@@ -9,6 +9,7 @@ see, and is reported as a blind spot rather than papered over.
 Usage: python3 .agents/slop/dsp_mutate.py [--baseline]
 """
 import os, re, shutil, subprocess, sys, tempfile
+import patch_not_apply as PNA
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SRC = os.path.join(ROOT, "tinybendygrad/runtime/ops_dsp.bend")
@@ -233,13 +234,13 @@ def main():
   for mid, old, new, why in MUTATIONS:
     s = open(SRC).read()
     if old not in s:
-      print(f"| {mid} | -- EDIT DID NOT APPLY -- | {why} |")
+      print(PNA.pipe([mid, PNA.not_applied(), why], 3))
       continue
     p = os.path.join(WORK, f"_dspmut_{mid}.bend")
     open(p, "w").write(s.replace(old, new, 1))
     got = run(p)
     if got is None:
-      print(f"| {mid} | -- DID NOT COMPILE / RUN -- | {why} |")
+      print(PNA.pipe([mid, "DID-NOT-COMPILE", why], 3))
       continue
     gs = set(got)
     moved = sorted({k.split("=", 1)[0] for k in got if k not in base_set}

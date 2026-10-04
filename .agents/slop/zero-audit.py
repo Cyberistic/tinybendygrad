@@ -129,6 +129,12 @@ def main():
                   % (table[:22], "-", "-", "-", "-", "UNPARSED"))
             unmatched.append((table, err))
             continue
+        # CONTROLS ARE NOT ZEROS.  A RULE C control is SUPPOSED to read 0 rows --
+        # that is its required outcome and it is the guard on every other
+        # verdict -- so counting one as a zero is the exact conflation this
+        # audit exists to end, done by the auditor.  The first version of this
+        # file did it and reported dd's 5 proven THEOREMs as 8.
+        rows = [r for r in rows if not r[0].startswith("C")]
         moved = [r for r in rows if r[1] in ("MOVED", "OK") or (r[2] or 0) > 0]
         zero = [r for r in rows if r not in moved]
         nap = [r for r in rows if r[1] in ("DID-NOT-COMPILE", "DID-NOT-COMPILED")]
@@ -145,6 +151,10 @@ def main():
     print("  a ZERO is only a coverage fact once you know a mutation was AIMED at")
     print("  the site.  'unmoved' alone cannot tell that from 'never tried'.")
     print()
+    print("  PER TABLE -- mutations recorded, and of those how many are ZEROS.")
+    print("  Controls (RULE C) are excluded from both columns: a control reading")
+    print("  0 rows is its REQUIRED outcome, not a blind spot.")
+    grand = gz = 0
     for harness, table, rx in TABLES:
         p = os.path.join(HERE, table)
         if not os.path.exists(p):
@@ -152,8 +162,21 @@ def main():
         rows, err = parse(p, rx)
         if not rows:
             continue
-        ids = set(r[0] for r in rows)
-        print("  %-24s %3d mutation(s) recorded" % (table[:24], len(ids)))
+        # A row is IDENTIFIED by its own column when it has one, else by its
+        # position in the file.  `nv_ip_mutations.txt` names its mutations in a
+        # prose column and has no id column at all, so keying on the id gave one
+        # empty string and a denominator of 1 against 33 measured mutations.
+        rows = [(r[0] or "#%d" % i, r[1], r[2], r[3])
+                for i, r in enumerate(rows) if not r[0].startswith("C")]
+        n = len(set(r[0] for r in rows))
+        z = sum(1 for r in rows if not (r[1] in ("MOVED", "OK") or (r[2] or 0) > 0))
+        grand += n
+        gz += z
+        print("  %-26s %3d mutation(s)   %2d zero(s)" % (table[:26], n, z))
+    print("  %-26s %3d mutation(s)   %2d zero(s)" % ("TOTAL", grand, gz))
+    print("  dd is the ONLY table whose zeros are classified; the other %d zeros"
+          % (gz - 5))
+    print("  carry the harness's own label and nothing else.")
     print("-" * W)
     print("RULE D, SCANNED IN THE HARNESS SOURCES.  A patch that did not apply must")
     print("print PATCH-NOT-APPLY and NEVER a bare 0.  This is grepped at the branch")

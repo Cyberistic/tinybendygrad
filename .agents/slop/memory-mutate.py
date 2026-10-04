@@ -254,7 +254,8 @@ def main():
         src = open(BEND).read()
         n = src.count(find)
         if find == 'KEEP' or n == 0:
-            results.append((mid, desc, 'SKIP', [], f'pattern not found ({n})')); continue
+            results.append((mid, desc, PNA.not_applied(), [],
+                            f'pattern not found ({n})')); continue
         shutil.copy(BEND, BEND + '.mut')
         open(BEND + '.mut', 'w').write(src.replace(find, repl))
         txt, rc, err = run(BEND + '.mut')

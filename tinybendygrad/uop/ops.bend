@@ -1803,6 +1803,34 @@ def eq_arg.ABlob(y: Arg, +bs: List<&2, U32>) -> Bool:
     case ABlob{y1}: eq_u32(bs, y1)
     case _: False{}
 
+# IEEE EQUALITY IS CORRECT HERE, AND `F32.bits` WOULD BE A REGRESSION. `eq_const.CFloat`
+# one hundred lines up compares `F32.bits` and is right, so this arm LOOKS like the
+# same bug. It is the OPPOSITE bug, and the difference is the PYTHON CLASS of the
+# element `ops.py:201`'s key holds -- the key is
+# `(op, src, arg, tag, type(arg))` and each element is compared with ITS OWN `__eq__`:
+#
+#   * `dtype.py:8-23` `class ConstFloat(float)` says in its own docstring that it
+#     "distinguishes -0.0 from 0.0 and where nan == nan", and it overrides BOTH
+#     `__eq__` (line 16) and `__hash__` (line 21, `hash(self.bits)`). So a CONST's
+#     arg compares BITWISE -- which is why `eq_const.CFloat` is `F32.bits`.
+#   * `AFloat` is the BARE `float`. It overrides nothing, so its hash is
+#     `hash(-0.0) == hash(0.0)` and its equality is IEEE, and CPython therefore
+#     interns `0.0` and `-0.0` as ONE key.
+#
+# MEASURED, live, on both trees this gate can select, by CALLING
+# `.agents/slop/afloat-probe.py` (and by the four `afloat_*` rows of
+# `.agents/slop/ops-oracle.py`, which are the same measurement as a gate):
+#     UOp(Ops.CONST, arg=0.0)   is UOp(Ops.CONST, arg=-0.0)         -> True,  1 node
+#     two DISTINCT float('nan') with the SAME 0x7fc00000 payload     -> False, 2 nodes
+#     UOp(Ops.CONST, arg=1.5)   is UOp(Ops.CONST, arg=1.5)         -> True,  1 node
+#     UOp(Ops.CONST, arg=1.5)   is UOp(Ops.CONST, arg=2.5)         -> False, 2 nodes
+#     `type(arg)` keeps an `int` 0 and a `float` 0.0 apart           -> False, 2 nodes
+# A `F32.bits` comparator inverts BOTH discriminating cells: it would split the signed
+# zeros CPython joins and merge the two NaNs CPython keeps apart. THE ONE CELL NO
+# VALUE-BASED PORT CAN REPRODUCE is the SAME NaN object twice, which interns in
+# CPython (1 node -- `lookdict` short-circuits on pointer identity) and is False under
+# `F32.is_eq`. That is a fact about Python object IDENTITY rather than about the float,
+# so there is deliberately no row for it: a row would have to lie about one or the other.
 def eq_arg.AFloat(y: Arg, +f: F32) -> Bool:
   match y:
     case AFloat{y1}: F32.is_eq(f, y1)
@@ -5199,6 +5227,40 @@ def s_blob_sweep_count() -> String:
   U32.show(U32.sub(Arena.next(blob_sweep_ar.go(blob_sweep_blobs(), Arena.empty())), 1))
 
 # ---------------------------------------------------------------------------
+# AFLOAT -- `Arg`'s BARE-float arm, the OTHER half of the intern key. ops.py:201.
+#
+# The measurement and the reason `F32.is_eq` is right here and `F32.bits` would be a
+# regression are the comment on `eq_arg.AFloat` above; this block is the GATE for it.
+# `AFloat` has no constructor anywhere in the tree -- `uop/upat.bend:418` and
+# `uop/render.bend:717` only READ it, and its one would-be builder `_frompy` is
+# `TODO(p3)` at :4318 -- so no interning fixture can reach the arm the normal way and
+# the comparator was untested rather than unreachable. These rows intern two
+# `AFloat`s on ONE arena through `UOp.new`, so the answer is IDENTITY OF THE TWO
+# INDICES and not `eq_arg` read directly: `blob_same` above says why, and this is
+# the same rule.
+# ---------------------------------------------------------------------------
+def afloat_same(f1: F32, f2: F32) -> Bool:
+  +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, AFloat{f1}, TNone{})
+  +v = UOp.new(Found.ar(u), OpsCONST{}, Nil{}, AFloat{f2}, TNone{})
+  U32.is_eq(Found.i(u), Found.i(v))
+
+# THE DISCRIMINATING CELL. `0.0` and `-0.0` are `0x00000000` and `0x80000000` and
+# CPython interns them as ONE key; a bit comparator answers False here and splits it.
+def t_afloat_zeros_intern() -> Bool: afloat_same(0.0, F32.neg(0.0))
+
+# THE COUNTER-CELL. Two NaNs of the same payload, IEEE-unequal, and CPython keeps two
+# nodes; a bit comparator answers True here and merges them. `F32.div(0,0)` is the
+# file's NaN, the same construction `t_float_nan_interns` uses.
+def t_afloat_nan_distinct_intern() -> Bool: afloat_same(F32.div(0.0, 0.0), F32.div(0.0, 0.0))
+
+# THE TWO CONTROLS, and they are what make the two cells above mean something: a
+# comparator that answered False for every float would satisfy the NaN row alone, and
+# one that answered True for every float would satisfy the zeros row alone.
+def t_afloat_same_intern() -> Bool: afloat_same(1.5, 1.5)
+
+def t_afloat_distinct_intern() -> Bool: afloat_same(1.5, 2.5)
+
+# ---------------------------------------------------------------------------
 # MSTACK -- ops.py:770, `UOp(Ops.MSTACK, src=(self,)+srcs) if len(srcs) else self`.
 #
 # THE ROW THIS FILE WAS MISSING, and it is a KNOWN LOOSE END rather than a new finding.
@@ -6143,6 +6205,13 @@ def main() -> IO(Unit):
     srow("blob_content", s_blob_content())
     row("blob_sweep", t_blob_sweep())
     srow("blob_sweep_count", s_blob_sweep_count())
+    # --- THE BARE-FLOAT LANE. ops.py:201. `AFloat` is the intern key's float half and
+    # --- it compares IEEE, which is CORRECT for a bare `float` and wrong for the
+    # --- `ConstFloat` in `eq_const.CFloat` -- see the comment on `eq_arg.AFloat`.
+    row("afloat_zeros_intern", t_afloat_zeros_intern())
+    row("afloat_nan_distinct_intern", t_afloat_nan_distinct_intern())
+    row("afloat_same_intern", t_afloat_same_intern())
+    row("afloat_distinct_intern", t_afloat_distinct_intern())
     # --- THE AXIS CPYTHON LANE. `#bend_only_mstack_puts_self_first` first, because it is
     # --- the row this file was MISSING: `UOp.after` and `UOp.end` had rows and
     # --- `UOp.mstack` had the same inverse bug fixed in the same commit with none, so a

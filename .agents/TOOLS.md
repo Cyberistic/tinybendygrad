@@ -470,6 +470,7 @@ Everything below is `bin/bend` + CPython. **Nothing is committed.**
 | `.agents/slop/rebase-oracle-search.py` | NEW oracle for `codegen/opt/search.bend`, 12 of 18 rows, **RED on 5**, and it exists because `tinygrad/codegen/opt/search.py` **in the vendored tree does not import**: line 15 reads `AxisType.UNROLL`, which upstream deleted. Measured against `.agents/slop/opstree`: `actions` is 209 where the port counts 269 and has 18 amt-0 entries where the port counts 28. `TG_TREE` picks the tree exactly as `ops-gate.sh` does, and the vendored tree's import failure is printed as the ROW `#repro_vendored_import` — because a fact that can only be read in a comment survives exactly as long as the comment. `acts_n_padto` is the length of `actions` imported **with `BEAM_PADTO=1`**, because the PADTO group is added by a module-scope `if getenv(...)` and is not in this process's list. |
 | `.agents/slop/rebase-break.py` | PROVE AN ORACLE IS CAPABLE OF BEING RED, by perturbing the PORT and reverting it. The revert is **asserted, not intended**: SHA-256 before, SHA-256 after, and a non-zero exit with the backup left in place if they differ. Fails when the perturbation string is not unique (it must occur exactly once or the proof is about nothing) and when it moves no row. |
 | `.agents/slop/rebase-shadow.py` | The same proof for an oracle whose INPUT IS THE TREE. `copytree(symlinks=True)` — 289 links, no bytes, two seconds — then one link is replaced by a real perturbed copy, so nothing upstream can be reached and `codegen/opt/*` (a live agent's file) is never touched. Asks the right question: not "did it go red" but **"did the row that moved belong to the thing the oracle claims to read"**. |
+| `.agents/slop/rows-blast.py` | **THE BLAST RADIUS OF `rows()`, MEASURED OVER EVERY WIRED LANE.** Runs all pairs LIVE, keeps the RAW stdout, and applies the shipped parser and any candidate to the same bytes; per lane it reports old/new row counts, keys gained, keys dropped and values changed, and per PAIR the shared and disagreeing counts under each. Nothing is read from a cache, because a cached row DICT cannot answer the only question here -- what did the text say. 38 pairs in ~470 s at 5 workers. It is how the `]   py=[` fold was shown to move 0 keys and 0 verdicts on 32 of the pairs while it changed 1 504 values on `renderer/amd/generate.bend` alone, and how `cstyle.bend` was shown to go 222 shared / 222 disagree -> 222 / 0. |
 | `.agents/slop/rebase-gate-selftest.py` | The six-state TEMPLATE every oracle must pass: dead lane, empty output, no shared row name, a shared name that differs, agreement, malformed baseline — each driven through the same `gate_port()` main() calls, with each wired oracle's OWN row names as the fixture. Synthetic names would pass a broken oracle and fail a working one. |
 
 Three bugs found in the instruments themselves this session, all recorded at the
@@ -683,6 +684,68 @@ TWO THINGS IN IT THAT ARE WORTH THE REUSE.
    name already there, none of which has a digit. If a new `#bend_only_<name>` ever
    fails to filter, LOOK AT THE CHARACTER CLASS before looking at the rows.
 
+### `.agents/slop/afloat-patch.py` -- reconstructing an edit into a file another unit overwrote
+
+A concurrent unit wrote a divergent 7230-line `ops.bend` over the shared working copy,
+taking both this unit's four `afloat_*` rows and the earlier `ABlob` false-intern fix
+with it. This script rebuilds the lost side from a **HASH-ASSERTED** base
+(`ops-blob-fixed.pristine.bend`, md5 `d5c1174e...`), re-applies three anchors, and emits
+`afloat-ops-bend.bend` + `afloat-ops-bend.patch`.
+
+It **REFUSES** rather than emitting a wrong patch in three cases: the base md5 is not the
+one this unit started from (somebody refreshed the snapshot), an anchor matches zero or
+more than once, or **the base still compares a blob by LENGTH** -- because then the patch
+would apply on top of the false-intern fix rather than after it. A snapshot somebody else
+can refresh is not a base; a snapshot with an asserted digest is.
+
+The reconstruction was **proven, not assumed**: in a mirrored subtree it is
+`ALL PROOFS CHECK` and its row output is byte-identical to the `blobrows/af-after`
+snapshot taken from the file that had been green. See `## A-4` in
+`notes/bend2-constraints.md`.
+
+### `.agents/slop/afloat-probe.py` -- what CPython's ucache does with a BARE float arg
+
+Read-only, one file, no gate. It exists because `ops.py:201`'s key holds the element
+and **each element carries its own `__eq__`**, so "is this the right comparison" is
+unanswerable without asking CPython which Python class is in the key. `TG_TREE`
+selects the tree and the answers are IDENTICAL on the vendored pin and on
+`.agents/slop/opstree`, which is itself part of the finding.
+
+The measured answer is that the two float classes are opposite rules:
+`dtype.py:8-23`'s `ConstFloat` overrides `__eq__` and `__hash__` ("distinguishes
+-0.0 from 0.0 and where nan == nan"), so a CONST's arg compares BITWISE and
+`eq_const.CFloat` is right; a bare `float` overrides nothing, so `hash(-0.0) ==
+hash(0.0)` and CPython **interns `0.0` with `-0.0` (1 node)** and keeps two DISTINCT
+same-payload NaNs apart (2 nodes), which is IEEE and makes `eq_arg.AFloat`'s
+`F32.is_eq` right. Changing it to `F32.bits` inverts both cells -- it is a double
+regression wearing the costume of a fix.
+
+**ONE CELL IS DELIBERATELY UNGATED.** The same NaN *object* twice interns in CPython
+(1 node, `lookdict` short-circuits on pointer identity) and `F32.is_eq(nan, nan)` is
+False. That is a fact about Python object IDENTITY and not about the float, so a row
+for it would have to lie about the comparator or about CPython. It is measured here
+and printed nowhere else.
+
+### `sh .agents/slop/ops-gate.sh` -- the two red-at-rest lanes it stopped hiding
+
+`ops-gate.sh` is the three-lane gate for `uop/ops.bend` and it was **RED ON THE
+PRISTINE TREE**: its CPython lane had none of the five `cfun_*` rows the Bend prints,
+so the byte diff reported `0a1,5` on every run and `TODO.md:600` recorded it as
+pre-existing. Those five rows are **gateable, not bend-only** -- `CustomFunction` is a
+frozen dataclass at `ops.py:1395` and `UOp.custom_function` at `ops.py:1259`, both
+present on BOTH selectable trees, answering `True/True/True/sel_registerName|u64/
+sel_registerName|void` identically on each. They are now a shared `# 0bis0` block at
+the HEAD of `ops-oracle.py`, in the Bend's print order, with no `#bend_only_` reason:
+**denominator 94 -> 103 shared rows, three lanes byte-identical, exit 0, on both
+trees.**
+
+The general lesson, and it is the one in the notes: **a lane must never be wired
+having been seen go red**, because a gate that is red at rest trains its reader to
+read red as normal. `sh .agents/slop/ops-501-gate.sh` is red for the same reason and
+is still red -- 101 `s5_*` rows in `ops-501-oracle.py` against 82 in the Bend, 19
+families (`s5_copy_*`, `s5_devrange_*`, `s5_ga_*`) that only the oracle has. That
+oracle is at its committed state, so it is red AT REST and it is another unit's file.
+
 ## Unobservable-row census (2026-10-03/04)
 
 Five tools, all read-only against the ports; the only file one of them *writes*
@@ -742,6 +805,10 @@ Harness rules learned here:
 | `.agents/slop/dd-mutations.frozen.bend` | the pinned snapshot, `73b0e1e7…`. **The live file is a concurrent unit's** and moved under the run. |
 | `.agents/slop/dd-gate-base-172.txt` | the 172-row baseline the table is diffed against. |
 | `.agents/slop/dd-mutations-report.md` | the classified table: 28 MOVED, 5 THEOREM with a proof each, 1 REQUEST with the fixture named, 2 DID-NOT-COMPILE. |
+| **`.agents/slop/zero-classify.py`** | **A ZERO CLASSIFIES ITSELF: five verdicts and no sixth** — `UNREACHABLE+proof` / `PORT-DEFECT` / `PATCH-NOT-APPLY` / `INVISIBLE-to-reader` / `NO-MUTATION-WRITTEN`. `MOVED` and `DID-NOT-COMPILE` are counted separately (they are not zeros), and **RULE C controls are excluded from the tally** (their `0 rows` is the required outcome). Two string questions decide a zero: **Q1 WRONG+JOINED** — does a DISAGREEING row carry CPython's answer *at this site*? **Q2 VISIBLE** — does CPython's answer at the site appear in *any* row? **WRONG before VISIBLE.** **Q1 MUST BE A PER-SITE JOIN, NOT A FAMILY VOTE**: a coarse family lets every disagreeing row in it act as an alibi for every site under it. Driven by three declarations — `--aim` (id→def), `--family` (row regex→family), `--site-answer` (site→CPython's measured answer) — so it never guesses, and a site with no answer is refused as UNDECLARED rather than guessed at. **`inside()` tests the UNDERSCORE, not the dot**: Bend namespaces sub-defs as `l2i_shl.hi`, and a `startswith(fam + ".")` test classifies every `l2i_*` site as belonging to no family. **REFUSES an unrecognised MEASURED verdict** so "unrecognised" cannot become a sixth bucket that reads like a pass. `--verdicts` prints the five. |
+| `.agents/slop/zero-selftest.py` | proves the PORT-DEFECT / INVISIBLE-to-reader discrimination **on the real snapshots**: `l2i_shl.hi` against the defective `73b0e1e7` reads `PORT-DEFECT` (`lg9p` says `BITCAST(WHERE)` where CPython has `BITCAST(OR)`), an answer in no row reads `INVISIBLE-to-reader`. Same site, same rows, different snapshot, different verdict. Exits 1 on any failure; every input is a file this project produced by running something. |
+| `.agents/slop/zero-audit.py` | audits **every** mutation table in `.agents/slop` and prints **THE DENOMINATOR** — mutations recorded vs zeros, controls excluded — because "unmoved" conflates *no mutation was written* with *written and it did not move*. Measured: 487 mutations / 15 tables / 30 zeros, of which **25 are unclassified**. A table whose pattern matches nothing is printed **UNPARSED, not skipped silently**. Also **greps RULE D at the branch that PRODUCES the number** — a report file cannot say which branch produced its own figure — and found a live violation: `ops-python-mutate.py` prints `\| {mid} \| (pattern not found) \| 0 \|` and the committed record carries it. |
+| `.agents/slop/dd-zero-{aim,family,site-answer}.tsv` | the three declarations `zero-classify.py` is driven by for `codegen/decomp/dtype.bend`: which site each of the 41 mutations is aimed at, which family produces each baseline row, and **CPython's measured answer at each site** (the join key). |
 | `.agents/slop/dd-mut-proof.py` | proves a THEOREM by **renaming the enclosing def**: a rename cannot change semantics or break a type, so a rename that compiles proves nothing resolved the old name. Reports `REACHABLE-WAS` (bend refused, so a caller exists) or `THEOREM` (compiled, output byte-identical). Reads **stderr** to tell a refusal from bend's stack overflow, because both print nothing on stdout. |
 | `.agents/slop/dd-mut-tether.py` | proves a THEOREM by **deleting the arm**: compiles and byte-identical ⇒ the arm was dead. The complement — deleting the *interceptor* and seeing the rows CHANGE — is what attributes the death to the interception rather than to unreachability (M06). |
 | `.agents/slop/dd-mut-reach.py` | the call graph from `main` to every def. **Evidence, not proof** (a regex over source can miss an indirect use), but it names the 81 defs no fixture reaches. |

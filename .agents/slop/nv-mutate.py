@@ -148,7 +148,7 @@ def main():
         if want and mid not in want:
             continue
         if old not in src:
-            print("| %s | NOT FOUND | %s |" % (mid, what))
+            print(PNA.pipe([mid, PNA.not_applied(), what], 3))
             continue
         dst = os.path.join(os.path.dirname(SRC), "_mut_scratch.bend")
         open(dst, "w").write(src.replace(old, new, 1))

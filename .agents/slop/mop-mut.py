@@ -194,8 +194,8 @@ def main():
   for name, old, new in MUTS:
     s = open(BAK).read()
     if old not in s:
-      results.append((name, "PATTERN NOT FOUND", []))
-      print("%-72s PATTERN NOT FOUND" % name)
+      results.append((name, PNA.not_applied(), []))
+      print("%-72s %s" % (name, PNA.not_applied()))
       continue
     open(F, 'w').write(s.replace(old, new, 1))
     if not checks():

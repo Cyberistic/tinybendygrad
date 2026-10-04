@@ -120,8 +120,9 @@ print("| --- | --- | --- | --- |")
 summary = []
 for mid, name, find, repl, what in MUTS:
   if find not in BASE:
-    print(f"| {mid} | `{name}` | {what} | **NOT APPLIED** (anchor not found) |")
-    summary.append((mid, name, what, ["NOT-APPLIED"]))
+    print(PNA.pipe([mid, "`%s`" % name, what,
+                    PNA.not_applied("anchor not found")], 4))
+    summary.append((mid, name, what, [PNA.not_applied()]))
     continue
   shutil.copy(BEND, BEND + ".bak")
   open(BEND, "w").write(BASE.replace(find, repl, 1))

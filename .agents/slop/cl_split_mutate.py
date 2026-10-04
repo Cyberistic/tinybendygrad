@@ -9,6 +9,7 @@ unit and 0 for all 30 in another.
   python3 .agents/slop/cl_split_mutate.py
 """
 import pathlib, re, shutil, subprocess, sys, tempfile
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 BEND = ROOT / "bin/bend"
@@ -97,7 +98,7 @@ with tempfile.TemporaryDirectory() as td:
     p = base / f"tinybendygrad/runtime/{f}.bend"
     src = p.read_text()
     if old not in src:
-      print(f"{mid:4} {f:9} {'--':>5} {'--':>7}  ANCHOR NOT FOUND -- stale mutation")
+      print(f"{mid:4} {f:9} {'--':>5} {'--':>7}  {PNA.not_applied('stale mutation')}")
       continue
     p.write_text(src.replace(old, new, 1))
     got = rows(base)

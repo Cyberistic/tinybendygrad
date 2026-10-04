@@ -188,7 +188,8 @@ def main():
     if not find or not repl or find == repl:
       print(f"| {mid} | HARNESS-FAIL | the edit is malformed (empty or identical halves) |"); continue
     if find not in base_text:
-      print(f"| {mid} | HARNESS-FAIL | the ANCHOR is not in the file (the edit did not land) |")
+      print(PNA.pipe([mid, PNA.not_applied(),
+                      "the ANCHOR is not in the file (the edit did not land)"], 3))
       if only: print(f"\n--- {mid} anchor ---\n{find[:400]}")
       continue
     SCRATCH.write_text(base_text.replace(find, repl, 1))

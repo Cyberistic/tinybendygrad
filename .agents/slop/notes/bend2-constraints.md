@@ -18418,3 +18418,403 @@ success, and at the moment of the last report ZERO of the three were in the
 tree the gate reads. A finished agent in a workspace is an unmerged pull
 request, and "the gate is green" in the agent's own workspace is not
 evidence about the tree.
+
+---
+
+## ZERO-CLASSIFICATION UNIT, 2026-10-04. The `## M-N` numbering continues from the
+## M-series above (last was M-3); the file's INDEX at the top says to cite POSITIONS,
+## so each rule names its own file. Five rules, each with its measurement.
+
+### M-4. A ZERO MUST CLASSIFY ITSELF, AND THERE ARE FIVE VERDICTS AND NO SIXTH
+
+`SAME -- 0 rows` is four different facts wearing one costume, and this project has
+been charged for all four:
+
+| verdict | what it means | what earns it |
+|---|---|---|
+| `UNREACHABLE+proof` | the site cannot be called | the rename compiled AND the output stayed byte-identical |
+| `PORT-DEFECT` | the site IS called and a row asserts a WRONG value | a disagreeing row carrying CPython's answer AT the site |
+| `PATCH-NOT-APPLY` | the edit never landed | the harness says so (RULE D) |
+| `INVISIBLE-to-reader` | the reader cannot see the node | CPython's answer at the site is in NO row |
+| `NO-MUTATION-WRITTEN` | nothing was aimed at the site | nothing; this is the DENOMINATOR |
+
+`MOVED` is not a zero and `DID-NOT-COMPILE` is not either (RULE B: a non-program
+says nothing, **not even zero**). A zero that cannot be placed in the five is an
+error. `.agents/slop/zero-classify.py` does it; `--verdicts` prints the five.
+
+### M-5. "IS IT ZERO?" NEVER DECIDES A ZERO. ONLY CPython DOES.
+
+THE MECHANICAL TEST, and the two questions, **in this order**:
+
+```
+Q1  WRONG + JOINED   does a DISAGREEING row carry CPython's answer AT THIS SITE?
+                     yes -> PORT-DEFECT
+Q2  VISIBLE          does CPython's answer at the site appear in ANY row?
+                     no, and Q1 silent -> INVISIBLE-to-reader
+```
+
+**WRONG before VISIBLE.** A row that *lies* is a defect even when it is also the
+only witness; a row that is *silent* is only a coverage gap.
+
+**Q1 MUST BE A PER-SITE JOIN, NOT A FAMILY VOTE.** This was measured by getting it
+wrong: with a coarse `l2i` family (every `lg*` row is one), a family vote let all
+51 disagreeing `l2i` rows act as an alibi for every `l2i_*` site and called
+**M06 a defect when M06 is a proven THEOREM**. A row can only witness a defect *at*
+a site if CPython's answer for that site is inside it.
+
+`zero-selftest.py` proves the discrimination on the **real snapshots**: `l2i_shl.hi`
+against defective `73b0e1e7` reads `PORT-DEFECT`, and an answer in no row reads
+`INVISIBLE-to-reader`. Same site, same rows, different snapshot, different verdict.
+If it passed for both, the classifier would be reading a label.
+
+### M-6. BEND NAMESPACES SUB-DEFS WITH AN UNDERSCORE, SO A CONTAINMENT TEST MUST TOO
+
+`def l2i_shl.hi(` is a sub-def of `l2i_shl`, which is a sub-def of `l2i`. There is
+no `l2i.` in any name. A classifier written with the reflex every other language
+induces -- `site.startswith(fam + ".")` -- classifies **every `l2i_*` site as
+belonging to NO family**, which turns a PORT-DEFECT into an "UNDECLARED" shrug.
+MEASURED: that bug made `l2i_shl.hi` read `UNDECLARED` instead of `PORT-DEFECT`.
+
+**A tool that cannot see a family is worse than one that has no opinion**: the
+second is honest and the first invents a reason.
+
+### M-7. A BASELINE'S GUARD MUST BE A DIGEST OF ITS ROWSET. THREE FIELDS IS A SAMPLE.
+
+`dd-mutate.py`'s `shape()` is `(first line, line count, last line)`. It catches a
+*differently-shaped* build -- the 172- and 178-row baselines differ in line count
+and are rejected -- and it **passes a same-shaped corrupt one**:
+
+```
+original shape: ('l2idt0=i64->i32', 184, '')
+corrupt  shape: ('l2idt0=i64->i32', 184, '')      # hi42's operand order swapped
+SHAPE GUARD PASSES A CORRUPT BASELINE: True
+```
+
+That is the exact M09-mutant-baseline defect, one shape-collision away, and it is
+what the frozen-digest assertions do NOT cover: they assert about the file being
+**mutated**, and `SAME` is measured against the **baseline**.
+
+A baseline is a claim about a file. Three fields is not a claim.
+
+**And it survives today only because RULE C catches it**, which is now the second
+time RULE C has earned its keep on a defect it was not written for.
+
+### M-8. "UNMOVED" CONFLATES *NEVER AIMED* WITH *AIMED AND IT DID NOT MOVE*
+
+MEASURED on `codegen/decomp/dtype.bend`, 182 baseline rows:
+
+| | before (36 mutations) | after (41) |
+|---|---|---|
+| baseline rows a mutation moved | 159 | **172** |
+| unmoved rows at a site that WAS aimed | 15 | **2** |
+| unmoved rows whose family has NO aimed mutation | 8 | 8 |
+| `l2idt*` / `f2fdt*` unmoved | **11** | **0** |
+
+Eleven of the twenty-three "unmoved" rows had **no mutation aimed at them at
+all**. They were reported as though they were a coverage fact.
+
+**"Rows moved" and "baseline rows covered" are different numbers**: the 41
+mutations move 174 distinct row names and cover 172 of the 182 baseline rows,
+because `lguk` and `lgusig` are rows a mutation **created** -- they are in no
+baseline. Only the second is a coverage statement.
+
+**AND A CLAIM ABOUT A MUTATION'S REACH IS NEVER INHERITED.** A report predicted
+`l2i_dt`'s value swap would move 2 rows; measured, it moved **23**. The same prose
+had already said "`dd_dtb.to` is on every `l2i` fixture's path" and still
+under-predicted by 11x. It costs 25 seconds to measure.
+
+---
+
+## R-1 (continues the M-series at POSITION 18502, `### M-8.`). A SHARED ROW READER IS A
+##     VERDICT ABOUT 38 LANES, AND "UNCHANGED FOR EVERY ROW" IS NOT THE CLAIM WORTH MAKING
+
+`rebase-gate.py:rows()` is the parser every wired gate uses. Changing it changes 38 verdicts
+at once, and the six findings this project calls "compared nothing" were all a reader or a
+cache, never a port:
+
+* 82 cache files holding `{}`;
+* an oracle covering 109 of 172 rows;
+* a lane sharing 0 row names;
+* a **whitespace-format lane** (`schedule/multi.bend`'s oracle prints `name␣␣value`, no `=`
+  anywhere: `rows()` read **0 of 213** real rows);
+* an `F2` lane (`renderer/cstyle.bend` prints `name = [v]   py=[w]` while its oracle prints
+  `name = [v]`: **222 shared / 222 disagreeing**, every one by construction);
+* 18 disagreements hidden inside a 65-name `SKIP` set.
+
+So the change has three movements and only one is safe:
+
+| movement | consequence | how it is caught |
+|---|---|---|
+| LOST KEY | GUARD 4's intersection SHRINKS — below 1 it is BROKEN, between 1 and n it is a silently narrower comparison | every old key present in the new one |
+| CHANGED VALUE | can turn a real disagreement into AGREEMENT | per-PAIR shared/disagree under BOTH parsers |
+| MANUFACTURED KEY | a name invented out of a line that was never a row; GUARD 4 reads a shared name as EVIDENCE | a TSV lane must stay at 0 rows |
+
+**ASSERT "NO VALUE CHANGED" AND YOU HAVE ASSERTED NOTHING.** Every F2 lane changes every
+value. The assertion that means something is `old == new + PY_TAIL + <transcription>` for
+every changed row — and getting the bracket wrong reports **0 folds out of 450 folds**, which
+is a check that fails to check. It did, once, in this change.
+
+**AND THE FOLD'S OWN PROOF IS A LANE THAT WAS NEVER GREEN.** Agreeing-once is what a blind
+gate looks like. A planted row in a folded lane must still be BROKEN with the row NAMED, or
+the fold bought its green by making the lane unable to go red.
+
+### R-2. A LANE'S OWN GATE AND THE SHARED GATE CAN DISAGREE ABOUT WHAT A VALUE IS, AND THE
+###     FIX BELONGS IN THE PRODUCER
+
+`renderer_oracle.py cstyle-rows` emitted the sentinel `!KeyError` where CPython **raised**
+`KeyError`, while `cstyle.bend` has no exception channel and answers `""` (cstyle.bend:1074,
+:1149). So 9 of 222 shared rows could not agree under any reader, and three repairs were
+available:
+
+1. teach the SHARED reader to translate `!KeyError` — **rejected**: the token means nothing to
+   any other lane, and `rebase-scan-oracles.py` IMPORTS `rows()` and computes its own
+   shared/disagree counts, so the scan and the gate would then disagree **by construction**;
+2. wire it anyway and live with a permanently red lane — **rejected**: red on every sweep is
+   what a reader learns to ignore;
+3. emit the port's marker in the VALUE and report the refusal on **stderr** — **chosen**.
+
+**WHAT WAS GIVEN UP, precisely**: 9 of 222 shared rows are a refusal rendered as the marker
+and 213 are CPython's own return value. "The oracle called CPython" has to mean something, so
+the count belongs in every sentence about the lane.
+
+**AND A PRINTED COUNT THAT NOTHING ASSERTS IS A COMMENT.** Once the refusal left the value,
+stderr was the only place it existed, so `cstyle-gate.py:unsilent_refusals()` DERIVES the set
+from the PORT's own output — every row whose answer is entirely the empty marker — and fails
+when the oracle named none of them. Derived, not typed: a typed list of four row names rots
+the day the port grows a fifth, and it would have rotted silently.
+
+### R-3. A PREFIX NORMALISATION BETWEEN TWO LANES IS A SECOND SOURCE OF TRUTH, NOT A FIX
+
+`schedule/multi.bend`'s 321 rows are all `t_`-prefixed (`t_pm_n`); `multi-rows.py`'s 213 are
+not (`pm_len`). Shared as printed: **0**. Strip the prefix: **26**, of which **21 DISAGREE** —
+and the disagreements are the point:
+
+```
+bx_none    port `1`  vs oracle `()`    port: "is anything broadcast"   oracle: WHICH axes
+pm_rev     port `1`  vs oracle `0`     port: a COUNT row               oracle: tuple.index
+fl_mid_n   port `1`  vs oracle `1`     AGREES -- on the LITERAL `1`
+```
+
+The collision is an accident of spelling, not a correspondence of claims, and the one that
+agrees agrees for the cheapest possible reason. Normalising would manufacture 21 reds **and 1
+agreement that is not one** — and an agreement is what a reader believes.
+
+**A READABLE FORMAT IS NECESSARY FOR A WIREABLE LANE AND NOT SUFFICIENT.** F3 fixed the half
+that was the reader's (0 rows -> 213). The lane is STILL unwired, for the NAME reason, and
+GUARD 4 answering "share NO row names" is the correct verdict rather than a failure of it.
+
+### R-4. A ROW CACHE IS NOT INVALIDATED BY ITS SOURCE, BECAUSE THE PARSER IS NOT A SOURCE
+
+`rebase-scan-oracles.py` caches row **DICTS**, not stdout, and its rule is "a cache OLDER than
+its source is not a reading". `rows()` is not a source: editing `rebase-gate.py` moves no `.bend`
+and no oracle, so every cached dict stayed "fresh" and `measure_roster()` would have reported
+the NEW parser's verdicts over the OLD parser's rows. Same species as the 82 `{}` files and as
+the stale `84 shared` count — a plausible number that outlives its input.
+
+The fingerprint is `sha256(rows.__code__.co_code)` plus `repr((PY_TAIL, GAP))`, written beside
+the cache, and a change DELETES every cached dict (`rebase-gate-selftest.py:parser_cache_guard`).
+Wiping is cheap — the lanes re-run — and it is the safe direction.
+
+### R-5. A "MOVED" ROW IS NOT EVIDENCE THAT THE PORT MOVED, AND THE GATE SAID SO
+
+`renderer/cstyle.bend` came back **RE-PORTED, 450 rows moved and now agree**, with its source
+untouched: `rows()` had just gained the fold. RE-PORTED means drift, and a reader files it
+there.
+
+`verdict()` now counts the two kinds separately, over the denominator:
+
+```
+450 row(s) moved and now agree, out of 672 row(s) on 3 lane(s).
+278 of the 450 are this reader's `py=` fold (172 are not)
+```
+
+The 172 are real and are the legacy dtype spellings the port was re-cut to (`f16` -> `__fp16`,
+`__bf16` -> `bfloat`). **A count of moved rows with no split is a count that cannot be read.**
+
+---
+
+## A-1. THE KEY'S RULE IS THE ELEMENT'S OWN `__eq__`, SO TWO FLOAT CLASSES ARE TWO OPPOSITE RULES
+
+Measured 2026-10-04 on `uop/ops.bend`'s `eq_arg` cluster. Numbering continues from the
+`## M-N` series above (last was **M-8**); the INDEX at the top says rule NUMBERS repeat
+across units, so cite this file and this position.
+
+`UOpMetaClass.__call__` keys on `(op, src, arg, tag, type(arg))`
+(`tinygrad/uop/ops.py:199`, and `ops.py:256`'s `replace` compares the same 4-tuple with
+`==`). **The key does not define an equality; each ELEMENT carries its own.** So the
+question a comparator has to answer is never "is this content?" but **"what is the
+Python CLASS of the thing in the key?"** — and two float classes answer it oppositely:
+
+| element in the key | class | `__eq__`/`__hash__` | the correct comparator |
+| --- | --- | --- | --- |
+| a CONST's `arg` | `ConstFloat(float)`, `dtype.py:8-23`, docstring "distinguishes -0.0 from 0.0 and where nan == nan" | BOTH OVERRIDDEN; `__hash__` is `hash(self.bits)` (line 21) | BIT PATTERN |
+| any other `arg` | bare `float` | neither; IEEE in both | IEEE EQUALITY |
+
+MEASURED, calling CPython on both trees the gate can select, twice each, byte-identical
+(`.agents/slop/afloat-probe.py`):
+
+```
+UOp(Ops.CONST, arg=0.0)  is UOp(Ops.CONST, arg=-0.0)   -> True,   1 node
+two DISTINCT float('nan'), same 0x7fc00000 payload       -> False,  2 nodes
+UOp(Ops.CONST, arg=1.5)  is UOp(Ops.CONST, arg=1.5)     -> True,   1 node
+UOp(Ops.CONST, arg=1.5)  is UOp(Ops.CONST, arg=2.5)     -> False,  2 nodes
+type(arg) keeps int 0 and float 0.0 apart               -> False,  2 nodes
+```
+
+**SO `U32.is_eq(F32.bits(f), F32.bits(y1))` IN `eq_arg.AFloat` IS NOT A REPAIR. It IS A
+DOUBLE REGRESSION** — it inverts BOTH discriminating cells, splitting the signed zeros
+CPython joins and merging the NaNs CPython separates. `eq_const.CFloat` compares bits
+and is RIGHT; `eq_arg.AFloat` compares `F32.is_eq` and is RIGHT; they are different
+bugs pointing opposite ways and the file's own comment above `eq_const.CFloat` (which
+says `F32.is_eq` "is IEEE and disagrees in both directions") is TRUE **of `ConstFloat`
+only**.
+
+**AND THE CELL NO VALUE PORT CAN REPRODUCE, so that it gets no row.** The SAME NaN
+*object* twice interns in CPython (1 node — `lookdict` short-circuits on pointer
+identity) while `F32.is_eq(nan, nan)` is False. That is a fact about Python object
+IDENTITY and not about the float, so a row for it must lie about the comparator or about
+CPython. Measured and printed NOWHERE, deliberately.
+
+## A-2. "NO CONSTRUCTOR" IS A STATEMENT ABOUT THE ARM; IT IS NOT A STATEMENT ABOUT THE COMPARATOR
+
+The briefing's reasoning was "latent, so untestable" and both halves were checked.
+Zero constructors: `AFloat` occurs 8 times in the whole live tree -- 1 type
+declaration, 2 comments, 1 def header, 4 `case` PATTERNS (`eq_arg.AFloat`,
+`eq_arg.sel`, `upat.bend:418`, `render.bend:717`) and **not one construction
+expression**. Its one would-be builder is `_frompy`, `TODO(p3)` at `ops.bend:4318`.
+
+But `UOp.new(arena, op, src, arg, tag)` takes the `Arg` as a PARAMETER
+(`ops.bend:2309`), so an arm with no constructor is still reachable from a gate row:
+two `AFloat`s interned on one arena answer by IDENTITY OF THE TWO INDICES. **This is
+the `blob_same` rule (`ops.bend:5117`: "a row that asserted `eq_arg` directly would be
+asserting the def under test with itself") and it is the right one** -- the comparator
+is measured THROUGH the arena, and the oracle supplies the expectation, so the row is
+not a tautology.
+
+**The mutation matrix, all four rows, measured on a MIRRORED tree** (never the live
+one; see the mirror contract below):
+
+| mutant | zeros | nan | same | distinct | rows moved |
+| --- | --- | --- | --- | --- | --- |
+| baseline | T | F | T | F | -- |
+| `U32.is_eq(F32.bits, F32.bits)` | **F** | **T** | T | F | 2 |
+| `True{}` | T | **T** | T | **T** | 2 |
+| `False{}` | **F** | F | **F** | F | 2 |
+| `Bool.not(F32.is_eq(..))` | **F** | **T** | **F** | **T** | 4 |
+
+**No mutant is invisible and no single row catches every mutant**, which is the
+property that makes four rows a minimal set rather than two rows and a hope: the two
+DIAGONAL/control rows never move under the bug being guarded against and exist only so
+a constant comparator cannot satisfy a discriminating row.
+
+## A-3. A MIRROR TREE IS THE ONLY SAFE WAY TO MUTATE, AND `cp` OF A SNAPSHOT IS NOT A MERGE
+
+`ops.bend` imports `./../helpers.bend` and `./../LAWS/spec.bend` (`ops.bend:167-168`)
+plus a bare `import Base`, so a copy under `.agents/slop/` **cannot resolve its
+imports** and will not compile -- the `ops-blob-on.bend` snapshot sitting in that
+directory is a TEXT file that was never run. A mutation therefore needs a mirrored
+SUBTREE at the same relative depth:
+
+```sh
+mkdir -p .agents/slop/<tag> && cp -R tinybendygrad .agents/slop/<tag>/
+# assert byte-identical to live BEFORE touching anything, mutate ONE line, then
+# diff live-vs-variant and require the diff to be exactly that line
+```
+
+Same technique as `.agents/slop/xd1/wt-sync.sh`, and it satisfies R-5/R-6: no `jj
+restore`, no write to the live tree, and the before/after assertion is a `diff -q` on
+the file being mutated rather than on a snapshot somebody else may have refreshed.
+
+## A-4. A CONCURRENT OVERWRITE OF A FILE YOU ARE EDITING IS NOT A DIFF — IT IS A ROLLBACK, AND A HASH POLLED ONCE MISSES IT
+
+MEASURED 2026-10-04, `tinybendygrad/uop/ops.bend`, and it is the sharpest thing in this
+file. A unit held the file at `d5c1174eb9b45a8a8ac1f197c6268101` / 6306 lines, edited it,
+verified its gate green three times on two trees, and finished. Nineteen minutes later:
+
+| when | md5 | lines | `afloat_*` rows | `eq_arg.ABlob` |
+| --- | --- | --- | --- | --- |
+| start, and all of this unit's work | `d5c1174e…` | 6306 | 0 -> 4 | `+bs: List<&2, U32>` (content) |
+| after the overwrite | `44b9c64f…` | 7140 | **0** | **`+n: U32` (LENGTH)** |
+| 60s later | `47ce62d0…` | 7176 | **0** | `+n: U32` |
+| 60s later | `c7879a52…` | 7230 | **0** | `+n: U32` |
+
+**The version that landed is missing this unit's four rows AND the earlier `ABlob`
+false-intern fix, and it grew 924 lines.** So the overwrite was not a merge and not an
+edit: it was a **DIVERGENT COPY** — another unit's branch of the same file, written over
+the shared working copy, carrying its own new work (`type DRng` at :6532,
+`UOp.device_range_src` at :6554) and lacking the blob fix that was in the tree before it.
+
+**FOUR RULES, and each was already written here and each was still not enough.**
+
+1. **POLL THE HASH, DO NOT POLL IT ONCE.** One `md5 -q` at the start and one
+   `jj diff --summary` at the end would both have passed. The file moved **three times**
+   after the last verification, and each version was different.
+2. **A GREEN GATE IS NOT A CLAIM ABOUT A FILE, IT IS A CLAIM ABOUT A MOMENT.** The gate
+   said green at 6306 lines. That statement became false without anybody running anything.
+   So a gate result must carry the hash it was measured at, or it cannot be re-checked.
+3. **`jj diff --summary` NAMES FILES, NOT CONTENT.** It listed
+   `M tinybendygrad/uop/ops.bend` for the whole episode and never said that 924 lines and
+   a fix had disappeared. The only instrument that caught it was a `grep -c` for **this
+   unit's own row names in the file being edited** — the cheapest possible liveness probe,
+   and it is the one to run before trusting any of this.
+4. **KEEP A HASHED BASE, NOT A PATH.** `ops-blob-fixed.pristine.bend` and
+   `ops-blob-on.bend` were both still `d5c1174e…`, which made the whole reconstruction
+   possible: `afloat-patch.py` asserts that md5, re-applies three anchors, REFUSES if the
+   base still compares a blob by length, and emits `afloat-ops-bend.patch`. **A snapshot
+   somebody else can refresh is not a base; a snapshot with an asserted digest is.** The
+   reconstruction was then PROVEN, not assumed: `ALL PROOFS CHECK` and a row output
+   byte-identical to the snapshot captured from the file that had been green.
+
+**AND THE HONEST END STATE IS A RED GATE.** The oracle side of this unit's work is live
+and correct; the Bend side is a prepared patch. `ops-gate.sh` is therefore red on the
+`afloat_*`/`cfun_*` rows **because of a concurrent overwrite, not because of the oracle**,
+and the correct thing is to say so rather than revert verified work to make a gate look
+tidy. A gate that goes red for a reason you can name is information. One that is quietly
+tidied is not.
+
+**ONE MORE THING THE OVERWRITE TAUGHT, and it is a `case` finding.** The first failure it
+produced was `a declared constructor (unknown: DRng)` at :6475 — the USE was written
+before the `type` at :6532. **A `type` declared 60 lines below its first use is a
+half-written file, and `--check-only` says `SOME PROOFS FAIL` for it, which is exactly
+the signal `agent-core.md` tells you to read.** Two minutes later the same command named a
+DIFFERENT failure (`expected: a filled definition; observed: UOp.device_range_src` —
+an arm set with no catch-all). **Two different `--check-only` failures in the same file two
+minutes apart is another unit mid-edit, not a defect to fix.**
+
+## R-7. THREE INCOMPATIBLE EDITS TO ONE FILE CANNOT BE 3-WAY MERGED — THE BASE ITSELF IS CONTESTED
+
+R-6 said one owner per FILE. This is the measurement that says **why**, and
+it is stronger than "merging is hard".
+
+On 2026-10-04 four units had `uop/ops.bend` open:
+
+* the **default workspace** held an uncommitted `BLOB_*` block whose
+  `ABlob` had been **reshaped from `{n: U32}` to `{bs: List<&2, U32>}`**;
+* the **sugar1** and **sugar2** workspaces were both branched from a tree
+  where `ABlob` was still `{n: U32}`, and neither contains the other.
+
+A `difflib` three-way line merge over `(base, s1, s2)` produced a
+7,141-line file with 146 markers — better than any input — that **did not
+compile**, because the grafted `BLOB` block writes `ABlob{bs1}` against a
+datatype that is still `{n: U32}` in the merge base. Restoring the four
+`DRng`/`device_range_src` blocks then produced 23 more errors, because
+each fix reordered the file and R-3 (sub-defs before parents) has to
+hold for every one of them simultaneously.
+
+**THE POINT IS NOT THAT THE MERGE WAS HARD. IT IS THAT THE MERGE BASE WAS
+NOT A COMMON ANCESTOR.** s1 and s2 disagree about a datatype's shape, so
+there is no three-way merge — there are three divergent futures and no
+statement of which one is right.
+
+**THE RULE:** before a wave opens a file, the file must be **committed and
+green**, and every agent must branch from that same commit. An UNCOMMITTED
+edit in the working copy is invisible to `jj rebase`, invisible to a
+three-way merge, and invisible to `git merge`. The default workspace's
+`BLOB_*` work was the third future, and it is the reason both merges
+failed — not the size of the diff and not carelessness about ordering.
+
+**WHAT WOULD HAVE WORKED:** commit the `BLOB_*` block first, re-point
+`p3-sugar1` and `p3-sugar2` at that commit, and then take them **in
+sequence** — s1, verify, then s2, verify. One owner at a time, each
+landing before the next starts. That is slower and it is the only thing
+that is correct.

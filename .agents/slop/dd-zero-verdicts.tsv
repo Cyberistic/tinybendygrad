@@ -1,14 +1,13 @@
-# zero-classify.py -- dd-mutate.py / codegen/decomp/dtype.bend -- valid for revision target e4618a7127ce (FROZEN dd-mutations.frozen.bend) + tree e17d3f7dd48c
+# zero-classify.py -- dd-mutate.py / codegen/decomp/dtype.bend
+# VALID FOR REVISION: target e4618a7127ce + tree e17d3f7dd48c
+# 182 baseline rows, 10 disagree with CPython, 0 have no CPython answer
 # ID	MEASURED	ROWS	SITE	VERDICT	WHY
-C00	SAME	0		NO-MUTATION-WRITTEN	no mutation names a site for C00
-C01	SAME	0		NO-MUTATION-WRITTEN	no mutation names a site for C01
-C02	SAME	0		NO-MUTATION-WRITTEN	no mutation names a site for C02
 M01	MOVED	36	dd_cast_sel	MOVED	the gate output changed -- not a zero
 M02	MOVED	12	dd_cast_sel	MOVED	the gate output changed -- not a zero
 M03	MOVED	18	dd_cast_fold	MOVED	the gate output changed -- not a zero
 M04	MOVED	2	dd_cast_bool	MOVED	the gate output changed -- not a zero
 M05	MOVED	4	l2i_cast3.bitc	MOVED	the gate output changed -- not a zero
-M06	SAME	0	l2i_cast.got	UNREACHABLE+proof	intercepted: dd-mut-tether.py: DELETING l2i_cast.got's `case 3` arm compiled and the output stayed BYTE-IDENTICAL to the 172-row baseline. Removing the INTERCEPTOR (l2i_cast.ldt's `case 3`) instead changed 129 of 174 lines, so the arm is dead precisely because l2i_cast.ldt takes sel==3 first -- interception, not unreachability.
+M06	SAME	0	l2i_cast.got	UNREACHABLE+proof	intercepted: dd-mut-tether.py on THIS snapshot e4618a71: deleting l2i_cast.got's case 3 arm (with the def line as an unambiguous anchor) compiled and the output stayed BYTE-IDENTICAL to the 182-row baseline. Dead by INTERCEPTION, not by unreachability.
 M07	MOVED	15	dd_bc	MOVED	the gate output changed -- not a zero
 M08	MOVED	7	l2i_cast0.sgn	MOVED	the gate output changed -- not a zero
 M09	MOVED	8	l2i_shl.hi	MOVED	the gate output changed -- not a zero
@@ -25,7 +24,7 @@ M19	MOVED	6	l2i_binop	MOVED	the gate output changed -- not a zero
 M20	MOVED	14	dd_rsub31	MOVED	the gate output changed -- not a zero
 M21	MOVED	6	unpack32	MOVED	the gate output changed -- not a zero
 M22	MOVED	2	unpack32	MOVED	the gate output changed -- not a zero
-M23	SAME	0	reindex.scaled	UNREACHABLE+proof	unreachable: dd-mut-proof.py: renaming `def reindex(` compiled and the output stayed BYTE-IDENTICAL. reindex.scaled is inside reindex, which the gate cannot reach.
+M23	SAME	0	reindex.scaled	UNREACHABLE+proof	unreachable: dd-mut-proof.py, RE-RUN on e4618a71: renaming `def reindex(` compiled and the output stayed BYTE-IDENTICAL.
 M24	MOVED	7	l2i_cdiv	MOVED	the gate output changed -- not a zero
 M25	MOVED	31	l2i_cast0.pick	MOVED	the gate output changed -- not a zero
 M26	MOVED	29	dd_rs.push	MOVED	the gate output changed -- not a zero
@@ -35,12 +34,15 @@ M29	MOVED	1	l2i.gone	MOVED	the gate output changed -- not a zero
 M30	MOVED	24	dd_eck	MOVED	the gate output changed -- not a zero
 M31	MOVED	48	dd_join.add	MOVED	the gate output changed -- not a zero
 M32	MOVED	138	l2i.went	MOVED	the gate output changed -- not a zero
-M33	SAME	0	l2i_define.size2	UNREACHABLE+proof	unreachable: dd-mut-proof.py: renaming `def l2i_define(` compiled and the output stayed BYTE-IDENTICAL. l2i_define.size2 is inside l2i_define.
-M34	SAME	0	f2f.up.tail	UNREACHABLE+proof	unreachable: dd-mut-proof.py: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. f2f.up.tail is reachable only via f2f.up <- f2f.sel <- f2f.
-M35	SAME	0	rne.sel	UNREACHABLE+proof	unreachable: dd-mut-proof.py: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. rne.sel's only caller is f2f.down.norm, inside f2f.
+M33	SAME	0	l2i_define.size2	UNREACHABLE+proof	unreachable: dd-mut-proof.py, RE-RUN on e4618a71: renaming `def l2i_define(` compiled and the output stayed BYTE-IDENTICAL.
+M34	SAME	0	f2f.up.tail	UNREACHABLE+proof	unreachable: dd-mut-proof.py, RE-RUN on e4618a71: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. f2f.up.tail is reachable only through f2f.
+M35	SAME	0	rne.sel	UNREACHABLE+proof	unreachable: dd-mut-proof.py, RE-RUN on e4618a71: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. rne.sel's only caller is inside f2f.
 M36	MOVED	8	l2i_cdiv.uns	MOVED	the gate output changed -- not a zero
 M37	MOVED	23	l2i_dt.wide	MOVED	the gate output changed -- not a zero
 M38	MOVED	47	l2i_dt	MOVED	the gate output changed -- not a zero
 M39	MOVED	6	f2f_dt.w	MOVED	the gate output changed -- not a zero
 M40	MOVED	2	f2f_dt.w	MOVED	the gate output changed -- not a zero
 M41	MOVED	1	f2f_dt.of	MOVED	the gate output changed -- not a zero
+C00	SAME	0		CONTROL	RULE C guard; 0 rows is required
+C01	SAME	0		CONTROL	RULE C guard; 0 rows is required
+C02	SAME	0		CONTROL	RULE C guard; 0 rows is required

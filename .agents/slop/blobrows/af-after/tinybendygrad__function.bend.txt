@@ -1,0 +1,52 @@
+pctx_table=0:Ops.BUFFER/Ops.ALLOC/Ops.PARAM 1:Ops.AFTER/Ops.STAGE
+iis_buf=1
+iis_alloc_lt=1
+iis_alloc_ge=0
+iis_alloc_far=0
+iis_alloc_nobor=0
+iis_var_4294967295=1
+iis_var_p0=0
+iis_var_novmin=0
+iis_var_1d=0
+iis_var_reg=0
+iis_const=0
+iis_param_buf=0
+add_first=0 add_again=1 add_len=2
+add_refused=0 add_ref_len=0 add_ref_slot=0
+inv_one=1
+inv_ok=0
+inv_two=2
+inv_real=0
+inv_notstore=0
+renum_one=0@4
+renum_two=0|1@6
+renum_gap=0|1@7
+pctx_buf=bot=1/Ops.BUFFER top=1/Ops.BUFFER
+pctx_fresh=bot=0/ top=0/
+pctx_add01=n=3 op=Ops.ADD nsrc=2 srcops=Ops.ALLOC|Ops.CONST bot=0/ top=0/
+pctx_add10=n=3 op=Ops.ADD nsrc=2 srcops=Ops.CONST|Ops.ALLOC bot=0/ top=0/
+pctx_aft_p0=bot=0/ top=0/
+pctx_aft_4294967295=bot=0/ top=0/
+pctx_aft_buf=bot=2/Ops.AFTER|Ops.BUFFER top=2/Ops.BUFFER|Ops.AFTER
+pctx_aft_slot0=bot=1/Ops.BUFFER top=1/Ops.BUFFER
+bs_n=2 bs_top=3
+imp_tail=1/0
+imp_one=|function f5 has 1 implicit buffer(s), but allow_implicit=False
+  0: dtype=dtypes.f32, size=4, device=None
+imp_two=|function f5 has 2 implicit buffer(s), but allow_implicit=False
+  0: dtype=dtypes.f32, size=4, device=None
+  1: dtype=dtypes.f32, size=4, device=None
+ret_int=|function return type <class 'int'> not supported
+ret_none=|function return type <class 'NoneType'> not supported
+dep_enter=1
+dep_exit=0
+dep_shared=1
+fac_same=1
+fac_flags=11
+fac_fresh=0
+fac_diff=0
+callu_ops=2/Ops.BUFFER|Ops.NOOP
+trace0=|function 3735928559 in 12 ms: f5
+trace2=|    function 3735928559 in 12 ms: f5
+fn_name=f5/<lambda>
+ctx_empty=0 ctx_start=7

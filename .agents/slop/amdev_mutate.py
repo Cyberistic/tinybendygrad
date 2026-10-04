@@ -8,9 +8,14 @@ this gate does NOT see -- and those are reported, not closed.
     .venv/bin/python .agents/slop/amdev_mutate.py
 """
 import subprocess, sys, os, shutil
+import patch_not_apply as PNA
 
 SRC = 'tinybendygrad/runtime/support/am/amdev.bend'
 BEND = './bin/bend'
+# The count column is as wide as the marker, so a refusal FITS the column it
+# replaces. A table too narrow for its own marker shifts `what` sideways on that
+# one row, which is how a fixed-width table loses its positional meaning.
+CW = len(PNA.MARKER)
 
 def rows(text):
   return [l.split('=', 1)[0] for l in text.splitlines() if '=' in l]
@@ -88,13 +93,13 @@ M = [
          'a comment-only-equivalent edit. THE CONTROL: a table with no row that CANNOT move is a table of coincidences.'),
 ]
 
-print(f"{'id':<5}{'rows moved':>11}  what")
+print(f"{'id':<5}{'rows moved':>{CW}}  what")
 print('-' * 100)
 zero = []
 for label, old, new, what in M:
   s = open(SRC).read()
   if old not in s:
-    print(f"{label:<5}{'EDIT NOT FOUND':>11}  {what}")
+    print(f"{label:<5}{PNA.not_applied():>{CW}}  {what}")
     continue
   # The scratch copy MUST live IN THE TREE: `import ../../../helpers.bend` is a
   # RELATIVE path, so a copy under $TMPDIR cannot resolve it and every mutation
@@ -105,7 +110,7 @@ for label, old, new, what in M:
   out, err = run(SCRATCH)
   os.path.exists(SCRATCH) and os.remove(SCRATCH)
   if not out.strip():
-    print(f"{label:<5}{'DID NOT COMPILE':>15}  {what}")
+    print(f"{label:<5}{'DID NOT COMPILE':>{CW}}  {what}")
     continue
   got = rows(out)
   # `rows` answers KEYS, so the value dicts must be built from the RAW output, not
@@ -117,8 +122,8 @@ for label, old, new, what in M:
   moved = sorted(set(gd) ^ set(bd)) + sorted(k for k in set(gd) & set(bd) if gd[k] != bd[k])
   n = len(moved)
   if n == 0: zero.append(label)
-  print(f"{label:<5}{n:>11}  {what}")
-  if n and n <= 6: print(f"{'':<17}{moved}")
+  print(f"{label:<5}{n:>{CW}}  {what}")
+  if n and n <= 6: print(f"{'':<{5 + CW}}{moved}")
 print('-' * 100)
 print(f"baseline rows: {len(BASE)}")
 print(f"mutations moving nothing: {zero or 'none'}")

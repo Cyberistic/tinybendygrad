@@ -12,6 +12,11 @@ import os
 import subprocess
 import sys
 import tempfile
+import patch_not_apply as PNA
+
+# One format for every row this table prints, with the count column as wide as
+# the marker: a column too narrow for its own refusal shifts `rows` sideways.
+ROW = "%-5s %-*s %s"
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 TARGET = os.path.join(ROOT, "tinybendygrad", "renderer", "wgsl.bend")
@@ -137,19 +142,21 @@ def main():
     bk = keys(base)
     print("baseline: %d rows" % len(base))
     print()
-    print("%-5s %-7s %s" % ("id", "moved", "rows"))
+    print(ROW % ("id", len(PNA.MARKER), "moved", "rows"))
     for mid, what, old, new in MUTATIONS:
         if src.count(old) == 0:
-            print("%-5s %-7s %s" % (mid, "SKIP", "pattern not found: " + old[:48]))
+            print(ROW % (mid, len(PNA.MARKER), PNA.not_applied(),
+                         "pattern not found: " + old[:48]))
             continue
         mut = src.replace(old, new, 1)
         rows, err = run(mut)
         if rows is None:
-            print("%-5s %-7s %s" % (mid, "FAIL", err))
+            print(ROW % (mid, len(PNA.MARKER), "FAIL", err))
             continue
         rk = keys(rows)
         moved = [k for k in bk if k not in rk or rk[k] != bk[k]]
-        print("%-5s %-7s %s" % (mid, len(moved), ", ".join(moved[:9]) + (" ..." if len(moved) > 9 else "")))
+        print(ROW % (mid, len(PNA.MARKER), len(moved),
+                     ", ".join(moved[:9]) + (" ..." if len(moved) > 9 else "")))
     return 0
 
 

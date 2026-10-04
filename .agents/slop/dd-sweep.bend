@@ -23,12 +23,14 @@ import ./../../tinybendygrad/LAWS/spec.bend as S
 # reading argv needs a shape I did not find in `bend guide`. The caller substitutes the
 # literal instead, which is also the only way a sweep can be READ: one line of diff per
 # configuration.
-def pad.go(n: Nat, +ar: O.Arena, +k: U32) -> O.Arena:
+def pad.go(n: Nat, +ar: O.Arena) -> O.Arena:
   match n:
     case 0n: ar
-    case 1n+q: pad.go(q, D.dd_par(ar, "pad", S.uint32()), k)
+    case 1n+q:
+      +f = D.dd_par(ar, "pad", S.uint32())
+      pad.go(q, O.Found.ar(f))
 
-def pad(k: U32, +ar: O.Arena) -> O.Arena: pad.go(U32.to_nat(k), ar, k)
+def pad(k: U32, +ar: O.Arena) -> O.Arena: pad.go(U32.to_nat(k), ar)
 
 def ar.of(r: Maybe<&2, D.W2>, dflt: O.Arena) -> O.Arena:
   match r:
@@ -47,7 +49,7 @@ def row1(+nm: String, r: Maybe<&2, D.W2>, +from: U32) -> String:
     case None{}: String.concat([nm, "REFUSED\n"])
 
 def main() -> IO(Unit):
-  +nd = D.dd_wpool.step(24n, pad(1, O.Arena.empty()), Nil{}, 0, 0)
+  +nd = D.dd_wpool.step(24n, pad(5, O.Arena.empty()), Nil{}, 0, 0)
   +ps = D.Nd.ns(nd)
   +a0 = D.Nd.ar(nd)
   +u9 = D.ws2(D.nth(ps, 9n), D.nth(ps, 10n))
@@ -115,7 +117,7 @@ def main() -> IO(Unit):
   +f25 = O.Arena.next(a25)
   +f26 = O.Arena.next(a26)
   do IO<Unit>:
-    IO.print(String.concat(["# pad=", U32.show(1), "\n"]))
+    IO.print(String.concat(["# pad=", U32.show(5), "\n"]))
     IO.print(row1("lgq", g23, f23))
     IO.print(row1("lgr", g24, f23))
     IO.print(row1("lgs", g25, f25))

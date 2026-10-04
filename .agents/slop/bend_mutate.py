@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Mutation harness for ops_bend.bend. Diffs WHOLE name=value lines, never names."""
 import subprocess, pathlib, sys, difflib
+import patch_not_apply as PNA
 F = pathlib.Path('tinybendygrad/runtime/ops_bend.bend')
 # THE MUTANT GOES NEXT TO THE ORIGINAL. A scratch copy elsewhere cannot
 # resolve `import ../helpers.bend`, and every mutation then reports "did not
@@ -40,7 +41,8 @@ print(f'| # | edit | rows MOVED | first movers |')
 print('| --- | --- | --- | --- |')
 for name, desc, a, b in MUT:
   if a not in base:
-    print(f'| {name} | {desc} | NOT APPLIED | the text did not match |'); continue
+    print(PNA.pipe([name, desc, PNA.not_applied("the text did not match"),
+                    "--"], 4)); continue
   T.write_text(base.replace(a, b, 1))
   r = subprocess.run(['./bin/bend', str(T)], capture_output=True, text=True)
   if not r.stdout:

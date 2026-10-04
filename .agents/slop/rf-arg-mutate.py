@@ -136,7 +136,7 @@ for mid, label, old, new, note in MUTATIONS:
   restore()
   src = open(TARGET).read()
   if old not in src:
-    results.append((mid, label, "PATTERN-NOT-FOUND", [], note)); continue
+    results.append((mid, label, PNA.not_applied(), [], note)); continue
   open(TARGET, 'w').write(src.replace(old, new, 1))
   head = run_bend(TARGET).splitlines()[0] if run_bend(TARGET).strip() else '(empty)'
   if 'ALL PROOFS CHECK' not in head:

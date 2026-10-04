@@ -1,0 +1,25 @@
+# dd-zero-site-answer.tsv -- CPython's answer AT each site, for zero-classify.py.
+#
+# This is the JOIN KEY of the mechanical test that separates PORT-DEFECT from
+# INVISIBLE-to-reader.  A row can only witness a defect AT a site if CPython's
+# answer for that site is inside it, so Q1 is a per-site join and NOT a family
+# vote: the `l2i` family is deliberately coarse (every `lg*` row is one), and a
+# family vote would let all 51 disagreeing `l2i` rows act as an alibi for every
+# `l2i_*` site -- it would have called M06 a defect when M06 is a proven THEOREM.
+#
+# EVERY STRING HERE IS MEASURED, not typed:
+#   `l2i_shl.hi`            .agents/slop/dd-mut-fixtures.py hi42  -> dd-oracle.txt lg9p
+#   `l2i_cast3.bitc`        .agents/slop/dd-mut-fixtures.py lgy   -> dd-oracle.txt lg7
+#   everything else         grep'd out of .agents/slop/dd-oracle.txt and re-checked
+#                           against the baseline with zero-classify.py's own Q2.
+# A site with no line here is reported INVISIBLE-to-reader with the reason
+# "has NO --site-answer", which is a refusal to guess rather than a guess.
+#
+# The rows are the FIVE ZEROS plus every site a proof covers.  A MOVED site needs
+# no answer: it is not a zero, and a verdict is not computed for it.
+l2i_shl.hi	OR(SHL(BITCAST,CAST),SHR(SHR,ADD))
+l2i_cast.got	CAST(Pu320)
+reindex.scaled	ADD(SHR(CAST,MUL)
+l2i_define.size2	C(MUL(ADD
+f2f.up.tail	FP8
+rne.sel	ADD(CAST

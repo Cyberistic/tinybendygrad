@@ -11,6 +11,7 @@ moves nothing measures what the gate does NOT see.
 NOTHING here is written back to hcq2.bend; the file is only ever read.
 """
 import subprocess, sys, pathlib, tempfile, shutil, os, re
+import patch_not_apply as PNA
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 TARGET = ROOT / 'tinybendygrad/runtime/support/hcq2.bend'
@@ -147,7 +148,7 @@ def main():
   for mid, desc, (old, new) in MUTS:
     if want and mid not in want: continue
     if old not in base:
-      print(f'| {mid} | {desc} | 0 -- EDIT DID NOT APPLY |')
+      print(PNA.pipe([mid, desc, PNA.not_applied()], 3))
       continue
     got = vals(run(base.replace(old, new, 1), mid.replace('M', 'm')))
     moved = [n for n in ref if got.get(n) != ref[n]]

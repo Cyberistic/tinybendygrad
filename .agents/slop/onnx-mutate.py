@@ -122,7 +122,7 @@ def main():
   print(f"baseline: {len(ref)} rows")
   for mid, find, repl, why in MUTS:
     if find not in base:
-      print(f"{mid}: PATTERN NOT FOUND -- the mutation is stale")
+      print("%s: %s -- the mutation is stale" % (mid, PNA.not_applied()))
       continue
     open(F, "w").write(base.replace(find, repl, 1))
     try:

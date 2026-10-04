@@ -89,7 +89,7 @@ print('| --- | --- | --- |')
 results = []
 for mid, find, repl, what in MUTS:
     if find not in src:
-        print('| %s | NOT FOUND (the line changed) | %s |' % (mid, what))
+        print(PNA.pipe([mid, PNA.not_applied("the line changed"), what], 3))
         continue
     open(F, 'w').write(src.replace(find, repl, 1))
     rows, txt = run()

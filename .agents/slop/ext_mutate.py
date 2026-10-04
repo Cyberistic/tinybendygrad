@@ -194,7 +194,8 @@ def main():
   table, zero = [], []
   for (f, old, new, what) in MUTATIONS:
     if old not in srcs[f]:
-      table.append((f, what, "NOT-APPLIED", "the source text did not match; re-run with the exact text"))
+      table.append((f, what, PNA.not_applied(),
+                    "the source text did not match; re-run with the exact text"))
       continue
     p = ROOT / f"tinybendygrad/runtime/support/{f}.bend"
     p.write_text(srcs[f].replace(old, new, 1))

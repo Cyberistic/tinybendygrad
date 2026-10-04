@@ -5,7 +5,7 @@
 # TREE  git archive e17d3f7dd48cf84c7a101b3d6aee11c0284a165e tinybendygrad, also pinned: HEAD moved to a
 #   revision whose tree prints ZERO lines with this dtype.bend.
 # baseline 182 rows, shape (first='l2idt0=i64->i32' lines=184 last='')
-# 3 controls SAME | 31 mutations MOVED | 5 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 0 DID-NOT-COMPILE | 0 DEAD ANCHOR
+# 3 controls SAME | 36 mutations MOVED | 5 SAME (zeros: REQUEST or THEOREM, never a silent pass) | 0 DID-NOT-COMPILE | 0 DEAD ANCHOR
 #
 # DEAD ANCHOR -- PATCH DID NOT APPLY.  NOT a zero, NOT a pass.
 #   (none: every anchor occurs exactly once)
@@ -660,8 +660,102 @@ M36 l2i_cdiv.uns: put the remainder back on the CDIV arm (the defect M36 found)
     lgtp
     lgtsig
 
+M37 l2i_dt.wide: swap the SIGNED and UNSIGNED answers
+  MOVED  23 rows
+    l2idt0
+    l2idt1
+    lg2
+    lg2n
+    lg2sig
+    lg3
+    lg3n
+    lg3sig
+    lg6
+    lg6n
+    lg6sig
+    lg7n
+    lgo
+    lgosig
+    lgv
+    lgvn
+    lgvsig
+    lgw
+    lgwn
+    lgwsig
+    lgx
+    lgxn
+    lgxsig
 
-=== ROWS NO MUTATION MOVED (23 of 182 baseline rows) ===
+M38 l2i_dt: the 64-bit test answers the 32-bit half
+  MOVED  47 rows
+    l2idt0
+    l2idt1
+    lg2
+    lg2k
+    lg2n
+    lg2p
+    lg2sig
+    lg3
+    lg3k
+    lg3n
+    lg3p
+    lg3sig
+    lg4
+    lg4k
+    lg4n
+    lg4p
+    lg4sig
+    lg5
+    lg5k
+    lg5n
+    lg5p
+    lg5sig
+    lg6
+    lg6k
+    lg6n
+    lg6p
+    lg6sig
+    lg7n
+    lg8n
+    lgbn
+    lgo
+    lgok
+    lgop
+    lgosig
+    lgv
+    lgvk
+    lgvn
+    lgvp
+    lgvsig
+    lgw
+    lgwk
+    lgwp
+    lgwsig
+    lgx
+    lgxk
+    lgxp
+    lgxsig
+
+M39 f2f_dt.w: swap the 8-bit and 16-bit answers
+  MOVED  6 rows
+    f2fdt0
+    f2fdt1
+    f2fdt2
+    f2fdt3
+    f2fdt4
+    f2fdt5
+
+M40 f2f_dt.w: swap the 32-bit and 64-bit answers
+  MOVED  2 rows
+    f2fdt6
+    f2fdt7
+
+M41 f2f_dt.of: the float test never refuses
+  MOVED  1 rows
+    f2fdt8
+
+
+=== ROWS NO MUTATION MOVED (10 of 182 baseline rows) ===
   c0
   c1
   c2
@@ -670,18 +764,5 @@ M36 l2i_cdiv.uns: put the remainder back on the CDIV arm (the defect M36 found)
   c5
   c6
   c7
-  f2fdt0
-  f2fdt1
-  f2fdt2
-  f2fdt3
-  f2fdt4
-  f2fdt5
-  f2fdt6
-  f2fdt7
-  f2fdt8
-  l2idt0
-  l2idt1
-  lg7n
   lgnn
   lgon
-  lgv

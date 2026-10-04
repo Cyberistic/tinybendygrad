@@ -103,7 +103,7 @@ for name, old, new in MUT:
   src = open(BAK).read()
   old, new = q(old), q(new)
   if old not in src:
-    print('%-52s %s' % (name[:52], 'DID NOT APPLY'))
+    print('%-52s %s' % (name[:52], PNA.not_applied()))
     continue
   try:
     open(MUTATED, 'w').write(src.replace(old, new, 1))

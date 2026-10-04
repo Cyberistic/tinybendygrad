@@ -9,6 +9,7 @@ name-comparing harness reported 0 for all 30 mutations in one unit and 0 for all
     .venv/bin/python .agents/slop/ops-python-mutate.py
 """
 import pathlib, re, subprocess, sys
+import patch_not_apply as PNA
 
 REPO = pathlib.Path(__file__).parent.parent.parent
 # THE SUBSTRATE MIRROR, and it is not hygiene. `tinybendygrad/uop/ops.bend` was
@@ -105,10 +106,11 @@ def main():
   for mid, old, new, what in MUTATIONS:
     if old not in src:
       # RULE D: a patch that does not apply must never read as a zero. M4 sat in the
-      # committed record as `0` for exactly this reason. The marker is NON-NUMERIC and
-      # the row keeps the table's 3-column shape, so neither a reader scanning the count
-      # column nor one summing it can mistake this for a measurement.
-      print(f'| {mid} | {what} | PATCH-NOT-APPLY: anchor not in SRC |')
+      # committed record as `0` for exactly this reason. PNA.not_applied() is
+      # non-numeric and PNA.pipe refuses a width other than this table's 3, so
+      # neither a reader scanning the count column nor one summing it can mistake
+      # it for a measurement, and the figure cannot shift into another column.
+      print(PNA.pipe([mid, what, PNA.not_applied('anchor not in SRC')], 3))
       continue
     SCRATCH.write_text(src.replace(old, new, 1))
     out, rc = run(SCRATCH)

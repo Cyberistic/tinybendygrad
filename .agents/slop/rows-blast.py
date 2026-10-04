@@ -26,7 +26,7 @@ Reported per lane: old count, new count, keys added / dropped / value-changed.  
 PAIR: shared and disagreeing under each parser, so a lane that would start agreeing by comparing
 less is named with both numbers.
 """
-import argparse, concurrent.futures as cf, importlib.util, pathlib, subprocess, sys, time
+import argparse, concurrent.futures as cf, importlib.util, os, pathlib, subprocess, sys, time
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parent.parent
@@ -70,10 +70,11 @@ def _lane(argv, env=None, timeout=1800, tries=3):
 
 
 def pair_lanes(port, spec):
-  """(port_text, oracle_text, notes). Both live."""
+  """(port_text, oracle_text, notes). Both live, under the PINNED interpreter."""
   py = oracle_py.resolve()[0]
-  env = dict({k: v for k, v in __import__("os").environ.items()}, DEV="NULL")
-  env.pop("PYTHONPATH", None)
+  env = os.environ.copy()
+  env["DEV"] = "NULL"
+  env.pop("PYTHONPATH", None)  # the editable install resolves without it; a stale value overrides
   pt, pn = _lane(["./bin/bend", str(REPO / port)])
   ot, on = _lane([py, *spec.split()], env=env)
   return port, spec, pt, ot, (pn, on)
@@ -129,7 +130,7 @@ def main():
   gate = load(HERE / "rebase-gate.py", "blast_gate")
   roster = {p: o[0] for p, o in gate.BASE_ORACLES.items()}
   if a.lanes:
-    roster = {p: s for p, s in (kv.split("=", 1) for kv in a.lanes.split(",") if kv)}
+    roster = dict(kv.split("=", 1) for kv in a.lanes.split(",") if kv)
   new = gate.rows
   print(f"parser fingerprint: {hash(new.__code__.co_code)}  lanes: {len(roster)}")
   t0 = time.monotonic()

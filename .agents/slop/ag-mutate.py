@@ -12,6 +12,7 @@ HARNESS RULES, both learned the hard way in this repo:
     `import Base` and reports every mutation as "did not compile".
 """
 import subprocess, os, re
+import patch_not_apply as PNA
 ROOT = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad"
 F = os.path.join(ROOT, "tinybendygrad/runtime/support/autogen.bend")
 BEND = os.path.join(ROOT, "bin/bend")
@@ -88,7 +89,7 @@ src = open(F).read()
 rows = []
 for mid, desc, find, repl, why in MUTS:
     if find not in src:
-        rows.append((mid, desc, why, "NOT APPLIED: the anchor text is not in the file")); continue
+        rows.append((mid, desc, why, PNA.not_applied("the anchor text is not in the file"))); continue
     mv = moved(BASE, run(src.replace(find, repl, 1)))
     if mv is None: rows.append((mid, desc, why, "DID NOT COMPILE / PROOFS FAILED"))
     elif not mv:  rows.append((mid, desc, why, "0  <-- BLIND SPOT"))

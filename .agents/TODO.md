@@ -5179,10 +5179,44 @@ Progress: gates landed `0/38` -> `1/38` for this pair. Coverage of `cstyle.bend`
       port's `""` marker, and that lane with a name where a refusal belongs — three seen red.
       Recorded in `ORACLE_NOT_WIRED` in `rebase-gate-selftest.py`.
 
-- [ ] **OPEN — one caller left on the old lane.** `renderer_oracle.py cstyle` (the 15-row one)
-      still exists and is still referenced by `rebase-gate-selftest.py`'s `dead_lane_is_broken`
-      docstring. It is now unused by `BASE_ORACLES`; delete it and its docstring paragraph when
-      the selftest's fixture set is next touched.
+- [x] **THE LAST CALLER ON THE OLD LANE IS GONE.** `renderer_oracle.py cstyle` (the 15-row one)
+      is no longer in `BASE_ORACLES`, no longer in `ORACLE_CONFORMANCE`, and
+      `dead_lane_is_broken`'s docstring no longer cites it — it was rewritten rather than deleted,
+      because a docstring that describes a BROKEN reason which has stopped being true sends the
+      next reader to trust the exit status. The script itself is kept (deleting a lane is how a
+      "0 shared names" measurement stops being re-checkable) but nothing runs it.
+
+- [x] **`cstyle.bend` IS WIRED INTO `rebase-gate.py`, AND IT WAS THE READER'S FAULT BOTH TIMES.**
+      `renderer/cstyle.py cstyle-rows` replaced the 15-row lane: 222 shared / 0 disagree, and
+      `cstyle-gate.py` independently says 221/227 with 6 exclusions, 0 stale literals, rc=0.
+      Two reader defects blocked it and NEITHER was a port bug: (a) `rows()` compared the port's
+      `NAME = [v]   py=[w]` against the oracle's `NAME = [v]`, so all 222 shared rows disagreed
+      BY CONSTRUCTION; (b) `rows()` read none of `multi-rows.py`'s 213 whitespace rows. Fixed in
+      `rebase-gate.py:row()`, which now reads all three shapes.
+      Control: `rebase-gate-selftest.py:planted_lane_control()` — clean AGREE-UNRECORDED over 222
+      shared names, one planted row → BROKEN **naming `acc  BASE  plain`**, restore byte-identical.
+      Also driven through `main()` itself with `--oracle`, which **works** (the lane key becomes
+      `cpython:mutant-lane`, proving the override replaced the iterated target and not the dict
+      the snapshot was taken from), rc=1 with the row named.
+
+- [x] **THE REFUSAL MARKER MOVED OUT OF THE VALUE AND THE GAP WAS CLOSED WITH AN ASSERTION.**
+      `renderer_oracle.py` emitted `!KeyError` where CPython raises; `cstyle.bend` has no
+      exception channel and answers `""` (cstyle.bend:1074, :1149), so 9 of 222 rows could never
+      agree under any reader. The shared reader was NOT taught the token — `rebase-scan-oracles.py`
+      imports `rows()` and computes its own counts, so a translation there makes the scan and the
+      gate disagree by construction. The oracle now emits the port's marker and reports all 13
+      refusals on stderr, and `cstyle-gate.py:unsilent_refusals()` DERIVES the expected set from
+      the port's own output (every row whose answer is entirely the empty marker) and fails when
+      the oracle names none of them. **GIVEN UP, PRECISELY: 9 of 222 shared rows are a refusal
+      rendered as the marker; the other 213 are CPython's own return value.**
+
+- [x] **`schedule/multi.bend` IS STILL UNWIRED, AND THE REASON IS A NAME, NOT A FORMAT.**
+      321 port rows, 213 oracle rows, **0 shared names** — a `t_` prefix normalisation yields 26
+      collisions of which **21 DISAGREE**, because the port's `1`-per-op rows and the oracle's
+      axis tuples share a spelling and not a claim, and the one that agrees agrees on the literal
+      `1`. That is a second source of truth, not a fix. The format IS read now (0 → 213 rows);
+      GUARD 4's "share NO row names" is the correct verdict. Recorded in `ORACLE_NOT_WIRED` with
+      the numbers. R-3 in the notes.
 
 ---
 
@@ -5243,6 +5277,71 @@ Progress: gates landed `0/38` -> `1/38` for this pair. Coverage of `cstyle.bend`
       was the FIXED text with the DEFECT as the mutant, so applying it would have made the table a
       regression test for correct code; the anchor is now the fixed line and the mutant puts the
       remainder back — **MOVED 8 rows.**
+
+## ZERO CLASSIFICATION (zero unit, 2026-10-04)
+
+Report: `.agents/slop/zero-audit-report.md`. **No commit.** Rules appended at the END of
+`bend2-constraints.md` as **M-4..M-8** (numbers collide across units — cite POSITIONS).
+
+- [x] **A ZERO CLASSIFIES ITSELF. FIVE VERDICTS AND NO SIXTH:** `UNREACHABLE+proof` /
+      `PORT-DEFECT` / `PATCH-NOT-APPLY` / `INVISIBLE-to-reader` / `NO-MUTATION-WRITTEN`.
+      `MOVED` and `DID-NOT-COMPILE` are counted separately because they are not zeros.
+      `.agents/slop/zero-classify.py`; `--verdicts` prints the five.
+
+- [x] **THE MECHANICAL TEST SEPARATING 2 FROM 4, and it is two string questions.**
+      **Q1 WRONG+JOINED:** does a DISAGREEING row carry CPython's answer *at this site*?
+      **Q2 VISIBLE:** does CPython's answer at the site appear in *any* row? **WRONG before
+      VISIBLE.** "Is it zero?" never decides it; only CPython does. **Q1 MUST BE A PER-SITE
+      JOIN, NOT A FAMILY VOTE** — a coarse `l2i` family let all 51 disagreeing rows alibi for
+      every `l2i_*` site and called M06 a defect when M06 is a proven THEOREM.
+
+- [x] **THE DISCRIMINATION IS TESTED ON REAL SNAPSHOTS, NOT FIXTURES.**
+      `.agents/slop/zero-selftest.py`: `l2i_shl.hi` against defective snapshot `73b0e1e7` reads
+      `PORT-DEFECT`; an answer in no row reads `INVISIBLE-to-reader`; same site, same rows,
+      different snapshot, different verdict. An unknown MEASURED verdict is REFUSED (exit 1).
+
+- [x] **THE DENOMINATOR, WHICH NO TABLE WAS PRINTING.** 487 mutations across 15 tables carry
+      **30 zeros, of which 25 are unclassified** — their labels are the raw harness output
+      (`SAME`/`ZERO`/unstated), and **not one** of the 14 non-dd tables distinguishes
+      PORT-DEFECT from INVISIBLE-to-reader. `.agents/slop/zero-audit.py`. Three harnesses
+      (`mm-mutate.py`, `ops-mutate.py`, `dk-mutate.py`) have **no table file at all**; an absent
+      number is not a zero, so they are reported as absent.
+
+- [x] **A RULE D VIOLATION, LIVE, IN A COMMITTED RECORD.** `ops-python-mutate.py:107` prints
+      `| {mid} | (pattern not found) | 0 | ...` and `ops-python-mutations.txt:7` carries it —
+      a dead patch published as `0 rows`. `zero-audit.py` now greps the branch that PRODUCES
+      the number, because a report file cannot say which branch produced its own figure.
+      **Reported, not fixed: not my file. One line.**
+
+- [x] **`l2i_dt` / `f2f_dt` HAD NO MUTATION AT ALL — 11 of 23 unmoved rows.** M37–M41 added to
+      `dd-mutate.py`, all five MOVED: **M37 23 rows · M38 47 · M39 6 · M40 2 · M41 1.** The
+      previous report *claimed* a value swap "would move `l2idt0 l2idt1`" — **measured, it moved
+      23, not 2.** The same prose had already said "`dd_dtb.to` is on every `l2i` fixture's
+      path". **A claim about a mutation's reach is never inherited.** Baseline rows a mutation
+      moved: **159 → 172 of 182**; `l2idt*`/`f2fdt*` unmoved **11 → 0**.
+
+- [x] **`shape()` IS A SAMPLE, NOT A CLAIM — and it passes a corrupt baseline.** It is
+      `(first line, line count, last line)`; swapping `hi42`'s operand order (the exact M09
+      defect) leaves all three unchanged, so `dd-mutate.py` would accept a mutant baseline.
+      The frozen-digest assertions cover the file being MUTATED, not the one `SAME` is measured
+      against. **RULE C is what catches it — the second time it has earned its keep on a defect
+      it was not written for.** One-line fix proposed: digest the row SET.
+
+- [x] **THE WARN-vs-REFUSE DEVIATION IN `dd-mut-base.sh`: ACCEPTED, WITH THE ROW-SET DIGEST
+      AS AN AMENDMENT.** The claim is true — `live == frozen` should stay a warning (the live
+      file moved FIVE times under this table, and a hard assertion makes the script unrunnable
+      when needed) — but it is true only of the *mutation* side and does not cover the
+      baseline. **Also found: the auditor itself made the error it exists to end** — the first
+      `zero-audit.py` counted the three RULE C controls as dd's zeros (8, not 5).
+
+- [x] **PIN DISCIPLINE, per table.** The dd verdict is valid for target `e4618a7127ce` + tree
+      `e17d3f7dd48c`; the live `dtype.bend` is now `cdd85227d359`, so **the table does not
+      describe what is on disk.** Baseline re-verified byte-identically today (`sha1 78c79061…`,
+      182 rows); oracle re-run today, byte-identical (`sha1 8f80df08…`); **all five dd proofs
+      RE-MEASURED on the current snapshot.** **The other 14 tables name NO revision — that is
+      the finding.** 10 rows disagree with CPython on the pinned snapshot; three of them
+      (`lg5k`/`lg5n`/`lg5sig`) are the `promote`-remint defect the live file has since fixed
+      with `dd_wf`, so the 0-on-a-snapshot rule is now measured rather than asserted.
 
 ## Session 2026-10-04 — REPO HYGIENE: the dangling citations, the census, and the scratch in the tree
 
@@ -5418,3 +5517,227 @@ Report: `.agents/slop/dd-mutations-report.md`. **No commit.** Changed: **fixture
 Progress: dtype M09 + REQUEST sweep [##########] DONE — 2 fixtures (8 rows, all from CPython),
       M09 MOVED 8, M05 MOVED 4, 31 MOVED · 5 THEOREM · 0 REQUEST · 0 DID-NOT-COMPILE,
       5 THEOREMs re-measured, 3 controls SAME, .tsv reproducible
+
+## Session 2026-10-04 — `uop/ops.bend`'s three loose ends: the `AFloat` premise is FALSIFIED, the `cfun_*` gate is GREEN, and `ops-oracle.py` is unowned
+
+Three findings were handed over. One was a defect, one was a red gate, one was an
+ownership question. **The defect was not a defect**: the proposed one-word repair is a
+double regression, measured on both trees, and what landed instead is the row set that
+says so. Gate: `sh .agents/slop/ops-gate.sh` — **94 shared rows RED -> 103 GREEN**, three
+lanes byte-identical, exit 0, twice, on the upstream tree AND on `TG_TREE=.`.
+
+- [x] **`eq_arg.AFloat`'s `F32.is_eq` IS CORRECT AND `U32.is_eq(F32.bits(f), F32.bits(y1))`
+      IS A DOUBLE REGRESSION. The repair was NOT landed; the reason it looked wrong was
+      landed instead.** `ops.py:201`'s key holds the element and **each element carries
+      its own `__eq__`**, so the question is which PYTHON CLASS is in the key. Two, with
+      opposite rules: `dtype.py:8-23` `ConstFloat(float)` overrides BOTH `__eq__` (line
+      16) and `__hash__` (line 21, `hash(self.bits)`) and its docstring says it
+      "distinguishes -0.0 from 0.0 and where nan == nan" — so `eq_const.CFloat` is
+      right to compare bits — while `AFloat` is a BARE `float`, overrides nothing, and is
+      IEEE. **CALLED, never transcribed** (`.agents/slop/afloat-probe.py`, byte-identical
+      on two runs and on `TG_TREE=.` and on `.agents/slop/opstree`):
+      `UOp(Ops.CONST, arg=0.0) is UOp(Ops.CONST, arg=-0.0)` -> **True, 1 node**;
+      two DISTINCT same-payload NaNs -> **False, 2 nodes**; `1.5/1.5` -> True;
+      `1.5/2.5` -> False; `type(arg)` keeps `int 0` and `float 0.0` apart -> False.
+      Bits inverts BOTH discriminating cells. **The briefing's premise that `eq_const`'s
+      rule is the model is what made the arm look wrong; they are different bugs
+      pointing opposite ways.** The file's own comment above `eq_const.CFloat` ("`F32.is_eq`
+      is IEEE and disagrees in both directions") is TRUE OF `ConstFloat` ONLY, and that
+      is now said where the arm is.
+
+- [x] **`AFloat` IS LATENT, and the evidence is that ZERO of its 8 occurrences in the live
+      tree construct one.** 1 type declaration (`ops.bend:948`), 2 comments, 1 def header,
+      and 4 `case` PATTERNS (`eq_arg.AFloat`, `eq_arg.sel`, `upat.bend:418`,
+      `render.bend:717`). Its one would-be builder is `_frompy`, `TODO(p3)` at
+      `ops.bend:4318`. **But "latent" was a statement about the arm and not about the
+      comparator**, and `UOp.new(arena, op, src, arg, tag)` takes the `Arg` as a
+      PARAMETER (`ops.bend:2309`) — so an arm with no constructor is still reachable, by
+      interning two `AFloat`s on one arena and answering by IDENTITY OF THE TWO INDICES.
+      That is `blob_same`'s rule (`ops.bend:5117`, "a row that asserted `eq_arg` directly
+      would be asserting the def under test with itself") and it is why these four rows
+      are not tautologies.
+
+- [x] **FOUR `afloat_*` ROWS LANDED, PLUS THE COMMENT THAT STOPS THE NEXT UNIT REPEATING
+      THIS.** `afloat_zeros_intern` / `afloat_nan_distinct_intern` are the two
+      discriminating cells; `afloat_same_intern` / `afloat_distinct_intern` are the two
+      CONTROLS, without which a comparator answering `False` for every float would
+      satisfy the NaN row alone. **Mutation matrix on a MIRRORED tree, all four rows:**
+
+      | mutant | zeros | nan | same | distinct | rows moved |
+      | --- | --- | --- | --- | --- | --- |
+      | baseline | T | F | T | F | -- |
+      | `U32.is_eq(F32.bits, F32.bits)` | **F** | **T** | T | F | 2 |
+      | `True{}` | T | **T** | T | **T** | 2 |
+      | `False{}` | **F** | F | **F** | F | 2 |
+      | `Bool.not(F32.is_eq(..))` | **F** | **T** | **F** | **T** | 4 |
+
+      **No mutant is invisible and no single row catches every mutant** — the property
+      that makes four rows a minimal set rather than two rows and a hope.
+      **ONE CELL IS DELIBERATELY UNGATED:** the same NaN *object* twice interns in
+      CPython (1 node — `lookdict` short-circuits on pointer identity) and
+      `F32.is_eq(nan, nan)` is False. That is a fact about Python object IDENTITY and not
+      about the float, so a row for it must lie about the comparator or about CPython.
+      Measured in the probe, printed nowhere else.
+
+- [x] **SIBLING SWEEP, RE-DONE AGAINST THE UPSTREAM RULE AND NOT AGAINST "IS IT CONTENT".**
+      Spot-checked all 19 named comparators. **CLEAN (11):** `ANone`↔`None`,
+      `ARange`/`ATuple`/`AWmma`↔tuples (`eq_u32` is elementwise, order- and
+      length-sensitive), `AReduce`/`AAllred`↔`(Ops, …)` (`Ops` is a FastEnum so
+      `Ops.value` ≡ identity), `AStr`/`AInk`↔`str` (Python `str.__eq__` is code-point
+      equality and does no normalisation), `ADev`↔`str|tuple[str,…]` (`ops.py:765`),
+      `ABlob`↔`bytes` (content, just fixed), `AFloat`↔bare `float` (IEEE, measured),
+      `ABad` (never interned), `eq_dt`, `eq_axis`, `eq_u32`, `eq_pyrange`, `eq_img`,
+      `eq_i64`/`eq_i64s`. **`type(arg)` IS represented**: the `Arg` datatype's
+      CONSTRUCTOR is the discriminator, which is why every mismatched arm falls to
+      `case _: False{}` — and that is also why a dtype rename is the silent failure it is.
+      **FOUR COMPARATORS ARE WEAKER THAN UPSTREAM'S KEY — reported, NOT fixed, all
+      documented boundaries in the port:**
+      1. `eq_kernelinfo` compares 4 of `ops.py:1342`'s **5** `KernelInfo` fields; it
+         drops `estimates` (P5, the renderer's cost model).
+      2. `eq_programinfo` compares 6 of `ops.py:1351`'s **7** `ProgramInfo` fields; it
+         drops `target: Target` (P6). Documented at `ops.bend:988-994`.
+      3. `eq_callinfo` compares 4 of `ops.py:1399`'s **5** `CallInfo` fields; it drops
+         `grad_fxn` (a Python function object, cannot be a `Data` field) and SUBSTITUTES
+         a port-local `dtype` for upstream's `aux: Any`. **`aux` is not inert upstream** —
+         `ops.py:549-550` reads `hasattr(arg.aux, "written_bufs")` and `replace`s it, so
+         two CALLs differing only in `aux` are TWO keys in CPython and ONE here.
+      4. `eq_pyrange` compares `H.I64` bounds, while `ParamArg.vmin_vmax` is
+         `tuple[PyConst, PyConst]` and `dtype.py:38`'s `PyConst = float|int|bool` — so a
+         float or bool bound is not representable, and `True == 1` collapses where the
+         port separates.
+      **ONE OVER-SPLIT, latent, and the safe direction:** `eq_tag` has `TBool` and `TInt`
+      as separate arms, but `ops.py:258` is `def rtag(self, tag=True)` — the DEFAULT tag
+      is a bool — and the key carries `type(arg)` and NOT `type(tag)`, so `tag=True` and
+      `tag=1` are ONE key in CPython. The port has no `rtag` def and no `TBool{…}`
+      construction, so it is as unreachable as `AFloat` was. This is the `dtype_key` row's
+      twin, on `tag` rather than `arg`. **The one that would be a real defect is the
+      missing `CTuple`**: `ops.py:1920` is `ConstLike = ConstType|Variable|tuple[ConstType,
+      …]` and `eq_const` has no tuple arm — but no upstream code builds a CONST with a
+      tuple or `Variable` arg in the tree, so it is unreachable, not wrong.
+
+- [x] **TASK B — `ops-gate.sh` WAS RED ON THE PRISTINE TREE. DIAGNOSIS: (a) MISSING FROM
+      THE ORACLE, and fixable, and now fixed.** The Bend printed 5 `cfun_*` rows
+      (`ops.bend:6130-6134`) that `ops-oracle.py` did not have and that were not in
+      `BEND_ONLY`, so `diff` reported `0a1,5` on every run. Not a port defect and not a
+      dead lane: `CustomFunction` is a frozen dataclass at `ops.py:1395` and
+      `UOp.custom_function` at `ops.py:1259`, **both present and answering IDENTICALLY on
+      both selectable trees**, so the rows are GATEABLE and belong in a shared block
+      rather than five `#bend_only_` reasons. `.agents/slop/ops-oracle.py:244` is now a
+      `# 0bis0` block printing `cfun_interns=True`, `cfun_dtype_splits=True`,
+      `cfun_name_splits=True`, `cfun_arg=sel_registerName|u64`,
+      `cfun_of=sel_registerName|void` — CPython's, called, with `dtype.name` rather than
+      `str(dtypes.void)` (which is `dtypes.void`, and `str(dtypes.uint64)` is
+      `dtypes.u64`, neither of which is the port's spelling). **The five were added at the
+      HEAD of the oracle because the Bend prints them FIRST, and the oracle's row order
+      IS the contract** (`ops-gate.sh` is a byte diff).
+      **STATE BEFORE: `BROKEN`, 94 rows compared by the CPython lane against 99 by the two
+      Bend lanes — a 5-row gap that was 5/94 = 5.3% of the denominator reading as
+      "agreement" on everything it did compare. STATE AFTER: `UNCHANGED` rows, no
+      re-port, no `ops.bend` edit; 103 shared rows, three lanes byte-identical, exit 0,
+      on the upstream tree and on `TG_TREE=.`.**
+
+- [x] **BLAST RADIUS, THE SAME METHOD AS THE `ABlob` FIX, AND IT IS PROVABLY LOCAL.**
+      `.agents/slop/blob-rows.py af-before` then `af-after`: **72 files in the sweep
+      (71 importers + `ops.bend` itself), 0 ZERO-ROW files on both runs.** Per-file
+      counts: **every file byte-identical except `tinybendygrad/uop/ops.bend`, 220 -> 224**;
+      `TOTAL` 12,425 -> 12,429. `diff -r` on the two snapshots: the ONLY content delta
+      anywhere is `118a119,122`, the four new rows. Nothing moved and nothing reordered.
+      (The sweep measures the BEND lane; for the oracle the consumers are
+      `ops-gate.sh` — green — and `rebase-oracle-ops.py`, whose wrapper is SET-keyed and
+      prints sorted, so 9 new keys can only widen it: `inner_rows` 105 -> 114,
+      `kept` 90 -> 99, 43 bend-only families unchanged. `rebase-gate.py`'s `row_counts`
+      is a report field, not a baseline assertion.)
+
+- [x] **TASK C — NO CustomFunction UNIT IS LIVE AND NONE OWNS `ops-oracle.py`. THE NINE BLOB
+      ROWS STAY.** Evidence: no `- [ ]` open TODO entry mentions `CustomFunction` or
+      `cfun`; `TODO.md:2642`/`2678` attribute `CustomFunction` to an **`ops.bend`**
+      substrate unit whose two open items name `helpers.bend` and `ops.bend` and not this
+      oracle; `TODO.md:600-601` attributes the five red rows to "the other range", which is
+      `ops.py:1258/1394` inside `[501,1928]` — the `s5` unit, whose own gate filters
+      `^s5_` (`ops-501-gate.sh:40-43`) and therefore cannot own them; and
+      `TODO.md:4283-4286` already rules that closing the `axis_id` item needs "a matching
+      row in `.agents/slop/ops-oracle.py` … and that oracle is not this unit's file".
+      **So the blob unit's worry was unfounded — the 9 rows are safe, and by the same
+      argument the 5 `cfun_*` and 4 `afloat_*` rows are mine to add.** `bend2-constraints`
+      R-6 (position 18382) says ONE OWNER PER FILE PER WAVE, so this unit claims
+      `ops-oracle.py` for the duration and says so.
+
+- [x] **A SECOND RED-AT-REST GATE, REPORTED AND NOT TOUCHED: `sh .agents/slop/ops-501-gate.sh`.**
+      Its CPython lane prints **101 `s5_*` rows against the Bend's 82**, and the 19 extra
+      are families the oracle has alone — `s5_copy_multi/single/sel`, `s5_devrange_one/
+      single/two`, and 12 `s5_ga_*`. `ops-501-oracle.py` is at its COMMITTED state
+      (`jj diff --summary` does not list it), so this is red AT REST and not collateral:
+      the `s5_` subset of `ops.bend`'s output is byte-identical before and after this
+      unit's change. **Not fixed — `ops-501-oracle.py` is another unit's file, and
+      `agent-core.md` says report it.** `TODO.md:600-601`'s note that the five `cfun_*`
+      rows "were red before the wave started" is now CLOSED and its companion claim is
+      not.
+
+- [x] **3 rules appended to `bend2-constraints.md` at the END (position 18633), numbered
+      `## A-1..A-3` continuing from the `## M-` series (last was M-8)**, self-locating
+      by content. **3 rows appended to `.agents/TOOLS.md`** for
+      `afloat-probe.py` and the two red-at-rest lanes. **NOT COMMITTED.**
+
+Progress: `uop/ops.bend` loose ends [####] DONE — A: premise FALSIFIED, 4 rows + the
+      comment landed, 4/4 mutants caught, blast radius 1 of 72 files · B: gate RED
+      (94/99) -> GREEN (103/103/103) on both trees · C: no live owner, rows kept
+
+- [x] **A CONCURRENT UNIT OVERWROTE `uop/ops.bend` MID-RUN AND TOOK BOTH FIXES WITH IT.
+      REPORTED, NOT PATCHED OVER, AND THE WORK IS HANDED OVER AS A PROVEN PATCH.** The
+      live file went `d5c1174e`/6306 (this unit's starting point, and the state every
+      gate result below was measured at) -> `44b9c64f`/7140 -> `47ce62d0`/7176 ->
+      `c7879a52`/7230 in about four minutes, **while this unit was still working**. The
+      version that landed is missing this unit's four `afloat_*` rows **AND the earlier
+      `ABlob` false-intern fix** (`eq_arg.ABlob(y: Arg, +n: U32)`, comparing a LENGTH
+      again) while carrying 924 new lines of someone else's work (`type DRng` at :6532,
+      `UOp.device_range_src` at :6554). **So it was a DIVERGENT COPY written over the
+      shared working copy, not a merge and not an edit** — R-6's failure mode, live.
+      It also does not compile, and its two `--check-only` failures two minutes apart
+      (`a declared constructor (unknown: DRng)`, then `expected: a filled definition;
+      observed: UOp.device_range_src`) are a half-written file, not a defect to fix.
+      **NOT patched over: `ops.bend` is that unit's file while it writes, and landing a
+      6306-line-derived patch on a 7230-line divergent base is a merge nobody can verify.**
+      Instead `.agents/slop/afloat-patch.py` **asserts the base md5**, re-applies three
+      anchors, **REFUSES if the base still compares a blob by length**, and writes
+      `.agents/slop/afloat-ops-bend.bend` + `.agents/slop/afloat-ops-bend.patch`
+      (92 diff lines). **The reconstruction is PROVEN, not assumed:** run in a mirrored
+      subtree it is `ALL PROOFS CHECK` and its 224-row output is **byte-identical** to
+      `.agents/slop/blobrows/af-after/tinybendygrad__uop__ops.bend.txt`, the snapshot
+      captured from the file that was green. **To land it:**
+      `git apply -p1 .agents/slop/afloat-ops-bend.patch` once `ops.bend` is back to the
+      blob-fixed state — and note it needs `uop/ops.bend` AND `.agents/slop/ops-oracle.py`,
+      which is already in the tree.
+      **THE GATE IS RED RIGHT NOW AND THAT IS THE HONEST STATE:** the oracle half is live
+      and correct, the Bend half is the patch above, so `ops-gate.sh` disagrees on the
+      5 `cfun_*` + 4 `afloat_*` rows **because of the overwrite, not because of the
+      oracle.** Reverting verified oracle work to make a gate look tidy would be the one
+      wrong move available here. Appended as `## A-4` in `bend2-constraints.md`
+      (position 18727), including the two instruments that would have caught it — a
+      **polled** hash, and a `grep -c` for this unit's OWN ROW NAMES in the file being
+      edited, which is the cheapest liveness probe there is.
+
+Progress: `uop/ops.bend` loose ends [###.] BLOCKED ON A CONCURRENT OVERWRITE — A: premise
+      FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+      B: gate was RED (94/99) and is GREEN (103/103/103) on both trees IN THIS UNIT'S
+      TREE, red again only via the overwrite · C: no live owner, rows kept · **the live
+      file lost both the ABlob fix and these rows to another unit's copy**
+
+- [x] **AND THE OVERWROTE `ops-oracle.py` TOO — the SAME EVENT, one file later.** Five
+      minutes after the `ops.bend` overwrite, `ops-oracle.py` also stopped answering:
+      `md5 c2a4b0ff…`, 771 lines, and `grep -c 'cfun_\|afloat_'` read **0** for a few
+      minutes. It is back now (both blocks present at positions 247-284 and 346-401, all
+      nine rows printing, byte-identical to what was verified) with no edit from me, so
+      this was an agent writing and restoring, not a second loss. **Recorded because it is
+      the same lesson twice: `ops-oracle.py` and `tinybendygrad/uop/ops.bend` are BOTH
+      under concurrent edit in this wave, and Task C's conclusion that no CustomFunction
+      unit OWNS the oracle is an ownership answer, not a promise that nobody is TOUCHING
+      it.** A unit that adds rows to a byte-diff oracle during a wave where another unit
+      is mid-write will lose them, and `grep -c` for its own row names in the oracle is
+      the cheap liveness probe that would have said so in seconds rather than minutes.
+
+Progress: `uop/ops.bend` loose ends [###.] BLOCKED ON A CONCURRENT OVERWRITE — A: premise
+      FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+      B: gate was RED (94/99) and is GREEN (103/103/103) on both trees IN THIS UNIT'S
+      TREE, red again only via the overwrite · C: no live owner, rows kept · **the live
+      file lost both the ABlob fix and these rows to another unit's copy, and the oracle
+      was written and restored in the same window**

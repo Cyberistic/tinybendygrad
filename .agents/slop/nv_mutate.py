@@ -172,8 +172,9 @@ def main():
             continue
         print(f"[{i:2d}] {label} ... ", end="", flush=True)
         if find not in original:
-            print(f"ANCHOR MISS -- {why}")
-            zeros.append((label, "ANCHOR MISS: the pattern is not in the file, so this mutation was NEVER RUN"))
+            print("%s -- %s" % (PNA.not_applied(), why))
+            zeros.append((label, "%s: the pattern is not in the file, so this "
+                            "mutation was NEVER RUN" % PNA.not_applied()))
             continue
         open(SRC, "w").write(original.replace(find, repl, 1))
         try:

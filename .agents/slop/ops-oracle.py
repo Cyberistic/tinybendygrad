@@ -81,6 +81,7 @@ sys.path.insert(0, TG_TREE)
 
 import tinygrad.uop.ops as O  # noqa: E402
 from tinygrad.uop import Ops  # noqa: E402
+from tinygrad.dtype import dtypes  # noqa: E402
 from tinygrad.uop.ops import UOp, AxisType, CallInfo, axis_letters, axis_colors, range_start  # noqa: E402
 
 TAG = f"TG_TREE={TG_TREE}"
@@ -243,6 +244,46 @@ def axis_type_str(u) -> str:
 print(f"#shared_tree={TAG}")
 
 # ---------------------------------------------------------------------------
+# 0bis0. THE CustomFunction LANE. `uop/ops.bend` has printed five `cfun_*` rows
+#       since 2026-10-03 and this file had NONE of them, so `ops-gate.sh` was RED
+#       at rest and `TODO.md:600` recorded it as pre-existing. This block is the
+#       CPython half of those five rows, and it is a SHARED block rather than five
+#       `#bend_only_` reasons because CPython CAN be asked: `CustomFunction` is a
+#       frozen dataclass at `ops.py:1395` and `UOp.custom_function` at `ops.py:1259`,
+#       and BOTH exist and answer identically on both trees this gate can select
+#       (`.agents/slop/opstree` and the vendored pin), measured per tree.
+#
+#       A gate that is red at rest teaches its reader to read red as normal, and
+#       that is the whole reason this block exists rather than a filter.
+# ---------------------------------------------------------------------------
+_CF = O.CustomFunction
+_cfkeep = []
+O.UOpMetaClass.ucache.clear()
+# `ucache` holds weakrefs and `UOp.__del__` deletes BY KEY BY VALUE, so every node
+# built here is retained in `_cfkeep` for the whole block: a pair that is not kept
+# can delete the key it just registered, and `is` then answers about a node the
+# cache has forgotten. The FIVE are built here, not per row, so all five rows read
+# the SAME cache -- the state each row names.
+_cf_void_a = UOp.custom_function("sel_registerName", dtype=dtypes.void)
+_cf_void_b = UOp.custom_function("sel_registerName", dtype=dtypes.void)
+_cf_u64 = UOp.custom_function("sel_registerName", dtype=dtypes.uint64)
+_cf_null = UOp.custom_function("submit_null", dtype=dtypes.void)
+_cf_cl = UOp.custom_function("submit_cl", dtype=dtypes.void)
+_cfkeep += [_cf_void_a, _cf_void_b, _cf_u64, _cf_null, _cf_cl]
+print(f"cfun_interns={_cf_void_a is _cf_void_b}")
+print(f"cfun_dtype_splits={_cf_void_a is not _cf_u64}")
+print(f"cfun_name_splits={_cf_null is not _cf_cl}")
+# THE ARG, read back off the node rather than asserted about it: the row is which
+# object `UOp.custom_function` put in the key and what its fields SAY. `dtype.name`
+# is the attribute the port's `dt_name` reads -- `str(dtypes.void)` is `dtypes.void`
+# and `str(dtypes.uint64)` is `dtypes.u64`, neither of which is the port's spelling,
+# so `name` is the attribute and not a stripped prefix.
+print(f"cfun_arg={_cf_u64.arg.name}|{_cf_u64.arg.dtype.name}")
+# `CustomFunction(name)`'s DEFAULT dtype, ops.py:1397's `dtype: DType = dtypes.void`.
+_cf_default = _CF("sel_registerName")
+print(f"cfun_of={_cf_default.name}|{_cf_default.dtype.name}")
+
+# ---------------------------------------------------------------------------
 # 0bis. THE BLOB LANE. `UOpMetaClass.__call__` keys on
 #      `(op, src, arg, tag, type(arg))` (ops.py:201), so a BINARY's key HOLDS the
 #      `bytes` object and dict equality compares bytes CONTENT-WISE. The port spelled
@@ -299,6 +340,66 @@ _bkeep.extend(_bpairs)
 print(f"blob_sweep={all(u is v for u, v in _bpairs) and len(O.UOpMetaClass.ucache) == len(_bsweep)}")
 print(f"blob_sweep_count={len(O.UOpMetaClass.ucache)}")
 _bkeep.clear()
+O.UOpMetaClass.ucache.clear()
+
+# ---------------------------------------------------------------------------
+# 0bis2. THE BARE-float ARG LANE -- `Arg`'s `AFloat`, and the one that is NOT the
+#       same species as `ConstFloat`. `UOpMetaClass.__call__` keys on
+#       `(op, src, arg, tag, type(arg))` (ops.py:201), so what the key compares is
+#       decided by the PYTHON CLASS of the element, and there are two float classes
+#       in play with OPPOSITE equality:
+#
+#         dtype.py:8-23 `ConstFloat(float)` OVERRIDES `__eq__` and `__hash__`
+#           ("distinguishes -0.0 from 0.0 and where nan == nan"), so a CONST's arg
+#           compares BITWISE. `eq_const.CFloat` compares `F32.bits` and is RIGHT.
+#         a bare `float` OVERRIDES NOTHING
+#           so hash and equality are IEEE and the key interns `-0.0` WITH `0.0`.
+#           `eq_arg.AFloat` compares `F32.is_eq` and is RIGHT.
+#
+#       Both halves are MEASURED here, on the tree, per row. This block exists to be
+#       the row set that says so: a one-word change making `eq_arg.AFloat` compare
+#       bits would move EVERY cell the wrong way, which is why it was not made.
+#
+#       THE FIXTURE IS THE POINT. Each pair is two DISTINCT Python objects, so
+#       `ucache` is asked the question the arena's `eq_arg` stands in for. Kept alive
+#       in `_afkeep` for the reason `_bkeep` exists: `UOp.__del__` deletes by key
+#       BY VALUE.
+#
+#       THE ONE CELL A VALUE-BASED PORT CANNOT REPRODUCE, measured here and printed
+#       NOWHERE, because no row could answer it honestly: the SAME NaN object twice
+#       interns (1 node -- `lookdict` short-circuits on pointer identity), where
+#       `F32.is_eq(nan, nan)` is False. That is a fact about Python object IDENTITY
+#       and not about the float, so a row for it would either lie about the
+#       comparator or lie about CPython. The `afloat_nan_distinct_intern` row is the
+#       one the port can and does answer, and CPython answers it the same way.
+# ---------------------------------------------------------------------------
+_afkeep = []
+
+
+def _afcell(*args):
+  """Two CONSTs carrying a BARE float, on a FRESH ucache, plus the node COUNT."""
+  O.UOpMetaClass.ucache.clear()
+  nodes = [UOp(Ops.CONST, src=(), arg=a) for a in args]
+  _afkeep.extend(nodes)
+  return nodes, len(O.UOpMetaClass.ucache)
+
+
+# 0.0 against -0.0: equal by IEEE, DIFFERENT bit patterns. CPython interns them, so a
+# bit comparator answers False and SPLITS a node CPython keeps together.
+_af_zero, _af_zero_n = _afcell(0.0, -0.0)
+# TWO DISTINCT NaN objects with the SAME payload. IEEE says unequal and CPython keeps
+# them apart, so a bit comparator answers True and MERGES a node CPython splits. The
+# counter-case: a comparator is only "IEEE" or "bits" if it is one of them on BOTH.
+_af_nan, _af_nan_n = _afcell(float('nan'), float('nan'))
+# THE DIAGONAL and an ordinary unequal pair: the two CONTROLS. Without them a
+# comparator answering False for every float would satisfy the NaN row alone.
+_af_same, _af_same_n = _afcell(1.5, 1.5)
+_af_diff, _af_diff_n = _afcell(1.5, 2.5)
+print(f"afloat_zeros_intern={_af_zero[0] is _af_zero[1]}")
+print(f"afloat_nan_distinct_intern={_af_nan[0] is _af_nan[1]}")
+print(f"afloat_same_intern={_af_same[0] is _af_same[1]}")
+print(f"afloat_distinct_intern={_af_diff[0] is _af_diff[1]}")
+_afkeep.clear()
 O.UOpMetaClass.ucache.clear()
 
 # ---------------------------------------------------------------------------

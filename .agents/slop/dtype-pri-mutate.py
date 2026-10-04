@@ -18,6 +18,7 @@ import re
 import shutil
 import subprocess
 import sys
+import patch_not_apply as PNA
 
 REPO = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SLOP = os.path.join(REPO, ".agents", "slop")
@@ -119,7 +120,7 @@ def main():
         shutil.copyfile(src, pristine)
         text = open(src).read()
         if old not in text:
-            print("%-64s NO-OP: pattern not found" % label[:64])
+            print("%-64s %s" % (label[:64], PNA.not_applied("pattern not found")))
             continue
         open(src, "w").write(text.replace(old, new, 1))
         rc, txt = run_bend(os.path.join(REPO, "tinybendygrad/uop/fold.bend"))
