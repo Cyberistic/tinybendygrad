@@ -1,3 +1,5 @@
+# THIS IS NOT A GATE. It is a CAPTURE: one run of prepare.bend -o (native lane), taken before
+# `.agents/slop/prepare-gate.sh` existed, and nothing diffed it until now.
 fma_n=3
 fma_0_ops=AFTER
 fma_0_rej={STORE}

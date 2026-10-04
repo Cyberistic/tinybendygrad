@@ -1,3 +1,14 @@
+# THIS IS NOT A GATE. It is a CAPTURE: one run of prepare.bend, taken before
+# `.agents/slop/prepare-gate.sh` existed, and nothing diffed it until now.
+#
+# IT IS ALSO STALE, and measurably. 72 lines here say `|int` where the live file says
+# `|i32`, and CPython says `dtypes.int32.name == 'i32'` -- so the LIVE side is the
+# correct one and the fix that made it correct was unprovable at the time. A capture
+# is a record; the gate is `sh .agents/slop/prepare-gate.sh` and it asks CPython.
+#
+# Kept deliberately rather than deleted: it is the only record of what the unit
+# answered before, and a stale baseline that is LABELLED stale is evidence. An
+# unlabelled one is a trap.
 fma_n=3
 fma_0_ops=AFTER
 fma_0_rej={STORE}
