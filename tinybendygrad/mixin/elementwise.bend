@@ -284,7 +284,6 @@ def ew_ufix.at(ist: Bool, +t: T.Tensor, +e: Ew) -> T.Tensor:
 def ew_ufix(+t: T.Tensor, +e: Ew) -> T.Tensor:
   ew_ufix.at(ew_is_t(e), t, e)
 
-
 # ===========================================================================
 # `remint` -- elementwise.py:12.
 #     return u.ccast(dt) if u.op is Ops.CONST else u.replace(src=(remint(u.src[0], dt),)+u.src[1:])
@@ -584,8 +583,6 @@ def ew_sqrt(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsSQRT{}, Nil{})
 def ew_sin(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsSIN{}, Nil{})
 def ew_log2(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsLOG2{}, Nil{})
 def ew_exp2(+t: T.Tensor) -> T.Tensor: T.tn_alu(t, O.OpsEXP2{}, Nil{})
-def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, e, False{})
-
 # `square` -- elementwise.py:584 -- is `self * self`, so it is a `_binop` whose two
 # operands are the SAME tensor. `ew_square` is the row that says so: two srcs and no
 # third node, which a `alu(MUL, self, self)` shortcut would also print -- so it is
@@ -734,7 +731,6 @@ def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
   dt = W.wk_dt(fx, T.Tensor.u(t))
   ew_fmod.of(S.Dt.is_int(dt), True{}, t, e, rev)
 
-
 # THE WALLS. Each is a Python line and the thing that is missing, in the file's own
 # terms. `p3` is the phase that owns the method surface.
 # ===========================================================================
@@ -837,7 +833,6 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:623  isfinite  -- was `isinf + 0.0`; both are now available, so the remainder is the rule body. UNDIAGNOSED
 # TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
 # TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
-# TODO(p3) elementwise.py:685  sigmoid  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
@@ -990,6 +985,8 @@ def ew_i8(ar: O.Arena) -> O.Found: ew_buf(ar, S.int8())
 def ew_i32(ar: O.Arena) -> O.Found: ew_buf(ar, S.int32())
 
 def ew_ci(ar: O.Arena, v: U32) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(v)})
+
+def ew_cf(ar: O.Arena, +f: F32) -> O.Found: O.UOp.const(ar, O.CFloat{f})
 def ew_cbool(ar: O.Arena, b: Bool) -> O.Found: O.UOp.const(ar, O.CBool{b})
 
 # `Invalid` -- tinygrad/dtype.py:36, the singleton an OPTIONAL dtype's absent
@@ -1126,7 +1123,23 @@ def g_unary(u: Un) -> T.Tensor:
   b = ew_i32(O.Arena.empty())
   ew_unary.at(u, ew_ct(b))
 
+# `sigmoid` is `(1 + (self * (-1/math.log(2))).exp2()).reciprocal()` (elementwise.py:693),
+# and the constant is the one the refuted wall said could not be written. It is
+# `F32.neg(ew_k.inv_log2())` and it is BIT-EXACT -- ew-consts-gate.sh row `k_inv_log2` --
+# so this is the first of the 22 unmarked methods whose stated blocker is measurably gone.
+#
+# THE ORDER OF THE THREE BUILDS IS THE ORDER OF THE PYTHON and it does not matter to the
+# signature: `ew_sig` reads `O.UOp.toposort`, the same DFS-POSTORDER CPython's `u.toposort`
+# is, so what the row compares is the SHAPE and not the arena indices. That is why
+# `ew_cf` may intern the constant whenever it is called without perturbing a row.
+def ew_sigmoid(+t: T.Tensor) -> T.Tensor:
+  ew_reciprocal(ew_add(ew_exp2(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), F32.neg(ew_k.inv_log2()))), False{})), ECon{O.CInt{H.i64_of_i32(1)}}, True{}))
+
+def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, e, False{})
+
+def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
+def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
 def t_recip() -> IO(Unit): ew_sig("ew_recip", g_unary(URecip{}))
 def t_trunc() -> IO(Unit): ew_sig("ew_trunc", g_unary(UTrunc{}))
@@ -1413,6 +1426,7 @@ def main() -> IO(Unit):
     r : Unit <- t_ne()
     s : Unit <- t_eq()
     u : Unit <- t_detach()
+    t : Unit <- t_sigmoid()
     v : Unit <- t_contig_bwd()
     w : Unit <- t_recip()
     x : Unit <- t_trunc()

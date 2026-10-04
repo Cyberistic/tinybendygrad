@@ -118,6 +118,11 @@ sig(u4.uop.eq(c3.uop), 'ew_eq')
 
 # --- the unary alu family: no promotion at all ---------------------------------
 sig(u4.uop.alu(Ops.DETACH), 'ew_detach')
+
+# `sigmoid` is the first of the 22 markers whose stated blocker was the F32 constant
+# wall -- a wall ew-consts-gate.sh REFUTED. `Tensor(5)`, the same fixture as every
+# other unary row, so the row compares the method and not the operand.
+sig(Tensor(5).uop.sigmoid(), 'ew_sigmoid')
 sig(u4.uop.alu(Ops.CONTIGUOUS_BACKWARD), 'ew_contig_bwd')
 sig(u4.uop.alu(Ops.RECIPROCAL), 'ew_recip')
 sig(u4.uop.alu(Ops.TRUNC), 'ew_trunc')

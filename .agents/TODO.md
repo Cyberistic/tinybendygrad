@@ -10081,3 +10081,103 @@ claim + md5s **`.agents/slop/denom/CLAIM.md`**. Rules `DENOM-1..5` appended to
       fabricated result, and the same shape as the `P06` `target-not-found` earlier. The loop
       now distinguishes *target missing* from *blind*, and verifies the mutation landed
       before trusting the verdict.
+
+## `DEVG` — is `DEV` a SETTING or a COMMENT? (unit `DEVG`, 2026-10-04). Progress: `[#########.]` 9/10
+
+- [x] **`DEVG-1` `oracles/mm-range.py` ASKED FOR NULL AND GOT METAL. FIXED, PROVED BY ITS
+      PRINTED DEVICE, NOT ITS EXIT STATUS.** `:12` imported tinygrad at module scope; `:59`
+      set `DEV='NULL'`. MEASURED pre-fix `Device.DEFAULT` = **METAL**; post-fix, line 1 of
+      stdout is `device: NULL` (`od -c`: `d e v i c e :   N U L L \n`). Minimal fix: the
+      assignment moved from `:59` to `:14`, above the import on `:15` — 4 insertions,
+      3 deletions, no graph or tally touched. **It still exits 1**, at `:70` on
+      `Tensor.floordiv` (`AttributeError`) — separate rot, not fixed. The OVER_I64 counts it
+      reports were being measured on METAL.
+- [x] **`DEVG-2` THE DENOMINATOR IS 55, NOT 37, AND THE CLASS HAD EXACTLY ONE MEMBER.**
+      69 `.py` files write `DEV`; 14 are VENDORED; **55 is the denominator** (writes `DEV`
+      and reaches tinygrad). Of the 55: **55 EARLY, 0 LATE, 0 DEFERRED, 0 BOTH, 0 UNRESOLVED,
+      0 IMPORTLESS.** `HERMETIC.md` §3's "37 scripts" and `C3b`'s "16 false positives of 17"
+      are both superseded. `devgate.py --why` prints all 55 with each file's own write line
+      and boundary line.
+- [x] **`DEVG-3` THE ERROR RATE, ON DATA THE CLASSIFIER WAS NOT TUNED AGAINST.** 15 held-out
+      plants written after the rules were frozen: **14/15**, miss named
+      (`ho-nested-def-import-ignored`, a def importing tinygrad called only from an uncalled
+      def — devgate says EARLY, sharper is IMPORTLESS). The 27 tuning plants are 27/27 and
+      are a **FIXPOINT** — I fixed 7 rules against them — so they are not an estimate.
+      The RULE is tested separately by **executing** each ordering: **10/10** behave as
+      predicted (late prints `METAL`, early prints `NULL`, no `DEV` in the environment).
+- [x] **`DEVG-4` AN INDEPENDENT SECOND INSTRUMENT, 68 AGREE / 1 DISAGREE.** `--crosscheck`
+      is a regex scan sharing no code with the AST classifier. The single disagreement is
+      **`audit-hermetic.py:159`**, where `tokenize` shows the regex's match is a
+      **`type=STRING` token** — `EARLY, LATE = 'os.environ["DEV"]="NULL"', …` assigns string
+      LITERALS whose text contains the assignment. The regex matched a string's contents;
+      devgate is right. A regex scanner cannot see this class, which is why C3b failed.
+- [x] **`DEVG-5` THE CHECK, WITH ITS HIT RATE STATED.** `--check` is **rc 1** on the recovered
+      pre-fix `mm-range.py` and names `mm-range-prefix.py:[59]` with the boundary at `:12`;
+      **rc 0** on the live tree. It flags **1 file** and examines **69** — it is not an
+      instrument that flags everything, and it does not flag nothing.
+- [x] **`DEVG-6` FOUR BUGS IN MY OWN READOUT, ALL "A COMPARISON THAT CANNOT FAIL".**
+      (1) `run_plants` returned `len(PLANTS)` unconditionally — `--heldout` ran 15 and printed
+      "26/27". (2) `order_inert` lacked `@property`, so `method == False` is always false and
+      the crosscheck reported **0 agree / 69 disagree**. (3) the loader closure read every
+      `Name` instead of each `Call`'s callee and snowballed to 28 of graphcmp.py's functions,
+      reporting `graphcmp.py` **LATE** — contradicting a measurement. (4) a *shell* `|| true`
+      swallowed `--check`'s rc and printed `rc=0` on a failing run.
+- [x] **`DEVG-7` SOURCE ORDER IS NOT EXECUTION ORDER, MEASURED.** An unsound classifier called
+      `graphcmp.py` LATE; it really does get `NULL`. devgate now scores a write **inert** only
+      when a **module-scope** import (or a loader **called at module scope**) precedes it, and
+      has a `DEFERRED` class for what it declines to decide.
+- [x] **`DEVG-8` `HERMETIC.md` §5's CITATION FOR `tinygrad/device.py:59` IS STALE.** The
+      conclusion ("upstream's contract, not a defect") is right; the spelling is wrong. `:59` is
+      `os.environ["DEV"] = device  # we set this in environment for spawned children` — a real
+      WRITE behind the module-scope import at `:6`, not `DEV = ContextVar` / `os.getenv`.
+      14 copies of that line, all VENDORED, reported and never gated.
+- [ ] **`DEVG-9` OPEN.** (a) `mm-range.py:70`'s `Tensor.floordiv` is rot I did not touch — the
+      oracle cannot produce its headline `OVER_I64`/`MAX_BITS` until someone checks upstream's
+      spelling. (b) `DEFERRED` has 0 members today but is a real class; when it is non-empty it
+      must be resolved by a RUN, not a guess. (c) The 55 EARLY files are EARLY by source order
+      and have not each been executed — the 10 executed replays validate the rule, not those 55.
+
+## Session 2026-10-04 round 7 — the FIRST method landed since the constant wall fell
+
+- [x] **`sigmoid` LANDED (elementwise.py:693). `ew-gate` is 72 rows, 3 lanes identical**, its
+      marker retired, and a negative control confirms the new row is load-bearing.
+
+      `sigmoid` is `(1 + (self * (-1/math.log(2))).exp2()).reciprocal()`, and the constant
+      is the one the refuted wall said could not be written. It bit-exactly:
+      `F32.neg(ew_k.inv_log2())`, gate row `k_inv_log2`. It is also the highest-leverage
+      single method — `swish` is `self * self.sigmoid()` and `silu` is `swish()`, so those
+      two are now compositions of something that exists.
+
+      ### FOUR THINGS THE ROW CAUGHT, NONE OF THEM A VALUE
+
+      A value gate would have passed every one of these, because all four produce the same
+      arithmetic. **The row is the toposort SIGNATURE, so argument order and node kind are
+      both observable**, and that is the entire reason this gate is worth more than a number.
+
+      1. **THE FIXTURE'S KIND.** `g_i32` used `ew_i32`, which is `ew_buf(ar, int32())` — a
+         BUFFER — while CPython's is `Tensor(5)`, a CONST. The port read
+         `BUFFER/0 CAST/1 ...` against `CONST/0 CONST/0 ...`: an extra node AND an extra
+         CAST that the promotion only inserted because the operand was a buffer. `g_add`
+         already showed the convention (`ew_ci`, not `ew_i32`).
+      2. **THE ADD'S ARGUMENT ORDER.** CPython's postorder puts all three CONSTs before the
+         MUL, so its `ADD` has the scalar on the LEFT. The port had it on the right and read
+         `... MUL/2 EXP2/1 CONST/0 ADD/2 ...`. That is what `ew_add`'s `rev` flag is for, and
+         the signature is the only thing in this port that can see it.
+      3. **PARENS BALANCED IN COUNT AND WRONG IN STRUCTURE.** The body was nine opens and
+         nine closes and `ew_add` was still unclosed — the error named
+         `@rev:Bool -> T.Tensor`, a def applied to two of three arguments. A paren-COUNT
+         check passes that. It is now built as NESTED calls so the nesting cannot be wrong,
+         which is the second time in this session a hand-counted expression has cost a round.
+      4. **A TEXT SPLICE DELETED `ew_threefry`.** `s[end+1:]` ate the newline and the def
+         with it, and the file still typechecked far enough to report only
+         "expected : a defined name". Caught by diffing the def NAMES against master rather
+         than by reading the error. **That is the second splice to destroy a def here, so the
+         rule is APPEND, never splice** — and a def census against master belongs in the
+         loop, because a file that compiles is not a file that is intact.
+
+      ### `Nat` AND `I64` AND F32, ONE AFTER ANOTHER
+
+      Three substrate walls in a row, all refuted, all by the same move: write the probe,
+      measure, and let the number decide. The pattern is now strong enough to be a rule for
+      the remaining 200-odd markers: **a claim about what the substrate cannot do is not
+      evidence until something has measured it.**
