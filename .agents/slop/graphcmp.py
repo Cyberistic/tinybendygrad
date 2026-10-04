@@ -284,6 +284,8 @@ def load_tinygrad() -> None:
   globals().update(AddrSpace=dtm.AddrSpace, DType=dtm.DType, dtypes=dtm.dtypes,
                    AxisType=opm.AxisType, Ops=opm.Ops, ParamArg=opm.ParamArg, UOp=opm.UOp,
                    GroupOp=GroupOp)
+  from tinygrad.helpers import Context
+  globals().update(Context=Context)
 
 
 def commutative() -> frozenset:
@@ -462,6 +464,24 @@ def carg(op: Ops, x) -> str:
     # than smoothed into an agreement.
     return "cI(" + ",".join([bstr(x.name) if x.name is not None else ATOMS["none"],
                              bo(x.precompile), bo(x.precompile_backward)]) + ")"
+  if op is Ops.SINK and x is None:
+    # DEFECT 17, FOUND BY WIDENING (2026-10-04, `--graph loop`). A SINK's `arg` is
+    # `KernelInfo | None` and upstream BUILDS the None one: `hcq_fence` ends in a bare
+    # `.sink()` (tinygrad/runtime/support/hcq2.py:412) and so does `usb.py:236`'s helper.
+    # MEASURED: the emitter DIED on it --
+    #     AttributeError: 'NoneType' object has no attribute 'name'
+    # at the `kI(...)` line below, which is this arm -- so a real in-tree kernel could not
+    # be diffed at all, and the corpus's silence on `arg=None` SINKs was a CRASH, not an
+    # agreement. It is the same shape as defect 13 (`BYTE-IDENTICAL` over two 0-byte files):
+    # an emitter that dies is indistinguishable, in a report that only counts rows, from an
+    # emitter that has nothing to say.
+    #
+    # `N` is the right letter and not a new one: `KernelInfo | None` is `Maybe<KernelInfo>`
+    # and the port's `AKernel`/`ANone` pair is the same distinction (ops.bend's `Arg`), and
+    # `mm`/`mum`/`nm`/`dm` already spell every other optional field with `N`. So the fix is
+    # ONE arm, not a new atom, and it is the widening's own lesson applied: a value with no
+    # spelling is a hole, and the hole was reached by a graph rather than by reading.
+    return ATOMS["none"]
   if op is Ops.SINK:
     # FOUR SLOTS, and the arity is the point. It was three, and the port's emitter wrote
     # TWO (`kI(<name>,<beam>)`, graphcmp.bend), so the texts could not agree for any
@@ -741,7 +761,22 @@ def cdepth(n: UOp) -> int:
 
 
 def ctag(t) -> str:
-  return ATOMS["none"] if t is None else carg(t)
+  # DEFECT 18, FOUND BY WIDENING (2026-10-04, `--graph lin`). This read `carg(t)` -- the
+  # OP-DISPATCHING entry point, which takes `(op, x)` -- with ONE argument, so it raised
+  # `TypeError: carg() missing 1 required positional argument: 'x'` on the first non-None
+  # tag in the corpus. Every one of the thirteen earlier graphs has `tag is None` on every
+  # node, so R6 had never been asked a question: it was a FIELD that could not be read, and
+  # the eight-field row still said `N` on both sides, so the field agreed by never being
+  # evaluated. `_carg` is the value grammar `ctag` wanted -- a tag is `UOp.tagstr`'s
+  # `bool | str | int | tuple[UOp,...] | None` (ops.py:277) and has no op to dispatch on.
+  #
+  # IT IS NOT COSMETIC, and the graph that found it says why. `lin` is the first corpus graph
+  # to carry a tag at all, because a tag is what a renderer attaches to an INSTRUCTION, and
+  # `full_rewrite_to_sink` is the first corpus graph to be a kernelized program. So the
+  # field and the fixture arrived together: without a linearized program there was nothing
+  # to tag, and without a tag the field was unreadable -- and neither fact is visible from
+  # the other.
+  return ATOMS["none"] if t is None else _carg(t)
 
 
 def row_of(n: UOp, k: int, ix: dict) -> str:
@@ -1003,10 +1038,144 @@ def g_sym():
                    UOp(Ops.RESHAPE, (a, UOp.stack(_variable("m"), c4))))
 
 
+# ---------------------------------------------------------------------------
+# THE THREE PROGRAM GRAPHS (third pass, 2026-10-04). Every graph above is a VALUE: the
+# eager Tensor API, hand-spelled ops, or a kernel body written by hand in this file. None of
+# them is a linearized PROGRAM, and that was the first line of graphcmp-LIMITS.md:
+# "These are hand-built graphs, not a kernelized program, and they exercise not one of
+# INDEX/BARRIER/GROUP/ENDIF/BACKEDGE/LOAD/STORE." INDEX/BARRIER/GROUP have since been
+# reached by hand; the remaining FOUR cannot be, because they are properties of a SCHEDULE
+# rather than of an expression. These three are the schedule.
+#
+# `LIN`  `full_rewrite_to_sink` of a REAL scheduled matmul -- the first graph in the corpus
+#        that is a kernel the SCHEDULER produced. Reaches LOAD and STORE.
+# `LOOP` `hcq_fence` -- a REAL kernel body in this tree (tinygrad/runtime/support/hcq2.py:
+#        405-413), reached by CALLING it. The only place in the tree that mints a BACKEDGE
+#        outside a hand-written fixture. Reaches BACKEDGE, LOAD and STORE.
+# `GATE` a gated STORE run through the REAL `pm_linearize_cleanups` -- the one rule in this
+#        tree that constructs `Ops.IF`/`Ops.ENDIF` (codegen/__init__.py:403). Reaches IF,
+#        ENDIF and STORE.
+#
+# ALL THREE ARE PY-SIDE CALLS INTO TINYGRAD'S OWN CODE, NOT HAND-WRITTEN IR, and that is the
+# distinction the limits file was making: `lin` and `gate` go through the scheduler/codegen
+# passes, and `loop` is upstream's own kernel. What is hand-built is the BEND side of every
+# graph in this corpus -- see `graphcmp.bend` -- because the port has no working scheduler
+# (`tinybendygrad/schedule/__init__.bend` DEFERREDs `__init__.py:82-301` behind "every rule
+# is a `graph_rewrite` with a PYTHON ctx DICT"). So the honest statement of what was
+# expensive is: the py side stopped being hand-written, and the bend side did not stop being
+# hand-written for ANY of the thirteen earlier graphs either.
+def _renderer():
+  from tinygrad import Device
+  return Device[Device.DEFAULT].renderer
+
+
+def _kernels(expr: Tensor) -> list:
+  """The kernel SINKs of `expr`'s schedule. `schedule_linear` (not `create_schedule`):
+  MEASURED, `create_schedule` answers a single `LINEAR` node whose toposort is 1 -- it is
+  the TinyJit capture path (`create_linear_with_vars` returns `UOp(Ops.LINEAR, src=())` when
+  `capturing` is live, schedule/__init__.py:296-298), and even outside a JIT the LINEAR it
+  returns has to be resolved before it has a body. `schedule_linear` is what
+  `test/null/test_schedule.py` and `check_schedule` use, and its srcs ARE the kernel sinks."""
+  return [si.src[0] for si in expr.schedule_linear().src if si.src[0].op is Ops.SINK]
+
+
+def g_lin():
+  """`full_rewrite_to_sink` of the scheduled `(4,3)@(3,5)` matmul -- MEASURED at 46 nodes
+  with the op census `END=2 LOAD=6 STORE=1 INDEX=7 RANGE=2 PARAM=3 SHRINK=2 WHERE=0`.
+
+  This is the graph the limits file asked for and did not have: a KERNEL, produced by
+  `schedule_linear` (the real scheduler) and then by `full_rewrite_to_sink` (the real
+  codegen rewrite), carrying device PARAMs and the LOADs and STOREs that only a linearized
+  program has. Nothing above it in the corpus contains a LOAD or a STORE, because an eager
+  Tensor graph has neither: its ALLOCs are read by the kernel, not by the graph.
+
+  `optimize=True`, because `optimize=False` skips the whole optimization half of the pass
+  (`apply_opts`, codegen/__init__.py:297) and answers a DIFFERENT graph -- MEASURED, 45
+  nodes with `optimize=False` against 46 with it.
+  """
+  from tinygrad import Tensor
+  from tinygrad.codegen import full_rewrite_to_sink
+  out = Tensor.empty(4, 5).realize()
+  out.assign(Tensor.empty(4, 3) @ Tensor.empty(3, 5))
+  return full_rewrite_to_sink(_kernels(out)[0], _renderer(), optimize=True)
+
+
+def g_loop():
+  """`hcq_fence(tv, tv, tv, 0)` from tinygrad/runtime/support/hcq2.py:405-413 -- MEASURED at
+  25 nodes with the census `BACKEDGE=1 LOAD=2 STORE=2 INDEX=4 RANGE=1 PARAM=4`.
+
+  WHY THIS ONE AND NOT A HAND-WRITTEN `UOp.backedge(...)` CALL. `UOp.backedge` is a real
+  constructor (ops.py:617) and `hando-writing` it would have reached BACKEDGE at the cost of
+  proving nothing. `hcq_fence` is the kernel tinygrad SHIPS for waiting on an HCQ2 queue --
+  `.backedge(loop, done < target)` at hcq2.py:411 is a POLL LOOP, which is exactly what a
+  BACKEDGE is, and the `LOAD`s around it are the two it spins on. So the graph is upstream's
+  own control flow, reached by CALLING upstream, and it is byte-identical on NULL, CPU and
+  PYTHON (MEASURED, `.agents/slop/graphcmp-p14-sched.py`).
+
+  `tv` is a VOLATILE uint64 PARAM of size 1 on CPU: MEASURED, `hcq_fence` replaces its arg
+  with `volatile=True` itself (`tl.replace(arg=replace(tl.arg, volatile=True))`), so the
+  volatility is not a fixture choice but a consequence -- which is why the row says `b1`."""
+  from tinygrad.dtype import dtypes
+  from tinygrad.uop.ops import ParamArg
+  from tinygrad.runtime.support.hcq2 import hcq_fence
+  tv = UOp(Ops.PARAM, src=(), arg=ParamArg(3, dtypes.uint64, 1, device="CPU"))
+  return hcq_fence(tv, tv, tv, 0)
+
+
+def g_gate():
+  """A GATED STORE through the REAL `pm_linearize_cleanups` -- MEASURED at 13 nodes under
+  the SINK: PARAM BUFFER CONST CONST RANGE INDEX INDEX CMPLT IF STORE ENDIF END SINK.
+
+  THIS IS THE ONLY ROUTE TO `ENDIF` IN THIS TREE, and it is measured rather than asserted.
+  `Ops.ENDIF` is constructed at exactly ONE site, `codegen/__init__.py:403`, inside
+  `pm_linearize_cleanups`, and it fires on a STORE with THREE srcs whose third is a bool:
+
+      (UPat(Ops.STORE, src=(UPat((Ops.INDEX, Ops.SHRINK)), UPat(), UPat(name="gate",
+       dtype=dtypes.bool))), lambda u, gate: ([mif:=UOp(Ops.IF, src=(gate, u.src[0]))],
+       u.replace(src=u.src[0:2]), [UOp(Ops.ENDIF, src=(mif,))]))
+
+  A gated STORE is `UOp.store(val, gate)` (ops.py:613-616), which is how the tree's own
+  renderers spell one -- `renderer/wgsl.py:20` (`idx.store(..., *gate)`) and
+  `codegen/late/gater.py:16,:22`.
+
+  **AND THE SCHEDULER NEVER MINTS ONE.** MEASURED over NINE scheduled programs
+  (`.agents/slop/graphcmp-p14d.py`, Q1: matmul / assign / shrink / pad / pad+shrink / sum /
+  expand+slice / assign-into-view / 3d-slice): **0 gated STOREs in 9 programs.** The closest
+  is `shrink`, which leaves two GATED LOADs (`LOAD(3src)`) -- the gater fires on the READ
+  side and `to_program` then REFUSES it ("memory coalescing does not support gated
+  loads/stores"). So a graph reaching ENDIF is necessarily one built from a hand-written
+  gated store, and the honest claim is the narrow one: the PY side is upstream's own
+  constructor and upstream's own rewrite, while the STORE BODY is spelled by this file.
+
+  `line_rewrite(linearize(sink), pm_linearize_cleanups)` is verbatim what `pm_to_program`
+  does at codegen/__init__.py:426 -- minus `pm_alloc_to_buf`, which cannot match here
+  because there is no ALLOC to convert. The LINEAR wrapper is NOT taken as the root, so
+  `Ops.LINEAR` stays unreached; taking it would add one op and one arg shape for nothing."""
+  from tinygrad.dtype import dtypes
+  from tinygrad.uop.ops import KernelInfo, ParamArg
+  from tinygrad.codegen import line_rewrite, pm_linearize_cleanups
+  from tinygrad.codegen.late.linearizer import linearize
+  buf = UOp(Ops.BUFFER, src=(), arg=ParamArg(1, dtypes.float, 16, device="CPU"))
+  val = UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.float, 16, device="CPU", name="v0"))
+  r = UOp.range(4, 0)
+  st = buf.index(r).store(val.index(r), r < UOp.const(3)).end(r)
+  sk = st.sink(arg=KernelInfo(name="gated"))
+  lines = line_rewrite(linearize(sk), pm_linearize_cleanups)
+  # THE ROOT MUST BE THE `LINEAR`, and that is MEASURED rather than a choice of taste:
+  # `ENDIF`'s only src is the `IF`, and NOTHING points at the `ENDIF` -- so the rewritten
+  # SINK's toposort is 12 nodes and it does NOT CONTAIN THE ENDIF. `line_rewrite` answers a
+  # LINE LIST and the LINEAR node is the only thing that holds every line (MEASURED:
+  # `UOp(Ops.LINEAR, src=tuple(lines)).toposort()` is 14 rows, ENDIF among them, against 12
+  # for the new SINK alone). So taking the last line as the root would have reported a
+  # 12-node graph and quietly lost the op this fixture exists to reach -- an "unexplained
+  # zero" in the exact place where the artifact exists to put a number.
+  return UOp(Ops.LINEAR, src=tuple(lines))
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
-          "sym": g_sym}
+          "sym": g_sym, "lin": g_lin, "loop": g_loop, "gate": g_gate}
 
 _BASE: dict[str, UOp] = {}
 
@@ -2196,7 +2365,34 @@ def main() -> int:
   global COMM
   os.environ["DEV"] = a.dev
   load_tinygrad()
+  return _main(a)
+
+
+def _main(a) -> int:
+  global COMM
   COMM = commutative()
+  # DEFECT 19, FOUND BY WIDENING (2026-10-04, `--graph lin`). A LINEARIZED KERNEL'S NAME
+  # IS ANSI-COLOURED TEXT, and it reached a structural field:
+  #     `kI(sr\x1b[90m_\x1b[0m\x1b[31m4\x1b[0m..., ...)`
+  # `full_rewrite_to_sink` names its SINK through `helpers.colored`
+  # (tinygrad/helpers.py:41-43), `NO_COLOR` is a `ContextVar` defaulting to 0
+  # (helpers.py:240) and NOT an environment variable, so no `NO_COLOR=1` on the command
+  # line reaches it -- the only spelling is `Context(NO_COLOR=1)`. The escape bytes are
+  # ASCII (`0x1b`), so `unchunks`' non-ASCII guard did not fire and 18 bytes of `\x1b[..m`
+  # sat inside a chunk whose whole job is to be compared byte for byte.
+  #
+  # It wraps EVERY command rather than one graph: it is a property of the emitter and not of
+  # a fixture, and a fixture that needed it would be a fixture whose reproducibility depends
+  # on a flag the reader has to know about. tinygrad ships its own answer to this question
+  # (`helpers.ansistrip`) and the differ does NOT use it, because stripping the escapes
+  # would silently normalize the field instead of refusing a graph whose name is not plain
+  # text; `Context(NO_COLOR=1)` makes the name plain at the SOURCE, which is the fix that
+  # does not need a reader to trust a normalisation.
+  with Context(NO_COLOR=1):
+    return _dispatch(a)
+
+
+def _dispatch(a) -> int:
 
   if a.cmd == "selfcheck":
     return selfcheck(a.dev)

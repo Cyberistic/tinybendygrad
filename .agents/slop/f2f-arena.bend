@@ -3,13 +3,24 @@ import ./../../tinybendygrad/codegen/decomp/dtype.bend as D
 import ./../../tinybendygrad/uop/ops.bend as O
 import ./../../tinybendygrad/LAWS/spec.bend as S
 
-# f2f-arena.bend -- every SLOT of the `f1` fixture's arena, the ONE fixture that reaches
-# `f2f.fnuz`, so the `f2f.em1` collapse inside it can be NAMED rather than inferred.
+# f2f-arena.bend -- every SLOT of a fixture's arena, so a FORWARD edge -- a node whose
+# src is a LATER slot -- can be NAMED rather than inferred from a `sig=` that is a
+# toposort and cannot show one at all.
 #
-# `dd-bandarena.bend` prints `w1`, and `w1` is fp8e4m3 -> float32, which is NOT fnuz, so
-# it takes `f2f.up.tail`'s `f2f.ocp` arm. `f2f.em1` is called from THREE sites -- `f2f.qnan`
-# (w1's), `f2f.fnuz` (f1's) and `f2f.down.npat` (n2's) -- and only the last two are
-# separable now that `f2f.ocp` no longer calls it.
+# ⚠ THE PARAM'S DTYPE IS `f2f_dt[fr]`, NOT `fr`, and this probe's first version had `fr`.
+# Both real call sites pass a uint (dtype.py:142 `val.bitcast(f2f_dt[to])`, dtype.py:196
+# `x.bitcast(f2f_dt[ctx[0]])`), `f2f_dt[f] = getattr(dtypes, f"uint{f.bitsize}")`
+# (dtype.py:97), and `f2f.udt` IS that table -- which is why `dtype.bend`'s own gate
+# passes `f2f.udt(fr)` here and the two lanes disagreed by 11 rows (`w1n` 33 against
+# `q1n` 22). A probe whose fixture differs from the gate's measures a graph dtype.py
+# never builds. `dd_par`'s dtype is its THIRD argument and it is what `mixin/dtype.py:53`
+# reads, so the fold that removes the BITCAST is decided HERE.
+#
+# THE SLOT OFFSET IS 1, NOT 0. `ops.bend`'s `Arena` carries a bottom slot: slot 0 reads
+# back `NOOP/0`, which is why a wrong index answers a plausible value instead of failing.
+# CPython's `ORDER` has no bottom, so CPython slot `i` is port slot `i + 1` and the
+# differ shifts rather than pretending the two numberings agree. Printing the offset in
+# the header is the honest form.
 #
 # THE PRINT IS THE POINT. A wrong answer that is an arena INDEX is stable, so it would
 # pass every fixture the file owns forever; only the SLOTS say which node a src points at.
@@ -22,15 +33,21 @@ def miss(r: Maybe<&2, O.Found>, +ar: O.Arena) -> R:
     case Some{+f}: R{O.Found.ar(f), O.Found.i(f)}
     case None{}: R{ar, 0}
 
-def f1(+ar: O.Arena) -> R:
-  +p = D.dd_par(ar, "f1", S.fp8e4m3fnuz())
+# ONE FIXTURE, and `D.f2f.udt(fr)` is the receiver's dtype. `dd_par` interns the PARAM
+# into `ar` and returns it grown, so `pa` is the arena the fixture STARTS from and the
+# answer's arena is whatever `f2f` grew it into -- the two are not the same and `miss`
+# reports the ANSWER's, which is the only arena a cone can be walked in.
+def one(nm: String, +fr: S.Dt, +to: S.Dt, +ar: O.Arena) -> R:
+  +p = D.dd_par(ar, nm, D.f2f.udt(fr))
   +pa = O.Found.ar(p)
-  miss(D.f2f(pa, O.Found.i(p), S.fp8e4m3fnuz(), S.single(), True{}), pa)
+  miss(D.f2f(pa, O.Found.i(p), fr, to, True{}), pa)
 
-def n2(+ar: O.Arena) -> R:
-  +p = D.dd_par(ar, "n2", S.single())
-  +pa = O.Found.ar(p)
-  miss(D.f2f(pa, O.Found.i(p), S.single(), S.fp8e5m2(), True{}), pa)
+def q1(+ar: O.Arena) -> R: one("q1", S.fp8e4m3(), S.single(), ar)
+def q2(+ar: O.Arena) -> R: one("q2", S.single(), S.fp8e4m3(), ar)
+def q3(+ar: O.Arena) -> R: one("q3", S.single(), S.fp8e5m2(), ar)
+def q4(+ar: O.Arena) -> R: one("q4", S.fp8e4m3fnuz(), S.single(), ar)
+def q5(+ar: O.Arena) -> R: one("q5", S.single(), S.fp8e5m2fnuz(), ar)
+def q7(+ar: O.Arena) -> R: one("q7", S.single(), S.double(), ar)
 
 def mark(b: Bool) -> String:
   match b:
@@ -85,9 +102,21 @@ def dump(+nm: String, r: R) -> IO(Unit):
 
 def main() -> IO(Unit):
   +a1 = O.Arena.empty()
-  +r1 = f1(a1)
+  +r1 = q1(a1)
   +a2 = O.Arena.empty()
-  +r2 = n2(a2)
+  +r2 = q2(a2)
+  +a3 = O.Arena.empty()
+  +r3 = q3(a3)
+  +a4 = O.Arena.empty()
+  +r4 = q4(a4)
+  +a5 = O.Arena.empty()
+  +r5 = q5(a5)
+  +a7 = O.Arena.empty()
+  +r7 = q7(a7)
   do IO<Unit>:
-    dump("f1", r1)
-    dump("n2", r2)
+    dump("q1", r1)
+    dump("q2", r2)
+    dump("q3", r3)
+    dump("q4", r4)
+    dump("q5", r5)
+    dump("q7", r7)

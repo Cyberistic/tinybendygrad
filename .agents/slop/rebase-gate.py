@@ -158,7 +158,7 @@ gate-reconcile.py's control, could leave one port's native lane holding another 
                                                  the two deliberately-dead lanes on the real
                                                  tree, plus the plan contract in BOTH shapes
 """
-import argparse, json, os, pathlib, subprocess, sys, time
+import argparse, hashlib, json, os, pathlib, re, subprocess, sys, time
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 import oracle_py
@@ -202,6 +202,143 @@ AGREE_UNRECORDED = "AGREE-UNRECORDED"
 
 def sh(*a, timeout=1800):
   return subprocess.run(a, cwd=REPO, capture_output=True, text=True, timeout=timeout)
+
+
+# ===========================================================================
+# LANE PROVENANCE: WHICH REVISION OF WHICH FILE DID THIS LANE COMPILE?
+# ===========================================================================
+#
+# WHY IT IS HERE.  On 2026-10-04 four lanes died together -- `schedule/prepare.bend`,
+# `tensor.bend`, `uop/render.bend`, `viz/serve.bend` -- with the IDENTICAL
+# `expected : Arg / observed : Const`, and the def named in the message
+# (`t_const_bool_int_splits`) was in no file on the tree. All four re-run alone at rc=0 with rows
+# (321, 33, 129, 177). REPRODUCED end to end by .agents/slop/phantom-run.py: bend checks an
+# IMPORTED module, so a lane's verdict is a statement about its whole import CLOSURE, and bend's
+# error names a DEF and its SOURCE LINE with NO FILE in it. The reader greps the file the sweep
+# named, finds nothing, and concludes the lane is broken.
+#
+# TWO THINGS WERE MISSING AND ONLY ONE OF THEM IS OBVIOUS.
+#
+#   * WHICH FILE. A lane-death is attributed to the .bend the sweep named. When the defect is in
+#     the substrate, that attribution is simply wrong, and it is wrong in a way that reads as
+#     evidence. `error_site()` below resolves every def bend names against the lane's own import
+#     closure and prints the file and the line it was found on.
+#
+#   * WHICH REVISION. Resolving the file is not enough: the reader then has to ask whether THAT
+#     file was the same bytes when the lane ran. `run_port()` therefore takes a manifest BEFORE
+#     the lanes and another AFTER, and `drift()` reports the files that differ. A single digest
+#     cannot answer it -- a digest says what the bytes are, never when they were read -- and a
+#     digest taken after the run describes a tree the lane never saw.
+#
+# WHAT IT DELIBERATELY DOES NOT DO. It does not guess. If a def bend names is in NO file of the
+# closure, that is printed as a finding with its denominator (`resolved 0 of N named defs
+# found in 13 closure files`) rather than as a clean bill of health: the digest-guard that hashed
+# the empty string at every level is the shape this is written to avoid, so `substrate_line()`
+# refuses to print a count without the denominator beside it, and `import_closure` raises rather
+# than returning [] when it cannot read a file it was told to read.
+IMPORT_LINE = re.compile(r"^import\s+(\S+?\.bend)(?:\s+as\s+\S+)?", re.M)
+# `Location:` is the header bend puts above the quoted source. Two renderings are in this tree's
+# record -- `Location: t_const_bool_int_splits` (a def NAME) and `Location:\n7001 | def ...` (a
+# LINE) -- so both shapes are read and the DEF NAME is taken from the quoted `def` line, which is
+# the one thing both have.
+DEF_HEAD = re.compile(r"\bdef\s+([A-Za-z_][A-Za-z0-9_.]*)")
+
+
+def import_closure(bend):
+  """Every .bend `bend` imports, transitively, INCLUDING itself. Sorted, de-duplicated.
+
+  Raised on, never swallowed: a closure that quietly omits a file it could not resolve reports a
+  lane's substrate as smaller than it is, and every count derived from it becomes a smaller
+  denominator -- which is the same species as a disagreement count with no denominator, wearing a
+  smaller number."""
+  bend = pathlib.Path(bend).resolve()
+  seen, stack = set(), [bend]
+  while stack:
+    cur = stack.pop()
+    if cur in seen:
+      continue
+    if not cur.exists():
+      raise SubstrateUnreadable(f"{port_key(cur)} is in {port_key(bend)}'s import closure and is "
+                                "not on disk; the substrate cannot be described")
+    seen.add(cur)
+    for ref in IMPORT_LINE.findall(cur.read_text()):
+      stack.append((cur.parent / ref).resolve())
+  return sorted(seen)
+
+
+class SubstrateUnreadable(RuntimeError):
+  """A file the lane compiled through is gone or unreadable. Named, because the alternative is a
+  provenance line that describes a tree smaller than the one the lane read."""
+
+
+def substrate_manifest(bend):
+  """[(repo-relative path, sha256[:12], bytes)] for the lane's whole import closure, read NOW."""
+  out = []
+  for p in import_closure(bend):
+    raw = p.read_bytes()
+    out.append((port_key(p), hashlib.sha256(raw).hexdigest()[:12], len(raw)))
+  return out
+
+
+def drift(before, after):
+  """The closure files whose bytes differ between two manifests. `added` and `gone` are separate
+  lists rather than one, because "the file appeared" and "the file changed" are different claims
+  and an importer list that grew mid-lane is the exact shape of the event this file exists for."""
+  b, a = {k: (h, n) for k, h, n in before}, {k: (h, n) for k, h, n in after}
+  moved = sorted(k for k in b.keys() & a.keys() if b[k] != a[k])
+  return {"moved": moved, "added": sorted(a.keys() - b.keys()),
+          "gone": sorted(b.keys() - a.keys())}
+
+
+def error_site(err, closure):
+  """[(def name, file, line)] for every def a bend error NAMES, resolved against `closure`.
+
+  Resolved by SEARCHING the closure for the def header, not by trusting any file path in the
+  message: measured, bend prints no file, and the one rendering that prints a line number prints
+  the line number IN THE IMPORTED FILE, which the reader has no way to place. An unresolved name
+  is returned as a hit with file None, and the caller prints the denominator -- a name bend
+  invented, or a file that has since changed, is a finding and not a silent success."""
+  hits, found = [], {}
+  for p in closure:
+    try:
+      lines = pathlib.Path(p).read_text().splitlines()
+    except OSError:
+      continue
+    for i, ln in enumerate(lines, 1):
+      m = DEF_HEAD.search(ln)
+      if m:
+        found.setdefault(m.group(1), (p, i))
+  for name in DEF_HEAD.findall(err or ""):
+    if name in found:
+      hits.append((name, port_key(found[name][0]), found[name][1]))
+    else:
+      hits.append((name, None, None))
+  return hits
+
+
+def revision_id():
+  """The working-copy commit id, or an explicit refusal. Part of the provenance because a reader
+  asking "which revision" wants an id they can paste, and a digest they cannot."""
+  r = sh("jj", "log", "-r", "@", "--no-graph", "-T", "commit_id.short() ++ ' ' ++ description.first_line()")
+  out = " ".join(r.stdout.split())
+  return out if r.returncode == 0 and out else f"UNAVAILABLE (jj rc={r.returncode})"
+
+
+def substrate_line(bend, manifest, moved=None):
+  """The provenance block, in one place, with its denominator. NEVER prints a bare count."""
+  n = len(manifest)
+  head = f"    compiled {n} .bend file(s) in the import closure; working copy {revision_id()}"
+  if not n:
+    return f"    NO SUBSTRATE: the closure of {bend} is empty, so no revision can be named"
+  body = "\n".join(f"      {h}  {sz:>8}B  {p}" for p, h, sz in manifest)
+  tail = ""
+  if moved:
+    tail = (f"    ⚠ {len(moved['moved'])} of {n} closure file(s) CHANGED WHILE THIS LANE RAN: "
+            f"{', '.join(moved['moved'])}"
+            + (f"; APPEARED: {', '.join(moved['added'])}" if moved["added"] else "")
+            + (f"; VANISHED: {', '.join(moved['gone'])}" if moved["gone"] else "")
+            + ". The lane did not compile one revision and the tree is not that revision")
+  return f"{head}\n{body}\n{tail}"
 
 
 # THE THREE ROW SHAPES the oracles in this tree ACTUALLY print. Two of the three were unreadable
@@ -537,8 +674,22 @@ def run_port(bend, oracle, native=True):
   `oracle` entries are `path` or `path arg` -- several real oracles take a section name
   (renderer_oracle.py `init` vs `cstyle`), and running one bare gives it no argv[1] and a
   traceback that reads like a broken port rather than a missing argument.
+
+  ⚠ THE SUBSTRATE IS MEASURED TWICE, ONCE BEFORE AND ONCE AFTER, and the two are compared. That
+  is the whole difference between a provenance claim and a receipt: a digest read AFTER the lanes
+  describes bytes the lane may never have seen, and a digest read BEFORE describes bytes the tree
+  may have stopped being while the lane ran. `BAND-19` records what the absence of this cost --
+  three separate measurements on one afternoon (`dtype.bend` disagreeing on 9 rows where an hour
+  earlier the same lane disagreed on 1; `uop/spec.bend` 7 against a selftest's 0 of 11; the four
+  lane deaths) and all three were measurements of a tree that did not hold still, with nothing in
+  any of them able to say so. A single mtime or a single digest would not have caught any of
+  them either, because the question is not "is the tree current" but "was it the same tree".
   """
   lanes, r = {}, {}
+  # Taken BEFORE the first lane, and a failure to read it is LOUD rather than absent: a verdict
+  # with no provenance is the shape that let four victims of one edit read as four defects.
+  before = substrate_manifest(bend)
+  closure = import_closure(bend)
   chk = sh("./bin/bend", str(bend), "--check-only")
   first = (chk.stdout.strip().splitlines() or [""])[0]
   lanes["check"] = {"rc": chk.returncode, "first": first}
@@ -582,6 +733,14 @@ def run_port(bend, oracle, native=True):
                        env=e, timeout=1800)
     lanes[key] = {"rc": c.returncode, "err": c.stderr[-600:]}
     r[key] = rows(c.stdout)
+  # AFTER every lane, and compared. `substrate` is a LANE ENTRY, not a verdict field, so it
+  # reaches the reader on every exit path out of verdict() including the ones that return before
+  # any guard fires -- which is where a lane-death returns.
+  after = substrate_manifest(bend)
+  moved = drift(before, after)
+  lanes["substrate"] = {"rc": 0, "manifest": before, "drift": moved,
+                        "sites": {k: error_site(l.get("err", ""), closure)
+                                  for k, l in lanes.items() if k != "check" and l["rc"] != 0}}
   return lanes, r
 
 
@@ -948,10 +1107,36 @@ def classify(v):
     detail = "; ".join(f"{k} rc={lanes[k]['rc']}: {' '.join(lanes[k].get('err', '').split())[:90]}"
                        for k in died)
     zero = [k for k in died if not rows_.get(k)]
+    # ⚠ WHERE THE ERROR LIVES, resolved against the lane's own import closure.  A lane-death
+    # whose def bend names is in an IMPORTED file is a statement about that file, not about the
+    # port the sweep named -- and the recorded event this file exists for was four ports named
+    # BROKEN with an error whose location was in none of them.  When the named def is found in a
+    # file OTHER than the port, that file is named here, which is the whole deliverable: the
+    # claim "four lanes died" becomes "four lanes died in `uop/ops.bend:NNNN`".
+    sites = v.get("error_sites") or {}
+    resolved = [(n, w) for k in died for (n, w, _ln) in sites.get(k, []) if w]
+    unresolved = [n for k in died for (n, w, _ln) in sites.get(k, []) if not w]
+    elsewhere = sorted({w for n, w in resolved if w != v.get("port")})
+    closure_n = len(v.get("substrate") or [])
+    where = ""
+    if resolved:
+      where = (f". Resolved {len(resolved)} of {sum(len(sites.get(k, [])) for k in died)} named "
+               f"def(s) against {closure_n} file(s) in the import closure"
+               + (f"; THE DEF IS IN {', '.join(elsewhere)}, NOT IN THE PORT -- this is a "
+                  f"SUBSTRATE death and the port is a victim of it" if elsewhere else "")
+               + (f". UNRESOLVED: {', '.join(sorted(set(unresolved)))} is not on the tree, so the "
+                  f"message refers to a revision of the tree that no longer exists" if unresolved
+                  else ""))
+    drift_ = v.get("substrate_drift") or {}
+    if drift_.get("moved") or drift_.get("added") or drift_.get("gone"):
+      where += (f". {len(drift_.get('moved', [])) + len(drift_.get('added', [])) + len(drift_.get('gone', []))}"
+                f" of {closure_n} closure file(s) CHANGED WHILE THIS LANE RAN "
+                f"({', '.join(drift_.get('moved', []) + drift_.get('added', []) + drift_.get('gone', []))})"
+                f" -- the lane and the tree are not the same revision")
     return (CAUSE_LANE_DEATH, CLASS_OF[CAUSE_LANE_DEATH],
             f"{len(died)} of {len(lanes) - 1} runnable lane(s) did not run: {detail}"
             + ("  (and the dead lane emitted zero rows too, so which finding fired is the ORDER, "
-               "not the port)" if zero else ""))
+               "not the port)" if zero else "") + where)
   empty = sorted(k for k, x in rows_.items() if not x)
   if empty:
     tries = v.get("state_tries") or {k: lanes.get(k, {}).get("row_tries", 1) for k in empty}
@@ -1351,6 +1536,18 @@ def main():
           for kind in ("added", "removed", "changed"):
             if d.get(kind):
               print(f"                   {kind}: {', '.join(map(str, d[kind]))}")
+      # ⚠ LANE PROVENANCE, ON EVERY VERDICT THAT IS NOT `UNCHANGED`.  This is the block that
+      # makes "four lanes, one in-flight edit" distinguishable from "four independent defects":
+      # the first names ONE file for all four, the second names four files.  It is printed on
+      # green runs too, on purpose -- a reader who has seen the bytes while they were green has
+      # something to compare the red bytes against, and a provenance block that appears only on
+      # failure is a block nobody has a baseline for.
+      print(substrate_line(v["port"], v.get("substrate", []), v.get("substrate_drift")))
+      for lane, sites in (v.get("error_sites") or {}).items():
+        for name, where, line in sites:
+          print(f"               SITE `{lane}`: bend named def `{name}` -> "
+                + (f"{where}:{line}" if where else
+                   "NOT FOUND in this lane's import closure -- the def is not on the tree"))
     # THE TALLY, WITH ITS CAUSES BESIDE IT. `TALLY BROKEN 6` on its own is the sentence this unit
     # was sent to make illegible: a reader counts six defects, and the six are not six of anything.
     # The parenthetical is the whole deliverable -- BROKEN=6 (DISAGREE=1 ZERO-ROWS=2 ...) says

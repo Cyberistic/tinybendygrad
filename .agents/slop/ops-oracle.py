@@ -943,6 +943,13 @@ BEND_ONLY = [
          "and `sh .agents/slop/ops-var-gate.sh`, with the mutation table at "
          "`.agents/slop/ops-var-mutate.py`. A four-row unit does not belong in a "
          "103-row gate whose row ORDER is the contract for a different unit."),
+  ("rra", "as vr: the ops.py:1899 `resolve_returned_after` unit, nine rows over one "
+          "arena, with a seven-mutation table in which every mutation moves EXACTLY "
+          "the rows it names. Its own lane and gate -- "
+          "`.agents/slop/ops-rra-oracle.py`, `sh .agents/slop/ops-rra-gate.sh`, "
+          "`.agents/slop/ops-rra-mutate.py`. FOUR families now follow this shape "
+          "(s5, sg, vr, rra): a unit gets its own script when its FIXTURES are its "
+          "own, and this gate keeps answering the question it was written for."),
   # --- THE KEY-FIDELITY WALLS, `(op, src, arg, tag, type(arg))` at ops.py:201. All
   # --- four are UNDER-splits: the port's record is missing a field upstream's frozen
   # --- dataclass `__eq__` compares, so two nodes CPython keeps apart become one. They

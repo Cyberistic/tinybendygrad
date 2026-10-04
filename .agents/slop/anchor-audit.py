@@ -55,7 +55,7 @@ def main():
                          "no existing source file named; nothing to measure against"))
             continue
         texts = [open(p, errors="replace").read() for _, p in tgts]
-        anc = MA.anchors(tree, texts)
+        anc = MA.anchors(tree, texts, base)
         if anc is None:
             rows.append((base, "UNDECLARED", ",".join(os.path.basename(p) for _, p in tgts[:2]),
                          ",".join(zone), 0, 0,

@@ -630,12 +630,12 @@ and prints an honest gap beats a fixpoint that lies.
 `probe-mmcore.bend`, and — since the rewrite engine landed — the gate on
 `codegen/__init__.bend`, which is its own 0). All 12 are `ALL PROOFS CHECK`.
 
-265 markers remain, and they are **not** 265 tasks. `.agents/slop/marker-audit.py`
+264 markers remain, and they are **not** 265 tasks. `.agents/slop/marker-audit.py`
 splits them three ways, and only the third is work:
 
 | file | wall | shared | **backlog** |
 | --- | --- | --- | --- |
-| `uop/ops.bend` | 13 | 57 | 69 |
+| `uop/ops.bend` | 14 | 59 | 61 |
 | `uop/fold.bend` | 41 | 0 | 0 |
 | `uop/symbolic.bend` | 15 | 0 | 0 |
 | `uop/weak.bend` | 14 | 0 | 0 |
@@ -645,7 +645,7 @@ splits them three ways, and only the third is work:
 | `uop/upat.bend` | 3 | 0 | 0 |
 | `uop/movement.bend` | 1 | 0 | 0 |
 | `uop/validate.bend` | 0 | 0 | 2 |
-| **total** | **110** | **57** | **76** |
+| **total** | **110** | **59** | **65** |
 
 - **wall** — the reason is in the marker's own entry. Closed in the only honest
   sense available: it compiles, it prints the gap, nobody mistakes it for flight.

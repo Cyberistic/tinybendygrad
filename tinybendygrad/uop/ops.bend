@@ -4775,7 +4775,15 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1894  def to_max_shape
 
-# TODO(p3) ops.py:1899  def resolve_returned_after
+# PORTED -- `ops.py:1899 resolve_returned_after` is `resolve_returned_after`
+# (ops.bend), 9 `rra_*` rows byte-identical to CPython on all three lanes via
+# `sh .agents/slop/ops-rra-gate.sh`, with 7 mutations in
+# `.agents/slop/ops-rra-mutate.py` each moving EXACTLY the rows it names.
+#
+# ITS ONE CALLER IS STILL A MARKER: `schedule/prepare.py:186` is the only call
+# site, and that rewrite rule is P3. `ops.bend:764` names the situation this
+# creates -- "This `U32` ladder has NO CALLER in the port. The fix is a caller,
+# not a deletion." The def is landed and gated; the rule that uses it is not.
 
 # DELETED -- `contiguous_bitcast_index` does not exist at this pin. `rg` finds
 # zero hits in `tinygrad/`; `ops.py:1907` is `pm_drop_after`. The marker named a
@@ -7243,8 +7251,210 @@ def vr.expr.rows(+ar: Arena) -> IO(Unit):
 #   Recurses over ADD/MUL srcs and calls `divides`, `const_like` and `__floordiv__`.
 
 
+# ==== ops.py:1899  `resolve_returned_after` ===============================
+#
+# `"""Extract a call output's matching store, preserving writes to the enclosing
+# scope's output PARAMs."""` -- `[st for st in t.src if st.op is Ops.STORE and
+# st.src[0].unsharded_base is r.unsharded_base]`, then `if len(stores) != 1: return
+# None`, then one of two mints.
+#
+# `r.unsharded_base` IS COMPUTED ONCE AND PASSED, not read twice. CPython evaluates
+# the peel again in the final `r.unsharded_base.op is Ops.PARAM`; `unsharded_base`
+# is a PURE peel (`UOp.base` plus UNSHARD, and neither mints), so the two walks
+# answer the same index and computing it once is the same answer for one less walk.
+# A gate row cannot see the difference, and the reason is written here so nobody
+# "simplifies" it back into two reads.
+#
+# THE ANSWER'S ARENA IS NOT THE CALLER'S IN ONE ARM. `r.after(stores[0])` MINTS and
+# grows the arena; `stores[0].src[1]` is an index that already existed. So the
+# answer is a `Found` and not a bare `U32` -- the same reason `UOp.index.pick`
+# returns a `Found`, and the same stale-arena bug if it does not: a caller reading
+# the index out of ITS OWN arena gets the bottom, which is a NOOP. The `rra_arena`
+# row reads the op from the RETURNED arena on purpose.
+def rra.hit(fuel: Nat, +ar: Arena, rb: U32, +st: U32) -> Bool:
+  Bool.and(eq_op(Arena.op(ar, st), OpsSTORE{}),
+    U32.is_eq(UOp.unsharded_base(fuel, ar, Arena.src(ar, st, 0)), rb))
+
+# THE FILTER, and it is ONE def rather than three. The first draft split it into
+# `filter.go` / `at` / `put` so each `match` would scrutinise a binder -- and that is
+# MUTUALLY recursive, which Bend refuses: `go` calls `at` and `at` calls `go`, and
+# `bend-toposort.py` reported the cycle and declined to write, correctly.
+#
+# `Bool.pick` is the way out, and it is why the file's own folds are single defs: it
+# is the only conditional that does not need a `match`, so the accumulator is an
+# ordinary expression and the def can recurse into ITSELF. The `List.append` is built
+# even when the test is False, which is the same eager-argument waste `UOp.after.go`
+# and `UOp.getaddr.go` already pay and is free here: a discarded list is not a
+# discarded NODE.
+def rra.filter.go(+fuel: Nat, +ar: Arena, +xs: List<&2, U32>, +acc: List<&2, U32>, +rb: U32) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t:
+      rra.filter.go(fuel, ar, t, Bool.pick(List<&2, U32>, rra.hit(fuel, ar, rb, h),
+        List.append(&2, U32, acc, [h]), acc), rb)
+
+def rra.one.tail(s: U32, rest: List<&2, U32>) -> Maybe<&2, U32>:
+  match rest:
+    case _ <> _ <> _: None{}
+    case _: Some{s}
+
+# THE PICK. `!= 1` is a REFUSAL, so this is a `Maybe`, and the refusal is the whole
+# of what `rra_none_*` rows gate. Two of the three fixtures that reach `None` reach
+# it through DIFFERENT conjuncts, which is the point of having three rows and not one.
+# THE COUNT, and it is `len(stores) != 1` over the LIST rather than a length compare,
+# so `rra_none_two` and `rra_none_empty` are the SAME code path and not two arms that
+# happen to agree. ONE match per def: a def with two `match`es reads the second as a
+# consumed binder, which Bend rejects with a message about binders and not about
+# matches.
+def rra.one(+stores: List<&2, U32>) -> Maybe<&2, U32>:
+  match stores:
+    case Nil{}: None{}
+    case s <> _: rra.one.tail(s, stores)
+
+# The PARAM arm MINTS and the other arm does not, so the two answers have different
+# arenas and the pick must carry the `Found` rather than an index. The discarded
+# `UOp.after` in the `False{}` arm grows the arena and is unreachable, which is the
+# same waste `UOp.after.go` and `UOp.getaddr.go` already pay: Bend evaluates an
+# argument before the callee branches, and the waste is only free when the two
+# candidates are the same node -- here they are NOT, which is exactly why the pick
+# carries a `Found` rather than an index.
+def rra.pick(isparam: Bool, +ar: Arena, r: U32, st: U32) -> Found:
+  match isparam:
+    case True{}: UOp.after(ar, r, [st])
+    case False{}: Found{ar, Arena.src(ar, st, 1)}
+
+# The `Maybe` from `rra.one` is a COMPUTED value, so the `match` that opens it lives
+# in a def that RECEIVES it. `done` does not call back, so this is one-directional
+# and not a second instance of the mutual-recursion wall above.
+def rra.done(+ar: Arena, r: U32, rb: U32, hit: Maybe<&2, U32>) -> Maybe<&2, Found>:
+  match hit:
+    case None{}: None{}
+    case Some{st}: Some{rra.pick(eq_op(Arena.op(ar, rb), OpsPARAM{}), ar, r, st)}
+
+def resolve_returned_after(+fuel: Nat, +ar: Arena, +r: U32, t: U32) -> Maybe<&2, Found>:
+  +rb = UOp.unsharded_base(fuel, ar, r)
+  +stores = rra.filter.go(fuel, ar, Arena.srcs(ar, t), Nil{}, rb)
+  rra.done(ar, r, rb, rra.one(stores))
+
+# ==== the `rra_*` fixture and rows =========================================
+#
+# ONE ARENA, and the ordering is LOAD-BEARING rather than cosmetic. CPython's test
+# is `st.src[0].unsharded_base is r.unsharded_base`, so a store only matches when its
+# TARGET peels to `r` -- which means every target must appear BEFORE the store that
+# writes it. The first draft put the AFTERs after the stores and every row answered
+# `none`: the filter was correct and the FIXTURE was wrong, which is the failure
+# mode this file's own rule warns about ("a fixture that does not reach the branch").
+#
+#   idx  node            why it is here
+#     1  CONST 7         the stored value
+#     2  CONST 9         a second value
+#     3  BUFFER          a target
+#     4  AFTER [3]       r_val. AFTER is NOT a movement op, so base(4) = 4
+#     5  PARAM           r_param. PARAM is not a movement op either: base(5) = 5,
+#                        and op(5) is PARAM, which is the `after` arm
+#     6  STORE [4,1]     the one matching store for r_val
+#     7  SINK [6]        t for rra_val
+#     8  STORE [4,2]     a SECOND store to the same r
+#     9  SINK [6,8]      two matches -> the `!= 1` refusal
+#    10  SINK [1]        no STORE src -> also a refusal, via a different conjunct
+#    11  SINK []         no srcs at all -> the filter's Nil arm
+#    12  SINK [6,1]      one match plus a non-store src
+#    13  STORE [5,1]     the store into the PARAM
+#    14  SINK [13]       t for rra_param
+#    15  UNSHARD [3]     r_unshard. UNSHARD is the ONE op where base and
+#                        unsharded_base differ: `base.peel` is movement, and UNSHARD
+#                        is not, so base(15) = 15 while unsharded_base(15) = 3
+#    16  STORE [3,1]     its target peels to 3, which is r_unshard's base
+#    17  SINK [16]       t for rra_unshard
+#    18  RESHAPE [3]     NOT a STORE, and its base IS r_unshard's base: RESHAPE is in
+#                        `GroupOp.movement`, so unsharded_base(18) = 3 = rb
+#    19  SINK [16,18]    the store AND that reshape. The ONLY sink where the op test
+#                        and the base test disagree, so it is the only row that can
+#                        see the op test at all.
+#
+#                        BOTH of these were FOUND BY THE MUTATION TABLE, not by
+#                        reading the code, and the two attempts are the reason the
+#                        comment is here. `rra_none_zero` does not carry the conjunct:
+#                        its only src is a CONST, whose base is not r either. A sink of
+#                        [the store, the BUFFER] does not either -- the BUFFER has no
+#                        srcs, so `Arena.src` answers the bottom and the base test
+#                        rejects it. Two fixtures, two rounds, both measuring zero
+#                        moved rows. A conjunct needs a fixture where it is the ONLY
+#                        failing test, and that is not the same as a fixture where it
+#                        happens to be one of two.
+def rra.pa(slot: U32) -> ParamArg: ParamArg.of(slot, S.int32())
+
+def rra.arena() -> Arena:
+  Arena{[
+    Arena.bottom(),
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(7)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(9)}}, TNone{}},
+    Node{OpsBUFFER{}, Nil{}, AParam{rra.pa(1)}, TNone{}},
+    Node{OpsAFTER{}, [3], ANone{}, TNone{}},
+    Node{OpsPARAM{}, Nil{}, AParam{rra.pa(2)}, TNone{}},
+    Node{OpsSTORE{}, [4, 1], ANone{}, TNone{}},
+    Node{OpsSINK{}, [6], ANone{}, TNone{}},
+    Node{OpsSTORE{}, [4, 2], ANone{}, TNone{}},
+    Node{OpsSINK{}, [6, 8], ANone{}, TNone{}},
+    Node{OpsSINK{}, [1], ANone{}, TNone{}},
+    Node{OpsSINK{}, Nil{}, ANone{}, TNone{}},
+    Node{OpsSINK{}, [6, 1], ANone{}, TNone{}},
+    Node{OpsSTORE{}, [5, 1], ANone{}, TNone{}},
+    Node{OpsSINK{}, [13], ANone{}, TNone{}},
+    Node{OpsUNSHARD{}, [3], ATuple{[0]}, TNone{}},
+    Node{OpsSTORE{}, [3, 1], ANone{}, TNone{}},
+    Node{OpsSINK{}, [16], ANone{}, TNone{}},
+    Node{OpsRESHAPE{}, [3], ANone{}, TNone{}},
+    Node{OpsSINK{}, [16, 18], ANone{}, TNone{}}], [0]}
+
+# The printer, and it reads the op out of the FOUND'S OWN ARENA. That is not
+# tidiness: the `rra_param` answer is a freshly minted AFTER, and a reader using the
+# fixture's arena would get the BOTTOM, which is a NOOP -- the stale-arena bug, and
+# it PRINTS as `Ops.NOOP`.
+def rra.show(m: Maybe<&2, Found>) -> String:
+  match m:
+    case Some{+f}: String.concat(["some:", Ops.name(Arena.op(Found.ar(f), Found.i(f)))])
+    case None{}: "none"
+
+def rra.row(nm: String, +ar: Arena, r: U32, t: U32) -> IO(Unit):
+  srow(nm, rra.show(resolve_returned_after(Arena.budget(ar), ar, r, t)))
+
+# THE COUNT row, and it reads the RETURNED arena. `rra_param` is the one answer that
+# MINTS, so this pins that single node: a def that stopped building the AFTER would
+# answer all seven other rows identically and this row would drop.
+# THE DELTA, and the first draft printed the arena SIZE and called it a count. The
+# oracle prints how many nodes were minted, which is 1 for the PARAM arm; the port
+# printed `Arena.next` of the returned arena, which is 19, and the two lanes were
+# measuring DIFFERENT THINGS and disagreeing. Same gate, two quantities, and only
+# one of them says anything: a def that minted nothing would still answer 19 if the
+# arena happened to be that size.
+def rra.next(base: U32, hit: Maybe<&2, Found>) -> String:
+  match hit:
+    case Some{+f}: U32.show(U32.sub(Arena.next(Found.ar(f)), base))
+    case None{}: "none"
+
+def rra.count(+ar: Arena, r: U32, t: U32) -> String:
+  rra.next(Arena.next(ar), resolve_returned_after(Arena.budget(ar), ar, r, t))
+
+# rra_val and rra_param are a PAIR and neither is worth having alone. Both have
+# exactly one matching store; they differ only in whether `r.unsharded_base.op` is
+# PARAM, and a def with that conjunct dropped answers `rra_param` with the CONST and
+# passes every other row in the family.
+def rra.rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- rra.row("rra_val", ar, 4, 7)
+    b : Unit <- rra.row("rra_param", ar, 5, 14)
+    c : Unit <- rra.row("rra_unshard", ar, 15, 17)
+    d : Unit <- rra.row("rra_none_zero", ar, 4, 10)
+    e : Unit <- rra.row("rra_none_two", ar, 4, 9)
+    f : Unit <- rra.row("rra_none_empty", ar, 4, 11)
+    g : Unit <- rra.row("rra_mixed", ar, 4, 12)
+    h : Unit <- rra.row("rra_samebase", ar, 15, 19)
+    srow("rra_arena", rra.count(ar, 5, 14))
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    w0 : Unit <- rra.rows(rra.arena())
     v0 : Unit <- vr.expr.rows(vr.arena())
     a0 : Unit <- sg.rows()
     z : Unit <- s5.rows()

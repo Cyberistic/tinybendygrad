@@ -13,6 +13,7 @@ proves the point the hard way, by asserting a digest.
 """
 import ast
 import os
+import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -23,6 +24,34 @@ SCRATCH_ROOT = "/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencod
 TARGET_NAMES = ("SRC", "TARGET", "BEND", "F", "PORT", "FILE", "SOURCE")
 WRITE_RECV = ("write_text", "write_bytes")     # X.write_text(...) writes to X
 WRITE_LAST = ("copy", "copyfile", "copy2", "copymode", "replace", "rename")
+# `os.remove`/`os.unlink`/`os.rename`/`shutil.move`/`shutil.rmtree` DESTROY a file
+# under the repo exactly as surely as a write does, and the only one of them that
+# destroys it irrecoverably.  A zone that counts writes but not DELETIONS reports
+# a harness that unlinks the live tree as safe.
+WRITE_DESTROY = ("remove", "unlink", "rmdir", "removedirs", "truncate", "rmtree")
+# `os.rename`/`os.replace`/`shutil.move` name their DESTINATION LAST, and reading
+# their first argument instead reports the SOURCE.  Measured: `shutil.move(A, SRC)`
+# was classified from `A`, i.e. `/tmp/x`, and printed ELSEWHERE while it moved a
+# scratch file ONTO the live tree.
+WRITE_MOVE = ("move", "renames", "replace", "rename")
+DESTROY_MODULE = ("os", "shutil", "nt", "posix")
+# `open(P, 'w')` and its relatives.  The NAME is open for all of them: `io.open`,
+# `codecs.open`, `gzip.open`, `bz2.open`, `lzma.open`, `tarfile.open`, `shelve.open`
+# and `tempfile.NamedTemporaryFile` all return a writable handle over P.  Matching
+# the name rather than the binding is deliberate -- a reader that resolved the
+# module would have to know every one of those import styles, and missing one is
+# the failure this table exists to remove.
+OPENERS = ("open", "NamedTemporaryFile", "TemporaryFile", "SpooledTemporaryFile")
+# `open(P, 'w').write(s)` -- THE SPELLING THAT WAS MISSED, measured on four live
+# harnesses.  The destination is not a name at all: it is the opener CALL, so
+# `_path` on `f.value` has no node to resolve and the write vanished.  Every one of
+# the four read as safer than it was for exactly this reason.
+HANDLE_METHODS = ("write", "writelines", "truncate", "flush", "close")
+# Modes that can put bytes in the file.  `open(P)` and `open(P, 'rb')` are READS
+# and are deliberately absent: reporting a read as a write would make every
+# read-only harness look IN-PLAY, which is the same failure in the other
+# direction.
+WRITE_MODES = ("w", "a", "x", "+")
 
 
 def parse(path):
@@ -108,8 +137,69 @@ def _abspath(node, env, self_name):
     return None
 
 
+def _opened(call, env, self_name):
+    """The path an `open(...)`-shaped call WRITES, or None.
+
+    Two independent filters, both required, and the second one is the one that
+    makes the detector usable: a mode.  `open(p).read()` is the most common call in
+    these harnesses by a wide margin, and counting it would make a reader that
+    writes nothing look like one that writes the live tree.
+
+    `call.func` may be a Name (`open`) or an Attribute (`io.open`, `gzip.open`),
+    because the module is the part a reader cannot afford to enumerate.
+    """
+    if not isinstance(call, ast.Call):
+        return None
+    f = call.func
+    named = f.id if isinstance(f, ast.Name) else (f.attr if isinstance(f, ast.Attribute) else None)
+    if named not in OPENERS or not call.args:
+        return None
+    mode = "r"
+    if len(call.args) > 1 and isinstance(call.args[1], ast.Constant) \
+       and isinstance(call.args[1].value, str):
+        mode = call.args[1].value
+    for kw in call.keywords:
+        if kw.arg == "mode" and isinstance(kw.value, ast.Constant) \
+           and isinstance(kw.value.value, str):
+            mode = kw.value.value
+    if not any(c in mode for c in WRITE_MODES):
+        return None
+    return _path(call.args[0], env, self_name)
+
+
+def handles(tree, self_name=None, env=None):
+    """`{handle name: path}` for names bound to a WRITABLE file, and only those.
+
+    Separate from `_bounds` on purpose.  `env` holds path CONSTANTS, so resolving a
+    bare `f.write(s)` against it would report any name that happens to be a path,
+    and a false IN-PLAY is the mirror image of a false SCRATCH: both teach a reader
+    to stop believing the column.
+    """
+    env = _bounds(tree, self_name) if env is None else env
+    out = {}
+    for _ in range(4):
+        grown = dict(out)
+        for n in ast.walk(tree):
+            if isinstance(n, ast.Assign) and len(n.targets) == 1 \
+               and isinstance(n.targets[0], ast.Name):
+                p = _opened(n.value, env, self_name)
+                if p:
+                    grown.setdefault(n.targets[0].id, p)
+            elif isinstance(n, (ast.With, ast.AsyncWith)):
+                for item in n.items:
+                    if isinstance(item.optional_vars, ast.Name):
+                        p = _opened(item.context_expr, env, self_name)
+                        if p:
+                            grown.setdefault(item.optional_vars.id, p)
+        if grown == out:
+            return out
+        out = grown
+    return out
+
+
 def _bounds(tree, self_name=None):
-    """`{name: path}` for every path-ish module constant, to a fixpoint.
+    """`{name: path}` for every path-ish module constant AND every writable handle,
+    to a fixpoint.
 
     The fixpoint is load-bearing and short: `ROOT = dirname(dirname(__file__))`
     must resolve before `WORK = os.path.join(ROOT, "...")` can, and `WORK` must
@@ -117,6 +207,10 @@ def _bounds(tree, self_name=None):
     three, and a reader that stops at the first pass declares
     `ops-python-mutate.py`'s target UNDECLARED -- which is what the earlier
     sweep did, silently disabling its own ANCHOR-GONE check for that harness.
+
+    The fixpoint is also what lets a HANDLE ALIAS resolve in either direction:
+    `f = open(SRC, 'w')` on one line and `f.write(src)` on the next is invisible to
+    a single pass, because the reader resolves against the PREVIOUS pass's `env`.
     """
     env = {}
     for _ in range(8):
@@ -191,24 +285,71 @@ def target_text(tree, self_name=None, names=TARGET_NAMES):
     return t[0][1] if t else None
 
 
-def writes(tree, self_name=None):
-    """`(zone, destination)` for every write this harness performs.
+def write_spellings(tree, self_name=None):
+    """`(zone, destination, spelling)` for every write or destruction.
+
+    The spelling is returned rather than discarded because a detector that
+    cannot say HOW it found a write cannot be argued with: every claim in this
+    list is checkable by reading the call at the cited line.
 
     `str.replace` is filtered for free: its receiver is a string constant, so
     `_path` returns None and it never appears.
     """
     env = _bounds(tree, self_name)
+    hd = handles(tree, self_name, env)
     out = []
     for n in ast.walk(tree):
-        f = n.func if isinstance(n, ast.Call) else None
-        if not (isinstance(f, ast.Attribute) and f.attr in WRITE_RECV + WRITE_LAST):
+        if not isinstance(n, ast.Call):
             continue
-        dest = f.value if f.attr in WRITE_RECV else \
-            (n.args[-1] if n.args else None)
-        p = _path(dest, env, self_name)
-        if p:
-            out.append((zone(p), absolve(p)))
+        f = n.func
+        mod = f.value.id if isinstance(f, ast.Attribute) and isinstance(f.value, ast.Name) else None
+        # 1. X.write_text / X.write_bytes -- the receiver IS the destination.
+        if isinstance(f, ast.Attribute) and f.attr in WRITE_RECV:
+            p = _path(f.value, env, self_name)
+            if p:
+                out.append((zone(p), absolve(p), f.attr))
+        # 2. shutil.copy(BAK, LIVE) -- the LAST argument is the destination.
+        elif isinstance(f, ast.Attribute) and f.attr in WRITE_LAST and n.args:
+            p = _path(n.args[-1], env, self_name)
+            if p:
+                out.append((zone(p), absolve(p), "%s.%s" % (mod or "shutil", f.attr)))
+        # 3. open(P, 'w').write(s) AND f.write(s) where f = open(P, 'w') -- the
+        #    SPELLINGS THAT WERE MISSED.  The receiver is either the opener CALL
+        #    itself or a name bound to one; neither resolves as a path expression.
+        elif isinstance(f, ast.Attribute) and f.attr in HANDLE_METHODS:
+            p = _opened(f.value, env, self_name) or \
+                (hd.get(f.value.id) if isinstance(f.value, ast.Name) else None)
+            if p:
+                out.append((zone(p), absolve(p), "open(...).%s" % f.attr))
+        # 4. os.remove(P) / shutil.rmtree(P) -- a DELETION of the live tree.
+        elif isinstance(f, ast.Attribute) and f.attr in WRITE_DESTROY \
+                and mod in DESTROY_MODULE and n.args:
+            p = _path(n.args[0], env, self_name)
+            if p:
+                out.append((zone(p), absolve(p), "%s.%s" % (mod, f.attr)))
+        # 5. os.rename(A, B) / shutil.move(A, B) -- B is the destination.
+        elif isinstance(f, ast.Attribute) and f.attr in WRITE_MOVE \
+                and mod in DESTROY_MODULE and len(n.args) > 1:
+            p = _path(n.args[-1], env, self_name)
+            if p:
+                out.append((zone(p), absolve(p), "%s.%s" % (mod, f.attr)))
+        # 6. the opener NESTED as an argument -- `json.dump(x, open(P, 'w'))` and
+        #    `print(x, file=open(P, 'w'))`.  Here the file is written by the
+        #    CONSUMER, so no `.write` attribute exists anywhere to hang a branch
+        #    on, and `print`'s callee is a Name rather than an Attribute, so this
+        #    has to sit OUTSIDE the attribute chain.  It is the one remaining
+        #    spelling a single-file reader can close without dataflow.
+        for sub in list(n.args) + [k.value for k in n.keywords]:
+            p = _opened(sub, env, self_name) if isinstance(sub, ast.Call) else None
+            if p:
+                out.append((zone(p), absolve(p), "nested open as %s argument"
+                            % (f.id if isinstance(f, ast.Name) else f.attr)))
     return out
+
+
+def writes(tree, self_name=None):
+    """`(zone, destination)` for every write this harness performs."""
+    return [(z, d) for z, d, _ in write_spellings(tree, self_name)]
 
 
 def anchor_column(rows, texts):
@@ -255,8 +396,55 @@ def anchor_column(rows, texts):
     return winners[0] if best and len(winners) == 1 else None
 
 
-def anchors(tree, texts=()):
-    """`{id: anchor}` from `mutations()`, keyed on the voted column.
+def transform(tree, self_name=None):
+    """The harness's OWN anchor transform, or None.
+
+    `ra-mutate.py` and `ra-mutate2.py` post-process every anchor and every
+    replacement through `q()` before searching, because the 1:1 file split forced an
+    `LT.` qualifier onto cross-file names.  A reader that compares the RAW literal
+    against the file is therefore searching for a string the harness never uses, and
+    reports 20 and 8 anchors STALE that are all present -- measured, and the error is
+    the same shape as the mirror-stale one: the reader held a copy of the substrate
+    that was not the substrate.
+
+    So the transform is EXECUTED, from the harness's own AST, rather than
+    transcribed.  A transcription would be a second copy of the qualification list,
+    which is the thing most likely to drift, and this is the harness's rule about
+    names -- the one place where inheriting a value is worse than deriving it.
+    """
+    names = {}
+    for n in tree.body:
+        if isinstance(n, ast.Assign) and len(n.targets) == 1 \
+           and isinstance(n.targets[0], ast.Name):
+            names[n.targets[0].id] = n
+        elif isinstance(n, ast.FunctionDef) and n.name == "q":
+            names.setdefault("q", n)
+    if "q" not in names:
+        return None
+    qdef = names["q"]
+    # ONLY the globals `q` actually reads are executed.  The alternative -- exec
+    # every module-level assignment -- runs the harness's own I/O, and
+    # `ra-mutate.py` reads a baseline file that does not exist, so the reader died
+    # with a FileNotFoundError raised from inside a file it claimed only to read.
+    free = {n2.id for n2 in ast.walk(qdef) if isinstance(n2, ast.Name)}
+    ns = {"re": re}
+    for key, node in names.items():
+        if key == "q" or key not in free:
+            continue
+        try:
+            exec(compile(ast.Module([node], []), self_name or "?", "exec"), ns)
+        except Exception:
+            return None                 # a transform that cannot be reproduced is
+    try:                             # NOT a transform the reader may invent
+        exec(compile(ast.Module([qdef], []), self_name or "?", "exec"), ns)
+    except Exception:
+        return None
+    return ns.get("q")
+
+
+def anchors(tree, texts=(), self_name=None):
+    """`{id: anchor}` from `mutations()`, keyed on the voted column, WITH the
+    harness's own transform applied.
 
     `texts` is the target file's content; without it no anchor can be voted for
     and every row is UNDECLARED, which is the honest answer rather than a guess
@@ -266,11 +454,14 @@ def anchors(tree, texts=()):
     v = mutations(tree)
     if v is None:
         return None
+    q = transform(tree, self_name)
     col = anchor_column(v, texts) if texts else None
     out = {}
     for e in v:
         if len(e) > 1 and isinstance(e[0], str):
             c = e[col] if col is not None and col < len(e) else None
+            if isinstance(c, str) and q is not None:
+                c = q(c)
             out[e[0]] = c if isinstance(c, str) else None
     return out
 

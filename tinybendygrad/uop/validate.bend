@@ -1380,14 +1380,25 @@ def vz_push(ar: O.Arena, +n: U32, +t: VTopo) -> VTopo:
   match t:
     case VTopo{cache, stack}: VTopo{cache, vz_push_srcs(O.Arena.srcs(ar, n), VFr{n, True{}} <> stack)}
 
-# `if not visited: if gate(node): push (node, True) and the srcs` /
-# `else: cache.append(node)` -- and `if node in cache: continue` is checked
-# FIRST, so an already-visited node is never re-EXPANDED. That membership test
-# is what makes the fuel (`Arena.budget`) sufficient for a DAG.
-def vz_step.keep(seen: Bool, keep: Bool, ar: O.Arena, +n: U32, +rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
-  match seen:
-    case True{}: vz_push(ar, n, VTopo{cache, rest})
-    case False{}: Bool.pick(VTopo, keep, vz_push(ar, n, VTopo{cache, rest}), VTopo{cache, rest})
+# ⚠ `seen` IS NOT CPYTHON'S `visited` FLAG, AND THAT IS A REAL DEFECT THIS ROW GATES.
+# `ops.py:302` is `if node in cache: continue` -- a THIRD branch, checked on EVERY pop before
+# the `visited` test. This file's `seen` is the `visited` flag, but `vz_step.fresh` used to
+# COMPUTE `List.contains(cache, n)` and pass it into `vz_step.keep`'s `seen` SLOT, where
+# `seen` means "this frame is the re-push of its own parent". Two different questions in one
+# field, so the answer was read and thrown away and an already-cached node was re-PUSHED --
+# and because `cache` is a LIST, `vz_cache_add` then appended it a SECOND time.
+#
+# MEASURED by `.agents/slop/vw-topo-probe.bend` against `.agents/slop/vw-topo-truth.py`, and
+# the ARENA IS EXCLUDED AS THE CAUSE: both sides intern `arena_nodes=6`. Only the walk differs:
+#     port  : walk_len=6 walk_distinct=5 walk_ops=[1:Ops.PARAM 2:Ops.CONST 3:Ops.CMPLT
+#                                                1:Ops.PARAM 4:Ops.CONST 5:Ops.WHERE]
+#     CPython: walk_len=5 walk_distinct=5 walk_is_set=True
+# `Ops.PARAM` at index 1 is visited TWICE, so `v` is rewritten twice, and `create_var` is a
+# `solver.add` -- which is why `dv_where_cs` read
+# `[And(v >= 0, v <= 15), And(v >= 0, v <= 15), 8 > v, True]`. CPython's `cache` is a DICT, so
+# `cache[node] = None` cannot double-insert; the port needs the membership test to be a BRANCH.
+def vz_step.keep(keep: Bool, ar: O.Arena, +n: U32, +rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
+  Bool.pick(VTopo, keep, vz_push(ar, n, VTopo{cache, rest}), VTopo{cache, rest})
 
 def vz_vs(acc: Vz) -> List<&2, String>:
   vz_vs.go(acc)
@@ -1502,16 +1513,19 @@ def ren_10.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 def vz_keep(+op: O.Op, dt: S.Dt) -> Bool:
   vz_keep.put(vz_not_mem(op), dt_kept(dt), op)
 
-def vz_step.hit(seen: Bool, +ar: O.Arena, +fx: F.Folded, +n: U32, rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
-  vz_step.keep(seen, vz_keep(O.Arena.op(ar, n), vz_dt(fx, n)), ar, n, rest, cache)
+def vz_step.fresh(+ar: O.Arena, +fx: F.Folded, +n: U32, rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
+  vz_step.keep(vz_keep(O.Arena.op(ar, n), vz_dt(fx, n)), ar, n, rest, cache)
 
-def vz_step.fresh(ar: O.Arena, +fx: F.Folded, +n: U32, rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
-  vz_step.hit(List.contains(U32, U32.is_eq, cache, n), ar, fx, n, rest, cache)
+# `if node in cache: continue`, AS A BRANCH. It is `List.contains` in TAIL position because that
+# is the only place the quantifier form is a `Data` (measured: `&2` where a `Quant` was
+# expected), and `Bool.pick` is what carries the choice without a `match` on a computed value.
+def vz_step.seen(cache: List<&2, U32>, +n: U32, ar: O.Arena, +fx: F.Folded, +rest: List<&2, VFr>, +c: List<&2, U32>) -> VTopo:
+  Bool.pick(VTopo, List.contains(U32, U32.is_eq, cache, n), VTopo{c, rest}, vz_step.fresh(ar, fx, n, rest, c))
 
 def vz_step.vis(ar: O.Arena, +fx: F.Folded, +n: U32, visited: Bool, rest: List<&2, VFr>, +cache: List<&2, U32>) -> VTopo:
   match visited:
     case True{}: vz_cache_add(n, VTopo{cache, rest})
-    case False{}: vz_step.fresh(ar, fx, n, rest, cache)
+    case False{}: vz_step.seen(cache, n, ar, fx, rest, cache)
 
 def vz_step(ar: O.Arena, +fx: F.Folded, t: VTopo) -> VTopo:
   match t:
@@ -2106,14 +2120,45 @@ def dv_shr2.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, dv_and.mm2(O.Found.ar(t), t))
 
+# ⚠ THE ROW THAT NAMES THE DUPLICATED NODE, and it is a WALK rather than a count because a
+# count cannot name the site that duplicated. `dv_where`'s blob row said `And(v >= 0, v <= 15)`
+# TWICE, which names a repeated TERM and not a repeated OP -- three units saw that blob and none
+# localised it, because a repeated term is the same shape as a legitimately repeated one. This
+# row is `ops.py:83-84`'s `lst` as an op SEQUENCE, so before the fix it read
+#     Ops.PARAM Ops.CONST Ops.CMPLT Ops.PARAM Ops.CONST Ops.WHERE
+# and the second `Ops.PARAM` IS the defect: `v` is src[0] of `cm` AND src[1] of `t`, so it is
+# reachable twice and the walk must visit it once. Oracle row `dv_where_walk`, CALLED.
+#
+# `O.UOp.sink` GROWS the arena and the walk is taken AFTER it -- the sibling-arena trap
+# `uops_to_z3.sink`'s own header is about, spelled the same way here rather than differently.
+def vz_ops.go(+xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case h <> t: vz_ops.go(t, ar, String.concat([acc, O.Ops.name(O.Arena.op(ar, h)), " "]))
+
+def vz_walk_ops(nm: String, +ar: O.Arena, idx: U32, gate: U32) -> String:
+  +snk: O.Found = O.UOp.sink(ar, [idx, gate])
+  +a: O.Arena = O.Found.ar(snk)
+  +b: String = nm
+  # LEADING newline, because `dv.of.msg` is the last field row and carries no trailing one --
+  # without it this row is appended onto `dv_where_msg`, and the two are then ONE row.
+  String.concat(["\n", b, "_walk = ",
+                 vz_ops.go(vz_drop_sink(vz_topo(O.Arena.budget(a), a, F.folded(a),
+                                                VTopo{Nil{}, [VFr{O.Found.i(snk), False{}}]}), a, Nil{}), a, "")])
+
 def dv_where.of(+ar: O.Arena, nm: String) -> String:
+  # `+b` is a LET because the two `String.concat` arguments both read `nm` and a parameter may
+  # not be read twice (measured: "consumed more than once").
+  +b: String = nm
   +v = fx_var(ar, 0, "v", S.int32())
   +c8 = fx_const(O.Found.ar(v), 8)
   +cm = O.UOp.new(O.Found.ar(c8), O.OpsCMPLT{}, [O.Found.i(v), O.Found.i(c8)], O.ANone{}, O.TNone{})
   +inv = fx_const_invalid(O.Found.ar(cm))
   +t = O.UOp.new(O.Found.ar(inv), O.OpsWHERE{}, [O.Found.i(cm), O.Found.i(v), O.Found.i(inv)], O.ANone{}, O.TNone{})
   +g = fx_const_bool(O.Found.ar(t), True{})
-  dv2(nm, t, g, mm_i(O.Found.i(v), 0, 15))
+  String.concat([dv2(b, t, g, mm_i(O.Found.i(v), 0, 15)),
+                 vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
+
 
 def dv_const_invalid.of(+ar: O.Arena, nm: String) -> String:
   +t = fx_const_invalid(ar)

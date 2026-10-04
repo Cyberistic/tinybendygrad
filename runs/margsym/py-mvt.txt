@@ -1,0 +1,38 @@
+mv_exp1 n=3 op=EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=i32
+mv_exp2 n=5 op=EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=i32
+mv_expnoop n=4 op=EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+mv_expsym n=6 op=EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,UOp(Ops.SPECIAL, arg='N', src=(
+  UOp(Ops.CONST, arg=0, src=()),)),4) dtype=i32
+mv_pad1 n=4 op=PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=i32
+mv_pad2 n=12 op=PAD nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(6,5) dtype=i32
+mv_padr n=8 op=PAD nsrc=3 srcops=Ops.BUFFER|Ops.STACK|Ops.STACK shape=RAISE dtype=i32
+mv_padr2 n=4 op=PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=RAISE dtype=i32
+mv_padexp n=8 op=PAD nsrc=3 srcops=Ops.EXPAND|Ops.STACK|Ops.STACK shape=(6,6) dtype=i32
+mv_shr1 n=4 op=SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(2) dtype=i32
+mv_shr2 n=11 op=SHRINK nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(3,2) dtype=i32
+mv_shrr n=4 op=SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=RAISE dtype=i32
+mv_perm n=6 op=PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,4) dtype=i32
+mv_permrep n=6 op=PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=RAISE dtype=i32
+mv_permlen n=6 op=PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=RAISE dtype=i32
+mv_flip n=6 op=FLIP nsrc=1 srcops=Ops.RESHAPE shape=(4,3) dtype=i32
+mv_fliplen n=6 op=FLIP nsrc=1 srcops=Ops.RESHAPE shape=RAISE dtype=i32
+mv_flipint n=6 op=FLIP nsrc=1 srcops=Ops.RESHAPE shape=RAISE dtype=i32
+mv_cast n=2 op=CAST nsrc=1 srcops=Ops.BUFFER shape=(6) dtype=f16
+mv_permhalf n=7 op=PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=f16
+mv_padsym n=5 op=PAD nsrc=3 srcops=Ops.BUFFER|Ops.SPECIAL|Ops.CONST shape=(6) dtype=i32
+
+== WHAT CPython ANSWERS WHERE THE FOLD REFUSES ==
+  mv_expsym: CPython's shape holds a UOp; `ssimplify` is the wall, so the fold does not answer
+      CPython: n=6 op=EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,UOp(Ops.SPECIAL, arg='N', src=(
+  UOp(Ops.CONST, arg=0, src=()),)),4) dtype=i32
+  mv_padsym: CPython's `resolve` defaults to True so it answers (6); the fold cannot read a SPECIAL's value, so it does not answer
+      CPython: n=5 op=PAD nsrc=3 srcops=Ops.BUFFER|Ops.SPECIAL|Ops.CONST shape=(6) dtype=i32
+
+== THE `raise`s, BY MESSAGE -- the refuse rows' ground truth ==
+  mv_padr: ValueError: invalid pad ((0, 6), (1, 5)) for (4,)
+  mv_padr2: ValueError: invalid pad ((1, 3),) for (4,)
+  mv_shrr: ValueError: invalid shrink ((1, 4),) for (4,)
+  mv_permrep: ValueError: invalid permutation (0, 0) of len 2
+  mv_permlen: ValueError: invalid permutation (1, 0, 2) of len 2
+  mv_fliplen: ValueError: bad flip on (4, 3), (True,)
+  mv_flipint: ValueError: bad flip on (4, 3), (1, 0)
