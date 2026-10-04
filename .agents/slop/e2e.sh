@@ -189,6 +189,52 @@ cat "$RUN/e2e-port-mm.txt"
 verdict "stage 6 port (matmul THROUGH the port, no Node)" "$psrc"
 
 # ---------------------------------------------------------------------------
+# STAGE 7, THE SAME KERNEL ONE DTYPE WIDER.  ADDED, NOT SUBSTITUTED: nothing above
+# this line is changed, stages 1-6 are byte-unchanged, and their verdicts still are
+# what the per-stage lines say they are.  Read stage 7 as a SEPARATE claim.
+#
+# STAGES 1-6 RUN `float`.  STAGE 7 RUNS `double`, through the SAME committed harness
+# -- `.agents/slop/portexec/run-kernel.sh mm`, unchanged, on a copy.  The port emits
+# `void mm(double* restrict data0_4, ...)`; `cc -Wall -Werror` compiles it; BEND
+# allocates three buffers, fills them, LAUNCHES THE KERNEL BY POINTER and reads 64
+# `U32` words back; all 64 are bit-identical to CPython's, diff 0 bytes.  No Node, no
+# browser, no `navigator.gpu`, no tinygrad scheduler.
+#
+# WHY IT IS ITS OWN STAGE AND NOT A WIDER CLAIM ON STAGE 6: because `render_dtype`
+# HAS NO `f64` GATE ROW.  `renderer/cstyle.bend:2984-3015` calls `rd_row` for exactly
+# seven dtypes -- f32, f16, bf16, bool, u8, fp8e4m3, i32 -- across six devices, and
+# f64 is not among them, so all 227 rows are silent about `double*`.  `tmap CLANG`
+# does carry the NAME `double`, and a name in a type map is not a `double*` in a
+# signature that a compiler accepted and a machine executed.
+#
+# THE NO-`double`-CROSSES-THE-FFI HALF IS THE POINT.  An f64 element is TWO `U32`
+# words at the 4-byte stride `fill.go`/`dump.go` already walk, so the word count is
+# still 64 for 32 doubles and the harness needed no change to be dtype-general.  That
+# is the same two-`U32` route `W64.md:124-160` measured, now on a KERNEL.
+#
+# AND IT IS THE ROW f32 CANNOT HAVE.  `out[0] = 1.0 + 2**-40 = 0x3FF0000000001000`,
+# which rounds to exactly `1.0` (`0x3F800000`) in f32.  Same kernel shape, same
+# harness, same launch, different width, different answer -- so the width is not a
+# label.  CPython's two answers are printed side by side, never asserted apart.
+# ---------------------------------------------------------------------------
+echo "== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)"
+set +e
+zsh .agents/slop/f64/run-f64.sh > "$RUN/e2e-f64.txt" 2>&1
+fsrc=$?
+set -e
+# A stage that DID NOT RUN must be SKIP, never PASS.  `run-f64.sh` exits 3 without
+# running a lane when its substrate is cold, and 3 is a refusal, not a failure.
+if [ "$fsrc" -eq 3 ]; then
+  skip "stage 7 f64 (double through the port, no Node)" "run-f64.sh refused: its substrate is cold; see $RUN/e2e-f64.txt"
+elif [ "$fsrc" -eq 127 ]; then
+  skip "stage 7 f64 (double through the port, no Node)" "\`zsh\` is not available; stage 7 measured NOTHING"
+else
+  grep -E 'STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|THEOREM \[|F64-[0-9]' \
+    "$RUN/e2e-f64.txt" | sed 's/^/  /'
+  verdict "stage 7 f64 (double through the port, no Node)" "$fsrc"
+fi
+
+# ---------------------------------------------------------------------------
 # THE EXIT STATUS. IT IS NO LONGER STAGE 4's, AND THAT IS THE FIX.
 #
 # Every stage that RAN and FAILED now decides. `SKIP` does not -- a stage that could

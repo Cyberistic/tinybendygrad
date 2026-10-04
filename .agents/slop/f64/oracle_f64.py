@@ -91,22 +91,31 @@ def flat(m):
 
 
 def words64(vals):
-  """A float64 buffer as u32 words, (hi, lo) PAIRS IN ELEMENT ORDER.
+  """A float64 buffer as u32 words in **MEMORY ORDER**, which is what the lane
+  writes and reads.
 
-  That is the order the lane reads back: `dump.go` walks the buffer at a 4-byte
-  stride and `fill.go` fills it the same way, so an f64 element is simply two
-  consecutive u32 words and NOTHING in `gen_ffi.py` has to know the dtype is 8
-  bytes wide.  Little-endian, so on this host the HIGH word is the even one.
-  Never typed -- `struct.pack`, and `struct.unpack('<Q')` cross-checks it."""
-  b = struct.pack(f"<{len(vals)}d", *vals)
-  u = struct.unpack(f"<{2 * len(vals)}I", b)
-  assert [w for i in range(len(vals))
-          for w in (u[2 * i + 1], u[2 * i])] == [
-      w for i, v in enumerate(vals)
-      for w in (struct.unpack("<Q", struct.pack("<d", v))[0] >> 32,
-                struct.unpack("<Q", struct.pack("<d", v))[0] & 0xffffffff)], \
-      "the (hi, lo) split disagrees with the <Q view of the same bytes"
-  return [w for i in range(len(vals)) for w in (u[2 * i + 1], u[2 * i])]
+  That order is `(lo, hi)` and getting it backwards is a real, measured failure:
+  the first version of this function returned `(hi, lo)` with a comment claiming
+  "on this host the HIGH word is the even one", which is FALSE for little-endian.
+  `struct.pack('<d', 1.0)` is the bytes `00 00 00 00 00 00 f0 3f`, so `unpack`
+  yields `(0, 0x3ff00000)` -- the LOW word first.  Filling the buffer `(hi, lo)`
+  made every operand a denormal (`A[0]` read back as `5.3e-315`), the products
+  were zero, and the kernel dutifully returned exactly `DELTA` for all 32
+  elements.  A lane that compares only the answer would have reported 64/64
+  against a wrong oracle; it was caught because the answer was `DELTA` alone,
+  which is a shape no correct matmul can have.
+
+  `dump.go` walks the buffer at a 4-byte stride and `fill.go` fills it the same
+  way, so an f64 element is simply two consecutive u32 words and NOTHING in
+  `gen_ffi.py` has to know the dtype is 8 bytes wide.  Never typed --
+  `struct.pack`, and the ROUND TRIP below is the check that would have caught
+  the swap: re-packing the returned words must reproduce the input bit for bit,
+  which `(hi, lo)` cannot do and `(lo, hi)` can."""
+  u = struct.unpack(f"<{2 * len(vals)}I", struct.pack(f"<{len(vals)}d", *vals))
+  out = [w for i in range(len(vals)) for w in (u[2 * i], u[2 * i + 1])]
+  back = struct.unpack(f"<{len(vals)}d", struct.pack(f"<{2 * len(vals)}I", *out))
+  assert list(back) == list(vals), "the (lo, hi) split does not round-trip"
+  return out
 
 
 def expect64():
