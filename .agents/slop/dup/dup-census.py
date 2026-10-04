@@ -76,25 +76,43 @@ def names_strict(text):
 
 
 def measure(text, label=""):
-  """The figures, with a denominator for every count."""
+  """The figures, with a denominator for every count.
+
+  ⚠ THE DUPLICATES ARE COUNTED OVER THE LINES THE READER ACCEPTS, NOT OVER EVERY LINE THE
+  WRITER EMITTED, and the difference is 13 measurements on one lane in this tree.
+  `schedule/prepare.bend`'s oracle prints 14 `== SECTION ==` banners; `boundary()` reads their
+  first `=` and gives them all the name `""`, so a census over WRITER rows reads one name
+  printed 14 times and calls it a 13-measurement duplicate.  It is not: `rebase-gate.py:row()`
+  refuses a row with an EMPTY name -- deliberately, and with the argument in its own docstring
+  -- so all fourteen are outside the table before any of them is counted.  Counting them made
+  the reconciliation line read 82 + 0 + 136 = 218 against a measured 205, and the 13 is exactly
+  the banner population.  **A loss is a property of the READER, so a duplicate is measured where
+  the reader lives.**
+  """
   src = text.splitlines()
   rows, shape, sc = names_strict(text)
   cont = [(i, w) for i, k, _, w in sc if k == "continuation"]
   nob = [(i, w) for i, k, _, w in sc if k == "no-boundary"]
   unbal = [(i, w) for i, k, _, w in sc if k == "end-unbalanced"]
-  refuse = [i for i, _, _ in rows if ROW(src[i - 1]) is None]
+  # SPLIT the writer's rows into the ones `row()` ACCEPTS and the ones it REFUSES.  A refused row
+  # is a measurement printed and compared against nothing, which is a different defect with a
+  # different owner (`uop/fold.bend`'s 93 and `prepare`'s 14 banners), and both are reported.
+  kept = [(i, nm, ROW(ln)) for i, nm, ln in rows if ROW(ln) is not None]
+  refuse = [(i, nm, ln) for i, nm, ln in rows if ROW(ln) is None]
 
   # STRICT: the names the producer printed, WITH MULTIPLICITY.  `Counter` over a LIST; a `set()`
   # here has already overwritten the duplicate and reads 0 on a lane that has one.
-  strict = Counter(nm for _, nm, _ in rows)
+  strict = Counter(nm for _, nm, _ in kept)
   dup_s = {k: v for k, v in strict.items() if v > 1}
-  # SHIPPED: what `rows()` keys on, also with multiplicity.
+  # SHIPPED: what `rows()` keys on, also with multiplicity.  It is the SAME population under a
+  # second name definition, so `len(acc) - len(ship)` and `len(kept) - len(strict)` are two
+  # readings of one loss and they are printed against each other.
   acc = [(i, ROW(l)) for i, l in enumerate(src, 1) if ROW(l) is not None]
   ship = Counter(r[0] for _, r in acc)
   dup_p = {k: v for k, v in ship.items() if v > 1}
 
   lost = len(acc) - len(ship)                 # the reader's OWN arithmetic
-  lost_s = len(rows) - len(strict)
+  lost_s = len(kept) - len(strict)            # the same loss under the writer's names
   # THE TWO NAME DEFINITIONS DISAGREEING is the finding the `=`-class unit paid for, so it is a
   # reported number and not a silent preference.
   sdiff = sorted(set(dup_s) ^ set(dup_p))
@@ -103,17 +121,12 @@ def measure(text, label=""):
   # printed one measurement twice (a loop); two rows with DIFFERENT values are two measurements
   # and the NAME is what is wrong.  A mutation harness cannot tell those apart from the name
   # alone, and the fix is different for each.
-  vals = {}
-  for i, nm, ln in rows:
-    r = ROW(ln)
-    if r is not None:
-      vals.setdefault(nm, []).append(r[1])
   dupes = {}
   for nm, n in sorted(dup_s.items(), key=lambda kv: (-kv[1], kv[0])):
-    vs = vals.get(nm, [])
+    vs = [r[1] for _, m, r in kept if m == nm]
     dupes[nm] = {"n": n, "vals": vs, "distinct_vals": len(set(vs)),
                  "identical": len(set(vs)) == 1,
-                 "lines": [i for i, m, _ in rows if m == nm]}
+                 "lines": [i for i, m, _ in kept if m == nm]}
   return {"label": label, "shape": shape, "phys": len(rows), "accepted": len(acc),
           "names_strict": len(strict), "names_shipped": len(ship),
           "dup_n_strict": len(dup_s), "dup_rows_strict": sum(dup_s.values()),
@@ -217,10 +230,17 @@ def main():
           print(f"     {nm!r} x{d['n']} lines={d['lines']} distinct_vals={d['distinct_vals']}")
           for l in lines:
             print(f"        {l[:150]}")
-      for i in m["refuse"][:4]:
-        print(f"   REFUSED-BY-ROW() L{i}: {m['src'][i - 1][:120]!r}")
+      for i, nm, ln in m["refuse"][:4]:
+        print(f"   REFUSED-BY-ROW() L{i} name={nm!r}: {ln[:120]!r}")
       if len(m["refuse"]) > 4:
         print(f"   ... and {len(m['refuse']) - 4} more refused")
+      for i, w in m["nob"][:4]:
+        print(f"   NO-BOUNDARY L{i}: {m['src'][i - 1][:120]!r}   [{w}]")
+      if len(m["nob"]) > 4:
+        print(f"   ... and {len(m['nob']) - 4} more with no boundary")
+      if m["name_defs_differ"]:
+        print(f"   NAME-DEFINITION DISAGREEMENT on {m['name_defs_differ']}: duplicated under one "
+              f"definition only")
   (HERE / "dup-census.json").write_text(json.dumps(
     [{k: v for k, v in m.items() if k != "src"} for m in ms], indent=1, default=str))
   return 0

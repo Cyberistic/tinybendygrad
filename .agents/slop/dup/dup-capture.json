@@ -5,14 +5,16 @@
   "closure": 7,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  11.9s  lines=210  distinct keys of `rows()`=208  closure=7 file(s)",
+  "port_log": "rc=0  12.5s  lines=210  distinct keys of `rows()`=208  closure=7 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/dtype-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/dtype-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 356
    }
   ]
  },
@@ -22,14 +24,16 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.9s  lines=24  distinct keys of `rows()`=24  closure=6 file(s)",
+  "port_log": "rc=0  1.1s  lines=24  distinct keys of `rows()`=24  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/xd1/rw-gate-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/xd1/rw-gate-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 54
    }
   ]
  },
@@ -39,14 +43,16 @@
   "closure": 5,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.6s  lines=38  distinct keys of `rows()`=38  closure=5 file(s)",
+  "port_log": "rc=0  0.7s  lines=38  distinct keys of `rows()`=38  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/rebase-oracle-search.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/rebase-oracle-search.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 20
    }
   ]
  },
@@ -56,14 +62,16 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.1s  lines=28  distinct keys of `rows()`=28  closure=6 file(s)",
+  "port_log": "rc=0  1.3s  lines=28  distinct keys of `rows()`=28  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/xd1/rw-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/xd1/rw-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 60
    }
   ]
  },
@@ -76,11 +84,13 @@
   "port_log": "rc=0  0.3s  lines=110  distinct keys of `rows()`=110  closure=2 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/device-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/device-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 23
    }
   ]
  },
@@ -90,14 +100,16 @@
   "closure": 3,
   "port_ok": false,
   "port_tries": 3,
-  "port_log": "rc=1  2.6s  lines=0  distinct keys of `rows()`=0  closure=3 file(s)\n  stderr: 4_floor_mod - Dt.i64_cdiv - Dt.i64_cmod - Dt.i64_ceildiv - float_to_bf16 - float_to_fp16 - float_to_fp8 - fp8_to_float bend 2.0.35 is available: run bend update",
+  "port_log": "rc=1  1.4s  lines=0  distinct keys of `rows()`=0  closure=3 file(s)\n  stderr: 4_floor_mod - Dt.i64_cdiv - Dt.i64_cmod - Dt.i64_ceildiv - float_to_bf16 - float_to_fp16 - float_to_fp8 - fp8_to_float bend 2.0.35 is available: run bend update",
   "oracles": [
    {
-    "argv": ".agents/slop/oracle/dtype_tables.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/oracle/dtype_tables.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 14774
    }
   ]
  },
@@ -107,13 +119,15 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  2.7s  lines=137  distinct keys of `rows()`=137  closure=6 file(s)",
+  "port_log": "rc=0  0.9s  lines=137  distinct keys of `rows()`=137  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/jit-oracle.py",
+    "argv": [
+     ".agents/slop/jit-oracle.py"
+    ],
     "ok": false,
     "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
+    "err": "aise RuntimeError(f'Attempting to relocate against an undefined symbol {sym}') RuntimeError: Attempting to relocate against an undefined symbol sel_registerName",
     "lines": 0
    }
   ]
@@ -124,14 +138,16 @@
   "closure": 7,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  2.7s  lines=72  distinct keys of `rows()`=72  closure=7 file(s)",
+  "port_log": "rc=0  3.2s  lines=72  distinct keys of `rows()`=72  closure=7 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/ew-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/ew-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 71
    }
   ]
  },
@@ -141,14 +157,16 @@
   "closure": 9,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  3.0s  lines=36  distinct keys of `rows()`=36  closure=9 file(s)",
+  "port_log": "rc=0  1.8s  lines=36  distinct keys of `rows()`=36  closure=9 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/mixin-op-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/mixin-op-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 32
    }
   ]
  },
@@ -158,14 +176,16 @@
   "closure": 8,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  2.5s  lines=24  distinct keys of `rows()`=24  closure=8 file(s)",
+  "port_log": "rc=0  1.6s  lines=24  distinct keys of `rows()`=24  closure=8 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/nn-init-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/nn-init-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 24
    }
   ]
  },
@@ -175,14 +195,16 @@
   "closure": 7,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  13.8s  lines=123  distinct keys of `rows()`=123  closure=7 file(s)",
+  "port_log": "rc=0  4.9s  lines=123  distinct keys of `rows()`=123  closure=7 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/onnx-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/onnx-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 123
    }
   ]
  },
@@ -195,11 +217,13 @@
   "port_log": "rc=0  0.7s  lines=727  distinct keys of `rows()`=726  closure=1 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/ga-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/ga-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 779
    }
   ]
  },
@@ -212,11 +236,13 @@
   "port_log": "rc=0  0.8s  lines=1033  distinct keys of `rows()`=1033  closure=3 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/sqtt_spec.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/sqtt_spec.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 1324
    }
   ]
  },
@@ -226,14 +252,17 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.3s  lines=228  distinct keys of `rows()`=227  closure=6 file(s)",
+  "port_log": "rc=0  1.5s  lines=228  distinct keys of `rows()`=227  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/renderer_oracle.py cstyle-rows",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/renderer_oracle.py",
+     "cstyle-rows"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 224
    }
   ]
  },
@@ -243,14 +272,16 @@
   "closure": 7,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.3s  lines=472  distinct keys of `rows()`=470  closure=7 file(s)",
+  "port_log": "rc=0  1.4s  lines=472  distinct keys of `rows()`=470  closure=7 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/llvmir-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/llvmir-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 472
    }
   ]
  },
@@ -260,14 +291,16 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.3s  lines=206  distinct keys of `rows()`=205  closure=6 file(s)",
+  "port_log": "rc=0  1.1s  lines=206  distinct keys of `rows()`=205  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/nl/nl-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/nl/nl-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 206
    }
   ]
  },
@@ -280,11 +313,13 @@
   "port_log": "rc=0  0.6s  lines=281  distinct keys of `rows()`=281  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/ptx-s3-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/ptx-s3-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 281
    }
   ]
  },
@@ -294,14 +329,17 @@
   "closure": 5,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.7s  lines=335  distinct keys of `rows()`=333  closure=5 file(s)",
+  "port_log": "rc=0  0.6s  lines=335  distinct keys of `rows()`=333  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/tcptx-oracle.py stage2",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/tcptx-oracle.py",
+     "stage2"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 335
    }
   ]
  },
@@ -314,11 +352,13 @@
   "port_log": "rc=0  0.6s  lines=520  distinct keys of `rows()`=520  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/amd_oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/amd_oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 1010
    }
   ]
  },
@@ -328,14 +368,16 @@
   "closure": 4,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.6s  lines=134  distinct keys of `rows()`=134  closure=4 file(s)",
+  "port_log": "rc=0  0.5s  lines=134  distinct keys of `rows()`=134  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/cpulink_oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/cpulink_oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 22
    }
   ]
  },
@@ -348,11 +390,13 @@
   "port_log": "rc=0  0.6s  lines=432  distinct keys of `rows()`=432  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/mt_seam_rows.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/mt_seam_rows.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 18
    }
   ]
  },
@@ -365,11 +409,13 @@
   "port_log": "rc=0  0.5s  lines=180  distinct keys of `rows()`=180  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/null-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/null-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 9
    }
   ]
  },
@@ -382,11 +428,13 @@
   "port_log": "rc=0  0.7s  lines=611  distinct keys of `rows()`=600  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/nv-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/nv-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 574
    }
   ]
  },
@@ -396,14 +444,16 @@
   "closure": 7,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  8.1s  lines=85  distinct keys of `rows()`=85  closure=7 file(s)",
+  "port_log": "rc=0  6.4s  lines=85  distinct keys of `rows()`=85  closure=7 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/ops-python-render-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/ops-python-render-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 241
    }
   ]
  },
@@ -413,14 +463,16 @@
   "closure": 2,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.8s  lines=750  distinct keys of `rows()`=750  closure=2 file(s)",
+  "port_log": "rc=0  0.9s  lines=750  distinct keys of `rows()`=750  closure=2 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/qcom-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/qcom-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 312
    }
   ]
  },
@@ -433,11 +485,13 @@
   "port_log": "rc=0  0.7s  lines=389  distinct keys of `rows()`=389  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/oracle_rdma_gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/oracle_rdma_gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 389
    }
   ]
  },
@@ -450,11 +504,13 @@
   "port_log": "rc=0  0.2s  lines=129  distinct keys of `rows()`=129  closure=1 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/c-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/c-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 129
    }
   ]
  },
@@ -464,14 +520,16 @@
   "closure": 2,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  65.7s  lines=353  distinct keys of `rows()`=353  closure=2 file(s)",
+  "port_log": "rc=0  148.4s  lines=353  distinct keys of `rows()`=353  closure=2 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/elf_rows.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/elf_rows.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 1042
    }
   ]
  },
@@ -481,14 +539,16 @@
   "closure": 4,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.6s  lines=360  distinct keys of `rows()`=360  closure=4 file(s)",
+  "port_log": "rc=0  0.5s  lines=360  distinct keys of `rows()`=360  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/hcq2-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/hcq2-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 165
    }
   ]
  },
@@ -501,11 +561,13 @@
   "port_log": "rc=0  0.6s  lines=940  distinct keys of `rows()`=940  closure=2 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/usb-oracle-run.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/usb-oracle-run.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 1014
    }
   ]
  },
@@ -515,14 +577,16 @@
   "closure": 4,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  0.6s  lines=276  distinct keys of `rows()`=252  closure=4 file(s)",
+  "port_log": "rc=0  0.5s  lines=276  distinct keys of `rows()`=252  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/indexing-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/indexing-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 104
    }
   ]
  },
@@ -535,11 +599,13 @@
   "port_log": "rc=0  0.9s  lines=335  distinct keys of `rows()`=321  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/prepare-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/prepare-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 2535
    }
   ]
  },
@@ -549,14 +615,16 @@
   "closure": 6,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.4s  lines=126  distinct keys of `rows()`=126  closure=6 file(s)",
+  "port_log": "rc=0  1.3s  lines=126  distinct keys of `rows()`=126  closure=6 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/rangeify-oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/rangeify-oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 89
    }
   ]
  },
@@ -566,14 +634,16 @@
   "closure": 5,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.0s  lines=33  distinct keys of `rows()`=33  closure=5 file(s)",
+  "port_log": "rc=0  0.9s  lines=33  distinct keys of `rows()`=33  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/tensor-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/tensor-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 30
    }
   ]
  },
@@ -586,11 +656,13 @@
   "port_log": "rc=0  1.3s  lines=334  distinct keys of `rows()`=240  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/mm-lift-gate.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/mm-lift-gate.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 131
    }
   ]
  },
@@ -603,10 +675,12 @@
   "port_log": "rc=0  0.6s  lines=319  distinct keys of `rows()`=319  closure=3 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/rebase-oracle-ops.py",
+    "argv": [
+     ".agents/slop/rebase-oracle-ops.py"
+    ],
     "ok": false,
     "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
+    "err": "(\"rebase_gate\", pathlib.Path(__file__).resolve() / \"rebase-gate.py\") ^^^^^^^^^ NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?",
     "lines": 0
    }
   ]
@@ -617,14 +691,17 @@
   "closure": 5,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.3s  lines=140  distinct keys of `rows()`=97  closure=5 file(s)",
+  "port_log": "rc=0  1.0s  lines=140  distinct keys of `rows()`=97  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/xd1/render-gate-oracle.py --gate",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/xd1/render-gate-oracle.py",
+     "--gate"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 124
    }
   ]
  },
@@ -634,14 +711,16 @@
   "closure": 5,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.4s  lines=25  distinct keys of `rows()`=25  closure=5 file(s)",
+  "port_log": "rc=0  1.3s  lines=25  distinct keys of `rows()`=25  closure=5 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/rebase-oracle-spec.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/rebase-oracle-spec.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 16
    }
   ]
  },
@@ -651,14 +730,16 @@
   "closure": 4,
   "port_ok": true,
   "port_tries": 1,
-  "port_log": "rc=0  1.2s  lines=177  distinct keys of `rows()`=176  closure=4 file(s)",
+  "port_log": "rc=0  0.9s  lines=177  distinct keys of `rows()`=176  closure=4 file(s)",
   "oracles": [
    {
-    "argv": ".agents/slop/vz/viz_oracle.py",
-    "ok": false,
-    "tries": 3,
-    "err": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't find '__main__' module in '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'",
-    "lines": 0
+    "argv": [
+     ".agents/slop/vz/viz_oracle.py"
+    ],
+    "ok": true,
+    "tries": 1,
+    "err": "",
+    "lines": 177
    }
   ]
  }

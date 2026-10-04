@@ -1,0 +1,87 @@
+lane                                                            phys   acc   nmS   nmP  dupN  dupR  LOST refuse  cont defs?
+tinybendygrad_codegen_decomp_dtype.bend.oracle0.txt              356   356   356   356     0     0     0      0     0     0
+tinybendygrad_codegen_decomp_dtype.bend.port.txt                 208   208   208   208     0     0     0      0     0     0
+tinybendygrad_codegen_gpudims.bend.oracle0.txt                    54    54    54    54     0     0     0      0     0     0
+tinybendygrad_codegen_gpudims.bend.port.txt                       24    24    24    24     0     0     0      0     0     0
+tinybendygrad_codegen_opt_search.bend.oracle0.txt                 20    20    20    20     0     0     0      0     0     0
+tinybendygrad_codegen_opt_search.bend.port.txt                    38    38    38    38     0     0     0      0     0     0
+tinybendygrad_codegen_simplify.bend.oracle0.txt                   60    60    60    60     0     0     0      0     0     0
+tinybendygrad_codegen_simplify.bend.port.txt                      28    28    28    28     0     0     0      0     0     0
+tinybendygrad_device.bend.oracle0.txt                             23    23    23    23     0     0     0      0     0     0
+tinybendygrad_device.bend.port.txt                               110   110   110   110     0     0     0      0     0     0
+tinybendygrad_dtype.bend.oracle0.txt                               0     0     0     0     0     0     0      0     0     0
+tinybendygrad_dtype.bend.port.txt                                  0     0     0     0     0     0     0      0     0     0
+tinybendygrad_engine_jit.bend.oracle0.txt                          0     0     0     0     0     0     0      0     0     0
+tinybendygrad_engine_jit.bend.port.txt                            10   137    10   137     0     0     0      0   127     0
+tinybendygrad_mixin_elementwise.bend.oracle0.txt                  71    71    71    71     0     0     0      0     0     0
+tinybendygrad_mixin_elementwise.bend.port.txt                     72    72    72    72     0     0     0      0     0     0
+tinybendygrad_mixin_op.bend.oracle0.txt                           32    32    32    32     0     0     0      0     0     0
+tinybendygrad_mixin_op.bend.port.txt                              36    36    36    36     0     0     0      0     0     0
+tinybendygrad_nn___init__.bend.oracle0.txt                        24    24    24    24     0     0     0      0     0     0
+tinybendygrad_nn___init__.bend.port.txt                           24    24    24    24     0     0     0      0     0     0
+tinybendygrad_nn_onnx.bend.oracle0.txt                           123   123   123   123     0     0     0      0     0     0
+tinybendygrad_nn_onnx.bend.port.txt                              123   123   123   123     0     0     0      0     0     0
+tinybendygrad_renderer_amd_generate.bend.oracle0.txt             778   779   778   779     0     0     0      0     0     0
+tinybendygrad_renderer_amd_generate.bend.port.txt                726   726   726   726     0     0     0      0     0     0
+tinybendygrad_renderer_amd_sqtt.bend.oracle0.txt                1324  1324  1324  1324     0     0     0      0     0     0
+tinybendygrad_renderer_amd_sqtt.bend.port.txt                   1033  1033  1033  1033     0     0     0      0     0     0
+tinybendygrad_renderer_cstyle.bend.oracle0.txt                   224   224   224   224     0     0     0      0     0     0
+tinybendygrad_renderer_cstyle.bend.port.txt                      227   227   227   227     0     0     0      0     0     0
+tinybendygrad_renderer_llvmir.bend.oracle0.txt                   471   471   470   470     1     2     1      0     0     0
+tinybendygrad_renderer_llvmir.bend.port.txt                      471   471   470   470     1     2     1      0     0     0
+tinybendygrad_renderer_nir_llvmir.bend.oracle0.txt               205   205   205   205     0     0     0      0     0     0
+tinybendygrad_renderer_nir_llvmir.bend.port.txt                  205   205   205   205     0     0     0      0     0     0
+tinybendygrad_renderer_ptx.bend.oracle0.txt                      281   281   281   281     0     0     0      0     0     0
+tinybendygrad_renderer_ptx.bend.port.txt                         281   281   281   281     0     0     0      0     0     0
+tinybendygrad_renderer_tc_ptx.bend.oracle0.txt                   334   334   333   333     1     2     1      0     0     0
+tinybendygrad_renderer_tc_ptx.bend.port.txt                      334   334   333   333     1     2     1      0     0     0
+tinybendygrad_runtime_ops_amd.bend.oracle0.txt                  1010  1010  1010  1010     0     0     0      0     0     0
+tinybendygrad_runtime_ops_amd.bend.port.txt                      520   520   520   520     0     0     0      0     0     0
+tinybendygrad_runtime_ops_cpu.bend.oracle0.txt                    20    20    20    20     0     0     0      0     0     0
+tinybendygrad_runtime_ops_cpu.bend.port.txt                      134   134   134   134     0     0     0      0     0     0
+tinybendygrad_runtime_ops_metal.bend.oracle0.txt                  18    18    18    18     0     0     0      0     0     0
+tinybendygrad_runtime_ops_metal.bend.port.txt                    432   432   432   432     0     0     0      0     0     0
+tinybendygrad_runtime_ops_null.bend.oracle0.txt                    9     9     9     9     0     0     0      0     0     0
+tinybendygrad_runtime_ops_null.bend.port.txt                     180   180   180   180     0     0     0      0     0     0
+tinybendygrad_runtime_ops_nv.bend.oracle0.txt                    574   574   547   547    27    54    27      0     0     0
+tinybendygrad_runtime_ops_nv.bend.port.txt                       611   611   600   600    11    22    11      0     0     0
+tinybendygrad_runtime_ops_python.bend.oracle0.txt                241   241   241   241     0     0     0      0     0     0
+tinybendygrad_runtime_ops_python.bend.port.txt                    85    85    85    85     0     0     0      0     0     0
+tinybendygrad_runtime_ops_qcom.bend.oracle0.txt                  312   312   312   312     0     0     0      0     0     0
+tinybendygrad_runtime_ops_qcom.bend.port.txt                     750   750   750   750     0     0     0      0     0     0
+tinybendygrad_runtime_ops_rdma.bend.oracle0.txt                  389   389   389   389     0     0     0      0     0     0
+tinybendygrad_runtime_ops_rdma.bend.port.txt                     389   389   389   389     0     0     0      0     0     0
+tinybendygrad_runtime_support_c.bend.oracle0.txt                 129   129   129   129     0     0     0      0     0     0
+tinybendygrad_runtime_support_c.bend.port.txt                    129   129   129   129     0     0     0      0     0     0
+tinybendygrad_runtime_support_elf.bend.oracle0.txt              1042  1042  1042  1042     0     0     0      0     0     0
+tinybendygrad_runtime_support_elf.bend.port.txt                  353   353   353   353     0     0     0      0     0     0
+tinybendygrad_runtime_support_hcq2.bend.oracle0.txt              165   165   163   163     2     4     2      0     0     0
+tinybendygrad_runtime_support_hcq2.bend.port.txt                 360   360   360   360     0     0     0      0     0     0
+tinybendygrad_runtime_support_usb.bend.oracle0.txt               939   939   939   939     0     0     0      0     0     0
+tinybendygrad_runtime_support_usb.bend.port.txt                  940   940   940   940     0     0     0      0     0     0
+tinybendygrad_schedule_indexing.bend.oracle0.txt                 104   104   104   104     0     0     0      0     0     0
+tinybendygrad_schedule_indexing.bend.port.txt                    252   252   252   252     0     0     0      0     0     0
+tinybendygrad_schedule_prepare.bend.oracle0.txt                 2535  2521  2521  2521     0     0     0     14     0     0
+tinybendygrad_schedule_prepare.bend.port.txt                     321   321   321   321     0     0     0      0     0     0
+tinybendygrad_schedule_rangeify.bend.oracle0.txt                  89    89    89    89     0     0     0      0     0     0
+tinybendygrad_schedule_rangeify.bend.port.txt                    126   126   126   126     0     0     0      0     0     0
+tinybendygrad_tensor.bend.oracle0.txt                             30    30    30    30     0     0     0      0     0     0
+tinybendygrad_tensor.bend.port.txt                                33    33    33    33     0     0     0      0     0     0
+tinybendygrad_uop_fold.bend.oracle0.txt                          131   131   130   130     1     2     1      0     0     0
+tinybendygrad_uop_fold.bend.port.txt                             241   241   240   240     1     2     1      0     0     0
+tinybendygrad_uop_ops.bend.oracle0.txt                             0     0     0     0     0     0     0      0     0     0
+tinybendygrad_uop_ops.bend.port.txt                              319   319   319   319     0     0     0      0     0     0
+tinybendygrad_uop_render.bend.oracle0.txt                         80   124    80    85     0     0     0      0    44     5
+tinybendygrad_uop_render.bend.port.txt                            80   140    80    97     0     0     0      0    49     6
+tinybendygrad_uop_spec.bend.oracle0.txt                           16    16    16    16     0     0     0      0     0     0
+tinybendygrad_uop_spec.bend.port.txt                              25    25    25    25     0     0     0      0     0     0
+tinybendygrad_viz_serve.bend.oracle0.txt                         175   177   174   176     1     2     1      0     2     0
+tinybendygrad_viz_serve.bend.port.txt                            175   177   174   176     1     2     1      0     2     0
+
+TOTAL over 78 lane texts of 39 ports
+  DENOMINATOR: 11 of 78 lane texts carry at least one duplicate name under the WRITER'S OWN boundary
+  rows the writer emitted: 22793   lines the shipped reader ACCEPTS: 23015   distinct names the producer printed: 22731   distinct keys `rows()` produces: 22885
+  DUPLICATE NAMES: 48 over 96 rows, costing 48 measurements (one per surplus row)
+  the reader's OWN loss: accepted 23015 − keys 22885 = 130
+  and the reader's loss attributes to: 82 continuation + 0 `=`-in-a-name + 48 duplicate = 130   RECONCILES
+  NAME-DEFINITION DISAGREEMENT: 11 name(s) are a duplicate under one name definition and not under the other -- a duplicate counted from one definition alone is not yet a duplicate
