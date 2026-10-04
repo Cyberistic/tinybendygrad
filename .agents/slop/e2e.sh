@@ -55,6 +55,33 @@ bend_run() {
   return 2
 }
 
+# ---------------------------------------------------------------------------
+# THE VERDICT ACCUMULATOR. ADDED AFTER A MEASURED DEFECT, NOT FOR STYLE.
+#
+# STAGES 5 AND 6 PRINTED `STAGE n FAILED` AND THE SCRIPT STILL EXITED 0, because the
+# exit was `$rc` -- STAGE 4's. MEASURED HERE, by renaming `run-port-mm.sh` away so
+# stage 6 could not start:
+#     mm_e2e_failed=0 / PASS ... STAGE 6 FAILED ... exit 0
+# A STAGE THAT FAILS AND DOES NOT REACH THE EXIT STATUS IS A ROW THAT CANNOT FAIL,
+# IN THE PROJECT'S ONE EXECUTABLE ARTIFACT.
+#
+# TWO THINGS ARE BEING KEPT APART, AND THE OLD CODE CONFLATED THEM:
+#   CLAIM INDEPENDENCE -- stage 6 failing must NOT retract "stage 4's matmul is
+#     green". TRUE, and each verdict is still printed on its own.
+#   ARTIFACT SOUNDNESS -- a stage that RAN and FAILED must make the SCRIPT fail.
+#     Also true, and it is what was missing.
+# Hence three outcomes, not two. `SKIP` IS NOT `PASS`: a stage that could not run
+# has measured nothing, and reporting it as a pass is the same defect one level up.
+FAILS=0
+SKIPS=0
+verdict () {  # verdict <stage> <rc>
+  if [ "$2" -eq 0 ]; then echo "  $1: PASS"
+  else echo "  $1: FAIL (rc=$2)"; FAILS=$((FAILS + 1)); fi
+}
+skip () {     # skip <stage> <why>
+  echo "  $1: SKIP -- $2"; SKIPS=$((SKIPS + 1))
+}
+
 echo "== 1/4 oracle (CPython tinygrad, DEV=CPU)"
 "$PY" .agents/slop/e2e_mm.py
 
@@ -62,7 +89,16 @@ echo "== 2/4 port (pure bend, no GPU)"
 bend_run
 
 echo "== 3/4 gpu (real WebGPU adapter, headless Chrome)"
-node .agents/slop/e2e_mm_run.mjs
+# THE ONE STAGE THAT ASKS NODE. IT IS THE ONLY STAGE THAT NEEDS A BROWSER, SO IT IS
+# ALSO THE ONLY STAGE THAT CAN BE UNAVAILABLE. AN UNAVAILABLE STAGE IS `SKIP`, NEVER
+# `PASS`: it measured nothing, and calling that a pass is the same defect one level
+# up. Stages 5 and 6 need no browser at all, which is the point of them.
+if command -v node >/dev/null 2>&1; then
+  set +e; node .agents/slop/e2e_mm_run.mjs; nsrc=$?; set -e
+  verdict "stage 3 gpu (node)" "$nsrc"
+else
+  skip "stage 3 gpu (node)" "no \`node\` on PATH; stage 3 measured nothing"
+fi
 
 echo "== 4/4 gate"
 # THE EXIT STATUS IS THE PYTHON ONE, NOT `tee`'s. MEASURED in this harness, and it
@@ -75,7 +111,7 @@ set +e
 rc=$?
 set -e
 cat "$RUN/e2e-mm-gate.txt"
-if [ "$rc" -eq 0 ]; then echo "PASS"; else echo "FAIL"; fi
+verdict "stage 4 gate (matmul vs CPython, via WebGPU)" "$rc"
 
 # ---------------------------------------------------------------------------
 # STAGE 5, THE PORT'S OWN DEVICE. ADDED, NOT SUBSTITUTED: everything above is
@@ -110,13 +146,65 @@ set +e
 msrc=$?
 set -e
 tail -3 "$RUN/e2e-opsbend.txt"
-if [ "$msrc" -eq 0 ]; then
-  echo "PASS (stages 1-4 and stage 5)"
-else
-  echo "STAGE 5 FAILED -- stages 1-4 verdict above stands on its own"
-  # THE EXIT STATUS IS STAGE 4's, NOT STAGE 5's. A failure here must not retract a
-  # green matmul: the two claims are independent and conflating them would make the
-  # stronger claim weaker, which is the same mistake this script's own header warns
-  # about at stage 4.
+verdict "stage 5 ops_bend (kernel executes in Bend)" "$msrc"
+# THE COMMENT THAT USED TO BE HERE WAS RIGHT AND INCOMPLETE. "A failure here must not
+# retract a green matmul: the two claims are independent" -- TRUE, and each verdict is
+# now printed separately above. What it did NOT say is that the failure must still
+# REACH THE EXIT STATUS, and omitting that is what let this stage print FAILED while
+# the script exited 0. Both halves now hold: the claim stands on its own, and the
+# artifact still fails.
+
+# ---------------------------------------------------------------------------
+# STAGE 6, THE SAME MATMUL RUN THROUGH THE PORT. ADDED, NOT SUBSTITUTED: nothing
+# above this line is changed and its PASS/FAIL is still what this script returns.
+# Read stage 6 as a SEPARATE claim with its own verdict, because it answers the
+# question stage 3 cannot.
+#
+# STAGES 1-4 ASKING NODE FOR A DEVICE IS THE GAP STAGE 6 CLOSES, not a mistake in
+# them. Stage 3 reaches a real `apple/metal-3` adapter through
+# `.agents/slop/e2e/webgpu_call.js`, driven by `node`; nothing in the port's own
+# runtime is in that path, and that has been true since the artifact was written.
+# Stage 6 runs the SAME `(A @ B) @ Cm` with NO NODE, NO BROWSER, NO
+# `navigator.gpu` AND NO TINYGRAD PYTHON SCHEDULER in the execution path:
+# `cstyle.bend`'s `render_kernel` emits the C, `cc` compiles it, and BEND allocates
+# the buffers, fills them, LAUNCHES THE KERNEL BY POINTER and reads 64 words back.
+# It also prints the COVERAGE TABLE, so the artifact cannot be quoted as stronger
+# than 1 of the port's 227 gate rows is executed.
+#
+# THE WALL STAGE 5 NAMES IS UNCHANGED. There is still no Bend-emitting renderer,
+# and nothing here needed one: the render side emits C exactly as it always did.
+# What is now proven live is the port's KERNEL INTERFACE AND SIGNATURE ASSEMBLY --
+# the same claim `portexec/STAGE3.md` makes, and no larger. The kernel BODY is
+# still `emit-mm.bend`'s fixture. The mechanism is upstream's own CPU backend
+# (`ops_cpu.py:29-72`), not an invention, and it is portexec's, reused unchanged.
+#
+# Like stage 5, this stage's verdict does NOT become the script's exit status.
+# ---------------------------------------------------------------------------
+echo "== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"
+set +e
+zsh .agents/slop/e2e_port/run-port-mm.sh > "$RUN/e2e-port-mm.txt" 2>&1
+psrc=$?
+set -e
+cat "$RUN/e2e-port-mm.txt"
+verdict "stage 6 port (matmul THROUGH the port, no Node)" "$psrc"
+
+# ---------------------------------------------------------------------------
+# THE EXIT STATUS. IT IS NO LONGER STAGE 4's, AND THAT IS THE FIX.
+#
+# Every stage that RAN and FAILED now decides. `SKIP` does not -- a stage that could
+# not run measured nothing, and must not be laundered into a pass by the same
+# arithmetic that would hide a real failure.
+echo "--- verdicts: $FAILS failed, $SKIPS skipped ---"
+if [ "$FAILS" -gt 0 ]; then
+  echo "FAIL -- $FAILS stage(s) ran and failed. The per-stage verdicts above stand on their own:"
+  echo "       a failing stage does not retract the others' claims, and this script now says so in"
+  echo "       its exit status, which it did not before."
+  exit 1
 fi
-exit "$rc"
+if [ "$SKIPS" -gt 0 ]; then
+  echo "PASS WITH $SKIPS SKIP(S) -- nothing failed, but $SKIPS stage(s) measured NOTHING."
+  echo "       PASS-WITH-SKIP IS NOT PASS. Read the skipped lines above."
+  exit 0
+fi
+echo "PASS -- every stage ran and every stage agreed."
+exit 0
