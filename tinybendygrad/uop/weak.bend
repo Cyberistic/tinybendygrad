@@ -10,12 +10,27 @@
 # hypothetical src (`wk_derived`/`wk_dtype_at` below). Asking the fold about a node that
 # does not exist would need a scratch arena and a second Kahn worklist per query.
 #
-# THE WALL is `UOp._min_max` (ops.py:1104-1158), which `commit_dtype` (mixin/dtype.py:16)
-# reads for `vmin`/`vmax` on a weakint node. `fold.bend:2176-2184` records it as the
-# biggest single piece left in that half of ops.py and names what is missing (`i64_mul`,
-# `i64_div`, `i64_mod`; there is no F32 min/max). Every blocked def and rule below is
-# behind it, and the gate prints a COUNT row per table so the shortfall is visible rather
-# than a silent under-rewrite.
+# `UOp._min_max` (ops.py:1104-1158) IS LANDED, and the reader that joins it to
+# `commit_dtype` is landed with it. `fold.bend:2176-2184` once recorded the sweep as the
+# biggest single piece left in that half of ops.py and named what was missing (`i64_mul`,
+# `i64_div`, `i64_mod`; there is no F32 min/max) -- all of which now exist, and the
+# arithmetic core is at `fold.bend:2648` under a "when helpers.bend grows them these defs
+# go there" notice that has been kept.
+#
+# SO THE NINE MARKERS BELOW THAT SAY "`commit_dtype` IS MISSING" ARE OUT OF DATE, and the
+# wall was never a LANGUAGE limit. It was an IMPORT TOPOLOGY: the arithmetic is
+# `D.commit_dtype` in `mixin/dtype.bend`, which does not import this file, and `wk_dt` is
+# here -- so one call could not be written. `wk_commit_dtype` is that call, and
+# `.agents/slop/wk-cd-gate.sh` is its gate: 7 rows, three lanes, 6 identical and ONE
+# DOCUMENTED DIVERGENCE (`cd_none`, a PARAM with no `vmin_vmax`, where the sweep has no
+# interval to report and CPython answers `i64`). The nine markers are now blocked on their
+# own RULE BODIES and not on a reader.
+#
+# WHAT THE GATE HAS TO CONTAIN, because the obvious fixture proves nothing: a PARAM whose
+# dtype is int32 answers `i32` on EVERY row, because the weakint branch is not taken. And
+# with `default_int = int32` the ladder's first rung swallows every range inside int32. So
+# the rows that discriminate are the ranges int32 CANNOT hold, and a gate without them
+# would pass a reader that always answered `i32`.
 #
 # THE SECOND WALL is `DType.const` (dtype.py:79-84) for float16, bfloat16 and the four
 # fp8s, whose `truncate` entry is a C-effect seam. `wk_sealed` names those six dtypes and
@@ -27,6 +42,7 @@ import ./../LAWS/spec.bend as S
 import ./../helpers.bend as H
 import ./ops.bend as O
 import ./fold.bend as F
+import ./../mixin/dtype.bend as D
 
 # `dtypes.weaks` (dtype.py:160) is `(weakint, weakfloat)`, the two members of `S.Cls`
 # that are neither concrete-signed nor concrete-unsigned.
@@ -126,6 +142,46 @@ def wk_eq_dt(+x: S.Dt, +y: S.Dt) -> Bool:
 
 def wk_dt(+fx: F.Folded, i: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), i), S.void())
+
+# `commit_dtype` (dtype.py:16) -- `commit_int(self._uop.vmin, self._uop.vmax, default_int)
+# if self.dtype is weakint else self.dtype` -- AS A NODE-LEVEL READER.
+#
+# THE ARITHMETIC AND THE BOUNDS WERE BOTH ALREADY HERE and the READER was not, which is
+# what nine of this file's markers said and what none of them got right about WHY:
+#   * `D.commit_dtype` is ported (`mixin/dtype.bend`), and takes the node's dtype and its
+#     two bounds ALREADY RESOLVED -- CPython's own signature wants them separately, so the
+#     port's is not a workaround for anything.
+#   * `UOp.vmin` / `UOp.vmax` are ported (`uop/fold.bend`), over the sweep's `BTable`,
+#     and return the sweep's `Bnd`.
+# What was missing is ONE call that joins them, and it could not be written where the
+# arithmetic lives: `mixin/dtype.bend` does not import `uop/weak.bend` and `wk_dt` is here.
+# MEASURED, the edge this file adds -- `weak.bend -> mixin/dtype.bend` -- closes NO cycle:
+# `ops.bend`, `fold.bend` and `spec.bend` all do NOT import `weak.bend`.
+#
+# SO THE WALL WAS NEVER A LANGUAGE LIMIT. It was an IMPORT TOPOLOGY, and a wall is written
+# as a property of the language and read as one.
+# `BndInt` is the only arm that COMMITS: `commit_int` takes two ints, so an infinite
+# bound and a FLOAT bound have no integer to offer and answer nothing. That is a decision
+# and not an omission -- the arm is unreachable for the nodes these nine markers are about
+# (a PARAM's bounds are ints) and answering a wrong integer for an infinite one would be
+# the failure mode this port has catalogueued all session.
+def wk_bnd_i64.of(b: F.Bnd) -> Maybe<&1, H.I64>:
+  match b:
+    case F.BndInt{neg, mag}: Some{H.i64_neg(neg, mag)}
+    case _: None{}
+
+def wk_bnd_i64(m: Maybe<&2, F.Bnd>) -> Maybe<&1, H.I64>:
+  match m:
+    case Some{b}: wk_bnd_i64.of(b)
+    case _: None{}
+
+# `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
+# `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is
+# spelled here rather than taken as a parameter because all nine callers want the same one.
+def wk_commit_dtype(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, S.Dt>:
+  D.commit_dtype(wk_dt(fx, i),
+    wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+    wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)), S.int32())
 
 def wk_known.go(m: Maybe<&2, S.Dt>) -> Bool:
   match m:
