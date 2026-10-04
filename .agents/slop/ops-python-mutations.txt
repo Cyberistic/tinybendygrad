@@ -4,7 +4,7 @@
 | M1 | :178's else arm -- `Renderer.tensor_cores` is the CLASS default [] and ncores must stay 0 | 1 pyr_sm_74_ncores |
 | M2 | tc.py:98's four-key dict: gfx942 is the ONLY cdna3 key | 1 pyr_gfx942_tid |
 | M3 | the rdna4 dict has TWO keys and dropping one is a silent half-table | 1 pyr_gfx1201_tid |
-| M4 | (pattern not found) | 0 | get_amd's DEFAULT is amd_rdna3, so a typo'd gfx arch is a FULL rdna3 set |
+| M4 | get_amd's DEFAULT is amd_rdna3, so a typo'd gfx arch is a FULL rdna3 set | PATCH-NOT-APPLY: anchor not in SRC |
 | M5 | tc.py:68's ladder is `int(arch[3:]) >= 89`, not >= 88 | 1 pyr_sm_88_ncores |
 | M6 | the ladder's bottom is `[]`, and a Metal table here is the fall-through value | 2 pyr_sm_74_ncores pyr_sm_74_tid |
 | M7 | :170's arm is `target.arch == "METAL"`, exactly | 4 pyr_metal_device pyr_metal_lowp_device pyr_metal_ncores pyr_metal_tid |

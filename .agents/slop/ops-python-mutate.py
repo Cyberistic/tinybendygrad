@@ -104,7 +104,11 @@ def main():
   print('# | --- | --- | --- |')
   for mid, old, new, what in MUTATIONS:
     if old not in src:
-      print(f'| {mid} | (pattern not found) | 0 | {what} |')
+      # RULE D: a patch that does not apply must never read as a zero. M4 sat in the
+      # committed record as `0` for exactly this reason. The marker is NON-NUMERIC and
+      # the row keeps the table's 3-column shape, so neither a reader scanning the count
+      # column nor one summing it can mistake this for a measurement.
+      print(f'| {mid} | {what} | PATCH-NOT-APPLY: anchor not in SRC |')
       continue
     SCRATCH.write_text(src.replace(old, new, 1))
     out, rc = run(SCRATCH)
