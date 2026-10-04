@@ -9736,3 +9736,348 @@ baselines `.agents/slop/arith/baseline/`. **Nothing committed.**
 
       `isinf`'s marker named `float("inf")` as its own blocker. `F32.div(1.0, 0.0)` is
       `0x7F800000`.
+
+---
+
+## `notes-sweep` unit, 2026-10-04 — the notes' numbers were audited against runs
+
+**- [x] enumerate every superseded claim across `.agents/slop/**/*.md` and the scripts that
+      embed a count, each WITH ITS DENOMINATOR**
+      → `.agents/slop/notes-sweep/02-FINDINGS.md`, tables A–I. 8 sites on the coverage
+      number, 5 on `flip 6/7`, **6** on `graphs-agree`, 8 on graph/verdict counts, plus
+      `agent-core.md`, `SPELLING.md`, `TENSOR-SURFACE.md`, `arith/REACH-ARITH.md`,
+      `flip/FLIPR.md`, `backward-graph/BW-GRAPH.md`.
+
+**- [x] verify by MEASURING, not by reading the newest note** → `01-GROUND-TRUTH.md`.
+      `hermetic-census.py --no-publish` (rc=0) + `graphcmp.py diff` × 24 + a 137-file
+      `--check-only` census. The brief's numbers were **all confirmed by run**.
+
+**- [x] correct in place, PRESERVING THE HISTORY** — every stale block is kept verbatim under
+      a banner naming old and new, so a reader can see what moved. The arith `53 → 59`
+      before/after table and `graphcmp-LIMITS.md`'s 16-graph baseline are deliberately intact.
+
+**- [x] mark what could not be re-measured as `STALE`, not guessed** — **21 claims**, listed
+      by name in `notes-sweep/staleness.py` and section E of the findings. No replacement
+      number was invented for any of them.
+
+**- [x] make the staleness findable** → `.agents/slop/notes-sweep/staleness.py`.
+      `staleness.py` / `--quiet` / `--measure` / `--falsify`. **Hit rate: 11 re-measured
+      claims, 0 stale after correction; `--falsify` provably fires (rc=2, 1 row) so `0`
+      means "agrees", not "cannot notice".** The 21 unmeasured claims are printed on every
+      run and never counted as passes.
+
+**- [x] verify each corrected `file:line` exists and says what the note claims** — did, and
+      the direction was worse than expected: **`arith/REACH-ARITH.md` §5 had FOUR of six
+      citations wrong, not two** (`:2769`, `:1712-1717`, `:2869`, `ops.py:842`; plus
+      `graphcmp.py:1686`/`:1703-1705` in wall 1). Every wall's *substance* was sound.
+      `graphcmp.bend` is generated and `g_flip` moved `:1274` → **`:1289`**: cite by NAME.
+
+**- [ ] FIX `graphcmp-repro.sh`'s three dead pins — NOT DONE, GATE SCRIPT, OUT OF SCOPE.**
+      `graphs=16`→24, `graphs-agree=14`→**22**, `byte-identical=14`→21. The gate currently
+      refuses a fully correct run and retries, which is indistinguishable from a real
+      reproducibility failure. Owner action. Recorded in `REACH.md`, `graphcmp-LIMITS.md`
+      §3c and `backward-graph/BW-GRAPH.md`.
+
+**- [ ] re-measure the 21 STALE claims** — cheap ones first (`190+` rules, `zip-truncated=`
+      over 24 graphs, the 189-node float-CONST question, `i64_*` def count, the port's `Ops`
+      enum 77/77/0/0). The rest need a gate script or a full run.
+
+**- [x] found numbers CORRECT that a note says are wrong** — 7 groups, section I. **Every
+      claim with a machine-printed denominator is current; every number a human typed into
+      prose has aged.** `cdiv 7/7`, `late 9/9`, `loop ?=0/2`, `lin q=0/1 E=1/0`, `alu/bit/
+      where/move` node counts, `SPELLING.md`'s eight `i64_*` lines and its 678 uses.
+
+**- [x] a claim that INVERTED, not just aged** — `graphcmp-LIMITS.md` §5 proves `CMPEQ` is
+      unreachable and concludes "still 0". Measured: **`CMPEQ` is reached by `late`;
+      commutative ops are now 8 of 8.** Every measurement in the paragraph is still true and
+      the conclusion drawn from them is false. "I could not reach it" ≠ "it cannot be reached".
+
+**Nothing committed.**
+
+## TRIAGE — the 21 stray `.bend` copies (2026-10-04)
+
+- [x] **classify all 21 preserved copies** — **19 DAMAGE · 1 PARTIAL · 1 REAL WORK.**
+      Report `.agents/slop/TRIAGE.md`; rules `TRIAGE-01..06` in `.agents/slop/triage/NOTES.md`.
+      Re-measured the brief's own cold/warm table and reproduced it exactly; every COLD verdict
+      named by the compiler. Nothing in `strays/` deleted or modified.
+
+- [x] **apply + gate the one REAL WORK: `runtime/autogen/libclang.bend`** — applied at the
+      **generator layer** (`apply-port-lane.py`, no `--check`, zero hand edits) and the result is
+      **byte-identical** to the preserved copy (`04199adf…`, 71,324 B). Gate: `bend -o` goes
+      **rc 1 / 0 lines emitted → rc 0 / 5,503 lines**, `cl-port-gate.py` rc 0 with
+      `FAILURES: 0`, `apply-port-lane.py --check` `OUT OF SYNC` → `IN SYNC`, whole tree over all
+      137 `.bend` files **14 COLD before and after (the same 14)**, half 2
+      `refs=36407 exact=36407 unresolved=0` identical, `e2e.sh` rc 0 / 0 failed / 0 skipped.
+
+- [x] **answer the two questions the brief asked, measured** — (a) the +200 is **in the product,
+      not the header**: header +32, **body 184 lines**, and every substantive repair is body
+      (`Ty` declared, 13 ABI types added, Base's `U32`/`Unit` redeclarations removed, two
+      keyword params renamed, FFI lane appended). (b) a +32 header moves **all 7 distinct**
+      `libclang.bend:LINE` citations — but they are **0 in `.bend` source, 0 importers**, and
+      **3 of the 7 (`:617`, `:638`, `:641`) were already blank lines at origin**.
+
+- [x] **`S-6` (`helpers.bend:1167` vs the real `:1639`) — NOT from the stray copy.** It occurs
+      exactly once, in `renderer/amd/dsl.bend`, **count 1 at origin and 1 in the copy**. It is a
+      **pre-existing committed defect at `dsl.bend:64`**. `helpers.bend` is read-only to me, so
+      this is reported, not fixed.
+
+- [ ] **OWNER: `runtime/autogen/libclang.bend` was rolled BACK by the restore, not forward.**
+      The md5 `04199adf…` / 71,324 B / `IN SYNC` recorded as current belonged to the **stray
+      copy**. The live file was `07383541…` / 63,334 B and **OUT OF SYNC with its own committed
+      generator**. Re-applied here at the generator layer. **When restoring generated files,
+      re-run the generator and diff against it — a restore can move a generated product
+      backwards** (`TRIAGE-01`, `TRIAGE-02`).
+
+- [ ] **OWNER: `dsl_gen.py` and `ga_fix.py` are NON-IDEMPOTENT.** Both truncate at a marker and
+      re-append a block, so each run adds one copy. Measured: "THE FIXTURE" headers are **1 at
+      origin / 7 in `renderer/amd/dsl.bend`** and **4 → 10 in `renderer/amd/generate.bend`**; the
+      `duplicate declaration: VOP2_ALL` and `duplicate declaration: gl.go` are the same fact as
+      the "+1403". **Count the generator's marker; do not read the diff's line count**
+      (`TRIAGE-06`).
+
+- [ ] **the 19 DAMAGE files are silent, not loud — worth a sweep.** The shape is
+      character-level edits that KEEP THE FILE COMPILING: `and`→`or`, a disjunct dropped, a carry
+      → `0`, two `Bool.pick` arms swapped, a record field order permuted, a list constant
+      transposed, a parameter left unused, and (in `nv/nvdev.bend`) **313 of 374 gate rows turned
+      into dead `String.concat` expressions**. Two are falsified by UPSTREAM
+      (`compiler_mesa` `arch[3:]` is 3, not 2; `memory.py:39` is `size, next, prev`), two by the
+      port's OWN named predicate or row (`fold.bend:627` `aspace_val_is_ix_plus1`;
+      `simplify.bend` `fr_off_linear` vs `ops.py:58`), and one (`nv/ip.bend`) is a prose revert to
+      a pre-`hcq2` state that the tree falsifies (`hcq2.bend` is 2348 lines, not a 29-line stub).
+
+- [ ] **the 6 artifacts, all DAMAGE, none appliable** — `elf.bend.mut` md5 == live `elf.bend`
+      (zero information); three mutually distinct one-line variants of `memory.bend` under three
+      PIDs, each falsified above; `ops.staged-blob-24323` is `ops.bend` at an **earlier** state
+      (`+406/−2413`, 6306 vs 8313 lines); `trip` is 0 bytes.
+
+**Nothing committed.**
+
+---
+
+## `DENOM` — the 77 denominator (unit `DENOM`, 2026-10-04). Progress: [==========] 10/10
+
+Report **`.agents/slop/DENOMINATOR.md`**; instruments **`.agents/slop/denom/`**;
+claim + md5s **`.agents/slop/denom/CLAIM.md`**. Rules `DENOM-1..5` appended to
+`notes/bend2-constraints.md`. **Nothing committed.**
+
+- [x] **The brief's stated test, run as asked — "no `UOp` is ever constructed with it" — finds
+      NOTHING. 18 of 18 constructible, 18 of 18 carried on a real `UOp`, 18 of 18 in
+      `toposort()`.** The hypothesis is FALSIFIED, and by two members of the section whose
+      header it rests on (`CONTIGUOUS_BACKWARD`, `DETACH` are reached and are in
+      `__init__.py:88`'s *"ops that don't exist in programs"*). **`DENOM-1`, `DENOM-2`.**
+- [x] Per-op verdict with the deciding `file:line` — 18 rows, `DENOMINATOR.md` §2.
+- [x] **The reachable denominator: 77 of 77 reachable as a UOp graph; 73 of 77 emittable by
+      the differ.** So `59 of 77` was the RIGHT denominator and the shortfall was the CORPUS,
+      not the denominator. Emptability is measured, not assumed: 14 upstream-constructed graphs,
+      union 73.
+- [x] **`CUSTOM CUSTOMI PYLITERAL` blocked by the INSTRUMENT, not tinygrad:** `cshape` catches
+      `RuntimeError`, `ops.py:442` raises `AssertionError`, and `upat.py:66` makes every
+      pattern IR `AND`-rooted. One `except` arm retires all three. **`DENOM-3`.**
+- [x] **`MULACC` is device-gated, not dead:** one rule at `op.py:118`, gated on `code_for_op`,
+      listed by exactly one renderer (`renderer/ptx.py:33`). Needs an NVIDIA device.
+- [x] **Graph added: `g_allred` (`copy_to_device` + `allreduce`, upstream's own calls), 9 nodes,
+      reaches `ALLREDUCE` + `COPY`. Corpus 59 → 61 BOTH SIDES, `py-only=[]`, `bend-only=[]`,
+      `WALLS=[]`.** 24 prior verdicts re-measured: 23 AGREE, 2 DISAGREE (`lin`,`loop`, on
+      purpose). `selfcheck: OK`. Edits to `graphcmp.py`/`graphcmp.bend` are PURELY ADDITIVE
+      (0 lines deleted; the 23 deletions in the working diff are FLIPR's pre-existing work).
+- [x] **VERDICT for the new graph is `DISAGREE`, and the headline is the verdict, not the
+      ledger.** `?=0` on both sides while disagreeing — the `flip` pattern reproduced
+      deliberately. Cause located to ONE field on 2 of 9 nodes: **`COPY`'s arg has NO port
+      representation** — `ADev` is the only Arg variant for it and it flattens, while py
+      (having no `carg` arm for `COPY`) nests. **Reported, NOT fixed: it is a NORMAL-FORM
+      decision affecting both files, and py itself is inconsistent** (`n(sCPU,sCPU)` for `COPY`
+      vs `sCPU,CPU` for `ALLREDUCE`, same graph). **`DENOM-5`.**
+- [x] **The claim NOT made:** not that the corpus compares training graphs. `bw` is one eager
+      expression's gradient, `schedule -> render -> compile` is still forward-only, and `late`
+      and `g_allred` are graphs the port REPRODUCES and does not PRODUCE.
+- [ ] *(left for a successor, deliberately)* the other 13 emittable candidates —
+      `stage copy getaddr customfn ins rwrerr threefry wmma mstack mselect unshard program`,
+      each 1–2 new ops with its citation in `emittable.py`. **Blocked on the `ADev` spelling
+      question in `DENOMINATOR.md` §4**, which is the owner's call, not mine.
+- [ ] *(left for a successor)* widen `graphcmp.py:750`'s `except RuntimeError` so a shapeless
+      `AND` can be compared; that alone reaches `CUSTOM`, `CUSTOMI`, `PYLITERAL`.
+
+## GUARDFIX — `substrate-check.sh` half 1 ROUTES BY WHAT THE FILE IS (`GXR-*`)
+
+- [x] **`GXR-1` THE DEFECT, IN ONE MEASUREMENT.** Half 1 ran `bend --check-only` on every
+      file. Over the six non-`.bend` files of `tinybendygrad/` (`dtype.c`, `sz.c`,
+      `dtype.js`, `sz.js`, `webgpu_call.js`, `webgpu_call.mjs`) that is **6 of 6
+      `SOME PROOFS FAIL`**, and not one of them is a Bend file. `SOME PROOFS FAIL` is
+      bend answering "this is not a Bend program" — a statement about the QUESTION.
+      `w64mile/STATUS.md:44` had recorded the caveat; the caveat is now removed.
+- [x] **`GXR-2` THE ROUTING TABLE.** `.bend` -> `bend --check-only`; `.c` -> `cc -fsyntax-only`
+      over bend's own generated C context; `.js`/`.mjs` -> `node --check`; **anything else
+      -> `NO INSTRUMENT`, counted apart, NEVER `COLD`.** `MISSING`/`EMPTY` stay ahead of the
+      router. Four verdicts because three are not enough: a file nobody measured is not a
+      file that passed.
+- [x] **`GXR-3` `.c` IS NOT A TRANSLATION UNIT, AND THE OBVIOUS FIX IS ALSO WRONG.**
+      `cc -fsyntax-only tinybendygrad/runtime/dtype.c` alone gives **190 errors, every one
+      "bend's runtime is not here"** (`Term` 22, `u32` 50, `Env` 12, `IoWork` 10, `ctr_take`,
+      `io_tup`, `f32_rewrap`, +60 locals downstream). The brief's literal suggestion is the
+      SAME category error asked of a different tool. bend pastes the fragment in verbatim
+      (`comp.ts` `effect_srcs` -> `c_ids` -> `runtime_c`), so the types are declared by the
+      GENERATOR.
+- [x] **`GXR-4` AND THE GENERATED UNIT CANNOT BE HALVED.** Emit lines 1..2839 carry **44
+      `#if` opens against 43 `#endif` closes** — `#if !DEVICE` (1556) is closed by the
+      generated `main`, past the foreign block. So there is NO self-contained preamble to
+      `-include`: `cc -fsyntax-only` on the prefix alone reports `unterminated conditional
+      directive` at 1556:2. The guard therefore builds the context from a real
+      `bend -o` (`guardfix/probe-c.bend`), **counts** the deficit, appends the closure,
+      compiles the context **on its own**, and prints `NO INSTRUMENT` — never a pass,
+      never a cold — if that self-check fails.
+- [x] **`GXR-5` A FALSE RED, CAUGHT BY THE TOOL, CORRECTED IN THE INSTRUMENT.**
+      `sz.c:51,53` evaluate `term_pak(CID(Nil), 0)`. `CID` is an EMIT-TIME substitution,
+      not C, and no emit defines a `CID` function — so a first cut reported `sz.c` COLD
+      with 7 "undeclared function `CID`". **That red contradicted the tool** (bend builds
+      and runs the file), so it was my instrument, not `sz.c`. Fixed by `#define CID(x) 0`
+      in the context: correct because the id's VALUE is irrelevant to parsing. Result:
+      `dtype.c` 0, `sz.c` 0. **The corollary is named in `guardfix/RESULTS.md` §3: `CID` is
+      the one thing this instrument cannot judge.**
+- [x] **`GXR-6` THE PLANT-TO-PASS IS CLOSED AND THE DISARM IS 6/6.** A byte copy of
+      `runtime/dtype.c` is **WARM**; the SAME copy plus one broken line is **COLD at
+      `broken.c:298`**; `const x = ;` is **COLD**; a valid `.js` is **WARM**; a `.py` is
+      **NO INSTRUMENT** with the exit code untouched; a 0-byte `.bend` is still **EMPTY**.
+      Repeatable: `.agents/slop/guardfix/disarm.sh` (exit 0 = every assertion held). All
+      plants are `$TMPDIR` copies; **the tree was never written to.**
+- [x] **`GXR-7` THE ROUTING IS PRINTED BESIDE THE VERDICTS.** Every line carries its
+      instrument in brackets and one line tallies it:
+      `ROUTE   bend=137  cc=2  node=4  no-instrument=0  (of 143 file(s))`. Half 2's
+      `unseen=` count exists for the same reason.
+- [x] **`GXR-8` WHOLE TREE, AFTER.** `COLD` by instrument: **14 `[bend --check-only]`, 0 from
+      `cc`, 0 from `node`** — and the 14 are exactly the 14 `agent-core.md:138-150`
+      documents. Half 2 unchanged: `BAD 0`, `unresolved=0`. Output stays column-compatible
+      with `f64/run-f64.sh:99`, which reads `head -1 | awk '{print $1}'`.
+- [x] **`GXR-9` REPORTED, NOT FIXED — `runtime/sz.c` AND `sz.bend`.** `sz.c` registers
+      `io_eff(CID(Sz.read_dir), ...)` bare, where `dtype.c:250-297` guards **every**
+      registration with `#ifdef CID(...)`. A build reaching `Sz.is_dir` but not
+      `Sz.read_dir` leaves `CID__________..._SZ_SZ_READ_DIR` undefined (`cc` says so, and
+      suggests `WL_FID__________..._SZ_SZ_IS_DIR`), and the same emit wants `CID_NIL` /
+      `CID_CON`, which **no emit defines** (`#define CID_NIL` count 0) while bend's own
+      preamble spells them `CID_SNIL` / `CID_SCON`. Read-only file: reported, not edited.
+- [x] **`GXR-10` NO `TODO` LEFT IN THE SCRIPT.** The `.c` context has two named
+      dependencies (`guardfix/probe-c.bend` and the `.c` it reaches, named not guessed) and
+      **fails loud** if either is absent or if the emit stops containing that file's first
+      line — so a bend upgrade that changes the splice prints `NO INSTRUMENT` rather than
+      a silent pass.
+- [x] **`GXR-12` THE ROUTE CAUGHT A LIVE CONCURRENT BREAKAGE — and it is the argument for the
+      whole job.** Minutes after the run that read `0 from node`, the same command read
+      `COLD tinybendygrad/runtime/dtype.js :: SyntaxError: Unexpected token ')' :: dtype.js:96`.
+      A **real** unbalanced paren, introduced by another agent mid-measurement (`jj status`
+      shows `M tinybendygrad/runtime/dtype.js`). **The old guard said `SOME PROOFS FAIL` for
+      that file when it was valid and says the SAME string now that it is broken** — so its
+      red carried zero information and only trained people to ignore it. The routed verdict
+      names the error AND the line. Read-only file: reported, not edited. **`RESULTS.md` §5.**
+
+## `DTB-` dtype.bend's red laws — 14 -> 6. Full write-up in `.agents/slop/DTYPEB.md`.
+
+- [x] **`DTB-1` THE 6 `Dt.i64_*` ARE PURE.** They were `IO(..)` foreign defs with no body.
+      `H.I64` and the whole 64-bit ALU were already in `helpers.bend`; the wall was being an
+      **effect**, and an effect is unreachable from `UOp._min_max`, a pure Kahn fold
+      (`mixin/dtype.bend:38-60`). Chosen route: **remove the effect from the leaf** — the
+      arithmetic does not move and the fold does not change type. NOT the other route, which
+      would make `fold.bend`'s `Folded`/`Table` an `IO` value and is that file's call.
+      `i64_mul` is still missing and `mixin/dtype.bend:56` is right; cdiv/cmod are derived
+      from the multiply-free floor pair. `ceildiv` could **not** be upstream's
+      `-((-x)//y)`: `-x` does not exist for `int64.min`, and the fixture `min_min` caught the
+      wrong answer (-1 vs CPython's 1) before it shipped.
+- [x] **`DTB-2` `Dt.fp8_from` + `float_to_fp8` ARE PURE — 14 -> 6.** `fp8_encode`
+      (`dtype.c:44-87`) is pure U32 arithmetic on the f32 pattern. The one obstacle was that
+      `U32.shl`/`U32.shr` are ONE-BIT and the shaper's shift amounts are computed; measured on
+      2.0.34, `U32.shln(a, U32.to_nat(n))` with a **runtime** `n` works. `float_to_fp8` was
+      never arithmetic; it was red only through `Dt.fp8_from`.
+- [x] **`DTB-3` THE 6 THAT REMAIN ARE ONE MISSING PRIMITIVE.** `F32.bits` exists and is a
+      bitcast; **`F32.from_bits` does not exist on 2.0.34**; and `U32.to_f32` is the NUMERIC
+      conversion (`U32.to_f32(3)` = 3), not a bitcast. Bend can take a float apart and cannot
+      put one back together. `Dt.bf16` / `Dt.fp16` / `Dt.fp8_to` all end in that step and their
+      three wrappers have no arithmetic at all. **Requirement: `def F32.from_bits(bits: U32) ->
+      F32` in `base.bend`, which is not this file's.** File stays COLD, with a stated cause.
+- [x] **`DTB-4` THE GATES RAN AGAINST A CALLED ORACLE, 1330 rows, present==expected every run.**
+      i64 102 (99 CPython-verified via `tinygrad/helpers.py`, 3 `TOTALISE` at `b == 0` where
+      CPython raises, checked against `runtime/dtype.c`'s own zero branch and never called
+      passes); fp8 1228 (all CPython-verified via `tinygrad/dtype.py:float_to_fp8`) over 215
+      patterns x 4 formats plus 122 f32 literals for the end-to-end wrapper.
+- [x] **`DTB-5` DISARM FIRST, THEN PLANT.** Disarms moved **0**. The i64 plant (drop the
+      `- b`) moved **6** rows and the moved set is asserted **equal to the set derived from the
+      mutation's algebra**, not a transcribed list. The fp8 plant (drop `& 0xFFu`) moved 236
+      with **0 outside the derived reachability family**. The tie-parity blindness probe moved
+      **12**, so it is reported as a non-zero and not as a blind spot.
+- [x] **`DTB-6` THREE BUGS FOUND, TWO MINE AND ONE IN `runtime/dtype.c` (reported, not fixed,
+      it is not this file's).** (1) mine: `& 0xFFu` dropped from the exponent field, 236 rows.
+      (2) mine: the subnormal shift ladder had 3 rungs; the window is **4** exponents wide,
+      because `absx > denorm` compares the whole magnitude — 43 rows. (3)
+      **`dtype.c:40`'s `fp8_ovf` drops the trailing `-1` that `dtype.py:236-241` writes on three
+      of four thresholds**, and `dtype.c:70` compares with `>`, so at `absx == 0x47700000`
+      CPython answers 123 (`fp8e5m2`) / 127 (`fp8e4m3fnuz`) and the C answers 124 / 128.
+      `dtype.c:19-21`'s "agree bit for bit on every f32 input" is false on that row.
+- [x] **`DTB-7` A STALE CITATION, IN THE REPORT THAT MADE IT.** W64-MILE.md's ADDENDUM item
+      "REFUTED 2" claims `runtime/dtype.c:205-206` reads `f[0], f[1]` and is wrong on 0 of 30
+      rows. **The live file already takes `Env`+`Term` and uses `ctr_take`
+      (`dtype.c:205-209`)** — that patch landed. Do not act on that item.
+- [x] **`DTB-8` A WALL THAT IS NOW HALF STALE.** `mixin/dtype.bend:50-58` records CAST, CDIV,
+      FLOORDIV, FLOORMOD and CMOD as EFFECT SEAMS `_min_max` cannot call. After `DTB-1` they
+      are pure and callable. **`i64_mul` and a 64-bit shift are the whole of what still blocks
+      `UOp._min_max`.** Separately: **all fourteen of these defs have ZERO executable call sites
+      outside `dtype.bend`** — every hit in the tree is a comment — so `mixin/dtype.bend` names
+      a seam it never calls, and the `uop/weak.bend` and `uop/fold.bend` TODOs that quote those
+      names should be re-read against this.
+- [x] **`DTB-9` NO LAW WAS DELETED.** All 14 names are still declared exactly once each
+      (`grep -c "^def <n>("` = 1, live and patched); 8 changed from a seam to a body, 6
+      unchanged. `import "./runtime/dtype.*"` lines 20 -> 6. Whole-tree `--check-only` sweep:
+      the red file set is **byte-identical** live vs patched, so nothing else regressed.
+      `substrate-check.sh`: **COLD** on the bend half (6 laws, expected), **NAMES CLEAN** on the
+      names half (328 refs, 328 exact, 0 unresolved, 0 dead imports), 871 lines not empty.
+      `ops_python.bend` — the file that made `ops.bend`'s false green visible — is still red.
+
+## Session 2026-10-04 round 6 — the method surface was 71/71 correct and UNGATED
+
+- [x] **`.agents/slop/ew-gate.sh` LANDED: 71 rows, 3 lanes byte-identical, 1 documented
+      divergence.** The oracle (`ew-gate.py`) and the row-emitting `main` both already
+      existed; only the gate was missing — the same gap `prepare.bend` had.
+
+      ### A GATE THAT DID NOT EXIST IS HOW A FALSE WALL HAPPENS
+
+      The oracle and the emitter were written and the diff was never run, so the file's
+      43-marker queue sat on **nobody's measurement** — and one of those markers grew into
+      the "no float literal anywhere in the port" wall that held up a dozen methods and was
+      false in all three of its halves. Four of the last five walls here were an untested
+      premise rather than a substrate limit.
+
+      **So the fix is not more care. The claim gets a GATE before it gets believed.** And
+      the measurement came out the other way from what I expected: **all 71 shared rows
+      already agreed exactly**, so the queue is not "fix wrong methods" — it is "land the
+      22 methods whose stated blocker was just refuted, and now I can tell whether they are
+      one-liners."
+
+      ### THE ROWS ARE GRAPH SIGNATURES, NOT VALUES
+
+      `ew_add=3 CONST/0 CONST/0 ADD/2` is a node count then each node's `OP/n` with its src
+      count. Comparing the graph is the STRONGER claim: a promotion that reaches the right
+      dtype by the wrong ops is a different method, and a value gate would pass it.
+
+      ### ONE DIVERGENCE, DOCUMENTED ON BOTH SIDES
+
+      `ew_promo_nc` is the port's signature for a non-constant promotion and the oracle
+      deliberately omits it — a signature there is unfalsifiable, since CPython's promotion
+      of a non-constant has no fixed arity. The oracle gates the two halves it CAN check
+      (`ew_dt_promo_nc`, `ew_op_promo_nc`) and the port emits those too. So the gate excludes
+      one named row, asserts it is PRESENT on both port lanes, asserts the oracle has NOT
+      grown it (a stale `DIVERGES` would exclude nothing while claiming to), and asserts the
+      two checkable halves are still there — so the exclusion removes the unfalsifiable part
+      and not the whole claim.
+
+      ### TWO GATES, TWO CLAIMS — and a mutation table must not confuse them
+
+      `OpsSQRT -> OpsRSQRT` and `OpsRECIPROCAL -> OpsNEG` both turn this gate RED.
+      `0.30103 -> 0.30102999` leaves it GREEN, and that is CORRECT: no method row calls
+      `ew_k.log10_2()` yet, so a constant cannot change a signature. The constants are gated
+      by `ew-consts-gate.sh`, which turns red on exactly that mutation. A single gate
+      claiming both would have to sit green on every constant until a method used it — which
+      is the same untested-premise shape this gate exists to end.
+
+      ### A CONTROL THAT WAS NOT A CONTROL
+
+      My first negative control mutated `O.OpsNEG{}`, which has **zero sites** in the file.
+      The replacement never applied, and the loop printed `STILL GREEN (blind!)` — a
+      fabricated result, and the same shape as the `P06` `target-not-found` earlier. The loop
+      now distinguishes *target missing* from *blind*, and verifies the mutation landed
+      before trusting the verdict.
