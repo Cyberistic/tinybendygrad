@@ -594,41 +594,35 @@ def _answers(fn, inputs):
 
 # ── ONE CANDIDATE, MEASURED ────────────────────────────────────────────────────────────────
 def measure(rel, name, lineno, seg, node):
-  """Measure ONE candidate, and run the measurement TWICE.
+  """Measure ONE candidate: the RUNNER check, then the six shapes, then the six shapes AGAIN.
 
-  Twice, because a reader that gives two different answers to the same text cannot be given a
-  fingerprint at all -- and that is a finding, not a measurement to be averaged."""
-  m = measure_once(rel, name, lineno, seg, node)
-  m2 = measure_once(rel, name, lineno, seg, node)
-  keys = ("contract", "drift", "note", "kinds", "blob_kind", "blob_n", "verdict")
-  m["unstable"] = any(m.get(k) != m2.get(k) for k in keys)
-  # A reader whose CLASSIFICATION moves between two runs on the same tree cannot be given a
-  # fingerprint either, because a fingerprint is only meaningful for a fixed contract. This is
-  # not hypothetical: `graphcmp.py`'s `bend_sym_rows` reads as a `text->mapping` reader on an idle
-  # run and as `not-a-reader` on a busy one, so the registry gained and lost its row between two
-  # runs and the guard's finding count moved with it.
-  #
-  # THE CAUSE IS THE TIMEOUT, AND THE FIX IS TO STOP ASKING. `does_real_work()` reads the AST and
-  # decides STATICALLY whether the function runs a lane, compiles anything, or walks a tree. A
-  # runner is a runner on a fast machine and a slow one; classifying it by whether it finished
-  # inside PROBE_TIMEOUT is a coin flip in the DENOMINATOR, which is the one thing a census must
-  # not produce. So the check is made once, statically, and the timeout becomes a backstop rather
-  # than a classifier.
-  # The RUNNER check is STATIC and needs the module source, so it happens HERE rather than in
-  # `measure_once`: it is a fact about the SOURCE, not about one run of it.
+  The second pass is not redundant with the first. The first decides whether the function is a
+  reader at all; the second asks whether it ANSWERS TO ITSELF, and a function that does not has
+  no fingerprint to guard. Both are needed and the order is fixed: the runner check is STATIC and
+  comes first, so a reader's class never depends on how loaded the machine was when it was asked.
+
+  MEASURED, and the reason the order is not negotiable: `graphcmp.py`'s `bend_sym_rows` read as a
+  `text->mapping` reader on an idle run and as `not-a-reader` on a busy one, purely because it
+  ran a graph walk and tripped PROBE_TIMEOUT on the second. A classification that moves with load
+  puts a coin flip in the DENOMINATOR, and the registry then gains and loses its rows between
+  runs of one tree."""
   src_path = REPO / rel
   try:
     mod_src = src_path.read_text()
   except OSError:
     mod_src = None
   if mod_src is not None and does_real_work(node, mod_src):
-    m["contract"] = "runner"
-    m["drift"] = None
-    m["note"] = ("STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, "
-                 "so how long it takes is a property of the machine. Classified from the AST so "
-                 "the answer does not move with load; a run it timed out on is a backstop, not "
-                 "the measurement.")
-  elif m["unstable"]:
+    return dict(file=rel, func=name, line=lineno, contract="runner", drift=None,
+                note=("STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree "
+                      "walk, so how long it takes is a property of the machine. Classified from "
+                      "the AST so the answer does not move with load; PROBE_TIMEOUT is a backstop "
+                      "that stops this harness hanging, not the classifier."),
+                sig="?", kinds=[], blob_kind="", blob_n=0)
+  m = measure_once(rel, name, lineno, seg, node)
+  m2 = measure_once(rel, name, lineno, seg, node)
+  keys = ("contract", "drift", "note", "kinds", "blob_kind", "blob_n", "verdict")
+  m["unstable"] = any(m.get(k) != m2.get(k) for k in keys)
+  if m["unstable"]:
     m["contract"] = "non-deterministic"
     m["drift"] = None
     m["note"] = ("ANSWERED THE SAME TEXT TWO DIFFERENT WAYS in one process, with no subprocess in "

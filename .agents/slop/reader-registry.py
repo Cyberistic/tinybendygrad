@@ -186,6 +186,31 @@ CONTRACTS = {
     "ambiguity is reported rather than resolved.",
   ("eq/rn-gate.py", "split_py"):
     "INVERSE FOLD, FOURTH instance. Reads the `]   py=[` tail back out by rfind.",
+  # ── llvmir-gate.py, the SIXTH copy, and the FIRST one measured to be BYTE-IDENTICAL to
+  # nl-gate.py's (census signature S06: 1e9d42d3d219, two readers, one signature). Identical
+  # behaviour in two files is the strongest possible statement that the second file does not need
+  # its own copy -- and it is the shape this whole census exists to collapse. Registered, not
+  # converted: llvmir-gate.py is another unit's live gate.
+  ("llvmir-gate.py", "rows_strict"):
+    "PARITY reader, SIXTH instance (cstyle-gate, cs-fixpy, nl-gate, rn-gate, and this). "
+    "MEASURED BYTE-IDENTICAL in behaviour to eq/nl-gate.py's -- same census signature "
+    "1e9d42d3d219, from two files that cannot see each other. Same contract: demands the `py=` "
+    "column and a closing `]`, returns (rows, unread, dups), and REFUSES ambiguity with a reason "
+    "string rather than resolving it.",
+  ("llvmir-gate.py", "row_strict"):
+    "PER-LINE rule, sixth instance. Returns (name, value, why).",
+  ("llvmir-gate.py", "split_py"):
+    "INVERSE FOLD, sixth instance. Its docstring names its own concrete case -- "
+    "`br6 bitcast i8x1->f32x1`'s answer is `RuntimeError`, and the row carries two brackets -- "
+    "which is why rfind and not find.",
+
+  # ── prepare_rows.py, and the NARROWING verdict is the interesting part.
+  ("prepare_rows.py", "port_rows"):
+    "PREPARATION, not verification: named `port_rows` because it reads the PORT lane before the "
+    "gate compares anything, to reshape names. NARROWING against rows() -- it sees a subset with "
+    "identical values, so importing rows() could only ADD rows. It is not converted because what "
+    "it feeds is a name reshape, and a reshape applied to rows() output must be shown to be the "
+    "same reshape on the same lane, not assumed to be.",
 }
 
 # Every reader that IS the gate's rows(), imported. Kept as data so R3 has something to check.
@@ -197,7 +222,11 @@ IMPORTS = {
   "debug-mutate.py": "rows_of", "ext_mutate.py": "rows_of_text", "mutate.py": "rows",
   "dtype-pri-mutate.py": "rows_of", "tools/mutate-dm.py": "rows",
   "tools/mutate-allreduce.py": "rows", "tools/mutate-memory.py": "rows",
-  "dd-band-paddiff.py": "rows",  # already unified before this census
+  # ⚠ `dd-band-paddiff.py` was on this list and HAD TO BE REMOVED, which is the guard's R3 rule
+  # catching a false claim in its own registry. It looked unified because its docstring says it
+  # uses "rebase-gate.py's unified row reader" -- and it carries its OWN `rows(p)` that opens a
+  # file. A claim of unification in a docstring is not a unification, and only checking the BINDING
+  # rather than the prose is what noticed.
 }
 
 DROP = {("mop-mut.py", "rows"), ("ext_mutate.py", "rows_of")}  # both converted; see IMPORTS
@@ -234,6 +263,22 @@ def main():
                "THE PER-LINE READER rows() is built on. Returns (name, left, right) or None; "
                "`right` is the `py=` column and is deliberately NOT the compared column."))
 
+  # THE IMPORT-FORM ROWS, emitted from IMPORTS and NOT from the census -- because a converted file
+  # has no `def` for the census to find. That is the whole point of the conversion, and it is also
+  # why the registry cannot be built by scanning alone: a file that HAS successfully stopped being
+  # a fork is invisible to a scan for forks. These rows are what lets R3 check that each of those
+  # files binds the gate rather than carrying a parser that the scan can no longer see.
+  for bare, func in sorted(IMPORTS.items()):
+    if not func:
+      continue
+    p = HERE / bare
+    if not p.exists():
+      continue
+    rows.append((str(p.relative_to(REPO)), func, "import-gate-rows", "-",
+                 "IMPORT FORM: binds rebase-gate.py's rows() by path. No second parser, so there "
+                 "is exactly one answer to \"what does this lane's output mean\". A converted file "
+                 "has no `def` for a scan to find -- this row is how the guard still checks it."))
+
   forked = uncontracted = 0
   for (rel, func), m in sorted(measured.items()):
     if rel.endswith(".agents/slop/rebase-gate.py") and func in ("rows", "row"):
@@ -242,10 +287,7 @@ def main():
     if m["contract"] not in C.DRIFT_FAMILIES:
       continue  # a producer, a differ, a name extractor: not a row reader
     if bare in IMPORTS and IMPORTS[bare] == func:
-      rows.append((rel, func, "import-gate-rows", "-",
-                   "IMPORT FORM: binds rebase-gate.py's rows() by path. No second parser, so "
-                   "there is exactly one answer to \"what does this lane's output mean\"."))
-      continue
+      continue  # already emitted above, from IMPORTS: a converted file has no def to find
     if (bare, func) in DROP:
       continue
     forked += 1

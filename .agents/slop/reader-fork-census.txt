@@ -1,6 +1,6 @@
 control: rebase-gate.py rows()/row(), loaded by path   md5=b6d706e9158f89de56aedd26c9ce298e
 corpus: .agents + runs (this project's own tooling; upstream tinygrad excluded)
-candidates whose NAME says rows: 311   (the DENOMINATOR for everything below)
+candidates whose NAME says rows: 347   (the DENOMINATOR for everything below)
 
 CANONICAL SIGNATURE, by CALLING the gate's rows()
   F1  name=value               'ctl OPENCL sz1 k0=half'                     -> [('ctl OPENCL sz1 k0', "'half'")]
@@ -11,47 +11,42 @@ CANONICAL SIGNATURE, by CALLING the gate's rows()
   F6  TAB gap                  'ctl\ttab\thalf'                             -> []
 
 BY CONTRACT -- the DRIFT DENOMINATOR is the two families that answer a row question
-  not-single-arg     151   drifted=0   (not a row reader: excluded from drift)
-  NOT-COMPARABLE     83    drifted=0   (not a row reader: excluded from drift)
-  text->mapping      35    drifted=34
-  refused-text       23    drifted=0   (not a row reader: excluded from drift)
-  path-reader        12    drifted=0   (not a row reader: excluded from drift)
-  line->answer       4     drifted=3
+  not-single-arg     142   drifted=0   (not a row reader: excluded from drift)
+  NOT-COMPARABLE     75    drifted=0   (not a row reader: excluded from drift)
+  runner             68    drifted=0   (not a row reader: excluded from drift)
+  text->mapping      29    drifted=28
+  path-reader        13    drifted=0   (not a row reader: excluded from drift)
+  refused-text       9     drifted=0   (not a row reader: excluded from drift)
+  line->answer       5     drifted=4
+  value->fold        4     drifted=0
   not-a-reader       2     drifted=0   (not a row reader: excluded from drift)
-  value->fold        1     drifted=0
 
 DRIFT, over every function in this corpus that ANSWERS A ROW QUESTION
-  DRIFTED 37 of 40    (35 text readers, 4 per-line, 1 inverse-fold)
-  agree on all six  3
+  DRIFTED 32 of 38    (29 text readers, 5 per-line, 4 inverse-fold)
+  agree on all six  6
 
-THE THREE-WAY SPLIT OF THE 35 TEXT READERS -- this is what decides
+THE THREE-WAY SPLIT OF THE 29 TEXT READERS -- this is what decides
    which fork can be DELETED. NARROWING = the fork sees a SUBSET of what rows() sees, with
    identical values, so importing rows() can only ADD rows. DIVERGENT = the fork reads
    something rows() does not, and swapping one for the other changes a verdict.
   AGREE        1
-  NARROWING    14
+  NARROWING    8
   DIVERGENT    20
   of which the control itself (rebase-gate.py's own rows()): 1 -- and it agrees with itself, which is the only reason the other rows are a finding
 
-DISTINCT BEHAVIOURS: 15 different answers to the six shapes, from 35 text readers
+DISTINCT BEHAVIOURS: 15 different answers to the six shapes, from 29 text readers
   A signature is the exact (name, value) answer set on all six shapes, so two readers with
   the same signature are the same reader spelled twice -- which is what makes this a
   fan-out problem with a small number of root causes rather than 51 of them.
   readers excluded from the grouping because the fake stdout gave them a row name that is
-  not in the probe text, i.e. the verdict is the harness's and not theirs: 2
+  not in the probe text, i.e. the verdict is the harness's and not theirs: 1
 
-  S01 0c66f485d883  11 reader(s)   verdict=NARROWING
+  S01 0c66f485d883  5 reader(s)   verdict=NARROWING
         .agents/slop/amdev_mutate.py:20  rows(text)
-        .agents/slop/fold-rng-mutate.py:153  rows(work)
-        .agents/slop/graphcmp.py:2039  bend_loop_rows(dev: str)
-        .agents/slop/graphcmp.py:2035  bend_sym_rows(dev: str)
-        .agents/slop/hdr_audit.py:164  printed_rows(path)
         .agents/slop/ip_sweep.py:48  rows(src)
         .agents/slop/mm-mutate.py:91  rows(text)
         .agents/slop/multi-mutate.py:70  rows(text)
         .agents/slop/prepare_rows.py:34  port_rows(text: str)
-        .agents/slop/rebase-probe-oracle.py:25  bend_rows(port, native=False)
-        .agents/slop/rebase-probe-oracle.py:41  oracle_rows(spec)
 
   S02 bd1522b6808a  4 reader(s)   verdict=DIVERGENT
         .agents/slop/codegen-init-measure.py:211  rows(out: str)
@@ -72,21 +67,22 @@ DISTINCT BEHAVIOURS: 15 different answers to the six shapes, from 35 text reader
         .agents/slop/drift-gate.py:33  rows(text)
         .agents/slop/hcq2-diff.py:93  rows(text)
 
-  S06 12d6bed6132d  2 reader(s)   verdict=NARROWING
+  S06 1e9d42d3d219  2 reader(s)   verdict=DIVERGENT
+        .agents/slop/eq/nl-gate.py:107  rows_strict(text)
+        .agents/slop/llvmir-gate.py:104  rows_strict(text)
+
+  S07 12d6bed6132d  2 reader(s)   verdict=NARROWING
         .agents/slop/nv_nvdev_gate.py:30  rows(text)
         .agents/slop/nv_nvdev_mutrun.py:63  rows(text)
 
-  S07 a6e0ac31d2cd  1 reader(s)   verdict=DIVERGENT
+  S08 a6e0ac31d2cd  1 reader(s)   verdict=DIVERGENT
         .agents/slop/bnxt_sweep.py:28  rows_of(out)
 
-  S08 1095cdefcc3c  1 reader(s)   verdict=DIVERGENT
+  S09 1095cdefcc3c  1 reader(s)   verdict=DIVERGENT
         .agents/slop/dd-band-mut.py:95  rows(text)
 
-  S09 2d491776b4c5  1 reader(s)   verdict=NARROWING
+  S10 2d491776b4c5  1 reader(s)   verdict=NARROWING
         .agents/slop/formblind-audit.py:640  rows_fold_at_first_tail(text: str)
-
-  S10 80da6790d533  1 reader(s)   verdict=DIVERGENT
-        .agents/slop/memory-mutate.py:247  rows_of(txt)
 
   S11 c3ef9f26885a  1 reader(s)   verdict=DIVERGENT
         .agents/slop/nv-diff.py:28  rows_of(text)
@@ -103,7 +99,7 @@ DISTINCT BEHAVIOURS: 15 different answers to the six shapes, from 35 text reader
   S15 887de055ee23  1 reader(s)   verdict=DIVERGENT
         .agents/slop/wire_parse.py:17  rows(text)
 
-TEXT->MAPPING (35) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
+TEXT->MAPPING (29) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
    because a reader can agree on all six shapes and still not be substitutable
   DRIFT .agents/slop/amdev_mutate.py:20    rows(text)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/bnxt_mutate.py:152   rows_of(out)  kinds=dict        DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', "SET['half']"); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "SET[' [half]   py=[half]']"); F3  name<SP><SP>value:('#ctlf3  half', 'SET[]'); F4  name contains '=':('na', "SET['me=value']")
@@ -113,46 +109,44 @@ TEXT->MAPPING (35) -- one line each; `kinds` is the RESULT SHAPE, reported apart
   DRIFT .agents/slop/cstyle-gate.py:137   rows_strict(text)  kinds=dict+extras DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'half]   py=[half'")
   DRIFT .agents/slop/dd-band-mut.py:95    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "' [half]   py=[half]'")
   DRIFT .agents/slop/drift-gate.py:33    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/dsl_mutate.py:147   rows(path)  kinds=dict        DIVERGENT: F1  name=value:('- message  : no such file: ctl OPENCL sz1 k0', "'half'"); F2  name = [v]   py=[w]:('- message  : no such file: ctl OPENCL sz1 k0 ', "' [half]   py=[half]'"); F4  name contains '=':('- message  : no such file: na', "'me=value'")
-  DRIFT .agents/slop/fold-rng-mutate.py:153   rows(work)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
+  DRIFT .agents/slop/eq/nl-gate.py:107   rows_strict(text)  kinds=dict+extras DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'half'")
   DRIFT .agents/slop/formblind-audit.py:113   rows_eq_or_gap_no_tab(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:118   rows_eq_then_gap_greedy(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:640   rows_fold_at_first_tail(text: str)  kinds=dict        NARROWING: F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/formblind-audit.py:95    rows_name_must_be_one_token(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/formblind-audit.py:83    rows_pre_f3(text: str)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
-  DRIFT .agents/slop/graphcmp.py:2039  bend_loop_rows(dev: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/graphcmp.py:2035  bend_sym_rows(dev: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/hcq2-diff.py:93    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'")
-  DRIFT .agents/slop/hdr_audit.py:164   printed_rows(path)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/ip_sweep.py:48    rows(src)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/memory-mutate.py:247   rows_of(txt)  kinds=lines       DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', 'half'); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', '[half]'); F4  name contains '=':('na', 'me=value')
+  DRIFT .agents/slop/llvmir-gate.py:104   rows_strict(text)  kinds=dict+extras DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'half'")
   DRIFT .agents/slop/mm-mutate.py:91    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/multi-mutate.py:70    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/nv-diff.py:28    rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 = [half]   py', "'[half]'"); F4  name contains '=':('na=me', "'value'")
-  DRIFT .agents/slop/nv_ip_mutate.py:249   rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'"); F3  name<SP><SP>value:('ctlf3  half', "''"); F5  single-space gap:('ctl single half', "''"); F6  TAB gap:('ctl\ttab\thalf', "''")
+  DRIFT .agents/slop/nv_ip_mutate.py:249   rows_of(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "' [half]   py=[half]'"); F3  name<SP><SP>value:('ctlf3  half', "''")
   DRIFT .agents/slop/nv_nvdev_gate.py:30    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/nv_nvdev_mutrun.py:63    rows(text)  kinds=dict        NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1
   DRIFT .agents/slop/ops-mutate.py:190   rows_of(text)  kinds=dict        DIVERGENT: F1  name=value:('ctl OPENCL sz1 k0', "'ctl OPENCL sz1 k0=half'"); F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0 ', "'ctl OPENCL sz1 k0 = [half]   py=[half]'"); F4  name contains '=':('na', "'na=me=value'")
   DRIFT .agents/slop/prepare_rows.py:34    port_rows(text: str)  kinds=lines       NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/rebase-probe-oracle.py:25    bend_rows(port, native=False)  kinds=dict+extras NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
-  DRIFT .agents/slop/rebase-probe-oracle.py:41    oracle_rows(spec)  kinds=dict+extras NARROWING: F1  name=value:misses 1; F2  name = [v]   py=[w]:misses 1; F3  name<SP><SP>value:misses 1; F4  name contains '=':misses 1
   DRIFT .agents/slop/rebase-probe-oracle.py:16    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/rows-blast.py:47    rows_old(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   DRIFT .agents/slop/wire_parse.py:17    rows(text)  kinds=dict        DIVERGENT: F2  name = [v]   py=[w]:('ctl OPENCL sz1 k0', "'[half]   py=[half]'")
   ok    .agents/slop/rebase-gate.py:458   rows(text)  kinds=dict        AGREE: 
 
-LINE->ANSWER (4) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
+LINE->ANSWER (5) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
    because a reader can agree on all six shapes and still not be substitutable
-  DRIFT .agents/slop/blob-rows.py:54    rows_of(path: str, tries: int=2)  kinds=-           disagrees on F1  name=value F2  name = [v]   py=[w] F3  name<SP><SP>value F4  name contains '=' F5  single-space gap F6  TAB gap
   DRIFT .agents/slop/cstyle-gate.py:127   row_strict(line)  kinds=-           disagrees on F1  name=value F2  name = [v]   py=[w] F3  name<SP><SP>value F4  name contains '='
+  DRIFT .agents/slop/eq/nl-gate.py:85    row_strict(line)  kinds=-           disagrees on F1  name=value F2  name = [v]   py=[w] F3  name<SP><SP>value F4  name contains '=' F5  single-space gap F6  TAB gap
+  DRIFT .agents/slop/llvmir-gate.py:82    row_strict(line)  kinds=-           disagrees on F1  name=value F2  name = [v]   py=[w] F3  name<SP><SP>value F4  name contains '=' F5  single-space gap F6  TAB gap
   DRIFT .agents/slop/table-pin.py:115   rowset(path)  kinds=-           disagrees on F1  name=value F2  name = [v]   py=[w] F3  name<SP><SP>value F4  name contains '=' F5  single-space gap F6  TAB gap
   ok    .agents/slop/rebase-gate.py:418   row(line)  kinds=-           
 
-VALUE->FOLD (1) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
+VALUE->FOLD (4) -- one line each; `kinds` is the RESULT SHAPE, reported apart from drift
    because a reader can agree on all six shapes and still not be substitutable
   ok    .agents/slop/cstyle-gate.py:295   split_py(value)  kinds=-           arg is `value`: inverse-fold contract; agrees with row()'s fold
+  ok    .agents/slop/eq/nl-gate.py:123   split_py(value)  kinds=-           arg is `value`: inverse-fold contract; agrees with row()'s fold
+  ok    .agents/slop/eq/rn-gate.py:184   split_py(value)  kinds=-           arg is `value`: inverse-fold contract; agrees with row()'s fold
+  ok    .agents/slop/llvmir-gate.py:120   split_py(value)  kinds=-           arg is `value`: inverse-fold contract; agrees with row()'s fold
 
-NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
+NOT ROW READERS (309) -- excluded from the drift denominator, listed so the
    exclusion is checkable rather than asserted
     NOT-COMPARABLE   .agents/slop/amd_oracle.py:29  row(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
     NOT-COMPARABLE   .agents/slop/amdev_fw.py:173  desc_rows(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
@@ -161,7 +155,6 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/amdev_oracle.py:30  row(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
     NOT-COMPARABLE   .agents/slop/bnxt_oracle.py:23  row(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
     NOT-COMPARABLE   .agents/slop/c-mutate.py:30  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
-    NOT-COMPARABLE   .agents/slop/cl_split_mutate.py:64  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/codegen3-mut.py:49  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/cs_oracle.py:28  row(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
     NOT-COMPARABLE   .agents/slop/elf_oracle.py:402  link_sym_rows(?)  def-time ImportError: reader-fork-census sandbox: 'ctypes' not allowed
@@ -185,7 +178,6 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/late-oracle.py:30  row(?)  def-time NameError: name 'AddrSpace' is not defined
     NOT-COMPARABLE   .agents/slop/late-oracle.py:329  rw_rows(?)  def-time NameError: name 'AddrSpace' is not defined
     NOT-COMPARABLE   .agents/slop/late-oracle.py:195  se_rows(?)  def-time NameError: name 'AddrSpace' is not defined
-    NOT-COMPARABLE   .agents/slop/mutate_webgpu_call.py:17  rows_of(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/nir/nir_mutate.py:53  moved_rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/nir/nir_oracle.py:432  const_rows(?)  def-time ImportError: reader-fork-census sandbox: 'inspect' not allowed
     NOT-COMPARABLE   .agents/slop/nir/nir_oracle.py:239  rows(?)  def-time ImportError: reader-fork-census sandbox: 'inspect' not allowed
@@ -194,7 +186,7 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/nv_ip_diff.py:32  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/nv_mutate.py:50  rows(?)  def-time NameError: name 'SRC' is not defined
     NOT-COMPARABLE   .agents/slop/ops-python-render-oracle.py:45  row(?)  def-time ImportError: reader-fork-census sandbox: 'traceback' not allowed
-    NOT-COMPARABLE   .agents/slop/oracles/fold-mut.py:135  rows_of(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
+    NOT-COMPARABLE   .agents/slop/oracles/fold-mut.py:136  rows_of(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prep-mutate.py:17  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prep-mutate.py:42  rows_txt(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prepare-oracle.py:66  row(?)  def-time NameError: name 'I32' is not defined
@@ -214,21 +206,15 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:494  rows_hip(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:576  rows_idx(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:99  rows_init(?)  def-time NameError: name 'CS' is not defined
-    NOT-COMPARABLE   .agents/slop/renderer_oracle.py:394  rows_kern(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:533  rows_kern2(?)  def-time NameError: name 'CS' is not defined
-    NOT-COMPARABLE   .agents/slop/renderer_oracle.py:417  rows_misc(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:407  rows_opt(?)  def-time NameError: name 'CS' is not defined
-    NOT-COMPARABLE   .agents/slop/renderer_oracle.py:297  rows_rd(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:275  rows_tmap(?)  def-time NameError: name 'CS' is not defined
-    NOT-COMPARABLE   .agents/slop/renderer_oracle.py:315  rows_witem(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/renderer_oracle.py:455  rows_wmma(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/state-audit.py:167  parse_rows(?)  def-time NameError: name 'REPO' is not defined
-    NOT-COMPARABLE   .agents/slop/state-mutate.py:59  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/tc-value.py:77  row(?)  def-time NameError: name 'F32' is not defined
     NOT-COMPARABLE   .agents/slop/tools/mutate-eqcls.py:63  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/tools/renderer-oracle.py:135  rows_cstyle(?)  def-time NameError: name 'CS' is not defined
     NOT-COMPARABLE   .agents/slop/tools/renderer-oracle.py:31  rows_init(?)  def-time NameError: name 'CS' is not defined
-    NOT-COMPARABLE   .agents/slop/tools/tx-mut.py:74  rows_moved(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/validate-oracle.py:122  row_of(?)  def-time NameError: name 'T' is not defined
     NOT-COMPARABLE   .agents/slop/wip/gen_main.py:33  row(?)  def-time NameError: name 'AddrSpace' is not defined
     NOT-COMPARABLE   .agents/slop/wire-snapshot.py:21  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
@@ -237,14 +223,11 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/x86/x86_oracle.py:287  row(?)  def-time NameError: name 'dtypes' is not defined
     NOT-COMPARABLE   .agents/slop/x86/x86_oracle.py:324  row(?)  def-time NameError: name 'dtypes' is not defined
     NOT-COMPARABLE   .agents/slop/xb1/device-mutate.py:19  rows(?)  def-time ImportError: reader-fork-census sandbox: 'difflib' not allowed
-    not-a-reader     .agents/slop/f2f-calibrate.py:149  shape_rows(path)  F1  name=value=OTHER -1; F2  name = [v]   py=[w]=OTHER -1; F3  name<SP><SP>value=OTHER -
-    not-a-reader     .agents/slop/ops-mutate.py:208  bend_rows(native)  F1  name=value=HUNG; F2  name = [v]   py=[w]=HUNG; F3  name<SP><SP>value=HUNG
+    not-a-reader     .agents/slop/eq/eq-census2.py:98  row_open_at_depth0(line)  F1  name=value=NONE; F2  name = [v]   py=[w]=NameError: name 'PYCOL' is not defined; F3 
+    not-a-reader     .agents/slop/eq/rn-gate.py:100  logical_rows(text)  F1  name=value=SEQ1["SEQ['1', '1', 'ctl OPENCL sz1 k0=half']"]; F2  name = [v]   py=[w]=
     not-single-arg   .agents/slop/bend_oracle.py:30  rows()  ARITY rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/blob-intern-mutate.py:84  blob_rows()  ARITY blob_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/c-oracle.py:45  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/commute-detect.py:173  diff_rows(a: dict[str, str], b: dict[str, str])  ARITY diff_rows() missing 1 required positional argument: 'b'
-    not-single-arg   .agents/slop/cpulink_gate.py:81  bend_rows()  ARITY bend_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/dd-truth.py:57  gate_rows()  ARITY gate_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/commute-detect.py:176  diff_rows(a: dict[str, str], b: dict[str, str])  ARITY diff_rows() missing 1 required positional argument: 'b'
     not-single-arg   .agents/slop/debug-gate.py:52  row(nm, v)  ARITY row() missing 1 required positional argument: 'v'
     not-single-arg   .agents/slop/device-oracle.py:43  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
     not-single-arg   .agents/slop/dk-oracle.py:116  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
@@ -253,23 +236,27 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/dst-oracle.py:18  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
     not-single-arg   .agents/slop/e2e_mm_gate.py:89  row(name, value, expect)  ARITY row() missing 2 required positional arguments: 'value' and 'expect'
     not-single-arg   .agents/slop/ew-gate.py:58  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
-    not-single-arg   .agents/slop/fold-lift-mutate.py:57  rows()  ARITY rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/fold2-mutate.py:102  cp_rows()  ARITY cp_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/fold2-mutate.py:98  rows()  ARITY rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/ga-oracle.py:304  emit_rows(tag, text)  ARITY emit_rows() missing 1 required positional argument: 'text'
     not-single-arg   .agents/slop/ga-oracle.py:31  row(nm, val)  ARITY row() missing 1 required positional argument: 'val'
-    not-single-arg   .agents/slop/graphcmp.py:2031  py_sym_rows()  ARITY py_sym_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/graphcmp.py:782  row_of(n: UOp, k: int, ix: dict)  ARITY row_of() missing 2 required positional arguments: 'k' and 'ix'
+    not-single-arg   .agents/slop/graphcmp.py:2046  py_sym_rows()  ARITY py_sym_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/graphcmp.py:784  row_of(n: UOp, k: int, ix: dict)  ARITY row_of() missing 2 required positional arguments: 'k' and 'ix'
     not-single-arg   .agents/slop/indexing-oracle.py:57  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
     not-single-arg   .agents/slop/ip_oracle.py:30  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/llvmir-oracle.py:364  amdr_rows()  ARITY amdr_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:298  br11_rows()  ARITY br11_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:342  br15_rows()  ARITY br15_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:172  br1_rows()  ARITY br1_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:195  br2_rows()  ARITY br2_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:215  br3_rows()  ARITY br3_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:233  br5_rows()  ARITY br5_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/llvmir-oracle.py:253  br6_rows()  ARITY br6_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:164  br_index_rows()  ARITY br_index_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:513  footer_rows()  ARITY footer_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:629  lab_rows()  ARITY lab_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:113  lconst_rows()  ARITY lconst_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:639  lt_rows()  ARITY lt_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:653  pri_rows()  ARITY pri_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:576  rdna_rows()  ARITY rdna_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:438  render_fn_rows()  ARITY render_fn_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:550  render_rows()  ARITY render_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:41  row(nm, got, want)  ARITY row() missing 2 required positional arguments: 'got' and 'want'
+    not-single-arg   .agents/slop/li/pre-oracle.py:153  rstr_rows()  ARITY rstr_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:417  sargs_rows()  ARITY sargs_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:93  vol_rows()  ARITY vol_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:476  walk_rows()  ARITY walk_rows() takes 0 positional arguments but 1 was given
+    not-single-arg   .agents/slop/li/pre-oracle.py:588  wmma_rows()  ARITY wmma_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:164  br_index_rows()  ARITY br_index_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:513  footer_rows()  ARITY footer_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:629  lab_rows()  ARITY lab_rows() takes 0 positional arguments but 1 was given
@@ -280,7 +267,6 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/llvmir-oracle.py:438  render_fn_rows()  ARITY render_fn_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:550  render_rows()  ARITY render_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:41  row(nm, got, want)  ARITY row() missing 2 required positional arguments: 'got' and 'want'
-    not-single-arg   .agents/slop/llvmir-oracle.py:671  rows()  ARITY rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:153  rstr_rows()  ARITY rstr_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:417  sargs_rows()  ARITY sargs_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/llvmir-oracle.py:93  vol_rows()  ARITY vol_rows() takes 0 positional arguments but 1 was given
@@ -289,13 +275,10 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/memory_oracle.py:18  row(nm, v)  ARITY row() missing 1 required positional argument: 'v'
     not-single-arg   .agents/slop/memory_oracle.py:736  trace_rows(tag, calls)  ARITY trace_rows() missing 1 required positional argument: 'calls'
     not-single-arg   .agents/slop/mixin-op-gate.py:55  row(name, t)  ARITY row() missing 1 required positional argument: 't'
-    not-single-arg   .agents/slop/mt_audit2.py:549  rows_mode()  ARITY rows_mode() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/mt_constmap.py:419  emit_rows()  ARITY emit_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:52  bax_rows()  ARITY bax_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:160  expand_rows()  ARITY expand_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:150  flip_rows()  ARITY flip_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:167  index_rows()  ARITY index_rows() takes 0 positional arguments but 1 was given
-    not-single-arg   .agents/slop/multi-rows.py:227  late_rows()  ARITY late_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:113  part_bounds_rows()  ARITY part_bounds_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:139  permute_rows()  ARITY permute_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/multi-rows.py:72  reduce_rows()  ARITY reduce_rows() takes 0 positional arguments but 1 was given
@@ -341,25 +324,21 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/onnx-gate.py:32  row(nm, v)  ARITY row() missing 1 required positional argument: 'v'
     not-single-arg   .agents/slop/ops-501-oracle.py:30  row(k, v)  ARITY row() missing 1 required positional argument: 'v'
     not-single-arg   .agents/slop/ops-render-oracle.py:55  row(nm, u)  ARITY row() missing 1 required positional argument: 'u'
-    not-single-arg   .agents/slop/ops-rra-mutate.py:132  read_rows()  ARITY read_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/ops-rra-mutate.py:143  rows_moved(base: dict, got: dict)  ARITY rows_moved() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/ops-rra-oracle.py:67  row(nm, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/ops-sugar-mutate.py:229  read_rows()  ARITY read_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/ops-sugar-mutate.py:225  rows_moved(before: dict, after: dict)  ARITY rows_moved() missing 1 required positional argument: 'after'
     not-single-arg   .agents/slop/ops-sugar-oracle.py:54  row(k, v)  ARITY row() missing 1 required positional argument: 'v'
-    not-single-arg   .agents/slop/ops-var-mutate.py:68  read_rows()  ARITY read_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/ops-var-mutate.py:79  rows_moved(base: dict, got: dict)  ARITY rows_moved() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/ops-var-oracle.py:60  row(nm, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/ops-vrn-mutate.py:96  read_rows()  ARITY read_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/ops-vrn-mutate.py:107  rows_moved(base: dict, got: dict)  ARITY rows_moved() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/ops-vrn-oracle.py:59  row(nm, name, lo, hi, mult, dt)  ARITY row() missing 5 required positional arguments: 'name', 'lo', 'hi', 'mult', and 'dt
+    not-single-arg   .agents/slop/ops-vv-oracle.py:60  row(nm, got)  ARITY row() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/oracle-search.py:41  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
     not-single-arg   .agents/slop/oracles/fold-mvt-oracle.py:57  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
     not-single-arg   .agents/slop/oracles/fold-mvt-rows.py:62  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
     not-single-arg   .agents/slop/oracles/fold-rng-oracle.py:41  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
     not-single-arg   .agents/slop/order-verdicts.py:102  row_source(oracle_py: pathlib.Path, name: str)  ARITY row_source() missing 1 required positional argument: 'name'
     not-single-arg   .agents/slop/qcom-oracle.py:48  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/reader-fork-convert.py:75  gate_rows()  ARITY gate_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/sqtt_spec.py:45  row(name, val)  ARITY row() missing 1 required positional argument: 'val'
     not-single-arg   .agents/slop/state-gate.py:29  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
     not-single-arg   .agents/slop/tcptx-oracle.py:190  asm_rows()  ARITY asm_rows() takes 0 positional arguments but 1 was given
@@ -377,8 +356,6 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/tcptx-oracle.py:134  wmma_guard_rows()  ARITY wmma_guard_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/tcptx-oracle.py:324  wmma_render_rows()  ARITY wmma_render_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/tensor-gate.py:33  row(nm, b)  ARITY row() missing 1 required positional argument: 'b'
-    not-single-arg   .agents/slop/tx-oracle.py:95  rows(nm, v)  ARITY rows() missing 1 required positional argument: 'v'
-    not-single-arg   .agents/slop/validate-mutate.py:80  oracle_rows()  ARITY oracle_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/vz/viz_oracle.py:31  row(name, got, both=False)  ARITY row() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/vz/viz_oracle.py:75  sec_rows()  ARITY sec_rows() takes 0 positional arguments but 1 was given
     not-single-arg   .agents/slop/wgsl-rows.py:171  rows_kernel()  ARITY rows_kernel() takes 0 positional arguments but 1 was given
@@ -400,28 +377,83 @@ NOT ROW READERS (271) -- excluded from the drift denominator, listed so the
     path-reader      .agents/slop/f2f-gate-diff.py:36  rows(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
     path-reader      .agents/slop/false-zero-sweep.py:83  rows_with_zero_count(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
     path-reader      .agents/slop/mt_constmap.py:434  gate_rows(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
+    path-reader      .agents/slop/opsbend_milestone_gate.py:74  rows(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
+    path-reader      .agents/slop/portexec/exec_harness.py:35  port_rows(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
     path-reader      .agents/slop/zero-classify.py:100  rows_of(path)  FileNotFoundError: [Errno 2] No such file or directory: 'ctl OPENCL sz1 k0=half'
-    path-reader      runs/margsym/snap/graphcmp.py:2035  bend_sym_rows(dev: str)  FileNotFoundError: [Errno 2] No such file or directory: '/Users/cyberistic/src/tries/202
-    refused-text     .agents/slop/blob-control-mirror.py:91  blob_rows(path: str, attempt_cap: int=8)  _Denied: reader-fork-census sandbox denied print
-    refused-text     .agents/slop/dd-coverage.py:35  rows_of(text)  NameError: name 'importlib' is not defined
     refused-text     .agents/slop/dst-oracle.py:59  rows_of(e)  TypeError: unsupported operand type(s) for -: 'str' and 'str'
+    refused-text     .agents/slop/eq/rn-gate.py:128  row_strict(logical)  ValueError: too many values to unpack (expected 3)
+    refused-text     .agents/slop/eq/rn-gate.py:171  rows_strict(text)  NameError: name '_census' is not defined
     refused-text     .agents/slop/graphcmp-oracle.py:82  symdim_rows(lines: list[str])  NameError: name 'G' is not defined
-    refused-text     .agents/slop/late-zero-classify.py:42  rows_of(paths)  NameError: name 'SM' is not defined
-    refused-text     .agents/slop/mt_oracle.py:107  rows(live=True)  ImportError: reader-fork-census sandbox: 'tinygrad.runtime.autogen' not allowed
-    refused-text     .agents/slop/nn-init-mutate.py:84  rows(src)  OSError: reader-fork-census sandbox: writers are disabled
-    refused-text     .agents/slop/not-applied-audit.py:268  pipe_rows(node)  AttributeError: 'str' object has no attribute '_fields'
-    refused-text     .agents/slop/ops-501-mutate.py:207  read_rows(path: pathlib.Path)  NameError: name '_rg' is not defined
-    refused-text     .agents/slop/rebase-plant-disagreement.py:36  rows_of(spec)  NameError: name 'ORACLE_PY' is not defined
-    refused-text     .agents/slop/rebase-scan-oracles.py:138  bend_rows(port)  NameError: name 'read_fresh_cache' is not defined
-    refused-text     .agents/slop/rebase-scan-oracles.py:170  oracle_rows(spec)  NameError: name 'read_fresh_cache' is not defined
     refused-text     .agents/slop/spec-citations.py:42  bend_rows(fn)  StopIteration: 
     refused-text     .agents/slop/staged_mut.py:114  row_digest(r)  AttributeError: 'str' object has no attribute 'items'
-    refused-text     .agents/slop/staged_mut.py:78  rows(text)  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:195  rows(self, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:377  rows(self, retries=5, args=())  ImportError: reader-fork-census sandbox: 'importlib.util' not allowed
-    refused-text     .agents/slop/staged_mut.py:201  try_rows(self, retries=5, args=())  AttributeError: 'str' object has no attribute 'run'
     refused-text     .agents/slop/tools/szfuzz.py:121  bend_rows(out)  NameError: name 'ROW' is not defined
     refused-text     .agents/slop/unobservable-census.py:60  rows_of(path: pathlib.Path)  AttributeError: 'str' object has no attribute 'read_text'
-    refused-text     .agents/slop/wire-pair.py:91  bend_rows(port, tries=3)  NameError: name 'read_fresh_cache' is not defined
-    refused-text     .agents/slop/wire-rows.py:34  bend_rows(port, tries=3)  NameError: name 'read_fresh_cache' is not defined
     refused-text     runs/margsym/snap/graphcmp-oracle.py:65  symdim_rows(lines: list[str])  NameError: name 'G' is not defined
+    runner           .agents/slop/blob-control-mirror.py:91  blob_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/blob-rows.py:54  rows_of(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/cl_split_mutate.py:64  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/cpulink_gate.py:81  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/dd-coverage.py:35  rows_of(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/dd-truth.py:57  gate_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/dsl_mutate.py:147  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/f2f-calibrate.py:149  shape_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/fold-lift-mutate.py:57  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/fold-rng-mutate.py:153  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/fold2-mutate.py:102  cp_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/fold2-mutate.py:98  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/graphcmp.py:2054  bend_loop_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/graphcmp.py:2050  bend_sym_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/hdr_audit.py:164  printed_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/late-zero-classify.py:42  rows_of(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:364  amdr_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:298  br11_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:342  br15_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:172  br1_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:195  br2_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:215  br3_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:233  br5_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:253  br6_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/li/pre-oracle.py:671  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:364  amdr_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:298  br11_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:342  br15_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:172  br1_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:195  br2_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:215  br3_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:233  br5_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:253  br6_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/llvmir-oracle.py:671  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/mt_audit2.py:549  rows_mode(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/mt_constmap.py:419  emit_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/mt_oracle.py:107  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/multi-rows.py:227  late_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/mutate_webgpu_call.py:17  rows_of(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/nn-init-mutate.py:84  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/not-applied-audit.py:268  pipe_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-501-mutate.py:207  read_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-mutate.py:208  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-rra-mutate.py:132  read_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-sugar-mutate.py:229  read_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-var-mutate.py:68  read_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/ops-vrn-mutate.py:96  read_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/reader-fork-convert.py:82  gate_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/rebase-plant-disagreement.py:36  rows_of(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/rebase-probe-oracle.py:25  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/rebase-probe-oracle.py:41  oracle_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/rebase-scan-oracles.py:138  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/rebase-scan-oracles.py:170  oracle_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/renderer_oracle.py:394  rows_kern(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/renderer_oracle.py:417  rows_misc(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/renderer_oracle.py:297  rows_rd(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/renderer_oracle.py:315  rows_witem(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/staged_mut.py:78  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/staged_mut.py:195  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/staged_mut.py:377  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/staged_mut.py:201  try_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/state-mutate.py:59  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/tools/tx-mut.py:74  rows_moved(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/tx-oracle.py:95  rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/validate-mutate.py:80  oracle_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/wire-pair.py:91  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           .agents/slop/wire-rows.py:34  bend_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l
+    runner           runs/margsym/snap/graphcmp.py:2035  bend_sym_rows(?)  STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, so how l

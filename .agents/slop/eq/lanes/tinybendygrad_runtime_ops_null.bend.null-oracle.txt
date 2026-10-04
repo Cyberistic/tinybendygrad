@@ -1,0 +1,9 @@
+nr_exec=0
+nr_copy=1
+nr_wait=2
+nr_store=3
+nr_timestamp=4
+nr_emulate_msg_rdna4=EMULATE is deprecated, use DEV=NULL:HIP:gfx1201
+nr_emulate_msg_amd=EMULATE is deprecated, use DEV=NULL:HIP:gfx1100
+nr_emulate_msg_cdna=EMULATE is deprecated, use DEV=NULL:HIP:gfx950
+nr_emulate_msg_other=EMULATE is deprecated, use DEV=NULL:HIP:<arch>

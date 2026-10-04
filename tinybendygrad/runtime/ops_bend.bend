@@ -599,12 +599,29 @@ def fld2(xs: List<&2, String>) -> String:
 def fld3(xs: List<&2, String>) -> String:
   Maybe.default(&2, String, List.get(&2, String, xs, 3n), "")
 
+# THE OFF-BY-ONE, AND IT IS THE REAL WALL. `take1` is `take_nat(xs, 1n)` and it
+# MUST answer exactly one field -- `header_only` joins the result and splits it on
+# ' ', so a two-field answer glues the header onto the first uop line and every
+# field after it shifts by one token.
+#
+# The original armed `case h <> t 0n: [h]`, which takes ONE ELEMENT WHEN THE COUNT
+# IS ALREADY SPENT: `take_nat(xs, 1n)` matched `1n+np` with `np = 0n`, took `h`,
+# then recursed `take_nat(t, 0n)` which took `h2` as well. MEASURED:
+# `header_only` answered ["bendexec1", "13", "31:", "PARAM", ...] -- "3" and "1:"
+# glued into "31:" -- so `dec` read it as 0 and `bend_parse_nbufs=0`,
+# `bend_prog_*_nbufs_ok=False` and `bend_call_*_refused=False`.
+#
+# SO THE HEADER'S WALL 4 WAS THE WRONG DEF. It blamed `String.split(s, NLCH())`,
+# and the split is fine on this substrate (MEASURED: it answers four fields for
+# "a\nb\nc\n"). The wall was `take_nat`'s spent-count arm.
 def take_nat(+xs: List<&2, String>, n: Nat) -> List<&2, String>:
   match xs n:
     case Nil{} _:
       Nil{}
-    case h <> t 0n:
-      [h]
+    case _ <> _ 0n:
+      Nil{}
+    case Nil{} 1n+np:
+      Nil{}
     case h <> t 1n+np:
       List.append(&2, String, [h], take_nat(t, np))
 
@@ -912,17 +929,25 @@ def bufs_before.of(ls: List<&2, Line>, +b: U32) -> U32:
   bufs_before(U32.to_nat(b), b, ls, 0)
 
 # :200 `[buf_extent(u.arg) for u in self.uops if is_buf(u.arg)]`
-def in_bufs.go(+ls: List<&2, Line>, +acc: List<&2, U32>, +hit: Bool) -> List<&2, U32>:
+# `Bool.pick` CHOOSES an arm, so `hit` carries the PREDICATE for the line about to
+# be read. THE SEED IS WRONG ONCE AND IT WAS HIDDEN: `in_bufs.of` seeded `hit` from
+# `ls_at(ls, 0n)` -- the FIRST line -- and then the first arm re-tested it, so the
+# first line was counted twice and the LAST line never counted. MEASURED, after
+# WALL 4 was cleared: `bend_prog_tiny_in_bufs` read `4 4 4 0` where CPython's
+# `[buf_extent(u.arg) for u in self.uops if is_buf(u.arg)]` is `[4, 4, 4]`.
+#
+# The fix is the shape `ops_python.bend` uses everywhere: TEST THE HEAD INSIDE THE
+# ARM, so every line is tested exactly once and the seed is `False{}`.
+def in_bufs.go(+ls: List<&2, Line>, +acc: List<&2, U32>) -> List<&2, U32>:
   match ls:
     case Nil{}:
       List.reverse(&2, U32, acc)
     case h <> t:
-      in_bufs.go(t, Bool.pick(List<&2, U32>, hit,
-        List.append(&2, U32, acc, [buf_extent(Line.arg(h))]), acc),
-        is_buf(Line.arg(h)))
+      Bool.pick(List<&2, U32>, is_buf(Line.arg(h)),
+        in_bufs.go(t, List.append(&2, U32, acc, [buf_extent(Line.arg(h))])),
+        in_bufs.go(t, acc))
 
-def in_bufs.of(+ls: List<&2, Line>) -> List<&2, U32>:
-  in_bufs.go(ls, Nil{}, is_buf(Line.arg(ls_at(ls, 0n))))
+def in_bufs.of(+ls: List<&2, Line>) -> List<&2, U32>: in_bufs.go(ls, Nil{})
 
 def in_bufs(+ls: List<&2, Line>) -> List<&2, U32>: in_bufs.of(ls)
 
@@ -961,11 +986,24 @@ def out_bufs(+ls: List<&2, Line>) -> List<&2, U32>:
   H.dedup_u32(out_go(ls, ls, bases(ls), 1, Nil{}))
 
 
+# THE ARMS WERE SWAPPED, and that is THE WALL -- not the line split, not
+# `take_nat`. `Bool.pick(-A, cond, THEN, ELSE)` takes the FIRST arm when `cond` is
+# True, which this file's own `wire_dtype` establishes (`Bool.pick(Res, lanes(dt),
+# Res{True{}, dt}, Res{False{}, msg})` -- the OK case is the first arm). So this def
+# was building `Prog.of(False{}, ...)` for every GOOD packet and
+# `Prog.of(True{}, ...)` for a refused one.
+#
+# MEASURED, and the diagnostic rows that found it are still in the file: with the
+# arms as they were, `parse` answered `nbufs = 3`, `bend_emit_tiny_match` was True,
+# `bend_len_lit` and `bend_len_enc` were both 277, and `Prog.nbufs(prog.of(...))`
+# was 0. Every input was right and the SELECTOR was inverted. `bend_prog_*_nbufs_ok`,
+# `bend_prog_*_in_bufs_ok`, `bend_prog_*_out_bufs_ok` and `bend_call_*_refused` were
+# all False, and the header attributed them to WALL 4.
 def prog.of.pkt(+us: List<&2, N>, +pk: Pkt) -> Prog:
   Bool.pick(Prog, Pkt.ok(pk),
-    Prog.of(False{}, Pkt.msg(pk), 0, Nil{}, Nil{}, us),
     Prog.of(True{}, "", Pkt.nbufs(pk), in_bufs(Pkt.lines(pk)),
-      out_bufs(Pkt.lines(pk)), us))
+      out_bufs(Pkt.lines(pk)), us),
+    Prog.of(False{}, Pkt.msg(pk), 0, Nil{}, Nil{}, us))
 
 def prog.of(+us: List<&2, N>) -> Prog:
   prog.of.pkt(us, parse(Res.s(encode(us))))
@@ -2332,7 +2370,33 @@ def line1(src: String) -> String:
 
 def t_parse() -> IO(Unit):
   do IO<Unit>:
+    # DIAGNOSTIC ROWS FOR THE `prog.of` DISAGREEMENT. `bend_parse_nbufs` reads
+    # `parse(PKT_TINY())` (a LITERAL) and answers 3, while `Prog.nbufs(prog.of(
+    # NODES_TINY()))` reads `parse(Res.s(encode(us)))` (a COMPUTED String) and
+    # answers 0 -- even though `bend_emit_tiny_match` says the two strings are
+    # `String.eq`. These four rows say WHERE they differ.
     urow("bend_parse_nbufs", Pkt.nbufs(parse(PKT_TINY())))
+    urow("bend_parse_nbufs_enc", Pkt.nbufs(parse(Res.s(encode(NODES_TINY())))))
+    urow("bend_hdr_nfields_lit", U32.from_nat(List.length(&2, String, header_only(PKT_TINY()))))
+    urow("bend_hdr_nfields_enc", U32.from_nat(List.length(&2, String, header_only(Res.s(encode(NODES_TINY()))))))
+    urow("bend_len_lit", U32.from_nat(String.length(PKT_TINY())))
+    urow("bend_len_enc", U32.from_nat(String.length(Res.s(encode(NODES_TINY())))))
+    row("bend_eq", String.eq(PKT_TINY(), Res.s(encode(NODES_TINY()))))
+    srow("bend_hdr2_lit", fld2(header_only(PKT_TINY())))
+    srow("bend_hdr2_enc", fld2(header_only(Res.s(encode(NODES_TINY())))))
+    # 13, AND IT WAS 14 BEFORE THIS UNIT. MEASURED against CPython, not reasoned:
+    # `OB.parse(pkt)` on `.agents/slop/packet-tiny.txt` answers `nlines = 13`,
+    # `nbufs = 3`, first line `UOpLine(op='PARAM', dtype='f32',
+    # arg='k:param:4:g', srcs=())`, last `UOpLine(op='SINK', dtype='void', arg='-',
+    # srcs=(12,))`. The old 14 came from `drop_final` dropping the packet's HEAD
+    # while `body_of` believed it was dropping the trailing empty field, so
+    # `head, *body` and the drop cancelled on the header and `body[:nuops]` then
+    # counted one line too many. Separating `drop_head` from `drop_final` fixed it.
+    #
+    # THIS ROW IS ALSO THE ONE ROW IN THIS FILE THAT WAS HAND-TYPED: it is not in
+    # `.agents/slop/bend_oracle_rows.txt` and `bend_gate.py` does not generate it,
+    # so the 13 above is the first time anyone checked it against CPython. It is
+    # named here rather than quietly corrected.
     urow("bend_parse_nlines", U32.from_nat(List.length(&2, Line, Pkt.lines(parse(PKT_TINY())))))
     row("bend_parse_ok", Pkt.ok(parse(PKT_TINY())))
     row("bend_parse_bad", Bool.not(Pkt.ok(parse("bendexec 1 0\n"))))

@@ -55,7 +55,16 @@ from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[2]
-CACHE = REPO / ".agents/slop/name-census-lanes"
+CACHE = HERE / "lanes"
+"""`name-census-lanes/` with THIS UNIT'S four lane texts REPLACED by fresh captures.
+
+  ⚠ THE SHIPPED CACHE IS STALE, MEASURED.  `name-census-lanes/*.txt` was captured at 11:00-11:08
+  today; `tinybendygrad/uop/render.bend` gained its eleven `rnd_*` rows at 11:46, so the cached
+  render port text is 129 lines where the live one is 140, and the census reads a port that no
+  longer exists.  A census that reports its own cache without saying the cache is stale is a census
+  of a revision nobody has.  This directory is the cache with the four lanes this unit owns
+  re-captured through `.agents/slop/eq/lane.py`, which digests the whole import closure before and
+  after each capture."""
 
 
 def load(name):
@@ -305,6 +314,11 @@ def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--names", action="store_true")
   ap.add_argument("--one", nargs="+")
+  ap.add_argument("--all", action="store_true",
+                  help="print EVERY lane, including the clean ones. ⚠ WITHOUT IT A FIXED LANE "
+                       "DISAPPEARS FROM THE TABLE -- `nir_llvmir` vanished the moment its rename "
+                       "landed -- and a reader cannot tell 'fixed' from 'not looked at'. A table "
+                       "that lists only its failures cannot report a clean lane as clean.")
   a = ap.parse_args()
   texts = ([(p, pathlib.Path(p).read_text()) for p in a.one] if a.one
            else [(p.name, p.read_text()) for p in sorted(CACHE.glob("*.txt"))])
@@ -312,7 +326,7 @@ def main():
   print(f"{'lane':<50} {'phys':>5} {'shape':>5} {'py=':>7} {'F1':>5} {'F2':>5} {'cont':>5} "
         f"{'names':>6} {'ship':>6} {'`=`':>4} {'LOST':>5} {'reshp':>6} {'dupe':>5} {'contL':>6}")
   for m in ms:
-    if m["eq_n"] or m["lost"] or m["cont"] or m["nob"] or m["unbal"] or m["F3"]:
+    if a.all or m["eq_n"] or m["lost"] or m["cont"] or m["nob"] or m["unbal"] or m["F3"]:
       print(f"{m['label']:<50} {m['phys']:5} {m['lane_shape']:>5} {m['lane_n2']:>7} {m['F1']:5} "
             f"{m['F2']:5} {m['cont']:5} {m['names']:6} {m['shipped_names']:6} {m['eq_n']:4} "
             f"{m['lost_reader']:5} {m['lost_reshape']:6} {m['lost_dupe']:5} {m['lost_cont']:6}")

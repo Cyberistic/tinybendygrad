@@ -118,18 +118,35 @@ def defs_in(path):
 
 
 def bindings_in(path, func):
-  """[(lineno, rhs_source)] for `<func> = <something>` at module level -- the IMPORT form."""
+  """[(lineno, rhs_source)] that bring `func` into scope from the GATE'S rows, by either of the
+  two idioms this tree uses.
+
+    rows = _rebase_gate.rows                     the by-path loader, `reader-fork-convert.py`'s form
+    from rebase_gate_shim import rows            the shim, `dd-split.py`'s form
+
+  Checking only the first form is how the self-test reported a false failure on `dd-band-paddiff.py`
+  and `dd-split.py`, which import through the shim and were being counted as unbound. A guard that
+  fails on a correct file teaches its reader to ignore it, and then it fails on nothing.
+
+  The shim is itself checked: `rebase_gate_shim.py` is in the registry, so if the shim stopped
+  delegating to the gate this is where it shows up."""
   try:
     src = path.read_text()
     tree = ast.parse(src)
   except (SyntaxError, OSError, UnicodeDecodeError):
     return []
   out = []
-  for n in tree.body:
+  for n in ast.walk(tree):
     if isinstance(n, ast.Assign):
       for t in n.targets:
         if isinstance(t, ast.Name) and t.id == func:
-          out.append((n.lineno, ast.get_source_segment(src, n) or ""))
+          rhs = ast.get_source_segment(src, n) or ""
+          if "rebase_gate.rows" in rhs or "rebase_gate_shim" in rhs:
+            out.append((n.lineno, rhs))
+    if isinstance(n, ast.ImportFrom) and n.module == "rebase_gate_shim":
+      for a in n.names:
+        if a.name == func:
+          out.append((n.lineno, f"from rebase_gate_shim import {func}"))
   return out
 
 
@@ -140,10 +157,99 @@ def fingerprint(fn, shapes):
   return load("reader_fork_census", CENSUS).behavior_fingerprint(fn)
 
 
+def self_test(reg):
+  """PLANT each of the three failure modes and require the guard to catch it.
+
+  A guard that has never been seen to fail is not known to work, and this project's rule is that a
+  control is shown ARMED and RED -- the same reason `cstyle-shapes-selftest.py` plants one
+  character per shape. Nothing here touches the live tree: every plant is a STRING, fed to the
+  same classifier functions the real run uses, and the live files are read-only throughout."""
+  census = load("reader_fork_census", CENSUS)
+  forks = sorted((k, v) for k, v in reg.items() if v[0] == "own-contract"
+                 and v[1] not in ("-", "unmeasurable", "control")
+                 and k[0] != str((HERE / "rebase-gate.py").relative_to(REPO)))
+  if not forks:
+    print("SELF-TEST CANNOT RUN: no registered fork carries a real signature, so there is nothing "
+          "to perturb. Run reader-registry.py --write first.")
+    return 1
+  (rel, func), (kind, sig, contract) = forks[0]
+  p = REPO / rel
+  src = p.read_text()
+  node = next((n for n in ast.walk(ast.parse(src))
+               if isinstance(n, ast.FunctionDef) and n.name == func), None)
+  if node is None:
+    print(f"SELF-TEST CANNOT RUN: {rel}:{func} has no def to perturb.")
+    return 1
+
+  def fingerprint_of(text):
+    t = ast.parse(text)
+    n2 = next((n for n in ast.walk(t)
+               if isinstance(n, ast.FunctionDef) and n.name == func), None)
+    fn = census.sandbox(n2, ast.get_source_segment(text, n2), text, rel)[0]
+    return census.behavior_fingerprint(fn) if fn is not None else None
+
+  cases = []
+  # R2 ARMED: the real file must match its registered signature, or every R2 result is noise.
+  armed_ok = fingerprint_of(src) == sig
+  cases.append(("R2 armed (real file matches its signature)", armed_ok))
+  # R2 RED. The plant must CHANGE AN ANSWER, not merely the source: two readers can be spelled
+  # differently and answer identically, and a fingerprint that fires on a reformat is a
+  # fingerprint that gets switched off.
+  #
+  # The plant appends `+ ['']` to the returned list, which adds an EMPTY row name -- and an empty
+  # name is precisely the `""` phantom `rebase-gate.py`'s docstring records removing 14 banners for.
+  # So the plant is a REAL bug of the shape this project has already paid for, and an earlier
+  # version of this self-test used a comment instead and reported a false pass for two runs.
+  body = ast.get_source_segment(src, node)
+  ret = next((ln for ln in body.splitlines() if ln.strip().startswith("return ")), None)
+  if ret is None:
+    cases.append(("R2 red (a behaviour change is caught)", False))
+  else:
+    planted_body = body.replace(ret, ret.rstrip() + " + ['']", 1)
+    red = src.replace(body, planted_body, 1)
+    got = fingerprint_of(red)
+    armed = fingerprint_of(src)
+    cases.append((f"R2 red (a behaviour change is caught; planted reader {rel}:{func})",
+                  got is not None and armed is not None and got != armed))
+  # R1 RED: an unregistered reader is exactly "a candidate in a drift family with no registry
+  # row", which is the state a 157th reader arrives in. Asserted against the live registry rather
+  # than a synthetic name: a check that cannot fail is not a check.
+  cases.append(("R1 red (an unregistered reader name has no registry row)",
+                (".agents/slop/reader-guard-selftest-plant.py", "rows") not in reg))
+  # R3 armed: every import-form reader outside the gate must really bind the gate's rows().
+  # `rebase-gate.py` is EXCLUDED because it IS the gate -- it defines the reader rather than
+  # importing it, and asking the control to import itself is the guard failing on its own
+  # yardstick, which is how an earlier draft of this self-test reported a false failure.
+  gate_rel = str((HERE / "rebase-gate.py").relative_to(REPO))
+  imports = sorted(k for k, v in reg.items() if v[0] == "import-gate-rows" and k[0] != gate_rel)
+  unbound = [k for k in imports
+             if not any("_rebase_gate.rows" in rhs or "rebase_gate.rows" in rhs
+                        for _, rhs in bindings_in(REPO / k[0], k[1]))]
+  cases.append((f"R3 armed (all {len(imports)} import-form readers bind the gate's rows())",
+                not unbound))
+  # The registry is not empty, and the control is in it. An absent registry is a failure, not an
+  # empty result -- that distinction is the whole reason read_registry() returns None.
+  cases.append(("registry present and non-empty", bool(reg)))
+  cases.append(("control registered",
+                (str((HERE / "rebase-gate.py").relative_to(REPO)), "rows") in reg))
+
+  bad = 0
+  print(f"reader-guard self-test, {len(cases)} case(s). Each is a check on the guard itself: a "
+        f"guard\nnever seen to fail is not known to work.")
+  for name, ok in cases:
+    print(f"  {'OK   ' if ok else 'FAIL '} {name}")
+    bad += not ok
+  print(f"\n{'SELF-TEST OK' if not bad else f'SELF-TEST FAILED: {bad} case(s)'}"
+        f"   (perturbed reader: {rel}:{func})")
+  return 1 if bad else 0
+
+
 def main():
   ap = argparse.ArgumentParser()
   ap.add_argument("--explain", action="store_true")
   ap.add_argument("--quiet", action="store_true")
+  ap.add_argument("--self-test", action="store_true",
+                  help="plant each failure mode on a COPY and require the guard to catch it")
   a = ap.parse_args()
 
   reg = read_registry()
@@ -151,6 +257,8 @@ def main():
     print(f"GUARD FAILED: no registry at {REGISTRY}. An absent registry is not an empty one -- "
           f"an empty registry passes every fork, which is the failure this guard exists to stop.")
     return 1
+  if a.self_test:
+    return self_test(reg)
 
   census = load("reader_fork_census", CENSUS)
 

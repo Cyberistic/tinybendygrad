@@ -147,9 +147,15 @@ def row_strict(logical):
   # classified `rnd_param_named=i` as F2 and cut it at the wrong place.  Three candidates are tried
   # in order and AMBIGUITY IS REFUSED rather than resolved.
   for rx in (ROW_OPEN, "=["):
+    # A candidate is a depth-0 `=` whose remainder, after spaces, opens a bracket, and which is
+    # either SPACED (` = [`) or GLUED (`=[`).  ⚠ The glued form is `= [`-shaped too, so testing
+    # `rx[-2:]` against `probe[i:i+len(rx)]` is off by one -- `probe[i:]` STARTS at the `=`, not
+    # before it -- and it silently rejected every candidate on this lane, which then fell through
+    # to the `eqs[0]` fallback and named every planted row `pyrender co`.  A reader whose candidate
+    # test rejects all candidates looks exactly like a lane with no ambiguous rows.
     cands = [i for i in _census.depth0_eq(probe)
-             if probe[i:].startswith(rx.lstrip()) and probe[i + 1:].lstrip(" ").startswith("[")
-             and probe[i:i + len(rx)] .endswith(rx[-2:]) and probe[i - 1:i] == " "]
+             if probe[i + 1:].lstrip(" ").startswith("[")
+             and (rx is not ROW_OPEN or probe[i - 1:i] == " " or rx == "=[")]
     if len(cands) == 1:
       i = cands[0]
       return probe[:i].strip(), probe[i + 1:].strip(), None
@@ -270,12 +276,12 @@ def plant_shape(text, pairs):
   # The padding trap again: this lane pads names to a column, so the match is a regex on the NAME
   # followed by `\s*=`, and the replacement REPLACES THE NAME while leaving the boundary and every
   # byte after it verbatim.
-  rxs = [(re.compile(r"^" + re.escape(old) + r" +="), old, new) for old, new in pairs]
+  rxs = [(re.compile(r"^" + re.escape(old) + r" +(?==)"), old, new) for old, new in pairs]
   for line in text.splitlines():
     for rx, old, new in rxs:
       m = rx.match(line)
       if m:
-        line = new + " " + line[m.end():]      # the PADDING and the boundary, verbatim
+        line = new + " " + line[m.end():]   # the boundary `= [` and every byte after it, verbatim
         hits += 1
     out.append(line)
   if not hits:

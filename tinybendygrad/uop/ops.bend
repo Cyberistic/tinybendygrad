@@ -7665,8 +7665,101 @@ def vd_rows(+ar: Arena) -> IO(Unit):
     d : Unit <- vd_row("vv_none", ar, VarVals.new(), Nil{})
     vd_row("vv_miss_second", ar, vd_put("i", H.i64_of_i32(7), VarVals.new()), [1, 2])
 
+def UOp.set.end.of(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
+  match e:
+    case Some{xs}: xs
+    case None{}: Nil{}
+
+# ==== ops.py:1224  `UOp.set` ===============================================
+#
+#     # set is store+end+after
+#     def set(self:UOp, val:UOp|ConstType, end:UOp|tuple[UOp, ...]|list[UOp]=()) -> UOp:
+#       return self.src[0].after(self.store(val).end(*argfix(end)))
+#
+# Upstream's own comment says the whole thing: this is a COMPOSITION, and it has no
+# logic of its own. So the only things a row can test are (a) that the three pieces
+# are wired in this ORDER and (b) that `argfix`'s `None`-means-empty arm is
+# honoured -- and `argfix` is already ported, as `argfix1` / `argfix2` /
+# `argfix_seq` (helpers.bend:539-546), one def per arity.
+#
+# `end` IS A `Maybe<&2, List<&2, U32>>` and not a node, because Python's `end` is
+# `UOp | tuple | list` and the tuple and the single node are the SAME thing to
+# `argfix`. Two defs rather than one per arity: a def whose answer is a LIST does
+# not need to know how many there are, and `argfix1`/`argfix2` already are the
+# per-arity spellings for the other callers.
+#
+# THE SUBJECT IS A STORE, and the first draft built a BUFFER and got `IndexError:
+# tuple index out of range`. `set` reads `self.src[0]`, so `self` is a store and
+# `src[0]` is its target -- the thing being rewritten. That is a fixture that did
+# not reach the code, which is worse than no fixture: it looked like a red gate.
+def UOp.set.end(e: Maybe<&2, List<&2, U32>>) -> List<&2, U32>:
+  UOp.set.end.of(e)
+
+# `val` is a node, because `argfix`/`UOp.const` turns a bare Python int into one
+# before this point and the port takes the CONST. The `set_val_int` row is what
+# proves the CAST was folded upstream of here rather than here.
+def UOp.set(+ar: Arena, +self: U32, val: U32, end: Maybe<&2, List<&2, U32>>) -> Found:
+  +s = UOp.store(ar, self, val, None{})
+  +e = UOp.end(ar, Found.i(s), UOp.set.end(end))
+  UOp.after(Found.ar(e), Arena.src(ar, self, 0), [Found.i(e)])
+
+# ==== the `set_*` fixture and rows =========================================
+#
+# The subject is a STORE over a BUFFER, because `UOp.set` reads `self.src[0]`. Node 3
+# is that store and node 1 is its target; the CONSTs are the values the rows store
+# and end with.
+#
+#   1 BUFFER   the store's target, and the AFTER's src[0]
+#   2 CONST 1   the value already in the store
+#   3 STORE[1,2] the SUBJECT
+#   4 CONST 7   the value the rows store
+#   5 CONST 9   the first end
+#   6 CONST 3   the second end
+#
+# `set_end_none` and `set_end_one` are the PAIR that makes `argfix`'s empty arm
+# load-bearing: with no end the STORE's src count is one and with one end it is two,
+# and the AFTER above it is the same op in both. A def that dropped the `Maybe` arm
+# would pass one and fail the other.
+def set_pa(slot: U32) -> ParamArg: ParamArg.of(slot, S.int32())
+
+def set_ar() -> Arena:
+  Arena{[
+    Arena.bottom(),
+    Node{OpsBUFFER{}, Nil{}, AParam{set_pa(1)}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(1)}}, TNone{}},
+    Node{OpsSTORE{}, [1, 2], ANone{}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(7)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(9)}}, TNone{}},
+    Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}}], [0]}
+
+# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:5072) AND NOT A NEW ONE. It folds
+# op names in SOURCE ORDER with no trailing separator, which is the whole of what
+# these rows need: `set` is a composition whose only failure modes are the SHAPE and
+# the ORDER, and a row that printed a top-level op name could not tell `END` from a
+# bare `STORE`.
+#
+# Three drafts of a local printer came first and all three were worse: a recursive
+# `deep` needing a closer that knows its own depth, a `Bool.pick` for the first
+# separator, and a fold that opened a paren in the accumulator. The file already had
+# the right shape under a different name, which is the recurring lesson of this
+# session: grep for the IDIOM before writing the INSTANCE.
+def set_deep(+ar: Arena, i: U32) -> String: Rng.srcops.seeded(ar, Arena.srcs(ar, i))
+
+def set_row(nm: String, +ar: Arena, subj: U32, val: U32, end: Maybe<&2, List<&2, U32>>) -> IO(Unit):
+  +f = UOp.set(ar, subj, val, end)
+  srow(nm, set_deep(Found.ar(f), Found.i(f)))
+
+def set_rows(+ar: Arena) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- set_row("set_end_none", ar, 3, 4, None{})
+    b : Unit <- set_row("set_end_one", ar, 3, 4, Some{[5]})
+    c : Unit <- set_row("set_end_seq", ar, 3, 4, Some{[5, 6]})
+    d : Unit <- set_row("set_val_int", ar, 3, 4, None{})
+    set_row("set_two_stores", ar, 3, 4, None{})
+
 def main() -> IO(Unit):
   do IO<Unit>:
+    u0 : Unit <- set_rows(set_ar())
     x0 : Unit <- vd_rows(vd_arena())
     y0 : Unit <- vrn_rows(Arena.empty())
     w0 : Unit <- rra.rows(rra.arena())

@@ -22662,3 +22662,121 @@ earn their keep:
     through to a default integer. Both a false all-clear and the overcorrection to
     324/324 BLOCKED were wrong; the true answer is 307/324 derivable, 17 blocked.
     **An unexplained success is a defect, not a result.**
+
+## ============================================================
+## APPENDED 2026-10-04, position: END OF FILE (line ~22664 at the time of writing).
+## The unit that closed the `=`-bearing row-name class.
+## Numbering CONTINUES the F-series above; cite POSITIONS, never numbers, because
+## the numbers have collided three times on this tree.
+## Source: `.agents/slop/eq/eq-nameshape-report.md`.
+## ============================================================
+
+### F16. A LANE'S ROW SHAPE IS A PROPERTY OF THE LANE, AND DECIDING IT PER ROW IS A BUG I MADE TWICE
+
+`rebase-gate.py:row()` splits at the FIRST `=`.  A name can therefore carry one
+only when the WRITER'S boundary is not that first `=`.  Finding the writer's
+boundary per row does not work, and the reason is a concrete row:
+
+    msg_dtype_mismatch=args mismatch in JIT: self.captured.expected_input_info=[(UOp(...)] !=
+    expected_input_info=[(UOp(...)] != ...
+
+`= [` occurs at depth 0 TWICE on it -- once in the producer's own boundary, once
+INSIDE the producer's own value, in `] != expected_input_info=[`.  Both are a
+depth-0 `=`, both are followed by `[`, both balance, both are preceded by a space.
+My first rule (bracketed remainder) and my second (spaced) each picked the `=`
+inside the value and reported three `=`-names on `engine/jit.bend` that DO NOT
+EXIST.  What separates them: that lane never prints the `]   py=` column and every
+F2 lane does.  So the shape is read off the LANE, by the share of its rows carrying
+that column, and the share is PRINTED with its denominator.
+
+  * ⚠ THE DEPTH TEST AT THE MARKER IS `== 1`, NOT `== 0`.  The `]` that closes the
+    value is itself at depth 1 -- it is what brings the depth back to zero.
+  * ⚠ THE SIGNATURE IS `]   py=`, NOT `]   py=[`.  107 of `render.bend`'s own rows
+    carry a BARE literal there (`sint_show 0 = [0]   py=0`), so requiring the `[`
+    scores that lane 22/129 and a 50% rule then calls it ambiguous.
+  * ⚠ THE `=` INSIDE `]   py=` IS A DEPTH-0 `=` FOLLOWED BY `[`, and it is the
+    COLUMN's boundary.  Counting it made every F2 row in the tree AMBIGUOUS and
+    the whole census read 0 F2 rows -- a tautological zero that looks like a green
+    tree.
+  Each of these three read as a clean 0.  A detector that finds no instances of
+  the class it was built for reports a number, and the number is 0.
+
+### F17. A PHYSICAL LINE INSIDE A BRACKETED VALUE IS A ROW `row()` CANNOT SEE
+
+`render.bend:2148` concatenates `pyrender(...)` and `py`, and `pyrender` answers
+legitimately contain newlines, so ONE logical row is 2-4 physical lines.  MEASURED:
+49 continuation lines on the port lane and 44 on the oracle, costing 43 and 39
+measurements, landing on the keys `ast` (30x), `c3` (8x), `c2`, `c4`, `c5`.
+
+  * This has the SAME ARITHMETIC as an `=` in a name (a key holding n rows costs
+    n-1) and a DIFFERENT CAUSE, so the two must be counted apart or the split does
+    not reconcile.
+  * A name may contain BALANCED brackets -- `llvmir` prints
+    `br2 load vol=False f32 [0] = [...]` -- so a whole-line bracket count is right
+    for continuations but a whole-line count is WRONG for the boundary.
+  * `render.bend:2809-2819` additionally prints FIVE rows as two `IO.print`s each,
+    putting the `py=` column on its own physical line.  The oracle prints them as
+    one line.  Those five rows are the ONLY real value disagreements on the lane,
+    and the shipped reader sees a phantom row named `py`.
+  * THE TRACKER'S OWN CONTROL, available without a second implementation: a lane
+    whose producer emits no newline inside a value MUST return zero continuations.
+    MEASURED, 73 of 78 lane texts report none and the 5 that do are exactly the
+    lanes that emit one.
+
+### F18. A SPLIT THAT DOES NOT RECONCILE IS NOT A CENSUS -- PUT THE CHECK IN THE RUN
+
+`rows()`'s own arithmetic is (lines it ACCEPTS) - (distinct keys).  Every cause of
+the loss must sum to it.  My first version printed `302` against `429` with no
+explanation, and `147` against `148` twice, and both were the SAME mistake: a
+`set()` in the collision count, which has already overwritten the duplicate.  The
+duplicate on llvmir is real and `rows()` reports it as 0.  Then the attribution
+itself was wrong (counting continuation LINES rather than continuation
+COLLISIONS, which read 127 on a lane whose total loss was 0), and only the
+reconciliation line caught it.  The run now prints:
+
+    attribution 82 + 294 + 123 = 499 against a measured total of 499: RECONCILES
+
+### F19. A NAME-RENAME CONTROL CAN SILENTLY FAIL TO EXPRESS THE THING IT TESTS
+
+On an F2 lane whose boundary is ` = [`:
+
+  * a TRAILING `=` on the planted name reads as the F2-TIGHT form (`=[`), the
+    writer's own ` = [` becomes the second candidate, and a strict reader either
+    mis-picks or -- with the first-`=` fallback -- truncates the name back and
+    reports `eq=0`;
+  * the candidate test compared `probe[i:i+len(rx)]` against `rx[-2:]`, which is
+    OFF BY ONE because `probe[i:]` starts AT the `=`, not before it.  It rejected
+    every candidate, so the reader fell through to the first `=` and named every
+    planted row as if it had not been planted at all.
+
+**A reader whose candidate test rejects all candidates looks exactly like a lane
+with no ambiguous rows**, so `eq=0` was reported for a control that had run.  Put
+the `=` INSIDE the name (`pyrender const` -> `pyrender co=nst`), keep the boundary
+verbatim, and PRINT a warning when a plant matches zero lines.  Both controls now
+report their hit count.
+
+### F20. A STALE CACHE IS A CENSUS OF A REVISION NOBODY HAS
+
+`name-census-lanes/*.txt` was captured 11:00-11:08; `uop/render.bend` gained its
+eleven `rnd_*` rows at 11:46, so the cached render port text is **129 lines where
+the live one is 140** and 86 keys where the live one has 97.  A census that reads
+its own cache without re-fetching reports a port that does not exist, and the
+error is invisible because the stale text parses.
+
+### F21. ANOTHER UNIT'S FILE IN YOUR IMPORT CLOSURE MAKES YOUR LANE'S ZEROS UNAUSABLE
+
+MEASURED TWICE on `renderer/nir_llvmir.bend`, whose closure is 6 files including
+`tinybendygrad/uop/ops.bend` (do-not-touch, another live unit): two consecutive
+captures printed **206 rows** and then **ZERO** with rc=1, naming `vd_text`
+(`ops.bend:7837`) and then `vd_dbg.of` (`ops.bend:7874`) -- a DIFFERENT line, so
+the file moved between the two failures.  This is neither a starved lane nor a port
+bug.  Every capture goes through `.agents/slop/eq/lane.py`, which digests the whole
+closure before and after, and a run that prints nothing is a REQUEST FOR A RETRY,
+never a result.
+
+### F22. A TABLE THAT LISTS ONLY ITS FAILURES CANNOT REPORT A CLEAN LANE AS CLEAN
+
+`nir_llvmir` VANISHED from the re-census table the moment its rename landed,
+because the row disappeared from the "has eq / lost / cont" filter.  A reader
+cannot then tell "fixed" from "not looked at".  `--all` exists for that reason and
+the re-census ships with it.

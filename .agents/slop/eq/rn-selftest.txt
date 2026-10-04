@@ -1,0 +1,7 @@
+[selftest base] the REAL captured pair: 80 gated rows, 75 agree, 5 disagree ['arg_repr AKern', 'arg_repr AParam1', 'arg_repr AParam2', 'arg_repr AParam3', 'arg_repr AProgr'] -- MEASURED, and it is NOT 0: the port puts the `py=` column on its own physical line on five rows (render.bend:2809-2819) and the oracle does not, so the port's VALUE for those five carries an extra line. A `clean` lane that quietly is not the real lane is the failure this work is about, so the base is the real pair and the number is printed.
+  base     BROKEN  cont=49 eq=0 unaddressable=43 disagree=5 ['arg_repr AKern', 'arg_repr AParam1', 'arg_repr AParam2', 'arg_repr AParam3']  ok
+  value    BROKEN  cont=49 eq=0 unaddressable=43 disagree=6 ['arg_repr AKern', 'arg_repr AParam1', 'arg_repr AParam2', 'arg_repr AParam3']  ok
+  shape    BROKEN  cont=49 eq=1 unaddressable=43 disagree=0 []  ok
+  collide  BROKEN  cont=49 eq=0 unaddressable=44 disagree=0 []  ok
+  NOTE every lane is BROKEN, and that is CORRECT: `cont` > 0 on the real lane and the real pair really does disagree, so this lane's honest verdict is BROKEN and `base` asserts BROKEN rather than AGREE. The two plants are still told apart by `disagree`.
+SELFTEST OK -- a planted VALUE raises `disagree` by one; a planted NAME leaves `disagree` at the base count and moves the name sets, so the two are distinguishable

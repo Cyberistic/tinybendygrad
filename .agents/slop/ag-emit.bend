@@ -159,9 +159,6 @@ def gs_acc(g: Gs) -> List<&2, Pm>:
     case Gs{st, nm, ty, hd, acc}: acc
 
 
-def pm(+n: String, +t: String, +h: String) -> Pm: Pm{n, t, h}
-
-
 def pm_nm(+p: Pm) -> String:
   match p:
     case Pm{nm, ty, hint}: nm
@@ -329,25 +326,6 @@ def parse_row.h(+r1: List<&2, String>, +acc: Trr) -> Trr:
 def group.at(+g: Gs, st: Nat) -> Gs: gs(st, gs_nm(g), gs_ty(g), gs_hd(g), gs_acc(g))
 
 
-# ONE cell in: stage 0 takes a NAME, stage 1 the ABI type, stage 2 the
-# annotation AND closes the parameter.
-def group.step.at(st: Nat, +g: Gs, +c: String) -> Gs:
-  match st:
-    case 0n: gs(1n, c, gs_ty(g), gs_hd(g), gs_acc(g))
-    case 1n: gs(2n, gs_nm(g), c, gs_hd(g), gs_acc(g))
-    case _s: gs(0n, gs_nm(g), gs_ty(g), c, List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), c)]))
-
-
-# A truncated final triple still yields its parameter.  autogen.py:239 spells the
-# fallback `'_' + str(i)`, and a row read from a truncated file is exactly the
-# case where a silently dropped parameter would be invisible.
-def group.flush.at(st: Nat, +g: Gs) -> List<&2, Pm>:
-  match st:
-    case 0n: gs_acc(g)
-    case 1n: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), "")])
-    case _s: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), gs_hd(g))])
-
-
 def emit_param(+p: Pm) -> String: String.concat([pm_nm(p), ": ", pm_ty(p)])
 
 
@@ -358,22 +336,22 @@ def emit_param(+p: Pm) -> String: String.concat([pm_nm(p), ": ", pm_ty(p)])
 def emit_binds.go(+xs: List<&2, Pm>) -> List<&2, String>:
   match xs:
     case Nil{}: Nil{}
-    case p <> rest: List.append(&2, String, emit_binds.go(rest), [pm_ty(p)])
+    case p <> rest: List.append(&2, String, [pm_ty(p)], emit_binds.go(rest))
 
 
 def emit_binds_up.go(+xs: List<&2, Pm>) -> List<&2, String>:
   match xs:
     case Nil{}: Nil{}
-    case p <> rest: List.append(&2, String, emit_binds_up.go(rest), [pm_hint(p)])
+    case p <> rest: List.append(&2, String, [pm_hint(p)], emit_binds_up.go(rest))
 
 
 # Adding a spelling to the row for a Bend name REPLACES that row. Appending
 # instead leaves a second row behind and NOTHING upstream complains: the first
 # run emitted `type CXFile is Data` THREE times, once per occurrence of the
 # spelling, and bend accepts that. A NAME-SET check is what sees it.
-def ty_add.at(hit: Bool, +cur: Ty, +rest: List<&2, Ty>, +b: String) -> List<&2, Ty>:
+def ty_add.at(hit: Bool, +cur: Ty, +tail: List<&2, Ty>, +b: String) -> List<&2, Ty>:
   Bool.pick(List<&2, Ty>, hit, [Ty{b, String.concat([ty_ups(cur), ",", b])}],
-            List.append(&2, Ty, rest, [cur]))
+            List.append(&2, Ty, [cur], tail))
 
 
 def emit_ty(+t: Ty) -> String: String.concat(["type ", ty_bend(t), " is Data:\n  ", ty_bend(t), "{}\n"])
@@ -394,13 +372,18 @@ def read_lines(path: String) -> IO(String):
     read_lines.go(m)
 
 
+# the `[...]` around a CFUNCTYPE's argument list carries no name of its own, so
+# it is stripped here rather than in the splitter
 def enc_arg(+s: String) -> String: Bool.pick(String, enc_bracketed(s), enc_strip(s, 1n, 1n), s)
 
 
+# The recursion is over `rest` INSIDE the arm.  A version that stopped at the
+# head compiled, ran, and built a table of the FIRST type only -- and the
+# symptom was a 12-line emitted file, not an error.
 def ty_add.put(+xs: List<&2, Ty>, +b: String) -> List<&2, Ty>:
   match xs:
     case Nil{}: [Ty{b, b}]
-    case Ty{bend, ups} <> rest: ty_add.at(String.eq(bend, b), Ty{bend, ups}, rest, b)
+    case Ty{bend, ups} <> rest: ty_add.at(String.eq(bend, b), Ty{bend, ups}, ty_add.put(rest, b), b)
 
 
 # the RESULT type then the ARGUMENT types of a `c.CFUNCTYPE[...]`, brackets off
@@ -417,30 +400,25 @@ def parse_row.b(+r0: List<&2, String>, +acc: Trr) -> Trr:
     case rb <> r1: parse_row.h(r1, Trr{trr_nm(acc), rb, "", Nil{}})
 
 
-def group.step(+g: Gs, +c: String) -> Gs: group.step.at(gs_st(g), g, c)
-
-
-def group.flush(+g: Gs) -> List<&2, Pm>: group.flush.at(gs_st(g), g)
-
-
 def emit_params(+xs: List<&2, Pm>) -> List<&2, String>:
   match xs:
     case Nil{}: Nil{}
-    case p <> rest: List.append(&2, String, emit_params(rest), [emit_param(p)])
+    case p <> rest: List.append(&2, String, [emit_param(p)], emit_params(rest))
 
 
+# `[rt] + ats`, autogen.py:240's own order: the RETURN TYPE FIRST.
 def emit_binds(+t: Tr) -> List<&2, String>:
-  List.append(&2, String, emit_binds.go(tr_ps(t)), [tr_rty(t)])
+  List.append(&2, String, [tr_rty(t)], emit_binds.go(tr_ps(t)))
 
 
 def emit_binds_up(+t: Tr) -> List<&2, String>:
-  List.append(&2, String, emit_binds_up.go(tr_ps(t)), [tr_ret(t)])
+  List.append(&2, String, [tr_ret(t)], emit_binds_up.go(tr_ps(t)))
 
 
 # every ABI type a row mentions, the return first, then each parameter -- the
 # order autogen.py:240 builds `[rt] + ats` in.
 def tr_bends(+t: Tr) -> List<&2, String>:
-  List.append(&2, String, emit_binds.go(tr_ps(t)), [tr_rty(t)])
+  List.append(&2, String, [tr_rty(t)], emit_binds.go(tr_ps(t)))
 
 
 # insertion sort on the Bend name.  `List.sort` needs a closure.
@@ -470,16 +448,6 @@ def parse_row.at(+cs: List<&2, String>) -> Trr:
     case n0 <> r0: parse_row.b(r0, Trr{n0, "", "", Nil{}})
 
 
-# THE CELL LIST COMES FIRST, THE STATE SECOND.  bend reads a self-call's
-# arguments left to right and wants each passed UNCHANGED until one shrinks.  With
-# the state first, the first argument is `group.step(g, c)` -- computed, and not
-# shrinking -- so the call is refused even though `rest` shrinks.
-def group.go(+cs: List<&2, String>, +g: Gs) -> List<&2, Pm>:
-  match cs:
-    case Nil{}: group.flush(g)
-    case c <> rest: group.go(rest, group.step(g, c))
-
-
 def enc0(+s: String) -> String: enc_prim(s)
 
 
@@ -507,9 +475,6 @@ def tys_go(+xs: List<&2, String>, +acc: List<&2, Ty>) -> List<&2, Ty>:
 
 
 def parse_row(+line: String) -> Trr: parse_row.at(String.split(line, '|'))
-
-
-def group(+cs: List<&2, String>) -> List<&2, Pm>: group.go(cs, gs(0n, "", "", "", Nil{}))
 
 
 def enc1.ptr(+s: String) -> String: String.concat(["Ptr_", enc0(enc_strip(s, 10n, 1n))])
@@ -572,6 +537,50 @@ def enc2(+s: String) -> String:
 def enc(+s: String) -> String: enc2(s)
 
 
+# `pm` is where a cell becomes a Bend TYPE.  Omitting the two `enc` calls here
+# compiles, runs, and emits `c.POINTER[CXIndexOptions]` as the Bend type name --
+# a name with dots and brackets in it -- and the first run did exactly that.
+def pm(+n: String, +t: String, +h: String) -> Pm: Pm{n, enc(t), enc(h)}
+
+
+# ONE cell in: stage 0 takes a NAME, stage 1 the ABI type, stage 2 the
+# annotation AND closes the parameter.
+def group.step.at(st: Nat, +g: Gs, +c: String) -> Gs:
+  match st:
+    case 0n: gs(1n, c, gs_ty(g), gs_hd(g), gs_acc(g))
+    case 1n: gs(2n, gs_nm(g), c, gs_hd(g), gs_acc(g))
+    case _s: gs(0n, gs_nm(g), gs_ty(g), c, List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), c)]))
+
+
+# A truncated final triple still yields its parameter.  autogen.py:239 spells the
+# fallback `'_' + str(i)`, and a row read from a truncated file is exactly the
+# case where a silently dropped parameter would be invisible.
+def group.flush.at(st: Nat, +g: Gs) -> List<&2, Pm>:
+  match st:
+    case 0n: gs_acc(g)
+    case 1n: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), "")])
+    case _s: List.append(&2, Pm, gs_acc(g), [pm(gs_nm(g), gs_ty(g), gs_hd(g))])
+
+
+def group.step(+g: Gs, +c: String) -> Gs: group.step.at(gs_st(g), g, c)
+
+
+def group.flush(+g: Gs) -> List<&2, Pm>: group.flush.at(gs_st(g), g)
+
+
+# THE CELL LIST COMES FIRST, THE STATE SECOND.  bend reads a self-call's
+# arguments left to right and wants each passed UNCHANGED until one shrinks.  With
+# the state first, the first argument is `group.step(g, c)` -- computed, and not
+# shrinking -- so the call is refused even though `rest` shrinks.
+def group.go(+cs: List<&2, String>, +g: Gs) -> List<&2, Pm>:
+  match cs:
+    case Nil{}: group.flush(g)
+    case c <> rest: group.go(rest, group.step(g, c))
+
+
+def group(+cs: List<&2, String>) -> List<&2, Pm>: group.go(cs, gs(0n, "", "", "", Nil{}))
+
+
 def to_tr(+t: Trr) -> Tr: Tr{trr_nm(t), enc(trr_rb(t)), enc(trr_rh(t)), group(trr_cells(t))}
 
 
@@ -583,7 +592,7 @@ def trs_map(+xs: List<&2, String>) -> List<&2, Tr>:
     case Nil{}: Nil{}
     case l <> rest:
       Bool.pick(List<&2, Tr>, String.is_empty(l), trs_map(rest),
-                List.append(&2, Tr, trs_map(rest), [to_tr(parse_row(l))]))
+                List.append(&2, Tr, [to_tr(parse_row(l))], trs_map(rest)))
 
 
 def main.go(+lines: List<&2, String>) -> IO(Unit):
