@@ -18080,3 +18080,41 @@ mtime beside every entry for exactly this; three of eight entries here were flag
 `{"oracle_py", "tinygrad", "python", "tally", "verdicts"}` — every BROKEN above was classified
 from that document with **no lane re-run at all**. The non-`--json` path prints the same
 information and a reader has to reconstruct it by hand. **Always sweep with `--json`.**
+
+## R-5. A WORKSPACE IS ISOLATION, NOT DELIVERY — AND A FILE COPY IS NOT A MERGE
+
+R-4 says parallel agents need separate `jj` workspaces. That is right and
+it stopped the loss of work. It is INCOMPLETE, and both halves of the
+incompleteness cost a cycle on 2026-10-04.
+
+**1. THE AGENT'S WORK IS NEVER MERGED.** Four agents were launched into
+workspaces; two of them finished and their trees sat in `/tmp` while the
+default tree kept reporting the old marker counts. Isolation removes the
+collision and creates a silent delivery gap, because **nobody owns the
+merge except the coordinator.** The workspace is where the agent writes;
+the default tree is what the gate reads. Those are two different places
+and nothing moves work between them by itself.
+
+THE RULE: when an agent reports in a workspace, the coordinator's next
+act is `jj log -r <bookmark> --stat`, read the file list, and bring the
+files across BEFORE starting anything else. A finished agent in a
+workspace is an unmerged pull request.
+
+**2. A WHOLESALE FILE COPY FROM A WORKSPACE IS NOT A MERGE.** Copying
+`/tmp/wt-<agent>/tinybendygrad/uop/ops.bend` over the tree turned NINE
+`uop/` files red, because the workspace is based on an older tree and the
+copy silently reverted whatever landed in the meantime. It typechecked.
+It ran. The only symptom was a DEPENDENT file failing to check.
+
+THE RULE: the operation is `jj rebase` of the agent's own commit onto the
+current tree, never a file copy. A copy throws away every concurrent
+change to that path; a rebase resolves them. And the agent's commit stays
+findable across a rebase because **the DESCRIPTION is the one field a
+rebase does not rewrite** — after three rebases the commit id was
+`fcfa7f20`, then `31da532f`, then `d2c0a1ff`, and the description was
+the only handle that stayed true.
+
+**THE GENERAL FORM, and it is the same lesson as the whole project:** a
+change that typechecks and runs has still not been delivered, and the
+thing that proves delivery is a gate over the MERGED tree, not over the
+workspace it was written in.

@@ -53,8 +53,8 @@ EDITS = [
    "  UOp.new(ar, OpsMSELECT{}, [self], ABlob{[k]}, TNone{})\n",
    "  UOp.new(ar, OpsMSELECT{}, [self], ABlob{k}, TNone{})\n"),
   ("s5.ga.arena's MSELECT node",
-   "Node{OpsMSELECT{}, [1, 2], ABlob{[0]}, TNone{}}\n",
-   "Node{OpsMSELECT{}, [1, 2], ABlob{0}, TNone{}}\n"),
+   "Node{OpsMSELECT{}, [1, 2], ABlob{[0]}, TNone{}}",
+   "Node{OpsMSELECT{}, [1, 2], ABlob{0}, TNone{}}"),
 ]
 # the three that carry a COMMENT BLOCK as well, so they are handled as spans
 SPANS = [

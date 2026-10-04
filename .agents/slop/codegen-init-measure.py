@@ -195,7 +195,7 @@ def rows(out: str) -> dict:
     k = k.strip().removeprefix("gr.")
     if k == "new_sink" and " repl=" in v:
       head, _, tail = v.partition(" repl=")
-      got["repl"] = f"{tail.strip()} repl={head.strip()}"
+      got["repl"], got["new_sink"] = tail.strip(), head.strip()
       continue
     got[k] = v.strip()
   return got
