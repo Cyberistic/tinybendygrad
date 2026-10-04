@@ -82,6 +82,13 @@ PAD_ANCHOR = "  ar0 = O.Arena.empty()\n  +p0 = test_param(ar0, 0)"
 
 GATE_ROWS = ("repl", "new_sink_is_original", "new_sink_srcs", "new_sink_op")
 CONTROL_ROW = "n_repl"
+# PORT-ONLY, no CPython counterpart: upstream returns a UOp object and has no
+# arena numbering, so `new_sink=<index>` cannot be compared to anything. It is
+# carried because it is the DIRECT readout of the fix -- the index is a NEW
+# node in the fold's GROWN arena -- and it is swept over six arena lengths
+# below. Folding it into the compared `repl` row would have made a correct
+# port FAIL on a difference that has no oracle side.
+PORT_ONLY = ("new_sink",)
 
 
 def pad(k: int) -> str:
@@ -260,7 +267,8 @@ def main() -> int:
   print("substrate for every stage is the LIVE tree; BASE swaps in one file (the port) and the old probe.")
   print()
   print("=" * 122)
-  print(f"{'stage':13} | {'repl (the printed gate row)':44} | d | {'is_orig':9} | {'srcs':31} | {'op':9} | n_repl")
+  print(f"{'stage':13} | {'repl (the printed gate row)':44} | d | {'is_orig':9} | {'srcs':31} | "
+      f"{'op':9} | n_repl | new_sink (port-only)")
   print("=" * 122)
 
   seen_substr: set[str] = set()
@@ -300,7 +308,8 @@ def main() -> int:
     flag = "PASS" if not bad else "FAIL " + ",".join(bad)
     print(f"{name:13} | {r.get('repl','<no row>'):44} | {dist(r.get('repl',''), PY['repl']):2} | "
           f"{r.get('new_sink_is_original','<no row>'):9} | {r.get('new_sink_srcs','<no row>'):31} | "
-          f"{r.get('new_sink_op','<no row>'):9} | {r.get('n_repl','<no row>'):9}  {flag}")
+          f"{r.get('new_sink_op','<no row>'):9} | {r.get('n_repl','<no row>'):6} | "
+          f"{r.get('new_sink','<no row>'):9}  {flag}")
   print()
   print(f"py.repl (want)              = {PY['repl']}")
   print(f"py.new_sink_is_original     = {PY['new_sink_is_original']}")
@@ -328,12 +337,13 @@ def main() -> int:
     name = "B-both" if k == 0 else f"B-pad{k}"
     r = out[name]
     repl = r.get("repl", "<no row>")
-    idx = repl.rsplit(" repl=", 1)[-1] if " repl=" in repl else "<no row>"
-    print(f"    {k:>2} {5 + k:>14} {idx:>9}  {repl}")
+    print(f"    {k:>2} {5 + k:>14} {r.get('new_sink','<no row>'):>9}  "
+          f"{'OK ' if norm(repl) == norm(PY['repl']) else 'BAD'} {repl}")
   print()
   print("MUTATIONS, with the rows they moved by name:")
   for name in ("M-drop-arena", "M-u", "M-u-norule"):
-    moved = [k for k in GATE_ROWS + (CONTROL_ROW,) if norm(out[name].get(k, "")) != norm(out["B-both"].get(k, ""))]
+    moved = [k for k in GATE_ROWS + (CONTROL_ROW,) + PORT_ONLY
+             if norm(out[name].get(k, "")) != norm(out["B-both"].get(k, ""))]
     print(f"    {name:13} moved {moved if moved else 'NOTHING -- a blind spot, with the reason below'}")
   print("      M-drop-arena  `wr.rebuild.found` returns `O.Arena.empty()` instead of the grown")
   print("                    arena: the threading is the ONLY thing carrying the index, so this")

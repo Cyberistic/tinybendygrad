@@ -93,6 +93,21 @@
 #      fixture in this file's `lf_*` gate has `CONST` srcs, so the table is handed a
 #      `List<&2, Bnd2>` it did not have to compute, and CPython builds the same graph and is
 #      asked the same question. 127 rows, byte-identical.
+#   4. THE WALK, `mm.sweep` -- LANDED, and it is a FORWARD SWEEP in arena index order rather
+#      than the Kahn worklist the foot of this file predicted, for the reason `rng_sweep`
+#      already gives: `UOp.make` only ever names src indices already interned, so every src
+#      is strictly below its consumer and one sweep reads nothing that is not already in the
+#      table. A BACKEDGE is not the exception it looks like -- `src[0]` is the node the
+#      marker was built from. 17 rows byte-identical to CPython, 3 recorded divergences, and
+#      a 7-entry mutation table of which 6 move rows.
+#
+# WHAT THE WALK'S PRICE IS, MEASURED RATHER THAN ASSUMED. Its dtype comes from the MAIN
+# fold's table, so a node `dt_shape` DEFERS has no interval here where CPython has one, and
+# the refused set is exactly `STAGE`, `CUSTOM`, `CUSTOMI`, `UNSHARD` and a RESHAPE over a
+# symbolic marg. THE TWELVE `late()` MARKER OPS ARE NOT IN IT, and that is the measurement
+# that shrank the set: `late()` hands them `void` with no shape, so their dtype IS known and
+# a BACKEDGE answers `(False, True)` rather than refusing. `mmkx_*` is the recorded
+# divergence, in the `lfx_` / `rg_absent` / `mv_expsym` arrangement.
 #
 # THE ORDER WAS RIGHT AND THE PAYOFF IS MEASURABLE: because the table is pure, its 127 rows
 # and its 35-entry mutation table came BEFORE any arena was touched, and the gate found
@@ -4927,6 +4942,61 @@ def sig4(+ar: O.Arena, +u: U32) -> String:
 # arrangement as `lf`/`lfx`: each lane prints its divergences in full and the diff covers
 # only the claims the two agree on.
 # ===========================================================================
+# THE `_min_max` WALK ROWS. `.agents/slop/mm-walk-gate.py` builds the same graphs node
+# for node and prints CPython's own `_min_max`, so `diff` of the two lanes IS the test.
+#
+# EVERY ROW CARRIES THE GRAPH IT IS ABOUT, not only the answer, and that is why `sig4` is
+# reused whole: a fixture built with a swapped pair of srcs or the wrong op hands the
+# table a different graph, and a plausible interval that happens to agree is the failure
+# mode this file's own header records four times over. `n=` counts the same reachable
+# nodes CPython's `toposort` does, so a fixture that reached further or less far is caught
+# before the interval is read.
+#
+# THE PREFIX IS A PARAMETER and not a constant because the `mmkx_` rows are the
+# DIVERGENCE and are NOT gated for equality: the sweep's dtype comes from the main fold's
+# table, so a node `dt_shape` defers has no interval here where CPython has one. Same
+# treatment `rg_absent` and `mv_expsym` get -- the port prints what it does, and the
+# oracle records CPython's real answer in a DIVERGES block.
+#
+#     .venv/bin/python .agents/slop/mm-walk-gate.py | grep '^mmk_' > mm-walk-py.txt
+#     ./bin/bend tinybendygrad/uop/fold.bend      | grep '^mmk_' > mm-walk-bend.txt
+#     diff mm-walk-py.txt mm-walk-bend.txt
+#
+# The `^mmk_` is what excludes the `mmkx_` rows from BOTH sides, which is the same
+# arrangement as `lf`/`lfx`: each lane prints its divergences in full and the diff covers
+# only the claims the two agree on.
+#
+# THE MUTATION TABLE, MEASURED by `.agents/slop/mm-walk-mutate.py`, which edits, runs,
+# diffs and reverts and prints the rows that moved BY NAME. Six of the seven move rows and
+# the seventh is reported with its reason, because a mutation table that is not measured is
+# a claim about a mutation nobody ran.
+#
+#   | mutation                                 | rows moved                        |
+#   |-------------------------------------------|-----------------------------------|
+#   | MW1 gather builds the src list backwards | sub34 sub43 nested pad5           |
+#   | MW2 a refusal becomes `mm.unbound()`     | the 3 `mmkx_` rows, and NO `mmk_` |
+#   | MW3 the dtype becomes `void` everywhere  | 11, incl. threefry and buf_i64    |
+#   | MW4 `vmin`/`vmax` exchanged, two lines   | `mmk_vmin` alone, then `mmk_vmax`  |
+#   | MW5 the sweep drops its accumulator      | 9                                  |
+#   | MW7 the sweep answers only its seed      | 9                                  |
+#   | MW6 the sweep's index off by one         | NOTHING -- see below               |
+#
+# MW2 IS THE INTERESTING ONE and it is this unit's own recorded trap in miniature: it
+# changes NO `mmk_` row, because the agreeing rows do not depend on the refusal machinery
+# at all -- and it changes all three `mmkx_` rows, which is the measurement that those
+# rows read a live refusal rather than printing a constant.
+#
+# MW6 MOVES NOTHING, AND IT IS NOT A HOLE IN THE GATE -- IT IS A DIFFERENCE OF SHAPE FROM
+# `rng_sweep`, and that is the finding. `mm.node.of` keys each row by the SAME `i` it
+# reads the node from, so the two are ONE expression and no single-site edit can separate
+# them. R10 in the ranges table above is the index-lockstep mutation and it moves eleven
+# rows THERE, because `rng_of` takes the index and the node's own fields as separate
+# arguments and so has two expressions to drift. Fusing them here makes R10's class of
+# defect UNREPRESENTABLE rather than untested, which is the better of the two, and it is
+# also why the START INDEX is not observable: shifting it by one leaves index 0 unrowed
+# and `Arena.empty()` spends index 0 on a bottom nothing ever names. What the gate pins is
+# the ORDER, and MW5 and MW7 measure that.
+# ===========================================================================
 
 # `ABSENT` is this file's "this fold cannot answer", the same word `rng_str` prints, so a
 # refused interval is not mistakable for a saturated one.
@@ -5893,13 +5963,31 @@ def main() -> IO(Unit):
 #   P3 with the set algebra.
 # TODO(p3) ops.py:1058 def const_factor         -- `divides` on a symbolic factor list,
 #   and `divides` needs `gcd`, and `gcd` needs a `Counter` fold. P3.
-# TODO(p3) ops.py:1100 def vmin                 -- `self._min_max[0]`, and the BOUND
-#   AND THE OP TABLE it reads are both LANDED and gated. What is left is the WALK.
-# TODO(p3) ops.py:1102 def vmax                 -- `self._min_max[1]`, same.
-# TODO(p3) ops.py:1104 def _min_max             -- THE BOUND, THE OP TABLE AND
-#   `int(x).bit_length()` ARE LANDED AND GATED (54 + 127 rows byte-identical to CPython,
-#   and a 37-entry mutation table below). What is left is the WALK and four
-#   signed-division arms. The history of the wall this retires is worth keeping: `mixin/dtype.bend` measured the wall as "four I64
+# DONE(p3) ops.py:1100 def vmin                 -- LANDED as `UOp.vmin`, a reader over the
+#   sweep's row. `mmk_vmin` and `mmk_vmax` are TWO rows on the ONE node whose bounds are
+#   63 bits apart, because a pair in one string cannot see them exchanged and `commit_int`
+#   reads them as two arguments. MW4 exchanges them one line at a time and moves one row
+#   each, which is the measurement that neither reader is riding on the other.
+# DONE(p3) ops.py:1102 def vmax                 -- same, and the same two rows.
+# DONE(p3) ops.py:1104 def _min_max             -- THE BOUND, THE OP TABLE,
+#   `int(x).bit_length()` AND THE WALK ARE LANDED AND GATED: 54 + 127 + 17 rows
+#   byte-identical to CPython, 3 recorded divergences (`mmkx_*`), and 54 + 35 + 7
+#   mutation entries. The walk is `mm.sweep`, a FORWARD SWEEP in arena index order rather
+#   than the Kahn worklist this entry used to predict, for `rng_sweep`'s reason: `UOp.make`
+#   only ever names src indices already interned, so the arena is a DAG by construction and
+#   a worklist would be the same DAG walked in a worse order. Its dtype comes from the
+#   MAIN fold, so a node `dt_shape` defers has no interval -- and that is the measured
+#   divergence, not an estimate. WHAT IS STILL MISSING IS FOUR THINGS, and none of them is
+#   the walk:
+#     * FOUR SIGNED-DIVISION ARMS: `CMOD`, `CDIV`, `FLOORDIV`, `FLOORMOD`. `mm.dm.*` is an
+#       UNSIGNED restoring divider and `mm.sn.div` is the signed core and is LANDED, so
+#       these four are arithmetic on top of a landed core rather than a new wall.
+#     * `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend` and
+#       a pure def cannot call it. The arm is ABSENT rather than approximated, so a CAST
+#       lands on `(dtype.min, dtype.max)`; a sound widening and a divergence.
+#     * `self.src[0].buf_uop` (a `while` over five ops) for the LOAD-from-BINARY arm.
+#   THE HISTORY OF THE WALL THIS RETIRES IS WORTH KEEPING, and the measure that retired it
+#   was wrong in an instructive way. `mixin/dtype.bend` measured the wall as "four I64
 #   arithmetic helpers missing, and the div/mod that DO exist are `IO(..)` effect
 #   seams a fold cannot call". Those four are now PURE and gated: `mm.u64.add`,
 #   `mm.u64.sub`, `mm.u64.mul`, `mm.u64.shl`/`shr` and `mm.dm.*` (a 64-step
@@ -5938,27 +6026,41 @@ def main() -> IO(Unit):
 #       Movement|INDEX passthrough and the `(dtype.min, dtype.max)` default.
 #
 #   WHAT IS STILL NOT WRITTEN, in the order the walls fall:
-#     1. THE WALK. `mm.lift` takes the srcs' intervals as an argument, so what is
-#       missing is the Kahn pass that PRODUCES them -- the same `pend`/`work`/`Table`
-#       machine the other six properties use with a `Bnd2` row type, and mechanical
-#       rather than subtle, which is WHY the table was built first.
-#       THE KAHN PASS IS DELIBERATELY NOT A SEVENTH `Derived` FIELD, and that is the one
-#       design decision here rather than a consequence. `_min_max` needs NO shape, no
-#       device and no addrspace, and a node whose `_shape` this file DEFERS -- every
-#       RESHAPE, and UNSHARD -- still HAS an interval. As a seventh field, every deferred
-#       RESHAPE would defer its interval too, and `gap_ok` is precisely the row that would
-#       have noticed: it is the claim "a node whose rules are deferred is NOT answered".
-#       Folding it in would have made that claim FALSE for a property that was never
-#       deferred, which is the exact failure mode the other six fields avoid.
+#     1. ~~THE WALK.~~ LANDED as `mm.sweep`, and this entry predicted the wrong SHAPE, so
+#       the correction is kept here rather than the prediction.
+#       THE WALK IS DELIBERATELY NOT A SEVENTH `Derived` FIELD, and that decision SURVIVED
+#       and is the reason it is a sweep: a `Derived` field sees only the node's own srcs,
+#       and a `Derived` EXISTS only for a node the dtype/shape ladder answered.
+#       IT IS NOT A KAHN PASS EITHER, and THAT part of the prediction was wrong.
+#       `rng_sweep` had already answered it: `UOp.make` only ever names src indices
+#       already interned, so every src index is strictly below its consumer's and ONE
+#       FORWARD SWEEP IN INDEX ORDER reads nothing that is not already there. A worklist
+#       would be the same DAG walked in a worse order.
+#       **AND THE PARAGRAPH'S CLAIM WAS FALSE, WHICH IS THE PART WORTH KEEPING.** It said
+#       "a node whose `_shape` this file DEFERS -- every RESHAPE, and UNSHARD -- still HAS
+#       an interval". It does not, and the reason is that the dtype is BUNDLED with the
+#       shape: `dt_shape` answers a `DtShape` or nothing, so a deferred shape takes the
+#       dtype with it and the default arm has nothing to compute from. MEASURED, not
+#       assumed: `mmkx_reshape` reads `ABSENT` where CPython answers the whole `int32`
+#       window. What IS true is the half that matters for the decision -- a node this file
+#       defers in SHAPE ALONE is still answered, which is why the walk is not a
+#       `Derived` field -- and the honest statement of the rest is the `mmkx_` rows.
+#       THE SETTLED PART IS SMALLER THAN THE PARAGRAPH IMPLIED, and the measurement is what
+#       shrank it: the TWELVE `late()` MARKER OPS ARE NOT IN IT. `late()` hands them
+#       `void` with no shape, so their dtype is KNOWN and a BACKEDGE answers
+#       `(False, True)` instead of refusing. So the refused set is `STAGE`, `CUSTOM`,
+#       `CUSTOMI`, `UNSHARD` and a symbolic-marg RESHAPE -- four ops and a special case,
+#       and `STAGE` is the only one of them a fixture in this file's gate can reach.
 #     2. FOUR SIGNED-DIVISION ARMS: `CMOD`, `CDIV`, `FLOORDIV`, `FLOORMOD`. `mm.dm.*` is
 #       an UNSIGNED restoring divider, and all four need signed `//` -- a FLOOR and not a
-#       truncation -- plus the remainder. `divandmod.bend` is the consumer.
+#       truncation -- plus the remainder. `divandmod.bend` is the consumer. `mm.sn.div`
+#       is the signed core and it is LANDED, so these four are arithmetic on top of it.
 #     3. `Ops.CAST` -- `truncate` (dtype.py:297) is half a C-effect seam in `dtype.bend`
 #       and a pure def cannot call it. The arm is ABSENT rather than approximated, so a
 #       CAST lands on `(dtype.min, dtype.max)`; that is a sound widening and a divergence.
 #     4. `self.src[0].buf_uop` (a `while` over five ops) for the LOAD-from-BINARY arm.
-#   So this retires the WALL'S NAMING, its i64 arithmetic, `bit_length`, the dtype limits
-#   and the op table -- and leaves the walk, four div/mod arms, CAST and the LOAD arm.
+#   So this retires the WALL'S NAMING, its i64 arithmetic, `bit_length`, the dtype limits,
+#   the op table AND the walk -- and leaves four div/mod arms, CAST and the LOAD arm.
 # TODO(p3) ops.py:1166 def _sym_fxn             -- `exec` of generated source. P3/P6.
 # TODO(p3) ops.py:1196 def alloc                -- `new_buffer`, which is P6's device
 #   memory layer.

@@ -63,8 +63,12 @@ def rows_of(path: str, tries: int = 2) -> tuple[list[str], str]:
     out = [ln for ln in r.stdout.splitlines() if ln.strip() and not BANNER.match(ln)]
     if out:
       return out, 'ok' if attempt == 0 else f'ok-after-retry({attempt + 1})'
-    return [], 'no-main' if 'no main' in (r.stderr + r.stdout) else f'empty(rc={r.returncode})'
-  return [], 'unreachable'
+    if 'no main' in (r.stderr + r.stdout):
+      return [], 'no-main'
+    last = f'empty(rc={r.returncode})'
+  # every attempt printed nothing: a 0 here is indistinguishable from "not started", so it
+  # is reported as such rather than recorded as a 0-row baseline
+  return [], last + f'-after-{tries}-tries'
 
 
 def main() -> None:

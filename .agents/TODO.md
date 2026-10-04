@@ -5139,18 +5139,31 @@ Progress: gates landed `0/38` -> `1/38` for this pair. Coverage of `cstyle.bend`
       `dd-mut-reach.py` (call graph), `dd-mut-classify.py` (MOVED/THEOREM/REQUEST, which
       cannot emit a verdict with no proof behind it).
 
-- [x] **M09 LEFT AS A REQUEST, WITH THE FIXTURE NAMED.** Not a theorem. Proved NOT a
-      printer-depth problem (a 3-deep printer changes 28 rows and M09 still moves 0) and
-      proved the `hi` site is not reached by any of the 172 fixtures (replacing its left
-      operand with a different node also moves 0). The fixture that closes it is named in
-      the report.
+- [x] **M09 CLOSED — MOVED, 8 rows. THE REQUEST WAS A MISDIAGNOSIS.** `l2i_shl.hi` was
+      never unreached: it is called unconditionally. On snapshot `73b0e1e7` the arena-aliasing
+      defect overwrote the index pointing at it, so `lg9p` printed `BITCAST(WHERE)` where CPython
+      has `BITCAST(OR)` — a PORT defect under a green gate, read as a coverage fact. Two fixtures
+      added (ROWS ONLY, no port logic): **`hi42`** = `dtype.py:42`'s `hi` as a fixture ANSWER, so
+      the `|` is at the root and `OR(SHL,SHR)` vs `OR(SHR,SHL)` are different strings; **`lgy`** =
+      `dtype.py:39` on an `i32` source, so `l2i_cast3.bitc`'s fold stops hiding it. All eight
+      rows CALLED from CPython. `.agents/slop/dd-mutations-report.md`.
 
-- [ ] **OPEN, OWNER: the dtype unit — `l2i_cdiv.uns` HAS ITS ARMS SWAPPED** (`dtype.bend:971`).
-      `dtype.py:74` is `return r if op == Ops.CMOD else q`; the comment two lines above the
-      arms quotes it correctly and the arms are inverted, so unsigned CDIV returns the
-      REMAINDER and unsigned CMOD returns the QUOTIENT. New mutation **M36 moves 6 rows**,
-      and the port's `lgs`/`lgt` disagree with CPython with each other's answer. Same shape
-      as the two mutants that reached origin/master. R-45 in the notes.
+- [x] **THE TABLE HAS **ZERO REQUESTS** — 31 MOVED · 5 THEOREM · 0 REQUEST · 0
+      DID-NOT-COMPILE · 0 dead anchors, 182 rows.** Re-frozen at `e4618a71`, re-baselined, all
+      five THEOREMs RE-MEASURED on the new snapshot (`l2i_define`/`f2f`/`reindex` renames
+      byte-identical; M06 in BOTH directions, 137 of 184 lines). M05 and M36 RE-AIMED at the fixed
+      text; M30 re-aimed off a non-compiling mutant, now 24 rows; M14 compiles, 2 rows.
+      `.agents/slop/dd-mut-base.sh` builds a baseline that CANNOT be a mutant, after a baseline
+      was built from a mirror still holding the M09 mutant and RULE C caught it (all three
+      controls read MOVED 6 rows and NO table was written).
+
+- [x] ~~**OPEN, OWNER: the dtype unit — `l2i_cdiv.uns` HAS ITS ARMS SWAPPED**~~ **FIXED by
+      that unit; M36 RE-AIMED to re-introduce the defect so it stays armed.** `dtype.bend:971` was
+      `case True{}: Cd.r0` / `case False{}: Cd.q0` against `dtype.py:74`'s
+      `return r if op == Ops.CMOD else q`. The live file now agrees with CPython. The old anchor
+      was the FIXED text with the DEFECT as the mutant, so applying it would have made the table a
+      regression test for correct code; the anchor is now the fixed line and the mutant puts the
+      remainder back — **MOVED 8 rows.**
 
 ## Session 2026-10-04 — REPO HYGIENE: the dangling citations, the census, and the scratch in the tree
 
@@ -5278,3 +5291,51 @@ harnesses (`.agents/slop/stale-snapshot-detect.py`, `.agents/slop/hygiene-2026-1
 Progress: repo hygiene [##########] DONE — 3 citations repointed, 3 reported, glob proven,
       2 `.gitignore` patterns added, census corrected, 6 numbers marked unstable,
       4 deletions handed to the coordinator
+
+## Session 2026-10-04 — M09 CLOSED: two fixture rows, the REQUEST sweep, and a baseline that was a mutant
+
+Report: `.agents/slop/dd-mutations-report.md`. **No commit.** Changed: **fixture rows only** in
+`tinybendygrad/codegen/decomp/dtype.bend` (`hi42`, `lgy`, `l2i.rows(32n → 33n)`), plus
+`.agents/slop/dd-mutate.py`, `dd-mutations.txt`, `dd-mutations-report.md`, and two new harnesses
+(`dd-mut-base.sh`, `dd-mut-fixtures.py`).
+
+- [x] **THE FIXTURE EXISTS AND IT READS THE ORDER.** `hi42` roots the cone at `dtype.py:42`'s `|`
+      instead of two levels below a `WHERE`, so `hi42=OR(SHL(BITCAST,CAST),SHR(SHR,ADD))` becomes
+      `OR(SHR(SHR,ADD),SHL(BITCAST,CAST))` under M09. **A fixture that passes under both operand
+      orders is not a fixture, and this one does not.** `dt=uint32` so the `.bitcast` FOLDS and both
+      lanes reach the `|` at ONE address (`r1.src[2]` / `O.Arena.src(ar, r1, 2)`); `xdt=int32` so
+      each half carries its own `BITCAST`.
+
+- [x] **`b0 < 32` WAS ALREADY COVERED AND I MEASURED IT.** `l2i_cdiv` calls
+      `l2i(SHL, uint, *r, UOp.const(1, uint), z)` at `dtype.py:58`, so `lgq`/`lgr`/`lgs`/`lgt`
+      reach the `hi` arm with the LITERAL `b0 = C(1)` — which is why M09 moves their sigs. And
+      `n = b0 & 31` puts the shift in `0..31` for every input, so the requested precondition is
+      guaranteed rather than chosen.
+
+- [x] **THE SWEEP FOUND A REQUEST THE TABLE DID NOT HAVE.** Re-aiming M05 read 0 rows, and
+      `dd-mut-proof.py` **REFUSED to rename `l2i_cast3.bitc`** — so the site is LIVE and the 0 is
+      INVISIBILITY. `lg7` is dtype.py:39's only fixture and `bitcast(uint)` FOLDS on it, so the
+      node that arm exists to build was in no row. **`lgy` closes it: M05 now MOVES 4 rows.**
+
+- [x] **A BASELINE WAS THE M09 MUTANT, AND RULE C CAUGHT IT.** `hi42=OR(SHR(SHR,ADD),…)` sat in the
+      BASELINE file because the mirror had been left holding a mutated `dtype.bend`. Every mutation
+      moved exactly 6 rows and all three controls read MOVED, so no table was written. Fixed at the
+      source: `dd-mut-base.sh` builds the baseline in a FRESH mirror, ASSERTS the digest on both
+      sides, and requires two consecutive stable 150+ row runs. **The same defect then turned up in
+      my own oracle replay** — it ran the fixture it was about to measure, so `lgyn` read `0`
+      against the port's `2`. Both appended to `bend2-constraints.md` as M-1.
+
+- [x] **ONE DELIBERATE DEVIATION, REPORTED.** `dd-mut-base.sh` WARNs instead of refusing when the
+      live `dtype.bend` no longer matches the frozen snapshot. It moved FOUR times during this run,
+      so a hard `frozen == live` assertion makes the script unrunnable exactly when it is needed;
+      what the table's validity rests on — the frozen digest and `mirror == frozen` — is asserted
+      and unchanged.
+
+- [x] **NOT DONE, AND IT IS NOT A COVERAGE CLAIM.** The table has **no mutation entry for
+      `l2i_dt`/`f2f_dt`**, which is why `l2idt0 l2idt1 f2fdt0..8` (11 of the 23 unmoved rows) are
+      unmoved. Both are live; a one-line swap of `l2i_dt`'s two values moves two rows. Out of scope
+      for a REQUEST sweep, recorded so the next reader does not read the orphan list as coverage.
+
+Progress: dtype M09 + REQUEST sweep [##########] DONE — 2 fixtures (8 rows, all from CPython),
+      M09 MOVED 8, M05 MOVED 4, 31 MOVED · 5 THEOREM · 0 REQUEST · 0 DID-NOT-COMPILE,
+      5 THEOREMs re-measured, 3 controls SAME, .tsv reproducible

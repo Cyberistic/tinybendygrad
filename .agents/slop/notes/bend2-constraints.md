@@ -18118,3 +18118,89 @@ the only handle that stayed true.
 change that typechecks and runs has still not been delivered, and the
 thing that proves delivery is a gate over the MERGED tree, not over the
 workspace it was written in.
+
+## D-1. A `Data` RECORD BINDER IS CONSUMED BY EVERY READ, SO `W2.ar(w)` TWICE IS A TYPE ERROR
+
+`W2` is a `Data` record with three `+` fields, so `W2.ar(w)` **consumes** `w`. A fixture that
+wanted the arena twice wrote `O.Arena.src(W2.ar(w), W2.hi(w), 2)` and bend answered
+
+```
+- expected : w
+- observed : w (consumed more than once)
+```
+
+The fix is the shape `l2i.two` already uses — destructure once with `+` binders and read the
+binders, which are linear and may be read freely:
+
+```
+case Some{W2{+ar, +lo, +hi}}: <use ar and hi>
+```
+
+`l2i.hi.put` in `codegen/decomp/dtype.bend` is the worked example. MEASURED 2026-10-04.
+
+## D-2. A DEF MUST BE **FILLED** BEFORE IT IS USED, AND THE ERROR SAYS "UNFILLLED LAW"
+
+Calling a def that is defined LATER in the file gives
+
+```
+- expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+- observed : <the name>
+```
+
+with `Context:` listing the CALLER's locals and `Location:` pointing at the call. It reads like
+a "law"/namespace problem and is not one: the def simply does not exist yet at that point. The
+file's own convention (`def X.of` precedes `def X`) is the same rule. MEASURED 2026-10-04, and it
+cost three compile cycles because the message points at the CALL, not at the missing def.
+
+## D-3. `match` MAY NOT SCRUTINISE A COMPUTED VALUE, AND THE HELPER MUST COME FIRST
+
+```
+- a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+```
+
+is what `match l2i(ar, O.OpsSHL{}, dt, xdt, ws):` produces. The port's own idiom is to pass the
+`Maybe` to a second def and `match` the PARAMETER — `l2i.went` → `l2i.got`, and the new
+`l2i.hi42` → `l2i.hi.put`. Combined with D-2 that fixes the order: the helper that owns the
+`match` is defined BEFORE the def that calls it. MEASURED 2026-10-04.
+
+## M-1. A BASELINE BUILT FROM A MIRROR IS A CLAIM ABOUT A MUTABLE THING
+
+Measured 2026-10-04, and it is the most expensive hour in this file's history. A hand-built
+mirror was left holding an MUTATED `dtype.bend` by an earlier probe; the baseline was generated
+from it; every mutation then moved exactly 6 rows and all three controls read MOVED.
+
+**RULE C caught it** — the abort is the reason the defect is a near-miss and not a shipped
+table — but the fix is upstream of the harness:
+
+- a baseline is built in a FRESH mirror from `git archive <pinned> tinybendygrad` plus the
+  **frozen** file, and the mirror's digest is **asserted** equal to the frozen file's;
+- the accepted output is two CONSECUTIVE stable 150+ row runs, because `bend` prints NOTHING on
+  a stack overflow (~1 run in 20) and that is indistinguishable from "never started";
+- the exit code is never the guard.
+
+`.agents/slop/dd-mut-base.sh` is the artifact. **THE SAME DEFECT EXISTS IN AN ORACLE REPLAY** and
+it was found there an hour later: a fixture whose `n=` row counts interned nodes was measured in
+a session whose replay had ALREADY run it, and read `0` against the port's `2`. **A replay that
+includes the row under measurement measures it after it already happened.**
+
+## M-2. A `0` MEASURED AGAINST A SNAPSHOT WITH A KNOWN DEFECT IN IT IS A STATEMENT ABOUT THE SNAPSHOT
+
+`l2i_shl.hi`'s operand-order swap read `SAME 0 rows` against snapshot `73b0e1e7` and was filed as
+"the `hi` site is not reached by any of the 172 fixtures". It was reached, unconditionally, on
+every snapshot: the arena-aliasing defect in that snapshot overwrote the index pointing at it,
+so the row printed `BITCAST(WHERE)` instead of `BITCAST(OR)`. The gate could not see the node it
+was printing a substitute for. After the fix the same mutation moves **8 rows**.
+
+**So the diagnostic order is: is the site reached? THEN is the mutation visible? — never the
+reverse.** A zero whose own row reads `BITCAST(WHERE)` where CPython reads `BITCAST(OR)` is a
+PORT defect with a green gate, which is the shape that has cost this project five times. Cite
+the row's own text as evidence before classifying anything.
+
+## M-3. AN "UNREACHABLE" THEOREM MUST BE MEASURED IN BOTH DIRECTIONS
+
+`dd-mut-proof.py` renames the DEF and shows the output byte-identical; that proves no live
+caller. It says nothing about an ARM, and for an arm the honest test is a pair: delete the arm
+(byte-identical ⇒ dead) and delete its INTERCEPTOR (big diff ⇒ it becomes live). `l2i_cast.got`'s
+`case 3` measured `THEOREM` and 137 of 184 lines when `l2i_cast.ldt`'s `case 3` was removed. One
+direction without the other is half a proof, and the half you skip is the half that says whether
+the zero would stay a zero.
