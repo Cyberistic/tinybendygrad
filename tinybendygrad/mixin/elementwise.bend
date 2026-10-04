@@ -825,6 +825,23 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # shortest-round-trip one, so f32(log 2) prints `0.693147` here and
 # `0.6931471824645996` there. That is a real difference about a different def and it
 # is NOT gated here; it is its own unit.
+# TODO(p3) elementwise.py:757  tanh         -- `2.0 * ((2.0 * self).sigmoid()) - 1.0`
+# is one line over the landed `sigmoid`, and its constants are NOT the problem. WHAT IS:
+# `ew_neg` negates by MUL by `CInt{H.i64_of_i32(4294967295)}`, and promoting a NEGATIVE int
+# const to a float const produces the WRONG f32.
+# MEASURED, and the signature is the handle: +1 -> 1.0f and +2 -> 2.0f are CORRECT, and
+# BOTH -1 and -2 give the SAME wrong value 0x4F800000 = 4294967296.0 -- so the MAGNITUDE is
+# lost entirely, not merely mis-signed. A mis-signed bug would give -1.0 and -2.0.
+# LOCATION: `wk_i64_to_f32` / `wk_i64_to_f32.sgn`, uop/weak.bend:266-272. The formula READS
+# correct on paper -- a two's complement value is `lo + (hi - 2**32) * 2**32` when negative
+# -- which is exactly why this is a MEASURED LOCATION and not a diagnosis. Next step: a
+# four-row probe of `U32.to_f32(0xFFFFFFFF)`, `wk_i64_to_f32.sgn`, and the two
+# intermediates of the sum.
+# IT IS NOT THE FIXTURE. This blocker SURVIVED a fixture repair: the promotion matrix's
+# missing cell WAS a fixture bug (two operands built as two independent
+# `O.Arena.empty()` roots, so both were node 1) and fixing that made `ew_promo_wf_wi` match
+# byte for byte -- while this one kept failing, for a different reason entirely.
+
 # TODO(p3) elementwise.py:500  cos  -- math.pi/2 is `F32.div(F32.pi(), 2.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
@@ -836,15 +853,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:757  tanh         -- `2.0 * ((2.0 * self).sigmoid()) - 1.0`
-# is one line over the landed `sigmoid` and the CONSTANTS are not the problem any
-# more (`2.0` and `1.0` are literals). WHAT IS: `ew_sub` is `left + (-right)`,
-# so the negation folds into the CONST, and the port folds it to the WRONG BITS.
-# MEASURED, and the row is what found it: CPython emits CONST 0xBF800000 (-1.0)
-# and the port emits 0x4F800000 (4294967296.0) for the same node.
-# `F32.neg` IS CORRECT -- a five-row probe of 1.0, 0.5, 2.0, 1.5 and 0.0-1.0 agrees
-# with CPython bit for bit -- so the defect is in the CONST-NODE negation path
-# (`ew_neg` of a float CONST TENSOR), not in float arithmetic. Separate unit.
+
 # TODO(p3) elementwise.py:854  atanh        -- .log()
 # TODO(p3) elementwise.py:866  asinh        -- .log()
 # TODO(p3) elementwise.py:878  acosh        -- .log()
@@ -1188,13 +1197,29 @@ def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 # graphs are indistinguishable -- `Tensor(1.0) * 1` is 2 nodes on BOTH sides and a matrix
 # built only from it would look correct and be blind. Two CONSTs of different weak classes
 # is a cell the other seven do not reach.
+# THE ARENA IS THREADED, and every other fixture in this file threads it too --
+# `g_promo_remint` is `+b = ew_f32(empty); c = ew_ci(Found.ar(b), 3)`. This one was
+# `ew_cf(empty, 1.0)` and `ew_ci(empty, v)` as two INDEPENDENT roots, so both operands
+# were node 1 in DIFFERENT arenas and the fold collided them: the int const was read
+# from the float's arena and every value came out as 1.0.
+#
+# **THE THIRD FIXTURE-SHAPED WALL IN THIS SESSION, and the most expensive one, because
+# two commits of diagnosis were built on top of it.** The file's own comment predicted it
+# -- "Folding either operand's own arena is the bug this file measured twice" -- and the
+# probe that found it is the one that printed `SAME=T idx=1/1` for the WORKING pair as
+# well as the failing one. A defect that reproduces in the case that works is not a
+# defect in the thing under test.
 def g_f32c() -> T.Tensor: ew_ct(ew_cf(O.Arena.empty(), 1.0))
-def g_i32c(v: U32) -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), v))
+def g_i32c(v: U32, +t: T.Tensor) -> T.Tensor: ew_ct(ew_ci(T.Tensor.ar(t), v))
 
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
 def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))def t_swish() -> IO(Unit): ew_sig("ew_swish", ew_swish(g_i32()))
 def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))
-def t_promo_wf_wi() -> IO(Unit): ew_sig("ew_promo_wf_wi", ew_mul2(g_f32c(), g_i32c(2), False{}))
+def g_wf_wi() -> T.Tensor:
+  +f = g_f32c()
+  g_i32c(2, f)
+
+def t_promo_wf_wi() -> IO(Unit): ew_sig("ew_promo_wf_wi", ew_mul2(g_f32c(), g_i32c(2, g_f32c()), False{}))
 def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
 
 

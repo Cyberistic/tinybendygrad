@@ -43,9 +43,9 @@ GT=.agents/slop/ew-gate
 mkdir -p "$GT"
 
 ROWS=76
-DIVERGES='ew_promo_nc|ew_promo_wf_wi'
+DIVERGES='ew_promo_nc'
 
-# `ew_promo_wf_wi` IS A REAL DEFECT, NAMED. It is the promotion matrix's missing cell -- two
+# `ew_promo_wf_wi` WAS A DIVERGENCE AND IS NOT ANY MORE, AND THAT IS THE POINT. It is the promotion matrix's missing cell -- two
 # weak CONSTs of DIFFERENT classes, a weakfloat against a weakint -- and the other seven
 # cells do not reach it, so nothing tested it until now.
 #
@@ -105,9 +105,12 @@ grep -vE "^($DIVERGES)=" "$GT-bn.txt" > "$GT-bn.sub"
 # THREE COUNTS, because the two sides emit a DIFFERENT number of rows and that is now a
 # fact about the port rather than an accident:
 #
-#   76  the oracle:  75 agreeing rows + ew_promo_wf_wi (which the port disagrees with)
-#   77  the port:    the same 75, PLUS ew_promo_nc, PLUS ew_promo_wf_wi
-#   75  what is COMPARED, on both sides, after the two exclusions
+#   76  the oracle:  every row it emits is compared
+#   77  the port:    the same 76, PLUS ew_promo_nc, which the oracle deliberately omits
+#   76  what is COMPARED -- and it is 76, not 75, because the exclusion removes a row the
+#       ORACLE DOES NOT HAVE. Filtering the oracle is a no-op, so the compared count is the
+#       ORACLE's count, and a gate that assumed "unfiltered minus one" on both sides would
+#       assert the wrong number on the side that never had the row.
 #
 # The port-only row is `ew_promo_nc`, which the oracle deliberately omits because a
 # signature for a non-constant promotion is unfalsifiable. Asserting one number for all three
@@ -119,7 +122,7 @@ for f in "$GT-bd.txt" "$GT-bn.txt"; do
   [ "$(cnt "$f")" = 77 ] || { echo "ew-gate: $f has $(cnt "$f") rows, expected 77" >&2; exit 1; }
 done
 for f in "$GT-py.sub" "$GT-bd.sub" "$GT-bn.sub"; do
-  [ "$(cnt "$f")" = 75 ] || { echo "ew-gate: $f has $(cnt "$f") COMPARED rows, expected 75" >&2; exit 1; }
+  [ "$(cnt "$f")" = 76 ] || { echo "ew-gate: $f has $(cnt "$f") COMPARED rows, expected 76" >&2; exit 1; }
 done
 
 diff "$GT-py.sub" "$GT-bd.sub" || { echo "ew-gate: DISAGREE (interpreted)" >&2; exit 1; }
@@ -147,16 +150,6 @@ grep -qE "^ew_promo_wf_wi=" "$GT-py.txt" || {
   exit 1
 }
 
-# THE PINNED HALVES OF THE PROMOTION DEFECT. Asserting the exact content is what makes
-# this a checked divergence: `promote` names a remint that MINTS a const, so the port's row
-# is one node short, and the specific short node is the claim.
-grep -q "^ew_promo_wf_wi=3 CONST/0=1065353216 CONST/0=1073741824 MUL/2 $" "$GT-py.txt" \
-  || { echo "ew-gate: CPython's ew_promo_wf_wi CHANGED -- the divergence needs review" >&2; exit 1; }
-grep -q "^ew_promo_wf_wi=2 CONST/0=1065353216 MUL/2 $" "$GT-bd.txt" \
-  || { echo "ew-gate: the port's ew_promo_wf_wi CHANGED -- is the fold fixed?" >&2; exit 1; }
-grep -q "^ew_promo_wf_wi=" "$GT-bd.txt" \
-  || { echo "ew-gate: ew_promo_wf_wi is MISSING from the port" >&2; exit 1; }
-
 # The two halves the oracle DOES check for that graph must be present on the port side, or
 # the exclusion above has quietly removed the whole claim rather than its unfalsifiable part.
 for nm in ew_dt_promo_nc ew_op_promo_nc; do
@@ -164,4 +157,4 @@ for nm in ew_dt_promo_nc ew_op_promo_nc; do
   grep -q "^$nm=" "$GT-bd.txt" || { echo "ew-gate: the port lost $nm" >&2; exit 1; }
 done
 
-echo "ew-gate: 75 rows, 3 lanes identical, 2 documented divergences ($DIVERGES)"
+echo "ew-gate: 76 rows compared, 3 lanes identical, 1 documented divergence ($DIVERGES)"

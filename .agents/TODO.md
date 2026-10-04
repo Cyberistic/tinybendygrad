@@ -106,6 +106,35 @@ dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no 
                                          Neither edited: `jslane2/` is not this
                                          unit's. `.agents/slop/abi4/`,
                                          `.agents/slop/DTYPE-ABI.md`, ABI4-1..6.
+ e2e-js-lane    [##########] 3/3    **`e2e.sh` STAGE 8: THE JS LANE, AND IT WAS THE ONLY LANE OF SEVEN THAT NO
+                                    STAGE RAN.** All 7 stages drove Bend or C; `node` appeared once, in stage 3, as a
+                                    BROWSER DRIVER. The JS lane shipped THREE SILENT BUGS (two frame slots where the
+                                    seam has one argument, returning two allocation addresses; `p.fst`/`p.snd` against
+                                    `hi`/`lo`, so `undefined >>> 0 === 0` and `i64_trunc` -- the IDENTITY -- was not the
+                                    identity, 9/12 wrong; three `of32` misplacements, 57/98 -> 98/98) and NO stage of
+                                    the artifact could see any of them. A GATE IS NOT THE ARTIFACT.
+                                    CLAIM: `node` runs `runtime/dtype.js` via `bend -o`, rc 0, **20/20 rows present**,
+                                    **19/19** vs CPython -- **and only 12 of the 20 REACH `dtype.js`**, because
+                                    `Dt.bf16`/`Dt.fp16`/`Dt.fp8_to` are now PURE `dtype.bend` defs: those 3 CIDs are
+                                    DEAD in `dtype.js` and 8 rows measure `dtype.bend`. The split is DERIVED from the
+                                    substrate's own declarations each run, so a tree that moves back is counted right.
+                                    `ROWS PRESENT == ROWS EXPECTED` is its OWN obligation and an absent row is a FAIL
+                                    -- the lesson `abi4_gate.py` 98/98 and `abi_gate.py` "12/12" both paid.
+                                    PLANT (ABI-2 as shipped) **moved 8**, DISARM (`* 2**32n +`) **moved 0**, the
+                                    NUMBER-arithmetic second plant **moved 5**. **ON THE PLANT node STILL EXITS 0** with
+                                    20/20 rows present and 11/19: a full row set over a wrong lane is NOT a partial
+                                    success, so rc is a THIRD obligation.
+                                    **CENSUS CORRECTED:** the brief's "320 executed / 256 with a NULL argument / 175
+                                    sentinels" is `clangfill/gate.py`, a **C**-lane libclang census, NOT a JS one --
+                                    `clangshim/apply-port-lane.py:130` records the libclang lane cannot be emitted to JS
+                                    at all. Executed-is-not-bound is kept as a SHAPE; this lane's own limit is that
+                                    every argument is a bend literal, so there is no NULL-argument class to count.
+                                    **ADDITIVE, VERIFIED NOT ASSUMED:** stages 1-7 byte-identical over 12449 B (sha256
+                                    e3a0edf0...), exit block identical, **+6879 B, 0 removed**. Stage 8 keeps the
+                                    one-temp/one-atomic-move discipline and reads the gate's rc from the report's LAST
+                                    LINE, because POSIX sh has no PIPESTATUS; the `rc=` stamp count is checked too, and
+                                    no stamp is SKIP. rc 0 / 1 / 3 all exercised through `e2e.sh` itself.
+                                    `.agents/slop/jstage/`, `.agents/slop/JSTAGE.md`, JS8-1..7.
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
@@ -10945,3 +10974,485 @@ Report: `.agents/slop/CIDSWEEP.md`.  Gate: `sh .agents/slop/cidsweep/gate.sh` (e
       THIRD symptom of the same cell, or of the int-const-to-float path, and the honest
       statement is that `tanh` is held pending this fix rather than on a diagnosis that has
       since moved twice.
+
+---
+
+## PROBES — a probe or a plant in `tinybendygrad/` now announces itself to a TOOL (prefix `PROBE-`)
+
+Rule prefix `PROBE-`, ledger `.agents/slop/PROBES.md`, instruments
+`.agents/slop/probes/{classify.sh,demo.sh}` and the `PROVENANCE` block in
+`substrate-check.sh`. Nothing committed.
+
+- [x] **PROBE-1** **THE MECHANISM.** A file in `tinybendygrad/` is PORT iff `git ls-files`
+      knows it. **Silence requires ownership**: the alarm's only off-switch is `git add`, i.e.
+      committing it. Measured over all 144 files: **zero false positives** — the only 2
+      untracked files are `runtime/ops_bend.mut.bend` and `test/_probe/v5.bend`, both genuine.
+      Chosen over a `PROBES.md` registry (reproduces the defect one level down: the probe
+      nobody registered is the one that moved the count), a `.probe`/`.mut` suffix routed to
+      `NO INSTRUMENT` (a probe `./bin/bend` can no longer run is debris with a polite name),
+      and a header/comment (`mutate.py:20-24 fresh()` is `rmtree`+`copytree`, so in-file
+      markers are erased by the next experiment). `.gitignore:34-52` KEEPS its patterns but
+      cannot be the mechanism: it cannot untrack (`:48-50` records that no-op as looking like
+      success), `probe-*.bend` needs a hyphen so `probe_f32lit.bend` is now STAGED, and the
+      router's population comes from `find`, which never asks git.
+- [x] **PROBE-2** **THE INSTRUMENT.** `substrate-check.sh`'s `ROUTE` now prints its own
+      denominator split: `PROVENANCE port=N non-port=M not-in-index=I no-upstream=U`, a
+      per-file list, and `PORT ALARM`. `not-in-index` FAILS; `no-upstream` is REPORTED and
+      never fails, because **16 of the 31 non-port files are legitimately not 1:1 with an
+      upstream `.py`** and would otherwise be 16 findings forever. Alarm is scoped to paths
+      inside `tinybendygrad/`: a `$TMPDIR` scratch copy is also not in the index, and
+      `agent-core.md:217` makes that a sanctioned workflow.
+- [x] **PROBE-3** **`runtime/ops_bend.mut.bend` IS A HARNESS RESIDUE, NOT AN ARMED PLANT.**
+      Producer/consumer is `.agents/slop/bend_mutate.py:9` (`T = F.with_name(...)`), written
+      `:46`, run `:47`; the text on disk is byte-for-byte row **`M3`** (`:18`,
+      `'lanes: drop the bool lane'`). `MUT` runs `M1…M20` IN ORDER, so a completed run leaves
+      **M20** — it leaves `M3`, so **the run was interrupted after `M3.write_text`**.
+      Consumers: `deadarm/bendarm.py:136` (and `:138` sees `def main(`, so `:155` admits it as
+      an entry point), `triage/allfiles.txt:70` (frozen 22:34), `e2e.sh:138` (PROSE ONLY).
+      **No gate asserts it exists.** Deleted. Also: it is NOT the `mutate.py` re-arm trap —
+      `fresh()` writes OUT of the live tree; `bend_mutate.py:46` writes INTO it but only when
+      a human runs it. It cannot be moved to `$TMPDIR`: `bend_mutate.py:6-8` says a scratch
+      copy cannot resolve `import ../helpers.bend`, so every mutation reports "did not
+      compile" (`agent-core.md:217`).
+- [x] **PROBE-4** **CLASSIFIED all 31 non-port files of 144** in `PROBES.md` §5: 1 mutant
+      (deleted), 8 probes, 6 seam/lane halves, 16 port infrastructure. Reproduces
+      `MUT-4`'s 31-of-144 independently.
+- [ ] **PROBE-5** **NOT FIXED, REPORTED.** `.agents/slop/guardfix/probe-c.bend` does not
+      compile (`observed : F32` at `main`), so `substrate-check.sh:140-141` refuses the C
+      context and **every `.c` file reports `NO INSTRUMENT`** — the `.c` lane is DEAD right
+      now. `guardfix` and the live `dtype.bend` own the two files; not mine. Any claim that
+      the 6 non-`.bend` files are clean is currently unfounded.
+- [ ] **PROBE-6** **NOT FIXED, NEEDS A COMMIT.** 6 of the 8 live probes are **tracked**, so
+      `not-in-index` is silent on them. `rm` + commit, or `git rm --cached`, is the
+      coordinator's call. Same conclusion `MUT-9` reaches for the shadow copies.
+- [ ] **PROBE-7** **TRAP, measured today.** zsh reads a script INCREMENTALLY, so editing
+      `substrate-check.sh` while a 138-file run is in flight made it resume at a stale byte
+      offset and print `substrate-check.sh:309: parse error near ()'` — half a verdict that
+      reads like a result. Do not edit a running shell script; `probes/demo.sh` is a
+      repeatable artifact for exactly this reason.
+- [x] **PROBE-8** **TWO BUGS IN MY OWN `PROVENANCE` BLOCK, AND ONLY ONE WAS SAFE.**
+      Dropping the `tinygrad/` prefix from the mirror test printed `port=1 non-port=137
+      no-upstream=137` — four plausible integers, all wrong, **and it looked like a
+      result**; `not-in-index=2` stayed correct, because that conjunct never touches the
+      filesystem. **A defect in one conjunct of a predicate does not dim the other, so
+      partial correctness is not a check.** Caught only because the deleted standalone had
+      printed `port=113` seconds earlier and both numbers could not be right — keep an
+      earlier run's numbers as a REGRESSION TARGET, do not re-read the new code. Dropping
+      the closing `)` of `$(...)` failed LOUD (`parse error near 'PROVENANCE=$(print
+      -...'`) and cost one bisect: **the parse error is the fail-safe direction**, and it
+      is the contrast that makes the first one serious.
+- [x] **PROBE-9** `no-upstream` is asked ONLY of `.bend` files: mirroring a `.bend` to
+      `tinygrad/*.py` is rule 1's convention, and asking it of `runtime/dtype.c` is a
+      category error (a `.c` seam half has no `.py` to mirror). So `no-upstream=25`, not
+      `MUT-LEDGER`'s 31 — **the 6-file difference is the 6 seam halves, both counts right,
+      different populations.** Reporting `25` unexplained would have read as a
+      disagreement with a ledger that was not wrong.
+- [x] **PROBE-10** Deleted a redundant second copy of the predicate: a standalone
+      `probes/classify.sh` reimplemented what `substrate-check.sh` now does, and two copies
+      of a predicate is one more thing that can be true. `probes/{demo.sh,disarm.sh}`
+      remain — they are demonstration artifacts, not a second implementation.
+- [x] **PROBE-11** ⚠ **A STALE FILE LIST IS A WAY TO MAKE A DENOMINATOR LIE, AND IT IS
+      SILENT.** `probes/demo.sh`'s first cut snapshotted `find tinybendygrad -name '*.bend'`
+      ONCE, before planting anything, so all four passes printed IDENTICAL numbers, `of 138`
+      four times — a list frozen before the probe was planted does not contain the probe, and a
+      DELETED file still gets classified because the *path* is still listed. **The instrument
+      was correct, the input was stale, and four successful-looking passes were the result.**
+      Re-deriving per step is what produced the real table. `.agents/slop/triage/allfiles.txt`
+      is exactly such a list (frozen 2026-10-04 22:34) — fine for a same-instant before/after
+      pair, wrong for any cross-session comparison: that is a census, not a tree.
+- [x] **PROBE-12** **DEMONSTRATED, MEASURED, WITH THE PAIRED DISARM.**
+      `.bend handed` 138→139→138→137 while **port count held at 113 in all four states** — the
+      old `bend=` moved by one silently four times; the new line moves by one VISIBLY.
+      Disarm: `not-in-index`/`PORT ALARM` 1→**0**→1 via `git update-index --add`, with `port=`
+      unmoved, index recorded before and proven restored after, no worktree file touched
+      (`probe_f32lit.bend` is staged by a live unit; the index is shared).
+- [x] **PROBE-13** **THE PLANT IS BYTE-IDENTICAL TO `bend_mutate.py`'s M3 AND TO NOTHING
+      ELSE.** Regenerating it mechanically (`base.replace(M3_from, M3_to, 1)`) reproduced md5
+      `9bdb1dd8aba9420be625535a9c7734ba` exactly. Combined with M3's site being line **144**
+      and M20's being line **163**, a completed `MUT` run would leave a diff at 163 — so the
+      harness stopped after `M3.write_text` (`bend_mutate.py:46`). **Residue, not a plant.**
+      Deleted; `tinybendygrad/` is now 137 `.bend` / 143 files, and 137 IS the port count.
+
+### S2 — Tensor surface: which missing methods a RUNTIME DEVICE needs (`.agents/slop/SURFACE2.md`)
+
+- [x] **S2-1** **RE-MEASURED the count instead of inheriting it: 18 -> 19 of 57, missing
+      39 -> 38.** Denominator 57 from `ast.parse`. `as_param` closed (§S2-3). The 19th is
+      the only method in `tensor.bend`'s DEVICE HALF that is buildable.
+- [x] **S2-2** **`TENSOR-SURFACE.md`'s ABSENT LIST IS ONE NAME SHORT AND SAYS 39.** It lists
+      38; `18 + 38 = 56`. The member in neither list is `__del__` (tensor.py:102). The
+      count was right and the list was short, so anything that read the LIST was one low.
+      **Its `tensor.bend` line count is also stale (1,584 stated, 1,771 actual) and its
+      `backward` row is stale (zip recorded as `TODO(p3)`, in fact ported and gated).**
+      Do not inherit either number.
+- [x] **S2-3** **CLOSED `as_param`** -> `tn_as_param`, arm 3 of `UOp.param_like`, reading
+      the source's own `ParamArg`. THREE facts on ONE line because a signature cannot see an
+      ARG. Mutations A21/A22 leave the signature byte-identical; A23 leaves the arg facts
+      byte-identical; A24 is a control that moves nothing. Gate + `bwd-oracle.py` both green.
+- [x] **S2-4** **CLASSIFIED 38 into 3 bins BY WHAT A CALLER MUST BE ABLE TO DO, not by
+      name**, with four seams instrumented (`Buffer.allocate`, `run_linear`,
+      `Buffer.as_memoryview`, `UOp._mop`) and a **DELTA** per program. A first pass counted
+      raw totals and reported ALLOCATE for all 39 — building the fixture IS an allocation.
+      A **9 / B 11 / C 18**, and **C is 47% of the gap**: two refusals (`__bool__`,
+      `__delitem__`), twelve operator-sugar `__i*__` over a present `assign`, two external
+      services, one GC finalizer. **Unmeasured bin members: none.**
+- [x] **S2-5** **DELIBERATELY NOT CLOSED `__bool__` and `__delitem__`.** Both are refusals
+      whose whole observable is an exception; the only expressible port is a def that traces
+      nothing, and a row over a def whose body is a literal is a tautology. `manual_seed` is
+      ungateable by nature (its only observable needs RNG + realize + readback).
+      **An ungated method is an assertion.**
+- [x] **S2-6** **UPSTREAM DEFECT, REPORTED NOT FIXED:** `Tensor.decode_hevc_frame` is
+      inoperable at this revision — `tensor.py:563` passes `arg="encdec"` where `ops.py:1259`
+      declares `CustomFunction(name, dtype)`, so `dtype_from_uop` reads `.dtype` off a `str`
+      and the graph it returns has **no readable shape**. The call succeeds; a reader breaks.
+- [ ] **S2-7** **THE GAP IS IN BIN A, AND BIN A IS THE SMALLEST OF THE THREE.** 4 of its 9
+      are read-back and 5 are launch, and `realize` is the **only** member whose invoke
+      crosses a seam at all — `linear_with_vars`/`schedule_linear` cross nothing and return
+      the `LINEAR` that `realize` consumes. Next: bin A's launch side, i.e. whether
+      `realize` can be built on what the schedule cluster currently returns.
+- [ ] **S2-8** **`manual_seed` / `__bool__` / `__delitem__` need a REFUSAL convention in
+      `tensor.bend` before any of them can be gated** — `tn_len` models `__len__`'s raise as
+      a `Maybe`, which is the shape a row could read; `__bool__` has no non-tautological
+      observable at all and should stay a TODO until the gate has something to print.
+
+## `e2e-js-lane` — STAGE 8 OF `e2e.sh`, THE JS LANE (JS8-1..7)
+
+- [x] **`e2e.sh` STAGE 8, ADDITIVELY.** Stages 1-7 **byte-identical** over 12449 B
+      (sha256 `e3a0edf0…`), exit block byte-identical, **+6879 B, 0 removed** — verified
+      by byte comparison against a pre-edit copy, not by reading the diff. Full run:
+      **8/8 PASS, 0 failed, 0 skipped, exit 0.**
+- [x] **THE STAGE'S CLAIM, AND ITS DENOMINATOR IS TWO NUMBERS, NOT ONE.** `node` runs
+      `runtime/dtype.js` through `bend -o`, rc 0, **20/20 rows present**, **19/19** vs
+      CPython (called, never transcribed) — and **only 12 of the 20 rows REACH
+      `dtype.js`**. `Dt.bf16`/`Dt.fp16`/`Dt.fp8_to` are now PURE `dtype.bend` defs, so
+      those three CIDs are **dead in `dtype.js`** and 8 rows measure `dtype.bend`. The
+      split is derived from the substrate's own declarations every run. **A stage's row
+      count is its FIXTURE; the rows that reach the lane are the CLAIM.** (JS8-1)
+- [x] **THREE OUTCOMES, ALL THREE EXERCISED THROUGH `e2e.sh` ITSELF.** rc 0 → `PASS`;
+      rc 1 → `FAIL (rc=1)` and the script exits 1; rc 3 → `SKIP`, script exits 0 with
+      `PASS WITH 1 SKIP(S)`. The refusal is REAL: with a **0-byte `helpers.bend`**
+      planted in a `$TMPDIR` copy, `bend -o` answers `expected : a defined name /
+      observed : H.I64`, no JS is emitted, node never runs.
+- [x] **A MISSING SUBSTRATE IS `SKIP`; A REVERTED SEAM IS `FAIL`.** `--tree` at a
+      directory with no `tinybendygrad` used to *crash*, and a crash read as `FAIL`,
+      which is a claim the lane is wrong; now rc 3. But a `dtype.js` whose `i64_of` no
+      longer reads `p.hi`/`p.lo` is **the ABI-2 bug shipping again**, and calling that
+      `SKIP` would launder a live defect into "could not run". (JS8-3)
+- [x] **`ROWS PRESENT == ROWS EXPECTED` IS ITS OWN OBLIGATION, and an absent row is a
+      FAIL**, never a neutral. `abi4_gate.py` once passed 98/98 and `abi_gate.py` once
+      reported "node agrees with CPython on 12/12" while `node` exited 1 with EMPTY
+      stdout — `vs()` excludes absent rows from `bad`, so **a dead lane counted as a
+      lane never wrong**. (JS8-4)
+- [x] **PLANT AND DISARM, RUN.** ABI-2 as shipped (`p.hi`→`p.fst`) **moved 8/20**; the
+      BigInt re-spelling **moved 0/20**; the NUMBER-arithmetic spelling was **run too
+      and moved 5/20**, because JSL2-5 records it being mistaken for a disarm once.
+      **On the plant `node` STILL EXITS 0** with 20/20 rows present and 11/19 — so rc,
+      the row set, and the CPython comparison are three separate obligations.
+- [x] **THE PLANT'S UNMOVED ROWS ARE ATTRIBUTED, each a theorem:** 8 never reach
+      `dtype.js`; 1 (`fp8from_1p5`) reaches it by a seam the plant does not touch; 3 go
+      through `i64_of` but already answer `0:0`.
+- [x] **THE TEMP-AND-MOVE DISCIPLINE IS KEPT** (one temp inside `$RUN`, one write, one
+      atomic `mv`, `rm -f` of dot-temps first, the `rc=` stamp appended to the **temp**
+      and never to the file the child just wrote), and the gate's status is read from
+      the report's **last line** — POSIX sh has no `PIPESTATUS`, so `$?` after a pipe
+      is the last command's status and a crashed gate would print PASS. The stamp
+      count is checked too: no stamp is `SKIP`. (JS8-5)
+- [x] **TWO FIXTURE BUGS OF MY OWN, BOTH FOUND BY A NUMBER, BOTH MINE.** A hand-typed
+      `-8` as `i64_of_hi_lo(0, 4294967288)` is **`+4294967288`** — `BigInt.asIntN(64,·)`
+      leaves a 32-bit value alone because **the sign lives in the HIGH word**; four rows
+      went red and **both lanes were right and the fixture was wrong**, found only by
+      running the same rows through `cc` and getting byte-identical output. And
+      `F32.show` prints SEVEN significant digits (`1.0996094` vs CPython's
+      `1.099609375`), so both sides now round through `f32()`. `jslane2/gen_f32_seam.py`'s
+      own `norm` has no round-trip and would call `fp16(1.1)` a lane disagreement for
+      that reason; the row is here so it cannot hide. (JS8-6)
+- [x] **THE FIXTURE FOLLOWS `dtype.bend`, WHICH IS MOVING UNDER IT.** The three F32
+      seams were `-> IO(_)` laws and are now pure defs, so a `<-` bind inside a
+      `do IO<Unit>` block stops type-checking for them. The emitter reads the
+      declaration and lifts a pure one with `IO.pure`. A hard-coded seam shape is a
+      stage that refuses on whichever side of a refactor the tree is on — and a refusal
+      is a stage that measured nothing. (JS8-7)
+- [x] **CENSUS CORRECTED, NOT REPEATED.** The "320 executed / 256 with a NULL argument
+      / 175 sentinels" figures are `clangfill/gate.py`, a **C**-lane libclang census,
+      **not a JS one** — `clangshim/apply-port-lane.py:130` records that the libclang
+      lane cannot be emitted to JS at all. Executed-is-not-bound is kept as a SHAPE;
+      this lane's own limit is that every argument is a bend literal, so there is no
+      NULL-argument class here to count. (JS8-2)
+
+Files: `.agents/slop/jstage/jsstage.py`, `.agents/slop/JSTAGE.md`, and stage 8 of
+`.agents/slop/e2e.sh`. Nothing committed. No `.bend`, no `runtime/*.c`, no
+`runtime/dtype.js`, no other unit's gate, and no plant in the live tree.
+
+---
+
+## [DONE] noneshape: `None` vs `None{}`, and an `Arg` that cannot hold an `Op` (2026-10-05)
+
+Unit `NONSHAPE`. **ONE file edited: `tinybendygrad/uop/fold.bend`, +68 lines**
+(`e372ca226461fe2295b49a9990db0165` -> `310c3975393ad37ea1c3c5caf9822756`).
+`fold.bend` 6605 -> 6673 lines. Nothing else. Nothing committed.
+
+- [x] **DEFECT #1, `fold.bend:2296-2297`: `None{}` WHERE UPSTREAM ANSWERS `None`.**
+      Upstream `tinygrad/uop/ops.py:371-372` — `if self.dtype is dtypes.void: return None`
+      then `return _broadcast_shape(*input_shapes) if input_shapes else None` — and
+      **BOTH `None`s mean "NO SHAPE"**, which is `ops.py:455`'s raise and the differ's
+      `R`. The port's outer `None{}` means "NO `Derived`", which is PORT-ONLY and is `?`.
+      MEASURED on CPython, `noneshape/pyarg-run0.txt` §E: void/0src -> `None`;
+      u32/0src -> `None`; u32/1 shaped src -> `(2,)`; **void/1 shaped src -> `None`** (so
+      `:371` runs FIRST); u32/shapeless+shaped -> `(2,)` (so `:372` FILTERS).
+      FIXED at `fold.bend:2364-2365` with `custom_ds` (1164-1179) and the new `some_shapes`
+      walk (916-932), which is `:372`'s filter beside `all_shapes`'s assert.
+- [x] **EIGHT graphs, one question each — 8/8 `settled=True`, 7/8 were `False`.**
+      `noneshape/ns-fix.bend` -> `ns-fix-run1.txt`. **Q7 (shapeless+shaped src -> `R` no,
+      `(l0:2)` yes) and Q8 (void WITH a shaped src -> `R`, NOT a broadcast)** are the two
+      rows no wrong implementation can produce. The `AND` control was already `True`.
+- [x] **WHICH OF THE THREE SETTLE: `CUSTOM` and `CUSTOMI` now (`4:void 1:R`); `PYLITERAL`
+      ALREADY DID (`4:void 1:R`, from `late()`, at the pre-fix pin).** So the brief's
+      premise that item 1 gates three is right and item 2's is not — see below.
+- [x] **DEFECT #2 SPLIT IN TWO, AND THEY ARE NOT THE SAME KIND.**
+      `n(` vs `in(` is a **MISSING ARM** in `graphcmp.py`'s `carg` (eleven per-op arms,
+      none of them CUSTOM/CUSTOMI), not a port defect; PLANTED AND MEASURED, one arm takes
+      the verdict **5 -> 3** and moves **0 of 624** live rows.
+      A bare `Op` is a **HOLE IN THE TYPE**: `O.Arg` has 19 constructors and exactly TWO
+      hold an `Op` — `AReduce{rop, num_axes}` and `AAllred{rop, dev}` — and BOTH PAIR IT.
+      `noneshape/ns-oparg.bend` **does not compile**: `expected : O.Arg / observed : O.Op`.
+      **Reported, not landed** (both files are other units'). MEASURED: item 2 gates ONE
+      COLUMN of ONE of the three ops and gates none of their SETTLING.
+- [x] **BLAST RADIUS 0 of 624 rows, 0 of 25 graphs' row counts**, diffed by WHOLE
+      `name=value` LINE; `fold.bend`'s own 335-line output **byte-identical** before/after.
+- [x] **THE BASELINE IS PROVEN, NOT CLAIMED**: `noneshape/ns-revert.py` reverses the three
+      insertions and reproduces md5 `e372ca226461fe2295b49a9990db0165` EXACTLY, so the
+      two verdicts below differ by `fold.bend` and by nothing else.
+- [x] **CORPUS, both sides, against 77:** live **61/77, `py-only=[]`, `bend-only=[]`,
+      NEITHER 16** — UNCHANGED. With `patir` (a ceiling, `GRAPHS` is another unit's):
+      **64/64/64, splits empty, NEITHER 13**. Runs twice, **byte-equal**.
+- [x] **THE VERDICT IS THE HEADLINE, NOT THE CENSUS.** Same py rows, same probe,
+      `fold.bend` the only thing that moved: **9 field mismatches / 24 -> 5 / 24.** dtype
+      and shape now AGREE on `CUSTOMI`/`PYLITERAL`/`CUSTOM`; `?=` on the bend side 3 -> 1.
+      **A clean 64/64/64 with `py-only=[]` is still printed here, next to `DISAGREE`.**
+- [x] **THE THIRD BLOCKER UNTOUCHED, AND THE REFUSAL IS THE RESULT.** `AND`'s shape has no
+      correct answer on either side: `ops.py:444` ASSERTS and the port's `all_shapes`
+      refuses for the same reason, so 2 of the 5 remaining mismatches are upstream's own
+      answer. **Not widened.** The `AssertionError` widening the corpus needs to EMIT at
+      all is re-derived in `ns-corpus.py` as CSHAPE's W1s and is an in-process monkeypatch.
+- [x] **`NON-1..NON-8` appended** at `notes/bend2-constraints.md` 26341+. The ones that
+      would have cost another unit real time: **NON-3** (`if void: return None` BEFORE
+      `... if xs else None` — the order IS the arm), **NON-6** (a baseline from an
+      already-edited file is a claim until its md5 checks), **NON-7** (a `","`-joined
+      baseline read with `split(",")` shredded 2230 rows into 611 and reported 24 of 25
+      graphs moved, on a change that moved 0), **NON-8** (`--check-only`'s `ALL PROOFS
+      CHECK` passed an arm that was still wrong).
+
+Files: `.agents/slop/NONSHAPE.md`, `.agents/slop/noneshape/` (`ns-pyarg.py`,
+`ns-fix.bend`, `ns-patir.bend`, `ns-corpus.py`, `ns-revert.py`, `ns-argplant.py`,
+`ns-oparg.bend`, and the transcripts). Nothing committed. `graphcmp.py`,
+`graphcmp.bend`, `uop/ops.bend`, `.agents/slop/substrate-check.sh` (mid-edit, another
+unit: `syntax error ... 'done'` at :245) and every other unit's slop tree untouched.
+
+- [x] **`FB-1` `def F32.from_bits`, AND THE SIX `dtype.bend` LAWS IT UNBLOCKED.**
+      `dtype.bend` `--check-only` **14 -> 8**; the whole-tree red set is byte-identical
+      (14 files) and the new `tinybendygrad/base.bend` is WARM and not among them.
+      `F32` is declared at `references/bend/bend2/base.bend:60` and `U32` at `:57` --
+      both `data: Word(32n)`, so a float's payload IS its pattern and the constructor
+      `F32{..}` is already a bitcast. The definition is two lines and SAFE.
+      `F32.bits` IS its inverse; no second name was added.
+      **CENSUS: all 4 294 967 296 patterns round-tripped, 16 777 214 / 16 777 214 NaN
+      payloads kept, 0 mismatches.** JS keeps **0 / 199 999** over the NaN region --
+      the backend collapses every NaN onto 0x7FC00000 (`comp.ts:539`), which no
+      definition can repair, and which is why the laws gate runs in C.
+      **FOUR REAL BUGS CAUGHT IN THE PORT** (fp8 exponent shift `sig` vs `sig-1`;
+      `x & 0x80` vs `x == 0x80`; e5m2 inside the saturating guard; the half NaN
+      payload dropped in both directions) and **TWO IN `runtime/dtype.c`, REPORTED NOT
+      FIXED** -- `bf16_run` has no `isfinite` guard that `dtype.py:230` has, and
+      `dtype.c:97-98` reads as if e5m2 were the only saturating format.
+      **THE PLANT AND THE DISARM, DISARM FIRST.** Disarm moved 0. But **two earlier
+      disarms of mine MOVED 116984 and 215288 rows** -- both turned "the same test"
+      into "the other test", which is the failure this step exists to catch -- and the
+      **first `mutate.sh` left plant P1 in the LIVE tree** when a run hit the 120s
+      timeout, answering a plausible float for 214016 rows and still compiling. That
+      is a disarm that removed the fix; the script now copies the tree and never writes
+      `tinybendygrad/`. **P4 (the census's own NaN test, blinded) PASSED over a
+      NaN-FREE window** -- 400M patterns contain zero NaNs -- so `run.py` now REFUSES
+      a partial range whose NaN denominator is 0 instead of reporting a zero.
+      Files: `tinybendygrad/base.bend`, `tinybendygrad/dtype.bend`,
+      `.agents/slop/FROMBITS.md`, `.agents/slop/frombits/` (`sweep.bend`, `expect.py`,
+      `run.py`, `gate_dtype.bend`, `gate_dtype.py`, `gen_dtype.py`, `gate.sh`,
+      `mutate.sh`, `00-stub.md`). Nothing committed. `runtime/dtype.c`,
+      `runtime/dtype.js`, `helpers.bend`, `references/**`, and every other unit's slop
+      tree untouched. **NOT FILLED, with `file:line`: `Dt.fp8_from` `:919`,
+      `Dt.i64_trunc` `:923`, `Dt.i64_floor_div` `:927`, `Dt.i64_floor_mod` `:931`,
+      `Dt.i64_cdiv` `:935`, `Dt.i64_cmod` `:939`, `Dt.i64_ceildiv` `:943`,
+      `float_to_fp8` `:967`** -- seven of the eight are the missing `i64_mul`
+      (`mixin/dtype.bend:56`) and DTYPEB already measured their cost; the eighth is a
+      deliberate f64/f32 split. **`ops_python.bend:274-278`'s `w32`/`f32_of` is now a
+      duplicate of `from_bits` and should import it** -- the cycle is already broken,
+      but that file is not this unit's.
+
+## FP8FIX (2026-10-05) — the C lane of `runtime/dtype.c`: 3 FIXED, 1 NOT A DEFECT (unit `fp8fix`, prefix `FX-`)
+
+- [x] **`FX-1` A C-LANE INSTRUMENT, because the 1,228-row gate runs the BEND port.**
+      It reaches `runtime/dtype.c` only through a seam, and two files agreeing proves
+      nothing. `build.py` compiles the LIVE `dtype.c` into two executables; `gate.py`
+      drives them. **82,978 expectations, every one CALLED from `tinygrad`, 0 typed.**
+      Three families reported apart and NEVER summed: E 81,852 encode · D 1,024 decode
+      (**all 256 codes × 4**) · I 102 i64 (97 CPython-verified, **5 `TOTALISE`** at
+      `b == 0` where CPython raises `ZeroDivisionError`, counted and never a pass — DTYPEB
+      labels three of the five) · S **234,881,032-pattern EXHAUSTIVE** sweep of every
+      format's subnormal window, both signs.
+- [x] **`FX-2` `bend -o` IS DEAD FOR EVERY `.c` FILE RIGHT NOW, and it is not mine.**
+      `substrate-check.sh:134` builds its `cc` context from
+      `bend -o .agents/slop/guardfix/probe-c.bend`, which returns **rc 1 and emits no
+      `gen.c`**: `expected : Nat / observed : U32 / Location: fp16_flat / dtype.bend:687`.
+      `dtype.bend` is another unit's LIVE file, so **`substrate-check.sh` currently prints
+      `NO INSTRUMENT` for every `.c` file in the tree.** Reported; **not** worked around
+      by editing their file. `context.h` declares the 7 names the two PURE halves need —
+      fewer than the 190-error deficit `substrate-check.sh:97` measures for
+      `cc -fsyntax-only dtype.c` alone — and **`cc` corrected me twice: `ctr_take` and
+      `io_tup` take `Env` BY VALUE.** Blind spot, stated: my tuple shim is mine, so the
+      **ABI is not tested**, only the arithmetic.
+- [x] **`FX-3` THE ASSIGNED DEFECT, `dtype.c:40`, FIXED: the dropped `-1`. 15 E rows.**
+      `fp8_ovf` restated dtype.py's three `-1` thresholds as the f32 patterns of the
+      values themselves, so `>` excluded the boundary. `E[fp8e5m2][thr47700000+0]`
+      answered **124** where CPython says **123**; `E[fp8e4m3fnuz][thr43780000+0]`
+      answered **128** where CPython says **127**. Fixed by storing the last f32
+      magnitude dtype.py still rounds normally —
+      `{ 0x43E80000, 0x476FFFFF, 0x4377FFFF, 0x476FFFFF }` — so `>` is dtype.py's `>`.
+- [x] **`FX-4` THE SECOND ASSIGNED DEFECT IS NOT IN THIS FILE. THE 3-RUNG LADDER IS IN
+      `dtype.patched.bend`, WHICH DTYPEB RECORDS AS ALREADY FIXED.** `dtype.c:77` computes
+      `sh = 1 - exp`: not a ladder, and not three rungs. **The S sweep is EXHAUSTIVE over
+      the ladder's entire domain — 234,881,032 patterns — and reports 0 mismatches on the
+      pre-fix file AND on the fixed one.** All four rungs correct where reachable.
+- [x] **`FX-5` THIRD DEFECT, `dtype.c:107`, FIXED: EVERY fp8 SUBNORMAL DECODED TO HALF
+      ITS VALUE. 40 D rows.** `(1.0f / (1u << bias))` is `2**-bias`; `dtype.py:279` says
+      `2 ** (1 - bias)`. `D[fp8e4m3][d1]` answered `3a800000` = `-2**-10` where CPython
+      says `3b000000` = `-2**-9`.
+- [x] **`FX-6` FOURTH DEFECT, `dtype.c:104`, FIXED: e4m3's NaN IS SIGNED AND UPSTREAM'S
+      IS NOT. 1 D row.** `dtype.py:278` returns a bare `math.nan`; the C returned
+      `sgn ? 0xFFC00000 : 0x7FC00000`. `D[fp8e4m3][d255]` answered `ffc00000` where
+      CPython says `7fc00000`.
+- [x] **`FX-7` WHY 1,228 ROWS NEVER SAW EITHER: `fp8_to_float` WAS NOT IN THE GATE AT
+      ALL.** It is `float_to_fp8` end to end. `DTYPEB.md:160` records `Dt.fp8_to` as
+      still red — **the decode path is written, compiles, and is UNREACHED.**
+- [x] **`FX-8` THE DENOMINATOR, BEFORE AND AFTER.** E 81,852/81,852, **MISMATCH 15 → 0**.
+      D 1,024/1,024, **41 → 0**. I 102/102, **0 → 0** (5 TOTALISE, never passes).
+      S **234,881,032**, **0 → 0**. **`MOVED FIX → BASE : 56 = E 15 + D 41 + I 0`** — one
+      lane per defect, never a sum.
+- [x] **`FX-9` THE PREDICTIONS, PRINTED BEFORE ANY PLANT RAN** (`gate.py --predict`).
+      A-plant ovf `V→V+1` **31 → 27 moved, 0 out-of-mechanism** · A-plant-ge `>→>=` **8 → 0
+      moved, 0 out-of-mechanism** · C-plant **40 → 40, EXACT** · D-plant **1 → 1, EXACT**
+      · B-plant **403 → 213, 0 out-of-mechanism** · **all three disarms 0.**
+      **`OUT-OF-MECHANISM 0` is the assertion that can fail**, and it caught THREE OF MY
+      OWN ERRORS: an off-by-one in A-plant's derived set (`{V,V+1}` for `{V+1,V+2}`);
+      D-plant's derived set naming `d255`, **the row the plant REPAIRS**; and B-plant's
+      unmasked exponent field, reading the sign bit on a negative pattern.
+- [x] **`FX-10` WHY A SUBSET ASSERTION, NOT `moved == derived` EVERYWHERE.** For C and D
+      the mechanism DETERMINES the answer and equality is reported, exact. For the ovf
+      and ladder plants the mechanism only says which patterns are CANDIDATES — whether
+      saturating and rounding agree at a pattern is a fact about the PORT, not the
+      oracle, and **a derived set claiming otherwise cannot fail.** Equality would have
+      been theatre; AGENTS.md:137 asks for it and it is not always available.
+- [x] **`FX-11` A ZERO WITH A PROOF IS A THEOREM: `A-plant-ge` MOVED 0 OF 8.**
+      **At every format's own threshold the saturating answer and the rounding answer are
+      the SAME CODE**, so the arm is idempotent there; `A-plant` says it from the other
+      side — of 31 candidates the 4 e4m3 ones are exactly those that do not move. The arm
+      is still needed ABOVE the threshold. The arm is idempotent at its own threshold AND
+      necessary above it, and those two facts are the whole reason the ovf row is a real
+      defect and not a cosmetic one.
+- [x] **`FX-12` IS "THREE OF FOUR THRESHOLDS" UPSTREAM'S RULE? YES, BY DESIGN, AND THE
+      GATE COVERS ALL FOUR, SO THERE IS NO GAP IN THE GATE.** `dtype.py:238-241` writes
+      `-1` because the comparison is `absx > ovf_threshold` and **an f64 ULP below the
+      value means "include the value itself"**. `fp8e4m3` is the fourth case and IS
+      swept, at `thr43e80000±6`. The `-1` is upstream's rule; the C's **restatement** of
+      it was the defect.
+- [x] **`FX-13` THE LADDER'S WIDTH, WRITTEN OUT AND CHECKED AGAINST EACH BOUNDARY.**
+      e4m3 `denorm 0x3A800000` → its OWN exp field 117 → `exp -3` → **`sh 4`**, 4 rungs.
+      e5m2 `0x37000000` → 110 → `-2` → 3, 3 rungs. e4m3fnuz `0x3A000000` → 116 → `-3` →
+      **4**, 4. e5m2fnuz `0x36800000` → 109 → `-2` → 3, 3. **`denorm`'s own exponent
+      field is inside the window whenever its mantissa is nonzero, and e5m2 is three rungs
+      UPSTREAM TOO — so the width is upstream's shape, not an artefact of the f32
+      restatement.**
+- [x] **`FX-14` THE FIXTURE TRAP: `gen_fp8.py:35` SWEEPS AROUND `dtype.c`'s OWN `OVF`,
+      so the bug is TRANSCRIBED INTO THE FIXTURE.** It catches this defect only because
+      `t-1,t,t+1,t+2` happens to include `t`. **A FIXTURE SWEPT AROUND THE PORT'S OWN
+      CONSTANT TESTS THE PORT'S CONSTANT.** `gate.py` sweeps `t-6..t+6` around every
+      threshold in the file AND both restatements of it (+208 rows), which is why
+      `thr476fffff+0` exists.
+- [x] **`FX-15` TWO OF MY OWN INSTRUMENT BUGS, BOTH OF WHICH MOVED ROWS, NEITHER A
+      DEFECT IN `dtype.c`.** (1) `fx_pairs[64]` against 306 tuples: silent overflow at
+      request 24 = `I 3 m7_m4`, printing `cdiv(-7,-4) = 0` where the answer is `1`. Now
+      4096. (2) `%u` against `%08x` in the drivers: **1,024 decode rows and 62 i64 rows
+      read as MISMATCH.** Row space, not arithmetic.
+- [x] **`FX-16` A ROW NAME THAT CAN BE READ AS FALSE IS A DEFECT IN THE FIXTURE.**
+      `sub_k%d_ef%d` carried a kind index into rows evaluated for ALL FOUR kinds, so
+      `E[fp8e4m3][sub_k2_ef117_…]` read as a contradiction. Renamed `sub_ef%d_m%06x`.
+- [x] **`FX-17` BASE IS PROVEN, NOT ASSUMED.** It is reconstructed by reverse-applying
+      this unit's edits and **verified by md5** of the comment-stripped code
+      (`plants.py:BASE_CODE_MD5`); the comment delta is 41 lines, all `//`.
+- [x] **`FX-18` THE CID SWEEP HAD NOT LANDED IN `dtype.c`.** The diff is **3 CODE LINES**
+      and 36 comment lines; no `#ifdef CID(...)` guard was added or changed.
+      **`runtime/dtype.js` CARRIES FINDINGS 1 AND 4, VERIFIED, AND IS NOT MINE** —
+      `dtype.js:37-38` has the same `0x47700000` / `0x43780000` ovf restatement with
+      `absx > ovf` at `dtype.js:68`, and `dtype.js:97` signs e4m3's NaN exactly as the C
+      did. **`dtype.js:101` is CORRECT** (`Math.pow(2, 1 - bias)`), so finding 3 is
+      C-only. `dtype.js` is on my DO-NOT-TOUCH list; reported with `file:line`.
+      Nothing committed. **`.bend`, `dtype.js`, `helpers.bend`, `runtime/autogen/**`,
+      `uop/**`, `renderer/**`, `tinygrad/**`, `LAWS/**`, `PROOF*.bend`, `graphcmp*`,
+      `reader-*`, `e2e*`, `abi_gate.py`, `jsfix_*` and every other unit's slop tree:
+      UNTOUCHED.**
+
+## Session 2026-10-05 round 4 — the "promotion defect" was MY FIXTURE. The third time.
+
+- [x] **`ew_promo_wf_wi` WITHDRAWN as a divergence and now a COMPARED CELL.** `ew-gate` is
+      76 rows compared, 3 lanes identical, 1 documented divergence. The promotion was never
+      broken.
+- [ ] **`tanh` STILL HELD, and now on a LOCATED bug that is not the fixture.**
+
+      ### THE PROBE FOUND IT, AND IT FOUND MY FIXTURE
+
+      The probe I said I would run prints `SAME` -- whether the two promoted tensors ended
+      up on the same UOp index. It answered `SAME=T idx=1/1` for the **WORKING** pair as
+      well as the failing one. A defect that reproduces in the case that works is not a
+      defect in the thing under test, and that is what the printout was saying.
+
+      The reason: **`g_f32c()` and `g_i32c(v)` each started from `O.Arena.empty()`** -- two
+      independent roots, so both operands were node 1 in DIFFERENT arenas and the fold
+      collided them. The int const was read from the float's arena, and every value came
+      out as 1.0. Every other fixture in the file threads it: `g_promo_remint` is
+      `+b = ew_f32(empty); c = ew_ci(Found.ar(b), 3)`.
+
+      The file's own comment predicted this -- *"Folding either operand's own arena is the
+      bug this file measured twice"* -- and **THREE of the last four "walls" in this port
+      have now been my own fixture**: the BUFFER with no CONST src, the "CPython colours the
+      range" gap that was the port's own mis-indexed RANGE node, and this.
+
+      ### AND `tanh`'s BUG IS REAL, AND IT IS NOT THE FIXTURE
+
+      With the fixture repaired, `ew_promo_wf_wi` matches byte for byte -- and `tanh` still
+      fails, for a different reason. The handle is the SIGN of the int const:
+
+      | int const | port | CPython |
+      |---|---|---|
+      | 1 | 1.0f | 1.0f |
+      | 2 | 2.0f | 1.0f, 2.0f |
+      | **-1** | **4294967296.0** | 1.0f, -1.0f |
+      | **-2** | **4294967296.0** | 1.0f, -2.0f |
+
+      **BOTH NEGATIVES GIVE THE SAME WRONG VALUE, so the MAGNITUDE IS LOST, not merely
+      mis-signed.** A mis-signed bug would give -1.0 and -2.0. And `ew_neg` is
+      `x * CInt{H.i64_of_i32(4294967295)}`, so this is on `tanh`'s path directly.
+
+      **LOCATION: `wk_i64_to_f32` / `wk_i64_to_f32.sgn`, `uop/weak.bend:266-272`.** The
+      formula READS correct on paper -- a two's complement value is
+      `lo + (hi - 2**32) * 2**32` when negative -- which is exactly why this is a MEASURED
+      LOCATION and not a diagnosis. Next step is a four-row probe of
+      `U32.to_f32(0xFFFFFFFF)`, `wk_i64_to_f32.sgn`, and the two intermediates of the sum.
+
+      ### AND THE GATE SCRIPT ITSELF LOST ITS LANES WHILE I WAS EDITING IT
+
+      A `s[:a] + s[b:]` slice with `a` near the top of the file and `b` after the lane
+      invocations silently DELETED the lanes. The gate still ran, still printed its success
+      line, and compared nothing. **A gate that is green because it does less is worse than a
+      gate that is red**, so the rebuild now ends by asserting that all five load-bearing
+      lines are present: `run_lane() {`, the oracle invocation, both `run_lane` calls, and
+      the first `diff`. It is rebuilt from `master` in one pass with no cross-file slicing,
+      because the fourth patch-in-place edit to this file is what caused the damage.
+
+      Markers 561 -> 559. Backlog still 236.
