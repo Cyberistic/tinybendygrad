@@ -244,6 +244,24 @@ for f in "$@"; do
   esac
 done
 
+# --- ZERO ARGUMENTS IS A MISUSE, NOT AN EMPTY VERDICT -------------------------------
+# MEASURED 2026-10-05: invoked with no arguments this script printed
+#   `ROUTE bend=0 cc=0 node=0 no-instrument=0 (of 0 file(s))`
+#   `SUBSTRATE CLEAN: 0 file(s), ...`
+# which is the SAME VERDICT AS A GREEN RUN OVER A POPULATION. A guard that measures nothing
+# must not report agreement. This is the FOURTEENTH instance of the project's oldest
+# failing -- `--check-only` reports `ALL PROOFS CHECK` FOR AN EMPTY FILE -- and the first
+# one where the EMPTYNESS IS IN THE ARGUMENT LIST rather than in a file.
+# Refusing is the safe reading: defaulting to the whole tree would silently check the wrong
+# thing when an argument was mistyped, and "CLEAN" is the worst available response to that.
+if [ "$#" -eq 0 ]; then
+  print -r -- "REFUSED: no files given. A guard invoked with an empty population must not"
+  print -r -- "report agreement -- that is indistinguishable from a green run over nothing."
+  print -r -- "usage: zsh $0 <file.bend|file.c|file.js> [more ...]"
+  print -r -- "       or: find tinybendygrad -name '*.bend' | xargs zsh $0"
+  exit 3
+fi
+
 # ------------------------------------------------------------------ THE ROUTE
 # AN INSTRUMENT THAT HIDES ITS OWN ROUTING IS THE DEFECT THIS PROJECT HAS
 # CATALOGUED TWENTY TIMES -- AND ITS OWN SECOND HALF ALREADY PRINTS AN `unseen=`
