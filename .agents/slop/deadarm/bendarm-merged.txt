@@ -1,0 +1,466 @@
+
+BENDARM -- merged over 88 traced entries whose lane was byte-identical
+           (110 entries built and ran in this run, 174 failed `bend -o`)
+
+  defs in the tree (tinybendygrad/**/*.bend + slop's own probes)   42402
+  defs inside >= 1 traced lane's import closure                  11213
+  defs a traced lane REACHES                                    5121
+  defs NO traced lane reaches                                   6092
+     of which the file's OWN lane BUILT, so the claim is real    692
+     of which the file's own lane FAILED `bend -o`, so UNKNOWN   5504
+     of which the file is not itself an entry at all              12
+  defs in NO traced lane's closure -- COVERAGE, not DEADNESS     31189
+  dead-arm findings, summed over the entries                     731
+  entries with >= 1 dead arm                                     61
+
+  THE DEFS NO TRACED LANE REACHES -- and whose own lane DID build
+
+  tinybendygrad/sz.bend   (189)
+      tinybendygrad/sz.bend:65     def Row.name
+      tinybendygrad/sz.bend:69     def Row.lines
+      tinybendygrad/sz.bend:73     def Row.toks
+      tinybendygrad/sz.bend:77     def Row.dl
+      tinybendygrad/sz.bend:81     def Row.dt
+      tinybendygrad/sz.bend:85     def Row.none
+      tinybendygrad/sz.bend:88     def Row.found
+      tinybendygrad/sz.bend:149    def is_docstring
+      tinybendygrad/sz.bend:170    def is_js_token
+      tinybendygrad/sz.bend:186    def eq
+      tinybendygrad/sz.bend:189    def is_zero
+      tinybendygrad/sz.bend:192    def is_upper
+      tinybendygrad/sz.bend:195    def lc
+      tinybendygrad/sz.bend:199    def is_digit
+      tinybendygrad/sz.bend:202    def is_alpha
+      tinybendygrad/sz.bend:211    def is_hspace
+      tinybendygrad/sz.bend:219    def cls3
+      tinybendygrad/sz.bend:223    def brm
+      tinybendygrad/sz.bend:229    def op2eq
+      tinybendygrad/sz.bend:248    def op2same
+      tinybendygrad/sz.bend:257    def isdig.abcdef
+      tinybendygrad/sz.bend:261    def isdig.dec
+      tinybendygrad/sz.bend:264    def isdig.bin
+      tinybendygrad/sz.bend:267    def isdig.oct
+      tinybendygrad/sz.bend:270    def isdig.hex
+      tinybendygrad/sz.bend:274    def isdig
+      tinybendygrad/sz.bend:284    def pfx1
+      tinybendygrad/sz.bend:293    def pfx2b
+      tinybendygrad/sz.bend:353    def nl
+      tinybendygrad/sz.bend:358    def add_lines.go
+      tinybendygrad/sz.bend:368    def add_lines
+      tinybendygrad/sz.bend:373    def emit1
+      tinybendygrad/sz.bend:378    def a.die
+      tinybendygrad/sz.bend:383    def a.bad
+      tinybendygrad/sz.bend:393    def str.sq
+      tinybendygrad/sz.bend:398    def str.go
+      tinybendygrad/sz.bend:405    def str.start
+      tinybendygrad/sz.bend:408    def p0.ws
+      tinybendygrad/sz.bend:415    def p0.num
+      tinybendygrad/sz.bend:421    def p0.op
+      ... 149 more in this file
+  .agents/slop/ga-green-87.bend   (129)
+      .agents/slop/ga-green-87.bend:171    def Suf.old
+      .agents/slop/ga-green-87.bend:175    def Suf.new
+      .agents/slop/ga-green-87.bend:263    def skip_encodings
+      .agents/slop/ga-green-87.bend:283    def name_map
+      .agents/slop/ga-green-87.bend:301    def fixes
+      .agents/slop/ga-green-87.bend:315    def field_fixes
+      .agents/slop/ga-green-87.bend:324    def fixed_fields
+      .agents/slop/ga-green-87.bend:327    def archs
+      .agents/slop/ga-green-87.bend:336    def str_at
+      .agents/slop/ga-green-87.bend:357    def slen
+      .agents/slop/ga-green-87.bend:359    def arch_xml
+      .agents/slop/ga-green-87.bend:361    def xml_url
+      .agents/slop/ga-green-87.bend:371    def str_in
+      .agents/slop/ga-green-87.bend:457    def variant_suffixes
+      .agents/slop/ga-green-87.bend:463    def get_base_fmt.go
+      .agents/slop/ga-green-87.bend:468    def get_base_fmt
+      .agents/slop/ga-green-87.bend:477    def order
+      .agents/slop/ga-green-87.bend:488    def order.hit
+      .agents/slop/ga-green-87.bend:498    def order_at
+      .agents/slop/ga-green-87.bend:506    def order_idx
+      .agents/slop/ga-green-87.bend:509    def Fld.nm
+      .agents/slop/ga-green-87.bend:513    def Fld.hi
+      .agents/slop/ga-green-87.bend:517    def Fld.lo
+      .agents/slop/ga-green-87.bend:521    def Fld.of
+      .agents/slop/ga-green-87.bend:531    def fld_le.k2
+      .agents/slop/ga-green-87.bend:536    def fld_le.c
+      .agents/slop/ga-green-87.bend:539    def fld_le.b
+      .agents/slop/ga-green-87.bend:543    def fld_le.a
+      .agents/slop/ga-green-87.bend:547    def fld_le
+      .agents/slop/ga-green-87.bend:549    def sort_fields
+      .agents/slop/ga-green-87.bend:579    def K2_BIT
+      .agents/slop/ga-green-87.bend:581    def K2_ENCBITS
+      .agents/slop/ga-green-87.bend:583    def K2_FIXINT
+      .agents/slop/ga-green-87.bend:585    def K2_FIXEMB
+      .agents/slop/ga-green-87.bend:587    def K2_ENOP
+      .agents/slop/ga-green-87.bend:589    def K2_ENOPD
+      .agents/slop/ga-green-87.bend:591    def K2_VDSTY
+      .agents/slop/ga-green-87.bend:593    def K2_VGPR
+      .agents/slop/ga-green-87.bend:595    def K2_SBASE
+      .agents/slop/ga-green-87.bend:597    def K2_SRSC
+      ... 89 more in this file
+  .agents/slop/ag-emit.bend   (88)
+      .agents/slop/ag-emit.bend:116    def ty
+      .agents/slop/ag-emit.bend:118    def ty_bend
+      .agents/slop/ag-emit.bend:122    def ty_ups
+      .agents/slop/ag-emit.bend:126    def ty_le
+      .agents/slop/ag-emit.bend:131    def ty_prims
+      .agents/slop/ag-emit.bend:146    def ty_in
+      .agents/slop/ag-emit.bend:149    def enc_prim.find
+      .agents/slop/ag-emit.bend:154    def enc_prim.of
+      .agents/slop/ag-emit.bend:159    def enc_prim
+      .agents/slop/ag-emit.bend:165    def enc_strip.go
+      .agents/slop/ag-emit.bend:168    def enc_strip
+      .agents/slop/ag-emit.bend:171    def enc_bracketed
+      .agents/slop/ag-emit.bend:175    def enc_arg
+      .agents/slop/ag-emit.bend:182    def enc_trim
+      .agents/slop/ag-emit.bend:184    def enc_fn_parts.put
+      .agents/slop/ag-emit.bend:191    def enc_fn_parts.go
+      .agents/slop/ag-emit.bend:197    def enc_fn_parts
+      .agents/slop/ag-emit.bend:225    def enc0
+      .agents/slop/ag-emit.bend:227    def enc1.ptr
+      .agents/slop/ag-emit.bend:231    def enc1.fn.parts
+      .agents/slop/ag-emit.bend:236    def enc1.fn
+      .agents/slop/ag-emit.bend:238    def enc1
+      .agents/slop/ag-emit.bend:242    def enc2.ptr
+      .agents/slop/ag-emit.bend:244    def enc2.fn.parts
+      .agents/slop/ag-emit.bend:249    def enc2.fn
+      .agents/slop/ag-emit.bend:251    def enc2
+      .agents/slop/ag-emit.bend:256    def enc
+      .agents/slop/ag-emit.bend:267    def trr_nm
+      .agents/slop/ag-emit.bend:271    def trr_rb
+      .agents/slop/ag-emit.bend:275    def trr_rh
+      .agents/slop/ag-emit.bend:279    def trr_cells
+      .agents/slop/ag-emit.bend:283    def parse_row.h
+      .agents/slop/ag-emit.bend:288    def parse_row.b
+      .agents/slop/ag-emit.bend:293    def parse_row.at
+      .agents/slop/ag-emit.bend:298    def parse_row
+      .agents/slop/ag-emit.bend:313    def pm
+      .agents/slop/ag-emit.bend:315    def pm_nm
+      .agents/slop/ag-emit.bend:319    def pm_ty
+      .agents/slop/ag-emit.bend:323    def pm_hint
+      .agents/slop/ag-emit.bend:327    def gs
+      ... 48 more in this file
+  tinybendygrad/LAWS/spec.bend   (58)
+      tinybendygrad/LAWS/spec.bend:93     def dt_smax
+      tinybendygrad/LAWS/spec.bend:100    def dt_smag
+      tinybendygrad/LAWS/spec.bend:106    def dt_umax
+      tinybendygrad/LAWS/spec.bend:112    def dt_min_signed
+      tinybendygrad/LAWS/spec.bend:116    def dt_max_signed
+      tinybendygrad/LAWS/spec.bend:119    def dt_umax_of
+      tinybendygrad/LAWS/spec.bend:127    def Cls.is_int
+      tinybendygrad/LAWS/spec.bend:134    def Cls.is_float
+      tinybendygrad/LAWS/spec.bend:142    def Cls.is_unsigned
+      tinybendygrad/LAWS/spec.bend:147    def Cls.is_bool
+      tinybendygrad/LAWS/spec.bend:152    def Dt.cls
+      tinybendygrad/LAWS/spec.bend:156    def Dt.bits
+      tinybendygrad/LAWS/spec.bend:160    def Dt.pri
+      tinybendygrad/LAWS/spec.bend:164    def Dt.is_int
+      tinybendygrad/LAWS/spec.bend:167    def Dt.is_float
+      tinybendygrad/LAWS/spec.bend:170    def Dt.is_unsigned
+      tinybendygrad/LAWS/spec.bend:173    def Dt.is_bool
+      tinybendygrad/LAWS/spec.bend:176    def Dt.itemsize
+      tinybendygrad/LAWS/spec.bend:190    def Cls.sgn
+      tinybendygrad/LAWS/spec.bend:196    def Dt.range.smag
+      tinybendygrad/LAWS/spec.bend:201    def Dt.range.lim
+      tinybendygrad/LAWS/spec.bend:206    def Dt.range.wide
+      tinybendygrad/LAWS/spec.bend:211    def Dt.range
+      tinybendygrad/LAWS/spec.bend:216    def Dt.min
+      tinybendygrad/LAWS/spec.bend:221    def Dt.max
+      tinybendygrad/LAWS/spec.bend:254    def Shape.append
+      tinybendygrad/LAWS/spec.bend:258    def Shape.append_dims
+      tinybendygrad/LAWS/spec.bend:264    def Shape.prepend
+      tinybendygrad/LAWS/spec.bend:299    def AllSN
+      tinybendygrad/LAWS/spec.bend:305    def SameLen
+      tinybendygrad/LAWS/spec.bend:318    def elem_pick
+      tinybendygrad/LAWS/spec.bend:349    def dim_of
+      tinybendygrad/LAWS/spec.bend:354    def prod
+      tinybendygrad/LAWS/spec.bend:379    def dims_prod
+      tinybendygrad/LAWS/spec.bend:392    def dims_append
+      tinybendygrad/LAWS/spec.bend:528    def Sp.shape.stack
+      tinybendygrad/LAWS/spec.bend:719    def void
+      tinybendygrad/LAWS/spec.bend:720    def weakint
+      tinybendygrad/LAWS/spec.bend:724    def index
+      tinybendygrad/LAWS/spec.bend:725    def boolean
+      ... 18 more in this file
+  .agents/slop/proof-close/spec.bend   (58)
+      .agents/slop/proof-close/spec.bend:93     def dt_smax
+      .agents/slop/proof-close/spec.bend:100    def dt_smag
+      .agents/slop/proof-close/spec.bend:106    def dt_umax
+      .agents/slop/proof-close/spec.bend:112    def dt_min_signed
+      .agents/slop/proof-close/spec.bend:116    def dt_max_signed
+      .agents/slop/proof-close/spec.bend:119    def dt_umax_of
+      .agents/slop/proof-close/spec.bend:127    def Cls.is_int
+      .agents/slop/proof-close/spec.bend:134    def Cls.is_float
+      .agents/slop/proof-close/spec.bend:142    def Cls.is_unsigned
+      .agents/slop/proof-close/spec.bend:147    def Cls.is_bool
+      .agents/slop/proof-close/spec.bend:152    def Dt.cls
+      .agents/slop/proof-close/spec.bend:156    def Dt.bits
+      .agents/slop/proof-close/spec.bend:160    def Dt.pri
+      .agents/slop/proof-close/spec.bend:164    def Dt.is_int
+      .agents/slop/proof-close/spec.bend:167    def Dt.is_float
+      .agents/slop/proof-close/spec.bend:170    def Dt.is_unsigned
+      .agents/slop/proof-close/spec.bend:173    def Dt.is_bool
+      .agents/slop/proof-close/spec.bend:176    def Dt.itemsize
+      .agents/slop/proof-close/spec.bend:190    def Cls.sgn
+      .agents/slop/proof-close/spec.bend:196    def Dt.range.smag
+      .agents/slop/proof-close/spec.bend:201    def Dt.range.lim
+      .agents/slop/proof-close/spec.bend:206    def Dt.range.wide
+      .agents/slop/proof-close/spec.bend:211    def Dt.range
+      .agents/slop/proof-close/spec.bend:216    def Dt.min
+      .agents/slop/proof-close/spec.bend:221    def Dt.max
+      .agents/slop/proof-close/spec.bend:254    def Shape.append
+      .agents/slop/proof-close/spec.bend:258    def Shape.append_dims
+      .agents/slop/proof-close/spec.bend:264    def Shape.prepend
+      .agents/slop/proof-close/spec.bend:297    def AllSN
+      .agents/slop/proof-close/spec.bend:303    def SameLen
+      .agents/slop/proof-close/spec.bend:316    def elem_pick
+      .agents/slop/proof-close/spec.bend:348    def dim_of
+      .agents/slop/proof-close/spec.bend:353    def prod
+      .agents/slop/proof-close/spec.bend:378    def dims_prod
+      .agents/slop/proof-close/spec.bend:391    def dims_append
+      .agents/slop/proof-close/spec.bend:527    def Sp.shape.stack
+      .agents/slop/proof-close/spec.bend:718    def void
+      .agents/slop/proof-close/spec.bend:719    def weakint
+      .agents/slop/proof-close/spec.bend:723    def index
+      .agents/slop/proof-close/spec.bend:724    def boolean
+      ... 18 more in this file
+  .agents/slop/graphcmp.bend   (17)
+      .agents/slop/graphcmp.bend:81     def is64
+      .agents/slop/graphcmp.bend:95     def axis1
+      .agents/slop/graphcmp.bend:150    def devs.go
+      .agents/slop/graphcmp.bend:158    def devs
+      .agents/slop/graphcmp.bend:174    def img2
+      .agents/slop/graphcmp.bend:192    def rng
+      .agents/slop/graphcmp.bend:288    def custom_fn
+      .agents/slop/graphcmp.bend:298    def callinfo
+      .agents/slop/graphcmp.bend:324    def opts.go
+      .agents/slop/graphcmp.bend:329    def opts
+      .agents/slop/graphcmp.bend:332    def optsm
+      .agents/slop/graphcmp.bend:337    def kernelinfo
+      .agents/slop/graphcmp.bend:342    def i64s.go
+      .agents/slop/graphcmp.bend:347    def i64s
+      .agents/slop/graphcmp.bend:350    def bs.go
+      .agents/slop/graphcmp.bend:355    def blobstr
+      .agents/slop/graphcmp.bend:360    def prog_info
+  tinybendygrad/runtime/ops_cpu.bend   (17)
+      tinybendygrad/runtime/ops_cpu.bend:197    def pk.offsets
+      tinybendygrad/runtime/ops_cpu.bend:258    def Ca.to
+      tinybendygrad/runtime/ops_cpu.bend:369    def CALL_ASSERT_EMULATE
+      tinybendygrad/runtime/ops_cpu.bend:401    def Tr.refused
+      tinybendygrad/runtime/ops_cpu.bend:507    def key
+      tinybendygrad/runtime/ops_cpu.bend:520    def Sub.nm
+      tinybendygrad/runtime/ops_cpu.bend:524    def nr.submit_graph
+      tinybendygrad/runtime/ops_cpu.bend:553    def Prog.name
+      tinybendygrad/runtime/ops_cpu.bend:557    def Prog.sig
+      tinybendygrad/runtime/ops_cpu.bend:565    def Prog.elf
+      tinybendygrad/runtime/ops_cpu.bend:569    def Prog.osx
+      tinybendygrad/runtime/ops_cpu.bend:573    def Prog.rt
+      tinybendygrad/runtime/ops_cpu.bend:993    def CALL_NAME_UNKNOWN
+      tinybendygrad/runtime/ops_cpu.bend:1091   def nrow
+      tinybendygrad/runtime/ops_cpu.bend:1101   def rlist
+      tinybendygrad/runtime/ops_cpu.bend:1143   def subnames.go
+      tinybendygrad/runtime/ops_cpu.bend:1151   def subnames
+  .agents/slop/ind/p10-lemmas.bend   (14)
+      .agents/slop/ind/p10-lemmas.bend:3      def nat_add_zero
+      .agents/slop/ind/p10-lemmas.bend:12     def nat_add_assoc
+      .agents/slop/ind/p10-lemmas.bend:21     def nat_add_succ_r
+      .agents/slop/ind/p10-lemmas.bend:32     def nat_add_comm
+      .agents/slop/ind/p10-lemmas.bend:46     def add_by
+      .agents/slop/ind/p10-lemmas.bend:49     def nat_add_swap
+      .agents/slop/ind/p10-lemmas.bend:57     def nat_mul_zero_r
+      .agents/slop/ind/p10-lemmas.bend:64     def nat_mul_one_r
+      .agents/slop/ind/p10-lemmas.bend:73     def nat_mul_dist
+      .agents/slop/ind/p10-lemmas.bend:84     def nat_mul_assoc
+      .agents/slop/ind/p10-lemmas.bend:98     def nat_mul_succ_r
+      .agents/slop/ind/p10-lemmas.bend:112    def mul_by
+      .agents/slop/ind/p10-lemmas.bend:115    def nat_mul_comm
+      .agents/slop/ind/p10-lemmas.bend:129    def nat_mul_swap
+  .agents/slop/proof-close/p10-lemmas.bend   (14)
+      .agents/slop/proof-close/p10-lemmas.bend:3      def nat_add_zero
+      .agents/slop/proof-close/p10-lemmas.bend:12     def nat_add_assoc
+      .agents/slop/proof-close/p10-lemmas.bend:21     def nat_add_succ_r
+      .agents/slop/proof-close/p10-lemmas.bend:32     def nat_add_comm
+      .agents/slop/proof-close/p10-lemmas.bend:46     def add_by
+      .agents/slop/proof-close/p10-lemmas.bend:49     def nat_add_swap
+      .agents/slop/proof-close/p10-lemmas.bend:57     def nat_mul_zero_r
+      .agents/slop/proof-close/p10-lemmas.bend:64     def nat_mul_one_r
+      .agents/slop/proof-close/p10-lemmas.bend:73     def nat_mul_dist
+      .agents/slop/proof-close/p10-lemmas.bend:84     def nat_mul_assoc
+      .agents/slop/proof-close/p10-lemmas.bend:98     def nat_mul_succ_r
+      .agents/slop/proof-close/p10-lemmas.bend:112    def mul_by
+      .agents/slop/proof-close/p10-lemmas.bend:115    def nat_mul_comm
+      .agents/slop/proof-close/p10-lemmas.bend:129    def nat_mul_swap
+  tinybendygrad/runtime/support/objc.bend   (11)
+      tinybendygrad/runtime/support/objc.bend:158    def CT_I32
+      tinybendygrad/runtime/support/objc.bend:162    def CT_CHARP
+      tinybendygrad/runtime/support/objc.bend:166    def POOL_PUSH
+      tinybendygrad/runtime/support/objc.bend:167    def POOL_POP
+      tinybendygrad/runtime/support/objc.bend:170    def SYM_GETCLASS
+      tinybendygrad/runtime/support/objc.bend:171    def SYM_DDCREATE
+      tinybendygrad/runtime/support/objc.bend:403    def msg_recv.is_cls
+      tinybendygrad/runtime/support/objc.bend:627    def Call.a2
+      tinybendygrad/runtime/support/objc.bend:671    def urow
+      tinybendygrad/runtime/support/objc.bend:949    def inh_bases
+      tinybendygrad/runtime/support/objc.bend:995    def own_x
+  tinybendygrad/runtime/support/c.bend   (10)
+      tinybendygrad/runtime/support/c.bend:161    def _do_ioctl.rc_msg
+      tinybendygrad/runtime/support/c.bend:292    def Field.entry
+      tinybendygrad/runtime/support/c.bend:487    def Field.dummy_name
+      tinybendygrad/runtime/support/c.bend:488    def Field.dummy_v
+      tinybendygrad/runtime/support/c.bend:489    def Field.dummy_len0
+      tinybendygrad/runtime/support/c.bend:539    def Struct.sizeof
+      tinybendygrad/runtime/support/c.bend:742    def findlib.base.win
+      tinybendygrad/runtime/support/c.bend:777    def DLL.is_loaded
+      tinybendygrad/runtime/support/c.bend:782    def DLL.bind.restype
+      tinybendygrad/runtime/support/c.bend:783    def DLL.bind.argtypes
+  tinybendygrad/runtime/support/compiler_mesa.bend   (8)
+      tinybendygrad/runtime/support/compiler_mesa.bend:127    def Tr.text
+      tinybendygrad/runtime/support/compiler_mesa.bend:228    def da.opts
+      tinybendygrad/runtime/support/compiler_mesa.bend:230    def da.opt_count
+      tinybendygrad/runtime/support/compiler_mesa.bend:232    def da.opts_str2
+      tinybendygrad/runtime/support/compiler_mesa.bend:237    def da.opts_sp
+      tinybendygrad/runtime/support/compiler_mesa.bend:239    def da.opts_str
+      tinybendygrad/runtime/support/compiler_mesa.bend:261    def w.warps
+      tinybendygrad/runtime/support/compiler_mesa.bend:375    def nv.fail
+  tinybendygrad/runtime/support/compiler_cpu.bend   (7)
+      tinybendygrad/runtime/support/compiler_cpu.bend:119    def ClangCompiler.min_n
+      tinybendygrad/runtime/support/compiler_cpu.bend:147    def ClangCompiler.feats_n
+      tinybendygrad/runtime/support/compiler_cpu.bend:187    def ClangCompiler.arm64_fixed
+      tinybendygrad/runtime/support/compiler_cpu.bend:234    def ClangCompiler.arm_n
+      tinybendygrad/runtime/support/compiler_cpu.bend:260    def ClangCompiler.compile_fixed_n
+      tinybendygrad/runtime/support/compiler_cpu.bend:264    def ClangCompiler.compile_tail_n
+      tinybendygrad/runtime/support/compiler_cpu.bend:301    def X86Compiler.arch
+  tinybendygrad/runtime/support/compiler_cuda.bend   (7)
+      tinybendygrad/runtime/support/compiler_cuda.bend:168    def colored.on
+      tinybendygrad/runtime/support/compiler_cuda.bend:203    def root
+      tinybendygrad/runtime/support/compiler_cuda.bend:205    def osx_docker_cmd
+      tinybendygrad/runtime/support/compiler_cuda.bend:267    def cuda_disassemble.fname_prefix_n
+      tinybendygrad/runtime/support/compiler_cuda.bend:372    def NVRTCCompiler.key2
+      tinybendygrad/runtime/support/compiler_cuda.bend:395    def to_char_p_p_n
+      tinybendygrad/runtime/support/compiler_cuda.bend:548    def ct.third
+  .agents/slop/w64/w4_b_double.bend   (5)
+      .agents/slop/w64/w4_b_double.bend:6      def bch
+      .agents/slop/w64/w4_b_double.bend:13     def bits
+      .agents/slop/w64/w4_b_double.bend:22     def wa
+      .agents/slop/w64/w4_b_double.bend:25     def wb
+      .agents/slop/w64/w4_b_double.bend:28     def f4add
+  .agents/slop/w64/w4_c_bits.bend   (5)
+      .agents/slop/w64/w4_c_bits.bend:6      def bch
+      .agents/slop/w64/w4_c_bits.bend:13     def bits
+      .agents/slop/w64/w4_c_bits.bend:22     def wa
+      .agents/slop/w64/w4_c_bits.bend:25     def wb
+      .agents/slop/w64/w4_c_bits.bend:28     def f4add
+  .agents/slop/e2e_mm.bend   (4)
+      .agents/slop/e2e_mm.bend:142    def mm_read_in
+      .agents/slop/e2e_mm.bend:154    def mm_prefix
+      .agents/slop/e2e_mm.bend:155    def mm_run
+      .agents/slop/e2e_mm.bend:156    def mm_run_in
+  .agents/slop/probe-tcptx.bend   (4)
+      .agents/slop/probe-tcptx.bend:6      def T.a
+      .agents/slop/probe-tcptx.bend:10     def T.b
+      .agents/slop/probe-tcptx.bend:37     def Kv.ks
+      .agents/slop/probe-tcptx.bend:41     def Kv.vs
+  tinybendygrad/codegen/decomp/transcendental_f32.bend   (4)
+      tinybendygrad/codegen/decomp/transcendental_f32.bend:478    def tc.nth
+      tinybendygrad/codegen/decomp/transcendental_f32.bend:502    def tc.fv
+      tinybendygrad/codegen/decomp/transcendental_f32.bend:927    def tc.xpow_abs
+      tinybendygrad/codegen/decomp/transcendental_f32.bend:957    def tc.take_pick
+  tinybendygrad/runtime/support/compileserver.bend   (4)
+      tinybendygrad/runtime/support/compileserver.bend:160    def cs.unpack_str
+      tinybendygrad/runtime/support/compileserver.bend:175    def cs.respond_lens
+      tinybendygrad/runtime/support/compileserver.bend:179    def add2
+      tinybendygrad/runtime/support/compileserver.bend:181    def cs.frame_total
+  .agents/slop/notes/upat-shape.bend   (3)
+      .agents/slop/notes/upat-shape.bend:20     def UPat.srcs
+      .agents/slop/notes/upat-shape.bend:24     def UPat.is_any
+      .agents/slop/notes/upat-shape.bend:28     def UPat.nm
+  tinybendygrad/device.bend   (3)
+      tinybendygrad/device.bend:588    def Bn.self_ix
+      tinybendygrad/device.bend:608    def Bn.base
+      tinybendygrad/device.bend:1055   def Pn.named_b
+  tinybendygrad/runtime/support/amd.bend   (3)
+      tinybendygrad/runtime/support/amd.bend:439    def import_module.err
+      tinybendygrad/runtime/support/amd.bend:452    def import_asic_regs.n
+      tinybendygrad/runtime/support/amd.bend:454    def import_asic_regs.first
+  tinybendygrad/runtime/support/compiler_amd.bend   (3)
+      tinybendygrad/runtime/support/compiler_amd.bend:161    def Tr.text
+      tinybendygrad/runtime/support/compiler_amd.bend:196    def Ad.hyp3
+      tinybendygrad/runtime/support/compiler_amd.bend:346    def C.dis_row
+  tinybendygrad/runtime/support/compiler_llvm.bend   (3)
+      tinybendygrad/runtime/support/compiler_llvm.bend:280    def LLVMCompiler.compile_order
+      tinybendygrad/runtime/support/compiler_llvm.bend:382    def ct.go
+      tinybendygrad/runtime/support/compiler_llvm.bend:389    def ct.at
+  .agents/slop/ag-probe.bend   (2)
+      .agents/slop/ag-probe.bend:9      def probe_get
+      .agents/slop/ag-probe.bend:13     def probe_find
+  .agents/slop/notes/engine-shape.bend   (2)
+      .agents/slop/notes/engine-shape.bend:46     def len_of
+      .agents/slop/notes/engine-shape.bend:50     def head_of
+  .agents/slop/notes/p-sc-1.bend   (2)
+      .agents/slop/notes/p-sc-1.bend:30     def dw.go
+      .agents/slop/notes/p-sc-1.bend:38     def dw
+  .agents/slop/notes/probe-sched1.bend   (2)
+      .agents/slop/notes/probe-sched1.bend:41     def q5.go
+      .agents/slop/notes/probe-sched1.bend:56     def q7
+  tinybendygrad/runtime/support/compiler_qcom.bend   (2)
+      tinybendygrad/runtime/support/compiler_qcom.bend:138    def q.slice_off
+      tinybendygrad/runtime/support/compiler_qcom.bend:251    def q.is_compile
+  .agents/slop/ag-wall4-control.bend   (1)
+      .agents/slop/ag-wall4-control.bend:28     def walk_a
+  .agents/slop/agprobe/p20a.bend   (1)
+      .agents/slop/agprobe/p20a.bend:28     def walk_a
+  .agents/slop/arena-sweep-jit.bend   (1)
+      .agents/slop/arena-sweep-jit.bend:68     def pl_replace_p
+  .agents/slop/dd-slotprobe.bend   (1)
+      .agents/slop/dd-slotprobe.bend:84     def pre
+  .agents/slop/helpers-probe.bend   (1)
+      .agents/slop/helpers-probe.bend:25     def two_rows
+  .agents/slop/ind/p11-split.bend   (1)
+      .agents/slop/ind/p11-split.bend:5      def split
+  .agents/slop/mathlib/bracket_probe.bend   (1)
+      .agents/slop/mathlib/bracket_probe.bend:20     def say
+  .agents/slop/multi-raw-probe.bend   (1)
+      .agents/slop/multi-raw-probe.bend:81     def s3
+  .agents/slop/notes/p-sc-2.bend   (1)
+      .agents/slop/notes/p-sc-2.bend:20     def pickc3
+  .agents/slop/notes/spec-classifier-shape.bend   (1)
+      .agents/slop/notes/spec-classifier-shape.bend:25     def when_bad
+  .agents/slop/probe/trivial.bend   (1)
+      .agents/slop/probe/trivial.bend:6      def mk
+  .agents/slop/proof-close/p11-split.bend   (1)
+      .agents/slop/proof-close/p11-split.bend:5      def split
+  tinybendygrad/engine/worker.bend   (1)
+      tinybendygrad/engine/worker.bend:74     def w_n
+  tinybendygrad/runtime/ops_null.bend   (1)
+      tinybendygrad/runtime/ops_null.bend:185    def EvA.evs
+
+  NOT COUNTED AS DEAD -- these files' own lanes FAILED to build in this run:
+
+      multi.bend                                   694 def(s)
+      elf_local.bend                               548 def(s)
+      amdev.bend                                   475 def(s)
+      fold.bend                                    429 def(s)
+      dtype.bend                                   381 def(s)
+      helpers.bend                                 336 def(s)
+      op.bend                                      321 def(s)
+      render.bend                                  302 def(s)
+      realize.bend                                 280 def(s)
+      memory.bend                                  263 def(s)
+      ops_webgpu.bend                              250 def(s)
+      transcendental.bend                          236 def(s)
+      jit.bend                                     186 def(s)
+      tensor.bend                                  173 def(s)
+      allreduce.bend                               126 def(s)
+      ops.bend                                     124 def(s)
+      webgpu_call.bend                             122 def(s)
+      spec.bend                                    116 def(s)
+      state.bend                                   83 def(s)
+      gate.bend                                    59 def(s)
+      MEASURED substrate, not deadness.  `bendarm.py --entry <file>` on each of these
+      once the build is green turns them into claims or into coverage.
+
+  ⚠ THE ARM COLUMN IS PER-ENTRY AND NOT MERGED.  A `case` arm dead in one entry can be
+    taken in another, so `bendarm-merge.py` does NOT claim a tree-wide arm count: the
+    negative set (arms that were TAKEN) is not in the TSV, and inferring it would be
+    exactly the inference this whole unit exists to distrust.  Read the per-entry column.

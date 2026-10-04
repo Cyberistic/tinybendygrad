@@ -1,0 +1,405 @@
+instrument	sites	kind	rows	dead	dead_in_called	dup	detail
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/afloat-probe.py	27	lane	27	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix11.py	2	crash ValueError: substring not found	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix9.py	2	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-meas4b.py	14	lane	1	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_check.py	10	lane	1	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py	31	lane	5	25	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/audit/proof-plants.py	16	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/bend_drive.py	9	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/bend_topo.py	2	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/bnxt_mutate.py	13	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cl_emit_map.py	12	crash AssertionError: no `def vend.cu()` block	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/clangshim/clang-cost.py	9	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/cmt.py	9	lane	0	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/specC.py	3	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/const_sweep.py	11	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cs_mutate.py	9	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-shapes-selftest.py	19	lane	23	0	0	4	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-cmp.py	7	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-f2-probe.py	4	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-oracle.py	53	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dead-defs2.py	3	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/debug-gate-out/debug-gate.3.py	0	unparsable	0	0	0	0	SyntaxError: invalid decimal literal (<unknown>, line 38)
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/debug-gate-out.unset.py	0	unparsable	0	0	0	0	SyntaxError: invalid decimal literal (<unknown>, line 73)
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dev-tally-classify.py	15	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py	20	lane	1	8	8	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp-rules.py	5	crash FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/.venv/bin/python'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dtype-oracle.py	8	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2e-vacuity.py	5	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/elf_fixture.py	13	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/empty-cache-consumers.py	21	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ew-mutate.py	5	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/f2f-calib.py	5	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ffi-port-cost.py	58	crash SystemExit(2)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/formblind-census.py	36	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ga_plus.py	7	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/gate-roster-arith.py	21	lane	6	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp.py	32	crash SystemExit(2)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/hcq2-mutate.py	6	lane	0	1	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/hq-oracle.py	140	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jit-prune-truth.py	6	lane	5	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/li/li-rename.py	3	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/margsym-probe.py	22	lane	33	0	0	1	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/measure-search-dedup.py	8	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py	13	lane	17	6	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_audit2.py	53	crash RuntimeError: git show 7b6766c2f53e5217800d6b0d418b26c36e5b7d8a:tinygrad/runtime/ops_metal.py: fatal: not a git repository (or any of the parent directories): .git	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/multi-controls.py	20	lane	7	0	0	2	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mutanchor-writes-selftest.py	22	lane	14	1	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/naming-gate-selftest.py	50	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nl/nl-oracle.py	1	lane	205	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/bendlint.py	3	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/mop-truth3.py	11	lane	45	0	0	1	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sched-truth.py	28	lane	10	0	0	1	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sz-probe3.py	5	lane	60	0	0	2	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sz-where.py	3	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv-oracle.py	347	lane	547	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_ip_mutate.py	14	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_nvdev_oracle.py	151	lane	2176	1	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py	13	lane	1	5	5	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-oracle.py	118	lane	198	2	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-set-oracle.py	5	lane	4	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops_cl_constmap.py	8	lane	66	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/codegen/late/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/device.py	13	crash RuntimeError: attempt to recreate ContextVar HCQ_RUNTIME_DEV	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/llm/cli.py	6	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/mixin/gradient.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/nn/torch.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/renderer/llvmir.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/am/navi_offsets.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/am/smu_13_0_6.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/amd/cdna/operands.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/amd/rdna4/ins.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/corefoundation.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/libclang.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/nv_610.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/nv_regs/dev_mmu.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/autogen/qcom_dsp.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/ops_dsp.py	4	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/support/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/support/compiler_llvm.py	2	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/runtime/support/objc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/schedule/prepare.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opstree/tinygrad/uop/upat.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/oracle-live.py	34	crash SystemExit(2)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/oracles/fold-mvt-oracle.py	30	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/order-verdicts.py	57	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/pr-actions-oracle.py	7	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/probe/serve.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/qc_exec_oracle.py	3	crash AttributeError: 'D' object has no attribute 'tag'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/reader-guard.py	15	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rebase-oracle-search.py	5	crash FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/.venv/bin/python'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rebase-shadow.py	11	crash NameError: name 'importlib' is not defined	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-arg-blindspot.py	15	lane	17	2	2	2	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-zero-classify.py	30	lane	2	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/schedule-bodies/sb-oracle.py	92	lane	88	3	3	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sqtt_gen.py	2	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/system_mutate.py	10	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tcptx/probe_tc2.py	8	crash NameError: name 'coord' is not defined	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/amdfix.py	8	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py	11	lane	0	8	8	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/symprobe.py	3	lane	13	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tx-oracle.py	36	crash AssertionError: eval with wrong dtype UOp(Ops.EXP2, arg=None, src=( UOp(Ops.PARAM, arg=ParamArg(-1, dtypes.f32, vmin_vmax=(0.0, 100.0), multiple_of=1, name='d', addrspace=AddrSpace.ALU), src=()),))	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/unvendored.py	49	crash CalledProcessError: Command '['git', '-C', '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446', 'ls-tree', '-r', '--name-only', '6c3d401cf324', '--', 'tinygrad/']' returned non-zero exit status 128.	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-handmap.py	5	lane	55	2	2	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/validate-gate.py	6	lane	1	4	4	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/w64/gen_w4.py	15	lane	10	0	0	2	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/add_readers.py	2	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/b1.py	3	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/wgsl/gt.py	2	lane	8	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wire_parse.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x86/x86-sweep.py	8	crash FileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/.venv/bin/python'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/codegen/late/linearizer.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/engine/jit.py	3	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/llm/kernels/amd.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/mixin/rand.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/renderer/amd/dsl.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/renderer/tc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/am/pmc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/am/soc_12.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/amd/rdna3/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/amd_gpu.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/hip.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/llvm_qcom.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/nv_regs/dev_falcon_second_pri.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/nv_regs/dev_therm.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/autogen/vfio.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/ops_metal.py	4	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/support/am/amdev.py	48	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/support/compiler_qcom.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/runtime/support/rdma/bnxtdev.py	15	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/tensor.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/cur/tinygrad/uop/weak.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/audio_helpers.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/hlb_cifar10.py	8	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/mlperf/initializers.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/mlperf/models/test_flat_llama.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/other_mnist/beautiful_mnist_torch.py	3	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/tools/gpuburn.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/examples/yolov8-onnx.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/benchmark_llm.py	4	crash SystemExit(2)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/datasets/librispeech.py	3	crash ModuleNotFoundError: No module named 'librosa'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/dsp/opt.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/gemm/amd_matmul.py	1	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/gemm/metal_conv.py	3	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/gemm/simple_conv.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/gptoss_kernels/gather_sum/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/hcq1/graph.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/hcqfuzz/tests/allreduce.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/hip_gpu_driver/test_sdma_fun.py	1	crash ImportError: cannot import name 'kio' from 'tinygrad.runtime.ops_amd' (/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/tinygrad/runtime/ops_amd.py)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/llama_kernels/swiglu/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/models/efficientnet.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/models/unet3d.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/onnx_helpers.py	3	crash ModuleNotFoundError: No module named 'onnxruntime'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/sqtt/install_rocprof_decoder.py	1	crash CalledProcessError: Command '['hdiutil', 'attach', '-nobrowse', '-readonly', '-mountrandom', '/tmp', '/Users/cyberistic/Library/Caches/tinygrad/downloads/45db9f2660af62b9de6671c2edf2f6d0']' returned non-zero exit status 1.	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/thunder/tiny/tk/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/torch_backend/test_compile.py	3	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/extra/usbgpu/legacy/patch_exp.py	3	crash IndexError: list index out of range	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/amd/helpers.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/amd/hw/test_scratch.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/amd/test_asm_kernel.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/amd/test_rdna3_asm.py	1	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/device/amd/test_attention.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/device/cpu/test_ops.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/device/python/test_uops.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_benchmark_disk_raw.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_benchmark_schedule.py	1	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_jit_failure.py	1	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_test_amd.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_test_image.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_test_mnist_data_select.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_test_speed_theoretical.py	8	lane	0	1	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/fuzz_symbolic.py	6	crash ModuleNotFoundError: No module named 'z3'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/mlperf_retinanet/coco_utils.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/mlperf_stable_diffusion/external_test_models.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/mockgpu/am/amdriver.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/mockgpu/gpu.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/models/test_mnist.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_attention.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_dtype_weak.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_graph_rewrite.py	3	crash ModuleNotFoundError: No module named 'hypothesis'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_linearizer_rewrite.py	2	lane	21	0	0	1	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_objc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_resnet.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_system_pci_scan_bus.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_uop_graph.py	1	crash ModuleNotFoundError: No module named 'pytest'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/null/test_winograd.py	2	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_const_folding.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_getitem_ops.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_jit_cases.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_llm_server.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_rangeify.py	3	crash	0	0	0	0	child rc=-10: UserWarning: resource_tracker: There appear to be 6 leaked semaphore objects to clean up at shutdown warnings.warn('resource_tracker: There appear to be %d '
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_softmax_fusion.py	8	crash SystemExit(1)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/runtime/test_tensor_io.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/speed/external_test_device_speed.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/testextra/test_hk_fa.py	1	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/codegen/gpudims.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/codegen/simplify.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/llm/__main__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/mixin/elementwise.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/nn/state.py	7	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/renderer/isa/x86.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/am/fw.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/am/smu_13_0_12.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/amd/cdna/ins.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/amd/rdna4/enum.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/comgr_3.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/libc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/nv_580.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/nv_regs/dev_gsp.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/autogen/pci.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/ops_disk.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/ops_webgpu.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/support/compiler_cuda.py	9	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/runtime/support/nv/nvdev.py	6	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/schedule/multi.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/tinygrad/uop/symbolic.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/docs/abstractions3.py	4	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/compile_tensorflow.py	6	crash ModuleNotFoundError: No module named 'tensorflow'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/mixtral.py	2	crash FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/.agents/slop/xd1/pin/weights/mixtral-8x7b-32kseqlen/consolidated.00.pth.b'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/mlperf/models/flat_llama.py	5	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/openpilot/compile_warp.py	1	crash SystemExit(2)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/test_pkl_imagenet.py	2	crash ModuleNotFoundError: No module named 'PIL'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/examples/webgpu/yolov8/compile.py	1	crash ModuleNotFoundError: No module named 'cv2'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/amdpci/proclogs.py	3	lane	0	2	1	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/datasets/imagenet.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/dsp/hook.py	20	crash KeyError: 'LD_PRELOAD'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/gemm/amd_asm_matmul.py	8	crash NotImplementedError: needs an assembler	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/gemm/halide_gemm.py	4	crash ModuleNotFoundError: No module named 'halide'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/gemm/moe_routing.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/gemm_fragment.py	1	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/hcq1/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/hcqfuzz/tests/allocator.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/hip_gpu_driver/test_pm4.py	5	crash ModuleNotFoundError: No module named 'hexdump'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/llama_kernels/rmsnorm/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/models/convnext.py	1	crash RuntimeError: Attempting to relocate against an undefined symbol sel_registerName	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/models/unet.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/nv_pma/test/test_nvprof.py	21	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/sqtt/examples/generate_examples.py	1	crash FileNotFoundError: [Errno 2] No such file or directory: 'python'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/thunder/tiny/fa.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/torch_backend/test.py	5	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/usbgpu/legacy/nvme_speed.py	1	crash ModuleNotFoundError: No module named 'hexdump'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/amd/disasm.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/amd/hw/test_rdna4_permlane_var.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/amd/hw/test_vopd.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/amd/test_pdf.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/device/amd/test_asm_gemm.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/device/cpu/test_custom_kernel.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/device/python/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_benchmark_bert_softmax.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_benchmark_resnet.py	10	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_gpu_fail_osx.py	3	crash TypeError: CLProgram.__init__() takes 3 positional arguments but 4 were given	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_test_am_fault_recovery.py	16	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_test_hive_reset.py	6	hang	0	0	0	0	timeout 45.0s
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_test_metrics.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/external_test_speed_llama.py	9	crash ModuleNotFoundError: No module named 'sentencepiece'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/fuzz_shape_ops.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/mlperf_resnet/lars_util.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/external/mlperf_stable_diffusion/external_test_eval.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/mockgpu/am/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/mockgpu/driver.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/models/test_end2end.py	10	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_assign.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_dtype_spec.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_gradient.py	1	crash ModuleNotFoundError: No module named 'torch'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_linearizer_failures.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_nn.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_resnet.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_system_pci_scan_bus.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_uop_graph.py	1	crash ModuleNotFoundError: No module named 'pytest'	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/null/test_winograd.py	2	lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_const_folding.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_getitem_ops.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_jit_cases.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_llm_server.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_rangeify.py	3	crash	0	0	0	0	child rc=-10: UserWarning: resource_tracker: There appear to be 6 leaked semaphore objects to clean up at shutdown warnings.warn('resource_tracker: There appear to be %d '
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_softmax_fusion.py	8	crash SystemExit(1)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/runtime/test_tensor_io.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/speed/external_test_device_speed.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/test/testextra/test_hk_fa.py	1	ok	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/gpudims.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/codegen/simplify.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/llm/__main__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/mixin/elementwise.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/nn/state.py	7	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/renderer/isa/x86.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/am/fw.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/am/smu_13_0_12.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/cdna/ins.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/amd/rdna4/enum.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/comgr_3.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/libc.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/nv_580.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/nv_regs/dev_gsp.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/autogen/pci.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/ops_disk.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/ops_webgpu.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/support/compiler_cuda.py	9	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/runtime/support/nv/nvdev.py	6	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/schedule/multi.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/tinygrad/uop/symbolic.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/rewrite-main.py	2	harness	0	0	0	0	the traced lane differs from the instrument's own lane
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/codegen/decomp/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/codegen/opt/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/engine/worker.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/llm/serve.py	1	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/nn/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/renderer/amd/generate.py	15	crash HTTPError: HTTP Error 401: Unauthorized	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/__init__.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/am/sdma_4_0_0.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/am/vega_offsets.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/amd/rdna3/ins.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/amdgpu_kd.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/io_uring.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/metal.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/nv_regs/dev_fb.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/autogen/nv_regs/nv_ref.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/ops_amd.py	12	crash ImportError: cannot import name 'pm_usb_bufferize' from 'tinygrad.runtime.support.usb' (/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-18446/tinygrad/runtime/support/usb.py)	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/ops_null.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/support/amd.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/support/elf.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/runtime/support/usb.py	4	no-lane	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/uop/divandmod.py	0	no-sites	0	0	0	0	
+/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/work/tinygrad/viz/cli.py	22	crash RuntimeError: empty profile in /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/profile.pkl.cyberistic	0	0	0	0	
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_check.py:42	print(f"\nMISMATCHES: {len(bad)}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_check.py:43	for k, b, p in bad: print(f" {k}: bend={b} cpython={p}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:164	print("baseline bend rows = %d" % len(base))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:168	print("%-74s %s (anchor x%d)" % (name, PNA.not_applied(), src.count(old)))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:171	open(PORT, "w").write(src.replace(old, new))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:174	open(PORT, "w").write(src)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:175	print("%-74s DID NOT COMPILE (0 rows moved)" % name)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:181	open(PORT, "w").write(src)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:184	print("%-74s moved %3d %s" % (name, len(names), shown))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:187	print("%-74s MOVED NOTHING" % name)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:189	print("\n%d mutations moved rows, %d moved none" % (len(moved), len(zeros)))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:191	print(" ZERO: %s (%s)" % (n, w))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:194	print("\nTHE ZEROES, ARGUED:")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:195	print(" M14 THEOREM. `n` is read by exactly two arms, both `List.drop`, and both")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:196	print(" are reachable only from q=2n/3n. Every transition INTO a run writes")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:197	print(" the constant 2n, so `n` is unobservable while q is 0n or 1n and NO")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:198	print(" fixture can separate those two spellings. It also means `n` is dead")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:199	print(" in six of the nineteen arms -- kept only because it makes them")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:200	print(" one-liners.")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:201	print(" (M15 was a THEOREM-shaped zero in its first form -- rewriting the 2n arm's")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:202	print(" state to 0n just shadows an EARLIER 0n arm and the compiler does not")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:203	print(" notice -- and it is now a fixture question, answered: 18 rows move.)")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:204	print(" M16 THEOREM. `q` never exceeds 3n -- no arm writes a larger one -- so the")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:205	print(" `Succ{_p}` arms are unreachable BY CONSTRUCTION. No input reaches them,")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:206	print(" so no fixture can move them. They exist only to satisfy the `Nat`")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:207	print(" exhaustiveness check on a multi-scrutinee.")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_gate.py:212	mutate()
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/cmt.py:76	print(f"{p.replace('tinybendygrad/',''):52s} {a['total']:7d} {a['comment_lines']:6d} "
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/cmt.py:88	print(f" {s:4d}: {allsizes.count(s)}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:107	print(" D -- our path, upstream has NEVER had it in any ref: a vendored-in fork, NOT an edit")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:108	for p in localonly: print(f" {p}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:109	print(" upstream-delta.py counts these under HAND EDITS. It cannot do otherwise:")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:110	print(" tree.get(path) is None at every commit, so no content can ever match.")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:112	print(" C -- upstream HAS the path; our blob equals no upstream commit:")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:113	for p in handedit: print(f" {p}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:115	print(" ...of which these DO match an upstream commit, just outside the scan window:")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/drift-diagnose.py:116	for p, c in handedit_but_upstream_ever: print(f" {p} <- {c[:12]}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/gate-roster-arith.py:44	print(f" wired but NO .bend on disk: {wired_missing}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/gate-roster-arith.py:81	print(f" !! MISMATCH: this roster cannot produce NOT-STARTED={QUOTED['NOT-STARTED']}; "
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/hcq2-mutate.py:151	print(PNA.pipe([mid, desc, PNA.not_applied()], 3))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:132	print(f' mm_row("{name}", mm_show(u64.add({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0xFFFF
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:134	print(f' mm_row("{name}", mm_show(u64.sub({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0xFFFF
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:136	print(f' mm_row("{name}", mm_show(u64.mul({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0xFFFF
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:138	print(f' mm_row("{name}", mm_show(u64.shl({a >> 32}, {a & 0xFFFFFFFF}, {k}n)))')
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:140	print(f' mm_row("{name}", H.i64_text(u64.shr({a >> 32}, {a & 0xFFFFFFFF}, {k}n)))')
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-gate.py:142	print(f' mm_row("{name}", dm_show(dm_run({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0xFFFFF
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mutanchor-writes-selftest.py:122	print(" DOUBLE COUNTED %-40s %s" % (label, dests))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_nvdev_oracle.py:523	print("ORACLE PRODUCED ZERO ROWS", file=sys.stderr); sys.exit(1)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py:62	print(f"ORACLE EXITED {r.returncode} -- the gate is BLIND, not passing"); print(r.stderr[-2000:]
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py:69	print(f"ORACLE EMITTED {len(out)} ROWS, expected >= {MIN_ORACLE_ROWS} -- the recorder stub is br
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py:77	print(f"BEND LANE EXITED {r.returncode}"); print(r.stderr[-3000:]); sys.exit(1)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py:79	print("NO DONE MARKER -- the lane did not start, or it broke"); sys.exit(1)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/objc/objc_diff.py:108	bad.append((k, py, ov)); print(f" SHAPE DISAGREES {k}: py=[{py}] cpython=[{ov}]")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-oracle.py:224	print(f"rng_{name}={len(list(u.toposort()))} {u.op}/{len(u.src)} {srcops(u)}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-oracle.py:225	print(f"rngarg_{name}={argstr(u)}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops_cl_constmap.py:142	if missing: print(f"!! missing from HAND_MAP: {sorted(missing)}", file=sys.stderr)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops_cl_constmap.py:143	if extra: print(f"!! extra in HAND_MAP: {sorted(extra)}", file=sys.stderr)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-arg-blindspot.py:39	print(f" MSTACK arg={name:12} REJECTED {type(e).__name__}: {e}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-arg-blindspot.py:49	print(f" AFTER arg={name:12} REJECTED {type(e).__name__}: {e}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-zero-classify.py:102	print(" smallest separating fixture: have={%s} rej={%s} and=%s or=%s"
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-zero-classify.py:104	verdict("INVISIBLE-to-reader",
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/schedule-bodies/sb-oracle.py:108	for nm, u in ORDER: row(f"ix_{nm}", idx[(u.op,u.src,str(u.arg),u.tag)])
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/schedule-bodies/sb-oracle.py:109	print("\n".join(rows)); sys.exit(0)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/schedule-bodies/sb-oracle.py:311	row("ca_noarg", "None" if r5 is None else "Some")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:83	print("baseline gate: GREEN\n")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:87	print(f" SKIPPED {label}\n anchor occurs {src.count(old)}x, not 1")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:96	print(f" ok {label}\n rows moved: NONE -- this row set "
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:100	print(f" {'ok':>7} {label}\n {first} rows moved: {len(moved)}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:102	print(f" {m}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:106	print()
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:108	print("restored; baseline gate is", "GREEN" if rc == 0 else "RED")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-floor.py:109	print("helpers.bend defs =", sum(1 for l in original.splitlines()
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-handmap.py:163	print(f"{ln:4d} {LINES[ln - 1].strip()[:78]}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-handmap.py:165	print(f" col {c:4d} = {v!r}")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/validate-gate.py:102	print("ORACLE PRODUCED ZERO ROWS -- it compared nothing (rebase-gate GUARD 2)")
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/validate-gate.py:105	print(f"PORT PRODUCED ZERO ROWS after {tries} attempt(s) -- GUARD 2, and the attempt count "
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/validate-gate.py:127	print(json.dumps({"shared": len(shared), "agree": len(shared) - len(bad),
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/validate-gate.py:132	print("\n".join(lines))
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/head/test/external/external_test_speed_theoretical.py:26	print(f"{ts[0].nbytes()/(1024*1024):10.0f} MB, {min(tms)*1e3:6.2f} ms {gbs:10.2f} GB/s {gflops:1
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/amdpci/proclogs.py:90	f.write(processed_log)
+DEAD	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/pin/extra/amdpci/proclogs.py:96	main()

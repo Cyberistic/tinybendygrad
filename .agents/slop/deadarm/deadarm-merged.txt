@@ -1,0 +1,873 @@
+
+DEADARM -- the tree-wide census, merged from 10 shard(s)
+
+  instruments EXAMINED (every .py under .agents/slop)      3230
+  with >= 1 emitting site                                 1721
+  TRACEABLE -- ran to completion AND emitted >=1 row      430
+  emitting sites inside those traceable instruments       9410
+  DEAD emitting lines                                    1129
+     of which in a def the lane ENTERED                   874   <- the D2 class
+     of which in a def it never entered                  255   <- either a
+        dead helper or THIS CENSUS's no-argv blindness; never counted as D2
+  dead lines in                                          206 file(s)
+  duplicate names in the same traceable lanes            366
+     <- the OTHER census, printed beside this one because neither substitutes for the other
+
+  every instrument NOT counted as traceable, by reason:
+    crash        761
+    hang         164
+    harness      81
+    lane         430
+    no-lane      253
+    no-sites     1495
+    ok           32
+    unparsable   14
+
+  shard partition: every instrument name appears exactly once   OK
+
+  THE DEAD EMITTING LINES, by file
+
+  .agents/slop/cstyle-gate.py   (43)
+      .agents/slop/cstyle-gate.py:283    print(f"{'lane':<7} {'rows read':>9} {'names (gate)':>13} {'names (shipped)':>16} "
+      .agents/slop/cstyle-gate.py:287    print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):13} {len(m['shared']):16} "
+      .agents/slop/cstyle-gate.py:292    print(f" {b}")
+      .agents/slop/cstyle-gate.py:483    print(f"{'family':10} {'rows':>5} {'gated':>6} {'excluded':>9} {'uncovered':>10}")
+      .agents/slop/cstyle-gate.py:491    print(f"{f:10} {len(rows):5} {len(g):6} {len(e):9} {len(u):10}"
+      .agents/slop/cstyle-gate.py:494    print(f"{'TOTAL':10} {len(pr):5} {len(res['gated']):6} {len(EXCLUDED):9} "
+      .agents/slop/cstyle-gate.py:496    print(f"COVERAGE {len(res['agree'])}/{len(pr)} port rows compared to a live CPython "
+      .agents/slop/cstyle-gate.py:501    print(f" EXCLUDED `{n}`: {why}")
+      .agents/slop/cstyle-gate.py:550    return selftest()
+      .agents/slop/cstyle-gate.py:552    print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence "
+      .agents/slop/cstyle-gate.py:571    print("a lane printed NOTHING, so nothing was compared. This is GUARD 2's failure "
+      .agents/slop/cstyle-gate.py:581    print("--oracle-stdout without --oracle-stderr discards the oracle's refusal report, whi
+      .agents/slop/cstyle-gate.py:588    print(f"[planted SHAPE] {len(a.plant_shape)} row NAME(S) reshaped on BOTH captured lanes
+      .agents/slop/cstyle-gate.py:594    print(f"[planted] `{a.plant}` corrupted in the CAPTURED OUTPUT ONLY; no file on "
+      .agents/slop/cstyle-gate.py:597    print(f"port rows (rows_strict): {len(res['port'])} oracle rows (rows_strict): "
+      .agents/slop/cstyle-gate.py:604    report_reshape(res["reshape"])
+      .agents/slop/cstyle-gate.py:607    print(f" {m['lane']} name set, rows_strict ({len(m['strict'])}):")
+      .agents/slop/cstyle-gate.py:609    print(f" GATE {n!r}")
+      .agents/slop/cstyle-gate.py:610    print(f" {m['lane']} name set, shipped reader ({len(m['shared'])}):")
+      .agents/slop/cstyle-gate.py:612    print(f" SHIP {n!r}")
+      .agents/slop/cstyle-gate.py:613    print(f"gated {len(res['gated'])} agree {len(res['agree'])} disagree "
+      .agents/slop/cstyle-gate.py:615    print(f"STALE-LITERAL {len(res['stale'])} port `py=` literal(s) disagree with the live "
+      .agents/slop/cstyle-gate.py:618    print(f"ORACLE-REFUSALS {len(ref)} CPython KeyError(s) the oracle reported on stderr: {r
+      .agents/slop/cstyle-gate.py:628    print(f"UNREPORTED-REFUSALS {len(silent)}: every port row that answers `{PORT_KEYERROR}`
+      .agents/slop/cstyle-gate.py:630    print(f"EXCLUDED {len(EXCLUDED)} port row(s) CPython cannot answer at all: "
+      .agents/slop/cstyle-gate.py:632    print(("BROKEN" if bad else "AGREE"), *(["\n - " + b for b in bad]))
+      .agents/slop/cstyle-gate.py:634    print()
+      .agents/slop/cstyle-gate.py:635    explain(res)
+      .agents/slop/cstyle-gate.py:736    print(f" {label:<8} -> {'BROKEN' if r['bad'] else 'AGREE':<7} "
+      .agents/slop/cstyle-gate.py:742    print(" SELFTEST FAILED: a VALUE plant moved the name-set lane, so the shape lane "
+      .agents/slop/cstyle-gate.py:746    print(" SELFTEST FAILED: a planted NAME did not show as a name-set difference")
+      .agents/slop/cstyle-gate.py:749    print(" SELFTEST FAILED: two planted names did not collide onto one shipped key, so "
+      .agents/slop/cstyle-gate.py:754    print("SELFTEST OK: a planted VALUE leaves the name sets identical (so the name lane is 
+      .agents/slop/cstyle-gate.py:769    print(f"probe --check-only FIRST LINE: "
+      .agents/slop/cstyle-gate.py:777    print(f" {label:<8} -> {'BROKEN' if bad else 'AGREE':<7} "
+      .agents/slop/cstyle-gate.py:781    print(" SELFTEST FAILED: the clean pair must share a name and agree")
+      .agents/slop/cstyle-gate.py:784    print(" SELFTEST FAILED: the planted disagreement was not seen")
+      .agents/slop/cstyle-gate.py:798    print(f" refusal -> {'AGREE' if ok else 'BROKEN':<7} gated={r['gated']} "
+      .agents/slop/cstyle-gate.py:801    print(f" SELFTEST FAILED: a CPython refusal did not compare against the port's "
+      .agents/slop/cstyle-gate.py:811    print(f" refusal+ -> {'BROKEN' if r['disagree'] else 'AGREE':<7} "
+      .agents/slop/cstyle-gate.py:814    print(" SELFTEST FAILED: a CPython refusal accepted a port answer that was not "
+      .agents/slop/cstyle-gate.py:817    print("SELFTEST OK: the SAME instrument reports AGREE on the clean pair, DISAGREE "
+      .agents/slop/cstyle-gate.py:819    return selftest_reshape(bend)
+  .agents/slop/codegen-init-measure.py   (36)
+      .agents/slop/codegen-init-measure.py:196    r = subprocess.run([str(d / "bin" / "bend"), str(d / rel)],
+      .agents/slop/codegen-init-measure.py:201    print(f" [{stage}] {rel} took {n + 1} tries; earlier attempts returned "
+      .agents/slop/codegen-init-measure.py:325    praw = rows(run(d, "tinybendygrad/" + PORT, name, "new_sink=", "no rebuilt sink"))
+      .agents/slop/codegen-init-measure.py:326    grows = rows(run(d, ".agents/slop/" + PROBE, name, "gr.new_sink_is_original="))
+      .agents/slop/codegen-init-measure.py:339    print(f"{name:13} | {r.get('repl','<no row>'):44} | {dist(r.get('repl',''), PY['repl']):
+      .agents/slop/codegen-init-measure.py:343    print()
+      .agents/slop/codegen-init-measure.py:344    print(f"py.repl (want) = {PY['repl']}")
+      .agents/slop/codegen-init-measure.py:345    print(f"py.new_sink_is_original = {PY['new_sink_is_original']}")
+      .agents/slop/codegen-init-measure.py:346    print(f"py.new_sink_srcs = {PY['new_sink_srcs']}")
+      .agents/slop/codegen-init-measure.py:347    print(f"py.new_sink_op = {PY['new_sink_op']}")
+      .agents/slop/codegen-init-measure.py:348    print(f"py.n_repl (CONTROL) = {PY['n_repl']}")
+      .agents/slop/codegen-init-measure.py:349    print()
+      .agents/slop/codegen-init-measure.py:351    print("THE SEQUENCE, on the row that decides it. `want` is CPython's, called above.")
+      .agents/slop/codegen-init-measure.py:357    print(f" {stage:12} gr.new_sink_is_original = {gotv:9} want {PY['new_sink_is_original']}
+      .agents/slop/codegen-init-measure.py:361    print(f" C-comment comment-only control: {'SAME as B-both on every row' if same else 'MO
+      .agents/slop/codegen-init-measure.py:362    print()
+      .agents/slop/codegen-init-measure.py:364    print("THE ARENA-LENGTH SWEEP on B-both (`5 + K` nodes at the sink; `new_sink` IS the gr
+      .agents/slop/codegen-init-measure.py:365    print(f" {'K':>2} {'arena at sink':>14} {'new_sink':>9} repl row")
+      .agents/slop/codegen-init-measure.py:370    print(f" {k:>2} {5 + k:>14} {r.get('new_sink','<no row>'):>9} "
+      .agents/slop/codegen-init-measure.py:372    print()
+      .agents/slop/codegen-init-measure.py:375    print(f" C-deadcode re-inserting the 4 DELETED defs: "
+      .agents/slop/codegen-init-measure.py:377    print()
+      .agents/slop/codegen-init-measure.py:379    print("MUTATIONS, with the rows they moved by name:")
+      .agents/slop/codegen-init-measure.py:383    print(f" {name:13} moved {moved if moved else 'NOTHING -- a blind spot, with the reason 
+      .agents/slop/codegen-init-measure.py:384    print(" M-drop-arena `wr.rebuild.found` returns `O.Arena.empty()` instead of the grown")
+      .agents/slop/codegen-init-measure.py:385    print(" arena: the threading is the ONLY thing carrying the index, so this")
+      .agents/slop/codegen-init-measure.py:386    print(" must move the srcs row.")
+      .agents/slop/codegen-init-measure.py:387    print(" M-u `pm_rewrite_m(pm, ar, rebuilt, ctx)`: settled as UNOBSERVABLE over")
+      .agents/slop/codegen-init-measure.py:388    print(" this table (both upstream patterns are `UPat(Ops.X)` with no `src=`")
+      .agents/slop/codegen-init-measure.py:389    print(" clause, and ops.py:1810 hands back `n` itself when `new_src == n.src`
+      .agents/slop/codegen-init-measure.py:390    print(" M-u-norule the same mutation WITH the third rule present, to show the two are")
+      .agents/slop/codegen-init-measure.py:391    print(" not interacting: if it moves nothing here either, the `u`/`rebuilt`")
+      .agents/slop/codegen-init-measure.py:392    print(" question is closed for the third time.")
+      .agents/slop/codegen-init-measure.py:393    print()
+      .agents/slop/codegen-init-measure.py:395    print(f"DENOMINATOR: {n_rows} rows compared per stage, {n_stages} stages, "
+      .agents/slop/codegen-init-measure.py:397    print(f"SUBSTRATE: {len(seen_substr)} distinct (ops.bend, fold.bend) pair(s) seen across
+  .agents/slop/nv_order_census.py   (31)
+      .agents/slop/nv_order_census.py:209    print("\nall %d agree -- the census below models the port's arithmetic." % len(checks))
+      .agents/slop/nv_order_census.py:212    print()
+      .agents/slop/nv_order_census.py:213    print("=" * 78)
+      .agents/slop/nv_order_census.py:214    print("PER-SITE, OVER EVERY `Fld.of` IN nvdev.bend")
+      .agents/slop/nv_order_census.py:215    print("=" * 78)
+      .agents/slop/nv_order_census.py:216    print("%-4s %-26s %-26s %-9s %-9s %-9s %-9s"
+      .agents/slop/nv_order_census.py:229    print("%-4d %-26s %-26s %-9s %-9s %-9s %-9s"
+      .agents/slop/nv_order_census.py:234    print()
+      .agents/slop/nv_order_census.py:235    print("SITES AUDITED (the port's own Fld.of literals) : %d" % n)
+      .agents/slop/nv_order_census.py:236    print(" order-sensitive fmask(s,e) != fmask(e,s) : %d" % sum(r["order_sensitive"]
+      .agents/slop/nv_order_census.py:237    print(" width-PRESERVING wid(s,e) == wid(e,s) : %d" % sum(r["width_preserving"]
+      .agents/slop/nv_order_census.py:238    print(" rt all-ones probe MOVES between the two orders : %d" % sum(r["rt_ones_moves"]
+      .agents/slop/nv_order_census.py:239    print(" rt low-bit probe MOVES between the two orders : %d" % sum(r["rt_lowbit_moves"]
+      .agents/slop/nv_order_census.py:240    print(" rt top-bit probe MOVES between the two orders : %d" % sum(r["rt_topbit_moves"]
+      .agents/slop/nv_order_census.py:241    print(" UNREACHABLE IN THE PORT: 0 -- every one of the %d is a literal in this" % n)
+      .agents/slop/nv_order_census.py:242    print(" file, and `nv.fld_se` reads all six ported BOOT_42 fields by name. That")
+      .agents/slop/nv_order_census.py:243    print(" number is about THIS FILE only; the CPython-side reachability is below.")
+      .agents/slop/nv_order_census.py:246    print()
+      .agents/slop/nv_order_census.py:247    print("=" * 78)
+      .agents/slop/nv_order_census.py:248    print("THE SAME THREE QUESTIONS OVER CPYTHON'S OWN TABLES (%d fields)" % n_py_fields)
+      .agents/slop/nv_order_census.py:249    print("=" * 78)
+      .agents/slop/nv_order_census.py:264    print(" order-sensitive : %d of %d" % (ins, n_py_fields)
+      .agents/slop/nv_order_census.py:265    print(" width-PRESERVING (the brief's premise) : %d of %d" % (widp, n_py_fields)
+      .agents/slop/nv_order_census.py:266    print(" rt all-ones probe MOVES : %d of %d" % (rtm, n_py_fields))
+      .agents/slop/nv_order_census.py:267    print(" rt low-bit probe MOVES : %d of %d" % (rtl, n_py_fields))
+      .agents/slop/nv_order_census.py:268    print(" s > 31 (out of a U32 SHIFT's reach, so no mask is buildable): %d of %d"
+      .agents/slop/nv_order_census.py:271    print(" in tables THIS FILE ports : %d of %d tables"
+      .agents/slop/nv_order_census.py:273    print(" in tables this file does NOT port (nothing to gate) : %d of %d tables, "
+      .agents/slop/nv_order_census.py:284    print(" e.g. %s" % "; ".join("%s/%s/%s s=%d e=%d" % d for d in degenerate[:4]))
+      .agents/slop/nv_order_census.py:291    print()
+      .agents/slop/nv_order_census.py:292    print("wrote .agents/slop/nv_order_census.json")
+  .agents/slop/unobservable-gr-oracle.py   (30)
+      .agents/slop/unobservable-gr-oracle.py:199    print()
+      .agents/slop/unobservable-gr-oracle.py:200    print("=" * 78)
+      .agents/slop/unobservable-gr-oracle.py:201    print("Q4 THE DANGEROUS ONE: the PORT's table has a SINK rule upstream does not")
+      .agents/slop/unobservable-gr-oracle.py:202    print("=" * 78)
+      .agents/slop/unobservable-gr-oracle.py:207    print(f" upstream pm_post_sched_cache ops: "
+      .agents/slop/unobservable-gr-oracle.py:209    print(f" the port's pm_post_sched_cache table (codegen/__init__.bend):")
+      .agents/slop/unobservable-gr-oracle.py:210    print(f" O.PMEntry{{0, [O.OpsSINK{{}}], Nil{{}}}} <- tag 0, NOT upstream")
+      .agents/slop/unobservable-gr-oracle.py:211    print(f" O.PMEntry{{3, [O.OpsPARAM{{}}], Nil{{}}}}")
+      .agents/slop/unobservable-gr-oracle.py:212    print(f" O.PMEntry{{4, [O.OpsALLOC{{}}], Nil{{}}}}")
+      .agents/slop/unobservable-gr-oracle.py:213    print(f" uop/ops.bend pm_dispatch_m case 0 -> pm_r_sink_m -> Some{{self}}")
+      .agents/slop/unobservable-gr-oracle.py:214    print()
+      .agents/slop/unobservable-gr-oracle.py:215    print(f" upstream's returned SINK: srcs = "
+      .agents/slop/unobservable-gr-oracle.py:217    print(f" upstream's SINK is a new node: {got is not root}")
+      .agents/slop/unobservable-gr-oracle.py:218    print()
+      .agents/slop/unobservable-gr-oracle.py:219    print(" With the port's extra `SINK -> self` rule, `pm_rewrite_m` returns")
+      .agents/slop/unobservable-gr-oracle.py:220    print(" Some{u}, so `wr.step.try_rule` takes the Some arm and records")
+      .agents/slop/unobservable-gr-oracle.py:221    print(" `repl[sink] = sink` -- the ORIGINAL node, whose srcs are")
+      .agents/slop/unobservable-gr-oracle.py:222    print(f" {[s.op.name + (f'({s.arg.slot})' if s.op is Ops.PARAM else '') for s in root.sr
+      .agents/slop/unobservable-gr-oracle.py:223    print(" i.e. the UNREWRITTEN srcs. Upstream records the REBUILT node.")
+      .agents/slop/unobservable-gr-oracle.py:224    print()
+      .agents/slop/unobservable-gr-oracle.py:225    print(" The gate cannot see this: `uop_short` renders a SINK as the bare")
+      .agents/slop/unobservable-gr-oracle.py:226    print(" string 'SINK', so upstream's rebuilt SINK and the port's original")
+      .agents/slop/unobservable-gr-oracle.py:227    print(" SINK print identically, and `gr-diff.sh` compares COUNTS. This is")
+      .agents/slop/unobservable-gr-oracle.py:228    print(" an IDENTITY invariant guarded by an unobservable row, and it is the")
+      .agents/slop/unobservable-gr-oracle.py:229    print(" shape agent-core ranks highest.")
+      .agents/slop/unobservable-gr-oracle.py:230    print()
+      .agents/slop/unobservable-gr-oracle.py:231    print(" THE ROW THAT SEES IT -- expected value CALLED from CPython above:")
+      .agents/slop/unobservable-gr-oracle.py:232    print(f" gr.sink_identity = 0 (upstream: replace[sink] is not sink)")
+      .agents/slop/unobservable-gr-oracle.py:233    print(f" gr.sink_srcs = {','.join(s.op.name for s in got.src)}")
+      .agents/slop/unobservable-gr-oracle.py:234    print(f" gr.sink_src_slots = "
+  .agents/slop/unobservable-census.py   (29)
+      .agents/slop/unobservable-census.py:252    print(f"=== {p} {r['n']} rows")
+      .agents/slop/unobservable-census.py:253    print(f" ORDER-DEAD {r['order_dead']} order-weak {r['order_weak']} "
+      .agents/slop/unobservable-census.py:259    print(f" {w['verdict']:10} blind={w['blind']:<4} {w['name']}={w['val']}")
+      .agents/slop/unobservable-census.py:261    print(" -- sibling families with equal-valued pairs --")
+      .agents/slop/unobservable-census.py:263    print(f" {fname}[{k}] sibling_blind={s}")
+      .agents/slop/unobservable-census.py:348    print("=" * 96)
+      .agents/slop/unobservable-census.py:349    print("COUNT-ONLY GATES -- a pass condition that compares COUNTS cannot see a")
+      .agents/slop/unobservable-census.py:350    print("value change. Evidence is quoted, not inferred.")
+      .agents/slop/unobservable-census.py:351    print("=" * 96)
+      .agents/slop/unobservable-census.py:354    print(f"--- {name}")
+      .agents/slop/unobservable-census.py:355    print(f" {ev}")
+      .agents/slop/unobservable-census.py:356    print(f"\nTOTAL gate scripts with a count-adjacent pass condition: {len(rows)}")
+      .agents/slop/unobservable-census.py:357    print("(NOT all of these are wrong -- a count check is a legitimate FIRST check.")
+      .agents/slop/unobservable-census.py:358    print(" What is wrong is a count being the ONLY check. Read the script.)")
+      .agents/slop/unobservable-census.py:363    print("=" * 96)
+      .agents/slop/unobservable-census.py:364    print("HAND-TYPED ROWS -- a row whose expected value is a LITERAL, not a CALL")
+      .agents/slop/unobservable-census.py:365    print()
+      .agents/slop/unobservable-census.py:366    print("⚠ READ THIS NUMBER AS A LITERAL COUNT, NOT AS A FLOOR. This used to carry its own
+      .agents/slop/unobservable-census.py:367    print(" regex and answered 224 where the truth is 578; the 224 was repeated by")
+      .agents/slop/unobservable-census.py:368    print(" handtyped-audit.py's header until both were corrected. It now DELEGATES to")
+      .agents/slop/unobservable-census.py:369    print(" handtyped-audit.py's ast scan, so it is the same number that file prints and")
+      .agents/slop/unobservable-census.py:370    print(" there is no second reader to drift. See hand_typed()'s docstring for the four")
+      .agents/slop/unobservable-census.py:371    print(" named blind variants and formblind-audit.py A6..A11 for the assertions.")
+      .agents/slop/unobservable-census.py:372    print("=" * 96)
+      .agents/slop/unobservable-census.py:386    print(f"--- {f.relative_to(SLOP)} {len(rows)} hand-typed rows")
+      .agents/slop/unobservable-census.py:388    print(f" {nm} = {v}")
+      .agents/slop/unobservable-census.py:389    print(f"\nTOTAL hand-typed rows across every committed oracle: {total}")
+      .agents/slop/unobservable-census.py:395    raise SystemExit(q_countgate())
+      .agents/slop/unobservable-census.py:397    raise SystemExit(q_handtyped())
+  .agents/slop/dup/dup-gate.py   (28)
+      .agents/slop/dup/dup-gate.py:105    print(f" {g['label']}: lines={g['lines']} accepted={g['accepted']} keys={g['keys']} "
+      .agents/slop/dup/dup-gate.py:109    print(f" DUPLICATE {k!r} x{n} value={g['rows'][k]!r}")
+      .agents/slop/dup/dup-gate.py:114    print("GUARD 0 -- the duplicate census, per lane, before any value is compared")
+      .agents/slop/dup/dup-gate.py:115    show(gp)
+      .agents/slop/dup/dup-gate.py:116    show(go)
+      .agents/slop/dup/dup-gate.py:120    print(f" lanes print the SAME BYTES: {identical}"
+      .agents/slop/dup/dup-gate.py:135    print(f" shared names: {len(shared)} of {len(gp['rows'])} port / {len(go['rows'])} oracl
+      .agents/slop/dup/dup-gate.py:137    print(f" VERDICT: {'BROKEN (' + ', '.join(sorted(set(bad))) + ')' if bad else 'AGREE'}")
+      .agents/slop/dup/dup-gate.py:153    print(f"[selftest base] the REAL captured pair: {len(shared)} shared names, "
+      .agents/slop/dup/dup-gate.py:213    print(f" [plant] donor={donor!r} -> key={shared[0]!r}; value differs from the key's: "
+      .agents/slop/dup/dup-gate.py:221    print(f" {'cell':<8} {'verdict':<8} {'dup(port)':>9} {'dup(oracle)':>11} {'byteIdent':>1
+      .agents/slop/dup/dup-gate.py:230    print(f" {nm:<8} {verdict:<8} {len(gp['dup']):9} {len(go['dup']):11} "
+      .agents/slop/dup/dup-gate.py:233    print(f"[selftest assert] clean must be AGREE or carry the MEASURED base disagree: "
+      .agents/slop/dup/dup-gate.py:235    print(f"[selftest assert] value must BREAK byte-identity: {not out['value'][3]} "
+      .agents/slop/dup/dup-gate.py:237    print(f"[selftest assert] name must raise dup on BOTH sides with the lanes STILL "
+      .agents/slop/dup/dup-gate.py:241    print(f"[selftest assert] collide must raise dup: {out['collide'][1] > out['clean'][1]}"
+      .agents/slop/dup/dup-gate.py:244    print(f"SELFTEST {'OK' if ok else 'FAILED'}"
+      .agents/slop/dup/dup-gate.py:269    print(f"ROWS {len(ra)} -> {len(rb)} lines; {sum(na.values())} -> {sum(nb.values())} read
+      .agents/slop/dup/dup-gate.py:272    print(f"VALUES same multiset: {va == vb} distinct {len(va)} -> {len(vb)} "
+      .agents/slop/dup/dup-gate.py:278    print(f"VALUE SET identical: {set(va) == set(vb)} instances "
+      .agents/slop/dup/dup-gate.py:281    print(f"DUPLICATES {len(da)} -> {len(db)} name(s) printed more than once, COUNTED FROM T
+      .agents/slop/dup/dup-gate.py:284    print(f"LOST {len(ra) - len(na)} -> {len(rb) - len(nb)} measurements unreachable by any 
+      .agents/slop/dup/dup-gate.py:286    print(f"RENAME {len(pairs)} pair(s); "
+      .agents/slop/dup/dup-gate.py:288    print(f"BYTES sha256(nb) {digest(A)} -> {digest(B)} "
+      .agents/slop/dup/dup-gate.py:291    print(f"AUDIT {'OK -- no name is printed more than once' if ok else 'FAILED -- duplicate
+      .agents/slop/dup/dup-gate.py:303    return 0 if compare(*a.compare) else 1
+      .agents/slop/dup/dup-gate.py:309    return 0 if selftest(P, O, pathlib.Path(a.port).name, pathlib.Path(a.oracle).name) else 
+      .agents/slop/dup/dup-gate.py:310    return 0 if gate(P, O, pathlib.Path(a.port).name, pathlib.Path(a.oracle).name) else 1
+  .agents/slop/wip/gate.py   (26)
+      .agents/slop/wip/gate.py:87     die("NATIVE LANE DID NOT RUN: build rc %d, %d bytes at %s"
+      .agents/slop/wip/gate.py:92     die("NATIVE LANE DID NOT RUN rc %d" % b.returncode, b.stderr[-1500:])
+      .agents/slop/wip/gate.py:96     print("AUTHORITY: %s -- live CPython, DEV=NULL, exit status consulted"
+      .agents/slop/wip/gate.py:101    die("ORACLE DID NOT RUN rc %d" % o.returncode, o.stderr[-1500:])
+      .agents/slop/wip/gate.py:104    die("ORACLE DID NOT RUN: %s printed 0 rows" % os.path.relpath(oracle, ROOT))
+      .agents/slop/wip/gate.py:107    print("UNPARSED %s: %r" % (tag, line))
+      .agents/slop/wip/gate.py:111    print("\nROWS COUNTED, EACH SIDE SEPARATELY (names whitespace-collapsed)")
+      .agents/slop/wip/gate.py:112    print(" interpreted port rows : %d" % len(port))
+      .agents/slop/wip/gate.py:113    print(" native port rows : %d" % len(native))
+      .agents/slop/wip/gate.py:114    print(" CPython oracle rows : %d" % len(cpy))
+      .agents/slop/wip/gate.py:115    print(" COMPARED port<->CPython : %d" % len(both))
+      .agents/slop/wip/gate.py:116    print(" port rows with no oracle row : %d (UNREFUTABLE, not green)" % len(only_port))
+      .agents/slop/wip/gate.py:117    print(" oracle rows with no port row : %d" % len(only_cpy))
+      .agents/slop/wip/gate.py:119    die("\nFAIL: 0 ROWS COMPARED -- the oracle ran and matched no row name.")
+      .agents/slop/wip/gate.py:121    print("\nINTERPRETED vs NATIVE name sets differ by %d" % len(set(port) ^ set(native)))
+      .agents/slop/wip/gate.py:123    print("\nVERDICT vs CPython: %d compared, %d DISAGREE, %d agree"
+      .agents/slop/wip/gate.py:126    print(" RED %s\n bend : [%s]\n cpython : [%s]" % (n, port[n][0], cpy[n][0]))
+      .agents/slop/wip/gate.py:128    print(" ORACLE-ONLY %s cpython=[%s] bend=ABSENT" % (n, cpy[n][0]))
+      .agents/slop/wip/gate.py:134    print("\nPORT-BAKED `py=` LITERAL -- an artefact OF the port, NOT an authority:")
+      .agents/slop/wip/gate.py:135    print(" %d of %d baked literals disagree with the port's own [bend] half."
+      .agents/slop/wip/gate.py:137    print(" live CPython sides WITH the port : %d -> the baked literal is wrong text" % len(
+      .agents/slop/wip/gate.py:138    print(" live CPython sides with baked py : %d -> THE PORT IS WRONG" % len(with_py))
+      .agents/slop/wip/gate.py:139    print(" no CPython row to adjudicate : %d -> unfalsifiable either way"
+      .agents/slop/wip/gate.py:142    print(" PORT DISAGREES WITH CPYTHON %s bend=[%s] baked=[%s] cpython=[%s]"
+      .agents/slop/wip/gate.py:145    print(" UNREFUTABLE (no oracle row) %s" % n)
+      .agents/slop/wip/gate.py:149    print("\nPROBLEMS: %d (each unrefutable baked literal counts: a wrong expectation"
+  .agents/slop/ansi_gate.py   (25)
+      .agents/slop/ansi_gate.py:164    print("baseline bend rows = %d" % len(base))
+      .agents/slop/ansi_gate.py:168    print("%-74s %s (anchor x%d)" % (name, PNA.not_applied(), src.count(old)))
+      .agents/slop/ansi_gate.py:171    open(PORT, "w").write(src.replace(old, new))
+      .agents/slop/ansi_gate.py:174    open(PORT, "w").write(src)
+      .agents/slop/ansi_gate.py:175    print("%-74s DID NOT COMPILE (0 rows moved)" % name)
+      .agents/slop/ansi_gate.py:181    open(PORT, "w").write(src)
+      .agents/slop/ansi_gate.py:184    print("%-74s moved %3d %s" % (name, len(names), shown))
+      .agents/slop/ansi_gate.py:187    print("%-74s MOVED NOTHING" % name)
+      .agents/slop/ansi_gate.py:189    print("\n%d mutations moved rows, %d moved none" % (len(moved), len(zeros)))
+      .agents/slop/ansi_gate.py:191    print(" ZERO: %s (%s)" % (n, w))
+      .agents/slop/ansi_gate.py:194    print("\nTHE ZEROES, ARGUED:")
+      .agents/slop/ansi_gate.py:195    print(" M14 THEOREM. `n` is read by exactly two arms, both `List.drop`, and both")
+      .agents/slop/ansi_gate.py:196    print(" are reachable only from q=2n/3n. Every transition INTO a run writes")
+      .agents/slop/ansi_gate.py:197    print(" the constant 2n, so `n` is unobservable while q is 0n or 1n and NO")
+      .agents/slop/ansi_gate.py:198    print(" fixture can separate those two spellings. It also means `n` is dead")
+      .agents/slop/ansi_gate.py:199    print(" in six of the nineteen arms -- kept only because it makes them")
+      .agents/slop/ansi_gate.py:200    print(" one-liners.")
+      .agents/slop/ansi_gate.py:201    print(" (M15 was a THEOREM-shaped zero in its first form -- rewriting the 2n arm's")
+      .agents/slop/ansi_gate.py:202    print(" state to 0n just shadows an EARLIER 0n arm and the compiler does not")
+      .agents/slop/ansi_gate.py:203    print(" notice -- and it is now a fixture question, answered: 18 rows move.)")
+      .agents/slop/ansi_gate.py:204    print(" M16 THEOREM. `q` never exceeds 3n -- no arm writes a larger one -- so the")
+      .agents/slop/ansi_gate.py:205    print(" `Succ{_p}` arms are unreachable BY CONSTRUCTION. No input reaches them,")
+      .agents/slop/ansi_gate.py:206    print(" so no fixture can move them. They exist only to satisfy the `Nat`")
+      .agents/slop/ansi_gate.py:207    print(" exhaustiveness check on a multi-scrutinee.")
+      .agents/slop/ansi_gate.py:212    mutate()
+  .agents/slop/opsbend_milestone_gate.py   (23)
+      .agents/slop/opsbend_milestone_gate.py:94     print(f" {'ok ' if got == want else 'FAIL'} {name}: {got!r}"
+      .agents/slop/opsbend_milestone_gate.py:108    print("== the milestone: expected bytes, written before the run")
+      .agents/slop/opsbend_milestone_gate.py:109    check("ms_exit (the executor launched)", R.get("ms_exit"), "0")
+      .agents/slop/opsbend_milestone_gate.py:111    check(f"ms_b{i}_got (PORT's readback)", R.get(f"ms_b{i}_got"), WANT[f"b{i}"])
+      .agents/slop/opsbend_milestone_gate.py:112    check(f"ms_b{i}_want (the file's expectation)", R.get(f"ms_b{i}_want"),
+      .agents/slop/opsbend_milestone_gate.py:114    check(f"ms_b{i} (the gate)", R.get(f"ms_b{i}"), "True")
+      .agents/slop/opsbend_milestone_gate.py:115    check("ms_line_count", R.get("ms_line_count"), "True")
+      .agents/slop/opsbend_milestone_gate.py:120    print("== the executor's own file, read by python (a different reader)")
+      .agents/slop/opsbend_milestone_gate.py:121    check("PACKET.out (executor, via python)", pkt_out, WANT["packout"])
+      .agents/slop/opsbend_milestone_gate.py:122    check("PACKET.out line count", str(len(pkt_out.splitlines())), WANT["line_count"])
+      .agents/slop/opsbend_milestone_gate.py:123    check("PACKET.out agrees with the PORT, line for line",
+      .agents/slop/opsbend_milestone_gate.py:127    print("== the allocator: 3 buffers, 12 bytes, bases 0/4/8")
+      .agents/slop/opsbend_milestone_gate.py:131    check(nm, R.get(nm), want)
+      .agents/slop/opsbend_milestone_gate.py:135    check("buffers agreeing with the expectation", f"{agree}/3", "3/3")
+      .agents/slop/opsbend_milestone_gate.py:136    print(f"# load: 3 buffers, 12 bytes in, 12 bytes out, "
+      .agents/slop/opsbend_milestone_gate.py:138    check("buffers the kernel did NOT write (must be unchanged)",
+      .agents/slop/opsbend_milestone_gate.py:143    print("== the input pattern, three buffers, 12 bytes")
+      .agents/slop/opsbend_milestone_gate.py:146    check(nm, R.get(nm), want)
+      .agents/slop/opsbend_milestone_gate.py:147    check("bytes written", str(len(R.get("ms_b0_hex_in", "")) // 2
+      .agents/slop/opsbend_milestone_gate.py:155    print("== raw_free")
+      .agents/slop/opsbend_milestone_gate.py:156    check("ms_free_noop", R.get("ms_free_noop"), "4 efbeadde")
+      .agents/slop/opsbend_milestone_gate.py:157    check("bend_free_is_noop", R.get("bend_free_is_noop"), "True")
+      .agents/slop/opsbend_milestone_gate.py:159    print(f"\n# {len(bad)} failed of {len(R)} rows read")
+  .agents/slop/eq/nl-gate.py   (23)
+      .agents/slop/eq/nl-gate.py:223    print(f" {b}")
+      .agents/slop/eq/nl-gate.py:298    print(f"ROWS {len(A.splitlines())} -> {len(B.splitlines())} lines; {sum(na.values())} ->
+      .agents/slop/eq/nl-gate.py:301    print(f"VALUES same multiset: {va == vb} distinct {len(va)} -> {len(vb)} only in BEFORE
+      .agents/slop/eq/nl-gate.py:303    print(f"RENAME {len(pairs)} PAIR(S), each one name whose `X=` form is the other side's n
+      .agents/slop/eq/nl-gate.py:307    print(f"COLLISIONS {len(coll)} name(s) printed more than once, counted from the LINES an
+      .agents/slop/eq/nl-gate.py:309    print(f"`=` NAMES {len(eq_a)} -> {len(eq_b)}, counted from `rows_strict`'s names and NEV
+      .agents/slop/eq/nl-gate.py:312    print(f"SHIPPED {len(ka)} -> {len(kb)} keys of `rebase-gate.py:rows()`, i.e. the rows a 
+      .agents/slop/eq/nl-gate.py:315    print("AUDIT", ("OK on the RENAME -- same rows, same values, same number of distinct nam
+      .agents/slop/eq/nl-gate.py:382    print("SELFTEST ABORTED: the captured port lane is empty or unreadable, so a 'clean' lan
+      .agents/slop/eq/nl-gate.py:401    print(f" {name:<8} {'BROKEN' if r['bad'] else 'AGREE '} names eq={eq} unaddressable={los
+      .agents/slop/eq/nl-gate.py:403    print("SELFTEST", "OK -- a planted VALUE leaves the name sets identical (so the name che
+      .agents/slop/eq/nl-gate.py:423    return selftest()
+      .agents/slop/eq/nl-gate.py:425    return compare(*a.compare)
+      .agents/slop/eq/nl-gate.py:427    print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence abou
+      .agents/slop/eq/nl-gate.py:437    print(f"lane failure: bend {' '.join(p.stderr.split())[-140:]} | oracle "
+      .agents/slop/eq/nl-gate.py:439    print(" ⚠ `tinybendygrad/uop/ops.bend` is in this port's 6-file import closure and is ow
+      .agents/slop/eq/nl-gate.py:446    print("a lane printed NOTHING, so nothing was compared. NOT a pass.")
+      .agents/slop/eq/nl-gate.py:451    print(f"[unrenamed] the `=` is BACK in the row-name field of the CAPTURED BYTES "
+      .agents/slop/eq/nl-gate.py:459    print(f"[planted SHAPE] {ph}/{oh} row NAME(S) reshaped on BOTH lanes, values untouched: 
+      .agents/slop/eq/nl-gate.py:464    print(f"[planted] `{a.plant}` corrupted on the PORT LANE ONLY, in the CAPTURED OUTPUT; t
+      .agents/slop/eq/nl-gate.py:475    print(f" {m['lane']} name set, {tag} ({len(s)}):")
+      .agents/slop/eq/nl-gate.py:477    print(f" {tag} {n!r}")
+      .agents/slop/eq/nl-gate.py:480    print(f" ^^ {len(manu)} of the {tag} names are MANUFACTURED by `row()` and were printed 
+  .agents/slop/llvmir-gate.py   (22)
+      .agents/slop/llvmir-gate.py:300    print(f"ROWS {len(A.splitlines())} -> {len(B.splitlines())} lines; "
+      .agents/slop/llvmir-gate.py:303    print(f"VALUES same multiset: {va == vb} distinct {len(va)} -> {len(vb)} "
+      .agents/slop/llvmir-gate.py:306    print(f"RENAME {len(pairs)} PAIR(S), each one name whose `X=` form is the other side's "
+      .agents/slop/llvmir-gate.py:310    print(f"COLLISIONS {len(coll)} name(s) printed more than once, counted from the LINES an
+      .agents/slop/llvmir-gate.py:313    print(f"`=` NAMES {len(eq_a)} -> {len(eq_b)}, counted from `rows_strict`'s names and NEV
+      .agents/slop/llvmir-gate.py:316    print(f"SHIPPED {len(ka)} -> {len(kb)} keys of `rebase-gate.py:rows()`, i.e. the rows a 
+      .agents/slop/llvmir-gate.py:319    print("AUDIT", ("OK on the RENAME -- same rows, same values, same number of distinct nam
+      .agents/slop/llvmir-gate.py:416    print(f"[selftest base] the real {len(live.splitlines())}-line port lane with the ONE ro
+      .agents/slop/llvmir-gate.py:433    print(f" {name:<8} {'BROKEN' if r['bad'] else 'AGREE '} names eq={eq} "
+      .agents/slop/llvmir-gate.py:436    print("SELFTEST", "OK -- a planted VALUE leaves the name sets identical (so the name che
+      .agents/slop/llvmir-gate.py:460    return selftest()
+      .agents/slop/llvmir-gate.py:462    return compare(*a.compare)
+      .agents/slop/llvmir-gate.py:464    print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence abou
+      .agents/slop/llvmir-gate.py:474    print(f"lane failure: bend {' '.join(p.stderr.split())[-140:]} | "
+      .agents/slop/llvmir-gate.py:478    print("a lane printed NOTHING, so nothing was compared. NOT a pass.")
+      .agents/slop/llvmir-gate.py:483    print(f"[unrenamed] the `=` is BACK in the row-name field of the CAPTURED BYTES "
+      .agents/slop/llvmir-gate.py:490    print(f"[dropped DUP] `{a.drop_dup}` printed {ph}/{oh}x; the LAST copy removed from BOTH
+      .agents/slop/llvmir-gate.py:497    print(f"[planted SHAPE] {ph}/{oh} row NAME(S) reshaped on BOTH lanes, values untouched: 
+      .agents/slop/llvmir-gate.py:502    print(f"[planted] `{a.plant}` corrupted on the PORT LANE ONLY, in the CAPTURED OUTPUT; t
+      .agents/slop/llvmir-gate.py:513    print(f" {m['lane']} name set, {tag} ({len(s)}):")
+      .agents/slop/llvmir-gate.py:515    print(f" {tag} {n!r}")
+      .agents/slop/llvmir-gate.py:518    print(f" ^^ {len(manu)} of the {tag} names are MANUFACTURED by `row()` and were "
+  .agents/slop/kn-ops-mutate.py   (21)
+      .agents/slop/kn-ops-mutate.py:116    print(f" baseline rows: {len(base)} rc={rc}")
+      .agents/slop/kn-ops-mutate.py:117    print()
+      .agents/slop/kn-ops-mutate.py:122    print(f" ORACLE stdout rows : {len(olines)} rc={orc.returncode}")
+      .agents/slop/kn-ops-mutate.py:124    print(f" ORACLE RAISED: {orc.stderr.strip().splitlines()[-1]}")
+      .agents/slop/kn-ops-mutate.py:125    print()
+      .agents/slop/kn-ops-mutate.py:131    print(f"{mid} NOT APPLICABLE -- anchor occurs {src.count(old)}x, expected 1")
+      .agents/slop/kn-ops-mutate.py:137    print(f"{mid} INCONCLUSIVE -- zero rows emitted (rc={mrc}) {merr}")
+      .agents/slop/kn-ops-mutate.py:138    print(f" {desc}")
+      .agents/slop/kn-ops-mutate.py:144    print(f"{mid} MOVED {len(moved)} {desc}")
+      .agents/slop/kn-ops-mutate.py:146    print(f" base {base[k]}")
+      .agents/slop/kn-ops-mutate.py:147    print(f" mut {mut[k]}")
+      .agents/slop/kn-ops-mutate.py:149    print(f" rows DROPPED: {dropped}")
+      .agents/slop/kn-ops-mutate.py:151    print(f" rows GAINED : {gained}")
+      .agents/slop/kn-ops-mutate.py:152    print()
+      .agents/slop/kn-ops-mutate.py:156    print("scratch tree restored; live tree md5 unchanged: "
+      .agents/slop/kn-ops-mutate.py:158    print()
+      .agents/slop/kn-ops-mutate.py:161    print(f" `ops` MOVED under : {ops_moved}")
+      .agents/slop/kn-ops-mutate.py:162    print(f" `ops` DID NOT MOVE under: {ops_dead}")
+      .agents/slop/kn-ops-mutate.py:163    print(" The second list is reported, not hidden: a row a mutation does not move is")
+      .agents/slop/kn-ops-mutate.py:164    print(" provenance, NOT sensitivity (the `qmd.ver.of` >= -> > lesson).")
+      .agents/slop/kn-ops-mutate.py:168    print(f" scratch kept at {work}")
+  .agents/slop/prepare-oracle.py   (17)
+      .agents/slop/prepare-oracle.py:232    row(f"mi_{nm}_ret", f"RAISE:{type(e).__name__}:{e}")
+      .agents/slop/prepare-oracle.py:303    row(f"fsh_{nm}_ret", f"RAISE:{type(e).__name__}:{e}")
+      .agents/slop/prepare-oracle.py:401    row(f"sr_{nm}_ret", f"RAISE:{type(e).__name__}:{e}")
+      .agents/slop/prepare-oracle.py:405    row(f"sr_{nm}_ret", ident4(ret))
+      .agents/slop/prepare-oracle.py:406    row(f"sr_{nm}_ret_topo", tsq(ret))
+      .agents/slop/prepare-oracle.py:408    if got is None: row(f"sr_{nm}_split", "NOPERM"); return
+      .agents/slop/prepare-oracle.py:410    row(f"sr_{nm}_split", "x".join(str(v) for v in shp))
+      .agents/slop/prepare-oracle.py:411    row(f"sr_{nm}_perm", ",".join(str(v) for v in arg))
+      .agents/slop/prepare-oracle.py:412    row(f"sr_{nm}_last", last)
+      .agents/slop/prepare-oracle.py:413    row(f"sr_{nm}_dim", dim)
+      .agents/slop/prepare-oracle.py:414    row(f"sr_{nm}_div", shp[0])
+      .agents/slop/prepare-oracle.py:489    row(f"eb_{nm}_ret", f"RAISE:{type(e).__name__}:{e}")
+      .agents/slop/prepare-oracle.py:518    except Exception as e: row(f"cas_{nm}_ret", f"RAISE:{type(e).__name__}:{e}"); return
+      .agents/slop/prepare-oracle.py:536    except Exception as e: row(f"mcd_{nm}_ret", f"RAISE:{type(e).__name__}:{e}"); return
+      .agents/slop/prepare-oracle.py:575    row(f"fco_{nm}_ret", f"RAISE:{type(e).__name__}:{e}")
+      .agents/slop/prepare-oracle.py:631    row(f"pr_{nm}_err", f"{type(e).__name__}: {e}")
+      .agents/slop/prepare-oracle.py:639    row(f"pr_{nm}_ret", f"RAISE:{type(e).__name__}:{e}"); return
+  .agents/slop/formblind-audit.py   (16)
+      .agents/slop/formblind-audit.py:718    return corpus_report()
+      .agents/slop/formblind-audit.py:721    print(f"{x.aid:4} {x.status:12} {x.what}")
+      .agents/slop/formblind-audit.py:773    print("=" * 100)
+      .agents/slop/formblind-audit.py:774    print("CORPUS -- the blind variants, measured on this tree rather than only constructed"
+      .agents/slop/formblind-audit.py:775    print("=" * 100)
+      .agents/slop/formblind-audit.py:792    qfiles.add(p)
+      .agents/slop/formblind-audit.py:794    bfiles.add(p)
+      .agents/slop/formblind-audit.py:799    print(f"A15 quoted-import vs bare-import, over tinybendygrad/**/*.bend")
+      .agents/slop/formblind-audit.py:800    print(f" run1: files={n1} `\"x.bend\"` hits={q1} in {qf1} files "
+      .agents/slop/formblind-audit.py:802    print(f" run2: files={n2} `\"x.bend\"` hits={q2} in {qf2} files "
+      .agents/slop/formblind-audit.py:806    print(f" {stable}")
+      .agents/slop/formblind-audit.py:807    print(f" the quoted grep's blast radius is {b1 - q1} imports INVISIBLE to it\n")
+      .agents/slop/formblind-audit.py:828    print(f"A1-A4 lane lines rebase-gate.rows() cannot read, over {lanes} lanes it DOES read
+      .agents/slop/formblind-audit.py:830    print(f" {k:18} {v:>7}")
+      .agents/slop/formblind-audit.py:831    print(f" {'TOTAL (a floor)':18} {sum(tally.values()):>7} -- every count in this repo")
+      .agents/slop/formblind-audit.py:832    print(f" produced through rows() is a FLOOR by at least this much.")
+  .agents/slop/x86/x86_oracle.py   (15)
+      .agents/slop/x86/x86_oracle.py:554    row('"hex.%s.%s = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("%s", %s)), "%s")) ++ "] 
+      .agents/slop/x86/x86_oracle.py:586    row(f'"cls.{k} = [" ++ {expr} ++ "] py=[{py}]"', f"cls.{k} = [{py}]")
+      .agents/slop/x86/x86_oracle.py:591    row(f'"cls.drop {nm} = [" ++ Bool.show(Cls.dropped("{nm}")) ++ "] py=[{v}]"',
+      .agents/slop/x86/x86_oracle.py:714    row(f'"asm.lines = [" ++ U32.show(AsmLines_n([{ASM_OPS}])) ++ "] py=[{len(ASM_LINES) - 1
+      .agents/slop/x86/x86_oracle.py:716    row(f'"asm.total = [" ++ U32.show(AsmN(asm_str("kern", [{ASM_OPS}]))) ++ "] py=[{len(ASM
+      .agents/slop/x86/x86_oracle.py:722    row(f'"asm.L{i}.{line} = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [{ASM_OPS}
+      .agents/slop/x86/x86_oracle.py:727    row(f'"asm.fn = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("mykern", [{ASM_OPS}]), 0n)
+      .agents/slop/x86/x86_oracle.py:739    row(f'"render.{target}-{t}.{b} = [" ++ Bool.show(String.eq(Render.le4(Render.delta({targ
+      .agents/slop/x86/x86_oracle.py:808    print(bend_tables())
+      .agents/slop/x86/x86_oracle.py:812    sys.stdout.write(src)
+      .agents/slop/x86/x86_oracle.py:813    sys.stderr.write(f"{len(ROWS)} rows in {nchunks} chunks\n")
+      .agents/slop/x86/x86_oracle.py:816    sys.stderr.write("usage: x86-oracle.py rows|bend|gate|tables\n")
+      .agents/slop/x86/x86_oracle.py:832    print("\n".join(out))
+      .agents/slop/x86/x86_oracle.py:834    print("\n".join(expr for expr, _ in ROWS))
+      .agents/slop/x86/x86_oracle.py:835    sys.stderr.write(f"{len(ROWS)} rows\n")
+  .agents/slop/nir/nir_mutate.py   (15)
+      .agents/slop/nir/nir_mutate.py:120    print("SUBSTRATE NEVER SETTLED before K%02d -- stopping" % (n + 1)); break
+      .agents/slop/nir/nir_mutate.py:140    print("baseline: %d rows\n" % len(BASE))
+      .agents/slop/nir/nir_mutate.py:143    res = sweep_consts("k")
+      .agents/slop/nir/nir_mutate.py:146    print("%-6s %-6s %-34s %s" % ("ID", "LINE", "ARM", "ROWS MOVED"))
+      .agents/slop/nir/nir_mutate.py:147    print("-" * 100)
+      .agents/slop/nir/nir_mutate.py:149    print("%-6s %-6d %-34s %s" % (tag, ln, arm[:34], ", ".join(rows) if rows else
+      .agents/slop/nir/nir_mutate.py:151    print("\nconstant sweep: %d arms, %d blind, %d did-not-compile"
+      .agents/slop/nir/nir_mutate.py:156    print("%-5s %-46s %s" % ("ID", "WHAT", "ROWS MOVED (BY NAME)"))
+      .agents/slop/nir/nir_mutate.py:157    print("-" * 110)
+      .agents/slop/nir/nir_mutate.py:162    print("SUBSTRATE NEVER SETTLED before %s -- stopping rather than reporting "
+      .agents/slop/nir/nir_mutate.py:167    print("%-5s %-46s *** PATTERN DID NOT MATCH ***" % (mid, what)); nblind += 1; continue
+      .agents/slop/nir/nir_mutate.py:171    print("%-5s %-46s DID NOT COMPILE: %s" % (mid, what, err.replace("\n", " ")[:50])); nbli
+      .agents/slop/nir/nir_mutate.py:173    print("%-5s %-46s *** NOTHING MOVED ***" % (mid, what)); nblind += 1
+      .agents/slop/nir/nir_mutate.py:175    print("%-5s %-46s %s" % (mid, what, ", ".join(rows)))
+      .agents/slop/nir/nir_mutate.py:176    print("\n%d mutations, %d blind" % (len(MUTATIONS), nblind))
+  .agents/slop/x86/x86-oracle.py   (15)
+      .agents/slop/x86/x86-oracle.py:554    row('"hex.%s.%s = [" ++ Bool.show(String.eq(Hex.bytes(Enc.emit("%s", %s)), "%s")) ++ "] 
+      .agents/slop/x86/x86-oracle.py:586    row(f'"cls.{k} = [" ++ {expr} ++ "] py=[{py}]"', f"cls.{k} = [{py}]")
+      .agents/slop/x86/x86-oracle.py:591    row(f'"cls.drop {nm} = [" ++ Bool.show(Cls.dropped("{nm}")) ++ "] py=[{v}]"',
+      .agents/slop/x86/x86-oracle.py:714    row(f'"asm.lines = [" ++ U32.show(AsmLines_n([{ASM_OPS}])) ++ "] py=[{len(ASM_LINES) - 1
+      .agents/slop/x86/x86-oracle.py:716    row(f'"asm.total = [" ++ U32.show(AsmN(asm_str("kern", [{ASM_OPS}]))) ++ "] py=[{len(ASM
+      .agents/slop/x86/x86-oracle.py:722    row(f'"asm.L{i}.{line} = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("kern", [{ASM_OPS}
+      .agents/slop/x86/x86-oracle.py:727    row(f'"asm.fn = [" ++ Bool.show(String.eq(AsmLine.at(asm_str("mykern", [{ASM_OPS}]), 0n)
+      .agents/slop/x86/x86-oracle.py:739    row(f'"render.{target}-{t}.{b} = [" ++ Bool.show(String.eq(Render.le4(Render.delta({targ
+      .agents/slop/x86/x86-oracle.py:808    print(bend_tables())
+      .agents/slop/x86/x86-oracle.py:812    sys.stdout.write(src)
+      .agents/slop/x86/x86-oracle.py:813    sys.stderr.write(f"{len(ROWS)} rows in {nchunks} chunks\n")
+      .agents/slop/x86/x86-oracle.py:816    sys.stderr.write("usage: x86-oracle.py rows|bend|gate|tables\n")
+      .agents/slop/x86/x86-oracle.py:832    print("\n".join(out))
+      .agents/slop/x86/x86-oracle.py:834    print("\n".join(expr for expr, _ in ROWS))
+      .agents/slop/x86/x86-oracle.py:835    sys.stderr.write(f"{len(ROWS)} rows\n")
+  .agents/slop/mm-lift-gate.py   (14)
+      .agents/slop/mm-lift-gate.py:369    print(line)
+      .agents/slop/mm-lift-gate.py:371    print(f'lf_row("{name}", mm.lift(O.Ops{opn}{{}}, lf_c2({bnd(a)}, {bnd(b)}), O.ANone{{}},
+      .agents/slop/mm-lift-gate.py:404    die(f"oracle_py refused to name an interpreter: {why}")
+      .agents/slop/mm-lift-gate.py:408    die("re-exec landed on an interpreter oracle_py did not name")
+      .agents/slop/mm-lift-gate.py:416    print(f"DIED mm-lift-gate {why}")
+      .agents/slop/mm-lift-gate.py:417    sys.stderr.write(f"mm-lift-gate: DIED {why}\n Nothing was checked.\n")
+      .agents/slop/mm-lift-gate.py:461    print(f"selftest {label}\n rc={r.returncode} (want {DIED_RC}) "
+      .agents/slop/mm-lift-gate.py:464    print(f" {l}")
+      .agents/slop/mm-lift-gate.py:466    print(" stderr:", (r.stderr.strip().splitlines() or ["<none>"])[-1])
+      .agents/slop/mm-lift-gate.py:467    print("selftest:", "PASS" if ok else "FAIL -- a death did not announce itself")
+      .agents/slop/mm-lift-gate.py:473    selftest()
+      .agents/slop/mm-lift-gate.py:477    emit_bend()
+      .agents/slop/mm-lift-gate.py:481    print(f"{name} {pair}")
+      .agents/slop/mm-lift-gate.py:487    die(f"{type(e).__name__}: {e}")
+  .agents/slop/nvdup/nvdup-fix-nv.py   (14)
+      .agents/slop/nvdup/nvdup-fix-nv.py:181    f.write(source_text)
+      .agents/slop/nvdup/nvdup-fix-nv.py:185    r = subprocess.run([PY, str(tmp)], cwd=REPO, capture_output=True, text=True, env=env)
+      .agents/slop/nvdup/nvdup-fix-nv.py:210    cb = census(run(src, "BEFORE"))
+      .agents/slop/nvdup/nvdup-fix-nv.py:211    print(f"BEFORE rows={cb['rows']} distinct={cb['distinct']} DUPLICATE NAMES={len(cb['dup'
+      .agents/slop/nvdup/nvdup-fix-nv.py:216    ca = census(run(after_src, "PATCHED"))
+      .agents/slop/nvdup/nvdup-fix-nv.py:217    print(f"AFTER rows={ca['rows']} distinct={ca['distinct']} DUPLICATE NAMES={len(ca['dup']
+      .agents/slop/nvdup/nvdup-fix-nv.py:219    print(f" duplicate NAMES: {len(cb['dup'])} -> {len(ca['dup'])} "
+      .agents/slop/nvdup/nvdup-fix-nv.py:221    print(f" distinct names: {cb['distinct']} -> {ca['distinct']} "
+      .agents/slop/nvdup/nvdup-fix-nv.py:223    print(f" VALUE SET identical: {cb['values'] == ca['values']} "
+      .agents/slop/nvdup/nvdup-fix-nv.py:226    print(f" names LOST entirely: {sorted(cb['names'] - ca['names'])} "
+      .agents/slop/nvdup/nvdup-fix-nv.py:228    print(f" source lines: {len(src.splitlines())} -> {len(after_src.splitlines())} "
+      .agents/slop/nvdup/nvdup-fix-nv.py:235    print(f"ASSERTION FAILED: {msg}")
+      .agents/slop/nvdup/nvdup-fix-nv.py:239    print("CHECK OK -- nothing written. 27 duplicate names closed, 0 remain, value set ident
+      .agents/slop/nvdup/nvdup-fix-nv.py:244    print(f"APPLIED. pre-fix copy kept at {BAK.relative_to(REPO)}")
+  .agents/slop/cpulink_gate.py   (12)
+      .agents/slop/cpulink_gate.py:104    print("DIVERGES %s: port %r oracle %r" % (k, bend[k], oracle[k]))
+      .agents/slop/cpulink_gate.py:107    print("AGREES %s=%s" % (k, bend[k]))
+      .agents/slop/cpulink_gate.py:119    print("LINK-SET GATE PASSES: %d shared rows agree byte for byte, %d evidence "
+      .agents/slop/cpulink_gate.py:146    print("baseline bend rows = %d" % len(base))
+      .agents/slop/cpulink_gate.py:150    print("%-70s %s (anchor x%d)" % (name, PNA.not_applied(), src.count(old)))
+      .agents/slop/cpulink_gate.py:153    open(PORT, "w").write(src.replace(old, new))
+      .agents/slop/cpulink_gate.py:155    open(PORT, "w").write(src)
+      .agents/slop/cpulink_gate.py:159    print("%-70s moved %3d %s" % (name, len(names), ",".join(sorted(names)[:6])))
+      .agents/slop/cpulink_gate.py:162    print("%-70s MOVED NOTHING" % name)
+      .agents/slop/cpulink_gate.py:164    print("\n%d mutations moved rows, %d moved none" % (len(moved), len(zeros)))
+      .agents/slop/cpulink_gate.py:166    print(" ZERO: %s (%s)" % (n, w))
+      .agents/slop/cpulink_gate.py:171    mutate()
+  .agents/slop/name-census.py   (12)
+      .agents/slop/name-census.py:255    print(f"{len(zero)} of {len(ports)} port lanes are empty in the cache; re-running each "
+      .agents/slop/name-census.py:259    print(f" {res['port']:<40} names={res['names']:>4} rc={res['rc']} "
+      .agents/slop/name-census.py:262    print("re-run without --refetch-zero for the census")
+      .agents/slop/name-census.py:266    print(f"fetching {len(ports)} wired lanes, 8 at a time, no cache reuse")
+      .agents/slop/name-census.py:269    print(f"--- {res['port']}"
+      .agents/slop/name-census.py:272    print(" " + l)
+      .agents/slop/name-census.py:342    print(f" NOT FETCHED: {len(missing)} lane text(s) -- {[m[1] for m in missing]}")
+      .agents/slop/name-census.py:344    print(f" ports with no .bend on disk now: {sorted(set(unstable))}")
+      .agents/slop/name-census.py:346    print()
+      .agents/slop/name-census.py:349    print(f"{r['port']} [{r['lane']}] LINES={r['lines']} READ={r['read']} F1={r['F1']} "
+      .agents/slop/name-census.py:353    print(f" KEY {s!r} <- {len(bs)} row(s) naming it: {bs[:6]}")
+      .agents/slop/name-census.py:355    print(f" DUPE {s!r} <- {bs}")
+  .agents/slop/naming-gate.py   (11)
+      .agents/slop/naming-gate.py:253    fh.write('# THE NAMING GATE REVIEW LEDGER -- one line per RENAME:\n')
+      .agents/slop/naming-gate.py:254    fh.write('#\tupstream_file<TAB>upstream_name<TAB>affix<TAB>reason\n')
+      .agents/slop/naming-gate.py:255    fh.write('#\n# Regenerate with `naming-gate-ledger.py`, which asserts full coverage.\n')
+      .agents/slop/naming-gate.py:257    fh.write('%s\t%s\t%s\t%s\n' % (
+      .agents/slop/naming-gate.py:260    print('ledger rewritten: %d rename(s), %d still UNREVIEWED'
+      .agents/slop/naming-gate.py:300    print('\nEvery rename candidate carries a ruling. No unadjudicated divergence.')
+      .agents/slop/naming-gate.py:303    print('\n*** %d STALE LEDGER LINE(S): no longer a candidate. ***' % len(stale))
+      .agents/slop/naming-gate.py:305    print(' %-38s %-20s + %-18s (ledger says: %s)'
+      .agents/slop/naming-gate.py:307    print(' Stale amnesty is unearned amnesty. Delete the line (--update).')
+      .agents/slop/naming-gate.py:319    print(' %-34s %-18s + %-16s -> %s'
+      .agents/slop/naming-gate.py:332    print(' %-40s %4d absent of %4d'
+  .agents/slop/slop_1to1.py   (11)
+      .agents/slop/slop_1to1.py:111    print('\nTHE NAME CORRESPONDENCE, per file. IT IS A CORRESPONDENCE, NOT A SCORE: a')
+      .agents/slop/slop_1to1.py:112    print('bend def with NO upstream counterpart is a port-local record or one of its')
+      .agents/slop/slop_1to1.py:113    print('readers, and the naming rule simply does not apply to it. `local` is that')
+      .agents/slop/slop_1to1.py:114    print('count; `verbatim` is upstream names the port reproduces exactly, either')
+      .agents/slop/slop_1to1.py:115    print('bare or under a module qualifier (`def Sch.kernelize` keeps the name).')
+      .agents/slop/slop_1to1.py:116    print('\nRENAMED is deliberately NOT counted here. It has its own gate:')
+      .agents/slop/slop_1to1.py:117    print('`naming-gate.py` fails on any rename that lacks a written ruling, which')
+      .agents/slop/slop_1to1.py:118    print('is the only way the number stops drifting back.')
+      .agents/slop/slop_1to1.py:128    print(' %-42s upstream=%4d bend=%4d verbatim=%3d local=%4d renamed=%3d %s'
+      .agents/slop/slop_1to1.py:131    print('\n TOTAL upstream top-level bindings %d, reproduced verbatim %d (%.1f%%)'
+      .agents/slop/slop_1to1.py:133    print(' bindings with a RENAME candidate %d -- see naming-gate.py for the ruling'
+  .agents/slop/rebase-plan.py   (11)
+      .agents/slop/rebase-plan.py:650    print(json.dumps(res, indent=2))
+      .agents/slop/rebase-plan.py:662    print(f" BATCH {b['id']} ({b['size']} files, MUST move together)")
+      .agents/slop/rebase-plan.py:664    print(f" {e['from']} -> {e['to']}")
+      .agents/slop/rebase-plan.py:666    print(f" {r}")
+      .agents/slop/rebase-plan.py:667    print(" vendor order (dependency-first):")
+      .agents/slop/rebase-plan.py:671    print(f" {f:<44} +{len(d['added'])} -{len(d['removed'])} ~{len(d['changed'])}"
+      .agents/slop/rebase-plan.py:675    print(f" SIG {f}::{k}: {x} -> {y}")
+      .agents/slop/rebase-plan.py:676    print()
+      .agents/slop/rebase-plan.py:678    print(" INDEPENDENT SINGLETONS (vendor alone, each one its own step):")
+      .agents/slop/rebase-plan.py:683    print(f" {f:<44} +{len(d['added'])} -{len(d['removed'])} ~{len(d['changed'])}"
+      .agents/slop/rebase-plan.py:686    print(f" SIG {k}: {x} -> {y}")
+  .agents/slop/mutate_webgpu_call.py   (11)
+      .agents/slop/mutate_webgpu_call.py:112    print(f"baseline: {len(base)} rows, wgc-done=1")
+      .agents/slop/mutate_webgpu_call.py:113    print()
+      .agents/slop/mutate_webgpu_call.py:114    print("| # | edit | rows moved |")
+      .agents/slop/mutate_webgpu_call.py:115    print("| --- | --- | --- |")
+      .agents/slop/mutate_webgpu_call.py:118    print(f"| {mid} | a comment-only edit | 0 -- THE CONTROL |")
+      .agents/slop/mutate_webgpu_call.py:122    print(PNA.pipe([mid, why, "--"], 3))
+      .agents/slop/mutate_webgpu_call.py:123    print(f" {what}")
+      .agents/slop/mutate_webgpu_call.py:128    open(tmp, "w").write(mutated)
+      .agents/slop/mutate_webgpu_call.py:143    print(f"| {mid} | 0{' -- DID NOT TYPECHECK: ' + msg if failed else ' -- STACK OVERFLOW, 
+      .agents/slop/mutate_webgpu_call.py:148    print(f"| {mid} | {len(moved)}{kind} | {what}")
+      .agents/slop/mutate_webgpu_call.py:150    print(f" moved: {', '.join(m[:60] for m in moved[:8])}"
+  .agents/slop/zero-classify.py   (11)
+      .agents/slop/zero-classify.py:146    print(v)
+      .agents/slop/zero-classify.py:299    print(" DISAGREEING: %s" % " ".join(sorted(wrong)))
+      .agents/slop/zero-classify.py:301    print(" ORACLE GAP: %s" % " ".join(sorted(n for n in base if n not in oracle)))
+      .agents/slop/zero-classify.py:305    print("%-5s %-9s %4d %-18s %s" % (eid, verdict, n, site or "-", v or "(not a zero)"))
+      .agents/slop/zero-classify.py:307    print(" %s" % why)
+      .agents/slop/zero-classify.py:312    print(" %-5s %-9s %4d rows" % (eid, verdict, n))
+      .agents/slop/zero-classify.py:339    fh.write("# zero-classify.py -- %s\n# VALID FOR REVISION: %s\n"
+      .agents/slop/zero-classify.py:341    fh.write("# %d baseline rows, %d disagree with CPython, %d have no "
+      .agents/slop/zero-classify.py:344    fh.write("# ID\tMEASURED\tROWS\tSITE\tVERDICT\tWHY\n")
+      .agents/slop/zero-classify.py:346    fh.write("%s\t%s\t%d\t%s\t%s\t%s\n"
+      .agents/slop/zero-classify.py:349    fh.write("%s\t%s\t%d\t\tCONTROL\tRULE C guard; 0 rows is required\n"
+  .agents/slop/dup/dup-census.py   (11)
+      .agents/slop/dup/dup-census.py:213    print(f" {m['label']}: reader {m['lost_shipped']} vs "
+      .agents/slop/dup/dup-census.py:220    print()
+      .agents/slop/dup/dup-census.py:225    print(f"== {m['label']} shape={m['shape']} rows={m['phys']} accepted={m['accepted']} "
+      .agents/slop/dup/dup-census.py:228    print(f" CLASS {c}: {len(items)} name(s)")
+      .agents/slop/dup/dup-census.py:230    print(f" {nm!r} x{d['n']} lines={d['lines']} distinct_vals={d['distinct_vals']}")
+      .agents/slop/dup/dup-census.py:232    print(f" {l[:150]}")
+      .agents/slop/dup/dup-census.py:234    print(f" REFUSED-BY-ROW() L{i} name={nm!r}: {ln[:120]!r}")
+      .agents/slop/dup/dup-census.py:236    print(f" ... and {len(m['refuse']) - 4} more refused")
+      .agents/slop/dup/dup-census.py:238    print(f" NO-BOUNDARY L{i}: {m['src'][i - 1][:120]!r} [{w}]")
+      .agents/slop/dup/dup-census.py:240    print(f" ... and {len(m['nob']) - 4} more with no boundary")
+      .agents/slop/dup/dup-census.py:242    print(f" NAME-DEFINITION DISAGREEMENT on {m['name_defs_differ']}: duplicated under one "
+  .agents/slop/nv_nvdev_gen.py   (10)
+      .agents/slop/nv_nvdev_gen.py:45     raw = need(f"nv_reg_{name}_ranges")
+      .agents/slop/nv_nvdev_gen.py:52     has = int(need(f"nv_reg_{name}_has_addr"))
+      .agents/slop/nv_nvdev_gen.py:53     print(f"def nv.reg_{tag}() -> Rgv: Rgv.of({base}, {off}, {body})")
+      .agents/slop/nv_nvdev_gen.py:54     print(f"def nv.addr_{tag}() -> U32: {has}") # 1 = nvdev.py may READ it; 0 = descriptor o
+      .agents/slop/nv_nvdev_gen.py:55     print(f"def nv.tag_{tag}() -> String: \"{name}\"")
+      .agents/slop/nv_nvdev_gen.py:56     print(f"def nv.mmcnt_{tag}() -> U32: {need(f'nv_reg_{name}_nf')}")
+      .agents/slop/nv_nvdev_gen.py:57     print(f"def nv.maxw_{tag}() -> U32: {need(f'nv_reg_{name}_maxw')}")
+      .agents/slop/nv_nvdev_gen.py:58     print(f"def nv.wide_{tag}() -> U32: {need(f'nv_reg_{name}_wide')}")
+      .agents/slop/nv_nvdev_gen.py:59     print(f"# total fields across the eleven registers: {sum(int(need(f'nv_reg_{n}_nf')) for
+      .agents/slop/nv_nvdev_gen.py:60     print(f"# total fields WIDER THAN 32 bits: {sum(int(need(f'nv_reg_{n}_wide')) for _, n i
+  .agents/slop/sched-portmut.py   (10)
+      .agents/slop/sched-portmut.py:97     open(SCHED, "w").write(orig.replace(pat, rep, 1))
+      .agents/slop/sched-portmut.py:100    print(f"FATAL {mid}: mutant produced {len(rows)} rows, not {len(base)} -- it did not run
+      .agents/slop/sched-portmut.py:102    open(SCHED, "w").write(orig)
+      .agents/slop/sched-portmut.py:104    line = cmp_rows()
+      .agents/slop/sched-portmut.py:106    print(f"{mid} moved={len(moved):2} {what}")
+      .agents/slop/sched-portmut.py:108    print(f" {l}")
+      .agents/slop/sched-portmut.py:111    open(SCHED, "w").write(orig)
+      .agents/slop/sched-portmut.py:113    print(f"RESTORED {cmp_rows()} sha256={sha()}")
+      .agents/slop/sched-portmut.py:115    print("BLIND SPOTS (moved nothing), with reasons:")
+      .agents/slop/sched-portmut.py:117    print(f" {mid}: {what}")
+  .agents/slop/mmfold/mmfold-plant.py   (10)
+      .agents/slop/mmfold/mmfold-plant.py:159    print(f" precondition 3 -- port stdout sha256[:16] = {digest(out)} "
+      .agents/slop/mmfold/mmfold-plant.py:167    print(verdict_line(p))
+      .agents/slop/mmfold/mmfold-plant.py:168    print(f" rows it moved by name: {sorted(moved)}")
+      .agents/slop/mmfold/mmfold-plant.py:169    print(f" expected victims : {sorted(VICTIMS)}")
+      .agents/slop/mmfold/mmfold-plant.py:170    print(f" PLANT {'PASS' if moved == VICTIMS and p['DISAGREEMENTS'] == len(VICTIMS) and rc
+      .agents/slop/mmfold/mmfold-plant.py:173    print("\nDISARM: " + DISARM[2])
+      .agents/slop/mmfold/mmfold-plant.py:176    print(f" port stdout sha256[:16] = {digest(out2)} "
+      .agents/slop/mmfold/mmfold-plant.py:180    print(verdict_line(d))
+      .agents/slop/mmfold/mmfold-plant.py:182    print(f" measurement identical to baseline: {same} lane rc={rc2}")
+      .agents/slop/mmfold/mmfold-plant.py:183    print(f" DISARM {'PASS' if same and not disagreeing(lo2) else 'FAIL'} -- a lane that mov
+  .agents/slop/split-codegen3.py   (10)
+      .agents/slop/split-codegen3.py:220    print(' FOUND %-14s %4d..%-4d %-46s %d lines' % (nm, a, b, lbl, b - a + 1))
+      .agents/slop/split-codegen3.py:223    print(' MISSING %-14s %4d..%-4d %s' % (nm, a, b, lbl))
+      .agents/slop/split-codegen3.py:227    ok = False; print(' MISSING %-14s fragment (header/main) differs' % nm)
+      .agents/slop/split-codegen3.py:232    print(' EXTRA %-14s %d lines that are neither a moved block nor a' % (nm, len(leftover))
+      .agents/slop/split-codegen3.py:233    print(' fragment: %r' % leftover[:3])
+      .agents/slop/split-codegen3.py:235    print(' NOTHING EXTRA in %s (%d lines, every one a moved block or a fragment)'
+      .agents/slop/split-codegen3.py:239    print('\nEVERY ORIGINAL CODE LINE NOT CARRIED OVER AS A BODY (%d). Each must be a'
+      .agents/slop/split-codegen3.py:241    print('`main` row, a `def main`, or an import -- anything else is a DELETION:\n')
+      .agents/slop/split-codegen3.py:242    for i in missed: print(' %4d %s' % (i, ORIG[i - 1]))
+      .agents/slop/split-codegen3.py:243    print('\n%s' % ('ROUND TRIP OK' if ok and len(missed) == len(set(missed)) else 'ROUND TR
+  .agents/slop/nv_bendorder.py   (9)
+      .agents/slop/nv_bendorder.py:49     print(f"STOP after {len(moved)} moves (round {it})")
+      .agents/slop/nv_bendorder.py:50     save(src); return 0
+      .agents/slop/nv_bendorder.py:53     print(f"TWO-CYCLE on {t}; stopping"); save(src); return 1
+      .agents/slop/nv_bendorder.py:64     print(f"no caller for {t}\n{out[:600]}"); save(src); return 1
+      .agents/slop/nv_bendorder.py:66     print(f"{t} at {ti} already precedes its caller at {caller}; the real"
+      .agents/slop/nv_bendorder.py:68     save(src); return 1
+      .agents/slop/nv_bendorder.py:72     save(src) # the next round's compile() reads the FILE
+      .agents/slop/nv_bendorder.py:74     print(f" {t} -> {caller}")
+      .agents/slop/nv_bendorder.py:75     print("GAVE UP after 200 moves"); save(src); return 1
+  .agents/slop/rowform.py   (9)
+      .agents/slop/rowform.py:206    print("=" * 92)
+      .agents/slop/rowform.py:207    print("SPELLING-INVARIANCE -- rebase-gate.py:rows() on two spellings of one meaning")
+      .agents/slop/rowform.py:208    print("=" * 92)
+      .agents/slop/rowform.py:214    print(f"\n{'ok ' if ok else 'BLIND'} {bid}\n meaning: {why}")
+      .agents/slop/rowform.py:215    print(f" rows(a) = {ra}\n rows(b) = {rb}")
+      .agents/slop/rowform.py:217    print(f" already measured: {hid}")
+      .agents/slop/rowform.py:221    print(f" -> rows() MISSED {miss or '(nothing new)'} and invented {extra or '(nothing)'}"
+      .agents/slop/rowform.py:223    print(f"\n{bad} of the lane_txt entries are INVISIBLE to rows()")
+      .agents/slop/rowform.py:229    raise SystemExit(selftest())
+  .agents/slop/cs-fixpy.py   (9)
+      .agents/slop/cs-fixpy.py:118    print(f"STALE-LITERAL {len(stale)} row(s); the gate is "
+      .agents/slop/cs-fixpy.py:121    print("nothing to do")
+      .agents/slop/cs-fixpy.py:124    print(f" {n!r}")
+      .agents/slop/cs-fixpy.py:147    print(f"located {len(changed)}/{len(stale)} literal(s) in main(); NOT located: {missing}
+      .agents/slop/cs-fixpy.py:149    print(" a stale literal the locator could not find is REPORTED, not guessed at")
+      .agents/slop/cs-fixpy.py:152    print("dry run; pass --write to apply")
+      .agents/slop/cs-fixpy.py:164    print(f"rewritten file emits {nrow} row lines (expected {ROW_LINES}); first line "
+      .agents/slop/cs-fixpy.py:167    print("REFUSING TO WRITE: the row count moved or the file stopped checking")
+      .agents/slop/cs-fixpy.py:170    print(f"wrote {PORT}")
+  .agents/slop/mt_mutate.py   (9)
+      .agents/slop/mt_mutate.py:133    print(f"\nCONSTANT SWEEP: {len(defs)} numeric constant defs, "
+      .agents/slop/mt_mutate.py:135    for n, why in blind: print(f" BLIND {n}: {why}")
+      .agents/slop/mt_mutate.py:160    print(f"base gate: {len(base)} rows\n")
+      .agents/slop/mt_mutate.py:161    print("| # | the edit | rows moved | what it is testing |")
+      .agents/slop/mt_mutate.py:162    print("| --- | --- | --- | --- |")
+      .agents/slop/mt_mutate.py:169    print(PNA.pipe([mid, what, PNA.not_applied("anchor occurs %dx" % n), ""], 4))
+      .agents/slop/mt_mutate.py:174    print(f"| {mid} | {what} | **LANE FAILS** {err} | |")
+      .agents/slop/mt_mutate.py:178    print(f"| {mid} | {what} | {len(moved)}{' ' + ','.join(moved[:6]) if moved else ' -- NOT
+      .agents/slop/mt_mutate.py:180    const_sweep(base)
+  .agents/slop/xd1/head/extra/nv_pma/decode.py   (8)
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:146    print(f"Pkt {i:3d}: tpc={hdr.tpc_id:4d} n={hdr.num_bytes:2d} drop={hdr.dropped} left={le
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:152    print(f"\nAggregated samples (base_pc=0x{base_pc:x}):")
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:155    print(f" pc=0x{pc - base_pc:06x} {stall_str} samples={cnt:4d}")
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:179    print(f"\n{'='*60}\nDump {dump_idx} ({len(raw)} bytes, {len(raw)//32} packets)\n{'='*60}
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:180    if "--raw" in sys.argv: print_packets(raw, sm_ver)
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:186    print(f"pc=0x{s.pc_offset:06x} {stall_str} ev={s.stall_key:2d} active={s.active} wave={s
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:188    print(f"\nDecoded {len(samples)} samples:")
+      .agents/slop/xd1/head/extra/nv_pma/decode.py:189    print_aggregated(samples)
+  .agents/slop/wip/mutate.py   (8)
+      .agents/slop/wip/mutate.py:112    print("baseline rows: %d\n" % len(base))
+      .agents/slop/wip/mutate.py:119    print("%2d ANCHOR-MISS(%d) %s" % (k, base_src.count(old), name))
+      .agents/slop/wip/mutate.py:121    open(SRC, "w").write(base_src.replace(old, new, 1))
+      .agents/slop/wip/mutate.py:133    open(SRC, "w").write(base_src)
+      .agents/slop/wip/mutate.py:134    print("%2d %-12s %s" % (k, verdict, name))
+      .agents/slop/wip/mutate.py:135    print(" rows: %s%s" % (", ".join(moved) if moved else "(none)", detail))
+      .agents/slop/wip/mutate.py:137    print(" %s" % detail)
+      .agents/slop/wip/mutate.py:138    print("\nbaseline restored: %s" % (open(SRC).read() == base_src))
+  .agents/slop/xd1/pin/extra/nv_pma/decode.py   (8)
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:146    print(f"Pkt {i:3d}: tpc={hdr.tpc_id:4d} n={hdr.num_bytes:2d} drop={hdr.dropped} left={le
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:152    print(f"\nAggregated samples (base_pc=0x{base_pc:x}):")
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:155    print(f" pc=0x{pc - base_pc:06x} {stall_str} samples={cnt:4d}")
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:179    print(f"\n{'='*60}\nDump {dump_idx} ({len(raw)} bytes, {len(raw)//32} packets)\n{'='*60}
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:180    if "--raw" in sys.argv: print_packets(raw, sm_ver)
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:186    print(f"pc=0x{s.pc_offset:06x} {stall_str} ev={s.stall_key:2d} active={s.active} wave={s
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:188    print(f"\nDecoded {len(samples)} samples:")
+      .agents/slop/xd1/pin/extra/nv_pma/decode.py:189    print_aggregated(samples)
+  .agents/slop/drift-diagnose.py   (8)
+      .agents/slop/drift-diagnose.py:107    print(" D -- our path, upstream has NEVER had it in any ref: a vendored-in fork, NOT an 
+      .agents/slop/drift-diagnose.py:108    for p in localonly: print(f" {p}")
+      .agents/slop/drift-diagnose.py:109    print(" upstream-delta.py counts these under HAND EDITS. It cannot do otherwise:")
+      .agents/slop/drift-diagnose.py:110    print(" tree.get(path) is None at every commit, so no content can ever match.")
+      .agents/slop/drift-diagnose.py:112    print(" C -- upstream HAS the path; our blob equals no upstream commit:")
+      .agents/slop/drift-diagnose.py:113    for p in handedit: print(f" {p}")
+      .agents/slop/drift-diagnose.py:115    print(" ...of which these DO match an upstream commit, just outside the scan window:")
+      .agents/slop/drift-diagnose.py:116    for p, c in handedit_but_upstream_ever: print(f" {p} <- {c[:12]}")
+  .agents/slop/tools/mutate-floor.py   (8)
+      .agents/slop/tools/mutate-floor.py:83     print("baseline gate: GREEN\n")
+      .agents/slop/tools/mutate-floor.py:87     print(f" SKIPPED {label}\n anchor occurs {src.count(old)}x, not 1")
+      .agents/slop/tools/mutate-floor.py:96     print(f" ok {label}\n rows moved: NONE -- this row set "
+      .agents/slop/tools/mutate-floor.py:100    print(f" {'ok':>7} {label}\n {first} rows moved: {len(moved)}")
+      .agents/slop/tools/mutate-floor.py:102    print(f" {m}")
+      .agents/slop/tools/mutate-floor.py:106    print()
+      .agents/slop/tools/mutate-floor.py:108    print("restored; baseline gate is", "GREEN" if rc == 0 else "RED")
+      .agents/slop/tools/mutate-floor.py:109    print("helpers.bend defs =", sum(1 for l in original.splitlines()
+  .agents/slop/elf_rows.py   (8)
+      .agents/slop/elf_rows.py:266    row("elf-done", 1)
+      .agents/slop/elf_rows.py:322    row("elf_ls_miss_ok", 1); row("elf_ls_miss_msg", "")
+      .agents/slop/elf_rows.py:367    row(f"elf_jit_{t}_ok", 1)
+      .agents/slop/elf_rows.py:368    row(f"elf_jit_{t}_len", len(out))
+      .agents/slop/elf_rows.py:369    row(f"elf_jit_{t}_digest", fnv1a(out))
+      .agents/slop/elf_rows.py:370    row(f"elf_jit_{t}_head", out[:32].hex())
+      .agents/slop/elf_rows.py:371    row(f"elf_jit_{t}_tail", out[-32:].hex())
+      .agents/slop/elf_rows.py:381    row(f"elf_sym_{t}_{k}", "")
+  .agents/slop/wg_constmap.py   (8)
+      .agents/slop/wg_constmap.py:241    wrong.append((name, val, f"{got} vs header {hdr('WGPUWaitStatus_Success')}", ln, why))
+      .agents/slop/wg_constmap.py:259    print(f" WRONG {n}: port {p} at line {ln}, authority {g} -- {why}")
+      .agents/slop/wg_constmap.py:285    print(" !! the six wrappers are not at :45-50"); bad += 1
+      .agents/slop/wg_constmap.py:288    print(f" !! the port's SYNC_HAS_EMSG/NO_EMSG pattern is wrong: {flags} != {want}"); bad 
+      .agents/slop/wg_constmap.py:313    print(f" WRONG SYNC ID {name}: port {got_id}, authority {want_id} "
+      .agents/slop/wg_constmap.py:318    print(f" !! the six wrappers target {got_syms}"); bad += 1
+      .agents/slop/wg_constmap.py:327    print(" !! ops_webgpu.py:132-138 releases in another order than the port assumes")
+      .agents/slop/wg_constmap.py:336    print(" !! the OBJ ids do NOT increase along the Python release order -- "
+  .agents/slop/usb-diff.py   (8)
+      .agents/slop/usb-diff.py:23     print("BEND FAILED", r.returncode)
+      .agents/slop/usb-diff.py:24     print(r.stdout[-3000:])
+      .agents/slop/usb-diff.py:25     print(r.stderr[-3000:])
+      .agents/slop/usb-diff.py:41     print("ORACLE FAILED")
+      .agents/slop/usb-diff.py:42     print(r.stderr[-3000:])
+      .agents/slop/usb-diff.py:61     print(f"DISAGREE {nm}\n bend={got[nm]}\n cpy ={want[nm]}")
+      .agents/slop/usb-diff.py:63     print(f"ORACLE-ONLY {nm}={want[nm]}")
+      .agents/slop/usb-diff.py:65     print(f"BEND-ONLY {nm}={got[nm]}")
+  .agents/slop/wgsl-mutate.py   (8)
+      .agents/slop/wgsl-mutate.py:126    p = subprocess.run([BEND, TARGET + ".mut"], capture_output=True, text=True, cwd=ROOT)
+      .agents/slop/wgsl-mutate.py:150    print("baseline: %d rows" % len(base))
+      .agents/slop/wgsl-mutate.py:151    print()
+      .agents/slop/wgsl-mutate.py:152    print(ROW % ("id", len(PNA.MARKER), "moved", "rows"))
+      .agents/slop/wgsl-mutate.py:155    print(ROW % (mid, len(PNA.MARKER), PNA.not_applied(),
+      .agents/slop/wgsl-mutate.py:159    rows, err = run(mut)
+      .agents/slop/wgsl-mutate.py:161    print(ROW % (mid, len(PNA.MARKER), "FAIL", err))
+      .agents/slop/wgsl-mutate.py:165    print(ROW % (mid, len(PNA.MARKER), len(moved),
+  .agents/slop/dtype-gate.py   (7)
+      .agents/slop/dtype-gate.py:74     sys.stderr.write(b.stdout + b.stderr)
+      .agents/slop/dtype-gate.py:76     open(BEND_OUT, "w").write(b.stdout)
+      .agents/slop/dtype-gate.py:79     sys.stderr.write(p.stdout + p.stderr)
+      .agents/slop/dtype-gate.py:81     open(PY_OUT, "w").write(p.stdout)
+      .agents/slop/dtype-gate.py:86     print("SECTION COUNT py=%d bend=%d expected=%d" % (len(py), len(bend), len(SECTIONS)))
+      .agents/slop/dtype-gate.py:93     print(" %-16s ROW COUNT py=%d bend=%d" % (name, len(x), len(y)))
+      .agents/slop/dtype-gate.py:109    print("\nUNEXPECTED (%s):\n cpython: %s\n bend : %s" % (name, p, q))
+  .agents/slop/const-audit.py   (7)
+      .agents/slop/const-audit.py:43     print(f" !! {p}: {e}", file=sys.stderr); continue
+      .agents/slop/const-audit.py:60     port, auth = bend_consts(bend), py_consts(*auths)
+      .agents/slop/const-audit.py:73     print(f"{Path(bend).name}: {len(port)} consts | COVERED {len(shared)} "
+      .agents/slop/const-audit.py:76     for n, p, a in real: print(f" WRONG {n}: port {p} ({p:#x}) authority {a} ({a:#x})")
+      .agents/slop/const-audit.py:77     for n, p, a in collide: print(f" COLLIDE {n}: port {p} vs authority {a} ({a:#x}) -- like
+      .agents/slop/const-audit.py:79     print(f" NOTE: {len(port) - len(shared)} consts UNCOVERED -- a name-matching script cann
+      .agents/slop/const-audit.py:80     print(" reach them. This is a SMOKE TEST; a real audit needs a hand-built map.")
+  .agents/slop/fixplus.py   (7)
+      .agents/slop/fixplus.py:7      print("CLEAN after", it, "fixes"); sys.exit(0)
+      .agents/slop/fixplus.py:19     print('no header for', name); sys.exit(1)
+      .agents/slop/fixplus.py:28     print(it, 'PARAM +', arg, 'in', name)
+      .agents/slop/fixplus.py:36     print(it, 'BINDER +', arg, 'in', name); break
+      .agents/slop/fixplus.py:38     print('cannot fix', arg, 'in', name); print('\n'.join(L[hdr:hdr+8])); sys.exit(1)
+      .agents/slop/fixplus.py:39     open(P, 'w').write('\n'.join(L))
+      .agents/slop/fixplus.py:40     print('gave up')
+  .agents/slop/nv_bendplus.py   (7)
+      .agents/slop/nv_bendplus.py:17     open(P, "w").write(re.sub(r'\n{3,}', '\n\n', s))
+      .agents/slop/nv_bendplus.py:28     print("no Location line"); print(out[:900]); break
+      .agents/slop/nv_bendplus.py:32     print(f"no def {dn} for {name}"); break
+      .agents/slop/nv_bendplus.py:45     print(f"unbalanced parens in {dn}"); break
+      .agents/slop/nv_bendplus.py:54     print(f"{name} is not a parameter of {dn}: {s[start:close+1]}"); break
+      .agents/slop/nv_bendplus.py:56     save(s)
+      .agents/slop/nv_bendplus.py:57     print(f" +{name} in {dn}")
+  .agents/slop/dtype-pri-treecheck.py   (7)
+      .agents/slop/dtype-pri-treecheck.py:71     fh.write(pristine)
+      .agents/slop/dtype-pri-treecheck.py:75     print("files with a main, in both trees: %d" % len(paths), flush=True)
+      .agents/slop/dtype-pri-treecheck.py:78     print("before done", flush=True)
+      .agents/slop/dtype-pri-treecheck.py:80     print("after done", flush=True)
+      .agents/slop/dtype-pri-treecheck.py:85     print("MOVED %-46s exit %d->%d rows %d->%d hash %s->%s"
+      .agents/slop/dtype-pri-treecheck.py:87     print("\n%d of %d files moved. A file this unit did not edit appearing here means"
+      .agents/slop/dtype-pri-treecheck.py:89     print("(uop/fold.bend itself is expected: 288 rows before, 295 after.)")
+  .agents/slop/fold-rng-mutate.py   (7)
+      .agents/slop/fold-rng-mutate.py:178    print(f'scratch {d}\nops.bend pinned at {PIN}\nbaseline: {len(base)} bend rows, {chk!r}'
+      .agents/slop/fold-rng-mutate.py:182    print(f'{label:4s} SKIP -- pattern occurs {src.count(old)}x, not 1')
+      .agents/slop/fold-rng-mutate.py:184    open(work, 'w').write(src.replace(old, new))
+      .agents/slop/fold-rng-mutate.py:190    print(f'{label:4s} moved {len(moved) + len(gone):4d} {chk!r}{lost} {moved[:8] if moved e
+      .agents/slop/fold-rng-mutate.py:192    open(work, 'w').write(src)
+      .agents/slop/fold-rng-mutate.py:193    open(work, 'w').write(src)
+      .agents/slop/fold-rng-mutate.py:194    print(f'\nscratch copy restored byte-identical; {moved_total} row-moves over {len(MUT)} 
+  .agents/slop/nir/nir_oracle.py   (6)
+      .agents/slop/nir/nir_oracle.py:442    for nm, _ in rows(): print(nm)
+      .agents/slop/nir/nir_oracle.py:450    print("%-18s spec.bend=%-20s dtype.py=%-12s %s"
+      .agents/slop/nir/nir_oracle.py:452    print("\n%d of %d spellings DIFFER between tinybendygrad/LAWS/spec.bend and "
+      .agents/slop/nir/nir_oracle.py:455    for nm, auth, v in const_rows(): print("%-42s %-52s %s" % (nm, auth, v))
+      .agents/slop/nir/nir_oracle.py:475    sys.stderr.write("rewrote %d rows; unmatched: %s\n" % (hit, miss or "none"))
+      .agents/slop/nir/nir_oracle.py:476    print("\n".join(out))
+  .agents/slop/nv_nvdev_mutrun.py   (6)
+      .agents/slop/nv_nvdev_mutrun.py:218    open(target, "w").write(patched)
+      .agents/slop/nv_nvdev_mutrun.py:222    open(target, "w").write(pristine)
+      .agents/slop/nv_nvdev_mutrun.py:312    print("baseline %d lines, %d distinct name= rows, row-set %s, TWICE "
+      .agents/slop/nv_nvdev_mutrun.py:328    print("[%2d] %-32s %-16s %-18s %s"
+      .agents/slop/nv_nvdev_mutrun.py:349    print("wrote %s" % p)
+      .agents/slop/nv_nvdev_mutrun.py:353    print("tally: %s (denominator %d)" % (tally, len(results)))
+  .agents/slop/mm-gate.py   (6)
+      .agents/slop/mm-gate.py:132    print(f' mm_row("{name}", mm_show(u64.add({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0
+      .agents/slop/mm-gate.py:134    print(f' mm_row("{name}", mm_show(u64.sub({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0
+      .agents/slop/mm-gate.py:136    print(f' mm_row("{name}", mm_show(u64.mul({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0
+      .agents/slop/mm-gate.py:138    print(f' mm_row("{name}", mm_show(u64.shl({a >> 32}, {a & 0xFFFFFFFF}, {k}n)))')
+      .agents/slop/mm-gate.py:140    print(f' mm_row("{name}", H.i64_text(u64.shr({a >> 32}, {a & 0xFFFFFFFF}, {k}n)))')
+      .agents/slop/mm-gate.py:142    print(f' mm_row("{name}", dm_show(dm_run({a >> 32}, {a & 0xFFFFFFFF}, {b >> 32}, {b & 0x
+  .agents/slop/elf_oracle.py   (6)
+      .agents/slop/elf_oracle.py:348    row(f"{t}_jit_ok", 1)
+      .agents/slop/elf_oracle.py:349    row(f"{t}_jit_len", len(out))
+      .agents/slop/elf_oracle.py:350    row(f"{t}_jit_sha", hashlib.sha256(out).hexdigest()[:16])
+      .agents/slop/elf_oracle.py:351    row(f"{t}_jit_head", out[:32].hex())
+      .agents/slop/elf_oracle.py:352    row(f"{t}_jit_tail", out[-32:].hex())
+      .agents/slop/elf_oracle.py:429    row(f"ls_trio_{sym}", 0)
+  .agents/slop/blob-fix-toggle.py   (6)
+      .agents/slop/blob-fix-toggle.py:118    print(f'blob-fix-toggle: {label} {PNA.not_applied("-- not in this tree")}')
+      .agents/slop/blob-fix-toggle.py:140    off_text = off(on)
+      .agents/slop/blob-fix-toggle.py:141    open(ON, 'w', encoding='utf-8').write(on)
+      .agents/slop/blob-fix-toggle.py:142    open(OFF, 'w', encoding='utf-8').write(off_text)
+      .agents/slop/blob-fix-toggle.py:143    print(f'blob-fix-toggle: ON {len(on.splitlines())} lines -> {ON}')
+      .agents/slop/blob-fix-toggle.py:144    print(f'blob-fix-toggle: OFF {len(off_text.splitlines())} lines -> {OFF}')
+  .agents/slop/deadarm/deadarm-merge.py   (6)
+      .agents/slop/deadarm/deadarm-merge.py:74     print(f" !! {len(dupes)} instrument name(s) in more than one shard: {dupes[:5]}"
+      .agents/slop/deadarm/deadarm-merge.py:81     print(f" !! {len(truncated)} truncated row(s) dropped -- a shard did not finish writing 
+      .agents/slop/deadarm/deadarm-merge.py:83     print("\n THE DEAD EMITTING LINES, by file\n")
+      .agents/slop/deadarm/deadarm-merge.py:85     print(f" {f.replace(str(REPO) + '/', '')} ({len(byfile[f])})")
+      .agents/slop/deadarm/deadarm-merge.py:87     print(f" {f.replace(str(REPO) + '/', '')}:{ln:<6} {txt[:88]}")
+      .agents/slop/deadarm/deadarm-merge.py:89     print(f" ... and {len(byfile) - 60} more file(s); the full table is the union of the sha
+  .agents/slop/eq/eq-census2.py   (6)
+      .agents/slop/eq/eq-census2.py:376    print(f" {m['label']}: total {m['lost_reader']} vs attributed "
+      .agents/slop/eq/eq-census2.py:390    print()
+      .agents/slop/eq/eq-census2.py:394    print(f"{m['label']} rows={m['phys']} F1={m['F1']} F2={m['F2']} F3={m['F3']} "
+      .agents/slop/eq/eq-census2.py:398    print(f" EQ-NAME {n!r}")
+      .agents/slop/eq/eq-census2.py:400    print(f" KEY {k!r} <- {len(v)} row(s): {sorted(set(v))[:4]}")
+      .agents/slop/eq/eq-census2.py:402    print(f" CONT L{n}: {src_line(texts, m['label'], n)!r}")
+  .agents/slop/spec-offsets.py   (6)
+      .agents/slop/spec-offsets.py:63     print(f"cannot read table {e}", file=sys.stderr)
+      .agents/slop/spec-offsets.py:78     print(f" FAIL {where}: found {len(got)} matches, want 1")
+      .agents/slop/spec-offsets.py:91     print(f" FAIL full_table: found {len(full)} bumps, want 4")
+      .agents/slop/spec-offsets.py:106    print(f" FAIL fu_dispatch.of: found {len(subs)} U32.sub, want 4")
+      .agents/slop/spec-offsets.py:121    print(f" FAIL {disp} ladder: {len(arms)} arms, want {n}")
+      .agents/slop/spec-offsets.py:124    print(f" FAIL {disp} ladder: tags/defs are not `case N: _N` pairwise")
+  .agents/slop/nv_table_equiv.py   (6)
+      .agents/slop/nv_table_equiv.py:72     print("%-9s %-46s %-7d no fields on either side (%s)" % (reg, name, 0, call))
+      .agents/slop/nv_table_equiv.py:75     print("%-9s %-46s %-7d *** PORT HAS NO TABLE, CPYTHON HAS %d ***" % (reg, name, len(cpy)
+      .agents/slop/nv_table_equiv.py:83     print("%-9s %-46s %-7d *** MISMATCH ***" % (reg, name, len(fs)))
+      .agents/slop/nv_table_equiv.py:87     print(" [%d] port=%s cpython=%s" % (i, a, b))
+      .agents/slop/nv_table_equiv.py:89     print(" port : %s" % fs)
+      .agents/slop/nv_table_equiv.py:90     print(" cpython: %s" % cpy)
+  .agents/slop/backward-graph/bw-p2.py   (6)
+      .agents/slop/backward-graph/bw-p2.py:65     print("q2_FAIL the plant is a NO-OP: the planted stream is byte-identical to the clean "
+      .agents/slop/backward-graph/bw-p2.py:72     print("q2_FAIL the streams differ but NO FIELD is named, which would mean the difference
+      .agents/slop/backward-graph/bw-p2.py:88     print("q2_FAIL the differ reports AGREE on a planted graph -- the plant is not reaching 
+      .agents/slop/backward-graph/bw-p2.py:92     print("q2_FAIL the differ disagrees but does not NAME the shape field, so the report say
+      .agents/slop/backward-graph/bw-p2.py:109    print("q2_FAIL the DISARM moved the stream, so the plant's red is not attributable to "
+      .agents/slop/backward-graph/bw-p2.py:119    print("q2_FAIL the DISARM reports DISAGREE -- it is not a null, so the plant's red says 
+  ... and 146 more file(s); the full table is the union of the shard TSVs

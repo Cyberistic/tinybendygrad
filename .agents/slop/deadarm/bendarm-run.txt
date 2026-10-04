@@ -1,0 +1,1966 @@
+BENDARM -- 297 entry point(s) some instrument runs
+  afloat-ops-bend.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+166 | import Base
+167>| import ./../helpers.bend as H
+    |        ^
+168 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  ag-emit.1.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+- observed : enc
+Context:
+- t : Trr
+Location: to_tr
+338 | 
+339>| def to_tr(+t: Trr) -> Tr: Tr{trr_nm(t), enc(trr_rb(t)), enc(trr_rh(t)), group(trr_cells(t))}
+    |                                         ^^^
+340 | 
+bend 2.0.35 is available: run bend update
+
+  ag-emit.bend                 ok=True rows=    0 emitted= 134 entered=  19 NOT-EMITTED=   8 NOT-ENTERED=  80 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ag-emit.presort.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: OOFS FAIL
+Error:
+- expected : a filled definition (an unfilled law is a dead claim: live code cannot use it)
+- observed : parse_row.b
+Context:
+- n0 : String
+- r0 : List<&2, String>
+Location: parse_row.at
+244 |     case Nil{}: Trr{"", "", "", Nil{}}
+245>|     case n0 <> r0: parse_row.b(r0, Trr{n0, "", "", Nil{}})
+    |                    ^^^^^^^^^^^
+246 | 
+bend 2.0.35 is available: run bend update
+
+  ag-probe.bend                ok=True rows=   12 emitted=  56 entered=  52 NOT-EMITTED=   2 NOT-ENTERED=   0 arms 6/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ag-probe2.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a term
+- observed : '}'
+Location:
+10 |     case Nil{}: None
+11>|     case E{+} <> rest:
+   |             ^
+12 |       if String.eq(k, "?"): Some{xs.head}
+bend 2.0.35 is available: run bend update
+
+  ag-wall4-control.bend        ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ag-wall4-repro.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: read left to right: each passed unchanged until one shrinks)
+- observed : walk_b
+Context:
+- nm   : String
+- ty   : Ty
+- rest : List<&2, Fld>
+- g    : Ty
+Location: walk_b
+37 |     case Nil{}: Nil{}
+38>|     case Fld{+nm, ty} <> rest: List.append(&2, Fld, walk_b(xs, ty), walk_a(rest, ty))
+   |                                                     ^^^^^^
+39 | 
+bend 2.0.35 is available: run bend update
+
+  p20.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: read left to right: each passed unchanged until one shrinks)
+- observed : walk_b
+Context:
+- nm   : String
+- ty   : Ty
+- rest : List<&2, Fld>
+- g    : Ty
+Location: walk_b
+37 |     case Nil{}: Nil{}
+38>|     case Fld{+nm, ty} <> rest: List.append(&2, Fld, walk_b(xs, ty), walk_a(rest, ty))
+   |                                                     ^^^^^^
+39 | 
+bend 2.0.35 is available: run bend update
+
+  p20a.bend                    ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ansi_probe.bend              ok=True rows=   44 emitted=  79 entered=  78 NOT-EMITTED= 343 NOT-ENTERED=   0 arms 11/4 DEAD-ARM=   0 unmeasured=   2  byte-identical
+  probe-fields-3.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a ARange pattern with 3 fields
+Location:
+10 |   match a:
+11>|     case ARange{ids, at}: at
+   |          ^^^^^^^^^^^^^^^
+12 |     case _: 0
+bend 2.0.35 is available: run bend update
+
+  probe-fields.bend            ok=True rows=    1 emitted=   7 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/2 DEAD-ARM=   0 unmeasured=   1  byte-identical
+  probe-variant-3.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : cases for ANest
+- observed : \{}
+Location: read
+10 | def read(a: Arg) -> U32:
+11>|   match a:
+   |   ^^^^^^^^
+12 |     case ARange{ids, at}: at
+bend 2.0.35 is available: run bend update
+
+  probe-variant.bend           ok=True rows=    1 emitted=   7 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/2 DEAD-ARM=   1 unmeasured=   0  byte-identical
+  arena-affine-probe.bend      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : O.UOp.cconst
+Location: good
+37 | def good() -> String:
+38>|   +f = O.UOp.cconst(O.Arena.empty(), O.CInt{H.i64_of_i32(7)}, S.int32())
+   |        ^^^^^^^^^^^^
+39 |   String.concat(["good=", ctl.name(O.Found.ar(f), O.Found.i(f)), "\n"])
+bend 2.0.35 is available: run bend update
+
+  arena-noop-probe.bend        ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : O.UOp.cconst
+Context:
+- a0 : O.Arena
+Location: fixture
+85 |   +a0 = O.Arena.empty()
+86>|   +p = O.UOp.cconst(a0, O.CInt{H.i64_of_i32(3)}, S.int32())
+   |        ^^^^^^^^^^^^
+87 |   +p2 = O.UOp.cconst(O.Found.ar(p), O.CInt{H.i64_of_i32(4)}, S.int32())
+bend 2.0.35 is available: run bend update
+
+  arena-sweep-jit.bend         ok=True rows=   48 emitted= 178 entered= 140 NOT-EMITTED=2293 NOT-ENTERED=   0 arms 52/4 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  arena-validate-probe.bend    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: s5.d1
+Context:
+- slot : U32
+- dt   : S.Dt
+Location: c2d_pat
+2545 | def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
+2546>|   O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
+     |                                                                          ^^^^^^^
+2547 |              False{}, None{}, None{}, False{}, None{}}
+bend 2.0.35 is available: run bend update
+
+  fs-probe.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : 'I'
+Location:
+4 |   IO.print(String.concat(["a=", U32.show(F32.bits(1.0)), " b=", U32.show(F32.bits(0.5))]))
+5>|   IO.print(String.concat(["c=", U32.show(F32.bits(F32.neg(0.0))), " d=", U32.show(F32.bits(2.0))]))
+  |   ^
+6 | 
+bend 2.0.35 is available: run bend update
+
+  s1.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: clang_createIndex
+bend 2.0.35 is available: run bend update
+
+  s3.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: same
+bend 2.0.35 is available: run bend update
+
+  codegen-init-probe.bend      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: 
+173 | def Rewritten.passes(w: Rewritten) -> U32: match w: case Rewritten{ar, sink, repl, passes, capped}: passes
+174>| def Rewritten.capped(w: Rewritten) -> Bool: match w: case Rewritten{ar, sink, repl, passes, capped}: NoSuchDef(1)
+    |                                                                                                      ^^^^^^^^^
+175 | 
+bend 2.0.35 is available: run bend update
+
+  cs-probe.bend                ok=True rows=   11 emitted=  18 entered=  16 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/2 DEAD-ARM=   1 unmeasured=   0  byte-identical
+  cs-probe2.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: (@_:File -> IO.OP<R>) -> IO.OP<R>
+- observed : @-R:Type -> @k:(@_:Result<&1, &1, Sigma<&1, &1, U32, _ => String>, File> -> IO.OP<R>) -> IO.OP<R>
+Location: main
+4 |   do IO<Unit>:
+5>|     f : File <- File.open(".agents/slop/probe-tmp.txt", "w")
+  |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+6 |     u : Unit <- File.write(f, "HELLO-WORLD")
+bend 2.0.35 is available: run bend update
+
+  cs-probe3.bend               ok=True rows=    3 emitted=  20 entered=  15 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 3/4 DEAD-ARM=   4 unmeasured=   0  byte-identical
+  cs-probe4.bend               ok=True rows=   14 emitted=  17 entered=  16 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  emit-real.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-live/cstyle.bend
+Location:
+1 | import Base
+2>| import ./cstyle.bend as C
+  |        ^
+3 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  dd-band-unfixed.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/helpers.bend
+Location:
+182 | import Base
+183>| import ./../../helpers.bend as H
+    |        ^
+184 | import ./../../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  dd-bandarena.bend            ok=True rows=  152 emitted= 265 entered= 220 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 77/7 DEAD-ARM=   4 unmeasured=   2  byte-identical
+  dd-bandpad.bend              ok=True rows=  108 emitted= 307 entered= 262 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 81/5 DEAD-ARM=   2 unmeasured=   2  byte-identical
+  dd-bandprobe.bend            ok=True rows=   24 emitted= 294 entered= 249 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 83/3 DEAD-ARM=   2 unmeasured=   0  byte-identical
+  dd-cdivprobe.bend            ok=True rows= 9911 emitted= 317 entered= 243 NOT-EMITTED=2672 NOT-ENTERED=   0 arms 84/10 DEAD-ARM=   3 unmeasured=   5  byte-identical
+  dd-const-probe.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : ../../tinybendygrad/helpers.I64
+- observed : U32
+Location: main
+20 | def main() -> IO(Unit):
+21>|   +c = D.dd_const.int(O.Arena.empty(), 0, S.uint32())
+   |                                        ^
+22 |   +ar = O.Found.ar(c)
+bend 2.0.35 is available: run bend update
+
+  dd-divE-probe.bend           ok=True rows=    9 emitted=  32 entered=  31 NOT-EMITTED=2672 NOT-ENTERED=   0 arms 3/2 DEAD-ARM=   1 unmeasured=   0  byte-identical
+  dd-f32probe.bend             ok=True rows=    2 emitted=   8 entered=   7 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  dd-mutations.frozen.bend     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/helpers.bend
+Location:
+144 | import Base
+145>| import ./../../helpers.bend as H
+    |        ^
+146 | import ./../../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  dd-slotprobe.bend            ok=True rows= 5122 emitted= 301 entered= 264 NOT-EMITTED=2673 NOT-ENTERED=   0 arms 109/12 DEAD-ARM=   8 unmeasured=   2  byte-identical
+  dd-sweep.bend                ok=True rows=   10 emitted= 310 entered= 275 NOT-EMITTED=2672 NOT-ENTERED=   0 arms 111/6 DEAD-ARM=   2 unmeasured=   2  byte-identical
+  debug-gate.bend              ok=True rows=  103 emitted= 862 entered= 587 NOT-EMITTED=3038 NOT-ENTERED=   0 arms 115/13 DEAD-ARM=   5 unmeasured=   7  byte-identical
+  dm.bend                      ok=True rows=   51 emitted=  27 entered=  26 NOT-EMITTED= 343 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  dtype-pri-probe.bend         ok=True rows=   21 emitted=  40 entered=  34 NOT-EMITTED=1825 NOT-ENTERED=   0 arms 10/3 DEAD-ARM=   0 unmeasured=   2  byte-identical
+  e2e_mm.bend                  ok=True rows=   22 emitted= 201 entered= 184 NOT-EMITTED= 719 NOT-ENTERED=   0 arms 20/6 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  elf_main.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : IO
+Location: g_glob
+4 | # ===========================================================================
+5>| def g_glob() -> IO(Unit):
+  |                 ^^
+6 |   do IO<Unit>:
+bend 2.0.35 is available: run bend update
+
+  elf_local.bend               ok=False rows=  307 emitted= 258 entered=   0 NOT-EMITTED= 334 NOT-ENTERED= 226 arms 0/0 DEAD-ARM=   0 unmeasured=   0  hang: the JS lane did not finish in 240.0s
+  exec_gate.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/executor.bend
+Location:
+1 | import Base
+2>| import ../../tinybendygrad/runtime/executor.bend as X
+  |        ^
+3 | import ../../tinybendygrad/LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  f2f-arena-inverted.bend      ok=True rows=  279 emitted= 276 entered= 236 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 78/9 DEAD-ARM=   6 unmeasured=   2  byte-identical
+  f2f-arena.bend               ok=True rows=  279 emitted= 276 entered= 236 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 78/9 DEAD-ARM=   6 unmeasured=   2  byte-identical
+  f2f-fixtures.bend            ok=True rows=   52 emitted= 303 entered= 263 NOT-EMITTED=2671 NOT-ENTERED=   0 arms 84/6 DEAD-ARM=   5 unmeasured=   0  byte-identical
+  e1.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: slen
+bend 2.0.35 is available: run bend update
+
+  e12.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: fbits
+bend 2.0.35 is available: run bend update
+
+  e13.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: nq_proto
+bend 2.0.35 is available: run bend update
+
+  e3.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: env
+bend 2.0.35 is available: run bend update
+
+  e4.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: cver
+bend 2.0.35 is available: run bend update
+
+  e5.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: a
+bend 2.0.35 is available: run bend update
+
+  e6.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a term
+- observed : '='
+Location:
+15 | def live(p: U64) -> String:
+16>|   match p == 0u64:
+   |           ^
+17 |     case True: "NO"
+bend 2.0.35 is available: run bend update
+
+  e7.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: mdev_hi
+bend 2.0.35 is available: run bend update
+
+  e8.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: mlo
+bend 2.0.35 is available: run bend update
+
+  fold.before-ladder.bend      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+82 | import Base
+83>| import ./../helpers.bend as H
+   |        ^
+84 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  fold.preorder.bend           ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+82 | import Base
+83>| import ./../helpers.bend as H
+   |        ^
+84 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  ga-green-87.bend             ok=True rows=  510 emitted= 172 entered= 169 NOT-EMITTED= 129 NOT-ENTERED=   0 arms 50/76 DEAD-ARM=  37 unmeasured=  20  byte-identical
+  ga-green-89.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: the machine stack overflowed (a deep recursion, or a literal too large to expand)
+bend 2.0.35 is available: run bend update
+
+  ga-green-91.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: the machine stack overflowed (a deep recursion, or a literal too large to expand)
+bend 2.0.35 is available: run bend update
+
+  ga-ins-wip.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: the machine stack overflowed (a deep recursion, or a literal too large to expand)
+bend 2.0.35 is available: run bend update
+
+  ga-pre-topo.bak.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: dead claim: live code cannot use it)
+- observed : op_le
+Context:
+- f   : Nat
+- acc : List<&2, OP>
+- x   : OP
+- xt  : List<&2, OP>
+- y   : OP
+- yt  : List<&2, OP>
+Location: List.merge.go~1
+897 | 
+898>| def sort_ops(os_: List<&2, OP>) -> List<&2, OP>: List.sort(OP, op_le, os_)
+    |                                                                ^^^^^
+899 | 
+bend 2.0.35 is available: run bend update
+
+  ga-takeover.bak.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Fmt.VOP3P: 64,\n  Fmt.VOPC: 32,\n}\nclass OpType(Enum):\n  OPR_ADDR = auto()\n  OPR_DATA = auto()\n  OPR_HWREG = auto()\n  OPR_SENDMSG_RTN = auto()\n  OPR_SRC = auto()\n  OPR_SRC_ABS = auto()\n  OPR_SRC_NEG = auto()\n  OPR_SRC_NTZ = auto()\n  OPR_SREG = auto()\n  OPR_SREG_SRC = auto()\n  OPR_VGPR = auto()")
+1499>|     IO.print("")
+     |                 ^
+bend 2.0.35 is available: run bend update
+
+  graphcmp-dbg.bend            ok=True rows=   28 emitted= 919 entered= 656 NOT-EMITTED=3431 NOT-ENTERED=   0 arms 192/4 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  graphcmp-empty.bend          ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=1043 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  graphcmp-probe-optq.bend     ok=True rows=   10 emitted=  31 entered=  22 NOT-EMITTED=2215 NOT-ENTERED=   0 arms 12/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  graphcmp.bend                ok=True rows=   19 emitted= 668 entered= 458 NOT-EMITTED=2122 NOT-ENTERED=  17 arms 211/75 DEAD-ARM=  13 unmeasured=  52  byte-identical
+  grw-loop-probe.bend          ok=True rows=   11 emitted=  22 entered=  21 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/11 DEAD-ARM=   4 unmeasured=   7  byte-identical
+  gate.bend                    ok=False rows=    0 emitted= 187 entered=   0 NOT-EMITTED= 336 NOT-ENTERED=  59 arms 0/0 DEAD-ARM=   0 unmeasured=   0  hang: the JS lane did not finish in 240.0s
+  helpers-probe.bend           ok=True rows=    3 emitted=  45 entered=  34 NOT-EMITTED= 344 NOT-ENTERED=   0 arms 3/3 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  helpers-tc-standalone.bend   ok=True rows=   62 emitted= 121 entered= 116 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 13/56 DEAD-ARM=  35 unmeasured=  14  byte-identical
+  helpers-tc.bend              ok=True rows=  237 emitted= 201 entered= 190 NOT-EMITTED= 343 NOT-ENTERED=   0 arms 18/20 DEAD-ARM=   9 unmeasured=   8  byte-identical
+  ilt.bend                     ok=True rows=    4 emitted=   5 entered=   5 NOT-EMITTED= 343 NOT-ENTERED=   0 arms 2/2 DEAD-ARM=   2 unmeasured=   0  byte-identical
+  dropn-measure.bend           ok=True rows=   18 emitted=  55 entered=  46 NOT-EMITTED=  81 NOT-ENTERED=   0 arms 17/10 DEAD-ARM=   2 unmeasured=   4  byte-identical
+  p10-lemmas.bend              ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=  14 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  p11-split.bend               ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=  96 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  p9-measure.bend              ok=True rows=   29 emitted=  63 entered=  56 NOT-EMITTED=  81 NOT-ENTERED=   0 arms 16/2 DEAD-ARM=   1 unmeasured=   0  byte-identical
+  key-pad-sweep.bend           ok=True rows=   14 emitted= 140 entered=  81 NOT-EMITTED=1043 NOT-ENTERED=   0 arms 29/2 DEAD-ARM=   0 unmeasured=   1  byte-identical
+  late-pre-split.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+182 | import Base
+183>| import ./../helpers.bend as H
+    |        ^
+184 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  lintable-probe.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : O.pm_r_tag_m.of
+Context:
+- fx     : O.Found
+- tagged : Bool
+Location: retag
+102 | def retag(+fx: O.Found, tagged: Bool) -> Maybe<&2, O.Found>:
+103>|   O.pm_r_tag_m.of(tagged, O.UOp.new(fx_ar(fx), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{}))
+    |   ^^^^^^^^^^^^^^^
+104 | 
+bend 2.0.35 is available: run bend update
+
+  mask-probe.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: s5.d1
+Context:
+- slot : U32
+- dt   : S.Dt
+Location: c2d_pat
+2545 | def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
+2546>|   O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
+     |                                                                          ^^^^^^^
+2547 |              False{}, None{}, None{}, False{}, None{}}
+bend 2.0.35 is available: run bend update
+
+  bracket_probe.bend           ok=True rows=    8 emitted=   6 entered=   6 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  const_probe.bend             ok=True rows=   10 emitted=  16 entered=  16 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  find_q.bend                  ok=True rows=   25 emitted=   7 entered=   7 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  lit_probe.bend               ok=True rows=   10 emitted=  19 entered=  18 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  lit_probe2.bend              ok=True rows=   11 emitted=  10 entered=  10 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  rounding_probe.bend          ok=True rows=   12 emitted=   6 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ulp_probe.bend               ok=True rows=    8 emitted=   8 entered=   8 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  memprobe.bend                ok=True rows=   10 emitted= 697 entered= 424 NOT-EMITTED=2090 NOT-ENTERED=   0 arms 107/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  multi-defect-probe.bend      ok=True rows=   37 emitted=  74 entered=  73 NOT-EMITTED=2523 NOT-ENTERED=   0 arms 18/8 DEAD-ARM=   6 unmeasured=   1  byte-identical
+  multi-raw-probe.bend         ok=True rows=   35 emitted=  93 entered=  92 NOT-EMITTED=2521 NOT-ENTERED=   0 arms 18/12 DEAD-ARM=   7 unmeasured=   3  byte-identical
+  p0.bend                      ok=True rows=   33 emitted=  21 entered=  20 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 7/6 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  nocolor-probe.bend           ok=True rows=   33 emitted=  68 entered=  66 NOT-EMITTED= 343 NOT-ENTERED=   0 arms 5/5 DEAD-ARM=   3 unmeasured=   1  byte-identical
+  closure-shared-arg-wall.bend ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : @_:A -> @_:U32 -> V
+- observed : @+ar:A -> @i:U32 -> V
+Location: r_shared
+25 | def r_shared() -> R2:
+26>|   Shared{needs_twice}
+   |          ^^^^^^^^^^^
+27 | 
+bend 2.0.35 is available: run bend update
+
+  compiled-matcher-shape.bend  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/ops.bend
+Location:
+1>| import ./ops.bend as O
+  |        ^
+2 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  dbg-movement.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+Location:
+1211 | def dbg_ck(i: U32) -> U32:
+1212>|   match O.Arena.arg(g_ar(), i):
+     |         ^^^^^^^^^^^^^^^^^^^^^^
+1213 |     case O.APy{c}: dbg_consts(c)
+bend 2.0.35 is available: run bend update
+
+  engine-shape.bend            ok=True rows=    1 emitted=  14 entered=  14 NOT-EMITTED=   2 NOT-ENTERED=   0 arms 2/7 DEAD-ARM=   4 unmeasured=   1  byte-identical
+  ew-probe.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : 'r'
+Location:
+71 |   row("r6_dtconst_single", ew_is_some(W.wk_dt_const(S.single(), O.CInt{H.i64_of_i32(3)})))
+72>|   row("r6_dtconst_half", Bool.not(ew_is_some(W.wk_dt_const(S.half(), O.CInt{H.i64_of_i32(3)}))))
+   |   ^
+73 | 
+bend 2.0.35 is available: run bend update
+
+  p-sc-1.bend                  ok=True rows=    7 emitted= 166 entered= 122 NOT-EMITTED=1826 NOT-ENTERED=   0 arms 44/7 DEAD-ARM=   2 unmeasured=   5  byte-identical
+  p-sc-2.bend                  ok=True rows=    4 emitted=  19 entered=  17 NOT-EMITTED=   0 NOT-ENTERED=   1 arms 4/14 DEAD-ARM=   8 unmeasured=   6  byte-identical
+  p-sc-3.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a match on a parameter or field (this name is a def or a consumed binder: give the value its own def)
+Location:
+10 |     case Split{ks, ds}:
+11>|       match is_k:
+   |             ^^^^
+12 |         case True{} : Split{ks, ds}
+bend 2.0.35 is available: run bend update
+
+  p-sc-4.bend                  ok=True rows=    4 emitted=  13 entered=  12 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/15 DEAD-ARM=   5 unmeasured=  10  byte-identical
+  p-sc-5.bend                  ok=True rows=    4 emitted=  13 entered=  12 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/14 DEAD-ARM=   3 unmeasured=  11  byte-identical
+  probe-append.bend            ok=True rows=    2 emitted=  17 entered=  16 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/2 DEAD-ARM=   0 unmeasured=   1  byte-identical
+  probe-list.bend              ok=True rows=    6 emitted=  22 entered=  20 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 6/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  probe-list2.bend             ok=True rows=    5 emitted=  21 entered=  19 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 5/1 DEAD-ARM=   1 unmeasured=   0  byte-identical
+  probe-mop.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Data
+- observed : Type
+Location: marg_pairs
+13 | 
+14>| def marg_pairs() -> List<&2, O.Sint & O.Sint>:
+   |                              ^^^^^^^^^^^^^^^
+15 |   [(O.SInt.of(H.i64_of_i32(0)), O.SInt.of(H.i64_of_i32(4)))]
+bend 2.0.35 is available: run bend update
+
+  probe-put.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  code cannot use it)
+- observed : mem_bf_put
+Context:
+- p     : Nat
+- t     : List<&2, Bf>
+- b     : U32
+- i     : U32
+- acc   : List<&2, Bf>
+- found : Bool
+Location: mem_bf_put.k
+34 | def mem_bf_put.k(p: Nat, t: List<&2, Bf>, b: U32, i: U32, acc: List<&2, Bf>, found: Bool) -> List<&2, Bf>:
+35>|   mem_bf_put(p, t, b, i, acc, found)
+   |   ^^^^^^^^^^
+36 | 
+bend 2.0.35 is available: run bend update
+
+  probe-sched1.bend            ok=True rows=    5 emitted=  25 entered=  24 NOT-EMITTED=1828 NOT-ENTERED=   0 arms 6/4 DEAD-ARM=   1 unmeasured=   2  byte-identical
+  probe-sized-consumers.bend   ok=True rows=    3 emitted=  53 entered=  52 NOT-EMITTED=1826 NOT-ENTERED=   0 arms 13/6 DEAD-ARM=   1 unmeasured=   2  byte-identical
+  probe-sized.bend             ok=True rows=    4 emitted= 545 entered= 285 NOT-EMITTED=1483 NOT-ENTERED=   0 arms 93/4 DEAD-ARM=   2 unmeasured=   1  byte-identical
+  probe-sized2.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  probe-srcorder.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  probe-zip.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: : more_next
+Context:
+- _   : U32
+- _   : List<&2, U32>
+- xs  : List<&2, U32>
+- acc : List<&2, P>
+Location: f3
+38 |     case _ <> _ False{} : acc
+39>|     case y <> yt True{} : f3(yt, tail(xs), List.append(&2, P, acc, [P{head(xs), y}]), more_next(xs))
+   |                                                                                       ^^^^^^^^^
+40 | 
+bend 2.0.35 is available: run bend update
+
+  spec-classifier-shape.bend   ok=True rows=    4 emitted=  30 entered=  29 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 9/16 DEAD-ARM=   9 unmeasured=   0  byte-identical
+  upat-anum-probe.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/ops.bend
+Location:
+97 | import Base
+98>| import ./ops.bend as O
+   |        ^
+99 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  upat-shape.bend              ok=True rows=    1 emitted=  15 entered=  15 NOT-EMITTED=   3 NOT-ENTERED=   0 arms 4/9 DEAD-ARM=   6 unmeasured=   1  byte-identical
+  nv_ip_main.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : IO
+Location: main
+ 8 | 
+ 9>| def main() -> IO(Unit):
+   |               ^^
+10 |   do IO<Unit>:
+bend 2.0.35 is available: run bend update
+
+  ops-blob-fixed.pristine.bend ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+166 | import Base
+167>| import ./../helpers.bend as H
+    |        ^
+168 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  ops-blob-off.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+166 | import Base
+167>| import ./../helpers.bend as H
+    |        ^
+168 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  ops-blob-on.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+166 | import Base
+167>| import ./../helpers.bend as H
+    |        ^
+168 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  ops_cl-pre-split.bend        ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+258 | import Base
+259>| import ../helpers.bend as H
+    |        ^
+260 | 
+bend 2.0.35 is available: run bend update
+
+  ops_cpu_null-pre-split.bend  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+131 | import Base
+132>| import ../helpers.bend as H
+    |        ^
+133 | import ../device.bend as D
+bend 2.0.35 is available: run bend update
+
+  fold-mvt-e2e.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  fold-probe-mvt.bend          ok=True rows=    7 emitted=  22 entered=  22 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 11/14 DEAD-ARM=   4 unmeasured=   5  byte-identical
+  fold-probe-mvt2.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  probe-su.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  bystander.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Arg
+- observed : Const
+Location: t_const_bool_int_splits
+50 | def t_const_bool_int_splits() -> Bool:
+51>|   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+   |                                                  ^^^^^^^^^^^^^
+52 |   True{}
+bend 2.0.35 is available: run bend update
+
+  clean.bend                   ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  victim1.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Arg
+- observed : Const
+Location: t_const_bool_int_splits
+50 | def t_const_bool_int_splits() -> Bool:
+51>|   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+   |                                                  ^^^^^^^^^^^^^
+52 |   True{}
+bend 2.0.35 is available: run bend update
+
+  victim2.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Arg
+- observed : Const
+Location: t_const_bool_int_splits
+50 | def t_const_bool_int_splits() -> Bool:
+51>|   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+   |                                                  ^^^^^^^^^^^^^
+52 |   True{}
+bend 2.0.35 is available: run bend update
+
+  victim3.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Arg
+- observed : Const
+Location: t_const_bool_int_splits
+50 | def t_const_bool_int_splits() -> Bool:
+51>|   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+   |                                                  ^^^^^^^^^^^^^
+52 |   True{}
+bend 2.0.35 is available: run bend update
+
+  victim4.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : Arg
+- observed : Const
+Location: t_const_bool_int_splits
+50 | def t_const_bool_int_splits() -> Bool:
+51>|   +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{}, CBool{True{}}, TNone{})
+   |                                                  ^^^^^^^^^^^^^
+52 |   True{}
+bend 2.0.35 is available: run bend update
+
+  emit-mm.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  probe-appenddir.bend         ok=True rows=    3 emitted=  24 entered=  23 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 9/14 DEAD-ARM=   1 unmeasured=   9  byte-identical
+  probe-cc.bend                ok=True rows=    1 emitted=  13 entered=  12 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 7/10 DEAD-ARM=   1 unmeasured=   5  byte-identical
+  probe-char.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  c   : Char
+- t   : List<&2, Char>
+- acc : List<&2, Char>
+Location: b3
+15 |     case Nil{}   : acc
+16>|     case +c <> +t : Bool.pick(List<&2, Char>, U32.is_eq(Char.to_u32(c), 32), acc, List.append(&2, Char, acc, [c]) <> b3(t, acc))
+   |                                                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 | 
+bend 2.0.35 is available: run bend update
+
+  probe-cons.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  probe-f32.bend               ok=True rows=    1 emitted=   7 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  probe-log2.bend              ok=True rows=    1 emitted=  16 entered=  15 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/6 DEAD-ARM=   0 unmeasured=   5  byte-identical
+  probe-pri.bend               ok=True rows=    1 emitted=   6 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/25 DEAD-ARM=   0 unmeasured=  25  byte-identical
+  probe-tcptx.bend             ok=True rows=    1 emitted=  19 entered=  18 NOT-EMITTED=   4 NOT-ENTERED=   0 arms 8/14 DEAD-ARM=   0 unmeasured=   8  byte-identical
+  probe-ur.bend                ok=True rows=    1 emitted=  12 entered=  11 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/8 DEAD-ARM=   0 unmeasured=   7  byte-identical
+  append.bend                  ok=True rows=    4 emitted=  14 entered=  13 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/2 DEAD-ARM=   0 unmeasured=   1  byte-identical
+  dobind.bend                  ok=True rows=    2 emitted=  12 entered=  11 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  dotted.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+550 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+551>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+552 | 
+bend 2.0.35 is available: run bend update
+
+  trivial.bend                 ok=True rows=    1 emitted=  11 entered=  10 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  p10-lemmas.bend              ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=  14 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  p11-split.bend               ok=True rows=    1 emitted=   2 entered=   2 NOT-EMITTED=  96 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  spec.bend                    ok=True rows=   18 emitted=  46 entered=  41 NOT-EMITTED=  54 NOT-ENTERED=   4 arms 18/89 DEAD-ARM=  61 unmeasured=   9  byte-identical
+  rewriter-pre-split.bend      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/helpers.bend
+Location:
+133 | import Base
+134>| import ./../helpers.bend as H
+    |        ^
+135 | import ./../LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  rf2_work.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  sched-fixture.bend           ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  tc_ptx-pre-split.bend        ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/LAWS/spec.bend
+Location:
+67 | import Base
+68>| import ./../LAWS/spec.bend as S
+   |        ^
+69 | import ./../uop/ops.bend as O
+bend 2.0.35 is available: run bend update
+
+  tc_tail.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: Some)
+Location:
+15 |   match m:
+16>|     case Some{v}: v
+   |          ^^^^^^^
+17 |     case None{}: F32.mul(2.0, 0.0)
+bend 2.0.35 is available: run bend update
+
+  tc_tail_draft.bend           ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: Some)
+Location:
+19 |   match m:
+20>|     case Some{v}: v
+   |          ^^^^^^^
+21 |     case None{}: F32.mul(2.0, 0.0)
+bend 2.0.35 is available: run bend update
+
+  unobservable-gr-probe.bend   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  vw-topo-probe.bend           ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  probe.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/tinybendygrad/helpers.bend
+Location:
+1 | import Base
+2>| import ../../tinybendygrad/helpers.bend as H
+  |        ^
+3 | import ../../tinybendygrad/LAWS/spec.bend as S
+bend 2.0.35 is available: run bend update
+
+  nat_walk.bend                ok=True rows=   17 emitted=   8 entered=   7 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/2 DEAD-ARM=   0 unmeasured=   2  byte-identical
+  w3_control.bend              ok=True rows=    1 emitted=   5 entered=   5 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 1/5 DEAD-ARM=   3 unmeasured=   2  byte-identical
+  w3_wordadd.bend              ok=True rows=    3 emitted=  12 entered=  12 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 1/5 DEAD-ARM=   3 unmeasured=   2  byte-identical
+  w4_a_law.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : 'i'
+Location:
+25 |   F64
+26>|   import "./f4_a.c"
+   |   ^
+27 | 
+bend 2.0.35 is available: run bend update
+
+  w4_b_double.bend             ok=True rows=    0 emitted=   9 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   5 arms 0/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  w4_c_bits.bend               ok=True rows=    0 emitted=   9 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   5 arms 0/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  w4_f64add.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a foreign def without a .js import: f64_add
+bend 2.0.35 is available: run bend update
+
+  wgsl_lprobe.bend             ok=True rows=    1 emitted=   9 entered=   9 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 7/6 DEAD-ARM=   0 unmeasured=   3  byte-identical
+  wgsl_pk.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  wgsl_u32probe.bend           ok=True rows=    1 emitted=  13 entered=  12 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 6/4 DEAD-ARM=   0 unmeasured=   2  byte-identical
+  render-HEAD.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/ops.bend
+Location:
+181 | import Base
+182>| import ./ops.bend as O
+    |        ^
+183 | import ./fold.bend as F
+bend 2.0.35 is available: run bend update
+
+  triv.bend                    ok=True rows=    1 emitted=   7 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 1/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  beautiful_mnist.bend         ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../tinybendygrad/helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  spec.bend                    ok=True rows=   18 emitted=  46 entered=  41 NOT-EMITTED=  54 NOT-ENTERED=   4 arms 18/89 DEAD-ARM=  61 unmeasured=   9  byte-identical
+  __init__.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  dtype.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  op.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  transcendental.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  transcendental_f32.bend      ok=True rows=  932 emitted= 246 entered= 243 NOT-EMITTED=   4 NOT-ENTERED=   0 arms 13/75 DEAD-ARM=   5 unmeasured=  58  byte-identical
+  gpudims.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  kernel.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  coalesce.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  gater.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  linearizer.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  regalloc.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  heuristic.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  postrange.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  search.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  rewriter.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  simplify.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  device.bend                  ok=True rows=  110 emitted= 236 entered= 233 NOT-EMITTED=  84 NOT-ENTERED=   0 arms 25/99 DEAD-ARM=  51 unmeasured=  34  byte-identical
+  dtype.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Context:
+- bits : U32
+Location: i64_max_u
+378 | 
+379>| def i64_max_u(bits: U32) -> H.I64:
+    |                             ^^^^^
+380 |   match bits:
+bend 2.0.35 is available: run bend update
+
+  jit.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  realize.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  worker.bend                  ok=True rows=   56 emitted= 100 entered=  99 NOT-EMITTED=   1 NOT-ENTERED=   0 arms 17/37 DEAD-ARM=  17 unmeasured=   8  byte-identical
+  function.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  helpers.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: Error: a build needs import Base
+bend 2.0.35 is available: run bend update
+
+  creation.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  dtype.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  elementwise.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  gradient.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  movement.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  op.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  rand.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  reduce.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  __init__.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  datasets.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.prod_u32
+Context:
+- s : Shape
+Location: shape_bytes
+153 | 
+154>| def shape_bytes(s: Shape) -> U32: H.prod_u32(Shape.rest(s))
+    |                                   ^^^^^^^^^^
+155 | 
+bend 2.0.35 is available: run bend update
+
+  onnx.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  optim.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  state.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  torch.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+247 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+248>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+249 | 
+bend 2.0.35 is available: run bend update
+
+  __init__.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  dsl.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: VOP2_ALL)
+- observed : 'VOP2_ALL'
+Location:
+1740 | # about these fixtures is dsl.py's arithmetic on the choices made here.
+1741>| def VOP2_ALL() -> List<&2, Vf>:
+     |     ^^^^^^^^
+1742 |   [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+bend 2.0.35 is available: run bend update
+
+  elf.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: VOP2_ALL)
+- observed : 'VOP2_ALL'
+Location:
+1740 | # about these fixtures is dsl.py's arithmetic on the choices made here.
+1741>| def VOP2_ALL() -> List<&2, Vf>:
+     |     ^^^^^^^^
+1742 |   [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+bend 2.0.35 is available: run bend update
+
+  generate.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: gl.go)
+- observed : 'gl.go'
+Location:
+2563 | # CPython's input cannot drift apart.
+2564>| def gl.go(+nm: String, got: List<&2, String>, want: List<&2, String>, wc: String, +i: Nat) -> IO(Unit):
+     |     ^^^^^
+2565 |   match got, want:
+bend 2.0.35 is available: run bend update
+
+  sqtt.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: VOP2_ALL)
+- observed : 'VOP2_ALL'
+Location:
+1740 | # about these fixtures is dsl.py's arithmetic on the choices made here.
+1741>| def VOP2_ALL() -> List<&2, Vf>:
+     |     ^^^^^^^^
+1742 |   [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+bend 2.0.35 is available: run bend update
+
+  cstyle.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  x86.bend                     ok=True rows=  774 emitted= 313 entered= 311 NOT-EMITTED=  81 NOT-ENTERED=   0 arms 33/202 DEAD-ARM=  51 unmeasured= 129  byte-identical
+  llvmir.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  nir.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  nir_llvmir.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  ptx.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  tc.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  tc_ptx.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  wgsl.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  _p6.bend                     ok=True rows=    1 emitted=   7 entered=   6 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 2/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  ops_amd.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.round_up_u32
+Context:
+- off : U32
+- k   : U32
+Location: sig.slot
+621 | def sig.slot(+off: U32, +k: U32) -> Sig:
+622>|   Sig{H.round_up_u32(off, k), U32.add(H.round_up_u32(off, k), k)}
+    |       ^^^^^^^^^^^^^^
+623 | 
+bend 2.0.35 is available: run bend update
+
+  ops_bend.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: Nil)
+Location:
+442 |   match rest:
+443>|     case Nil{}:
+    |          ^^^^^
+444 |       acc
+bend 2.0.35 is available: run bend update
+
+  ops_bend.mut.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: Nil)
+Location:
+442 |   match rest:
+443>|     case Nil{}:
+    |          ^^^^^
+444 |       acc
+bend 2.0.35 is available: run bend update
+
+  ops_cl.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  name
+- observed : H.round_up_u32
+Context:
+- osx : Bool
+- w   : U32
+- isz : U32
+Location: cl.pitch.at
+1583 | def cl.pitch.at(osx: Bool, +w: U32, isz: U32) -> U32:
+1584>|   U32.mul(U32.mul(Bool.pick(U32, osx, H.round_up_u32(w, cl.PITCH_ALIGN()), w),
+     |                                       ^^^^^^^^^^^^^^
+1585 |                   IMAGE_CHANNELS()), isz)
+bend 2.0.35 is available: run bend update
+
+  ops_cpu.bend                 ok=True rows=  128 emitted= 215 entered= 212 NOT-EMITTED= 275 NOT-ENTERED=   1 arms 15/109 DEAD-ARM=  55 unmeasured=  52  byte-identical
+  ops_cuda.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  name
+- observed : H.round_up_u32
+Context:
+- osx : Bool
+- w   : U32
+- isz : U32
+Location: cl.pitch.at
+1583 | def cl.pitch.at(osx: Bool, +w: U32, isz: U32) -> U32:
+1584>|   U32.mul(U32.mul(Bool.pick(U32, osx, H.round_up_u32(w, cl.PITCH_ALIGN()), w),
+     |                                       ^^^^^^^^^^^^^^
+1585 |                   IMAGE_CHANNELS()), isz)
+bend 2.0.35 is available: run bend update
+
+  ops_disk.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+525 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+526>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+527 | 
+bend 2.0.35 is available: run bend update
+
+  ops_dsp.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+657 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+658>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+659 | 
+bend 2.0.35 is available: run bend update
+
+  ops_hip.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  name
+- observed : H.round_up_u32
+Context:
+- osx : Bool
+- w   : U32
+- isz : U32
+Location: cl.pitch.at
+1583 | def cl.pitch.at(osx: Bool, +w: U32, isz: U32) -> U32:
+1584>|   U32.mul(U32.mul(Bool.pick(U32, osx, H.round_up_u32(w, cl.PITCH_ALIGN()), w),
+     |                                       ^^^^^^^^^^^^^^
+1585 |                   IMAGE_CHANNELS()), isz)
+bend 2.0.35 is available: run bend update
+
+  ops_metal.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+764 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+765>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+766 | 
+bend 2.0.35 is available: run bend update
+
+  ops_npy.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+292 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+293>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+294 | 
+bend 2.0.35 is available: run bend update
+
+  ops_null.bend                ok=True rows=  180 emitted= 223 entered= 219 NOT-EMITTED= 440 NOT-ENTERED=   0 arms 16/78 DEAD-ARM=  32 unmeasured=  42  byte-identical
+  ops_nv.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: va.low_size
+482 | 
+483>| def va.low_size() -> H.I64: H.i64_of_hi_lo(LOW_VA_HI(), LOW_VA_LO())
+    |                      ^^^^^
+484 | def va.low_base_osx() -> H.I64: H.i64_of_hi_lo(LOW_VA_BASE_OSX_HI(), 0)
+bend 2.0.35 is available: run bend update
+
+  ops_python.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  ops_qcom.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: expected : a defined name
+- observed : H.round_up_u32
+Context:
+- pvtmem : U32
+Location: pd.pvtmem_size_per_item
+870 | # `pvtmem` twice through `round_up` and `next_power2`.
+871>| def pd.pvtmem_size_per_item(+pvtmem: U32) -> U32: U32.shrn(H.round_up_u32(pvtmem, 512), 9n)
+    |                                                            ^^^^^^^^^^^^^^
+872 | 
+bend 2.0.35 is available: run bend update
+
+  ops_rdma.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+500 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+501>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+502 | 
+bend 2.0.35 is available: run bend update
+
+  ops_webgpu.bend              ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+550 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+551>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+552 | 
+bend 2.0.35 is available: run bend update
+
+  amdev.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: Zero)
+Location:
+586 |   match n:
+587>|     case 0n: got
+    |          ^^
+588 |     case 1n+m:
+bend 2.0.35 is available: run bend update
+
+  ip.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: OOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Context:
+- hi : U32
+- lo : U32
+- n  : U32
+Location: i64_shl32
+667 | # `3 << 50`, and `amp_pte_mtype_12_uc` is the row that caught it.
+668>| def i64_shl32(+hi: U32, +lo: U32, +n: U32) -> H.I64:
+    |                                               ^^^^^
+669 |   Bool.pick(H.I64, U32.is_lt(n, 32),
+bend 2.0.35 is available: run bend update
+
+  amd.bend                     ok=True rows=  104 emitted= 129 entered= 126 NOT-EMITTED=   3 NOT-ENTERED=   0 arms 29/52 DEAD-ARM=   2 unmeasured=  29  byte-identical
+  autogen.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : 1 patterns (one per scrutinee)
+- observed : 'c1 c2 rest'
+Location:
+744 |     case Nil{}: List.reverse(acc)
+745>|     case c1 c2 rest: rep_go2(rest, List.append(&2, Char, acc, rep_emit2(c1, c2)))
+    |          ^^^^^^^^^^
+746 | 
+bend 2.0.35 is available: run bend update
+
+  c.bend                       ok=True rows=  129 emitted= 199 entered= 197 NOT-EMITTED=  10 NOT-ENTERED=   0 arms 27/71 DEAD-ARM=  41 unmeasured=  15  byte-identical
+  compiler_amd.bend            ok=True rows=  113 emitted=  98 entered=  96 NOT-EMITTED=   3 NOT-ENTERED=   0 arms 9/3 DEAD-ARM=   2 unmeasured=   1  byte-identical
+  compiler_cpu.bend            ok=True rows=  116 emitted= 116 entered= 114 NOT-EMITTED=   7 NOT-ENTERED=   0 arms 15/18 DEAD-ARM=   4 unmeasured=  11  byte-identical
+  compiler_cuda.bend           ok=True rows=  175 emitted= 163 entered= 161 NOT-EMITTED=   7 NOT-ENTERED=   0 arms 16/14 DEAD-ARM=   1 unmeasured=   8  byte-identical
+  compiler_llvm.bend           ok=True rows=  132 emitted= 113 entered= 110 NOT-EMITTED=   3 NOT-ENTERED=   0 arms 12/4 DEAD-ARM=   0 unmeasured=   2  byte-identical
+  compiler_mesa.bend           ok=True rows=  163 emitted= 132 entered= 131 NOT-EMITTED=   8 NOT-ENTERED=   0 arms 14/17 DEAD-ARM=   6 unmeasured=   7  byte-identical
+  compiler_qcom.bend           ok=True rows=   79 emitted=  96 entered=  94 NOT-EMITTED=   2 NOT-ENTERED=   0 arms 12/13 DEAD-ARM=   5 unmeasured=   5  byte-identical
+  compileserver.bend           ok=True rows=   50 emitted=  63 entered=  62 NOT-EMITTED=   4 NOT-ENTERED=   0 arms 10/9 DEAD-ARM=   3 unmeasured=   3  byte-identical
+  elf.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: r:
+- expected : a defined name
+- observed : H.i2u
+Context:
+- d : Sdiff
+Location: Sdiff.i2u32
+1615 |     case Sdiff{sd_neg, sd_mag}: sd_mag
+1616>| def Sdiff.i2u32(+d: Sdiff) -> U32: H.i2u(Sdiff.neg(d), 32n, Sdiff.mag(d))
+     |                                    ^^^^^
+1617 | # `-2**31 <= v < 2**31` (elf.py:62). NOT `<= 2**31`: 2**31 itself does not fit and
+bend 2.0.35 is available: run bend update
+
+  hcq2.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32s_eq
+615 | 
+616>| def u32s_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
+    |                                                            ^^^^^^^^^^^^^
+617 | 
+bend 2.0.35 is available: run bend update
+
+  memory.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: LOWBIT_ZERO_64
+232 | # gates the consequence.
+233>| def LOWBIT_ZERO_64() -> H.I64: H.i64_of_hi_lo(2147483648, 0)
+    |                         ^^^^^
+234 | def LOWBIT_ZERO() -> U32: 2147483648
+bend 2.0.35 is available: run bend update
+
+  ip.bend                      ok=True rows= 1428 emitted= 569 entered= 567 NOT-EMITTED= 259 NOT-ENTERED=   0 arms 36/142 DEAD-ARM=  64 unmeasured=  52  byte-identical
+  nvdev.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : 'def', 'type' or 'law'
+- observed : ','
+Location:
+1193 | 
+1194>|     String.concat(["nv_vabits_3", "=", U32.show(nv.va_bits(3))]),
+     |                                                                 ^
+1195 |     String.concat(["nv_vashifts_3", "=", nv.shifts_str(3)]),
+bend 2.0.35 is available: run bend update
+
+  objc.bend                    ok=True rows=  123 emitted= 177 entered= 175 NOT-EMITTED=  11 NOT-ENTERED=   0 arms 27/62 DEAD-ARM=  33 unmeasured=  18  byte-identical
+  bnxtdev.bend                 ok=True rows=  931 emitted= 406 entered= 405 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 8/48 DEAD-ARM=  22 unmeasured=  26  byte-identical
+  system.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+666 | 
+667>| def u32_list_eq(+a: List<&2, U32>, +b: List<&2, U32>) -> Bool: H.u32_list_eq(a, b)
+    |                                                                ^^^^^^^^^^^^^
+668 | 
+bend 2.0.35 is available: run bend update
+
+  usb.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.i32_is_neg
+Context:
+- x : U32
+Location: show_i32
+104 | def show_i32(+x: U32) -> String:
+105>|   Bool.pick(String, H.i32_is_neg(x),
+    |                     ^^^^^^^^^^^^
+106 |             String.concat(["-", U32.show(H.i32_abs(H.i32_is_neg(x), x))]), U32.show(x))
+bend 2.0.35 is available: run bend update
+
+  zz_objc_mutant.bend          ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : no such file: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/support/zz_objc_mutant.bend
+bend 2.0.35 is available: run bend update
+
+  webgpu_call.bend             ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed:  : a defined name
+- observed : H.u32_list_eq
+Context:
+- a : List<&2, U32>
+- b : List<&2, U32>
+Location: u32_list_eq
+550 |   Bool.and(U32.is_eq(U32.from_nat(List.length(&2, U32, a)),
+551>|                      U32.from_nat(List.length(&2, U32, b))), H.u32_list_eq(a, b))
+    |                                                              ^^^^^^^^^^^^^
+552 | 
+bend 2.0.35 is available: run bend update
+
+  zzdiag.bend                  ok=True rows=    5 emitted=  21 entered=  20 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 3/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  zzprobe2.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  zzread.bend                  ok=True rows=    5 emitted=  15 entered=  13 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 3/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  zzsplit.bend                 ok=True rows=    8 emitted=  26 entered=  25 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 4/0 DEAD-ARM=   0 unmeasured=   0  byte-identical
+  __init__.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  allreduce.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  indexing.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  memory.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  multi.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  prepare.bend                 ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  rangeify.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  sz.bend                      ok=True rows=    0 emitted= 281 entered=  45 NOT-EMITTED=   0 NOT-ENTERED= 189 arms 7/16 DEAD-ARM=   7 unmeasured=   5  byte-identical
+  tensor.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  v5.bend                      ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Context:
+- bits : U32
+Location: i64_max_u
+378 | 
+379>| def i64_max_u(bits: U32) -> H.I64:
+    |                             ^^^^^
+380 |   match bits:
+bend 2.0.35 is available: run bend update
+
+  dtype_oracle.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Context:
+- bits : U32
+Location: i64_max_u
+378 | 
+379>| def i64_max_u(bits: U32) -> H.I64:
+    |                             ^^^^^
+380 |   match bits:
+bend 2.0.35 is available: run bend update
+
+  __init__.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  divandmod.bend               ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  fold.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  movement.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  ops.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  probe-mmcore.bend            ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+331 |   match r:
+332>|     case H.I64{nh, nl}: St{qh, ql, nh, nl, False{}, True{} }
+    |          ^^^^^^^^^^^^^
+333 | 
+bend 2.0.35 is available: run bend update
+
+  render.bend                  ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  spec.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  symbolic.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  upat.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Location: CInt
+808 |   CBool{b: Bool}
+809>|   CInt{i: H.I64}
+    |           ^^^^^
+810 |   CFloat{f: F32}
+bend 2.0.35 is available: run bend update
+
+  validate.bend                ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  weak.bend                    ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.I64)
+Location:
+2863 |   match r:
+2864>|     case H.I64{nh, nl}: mm.MMSt{qh, ql, nh, nl, False{}, True{} }
+     |          ^^^^^^^^^^^^^
+2865 | 
+bend 2.0.35 is available: run bend update
+
+  cli.bend                     ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : H.I64
+Context:
+- name : String
+Location: Marker
+64 | type Marker is Data:
+65>|   Marker{name: String, ts: H.I64}
+   |                            ^^^^^
+66 | 
+bend 2.0.35 is available: run bend update
+
+  serve.bend                   ok=False rows=    0 emitted=   0 entered=   0 NOT-EMITTED=   0 NOT-ENTERED=   0 arms 0/0 DEAD-ARM=   0 unmeasured=   0  bend -o failed: SOME PROOFS FAIL
+Error:
+- message  : a declared constructor (unknown: ../helpers.Flags)
+Location:
+591 |   match f:
+592>|     case H.Flags{no_color, default_float, default_int, sum_dtype}: no_color
+    |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+593 | 
+bend 2.0.35 is available: run bend update
+
+
+  entries examined            297
+  entries whose lane is byte-identical instrumented vs plain  113
+  NOT-EMITTED def-site pairs   62445
+  NOT-ENTERED def-site pairs  306
+  wrote /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//bendarm.tsv
