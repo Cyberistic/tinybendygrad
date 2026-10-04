@@ -8854,3 +8854,50 @@ sentence as the count.** Rules W-1…W-7 appended to
 **Two numbers on the board are wrong and both are in circulation: the marker count is 1,028 not
 1,026, and the `graph_rewrite` blast radius is 6 claim lines / 10 targets, not 22 across 14
 files.** The 22 is `grw-census.py` reading to the *next marker*, so it inherits the shared wall.
+
+### [x] `.agents/slop/clangshim/oracle.py` RUNS TO COMPLETION — all three modes, exit 0, empty stderr
+
+Ten rows from **10 calls into `tinygrad.runtime.autogen.libclang`**, nothing typed.
+`all` / `sizes` / `fields` / `version` all exit **0** with **0 bytes** on stderr.
+Baseline `sha256 3e0e769dbb0130c6…`, byte-identical across two runs and across a
+second `$TMPDIR` copy.
+
+**The pin.** Both sides now read `/Library/Developer/CommandLineTools/usr/lib/libclang.dylib`,
+via `LIBCLANG_PATH` — tinygrad's own escape hatch at `c.py:95` — set **before** the
+import, then **verified** with `L.dll._name` because `findlib` falls back to the
+search path when the path is not a file.  Version row moved
+`Homebrew clang version 20.1.8` → **`Apple clang version 17.0.0 (clang-1700.6.3.2)`**.
+**No `tinygrad/` change is required.**
+
+**The `bytes`-vs-`LP_c_char` pair resolved as: the pointer is primary, and BOTH
+ends cast.** `c.py` is right to refuse `bytes` — accepting them means ctypes
+allocates a temporary nothing keeps alive across the FFI call.  Measured
+asymmetry is in `bend2-constraints.md` **CL-1**: `c_char_p` and `LP_c_char` are
+distinct classes, and a struct field rejects *both* directions.
+
+**Three more latent bugs, none of which the first crash pointed at:** the visitor
+returned `1` = `CXChildVisit_Continue`, so the walk never left the TU's own
+children (**CL-2**); `clang_Type_getOffsetOf` was called with the field's own
+type instead of the record type + field **name**, and answers **bits** (**CL-5**);
+and `text()` was briefly handed a `CXString` instead of the `char*`
+(`cannot be interpreted as ctypes.c_void_p`).
+
+**Plant/disarm, paired** (**CL-8**): plant `int a;` → `unsigned a;` moves
+`SIZE int` and `FIELD a` at rc 0 — label stays `int`, answer becomes
+`unsigned int`, which is the whole point of label-vs-answer.  Disarm
+`int a;` → `int a; /* 8 */` leaves the row set **byte-identical** at rc 0.
+A third plant (`bits // 8` → `// 4`) moves `offof_bytes` while leaving
+`offof_bits` still, proving the division is real and the two are not two
+measurements.  The **first disarm attempt was a plant in disguise** — adding an
+unnamed `long d;` moved `SIZE struct Pair` 16→24, which is why that row exists.
+
+**Corrections to the brief, both measured.** (1) `clang_getTypePrettyPrinted`,
+`clang_isBeforeInTranslationUnit`, `clang_visitCXXBaseClasses` are **not** absent
+from both builds — absent on CLT 17 only, and they **do** link on Homebrew llvm@20
+and llvm@22 (**CL-7**). (2) A crash in a **ctypes callback does not exit non-zero**:
+it prints `Exception ignored while calling ctypes callback function`, returns 0 =
+`CXChildVisit_Break`, and the run still exits 0 (**CL-3**); and a bad `char*` is a
+SIGSEGV, rc **139**, with no traceback (**CL-4**). Reproduced the `| tee` trap
+exactly: rc 1 direct, **rc 0** through `| tee`.
+
+Rules **CL-1…CL-9** appended to `.agents/slop/notes/bend2-constraints.md`.

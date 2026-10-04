@@ -24950,3 +24950,101 @@ tag live in different files. This is the "a name is not a binding" trap one leve
 down. Measured in-use tags across the tree: **0..32, 40-43, 999** — and the ONE
 consumer that reaches `ops.bend`'s dispatch at all is `codegen/__init__.bend:108`,
 whose tables use tags 3 and 4.
+
+---
+
+## CL — ctypes/libclang rules, measured on the clangshim oracle (2026-10-04)
+
+New prefix `CL`; it does **not** continue `S` (S-1…S-14 are taken by an earlier
+appender, and with five units appending to one file a reused prefix is a
+collision waiting to happen).  Every number below came from CALLING CPython
+3.14.6 against `/Library/Developer/CommandLineTools/usr/lib/libclang.dylib`
+(Apple clang 17.0.0); none is transcribed.
+
+**CL-1 — `char *` IS AN ADDRESS, AND CTYPES ACCEPTS IT IN THREE MUTUALLY
+INCOMPATIBLE WAYS.**  `bytes in` / `c_char_p in` / `cast(buf, POINTER(c_char)) in`:
+
+| site | bytes | c_char_p | cast(buf) |
+|---|---|---|---|
+| struct field typed `POINTER(c_char)` | refused | **refused** | accepted |
+| struct field typed `c_char_p` | accepted | accepted | **refused** |
+| function argtype `POINTER(c_char)` | accepted | accepted | accepted |
+
+The refusals are not the same refusal: the first is `expected LP_c_char instance,
+got bytes`, the second `incompatible types, c_char_p instance instead of LP_c_char
+instance`.  **`ctypes.c_char_p is ctypes.POINTER(ctypes.c_char)` is `False`** — they
+are DISTINCT classes, and a struct field rejects the subclass instance *and* the
+base instance.  So there is no coercion that makes the read end and the write end
+agree.  The only rule covering all three sites: **a `char*` is a real pointer
+everywhere except the argument list; `c_char_p` is a READING cast on top of
+`LP_c_char`, never a carrier.**
+
+**CL-2 — `CXChildVisit_Continue = 1` AND `CXChildVisit_Recurse = 2`, AND A
+VISITOR RETURNING 1 NEVER LEAVES THE TU'S OWN CHILDREN.**  A
+`clang_visitChildren` callback returning `1` walks `Pair` and `top` and stops;
+measured cursor spellings were `['Pair','top']`, and with `2` they are
+`['Pair','a','b','c','top']`.  A search for anything below the top level fails
+with a bare "not found" and no hint that the walk was the problem.
+
+**CL-3 — CTYPES SWALLOWS AN EXCEPTION RAISED INSIDE A CALLBACK.**  It prints
+`Exception ignored while calling ctypes callback function …` to stderr, then the
+callback's return value is `None`, which reaches libclang as **0 =
+`CXChildVisit_Break`**, so the walk silently stops and the process **exits 0**.
+An exception in an FFI callback is therefore not a crash and not a red.  This is
+the `nv_nvdev_gate.py` failure mode in new clothes: the traceback in the log looks
+like the failure, and the *quiet truncation* is the failure.  Only a positive
+assertion ("did I find it?") turns it back into a non-zero exit.
+
+**CL-4 — A BAD `char*` IS A SIGSEGV, NOT A PYTHON EXCEPTION.**  Passing `None`
+to `strlen` with `argtypes=[POINTER(c_char)]` killed the probe with **rc 139** and
+no traceback at all.  So "a crash must exit non-zero" has to mean non-zero
+*including signal death*, and it must not be read through a pipe — see CL-8.
+
+**CL-5 — `clang_Type_getOffsetOf` RETURNS BITS, ITS SECOND ARGUMENT IS THE FIELD
+NAME, AND AN UNKNOWN NAME ANSWERS -5.**  Measured on `struct Pair{int a; char b;
+double c;}`: `0 / 32 / 64`, i.e. `offsetof` × 8, and `-5` for `b"nope"` (not the
+`-1` the header's prose suggests — that number was **not** measured, only -5
+was).  Passing the FIELD's own type instead of the RECORD type answers a question
+about nothing and yields `-5` for every field, which prints as a row rather than
+failing.
+
+**CL-6 — `LIBCLANG_PATH` PINS THE DYLIB BEFORE IMPORT, BUT `findlib` FALLS BACK
+TO THE SEARCH PATH, SO THE LOAD MUST BE VERIFIED.**  `c.DLL.findlib`
+(`tinygrad/runtime/support/c.py:95`) checks `getenv(nm.upper()+"_PATH")` first and
+only then walks `/opt/homebrew/opt/llvm@21 … llvm@14`.  Unpinned the oracle
+answered **`Homebrew clang version 20.1.8`**; pinned it answers
+**`Apple clang version 17.0.0 (clang-1700.6.3.2)`**.  A path that is not a file
+falls through to the search path, so *requesting* the pin and *getting* it are
+different acts — `getattr(L.dll, "_name", None) != PIN` is the check that closes
+it.  No monkeypatch and no upstream change is needed for either half.
+
+**CL-7 — "THE BINDING HAS A `def` FOR IT" IS NOT "THE SYMBOL LINKS".**
+`clang_getTypePrettyPrinted`, `clang_isBeforeInTranslationUnit` and
+`clang_visitCXXBaseClasses` all have Python `def` stubs, and `getattr(module,
+name)` succeeds for all three; `getattr(L.dll, name)` raises `AttributeError:
+dlsym(…): symbol not found` for all three **on the CLT 17 build**.  And they
+**do link on Homebrew**: `hasattr(L.dll, …)` is `True` on llvm@20 (20.1.8) and
+on llvm (22.1.8).  So "absent from both builds, it holds whichever you pick" is
+**FALSE** — it is version-dependent, and the correct comparison is
+`getattr(dll, name)`, never `getattr(module, name)`.  All the *structural* rows
+(sizeOf / alignOf / offsets / spellings / sizeof) are byte-identical across CLT
+17, llvm@20 and llvm@22, so pinning costs nothing on the data and only changes
+which symbols exist.
+
+**CL-8 — A DISARM MUST BE THE SAME LEVER AND THE SAME GRANULARITY AS ITS PLANT.**
+First attempt here: plant the fixture by changing `int a;` → `long a;`, and try to
+disarm it by adding an unnamed field `long d;`.  The "disarm" **moved
+`SIZE struct Pair` 16 → 24** — it was a second plant wearing a disguise, and the
+record-size row is what caught it.  Shipped pair instead: plant `int a;` →
+`unsigned a;` (rows `SIZE int` and `FIELD a` change `spelling`, rc 0) against
+disarm `int a;` → `int a; /* 8 */` (row set byte-identical, rc 0).  Same line,
+same size of edit, opposite outcome — which is the only pairing that says where
+the plant landed.
+
+**CL-9 — A PLANT THAT BREAKS THE SHARED FIXTURE TABLE MUST BE *REPORTED*, NOT
+PRINTED.**  `int a;` → `long a;` moves `b` to offset 8, so the byte offset the C
+spelling table records (4) and libclang's own answer (64 bits) disagree.
+Asserting `bits == cdecl_off * 8` turns that into rc 1 with 7 of 10 rows printed
+and **no `FIELD b`/`FIELD c` row emitted at all**.  Printing the disagreement
+instead would put a self-contradicting row in the file that a differ scores as a
+port bug.
