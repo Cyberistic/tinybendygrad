@@ -1,0 +1,9 @@
+rnd_param_named=i
+rnd_param_unnamed=p7
+rnd_buffer_named=buf
+rnd_buffer_unnamed=b2
+rnd_alloc_named=out
+rnd_alloc_unnamed=a5
+rnd_const_int=42
+rnd_const_bool=True
+rnd_const_float=1.5

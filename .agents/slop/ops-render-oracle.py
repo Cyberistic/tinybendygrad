@@ -74,6 +74,14 @@ def main():
   row("rnd_const_float", UOp.const(1.5))
   # SPECIAL: see the module docstring -- the arm returns None and never fires.
   row("rnd_special", UOp(Ops.SPECIAL, (), None, L))
+  # NOT CLAIMED BY ANY OF THE FIVE, and it is the row that says the port's REFUSAL is
+  # real. It has to be an op that reaches `(UPat(GroupOp.All), lambda x: str(x))`,
+  # and the first choice -- an ADD -- does NOT: an ADD is in `syms`, so the arm above
+  # fires and asks for `ctx[x.src[0]]`, which raises `KeyError` on an empty ctx. That
+  # is a THIRD thing this row is not, and finding it is why the row is here: "no leaf
+  # arm claims it" is not the same as "it falls through", and an ADD looked like the
+  # clean case until it raised. GROUP is unclaimed AND falls through.
+  row("rnd_unclaimed", UOp(Ops.GROUP, (UOp.const(1),), ()))
   return 0
 
 
