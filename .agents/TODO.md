@@ -10328,3 +10328,193 @@ Claim: `.agents/slop/adev/CLAIM.md`.  **Nothing committed.**
       before mutating and says TARGET MISSING rather than reporting a result.
 
       Markers 565 -> 563. Backlog still 236: these were walls, not queue.
+
+---
+
+## SZLANE — `runtime/sz.c`'s bare registrations (unit `szlane`, 2026-10-04)
+
+**Category: substrate / FFI guards.** `[x]` done, uncommitted.
+
+- [x] **Establish what bend emits for a `CID` used OUTSIDE an `#ifdef`.** It is a **textual
+      substitution at emit time, not a macro**; the emit has **0** occurrences of `CID(`.
+      The unguarded form is **NOT safe** — cc reports undeclared identifiers.
+- [x] **Fix defect 1 (bare registration)** by wrapping **2** registrations in
+      `#ifdef CID(Sz.read_dir)` / `#ifdef CID(Sz.is_dir)`, `dtype.c`'s idiom. Wrapped the
+      whole per-effect C group, not just `io_eff` — forced by `sz_read_dir_pack` naming
+      `CID(Nil)`/`CID(Con)` and `sz_read_dir_run` calling it.
+- [x] **Settle `CID_NIL`/`CID_CON` vs `CID_SNIL`/`CID_SCON`.** **The reported mismatch is a
+      FALSE RED.** Both pairs are `#define`d; they are different types (`Nil`/`Con` = List
+      ids 13/14, `SNil`/`SCon` = String ids 1/2). `read_dir` returns `List<String>`, so
+      `CID_NIL`/`CID_CON` is correct. **Nothing renamed, no defensive `#define` added** — and
+      the real cause of their going undefined is SZ-2 (demand allocation), not naming.
+- [x] **Gate it.** Four builds, all `cc -fsyntax-only` rc 0 after the fix; two were rc 1
+      before. Registration counts taken from `cc -E`: **0 / 1 / 1 / 2** for
+      reaches-nothing / is_dir-only / read_dir-only / all. Binaries built **and run**:
+      `is_dir(.) = 1`, `read_dir(.) = NONEMPTY`.
+- [x] **Name what the guard's `#define CID(x) 0` masks.** Three things, two of them not
+      previously named: an id no emit defines (`TODO(GXR-11)`, was live), **registration
+      identity**, and the id's value. It does **not** mask syntax errors — measured, and
+      `#ifdef` does not macro-expand, which is why every guard takes the permissive branch.
+
+- [ ] **NOT MINE, REPORTED BACK:** `substrate-check.sh`'s C lane is `bend -o`'s blind spot in
+      general (`TODO(GXR-11)`'s real scope). Any lane reading `bend -o`'s rc as a build
+      verdict reads a number that cannot fail for this defect class. A C-lane gate would be
+      `cc -fsyntax-only` on `bend -o`'s emit. Left alone: the guard is another unit's file.
+
+- [ ] **NOT MINE, REPORTED BACK:** `sz.bend` is one of the 14 known-cold files (its own 7
+      foreign `@unsafe` defs — `Sz.read_dir`, `Sz.is_dir`, `walk.item`, `walk.scan`, `walk`
+      and the two mode-dispatch defs). **Every `--check-only` verdict against it is
+      INCONCLUSIVE**, and it was not edited here. Its two foreign defs each carry a
+      `TODO(p3)` naming the `base.bend` primitive they wait for.
+
+**Artifacts:** `.agents/slop/SZLANE.md`, `.agents/slop/szlane/{probe-none,probe-isdir,
+probe-readdir}.bend`, `.agents/slop/szlane/BASELINE.md`. Rules `SZ-1`..`SZ-5` appended to
+`.agents/slop/notes/bend2-constraints.md`.
+
+## libclang trampolines: the 324 `None{}` bodies  [CF]
+
+- [x] **Fill all 324 through the generator.** `None{}` bodies **324 → 0**, denominator
+      324. `.agents/slop/clangfill/fill.py` (`bodies()`, spliced by
+      `.agents/slop/clangshim/apply-port-lane.py`) turns each `def ... ->
+      Maybe<&2, T>:\n  None{}` into a `law` + one `import`;
+      `.agents/slop/clangshim/libclang-tramp.c` is GENERATED from the SAME
+      `.agents/slop/ag-libclang.tramp` rows, so a bend signature and a C declaration
+      have one source. Both `--check`s say `IN SYNC`; `.agents/slop/spelling/roundtrip.py`
+      measures `rebuilt == product` (`baa107683faaf56badbd683737960052` / 98944 B).
+
+- [x] **Build the `const char*` marshalling walk — it is a CALL, not a build.**
+      `io_cbuf` (`references/bend/bend2/comp.ts:5591`) out of a bend `String`,
+      `io_str` (`:5640`) back into one. Both are RUNTIME code already in every emitted
+      program; `Tramp_anchor` measures both directions on a real
+      `clang_parseTranslationUnit` and gets a real `CXTranslationUnit` back.
+
+- [x] **Gate against a real clang index.** **320 of 324 EXECUTED**, **4 ungated** and
+      named. `abi.cross_check()`: 324 law signatures read out of the product, **0
+      disagreements**. Determinism 0 rows moved between two runs of one binary.
+      Two plants that move, one declared BLIND SPOT (an argument swap at the call site
+      is invisible to a row that prints the arguments), one disarm that moves 0.
+
+- [ ] **THE SECOND NUMBER, still open: 256 of the 320 executed rows ran with at least
+      one NULL argument and 175 answered a refusal sentinel.** A filled body called with
+      a null object and answering NULL has executed; it has not been shown to bind. The
+      4 ungated are `clang_createIndexWithOptions`, `clang_Cursor_getReceiverType`,
+      `clang_EvalResult_isUnsignedInt`, `clang_remap_getNumFiles` — each takes an object
+      the fixture cannot build.
+
+- [ ] **NOT MINE, REPORTED BACK:** upstream `tinygrad/runtime/autogen/libclang.py`'s own
+      `CXIdxLoc` is `{void*[2]; unsigned}` / SIZE 24, which is `CXSourceLocation`'s shape;
+      `clang-c/Index.h`'s `CXIdxLoc` is `{int index; int line; int column}` / 12. The
+      generator rebuilds C from upstream's table, so 2 `clang_indexLoc_*` rows marshal
+      against upstream's record. `tinygrad/` was not edited.
+
+- [ ] **NOT MINE, REPORTED BACK:** `clang_getOffsetOfBase`, `clang_getTypePrettyPrinted`,
+      `clang_visitCXXBaseClasses` and `clang_isBeforeInTranslationUnit` are ABSENT from
+      libclang 17.0.0 (`nm -gU` → 0 hits each) against `CINDEX_VERSION_MINOR = 64`, so
+      **four** not one, and a declaration of one does not link.
+
+**Artifacts:** `.agents/slop/CLANGFILL.md`, `.agents/slop/clangfill/{abi,fill,gate}.py`,
+`.agents/slop/clangfill/cf-runtime-stub.h`, `.agents/slop/clangshim/libclang-tramp.c`.
+Walls `CF-1`..`CF-8` at `.agents/slop/CLANGFILL.md` §6.
+
+## NVROWS — the 313 dead `nvdev.bend` gate rows (unit `NVROWS-*`)
+
+- [x] **THE 313 ARE FALSE OF THE LIVE FILE.** Live `nvdev.bend` (md5
+      `09eec1e5bd8bf2355f289dc242ded12c`, `cmp`-identical to `strays/origin/`) has
+      **374 row call sites, 368 ALIVE, 6 DEAD.** The 313 figure is true of the STRAY
+      (374 − 61 surviving = 313) and that file **does not compile** (`bend` rc 1,
+      dangling `,` at `:1194`) — so it was a loud failure, not a silent one.
+
+- [x] **THE 6 DEAD, AND THE `file:line`.** All 6 are the body of
+      **`tinybendygrad/runtime/support/nv/nvdev.bend:1272` `def t_const()`**, which has
+      **0 call sites**. Dead at `:1274`–`:1279` (`nv_pte_kind`, `nv_pte_aperture_0/1`,
+      `nv_sf_addrkey_2000`, `_2000_v2`, `_2000_v3`).
+
+- [x] **CLASS: PRE-EXISTING ROT, and a real bug report.** Uncalled in all three
+      commits (`c00db572e` 342 sites → `b8897fd48` 368 → `fde0fc1a8` 374), always at
+      line 1272; `main` never lists it. Unannotated, whereas `nv.pow_shifts` at `:2329`
+      IS annotated "it has no caller, which is stated here rather than left to be
+      discovered" — so the file has the convention and this row breaks it. `Bool.pick`
+      is **not** the mechanism (45 uses, all value positions; the `def` is never
+      entered, so no arm is reached or skipped).
+
+- [x] **DISARM FIRST, THEN PLANT.** `.agents/slop/nvrows/nvrows-deadrow-gate.py` tags
+      every site's row NAME `Snnn:` and counts ABSENCE; Bend has no `sys.settrace`.
+      Output-neutral by construction (`DISARM OUTPUT-NEUTRAL: True` in every cell).
+      Matrix: `ORPHAN` (3 more uncalled rows) → 9 dead while `bend` rc 0 and the printed
+      count stays **811** — caught where `nv_nvdev_gate.py` said `GATE PASS`; `REVIVE`
+      → 374/374, 817 printed, CLEAN; `SELF` → the census's own textual blind spot,
+      printed not promised; `STRIP`/STRAY → rc 1, reported **INCONCLUSIVE**, never CLEAN.
+
+- [ ] **THE FIX, NOT APPLIED (brief forbids planting in the live tree).** One line in
+      `main`'s do-block: `+m : Unit <- t_const()`. Verified by the `REVIVE` plant.
+
+- [ ] **BUT THE FIX ALONE BUYS 4 MEASUREMENTS, NOT 6.** `nv_nvdev_oracle.py` emits
+      2176 rows and **0** of the six names, so revived they print ungated; and
+      `nv_sf_addrkey_2000` / `_2000_v3` are the **identical call** `nv.pte_addrkey(3, 0)`.
+      Needs 3 oracle rows + 1 row deleted alongside the one-line fix.
+
+- [x] **SECOND DEAD DEF, REPORTED NOT FIXED: `nvdev.bend:1770` `def emit(...)`** is
+      never called (10 `\bemit(` hits: 9 are `IP.Tr.emit`) **and uncallable** — bare
+      `emit(...)` yields `expected : a filled definition (an unfilled law is a dead
+      claim…) / observed : emit`. `emit` is a reserved unfilled law in Bend 2.0.34;
+      `IP.emit` (`ip.bend:1174`) is the working printer.
+
+**Artifacts:** `.agents/slop/NVROWS.md`, `.agents/slop/nvrows/{nvrows-deadrow-gate.py,
+census-MATRIX.txt, census-LIVE.txt, NOTES.md}`. Rules `NV-1..NV-9` appended to
+`.agents/slop/notes/bend2-constraints.md`. Nothing committed.
+
+## Session 2026-10-04/05 round 9 — one method landed, one HELD, and the gate found a bug in the hour it was made stricter
+
+- [x] **`quick_gelu` LANDED (elementwise.py:769). `ew-gate` is 75 rows, 3 lanes identical**,
+      marker retired, and — the point of the round — **the row now pins FLOAT CONSTANTS**.
+- [ ] **`tanh` (:757) HELD**, blocked on a real defect found while landing it. Not a wall, a
+      bug, and a located one.
+
+      ### THE CONSTANTS ARE NOW PART OF THE SIGNATURE, AND THAT CHANGED THE GATE
+
+      A CONST printed as `CONST/0`, so `sigmoid` and a `sigmoid` with the WRONG multiplier
+      were the same ten nodes. Landing `sigmoid` and the three methods composed on it put
+      FLOAT CONSTANTS into the graph, and that made the hole live rather than hypothetical.
+      So a float const now prints `CONST/0=<f32 bits>` and an int const still prints
+      `CONST/0` — the asymmetry is the point, not an inconsistency. The bits and not the
+      decimal, because the port has no `F64` and a decimal would pass a value that rounds
+      differently.
+
+      **Control: `ew_quick_gelu` with `ew_k.gelu()` instead of `ew_k.quick_gelu()` turns the
+      gate RED.** Before the change it was the same ten nodes with a different constant and
+      it PASSED. `ew-consts-gate` gates the constants; this is the gate that says a given
+      method uses a given one, and neither alone says both.
+
+      ### AND THE STRICTER GATE FOUND A REAL DEFECT IMMEDIATELY
+
+      `tanh` is `2.0 * ((2.0 * self).sigmoid()) - 1.0`, one line over the landed `sigmoid`.
+      Its row disagreed, and the disagreement was NOT the one the shape suggested:
+
+      ```
+      CPython  CONST 0xBF800000  = -1.0
+      this     CONST 0x4F800000  = 4294967296.0
+      ```
+
+      `ew_sub` is `left + (-right)`, so the negation folds into the CONST — and the port
+      folds it to the wrong bits. `F32.neg` IS CORRECT: a five-row probe of 1.0, 0.5, 2.0,
+      1.5 and `0.0-1.0` agrees with CPython bit for bit. So the defect is in the
+      **CONST-NODE** negation path (`ew_neg` of a float CONST TENSOR), not in float
+      arithmetic — which is why `tanh` is HELD with that reason and not landed.
+
+      **TWO REAL DIFFERENCES IN ONE HOUR, BOTH INVISIBLE BEFORE.** The first was the
+      constant-value hole above. The second was an ordering difference between the two
+      `toposort` implementations for two consts of different nodes reached at different
+      depths (`tinygrad/uop/ops.py:303-307` is an explicit-stack DFS pushing
+      `reversed(node.src)`; the port's is `O.UOp.toposort`). Both were hidden by bare
+      `CONST/0`. **A gate that cannot see a value cannot find a bug about a value**, and
+      that is the argument for making gates stricter before trusting them.
+
+      ### THE CANONICALISATION WAS BUILT AND THEN REMOVED
+
+      For `tanh` I added a per-row multiset comparison, with the reason written down, so the
+      order divergence would be tolerated rather than absorbed. With `tanh` held there is no
+      order divergence, so it came back out: **a gate is a plain line diff again, at 75
+      rows.** Leaving a canonicalisation in "just in case" is how a gate stops being a gate,
+      and a canonicalisation whose reason has gone away should go with it.
+
+      Markers 563 -> 561. Backlog still 236: these were walls.

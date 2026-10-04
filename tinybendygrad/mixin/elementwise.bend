@@ -836,9 +836,15 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:721  hardsigmoid  -- alpha=1/6 and beta=0.5 are both available, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:744  leaky_relu  -- neg_slope=0.01 is a literal, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:757  tanh  -- 2.0 and -1.0 are available (`F32.neg(1.0)`; a negative literal is not a term). UNDIAGNOSED
-# TODO(p3) elementwise.py:769  quick_gelu  -- 1.702 is `ew_k.quick_gelu()`, bit-exact. nothing else was named; UNDIAGNOSED
-# TODO(p3) elementwise.py:779  gelu  -- sqrt(2/pi) and 0.044715 are `ew_k.sqrt_2_over_pi()` and `ew_k.gelu()`, both bit-exact -- the first is a LITERAL, the composite is one ulp off. `erf` is the remainder
+# TODO(p3) elementwise.py:757  tanh         -- `2.0 * ((2.0 * self).sigmoid()) - 1.0`
+# is one line over the landed `sigmoid` and the CONSTANTS are not the problem any
+# more (`2.0` and `1.0` are literals). WHAT IS: `ew_sub` is `left + (-right)`,
+# so the negation folds into the CONST, and the port folds it to the WRONG BITS.
+# MEASURED, and the row is what found it: CPython emits CONST 0xBF800000 (-1.0)
+# and the port emits 0x4F800000 (4294967296.0) for the same node.
+# `F32.neg` IS CORRECT -- a five-row probe of 1.0, 0.5, 2.0, 1.5 and 0.0-1.0 agrees
+# with CPython bit for bit -- so the defect is in the CONST-NODE negation path
+# (`ew_neg` of a float CONST TENSOR), not in float arithmetic. Separate unit.
 # TODO(p3) elementwise.py:854  atanh        -- .log()
 # TODO(p3) elementwise.py:866  asinh        -- .log()
 # TODO(p3) elementwise.py:878  acosh        -- .log()
@@ -935,11 +941,33 @@ def ew_k.selu_gamma() -> F32: 1.050701
 def ew_row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
 
+# A FLOAT CONST PRINTS ITS f32 BITS AND AN INT CONST DOES NOT, and that asymmetry is the
+# point rather than an inconsistency. Landing `sigmoid` and the three methods composed on
+# it put FLOAT CONSTANTS into the graph, and a signature that printed every CONST as
+# `CONST/0` could not tell `sigmoid` from a `sigmoid` with the wrong multiplier: the shape
+# is identical and the value is the whole difference. `ew_quick_gelu` with `ew_k.gelu()`
+# instead of `ew_k.quick_gelu()` is the same ten nodes with a different constant, and this
+# row is the only thing in the port that can see it.
+#
+# The bits and not the decimal, because the port has no F64 and a decimal comparison would
+# pass a value that rounds differently; the constants themselves are gated by value in
+# ew-consts-gate.sh, and THIS is the gate that says a given method uses a given one.
+# The ARG IS A PARAMETER and not a computed value: a `match` may scrutinise a parameter
+# or a field and not a call, and `O.Arena.arg(ar, u)` is a call. So the reader is its own
+# def over the arg and the caller passes it -- the shape `range_at.of` uses.
+def ew_sig.bits.of(a: O.Arg) -> String:
+  match a:
+    case O.APy{O.CFloat{f}}: String.concat(["=", U32.show(F32.bits(f))])
+    case _: SNil{}
+
+def ew_sig.bits(+ar: O.Arena, u: U32) -> String: ew_sig.bits.of(O.Arena.arg(ar, u))
+
 def ew_sig.go(xs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
   match xs:
     case Nil{}: acc
     case +u <> t: ew_sig.go(t, ar,
-      String.concat([acc, O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u)), " "]))
+      String.concat([acc, O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u)),
+        ew_sig.bits(ar, u), " "]))
 
 def ew_sig.print(nm: String, +xs: List<&2, U32>, +ar: O.Arena) -> IO(Unit):
   IO.print(String.concat([nm, "=", ew_sig.go(xs, ar,
@@ -1145,10 +1173,19 @@ def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, 
 def ew_swish(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(t), False{})
 def ew_silu(+t: T.Tensor) -> T.Tensor: ew_swish(t)
 
+
+# `quick_gelu` (elementwise.py:769) and `tanh` (:757) are one line each over the landed
+# `sigmoid`, so they are the second and third methods the composition pays for. Both MULs
+# in `tanh` put the CONSTANT ON THE LEFT because CPython writes `2.0 * self` and
+# `2.0 * (...)`, and that is `rev=True` here -- the same thing sigmoid's ADD needed, and
+# the signature row is the only thing in this port that can see an operand order at all.
+def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), ew_k.quick_gelu())), False{})), False{})
+
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
 def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))def t_swish() -> IO(Unit): ew_sig("ew_swish", ew_swish(g_i32()))
-def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))
+def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))def t_quick_gelu() -> IO(Unit): ew_sig("ew_quick_gelu", ew_quick_gelu(g_i32()))
+
 
 def t_contig_bwd() -> IO(Unit): ew_sig("ew_contig_bwd", g_unary(UContigBwd{}))
 def t_recip() -> IO(Unit): ew_sig("ew_recip", g_unary(URecip{}))
@@ -1439,6 +1476,7 @@ def main() -> IO(Unit):
     t : Unit <- t_sigmoid()
     bh : Unit <- t_swish()
     bi : Unit <- t_silu()
+    bh : Unit <- t_quick_gelu()
     v : Unit <- t_contig_bwd()
     w : Unit <- t_recip()
     x : Unit <- t_trunc()

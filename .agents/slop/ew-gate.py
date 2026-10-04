@@ -43,7 +43,7 @@ WHAT IS PINNED, and why each row exists:
     these" -- stated as a row: the second promote would add a node, and this row
     is what sees it.
 """
-import sys, os
+import sys, os, struct
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 from tinygrad.tensor import Tensor
@@ -51,9 +51,20 @@ from tinygrad.uop.ops import UOp, Ops
 from tinygrad import dtypes
 from tinygrad.dtype import least_upper_dtype, weak_dtype, Invalid
 
+def const_bits(x):
+  """A FLOAT const prints its f32 bits; an int const prints nothing. Same asymmetry as
+  ew_sig.bits on the port side, and for the same reason: sigmoid and the three methods
+  composed on it put FLOAT CONSTANTS in the graph, and `CONST/0` alone cannot tell a
+  method from the same method with a different constant. `struct.pack('f', ...)` is one
+  correctly-rounded step, which is the only definition of "the f32 of this value" worth
+  comparing -- the same rule ew-consts-gate.sh uses."""
+  if x.op is Ops.CONST and isinstance(x.arg, float):
+    return '=%d' % struct.unpack('I', struct.pack('f', x.arg))[0]
+  return ''
+
 def sig(u, nm):
   ts = list(u.toposort())
-  print('%s=%d %s' % (nm, len(ts), ' '.join('%s/%d' % (x.op.name, len(x.src)) for x in ts) + ' '))
+  print('%s=%d %s' % (nm, len(ts), ' '.join('%s/%d%s' % (x.op.name, len(x.src), const_bits(x)) for x in ts) + ' '))
 
 def row(nm, b):
   print('%s=%s' % (nm, 'True' if b else 'False'))
@@ -125,6 +136,7 @@ sig(u4.uop.alu(Ops.DETACH), 'ew_detach')
 sig(Tensor(5).uop.sigmoid(), 'ew_sigmoid')
 sig(Tensor(5).uop.swish(), 'ew_swish')
 sig(Tensor(5).uop.silu(), 'ew_silu')
+sig(Tensor(5).uop.quick_gelu(), 'ew_quick_gelu')
 sig(u4.uop.alu(Ops.CONTIGUOUS_BACKWARD), 'ew_contig_bwd')
 sig(u4.uop.alu(Ops.RECIPROCAL), 'ew_recip')
 sig(u4.uop.alu(Ops.TRUNC), 'ew_trunc')

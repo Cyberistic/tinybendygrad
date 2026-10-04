@@ -3,7 +3,7 @@
 #
 #   sh .agents/slop/ew-gate.sh
 #
-# 74 rows, THREE LANES -- CPython, bend interpreted, bend compiled -- all byte-identical.
+# 75 rows, THREE LANES -- CPython, bend interpreted, bend compiled -- all byte-identical.
 #
 # THE ORACLE AND THE EMITTER BOTH EXISTED AND NO GATE DID. That is the same gap
 # prepare.bend had, and it is a gap with a cost: a file whose surface is UNMEASURED
@@ -42,7 +42,7 @@ cd "$(dirname "$0")/../.."
 GT=.agents/slop/ew-gate
 mkdir -p "$GT"
 
-ROWS=74
+ROWS=75
 DIVERGES='ew_promo_nc'
 
 check_line=$(./bin/bend tinybendygrad/mixin/elementwise.bend --check-only | head -1)
@@ -107,4 +107,4 @@ for nm in ew_dt_promo_nc ew_op_promo_nc; do
   grep -q "^$nm=" "$GT-bd.txt" || { echo "ew-gate: the port lost $nm" >&2; exit 1; }
 done
 
-echo "ew-gate: 74 rows, 3 lanes identical, 1 documented divergence ($DIVERGES)"
+echo "ew-gate: 75 rows, 3 lanes identical, 1 documented divergence ($DIVERGES)"
