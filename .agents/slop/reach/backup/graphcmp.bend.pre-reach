@@ -1091,188 +1091,6 @@ def g_bw() -> O.Found:
   +r34b = O.UOp.new(O.Found.ar(p021a), O.OpsRESHAPE{}, [O.Found.i(p021a), O.Found.i(s34)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(r34b), O.OpsGROUP{}, [O.Found.i(r43b), O.Found.i(r34b)], O.ANone{}, O.TNone{})
 
-# ===========================================================================
-# THE FOUR ELEMENTWISE/MOVEMENT GRAPHS (`alu`, `bit`, `where`, `move`). Added after the
-# op census said 35 of 77 and 42 of the remaining ops are ELEMENTWISE -- i.e. exactly the
-# class a corpus of hand-written value graphs had structurally failed to reach.
-#
-# WHY THESE FIVE AND NOT ONE BIG ONE. The census is the only place that can tell a cheap
-# op from an expensive one, and it says: `alu` is 14 nodes for EIGHT new ops,
-# `bit` is 10 for FOUR, `where` is 8 for ONE, `move` is 19 for FOUR, and `flip` is 6 for
-# ONE. One graph would have been 55 nodes for the same 18 ops and every one of them would
-# have been harder to attribute, because a `?` ledger row would then have covered four ops
-# and a fold defect would have been reported against all four.
-#
-# AND EVERY ONE OF THEM IS `?`-ZERO BY MEASUREMENT, not by design. The port's fold has an
-# arm per op for all eighteen (`fold.bend`: `unary_ds` for SQRT/RECIPROCAL/LOG2/EXP2/SIN,
-# `thru0` for TRUNC/DETACH/CONTIGUOUS_BACKWARD, `alu_ds` for POW/FLOORDIV/FLOORMOD,
-# `shift_ds` for SHL/SHR, `where_ds` for WHERE, `pad_ds`/`shrink_ds`/`flip_ds`/`bitcast_ds`
-# for the movements), so nothing here is a new fold obligation -- they are existing arms
-# that no graph had reached, which is the same distinction `bw` made about `EXPAND`.
-
-# An ALLOC of an arbitrary dtype. `alloc` above is `f32` because every pre-`bit` fixture
-# was `Tensor.empty(..)` on the default float; `bit` needs `int` and retyping the ALLOC
-# would have moved every downstream node's dtype too, so the two spellings coexist and
-# `alloc` is left byte-for-byte alone (the graphs already measured against it must not
-# move).
-def allocd(slot: U32, dtx: S.Dt, size: U32) -> O.ParamArg:
-  O.ParamArg{slot, dtx, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
-    False{}, None{}, None{}, True{}, None{}}
-
-# `--graph alu`: `UOp.group(sqrt(a), reciprocal(a), a**a, log2(a), exp2(a), sin(a),
-# trunc(a), detach(a))` over ONE `Tensor.empty(4,3)`. MEASURED at 14 nodes on the py side
-# with the census
-# `ALLOC=1 CONST=2 DETACH=1 EXP2=1 GROUP=1 LOG2=1 POW=1 RECIPROCAL=1 RESHAPE=1 SIN=1
-#  SQRT=1 STACK=1 TRUNC=1`.
-#
-# EIGHT NEW OPS IN FOURTEEN NODES, and it is the densest graph in the corpus by that
-# measure. The shape is deliberately degenerate: every unary op takes the SAME `RESHAPE` as
-# its only child and `POW` takes it TWICE (`src=n(i5,i5)`, a repeated child index), so the
-# graph's whole content is the eighteen ops' `dtype`/`shape` arms and nothing else. That is
-# what makes it a coverage fixture rather than another arithmetic test.
-#
-# `DETACH` IS NOT A MOVEMENT even though `fold.bend` files it under `thru0` beside them:
-# upstream's `shape` (ops.py) is `thru0` for it and so is `CONTIGUOUS_BACKWARD`'s, which
-# is why they share an arm and not why they are the same kind of node.
-def g_alu() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
-  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
-  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
-  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +sq = O.UOp.new(O.Found.ar(r43), O.OpsSQRT{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +rp = O.UOp.new(O.Found.ar(sq), O.OpsRECIPROCAL{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +pw = O.UOp.new(O.Found.ar(rp), O.OpsPOW{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +lg = O.UOp.new(O.Found.ar(pw), O.OpsLOG2{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +e2 = O.UOp.new(O.Found.ar(lg), O.OpsEXP2{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +sn = O.UOp.new(O.Found.ar(e2), O.OpsSIN{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +tr = O.UOp.new(O.Found.ar(sn), O.OpsTRUNC{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +dt = O.UOp.new(O.Found.ar(tr), O.OpsDETACH{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(dt), O.OpsGROUP{}, [O.Found.i(sq), O.Found.i(rp), O.Found.i(pw),
-    O.Found.i(lg), O.Found.i(e2), O.Found.i(sn), O.Found.i(tr), O.Found.i(dt)], O.ANone{}, O.TNone{})
-
-# `--graph bit`: `UOp.group(a<<a, a>>a, a//a, a%a)` over ONE `Tensor.empty(4,3, int)`.
-# MEASURED at 10 nodes, census
-# `ALLOC=1 CONST=2 FLOORDIV=1 FLOORMOD=1 GROUP=1 RESHAPE=1 SHL=1 SHR=1 STACK=1`.
-#
-# THE ALLOC IS `int32` AND NOT f32, and that is the point rather than a convenience:
-# `shift_ds`/`alu_ds` branch on the operand dtype, so an f32 fixture would have measured a
-# different arm than a real integer program does. MEASURED on the py side, the ALLOC's row
-# is `P(i0,Di32,i12,...)` and every op below it reads `dt=i32`.
-def g_bit() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.int32(), 12)}, O.TNone{})
-  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
-  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
-  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +sl = O.UOp.new(O.Found.ar(r43), O.OpsSHL{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +sr = O.UOp.new(O.Found.ar(sl), O.OpsSHR{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +fd = O.UOp.new(O.Found.ar(sr), O.OpsFLOORDIV{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +fm = O.UOp.new(O.Found.ar(fd), O.OpsFLOORMOD{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(fm), O.OpsGROUP{}, [O.Found.i(sl), O.Found.i(sr), O.Found.i(fd),
-    O.Found.i(fm)], O.ANone{}, O.TNone{})
-
-# `--graph where`: `UOp.group((a<a).where(a,a), (a<a))`. MEASURED at 8 nodes, census
-# `ALLOC=1 CMPLT=1 CONST=2 GROUP=1 RESHATE=1 STACK=1 WHERE=1`.
-#
-# THE COND IS `(a < a)` AND NOT `a`, and that is a MEASURED constraint rather than a style
-# choice. `dtype_from_uop`'s WHERE arm (tinygrad/uop/ops.py:158) reads
-# `if src[0].dtype != dtypes.bool: raise RuntimeError(...)`, and `row_of` reads `.dtype`
-# for EVERY node -- so a `UOp.group(a.where(a,a), ...)` candidate DIES in the emitter. The
-# first reach probe did not see it because it counted `n.op.name` and never touched
-# `.dtype`, so the op census it printed was a census of a graph that cannot be emitted at
-# all. Every candidate after that one is checked through `emit_py`.
-def g_where() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
-  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
-  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
-  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +lt = O.UOp.new(O.Found.ar(r43), O.OpsCMPLT{}, [O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  +wh = O.UOp.new(O.Found.ar(lt), O.OpsWHERE{}, [O.Found.i(lt), O.Found.i(r43), O.Found.i(r43)], O.ANone{}, O.TNone{})
-  O.UOp.new(O.Found.ar(wh), O.OpsGROUP{}, [O.Found.i(wh), O.Found.i(lt)], O.ANone{}, O.TNone{})
-
-# `--graph move`: the four MOVEMENT ops the corpus had not reached and can compare --
-# `pad(((0,1),(0,2)))`, `shrink(((1,4),(2,5)))`, `contiguous_backward()` and
-# `bitcast(int)`. MEASURED at 19 nodes on the py side, census
-# `ALLOC=2 BITCAST=1 CONST=7 CONTIGUOUS_BACKWARD=1 GROUP=1 PAD=1 RESHAPE=2 SHRINK=1 STACK=6`.
-# FLIP was the fifth and is `g_flip` on its own -- see there for the measured wall.
-#
-# TWO FACTS THE ROWS CARRY AND A DOCSTRING WOULD NOT HAVE:
-#   * `PAD`'s margins are TWO CONST-STACKs of REPEATED children -- `n(i6,i6)` is
-#     `STACK(0,0)` and `n(i8,i8)` is `STACK(5,5)` -- so the SAME `CONST 0` node is a child
-#     of one and the SAME `CONST 5` of the other, and both are multi-parent nodes. This is
-#     the first graph in the corpus where a multi-parent node is a MOVEMENT ARG and not a
-#     shape literal reached twice by accident.
-#   * `SHRINK`'s third src is `STACK(3,3)` -- the `CONST 3` already interned at index 3 for
-#     the `a` shape. So `move` REUSES a CONST across two different subtrees, which is the
-#     ucache doing what `UOp.key` (ops.py:269) says it does and what a builder that minted
-#     a fresh `CONST 3` would silently get wrong.
-def g_move() -> O.Found:
-  +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
-  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
-  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
-  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +c0 = O.UOp.const(O.Found.ar(r43), O.CInt{H.i64_of_i32(0)})
-  +s00 = O.UOp.new(O.Found.ar(c0), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c0)], O.ANone{}, O.TNone{})
-  +c5 = O.UOp.const(O.Found.ar(s00), O.CInt{H.i64_of_i32(5)})
-  +s55 = O.UOp.new(O.Found.ar(c5), O.OpsSTACK{}, [O.Found.i(c5), O.Found.i(c5)], O.ANone{}, O.TNone{})
-  +pd = O.UOp.new(O.Found.ar(s55), O.OpsPAD{}, [O.Found.i(r43), O.Found.i(s00), O.Found.i(s55)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(pd), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 64)}, O.TNone{})
-  +c8 = O.UOp.const(O.Found.ar(a1), O.CInt{H.i64_of_i32(8)})
-  +s88 = O.UOp.new(O.Found.ar(c8), O.OpsSTACK{}, [O.Found.i(c8), O.Found.i(c8)], O.ANone{}, O.TNone{})
-  +r88 = O.UOp.new(O.Found.ar(s88), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s88)], O.ANone{}, O.TNone{})
-  +c1i = O.UOp.const(O.Found.ar(r88), O.CInt{H.i64_of_i32(1)})
-  +c2i = O.UOp.const(O.Found.ar(c1i), O.CInt{H.i64_of_i32(2)})
-  +s12 = O.UOp.new(O.Found.ar(c2i), O.OpsSTACK{}, [O.Found.i(c1i), O.Found.i(c2i)], O.ANone{}, O.TNone{})
-  +s33 = O.UOp.new(O.Found.ar(s12), O.OpsSTACK{}, [O.Found.i(c3), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +sk = O.UOp.new(O.Found.ar(s33), O.OpsSHRINK{}, [O.Found.i(r88), O.Found.i(s12), O.Found.i(s33)], O.ANone{}, O.TNone{})
-  +cb = O.UOp.new(O.Found.ar(sk), O.OpsCONTIGUOUS_BACKWARD{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
-  # BITCAST IS THE ONLY NODE IN THE CORPUS WHOSE `arg` IS A `DType` AND WHOSE `dtype` IS
-  # NOT `cast`'s f16 -- `cast` already covered the `ADt` arm, and this covers it with the
-  # dtype CHANGING under it (`f32 -> i32`), which is the case `bitcast_ds` and `cast_ds`
-  # share an arm for and must not be confused by.
-  +bc = O.UOp.new(O.Found.ar(cb), O.OpsBITCAST{}, [O.Found.i(r43)], O.ADt{S.int32()}, O.TNone{})
-  O.UOp.new(O.Found.ar(bc), O.OpsGROUP{}, [O.Found.i(pd), O.Found.i(sk), O.Found.i(cb),
-    O.Found.i(bc)], O.ANone{}, O.TNone{})
-
-# `--graph flip`: `a.flip(0)` -- MEASURED at 6 nodes, census
-# `ALLOC=1 CONST=2 FLIP=1 GROUP=1 RESHAPE=1 STACK=1`.
-#
-# **THIS GRAPH IS EXPECTED TO DISAGREE, ON ITS `arg` FIELD, AND THE CAUSE IS A PORT
-# SPELLING NOT AN ARITHMETIC ONE.** MEASURED, calling CPython:
-#     Tensor.empty(4,3).flip(0).uop.arg       ->  (True, False)
-#     Tensor.empty(4,3).flip(0,1).uop.arg     ->  (True, True)
-#     UOp(Ops.FLIP, (a,), (0,)).shape         ->  ValueError: bad flip on (4, 3), (0,)
-# so upstream's FLIP arg is a `tuple[bool, ...]` and upstream REFUSES an int tuple:
-# `tinygrad/uop/ops.py:428` reads `if len(ps) != len(self.marg) or not all(isinstance(x,
-# bool) for x in self.marg): raise ValueError(...)`, and `tinygrad/mixin/movement.py:254`
-# is the only construction site. `tinygrad/uop/spec.py:166` then asserts
-# `isinstance(mv.arg, tuple)` for PERMUTE **and** FLIP together -- ONE upstream constructor
-# for two arg TYPES, `tuple[int, ...]` for PERMUTE and `tuple[bool, ...]` for FLIP.
-#
-# THE PORT HAS ONE SPELLING FOR BOTH AND IT IS THE PERMUTE ONE. `tinybendygrad/uop/ops.bend`
-# :1066 types the tuple `ATuple{ys: List<&2, U32>}` (its own table at :1031 says
-# "PERMUTE/FLIP arg"), so a bool has no representation, and this file's `case O.ATuple{ys}:
-# us(ys)` renders `n(i1,i0)` where the py side renders `n(b1,b0)`.
-#
-# SO IT IS ITS OWN GRAPH AND NOT A FIFTH MEMBER OF `move`. That is the whole reason: a FLIP
-# disagreement CASCADES -- `arg` is in the `core`, so the FLIP goes one-sided and so does
-# every consumer, and `move`'s GROUP would have been reported as an unexplained one-sided
-# node with its real cause three lines up. Measured on the first attempt, which DID put it
-# in `move`: `shared-cores=21 ONLY-PY=1 ONLY-BEND=1` plus a rung-2 GROUP pair, and the cause
-# was only visible in the rung-3.5 cross-reference. One graph, one cause.
-def g_flip() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
-  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
-  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
-  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
-  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +fl = O.UOp.new(O.Found.ar(r43), O.OpsFLIP{}, [O.Found.i(r43)], O.ATuple{[1, 0]}, O.TNone{})
-  O.UOp.new(O.Found.ar(fl), O.OpsGROUP{}, [O.Found.i(fl)], O.ANone{}, O.TNone{})
-
 # `rows.pick` is a `Bool.pick` chain: `Bool.pick` CHOOSES an arm, it does not SEQUENCE
 # one, so each rung is one more `Bool.pick` and the default is the matmul.
 # `+` on the binder because this body READS `name` TWICE (once per rung). `Bool.pick`
@@ -1280,28 +1098,23 @@ def g_flip() -> O.Found:
 # counts the two static reads -- MEASURED: without `+` this is
 # "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
 def rows.pick3(+name: String) -> O.Found:
-  Bool.pick(O.Found, String.eq(name, "alu"), g_alu(),
-    Bool.pick(O.Found, String.eq(name, "bit"), g_bit(),
-      Bool.pick(O.Found, String.eq(name, "where"), g_where(),
-        Bool.pick(O.Found, String.eq(name, "move"), g_move(),
-          Bool.pick(O.Found, String.eq(name, "flip"), g_flip(),
-    Bool.pick(O.Found, String.eq(name, "lin"), g_lin(),
-      Bool.pick(O.Found, String.eq(name, "loop"), g_loop(),
-        Bool.pick(O.Found, String.eq(name, "gate"), g_gate(),
-          Bool.pick(O.Found, String.eq(name, "bw"), g_bw(),
-            Bool.pick(O.Found, String.eq(name, "group"), g_group(),
-              Bool.pick(O.Found, String.eq(name, "commute"), g_commute(),
-                Bool.pick(O.Found, String.eq(name, "indexed"), g_indexed(),
-                  Bool.pick(O.Found, String.eq(name, "sym"), g_sym(),
-                    Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
-                      Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
-                        Bool.pick(O.Found, String.eq(name, "range"), g_range(),
-                          Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
-                            Bool.pick(O.Found, String.eq(name, "special"), g_special(),
-                              Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
-                                Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
-                                  Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
-                                    g_matmul())))))))))))))))))))))
+  Bool.pick(O.Found, String.eq(name, "lin"), g_lin(),
+    Bool.pick(O.Found, String.eq(name, "loop"), g_loop(),
+      Bool.pick(O.Found, String.eq(name, "gate"), g_gate(),
+        Bool.pick(O.Found, String.eq(name, "bw"), g_bw(),
+          Bool.pick(O.Found, String.eq(name, "group"), g_group(),
+            Bool.pick(O.Found, String.eq(name, "commute"), g_commute(),
+              Bool.pick(O.Found, String.eq(name, "indexed"), g_indexed(),
+                Bool.pick(O.Found, String.eq(name, "sym"), g_sym(),
+                  Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
+                    Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
+                      Bool.pick(O.Found, String.eq(name, "range"), g_range(),
+                        Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
+                          Bool.pick(O.Found, String.eq(name, "special"), g_special(),
+                            Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
+                              Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
+                                Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
+                                  g_matmul()))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

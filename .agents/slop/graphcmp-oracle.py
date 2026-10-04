@@ -177,6 +177,23 @@ def main() -> int:
           + "   (nodes/graphs)")
   print(f"# NOT REACHED ({len(list(G.Ops)) - len(tal)} of {len(list(G.Ops))}): "
         + " ".join(o.name for o in G.Ops if o.name not in tal))
+  # THE VOCABULARY OF THE COVERAGE NUMBER, ASSERTED. `tot_ops` is a `set[str]` of
+  # whatever `unchunks(ln)[1]` yields, from BOTH sides, so an op name that is not a
+  # member of `Ops` used to be counted as reached: MEASURED, a well-formed wire line
+  # naming `INVENTED` took the census from 34 to 35 and this SELFCHECK stayed OK, rc=0.
+  # "N of 77 ops" therefore could not tell you that the 77 were the vocabulary at all --
+  # a name that is in neither `Ops` nor reality moves the numerator and nothing else.
+  # Measured, not assumed: every name in the corpus IS an `Ops` member today, so this
+  # is a guard on the number's own meaning, and it is planted on every run below.
+  known_ops = {o.name for o in G.Ops}
+  unknown_ops = sorted(tot_ops - known_ops)
+  if unknown_ops:
+    bad.append(f"the op census counted {len(unknown_ops)} name(s) that are NOT "
+               f"members of Ops, so '{len(tot_ops)} distinct ops' is not a count over "
+               f"the {len(known_ops)}-op vocabulary: {unknown_ops}")
+  print(f"# OP NAMES ALL IN Ops: {len(tot_ops) - len(unknown_ops)}/{len(tot_ops)}"
+        + (f"   UNKNOWN: {unknown_ops}" if unknown_ops else "   (the census's "
+           "vocabulary is verified against Ops, not assumed)"))
   print("# ORACLE SELFCHECK: " + ("OK" if not bad else "FAIL"))
   for b in bad:
     print("#   " + b)
