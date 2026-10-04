@@ -40,3 +40,16 @@ M37	6 moved	`ct_6`'s claim INVERTED -- the const branch and the pass-through swa
 M33	3 moved	`ct_5_claim`'s child-op test replaced by True	ct4a_claim,ct5b_claim,ct5b_pat
 M34	2 moved	`hop_srcops` answers the empty string for everything	ct8d_srcops,ct8r_srcops
 M35	2 moved	`srcops.go` drops the element -- the sequnence gate is dead	ct8d_srcops,ct8r_srcops
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: `rf2-mutate.py`'s mutation list is not a module-level literal, so its anchors are UNDECLARED and cannot be checked
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

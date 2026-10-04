@@ -115,3 +115,16 @@ declares no foreign effect.
 set of predictions, and the "would catch" column is a claim about which rows move.
 The seven "CAUGHT BY" rows in the first table are the part that is measured. Do
 not read the second table as a coverage claim.
+# PIN NOT WRITTEN -- UNSTATED.  NOT A MEASURED TABLE: its own header says 'ENUMERATED AND THEN NOT RUN TO COMPLETION', and 15 of its rows disagree with CPython today.  See the report.
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

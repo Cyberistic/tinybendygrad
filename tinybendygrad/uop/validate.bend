@@ -136,6 +136,100 @@ import ./../LAWS/spec.bend as S
 # `z3_and`/`z3_or`/`z3_xor`; it is a field rather than a `Z.is_b` recursion
 # because every constructor here knows its own sort except `ZIf`.
 # ===========================================================================
+# ===========================================================================
+# THE GATE HAS AN ORACLE, AND IT IS GREEN ON 80 OF 90 SHARED ROWS.
+#
+# There was none until now, and that is the whole reason three rows were able to move in an
+# unadjudicated direction: `dv_and15`/`dv_and21`/`dv_and_neg4` went from `- 1` to `- 256` in a
+# region with no CPython oracle anywhere in `.agents/slop/`, so no reader existed that could have
+# said the new value was wrong. The oracle is `.agents/slop/validate-oracle.py`; it calls
+# `uops_to_z3` live. The reader is `.agents/slop/validate-gate.py`; it uses
+# `rebase-gate.py`'s `rows()` and reports the DENOMINATOR.
+#
+#     port 155 rows, oracle 364 rows, SHARED 138, agree 123, disagree 15   (MEASURED)
+#
+# ⚠ THE PRIOR PREMISE WAS FALSE. This header used to record, as the reason `dv_and*` could not be
+# adjudicated: "**`z3` IS NOT INSTALLED IN THIS ENVIRONMENT**". z3 IS installed --
+# `z3.get_version()` is `(4, 16, 0, 0)`, `validate.py`'s own version gate at line 8 passes, and
+# `import tinygrad.uop.validate` gives a live `z3_bv`. Rows `z3_ok`, `z3_d3` and
+# `validate_import` in the oracle exist so a reader can check that in one command instead of
+# taking it on trust. The rows were never un-adjudicable; they were un-oracled.
+#
+# WHAT WAS FIXED, each with the CPython measurement that pinned it. Every one is a value, not a
+# reading, and every one is a mutation in `.agents/slop/validate-mutate.py` that moves rows AWAY
+# from CPython when reverted:
+#
+#   the arena `dv2` builds the SINK in -- `Found.ar(g)`, not `Found.ar(t)`. The gate is interned
+#     AFTER `t`, so `Found.ar(t)` is the store without it, and the walk read a node that is not
+#     the gate. M3: 34 rows, disagree 10 -> 33.
+#   `vz_cint` could not read a `CBool` CONST, so rule 7 MISSED on every gate and nothing was ever
+#     added to the solver. This was the real cause of the missing `True`, not the missing
+#     `solver.add`. M5: 68 rows, disagree 10 -> 60.
+#   `solver.add(z3_mask)` -- validate.py:95 -- now happens (`vz_add_mask`).
+#   `pow2`'s `m > 0` was written as a sign-bit test, which is False for every positive power of
+#     two. `r & 15` and `r & -4` therefore took the bit-blast arm. `m != 0` is the same predicate
+#     (`m & (m-1) == 0` forces m positive), and the theorem is checked as `pow2_fn_agree`.
+#     M4: 6 rows, disagree 10 -> 16.
+#   `create_bounded` built `Le(vmin, sym)`. With `vmin` a Python `int`, validate.py:51 REFLECTS
+#     and z3 receives `Ge(sym, vmin)`. M6: 24 rows, disagree 10 -> 29.
+#   `Ops.MAX` was reaching the `k`-tag ladder as `k = 0` and being silently FLOORMODded. `dv_max`
+#     is the row that found it. M7: 3 rows, disagree 10 -> 13.
+#   `range_str` and the violation join both DROPPED their first element (a `Bool` flag that took
+#     the accumulator arm on the head), which is why `dv_const_ok` printed `[]` where CPython
+#     prints `[True]` and why `dv_unsup_stack` reported one violation with no message.
+#   `Sol.put` appended every node's TERM to the assertion list. M8: 34 rows, 10 -> 33.
+#   `z3_lt` -- z3 canonicalises `a < n` to `n > a` when `n` is a z3 numeral and NOT when it is a
+#     Python `int`, and `python_alu[CMPLT]` is `operator.lt`. M9: 5 rows, 15 -> 18.
+#   `Ops.CDIV` was `k = 2`, i.e. `z3_floordiv`, and those are DIFFERENT FUNCTIONS. Two `z3_alu`
+#     keys on one tag, and for a POSITIVE divisor they agree on shape and disagree on nothing
+#     visible -- which is why nothing caught it. `dv_cdiv4` caught it.
+#   NO PARENTHESES AT ALL: `dv_xor_m1` printed `-r0 + 1` where CPython prints `-(r0 + 1)`, and
+#     THOSE ARE DIFFERENT FUNCTIONS. The rule is 60 measured cases and it is in `Z.par`.
+#
+# WHAT THE EIGHT NEW `z3_alu` ROWS FOUND ON THEIR FIRST RUN, which is the argument for adding them
+# rather than only naming the gap: before them 4 of the 11 keys had a fixture that REACHED them
+# and SEVEN did not, `n_z3_alu=11` passed throughout, and the first gate run over the new rows
+# reported FOUR defects -- `Ops.CDIV` floormodded, the missing parentheses, and `z3_xor's` `-(x+1)`
+# printing as `-x + 1`. **A membership count is not coverage; eight rows found three real bugs the
+# day they were written.**
+#
+# WHAT IS STILL RED, and each is a NAMED remaining difference rather than an unexplained one:
+#
+#   dv_shr2*, dv_shl2*      z3's `FreshInt` appends a per-CONTEXT counter: `invalid_shift!0`. The
+#                           port prints the bare name. The `_term_nb` rows are the same rows with
+#                           the counter suffix removed on BOTH sides and THEY AGREE, so everything
+#                           else about both terms is CPython-exact. M11 (the shift factor doubled)
+#                           moves 6 rows AWAY, so `dv_shr2_term_nb` is a real gate and not a
+#                           normalised-away comparison.
+#   dv_cmod4*, and ONLY that ONE SPACE   the port prints `*4` and `_term` prints `* 4`. EVIDENCE,
+#                           not assertion: oracle row `#raw_cmod4` is the raw z3 string and it
+#                           ENDS `r0/4)*\n4` -- z3 put a NEWLINE where it printed no space, and
+#                           collapsing the wrap to a space invents one. **THE PORT IS RIGHT AND
+#                           THE ORACLE'S OWN NORMALISATION IS WRONG HERE.** A second encoding
+#                           (`_term_ns`, wrap deleted with nothing) was built to fix it and is
+#                           ALSO unsound in the opposite direction -- z3 wraps after a comma too,
+#                           so it disagreed on 5 rows where the port is right -- and was removed.
+#                           Neither whitespace normalisation of z3 output is sound; one primary
+#                           encoding plus a named residual with the raw text is the honest form.
+#   dv_where, dv_where_cs   the port emits `And(v >= 0, v <= 15)` TWICE. CPython emits it once.
+#                           A rewrite-accounting defect in the walk, not yet located.
+#   dv_unsup_stack          CPython RAISES `NotImplementedError`; the port answers with a
+#   dv_unsup_two            violation LIST. Same for `AssertionError` and `TypeError` below. This
+#   dv_rank_shr1            is the declared design difference, not a mystery: the port cannot
+#   dv_bad_dtype_bitcast    raise. `_msg` rows carry the message TEXT, which both sides share.
+#
+# TWO THINGS CPython DOES THAT NO FIXTURE CAN REACH, both reported rather than papered over:
+#   * `dv_bad_dtype_bitcast`'s fixture is `Ops.BITCAST` with `arg=None`, and CPython's
+#     `dtype_from_uop` (ops.py:182) ASSERTS on that -- `CAST/BITCAST arg must be DType, got
+#     None`. The row's fixture does not exist in CPython, so it can never be adjudicated as
+#     written. The constructible spelling (`arg=dtypes.bool`, two srcs) does reach validate.py
+#     and answers `NotImplementedError: Ops.BITCAST is not supported by z3`; adding it as a row
+#     needs a dtype-carrying Arg in `ops.bend`, which is out of this file's scope.
+#   * `dv_rank_shr1`'s header used to claim CPython raises `IndexError: tuple index out of range`.
+#     It does not: `z3_alu[Ops.SHL]` is called as `(x, *srcs)` with ONE src, so it raises
+#     `TypeError: z3_shift() missing 1 required positional argument: 'b'`.
+# ===========================================================================
+
 # THE GATE IS RED. THIS IS THE MEASURED DEFECT LIST AND IT IS NOT FITTED AWAY.
 #
 # Both lanes are byte-identical and `ALL PROOFS CHECK`. The gate is red against
@@ -376,19 +470,94 @@ def ZBv.str(k: U32, w: U32, a: String, b: String) -> String:
 # `.agents/slop/validate-oracle.py`, and `str()` is the identity on all 120 of them.
 # ---------------------------------------------------------------------------
 
-# THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and
-# validate.py's f-strings print. The four comparison arms are inlined because they call
-# `Z.str` and `Z.str` calls them -- mutual recursion, which Bend refuses outright.
+# `Z.ch` IS THE ONE PLACE A CHILD GETS PARENTHESES, and the rule is PRECEDENCE, not
+# associativity. 60 measured cases, all accounted for (`cmp_*` and the `#paren_*` rows of
+# `.agents/slop/validate-oracle.py`):
+#
+#   parent    | child                     | parens | measured
+#   ----------|---------------------------|--------|---------------------------------
+#   `+`       | anything                  | NO     | `a + b + c`, `a + b - c`, `a + b*c`
+#   `-`       | `+` or `-` on the RIGHT   | YES    | `a - (b - c)`, and `a - (b + c)` from `dv_cdiv4`
+#   `-`       | anything else, either side | NO     | `a - b - c`, `a - b/c`, `a - b%c`, `a - b*c`
+#   `*`       | `+`, `-`, `/`, `%`        | YES    | `(a + b)*4`, `(a - b)*4`, `(a/b)*4`, `(a%b)*4`
+#   `*`       | `*`                       | NO     | `a*b*c`, and `a*(b*c)` prints `a*b*c`
+#   `/`, `%`  | anything BINARY           | YES    | `(a + b)/4`, `(a/b)/c`, `a/(b/c)`, `a%(b%c)`, `a/(b*c)`
+#   `/`, `%`  | an ATOM                   | NO     | `a/b`, `a%4`, `4*a`, `If(a < b, b, a)*4`
+#   unary `-` | anything BINARY           | YES    | `-(a + 4)`, `-(a*b)`, `-(a/b)`, `-(a%b)`
+#   unary `-` | `Neg`, symbol, lit, `If`  | NO     | `--a`, `-a`, `If(a < b, b, a)*4`
+#
+# ⚠ WITHOUT THIS `dv_xor_m1` PRINTED `-r0 + 1` WHERE CPYTHON PRINTS `-(r0 + 1)`, AND THOSE ARE
+# DIFFERENT FUNCTIONS. A dropped paren in a printer is not a formatting defect, which is why
+# `dv_xor_m1` exists: `x ^ -1` is the only fixture that reaches `ZNeg` of a binary.
+# FIVE CLASSES AND NOT FOUR, and the fifth is the whole point: `+` and `-` must be DISTINCT even
+# though they share a precedence, because MEASURED `a + (b - c)` prints `a + b - c` (no parens)
+# while `a - (b + c)` prints `a - (b + c)` (parens). One class for both parenthesised every `-`
+# under a `+`, which is `dv_cdiv4`'s `(r0 + (4 - 1))/4` against CPython's `(r0 + 4 - 1)/4`.
+def Z.cls(t: Z) -> U32:
+  match t:
+    case ZAdd{a, b}: 1
+    case ZMul{a, b}: 2
+    case ZDiv{a, b}: 3
+    case ZSub{a, b}: 4
+    case ZMod{a, b}: 5
+    case _: 0
+
+# `ZNeg` IS CLASS 0, and that is what makes `Neg(Neg(a))` print `--a`: a prefix minus is not a
+# binary operand and does not need protecting from anything.
+# FOUR PARENTS, FOUR ANSWERS, ONE LADDER -- `+` never, `-` on its RIGHT child, `*` under the four
+# looser classes, and `/`/`%` under anything binary. The `c != 0` in the last arm is the fix for
+# `dv_floordiv4` printing `(r0)/(4)`: an ATOM is never parenthesised, and the first version of
+# this rule parenthesised it because it tested only the parent's class.
+# TWO BOOLEANS BOUND AT `Z.ch`, BECAUSE THE CLASS IS NEEDED TWICE AND A `U32` IS NOT A `Data`
+# TYPE SO IT CANNOT TAKE `+`. This is the file's `Wv` pattern -- a pair, because a value is
+# unreadable twice -- applied to a DECISION rather than to a value. `List.contains` is the
+# membership test the file already uses for `tuple(z3_alu)` (`ren_t9`).
+def Z.par.loose(c: U32) -> Bool:
+  Bool.not(U32.is_zero(c))
+
+# `+c` IS THE ANSWER AND IT IS NOT THE ARENA TRAP: `+` on a `U32` parameter buys a second READ,
+# and `U32.is_eq` cannot REBIND the name -- the hazard agent-core.md records is a MINT rebinding an
+# arena name. The earlier refusal was `List.contains`'s predicate slot wanting a `Quant`, not `+`.
+def Z.par.addsub(+c: U32) -> Bool:
+  Bool.or(U32.is_eq(c, 1), U32.is_eq(c, 4))
+
+def Z.par.sub(pc: U32, right: Bool, addsub: Bool) -> Bool:
+  Bool.and(right, addsub)
+
+# THREE ARMS AND NOT FIVE, because `*`, `/` AND `%` ALL ASK THE SAME QUESTION -- "is the child
+# binary" -- and only `-` needs its own question. `+` never parenthesises.
+def Z.par(+pc: U32, right: Bool, loose: Bool, addsub: Bool) -> Bool:
+  Bool.pick(Bool, U32.is_eq(pc, 1), False{},
+    Bool.pick(Bool, U32.is_eq(pc, 4), Z.par.sub(pc, right, addsub), loose))
+
+# `Z.ch` TAKES THE CHILD'S ALREADY-PRINTED TEXT, NOT THE CHILD, and that is forced and not a
+# style choice: `Z.ch` needs `Z.str(c)` and `Z.str` calls `Z.ch`, so taking the `Z` would be
+# MUTUAL RECURSION, which Bend refuses outright. This is the same wall that forced the comparison
+# arms to be inlined, met a second time in this file for the same reason. `+s` because `Bool.pick`
+# is STRICT and builds both arms.
+def Z.ch(+s: String, +c: U32, pc: U32, right: Bool) -> String:
+  Bool.pick(String, Z.par(pc, right, Z.par.loose(c), Z.par.addsub(c)),
+            String.concat(["(", s, ")"]), s)
+
+# THE PRINTER. `str(z3_expr)`, which is what `solver`'s own `__str__` and validate.py's
+# f-strings print. The comparison and arithmetic arms are inlined because they call `Z.str` and
+# `Z.str` calls them -- mutual recursion, which Bend refuses outright. `Z.ch` is a def because it
+# does NOT recurse into a comparison, only into an arithmetic child.
 def Z.str(t: Z) -> String:
   match t:
     case ZSym{nm, b}: nm
     case ZLit{v, b}: ZLit.str(v, b)
-    case ZAdd{a, b}: String.concat([Z.str(a), " + ", Z.str(b)])
-    case ZSub{a, b}: String.concat([Z.str(a), " - ", Z.str(b)])
-    case ZMul{a, b}: String.concat([Z.str(a), "*", Z.str(b)])
-    case ZDiv{a, b}: String.concat([Z.str(a), "/", Z.str(b)])
-    case ZMod{a, b}: String.concat([Z.str(a), "%", Z.str(b)])
-    case ZNeg{a}: String.concat(["-", Z.str(a)])
+    case ZAdd{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 1, False{}), " + ", Z.ch(Z.str(b), Z.cls(b), 1, True{})])
+    case ZSub{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 4, False{}), " - ", Z.ch(Z.str(b), Z.cls(b), 4, True{})])
+    case ZMul{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 2, False{}), "*", Z.ch(Z.str(b), Z.cls(b), 2, True{})])
+    case ZDiv{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 3, False{}), "/", Z.ch(Z.str(b), Z.cls(b), 3, True{})])
+    case ZMod{+a, +b}: String.concat([Z.ch(Z.str(a), Z.cls(a), 5, False{}), "%", Z.ch(Z.str(b), Z.cls(b), 5, True{})])
+    # UNARY MINUS IS INLINED FOR THE SAME REASON AS `Z.ch`: a def would have to call `Z.str`
+    # from above `Z.str`, which is mutual recursion. Measured: `-(a + 4)`, `-(a*b)`, `-(a/b)`,
+    # `-(a%b)`, and `--a` for a `ZNeg` child (`ZNeg` is class 0, which is what gives `--a`).
+    case ZNeg{+a}:
+      Bool.pick(String, U32.is_gt(Z.cls(a), 0), String.concat(["-(", Z.str(a), ")"]),
+                                         String.concat(["-", Z.str(a)]))
     case ZIf{c, a, b}: String.concat(["If(", Z.str(c), ", ", Z.str(a), ", ", Z.str(b), ")"])
     case ZLe{a, b}: String.concat([Z.str(a), " <= ", Z.str(b)])
     case ZGe{a, b}: String.concat([Z.str(a), " >= ", Z.str(b)])
@@ -835,10 +1004,21 @@ def ren_8.put(+x: ZAt, +sb: Bool, +db: Bool, +s: Sol) -> Ren:
 # entries that combine `a` with `cdiv`/`floordiv`. The LAST arm is FLOORMOD, so a tag this
 # ladder does not know becomes FLOORMOD rather than an error; `dv_max` is the row that caught
 # `Ops.MAX` arriving as `k = 0` and being silently floormodded.
+# `k` is 1 CMOD, 2 FLOORDIV, 3 FLOORMOD, 4 CDIV -- and the LAST arm is FLOORMOD, so an
+# unrecognised tag is silently floormodded. That default is what let `Ops.MAX` arrive as `k = 0`
+# and be rendered as FLOORMOD (`ren_9.mx.mk` below, and `dv_max` is the row).
+# ⚠ `Ops.CDIV` WAS `k = 2`, i.e. `z3_floordiv`, AND THAT IS A DIFFERENT FUNCTION. `z3_cdiv`
+# (validate.py:12) truncates toward zero and only its `a < 0` arm differs from `z3_floordiv`'s
+# `b > 0` test, so for a POSITIVE divisor the two agree on the shape and disagree on nothing
+# visible -- which is exactly why no row caught it. `dv_cdiv4` caught it: the port printed
+# `If(4 > 0, r0/4, -r0/-4)` where CPython prints the whole `If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4,
+# (r0 - (4 + 1))/4), r0/4)`. Two `z3_alu` keys on ONE tag is a membership-count-invisible defect
+# of the same family as `Ops.MAX`.
 def ren_9.b2.mk(+k: U32, +a: Z, +b: Z) -> Z:
   Bool.pick(Z, U32.is_eq(k, 2), z3_floordiv(a, b),
     Bool.pick(Z, U32.is_eq(k, 1), ZSub{a, ZMul{z3_cdiv(a, b), b}},
-                                   ZSub{a, ZMul{z3_floordiv(a, b), b}}))
+      Bool.pick(Z, U32.is_eq(k, 4), z3_cdiv(a, b),
+                                   ZSub{a, ZMul{z3_floordiv(a, b), b}})))
 
 # ⚠ A REAL DEFECT WAS HERE AND NO ROW COVERED IT. `Ops.MAX` was reaching this ladder as `k =
 # 0`, which is neither 2 (FLOORDIV) nor 1 (CMOD), so it fell through to the FLOORMOD arm:
@@ -1607,7 +1787,7 @@ def ren_9.bv(k: U32, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
 def ren_9.go(op: O.Op, +ar: O.Arena, +s: Sol, +self: U32) -> Ren:
   match op:
     case O.OpsCMOD{}: ren_9.b2(1, ar, s, self)
-    case O.OpsCDIV{}: ren_9.b2(2, ar, s, self)
+    case O.OpsCDIV{}: ren_9.b2(4, ar, s, self)
     case O.OpsFLOORDIV{}: ren_9.b2(2, ar, s, self)
     case O.OpsFLOORMOD{}: ren_9.b2(3, ar, s, self)
     case O.OpsMAX{}: ren_9.mx(ar, s, self)
@@ -1661,13 +1841,73 @@ def vs_str(vs: List<&2, String>) -> String:
 def n_vs(vs: List<&2, String>) -> U32:
   U32.from_nat(List.length(&2, String, vs))
 
+# ---------------------------------------------------------------------------
+# THE ROW SHAPE, AND IT IS `name=value` BECAUSE THAT IS WHAT THE GATE READS.
+#
+# `.agents/slop/rebase-gate.py`'s `rows()` splits on the FIRST `=`, so `dv_and21 | ... | ...`
+# -- the shape this file used to print -- parsed to NOTHING. A lane that parses to no rows
+# shares no name with anything and therefore can never disagree, which is `rebase-gate.py`'s
+# GUARD 2 and `agent-core.md`'s "0 rows is not a pass". That is the mechanical reason
+# `dv_and15`/`dv_and21`/`dv_and_neg4` were able to move from `- 1` to `- 256` with nobody
+# adjudicating the direction: there was no reader for the row to be read BY.
+#
+# SIX ROWS PER FIXTURE, NOT ONE, because a blob row is red on any fixture with more than one
+# thing wrong in it and "3 of 4 fields agree" is the only useful thing to know about a row
+# under adjudication:
+#
+#   nm          the whole row
+#   nm_cs       `str(solver)` alone
+#   nm_term     `str(z3map[idx])` alone
+#   nm_term_nb  the term with z3's `FreshInt` COUNTER SUFFIX removed, on BOTH sides
+#   nm_n        the violation count
+#   nm_msg      the violation TEXT
+#
+# `_nb` is a declared ENCODING on both sides, not a second question. On the oracle side it
+# strips `!<digits>` from a FreshInt name; on the port side the term has no such suffix to
+# strip. z3's counter is PER-CONTEXT (MEASURED: `aaa!4` then `bbb!5` in one context, and a
+# new context restarts at `!0`) and `validate_index_with_z3:93` builds a fresh `z3.Context()`
+# per call, so the counter is `!0` for the first FreshInt of EVERY row. Without `_nb` the only
+# difference on `dv_shr2` would be one token and would read like a defect; with it
+# `dv_shr2_term_nb` is green and the divergence is confined to `dv_shr2_term`, which is what
+# "name what is proven and what is not, separately" means in a row name.
+# ---------------------------------------------------------------------------
 # `str(solver)` | `str(z3map[idx])` | violations | violation COUNT
 def row(+r: Rep) -> String:
   String.concat([Rep.cs(r), " | ", Rep.term(r), " | ", vs_str(Rep.vs(r)), " | ",
                  U32.show(n_vs(Rep.vs(r)))])
 
-def dv.of(nm: String, +acc: Vz, idx: U32) -> String:
-  String.concat([nm, " | ", row(validate_index_with_z3(16, acc, idx))])
+# THE THREE PER-FIELD ROWS, and the row NAME is threaded through rather than repeated six times
+# in one `String.concat`, because `String.concat` CONSUMES each name it is given and `nm` is
+# read six times. `+nm` alone is not enough -- the compiler refused `nm (consumed more than
+# once)` at six reads and accepted it at two -- so each suffix is its own def, and each is
+# written ABOVE its caller because a def may only call defs written above it.
+def dv.of.cs(+nm: String, +r: Rep) -> String:
+  String.concat([nm, "_cs = ", Rep.cs(r), "\n"])
+
+# ⚠ A THIRD ENCODING, `_term_ns` (the wrap deleted with NOTHING in its place), WAS BUILT AND THEN
+# REMOVED, and the reason is worth more than the rows. It was an attempt to normalise z3's line wrap
+# SOUNDLY, and MEASURED it is an ARTEFACT GENERATOR in the opposite direction from `_term`: z3 wraps
+# after a `,` as well as after an operator, so deleting the wrap with nothing gives
+# `If(a < 0,If(b > 0, ...` -- no space after the comma -- and it disagreed on 5 rows where the port
+# is RIGHT. `_term` invents one space in exactly ONE place (`dv_cmod4`'s `* 4`, where the raw text
+# ends `r0/4)*\n4` and z3 printed no space at all) and agrees everywhere else.
+# **NEITHER WHITESPACE NORMALISATION OF z3 OUTPUT IS SOUND, and the honest form is ONE primary
+# encoding plus a NAMED residual with the raw text as evidence** -- which is what `_term` and
+# `dv_cmod4`'s one-token disagreement are. Oracle rows `#raw_cmod4` / `#wrap_cmod4` carry the raw
+# string and the newline count, so the residual is checkable rather than asserted.
+def dv.of.term(+nm: String, +r: Rep) -> String:
+  String.concat([nm, "_term = ", Rep.term(r), "\n", nm, "_term_nb = ", Rep.term(r), "\n"])
+
+def dv.of.count(+nm: String, +r: Rep) -> String:
+  String.concat([nm, "_n = ", U32.show(n_vs(Rep.vs(r))), "\n"])
+
+def dv.of.msg(+nm: String, +r: Rep) -> String:
+  String.concat([nm, "_msg = ", vs_str(Rep.vs(r))])
+
+def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
+  +r: Rep = validate_index_with_z3(16, acc, idx)
+  String.concat([nm, " = ", row(r), "\n", dv.of.cs(nm, r), dv.of.term(nm, r),
+                 dv.of.count(nm, r), dv.of.msg(nm, r)])
 
 # `UOp.variable(name, vmin, vmax)` -- ops.py:669. The node is a PARAM, so
 # `create_var` takes its name from `x.arg.name` and NOT from the counter, which
@@ -1985,19 +2225,31 @@ def dv_bad_dtype_bitcast() -> String:
 # `dv_and.mm(ar, t)` then read an index `ar` never interned. PROVEN by
 # `.agents/slop/arena-validate-probe.bend`: `in_pre_mint_arena=None`.
 #
-# ⚠⚠ THIS CHANGES THREE ROWS AND **THE DIRECTION IS NOT YET ADJUDICATED**. `dv_and15`,
-# `dv_and21` and `dv_and_neg4` moved from `... BV2Int(...) - 1 ...` to `... - 256 ...`, and
-# that `1` is `2**(w-1)` for the bit width `validate.py:16` computes from `vmin`/`vmax` --
-# so the stale read was supplying the arena BOTTOM's bounds (all zero, hence `w=1`) and the
-# fix supplies the real node's. **`z3` IS NOT INSTALLED IN THIS ENVIRONMENT**, so CPython's
-# `uops_to_z3` could not be CALLED, and `dv_and*` has no oracle anywhere in `.agents/slop/`.
-# A hand-derivation of `validate.py:16` gives `w=8` -> bound 128, which matches NEITHER 1 NOR
-# 256, so it settles nothing.
+# ✅ THE OPEN QUESTION THIS USED TO CARRY IS CLOSED, AND CLOSED BY CALLING CPython. The old text
+# here said "**THE DIRECTION IS NOT YET ADJUDICATED**... `z3` IS NOT INSTALLED IN THIS
+# ENVIRONMENT, so CPython's `uops_to_z3` could not be CALLED, and `dv_and*` has no oracle
+# anywhere in `.agents/slop/`. A hand-derivation of `validate.py:16` gives `w=8` -> bound 128,
+# which matches NEITHER 1 NOR 256, so it settles nothing."
 #
-# SO: THE ALIASING IS PROVEN AND THE FIX IS RIGHT BY THAT PROOF; WHETHER `- 256` IS WHAT
-# CPython ANSWERS IS **NOT ESTABLISHED**, and this row must not be called green until an
-# oracle exists. Recorded as an OPEN QUESTION, not as a gated fix. `dv_shr2.of` above moves
-# NO row and has no such question.
+#   * z3 IS installed (4.16.0.0) and `uops_to_z3` runs. The premise was false.
+#   * CALLED, `validate.py:16` on CPython's own `_min_max` gives `w = 8`, and the literal z3
+#     prints inside the signed `BV2Int` expansion is `2**8 = 256`. So `- 256` is CPython's
+#     answer and the fix is KEPT. Oracle rows `w_and_100_21=8`, `w_and_100_21_off=256`.
+#   * The `128` in that old text is the width of a DIFFERENT NODE: `w = 7`, and `w = 7` is what
+#     `RANGE(64) & CONST(2)` gives -- the `dv_shr2` shape, not any `dv_and*` fixture. Oracle
+#     rows `w_and_64_2=7` and `w_and_100_21=8` put the two numbers side by side, so they are
+#     distinguishable by a row name instead of by an argument.
+#   * M1 in `.agents/slop/validate-mutate.py` reverts this one line and moves exactly THREE rows
+#     -- `dv_and21`, `dv_and21_term`, `dv_and21_term_nb` -- and moves them AWAY from CPython
+#     (disagree 10 -> 13), the moved value being `- 1`. **NOT the three fixtures the old text
+#     named.** `dv_and15` and `dv_and_neg4` are INSENSITIVE to this aliasing: `z3_and`'s `pow2`
+#     arms fire for 15 and -4 and never reach `z3_bv`, so no width is read and there is nothing
+#     for a stale arena to change. Those two printed a `- 256` before this fix only because
+#     `pow2` was ALSO broken; with `pow2` fixed they print `r0%16` and `r0 - r0%4` and the arena
+#     is irrelevant to them.
+#   * AND `bv_w_and21` does NOT move under M1, so the width rows gate `bv_w`'s arithmetic and are
+#     blind to the arena; `dv_and21_term` is the row that gates the arena. `dv_w2`'s header says
+#     so and says what would close the gap.
 def dv_and.put(+ar: O.Arena, nm: String, k: U32) -> String:
   +t = dv_bin(ar, O.OpsAND{}, 100, k)
   +g = fx_const_bool(O.Found.ar(t), True{})
@@ -2005,6 +2257,104 @@ def dv_and.put(+ar: O.Arena, nm: String, k: U32) -> String:
 
 def dv_and.of(+ar: O.Arena, nm: String, k: U32) -> String:
   dv_and.put(ar, nm, k)
+
+# --- `Ops.MAX`, and THIS ROW EXISTS BECAUSE A DEFECT HAD NO ROW.
+# `validate.py:47` is `Ops.MAX: lambda _,a,b: z3.If(a<b, b, a)`, and `Ops.MAX` is one of the
+# eleven `z3_alu` keys (`n_z3_alu=11`), but `ren_9.mx` was routing it into the `k`-tag ladder
+# as `k = 0` -- which is neither 2 (FLOORDIV) nor 1 (CMOD) -- so it silently took the LAST arm
+# and `r0 & 21`-shaped MAX rendered as `a - floordiv(a,b)*b`, i.e. FLOORMOD. Reachable from
+# `uops_to_z3`, invisible to every existing row, and invisible to `n_z3_alu` because the key
+# set was right and only the TRANSLATION was wrong. A membership count cannot see this; a
+# value row can.
+def dv_max.of(+ar: O.Arena, nm: String) -> String:
+  +t = dv_bin(ar, O.OpsMAX{}, 100, 21)
+  +g = fx_const_bool(O.Found.ar(t), True{})
+  dv2(nm, t, g, dv_and.mm(O.Found.ar(t), t))
+
+# --- THE `z3_bv` WIDTH AS ITS OWN ROW. `validate.py:16` is the width, and the `- 1` -> `- 256`
+# move was a move IN IT, so the width gets a row that can be green on its own: a blob row that
+# contains a term cannot isolate the number the adjudication was about. Oracle: `w_*` /
+# `w_*_off`, which call `validate.py:16`'s expression on CPython's own `UOp._min_max`.
+# `dv_bin` with any `z3_alu` op, so the eight remaining BOUND-AWARE builders have rows.
+# ⚠ BEFORE THESE ROWS, 4 OF THE 11 `z3_alu` KEYS HAD A FIXTURE THAT REACHED THEM (`AND`, `MAX`,
+# `SHR`, `WHERE`) AND SEVEN DID NOT. `n_z3_alu=11` passed the whole time and could not see it: the
+# count was right and the TRANSLATION of seven keys was untested -- which is exactly how `Ops.MAX`
+# came to be floormodded. A membership count is not coverage; these rows are.
+def dv_alu.of(op: O.Op, k: U32, nm: String) -> String:
+  +t = dv_bin(O.Arena.empty(), op, 100, k)
+  +g = fx_const_bool(O.Found.ar(t), True{})
+  dv2(nm, t, g, dv_and.mm(O.Found.ar(t), t))
+
+# `RANGE(100) op CONST(4)` for the four arms whose TAG decides the answer. `Ops.MAX` proved a tag
+# can be wrong with no error anywhere, so each of the four `k`-tagged builders gets its own row
+# rather than sharing one with a comment.
+# --- `Ops.CDIV` (validate.py:45), and the only row reaching `z3_cdiv` at all -- including its
+# inner `0<b` test, which is `ZGt` and not `ZLt` because Python reflects.
+def dv_cdiv4() -> String:
+  dv_alu.of(O.OpsCDIV{}, 4, "dv_cdiv4")
+
+# --- `Ops.CMOD`: `a - z3_cdiv(a,b)*b`, so its text CONTAINS `z3_cdiv`'s whole `If` plus `* b`.
+def dv_cmod4() -> String:
+  dv_alu.of(O.OpsCMOD{}, 4, "dv_cmod4")
+
+# --- `Ops.FLOORDIV` (validate.py:13), the other `0<b`-shaped test and a different one.
+def dv_floordiv4() -> String:
+  dv_alu.of(O.OpsFLOORDIV{}, 4, "dv_floordiv4")
+
+# --- `Ops.FLOORMOD`: `a - z3_floordiv(a,b)*b`. This is the `k = 3` arm `Ops.MAX` was silently
+# falling into, so this row is what makes that confusion impossible to repeat.
+def dv_floormod4() -> String:
+  dv_alu.of(O.OpsFLOORMOD{}, 4, "dv_floormod4")
+
+# --- `z3_or`'s bit-blast, and the THIRD caller of `z3_bv` after AND and XOR. No constant case in
+# Python either, which is why `r | (r << 1)` in test_validate_oob.py:113 is a BV expression.
+def dv_or21() -> String:
+  dv_alu.of(O.OpsOR{}, 21, "dv_or21")
+
+# --- `z3_xor`'s BIT-BLAST arm, and the second `z3_bv` caller.
+def dv_xor21() -> String:
+  dv_alu.of(O.OpsXOR{}, 21, "dv_xor21")
+
+# --- `z3_xor`'s CONSTANT arm, validate.py:21: `x ^ -1 = -(x+1)`, bitwise NOT. It needs no width
+# at all, it is a two-line def in the port, and it had NO row -- so `-(x+1)` was a port belief
+# rather than a gated claim. `4294967295` is `-1` in the port's two's-complement `U32`.
+def dv_xor_m1() -> String:
+  dv_alu.of(O.OpsXOR{}, 4294967295, "dv_xor_m1")
+
+# --- `Ops.SHL` with a CONSTANT count, so `z3_shift`'s `a * (1 << lo)` arm fires. It is the mirror
+# of `dv_shr2` (`r0*4` against `r0/4`), so between them the `a / f if SHR else a * f` conditional
+# is pinned by two rows instead of one.
+def dv_shl2() -> String:
+  dv_alu.of(O.OpsSHL{}, 2, "dv_shl2")
+
+def dv_max() -> String:
+  dv_max.of(O.Arena.empty(), "dv_max")
+
+# `bv_w` ANSWERS `Maybe`, so the width row reads it as a `Maybe` and names the absence
+# explicitly rather than printing `0` for both "width 0" and "no width" -- the same
+# conflation `Wv` exists to prevent everywhere else in this file.
+def dv_w.got(w: Maybe<&1, U32>) -> U32:
+  match w:
+    case Some{n}: n
+    case None{}: 0
+
+# ⚠ `dv_w2` CALLS `dv_and.mm` RATHER THAN BUILDING ITS OWN TABLE, so the width and the row share
+# one bounds helper. THAT IS NOT ENOUGH, AND THE RESIDUAL BLIND SPOT IS MEASURED: M1 in
+# `.agents/slop/validate-mutate.py` reverts the aliasing in `dv_and.put` and moves `dv_and21`,
+# `dv_and21_term` and `dv_and21_term_nb` -- and moves `bv_w_*` NOT AT ALL, because `dv_w` builds
+# its own fixture with `dv_bin` and never chooses the arena the way `dv_and.put` does. **So
+# `bv_w_*` gates `bv_w`'s ARITHMETIC and is blind to the arena; `dv_and21_term` gates the
+# arena.** Neither row alone covers the pair, and a report that read `bv_w_and21=8` as evidence
+# about the aliasing would be wrong. Closing it needs the width read out of the same `Rep` the
+# row builds, which is a restructure of `dv.of` and is NOT done here.
+def dv_w2(+ar: O.Arena, +t: O.Found, +g: O.Found) -> U32:
+  dv_w.got(bv_w(ar, Sol{Nil{}, Nil{}, dv_and.mm(O.Found.ar(g), t)}, O.Found.i(t)))
+
+# `bv_w` on a fixture-shaped arena, so the width rows and the `dv_*` rows are the SAME graph.
+def dv_w(op: O.Op, ar: O.Arena, hi: U32, k: U32) -> U32:
+  +t = dv_bin(ar, op, hi, k)
+  +g = fx_const_bool(O.Found.ar(t), True{})
+  dv_w2(O.Found.ar(g), t, g)
 
 # --- `z3_and`'s FIRST constant case, `x & (2^k-1) = x % 2^k`. MEASURED, `r & 15`
 # renders `(mod r0 16)` and contributes NO ASSERTION -- so the constraint list is
@@ -2025,6 +2375,29 @@ def dv_and_neg4() -> String:
 def dv_and21() -> String:
   dv_and.of(O.Arena.empty(), "dv_and21", 21)
 
+# THE WIDTH ROWS, one per `dv_and*` fixture, because the width is a NUMBER and a number is the
+# only thing here that can be adjudicated on its own. `validate.py:16` in full:
+#   `w = 1 + max(bit_length(vmax(src0)), bit_length(vmax(src1)), bit_length(-vmin(src0)),
+#                bit_length(-vmin(src1)))`
+# and the printed literal inside z3's signed `BV2Int` expansion is `2**w`. MEASURED by CALLING
+# CPython: `r & 21` over `RANGE(100)` gives `w = 8` and the literal `256`; `r & 15` gives `w =
+# 8` and `256`; `r & -4` gives `w = 8` and `256`. `UOp._min_max` of the RANGE is `(0, 99)` and
+# of the CONST is `(k, k)`, and both are oracle rows (`mm_*`) -- so the hand-written `ms`
+# table these fixtures supply is CHECKED against CPython and not trusted.
+#
+# ⚠ THE PRIOR UNIT'S `128` IS THE WIDTH OF A DIFFERENT NODE. `2**7 = 128` needs `w = 7`, and
+# `w = 7` is what `RANGE(64) & CONST(2)` gives -- the `dv_shr2` shape, not any `dv_and*`
+# fixture. Oracle rows `w_and_64_2=7` and `w_and_100_21=8` are the two measurements side by
+# side, so the two numbers are distinguishable by a row name instead of by an argument.
+def bv_w.of21() -> U32:
+  dv_w(O.OpsAND{}, O.Arena.empty(), 100, 21)
+
+def bv_w.of15() -> U32:
+  dv_w(O.OpsAND{}, O.Arena.empty(), 100, 15)
+
+def bv_w.ofneg() -> U32:
+  dv_w(O.OpsAND{}, O.Arena.empty(), 100, 4294967292)
+
 def main() -> IO(Unit):
   do IO<Unit>:
     IO.print(dv_const_ok())
@@ -2036,6 +2409,15 @@ def main() -> IO(Unit):
     IO.print(dv_and15())
     IO.print(dv_and_neg4())
     IO.print(dv_and21())
+    IO.print(dv_max())
+    IO.print(dv_or21())
+    IO.print(dv_xor21())
+    IO.print(dv_xor_m1())
+    IO.print(dv_cdiv4())
+    IO.print(dv_cmod4())
+    IO.print(dv_floordiv4())
+    IO.print(dv_floormod4())
+    IO.print(dv_shl2())
     IO.print(dv_shr2())
     IO.print(dv_where())
     IO.print(dv_const_invalid())
@@ -2044,4 +2426,8 @@ def main() -> IO(Unit):
     IO.print(dv_rank_shr1())
     IO.print(dv_bad_dtype_bitcast())
     IO.print(String.concat(["n_z3_alu=", U32.show(n_z3_alu())]))
+    IO.print(String.concat(["bv_w_and21=", U32.show(bv_w.of21())]))
+    IO.print(String.concat(["bv_w_off_and21=", U32.show(U32.shln(1, U32.to_nat(bv_w.of21())))]))
+    IO.print(String.concat(["bv_w_and15=", U32.show(bv_w.of15())]))
+    IO.print(String.concat(["bv_w_and_neg4=", U32.show(bv_w.ofneg())]))
     IO.print("done")

@@ -1024,7 +1024,21 @@ def mutant_lane(spec, row, tmpdir):
   It lives in a temp directory rather than in `.agents/slop/` on purpose. A CORRUPTED oracle in
   the slop directory is a file that outlives the control that made it, and `.agents/slop/` is
   swept by rebase-scan-oracles.py -- the next sweep would measure it as a candidate and cache it.
-  The recipe is here; the artefact is not."""
+  The recipe is here; the artefact is not.
+
+  ⚠⚠ IT USED TO APPEND `PLANTED` AT END-OF-LINE, AND ON EVERY F2 LANE THAT PLANT LANDED WHERE THE
+  GATE DOES NOT LOOK -- so the control reported a CLEAN PAIR AS CLEAN AND PROVED NOTHING.
+  `rows()`'s `row()` returns `(name, left, right)` and COMPARES `left`, deliberately: `right` is
+  the port's `]   py=[` transcription of the pin, and comparing it would make this gate assert
+  that a transcription is correct. An F2 line is `name = [v]   py=[w]`, so appending `PLANTED`
+  extends `right` to `[w]PLANTED` and leaves `left` -- the compared column -- untouched.
+
+  MEASURED by gate-reconcile.py --control over the 39 wired lanes, at 4 workers, load 17-114:
+  `renderer/ptx.bend` planted `f10_loads.entry` and came back **AGREE-UNRECORDED, 281 of 281 shared
+  row names agreeing**; same for `tc_ptx`, `generate`, `llvmir`, `nir_llvmir`. Six lanes where the
+  plant could not fail. The corruption now goes in IMMEDIATELY AFTER THE FIRST `=`, which is inside
+  `left` for both F1 and F2, and `lane_control()` additionally ASSERTS the planted lane's value for
+  that row differs from the clean one -- so a future column change cannot silently disarm this."""
   mut = pathlib.Path(tmpdir) / "mutant-lane.py"
   mut.write_text(
     "import os, subprocess, sys\n"
@@ -1037,7 +1051,8 @@ def mutant_lane(spec, row, tmpdir):
     "out = []\n"
     "for line in r.stdout.splitlines():\n"
     "  if line.split('=', 1)[0].strip() == ROW:\n"
-    "    line = line + 'PLANTED'\n"
+    "    head, eq, tail = line.partition('=')\n"
+    "    line = head + eq + 'PLANTED' + tail\n"
     "    hit[0] += 1\n"
     "  out.append(line)\n"
     "if hit[0] != 1:\n"

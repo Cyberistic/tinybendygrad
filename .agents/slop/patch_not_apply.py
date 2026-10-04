@@ -48,6 +48,20 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 # THE MARKER.  zero-classify.py's V_PATCH, verbatim and queried.
 MARKER = "PATCH-NOT-APPLY"
 
+# RULE B, SPELLED OUT.  A mutant that is not a PROGRAM says nothing about
+# coverage -- not even zero -- so it needs its own cell value, and it must be one
+# `zero-classify.py` already knows: that classifier REFUSES an unrecognised
+# measurement rather than inventing a verdict for it, so appending a diagnostic
+# here (`DID-NOT-COMPILE rc=1`) would break the classifier loudly.  The value is
+# therefore spelled exactly as `zero-classify.py`'s MEASURED tuple spells it, and a
+# caller that wants the rc puts it in the DESCRIPTION cell.
+#
+# This is a different claim from MARKER and the difference is the whole point:
+# MARKER says the edit never landed; this says it landed and the result is not a
+# program.  A table that uses MARKER for both is reporting an edit as dead when
+# the port under test was the thing that failed to build.
+NOT_A_PROGRAM = "DID-NOT-COMPILE"
+
 
 def _check_vocabulary():
     """Refuse to exist in a vocabulary zero-classify.py does not know.
@@ -93,6 +107,25 @@ def not_applied(note=""):
     if MARKER.isdigit():
         raise PatchNotApplied("a digit marker is the defect, not the fix")
     return MARKER if not note else "%s: %s" % (MARKER, note)
+
+
+def not_a_program():
+    """RULE B's cell value, and it is deliberately NOT `not_applied()`.
+
+    `not_applied` says the edit never landed.  This says the edit landed and the
+    result is not a program, which is a different claim about a different thing:
+    `ops-python-mutate.py`'s M17 and M22 each LOST ALL 85 ROWS to a run that
+    produced none and printed `85` for both, which is 170 moved rows that do not
+    exist.  Calling that a dead patch indicts the edit instead of the build.
+
+    Spelled through `zero-classify.py`'s vocabulary rather than invented, and
+    spelled EXACTLY: that classifier compares the whole cell and REFUSES anything
+    it does not recognise, so a diagnostic suffix here would break it loudly.  The
+    rc belongs in the description cell.
+    """
+    if NOT_A_PROGRAM.isdigit():
+        raise PatchNotApplied("a digit marker is the defect, not the fix")
+    return NOT_A_PROGRAM
 
 
 def pipe(cells, width):

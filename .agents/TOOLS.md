@@ -937,3 +937,164 @@ Three findings from it generalise past this repo, and all three are in
 - **A flag that reaches nothing is a comment with a command-line syntax.** This file had
   three: `--graph` (defaulted to the default), `--plant-side` (never read), `--bend-probe`
   (not reaching `emit`, the one command whose job it describes).
+
+---
+
+## FORM-BLINDNESS — the four instruments (2026-10-04)
+
+The class every one of this round's six findings belongs to: **a tool that matches a
+FORM cannot see the instance that lacks it.** The checkable form is
+**spelling-invariance** — two texts that mean the same thing, written differently; a
+reader that disagrees is matching a form. Rules `FB-1`…`FB-7` appended at the END of
+`.agents/slop/notes/bend2-constraints.md` (positions ~19941–20057).
+
+| tool | what it is |
+|---|---|
+| `.agents/slop/rowform.py` | The FORM-COMPLETE row reader (`any_row`, `blind_reason`) and the meaning-equal spelling battery every other tool is measured against. `--selftest` exits 1 on the four variants `rebase-gate.py:rows()` cannot see. |
+| `.agents/slop/formblind-census.py` | Every selection predicate under `.agents/slop/`, extracted from the tool's own AST and RUN against the battery. `--denoms` (the denominators), `--detail TOOL` (every selector and the inference that put it in this subject language), `--floor` (how many real lane lines the shared reader cannot read). Output kept in `FORM-BLIND-TABLE.txt` / `FORM-BLIND-FLOOR.txt`. |
+| `.agents/slop/formblind-audit.py` | 17 constructed variants. Each asserts the reader must produce the FORM-COMPLETE answer, and each carries a CONTROL reader that must NOT. `--corpus` repeats them against the real tree, twice, and compares. |
+| `.agents/slop/substrate-audit.py` | The OTHER root cause: 4 instruments that are right about a form and wrong about the substrate. A census that reads FORMS cannot see these, so its FORM-COMPLETE verdict on one is silence, not clearance. |
+| `.agents/slop/FORM-BLIND-SPOTS.md` | The ledger. Per-tool classification, the denominators, the measured floor, and what is still wrong and why it was not fixed. |
+
+> **SNAPSHOT, AND THE UNIVERSE IS LIVE.** Other agents are adding tools while this runs:
+> the census read **851 → 841 → 846** tools over one session and the lane count
+> **771 → 834 → 835**. Every count below was read TWICE and the two reads compared, but a
+> number that grows while you watch it is an **unfinished** one, not an unstable one. **Run
+> `formblind-census.py --denoms` and `--floor`; do not quote these blocks from memory.**
+
+MEASURED, this tree: **67 FORM-BLIND / 284 FORM-COMPLETE-ON-BATTERY / 490 NOT-A-SELECTOR
+(unaudited, not cleared) / 166 delegating a reader, of 841 tools.** 9 tools call
+`rebase-gate.py:rows()` and 156 fork a reader; that shared reader cannot read
+**3,298 lines** inside the **835** `.txt` lanes it does read.
+
+FOUND AND FIXED: `unobservable-census.py --handtyped` (**209 → 556** on a fixed file set,
+329 rows it could not see, and 1 it reported that does not exist — it now delegates to
+`handtyped-audit.py` rather than carrying a second reader) and `dd-band-census.py` §C (now
+walks arguments over a stated callee set and prints its own denominator).
+
+FOUND AND REPORTED, NOT FIXED: `rebase-gate.py:rows()` A1–A4 (another unit's file);
+`wire_parse.read_fresh_cache` returning `({}, 'fresh')` for a crashed lane (three
+consumers, two not mine); `cstyle-gate.py:rows_shipped`, whose docstring claim of being
+`rebase-gate.py:rows()` "verbatim" measured false on four of six shapes.
+
+---
+
+## `uop/validate.bend` unit — the z3 out-of-bounds checker. Appended 2026-10-04.
+
+**`z3-solver` 4.16.0.0 IS ALREADY INSTALLED** at `/opt/homebrew/lib/python3.14/site-packages/z3`
+(homebrew python 3.14.6; `python3 -m pip show z3-solver` says "not found" and is WRONG — the dist
+is not registered under that name, so **`pip show` is not a reachability test, `import z3` is**).
+`tinygrad.uop.validate` imports cleanly and its own version gate at `validate.py:8` passes, so
+`uops_to_z3` is callable. This retracted a recorded OPEN QUESTION whose stated cause was "z3 is
+not installed". **No dependency was added; the constraint held.**
+
+Three new instruments, all in `.agents/slop/`, all reading `rebase-gate.py`'s `rows()` by path
+(a copy would be a second reader, and `agent-core.md` records a name-comparing harness reporting 0
+for all 68 mutations in one unit):
+
+| file | what it is | how to run |
+| --- | --- | --- |
+| `validate-oracle.py` | the CPython lane; calls `uops_to_z3` + `solver.add(z3_mask)` on validate.py:92-95 verbatim, plus `validate.py:16`'s width expression, `range_str`, `z3_alu` and a 120-pair comparison-printer table | `DEV=NULL python3 .agents/slop/validate-oracle.py` |
+| `validate-gate.py` | both lanes over the shared row names; prints the DENOMINATOR | `DEV=NULL python3 .agents/slop/validate-gate.py` |
+| `validate-mutate.py` | 11 mutants run through BOTH lanes, so a row that moved TOWARD CPython is distinguishable from one that moved away; restores from memory and asserts the md5 | `DEV=NULL python3 .agents/slop/validate-mutate.py [--only M1,M2]` |
+| `mask-probe.bend` | the `Arena.at`-based probe that located the stale-arena defect (VZ-3/VZ-4) | `./bin/bend .agents/slop/mask-probe.bend` |
+
+Current measurement: **port 155 rows, oracle 364, shared 138, agree 123, disagree 15 (89.1%).** Of
+the 11 mutants, 10 move rows AWAY from CPython and 1 (M10, `range_str`'s axis-id separator) moves
+nothing — a declared blind spot, because every fixture has a single axis id and no multi-axis row
+exists. Bend 2.0.34 via `bin/bend` (a 2.0.35 update is offered; not taken mid-session).
+
+z3's own artefacts, all measured and all of them the reason two rows stay red: the pretty-printer
+wraps long terms at a position **of its own choosing** (so a whitespace normalisation cannot be
+undone), and `z3.FreshInt` appends a **per-`z3.Context`** counter -- `invalid_shift!0` -- which
+resets because `validate_index_with_z3` builds a fresh `Context` per call.
+
+`.agents/slop/notes/bend2-constraints.md` section `VZ-*` (appended at the END, continuing from
+`FF-*`): VZ-1 a row shape nobody reads is not a row; VZ-2 z3 has no printer reorientation, the AST
+does, and Python's reflected operators put it there; VZ-3 `Arena.at` is the only interning test;
+VZ-4 a fixture that mints its own gate must build the sink in the arena AFTER the gate; VZ-5 a
+`Bool` head-flag drops the first list element (found three times); VZ-6 a constructor-matching def
+is the most expensive kind of no coverage; VZ-7 `m>0 and m&(m-1)==0` ≡ `m!=0 and m&(m-1)==0`;
+VZ-8 `String.concat` consumes each name and `+` does not raise the read count; VZ-9 `+` silences
+"consumed more than once" without guaranteeing the value; VZ-10 a "cannot be adjudicated" claim is
+a claim about the ENVIRONMENT and it expires; VZ-11 a new oracle must pin the inputs the port
+transcribes by hand; VZ-12 a row NAME must not contain `=` (30 of this oracle's own rows collapsed
+onto 10 names before the fix).
+
+**THE GENERAL LESSON, and it is the one worth keeping: `agent-core.md` warns that an instrument
+can return something other than its subject. Twice, this oracle did.** Once through a row name
+containing `=` (VZ-12) and once through `norm()` inventing a space inside z3's line wrap, which
+made the PORT look wrong when it was right. Both were caught by printing the RAW value as its own
+row -- `#raw_and21`, `#raw_cmod4`, `#wrap_cmod4` -- and by noticing that a printed-row count
+exceeded a parsed-row count. Neither would have been caught by an assertion of the form "the oracle
+emits rows".
+
+## `graphcmp` — a CANONICAL GRAPH NORMAL FORM both sides emit, and a differ over it
+
+The one instrument in this repo that compares **graphs** rather than rows, and the one whose
+limits file is the deliverable. Not a library: five files, one command to regenerate all of it.
+
+| file | what it is | how to run |
+| --- | --- | --- |
+| `.agents/slop/graphcmp.py` | the differ. Emits a NORMAL FORM both sides produce — eight fields per node, `id op dtype shape depth tag arg src`, `id` reporting-only because the two arenas number differently — pairs by a structural `core`, and falls back to a dtype-erased `loose` key and then to full node dumps, so a difference is NAMED (`MISMATCH RESHAPE py#8 vs bend#8 shape py=(U,l0:4) bend=?`) rather than counted. `--equiv` is the commutative-canonical mode. `conf` runs the four conflations. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py diff --graph NAME` |
+| `.agents/slop/graphcmp.bend` | the port side. READS `uop/ops.bend` and `uop/fold.bend` and PRINTS; it edits neither and adds nothing to either. Each graph is built node for node into its own `O.Arena.empty()`. | `./bin/bend .agents/slop/graphcmp.bend NAME` |
+| `.agents/slop/graphcmp-p13-ops.py` | the raw CPython probe, and the answer to every coverage claim: does `Ops.GROUP` carry a `params` list (no), which Tensor op emits which NODE op, can two different symbolic dims be separated and by which field, what is a variable PARAM's slot, and the corpus-wide op/node/symbolic-dim/fan-in tally. **Everything is a CALL, never a transcription.** | `env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/graphcmp-p13-ops.py` |
+| `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py` |
+| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 13 graphs, controls, cross, six plants, the ordered/equiv split, the conflations, the DEBUG sweep, three stability pairs, the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. | `sh .agents/slop/graphcmp-run.sh` |
+
+`E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
+
+Current measurement: **13 graphs, 104 nodes per side, 624 field-records, 23 of 77 ops, 7 of the
+8 commutative ops, 2 symbolic-dim nodes of 104, 12 of 13 `AGREE` (`sym` DISAGREES on purpose),
+12 of 13 byte-identical, 3 of 3 stability pairs, 4 of 4 conflations.** Two consecutive clean
+runs of `graphcmp-run.sh` leave all 126 files in `runs/graphcmp/D/` byte-identical.
+
+**`.agents/slop/graphcmp-LIMITS.md` is the point of the whole thing** — sixteen defects this
+instrument found in its OWN normal form by widening its corpus, and every limit it does not
+close, each with the denominator that produced it. The two that generalise past this unit: **a
+field that reads equal because both sides are wrong is worse than a field that is not
+compared** (`cdepth` was off by one against `Arena.depth` on all four fixtures and nobody
+could see it, because no graph emitted a RANGE so both sides read 0), and **a check that
+reports `PASS` over an empty comparison looks exactly like a check that passes** (the
+byte-identity step had been running `emit py` where `--side` is a flag, so both files were 0
+bytes and `cmp -s` on two empty files succeeded, and four graphs read `BYTE-IDENTICAL`).
+
+`.agents/slop/notes/bend2-constraints.md` section `GC-*` (appended at the END, continuing from
+`FF-*`/`VZ-*`): GC-1 a 0-row side is a FAILURE on the harness side too, not only the port side;
+GC-2 `rng` was the only I64 formatter that forgot the `l`, and it was invisible because
+`ParamArg`'s fourth field had never been emitted in its `Some` case — the cost was a four-node
+cascade with the cause in none of them; GC-3 fan-in needs TWO counts (in-edges and distinct
+parents) because a node naming the same child twice inflates the first; GC-4 a prose claim
+written to justify a fixture is a claim with no denominator, and this repo's three such
+sentences about shared nodes were FALSE; GC-5 `COMM` holds bare names and `Ops.ADD in COMM` is
+`False`; GC-6 a string literal split across lines inside an f-string is a `SyntaxError`; GC-7 a
+killed run leaves PASS-shaped files; GC-8 numbering positions.
+
+## MUTATION-TABLE ANCHORS AND PINS — the mutation-records unit (2026-10-04)
+
+Four tools. The unit's subject is not a port; it is **the records that claim things about
+ports**, so every tool here reads a harness with `ast` and never imports one.
+
+| tool | what it is | the trap it closes |
+|---|---|---|
+| `.agents/slop/mutanchor.py` | THE shared static reader: `targets()` (which files a harness patches), `anchors()` (which literal each mutation looks for), `writes()` (and in which ZONE it writes), `zone()` (`IN-PLAY` / `SCRATCH` / `ELSEWHERE`). Resolves `os.path.join` chains, `Path(...)`, `dirname(dirname(__file__))`, and `__file__` itself. | `BEND` names the **compiler** in most of these harnesses, so a reader that takes it as the substrate makes all 44 of `ag-mutate.py`'s anchors read STALE when every one is present. `bin/bend` has no extension, and that is the discriminator. |
+| `.agents/slop/anchor-audit.py` | Which anchors are stale, and which harnesses may be run at all. 49 harnesses, all `patch_not_apply` consumers. | **The anchor cell index is a property of the HARNESS, not a constant** — 1 in `wgsl-mutate.py`, 2 in `rf-arg-mutate.py`. `anchor_column` VOTES over the rows on the two-sided signal *in the file AND successor not in file*, because presence alone ties the ID column against the anchor column in 8 of 13 harnesses, and absence alone scores zero for every column once a table's anchors have all moved. `--only-stale` |
+| `.agents/slop/table-pin.py` | rev + **FILE** digest + **ROWS** digest per table, 24 tables. `ROWS` is the row SET (names AND values, sorted) taken from the harness's own baseline file. | A digest protects the MUTANT, not the REFERENCE. Swapping `hi42`'s operands leaves `shape()`'s three fields identical, and RULE C caught that twice in one day. |
+| `.agents/slop/pin-tables.py` | WRITES the pin into each table — or writes `PIN NOT WRITTEN -- UNSTATED. <reason>`. | **A pin is a claim about a run, so it may only be written for a run that happened.** Measurements are ARGUMENTS; there is no code path in the file that can decide a table reproduces, and an unstated reason is an error rather than a default. |
+
+```sh
+python3 .agents/slop/anchor-audit.py [--only-stale]     # stale anchors + runnable zone
+python3 .agents/slop/table-pin.py                       # what each table describes
+```
+
+`patch_not_apply.py` gained **`not_a_program()`** (RULE B): the `DID-NOT-COMPILE` cell value,
+spelled EXACTLY because `zero-classify.py` compares the whole cell and `sys.exit`s on
+anything unrecognised, and taking no note argument so the suffix cannot be added by accident.
+It is a different claim from `PATCH-NOT-APPLY` — the edit landed, the result is not a program
+— and `ops-python-mutate.py`'s M17/M22 had been reporting the second as the first while
+printing **170 moved rows that do not exist**.
+
+**RECONSTRUCTED RECORDS:** `memory-mutations.txt` (70 mutations; the harness had exited 2 on
+every run for a week because it treated `bend`'s upgrade notice on stderr as a failure) and
+`wgsl-mutations.txt` (36; its table was a stale comment block inside `renderer/wgsl.bend`,
+which is a `.bend` file this unit does not own, so the record lives out here).

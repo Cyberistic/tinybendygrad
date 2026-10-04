@@ -1,0 +1,364 @@
+z3_ok=1
+z3_d3=4.16.0.0
+validate_import=1
+cmp_iltj=i < j
+cmp_ilt5=5 > i
+cmp_ilt99=i < 100 - 1
+cmp_ilt-5=-5 > i
+cmp_jlti=j < i
+cmp_jlt5=5 > j
+cmp_jlt99=j < 100 - 1
+cmp_jlt-5=-5 > j
+cmp_5lti=5 < i
+cmp_5ltj=5 < j
+cmp_5lt99=5 < 100 - 1
+cmp_5lt-5=5 < -5
+cmp_99lti=100 - 1 < i
+cmp_99ltj=100 - 1 < j
+cmp_99lt5=5 > 100 - 1
+cmp_99lt-5=-5 > 100 - 1
+cmp_-5lti=-5 < i
+cmp_-5ltj=-5 < j
+cmp_-5lt5=-5 < 5
+cmp_-5lt99=-5 < 100 - 1
+cmp_ilej=i <= j
+cmp_ile5=5 >= i
+cmp_ile99=i <= 100 - 1
+cmp_ile-5=-5 >= i
+cmp_jlei=j <= i
+cmp_jle5=5 >= j
+cmp_jle99=j <= 100 - 1
+cmp_jle-5=-5 >= j
+cmp_5lei=5 <= i
+cmp_5lej=5 <= j
+cmp_5le99=5 <= 100 - 1
+cmp_5le-5=5 <= -5
+cmp_99lei=100 - 1 <= i
+cmp_99lej=100 - 1 <= j
+cmp_99le5=5 >= 100 - 1
+cmp_99le-5=-5 >= 100 - 1
+cmp_-5lei=-5 <= i
+cmp_-5lej=-5 <= j
+cmp_-5le5=-5 <= 5
+cmp_-5le99=-5 <= 100 - 1
+cmp_igtj=i > j
+cmp_igt5=5 < i
+cmp_igt99=i > 100 - 1
+cmp_igt-5=-5 < i
+cmp_jgti=j > i
+cmp_jgt5=5 < j
+cmp_jgt99=j > 100 - 1
+cmp_jgt-5=-5 < j
+cmp_5gti=5 > i
+cmp_5gtj=5 > j
+cmp_5gt99=5 > 100 - 1
+cmp_5gt-5=5 > -5
+cmp_99gti=100 - 1 > i
+cmp_99gtj=100 - 1 > j
+cmp_99gt5=5 < 100 - 1
+cmp_99gt-5=-5 < 100 - 1
+cmp_-5gti=-5 > i
+cmp_-5gtj=-5 > j
+cmp_-5gt5=-5 > 5
+cmp_-5gt99=-5 > 100 - 1
+cmp_igej=i >= j
+cmp_ige5=5 <= i
+cmp_ige99=i >= 100 - 1
+cmp_ige-5=-5 <= i
+cmp_jgei=j >= i
+cmp_jge5=5 <= j
+cmp_jge99=j >= 100 - 1
+cmp_jge-5=-5 <= j
+cmp_5gei=5 >= i
+cmp_5gej=5 >= j
+cmp_5ge99=5 >= 100 - 1
+cmp_5ge-5=5 >= -5
+cmp_99gei=100 - 1 >= i
+cmp_99gej=100 - 1 >= j
+cmp_99ge5=5 <= 100 - 1
+cmp_99ge-5=-5 <= 100 - 1
+cmp_-5gei=-5 >= i
+cmp_-5gej=-5 >= j
+cmp_-5ge5=-5 >= 5
+cmp_-5ge99=-5 >= 100 - 1
+refl_0_le_i=i >= 0
+refl_i_le_0=i <= 0
+refl_0_le_expr=100 - 1 >= 0
+refl_z_le_i=0 <= i
+refl_z_le_i_2=0 >= i
+refl_i_le_z=0 >= i
+refl_z_le_expr=0 <= 100 - 1
+rs_g=0
+ax_g=(0,)
+rs_l=0
+ax_l=(0,)
+rs_m1=m1
+ax_m1=(-1,)
+rs_two=0_1
+ax_two=(0, 1)
+pow2_win_n=22
+pow2_agree=14
+pow2_-8=0
+pow2_-5=0
+pow2_-4=0
+pow2_-3=0
+pow2_-2=0
+pow2_-1=0
+pow2_0=0
+pow2_1=1
+pow2_2=1
+pow2_3=0
+pow2_4=1
+pow2_5=0
+pow2_7=0
+pow2_8=1
+pow2_15=0
+pow2_16=1
+pow2_21=0
+pow2_22=0
+pow2_32=1
+pow2_64=1
+pow2_255=0
+pow2_256=1
+pow2_fn_agree=1
+w_and_100_21=8
+w_and_100_21_off=256
+mm_and_100_21_s0=(0, 99)
+mm_and_100_21_s1=(21, 21)
+w_and_100_15=8
+w_and_100_15_off=256
+mm_and_100_15_s0=(0, 99)
+mm_and_100_15_s1=(15, 15)
+w_and_64_2=7
+w_and_64_2_off=128
+mm_and_64_2_s0=(0, 63)
+mm_and_64_2_s1=(2, 2)
+w_and_8_21=6
+w_and_8_21_off=64
+mm_and_8_21_s0=(0, 7)
+mm_and_8_21_s1=(21, 21)
+w_or_100_21=8
+w_or_100_21_off=256
+mm_or_100_21_s0=(0, 99)
+mm_or_100_21_s1=(21, 21)
+w_or_100_15=8
+w_or_100_15_off=256
+mm_or_100_15_s0=(0, 99)
+mm_or_100_15_s1=(15, 15)
+w_or_64_2=7
+w_or_64_2_off=128
+mm_or_64_2_s0=(0, 63)
+mm_or_64_2_s1=(2, 2)
+w_or_8_21=6
+w_or_8_21_off=64
+mm_or_8_21_s0=(0, 7)
+mm_or_8_21_s1=(21, 21)
+w_xor_100_21=8
+w_xor_100_21_off=256
+mm_xor_100_21_s0=(0, 99)
+mm_xor_100_21_s1=(21, 21)
+w_xor_100_15=8
+w_xor_100_15_off=256
+mm_xor_100_15_s0=(0, 99)
+mm_xor_100_15_s1=(15, 15)
+w_xor_64_2=7
+w_xor_64_2_off=128
+mm_xor_64_2_s0=(0, 63)
+mm_xor_64_2_s1=(2, 2)
+w_xor_8_21=6
+w_xor_8_21_off=64
+mm_xor_8_21_s0=(0, 7)
+mm_xor_8_21_s1=(21, 21)
+w_and_var-100_100_21=8
+w_and_var-100_100_21_off=256
+mm_and_var-100_100_21_s0=(-100, 100)
+mm_and_var-100_100_21_s1=(21, 21)
+w_and_var-1_1_3=3
+w_and_var-1_1_3_off=8
+mm_and_var-1_1_3_s0=(-1, 1)
+mm_and_var-1_1_3_s1=(3, 3)
+w_and_var0_1_1=2
+w_and_var0_1_1_off=4
+mm_and_var0_1_1_s0=(0, 1)
+mm_and_var0_1_1_s1=(1, 1)
+w_and_buf_neg=6
+w_and_buf_neg_off=64
+mm_and_buf_neg_s0=(-4, -4)
+mm_and_buf_neg_s1=(21, 21)
+dv_const_ok_dt=weakint
+dv_const_ok_mm=(15, 15)
+dv_const_ok=[True] | 15 |  | 0
+dv_const_ok_cs=[True]
+dv_const_ok_term=15
+dv_const_ok_term_nb=15
+dv_const_ok_n=0
+dv_const_ok_msg=
+dv_var_dt=i32
+dv_var_mm=(0, 15)
+dv_var=[And(i >= 0, i <= 15), True] | i |  | 0
+dv_var_cs=[And(i >= 0, i <= 15), True]
+dv_var_term=i
+dv_var_term_nb=i
+dv_var_n=0
+dv_var_msg=
+dv_var_neg_mm=(-5, 10)
+dv_var_neg=[And(i >= -5, i <= 10), True] | i |  | 0
+dv_var_neg_cs=[And(i >= -5, i <= 10), True]
+dv_var_neg_term=i
+dv_var_neg_term_nb=i
+dv_var_neg_n=0
+dv_var_neg_msg=
+dv_range_global_mm=(0, 99)
+dv_range_global_dt=dtypes.weakint
+dv_range_global=[And(r0 >= 0, r0 <= 100 - 1), True] | r0 |  | 0
+dv_range_global_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_range_global_term=r0
+dv_range_global_term_nb=r0
+dv_range_global_n=0
+dv_range_global_msg=
+dv_range_loop_mm=(0, 99)
+dv_range_loop=[And(r0 >= 0, r0 <= 100 - 1), True] | r0 |  | 0
+dv_range_loop_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_range_loop_term=r0
+dv_range_loop_term_nb=r0
+dv_range_loop_n=0
+dv_range_loop_msg=
+dv_range_m1_mm=(0, 99)
+dv_range_m1_ax=(-1,)
+dv_range_m1=[And(rm1 >= 0, rm1 <= 100 - 1), True] | rm1 |  | 0
+dv_range_m1_cs=[And(rm1 >= 0, rm1 <= 100 - 1), True]
+dv_range_m1_term=rm1
+dv_range_m1_term_nb=rm1
+dv_range_m1_n=0
+dv_range_m1_msg=
+dv_and15_mm_s0=(0, 99)
+dv_and15_mm_s1=(15, 15)
+dv_and15_w=8
+dv_and15=[And(r0 >= 0, r0 <= 100 - 1), True] | r0%16 |  | 0
+dv_and15_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_and15_term=r0%16
+dv_and15_term_nb=r0%16
+dv_and15_n=0
+dv_and15_msg=
+dv_and21_mm_s0=(0, 99)
+dv_and21_mm_s1=(21, 21)
+dv_and21_w=8
+dv_and21=[And(r0 >= 0, r0 <= 100 - 1), True] | If(int_to_bv(r0) & int_to_bv(21) < 0, BV2Int(int_to_bv(r0) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) & int_to_bv(21))) |  | 0
+dv_and21_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_and21_term=If(int_to_bv(r0) & int_to_bv(21) < 0, BV2Int(int_to_bv(r0) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) & int_to_bv(21)))
+dv_and21_term_nb=If(int_to_bv(r0) & int_to_bv(21) < 0, BV2Int(int_to_bv(r0) & int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) & int_to_bv(21)))
+dv_and21_n=0
+dv_and21_msg=
+dv_and_neg4_mm_s0=(0, 99)
+dv_and_neg4_mm_s1=(-4, -4)
+dv_and_neg4_w=8
+dv_and_neg4=[And(r0 >= 0, r0 <= 100 - 1), True] | r0 - r0%4 |  | 0
+dv_and_neg4_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_and_neg4_term=r0 - r0%4
+dv_and_neg4_term_nb=r0 - r0%4
+dv_and_neg4_n=0
+dv_and_neg4_msg=
+dv_max_dt=weakint
+dv_max=[And(r0 >= 0, r0 <= 100 - 1), True] | If(21 > r0, 21, r0) |  | 0
+dv_max_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_max_term=If(21 > r0, 21, r0)
+dv_max_term_nb=If(21 > r0, 21, r0)
+dv_max_n=0
+dv_max_msg=
+dv_or21=[And(r0 >= 0, r0 <= 100 - 1), True] | If(int_to_bv(r0) | int_to_bv(21) < 0, BV2Int(int_to_bv(r0) | int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) | int_to_bv(21))) |  | 0
+dv_or21_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_or21_term=If(int_to_bv(r0) | int_to_bv(21) < 0, BV2Int(int_to_bv(r0) | int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) | int_to_bv(21)))
+dv_or21_term_nb=If(int_to_bv(r0) | int_to_bv(21) < 0, BV2Int(int_to_bv(r0) | int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) | int_to_bv(21)))
+dv_or21_n=0
+dv_or21_msg=
+dv_xor21=[And(r0 >= 0, r0 <= 100 - 1), True] | If(int_to_bv(r0) ^ int_to_bv(21) < 0, BV2Int(int_to_bv(r0) ^ int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) ^ int_to_bv(21))) |  | 0
+dv_xor21_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_xor21_term=If(int_to_bv(r0) ^ int_to_bv(21) < 0, BV2Int(int_to_bv(r0) ^ int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) ^ int_to_bv(21)))
+dv_xor21_term_nb=If(int_to_bv(r0) ^ int_to_bv(21) < 0, BV2Int(int_to_bv(r0) ^ int_to_bv(21)) - 256, BV2Int(int_to_bv(r0) ^ int_to_bv(21)))
+dv_xor21_n=0
+dv_xor21_msg=
+dv_xor_m1=[And(r0 >= 0, r0 <= 100 - 1), True] | -(r0 + 1) |  | 0
+dv_xor_m1_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_xor_m1_term=-(r0 + 1)
+dv_xor_m1_term_nb=-(r0 + 1)
+dv_xor_m1_n=0
+dv_xor_m1_msg=
+dv_cdiv4=[And(r0 >= 0, r0 <= 100 - 1), True] | If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4) |  | 0
+dv_cdiv4_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_cdiv4_term=If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4)
+dv_cdiv4_term_nb=If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4)
+dv_cdiv4_n=0
+dv_cdiv4_msg=
+dv_cmod4=[And(r0 >= 0, r0 <= 100 - 1), True] | r0 - If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4)* 4 |  | 0
+dv_cmod4_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_cmod4_term=r0 - If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4)* 4
+dv_cmod4_term_nb=r0 - If(r0 < 0, If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4), r0/4)* 4
+dv_cmod4_n=0
+dv_cmod4_msg=
+dv_floordiv4=[And(r0 >= 0, r0 <= 100 - 1), True] | If(4 > 0, r0/4, -r0/-4) |  | 0
+dv_floordiv4_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_floordiv4_term=If(4 > 0, r0/4, -r0/-4)
+dv_floordiv4_term_nb=If(4 > 0, r0/4, -r0/-4)
+dv_floordiv4_n=0
+dv_floordiv4_msg=
+dv_floormod4=[And(r0 >= 0, r0 <= 100 - 1), True] | r0 - If(4 > 0, r0/4, -r0/-4)*4 |  | 0
+dv_floormod4_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_floormod4_term=r0 - If(4 > 0, r0/4, -r0/-4)*4
+dv_floormod4_term_nb=r0 - If(4 > 0, r0/4, -r0/-4)*4
+dv_floormod4_n=0
+dv_floormod4_msg=
+dv_shl2=[And(r0 >= 0, r0 <= 100 - 1), True] | If(2 < 0, invalid_shift!0, r0*4) |  | 0
+dv_shl2_cs=[And(r0 >= 0, r0 <= 100 - 1), True]
+dv_shl2_term=If(2 < 0, invalid_shift!0, r0*4)
+dv_shl2_term_nb=If(2 < 0, invalid_shift, r0*4)
+dv_shl2_n=0
+dv_shl2_msg=
+dv_shr2_mm_s0=(0, 63)
+dv_shr2_mm_s1=(2, 2)
+dv_shr2=[And(r0 >= 0, r0 <= 64 - 1), True] | If(2 < 0, invalid_shift!0, r0/4) |  | 0
+dv_shr2_cs=[And(r0 >= 0, r0 <= 64 - 1), True]
+dv_shr2_term=If(2 < 0, invalid_shift!0, r0/4)
+dv_shr2_term_nb=If(2 < 0, invalid_shift, r0/4)
+dv_shr2_n=0
+dv_shr2_msg=
+dv_where_mm=(0, 15)
+dv_where_mm_cm=(False, True)
+dv_where_mm_inv=(False, True)
+dv_where=[And(v >= 0, v <= 15), 8 > v, True] | v |  | 0
+dv_where_cs=[And(v >= 0, v <= 15), 8 > v, True]
+dv_where_term=v
+dv_where_term_nb=v
+dv_where_n=0
+dv_where_msg=
+dv_const_invalid_dt=dtypes.bool
+dv_const_invalid=[True] | Invalid |  | 0
+dv_const_invalid_cs=[True]
+dv_const_invalid_term=Invalid
+dv_const_invalid_term_nb=Invalid
+dv_const_invalid_n=0
+dv_const_invalid_msg=
+dv_unsup_stack_dt=weakint
+dv_unsup_stack=RAISED NotImplementedError: Ops.STACK is not supported by z3
+dv_unsup_stack_msg=Ops.STACK is not supported by z3
+dv_unsup_two_dt=dtypes.void
+dv_unsup_two=RAISED AssertionError: UOp failed to rewrite to z3!
+dv_unsup_two_msg=UOp failed to rewrite to z3!
+dv_rank_shr1_dt=dtypes.weakint
+dv_rank_shr1=RAISED TypeError: z3_shift() missing 1 required positional argument: 'b'
+dv_rank_shr1_msg=z3_shift() missing 1 required positional argument: 'b'
+dv_bad_dtype_bitcast=RAISED AssertionError: CAST/BITCAST arg must be DType, got None
+dv_bitcast_bool_dt=bool
+dv_bitcast_bool=RAISED NotImplementedError: Ops.BITCAST is not supported by z3
+dv_bitcast_bool_msg=Ops.BITCAST is not supported by z3
+n_z3_alu=11
+n_z3_alu_keys=AND|CDIV|CMOD|FLOORDIV|FLOORMOD|MAX|OR|SHL|SHR|WHERE|XOR
+bv_w_and21=8
+bv_w_off_and21=256
+bv_w_and15=8
+bv_w_off_and15=256
+bv_w_and_neg4=8
+bv_w_off_and_neg4=256
+#raw_and21='If(int_to_bv(r0) & int_to_bv(21) < 0,\n   BV2Int(int_to_bv(r0) & int_to_bv(21)) - 256,\n   BV2Int(int_to_bv(r0) & int_to_bv(21)))'
+#wrap_and21=2
+#raw_cmod4='r0 -\nIf(r0 < 0,\n   If(4 > 0, (r0 + 4 - 1)/4, (r0 - (4 + 1))/4),\n   r0/4)*\n4'
+#wrap_cmod4=4

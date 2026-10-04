@@ -176,16 +176,34 @@ def main():
   #     `DEBUG.value` inside that child is 0 whatever the process's environment says, so
   #     the Python plant was a no-op and the Bend lane alone moved. The Python half of the
   #     plant therefore has to be the line that RUNS THE PIN CHILD, not the line that
-  #     prints it. That is the third version of this control and the notes here are the
-  #     reason the third version is the one that works.
+  #     prints it.
+  #
+  # (iv) With both halves correct the file no longer PARSED -- the Bend bind was at the top
+  #     of the `def` body rather than inside the `do` block -- so the bend lane printed
+  #     ZERO rows, `run_lane` retried 25 times and gave up, and the control read that as
+  #     "the digest guard did not fire" when in fact nothing had run at all.
   #
   # The plant goes on BOTH LANES. The per-level diff then PASSES -- both sides moved
   # together -- while the level-INVARIANT digest still DIFFERS across levels, which is
   # exactly the condition the guard exists to refuse and exactly the one no other check in
   # this gate can see.
-  bend_old_head = 'def pin_rows() -> IO(Unit):\n  do IO<Unit>:'
-  bend_new_head = ('def pin_rows() -> IO(Unit):\n  d : U32 <- H.debug()  # PLANTED\n'
-                   '  do IO<Unit>:')
+  #
+  # FOUR VERSIONS BEFORE THE ONE THAT WORKS. The recurring lesson is that a broken plant
+  # and a broken control are indistinguishable from the outside: a plant that does not
+  # compile is a lane that prints nothing, and a lane that prints nothing is a ZERO-ROW
+  # RESULT, which is indistinguishable from "not started". So this control REQUIRES the
+  # planted run to report its row count (see the `89 rows` check below), and a control that
+  # cannot tell "the guard did not fire" from "nothing ran" is not a control.
+  bend_old_head = 'def pin_rows() -> IO(Unit):\n  do IO<Unit>:\n'
+  # THE BIND GOES INSIDE THE `do` BLOCK, and that is a MEASURED Bend rule rather than a
+  # formatting choice: an `IO`-returning bind (`x : T <- eff`) is only legal inside a
+  # `do` block, while a PURE bind (`+r = f(x)`) is legal at the top of a `def` body
+  # (`memory.bend`'s `p_count` is the example). The two are NOT interchangeable. With the
+  # bind at the top of the body the whole file fails to parse -- "expected : 'def', 'type'
+  # or 'law' / observed : ':'" -- so the lane printed zero rows and the control could not
+  # tell that from a guard that stayed silent.
+  bend_new_head = ('def pin_rows() -> IO(Unit):\n  do IO<Unit>:\n'
+                   '    d : U32 <- H.debug()  # PLANTED\n')
   bend_old_row = '    _ : Unit <- urow("pin_bufs", M.mem_len(M.Planned.bs(p)))'
   bend_new_row = ('    _ : Unit <- urow("pin_bufs", U32.add(M.mem_len(M.Planned.bs(p)), d))'
                   '  # PLANTED')
@@ -219,9 +237,13 @@ def main():
       f.write(py_green.replace(py_old, py_new, 1).replace(py_old_row, py_new_row, 1))
     rc, out = gate("unset 7")
     fired = "level-INVARIANT rows DIFFER" in out
+    ran = "89 rows, 3 lanes identical" in out
     print("C6 a LEVEL-INVARIANT row made level-dependent ON BOTH LANES: rc=%d "
-          "(expected 2), digest guard fired: %s, called a FAILURE not a verdict: %s"
-          % (rc, fired, "NOT A VERDICT" in out))
+          "(expected 2), both lanes RAN (%s), digest guard fired: %s, called a FAILURE "
+          "not a verdict: %s" % (rc, ran, fired, "NOT A VERDICT" in out))
+    if not ran:
+      fails.append("C6 the planted run did not produce its rows, so this control could "
+                   "not tell 'the guard stayed silent' from 'nothing ran'")
     if rc != 2:
       fails.append("C6 rc was %d, expected 2 (the digest guard's own exit code), not 1"
                    % rc)

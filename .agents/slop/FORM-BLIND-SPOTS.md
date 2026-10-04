@@ -24,21 +24,31 @@ denominators below are printed on every run.
 | `formblind-audit.py` | 17 constructed variants, each with a form-complete answer, the real reader's own answer, and a control. Exits 1 on the 12 that still stand |
 | `substrate-audit.py` | the OTHER root cause: 4 instruments that are right about a form and wrong about the substrate |
 
+> **SNAPSHOT, AND THE UNIVERSE IS LIVE.** Other agents are adding tools while this
+> runs: the census read **851 → 841 → 846** tools over one session and the lane
+> count **771 → 834 → 835**. Every count below was read TWICE and the two reads
+> compared, but a number that grows while you watch it is an **unfinished** one, not
+> an unstable one. **Run `formblind-census.py --denoms` and `--floor`; do not quote
+> these blocks from memory.** The per-reason floor split is the stable part.
+
 ## DENOMINATORS — every run prints these, and none of them is a coverage claim
 
 ```
-tools in universe                            851   (.py/.sh/.mjs/.js under .agents/slop)
+tools in universe                            841   (.py/.sh/.mjs/.js under .agents/slop)
   excluded xd1/                             4989 files   vendored tinygrad checkout -- SUBJECT, not tool
   excluded opstree/                          348 files   vendored tinygrad checkout -- SUBJECT, not tool
-  census instruments (SELF)                     4        excluded: a census that counts its own detector
+  census instruments (SELF)                     5        excluded: a census that counts its own detector
 FORM-BLIND                                    67
-FORM-COMPLETE-ON-BATTERY                     285       survived the battery -- a FLOOR, not a proof
-NOT-A-SELECTOR (UNAUDITED)                   499       no predicate found; NOT CLEARED
-DELEGATES-A-READER                           167       inherits another tool's blindness
+FORM-COMPLETE-ON-BATTERY                     284       survived the battery -- a FLOOR, not a proof
+NOT-A-SELECTOR (UNAUDITED)                   490       no predicate found; NOT CLEARED
+DELEGATES-A-READER                           166       inherits another tool's blindness
+FORKS-A-READER                               156       `def rows…` / `split_py` / `parse_rows` of its own
 ```
 
-**499 of 851 tools were not audited.** They have no selection predicate the extractor can see.
-That is reported as a denominator, not folded into the green.
+**490 of 841 tools were not audited.** They have no selection predicate the extractor can see.
+That is reported as a denominator, not folded into the green. **The universe is moving** —
+851 → 841 over the session, because other agents are adding tools — so run `--denoms`, do not
+quote this block from memory.
 
 ## BLAST RADIUS — who inherits `rebase-gate.py:rows()`
 
@@ -47,21 +57,27 @@ That is reported as a denominator, not folded into the green.
 `dd-band-diff.py` · `dd-split.py` · `multi-namelane.py` · `ops-501-mutate.py` · `ops501-agree.py` ·
 `ops501-names.py` · `rebase-portrows.py` · `rebase_gate_shim.py` · `wire-lanes.py`
 
-A further **~160 tools FORK a reader** (`def rows…` / `split_py` / `parse_rows`), so a fix
+A further **156 tools FORK a reader** (`def rows…` / `split_py` / `parse_rows`), so a fix
 applied to `rebase-gate.py` leaves the forks blind with nothing to notice. The census prints a
 `FORK:` column for each.
 
 ## THE MEASURED FLOOR (`formblind-census.py --floor`, run twice, both stable)
 
-Across the **834** `.txt` lanes that `rows()` *does* read as rows, it cannot read **3,293**
+Across the **835** `.txt` lanes that `rows()` *does* read as rows, it cannot read **3,298**
 of their lines:
 
 | reason | lines | what it is |
 |---|---:|---|
-| `SINGLE-SPACE` | 3,086 | the gap must be **two** spaces; a lane printing `name value` reads as zero rows |
+| `SINGLE-SPACE` | 3,091 | the gap must be **two** spaces; a lane printing `name value` reads as zero rows |
 | `TAB` | 186 | refused on purpose — a TSV table's first column is not a row name |
 | `EQ-INSIDE-GAP` | 19 | a two-space row whose value carries `=`: the `=` branch claims it first and **renames** it |
 | `OTHER` | 2 | |
+
+**The lane count moves while you watch** — 771 → 834 → 835 across this session, because other
+agents are writing lanes. That is why the floor is read twice and the two reads compared: a
+count that grows while you watch it is an **unfinished** one, not an unstable one. The per-reason
+split has been stable (`TAB` 186 and `EQ-INSIDE-GAP` 19 on every read); `SINGLE-SPACE` tracks
+the lane count.
 
 Plus, unmeasurable by counting because the row simply vanishes: **a row whose NAME carries a
 space** (`F3` requires `len(head.split()) == 1`) — and `multi-rows.py` writes
@@ -72,7 +88,7 @@ space** (`F3` requires `len(head.split()) == 1`) — and `multi-rows.py` writes
 | # | the form it matched | the variant it could not see | consequence | where the blind spot is written down | status |
 |---|---|---|---|---|---|
 | 1 | `rows()`: `name=value` | `name␣␣value` — **213 real rows compared against nothing** | the F3 discovery; a wrong number reached a claim | `rebase-gate.py:165-189` (own header) | fixed 2026-10-04 |
-| 2 | `rows()`: name is **one token** | a name carrying a space; a TAB; a single space; a value carrying `=` | **3,293 lane lines** measured | `dd-band-diff.py` (this round), `rowform.py`, audit **A1–A4, A16** | **KNOWN-BLIND** — owner is another unit |
+| 2 | `rows()`: name is **one token** | a name carrying a space; a TAB; a single space; a value carrying `=` | **3,298 lane lines** measured | `dd-band-diff.py` (this round), `rowform.py`, audit **A1–A4, A16** | **KNOWN-BLIND** — owner is another unit |
 | 3 | `--handtyped`: one regex with `$` | f-string names, hex, two `row()`/line, wrapped calls, `row()` in a string | **224 reported, 578 actual** | `unobservable-census.py:hand_typed()` | **FIXED** — delegates to `handtyped-audit.py` |
 | 4 | the `s5_` tally: the **bound** form | the one row written bare | **18 named where there were 19** | audit **A14**; `ops-501-gate.sh` itself is sound (it greps lane OUTPUT) | KNOWN-BLIND in the tally, not in the gate |
 | 5 | a quoted-import grep: `"ops.bend"` | Bend imports are **unquoted** | **0 importers** — a vacuous blast radius; **330 of 333** import mentions invisible | audit **A15**, `--corpus` | KNOWN-BLIND |
@@ -135,6 +151,6 @@ because the file belongs to another unit.
 - **`rebase-gate.py:rows()`** (A1–A4) — owned by another unit this round. Reported, measured,
   asserted, and the floor is written into every consumer that reaches it.
 - **`wire_parse.read_fresh_cache`** (S2) — three consumers, two of them not mine.
-- **499 NOT-A-SELECTOR tools** — no predicate to audit. Unaudited is not cleared.
-- **`~160 forked readers`** — a fix to the original leaves each fork blind. The census names
+- **490 NOT-A-SELECTOR tools** — no predicate to audit. Unaudited is not cleared.
+- **156 forked readers** — a fix to the original leaves each fork blind. The census names
   them; deduplicating 160 forks is a different piece of work and is not done here.

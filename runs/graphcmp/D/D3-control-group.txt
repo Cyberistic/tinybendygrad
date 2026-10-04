@@ -4,13 +4,14 @@
 # OPS REACHED: py=7 py=7 of 77 upstream ops (MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, so the per-op NODE counts follow:
 #   ADD 1/1  ALLOC 1/1  CONST 2/2  GROUP 1/1  MUL 1/1  RESHAPE 1/1  STACK 1/1
 # SYMBOLIC DIMS: py=0/8 py=0/8 nodes carry a `U` dim; ids py=[] py=[]
+# MULTI-PARENT NODES (op#id in-edges/parents): py=RESHAPE#5 4e/2p   py=RESHAPE#5 4e/2p
 # RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
 # SHARED cores=8  ONLY-PY=0  ONLY-PY=0  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
 # LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=0    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -25,7 +26,7 @@
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
 # shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 py + 1 py)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=1/1
 # VERDICT: AGREE
 == CONTROL bend vs itself: rc=0
 # bend rows=8  bend rows=8  plant=none  mode=ORDERED
@@ -33,13 +34,14 @@
 # OPS REACHED: bend=7 bend=7 of 77 upstream ops (MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, so the per-op NODE counts follow:
 #   ADD 1/1  ALLOC 1/1  CONST 2/2  GROUP 1/1  MUL 1/1  RESHAPE 1/1  STACK 1/1
 # SYMBOLIC DIMS: bend=0/8 bend=0/8 nodes carry a `U` dim; ids bend=[] bend=[]
+# MULTI-PARENT NODES (op#id in-edges/parents): bend=RESHAPE#5 4e/2p   bend=RESHAPE#5 4e/2p
 # RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.
 # SHARED cores=8  ONLY-BEND=0  ONLY-BEND=0  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
 # LEDGER -- constructs this normal form does NOT compare in full. A `0/0` is a fact, not an absence:
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=0    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -54,7 +56,7 @@
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
 # shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 bend + 1 bend)  nodes=8/8  fields=6  field-records=48  shared-cores=8  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=1/1
 # VERDICT: AGREE
 # CONTROL VERDICT: OK
 rc=0

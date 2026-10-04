@@ -34,7 +34,7 @@ import sys
 
 sys.path.insert(0, '.')
 from tinygrad.dtype import dtypes
-from tinygrad.uop.ops import UOp, Ops
+from tinygrad.uop.ops import UOp, Ops, UOpMetaClass
 from tinygrad.codegen.decomp import dtype as DD
 
 # `dd-bandoracle.py`'s print decisions, verbatim: drop the promotion CASTs
@@ -57,6 +57,23 @@ def _cast(self, dtype):
 
 
 type(UOp.variable("p", 0, 0)).cast = _cast
+
+# `dd-oracle.py`'s OWN interning-order hook (its lines 77-91), installed here rather than
+# reinvented, so `window()` counts what that file counts.
+ORDER = []
+_CALL = UOpMetaClass.__call__
+
+
+def _call(cls, op, src=(), arg=None, tag=None, metadata=None):
+    key = (op, src, arg, tag, type(arg))
+    fresh = key not in UOpMetaClass.ucache
+    r = _CALL(cls, op, src, arg, tag, metadata)
+    if fresh:
+        ORDER.append(r)
+    return r
+
+
+UOpMetaClass.__call__ = _call
 
 
 def uncast(v):
@@ -143,18 +160,70 @@ def eck(built):
     return ",".join(out)
 
 
-FIX = (("w1", dtypes.fp8e4m3, dtypes.float32),
-       ("n1", dtypes.float32, dtypes.fp8e4m3),
-       ("n2", dtypes.float32, dtypes.fp8e5m2),
-       ("f1", dtypes.fp8e4m3fnuz, dtypes.float32),
-       ("f2", dtypes.float32, dtypes.fp8e5m2fnuz),
-       ("x1", dtypes.float16, dtypes.bfloat16),
-       ("x2", dtypes.float32, dtypes.float64))
+# ⚠⚠ THE RECEIVER'S DTYPE IS `f2f_dt[fr]`, NOT `fr`. BOTH REAL CALL SITES SAY SO, and
+# this is the third fixture bug these rows have found:
+#
+#     dtype.py:142   f2f(val.bitcast(f2f_dt[to]), to, fr)     <- `f2f_store`
+#     dtype.py:196   f2f(x.bitcast(f2f_dt[ctx[0]]), ctx[0], ctx[1])
+#
+# `f2f_dt[f] = getattr(dtypes, f"uint{f.bitsize}")` (dtype.py:97), so the receiver is a
+# UINT of the source's width. A fixture that hands `f2f` a receiver of dtype `fr` takes a
+# different path in `mixin/dtype.py:53`, whose `bitcast` is
+# `return self if self.dtype == dt else ...` -- so with a `fr` receiver
+# `v.bitcast(fr)` FOLDS to `v` and the BITCAST disappears, and the fixture measures a
+# graph dtype.py never builds. MEASURED: `v.bitcast(f32) is v` is `True` for an `f32`
+# receiver and `False` for a `u32` one. That is a fixture disagreement with the port that
+# would have been read as a PORT BUG, and the port would have been "fixed" into building
+# a node CPython does not have.
+#
+# So `f2f_dt[fr]` is computed here and the receiver carries it. `fr`/`to` -- the FLOAT pair
+# that selects the branch -- are unchanged.
+def f2f_dt_of(fr):
+    return getattr(dtypes, f"uint{fr.bitsize}")
+
+
+# ⚠ THE NAMES ARE `q*` AND NOT `f*`/`g*`/`h*`/`k*`, because `dd-oracle.py` ALREADY OWNS
+# those for the SAME defs with DIFFERENT fixtures: its `f1` is `fp8e4m3 -> f32` where
+# this file's `w1` was, its `f2` is `fp8e4m3fnuz -> f32` where this file's `f1` was, and
+# its `g3`/`g4`/`g6`/`g7` are the three narrowing fixtures and the f64 widening one.
+# Two DIFFERENT fixtures under one `name=` key is a disagreement manufactured by the
+# naming, and `dd-band-diff.py` cannot see it -- it compares whole `name=value` lines and
+# a collision looks exactly like a real bug. Measured: with `f1`/`f2` reused, the differ
+# reported 8 disagreements of which 4 were this collision. The `q*` names are disjoint from
+# every row `dd-oracle.py` prints (`grep -c '^q' dd-oracle.txt` is 0).
+#
+# `dd-oracle.py` COULD be diffed against for the `sig`/`k`/`=` facts, and its expectations
+# are better in one respect: it interns a shared POOL first, so a CONST a later fixture
+# wants is already there. Its `n=` is therefore a different WINDOW from a fresh arena's,
+# which is why this file prints its own `n=`.
+
+FIX = (("q1", dtypes.fp8e4m3, dtypes.float32),
+       ("q2", dtypes.float32, dtypes.fp8e4m3),
+       ("q3", dtypes.float32, dtypes.fp8e5m2),
+       ("q4", dtypes.fp8e4m3fnuz, dtypes.float32),
+       ("q5", dtypes.float32, dtypes.fp8e5m2fnuz),
+       ("q6", dtypes.float16, dtypes.bfloat16),
+       ("q7", dtypes.float32, dtypes.float64))
+
+
+def window():
+    """Nodes interned SINCE THE MARK, i.e. the port's `to - from`.
+
+    `dd-oracle.py`'s own `ORDER` hook (`UOpMetaClass.__call__`) is installed here rather
+    than reinvented: it records a node the first time its key misses the ucache, which is
+    exactly "interned". The port's `rows.put` prints `O.Arena.next(ar) - from`, the number
+    of arena slots the fixture added, so this is the same quantity. Printing the CONE
+    size instead would compare two different facts -- the cone deduplicates shared
+    subtrees and the window does not -- and `q1c` carries the cone separately so the two
+    are never confused again. Measured on the corrected fixture: window 22, cone 27.
+    """
+    return len(ORDER)
 
 
 def main():
     for nm, fr, to in FIX:
-        v = UOp.variable(nm, 0, 0, fr)
+        v = UOp.variable(nm, 0, 0, f2f_dt_of(fr))
+        b = window()
         try:
             ans = DD.f2f(v, fr, to)
         except NotImplementedError as e:
@@ -162,11 +231,18 @@ def main():
             # condition. Printing the exception TYPE rather than the message, because the
             # message interpolates the two dtypes and the port's refusal is a tag.
             print(f"{nm}=refused:NotImplementedError")
-            print(f"{nm}n=0")
+            print(f"{nm}n={window() - b}")
             continue
         c = cone([ans])
         print(f"{nm}={tree(ans)}")
-        print(f"{nm}n={len(c)}")
+        # `n=` IS THE WINDOW, NOT THE CONE, and it must be the same quantity the port's
+        # `rows.put` prints (`to - from`, the arena slots the fixture interned). Printing
+        # `len(cone)` here compares two different facts: the cone is deduplicated across
+        # shared subtrees and the window is not. Measured on the CORRECTED fixture:
+        # port `q1n` 22, cone 27, window 22 -- the cone and the window differ by 5 and a
+        # gate that mixes them is a gate that is always red for the wrong reason.
+        print(f"{nm}n={window() - b}")
+        print(f"{nm}c={len(c)}")
         print(f"{nm}sig={esig(c)}")
         print(f"{nm}k={eck(c)}")
 

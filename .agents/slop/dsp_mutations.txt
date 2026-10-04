@@ -135,3 +135,16 @@ baseline: 497 rows
 | M66 | 1 | :192's `[context, status, ...]` -- status is the SECOND word. |
 | | | moved: dsp_rpc_msg_ix |
 | M99 | 0 | THE CONTROL: a comment-only edit. A table with no row that CANNOT move is a table of coincidences. |
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: anchors all present; no run performed here
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

@@ -1,36 +1,58 @@
-id    rows moved  what
+# amdev_mut.txt -- the mutation table for tinybendygrad/runtime/support/am/amdev.bend
+# REWRITTEN 2026-10-04.  Three mutations read `EDIT NOT FOUND` in this record:
+# M13, M14 and M16.  None of them had moved a row.  `rv.hi`/`rv.lo` gained an
+# explicit `caddr: U32` annotation, and M16's anchor carried ONE CLOSING PAREN
+# TOO MANY -- the call spans three lines, so the anchor stopped one paren
+# before the text ended.  All three were re-aimed and re-run; see the pin below.
+#
+id        rows moved  what
 ----------------------------------------------------------------------------------------------------
-M1             0  the version compare: `>` against `>=` on the MAJOR component.
-M2             8  the RELATIVE shift: `1 << (34 - 32)` is `1 << 2` in the high word, and `1 << 34` in a U32 SATURATES TO 0. This is the ops_amd SQTT-pointer shape.
-M3             8  the palloc high word: subtract 32 for the split, not add.
-M4             8  the palloc low word: for a 64-bit entry it must be ZERO, and a 1 there would make the allocator hand out 2^32 + n.
-M5             4  :406 `nbio` for ip_ver < (12,0,0) -- moving the boundary to 11.
-                 ['mods_11_0_0_all', 'mods_11_0_0_nb', 'mods_11_9_0_all', 'mods_11_9_0_nb']
-M6             1  the palloc 64-bit test reads the NEXT index, so `nbig` counts one too few.
-                 ['palloc_nbig']
-M7             2  the `max((k >> 2 ...), default=0)` fold: the argument order decides which wins.
-                 ['aids_full4_maxaid', 'aids_sparse_maxaid']
-M8             9  :405-407 builds the module list and appends nbio/nbif LAST; prepending it changes which table each IP is keyed by.
-M9             4  the RLC gateway's read/write bit: `(addr | 1<<28) << 32` is a read, `addr << 32` a write. Swapping them is a silently wrong gateway command.
-                 ['amrl_pair_hi_r', 'amrl_pair_hi_w', 'amrl_word_hi_r', 'amrl_word_hi_w']
-M10            2  wreg_pair's ORDER: the LOW word is stored first. This mutation swaps the SLOTS, not the nesting, so it is the argument order.
-                 ['amrl_pair_bend_vals', 'amrl_pair_hivals']
-M11            4  :272 `for i, val in enumerate((req, 0, 0, 0)): mmio[TRN_DW0 + i] = val` -- the REQUEST goes in the FIRST word, so writing the next address's value would put the request one word late.
-                 ['amb_fini_mm_val', 'amb_init_mm_val', 'amb_norw_mm_val', 'amb_reqff_mm_val']
-M12            3  :276 `vf_mailbox[0] = 0` is UNCONDITIONAL -- only the ready wait and the ack are behind `if wait_ready:`. This mutation drops the FALSE arm's store.
-                 ['amb_norw_mb_val', 'amb_norw_mb_wr', 'amb_norw_n']
-M13  EDIT NOT FOUND  :351 `wreg(0x06, caddr >> 31)` -- the high address bit, off by one.
-M14  EDIT NOT FOUND  :352 `(caddr & 0x7FFFFFFF) | 0x80000000` -- dropping the mask keeps the address bit that selects the window half.
-M15            4  the ASPM probe ORDER: `cap` then `cap + 1`. The inner call is evaluated first, so the argument that reads LAST must be the OUTER one. Invisible on every fixture with one read per step.
-                 ['ama_aspm_chain_rd_1', 'ama_aspm_chain_rd_2', 'ama_aspm_loop_rd_1', 'ama_aspm_loop_rd_2']
-M16  EDIT NOT FOUND  :154 `if cap and cap not in seen` -- `not` against `or`.
-M17            1  :154 writes `read_config(...) & ~3`, NOT the mask itself; writing the mask would clear every other Link Control bit.
-                 ['ama_aspm_link_val_0']
-M18           19  the two-way table SEARCH: `:400`'s dict comprehension OVERWRITES, so the LAST duplicate wins (UVD_HWID and VCN_HWID are both 12).
-M19           10  the two-way table's REVERSE direction, which is a different walk.
-M20            0  the AID alive-mask SET {0xf, 0x3, 0xc}: 0xc IS AID_ALIVE_C(), so this mutation is a CONTROL. It should move nothing.
-M21            0  the version TAIL compare: reading `ax` on both sides is an EQUIVALENCE, not a bug -- reported as a blind spot, NOT closed with a row.
-M22            0  a comment-only-equivalent edit. THE CONTROL: a table with no row that CANNOT move is a table of coincidences.
+M1                 0  the version compare: `>` against `>=` on the MAJOR component.
+M2                 8  the RELATIVE shift: `1 << (34 - 32)` is `1 << 2` in the high word, and `1 << 34` in a U32 SATURATES TO 0. This is the ops_amd SQTT-pointer shape.
+M3                 8  the palloc high word: subtract 32 for the split, not add.
+M4                 8  the palloc low word: for a 64-bit entry it must be ZERO, and a 1 there would make the allocator hand out 2^32 + n.
+M5                 4  :406 `nbio` for ip_ver < (12,0,0) -- moving the boundary to 11.
+                    ['mods_11_0_0_all', 'mods_11_0_0_nb', 'mods_11_9_0_all', 'mods_11_9_0_nb']
+M6                 1  the palloc 64-bit test reads the NEXT index, so `nbig` counts one too few.
+                    ['palloc_nbig']
+M7                 2  the `max((k >> 2 ...), default=0)` fold: the argument order decides which wins.
+                    ['aids_full4_maxaid', 'aids_sparse_maxaid']
+M8                 9  :405-407 builds the module list and appends nbio/nbif LAST; prepending it changes which table each IP is keyed by.
+M9                 4  the RLC gateway's read/write bit: `(addr | 1<<28) << 32` is a read, `addr << 32` a write. Swapping them is a silently wrong gateway command.
+                    ['amrl_pair_hi_r', 'amrl_pair_hi_w', 'amrl_word_hi_r', 'amrl_word_hi_w']
+M10                2  wreg_pair's ORDER: the LOW word is stored first. This mutation swaps the SLOTS, not the nesting, so it is the argument order.
+                    ['amrl_pair_bend_vals', 'amrl_pair_hivals']
+M11                4  :272 `for i, val in enumerate((req, 0, 0, 0)): mmio[TRN_DW0 + i] = val` -- the REQUEST goes in the FIRST word, so writing the next address's value would put the request one word late.
+                    ['amb_fini_mm_val', 'amb_init_mm_val', 'amb_norw_mm_val', 'amb_reqff_mm_val']
+M12                3  :276 `vf_mailbox[0] = 0` is UNCONDITIONAL -- only the ready wait and the ack are behind `if wait_ready:`. This mutation drops the FALSE arm's store.
+                    ['amb_norw_mb_val', 'amb_norw_mb_wr', 'amb_norw_n']
+M13                1  :351 `wreg(0x06, caddr >> 31)` -- the high address bit, off by one.
+                    ['amv_rv_hi4']
+M14                4  :352 `(caddr & 0x7FFFFFFF) | 0x80000000` -- dropping the mask keeps the address bit that selects the window half.
+                    ['amv_rv_lo0', 'amv_rv_lo1', 'amv_rv_lo4', 'amv_rv_val']
+M15                4  the ASPM probe ORDER: `cap` then `cap + 1`. The inner call is evaluated first, so the argument that reads LAST must be the OUTER one. Invisible on every fixture with one read per step.
+                    ['ama_aspm_chain_rd_1', 'ama_aspm_chain_rd_2', 'ama_aspm_loop_rd_1', 'ama_aspm_loop_rd_2']
+M16                9  :154 `if cap and cap not in seen` -- `not` against `or`.
+M17                1  :154 writes `read_config(...) & ~3`, NOT the mask itself; writing the mask would clear every other Link Control bit.
+                    ['ama_aspm_link_val_0']
+M18               19  the two-way table SEARCH: `:400`'s dict comprehension OVERWRITES, so the LAST duplicate wins (UVD_HWID and VCN_HWID are both 12).
+M19               10  the two-way table's REVERSE direction, which is a different walk.
+M20                0  the AID alive-mask SET {0xf, 0x3, 0xc}: 0xc IS AID_ALIVE_C(), so this mutation is a CONTROL. It should move nothing.
+M21                0  the version TAIL compare: reading `ax` on both sides is an EQUIVALENCE, not a bug -- reported as a blind spot, NOT closed with a row.
+M22                0  a comment-only-equivalent edit. THE CONTROL: a table with no row that CANNOT move is a table of coincidences.
 ----------------------------------------------------------------------------------------------------
 baseline rows: 552
 mutations moving nothing: ['M1', 'M20', 'M21', 'M22']
+#   rev 5a58dd4184db | file 233a21a435af176e | rows 917db6c4b9e8be5b (552 rows)
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

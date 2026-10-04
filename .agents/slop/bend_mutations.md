@@ -22,3 +22,16 @@
 | M18 | out_bufs: no dedup | 0 |  |
 | M19 | a comment-only edit (THE CONTROL) | 0 |  |
 | M20 | wire_dtype: void needs no lane either | 9 | bend_emit_cmp, bend_emit_cmp_match, bend_emit_cmp_ok, bend_emit_fconst, bend_emit_fconst_match, bend_emit_fconst_ok... |
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: 22/22 anchors present; no anchor work was needed and no run was performed here
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

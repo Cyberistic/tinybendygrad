@@ -3,6 +3,7 @@
 # OPS REACHED: py range=2 py binblob=8 of 77 upstream ops (MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, so the per-op NODE counts follow:
 #   ALLOC 0/2  BINARY 0/1  CONST 1/4  MUL 0/1  PERMUTE 0/2  RANGE 1/0  REDUCE 0/1  RESHAPE 0/4  STACK 0/4
 # SYMBOLIC DIMS: py range=0/2 py binblob=0/19 nodes carry a `U` dim; ids py range=[] py binblob=[]
+# MULTI-PARENT NODES (op#id in-edges/parents): py range=none -- this side is a TREE   py binblob=CONST#10 2e/2p, CONST#2 2e/2p, CONST#3 4e/4p, CONST#6 2e/2p
 # RESIDUALS IN THIS RUN: y=0/1 (a bytes arg: CONTENT compared; the residual is the bytes CONST) -- agreement below does NOT cover these.
 # SHARED cores=1  ONLY-PY RANGE=1  ONLY-PY BINBLOB=18  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
 # ONLY ON THE PY RANGE SIDE (1), IN FULL:
@@ -30,7 +31,7 @@
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=1    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -45,13 +46,14 @@
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
 # shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# DENOMINATOR: graphs=2 (1 py range + 1 py binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/8 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 py range + 1 py binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/8 of 77  symbolic-dims=0/0  multi-parent-nodes=0/4
 # VERDICT: DISAGREE
 # bend range rows=2  bend binblob rows=19  plant=range-vs-binblob  mode=ORDERED
 # devices bend range=[] bend binblob=['sCPU']  (both sides emit the NAME: CPython's is `Compiled.device`, the port's is `uop/render.bend:363` on the tag)
 # OPS REACHED: bend range=2 bend binblob=8 of 77 upstream ops (MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, so the per-op NODE counts follow:
 #   ALLOC 0/2  BINARY 0/1  CONST 1/4  MUL 0/1  PERMUTE 0/2  RANGE 1/0  REDUCE 0/1  RESHAPE 0/4  STACK 0/4
 # SYMBOLIC DIMS: bend range=0/2 bend binblob=0/19 nodes carry a `U` dim; ids bend range=[] bend binblob=[]
+# MULTI-PARENT NODES (op#id in-edges/parents): bend range=none -- this side is a TREE   bend binblob=CONST#10 2e/2p, CONST#2 2e/2p, CONST#3 4e/4p, CONST#6 2e/2p
 # RESIDUALS IN THIS RUN: y=0/1 (a bytes arg: CONTENT compared; the residual is the bytes CONST) -- agreement below does NOT cover these.
 # SHARED cores=1  ONLY-BEND RANGE=1  ONLY-BEND BINBLOB=18  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
 # ONLY ON THE BEND RANGE SIDE (1), IN FULL:
@@ -79,7 +81,7 @@
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=1    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -94,7 +96,7 @@
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
 # shape-N hits py=0 (expected 0: `UOp.shape` RAISES instead of returning None, ops.py:455 -- probed over all 12 no-shape ops)
-# DENOMINATOR: graphs=2 (1 bend range + 1 bend binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/8 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 bend range + 1 bend binblob)  nodes=2/19  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/8 of 77  symbolic-dims=0/0  multi-parent-nodes=0/4
 # VERDICT: DISAGREE
 # CROSS VERDICT: OK -- it disagrees
 rc=0

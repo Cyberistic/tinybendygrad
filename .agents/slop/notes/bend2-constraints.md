@@ -19938,3 +19938,717 @@ Also measured here, and both are traps rather than findings:
   overwritten and stay sound.
 - `_srchash.txt` is `HASH PATH`. Reading it as `PATH HASH` silently compares
   hashes to hashes, which always agrees.
+
+---
+---
+
+## FB — FORM-BLINDNESS (appended 2026-10-04; continues from the `blobrows-sweep`
+## rules at the end of the file above. NUMBERS REPEAT ACROSS UNITS — cite the
+## `FB-` prefix and this position, never a bare number.)
+
+### FB-1 THE RULE, STATED ONCE AND CHECKABLE
+
+**A tool that matches a form cannot see the instance that lacks it.**
+
+THE TEST THAT GOES WITH IT, because the rule alone is not actionable:
+
+**SPELLING-INVARIANCE.** Build two texts that MEAN THE SAME THING and are WRITTEN
+DIFFERENTLY. A reader that answers differently is matching a form. Name the
+variant, construct it, assert.
+
+MEASURED: **every** finding below arrived as a **disagreement between two tools that
+meant the same thing** — `hand_typed` missing f-strings, the `s5_` tally missing an
+unbound row, `radix` missing hex, `O.Found.i(` missing a local, `rows()` missing
+the F3 gap. **NONE of them was found by reading the tool.** So a disagreement
+count is not a coverage statement, and the denominator has to be printed beside it
+every time.
+
+INSTRUMENTS: `.agents/slop/rowform.py` (form-complete reader + spelling battery),
+`formblind-census.py` (every selector, extracted from its AST, run against the
+battery), `formblind-audit.py` (17 constructed variants, each with a control),
+`FORM-BLIND-SPOTS.md` (the ledger).
+
+### FB-2 A COUNT THAT IS SILENTLY A FLOOR IS THE DEFECT
+
+This whole class is one failure wearing six costumes. The tell is always the same:
+**a number reached a claim someone repeated**, or **a zero that looks like a
+finding**.
+
+MEASURED, this tree, 2026-10-04:
+
+- `rebase-gate.py:rows()` cannot read **3,293 lines** inside the **834** `.txt`
+  lanes it *does* read as rows: `SINGLE-SPACE` 3,086 (the gap must be TWO
+  spaces), `TAB` 186 (refused on purpose — a TSV table's first column is not a row
+  name), `EQ-INSIDE-GAP` 19 (the `=` branch claims it first and **renames** the
+  row). Run twice, stable. **Every count in this repo produced through `rows()` is
+  a floor.**
+- **9 tools call `rows()`** and **~160 tools FORK a reader** (`def rows…` /
+  `split_py` / `parse_rows`). **A correction that does not propagate is
+  indistinguishable from a correction that never happened.**
+- a grep for `"ops.bend"` sees **3 of 333** `.bend` import mentions across
+  `tinybendygrad/**/*.bend`; **330 are invisible**. Bend writes an import path BARE.
+  **0 importers is a claim somebody repeats.**
+- `dd-band-census.py` §C printed **0** on a file where §A printed **7**.
+
+### FB-3 THE `pinned` trap: a "verbatim" copy is not the thing it names
+
+`cstyle-gate.py:rows_shipped` said "rebase-gate.py's `rows()`, verbatim". Measured
+against the real reader on six shapes: **agrees on two, differs on four.** It is the
+pre-F2/pre-F3 reader; it misses the two-space gap, does not fold `]   py=[`, and
+manufactures the `""` phantom row that `rows()` excludes **on purpose**. Its shred
+count measures a reader that no longer exists.
+
+**RULE: a function that claims to BE another function is a fork, and the claim must
+be asserted, not written in a docstring.** Call both on the same six shapes.
+
+### FB-4 THE SUBSTRATE IS A DIFFERENT ROOT CAUSE AND WANTS A DIFFERENT FIX
+
+**A tool that measures the right form of the wrong thing answers a question you did
+not ask.** Widening the selector does not help.
+
+| instrument | measures | should measure |
+|---|---|---|
+| a sha256 **digest** | the file being **mutated** | the file the rows are `SAME`-compared against. **A digest protects the MUTANT, not the REFERENCE** — swapping `hi42`'s two shape args (the M09 defect) leaves `shape()`'s three fields byte-identical |
+| a **cache** | an mtime over a cache file | whether the payload is a measurement at all. `rebase-scan-oracles.cached()` refuses an empty cache; **`wire_parse.read_fresh_cache()` — the shared reader, imported by `wire-rows.py` and `wire-pair.py` — returns `({}, 'fresh')`** for a crashed lane |
+| a **binary path** keyed on `<stem>` | 131 `.bend` files, **110 distinct stems** | `port_key()` — **14 `__init__` ports shared one artefact**; `run_port()` unlinked it then executed whatever was there |
+| a **selftest** | the classifier over six synthetic states with `run_port()` stubbed | the instrument. A re-implementation measuring itself |
+
+**A census that reads FORMS cannot see a substrate error at all**, so its
+FORM-COMPLETE verdict on a wrong-substrate instrument is silence, not clearance.
+`.agents/slop/substrate-audit.py` carries the four with controls; S2 FAILS today.
+
+### FB-5 AN AUDIT WHOSE EXPECTED VALUE COMES FROM THE THING UNDER TEST AGREES WITH ITSELF
+
+Every assertion in `formblind-audit.py` therefore carries a **CONTROL** — a reader
+built in the audit file, blind on purpose to the same variant — whose contract is
+that it must **NOT** agree with the form-complete answer. A control that agrees means
+the assertion has stopped being able to detect a miss, and the audit fails with
+`THIS AUDIT CANNOT FAIL`.
+
+Expected values come from: an independent reader (`rowform.any_row`), a
+construction I can count, CPython's `ast`/`int()`, or the CORRECTED detector in this
+repo (`handtyped-audit.py`, whose answer disagrees with the regex by a measured
+329 rows and whose disagreement IS the finding).
+
+**RUN ANYTHING TWICE.** A count that grows while you watch it is an unfinished one,
+not an unstable one — the floor above was read twice on purpose.
+
+### FB-6 TWO SPELLINGS OF "CORRECTED" THAT ARE NOT
+
+- A **claimed blind variant that is not one.** `hand_typed`'s `bare` arm
+  `f"[^"{]*"` **does** see `row("a", f"1")`. A census that is not corrected is a
+  census that teaches the wrong lesson. Pinned as audit A10.
+- **A fix applied to one CONSUMER rather than to the shared function** (FB-4/S2).
+  The symptom is two readers of the same data disagreeing, one of which is the one
+  everyone calls.
+
+### FB-7 WHAT TO DO WHEN YOU FIND ONE
+
+1. **Construct** the variant and get a FAILING assertion, not a paragraph. The
+   audit's `KNOWN-BLIND` polarity is a failing assertion: a reader that cannot see
+   the thing is a FAILURE OF THE WORLD, not a successful confirmation of a
+   hypothesis. Getting that backwards is how a defect audit becomes a census
+   validator that exits 0 forever.
+2. **Name the blind variant where the tool lives**, in the tool, so the next reader
+   knows the number is a floor. Comment-only is enough and is what most of these
+   needed.
+3. **Report the denominator.** Audited / could-audit / unaudited, always.
+4. **Do not patch the live tree from a harness**, and do not edit another unit's
+   file — report it, loudly, with the measurement.
+
+---
+
+## FF -- the `f2f` region, 2026-10-04. Continues FB (position ~20020 before this block).
+
+Four rules, all measured on bend 2.0.34, all in
+`tinybendygrad/codegen/decomp/dtype.bend` unless stated. Positions: this block starts at
+line ~20058.
+
+### FF-1 A FORWARD REFERENCE IS A CYCLE, AND IT COMES FROM AN ARENA HANDED TO TWO BUILDERS
+
+`f2f.qnan`/`f2f.fnuz`/`f2f.down.npat` all wrote
+
+    +b = T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)
+
+`f2f.em1` builds three nodes into ITS OWN copy and returns an INDEX; `tx_shl` then
+starts writing at the same `next` in the arena it was handed, so the first builder's
+nodes are overwritten and the answer's src points at a LATER slot. Measured,
+`.agents/slop/f2f-arena.bend`:
+
+    22  MUL/2  <- 23,19   FORWARD
+    23  OR/2   <- 17,22
+
+22 and 23 point at each other. An append-only arena cannot hold a cycle, so this is not
+a wrong answer -- it is a graph that cannot exist, and `w1` still printed
+`BITCAST(MUL(C(1),C(-1)))`, which looks like an answer.
+
+**`+ar` DOES NOT PREVENT THIS.** `arena-affine-probe.bend`'s `ctl1` measures two mints
+from one arena name BOTH returning index 2. The rule that holds is: **a def that builds
+nodes and returns a bare index is a def that can be misused.** Return `O.Found`.
+
+### FF-2 A `U32` RETURN FROM A DEF THAT BUILDS NODES IS A `Found` IN DISGUISE
+
+`f2f.up.tail` / `f2f.fnuz` / `f2f.ocp` each returned `U32`, and `f2f.up` then built its
+BITCAST into `O.Found.ar(nq)` -- a DIFFERENT arena from the one the index belonged to,
+because `f2f.up` had handed the tail its own pre-`f2f.sign` `+ar`. Two independent
+defects, and **fixing only the return type re-creates the aliasing**, because the
+returned `Found` would carry the stale arena. Both halves are needed:
+
+    +w = f2f.up.tail(..., O.Found.ar(nq), ns, sg, ex, nm, nq, fe, fm, te, tm)
+    T.tx_bitcast(O.Found.ar(w), O.Found.i(w), to)
+
+`wr.rebuild` in `codegen/__init__.bend` is the same shape and it is why it was written
+that way.
+
+### FF-3 `+` GOES INSIDE A DESTRUCTURING, AND A `match` MAY NOT BE NESTED IN A `match` ARM
+
+- `(ar, +repl) = p` works for a TUPLE return; `case Ga{+ar, n, ...}: f2f.got.put(...)`
+  works for a record. A `+` on the WHOLE binder is refused where the binder is a field.
+- A `match` whose scrutinee is a **def parameter** cannot be nested inside a `match` arm
+  whose binders are consumed: `a match on a parameter or field (this name is a def or a
+  consumed binder: give the value its own def)`. The fix is a LEAF def taking the
+  `Maybe` plus the accumulated `String`, which is the shape `l2i.hi.put` already uses.
+- Declaration order is still R-3: `f2f.got` must be defined BEFORE `f2f.one`, and
+  `expected : a filled definition (an unfilled law is a dead claim)` names the offender.
+
+### FF-4 A FLAG THAT FIRES ON EVERY ROW IS NOT A GATE
+
+The first `FORWARD` predicate was `is_lt(src, i)` on the theory that a forward edge has
+`src > i`. It fired on **every** row including `0 NOOP <- 0,0`, because `U32.is_lt(3, 5)`
+is `T` (measured, `.agents/slop/ilt.bend`) and `src < i` is TRUE for every WELL-FORMED
+edge. The impossible edge is `i <= src`. A detector that cannot fail is a gate that says
+PASS; the corrected test is `and(i != 0, or(is_lt(i, src), is_eq(i, src)))`, and the
+`i != 0` is load-bearing because `Arena.src` answers 0 for a short tuple, so a missing
+`src1` and a real self-edge are the same index.
+
+### FF-5 THE ARENA-SIZE SWEEP SEES EXACTLY ONE THING, AND IT IS NOT CORRECTNESS
+
+`f2f-pad.sh` prepends `pad` PARAMs and asks whether the answer moves. Four defect classes
+injected and measured (`.agents/slop/f2f-inject.py`, verdicts from `f2f-calib.py`):
+
+| injected defect | the wrong value | sweep verdict |
+| --- | --- | --- |
+| fixed wrong INDEX (`dd_band` mask = a node's slot) | `C(31)` at pad 0, `C(32)` at every pad > 0 | **TRACKS pad -- seen** |
+| wrong CONSTANT (`2**k + 1`) | `C(257)` at every pad | FIXED -- blind |
+| wrong OFFSET (`2**k`, the `-1` dropped) | `C(256)` at every pad | FIXED -- blind |
+| STALE ARENA (the Task A defect) | no change at any pad | FIXED -- blind |
+
+So the sweep licenses exactly one claim: **the wrong value is not a function of arena
+position.** It says nothing about a wrong constant, a wrong offset, or a stale arena --
+`O.Arena.node` is TOTAL and answers the bottom out of range, so a stale arena still
+prints. A clean sweep over a fixed file is not evidence for that fix; the FORWARD
+detector of FF-1 and the CPython cone are.
+
+---
+
+## APPENDED 2026-10-04 by the `uop/validate.bend` unit. Numbering CONTINUES from the FF-*
+## series at the END of this file (FF-5 is the last entry above). Rule NUMBERS REPEAT across
+## units, so cite the SECTION LABEL (`VZ-*`) and never a number.
+
+The unit's question was narrow -- is the `- 256` in `z3_bv`'s printed `BV2Int` expansion
+CPython's answer? -- and every rule below came out of answering it. Three of them are about
+CPython, four are about Bend, and one is about the harness.
+
+### VZ-1 A ROW SHAPE NOBODY READS IS NOT A ROW, AND IT IS SILENT
+
+`validate.bend` printed `dv_and21 | ... | ... | ... | ...`. `.agents/slop/rebase-gate.py`'s
+`rows()` splits F1 on the FIRST `=` and has no `=` to split, so the lane parsed to **zero rows**,
+and a lane that parses to no rows shares no name with anything and therefore CANNOT DISAGREE.
+Three rows moved `- 1` -> `- 256` through that lane and nothing said so.
+
+This is `rebase-gate.py`'s GUARD 2 restated from the producing side, and the producing side is
+where it is cheap to fix: **`nm = value`, one `=` per line, and a per-line assertion that the
+name you meant to print is the name that parses.** `agent-core.md`'s "0 rows is not a pass" is a
+statement about readers; this is the same fact about writers.
+
+### VZ-2 z3 HAS NO PRINTER REORIENTATION. THE AST HAS ONE, AND PYTHON PUTS IT THERE
+
+Measured over 120 ordered pairs WITH sexprs, four operators, five operand kinds
+(`.agents/slop/validate-oracle.py`'s `cmp_*` rows): `str()` is the IDENTITY on a comparison's
+sexpr. `(>= 5 i)` prints `5 >= i`; `(<= i 0)` prints `i <= 0`; `(<= i (- 100 1))` prints
+`i <= 100 - 1`. There is no hoist and no flip.
+
+The two things that LOOK like printer rules are both AST facts, and both have been mistaken for
+printer rules at cost:
+
+  1. **Python reflection.** A Python `int` on the LEFT of a comparison tries
+     `int.__le__(ArithRef)`, gets NotImplemented, and evaluates `ArithRef.__ge__`, which builds
+     `GE(right, left)`. So `0 <= i` is `i >= 0` in the AST -- MEASURED, and `IntVal(0) <= i` is
+     `0 <= i`, which is the same source text with a different answer and the whole reason a
+     prior unit recorded "two CPython measurements that disagree with EACH OTHER".
+  2. **z3's own canonicalisation, and only for a z3 `IntNumRef` on the right.** `i <= IntVal(5)`
+     builds `(>= 5 i)`; `i <= 5` builds `(<= i 5)`; `i <= (100-1)` builds `(<= i ...)`. So a
+     Python `int` and an `ArithRef` expression both print unchanged.
+
+**THE PORTING RULE: reproduce the AST CPython builds, and never compensate in the printer.** A
+printer heuristic that "hoists a numeral" is a guess about an AST question, and it will be wrong
+in both directions -- which is how `create_bounded` came to build `Le(vmin, sym)` where
+validate.py:51 builds `Ge(sym, vmin)` (M6: 24 rows).
+
+### VZ-3 `Arena.at` IS THE ONLY WAY TO ASK "WAS THIS NODE EVER INTERNED", AND
+### `O.Arena.node` CANNOT ANSWER IT
+
+Already known (`Arena.node` is TOTAL, out of range reads the bottom). Re-measured here with a
+THIRD instance nobody had found: `dv2` passed `Found.ar(t)` -- the arena **before** the gate was
+interned -- so `O.UOp.sink` grew a node whose `src[1]` was an index the store never held. The
+diagnostic that separated it was the pair `mask_missing@<correct index>/n=<bind count>`: the
+index was RIGHT and the bind count was one short, which says the walk never reached the node
+rather than that the index was wrong. `O.Arena.node` would have answered `0` and printed nothing.
+
+### VZ-4 A FIXTURE THAT MINTS ITS OWN GATE MUST BUILD THE SINK IN THE ARENA AFTER THE GATE
+
+`Found.ar(g)`, not `Found.ar(t)`, when `g` was minted second. CPython cannot have this bug --
+`uops_to_z3` takes UOp OBJECTS and tinygrad hash-conses them into one graph -- so a port that
+threads an arena through has to reconstruct the invariant the object graph gave for free, and
+the arena that reconstructs it is the one after the LAST mint.
+
+This is the same class as the `dv_and.mm` staleness, one level up, and it was INVISIBLE to
+`dv_shr2` and to every `dv_*` row until an oracle existed: the port answered `[]` where CPython
+answers `[True]`, which no existing row looked at.
+
+### VZ-5 A `Bool` FLAG THAT READS THE LIST IT IS BUILDING DROPS THE HEAD. THREE TIMES.
+
+`Bool.pick(String, first, acc, acc + ", " + str(h))` with `first=True` initially is a fold that
+**discards the first element** on every list. Measured in `validate.bend` in three places at
+once, all with the same shape and all invisible for the same reason -- the discarded element was
+either a CONSTRAINT or the whole message:
+
+  * `cs_str.go` dropped the head of every assertion list, so `dv_const_ok` printed `[]` where
+    CPython prints `[True]`.
+  * `rs_ids.go` dropped the first axis id, so every `dv_range_*` row printed the symbol `r` where
+    CPython prints `r0` / `rm1`.
+  * `vs_str.go` took the `acc` arm when the list had exactly ONE element, so `dv_unsup_stack`
+    reported "1 violation" next to an EMPTY message -- a violation count with no visible
+    violation.
+
+**A SEPARATOR STRING IS THE FIX AND IT IS ALSO FEWER CHARACTERS.** `String.concat([acc, sep,
+Z.str(h)])` with `sep` starting as `""` cannot drop an element, needs no `first` flag, and needs
+no list length. If a fold carries a boolean telling it whether it is at the head, that is the
+shape of this bug.
+
+### VZ-6 A TYPE-CONSTRUCTOR-MATCHING DEF IS THE MOST EXPENSIVE KIND OF NO COVERAGE
+
+`pow2(m)` was `m > 0 and m & (m-1) == 0` written as a SIGN-BIT test in `U32`. It therefore
+answered False for all eight positive powers of two in the oracle's 22-value window, and
+`z3_and` took the bit-blast arm for `r & 15` and `r & -4` where CPython takes `a % m` and
+`a - a % m`. `n_z3_alu=11` and every COUNT row still passed: the key set was right and only the
+TRANSLATION was wrong.
+
+A membership count cannot see a mistranslation. A value row can -- which is why `dv_max` was
+added (and immediately found `Ops.MAX` arriving as `k = 0` and being silently floormodded by a
+`k`-tag ladder whose unknown tag takes the last arm). **NEVER let a tag ladder's default arm be a
+real op.**
+
+### VZ-7 `m > 0 and m&(m-1) == 0` AND `m != 0 and m&(m-1) == 0` ARE THE SAME PREDICATE
+
+Because `m & (m-1) == 0` says every bit of `m` but its lowest is clear, so `m` is a power of two,
+so `m` is positive; `m = 0` is the single value the bit test admits and `m > 0` rejects. So a
+port may drop the first conjunct and be provably right. Check it anyway, as a row over a window
+(`pow2_fn_agree`): a theorem you have checked is a claim; a theorem you have asserted is a hope,
+and agent-core.md's "an unexplained zero is still a zero" applies to theorems too.
+
+### VZ-8 `String.concat` CONSUMES EACH NAME, AND `+` DOES NOT RAISE THE READ COUNT
+
+Six reads of one `String` parameter in one `String.concat` is refused with `nm (consumed more
+than once)`. Two reads with `+nm` is accepted; six is not. The escape is one def per suffix
+(`dv.of.cs`, `dv.of.term`, ...), each written ABOVE its caller, because a def may only call defs
+written above it. Recorded because the error message names the NAME and not the count, so it
+reads like an ownership rule when it is a fold rule.
+
+### VZ-9 `+name` SILENCES "CONSUMED MORE THAN ONCE" WITHOUT GUARANTEEING THE VALUE
+
+`uops_to_z3.sink` needed `gate` twice; `+gate: U32` compiled and then looked up an index that was
+no longer the gate's, printing a missing-mask symbol on all 16 rows while the same `Sol` answered
+`Some` for that node when read by hand. **`+` says the callee may REBIND the name** -- the
+`arena-affine-probe.bend` measurement (two mints from one arena name both returning index 2 and
+overwriting each other) is the general form -- so `+` is for a SHARED REFERENCE you want, not for
+a value you need twice. **Bind a `let` when you need a value twice**; a `let` is shared where a
+parameter is not.
+
+### VZ-10 AN ORACLE THAT CALLS THE FUNCTION UNDER TEST IS NOT AN ORACLE IF THE FUNCTION CANNOT BE
+### REACHED. CHECK REACHABILITY FIRST, AND PRINT THE CHECK AS A ROW.
+
+The open question this unit inherited was closed in one command -- `import tinygrad.uop.validate`
+works and `z3.get_version()` is `(4, 16, 0, 0)` -- because the reason it was open was a FALSE
+PREMIISE rather than a wall. `validate.py`'s own version gate at line 8 passes, so the module
+imports and `uops_to_z3` runs.
+
+**A "cannot be adjudicated" claim is a claim about the ENVIRONMENT and it expires.** Emit
+`z3_ok`, `z3_d3` and `validate_import` as ROWS at the top of the oracle so the next reader checks
+the premise instead of inheriting it. `n_z3_alu` and every COUNT row passing is not evidence that
+a dependency is present, for the same reason: they test the port, not the environment.
+
+### VZ-11 A NEW ORACLE MUST ALSO PIN THE INPUTS THE PORT TRANSCRIBES BY HAND
+
+`validate.bend`'s `Sol` carries an `_min_max` TABLE that the fixtures write literally, because
+`fold.bend` has no fold. Those literals are INPUTS and they were never checked. The oracle emits
+`mm_*` rows for CPython's own `UOp._min_max` on the same fixture, so a transcription error in the
+table is a disagreement rather than an invisible input. This is the cheapest possible defence and
+it caught nothing here -- but it is the check whose absence makes every other row in the file
+conditional on an unverified literal.
+
+## DEBUG-LEVEL GATE (positions ~20289-). Numbering continues from BAND-16 above; cite
+## POSITIONS, never numbers -- agent-core.md records that rule NUMBERS REPEAT across units.
+
+### DEBUG-1 AN `IO`-RETURNING BIND IS LEGAL ONLY INSIDE A `do` BLOCK; A PURE BIND IS LEGAL AT
+### THE TOP OF A `def` BODY. THE TWO ARE NOT INTERCHANGEABLE.
+MEASURED: `d : U32 <- H.debug()` as the first line of a `def body` is refused with "expected :
+'def', 'type' or 'law' / observed : ':'". The same bind one line later, inside `do IO<Unit>:`, is
+accepted. A PURE bind (`+r = mem_plan(proj_of())`) IS accepted at the top of a `def` body --
+`schedule/memory.bend`'s `p_count` is the example -- so the two spellings look equivalent and are
+not. **THIS COST A CONTROL FOUR VERSIONS**: with the bind at the top of the body the whole gate
+file failed to PARSE, so the lane printed ZERO rows, the harness retried 25 times, gave up, and
+the control reported "the guard did not fire". A PLANT THAT DOES NOT COMPILE IS A LANE THAT
+PRINTS NOTHING, and a lane that prints nothing is a ZERO-ROW RESULT, which is INDISTINGUISHABLE
+FROM "NOT STARTED". Any harness that plants a difference must assert its planted run produced
+rows, or a broken plant and a working guard look the same from outside.
+
+### DEBUG-2 A DIGEST OF AN EMPTY SELECTION IS A CONSTANT, SO A GUARD CANNOT FAIL AND STILL PASSES.
+MEASURED on `.agents/slop/debug-gate.sh`: `INVARIANT_PREFIXES="gi_ mem_mb_ thr_ pin_ fires_
+st_ok"` with `grep -E "^($INVARIANT_PREFIXES)"` reaches grep as `^(gi_ mem_mb_ thr_ ...)` --
+SPACES inside the group -- and matches NOTHING. The digest is then the md5 of the empty string,
+`d41d8cd98f00b204e9800998ecf8427e`, at every level, so `distinct=1` and the guard is GREEN
+THROUGH VACUITY. The tell is that the md5 is a recognisable CONSTANT rather than a value; nothing
+else about the output changes. **THE FIX IS NOT THE `|` SO MUCH AS THE ASSERTION**: the selection
+now counts its own rows and exits 2 if the count is below a floor, because a digest over nothing
+is stable and stability is exactly what such a guard mistakes for agreement. This is
+agent-core.md's "an all-empty block is a WALKER FAILURE, not a fixture with nothing in it",
+arriving in a place nobody was looking, in a gate that had never been red.
+
+### DEBUG-3 A CHECK THAT READS A FILE A NARROWED RUN NEVER WROTE STILL PRODUCES A VERDICT.
+MEASURED, twice in one session, same species. The level-discrimination table read `$GT.1.py` and
+`$GT.2.py` BY NAME; under `DEBUG_GATE_LEVELS=4` neither file existed, `value_of` returned empty,
+and the run exited 1 with all three lanes in agreement. The digest guard was gated on the FULL
+nine-level set, so a control that planted a level-dependent row and needed the guard to fire
+measured rc=1 with the guard never having run. **A HARNESS THAT CANNOT DISTINGUISH "THE CHECK
+DID NOT FIRE" FROM "NOTHING RAN" IS NOT A CHECK.** The rule that falls out: gate every assertion
+on the PRECONDITION IT NEEDS -- the digest needs TWO OR MORE LEVELS (a tautology at one) and
+nothing else; a table naming specific levels needs those levels. And when the level set is
+narrowed on purpose, PRINT that the skipped assertions were skipped rather than passing.
+
+### DEBUG-4 A PLANT THAT TESTS CORRECTNESS CANNOT TEST A CROSS-LEVEL GUARD, AND THE FIXTURE'S
+### OWN DELIBERATE CHOICE IS WHAT HIDES IT.
+MEASURED, three failures in a row on the same control. (i) Doubling an invariant row's value
+makes it wrong at EVERY level, so it digests IDENTICALLY at every level and the guard correctly
+stays silent -- the guard is about cross-level WELL-POSEDNESS, not correctness. (ii) Making it
+level-dependent on ONE lane lets the per-level diff answer first and the guard is never reached.
+(iii) Making it level-dependent on BOTH lanes still failed, because the oracle reads that fixture
+in a child process spawned at `DEBUG` UNSET ON PURPOSE, so adding `+ DEBUG.value` to its print
+was a NO-OP and only one side moved. **THE PLANT HAD TO REMOVE THE CONSTRUCTION, NOT ADD TO IT.**
+The general shape: when a harness deliberately isolates a fixture from a variable, planting a
+dependence on that variable means undoing the isolation -- and the undoing is the thing to name.
+
+### DEBUG-5 SELF-CHECK A DERIVED TABLE'S CLASSIFICATION AGAINST THE ENCLOSING STATEMENT, NOT
+### THE LINE THAT CARRIES THE `if`.
+MEASURED while inventorying upstream's `DEBUG >= N` sites: classifying by the SITE'S OWN LINE
+called `schedule/memory.py:59` `other` and `schedule/__init__.py:141` `other`, because the `print`
+is on line 60 and line 148 respectively. The print/non-print split UNDERCOUNTED by 2 of 76 sites
+and level 1 read 11 printing sites when it was 13. **A PER-LEVEL DENOMINATOR THAT IS WRONG BY TWO
+IS NOT A DENOMINATOR.** The fix is a block scan: the site's line plus every following line
+indented strictly deeper, blanks included, which is the whole statement. Both of the miscounted
+sites are single-line `if`s with a deeper body, and the body is what says whether anything is
+printed.
+
+### DEBUG-6 A ROW THAT DESCRIBES THE UPSTREAM TREE AND NOT THE PORT IS NOT A GATE ROW.
+The `DEBUG`-level inventory (how many `DEBUG >= N` sites upstream has at each level) was first
+emitted as 14 `usites_*` rows. Both lanes would have computed the same table from the same grep,
+so all 14 would have agreed, and the shared-row count would have risen from 89 to 103 with 14
+claims about nothing. **THAT IS THE `nv_query_litter` SHAPE: TWO COPIES OF ONE THING AGREEING
+PERFECTLY.** A hand-written threshold is a row that can only agree with itself; so is a
+machine-derived one once it is on BOTH sides. Facts about `tinygrad/` belong in a PRINTED table
+with denominators beside it, and the compared row count must keep meaning one thing: claims about
+the port.
+
+### DEBUG-7 `${x:-WORD}` IS POSIX BUT NOT WITH A PARENTHESISED WORD, AND IN `#!/bin/sh` IT IS A
+### PARSE ERROR THAT LANDS AFTER EVERYTHING ELSE HAS ALREADY RUN.
+MEASURED: `printf ... "${got:-(nothing fires)}"` under `#!/bin/sh` is "syntax error near unexpected
+token `;;'" -- and it fired at PARSE time, so the gate ran all nine levels, printed nine green
+"3 lanes identical" lines, and then died. The worst position for a parse error, because the run
+looked like it had almost worked. `sh -n` on the script is worth its millisecond.
+
+### VZ-12 A ROW NAME MUST NOT CONTAIN `=`, AND MY OWN ORACLE HAD 30 SUCH ROWS
+
+Found by reading the gate's own output rather than by reading the oracle. `validate-oracle.py`
+named its comparison-printer rows `cmp_i<=5`, `cmp_99<-5`, and so on. `rows()` splits F1 on the
+FIRST `=`, so:
+
+    cmp_i<=5=5 >= i        parses as   name `cmp_i<`    value `5=5 >= i`
+
+MEASURED on that oracle: **310 printed lines, 280 parsed rows, 30 collapsed onto 10 names, and
+each of those 10 names then held FOUR different measurements.** After renaming the operators to
+`lt`/`le`/`gt`/`ge`: 314 printed, 314 parsed, 0 collapsed, 0 names holding more than one line.
+
+Three things make this worth a rule rather than a fix:
+
+  * **IT IS SILENT IN THE DIRECTION THAT HIDES IT.** The printed-line count (310) is HIGHER than
+    the parsed count (280), so a reader checking "did the oracle emit rows?" sees a healthy
+    number, and a reader checking `disagree` sees a plausible one. Only the gap is the signal.
+  * **A NAME IS A KEY, AND THE PARSER OWNS THE KEYSPACE.** Any character the reader treats as a
+    delimiter is forbidden in a name. This is the same rule as "row names contain SPACES, so use
+    `rebase-gate.py`'s `rows()` and not a second reader" -- stated from the PRODUCING side.
+  * **AN INSTRUMENT NEEDS ITS OWN COVERAGE FLOOR.** The obvious check for an oracle is "it
+    printed rows". The check that catches this is `len(parsed) == len(printed_nonempty)`, which is
+    now in `validate-gate.py`'s sibling counts. A lane whose printed count exceeds its parsed
+    count is a lane with colliding names, and it is reporting on fewer questions than it appears
+    to.
+
+### GC-1 A `0`-ROW SIDE IS A FAILURE ON THE HARNESS SIDE TOO, NOT ONLY ON THE PORT SIDE
+
+`graphcmp-run.sh`'s byte-identity step ran `graphcmp.py emit py --graph G` and
+`emit bend --graph G`. `--side` is a FLAG, not a positional, so argparse rejected both with
+`unrecognized arguments: py` and exit 2. MEASURED: both files were **0 bytes**, and
+`cmp -s` on two empty files returns success, so `D2-cmp-*.txt` read `BYTE-IDENTICAL` for four
+graphs. The same command with the correct spelling produces 18 rows for `matmul` that ARE
+byte-identical. `emit_bend` already had a 5-attempt 0-row guard and a `SystemExit`; nothing
+guarded the SHELL's use of its output, and a verdict line cannot tell an empty comparison
+from a satisfied one. The fix that generalises is not the corrected spelling but the rule:
+**count rows/bytes on BOTH sides and print `NOT COMPARED` before comparing anything.**
+
+### GC-2 `rng` WAS THE ONLY I64 FORMATTER THAT FORGOT THE `l`
+
+`H.i64_text` (helpers.bend:1704-1705) is only the `hi:lo` PAIR. The `l` that marks it as an
+I64 is `is64`'s contribution, one def up in graphcmp.bend. `rng` called `H.i64_text` and so
+emitted `r(0:1,0:100)` against the py side's `r(l0:1,l0:100)`. **It was invisible because
+`mm`'s `Some` arm had never run** -- every `ParamArg` in the nine earlier graphs had
+`vmin_vmax=None`, so ParamArg's FOURTH field had never been asked a question. The cost was a
+FOUR-NODE CASCADE with the cause in none of them: `arg` is in the `core`, and rung-2's `loose`
+key includes `arg`, so a PARAM with a different `arg` takes its STACK, its RESHAPE and the
+GROUP above it to rung 3 and the report names no field. **When one atom letter is derived
+rather than literal, EVERY formatter that reaches that value must go through the same def**;
+an `H.*_text` call is a smell.
+
+### GC-3 TWO COUNTS FOR FAN-IN: IN-EDGES AND DISTINCT PARENTS, BOTH
+
+`sh + sh` puts `sh` in the ADD's src TWICE, so a shared node's IN-EDGE count and its
+DISTINCT-PARENT count differ: MEASURED, `--graph group`'s RESHAPE#5 is `4e/2p`. Reporting
+only edges makes a fixture look four-parented; reporting only parents hides the repeated
+child index, which is a DIFFERENT and separately interesting property (`src=n(i5,i5)`). The
+report prints both as `op#id Ne/Np`.
+
+### GC-4 A PROSE CLAIM WRITTEN TO JUSTIFY A FIXTURE IS A CLAIM WITH NO DENOMINATOR
+
+Three sentences in graphcmp.py and graphcmp-LIMITS.md asserted that no node in the corpus had
+more than one parent. **FALSE**, and the census that caught it is one line:
+`matmul CONST#2 2e/2p CONST#3 4e/4p CONST#6 2e/2p CONST#10 2e/2p`. The corpus had shared
+nodes all along -- they were all shape `CONST`s, whose `core` is a leaf. What the new fixture
+added was a shared node with a real subtree under it and a repeated child index. The claim was
+wrong in the direction that FLATTERED the fixture, which is the direction a justification
+always drifts. **When a comment explains why a fixture is necessary, the census that would
+refute it belongs next to the comment, not in the reader's memory.**
+
+### GC-5 `COMM` HOLDS BARE NAMES, AND `Ops.ADD in COMM` IS `False`
+
+`GroupOp.Commutative` yields members; the differ stores `{o.name for o in ...}` because
+`Node.op` is the WIRE TEXT. Comparing an `Ops` member against that set is `False` for every
+op -- MEASURED, `Ops.ADD in COMM` is `False` AND `Ops.ADD == "ADD"` is `False`. A membership
+test written against the wrong representation answers an EMPTY list and reads as "nothing to
+do"; on `--graph commute` it made `plant_srcswap` report "no commutative op occurs exactly
+once in []" on a graph built out of six. It now RAISES on an empty target set rather than
+reporting AGREE for its own reasons.
+
+### GC-6 A STRING LITERAL SPLIT ACROSS LINES INSIDE AN f-string EXPRESSION IS A `SyntaxError`
+
+`f"...{x or 'none -- this ' 'side is a TREE'}..."` split the literal across lines, so Python
+read the newline as the end of the f-string and the source raised at import. The failure
+surfaced as the SOURCE TEXT of the offending lines in the captured output, which is the one
+diagnostic that reads like the tool working. Compute the conditional into a name first, and
+keep every string literal on one line.
+
+### GC-7 WHAT A KILLED RUN LEAVES BEHIND IS PASS-SHAPED
+
+MEASURED: a `graphcmp-run.sh` invocation killed at a 120 s tool timeout left three
+`D5-plant-*.txt` files BYTE-IDENTICAL TO EACH OTHER -- a shape no plant can produce, since
+the three plants plant different nodes -- and their `.err` files all identical and
+non-empty. The two clean runs either side of it were byte-identical, so the harness was not
+nondeterministic; the directory was simply mid-write. **A partially written artifact is
+indistinguishable from a finished one unless something counts it**, so every step that
+compares two files now counts ROWS or BYTES first (`NOT COMPARED: py=0 bytes bend=N bytes`),
+and every step that writes a verdict asserts the whole set on the next line
+(`D1-verdicts.txt`).
+
+### GC-8 NUMBERING: GC-1..GC-8 ARE APPENDED AT THE END OF THIS FILE, IN THIS ORDER.
+Positions, not numbers, are the citation: this file's rule numbers REPEAT across units, so
+cite the `### GC-n` HEADING and its position from the end. Round 1 of this work is
+`graphcmp-LIMITS.md` sections 1 and 6, which carry the per-defect positions in
+`graphcmp.py` and `graphcmp.bend`.
+
+---
+
+## AN-1 A `PATCH-NOT-APPLY` DOES NOT DISTINGUISH A STALE ANCHOR FROM A STALE SUBSTRATE
+
+MEASURED 2026-10-04, on `ops-python-mutate.py`'s M4.
+
+The committed record read `PATCH-NOT-APPLY: anchor not in SRC`. The anchor was NOT stale:
+`CORES_AMD_RDNA4(), CORES_AMD_RDNA3())))` is present in `ops_python.bend:2466` and in
+**every one of the five revisions** that file has ever had. Re-run three times, byte-identical:
+**M4 moves 2 rows**, `pyr_gfx1100_tid pyr_gfx1101_tid`.
+
+So the `old not in src` branch fired for a reason that has nothing to do with the patch:
+`SRC` is the file in a MIRROR built by `git archive HEAD` plus a manual overlay, and the
+mirror on disk was an OLD overlay. The harness cannot tell "the literal moved" from "the file
+I am reading is not the file you think it is", and it prints the same string for both.
+
+**A marker that cannot name its cause is a marker that will be re-aimed in the wrong
+direction.** The fix is not a better message; it is an assertion. `dd-mutate.py` already has
+the right shape (`build_mirror` `sys.exit`s on a digest mismatch) and this harness does not.
+
+Corollary, measured: `live == git HEAD` is **not** a sufficient guard. The mirror was built
+from a HEAD that was correct at build time, and the overlay drifted after. What is required
+is `sha256(mirror's target) == sha256(live's target)`, asserted at run time.
+
+## AN-2 AN ANCHOR COLUMN IS A PROPERTY OF THE HARNESS, NOT A CONSTANT
+
+MEASURED, and it cost four false readings before it was right.
+
+The anchor cell sits at index 1 in `wgsl-mutate.py`, index 2 in `rf-arg-mutate.py`, index 2 in
+`ag-mutate.py`, and index 1 in `usb-mutate.py` (where the replacement is a LIST, not a string).
+A reader that hard-codes index 1 reports 29 of 36 `wgsl-mutate.py` anchors STALE when every
+one of them is present, and 11 of 11 `rf-arg-mutate.py`.
+
+Presence alone does not discriminate either: `M1` and a prose description are substrings of
+almost any file, and measured, the ID column ties the anchor column in 8 of the 13 harnesses
+here. Absence alone is worse, because for a table whose anchors have ALL moved, old and new
+are both absent and every column scores zero.
+
+The signal is **two-sided**: an anchor column's cells are in the file AND their successor is
+not. Where that scores zero everywhere -- the fully-stale case -- the fallback is plain
+presence over the interior columns, and the fallback ALSO recognises the case, because a prose
+cell is a phrase and the literals are gone. `mutanchor.anchor_column` implements both, and
+returns `None` on a tie rather than picking: two columns that both look like anchors means the
+shape is not uniform, and any choice would be a coin flip presented as a measurement.
+
+## AN-3 `BEND` NAMES THE COMPILER IN MOST OF THESE HARNESSES
+
+MEASURED. `ag-mutate.py`, `dsp_mutate.py`, `ga_mutate.py`, `usb-mutate.py` and `nv_ip_mutate.py`
+all bind `BEND` to `bin/bend` (the binary) and the file under test to something else. A target
+reader that takes `BEND` as the substrate makes **all 44** of `ag-mutate.py`'s anchors read
+STALE, which is a fiction: every one of them is present in `autogen.bend`.
+
+`bin/bend` has no file extension, and that is the discriminator. A path with no source
+extension is not something a mutation anchor can be absent from.
+
+A second one in the same family: `mop-mut.py` names `.agents/slop/notes/mop-truth3.py` and
+`rf2-mutate.py` names `rf2_work.bend`, and neither is called `SRC`. Judging an anchor against
+ALL of a harness's declared source files, not against the first one whose name looks right, is
+the only way to tell "the literal moved" from "I am looking at the wrong file".
+
+## AN-4 STDERR IS NOT A FAILURE SIGNAL, AND `rc == 0` IS NOT A SUCCESS SIGNAL
+
+MEASURED on `memory-mutate.py`, which exited 2 with `BASELINE FAILED` on a file that runs
+cleanly. `bend` writes `bend 2.0.35 is available: run bend update` to stderr on EVERY run,
+so "stderr is non-empty" is true of a healthy run and of a broken one alike. The signal is
+`rc == 0 AND the run produced rows` -- which is the same shape `agent-core.md` gives for
+`--check-only` exiting 1 on a file that is fine.
+
+The converse is also live: `rc != 0` does not mean "the mutation moved nothing". Two of them
+in `ops-python-mutate.py` LOST ALL 85 ROWS to a run that printed none, and the table printed
+`85` for both -- **170 moved rows that do not exist**, in a committed artifact. RULE B says a
+non-program is not even a zero; it is not a count either.
+
+## AN-5 THE CELL FOR A NON-PROGRAM IS SPELLED EXACTLY, OR THE CLASSIFIER REFUSES
+
+`zero-classify.py` compares the WHOLE measurement cell against its `MEASURED` tuple and
+`sys.exit`s on anything else, deliberately: an unrecognised measurement must not become a sixth
+verdict that reads like a pass. So `DID-NOT-COMPILE rc=1` is not "a refusal with a diagnostic"
+-- it is a table the classifier refuses to read at all. The diagnostic belongs in the
+DESCRIPTION cell, where prose already lives.
+
+And `DID-NOT-COMPILE` is not `PATCH-NOT-APPLY`. The first says the edit landed and the result
+is not a program; the second says the edit never landed. `ops-python-mutate.py`'s M17 and M22
+are the second shape wearing the first's clothes, and calling them dead patches indicts the
+edit instead of the build. `patch_not_apply.not_a_program()` now exists for exactly this and
+takes no note argument, so the suffix cannot be added by accident.
+
+## AN-6 A PIN IS A CLAIM ABOUT A RUN, SO A PIN MAY ONLY BE WRITTEN FOR A RUN THAT HAPPENED
+
+MEASURED against myself. Writing the first `memory-mutations.txt` header, I typed a row digest
+I had not computed -- `d0f24f2c6f3ab6ee` -- and caught it only because the count in the same
+line was wrong. A fabricated pin is indistinguishable from a real one forever after, which is
+strictly worse than no pin, because it suppresses the question.
+
+`pin-tables.py` therefore takes the measurements as ARGUMENTS and has no code path that can
+decide a table reproduces. For every table it was not given it writes
+
+    PIN NOT WRITTEN -- UNSTATED.  <the reason>
+
+with the reason required to be non-empty, and a table with neither a measurement nor a reason
+is an error rather than a default. An unstated reason is an unstated reason.
+
+## AN-7 THE TRAP THAT NEARLY COST THE MOST: I TYPED A PIN
+
+Recorded because it is the failure this whole unit exists to prevent, and it happened HERE.
+
+To write the `wgsl-mutations.txt` header I took the row count from the harness's own summary
+line and hashed `[]`, because the harness prints a SUMMARY and not the row set. The result was
+`e3b0c44298fc1c14` -- which is the sha256 of the EMPTY STRING. A zero-row digest. It went into
+a committed-shaped file and would have read as a measurement of nothing.
+
+It was caught because a digest of nothing is a famous constant and an unusual one to type. The
+general rule is stronger and is why `table-pin.py` computes rather than accepts: **a number
+you did not measure is worse than no number**, and the shape of the mistake is always a
+plausible-looking hex string in a header.
+
+`memory-mutations.txt` got the same treatment and got it wrong first (`d0f24f2c6f3ab6ee`); both
+were fixed by hashing the real baseline before writing.
+
+## AN-8 A ROW-SET DIGEST MUST BE TAKEN WITH THE HARNESS'S OWN READER
+
+MEASURED: `rf-arg-mutate.py`'s `gate()` reads rows with `^([a-z0-9_]+)=(\S+)$` and sees **124**
+of `rangeify_work.bend`'s 126 output lines. The shared reader in `zero-classify.py`
+(`name` up to the first `=` or `:`) sees **126**. Two readers, two row counts, and the digest
+follows the reader.
+
+A row-set digest is therefore only comparable against another digest taken with the SAME
+reader, and the reader is part of the pin. Where they differ, say so in the record rather than
+picking the flattering one: `rf-arg-mutations.txt` pins `cafc801f8bc17216` (124 rows, the
+harness's own reader) and the shared reader's `6c1e76bdb2ab085c` (126) is in the report for
+the reader that did not produce the numbers.
+
+Also: `md5 -q` on macOS takes exactly ONE file and prints nothing given several. A row set
+reached by a pipe is the only way to hash one.
+
+## AN-9 NUMBERING: AN-1..AN-9 ARE APPENDED AT THE END OF THIS FILE, IN THIS ORDER.
+
+Positions, not numbers, are the citation -- this file's rule numbers REPEAT across units, so
+cite the `### AN-n` HEADING and its position from the end.
+
+### BAND-17 (position ~20615). A PLANT MUST LAND IN THE COLUMN THE GATE COMPARES, AND A
+### CONTROL MUST ASSERT THAT IT LANDED.
+`rebase-gate-selftest.py`'s `mutant_lane()` appended `PLANTED` at END-OF-LINE.  `rows()`'s
+`row()` returns `(name, left, right)` and GUARD 4 compares **`left`** -- deliberately, because
+`right` is the port's `]   py=[` transcription of the pin and comparing it would make the gate
+assert that a transcription is correct.  An F2 line is `name = [v]   py=[w]`, so appending
+`PLANTED` extends `right` and leaves `left` -- the compared value -- **untouched**.
+MEASURED by `gate-reconcile.py --control` over the 39 wired lanes: `renderer/ptx.bend` planted
+`f10_loads.entry` and came back **`AGREE-UNRECORDED`, 281 of 281 shared names agreeing**; likewise
+`tc_ptx`, `generate`, `llvmir`, `nir_llvmir`.  **SIX LANES REPORTING GREEN WHILE DISARMED, AND
+EACH ONE PASSING.**  Fix: insert the corruption IMMEDIATELY AFTER THE FIRST `=`, which is inside
+`left` for both F1 and F2, and **assert the planted lane's own value differs from the port's
+BEFORE reading the verdict** -- a control that plants into a column nobody compares is the same
+instrument class as the selftest whose `run_port()` was stubbed, one level down.
+
+### BAND-18 (position ~20630). "THE RESTORE IS BYTE-IDENTICAL" IS A CLAIM ABOUT THE PORT LANES;
+### AN ORACLE'S RUN-TO-RUN DETERMINISM IS A DIFFERENT CLAIM AND MUST BE REPORTED SEPARATELY.
+`prepare-oracle.py` drifts on **38** rows between two runs and `elf_rows.py` on **14** (the
+`elf_built_*` rows carrying the runtime addresses of the `libstub.dylib` the fixtures link
+against, so ASLR moves them every launch).  Both are already recorded in `BASE_ORACLES`, and both
+made a restore check FAIL when it compared *every* lane -- a control reporting damage that was
+never done.  **SPLIT THE CLAIM:** the two PORT lanes (`interpreted`, `native`) must be identical,
+because nothing on disk was edited; an ORACLE lane's drift is printed **with its row count and its
+cause**; and drift on a **SHARED** row name still fails, because that is a disagreement waiting to
+happen.  Measured: both drifts are entirely on UNSHARED names.
+
+### BAND-19 (position ~20641). A SWEEP AND A PER-LANE CONTROL MUST BE BRACKETED BY A TREE
+### MANIFEST, OR THE DIFFERENCE BETWEEN THEM IS NOT A FINDING.
+Three separate measurements on one afternoon: a whole-tree sweep that reported
+`prepare`/`tensor`/`uop/render`/`viz/serve` BROKEN with the identical
+`expected : Arg / observed : Const`; a per-lane control that reported
+`codegen/decomp/dtype.bend` disagreeing on **9** rows (`c7`, `f1`, `f1k`, `f1n`, `f1sig`, `f2`, ...)
+where an hour earlier the same lane disagreed on **1**; and a reconciliation that then reported
+`uop/spec.bend` with **7** disagreeing names against a selftest's **0 of 11**, with both caches
+fresh.  **ALL THREE WERE MEASUREMENTS OF A TREE THAT DID NOT HOLD STILL** -- `uop/ops.bend` changed
+mid-sweep (md5 in the manifest), and re-running each port ALONE gave `uop/spec.bend` UNCHANGED 25/0
+and `codegen/decomp/dtype.bend` 1 of 109.  **`md5 -q` on macOS TAKES EXACTLY ONE FILE, so the
+manifest must be built with `-exec md5 -q {} \;`** -- and the manifest must be taken on BOTH SIDES
+of every long run.  A number that moves because a file moved is a fact about the session, not
+about the port, and the two are indistinguishable from the number alone.

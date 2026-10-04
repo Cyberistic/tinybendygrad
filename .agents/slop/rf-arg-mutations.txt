@@ -1,5 +1,17 @@
+# rf-arg-mutations.txt -- the mutation table for the `mp_replace` ARG repair in
+# tinybendygrad/schedule/rangeify.bend.  REWRITTEN 2026-10-04.
+#
+# THE TWO FIGURES THAT WERE WRONG.  M9 and M10 both read `0 rows moved` and
+# `(NONE -- blind spot)`, which is the table saying the patches landed and moved
+# nothing.  They did not land at all.  M9's anchor had stale whitespace; M10's
+# anchor IS the defect the port has since fixed.  Re-aimed and measured, M9
+# moves 2 rows and M10 moves 5.  **A blind spot and a dead patch are opposite
+# findings and this table printed the same two words for both.**
+#
+# The baseline was ALSO stale: 84 rows then, 124 today.
+#
 baseline compile: ALL PROOFS CHECK
-baseline rows: 84
+baseline rows: 124
 
 ID   MUTATION                                             RESULT                             ROWS MOVED BY NAME
 ------------------------------------------------------------------------------------------------------------------------------------------------------
@@ -19,9 +31,39 @@ M7   nic: own arg -> ANone (the nic twin of M2)           compiled; 1 rows moved
      note: duplicate of M3, kept separate so a row moving one and not the other is visible
 M8   revert to the PRE-REPAIR arg order (the original defect shape) DID NOT COMPILE: SOME PROOFS FAIL  (NONE -- blind spot)
      note: the 4-arg form that made the file stop compiling
-M9   ct_table[4]: accept set {STAGE} -> {INDEX} (the outer node CPython rewrites) compiled; 0 rows moved             (NONE -- blind spot)
+M9   ct_table[4]: accept set {STAGE} -> {INDEX} (the outer node CPython rewrites) compiled; 2 rows moved             ct4a_claim, ct_root4
      note: does the gate see ct_4 being UNBLOCKED, or is the subset test inert?
-M10  ct_table[8]: accept set {MSTACK} -> {INDEX} (the outer node CPython rewrites) compiled; 0 rows moved             (NONE -- blind spot)
+M10  ct_table[8]: accept set {MSTACK} -> {INDEX} (the outer node CPython rewrites) compiled; 5 rows moved             ct8d_claim, ct8d_srcops, ct8r_arg, ct8r_axis, ct8r_srcops
      note: the same inversion on the deviceless-MSTACK rule
 M11  ct_4: force its CLAIM test True (would a row see it?) compiled; 0 rows moved             (NONE -- blind spot)
      note: ct_4's comment promises a `ct_4_ans` row; does one exist in main?
+#
+# READER NOTE, and it is load-bearing for the digest above.  This harness reads
+# rows with `^([a-z0-9_]+)=(\S+)$` and sees **124** of the baseline's 126 lines;
+# `zero-classify.py`'s shared reader sees **126**.  Two readers, two row counts,
+# and the digest follows the reader:
+#     rows cafc801f8bc17216  124 rows  <- this harness's own reader, and the pin
+#     rows 6c1e76bdb2ab085c  126 rows  <- the shared reader, for cross-checking
+# The pin quotes the first because that reader produced the numbers.  A row-set
+# digest is only comparable against another taken with the SAME reader.
+#
+# RE-AIMED 2026-10-04: M9 and M10.  M9's column padding narrowed and its comment
+# was reworded.  M10's anchor WAS THE DEFECT -- ct_table[8] has since been
+# corrected to INDEX/MSTACK -- so its direction is inverted and the FIX is now the
+# old side.  M9 moves 2 rows (was 0, because the patch never landed); M10 moves 5
+# (was 0).  Both measured in a MIRROR: this harness edits rangeify_work.bend IN
+# PLACE beside the real file, so it was run against a git-archive copy with the
+# live rangeify.bend overlaid, twice, byte-identically.
+#   rev 7c5e952391e2 | file b2ca777b9dfa3e80 | rows cafc801f8bc17216 (124 rows)
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

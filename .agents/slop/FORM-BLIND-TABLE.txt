@@ -178,7 +178,6 @@ cs-probe2.py                                             2     0  FORM-COMPLETE*
 dd-cmp.py                                                2     0  FORM-COMPLETE*    -                                     -
 dd-gap.py                                                2     0  FORM-COMPLETE*    -                                     -
 dead-defs2.py                                            2     0  FORM-COMPLETE*    -                                     -
-debug-control-work/.agents/slop/debug-gate.py            2     0  FORM-COMPLETE*    -                                     FORK:row
 debug-gate.py                                            2     0  FORM-COMPLETE*    -                                     FORK:row
 dk-mutate.py                                             2     0  FORM-COMPLETE*    -                                     -
 drift-diagnose.py                                        2     0  FORM-COMPLETE*    -                                     -
@@ -357,6 +356,6 @@ x86/x86-oracle.py                                        1     0  FORM-COMPLETE*
 x86/x86-rules.py                                         1     0  FORM-COMPLETE*    -                                     -
 x86/x86_oracle.py                                        1     0  FORM-COMPLETE*    -                                     FORK:row
 ----------------------------------------------------------------------------------------------------------------------
-FORM-BLIND 67   FORM-COMPLETE-ON-BATTERY 285   NOT-A-SELECTOR (unaudited) 499   DELEGATES-A-READER 167   TOTAL 851
-a DISAGREEMENT count over 67 of 851 tools is not a coverage statement:
-499 tools have no selector to judge and 167 inherit another tool's reader.
+FORM-BLIND 67   FORM-COMPLETE-ON-BATTERY 284   NOT-A-SELECTOR (unaudited) 490   DELEGATES-A-READER 166   TOTAL 841
+a DISAGREEMENT count over 67 of 841 tools is not a coverage statement:
+490 tools have no selector to judge and 166 inherit another tool's reader.

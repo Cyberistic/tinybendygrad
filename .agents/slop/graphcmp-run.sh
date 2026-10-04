@@ -98,6 +98,11 @@ for pl in dtype srcswap shape bytes pyuop opt; do
   run "D5-plant-$pl.txt" diff --graph matmul --plant "$pl"
 done
 run D5-plant-sym1.txt diff --graph sym --plant sym1
+#     NOT the attributable measurement for the symbolic dim: a plant edits the PY side only
+#     (planting the bend side is six DAG rewrites in Bend -- the reason `--plant-side` was
+#     removed), so this file carries the plant's effect AND `sym`'s pre-existing `?`
+#     disagreements together. `conf`'s CONFLATION 4 is the attributable one: py vs py, with
+#     nothing else moving.
 
 # --- 06 THE ORDERED / EQUIV SPLIT on the same reordered pair. Same fixture, two answers,
 # ---    and both are results. It runs on `commute` as well, and that is the point of this
@@ -151,18 +156,26 @@ $E $P .agents/slop/graphcmp-oracle.py > "$D/D0-coverage-census.txt" 2>&1
 # ---     graphs, which is why `dbg` is port-vs-port and says so in its own output.
 $E $P .agents/slop/graphcmp-dbg-oracle.py > "$D/D8b-cpython-dbg1-reachability.txt" 2>&1
 
-# --- 13 REMOVE THE STALE FOUR-GRAPH FILES. The byte-identity step used to run four graphs
+# --- 13 THE OPS PROBE: the raw CPython measurements every coverage claim rests on. It is a
+# ---     separate file rather than more `diff` output because it asks CPython DIRECTLY --
+# ---     does GROUP carry a `params` list, which Tensor op emits which NODE op, can two
+# ---     different symbolic dims be separated, what is a variable PARAM's slot -- and those
+# ---     questions have no answer that a port-vs-port diff can produce.
+$E $P .agents/slop/graphcmp-p13-ops.py > "$D/D0-ops-probe.txt" 2>&1
+
+# --- 14 REMOVE THE STALE FOUR-GRAPH FILES. The byte-identity step used to run four graphs
 # ---     and its `BYTE-IDENTICAL` verdicts were vacuous (step 02's comment); the old
 # ---     `D9-stability-{a,b}.txt` were the binblob pair. Leaving them would leave a
 # ---     PASS-shaped file in the directory that no command in this script produces.
 rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
 
-# --- 14 WHAT A CLEAN RUN OF THIS SCRIPT ESTABLISHES, IN ONE PLACE, because every other
+# --- 15 WHAT A CLEAN RUN OF THIS SCRIPT ESTABLISHES, IN ONE PLACE, because every other
 # ---     statement about it is somewhere else. MEASURED: two consecutive clean runs of this
-# ---     script leave all 121 files under `$D` byte-identical (`find | md5 -q`, both sides).
+# ---     script leave every file under `$D` byte-identical (`find | md5 -q`, both sides).
 # ---     It is written here rather than claimed in the prose because a claim about
 # ---     reproducibility that is not printed by the script is the same kind of sentence
-# ---     that the symbolic-dim entry used to be.
+# ---     that the symbolic-dim entry used to be -- and LIMITS #16 is the measured cost of
+# ---     exactly that habit.
 { echo "graphs=$(ls "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
   echo "graphs-agree=$(grep -l 'VERDICT: AGREE' "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
   echo "graphs-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"

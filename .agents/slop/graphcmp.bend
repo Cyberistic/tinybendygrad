@@ -73,7 +73,7 @@ def addr1(a: S.Addr) -> String:
 def i(x: U32) -> String:
   String.concat(["i", U32.show(x)])
 
-# `H.i64_text` is `hi:lo` (helpers.bend:1696-1699), which is why the shape column reads
+# `H.i64_text` is `hi:lo` (helpers.bend:1701-1705), which is why the shape column reads
 # `n(0:4,0:3)` rather than `n(4,3)`: a dim is an `H.I64` and dropping the HIGH word would
 # read a shape of `2**32` as `0`. It costs four characters per dim and it is the difference
 # between an exact column and one that cannot see a large dimension.
@@ -179,7 +179,7 @@ def img2(m: O.Img) -> String:
 # both members are `H.I64`s -- so the column is `r(l0:1,l0:100)` and NOT `r(0:1,0:100)`.
 #
 # IT WAS THE SECOND ONE, and it is the second measured instance of the same defect in this
-# file: `H.i64_text` is only the `hi:lo` PAIR (helpers.bend:1696-1699) and the `l` that
+# file: `H.i64_text` is only the `hi:lo` PAIR (helpers.bend:1701-1705) and the `l` that
 # marks it as an I64 is `is64`'s contribution, one line up. So `rng` formatted a pair and
 # forgot the letter. MEASURED by `--graph sym`, the FIRST graph in the corpus with a
 # `Some` `vmin_vmax` -- every ParamArg the nine earlier graphs carried had `vmin_vmax=None`,
@@ -799,7 +799,7 @@ def var(nm: String) -> O.ParamArg:
 # THE OTHER HALF IS WHAT THE DIFFER CAN DO, and it is the answer to the symbolic-dim
 # limit. The two RESHAPEs' `shape` columns are IDENTICAL (`(U,l0:4)` both) -- so the shape
 # field cannot separate them -- but their `arg`/`src` columns do, through ParamArg's sixth
-# field (`sn` against `sm`, ops.py:31) and through the STACK's child cores. So `U` is a
+# field (`sn` against `sm`, ops.py:32) and through the STACK's child cores. So `U` is a
 # hole in the SHAPE COLUMN alone and not in the differ's identity, and
 # `graphcmp.py`'s `conf` measures exactly that (CONFLATION 4).
 def g_sym() -> O.Found:

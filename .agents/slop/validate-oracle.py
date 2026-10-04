@@ -51,6 +51,7 @@ visible, and collapsing cannot merge `a + b` with `a+b` (z3 prints `*` `/` `%` t
 """
 import os
 import pathlib
+import re
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -70,9 +71,36 @@ def emit(nm, v):
   OUT.append((nm, v))
 
 
+def norm_ns(s):
+  """Remove z3's line wrap with NOTHING in its place -- the encoding the port already uses, so a
+  `_term_ns` row asks only whether the two TOKEN STREAMS agree."""
+  return re.sub(r"\n\s*", "", s)
+
+
 def norm(s):
-  """Collapse z3's line wrapping. See the module docstring: the wrap is a column property."""
+  """Collapse z3's line wrapping. See the module docstring: the wrap is a column property.
+
+  \u26a0 AND THIS IS AN ARTEFACT-PRODUCING NORMALISATION, WHICH `_term_ns` EXISTS TO PROVE. z3 breaks
+  a long term at a position of ITS CHOOSING, not by replacing a space, so a wrap sometimes lands
+  where there was no space: the raw text of `dv_cmod4`'s term ends `... r0/4)*\n4`, and collapsing
+  gives `... r0/4)* 4` -- a space z3 never printed. MEASURED, and it is why `dv_cmod4` first
+  disagreed with the port on `* 4` against `*4` when the two were otherwise IDENTICAL.
+
+  `norm_ns` is emitted alongside as `_term_ns` so the artefact is a NAMED ROW rather than a red
+  that looks like a defect. NEITHER normalisation is SOUND -- `i < 0,\n   If(` really did have a
+  space there and `*\n4` really did not -- so the pair brackets the truth and neither states it.
+  That is the honest shape for a normalisation that cannot be undone."""
   return " ".join(s.split())
+
+
+def nofresh(s):
+  """Strip z3's per-Context `FreshInt` counter suffix (`invalid_shift!0` -> `invalid_shift`).
+
+  The port has no counter -- `ZFresh` prints the bare name -- so the port's `_term_nb` IS its
+  `_term`. Declaring the normalisation on BOTH sides is what makes the `_term_nb` rows
+  comparable, and it is what confines the counter divergence to the `_term` rows instead of
+  letting one token make `dv_shr2`'s whole term unreadable."""
+  return re.sub(r"!\d+", "", s)
 
 
 # ---------------------------------------------------------------- the fixtures
@@ -105,19 +133,27 @@ def fixture(nm, idx, gate=T, prov=()):
   performs. CPython's `validate_index_with_z3` does not return a violation LIST -- it RAISES
   (validate.py:87 NotImplementedError, :89 AssertionError, and a TypeError from a one-src SHL),
   so a raise is the honest value and it is emitted as one. The port answers with a list; that
-  disagreement is REAL and is defect class D7/D8."""
+  disagreement is REAL and is defect class D7/D8.
+
+  `_msg` is emitted for a raise as the EXCEPTION MESSAGE, because the message text is the part
+  the port CAN reproduce: `NotImplementedError: Ops.STACK is not supported by z3` and the port's
+  violation list carry the same string. So `_msg` is green for `dv_unsup_stack` while the blob
+  row is red for the raise-versus-list shape -- proven and unproven, separated by row name."""
   for tag, v in prov:
     emit(f"{nm}_{tag}", v)
   try:
     cs, term = row_of(idx, gate)
   except Exception as e:  # noqa: BLE001 -- the exception IS the answer, and it is named
     emit(nm, f"RAISED {type(e).__name__}: {e}")
+    emit(f"{nm}_msg", str(e))
     return
   vs, n = "", 0  # CPython's own `vs` is empty whenever it does not raise
   emit(nm, f"{norm(cs)} | {norm(term)} | {vs} | {n}")
   emit(f"{nm}_cs", norm(cs))
   emit(f"{nm}_term", norm(term))
+  emit(f"{nm}_term_nb", nofresh(norm(term)))
   emit(f"{nm}_n", str(n))
+  emit(f"{nm}_msg", vs)
 
 
 def main():
@@ -131,14 +167,22 @@ def main():
   # ---- 1. THE COMPARISON PRINTER. validate.py builds its comparisons with Python's operators
   # on MIXED operands, and a Python `int` on the LEFT reflects, so `(vmin <= s)` at
   # validate.py:51 is `Ge(s, vmin)` in the AST, not `Le(vmin, s)`. That reflection -- not a
-  # printer reorientation -- is why CPython prints `i >= 0`. The rule measured over 80 ordered
-  # pairs is: print `b flip(a)` iff `b` is a numeral and `a` is not.
+  # printer reorientation -- is why CPython prints `i >= 0`.
+  #
+  # ⚠ THE OPERATOR SPELLING IN THE ROW NAME IS `lt`/`le`/`gt`/`ge`, NOT `<`/`<=`, AND THAT IS NOT
+  # COSMETIC. `rows()` splits F1 on the FIRST `=`, so a name containing `<=` splits INSIDE ITSELF:
+  # `cmp_i<=5=5 >= i` parsed to the name `cmp_i<` with the value `5=5 >= i`. MEASURED on this
+  # oracle before the fix: 310 printed lines, 280 parsed rows, **30 collapsed onto 10 names**, and
+  # each of those 10 names then held FOUR different measurements. A table whose operator names
+  # collide is a table that silently answers a different question for 30 of its rows, and the
+  # count of printed lines hides it. **A ROW NAME MUST NOT CONTAIN `=`** -- that is the same rule
+  # as "row names contain SPACES, use `rows()`", stated from the other side.
   i, j = z3.Int("i"), z3.Int("j")
   E = z3.IntVal(100) - z3.IntVal(1)
   S = [("i", i), ("j", j), ("5", z3.IntVal(5)), ("99", E), ("-5", z3.IntVal(-5))]
-  OPS = {"<": (lambda a, b: a < b, ">"), "<=": (lambda a, b: a <= b, ">="),
-         ">": (lambda a, b: a > b, "<"), ">=": (lambda a, b: a >= b, "<=")}
-  for opn, (mk, _) in OPS.items():
+  OPS = {"lt": lambda a, b: a < b, "le": lambda a, b: a <= b,
+         "gt": lambda a, b: a > b, "ge": lambda a, b: a >= b}
+  for opn, mk in OPS.items():
     for an, a in S:
       for bn, b in S:
         if an == bn:
@@ -148,6 +192,10 @@ def main():
   emit("refl_0_le_i", norm(str(0 <= i)))
   emit("refl_i_le_0", norm(str(i <= 0)))
   emit("refl_0_le_expr", norm(str(0 <= E)))
+  emit("refl_z_le_i", norm(str(z3.IntVal(0) <= i)))
+  emit("refl_z_le_i_2", norm(str(i <= z3.IntVal(0))))
+  emit("refl_i_le_z", norm(str(i <= z3.IntVal(0))))
+  emit("refl_z_le_expr", norm(str(z3.IntVal(0) <= E)))
 
   # ---- 2. `range_str` (ops.py:95) -- the AXIS IDS, joined by `_`, negatives as `m<n>`.
   for tag, at, ids in (("g", AxisType.GLOBAL, 0), ("l", AxisType.LOOP, 0),
@@ -220,6 +268,21 @@ def main():
     t = UOp(Ops.AND, (r_g, UOp.const(k)))
     fixture(nm, t, prov=(("mm_s0", repr(t.src[0]._min_max)), ("mm_s1", repr(t.src[1]._min_max)),
                          ("w", str(width(t)))))
+  # `Ops.MAX`. `validate.py:47` is `lambda _,a,b: z3.If(a<b, b, a)`; the port routed MAX into a
+  # `k`-tag ladder where an unknown tag silently took the FLOORMOD arm, and no row covered it.
+  fixture("dv_max", UOp(Ops.MAX, (r_g, UOp.const(21))), prov=(("dt", "weakint"),))
+  # ---- 5b. THE OTHER SEVEN `z3_alu` BUILDERS. Before these rows only 4 of the 11 keys had a
+  # fixture that REACHED them, and `n_z3_alu=11` could not see that -- which is how `Ops.MAX` came
+  # to be floormodded. Seven builders, seven rows, all called live.
+  fixture("dv_or21", UOp(Ops.OR, (r_g, UOp.const(21))))
+  fixture("dv_xor21", UOp(Ops.XOR, (r_g, UOp.const(21))))
+  # `z3_xor`'s CONSTANT arm, validate.py:21: `x ^ -1 = -(x+1)`. No width, and no row until now.
+  fixture("dv_xor_m1", UOp(Ops.XOR, (r_g, UOp.const(-1))))
+  fixture("dv_cdiv4", UOp(Ops.CDIV, (r_g, UOp.const(4))))
+  fixture("dv_cmod4", UOp(Ops.CMOD, (r_g, UOp.const(4))))
+  fixture("dv_floordiv4", UOp(Ops.FLOORDIV, (r_g, UOp.const(4))))
+  fixture("dv_floormod4", UOp(Ops.FLOORMOD, (r_g, UOp.const(4))))
+  fixture("dv_shl2", UOp(Ops.SHL, (r_g, UOp.const(2))))
   t = UOp(Ops.SHR, (r64, UOp.const(2)))
   fixture("dv_shr2", t, prov=(("mm_s0", repr(t.src[0]._min_max)), ("mm_s1", repr(t.src[1]._min_max))))
   vw = fx_var("v", 0, 15)
@@ -252,12 +315,28 @@ def main():
   emit("n_z3_alu", str(len(z3_alu)))
   emit("n_z3_alu_keys", "|".join(sorted(o.name for o in z3_alu)))
 
+  # ---- 6b. THE WIDTH ROWS, under the NAMES THE PORT PRINTS. `bv_w_*` in
+  # `validate.bend`'s `main` reads `bv_w` off a fixture-shaped arena, so these four rows are
+  # the same four numbers under the names the two lanes can intersect on. They are the rows
+  # that adjudicate the `- 1` -> `- 256` move ON ITS OWN, with no printer text in them.
+  for tag, k in (("and21", 21), ("and15", 15), ("and_neg4", -4)):
+    emit(f"bv_w_{tag}", str(width(UOp(Ops.AND, (r_g, UOp.const(k))))))
+    emit(f"bv_w_off_{tag}", str(2 ** width(UOp(Ops.AND, (r_g, UOp.const(k))))))
+
   # ---- 7. THE WRAPPED TEXT, so the normalisation above is visible rather than claimed. ----
   s = z3.Solver(ctx=z3.Context())
   z3_idx, z3_mask = uops_to_z3(s, UOp(Ops.AND, (r_g, UOp.const(21))), T)
   s.add(z3_mask)
   emit("#raw_and21", repr(str(z3_idx)))
   emit("#wrap_and21", str(str(z3_idx).count("\n")))
+  # THE ONE NAMED RESIDUAL, WITH ITS EVIDENCE. `dv_cmod4_term` is the only row where the port and
+  # `_term` differ, and it differs by ONE SPACE: the raw text below ends `r0/4)*\n4`, so z3 put a
+  # newline where it printed no space and collapsing the wrap to a space invents one. MEASURED --
+  # and it is why `norm_ns` is not emitted either: z3 also wraps after a comma, so that encoding
+  # invents the OPPOSITE error on five rows where the port is right.
+  cs2, term2 = row_of(UOp(Ops.CMOD, (UOp.range(100, 0, AxisType.GLOBAL), UOp.const(4))), T)
+  emit("#raw_cmod4", repr(term2))
+  emit("#wrap_cmod4", str(term2.count("\n")))
 
   for nm, v in OUT:
     print(f"{nm}={v}")

@@ -86,3 +86,16 @@
 41 mutations, 40 move rows, 1 do not
 NOT MOVING:
   M41: 0  <-- BLIND SPOT  [dsl_reexport: NULL is removed from _ALL_DSL only]
+# PIN NOT WRITTEN -- UNSTATED.  REFUSED: `ga_mutate.py` writes into the repo (IN-PLAY)
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

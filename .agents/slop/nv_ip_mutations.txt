@@ -43,3 +43,16 @@ rpc.am3.no_wait              4  MOVED  ip_rp_am_0_order,ip_rp_am_0_n,ip_rp_am_4_
   EQUIVALENT rp.cont_more.ge        at plen == max_payload both guards give cdiv(0, m) == 0
   EQUIVALENT rp.pickw.swap          rp.finish XORs the two accumulators, so permuting the words between them is the identity
   EQUIVALENT rp.which.last_word     words 18 and 19 are both zero slots with no rp.word2 arm, so 19 and 18 answer the same 0
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: `nv_ip_mutate.py` edits tinybendygrad/runtime/support/nv/ip.bend IN PLACE and restores it from a snapshot; refused without a matching digest
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

@@ -105,3 +105,16 @@ cs.M13 the spec splits on '.'	5 rows	cs.spec_n_a_b|cs.spec_n_colon|cs.spec_n_thr
 cs.M14 the usage string	1 rows	cs.usage
 cs.M15 the extra count is argc - 2	2 rows	cs.extra_n_3|cs.extra_n_6
 cs.M16 the frame header is 5 bytes	3 rows	cs.n_needed|tr.srv.first|tr.srv_err.first
+# PIN NOT WRITTEN -- UNSTATED.  not re-run: no source file resolvable from the harness's own path constants
+
+# ======================================================================
+# PIN -- what this table describes.  Written by pin-tables.py, 2026-10-04.
+#   rev   the jj revision of the file the harness patched
+#   file  sha256[:16] of that file.  Protects the MUTANT: it proves the edit
+#         went into the file you meant.
+#   rows  sha256[:16] of the ROW SET the counts were measured against.
+#         Protects the REFERENCE, and it is the one that matters: a digest
+#         over the mutant PROVABLY cannot see an operand-order defect, because
+#         swapping `hi42`'s two shape args leaves `shape()`'s three fields
+#         unchanged.  RULE C caught that twice in one day.
+#   REPRODUCES  measured on 2026-10-04, TWICE, byte-identically.

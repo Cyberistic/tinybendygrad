@@ -329,4 +329,14 @@ echo "debug-gate: ---- levels 3..7: what this gate can and cannot say ----"
 
 rm -f "$GT.bin"
 ./bin/bend .agents/slop/debug-gate.bend --check-only | head -1
-echo "debug-gate: $(grep -c '=' "$GT.$OPERATING.py" | tr -d ' ') shared rows at level $OPERATING; $nlev levels x 3 lanes; all agree; 8 site rows all move; cumulativeness measured at every level; level-0 control silent"
+# THE SUMMARY MUST SAY WHAT THIS RUN ESTABLISHED AND NO MORE. It read a fixed
+# "8 site rows all move; cumulativeness measured at every level" on a FOUR-LEVEL run that
+# had SKIPPED both -- the BAND-15 failure in `bend2-constraints.md`, verbatim: "A PASS THAT
+# DOES NOT SAY WHAT IT DID NOT MEASURE IS A PASS THAT CAN BE MISQUOTED AS COVERAGE". So the
+# tail is assembled from the checks that actually ran.
+if [ "$LEVELS" = "$FULL" ]; then
+  tail="8 site rows all move; cumulativeness measured at all $nlev levels"
+else
+  tail="cross-level movement and cumulativeness NOT MEASURED (level set is '$LEVELS')"
+fi
+echo "debug-gate: $(grep -c '=' "$GT.$OPERATING.py" | tr -d ' ') shared rows at level $OPERATING; $nlev levels x 3 lanes; all lanes agree per level; $tail; level-0 control silent"

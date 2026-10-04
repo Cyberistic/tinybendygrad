@@ -116,8 +116,23 @@ def main():
     out, rc = run(SCRATCH)
     got = rows_of(out)
     moved = sorted(k for k in set(base) | set(got) if base.get(k) != got.get(k))
-    note = "" if rc == 0 else f" [DID NOT COMPILE/RUN rc={rc}]"
-    print(f'| {mid} | {what} | {len(moved)} {" ".join(moved[:8]) if moved else "**NOTHING**"}{note} |')
+    # RULE B: a mutant that is not a PROGRAM says NOTHING about coverage -- not even
+    # zero -- so it may not be counted in the number column.  M17 and M22 each lost
+    # ALL 85 rows to a run that produced none, and the table printed `85` for both,
+    # which is 170 moved rows that do not exist.
+    #
+    # The cell is `DID-NOT-COMPILE` and NOT `PATCH-NOT-APPLY`, because the patch DID
+    # land; `DID-NOT-COMPILE` is in `zero-classify.py`'s MEASURED vocabulary and
+    # classifies as NOT-A-PROGRAM, whereas the marker means "the edit never landed"
+    # and would be a different, untrue statement.  It is spelled EXACTLY, with no
+    # suffix: the classifier compares the whole cell and REFUSES anything else, so
+    # `DID-NOT-COMPILE rc=1` would be an unrecognised measurement.  The diagnostic
+    # therefore goes in the description cell, where prose already lives.
+    if rc != 0 or not got:
+      why = f"{what}  [rc={rc}, {len(got)} rows printed]"
+      print(PNA.pipe([mid, why, PNA.not_a_program()], 3))
+      continue
+    print(f'| {mid} | {what} | {len(moved)} {" ".join(moved[:8]) if moved else "**NOTHING**"} |')
   SCRATCH.unlink(missing_ok=True)
 
 

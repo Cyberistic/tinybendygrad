@@ -350,21 +350,18 @@ def upstream_sites():
   return out
 
 
-def usite_rows():
-  """NOT ROWS, and this is the point of the function being separate from the rows.
-
-  The upstream inventory is a fact about `tinygrad/`, not about the port, so putting it
-  in the compared row set would manufacture rows that agree because BOTH sides
-  transcribe the same upstream tree -- which is the `nv_query_litter` shape: two copies
-  of one mistake agreeing perfectly. It is printed instead, with denominators, by
-  `--inventory`. The 89 compared rows say something about the PORT; these say something
-  about UPSTREAM, and mixing the two would make the row count mean two things.
-  """
-  return []
-
-
 def inventory():
-  """The `DEBUG` scale as this tree actually defines it, every site, with its kind."""
+  """The `DEBUG` scale as this tree actually defines it, every site, with its kind.
+
+  THIS IS NOT A ROW SET, AND THAT IS THE POINT. The upstream inventory is a fact about
+  `tinygrad/`, not about the port, so putting it in the compared row set would manufacture
+  rows that agree because BOTH sides derive the same table from the same grep over the same
+  tree -- which is the `nv_query_litter` shape: two copies of one thing agreeing perfectly.
+  It WAS a row set (14 `usites_*` rows) and was removed; the shared-row count would have
+  risen 89 -> 103 with 14 claims about nothing. The 89 compared rows say something about the
+  PORT; this says something about UPSTREAM, and mixing the two would make the row count mean
+  two things at once.
+  """
   sites = upstream_sites()
   port = port_site_thresholds()
   print("%-6s %-9s %-9s %-9s %s" % ("level", "upstream", "print", "non-print", "port"))
@@ -384,25 +381,55 @@ def inventory():
     for s in [x for x in sites if x[0] == L]:
       print("  L%d %-8s %-44s:%-4d %s" % (L, s[3], s[1], s[2], s[4][:80]))
   print()
-  print("WHAT EACH LEVEL CANNOT SHOW, stated rather than left to a zero:")
+  print("WHAT EACH LEVEL CANNOT SHOW, stated rather than left to a zero. EVERY COUNT")
+  print("IN THESE LINES IS INTERPOLATED FROM `sites` AND `port`, NEVER TYPED -- and that")
+  print("is a correction: the first version of this block hard-wrote '11 print' at level 1")
+  print("and '17 print' at level 2 while the table immediately above it said 14 and 20.")
+  print("Two numbers in one report about the same thing, one of them wrong, is the")
+  print("`nv_query_litter` shape with the copies on the SAME PAGE. Prose that carries a")
+  print("count has to read the count.")
+  at = {L: [s for s in sites if s[0] == L] for L in ALL_LEVELS}
+  pr = {L: sum(1 for s in at[L] if s[3] == "print") for L in ALL_LEVELS}
   notes = {
-    1: "memory + timings. 14 upstream sites, 11 print.",
-    2: "the seven this repository gates are 7 of the 22 here. 17 print.",
-    3: "NOT covered by this gate's level-3 lane: the port has 0 sites at threshold 3,",
-    4: "GENERATED SOURCE (codegen/__init__.py:462) -- 6 sites in codegen/ alone.",
-    5: "THE UOP LIST, codegen/__init__.py:274 `print(pyrender(ast))`.",
-    6: "NOTHING PRINTABLE on this tree. Both sites are non-printing (usb.py:25",
-    7: "DISASSEMBLY (codegen/__init__.py:464) plus the buffer ledger (device.py).",
+    1: "memory + timings. %d upstream sites, %d print, %d port site."
+       % (len(at[1]), pr[1], port.get(1, 0)),
+    2: "the six level-2 sites this repository gates are %d of the %d here. %d print."
+       % (port.get(2, 0), len(at[2]), pr[2]),
+    3: "NOT COVERED by this gate's level-3 lane: %d upstream sites, %d print, and %d "
+       "port sites, so the lane shows cumulativeness and nothing about level 3."
+       % (len(at[3]), pr[3], port.get(3, 0)),
+    4: "GENERATED SOURCE (codegen/__init__.py:462). %d upstream sites, %d print, %d "
+       "port sites." % (len(at[4]), pr[4], port.get(4, 0)),
+    5: "THE UOP LIST (codegen/__init__.py:274 `print(pyrender(ast))`). %d upstream "
+       "sites, %d print, %d port sites -- but the port HAS `pyrender` "
+       "(uop/render.bend:1886), so this is unbuilt, not unrepresentable."
+       % (len(at[5]), pr[5], port.get(5, 0)),
+    6: "NOTHING PRINTABLE on this fixture: %d upstream sites, %d of which prints, and "
+       "%d port sites. usb.py:25 sets a libusb log level and viz/cli.py:216 is reachable "
+       "only from the viz CLI. A LIMIT OF UPSTREAM, NOT OF THE PORT."
+       % (len(at[6]), pr[6], port.get(6, 0)),
+    7: "DISASSEMBLY (codegen/__init__.py:464) plus the buffer ledger (device.py:171/198, "
+       "where device.bend has no debug_ge at all). %d upstream sites, %d print, %d port "
+       "sites." % (len(at[7]), pr[7], port.get(7, 0)),
   }
   for L in ALL_LEVELS:
     print("  level %d: %s" % (L, notes[L]))
   print()
-  print("  LEVEL 6 IS A LIMIT OF UPSTREAM, NOT OF THE PORT, and that is worth saying")
-  print("  plainly: the brief's scale says 6 = '+ linearized', and this tree has NO")
-  print("  `DEBUG >= 6` that prints. `schedule/__init__.py:141` prints the SCHEDULED")
-  print("  count at `DEBUG >= 3`, not the linearized graph, and nothing else mentions")
-  print("  a linearized render under DEBUG. So a level-6 gate here can only assert an")
-  print("  absence, and it is an absence UPSTREAM HAS TOO.")
+  print("  LEVEL 6 CONTRADICTS THE BRIEF'S SCALE, and that is a finding rather than a")
+  print("  gap in this gate. The scale says 6 = '+ linearized'. This tree has NO")
+  print("  `DEBUG >= 6` that prints a linearized graph: `schedule/__init__.py:141` prints")
+  print("  the SCHEDULED KERNEL COUNT at `DEBUG >= 3`, and nothing else in tinygrad/")
+  print("  renders a linearized graph under DEBUG. Measured on a fixed end-to-end")
+  print("  fixture (`--probe-levels`), level 6 adds 0 stdout lines over level 5.")
+  print()
+  print("  AND THE REST OF THE SCALE IS UNGATED TOO: this repository gates %d of the %d"
+       % (sum(port.values()), len(sites)))
+  print("  upstream sites at levels 1..7. At level 2 that is %d of %d, so %d level-2"
+       % (port.get(2, 0), len(at[2]), len(at[2]) - port.get(2, 0)))
+  print("  sites are ungated (am/ip.py x5, nvdev.py, bnxtdev.py x2, decomp/dtype.py,")
+  print("  opt/search.py x4, engine/realize.py x2, function.py), and every one of the")
+  print("  %d sites above level 2 is ungated as well."
+       % (len(sites) - port.get(1, 0) - port.get(2, 0)))
 
 
 def usite_selfcheck():
@@ -744,13 +771,6 @@ def main():
   # mismatch, which is the half that checks it.
   for l in keep(child(None, MEM_BODY), "pin"):
     rows.append(l)
-
-  # THE UPSTREAM INVENTORY at 4..7, level-INVARIANT: how many `DEBUG >= N` sites
-  # upstream has at each of those levels, and how many of them print. Both sides build
-  # the table from the same grep over the same tree, so a site added or removed
-  # upstream MOVES these rows rather than silently changing what the levels mean.
-  for nm, v in usite_rows():
-    row(nm, v)
 
   # THE CUMULATIVITY ROW, for each of levels 0..7. Which of the seven gated sites fire
   # when the level is L. At L >= 2 all seven must fire, which is the measured statement

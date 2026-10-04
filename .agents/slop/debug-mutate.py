@@ -151,15 +151,24 @@ MUT = [
    "  red_dbg_text.gate(H.debug_ge(dbg, 4), red_dbg_text(s, ndev, numel, dt))"),
 ]
 
-# THE LEVELS, and why not all nine. The table asks "which rows moved", so a level is only
-# worth a run if some mutation can move something there. Levels 0, 1 and 2 carry every
-# threshold mutation; 3 and 4 are where the non-cumulative mutation bites; 7 is the top of
-# the scale, and is where a level stopping firing would be caught. Levels 5 and 6 are
-# omitted for COST, and the omission is named rather than hidden: every row here that
-# reads a level is `>=`-shaped and `fires_L<n>` is a straight function of `n`, so no
-# mutation in this table can move anything differently at 5 than at 4 or at 7. The GATE
-# still runs all nine levels; only this table runs six.
-LEVELS = ("0", "1", "2", "3", "4", "7")
+# THE LEVELS, AND WHY THE SET IS WHAT IT IS. The table asks "which rows moved", so a level
+# is only worth a run if some mutation can move something there.
+#
+# LEVEL 6 WAS OMITTED FOR COST AND THAT OMISSION WAS MEASURED TO MATTER. With
+# `("0","1","2","3","4","7")`, the mutation "`env_ge7` reads threshold 6" reported ZERO
+# moved rows -- not because `env_ge7` cannot be seen but because `DEBUG >= 7` and
+# `DEBUG >= 6` AGREE at every level in the set: at 0..4 both are 0, and at 7 both are 1.
+# The level that separates them is 6, and it was not in the table. So 6 is in it now, and
+# the entry that was a blind spot is a measured 7. **A MUTATION TABLE'S OWN LEVEL SET IS A
+# COVERAGE CLAIM, AND A BLIND SPOT IN IT LOOKS IDENTICALLY TO A BLIND SPOT IN THE GATE.**
+# The gate's level-6 control (`.agents/slop/debug-gate-control.py` C4) already caught this
+# mutation, which is why it read as a gap in the TABLE rather than in the gate -- but a
+# reader of the table alone would have concluded the gate could not see it.
+#
+# Level 5 is still omitted, and that omission is also measured rather than assumed:
+# `env_ge5` is `DEBUG >= 5`, which `env_ge7` (threshold 7) already separates from every
+# other level in the set, and no mutation in this table reads threshold 5.
+LEVELS = ("0", "1", "2", "3", "4", "6", "7")
 
 
 def rows_of(out):

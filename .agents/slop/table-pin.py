@@ -67,11 +67,11 @@ TABLES = [
     ("rf2-mutations.txt", "rf2-mutate.py"),
     ("tc-mutations.txt", "tc-mutate.py"),
     ("usb-mutations.md", "usb-mutate.py"),
-    # wgsl has NO standalone record: its table is a comment block inside the port
-    # itself (renderer/wgsl.bend:1162-1197), so the table and the substrate are
-    # the same bytes.  That is worth saying out loud rather than hiding behind a
-    # filename that does not exist.
-    ("tinybendygrad/renderer/wgsl.bend", "wgsl-mutate.py"),
+    # TWO RECORDS THIS UNIT RECONSTRUCTED today.  `memory-mutate.py` had run 70
+    # mutations and written nothing down; `wgsl-mutate.py`'s table was a comment
+    # block inside a .bend this unit does not own, so it now has a record out here.
+    ("memory-mutations.txt", "memory-mutate.py"),
+    ("wgsl-mutations.txt", "wgsl-mutate.py"),
     # dd pins FOUR artifacts against ONE frozen snapshot, which is the only
     # arrangement in this directory where the reference is on disk.
     ("dd-mutations.txt", "dd-mutate.py"),
@@ -82,6 +82,15 @@ TABLES = [
 # A baseline committed ALONGSIDE the table, read for its ROW SET.
 BASELINES = {
     "ag-mutations.txt": ".agents/slop/ag-base.txt",
+    # Five baselines COMMITTED today by this unit, because a row-set digest over a
+    # baseline that is not on disk is a number nobody can check -- which is the
+    # whole reason the second digest exists.  Each was captured from the same run
+    # that produced the pinned table.
+    "amdev_mut.txt": ".agents/slop/amdev-baseline-552.txt",
+    "memory-mutations.txt": ".agents/slop/memory-baseline-889.txt",
+    "wgsl-mutations.txt": ".agents/slop/wgsl-baseline-172.txt",
+    "ops-python-mutations.txt": ".agents/slop/ops-python-baseline-85.txt",
+    "rf-arg-mutations.txt": ".agents/slop/rangeify-baseline-126.txt",
     "dd-mutations.txt": ".agents/slop/dd-gate-base-182.txt",
     "dd-mutations.txt.tsv": ".agents/slop/dd-gate-base-182.txt",
     "dd-mutations-classified.txt": ".agents/slop/dd-gate-base-182.txt",

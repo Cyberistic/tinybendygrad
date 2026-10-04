@@ -297,27 +297,56 @@ def sweep_reconcile(g, scan, sweep_path, lanes_ok=True):
       continue
     n = selftest_number(scan, g, port, g.BASE_ORACLES[port])[0]
     num = f"{n['shared']}/{n['disagree']} of {n['n_bend']}+{n['n_oracle']}"
+    swept = len(v.get("disagree_rows") or {d[2] for d in v.get("disagreements", [])})
     if not n["n_bend"] or not n["n_oracle"]:
       blank = [w for w, c in (("port", n["n_bend"]), ("oracle", n["n_oracle"])) if not c]
-      lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} "
-                   f"{num:<28} UNMEASURED: the {' and '.join(blank)} lane produced 0 rows "
-                   f"[{n['src']}]")
-      bad += 1
+      # A LANE THAT PRODUCED NOTHING ON BOTH SIDES IS NOT A DIVERGENCE -- it is the one case where
+      # the two instruments AGREE, because they agree that there was nothing to compare. Calling
+      # it divergent would make this table permanently red for `dtype.bend`, which is wired ON
+      # PURPOSE to a TSV oracle, and a permanently-red control is a control nobody reads. What is
+      # NOT allowed is calling it reconciled when only ONE side is empty: then the other side
+      # measured something and the emptiness is one side's failure, named below.
+      silent = cause in (g.CAUSE_LANE_DEATH, g.CAUSE_ZERO_ROWS)
+      lines.append(f"{port.split('/', 1)[-1]:<40} {v['state']:<17} {cause:<13} {num:<28} "
+                   + (f"RECONCILED: BOTH instruments found nothing to compare -- the sweep could "
+                      f"not read {cause} and the selftest read 0 rows from the "
+                      f"{' and '.join(blank)} lane [{n['src']}]" if silent else
+                      f"DIVERGES: UNMEASURED, the {' and '.join(blank)} lane produced 0 rows "
+                      f"[{n['src']}] -- so this row proves nothing"))
+      bad += not silent
+      good += silent
       continue
     if n["disagree"] and cause != g.CAUSE_DISAGREE:
       verdict = (f"DIVERGES: {n['disagree']} of {n['shared']} shared names disagree but the "
                  f"sweep's cause is {cause}, so the sweep is red for the WRONG reason")
       bad += 1
-    elif not n["disagree"] and cause == g.CAUSE_DISAGREE:
-      verdict = (f"DIVERGES: the sweep says {len(v.get('disagreements', []))} disagree while the "
-                 f"selftest measures {n['disagree']} of {n['shared']} -- one read a cache")
+    elif swept and not n["disagree"]:
+      # ⚠ THE ONE THAT MATTERS, and it fired on its first real run. `uop/spec.bend`: the sweep
+      # (07:09-07:23) says 9 names disagree, the selftest's lanes (19:0x) say 0 of 11 -- and
+      # `uop/ops.bend` is one of the TWO files whose md5 changed DURING that sweep. Both numbers
+      # are printed with the rows each saw; the cause is a tree that did not hold still, and this
+      # is what catching it looks like.
+      verdict = (f"DIVERGES: the sweep measured {swept} disagreeing name(s) "
+                 f"({', '.join(sorted(v.get('disagree_rows') or [])[:4])}) over "
+                 f"{v.get('compared_names', '?')} shared, the selftest measures {n['disagree']} of "
+                 f"{n['shared']} [{n['src']}] -- the two read DIFFERENT TREES or one read a cache. "
+                 f"Re-run the sweep on a tree that held still")
       bad += 1
     elif not n["disagree"] and cause != g.CAUSE_NONE:
-      verdict = (f"RECONCILED as EXPECTED: selftest 0 disagree vs sweep cause {cause} -- the two "
-                 f"instruments measure different things, and this is what that looks like")
+      verdict = (f"RECONCILED as EXPECTED: selftest {n['disagree']} disagree of {n['shared']} vs "
+                 f"sweep cause {cause} -- the two instruments measure different things, and this "
+                 f"is what that looks like")
       good += 1
     else:
-      verdict = f"RECONCILED: 0 of {n['shared']} shared names disagree, and the sweep agrees"
+      # NOT A TYPED 0. It printed `0 of 109 shared names disagree` beside a row whose own column
+      # read `109/1`, on the ONE port with a real disagreement: a hard-coded zero in a sentence
+      # that claims to report a measurement, which is the one number in this file that must
+      # never be typed.
+      verdict = (f"RECONCILED: {n['disagree']} of {n['shared']} shared names disagree, and the "
+                 f"sweep names the same row(s)"
+                 if not n["disagree"] else
+                 f"RECONCILED: {n['disagree']} of {n['shared']} shared names disagree on BOTH "
+                 f"sides, and the sweep names the same row(s)")
       good += 1
     if n["bad"]:
       verdict += f"  [{', '.join(repr(k) for k in n['bad'][:3])}]"
@@ -363,7 +392,7 @@ def lane_control(g, port, st):
   counts = {k: len(v) for k, v in clean.items()}
   out = [f"{port}", f"  lanes  {counts}  " + "  ".join(f"{k}=rc{l['rc']}" for k, l in
                                                           sorted(lanes.items()) if k != 'check')]
-  v = gate_with(g, {"lanes": {}, "hunks": {}}, clean)
+  v = gate_with(g, {"lanes": {}, "hunks": {}}, clean, lanes)
   out.append(f"  clean  -> {v['state']} cause={v['cause']} [{v['class']}]  {v['cause_reason'][:110]}")
   if _conformance_kind(port) == "dead":
     # Wired ON PURPOSE to a lane that cannot compare. Its control is that it IS red: a lane that
@@ -383,23 +412,55 @@ def lane_control(g, port, st):
                "nothing to corrupt and this control proved nothing")
     return out, False
   with tempfile.TemporaryDirectory() as td:
-    _, planted = g.run_port(bend, [st.mutant_lane(oracles[0], row, td)], True)
-  p = gate_with(g, {"lanes": {}, "hunks": {}}, planted)
+    ml, planted = g.run_port(bend, [st.mutant_lane(oracles[0], row, td)], True)
+  # ⚠ THE PLANT MUST BE VISIBLE IN THE LANE'S OWN ROWS, ASSERTED BEFORE THE VERDICT IS READ. A
+  # control that plants a corruption into a column the gate does not compare reports a clean pair
+  # as clean and proves nothing -- which is exactly what appending `PLANTED` at end-of-line did on
+  # every F2 lane, and it turned six of these lanes green while disarmed. If this assert ever
+  # fires, the plant moved to a column `rows()` no longer compares.
+  pk = next((k for k in ml if k.startswith("cpython:")), None)
+  landed = pk is not None and planted.get(pk, {}).get(row) != clean["interpreted"][row]
+  p = gate_with(g, {"lanes": {}, "hunks": {}}, planted, ml)
   named = [d for d in p.get("disagreements", []) if d[2] == row]
   out.append(f"  plant  -> {p['state']} cause={p['cause']} rc=1 required, NAMES {row!r}: "
-             f"{bool(named)}  {p['cause_reason'][:100]}")
-  ok = ok and p["state"] == g.BROKEN and bool(named)
-  same = g.run_port(bend, list(oracles), True)[1] == clean
-  out.append(f"  restore-> byte-identical to the clean reading: {same} (nothing on disk was "
-             "edited, so this compares ROW SETS, not a file digest)")
-  return out, ok and same
+             f"{bool(named)}; the planted lane's own value differs from the port's: {landed}  "
+             f"{p['cause_reason'][:90]}")
+  ok = ok and p["state"] == g.BROKEN and bool(named) and landed
+
+  # ⚠ THE RESTORE IS CHECKED PER LANE, AND AN ORACLE THAT IS NOT DETERMINISTIC BETWEEN RUNS IS A
+  # NAMED FINDING RATHER THAN A FAILED RESTORE. Two are, and BASE_ORACLES records both:
+  # `elf_rows.py` emits 14 `elf_built_*` rows carrying the runtime addresses of the `libstub.dylib`
+  # the fixtures link against, so ASLR changes them every launch; `prepare-oracle.py` has 38 rows
+  # that differ between runs (recorded in this file's DONE entry). Nothing was edited on disk, so
+  # "the restore is byte-identical" is a claim about the PORT lanes -- the two bend runs -- and a
+  # claim about an oracle's own determinism, and those are different claims. What DOES fail the
+  # control is drift on a SHARED row name, because that is a disagreement waiting to happen.
+  again = g.run_port(bend, list(oracles), True)[1]
+  port_drift = sorted(k for k in clean if not k.startswith("cpython:")
+                      and again.get(k) != clean[k])
+  orc_drift = {}
+  for k in clean:
+    if not k.startswith("cpython:"):
+      continue
+    b, a = clean[k], again.get(k, {})
+    orc_drift[k] = sorted((set(b) ^ set(a)) | {n for n in set(b) & set(a) if b[n] != a[n]})
+  orc_drift = {k: n for k, n in orc_drift.items() if n}
+  shared_drift = {k: [n for n in v if n in set(clean["interpreted"])] for k, v in orc_drift.items()}
+  shared_drift = {k: v for k, v in shared_drift.items() if v}
+  out.append(f"  restore-> PORT lanes byte-identical: {not port_drift}"
+             + (f"  DRIFTED {port_drift}" if port_drift else "")
+             + "; oracle lanes drift between runs: "
+             + (", ".join(f"{k}={len(v)} rows" for k, v in orc_drift.items()) or "none")
+             + (f"  -- AND ON SHARED NAMES {shared_drift}, which is a real disagreement source"
+                if shared_drift else ""))
+  return out, ok and not port_drift and not shared_drift
 
 
 def _conformance_kind(port):
   return _conformance().get(port, (None, None))[1]
 
 
-def gate_with(g, doc, rows_by_lane):
+def gate_with(g, doc, rows_by_lane, lanes=None):
   """gate_port() with run_port() REPLACED for the duration of the call, for reading a verdict off
   rows ALREADY COLLECTED here.
 
@@ -408,9 +469,16 @@ def gate_with(g, doc, rows_by_lane):
   pointing at `g`, so the stub is never called and the caller silently measures the LIVE tree.
   rebase-gate-selftest.py's docstring records the same trap ("FOUR MODULES, NOT ONE") and pays for
   it with four module loads; a save/restore is one line and one module, and the restore is in a
-  `finally` so a raised verdict cannot leave the gate stubbed for the next port."""
+  `finally` so a raised verdict cannot leave the gate stubbed for the next port.
+
+  ⚠ `lanes` MUST BE THE REAL LANE INFO, because GUARD 3 reads rc and GUARD 2 reads the row sets.
+  Fabricating `{"rc": 0}` for every lane made `dtype.bend` report cause=ZERO-ROWS when its lanes
+  had in fact DIED at rc=1 -- a control reporting a cause the measurement does not support, which
+  is the instrument class this file is here to catch. rc=0 is only a default for a lane nobody ran.
+  """
+  info = lanes if lanes is not None else {n: {"rc": 0} for n in rows_by_lane}
   was = g.run_port
-  g.run_port = lambda *a, **k: ({n: {"rc": 0} for n in rows_by_lane}, rows_by_lane)
+  g.run_port = lambda *a, **k: (info, rows_by_lane)
   try:
     return g.gate_port(REPO / "tinybendygrad/probe.bend", ["o"], doc, native=True)[0]
   finally:
@@ -434,17 +502,28 @@ def run_controls(g, ports, workers):
   """
   import concurrent.futures as cf
   st = _selftest()
+  done = []
   ok_n, fails = 0, []
   print(f"PER-LANE CONTROL: {len(ports)} wired lane(s), {workers} in flight, "
-        f"load {os.getloadavg()[0]:.2f}\n")
+        f"load {os.getloadavg()[0]:.2f}\n", flush=True)
   with cf.ThreadPoolExecutor(max_workers=workers) as pool:
-    for lines, ok in pool.map(lambda p: lane_control(g, p, st), ports):
-      print("\n".join(lines))
-      print(f"  {'PASS' if ok else 'FAIL'}  {lines[0]}")
+    # as_completed, NOT pool.map: map yields IN ORDER, so one slow port buffers every result
+    # behind it and a run this expensive (three real gate runs x 39 ports, and four agents share
+    # the machine) prints nothing for an hour -- at which point the reader assumes it wedged and
+    # kills it. Each result is printed and flushed as it lands, so a partial run is still a
+    # measurement of the ports it reached.
+    futs = {pool.submit(lane_control, g, p, st): p for p in ports}
+    for fut in cf.as_completed(futs):
+      lines, ok = fut.result()
+      print("\n".join(lines), flush=True)
+      print(f"  {'PASS' if ok else 'FAIL'}  {lines[0]}", flush=True)
       ok_n += ok
+      done.append(lines[0])
       if not ok:
         fails.append(lines[0])
-      print()
+      print(flush=True)
+      print(f"  -- {len(done)}/{len(ports)} done, {len(fails)} failed, load "
+            f"{os.getloadavg()[0]:.2f}", flush=True)
   print("=" * 100)
   print(f"{ok_n}/{len(ports)} lanes: clean -> AGREE rc=0, one planted row -> BROKEN rc=1 naming "
         f"it, restore byte-identical.  load {os.getloadavg()[0]:.2f}")
@@ -494,6 +573,7 @@ def main():
   g = load("gate_reconcile_gate", GATE)
   scan = load("gate_reconcile_scan", HERE / "rebase-scan-oracles.py")
   base = json.loads(BASELINE.read_text()) if BASELINE.exists() else {}
+  ports = a.ports or []
   if a.roster:
     # WIRING ONLY. NOT-STARTED is decided by never_wired() before any lane runs, so the
     # roster alone pins that bucket -- which is what makes a quoted tally checkable without
@@ -515,9 +595,13 @@ def main():
     return 1 if bad else 0
 
   if a.control:
-    return run_controls(g, sorted(g.BASE_ORACLES), a.workers)
+    # The POSITIONAL ports are honoured here, and they used to be dropped: --control ran all 39
+    # wired lanes whatever you named, which is a flag that silently widens the work by 39x and a
+    # good way to lose twenty minutes to a two-port question.
+    named = [p for p in ports if p in g.BASE_ORACLES] if ports else []
+    return run_controls(g, named or sorted(g.BASE_ORACLES), a.workers)
 
-  ports = a.ports or DEFAULT_PORTS
+  ports = ports or DEFAULT_PORTS
 
   print(f"gate interpreter {g.ORACLE_PY}")
   print(f"scan interpreter {sys.executable}   (rebase-scan-oracles.py uses sys.executable, "

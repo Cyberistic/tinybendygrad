@@ -49,6 +49,12 @@ import collections
 import pathlib
 import re
 import sys
+import warnings
+
+# Parsing OTHER tools' sources emits their own SyntaxWarnings (`invalid escape sequence` in
+# somebody else's regex literal). Those are not this file's findings and they drown the table,
+# so they are silenced HERE rather than in the 300 files that cause them.
+warnings.filterwarnings("ignore", category=SyntaxWarning)
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
 from rowform import respelling_battery  # noqa: E402

@@ -13,7 +13,7 @@ MISMATCH REDUCE    py#18 vs srcswap#18  (no shared core; paired one-to-one on th
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=0    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -27,7 +27,7 @@ MISMATCH REDUCE    py#18 vs srcswap#18  (no shared core; paired one-to-one on th
 #   E   arg         py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
-# DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=15  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=15  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
 # VERDICT: DISAGREE
 # CONFLATION 1 VERDICT: OK -- names src on the reordered node (expected DISAGREE naming src; got rc=1)
 # CONFLATION 2 -- the same op with a different `depth`, on a graph whose other fields agree.
@@ -41,7 +41,7 @@ MISMATCH REDUCE    py#18 vs srcswap#18  (no shared core; paired one-to-one on th
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=0    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -55,19 +55,19 @@ MISMATCH REDUCE    py#18 vs srcswap#18  (no shared core; paired one-to-one on th
 #   E   arg         py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
-# DENOMINATOR: graphs=2 (1 rangeflat + 1 range)  nodes=2/2  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/2 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 rangeflat + 1 range)  nodes=2/2  fields=6  field-records=12  shared-cores=1  commutative-ops=8  ops-reached=2/2 of 77  symbolic-dims=0/0  multi-parent-nodes=0/0
 # VERDICT: DISAGREE
 # CONFLATION 2 VERDICT: OK -- names depth (expected DISAGREE naming depth; got rc=1)
 #   CONTROL (see cmd_diff for the run): `diff --graph range` and `diff --graph rangeflat` each report AGREE against the port, so the depth difference above is between two graphs and not a field the port always gets wrong. Recorded in runs/graphcmp/D/C2b-*.txt.
 # CONFLATION 3 -- the SAME reordered pair under the commutative-canonical key. Expected: AGREE.
 # ordered rows=18  srcswap rows=18  plant=srcswap  mode=EQUIV
 # SHARED cores=18  ONLY-ORDERED=0  ONLY-SRCSWAP=0  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0
-# DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0
+# DENOMINATOR: graphs=2 (1 ordered + 1 srcswap)  nodes=18/18  fields=6  field-records=108  shared-cores=18  commutative-ops=8  ops-reached=7/7 of 77  symbolic-dims=0/0  multi-parent-nodes=4/4
 # VERDICT: AGREE
 #   commutative ops READ FROM CPython: ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']
 # CONFLATION 3 VERDICT: OK -- AGREE under --equiv (expected rc=0; got rc=0)
 # CONFLATION 4 -- TWO DIFFERENT symbolic dims against ONE, on a graph whose `shape` columns are IDENTICAL.
-#   MEASURED: symbolic-dim nodes two=2 one=1 and the shape texts are ['(U,l0:4)'] against ['(U,l0:4)'] -- EQUAL as sets, so the shape column cannot separate them. Node counts 12 against 9. The PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:31): ['P(i0,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N)', 'P(i0,Dweakint,N,r(l0:1,l0:100),i1,sm,SALU,N,b0,N,N,b0,N)'].
+#   MEASURED: symbolic-dim nodes two=2 one=1 and the shape texts are ['(U,l0:4)'] against ['(U,l0:4)'] -- EQUAL as sets, so the shape column cannot separate them. Node counts 12 against 9. The PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:32): ['P(i0,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N)', 'P(i0,Dweakint,N,r(l0:1,l0:100),i1,sm,SALU,N,b0,N,N,b0,N)'].
 #   ALLOC 1/1  CONST 2/2  GROUP 1/1  PARAM 2/1  RESHAPE 3/2  STACK 3/2
 # SYMBOLIC DIMS: two-symbolic-dims=2/12 one-symbolic-dim=1/9 nodes carry a `U` dim; ids two-symbolic-dims=['8', '11'] one-symbolic-dim=['8']
 # SHARED cores=8  ONLY-TWO-SYMBOLIC-DIMS=3  ONLY-ONE-SYMBOLIC-DIM=0  field-mismatches=0  rung2-pairs=1  rung3.5-crossrefs=0  zip-truncated=0
@@ -77,7 +77,7 @@ MISMATCH GROUP     py#12 vs one-symbolic-dim#9  (no shared core; paired one-to-o
 #   z   arg         py=0    bend=0    a realized BUFFER: device-object PRESENCE only
 #       Buffer has no `slot` (measured) and the port's is a P6 allocator slot; size/dtype/device/offset are already ParamArg fields 2/3/8 and ARE compared
 #   y   arg         py=0    bend=0    a bytes arg: CONTENT compared; the residual is the bytes CONST
-#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), and graphcmp.bend's `konst` has no bytes arm at all
+#       MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` (:1801) compares them, so the column is the full byte list; this row used to say LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` (ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), and graphcmp.bend's `konst` has no bytes arm at all
 #   u   arg         py=0    bend=0    a UOp nested in an arg: identity NOT compared
 #       measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no arena index here; the port's ATuple also spells PERMUTE's literal ints
 #   q   arg         py=0    bend=0    an applied option the port cannot resolve: COUNT only
@@ -91,7 +91,7 @@ MISMATCH GROUP     py#12 vs one-symbolic-dim#9  (no shared core; paired one-to-o
 #   E   arg         py=0    bend=0    an enum member outside {Ops, AxisType, AddrSpace}: NAME only
 #       `OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic `vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 attributes, and died on a descriptor -- so a SINK with a non-empty applied_opts could not be emitted at all
 #   -   arg   py=n/a  bend=n/a  KernelInfo.estimates: NEITHER SIDE CARRIES IT (port dropped it, P5); upstream's value is None for every kernel the port can build, so the count would be 0 BY CONSTRUCTION and is not printed as one
-# DENOMINATOR: graphs=2 (1 two-symbolic-dims + 1 one-symbolic-dim)  nodes=12/9  fields=6  field-records=72  shared-cores=8  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=2/1
+# DENOMINATOR: graphs=2 (1 two-symbolic-dims + 1 one-symbolic-dim)  nodes=12/9  fields=6  field-records=72  shared-cores=8  commutative-ops=8  ops-reached=6/6 of 77  symbolic-dims=2/1  multi-parent-nodes=2/1
 # VERDICT: DISAGREE
 # CONFLATION 4 VERDICT: OK -- separates two symbolic dims from one, naming src (expected DISAGREE naming src; got rc=1)
 # CONFLATION VERDICT: ALL FOUR DISTINGUISHED

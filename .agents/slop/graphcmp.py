@@ -66,7 +66,7 @@ THE NORMAL FORM. One record per node, eight fields, in this order:
               when `_shape` is None (the ten ops at ops.py:331-338). Three-valued, because
               "has no shape" and "shape raised" are different facts. A dim is a `sint`
               (ops.py:1925) = `int|UOp`: an int prints as its EXACT `hi:lo` I64
-              (`H.i64_text`, helpers.bend:1696-1699, is two words for exactly this) and a UOp
+              (`H.i64_text`, helpers.bend:1701-1705, is two words for exactly this) and a UOp
               prints as `U`. Never as a number -- a symbolic dim read as 0 is a silent
               wrong shape.
   R5  depth   how many times a RANGE arg's `axis_id` is NESTED. `UOp.range` builds
@@ -210,8 +210,11 @@ graph had `depth=i0` on both sides, so R5 was a field that had never been asked 
 question -- and when the first RANGE arrived it turned out to be OFF BY ONE on the py
 side (see `cdepth`). A field that reads equal because both sides are wrong is worse than
 a field that is not compared, and only a graph that reaches the field finds that.
-`group` is the same argument about `src`: before it no node in the corpus had more than
-one parent, so nothing had ever tested that the differ can place a node twice.
+`group` is the same argument about `src`, and it is also where a claim in this very file
+was caught: before it the corpus DID have shared nodes (`matmul` has four, all shape
+`CONST`s, one of them with four parents) but none that was a non-leaf, and none with a
+REPEATED child index. `multiparent` is now printed on every report, so the fan-in is a
+measurement and not a sentence.
 
 USAGE
 
@@ -367,7 +370,7 @@ def u(x: int) -> str:
 
 def i64(x: int) -> str:
   """`hi:lo` in DECIMAL, exactly `H.i64_text` = `i64_show(hi32, lo32)` = `U32.show(hi) ":"
-  U32.show(lo)` (helpers.bend:1696-1699). A dim is an I64, and dropping the high word would
+  U32.show(lo)` (helpers.bend:1701-1705). A dim is an I64, and dropping the high word would
   read a dimension of 2**32 as zero."""
   return ATOMS["i64"] + f"{x >> 32}:{x & 0xFFFFFFFF}"
 
@@ -569,7 +572,7 @@ def _carg(x) -> str:
     #
     # WHAT IS STILL NOT COMPARABLE, and is now the whole of the `y` residual: a bytes
     # CONST. Upstream's `PyConst` includes `bytes` (ops.py:122) and the port's `Const`
-    # does NOT -- `ops.bend:810-811` is `CBool{} | CInt{} | CFloat{} | CInvalid{}` and
+    # does NOT -- `ops.bend:808-811` is `CBool{} | CInt{} | CFloat{} | CInvalid{}` and
     # graphcmp.bend's `konst` has no bytes arm, so there is no port spelling at all.
     return ATOMS["bytes"] + " n(" + ",".join(u(b) for b in x) + ")"
   if isinstance(x, (tuple, list)):
@@ -849,16 +852,22 @@ def g_binblob():
 
 def g_group():
   """`UOp.group(sh + sh, sh * sh)` over `sh = Tensor.empty(4,3).uop` -- 8 nodes, and the
-  first graph whose tree is NOT a tree: `GROUP` is the op that makes a linearized program
-  a graph, and before this one NO node in the corpus had more than one parent, so the
-  differ had never had to place a node by two parents.
+  first graph whose shared node has a real SUBTREE under it. `GROUP` is the op that makes a
+  linearized program a graph rather than a tree.
 
-  MEASURED, calling CPython (`runs/graphcmp/probe/p13-group-probe.py`): the toposort is
-  ALLOC CONST CONST STACK RESHAPE ADD MUL GROUP and **two** nodes have more than one
-  parent -- the RESHAPE (`id 5`, 2 parents) and the CONST 4 (`id 2`, 2 parents, via the
-  ADD's and the MUL's shared `sh`) -- and `ADD` carries the SAME child index twice,
-  `src=n(i5,i5)`. So this fixture exercises a two-parent node, a repeated child index, and
-  `GROUP` itself in one graph, and the denominators are 2 and 1 respectively.
+  MEASURED, calling CPython (`.agents/slop/graphcmp-p13-ops.py`, Q2): the toposort is
+  ALLOC CONST CONST STACK RESHAPE ADD MUL GROUP and the RESHAPE has **2 distinct parent
+  NODES** (the ADD and the MUL) over **4 in-edges**, because each of ADD and MUL carries the
+  SAME child index twice -- `src=n(i5,i5)` on both. So the three things this fixture adds
+  are a shared non-CONST node, a repeated child index, and `GROUP` itself.
+
+  NOT "the first shared node", and the false version of that claim is LIMITS #16. The
+  matmul ALREADY shared four nodes -- `CONST#2 2e/2p`, `CONST#3 4e/4p`, `CONST#6 2e/2p`,
+  `CONST#10 2e/2p`: the shape literals 4/3/1/5, reached from two to four STACKs each. So
+  the differ HAD placed a node by up to four parents before this round; what it had never
+  done is place a shared node that is not a leaf, and it had never seen a repeated child
+  index. Every report now prints `# MULTI-PARENT NODES (op#id in-edges/parents)` for both
+  sides, which is how the wrong claim was caught.
 
   `UOp.group` takes the ONE-arg identity (`ops.py:558-560`, `if len(srcs) == 1 and
   isinstance(srcs[0], UOp): return srcs[0]`), which is why the corpus needed at least
@@ -874,7 +883,7 @@ def g_commute():
 
   Every rung was chosen by MEASUREMENT, not by reading `GroupOp.Commutative`: each
   candidate Tensor operation was emitted and its NODE ops tabulated
-  (`runs/graphcmp/probe/p15-comm.py`), and the table is the reason this graph has six
+  (`.agents/slop/graphcmp-p13-ops.py`, Q3), and the table is the reason this graph has six
   srcs and not one:
 
       a + b            -> ADD     (and only ADD)
@@ -964,12 +973,12 @@ def g_sym():
   `a = Tensor.empty(4,3).uop`, `n = _variable("n")` and `m = _variable("m")` -- 12 nodes,
   and the graph that makes the SYMBOLIC-DIM limit a MEASUREMENT.
 
-  MEASURED, calling CPython (`runs/graphcmp/probe/p14-cand.py`):
+  MEASURED, calling CPython (`.agents/slop/graphcmp-p13-ops.py`, Q4):
     * the two RESHAPEs' shape columns are `(U,l0:4)` and `(U,l0:4)` -- IDENTICAL, so the
       shape field alone CANNOT tell them apart, which is the limit the limits file states;
     * their `src` fields are `n(i5,i7)` and `n(i5,i10)`, whose cores DIFFER because the
       STACK's children differ, and the PARAMs' `arg` columns differ in ParamArg's sixth
-      field (`sn` against `sm` -- `name`, ops.py:31), so the differ separates the two
+      field (`sn` against `sm` -- `name`, ops.py:32), so the differ separates the two
       symbolic dims at RUNG 1 through two independent fields;
     * so `U` is not a hole in the differ's identity, it is a hole in the SHAPE COLUMN
       alone, and the resolution of the limit is that exact statement.
@@ -1461,7 +1470,7 @@ LEDGER = (
    "MEASURED 2026-10-04: `ABlob{bs}` (ops.bend:1062) holds the BYTES and `eq_arg.ABlob` "
    "(:1801) compares them, so the column is the full byte list; this row used to say "
    "LENGTH only. NOT comparable: a bytes CONST -- upstream's `PyConst` includes `bytes` "
-   "(ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:810-811), "
+   "(ops.py:122), the port's `Const` is CBool|CInt|CFloat|CInvalid (ops.bend:808-811), "
    "and graphcmp.bend's `konst` has no bytes arm at all"),
   ("u", (6,), "a UOp nested in an arg: identity NOT compared",
    "measured: PYLITERAL's nested UOp is in neither `src` nor `toposort`, so it has no "
@@ -1664,19 +1673,55 @@ def symdims(nodes: dict[str, "Node"]) -> list["Node"]:
   return out
 
 
+def multiparent(nodes: dict[str, "Node"]) -> list[str]:
+  """`op#id Ne/Np` for every node reached by MORE THAN ONE parent node. Two counts and the
+  difference between them is the property, so the string carries both: N is IN-EDGES, and a
+  node whose own src repeats the same index twice inflates it -- `--graph group`'s RESHAPE#5
+  is 4 edges over 2 parents, because `sh + sh` and `sh * sh` each name `sh` twice.
+
+  WHY IT IS COUNTED ON EVERY REPORT, and the claim this census immediately FALSIFIED. Both
+  `g_group`'s docstring and this file's header asserted, before the census existed, that "no
+  node in the corpus had more than one parent". MEASURED, per graph: `matmul` 4
+  (`CONST#2 2e/2p`, `CONST#3 4e/4p`, `CONST#6 2e/2p`, `CONST#10 2e/2p`), `binblob` the same
+  4 because it hangs the BINARY off the matmul, `sym` 2, `commute` 3, `group` 1, and
+  `reduce`/`buffer`/`sink`/`range`/`rangeflat`/`cast`/`special`/`indexed` ZERO. So the
+  corpus before this round was NOT parent-free: it had 4 shared nodes in one graph and they
+  were ALL shape `CONST`s, whose core is a leaf.
+
+  What the round actually added is narrower, and that is what the docstrings now say: a
+  shared node with a real SUBTREE under it (`group`'s RESHAPE, `commute`'s two RESHAPEs at
+  6 parents each) and a REPEATED CHILD INDEX (`src=n(i5,i5)`), neither of which any earlier
+  graph had. A prose claim that a measurement contradicts is a defect, and printing the
+  count on every report is what makes the next one impossible to leave standing."""
+  by_id = {n.nid: n for n in nodes.values()}
+  parents: dict[str, set[str]] = collections.defaultdict(set)
+  edges: collections.Counter = collections.Counter()
+  for n in nodes.values():
+    for c in n.src:
+      parents[c].add(n.nid)
+      edges[c] += 1
+  return [f"{by_id[c].op}#{c} {edges[c]}e/{len(parents[c])}p" for c in sorted(parents)
+          if len(parents[c]) > 1]
+
+
 def census_lines(pn: dict[str, "Node"], bn: dict[str, "Node"], lname: str, rname: str) -> list[str]:
   """THE COVERAGE DENOMINATOR, on every report, for both sides. `len(list(Ops))` is
   MEASURED by CPython at run time and not written down here, so the denominator cannot rot
   the way the 77 in the limits file can."""
   pc, bc = ops_census(pn), ops_census(bn)
   ps, bs = symdims(pn), symdims(bn)
+  pmp, bmp = multiparent(pn), multiparent(bn)
+  tree = "none -- this side is a TREE"
   return [f"# OPS REACHED: {lname}={len(pc)} {rname}={len(bc)} of {len(list(Ops))} upstream ops "
           f"(MEASURED `len(list(Ops))`). A disagreement count is not a coverage statement, "
           f"so the per-op NODE counts follow:",
           "#   " + "  ".join(f"{op} {pc.get(op, 0)}/{bc.get(op, 0)}"
                              for op in sorted(set(pc) | set(bc))),
           f"# SYMBOLIC DIMS: {lname}={len(ps)}/{len(pn)} {rname}={len(bs)}/{len(bn)} nodes "
-          f"carry a `U` dim; ids {lname}={[n.nid for n in ps]} {rname}={[n.nid for n in bs]}"]
+          f"carry a `U` dim; ids {lname}={[n.nid for n in ps]} {rname}={[n.nid for n in bs]}",
+          f"# MULTI-PARENT NODES (op#id in-edges/parents): {lname}="
+          f"{', '.join(pmp) if pmp else tree}   {rname}="
+          f"{', '.join(bmp) if bmp else tree}"]
 
 
 def report(py: list[str], bd: list[str], plant: str | None,
@@ -1807,7 +1852,8 @@ def report(py: list[str], bd: list[str], plant: str | None,
            f"shared-cores={len(shared)}  commutative-ops={len(COMM)}  "
            f"ops-reached={len(ops_census(pnodes_all))}/{len(ops_census(bnodes_all))} of "
            f"{len(list(Ops))}  symbolic-dims={len(symdims(pnodes_all))}/"
-           f"{len(symdims(bnodes_all))}")
+           f"{len(symdims(bnodes_all))}  multi-parent-nodes={len(multiparent(pnodes_all))}/"
+           f"{len(multiparent(bnodes_all))}")
   o.append(f"# VERDICT: {'AGREE' if same else 'DISAGREE'}")
   return (0 if same else 1), "\n".join(o)
 
@@ -2101,7 +2147,7 @@ def cmd_conf(dev: str) -> int:
              f"shape texts are {sorted(set(sh_two))} against {sorted(set(sh_one))} -- EQUAL as "
              f"sets, so the shape column cannot separate them. Node counts "
              f"{len(list(s_two.toposort()))} against {len(list(s_one.toposort()))}. The "
-             f"PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:31): "
+             f"PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:32): "
              f"{[carg(Ops.PARAM, n.arg) for n in s_two.toposort() if n.op is Ops.PARAM]!r}.")
   rc4, txt4 = report(emit_py("sym", None), emit_py("sym", "sym1"), "sym1",
                      "two-symbolic-dims", "one-symbolic-dim")

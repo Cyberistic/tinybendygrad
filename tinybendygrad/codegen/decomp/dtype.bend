@@ -2840,29 +2840,43 @@ def dd_cmx.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
 #
 # SEVEN FIXTURES, and each one is the ONLY way into a def:
 #
-#   w1  fp8e4m3 -> float32      widening, dtype.py:104. `f2f.up` + `f2f.sign` +
+#   q1  fp8e4m3 -> float32      widening, dtype.py:104. `f2f.up` + `f2f.sign` +
 #                              `f2f.nosign` + `f2f.norm` + `f2f.qnan` + `f2f.isnan`
 #                              + `f2f.up.tail` + `f2f.ocp`.
-#   n1  float32 -> fp8e4m3      narrowing to an e4m3 target, dtype.py:115. `f2f_clamp`
+#   q2  float32 -> fp8e4m3      narrowing to an e4m3 target, dtype.py:115. `f2f_clamp`
 #                              + `rne` + `f2f.down.*` + `f2f.down.m1`.
-#   n2  float32 -> fp8e5m2      narrowing to a NON-e4m3 target, and the ONLY way into
+#   q3  float32 -> fp8e5m2      narrowing to a NON-e4m3 target, and the ONLY way into
 #                              `f2f.down.m2` (dtype.py:120's `else` arm).
-#   f1  fp8e4m3fnuz -> float32  `fr in dtypes.fp8_fnuz`, dtype.py:108 -- the ONLY fixture
+#   q4  fp8e4m3fnuz -> float32  `fr in dtypes.fp8_fnuz`, dtype.py:108 -- the ONLY fixture
 #                              that reaches `f2f.fnuz`, one of the three defs whose `U32`
 #                              return was the forward reference.
-#   f2  float32 -> fp8e5m2fnuz  `to in dtypes.fp8_fnuz`, dtype.py:123 -- the ONLY fixture
+#   q5  float32 -> fp8e5m2fnuz  `to in dtypes.fp8_fnuz`, dtype.py:123 -- the ONLY fixture
 #                              that reaches `f2f.down.fnuz`.
-#   x1  float16 -> bfloat16     dtype.py:125 `else: raise NotImplementedError`. THE
+#   q6  float16 -> bfloat16     dtype.py:125 `else: raise NotImplementedError`. THE
 #                              NEGATIVE ROW: a fixture that must FAIL. `f2f.sel2`
 #                              answers 2 and `f2f.sel`'s `_` arm maps it to `None`, so the
 #                              port DECLINES where CPython RAISES. Printing `unported` is
 #                              the honest string: it says the port does not build the arm,
 #                              and it is NOT dtype.py's exception name.
-#   x2  float32 -> float64      a widening whose `mx` is an `f64` CONST -- the second arm
+#   q7  float32 -> float64      a widening whose `mx` is an `f64` CONST -- the second arm
 #                              of `f2f_clamp_max`, the subject `c7` names.
 #
 # CPython, `.agents/slop/f2f-fixtures.py`, run twice with the same result. NOT
 # transcribed: that file calls `DD.f2f` on a live `tinygrad`.
+#
+# !! THE NAMES ARE `q*` AND NOT `f*`/`g*`/`h*`/`k*`, because `.agents/slop/dd-oracle.py`
+# ALREADY OWNS THOSE for the SAME DEFS with DIFFERENT fixtures: its `f1` is
+# `fp8e4m3 -> f32` where `q1` is, its `f2` is `fp8e4m3fnuz -> f32` where `q4` is, and
+# its `g3`/`g4`/`g6`/`g7` are `q2`/`q3`/`q5`/`q7`. Two DIFFERENT fixtures sharing one
+# `name=` key is a disagreement MANUFACTURED BY THE NAMING, and `dd-band-diff.py` cannot
+# see it -- it compares whole `name=value` lines, so a collision reads exactly like a real
+# bug. MEASURED: with `f1`/`f2` reused, the differ reported 8 disagreements of which 4
+# were this collision and 0 were real. `grep -c '^q' dd-oracle.txt` is 0.
+#
+# !! `n=` IS THE INTERNING WINDOW (`rows.put`'s `to - from`), and CPython's is the same
+# quantity -- `dd-oracle.py`'s `ORDER` hook, reinstalled in `f2f-fixtures.py`. It is NOT
+# the cone size, which deduplicates shared subtrees and the window does not: `q1n` is 26
+# and `q1c` is 27, and the two are separate rows for that reason.
 #
 # ⚠ `f2f` is `Maybe`-returning here because the port's `f2f.sel` declines rather than
 # raising, so the port's answer for `x1` is `None` and CPython's is an exception. That is
@@ -2879,6 +2893,20 @@ def f2f.fx(r: Maybe<&2, O.Found>, +ar: O.Arena) -> Fx:
     case Some{+f}: Fx{O.Found.ar(f), O.Found.i(f)}
     case None{}: Fx{ar, 0}
 
+# A `match` MAY NOT BE NESTED inside a `match` arm on a consumed binder -- bend says
+# `a match on a parameter or field (this name is a def or a consumed binder: give the
+# value its own def)`. So the `Maybe` is dispatched in a LEAF def whose first statement is
+# the match, and the accumulated text rides in as a `String` the leaf concatenates onto.
+# `l2i.hi.put` is the same seam for the same reason.
+def f2f.got.put(nm: String, r: Maybe<&2, O.Found>, +s: String, +ar: O.Arena, +ps: List<&2, U32>, +w: List<&2, U32>, n: U32, z: U32, o: U32, from: U32) -> Ga:
+  match r:
+    case Some{+f}: Ga{O.Found.ar(f), n, String.concat([s, rows.put(nm, True{}, O.Found.i(f), O.Found.ar(f), from)]), ps, w, z, o}
+    case None{}: Ga{ar, n, String.concat([s, dd_gap(ar, from, O.Arena.next(ar), nm)]), ps, w, z, o}
+
+def f2f.got(nm: String, r: Maybe<&2, O.Found>, +ga: Ga, from: U32) -> Ga:
+  match ga:
+    case Ga{+ar, n, +s, +ps, +w, z, o}: f2f.got.put(nm, r, s, ar, ps, w, n, z, o, from)
+
 # ONE FIXTURE, and `+from` is read AFTER the PARAM is interned and BEFORE `f2f` is called,
 # which is how `rows.put` measures a window. A fixture that interned nothing would read
 # `n=0`, and that is indistinguishable from "not started" -- so every row below carries a
@@ -2887,32 +2915,33 @@ def f2f.fx(r: Maybe<&2, O.Found>, +ar: O.Arena) -> Fx:
 # The answer's arena is `O.Found.ar(f)` and NOT the arena the call was given: `f2f` grows
 # it, and the cone must be walked in the grown one. That distinction is the whole of the
 # forward reference this file used to have.
+#
+# ⚠ THE PARAM'S DTYPE IS `f2f_dt[fr]` AND NOT `fr`, because BOTH REAL CALL SITES PASS A
+# UINT: dtype.py:142 `f2f(val.bitcast(f2f_dt[to]), to, fr)` and dtype.py:196
+# `f2f(x.bitcast(f2f_dt[ctx[0]]), ctx[0], ctx[1])`, with `f2f_dt[f] =
+# getattr(dtypes, f"uint{f.bitsize}")` at dtype.py:97. `f2f.udt(fr)` IS that table, and
+# `f2f.udt`'s fallback arm is `S.uint32()` -- which is why passing `fr` here compiled, ran,
+# and disagreed: `dd_par`'s PARAM carries its dtype in the ARENA'S `Arg`, so a `float32`
+# PARAM is expressible and the fold in `mixin/dtype.py:53` (`return self if self.dtype ==
+# dt`) then REMOVES a BITCAST that dtype.py builds. MEASURED both ways, and the `fr`
+# receiver costs `w1` a node (28 against CPython's 27).
 def f2f.one(nm: String, +nmv: String, +fr: S.Dt, +to: S.Dt, +ga: Ga) -> Ga:
   match ga:
     case Ga{+ar, n, s, ps, w, z, o}:
-      +p = dd_par(ar, nmv, fr)
+      +p = dd_par(ar, nmv, f2f.udt(fr))
       +pa = O.Found.ar(p)
       +from = O.Arena.next(pa)
       f2f.got(nm, f2f(pa, O.Found.i(p), fr, to, True{}), Ga{pa, n, s, ps, w, z, o}, from)
 
-def f2f.got(nm: String, r: Maybe<&2, O.Found>, +ga: Ga, from: U32) -> Ga:
-  match ga:
-    case Ga{+ar, n, +s, ps, w, z, o}:
-      match r:
-        case Some{+f}:
-          Ga{O.Found.ar(f), n, String.concat([s, rows.put(nm, True{}, O.Found.i(f), O.Found.ar(f), from)]), ps, w, z, o}
-        case None{}:
-          Ga{ar, n, String.concat([s, dd_gap(ar, from, O.Arena.next(ar), nm)]), ps, w, z, o}
-
 def f2f.pick(i: U32, +ga: Ga) -> Ga:
   match i:
-    case 0: f2f.one("w1", "w1", S.fp8e4m3(), S.single(), ga)
-    case 1: f2f.one("n1", "n1", S.single(), S.fp8e4m3(), ga)
-    case 2: f2f.one("n2", "n2", S.single(), S.fp8e5m2(), ga)
-    case 3: f2f.one("f1", "f1", S.fp8e4m3fnuz(), S.single(), ga)
-    case 4: f2f.one("f2", "f2", S.single(), S.fp8e5m2fnuz(), ga)
-    case 5: f2f.one("x1", "x1", S.half(), S.bfloat16(), ga)
-    case _: f2f.one("x2", "x2", S.single(), S.double(), ga)
+    case 0: f2f.one("q1", "q1", S.fp8e4m3(), S.single(), ga)
+    case 1: f2f.one("q2", "q2", S.single(), S.fp8e4m3(), ga)
+    case 2: f2f.one("q3", "q3", S.single(), S.fp8e5m2(), ga)
+    case 3: f2f.one("q4", "q4", S.fp8e4m3fnuz(), S.single(), ga)
+    case 4: f2f.one("q5", "q5", S.single(), S.fp8e5m2fnuz(), ga)
+    case 5: f2f.one("q6", "q6", S.half(), S.bfloat16(), ga)
+    case _: f2f.one("q7", "q7", S.single(), S.double(), ga)
 
 def f2f.rows(n: Nat, +i: U32, +ga: Ga) -> Ga:
   match n:
