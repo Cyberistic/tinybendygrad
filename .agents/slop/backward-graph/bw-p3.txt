@@ -1,0 +1,25 @@
+q3_BASELINE -- nothing patched, selfcheck must be OK
+# SELFCHECK: OK
+q3_baseline_selfcheck_rc=0 OK
+q3_armA_readback=dtype column now reads `?`  (the patch landed where it was aimed)
+
+q3_ARM_A -- one node's dtype column reads `?` (what the identity PERMUTE did)
+# SELFCHECK: FAIL
+#   `--graph bw` answers ?=1 on the bend side, not 0. The graph's gradient seed is `CAST(weakfloat 1.0)` EXPANDed to `(3,4,4)`, and the node above it must be PERMUTED `(1,2,0)` -- MEASURED: the identity `[0,1,2]` compiles, emits 32 rows with the same 11-op census, and leaves the fold unsettled on 17 of 32 nodes because the MUL then cannot broadcast. A node count and an op census BOTH read that version as the same graph.
+q3_armA_selfcheck_rc=1 FAIL
+
+q3_ARM_B1 -- py's float CONST reverts to `repr`, i.e. `fConstFloat(1.0)`
+# SELFCHECK: FAIL
+#   the py side's float CONST for `bw` is ['fConstFloat(1.0)'], not exactly ['f1065353216'] -- that literal is `struct.pack('<f', 1.0)`, and any other spelling means `repr` is back in a structural field (MEASURED: `repr(ConstFloat(1.0))` is `ConstFloat(1.0)` and `F32.show(1.0)` is `1`, and they disagree with each other)
+q3_armB1_selfcheck_rc=1 FAIL
+
+q3_ARM_B2 -- py keeps the exact bits and bend reverts to `F32.show` (`f1`): the two sides DISAGREE, which is a different defect from B1
+# SELFCHECK: FAIL
+#   the bend side's float CONST for `bw` is ['f1'], not exactly ['f1065353216'] -- `F32.bits(1.0)` MEASURES to 1065353216, so `F32.show` is back in the `konst` arm
+q3_armB2_selfcheck_rc=1 FAIL
+
+q3_RESTORED -- patches undone, selfcheck must be OK again
+# SELFCHECK: OK
+q3_restored_selfcheck_rc=0 OK
+
+q3_ARMS_FIRED  A(?=0 on bw)=FIRED  B1(repr back)=FIRED  B2(sides mismatch)=FIRED  baseline=OK  restored=OK
