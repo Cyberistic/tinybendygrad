@@ -145,12 +145,37 @@ C_I64_OF_OLD = """static s64 i64_of(Env e, Term t) {
 C_I64_OF_OVERREAD = """static s64 i64_of(Term* f) {
   return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);
 }"""
-JS_I64_OF_OLD = """function i64_of(p) {
+# ABI-2's repair is IN THE TREE (see dtype.js), so the anchors an arm is written
+# against are now the CONFORMING text, and the evidence that the lane used to be
+# broken is a PLANT rather than a $TMPDIR diagnosis.  `shipped` is the measurement;
+# `plant-abi2-*-js` are the pre-fix bytes, verbatim.
+JS_I64_OF_SHIPPED = """function i64_of(p) {
+  return BigInt.asIntN(64, (BigInt(p.hi >>> 0) << 32n) | BigInt(p.lo >>> 0));
+}"""
+JS_PACK_SHIPPED = """function pack64(v) {
+  const u = BigInt.asUintN(64, v);
+  return {$: "tinybendygrad/helpers.I64", hi: Number((u >> 32n) & 0xffffffffn),
+          lo: Number(u & 0xffffffffn)};
+}"""
+# The INBOUND half as it shipped: `p.fst`/`p.snd` against fields `hi`/`lo`.
+JS_I64_OF_FST = """function i64_of(p) {
   return BigInt.asIntN(64, (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0));
 }"""
-JS_PACK_OLD = """function pack64(v) {
+# The OUTBOUND half as it shipped: io_tup -> Tuple{fst,snd} where the caller
+# reads {hi, lo}.  A separate plant, because an inbound-only plant CANNOT see it.
+JS_PACK_IOTUP = """function pack64(v) {
   const u = BigInt.asUintN(64, v);
   return io_tup(Number((u >> 32n) & 0xffffffffn), Number(u & 0xffffffffn));
+}"""
+# THE DISARMS.  Re-spellings of the conforming reads, so 0 is the only correct
+# moved count and a check matching TOKENS would fire on both of them.
+JS_DISARM_IN = """function i64_of(p) {
+  return BigInt.asIntN(64, (BigInt(p["hi"] >>> 0) << 32n) | BigInt(p["lo"] >>> 0));
+}"""
+JS_DISARM_OUT = """function pack64(v) {
+  const u = BigInt.asUintN(64, v);
+  return {$: "tinybendygrad/helpers.I64", lo: Number(u & 0xffffffffn) * 1,
+          hi: Number(((u >> 32n) & 0xffffffffn))};
 }"""
 JS_FP16_OLD = """function dtype_fp16(x) {
   return of32(half_to_f32(f16_bits(of32(x))));
@@ -169,18 +194,14 @@ C_JOIN_OLD = """  v = (f32)(exp == 0 ? (mant / (f32)(mant_max + 1)) * (1.0f / (1
                        ldexpf(1.0f, (int)exp - (int)bias));
   return f32_rewrap(sgn ? -v : v);"""
 
-# The JS repair.  Four edits, each one an obligation named in abi.json.  This is
-# the DIAGNOSTIC arm: it exists to show the declaration is satisfiable and to give
-# ABI-2's control a green middle.  It is $TMPDIR ONLY and is NOT applied to the
-# tree -- declaring the ABI is the coordinator's call, not this gate's.
-JS_I64_OF_FIXED = """function i64_of(p) {
-  return BigInt.asIntN(64, (BigInt(p.hi >>> 0) << 32n) | BigInt(p.lo >>> 0));
-}"""
-JS_PACK_FIXED = """function pack64(v) {
-  const u = BigInt.asUintN(64, v);
-  return {$: "tinybendygrad/helpers.I64", hi: Number((u >> 32n) & 0xffffffffn),
-          lo: Number(u & 0xffffffffn)};
-}"""
+# The ABI-4 obligations.  Two `of32` calls applied to arithmetic VALUES
+# (dtype.js:96 fp8_decode and :137 dtype_fp16) and one missing conversion at the
+# transport (dtype.js:145 dtype_fp8_to).  NOTE WHAT IS NOT HERE ANY MORE: these arms
+# used to carry JS_I64_OF_OLD->JS_I64_OF_FIXED and JS_PACK_OLD->JS_PACK_FIXED as
+# well, which is why "the ABI-4 repair touched ONLY F32 rows" FAILED -- the arm was
+# not an ABI-4 repair at all, it was ABI-2's repair wearing ABI-4's name, and the
+# five abi123_* rows it moved were moved by ABI-2.  With the repair in the tree the
+# bundling is gone and the check measures what it claims to.
 JS_FP16_FIXED = """function dtype_fp16(x) {
   return of32(half_to_f32(f16_bits(x)));
 }"""
@@ -193,9 +214,7 @@ JS_FP8TO_FIXED = """function dtype_fp8_to(x, kind) {
 # THE SAME ABI-4 BUG AS dtype_fp16, AT THE SAME SHAPE, IN A DIFFERENT FUNCTION.
 # `of32(...)` is pattern->value applied to an arithmetic VALUE, so of32(1.5) is
 # the pattern 1 -- the smallest f32 subnormal -- and `bits32` of that denormal is
-# 1.  This is what `fp8_to(0x3C)` answers under node, and it is why JS-LANE-GATE.md
-# recorded fp8_to as "measured, NOT localised": the fault is in the HELPER, not in
-# the seam that calls it.  Measured, with all three stages, by fp8stage.py.
+# 1.  This is what `fp8_to(0x3C)` answers under node.
 JS_FP8DEC_OLD = """  const v = of32(exp === 0
     ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
     : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));
@@ -205,31 +224,22 @@ JS_FP8DEC_FIXED = """  const v = exp === 0
     : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);
   return bits32(sgn ? -v : v);"""
 
+ABI4_ONLY = [(JS_FP16_OLD, JS_FP16_FIXED, 1),
+             (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
+             (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)]
+
 
 ARMS = {
     # ---- the measurement: nothing patched
     "shipped": [("c", []), ("js", [])],
 
-    # ---- ABI-2 control: red with NO edit -> repaired -> still green after a
-    # ---- RE-SPELLING of the same reads.  Two obligations, two edits, and no
-    # ---- ABI-4 edit, so anything that moves outside the record rows is visible
-    # ---- as an escape rather than absorbed.
-    "js-repair-abi2": [("js", [(JS_I64_OF_OLD, JS_I64_OF_FIXED, 1),
-                               (JS_PACK_OLD, JS_PACK_FIXED, 1)])],
-    "disarm-abi2-js": [("js", [(JS_I64_OF_OLD,
-                                """function i64_of(p) {
-  return BigInt.asIntN(64, (BigInt(p["hi"] >>> 0) << 32n) | BigInt(p["lo"] >>> 0));
-}""", 1),
-                               (JS_PACK_OLD, JS_PACK_FIXED, 1)])],
-
-    # ---- ABI-4 is THREE edits, in three different functions, and that is the
-    # ---- finding: two `of32` calls applied to values (dtype.js:80 and :123) and
-    # ---- one missing conversion at the transport (dtype.js:131).
-    "js-repair-abi4": [("js", [(JS_I64_OF_OLD, JS_I64_OF_FIXED, 1),
-                               (JS_PACK_OLD, JS_PACK_FIXED, 1),
-                               (JS_FP16_OLD, JS_FP16_FIXED, 1),
-                               (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
-                               (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)])],
+    # ---- ABI-2's control, now that the repair is in the tree: ship GREEN, and two
+    # ---- SEPARATE plants for the two halves, because one plant cannot see the
+    # ---- other.  Each has a paired re-spelling expected to move 0.
+    "plant-abi2-in-js": [("js", [(JS_I64_OF_SHIPPED, JS_I64_OF_FST, 1)])],
+    "plant-abi2-out-js": [("js", [(JS_PACK_SHIPPED, JS_PACK_IOTUP, 1)])],
+    "disarm-abi2-in-js": [("js", [(JS_I64_OF_SHIPPED, JS_DISARM_IN, 1)])],
+    "disarm-abi2-out-js": [("js", [(JS_PACK_SHIPPED, JS_DISARM_OUT, 1)])],
 
     # ---- ABI-1: the pre-fix over-read, planted in the C lane
     "plant-abi1-c": [("c", [(C_I64_OF_OLD, C_I64_OF_OVERREAD, 1),
@@ -246,39 +256,24 @@ ARMS = {
     "disarm-abi3-c": [("c", [("(s64)((((u64)(u32)o[0]) << 32) | (u32)o[1])",
                               "(s64)(((u64)(u32)o[0]) * 0x100000000ull + (u32)o[1])", 1)])],
 
-    # ---- ABI-4 is planted in the JS lane, NOT the C lane.
-    #
-    # The C-side plant I wrote first -- a union that reads the pattern as a value
-    # and reads the bits back -- moved 0/12, and it was going to stay 0 for every
-    # possible input.  In C `f[0]` IS the pattern, so `a.u = pattern; b.v = a.v;
-    # b.u = pattern` is the identity BY CONSTRUCTION, not by fixture.  No fixture
-    # can separate them, which is the `unfixable` case in agent-core, not the
-    # `a 0 is a request for a fixture` case.  So the C lane has no ABI-4 plant and
-    # the gate says so rather than reporting a zero it cannot explain.
-    #
-    # The violation is real only where the backend hands the lane a VALUE, i.e.
-    # node (probe.js:391 emits `1.5`, not 0x3FC00000).  So ABI-4's plant is the
-    # shipped `of32(x)` and its base is js-repair.
-    # `patch` restores the PRISTINE bytes before every arm, so an arm's edits are
-    # written against the shipped file, never against another arm's output.  That
-    # is what makes the arms independent and the counts comparable.
-    "plant-abi4-js": [("js", [(JS_I64_OF_OLD, JS_I64_OF_FIXED, 1),
-                              (JS_PACK_OLD, JS_PACK_FIXED, 1),
-                              (JS_FP16_OLD, JS_FP16_FIXED, 1),
-                              (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
-                              (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1),
-                              # and back out again: the shipped `of32(x)` on the way in
-                              (JS_FP16_FIXED, JS_FP16_OLD, 1)])],
-    "disarm-abi4-js": [("js", [(JS_I64_OF_OLD, JS_I64_OF_FIXED, 1),
-                               (JS_PACK_OLD, JS_PACK_FIXED, 1),
-                               # a re-spelling of the REPAIRED read: `+x` on a
-                               # number is the identity, so this is the same value
-                               (JS_FP16_OLD,
+    # ---- ABI-4, in the JS lane.  The C-side plant I wrote first -- a union that
+    # ---- reads the pattern as a value and reads the bits back -- moved 0/12 and
+    # ---- was going to stay 0 for every possible input: in C `f[0]` IS the
+    # ---- pattern, so that is the identity BY CONSTRUCTION, not by fixture.  No
+    # ---- fixture can separate it, which is the `unfixable` case in agent-core, not
+    # ---- the `a 0 is a request for a fixture` case.  So the C lane has no ABI-4
+    # ---- plant and the gate says so rather than reporting a zero it cannot
+    # ---- explain.  The violation is real only where the backend hands the lane a
+    # ---- VALUE, i.e. node.  `patch` restores the PRISTINE bytes before every arm,
+    # ---- so arms are independent and the counts are comparable.
+    "js-repair-abi4": [("js", ABI4_ONLY)],
+    "plant-abi4-js": [("js", ABI4_ONLY + [(JS_FP16_FIXED, JS_FP16_OLD, 1)])],
+    "disarm-abi4-js": [("js", [(JS_FP16_OLD,
                                 """function dtype_fp16(x) {
   return of32(half_to_f32(f16_bits(+x)));
 }""", 1),
-                               (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
-                               (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)])],
+                       (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
+                       (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)])],
 }
 
 
@@ -386,6 +381,66 @@ def fence(base: dict[str, str], arm: dict[str, str], owned: set[str]) -> list[st
 
 
 # ------------------------------------------------------------------- main.
+def cite_ok(p: pathlib.Path, e) -> tuple[bool, str]:
+    """Resolve one `site` entry.
+
+    Two shapes.  A CHECKED-IN file is cited `[file, line, token]` and the gate
+    checks that line still carries the token.  A GENERATED file is cited
+    `{file, body, token}` -- BY NAME -- because `bend -o` embeds `import "./x.js"`
+    verbatim: editing a lane moves every generated body `file:line` with no change
+    to the convention being cited.  Measured here -- editing `dtype.js` moved all of
+    `probe.js` by exactly +21 (894 -> 915 lines), which is how three stale
+    citations were created in one commit."""
+    if isinstance(e, dict):
+        lines = p.read_text().splitlines()
+        # A NAME citation must resolve to the DEFINITION, not to a call.  Three
+        # measured ways to get that wrong, one per language:
+        #   probe.js:701 is `process.exit(io_run(main));` and `function io_run` is
+        #     at :861 -- a call site 160 lines earlier;
+        #   bend mangles names to `$a$047b$c$`, and `$` is not a word character,
+        #     so `\b$main$` can never match at all;
+        #   probe.gen.c writes `static Term io_exec(Env e, IoWork* w) {` -- a return
+        #     type between `static` and the name -- while `io_tup` is a `#define`.
+        # So: the name must be followed by `(`/`{`/`=`, and must not sit in an
+        # EXPRESSION position, which is what tells a definition from a call.
+        name = e["body"]
+
+        def is_def(line: str) -> bool:
+            for m in re.finditer(re.escape(name), line):
+                before = line[:m.start()].rstrip()
+                after = line[m.end():].lstrip()[:1]
+                if after not in ("(", "{", "="):
+                    continue
+                if before and before[-1] in "=+(,:?*&":
+                    continue
+                return True
+            return False
+
+        start = next((i for i, l in enumerate(lines) if is_def(l)), None)
+        if start is None:
+            return False, f"no definition of {name} in {p.name}"
+        # the body is the def line plus its brace-matched extent, or 40 lines for a
+        # macro / a table row, whichever is shorter
+        depth, end = 0, min(len(lines), start + 400)
+        for i in range(start, min(len(lines), start + 400)):
+            depth += lines[i].count("{") - lines[i].count("}")
+            if depth <= 0 and i > start:
+                end = i + 1
+                break
+            if depth <= 0 and i == start and "{" not in lines[i]:
+                end = i + 1
+                break
+        body = "\n".join(lines[start:end])
+        return e["token"] in body, f"body {e['body']} @{start + 1}"
+    _, ln, tok = e
+    if not p.exists():
+        return False, "no such file"
+    lines = p.read_text().splitlines()
+    if ln > len(lines):
+        return False, f"only {len(lines)} lines"
+    return tok in lines[ln - 1], f"line {ln}"
+
+
 def main() -> None:
     decl = json.loads(DECL.read_text())
     ids = [a["id"] for a in decl["abi"]]
@@ -399,8 +454,11 @@ def main() -> None:
             print(f"    {line}")
         print("  sites:")
         for side, entries in a["site"].items():
-            for f, ln, tok in entries:
-                print(f"    {side:<11} {f}:{ln}   {tok!r}")
+            for e in entries:
+                f = e[0] if isinstance(e, list) else e["file"]
+                at = (f":{e[1]}" if isinstance(e, list)
+                      else f" body {e['body']}")
+                print(f"    {side:<11} {f}{at}")
 
     # --- dangling-pointer check.  This can report that THIS DOCUMENT is stale.
     # --- It cannot report that a lane conforms.  Conformance is measured below.
@@ -415,9 +473,8 @@ def main() -> None:
         work.mkdir()
         shutil.copytree(REPO / "tinybendygrad", work / "tinybendygrad")
         (work / "abi_probe.bend").write_text(PROBE)
-        # The two BACKEND files are persisted next to the declaration, because the
-        # declaration cites them by line and a citation into a temp dir is a
-        # citation into nothing.
+        # The two BACKEND files are persisted next to the declaration, because a
+        # citation into a temp dir is a citation into nothing.
         for ext in ("js", "gen.c"):
             r = subprocess.run([str(BEND), str(work / "abi_probe.bend"),
                                 "-o", str(gendir / f"probe.{ext}")],
@@ -426,22 +483,16 @@ def main() -> None:
                 sys.exit(f"bend failed emitting probe.{ext}: {r.stdout}\n{r.stderr}")
         for a in decl["abi"]:
             for side, entries in a["site"].items():
-                for f, ln, tok in entries:
-                    p = gendir / f.removeprefix("gen/") if f.startswith("gen/") else REPO / f
-                    if not p.exists():
-                        stale.append(f"{a['id']} {side} {f}:{ln} -- no such file")
-                        print(f"  STALE {a['id']:<6} {side:<11} {f}:{ln}  (no file)")
-                        continue
-                    lines = p.read_text().splitlines()
-                    if ln > len(lines):
-                        stale.append(f"{a['id']} {side} {f}:{ln} -- only {len(lines)} lines")
-                        print(f"  STALE {a['id']:<6} {side:<11} {f}:{ln}  (short file)")
-                        continue
-                    ok = tok in lines[ln - 1]
+                for e in entries:
+                    f = e[0] if isinstance(e, list) else e["file"]
+                    q = gendir / f.removeprefix("gen/") if f.startswith("gen/") \
+                        else REPO / f
+                    ok, where = cite_ok(q, e)
+                    at = f"body {e['body']}" if isinstance(e, dict) else f"line {e[1]}"
                     if not ok:
-                        stale.append(f"{a['id']} {side} {f}:{ln} expected {tok!r}")
-                    print(f"  {'ok   ' if ok else 'STALE'} {a['id']:<6} {side:<11} "
-                          f"{f}:{ln}")
+                        stale.append(f"{a['id']} {side} {f} {at}: {where}")
+                    print(f"  {'ok   ' if ok else 'STALE'} {a['id']:<6} "
+                          f"{side:<11} {f:<28} {at:<24} {'' if ok else where}")
     if stale:
         print("\n  STALE POINTERS -- the declaration no longer describes the tree:")
         for s in stale:
@@ -510,8 +561,10 @@ def main() -> None:
         ("disarm-abi1-c", "c", "shipped", "abi123"),
         ("plant-abi3-c", "c", "shipped", "abi123"),
         ("disarm-abi3-c", "c", "shipped", "abi123"),
-        ("js-repair-abi2", "js", "shipped", "abi123"),
-        ("disarm-abi2-js", "js", "js-repair-abi2", "abi123"),
+        ("plant-abi2-in-js", "js", "shipped", "abi123"),
+        ("disarm-abi2-in-js", "js", "shipped", "abi123"),
+        ("plant-abi2-out-js", "js", "shipped", "abi123"),
+        ("disarm-abi2-out-js", "js", "shipped", "abi123"),
         ("plant-abi4-js", "js", "js-repair-abi4", "abi4"),
         ("disarm-abi4-js", "js", "js-repair-abi4", "abi4"),
     ]
@@ -526,15 +579,27 @@ def main() -> None:
         if out:
             print(f"    ** ESCAPED ITS OWN ROW SET {prefix}_*: {out}")
 
-    # the ABI-2 control is a three-point control on a lane that ships red
-    print("\n  --- ABI-2 control, three points, on the lane that ships RED ---")
-    for arm in ("shipped", "js-repair-abi2", "disarm-abi2-js"):
+    # the ABI-2 control, on the lane that now SHIPS GREEN
+    print("\n  --- ABI-2 control, on the lane that now ships GREEN ---")
+    for arm in ("shipped", "plant-abi2-in-js", "plant-abi2-out-js",
+                "disarm-abi2-in-js", "disarm-abi2-out-js"):
         bad, _ = vs(res[arm]["js"])
-        print(f"    {arm:<15} node disagrees with CPython on {len(bad):>2}/{len(ORACLE)}"
+        print(f"    {arm:<18} node disagrees with CPython on {len(bad):>2}/{len(ORACLE)}"
               f"   {sorted(bad)}")
-    print("    shipped red is not a plant -- it is the tree, unedited.  The repairs")
-    print("    are $TMPDIR only.  The disarm re-spells the SAME conforming reads as")
-    print('    p["hi"] and p["lo"], so a check matching TOKENS would fire on it.')
+    print("    shipped green is the MEASUREMENT now: the ABI-2 repair is in the tree,")
+    print("    so the evidence that the lane was broken is a plant, not a diagnosis.")
+    ain = set(moved(shipjs, res["plant-abi2-in-js"]["js"]))
+    aout = set(moved(shipjs, res["plant-abi2-out-js"]["js"]))
+    print("    Both plants move the SAME rows here, and that is a property of these")
+    print(f"    12 fixtures, not evidence of one defect: every row reads a record IN")
+    print(f"    and reads the answer back OUT, so either half alone breaks all of them")
+    print(f"    (inbound {sorted(ain)}")
+    print(f"     outbound {sorted(aout)}).")
+    print("    .agents/slop/jsfix/jsfix_gate.py is the instrument that separates them:")
+    print("    30 rows x 10 arms, 28/30 vs 30/30, and the VALUES differ -- `0:0`")
+    print("    everywhere (a totalisation) against something that is not a hi:lo pair.")
+    print("    The disarms re-spell the SAME conforming reads as p[\"hi\"]/p[\"lo\"] and")
+    print("    as a one-line literal, so a check matching TOKENS would fire on both.")
 
     print("\n  --- ABI-4, and why there is no C-side plant to pair ---")
     print("    The C plant I wrote first reads the pattern as a value and reads the")
@@ -561,8 +626,28 @@ def main() -> None:
          all(WORDS[r][0] != WORDS[r][1] for r in WORDS)),
         ("cc agrees with CPython on the shipped tree", len(badc) == 0),
         ("the two lanes disagree somewhere, so the check has teeth", len(dis) > 0),
-        ("ABI-2 fires on node with NO edit to the tree",
-         any("ABI-2 VIOLATED" in w for _, w in attribute(shipjs))),
+        ("ABI-2 does NOT fire on node with NO edit to the tree",
+         not any("ABI-2 VIOLATED" in w for _, w in attribute(shipjs))),
+        ("ABI-2 DOES fire on node when its INBOUND half is planted",
+         any("ABI-2 VIOLATED" in w for _, w in attribute(res["plant-abi2-in-js"]["js"]))),
+        ("ABI-2 DOES fire on node when its OUTBOUND half is planted",
+         any("ABI-2 VIOLATED" in w for _, w in attribute(res["plant-abi2-out-js"]["js"]))),
+        ("ABI-2's inbound plant stayed inside its own rows",
+         not fence(shipjs, res["plant-abi2-in-js"]["js"], "abi123")),
+        ("ABI-2's outbound plant stayed inside its own rows",
+         not fence(shipjs, res["plant-abi2-out-js"]["js"], "abi123")),
+        # NB there is deliberately NO check here that the two ABI-2 plants move
+        # DIFFERENT rows, because they do not: both move the same five abi123_* rows
+        # of this set.  That is a property of these 12 fixtures -- every one reads a
+        # record IN and reads the answer back OUT, so either half alone breaks all
+        # five -- and it is NOT evidence that they are one defect.  The 30-row gate
+        # at .agents/slop/jsfix/jsfix_gate.py is the instrument that separates them
+        # (28/30 and 30/30, differing on floor_mod|-8|4 and cmod|-8|4), and it adds
+        # the values: the inbound plant answers `0:0` everywhere, a totalisation,
+        # while the outbound one answers something that is not a hi:lo pair at all.
+        # A check here would have been a guess dressed as an obligation.
+        ("ABI-2's inbound disarm moved 0", moved(shipjs, res["disarm-abi2-in-js"]["js"]) == []),
+        ("ABI-2's outbound disarm moved 0", moved(shipjs, res["disarm-abi2-out-js"]["js"]) == []),
         ("ABI-2 does NOT fire on cc", not any("VIOLATED" in w for _, w in attribute(ship))),
         ("ABI-1 plant fires on cc",
          len(moved(ship, res["plant-abi1-c"]["c"])) > 0),
@@ -582,24 +667,14 @@ def main() -> None:
         ("ABI-4 disarm moved 0",
          moved(res["js-repair-abi4"]["js"], res["disarm-abi4-js"]["js"]) == []),
         ("the ABI-2 repair fixes every record row",
-         len([r for r in vs(res["js-repair-abi2"]["js"])[0] if r.startswith("abi123")]) == 0),
-        # A repair is EXPECTED to move its own rows -- that is its job.  The check
-        # is the other direction: it must not move a row it has no business
-        # touching, or the two obligations would be entangled and one edit could
-        # paper over the other.  (My first cut asserted this backwards and failed
-        # on a repair that was working.)
-        # NB `shipjs`, not `ship`: a JS-lane repair must be compared against the
-        # SHIPPED JS lane.  Comparing it against the C lane moves every F32 row
-        # for the trivial reason that the lanes disagree there, and reports a
-        # working repair as entangled.
-        ("the ABI-2 repair touched ONLY record rows",
-         not [r for r in moved(shipjs, res["js-repair-abi2"]["js"])
-              if not r.startswith("abi123")]),
+         len([r for r in vs(shipjs)[0] if r.startswith("abi123")]) == 0),
+        # A plant is EXPECTED to move its own rows -- that is its job.  The check is
+        # the other direction: it must not move a row it has no business touching,
+        # or the two obligations would be entangled and one edit could paper over
+        # the other.
         ("the ABI-4 repair touched ONLY F32 rows",
          not [r for r in moved(shipjs, res["js-repair-abi4"]["js"])
               if not r.startswith("abi4")]),
-        ("the ABI-2 disarm moved 0 against the repair",
-         moved(res["js-repair-abi2"]["js"], res["disarm-abi2-js"]["js"]) == []),
         ("all four obligations applied, node agrees with CPython everywhere",
          len(vs(res["js-repair-abi4"]["js"])[0]) == 0),
         ("the repaired JS lane is byte-equal to the C lane on all rows",

@@ -22,19 +22,24 @@
     "c": {
       "file": "gen/probe.gen.c",
       "dispatch": [
-        3133,
-        "io_eff_rows[c].run(e, fs, w)"
+        {
+          "body": "io_exec",
+          "token": "io_eff_rows[c].run(e, fs, w)"
+        }
       ],
       "note": "the frame is Term* fs of n = cid_arity(c) slots; ctr_take at :3136 built it"
     },
     "js": {
       "file": "gen/probe.js",
       "dispatch": [
-        777,
-        "op.run(...op.args, op.kont)"
+        {
+          "body": "io_run",
+          "token": "op.run(...op.args, op.kont)"
+        }
       ],
       "note": "op.args is a JS array of NATIVE values, passed through with NO conversion"
-    }
+    },
+    "_cite": "GENERATED FILES ARE CITED BY BODY NAME, NEVER BY file:line. `bend -o` embeds `import \"./x.js\"` verbatim, so editing a lane moves every probe.js body line: measured here, editing dtype.js moved all of them by exactly +21 (894 -> 915 lines) and changed no convention."
   },
   "abi": [
     {
@@ -88,28 +93,28 @@
         "js": [
           [
             "tinybendygrad/runtime/dtype.js",
-            164,
+            185,
             "(a) => pack64(i64_of(a))"
           ],
           [
             "tinybendygrad/runtime/dtype.js",
-            165,
+            186,
             "(a, b) => pack64"
           ]
         ],
         "c_backend": [
-          [
-            "gen/probe.gen.c",
-            4317,
-            "io_eff_rows[c].run(e, fs, w)"
-          ]
+          {
+            "file": "gen/probe.gen.c",
+            "body": "io_exec",
+            "token": "io_eff_rows[c].run(e, fs, w)"
+          }
         ],
         "js_backend": [
-          [
-            "gen/probe.js",
-            875,
-            "op.run(...op.args, op.kont)"
-          ]
+          {
+            "file": "gen/probe.js",
+            "body": "io_run",
+            "token": "op.run(...op.args, op.kont)"
+          }
         ]
       },
       "rows": [
@@ -148,7 +153,7 @@
         "did": "read two fields that do not exist on the incoming object",
         "answered": "0 for every input: undefined >>> 0 === 0",
         "consequence": "Dt.i64_trunc, the IDENTITY, is not the identity.  0/30 rows.",
-        "fixed_at": "NOT FIXED.  dtype.js:137 is shipped as-is."
+        "fixed_at": "tinybendygrad/runtime/dtype.js:154 (inbound) and :162 (outbound).  i64_of reads p.hi/p.lo; pack64 answers {$:\"tinybendygrad/helpers.I64\", hi, lo}.  ABID `js-repair-abi2`'s DIAGNOSTIC edit is now the shipped text, which is the check that the obligation was applied and not merely stated."
       },
       "names": {
         "_source": "tinybendygrad/helpers.bend:1639-1640",
@@ -172,33 +177,43 @@
         "js": [
           [
             "tinybendygrad/runtime/dtype.js",
-            137,
-            "p.fst >>> 0"
+            154,
+            "p.hi >>> 0"
           ],
           [
             "tinybendygrad/runtime/dtype.js",
-            142,
-            "return io_tup("
+            162,
+            "return {$: \"tinybendygrad/helpers.I64\""
+          ],
+          [
+            "tinybendygrad/runtime/dtype.js",
+            154,
+            "p.lo >>> 0"
           ]
         ],
         "js_backend": [
-          [
-            "gen/probe.js",
-            467,
-            "\"hi\": _hi_0"
-          ],
-          [
-            "gen/probe.js",
-            502,
-            "_x_0[\"hi\"]"
-          ]
+          {
+            "file": "gen/probe.js",
+            "body": "$tinybendygrad$047helpers$i64_of_hi_lo$",
+            "token": "\"hi\": _hi_0"
+          },
+          {
+            "file": "gen/probe.js",
+            "body": "$tinybendygrad$047helpers$hi32$",
+            "token": "_x_0[\"hi\"]"
+          },
+          {
+            "file": "gen/probe.js",
+            "body": "$tinybendygrad$047helpers$lo32$",
+            "token": "_x_0[\"lo\"]"
+          }
         ],
         "c_backend": [
-          [
-            "gen/probe.gen.c",
-            4242,
-            "io_node(e, CID_TUPLE, a, b)"
-          ]
+          {
+            "file": "gen/probe.gen.c",
+            "body": "io_tup",
+            "token": "io_node(e, CID_TUPLE, a, b)"
+          }
         ]
       },
       "rows": [
@@ -216,7 +231,8 @@
         "  L(R) neither        -> ABI-2 VIOLATED: the lane is not reading the two",
         "                           halves of this record at all.  Shipped node",
         "                           answers ` : ` here, which is the third case."
-      ]
+      ],
+      "fixed_by": "`.agents/slop/jsfix/jsfix_gate.py`, 30 rows x 10 arms, every arm matched to an exact Python model.  It adds the OUTBOUND-only plant that this gate could not see: the inbound plant moves 28/30 and the outbound plant 30/30, and the 2 rows only the outbound one moves are floor_mod|-8|4 and cmod|-8|4."
     },
     {
       "id": "ABI-3",
@@ -247,12 +263,12 @@
         "js": [
           [
             "tinybendygrad/runtime/dtype.js",
-            137,
-            "<< 32n) | BigInt(p.snd"
+            154,
+            "<< 32n) | BigInt(p.lo"
           ],
           [
             "tinybendygrad/runtime/dtype.js",
-            142,
+            162,
             "(u >> 32n)"
           ]
         ]
@@ -311,38 +327,38 @@
         "js": [
           [
             "tinybendygrad/runtime/dtype.js",
-            123,
+            137,
             "f16_bits(of32(x))"
           ],
           [
             "tinybendygrad/runtime/dtype.js",
-            83,
+            97,
             "return bits32(sgn ? -v : v);"
           ],
           [
             "tinybendygrad/runtime/dtype.js",
-            119,
+            133,
             "return of32("
           ]
         ],
         "js_backend": [
-          [
-            "gen/probe.js",
-            391,
-            "Dt$fp16$(1.5"
-          ],
-          [
-            "gen/probe.js",
-            407,
-            "f32_show(_x_"
-          ]
+          {
+            "file": "gen/probe.js",
+            "body": "$main$",
+            "token": "$tinybendygrad$047dtype$Dt$fp16$(1.5"
+          },
+          {
+            "file": "gen/probe.js",
+            "body": "$main$",
+            "token": "f32_show(_x_"
+          }
         ],
         "c_backend": [
-          [
-            "gen/probe.gen.c",
-            4317,
-            "io_eff_rows[c].run(e, fs, w)"
-          ]
+          {
+            "file": "gen/probe.gen.c",
+            "body": "io_exec",
+            "token": "io_eff_rows[c].run(e, fs, w)"
+          }
         ]
       },
       "rows": [
@@ -366,15 +382,19 @@
   "undeclared": [
     [
       "ABI-5",
-      "Term is u64 (probe.gen.c:171) and a JS number (dtype.js:142 answers Number(...)). Nothing states which parts of a Term are meaningful, or that a U32 argument's upper 32 bits are zero."
-    ],
-    [
-      "ABI-6",
-      "The zero-divisor branch: both lanes answer 0 where tinygrad's helpers raise ZeroDivisionError. The lanes AGREE, so no agreement gate can see it. Counted `diverge`, never `pass`."
+      "Term is u64 (probe.gen.c:171) and a JS number (dtype.js:162 answers Number(...)). Nothing states which parts of a Term are meaningful, or that a U32 argument's upper 32 bits are zero."
     ],
     [
       "ABI-7",
       "dtype.js's own return-style split (ABI-4's second_site) was not localised when this was written; it is now attributed, but only for fp16 and fp8_to. fp8_from and bf16 were not re-examined against the repaired lane."
+    ],
+    [
+      "ABI-6",
+      "THE ZERO-DIVISOR BRANCH, CORRECTED: it is ONE row, not five.  `abi.json` said 'both lanes answer 0 where tinygrad's helpers raise ZeroDivisionError', and that is TRUE OF `ceildiv` AND FALSE OF THE OTHER FOUR: tinygrad/helpers.py:74 and :77 guard `cdiv` and `floordiv` with an explicit `if y != 0 else 0`, and `floormod` and `cmod` are derived from them, so they answer 0 or a too.  Only `ceildiv` has no guard and raises.  Measured: ceildiv -> ZeroDivisionError vs node 0:0 and cc 0:0; floor_div 0:0, floor_mod 0:7, cdiv 0:0, cmod 0:7 -- all three AGREE with upstream.  The two lanes AGREE on all five, so no lane-agreement check can see the one that diverges.  1 diverge, 4 agree; counted `diverge`, never `pass`.  Measured by `.agents/slop/jsfix/jsfix_gate.py`."
+    ],
+    [
+      "ABI-8",
+      "THE DECLARATION'S OWN POINTERS WENT STALE THE MOMENT THE REPAIR LANDED, AND ALL FOUR STALE CITATIONS WERE INTO A GENERATED FILE.  `bend -o` embeds `import \"./x.js\"` verbatim, so editing dtype.js moved every probe.js body file:line by exactly +21 (894 -> 915 lines, I64 ctor 467 -> 488, hi32 502 -> 523, op.run 875 -> 896) while changing no convention at all.  `abi.gen.c` did NOT move, because it embeds dtype.c.  So generated bodies are now cited BY NAME (`{file, body, token}`) and `abi_gate.cite_ok` resolves the name; the `file:line` shape is kept only for the two checked-in lane files."
     ]
   ]
 }

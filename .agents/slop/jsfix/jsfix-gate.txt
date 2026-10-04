@@ -1,0 +1,218 @@
+  --- arm shipped ---
+  --- arm plant-abi2-in-js ---
+  --- arm plant-abi2-out-js ---
+  --- arm plant-abi2-both-js ---
+  --- arm plant-abi3-in-js ---
+  --- arm plant-abi3-out-js ---
+  --- arm plant-abi5-js ---
+  --- arm disarm-abi2-in-js ---
+  --- arm disarm-abi2-out-js ---
+  --- arm disarm-both-js ---
+
+==============================================================================
+ROWS PRESENT vs ROWS EXPECTED
+==============================================================================
+  shipped            present 30/30
+  plant-abi2-in-js   present 30/30
+  plant-abi2-out-js  present 30/30
+  plant-abi2-both-js present 30/30
+  plant-abi3-in-js   present 30/30
+  plant-abi3-out-js  present 30/30
+  plant-abi5-js      present 30/30
+  disarm-abi2-in-js  present 30/30
+  disarm-abi2-out-js present 30/30
+  disarm-both-js     present 30/30
+
+==============================================================================
+AGREEMENT WITH CPYTHON -- `tinygrad.helpers` CALLED, never transcribed
+==============================================================================
+  shipped            30/30
+  plant-abi2-in-js    2/30
+  plant-abi2-out-js   0/30
+  plant-abi2-both-js  0/30
+  plant-abi3-in-js    7/30
+  plant-abi3-out-js   7/30
+  plant-abi5-js      15/30
+  disarm-abi2-in-js  30/30
+  disarm-abi2-out-js 30/30
+  disarm-both-js     30/30
+
+==============================================================================
+EXACT MODEL -- every row explained, moved AND unmoved
+==============================================================================
+  A plant that fires on some rows and is silent on others is only a
+  measurement if the silence is accounted for.  Each arm is modelled in
+  Python and compared on all 30, so an unexplained 0 cannot survive.
+  shipped            in=identity  out=identity  unexplained 0/30
+  plant-abi2-in-js   in=fst       out=identity  unexplained 0/30
+  plant-abi2-out-js  in=identity  out=io_tup    unexplained 0/30
+  plant-abi2-both-js in=fst       out=io_tup    unexplained 0/30
+  plant-abi3-in-js   in=swap      out=identity  unexplained 0/30
+  plant-abi3-out-js  in=identity  out=swap      unexplained 0/30
+  plant-abi5-js      in=numprod   out=identity  unexplained 0/30
+  disarm-abi2-in-js  in=identity  out=identity  unexplained 0/30
+  disarm-abi2-out-js in=identity  out=identity  unexplained 0/30
+  disarm-both-js     in=identity  out=identity  unexplained 0/30
+
+==============================================================================
+BEND'S EXIT STATUS -- reported, NOT gated on (dtype.bend is COLD)
+==============================================================================
+  'does this file stand alone' and 'can the lane be built and run' are
+  two questions and neither is the other.  The gate is on node's rows.
+  shipped            bend -o rc=0   node rows=30
+  plant-abi2-in-js   bend -o rc=0   node rows=30
+  plant-abi2-out-js  bend -o rc=0   node rows=30
+  plant-abi2-both-js bend -o rc=0   node rows=30
+  plant-abi3-in-js   bend -o rc=0   node rows=30
+  plant-abi3-out-js  bend -o rc=0   node rows=30
+  plant-abi5-js      bend -o rc=0   node rows=30
+  disarm-abi2-in-js  bend -o rc=0   node rows=30
+  disarm-abi2-out-js bend -o rc=0   node rows=30
+  disarm-both-js     bend -o rc=0   node rows=30
+
+==============================================================================
+PLANT AND DISARM -- the DISARMS are run and listed FIRST
+==============================================================================
+
+  DISARM disarm-abi2-in-js  moved  0/30   p.hi -> p["hi"], p.lo -> p["lo"]
+
+  DISARM disarm-abi2-out-js moved  0/30   the same object, one line, field order swapped
+
+  DISARM disarm-both-js     moved  0/30   both re-spellings at once
+
+  PLANT  plant-abi2-in-js   moved 28/30   p.fst/p.snd, the inbound half as it shipped
+      trunc|7|4                          CPython 0:7                    this arm '0:0'
+      floor_div|7|4                      CPython 0:1                    this arm '0:0'
+      floor_mod|7|4                      CPython 0:3                    this arm '0:0'
+      cdiv|7|4                           CPython 0:1                    this arm '0:0'
+      ... and 24 more
+
+  PLANT  plant-abi2-out-js  moved 30/30   io_tup, the OUTBOUND half as it shipped
+      trunc|7|4                          CPython 0:7                    this arm '\x00:\x00'
+      floor_div|7|4                      CPython 0:1                    this arm '\x00:\x00'
+      floor_mod|7|4                      CPython 0:3                    this arm '\x00:\x00'
+      cdiv|7|4                           CPython 0:1                    this arm '\x00:\x00'
+      ... and 26 more
+
+  PLANT  plant-abi2-both-js moved 30/30   both halves: the file exactly as it shipped
+      trunc|7|4                          CPython 0:7                    this arm '\x00:\x00'
+      floor_div|7|4                      CPython 0:1                    this arm '\x00:\x00'
+      floor_mod|7|4                      CPython 0:3                    this arm '\x00:\x00'
+      cdiv|7|4                           CPython 0:1                    this arm '\x00:\x00'
+      ... and 26 more
+
+  PLANT  plant-abi3-in-js   moved 23/30   the words exchanged inbound
+      trunc|7|4                          CPython 0:7                    this arm '7:0'
+      floor_mod|7|4                      CPython 0:3                    this arm '3:0'
+      cmod|7|4                           CPython 0:3                    this arm '3:0'
+      trunc|-7|4                         CPython 4294967295:4294967289  this arm '4294967289:4294967295'
+      ... and 19 more
+
+  PLANT  plant-abi3-out-js  moved 23/30   the words exchanged OUTBOUND
+      trunc|7|4                          CPython 0:7                    this arm '7:0'
+      floor_div|7|4                      CPython 0:1                    this arm '1:0'
+      floor_mod|7|4                      CPython 0:3                    this arm '3:0'
+      cdiv|7|4                           CPython 0:1                    this arm '1:0'
+      ... and 19 more
+
+  PLANT  plant-abi5-js      moved 15/30   (hi * 2**32 + lo) in Number arithmetic
+      trunc|-7|4                         CPython 4294967295:4294967289  this arm '0:0'
+      floor_div|-7|4                     CPython 4294967295:4294967294  this arm '0:0'
+      floor_mod|-7|4                     CPython 0:1                    this arm '0:0'
+      cdiv|-7|4                          CPython 4294967295:4294967295  this arm '0:0'
+      ... and 11 more
+
+  THE TWO HALVES ARE NOT THE SAME DEFECT, and here is what separates them:
+    inbound-only plant  moves 28/30 and answers '0:0' on row 0 -- a TOTALISATION (i64_of is 0 for every input)
+    outbound-only plant moves 30/30 and answers '\x00:\x00' on row 0 -- not a hi:lo pair at all (io_tup built a Tuple)
+    rows only the outbound plant moves: ['cmod|-8|4', 'floor_mod|-8|4']
+    rows only the inbound plant moves:  []
+    So a gate whose only plant re-reads p.fst would report this lane green
+    while pack64 still built the wrong shape.  That is why PLANT B exists.
+
+  ABI-5's plant, attributed per OPERAND (a double has 53 mantissa bits):
+          trunc|7|4                          inexact hi half on -
+          floor_div|7|4                      inexact hi half on -
+          floor_mod|7|4                      inexact hi half on -
+          cdiv|7|4                           inexact hi half on -
+          cmod|7|4                           inexact hi half on -
+          ceildiv|7|4                        inexact hi half on -
+    MOVED trunc|-7|4                         inexact hi half on a
+    MOVED floor_div|-7|4                     inexact hi half on a
+    MOVED floor_mod|-7|4                     inexact hi half on a
+    MOVED cdiv|-7|4                          inexact hi half on a
+    MOVED cmod|-7|4                          inexact hi half on a
+    MOVED ceildiv|-7|4                       inexact hi half on a
+    MOVED trunc|-8|4                         inexact hi half on a
+    MOVED floor_div|-8|4                     inexact hi half on a
+          floor_mod|-8|4                     inexact hi half on a
+    MOVED cdiv|-8|4                          inexact hi half on a
+          cmod|-8|4                          inexact hi half on a
+    MOVED ceildiv|-8|4                       inexact hi half on a
+          trunc|7|-4                         inexact hi half on -
+    MOVED floor_div|7|-4                     inexact hi half on b
+    MOVED floor_mod|7|-4                     inexact hi half on b
+    MOVED cdiv|7|-4                          inexact hi half on b
+    MOVED cmod|7|-4                          inexact hi half on b
+    MOVED ceildiv|7|-4                       inexact hi half on b
+          trunc|-9223372036854775808|3       inexact hi half on -
+          floor_div|-9223372036854775808|3   inexact hi half on -
+          floor_mod|-9223372036854775808|3   inexact hi half on -
+          cdiv|-9223372036854775808|3        inexact hi half on -
+          cmod|-9223372036854775808|3        inexact hi half on -
+          ceildiv|-9223372036854775808|3     inexact hi half on -
+    The model above already predicts all 30 exactly, so the moved set is
+    not a coincidence list -- it is a consequence.
+
+==============================================================================
+ABI-6 -- CLASSIFIED, NOT COUNTED BLIND
+==============================================================================
+  `abi.json` states ABI-6 as 'both lanes answer 0 where tinygrad's helpers
+  raise ZeroDivisionError'.  That is TRUE OF `ceildiv` AND FALSE OF THE
+  OTHER FOUR: tinygrad/helpers.py:74 and :77 guard `cdiv` and `floordiv`
+  with an explicit `if y != 0 else 0`, so only `ceildiv` ever raises.
+  A block that reported 5 divergences here would have counted 4 agreements
+  as divergences, which is JSL2-7 with the sign flipped.
+  floor_div  tinygrad -> 0:0                                    node 0:0        cc 0:0        agree
+  floor_mod  tinygrad -> 0:7                                    node 0:7        cc 0:7        agree
+  cdiv       tinygrad -> 0:0                                    node 0:0        cc 0:0        agree
+  cmod       tinygrad -> 0:7                                    node 0:7        cc 0:7        agree
+  ceildiv    tinygrad -> ZeroDivisionError: division by zero    node 0:0        cc 0:0        DIVERGE
+
+  1 diverge (ceildiv), 4 agree.  Counted `diverge`, never `pass`: the lanes
+  AGREE on the zero divisor, so no lane-against-lane check can see this,
+  and an oracle that called floordiv(7, 0) would raise inside this gate.
+
+==============================================================================
+VERDICT
+==============================================================================
+  PASS  the shipped JS lane agrees with CPython on all 30 rows
+  PASS  the shipped JS lane PRINTED all 30 rows, so none is absent
+  PASS  every arm printed all 30 rows, so no arm is a silent no-op
+  PASS  every arm matches its exact model on all 30 rows, so no 0 is unexplained
+  PASS  PLANT A: the inbound half alone moves rows (it used to ship)
+  PASS  PLANT A is a TOTALISATION, not a misread: it answers 0:0 on every row
+  PASS  every row PLANT A does NOT move has the totalised answer as its true answer
+  PASS  PLANT B: the OUTBOUND half alone moves rows -- no inbound plant sees this
+  PASS  PLANT B answers nothing that is a valid hi:lo pair on any row
+  PASS  PLANT C: the file as it shipped moves at least as many rows as either half
+  PASS  PLANT D: the words exchanged inbound move rows
+  PASS  PLANT E: the words exchanged OUTBOUND move rows
+  PASS  PLANT F: Number arithmetic moves rows (BigInt is load-bearing, ABI-5)
+  PASS  DISARM inbound moved 0
+  PASS  DISARM outbound moved 0
+  PASS  DISARM both moved 0
+  PASS  ABI-6: exactly ONE zero-divisor seam diverges from upstream, and it is ceildiv (the 4 others are agreements, not divergences)
+  PASS  ABI-6: node and cc answer IDENTICALLY on all five zero-divisor rows, so no lane-agreement check can see the divergence
+
+==============================================================================
+WHAT THIS GATE STILL CANNOT SEE
+==============================================================================
+  The 12 F32 rows of abi/abi_gate.py (bf16, fp16, fp8_from, fp8_to).
+  fp16(1.5) and fp8_to(0x3C) are ABI-4, a DIFFERENT convention in a
+  DIFFERENT half of the same file, and all 30 rows here are I64.
+  ABI-6 (both lanes answer 0 where tinygrad's helpers raise
+  ZeroDivisionError) is a divergence from UPSTREAM, not between lanes, so
+  no lane-agreement check can see it.  Counted diverge, never pass.
+
+  gate rc: 0

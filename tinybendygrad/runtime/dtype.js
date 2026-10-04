@@ -1,9 +1,23 @@
 // dtype.js -- the interpreted-lane half of the runtime/dtype.c seam.
 //
-// Same arithmetic, same tables, same answer as dtype.c, so a `.bend` that runs
-// under both lanes cannot tell which one it got. JS gives exact integer and
-// double arithmetic, and every value here is either a bit pattern or a float
-// with at most four significant bits, so nothing rounds differently than in C.
+// Same tables, same arithmetic as dtype.c, but the SEAM is not the same shape in
+// the two lanes, and reading dtype.c is how this file came to disagree with it.
+// The conventions are declared once, in .agents/slop/abi/abi.json, and named
+// ABI-1..ABI-7 here so a wrong read has a name:
+//
+//   ABI-1  a seam receives its arguments POSITIONALLY, one slot per parameter of
+//          its CID. An H.I64 is ONE slot carrying a record, not two words.
+//   ABI-2  a record crosses into JS BY ITS BEND FIELD NAMES, {hi, lo}, and
+//          crosses back the same way. In C it is a constructor node opened
+//          POSITIONALLY by ctr_take, so a.fst/a.snd is wrong in both
+//          directions and under one name.
+//   ABI-3  the two words are ordered HIGH FIRST: hi is bits 63..32, lo is 31..0.
+//   ABI-5  the words are carried as JS numbers into BigInt arithmetic, never
+//          combined in Number arithmetic, which has 53 mantissa bits.
+//
+// JS gives exact integer and double arithmetic, and every value here is either a
+// bit pattern or a float with at most four significant bits, so nothing rounds
+// differently than in C.
 
 const FP8_E4M3 = 0;
 const FP8_E5M2 = 1;
@@ -131,15 +145,22 @@ function dtype_fp8_to(x, kind) {
   return fp8_decode(x >>> 0, kind & 0xff);
 }
 
-// I64 arrives as (hi, lo) and answers the same way, through BigInt so the sign
-// and all 64 bits survive.
+// ABI-1/ABI-2: an I64 crosses by its BEND FIELD NAMES (helpers.bend's
+// `I64{hi: U32, lo: U32}`), both in and out. `p.fst`/`p.snd` are not that
+// record, and `undefined >>> 0 === 0` makes such a read total rather than loud.
+// ABI-3: hi is the high word. ABI-5: the words become BigInt before they are
+// combined, because `hi * 2**32` in Number arithmetic is inexact for most hi.
 function i64_of(p) {
-  return BigInt.asIntN(64, (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0));
+  return BigInt.asIntN(64, (BigInt(p.hi >>> 0) << 32n) | BigInt(p.lo >>> 0));
 }
 
+// ABI-2 the way out: the answer is an H.I64 again, so it is built with hi/lo.
+// `io_tup` builds a Tuple{fst,snd}, which is the C lane's positional shape and
+// is not what generated code reads.
 function pack64(v) {
   const u = BigInt.asUintN(64, v);
-  return io_tup(Number((u >> 32n) & 0xffffffffn), Number(u & 0xffffffffn));
+  return {$: "tinybendygrad/helpers.I64", hi: Number((u >> 32n) & 0xffffffffn),
+          lo: Number(u & 0xffffffffn)};
 }
 
 // Python's // and %: floor division, and the remainder that goes with it.

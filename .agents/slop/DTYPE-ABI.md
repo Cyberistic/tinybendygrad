@@ -108,3 +108,77 @@ abi4_fp8to_0x3C      CPython 1.5               node 1
 - **A paired disarm that moves the same count as the plant proves the plant did nothing.**
   `disarm-abi2-js` reads **4/12**, exactly `js-repair-abi2` — so the 5 rows that changed are
   attributable to ABI-2's repair and to nothing else.
+
+---
+
+# UPDATE — ABI-2 IS REPAIRED IN THE TREE, AND THIS GATE NOW EXITS 0
+
+Unit: `.agents/slop/jsfix/`, rules `JSF-1..JSF-9`. `runtime/dtype.js` was the file the
+earlier brief forbade touching; that brief is withdrawn.
+
+**`dtype.js:154` reads `p.hi`/`p.lo`; `dtype.js:162` answers
+`{$:"tinybendygrad/helpers.I64", hi, lo}`.** Justified against ABI-2 above and against
+the backend's own emitted names — the function `$tinybendygrad$047helpers$i64_of_hi_lo$`
+**builds** the record as `{…, "hi": _hi_0, "lo": _lo_0}`, `$…$hi32$` **reads** `_x_0["hi"]`,
+and `io_run` feeds the seam's return value straight into `op.kont(x)`. Both directions
+are forced. Not against `dtype.c`, which is what both lanes were written by reading.
+
+## The numbers moved
+
+| | rows | before | after |
+|---|---|---|---|
+| `abi_gate.py` node | 12 | 3/12 | **12/12** |
+| `gen_js_seam.py` node | 30 | 0/30 | superseded by `jsfix_gate.py` |
+| `jsfix_gate.py` node | 30 | — | **30/30** |
+
+## `FAIL the ABI-4 repair touched ONLY F32 rows` IS NOW `PASS`, AND IT WAS NEVER AN ABI-4 ESCAPE
+
+`abi_gate.py`'s `js-repair-abi4` arm carried **ABI-2's edits as well**, so it was ABI-2's
+repair wearing ABI-4's name and the five `abi123_*` rows it moved were moved by ABI-2.
+The obligation was never entangled; the **arm** was. With the repair in the tree the arm
+carries only ABI-4 edits and the check measures what it claims to. `abi_gate.py` rc 1 → **0**.
+
+## ABI-6 IS ONE ROW, NOT FIVE
+
+The statement above is **true of `ceildiv` and false of the other four**:
+`tinygrad/helpers.py:74` and `:77` guard `cdiv` and `floordiv` with an explicit
+`if y != 0 else 0`, and `floormod`/`cmod` derive from them. Measured:
+
+```
+floor_div  0:0  agree     floor_mod 0:7  agree
+cdiv       0:0  agree     cmod      0:7  agree
+ceildiv    ZeroDivisionError vs node 0:0 and cc 0:0   DIVERGE
+```
+
+**1 diverge, 4 agree**, counted `diverge` and never `pass`. Both lanes agree on all five,
+so no lane-agreement check can see the one that diverges.
+
+## Plant and disarm, disarm first and run — 30 rows, 10 arms
+
+DISARM `p.hi → p["hi"]` **0/30** · DISARM the outbound object re-spelled **0/30** ·
+DISARM both **0/30** · PLANT inbound **28/30** · PLANT **outbound** **30/30** ·
+PLANT both as shipped **30/30** · PLANT ABI-3 in **23/30** · PLANT ABI-3 out **23/30** ·
+PLANT ABI-5 `Number` arithmetic **15/30**.
+
+**An inbound-only plant cannot see the outbound half**: the 2 rows only the outbound one
+moves are `floor_mod|-8|4` and `cmod|-8|4`, whose true answer *is* `0:0`, so the inbound
+totalisation coincides with the truth there. Every arm is matched to an **exact Python
+model** on all 30 rows, so no 0 is unexplained.
+
+## ABI-8 — the declaration's own pointers went stale the moment the repair landed
+
+`bend -o` embeds `import "./x.js"` verbatim, so editing `dtype.js` moved every
+`probe.js` body `file:line` by **exactly +21** (894 → 915; I64 ctor 467 → 488, `hi32`
+502 → 523, `op.run` 875 → 896) and changed no convention. `probe.gen.c` did not move.
+**All four stale citations were in the generated file.** Backend citations are now
+`{file, body, token}` — **by name** — and `abi_gate.cite_ok` resolves the name to its
+**definition**, not a call site (`io_run` appears at `probe.js:701` as an argument and
+is defined at `:861`).
+
+## Still open, and not this unit's
+
+**ABI-4.** `dtype.js:97` and `:137` still apply `of32` to an arithmetic value and
+`:145` still answers a pattern where the backend consumes one. `abi4_fp16_1p5` is `0`
+and `abi4_fp8to_0x3C` is `1` under node. `js-repair-abi4` makes all 12 rows agree **in
+`$TMPDIR` only**. **`gen_js_seam.py` now aborts** on a moved anchor and was left that
+way — a defect this unit introduced and did not clean up.
