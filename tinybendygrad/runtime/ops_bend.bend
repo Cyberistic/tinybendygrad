@@ -1710,6 +1710,12 @@ def write_file(path: String, text: String) -> IO(Unit):
   IO.bind(Result<&1, &1, U32 & String, File>, Unit, File.open(path, "w"),
     r => put_after(r, text))
 
+# PACKET.out, read back. `<nbytes> <hex-bytes>` per line, `nbufs` of them --
+# `ops_bend.py:225`'s `read_text().splitlines()`. ONE GiB cap, which is the same
+# order as the executor's own `File.read(f, 1073741824)` and is not a real limit:
+# a packet this port emits is kilobytes.
+def pkt_out() -> IO(String): read_file(PKT_OUT(), 1073741824)
+
 # THE LAUNCH, and the refusal at ops_bend.py:224 becomes REAL: a non-zero exit is
 # a DIE carrying the executor's own stderr, which is what `subprocess.run` raises
 # on at :224-225. `IO.die` rather than a printed row, because a launch that
@@ -1899,19 +1905,50 @@ def ms_stage2g(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
 def on_out(ms: List<&2, Mem>, +s: Store, text: String) -> IO(Unit):
   IO.bind(Unit, Unit, ms_verdict(text, EXPECTED()), _ => ms_stage2g(ms, s))
 
-def on_packet(+ms: List<&2, Mem>, +s: Store) -> IO(Unit):
-  do IO<Unit>:
-    w : Unit <- write_file(PKT_IN(), pkt_in(ms, s))
-    r : Unit <- run_exe()
-    out : String <- pkt_out()
-    ms_stage2f(ms, s)
+# THE THREE IO STEPS, and the SHAPE is one `do` block with a single `out` bind --
+# which works because `on_out` answers `Unit` here and the diagnostic rows hang
+# off it. (An earlier chain threaded `List<&2, Mem>` through four binds and every
+# link had to re-answer the list; MEASURED, "expected Unit -> IO / observed
+# List<&2, Mem> -> IO". One `do` block and one call is strictly less code and the
+# rows are in the SAME order either way.) `pkt_out` runs AFTER `run_exe` because
+# the executor WRITES PACKET.out beside the packet -- the read must see the result.
+# THE DIAGNOSTICS RUN BEFORE THE LAUNCH, and that ordering is a correction, not a
+# style: MEASURED, a refused launch `IO.die`s and every row after it is LOST, so
+# a milestone that failed at the launch reported nothing about the allocator --
+# which is precisely the state a reader needs. Now the bases, the extents, the
+# store length and the hex all print before the executor is asked anything.
+def on_packet(ms: List<&2, Mem>, +s: Store) -> IO(Unit):
+  IO.bind(List<&2, Mem>, List<&2, Mem>, write_file(PKT_IN(), pkt_in(ms, s)), a =>
+    IO.bind(List<&2, Mem>, List<&2, Mem>, ms_stage2f(a, s), b =>
+      IO.bind(List<&2, Mem>, Unit, run_exe(), c =>
+        IO.bind(String, List<&2, Mem>, pkt_out(), out => on_out(b, s, out)))))
 
-def on_state(p: (List<&2, Mem> & Store)) -> IO(Unit):
+# THE ENTRY. `ms_state` is a COMPUTED pair and a pair cannot be a bind argument
+# (MEASURED: "expected Sigma / observed Sigma" -- the two sides disagree on the
+# depth), so the pair is bound as the result of an IO effect and split inside.
+# `ms_after_state` then hands the SPLIT pair to `on_state`, which does the three
+# IO steps. The `+ms`/`+s` on every hop is the rebind marker, which is what lets a
+# name be read once per def instead of once per use.
+# THE ENTRY. `ms_state` answers a COMPUTED pair, and a computed pair cannot be a
+# bind argument (MEASURED: "expected Sigma<&1,&1,List<&2,Mem>,Store> / observed
+# Sigma" -- the depth annotation is what disagrees), so `IO.bind` names the PAIR
+# type and the continuation splits it. `on_state` is the def the continuation
+# hands it to, which is why `ms_after_state` exists at all: a lambda cannot destructure.
+# THE ENTRY, and the pair is laundered through a ONE-ARG def because a pair with
+# a depth annotation cannot be an `IO.bind` argument (MEASURED). `ms_start` binds
+# on the LIST -- which `ms_state`'s first component already is -- and `on_start`
+# takes the store as its own parameter, so the two are threaded as ordinary
+# arguments rather than as a computed Sigma.
+def on_start(ms: List<&2, Mem>, +s: Store) -> IO(Unit): on_packet(ms, s)
+
+def ms_start(p: (List<&2, Mem> & Store)) -> IO(Unit):
   (ms, s) = p
-  on_packet(ms, s)
+  on_start(ms, s)
+
+def ms_io() -> IO((List<&2, Mem> & Store)): IO.pure(List<&2, Mem> & Store, ms_state(store()))
 
 def milestone() -> IO(Unit):
-  IO.bind(List<&2, Mem> & Store, Unit, ms_state(store()), on_state)
+  IO.bind(List<&2, Mem> & Store, Unit, ms_io(), ms_start)
 
 # THE ALLOCATOR AND CODEC ROWS. `bend_alloc_*` reads the bump with NOTHING
 # written, so a bug in the copy-in cannot be mistaken for a bug in the allocator;
@@ -1927,7 +1964,12 @@ def ms_gate_rows() -> IO(Unit):
       Store.ms(alloc_store(4, store())))))
     urow("bend_alloc_len3", U32.from_nat(List.length(&2, U32,
       Store.ms(alloc_store(4, alloc_store(4, store()))))))
-    row("bend_alloc_advances", U32.is_ne(Mem.base(alloc_mem(4, store())), 0))
+    # NOT "the first alloc's base is nonzero" -- it is 0 by construction and
+    # asserting otherwise is a row that encodes the bug. The claim is that the
+    # SECOND alloc starts where the first ended, which is the only thing
+    # "advances" can mean for a bump allocator.
+    row("bend_alloc_advances", U32.is_eq(Mem.base(alloc_mem(4,
+      alloc_store(4, store()))), 4))
     row("bend_free_is_noop", U32.is_eq(Mem.base(raw_free(alloc_mem(4, store()))),
       Mem.base(alloc_mem(4, store()))))
     srow("bend_hexbyte_ef", hexbyte(239))
@@ -2216,15 +2258,33 @@ def gate() -> IO(Unit):
 # milestone. The split is on the SECOND argument and not on the first, because
 # `bend <file>` always spends argv[0] on the program's own path -- so a split on
 # argv[0] would take the milestone branch for a plain gate run.
-def main.at(+lane: String) -> IO(Unit):
-  Bool.pick(IO<Unit>, String.eq(lane, "gate"), gate(), milestone.main())
+# `match` ON A BOOL PARAMETER again, for the reason measured at `launch`: a
+# `Bool.pick` whose arms are IO terms is refused ("a type for this operator"),
+# and here it also cannot name `IO` at all. The split is one def per arm.
+def main.gate(_: Bool, +lane: String) -> IO(Unit): gate()
+
+def main.ms(_: Bool, +lane: String) -> IO(Unit): milestone.main()
+
+def main.pick(+lane: String, +is_gate: Bool) -> IO(Unit):
+  match is_gate:
+    case True{}: main.gate(is_gate, lane)
+    case False{}: main.ms(is_gate, lane)
+
+def main.at(+lane: String) -> IO(Unit): main.pick(lane, String.eq(lane, "gate"))
+
+# `IO.args()` answers a `List<&1, String>` -- one lifetime DEEPER than a `String`
+# parameter, MEASURED -- and the lane is read by INDEX, so the depth annotation is
+# `&1` here and not `&2`. `Maybe.default` with "gate" is the default lane, which
+# is what makes a bare `./bin/bend ops_bend.bend` run the gate.
+def lane_of(as: List<&1, String>) -> IO(String):
+  IO.pure(String, Maybe.default(&1, String, List.get(&1, String, as, 1n), "gate"))
 
 def main() -> IO(Unit):
   do IO<Unit>:
     as : List<String> <- IO.args()
-    lane : String <- IO.pure(String, Maybe.default(&2, String,
-      List.get(&2, String, as, 1n), "gate"))
+    lane : String <- lane_of(as)
     main.at(lane)
+
 
 # ===========================================================================
 # THE MUTATION TABLE. Every number is `.agents/slop/bend_mutate.py`'s output,

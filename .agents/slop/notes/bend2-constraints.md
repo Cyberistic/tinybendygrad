@@ -22498,3 +22498,167 @@ table CPython holds, field for field and IN ORDER -- so a transposed pair, a ren
 a reordered list and a wrong offset are four distinguishable failures.
 
     tables compared : 11        fields compared : 86        MISMATCHING TABLES : 0
+
+---
+
+## BEND-SHARED-LIBRARY FFI (unit: ffi-link). Numbering continues after the
+## nv_table_equiv section at the END of this file (22500 lines). Cite POSITIONS.
+
+Every rule here was measured by RUNNING `bend -o out.c && cc out.c && ./out`.
+Experiments: `.agents/slop/ffi-experiment/`. Tool: `.agents/slop/ffi-port-cost.py`.
+
+### F1. A BEND DEF CAN CALL ANY SHARED LIBRARY. THE FFI WALL IS NOT REAL.
+
+`references/bend/tests/io/` proves the mechanism but every test there is
+header-only. Measured past it:
+
+    libc      cc out.c -o out                                    -> runs
+    libclang  cc out.c -L/Library/Developer/CommandLineTools/usr/lib \
+                  -lclang -Wl,-rpath,/Library/Developer/CommandLineTools/usr/lib -o out
+                                                                            -> runs
+    Metal     cc -x objective-c out.c -framework Metal -framework Foundation -o out
+                                                                            -> runs
+
+Two units concluded "the FFI wall is real" from wrong premises -- one from "no
+per-function binding form", one from the absence of `dlopen`. BOTH WRONG. Bend
+INLINES an imported `.c` into the C it emits (the shim sat at line 3018 of a
+78405-byte `out.c`), and that `.c` may call anything the C compiler links. Do not
+concatenate the imported C yourself; that is a redefinition.
+
+### F2. THE PER-FUNCTION COST IS ~3 LINES OF LAW + ~3 LINES OF C
+
+Measured on three laws sharing one `shim.c`: 6 lines of `law` + 9 lines of C for
+3 functions. Marginal cost per function is **~3 law lines and ~3 C lines**, plus
+the marshalling helpers, which are **written once** and reused by every function.
+
+### F3. `Env` IS PASSED BY VALUE. `Env*` DOES NOT COMPILE.
+
+`typedef struct { DEV u64* mem; DEV u64* alc; } Env;` -- two pointers, by value.
+`Term x_run(Env e, Term* f, IoWork* w)`, never `Env* e`. I got this wrong twice
+before noticing; `cc` says "passing 'Env *' to parameter of incompatible type".
+
+### F4. NO `U64`, NO `I64`, NO `I32`, NO `U8`, **AND NO `F64`**
+
+Measured: `law f: <T> -> IO(<T>)` then `--check-only`. `U64`/`I64`/`I32`/`U8`/
+`F64` all give "expected : a defined name / observed : <T>". **Available scalar
+types: `U32`, `F32`, `Nat`, `Bool`, `String`.** So every `double` and every 64-bit
+integer in a driver API has NO native Bend type. This is the real marshalling tax
+and it is invisible until you try it.
+
+### F5. `Nat` IS THE 64-BIT CARRIER, AND IT WORKS TO 2^51-1 -- BUT THE ERROR
+### MESSAGE LIES BY THREE BITS
+
+Swept magnitudes `2^n - 1` for n in 32..63. `Nat` crosses the foreign boundary as
+a RAW UNBOXED word (`term_tag(f[0]) == 0`, no heap slot) and round-trips exactly
+through 2^51-1. At 2^52-1 the runtime aborts:
+
+    bend: a Nat past the largest immediate 2^48-1
+
+**The cut is between 2^51 and 2^52, not 2^48.** Trust the sweep, not the message.
+macOS user addresses are ~2^32 so handles are safe; **a Linux 5-level-paging
+device pointer can exceed this window**, which is the case to check first.
+
+### F6. `f32` CROSSES LOSSLESSLY AS A `Nat` BIT PATTERN
+
+Sent `0x3F800000` from Bend, C did `memcpy` to `float`, read back `1.000000`, and
+re-emitted the identical `1065353216`. There is NO `F64`, so this is the only
+lossless route for a wide float until `F64` exists.
+
+### F7. A BEND `String` IS A CONS LIST, NOT A `char*`
+
+`term_ctr(CID_SCON, loc)` per Unicode scalar, scalar at `mem[loc]`, SEALED tail at
+`mem[loc+1]`, ended by `term_pak(CID_SNIL, 0)`. Read a sealed cell with
+`ctr_take(e, t, 2, buf)` + `spare_free(e, cls_fit(2), sp)` -- never `mem[loc+1]`
+directly. So a `const char*` PARAMETER costs a walk (`bend_str_to_c`, ~12 lines,
+written once); a `const char*` RETURN is free (`io_str(e, p, n)`, 2 lines).
+
+### F8. A 64-BIT DRIVER HANDLE CROSSES IN ONE `Nat`
+
+`MTLCreateSystemDefaultDevice()` -> `(Term)(u64)(uintptr_t)d`. Verified IN ONE
+PROCESS against C's own reading of the same pointer: `lo=12806208 hi=1
+full=4307773504` on both sides. (Never compare a pointer across two processes --
+ASLR.)
+
+### F9. OBJC IS NOT A WALL EITHER: THE DRIVER CASE IS REACHABLE
+
+Metal's real surface is not C, it is message sends. All three routes work:
+
+  * `[d newCommandQueue]` with a locally declared `@protocol`   -> live queue
+  * `sel_registerName` + `methodForSelector` + a raw function pointer,
+    **with NO local `@interface` at all** -- the ObjC *runtime* is a plain C
+    library, so nothing but C is needed                                  -> live queue
+  * a property read `[(id<MTLBuffer>)buf length]` -> 1024, exact
+
+### F10. `match` MAY ONLY SCRUTINIZE A PARAMETER OR A FIELD
+
+Three separate rejections, all at step 1 (`bend -o`):
+  * `match <computed expr>:` -> "a match cannot scrutinize a computed value"
+  * `x = expr` then `match x:` -> "a match cannot scrutinize a local binder"
+  * inside a `do IO<...>:` block -> "a match heads a def body, not a term"
+
+So every conditional is a MATCH HELPER whose parameter is the flag:
+
+    def verdict(eq: Bool) -> String:
+      match eq:
+        case True{}: "EQ_YES"
+        case False{}: "EQ_NO"
+    ... verdict(Nat.is_eq(a, b))
+
+`case True:` also fails -- constructors need braces: `True{}`.
+
+### F11. `==` IS NOT AN EQUALITY OPERATOR. IT IS ONLY THE TYPE
+
+`references/bend/guide/GUIDE.md:634`: "Equality of values is a call,
+`T.is_eq(a, b)`; `==` is only the type." Measured: `match a == b:` fails with
+"expected : a / observed : =" for `Nat` **and for `U32`**. Use `Nat.is_eq`,
+`U32.is_eq`.
+
+### F12. EVERY FOREIGN VALUE IS LINEAR -- CONSUMED EXACTLY ONCE
+
+`a : Nat <- n(5n)` used in two expressions gives "(consumed more than once)". So a
+handle cannot be passed twice; each use site needs its own acquisition. This is a
+per-VALUE cost and it is invisible until a program is written.
+
+### F13. TWO LINK-TIME FACTS THAT ARE NOT BEND'S FAULT
+
+  * Apple's `libclang.dylib` has an `@rpath/libclang.dylib` install name and the
+    linked binary carries no rpath, so the RUN fails with dyld error 134 while
+    compile and LINK both succeed. Fix with `-Wl,-rpath,<dir>` or
+    `DYLD_LIBRARY_PATH`. Steps 1-3 pass; only step 4 fails.
+  * `cc` defaults to C. Any ObjC framework backend (Metal) needs
+    `cc -x objective-c`. Otherwise the error surfaces inside `Foundation.h` as
+    "@class NSString, Protocol" -- which reads like a broken header and is not.
+
+Report WHICH of `bend -o` / `cc` / LINK / RUN broke. All four failures above look
+like "the FFI wall" from the outside and none of them is.
+
+### F14. A DRIVER BACKEND'S ENTRY POINTS ARE MOSTLY NOT C FUNCTIONS
+
+Metal, measured from the SDK headers at
+`$(xcrun --show-sdk-path)/System/Library/Frameworks/Metal.framework/Headers`
+(96 headers; note they are in the SDK, NOT in `/System/Library/Frameworks`):
+
+    MTL_EXTERN C functions : 8      <-- the entire C surface
+    @protocol declarations : 80
+    ObjC methods           : 788
+    @property declarations : 1424
+
+`grep -c '^MTL_EXPORT'` returns 153 and IS WRONG -- `MTL_EXPORT` is the
+availability-attribute macro; the declaration macro is `MTL_EXTERN`. A count taken
+from the wrong macro is not a smaller truth, it is a different number.
+
+### F15. THE TOOL THAT KEEPS THIS FROM BECING FOLKLORE
+
+`.agents/slop/ffi-port-cost.py`. Given a header, a symbol list, or a dylib it
+reports entry points WITH the denominator, the per-function marshalling class,
+mechanical derivability, the resulting size, and the `cc` line. Two properties
+earn their keep:
+
+  * It **refuses to estimate** marshalling cost from symbol NAMES alone and says
+    so. A count is real; a cost guessed from a name is not.
+  * Its default arm is `OPAQUE` (needs a human decision), NOT `int`. When I first
+    ran it on real libclang signatures it reported **324/324 SCALAR** -- entirely
+    false, because `CXString` and `CXCursor` are structs and the classifier fell
+    through to a default integer. Both a false all-clear and the overcorrection to
+    324/324 BLOCKED were wrong; the true answer is 307/324 derivable, 17 blocked.
+    **An unexplained success is a defect, not a result.**

@@ -171,31 +171,61 @@ def scan(text):
   the SUFFIX AFTER each row's boundary and carried across physical lines, which is what tells a
   continuation from a row without asking any producer what it meant."""
   src = text.splitlines()
-  shape, n2, n = lane_shape(src)
-  out, depth, opened = [], 0, None
+  # PASS 1: which physical lines are CONTINUATIONS.  This pass counts brackets over the WHOLE line
+  # and carries the depth forward, and it must not know anything about the boundary -- otherwise the
+  # lane's shape would be decided by a rule that already assumed a shape.  A name may contain
+  # BALANCED brackets (`llvmir`'s `br2 load vol=False f32 [0]`) and those net to zero, which is
+  # why a whole-line count is right; an UNBALANCED bracket in a name would be a finding, and the
+  # TRACKER'S CONTROL (73 of 78 lane texts report zero continuations, and every lane whose producer
+  # emits no newline inside a value must be among them) is what would catch it.
+  cont, depth, opened = set(), 0, None
   for n_, line in enumerate(src, 1):
     if not line.strip():
       continue
     if depth > 0:
-      out.append((n_, "continuation", None, f"inside the value of the row opened at L{opened}"))
+      cont.add(n_)
       for c in line:
         depth += DEPTH.get(c, 0)
       if depth <= 0:
         opened = None
+      continue
+    for c in line:
+      depth += DEPTH.get(c, 0)
+    opened = n_ if depth > 0 else None
+  shape, n2, n = lane_shape([l for i, l in enumerate(src, 1) if i not in cont and "=" in l])
+  # PASS 2, and it exists because of ONE HAND-WRITTEN WRAP IN `render.bend`.  `render.bend:2809-2819`
+  # prints five rows as TWO `IO.print`s each, because the `arg_repr` values are long enough that
+  # the author put the `py=` column on its own line:
+  #     IO.print("arg_repr AKern   = [" ++ arg_repr(...) ++ "]")
+  #     IO.print("                     py=KernelInfo(name='test', ...)")
+  # Pass 1 cannot see that: both physical lines are bracket-balanced.  So on an F2 lane a line
+  # whose FIRST non-space text is `py=` is a continuation of the previous row's `py=` column --
+  # on an F2 lane a row's own name always precedes its ` = [`, so a line can only START with the
+  # column.  ⚠ MEASURED WITHOUT IT: the port lane's loss read 43 with 39 attributed, and the four
+  # missing rows were exactly these, read as a row named `py`.  The oracle does not wrap, so the
+  # lane pair also disagreed about a row name -- a `ghost` the value comparison never sees.
+  if shape == "F2":
+    for n_, line in enumerate(src, 1):
+      if line.lstrip().startswith("py=") and n_ not in cont:
+        cont.add(n_)
+  out, opened = [], None
+  for n_, line in enumerate(src, 1):
+    if not line.strip():
+      continue
+    if n_ in cont:
+      out.append((n_, "continuation", None,
+                  f"inside the value of the row opened at L{opened}"))
       continue
     i, kind = boundary(line, shape)
     if i is None:
       out.append((n_, "no-boundary", None, kind))
       continue
     out.append((n_, kind, line[:i].strip(), "row"))
-    for c in line[i:]:
-      depth += DEPTH.get(c, 0)
-    opened = n_ if depth > 0 else None
   if depth != 0:
     out.append((len(src), "end-unbalanced", None,
-                f"LANE ENDS {depth:+d} bracket(s) UNCLOSED over {opened} -- either a producer "
+                f"LANE ENDS {depth:+d} bracket(s) UNCLOSED over L{opened} -- either a producer "
                 f"prints an unbalanced value or the tracker is wrong; both are findings"))
-  return out
+  return out, shape, n2, n
 
 
 def key_collision(names):
@@ -208,8 +238,8 @@ def key_collision(names):
 def measure(text, label=""):
   """The figures.  Every count carries its denominator; the two kinds of lost row are counted
   apart because they have different fixes and different owners."""
-  sc, src = scan(text), text.splitlines()
-  shape, n2, n = lane_shape(src)
+  src = text.splitlines()
+  sc, shape, n2, n = scan(text)      # ONE shape decision, made inside `scan` over the rows it found
   rows = [(n_, nm) for n_, k, nm, _ in sc if k in ("F1", "F2")]
   cont = [(n, w) for n, k, _, w in sc if k == "continuation"]
   nob = [(n, w) for n, k, _, w in sc if k == "no-boundary"]
@@ -279,13 +309,13 @@ def main():
   texts = ([(p, pathlib.Path(p).read_text()) for p in a.one] if a.one
            else [(p.name, p.read_text()) for p in sorted(CACHE.glob("*.txt"))])
   ms = [measure(t, lb) for lb, t in texts]
-  print(f"{'lane':<50} {'phys':>5} {'F1':>5} {'F2':>5} {'F3':>5} {'cont':>5} {'names':>6} "
-        f"{'ship':>6} {'`=`':>4} {'LOST':>5} {'reshp':>6} {'dupe':>5}")
+  print(f"{'lane':<50} {'phys':>5} {'shape':>5} {'py=':>7} {'F1':>5} {'F2':>5} {'cont':>5} "
+        f"{'names':>6} {'ship':>6} {'`=`':>4} {'LOST':>5} {'reshp':>6} {'dupe':>5} {'contL':>6}")
   for m in ms:
     if m["eq_n"] or m["lost"] or m["cont"] or m["nob"] or m["unbal"] or m["F3"]:
-      print(f"{m['label']:<50} {m['phys']:5} {m['F1']:5} {m['F2']:5} {m['F3']:5} {m['cont']:5} "
-            f"{m['names']:6} {m['shipped_names']:6} {m['eq_n']:4} {m['lost']:5} "
-            f"{m['lost_reshape']:6} {m['lost_dupe']:5}")
+      print(f"{m['label']:<50} {m['phys']:5} {m['lane_shape']:>5} {m['lane_n2']:>7} {m['F1']:5} "
+            f"{m['F2']:5} {m['cont']:5} {m['names']:6} {m['shipped_names']:6} {m['eq_n']:4} "
+            f"{m['lost_reader']:5} {m['lost_reshape']:6} {m['lost_dupe']:5} {m['lost_cont']:6}")
   g = lambda k: sum(m[k] for m in ms)
   P, F1, F2, F3, C = g("phys"), g("F1"), g("F2"), g("F3"), g("cont")
   E, LR, LD, N, S = g("eq_n"), g("lost_reshape"), g("lost_dupe"), g("names"), g("shipped_names")

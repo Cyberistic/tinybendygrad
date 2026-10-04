@@ -159,17 +159,15 @@ def main() -> int:
             s -= 1
         return "\n".join(lines[s:end])
 
-    cursor = 0
-    parts = []
-    for b in sorted(bl, key=lambda x: x[1][0]):
-        s = b[1][0]
-        while s - 1 > cursor and lines[s - 1].startswith("#"):
-            s -= 1
-        s = max(s, cursor)
-        parts.append("\n".join(lines[s:b[2]]))
-        cursor = b[2]
+    # The EMITTED order is `order`, the topological one. Sorting the blocks back
+    # into file order here silently undoes the whole sort, and it fails QUIETLY:
+    # the file still typechecks, it is just ordered as it always was, so the tool
+    # reports success on every run while `to_tr` stays above `enc`.
+    by_name = {b[0]: b for b in bl}
+    pos = {n: by_name[n] for n in order}
     out = head + "\n\n\n" + "\n\n\n".join(
-        [slice_with_comment(t) for t in tys] + [slice_with_comment(b) for b in bl]) + "\n"
+        [slice_with_comment(t) for t in tys]
+        + [slice_with_comment(pos[n]) for n in order]) + "\n"
 
     if "--write" in sys.argv:
         path.write_text(out)

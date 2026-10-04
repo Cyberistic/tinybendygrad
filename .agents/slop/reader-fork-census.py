@@ -594,25 +594,46 @@ def _answers(fn, inputs):
 
 # ── ONE CANDIDATE, MEASURED ────────────────────────────────────────────────────────────────
 def measure(rel, name, lineno, seg, node):
-  """Measure ONE candidate. `probe_twice` runs the six shapes twice and compares, because a
-  reader that gives two different answers to the same text cannot be given a signature at all --
-  and that is a finding, not a measurement to be averaged."""
+  """Measure ONE candidate, and run the measurement TWICE.
+
+  Twice, because a reader that gives two different answers to the same text cannot be given a
+  fingerprint at all -- and that is a finding, not a measurement to be averaged."""
   m = measure_once(rel, name, lineno, seg, node)
   m2 = measure_once(rel, name, lineno, seg, node)
   keys = ("contract", "drift", "note", "kinds", "blob_kind", "blob_n", "verdict")
   m["unstable"] = any(m.get(k) != m2.get(k) for k in keys)
   # A reader whose CLASSIFICATION moves between two runs on the same tree cannot be given a
   # fingerprint either, because a fingerprint is only meaningful for a fixed contract. This is
-  # not hypothetical: `graphcmp.py`'s `bend_sym_rows` reads as a `text->mapping` reader on a
-  # loaded machine and as `not-a-reader` on a busy one, so the registry gained and lost its row
-  # between two runs and the guard's finding count moved with it. A denominator that moves
-  # between runs of one tree is not a denominator, so this is its own class.
-  if m["unstable"]:
+  # not hypothetical: `graphcmp.py`'s `bend_sym_rows` reads as a `text->mapping` reader on an idle
+  # run and as `not-a-reader` on a busy one, so the registry gained and lost its row between two
+  # runs and the guard's finding count moved with it.
+  #
+  # THE CAUSE IS THE TIMEOUT, AND THE FIX IS TO STOP ASKING. `does_real_work()` reads the AST and
+  # decides STATICALLY whether the function runs a lane, compiles anything, or walks a tree. A
+  # runner is a runner on a fast machine and a slow one; classifying it by whether it finished
+  # inside PROBE_TIMEOUT is a coin flip in the DENOMINATOR, which is the one thing a census must
+  # not produce. So the check is made once, statically, and the timeout becomes a backstop rather
+  # than a classifier.
+  # The RUNNER check is STATIC and needs the module source, so it happens HERE rather than in
+  # `measure_once`: it is a fact about the SOURCE, not about one run of it.
+  src_path = REPO / rel
+  try:
+    mod_src = src_path.read_text()
+  except OSError:
+    mod_src = None
+  if mod_src is not None and does_real_work(node, mod_src):
+    m["contract"] = "runner"
+    m["drift"] = None
+    m["note"] = ("STATICALLY a runner: its body reaches a subprocess, a compiler, or a tree walk, "
+                 "so how long it takes is a property of the machine. Classified from the AST so "
+                 "the answer does not move with load; a run it timed out on is a backstop, not "
+                 "the measurement.")
+  elif m["unstable"]:
     m["contract"] = "non-deterministic"
     m["drift"] = None
-    m["note"] = ("CLASSIFICATION OR ANSWER MOVED between two runs in one process, so no "
-                 "fingerprint of it is meaningful. Excluded from the drift denominator rather "
-                 "than scored with the run that happened to be slower.")
+    m["note"] = ("ANSWERED THE SAME TEXT TWO DIFFERENT WAYS in one process, with no subprocess in "
+                 "sight, so this is the reader's own nondeterminism. No fingerprint can be taken "
+                 "of a function that does not answer to itself.")
   return m
 
 
@@ -737,7 +758,67 @@ def measure_once(rel, name, lineno, seg, node):
                 untrusted=untrusted, signature=hashlib.md5(repr(signatures).encode()).hexdigest()[:12])
 
 
+# CALLS THAT MAKE A FUNCTION'S DURATION A PROPERTY OF THE MACHINE RATHER THAN OF THE FUNCTION.
+# Classifying a runner by whether it happened to finish inside PROBE_TIMEOUT is a coin flip on a
+# loaded machine, and a coin flip in a DENOMINATOR is the one thing this file must not produce.
+# MEASURED: `graphcmp.py`'s `bend_sym_rows` classified as `text->mapping` on an idle run and as
+# `not-a-reader` on a busy one, so the registry gained and lost its row between two runs of the
+# same tree. The signal below is read from the AST, so it does not move.
+WORK_CALLS = {"run", "check_output", "check_call", "Popen", "call", "system", "popen", "execv",
+              "sleep", "compile", "exec_module", "fork", "wait", "communicate", "walk",
+              "rglob", "glob", "iterdir", "runtests", "main"}
+
+
 def _looks_like_exclusion(text, contra):
+  """True when the fork's extra row comes from a LINE `rows()` excludes on purpose: a line with
+  no name (an `== SECTION ==` banner), a single-space gap, or a TAB.
+
+  The distinction matters because a phantom row is a row NOBODY believed in, while a divergent row
+  is a real disagreement both readers would act on. Measured on F5 and F6: `rows()` reads 0 rows
+  from both, which is the rule `dtype_tables.py` depends on -- it emits 14,774 TSV lines and must
+  keep reading as ZERO, or a lane wired on purpose to be dead would report 14,774 fabricated
+  claims instead of "compared nothing"."""
+  head = text.split("=", 1)[0] if "=" in text else text.split("  ", 1)[0]
+  if not head.strip():
+    return True
+  if "\t" in text:
+    return True
+  return "=" not in text and "  " not in text
+
+
+def does_real_work(node, module_src=None):
+  """True when the def, or anything it calls in ITS OWN MODULE, reaches one of WORK_CALLS.
+
+  STATIC on purpose. A reader that runs a lane is a RUNNER, and a runner cannot be given a
+  fingerprint by a harness that would have to run the lane -- and whether it finished in time is
+  not a property of the function. Walk depth is bounded at 3 and `seen` breaks cycles, because an
+  unbounded walk over a recursive oracle is a hang and a hang reports nothing."""
+  byname = {}
+  if module_src:
+    try:
+      byname = {n.name: n for n in ast.walk(ast.parse(module_src))
+                if isinstance(n, ast.FunctionDef)}
+    except SyntaxError:
+      byname = {}
+  byname.setdefault(node.name, node)
+  seen = set()
+
+  def hits(fn, depth=0):
+    if fn.name in seen or depth > 3:
+      return False
+    seen.add(fn.name)
+    calls = []
+    for n in ast.walk(fn):
+      if not isinstance(n, ast.Call):
+        continue
+      f = getattr(n.func, "attr", None) or getattr(n.func, "id", None)
+      if f in WORK_CALLS:
+        return True
+      if f in byname:
+        calls.append(f)
+    return any(hits(byname[c], depth + 1) for c in calls)
+
+  return hits(node)
   """True when the fork's extra row comes from a LINE `rows()` excludes on purpose: a line with
   no name (an `== SECTION ==` banner), a single-space gap, or a TAB. The distinction matters
   because a phantom row is a row NOBODY believed in, while a divergent row is a real

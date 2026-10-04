@@ -7788,34 +7788,71 @@ def vd_pa(slot: U32, nm: Maybe<&2, String>) -> ParamArg:
 # test's OWN constructor rather than a hand-built ParamArg. That is the discipline
 # `rra`'s arena follows and the reason `vrn_*` can gate `UOp.variable` from inside
 # the file that uses it.
-def vv.arena() -> Arena:
+def vd_arena() -> Arena:
   Arena{[
     Arena.bottom(),
     Node{OpsPARAM{}, Nil{}, AParam{vd_pa(ParamArg.no_slot(), Some{"i"})}, TNone{}},
     Node{OpsPARAM{}, Nil{}, AParam{vd_pa(ParamArg.no_slot(), Some{"j"})}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(5)}}, TNone{}}], [0]}
 
-def vd_put(nm: String, x: H.I64) -> VarVals: VarVals{Map.set(&2, H.I64, VarVals.new(), nm, x)}
+# THE THREE `Map` READERS TAKE THEIR QUANTIFIER IN THREE DIFFERENT PLACES, and
+# getting it wrong is a `expected : Map<&2, H.I64> / observed: VarVals` rather than a
+# clean arity error, because the stray value lands in the next parameter.
+#   Map.set(a, -V: Kind(a), m, key, x)  -- quantifier SECOND, after the linearity
+#   Map.has(-a: Quant, -V: Kind(a), m, key)
+#   Map.get(-V: Data, d, m, key)        -- NO linearity parameter at all
+# `render.bend:1007` and `:1017` already spell all three correctly; this cost three
+# compile rounds to find, and the first of them I had recorded as a LANGUAGE gap.
+def vd_put(nm: String, x: H.I64) -> VarVals: VarVals{Map.set(&2, H.I64, VarVals.m(VarVals.new()), nm, x)}
 
 # The row, and the `Maybe` is a refusal: `none` is an unbound Variable. A bare
 # `(0)` would be the bug this whole `has` exists to prevent, so the printer spells
 # the refusal rather than letting a default through.
+# THE PRINTER, and it is `s5.seps`'s TWO-DEF SHAPE for a reason I got wrong twice.
+# The accumulator is a `String` and is NOT `+`-marked, the HEAD is `+h`, and the
+# recursion is a SEPARATE def -- `s5.seps.go` above. I wrote it as one def with
+# `+acc` and a self-call, which typechecked and then answered `()` for every input,
+# because a `+` accumulator that starts life as a bare `Nil{}` literal never
+# accumulates. A fold that compiles and returns nothing is worse than one that does
+# not compile, and this is the second time this session that bit (the first was
+# `rra.filter`).
+def vd_text.go(xs: List<&2, H.I64>, acc: String) -> String:
+  match xs:
+    case Nil{}: acc
+    case +h <> t: vd_text.go(t, String.concat([acc, H.i64_text(h), ","]))
+
+def vd_text(xs: List<&2, H.I64>) -> String:
+  match xs:
+    case Nil{}: "()"
+    case +_ <> _: vd_text.of(vd_text.go(xs, ""))
+
+def vd_text.of(acc: String) -> String: vd_text.of2(String.drop_last(&1, acc))
+
+def vd_text.of2(m: Maybe<&1, String>) -> String:
+  match m:
+    case Some{s}: String.concat(["(", s, ")"])
+    case None{}: "()"
+
 def vd_show(m: Maybe<&2, List<&2, H.I64>>) -> String:
   match m:
     case Some{ys}: vd_text(ys)
     case None{}: "none"
 
-def vd_text(ys: List<&2, H.I64>) -> String:
-  match ys:
-    case Nil{}: "()"
-    case h <> t: String.concat([H.i64_text(h), ",", vd_text(t)])
+# The record is spelled through a helper because the SIX fields are all defaulted
+# and only `vars` is under test; `ProgramInfo.of()` supplies the three `(1,1,1)`s
+# and the three empty lists, and a six-field LITERAL here would be a second copy of
+# a default that already has a name.
+def vd.pi.of(pi: ProgramInfo, xs: List<&2, U32>) -> ProgramInfo:
+  match pi:
+    case ProgramInfo{g, l, _v, go, o, i}: ProgramInfo{g, l, xs, go, o, i}
+
+def vd.pi(xs: List<&2, U32>) -> ProgramInfo: vd.pi.of(ProgramInfo.of(), xs)
 
 def vd_row(nm: String, +ar: Arena, v: VarVals, xs: List<&2, U32>) -> IO(Unit):
-  +pi = ProgramInfo{ProgramInfo.global_size(ProgramInfo.of()), ProgramInfo.local_size(ProgramInfo.of()), xs,
-    ProgramInfo.globals(ProgramInfo.of()), ProgramInfo.outs(ProgramInfo.of()), ProgramInfo.ins(ProgramInfo.of())}
+  +pi = vd.pi(xs)
   srow(nm, vd_show(ProgramInfo.vals(ar, v, pi)))
 
-def vv.rows(+ar: Arena) -> IO(Unit):
+def vd_rows(+ar: Arena) -> IO(Unit):
   do IO<Unit>:
     a : Unit <- vd_row("vv_two", ar, vd_put("i", H.i64_of_i32(7)), [1, 2])
     b : Unit <- vd_row("vv_one", ar, vd_put("i", H.i64_of_i32(7)), [1])
@@ -7825,6 +7862,7 @@ def vv.rows(+ar: Arena) -> IO(Unit):
 
 def main() -> IO(Unit):
   do IO<Unit>:
+    x0 : Unit <- vd_rows(vd_arena())
     y0 : Unit <- vrn_rows(Arena.empty())
     w0 : Unit <- rra.rows(rra.arena())
     v0 : Unit <- vr.expr.rows(vr.arena())
