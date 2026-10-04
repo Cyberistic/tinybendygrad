@@ -182,3 +182,113 @@ is defined at `:861`).
 and `abi4_fp8to_0x3C` is `1` under node. `js-repair-abi4` makes all 12 rows agree **in
 `$TMPDIR` only**. **`gen_js_seam.py` now aborts** on a moved anchor and was left that
 way — a defect this unit introduced and did not clean up.
+
+---
+
+# UPDATE — ABI-4 IS REPAIRED IN THE TREE, AND IT WAS THREE SITES
+
+Unit: `.agents/slop/abi4/`, rules `ABI4-1..ABI4-6`. `abi_gate.py` rc 0,
+27 PASS / 0 FAIL. **The numbers in the two sections above about ABI-4 are now stale
+and this section supersedes them**: `node agrees with CPython on 12/12`, the two lanes
+disagree on 0/12, and `abi4_fp16_1p5` is `1.5`.
+
+**THE TABLE ABOVE WAS ALSO WRONG IN A SECOND WAY, MEASURED.** It printed
+`abi4_fp16_1p1  CPython 1.099609375  node 1.0996094`, i.e. node right. It is not:
+that row is `0` under node and was red like the other three. Shipped was **8/12**,
+not 9/12.
+
+## WHICH OF THE THREE SITES IS ABI-4 — BY ROW SET, NOT BY READING
+
+`NEEDS(s)` = rows green as shipped and red with site *s* re-broken.
+`FIXES(s)` = rows *s* is sufficient, alone, for. 98 rows × 15 arms, every expectation
+`tinygrad.dtype`-called, at `.agents/slop/abi4/abi4_gate.py`.
+
+| site | NEEDS | FIXES | separable by row? |
+|---|---|---|---|
+| `dtype.js:143` **B** `of32(x)` on `dtype_fp16`'s declared `F32` argument | 10 | 10 | **yes** — `NEEDS(B)` touches no `fp8_to` row |
+| `dtype.js:151` **C** no `of32` on `dtype_fp8_to`'s declared `F32` answer | 40 | **10** | **yes** — the only site with a row set of its own |
+| `dtype.js:103` **A** `of32(v)` inside `fp8_decode`, on an intermediate | 30 | **0** | **no** — `NEEDS(A) ⊆ NEEDS(C)`, all 30 shared |
+
+**So: B and C are ABI-4 AT THE SEAM, in the two directions the declaration names.
+A is ABI-4's error class applied one call INSIDE the lane, on C's path, reachable only
+through C — load-bearing for 30 rows, so not incidental, but not a third seam
+convention. The three are one error class at two depths and two crossings, not three
+coincidences, and the measurement says so instead of the reading.**
+
+`FIXES(C)`'s ten rows are `fp8_decode`'s **early NaN/Inf returns**: they never build
+the intermediate `v`, so they are fixed by C and blind to A. That is the entire
+separation, and `abi_gate.py`'s 12-row probe has exactly ONE `fp8_to` row, which needs
+A *and* C. **The `FAIL the ABI-4 repair touched ONLY F32 rows` episode was a fixture
+entanglement before it was an arm entanglement, and de-entangling the arm alone could
+not have fixed it.**
+
+The inversion rows name the wrong representation rather than merely being wrong:
+`Dt.fp16(1073741824.0)` arrives as the value 1073741824, whose own f32 *pattern* is
+`0x40000000` = 2.0, so a pattern-reading lane answers `2` where CPython answers `inf`.
+
+## THE CONVERSION IS FORCED ONTO THE SEAM — MEASURED, NOT CHOSEN
+
+The alternative spelling (`fp8_decode` answers a value, the seam's `of32` removed) is
+green on 88/98 and red on **exactly** `FIXES(C)`, because those ten rows never reach
+the `return` that carries the conversion. Both spellings were run so this could not be
+"I picked the one that went green".
+
+## THE REPAIR
+
+Three lines and **no net line count** in `dtype.js`: the `of32` on `dtype_fp16`'s
+argument deleted, the `of32` inside `fp8_decode` deleted, one `of32` added to
+`dtype_fp8_to`'s return. Shipped 57/98 → **98/98**. `abi_gate.py` 27 PASS / 0 FAIL rc 0;
+`jsfix_gate.py` 18 PASS / 0 FAIL rc 0 at 30/30; `jsfix_e2e.py` rc 0; `e2e.sh` 7/7 rc 0;
+`jslane2/gen_f32_seam.py` — never re-run before today — **3/6 → 6/6, lanes agree 6/6,
+rc 0**, which is a third independent witness whose comparison is *weaker* than
+`abi_gate.py`'s and therefore not an artefact of normalisation.
+
+`abi_gate.py`'s `js-repair-abi4` arm is **deleted**: an arm that applies a repair to an
+already-repaired tree is a tautology. `plant-abi4-js` re-breaks all three sites and
+`disarm-abi4-js` re-spells all three, both against `shipped`.
+
+## ABI4-4 — A DANGLING PAREN PASSED 98/98, AND A DEAD LANE WAS CALLED GREEN
+
+The repair first landed with a stray `)` in `fp8_decode`. `node` exited 1 with empty
+stdout. `abi4_gate.py` reported **98/98** and `abi_gate.py` reported **"node agrees
+with CPython on 12/12"** — because both measure a *patched copy*, and `vs()` excludes
+absent rows from `bad` by design, so **a lane that printed nothing counted as a lane
+that was never wrong**. Both gates now exit on `node`'s exit status or a short row
+set, and `abi4_gate.py` asserts the shipped tree's rows equal the full repair's.
+
+## ABI4-5 — THE POINTER CHECK NOW READS `undeclared`, AND AN ENTRY MAY DECLARE ITSELF HISTORICAL
+
+The blind spot is closed: every `<path>:<line>` in `undeclared` is checked. An entry may
+opt out with `{"historical": true, "why": ...}`; exactly one does, **ABI-8**, which
+narrates a measurement that *was* true (`probe.js` 894 → 915). **A guard that is always
+red on a class of entries is a guard whose green is worth less than its red**, so the
+author of the prose declares which claims are live. Planted `:74` → `:740`: rc 1.
+Reverted: rc 0. One live reference was stale and is fixed (ABI-5's `dtype.js:162` →
+`:168`).
+
+## ABI4-6 — THE ARM-ENTANGLEMENT FENCE, ON EVERY ARM
+
+`js-repair-abi4` failed "touched ONLY F32 rows" because the **arm** carried ABI-2's
+bytes. A row-count fence cannot see that; a **content** fence can, because it reads the
+bytes the arm would apply. `abi4_gate.py` now runs it over **all 15** arms, and
+`abi_gate.py` over every non-ABI-2 JS arm. Planted: one `JS_I64_OF_FST` edit added to
+the ABI-4 plant turns `abi_gate.py` red on **both** fences, rc 1. The structural half of
+the fix is that every arm in `abi4_gate.py` is built from `pristine` and never from
+another arm, so an arm cannot inherit an edit even by accident.
+
+`jsfix_gate.py`'s 30 rows are all `Dt.i64_*` and no arm of this repair touches an I64
+helper, so its moving 0 is a **theorem about its row set**, not evidence of locality.
+
+## THE GENERATORS — DISPOSITION, NEITHER EDITED (`.agents/slop/jslane2/` is not this unit's)
+
+- **`gen_js_seam.py` — quarantined by supersession, still aborts.** `READ_SHIPPED` is
+  ABI-2's pre-repair `p.fst`/`p.snd` text and occurs 0× now. Everything it measured is
+  reproduced and exceeded by `jsfix/jsfix_gate.py` + `jsfix_e2e.py` (same 30 rows, same
+  `int64.min`, same `tinygrad.helpers`-called oracle, 10 arms not 4, including the
+  outbound-only plant it lacked). **Do not re-anchor it; there is nothing left for it
+  to measure.**
+- **`gen_f32_seam.py` — runs, and is green.** First re-run today: 3/6 → **6/6, rc 0**.
+  Output kept at `.agents/slop/abi4/gen-f32-seam.txt`. One defect reported, not fixed:
+  its `norm` is `repr(float(s))` with no f32 round-trip, so it would call `fp16(1.1)` a
+  lane disagreement for a formatting reason — it escapes only because no `1.1` row is in
+  its `CASES`.

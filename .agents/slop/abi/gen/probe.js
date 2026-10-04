@@ -163,12 +163,18 @@ function io_eff(k, run, need) {
 //          POSITIONALLY by ctr_take, so a.fst/a.snd is wrong in both
 //          directions and under one name.
 //   ABI-3  the two words are ordered HIGH FIRST: hi is bits 63..32, lo is 31..0.
+//   ABI-4  a scalar crosses as BITS in C and as a VALUE in node, so `of32`
+//          (pattern->value) belongs on an ANSWER and `bits32` (value->pattern)
+//          on an ARGUMENT: once each, at the seam, and never in the other place.
 //   ABI-5  the words are carried as JS numbers into BigInt arithmetic, never
 //          combined in Number arithmetic, which has 53 mantissa bits.
 //
-// JS gives exact integer and double arithmetic, and every value here is either a
-// bit pattern or a float with at most four significant bits, so nothing rounds
-// differently than in C.
+// Which of the two a given helper answers is `dtype.bend`'s declaration, not a
+// choice: `Dt.bf16(bits: U32) -> IO(F32)` and `Dt.fp8_to(..) -> IO(F32)` owe a
+// value out, `Dt.fp8_from(..) -> IO(U32)` owes a pattern. JS doubles are exact
+// for every bit pattern here, so nothing rounds differently than in C -- but a
+// value read as a pattern is not a rounding difference, it is a different
+// number, and it is silent.
 
 const FP8_E4M3 = 0;
 const FP8_E5M2 = 1;
@@ -242,9 +248,9 @@ function fp8_decode(x, kind) {
     if (mant === mantMax) return sgn ? 0xffc00000 : 0x7fc00000;
   }
   const bias = FP8_CFG[kind][0];
-  const v = of32(exp === 0
+  const v = exp === 0
     ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
-    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));
+    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);
   return bits32(sgn ? -v : v);
 }
 
@@ -285,7 +291,7 @@ function dtype_bf16(u) {
 }
 
 function dtype_fp16(x) {
-  return of32(half_to_f32(f16_bits(of32(x))));
+  return of32(half_to_f32(f16_bits(x)));
 }
 
 function dtype_fp8_from(xb, kind) {
@@ -293,7 +299,7 @@ function dtype_fp8_from(xb, kind) {
 }
 
 function dtype_fp8_to(x, kind) {
-  return fp8_decode(x >>> 0, kind & 0xff);
+  return of32(fp8_decode(x >>> 0, kind & 0xff));
 }
 
 // ABI-1/ABI-2: an I64 crosses by its BEND FIELD NAMES (helpers.bend's

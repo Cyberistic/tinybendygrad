@@ -194,14 +194,13 @@ C_JOIN_OLD = """  v = (f32)(exp == 0 ? (mant / (f32)(mant_max + 1)) * (1.0f / (1
                        ldexpf(1.0f, (int)exp - (int)bias));
   return f32_rewrap(sgn ? -v : v);"""
 
-# The ABI-4 obligations.  Two `of32` calls applied to arithmetic VALUES
-# (dtype.js:96 fp8_decode and :137 dtype_fp16) and one missing conversion at the
-# transport (dtype.js:145 dtype_fp8_to).  NOTE WHAT IS NOT HERE ANY MORE: these arms
-# used to carry JS_I64_OF_OLD->JS_I64_OF_FIXED and JS_PACK_OLD->JS_PACK_FIXED as
-# well, which is why "the ABI-4 repair touched ONLY F32 rows" FAILED -- the arm was
-# not an ABI-4 repair at all, it was ABI-2's repair wearing ABI-4's name, and the
-# five abi123_* rows it moved were moved by ABI-2.  With the repair in the tree the
-# bundling is gone and the check measures what it claims to.
+# The ABI-4 obligations.  Two `of32` calls applied to arithmetic VALUES (fp8_decode
+# and dtype_fp16) and one MISSING conversion on the answer (dtype_fp8_to).  ALL THREE
+# ARE NOW IN THE TREE (see dtype.js), so -- exactly as ABI-2's arms were re-anchored
+# when ITS repair landed -- `JS_*_FIXED` is the SHIPPED text and `JS_*_OLD` is the
+# PLANT.  `shipped` is the measurement, and the evidence that the lane used to be
+# broken is a plant rather than a diagnosis.  There is no `js-repair-abi4` arm any
+# more: an arm that applies a repair to an already-repaired tree is a tautology.
 JS_FP16_FIXED = """function dtype_fp16(x) {
   return of32(half_to_f32(f16_bits(x)));
 }"""
@@ -211,10 +210,12 @@ JS_FP8TO_OLD = """function dtype_fp8_to(x, kind) {
 JS_FP8TO_FIXED = """function dtype_fp8_to(x, kind) {
   return of32(fp8_decode(x >>> 0, kind & 0xff));
 }"""
-# THE SAME ABI-4 BUG AS dtype_fp16, AT THE SAME SHAPE, IN A DIFFERENT FUNCTION.
-# `of32(...)` is pattern->value applied to an arithmetic VALUE, so of32(1.5) is
-# the pattern 1 -- the smallest f32 subnormal -- and `bits32` of that denormal is
-# 1.  This is what `fp8_to(0x3C)` answers under node.
+# THE THIRD SITE, WHICH THESE 12 ROWS CANNOT SEE ON ITS OWN.  `of32(...)` is
+# pattern->value applied to an arithmetic VALUE, so of32(1.5) is the pattern 1 --
+# the smallest f32 subnormal -- and bits32 of that denormal is 1.  It is observable
+# only THROUGH the missing conversion at dtype_fp8_to, because this arm carries
+# exactly ONE fp8_to row and that row needs both.  That is the whole reason the
+# 98-row instrument at .agents/slop/abi4/abi4_gate.py exists and a comment did not.
 JS_FP8DEC_OLD = """  const v = of32(exp === 0
     ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
     : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));
@@ -223,10 +224,22 @@ JS_FP8DEC_FIXED = """  const v = exp === 0
     ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
     : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);
   return bits32(sgn ? -v : v);"""
-
-ABI4_ONLY = [(JS_FP16_OLD, JS_FP16_FIXED, 1),
-             (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
-             (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)]
+# Re-spellings of the CONFORMING text, one per site, so 0 is the only correct moved
+# count AND a check matching the token `of32(` fires on the plant but not on these.
+JS_FP8DEC_DISARM = """  const v = (exp === 0
+    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
+    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias)) * 1;
+  return bits32(sgn ? -v : v);"""
+JS_FP16_DISARM = """function dtype_fp16(x) {
+  return of32(half_to_f32(f16_bits(x * 1)));
+}"""
+JS_FP8TO_DISARM = """function dtype_fp8_to(x, kind) {
+  return of32(fp8_decode(x >>> 0, kind & 0xff) >>> 0);
+}"""
+ABI4_SITES = ((JS_FP8DEC_FIXED, JS_FP8DEC_OLD), (JS_FP16_FIXED, JS_FP16_OLD),
+              (JS_FP8TO_FIXED, JS_FP8TO_OLD))
+ABI4_DISARMS = ((JS_FP8DEC_FIXED, JS_FP8DEC_DISARM), (JS_FP16_FIXED, JS_FP16_DISARM),
+                (JS_FP8TO_FIXED, JS_FP8TO_DISARM))
 
 
 ARMS = {
@@ -266,14 +279,13 @@ ARMS = {
     # ---- explain.  The violation is real only where the backend hands the lane a
     # ---- VALUE, i.e. node.  `patch` restores the PRISTINE bytes before every arm,
     # ---- so arms are independent and the counts are comparable.
-    "js-repair-abi4": [("js", ABI4_ONLY)],
-    "plant-abi4-js": [("js", ABI4_ONLY + [(JS_FP16_FIXED, JS_FP16_OLD, 1)])],
-    "disarm-abi4-js": [("js", [(JS_FP16_OLD,
-                                """function dtype_fp16(x) {
-  return of32(half_to_f32(f16_bits(+x)));
-}""", 1),
-                       (JS_FP8DEC_OLD, JS_FP8DEC_FIXED, 1),
-                       (JS_FP8TO_OLD, JS_FP8TO_FIXED, 1)])],
+    # ---- The repair is in the tree, so `shipped` is GREEN and the plant re-breaks
+    # ---- all three sites at once.  There is deliberately no `js-repair-abi4` arm:
+    # ---- it applied the repair to the tree, which is now already repaired, so it
+    # ---- measured a tautology -- and it was the arm that carried ABI-2's bytes,
+    # ---- which is why "the ABI-4 repair touched ONLY F32 rows" FAILED once.
+    "plant-abi4-js": [("js", [(shipped, other, 1) for shipped, other in ABI4_SITES])],
+    "disarm-abi4-js": [("js", [(shipped, other, 1) for shipped, other in ABI4_DISARMS])],
 }
 
 
@@ -327,6 +339,15 @@ def drive(work: pathlib.Path, target: str) -> dict[str, str]:
         m = ROW.match(line)
         if m:
             rows[f"{m[1]}_{m[2]}"] = m[3].strip()
+    # A lane that prints NOTHING must never be a green lane.  `vs()` excludes
+    # absent rows from `bad` by design (so a totalisation is not an absence), and
+    # that is right UNTIL the lane dies: a dangling paren in dtype.js made node
+    # exit 1 with empty stdout, and this gate then reported `node agrees with
+    # CPython on 12/12` and 12 FAILs downstream.  node's exit status is the check
+    # that was missing, and it costs one line.
+    if p.returncode != 0 or len(rows) != len(ORACLE):
+        sys.exit(f"{target} lane printed {len(rows)}/{len(ORACLE)} rows "
+                 f"(rc={p.returncode}):\n{p.stderr[:600]}")
     return rows
 
 
@@ -380,7 +401,73 @@ def fence(base: dict[str, str], arm: dict[str, str], owned: set[str]) -> list[st
     return [r for r in moved(base, arm) if not r.startswith(owned)]
 
 
+# THE CONTENT FENCE, and the reason it exists.  `js-repair-abi4` used to carry
+# ABI-2's edits as well, so the five `abi123_*` rows it moved were moved by ABI-2;
+# a row-count fence on that arm passed or failed for reasons nobody could read.
+# This one reads the BYTES each arm would apply and refuses any JS edit that names
+# another ABI's token.  It is checked for the ABI-4 arms here and for EVERY arm in
+# .agents/slop/abi4/abi4_gate.py, because the entanglement was never about which
+# convention -- it was about an arm quietly carrying two.
+JS_ARM_TOKENS = ("p.hi", "p.lo", "p.fst", "p.snd", "io_tup", "BigInt",
+                 "asIntN", "<< 32n", ">>> 32n")
+
+
+def arm_leaks(arm: str) -> list[str]:
+    """Tokens from another ABI that this arm's JS edits would write.  The C lane's
+    arms legitimately mention `f[0]` and `i64_of`, so the fence is on the JS lane,
+    which is where both shipped bugs were -- and it is scoped to the arms that are
+    NOT ABI-2's, because ABI-2's own arms must of course write ABI-2's tokens.
+    """
+    if arm.startswith("plant-abi2") or arm.startswith("disarm-abi2"):
+        return []
+    out = []
+    for lane, edits in ARMS[arm]:
+        if lane != "js":
+            continue
+        for old, new, _ in edits:
+            out += [t for t in JS_ARM_TOKENS if t in old or t in new]
+    return sorted(set(out))
+
+
 # ------------------------------------------------------------------- main.
+UNDECLARED_REF = re.compile(
+    r"(?<![\w/])((?:tinybendygrad|tinygrad|bin)/[\w./-]+?\.(?:py|js|c|bend|json)|"
+    r"gen/\w+\.\w+):(\d+)")
+
+
+def undeclared_refs(decl) -> tuple[list[str], list[str]]:
+    """THE BLIND SPOT, NOW CLOSED.  This check read `abi`[i]['site'] and nothing
+    else, so the `undeclared` block -- where a stale citation was found today --
+    was prose, and prose that goes stale is indistinguishable from prose that was
+    always wrong.
+
+    Every `<path>:<line>` in an `undeclared` entry is now checked, EXCEPT in an
+    entry that declares itself historical with a third element
+    `{"historical": true, "why": ...}`.  That flag is the whole design: an entry
+    that narrates a past measurement (`probe.js moved 894 -> 915`) would be a
+    permanent false red, and a check that is always red on a class of entry is a
+    check whose green is worth less than its red.  So the AUTHOR of the prose
+    declares which claims are live, and a live claim that goes stale fails.
+
+    Returns (stale, skipped)."""
+    stale, skipped = [], []
+    for entry in decl["undeclared"]:
+        eid, prose = entry[0], entry[1]
+        meta = entry[2] if len(entry) > 2 else {}
+        refs = UNDECLARED_REF.findall(prose)
+        if meta.get("historical"):
+            skipped += [f"{eid} historical x{len(refs)}"]
+            continue
+        for rel, ln in refs:
+            f = HERE / "abi" / rel if rel.startswith("gen/") else REPO / rel
+            if not f.exists():
+                stale.append(f"{eid} cites {rel}: no such file")
+            elif int(ln) > len(f.read_text().splitlines()):
+                stale.append(f"{eid} cites {rel}:{ln}, a file of "
+                             f"{len(f.read_text().splitlines())} lines")
+    return stale, skipped
+
+
 def cite_ok(p: pathlib.Path, e) -> tuple[bool, str]:
     """Resolve one `site` entry.
 
@@ -500,6 +587,13 @@ def main() -> None:
     else:
         print("  every cited line still carries its token")
 
+    # --- the SAME check over the `undeclared` block, which it did not read until
+    # --- a stale citation was found there.
+    ustale, uskip = undeclared_refs(decl)
+    stale += ustale
+    print(f"  undeclared: {len(ustale)} stale live reference(s), "
+          f"{len(uskip)} declared-historical entr(ies) skipped {uskip}")
+
     # --- the lanes.
     with tempfile.TemporaryDirectory() as td:
         work = pathlib.Path(td) / "tree"
@@ -565,8 +659,8 @@ def main() -> None:
         ("disarm-abi2-in-js", "js", "shipped", "abi123"),
         ("plant-abi2-out-js", "js", "shipped", "abi123"),
         ("disarm-abi2-out-js", "js", "shipped", "abi123"),
-        ("plant-abi4-js", "js", "js-repair-abi4", "abi4"),
-        ("disarm-abi4-js", "js", "js-repair-abi4", "abi4"),
+        ("plant-abi4-js", "js", "shipped", "abi4"),
+        ("disarm-abi4-js", "js", "shipped", "abi4"),
     ]
     for arm, tgt, base, prefix in controls:
         b, a = res[base][tgt], res[arm][tgt]
@@ -606,7 +700,12 @@ def main() -> None:
     print("    bits back.  In C `f[0]` IS the pattern, so that is the identity by")
     print("    CONSTRUCTION: no fixture can separate it, and 0/12 is a THEOREM, not")
     print("    a coverage gap.  The obligation is only live where the backend hands")
-    print("    the lane a VALUE, so ABI-4's plant is in JS, against js-repair-abi4.")
+    print("    the lane a VALUE, so ABI-4's plant is in JS, against the shipped tree.")
+    print("    The repair is IN the tree, so `shipped` is GREEN and the plant re-breaks")
+    print("    all three sites at once.  This gate CANNOT tell the three sites apart:")
+    print("    it carries one fp8_to row and that row needs two of them.  The")
+    print("    98-row instrument at .agents/slop/abi4/abi4_gate.py separates them, and")
+    print("    it is the only thing that can: NEEDS 10 / 40 / 30 with FIXES 10 / 10 / 0.")
 
     # arity-2 liveness, measured on the ABI-1 plant
     print("\n  --- ABI-1 arity-2 predicate on the over-read plant ---")
@@ -621,11 +720,18 @@ def main() -> None:
     print("=" * 78)
     ok = True
     checks = [
-        ("the declaration's pointers are current", not stale),
+        ("the declaration's pointers are current, INCLUDING the undeclared block "
+         "(the block this check did not read until a stale citation was found in "
+         "it; entries may opt out by declaring themselves historical)", not stale),
         ("every abi123_* row has hi != lo, by construction",
          all(WORDS[r][0] != WORDS[r][1] for r in WORDS)),
         ("cc agrees with CPython on the shipped tree", len(badc) == 0),
-        ("the two lanes disagree somewhere, so the check has teeth", len(dis) > 0),
+        # The two lanes AGREING is no longer the evidence: the repair landed, so the
+        # shipped tree is green and only a PLANT can show the check still sees red.
+        ("the two lanes agree on every row of the shipped tree", len(dis) == 0),
+        ("and they agree only because both are right, not because the check is "
+         "blind: the ABI-4 plant breaks that agreement",
+         len(moved(shipjs, res["plant-abi4-js"]["js"])) > 0),
         ("ABI-2 does NOT fire on node with NO edit to the tree",
          not any("ABI-2 VIOLATED" in w for _, w in attribute(shipjs))),
         ("ABI-2 DOES fire on node when its INBOUND half is planted",
@@ -658,28 +764,28 @@ def main() -> None:
         ("ABI-3 plant stayed inside its own rows",
          not fence(ship, res["plant-abi3-c"]["c"], "abi123")),
         ("ABI-3 disarm moved 0", moved(ship, res["disarm-abi3-c"]["c"]) == []),
-        ("ABI-4 fires on node with NO edit to the tree",
-         len([r for r in vs(shipjs)[0] if r.startswith("abi4")]) > 0),
-        ("ABI-4 plant fired in JS",
-         len(moved(res["js-repair-abi4"]["js"], res["plant-abi4-js"]["js"])) > 0),
-        ("ABI-4 plant stayed inside its own rows",
-         not fence(res["js-repair-abi4"]["js"], res["plant-abi4-js"]["js"], "abi4")),
+        ("ABI-4 does NOT fire on node with NO edit to the tree",
+         not [r for r in vs(shipjs)[0] if r.startswith("abi4")]),
+        ("ABI-4 DOES fire on node when all three sites are planted",
+         len(moved(shipjs, res["plant-abi4-js"]["js"])) > 0),
+        ("ABI-4's plant stayed inside its own rows",
+         not fence(shipjs, res["plant-abi4-js"]["js"], "abi4")),
         ("ABI-4 disarm moved 0",
-         moved(res["js-repair-abi4"]["js"], res["disarm-abi4-js"]["js"]) == []),
+         moved(shipjs, res["disarm-abi4-js"]["js"]) == []),
+        ("no JS arm writes another ABI's token -- the CONTENT fence, which is "
+         "what `js-repair-abi4` tripped and what a row count cannot see",
+         not {a: l for a in ARMS if (l := arm_leaks(a))}),
         ("the ABI-2 repair fixes every record row",
          len([r for r in vs(shipjs)[0] if r.startswith("abi123")]) == 0),
         # A plant is EXPECTED to move its own rows -- that is its job.  The check is
         # the other direction: it must not move a row it has no business touching,
         # or the two obligations would be entangled and one edit could paper over
-        # the other.
-        ("the ABI-4 repair touched ONLY F32 rows",
-         not [r for r in moved(shipjs, res["js-repair-abi4"]["js"])
-              if not r.startswith("abi4")]),
-        ("all four obligations applied, node agrees with CPython everywhere",
-         len(vs(res["js-repair-abi4"]["js"])[0]) == 0),
-        ("the repaired JS lane is byte-equal to the C lane on all rows",
-         all(norm(res["js-repair-abi4"]["js"].get(r, "\0")) == norm(ship.get(r, "\0"))
-             for r in ORACLE)),
+        # the other.  And it is now a fence on the PLANT rather than on the repair,
+        # because the repair is the tree and a fence on the tree is a tautology.
+        ("the shipped JS lane agrees with CPython on every row",
+         len(vs(shipjs)[0]) == 0),
+        ("the shipped JS lane is byte-equal to the C lane on all rows",
+         all(norm(shipjs.get(r, "\0")) == norm(ship.get(r, "\0")) for r in ORACLE)),
     ]
     for name, good in checks:
         print(f"  {'PASS' if good else 'FAIL'}  {name}")
@@ -688,8 +794,8 @@ def main() -> None:
     print("\n" + "=" * 78)
     print("WHAT REMAINS UNDECLARED")
     print("=" * 78)
-    for i, t in decl["undeclared"]:
-        print(f"  {i}  {t}")
+    for entry in decl["undeclared"]:
+        print(f"  {entry[0]}  {entry[1]}")
     print("\n  gate rc:", 0 if ok else 1)
     sys.exit(0 if ok else 1)
 

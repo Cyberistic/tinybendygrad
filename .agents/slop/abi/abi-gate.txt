@@ -12,8 +12,8 @@ ABI-1  flat frame, arity is a property of the CID
     c           tinybendygrad/runtime/dtype.c:205
     c           tinybendygrad/runtime/dtype.c:207
     c           tinybendygrad/runtime/dtype.c:216
-    js          tinybendygrad/runtime/dtype.js:185
-    js          tinybendygrad/runtime/dtype.js:186
+    js          tinybendygrad/runtime/dtype.js:191
+    js          tinybendygrad/runtime/dtype.js:192
     c_backend   gen/probe.gen.c body io_exec
     js_backend  gen/probe.js body io_run
 
@@ -28,9 +28,9 @@ ABI-2  a record crosses BY FIELD NAME, and the names are hi/lo
   sites:
     c           tinybendygrad/runtime/dtype.c:207
     c           tinybendygrad/runtime/dtype.c:212
-    js          tinybendygrad/runtime/dtype.js:154
-    js          tinybendygrad/runtime/dtype.js:162
-    js          tinybendygrad/runtime/dtype.js:154
+    js          tinybendygrad/runtime/dtype.js:160
+    js          tinybendygrad/runtime/dtype.js:168
+    js          tinybendygrad/runtime/dtype.js:160
     js_backend  gen/probe.js body $tinybendygrad$047helpers$i64_of_hi_lo$
     js_backend  gen/probe.js body $tinybendygrad$047helpers$hi32$
     js_backend  gen/probe.js body $tinybendygrad$047helpers$lo32$
@@ -42,8 +42,8 @@ ABI-3  pair order: the value is (hi << 32) | lo
   sites:
     c           tinybendygrad/runtime/dtype.c:208
     c           tinybendygrad/runtime/dtype.c:212
-    js          tinybendygrad/runtime/dtype.js:154
-    js          tinybendygrad/runtime/dtype.js:162
+    js          tinybendygrad/runtime/dtype.js:160
+    js          tinybendygrad/runtime/dtype.js:168
 
 ABI-4  scalar transport: an F32 crosses as its BIT PATTERN
     A U32 crosses as itself in both lanes.  An F32 crosses as its 32-bit
@@ -54,15 +54,24 @@ ABI-4  scalar transport: an F32 crosses as its BIT PATTERN
       node: op.args carries the VALUE (bend's JS book emits 1.5, not
             0x3FC00000) and f32_show() consumes the raw RESULT as a value, so
             the JS lane must answer a VALUE.
-    So dtype.js is written in two styles at once -- fp8_decode answers a
-    pattern while dtype_bf16/dtype_fp16 answer a value -- and only one of
-    them is what the JS backend consumes.
+    WHICH HELPER OWINS WHICH IS NOT A CHOICE.  `of32` is PATTERN->VALUE and
+    belongs on an ANSWER; `bits32` is VALUE->PATTERN and belongs on an
+    ARGUMENT.  Once each, at the seam, never in the other place.  And which
+    direction a seam owes is `dtype.bend`'s SIGNATURE, not the lane's habit:
+      Dt.fp16(x: F32) -> IO(F32)          value in AND value out
+      Dt.bf16(bits: U32) -> IO(F32)       pattern in, value out
+      Dt.fp8_to(bits, kind) -> IO(F32)    pattern in, value out
+      Dt.fp8_from(bits, kind) -> IO(U32)  pattern in and out; crosses no value
   sites:
     c           tinybendygrad/runtime/dtype.c:157
     c           tinybendygrad/runtime/dtype.c:174
-    js          tinybendygrad/runtime/dtype.js:137
-    js          tinybendygrad/runtime/dtype.js:97
-    js          tinybendygrad/runtime/dtype.js:133
+    js          tinybendygrad/runtime/dtype.js:143
+    js          tinybendygrad/runtime/dtype.js:103
+    js          tinybendygrad/runtime/dtype.js:139
+    js          tinybendygrad/runtime/dtype.js:151
+    declaration tinybendygrad/dtype.bend:580
+    declaration tinybendygrad/dtype.bend:584
+    declaration tinybendygrad/dtype.bend:588
     js_backend  gen/probe.js body $main$
     js_backend  gen/probe.js body $main$
     c_backend   gen/probe.gen.c body io_exec
@@ -73,32 +82,37 @@ POINTER CHECK -- is this document still pointing at what it claims?
   ok    ABI-1  c           tinybendygrad/runtime/dtype.c line 205                 
   ok    ABI-1  c           tinybendygrad/runtime/dtype.c line 207                 
   ok    ABI-1  c           tinybendygrad/runtime/dtype.c line 216                 
-  ok    ABI-1  js          tinybendygrad/runtime/dtype.js line 185                 
-  ok    ABI-1  js          tinybendygrad/runtime/dtype.js line 186                 
+  ok    ABI-1  js          tinybendygrad/runtime/dtype.js line 191                 
+  ok    ABI-1  js          tinybendygrad/runtime/dtype.js line 192                 
   ok    ABI-1  c_backend   gen/probe.gen.c              body io_exec             
   ok    ABI-1  js_backend  gen/probe.js                 body io_run              
   ok    ABI-2  c           tinybendygrad/runtime/dtype.c line 207                 
   ok    ABI-2  c           tinybendygrad/runtime/dtype.c line 212                 
-  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 154                 
-  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 162                 
-  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 154                 
+  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 160                 
+  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 168                 
+  ok    ABI-2  js          tinybendygrad/runtime/dtype.js line 160                 
   ok    ABI-2  js_backend  gen/probe.js                 body $tinybendygrad$047helpers$i64_of_hi_lo$ 
   ok    ABI-2  js_backend  gen/probe.js                 body $tinybendygrad$047helpers$hi32$ 
   ok    ABI-2  js_backend  gen/probe.js                 body $tinybendygrad$047helpers$lo32$ 
   ok    ABI-2  c_backend   gen/probe.gen.c              body io_tup              
   ok    ABI-3  c           tinybendygrad/runtime/dtype.c line 208                 
   ok    ABI-3  c           tinybendygrad/runtime/dtype.c line 212                 
-  ok    ABI-3  js          tinybendygrad/runtime/dtype.js line 154                 
-  ok    ABI-3  js          tinybendygrad/runtime/dtype.js line 162                 
+  ok    ABI-3  js          tinybendygrad/runtime/dtype.js line 160                 
+  ok    ABI-3  js          tinybendygrad/runtime/dtype.js line 168                 
   ok    ABI-4  c           tinybendygrad/runtime/dtype.c line 157                 
   ok    ABI-4  c           tinybendygrad/runtime/dtype.c line 174                 
-  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 137                 
-  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 97                  
-  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 133                 
+  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 143                 
+  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 103                 
+  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 139                 
+  ok    ABI-4  js          tinybendygrad/runtime/dtype.js line 151                 
+  ok    ABI-4  declaration tinybendygrad/dtype.bend     line 580                 
+  ok    ABI-4  declaration tinybendygrad/dtype.bend     line 584                 
+  ok    ABI-4  declaration tinybendygrad/dtype.bend     line 588                 
   ok    ABI-4  js_backend  gen/probe.js                 body $main$              
   ok    ABI-4  js_backend  gen/probe.js                 body $main$              
   ok    ABI-4  c_backend   gen/probe.gen.c              body io_exec             
   every cited line still carries its token
+  undeclared: 0 stale live reference(s), 1 declared-historical entr(ies) skipped ['ABI-8 historical x0']
 
   --- arm shipped ---
 
@@ -131,20 +145,14 @@ POINTER CHECK -- is this document still pointing at what it claims?
   --- arm disarm-abi3-c ---
     patched c: 1 site(s)  '(s64)((((u64)(u32)o[0]) << 32) | (u32)o[1])'
 
-  --- arm js-repair-abi4 ---
-    patched js: 1 site(s)  'function dtype_fp16(x) {'
-    patched js: 1 site(s)  '  const v = of32(exp === 0'
-    patched js: 1 site(s)  'function dtype_fp8_to(x, kind) {'
-
   --- arm plant-abi4-js ---
+    patched js: 1 site(s)  '  const v = exp === 0'
     patched js: 1 site(s)  'function dtype_fp16(x) {'
-    patched js: 1 site(s)  '  const v = of32(exp === 0'
     patched js: 1 site(s)  'function dtype_fp8_to(x, kind) {'
-    patched js: 1 site(s)  'function dtype_fp16(x) {'
 
   --- arm disarm-abi4-js ---
+    patched js: 1 site(s)  '  const v = exp === 0'
     patched js: 1 site(s)  'function dtype_fp16(x) {'
-    patched js: 1 site(s)  '  const v = of32(exp === 0'
     patched js: 1 site(s)  'function dtype_fp8_to(x, kind) {'
 
 ==============================================================================
@@ -165,14 +173,14 @@ THE MEASUREMENT -- shipped tree, no edit to either lane
   abi1_fp8from_e4m3    60                     60                     60                    
   abi1_fp8from_fnuz    68                     68                     68                    
   abi1_bf16_1p5        1.5                    1.5                    1.5                   
-  abi4_fp16_1p5        1.5                    1.5                    0                     
-  abi4_fp16_1p1        1.099609375            1.0996094              0                     
-  abi4_fp16_m2p25      -2.25                  -2.25                  nan                   
-  abi4_fp8to_0x3C      1.5                    1.5                    1                     
+  abi4_fp16_1p5        1.5                    1.5                    1.5                   
+  abi4_fp16_1p1        1.099609375            1.0996094              1.0996094             
+  abi4_fp16_m2p25      -2.25                  -2.25                  -2.25                 
+  abi4_fp8to_0x3C      1.5                    1.5                    1.5                   
 
   cc   agrees with CPython on 12/12
-  node agrees with CPython on 8/12
-  the two lanes DISAGREE on 4/12: ['abi4_fp16_1p5', 'abi4_fp16_1p1', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
+  node agrees with CPython on 12/12
+  the two lanes DISAGREE on 0/12: []
 
 ==============================================================================
 ATTRIBUTION -- which of the four, and decided how
@@ -218,18 +226,18 @@ PLANT AND DISARM -- every plant paired, every disarm expected to be 0
   DISARM disarm-abi2-out-js  (js, vs shipped)
     rows moved: 0/12  []
 
-  PLANT  plant-abi4-js  (js, vs js-repair-abi4)
-    rows moved: 3/12  ['abi4_fp16_1p5', 'abi4_fp16_1p1', 'abi4_fp16_m2p25']
+  PLANT  plant-abi4-js  (js, vs shipped)
+    rows moved: 4/12  ['abi4_fp16_1p5', 'abi4_fp16_1p1', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
 
-  DISARM disarm-abi4-js  (js, vs js-repair-abi4)
+  DISARM disarm-abi4-js  (js, vs shipped)
     rows moved: 0/12  []
 
   --- ABI-2 control, on the lane that now ships GREEN ---
-    shipped            node disagrees with CPython on  4/12   ['abi4_fp16_1p1', 'abi4_fp16_1p5', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
-    plant-abi2-in-js   node disagrees with CPython on  9/12   ['abi123_fdiv_b1', 'abi123_fdiv_b3', 'abi123_fdiv_b5', 'abi123_trunc_A', 'abi123_trunc_B', 'abi4_fp16_1p1', 'abi4_fp16_1p5', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
-    plant-abi2-out-js  node disagrees with CPython on  9/12   ['abi123_fdiv_b1', 'abi123_fdiv_b3', 'abi123_fdiv_b5', 'abi123_trunc_A', 'abi123_trunc_B', 'abi4_fp16_1p1', 'abi4_fp16_1p5', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
-    disarm-abi2-in-js  node disagrees with CPython on  4/12   ['abi4_fp16_1p1', 'abi4_fp16_1p5', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
-    disarm-abi2-out-js node disagrees with CPython on  4/12   ['abi4_fp16_1p1', 'abi4_fp16_1p5', 'abi4_fp16_m2p25', 'abi4_fp8to_0x3C']
+    shipped            node disagrees with CPython on  0/12   []
+    plant-abi2-in-js   node disagrees with CPython on  5/12   ['abi123_fdiv_b1', 'abi123_fdiv_b3', 'abi123_fdiv_b5', 'abi123_trunc_A', 'abi123_trunc_B']
+    plant-abi2-out-js  node disagrees with CPython on  5/12   ['abi123_fdiv_b1', 'abi123_fdiv_b3', 'abi123_fdiv_b5', 'abi123_trunc_A', 'abi123_trunc_B']
+    disarm-abi2-in-js  node disagrees with CPython on  0/12   []
+    disarm-abi2-out-js node disagrees with CPython on  0/12   []
     shipped green is the MEASUREMENT now: the ABI-2 repair is in the tree,
     so the evidence that the lane was broken is a plant, not a diagnosis.
     Both plants move the SAME rows here, and that is a property of these
@@ -248,7 +256,12 @@ PLANT AND DISARM -- every plant paired, every disarm expected to be 0
     bits back.  In C `f[0]` IS the pattern, so that is the identity by
     CONSTRUCTION: no fixture can separate it, and 0/12 is a THEOREM, not
     a coverage gap.  The obligation is only live where the backend hands
-    the lane a VALUE, so ABI-4's plant is in JS, against js-repair-abi4.
+    the lane a VALUE, so ABI-4's plant is in JS, against the shipped tree.
+    The repair is IN the tree, so `shipped` is GREEN and the plant re-breaks
+    all three sites at once.  This gate CANNOT tell the three sites apart:
+    it carries one fp8_to row and that row needs two of them.  The
+    98-row instrument at .agents/slop/abi4/abi4_gate.py separates them, and
+    it is the only thing that can: NEEDS 10 / 40 / 30 with FIXES 10 / 10 / 0.
 
   --- ABI-1 arity-2 predicate on the over-read plant ---
     shipped         fdiv over b in 3,5,1 -> ['0:2', '0:1', '0:7']  ALIVE
@@ -258,10 +271,11 @@ PLANT AND DISARM -- every plant paired, every disarm expected to be 0
 ==============================================================================
 VERDICT
 ==============================================================================
-  PASS  the declaration's pointers are current
+  PASS  the declaration's pointers are current, INCLUDING the undeclared block (the block this check did not read until a stale citation was found in it; entries may opt out by declaring themselves historical)
   PASS  every abi123_* row has hi != lo, by construction
   PASS  cc agrees with CPython on the shipped tree
-  PASS  the two lanes disagree somewhere, so the check has teeth
+  PASS  the two lanes agree on every row of the shipped tree
+  PASS  and they agree only because both are right, not because the check is blind: the ABI-4 plant breaks that agreement
   PASS  ABI-2 does NOT fire on node with NO edit to the tree
   PASS  ABI-2 DOES fire on node when its INBOUND half is planted
   PASS  ABI-2 DOES fire on node when its OUTBOUND half is planted
@@ -276,19 +290,19 @@ VERDICT
   PASS  ABI-3 plant fired
   PASS  ABI-3 plant stayed inside its own rows
   PASS  ABI-3 disarm moved 0
-  PASS  ABI-4 fires on node with NO edit to the tree
-  PASS  ABI-4 plant fired in JS
-  PASS  ABI-4 plant stayed inside its own rows
+  PASS  ABI-4 does NOT fire on node with NO edit to the tree
+  PASS  ABI-4 DOES fire on node when all three sites are planted
+  PASS  ABI-4's plant stayed inside its own rows
   PASS  ABI-4 disarm moved 0
+  PASS  no JS arm writes another ABI's token -- the CONTENT fence, which is what `js-repair-abi4` tripped and what a row count cannot see
   PASS  the ABI-2 repair fixes every record row
-  PASS  the ABI-4 repair touched ONLY F32 rows
-  PASS  all four obligations applied, node agrees with CPython everywhere
-  PASS  the repaired JS lane is byte-equal to the C lane on all rows
+  PASS  the shipped JS lane agrees with CPython on every row
+  PASS  the shipped JS lane is byte-equal to the C lane on all rows
 
 ==============================================================================
 WHAT REMAINS UNDECLARED
 ==============================================================================
-  ABI-5  Term is u64 (probe.gen.c:171) and a JS number (dtype.js:142 answers Number(...)). Nothing states which parts of a Term are meaningful, or that a U32 argument's upper 32 bits are zero.
+  ABI-5  Term is u64 (probe.gen.c:171) and a JS number (dtype.js:168 answers Number(...)). Nothing states which parts of a Term are meaningful, or that a U32 argument's upper 32 bits are zero.
   ABI-7  dtype.js's own return-style split (ABI-4's second_site) was not localised when this was written; it is now attributed, but only for fp16 and fp8_to. fp8_from and bf16 were not re-examined against the repaired lane.
   ABI-6  THE ZERO-DIVISOR BRANCH, CORRECTED: it is ONE row, not five.  `abi.json` said 'both lanes answer 0 where tinygrad's helpers raise ZeroDivisionError', and that is TRUE OF `ceildiv` AND FALSE OF THE OTHER FOUR: tinygrad/helpers.py:74 and :77 guard `cdiv` and `floordiv` with an explicit `if y != 0 else 0`, and `floormod` and `cmod` are derived from them, so they answer 0 or a too.  Only `ceildiv` has no guard and raises.  Measured: ceildiv -> ZeroDivisionError vs node 0:0 and cc 0:0; floor_div 0:0, floor_mod 0:7, cdiv 0:0, cmod 0:7 -- all three AGREE with upstream.  The two lanes AGREE on all five, so no lane-agreement check can see the one that diverges.  1 diverge, 4 agree; counted `diverge`, never `pass`.  Measured by `.agents/slop/jsfix/jsfix_gate.py`.
   ABI-8  THE DECLARATION'S OWN POINTERS WENT STALE THE MOMENT THE REPAIR LANDED, AND ALL FOUR STALE CITATIONS WERE INTO A GENERATED FILE.  `bend -o` embeds `import "./x.js"` verbatim, so editing dtype.js moved every probe.js body file:line by exactly +21 (894 -> 915 lines, I64 ctor 467 -> 488, hi32 502 -> 523, op.run 875 -> 896) while changing no convention at all.  `abi.gen.c` did NOT move, because it embeds dtype.c.  So generated bodies are now cited BY NAME (`{file, body, token}`) and `abi_gate.cite_ok` resolves the name; the `file:line` shape is kept only for the two checked-in lane files.
