@@ -294,17 +294,25 @@ def count_refusals(oracle_stderr):
           if l.startswith(REFUSED_MARK)]
 
 
-def unsilent_refusals(port_rows, stderr_labels):
-  """Port rows whose own answer is the EMPTY marker and which the oracle did NOT report refusing.
+def unsilent_refusals(port_rows, gated, stderr_labels):
+  """GATED port rows whose own answer is the EMPTY marker and which the oracle did NOT report
+  refusing.
 
   DERIVED, not typed. A refusal is exactly "every cell of the answer is empty", because the port
   has no exception channel and cstyle.bend:1074 and :1149 say what it prints when upstream raises
   -- so this list cannot fall out of date with the port the way a typed list of four row names
   would. A port that started printing a NAME where upstream raises stops appearing here, which is
   exactly the regression `--selftest`'s `refusal+` lane checks, and a port that grows a new
-  empty-answer row is caught the day it is added."""
-  empty = sorted(n for n, v in port_rows.items()
-                 if all(not c.strip() for c in cells(split_py(v)[0])))
+  empty-answer row is caught the day it is added.
+
+  ⚠ RESTRICTED TO THE GATED ROWS, and that restriction is load-bearing in the safe direction. An
+  EXCLUDED row is one CPython cannot answer at all -- `buft METAL`'s is empty for a reason that
+  has nothing to do with `_render_dtype` -- so demanding a refusal report for one would ask the
+  oracle to report an exception it never raised, and the assertion would be satisfied by a
+  stderr line that lies. The question here is "of the rows WE COMPARED, did every one we compared
+  by answering nothing get its refusal named", and an excluded row is not compared."""
+  empty = sorted(n for n in gated
+                 if all(not c.strip() for c in cells(split_py(port_rows[n])[0])))
   return [n for n in empty if not any(n in lab for lab in stderr_labels)]
 
 
@@ -381,7 +389,7 @@ def main():
   # carrying the sentinel, this is the only place a refusal exists: a port row whose own answer
   # is the empty marker and which the oracle did NOT report refusing is a row that was compared
   # against a hand-written empty string and called agreement.
-  silent = unsilent_refusals(res["port"], ref)
+  silent = unsilent_refusals(res["port"], res["gated"], ref)
   bad = list(res["bad"]) + ([
     f"{len(silent)} port row(s) answer the empty marker and the oracle reported NO refusal for "
     f"them, so they were compared against an assertion rather than against CPython: {silent}"]

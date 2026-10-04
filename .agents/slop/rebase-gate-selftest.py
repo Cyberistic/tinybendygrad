@@ -1269,23 +1269,28 @@ def dead_lane_is_broken(port, oracle):
   deliberately-dead pair and require BROKEN.
 
   This is the state the whole tool exists for, and the one a synthetic fixture cannot supply:
-  GUARD 2 and GUARD 4 both need lanes that were actually produced. `dtype_tables` exits 0
-  printing TSV (so `rows()` finds no `=`). `renderer_oracle.py cstyle` USED to exit 1 with
-  `KeyError: dtypes.weakint` inside upstream cstyle, and NO LONGER DOES: measured 2026-10-03
-  it exits 0 and prints 15 real C kernels under the names `k1_load_store`, `k2_alu`,
-  `k3_consts`, ... It is still BROKEN, and now for the ONE remaining reason rather than two:
-  those 15 names share 0 of cstyle.bend's 225, so GUARD 3 fires. Stating this matters --
-  "exits 1" was true when this docstring was written, a reader checking it would now be told
-  it is broken code, and the obvious repair -- trusting the exit status -- is the mistake this
-  function exists to prevent. Both were BROKEN-by-construction in the briefing, and a wiring
-  change must never quietly turn either into a pass.
+  GUARD 2 and GUARD 4 both need lanes that were actually produced. There is now ONE of these and
+  not two: `dtype.bend` is wired to `oracle/dtype_tables.py`, which exits 0 printing 14,774
+  TAB-separated lines, so `rows()` finds nothing and GUARD 2 answers "compared nothing".
 
-  IT CALLS gate_port(), NOT main(). That is deliberate and it is a correction: shelling out to
-  the whole gate took 4m25s per port -- measured, and almost entirely `rebase-plan.py` re-walking
-  every header -- which made the selftest long enough to be killed by a server restart TWICE.
-  gate_port() is the same decision function main() calls; what it does not cover is main()'s
-  TARGET CONSTRUCTION, and plan_contract() covers that separately and instantly. Both halves
-  are driven, neither is driven twice, and neither is driven through an interpreter."""
+  ⚠ THE OTHER ONE WAS `renderer_oracle.py cstyle` AND IT IS GONE FROM BOTH ROSTERS, which is why
+  this docstring had to change rather than keep describing it. It used to exit 1 with
+  `KeyError: dtypes.weakint` inside upstream cstyle, then (measured 2026-10-03) exit 0 and print
+  15 real C kernels under names `k1_load_store`, `k2_alu`, ... which share 0 of cstyle.bend's row
+  names -- so it was BROKEN as GUARD 3 while the port sat unwired for a reason that had nothing
+  to do with it. `cstyle-rows` replaced it (222 shared, 0 disagree) and cstyle.bend is WIRED.
+
+  THE LESSON STAYS AND IT IS NOT ABOUT EITHER LANE: stating a BROKEN reason that has since
+  stopped being true sends the next reader to trust the exit status, which is exactly the
+  mistake this function exists to prevent. A stale reason is worse than no reason, because it is
+  a reason.
+
+  IT CALLS gate_port(), NOT main(). That is deliberate: shelling out to the whole gate took 4m25s
+  per port -- measured, and almost entirely `rebase-plan.py` re-walking every header -- which made
+  the selftest long enough to be killed by a server restart TWICE. gate_port() is the same decision
+  function main() calls; what it does not cover is main()'s TARGET CONSTRUCTION, and
+  plan_contract() covers that separately and instantly. Both halves are driven, neither is driven
+  twice, and neither is driven through an interpreter."""
   g = load_gate(f"dead_lane_{pathlib.Path(oracle.split()[0]).stem}")
   bend = FakeBend(str(REPO / port))
   v, _ = g.gate_port(bend, [oracle], {"lanes": {}, "hunks": {}}, native=False)

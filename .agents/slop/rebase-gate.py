@@ -173,16 +173,19 @@ def sh(*a, timeout=1800):
 #                               which prints `f"{n.ljust(w)}  {v}"`. NO `=` AT ALL, so F1 found
 #                               ZERO rows in 213 real ground-truth rows.
 #
-# ⚠ F2 IS WHY cstyle.bend WAS NOT WIRED, and it was 4/4 AGREEING over 434 unread rows while
-# unwired. `rows()` took everything after the FIRST `=` as the value, so the port's `[v]   py=[w]`
-# was compared against an oracle printing bare `[v]`, and every shared row disagreed BY
-# CONSTRUCTION: measured 444 disagreements on a pair cstyle-gate.py measures as 221/227 clean
-# with 0 disagreeing. A red lane teaches the reader to read red as normal, so the port was left
-# unwired and 434 rows of real comparison were being read as zero.
+# ⚠ F2 IS WHY cstyle.bend WAS NOT WIRED, and it is why it would have read as BROKEN FOREVER while
+# being 221-of-227 CLEAN. `rows()` took everything after the FIRST `=` as the value, so the port's
+# `[v]   py=[w]` was compared against an oracle printing bare `[v]`, and every shared row disagreed
+# BY CONSTRUCTION. MEASURED through this tool with the old parser: 222 shared, **222 disagreeing**,
+# on a pair `.agents/slop/cstyle-gate.py` measures as 221/227 with 0 disagreeing. A red lane teaches
+# the reader to read red as normal, so the port was left unwired and 222 rows of real comparison
+# were being read as zero. With the fold: 222 shared, **0 disagreeing**.
 #
-# ⚠ F3 IS WHY ~213 ROWS OF GROUND TRUTH COMPARED AGAINST NOTHING, which is the single most
-# expensive shape this tool has to defend against: an empty lane and a disagreeing lane print
-# nothing alike to a reader in a hurry.
+# ⚠ F3 IS WHY 213 ROWS OF GROUND TRUTH COMPARED AGAINST NOTHING, which is the single most expensive
+# shape this tool has to defend against: an empty lane and a disagreeing lane print nothing alike to
+# a reader in a hurry. `schedule/multi.bend` is still UNWIRED after this change, for a DIFFERENT
+# reason -- 0 shared row names -- and GUARD 4 answering "share NO row names" is the correct verdict
+# rather than a failure of it. See ORACLE_NOT_WIRED in rebase-gate-selftest.py.
 PY_TAIL = "]   py=["   # exactly the three-space literal cstyle.bend:1747 writes; rfind, not find,
                        # because a value's own bracket can precede the boundary. The `]` BELONGS
                        # to `left`: the oracle prints `[*V]` and the port prints `[*V]   py=[*V]`,
