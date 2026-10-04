@@ -51,8 +51,10 @@ import ./ops.bend as O
 import ./fold.bend as F
 
 # THE ACCUMULATOR. These rules GROW the arena, so the answer is the arena AND a
-# node index AND whether anything fired. A `Maybe` cannot be a field of a `Data`
-# record, so the flag is a `U32`; the index is meaningless when the flag is 0, and
+# node index AND whether anything fired. A `Maybe` cannot be a FOLD'S ACCUMULATOR (it is
+# affine), and it is NOT true that it cannot be a `Data` field -- MEASURED, 20 in-tree
+# `Data` records carry 38 `Maybe` fields. So the flag being a `U32` is NOT this reason; the
+# independent one is below. The index is meaningless when the flag is 0, and
 # 0 is the arena's BOTTOM node so it cannot serve as the sentinel either.
 type Hit is Data:
   Hit{ar: O.Arena, i: U32, on: U32}

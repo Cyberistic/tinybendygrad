@@ -1590,8 +1590,10 @@ def slrow(nm: String, xs: List<&2, String>) -> IO(Unit):
 def wstream(t: Tr) -> List<&2, U32>: Tr.args(CALL_WORD(), Tr.calls(t))
 
 # `xs[i]`, which is `List.get` and a `Maybe` and no sugar. `Wv` is the record
-# version of `Maybe<&2, U32>`: a `Data` record cannot hold a `Maybe` field, and
-# a `Maybe` is read once and cannot be `+`.
+# version of `Maybe<&2, U32>`. THE REASON GIVEN WAS HALF FALSE: a `Data` record CAN hold a
+# `Maybe` field -- MEASURED, 20 in-tree `Data` records carry 38 of them -- while the OTHER half
+# is the real constraint and stands: a `Maybe` is affine, read once, no `+`. So `Wv` may be
+# the right encoding; what was wrong is the reason offered for it.
 type Wv is Data:
   Wv{v: U32}
 

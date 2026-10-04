@@ -403,7 +403,10 @@ def onx_odt_name_rev.of(m: Maybe<&1, U32>) -> U32:
 # `OnnxDataType.to_dtype()` -- onnx.py:37. Two defs, not one, for the reason
 # every `.of` split in this port exists: a `match` may not scrutinise a CALL
 # (bend2-constraints rule 2), so `onx_odt_dt` cannot match `DT.to_dtype_of(k)`.
-# And a `Maybe` cannot be a fold's accumulator nor a `Data` field, so the
+# And a `Maybe` cannot be a fold's ACCUMULATOR (bend2-constraints rule 2, and that is
+# true -- it is affine). The old text also said "nor a `Data` field", which is FALSE:
+# MEASURED, 20 in-tree `Data` records carry 38 `Maybe` fields between them. Only the
+# accumulator half survives, so the
 # "key AND dtype" answer travels as two parameters.
 def onx_odt_dt.of(k: Maybe<&1, String>) -> Maybe<&1, S.Dt>:
   match k:

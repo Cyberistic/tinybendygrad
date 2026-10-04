@@ -100,7 +100,12 @@
 #      `u.shape` IS `new_shape`, `shrink_to` builds `_mop(SHRINK, ((0,n0),(0,n1)))`
 #      and then returns `self` because `ret.shape == self.shape` (movement.py:204).
 #      Spelling it would add a SHRINK node to every `empty` row and CPython has none.
-#   5. A `MAYBE` CANNOT BE A `Data` FIELD AND `+` CANNOT BE SPELLED ON IT, so the
+#   5. A `Maybe` IS AFFINE, SO IT CANNOT BE A FOLD'S ACCUMULATOR -- and the FIELD half of
+#      the old claim was FALSE. MEASURED: 20 in-tree `type ... is Data` records carry 38
+#      `Maybe` fields (`LAWS/spec.bend`'s `Sp` has three), so a `Data` record holds a
+#      `Maybe` fine and the note it cites says only ACCUMULATOR. Whether `+` can be spelled
+#      on a `Maybe` FIELD is not tested either way here -- the accumulator rule does not
+#      decide it. What survives is the affinity, so the
 #      `dtype=None` that threads `full` -> `empty_like` -> `commit_dtype` crosses as
 #      its RESOLVED `S.Dt` plus the two `Maybe` bounds SEPARATELY (`cr_committed`).
 #      `D.commit_dtype`'s own signature already wants them separately, so this costs
