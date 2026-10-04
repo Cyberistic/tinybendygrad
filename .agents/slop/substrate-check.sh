@@ -251,6 +251,92 @@ done
 # THE TALLY IS PRINTED BESIDE THE TOTALS, NOT BURIED IN A COMMENT.
 print -r -- "ROUTE   bend=$n_bend  cc=$n_cc  node=$n_node  no-instrument=$n_none  (of $# file(s))"
 
+# ------------------------------------------------------------------ PROVENANCE
+# `bend=` ABOVE COUNTS WHATEVER IT WAS HANDED, AND THAT IS THE DEFECT THIS BLOCK
+# EXISTS FOR. MEASURED 2026-10-05: `find tinybendygrad -name '*.bend'` = 138, the port
+# is 137, and the whole discrepancy is `probe_f32lit.bend` -- ONE PROBE, STILL ON DISK,
+# OWNED BY A LIVE UNIT. Two earlier units did the same with `*.staged-*` names and were
+# deleted before anyone read the number, so the count came back to 137 and NOBODY
+# NOTICED IT HAD MOVED. **A DENOMINATOR THAT MOVES BY ONE STILL LOOKS LIKE A
+# DENOMINATOR**, and `bend=137` printed the same in both worlds.
+#
+# SO THE ROUTE LINE NOW PRINTS ITS OWN SPLIT, `port=` AGAINST `non-port=`, AND THE
+# CRITERION IS DERIVED RATHER THAN DECLARED. A registry -- a `PROBES.md` the router
+# reads, or a list of known-scratch names -- REPRODUCES THE DEFECT ONE LEVEL DOWN: the
+# probe that moves the count is the probe nobody remembered to register. Instead:
+#
+#   PORT     iff `git ls-files` knows the path. No registration, no naming convention,
+#            no memory. A port file is in the index and a probe is not, because nothing
+#            has ever committed one. `bend_mutate.py:46` is the producer that keeps
+#            producing one, and `.gitignore:34-36` already names `*.mut.bend`.
+#   no-upstream is the SECOND, WEAKER criterion and is REPORTED, NOT FAILED: 16 files
+#            are legitimately not 1:1 with an upstream `.py` (`LAWS/**`, `PROOF*.bend`,
+#            `base.bend`, `sz.bend`, `codegen/kernel.bend`, `uop/fold.bend`, ...), so
+#            failing on it would report 16 findings forever. Measured: it agrees with
+#            the index criterion on exactly the 2 files that are both.
+#
+# FAIL-SAFE DIRECTION, AND IT IS THE PART THAT MATTERS: THE ALARM FAILS, BUT THE ONLY
+# WAY TO SILENCE IT IS `git add` THE FILE -- i.e. to take ownership of it IN THE INDEX.
+# SILENCE REQUIRES AN EXPLICIT, RECORDED ACT. A probe that gets swept into a `jj split`
+# does not disappear from the count; it flips `not-in-index` to 0 and the port count a
+# reader compares against is one too high, which the same line now says.
+#
+# SCOPE: THE ALARM FIRES ONLY FOR A PATH INSIDE `tinybendygrad/`. A `$TMPDIR` SCRATCH
+# COPY IS NOT IN THE INDEX EITHER -- `agent-core.md:217` records that a scratch copy
+# also cannot resolve a relative import, so it is a documented way to work -- and
+# failing it would be a false positive on the sanctioned workflow. Same split, softer
+# verdict, stated rather than tuned.
+PROVENANCE=$(print -l -- "$@" | python3 -c '
+import os, subprocess, sys
+P=N=I=U=A=NB=BENDPOP=0; rows=[]; alarm=[]
+for p in [l for l in sys.stdin.read().split("\n") if l]:
+    # AN EXACT PATHSPEC. `git ls-files <path>` IS THE QUESTION; A `grep -r tinybendygrad`
+    # IS NOT -- a path SUBSTRING is not a path, and that mistake produced 315 phantom
+    # "files swept", every one a `.agents/slop/.../tinybendygrad/...` copy.
+    idx = subprocess.run(["git", "ls-files", "--error-unmatch", "--", p],
+                         capture_output=True).returncode == 0
+    live = p.startswith("tinybendygrad/")
+    up = os.path.isfile("tinygrad/" + p[len("tinybendygrad/"):-5] + ".py") if live and p.endswith(".bend") else None
+    if p.endswith(".bend"): BENDPOP += 1
+    if idx and up is not False:
+        P += 1; continue
+    N += 1
+    if p.endswith(".bend"): NB += 1
+    if not idx: I += 1
+    if up is False: U += 1; rows.append("  no-upstream   %s" % p)
+    if live and not idx:
+        A += 1
+        alarm.append("  NOT-PORT      %s\n"
+                     "                :: NOT IN THE INDEX. NO PORT FILE IS UNTRACKED, so this is a probe, a\n"
+                     "                :: mutant, or scratch copy -- whatever it is, it is not in the tree.\n"
+                     "                :: IT IS STILL COUNTED IN `bend=` ABOVE. Silence requires ownership:\n"
+                     "                :: `git add` it, or delete it." % p)
+print("PROVENANCE  port=%d  non-port=%d   of which not-in-index=%d no-upstream=%d   (of %d)"
+      % (P, N, I, U, P + N))
+for r in rows: print(r)
+for r in alarm: print(r)
+print("PORT ALARM  %d file(s) inside tinybendygrad/ are not in the index." % A)
+# THE RESIDUAL, STATED AS A SUBTRACTION AND NOT AS A CLAIM. A first cut printed
+# `none, so `port=` is the whole of `bend=`` -- and it was FALSE in the same breath it
+# printed `port=0 bend=2`, because a `$TMPDIR` scratch copy is legitimately not in the
+# index and legitimately not a port. A conditional sentence about agreement is a claim
+# that can be wrong; a subtraction cannot.
+#
+# COUNTED FROM THE `.bend` POPULATION HANDED, NOT FROM `bend=` ABOVE, AND THE REASON IS
+# MEASURED COST: the verdicts are ~0.1 s for a small file and tens of seconds for a
+# 6,000-line one, so a full 138-file pass is minutes while this line is 2.4 s. Deriving
+# the number from `$n_bend` would have made the honest answer unmeasurable in practice,
+# which is the same failure as the defect: a number too expensive to check is a number
+# nobody checks. `-n` suppresses verdicts and does not touch this line, so the split is
+# available with and without a verdict -- which is what makes it usable as a pre-gate.
+print("DENOMINATOR .bend handed=%d, of which non-port=%d  =>  the port count to compare against is %d"
+      % (BENDPOP, NB, BENDPOP - NB))
+sys.exit(1 if A else 0)
+')
+prov_rc=$?                      # CAPTURED IMMEDIATELY: `$?` AFTER ANY `[` IS THAT `[`'s rc,
+print -r -- "$PROVENANCE"        # NOT python's -- AND A VACUOUS VERDICT LOOKS IDENTICAL TO A PASS.
+[ "$prov_rc" -ne 0 ] && fail=$((fail+1))
+
 # ------------------------------------------------------------------ HALF 2
 # DECLARATIONS A MODULE EXPORTS. `def`/`type`/`law` ARE ALWAYS AT COLUMN 0 IN THIS
 # TREE (MEASURED: 27,661/804/44 top-level `def`/`type`/`law`, 0 indented). A `type X is
