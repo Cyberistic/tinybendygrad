@@ -1,1 +1,9 @@
-reduce BYTE-IDENTICAL (434 bytes both sides)
+reduce DIFFERS:
+5,7c5,7
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:8) 2:i0 1:N 1:N 8:n(i1,i4)
+< 2:i6 7:PERMUTE 3:f32 11:(l0:8,l0:4) 2:i0 1:N 8:n(i1,i0) 5:n(i5)
+< 2:i7 6:REDUCE 3:f32 6:(l0:4) 2:i0 1:N 11:rd(OADD,i1) 5:n(i6)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+> 2:i6 7:PERMUTE 1:? 1:? 2:i0 1:N 8:n(i1,i0) 5:n(i5)
+> 2:i7 6:REDUCE 1:? 1:? 2:i0 1:N 11:rd(OADD,i1) 5:n(i6)

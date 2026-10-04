@@ -13,7 +13,16 @@ cd "$(dirname "$0")/../.." || exit 2
 D=runs/graphcmp/D
 E="env -u PYTHONPATH LC_ALL=C DEV=NULL"
 P=.venv/bin/python
-ALL="matmul reduce buffer sink range rangeflat cast special binblob group commute indexed sym"
+ALL="matmul reduce buffer sink range rangeflat cast special binblob group commute indexed sym lin loop gate"
+# THE VERDICT EACH GRAPH MUST PRINT. A default is not available here and the reason is
+# LIMITS.md's own lesson: a claim with no denominator, or an expectation that reads a
+# variable, is a claim nobody can check. `sym` DISAGREES because the port cannot mint a
+# symbolic dim at all (fold.bend's `ssimplify` wall). `lin` DISAGREES on ONE node of 46 --
+# its SINK's `applied_opts`, which the port can only answer with one `q` per option.
+# `loop` DISAGREES on ONE node of 25 -- its CALL, whose dtype the port reads from
+# `CallInfo.cdtype`, a field CPython's `CallInfo` does not have (ops.py:130-131 reads
+# `src[0].dtype`). Both are MEASURED causes, not tolerances.
+WANT="matmul:AGREE reduce:AGREE buffer:AGREE sink:AGREE range:AGREE rangeflat:AGREE cast:AGREE special:AGREE binblob:AGREE group:AGREE commute:AGREE indexed:AGREE sym:DISAGREE lin:DISAGREE loop:DISAGREE gate:AGREE"
 mkdir -p "$D"
 
 run() { # run <outfile> <args...>
@@ -26,24 +35,23 @@ run() { # run <outfile> <args...>
 # --- 00 THE SELFCHECK, and the COMM and LEDGER assertions it grew -------------------
 run D0-selfcheck.txt selfcheck
 
-# --- 01 THE THIRTEEN GRAPHS. One command each, one verdict line each, and the
+# --- 01 THE SIXTEEN GRAPHS. One command each, one verdict line each, and the
 # ---    DENOMINATOR on the line above it so `AGREE` on 2 nodes never prints like `AGREE`
-# ---    on 19. `sym` is SUPPOSED TO DISAGREE (three of its twelve nodes read `?` for
-# ---    dtype and shape: fold.bend cannot `ssimplify` a non-CONST STACK element, so the
-# ---    port cannot build a symbolic dim at all). Every other graph is AGREE, and this
-# ---    script ASSERTS it rather than letting a reader check thirteen files by eye.
+# ---    on 19. THREE graphs DISAGREE and every one of them is accounted for by a name in
+# ---    `WANT` above; the script ASSERTS each rather than letting a reader check sixteen
+# ---    files by eye.
 for g in $ALL; do
   run "D1-graph-$g.txt" diff --graph "$g"
 done
 { bad=0
   for g in $ALL; do
-    case $g in sym) want=DISAGREE ;; *) want=AGREE ;; esac
+    want=$(echo "$WANT" | tr ' ' '\n' | grep "^$g:" | cut -d: -f2)
     got=$(grep -o 'VERDICT: [A-Z]*' "$D/D1-graph-$g.txt" | tail -1 | cut -d' ' -f2)
     if [ "$got" != "$want" ]; then
       echo "$g: VERDICT=$got EXPECTED=$want"; bad=1
     fi
   done
-  [ "$bad" = 0 ] && echo "all 13 graphs: verdict as expected (12 AGREE + sym DISAGREE)" \
+  [ "$bad" = 0 ] && echo "all 16 graphs: verdict as expected (13 AGREE; sym, lin and loop DISAGREE, each with a named cause in the \$WANT comment above)" \
     || echo "AT LEAST ONE GRAPH'S VERDICT MOVED"
 } > "$D/D1-verdicts.txt"
 
@@ -83,10 +91,15 @@ cat "$D"/D2-cmp-*.txt > "$D/D2-bytediff.txt"
 
 # --- 03 CONTROL: each side against ITSELF. A differ never seen to agree with itself is
 # ---    not known to work. `group` is here because it is the first DAG, and a control over
-# ---    a tree-only corpus is a control that has never met a two-parent node.
+# ---    a tree-only corpus is a control that has never met a two-parent node. `gate` and
+# ---    `loop` are here because they are the widest-fan-in and the disagreeing graphs, and a
+# ---    control that only ever runs on AGREEing fixtures is a control that has never had to
+# ---    agree with itself WHILE disagreeing.
 run D3-control-matmul.txt control --graph matmul
 run D3-control-binblob.txt control --graph binblob
 run D3-control-group.txt  control --graph group
+run D3-control-gate.txt   control --graph gate
+run D3-control-loop.txt   control --graph loop
 
 # --- 04 CROSS: one graph against a DIFFERENT graph, on BOTH sides.
 run D4-cross-range.txt cross --graph range
@@ -121,14 +134,25 @@ run D8-dbg-012.txt dbg --levels 0,1,2
 run D8-dbg-03.txt   dbg --levels 0,3
 
 # --- 09 REPRODUCIBILITY. Two clean runs, byte-for-byte. A differ whose output moves on
-# ---    its own cannot be used to detect that the port moved. THREE cases, because the
-# ---    three interesting shapes are different: `group` is the first DAG, `sym` is the one
-# ---    graph that DISAGREES (so a report whose DISAGREEMENTS moved would be the one that
-# ---    matters, and it used not to be in the pair at all), and the third is a PLANT -- a
-# ---    run that was killed mid-write once left three `D5-plant-*.txt` files that were
-# ---    byte-identical to EACH OTHER, which no plant can produce, and the only thing that
-# ---    told them apart from a real result was that they had been truncated.
-for c in "group:" "sym:" "commute:--plant srcswap"; do
+# ---    its own cannot be used to detect that the port moved. FIVE cases, because the
+# ---    interesting shapes are different: `group` is the first DAG, `sym` and `loop` are
+# ---    graphs that DISAGREE (so a report whose disagreements moved would be the one that
+# ---    matters, and only one of them used to be in the pair at all), `gate` is the widest
+# ---    fan-in in the corpus, and `commute:--plant srcswap` is a PLANT -- a run that was
+# ---    killed mid-write once left three `D5-plant-*.txt` files that were byte-identical to
+# ---    EACH OTHER, which no plant can produce, and the only thing that told them apart from
+# ---    a real result was that they had been truncated.
+STAB_A="group sym loop gate"
+STAB_PLANT="commute:--plant srcswap"
+for g in $STAB_A; do
+  run "D9-stability-$g-a.txt" diff --graph "$g"
+  run "D9-stability-$g-b.txt" diff --graph "$g"
+done
+# QUOTED, or `for c in $STAB` splits on the space in `--plant srcswap` and produces a
+# SIXTH pair named `srcswap`, which is not a graph. MEASURED: the unquoted list did
+# exactly that and `D9-stability-srcswap-a.txt` was an argparse error file -- which is why
+# `stable-pairs` printed 6 for 5 pairs.
+for c in $STAB_PLANT; do
   g=${c%%:*}
   pl=${c#*:}
   # shellcheck disable=SC2086
@@ -136,7 +160,7 @@ for c in "group:" "sym:" "commute:--plant srcswap"; do
   # shellcheck disable=SC2086
   run "D9-stability-$g-b.txt" diff --graph "$g" $pl
 done
-{ for g in group sym commute; do
+{ for g in $STAB_A commute; do
     if cmp -s "$D/D9-stability-$g-a.txt" "$D/D9-stability-$g-b.txt"; then
       echo "$g: 2 runs BYTE-IDENTICAL"
     else
@@ -170,12 +194,32 @@ $E $P .agents/slop/graphcmp-p13-ops.py > "$D/D0-ops-probe.txt" 2>&1
 rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
 
 # --- 15 WHAT A CLEAN RUN OF THIS SCRIPT ESTABLISHES, IN ONE PLACE, because every other
-# ---     statement about it is somewhere else. MEASURED: two consecutive clean runs of this
-# ---     script leave every file under `$D` byte-identical (`find | md5 -q`, both sides).
-# ---     It is written here rather than claimed in the prose because a claim about
-# ---     reproducibility that is not printed by the script is the same kind of sentence
-# ---     that the symbolic-dim entry used to be -- and LIMITS #16 is the measured cost of
-# ---     exactly that habit.
+# ---     statement about it is somewhere else.
+# ---
+# ---     REPRODUCIBILITY, and the command that checks it. The old claim here read "two
+# ---     consecutive clean runs of this script leave every file under `$D` byte-identical
+# ---     (`find | md5 -q`, both sides)" and THAT COMMAND IS WRONG: macOS `md5 -q` takes
+# ---     exactly ONE file and PRINTS NOTHING given several, so `find | md5 -q` is not a
+# ---     digest of anything. The claim survived because the file it produced looked like a
+# ---     digest. The check that works, and the only one used since:
+# ---
+# ---       sh .agents/slop/graphcmp-run.sh
+# ---       find runs/graphcmp/D -type f | sort | while read f; do
+# ---         printf '%s  %s\n' "$(grep -v '^[[:space:]]*$' "$f" | shasum -a 256 | cut -d' ' -f1)" "$f"
+# ---       done > /tmp/A
+# ---       sh .agents/slop/graphcmp-run.sh
+# ---       ... same ... > /tmp/B ; diff /tmp/A /tmp/B
+# ---
+# ---     `grep -v '^[[:space:]]*$'` is load-bearing rather than fussy: a trailing BLANK LINE
+# ---     is a real difference that this project has already paid for -- a count-based diff
+# ---     reported 16 apparent deltas on a run where 16 were blank lines -- while a
+# ---     hash-of-the-whole-file would call a blank line a difference too. This form asks
+# ---     the question "did any CONTENT move", which is the question.
+# ---     MEASURED 2026-10-04: **158 of 158 files identical**, and the first time it was run
+# ---     it found exactly ONE file that was not (`D0-coverage-census.txt`, a `dict` printed
+# ---     in set-iteration order -- now defect 20 in graphcmp-oracle.py). That is the whole
+# ---     argument for the check existing: the defect it found was invisible to `selfcheck`,
+# ---     to `control`, to every verdict and to every DENOMINATOR line in the directory.
 { echo "graphs=$(ls "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
   echo "graphs-agree=$(grep -l 'VERDICT: AGREE' "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
   echo "graphs-disagree=$(grep -l 'VERDICT: DISAGREE' "$D"/D1-graph-*.txt | wc -l | tr -d ' ')"
@@ -184,6 +228,10 @@ rm -f "$D/D9-stability-a.txt" "$D/D9-stability-b.txt"
   echo "stable-pairs=$(grep -c 'BYTE-IDENTICAL' "$D/D9-stability.txt" | tr -d ' ')"
   echo "selfcheck=$(sed -n '1p' "$D/D0-selfcheck.txt")"
   echo "conflations=$(grep -c 'VERDICT: OK' "$D/D7-conf.txt") of 4"
+  # `grep -c` over a GLOB prints ONE COUNT PER FILE; it does not total them. MEASURED: it
+  # printed five `filename:1` lines and then `of 5`, so the summary's own total line was
+  # five lines long. `-l | wc -l` is the counting form.
+  echo "controls=$(grep -l 'CONTROL VERDICT: OK' "$D"/D3-control-*.txt | wc -l | tr -d ' ') of 5"
 } > "$D/D0-run-summary.txt"
 
 echo "wrote $D"

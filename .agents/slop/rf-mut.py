@@ -1,47 +1,55 @@
 #!/usr/bin/env python3
-"""mut.py -- the MEASURED mutation table for schedule/rangeify.bend.
+"""rf-mut.py -- the MEASURED mutation table for `schedule/rangeify.bend`.
+
+    python3 .agents/slop/rf-mut.py
 
 Applies one textual mutation at a time, re-checks, re-runs, and diffs against the
 clean gate.  A mutation that does not compile is reported as such, because "the
-refused edit" is a result too.
+refused edit" is a result too -- and it is a DIFFERENT result from "the edit never
+landed", which is `PATCH-NOT-APPLY`.  A table that uses one spelling for both indicts
+the edit when the build is what failed.
+
+⚠ IT NO LONGER WRITES THE LIVE TREE.  It used to: `open(F,'w').write(...)` plus a
+`shutil.copy(BAK, F)` restore, digest sampled once at start.  `rangeify.bend` is a
+file other units are editing, and a restore over a concurrent edit destroys the
+straddling work permanently -- `ops-501-mutate.py`'s docstring records exactly that
+happening.  `staged_mut.Staged` now stages `jj file show -r @` BESIDE the file (so
+`./../helpers.bend` and `./../LAWS/spec.bend` still resolve -- a `$TMPDIR` copy
+cannot, and that produced 22 phantom blind spots in one unit), ASSERTS
+`sha256(mirror) == sha256(live)`, edits only the staged copy, unlinks it in a
+`finally`, and REPORTS whether the live digest moved during the run.
+
+`BEND --check-only` is used for the liveness gate on its OUTPUT TEXT and never on its
+exit status, because agent-core.md records it exiting 1 on a file that is fine.
 """
-import subprocess, sys, os, shutil
+import os
+import pathlib
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import patch_not_apply as PNA
+import staged_mut as SM
 
-F = 'tinybendygrad/schedule/rangeify.bend'
-BAK = '/tmp/rf_orig.bend'
-
-def run():
-  r = subprocess.run(['./bin/bend', F], capture_output=True, text=True)
-  return r.stdout + r.stderr
-
-def checks():
-  r = subprocess.run(['./bin/bend', F, '--check-only'], capture_output=True, text=True)
-  return 'ALL PROOFS CHECK' in (r.stdout + r.stderr)
+ROOT = pathlib.Path(__file__).resolve().parent.parent.parent
+F = ROOT / "tinybendygrad/schedule/rangeify.bend"
+OUT = ROOT / ".agents/slop/rf-mutations.txt"
 
 MUTS = [
-  # (name, old, new)
-  ("M1  `M.hop_first`'s first-wins test flipped (last-wins)",
-   "def M2X", "def M2X"),   # placeholder, replaced below
-]
-
-MUTS = [
-  # 1. THE FIRST-WINS FOLD. `hop_first` is movement.bend's, so the mutation is on
-  #    the ONE thing this file owns that decides first-wins: `rf_self` is not it,
-  #    `M.hop_first` is. So mutate the local copy of the fold's DECISION instead:
-  #    `M.hop_next`'s ordering, by making `rf_self` KEEP the node under examination
-  #    rather than drop it. That is the `ret is not uop` direction and it is the
-  #    single mutation most likely to be written by mistake.
+  # 1. THE FIRST-WINS FOLD.  `hop_first` is movement.bend's, so the mutation is on
+  #    the ONE thing this file owns that decides first-wins: `M.hop_next`'s ordering,
+  #    by making `rf_self` KEEP the node under examination rather than drop it.  That
+  #    is the `ret is not uop` direction and it is the single mutation most likely to
+  #    be written by mistake.
   ("M1  `rf_self` keeps `self` instead of dropping it (ret-is-not-upop inverted)",
    "def rf_self.of(same: Bool, +r: M.Hop) -> M.Hop:\n  match same:\n    case True{} : M.Hop{M.hop_ar(r), 0}\n    case False{}: r",
    "def rf_self.of(same: Bool, +r: M.Hop) -> M.Hop:\n  match same:\n    case True{} : r\n    case False{}: M.Hop{M.hop_ar(r), 0}"),
 
-  # 2. THE IDENTITY CHECK of the header. `rb_ident` is the only one in the file.
+  # 2. THE IDENTITY CHECK of the header.  `rb_ident` is the only one in the file.
   ("M2  `rb_ident` always True (the upat.py:100-105 check removed)",
    "def rb_ident(+ar: O.Arena, +self: U32) -> Bool:\n  U32.is_eq(M.mp_src(ar, self, 0), M.mp_src(ar, self, 1))",
    "def rb_ident(+ar: O.Arena, +self: U32) -> Bool:\n  Bool.or(U32.is_eq(M.mp_src(ar, self, 0), M.mp_src(ar, self, 1)), M.mp_nsrc_is(ar, self, 2))"),
 
-  # 3. `early_reject`'s subset test, `and` -> `or`.  The measured NEGATIVE result.
+  # 3. `early_reject`'s subset test, `and` -> `or`.
   ("M3  `rf_early`'s subset test `and` -> `or`",
    "    case o <> t: Bool.and(O.op_in(have, o), rf_early.go(have, t))",
    "    case o <> t: Bool.or(O.op_in(have, o), rf_early.go(have, t))"),
@@ -133,44 +141,82 @@ MUTS = [
 
   # 20. the COUNT rows' reason for existing: an entry DELETED -- not edited, not
   #     given a wrong op set.  It is the LAST entry, so no tag after it renumbers
-  #     and no rule can fire differently: the only thing in the whole 81-row gate
-  #     that can possibly see this is `ct_len`.  If that row did not exist, this
-  #     mutation would be invisible.
+  #     and no rule can fire differently: the only thing in the whole gate that can
+  #     possibly see this is `ct_len`.  If that row did not exist, this mutation
+  #     would be invisible.
+  #
+  # RE-AIMED 2026-10-04.  The old anchor had drifted in three ways at once, and all
+  # three were whitespace-or-content rather than structural: `[O.OpsINDEX{}],` took
+  # FIVE spaces before the second column and now takes three, entry 8's left column
+  # said `OpsMSTACK` where it says `OpsINDEX`, and the trailing comments were
+  # rewritten.  Re-aimed to the file's current two lines; the mutation is unchanged,
+  # which is the point -- only the anchor moved.  The REPLACEMENT also gained the
+  # closing `]}`: deleting the last `PMEntry` verbatim leaves the entry LIST
+  # unterminated, so M20 as written was `DID-NOT-COMPILE` and never measured the
+  # thing it exists for.  A mutation that deletes an entry has to leave a table.
   ("M20 `ct_8`'s MSTACK.f(INDEX) rule DELETED from the table",
-   "   O.PMEntry{7, [O.OpsINDEX{}],     [O.OpsAFTER{}]},          # 124  INDEX(AFTER)\n   O.PMEntry{8, [O.OpsMSTACK{}],    [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX)",
-   "   O.PMEntry{7, [O.OpsINDEX{}],     [O.OpsAFTER{}]}]          # 124  INDEX(AFTER)"),
+   "   O.PMEntry{7, [O.OpsINDEX{}],   [O.OpsAFTER{}]},          # 124  AFTER.f(INDEX) -- root INDEX\n   O.PMEntry{8, [O.OpsINDEX{}],   [O.OpsMSTACK{}]}]         # 127  MSTACK.f(INDEX) -- root INDEX",
+   "   O.PMEntry{7, [O.OpsINDEX{}],   [O.OpsAFTER{}]}]         # 124  AFTER.f(INDEX) -- root INDEX"),
 ]
 
-def main():
-  shutil.copy(F, BAK)
-  base = run()
-  open('/tmp/rf_base.txt', 'w').write(base)
-  assert checks(), "the file does not check to begin with"
-  print("clean gate captured: %d rows\n" % len(base.strip().split('\n')))
-  results = []
-  for name, old, new in MUTS:
-    s = open(BAK).read()
-    if old not in s:
-      results.append((name, PNA.not_applied(), []))
-      print("%-72s %s" % (name, PNA.not_applied()))
-      continue
-    open(F, 'w').write(s.replace(old, new, 1))
-    if not checks():
-      results.append((name, "DOES NOT CHECK", []))
-      print("%-72s DOES NOT CHECK" % name)
-      shutil.copy(BAK, F)
-      continue
-    out = run()
-    b = dict(l.split('=', 1) for l in base.strip().split('\n'))
-    m = dict(l.split('=', 1) for l in out.strip().split('\n'))
-    moved = sorted(k for k in b if b.get(k) != m.get(k))
-    results.append((name, "ok", moved))
-    print("%-72s moved %2d  %s" % (name, len(moved), ','.join(moved)))
-    shutil.copy(BAK, F)
-  print("\n| mutation | rows moved | how many |")
-  print("| --- | --- | --- |")
-  for name, st, moved in results:
-    print("| %s | %s | %d |" % (name, ' '.join(moved) if moved else 'NONE', len(moved)))
-  assert checks()
+def checks(text):
+    """`ALL PROOFS CHECK` on the OUTPUT TEXT.  Never the exit status: agent-core.md
+    records `--check-only` exiting 1 on a file that is fine, and one agent lost a
+    ten-minute retry loop to that."""
+    return "ALL PROOFS CHECK" in text
 
-main()
+
+def main():
+    lines = ["# rf-mut.py -- schedule/rangeify.bend, MEASURED.  rows moved are whole "
+             "`name=value` lines.\n"]
+    results = []
+    with SM.Staged(F, "rf") as unit:
+        if not checks(unit.run(("--check-only",))):
+            raise SystemExit("rangeify.bend does not ALL-PROOFS-CHECK to begin with; "
+                             "fix the substrate before measuring anything against it")
+        base = unit.rows()
+        if base is None:
+            raise SystemExit("the BASELINE produced no rows; refusing to measure")
+        SM.control(base, unit.rows(), "rangeify baseline")
+        lines.append("# baseline: %d rows, row-set digest %s\n"
+                     % (len(base), SM.row_digest(base)[:16]))
+        lines.append("| mutation | rows moved | how many |")
+        lines.append("| --- | --- | --- |")
+        for name, old, new in MUTS:
+            if unit.text().count(old) != 1:
+                results.append((name, PNA.not_applied("the anchor appears %d times"
+                                  % unit.text().count(old)), 0))
+                lines.append(PNA.pipe([name, PNA.not_applied("the anchor appears %d "
+                                  "times, so which occurrence is meant is undecided"
+                                  % unit.text().count(old)), 0], 3))
+                continue
+            unit.write(unit.text().replace(old, new, 1))
+            if not checks(unit.run(("--check-only",))):
+                unit.write(unit.origin())
+                results.append((name, PNA.not_a_program(), 0))
+                lines.append(PNA.pipe([name, PNA.not_a_program(), 0], 3))
+                continue
+            got = unit.rows()
+            unit.write(unit.origin())
+            if got is None:
+                results.append((name, PNA.not_a_program(), 0))
+                lines.append(PNA.pipe([name, PNA.not_a_program(), 0], 3))
+                continue
+            lost = sorted(k for k in set(base) | set(got) if base.get(k) != got.get(k))
+            results.append((name, "ok", len(lost)))
+            lines.append("| %s | %s | %d |"
+                         % (name, ", ".join(lost) if lost else "NONE", len(lost)))
+    OUT.write_text("\n".join(lines) + "\n")
+    print("\n".join(lines))
+    zeros = [r for r in results if r[2] == 0]
+    print("\nwrote %s" % OUT)
+    print("%d mutations, %d PATCH-NOT-APPLY, %d DID-NOT-COMPILE, %d moved nothing"
+          % (len(MUTS), sum(PNA.MARKER in r[1] for r in results),
+             sum(PNA.NOT_A_PROGRAM in r[1] for r in results), len(zeros)))
+    for name, st, _ in zeros:
+        print("  ZERO: %s -> %s" % (name, st))
+    return 1 if any(PNA.MARKER in r[1] or PNA.NOT_A_PROGRAM in r[1] for r in results) else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

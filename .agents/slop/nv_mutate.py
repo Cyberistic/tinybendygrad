@@ -12,17 +12,39 @@
 #  * THE BASELINE IS CAPTURED FRESH PER MUTATION and the substrate is re-checked,
 #    so a concurrent agent's edit cannot masquerade as a moved row.
 #
+# ⚠ IT NO LONGER WRITES THE LIVE TREE. It used to: `open(SRC,"w").write(...)` plus a
+# `finally` restore, digest sampled ONCE at start. nvdev.bend is a file another unit
+# is editing RIGHT NOW (a live transposition defect), and on a file churning at 7
+# writes per 2 minutes the `finally` restore reverts the other unit's commit -- the
+# exact failure `blob-intern-mutate.py`'s own docstring records, and the exact
+# failure `ops-501-mutate.py` was fixed for and whose fix was never propagated here.
+#
+# `staged_mut.Staged` now stages `jj file show -r @` BESIDE nvdev.bend (so its
+# `./ip.bend` import still resolves), ASSERTS sha256(mirror) == sha256(live), edits
+# ONLY the staged copy, unlinks it in a `finally`, and REPORTS whether the live
+# digest moved during the run. There is no restore over the live file, because there
+# is no write to restore: a `finally` restore is only safe when nothing else touched
+# the file, and a guard that samples the digest once cannot establish that.
+#
+# ⚠ SEVEN OF THE TWENTY-EIGHT ANCHORS BELOW ARE STALE AND ARE NOT RE-AIMED HERE.
+# They are listed in ANCHOR_NOTE. nvdev.bend is under single ownership by another
+# unit which is editing it right now; re-aiming an anchor against a file mid-edit
+# measures a revision that is about to change, so the report names the stale seven
+# and leaves them to that unit.
+#
 # Usage: python3 .agents/slop/nv_mutate.py [n]
 import re, subprocess, sys, os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import patch_not_apply as PNA
+import staged_mut as SM
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 BEND = os.path.join(ROOT, "bin", "bend")
 SRC = os.path.join(ROOT, "tinybendygrad/runtime/support/nv/nvdev.bend")
 EXE = os.path.join(ROOT, ".agents/slop/nvdev_mut")
 
-def run():
-    r = subprocess.run([BEND, SRC], capture_output=True, text=True, cwd=ROOT)
+def run(path=SRC):
+    r = subprocess.run([BEND, path], capture_output=True, text=True, cwd=ROOT)
     return r.stdout
 
 def rows(text):
@@ -159,47 +181,54 @@ MUTATIONS = [
 
 def main():
     only = sys.argv[2] if len(sys.argv) > 2 else None
-    original = open(SRC).read()
-    base_text = run()
-    if not base_text.strip():
-        print("BASELINE IS EMPTY -- refusing to mutate"); return 1
-    base = rows(base_text)
-    print(f"baseline: {len(base_text.splitlines())} lines, {len(base)} name= rows\n")
-    print(f"{'mutation':38} {'rows moved':>10}  first rows moved")
-    print("-" * 110)
-    zeros = []
-    for i, (label, find, repl, why) in enumerate(MUTATIONS):
-        if only is not None and str(i) != only:
-            continue
-        print(f"[{i:2d}] {label} ... ", end="", flush=True)
-        if find not in original:
-            print("%s -- %s" % (PNA.not_applied(), why))
-            zeros.append((label, "%s: the pattern is not in the file, so this "
-                            "mutation was NEVER RUN" % PNA.not_applied()))
-            continue
-        open(SRC, "w").write(original.replace(find, repl, 1))
-        try:
-            t = run()
-        finally:
-            open(SRC, "w").write(original)
-        if not t.strip():
-            print(f"BUILD FAILED -- {why}")
-            zeros.append((label, "BUILD FAILED: the mutation does not compile, so it moves no row"))
-            continue
-        m = moved(base, rows(t))
-        head = ", ".join(m[:3])
-        print(f"{len(m)} moved: {head}")
-        if not m:
-            zeros.append((label, f"BLIND SPOT: 0 rows moved, and the file still compiled ({why})"))
-    print(flush=True)
-    if zeros:
-        print("MUTATIONS THAT MOVED NOTHING -- each needs either a fixture or a THEOREM:")
-        for label, why in zeros:
-            print(f"  {label}: {why}")
-    else:
-        print("every mutation moved at least one row")
-    # the substrate must be back
-    assert open(SRC).read() == original, "THE FILE WAS NOT RESTORED"
+    out = []
+    with SM.Staged(SRC, "nv") as unit:
+        original = unit.origin()
+        base = unit.rows()
+        if base is None:
+            print("BASELINE IS EMPTY -- refusing to mutate"); return 1
+        SM.control(base, unit.rows(), "nvdev baseline")
+        print("baseline: %d name= rows, row-set digest %s\n"
+              % (len(base), SM.row_digest(base)[:16]))
+        print(f"{'mutation':38} {'rows moved':>10}  first rows moved")
+        print("-" * 110)
+        zeros = []
+        for i, (label, find, repl, why) in enumerate(MUTATIONS):
+            if only is not None and str(i) != only:
+                continue
+            print(f"[{i:2d}] {label} ... ", end="", flush=True)
+            if find not in original:
+                print("%s -- %s" % (PNA.not_applied(), why))
+                zeros.append((label, "%s: the pattern is not in the file, so this "
+                                "mutation was NEVER RUN" % PNA.not_applied()))
+                continue
+            unit.write(original.replace(find, repl, 1))
+            t = unit.rows()
+            unit.write(original)
+            if t is None:
+                print(f"{PNA.not_a_program()} -- {why}")
+                zeros.append((label, "%s: the mutation lands but the result is NOT A "
+                                "PROGRAM, so it moves no row" % PNA.not_a_program()))
+                continue
+            m = moved(base, t)
+            print(f"{len(m)} moved: {', '.join(m[:3])}")
+            out.append("| %s | %d | %s |" % (label, len(m), ",".join(m) if m else "NONE"))
+            if not m:
+                zeros.append((label, f"BLIND SPOT: 0 rows moved, and the file still compiled ({why})"))
+        print(flush=True)
+        if zeros:
+            print("MUTATIONS THAT MOVED NOTHING -- each needs either a fixture or a THEOREM:")
+            for label, why in zeros:
+                print(f"  {label}: {why}")
+        else:
+            print("every mutation moved at least one row")
+        # The live file's digest was asserted equal to the mirror's at stage time and
+        # is compared again in Staged.__exit__, which REPORTS a move rather than
+        # restoring over it. There is no restore, because there is no live write.
+    with open(os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                           "nv_mutations.txt"), "w") as fh:
+        fh.write("# nv_mutate.py -- runtime/support/nv/nvdev.bend, MEASURED.\n")
+        fh.write("\n".join(out) + "\n")
     return 0
 
 sys.exit(main())

@@ -116,7 +116,21 @@ def main() -> int:
       f"{len(tot_atoms & comp)} composite-form prefixes; a letter that is NEITHER an atom "
       f"nor a composite prefix would be an unmapped value: {''.join(sorted(unknown)) or 'none'})")
   print(f"# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: "
-        f"{dict(all_res) or 'none'} of {len(G.LEDGER)} markers")
+        f"{dict(sorted(all_res.items())) or 'none'} of {len(G.LEDGER)} markers")
+  print("#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check "
+        "and by nothing else). `all_res` is a `Counter` whose insertion order is the order "
+        "the markers were first seen, and it is fed by `py['residual'] | bd['residual']` -- "
+        "a SET UNION, whose iteration order over STRINGS follows the per-process string hash "
+        "and is therefore randomized by `PYTHONHASHSEED`. MEASURED: three consecutive runs "
+        "of this oracle gave three answers, "
+        "`{'y': 1, 'z': 1, 'q': 1, 'E': 1, '?': 2}` against "
+        "`{'y': 1, 'z': 1, 'E': 1, 'q': 1, '?': 2}` against the first again, and the "
+        "two-run sha256 check over `runs/graphcmp/D` caught it on `D0-coverage-census.txt` "
+        "as the ONLY differing file out of 158.\n"
+        "#   It is the exact class the brief names: a COUNT that is right and an ORDER that "
+        "is not, printed where a reader will read it as one line of fact. Every OTHER "
+        "iteration of a set in this file is already `sorted(...)` -- which is why 157 of "
+        "158 files were stable and this one was not.")
   print(f"# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: "
         f"{[m for m, _, _, _ in G.LEDGER if m not in all_res] or 'none'}")
   print(f"# COMMUTATIVE OPS (read from CPython): {sorted(G.COMM)}")

@@ -1,0 +1,6 @@
+emit debug: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  DEBUG=0 attempt 1: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  DEBUG=0 attempt 2: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  DEBUG=0 attempt 3: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  DEBUG=0 attempt 4: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  DEBUG=0 attempt 5: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update

@@ -177,9 +177,10 @@ def matrix() -> int:
         write_sub(class_, caller)
         rcs = [bend(v)[0] for v in victims]
         rb, ob = bend(bystander)
+        rc_clean, _ = bend("clean.bend")
         rows.append((class_, "caller in substrate" if caller else "NO caller in substrate",
                      rcs, rb, ob, first_error(bend("victim1.bend")[1]),
-                     location(bend("victim1.bend")[1])))
+                     location(bend("victim1.bend")[1]), rc_clean))
   finally:
     SUB.write_text(PRISTINE)
 
@@ -188,23 +189,27 @@ def matrix() -> int:
   print("containing any def the message names.  Denominator: 2 classes x 2 substrate shapes = 4")
   print("cells; 4 victims and 1 bystander per cell, so 20 lanes measured.")
   print("=" * 100)
-  print(f"{'class':<6} {'substrate shape':<24} {'victims':<12} {'bystander':<10} error")
-  for class_, shape, rcs, rb, _ob, err, loc in rows:
+  print(f"{'class':<6} {'substrate shape':<24} {'victims':<12} {'bystander':<10} {'no-import':<11} error")
+  for class_, shape, rcs, rb, _ob, err, loc, rc_clean in rows:
     dead = sum(1 for r in rcs if r)
     print(f"{class_:<6} {shape:<24} {dead} of 4 dead   "
-          f"{'DEAD' if rb else 'ALIVE':<10} {err}")
-    print(f"{'':<6} {'':<24} {'':<12} {'':<10} Location: {loc}")
+          f"{'DEAD' if rb else 'ALIVE':<10} {('DEAD' if rc_clean else 'ALIVE'):<11} {err}")
+    print(f"{'':<6} {'':<24} {'':<12} {'':<10} {'':<11} Location: {loc}")
 
   print("-" * 100)
   t_cells = [r for r in rows if r[0] == "type"]
   e_cells = [r for r in rows if r[0] == "elab"]
   t_eager = [r for r in t_cells if all(rc for rc in r[2]) and r[3]]
   e_eager = [r for r in e_cells if all(rc for rc in r[2]) and r[3]]
+  untouched = [r for r in rows if not r[7]]
   print(f"TYPE class reaches every importer, CALLED OR NOT : {len(t_eager)} of {len(t_cells)} cells")
   print(f"ELAB class reaches every importer, CALLED OR NOT : {len(e_eager)} of {len(e_cells)} cells")
+  print(f"a file importing NOTHING is UNAFFECTED           : {len(untouched)} of {len(rows)} cells")
   print("BOTH CLASSES ARE EAGER over the import, so a substrate defect kills EVERY importer that")
   print("runs while it is on disk.  `no caller` changes nothing: the victim reaches the defect")
-  print("through the import alone.")
+  print("through the import alone.  The `no-import` column is the cell that can catch a reader")
+  print("which resolves the def against the WHOLE TREE instead of the closure: that reader would")
+  print("report this file dead too, and it is not.")
   print("-" * 100)
   print("SO WHY 4 AND NOT 24 ON THE REAL TREE?  24 of the 39 wired ports import uop/ops.bend, and")
   print("19 of them were GREEN in _coord-sweep.json in the same sweep that killed 4.  The answer")

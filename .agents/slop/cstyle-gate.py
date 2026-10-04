@@ -6,6 +6,10 @@
     python3 .agents/slop/cstyle-gate.py --plant ROW     # corrupt ONE captured value
     python3 .agents/slop/cstyle-gate.py --explain       # the row budget, by family
 
+A CAPTURE NEEDS BOTH HALVES OF THE ORACLE LANE. `--oracle-stdout` alone is REFUSED, because the
+oracle's stderr is the only place a CPython refusal exists and a capture that drops it turns
+nine sound rows into nine phantom disagreements.
+
 WHY THIS REPLACED A CROSSWALK. The previous gate declared ONE crosswalk entry out
 of 225 port rows -- `tmap BASE` -- and left the other 224 UNCOVERED, because
 `renderer_oracle.py cstyle` printed 15 real C kernels under names the port does
@@ -42,7 +46,7 @@ sides by `esc_row`), it does not accept a duplicate row name, and it does not
 report a clean zero when a parser matched nothing -- GUARD 2 below exists because
 three false zeros happened today.
 """
-import argparse, pathlib, subprocess, sys, tempfile
+import argparse, importlib.util, pathlib, subprocess, sys, tempfile
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 PORT = "tinybendygrad/renderer/cstyle.bend"
@@ -131,38 +135,44 @@ def rows_strict(text):
   return rows, shreds, dups
 
 
-def rows_shipped(text):
-  """rebase-gate.py's `rows()`, verbatim, so the shred count is a MEASUREMENT of the
-  shipped reader rather than an argument about it.
+def load(name):
+  """`rebase-gate.py` has a `-` in its name, so it does not import by name. ONE loader, the
+  same shape rebase-scan-oracles.py uses, because two loaders is two chances to disagree about
+  what got loaded."""
+  spec = importlib.util.spec_from_file_location(name, str(pathlib.Path(__file__).parent / f"{name}.py"))
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
+  return mod
 
-  ⚠ THE "VERBATIM" IS FALSE AND IT MEASURED FALSE ON THIS TREE. This function is the
-  PRE-F2/PRE-F3 reader: `name=value` only. Called against `rebase-gate.py:rows()` on six
-  shapes, it AGREES on two and DIFFERS on four:
 
-      "alpha  1"              shipped {'alpha': '1'}        here {}          -- the F3 gap
-      "kern=[*V]   py=[*W]"   shipped {'kern': '[*V]'}      here {'kern': '[*V]   py=[*W]'}
-                                                                        -- the F2 fold
-      "== SECTION =="         shipped {}                     here {'': '= SECTION =='}
-      "=v"                    shipped {}                     here {'': 'v'}
+rows_shipped = load("rebase-gate").rows
+"""THE PROJECT'S ONE ROW READER, IMPORTED. `rebase-gate.py`'s `rows()`, which is what
+  `rebase-scan-oracles.py` already calls -- so scan and gate cannot disagree by construction.
 
-  THE LAST TWO ARE THE INTERESTING ONES. `rebase-gate.py:rows()` excludes an empty name ON
-  PURPOSE -- its own docstring says the oracle reported 2522 rows where it has 2521 because
-  fourteen `== SECTION ==` banners landed on ONE key -- and this fork MANUFACTURES exactly
-  that phantom. So the shred count below is not a measurement of the shipped reader; it is a
-  measurement of a reader that stopped existing three fixes ago.
+  ⚠ THIS FUNCTION WAS A FORK, AND THE FORK WAS WRONG ON 4 OF ITS 6 SHAPES while its docstring
+  claimed `rows()` "verbatim". MEASURED against the real `rows()`:
 
-  FIX, NOT DONE HERE: `rows_shipped = rg.rows`. `rebase-gate.py` is owned by another unit this
-  round and this file is not being restructured, so the honest state is that the number is a
-  measurement of a HISTORICAL reader and the docstring said otherwise. `.agents/slop/
-  formblind-audit.py` A5/A16 pin the shipped reader's behaviour on both of the shapes this
-  fork gets wrong, and `.agents/slop/substrate-audit.py` states why this is the OTHER root
-  cause: a tool that measures the right form of the wrong thing."""
-  out = {}
-  for line in text.splitlines():
-    if "=" in line:
-      k, v = line.split("=", 1)
-      out[k.strip()] = v.strip()
-  return out
+      "a=b"                       fork {'a': 'b'}                  rows() {'a': 'b'}          agree
+      "alpha  1"       (F3)       fork {}                          rows() {'alpha': '1'}      NO
+      "kern=[*V]   py=[*W]" (F2)   fork {'kern': '[*V]   py=[*W]'}  rows() {'kern': '[*V]'}    NO
+      "== SECTION =="             fork {'': '= SECTION =='}       rows() {}                  NO
+      "=v"                        fork {'': 'v'}                  rows() {}                  NO
+
+  Three ways it was wrong, not one: it could not read F3 at all, it could not fold F2's `py=`
+  column away, and it MANUFACTURED the `""` phantom `rows()` excludes on purpose. Over this
+  tree's own oracle lane the fork's number was `222` against `rows_strict`'s `224`, so the
+  print claimed **`-2` shredded rows** -- a negative shred count, which is not a measurement of
+  anything. A copied reader is a second reader, and a second reader drifts silently because
+  nothing compares the two.
+
+  ⚠ AND IT IS NOT THE READER `judge()` USES, and it must not become one. `rows()` returns the
+  producer's OWN answer (`left`) with the `py=` column already folded away, while `split_py()`
+  reads that column back OUT of the value to report STALE-LITERAL. MEASURED: substituting
+  `rows()` for `rows_strict` inside `judge()` turns the lane BROKEN on 225 of 227 rows with
+  "carry no `py=` column" -- not a disagreement, an incompatibility between the two readers'
+  contracts. So this name is a PARITY READER, used only to say whether the shared reader and
+  this gate's own reader see the same rows. `.agents/slop/cstyle-reader-parity.py` measures
+  that, and `.agents/slop/cstyle-shapes-selftest.py` proves both readers reach red."""
 
 
 def split_py(value):
@@ -372,18 +382,25 @@ def main():
   ap.add_argument("--explain", action="store_true")
   ap.add_argument("--port-stdout", default=None)
   ap.add_argument("--oracle-stdout", default=None)
+  ap.add_argument("--oracle-stderr", default=None)
   a = ap.parse_args()
   if a.selftest:
     return selftest()
   if a.port_stdout or a.oracle_stdout:
-    print("!! CAPTURED LANE INPUT. Not a live run: the live lanes are re-run and their "
-          "rc is printed below, and a capture can be stale. A verdict over a capture is "
-          "evidence about the CAPTURE, never about the tree as it is now.")
+    print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence "
+          "about the CAPTURE, never about the tree as it is now.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
-  o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")
+  o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(),
+                                   pathlib.Path(a.oracle_stderr).read_text()
+                                   if a.oracle_stderr else "")
        if a.oracle_stdout else run([sys.executable] + ORACLE.split()))
-  print(f"live port lane rc={p.returncode}   live oracle lane rc={o.returncode}")
+  # ⚠ THIS LINE USED TO SAY "live" UNCONDITIONALLY AND PRINT THE CAPTURE'S rc. Both halves were
+  # wrong in the same direction: a capture mode that never runs a lane reported `rc=0` beside the
+  # word "live", which is an unexplained zero wearing a measurement's clothes. Now the rc comes
+  # from the lane that actually ran, and a capture says so.
+  print(f"{'CAPTURED' if a.port_stdout else 'live'} port lane rc={p.returncode}   "
+        f"{'CAPTURED' if a.oracle_stdout else 'live'} oracle lane rc={o.returncode}")
   if (p.returncode or o.returncode) and not (a.port_stdout or a.oracle_stdout):
     print(f"lane failure: bend {' '.join(p.stderr.split())[-140:]} | "
           f"oracle {' '.join(o.stderr.split())[-140:]}")
@@ -392,16 +409,37 @@ def main():
     print("a lane printed NOTHING, so nothing was compared. This is GUARD 2's failure "
           "mode and it is NOT a pass")
     return 1
+  # ⚠ A CAPTURE MUST CARRY ITS STDERR, or the refusal lane is DEAD and the gate reports that as
+  # a disagreement rather than as a missing input. MEASURED: with `--oracle-stdout` and no
+  # `--oracle-stderr`, `count_refusals("")` is 0 and `unsilent_refusals` fires on all nine rows
+  # that answer the empty marker -- BROKEN, over lane text that is entirely sound, for a reason
+  # that has nothing to do with either lane. A capture mode that can only ever be red is not a
+  # capture mode. Refusing to guess is the honest answer, so a capture without one is refused.
+  if a.oracle_stdout and not a.oracle_stderr:
+    print("--oracle-stdout without --oracle-stderr discards the oracle's refusal report, which "
+          "is the ONLY place a CPython KeyError exists. Refusing to run rather than reporting "
+          "9 phantom disagreements")
+    return 1
   res = judge(p.stdout, o.stdout, a.plant)
   if a.plant:
     print(f"[planted] `{a.plant}` corrupted in the CAPTURED OUTPUT ONLY; no file on "
           f"disk was touched")
-  shipped = rows_shipped(o.stdout)
   orc_rows = rows_strict(o.stdout)[0]
   print(f"port rows (rows_strict): {len(res['port'])}   oracle rows (rows_strict): "
         f"{len(orc_rows)}")
-  print(f"the shipped rows() over the SAME oracle stdout: {len(shipped)} names -- "
-        f"{len(shipped) - len(orc_rows)} of them shredded out of multi-line values")
+  # READER PARITY, NOT A SHRED COUNT. The old line subtracted one reader's name count from the
+  # other's and called the difference "shredded rows"; with the fork in place it printed `-2`.
+  # Two readers do not have a shred relationship -- they have a DISAGREEMENT SET, and it is
+  # symmetric, so it is printed as one, with the names, because a count of differences is not a
+  # coverage statement.
+  shared = rows_shipped(o.stdout)
+  only_shared, only_gate = sorted(set(shared) - set(orc_rows)), sorted(set(orc_rows) - set(shared))
+  print(f"the SHARED reader (rebase-gate.py:rows()) over the SAME oracle stdout: "
+        f"{len(shared)} names -- {len(only_shared)} only it finds, {len(only_gate)} only "
+        f"rows_strict finds, {len(set(shared) & set(orc_rows))} in common")
+  if only_shared or only_gate:
+    print(f"  only the shared reader: {only_shared[:8]}")
+    print(f"  only rows_strict     : {only_gate[:8]}")
   print(f"gated {len(res['gated'])}   agree {len(res['agree'])}   disagree "
         f"{[d[0] for d in res['disagree']][:6]}")
   print(f"STALE-LITERAL {len(res['stale'])} port `py=` literal(s) disagree with the live "

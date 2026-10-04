@@ -1,0 +1,16 @@
+# LANE tinybendygrad/runtime/support/nv/nvdev.bend  md5=2019c2c60cfd6424ac32b8db7044a65b  A_nice0_f0
+# header  cell  rep  load1_start  n_bends  lines  rows  secs  rc  timed_out
+A_nice0_f0	1	10.01	3	80	79	75.02	-9	1
+A_nice0_f0	2	9.61	2	80	79	75.02	-9	1
+A_nice0_f0	3	9.29	2	80	79	75.03	-9	1
+# A_nice0_f0: load1_end=8.74 n_bends_end=3 src_md5_end=2019c2c60cfd6424ac32b8db7044a65b  reps=3
+# rows: [79, 79, 79]  lines: [80, 80, 80]  secs: [75.02, 75.02, 75.03]
+# appended .agents/slop/lane-load-measurements.tsv
+# LANE tinybendygrad/runtime/support/nv/nvdev.bend  md5=2019c2c60cfd6424ac32b8db7044a65b  B_nice19_f0
+# header  cell  rep  load1_start  n_bends  lines  rows  secs  rc  timed_out
+B_nice19_f0	1	8.76	3	80	79	75.02	-9	1
+B_nice19_f0	2	7.10	2	80	79	75.02	-9	1
+B_nice19_f0	3	6.43	2	80	79	75.02	-9	1
+# B_nice19_f0: load1_end=8.09 n_bends_end=3 src_md5_end=2019c2c60cfd6424ac32b8db7044a65b  reps=3
+# rows: [79, 79, 79]  lines: [80, 80, 80]  secs: [75.02, 75.02, 75.02]
+# appended .agents/slop/lane-load-measurements.tsv

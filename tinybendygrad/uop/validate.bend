@@ -211,20 +211,36 @@ import ./../LAWS/spec.bend as S
 #                           so it disagreed on 5 rows where the port is right -- and was removed.
 #                           Neither whitespace normalisation of z3 output is sound; one primary
 #                           encoding plus a named residual with the raw text is the honest form.
-#   dv_where, dv_where_cs   the port emits `And(v >= 0, v <= 15)` TWICE. CPython emits it once.
-#                           A rewrite-accounting defect in the walk, not yet located.
+#   dv_where, dv_where_cs   FIXED. The port emitted `And(v >= 0, v <= 15)` TWICE because
+#                           `ops.py:302`'s THIRD branch (`if node in cache: continue`) was
+#                           missing: `seen` was CPython's `visited` flag AND the cache
+#                           membership at once, so an already-visited node was re-pushed and,
+#                           `cache` being a LIST, appended twice. Located by COUNTING both
+#                           arenas -- `arena_nodes=6` on both sides, so the arena was EXCLUDED as
+#                           the cause -- and by NAMING the duplicate rather than counting it:
+#                           `walk_ops` read `Ops.PARAM ... Ops.PARAM ...`. `vz_step.seen` is the
+#                           restored branch and `dv_where_walk` is the row; see `vz_step.keep`.
 #   dv_unsup_stack          CPython RAISES `NotImplementedError`; the port answers with a
 #   dv_unsup_two            violation LIST. Same for `AssertionError` and `TypeError` below. This
 #   dv_rank_shr1            is the declared design difference, not a mystery: the port cannot
 #   dv_bad_dtype_bitcast    raise. `_msg` rows carry the message TEXT, which both sides share.
 #
-# TWO THINGS CPython DOES THAT NO FIXTURE CAN REACH, both reported rather than papered over:
-#   * `dv_bad_dtype_bitcast`'s fixture is `Ops.BITCAST` with `arg=None`, and CPython's
-#     `dtype_from_uop` (ops.py:182) ASSERTS on that -- `CAST/BITCAST arg must be DType, got
-#     None`. The row's fixture does not exist in CPython, so it can never be adjudicated as
-#     written. The constructible spelling (`arg=dtypes.bool`, two srcs) does reach validate.py
-#     and answers `NotImplementedError: Ops.BITCAST is not supported by z3`; adding it as a row
-#     needs a dtype-carrying Arg in `ops.bend`, which is out of this file's scope.
+# THE `dv_bad_dtype_bitcast` FIXTURE IS NOW ADJUDICABLE, and the stated requirement was FALSE.
+# It used to be `Ops.BITCAST` with `arg=ANone{}`, and CPython's `dtype_from_uop` ASSERTS on that
+# -- so the row could never be adjudicated as written. The constructible spelling is
+# `O.ADt{S.boolean()}`, and `ADt` is ALREADY an exported `Arg` -- `ops.bend`'s own `s5.arena`
+# builds `Ops.BITCAST` with `ADt{S.single()}` at slot 8 -- so NO `ops.bend` CHANGE IS NEEDED
+# and the "dtype-carrying Arg" the brief asked for already existed. MEASURED: the port's
+# `dv_bad_dtype_bitcast_msg` is now byte-identical to CPython's `NotImplementedError` message,
+# and the row's remaining redness is ONLY the raise-vs-list shape shared with the three above.
+#
+# ALSO CORRECTED BY CALLING, because the refusal is NOT where anybody said it was:
+# `UOp(Ops.BITCAST, (r, r))` CONSTRUCTS with `arg=None` and prints fine. The assert fires on
+# the first `.dtype` READ -- `ops.py:122` is `dtype_from_uop(op, src, arg)` and `UOp.__init__`
+# never calls it eagerly. Oracle rows `dv_bad_dtype_bitcast_argless_construct=ok` and
+# `dv_bad_dtype_bitcast_argless_dtype=RAISED AssertionError: CAST/BITCAST arg must be DType,
+# got None`. "The constructor refuses" and "the dtype read refuses" are different facts and a
+# row that collapses them is a row about neither.
 #   * `dv_rank_shr1`'s header used to claim CPython raises `IndexError: tuple index out of range`.
 #     It does not: `z3_alu[Ops.SHL]` is called as `(x, *srcs)` with ONE src, so it raises
 #     `TypeError: z3_shift() missing 1 required positional argument: 'b'`.
@@ -1391,8 +1407,9 @@ def vz_push(ar: O.Arena, +n: U32, +t: VTopo) -> VTopo:
 # MEASURED by `.agents/slop/vw-topo-probe.bend` against `.agents/slop/vw-topo-truth.py`, and
 # the ARENA IS EXCLUDED AS THE CAUSE: both sides intern `arena_nodes=6`. Only the walk differs:
 #     port  : walk_len=6 walk_distinct=5 walk_ops=[1:Ops.PARAM 2:Ops.CONST 3:Ops.CMPLT
-#                                                1:Ops.PARAM 4:Ops.CONST 5:Ops.WHERE]
-#     CPython: walk_len=5 walk_distinct=5 walk_is_set=True
+#                                                1:Ops.PARAM 4:Ops.CONST 5:Ops.WHERE
+#                                                6:Ops.CONST]
+#     CPython: walk_len=6 walk_distinct=6 walk_is_set=True
 # `Ops.PARAM` at index 1 is visited TWICE, so `v` is rewritten twice, and `create_var` is a
 # `solver.add` -- which is why `dv_where_cs` read
 # `[And(v >= 0, v <= 15), And(v >= 0, v <= 15), 8 > v, True]`. CPython's `cache` is a DICT, so
@@ -2173,6 +2190,7 @@ def dv_unsup_stack.of(+ar: O.Arena, nm: String) -> String:
   dv2(nm, t, g, Nil{})
 
 def dv_unsup_two.of(+ar: O.Arena, nm: String) -> String:
+  +b: String = nm
   +c2 = fx_const(ar, 2)
   +c3 = fx_const(O.Found.ar(c2), 3)
   +c5 = fx_const(O.Found.ar(c3), 5)
@@ -2181,7 +2199,7 @@ def dv_unsup_two.of(+ar: O.Arena, nm: String) -> String:
   +s2 = O.UOp.new(O.Found.ar(s1), O.OpsSTACK{}, [O.Found.i(c5), O.Found.i(c7)], O.ANone{}, O.TNone{})
   +t = O.UOp.new(O.Found.ar(s2), O.OpsGROUP{}, [O.Found.i(s1), O.Found.i(s2)], O.ANone{}, O.TNone{})
   +g = fx_const_bool(O.Found.ar(t), True{})
-  dv2(nm, t, g, Nil{})
+  String.concat([dv2(b, t, g, Nil{}), vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
 
 def dv_rank_shr1.of(+ar: O.Arena, nm: String) -> String:
   +r = fx_range(ar, 8, [0], O.AXIS_GLOBAL{})
@@ -2189,11 +2207,24 @@ def dv_rank_shr1.of(+ar: O.Arena, nm: String) -> String:
   +g = fx_const_bool(O.Found.ar(t), True{})
   dv2(nm, t, g, Nil{})
 
+# ⚠ THE FIXTURE IS CONSTRUCTIBLE AND WAS NOT, AND THE FIX WAS NOT AN `ops.bend` CHANGE.
+# `arg` was `ANone{}`, and CPython's `dtype_from_uop` ASSERTS `CAST/BITCAST arg must be DType,
+# got None` -- so this row had no CPython answer for two unit-generations and was adjudicated by
+# nobody. `O.ADt` is ALREADY an exported `Arg` (`ops.bend`'s own `s5.arena` builds
+# `Ops.BITCAST` with `ADt{S.single()}` at slot 8), so `ADt{S.boolean()}` needs no new def and no
+# new type: it is the dtype-carrying `Arg`, and it was already there. Oracle rows
+# `dv_bad_dtype_bitcast*`, CALLED; the oracle's `dv_bad_dtype_bitcast_argless_*` pair keeps the
+# old spelling's refusal where it actually happens, so it is reported rather than dropped.
+#
+# `src = (r, r)` -- `r` REACHABLE TWICE, and through a DIFFERENT shape than `dv_where` (both of
+# ONE parent's srcs rather than two parents), so the walk row here covers the second shape of
+# the duplication defect and `dv_where`'s covers the first.
 def dv_bad_dtype_bitcast.of(+ar: O.Arena, nm: String) -> String:
+  +b: String = nm
   +r = fx_range(ar, 16, [0], O.AXIS_GLOBAL{})
-  +t = O.UOp.new(O.Found.ar(r), O.OpsBITCAST{}, [O.Found.i(r), O.Found.i(r)], O.ANone{}, O.TNone{})
+  +t = O.UOp.new(O.Found.ar(r), O.OpsBITCAST{}, [O.Found.i(r), O.Found.i(r)], O.ADt{S.boolean()}, O.TNone{})
   +g = fx_const_bool(O.Found.ar(t), True{})
-  dv2(nm, t, g, Nil{})
+  String.concat([dv2(b, t, g, Nil{}), vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
 
 # --- THE POSITIVE ROW, and the shortest legal index there is: `UOp.const(15)`
 # with the `UOp.const(True)` mask. CPython answers `[True]` -- the mask alone,

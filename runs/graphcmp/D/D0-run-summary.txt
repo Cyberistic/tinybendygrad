@@ -1,8 +1,9 @@
-graphs=13
-graphs-agree=12
-graphs-disagree=1
-byte-identical=12
-not-comparable=0
-stable-pairs=3
-selfcheck=# SELFCHECK: OK
+graphs=16
+graphs-agree=0
+graphs-disagree=0
+byte-identical=0
+not-comparable=16
+stable-pairs=5
+selfcheck=rc=1
 conflations=4 of 4
+controls=0 of 5

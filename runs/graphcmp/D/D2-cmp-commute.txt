@@ -1,1 +1,21 @@
-commute BYTE-IDENTICAL (870 bytes both sides)
+commute DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+7,14c7,14
+< 2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+< 2:i8 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 2:i9 5:CMPNE 4:bool 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i10 3:MAX 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i11 3:AND 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i12 2:OR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i13 3:XOR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i14 5:GROUP 4:void 1:R 2:i0 1:N 1:N 24:n(i8,i9,i10,i11,i12,i13)
+---
+> 2:i7 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i6,i4)
+> 2:i8 3:ADD 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 2:i9 5:CMPNE 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i10 3:MAX 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i11 3:AND 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i12 2:OR 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)

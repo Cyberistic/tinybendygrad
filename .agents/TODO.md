@@ -4851,11 +4851,77 @@ All three are TRUE and all three measure different things. Now printed on the li
   `--reps 12` printed 12 and the control still ran 2 — a no-op with a printed receipt).
 
 - **STILL OPEN, NOT MINE:** `codegen/decomp/dtype.bend`'s row `c7` (a declared refusal, already
-  open above at "OPEN, NOT MINE — `c7`"), and the 04:xx type error that broke four ports —
-  `def t_const_bool_int_splits() -> Bool: +u = UOp.new(Arena.empty(), OpsCONST{}, Nil{},
-  CBool{True{}}, TNone{})`, `expected : Arg / observed : Const`. That def name is in NO file on
-  the tree (`grep -rn const_bool_int_splits` → nothing), so it was in a file mid-edit during the
-  sweep. Not reproduced; not touched.
+  open above at "OPEN, NOT MINE — `c7`"). **The 04:xx type error that broke four ports is CLOSED —
+  see the next section.**
+
+## [DONE] LANE PROVENANCE: a lane-death now names the FILE and the REVISION (2026-10-04)
+
+Progress: `[████████████████████] 100%` — mechanism reproduced end to end, 4 readers added to
+`rebase-gate.py`, 7/7 control cells, census with its denominator, BAND-20/21 appended.
+**No `.bend` under `tinybendygrad/` edited. `uop/ops.bend` not touched. Nothing committed.**
+
+Report: `.agents/slop/lanedeath-census.md`. Tools: `phantom-run.py`, `lanedeath-census.py`,
+`lanedeath-provenance.py`.
+
+- **THE PHANTOM IS REPRODUCED, AND THE MECHANISM IS THAT `bend` CHECKS AN IMPORTED MODULE.**
+  Four lanes — `schedule/prepare.bend`, `tensor.bend`, `uop/render.bend`, `viz/serve.bend` — died
+  together with the IDENTICAL `expected : Arg / observed : Const` at `Location:
+  t_const_bool_int_splits`, and that def is in no file on the tree. `.agents/slop/phantom-run.py
+  --event` builds the same shape from the live file's own types (`Arg` at `ops.bend:1045`,
+  `Const` at `:807`, `UOp.new` at `:2442`), plants it in a substrate four victim files import, and
+  gets **4 emitted messages, 1 distinct**; deletes the def; re-runs the same four files unchanged:
+  **rc=0 with rows**. Stale-artefact and cache candidates are ruled out in the report with the
+  evidence; "bend emitted an error referring to a file that has since changed" is the answer, and
+  "the name is synthesised from a call site in a file that did not exist" is REFUTED — the name is
+  on the `def` line bend quotes.
+
+- **⚠ AND THE BLAST RADIUS IS NOT REACHABILITY, WHICH WAS MY OWN FIRST HYPOTHESIS AND IS FALSE.**
+  Measured 2 error classes × 2 substrate shapes, 20 lanes: a substrate defect kills **4 of 4**
+  importers **and a bystander that never calls the defect**, in **4 of 4** cells. What limits it to
+  4 of 24 wired importers is the **window**: `main()` walks targets **sequentially**, and in
+  `_coord-sweep.json` the four deaths are at **indices 45, 46, 47, 49 of 50** with index 48
+  NOT-STARTED. The last 4 of 50. **No verdict records a window, so `BROKEN=4` is not a statement
+  about blast radius.**
+
+- **A SECOND PHANTOM, FOUND BY MACHINE.** `_coord-sweep.json` names
+  `UOp.const_factor.seed`; `grep -rn "def UOp.const_factor"` over `tinybendygrad/` returns
+  **nothing**. Two phantoms, one failure. **A stored sweep's stderr names defs from a revision that
+  no longer exists, and no digest over the CURRENT tree detects that** — the ghost is in the
+  message, not in a cache.
+
+- **THE CHANGE: four readers in `rebase-gate.py`, and a lane says which revision it compiled.**
+  `import_closure` (raises rather than returning a short list), `substrate_manifest`,
+  `drift(before, after)`, `error_site(err, closure)`. `run_port()` brackets the lanes with **two**
+  manifests. **A single digest cannot answer it — a digest says what the bytes are, never when they
+  were read**, and `BAND-19`'s mtime manifest answers a different question. Every non-zero exit now
+  prints the closure with per-file digests, the `jj` working-copy id, the resolved
+  `(def, file, line)` of every def the error names, and the distinct FILES the failing lanes'
+  errors resolve to. `--json` carries `revision`.
+
+- **THE CONTROL IS 7/7 AND ONE CELL EXISTS ONLY TO PROVE THE REST CAN FAIL.**
+  `.agents/slop/lanedeath-provenance.py` plants into `.agents/slop/phantom-repro/planted/`, never
+  into `tinybendygrad/`. **C7 neuters `error_site()` and requires C2's own assertion to FAIL.** The
+  control found **three** defects in the change before it was green, including the gate's own
+  `stamp()` lifting the provenance fields **after** `classify()` that reads them — so the verdict
+  text never mentioned the substrate and C2 was green on a verdict that should have failed.
+
+- **LIVE, UNPLANTED, TWICE, WHILE OTHER UNITS WERE EDITING `uop/fold.bend`:** `--port
+  uop/spec.bend` → `BROKEN`, and the new block said `THE DEF IS IN tinybendygrad/uop/fold.bend,
+  NOT IN THE PORT` plus `1 of 5 closure file(s) CHANGED WHILE THIS LANE RAN`. The same reader put
+  four more selftest `UNMEASURED` lanes' identical `Location: sym_dim.signable` at
+  `uop/fold.bend:1242`. **No file was opened to find that.**
+
+- **CENSUS, DENOMINATOR STATED:** 3 artefacts / 150 verdicts / **18 BROKEN entries → 5 SUBSTRATE,
+  4 UNRESOLVED, 1 PORT, 8 NO-DEF**. Of **12 incidents** named anywhere in `.agents/`, **8** are
+  explained and **4** are not; those four are recorded as unexplained and are **NOT** counted as
+  substrate. 5 of the 18 resolve to `uop/fold.bend:1043` — the `ABlob` incident this file already
+  described as "six of eight red entries were one edit".
+
+- **`rebase-gate-selftest.py` RUNS TO COMPLETION AGAIN (it used to die with `TypeError: ... not
+  'FakeBend'`) and reports 10 FAILED, none of them mine.** Every `run_port` subprocess argv is
+  byte-identical to the committed `@-` version (diffed), so the change cannot move a lane's rc; the
+  10 are 0-row lanes and the cause is `uop/fold.bend` mid-edit — it fails to compile *right now*,
+  `Location: sym_dim.range`, `expected : hi / observed : hi (consumed more than once)`.
 
 ## [DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)
 
@@ -7037,3 +7103,47 @@ Rules appended to `bend2-constraints.md` as **AN-1..AN-9** (positions ~20478-206
 patch `regalloc.bend`/`rangeify.bend` IN-PLAY with no digest guard — refused, not run.
 `debug-mutate.py` (4 stale) is IN-PLAY too. `mutanchor.writes()` misses `open(P,'w').write(...)`
 as an IN-PLAY signal, so three harnesses are reported safer than they are.
+
+## Session 2026-10-04 — CSTYLE-GATE READER (`.agents/slop/cstyle-gate.py`, the gate, not the port)
+
+`rows_shipped` claimed to be `rebase-gate.py`'s `rows()` "verbatim". It was not.
+
+- [x] **D1 — `rows_shipped` IS NOW THE IMPORTED READER.** `rebase-scan-oracles.py` already imports
+      it, which is why scan and gate cannot disagree; this file did not. `rebase-gate.py` NOT edited
+      (another unit's). MEASURED by CALLING both on six shapes: **agree on 2 of 6** — no F3, no F2
+      `py=` fold, and it MANUFACTURED the `""` phantom `rows()` excludes on purpose. A copied reader
+      is a second reader and nothing compares the two, so the drift was silent by construction.
+- [x] **D2 — IS THE GREEN TRUSTWORTHY? YES OVER THE CAPTURE; NOT REPRODUCIBLE LIVE.** Shared count
+      **221 gated, 221 agree, 0 disagree**; denominators **227 port rows / 224 oracle rows**; 6 named
+      exclusions, **0 uncovered**. Reader ABLATION with the file's own pre-fix reader taken from
+      `jj file show -r @-` (`ast`-extracted, not re-typed): **IDENTICAL, not one printed line
+      differs** — `rows_shipped` reached one `print` and never `judge()`. BUT the live port lane
+      printed **0 stdout lines, rc=1, 4 of 4 runs**, and the error MOVED under me:
+      `uop/fold.bend:1259` `sym_dim.pa` (computed-value scrutinee) → `uop/fold.bend:5321` `dim_str`
+      ("consumed more than once"). `uop/fold.bend` is M and is one of the six live units, so the lane
+      is cold AND MOVING. The 221/227 is a property of the 06:02 capture (md5 `e039eeff62ce`).
+- [x] **D3 — ONE CONTROL PER SHAPE, ARMED AND RED.** F1 and F2 on `ctl OPENCL sz1 k0`, F3 on `ctlf3`
+      (**single token — `rows()`'s F3 arm refuses a multi-token name**), plus F2's **DISARM** lane
+      (plant in the non-compared `py=` column → AGREE, which is what proves the RED plant landed in
+      the column the reader compares), plus a REAL row through `judge()` (`tmap OPENCL`,
+      `uchar`→`ucHar`: 221 gated / 220 agree / 1 disagree / BROKEN). Every case also requires
+      `shared != 0`: my first F3 draft reported AGREE over ZERO shared rows, a false pass.
+- [x] **`cstyle-gate.py --oracle-stdout` USED TO DISCARD THE ORACLE'S STDERR**, so `count_refusals`
+      was 0 and `UNREPORTED-REFUSALS 9` fired over sound lane text — BROKEN for a reason belonging
+      to neither lane. Added `--oracle-stderr`; a capture without one is now REFUSED.
+- [x] **CAPTURE MODE PRINTED `live port lane rc=0` WHILE RUNNING NOTHING.** The rc came from the
+      `CompletedProcess` built out of the capture. The word now matches the lane that ran.
+- [x] **THE SHRED LINE PRINTED `-2`.** `len(readerA) - len(readerB)` labelled "shredded rows" is not
+      a measurement; two readers have a symmetric disagreement set. Replaced with both directions
+      and the intersection, named: 6 only `rows()` finds, 8 only `rows_strict`, 216 in common.
+
+**NOT FIXED, REPORTED:** `tinybendygrad/uop/fold.bend` does not compile (two distinct errors, one
+still live) — not my file, not touched. `cstyle.bend:1758` emits **`kern CUDA  lb=1 = [...]`**, so a
+row NAME contains `=`; **8 of 227** names break the "spaces, no `=`" rule and they reshape under the
+other reader (`kern CUDA  lb`), which no value-plant can detect. `cstyle-gate.py --selftest` needs
+`.venv/bin/python` (bare `python3` → `ModuleNotFoundError: No module named 'tinygrad'`, reproduced
+against the committed blob; pre-existing).
+
+Rules appended to `bend2-constraints.md` as **BAND-22** (position ~20891), after BAND-21's empty
+header at ~20885. Report: `.agents/slop/cstyle-reader.md`, `.agents/slop/cstyle-green.md`,
+`.agents/slop/cstyle-controls.md`.

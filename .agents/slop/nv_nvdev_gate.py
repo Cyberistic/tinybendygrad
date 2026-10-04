@@ -175,7 +175,7 @@ def main():
     bad = real
     print(f"DISAGREEMENTS OUTSIDE A DOCUMENTED WALL: {len(bad)}")
     print(f"DISAGREEMENTS: {len(bad)}")
-    for k, p, q in bad[:40]:
+    for k, p, q, _ in bad[:40]:
         print(f"  {k}\n      py={p}\n     port={q}")
     print(f"PORT ROWS WITH NO ORACLE COUNTERPART: {len(only_port)}")
     for f, n in sorted(fams.items(), key=lambda x: -x[1]):

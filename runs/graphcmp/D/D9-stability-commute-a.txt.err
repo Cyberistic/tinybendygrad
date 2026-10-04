@@ -1,0 +1,8 @@
+usage: graphcmp.py [-h]
+                   [--graph {binblob,buffer,cast,commute,gate,group,indexed,lin,loop,matmul,range,rangeflat,reduce,sink,special,sym}]
+                   [--side {py,bend}]
+                   [--plant {bytes,dtype,opt,pyuop,shape,srcswap,sym1}]
+                   [--dev DEV] [--equiv] [--levels LEVELS]
+                   [--bend-probe BEND_PROBE]
+                   {emit,diff,control,cross,selfcheck,dbg,conf}
+graphcmp.py: error: argument --plant: expected one argument

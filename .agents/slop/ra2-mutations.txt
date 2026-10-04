@@ -1,0 +1,20 @@
+# ra-mutate2.py -- codegen/late, MEASURED.  rows moved are whole `name=value` lines.
+
+# baseline: 130 rows over linearizer, regalloc, gater, row-set digest f3ec90faa10d853a
+
+| mutation | file | rows moved | how many |
+| --- | --- | --- | --- |
+| loops: max user becomes first user | regalloc.bend | NONE | 0 |
+| alloc: free does not have priority | regalloc.bend | NONE | 0 |
+| prologue: live_in[v] is not written | regalloc.bend | ra2_before, ra2_spills | 2 |
+| prologue: the push is dropped | regalloc.bend | ra2_before, ra2_spills | 2 |
+| epilogue: it reloads everything | regalloc.bend | ra2_before, ra2_spills | 2 |
+| epilogue: the pop is dropped | regalloc.bend | NONE | 0 |
+| the main loop starts at 1 | regalloc.bend | ra0_a1, ra0_a10, ra0_a11, ra0_a12, ra0_a2, ra0_a3, ra0_a4, ra0_a5, ra0_a6, ra0_a7, ra0_a8, ra0_a9, ra0_before, ra1_a1, ra1_a10, ra1_a11, ra1_a12, ra1_a2, ra1_a3, ra1_a4, ra1_a5, ra1_a6, ra1_a7, ra1_a8, ra1_a9, ra1_before, ra2_a1, ra2_a2, ra2_a3, ra2_a4, ra2_a5, ra2_before, ra2_spills, rw_none | 34 |
+| rewrite: the tag rewrite is not threaded | regalloc.bend | rw_none | 1 |
+| rewrite: the spilled-src fills are dropped | regalloc.bend | NONE | 0 |
+| reals[i][v]: replace becomes whole-list append | DID-NOT-COMPILE | linearizer.bend: SOME PROOFS FAIL | 0 |
+| reals[i][v]: append a second copy of the pair | DID-NOT-COMPILE | regalloc.bend: SOME PROOFS FAIL | 0 |
+| the row order moves the per-uop rows first | regalloc.bend | NONE | 0 |
+| the row reads an INDEX where the oracle reads a NAME | regalloc.bend | ra0_a1, ra0_a10, ra0_a11, ra0_a2, ra0_a3, ra0_a4, ra0_a5, ra0_a6, ra0_a7, ra0_a9, ra0_before, ra1_a1, ra1_a10, ra1_a11, ra1_a2, ra1_a3, ra1_a4, ra1_a5, ra1_a6, ra1_a7, ra1_a9, ra1_before, ra2_a1, ra2_a2, ra2_a4, ra2_before | 26 |
+| the register name is replaced by its index | regalloc.bend | ra0_a1, ra0_a10, ra0_a11, ra0_a2, ra0_a3, ra0_a4, ra0_a5, ra0_a6, ra0_a7, ra0_a9, ra0_before, ra0_lr, ra0_spills, ra1_a1, ra1_a10, ra1_a11, ra1_a2, ra1_a3, ra1_a4, ra1_a5, ra1_a6, ra1_a7, ra1_a9, ra1_before, ra1_lr, ra1_spills, ra2_a1, ra2_a2, ra2_a4, ra2_before, ra2_lr, ra2_spills, rw_none | 33 |

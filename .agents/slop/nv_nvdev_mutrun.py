@@ -272,14 +272,32 @@ def main():
     if sha(rel) != live:
         sys.exit("CONTROL FAILED: the scratch copy's digest is not the live "
                  "file's.  Writing nothing.")
-    print("substrate  %s  sha256 %s  (scratch == live, proved both ways)"
-          % (REL, live[:16]))
+    # ONE TREE PER WORKER.  The first version of this file gave every worker the
+    # same tree and got three mutations patched over each other: mutation 3 came
+    # back PATCH-NOT-APPLY with "best live line 0.00: ''" because a sibling had
+    # the file truncated at that instant.  A concurrency bug in a mutation
+    # harness does not look like a concurrency bug -- it looks like a stale
+    # anchor, which is a verdict, and a wrong one.
+    trees = {}
+    for w in range(workers):
+        t = os.path.join(outdir, "tree%d" % w)
+        if os.path.exists(t):
+            shutil.rmtree(t)
+        r = scratch(t)
+        if sha(r) != live:
+            sys.exit("CONTROL FAILED: worker tree %d is not the live file." % w)
+        trees[w] = (t, r)
+
+    print("substrate  %s  sha256 %s  (scratch == live, proved both ways, one "
+          "tree per worker)" % (REL, live[:16]))
 
     # --- the baseline, TWICE, and the control that every count is against ---
     base = []
     for _ in range(2):
         exe = os.path.join(dest, ".base")
         L = lane(dest, rel, exe)
+        if os.path.exists(exe):
+            os.remove(exe)
         if not L.get("built") or not L["out"].strip():
             sys.exit("CONTROL FAILED: the baseline did not produce a program "
                      "with rows (%s / gate %s).  Writing nothing."
@@ -295,9 +313,13 @@ def main():
           "byte-identical" % (len(base[0].splitlines()), len(brows), bdigest))
 
     # --- the mutations -------------------------------------------------
+    # Worker w owns tree w for the whole run, so the file the anchor was checked
+    # in and the file the patch lands in are the same file, and no two mutations
+    # can ever be looking at each other's edit.
     results = [None] * len(M)
     with cf.ThreadPoolExecutor(max_workers=workers) as ex:
-        fut = {ex.submit(one, i, m, dest, rel, pristine, brows, bdigest): i
+        fut = {ex.submit(one, i, m, trees[i % workers][0], trees[i % workers][1],
+                         pristine, brows, bdigest): i
                for i, m in enumerate(M)}
         for f in cf.as_completed(fut):
             i = fut[f]
@@ -311,9 +333,10 @@ def main():
         if r.get("reproduced_twice") is False:
             sys.exit("CONTROL FAILED: mutation %d (%s) did not reproduce across "
                      "two runs.  Writing nothing." % (r["i"], r["label"]))
-    if sha(rel) != live or open(rel).read() != pristine:
-        sys.exit("CONTROL FAILED: the scratch substrate did not come back.  "
-                 "Writing nothing.")
+    for w, (t, r) in trees.items():
+        if sha(r) != live or open(r).read() != pristine:
+            sys.exit("CONTROL FAILED: worker tree %d did not come back.  "
+                     "Writing nothing." % w)
     if sha(SRC) != live:
         sys.exit("CONTROL FAILED: the LIVE file changed under the run "
                  "(%s -> %s).  The baseline is no longer the file this table "

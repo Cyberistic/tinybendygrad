@@ -128,6 +128,21 @@ def row_of(idx, gate):
   return str(solver), str(z3_idx)
 
 
+def walk_of(idx, gate):
+  """`validate.py:83-84` verbatim -- `UOp.sink(*uops).toposort(gate=...)[:-1]`.
+
+  WHY A WALK ROW AT ALL, and it is the row the `dv_where` defect needed. `dv_where`'s blob row
+  said `And(v >= 0, v <= 15)` TWICE, which names a repeated TERM and not a repeated NODE: three
+  units saw that blob and none localised it, because a repeated term looks exactly like a
+  legitimately repeated one. A COUNT cannot localise it either -- a count says `6` and not
+  `where`. The walk is the op SEQUENCE, so it says `Ops.PARAM` twice and names the node.
+  `[:-1]` drops the SINK and NOT the gate's CONST, which is why the sequence ends `Ops.CONST`.
+  """
+  gate_fn = lambda x: x.op not in {Ops.AFTER, Ops.SHRINK, Ops.ALLOC, Ops.BUFFER} and \
+      (x.dtype in dtypes.ints + (dtypes.bool, dtypes.weakint) or x.op is Ops.SINK)
+  return list(UOp.sink(idx, gate).toposort(gate=gate_fn))[:-1]
+
+
 def fixture(nm, idx, gate=T, prov=()):
   """One fixture: the blob row plus the three per-field rows, or the RAISE CPython actually
   performs. CPython's `validate_index_with_z3` does not return a violation LIST -- it RAISES
@@ -141,6 +156,12 @@ def fixture(nm, idx, gate=T, prov=()):
   row is red for the raise-versus-list shape -- proven and unproven, separated by row name."""
   for tag, v in prov:
     emit(f"{nm}_{tag}", v)
+  # THE WALK ROW, emitted for EVERY fixture rather than only `dv_where`: a walk is a graph
+  # property and one fixture cannot say the walk is right, only that it was right once.
+  try:
+    emit(f"{nm}_walk", " ".join(str(u.op) for u in walk_of(idx, gate)) + " ")
+  except Exception as e:  # noqa: BLE001
+    emit(f"{nm}_walk", f"RAISED {type(e).__name__}: {e}")
   try:
     cs, term = row_of(idx, gate)
   except Exception as e:  # noqa: BLE001 -- the exception IS the answer, and it is named
@@ -151,6 +172,11 @@ def fixture(nm, idx, gate=T, prov=()):
   emit(nm, f"{norm(cs)} | {norm(term)} | {vs} | {n}")
   emit(f"{nm}_cs", norm(cs))
   emit(f"{nm}_term", norm(term))
+  # `_term_ns` IS EMITTED, so the claim `norm`'s own docstring makes -- "that encoding invents
+  # the OPPOSITE error on five rows where the port is right" -- is COUNTED BY THE GATE instead
+  # of asserted in prose. Neither normalisation is sound; the pair brackets the truth and the
+  # bracket's width is a measured disagreement count rather than a sentence.
+  emit(f"{nm}_term_ns", nofresh(norm_ns(term)))
   emit(f"{nm}_term_nb", nofresh(norm(term)))
   emit(f"{nm}_n", str(n))
   emit(f"{nm}_msg", vs)
@@ -297,19 +323,40 @@ def main():
           prov=(("dt", str(UOp(Ops.GROUP, (UOp(Ops.STACK, (UOp.const(2), UOp.const(3))),
                                             UOp(Ops.STACK, (UOp.const(5), UOp.const(7))))).dtype)),))
   fixture("dv_rank_shr1", UOp(Ops.SHL, (r8,)), prov=(("dt", str(r8.dtype)),))
-  # ⚠ THE ONE FIXTURE THAT DOES NOT CORRESPOND, and it is left as the port has it so the row
-  # stays the same question. The port builds `Ops.BITCAST` with `arg=None`, and CPython's
-  # `dtype_from_uop` (ops.py:182) ASSERTS on that: `CAST/BITCAST arg must be DType, got None`.
-  # So CPython cannot be asked this row at all -- the answer below is the constructor's, not
-  # `uops_to_z3`'s. `dv_bitcast_bool` is the CONSTRUCTIBLE spelling of the same port intent
-  # (`arg=dtypes.bool`, two srcs, so rule 5's shape test fails and rules 9/10 do not claim
-  # BITCAST) and it does reach validate.py.
+  # ⚠ THE FIXTURE THAT DID NOT CORRESPOND, and IT NOW DOES. The port used to build
+  # `Ops.BITCAST` with `arg=ANone{}`, and CPython's `dtype_from_uop` (ops.py:182) ASSERTS on
+  # that: `CAST/BITCAST arg must be DType, got None`. So `dv_bad_dtype_bitcast` had NO CPython
+  # answer and was unadjudicable -- the row was a port statement with no referee.
+  #
+  # THE CONSTRUCTIBLE SPELLING IS ONE `Arg` FIELD AND IT IS NOT AN `ops.bend` CHANGE:
+  # `O.ADt{S.boolean()}` is already exported by `ops.bend` (its own `s5.arena` builds
+  # `Ops.BITCAST` with `ADt{S.single()}` at slot 8), so `validate.bend` reaches it directly.
+  # MEASURED: with `ADt{S.boolean()}` the port prints
+  #   dv_bad_dtype_bitcast_msg = Ops.BITCAST is not supported by z3
+  # which is byte-identical to the `NotImplementedError` message CPython raises here. The brief
+  # this answers asked for a dtype-carrying `Arg` in `ops.bend`; the arg type is ALREADY THERE
+  # and the premise was false.
+  #
+  # THE REFUSED SPELLING KEEPS ITS OWN ROWS, so the refusal is reported rather than lost -- a
+  # dropped refusal and a passing row are indistinguishable in a gate that only counts.
+  #
+  # ⚠ AND THE REFUSAL IS NOT WHERE ANYBODY SAID IT WAS. The port's header, and this oracle's
+  # own header until now, said CPython's `dtype_from_uop` ASSERTS on `arg=None` "at the
+  # constructor". It does not: `UOp(Ops.BITCAST, (r16, r16))` CONSTRUCTS FINE and prints
+  # `arg=None`. The assert fires on the first `.dtype` READ, and `ops.py:122` is
+  # `dtype_from_uop(op, src, arg)` -- a function `UOp.__init__` never calls eagerly. So the
+  # refusal is a LAZY one, and a port row that walks dtype-carrying nodes never reaches it. Both
+  # halves are separate rows because collapsing them would repeat the error.
   try:
     bc = UOp(Ops.BITCAST, (r16, r16))
-    emit("dv_bad_dtype_bitcast", norm(str(bc.dtype)))
+    emit("dv_bad_dtype_bitcast_argless_construct", "ok")
+    try:
+      emit("dv_bad_dtype_bitcast_argless_dtype", norm(str(bc.dtype)))
+    except Exception as e:  # noqa: BLE001
+      emit("dv_bad_dtype_bitcast_argless_dtype", f"RAISED {type(e).__name__}: {e}")
   except Exception as e:  # noqa: BLE001
-    emit("dv_bad_dtype_bitcast", f"RAISED {type(e).__name__}: {e}")
-  fixture("dv_bitcast_bool", UOp(Ops.BITCAST, (r16, r16), arg=dtypes.bool), prov=(("dt", "bool"),))
+    emit("dv_bad_dtype_bitcast_argless_construct", f"RAISED {type(e).__name__}: {e}")
+  fixture("dv_bad_dtype_bitcast", UOp(Ops.BITCAST, (r16, r16), arg=dtypes.bool), prov=(("dt", "bool"),))
 
   # ---- 6. TABLE COUNTS, read off the live objects. --------------------------------------
   emit("n_z3_alu", str(len(z3_alu)))

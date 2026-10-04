@@ -59,13 +59,36 @@ _RG = None
 def rows(text):
     """`rebase-gate.py`'s `rows()`, QUERIED not transcribed: agent-core.md records
     that a name-comparing harness reported 0 for all 30 mutations in one unit and
-    all 68 in another.  Whole `name=value` lines, keyed on NAME."""
+    all 68 in another.  Whole `name=value` lines, keyed on NAME.
+
+    THERE IS ONE ROW READER PER REPO and this must not become a second one, so the
+    import is retried rather than replaced.  It has to be: `rebase-gate.py` is under
+    concurrent edit, and at 10:13 on 2026-10-04 it was transiently unparseable at
+    line 1184 (a `⚠` lost its `#` mid-write).  A local copy of `rows()` would have
+    been the fix that survived, and it would also have been the one that drifted --
+    which is the reason the rule exists.
+    """
     global _RG
     if _RG is None:
         import importlib.util
-        spec = importlib.util.spec_from_file_location("rebase_gate", HERE / "rebase-gate.py")
-        _RG = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(_RG)
+        import time
+        for attempt in range(10):
+            spec = importlib.util.spec_from_file_location("rebase_gate", HERE / "rebase-gate.py")
+            mod = importlib.util.module_from_spec(spec)
+            try:
+                spec.loader.exec_module(mod)
+            except SyntaxError as e:
+                # Another agent is mid-write.  Say WHICH line, because a silent wait
+                # reads as a hang.
+                print("rebase-gate.py is unparseable at line %s (%s) -- another agent "
+                      "is mid-edit; retrying in 3s" % (e.lineno, e.msg), file=sys.stderr)
+                time.sleep(3)
+                continue
+            _RG = mod
+            break
+        if _RG is None:
+            raise SystemExit("rebase-gate.py does not parse and this harness will not "
+                             "invent a second row reader.  Re-run when it is green.")
     return _RG.rows(text)
 
 
@@ -125,13 +148,40 @@ class Staged:
         self.path.write_text(text)
 
     def run(self, args=()):
-        """Run the staged mirror with `bin/bend` from the repo root."""
+        """Run the staged mirror with `bin/bend` from the repo root.
+
+        STDOUT ONLY, and that is the whole contract.  `bend` writes `bend 2.0.35 is
+        available: run bend update` to STDERR on every single run, so any liveness
+        test that looks at stderr is permanently true -- which is exactly how
+        `memory-mutate.py` read bend's upgrade notice as a baseline failure and lost
+        70 completed mutations.  The four harnesses this replaces all carried a
+        retry loop keyed on `(stdout + stderr).strip()`, so that loop could never
+        fire even for the machine-stack-overflow it was written for.
+        """
         p = subprocess.run([str(BEND), str(self.path), *args],
                            capture_output=True, text=True, cwd=str(ROOT))
-        return p.stdout + p.stderr
+        self.stderr = p.stderr
+        return p.stdout
 
     def rows(self, args=()):
-        return rows(self.run(args))
+        r = self.try_rows(args=args)
+        if r is None:
+            raise SystemExit("%s produced no output at all" % self.path.name)
+        return r
+
+    def try_rows(self, retries=5, args=()):
+        """`rows()`, or None when the run is NOT A PROGRAM.
+
+        The retry is not defensive coding, it is a measurement: bend 2.0.34
+        machine-stack-overflows about 1 run in 20 on this unit, and an overflow is
+        byte-for-byte indistinguishable from a mutation that broke the file.  Five
+        attempts then an honest None, never a 0-row answer.
+        """
+        for _ in range(retries):
+            text = self.run(args)
+            if text.strip():
+                return rows(text)
+        return None
 
     # -- the context ----------------------------------------------------------
     def __enter__(self):
@@ -211,10 +261,14 @@ class StagedSet:
     would be the reader inventing a measurement.
     """
 
-    def __init__(self, lives, tag, files=()):
+    def __init__(self, lives, tag, files=(), transform=None):
         self.lives = [pathlib.Path(p) for p in lives]
         self.tag = tag
         self.extra = [pathlib.Path(f) for f in files]   # imported, not mutated
+        # The harness's OWN anchor transform, e.g. `ra-mutate.py`'s `q()`.  It is
+        # passed in rather than imported so staged_mut stays free of any one unit's
+        # naming rules, and it is offered as the FIRST candidate spelling.
+        self.q = transform
         self.gs = []
         self.pristine = {}
 
@@ -235,45 +289,80 @@ class StagedSet:
         """The staged files whose text contains `old`.  [] means the anchor moved."""
         return [g for g in self.gs if old in g.text()]
 
+    def spellings(self, old, new):
+        """Candidate `(anchor, replacement)` pairs for one entry, transformed first.
+
+        A harness transform like `q()` exists because a file SPLIT forced a qualifier
+        onto cross-file CALLS, so it is exactly right for a call site and exactly
+        WRONG for a `def`'s own header in the file that defines it: `tb_pset.put` is
+        spelled bare in `linearizer.bend` and `q` turns it into a spelling that is
+        nowhere.  Offering the transformed form first and the raw form second is
+        re-deriving the anchor per file; picking one and hoping is the failure the
+        mirror-digest assertion exists to catch, and it caught 21 false STALEs here
+        before `mutanchor.anchors()` learned to run `q` at all.
+        """
+        pairs = []
+        for text in ([old] if self.q is None else [self.q(old), old]):
+            pair = (text, self.q(new) if self.q is not None else new)
+            if pair[0] not in [p[0] for p in pairs]:
+                pairs.append(pair)
+        return pairs
+
     def apply(self, old, new):
-        """Replace `old` in the ONE staged file that has it.  Returns that file's
-        name, or None when the anchor is absent, and RAISES when it is ambiguous."""
-        hits = self.holders(old)
-        if not hits:
-            return None
-        if len(hits) > 1:
-            raise SystemExit("ANCHOR AMBIGUOUS: %d staged files contain it (%s).  "
-                             "Guessing which one was meant is how a mutation ends up "
-                             "measuring a different file than its name says."
-                             % (len(hits), ", ".join(g.live.name for g in hits)))
-        g = hits[0]
-        g.write(g.text().replace(old, new, 1))
-        return g.live.name
+        """Replace `old` in the ONE staged file that has it, and return that file's
+        name, or None when the anchor is absent.
+
+        Ambiguity is refused rather than guessed: an anchor present in two staged
+        files is two candidate mutants and choosing one would be the reader
+        inventing a measurement.
+        """
+        for o, n in self.spellings(old, new):
+            hits = self.holders(o)
+            if not hits:
+                continue
+            if len(hits) > 1:
+                raise SystemExit("ANCHOR AMBIGUOUS: %d staged files contain it (%s).  "
+                                 "Guessing which one was meant is how a mutation ends "
+                                 "up measuring a different file than its name says."
+                                 % (len(hits), ", ".join(g.live.name for g in hits)))
+            g = hits[0]
+            g.write(g.text().replace(o, n, 1))
+            return g.live.name
+        return None
 
     def restore(self):
         for g in self.gs:
             g.write(self.pristine[g.live.name])
 
     def rows(self, retries=5, args=()):
-        """Rows over the WHOLE SET, keyed on name.
-
-        The retry is not defensive coding, it is a measurement: bend 2.0.34
-        machine-stack-overflows about 1 run in 20 on this unit, and an overflow is
-        indistinguishable from a mutation that broke the file.  Retrying without
-        re-applying the mutation would report a phantom zero.
-        """
+        """Rows over the WHOLE SET, keyed on name.  None if ANY file is not a
+        program, because a set whose third file stopped running has no row set to
+        compare and reporting the other two as 'rows moved' is the 170-row
+        falsehood in `ops-python-mutate.py`."""
         out = {}
+        self.failed = None
         for g in self.gs:
-            for _ in range(retries):
-                text = g.run(args)
-                if text.strip():
-                    out.update(rows(text))
-                    break
-            else:
-                raise SystemExit("bend produced NO OUTPUT for %s %d times running; a "
-                                 "0-row answer here would be indistinguishable from "
-                                 "'not started'" % (g.live.name, retries))
+            r = g.try_rows(retries, args)
+            if r is None:
+                self.failed = g.live.name
+                return None
+            out.update(r)
         return out
+
+    def why(self):
+        """`<file>: <bend's first error line>`, for the DESCRIPTION cell only.
+
+        The MEASURED cell stays `DID-NOT-COMPILE` -- `zero-classify.py` compares the
+        whole cell and exits on anything it does not recognise, which is the correct
+        direction for it to break in -- and the diagnostic goes beside it.
+        """
+        if not self.failed:
+            return ""
+        g = next(x for x in self.gs if x.live.name == self.failed)
+        for line in (g.stderr or "").splitlines():
+            if line.startswith(("Error:", "Location:", "SOME PROOFS FAIL")):
+                return "%s: %s" % (self.failed, line.strip())
+        return self.failed
 
 
 # The four verdicts `zero-classify.py` accepts as a classification of a zero.  They

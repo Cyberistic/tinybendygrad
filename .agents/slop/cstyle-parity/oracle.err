@@ -1,0 +1,13 @@
+REFUSED rd BASE  fp8e4m3: 7 `_render_dtype` calls raise KeyError: dtypes.fp8e4m3 is not in CStyleLanguage.type_map at HEAD; the row is answered under the .get reading
+REFUSED rd CLANG fp8e4m3: 7 `_render_dtype` calls raise KeyError: dtypes.fp8e4m3 is not in ClangRenderer.type_map at HEAD; the row is answered under the .get reading
+REFUSED rd OPENCL fp8e4m3: 7 `_render_dtype` calls raise KeyError: dtypes.fp8e4m3 is not in OpenCLRenderer.type_map at HEAD; the row is answered under the .get reading
+REFUSED rd METAL fp8e4m3: 7 `_render_dtype` calls raise KeyError: dtypes.fp8e4m3 is not in MetalRenderer.type_map at HEAD; the row is answered under the .get reading
+REFUSED witem BASE : code_for_workitem is EMPTY at HEAD (cstyle.py:131), so code_for_workitem['g'] and ['l'] are BOTH a KeyError; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED witem CLANG: code_for_workitem is EMPTY at HEAD (cstyle.py:131), so code_for_workitem['g'] and ['l'] are BOTH a KeyError; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo BASE  FDIV f32: Ops.FDIV is not in CStyleLanguage.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo CLANG EXP2 f32: Ops.EXP2 is not in ClangRenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo CLANG LOG2 f32: Ops.LOG2 is not in ClangRenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo CLANG SIN f32: Ops.SIN is not in ClangRenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo CLANG RECIPROCAL f32: Ops.RECIPROCAL is not in ClangRenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo METAL FDIV f32: Ops.FDIV is not in MetalRenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped
+REFUSED cfo CUDA  FDIV f32: Ops.FDIV is not in CUDARenderer.code_for_op at HEAD; the port answers `` for this cell, so the row is GATED and not skipped

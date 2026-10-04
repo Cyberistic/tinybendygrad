@@ -1,28 +1,8 @@
 # tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
 # graph      nodes  cnt  ops arg-atoms shapes depths   sym  live-ledger
-  binblob    19/19   ok    8 DNOSbilrs     14      1  0/0  y  [same]
-  buffer      5/5    ok    4   DNSbils      4      1  0/0  z  [same]
-  cast        6/6    ok    5   DNSbils      4      1  0/0  -  [same]
-  commute    14/14   ok   11   DNSbils      5      1  0/0  -  [same]
-  group       8/8    ok    7   DNSbils      5      1  0/0  -  [same]
-  indexed     7/7    ok    6 DNSXbiklrs      3      1  0/0  -  [same]
-  matmul     18/18   ok    7 DNOSbilrs     13      1  0/0  -  [same]
-  range       2/2    ok    2      Xilr      1      2  0/0  -  [same]
-  rangeflat   2/2    ok    2      Xilr      1      1  0/0  -  [same]
-  reduce      7/7    ok    6 DNOSbilrs      6      1  0/0  -  [same]
-  sink        2/2    ok    2      ikls      2      1  0/0  -  [same]
-  special     2/2    ok    2        ls      1      1  0/0  -  [same]
-  sym        12/12   ok    6   DNSbils      6      1  2/0  ?  [same]
-# TOTAL: 13 graphs, 104 nodes per side, 23 distinct ops: ADD ALLOC AND BARRIER BINARY BUFFER CAST CMPNE CONST GROUP INDEX MAX MUL OR PARAM PERMUTE RANGE REDUCE RESHAPE SINK SPECIAL STACK XOR
-# FIELDS COMPARED PER NODE: 8 on the wire, 6 in the equality decision (dtype, shape, depth, tag, arg, src); `id` is reporting-only by R1
-# COMPOSITE ARG FORMS SPELLED BY BOTH SIDES: ['P(', 'al(', 'cF(', 'cI(', 'in(', 'kI(', 'pI(', 'rd(', 'rg(', 'wm(']
-# DISTINCT ARG ATOM LETTERS REACHED: DNOSXbiklrs (11 distinct = 8 atom letters + 3 composite-form prefixes; a letter that is NEITHER an atom nor a composite prefix would be an unmapped value: none)
-# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: {'y': 1, 'z': 1, '?': 1} of 8 markers
-# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: ['u', 'q', 'X!', 'BAD', 'E']
-# COMMUTATIVE OPS (read from CPython): ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']
-# COMMUTATIVE OPS REACHED BY A NODE: 7/8 ['ADD', 'AND', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED ['CMPEQ'] (--equiv is MEASURED on 7 of 8)
-# SYMBOLIC-DIM NODES: 2 of 104 py-side nodes carry a `U` dim (MEASURED off the shape column of every graph above)
-# FIELD-RECORDS PER SIDE: 104 nodes x 6 compared fields = 624
-# PER-OP NODE COUNTS ACROSS THE CORPUS -- the denominator for every op claim:
-#   ADD 2/2  ALLOC 10/7  AND 1/1  BARRIER 1/1  BINARY 1/1  BUFFER 1/1  CAST 1/1  CMPNE 1/1  CONST 26/13  GROUP 3/3  INDEX 1/1  MAX 1/1  MUL 3/3  OR 1/1  PARAM 3/2  PERMUTE 5/3  RANGE 3/3  REDUCE 3/3  RESHAPE 17/8  SINK 2/2  SPECIAL 1/1  STACK 16/8  XOR 1/1   (nodes/graphs)
-# NOT REACHED (54 of 77): NOOP REWRITE_ERROR CALL PROGRAM LINEAR SOURCE AFTER GETADDR SHRINK LOAD STORE WMMA BITCAST EXP2 LOG2 SIN SQRT RECIPROCAL NEG TRUNC SHL SHR CDIV CMOD CMPLT CMPEQ THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE MULACC IF END ENDIF BACKEDGE CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION EXPAND PAD FLIP UNSHARD ALLREDUCE PYLITERAL
+emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  bend attempt 1: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  bend attempt 2: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  bend attempt 3: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  bend attempt 4: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update
+  bend attempt 5: 0 rows, rc=1, stderr tail: be<&1, O.Sint>: 1251>| match O.ParamArg.vmin_vmax(pa): | ^^^^^^^^^^^^^^^^^^^^^^^^ 1252 | case Some{O.PyRange{lo, hi}}: bend 2.0.35 is available: run bend update

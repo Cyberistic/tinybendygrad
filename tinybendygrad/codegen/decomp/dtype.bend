@@ -1528,7 +1528,12 @@ def f2f_clamp.mx(mx: Maybe<&2, F32>, sat: Bool, +fr: S.Dt, +ar: O.Arena, +v: U32
       +s = f2f_clamp.sat(sat, mxc, inf)
       +ne = dd_ne(O.Found.ar(s), v, v)
       +n1 = dd_wkf(O.Found.ar(ne), F32.neg(1.0))
-      +nm = dd_mul(O.Found.ar(ne), O.Found.i(mxc), O.Found.i(n1))
+      # ⚠ `O.Found.ar(ne)` WAS ONE NODE STALE HERE: `dd_wkf` interns the `F(-1.0)`
+      # CONST and grows, so the `MUL` landed ON the CONST's slot and its src1 pointed at
+      # itself. MEASURED, `q3` before: `6 MUL/2 MUL <- 4,6 FORWARD` -- src1 == its own
+      # slot. `qmask`'s siblings are the same shape; see `.agents/slop/dd-stalearena.py`
+      # rule R2.
+      +nm = dd_mul(O.Found.ar(n1), O.Found.i(mxc), O.Found.i(n1))
       +lt = dd_lt1(O.Found.ar(nm), v, O.Found.i(nm))
       +ns = dd_mul(O.Found.ar(lt), O.Found.i(s), O.Found.i(n1))
       +in = dd_lt1(O.Found.ar(ns), O.Found.i(mxc), v)
@@ -1565,23 +1570,41 @@ def f2f.udt.of(m: Maybe<&2, S.Dt>, k: S.Dt) -> S.Dt:
 def f2f.udt(+to: S.Dt) -> S.Dt:
   f2f.udt.of(f2f_dt(to), S.uint32())
 
-def f2f.em1(+ar: O.Arena, +k: U32) -> U32:
-  +s = dd_wk(ar, T.tx_powi(k))
-  +m1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
-  +d = P.dc_sub(O.Found.ar(m1), O.Found.i(s), O.Found.i(m1))
-  O.Found.i(d)
-
-# `shl(1, k)` is `1 * 2**k`, a PYTHON INT (transcendental.py:20), and a Python int
-# written against a mask is a CONSTANT -- NOT the arena index of the node `f2f.em1`
-# built for it. `dd_band`'s third parameter is `op.bend`'s `dc_band`, which interns it
-# as `dc_cint(ar, k)`, so this is the VALUE half and `f2f.em1` is the INDEX half.
+# `shl(1, k) - 1`, the mask dtype.py writes four times. `P.dc_sub` is
+# `a - 1` = `ADD(a, MUL(C(1), C(-1)))`, and THAT IS THE BUG: `shl(1, k)` is
+# `1 * (2**k)` and BOTH of its arguments are Python ints (transcendental.py:20), so
+# tinygrad folds the subtraction in PYTHON and the mask is ONE interned `CONST` node
+# before any graph exists. Building it as `ADD(C(2**k), MUL(C(1), C(-1)))` costs FOUR
+# nodes where CPython has one, and the three the `+s`/`+m1`/`+m` binders mint are DEAD
+# -- nothing reads them -- so they are invisible in a cone walk from the root.
+# MEASURED, `f2f-arena-diff.py` against `.agents/slop/f2f-arena-oracle.py`:
+#     cpy[6]  CONST C(127)                       one node
+#     port[7] CONST C(1)  <- the mask's graph    four nodes, all dead
+#     port[8] CONST C(-1)
+#     port[9] MUL    <- 6,7
+#     port[10] ADD    <- 1,8
+# and the port's `q1` carried `+6` nodes over CPython's, of which these four and
+# `f2f.norm`'s two are the whole.
 def f2f.mask1(+k: U32) -> U32:
   U32.sub(T.tx_powi32(k), 1)
 
-# the SAME number as an I64, for the `dd_eq1` of dtype.py:122, which reads one interned
-# CONST node on BOTH sides of the equation.
-def f2f.em1.i64(+k: U32) -> H.I64:
-  H.i64_sub(T.tx_powi(k), H.i64_of_i32(1))
+# THE SAME NUMBER AS A NODE, for the three places dtype.py COMPARES against the mask
+# (`x.eq(shl(1, k) - 1)` twice) or ORs it in (`nan_mantissa = shl(1, tm) - 1`) rather
+# than ANDing it. One interned `CONST`; `H.i64_of_i32` of `mask1` is exact because
+# `2**k - 1` is below `2**31` for every `k` dtype.py writes here.
+def f2f.mask1.node(+ar: O.Arena, +k: U32) -> O.Found:
+  dd_wk(ar, H.i64_of_i32(f2f.mask1(k)))
+
+# `shl(shl(1, k) - 1, j)`, the `nan` pattern of dtype.py:106 and :120. `shl` is
+# `x * (2**y)` (transcendental.py:20) with BOTH arguments Python ints, so the whole
+# expression is one Python int by the time a node exists: `(2**k - 1) * 2**j`. ONE
+# `CONST`. MEASURED, `shl(255, 23)` is `C(2139095040)`, and CPython's `q1` slot 15 is
+# `CONST/0 C(2139095040)` with an `OR` for src1 -- not a `MUL` by a `CONST 2**j`.
+# This def REPLACED `f2f.em1`, which built `2**k - 1` as a three-node graph and then
+# handed the SAME arena to `tx_shl`, so `tx_shl`'s `MUL` overwrote the `em1` CONST and
+# its own src0 pointed FORWARD. See `f2f.qnan`.
+def f2f.qmask(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
+  dd_wk(ar, H.i64_shl(H.i64_of_i32(f2f.mask1(k)), U32.to_nat(j)))
 
 # `shl((v & shl(1, fs-1)).cast(f2f_dt[to]), ts - fs)`
 
@@ -1592,56 +1615,88 @@ def f2f.sign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32, +ts: U32) -> O.Found:
   T.tx_shl(O.Found.ar(c), O.Found.i(c), U32.sub(ts, fs))
 
 # `(v & (shl(1, fs-1) - 1)).cast(f2f_dt[to])`
+# ⚠ THE THREE `+s`/`+m1`/`+m` BINDERS BUILT A `2**k - 1` NODE GRAPH AND NOTHING READ
+# IT. `dd_band`'s third parameter IS the mask VALUE (`op.bend`'s `dc_band` interns it as
+# `dc_cint(ar, k)`), so those were four dead slots -- see `f2f.mask1`. `f2f.sign` keeps
+# its one `+s` line and this one does not: there the CONST `+s` interns is the one
+# `dc_band` HITS, so its slot is where the AND's mask has to live; here the AND's mask
+# is a different VALUE and gets its own slot either way.
 
 def f2f.nosign(+ar: O.Arena, +udt: S.Dt, +v: U32, +fs: U32) -> O.Found:
-  +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
-  +m1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
-  +m = P.dc_sub(O.Found.ar(m1), O.Found.i(s), O.Found.i(m1))
-  +a = dd_band(O.Found.ar(m), v, f2f.mask1(U32.sub(fs, 1)))
+  +a = dd_band(ar, v, f2f.mask1(U32.sub(fs, 1)))
   P.dc_cast(O.Found.ar(a), O.Found.i(a), udt)
 
-# `shl(nosign, tm - fm) + shl(tb - fb, tm)`. `tb - fb` is a Python int, so both
-# operands of that `*` are WEAKINT constants -- and it is never negative in the
-# widening branch, which is what keeps the weakfloat remint out of this arm.
+# `shl(nosign, tm - fm) + shl(tb - fb, tm)`. `tb - fb` is a Python int and so is `tm`,
+# so `shl(tb - fb, tm)` is `(tb - fb) * (2**tm)` evaluated IN PYTHON -- one interned
+# `CONST`. It is never negative in the widening branch, which is what keeps the
+# weakfloat remint out of this arm.
+# ⚠ THIS ARM BUILT THE WRONG NODE until this rewrite: it passed `O.Found.i(a)` to
+# `tx_shl`, so the graph was `a + (a * 2**tm)` and the `tb - fb` CONST it had just
+# interned was DEAD. MEASURED: cpy[13] is `CONST C(1006632960)` feeding cpy[14]
+# `ADD <- 12,13`, and `120 * 2**23 == 1006632960`; port[18] was `CONST C(120)` read by
+# nothing, port[20] was `MUL <- 16,18` (a *masked*, not an offset) and port[21] was
+# `ADD <- 16,19`. Two extra nodes and a different function.
 
 def f2f.norm(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
   +a = T.tx_shl(ar, O.Found.i(ns), U32.sub(tm, fm))
-  +bf = dd_wk(O.Found.ar(a), H.i64_sub(H.i64_of_i32(T.exponent_bias(to)), H.i64_of_i32(T.exponent_bias(fr))))
-  +b = T.tx_shl(O.Found.ar(bf), O.Found.i(a), tm)
-  dd_add(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
+  +bf = dd_wk(O.Found.ar(a), H.i64_shl(H.i64_sub(H.i64_of_i32(T.exponent_bias(to)),
+                                                H.i64_of_i32(T.exponent_bias(fr))),
+                                     U32.to_nat(tm)))
+  dd_add(O.Found.ar(bf), O.Found.i(a), O.Found.i(bf))
 
 # `shl(nosign, tm - fm) | shl((shl(1, te) - 1), tm)`
+# ⚠ THIS ARM WAS ONE ARENA HANDED TO TWO NODE BUILDERS. `T.tx_shl(O.Found.ar(a),
+# f2f.em1(O.Found.ar(a), te), tm)` reads `O.Found.ar(a)` -- the arena BEFORE `em1` grew
+# it -- so `tx_shl` wrote its `MUL` into the slot `em1`'s first `CONST` had just taken,
+# and read `src0` at `em1`'s LAST slot, three past the `MUL`. The result was a graph
+# whose `OR`'s operand pointed forward into the `OR` itself: on `f1` port slot 22 was
+# `MUL <- 23,19` and slot 23 was `OR <- 17,22`, a CYCLE, and slot 18's `CONST C(2**te)`
+# was gone. `+` means "the callee may REBIND this name", not "consumed on every path":
+# two mints from one arena name both returned index 2 and overwrote each other.
+# The rule this arm now follows is ONE ARENA, ONE BUILDER, PER NODE: `f2f.qmask`
+# returns the arena it grew and that arena is what `dd_or` is handed.
 
 def f2f.qnan(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, +te: U32) -> O.Found:
   +a = T.tx_shl(ar, O.Found.i(ns), U32.sub(tm, fm))
-  +b = T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)
-  dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
+  +qm = f2f.qmask(O.Found.ar(a), te, tm)
+  dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))
 
 # `fnuz_nan = sign.ne(0) & nosign.eq(0)`; `qnan = shl(shl(1, te) - 1, tm) | shl(1, tm - 1)`
+# ⚠ THE SAME ALIASING AS `f2f.qnan`, on the `q1` operand this time.
 
 def f2f.fnuz(+ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +te: U32, +tm: U32) -> O.Found:
   +z = dd_wk(ar, H.i64_of_i32(0))
-  +a = dd_ne(ar, O.Found.i(sg), O.Found.i(z))
+  # ⚠ `dd_ne(ar, ...)` WROTE OVER `z`'s OWN SLOT -- `+z` had already interned `C(0)`
+  # there -- and `a`'s src1 was that same slot, so `a` pointed at ITSELF. On `q4` before:
+  # `18 CMPNE/2 CMPNE <- 6,18 FORWARD`.
+  +a = dd_ne(O.Found.ar(z), O.Found.i(sg), O.Found.i(z))
   +b = dd_eq1(O.Found.ar(a), O.Found.i(ns), O.Found.i(z))
   +fn = dd_and(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
-  +q1 = T.tx_shl(O.Found.ar(fn), f2f.em1(O.Found.ar(fn), te), tm)
+  +q1 = f2f.qmask(O.Found.ar(fn), te, tm)
   +qk = dd_wk(O.Found.ar(q1), T.tx_powi(U32.sub(tm, 1)))
-  +q = dd_or(O.Found.ar(q1), O.Found.i(q1), O.Found.i(qk))
+  # ⚠ `O.Found.ar(q1)` IS TWO NODES STALE: `qk` interned `2**(tm-1)` in between. On `q4`
+  # before: `23 OR/2 OR <- 16,23 FORWARD`, whose src1 was the `OR`'s own slot.
+  +q = dd_or(O.Found.ar(qk), O.Found.i(q1), O.Found.i(qk))
   +e = dd_eq1(O.Found.ar(q), O.Found.i(ex), O.Found.i(z))
   +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(nm))
   +s = dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w))
   dd_where(O.Found.ar(s), O.Found.i(fn), O.Found.i(q), O.Found.i(s))
 
 # `is_nan = nosign.eq(shl(1, fm + fe) - 1)` for `fp8e4m3` else `exp.eq(shl(1, fe) - 1)`
+# ⚠ BOTH ARMS COMPARED AGAINST `2**(fm+fe)` AND `2**fe` -- THE MASK, NOT THE MINUS ONE.
+# dtype.py's `- 1` is inside the Python int `shl(1, k) - 1`, so the node is `C(2**k - 1)`
+# and the port's `C(2**k)` was a different function. MEASURED: cpy[6] is `C(127)` feeding
+# cpy[17] `CMPNE <- 8,6` (`nosign` vs `127`); the port's q1 read `CMPNE <- 12,1` (`nosign`
+# vs `128`). CPython's own `q1k` carries the `C(127)` the port never compared against.
 
 def f2f.isnan(+ar: O.Arena, +ns: O.Found, +ex: O.Found, +fe: U32, +fm: U32, e4m3: Bool) -> O.Found:
   match e4m3:
     case True{}:
-      +m = dd_wk(ar, T.tx_powi(U32.add(fm, fe)))
-      dd_eq1(ar, O.Found.i(ns), O.Found.i(m))
+      +m = f2f.mask1.node(ar, U32.add(fm, fe))
+      dd_eq1(O.Found.ar(m), O.Found.i(ns), O.Found.i(m))
     case False{}:
-      +m = dd_wk(ar, T.tx_powi(fe))
-      dd_eq1(ar, O.Found.i(ex), O.Found.i(m))
+      +m = f2f.mask1.node(ar, fe)
+      dd_eq1(O.Found.ar(m), O.Found.i(ex), O.Found.i(m))
 
 # ---- NARROWING
 
@@ -1650,16 +1705,15 @@ def f2f.ocp(e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, 
   +z = dd_wk(O.Found.ar(i), H.i64_of_i32(0))
   +e = dd_eq1(O.Found.ar(z), O.Found.i(ex), O.Found.i(z))
   +iu = dd_where(O.Found.ar(e), O.Found.i(i), O.Found.i(nn), O.Found.i(nm))
-  +w = dd_where(O.Found.ar(e), O.Found.i(e), O.Found.i(z), O.Found.i(iu))
+  # ⚠ `O.Found.ar(e)` IS ONE NODE STALE: `dd_where` grew it into `iu`. On `q3` before:
+  # `42 WHERE/3 WHERE <- 29,42 FORWARD`, whose src2 was the `WHERE`'s own slot.
+  +w = dd_where(O.Found.ar(iu), O.Found.i(e), O.Found.i(z), O.Found.i(iu))
   dd_or(O.Found.ar(w), O.Found.i(sg), O.Found.i(w))
 
 def f2f.up.tail(fnuz: Bool, e4m3: Bool, +ar: O.Arena, +ns: O.Found, +sg: O.Found, +ex: O.Found, +nm: O.Found, +nn: O.Found, +fe: U32, +fm: U32, +te: U32, +tm: U32) -> O.Found:
   match fnuz:
     case True{}: f2f.fnuz(ar, ns, sg, ex, nm, te, tm)
     case False{}: f2f.ocp(e4m3, ar, ns, sg, ex, nm, nn, fe, fm)
-
-# `shl(1, k) - 1`, the mask dtype.py writes four times. `P.dc_sub` is
-# `a - 1` = `ADD(a, MUL(C(1), C(-1)))`.
 
 def f2f.up(+fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
   +udt = f2f.udt(to)
@@ -1679,24 +1733,40 @@ def f2f.down.sign(+ar: O.Arena, +v: O.Found, +fs: U32, +ts: U32) -> O.Found:
   dd_band(O.Found.ar(b), O.Found.i(a), T.tx_powi32(U32.sub(ts, 1)))
 
 # `v & (shl(1, fs - 1) - 1)`
+# ⚠ THE SAME THREE DEAD BINDERS AS `f2f.nosign`: `dd_band`'s third parameter is the mask
+# VALUE, so `+s`/`+c1`/`+m` minted a four-node graph that nothing read.
 
 def f2f.down.nosign(+ar: O.Arena, +v: O.Found, +fs: U32) -> O.Found:
-  +s = dd_wk(ar, T.tx_powi(U32.sub(fs, 1)))
-  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
-  +m = P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
-  dd_band(O.Found.ar(m), O.Found.i(v), f2f.mask1(U32.sub(fs, 1)))
+  dd_band(ar, O.Found.i(v), f2f.mask1(U32.sub(fs, 1)))
 
 # `(rne(nosign, fm - tm) - shl(fb - tb, tm)).cast(f2f_dt[to])`
 
-def f2f.down.norm.put(+tudt: S.Dt, +ar: O.Arena, +x: O.Found, +fr: S.Dt, +to: S.Dt) -> O.Found:
-  +k = dd_wk(ar, H.i64_sub(H.i64_of_i32(T.exponent_bias(fr)), H.i64_of_i32(T.exponent_bias(to))))
-  +b = T.tx_shl(O.Found.ar(k), O.Found.i(x), T.tx_finfo_m(to))
-  +d = P.dc_sub(O.Found.ar(b), O.Found.i(x), O.Found.i(b))
+# ⚠ `+k` interned `C(fb - tb)` and `tx_shl` multiplied `x` by `2**tm` -- so the graph was
+# `(x - (fb - tb)) * 2**tm`, which is not the function, and it cost a `CONST 2**tm` and a
+# `MUL` that CPython does not have. `shl(fb - tb, tm)` is `x * (2**y)` with BOTH
+# arguments Python ints (transcendental.py:20), so the whole offset is one CONST and the
+# subtraction keeps `dc_sub`'s `x + MUL(C(k), C(-1))`. MEASURED, `q2`: cpy[58] is
+# `CONST C(960)` (`120 * 2**3` for `float32 -> fp8e4m3`) feeding cpy[59] `MUL <- 58,32`
+# where 32 is `C(-1)`, and cpy[60] is `ADD <- 57,59`; `q3` reads `C(448)` (`112 * 2**2`)
+# and `q5` reads `C(444)` (`111 * 2**2`, the fnuz bias of 16). The port read `C(120)`.
+# `+xi` AND NOT `+x: O.Found`, because `O.Found.ar(x)` CONSUMES `x` and passing `x` then
+# consumes it again: bend says `x (consumed more than once)`. `+ar` and `O.Found.ar(x)`
+# are the same value, so the caller passes both parts.
+def f2f.down.norm.put(+tudt: S.Dt, +ar: O.Arena, +xi: U32, +fr: S.Dt, +to: S.Dt) -> O.Found:
+  +k = dd_wk(ar, H.i64_shl(H.i64_sub(H.i64_of_i32(T.exponent_bias(fr)), H.i64_of_i32(T.exponent_bias(to))),
+                           U32.to_nat(T.tx_finfo_m(to))))
+  +d = P.dc_sub(O.Found.ar(k), xi, O.Found.i(k))
   P.dc_cast(O.Found.ar(d), O.Found.i(d), tudt)
 
+# ⚠ `+ar` IS ONLY LIVE IN THE `None` ARM. `rne` grows a COPY, and `f2f.down.norm` used
+# to hand `put` the name `ar` -- the arena from BEFORE rne -- so `put` wrote over rne's
+# twelve nodes and the whole `rne` subtree vanished. THE FORWARD DETECTOR CANNOT SEE
+# THIS: rne's own edges all still pointed backwards and the only symptom was a node
+# COUNT (`q3` 50 against CPython's 126 slots for the fixture). Found by
+# `.agents/slop/dd-stalearena.py` rule R1, which is why that file exists.
 def f2f.down.norm.g(r: Maybe<&2, O.Found>, +tudt: S.Dt, +ar: O.Arena, +fr: S.Dt, +to: S.Dt) -> O.Found:
   match r:
-    case Some{x}: f2f.down.norm.put(tudt, ar, x, fr, to)
+    case Some{O.Found{+xa, +xi}}: f2f.down.norm.put(tudt, xa, xi, fr, to)
     case None{}: dd_const.int(ar, H.i64_of_i32(0), tudt)
 
 # `underflow = (shr(v, fm) & (shl(1, fe) - 1)) < (1 + fb - tb)`. The right side is
@@ -1713,10 +1783,11 @@ def f2f.down.uf(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32, +fr: S.Dt, +to: S
 
 # `nan_mantissa = (shl(1, tm) - 1) if to == dtypes.fp8e4m3 else (shr(nosign, fm - tm) & (shl(1, tm) - 1))`
 
+# ⚠ THE THIRD DEAD MASK GRAPH. MEASURED, `q2`: cpy[50] is `CONST C(524287)` and it is
+# OR'd straight into the `nan`; the port minted `CONST C(8388608)`, `CONST C(1)`,
+# `CONST C(-1)`, `MUL` and `ADD` for the same number.
 def f2f.down.m1(+ar: O.Arena, +tm: U32) -> O.Found:
-  +s = dd_wk(ar, T.tx_powi(tm))
-  +c1 = dd_wk(O.Found.ar(s), H.i64_of_i32(1))
-  P.dc_sub(O.Found.ar(c1), O.Found.i(s), O.Found.i(c1))
+  f2f.mask1.node(ar, tm)
 
 def f2f.down.m2(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(ns), U32.sub(fm, tm))
@@ -1729,19 +1800,27 @@ def f2f.down.mant(+ar: O.Arena, +ns: O.Found, +fm: U32, +tm: U32, e4m3: Bool) ->
     case True{}: f2f.down.m1(ar, tm)
     case False{}: f2f.down.m2(ar, ns, fm, tm)
 
+# ⚠ THE THIRD OF THE THREE ALIASED ARMS -- `f2f.qnan`, `f2f.fnuz` and this one all wrote
+# `T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)`, one arena to two builders.
+# On `n2` the two `FORWARD` slots 41 and 48 were this arm and its `.cast`, and slot 26's
+# `MUL <- 36,25` and slot 28's `ADD <- 36,27` were the overwritten pair.
 def f2f.down.npat(+ar: O.Arena, +sg: O.Found, +nm: O.Found, +te: U32, +tm: U32, +to: S.Dt) -> O.Found:
   +tudt = f2f.udt(to)
   +a = dd_or(ar, O.Found.i(sg), O.Found.i(nm))
-  +b = T.tx_shl(O.Found.ar(a), f2f.em1(O.Found.ar(a), te), tm)
-  +c = dd_or(O.Found.ar(b), O.Found.i(a), O.Found.i(b))
+  +qm = f2f.qmask(O.Found.ar(a), te, tm)
+  +c = dd_or(O.Found.ar(qm), O.Found.i(a), O.Found.i(qm))
   P.dc_cast(O.Found.ar(c), O.Found.i(c), tudt)
 
 # `is_nan = (shr(v, fm) & (shl(1, fe) - 1)).eq(shl(1, fe) - 1)`. The AND is the
 # one `underflow` built, so it is interned; the `eq` is two CMPNEs.
 
+# ⚠ `+mc` minted `2**fe - 1` as `ADD(C(2**fe), MUL(C(1), C(-1)))` -- four nodes -- and
+# `dd_band`'s third parameter interned the SAME mask as a `CONST` two slots later, so the
+# graph and the constant were both in the arena. MEASURED, `q2`: cpy[50] `C(524287)` is
+# the single CONST the AND and the EQ both read.
 def f2f.down.isnan(+ar: O.Arena, +v: O.Found, +fm: U32, +fe: U32) -> O.Found:
   +a = T.tx_shr(ar, O.Found.i(v), fm)
-  +mc = dd_wk(O.Found.ar(a), f2f.em1.i64(fe))
+  +mc = f2f.mask1.node(O.Found.ar(a), fe)
   +b = dd_band(O.Found.ar(mc), O.Found.i(a), f2f.mask1(fe))
   dd_eq1(O.Found.ar(b), O.Found.i(b), O.Found.i(mc))
 
@@ -1761,7 +1840,8 @@ def f2f.down.fnuz(+ar: O.Arena, +sg: O.Found, +nr: O.Found, +uf: O.Found, +ii: O
 def f2f.down.ocp(+ar: O.Arena, +sg: O.Found, +nr: O.Found, +uf: O.Found, +ii: O.Found, +nm: O.Found, +to: S.Dt) -> O.Found:
   +c = P.dc_cast(ar, O.Found.i(sg), f2f.udt(to))
   +z = dd_wk(O.Found.ar(c), H.i64_of_i32(0))
-  +w = dd_where(O.Found.ar(c), O.Found.i(uf), O.Found.i(z), O.Found.i(nr))
+  # ⚠ `O.Found.ar(c)` IS ONE NODE STALE: `dd_wk` grew it into `z`.
+  +w = dd_where(O.Found.ar(z), O.Found.i(uf), O.Found.i(z), O.Found.i(nr))
   +o = dd_or(O.Found.ar(w), O.Found.i(c), O.Found.i(w))
   dd_where(O.Found.ar(o), O.Found.i(ii), O.Found.i(nm), O.Found.i(o))
 
@@ -1799,13 +1879,19 @@ def f2f.narrow(+v: O.Found, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, 
 
 # `shr(v, fs - ts) & shl(1, ts - 1)`
 
-def f2f.clamped.put(+udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +c: O.Found, +fr: S.Dt, +to: S.Dt) -> Maybe<&2, O.Found>:
-  Some{f2f.narrow(T.tx_bitcast(O.Found.ar(c), O.Found.i(c), udt), udt, fe, fm, te, tm, ar, fr, to)}
+# ⚠ NEITHER DEF TAKES AN `ar` ANY MORE, AND THAT IS THE POINT. Both used to, and
+# `f2f.down.has` passed the SAME `ar` to `f2f_clamp` and to `f2f.clamped`, so `tx_bitcast`
+# and `f2f.narrow` rebuilt the whole clamp on top of itself. The arena now travels INSIDE
+# the `Maybe` -- `case Some{O.Found{+ca, +ci}}` -- so there is no name a caller can hand
+# over stale. Found by `.agents/slop/dd-stalearena.py` rule R1.
+def f2f.clamped.put(+udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, +ca: O.Arena, +ci: U32, +fr: S.Dt, +to: S.Dt) -> Maybe<&2, O.Found>:
+  +bc = T.tx_bitcast(ca, ci, udt)
+  Some{f2f.narrow(bc, udt, fe, fm, te, tm, O.Found.ar(bc), fr, to)}
 
-def f2f.clamped(m: Maybe<&2, O.Found>, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +fr: S.Dt, +to: S.Dt) -> Maybe<&2, O.Found>:
+def f2f.clamped(m: Maybe<&2, O.Found>, +udt: S.Dt, +fe: U32, +fm: U32, +te: U32, +tm: U32, +fr: S.Dt, +to: S.Dt) -> Maybe<&2, O.Found>:
   match m:
     case None{}: None{}
-    case Some{c}: f2f.clamped.put(udt, fe, fm, te, tm, ar, c, fr, to)
+    case Some{O.Found{+ca, +ci}}: f2f.clamped.put(udt, fe, fm, te, tm, ca, ci, fr, to)
 
 # `v = f2f_clamp(v.bitcast(fr), to, sat).bitcast(f2f_dt[fr])`, renamed `v`, then
 # the two halves and the two return shapes. `fs` is the SOURCE's bit width,
@@ -1816,7 +1902,7 @@ def f2f.down.has(mx: Maybe<&2, F32>, sat: Bool, +fe: U32, +fm: U32, +te: U32, +t
     case None{}: None{}
     case Some{+m}:
       +bc = T.tx_bitcast(ar, v, fr)
-      f2f.clamped(f2f_clamp(O.Found.ar(bc), O.Found.i(bc), fr, to, dd_is_fp8(to)), f2f.udt(fr), fe, fm, te, tm, ar, fr, to)
+      f2f.clamped(f2f_clamp(O.Found.ar(bc), O.Found.i(bc), fr, to, dd_is_fp8(to)), f2f.udt(fr), fe, fm, te, tm, fr, to)
 
 def f2f.down(sat: Bool, +fe: U32, +fm: U32, +te: U32, +tm: U32, +ar: O.Arena, +v: U32, +fr: S.Dt, +to: S.Dt) -> Maybe<&2, O.Found>:
   f2f.down.has(f2f_clamp_max(to), sat, fe, fm, te, tm, ar, v, fr, to)

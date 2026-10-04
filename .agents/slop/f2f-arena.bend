@@ -78,10 +78,20 @@ def fwd1(+i: U32, +src: U32) -> Bool:
   +e = Bool.or(c, d)
   Bool.and(U32.is_ne(j, 0), e)
 
+# ⚠ src2 IS PRINTED. The first version printed src0 and src1 only, so every `WHERE/3` came
+# out with TWO srcs against CPython's three and the differ reported a WIRE disagreement
+# on the last two rows of `q1` after `q1` had become byte-identical otherwise -- a probe
+# limitation that read as a port bug. `Arena.src` answers the arena BOTTOM for an index
+# past the end, so a `CONST/0` prints `0,0,0` and the differ truncates to `op/N`.
+def fwd3(+i: U32, +ar: O.Arena) -> Bool:
+  Bool.or(fwd1(i, O.Arena.src0(ar, i)),
+    Bool.or(fwd1(i, O.Arena.src(ar, i, 1)), fwd1(i, O.Arena.src(ar, i, 2))))
+
 def slot.line(+root: U32, +i: U32, +ar: O.Arena) -> String:
   String.concat([U32.show(i), "\t", D.dd_sig1(ar, i), "\t", D.dd_lab(ar, i),
                  "\t<- ", U32.show(O.Arena.src0(ar, i)), ",", U32.show(O.Arena.src(ar, i, 1)),
-                 "\t", fwd(Bool.or(fwd1(i, O.Arena.src0(ar, i)), fwd1(i, O.Arena.src(ar, i, 1)))),
+                 ",", U32.show(O.Arena.src(ar, i, 2)),
+                 "\t", fwd(fwd3(i, ar)),
                  "\t", mark(U32.is_eq(i, root))])
 
 def slot.go(n: Nat, +ar: O.Arena, +i: U32, +root: U32) -> IO(Unit):

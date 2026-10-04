@@ -1,16 +1,119 @@
-binblob BYTE-IDENTICAL (1236 bytes both sides)
-buffer BYTE-IDENTICAL (310 bytes both sides)
-cast BYTE-IDENTICAL (366 bytes both sides)
-commute BYTE-IDENTICAL (870 bytes both sides)
-group BYTE-IDENTICAL (469 bytes both sides)
+binblob DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+8c8
+< 2:i8 7:RESHAPE 3:f32 16:(l0:4,l0:1,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+---
+> 2:i8 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+12c12
+< 3:i12 7:RESHAPE 3:f32 11:(l0:3,l0:5) 2:i0 1:N 1:N 9:n(i9,i11)
+---
+> 3:i12 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 9:n(i9,i11)
+14,19c14,19
+< 3:i14 7:RESHAPE 3:f32 16:(l0:1,l0:3,l0:5) 2:i0 1:N 1:N 10:n(i12,i13)
+< 3:i15 7:PERMUTE 3:f32 16:(l0:1,l0:5,l0:3) 2:i0 1:N 11:n(i0,i2,i1) 6:n(i14)
+< 3:i16 3:MUL 3:f32 16:(l0:4,l0:5,l0:3) 2:i0 1:N 1:N 9:n(i8,i15)
+< 3:i17 7:PERMUTE 3:f32 16:(l0:3,l0:4,l0:5) 2:i0 1:N 11:n(i2,i0,i1) 6:n(i16)
+< 3:i18 6:REDUCE 3:f32 11:(l0:4,l0:5) 2:i0 1:N 11:rd(OADD,i1) 6:n(i17)
+< 3:i19 6:BINARY 2:u8 6:(l0:4) 2:i0 1:N 24:y n(i116,i105,i110,i121) 6:n(i18)
+---
+buffer DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+cast DIFFERS:
+5,6c5,6
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+< 2:i6 4:CAST 3:f16 11:(l0:4,l0:3) 2:i0 1:N 4:Df16 5:n(i5)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+> 2:i6 4:CAST 1:? 1:? 2:i0 1:N 4:Df16 5:n(i5)
+commute DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+7,14c7,14
+< 2:i7 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i6,i4)
+< 2:i8 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 2:i9 5:CMPNE 4:bool 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i10 3:MAX 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i11 3:AND 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i12 2:OR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i13 3:XOR 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+< 3:i14 5:GROUP 4:void 1:R 2:i0 1:N 1:N 24:n(i8,i9,i10,i11,i12,i13)
+---
+> 2:i7 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i6,i4)
+> 2:i8 3:ADD 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 2:i9 5:CMPNE 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i10 3:MAX 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i11 3:AND 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+> 3:i12 2:OR 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+gate BYTE-IDENTICAL (844 bytes both sides)
+group DIFFERS:
+5,8c5,8
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+< 2:i6 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+< 2:i7 3:MUL 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+< 2:i8 5:GROUP 4:void 1:R 2:i0 1:N 1:N 8:n(i6,i7)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+> 2:i6 3:ADD 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i5)
+> 2:i7 3:MUL 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i5)
+> 2:i8 5:GROUP 1:? 1:? 2:i0 1:N 1:N 8:n(i6,i7)
 indexed BYTE-IDENTICAL (420 bytes both sides)
-matmul BYTE-IDENTICAL (1161 bytes both sides)
+lin DIFFERS:
+46c46
+< 3:i46 4:SINK 4:void 1:R 2:i0 2:i1 66:kI(sr_4_5_3,n(Opt(op=EOptOps.SPLITaxis=i2arg=n(i0,XUPCAST))),N,i0) 6:n(i45)
+---
+> 3:i46 4:SINK 4:void 1:R 2:i0 2:i1 22:kI(sr_4_5_3,n(q),N,i0) 6:n(i45)
+loop DIFFERS:
+25c25
+< 3:i25 4:CALL 4:void 1:R 2:i0 1:N 20:cI(shcq_fence,b0,b0) 18:n(i23,i24,i24,i24)
+---
+> 3:i25 4:CALL 1:? 1:? 2:i0 1:N 26:cI(shcq_fence,b0,b0,Dvoid) 18:n(i23,i24,i24,i24)
+matmul DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+8c8
+< 2:i8 7:RESHAPE 3:f32 16:(l0:4,l0:1,l0:3) 2:i0 1:N 1:N 8:n(i5,i7)
+---
+> 2:i8 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i7)
+12c12
+< 3:i12 7:RESHAPE 3:f32 11:(l0:3,l0:5) 2:i0 1:N 1:N 9:n(i9,i11)
+---
+> 3:i12 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 9:n(i9,i11)
+14,18c14,18
+< 3:i14 7:RESHAPE 3:f32 16:(l0:1,l0:3,l0:5) 2:i0 1:N 1:N 10:n(i12,i13)
+< 3:i15 7:PERMUTE 3:f32 16:(l0:1,l0:5,l0:3) 2:i0 1:N 11:n(i0,i2,i1) 6:n(i14)
+< 3:i16 3:MUL 3:f32 16:(l0:4,l0:5,l0:3) 2:i0 1:N 1:N 9:n(i8,i15)
+< 3:i17 7:PERMUTE 3:f32 16:(l0:3,l0:4,l0:5) 2:i0 1:N 11:n(i2,i0,i1) 6:n(i16)
+< 3:i18 6:REDUCE 3:f32 11:(l0:4,l0:5) 2:i0 1:N 11:rd(OADD,i1) 6:n(i17)
+---
+> 3:i14 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 10:n(i12,i13)
 range BYTE-IDENTICAL (120 bytes both sides)
 rangeflat BYTE-IDENTICAL (117 bytes both sides)
-reduce BYTE-IDENTICAL (434 bytes both sides)
+reduce DIFFERS:
+5,7c5,7
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:8) 2:i0 1:N 1:N 8:n(i1,i4)
+< 2:i6 7:PERMUTE 3:f32 11:(l0:8,l0:4) 2:i0 1:N 8:n(i1,i0) 5:n(i5)
+< 2:i7 6:REDUCE 3:f32 6:(l0:4) 2:i0 1:N 11:rd(OADD,i1) 5:n(i6)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+> 2:i6 7:PERMUTE 1:? 1:? 2:i0 1:N 8:n(i1,i0) 5:n(i5)
+> 2:i7 6:REDUCE 1:? 1:? 2:i0 1:N 11:rd(OADD,i1) 5:n(i6)
 sink BYTE-IDENTICAL (112 bytes both sides)
 special BYTE-IDENTICAL (104 bytes both sides)
 sym DIFFERS:
+5c5
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
 8c8
 < 2:i8 7:RESHAPE 3:f32 8:(U,l0:4) 2:i0 1:N 1:N 8:n(i5,i7)
 ---

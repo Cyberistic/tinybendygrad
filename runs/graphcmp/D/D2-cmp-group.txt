@@ -1,1 +1,11 @@
-group BYTE-IDENTICAL (469 bytes both sides)
+group DIFFERS:
+5,8c5,8
+< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+< 2:i6 3:ADD 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+< 2:i7 3:MUL 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+< 2:i8 5:GROUP 4:void 1:R 2:i0 1:N 1:N 8:n(i6,i7)
+---
+> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+> 2:i6 3:ADD 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i5)
+> 2:i7 3:MUL 1:? 1:? 2:i0 1:N 1:N 8:n(i5,i5)
+> 2:i8 5:GROUP 1:? 1:? 2:i0 1:N 1:N 8:n(i6,i7)

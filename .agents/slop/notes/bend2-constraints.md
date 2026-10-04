@@ -20652,3 +20652,307 @@ and `codegen/decomp/dtype.bend` 1 of 109.  **`md5 -q` on macOS TAKES EXACTLY ONE
 manifest must be built with `-exec md5 -q {} \;`** -- and the manifest must be taken on BOTH SIDES
 of every long run.  A number that moves because a file moved is a fact about the session, not
 about the port, and the two are indistinguishable from the number alone.
+
+### BAND-20 (position ~20655, continuing from BAND-19 at the END of this file).
+### A CACHE'S VALIDITY MUST BE READABLE OFF ITS CONTENT. AN MTIME CERTIFIES ONLY THAT A FILE IS
+### NEW, AND A CRASH IS THE ONLY WAY TO PRODUCE THE NEWEST FILE IN A DIRECTORY.
+`wire_parse.read_fresh_cache` checked existence and mtime and then answered `'fresh'`. A crashed
+lane leaves `{}` behind -- bend stack-overflows about one run in twenty and prints zero rows -- and
+that file is the FRESHEST thing in the cache directory, so the mtime half called a crash a
+measurement and a consumer read an empty row set, compared nothing, and reported agreement. **The
+rule is one sentence with two halves: A CACHE THAT RECORDS NOTHING IS NOT A READING, exactly as a
+cache older than its source is not a reading.** The fix is `.agents/slop/wire_parse.py:69`, and it
+is `rebase-scan-oracles.py:109`'s clause verbatim, placed AFTER the mtime test so a file that is
+both empty and old still answers `'stale'` and names the older of the two files. **A sibling's
+validity is not evidence about this cache's content** -- `cached()` was right for the wrong reason
+(it held the clause locally), and `store()` refusing to WRITE `{}` is a write-side rule that cannot
+see the 82 files already on disk.
+
+### BAND-21 (position ~20668). A CORRECTION THAT DOES NOT PROPAGATE REPORTS EXACTLY LIKE A
+### CORRECTION THAT NEVER HAPPENED, SO THE FIX BELONGS IN THE SHARED FUNCTION AND THE CONSUMER
+### CENSUS MUST BE COUNTED, NOT ASSUMED.
+The `empty` clause was correct in `rebase-scan-oracles.cached()` and absent from the function that
+file *wraps*. **THE BRIEF SAID "THREE CONSUMERS"; THE GREP FOUND SIX IMPORTERS** --
+`wire-rows.py:27`, `wire-pair.py:65`, `wire-survey.py:23`, `wire-sweep.py:34`,
+`rebase-scan-oracles.py:54`, `substrate-audit.py:137` -- so the count that reached the brief was
+itself a partial read, and `wire-lanes.py:22` imports `rows`/`stripped_env` from the same module
+and is NOT a consumer at all. `FORM-BLIND-SPOTS.md:137` and `:153` both say "three". **A DENOMINATOR
+NARRATED FROM MEMORY IS A DENOMINATOR, NOT A COUNT.** Grepping the import line is the census;
+`grep -l wire_parse` is not, and it is what produced the seventh name.
+
+### BAND-22 (position ~20678). A CONSUMER'S RETURN VALUE CANNOT DISTINGUISH "REFUSED" FROM
+### "BELIEVED" WHEN BOTH ARE `{}`, SO OBSERVE THE CONSUMER'S SIDE EFFECT INSTEAD.
+`wire-rows.bend_rows` returns `{}` before the fix (the cache said so) and `{}` after it (the lane
+printed nothing), so a harness comparing the RETURN VALUE reports agreement in both worlds -- the
+`nv_query_litter` shape, one level up. What differs is whether the lane RAN, and the observable is
+that the cache file on disk is rewritten with real rows. Measured with a 4-line fixture port that
+`./bin/bend` runs in 0.12s: **before, 0/3 executed consumers correct; after, 3/3.**
+`wire-survey.main` is the one whose harm is a NUMBER rather than a row: before it reported
+`1/1 port row-sets`, counting a crash as a port row-set it had rows for; after, `0/1`. The
+disagreement TABLE was identical either way (`set(orows) & set({})` is empty and was skipped before
+too), so the fix moved only the denominator -- and a denominator that counted crashes was the part
+that was wrong.
+
+### BAND-23 (position ~20692). A PROBE MUST REBUILD ITS STATE BEFORE EVERY SUBJECT, OR IT
+### MEASURES ITS OWN REPAIR.
+The per-consumer probe built the empty cache ONCE and reused the file. Consumer 1 REPAIRED it in
+place -- it ran the lane and wrote the rows back -- so consumers 2 and 3 were handed a healthy
+cache and the probe reported `wire-survey` as still counting a crash while the file held two good
+rows. **An instrument that repairs its own subject measures the repair, and it reported the
+opposite of the truth about a fix that was working.** Same family as the `$TMPDIR` scratch copy
+that produced 22 phantom blind spots: the scratch is fine, the STATE it holds is not.
+
+### BAND-24 (position ~20702). AN UNEXPLAINED ZERO IN THE OTHER DIRECTION IS ALSO A ZERO: 0 EMPTY
+### CACHES ON DISK DOES NOT MEAN THE FIX WAS UNNECESSARY.
+Measured on this machine: `/tmp/rebase-scan` holds **76** `.json` files and `rebase-wired-rows`
+holds **33**, and **0 of the 109 hold an empty object** (`ls | wc -l` said 77 and 33; the extra
+entry in the first directory is a `PARSER` file that is not a cache). So the defect was REACHABLE
+and was NOT CURRENTLY EXERCISED -- the fix changes no live output today. **That is a statement about
+the caches that exist, not about the rule**, and the control is what exercises it. Reporting "no
+empty caches found, nothing was wrong" from this measurement would have been the same error as
+reporting the `({}, 'fresh')` as a pass: one unexplained zero in place of another. Always print
+the denominator next to the zero.
+
+### BAND-25 (position ~20726). A BOOL SLOT THAT CARRIES TWO QUESTIONS IS NOT A BOOLEAN: IT IS A
+### SWALLOWED ANSWER, AND NOTHING DOWNSTREAM FAILS.
+`ops.py:297-309`'s `toposort` has THREE branches:
+    if node in cache: continue            # cache membership
+    if not visited:  if gate(...): push   # the visited flag
+    else: cache[node] = None
+`uop/validate.bend`'s port had a `VFr{n, seen}` with TWO fields and TWO branches, and
+`vz_step.fresh` COMPUTED `List.contains(cache, n)` and passed it into `vz_step.keep`'s `seen`
+SLOT -- where `seen` meant the `visited` flag. Two different questions in one field: the answer
+was computed, passed, and never read, so an already-cached node was re-PUSHED. `cache` is a
+LIST (CPython's is a dict), so `vz_cache_add` then appended it a second time and `v` was
+rewritten twice -- and `create_var` is a `solver.add`, which is why the CONSTRAINT LIST read
+`And(v >= 0, v <= 15)` twice. MEASURED, and the general form is the rule:
+
+  * **A boolean computed and then passed to a slot whose meaning is a DIFFERENT boolean is a
+    defect that cannot fail.** It has no wrong value anywhere; it has a value nobody reads.
+  * **The tell is a parameter that is read by the callee for a purpose its name does not
+    suggest.** `seen` did not suggest "or already cached".
+  * **`if node in cache: continue` is not `else`.** It is a THIRD branch on EVERY pop, and
+    dropping it is silent because the remaining two branches are a correct walk over a graph
+    with no shared nodes.
+  * **A LIST where upstream has a SET/DICT is the amplifier, not the cause.** `List.append` is
+    idempotent-in-value and duplicates-in-count, so the same program is right on a tree and
+    wrong on a DAG. **Every fixture whose graph is a tree cannot see this class.** MEASURED:
+    1 of `dv_where`'s 26 fixtures has a repeated node, and it was the only red row of its kind.
+
+### BAND-26 (position ~20745). `+name: Type = expr` IS A LET AND IT IS THE ONLY WAY TO READ A
+### VALUE TWICE; BUT A `match`/`case` BINDER STILL MAY NOT BE READ TWICE INSIDE `Bool.pick`.
+MEASURED, six shapes, in one session:
+  * `def f(i: U32): U32.show(i) + Arena.op(ar, i)`     -> "expected : i / observed : i (consumed
+    more than once)". Fixed by `+k: U32 = i` then reading `k` twice.
+  * a self-call `f(U32.add(i,1), n, ...)`             -> "expected : a decreasing self-call". The
+    shrinking argument must come FIRST; a `U32` that GROWS is not fuel. Fixed by walking a `Nat`
+    fuel down and letting the `U32` counter grow after it (`up.go(p, U32.add(i,1), ...)`, the
+    `vz_topo.go` shape).
+  * `Bool.pick(T, List.contains(~A, eq, xs, i), x, y)`  -> "expected : Data / observed : Quant".
+    `~A: Data` takes the TYPE (`U32`), not a linearity annotation. Written as
+    `List.contains(U32, U32.is_eq, xs, i)` it compiles in ANY argument position, not only tail.
+  * `Bool.pick(String, again(h, xs), rep(t, ...), rep(t, ...))` -> the `t` from `case h <> t:`
+    is "consumed more than once", and a `+rest: List = t` let does NOT rescue a `case` binder.
+    **A `Bool.pick` whose two arms both need the same list tail is unwriteable; restructure so
+    one arm does not.**
+  * `match someCall(x):`                               -> "a parameter or field scrutinee (a match
+    cannot scrutinize a computed value: give it its own def)". Giving it its own `Bool`-returning
+    def does NOT help -- the rule is about the scrutinee being a CALL. Use `Bool.pick`.
+  * `+ar: O.Arena` in a `def` header IS the let form for a parameter used in two branches
+    (`oops.bend`'s house style), and `+k: T = x` in a body is the same thing for a local.
+  * **Also: a trailing row with no `"\n"` swallows the next one.** `dv.of.msg` prints
+    `nm_msg = <blob>` with NO newline, so a row appended after it comes out as
+    `dv_where_msg = dv_where_walk = ...` -- two rows in one, and `rows()` reads ONE name. Any
+    appended row must LEAD with `"\n"`.
+
+### BAND-27 (position ~20770). A REPEATED TERM IS NOT A REPEATED NODE: GATE THE SEQUENCE, AND
+### THREE UNITS WILL ALL BE STUCK ON A CONSTRAINT LIST.
+`dv_where` read `[And(v >= 0, v <= 15), And(v >= 0, v <= 15), 8 > v, True]` where CPython reads
+it once, and THREE units saw that blob without localising it. The blob names a repeated TERM,
+and a repeated term is the same shape as a legitimately repeated one. A COUNT is no better: it
+says `6` and not `where`. **What localises it is the walk's op SEQUENCE, which names the node**:
+    before: Ops.PARAM Ops.CONST Ops.CMPLT Ops.PARAM Ops.CONST Ops.WHERE Ops.CONST
+    after : Ops.PARAM Ops.CONST Ops.CMPLT            Ops.CONST Ops.WHERE Ops.CONST
+Rules that follow from the measurement:
+  * **A row that must detect duplication has to be a SEQUENCE or a SET-LIKE ANSWER, and a count
+    is inadmissible for it.** agent-core's "a count cannot name the site that stopped" is the
+    same rule.
+  * **`[:-1]` drops the SINK and not the gate.** `UOp.sink(idx, gate)` walks SIX nodes for a
+    five-node fixture, and `UOp.sink(idx)` alone walks FIVE -- an oracle that abbreviates the
+    sink call is an oracle measuring a different graph.
+  * **Establish WHICH SIDE duplicates by counting the ARENA on both sides, then the walk.**
+    `arena_nodes` equal + `walk_len` greater is the signature, and it EXCLUDES the arena as the
+    cause in one measurement instead of by argument. tinygrad hash-conses, so a port that
+    duplicated a NODE would show `arena_nodes` one higher; this one did not.
+  * **A repeated node is a shape, and a fixture set needs BOTH shapes.** `dv_where` shares a node
+    across TWO PARENTS (`cm` and `t`); `dv_bad_dtype_bitcast` shares one node across BOTH SRCS of
+    ONE parent (`src=(r, r)`). One walk row each, because a fix that only handles one of them is
+    a fix that is green on the other.
+
+### BAND-28 (position ~20798). A STATED BLOCKER MUST BE CHECKED BEFORE IT IS ACTED ON: THIS
+### SESSION HAD TWO FALSE PREMISES AND BOTH COST A ROW.
+  * "`z3` IS NOT INSTALLED, so CPython's `uops_to_z3` cannot be CALLED." z3 4.16.0 IS installed
+    (`import z3`; `pip show z3-solver` is the wrong probe and reports nothing).
+  * "The constructible `dv_bad_dtype_bitcast` spelling needs a dtype-carrying `Arg` in
+    `ops.bend`." `O.ADt` is ALREADY an exported `Arg` -- `ops.bend`'s own `s5.arena` builds
+    `Ops.BITCAST` with `ADt{S.single()}` at slot 8 -- so `O.ADt{S.boolean()}` compiles from
+    `validate.bend` with no change to another file. The row went from UNADJUDICABLE to agreeing
+    on `_msg` in one edit, and the brief's requirement evaporates.
+  * **A blocker that names a file, a def, and a type is checkable in one grep.** If the check is
+    this cheap, a blocker that survives it is a blocker nobody checked. Ask for the grep.
+  * **AND THE CORRECTION GOES THE OTHER WAY TOO.** "CPython's `dtype_from_uop` ASSERTS at the
+    constructor" was ALSO false, in the opposite direction: `UOp(Ops.BITCAST, (r, r))` CONSTRUCTS
+    and prints fine, and the assert fires on the first `.dtype` READ (`ops.py:122` is
+    `dtype_from_uop(op, src, arg)`, which `__init__` never calls eagerly). **"The constructor
+    refuses" and "the dtype read refuses" are different facts, and one row that collapses them is
+    a row about neither.** Two rows, because collapsing is how a lazy refusal becomes a claimed
+    eager one.
+
+### BAND-20 (position ~20810). A LANE'S VERDICT IS ABOUT ITS IMPORT CLOSURE, AND `bend`'s ERROR
+### NAMES A DEF WITH NO FILE IN IT -- SO A RED LIST OF LANES IS A LIST OF VICTIMS.
+### THE FIX IS TO MAKE THE LANE NAME THE FILE AND THE REVISION, NOT TO CLASSIFY THE LIST AFTERWARDS.
+**MEASURED, on 2026-10-04, reproduced end to end.** Four lanes -- `schedule/prepare.bend`,
+`tensor.bend`, `uop/render.bend`, `viz/serve.bend` -- died together with the IDENTICAL
+`expected : Arg / observed : Const`, and the def named in the message,
+`def t_const_bool_int_splits() -> Bool:`, is in NO file on the tree. All four re-run alone at rc=0
+with rows (321, 33, 129, 177). `BAND-19` (position ~20641) recorded the same sweep and could not
+settle it; this is the mechanism.
+
+**`bend` CHECKS AN IMPORTED MODULE, EAGERLY.** Reproduced with the shapes copied from the live
+file (`Arg` at `uop/ops.bend:1045`, `Const` at `:807`, `UOp.new` at `:2442`): a substrate def that
+is ill-typed kills **4 of 4** importing victims **AND a bystander that imports the substrate and
+calls a def which does not reach it** -- **2 of 2** cells for each of **two** error classes (TYPE
+`expected/observed`, ELAB `message :`), 20 lanes measured, 0 skipped. **A CALLER MAKES NO
+DIFFERENCE.** If you were about to explain a small blast radius by reachability, measure it: this
+was my hypothesis and it is false.
+
+**SO WHY 4 AND NOT 24.** 24 of the 39 wired ports import `uop/ops.bend`. The blast radius of a
+substrate edit is **the number of lanes whose TURN FALLS INSIDE THE EDIT'S WINDOW**, because
+`rebase-gate.py`'s `main()` walks its targets **sequentially**. From `_coord-sweep.json`: the four
+deaths are at **indices 45, 46, 47 and 49 of 50**, with index 48 NOT-STARTED so no lane ran there.
+The other 45 targets -- 19 of them importers -- were measured before the window opened. **`BROKEN=4`
+is not a statement about blast radius, and no verdict records the window.**
+
+**`bend` PRINTS THREE DIFFERENT `Location:` RENDERINGS AND ALL THREE ARE IN THIS TREE'S RECORD:**
+
+    Location: t_const_bool_int_splits        then `50 | def t_const_bool_int_splits() -> Bool:`
+    Location: binary_n.of                    then `1028>| case O.ABlob{n}: n`   NO `def` line
+    Location:\n7001 | def UOp.const_factor.seed(fuel: Nat, ...)    NO bare header
+
+A reader that handles only the first classifies the ABlob incident as "the error names no def" --
+**which is a census's first silent pass, and it happened here.** Read the header AND any `def` in
+the quoted lines.
+
+**A STORED SWEEP'S STDERR NAMES DEFS FROM A REVISION THAT NO LONGER EXISTS.** `_coord-sweep.json`
+records four ports BROKEN naming `UOp.const_factor.seed`; `grep -rn "def UOp.const_factor"` over
+`tinybendygrad/` returns **nothing**, and `uop/ops.bend:7001` today is a `copy_to_device` call.
+That is the phantom, twice, and it is not a cache: `run_port()` runs every lane live, bend re-reads
+the tree, and a fresh run reports nothing. **The ghost is in the MESSAGE.** A reader is left holding
+a string over a tree that is not there, and no digest over the *current* tree can detect that.
+
+**THE FIX, AND IT IS FOUR FUNCTIONS.** `import_closure(bend)` (raises rather than returning a short
+list), `substrate_manifest(bend)` (`[(path, sha256[:12], bytes)]`), `drift(before, after)` (`moved` /
+`added` / `gone` separately), `error_site(err, closure)` (`[(def, file, line)]` or `None`).
+`run_port()` brackets the lanes with two manifests. **A SINGLE DIGEST CANNOT ANSWER THE QUESTION**:
+a digest says what the bytes are, never when they were read, and `BAND-19`'s mtime manifest answers
+"did the tree change", which is not the question the four victims asked. The question is *was the
+tree the same tree*, and that is two content digests with the lane between them.
+
+**⚠ ORDER MATTERS AND IT WAS WRONG FIRST.** `stamp()` lifted the provenance fields out of `lanes`
+**after** `classify()`, and `classify()` is what reads them -- so the verdict text never mentioned
+the substrate and the control cell written to catch exactly that was green. Lift before you
+classify.
+
+**⚠ A `drift` DICT IS TRUTHY WHEN IT IS EMPTY** (three empty lists), so the first version printed
+`⚠ 0 of 5 closure file(s) CHANGED WHILE THIS LANE RAN` on **every green verdict**. A warning that
+fires on every clean run is a warning nobody reads. Print the zero with its denominator; do not
+decorate it.
+
+**LIVE, UNPLANTED, TWICE, ON THIS TREE** while other units were editing `uop/fold.bend`: both
+`uop/spec.bend` and `uop/render.bend`/`prepare.bend`/`cstyle.bend`/`multi.bend` printed the identical
+`Location: sym_dim.signable` / `expected : lo - observed : lo (consumed more than once)`, and the
+reader resolved it to `tinybendygrad/uop/fold.bend:1242` for **every** one without opening the file.
+`rebase-gate-selftest.py` reported the same four as `UNMEASURED -- the lane produced 0 rows`, which
+is a coverage sentence about oracles and says **nothing** about where the failure is.
+
+**CENSUS, WITH ITS DENOMINATOR** (`.agents/slop/lanedeath-census.py`, over every JSON carrying a
+`verdicts[]`): **3 artefacts, 150 verdicts, 18 BROKEN entries -> 5 SUBSTRATE, 4 UNRESOLVED, 1 PORT,
+8 NO-DEF.** Of **12 incidents** named anywhere in `.agents/`, **8** are explained with a def name or
+an artefact and **4** are not; those four are recorded as unexplained and are **NOT** counted as
+substrate. Report and tooling: `.agents/slop/lanedeath-census.md`, `.agents/slop/lanedeath-census.py`,
+`.agents/slop/lanedeath-provenance.py`, `.agents/slop/phantom-run.py`.
+
+### BAND-21 (position ~20890). NUMBERING: BAND-20 and BAND-21 ARE APPENDED AT THE END OF THIS FILE,
+### IN THIS ORDER. Positions, not numbers, are the citation.
+`BAND-19` is at position ~20641 and is the immediately preceding band; it prescribes an mtime
+manifest on both sides of a long run, which this entry does NOT replace -- an mtime is necessary and
+not sufficient, and the two answer different questions.
+
+### BAND-22 (position ~20891). NUMBERING: BAND-21's HEADER IS AT POSITION ~20885 AND ITS BODY IS
+### EMPTY -- this entry is appended AFTER it, not in place of it. Positions, not numbers, are the citation.
+
+`BAND-21` is at position ~20885 and is a stub; the band immediately preceding it with a body is at
+position ~20865 (`lanedeath-census`). This entry is about a **stale reader behind a comment claiming
+it is current**, which is the same species as a stale oracle: the tool is not wrong about what it
+does, it is wrong about *what it is*, and the comment is the only thing asserting the difference.
+
+**A DOCSTRING NAMING ANOTHER FUNCTION IS A CLAIM, NOT A USE.** `.agents/slop/cstyle-gate.py`'s
+`rows_shipped` opened "rebase-gate.py's `rows()`, **verbatim**". MEASURED by CALLING both on six
+shapes: they agree on **2 of 6**. The fork could not read F3 (`alpha  1` -> `{}`), could not fold
+F2's `py=` column (`kern=[*V]   py=[*W]` -> kept the whole tail), and **MANUFACTURED the `""`
+phantom** that `rows()` excludes on purpose (`== SECTION ==` -> `{'': '= SECTION =='}`). A copied
+reader is a second reader, and nothing compares the two, so the drift is silent by construction.
+
+**IMPORT THE READER; A DRIFT THEN BECOMES AN `AttributeError`.** One loader, the shape
+`rebase-scan-oracles.py` already uses (`spec_from_file_location` + `exec_module`), because
+`rebase-gate.py` has a `-` in its name and two loaders is two chances to disagree about what got
+loaded.
+
+**TWO READERS DO NOT HAVE A SHRED RELATIONSHIP -- THEY HAVE A DISAGREEMENT SET, AND IT IS
+SYMMETRIC.** The line this replaces was `len(readerA) - len(readerB)` labelled "shredded rows", and
+on this tree it printed **`-2`**. A count of differences is not a coverage statement and one reader's
+name count is not a denominator for another's.
+
+**A READER'S NAME SET AND ITS VALUES ARE TWO SEPARATE MEASUREMENTS.** Over the real port lane the
+fork and `rows()` agreed on **225 of 225 NAMES** and differed on **225 of 225 VALUES**. Reporting
+only the name count (222 vs 224) says "agree"; reporting only the value count says "total
+disagreement"; both are true and neither is the finding.
+
+**ONE READER CANNOT ALWAYS REPLACE ANOTHER -- THE CONTRACT DIFFERS.** `rows()` returns `left` with
+the `py=` column already folded away; `split_py()` reads `py=` back OUT of the value to report
+STALE-LITERAL. MEASURED: substituting `rows()` for `rows_strict` inside `judge()` turns the lane
+**BROKEN on 225 of 227 rows** with "carry no `py=` column" -- an incompatibility, not a
+disagreement. So "one reader" is a rule about *not maintaining a second copy*, and a reader that
+feeds a print can be imported where a reader that feeds the comparison cannot.
+
+**F3 ROW NAMES MUST BE A SINGLE TOKEN.** `rebase-gate.py:row()`'s F3 arm returns None unless
+`len(head.split()) == 1`, so a control row named `ctl OPENCL sz1 k0` reads on F1 and F2 and reads
+**NOTHING** on F3. A control written for "names carry spaces" silently becomes a lane wired on
+purpose to be dead -- and it reported `AGREE`, because `disagree=[]` and `shared=[]` print the same.
+
+**AN ARMED CONTROL OVER ZERO SHARED ROWS IS A FALSE PASS.** Every case in
+`.agents/slop/cstyle-shapes-selftest.py` requires `shared != 0` in addition to the expected colour.
+A control has THREE lanes per shape, not two: ARMED (compared column identical), RED (compared
+column planted), and DISARM (**F2 only**: the plant placed in the non-compared `py=` column, which
+must come back AGREE -- that is what proves the RED plant landed where the reader looks).
+
+**A CAPTURE MODE THAT DROPS A STREAM'S STDERR REPORTS THAT STREAM'S GUARD AS A DISAGREEMENT.**
+`cstyle-gate.py --oracle-stdout` without stderr gave `count_refusals("") == 0` and
+`UNREPORTED-REFUSALS 9` over lane text that is entirely sound. A capture mode that can only ever be
+red is not a capture mode; refuse rather than guess.
+
+**A PRINTED WORD "live" BESIDE A CAPTURE'S rc IS AN UNEXPLAINED ZERO WEARING A MEASUREMENT'S
+CLOTHES.** The same line printed `live port lane rc=0` while running nothing. Say which lane ran.
+
+**A GATE'S GREEN OVER A CAPTURE IS A PROPERTY OF THE CAPTURE, AND A COLD LANE THAT MOVES IS NO
+VERDICT AT ALL.** Measured on this tree, 4 runs: `cstyle.bend`'s port lane printed **0 stdout lines,
+rc=1**, twice naming `tinybendygrad/uop/fold.bend:1259` (`match O.ParamArg.vmin_vmax(pa)` -- a
+computed value as scrutinee, the rule already recorded at position ~306) and then, ~15 min later
+and after that unit's edit landed, naming `fold.bend:5321` `dim_str` / "consumed more than once".
+A file owned by another live unit was mid-edit, so the 221/227 green was reproducible **only** over
+the 06:02 capture (md5 `e039eeff62ce`) and was evidence about the capture. Report the md5 with the
+verdict.
+
+Tooling: `.agents/slop/cstyle-reader-parity.py` (reader ablation, the pre-fix reader taken from
+`jj file show -r @-` rather than re-typed), `.agents/slop/cstyle-shapes-selftest.py` (one armed/red
+control per shape), `.agents/slop/cstyle-parity/`.
