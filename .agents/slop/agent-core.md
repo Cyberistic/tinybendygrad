@@ -146,7 +146,7 @@ rows that encode the bug.
   | `dtype.bend` | 1 | **1** | its own 14 unfilled laws (no `F16`/`I64`/`F64`/`U64`) |
   | `nn/__init__.bend` · `nn/optim.bend` · `nn/state.bend` · `nn/onnx.bend` · `runtime/ops_python.bend` · `runtime/zzprobe2.bend` · `test/dtype_oracle.bend` · `test/_probe/v5.bend` | 1 | **0** | `../dtype.Dt.bf16 …` inherited through the import |
   | `LAWS.bend` (34 TODOs) · `PROOF.bend` (18) · `PROOF2.bend` (16) | 1 | **1** | unfinished proof, not a foreign code |
-  | `runtime/autogen/libclang.bend` | 1 | **1** | `duplicate declaration: U32` — a real defect, not a dtype seam |
+  | `runtime/autogen/libclang.bend` | 1 | **1** | **STALE CAUSE, CORRECTED 2026-10-04:** it is now `11 defs rely on unsafe or foreign code: - Type_report, ...`, **NOT** `duplicate declaration: U32` -- **and the 11 foreign laws are S-1, a `.bend` importing `.c` only.** **TWO INSTRUMENTS, TWO QUESTIONS, BOTH TRUE:** `--check-only` rc 1 ("does this file stand alone?") while `bend -o` + `cc` are **rc 0** and emit 5,503 lines ("can it be built and run?"). **`-o` SUCCESS DOES NOT CONTRADICT `--check-only` FAILURE, AND NEITHER IS THE OTHER.** seam |
   | `sz.bend` | 1 | **1** | its own 7 foreign defs (`Sz.read_dir`, `Sz.is_dir`, …) |
 
   So the bullet is true as written for the **8 files that only IMPORT `dtype.bend`** (those exit
