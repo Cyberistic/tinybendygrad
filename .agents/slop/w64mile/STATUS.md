@@ -1,34 +1,46 @@
-# W64-MILE — status (append-only)
+# W64-MILE — status. Append-only; the report is `../W64-MILE.md`.
 
-Rule prefix for this unit: **`W64M-`**. Source spec: `.agents/slop/W64.md`.
+Rule prefix for this unit: **`W64M-`** (notes: `notes/bend2-constraints.md`,
+TODO: `.agents/TODO.md`). **Nothing committed by hand.**
 
-## 0. STARTED (stub written before any reading)
+## 0. Re-run of the previous attempt — BOTH GATES REPRODUCE
 
-Own slop tree: `.agents/slop/w64mile/`. Nothing committed.
+Not a fresh build: `99aa3b386` already carries `W64-MILE.md` and its generators.
+Measured on Bend 2.0.34, 2026-10-04, on a `$TMPDIR` copy of the whole tree.
 
-- `STATUS.md` — this file.
-- Read `agent-core.md` and `W64.md`. Nothing else yet.
-## 1. DONE
+| gate | printed |
+|---|---|
+| `gen_i64.py` (M-1) | `BASE PASS pass=170 diverge=2 fail=0` · `PLANT 7 rows moved, all on cmod` · `DISARM 0 rows moved` · `rows present 173 / rows expected 173` |
+| `emit_halves.py` (M-2, `LIBCLANG_PATH` pinned, asserted with `ls -la`) | `built 15/16` · `port line == CPython line: 15 of 15` · `PLANT 1 row moved` · `DISARM 0 rows moved` |
 
-Report: `.agents/slop/W64-MILE.md`. Prefix `M-` (in TODO.md and
-notes/bend2-constraints.md) and `W64M-` (here).
+So targets 1 and 2 stand as written, and target 3's list stands except items 4
+and 6, which this run refutes.
+
+## 1. What this run added
 
 | file | what |
 |---|---|
-| `patch_dtype.py` + `i64-pure.bend.txt` | the six `Dt.i64_*` as pure Bend, installed IN PLACE by one anchored span |
-| `dtype-i64.patch` + `dtype.patched.bend` | the change, unapplied |
-| `gen_i64.py` + `gate.txt` + `i64_pure.out.txt` + `i64_pure.bend` | 172 rows vs CPython, BASE/PLANT/DISARM |
-| `gen_halves.py` + `halves-census.txt` | the 16 blocked bindings: return-only 16/16, 7 call sites, 5 of 16 called |
-| `emit_halves.py` + `halves.txt` + `halves/*.bend` + `halves/*.c` | 15/16 built, linked, run, equal to CPython |
+| `t1_wire.c` / `t1_wire.bend` / `gen_wire.py` / `wire-gate.txt` | an `H.I64` argument arrives **BOXED**; 32 rows; plant 4 (the asymmetric rows only), disarm 0 |
+| `gen_seam.py` / `seam-gate.txt` | the six `Dt.i64_*` as shipped agree with CPython **0/30**; fixed **30/30**; plant 30/30, disarm 0 |
+| `dtype-c-i64.patch` | the 6-line fix, verified on a copy, **not applied** |
+| `t1_probe.bend` / `t1_smoke.bend` / `t1_guard.bend` | the three raw probes the diagnosis came from |
 
-M-1 `dtype.bend` 14 red -> 8. M-2 308 + 15 = **323/324** laws that compile, link
-and run. Nothing committed; `tinybendygrad/dtype.bend` and
-`tinybendygrad/helpers.bend` untouched by this unit.
+Two of our own walls refuted rather than reconciled, per `agent-core.md`:
+`W64-MILE.md` item 4 / build fact 1 (the `#ifdef CID(...)` guards **do** work and
+the C lane **does** build), and `W64.md`'s "a 64-bit pair cannot be returned from
+one foreign def" (false on the return direction; `pack64` is correct 8/8).
 
-## 2. THE HAZARD THAT WAS LIVE DURING THIS UNIT, NOW CLEARED
+## 2. Substrate, at the end
 
-`tinybendygrad/helpers.bend` was **0 bytes** for most of this session. `jj status`
-reported it as a RENAME to `.agents/slop/nested/baseline-probe.err` — two empty
-files, so the inference was technically right and completely misleading. It was
-back at 116,479 bytes (HEAD: 116,482) by 19:51. **If a future unit sees that
-directory entry, the file is empty, not moved.**
+```
+COLD  tinybendygrad/dtype.bend  (638 lines)  :: SOME PROOFS FAIL   <- its own 14 seams, expected
+WARM  tinybendygrad/helpers.bend (2605 lines)
+```
+
+`tinybendygrad/dtype.bend`, `runtime/dtype.c` and `runtime/dtype.js` are
+**byte-unchanged** by this unit — every gate ran on a `$TMPDIR` copy or in a
+scratch build under this directory. Both patches are files, not edits.
+
+One caveat on `substrate-check.sh`: it is bend-only, so feeding it `dtype.c` /
+`dtype.js` reports them COLD for the trivial reason that they are not Bend. The
+substrate claim is about `.bend` files.

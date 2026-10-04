@@ -202,8 +202,10 @@ static s64 cdiv_of(s64 a, s64 b) {
   return (a < 0) != (b < 0) ? -q : q;
 }
 
-static s64 i64_of(Term* f) {
-  return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);
+static s64 i64_of(Env e, Term t) {
+  Term o[2];
+  ctr_take(e, t, 2, o);
+  return (s64)((((u64)(u32)o[0]) << 32) | (u32)o[1]);
 }
 
 static Term pack64(Env e, s64 v) {
@@ -211,29 +213,29 @@ static Term pack64(Env e, s64 v) {
 }
 
 static Term i64_run(Env e, Term* f, IoWork* w) {
-  return pack64(e, i64_of(f));
+  return pack64(e, i64_of(e, f[0]));
 }
 
 static Term div64_floor_run(Env e, Term* f, IoWork* w) {
-  return pack64(e, floor_div_mod(i64_of(f), i64_of(f + 2)).q);
+  return pack64(e, floor_div_mod(i64_of(e, f[0]), i64_of(e, f[1])).q);
 }
 
 static Term div64_mod_run(Env e, Term* f, IoWork* w) {
-  return pack64(e, floor_div_mod(i64_of(f), i64_of(f + 2)).r);
+  return pack64(e, floor_div_mod(i64_of(e, f[0]), i64_of(e, f[1])).r);
 }
 
 static Term div64_cdiv_run(Env e, Term* f, IoWork* w) {
-  s64 a = i64_of(f), b = i64_of(f + 2);
+  s64 a = i64_of(e, f[0]), b = i64_of(e, f[1]);
   return pack64(e, b == 0 ? 0 : cdiv_of(a, b));
 }
 
 static Term div64_cmod_run(Env e, Term* f, IoWork* w) {
-  s64 a = i64_of(f), b = i64_of(f + 2);
+  s64 a = i64_of(e, f[0]), b = i64_of(e, f[1]);
   return pack64(e, b == 0 ? a : a - cdiv_of(a, b) * b);
 }
 
 static Term div64_ceildiv_run(Env e, Term* f, IoWork* w) {
-  s64 a = i64_of(f), b = i64_of(f + 2);
+  s64 a = i64_of(e, f[0]), b = i64_of(e, f[1]);
   if (b == 0) return pack64(e, 0);
   s64 c = a / b;
   if (a % b != 0 && (a < 0) == (b < 0)) c += 1;
