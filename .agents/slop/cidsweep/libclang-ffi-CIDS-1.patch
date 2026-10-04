@@ -1,0 +1,42 @@
+--- a/.agents/slop/clangshim/libclang-ffi.c
++++ b/.agents/slop/clangshim/libclang-ffi.c
+@@ -269,13 +269,33 @@
+ 
+ static void __attribute__((constructor)) cl_use(void) {
++  #ifdef CID(Type_report)
+   io_eff(CID(Type_report), Type_report_run, 0);
++  #endif
++  #ifdef CID(Field_report)
+   io_eff(CID(Field_report), Field_report_run, 0);
++  #endif
++  #ifdef CID(Field_offset_unknown)
+   io_eff(CID(Field_offset_unknown), Field_offset_unknown_run, 0);
++  #endif
++  #ifdef CID(Field_name)
+   io_eff(CID(Field_name), Field_name_run, 0);
++  #endif
++  #ifdef CID(Field_spell)
+   io_eff(CID(Field_spell), Field_spell_run, 0);
++  #endif
++  #ifdef CID(Record_words)
+   io_eff(CID(Record_words), Record_words_run, 0);
++  #endif
++  #ifdef CID(Record_report)
+   io_eff(CID(Record_report), Record_report_run, 0);
++  #endif
++  #ifdef CID(Pair_size)
+   io_eff(CID(Pair_size), Pair_size_run, 0);
++  #endif
++  #ifdef CID(Clang_version)
+   io_eff(CID(Clang_version), Clang_version_run, 0);
++  #endif
++  #ifdef CID(Loaded_dylib)
+   io_eff(CID(Loaded_dylib), Loaded_dylib_run, 0);
++  #endif
+ }
+# CIDS-1: 10 registrations guarded.  Verified ON THE EMIT (no live file edited):
+#   cc -fsyntax-only  14 errors -> 0  (rc 1 -> 0)
+#   cc -E  registrations landing 10 -> 1  (io_eff(14, Clang_version_run, 0))
+#   the 9 dropped were literal undeclared CID_ names.
+# NOT APPLIED by cidsweep: .agents/slop/clangshim/ is another unit's slop tree.
+

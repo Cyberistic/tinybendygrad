@@ -1,0 +1,44 @@
+====================================================================================
+CENSUS v2 — .bend EMPTY BODIES (None{} as a body, not a match arm)
+====================================================================================
+file                                                         declared  EMPTY match-arm None{}
+tinybendygrad/LAWS.bend                                            44      1                0   lines 393
+tinybendygrad/codegen/decomp/dtype.bend                           289      1                1   lines 2064
+tinybendygrad/engine/worker.bend                                   79      1                0   lines 417
+tinybendygrad/schedule/multi.bend                                 699      1                0   lines 2582
+tinybendygrad/tensor.bend                                         193      1                0   lines 453
+
+.bend files scanned                      : 140
+declared bodies (def + law)              : 27993
+EMPTY bodies                             : 5
+refusal match-arms `case X: None{}`     : 7   (NOT empty bodies)
+
+====================================================================================
+CENSUS v2b — .c seams: declared vs empty function bodies
+====================================================================================
+
+tinybendygrad/runtime/dtype.c
+  function definitions   : 21
+  EMPTY bodies           : 0  
+
+tinybendygrad/runtime/sz.c
+  function definitions   : 6
+  EMPTY bodies           : 0  
+
+.agents/slop/clangshim/libclang-tramp.c
+  function definitions   : 330
+  EMPTY bodies           : 0  
+
+.agents/slop/clangshim/libclang-ffi.c
+  function definitions   : 14
+  EMPTY bodies           : 0  
+
+====================================================================================
+CENSUS v2c — .js seams: arrow-fn bodies that are empty
+====================================================================================
+
+tinybendygrad/runtime/dtype.js
+  `function` decls : 14    `=>` arrows : 6    EMPTY arrow bodies : 0
+
+tinybendygrad/runtime/sz.js
+  `function` decls : 2    `=>` arrows : 0    EMPTY arrow bodies : 0
