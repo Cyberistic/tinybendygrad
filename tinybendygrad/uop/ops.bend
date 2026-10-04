@@ -4489,7 +4489,22 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1010  def is_realized
 
-# TODO(p3) ops.py:1015  def variable
+# PORTED -- `ops.py:1015 UOp.variable` is `UOp.variable` (this file), four `vrn_*`
+# rows byte-identical to CPython on all three lanes via
+# `sh .agents/slop/ops-vrn-gate.sh`, with six mutations in
+# `.agents/slop/ops-vrn-mutate.py` each moving EXACTLY the rows it names.
+#
+# IT WAS BLOCKED ON A NAME, NOT ON A SUBSTRATE. CPython writes `slot=-1` and this
+# file's `ParamArg.slot` is a `U32`, so the def needed a name for "no POSITIONAL
+# slot" and the file that OWNS the field had none -- while `function.bend`,
+# `codegen/kernel.bend`, `codegen/late/linearizer.bend` and `uop/symbolic.bend` had
+# each invented one. `ParamArg.no_slot()` (this file) is the single name, landed the
+# commit before, and this def is the first thing it unblocked.
+#
+# `is_variable` (ops.py:1020) is STILL BLOCKED and this does not change that: its
+# fifth conjunct is `self._shape == ()` and `Node{op, src, arg, tag}` has no shape
+# field. The `vrn_*` rows print `nsrc` as the closest honest proxy and the `is_
+# variable` marker says why that is not the same question.
 
 
 
