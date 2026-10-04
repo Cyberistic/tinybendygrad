@@ -1,0 +1,22 @@
+THE FOUR MOTIVATING ROWS
+  1  `1.1` in f16, f32_show says `1.0996094` -> f32:3f8cc000 | CPython says 1.099609375 -> f32:3f8cc000 | AGREE
+  2  `1.0`: `F32.show` says `1` -> f32:3f800000 | its bits say f32:3f800000 | AGREE
+  3  `1.0 + 2**-40`: f64 -> f64:3ff0000000001000 | f32 -> f32:3f800000 | WIDTH DECIDES
+  4  two NaNs: `f32:7fc00001` vs `f32:7fc00000` vs a bare spelling `f32:?nan` | ALL THREE DISTINCT
+  J  JSL2-7's `448` vs `448.0`: f32:43e00000 vs f32:43e00000 | AGREE
+
+THE PROPERTIES THE HELPER STANDS ON
+  injectivity over 1044482 non-NaN f32 patterns: 0 collisions
+  sweep size 655369 of 2^32, stratified: whole f32 space, every 2^14th 0x0+16384x262144; the whole subnormal window, every 32nd 0x1+32x262144; the NaN bands, every 2^14th 0x7f800000+16384x131072; plus 9 exact
+  f32_show round trip over 647170 patterns: 0 lost (4104 NaN patterns skipped -- `f32_show` answers `nan` for every one of them and there is nothing to read back)
+
+THE PLANTS, so each row is shown able to FAIL
+  plant(repr(float(s))) gets WRONG, of the five lane/oracle rows: ['1  `1.1` in f16', '3  `1.0 + 2**-40` at f64']
+  plant(f"{v:g}") gets WRONG, of the five lane/oracle rows: NONE
+  plant(f"{v:g}") on THREE DISTINCT f32 values one ULP apart ('1.0000001', '1.0000002', '1.0000003') -> ['1', '1', '1']: 1 spelling(s)
+  the helper on the same three: ['f32:3f800001', 'f32:3f800002', 'f32:3f800003'] -- 3 distinct, no collision
+  plant(repr(float(s))) at f64 on `1.0 + 2**-40`: 1.0000000000009095 vs 1.0 -> DISAGREE; the helper at f32 says f32:3f800000, which is `1.0`'s own spelling
+  every plant is distinguished by at least one row: {'repr(float(s))': 2, 'f"{v:g}"': 1}
+
+
+0 failure(s)
