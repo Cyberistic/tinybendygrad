@@ -10,20 +10,36 @@
 //
 // The f32 restatement of float_to_fp8 is not a simplification. dtype.py does the
 // arithmetic on f64 (`struct.pack('d', x)`), and this file does it on the f32
-// pattern handed in. The two agree bit for bit on every f32 input, because the
-// tie bit dtype.py compares against is at f64 bit (52 - sig_bits) and an f32 has
-// no bits below pattern bit 23: see .agents/slop/notes/fp8_oracle.py, which
-// checks all four formats over a million random patterns, every boundary
-// exponent, and all 256 codes in both directions.
+// pattern handed in. The two agree on every f32 input because the tie bit dtype.py
+// compares against is at f64 bit (52 - sig_bits) and an f32 has no bits below
+// pattern bit 23: see .agents/slop/notes/fp8_oracle.py, which checks all four
+// formats over a million random patterns, every boundary exponent, and all 256
+// codes in both directions.
+//
+// AND IT DID NOT, ON TWO ROWS, until .agents/slop/FP8FIX.md. The tie-bit argument
+// covers the ROUNDING and it does not cover a THRESHOLD: dtype.py's ovf_threshold
+// is an f64 ULP below the value it names on three of the four formats (dtype.py:239
+// -241), and `absx > ovf_threshold` is how dtype.py says "this value itself
+// saturates". Restating that constant as the f32 pattern of the value LOSES the
+// -1, because the f32 pattern of `61439.99999999999` IS 61440's pattern. That was
+// one wrong answer per affected format -- `absx == 0x47700000` answered 124 where
+// CPython says 123 -- so `fp8_ovf` below stores the LAST f32 magnitude dtype.py
+// still rounds normally, and the `>` at line 70 is dtype.py's own `>` again.
 //
 // ONE FILE, BOTH LANES. The .js file beside this one is the same arithmetic on
 // the same tables, for the interpreted lane; keeping them adjacent is what makes
 // the agreement checkable by eye.
 
 // (bias, sig_bits, mant_mask, min_denorm_half, ovf_threshold, max_norm, min_norm)
-// dtype.py's _fp8_cfg with the three f64 magnitude patterns rewritten as the f32
-// patterns of the same values. Two of dtype.py's constants are an f64 ULP below
-// 61440, which rounds to the same f32 pattern as 61440 itself.
+// dtype.py's _fp8_cfg with the f64 magnitudes restated for an f32 pattern. denorm and
+// min_norm are the f32 patterns of the same values, bit for bit. ovf is NOT: dtype.py
+// writes it an f64 ULP LOW on three of the four formats (dtype.py:239-241), which is
+// how `absx > ovf_threshold` includes the named value itself, and the f32 pattern of
+// `61439.99999999999` is 61440's own pattern -- so restating the value drops the -1 and
+// loses the boundary row. fp8_ovf therefore holds the LAST f32 magnitude dtype.py
+// still rounds normally, and `>` at fp8_encode is dtype.py's own `>`. fp8e4m3 is the
+// fourth threshold dtype.py writes WITHOUT the -1, and its entry is the value itself,
+// which is why it is the one slot that needed no change.
 #define FP8_E4M3      0
 #define FP8_E5M2      1
 #define FP8_E4M3FNUZ  2
@@ -37,7 +53,7 @@ static const u32 fp8_bias[4]      = {  7, 15,  8, 16 };
 static const u32 fp8_sig[4]       = {  4,  3,  4,  3 };
 static const u32 fp8_mant[4]      = { 0x7, 0x3, 0x7, 0x3 };
 static const u32 fp8_denorm[4]    = { 0x3A800000, 0x37000000, 0x3A000000, 0x36800000 };
-static const u32 fp8_ovf[4]       = { 0x43E80000,  0x47700000, 0x43780000,  0x47700000 };
+static const u32 fp8_ovf[4]       = { 0x43E80000,  0x476FFFFF, 0x4377FFFF,  0x476FFFFF };
 static const u32 fp8_max_norm[4]  = { 0x7E,       0x7B,       0x7F,        0x7F };
 static const u32 fp8_min_norm[4]  = { 0x3C800000, 0x38800000, 0x3C000000,  0x38000000 };
 
@@ -74,6 +90,12 @@ static u32 fp8_encode(u32 xb, u32 kind) {
     u32 rb = xb & ((hu << 1) - 1);
     if (rb > hu || (rb == hu && (mant & 1))) res += 1;
   } else {
+    // The shift ladder, and it is FOUR rungs wide for e4m3 and e4m3fnuz: `denorm`'s
+    // OWN exponent field is inside this window whenever its mantissa is nonzero, so
+    // `exp` reaches -3 and `sh` reaches 4. Three for e5m2 and e5m2fnuz, which is
+    // upstream's shape too (dtype.py:239-241, min_denorm_half an f64 ULP low again).
+    // So this is `1 - exp` and NOT a ladder: a three-rung ladder here answers `sh = 1`
+    // where the answer is 4. Measured over every f32 pattern in the window.
     u32 sh = 1 - exp;
     u32 half;
     mant |= 1u << (sig - 1);
@@ -101,10 +123,13 @@ static u32 fp8_decode(u32 x, u32 kind) {
       return mant ? (sgn ? 0xFFC00000u : 0x7FC00000u)
                   : (sgn ? 0xFF800000u : 0x7F800000u);
     }
-    if (mant == mant_max) return sgn ? 0xFFC00000u : 0x7FC00000u;
+    if (mant == mant_max) return 0x7FC00000u;   // dtype.py:278 `math.nan`, UNSIGNED
   }
   // the value is exact in f32 -- an fp8 has at most four significant bits
-  v = (f32)(exp == 0 ? (mant / (f32)(mant_max + 1)) * (1.0f / (1u << bias))
+  // dtype.py:279 `2 ** (1 - bias)` for the subnormal arm. `1.0f / (1u << bias)` is
+  // 2 ** -bias, which is HALF every fp8 subnormal: 0x01 of e4m3 is -2**-10 here and
+  // -2**-9 upstream. The `1 -` is the whole difference.
+  v = (f32)(exp == 0 ? (mant / (f32)(mant_max + 1)) * ldexpf(1.0f, 1 - (int)bias)
                      : (1.0f + mant / (f32)(mant_max + 1)) *
                        ldexpf(1.0f, (int)exp - (int)bias));
   return f32_rewrap(sgn ? -v : v);
