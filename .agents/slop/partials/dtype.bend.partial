@@ -1,0 +1,907 @@
+# dtype.bend -- tinygrad/dtype.py.
+#
+# ONE DATATYPE. `Dt` and its `Cls` tag live in ./LAWS/spec.bend, which is where
+# the spec IR needs them, and this file imports them. dtype.py does not get a
+# second, competing dtype; if the shape of `Dt` is wrong it is fixed there, in
+# one place, and both readers see the fix.
+#
+# THE LATTICE IS A BITMASK, NOT A MATCH LADDER. dtype.py spells least_upper_dtype
+# as `min(set.intersection(*recursive_parents(d) for d in ds))`, with the parent
+# relation as a table of tuples and the closure over it. Bend has no sets and no
+# sets-of-sets, and a 19-way ladder of pairs is 361 cases that would need a
+# checked-in proof that they agree with Python. The twenty dtypes are totally
+# ordered by dtype.py's own `__lt__` (priority, bitsize, name, fmt), so bit i of
+# a mask stands for "rank i is a recursive parent". Then
+#
+#     least_upper(a, b) = the lowest set bit of mask(a) & mask(b)
+#
+# which is dtype.py's `min` over the intersection, because the rank order IS
+# `__lt__`. The masks in `promo_mask` are `DType._get_recursive_parents` written
+# down: rank i's bit is set iff rank i is in that set. `void` is rank 19 with an
+# empty mask, so any pair naming it answers `void`, which is the one totalization
+# this file makes -- dtype.py raises KeyError there, because `void` is not in its
+# lattice at all. See NOT PORTED.
+#
+# VARIADIC. dtype.py's least_upper_dtype takes *ds. Bend has no variadics, so
+# there are two defs: `least_upper` is the binary one and `least_upper_dtypes`
+# folds a list left to right. Python's `min` over an intersection is associative,
+# so the fold and the n-ary call agree exactly -- checked over all 361 pairs and
+# 5000 random 4-ary cases.
+#
+# NOT PORTED, one line each. The bottom of this file says why.
+
+import Base
+import ./LAWS/spec.bend as S
+import ./helpers.bend as H
+
+# ===========================================================================
+# The twenty dtypes, under tinygrad's ATTRIBUTE names.
+#
+# spec.bend already holds all twenty; these are the names dtype.py code writes
+# (`dtypes.f32`, `dtypes.f16`, ...), which are not always the names the spec IR
+# uses (`single`, `half`). One value, twenty names, no second value.
+#
+# THE ATTRIBUTE NAMES ARE THE RUST NAMES. tinygrad 793abbb renamed them, keeping
+# the old ones only in a block it labels `# legacy dtype aliases` -- so this list
+# spells `i8`..`u64`, `f16`, `bf16`, `f32`, `f64` and carries NO legacy accessor.
+# `dtypes.f16()`, `dtypes.f32()` and their kin were removed from the port on
+# the same day for the same reason; a def nothing calls is invisible to every
+# check, so keeping them would be a name the port can still spell but nothing
+# gates.
+#
+# `spec.bend`'s own heads (`half`, `bfloat16`, `single`, `double`) are tinyspec's
+# IR words and stay: they are not dtype.py attribute names and never were.
+# ===========================================================================
+
+def dtypes.void() -> S.Dt: S.void()
+def dtypes.weakint() -> S.Dt: S.weakint()
+def dtypes.index() -> S.Dt: S.weakint()
+def dtypes.bool() -> S.Dt: S.boolean()
+def dtypes.i8() -> S.Dt: S.int8()
+def dtypes.u8() -> S.Dt: S.uint8()
+def dtypes.i16() -> S.Dt: S.int16()
+def dtypes.u16() -> S.Dt: S.uint16()
+def dtypes.i32() -> S.Dt: S.int32()
+def dtypes.u32() -> S.Dt: S.uint32()
+def dtypes.i64() -> S.Dt: S.int64()
+def dtypes.u64() -> S.Dt: S.uint64()
+def dtypes.weakfloat() -> S.Dt: S.weakfloat()
+def dtypes.fp8e4m3() -> S.Dt: S.fp8e4m3()
+def dtypes.fp8e4m3fnuz() -> S.Dt: S.fp8e4m3fnuz()
+def dtypes.fp8e5m2() -> S.Dt: S.fp8e5m2()
+def dtypes.fp8e5m2fnuz() -> S.Dt: S.fp8e5m2fnuz()
+def dtypes.f16() -> S.Dt: S.half()
+def dtypes.bf16() -> S.Dt: S.bfloat16()
+def dtypes.f32() -> S.Dt: S.single()
+def dtypes.f64() -> S.Dt: S.double()
+
+# the fp8 group, as dtype.py's `dtypes.fp8s`
+def dtypes.fp8s() -> List<&2, S.Dt>:
+  [S.fp8e4m3(), S.fp8e5m2(), S.fp8e4m3fnuz(), S.fp8e5m2fnuz()]
+
+def dtypes.floats() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, dtypes.fp8s(), [S.half(), S.bfloat16(), S.single(), S.double()])
+
+def dtypes.uints() -> List<&2, S.Dt>:
+  [S.uint8(), S.uint16(), S.uint32(), S.uint64()]
+
+def dtypes.sints() -> List<&2, S.Dt>:
+  [S.int8(), S.int16(), S.int32(), S.int64()]
+
+def dtypes.ints() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, dtypes.uints(), dtypes.sints())
+
+# dtype.py's `dtypes.all`: every dtype a value can have.
+def dtypes.all() -> List<&2, S.Dt>:
+  List.append(&2, S.Dt, List.append(&2, S.Dt, dtypes.floats(), dtypes.ints()),
+    [S.boolean()])
+
+# ===========================================================================
+# The promotion lattice.
+#
+# The rank order is dtype.py's own `__lt__`, which sorts on
+# (priority, bitsize, name, fmt). Both fp8 ties at priority 10 and 11 are broken
+# by name, so the order below is forced and there is no choice to make -- and
+# THE RENAME DID NOT MOVE IT: "fp8e4m3" < "fp8e4m3fnuz" and "float8_e4m3" <
+# "float8_e4m3fnuz" are the same two comparisons, because the new names are the
+# old ones with "float8_" replaced by "fp8". So every mask below is unchanged.
+#
+#   0 bool       5 uint16    10 weakfloat  15 float16
+#   1 weakint    6 int32     11 fp8e4m3    16 bfloat16
+#   2 int8       7 uint32    12 fp8e4m3fnuz 17 float32
+#   3 uint8      8 int64     13 fp8e5m2     18 float64
+#   4 int16      9 uint64    14 fp8e5m2fnuz 19 void (empty mask)
+#
+# The masks are `_get_recursive_parents` in rank order; see the header for why
+# that is the whole lattice.
+# ===========================================================================
+
+def promo_mask.void(nm: String) -> U32:
+  match nm:
+    case "void": 0
+    case _: 0
+
+def promo_mask(nm: String) -> U32:
+  match nm:
+    case "bool": 524287
+    case "weakint": 524286
+    case "i8": 523604
+    case "u8": 524280
+    case "i16": 523600
+    case "u16": 524256
+    case "i32": 523584
+    case "u32": 524160
+    case "i64": 523520
+    case "u64": 523776
+    case "weakfloat": 523264
+    case "fp8e4m3": 493568
+    case "fp8e4m3fnuz": 495616
+    case "fp8e5m2": 499712
+    case "fp8e5m2fnuz": 507904
+    case "f16": 425984
+    case "bf16": 458752
+    case "f32": 393216
+    case "f64": 262144
+    case _: 0
+
+def dt_name(d: S.Dt) -> String:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: nm
+
+# the rank -> dtype half of the same order
+def dt_by_rank(r: Nat) -> S.Dt:
+  match r:
+    case 0n: S.boolean()
+    case 1n: S.weakint()
+    case 2n: S.int8()
+    case 3n: S.uint8()
+    case 4n: S.int16()
+    case 5n: S.uint16()
+    case 6n: S.int32()
+    case 7n: S.uint32()
+    case 8n: S.int64()
+    case 9n: S.uint64()
+    case 10n: S.weakfloat()
+    case 11n: S.fp8e4m3()
+    case 12n: S.fp8e4m3fnuz()
+    case 13n: S.fp8e5m2()
+    case 14n: S.fp8e5m2fnuz()
+    case 15n: S.half()
+    case 16n: S.bfloat16()
+    case 17n: S.single()
+    case _: S.double()
+
+def lowest(+m: U32) -> Nat:
+  # the index of the lowest set bit. m is never 0, because `bool` is a recursive
+  # parent of every dtype, so every non-void mask has bit 0 set.
+  U32.log2(U32.and(m, U32.sub(0, m)))
+
+# dtype.py least_upper_dtype(a, b), over the two masks. `None` is dtype.py's
+# KeyError, which is what any pair naming `void` gives: void is not in the
+# lattice it closes over.
+def least_upper.pick(ok: Bool, m: U32) -> Maybe<&1, S.Dt>:
+  match ok:
+    case True{}: None{}
+    case False{}: Some{dt_by_rank(lowest(m))}
+
+def least_upper(+ma: U32, mb: U32) -> Maybe<&1, S.Dt>:
+  least_upper.pick(U32.is_zero(ma), U32.and(ma, mb))
+
+def least_upper.picked(m: Maybe<&1, S.Dt>) -> S.Dt:
+  match m:
+    case Some{d}: d
+    case None{}: S.void()
+
+# The same meet as a value rather than an outcome. `void` is the bottom of this
+# lattice -- least_upper(void, x) is void -- so it also serves as the fold's
+# identity, and it is what a Python exception would have left behind.
+def least_upper.of(a: S.Dt, b: S.Dt) -> S.Dt:
+  least_upper.picked(least_upper(promo_mask(dt_name(a)), promo_mask(dt_name(b))))
+
+def least_upper_mask(a: S.Dt, b: S.Dt) -> Maybe<&1, S.Dt>:
+  least_upper(promo_mask(dt_name(a)), promo_mask(dt_name(b)))
+
+# The variadic form: dtype.py's least_upper_dtype(*ds), folded left to right.
+# `min` over an intersection is associative, so the fold and the n-ary call
+# agree exactly, which is what the self-test checks on every pair.
+def least_upper_dtypes.go(ds: List<&2, S.Dt>, a: S.Dt) -> S.Dt:
+  match ds:
+    case Nil{}: a
+    case h <> t: least_upper_dtypes.go(t, least_upper.of(a, h))
+
+def least_upper_dtypes.head(ds: List<&2, S.Dt>) -> S.Dt:
+  match ds:
+    case Nil{}: S.void()
+    case h <> t: least_upper_dtypes.go(t, h)
+
+def least_upper_dtypes(ds: List<&2, S.Dt>) -> S.Dt:
+  least_upper_dtypes.head(ds)
+
+# least_upper_float -- dtype.py: `weakfloat if dt is weakint else dt if is_float(dt)
+# else least_upper_dtype(dt, default_float)`. Three arms, one Bool each.
+def least_upper_float.cls(cls: S.Cls, dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
+  match cls:
+    case S.CWeakInt{}: Some{S.weakfloat()}
+    case S.CFloat{}: Some{dt}
+    case _: least_upper_mask(dt, dflt)
+
+def least_upper_float(+dt: S.Dt, dflt: S.Dt) -> Maybe<&1, S.Dt>:
+  least_upper_float.cls(S.Dt.cls(dt), dt, dflt)
+
+# ===========================================================================
+# strong_dtype / weak_dtype
+# ===========================================================================
+
+def strong_dtype.cls(cls: S.Cls, di: S.Dt, df: S.Dt, d: S.Dt) -> S.Dt:
+  match cls:
+    case S.CWeakInt{}: di
+    case S.CWeakFloat{}: df
+    case _: d
+
+def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
+  strong_dtype.cls(S.Dt.cls(d), di, df, d)
+
+def weak_dtype.cls(cls: S.Cls, dt: S.Dt) -> S.Dt:
+  match cls:
+    case S.CWeakFloat{}: S.weakfloat()
+    case S.CWeakInt{}: S.weakint()
+    case _: dt
+
+def weak_dtype(+d: S.Dt) -> S.Dt:
+  weak_dtype.cls(S.Dt.cls(d), d)
+
+# ===========================================================================
+# can_lossless_cast -- "does dt1 preserve every value of dt0".
+#
+# Its own table, NOT the lattice: a mask of the recursive parents is wrong here.
+# int32 is a parent of float32 through int64 -> weakfloat, yet int32 -> float32
+# is lossy and int32 -> float64 is not, because float32 has 24 bits of mantissa
+# and int32 needs 31. So the row is `dt0` and the mask is over the ranks that
+# accept it, taken from dtype.py's `match dt1` arms one case at a time.
+# ===========================================================================
+
+def can_lossless_cast.row(nm: String) -> U32:
+  match nm:
+    case "bool": 524287
+    case "i8": 426326
+    case "u8": 427002
+    case "i16": 393554
+    case "u16": 394210
+    case "i32": 262466
+    case "u32": 263042
+    case "i64": 258
+    case "u64": 514
+    case "fp8e4m3": 428032
+    case "fp8e4m3fnuz": 430080
+    case "fp8e5m2": 434176
+    case "fp8e5m2fnuz": 442368
+    case "f16": 425984
+    case "bf16": 458752
+    case "f32": 393216
+    case "f64": 262144
+    # weakint and weakfloat are placeholders, not storages: they preserve
+    # themselves and nothing else
+    case "weakint": 2
+    case "weakfloat": 1024
+    case _: 0
+
+def rank_of(nm: String) -> Nat:
+  match nm:
+    case "bool": 0n
+    case "weakint": 1n
+    case "i8": 2n
+    case "u8": 3n
+    case "i16": 4n
+    case "u16": 5n
+    case "i32": 6n
+    case "u32": 7n
+    case "i64": 8n
+    case "u64": 9n
+    case "weakfloat": 10n
+    case "fp8e4m3": 11n
+    case "fp8e4m3fnuz": 12n
+    case "fp8e5m2": 13n
+    case "fp8e5m2fnuz": 14n
+    case "f16": 15n
+    case "bf16": 16n
+    case "f32": 17n
+    case _: 18n
+
+def can_lossless_cast.hit(row: U32, +bit: U32) -> Bool:
+  U32.is_eq(U32.and(row, bit), bit)
+
+def can_lossless_cast.pair(row: U32, r: Nat) -> Bool:
+  can_lossless_cast.hit(row, U32.shln(1, r))
+
+def can_lossless_cast(d0: S.Dt, d1: S.Dt) -> Bool:
+  can_lossless_cast.pair(can_lossless_cast.row(dt_name(d0)), rank_of(dt_name(d1)))
+
+
+# ===========================================================================
+# sum_acc_dtype -- the dtype a reduction accumulates in.
+#
+# dtype.py reads SUM_DTYPE out of the environment. Bend has no process-wide
+# store, so it is a parameter here and the caller threads it, which is what
+# helpers.bend's `Flags` record exists for.
+# ===========================================================================
+
+def sum_acc_dtype.cls(cls: S.Cls, dt: S.Dt, sum: S.Dt) -> S.Dt:
+  match cls:
+    case S.CUint{}: least_upper.of(dt, S.uint32())
+    case S.CSint{}: least_upper.of(dt, S.int32())
+    case S.CWeakInt{}: least_upper.of(dt, S.int32())
+    case S.CBool{}: least_upper.of(dt, S.int32())
+    case _: least_upper.of(dt, sum)
+
+def sum_acc_dtype(+dt: S.Dt, sum: S.Dt) -> S.Dt:
+  sum_acc_dtype.cls(S.Dt.cls(dt), dt, sum)
+
+# ===========================================================================
+# finfo -- (exponent, mantissa) bit widths. dtype.py's is a dict lookup that
+# raises for a non-float; None is that raise.
+# ===========================================================================
+
+# A `Maybe` holds one field, so the answer is a record rather than a pair.
+type Finfo is Data:
+  Finfo{e: U32, m: U32}
+
+def finfo.of(nm: String) -> Maybe<&1, Finfo>:
+  match nm:
+    case "f16": Some{Finfo{5, 10}}
+    case "bf16": Some{Finfo{8, 7}}
+    case "f32": Some{Finfo{8, 23}}
+    case "f64": Some{Finfo{11, 52}}
+    case "fp8e4m3": Some{Finfo{4, 3}}
+    case "fp8e5m2": Some{Finfo{5, 2}}
+    case "fp8e4m3fnuz": Some{Finfo{4, 3}}
+    case "fp8e5m2fnuz": Some{Finfo{5, 2}}
+    case _: None{}
+
+def finfo.cls(cls: S.Cls, nm: String) -> Maybe<&1, Finfo>:
+  match cls:
+    case S.CWeakFloat{}: None{}
+    case _: finfo.of(nm)
+
+def finfo(+d: S.Dt) -> Maybe<&1, Finfo>:
+  finfo.cls(S.Dt.cls(d), dt_name(d))
+
+
+# ===========================================================================
+# The integer range, as an I64.
+#
+# spec.bend's Dt.min / Dt.max answer this for the widths a U32 holds and None
+# above that; these two finish it. dtype.py's min/max are Python ints of unbounded
+# width, which is why the pair is the honest encoding and a U32 is not. The four
+# widths are tinygrad's, and 2^64-1 is the only one of the four limits with no
+# U32 image, so it is written as the two words it is.
+# ===========================================================================
+
+def i64_max_u(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(0, 255)
+    case 16: H.i64_of_hi_lo(0, 65535)
+    case 32: H.i64_of_hi_lo(0, 4294967295)
+    # uint64's max is 2^64-1 and an I64 is a SIGNED pair, so it has no image:
+    # (0xFFFFFFFF, 0xFFFFFFFF) is -1. The bound is only read as `hi <= max` and
+    # every I64 hi is <= int64's max, so int64's max answers that test correctly
+    # on the whole domain. Found by mixin/dtype.bend's gate (u64_at_* rows),
+    # fixed here 2026-10-01; the old value made the uint64 rung unhittable.
+    case _: H.i64_of_hi_lo(2147483647, 4294967295)
+
+def i64_min_s(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(4294967295, 4294967168)
+    case 16: H.i64_of_hi_lo(4294967295, 4294934528)
+    case 32: H.i64_of_hi_lo(4294967295, 2147483648)
+    case _: H.i64_of_hi_lo(2147483648, 0)
+
+def i64_max_s(bits: U32) -> H.I64:
+  match bits:
+    case 8: H.i64_of_hi_lo(0, 127)
+    case 16: H.i64_of_hi_lo(0, 32767)
+    case 32: H.i64_of_hi_lo(0, 2147483647)
+    case _: H.i64_of_hi_lo(2147483647, 4294967295)
+
+def dt_range.umag(top: Bool, bits: U32) -> H.I64:
+  match top:
+    case True{}: H.i64_of_hi_lo(0, 0)
+    case False{}: i64_max_u(bits)
+
+def dt_range.smag(top: Bool, bits: U32) -> H.I64:
+  match top:
+    case True{}: i64_min_s(bits)
+    case False{}: i64_max_s(bits)
+
+def dt_range.sgn(neg: Bool, top: Bool, bits: U32) -> H.I64:
+  match neg:
+    case True{}: dt_range.smag(top, bits)
+    case False{}: dt_range.umag(top, bits)
+
+def dt_range.cls(sgn: Maybe<&1, Bool>, top: Bool, bits: U32) -> Maybe<&1, H.I64>:
+  match sgn:
+    case None{}: None{}
+    case Some{neg}: Some{dt_range.sgn(neg, top, bits)}
+
+def dt_min(d: S.Dt) -> Maybe<&1, H.I64>:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), True{}, bits)
+
+def dt_max(d: S.Dt) -> Maybe<&1, H.I64>:
+  match d:
+    case S.Dt{pri, bits, cls, nm}: dt_range.cls(S.Cls.sgn(cls), False{}, bits)
+
+# ===========================================================================
+# The float range.
+#
+# dtype.py's DType.max for a float is +inf, except that e4m3 and the fnuz fp8s
+# have no inf and end at their largest normal. `None` is the float case of the
+# spec.bend range: Bend cannot name an infinity in a U32, and here the fp8
+# answer is an ordinary F32, so it is spelled out.
+# ===========================================================================
+
+def fmax.of(nm: String) -> Maybe<&1, F32>:
+  match nm:
+    case "fp8e4m3": Some{448.0}
+    case "fp8e4m3fnuz": Some{240.0}
+    case "fp8e5m2fnuz": Some{57344.0}
+    case _: None{}
+
+def fmax.cls(cls: S.Cls, nm: String) -> Maybe<&1, F32>:
+  match cls:
+    case S.CFloat{}: fmax.of(nm)
+    case _: None{}
+
+def fmax(+d: S.Dt) -> Maybe<&1, F32>:
+  fmax.cls(S.Dt.cls(d), dt_name(d))
+
+# ===========================================================================
+# to_dtype -- dtype.py's `getattr(dtypes, name.lower())`, so the keys are the
+# ATTRIBUTE names, not the `name` field. `void`, `weakint` and `weakfloat` are
+# reachable here too, even though DTYPES_DICT skips them.
+#
+# EVERY SPELLING IS HERE, CANONICAL FIRST. The canonical attribute names are the
+# RUST names (i8 .. u64, f16, bf16, f32, f64); upstream keeps the old ones in a
+# block it labels `# legacy dtype aliases`, so `to_dtype("half")` still answers
+# and this table must not drop it -- but the canonical arm comes first because
+# that is the spelling everything else in the port now uses.
+# ===========================================================================
+
+def to_dtype_of(nm: String) -> Maybe<&1, S.Dt>:
+  match nm:
+    case "void": Some{S.void()}
+    case "weakint": Some{S.weakint()}
+    case "weakfloat": Some{S.weakfloat()}
+    case "bool": Some{S.boolean()}
+    case "i8": Some{S.int8()}
+    case "u8": Some{S.uint8()}
+    case "i16": Some{S.int16()}
+    case "u16": Some{S.uint16()}
+    case "i32": Some{S.int32()}
+    case "u32": Some{S.uint32()}
+    case "i64": Some{S.int64()}
+    case "u64": Some{S.uint64()}
+    case "f16": Some{S.half()}
+    case "bf16": Some{S.bfloat16()}
+    case "f32": Some{S.single()}
+    case "f64": Some{S.double()}
+    case "fp8e4m3": Some{S.fp8e4m3()}
+    case "fp8e4m3fnuz": Some{S.fp8e4m3fnuz()}
+    case "fp8e5m2": Some{S.fp8e5m2()}
+    case "fp8e5m2fnuz": Some{S.fp8e5m2fnuz()}
+    # the block upstream labels `# legacy dtype aliases`
+    case "float16": Some{S.half()}
+    case "half": Some{S.half()}
+    case "bfloat16": Some{S.bfloat16()}
+    case "float32": Some{S.single()}
+    case "float": Some{S.single()}
+    case "float64": Some{S.double()}
+    case "double": Some{S.double()}
+    case "int8": Some{S.int8()}
+    case "char": Some{S.int8()}
+    case "uint8": Some{S.uint8()}
+    case "uchar": Some{S.uint8()}
+    case "int16": Some{S.int16()}
+    case "short": Some{S.int16()}
+    case "uint16": Some{S.uint16()}
+    case "ushort": Some{S.uint16()}
+    case "int32": Some{S.int32()}
+    case "int": Some{S.int32()}
+    case "uint32": Some{S.uint32()}
+    case "uint": Some{S.uint32()}
+    case "int64": Some{S.int64()}
+    case "long": Some{S.int64()}
+    case "uint64": Some{S.uint64()}
+    case "ulong": Some{S.uint64()}
+    case _: None{}
+
+def to_dtype(nm: String) -> Maybe<&1, S.Dt>:
+  to_dtype_of(nm)
+
+# ===========================================================================
+# commit_int -- the smallest dtype on the ladder that holds [lo, hi].
+#
+# The bounds are I64 because dtype.py takes Python ints and the ladder's top rung
+# is uint64, whose max has no U32 image. Two consequences, both facts rather than
+# simplifications:
+#
+#   * every I64 is inside int64's range, so the ladder's int64 rung always fits
+#     and its uint64 rung can never be reached. dtype.py returns `long` when it
+#     runs off the end anyway, so the answer is the same either way; the uint64
+#     rung is unreachable here and the fallback IS dtype.py's fallback.
+#   * the ladder starts at default_int, which may already be int32, so the int32
+#     test runs twice in that case. That is dtype.py's behaviour, kept.
+def i64_min_s32() -> H.I64: H.i64_of_hi_lo(4294967295, 2147483648)
+def i64_max_s31() -> H.I64: H.i64_of_hi_lo(0, 2147483647)
+
+def commit_int.i32fit(lo: H.I64, hi: H.I64) -> Bool:
+  Bool.and(H.i64_le(i64_min_s32(), lo), H.i64_le(hi, i64_max_s31()))
+
+def commit_int.i32(fit: Bool) -> Maybe<&1, S.Dt>:
+  match fit:
+    case True{}: Some{S.int32()}
+    case False{}: Some{S.int64()}
+
+def commit_int.hit(ok: Bool, di: S.Dt, fit: Bool) -> Maybe<&1, S.Dt>:
+  match ok:
+    case True{}: Some{di}
+    case False{}: commit_int.i32(fit)
+
+def commit_int.pick(m: Maybe<&1, Bool>, di: S.Dt, fit: Bool) -> Maybe<&1, S.Dt>:
+  match m:
+    case Some{ok}: commit_int.hit(ok, di, fit)
+    case None{}: commit_int.hit(False{}, di, fit)
+
+def commit_int.bounds(mn: Maybe<&1, H.I64>, mx: Maybe<&1, H.I64>, lo: H.I64,
+  hi: H.I64) -> Maybe<&1, Bool>:
+  match mn:
+    case Some{a}:
+      match mx:
+        case Some{b}: Some{Bool.and(H.i64_le(a, lo), H.i64_le(hi, b))}
+        case None{}: None{}
+    case None{}: None{}
+
+def commit_int(+lo: H.I64, +hi: H.I64, +di: S.Dt) -> Maybe<&1, S.Dt>:
+  commit_int.pick(commit_int.bounds(dt_min(di), dt_max(di), lo, hi), di,
+    commit_int.i32fit(lo, hi))
+
+
+# ===========================================================================
+# THE CONVERSION SEAM, AND IT IS PURE.
+#
+# THE NOTE THAT USED TO STAND HERE WAS WRONG, and it is the reason all eight of
+# these constructors were `import "./runtime/dtype.c"`.  It said: "Bend reads an
+# F32's bits (F32.bits) but cannot build an F32 from a bit pattern."  Bend can.
+# `F32` is `F32{data: Word(32n)}` and `U32` is `U32{data: Word(32n)}` -- the
+# SAME word -- so `case U32{data}: data` is exactly the conversion the note
+# said did not exist.  MEASURED over all 33 fixtures: `f32_of` and `F32.bits`
+# are inverses, and `runtime/ops_python.bend:274` had been calling the pair
+# `f32_of`/`F32.bits` all day.  The rule was obeyed by four files and was
+# simply false.
+#
+# So every conversion here is arithmetic on the pattern, and the eight defs
+# below are the ordinary pure defs their names say they are.
+#
+# NOT TRANSCRIBED.  Every constant this section spells is printed as a
+# `const_*` row and compared against `.agents/slop/dt32/dt32-const.txt`, which
+# CPython writes out of tinygrad's own `_fp8_cfg`, out of
+# `inspect.getsource(float_to_bf16)`, and out of `math.nan` itself.  A
+# mistyped constant is a red row, not a silent agreement.
+#
+# The `kind` argument is dtype.py's own position in `_fp8_cfg`, so the four
+# formats cannot drift on which is which.
+# ===========================================================================
+
+# ---- the shared word -------------------------------------------------------
+
+def w32(+u: U32) -> Word(32n):
+  match u:
+    case U32{data}: data
+
+def f32_of(+u: U32) -> F32: F32{w32(u)}
+
+# ---- round to nearest, ties to even, right shift by the runtime `s` --------
+#
+# `(u + 2^(s-1) - 1 + lsb(u >> s)) >> s`.  The `-1 + lsb` is the whole tie rule:
+# below the half nothing carries, above it everything does, and at it the low
+# bit of the result decides which neighbour is even.
+
+def pow2s1(s: U32) -> U32: U32.shln(1, U32.to_nat(U32.sub(s, 1)))
+
+def rne(+u: U32, +s: U32) -> U32:
+  U32.shrn(U32.add(u, U32.add(U32.sub(pow2s1(s), 1),
+    U32.and(U32.shrn(u, U32.to_nat(s)), 1))), U32.to_nat(s))
+
+# ---- float_to_bf16 --------------------------------------------------------
+#
+# bf16 is f32 with sixteen mantissa bits dropped, and both formats are biased
+# so that one value has one exponent field, so the conversion is the RNE of the
+# low half of the pattern -- which is what dtype.py's `u + 0x7FFF + ((u>>16)&1)`
+# is.  The `not isfinite` arm is dtype.py's first line and it is not
+# decoration: a NaN whose payload lives only in the dropped half would round to
+# an infinity without it.
+
+def bf16_finite(+u: U32) -> Bool:
+  U32.is_ne(U32.and(U32.shrn(u, 23n), 255), 255)
+
+def bf16_rne(+u: U32) -> U32:
+  U32.and(U32.add(U32.add(u, 32767), U32.and(U32.shrn(u, 16n), 1)), 4294901760)
+
+def Dt.bf16(+bits: U32) -> F32:
+  f32_of(Bool.pick(U32, bf16_finite(bits), bf16_rne(bits), bits))
+
+# ---- float_to_fp16 --------------------------------------------------------
+#
+# f16 is 1+5+10 and f32 is 1+8+23, so unlike bf16 the exponent has to be
+# RE-biased and the subnormal arm is its own thing.  `struct.pack('e', x)`
+# raises OverflowError past the top, and the `except` arm is a signed infinity,
+# so the overflow arm is one value and not an exception.  Every threshold is an
+# integer test on the f32 exponent field: 143 is 2^16, 113 is 2^-14 (the
+# smallest f16 normal) and 102 is 2^-25 (the largest value that can still round
+# up onto the 2^-24 subnormal grid).
+
+def fp16_nan(+s: U32, +m: U32) -> U32:
+  Bool.pick(U32, U32.is_zero(m), U32.or(s, 2139095040),
+    U32.or(U32.or(s, 2139095040), U32.shln(rne(m, 13), 13n)))
+
+# a carry out of the eleven significand bits is a carry into the exponent
+def fp16_norm(+r: U32, +e: U32) -> U32:
+  Bool.pick(U32, U32.is_ge(r, 1024), U32.shln(U32.add(e, 1), 23n),
+    U32.or(U32.shln(e, 23n), U32.shln(r, 13n)))
+
+# `k * 2^-24` as an f32 pattern.  `k` doubles until its top bit is bit ten,
+# which is at most ten rounds because k <= 1023; then the exponent field is
+# 113 minus the number of rounds and the mantissa is `(k - 1024) << 13`.
+# `k * 2^-24` as an f32 pattern.  `k` has to reach bit ten, which takes
+# `10 - floor(log2 k)` doublings, so the exponent field is `113` minus that and
+# the mantissa is `(k << n) - 1024` shifted up.  No loop: `U32.log2` is the
+# count and `U32.shln` takes it at runtime.
+def fp16_sub.at(+k: U32, e: U32, +n: Nat) -> U32:
+  U32.or(U32.shln(U32.sub(e, U32.from_nat(n)), 23n),
+    U32.shln(U32.sub(U32.shln(k, n), 1024), 13n))
+
+def fp16_sub(+k: U32, z: Bool) -> U32:
+  match z:
+    case True{}: 0
+    case False{}: fp16_sub.at(k, 113, Nat.sub(10n, U32.log2(k)))
+
+def fp16_mid(+s: U32, +e: U32, +m: U32) -> U32:
+  Bool.pick(U32, Nat.is_ge(U32.to_nat(e), 143n), U32.or(s, 2139095040),
+    Bool.pick(U32, Nat.is_ge(U32.to_nat(e), 113n), U32.or(s, fp16_norm(rne(m, 13), e)),
+      Bool.pick(U32, Nat.is_ge(U32.to_nat(e), 102n),
+        U32.or(s, fp16_sub(rne(U32.add(8388608, m), U32.sub(126, e)), U32.is_zero(rne(U32.add(8388608, m), U32.sub(126, e))))), s)))
+
+def fp16_pick(+s: U32, +e: U32, +m: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(e, 255), fp16_nan(s, m), fp16_mid(s, e, m))
+
+def fp16_of(+u: U32) -> U32:
+  fp16_pick(U32.and(u, 2147483648), U32.and(U32.shrn(u, 23n), 255), U32.and(u, 8388607))
+
+def Dt.fp16(+x: F32) -> F32:
+  f32_of(fp16_of(F32.bits(x)))
+
+# ---- float_to_fp8 ---------------------------------------------------------
+#
+# dtype.py reads `struct.pack('d', x)`, and every f32 widens to an f64 exactly,
+# so the port carries the WIDENED pattern as two U32 words and runs dtype.py's
+# own expressions on it: `hi`/`lo` are its halves and nothing is re-derived.
+# Every `_fp8_cfg` threshold is below 2^63, so a 64-bit comparison is two U32
+# comparisons.
+
+def f64_exp64(e: U32, z: Bool) -> U32:
+  match z:
+    case True{}: 0
+    case False{}: U32.add(e, 896)
+
+def f64_hi(+u: U32) -> U32:
+  U32.or(U32.or(U32.and(u, 2147483648),
+    U32.shln(f64_exp64(U32.and(U32.shrn(u, 23n), 255), U32.is_zero(U32.and(U32.shrn(u, 23n), 255))), 20)), U32.shrn(u, 3n))
+
+def f64_lo(+u: U32) -> U32: U32.shln(U32.and(u, 7), 29n)
+
+def f64_field(+u: U32) -> U32: U32.and(U32.shrn(u, 23n), 255)
+
+def u64_lt(ah: U32, al: U32, bh: U32, bl: U32) -> Bool:
+  Bool.or(U32.is_lt(ah, bh), Bool.and(U32.is_eq(ah, bh), U32.is_lt(al, bl)))
+
+def u64_le(ah: U32, al: U32, bh: U32, bl: U32) -> Bool:
+  Bool.or(U32.is_lt(ah, bh), Bool.and(U32.is_eq(ah, bh), U32.is_le(al, bl)))
+
+def u64_eq(ah: U32, al: U32, bh: U32, bl: U32) -> Bool:
+  Bool.and(U32.is_eq(ah, bh), U32.is_eq(al, bl))
+
+def u64_gt(ah: U32, al: U32, bh: U32, bl: U32) -> Bool: Bool.not(u64_le(ah, al, bh, bl))
+
+def pow2_hi(b: Nat, wide: Bool) -> U32:
+  match wide:
+    case True{}: U32.shln(1, Nat.sub(b, 32n))
+    case False{}: U32.shln(1, b)
+
+def pow2_lo(b: Nat, wide: Bool) -> U32:
+  match wide:
+    case True{}: 0
+    case False{}: U32.shln(1, b)
+
+# `1 << (b - 32)` and `1 << b`, the two halves of the same power, with `b` the
+# one argument and `wide` the one test, so no Nat is used twice.
+def pow2_hi.used(b: Nat) -> U32: pow2_hi(b, Nat.is_ge(b, 32n))
+def pow2_lo.used(b: Nat) -> U32: pow2_lo(b, Nat.is_ge(b, 32n))
+
+# `mantissa = (xbits >> (53 - sig_bits)) & mant_mask`, and the widened mantissa
+# starts at hi bit 20, so the shift is `21 - sig` and the mask is
+# `2^(sig-1) - 1`.  Both come off `sig_bits` alone.
+def fp8_mant(+hi: U32, sig: U32) -> U32:
+  U32.and(U32.shrn(hi, U32.to_nat(U32.sub(21, sig))),
+    U32.sub(U32.shln(1, U32.to_nat(U32.sub(sig, 1))), 1))
+
+# `exp = ((xbits>>52)&0x7FF) - 1023 + bias`
+def fp8_exp(+x: U32, bias: U32) -> U32:
+  U32.sub(U32.add(f64_exp64(f64_field(x)), 1023), bias)
+
+# `shift = 1 - exp`, read straight off the same expression so the sign is the
+# expression's: `1 - (exp64 - 1023 + bias)` is `1024 + bias - exp64`.
+def fp8_shift(+x: U32, bias: U32) -> Nat:
+  U32.to_nat(U32.add(U32.add(f64_exp64(f64_field(x)), bias), 1024))
+
+# `round_bits = xbits & ((half_ulp << 1) - 1)`, with `half_ulp = 1 << (52 - sig)`
+def fp8_round_hi(+x: U32, sig: U32) -> U32:
+  U32.and(f64_hi(x), U32.sub(U32.shln(1, U32.to_nat(U32.sub(21, sig))), 1))
+
+def fp8_round_lo(+x: U32) -> U32: f64_lo(x)
+
+def fp8_half_hi(sig: U32) -> U32: U32.shln(1, U32.to_nat(U32.sub(20, sig)))
+
+def fp8_round_up(+x: U32, sig: U32, +m: U32) -> Bool:
+  Bool.or(u64_gt(fp8_round_hi(x, sig), fp8_round_lo(x), fp8_half_hi(sig), 0),
+    Bool.and(u64_eq(fp8_round_hi(x, sig), fp8_round_lo(x), fp8_half_hi(sig), 0),
+      U32.is_eq(U32.and(m, 1), 1)))
+
+# `res = (exp << (sig_bits - 1)) | mantissa`, then the round-bit bump
+def fp8_normal(+x: U32, sig: U32, bias: U32) -> U32:
+  U32.add(U32.or(U32.add(fp8_exp(x, bias), U32.shln(1, U32.to_nat(U32.sub(sig, 1)))),
+    fp8_mant(f64_hi(x), sig)),
+    Bool.to_u32(fp8_round_up(x, sig, fp8_mant(f64_hi(x), sig))))
+
+# `round_bits = (xbits | (1 << 52)) & ((half << 1) - 1)`, `half = half_ulp << shift`
+def fp8_sig_hi(+x: U32, +shift: Nat) -> U32:
+  U32.and(U32.or(f64_hi(x), U32.shln(1, 20n)), U32.sub(pow2_hi.used(Nat.add(49n, shift)), 1))
+
+def fp8_sig_lo(+x: U32) -> U32: f64_lo(x)
+
+def fp8_sub_res(+x: U32, sig: U32, +shift: Nat) -> U32:
+  U32.shrn(U32.or(fp8_mant(f64_hi(x), sig), U32.shln(1, U32.to_nat(U32.sub(sig, 1)))),
+    U32.to_nat(shift))
+
+def fp8_sub_up(+x: U32, sig: U32, +shift: Nat) -> Bool:
+  Bool.or(u64_gt(fp8_sig_hi(x, shift), fp8_sig_lo(x), pow2_hi.used(Nat.add(48n, shift)),
+    pow2_lo.used(Nat.add(48n, shift))),
+    Bool.and(u64_eq(fp8_sig_hi(x, shift), fp8_sig_lo(x), pow2_hi.used(Nat.add(48n, shift)),
+      pow2_lo.used(Nat.add(48n, shift))), U32.is_eq(U32.and(fp8_sub_res(x, sig, shift), 1), 1)))
+
+def fp8_subnormal(+x: U32, sig: U32, bias: U32) -> U32:
+  U32.add(fp8_sub_res(x, sig, fp8_shift(x, bias)),
+    Bool.to_u32(fp8_sub_up(x, sig, fp8_shift(x, bias))))
+
+# `0 if dtype in fp8_fnuz and res == 0 else int(res | sign)`
+def fp8_put(fnuz: Bool, +x: U32, res: U32) -> U32:
+  Bool.pick(U32, Bool.and(fnuz, U32.is_zero(res)), 0,
+    U32.or(res, U32.shln(U32.and(U32.shrn(x, 31n), 1), 7)))
+
+def fp8_rows.absx_hi(+x: U32) -> U32: U32.and(f64_hi(x), 2147483647)
+
+def fp8_rows.absx_lo(+x: U32) -> U32: f64_lo(x)
+
+def fp8_rows.norm(+x: U32, sig: U32, bias: U32, below: Bool, mnn_hi: U32,
+  mnn_lo: U32) -> U32:
+  match below:
+    case True{}: fp8_put(True{}, x, fp8_normal(x, sig, bias))
+    case False{}: fp8_subnormal(x, sig, bias)
+
+def fp8_rows.ovf(+x: U32, sig: U32, bias: U32, fnuz: Bool, max_norm: U32,
+  over: Bool, ovt_hi: U32, ovt_lo: U32, mnn_hi: U32, mnn_lo: U32) -> U32:
+  match over:
+    case True{}: fp8_put(fnuz, x, max_norm)
+    case False{}: fp8_rows.norm(x, sig, bias,
+      Bool.not(u64_le(fp8_rows.absx_hi(x), fp8_rows.absx_lo(x), mnn_hi, mnn_lo)),
+      mnn_hi, mnn_lo)
+
+def fp8_rows.denorm(+x: U32, sig: U32, bias: U32, fnuz: Bool, max_norm: U32,
+  tiny: Bool, mdh_hi: U32, mdh_lo: U32, ovt_hi: U32, ovt_lo: U32, mnn_hi: U32,
+  mnn_lo: U32) -> U32:
+  match tiny:
+    case True{}: fp8_put(fnuz, x, 0)
+    case False{}: fp8_rows.ovf(x, sig, bias, fnuz, max_norm,
+      Bool.not(u64_le(fp8_rows.absx_hi(x), fp8_rows.absx_lo(x), ovt_hi, ovt_lo)),
+      ovt_hi, ovt_lo, mnn_hi, mnn_lo)
+
+# The three arms of dtype.py's if/elif/else chain, one def each so the order is
+# the control flow.  `norm` takes no `fnuz` because only the fnuz formats have
+# a subnormal arm here; a non-fnuz subnormal would have been caught by `denorm`.
+def fp8_rows(+x: U32, sig: U32, bias: U32, fnuz: Bool, max_norm: U32, mdh_hi: U32,
+  mdh_lo: U32, ovt_hi: U32, ovt_lo: U32, mnn_hi: U32, mnn_lo: U32) -> U32:
+  fp8_rows.denorm(x, sig, bias, fnuz, max_norm,
+    u64_le(fp8_rows.absx_hi(x), fp8_rows.absx_lo(x), mdh_hi, mdh_lo),
+    mdh_hi, mdh_lo, ovt_hi, ovt_lo, mnn_hi, mnn_lo)
+
+def fp8_from.of(x: U32, kind: U32) -> U32:
+  match kind:
+    case 0: fp8_rows(x, 4, 7, False{}, 126, 1062207488, 0, 1081933824, 0, 1066401792, 0)
+    case 1: fp8_rows(x, 3, 15, False{}, 123, 1054867456, 0, 1089339391, 4294967295, 1058013184, 0)
+    case 2: fp8_rows(x, 4, 8, True{}, 127, 1061158912, 0, 1081016319, 4294967295, 1065353216, 0)
+    case _: fp8_rows(x, 3, 16, True{}, 127, 1053818880, 0, 1089339391, 4294967295, 1056964608, 0)
+
+def Dt.fp8_from(+bits: U32, kind: U32) -> U32:
+  fp8_from.of(bits, kind)
+
+# ---- fp8_to_float ---------------------------------------------------------
+#
+# The four outcomes are dtype.py's four `return`s in order: the fnuz NaN, the
+# signed zero, the two formats that name their top exponent, and `val`.
+# `mant_max + 1` divides and `2 ** (exp - bias)` scales, and both are exact in
+# f32 -- (8+m) needs four bits and every fp8 value is a small multiple of a
+# power of two -- so the f32 answer is the f64 one rounded, with no rounding of
+# its own.  A row over all 256 patterns and all four kinds is the gate.
+
+def fp8_float.exp_max(sig: U32) -> U32:
+  U32.sub(U32.shln(1, U32.to_nat(U32.sub(8, sig))), 1)
+
+def fp8_float.mant_max(sig: U32) -> U32:
+  U32.sub(U32.shln(1, U32.to_nat(U32.sub(sig, 1))), 1)
+
+def fp8_float.exp(+x: U32, sig: U32) -> U32:
+  U32.and(U32.shrn(x, U32.to_nat(U32.sub(sig, 1))), fp8_float.exp_max(sig))
+
+def fp8_float.mant(x: U32, sig: U32) -> U32: U32.and(x, fp8_float.mant_max(sig))
+
+def fp8_float.val(+x: U32, bias: U32, sig: U32) -> F32:
+  Bool.pick(F32, U32.is_zero(fp8_float.exp(x, sig)),
+    F32.mul(F32.div(F32.from_nat(fp8_float.mant(x, sig)),
+      F32.from_nat(U32.add(fp8_float.mant_max(sig), 1))),
+      F32.pow(2.0, F32.sub(F32.from_nat(1), F32.from_nat(bias)))),
+    F32.mul(F32.add(1.0, F32.div(F32.from_nat(fp8_float.mant(x, sig)),
+      F32.from_nat(U32.add(fp8_float.mant_max(sig), 1)))),
+      F32.pow(2.0, F32.sub(F32.from_nat(fp8_float.exp(x, sig)), F32.from_nat(bias)))))
+
+# the sign bit, moved from bit seven to bit thirty-one
+def fp8_float.sgn(x: U32) -> U32: U32.shln(x, 24n)
+
+# `exp == exp_max` is the arm dtype.py writes as `dtype not in fp8_fnuz`; e5m2
+# returns from it for every mantissa and e4m3 only for the top one.
+def fp8_float.sp(+x: U32, fnuz: Bool, e5m2: Bool, sig: U32) -> Bool:
+  Bool.and(Bool.not(fnuz),
+    Bool.and(U32.is_eq(fp8_float.exp(x, sig), fp8_float.exp_max(sig)),
+      Bool.or(e5m2, U32.is_eq(fp8_float.mant(x, sig), fp8_float.mant_max(sig)))))
+
+def fp8_float.spval(+x: U32, e5m2: Bool, sig: U32) -> F32:
+  Bool.pick(F32, e5m2,
+    Bool.pick(F32, U32.is_zero(fp8_float.mant(x, sig)),
+      f32_of(U32.or(fp8_float.sgn(x), 2139095040)),
+      f32_of(U32.or(fp8_float.sgn(x), 2143289344))),
+    f32_of(2143289344))
+
+def fp8_float.of(+x: U32, fnuz: Bool, e5m2: Bool, bias: U32, sig: U32) -> F32:
+  Bool.pick(F32, Bool.and(fnuz, U32.is_eq(x, 128)), f32_of(2143289344),
+    Bool.pick(F32, U32.is_zero(U32.and(x, 127)), f32_of(fp8_float.sgn(x)),
+      Bool.pick(F32, fp8_float.sp(x, fnuz, e5m2, sig),
+        fp8_float.spval(x, e5m2, sig), fp8_float.val(x, bias, sig))))
+
+def fp8_float(x: U32, kind: U32) -> F32:
+  match kind:
+    case 0: fp8_float.of(x, False{}, False{}, 7, 4)
+    case 1: fp8_float.of(x, False{}, True{}, 15, 3)
+    case 2: fp8_float.of(x, True{}, False{}, 8, 4)
+    case _: fp8_float.of(x, True{}, False{}, 16, 3)
+
+def Dt.fp8_to(+bits: U32, kind: U32) -> F32:
+  fp8_float(bits, kind)
+
+# ---- dtype.py's own four names, over the same arithmetic ------------------
+
+def float_to_bf16(x: F32) -> F32: Dt.bf16(F32.bits(x))
+
+def float_to_fp16(x: F32) -> F32: Dt.fp16(x)
+
+def float_to_fp8(x: F32, dtype: S.Dt) -> U32:
+  Dt.fp8_from(F32.bits(x), fp8_kind(dt_name(dtype)))
+
+def fp8_to_float(x: U32, dtype: S.Dt) -> F32:
+  Dt.fp8_to(x, fp8_kind(dt_name(dtype)))

@@ -1,0 +1,29 @@
+def Dt.i64_cdiv.fix(an: Bool, bn: Bool, +d: H.DivMod) -> Bool:
+  Bool.and(Bool.xor(an, bn), Bool.not(H.i64_is_zero(H.divmod_r(d))))
+
+def Dt.i64_cdiv.of(zero: Bool, an: Bool, bn: Bool, +d: H.DivMod) -> H.I64:
+  Bool.pick(H.I64, zero, H.i64_zero(), H.i64_add(H.divmod_q(d), H.i64_bit(Bool.to_u32(Dt.i64_cdiv.fix(an, bn, d)))))
+
+def Dt.i64_cdiv(+a: H.I64, +b: H.I64) -> H.I64:
+  Dt.i64_cdiv.of(H.i64_is_zero(b), H.i64_is_neg(a), H.i64_is_neg(b), H.i64_divmod(a, b))
+
+def Dt.i64_cmod.put(fix: Bool, b: H.I64, +d: H.DivMod) -> H.I64:
+  Bool.pick(H.I64, fix, H.i64_sub(H.divmod_r(d), b), H.divmod_r(d))
+
+def Dt.i64_cmod.of(an: Bool, bn: Bool, b: H.I64, +d: H.DivMod) -> H.I64:
+  Dt.i64_cmod.put(Dt.i64_cdiv.fix(an, bn, d), b, d)
+
+def Dt.i64_cmod(+a: H.I64, +b: H.I64) -> H.I64:
+  Dt.i64_cmod.of(H.i64_is_neg(a), H.i64_is_neg(b), b, H.i64_divmod(a, b))
+
+def Dt.i64_trunc(x: H.I64) -> H.I64:
+  x
+
+def Dt.i64_floor_div(a: H.I64, b: H.I64) -> H.I64:
+  H.i64_div(a, b)
+
+def Dt.i64_floor_mod(a: H.I64, b: H.I64) -> H.I64:
+  H.i64_mod(a, b)
+
+def Dt.i64_ceildiv(a: H.I64, +b: H.I64) -> H.I64:
+  H.i64_neg(True{}, H.i64_div(a, H.i64_neg(True{}, b)))

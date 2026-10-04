@@ -3,6 +3,7 @@ import ./helpers.bend as H
 import ./LAWS/spec.bend as S
 import ./uop/ops.bend as O
 import ./uop/fold.bend as F
+import ./mixin/gradient.bend as G
 # tensor.bend -- tinygrad/tensor.py. The user-facing Tensor: lazy op
 # construction, the method surface, and the `realize` entry.
 #
@@ -96,8 +97,11 @@ import ./uop/fold.bend as F
 #     (:128). NOT MINE. `tn_rop` hoists the two IDENTITY tests it needs, because
 #     without them `_rop` builds a PERMUTE where Python returns `self`; the hoist
 #     is marked at the def.
-#   * `mixin/gradient.py` -- `gradient`. NOT MINE, so `backward`'s zip is a seam
-#     and only its scope filter is ported.
+#   * `mixin/gradient.py` -- `compute_gradient` and its `Grads` table. WAS "NOT MINE", and
+#     that was the seam that left `backward` half-ported; `backward`'s zip now calls it, so
+#     `tensor.bend` imports `./mixin/gradient.bend as G`. THE IMPORT CLOSURE IS UNCHANGED --
+#     `gradient.bend` imports the same five files this one already did -- so the closure's
+#     root (`uop/ops.bend`) has no new leaf under it.
 #
 # FIVE BEND RULES THIS FILE LEARNS THE HARD WAY, between them about twenty compile
 # cycles, and every def below obeys all five. They are in `.agents/slop/notes/
@@ -909,12 +913,12 @@ def tn_ib_walk(+ar: O.Arena, +self: U32) -> U32:
 # (`substitute`) and P4's dtype (`least_upper_dtype` on a weak dtype).
 
 # ===========================================================================
-# `backward` -- tensor.py:475-495. The SCOPE FILTER is ported, and it is the half
-# that is a Tensor fact: `all_uops = self.uop.toposort()` and then
+# `backward` -- tensor.py:475-495. BOTH halves are ported. The SCOPE FILTER is the
+# first: `all_uops = self.uop.toposort()` and then
 # `t.uop in all_uops and t.is_floating_point() and t.device is not None`.
 # `is_floating_point` is `self.dtype.is_float` and `Cls.is_float` is ported. The zip
-# that follows is mixin/gradient.bend's `gradient`, which is not mine and is not built,
-# so `tn_need_grad` is the filter and nothing after it is here.
+# that follows is below, and its callee is `mixin/gradient.bend`'s `compute_gradient`,
+# so the DEPS header's "`mixin/gradient.py` -- NOT MINE" is no longer true of the walk.
 # ===========================================================================
 
 def tn_need_grad.is_float.go(m: Maybe<&2, S.Dt>) -> Bool:
@@ -948,9 +952,97 @@ def tn_need_grad.go(+all_uops: List<&2, U32>, +ar: O.Arena, +ts: List<&2, U32>, 
 def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
   tn_need_grad.go(O.UOp.toposort(O.Arena.budget(ar), ar, self), ar, Tensors.ts(scope), Nil{})
 
-# TODO(p3) tensor.py:490  backward's zip -- `self.gradient(*tensors_need_grad,
-# gradient=gradient)` is mixin/gradient.bend's, and `t.grad.assign(...)` at :494 needs
-# `assign`.
+# ===========================================================================
+# THE ZIP -- tensor.py:490-494. `zip(tensors_need_grad, self.gradient(*tensors_need_grad,
+# gradient=gradient))` is TWO facts and the row keeps them apart, because a row that
+# cannot tell them apart cannot fail:
+#
+#   `mixin/op.py:471`  `[self._wrap_uop(grads[x] if x in grads else x.const_like(0))
+#                        for x in target_uops]`  -- the ANSWER: one slot per target, in
+#                        TARGET ORDER, and a target with no entry in `grads` gets the
+#                        ZERO SUBSTITUTE rather than a hole. This is `Bwd.gs`.
+#   `tensor.py:493`    `if t.grad is None: t.grad = g` -- the WRITE, and the number of
+#                        writes is what `Bwd.ts` LENGTHS. This is `Tensor.grad_set`, which
+#                        until now had no caller in the tree.
+#
+# WHY TWO INSTEAD OF ONE. `const_like(0)` is the substitute that makes the two halves
+# DISJOINT: a port that skipped the target instead of substituting it produces the SAME
+# `Bwd.gs` (the answer is unchanged) and ONE FEWER write, so a row that printed only the
+# answer could not see it. And a port that walked the two lists in the other order produces
+# the SAME COUNT and a PERMUTED answer. Neither half sees the other's bug; the row is the
+# pair. Measured on the `t_bwd` fixture: see `.agents/slop/BACKWARD-WALK.md`.
+# ===========================================================================
+
+# `grads[x] if x in grads else x.const_like(0)` -- mixin/op.py:471, one slot per target.
+# `G.gslot` IS the `x in grads` half and `G.GSlot.v_of` the `grads[x]` half, so the ONLY
+# thing this def adds is the ELSE. `x.const_like(0)` (ops.py:600) is `CONST(0)._mop(EXPAND,
+# x._shape)` and the CONST is a FLOAT literal, which is the DEPS header's second wall
+# (`F32{data: Word(32n)}` has no reachable constructor, so `Tensor(1.0)` has no CONST to
+# intern). So the substitute is the arena's RESERVED INDEX 0 -- the same `None` convention
+# `grad` already carries -- and the gate prints `ZERO` for that slot rather than printing a
+# node that would claim to be a float. NAMED DIVERGENCE, and it is the SUBSTITUTE's value
+# only: CPython's own decision (`in grads` or not) is what both lanes print.
+def tn_bwd_slot(hit: Maybe<&2, G.GSlot>) -> U32:
+  match hit:
+    case Some{sl}: G.GSlot.v_of(sl)
+    case _: 0
+
+# THE ANSWER LIST, one slot per target, in TARGET ORDER. `List.append(a, A, acc, [x])` is
+# `acc ++ [x]`, so this APPENDS; a version that prepended would be the same list reversed,
+# and over two equal-length lists that reverses WHICH TARGET each gradient lands on without
+# changing the count. That is the mutant that separates the two halves of the row.
+def tn_bwd_gs.go(+g: G.Grads, ts: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match ts:
+    case Nil{}: acc
+    case u <> t: List.append(&2, U32, [tn_bwd_slot(G.gslot(g, u))], tn_bwd_gs.go(g, t, acc))
+
+def tn_bwd_gs(+g: G.Grads, ts: List<&2, U32>) -> List<&2, U32>:
+  tn_bwd_gs.go(g, ts, Nil{})
+
+# THE WRITE. `grads` starts EMPTY, so Python's `grad` is `None` for every target here and
+# `if t.grad is None: t.grad = g` is the arm taken. It IS `Tensor.grad_set`, which had no
+# caller in the tree until now. The `:494` arm (`t.grad.assign(t.grad + g.to(...))`) needs
+# `__add__` and `assign`'s other eight arms, and `:492`'s `g.clone(device=t.device)` is
+# WALL 2 -- all three named at the `TODO` below. THE LENGTH of this list is the write COUNT.
+def tn_bwd_write.go(+ar: O.Arena, +t: Tensor, g: U32, acc: List<&2, Tensor>) -> List<&2, Tensor>:
+  List.append(&2, Tensor, [Tensor.grad_set(t, g)], acc)
+
+# THE ZIP, and it is a TWO-SCRUTINEE match over TWO lists because that is what `zip` is: a
+# step exists only where BOTH lists have an element. The scrutinees are in PARAMETER ORDER
+# (notes, BACKWARD-WALK's fifth item), so `ts` then `gs`. Three terminating arms because
+# `zip` stops at the shorter list, and ONE of the three is the answer's whole length here.
+def tn_bwd_pair.go(+ar: O.Arena, ts: List<&2, U32>, gs: List<&2, U32>, acc: List<&2, Tensor>) -> List<&2, Tensor>:
+  match ts gs:
+    case Nil{} _: acc
+    case Nil{} _ <> _: acc
+    case _ <> _ Nil{}: acc
+    case u <> t g <> r: tn_bwd_write.go(ar, tn_new(ar, u), g, tn_bwd_pair.go(ar, t, r, acc))
+
+def tn_bwd_pair(+ar: O.Arena, ts: List<&2, U32>, gs: List<&2, U32>) -> List<&2, Tensor>:
+  tn_bwd_pair.go(ar, ts, gs, Nil{})
+
+# `Bwd` is the pair the ROW prints, and it holds THREE things and not two: the arena
+# `compute_gradient` GROWN (this file's rule 5 -- the answer's indices live in the arena
+# the walk produced, not the one that went in), the answer, and the written tensors.
+type Bwd is Data:
+  Bwd{ar: O.Arena, gs: List<&2, U32>, ts: List<&2, Tensor>}
+
+# `backward`'s zip -- tensor.py:490-494. `ts` is `tensors_need_grad` (the filter above, in
+# scope order, which is `all_tensors` order upstream), and `root_grad` is upstream's
+# `gradient=` argument. `gradient=None` -> `self.const_like(1.0)` (mixin/op.py:468) is the
+# FLOAT CONST wall, so the seed is a PARAMETER here and the row supplies one; and the three
+# guards at mixin/op.py:465-467 are the refusals `tn_len` already models as a `Maybe`.
+def tn_backward.of(+ar: O.Arena, +ts: List<&2, U32>, +root: U32, root_grad: U32) -> Bwd:
+  +cs = G.compute_gradient(root, root_grad, ts, ar)
+  +ga = G.CState.ar_of(cs)
+  Bwd{ga, tn_bwd_gs(G.CState.g_of(cs), ts), tn_bwd_pair(ga, ts, tn_bwd_gs(G.CState.g_of(cs), ts))}
+
+def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd:
+  tn_backward.of(ar, tn_need_grad(ar, root, scope), root, root_grad)
+
+# TODO(p3) tensor.py:492  backward's other three arms -- `g.clone(device=t.device)` is
+# WALL 2 (`UOp.clone` is ops.py:882), `:493`'s `else` is `assign` plus `__add__`, and
+# `mixin/op.py:468`'s `const_like(1.0)` seed needs the FLOAT CONST this port cannot intern.
 
 # ===========================================================================
 # THE `__i*__` TWELVE AND `__eq__` -- tensor.py:536-549. Twelve methods, each
@@ -1138,6 +1230,20 @@ def g_t4() -> O.Found:
 def g_t4a(+ar: O.Found) -> O.Found:
   g_buf(O.Found.ar(ar), 0, 4, S.int32())
 
+# A SCALAR `float32` BUFFER -- `ParamArg(slot, f32)` with NO size, which is what
+# `oracle-cg.py:36`'s `ParamArg(0, dtypes.float32)` builds and what answers shape `()`.
+# `g_buf` cannot build one: its `size` is a `U32` and every row above needs a sized buffer.
+# THE REASON the `backward` fixture is scalar and not `(4,)`: `gradient.py:132-133` sums a
+# SHAPED edge's gradient to its source's shape, and that needs `broadcast_axes` (ops.py:89)
+# -- which is the port's named wall AND a place CPython ITSELF raises on a scalar seed over
+# a shaped graph (`RuntimeError: cannot broadcast (4,) into ()`, MEASURED, not reasoned).
+# Scalar shapes are the only place BOTH lanes answer, so scalar shapes are what the row is
+# built on.
+def g_sbuf(+ar: O.Arena, slot: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, Nil{},
+    O.AParam{O.ParamArg{slot, S.single(), None{}, None{}, None{}, None{}, S.AGlobal{},
+      Some{S.D1{0}}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
 # EVERY FIXTURE TAKES THE INCOMING ARENA. Two `Found`s from two `Arena.empty()`s are two
 # arenas, and an index means nothing outside its own, so a fixture that built its lhs and
 # rhs from separate empties would silently intern the ADD over the SAME index twice. It
@@ -1162,6 +1268,11 @@ def g_c1(+f: O.Found) -> O.Found:
 
 def t_row(nm: String, b: Bool) -> IO(Unit):
   IO.print(String.concat([nm, "=", Bool.show(b)]))
+
+# `t_row` is a BOOL row and `tn_sig` prints a name and a signature together, so a row that
+# prints a STRING needs the third spelling. `mixin/gradient.bend`'s gate calls it `srow`.
+def t_srow(nm: String, v: String) -> IO(Unit):
+  IO.print(String.concat([nm, "=", v]))
 
 # `Maybe` has no `is_none`, and the two rows that need one are the two that report a
 # RAISE (`__len__`'s `TypeError` and `replace`'s `assert`), so the predicate is written
@@ -1473,6 +1584,68 @@ def t_needgrad() -> IO(Unit):
   tn_need_grad.n(O.Found.ar(r), O.Found.i(r),
     Tensors.of_list([O.Found.i(a), O.Found.i(k), O.Found.i(ad)]))
 
+def tn_bwd_slot_sig(zero: Bool, +ar: O.Arena, g: U32) -> String:
+  match zero:
+    case True{}: "ZERO "
+    case _: tn_sig.go(O.UOp.toposort(O.Arena.budget(ar), ar, g), ar, "")
+
+def tn_bwd_sig.go(gs: List<&2, U32>, +ar: O.Arena, acc: String) -> String:
+  match gs:
+    case Nil{}: acc
+    case +g <> t: tn_bwd_sig.go(t, ar, String.concat([acc, tn_bwd_slot_sig(U32.is_zero(g), ar, g)]))
+
+# `tn_sig.go` is NOT reusable for a slot: it prints a COUNT and takes a toposort, and a slot
+# is ONE node. `ZERO` is the substitute, and WHICH slots are substitutes is CPython's own
+# `in grads` decision (mixin/op.py:471's else arm) -- the CPython lane prints `ZERO` for the
+# same reason, so the token is not a port invention.
+def tn_bwd_row.of(b: Bwd) -> String:
+  match b:
+    case Bwd{ar, gs, ts}: String.concat([tn_bwd_sig.go(gs, ar, ""),
+      "| writes=", U32.show(U32.from_nat(List.length(&2, Tensor, ts)))])
+
+# `Tensor.grad_set` READ BACK OUT OF THE TENSOR. `tn_bwd_row`'s `writes` says the writer was
+# CALLED; this says WHAT IT WROTE, and it is the only row in this file that can see a
+# `grad_set` that stores the wrong index or stores nothing at all -- the writer was DEAD
+# until this row's fixture gave it a caller, so nothing else in 35 rows looked at it. The
+# LAST written slot is target 1, the DETACH, which is the one with a real gradient.
+def tn_bwd_last.go(ws: List<&2, Tensor>, acc: U32) -> U32:
+  match ws:
+    case Nil{}: acc
+    case w <> t: tn_bwd_last.go(t, Tensor.grad_of(w))
+
+def tn_bwd_last.sig(+ws: List<&2, Tensor>, +ar: O.Arena) -> String:
+  tn_bwd_slot_sig(U32.is_zero(tn_bwd_last.go(ws, 0)), ar, tn_bwd_last.go(ws, 0))
+
+def tn_bwd_grad.of(b: Bwd) -> String:
+  match b:
+    case Bwd{ar, gs, ts}: tn_bwd_last.sig(ts, ar)
+
+# THE FIXTURE, and ONE def because `compute_gradient` GROWS the arena and every row below
+# must read the GROWN one -- this file's rule 5, and the reason `Bwd` carries an arena.
+# It is `(x*3).sum()`, and the SCOPE holds the f32 BUFFER, the REDUCE and the weakint
+# CONST, so the filter's second term is falsifiable here too (the CONST is in the
+# toposort as the MUL's operand and is still dropped).
+def tn_bwd_fix() -> Bwd:
+  +a = g_sbuf(O.Arena.empty(), 0)
+  +b = g_sbuf(O.Found.ar(a), 1)
+  +c = g_sbuf(O.Found.ar(b), 2)
+  +k = g_c3(c)
+  +mu = tn_alu(tn_new(O.Found.ar(k), O.Found.i(a)), O.OpsMUL{}, [O.Found.i(b)])
+  +in = tn_alu(tn_new(Tensor.ar(mu), O.Found.i(a)), O.OpsADD{}, [O.Found.i(c)])
+  +ad = tn_alu(tn_new(Tensor.ar(in), Tensor.u(in)), O.OpsADD{}, [O.Found.i(k)])
+  +rt = tn_alu(tn_new(Tensor.ar(ad), Tensor.u(mu)), O.OpsADD{}, [Tensor.u(ad)])
+  +sd = O.UOp.const(Tensor.ar(rt), O.CInt{H.i64_of_i32(1)})
+  tn_backward(O.Found.ar(sd), Tensor.u(rt),
+    Tensors.of_list([O.Found.i(a), O.Found.i(b), O.Found.i(c), O.Found.i(k)]), O.Found.i(sd))
+
+def t_bwd_row() -> String:
+  +b = tn_bwd_fix()
+  tn_bwd_row.of(b)
+
+def t_bwd_grad() -> String:
+  +b = tn_bwd_fix()
+  tn_bwd_grad.of(b)
+
 # THE BEND-ONLY ARENA COUNT, and it exists for the orphan SINK. Seven signature rows
 # would all still pass against a `tn_mop` that never built the SINK, and this is the row
 # that sees it.
@@ -1534,6 +1707,9 @@ def main() -> IO(Unit):
     ad : Unit <- t_arena()
     ae : Unit <- t_param_old()
     t_holds()
+    t_srow("tn_bwd_row", t_bwd_row())
+    t_srow("tn_bwd_grad", t_bwd_grad())
+
 
 # ===========================================================================
 # THE MUTATION TABLE, MEASURED, and re-runnable:
@@ -1544,6 +1720,12 @@ def main() -> IO(Unit):
 # least one row; the two that move NOTHING are reported below rather than quietly
 # dropped, because a mutation that moves nothing is a measurement of what the gate does
 # NOT see and it is the most useful line in the table.
+#
+# M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
+#     sh .agents/slop/backward/bwd-mutate.sh <arm>
+# because that harness is the one with the CLOSURE HASH LEDGER and the BYTE ASSERTION, and
+# `backward`'s zip spans two files (`tensor.bend` and `mixin/gradient.bend`), so a plant
+# there needs a substrate check that `tensor-mutate.py` does not have.
 #
 # THE GATE ITSELF, and the 29 SHARED ROWS:
 #     sh .agents/slop/tensor-gate.sh
@@ -1572,6 +1754,11 @@ def main() -> IO(Unit):
 # | M15 | `tn_alu.of`: `[uop] ++ srcs` -> `srcs ++ [uop]` | `tn_alu_ord` | `UOp.alu`'s `src=(self, *src)` (ops.py:630). `tn_alu_ord` was ADDED for this: its srcs are a BUFFER and a CONST, so the two orders print DIFFERENT signatures, while `tn_alu2`'s two CONSTs print the same one either way round. |
 # | M16 | `tn_rop.of`: drop the `case 0n` arm | `tn_rop_none` | `if not len(reduce_axis): return self.reshape(kept)` (ops.py:659). LOCALISED: `tn_rop0` and `tn_ropmax` have a non-empty axis. |
 # | M17 | a no-op edit | **NOTHING** | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
+# | M18 | `tn_bwd_gs.go`: `[slot] ++ tail` -> `tail ++ [slot]` | `tn_bwd_row` `tn_bwd_grad` | the ANSWER LIST's ORDER, `mixin/op.py:471`'s `for x in target_uops`. `writes` is UNCHANGED and the signature PERMUTES, so this is the arm that proves `tn_bwd_row`'s COUNT half is blind. |
+# | M19 | `tn_bwd_write.go`: drop the `grad_set` answer | `tn_bwd_row` `tn_bwd_grad` | the `.grad` WRITER. `writes` goes 3 -> 0 and the signature is UNCHANGED (the answer is built before the zip), so this is the arm that proves `tn_bwd_row`'s SIGNATURE half is blind. **This is the state the file shipped in all session: a `grad_set` with no caller and nothing to read it.** |
+# | M18/M19 are the SEPARATION, and it is measured per half by
+# `.agents/slop/backward/bwd-mutate.sh`, which prints each half's verdict separately. A
+# one-part row would have called one of them green. |
 #
 # THREE OF THESE FOUND REAL BUGS IN THIS FILE, and all three are the same bug wearing
 # different clothes: AN ARENA IS THE ONE A BUILD RETURNED, not the one that went in.

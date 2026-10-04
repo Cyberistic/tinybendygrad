@@ -1,0 +1,28 @@
+trampoline rows 324   laws emitted 308   blocked 16
+blocked on: {'I64': 15, 'F64': 1}
+
+64 bits on the RETURN only: 16/16. No blocked binding has a 64-bit PARAMETER.
+
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:33 clang_Cursor_getOffsetOfField  64-bit op after the name: ['//']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:34 clang_Cursor_getOffsetOfField  64-bit op after the name: ['//']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:148 clang_Cursor_getOffsetOfField  64-bit op after the name: ['%', '*']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:151 clang_Type_getSizeOf  64-bit op after the name: ['(none)']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:159 clang_getEnumConstantDeclUnsignedValue  64-bit op after the name: ['(none)']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:159 clang_getEnumConstantDeclValue  64-bit op after the name: ['(none)']
+  SITE tinygrad/tinygrad/runtime/support/autogen.py:164 clang_getArraySize  64-bit op after the name: ['(none)']
+
+called from .py call sites : 7 across 5 of 16 bindings
+named in a .bend law        : 16 across 16 of 16 bindings
+
+the bindings with NO .py call site:
+  clang_Cursor_getTemplateArgumentUnsignedValue        blockers=I64
+  clang_Cursor_getTemplateArgumentValue                blockers=I64
+  clang_EvalResult_getAsDouble                         blockers=F64
+  clang_EvalResult_getAsLongLong                       blockers=I64
+  clang_EvalResult_getAsUnsigned                       blockers=I64
+  clang_Type_getAlignOf                                blockers=I64
+  clang_Type_getOffsetOf                               blockers=I64
+  clang_codeCompleteGetContexts                        blockers=I64
+  clang_getFileTime                                    blockers=I64
+  clang_getNumElements                                 blockers=I64
+  clang_getOffsetOfBase                                blockers=I64

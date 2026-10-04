@@ -1,0 +1,43 @@
+probe emits 173 rows; expected 172 + 1 control; 20 decimal rows deliberately not printed
+
+===== BASE  (bend rc=0) =====
+rows present 173 / rows expected 173   control present True   decimal rows deliberately absent 20
+DIVERGE M1 i64_ceildiv|5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+DIVERGE M1 i64_ceildiv|-5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+CONTROL  hi_lo_order: port '0:1' want '0:1'  PASS
+summary: pass=170 diverge=2 fail=0 control=ok
+
+===== PLANT (cmod loses -b)  (bend rc=0) =====
+rows present 173 / rows expected 173   control present True   decimal rows deliberately absent 20
+FAIL     M1 i64_cmod|-7|4: port 0:1 want 4294967295:4294967293
+FAIL     M1 i64_cmod|7|-4: port 4294967295:4294967295 want 0:3
+DIVERGE M1 i64_ceildiv|5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+DIVERGE M1 i64_ceildiv|-5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+FAIL     M1 i64_cmod|-9223372036854775808|3: port 0:1 want 4294967295:4294967294
+FAIL     M1 i64_cmod|-1|2: port 0:1 want 4294967295:4294967295
+FAIL     M1 dec i64_cmod|-7|4: port 1 want -3
+FAIL     M1 dec i64_cmod|7|-4: port -1 want 3
+FAIL     M1 dec i64_cmod|-1|2: port 1 want -1
+CONTROL  hi_lo_order: port '0:1' want '0:1'  PASS
+summary: pass=163 diverge=2 fail=7 control=ok
+rows that MOVED against BASE: 7
+  moved  M1 dec i64_cmod|-1|2: -> 1
+  moved  M1 dec i64_cmod|-7|4: -> 1
+  moved  M1 dec i64_cmod|7|-4: -> -1
+  moved  M1 i64_cmod|-1|2: -> 0:1
+  moved  M1 i64_cmod|-7|4: -> 0:1
+  moved  M1 i64_cmod|-9223372036854775808|3: -> 0:1
+  moved  M1 i64_cmod|7|-4: -> 4294967295:4294967295
+
+===== DISARM (trunc rewritten as x|0)  (bend rc=0) =====
+rows present 173 / rows expected 173   control present True   decimal rows deliberately absent 20
+DIVERGE M1 i64_ceildiv|5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+DIVERGE M1 i64_ceildiv|-5|0: CPython ZeroDivisionError; the port answers 0 (pattern 0:0), which is what dtype.c:236 and dtype.js:171 totalise it to: as expected
+CONTROL  hi_lo_order: port '0:1' want '0:1'  PASS
+summary: pass=170 diverge=2 fail=0 control=ok
+rows that MOVED against BASE: 0
+
+===== VERDICT =====
+BASE   PASS   pass=170 diverge=2 fail=0
+PLANT  PASS   7 rows moved, all on `cmod` = True; a plant that moves nothing, or that moves a row for another def, is a dead lane
+DISARM PASS   0 rows moved; 0 is the only correct count here

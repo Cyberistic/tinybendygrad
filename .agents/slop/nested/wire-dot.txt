@@ -1,0 +1,48 @@
+bendexec1 47 3
+1: PARAM f32 k:param:64:g
+2: PARAM f32 k:param:64:g
+3: PARAM f32 k:param:64:g
+4: CONST weakint c:0
+5: CAST i32 - 4
+6: CONST weakint c:1
+7: CAST i32 - 6
+8: CONST weakint c:12
+9: CAST i32 - 8
+10: CONST weakint c:2
+11: CAST i32 - 10
+12: CONST weakint c:3
+13: CAST i32 - 12
+14: CONST weakint c:4
+15: CAST i32 - 14
+16: CONST weakint c:8
+17: CAST i32 - 16
+18: RANGE i32 - 15
+19: SHL i32 - 18 11
+20: SHRINK f32 - 2 19 15
+21: LOAD f32 k:vec:4 20
+22: INDEX f32 k:idx:0 21 5
+23: INDEX f32 k:idx:0 21 7
+24: INDEX f32 k:idx:0 21 11
+25: INDEX f32 k:idx:0 21 13
+26: RANGE i32 - 15 18
+27: ADD i32 - 26 9
+28: INDEX f32 - 3 27
+29: LOAD f32 - 28
+30: ADD i32 - 26 15
+31: INDEX f32 - 3 30
+32: LOAD f32 - 31
+33: ADD i32 - 26 17
+34: INDEX f32 - 3 33
+35: LOAD f32 - 34
+36: INDEX f32 - 3 26
+37: LOAD f32 - 36
+38: MULACC i32 - 18 15 26
+39: INDEX f32 - 1 38
+40: MUL f32 - 23 32
+41: MULACC f32 - 22 37 40
+42: MULACC f32 - 24 35 41
+43: MULACC f32 - 25 29 42
+44: STORE void - 39 43
+45: END void - 44 26
+46: END void - 45 18
+47: SINK void - 46

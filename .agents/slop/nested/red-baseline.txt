@@ -1,0 +1,15 @@
+executor /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/opsbend-milestone/bend-executor
+case       depth RANGE     grid words match  detail
+flat3          1     1    1x1x1     9  True  all words bit-identical
+maxred3        1     1    1x1x1     3  True  all words bit-identical
+mm2            2     2    1x1x1     4 False  2 of 4 differ, first 5 idx [2, 3]; got ['0', '0'] want ['43', '50']
+mm3            2     2    1x1x1     9 False  6 of 9 differ, first 5 idx [3, 4, 5, 6, 7]; got ['0', '0', '0'] want ['117', '147', '177']
+mm4            2     2    1x1x1    16 False  12 of 16 differ, first 5 idx [4, 5, 6, 7, 8]; got ['0', '0', '0'] want ['378', '430', '482']
+perm3          2     2    1x1x1     9 False  6 of 9 differ, first 5 idx [3, 4, 5, 6, 7]; got ['0', '0', '0'] want ['2', '5', '8']
+perm4          1     1    1x1x1    16  True  all words bit-identical
+red2s4         1     1    1x1x1     4  True  all words bit-identical
+red2step       1     1    1x1x1     2  True  all words bit-identical
+sumall3        0     0    1x1x1     1  True  all words bit-identical
+
+cases=10  max-depth>=2 cases=4  mismatching=4
+NOTE: a run with deep=0 proves nothing about nesting -- that is the single-loop-green trap. This gate refuses to claim it.

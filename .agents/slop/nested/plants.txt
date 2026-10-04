@@ -1,0 +1,29 @@
+== C0  THE COPY, UNPLANTED.  Mandatory: without a GREEN copy, C1..C3 prove NOTHING.
+      build failed in another file (SUBSTRATE, attempt 1): 631 | 
+      build failed in another file (SUBSTRATE, attempt 2): 631 | 
+      build failed in another file (SUBSTRATE, attempt 3): 631 | 
+      build failed in another file (SUBSTRATE, attempt 4): 631 | 
+  *** C0 DID NOT BUILD -- C1..C3 would prove NOTHING ***
+
+== C1  THE BACK EDGE.  Remove the del from the RANGE exit path -- the skipped
+        del of values[u], and nothing else.  Only the DEPTH>=2 rows may move.
+    planted ops_python.bend: 1 site, 78 -> 61 bytes
+      build failed in another file (SUBSTRATE, attempt 1): 643 |   Bool.pick(U32, U32.is_zero(m), U32.or(s, 2139095040),
+      build failed in another file (SUBSTRATE, attempt 2): 643 |   Bool.pick(U32, U32.is_zero(m), U32.or(s, 2139095040),
+      build failed in another file (SUBSTRATE, attempt 3): 643 |   Bool.pick(U32, U32.is_zero(m), U32.or(s, 2139095040),
+      build failed in another file (SUBSTRATE, attempt 4): 643 |   Bool.pick(U32, U32.is_zero(m), U32.or(s, 2139095040),
+
+== C2  THE INCREMENT.  cur+1 becomes cur+2, so every other index is skipped.
+        A depth-1 row must move too: that is what makes the depth-1 rows live.
+    planted ops_python.bend: 1 site, 64 -> 64 bytes
+      build failed in another file (SUBSTRATE, attempt 1): 658 | 
+      build failed in another file (SUBSTRATE, attempt 2): 658 | 
+      build failed in another file (SUBSTRATE, attempt 3): 658 | 
+      build failed in another file (SUBSTRATE, attempt 4): 658 | 
+
+== C3  THE del's FLAG CLEAR, 0 becomes 1.  The counter is still zeroed, so the
+        loop DOES re-enter -- one pass late, and the first body pass of every
+        later pass is lost.  A back-edge off-by-one, not a shape change.
+    planted ops_python.bend: 1 site, 48 -> 48 bytes
+      build failed in another file (SUBSTRATE, attempt 1): 665 | 
+      build failed in another file (SUBSTRATE, attempt 2): 665 | 

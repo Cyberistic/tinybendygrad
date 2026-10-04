@@ -1,0 +1,15 @@
+executor /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/nested-proof/bend-executor
+case       depth RANGE     grid words match  detail
+flat3          1     1    1x1x1     9  True  all words bit-identical
+maxred3        1     1    1x1x1     3  True  all words bit-identical
+mm2            2     2    1x1x1     4  True  all words bit-identical
+mm3            2     2    1x1x1     9  True  all words bit-identical
+mm4            2     2    1x1x1    16  True  all words bit-identical
+perm3          2     2    1x1x1     9  True  all words bit-identical
+perm4          1     1    1x1x1    16  True  all words bit-identical
+red2s4         1     1    1x1x1     4  True  all words bit-identical
+red2step       1     1    1x1x1     2  True  all words bit-identical
+sumall3        0     0    1x1x1     1  True  all words bit-identical
+
+cases=10  max-depth>=2 cases=4  mismatching=0
+NOTE: a run with deep=0 proves nothing about nesting -- that is the single-loop-green trap. This gate refuses to claim it.
