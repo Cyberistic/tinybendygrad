@@ -10793,3 +10793,155 @@ gate needs a row where the DIVISOR's magnitude is `2^63`.**
       single staleness test cannot express both. Each is asserted on its own terms now, and
       there are THREE row counts — 76 oracle, 77 port, 75 compared — because the port
       carries one row the oracle deliberately omits.
+
+## MUT- (2026-10-05) — the mutated-copy hazard: labelled, measured, ledgered
+
+Ledger: `.agents/slop/MUT-LEDGER.md`. Instruments: `.agents/slop/mutledger/`.
+Markers: `.agents/slop/proof-close/00-MUTANTS-READ-THIS-FIRST.txt`, `MUTANT-TREE.md`.
+
+- [x] **MUT-1** Make the sandbox announce itself. `proof-close/mut` -> `MUTANT`, `mut2` -> `MUTANT2`.
+      Sentinel is in the PATH because the path is the only part of a grep hit a reader cannot skip;
+      a README never appears in `grep -rn` output. Markers sit one level up in `proof-close/`
+      because `mutate.py:10 fresh()` is `rmtree(MUT.parent)` + `copytree(LIVE, MUT)` and destroys
+      everything inside the sandbox. `mutate.py:7` repointed (sole code reference, measured).
+- [x] **MUT-2** Ledger. 287 files in the two sandboxes; 287/287 shadow a real port file; **2 armed
+      plants of 287** (both `PROOF.bend`: `M-del` proof deleted, `M-bs` `Equal.cong` args swapped).
+      59/287 differ from live today, 57 of those merely stale.
+- [x] **MUT-3** Same shape elsewhere: **1,834 `.bend` files in 13 nested shadow trees**, not 287.
+      16 have unique content; **2 are deliberate mutations, 14 are other units' UNCOMMITTED WORK**
+      and were left alone. Total armed deliberate mutations readable anywhere: **3**.
+- [x] **MUT-4** Live tree: 31 of 144 files have no upstream `.py`. 8 are probes, 6 are seam/lane
+      halves, 16 are port infrastructure, and **1 is an ARMED PLANT IN THE LIVE TREE**.
+- [x] **MUT-5** Router denominator measured: 138 `.bend`; `138 - probe_f32lit.bend = 137`, so the
+      coordinator's `bend=137` is the port count and one probe is the whole discrepancy.
+- [ ] **MUT-6** **NEEDS AN OWNER — `tinybendygrad/runtime/ops_bend.mut.bend` is an armed plant in
+      the LIVE TREE.** Line 144 drops the `"bool"` clause, so `bool` no longer dispatches to the f32
+      lane: `Bool.or(is_lane(dt), String.eq(dt, "f32"))`. 1-line diff, unique content, counted by
+      `substrate-check.sh`'s `bend=`. I may not edit `tinybendygrad/`. `e2e.sh:138` calls it
+      "a scratch copy", so it was known and left.
+- [ ] **MUT-7** 8 live probes are still in the `bend=` routing total: `probe_f32lit.bend` (live
+      unit owns it), `runtime/zz{diag,read,split,probe2}.bend`, `runtime/_p6.bend`,
+      `uop/probe-mmcore.bend`, `test/_probe/v5.bend`. `zzprobe2.bend`'s own header says DELETE.
+- [ ] **MUT-8** 13 nested shadow trees are still unlabelled (`render-wt`, `xd1/wt`, `dd-cone-wt/*`,
+      `ddcheck/tree`, `runs/{gr-init,margsym}`, `ind/work`, `strays/*`). 14 of them hold other
+      units' uncommitted work. Renaming needs the owning units' agreement.
+- [ ] **MUT-9** `git rm --cached` the tracked shadow copies + an ignore rule, so a whole-repo grep
+      can no longer reach a mutant. It is an index change, so it is a commit = coordinator's call.
+
+## CIDSWEEP — the rest of the tree after `libclang.bend`'s 324 → 0 (unit `cidsweep`, 2026-10-05)
+Report: `.agents/slop/CIDSWEEP.md`.  Gate: `sh .agents/slop/cidsweep/gate.sh` (exits 1 today, on purpose).
+**Nothing committed.  Nothing in the live tree edited** — every candidate site is forbidden to this unit.
+
+### Progress: [#########.] 9/10
+
+- [x] **CIDS-0** Census, per file, with denominators.  **`.bend`: 5 empty of 27,993 declared** (140
+      files).  **0 of the 5 is a silent hole** — 2 are `Maybe`'s own nullary value, 3 carry their wall
+      in the source above them (`graph_rewrite.wall`, `terminate_worker_pool`, `tn_init.none`+TODO).
+      **`.c` seams: 0 empty of 371 fn defs.  `.js`: 0 empty.**
+      My own first census reported **478** "empty bodies"; **460 were `case _: None{}`**, a match arm.
+- [x] **CIDS-1** `io_eff(CID(…))` census: **337 guarded / 10 unguarded** across the C lane.
+      `dtype.c` 0/10 unguarded, `sz.c` 0/2, `libclang-tramp.c` 0/325, **`libclang-ffi.c` 10/10**.
+      **`.bend` files: ZERO registrations** — `nvdev.bend:66` is a COMMENT, so SZLANE §3b's
+      "`nvdev.bend` | 1" row counted a comment as a site.
+- [x] **CIDS-2** Per-seam BUILD gate, 12 builds, `cc -fsyntax-only` on the emit.
+      `bend -o` was **rc 0 in all 12**, before and after every fix — it cannot see this class.
+      `dtype.c`, `sz.c` (3 isolated corners + full 119,097 L + a real 287 KB binary), and
+      `libclang-tramp.c` all **WARM**; each registers exactly the one effect its build reached.
+- [x] **CIDS-3** **`clangshim/libclang-ffi.c:271-280` — 10 UNGUARDED registrations.  LIVE DEFECT.**
+      One-diagnostic `cc` error is a RED HERRING (`'fixture.h' file not found` = a missing `-I`);
+      with `-I` supplied: **rc 1, 9 undeclared `CID_…_LIBCLANG_*`** while the emit defines 15 ids
+      and the only libclang one is the reached `CLANG_VERSION`.
+      Fix = `libclang-tramp.c`'s own idiom, 15 lines away in the same unit.
+      **Shipped as a patch + proof, not an edit** (`.agents/slop/cidsweep/libclang-ffi-CIDS-1.patch`):
+      applied to a scratch copy and rebuilt — **9 errors → 0, registrations 10 → 1.**
+- [x] **CIDS-4** **`clangshim/libclang-tramp.c` — 39 constructor uses (`CID(Unit)`×37, `CID(SCon)`×2)
+      in `_run` bodies, 0 guarded.  LATENT, and only by accident.** The 325 guards cover the
+      registrations, not the packers.  It works because those ids are in the **always-allocated**
+      14-id base set; `CID_NIL`/`CID_CON` are absent from every build measured.  **PLANT: one
+      `term_pak(CID_UNIT,0)`→`CID_NIL` moves `cc` 0 errors → 1** (`use of undeclared identifier
+      'CID_NIL'`).  Closing it needs the **group** form, i.e. a restructure of 325 guards.
+- [x] **CIDS-5** **`.js` seams (12 registrations, none guarded) are BENIGN — rebuilt, not cited.**
+      The JS emit has **0** `#ifdef`/`#endif`/`defined(`; `CID(x)` is a **string key** into
+      `$0eff`, so an unreached registration is an unused table entry.  `node` rc 0, `node --check`
+      passes, one-`Sz.is_dir` registers both and still prints `[OK]`.  **SZLANE §3b is correct;
+      `#ifdef` in a `.js` file would be a syntax error.**  Unnamed by SZLANE: the JS lane's only
+      extra-registration failure is its `throw` on a **duplicate key**, and `dtype.js`+`sz.js` share
+      `$0eff` (no duplicate today; named, not claimed live).
+- [x] **CIDS-6** Refusal / NULL, re-run not cited: **`libclang` 320 executed, 175 (55%) answer a
+      refusal sentinel, 256 (80%) ran with ≥1 NULL argument.**  So "0 empty bodies" is not "the
+      bodies work".  **`dtype.c` and `sz.c`: NOT MEASURED** — no row harness; unknown, not zero.
+- [ ] **CIDS-7** **CIDS-1 and CIDS-4 both need `clangshim`'s owner.**  Two questions for them:
+      (a) apply CIDS-1's 10 guards? (b) CIDS-4 needs the **group** form around each `_run`+packer,
+      which is a different and larger edit than the 325 per-registration guards.
+- [ ] **CIDS-8** `gate.sh` exits 1 by design until CIDS-1 lands.  Whoever applies it should re-run it
+      and expect **0**, which is the falsifiable form of this whole unit.
+
+## Session 2026-10-05 round 3 — the promotion defect ISOLATED to one operand shape
+
+- [ ] **The weak-const promotion returns the FLOAT const's value for the INT operand,
+      whatever the int is.** Isolated to: **both operands are weak CONSTs of different
+      classes.** Not landed; the location is named and the fixture discriminates.
+
+      ### IT IS NOT A FOLD, IT IS A WRONG VALUE
+
+      Last round I read the port's 2-node row as "the port folds the int const away". That
+      is half right and the wrong half matters more: the port is not dropping the node and
+      keeping the float — it is **replacing the int const's VALUE with the float's**:
+
+      | int const | port | CPython |
+      |---|---|---|
+      | 1 | `1.0f` | 2 nodes, `1.0f` |
+      | 2 | `1.0f` | 3 nodes, `1.0f` + `2.0f` |
+      | 5 | `1.0f` | 3 nodes, `1.0f` + `5.0f` |
+      | 7 | `1.0f` | 3 nodes, `1.0f` + `7.0f` |
+      | 100 | `1.0f` | 3 nodes, `1.0f` + `100.0f` |
+
+      So `1.0 * 100` computes `1.0 * 1.0`. **A missing node is a smaller graph; a wrong
+      VALUE is a wrong answer**, and only the second one is a correctness defect. Reading a
+      node count as a fold is exactly the kind of inference the signature gate invites,
+      because the count is all it shows.
+
+      ### THE SAME CONVERSION IS CORRECT ONE ROW AWAY, WHICH IS THE DIAGNOSTIC
+
+      `ew_promo_remint` is a float **BUFFER** against a weakint CONST, and it is gated and
+      PASSES with `CONST 0x40400000` = **3.0** — the int const 3, correctly reminted. So:
+
+      - `wk_dt_const`'s int→f32 arm (`weak.bend:279`, `CInt{i} -> CFloat{wk_i64_to_f32(i)}`)
+        is CORRECT.
+      - `ew_ccast_at` (`elementwise.bend:323`) is CORRECT on that path.
+      - The defect is therefore in the **operand shape**, not the conversion: it needs BOTH
+        sides to be weak consts of different classes.
+
+      **A FIXTURE THAT DISCRIMINATES IS THE DELIVERABLE HERE.** `g_f32c()` against
+      `g_i32c(2)` fails; the same int const against a float buffer passes. Any fix has to
+      keep the second green, so the pair belongs in the gate together.
+
+      ### WHERE TO LOOK, AND WHAT NOT TO ASSUME
+
+      `ew_promote` (elementwise.bend:396) computes `wd = weak_dtype(od)` and
+      `same = eq_dt(dt, wd)`, and takes the remint arm only when `same` is False. With both
+      operands const, `od = least_upper(weakfloat, weakint)`, and the two candidates are
+      worth checking in this order:
+      1. `least_upper` of two DIFFERENT weak classes — if it returns `weakint`, then the
+         float const takes the remint arm and the int const is left alone, which is the
+         mirror of the bug and would explain a swapped result.
+      2. `W.wk_dt_const(dt, v)` / `W.wk_const_of(v)` for a **const-against-const** pair —
+         `wk_const_of` unseals, and a `Sealed` whose scale/bias lookup is keyed on the
+         class pair could be reading the wrong entry and landing on 1.0.
+      3. `ew_promote.b`'s `same` arm calling `ew_rebase`, which REUSES the tensor — if the
+         int const's tensor is ever rebased onto the float const's arena and index, the
+         value is gone with no node minted.
+
+      **NOT ASSUMED, and the reason is this session.** Four of the last five walls in this
+      port were an untested premise; three of the last four "obvious" bug sites were
+      innocent and were cleared by a probe (`F32.neg`, `i64_of_i32`, the `rev` flag, the
+      `i32`/`U32` widening). Each candidate above is a PLACE TO LOOK, not a diagnosis, and
+      the next step is a probe that prints `od`, `wd` and `same` for the failing pair
+      against the working one.
+
+      ### AND `tanh` IS STILL HELD, ON THIS ONE CAUSE
+
+      `tanh`'s `-1` became 2**32** because the int const was read unsigned. That is a
+      THIRD symptom of the same cell, or of the int-const-to-float path, and the honest
+      statement is that `tanh` is held pending this fix rather than on a diagnosis that has
+      since moved twice.
