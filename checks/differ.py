@@ -192,7 +192,21 @@ def lines_with(out, needle):
 
 
 def anchored(out, regex):
-    return sum(re.search(regex, ln) for ln in text(out).splitlines())
+    """`lines_with`'s regex twin: the number of LINES containing a match, not the number
+    of matches.
+
+    IT WAS `sum(re.search(regex, ln) for ln in ...)`, AND `re.search` RETURNS A MATCH OR
+    None -- so `differ.py run` DIED with
+        TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'
+    on the first line that did not match, which is nearly all of them. The sibling one
+    line above has the same shape and is CORRECT, because `needle in ln` is a bool and
+    bools sum; that one difference is the whole bug.
+
+    `bool(...)` and NOT `len(re.findall(...))`, because the two callers ask "how many of
+    the 5 stability pairs", which is a LINE count, and findall would silently change the
+    meaning if a line ever matched twice.
+    """
+    return sum(bool(re.search(regex, ln)) for ln in text(out).splitlines())
 
 
 def files_with(pattern, needle):

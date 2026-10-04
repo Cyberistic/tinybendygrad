@@ -12144,3 +12144,113 @@ Progress: [=============================-------] 7/7
       before committing: every changed line in all three files begins with `#`, and
       `tc_ptx.bend` -- which does not route through the broken import -- is
       `ALL PROOFS CHECK`. The other two are red for the reason above and not for this edit.
+
+## Session 2026-10-05 round 9 — the PRIMARY gate could not run, and there is already a gate for the failure I diagnosed
+
+- [x] **`checks/differ.py run` CRASHED and could not complete at all.** Fixed: one missing
+      `bool()`.
+- [ ] **The new `AGENTS.md` names four gates, and one of them DOCUMENTS the exact failure
+      this session spent an hour diagnosing by hand.**
+
+      ### `differ.py`'s `anchored()` SUMMED MATCH OBJECTS AND None
+
+      ```python
+      return sum(re.search(regex, ln) for ln in text(out).splitlines())
+      ```
+
+      `re.search` returns a match **or None**, so the sum raised
+      `TypeError: unsupported operand type(s) for +: 'int' and 'NoneType'` on the first
+      non-matching line -- which is nearly all of them. `differ.py run` therefore produced
+      NO verdict at all, and the new `AGENTS.md` names this driver as the thing to trust.
+      Its sibling one line above has the SAME shape and is CORRECT, because `needle in ln`
+      is a bool and bools sum. That single difference is the whole bug.
+
+      `bool(...)` and not `len(re.findall(...))`, because the two callers ask "how many of
+      the 5 stability pairs" -- a LINE count -- and `findall` would silently change the
+      meaning if a line ever matched twice. A gate that crashes is at least not lying; this
+      one crashed on a COUNT in a summary line, so even where it did not raise it was
+      summing the wrong thing.
+
+      ### AND `substrate-check.sh` ALREADY DOCUMENTS `ALL PROOFS CHECK` IS NOT A VERDICT
+
+      Its own header, measured:
+
+      ```
+      : > empty.bend              ; bend --check-only  ->  ALL PROOFS CHECK
+      printf '# nothing\n' > c.bend ; bend c.bend ...  ->  ALL PROOFS CHECK
+      ```
+
+      **SO `ALL PROOFS CHECK` DOES NOT MEAN THE FILE HAS CONTENT.** And `helpers.bend` was
+      truncated to 0 bytes THREE TIMES, each time by a unit that then ran `--check-only`,
+      saw green, and reported it fine. I hit that live earlier in this session and worked
+      it out from scratch; it is written down here and has been all along.
+
+      **AND ITS HALF 2 IS AIMED AT THE `O.ParamArg.no_slot` FAILURE I DIAGNOSED.** Its
+      header's worked example is, verbatim, the `ops.bend --check-only  ->  ALL PROOFS
+      CHECK (6,305 lines)` / `ops_python.bend -> observed : O.ParamArg.no_slot` pair. Half 2
+      is "COLLECTIVE COMPLETENESS": a file that COMPILES can still be MISSING A NAME
+      SOMETHING ELSE NEEDS, so it resolves every `<Mod>.<name>` a file references against
+      the names those modules declare. It reports its OWN COVERAGE for the same reason
+      this project has catalogued silent instruments twenty times: at 2026-10-04 20:03 it
+      measured 36,084 cross-file references, 36,071 exact, 13 UNRESOLVED, and 49,134
+      references UNSEEN because their `Foo` is not an import.
+
+      **A GATE ALREADY EXISTS FOR THE HOUR I SPENT DIAGNOSING IT BY HAND. THE LESSON IS
+      ABOUT THE SEARCH, NOT THE BUG: I diagnosed a live, carefully-measured defect three
+      separate ways (the const-bits change exposing it, then a signedness probe, then the
+      `U32.to_f32` disproof) and the answer was sitting in a script header in the tree the
+      whole time. READ THE EXISTING GATES BEFORE DIAGNOSING BY HAND.**
+
+## Session 2026-10-05 round 10 — FOUR FILES ARE 0 BYTES IN THE WORKING COPY, and one of them is helpers.bend
+
+- [x] **`checks/differ.py`'s `anchored()` fixed** (one missing `bool()`), so the primary gate
+      RUNS instead of dying. Committed alone, because it is the part that is mine.
+- [ ] **THE TREE IS WRECKED AND THE FIX IS ONE LINE THAT IS NOT MINE TO MAKE UNILATERALLY.**
+
+      | file | working copy | HEAD |
+      |---|---|---|
+      | `tinybendygrad/helpers.bend` | **0 bytes** | 125,668 |
+      | `tinybendygrad/runtime/support/compiler_mesa.bend` | **0 bytes** | 39,514 |
+      | `.agents/slop/graphcmp.py` | **0 bytes** | 170,623 |
+      | `.agents/slop/rf2root/helpers.bend` | **0 bytes** | 35 |
+
+      **NOTHING IS LOST.** All four are UNCOMMITTED truncations and HEAD has every byte. But
+      the consequences are not small:
+
+      - **THE WHOLE TREE DOES NOT COMPILE.** `helpers.bend` is imported by nearly everything,
+        and an empty file typechecks -- `substrate-check.sh` MEASURED that `--check-only`
+        answers `ALL PROOFS CHECK` for an empty file and for one containing only a comment.
+        So every unit that runs `--check-only` right now is told the substrate is warm.
+      - **`differ.py run` COMPLETES AND EVERY COUNT IS ZERO** with the fix above: 16 graphs,
+        0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+        the module `graphcmp-oracle.py` imports as `G`, so `G.load_tinygrad()` is an
+        AttributeError, the census step dies, and every graph artifact is 5 bytes. **A GATE
+        THAT COMPARED NOTHING AND REPORTED exit 0** -- the same class as the five gate
+        harnesses fixed earlier today, now in the primary driver.
+      - **`i64_dec` reads 5 defs on master and 0 in the tree.** Four commits of work are safe;
+        the working copy simply does not have them right now.
+
+      **THE RECOVERY IS ONE LINE AND IT IS NOT MINE TO MAKE UNILATERALLY:**
+
+      ```
+      jj restore tinybendygrad/helpers.bend tinybendygrad/runtime/support/compiler_mesa.bend \\
+                .agents/slop/graphcmp.py .agents/slop/rf2root/helpers.bend
+      ```
+
+      It is not silent because restoring a file a concurrent unit is MID-WRITE on would
+      destroy that unit's work, and `substrate-check.sh` records that these truncations
+      happen *by a unit* -- so an empty file is more likely to be an in-flight write than a
+      mistake, and clobbering it could be the more expensive error. **So: the call is the
+      coordinator's, and the command is above.**
+
+      ### THE LESSON, AND IT IS THE FIFTH TIME
+
+      The fourth truncation of `helpers.bend` is the same event the first three are, and the
+      script written to catch it is `.agents/slop/substrate-check.sh`. I spent an hour
+      diagnosing the `O.ParamArg.no_slot` failure three separate ways -- a gate change
+      exposing it, a signedness probe narrowing it, then a `U32.to_f32` disproof killing my
+      own hypothesis -- and **the answer was in that script's header the whole time**, quoted
+      verbatim as its worked example. All three measurements were sound and all three were
+      redundant. **READ THE EXISTING GATES BEFORE DIAGNOSING BY HAND.** The `run`/`repro`/
+      `snap` split is also worth internalising: `run` GENERATES and `repro` GATES, so `run`
+      exiting 0 is by design and `repro` is the thing that would have noticed.
