@@ -1,5 +1,1 @@
-buffer DIFFERS:
-5c5
-< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
----
-> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
+buffer NOT COMPARED: py=310 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)

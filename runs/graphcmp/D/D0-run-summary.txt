@@ -1,9 +1,9 @@
 graphs=16
-graphs-agree=0
-graphs-disagree=0
-byte-identical=0
-not-comparable=16
+graphs-agree=6
+graphs-disagree=10
+byte-identical=6
+not-comparable=0
 stable-pairs=5
-selfcheck=rc=1
+selfcheck=# SELFCHECK: FAIL
 conflations=4 of 4
-controls=0 of 5
+controls=5 of 5

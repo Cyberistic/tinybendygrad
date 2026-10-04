@@ -7113,15 +7113,18 @@ as an IN-PLAY signal, so three harnesses are reported safer than they are.
       (another unit's). MEASURED by CALLING both on six shapes: **agree on 2 of 6** — no F3, no F2
       `py=` fold, and it MANUFACTURED the `""` phantom `rows()` excludes on purpose. A copied reader
       is a second reader and nothing compares the two, so the drift was silent by construction.
-- [x] **D2 — IS THE GREEN TRUSTWORTHY? YES OVER THE CAPTURE; NOT REPRODUCIBLE LIVE.** Shared count
-      **221 gated, 221 agree, 0 disagree**; denominators **227 port rows / 224 oracle rows**; 6 named
-      exclusions, **0 uncovered**. Reader ABLATION with the file's own pre-fix reader taken from
-      `jj file show -r @-` (`ast`-extracted, not re-typed): **IDENTICAL, not one printed line
-      differs** — `rows_shipped` reached one `print` and never `judge()`. BUT the live port lane
-      printed **0 stdout lines, rc=1, 4 of 4 runs**, and the error MOVED under me:
-      `uop/fold.bend:1259` `sym_dim.pa` (computed-value scrutinee) → `uop/fold.bend:5321` `dim_str`
-      ("consumed more than once"). `uop/fold.bend` is M and is one of the six live units, so the lane
-      is cold AND MOVING. The 221/227 is a property of the 06:02 capture (md5 `e039eeff62ce`).
+- [x] **D2 — IS THE GREEN TRUSTWORTHY? THE VERDICT YES; THE TREE NO — and the tree's answer
+      MOVED.** **221 gated, 221 agree, 0 disagree**; denominators **227 port rows / 224 oracle
+      rows**; 6 named exclusions, **0 uncovered** — reproduced over the capture pair (exit 0) and
+      over one live window (3 runs, byte-identical, exit 0) whose port stdout md5 `e039eeff62ce`
+      was **byte-identical to the 06:02 capture**. Reader ABLATION with the file's own pre-fix
+      reader from `jj file show -r @-` (`ast`-extracted, not re-typed): **IDENTICAL, not one printed
+      line differs** — `rows_shipped` reached one `print` and never `judge()`. **BUT the lane
+      oscillates: 4 DISTINCT error sites in `uop/fold.bend`'s `sym_dim` family over this unit**
+      (`:1259` computed-value scrutinee → `:5321` "consumed more than once" → **green window** →
+      `:1275` `sym_dim.con` → **`:1286-1288`, 6 of 6 runs, 0 stdout lines, rc=1**) with the file `M`
+      throughout. `uop/fold.bend` is one of the six live units. **State at the end of this unit:
+      COLD, so the tree has no live verdict.**
 - [x] **D3 — ONE CONTROL PER SHAPE, ARMED AND RED.** F1 and F2 on `ctl OPENCL sz1 k0`, F3 on `ctlf3`
       (**single token — `rows()`'s F3 arm refuses a multi-token name**), plus F2's **DISARM** lane
       (plant in the non-compared `py=` column → AGREE, which is what proves the RED plant landed in
@@ -7137,12 +7140,12 @@ as an IN-PLAY signal, so three harnesses are reported safer than they are.
       a measurement; two readers have a symmetric disagreement set. Replaced with both directions
       and the intersection, named: 6 only `rows()` finds, 8 only `rows_strict`, 216 in common.
 
-**NOT FIXED, REPORTED:** `tinybendygrad/uop/fold.bend` does not compile (two distinct errors, one
-still live) — not my file, not touched. `cstyle.bend:1758` emits **`kern CUDA  lb=1 = [...]`**, so a
-row NAME contains `=`; **8 of 227** names break the "spaces, no `=`" rule and they reshape under the
-other reader (`kern CUDA  lb`), which no value-plant can detect. `cstyle-gate.py --selftest` needs
-`.venv/bin/python` (bare `python3` → `ModuleNotFoundError: No module named 'tinygrad'`, reproduced
-against the committed blob; pre-existing).
+**NOT FIXED, REPORTED:** `cstyle.bend:1758` emits **`kern CUDA  lb=1 = [...]`**, so a row NAME
+contains `=`; **8 of 227** names break the "spaces, no `=`" rule and they reshape under the other
+reader (`kern CUDA  lb`) — undetectable by any value-plant, which is why the gate now prints both
+readers' NAME SETS every run. `cstyle-gate.py --selftest` needs `.venv/bin/python` (bare `python3` →
+`ModuleNotFoundError: No module named 'tinygrad'`, reproduced against the committed blob;
+pre-existing).
 
 Rules appended to `bend2-constraints.md` as **BAND-22** (position ~20891), after BAND-21's empty
 header at ~20885. Report: `.agents/slop/cstyle-reader.md`, `.agents/slop/cstyle-green.md`,

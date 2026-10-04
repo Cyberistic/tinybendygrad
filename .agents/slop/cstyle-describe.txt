@@ -1,0 +1,38 @@
+slop(cstyle-gate): the reader claimed "verbatim" and was wrong on 4 of 6 shapes
+
+DELIVERABLE 1 -- `.agents/slop/cstyle-gate.py:rows_shipped` was a FORK of
+`rebase-gate.py:rows()` whose docstring opened "verbatim". MEASURED by calling both: they agree
+on 2 of 6 shapes. It could not read F3, could not fold F2's `py=` column, and MANUFACTURED the
+`""` phantom `rows()` excludes on purpose. It is now `load("rebase-gate").rows` -- imported,
+never copied, the reader `rebase-scan-oracles.py` already uses. `rebase-gate.py` NOT edited.
+
+DELIVERABLE 2 -- the green SURVIVES the reader, measured three ways. Over the capture pair and
+over one live window: 221 gated, 221 agree, 0 disagree; denominators 227 port rows and 224 oracle
+rows; 6 named exclusions, 0 uncovered. ABLATION with the file's OWN pre-fix reader, taken from
+`jj file show -r @-` and `ast`-extracted rather than re-typed, changes NOT ONE printed line:
+`rows_shipped` reached one print and never `judge()`. BUT the live lane went cold and MOVED --
+4 distinct error sites in `uop/fold.bend`'s `sym_dim` family (:1259, :5321, a green window,
+:1275, :1286) with the file M throughout -- and is COLD at the end, 6 of 6 runs, 0 stdout lines,
+rc=1. The 221/227 is a property of the capture and of one window, not of the tree.
+
+DELIVERABLE 3 -- one control per shape, each ARMED and RED, each run twice, plus F2's DISARM
+lane (plant in the non-compared `py=` column -> AGREE, which is what proves the RED plant landed
+in the column the reader compares) and a real row through `judge()` (`tmap OPENCL`, uchar->ucHar:
+221 gated / 220 agree / 1 disagree / BROKEN). F1+F2 use `ctl OPENCL sz1 k0`; F3 uses `ctlf3`
+because `rows()`'s F3 arm refuses a multi-token name. Every case requires `shared != 0`: my first
+F3 draft reported AGREE over ZERO shared rows, a false pass.
+
+TWO MORE DEFECTS IN THE SAME FILE, both pre-existing, both needed for D2 to be answerable:
+`--oracle-stdout` discarded the oracle's stderr, so `count_refusals` was 0 and
+`UNREPORTED-REFUSALS 9` fired over sound lane text; and capture mode printed "live port lane
+rc=0" while running nothing. Also: the shred line printed `-2`, because `len(A) - len(B)` is not a
+relationship between two readers -- replaced with both directions and the intersection, named.
+
+NOT FIXED, REPORTED: `uop/fold.bend` is cold at four sites (not my file). `cstyle.bend:1758`
+emits `kern CUDA  lb=1 = [...]`, so 8 of 227 row NAMES contain `=`, which reshapes under the other
+reader (`kern CUDA  lb`) and no value-plant can detect it. `--selftest` needs `.venv/bin/python`.
+
+Files: cstyle-gate.py, cstyle-reader-parity.py, cstyle-shapes-selftest.py, cstyle-reader.md,
+cstyle-green.md, cstyle-controls.md, cstyle-parity/. Rules: notes/bend2-constraints.md BAND-22,
+position ~20891. NOTE: this working copy ALSO carries other units' in-flight changes; this
+description covers only the files named above.

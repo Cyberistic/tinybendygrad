@@ -1193,15 +1193,17 @@ def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
 # for a CONST or a CAST of one. A `CFloat` is not a dim: `shape_to_shape_arg`
 # asserts `dtypes.is_int(x.dtype)`, and `True == 1` as dict keys, so a `CBool`
 # is the 1 or the 0 it is.
-def const_i64.go(a: O.Arg) -> Maybe<&2, H.I64>:
-  match a:
-    case O.APy{O.CInt{i}}       : Some{i}
-    case O.APy{O.CBool{True{}}}: Some{H.i64_of_i32(1)}
-    case O.APy{O.CBool{False{}}}: Some{H.i64_of_i32(0)}
-    case _                      : None{}
+def const_i64.go(v: O.Const) -> Maybe<&2, H.I64>:
+  match v:
+    case O.CInt{i}       : Some{i}
+    case O.CBool{True{}} : Some{H.i64_of_i32(1)}
+    case O.CBool{False{}}: Some{H.i64_of_i32(0)}
+    case _               : None{}
 
 def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
-  const_i64.go(a)
+  match a:
+    case O.APy{v}: const_i64.go(v)
+    case _       : None{}
 
 # ===========================================================================
 # `sym_dim` -- THE `ssimplify` WALL, CLOSED. `as_shape`'s two arms (ops.py:807-808)
@@ -1275,10 +1277,23 @@ def sym_dim.end(+ss: List<&2, U32>, +ar: O.Arena, i: U32) -> Maybe<&1, O.Sint>:
     case e <> _: sym_dim.spec(const_i64(O.Arena.arg(ar, e)), i)
     case Nil{}  : None{}
 
-# The `AStr` arm is a SPECIAL and nothing else -- `Arg`'s other string-bearing
-# variants are `AKernel`/`AProgram`/`AInk`, none of which is a shape dim.
+# `s.val` for a CONST and nothing else, and `const_i64.go`'s answer is the whole of
+# it: a `CFloat` is not a dim, so its `None` is a refusal rather than a value. This
+# is the `Maybe` in carrying to the `Maybe` out, and it is the ONE place a CONST dim
+# becomes a `Sint` -- which is why `marg.of`'s CONST arm and its `not STACK` arm are
+# the same def.
+def sym_dim.val(i: Maybe<&2, H.I64>) -> Maybe<&1, O.Sint>:
+  match i:
+    case Some{v}: Some{O.SI{v}}
+    case None{}  : None{}
+
+# The `APy` arm is `s.val` and the other two are `ssimplify(s)`, so the CONST and
+# the symbolic element are ONE reader. `AStr` is a SPECIAL and nothing else:
+# `Arg`'s other string-bearing variants are `AKernel`/`AProgram`/`AInk`, none of
+# which is a shape dim.
 def sym_dim.of(a: O.Arg, +i: U32, +ar: O.Arena) -> Maybe<&1, O.Sint>:
   match a:
+    case O.APy{v}    : sym_dim.val(const_i64.go(v))
     case O.AParam{pa}: sym_dim.pa(pa, i)
     case O.AStr{s}   : sym_dim.end(O.Arena.srcs(ar, i), ar, i)
     case _            : None{}

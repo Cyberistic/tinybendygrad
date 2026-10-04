@@ -1,0 +1,9 @@
+SOME PROOFS FAIL
+Error:
+- message  : a parameter or field scrutinee (a match cannot scrutinize a computed value: give it its own def)
+Location:
+1275 | def sym_dim.con(v: O.Const) -> Maybe<&1, O.Sint>:
+1276>|   match const_i64.go(v):
+     |         ^^^^^^^^^^^^^^^
+1277 |     case Some{x}: Some{O.SI{x}}
+bend 2.0.35 is available: run bend update

@@ -32,12 +32,24 @@ def st23(ar):
 
 
 def dims(ds):
-  # A UOp dim renders as `UOp(<toposort position>)`, which is the SAME integer the
-  # Bend side prints (`O.Arena` index) ONLY if both arenas intern in the same order.
-  # They do for these fixtures -- both build bottom-up through `UOp.new`/`const` --
-  # but the row does not rely on it: `mv_expsym` is a DIVERGE and the port refuses,
-  # so the digit never has to match. `id()` is NOT used: it is not reproducible.
-  return "(" + ",".join(str(x) if isinstance(x, int) else "UOp" for x in ds) + ")"
+  """A dim as BOTH lanes can spell it. `U(<OP>:<arg>)` is the agreement: a symbolic
+  dim is named by its OWN arg, not by an arena index, so no lane needs the other's
+  numbering. MEASURED, over nine PARAM/SPECIALs (`.agents/slop/margsym-probe2.py`),
+  `ssimplify` is the identity on every non-point one and the point value on every
+  point one, so the op and the arg are enough to name the dim on either side. The
+  `?` cover is for a symbolic dim neither lane can name, and `int` is the rest.
+  """
+  out = []
+  for x in ds:
+    if isinstance(x, int):
+      out.append(str(x))
+    elif x.op is Ops.PARAM:
+      out.append(f"U(PARAM:{x.arg.name})")
+    elif x.op is Ops.SPECIAL:
+      out.append(f"U(SPECIAL:{x.arg})")
+    else:
+      out.append(f"U({x.op.name}:?)")
+  return "(" + ",".join(out) + ")"
 
 
 def sig(u):

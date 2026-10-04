@@ -1,0 +1,6 @@
+emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
+  bend attempt 1: 0 rows, rc=1, stderr tail: m_dim.of 1286 | match a: 1287>| case O.APy{v} : sym_dim.py(v) | ^^^^^^^^^^ 1288 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
+  bend attempt 2: 0 rows, rc=1, stderr tail: m_dim.of 1286 | match a: 1287>| case O.APy{v} : sym_dim.py(v) | ^^^^^^^^^^ 1288 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
+  bend attempt 3: 0 rows, rc=1, stderr tail: m_dim.of 1286 | match a: 1287>| case O.APy{v} : sym_dim.py(v) | ^^^^^^^^^^ 1288 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
+  bend attempt 4: 0 rows, rc=1, stderr tail: m_dim.of 1286 | match a: 1287>| case O.APy{v} : sym_dim.py(v) | ^^^^^^^^^^ 1288 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update
+  bend attempt 5: 0 rows, rc=1, stderr tail: | match a: 1287>| case O.APy{v} : sym_dim.py(const_i64.go(v)) | ^^^^^^^^^^ 1288 | case O.AParam{pa}: sym_dim.pa(pa, i) bend 2.0.35 is available: run bend update

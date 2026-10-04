@@ -20944,14 +20944,22 @@ red is not a capture mode; refuse rather than guess.
 **A PRINTED WORD "live" BESIDE A CAPTURE'S rc IS AN UNEXPLAINED ZERO WEARING A MEASUREMENT'S
 CLOTHES.** The same line printed `live port lane rc=0` while running nothing. Say which lane ran.
 
-**A GATE'S GREEN OVER A CAPTURE IS A PROPERTY OF THE CAPTURE, AND A COLD LANE THAT MOVES IS NO
-VERDICT AT ALL.** Measured on this tree, 4 runs: `cstyle.bend`'s port lane printed **0 stdout lines,
-rc=1**, twice naming `tinybendygrad/uop/fold.bend:1259` (`match O.ParamArg.vmin_vmax(pa)` -- a
-computed value as scrutinee, the rule already recorded at position ~306) and then, ~15 min later
-and after that unit's edit landed, naming `fold.bend:5321` `dim_str` / "consumed more than once".
-A file owned by another live unit was mid-edit, so the 221/227 green was reproducible **only** over
-the 06:02 capture (md5 `e039eeff62ce`) and was evidence about the capture. Report the md5 with the
-verdict.
+**A GATE'S GREEN OVER A CAPTURE IS A PROPERTY OF THE CAPTURE, AND A LANE THAT GOES COLD AND MOVES
+IS NO VERDICT AT ALL.** Measured on this tree over this unit: `cstyle.bend`'s port lane printed
+**0 stdout lines, rc=1**, and the failure **moved through FOUR distinct sites** in
+`tinybendygrad/uop/fold.bend`'s `sym_dim` family -- `:1259` (`match O.ParamArg.vmin_vmax(pa)`, a
+computed value as scrutinee, the rule already recorded at position ~306), `:5321` (`dim_str`,
+"consumed more than once"), then a **green window** in which the live stdout proved **byte-identical**
+(md5 `e039eeff62ce`) to the 06:02 capture, then `:1275` (`sym_dim.con`, `match const_i64.go(v)`),
+then **`:1286-1288`, 6 of 6 runs, 0 stdout lines, rc=1**. The file was `M` throughout and is one of
+the six live units. So the 221/227 was reproducible only over a capture and over that one window,
+and the state at the end was **COLD**. Three rules follow, and the third is the one that bit:
+  * report a verdict's **lane provenance and md5** beside the verdict, always;
+  * a lane that recovers does not un-say the window in which it did not run -- keep the TIMELINE,
+    because the recovery is the easiest part to over-report;
+  * **`bend`'s error names a LINE and a def with no FILE, so with four sites in one file's family
+    the "same" failure looks like four failures.** Poll with a denominator and record the site, or
+    the lane's history reads as chaos instead of as one refactor.
 
 Tooling: `.agents/slop/cstyle-reader-parity.py` (reader ablation, the pre-fix reader taken from
 `jj file show -r @-` rather than re-typed), `.agents/slop/cstyle-shapes-selftest.py` (one armed/red

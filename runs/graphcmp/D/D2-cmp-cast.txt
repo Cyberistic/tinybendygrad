@@ -1,7 +1,1 @@
-cast DIFFERS:
-5,6c5,6
-< 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
-< 2:i6 4:CAST 3:f16 11:(l0:4,l0:3) 2:i0 1:N 4:Df16 5:n(i5)
----
-> 2:i5 7:RESHAPE 1:? 1:? 2:i0 1:N 1:N 8:n(i1,i4)
-> 2:i6 4:CAST 1:? 1:? 2:i0 1:N 4:Df16 5:n(i5)
+cast NOT COMPARED: py=366 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)
