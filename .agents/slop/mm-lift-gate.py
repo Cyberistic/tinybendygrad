@@ -22,7 +22,52 @@
 # emitted `lfx_` and the expectation is the PORT's saturating answer plus CPython's real
 # number in brackets, so the divergence is IN the row rather than smoothed into an
 # agreeing one. This is the same treatment `mv_expsym` gets.
+#
+# ---------------------------------------------------------------------------
+# WHY `main` PINS THE INTERPRETER AND WHY A DEATH IS NOT A ZERO.  Both were measured, and
+# the second one is the defect that made this file unreadable for a day:
+#
+#     python3 .agents/slop/mm-lift-gate.py            ->  rc=1, STDOUT 0 lines
+#     .venv/bin/python .agents/slop/mm-lift-gate.py    ->  rc=0, STDOUT 131 lines
+#
+# `python3` on PATH is 3.14 with no `.pth`; the EDITABLE tinygrad install exists only in
+# `.venv` (3.12), so `from tinygrad import dtypes` raises ModuleNotFoundError. A harness
+# that reads STDOUT and counts lines saw **0** -- and the project read that 0 as "no CPython
+# answer exists for the `_min_max` table", which is a claim about the PORT and is really a
+# claim about the LAUNCHER. So:
+#
+#   * THE PIN. `oracle_py.resolve()` decides which interpreter may answer, and this file
+#     RE-EXECS under it, so both commands above now print the same 131 rows. The mechanism
+#     is the project's own and not a second one invented here; `resolve()` also REFUSES an
+#     interpreter whose tinygrad resolves outside this tree, which is the L-11 trap: a `.venv`
+#     copied out of the repo still has `MAPPING = {'tinygrad': '/abs/path/to/the/original/
+#     tinygrad'}` in `__editable___tinygrad_0_14_0_finder.py`, and every row it produced
+#     would be measured against a tree the port is not ported from.
+#   * THE DEATH. A gate that could not run says `DIED` and exits **2**, on STDOUT so a
+#     line-counting harness cannot mistake it for an answer, and 2 rather than 1 because
+#     `oracle_py.refuse()` already reserves 1 for "the run happened and found a broken
+#     port". Three instruments died today and reported something else instead --
+#     `nv_nvdev_gate.py` hid 15 disagreements behind a 3-value unpack traceback,
+#     `rebase-oracle-ops.py` exits 1 on a missing `importlib` and prints nothing.
+#
+# `--selfcheck` PROVES the death path rather than asserting it, and it drives BOTH refusals by
+# moving the gate into a THROWAWAY TREE in $TMPDIR -- never the live one. A claim that a harness
+# can fail is only evidence once the harness has been seen to fail; and `nv_mutate.py` shipped
+# 19 of 28 entries as a whole because its anchors never compiled, so an unrun control is not a
+# control.
+# ---------------------------------------------------------------------------
+import contextlib
+import io
+import os
+import pathlib
 import sys
+
+SLOP = pathlib.Path(__file__).resolve().parent
+sys.path.insert(0, str(SLOP))
+import oracle_py  # noqa: E402  -- after sys.path, before anything can import tinygrad
+
+PIN_ENV = "MM_LIFT_GATE_PINNED"   # one re-exec only; never a loop
+DIED_RC = 2                      # distinct from 1 = "ran, and found a broken port"
 
 # (label, opname, [src values], dtype-attr)
 BIN = [
@@ -281,6 +326,29 @@ def run():
   return out, SAT
 
 
+def dupe_names(rows):
+  """Row names this fixture list prints MORE THAN ONCE, with how often.
+
+  MEASURED 2026-10-04, and it was invisible to everything that had run this file. `SUB`'s pair
+  list carries `(-3, 4)` twice -- positions 1 and 4 -- so the list produces eight `sub` rows
+  with SEVEN distinct names, and `uop/fold.bend:5862` and `:5865` print the same
+  `lf_sub_int32_-3_4` twice. A `diff` of the two lanes is GREEN over it (both sides have the
+  duplicate, so the line multisets match) and so is any comparison keyed on NAME (the dict keeps
+  the last and the first is gone with nothing saying so). Only a COUNT OF LINES against a count
+  of names sees it, which is why `.agents/slop/mmfold/mmfold-lane.py` reports `printed twice`
+  beside every row count.
+
+  The fixture is NOT deleted here. Deleting it makes `--emit-bend` stop emitting the second line
+  while `fold.bend` keeps it, which trades a duplicated measurement for an unexplained port row
+  -- a worse defect, and one in a file this unit must not edit. The duplicate is REPORTED, and
+  the fix belongs to whoever owns `fold.bend`: drop `fold.bend:5865`.
+  """
+  seen = {}
+  for name, *_ in rows:
+    seen[name] = seen.get(name, 0) + 1
+  return {n: c for n, c in seen.items() if c > 1}
+
+
 def emit_py():
   rows, sat = run()
   for name, pair, _ in rows:
@@ -291,6 +359,8 @@ def emit_py():
   # not read -- the same treatment `mm-bl-gate.py` gives the four width probes
   for name, opn, a, b in sat:
     print(f"satcp_{name} {cp_real(opn, a, b)}")
+  for name, c in sorted(dupe_names(rows).items()):
+    print(f"DUPLICATE {name} printed {c} times -- one case measured twice, not two cases")
 
 
 def emit_bend():
@@ -319,12 +389,99 @@ def port_sat(opn, a, b):
   return f"lo={clip(lo)} hi={clip(hi)}"
 
 
+def pin_or_reexec():
+  """Run under the interpreter `oracle_py` names, whichever one launched this file.
+
+  `resolve()` exits 2 with `Nothing was checked.` when it cannot name one, so a caller that
+  sees rc 2 knows the run never happened and did not merely find nothing. Its refusal goes to
+  STDERR, and a refusal nobody reads on STDOUT is the defect this file is fixing -- so the
+  `SystemExit` is caught and re-announced as `DIED` on STDOUT as well."""
+  try:
+    with contextlib.redirect_stderr(buf := io.StringIO()):
+      exe = oracle_py.resolve()[0]
+  except SystemExit as e:
+    why = next((l.strip() for l in buf.getvalue().splitlines() if l.strip()), "no detail")
+    die(f"oracle_py refused to name an interpreter: {why}")
+  if os.path.realpath(sys.executable) == os.path.realpath(exe):
+    return exe
+  if os.environ.get(PIN_ENV):
+    die("re-exec landed on an interpreter oracle_py did not name")
+  os.environ[PIN_ENV] = exe
+  os.execv(exe, [exe, str(pathlib.Path(__file__).resolve()), *sys.argv[1:]])
+
+
+def die(why):
+  """`DIED` on STDOUT and rc 2. The exit code alone is not enough: three harnesses here read
+  STDOUT and count lines, and a line is what separates "no rows" from "no run"."""
+  print(f"DIED mm-lift-gate {why}")
+  sys.stderr.write(f"mm-lift-gate: DIED {why}\n  Nothing was checked.\n")
+  raise SystemExit(DIED_RC)
+
+
+def selftest():
+  """The death path, EXERCISED TWICE, once per refusal `oracle_py` can make.
+
+  Both run in a throwaway tree so nothing here touches the live one, and the layout matters:
+  `oracle_py` derives its repo as `parents[1]` of the file's directory, so the copy must sit at
+  `<tmp>/repo/.agents/slop/` for `<tmp>/repo/.venv` to be the `.venv` it looks for. Case 1
+  deletes that `.venv`, which is `resolve()`'s `ORACLE PYTHON MISSING`. Case 2 keeps a
+  `.venv/bin/python` that is a shim running a site-less interpreter, which is the LITERAL
+  original defect -- a python that exists and cannot import tinygrad -- and is
+  `resolve()`'s `CANNOT IMPORT tinygrad`. Two different refusals, because a control that can
+  only produce one answer is not a control.
+
+  `pass` is on purpose: an unrun control is not a control, so a fixture that fails to set up
+  reports FAIL rather than the number it hoped for.
+  """
+  import shutil
+  import subprocess
+  import tempfile
+
+  shim = "#!/bin/sh\nexec /opt/homebrew/bin/python3 -S \"$@\"\n"
+  ok = True
+  for label, mkvenv in (("no .venv (resolve: PYTHON MISSING)", False),
+                        ("a .venv whose python cannot import tinygrad (resolve: CANNOT IMPORT)", True)):
+    with tempfile.TemporaryDirectory(dir=os.environ.get("TMPDIR", None)) as td:
+      repo = pathlib.Path(td) / "repo"
+      dst = repo / ".agents" / "slop"
+      dst.mkdir(parents=True)
+      for f in ("mm-lift-gate.py", "oracle_py.py"):
+        shutil.copy2(SLOP / f, dst / f)
+      if mkvenv:
+        vpy = repo / ".venv" / "bin"
+        vpy.mkdir(parents=True)
+        p = vpy / "python"
+        p.write_text(shim)
+        p.chmod(0o755)
+      r = subprocess.run([sys.executable, str(dst / "mm-lift-gate.py")],
+                         capture_output=True, text=True, timeout=600)
+      said = [l for l in r.stdout.splitlines() if l.startswith("DIED ")]
+      good = r.returncode == DIED_RC and len(said) == 1
+      ok = ok and good
+      print(f"selftest {label}\n  rc={r.returncode} (want {DIED_RC})  "
+            f"stdout DIED lines={len(said)} (want 1)  {'PASS' if good else 'FAIL'}")
+      for l in said:
+        print(f"  {l}")
+      if not good:
+        print("  stderr:", (r.stderr.strip().splitlines() or ["<none>"])[-1])
+  print("selftest:", "PASS" if ok else "FAIL -- a death did not announce itself")
+  raise SystemExit(0 if ok else 1)
+
+
 if __name__ == "__main__":
-  if "--emit-bend" in sys.argv:
-    emit_bend()
-  elif "--emit-rows" in sys.argv:
-    rows, _ = run()
-    for name, pair, _ in rows:
-      print(f"{name} {pair}")
-  else:
-    emit_py()
+  if "--selfcheck" in sys.argv:
+    selftest()
+  try:
+    pin_or_reexec()
+    if "--emit-bend" in sys.argv:
+      emit_bend()
+    elif "--emit-rows" in sys.argv:
+      rows, _ = run()
+      for name, pair, _ in rows:
+        print(f"{name} {pair}")
+    else:
+      emit_py()
+  except SystemExit:
+    raise
+  except BaseException as e:
+    die(f"{type(e).__name__}: {e}")
