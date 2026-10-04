@@ -1,3 +1,2 @@
-# SELFCHECK: FAIL
-#   the `?` ledger row does not count both columns of `--graph sym` (three unsettled nodes x two columns = 6)
-rc=1
+# SELFCHECK: OK
+rc=0

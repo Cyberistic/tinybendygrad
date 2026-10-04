@@ -1386,7 +1386,7 @@ def marg.at(k: U32, +ar: O.Arena, i: U32) -> Maybe<&2, List<&2, O.Sint>>:
 # `reshape_ds` already reads. A `Maybe` on either side is `None`, so a symbolic
 # marg is the `ssimplify` wall and a shape-less src is ops.py:407's raise.
 def expand_ds(+ar: O.Arena, i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  dt_of(src_dt(0, ss), both(src_shape(0, ss), marg(ar, i)))
+  dt_of(src_dt(0, ss), both(marg(ar, i), src_shape(0, ss)))
 
 # ===========================================================================
 # PAD AND SHRINK -- ops.py:419-428. THE TWO ARMS ARE ONE WALK.
@@ -1721,7 +1721,7 @@ def pad_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   pair_ds.of(True{}, pair3.of(True{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
 
 def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  pair_ds.of(False{}, pair3.of(False{}, src_shape(0, ss), marg.at(1, ar, i), marg.at(2, ar, i)), ss)
+  pair_ds.of(False{}, pair3.of(False{}, marg.at(1, ar, i), src_shape(0, ss), marg.at(2, ar, i)), ss)
 
 # ===========================================================================
 # THE TWO CHECKS, ops.py:408-410, and they are ONE walk.

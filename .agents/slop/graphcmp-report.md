@@ -29,6 +29,19 @@ nondeterminism on its first run.
 `sh .agents/slop/graphcmp-repro.sh` measures reproducibility: **158 of 158 files
 byte-identical across two clean runs.**
 
+**A LIMIT WAS CLOSED WHILE THIS ROUND RAN, AND THE THREE PINNED NUMBERS THAT CLAIMED IT
+MOVED WITH IT.** `sym` was the corpus's one DISAGREE-on-purpose graph because the port could
+not mint a symbolic dim at all (`uop/fold.bend`'s `ssimplify` wall). MEASURED late on
+2026-10-04: the wall is CLOSED — `fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the `AParam`
+arm of `sym_dim.of`) landed from the `fold` unit — and `sym` reads `?=0` and `VERDICT: AGREE`
+at 12 of 12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. `selfcheck`'s `?=6` row,
+`graphcmp-run.sh`'s `sym:DISAGREE` and `graphcmp-repro.sh`'s `graphs-agree=13` all had to
+move in the same direction. **The third one is the instructive one: the repro health gate
+reported "not healthy" for a run that was entirely CORRECT and sat retrying it**, which is
+the cost of pinning a gate to a verdict count. Nothing in this unit caused the fix and
+nothing in this unit could have made it; what this unit contributed is the fixture and the
+denominator that made the closure visible and checkable.
+
 Measured 2026-10-03. Harness: `.agents/slop/graphcmp.py` (the differ and the CPython
 emitter) and `.agents/slop/graphcmp.bend` (the port-side emitter). Artifacts:
 `runs/graphcmp/`. No port file was edited. No live tree was patched.

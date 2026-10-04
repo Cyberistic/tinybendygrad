@@ -44,7 +44,7 @@
 #   group            8/8      7     1      0      1          none        AGREE
 #   commute         14/14    11     1      0      3          none        AGREE
 #   indexed          7/7      6     1      0      0          none        AGREE
-#   sym             12/12     6     1      2/0    2          ?=0/6       DISAGREE  <-- ON PURPOSE
+#   sym             12/12     6     1      2/2    2          none        AGREE
 #   lin             46/46    11     1      0      6          E=1/0 q=0/1 DISAGREE  <-- MEASURED
 #   loop            25/25    14     1      0      8          ?=0/2       DISAGREE  <-- MEASURED
 #   gate            14/14    12     1      0     11          none        AGREE
@@ -56,8 +56,8 @@
 #   Commutative ops reached: 7 of 8 (CMPEQ is not reachable from an eager graph -- and is
 #     STILL not reachable after three REAL kernels, which is the measurement).
 #   Symbolic-dim nodes: 2 of 189.   Field-records: 189 x 6 = 1134 per side.
-#   Byte-identical canonical files: 13 of 16 -- the three that differ are `sym`, `lin` and
-#     `loop`, and each differs on exactly the node named below.
+#   Byte-identical canonical files: 14 of 16 -- the two that differ are `lin` and `loop`, and
+#     each differs on exactly the node named below.
 #
 # Fields: 8 on the wire, 6 IN THE EQUALITY DECISION (dtype shape depth tag arg src).
 # `id` is reporting-only by R1 -- the two arenas number differently, so a differ keyed on
@@ -66,9 +66,13 @@
 # Files: D1-graph-*.txt, and D1-verdicts.txt which ASSERTS the whole column above every run
 # so a moved verdict is a moved file rather than something a reader has to notice.
 #
-# `sym` IS SUPPOSED TO DISAGREE, on 3 of its 12 nodes and on `dtype`/`shape` only: the
-# port's `fold.bend` `marg` cannot `ssimplify` a non-CONST STACK element, so the port
-# cannot build a symbolic dim at all. See LIMITS section 3.
+# `sym` USED TO DISAGREE, on 3 of its 12 nodes and on `dtype`/`shape` only: the port's
+# `fold.bend` could not mint a symbolic dim at all (`ssimplify` wall). MEASURED 2026-10-04
+# late in the day: THAT WALL IS CLOSED. `fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the
+# `AParam` arm of `sym_dim.of`) landed from the `fold` unit; `sym` now reads `?=0` and
+# `VERDICT: AGREE` at 12 of 12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. This unit did not
+# fix it and did not cause it -- the fixture and the denominator are what this unit
+# contributed. See LIMITS section 3b for the three pinned numbers that had to move with it.
 #
 # `lin`, `loop` and `gate` ARE ROUND THREE, and they are the first graphs here whose PY
 # side is a call into tinygrad's own scheduler and codegen rather than a hand-built
@@ -129,10 +133,10 @@ D0  E3 .venv/bin/python .agents/slop/graphcmp-p13-ops.py     D0-ops-probe.txt
 D1  E diff --graph NAME   (x16)                     D1-graph-*.txt
 D1  (asserts the 16 verdicts)                      D1-verdicts.txt
 D2  E emit --side py|bend --graph NAME; `cmp`       D2-bytediff.txt + D2-canon-*.txt
-      MEASURED: 13 of 16 BYTE-IDENTICAL, and `sym`, `lin` and `loop` DIFFER on exactly the
-      nodes named above. The runner COUNTS BYTES on both sides first and prints
-      `NOT COMPARED` rather than comparing two empty files -- see LIMITS #13, where this
-      step had been reporting BYTE-IDENTICAL over 0-byte files for four graphs.
+      MEASURED: 14 of 16 BYTE-IDENTICAL, and `lin` and `loop` DIFFER on exactly the nodes
+      named above. The runner COUNTS BYTES on both sides first and prints `NOT COMPARED`
+      rather than comparing two empty files -- see LIMITS #13, where this step had been
+      reporting BYTE-IDENTICAL over 0-byte files for four graphs.
 D3  E control --graph {matmul,binblob,group,gate,loop}   D3-control-*.txt
       MEASURED: CONTROL VERDICT OK on all five -- each side against ITSELF. `group` is the
       first DAG, so a control over a tree-only corpus is a control that has never met a
@@ -190,10 +194,11 @@ D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
 # WHAT IS NOT HERE, and why.
 # ---------------------------------------------------------------------------
 # No `D3-control-sym.txt`, no `D3-control-lin.txt`. Those graphs DISAGREE against the port
-# by construction, so a CONTROL over them would be AGREE (each side against itself) and
-# would say nothing about the disagreement. The py-vs-py control for `sym` is CONFLATION 4
-# in D7. (`loop` IS controlled, deliberately, and that is the difference: a control over a
-# DISAGREEING graph is worth having precisely because the graph disagrees.)
+# by construction (see the table above), so a CONTROL over them would be AGREE (each side
+# against itself) and would say nothing about the disagreement. The py-vs-py control for
+# `sym` is CONFLATION 4 in D7. (`loop` IS controlled, deliberately, and that is the
+# difference: a control over a DISAGREEING graph is worth having precisely because the graph
+# disagrees.)
 # No per-op fixture for `CMPEQ`. It is not reachable from an eager graph: `UOp` has no
 # `cmpeq`, and `(a == b).uop` emits `CMPNE CONST CMPNE`. MEASURED, and STILL measured after
 # round three added three real kernels -- so it is a property of the op, not of the corpus.
@@ -225,9 +230,11 @@ D10 E emit --side bend --bend-probe .agents/slop/graphcmp-empty.bend
 #     "files" and both hashed. `graphcmp-repro.sh` therefore takes a snapshot only from a
 #     run whose own summary reads `graphs=16 graphs-agree=13 selfcheck=OK census-rc=rc=0`.
 #   * the three round-two/round-three findings that are PORT bugs rather than harness bugs
-#     are reported and NOT fixed, because the files are not this unit's: `fold.bend`'s
-#     `marg` `ssimplify` wall (LIMITS 3b), `ParamArg.slot = -1`'s two conflicting sentinels
-#     (LIMITS section 2), and `fold.bend:1067`'s `call_dt` reading `CallInfo.dtype`, a
-#     field CPython's `CallInfo` does not have (LIMITS section 2, `loop`).
+#     are reported and NOT fixed, because the files are not this unit's: `ParamArg.slot = -1`
+#     two conflicting sentinels (LIMITS section 2) and `fold.bend:1067`'s `call_dt` reading
+#     `CallInfo.dtype`, a field CPython's `CallInfo` does not have (LIMITS section 2,
+#     `loop`). `fold.bend`'s `marg` `ssimplify` wall (LIMITS 3b) WAS such a finding -- and it
+#     was CLOSED by the `fold` unit mid-session, which is the one item on this list that has
+#     since been fixed by someone else.
 #   * the artifacts above are all from the final compiling tree at the digests quoted at
 #     the top.

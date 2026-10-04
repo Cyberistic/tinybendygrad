@@ -85,17 +85,31 @@ coverage delta fires. `collide` is `unreachable=2`, i.e. the loss is a *count of
 
 ### The real lane, before and after, over the same bytes
 
-Pre-rename pair (both lanes, 8 `=` names, 2 unaddressable measurements per side), run through
-both gates:
+Pre-rename pair (both lanes, 8 `=` names, 2 unaddressable measurements per side). The
+pre-rename captures are regenerated from the tree by **reversing the rename in the captured
+bytes** (`re.sub(r'^(kern \S*? *lb) (\d+)( = \[)', r'\1=\2\3', …)`, 8 substitutions per
+side), so the control is reproducible without a second live oracle:
+
+```
+jj file show -r @----- .agents/slop/cstyle-gate.py > pre/cstyle-gate.py   # 571 lines, no reshape
+```
+
+**`@-----`, not `@-`.** The coordinator committed while this unit ran, so `@-` moved and now
+already contains the guard. First attempt at this control read `@-` and "got" a pre/post pair
+where both sides were the NEW gate — which agreed on everything and proved nothing. `@-----`
+is the 571-line blob, the last revision of `cstyle-gate.py` without `reshape`.
 
 | gate | rc | verdict | gated / agree / disagree | ghost+stray |
 |---|---|---|---|---|
-| **pre-fix** (parent revision, 571 lines, no `reshape`) | **0** | **AGREE** | 221 / 221 / `[]` | 0 |
+| **pre-fix** (`@-----`, 571 lines) | **0** | **AGREE** | 221 / 221 / `[]` | 0 |
 | **post-fix** | **1** | **BROKEN** | 221 / 221 / `[]` | 0 |
+| post-fix, **post-rename** bytes | 0 | AGREE | 221 / 221 / `[]` | 0 |
 
-`221 / 221 / []` in both columns is the whole point: **the value verdict is identical and the
-gate verdict changes.** That is the control a value plant cannot fake, failing before and
-passing after, on the tree's own lane rather than on a synthetic one.
+`221 / 221 / []` in every row is the whole point: **the value verdict is identical and the
+gate verdict changes.** And the pre-fix line immediately above `AGREE` names all eight rows:
+`222 names -- 6 only it finds, 8 only rows_strict finds`. That is the control a value plant
+cannot fake, failing before and passing after, on the tree's own lane rather than a synthetic
+one. Captures: `cstyle-control-{prefix,postfix,clean}.txt`, `cstyle-capture-*.txt`.
 
 Post-rename, live, twice, byte-identical:
 

@@ -1,4 +1,5 @@
-live port lane rc=0   live oracle lane rc=0
+!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the CAPTURE, never about the tree as it is now.
+CAPTURED port lane rc=0   CAPTURED oracle lane rc=0
 port rows (rows_strict): 227   oracle rows (rows_strict): 224
 lane    rows read  names (gate)  names (shipped)  `=`  unreachable  unreadable   name sets
 port          227           227              227    0            0           0   IDENTICAL (227 shared)

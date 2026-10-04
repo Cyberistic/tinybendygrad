@@ -1603,6 +1603,20 @@ def f2f.udt(+to: S.Dt) -> S.Dt:
 def f2f.qmask(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
   dd_wk(ar, H.i64_shl(H.i64_of_i32(dd_mask1(k)), U32.to_nat(j)))
 
+# `qnan = shl(shl(1, te) - 1, tm) | shl(1, tm - 1)`, dtype.py:108. BOTH operands of that
+# `|` are Python ints -- `shl` is `x * (2**y)` with two int arguments (transcendental.py:20)
+# -- so the disjunction is evaluated in PYTHON and the whole thing is ONE interned CONST.
+# MEASURED, `q4` (fp8e4m3fnuz -> float32): cpy[145] is `CONST/0 C(2143289344)` =
+# `2139095040 | 4194304` = `0x7FC00000`, feeding cpy[146] `WHERE <- 140,145,144`. The port
+# carried `C(2139095040)` AND `C(4194304)` separately with an `OR` over them, so its `q4k`
+# had a constant CPython does not have and its `q4sig` was 28 long against CPython's 22.
+# `j - 1` is `tm - 1` and every `to` reachable from `f2f.fnuz` is float32 or float64, so
+# `j >= 23`; a `tm` of 0 would underflow `U32.sub` and is not reachable from this arm.
+def f2f.qnan.c(+ar: O.Arena, +k: U32, +j: U32) -> O.Found:
+  +m = H.i64_shl(H.i64_of_i32(dd_mask1(k)), U32.to_nat(j))
+  +o = H.i64_shl(H.i64_of_i32(1), U32.to_nat(U32.sub(j, 1)))
+  dd_wk(ar, H.i64_or(m, o))
+
 # `shl((v & shl(1, fs-1)).cast(f2f_dt[to]), ts - fs)`
 
 # `shl(shl(1, k) - 1, j)`, the `nan` pattern of dtype.py:106 and :120. `shl` is

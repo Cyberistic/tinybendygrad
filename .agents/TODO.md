@@ -7230,7 +7230,7 @@ Measure reproducibility: `sh .agents/slop/graphcmp-repro.sh`.
 Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
 unreachable are all reached, with `ENDIF` reachable ONLY from a hand-spelled gated store)
 Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
-Progress: normal-form defects [########--] 21 found and fixed (17-21 are this round's)
+Progress: normal-form defects [##########] 21 found and fixed (17-21 are this round's)
 Progress: reproducibility [##########] DONE — 158 of 158 files identical, and the check
            found a real nondeterminism on its first run
 
@@ -7262,11 +7262,11 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       What needs an executor is making the `Buffer` VALUES agree, and LIMITS §2 already says
       why they cannot (`Buffer` has no `slot`). `.agents/slop/e2e.sh` is still the only
       end-to-end artefact and still proves one matmul.
-- [x] **DOES THE DIFFER STILL AGREE? 13 of 16, and the 3 that do not each have a NAMED
-      CAUSE** rather than a tolerance: `sym` (the `ssimplify` wall, by design), `lin`
-      (`applied_opts` is a count the port cannot fill, 1 node of 46), `loop`
-      (`CallInfo.cdtype` is a port-only field, 1 node of 25). `graphcmp-run.sh`'s `$WANT`
-      ASSERTS each one, so a moved verdict is a moved file.
+- [x] **DOES THE DIFFER STILL AGREE? 14 of 16, and the 2 that do not each have a NAMED
+      PORT CAUSE** rather than a tolerance: `lin` (`applied_opts` is a count the port cannot
+      fill, 1 node of 46) and `loop` (`CallInfo.cdtype` is a port-only field, 1 node of 25).
+      `graphcmp-run.sh`'s `$WANT` ASSERTS each one, so a moved verdict is a moved file.
+      `sym` was in that list until the `fold` unit closed its wall — see below.
 - [x] **SIX MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM**, of which two would have kept
       lying. A SINK with `arg=None` **CRASHED** the emitter (17) — thirteen graphs of
       silence that were a crash, not an agreement. The `tag` column **could not be read at
@@ -7276,10 +7276,27 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
       found a real nondeterminism on its FIRST run. The census counted a dataclass FIELD
       NAME as an atom letter (21), and the assertion for it is MEASURED TO FIRE.
 - [x] **REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
-      accepts a run only if its summary reads 16 graphs / 13 AGREE / selfcheck OK /
+      accepts a run only if its summary reads 16 graphs / 14 AGREE / selfcheck OK /
       `census-rc=0`, and compares sha256 over non-blank lines. **158 of 158 identical.**
       The health gate is not decoration: a concurrent edit to `uop/ops.bend` landed part way
       through a run and produced twelve real reports and four 0-row failures.
+- [x] **A LIMIT WAS CLOSED BY ANOTHER UNIT WHILE THIS ROUND RAN, AND THE THREE PINNED
+      NUMBERS THAT CLAIMED IT MOVED WITH IT.** `sym` was the corpus's one
+      DISAGREE-on-purpose graph because the port could not mint a symbolic dim at all.
+      MEASURED late on 2026-10-04: `uop/fold.bend`'s `sym_dim.pa` (`fold.bend:1296`, the
+      `AParam` arm of `sym_dim.of`) landed from the `fold` unit; `sym` now reads `?=0` and
+      `VERDICT: AGREE` at 12 of 12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. Three pinned
+      numbers had to move IN THE SAME DIRECTION, because a limits file left claiming a
+      resolved limit is worse than one that never had it:
+      `selfcheck`'s `?=6` row (a regression row for a defect that no longer existed, so it
+      made a FIX look like a break), `graphcmp-run.sh`'s `sym:DISAGREE`, and
+      `graphcmp-repro.sh`'s `graphs-agree=13`. **The third is the instructive one: the
+      health gate then reported "not healthy" for a run that was entirely CORRECT and sat
+      retrying it** — the cost of pinning a gate to a verdict COUNT. The two-column `?` row
+      moved to `loop`'s CALL (`?=2`, one node x two columns) rather than being deleted,
+      because a claim with no fixture is a claim with no denominator. This unit did not
+      cause the fix and could not have made it; the fixture and the denominator are what it
+      contributed.
 - [x] **`graphcmp-LIMITS.md` REWRITTEN WITH NEW DENOMINATORS.** Every claim I resolved
       carries the number that resolved it; every claim I could NOT resolve is stated at the
       same strength. `ENDIF`/`BACKEDGE`/`LOAD`/`STORE` are RESOLVED with the op counts and the
@@ -7290,13 +7307,16 @@ Progress: reproducibility [##########] DONE — 158 of 158 files identical, and 
 `CallInfo.dtype`, a field CPython's `CallInfo` does not have — `ops.py:130-131` reads
 `src[0].dtype` — so the port's CALL dtype/shape reads `?` where CPython reads `void`/`R`.
 `uop/ops.bend` is under single ownership this round and `fold.bend` belongs to the `fold`
-unit. Both names and the node count (1 of 25) are in `graphcmp-LIMITS.md` §2.
+unit. Both names and the node count (1 of 25) are in `graphcmp-LIMITS.md` §2. **This is now
+the only node in the whole corpus that answers `?`** — the `sym` closure took the other one —
+so the ledger's two-column `?` assertion had to be re-homed onto it rather than deleted.
 
-**CONCURRENCY, MEASURED TWICE.** `uop/ops.bend` went cold three times while this unit ran
-(`sym_dim.pa` at :1250 not compiling; `ParamArg`'s field list renamed mid-run). The
-`emit_bend` 5-attempt guard turned every one of them into `0 rows after 5 attempts -- a
-FAILURE, not a verdict` and `D2-cmp-*` into `NOT COMPARED` rather than `BYTE-IDENTICAL`,
-which is the behaviour those guards were written for. No port file was edited.
+**CONCURRENCY, MEASURED THREE TIMES.** `uop/ops.bend` went cold three times while this unit
+ran (`sym_dim.pa` at :1250 not compiling — twice; `ParamArg`'s field list renamed mid-run
+— once), and `fold.bend` gained `sym_dim.pa` mid-session. The `emit_bend` 5-attempt guard
+turned every cold spell into `0 rows after 5 attempts -- a FAILURE, not a verdict` and
+`D2-cmp-*` into `NOT COMPARED` rather than `BYTE-IDENTICAL`, which is the behaviour those
+guards were written for. No port file was edited.
 
 ## Session 2026-10-04 (name-shape unit) — A ROW NAME CONTAINING `=` HAS ONE NAME PER READER
 

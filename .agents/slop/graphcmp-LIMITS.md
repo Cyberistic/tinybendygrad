@@ -211,8 +211,8 @@ carries it -- see the paragraph below.) `y`, `z`, `E`, `q` and `?` are all live.
 every run and printed: `runs/graphcmp/D/D0-coverage-census.txt`. `?` cannot be produced by the
 py side at all (it is the port's "the fold produced no `Derived`"); the other two are
 reachable only through plants, which is what the plants are for. **`E` and `q` became live in
-round three** (`lin`) and **`?` became live outside `sym`** (`loop`), which is why the count
-went 3 -> 5.
+round three** (`lin`) and **`?` is now live on `loop` ALONE** -- §3(b) took it off `sym`, so
+the live count went 3 -> 5 and the `?` carrier had to move with it.
 
 **`KernelInfo.estimates` -- NEITHER SIDE CARRIES IT.** Dropped by the port (P5,
 `tinygrad.renderer`) and `None` for every kernel the port can build, so the count would be
@@ -237,18 +237,20 @@ an owner decision about `ops.bend`, not a harness decision, and `ops.bend` is un
 ownership this round.** Reported, not fixed.
 
 **A CALL's dtype -- A PORT GAP, new in round three, and it is the cause of `loop`'s single
-disagreement.** `dtype_from_uop` reads `Ops.CALL: return src[0].dtype` (`ops.py:130-131`,
-"a call has the dtype of its body, void for opaque bodies"). The port reads the dtype off
-the ARG instead -- `call_dt` is `case O.ACall{ci}: O.CallInfo.dtype(ci)`
-(`uop/fold.bend:1067-1070`) against a comment quoting an OLDER upstream line, "`return
-arg.dtype if isinstance(arg, CallInfo) else dtypes.void`". CPython's `CallInfo` has **no
-dtype attribute at all** (MEASURED: `repr` is `CallInfo(None, 'hcq_fence', False, False)`
--- four attributes, `grad_fxn`/`name`/`precompile`/`precompile_backward`). So the port's
-CALL dtype is decided by a field upstream does not consult and does not have, and on
-`--graph loop` it reads `?` where CPython reads `void`/`R` on **1 node of 25**. Two
-consequences: the `?` marker is live OUTSIDE `sym` for the first time (`?=0/2` on `loop`),
-and the differ now names a real port divergence instead of a documentation drift.
-**`fold.bend` and `ops.bend` are not this unit's files.** Reported, not fixed.
+disagreement, and now the ONLY place `?` is live.** `dtype_from_uop` reads
+`Ops.CALL: return src[0].dtype` (`ops.py:130-131`, "a call has the dtype of its body, void
+for opaque bodies"). The port reads the dtype off the ARG instead -- `call_dt` is
+`case O.ACall{ci}: O.CallInfo.dtype(ci)` (`uop/fold.bend:1067-1070`) against a comment
+quoting an OLDER upstream line, "`return arg.dtype if isinstance(arg, CallInfo) else
+dtypes.void`". CPython's `CallInfo` has **no dtype attribute at all** (MEASURED: `repr` is
+`CallInfo(None, 'hcq_fence', False, False)` -- four attributes,
+`grad_fxn`/`name`/`precompile`/`precompile_backward`). So the port's CALL dtype is decided
+by a field upstream does not consult and does not have, and on `--graph loop` it reads `?`
+where CPython reads `void`/`R` on **1 node of 25**. **After §3(b) closed the symbolic-dim
+wall this is the only node in the corpus that answers `?`** (`?=0/2`), which is why the
+ledger's two-column row was moved here rather than deleted: a claim with no fixture is a
+claim with no denominator. **`fold.bend` and `ops.bend` are not this unit's files.**
+Reported, not fixed.
 
 ---
 
@@ -598,14 +600,16 @@ now carry their disagreement in the verdict line instead of in a comment.
 
 A clean run establishes: on this substrate, for these 16 graphs, the port's arena and
 CPython's arena agree on op, dtype, shape, depth, tag, a structural arg and the ordered
-child edges for **189 nodes -- 1134 field-records** -- on **13 of 16** graphs, modulo the
-residuals printed above. The other three DISAGREE on 3 of 12, 1 of 46 and 1 of 25 nodes
-respectively, and every one of those disagreements is a NAMED, MEASURED cause: the
-`ssimplify` wall, the `applied_opts` count, and the `CallInfo.dtype` gap.
+child edges for **189 nodes -- 1134 field-records** -- on **14 of 16** graphs, modulo the
+residuals printed above. The two that DISAGREE do so on 1 of 46 and 1 of 25 nodes
+respectively, and each of those disagreements is a NAMED, MEASURED PORT gap: the
+`applied_opts` count and the `CallInfo.dtype` gap. Nothing in the corpus disagrees on a
+field the two implementations both get right.
 
 It does NOT establish: that the port builds correct graphs (only that they MATCH
 CPython's), that the residual-bearing constructs are right, anything about the 43
-unexercised ops, anything at a device other than CPU, that a symbolic dim can be built by
-the port at all, that the port can build a SCHEDULE at all (§0: `schedule/__init__.bend`
-DEFERS `__init__.py:82-301`), or anything about EXECUTING a kernel. `.agents/slop/e2e.sh`
-is still the only end-to-end artefact in the project and it still proves one matmul.
+unexercised ops, anything at a device other than CPU, that the port can build a SCHEDULE at
+all (§0: `schedule/__init__.bend` DEFERS `__init__.py:82-301`), that `ENDIF` is reachable
+from an eager program (§0: 0 of 9), or anything about EXECUTING a kernel.
+`.agents/slop/e2e.sh` is still the only end-to-end artefact in the project and it still
+proves one matmul.

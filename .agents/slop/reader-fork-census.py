@@ -658,8 +658,10 @@ def measure(rel, name, lineno, seg, node):
     if contra:
       (phantom if _looks_like_exclusion(text, contra) else divergent).append(
         f"{sid}:{sorted(contra)[0]}")
-    elif got_p != sorted(want):
-      divergent.append(f"{sid}:mismatch")
+    # A fork that simply MISSES rows is NARROWING, not divergent: the rows it does read are the
+    # rows `rows()` reads, so importing `rows()` can only add to it. An earlier draft had an
+    # `elif got != want` arm here, and it turned every narrowing fork into a DIVERGENT one --
+    # the same mistake as comparing by index instead of by content, one level up.
     missing = want - mine
     if missing and not contra:
       narrowing.append(f"{sid}:misses {len(missing)}")

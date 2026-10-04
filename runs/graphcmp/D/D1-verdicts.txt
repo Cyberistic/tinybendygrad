@@ -1,2 +1,1 @@
-sym: VERDICT=AGREE EXPECTED=DISAGREE
-AT LEAST ONE GRAPH'S VERDICT MOVED
+all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a named cause in the $WANT comment above)

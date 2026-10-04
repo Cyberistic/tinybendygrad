@@ -21371,3 +21371,13 @@ pass reported 25 empty port lanes, which read as "those ports emit no rows" and 
 `BEND_ROW_BACKOFF`, `row_tries` and `row_secs` per lane, and every empty lane re-run **alone**.
 All 25 returned rows on try 1. **A starved lane is your harness until proven otherwise** -- the
 second time today that a plausible-looking small number was mine.
+
+## GC-13 `@-` IS NOT A PINNED BASELINE WHEN THE COORDINATOR COMMITS WHILE YOU WORK
+
+Measuring "the gate before my change" by reading `@-` gave a **pre/post pair where both sides
+were the new gate**: `@-` had moved to a revision that already contained the guard, so the
+"before" run agreed with everything and proved nothing while looking like a clean result.
+`jj log` on the file settles it: walk back until the blob's own size and content change
+(`@`824 / `@--`741 / **`@-----`571 lines, `def reshape` absent**). **`@-----` is the revision
+that reproduces the pre-fix `AGREE` at rc=0.** A revision id is not a pin; the FILE's content
+is the pin, and the check is `grep -c "def reshape"` on the blob you actually loaded.

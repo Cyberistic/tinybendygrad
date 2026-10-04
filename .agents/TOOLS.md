@@ -1048,10 +1048,13 @@ all of it, one to measure whether the regeneration is reproducible.
 `E = env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp.py`
 
 Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
-the 8 commutative ops, 2 symbolic-dim nodes of 189, 13 of 16 `AGREE` (`sym`/`lin`/`loop`
-DISAGREE, each with a named measured cause), 13 of 16 byte-identical, 5 of 5 stability pairs,
-4 of 4 conflations, 5 of 5 controls, both selfchecks OK.** `graphcmp-repro.sh` measures
-**158 of 158 files byte-identical across two clean runs**.
+the 8 commutative ops, 2 symbolic-dim nodes of 189 on BOTH sides, 14 of 16 `AGREE`
+(`lin`/`loop` DISAGREE, each with a named measured port gap), 14 of 16 byte-identical, 5 of
+5 stability pairs, 4 of 4 conflations, 5 of 5 controls, both selfchecks OK.**
+`graphcmp-repro.sh` measures **158 of 158 files byte-identical across two clean runs**.
+**A limit closed mid-round:** the `ssimplify` wall that made `sym` DISAGREE was closed by
+the `fold` unit (`fold.bend:1296`), which moved three pinned numbers in this harness at
+once — including a health gate that then refused to measure a correct run.
 
 **`.agents/slop/graphcmp-LIMITS.md` is the point of the whole thing** — sixteen defects this
 instrument found in its OWN normal form by widening its corpus, and every limit it does not
