@@ -1,0 +1,2 @@
+2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+2:i2 4:SINK 4:void 1:R 2:i0 1:N 18:kI(stest,n(),N,i0) 5:n(i1)
