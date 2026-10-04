@@ -26,6 +26,18 @@ When using bend:
 
 
 
+The gates at the top of the tree, and what each one CLAIMS. Run `--help` before trusting one:
+
+- `checks/differ.py run` / `repro` / `snap` — the `graphcmp` corpus: CPython-vs-port VERDICT and
+  DENOMINATOR per graph, canonical byte identity, controls, cross, plants, conflations, the
+  coverage census, and (repro) that one run is reproducible. Artifacts in `runs/graphcmp/D`,
+  read `D0-run-summary.txt` first; `checks/README.md` names every file. `graphcmp-run.sh` /
+  `graphcmp-repro.sh` are shims onto it, and the shell bodies are the oracle in
+  `.agents/slop/diffpy/`.
+- `e2e.sh` — the 8-stage end-to-end gate, green. Do not rewrite it to tidy it.
+- `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
+
+
 When using Python:
 - use uv and ty
 - Run tests with `-n12` for speed (e.g. `python -m pytest test/null/test_dtype.py -x -q -n12`)
