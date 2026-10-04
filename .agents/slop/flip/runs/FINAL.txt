@@ -1,0 +1,24 @@
+alu        nodes=14/14  fields=6  field-records=84  shared-cores=14   ops-reached=13/13 of 77   multi-parent-nodes=1/1 VERDICT: AGREE 
+binblob    nodes=19/19  fields=6  field-records=114  shared-cores=19   ops-reached=8/8 of 77   multi-parent-nodes=4/4 VERDICT: AGREE 
+bit        nodes=10/10  fields=6  field-records=60  shared-cores=10   ops-reached=9/9 of 77   multi-parent-nodes=1/1 VERDICT: AGREE 
+buffer     nodes=5/5  fields=6  field-records=30  shared-cores=5   ops-reached=4/4 of 77   VERDICT: AGREE 
+bw         nodes=32/32  fields=6  field-records=192  shared-cores=32   ops-reached=10/10 of 77   multi-parent-nodes=7/7 VERDICT: AGREE 
+cast       nodes=6/6  fields=6  field-records=36  shared-cores=6   ops-reached=5/5 of 77   VERDICT: AGREE 
+cdiv       nodes=10/10  fields=6  field-records=60  shared-cores=10   ops-reached=7/7 of 77   multi-parent-nodes=3/3 VERDICT: AGREE 
+commute    nodes=14/14  fields=6  field-records=84  shared-cores=14   ops-reached=11/11 of 77   multi-parent-nodes=3/3 VERDICT: AGREE 
+flip       nodes=6/6  fields=6  field-records=36  shared-cores=6   ops-reached=5/5 of 77   VERDICT: AGREE 
+gate       nodes=14/14  fields=6  field-records=84  shared-cores=14   ops-reached=12/12 of 77   multi-parent-nodes=11/11 VERDICT: AGREE 
+group      nodes=8/8  fields=6  field-records=48  shared-cores=8   ops-reached=7/7 of 77   multi-parent-nodes=1/1 VERDICT: AGREE 
+indexed    nodes=7/7  fields=6  field-records=42  shared-cores=7   ops-reached=6/6 of 77   VERDICT: AGREE 
+late       nodes=12/12  fields=6  field-records=72  shared-cores=12   ops-reached=9/9 of 77   multi-parent-nodes=3/3 VERDICT: AGREE 
+lin        nodes=46/46  fields=6  field-records=276  shared-cores=45   ops-reached=11/11 of 77   multi-parent-nodes=6/6 VERDICT: DISAGREE 
+loop       nodes=25/25  fields=6  field-records=150  shared-cores=24   ops-reached=14/14 of 77   multi-parent-nodes=8/8 VERDICT: DISAGREE 
+matmul     nodes=18/18  fields=6  field-records=108  shared-cores=18   ops-reached=7/7 of 77   multi-parent-nodes=4/4 VERDICT: AGREE 
+move       nodes=22/22  fields=6  field-records=132  shared-cores=22   ops-reached=9/9 of 77   multi-parent-nodes=2/2 VERDICT: AGREE 
+range      nodes=2/2  fields=6  field-records=12  shared-cores=2   ops-reached=2/2 of 77   VERDICT: AGREE 
+rangeflat  nodes=2/2  fields=6  field-records=12  shared-cores=2   ops-reached=2/2 of 77   VERDICT: AGREE 
+reduce     nodes=7/7  fields=6  field-records=42  shared-cores=7   ops-reached=6/6 of 77   VERDICT: AGREE 
+sink       nodes=2/2  fields=6  field-records=12  shared-cores=2   ops-reached=2/2 of 77   VERDICT: AGREE 
+special    nodes=2/2  fields=6  field-records=12  shared-cores=2   ops-reached=2/2 of 77   VERDICT: AGREE 
+sym        nodes=12/12  fields=6  field-records=72  shared-cores=12   ops-reached=6/6 of 77  symbolic-dims=2/2  multi-parent-nodes=2/2 VERDICT: AGREE 
+where      nodes=8/8  fields=6  field-records=48  shared-cores=8   ops-reached=7/7 of 77   multi-parent-nodes=2/2 VERDICT: AGREE 

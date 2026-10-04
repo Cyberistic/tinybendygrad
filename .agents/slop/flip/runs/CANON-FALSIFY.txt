@@ -1,0 +1,20 @@
+== canon_flip's TEXT, directly ==
+  ok   FLIP 'n(b1,b0)' -> 'n(i1,i0)' (n=2, want 'n(i1,i0)'/2)
+  ok   FLIP 'n(b1,b1)' -> 'n(i1,i1)' (n=2, want 'n(i1,i1)'/2)
+  ok   PERMUTE 'n(b1,b0)' -> 'n(b1,b0)' (n=0, want 'n(b1,b0)'/0)
+  ok   RESHAPE 'n(b1,b0)' -> 'n(b1,b0)' (n=0, want 'n(b1,b0)'/0)
+  ok   FLIP 'n(i1,i0)' -> 'n(i1,i0)' (n=0, want 'n(i1,i0)'/0)
+  ok   FLIP 'P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)' -> 'P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)' (n=0, want 'P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)'/0)
+
+== THE DIFFER MUST STILL SEE A REAL ARG CHANGE ==
+  ok   the two SPELLINGS pair: shared cores = 6 (want 6)
+  ok   a REAL flip-arg change does NOT pair: shared = 5 (want 5)
+  ok   both-flags-true on both sides DOES pair: shared = 6 (want 6)
+  ok   flag VALUES differing does NOT pair: shared = 5 (want 5)
+  ok   a length change does NOT pair: shared = 5 (want 5)
+
+== SELF-AGREEMENT (the control this all rests on) ==
+  ok   canon_flip is idempotent: 'n(i1,i0)' n=(2,0)
+  ok   bnorm is 2 for the bool side and 0 for the u32 side
+
+RESULT: OK
