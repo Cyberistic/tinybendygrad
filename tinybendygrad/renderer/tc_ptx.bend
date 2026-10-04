@@ -189,8 +189,13 @@ def mem_type(addr: S.Addr) -> String:
 #                       from a float CONST on a PTX target in this gate's fixture
 #                       set; named rather than faked.
 #   TODO(p3) ptx.py:16  render_val's SIGNED-INTEGER arm -- `str(int(x))` needs a
-#                       signed decimal and Bend has no signed type. The
-#                       UNSIGNED arm is ported and gated; the signed one is not.
+#                       signed decimal. THE REASON "Bend has no signed type" IS
+#                       FALSE AND WAS NEVER MEASURED: `helpers.bend` has the `I64`
+#                       pair (`i64_of_i32` :1647, `i64_is_neg` :1692, `i64_neg` :1785)
+#                       and `i64_dec` (:2097), a signed decimal printer, gated by
+#                       `ew-consts-gate.sh`. The UNSIGNED arm is ported and gated;
+#                       the signed one is not, and the blocker is that nobody has
+#                       WIRED `i64_dec` INTO THIS ARM -- a row, not a wall.
 #
 # `bits` is the float's BIT PATTERN in the float arms and the integer's VALUE in
 # the integer arm -- see the note on the two numeric parameters below.

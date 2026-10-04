@@ -454,9 +454,13 @@ def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tens
 # `__getitem__` and not of this file, so it is folded here and `bits6`'s node count pins it.
 # TODO(p3) mixin/rand.py:21  `random_bits`'s SECOND AND LATER CHUNKS -- `i & 0xffffffff`
 #  and `i >> 32` on a counter past 2^32. `H.i64_of_i32` sign-EXTENDS, so `i` cannot be a
-#  `U32` past 2^31, and the multi-chunk arm needs `H.I64` arithmetic that
-#  `bend2-constraints`' "A 64-BIT PRODUCT IS A WALL" section says is absent (`i64_mul`,
-#  `i64_div`, `i64_mod` do not exist). 17 GiB of random bits to reach it.
+#  `U32` past 2^31, and the multi-chunk arm needs `H.I64` arithmetic. THE CLAIM THAT IT
+#  IS ABSENT IS FALSE: `helpers.bend` HAS `i64_mul` (:2206), `i64_div` (:1969), `i64_mod`
+#  (:2100) and `u64_divmod` (:2013). The wall is a STALE CITATION of a constraints note
+#  whose own text says `H.I64` exists -- the note refutes itself and the marker was never
+#  updated. What is left is real and is NOT a wall: `H.i64_of_i32` sign-EXTENDS, so a
+#  counter past 2^31 must be built with `H.i64_of_hi_lo` and the chunking done by hand.
+#  17 GiB of random bits to reach it.
 # ===========================================================================
 def rd_bits_num(+ds: List<&2, U32>, +dt: S.Dt) -> U32: H.ceildiv_u32(U32.mul(H.prod_u32(ds), S.Dt.itemsize(dt)), 4)
 def rd_bits_half(n: U32) -> U32: H.ceildiv_u32(n, 2)

@@ -12107,3 +12107,40 @@ Progress: [=============================-------] 7/7
         are in `helpers.bend` (`:2206`, `:1969`, `:2100`).
       - `tensor.bend:312` and `:1110` "the float Const cannot be interned" -- `nn/optim.bend`
         constructs `CFloat{...}` nine times.
+
+## Session 2026-10-05 round 8 — three walls RETIRED, and the tree is red through no fault of ours
+
+- [x] **Three false walls retired**, each refuted by something this port ALREADY SHIPS and
+      each verified with `rg` before editing. Highest-confidence items from the parallel
+      audit of all 559 wall reasons.
+      - `renderer/tc_ptx.bend:191` **"Bend has no signed type"** -> FALSE. `helpers.bend`
+        has the `I64` pair (`i64_of_i32` :1647, `i64_is_neg` :1692, `i64_neg` :1785) and
+        `i64_dec` (:2097), a signed decimal printer, gated by `ew-consts-gate.sh`. What
+        remains is that nobody has WIRED `i64_dec` INTO THIS ARM -- a missing row, not a
+        wall.
+      - `mixin/rand.bend:455` **"`i64_mul`, `i64_div`, `i64_mod` do not exist"** -> all
+        three are in `helpers.bend` (:2206, :1969, :2100) plus `u64_divmod` (:2013). The
+        wall is a STALE CITATION of a constraints note whose own text says `H.I64` exists.
+        What is left is real: `i64_of_i32` sign-EXTENDS, so a counter past 2^31 needs
+        `i64_of_hi_lo` and the chunking by hand.
+      - `tensor.bend:1045` and `:1110` **"the float Const cannot be interned"** -> FALSE. A
+        decimal literal IS an `F32` (`F32.bits(0.044715)` is CPython's f32 of 0.044715), so
+        `O.CFloat{...}` is legal with no exported `Word` in sight, and `nn/optim.bend`
+        constructs it NINE TIMES. What is missing is the one call in THIS file.
+
+      **AND THE INVENTORY THAT MEASURED THEM WAS MOSTLY CHURN.** A full re-run reported
+      `PASS=3` with 25 failures, which is not credible for gates that were green twenty
+      minutes earlier. The cause: the concurrent agent's working copy has 22 `.bend` files
+      mid-edit. The one that matters: **`uop/ops.bend` no longer defines
+      `ParamArg.no_slot`, which `tensor.bend:1650` CALLS** -- MEASURED, master has it and the
+      working copy does not -- and that single missing def is why `rand.bend`, `tensor.bend`
+      and everything importing them fail to compile. `ops-pu-gate` is red for a second,
+      independent reason: the in-flight `render.bend` edit DELETES `pu_rows(pu_ar())` from
+      `main`, so the rows `ops-pu-gate` greps for are not emitted. That is the third time
+      tonight a concurrent edit to a `main` has removed another unit's row group -- it is
+      the single most contended line in this tree.
+
+      **The three retirements are comment-only and were committed on that basis.** Verified
+      before committing: every changed line in all three files begins with `#`, and
+      `tc_ptx.bend` -- which does not route through the broken import -- is
+      `ALL PROOFS CHECK`. The other two are red for the reason above and not for this edit.

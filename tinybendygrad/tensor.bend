@@ -1042,7 +1042,11 @@ def tn_need_grad(+ar: O.Arena, self: U32, scope: Tensors) -> List<&2, U32>:
 # `G.gslot` IS the `x in grads` half and `G.GSlot.v_of` the `grads[x]` half, so the ONLY
 # thing this def adds is the ELSE. `x.const_like(0)` (ops.py:600) is `CONST(0)._mop(EXPAND,
 # x._shape)` and the CONST is a FLOAT literal, which is the DEPS header's second wall
-# (`F32{data: Word(32n)}` has no reachable constructor, so `Tensor(1.0)` has no CONST to
+# THE CLAIM IS FALSE AND NOTHING HERE IS MISSING BUT A CALL: a decimal literal IS
+# an `F32` (MEASURED: `F32.bits(0.044715)` is CPython's f32 of 0.044715), so
+# `O.CFloat{0.044715}` is a legal constant with no exported `Word` in sight, and
+# `nn/optim.bend` already constructs `CFloat{...}` NINE TIMES. What is missing is
+# the ONE call in THIS file that interns a float literal into a CONST tensor --
 # intern). So the substitute is the arena's RESERVED INDEX 0 -- the same `None` convention
 # `grad` already carries -- and the gate prints `ZERO` for that slot rather than printing a
 # node that would claim to be a float. NAMED DIVERGENCE, and it is the SUBSTITUTE's value
@@ -1107,7 +1111,9 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 
 # TODO(p3) tensor.py:492  backward's other three arms -- `g.clone(device=t.device)` is
 # WALL 2 (`UOp.clone` is ops.py:882), `:493`'s `else` is `assign` plus `__add__`, and
-# `mixin/op.py:468`'s `const_like(1.0)` seed needs the FLOAT CONST this port cannot intern.
+# `mixin/op.py:468`'s `const_like(1.0)` seed needs the float CONST MINTED HERE. The
+# PORT CAN: a literal is an `F32` and `nn/optim.bend` builds `CFloat{...}` nine
+# times, so this is a missing CALL and not a missing type.
 
 # ===========================================================================
 # THE `__i*__` TWELVE AND `__eq__` -- tensor.py:536-549. Twelve methods, each
