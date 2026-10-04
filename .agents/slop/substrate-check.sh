@@ -1,8 +1,9 @@
 #!/bin/zsh
 # SUBSTRATE CHECK. TWO HALVES, AND A FILE CAN PASS EITHER ONE ALONE.
 #
-# HALF 1 -- SIZE FIRST, VERDICT SECOND. EXISTS BECAUSE `bend --check-only` REPORTS
-# **ALL PROOFS CHECK** FOR AN EMPTY FILE, MEASURED:
+# HALF 1 -- SIZE FIRST, VERDICT SECOND, AND THEN **ROUTE BY WHAT THE FILE IS**.
+# EXISTS BECAUSE `bend --check-only` REPORTS **ALL PROOFS CHECK** FOR AN EMPTY
+# FILE, MEASURED:
 #     : > empty.bend ; bend empty.bend --check-only   ->  ALL PROOFS CHECK
 #     printf '# nothing\n' > c.bend ; bend c.bend ...  ->  ALL PROOFS CHECK
 #     printf 'def f(:\n'  > d.bend ; bend d.bend ...   ->  SOME PROOFS FAIL
@@ -10,6 +11,29 @@
 # warm" statement this project has made was therefore compatible with a truncated
 # file -- and `helpers.bend` WAS truncated to 0 bytes three times, each time by a unit
 # that then ran --check-only, saw ALL PROOFS CHECK, and reported it fine.
+#
+# THE ROUTER, AND WHY IT IS FOUR VERDICTS AND NOT THREE. HALF 1 USED TO RUN
+# `bend --check-only` ON EVERY FILE, WHICH SENT `runtime/dtype.c` (297 lines) AND
+# `runtime/dtype.js` (193 lines) DOWN THE BEND INSTRUMENT. **THAT IS A CATEGORY
+# ERROR**, the same one agent-core.md warns about when it says `-o` success does
+# not contradict `--check-only` failure: neither instrument is the other. MEASURED
+# OVER EVERY NON-`.bend` FILE IN tinybendygrad/ (6 OF THEM), ALL SIX READ `SOME
+# PROOFS FAIL` UNDER `--check-only`, AND NOT ONE OF THEM IS A BEND FILE. A GUARD
+# THAT IS ALWAYS RED ON A CLASS OF FILES IS A GUARD WHOSE GREEN IS WORTH LESS.
+#
+#   .bend          bend --check-only                 -> WARM / COLD      [bend]
+#   .c             cc -fsyntax-only, in bend's own C  -> WARM / COLD      [cc]
+#                  generated context (see C_CONTEXT)
+#   .js  .mjs      node --check                      -> WARM / COLD      [node]
+#   anything else  --                               -> NO INSTRUMENT    [none]
+#                  INCLUDING a .c whose context could not be built, and a file
+#                  whose instrument is not installed. **NEVER `COLD`.** A file
+#                  with no instrument has NOT BEEN JUDGED, and printing COLD for
+#                  it is a lie about a verdict nobody took. Counted apart.
+#
+# `NO INSTRUMENT` IS A FOURTH VERDICT BECAUSE THREE ARE NOT ENOUGH. EMPTY/MISSING
+# PRE-GATE, WARM, COLD AND NO INSTRUMENT ARE FOUR DIFFERENT CLAIMS ABOUT A FILE
+# AND COLLAPSING ANY PAIR OF THEM LOSES THE ONE THAT MATTERS.
 #
 # HALF 2 -- COLLECTIVE COMPLETENESS. HALF 1 ANSWERS "does this file parse?", WHICH
 # IS A QUESTION ABOUT ONE FILE. THE REAL FAILURE TODAY WAS THE OTHER QUESTION:
@@ -37,36 +61,195 @@
 # PROVIDER DECLARES NOTHING, SO EVERY CALL INTO IT GOES UNRESOLVED:
 #     : > helpers.bend   ->   UNRESOLVED codegen/kernel.bend:1003: H.i64_of_i32
 #
-# USAGE:  substrate-check.sh [-n] <file>...      -n = HALF 2 ONLY (skip bend)
+# USAGE:  substrate-check.sh [-n] <file>...      -n = HALF 2 ONLY (skip verdicts)
 cd "$(dirname "$0")/../.." || exit 2
-BEND=./bin/bend
-[ -x "$BEND" ] || BEND=bend
+BEND=""
+if   [ -x ./bin/bend ];       then BEND=./bin/bend
+elif command -v bend >/dev/null 2>&1; then BEND=$(command -v bend)
+fi
+CC=""
+if   command -v cc >/dev/null 2>&1;   then CC=$(command -v cc)
+elif command -v clang >/dev/null 2>&1; then CC=$(command -v clang)
+fi
+NODE=$(command -v node 2>/dev/null)
+HERE=.agents/slop/guardfix
+# THE ONE BEND PROGRAM THAT MAKES THE C INSTRUMENT POSSIBLE. It reaches a
+# dtype.bend seam so `bend -o` emits bend's whole generated C runtime. See
+# C_CONTEXT below for why that runtime is the only way a `.c` fragment can be read.
+C_PROBE=$HERE/probe-c.bend
+# AND THE `.c` THAT PROBE PULLS IN, whose FIRST LINE MARKS WHERE THE FOREIGN BLOCK
+# BEGINS IN THE EMIT (`probe-c.bend` imports `tinybendygrad/dtype.bend`, whose seams
+# import `tinybendygrad/runtime/dtype.c`). NAMED, NOT GUESSED -- and C_CONTEXT FAILS
+# LOUD if that exact line is not in the emit, so if bend ever stops pasting the file
+# the instrument reports NO INSTRUMENT rather than a silent pass.
+C_PROBE_FOREIGN=tinybendygrad/runtime/dtype.c
 names_only=0
 if [ "$1" = "-n" ]; then names_only=1; shift; fi
 
 fail=0
+n_bend=0 n_cc=0 n_node=0 n_none=0
+
+# ------------------------------------------------------------------ C CONTEXT
+# C_CONTEXT -- bend's generated C runtime, ONCE, so `cc` can read a `.c` fragment
+# AT ALL. MEASURED 2026-10-04, EVERY NUMBER IN IT:
+#
+#   1. `cc -fsyntax-only tinybendygrad/runtime/dtype.c` ON ITS OWN -> **190 errors**,
+#      and every distinct one is "bend's runtime is not here": `Term` 22, `u32` 50,
+#      `Env` 12, `IoWork` 10, `intptr_t`, `int64_t`, `ctr_take`, `io_tup`,
+#      `f32_rewrap`, and 60 undeclared *locals* that are merely downstream of the
+#      first unknown type. **SO THE BARE INVOCATION IS A CATEGORY ERROR** -- the same
+#      one `bend --check-only` on a `.c` file was, asked of a different tool. It
+#      reports a file RED that bend's own backend builds and RUNS.
+#
+#   2. A `.c` FILE HERE IS NOT A TRANSLATION UNIT. bend pastes it, verbatim, into the
+#      C it generates (comp.ts `effect_srcs` -> `c_ids` -> `runtime_c`), so `Term`,
+#      `IoWork` and `u32` are DECLARED BY THE GENERATOR, not by the fragment.
+#
+#   3. THE GENERATED UNIT CANNOT BE HALVED. Lines 1..2839 of the emit carry **44
+#      `#if` opens against 43 `#endif` closes**: `#if !DEVICE` at line 1556 is closed
+#      by the generated `main`, past the foreign block. So there is NO self-contained
+#      preamble to `-include` -- `cc -fsyntax-only` on the extracted prefix alone says
+#      `unterminated conditional directive` at 1556:2.
+#
+# So the deficit is COUNTED here, not assumed, and the closure is appended. That can
+# only ADD declarations to the check, so it can make this instrument MORE PERMISSIVE;
+# it can never turn a real syntax error green. And the finished context is compiled
+# ONCE ON ITS OWN before any fragment is judged: if the context itself does not
+# compile, the instrument produced nothing, and NO INSTRUMENT is printed -- never a
+# pass, never a cold.
+#
+#   4. ONE MORE THING THE CONTEXT MUST SUPPLY, AND IT COST A FALSE RED FIRST.
+#      `sz.c:51,53` evaluate `term_pak(CID(Nil), 0)`. `CID` IS **NOT C**: bend
+#      substitutes `CID(<name>)` for an effect id at EMIT time (comp.ts `c_ids`),
+#      and no generated C defines a `CID` function -- so a first cut of this context
+#      reported `runtime/sz.c` COLD with 7 "call to undeclared function 'CID'".
+#      **THAT RED WAS MY INSTRUMENT'S INCOMPLETENESS, NOT A DEFECT IN `sz.c`.** A
+#      result that contradicts the tool is a suspect result, and this one contradicted
+#      the fact that bend's own backend builds and runs the file. The context now
+#      declares `#define CID(x) 0`: a NEUTRAL STUB, correct here because the id's
+#      VALUE is irrelevant to whether a fragment parses, and a wrong id would only
+#      ever hide a duplicate-registration error, which is not this instrument's job.
+#      With it: `dtype.c` 0 errors, `sz.c` 0 errors, and a fragment with a syntax
+#      error still stops the compile (measured in guardfix/RESULTS.md).
+c_context() {
+  [ -n "$CTX" ] && return 0
+  [ -n "$BEND" ] || return 1
+  [ -f "$C_PROBE" ] || return 1
+  [ -f "$C_PROBE_FOREIGN" ] || return 1
+  local gen="$SCR/gen.c"
+  perl -e 'alarm 300; exec @ARGV' "$BEND" "$C_PROBE" -o "$gen" >/dev/null 2>&1
+  [ -s "$gen" ] || return 1
+  local at; at=$(grep -n -F -x -- "$(head -n 1 "$C_PROBE_FOREIGN")" "$gen" \
+                 | head -n 1 | cut -d: -f1)
+  case $at in ''|*[!0-9]*) return 1 ;; esac
+  [ "$at" -gt 1 ] || return 1
+  head -n $((at - 1)) "$gen" > "$SCR/pre.c"
+  local o c i; o=$(grep -cE '^[[:space:]]*#[[:space:]]*(if|ifdef|ifndef)' "$SCR/pre.c")
+  c=$(grep -cE '^[[:space:]]*#[[:space:]]*endif' "$SCR/pre.c")
+  [ "$o" -ge "$c" ] || return 1
+  i=1; while [ "$i" -le $((o - c)) ]; do print -r -- '#endif' >> "$SCR/pre.c"; i=$((i+1)); done
+  print -r -- '#define CID(x) 0' >> "$SCR/pre.c"
+  # TODO(GXR-11): CID IS THE ONE THING THIS INSTRUMENT CANNOT JUDGE. A fragment can
+  # register an effect under an id bend will never define and this check stays green --
+  # `runtime/sz.c:71` may already do. Only a `bend -o` build can see that, and it is a
+  # DIFFERENT QUESTION (agent-core.md: `-o` success does not contradict `--check-only`
+  # failure, and neither is the other). Do not widen this stub's remit; open a C-lane gate.
+  $CC -fsyntax-only "$SCR/pre.c" >/dev/null 2>&1 || return 1
+  CTX="$SCR/pre.c"; CTX_LINES=$(grep -c '' "$SCR/pre.c")
+  return 0
+}
+
+SCR=$(mktemp -d "${TMPDIR:-/tmp}/substrate.XXXXXX") || exit 2
+trap 'rm -rf "$SCR"' EXIT INT TERM
+CTX=; CTX_LINES=0
 
 # ------------------------------------------------------------------ HALF 1
 for f in "$@"; do
-  [ -f "$f" ] || { print -r -- "MISSING   $f"; fail=$((fail+1)); continue }
+  [ -f "$f" ] || { print -r -- "MISSING     $f"; fail=$((fail+1)); continue }
   lines=$(wc -l < "$f" | tr -d ' ')
   bytes=$(wc -c < "$f" | tr -d ' ')
   if [ "$lines" -eq 0 ] || [ "$bytes" -eq 0 ]; then
-    print -r -- "EMPTY     $f  ($lines lines, $bytes bytes)  <-- THE VERDICT IS MEANINGLESS"
+    print -r -- "EMPTY       $f  ($lines lines, $bytes bytes)  <-- THE VERDICT IS MEANINGLESS"
     fail=$((fail+1)); continue
   fi
-  if [ "$names_only" -eq 1 ]; then
-    print -r -- "SKIP-VERDICT $f  ($lines lines, --check-only suppressed by -n)"
+  # ------------------------------------------------------------------ ROUTE
+  # AN EXTENSION PICKS THE INSTRUMENT; A MISSING INSTRUMENT DOWNGRADES IT TO
+  # `none`, WHICH IS THE SAME VERDICT AS AN UNROUTABLE CLASS. BOTH MEAN THE FILE WAS
+  # NOT JUDGED. NEITHER IS A PASS.
+  case $f in
+  *.bend)     inst=bend; tag='bend --check-only'; why="" ;;
+  *.c)        inst=cc;   tag="cc -fsyntax-only + bend's C context"
+               why="cc and a compiling bend C context are both required, and one is absent" ;;
+  *.js|*.mjs) inst=node; tag='node --check'
+               why="node is not installed" ;;
+  *)          inst=none; tag='no instrument exists for this file class'
+               why="no instrument exists for this file class" ;;
+  esac
+  [ "$inst" = cc ]   && [ -z "$CC" ]   && { inst=none; why="cc is not installed"; }
+  [ "$inst" = node ] && [ -z "$NODE" ] && { inst=none; why="node is not installed"; }
+  [ "$inst" = bend ] && [ -z "$BEND" ] && { inst=none; why="bend is not installed"; }
+  if [ "$names_only" -eq 1 ] && [ "$inst" != none ]; then
+    print -r -- "SKIP-VERDICT $f  ($lines lines, verdict suppressed by -n)"
     continue
   fi
-  v=$(perl -e 'alarm 300; exec @ARGV' "$BEND" "$f" --check-only 2>&1 | head -1)
-  if [ "$v" = "ALL PROOFS CHECK" ]; then
-    print -r -- "WARM      $f  ($lines lines)"
-  else
-    print -r -- "COLD      $f  ($lines lines)  :: $v"
-    fail=$((fail+1))
-  fi
+  case $inst in
+  none) n_none=$((n_none+1))
+    print -r -- "NO INSTRUMENT  $f  ($lines lines)  :: $why -- **NOT JUDGED, AND NOT COLD**"
+    continue ;;
+  bend) n_bend=$((n_bend+1))
+    v=$(perl -e 'alarm 300; exec @ARGV' "$BEND" "$f" --check-only 2>&1 | head -1)
+    if [ "$v" = "ALL PROOFS CHECK" ]; then
+      print -r -- "WARM        $f  ($lines lines)  [$tag]"
+    else
+      print -r -- "COLD        $f  ($lines lines)  [$tag]  :: $v"
+      fail=$((fail+1))
+    fi ;;
+  node) n_node=$((n_node+1))
+    err=$(perl -e 'alarm 300; exec @ARGV' "$NODE" --check "$f" 2>&1); rc=$?
+    if [ "$rc" -eq 0 ]; then
+      print -r -- "WARM        $f  ($lines lines)  [$tag]"
+    else
+      # node's FIRST line is only the path and the line number; the sentence that says
+      # what is wrong is the `SyntaxError:` line. A verdict that prints a path is not a
+      # verdict. Prefer the error line, and fall back to line 1 when node has none.
+      nv=$(print -r -- "$err" | grep -m1 -E '^[A-Za-z]*Error')
+      print -r -- "COLD        $f  ($lines lines)  [$tag]  :: ${nv:-$(print -r -- "$err" | head -1)}  :: $f:$(print -r -- "$err" | head -1 | sed -E 's#^.*:([0-9]+)$#\1#')"
+      fail=$((fail+1))
+    fi ;;
+  cc)   if ! c_context; then n_none=$((n_none+1))
+      print -r -- "NO INSTRUMENT  $f  ($lines lines)  :: $why"
+      continue
+    fi
+    n_cc=$((n_cc+1))
+    # THE FRAGMENT GOES IN *AFTER* THE CONTEXT, so a diagnostic at context line L is
+    # the fragment's line L-CTX_LINES. REWRITTEN, because "gen.c:2891" names a file
+    # THAT DOES NOT EXIST in the repo and a reader would go looking for it.
+    cat "$CTX" "$f" > "$SCR/frag.c"
+    err=$($CC -fsyntax-only "$SCR/frag.c" 2>&1); rc=$?
+    if [ "$rc" -eq 0 ]; then
+      print -r -- "WARM        $f  ($lines lines)  [$tag]"
+    else
+      # A DIAGNOSTIC AT CONTEXT LINE L IS THE FRAGMENT'S LINE L-CTX_LINES. REWRITTEN,
+      # BECAUSE `frag.c:2891` NAMES A FILE THAT DOES NOT EXIST IN THE REPO AND A
+      # READER WOULD GO LOOKING FOR IT. THE FIRST `error:` ONLY: cc cascades, and a
+      # list of 7 lines that all say the same thing is not 7 findings.
+      msg=$(print -r -- "$err" | grep -m1 'error:')
+      gln=$(print -r -- "$msg" | perl -ne 'print "$1\n" if /frag\.c:(\d+):/')
+      gtxt=$(print -r -- "$msg" | perl -pe 's/^.*frag\.c:\d+:\d+:\s*//')
+      case $gln in ''|*[!0-9]*) print -r -- "COLD        $f  ($lines lines)  [$tag]  :: $msg" ;;
+      *) print -r -- "COLD        $f  ($lines lines)  [$tag]  :: $f:$((gln - CTX_LINES)): $gtxt" ;;
+      esac
+      fail=$((fail+1))
+    fi ;;
+  esac
 done
+
+# ------------------------------------------------------------------ THE ROUTE
+# AN INSTRUMENT THAT HIDES ITS OWN ROUTING IS THE DEFECT THIS PROJECT HAS
+# CATALOGUED TWENTY TIMES -- AND ITS OWN SECOND HALF ALREADY PRINTS AN `unseen=`
+# COUNT FOR EXACTLY THIS REASON. SO EVERY VERDICT ABOVE CARRIES ITS INSTRUMENT AND
+# THE TALLY IS PRINTED BESIDE THE TOTALS, NOT BURIED IN A COMMENT.
+print -r -- "ROUTE   bend=$n_bend  cc=$n_cc  node=$n_node  no-instrument=$n_none  (of $# file(s))"
 
 # ------------------------------------------------------------------ HALF 2
 # DECLARATIONS A MODULE EXPORTS. `def`/`type`/`law` ARE ALWAYS AT COLUMN 0 IN THIS
@@ -169,10 +352,14 @@ if [ "$fail" -gt 0 ]; then
   exit 1
 fi
 print -r -- ""
+if [ "$n_none" -gt 0 ]; then
+  print -r -- "NO INSTRUMENT: $n_none of $# file(s) were **NOT JUDGED** (no instrument exists, or it produced nothing)."
+  print -r -- "A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an unmeasured surface."
+fi
 if [ "$names_only" -eq 1 ]; then
   print -r -- "NAMES CLEAN: $# file(s), all non-empty, all cross-file names resolved. **VERDICT NOT TAKEN** (-n)."
 else
-  print -r -- "SUBSTRATE CLEAN: $# file(s), all non-empty, ALL PROOFS CHECK, all cross-file names resolved."
+  print -r -- "SUBSTRATE CLEAN: $# file(s), all non-empty, each judged by its OWN instrument, all cross-file names resolved."
 fi
 print -r -- "(name check is scoped to the IMPORT graph. It cannot see the unaliased \`import Base\`"
 print -r -- " surface -- List. String. U32. -- which is most qualified refs in the tree. Read the"
