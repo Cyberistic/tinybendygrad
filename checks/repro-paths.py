@@ -40,7 +40,21 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 # A path-shaped token under a directory this project owns, with an extension that means
 # "something a report tells a reader to run".
-REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]+\.(?:sh|py|bend))")
+#
+# **THE SUFFIX SET WAS `sh|py|bend` AND THAT MADE THE INSTRUMENT BLIND TO ITS OWN POPULATION.**
+# MEASURED 2026-10-05: `checks/e2e.py`'s stage inputs carry `.sh` 6, `.py` 6, **`.mjs` 2**, `.bend` 2 —
+# **AND THE `.mjs` FILES WERE INVISIBLE TO THIS FILE.** Of 15 stage inputs, **9 were counted and 6 were
+# not**, and all four fixtures the `fixures` unit had to reconcile by hand were among the six.
+# **RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO.**
+#
+# **THIS IS THE SAME FAILURE AS `LIVE_UNITS` NAMING FINISHED UNITS, AS `ORACLE` BEING A WORD SHAPE, AND AS
+# `sb-gate.sh` CHECKING ITS OWN THREE LITERAL LANES: A RULE THAT CANNOT SEE THE POPULATION CANNOT BE WRONG,
+# BECAUSE IT CANNOT BE ANYTHING.** A SUFFIX FILTER IS A POPULATION DEFINED BY A THREE-ITEM LIST.
+#
+# `.txt` IS HERE **EXCEPT** FOR `runs/graphcmp/D/`, WHICH IS A CONTRACT READ BY NAME BY A SHA-PINNED ORACLE —
+# see `checks/differ.py`'s `declared()`. A `.txt` THERE IS EXCUSED RATHER THAN COUNTED, BECAUSE A RENAME WOULD
+# MAKE `artefacts_ok()` MATCH 0 OF 22 FILES WITHOUT ERRORING.
+REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]+\.(?:sh|py|bend|mjs|json))")
 # `...` is an ellipsis and `//` is a doubled separator: a family, not a file.
 PATTERN = re.compile(r"\.\.\.|//")
 

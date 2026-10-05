@@ -382,6 +382,36 @@ def argstr(a: O.Arg, depth: U32) -> String:
     case O.AProgram{pi}: prog_info(pi)
     case O.ARange{ids, at}: String.concat(["rg(", i(depth), ",", axis1(at), ",", us(ids), ")"])
     case O.AReduce{rop, num_axes}: String.concat(["rd(", opx(rop), ",", i(num_axes), ")"])
+    # THE MISSING TWENTIETH. `AOpLit` (ops.bend:1079) holds a BARE `Op` -- the `arg` of a
+    # `PYLITERAL` is `upat.py:26`'s `self.op[0]` -- so this is the ATOM `opx` already emits
+    # and NOT a composite opener: `AReduce`/`AAllred` print `rd(`/`al(` because they hold an
+    # `Op` AND pair it, and this one does not. MEASURED, the text is already agreed on the
+    # CPython side without a new atom: `ATOMS["ops"]` is `"O"` (graphcmp.py:324) and
+    # `_carg`'s `isinstance(x, Ops)` arm (graphcmp.py:603) returns `ATOMS["ops"] + x.name`,
+    # so `gc._carg(Ops.INDEX)` is `"OINDEX"` -- byte-identical to what `opx` builds here.
+    # That is why this arm RESTORES A SYMMETRY rather than inventing a spelling: the py side
+    # could print this value and the bend side had no arm for it, so the file did not check
+    # and the port emitted NO ROWS FOR ANY GRAPH AT ALL (`not-comparable=16` meant "never
+    # ran", not "disagreed").
+    #
+    # WHAT IT DOES NOT CLOSE, stated here because an arm that looks finished is the place a
+    # reader stops. `upat.py` mints SEVEN `PYLITERAL`s and this arm covers ONE of them:
+    # `:26` passes a bare `Ops`, and `:25` / `:36` / `:43` pass a `frozenset` while `:39` /
+    # `:44` pass a bare `DType` / `AddrSpace` and `:29` passes `self.arg` whole. The port
+    # types only the `:26` one, and the multi-op `UPat((Ops.INDEX, Ops.SHRINK), ...)` form
+    # behind `:25` is common in this tree. So `PYLITERAL` remains a PORT GAP in its own
+    # right, DISTINCT from the CORPUS GAP that no graph mints one at all -- two different
+    # gaps, and the second does not cancel the first.
+    #
+    # AND THE ARM IS NOT OPTIONAL, WHICH IS THE PART THAT SETTLES "GIVE IT AN ARM OR DELETE
+    # `AOpLit`". MEASURED by taking the deletion: it does not compile, because `AOpLit` is
+    # spelled in THREE files -- `ops.bend` (the constructor at :1079, `eq_arg.AOpLit` at
+    # :1866, the dispatch arm at :1965), `render.bend:714` (`arg_repr`), and this file's
+    # `argstr`. Deleting the constructor means deleting all seven sites in a file this work
+    # does not own, to REMOVE a payload no graph in the corpus emits (MEASURED: zero rows
+    # carry `PYLITERAL` on either side, so the deletion cannot change one byte of output).
+    # One arm in one file this work does own is the whole of the difference.
+    case O.AOpLit{op}: opx(op)
     case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", U32.show(threads), ",", us(tc), ")"])
     case O.ATuple{ys}: us(ys)
     case O.AStr{s}: bstr(s)

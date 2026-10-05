@@ -75,8 +75,17 @@ def run_health() -> str:
     kv = dict(re.findall(r"^(\S+)=(\S+)$", summary.read_text(), re.M))
     agree, nc = int(kv.get("graphs-agree", -1)), int(kv.get("not-comparable", -1))
     total = int(kv.get("graphs", 0))
-    if nc == 0 and agree == total and total > 0:
-        return f"RUN HEALTH        : OK -- {agree} of {total} graphs agree"
+    # **COMPARED IS NOT AGREED.** I DEMANDED `agree == total`, WHICH IS A THIRD QUESTION AGAIN.
+    # MEASURED 2026-10-05: with the port emitting rows at all, the healthy run is
+    # `graphs-agree=14  not-comparable=0  total=16` — **because `checks/differ.py`'s `WANT` RECORDS TWO
+    # DELIBERATE `DISAGREE`s.** So `agree == total` CAN NEVER HOLD OVER A HEALTHY RUN OF THIS CORPUS, AND
+    # THIS INSTRUMENT REFUSED A TREE THAT HAD JUST BEEN FIXED. `not-comparable == 0` IS THE RIGHT TEST: IT
+    # ASKS "WAS EVERY GRAPH PUT TO THE COMPARISON", WHICH IS WHAT A COVERAGE FIGURE ACTUALLY DEPENDS ON.
+    # **A DISAGREEMENT IS A RESULT. AN UNCOMPARED GRAPH IS AN ABSENCE. ONLY THE ABSENCE BLOCKS A FIGURE.**
+    if nc == 0 and total > 0:
+        return (f"RUN HEALTH        : OK -- every one of {total} graphs was COMPARED, "
+                f"{agree} agree and {total - agree} disagree (disagreement is a recorded verdict, "
+                f"not an absence)")
     return (f"RUN HEALTH        : **FAILED** -- {agree} of {total} graphs agree, "
             f"{nc} not comparable. THE UNION ABOVE IS NOT A VERDICT.")
 

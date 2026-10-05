@@ -1,0 +1,67 @@
+dangling: 56
+  recoverable from 371cc64c9^: 35  (`git checkout 371cc64c9^ -- <path>` restores it)
+  not in that commit: 21  -- 11 of them ARE in an older commit and are recoverable from it; the remaining 10 were never committed
+  NEVER COMMITTED IN ANY REVISION: 10  -- these need a report corrected, not a checkout
+  ratio, any revision: 46/56 recoverable, 10/56 irrecoverable
+
+recoverable from the named commit:
+  .agents/slop/clangshim/s1.sh
+  .agents/slop/clangshim/s3.sh
+  .agents/slop/device-oracle.py
+  .agents/slop/differverdict/cmpwarm.py
+  .agents/slop/differverdict/mkroot.sh
+  .agents/slop/differverdict/mkwarm.sh
+  .agents/slop/differverdict/warmboth.sh
+  .agents/slop/dsl_oracle.py
+  .agents/slop/dup/dup-fix-usb.py
+  .agents/slop/e2e-vacuity.py
+  .agents/slop/eq/eq-census2.py
+  .agents/slop/eq/nl-control.sh
+  .agents/slop/eq/nl-rename.py
+  .agents/slop/ffi-experiment/run-all.sh
+  .agents/slop/ffi-port-cost.py
+  .agents/slop/ga-oracle.py
+  .agents/slop/gatecensus/enum.py
+  .agents/slop/gatecensus/group.py
+  .agents/slop/hermetic/isolate.py
+  .agents/slop/jsfix/jsfix_e2e.py
+  .agents/slop/llvmir-oracle.py
+  .agents/slop/multi-rows.py
+  .agents/slop/nl/nl-oracle.py
+  .agents/slop/notes/sched-multi-truth.py
+  .agents/slop/nv-constaudit.py
+  .agents/slop/nv-mutate.py
+  .agents/slop/ops-python-render-oracle.py
+  .agents/slop/proof-close/MUTANT/tinybendygrad/helpers.bend
+  .agents/slop/rebase-oracle-ops.py
+  .agents/slop/rebase-plan.py
+  .agents/slop/tcptx-oracle.py
+  .agents/slop/unvendored.py
+  .agents/slop/w64/gen.sh
+  .agents/slop/wip/optprobe/diff.py
+  .agents/slop/wire-pair.py
+
+NOT in that commit, but in an OLDER one (recoverable, just not from here):
+  .agents/slop/ansi_probe.bend
+  .agents/slop/blob-intern-gate.sh
+  .agents/slop/coldness/coldness.py
+  .agents/slop/coldness/sweep.sh
+  .agents/slop/deadreg/build4.py
+  .agents/slop/deadreg/plant.py
+  .agents/slop/nocolor-probe.bend
+  .agents/slop/ops-gate.sh
+  .agents/slop/rebase-try.sh
+  .agents/slop/wallrule/wallcheck.py
+  .agents/slop/wallrule/wallcheck.sh
+
+NEVER COMMITTED -- irrecoverable, each one needs a report corrected:
+  .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend
+  .agents/slop/dup/lanes/tinybendygrad_runtime_ops_nv.bend
+  .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend
+  .agents/slop/dup/lanes/tinybendygrad_uop_fold.bend
+  .agents/slop/guardfix/probe-c.bend
+  .agents/slop/li/li-control.sh
+  .agents/slop/lintable/lintable-probe.bend
+  .agents/slop/mask-probe.bend
+  .agents/slop/mathlib/const_probe.bend
+  gates/populate.py
