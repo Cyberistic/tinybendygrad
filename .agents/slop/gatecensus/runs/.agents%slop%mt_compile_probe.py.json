@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/mt_compile_probe.py",
+ "base": "mt_compile_probe.py",
+ "stem": "mt_compile_probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2433,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_compile_probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "mac_ver        = 26.3\nmacos_major    = 26\nmetal_version  = metal4.0\nlen(src)       = 0  len(src_padded) = 4\nlen(params_pad)= 146  len(request) = 166\nrequest <QQ>   = (4, 146)\nerror          = 0\ndataLen        = 271\nerrMsg         = None\nlen(reply)     = 271\nreply[8:16]    = (104, 0)\nhdr_sum        = 104\nreply[:4]      = (b'\\x03\\x00\\x00\\x00', 'reply[-4:]', b'ENDT')\nret_len        = 167\nret_magic      = (b'MTLB', b'ENDT')\n",
+ "stderr": "",
+ "secs": 0.84,
+ "verdict": "error          = 0",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

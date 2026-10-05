@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/notes/reshape-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "resh_2d          shape=('2:int', '2:int') dtype=i32 srcops=['BUFFER', 'STACK']\n   same node as by-hand: True  nsrc: 2\nresh_1d          shape=('4:int',) dtype=i32 srcops=['BUFFER', 'CONST']\n   identity ret==self: True (oracle wants True)\nresh_noop        shape=('2:int', '3:int') dtype=void srcops=['NOOP', 'STACK']\n   marg: (2, 3) (the NOOP arm skips BOTH checks)\nresh_badprod     shape=RAISE ValueError: bad reshape: (4,) -> (2, 3) dtype=i32 srcops=['BUFFER', 'STACK']\nresh_negative    shape=RAISE ValueError: shape can't contain negative numbers (-2,) dtype=i32 srcops=['BUFFER', 'CONST']\nresh_symbolic    shape=RAISE ValueError: bad reshape: (4,) -> (2, UOp(Ops.SPECIAL, arg='N', src=(\n  UOp(Ops.CONST, arg=0, src=()),))) dtype=i32 srcops=['BUFFER', 'STACK']\ndtype buf  = i32\ndtype noop = void\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/reshape-oracle.py\n",
+ "stderr": "",
+ "verdict": "resh_noop        shape=('2:int', '3:int') dtype=void srcops=['NOOP', 'STACK']",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

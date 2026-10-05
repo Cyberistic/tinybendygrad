@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/multi-defect-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "nsl d0       (2, 2)  sym=()\nnsl keep1    (0, 3)  sym=(0,)\nnsl none     (4, 6)  sym=()\nnsl emptyax  (4, 6)  sym=()\nnsl evendiv  (0, 0)  sym=(0, 1)\nnsl odddiv   (0, 2)  sym=(0,)\nnsl c1       (4, 6)  sym=()\nnsl big      (3, 3)  sym=()\nnsl swap     (0, 3)  sym=(0,)\nnsl sameax   (2, 6)  sym=()\nrst t_a      arg_acc=(1, 4, 24) rev=(24, 4, 1) i=1 new_ax=1 found=1\nrst t_ab     arg_acc=(1, 4, 24) rev=(24, 4, 1) i=0 new_ax=2 found=1\nrst t_1      arg_acc=(1, 4, 24) rev=(24, 4, 1) i=2 new_ax=0 found=1\nrst t_miss   arg_acc=(1, 4, 24) rev=(24, 4, 1) i=None new_ax=0 found=0\nrst t_a1     arg_acc=(1, 1, 6) rev=(6, 1, 1) i=1 new_ax=1 found=1\nrst t_eq     arg_acc=(1, 4, 24) rev=(24, 4, 1) i=None new_ax=0 found=0\nrst3 t3_12   arg_acc=(1, 2, 6, 24) rev=(24, 6, 2, 1) i=1 new_ax=2 found=1\nrst3 t3_24   arg_acc=(1, 2, 6, 24) rev=(24, 6, 2, 1) i=0 new_ax=3 found=1\nrst3 t3_1    arg_acc=(1, 2, 6, 24) rev=(24, 6, 2, 1) i=3 new_ax=0 found=1\nrst3 t3_eq   arg_acc=(1, 1, 1, 4) rev=(4, 1, 1, 1) i=1 new_ax=2 found=1\nexa e0       (0,)\nexa e1       (1,)\nexa e2       (2,)\nexa e3       (2, 3)\nexa e3b      (3, 4)\nflf f00      ()\nflf f04      (1,)\nflf f34      (0, 1)\nflf f20      (0,)\nflf f11      (0, 1)\nflf f010     (1,)\nflf f123     (0, 1, 2)\nskk k_none   2\nskk k_drop0  1\nskk k_drop1  1\nskk k_drop2  0\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/multi-defect-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

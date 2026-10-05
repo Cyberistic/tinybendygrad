@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/tensor-gate.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.3,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "tn_const5=1 CONST/0 \ntn_constT=1 CONST/0 \ntn_alu2=3 CONST/0 CONST/0 ADD/2 \ntn_alu3=4 CONST/0 CONST/0 CONST/0 MUL/3 \ntn_alu_ord=3 BUFFER/0 CONST/0 ADD/2 \ntn_alu_det=2 CONST/0 DETACH/1 \ntn_mop_resh=4 BUFFER/0 CONST/0 STACK/2 RESHAPE/2 \ntn_mop_exp0=1 BUFFER/0 \ntn_mop_exp=3 BUFFER/0 CONST/0 EXPAND/2 \ntn_mop_pad=6 BUFFER/0 CONST/0 STACK/2 CONST/0 STACK/2 PAD/3 \ntn_mop_shr=4 BUFFER/0 CONST/0 CONST/0 SHRINK/3 \ntn_mop_flip=2 BUFFER/0 FLIP/1 \ntn_mop_perm0=2 BUFFER/0 PERMUTE/1 \ntn_rop0=2 BUFFER/0 REDUCE/1 \ntn_ropmax=2 BUFFER/0 REDUCE/1 \ntn_rop_none=1 BUFFER/0 \ntn_rop_arg=ADD/1\ntn_sink1=2 CONST/0 SINK/1 \ntn_sink2=3 CONST/0 CONST/0 SINK/2 \ntn_rop_gap=True\ntn_assign=4 BUFFER/0 BUFFER/0 STORE/2 AFTER/2 \ntn_repr5=<Tensor <UOp None () weakint> on None with grad None>\ntn_reprT=<Tensor <UOp None () bool> on None with grad None>\ntn_len0=True\ntn_len3=True\ntn_param=True\ntn_hash=True\ntn_replace=True\ntn_replace_bad=False\ntn_needgrad=2\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tensor-gate.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

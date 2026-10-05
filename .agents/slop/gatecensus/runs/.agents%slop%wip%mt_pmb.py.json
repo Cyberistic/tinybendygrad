@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/mt_pmb.py",
+ "base": "mt_pmb.py",
+ "stem": "mt_pmb",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 5266,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mt_pmb.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mt_pmb.py\", line 4, in <module>\n    i = s.index(\"def pmb_m1.ok(at: U32) -> Bool:\")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nValueError: substring not found\n",
+ "secs": 0.27,
+ "verdict": "i = s.index(\"def pmb_m1.ok(at: U32) -> Bool:\")",
+ "status": "FAIL",
+ "why": "rc=1"
+}

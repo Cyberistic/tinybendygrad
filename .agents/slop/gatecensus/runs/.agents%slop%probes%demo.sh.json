@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/probes/demo.sh",
+ "base": "demo.sh",
+ "stem": "demo",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 2906,
+ "writes": false,
+ "entry": false,
+ "cmd": "./demo.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './demo.sh'",
+ "stdout": "",
+ "stderr": ""
+}

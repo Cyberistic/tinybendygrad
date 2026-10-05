@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/blob-intern-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 10,
+ "stdout": "blobdiag_is_same_content=True\nblobdiag_count_same_content=1\nblobdiag_arg_same_content=97,97,97,97,97,97,97,97\nblobdiag_shape_same_content=(4,)\nblobdiag_is_same_len_diff_content=False\nblobdiag_count_same_len_diff_content=2\nblobdiag_arg_same_len_diff_content=97,97,97,97,98,98,98,98\nblobdiag_shape_same_len_diff_content=(4,)\nblobdiag_is_diff_len=False\nblobdiag_count_diff_len=2\nblobdiag_arg_diff_len=97,97,97,97,97,97\nblobdiag_shape_diff_len=(4,)\nblob_interns=True\nblob_len_diff_content=True\nblob_diff_len=True\nblob_count_same=1\nblob_count_len_diff_content=2\nblob_shape=(4,)\nblob_content=97,97,97,97\nblob_sweep=True\nblob_sweep_count=6\nblobdiag_bytes_eq=False\nblobdiag_bytes_hash_eq=False\nblobdiag_type=bytes\nblobdiag_type_differs_from_tuple=True\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=10 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/blob-intern-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

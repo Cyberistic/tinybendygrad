@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/order-late-move.py",
+ "base": "order-late-move.py",
+ "stem": "order-late-move",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9802,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/order-late-move.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/order-late-move.py\", line 44, in <module>\n    CD = _load(\"commute_detect\", \"commute-detect.py\")\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/order-late-move.py\", line 40, in _load\n    spec.loader.exec_module(m)\n  File \"<frozen importlib._bootstrap_external>\", line 999, in exec_module\n  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commute-detect.py\", line 170, in <module>\n    _RG = importlib.util.spec_from_file_location(\"rebase_gate\", pathlib.Path(__file__).resolve() / \"rebase-gate.py\")\n          ^^^^^^^^^\nNameError: name 'importlib' is not defined. Did you forget to import 'importlib'?\n",
+ "secs": 0.16,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/probe/jit_oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.6,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 42,
+ "stdout": "msg_names_pos=[0, 1]\nmsg_names_kw=['a', 'b']\nmsg_names_mismatch=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']\nmsg_dtype_mismatch=args mismatch in JIT: self.captured.expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'PYTHON')] != expected_input_info=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.i32, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.i32, 'PYTHON')]\norder_names_first=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']\nmsg_captured=none\nmsg_execs_n=none\nexecs9_oracle=none\nmsg_pruned=none\nmsg_group1=JIT 1 call\nmsg_group2=JIT 2 calls\ninfo_repr_flat=[(UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'PYTHON'), (UOp(Ops.NOOP, arg=None, src=()), (), dtypes.f32, 'PYTHON')]\ninfo_repr_view_oracle=[(UOp(Ops.RESHAPE, arg=None, src=(\n  UOp(Ops.NOOP, arg=None, src=()),\n  UOp(Ops.STACK, arg=None, src=(\n    UOp(Ops.CONST, arg=2, src=()),\n    UOp(Ops.CONST, arg=3, src=()),)),)), (), dtypes.f32, 'PYTHON')]\ndt_repr_f32=dtypes.f32\ndt_repr_i32=dtypes.i32\ndt_repr_h=dtypes.f16\nprep_dup_same=duplicate inputs to JIT\nprep_pair_names=[]\nprep_pair_tensors=1\ntrace_on=[(1, False), (2, True), (3, True), (4, True), (5, True)]\nafter_reset=(0, False)\ntrace_off=[(1, False), (2, False), (3, False), (4, False), (5, False)]\ncapture_zero=didn't JIT anything!\ncapture_nontensor=JIT return contains non-Tensor value of type int\nret_deep=JIT return contains non-Tensor value of type float\nret_first_wins=JIT return contains non-Tensor value of type int\nmsg_nested=having TinyJit inside another TinyJit is not supported len(capturing)=1 capturing=[\nmsg_nested_tail_is_an_address=<tinygrad.engi\nref_shape_4elem=(3,)\nref_shape_1elem=(3,)\nts_shape_msg=train_step was captured with 1568/2 and called with 1568/3\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=42 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/probe/jit_oracle.py\n",
+ "stderr": "",
+ "verdict": "msg_names_mismatch=args mismatch in JIT: self.captured.expected_names=[0, 1] != ['x', 'y']",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

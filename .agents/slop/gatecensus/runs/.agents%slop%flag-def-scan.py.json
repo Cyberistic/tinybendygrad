@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/flag-def-scan.py",
+ "base": "flag-def-scan.py",
+ "stem": "flag-def-scan",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3514,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/flag-def-scan.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# (1) a Bend def NAMED AFTER a flag that returns a constant\n# (2) gate rows (`row(`/`urow(`/`srow(`/`lrow(`/...) that NAME a flag\n# (3) `py=` expectations anywhere in .agents/slop/*.py that mention a flag\n\n1) runtime/support/hcq2.bend:282      def HCQ_CACHE_THRESH() -> U32: 64   [defaults [('int', 64)]]\n1) runtime/support/system.bend:2221   def REMOTE_TIMEOUT() -> U32: 60   [defaults [('int', 60)]]\n1) runtime/support/usb.bend:535       def HALF() -> U32: 262144   [defaults [('int', 1)]]\n1) runtime/support/rdma/bnxtdev.bend:222 def BNXT_DEBUG() -> U32: 0   [defaults [('int', 0)]]\n\n# (1) count 4   (2) count 0\n",
+ "stderr": "",
+ "secs": 12.73,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

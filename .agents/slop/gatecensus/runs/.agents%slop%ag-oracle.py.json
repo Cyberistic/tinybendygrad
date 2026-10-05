@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/ag-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 7,
+ "stdout": "### TMAP (CXType kind -> ctypes name)\ntmap 2 = None\ntmap 3 = ctypes.c_bool\ntmap 4 = ctypes.c_ubyte\ntmap 5 = ctypes.c_ubyte\ntmap 8 = ctypes.c_uint16\ntmap 9 = ctypes.c_uint32\ntmap 10 = ctypes.c_uint64\ntmap 11 = ctypes.c_uint64\ntmap 13 = ctypes.c_char\ntmap 14 = ctypes.c_byte\ntmap 15 = ctypes.c_wchar\ntmap 16 = ctypes.c_int16\ntmap 17 = ctypes.c_int32\ntmap 18 = ctypes.c_int64\ntmap 19 = ctypes.c_int64\ntmap 21 = ctypes.c_float\ntmap 22 = ctypes.c_double\ntmap 23 = ctypes.c_longdouble\n### UINTS / INTS (CXType kinds)\nuints 4 5 8 9 10 11\nints 4 5 8 9 10 11 13 14 16 17 18 19\nfps 111 110\nspecs 40\n### ARC_FAMILIES\narc alloc copy mutableCopy new\n### BASE_RULES\nrule 0 : \\s*\\\\\\n\\s* =>  \nrule 1 : \\s*\\n\\s* =>  \nrule 2 : //.* => \nrule 3 : /\\*.*?\\*/ => \nrule 4 : \\b(0[xX][0-9a-fA-F]+|\\d+)[uUlL]+\\b => \\1\nrule 5 : \\b0+(?=\\d) => \nrule 6 : \\s*&&\\s* =>  and \nrule 7 : \\s*\\|\\|\\s* =>  or \nrule 8 : \\s*!\\s* =>  not \nrule 9 : (struct|union|enum)\\s*([a-zA-Z_][a-zA-Z0-9_]*\\b) => \\1_\\2\nrule 10 : \\((unsigned )?(char|uint64_t)\\) => \nrule 11 : ^.*\\d+:\\d+.*$ => \nrule 12 : ^.*\\w##\\w.*$ => \n### TYPEHINT over every CXType_ kind\ncxkind_count 0\n### GEN output\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-oracle.py\", line 49, in <module>\n    hdr = sys.argv[1]\n          ~~~~~~~~^^^\nIndexError: list index out of range\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=7 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-oracle.py\n",
+ "stderr": "",
+ "verdict": "IndexError: list index out of range",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

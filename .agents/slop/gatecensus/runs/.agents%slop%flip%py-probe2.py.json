@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/flip/py-probe2.py",
+ "base": "py-probe2.py",
+ "stem": "py-probe2",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1362,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/flip/py-probe2.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "== THE ATOM LETTERS (graphcmp.py:324-326) ==\n  none     -> N\n  u32      -> i\n  i64      -> l\n  float    -> f\n  bool     -> b\n  str      -> s\n  bytes    -> y\n  dtype    -> D\n  ops      -> O\n  axis     -> X\n  addr     -> S\n  invalid  -> v\n  buf      -> z\n  uop      -> u\n  opt      -> q\n  enum     -> E\n\n== upstream REFUSES a non-bool flip arg (ops.py:428) ==\n  UOp(Ops.FLIP,(au,),(0,)).shape -> ValueError: bad flip on (4, 3), (0,)\n  UOp(Ops.FLIP,(au,),(1, 0)).shape -> ValueError: bad flip on (4, 3), (1, 0)\n  UOp(Ops.FLIP,(au,),(True, False)).shape -> (4, 3)\n  UOp(Ops.FLIP,(au,),(5, 7)).shape -> ValueError: bad flip on (4, 3), (5, 7)\n\n== upstream PERMUTE for contrast (ops.py:415) ==\n  UOp(Ops.PERMUTE,(au,),(1, 0)).shape -> (3, 4)\n  UOp(Ops.PERMUTE,(au,),(True, False)).shape -> (3, 4)\n\n== spec.py -- the shared isinstance(tuple) assertion ==\n  Ops.FLIP arg=(True, False) isinstance(tuple)=True\n  Ops.PERMUTE arg=(1, 0) isinstance(tuple)=True\n",
+ "stderr": "",
+ "secs": 1.73,
+ "verdict": "UOp(Ops.FLIP,(au,),(0,)).shape -> ValueError: bad flip on (4, 3), (0,)",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

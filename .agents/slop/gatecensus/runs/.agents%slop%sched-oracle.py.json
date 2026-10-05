@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/sched-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 3,
+ "stdout": "# matmul_sym var_vals={'K': 3}\n# specs_attempted=6 controls=1 specs_scheduled=6 scheduled_calls=12 block_keys=25\n# ==== determinism ====\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-oracle.py\", line 307, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-oracle.py\", line 280, in main\n    if name not in got[0] or name not in got[1]:\n                                         ~~~^^^\nIndexError: list index out of range\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=3 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/sched-oracle.py\n",
+ "stderr": "",
+ "verdict": "IndexError: list index out of range",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

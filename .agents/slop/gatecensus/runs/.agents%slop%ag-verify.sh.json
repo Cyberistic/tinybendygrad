@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/ag-verify.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 13.84,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 511,
+ "stdout": "== check-only (read the FIRST LINE; --check-only exits 1 on dtype.bend's 14 red laws)\nALL PROOFS CHECK\n== lane 1: interpreted\nbend 2.0.35 is available: run bend update\n== lane 2: native\nbend 2.0.35 is available: run bend update\n   both lanes BYTE-IDENTICAL (     149 rows)\n== regenerate every oracle by CALLING CPython\n   ag-oracle.txt REPRODUCES byte-identically\n   ag-emit-oracle.txt REPRODUCES byte-identically\n   ag-abi-oracle.txt REPRODUCES byte-identically\n== diff the gate against CPython\n--- 36 CPython-traced rows, 36 bend rows, 0 disagreements\n--- 39 CPython-emission rows, 39 bend rows, 0 disagreements\n--- 78 libclang-resolved constants, 78 in the bend row, 0 disagreements\n== mutation table\n\n44 mutations, 42 move rows, 2 do not\nNOT MOVING:\n  M39: 0  <-- BLIND SPOT  [gtn_is_reserved: `__` -> `_`]\n  M40: 0  <-- BLIND SPOT  [record_nm: the two rewrites swap order]\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=511 MB (ceiling 1024)  14s  :: ./.agents/slop/ag-verify.sh\n",
+ "stderr": "",
+ "verdict": "== check-only (read the FIRST LINE; --check-only exits 1 on dtype.bend's 14 red laws)",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

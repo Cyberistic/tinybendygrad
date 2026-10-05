@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/e2e_mm.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.88,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 63,
+ "stdout": "launches 2  uploads 3 (768 words)  ids {'b0': 100, 'b1': 101, 'b2': 102, 'b3': 103, 'b4': 104}  answer_u32[:4]=[1044381696, 1079115776, 1050148864, 3231514624]  csum=-287.156250\nwrote .agents/slop/e2e_mm.bend and runs/e2e/e2e-mm-oracle.json\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=63 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2e_mm.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

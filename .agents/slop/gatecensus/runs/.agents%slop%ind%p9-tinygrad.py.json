@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ind/p9-tinygrad.py",
+ "base": "p9-tinygrad.py",
+ "stem": "p9-tinygrad",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1466,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ind/p9-tinygrad.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "reduce_n0 (4, 5, 6)\nreduce_n1 (5, 6)\nreduce_n3 ()\n23_33 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3), (3, 3))\n13_23 shape=(2, 3) numel=6 b=6 ge=True\n23_41 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3), (4, 1))\n20_11 shape=(2, 0) numel=0 b=1 ge=False\n50_3 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((5, 0), (3,))\n2_22 shape=(2, 2) numel=4 b=4 ge=True\n3_23 shape=(2, 3) numel=6 b=6 ge=True\n5_37 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((5,), (3, 7))\n11_20 shape=(2, 0) numel=0 b=0 ge=True\n0_1 shape=(0,) numel=0 b=1 ge=False\n1_0 shape=(0,) numel=0 b=0 ge=True\nscalar_33 shape=(3, 3) numel=9 b=9 ge=True\n",
+ "stderr": "",
+ "secs": 1.29,
+ "verdict": "23_33 ERR IndexError: shape mismatch: objects cannot be broadcast to a single shape ((2, 3), (3, 3))",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

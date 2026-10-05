@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/notes/rw-truth.py",
+ "base": "rw-truth.py",
+ "stem": "rw-truth",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 5786,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/rw-truth.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/rw-truth.py\", line 109, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/rw-truth.py\", line 104, in main\n    rows.append((\"gd_len\", len(GD.pm_add_gpudims.patterns)))\n                               ^^^^^^^^^^^^^^^^^\nAttributeError: module 'tinygrad.codegen.gpudims' has no attribute 'pm_add_gpudims'. Did you mean: 'pm_group_gpudims'?\n",
+ "secs": 0.22,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

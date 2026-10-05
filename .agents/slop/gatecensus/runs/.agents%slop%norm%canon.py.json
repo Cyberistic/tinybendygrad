@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/norm/canon.py",
+ "base": "canon.py",
+ "stem": "canon",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 11270,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/norm/canon.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "",
+ "stderr": "",
+ "secs": 0.04,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "zero bytes on both streams -- a refusal, not a pass"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_bendplus.py",
+ "base": "nv_bendplus.py",
+ "stem": "nv_bendplus",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2291,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_bendplus.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "STOP after 0 fixes\nnv_reg_NV_PMC_BOOT_0_base=0\nnv_reg_NV_PMC_BOOT_0_off=0\nnv_reg_NV_PMC_BOOT_0_nf=5\nnv_reg_NV_PMC_BOOT_0_names=minor_revision,major_revision,architecture_1,implementation,architecture_0\nnv_reg_NV_PMC_BOOT_0_ranges=minor_revision=0:3;major_revision=4:7;architecture_1=8:8;implementation=20:23;architecture_0=24:28\nnv_reg_NV_PMC_BOOT_0_maxw=5\nnv_reg_NV_PMC_BOOT_0_wide=0\nnv_addr_boot0=1\nnv_reg_NV_PMC_BOOT_42_base=0\nnv_reg_NV_PMC_BOOT_42_off=2560\nnv_reg_NV_PMC_BOOT_42_nf=6\nnv_reg_NV_PMC_BOOT_42_names=minor_extended_revision,minor_revision,major_revision,implementation,architecture,chip_id\nnv_reg_NV_PMC_BOOT_42_ranges=minor_extended_revision=8:11;minor_revision=12:15;major_revision=16:19;implementation=20:23;architecture=24:29;chip_id=20:29\nnv_reg_NV_PMC_BOOT_42_maxw=10\nnv_reg_NV_PMC_BOOT_42_wide=0\nnv_addr_boot42=1\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_base=0\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_off=2074664\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_nf=1\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_names=val\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_ranges=val=4:31\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_maxw=28\nnv_reg_NV_PFB_PRI_MMU_WPR2_ADDR_HI_wide=0\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_base=0\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_off=1147812\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_nf=0\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_names=\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_ranges=\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_maxw=0\nnv_reg_NV_PGC6_AON_SECURE_SCRATCH_GROUP_42_wide=0\nnv_reg_NV_VIRTUAL_F\n",
+ "stderr": "",
+ "secs": 3.65,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

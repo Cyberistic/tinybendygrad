@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/amdev_fw.py",
+ "base": "amdev_fw.py",
+ "stem": "amdev_fw",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 9892,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_fw.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "",
+ "stderr": "",
+ "secs": 0.18,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "zero bytes on both streams -- a refusal, not a pass"
+}

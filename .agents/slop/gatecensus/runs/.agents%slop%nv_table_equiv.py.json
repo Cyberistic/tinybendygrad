@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_table_equiv.py",
+ "base": "nv_table_equiv.py",
+ "stem": "nv_table_equiv",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4518,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_table_equiv.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "port reg  CPython table (arch from)                      fields  verdict\n----------------------------------------------------------------------------------------------------\nboot0     NV_PMC_BOOT_0                                  5       identical, field for field, IN ORDER\nboot42    NV_PMC_BOOT_42                                 6       identical, field for field, IN ORDER\ninval     NV_VIRTUAL_FUNCTION_PRIV_MMU_INVALIDATE        17      identical, field for field, IN ORDER\nscratch   NV_PGC6_AON_SECURE_SCRATCH_GROUP_42            0       identical, field for field, IN ORDER\nv2_dpd    NV_MMU_VER2_DUAL_PDE                           14      identical, field for field, IN ORDER\nv2_pde    NV_MMU_VER2_PDE                                9       identical, field for field, IN ORDER\nv2_pte    NV_MMU_VER2_PTE                                12      identical, field for field, IN ORDER\nv3_dpd    NV_MMU_VER3_DUAL_PDE                           8       identical, field for field, IN ORDER\nv3_pde    NV_MMU_VER3_PDE                                5       identical, field for field, IN ORDER\nv3_pte    NV_MMU_VER3_PTE                                9       identical, field for field, IN ORDER\nwpr2      NV_PFB_PRI_MMU_WPR2_ADDR_HI                    1       identical, field for field, IN ORDER\n\ntables compared : 11\nfields compared : 86\nregisters with no fields on either side (nothing to compare): none\nMISMATCHING TABLES: 0 []\n",
+ "stderr": "",
+ "secs": 0.42,
+ "verdict": "port reg  CPython table (arch from)                      fields  verdict",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

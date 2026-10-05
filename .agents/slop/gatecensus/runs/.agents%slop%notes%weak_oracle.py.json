@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/notes/weak_oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "A wl       dtypes.weakint [dtypes.weakint, dtypes.weakint]\nA u.dtype   dtypes.f16 | src dts [dtypes.weakint, dtypes.f16]\nA dts       (dtypes.f16, dtypes.f16)\nA commit    8.0 | dtypes.f16 | src dts [dtypes.f16, dtypes.f16]\nB store dt  [dtypes.f16, dtypes.weakfloat]\nB rewritten [dtypes.f16, dtypes.f16] | same node? False\nC src ops   [Ops.MUL, Ops.CAST] [dtypes.f16, dtypes.f16]\nC promo     dtypes.f16 | u.dtype dtypes.f16\nC uncast    [dtypes.f16, dtypes.weakfloat] | same node? False\nD load dts  None | u.dtype dtypes.weakint\nE dts       None | meet weak? True\nL weakint ^ weakint = weakint\nL weakint ^ weakfloat = weakfloat\nL weakfloat ^ weakfloat = weakfloat\nL weakint ^ i32 = i32\nL weakint ^ f16 = f16\nL weakfloat ^ f16 = f16\nS weakint strong= i32 weak= weakint\nS weakfloat strong= f32 weak= weakfloat\nS i32 strong= i32 weak= weakint\nS f16 strong= f16 weak= weakfloat\nS bool strong= bool weak= bool\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/weak_oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

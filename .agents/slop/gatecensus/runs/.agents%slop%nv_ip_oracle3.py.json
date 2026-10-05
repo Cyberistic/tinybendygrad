@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/nv_ip_oracle3.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "stage D rows 406\n  MAXPAY 65456 RING 0x3f000 MC 63\n  req0 func=72 plen=928 length=32 elem=1 total=4096 cksum=0x4050523f\n  req1 func=73 plen=82 length=32 elem=1 total=4096 cksum=0x4050523f\n  req2 func=4 plen=64 length=32 elem=1 total=4096 cksum=0x40505271\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_ip_oracle3.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

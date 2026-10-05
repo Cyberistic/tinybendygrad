@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/qc_cache_oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "KINDMAP PARSE=0 MINT=3 PATCH=1 HIT=2\nper-call: [['PARSE', 'MINT', 'PATCH'], ['HIT'], ['PARSE', 'MINT', 'PATCH'], ['HIT'], ['PARSE', 'MINT', 'PATCH'], ['PARSE', 'MINT', 'PATCH']]\nflat: PARSE,MINT,PATCH,HIT,PARSE,MINT,PATCH,HIT,PARSE,MINT,PATCH,PARSE,MINT,PATCH\nnparse=4 nmint=4 npatch=4 nhit=2 len=4\nfirst_trace= PARSE,MINT,PATCH\nsecond= ['HIT'] fourth= ['HIT']\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/qc_cache_oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

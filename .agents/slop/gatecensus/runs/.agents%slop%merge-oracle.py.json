@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/merge-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.36,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 7,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/merge-oracle.py\", line 53, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/merge-oracle.py\", line 29, in main\n    base, padto, out_path = sys.argv[1], sys.argv[2], sys.argv[3]\n                            ~~~~~~~~^^^\nIndexError: list index out of range\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=7 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/merge-oracle.py\n",
+ "stderr": "",
+ "verdict": "IndexError: list index out of range",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

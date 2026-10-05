@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/differverdict/cmp.py",
+ "base": "cmp.py",
+ "stem": "cmp",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3754,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/differverdict/cmp.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/differverdict/cmp.py\", line 96, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/differverdict/cmp.py\", line 37, in main\n    shell, py = Path(sys.argv[1]), Path(sys.argv[2])\n                     ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

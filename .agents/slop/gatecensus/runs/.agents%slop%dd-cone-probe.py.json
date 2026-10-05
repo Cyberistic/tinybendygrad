@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-cone-probe.py",
+ "base": "dd-cone-probe.py",
+ "stem": "dd-cone-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 1879,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-cone-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "lgv: roots=['CAST(CAST(C(0)))', 'CAST(C(0))']\n  built this call (n): 3\n  cone (4 nodes, oracle order):\n    0: CAST/1  incoming=1  tree=CAST(CAST(C(0)))\n    1: CAST/1  incoming=1  tree=CAST(C(0))\n    2: CONST/0  incoming=2  tree=C(0)\n    3: CAST/1  incoming=1  tree=CAST(C(0))\n  sig=CAST/1,CAST/1,CONST/0,CAST/1\n  k=C(0)\nlgw: roots=['CAST(C(0))', 'CAST(C(0))']\n  built this call (n): 1\n  cone (2 nodes, oracle order):\n    0: CAST/1  incoming=2  tree=CAST(C(0))\n    1: CONST/0  incoming=1  tree=C(0)\n  sig=CAST/1,CONST/0\n  k=C(0)\nlgx: roots=['CAST(C(1))', 'CAST(C(0))']\n  built this call (n): 0\n  cone (4 nodes, oracle order):\n    0: CAST/1  incoming=1  tree=CAST(C(1))\n    1: CONST/0  incoming=1  tree=C(1)\n    2: CAST/1  incoming=1  tree=CAST(C(0))\n    3: CONST/0  incoming=1  tree=C(0)\n  sig=CAST/1,CONST/0,CAST/1,CONST/0\n  k=C(1),C(0)\n",
+ "stderr": "",
+ "secs": 0.2,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

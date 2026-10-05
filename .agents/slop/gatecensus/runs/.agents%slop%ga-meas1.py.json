@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ga-meas1.py",
+ "base": "ga-meas1.py",
+ "stem": "ga-meas1",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3410,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ga-meas1.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "TOTAL source lines (file, minus trailing newline): 541\n  logic      390    72.1%\n  emission    22     4.1%\n  ffi          7     1.3%\n  decl        18     3.3%\n  comment     74    13.7%\n  blank       30     5.5%\n\nCORE (logic + emission, the two kinds a Bend port must reproduce): 412\n  logic     390  (94.7% of core)\n  emission  22  (5.3% of core)\n  ffi       7  (1.3% of file, WALL 1)\n\n### every EMISSION line, numbered, so the count can be argued with\n    69  return f\"{v}FLAT\"\n   260  lines.append('  def __repr__(self): return f\"{type(self).__name__}.{self\n   283  lines.append(f\"  {mem}{msuf} = {op}\")\n   302  return f\"FixedBitField({hi}, {lo}, 0b{fixed_bits}{opcode:0{bits-len(fixe\n   318  return f\"BitField({hi}, {lo})\"\n   364  return \"{\" + \", \".join(names) + \"}\"\n   382  lines.append(f\"class {cls}(Inst):\")\n   389  lines.append(f\"class {enc_name}(Inst):\")\n   393  lines.append(f\"  op = EnumBitField({hi}, {lo}, {base_fmt}Op, {fmt_allowe\n   395  lines.append(f\"  {fn} = {field_def(fn, hi, lo, enc_name, enc_bits if fn \n   409  lines.append(f\"class {enc_name}({base}):\")\n   416  lines.append(f\"  op = EnumBitField({hi}, {lo}, {base}Op, {fmt_allowed(f'\n   418  lines.append(f\"  {fn} = {field_def(fn, hi, lo, enc_name)}\")\n   430  lines.append(f\"class {base}_SDST({base}):\")\n   433  lines.append(f\"  op = EnumBitField({hi}, {lo}, {base}Op, {fmt_allowed(f'\n   434  lines.append(f\"  vdst = SSrcField({field_hi}, {field_lo})\")\n   441  lines.append(f\"class {base}_SDST_LIT({base}_SDST):\")\n   442  lines.append(f\"  literal = BitField({lit_field[1]}, {lit_field[2]})\")\n   461  lines.append(f\"{name.lower()}{msuf.lower()} = functools.partial({cls}, {\n   476  return f\"({f'Fmt.{fmt}' if fmt else 'None'}, {size}, {f'OpType.{otype}' \n   480  lines.append(f'  {enc_base}Op.{name}: {{{fstr}}},')\n   497  lines.append(f\"  {enum_name}.{name}: {code!r},\")\n\n### every FFI line, numbered, so the count can be argued with\n     4  import re, zlib, xml.etree.ElementTree as ET, zipfile, pathlib\n    77  root = ET.fromstring(zipfile.ZipFile(fetch(XML_URL)).read(filename))\n   166  data = fetch(url).read_bytes()\n   169  xref_match = re.search(rb'startxref\\s+(\\d+)', data)\n   184  return zlib.decompress(raw) if b'/FlateDecode' in obj else raw\n   203  t = ''.join(bytes.fromhex(h).decode('latin-1') for h in re.findall(r'<([\n   522  autogen_base = pathlib.Path(__file__).parents[2] / \"runtime\" / \"autogen\"\n\n### every DECL line (a def/class header or signature)\n    48  def _strip_enc(name: str) -> str:\n    56  def _norm_field(name: str) -> str:\n    61  def _map_flat(enc_name: str, instr_name: str) -> str:\n    76  def parse_xml(filename: str):\n    86  def _pv_val(pv: ET.Element) -> tuple[int, str]:\n   164  def extract_pdf_text(url: str) -> list[list[tuple[float, float, str, str\n   181  def get_stream(n: int) -> bytes:\n   208  def extract_pcode(pages: list[list[tuple[float, float, str, str]]], name\n   256  def write_common(all_fmts: dict[str, int], all_op_types: set[str], path:\n   273  def write_enum(enums, path):\n   289  def write_ins(encodings, enums, suffix_only_ops, types, arch, path):\n   292  def get_base_fmt(fmt):\n   295  def field_def(name, hi, lo, fmt, enc_bits=None):\n   327  def sort_fields(fields): return sorted(fields, key=lambda f: (ORDER.inde\n   361  def fmt_allowed(op_enum: str, ops: set[int]) -> str:\n   464  def write_operands(types: dict, enums: dict, arch: str, path: pathlib.Pa\n   474  def fmt_val(v):\n   484  def write_pcode(pcode: dict[tuple[str, int], str], enums: dict[str, dict\n",
+ "stderr": "",
+ "secs": 0.18,
+ "verdict": "TOTAL source lines (file, minus trailing newline): 541",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

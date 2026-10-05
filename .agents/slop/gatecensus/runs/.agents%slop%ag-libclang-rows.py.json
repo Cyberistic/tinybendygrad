@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/ag-libclang-rows.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.35,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 5,
+ "stdout": "tramps=324 types=76 records=41 rec_fields=130 enums=47 enum_consts=845 aliases=32\nnonbind top-level defs: []\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=5 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-libclang-rows.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

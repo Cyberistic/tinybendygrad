@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/deadreg/gate.py",
+ "base": "gate.py",
+ "stem": "gate",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10424,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/deadreg/gate.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 0,
+ "stdout": "configuration     bend    emit   cc pasted   regs  dtype.c run fns landed\n-------------------------------------------------------------------------\nnone                 0    2885    0     0      0  (none)\none-fp8-from         0    3555    0     8      1  fp8_from\none-i64-ceildiv      0    3591    0     8      1  i64_ceildiv\nall-ten              0    4324    0     8     10  bf16 fp16 fp8_from fp8_to i64_cdiv i64_ceildiv i64_cmod i64_floor_div i64_floor_mod i64_trunc\n\ndtype.c   10 registrations: bf16->bf16_run, fp16->fp16_run, fp8_from->fp8_from_run, fp8_to->fp8_to_run, i64_trunc->i64_run, i64_floor_div->div64_floor_run, i64_floor_mod->div64_mod_run, i64_cdiv->div64_cdiv_run, i64_cmod->div64_cmod_run, i64_ceildiv->div64_ceildiv_run\ndtype.js  10 registrations: bf16, fp16, fp8_from, fp8_to, i64_trunc, i64_floor_div, i64_floor_mod, i64_cdiv, i64_cmod, i64_ceildiv\nMY FILES runtime/dtype.c, runtime/dtype.js: md5 drift 0\nwhole-tree drift 2, files added 0, census 144  (both are OTHER units; runtime/support/autogen.bend, runtime/support/rdma/bnxtdev.bend.sweep)\n",
+ "stderr": "",
+ "secs": 38.14,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

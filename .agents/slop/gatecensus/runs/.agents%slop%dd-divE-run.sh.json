@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-divE-run.sh",
+ "base": "dd-divE-run.sh",
+ "stem": "dd-divE-run",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 1092,
+ "writes": false,
+ "entry": false,
+ "cmd": "./dd-divE-run.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './dd-divE-run.sh'",
+ "stdout": "",
+ "stderr": ""
+}

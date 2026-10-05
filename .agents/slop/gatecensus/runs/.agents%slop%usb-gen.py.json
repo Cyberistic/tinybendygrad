@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/usb-gen.py",
+ "base": "usb-gen.py",
+ "stem": "usb-gen",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 16859,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/usb-gen.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "sections: 17 rows: 357\n",
+ "stderr": "",
+ "secs": 0.38,
+ "verdict": "sections: 17 rows: 357",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

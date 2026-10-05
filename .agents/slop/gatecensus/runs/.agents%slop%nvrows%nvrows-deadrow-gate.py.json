@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/nvrows/nvrows-deadrow-gate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.56,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 467,
+ "stdout": "==============================================================================\nDEAD-ROW CENSUS -- tinybendygrad/runtime/support/nv/nvdev.bend\n==============================================================================\nbend rc                 : 0\nrow call sites in source: 374\nrow LINES printed       : 811\nSITES THAT EXECUTED     : 368\nSITES THAT NEVER RAN    : 6\nDISARM OUTPUT-NEUTRAL   : True\n   DEAD  S070:  nvdev.bend:1274\n   DEAD  S071:  nvdev.bend:1275\n   DEAD  S072:  nvdev.bend:1276\n   DEAD  S073:  nvdev.bend:1277\n   DEAD  S074:  nvdev.bend:1278\n   DEAD  S075:  nvdev.bend:1279\nVERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=467 MB (ceiling 1024)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nvrows/nvrows-deadrow-gate.py\n",
+ "stderr": "",
+ "verdict": "VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

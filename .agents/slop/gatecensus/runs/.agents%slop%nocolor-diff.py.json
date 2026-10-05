@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/nocolor-diff.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 7,
+ "stdout": "line 30: CPython True, port False   [NAMED BOUNDARY: Char.is_digit is ASCII; CPython int() also takes Unicode Nd digits]\nexact 18  refusal-answered-False 13  named-boundary 1  DISAGREE 0  of 32 probes\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=7 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nocolor-diff.py\n",
+ "stderr": "",
+ "verdict": "exact 18  refusal-answered-False 13  named-boundary 1  DISAGREE 0  of 32 probes",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

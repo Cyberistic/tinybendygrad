@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/graphcmp-p14-sched.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.3,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "# DEV = METAL\n# eager matmul           nodes=  18  \n#                        ops: ALLOC CONST MUL PERMUTE REDUCE RESHAPE STACK\n# create_schedule        nodes=   1  \n#                        ops: LINEAR\n# full_rewrite_to_sink FAILED: RuntimeError UOp verification failed at 0 on Ops.LINEAR dtypes.void 0 [] None\n# hcq_fence              nodes=  25  BACKEDGE=1 LOAD=2 STORE=2 INDEX=4 PARAM=4 RANGE=1\n#                        ops: ADD AFTER BACKEDGE CALL CAST CMPLT CONST INDEX LOAD NOOP PARAM RANGE SINK STORE\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp-p14-sched.py\n",
+ "stderr": "",
+ "verdict": "# full_rewrite_to_sink FAILED: RuntimeError UOp verification failed at 0 on Ops.LINEAR dtypes.void 0 [] None",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

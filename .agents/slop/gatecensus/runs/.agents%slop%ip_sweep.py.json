@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/ip_sweep.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 180.11,
+ "bounded_exit": 4,
+ "bound": "TIMED-OUT",
+ "child_rc": -9,
+ "peak_mb": 488,
+ "stdout": "[bounded] TIMED-OUT  rc=-9  peak-RSS=488 MB (ceiling 1024)  180s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ip_sweep.py\n[bounded] rc=142 would be SIGALRM; here the watchdog sent SIGKILL. Either way THIS RUN PROVES NOTHING -- it was killed, it did not fail.\n",
+ "stderr": "",
+ "status": "NOT-RUN",
+ "verdict": "",
+ "why": "TIMED OUT at 180s",
+ "pass": 2
+}

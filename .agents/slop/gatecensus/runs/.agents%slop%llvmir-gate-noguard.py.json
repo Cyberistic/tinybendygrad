@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/llvmir-gate-noguard.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.69,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 957,
+ "stdout": "port md5=74e3e832   oracle md5=74e3e832   lanes BYTE-IDENTICAL: True\nthe SHARED reader (rebase-gate.py:rows()) over each lane: 470 names on the port, 470 on the oracle -- 0 only it finds, 0 only this reader finds, 470 in common\nphysical rows on stdout: port 472, oracle 472\ngated 470   agree 470   disagree []\nAGREE\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=957 MB (ceiling 1024)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/llvmir-gate-noguard.py\n",
+ "stderr": "",
+ "verdict": "gated 470   agree 470   disagree []",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

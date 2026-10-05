@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/cpulink_gate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.99,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 220,
+ "stdout": "bend rows carrying '=' = 134\nAGREES cpu_lib_objc=/usr/lib/libobjc.dylib\nAGREES cpu_link_libs_10=m,System,/usr/lib/libobjc.dylib\nAGREES cpu_link_libs_n=3\ntwo_sel_registerName           HOLDS  got='RAISES:Attempting to relocate against an undefined symbol sel_registerName'\ntwo_objc_msgSend               HOLDS  got='RAISES:Attempting to relocate against an undefined symbol objc_msgSend'\nthree_dummy_sel_registerName   HOLDS  got='RAISES:Attempting to relocate against an undefined symbol sel_registerName'\nthree_objc_msgSend             HOLDS  got='0x18d9d1800'\nsame_as_global                 HOLDS  got='True'\nlibSystem_sel_registerName     HOLDS  got='UNRESOLVED'\nfindlib_objc                   HOLDS  got='None'\nis_file_libSystem              HOLDS  got='False'\nis_file_libobjc                HOLDS  got='False'\nNOTE findlib_rt=/System/Library/Frameworks/System.framework/System -- libSystem IS reachable, via the framework symlink\nLINK-SET GATE PASSES: 3 shared rows agree byte for byte, 9 evidence assertions hold\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=220 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cpulink_gate.py\n",
+ "stderr": "",
+ "verdict": "three_dummy_sel_registerName   HOLDS  got='RAISES:Attempting to relocate against an undefined symbol sel_registerName'",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

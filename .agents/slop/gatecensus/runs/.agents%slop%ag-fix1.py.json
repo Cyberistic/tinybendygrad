@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-fix1.py",
+ "base": "ag-fix1.py",
+ "stem": "ag-fix1",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2927,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix1.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-fix1.py\", line 3, in <module>\n    old_start = s.index(\"def te_some(\")\n                ^^^^^^^^^^^^^^^^^^^^^^^\nValueError: substring not found\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

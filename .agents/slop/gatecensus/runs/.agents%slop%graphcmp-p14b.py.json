@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/graphcmp-p14b.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.59,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 75,
+ "stdout": "# DEV = METAL\n# matmul                     kernels=1\n# matmul sched[0]            nodes=  23  END=1 STORE=1 INDEX=3 PARAM=3 RANGE=3\n# matmul full[0]             nodes=  45  END=3 LOAD=4 STORE=3 INDEX=6 PARAM=3 RANGE=3\n# copy                       kernels=0\n# assign                     kernels=1\n# assign sched[0]            nodes=  15  END=1 STORE=1 INDEX=2 PARAM=2 RANGE=2\n# assign full[0]             nodes=  20  END=2 LOAD=1 STORE=1 INDEX=2 PARAM=2 RANGE=2\n# shrink                     kernels=1\n# shrink sched[0]            nodes=  27  END=1 STORE=1 INDEX=3 PARAM=3 RANGE=3 WHERE=2\n# shrink full[0]             nodes=  45  END=3 LOAD=4 STORE=3 INDEX=6 PARAM=3 RANGE=3 WHERE=2\n# pad                        kernels=1\n# pad sched[0]               nodes=  26  END=1 STORE=1 INDEX=2 PARAM=2 RANGE=2 WHERE=2\n# pad full[0]                nodes=  33  END=2 LOAD=1 STORE=1 INDEX=2 PARAM=2 RANGE=2 WHERE=1\n# sum                        kernels=1\n# sum sched[0]               nodes=  14  END=1 STORE=1 INDEX=2 PARAM=2 RANGE=2\n# sum full[0]                nodes=  35  END=2 LOAD=3 STORE=3 INDEX=5 PARAM=2 RANGE=2\n# --- to_program (IF/ENDIF live here) ---\n# prg matmul                 nodes=  49  END=2 LOAD=4 STORE=3 INDEX=6 PARAM=3 BUFFER=1 RANGE=2\n# prg pad                   FAILED KernelOptError: 4 can't divide UOp(Ops.CAST, arg=dtypes.i32, src=(\n  UOp(Ops.CONST, arg=4, src=()),)) in    5    4\n# prg shrink                FAILED KernelOptError: 4 can't divide UOp(Ops.CAST, arg=dtypes.i32, src=(\n  UOp(Ops.CONST, arg=4, src=()),)) in    2    4    4\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=75 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp-p14b.py\n",
+ "stderr": "",
+ "verdict": "# prg pad                   FAILED KernelOptError: 4 can't divide UOp(Ops.CAST, arg=dtypes.i32, src=(",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

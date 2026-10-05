@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/jsfp8/gate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.14,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 167,
+ "stdout": "ROWS EXPECTED 205121  by family {'D': 1024, 'E': 204097}\nevery expectation was CALLED from tinygrad/dtype.py; none typed\n\ntree /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/dtype.js\nSRC_MD5 44294858354c23b02c595f423aacef40  (matches the live file: True)\n\nFIXED      present 205121/205121  MISMATCH 0\n    D     1024 rows   MISMATCH 0\n    R     3057 rows   MISMATCH 0\n    T     1040 rows   MISMATCH 0\n    W   200000 rows   MISMATCH 0\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=167 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jsfp8/gate.py\n",
+ "stderr": "",
+ "verdict": "FIXED      present 205121/205121  MISMATCH 0",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

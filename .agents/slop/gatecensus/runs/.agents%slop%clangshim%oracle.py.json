@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/clangshim/oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.36,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 7,
+ "stdout": "CLIB /Library/Developer/CommandLineTools/usr/lib/libclang.dylib\nCVER Apple clang version 17.0.0 (clang-1700.6.3.2)\nSIZE int          sizeOf=4 alignOf=4 spelling=int\nSIZE char         sizeOf=1 alignOf=1 spelling=char\nSIZE double       sizeOf=8 alignOf=8 spelling=double\nSIZE struct Pair  sizeOf=16 alignOf=8 spelling=struct Pair\nFIELD a cdecl_off=0 offof_bits=0 offof_bytes=0 sizeOf=4 spelling=int c=int\nFIELD b cdecl_off=4 offof_bits=32 offof_bytes=4 sizeOf=1 spelling=char c=char\nFIELD c cdecl_off=8 offof_bits=64 offof_bytes=8 sizeOf=8 spelling=double c=double\nRECORD CXCursor sizeof=32 opaque=_mem_ fields=kind@0,xdata@4,data@8\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=7 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/clangshim/oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

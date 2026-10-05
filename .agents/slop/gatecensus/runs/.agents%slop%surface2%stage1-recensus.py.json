@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/surface2/stage1-recensus.py",
+ "base": "stage1-recensus.py",
+ "stem": "stage1-recensus",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 1806,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/surface2/stage1-recensus.py",
+ "how": "venv-py",
+ "leash": 90,
+ "rc": 0,
+ "stdout": "DENOMINATOR (AST, class Tensor): 57\n  by kind: {'dunder': 21, 'private': 8, 'public': 28}\nPORT defs in tensor.bend: 205\nTOTAL tensor.bend lines: 1896\nUPSTREAM __init__                 57\nUPSTREAM __del__                  102\nUPSTREAM _apply_uop               104\nUPSTREAM alu                      116\nUPSTREAM _uop                     118\nUPSTREAM _wrap_uop                120\nUPSTREAM const                    122\nUPSTREAM is_param_                124\nUPSTREAM __repr__                 128\nUPSTREAM __hash__                 134\nUPSTREAM __bool__                 136\nUPSTREAM __len__                  138\nUPSTREAM device                   143\nUPSTREAM shape                    146\nUPSTREAM dtype                    149\nUPSTREAM as_param                 153\nUPSTREAM call                     156\nUPSTREAM custom_kernel            159\nUPSTREAM linear_with_vars         168\nUPSTREAM schedule_linear          212\nUPSTREAM realize                  219\nUPSTREAM replace                  227\nUPSTREAM assign                   236\nUPSTREAM _buffer                  276\nUPSTREAM _data                    285\nUPSTREAM data                     287\nUPSTREAM tolist                   306\nUPSTREAM numpy                    328\nUPSTREAM clone                    344\nUPSTREAM to                       353\nUPSTREAM to_                      369\nUPSTREAM shard                    377\nUPSTREAM shard_                   395\nUPSTREAM shard_like               401\nUPSTREAM from_blob                412\nUPSTREAM from_url                 426\nUPSTREAM manual_seed              442\nUPSTREAM _next_counter            460\nUPSTREAM backward                 475\nUPSTREAM _mop                     499\nUPSTREAM _rop                     500\nUPSTREAM __setitem__              502\nUPSTREAM __delitem__              530\nUPSTREAM __iadd__                 536\nUPSTREAM __isub__                 537\nUPSTREAM __imul__                 538\nUPSTREAM __itruediv__             539\nUPSTREAM __ifloordiv__            540\nUPSTREAM __ipow__                 541\nUPSTREAM __iand__                 542\nUPSTREAM __ior__                  543\nUPSTREAM __ixor__                 544\nUPSTREAM __ilshift__              545\nUPSTREAM __irshift__              546\nUPSTREAM __imatmul__              547\nUPSTREAM __eq__                   549\nUPSTREAM decode_hevc_frame        553\n",
+ "stderr": "",
+ "secs": 0.37,
+ "verdict": "TOTAL tensor.bend lines: 1896",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

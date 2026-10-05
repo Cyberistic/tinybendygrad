@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/null-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "nr_exec=0\nnr_copy=1\nnr_wait=2\nnr_store=3\nnr_timestamp=4\nnr_emulate_msg_rdna4=EMULATE is deprecated, use DEV=NULL:HIP:gfx1201\nnr_emulate_msg_amd=EMULATE is deprecated, use DEV=NULL:HIP:gfx1100\nnr_emulate_msg_cdna=EMULATE is deprecated, use DEV=NULL:HIP:gfx950\nnr_emulate_msg_other=EMULATE is deprecated, use DEV=NULL:HIP:<arch>\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/null-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

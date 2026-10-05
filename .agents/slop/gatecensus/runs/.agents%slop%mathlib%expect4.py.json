@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/mathlib/expect4.py",
+ "base": "expect4.py",
+ "stem": "expect4",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4523,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mathlib/expect4.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "3/7 correctly rounded f32                        3edb6db7\n3/7 as the decimal 0.42857143                    3edb6db7\n3/7 as the decimal 0.42857142857142855           3edb6db7\nsqrt(2)/sqrt(pi) is IRRATIONAL -- see below      (needs a real sqrt -- see expect3.py)\n2.5/1.25                                         40000000\n6/3                                              40000000\n\nFIRST ATTEMPT AT THE DISCRIMINATOR FAILED, and it is worth recording:\n  I picked the decimals 0.42857143 and 0.42857142857142855 expecting\n  them to be ADJACENT f32 neighbours of 3/7. They are not -- both round\n  to 3edb6db7, the same f32 as the exact quotient. So the pair could not\n  have failed, which is agent-core.md's 'a list row whose elements are all\n  equal cannot fail on an ordering bug' in a new costume. Rebuilt below by\n  SEARCHING for literals that actually land on the neighbouring f32s.\n\n  exact 3/7 -> 3edb6db7\n  the two f32 neighbours are 3edb6db6 and 3edb6db8\n\n  DECISOR literals, FOUND BY SEARCH (these are what the probe must use):\n    rounds to 3edb6db6: 0.42857141\n    rounds to 3edb6db7: 3/7 itself\n    rounds to 3edb6db8: 0.42857145\n",
+ "stderr": "",
+ "secs": 0.07,
+ "verdict": "FIRST ATTEMPT AT THE DISCRIMINATOR FAILED, and it is worth recording:",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/optprobe/beam1_probe.py",
+ "base": "beam1_probe.py",
+ "stem": "beam1_probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1170,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/beam1_probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "tensor_cores []\nn_actions 209\nk op Ops.REDUCE\n",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/beam1_probe.py\", line 22, in <module>\n    sched = Scheduler(k, ren)\n            ^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/opt/postrange.py\", line 20, in __init__\n    self.applied_opts = list(self.ast.arg.applied_opts) if self.ast.arg is not None else []\n                             ^^^^^^^^^^^^^^^^^^^^^^^^^\nAttributeError: 'tuple' object has no attribute 'applied_opts'\n",
+ "secs": 2.09,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

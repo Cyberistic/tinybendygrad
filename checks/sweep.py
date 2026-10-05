@@ -53,7 +53,18 @@ ORACLES = os.path.join(ROOT, "oracles")
 
 # What counts as being NAMED. Reports are where claims live; AGENTS.md and checks/README.md are
 # what a reader actually reads.
-NAMED_BY = [".agents/slop/*.md", "AGENTS.md", "checks/README.md", "checks/*.md"]
+#
+# `:(glob)` IS LOAD-BEARING AND ITS ABSENCE WAS A 63% CORRUPTION. MEASURED 2026-10-05: git's
+# DEFAULT pathspec magic treats `*` as FNM_PATHNAME-OFF, so `*` CROSSES `/`. `.agents/slop/*.md`
+# therefore matched **195** files where `:(glob).agents/slop/*.md` matches **98** — and the extra 97
+# were reports from INSIDE the shadow trees this script exists to delete, i.e. COPIES OF THE CORPUS
+# ITSELF. The citation blob was **3,736,092 chars of which 1,370,376 were real**: 63% of the
+# evidence was a copy of the evidence, so any file named inside a shadow tree counted as "named" and
+# the KEEP set was inflated by exactly the files the sweep should have removed.
+#
+# **A CITATION INDEX BUILT FROM THE TREE BEING SWEPT IS NOT A CITATION INDEX.**
+NAMED_BY = [":(glob).agents/slop/*.md", "AGENTS.md", ":(glob)checks/*.md",
+            ":(glob)gates/*.md", ":(glob).agents/*.md"]
 
 # A gate names itself with these words. `-gate`/`-check` decide; `probe`/`mutate`/`gen`/`fix` are
 # a thing that was run once. The distinction is the project's own vocabulary, not mine.
@@ -187,7 +198,11 @@ def main() -> int:
                 if rel in live and v not in ("PROTECTED", "LIVE-UNIT"):
                     v = "LIVE"
                 try:
-                    rows.append((v, os.path.getsize(p), rel))
+                    # lstat, NOT getsize: getsize FOLLOWS SYMLINKS, and slop has 174 of
+                    # them pointing into .venv and into shadow trees. Following them counted
+                    # each link at its TARGET's size, so the sweep reported **1,291 MB for a
+                    # 149 MB tree** -- a 7.5x headline on the ONE number it exists to publish.
+                    rows.append((v, os.lstat(p).st_size, rel))
                 except OSError:
                     pass
 

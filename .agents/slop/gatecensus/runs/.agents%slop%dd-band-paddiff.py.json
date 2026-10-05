@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/dd-band-paddiff.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.3,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 2,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-band-paddiff.py\", line 65, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-band-paddiff.py\", line 39, in main\n    b, a = rows(sys.argv[1]), rows(sys.argv[2])\n                ~~~~~~~~^^^\nIndexError: list index out of range\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-band-paddiff.py\n",
+ "stderr": "",
+ "verdict": "IndexError: list index out of range",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/gr-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "new_sink_op=SINK\nrepl=PARAM(slot=0)->PARAM(slot=99),PARAM(slot=1)->PARAM(slot=100),ALLOC->BUFFER(slot=0),SINK->SINK\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/gr-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

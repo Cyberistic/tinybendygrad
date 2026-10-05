@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/oracle_npy.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "npy_arg_alloc=1\nnpy_arg_runtime=0\nnpy_arg_render_passed=0\nnpy_arg_render_effective=1\nnpy_arg_render_is_default=True\nnpy_arg_render_not_empty=True\nnpy_arch_kwarg=0\nnpy_supports=0,0\nnpy_sup_disk=True\nnpy_sup_xfer=True\nnpy_peer=NPY\nnpy_peer_is_head=True\nnpy_host=CPU\nnpy_did_0=0\nnpy_did_0b=0\nnpy_did_3=3\nnpy_did_bad=0\nnpy_did_deep=1\nnpy_did_3_is_3=True\nnpy_did_bad_is_0=True\nnpy_canon=NPY\nnpy_dcls=10\nnpy_ifaces_len=0\nnpy_has_rejects_reverse=True\nnpy_has_rejects_absent=True\nnpy_alloc_order=True\nnpy_alloc_args=12\nnpy_alloc_views=12\nnpy_alloc_n=2\nnpy_alloc_mmaps=1\nnpy_alloc_storage_args=3\nnpy_alloc_fmt_b=1\nnpy_alloc_raw=5\nnpy_alloc_no_pad=True\nnpy_alloc_view_exact=5\nnpy_alloc_not_page=4096\nnpy_alloc_view_is_exact=True\nnpy_alloc_view_not_page=True\nnpy_copyin_sync_first=True\nnpy_copyin_sync_not_last=True\nnpy_copyin_no_mmap=True\nnpy_copyout_sync_first=True\nnpy_copyin_is_copyout=True\nnpy_copyin_ncalls=3\nnpy_copyout_ncalls=3\nnpy_copyin_len=12\nnpy_copyout_len=12\nnpy_copyin_short=5\nnpy_copyin_view_short=True\nnpy_copyin_sync_n=1\nnpy_alloc0_order=True\nnpy_alloc0_n=1\nnpy_alloc0_mmaps=0\nnpy_alloc0_no_mmap=True\nnpy_alloc0_refused=True\nnpy_alloc0_msg=alloc size must be positive, getting 0\nnpy_alloc1_msg=alloc size must be positive, getting 1\nnpy_map_ok_n=0\nnpy_map_ok_not_refused=True\nnpy_map_bad_n=1\nnpy_map_bad_refused=True\nnpy_map_bad_order=True\nnpy_map_bad_is_alloc_refuse=True\nnpy_map_bad_msg=host memory is not on the node of NPY\nnpy_map_ok_same=True\nnpy_map_ok_diff=True\nnpy_refuse_n_alloc=1\nnpy_refuse_n_map=1\nnpy_refuse_nested=0\nnpy_free_n=0\nnpy_free_munmaps=0\nnpy_free_no_refusal=True\nnpy_free_remote_n=1\nnpy_free_remote_munmaps=1\nnpy_roundtrip_alloc_nbytes=12\nnpy_roundtrip_fmt=B\nnpy_roundtrip=True\nnpy_offset_8=4104\nnpy_offset_0=4096\nnpy_offset_adds=True\nnpy_offset_not_identity=True\nnpy_map_storage_args=1\nnpy_map_args_differ=True\nnpy_map_meta_none=True\nnpy_map_host_none=True\nnpy_itemsize_uint8=1\nnpy_itemsize_uint64=8\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/oracle_npy.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

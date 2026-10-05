@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/blob-verify-independent.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "== same content: b'aaaa' vs b'aaaa' ==\nblob_interns=True\nblob_count_same=1\nblob_shape=(4,)\nblob_content=97,97,97,97\n  keys=[\"(Ops.BINARY, (), b'aaaa', None, <class 'bytes'>)\"]\n== SAME LENGTH, DIFFERENT CONTENT: b'aaaa' vs b'bbbb' (the fixture) ==\nblob_len_diff_content=True\nblob_count_len_diff_content=2\n  keys=[\"(Ops.BINARY, (), b'aaaa', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'bbbb', None, <class 'bytes'>)\"]\n== DIFFERENT LENGTH: b'aaaa' vs b'aa' ==\nblob_diff_len=True\n== sweep: six distinct blobs, lengths 0,1,2,3,4,4 ==\nblob_sweep=True\nblob_sweep_count=6\n  keys=[\"(Ops.BINARY, (), b'', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'a', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'ab', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'abc', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'abcd', None, <class 'bytes'>)\", \"(Ops.BINARY, (), b'abce', None, <class 'bytes'>)\"]\n== why CONTENT, not a digest, and not a length: the facts ==\n  b'aaaa'==b'bbbb' -> False\n  hash(b'aaaa')==hash(b'bbbb') -> False\n  len(b'aaaa')==len(b'bbbb') -> True\n  type(arg) is bytes -> bytes\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/blob-verify-independent.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

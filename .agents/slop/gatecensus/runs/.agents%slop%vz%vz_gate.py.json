@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/vz/vz_gate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.93,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 514,
+ "stdout": "cpython rows      = 177\nbend rows          = 177\ncheck-only first   = ALL PROOFS CHECK\n--- cpython\n+++ bend\n@@ -175 +175 @@\n-fmt_colored.off=red\n+fmt_colored.off=\u001b[31mred\u001b[0m\nLANES DISAGREE on 1 rows\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=514 MB (ceiling 1024)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/vz/vz_gate.py\n",
+ "stderr": "",
+ "verdict": "-fmt_colored.off=red",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/x86/x86-rules.py",
+ "base": "x86-rules.py",
+ "stem": "x86-rules",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10966,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x86/x86-rules.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x86/x86-rules.py\", line 196, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x86/x86-rules.py\", line 168, in main\n    assert base is not None, \"baseline does not compile\"\n           ^^^^^^^^^^^^^^^^\nAssertionError: baseline does not compile\n",
+ "secs": 18.46,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

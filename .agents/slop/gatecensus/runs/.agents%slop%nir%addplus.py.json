@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nir/addplus.py",
+ "base": "addplus.py",
+ "stem": "addplus",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2303,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nir/addplus.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nir/addplus.py\", line 17, in <module>\n    path = pathlib.Path(sys.argv[1])\n                        ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.05,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/indexing-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "ac_n=9\nac_sorted=AFTER,ALLOC,BUFFER,CALL,CONST,LOAD,MSELECT,MSTACK,PARAM\nac_after=True\nac_alloc=True\nac_buffer=True\nac_call=True\nac_const=True\nac_load=True\nac_mselect=True\nac_mstack=True\nac_param=True\nac_copy=False\nac_range=False\nac_contiguous_backward=False\nac_store=False\nac_sink=False\nac_reshape=False\nds_param_srcs=0\nds_param_has0=0\nds_param_has2=0\nds_buffer_srcs=0\nds_buffer_has0=0\nds_buffer_has2=0\nds_alloc_srcs=0\nds_alloc_has0=0\nds_alloc_has2=0\nds_range_srcs=0\nds_range_has0=0\nds_range_has2=0\nds_special_srcs=0\nds_special_has0=0\nds_special_has2=0\nds_index_srcs=1\nds_index_has0=1\nds_index_has2=0\nds_stage_srcs=1\nds_stage_has0=1\nds_stage_has2=0\nds_reduce_srcs=1\nds_reduce_has0=1\nds_reduce_has2=0\nds_after_srcs=1\nds_after_has0=1\nds_after_has2=0\nds_end_srcs=1\nds_end_has0=1\nds_end_has2=0\nds_backedge_srcs=1\nds_backedge_has0=1\nds_backedge_has2=0\nds_copy_srcs=1\nds_copy_has0=1\nds_copy_has2=0\nds_pad_srcs=1\nds_pad_has0=1\nds_pad_has2=0\nds_shrink_srcs=1\nds_shrink_has0=1\nds_shrink_has2=0\nds_flip_srcs=1\nds_flip_has0=1\nds_flip_has2=0\nds_expand_srcs=1\nds_expand_has0=1\nds_expand_has2=0\nds_reshape_srcs=1\nds_reshape_has0=1\nds_reshape_has2=0\nds_permute_srcs=1\nds_permute_has0=1\nds_permute_has2=0\nds_add_srcs=3\nds_add_has0=1\nds_add_has2=1\nds_mul_srcs=3\nds_mul_has0=1\nds_mul_has2=1\nds_sink_srcs=3\nds_sink_has0=1\nds_sink_has2=1\nds_const_srcs=3\nds_const_has0=1\nds_const_has2=1\nds_store_srcs=3\nds_store_has0=1\nds_store_has2=1\nbax0=0\nbax1=\nbax2=0\nbax3=0\nbax4=\nbax5=0\nbax6=0,2\nbax7=1\nbax8=0,1,2\nbax9=0,1\nbax_neg=raise\nargsort0=1,0\nargsort1=0,1\nargsort2=1,2,0\nargsort3=2,0,1\nargsort4=0,2,1\nargsort5=2,1,0\nargsort6=3,1,2,0\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/indexing-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

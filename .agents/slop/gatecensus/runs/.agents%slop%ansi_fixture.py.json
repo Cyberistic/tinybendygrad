@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ansi_fixture.py",
+ "base": "ansi_fixture.py",
+ "stem": "ansi_fixture",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4452,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ansi_fixture.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "",
+ "stderr": "",
+ "secs": 0.03,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "zero bytes on both streams -- a refusal, not a pass"
+}

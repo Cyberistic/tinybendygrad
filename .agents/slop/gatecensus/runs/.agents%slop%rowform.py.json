@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/rowform.py",
+ "base": "rowform.py",
+ "stem": "rowform",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10916,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rowform.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "ok    lane.eq-vs-gap\nBLIND lane.gap-name-space\nBLIND lane.gap-value-eq\nBLIND lane.tab\nBLIND lane.single-space\nok    lane.pyfold\n",
+ "stderr": "",
+ "secs": 0.77,
+ "verdict": "ok    lane.eq-vs-gap",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

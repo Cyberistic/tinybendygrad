@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/mathlib/windows.py",
+ "base": "windows.py",
+ "stem": "windows",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3117,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mathlib/windows.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": " own/tight  lines= 12  files= 6  targets= 10\n own/loose  lines= 13  files= 6  targets= 11\nnext/tight  lines= 25  files=13  targets= 17\nnext/loose  lines= 27  files=14  targets= 19\n\nWALLMAP.md \u00a73 claims      lines= 31  files= 12  targets= 35\n",
+ "stderr": "",
+ "secs": 1.43,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

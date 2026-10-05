@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-meas4b.py",
+ "base": "ag-meas4b.py",
+ "stem": "ag-meas4b",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2444,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-meas4b.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "### autogen-sourced constants that caused a REAL port bug, per this repo's records\n\n   33  from tinygrad/runtime/autogen/nv_570.py (+ nv_580/nv_610, nv.py)\n        ops_nv.bend: 33 of 219 hand-typed constants WRONG behind 590 green rows; all eleven CLASS_* ids among them, so the class ladder never matched a real GPU\n        recorded at .agents/TODO.md:1195-1201\n\n    1  from tinygrad/runtime/autogen/bnxt.py\n        BNXT_VENDOR shipped as 5356 where the header says 5348\n        recorded at .agents/TODO.md:1745\n\n    2  from tinygrad/runtime/autogen/libusb.py\n        SENTINEL_MAGIC 1363148800 vs 0x51000000 = 1358954496; FAST_P1_MASK 215 vs 0b11011111 = 223\n        recorded at .agents/TODO.md:1757-1758\n\n    1  from tinygrad/runtime/autogen/libusb.py\n        E_SYNTH / enum_libusb_class_code had the wrong entry count (the real table has 19)\n        recorded at .agents/TODO.md:1786-1791\n\n    1  from tinygrad/runtime/autogen/libusb.py\n        struct_libusb_transfer field ORDER transposed relative to the header, invisible to a count-based gate\n        recorded at .agents/TODO.md:1745-1749 (the usb.py:350-351 by-NAME access)\n\nTOTAL ATTRIBUTABLE TO autogen/: 38\n\nFor contrast, the POPULATION the repo records: 533 numeric constant defs\nacross ops_nv 222, ops_metal 106, ops_cl 103, ops_webgpu 67,\nops_cpu_null 29, cstyle 6, tc_ptx 6 (.agents/TODO.md:1213-1216).\n\nNOTE WHAT IS NOT IN THE COUNT: the two nv/ip `nv_query_litter` and the\nrenderer/cstyle 17-of-215 are NOT autogen constants (nv/ip is a hand\noracle over ops_nv.py; cstyle is not an autogen binding), so they are\nthe WRONG-KIND evidence and are excluded deliberately.\n",
+ "stderr": "",
+ "secs": 0.05,
+ "verdict": "ops_nv.bend: 33 of 219 hand-typed constants WRONG behind 590 green rows; all eleven CLASS_* ids among them, so the class ladder never matched a real GPU",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

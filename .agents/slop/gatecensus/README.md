@@ -1,8 +1,8 @@
 # gate census — which gate-shaped files are REAL GATES, and which of them RUN
 
     .venv/bin/python .agents/slop/gatecensus/enum.py            # the denominator, alone
-    .venv/bin/python .agents/slop/gatecensus/classify.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] --list  # the classification
-    .venv/bin/python .agents/slop/gatecensus/classify.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] --selftest   # prove each fix moved a number
+    .venv/bin/python .agents/slop/gatecensus/classify.py --list  # the classification
+    .venv/bin/python .agents/slop/gatecensus/classify.py --selftest   # prove each fix moved a number
     .venv/bin/python .agents/slop/gatecensus/run.py --dry-run   # enumerate, run nothing
     .venv/bin/python .agents/slop/gatecensus/run.py             # run every candidate, sequentially
     .venv/bin/python .agents/slop/gatecensus/group.py --why     # reds grouped by CAUSE

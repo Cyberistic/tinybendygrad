@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/rf-arg-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "### CLAIM COUNTS (first wins -- pm_add_buffers has several CALL patterns)\nab_claim_clik = 1\nnic_claim_clik = 1\n### ab_7 -- drop RESHAPEs on KERNEL, rangeify.py:267\nab7_clik_own  = ab7_clik = op_is_call=1 nsrc=2 src0_is_b4=0 arg_is_own_kernel=1 arg_is_none=0 is_self=0\nab7_clik0_own = ab7_clik0 = op_is_call=1 nsrc=2 src0_is_b4=0 arg_is_own_kernel=0 arg_is_none=1 is_self=0\nab7_clik_arg_is_object = 1\nab7_clik_arg_would_be_none = 0\n### no_indexing_calls -- rangeify.py:143-158\nnic_clik_own  = nic_clik = op_is_call=1 nsrc=2 src0_is_b4=0 arg_is_own_kernel=1 arg_is_none=0 is_self=0\nnic_clik_arg_is_object = 1\n### the OTHER two repaired sites: the arg is genuinely None there\nraf_after_arg_is_none = 1 | op_is_AFTER = 1\nmstack_arg_is_none = 1\nct8_claim_mstack = 0\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-arg-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

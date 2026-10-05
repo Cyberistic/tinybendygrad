@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/lintable/lintable-gate.sh",
+ "how": "zsh (no exec bit)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.79,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 366,
+ "stdout": "lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=366 MB (ceiling 1024)  1s  :: zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/lintable/lintable-gate.sh\n",
+ "stderr": "",
+ "verdict": "lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

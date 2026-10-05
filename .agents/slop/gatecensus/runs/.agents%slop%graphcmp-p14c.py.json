@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/graphcmp-p14c.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.59,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 76,
+ "stdout": "# DEV = METAL\n# matmul full        nodes=  44 STORE=1 LOAD=6 INDEX=7 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)']\n# matmul             to_program FAILED RuntimeError: UOp verification failed at 3 on Ops.SPECIAL dtypes.i32 1 [(Ops.CAST, dtypes.i32, dtypes.i3\n# pad full           nodes=  68 STORE=5 LOAD=3 INDEX=12 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)']\n# pad PROGRAM        nodes=  73 STORE=5 LOAD=3 INDEX=12 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)']\n# shrink full        nodes=  47 STORE=2 LOAD=3 INDEX=6 IF=0 ENDIF=0 WHERE=2 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'LOAD(3)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'LOAD(3)']\n#                    WHERE WHERE#13<-ADD#11\n#                    WHERE WHERE#15<-ADD#13\n# shrink             to_program FAILED RuntimeError: UOp verification failed at 3 on Ops.SPECIAL dtypes.i32 1 [(Ops.CAST, dtypes.i32, dtypes.i3\n# expand+slice full  nodes=  16 STORE=1 LOAD=1 INDEX=0 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n# expand+slice       to_program FAILED RuntimeError: UOp verification failed at 3 on Ops.SPECIAL dtypes.i32 1 [(Ops.CAST, dtypes.i32, dtypes.i3\n# pad2d+shrink full  nodes=  77 STORE=7 LOAD=3 INDEX=13 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)']\n# pad2d+shrink PROGRAM nodes=  82 STORE=7 LOAD=3 INDEX=13 IF=0 ENDIF=0 WHERE=0 BACKEDGE=0\n#                    MULTI-SRC MEM OPS: ['INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)', 'INDEX(2)']\n# avgpool            no kernels\n# Q (this file's whole subject): does the scheduler leave a gate on a STORE?\n#   ANSWER, from the runs above: no. Two GATED LOADS on `shrink` and no gated STORE,\n#   and `to_program` refuses `shrink` for the gated loads. The count with a\n#   denominator is in graphcmp-p14d.py Q1: 0 gated STOREs in 9 scheduled programs.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=76 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp-p14c.py\n",
+ "stderr": "",
+ "verdict": "# matmul             to_program FAILED RuntimeError: UOp verification failed at 3 on Ops.SPECIAL dtypes.i32 1 [(Ops.CAST, dtypes.i32, dtypes.i3",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

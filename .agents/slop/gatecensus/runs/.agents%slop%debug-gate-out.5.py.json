@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/debug-gate-out.5.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 15,
+ "stdout": "  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/debug-gate-out.5.py\", line 42\n    ar_ring=RING ALLREDUCE 4x300000 | dtypes.f32\n                           ^\nSyntaxError: invalid decimal literal\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=15 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/debug-gate-out.5.py\n",
+ "stderr": "",
+ "verdict": "SyntaxError: invalid decimal literal",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

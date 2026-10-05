@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/rf-claims.py",
+ "base": "rf-claims.py",
+ "stem": "rf-claims",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4172,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rf-claims.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "=== per node: which rules CLAIM, and what each body answers ===\nab op=STAGE      nsrc=2 claims=[3, 4] dis=0\n      rule 3: OK None\n      rule 4: OK a1\n",
+ "stderr": "",
+ "secs": 0.88,
+ "verdict": "rule 3: OK None",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

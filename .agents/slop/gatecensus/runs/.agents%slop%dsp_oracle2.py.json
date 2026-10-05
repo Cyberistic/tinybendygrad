@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/dsp_oracle2.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 1,
+ "stdout": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp_oracle2.py:7: SyntaxWarning: invalid escape sequence '\\['\n  ops_dsp.bend\"). 512 rows, `grep -c 'py=\\[' tinybendygrad/runtime/ops_dsp.bend` -> 0.\nException ignored in: <function DSPCompiler.__del__ at 0x1078dab60>\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/ops_dsp.py\", line 116, in __del__\n    if not self.mock: os.unlink(self.link_ld.name)\n                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmpvfeibs6s'\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp_oracle2.py\", line 328, in <module>\n    assert sorted(KIND.values()) == list(range(len(KNM))), KIND\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nAssertionError: {'CALL_ION_ALLOC': 0, 'CALL_ION_SHARE': 1, 'CALL_MMAP': 2, 'CALL_MEMMOVE': 3, 'CALL_OS_CLOSE': 4, 'CALL_ION_FREE': 5, 'CALL_ADSP_OPEN': 6, 'CALL_RPC_GETINFO': 7, 'CALL_RPC_CONTROL': 8, 'CALL_RPC_INIT': 9, 'CALL_RPC_INVOKE': 10, 'CALL_RPC_INVOKE_ATTRS': 11, 'CALL_OPEN_LIB': 12, 'CALL_EXEC_LIB': 13, 'CALL_CLOSE_LIB': 14, 'CALL_OPEN_ION': 15}\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp_oracle2.py\n",
+ "stderr": "",
+ "verdict": "AssertionError: {'CALL_ION_ALLOC': 0, 'CALL_ION_SHARE': 1, 'CALL_MMAP': 2, 'CALL_MEMMOVE': 3, 'CALL_OS_CLOSE': 4, 'CALL_ION_FREE': 5, 'CALL_ADSP_OPEN': 6, 'CALL_RPC_GETINFO': 7, 'C",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/exec_probe3.py",
+ "base": "exec_probe3.py",
+ "stem": "exec_probe3",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2645,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/exec_probe3.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "=== ALL OPS EVER EMITTED ===\n  Ops.ADD                10\n  Ops.AFTER              3\n  Ops.BARRIER            1\n  Ops.BUFFER             2\n  Ops.CAST               35\n  Ops.CMPEQ              1\n  Ops.CMPLT              4\n  Ops.CONST              35\n  Ops.END                1\n  Ops.ENDIF              1\n  Ops.GROUP              1\n  Ops.IF                 1\n  Ops.INDEX              44\n  Ops.LOAD               15\n  Ops.LOG2               4\n  Ops.MAX                1\n  Ops.MUL                6\n  Ops.MULACC             7\n  Ops.PARAM              14\n  Ops.RANGE              1\n  Ops.SHL                3\n  Ops.SHRINK             9\n  Ops.SINK               7\n  Ops.SPECIAL            5\n  Ops.SQRT               4\n  Ops.STACK              2\n  Ops.STORE              13\nREDUCE emitted: False\nFDIV emitted: False\nTHREEFRY emitted: False\n\n=== storage_fmt_for_dtype / itemsize ===\n  float      fmt=f itemsize=4 storage=f\n  int        fmt=i itemsize=4 storage=i\n  uint       fmt=I itemsize=4 storage=I\n  bool       fmt=? itemsize=1 storage=?\n  half       fmt=e itemsize=2 storage=e\n  bfloat16   fmt=None itemsize=2 storage=H\n  long       fmt=q itemsize=8 storage=q\n  uint64     fmt=Q itemsize=8 storage=Q\n\n=== PARAM ordering + bytes access ===\n  input raw: 0000803f000000400000404000008040\n  PARAM uops in order: [(0, Ops.PARAM, ParamArg(0, dtypes.f32, 2, device='PYTHON')), (1, Ops.PARAM, ParamArg(1, dtypes.f32, 4, device='PYTHON')), (2, Ops.PARAM, ParamArg(2, dtypes.f32, 2, device='PYTHON'))]\n  out bytes: 0000204100002041\n  out shape (2,) nbytes 8\n",
+ "stderr": "",
+ "secs": 2.53,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

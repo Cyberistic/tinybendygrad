@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/graphcmp-dbg-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 3.03,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 237,
+ "stdout": "# MARK searched for: 'memory reduced from'  (memory.py:59)\n  add64_relu       DEBUG=1 rc=0 line-fired=False done=True\n  big_add_chain    DEBUG=1 rc=0 line-fired=False done=True\n  chain4x3         DEBUG=1 rc=0 line-fired=False done=True\n  conv_like        DEBUG=1 rc=0 line-fired=False done=True\n  mm1000           DEBUG=1 rc=0 line-fired=False done=True\n  mm4x3            DEBUG=1 rc=0 line-fired=False done=True\n  mm512            DEBUG=1 rc=0 line-fired=False done=True\n  mm_then_two_mm   DEBUG=1 rc=0 line-fired=False done=True\n# FIXTURES=8  FIRED=0  NOT-FIRED=8  DID-NOT-COMPLETE=0\n# READ: the `DEBUG >= 1` memory site is a CONDITIONAL print, so a fixture that does not fire is a fixture whose planner reduced nothing (or whose level was too low) -- it is NOT evidence the gate is unwired, and `debug-gate.bend`'s own `thr_mem=1` row is the measurement that the GATE is wired.\n# CONSEQUENCE FOR graphcmp.py dbg: there is no CPython lane for the trace TEXT on this host, so `dbg` is a port-vs-port comparison across levels and says so. It is a first-class diff of a thing that DID move, not a corroboration of a value.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=237 MB (ceiling 1024)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp-dbg-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

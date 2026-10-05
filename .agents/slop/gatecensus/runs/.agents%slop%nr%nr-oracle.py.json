@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/nr/nr-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 2,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 539, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 496, in main\n    sys.stdout.write(rows())\n                     ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 489, in rows\n    out += fn()\n           ^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 177, in aop_rows\n    out += row(f\"aop.{tag}.keys\", j(dt.op.name for dt in tab.keys()), j(dt.op.name for dt in tab.keys()))\n                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 87, in j\n    def j(x): return \",\".join(str(v) for v in x)\n                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 87, in <genexpr>\n    def j(x): return \",\".join(str(v) for v in x)\n                                              ^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\", line 177, in <genexpr>\n    out += row(f\"aop.{tag}.keys\", j(dt.op.name for dt in tab.keys()), j(dt.op.name for dt in tab.keys()))\n                                    ^^^^^\nAttributeError: 'Ops' object has no attribute 'op'\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nr/nr-oracle.py\n",
+ "stderr": "",
+ "verdict": "AttributeError: 'Ops' object has no attribute 'op'",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/arena-sweep-control.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.63,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 268,
+ "stdout": "=== INJECTION A: WRONG CONSTANT: pl_step appends the arena bottom [0] instead of the node [h]\ntree  jit.bend  live 733a9b3d5667ad6f62574b24d3ca6708 / copy 28519da83c6bc5f015de15b9a44df13a\nprobe sweep.bend live 8d10ede2d45c5fc7902ba4545da668f5 / copy 8d10ede2d45c5fc7902ba4545da668f5\nat least one digest differs: the control copy carries the injection and the live tree does not\n\n=== CONTROL: the sweep on the REVERTED port, same six sizes\n# k=0 next=11\n# k=1 next=12\n# k=2 next=12\n# k=5 next=12\n# k=17 next=12\n# k=64 next=12\n\n     6 prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP\n     6 prune_sig_once=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP\n\n  36 lines, 6 distinct, max copies of one row = 6 over 6 sizes\n  RESULT: CONSTANT -- CORRECT. A wrong CONSTANT is not size-sensitive: index 0 is\n    the arena bottom in every size, so padding cannot separate it from a node.\n    This defect class belongs to arena-noop-scan.py, which DOES detect it.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=268 MB (ceiling 1024)  2s  :: ./.agents/slop/arena-sweep-control.sh\n",
+ "stderr": "",
+ "verdict": "6 prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.NOOP",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ip_table.py",
+ "base": "ip_table.py",
+ "stem": "ip_table",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 8138,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ip_table.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ip_table.py\", line 63, in <module>\n    mut = [l.strip().split('|||') for l in io.open(MUT) if re.match(r'^M\\d+\\|\\|\\|', l)]\n                                           ^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/mut.txt'\n",
+ "secs": 0.07,
+ "verdict": "mut = [l.strip().split('|||') for l in io.open(MUT) if re.match(r'^M\\d+\\|\\|\\|', l)]",
+ "status": "FAIL",
+ "why": "rc=1"
+}

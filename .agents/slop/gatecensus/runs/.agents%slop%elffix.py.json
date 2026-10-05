@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/elffix.py",
+ "base": "elffix.py",
+ "stem": "elffix",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2365,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/elffix.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/elffix.py\", line 64, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/elffix.py\", line 33, in main\n    path, cmd, name = sys.argv[1], sys.argv[2], sys.argv[3]\n                      ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.21,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

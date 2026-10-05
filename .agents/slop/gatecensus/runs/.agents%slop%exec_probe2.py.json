@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/exec_probe2.py",
+ "base": "exec_probe2.py",
+ "stem": "exec_probe2",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2858,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/exec_probe2.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "=== Ops members with 'DEFINE' or 'RANGE' or 'PARAM' or 'BUFFER' ===\n['ALLREDUCE', 'BARRIER', 'BINARY', 'BUFFER', 'CALL', 'GROUP', 'PARAM', 'RANGE', 'REDUCE', 'SPECIAL']\n\n=== GroupOp.ALU members ===\n['Ops.ADD', 'Ops.AND', 'Ops.CDIV', 'Ops.CMOD', 'Ops.CMPEQ', 'Ops.CMPLT', 'Ops.CMPNE', 'Ops.EXP2', 'Ops.FDIV', 'Ops.FLOORDIV', 'Ops.FLOORMOD', 'Ops.LOG2', 'Ops.MAX', 'Ops.MUL', 'Ops.MULACC', 'Ops.NEG', 'Ops.OR', 'Ops.POW', 'Ops.RECIPROCAL', 'Ops.SHL', 'Ops.SHR', 'Ops.SIN', 'Ops.SQRT', 'Ops.SUB', 'Ops.THREEFRY', 'Ops.TRUNC', 'Ops.WHERE', 'Ops.XOR']\n\n--- k1 small\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\n--- k2 sum100\n  LOOPOP  17 Ops.RANGE          dt=dtypes.i32 arg=(AxisType.WEAK, 0) srcs=['Ops.CAST']\n  LOOPOP  33 Ops.END            dt=dtypes.void arg=None srcs=['Ops.STORE', 'Ops.RANGE']\n--- k3 rowsum\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\nrowsum [6.0, 22.0, 38.0, 54.0]\n--- k4 big\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=gidx0 srcs=['Ops.CAST']\n  LOOPOP   7 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\n--- k5 div\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\ndiv [0.5, 0.5, 0.5]\n--- k6 cmp\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\ncmp [True, True, True, True]\n--- k7 and\n  LOOPOP   4 Ops.SPECIAL        dt=dtypes.i32 arg=lidx0 srcs=['Ops.CAST']\nand [0, 1, 2, 3]\n--- k8 2dsum\n2dsum 10.0\n\n=== CALL KWARGS (global_size / local_size) ===\n{'global_size': (1, 1, 1), 'local_size': (2, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (1, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (4, 1, 1), 'vals': ()}\n{'global_size': (125, 1, 1), 'local_size': (2, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (16, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (16, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (8, 1, 1), 'vals': ()}\n{'global_size': (1, 1, 1), 'local_size': (1, 1, 1), 'vals': ()}\n\n=== OP HISTOGRAM ===\nOps.ADD                  dtypes.f32       6\nOps.ADD                  dtypes.i32       8\nOps.AFTER                dtypes.i32       2\nOps.AND                  dtypes.i32       4\nOps.BUFFER               dtypes.i32       1\nOps.CAST                 dtypes.f32       1\nOps.CAST                 dtypes.i32       49\nOps.CMPLT                dtypes.bool      4\nOps.CONST                dtypes.weakfloat 1\nOps.CONST                dtypes.weakint   49\nOps.END                  dtypes.void      1\nOps.GROUP                dtypes.void      5\nOps.INDEX                dtypes.bool      4\nOps.INDEX                dtypes.f32       14\nOps.INDEX                dtypes.i32       24\nOps.LOAD                 dtypes.f32       3\nOps.LOAD                 dtypes.i32       7\nOps.MUL                  dtypes.f32       4\nOps.MULACC               dtypes.i32       8\nOps.PARAM                dtypes.bool      1\nOps.PARAM                dtypes.f32       6\nOps.PARAM                dtypes.i32       9\nOps.RANGE                dtypes.i32       1\nOps.SHL                  dtypes.i32       7\nOps.SHRINK               dtypes.f32       4\nOps.SHRINK               dtypes.i32       8\nOps.SINK                 dtypes.void      8\nOps.SPECIAL              dtypes.i32       7\nOps.STACK                dtypes.f32       1\nOps.STACK                dtypes.i32       3\nOps.STORE                dtypes.void      13\n",
+ "stderr": "",
+ "secs": 2.7,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

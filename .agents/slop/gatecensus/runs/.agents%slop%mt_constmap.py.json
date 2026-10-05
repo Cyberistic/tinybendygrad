@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/mt_constmap.py",
+ "base": "mt_constmap.py",
+ "stem": "mt_constmap",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 27749,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_constmap.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_constmap.py\", line 500, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_constmap.py\", line 471, in main\n    got = fn()\n          ^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_constmap.py\", line 257, in <lambda>\n    \"ADDR_SIZE\": (\"src\", lambda: src(132, rx=r\"zero // (\\d+)\"), \":132 the `// 8` = the uint64 word\"),\n                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_constmap.py\", line 64, in src\n    assert m, f\"ops_metal.py:{n} does not match {rx!r}: {_line(n).strip()!r}\"\n           ^\nAssertionError: ops_metal.py:132 does not match 'zero // (\\\\d+)': 'self.rows, self.cmds, self.sizes, self.stamps, self.nbytes = list[tuple[int, UOp]](), list[tuple](), list[tuple[int, int]](), list[UOp](), 0'\n",
+ "secs": 0.06,
+ "verdict": "assert m, f\"ops_metal.py:{n} does not match {rx!r}: {_line(n).strip()!r}\"",
+ "status": "FAIL",
+ "why": "rc=1"
+}

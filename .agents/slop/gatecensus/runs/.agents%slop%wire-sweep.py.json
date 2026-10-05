@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/wire-sweep.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 98.52,
+ "bounded_exit": 3,
+ "bound": "KILLED-ON-MEMORY",
+ "child_rc": -9,
+ "peak_mb": 1097,
+ "stdout": "66 candidates (141 skipped by the WRITE filter), 0/99 port row-sets\n\n  [1/66] .agents/slop/amd_oracle.py rc=0 rows=1010 0.1s\n  [2/66] .agents/slop/amdev_gate.py rc=0 rows=652 0.1s\n  [3/66] .agents/slop/amdev_oracle.py rc=0 rows=1471 0.2s\n  [4/66] .agents/slop/bnxt_oracle.py rc=0 rows=612 0.1s\n  [5/66] .agents/slop/c-oracle.py rc=0 rows=129 0.1s\n  [6/66] .agents/slop/cs_oracle.py rc=0 rows=1092 1.1s\n  [7/66] .agents/slop/debug-gate.py rc=0 rows=89 5.4s\n  [8/66] .agents/slop/device-oracle.py rc=0 rows=23 0.2s\n  [9/66] .agents/slop/dk-oracle.py rc=0 rows=211 0.1s\n  [10/66] .agents/slop/dsl_oracle.py rc=0 rows=1576 0.1s\n  [15/66] .agents/slop/ew-gate.py rc=0 rows=77 0.1s\n  [16/66] .agents/slop/ext_oracle.py rc=0 rows=846 0.1s\n  [17/66] .agents/slop/ga-oracle.py rc=0 rows=779 0.5s\n  [18/66] .agents/slop/indexing-oracle.py rc=0 rows=104 0.1s\n  [19/66] .agents/slop/ip_oracle.py rc=0 rows=444 0.1s\n  [20/66] .agents/slop/late-oracle.py rc=0 rows=130 0.1s\n  [21/66] .agents/slop/lintable/lintable-oracle.py rc=0 rows=36 0.1s\n  [22/66] .agents/slop/llvmir-oracle.py rc=0 rows=470 0.1s\n  [23/66] .agents/slop/memory_oracle.py rc=0 rows=889 0.1s\n  [24/66] .agents/slop/mixin-op-gate.py rc=0 rows=32 0.1s\n  [25/66] .agents/slop/nl/nl-oracle.py rc=0 rows=205 0.1s\n  [26/66] .agents/slop/nn-init-gate.py rc=0 rows=24 0.2s\n  [27/66] .agents/slop/notes/mxm-oracle.py rc=0 rows=10 0.1s\n  [28/66] .agents/slop/notes/sched-multi-truth.py rc=0 rows=468 0.1s\n  [30/66] .agents/slop/null-oracle.py rc=0 rows=9 0.1s\n  [31/66] .agents/slop/nv-oracle.py rc=0 rows=547 0.3s\n  [32/66] .agents/slop/nv_nvdev_oracle.py rc=0 rows=2176 0.1s\n  [33/66] .agents/slop/nvdup/nv-oracle-PREFIX.py rc=0 rows=547 0.3s\n  [34/66] .agents/slop/objc/objc_oracle.py rc=0 rows=248 0.1s\n  [35/66] .agents/slop/objc/symtab_oracle.py rc=0 rows=1 0.2s\n  [36/66] .agents/slop/onnx-gate.py rc=0 rows=123 0.1s\n  [38/66] .agents/slop/ops-python-render-oracle.py rc=0 rows=241 0.4s\n  [39/66] .agents/slop/ops-render-oracle.py rc=0 rows=11 0.1s\n  [40/66] .agents/slop/ops-rra-oracle.py rc=0 rows=9 0.1s\n  [41/66] .agents/slop/ops-sugar-oracle.py rc=0 rows=41 0.1s\n  [42/66] .agents/slop/ops-var-oracle.py rc=0 rows=4 0.1s\n  [43/66] .agents/slop/ops-vrn-oracle.py rc=0 rows=4 0.1s\n  [44/66] .agents/slop/ops-vv-oracle.py rc=0 rows=5 0.1s\n  [45/66] .agents/slop/oracle-search.py rc=0 rows=35 0.1s\n  [49/66] .agents/slop/prepare-oracle.py rc=0 rows=2521 0.1s\n  [50/66] .agents/slop/ptx-s3-oracle.py rc=0 rows=281 0.1s\n  [51/66] .agents/slop/qcom-oracle.py rc=0 rows=312 0.1s\n[bounded] KILLED-ON-MEMORY  rc=-9  peak-RSS=1097 MB (ceiling 1024)  98s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wire-sweep.py\n[bounded] THIS IS NOT A TIMEOUT. rc=137 is SIGKILL, so it looks like the project's alarm (rc=142) but is not: the term being built did not terminate. Look for Peano `Nat` arithmetic near its 2^48-1 ceiling, or a plant that made a multiplier symbolic.\n",
+ "stderr": "",
+ "status": "NOT-RUN",
+ "verdict": "",
+ "why": "KILLED ON MEMORY at 1024MB ceiling, peak 1097MB",
+ "pass": 2
+}

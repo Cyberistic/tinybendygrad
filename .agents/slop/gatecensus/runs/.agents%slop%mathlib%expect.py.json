@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/mathlib/expect.py",
+ "base": "expect.py",
+ "stem": "expect",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 1848,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mathlib/expect.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "inf      7f800000\nninf     ff800000\nnan      7fc00000\npi       40490fdb\nlog2     3f317218\nlog10_2  3e9a209b\nsqrt2    3fb504f3\ninvlog2  3fb8aa3b\n2pi      40c90fdb\n0.5      3f000000\n",
+ "stderr": "",
+ "secs": 0.08,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

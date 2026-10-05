@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/grw-gate.sh",
+ "how": "zsh (no exec bit)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.95,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 387,
+ "stdout": "grw-gate: oracle rows=13  port rows=27\n/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/grw-gate.sh:51: read-only variable: status\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=387 MB (ceiling 1024)  1s  :: zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/grw-gate.sh\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

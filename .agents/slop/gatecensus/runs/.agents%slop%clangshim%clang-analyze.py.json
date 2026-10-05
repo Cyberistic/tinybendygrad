@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/clangshim/clang-analyze.py",
+ "base": "clang-analyze.py",
+ "stem": "clang-analyze",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4814,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/clangshim/clang-analyze.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "trampoline rows            : 324\ndistinct names             : 324\n\nRETURN classes:\n  INT           135\n  BYVAL16        40\n  BYVAL24        38\n  VOID           37\n  PTR            23\n  ?ctypes.c_void_p   21\n  I64            15\n  BYVAL32        14\n  F64             1\n\nPARAMETER classes (all params of all 324):\n  PTR           167\n  BYVAL32       113\n  INT            89\n  ?ctypes.c_void_p   74\n  BYVAL24        73\n  BYVAL16         7\n  CB              5\n\nzero-parameter functions   : 8\nby-value struct types      : 9\n\nlibclang.bend clang_ defs  : 0\ntramp names missing a def  : 324 ['clang_createIndex', 'clang_disposeIndex', 'clang_createIndexWithOptions', 'clang_CXIndex_setGlobalOptions', 'clang_CXIndex_getGlobalOptions']\narity disagreements       : 0 []\n",
+ "stderr": "",
+ "secs": 0.07,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/nv_fixorder.py",
+ "base": "nv_fixorder.py",
+ "stem": "nv_fixorder",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3987,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nv_fixorder.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "CLEAN after 0 moves\nnv_reg_NV_PMC_BOOT_0_base=0\nnv_reg_NV_PMC_BOOT_0_off=0\nnv_reg_NV_PMC_BOOT_0_nf=5\nnv_reg_NV_PMC_BOOT_0_names=minor_revision,major_revision,architecture_1,implementation,architecture_0\nnv_reg_NV_PMC_BOOT_0_ranges=minor_revision=0:3;major_revision=4:7;architecture_1=8:8;implementation=20:23;architecture_0=24:28\nnv_reg_NV_PMC_BOOT_0_maxw=5\nnv_reg_NV_PMC_BOOT_0_wide=0\nnv_addr_boot0=1\nnv_reg_NV_PMC_BOOT_42_base=0\nnv_reg_NV_PMC_BOOT_42_off=2560\nnv_reg_NV_PMC_BOOT_42_nf=6\nnv_reg_NV_PMC_BOOT_42_names=minor_extended_revision,minor_revision,major_revision,implementation,architecture,chip_id\nnv_reg_NV_PMC\n",
+ "stderr": "",
+ "secs": 3.45,
+ "verdict": "CLEAN after 0 moves",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

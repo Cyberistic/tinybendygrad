@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/shlscope/walk.py",
+ "base": "walk.py",
+ "stem": "walk",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6383,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/shlscope/walk.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "amt_add n=5 op=Ops.SHL nsrc=2 srcops=Ops.CONST|Ops.ADD lo=+0:640 hi=+0:640\namt_mul n=5 op=Ops.SHL nsrc=2 srcops=Ops.CONST|Ops.MUL lo=+0:320 hi=+0:320\namt_sub n=5 op=Ops.SHL nsrc=2 srcops=Ops.CONST|Ops.SUB lo=+0:640 hi=+0:640\namt_max n=5 op=Ops.SHR nsrc=2 srcops=Ops.CONST|Ops.MAX lo=-0:1 hi=-0:1\namt_nest n=8 op=Ops.SHR nsrc=2 srcops=Ops.CONST|Ops.ADD lo=+0:0 hi=+0:0\namt_64 n=4 op=Ops.SHR nsrc=2 srcops=Ops.CONST|Ops.ADD lo=-0:1 hi=-0:1\namt_64_shl n=4 op=Ops.SHL nsrc=2 srcops=Ops.CONST|Ops.ADD SAT cp=[92233720368547758080,92233720368547758080]\namt_neg n=5 op=Ops.SHL nsrc=2 srcops=Ops.CONST|Ops.SUB RAISES ValueError\namt_zero n=4 op=Ops.SHR nsrc=2 srcops=Ops.CONST|Ops.SUB lo=-0:9 hi=-0:9\namt_imin n=6 op=Ops.SHR nsrc=2 srcops=Ops.CONST|Ops.SUB RAISES ValueError\n",
+ "stderr": "",
+ "secs": 1.21,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

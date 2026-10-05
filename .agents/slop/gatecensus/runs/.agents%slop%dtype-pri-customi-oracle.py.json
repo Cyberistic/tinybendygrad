@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/dtype-pri-customi-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "=== Q1 what does a real CUSTOMI node's arg ACTUALLY hold? ===\n  ops.py:136: case Ops.CUSTOM | Ops.CUSTOMI:\n  ops.py:137: assert isinstance(arg, tuple) and len(arg) == 2 and isinstance(arg[1], DType), f\"CUSTOM/CUSTOMI arg must be (str, DType), got {arg}\"\n  ops.py:370: case Ops.CUSTOM | Ops.CUSTOMI:\n\n=== Q2 dtype_from_uop for each op (ops.py:122) ===\n  CUSTOM_FUNCTION  arg=CustomFunction(name='myext', dtype=dtypes.u64) dtype=u64      shape=()\n  CUSTOM_FUNCTION  arg=CustomFunction(name='myvoid', dtype=dtypes.void) dtype=void     shape=None\n  CUSTOM_FUNCTION  arg=CustomFunction(name='f16fn', dtype=dtypes.f16) dtype=f16      shape=()\n\n  CUSTOM           arg=('mysym', dtypes.u64)              dtype=u64      shape=None\n  CUSTOMI          arg=('mysym', dtypes.u64)              dtype=u64      shape=None\n\n=== Q3 the assert text itself, verbatim ===\n  ops.py:137: assert isinstance(arg, tuple) and len(arg) == 2 and isinstance(arg[1], DType), f\"CUSTOM/CUSTOMI arg must be (str, DType), got {arg}\"\n\n=== Q4 does a bare str survive as a CUSTOMI arg? ===\n  AssertionError: CUSTOM/CUSTOMI arg must be (str, DType), got mysym\n\n=== Q5 so is a bare `('x',)`-style AStr a legal CUSTOMI arg at all? ===\n  arg='x'        -> AssertionError: CUSTOM/CUSTOMI arg must be (str, DType), got x\n  arg=('x',)     -> AssertionError: CUSTOM/CUSTOMI arg must be (str, DType), got ('x',)\n  arg=None       -> AssertionError: CUSTOM/CUSTOMI arg must be (str, DType), got None\n\n=== Q6 CUSTOM_FUNCTION (dtype, _shape) pair -- the Defect 2 table ===\n  CustomFunction('void', void    ) -> dtype=void     shape=None\n  CustomFunction('uint64', u64     ) -> dtype=u64      shape=()\n  CustomFunction('float16', f16     ) -> dtype=f16      shape=()\n  CustomFunction('int32', i32     ) -> dtype=i32      shape=()\n  CustomFunction('bool', bool    ) -> dtype=bool     shape=()\n  CustomFunction('f64', f64     ) -> dtype=f64      shape=()\n\n  and CustomFunction(name) with NO dtype:\n    CustomFunction('x').dtype = void   (ops.py:1395 default)\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dtype-pri-customi-oracle.py\n",
+ "stderr": "",
+ "verdict": "AssertionError: CUSTOM/CUSTOMI arg must be (str, DType), got mysym",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

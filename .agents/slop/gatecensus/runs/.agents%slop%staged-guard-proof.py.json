@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/staged-guard-proof.py",
+ "base": "staged-guard-proof.py",
+ "stem": "staged-guard-proof",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 7536,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/staged-guard-proof.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "0. THE MIRROR READ IS NOT A SNAPSHOT -- both spellings, one perturbation\n     live bytes                                    51\n     sha256(jj file show -r @)          SNAPSHOTS -> 5d2a13b8962e92be\n     sha256(jj --ignore-working-copy ...)          fa4bc8abe6f09703\n  [FIRED] the snapshotting spelling EQUALS live (so it can never raise MirrorStale)\n  [FIRED] the --ignore-working-copy spelling DIFFERS from live (so it can raise)\n\nA. MirrorStale -- an uncommitted edit on the substrate\n  [FIRED] Staged() raised MirrorStale\n         MIRROR STALE.  sha256(jj @) = fa4bc8abe6f09703 but sha256(live) = 5d2a13b8962e92be for /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/guard-fixture.txt (29 vs 49 bytes).\n\nB. LiveMoved -- the live digest moves DURING the run\nstaged .agents/slop/guard-fixture.txt -> guard-fixture.staged-proof-35347\n  sha256(mirror) == sha256(live) == fa4bc8abe6f09703  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)\n  [FIRED] exiting the context raised LiveMoved\n         live guard-fixture.txt moved during the run\n\nC. THE ORDINARY PATH -- a full run writes nothing live and leaves nothing\nstaged .agents/slop/guard-fixture.txt -> guard-fixture.staged-proof-35347\n  sha256(mirror) == sha256(live) == fa4bc8abe6f09703  ASSERTED (jj --ignore-working-copy, so this is a measurement and not an identity)\nlive guard-fixture.txt: byte-identical (fa4bc8abe6f09703) -- this harness never wrote it\n  [FIRED] live guard-fixture.txt is byte-identical after a staged mutation (fa4bc8abe6f09703)\n  [FIRED] the staged copy guard-fixture.staged-proof-35347 was unlinked\n\nD. NOTHING LEFT IN THE REPO -- a proof that deposits debris is not a proof\n  [FIRED] the fixture file is gone\n  [FIRED] no *.staged-proof-* debris anywhere under .agents/slop\n\n8/8 claims held\n",
+ "stderr": "live guard-fixture.txt: CHANGED fa4bc8abe6f09703 -> 7b191b206d5e5734 during this run.  Another agent wrote.  The numbers below describe the SNAPSHOT fa4bc8abe6f09703 and NOT the working copy; re-run before publishing.\n",
+ "secs": 8.84,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

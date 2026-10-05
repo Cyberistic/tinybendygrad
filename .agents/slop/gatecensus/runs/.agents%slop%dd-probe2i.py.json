@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dd-probe2i.py",
+ "base": "dd-probe2i.py",
+ "stem": "dd-probe2i",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 1695,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dd-probe2i.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "python dtypes.uints = (dtypes.u8, dtypes.u16, dtypes.u32, dtypes.u64)\nl2i_dt = {'i64': 'i32', 'u64': 'u32'}\n\n=== lg2: CAST dt=i64 xdt=i32  -> 2 root(s)\n  root0:\n    PARAM dtype=dtypes.i32 val=None arg=ParamArg(-1, dtypes.i32, vmin_vmax=(0, 0), multiple_of=1, name='w_i32', addrspace=AddrSpace.ALU)\n  root1:\n    WHERE dtype=dtypes.i32 val=None arg=None\n      CMPLT dtype=dtypes.bool val=None arg=None\n        PARAM dtype=dtypes.i32 val=None arg=ParamArg(-1, dtypes.i32, vmin_vmax=(0, 0), multiple_of=1, name='w_i32', addrspace=AddrSpace.ALU)\n        CAST dtype=dtypes.i32 val=0 arg=dtypes.i32\n          CONST dtype=dtypes.weakint val=0 arg=0\n      CAST dtype=dtypes.i32 val=-1 arg=dtypes.i32\n        CONST dtype=dtypes.weakint val=-1 arg=-1\n      CAST dtype=dtypes.i32 val=0 arg=dtypes.i32\n        CONST dtype=dtypes.weakint val=0 arg=0\n\n=== lg3: CAST dt=i64 xdt=u32  -> 2 root(s)\n  root0:\n    CAST dtype=dtypes.i32 val=None arg=dtypes.i32\n      PARAM dtype=dtypes.u32 val=None arg=ParamArg(-1, dtypes.u32, vmin_vmax=(0, 0), multiple_of=1, name='w_u32', addrspace=AddrSpace.ALU)\n  root1:\n    CAST dtype=dtypes.i32 val=0 arg=dtypes.i32\n      CONST dtype=dtypes.weakint val=0 arg=0\n\n=== lg4: CAST dt=i64 xdt=bool  -> 2 root(s)\n  root0:\n    CAST dtype=dtypes.i32 val=None arg=dtypes.i32\n      PARAM dtype=dtypes.bool val=None arg=ParamArg(-1, dtypes.bool, vmin_vmax=(0, 0), multiple_of=1, name='w_bool', addrspace=AddrSpace.ALU)\n  root1:\n    CAST dtype=dtypes.i32 val=0 arg=dtypes.i32\n      CONST dtype=dtypes.weakint val=0 arg=0\n\n=== lg6: CAST dt=u64 xdt=i32  -> 2 root(s)\n  root0:\n    CAST dtype=dtypes.u32 val=None arg=dtypes.u32\n      PARAM dtype=dtypes.i32 val=None arg=ParamArg(-1, dtypes.i32, vmin_vmax=(0, 0), multiple_of=1, name='w_i32', addrspace=AddrSpace.ALU)\n  root1:\n    WHERE dtype=dtypes.u32 val=None arg=None\n      CMPLT dtype=dtypes.bool val=None arg=None\n        PARAM dtype=dtypes.i32 val=None arg=ParamArg(-1, dtypes.i32, vmin_vmax=(0, 0), multiple_of=1, name='w_i32', addrspace=AddrSpace.ALU)\n        CAST dtype=dtypes.i32 val=0 arg=dtypes.i32\n          CONST dtype=dtypes.weakint val=0 arg=0\n      CAST dtype=dtypes.u32 val=-1 arg=dtypes.u32\n        CONST dtype=dtypes.weakint val=-1 arg=-1\n      CAST dtype=dtypes.u32 val=0 arg=dtypes.u32\n        CONST dtype=dtypes.weakint val=0 arg=0\n\ndtype.py:25:   elif len(uops) == 4: a0, a1, b0, b1 = uops\ndtype.py:26:   match op:\ndtype.py:27:     case Ops.NEG: return l2i(Ops.SUB, dt, zero, zero, *uops)\ndtype.py:28:     case Ops.CAST if dt in (dtypes.long, dtypes.ulong) and uops[0].dtype not in dtypes.floats:\ndtype.py:29:       # the high word is the sign extension, and unsigned and bool sources zero extend\ndtype.py:30:       x, lo = uops[0], uops[0].cast(l2i_dt[dt])\ndtype.py:31:       if x.dtype is dtypes.bool or x.dtype in dtypes.uints: return lo, lo.const_like(0)\ndtype.py:32:       return lo, (x < x.const_like(0)).where(lo.const_like(-1), lo.const_like(0))\ndtype.py:33:     case Ops.CAST if dt in (dtypes.long, dtypes.ulong):\ndtype.py:34:       return (lo:=uops[0].cast(l2i_dt[dt])), (uops[0] / 2**32).cast(l2i_dt[dt]) - ((uops[0] < 0) & lo.ne(0))\ndtype.py:35:     case Ops.CAST if dt in dtypes.floats:\ndtype.py:36:       small = (a1.eq(0) & (a0 >= 0)) | (a1.eq(-1) & (a0 < 0))\ndtype.py:37:       cdt = dt if dt == dtypes.float64 else dtypes.float32\ndtype.py:38:       return small.where(a0.cast(dt), ((a1.cast(cdt) * (2**32)) + a0.bitcast(dtypes.uint).cast(cdt)).cast(dt))\ndtype.py:39:     case Ops.CAST: return a0.bitcast(dtypes.uint).cast(dt)\ndtype.py:40:     case Ops.BITCAST: return a0.bitcast(dt), a1.bitcast(dt)\n",
+ "stderr": "",
+ "secs": 0.19,
+ "verdict": "dtype.py:26:   match op:",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

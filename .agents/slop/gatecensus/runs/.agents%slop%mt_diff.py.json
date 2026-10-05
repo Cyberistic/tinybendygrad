@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/mt_diff.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 7,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_diff.py\", line 53, in <module>\n    _RG = importlib.util.spec_from_file_location(\"rebase_gate\", pathlib.Path(__file__).resolve() / \"rebase-gate.py\")\n          ^^^^^^^^^\nNameError: name 'importlib' is not defined. Did you forget to import 'importlib'?\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=7 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_diff.py\n",
+ "stderr": "",
+ "verdict": "NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/jsfp8/norm_check.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "gate under test: slop/jslane2/gen_f32_seam.py  norm -> jfp_gen_f32_seam\n                  CANON.canon(s, \"f32\"), not repr(float(s)) with no round trip\n\n  ok    one f32, two spellings agree        (the defect's pair) the old norm: FAILS\n  ok    the neighbouring f32 still differs (a constant would pass) the old norm: passes\n  ok    a non-float passes through unchanged                 the old norm: passes\n  ok    NaN matches NaN                                      the old norm: passes\n  ok    an integral f32 is not a different value             the old norm: passes\n\nFIXED 5/5 assertions hold   PLANT (repr(float(s)) with no round trip) 4/5\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/jsfp8/norm_check.py\n",
+ "stderr": "",
+ "verdict": "ok    one f32, two spellings agree        (the defect's pair) the old norm: FAILS",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

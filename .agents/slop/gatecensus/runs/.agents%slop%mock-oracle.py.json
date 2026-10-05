@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/mock-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.96,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 110,
+ "stdout": "# oracle DEV=\n# rows=18\nadd=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nmul=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nrelu=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nsum=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nmax=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nrowsum=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\naxis0=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nmatmul=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nreshape=[[1.0, 2.0], [3.0, 4.0]]\npermute=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nflip=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nshrink=[]\ncast=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nwhere=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nmulacc=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\ngemm2=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\nrepeat=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\ncumsum=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=110 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mock-oracle.py\n",
+ "stderr": "",
+ "verdict": "cumsum=ERROR:RuntimeError:Attempting to relocate against an undefined symbol sel_registerName",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

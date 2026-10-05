@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/memory-diff.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.86,
+ "bounded_exit": 2,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 2,
+ "peak_mb": 321,
+ "stdout": "BEND LANE FAILED\nbend 2.0.35 is available: run bend update\n\n[bounded] WITHIN-LIMITS  rc=2  peak-RSS=321 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/memory-diff.py\n",
+ "stderr": "",
+ "verdict": "BEND LANE FAILED",
+ "status": "FAIL",
+ "why": "child rc=2 within both bounds"
+}

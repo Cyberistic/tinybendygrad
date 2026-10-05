@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/mm-dt-gate.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "bl_dt_boolean lo=+0:0 hi=+0:1\nbl_dt_weakint lo=NInf hi=PInf\nbl_dt_int8 lo=-0:128 hi=+0:127\nbl_dt_uint8 lo=+0:0 hi=+0:255\nbl_dt_int16 lo=-0:32768 hi=+0:32767\nbl_dt_uint16 lo=+0:0 hi=+0:65535\nbl_dt_int32 lo=-0:2147483648 hi=+0:2147483647\nbl_dt_uint32 lo=+0:0 hi=+0:4294967295\nbl_dt_int64 lo=-2147483648:0 hi=+2147483647:4294967295\nbl_dt_uint64 lo=+0:0 hi=+4294967295:4294967295\nbl_dt_weakfloat lo=NInf hi=PInf\nbl_dt_float8_e4m3 lo=F-448 hi=F448\nbl_dt_float8_e4m3fnuz lo=F-240 hi=F240\nbl_dt_float8_e5m2 lo=NInf hi=PInf\nbl_dt_float8_e5m2fnuz lo=F-57344 hi=F57344\nbl_dt_float16 lo=NInf hi=PInf\nbl_dt_bfloat16 lo=NInf hi=PInf\nbl_dt_float32 lo=NInf hi=PInf\nbl_dt_float64 lo=NInf hi=PInf\nbl_dt_void lo=+0:0 hi=+0:1\nbl_w_65_signed cp_bits=65/64 port=NInf,PInf\nbl_w_65_unsigned cp_bits=0/65 port=NInf,PInf\nbl_w_127_signed cp_bits=127/126 port=NInf,PInf\nbl_w_800_signed cp_bits=800/799 port=NInf,PInf\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mm-dt-gate.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

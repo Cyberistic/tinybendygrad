@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dsp-rules.py",
+ "base": "dsp-rules.py",
+ "stem": "dsp-rules",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6848,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp-rules.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp-rules.py\", line 146, in <module>\n    raise SystemExit(main())\n                     ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp-rules.py\", line 114, in main\n    ref = reference()\n          ^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp-rules.py\", line 95, in reference\n    r = subprocess.run([str(PY), str(ROOT / \".agents/slop/dsp_oracle2.py\"), \"rows\"],\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/subprocess.py\", line 571, in run\n    raise CalledProcessError(retcode, process.args,\nsubprocess.CalledProcessError: Command '['/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python', '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp_oracle2.py', 'rows']' returned non-zero exit status 1.\n",
+ "secs": 0.81,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

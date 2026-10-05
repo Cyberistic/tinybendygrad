@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cshape/cs-androot.py",
+ "base": "cs-androot.py",
+ "stem": "cs-androot",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 5012,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cshape/cs-androot.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# `_get_clause` ROOTS, called for every `UPat` shape, with `base=CUSTOMI('uop')`\n  UPat shape                                 n root op    root src ops\n  op only, len 1             (upat.py:27)    4 AND        CUSTOMI PYLITERAL CUSTOM AND\n  op only, len 2             (upat.py:25)    4 AND        CUSTOMI PYLITERAL CUSTOM AND\n  arg int                    (upat.py:29)    5 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM AND\n  arg str                    (upat.py:30)    6 AND        CUSTOMI PYLITERAL CUSTOM PYLITERAL CUSTOM AND\n  name                       (upat.py:32)    6 AND        CUSTOMI PYLITERAL CUSTOM CUSTOMI STORE AND\n  allow_any_len (not strict) (upat.py:31)   10 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX PYLITERAL CUSTOM AND AND\n  src as a bare UPat (repeat) (upat.py:52)   9 AND        CUSTOMI PYLITERAL CUSTOM CUSTOMI PYLITERAL CUSTOM AND CUSTOM AND\n  match_dtype len 1          (upat.py:34)    6 AND        CUSTOMI PYLITERAL CUSTOM PYLITERAL CUSTOM AND\n  match_dtype len 2          (upat.py:33)    6 AND        CUSTOMI PYLITERAL CUSTOM PYLITERAL CUSTOM AND\n  match_tag len 1            (upat.py:36)    6 AND        CUSTOMI PYLITERAL CUSTOM PYLITERAL CUSTOM AND\n  match_tag len 2            (upat.py:35)    6 AND        CUSTOMI PYLITERAL CUSTOM PYLITERAL CUSTOM AND\n  src, single match          (upat.py:42)   10 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX PYLITERAL CUSTOM AND AND\n  src, multi match           (upat.py:43)   15 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX PYLITERAL CUSTOM AND CONST INDEX PYLITERAL CUSTOM AND AND\n  src as a LIST -> FORK      (upat.py:63)   22 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX PYLITERAL CUSTOM AND CONST INDEX PYLITERAL CUSTOM AND AND CUSTOM AND CUSTOM AND AND OR AND\n  UPat.any(...) (is_any)     (upat.py:20)    9 AND        CUSTOMI PYLITERAL CUSTOM AND PYLITERAL CUSTOM AND OR AND\n  op as a set                (upat.py:25)    4 AND        CUSTOMI PYLITERAL CUSTOM AND\n  NOTHING (empty clause)     (upat.py:66)    1 CUSTOMI    CUSTOMI\n  EVERYTHING at once                        17 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CUSTOM CUSTOMI STORE PYLITERAL CUSTOM PYLITERAL CUSTOM CONST INDEX PYLITERAL CUSTOM AND AND\n\n# ROOT HISTOGRAM over 18 patterns: {'AND': 17, 'CUSTOMI': 1}\n#   roots that are OR: 2   patterns whose IR CONTAINS an OR (always under the AND): ['src as a LIST -> FORK      (upat.py:63)', 'UPat.any(...) (is_any)     (upat.py:20)']\n#   OR appears in 2/1 pattern(s), and in every case it is a CHILD of the AND (upat.py:20) -- never a root.\n#   upat.py:66   pattern return UOp\\(Ops\\.AND               found at upat.py:[20, 66, 115]\n#   upat.py:139  pattern x = UOp\\(Ops\\.AND, \\(x,\\)\\)        found at upat.py:[139]\n#   upat.py:140  pattern assert x\\.op is Ops\\.AND           found at upat.py:[140]\n#   upat.py:118  pattern UPat\\(Ops\\.AND, name=\\\"a\\\"\\)       found at upat.py:[118]\n",
+ "stderr": "",
+ "secs": 0.31,
+ "verdict": "src, single match          (upat.py:42)   10 AND        CUSTOMI PYLITERAL CUSTOM CUSTOM CONST INDEX PYLITERAL CUSTOM AND AND",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/denom/denom-probe.py",
+ "base": "denom-probe.py",
+ "stem": "denom-probe",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python",
+ "bytes": 8428,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denom/denom-probe.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "# device = METAL  renderer = MetalRenderer\n# denom  = 77\nop               CONSTRUCT  UOP  SPEC     INTOPO  nodes\nALLREDUCE        ok         yes  OK       yes     9\nCOPY             ok         yes  OK       yes     6\nCUSTOM           ok         yes  OK       yes     2\nCUSTOMI          ok         yes  OK       yes     3\nCUSTOM_FUNCTION  ok         yes  OK       yes     2\nGETADDR          ok         yes  FAIL Run yes     2\nINS              ok         yes  FAIL Ass yes     3\nMSELECT          ok         yes  OK       yes     9\nMSTACK           ok         yes  OK       yes     8\nMULACC           ok         yes  OK       yes     4\nPROGRAM          ok         yes  FAIL Run yes     49\nPYLITERAL        ok         yes  OK       yes     4\nREWRITE_ERROR    ok         yes  FAIL Run yes     1\nSOURCE           ok         yes  FAIL Run yes     49\nSTAGE            ok         yes  OK       yes     6\nTHREEFRY         ok         yes  FAIL Run yes     9\nUNSHARD          ok         yes  OK       yes     8\nWMMA             ok         yes  OK       yes     9\n\n# CONSTRUCTIBLE = 18 of 18\n# CARRIED-ON-A-UOP = 18\n# SPEC-PASSING = 12\n",
+ "stderr": "",
+ "secs": 1.74,
+ "verdict": "ALLREDUCE        ok         yes  OK       yes     9",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

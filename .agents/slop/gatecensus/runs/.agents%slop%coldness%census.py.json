@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/coldness/census.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 35.38,
+ "bounded_exit": 3,
+ "bound": "KILLED-ON-MEMORY",
+ "child_rc": -9,
+ "peak_mb": 1126,
+ "stdout": "[bounded] KILLED-ON-MEMORY  rc=-9  peak-RSS=1126 MB (ceiling 1024)  35s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/coldness/census.py\n[bounded] THIS IS NOT A TIMEOUT. rc=137 is SIGKILL, so it looks like the project's alarm (rc=142) but is not: the term being built did not terminate. Look for Peano `Nat` arithmetic near its 2^48-1 ceiling, or a plant that made a multiplier symbolic.\n",
+ "stderr": "",
+ "status": "NOT-RUN",
+ "verdict": "",
+ "why": "KILLED ON MEMORY at 1024MB ceiling, peak 1126MB",
+ "pass": 2
+}

@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/notes/resh-chain-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "r1.shape          = (4,)\nr1._mop(RESHAPE) is r1 : False\nb4._mop(RESHAPE,(4,)) is b4 : False\nb4._mop(RESHAPE,(2,2)).shape = (2, 2)\n\nbefore chain: shape= (4,) id= 55392\nafter  _mop : shape= (2, 2) id= 24208\nchain collapsed to b4 (identity): False\n\nx.shape where x is a RESHAPE: (4,) (this is rule 2's read)\nr1 (reshape over reshape) shape: (4,) dtype: i32\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/resh-chain-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

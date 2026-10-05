@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/mk_table.py",
+ "base": "mk_table.py",
+ "stem": "mk_table",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 4343,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mk_table.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/mk_table.py\", line 3, in <module>\n    lines = open('/tmp/mut.txt').read().split('\\n')\n            ^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '/tmp/mut.txt'\n",
+ "secs": 0.17,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

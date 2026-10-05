@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/helpers-tc-gate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.3,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 1,
+ "stdout": "  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/helpers-tc-gate.py\", line 4\n    trange_0_seq=\n                 ^\nSyntaxError: invalid syntax\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/helpers-tc-gate.py\n",
+ "stderr": "",
+ "verdict": "SyntaxError: invalid syntax",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/ops-set-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 3,
+ "stdout": "set_end_none=Ops.AFTER(Ops.BUFFER Ops.STORE)\nset_end_one=Ops.AFTER(Ops.BUFFER Ops.END)\nset_end_two=Ops.AFTER(Ops.BUFFER Ops.END)\nset_end_two_src=Ops.AFTER(Ops.BUFFER Ops.END)\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=3 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops-set-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

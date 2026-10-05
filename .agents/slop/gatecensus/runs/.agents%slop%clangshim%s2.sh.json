@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/clangshim/s2.sh",
+ "base": "s2.sh",
+ "stem": "s2",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 3034,
+ "writes": false,
+ "entry": false,
+ "cmd": "./s2.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './s2.sh'",
+ "stdout": "",
+ "stderr": ""
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/f2f-calib.py",
+ "base": "f2f-calib.py",
+ "stem": "f2f-calib",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2535,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/f2f-calib.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/f2f-calib.py\", line 58, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/f2f-calib.py\", line 37, in main\n    fixed = rows(sys.argv[1])\n                 ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.16,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

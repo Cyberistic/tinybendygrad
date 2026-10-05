@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/pin-tables.py",
+ "base": "pin-tables.py",
+ "stem": "pin-tables",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 10941,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/pin-tables.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "pin-tables.py -- WRITE THE PIN INTO EACH MUTATION TABLE, OR WRITE WHY NOT.\n\n`table-pin.py` computes the three numbers.  This writes them, because a pin that\nlives only in a tool's output is not in the artifact a reader opens.\n\nTHE RULE THAT MAKES THIS SAFE TO AUTOMATE, and it is the whole reason the file\nexists rather than a shell loop: a pin is only worth writing for a table whose\nfigure was MEASURED.  For every other table this writes\n\n    PIN NOT WRITTEN -- UNSTATED.  <the reason>\n\nand that is a better record than a pin nobody measured.  A pin is a claim about a\nrun; a fabricated pin is a claim about a run that never happened, and it is\nindistinguishable from a real one forever after.\n\nMEASURED is passed in, never inferred.  There is no code path in this file that\ndecides a table reproduces: it can only be told.\n\n    usage: pin-tables.py --out DIR <measured...>\n      measured  `table:rev:file:rows:nrows` for each table MEASURED today, where\n                `rows` is the row-set digest and `nrows` its row count.\n\n",
+ "secs": 0.05,
+ "verdict": "MEASURED is passed in, never inferred.  There is no code path in this file that",
+ "status": "SKIP",
+ "why": "needs arguments; bare is a different instrument"
+}

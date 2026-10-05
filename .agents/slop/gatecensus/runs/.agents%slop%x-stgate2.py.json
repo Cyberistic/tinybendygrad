@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/x-stgate2.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.34,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 3,
+ "stdout": "gsd_a=l1.weight,l1.bias,l2.weight,l2.bias,n.weight,n.bias,n.num_batches_tracked,n.running_mean,n.running_var\ngpar_a=9\ngpar_dt=f32,f32,f32,f32,f32,f32,i64,f32,f32\ngsd_conv=weight,bias\ngsd_lin=weight,bias\ngsd_root=\ngsd_int=[]\ngsd_prefix=p.a\ngsd_seq=0,1.b\ngsd_od=z,a\ngsd_nt=w\ngsd_dup=a,a.b\ngsd_dup_dt=a:f32,a.b:f32\nlsd_skip=b\nlsd_reshape=Shape mismatch in layer `a`: Expected shape (2, 3), but found (3, 2) in state dict.\nlsd_raise=Shape mismatch in layer `b`: Expected shape (4,), but found (9,) in state dict.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=3 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x-stgate2.py\n",
+ "stderr": "",
+ "verdict": "lsd_reshape=Shape mismatch in layer `a`: Expected shape (2, 3), but found (3, 2) in state dict.",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

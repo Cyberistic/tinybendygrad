@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/x-stgate.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.62,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 85,
+ "stdout": "ss_n=112\nss_jlen=112\nss_pad=0\nss_hdr=w:F32:(2, 3):0-24,b:F32:(3,):24-36\nsl_keys=w,b\nsl_shape=w:(2, 3),b:(3,)\nsl_dt=w:f32,b:f32\ntio_len=4\ntio_chain=1,1,3,0,4,0,2\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x-stgate.py\", line 34, in <module>\n    print('tio_w1=%s' % ','.join(str(io.seek(off, wh)) for off, wh in ((-5, 0), (0, 0), (2, 0), (10, 0), (0, 1), (-1, 1), (0, 2), (-4, 2), (1, 2), (99, 3))))\n                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x-stgate.py\", line 34, in <genexpr>\n    print('tio_w1=%s' % ','.join(str(io.seek(off, wh)) for off, wh in ((-5, 0), (0, 0), (2, 0), (10, 0), (0, 1), (-1, 1), (0, 2), (-4, 2), (1, 2), (99, 3))))\n                                     ^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/nn/state.py\", line 25, in seek\n    self._position = min(len(self._tensor), max(0, [offset, self._position+offset, len(self._tensor)+offset][whence]))\n                                                   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^\nIndexError: list index out of range\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=85 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/x-stgate.py\n",
+ "stderr": "",
+ "verdict": "IndexError: list index out of range",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

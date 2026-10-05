@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/c2d-refusal-rows.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.41,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 10,
+ "stdout": "c2d_selrow_op=Ops.SHRINK\nc2d_selrow_nsrc=1\nc2d_selrow_src0=Ops.BUFFER\nc2d_selrow_arg_is_tuple=True\nc2d_selrow_arg_is_param=False\nc2d_selrow_src0_slot=1\nc2d_selrow_src0_size_is_none=True\nc2d_selrow_src0_device_is_none=True\nc2d_node2_op=Ops.ALLOC\nc2d_node2_arg_is_param=True\nc2d_node2_slot=2\nc2d_node2_device_is_none=True\nc2d_761 selrow=REFUSED AssertionError: \nc2d_761 argnone=BUILT Ops.COPY/Ops.SHRINK Ops.RANGE \nc2d_761 tupledev=BUILT Ops.COPY/Ops.MSELECT Ops.RANGE \nc2d_761 argzero=REFUSED AssertionError: \nc2d_761 scalardevargone=REFUSED AssertionError: \nc2d_761 scalarnone=BUILT Ops.COPY/Ops.BUFFER Ops.RANGE \nc2d_761 tupleargzero=BUILT Ops.COPY/Ops.MSELECT Ops.RANGE \nc2d_761 tupleargnone=BUILT Ops.COPY/Ops.BUFFER Ops.RANGE \nc2d_759 disk=REFUSED RuntimeError: COPY to DISK is not allowed; use STORE to an explicit disk buffer\nc2d_759 disktuple=REFUSED RuntimeError: COPY to DISK is not allowed; use STORE to an explicit disk buffer\nc2d_759 cpu=BUILT Ops.COPY/Ops.BUFFER \nc2d_759 cputuple=BUILT Ops.COPY/Ops.BUFFER Ops.RANGE \nc2d_759 disklower=REFUSED RuntimeError: COPY to DISK is not allowed; use STORE to an explicit disk buffer\nc2d_759 disksuffix=REFUSED RuntimeError: COPY to DISK is not allowed; use STORE to an explicit disk buffer\nc2d_759 nodisk=BUILT Ops.COPY/Ops.BUFFER \nc2d_759 diskx=BUILT Ops.COPY/Ops.BUFFER \nc2d_763 i32=BUILT Ops.COPY/Ops.BUFFER \nc2d_763 f32=BUILT Ops.COPY/Ops.BUFFER \nc2d_763 bool=BUILT Ops.COPY/Ops.BUFFER \nc2d_763 void=BUILT Ops.COPY/Ops.BUFFER \nc2d_763 weakint=REFUSED RuntimeError: cannot create storage for weak dtype dtypes.weakint\nc2d_763 weakfloat=REFUSED RuntimeError: cannot create storage for weak dtype dtypes.weakfloat\nc2d_892 construct=BUILT Ops.MSELECT/Ops.SHRINK \nc2d_892 deviceread=REFUSED AssertionError: mselect must be on tuple device, getting None\nc2d_fixture_n=24\nc2d_identity_n=12\nc2d_outcome_761_n=8\nc2d_outcome_759_n=8\nc2d_outcome_763_n=6\nc2d_outcome_892_n=2\nc2d_shared_n=19\nc2d_oracle_only_n=5\nc2d_weaks_n=2\nc2d_dtypes_n=20\nc2d_refused_n=10\nc2d_built_n=14\nc2d_refused_assertion_n=4\nc2d_refused_runtime_n=6\nc2d_shared_refused_n=7\nc2d_shared_built_n=12\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=10 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/c2d-refusal-rows.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

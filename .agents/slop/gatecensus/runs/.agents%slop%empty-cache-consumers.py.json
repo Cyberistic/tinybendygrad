@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/empty-cache-consumers.py",
+ "base": "empty-cache-consumers.py",
+ "stem": "empty-cache-consumers",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9066,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/empty-cache-consumers.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "  CORRECT  wire-rows.bend_rows    returned 2 rows; cache file left holding 2\n           RE-MEASURED: the lane ran and the cache was rewritten with rows\n  CORRECT  wire-pair.bend_rows    returned 2 rows; cache file left holding 2\n           RE-MEASURED: the lane ran and the cache was rewritten with rows\n  CORRECT  wire-survey.main       reported 0 cached oracle row-sets, 0/1 port row-sets\n           DROPPED the port: a refused cache is not a port row-set, and the denominator now says so\n\n  MEASURED ELSEWHERE, restated with provenance (not re-run here):\n    CORRECT   rebase-scan-oracles  executed as the oracle by empty-cache-control.py,\n                                      states 3 and 4, both runs\n    CORRECT   substrate-audit s2()   executed before and after; FAIL -> pass, exit 1 -> 0\n    UNEXECUTED wire-sweep.main       its cache branch is byte-identical to\n                                      wire-survey's (wire-sweep.py:93-98 vs\n                                      wire-survey.py:56-61); main() then runs every\n                                      candidate oracle as a subprocess, so this row\n                                      is from the source and is NOT a measurement\n    NOT A     wire-lanes.py          imports rows + stripped_env only; no cache read\n             CONSUMER\n\n  3/3 EXECUTED consumers behave correctly;  0 do not\n  denominator: 3 of the 6 importers executed here; 1 measured elsewhere (the oracle),\n  1 not executed and marked as such, 1 excluded because it is not a consumer.\n",
+ "stderr": "",
+ "secs": 1.67,
+ "verdict": "CORRECT  wire-rows.bend_rows    returned 2 rows; cache file left holding 2",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

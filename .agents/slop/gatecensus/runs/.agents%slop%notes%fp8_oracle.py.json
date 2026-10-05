@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/notes/fp8_oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.41,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 133,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/fp8_oracle.py\", line 160, in <module>\n    ok &= check(lambda u, _n=name: to_fp8(val(u), DT[_n]), lambda u: ref_to(name, u),\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/fp8_oracle.py\", line 128, in check\n    bad = [(a, r, fn(a)) for a, r in cases if fn(a) != r]\n                                              ^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/fp8_oracle.py\", line 160, in <lambda>\n    ok &= check(lambda u, _n=name: to_fp8(val(u), DT[_n]), lambda u: ref_to(name, u),\n                                   ^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/fp8_oracle.py\", line 73, in to_fp8\n    bias, sig, mant, mdh, ovf, mx, mn = CFG[d.name]\n                                        ~~~^^^^^^^^\nKeyError: 'fp8e4m3'\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=133 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/fp8_oracle.py\n",
+ "stderr": "",
+ "verdict": "KeyError: 'fp8e4m3'",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

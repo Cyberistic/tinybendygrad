@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cstyle-reader-parity.py",
+ "base": "cstyle-reader-parity.py",
+ "stem": "cstyle-reader-parity",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 9654,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-reader-parity.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "port lane   CAPTURE .agents/slop/blobrows/CURRENT/tinybendygrad__renderer__cstyle.bend.txt md5=e039eeff62ce   228 physical lines\noracle lane CAPTURE .agents/slop/cstyle-parity/oracle.txt md5=1ddd5a5d574c   224 physical lines\n\n[1] port lane  rows_strict 227 names (0 shred(s), 0 dup(s))   rows() 225 names   union 233\n    rows_strict-only 8: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4']\n    rows()-only      6: ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']\n    same value on shared names: 0/219   <-- 219 shared name(s) the two readers value DIFFERENTLY\n\n[1] oracle lane  rows_strict 224 names (0 shred(s), 0 dup(s))   rows() 222 names   union 230\n    rows_strict-only 8: ['kern BASE  lb=1', 'kern CLANG lb=4', 'kern CUDA  lb=1', 'kern CUDA  lb=4', 'kern HIP   lb=1', 'kern HIP   lb=4']\n    rows()-only      6: ['kern BASE  lb', 'kern CLANG lb', 'kern CUDA  lb', 'kern HIP   lb', 'kern METAL lb', 'kern OPENCL lb']\n    same value on shared names: 0/216   <-- 216 shared name(s) the two readers value DIFFERENTLY\n\n[1b] judge() with rows_strict: BROKEN port=227 oracle=224 gated=221 agree=221 disagree=0 stale=0 bad=6\n[1b] judge() with rows()     : BROKEN port=225 oracle=222 gated=219 agree=219 disagree=0 stale=0 bad=3\n[1b] -> DIFFERENT  (disagreeing rows are none of 221 gated)\n",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-reader-parity.py\", line 203, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-reader-parity.py\", line 165, in main\n    rc_f, out_f = gate_once(fork)\n                  ^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-reader-parity.py\", line 158, in gate_once\n    rc = CG.main()\n         ^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-gate.py\", line 557, in main\n    pathlib.Path(a.oracle_stderr).read_text()\n  File \"/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1027, in read_text\n    with self.open(mode='r', encoding=encoding, errors=errors) as f:\n         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py\", line 1013, in open\n    return io.open(self, mode, buffering, encoding, errors, newline)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nFileNotFoundError: [Errno 2] No such file or directory: '.agents/slop/cstyle-parity/oracle.err'\n",
+ "secs": 2.6,
+ "verdict": "[1b] judge() with rows_strict: BROKEN port=227 oracle=224 gated=221 agree=221 disagree=0 stale=0 bad=6",
+ "status": "FAIL",
+ "why": "rc=1"
+}

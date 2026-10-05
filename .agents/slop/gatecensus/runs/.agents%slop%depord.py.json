@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/depord.py",
+ "base": "depord.py",
+ "stem": "depord",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 5325,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/depord.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/depord.py\", line 30, in <module>\n    path = sys.argv[1]\n           ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.04,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

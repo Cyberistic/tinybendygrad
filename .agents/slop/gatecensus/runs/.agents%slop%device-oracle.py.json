@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/device-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "all_len=9\ncanon_cpu0=CPU\ncanon_cpu00=CPU:0\ncanon_wg2=WEBGPU:2\ncanon_nv00=NV:00\ncanon_x00=X:0\ncanon_a=A:b\ncanon_dev=CPU\nmulti=CPU,CPU,CPU:1\nopen_one=1\nopen_two=2\nallow_py=1\nallow_lower=1\nallow_metal=0\nallow_on=1\nallow_cpu=0\nallow_disk=1\nallow_npy=1\nallow_cpu_l=0\nallow_mixed=1\ndisk_one=0\ndisk_two=1\ndisk_no=0\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/device-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

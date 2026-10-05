@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/split_late.py",
+ "base": "split_late.py",
+ "stem": "split_late",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 7863,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/split_late.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "linearizer names regalloc reaches for: ['RaEn', 'RaEn.k', 'RaEn.v', 'RaTb', 'RaTb.es', 'at', 'b2u', 'cfg_entry', 'lt_is_exit', 'lt_is_range', 'lt_key', 'lt_lines', 'lt_op_is', 'row', 'srow', 'tb_get', 'tb_has', 'tb_ins', 'tb_keys', 'tb_new', 'tb_pget', 'tb_pput', 'tb_pset', 'tb_put', 'tb_vput', 'tb_vs', 'u32_none']\nlinearizer names gater reaches for: ['cfg_entry', 'lt_ops_name', 'row', 'srow']\nmain rows: lin=47 reg=11 gat=15\n",
+ "stderr": "",
+ "secs": 0.88,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

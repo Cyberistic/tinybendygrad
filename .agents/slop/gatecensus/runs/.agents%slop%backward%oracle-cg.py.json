@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/backward/oracle-cg.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 2,
+ "stdout": "oracle_dag_n_toposort=6\noracle_dag_walk=MUL/2 ADD/2 ADD/2\noracle_dag_walk_n=3\noracle_dag_inpath=0 0 1 0 1 1\noracle_dag_n_inpath=3\noracle_dag_grads_n=6\noracle_dag_grad_a=5 root=ADD/2 srcs=ADD/2 BUFFER/0 CAST/1 CONST/0 MUL/2\noracle_dag_grad_b=4 root=MUL/2 srcs=BUFFER/0 CAST/1 CONST/0 MUL/2\noracle_dag_grad_c=2 root=CAST/1 srcs=CAST/1 CONST/0\noracle_dag_grad_p=2 root=CAST/1 srcs=CAST/1 CONST/0\noracle_dag_grad_q=2 root=CAST/1 srcs=CAST/1 CONST/0\noracle_dag_grad_r=2 root=CAST/1 srcs=CAST/1 CONST/0\noracle_dag_keys=ADD/2 MUL/2 ADD/2 BUFFER/0 BUFFER/0 BUFFER/0\noracle_dag_skip_n=0\noracle_dag_hole_n=0\noracle_hole_n_toposort=8\noracle_hole_walk=MUL/2 ADD/2 EXPAND/2 ADD/2\noracle_hole_walk_n=4\noracle_hole_inpath=0 0 1 0 1 1 0 1\noracle_hole_n_inpath=4\nTraceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py\", line 144, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py\", line 116, in main\n    one(\"hole\", r2, {a2, b2, d2},\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py\", line 83, in one\n    grads = compute_gradient(root, UOp.const(1.0, dtypes.float32), targets)\n            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/gradient.py\", line 133, in compute_gradient\n    v = v.cast(sum_acc_dtype(v.dtype))._rop(Ops.ADD, broadcast_axes(k.shape, v.shape)).reshape(k.shape).cast(v.dtype)\n                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py\", line 89, in broadcast_axes\n    if (nleft:=len(out_shape)-len(src_shape)) < 0: raise RuntimeError(f\"cannot broadcast {src_shape} into {out_shape}\")\n                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=(\n  UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.f32), src=()),\n  UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.f32), src=()),)),) into ()\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py\n",
+ "stderr": "",
+ "verdict": "RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=(",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

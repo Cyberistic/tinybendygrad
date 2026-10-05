@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/cpunull-gate.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.55,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 387,
+ "stdout": "runtime/ops_cpu.bend  134 rows\nruntime/ops_null.bend  180 rows\n--------------------------------------------- union: 314 rows\n10a11,16\n> cpu_lib_objc=/usr/lib/libobjc.dylib\n> cpu_link_libs_00=m,gcc_s,/usr/lib/libobjc.dylib\n> cpu_link_libs_10=m,System,/usr/lib/libobjc.dylib\n> cpu_link_libs_01=m,kernel,/usr/lib/libobjc.dylib\n> cpu_link_libs_11=m,System,/usr/lib/libobjc.dylib\n> cpu_link_libs_n=3\nDISAGREE with the pre-split snapshot\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=387 MB (ceiling 1024)  2s  :: ./.agents/slop/cpunull-gate.sh\n",
+ "stderr": "",
+ "verdict": "runtime/ops_cpu.bend  134 rows",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

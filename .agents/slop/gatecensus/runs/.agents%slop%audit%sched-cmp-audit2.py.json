@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/audit/sched-cmp-audit2.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 4.48,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 593,
+ "stdout": "==============================================================================\nPLANT 2 -- FIDELITY FIRST: an unmutated $TMPDIR copy must reproduce the\n           published snapshot sha, or the copy pipeline is not sound.\n  bend on the clean copy: rc=0 rows=60\n  sha=28cc85120f0de6b584f9b692f0762f5b5ed64196305b617b0cfd35a8a10234bd\n  == sha published in sched-stage2.md? False\n  stderr: bend 2.0.35 is available: run bend update\n  == live tree's sched-port.txt?  False\n\n==============================================================================\nPLANT 2 -- MUTATE THE PORT IN THE COPY: `Lin.out` drops its first src.\n  mutated tinybendygrad/schedule/__init__.bend -- Lin.out drops 1 src\n  bend on the PLANTED copy: rc=0 rows=60\n  sha=6c59fa473db7fec880ce00732fb283cbff855074f1075b15668a617cb5e5e38a   differs from clean? True\n  stderr: bend 2.0.35 is available: run bend update\n\n  NOW THE QUESTION: does the COMMITTED comparator see any of this?\n    # specs_attempted=6 specs_scheduled=6 fields_compared=60 fields_agree=54 fields_disagree=6 port_only=0\n    DISAGREE chain_gated cpython=5 port=18\n    DISAGREE conv_gated cpython=6 port=62\n    DISAGREE elementwise_gated cpython=7 port=24\n    DISAGREE matmul_gated cpython=6 port=26\n    DISAGREE matmul_sym_gated cpython=6 port=30\n    DISAGREE multi_gated cpython=9 port=43\n    rc=1\n    rows the planted port produces: 60; rows the committed comparator read: 60\n    ^ sched-cmp.py reads ONLY sched-port.txt. It spawns no process and\n      never touches tinybendygrad/. A port edit CANNOT move this number\n\n  With the PLANTED snapshot fed in by hand:\n    # specs_attempted=6 specs_scheduled=6 fields_compared=0 fields_agree=0 fields_disagree=0 port_only=60\n    rc=1\n\n==============================================================================\nPLANT 3 -- the denominator's '6 specs' and 'specs_attempted=6' are LITERALS\n    # matmul_sym var_vals={'K': 3}\n    # port side: this run's `./bin/bend` -> 0 rows, rc=None NO FIXTURE at /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/schedaudit2/harness-7specs/sched-fixture.bend\n    rc=1\n    ^ 70 fields were compared from SEVEN specs, and the header still says\n      'specs_attempted=6 specs_scheduled=6', and the denominator still says\n      '6 specs x 11 fields' -- which is 66, not 70.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=593 MB (ceiling 1024)  4s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/audit/sched-cmp-audit2.py\n",
+ "stderr": "",
+ "verdict": "bend on the clean copy: rc=0 rows=60",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

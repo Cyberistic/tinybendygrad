@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/i64mul/census.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 5.16,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 319,
+ "stdout": "=== the gate is armed: baseline == the oracle on every row ===\nrows_expected=442 rows_present=442 disagree=0\n\n=== hi == lo census: which fixtures can see a half-swap at all ===\nfixtures=221\n  BOTH operands hi==lo (blind to a half-swap): 4 -> ['f_zero_zero', 'f_neg1_neg1', 'f_pow0_m', 'f_pow32_p']\n  hi!=lo on at least one operand:              217\n\nthe three libclang sentinels, as word pairs:\n           0 -> 0:0   hi==lo: True\n          -1 -> 4294967295:4294967295   hi==lo: True\n   int64.min -> 2147483648:0   hi==lo: False\n\n=== which rows SEE each mutation (a plant that moves nothing is a blind spot) ===\ndrop_carry [disarm]: moved=33 UNMOVED=409\ncarry_at_bit0 [disarm]: moved=33 UNMOVED=409\ncross_in_low_word [disarm]: moved=269 UNMOVED=173\nno_carry_out_of_t [disarm]: moved=67 UNMOVED=375\nlimbs_swapped [disarm]: moved=321 UNMOVED=121\nno_sign_flip [disarm]: moved=79 UNMOVED=363\nplant_high_plus_one [plant]: moved=442 UNMOVED=0\nplant_cross_plus_one [plant]: moved=442 UNMOVED=0\n\n=== the half-swap census, concretely ===\nrows whose BOTH operands have hi==lo: 4\n   m_f_zero_zero=0:0\n   m_f_neg1_neg1=0:1\n   m_f_pow0_m=0:0\n   m_f_pow32_p=2:1\nA fixture set made only of these would answer the same under cross_in_low_word,\nwhich is why the set carries 80 random pairs and the 2**k +/- 1 ladder.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=319 MB (ceiling 1024)  5s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/i64mul/census.py\n",
+ "stderr": "",
+ "verdict": "rows_expected=442 rows_present=442 disagree=0",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

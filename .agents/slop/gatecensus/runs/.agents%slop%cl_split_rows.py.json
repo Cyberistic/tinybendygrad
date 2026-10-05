@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/cl_split_rows.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 2.64,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 333,
+ "stdout": "  runtime/ops_cl.bend  229 rows\n  runtime/ops_cuda.bend  120 rows\n  runtime/ops_hip.bend  96 rows\n\n  445 rows, 445 names, every name=value line byte-identical\n  rows whose POSITION changed: 444 (the regrouping by owning file)\n  largest move: vend_count_hip 2 -> 349\n  rows in the file that does NOT own them: 0\n\n  rows per file: {'ops_cl': 229, 'ops_cuda': 120, 'ops_hip': 96}\n  the 22 `x_*` cross-vendor rows are all in ops_hip.bend, the only file that can import both others\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=333 MB (ceiling 1024)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cl_split_rows.py\n",
+ "stderr": "",
+ "verdict": "runtime/ops_cl.bend  229 rows",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

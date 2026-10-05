@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/state-gate.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.33,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "sd_tens=True\nsd_map=True\nsd_seq=True\nsd_nest=True\nsd_strip=True\nsd_attr=True\nsd_ord=True\nsd_dup=True\nsd_safe=True\nsd_safedt=True\nsd_invn=True\nsd_inv=True\nsd_seek=True\nsd_param=True\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/state-gate.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/wgsl-oracle.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 2,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wgsl-oracle.py\", line 107, in <module>\n    main()\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wgsl-oracle.py\", line 103, in main\n    show(tag, render(fn, arch))\n              ^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wgsl-oracle.py\", line 28, in render\n    prg = to_program(t.uop, ren(arch))\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py\", line 518, in to_program\n    if (prg:=to_program_cache.get(key:=to_program_key(ast, renderer))) is None: to_program_cache[key] = prg = do_to_program(ast, renderer)\n                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py\", line 1684, in __wrapper\n    ret = func(*args, **kwargs)\n          ^^^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py\", line 81, in inner\n    return func(*args, **kwds)\n           ^^^^^^^^^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py\", line 503, in do_to_program\n    else: raise RuntimeError(f\"can't call to_program on {ast.op}\")\n          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nRuntimeError: can't call to_program on Ops.ADD\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wgsl-oracle.py\n",
+ "stderr": "",
+ "verdict": "RuntimeError: can't call to_program on Ops.ADD",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

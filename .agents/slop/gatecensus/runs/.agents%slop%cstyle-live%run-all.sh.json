@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cstyle-live/run-all.sh",
+ "base": "run-all.sh",
+ "stem": "run-all",
+ "sh": true,
+ "py": false,
+ "exec": false,
+ "interp": "",
+ "bytes": 4923,
+ "writes": false,
+ "entry": false,
+ "cmd": "zsh /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cstyle-live/run-all.sh",
+ "how": "zsh",
+ "leash": 25,
+ "rc": 124,
+ "stdout": "=== STAGE 0: snapshot the tree, and report the live tree's health ===\n  live ./bin/bend tinybendygrad/renderer/cstyle.bend  rc=0  rows=227\n  snapshot helpers.bend sha256 1c9f47b23d85ac78c6c77ab4f666e151d30b8d65182429d8819d953cef315703\n  snapshot cstyle.bend  sha256 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f\n  live    cstyle.bend  sha256 07ae2766f891e9a85bed84c416bab21f9a17c143730aa26383d685998c97eb7f\n  the snapshot's cstyle.bend is IDENTICAL to the live one\n  port.txt: 227 lines captured from the snapshot\n\n######################################################## STAGE 1\n\n",
+ "stderr": "",
+ "secs": 25.05,
+ "verdict": "live ./bin/bend tinybendygrad/renderer/cstyle.bend  rc=0  rows=227",
+ "status": "NOT-RUN",
+ "why": "OUR alarm at 25s (rc=124)"
+}

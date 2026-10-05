@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/xb1/hdr-audit.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.3,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xb1/hdr-audit.py\n",
+ "stderr": "",
+ "status": "NOT-RUN",
+ "verdict": "",
+ "why": "ZERO bytes on both streams -- a refusal",
+ "pass": 2
+}

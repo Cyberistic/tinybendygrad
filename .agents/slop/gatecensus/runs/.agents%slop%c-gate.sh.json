@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/c-gate.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.51,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 182,
+ "stdout": "--- 1. the ORACLE, re-derived by CALLING CPYTHON\n    c-oracle.py   exit 0   129 rows\n    and it is byte-identical to .agents/slop/runs/base_c.bend.txt on this run (it is REPRODUCIBLE, not a recording)\n--- 2. --check-only, FIRST LINE only (it exits 1 even on a clean file)\nALL PROOFS CHECK\n--- 3. the INTERPRETED lane, retried against the stack overflow\n    tinybendygrad/runtime/support/c.bend   129 rows after 1 attempt(s)\n--- 4. BYTE DIFF, whole name=value lines, against the CPYTHON snapshot\n    MATCHES CPython, all 129 rows, byte for byte\nc-gate: DONE\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=182 MB (ceiling 1024)  1s  :: ./.agents/slop/c-gate.sh\n",
+ "stderr": "",
+ "verdict": "c-oracle.py   exit 0   129 rows",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

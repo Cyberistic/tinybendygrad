@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/rebase-oracle-spec.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "sh_len=33\nte_len=55\npr_len=42\nhq_len=35\nfu_len=70\nkg_len=13\ntag_const=1\ntag_rej=1\n#repro_four_src_rule_op=PROGRAM\n#repro_four_src_reject=BINARY|LINEAR|SINK|SOURCE\n#repro_tensor_own_n=22\n#repro_spec_full_own=4\n#repro_shared_rejects=15:RANGE\nsink_ok=1\nnoop_ok=1\nnoop_kg=9\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/rebase-oracle-spec.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

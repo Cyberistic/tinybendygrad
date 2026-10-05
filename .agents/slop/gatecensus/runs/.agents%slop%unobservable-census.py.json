@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/unobservable-census.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.35,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 5,
+ "stdout": "================================================================================================\nUNOBSERVABLE-ROW CENSUS -- static half (blind-transposition count, proven from the row text)\n================================================================================================\nport                                       rows   DEAD   weak  NO-STATE  blind_sw   sib_bl\nrenderer/cstyle                             129      4      2         3        10        0\n   (renderer/cstyle                        scalar=61)\nruntime/ops_cl+ops_cuda+ops_hip             445      3     11        18        53        0\n   (runtime/ops_cl+ops_cuda+ops_hip        scalar=340)\ncodegen/late/{linearizer,regalloc,gater}    130      1     13         0       321        3\n   (codegen/late/{linearizer,regalloc,gate scalar=71)\nruntime/ops_bend                            612      1     14         0       177       98\n   (runtime/ops_bend                       scalar=583)\ncodegen/{simplify,late/coalesce,gpudims}     54      0      0         0         0        0\n   (codegen/{simplify,late/coalesce,gpudim scalar=54)\nruntime/ops_cpu_null                        308      0      7         3        22        2\n   (runtime/ops_cpu_null                   scalar=252)\nruntime/ops_dsp                             540      0    123         0      1793        4\n   (runtime/ops_dsp                        scalar=4)\nrenderer/tc_ptx                             620      0    347         0      1902        4\n   (renderer/tc_ptx                        scalar=29)\ncodegen/decomp/dtype                      14120      0   9858         0      9858        0\n   (codegen/decomp/dtype                   scalar=0)\nnaming-gate                                 668      0      0         0         0        0\n   (naming-gate                            scalar=668)\n------------------------------------------------------------------------------------------------\nTOTAL                                     17626      9  10375        24      2062    14136\n\nDEAD = every token identical: provably blind to EVERY ordering. weak = some.\nblind_sw = number of reorderings of a row's own tokens it cannot see.\nsib_bl = number of reorderings of SIBLING rows (index in the NAME) it cannot see.\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=5 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/unobservable-census.py\n",
+ "stderr": "",
+ "verdict": "TOTAL                                     17626      9  10375        24      2062    14136",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

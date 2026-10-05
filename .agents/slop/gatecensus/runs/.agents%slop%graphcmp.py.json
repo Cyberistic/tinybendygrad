@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/graphcmp.py",
+ "how": "venv-py",
+ "leash_s": 300,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 2,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 2,
+ "peak_mb": 2,
+ "stdout": "usage: graphcmp.py [-h]\n                   [--graph {alu,binblob,bit,buffer,bw,cast,commute,flip,gate,group,indexed,lin,loop,matmul,move,range,rangeflat,reduce,sink,special,sym,where}]\n                   [--side {py,bend}]\n                   [--plant {bytes,disarm,dsexpand,dtype,opt,pyuop,shape,srcswap,sym1}]\n                   [--dev DEV] [--equiv] [--levels LEVELS]\n                   [--bend-probe BEND_PROBE]\n                   {emit,diff,control,cross,selfcheck,dbg,conf}\ngraphcmp.py: error: the following arguments are required: cmd\n[bounded] WITHIN-LIMITS  rc=2  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "SKIP",
+ "why": "printed usage/REFUSED; bare is a different instrument"
+}

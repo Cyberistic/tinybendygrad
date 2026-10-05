@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/cl_split_noloss.py",
+ "base": "cl_split_noloss.py",
+ "stem": "cl_split_noloss",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 2691,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/cl_split_noloss.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "pre-split lines 3147; destination lines 3491\nnon-blank pre-split lines whose text appears in NO destination: 0\n\nno pre-split line was dropped. The edits that DID happen are the ones the\nsplit script enumerates: call-site qualifiers, four `v`-argument removals,\ntwo `cl.sync` -> `cu.sync` call sites, and the rewrites of t_vend/t_check/\nt_err/t_print/main. Each is asserted by a count in cl_split.py.\n",
+ "stderr": "",
+ "secs": 0.06,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

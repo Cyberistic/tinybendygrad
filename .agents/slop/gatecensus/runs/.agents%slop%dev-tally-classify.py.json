@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dev-tally-classify.py",
+ "base": "dev-tally-classify.py",
+ "stem": "dev-tally-classify",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 4417,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dev-tally-classify.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 1,
+ "stdout": "",
+ "stderr": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dev-tally-classify.py\", line 92, in <module>\n    sys.exit(main())\n             ^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dev-tally-classify.py\", line 48, in main\n    doc = json.loads(pathlib.Path(sys.argv[1]).read_text())\n                                  ~~~~~~~~^^^\nIndexError: list index out of range\n",
+ "secs": 0.17,
+ "verdict": "",
+ "status": "FAIL",
+ "why": "rc=1"
+}

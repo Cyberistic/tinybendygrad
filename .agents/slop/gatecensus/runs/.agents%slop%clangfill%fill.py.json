@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/clangfill/fill.py",
+ "base": "fill.py",
+ "stem": "fill",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 32557,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/clangfill/fill.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "rows 324  exported 320  absent 4  handles 21  byval 11  ptr-only 20  enums 32\nc-locers per class: {'INT': 89, 'FLT': 0, 'CSTR': 21, 'PTR': 225, 'BOX': 193}\n.agents/slop/clangshim/libclang-tramp.c: 207374 -> 207374 bytes\n",
+ "stderr": "",
+ "secs": 4.4,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

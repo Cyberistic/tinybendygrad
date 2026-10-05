@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/system_diff.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.35,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 12,
+ "stdout": "NO-ORACLE sy-done bend=1\n\n439 agree, 0 disagree, 1 rows with no oracle, 440 rows total\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=12 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/system_diff.py\n",
+ "stderr": "",
+ "verdict": "439 agree, 0 disagree, 1 rows with no oracle, 440 rows total",
+ "status": "PASS",
+ "why": "rc=0 under both bounds, output present, verdict token seen"
+}

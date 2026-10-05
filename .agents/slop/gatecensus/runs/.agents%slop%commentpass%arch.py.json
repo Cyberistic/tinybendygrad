@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/commentpass/arch.py",
+ "base": "arch.py",
+ "stem": "arch",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 2569,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/commentpass/arch.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "archetype                   blocks   lines  of which >10 lines\nTOTAL                            0       0\n",
+ "stderr": "",
+ "secs": 0.11,
+ "verdict": "TOTAL                            0       0",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

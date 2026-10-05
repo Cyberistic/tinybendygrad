@@ -1,0 +1,253 @@
+{
+ "distinct_gates": 400,
+ "alias_families": {
+  "unreadable": [
+   ".agents/slop/ag-verify.sh",
+   ".agents/slop/arena-sweep-control.sh",
+   ".agents/slop/arena-sweep.sh",
+   ".agents/slop/blob-intern-gate.sh",
+   ".agents/slop/blobrows-sweep.sh",
+   ".agents/slop/bnxt_gate.sh",
+   ".agents/slop/c-gate.sh",
+   ".agents/slop/coldness/census.py",
+   ".agents/slop/coldness/sweep.sh",
+   ".agents/slop/cpunull-gate.sh",
+   ".agents/slop/dd-gate-snap.sh",
+   ".agents/slop/dd-sweep.sh",
+   ".agents/slop/ew-consts-gate.sh",
+   ".agents/slop/ew-gate.sh",
+   ".agents/slop/helpers-tree-check.sh",
+   ".agents/slop/ip_check.sh",
+   ".agents/slop/lane-load-sweep.sh",
+   ".agents/slop/ops-cl-gate.sh",
+   ".agents/slop/ops-gate.sh",
+   ".agents/slop/ops-pu-gate.sh",
+   ".agents/slop/ops-rnd-gate.sh",
+   ".agents/slop/ops-rra-gate.sh",
+   ".agents/slop/ops-set-gate.sh",
+   ".agents/slop/ops-sugar-gate.sh",
+   ".agents/slop/ops-var-gate.sh",
+   ".agents/slop/ops-vrn-gate.sh",
+   ".agents/slop/ops-vv-gate.sh",
+   ".agents/slop/order-late-gate.sh",
+   ".agents/slop/order-lin-sweep.sh",
+   ".agents/slop/prepare-gate.sh",
+   ".agents/slop/shadowtrees/census.py",
+   ".agents/slop/shadowtrees/census2.py",
+   ".agents/slop/tc-gate.sh",
+   ".agents/slop/wallrule/wallcheck.py",
+   ".agents/slop/wk-f32-gate.sh"
+  ],
+  "427198cdf08562d517d41bcf834b86868b9be3249e57f95ff5a15b594b6b3ffd": [
+   ".agents/slop/debug-gate-out.0.py",
+   ".agents/slop/debug-gate-out.unset.py"
+  ],
+  "60fc36247d4e07c8b8c4cf581131da442e323b9c6c955a4f6917da5ad43fe470": [
+   ".agents/slop/debug-gate-out/debug-gate.0.py",
+   ".agents/slop/debug-gate-out/debug-gate.unset.py"
+  ],
+  "7f05dff70c7acda72ebb821f056211e17006c73a67265caf9a59c28f7e0d594f": [
+   ".agents/slop/x86/x86-oracle.py",
+   ".agents/slop/x86/x86_oracle.py"
+  ],
+  "43eac270079035e215b1fd78d8d855b41126cf3b207c9ae876f157c78d22f835": [
+   ".agents/slop/x86/x86-sweep.py",
+   ".agents/slop/x86/x86_sweep.py"
+  ]
+ },
+ "reds": 91,
+ "distinct_problems": 46,
+ "causes": {
+  "unclassified[1]: Error:": [
+   ".agents/slop/abi/abi_gate.py",
+   ".agents/slop/abi4/abi4_gate.py"
+  ],
+  "unclassified[1]: FAIL clang_createIndex MISSING from the emitted file": [
+   ".agents/slop/ag-tramp-verify.py"
+  ],
+  "missing-file": [
+   ".agents/slop/amd_check.py",
+   ".agents/slop/cidsweep/gate.sh",
+   ".agents/slop/multi-verify.py",
+   ".agents/slop/portexec/census.py"
+  ],
+  "unclassified[2]: al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE": [
+   ".agents/slop/arglit/al-verdict.py"
+  ],
+  "unclassified[1]: KeyError: 'mech_denom'": [
+   ".agents/slop/audit/ffi-port-cost-audit.py"
+  ],
+  "unclassified[1]: emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:": [
+   ".agents/slop/audit/graphcmp-census-audit.py",
+   ".agents/slop/graphcmp-oracle.py"
+  ],
+  "unclassified[1]: TypeError: 'tuple' object is not a mapping": [
+   ".agents/slop/audit/sched-cmp-audit.py"
+  ],
+  "unclassified[1]: RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=(": [
+   ".agents/slop/backward/oracle-cg.py"
+  ],
+  "unclassified[1]: KeyError: 'prog'": [
+   ".agents/slop/bend_oracle.py"
+  ],
+  "UNQUOTED: the harness captured no text for this red": [
+   ".agents/slop/blobrows-sweep.sh",
+   ".agents/slop/dd-gate-snap.sh",
+   ".agents/slop/dup/dup-gate.py",
+   ".agents/slop/ext_check.py",
+   ".agents/slop/grw-gate.sh",
+   ".agents/slop/helpers-tc-gate.sh",
+   ".agents/slop/lastlaw/sweep.sh",
+   ".agents/slop/naming-gate-ledger.py",
+   ".agents/slop/ops-rnd-rows.py",
+   ".agents/slop/pr-actions-oracle.py",
+   ".agents/slop/runrows.sh"
+  ],
+  "unclassified[1]: runtime/ops_cpu.bend 134 rows": [
+   ".agents/slop/cpunull-gate.sh"
+  ],
+  "syntax-error": [
+   ".agents/slop/debug-gate-out.0.py",
+   ".agents/slop/debug-gate-out.1.py",
+   ".agents/slop/debug-gate-out.2.py",
+   ".agents/slop/debug-gate-out.3.py",
+   ".agents/slop/debug-gate-out.4.py",
+   ".agents/slop/debug-gate-out.5.py",
+   ".agents/slop/debug-gate-out.6.py",
+   ".agents/slop/debug-gate-out.7.py",
+   ".agents/slop/debug-gate-out.unset.py",
+   ".agents/slop/debug-gate-out/debug-gate.0.py",
+   ".agents/slop/debug-gate-out/debug-gate.1.py",
+   ".agents/slop/debug-gate-out/debug-gate.2.py",
+   ".agents/slop/debug-gate-out/debug-gate.3.py",
+   ".agents/slop/debug-gate-out/debug-gate.unset.py",
+   ".agents/slop/helpers-tc-gate.py",
+   ".agents/slop/mt_audit2.py"
+  ],
+  "unclassified[1]: KeyError: dtypes.fp8e4m3": [
+   ".agents/slop/dsp_oracle.py",
+   ".agents/slop/wip/cstyle_oracle.py"
+  ],
+  "unclassified[1]: AssertionError: {'CALL_ION_ALLOC': 0, 'CALL_ION_SHARE': 1, 'CALL_MMAP': 2, 'CALL_MEMMOVE':": [
+   ".agents/slop/dsp_oracle2.py"
+  ],
+  "unclassified[1]: OSError: dlopen(/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/elf/libs": [
+   ".agents/slop/elf_oracle.py",
+   ".agents/slop/elf_rows.py"
+  ],
+  "unclassified[1]: lane failure: bend bend 2.0.35 is available: run bend update | oracle open file '/Users/cy": [
+   ".agents/slop/eq/rn-gate.py"
+  ],
+  "unclassified[1]: control's contract is that it must NOT agree with the form-complete answer: an audit": [
+   ".agents/slop/formblind-audit.py"
+  ],
+  "unclassified[1]: NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?": [
+   ".agents/slop/ga_rows.py",
+   ".agents/slop/ga_rows_blast.py",
+   ".agents/slop/mt_diff.py",
+   ".agents/slop/pin-tree-oracle.py"
+  ],
+  "unclassified[1]: gr-diff: DISAGREE": [
+   ".agents/slop/gr-diff.sh"
+  ],
+  "import-error": [
+   ".agents/slop/graphcmp-p14d.py",
+   ".agents/slop/ops-501-gate.sh",
+   ".agents/slop/ops-501-oracle.py",
+   ".agents/slop/ops-oracle.py",
+   ".agents/slop/rebase-oracle-ops.py",
+   ".agents/slop/validate-gate.py",
+   ".agents/slop/validate-oracle.py",
+   ".agents/slop/vw-alu-census.py"
+  ],
+  "unclassified[1]: AttributeError: 'HCQInfo' object has no attribute 'nargs'": [
+   ".agents/slop/hcq2-oracle2.py"
+  ],
+  "unclassified[1]: isolate: late/py emitted 0 rows, rc=1, stderr tail: _py ast = base(graph) ^^^^^^^^^^^ File": [
+   ".agents/slop/hermetic/audit-hermetic.py"
+  ],
+  "unclassified[1]: AssertionError: the i64_dec rows are already in the driver": [
+   ".agents/slop/i64-dec-rows.py"
+  ],
+  "unclassified[1]: RuntimeError: Attempting to relocate against an undefined symbol sel_registerName": [
+   ".agents/slop/jit-oracle.py"
+  ],
+  "unclassified[1]: lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'": [
+   ".agents/slop/lintable/lintable-gate.sh"
+  ],
+  "unclassified[1]: port: 1/471 row(s) share a key with another row of the SAME name -- one name printed 2x: [": [
+   ".agents/slop/llvmir-gate.py"
+  ],
+  "unclassified[2]: BEND LANE FAILED": [
+   ".agents/slop/memory-diff.py"
+  ],
+  "unclassified[1]: KeyError: 'SELECTORS'": [
+   ".agents/slop/mt_oracle.py",
+   ".agents/slop/mt_rows.py"
+  ],
+  "unclassified[1]: FAIL UNCOVERED RENAME(S):": [
+   ".agents/slop/naming-gate-ledger-check.py"
+  ],
+  "unclassified[1]: 1 CLEAN TREE": [
+   ".agents/slop/naming-gate-selftest.py"
+  ],
+  "unclassified[1]: NAMING GATE -- owner ruling: def names match upstream tinygrad exactly": [
+   ".agents/slop/naming-gate.py"
+  ],
+  "unclassified[1]: A1 anti-drift (calls the shared reporter) | A2 non-numeric | A3 column": [
+   ".agents/slop/not-applied-audit.py"
+  ],
+  "unclassified[1]: KeyError: 'fp8e4m3'": [
+   ".agents/slop/notes/fp8_oracle.py"
+  ],
+  "unclassified[1]: AttributeError: 'str' object has no attribute 'name'": [
+   ".agents/slop/notes/rz-oracle.py"
+  ],
+  "unclassified[1]: AttributeError: 'Ops' object has no attribute 'op'": [
+   ".agents/slop/nr/nr-oracle.py"
+  ],
+  "unclassified[1]: VERDICT: 6 DEAD SITE(S) -- the file's gate is short that many rows": [
+   ".agents/slop/nvrows/nvrows-deadrow-gate.py"
+  ],
+  "unclassified[1]: AttributeError: 'DTypes' object has no attribute 'single'": [
+   ".agents/slop/oracle/dtype_oracle.py"
+  ],
+  "unclassified[1]: AttributeError: 'D' object has no attribute 'tag'": [
+   ".agents/slop/qc_check.py",
+   ".agents/slop/qc_exec_oracle.py"
+  ],
+  "unclassified[1]: == BASE 81 rows: byte-identical (all present)": [
+   ".agents/slop/schedule-bodies/sb-gate.sh"
+  ],
+  "unclassified[1]: AssertionError: eval with wrong dtype UOp(Ops.EXP2, arg=None, src=(": [
+   ".agents/slop/tx-oracle.py"
+  ],
+  "unclassified[1]: KeyError: 'no evaluable node at tinygrad/runtime/support/usb.py:214:48'": [
+   ".agents/slop/usb-constsweep.py"
+  ],
+  "unclassified[1]: -fmt_colored.off=red": [
+   ".agents/slop/vz/vz_gate.py"
+  ],
+  "unclassified[1]: id verdict truth witness / how": [
+   ".agents/slop/wallrule/wallcheck.py"
+  ],
+  "unclassified[1]: OK _render_dtype uchar global got=var want=var": [
+   ".agents/slop/wgsl-cfo-check.py"
+  ],
+  "unclassified[1]: RuntimeError: can't call to_program on Ops.ADD": [
+   ".agents/slop/wgsl-oracle.py"
+  ],
+  "unclassified[1]: AssertionError: baseline differs from CPython on 1 rows": [
+   ".agents/slop/x86/x86-sweep.py",
+   ".agents/slop/x86/x86_sweep.py"
+  ]
+ },
+ "by_status": {
+  "FAIL": 91,
+  "NOT-RUN": 183,
+  "SKIP": 14,
+  "PASS": 112,
+  "FAIL->SKIP (needs a file argument; run bare)": 38
+ },
+ "denominator": 455
+}

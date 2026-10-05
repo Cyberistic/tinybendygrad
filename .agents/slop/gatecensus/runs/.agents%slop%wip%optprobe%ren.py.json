@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/wip/optprobe/ren.py",
+ "base": "ren.py",
+ "stem": "ren",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 539,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/wip/optprobe/ren.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "('PythonRenderer', 'PYTHON', True, True, 32768, 0)\n",
+ "stderr": "",
+ "secs": 2.23,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/cidsweep/gate.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 1.99,
+ "bounded_exit": 3,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 3,
+ "peak_mb": 35,
+ "stdout": "== C1  dtype.c  -- 10 registrations, 10 guards, 0 constructor ids       [expect WARM]\n  dtype: reaches ONE dtype.c seam        bend rc=1  NO EMIT            cc rc=n/a\n  dtype: reaches NO seam                 bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0\n0 [ok] registrations-landing=14,\n== C2  sz.c     -- 2 registrations, 2 guards, CID(Nil)/CID(Con) INSIDE  [expect WARM]\n  sz: reaches NOTHING                    bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0\n0 [ok] registrations-landing=14,\n  sz: reaches Sz.is_dir                  bend rc=1 emit=  3230L #define CID_*=16  cc rc=0 err=0\n0 [ok] registrations-landing=14,15,\n  sz: reaches Sz.read_dir                bend rc=1 emit=  3286L #define CID_*=18  cc rc=0 err=0\n0 [ok] registrations-landing=16,17,\n== C3  libclang-tramp.c -- 325 registrations, 325 guards                [expect WARM]\n  libclang: reaches ONE tramp effect     bend rc=1 emit=  7317L #define CID_*=16  cc rc=0 err=0\n0 [ok] registrations-landing=15,\n== C4  libclang-ffi.c   -- 10 registrations, 0 guards      *** CIDS-1 *** [expect COLD]\n  libclang: reaches NOTHING              bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0\n0 [ok] registrations-landing=14,\n  libclang: reaches ONE ffi effect       bend rc=1 emit=  3269L #define CID_*=15  cc rc=1 err=14 [COLD] registrations-landing=,,,,,,,,,14,\n== C5  JS lane -- no conditional compilation exists; node is the instrument [expect PASS]\ngrep: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cidsweep-gate/dt.js: No such file or directory\ngrep: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cidsweep-gate/dt.js: No such file or directory\ngrep: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cidsweep-gate/dt.js: No such file or directory\n  js: #ifdef=0 #endif=0 defined(=0   node --check: COLD   node-runs=rc1\n\nGATE FAIL  3 cold seam(s) -- see CIDS-1 in .agents/slop/CIDSWEEP.md\n[bounded] WITHIN-LIMITS  rc=3  peak-RSS=35 MB (ceiling 1024)  2s  :: ./.agents/slop/cidsweep/gate.sh\n",
+ "stderr": "",
+ "verdict": "grep: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//cidsweep-gate/dt.js: No such file or directory",
+ "status": "FAIL",
+ "why": "child rc=3 within both bounds"
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/kn-noop-truth.py",
+ "base": "kn-noop-truth.py",
+ "stem": "kn-noop-truth",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 3207,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/kn-noop-truth.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "ops=NOOP CONST CONST CONST SPECIAL BUFFER BUFFER PARAM RANGE RANGE SQRT STORE ALLOC REDUCE SINK PROGRAM PROGRAM INS PROGRAM PROGRAM \nops_nosentinel=CONST CONST CONST SPECIAL BUFFER BUFFER PARAM RANGE RANGE SQRT STORE ALLOC REDUCE SINK PROGRAM PROGRAM INS PROGRAM PROGRAM \nn_nodes=19\n",
+ "stderr": "",
+ "secs": 0.58,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token -- not a green I vouch for"
+}

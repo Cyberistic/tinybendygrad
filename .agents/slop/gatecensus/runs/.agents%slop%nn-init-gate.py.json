@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/nn-init-gate.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.31,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 2,
+ "stdout": "nn_conv=True\nnn_convb=True\nnn_conv0=True\nnn_same=True\nnn_same_rev=True\nnn_ks2=True\nnn_c1d=True\nnn_lin=True\nnn_bn_mask=True\nnn_bn_axes=True\nnn_bn_st=True\nnn_bn_flags=True\nnn_bn_shapes=True\nnn_ct=True\nnn_ln=True\nnn_ln_sh=True\nnn_ln2d=True\nnn_gn=True\nnn_rms=True\nnn_emb=True\nnn_glorot=True\nnn_lstm=True\nnn_lstm_st=True\nnn_formula=True\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nn-init-gate.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

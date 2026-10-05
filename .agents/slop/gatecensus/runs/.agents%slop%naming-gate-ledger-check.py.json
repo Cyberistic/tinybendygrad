@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/naming-gate-ledger-check.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.69,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 34,
+ "stdout": "detected rename proposals : 674\nrules matching live       : 37 of 37\nledger lines on disk      : 668\n\nFAIL  UNCOVERED RENAME(S):\n  helpers.py :: cdiv  +_i64\n  helpers.py :: cmod  +_i64\n  uop/ops.py :: pm_drop_after  +_table\n  uop/ops.py :: remove_all_tags  +pm_\n  uop/ops.py :: resolve  +_returned_after\n  uop/ops.py :: ucount  +blob_\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=34 MB (ceiling 1024)  1s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/naming-gate-ledger-check.py\n",
+ "stderr": "",
+ "verdict": "FAIL  UNCOVERED RENAME(S):",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

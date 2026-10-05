@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/backward-graph/bw-p2.py",
+ "base": "bw-p2.py",
+ "stem": "bw-p2",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 6311,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward-graph/bw-p2.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "q2_clean_nodes=32 rows=32\nq2_plant_nodes=32\nq2_precond_1_stream_differs=OK\nq2_precond_2_a_field_is_named=OK  fields=['shape', 'src']\nq2_field_shape   n=2   nodes=EXPAND#14,PERMUTE#15\nq2_field_src     n=1   nodes=EXPAND#14\nq2_diff # RESIDUALS IN THIS RUN: none -- every ledger entry is 0 on both sides.\nq2_diff # SHARED cores=19  ONLY-CLEAN=0  ONLY-DSEXPAND=0  field-mismatches=0  rung2-pairs=13  rung3.5-crossrefs=0  zip-truncated=0\nq2_diff # DENOMINATOR: graphs=2 (1 clean + 1 dsexpand)  nodes=32/32  fields=6  field-records=192  shared-cores=19  commutative-ops=8  ops-reached=10/10 of 77  symbolic-dims=0/0  multi-parent-nodes=7/7\nq2_diff # VERDICT: DISAGREE\nq2_diff_names_shape=True rc=1\nq2_ledger_clean    ?=0 B=0 BAD=0 E=0 X!=0 q=0 u=0 y=0 z=0\nq2_ledger_dsexpand ?=0 B=0 BAD=0 E=0 X!=0 q=0 u=0 y=0 z=0\n\nq2_disarm_nodes=32 rows=32\nq2_disarm_stream_identical=OK  (the rebuild reached the same ucache nodes)\nq2_disarm # SHARED cores=32  ONLY-CLEAN=0  ONLY-DISARM=0  field-mismatches=0  rung2-pairs=0  rung3.5-crossrefs=0  zip-truncated=0\nq2_disarm # DENOMINATOR: graphs=2 (1 clean + 1 disarm)  nodes=32/32  fields=6  field-records=192  shared-cores=32  commutative-ops=8  ops-reached=10/10 of 77  symbolic-dims=0/0  multi-parent-nodes=7/7\nq2_disarm # VERDICT: AGREE\nq2_disarm_verdict=AGREE  (so the plant's DISAGREE is attributable to the VALUE change and not to the rebuild)\n\nq2_PAIR  clean-vs-dsexpand DISAGREE rc=1 names_shape=True   clean-vs-disarm AGREE rc=0   same graph, same 32 nodes, same 192 field-records\n",
+ "stderr": "",
+ "secs": 0.12,
+ "verdict": "q2_clean_nodes=32 rows=32",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

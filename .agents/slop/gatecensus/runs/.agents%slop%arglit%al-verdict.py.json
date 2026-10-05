@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/arglit/al-verdict.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 2,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 2,
+ "peak_mb": 2,
+ "stdout": "al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE\nDENOMINATOR PRINTED, AND WITH NO MONKEYPATCH: whatever `carg` says is what is ON DISK.\n\n`noneshape/ns-argplant.py` printed P0 (no arm) against P1 (a monkeypatched arm). Now the\narm IS on disk, so there is nothing to patch and a P0/P1 pair would be two identical\nnumbers. This instrument takes the bend-side rows from a FILE instead, so the BEFORE\n(`noneshape/patir-run1.txt`, `AReduce`-spelled) and the AFTER\n(`arglit/patir-AFTER.txt`, `AOpLit`-spelled) are compared by the same code against the\nsame py rows.\n\n    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/arglit/al-verdict.py         .agents/slop/noneshape/patir-run1.txt BEFORE\n    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/arglit/al-verdict.py         .agents/slop/arglit/patir-AFTER.txt AFTER\n\nTHE `AssertionError` WIDENING IS INHERITED FROM `ns-argplant.py` and is NOT PART OF ANY\nFIX: upstream's `ops.py:444` assert FIRES on the AND node, so without the widening the py\nrows cannot be emitted at all and this instrument would report nothing. It catches\n`RuntimeError`, and `AssertionError` ONLY when the message starts\n`\"None input shape not supported for \"` -- so `ops.py:438`/`:137`/`:141`, which are WRONG\nFIXTURES, still refuse. It is a monkeypatch and NOTHING ON DISK CARRIES IT.\n\n[bounded] WITHIN-LIMITS  rc=2  peak-RSS=2 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/arglit/al-verdict.py\n",
+ "stderr": "",
+ "verdict": "al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE",
+ "status": "FAIL",
+ "why": "child rc=2 within both bounds"
+}

@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/notes/sized-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "sized([2,3]) = (2, (2, 3))\n  head=2 last=3\nsized([4]) = (1, (4,))\n  head=4 last=4\nsized([2]) = (1, (2,))\n  head=2 last=2\nsized([]) = (0, ())\n  head=- last=-\npad_to(([2,3],3)) = 1 2 3\npad_to(([4],3)) = 1 1 4\npad_to(([2,3],2)) = 2 3\npad_to(([2],2)) = 1 2\npad_to(([],3)) = 1 1 1\npad_to(([2,3,4],4)) = 1 2 3 4\nis_image_shape((4,32,32)) = False\nis_image_shape((32,32,4))  = True\n_align_left((2,3),(4,))    = ((2, 3), (1, 4))\n_align_left((4,32,32),(2,3)) = ((4, 32, 32), (1, 2, 3))\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/notes/sized-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/dobind.py",
+ "base": "dobind.py",
+ "stem": "dobind",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "",
+ "bytes": 1885,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dobind.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 36 do-blocks, 0 BAD -> clean after\n",
+ "stderr": "",
+ "secs": 0.04,
+ "verdict": "tinybendygrad/runtime/support/rdma/bnxtdev.bend: 36 do-blocks, 0 BAD -> clean after",
+ "status": "PASS",
+ "why": "rc=0, output present, verdict token seen"
+}

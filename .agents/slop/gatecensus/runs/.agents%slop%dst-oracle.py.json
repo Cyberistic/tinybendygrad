@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/dst-oracle.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "dst_url_mnist=https://storage.googleapis.com/cvdf-datasets/mnist/\ndst_url_fashion=http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/\ndst_url_train_images=https://storage.googleapis.com/cvdf-datasets/mnist/train-images-idx3-ubyte.gz\ndst_url_train_labels=https://storage.googleapis.com/cvdf-datasets/mnist/train-labels-idx1-ubyte.gz\ndst_url_t10k_images=https://storage.googleapis.com/cvdf-datasets/mnist/t10k-images-idx3-ubyte.gz\ndst_url_t10k_labels=https://storage.googleapis.com/cvdf-datasets/mnist/t10k-labels-idx1-ubyte.gz\ndst_url_fashion_t10k_labels=http://fashion-mnist.s3-website.eu-central-1.amazonaws.com/t10k-labels-idx1-ubyte.gz\ndst_url_cifar=https://data.brainchip.com/dataset-mirror/cifar10/cifar-10-binary.tar.gz\ndst_url_n=8\ndst_skip_idx3=16\ndst_skip_idx1=8\ndst_img_shape=-1,1,28,28\ndst_img_row=784\ndst_mnist=train_images:60000 train_labels:60000 t10k_images:10000 t10k_labels:10000\ndst_mnist_files=train-images-idx3-ubyte.gz,train-labels-idx1-ubyte.gz,t10k-images-idx3-ubyte.gz,t10k-labels-idx1-ubyte.gz\ndst_mnist_n=4\ndst_train_images_divides=True\ndst_train_labels_divides=True\ndst_t10k_images_divides=True\ndst_t10k_labels_divides=True\ndst_train_images_payload=47040000\ndst_t10k_images_payload=7840000\ndst_train_images_rows=60000\ndst_train_labels_rows=60000\ndst_images_skip8_payload=47040008\ndst_images_skip8_divides=False\ndst_images_skip8_rows=60000\ndst_labels_unreshaped=True\ndst_cifar_batch1=cifar-10-batches-bin/data_batch_1.bin\ndst_cifar_batch5=cifar-10-batches-bin/data_batch_5.bin\ndst_cifar_test=cifar-10-batches-bin/test_batch.bin\ndst_cifar_nbatch=5\ndst_cifar_batches_n=5\ndst_cifar_row=3073\ndst_cifar_train_rows=50000\ndst_cifar_test_rows=10000\ndst_cifar_train_bytes=153650000\ndst_cifar_shape=-1,3,32,32\ndst_cifar_image_bytes=3072\ndst_cifar_label_off=1\ndst_cifar_split=True\ndst_cifar_split_off0=False\ndst_cifar_split_off2=False\ndst_cifar_shape_text=True\ndst_cifar_image_named=True\ndst-done=1\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dst-oracle.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

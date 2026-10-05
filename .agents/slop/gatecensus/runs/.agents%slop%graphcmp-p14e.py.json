@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/graphcmp-p14e.py",
+ "how": "venv-py",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.32,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 1,
+ "stdout": "# DEV = METAL\n# gated sink srcs: ['END']\n# linearize -> [('PARAM', []), ('BUFFER', []), ('CONST', []), ('CONST', []), ('RANGE', ['CONST']), ('INDEX', ['BUFFER', 'RANGE']), ('INDEX', ['PARAM', 'RANGE']), ('CMPLT', ['RANGE', 'CONST']), ('STORE', ['INDEX', 'INDEX', 'CMPLT']), ('END', ['STORE', 'RANGE']), ('SINK', ['END'])]\n# after pm_linearize     nodes= 28 IF=2 ENDIF=1 END=2 STORE=2 INDEX=5 RANGE=5 PARAM=2 BUFFER=2\n# pm_to_program's LINEAR:\n#   UOp(Ops.LINEAR, arg=None, src=(\n  x0:=UOp(Ops.PARAM, arg=ParamArg(0, dtypes.f32, 16, name='v0', device='CPU'), src=()),\n  x1:=UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.f32, 16, device='CPU'), src=()),\n  x2:=UOp(Ops.CONST, arg=3, src=()),\n  x3:=UOp(Ops.CONST, arg=4, src=()),\n  x4:=UOp(Ops.RANGE, arg=(AxisType.WEAK, 0), src=(\n    x3,)),\n  x5:=UOp(Ops.INDEX, arg=None, src=(\n    x1,\n    x4,)),\n  x6:=UOp(Ops.INDEX, arg=None, src=(\n    x0,\n    x4,)),\n  x7:=UOp(Ops.CMPLT, arg=None, src=(\n    x4,\n    x2,)),\n  x8:=UOp(Ops.IF, arg=None, src=(\n    x7,\n    x5,)),\n  x9:=UOp(Ops.STORE, arg=None, src=(\n    x5,\n    x6,)),\n  UOp(Ops.ENDIF, arg=None, src=(\n    x8,)),\n  x11:=UOp(Ops.END, arg=None, src=(\n    x9,\n    x4,)),\n  UOp(Ops.SINK, arg=KernelInfo(name='gated', applied_opts=(), opts_to_apply=None, estimates=None, beam=0), src=(\n    x11,)),))\n# toposort of LINEAR:\n#   PARAM      dtype=dtypes.f32 arg=ParamArg(0, dtypes.f32, 16, name='v0', devic   src=[]\n#   BUFFER     dtype=dtypes.f32 arg=ParamArg(1, dtypes.f32, 16, device='CPU')      src=[]\n#   CONST      dtype=dtypes.weakint arg=3                                              src=[]\n#   CONST      dtype=dtypes.weakint arg=4                                              src=[]\n#   RANGE      dtype=dtypes.weakint arg=(AxisType.WEAK, 0)                             src=['CONST']\n#   INDEX      dtype=dtypes.f32 arg=None                                           src=['BUFFER', 'RANGE']\n#   INDEX      dtype=dtypes.f32 arg=None                                           src=['PARAM', 'RANGE']\n#   CMPLT      dtype=dtypes.bool arg=None                                           src=['RANGE', 'CONST']\n#   IF         dtype=dtypes.void arg=None                                           src=['CMPLT', 'INDEX']\n#   STORE      dtype=dtypes.void arg=None                                           src=['INDEX', 'INDEX']\n#   ENDIF      dtype=dtypes.void arg=None                                           src=['IF']\n#   END        dtype=dtypes.void arg=None                                           src=['STORE', 'RANGE']\n#   SINK       dtype=dtypes.void arg=KernelInfo(name='gated', applied_opts=(), op   src=['END']\n#   LINEAR     dtype=dtypes.void arg=None                                           src=['PARAM', 'BUFFER', 'CONST', 'CONST', 'RANGE', 'INDEX', 'INDEX', 'CMPLT', 'IF', 'STORE', 'ENDIF', 'END', 'SINK']\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp-p14e.py\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

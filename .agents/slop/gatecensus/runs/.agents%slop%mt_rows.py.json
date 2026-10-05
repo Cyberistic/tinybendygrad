@@ -1,0 +1,16 @@
+{
+ "rel": ".agents/slop/mt_rows.py",
+ "how": "venv-py",
+ "leash_s": 25,
+ "mb": 1024,
+ "wall_s": 0.35,
+ "bounded_exit": 1,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 1,
+ "peak_mb": 3,
+ "stdout": "Traceback (most recent call last):\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_rows.py\", line 15, in <module>\n    from mt_oracle import BOTH, HANDLES, SELECTORS, walk_run, metal_version, params, req_sizes\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_oracle.py\", line 103, in <module>\n    HANDLES, SELECTORS, REQUEST_TYPE_COMPILE = sel_table()\n                                               ^^^^^^^^^^^\n  File \"/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_oracle.py\", line 100, in sel_table\n    return keep[\"HANDLES\"], keep[\"SELECTORS\"], keep[\"REQUEST_TYPE_COMPILE\"]\n                            ~~~~^^^^^^^^^^^^^\nKeyError: 'SELECTORS'\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=3 MB (ceiling 1024)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/mt_rows.py\n",
+ "stderr": "",
+ "verdict": "KeyError: 'SELECTORS'",
+ "status": "FAIL",
+ "why": "child rc=1 within both bounds"
+}

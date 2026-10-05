@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ag-kinds.py",
+ "base": "ag-kinds.py",
+ "stem": "ag-kinds",
+ "sh": false,
+ "py": true,
+ "exec": false,
+ "interp": "python3",
+ "bytes": 597,
+ "writes": false,
+ "entry": false,
+ "cmd": "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ag-kinds.py",
+ "how": "venv-py",
+ "leash": 25,
+ "rc": 0,
+ "stdout": "",
+ "stderr": "",
+ "secs": 0.24,
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "zero bytes on both streams -- a refusal, not a pass"
+}

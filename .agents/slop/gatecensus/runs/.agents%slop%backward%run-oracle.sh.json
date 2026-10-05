@@ -1,0 +1,17 @@
+{
+ "rel": ".agents/slop/backward/run-oracle.sh",
+ "how": "./x (shebang honoured)",
+ "leash_s": 180,
+ "mb": 1024,
+ "wall_s": 0.43,
+ "bounded_exit": 0,
+ "bound": "WITHIN-LIMITS",
+ "child_rc": 0,
+ "peak_mb": 30,
+ "stdout": "RESOLVED=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py\n[bounded] WITHIN-LIMITS  rc=0  peak-RSS=30 MB (ceiling 1024)  0s  :: ./.agents/slop/backward/run-oracle.sh\n",
+ "stderr": "",
+ "verdict": "",
+ "status": "NOT-RUN",
+ "why": "rc=0 with output but NO verdict token",
+ "pass": 2
+}

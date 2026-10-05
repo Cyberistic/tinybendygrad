@@ -1,0 +1,22 @@
+{
+ "rel": ".agents/slop/ops501-atrest.sh",
+ "base": "ops501-atrest.sh",
+ "stem": "ops501-atrest",
+ "sh": true,
+ "py": false,
+ "exec": true,
+ "interp": "",
+ "bytes": 1864,
+ "writes": false,
+ "entry": false,
+ "cmd": "./ops501-atrest.sh",
+ "how": "./x",
+ "leash": 25,
+ "status": "NOT-RUN",
+ "rc": null,
+ "secs": 0.0,
+ "verdict": "",
+ "why": "could not exec: [Errno 2] No such file or directory: './ops501-atrest.sh'",
+ "stdout": "",
+ "stderr": ""
+}
