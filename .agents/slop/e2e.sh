@@ -13,5 +13,12 @@
 # `env -u PYTHONPATH` IS DELIBERATELY ABSENT: the shell never applied it, so the eight stages
 # inherit the caller's PYTHONPATH, and stripping it here would change what `e2e_mm.py` can import --
 # a change to a verdict, in the one direction this migration may not move.
-cd "$(dirname "$0")/../.." || exit 2
+# `dirname` is an EXTERNAL COMMAND for something the shell can do itself, and a shim whose
+# preamble depends on PATH reports "command not found" and then tries to exec a relative
+# path from the wrong place. MEASURED with dirname off PATH: e2e.sh exits 126, this exits
+# 127 -- both LOUDLY, so the severity is not "green having run nothing"; but neither needs
+# the dependency. `${0%/*}` is POSIX and spawns nothing, and the `[ "$d" = "$0" ]` arm is
+# the case where $0 has no slash at all.
+_d=${0%/*}; [ "$_d" = "$0" ] && _d=.
+cd "$_d/../.." || exit 2
 exec .venv/bin/python checks/e2e.py "$@"
