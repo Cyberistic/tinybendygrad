@@ -1,10 +1,18 @@
 # ABI-4 — WHICH OF THE THREE `of32` SITES WAS ABI-4, MEASURED
 
 Rule prefix: **`ABI4-`**. Instrument: `abi4_gate.py` (98 rows × 15 arms).
-Output: `abi4-gate.txt`. Rows persisted: `rows.json`. Gate **rc 0, 16 PASS / 0 FAIL**.
+As of `135bf0204` the output was `.agents/slop/abi4/abi4-gate.txt`, readable at that
+commit; it is **not in the tree now**, and neither is `rows.json`. The 2026-10-06
+re-measurement is `path-verdict.rows` (four runs, verbatim) and `probe/*.bend`.
 
-Reproduce: `python3 checks/abi4_gate.py` — ~2 min, the live tree is never
-written; every arm is built from `pristine` and from nothing else.
+> **THE INSTRUMENT WAS AN EXCEPTION FROM `2026-10-05` TO NOW, AND WAS GREEN BEFORE
+> THAT. See `ABI4-7` below, which supersedes the "Gate rc 0, 16 PASS / 0 FAIL" line
+> this file used to open with.** That line is still true *as of `135bf0204`* and is no
+> longer true of the tree.
+
+Reproduce: `.venv/bin/python checks/abi4_gate.py` — ~2 min when it runs, and today it
+refuses in 2 s; the live tree is never written, every arm is built from `pristine` and
+from nothing else.
 
 ## The answer, in one line
 
@@ -134,3 +142,146 @@ both are dispositioned here so neither can be mistaken for a passing gate.
 which had marked 44 correct rows red and the repaired lane as disagreeing with CPython.
 The `loc_*` rows (bf16, fp8_from: seams where no value crosses at all) exist to be a
 fence, and the repair moved none of them.
+
+## ABI4-7 — THE GATE WAS GREEN, THEN A MOVE MADE IT AN EXCEPTION, AND THE PATH IS NOT WHY IT IS RED NOW
+
+**Measured, 2026-10-06. Artifacts: `path-verdict.rows` (the four runs, verbatim),
+`probe/*.bend` (the four seam calls, plus the six-line module that names no file in
+this repo).**
+
+### Was it ever green? YES — at `135bf0204`, 2026-10-04, and never since
+
+`git log -S'parents[2]' -- checks/abi4_gate.py` returns **one** commit, `3f0e70ff1`
+("cleanup: THE POLICY IS \"PYTHON ONLY\"…"), and that is the commit that **created**
+the file at this path — already carrying `parents[2]`. So the constant was never
+*changed*; it was **born stale**, or rather born correct and immediately invalidated.
+
+The arithmetic, which is the whole lesson:
+
+| path | depth | `parents[2]` is |
+|---|---|---|
+| `.agents/slop/abi4/abi4_gate.py` | 3 below root | **the repo root** ✔ |
+| `checks/abi4_gate.py` | 1 below root | `/Users/cyberistic/src` ✘ |
+
+So `57d0fc387` ("slopcopies: **110 COPIES DELETED, 126 CITATIONS REPOINTED**") *moved*
+the file up two levels, repointed every **citation** to the new path, and carried the
+path **constant** across unchanged. `135bf0204` carries the artifact that proves the
+green: `.agents/slop/abi4/abi4-gate.txt`, 98/98 on all 15 arms, `shipped 98/98 agree`,
+16 PASS / 0 FAIL, `gate rc: 0`. **This is a regression, not the original condition,
+and the regression is a MOVE, not an edit.**
+
+### Before: an exception, with no denominator at all
+
+    $ .venv/bin/python checks/abi4_gate.py ; echo $?
+    Traceback (most recent call last):
+      File ".../checks/abi4_gate.py", line 306, in main
+        pristine = JS_LANE.read_text()
+    FileNotFoundError: [Errno 2] No such file or directory:
+      '/Users/cyberistic/src/tinybendygrad/runtime/dtype.js'
+    1
+
+Under the venv it reaches `:306` as reported. **Under bare `python3` it fails one
+line earlier and for a different reason** — `:78` `ModuleNotFoundError: No module
+named 'tinygrad'`, because `tinygrad` is an *editable* install in `.venv` and nothing
+rescues it when `sys.path` is pointed at `/Users/cyberistic/src`. Two interpreters,
+two exception sites, **one answer: it has no denominator.** An exception is not a red
+gate; it has no denominator and no disagreement, so it was excluded from every count
+by being uncategorisable.
+
+### The fix, and the trap inside it
+
+`parents[2]` → **`parents[0]`**, not `parents[1]**. `Path.parents` is 0-indexed, so
+`parents[0]` *is* `checks/`'s immediate parent, which is the repo root. Writing
+`parents[1]` is **also wrong** (it is `/Users/cyberistic/src/tries`) and I wrote it
+first; what caught it was not a review but the assertion added below, which turned the
+second mistake into a stated refusal instead of a third exception.
+
+### After: a verdict, and it is RED — on the toolchain, not on ABI-4
+
+    == no backend for arm shipped: rc=1
+    SOME PROOFS FAIL
+    Error:
+    - expected : @-R:Type -> @k:(@_:F32 -> IO.OP<R>) -> IO.OP<R>
+    - observed : F32
+    5>|     v0 : F32 <- D.Dt.fp16(1.5)
+    rc 1
+
+**Denominator: 98 rows × 15 arms = 1,470 comparisons designed, 0 reached.** The gate
+now has a number where it had a traceback, and the number is: it dies on the *first*
+arm, so **no `NEEDS`, no `FIXES`, no plant, no disarm, no locality fence, and no
+`rc_of` at `:498` was ever executed.** The 16-row verdict table is unreachable.
+
+**And the red is not about ABI-4.** All four seams fail identically — `Dt.fp16`,
+`Dt.bf16`, `Dt.fp8_to`, `Dt.fp8_from`, *and* the four module-level wrappers
+(`float_to_fp16`, `float_to_bf16`, `fp8_to_float`, `float_to_fp8`) — with the same
+`expected : @-R:Type -> @k:(@_:F32 -> IO.OP<R>) -> IO.OP<R>`: a two-argument
+continuation-passing shape. `probe/min_prim.bend` is **six lines, names no file in
+this repository, and calls `F32.add(1.5, 1.0)`** — a primitive, from `Base`. It
+fails with the identical error.
+
+> **So no Bend program in this repo that applies a two-argument function compiles
+> today, under `bin/bend`. That is a toolchain fact, and it is not this unit's to fix.**
+
+`bin/bend` is `exec bun references/bend/bend2/main.ts`, and that checkout is on
+**`main` at `v2.0.34-6-g0187512` — six commits past the tag the tree targets**, not
+pinned. The six touch `comp.ts`, `safe.ts`, `main.ts` and `bendtt.lean`, i.e. exactly
+the elaboration core, and one is *"A match inside a type goes to `--verdict` at the
+goals bend2 checked it at, so an erased field binds dead and a field's type reaches
+its arm (#1157)"*. **Suspicious, not proven**: pinning the shared checkout to prove it
+would break the six other units running `bend` off it, so it is reported, not
+attempted. **A moving `main` behind a lane is the same failure as a moving `parents[N]`:
+a constant that expires silently.**
+
+### Inputs that are simply MISSING
+
+- **`checks/abi.json` does not exist anywhere in the tree** (`find . -name abi.json` →
+  nothing). `checks/abi_gate.py:49` `DECL = HERE / "abi.json"` therefore raises
+  `FileNotFoundError` at `:532` — measured, rc 1. `abi4_gate.py:498` invokes that
+  gate, so `:504`/`:505` ("abi_gate.py exits 0 against this tree") would be **false
+  for a reason that has nothing to do with ABI-4.** The same slop→checks move took
+  `abi.json`'s expectation with it and left the file behind.
+- `checks/abi_gate.py:41` also still reads `REPO = HERE.parents[2]` — **the identical
+  defect, still unfixed, in the gate this one depends on.** Not mine; reported.
+
+### The gate can now see its own failure (this is the part that is not negotiable)
+
+`sb-gate.sh` already states the rule in prose — *"A gate that exits 0 having run
+nothing is WORSE THAN NO GATE, because it is trusted"*, and its rule 1 is *"`cd` to
+the repo root and PROVE it. A cd that lands outside is exit 3."* It states it, and it
+**applies it to itself and to its own three lanes only**: `$PORT`, `./bin/bend`,
+`$BASE`, `$ORACLE`, `$DIFFER`, all literal. It has no repository-wide census of gates,
+so **`abi4_gate.py` was never on its radar, and `checks/abi_gate.py` is still in the
+same hole it would catch in one line.** That is the answer to "why did it not look at
+this gate": it is not a gate over gates, and no gate here is.
+
+So the fix carries the assertion the brief's standard asks for. `refuse()` exits
+**3**, prints `REFUSED, NOT A VERDICT`, and asserts `REPO` really holds the tree plus
+the presence of every input — a missing input is not a passing input, which is the
+`[ -f $BASE ]`-with-no-else shape `sb-gate.sh` retired.
+
+### Plant and disarm, run against the FIX
+
+| run | `REPO` | rc | what it said |
+|---|---|---|---|
+| **FIX** | `HERE.parents[0]` | 1 | reaches `run()`; `no backend for arm shipped` |
+| **PLANT** | `HERE.parents[2]` *(the regression, restored)* | **3** | `REFUSED … /Users/cyberistic/src is not the repo root` |
+| **PLANT** | `HERE.parents[1]` *(the near miss)* | **3** | `REFUSED … /Users/cyberistic/src/tries is not the repo root` |
+| **DISARM** | `HERE.parent` | 1 | **byte-identical to FIX**, stdout *and* stderr |
+
+The plant that puts `parents[2]` back does not reproduce the old `FileNotFoundError`
+— **it produces a stated refusal.** That is the fix surviving its own regression:
+the failure is now a number the gate reports about itself instead of an exception it
+throws. And the disarm moves **nothing**, which is the only correct count.
+
+### What is still unsettled
+
+1. Whether the six unpinned Bend commits are the cause. Reported, not measured;
+   measuring needs the shared checkout, which is six other units' compiler.
+2. Whether `abi4_gate.py`'s 98-row fixture set still *matches* `dtype.bend`'s seam
+   signatures **once bend works again**. All four seams now look two-argument to the
+   compiler while `dtype.bend:748` reads `def Dt.fp16(+x: F32) -> F32` and
+   `dtype.bend:1126` calls `Dt.fp16(x)` in a direct application — so either the
+   compiler's reading is the wrong one or the tree has drifted. **Unmeasured, and
+   the gate cannot answer it until it can compile a row.**
+3. `abi.json`. Nothing in the tree declares ABI-4 any more, so the declaration half of
+   this gate's argument has no file to cite.

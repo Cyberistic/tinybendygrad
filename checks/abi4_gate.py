@@ -73,13 +73,50 @@ import tempfile
 from collections import namedtuple
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+# `parents[0]` is the immediate parent, which for `checks/<this file>` IS the repo
+# root; the old `parents[2]` was right only at `.agents/slop/abi4/`, and the move to
+# `checks/` carried the constant across without recomputing it.  REPO became
+# `/Users/cyberistic/src`, and the gate raised FileNotFoundError at
+# `JS_LANE.read_text()` -- an EXCEPTION, which is not a red gate: it has no
+# denominator and no disagreement, so it counted nowhere.  Note the trap: `parents[1]`
+# is ALSO wrong (it is `/Users/cyberistic/src/tries`), and writing it was caught here
+# by the assertion below rather than by a third exception.  The depth is now PROVED
+# by `refuse()`, which is `sb-gate.sh` rule 1 -- "a cd that lands outside is exit 3"
+# -- in Python.
+REPO = HERE.parents[0]
 sys.path.insert(0, str(REPO))
 from tinygrad import dtype as td            # noqa: E402
 
 BEND = REPO / "bin" / "bend"
 JS_LANE = REPO / "tinybendygrad" / "runtime" / "dtype.js"
+BEND_LANE = REPO / "tinybendygrad" / "dtype.bend"
+OTHER_GATES = ("checks/abi_gate.py", "checks/jsfix_gate.py")
 ROW = re.compile(r"^F32ROW (\w+) = (.*)$")
+
+
+def refuse(*why: str) -> None:
+    """exit 3 = REFUSED, and NOT a verdict.  `sb-gate.sh`'s vocabulary, in Python.
+
+    Every input this gate reads is asserted to EXIST before it is read, because a
+    missing input is not a passing input: the old `[ -f $BASE ]`-with-no-else form
+    skipped the comparison in silence and exited 0.  Here the same shape raised
+    `FileNotFoundError`, which is worse than exit 0 -- an exception is not a red
+    gate, it has no denominator and no disagreement, so it is excluded from every
+    count by being uncategorisable.  A refusal is at least a number."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    sys.exit(3)
+
+
+# `parents[N]` is a constant that silently expires when the file moves, and a move
+# is exactly what happened to this one.  So the depth is PROVED, not assumed:
+# REPO must be the directory that actually holds the substrate.  `cd` out of the
+# repo is refused here the way `sb-gate.sh` refuses it.
+if not (REPO / "tinybendygrad" / "runtime" / "dtype.js").is_file():
+    refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+           f"(is `parents[N]` stale after a move?)")
+for _p in (BEND, BEND_LANE, *(REPO / g for g in OTHER_GATES)):
+    if not _p.exists():
+        refuse(f"input absent: {_p.relative_to(REPO)}")
 
 # ------------------------------------------------------------------ the sites.
 # (as shipped, as re-broken).  Anchors must occur exactly once or this exits: an
@@ -461,8 +498,7 @@ def main() -> None:
     print("    patches a copy, so it could not see the tree's own syntax: a dangling")
     print("    paren passed 98/98 here until node's exit status was checked.")
 
-    ag = rc_of(REPO / "checks/abi_gate.py")
-    jg = rc_of(REPO / "checks/jsfix_gate.py")
+    ag, jg = (rc_of(REPO / g) for g in OTHER_GATES)
     jn = re.findall(r"^\s+shipped\s+(\d+)/(\d+)$", jg[1], re.M)
     print(f"  by the OTHER GATES: abi_gate rc={ag[0]}  jsfix_gate rc={jg[0]}"
           + (f"  jsfix shipped {jn[0][0]}/{jn[0][1]}" if jn else ""))
