@@ -90,9 +90,22 @@ ORACLE_WORD = re.compile(r"(^|[-_.])(oracle|rows|expect|pins|baseline)([-_.]|$)"
 # `checks/` and left pointing at paths that no longer existed, so the artifact was a script that
 # could not run. It was recoverable only because every one of those files happened to be
 # committed -- WHICH IS NOT A PROPERTY OF THE SWEEP, IT IS A PROPERTY OF THE DAY.
+#
+# **`strays/` AND `strays-root/` WERE HERE AND WERE REMOVED, AND THE REASON IS THE THING THIS
+# COMMENT ALREADY SAYS ABOVE IN ONE PLACE.** MEASURED 2026-10-05: the marking was
+# `"42 files restored from origin after regressing"` -- an INCIDENT, not a DEPENDENCY, which is
+# the same false-warrant shape as the six finished `LIVE_UNITS` that held 53% of `.slop`. Every
+# mention of either directory outside itself is PROSE: `checks/nvrows-deadrow-gate.py:69`,
+# `:205`, `checks/repro-paths.py:28`, `checks/wallcheck.py:101` name them in a docstring or a
+# `--file` help string, and no code position reads them. Parked both, re-ran the gates: `no-strays`
+# and `repro-paths` and `nvrows-deadrow-gate` produced BYTE-IDENTICAL output, `wallcheck` differed
+# only in the pin hash (a concurrent commit), and `no-txt` fell 342 -> 338. **ZERO DEPENDENCY.**
+# The `origin` arm is 18 of 21 byte-identical to live; the other 3 are older revisions, two of them
+# reproduced by a named commit and `fold.bend` by none, which is why exactly one file was kept and
+# 25 were deleted against `.agents/slop/strays/MANIFEST.tsv`. **A PAST ACCIDENT IS NOT A REASON TO
+# KEEP A DIRECTORY FOREVER; THE TEST IS WHAT NAMES IT, AND THE ANSWER WAS NOTHING.**
 PROTECTED = re.compile(
-    r"(^\.agents/slop/(strays|strays-root)/)"          # 42 files restored from origin after regressing
-    r"|(RECOVERY-0BYTE\.md$)"                          # the zero-byte incident
+    r"(RECOVERY-0BYTE\.md$)"                           # the zero-byte incident
     r"|(^\.agents/slop/(e2e|e2e_port|f64|portexec)/)"  # the artifact's fixtures and stage drivers
     r"|(^\.agents/slop/e2e(_mm(\.py|\.bend|_run\.mjs))?\.sh$)"   # e2e.sh itself, and its three fixtures
     r"|(^\.agents/slop/(opsbend-milestone|substrate-check|graphcmp-(run|repro))\.sh$)"
@@ -110,8 +123,14 @@ DIFFER = {"graphcmp.py", "graphcmp.bend", "graphcmp-oracle.py",
 # `blob-bn.txt` inside a directory called `oracles` looks like a row dump. **THE ROLE IS A PROPERTY OF
 # THE DIRECTORY AND WAS BEING READ FROM THE FILE.** These are the four names this project uses to
 # mean a role, so a directory that is one of them is one.
-ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE",
-             "strays": "PROTECTED", "strays-root": "PROTECTED"}
+#
+# **`strays`/`strays-root` WERE IN THIS DICT AND ARE GONE.** A name in `ROLE_DIRS` is not a milder
+# form of `PROTECTED`, it is a STRONGER one: `verdict_for` returns on the FIRST matching path part,
+# before the citation test runs at all, so listing a directory here exempted its whole subtree from
+# even being classified. **AN INCIDENT WAS ENCODED AS A NAME, WHICH MEANT NOBODY COULD EVER
+# DISCOVER THAT THE INCIDENT HAD STOPPED BEING TRUE.** The name outlived its reason exactly the way
+# the six finished `LIVE_UNITS` below did.
+ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE"}
 
 LIVE_UNITS = (
     # LIVE RIGHT NOW. MEASURED 2026-10-05: this list was written before the current four were
