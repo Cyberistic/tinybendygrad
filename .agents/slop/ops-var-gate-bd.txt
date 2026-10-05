@@ -1,4 +1,0 @@
-vr_expr_param=some:i
-vr_expr_buffer=some:buf
-vr_expr_unnamed=none
-vr_expr_nonparam=none

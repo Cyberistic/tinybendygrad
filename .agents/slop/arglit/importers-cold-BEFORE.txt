@@ -1,5 +1,0 @@
-tinybendygrad/nn/__init__.bend
-tinybendygrad/nn/onnx.bend
-tinybendygrad/nn/optim.bend
-tinybendygrad/nn/state.bend
-tinybendygrad/runtime/ops_python.bend

@@ -1,9 +1,0 @@
-# nv_mmustrans.py -- MEASURED: one transposition per MMU_VER struct.
-| v2_pte | 1 | nv_reg_NV_MMU_VER2_PTE_ranges | 2-bit field -> (2,1) |
-| v2_pde | 1 | nv_reg_NV_MMU_VER2_PDE_ranges | 2-bit field -> (2,1) |
-| v2_dpd | 1 | nv_reg_NV_MMU_VER2_DUAL_PDE_ranges | 2-bit field -> (2,1) |
-| v3_pte | 4 | nv_reg_NV_MMU_VER3_PTE_maxw,nv_reg_NV_MMU_VER3_PTE_ranges,nv_reg_NV_MMU_VER3_PTE_wide,nv_reg_NV_MMU_VER3_PTE_wide_names | 4-bit field -> (11,8), BOOT_42's exact shape |
-| v3_pde | 4 | nv_reg_NV_MMU_VER3_PDE_maxw,nv_reg_NV_MMU_VER3_PDE_ranges,nv_reg_NV_MMU_VER3_PDE_wide,nv_reg_NV_MMU_VER3_PDE_wide_names | 3-bit field -> (5,3) |
-| v3_dpd | 4 | nv_reg_NV_MMU_VER3_DUAL_PDE_maxw,nv_reg_NV_MMU_VER3_DUAL_PDE_ranges,nv_reg_NV_MMU_VER3_DUAL_PDE_wide,nv_reg_NV_MMU_VER3_DUAL_PDE_wide_names | 3-bit field -> (5,3) |
-| boot42-ctl | 22 | nv_boot42_chipid_over,nv_decode_arch_1a,nv_decode_arch_1b,nv_decode_arch_3f,nv_decode_boot42_full,nv_decode_impl_d,nv_encode_boot42_full,nv_fld_minor_revision,nv_fldmask_minor_revision,nv_fldmax_minor_revision,nv_fldwidth_minor_revision,nv_mask_all,nv_maskinv_all,nv_maskinv_impl,nv_maskinv_two_far,nv_reg_NV_PMC_BOOT_42_maxw,nv_reg_NV_PMC_BOOT_42_ranges,nv_reg_NV_PMC_BOOT_42_wide,nv_upd_u3_ini,nv_upd_u3_mask,nv_upd_u3_tr,nv_upd_u3_w | CONTROL: BOOT_42 has a `_ranges` row |
-| boot0-1bit-ctl | 1 | nv_reg_NV_PMC_BOOT_0_ranges | CONTROL: s==e widened to (8,9) -- a WIDTH edit, not a swap |

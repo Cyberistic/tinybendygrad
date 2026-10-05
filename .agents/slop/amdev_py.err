@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/amdev_oracle.py", line 44, in <module>
-    row(f"c_{n}", getattr(am, n))
-                  ^^^^^^^^^^^^^^
-AttributeError: module 'tinygrad.runtime.autogen.am.am' has no attribute 'NV_MAIBBOX_CONTROL_TRN_OFFSET_BYTE'

@@ -1,1 +1,0 @@
-MOVED	hi42,hi42k,hi42sig,lg1n,lg1sig,lg9sig,lgcn,lgcp,lgcsig,lgdn,lgdsig,lgfsig,lgmsig,lgqn,lgqsig,lgsn,lgssig

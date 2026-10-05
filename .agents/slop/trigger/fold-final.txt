@@ -1,0 +1,336 @@
+dtype_key=True
+shape_ok=True
+device_ok=True
+cycle_safe=True
+gap_ok=True
+resh_2d=True
+resh_1d=True
+resh_noop=True
+resh_reject=True
+resh_settle=True
+sized_order=True
+img_shape=True
+cfun_void=True
+cfun_u64=True
+pri_three_way=True
+promo_void_left=True
+promo_void_right=True
+meet_and=True
+bnd_void_is_bool=True
+mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=i32
+mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=i32
+mv_expnoop n=4 op=Ops.EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+mv_expsym n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=ABSENT dtype=ABSENT
+mv_reshsym_nm n=5 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(U(Ops.PARAM:n),U(Ops.PARAM:m)) dtype=i32
+mv_reshsym_pt n=5 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(3,1) dtype=i32
+mv_expsym_pos n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,U(Ops.SPECIAL:N),4) dtype=i32
+mv_reshbare n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(U(Ops.PARAM:n)) dtype=i32
+mv_reshbare_pt n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(4) dtype=i32
+mv_reshbare_dis n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(U(Ops.PARAM:w)) dtype=i32
+mv_pad1 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=i32
+mv_pad23 n=12 op=Ops.PAD nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(6,5) dtype=i32
+mv_padr n=8 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.STACK|Ops.STACK shape=ABSENT dtype=ABSENT
+mv_padr2 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=ABSENT dtype=ABSENT
+mv_shr1 n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(2) dtype=i32
+mv_shr23 n=10 op=Ops.SHRINK nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(2,1) dtype=i32
+mv_shrbad n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=ABSENT dtype=ABSENT
+mv_perm n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=i32
+mv_permrep n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_permlen n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_flip n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=(2,3) dtype=i32
+mv_fliplen n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+rg_none ranges=[]
+rg_self ranges=[R(0)]
+rg_two ranges=[R(0),R(1)]
+rg_rev ranges=[R(1),R(0)]
+rg_dup ranges=[R(0)]
+rg_end ranges=[R(0)]
+rg_after ranges=[R(0)]
+rg_barrier ranges=[R(0),R(2)]
+rg_er ranges=[R(0)]
+rg_call_cf ranges=[R(0),R(1)]
+rg_call_c ranges=[]
+rg_absent ranges=ABSENT
+mmk_sub34 n=3 op=Ops.SUB nsrc=2 srcops=Ops.CONST|Ops.CONST lo=-0:1 hi=-0:1
+mmk_sub43 n=3 op=Ops.SUB nsrc=2 srcops=Ops.CONST|Ops.CONST lo=+0:1 hi=+0:1
+mmk_nested n=6 op=Ops.ADD nsrc=2 srcops=Ops.MUL|Ops.SUB lo=+0:19 hi=+0:19
+mmk_range5 n=2 op=Ops.RANGE nsrc=1 srcops=Ops.CONST lo=+0:0 hi=+0:4
+mmk_special4 n=2 op=Ops.SPECIAL nsrc=1 srcops=Ops.CONST lo=+0:0 hi=+0:3
+mmk_stack n=4 op=Ops.STACK nsrc=3 srcops=Ops.CONST|Ops.CONST|Ops.CONST lo=-0:2 hi=+0:5
+mmk_pad5 n=4 op=Ops.PAD nsrc=3 srcops=Ops.PARAM|Ops.CONST|Ops.CONST lo=+0:0 hi=+0:9
+mmk_param n=1 op=Ops.PARAM nsrc=0 srcops= lo=-0:3 hi=+0:7
+mmk_threefry n=2 op=Ops.THREEFRY nsrc=3 srcops=Ops.CONST|Ops.CONST|Ops.CONST lo=+0:0 hi=+4294967295:4294967295
+mmk_buf_i64 n=1 op=Ops.BUFFER nsrc=0 srcops= lo=-2147483648:0 hi=+2147483647:4294967295
+mmk_noop n=2 op=Ops.NOOP nsrc=1 srcops=Ops.BUFFER lo=+0:0 hi=+0:1
+mmkx_sibling_stage n=2 op=Ops.STAGE nsrc=1 srcops=Ops.CONST ABSENT
+mmk_sibling n=3 op=Ops.ADD nsrc=2 srcops=Ops.CONST|Ops.CONST lo=+0:7 hi=+0:7
+mmk_backedge n=5 op=Ops.BACKEDGE nsrc=3 srcops=Ops.SPECIAL|Ops.RANGE|Ops.SPECIAL lo=+0:0 hi=+0:1
+mmk_backedge_sp n=2 op=Ops.SPECIAL nsrc=1 srcops=Ops.CONST lo=+0:0 hi=+0:3
+mmk_backedge_rg n=2 op=Ops.RANGE nsrc=1 srcops=Ops.CONST lo=+0:0 hi=+0:4
+mmkx_stage n=2 op=Ops.STAGE nsrc=1 srcops=Ops.CONST ABSENT
+mmkx_reshape n=2 op=Ops.RESHAPE nsrc=1 srcops=Ops.BUFFER ABSENT
+mmk_vmin n=1 op=Ops.BUFFER nsrc=0 srcops= -2147483648:0
+mmk_vmax n=1 op=Ops.BUFFER nsrc=0 srcops= +2147483647:4294967295
+lf_add_int32_3_4 lo=+0:7 hi=+0:7
+lf_add_int32_-3_4 lo=+0:1 hi=+0:1
+lf_add_int32_-3_-4 lo=-0:7 hi=-0:7
+lf_add_int32_0_-5 lo=-0:5 hi=-0:5
+lf_add_int32_-5_0 lo=-0:5 hi=-0:5
+lf_add_int32_2147483648_2147483647 lo=+0:4294967295 hi=+0:4294967295
+lf_add_int32_-2147483648_-2147483647 lo=-0:4294967295 hi=-0:4294967295
+lf_add_int32_0_0 lo=+0:0 hi=+0:0
+lf_add_int32_1099511627776_-1099511627776 lo=+0:0 hi=+0:0
+lf_sub_int32_3_4 lo=-0:1 hi=-0:1
+lf_sub_int32_-3_4 lo=-0:7 hi=-0:7
+lf_sub_int32_-3_-4 lo=+0:1 hi=+0:1
+lf_sub_int32_3_-4 lo=+0:7 hi=+0:7
+lf_sub_int32_-3_4 lo=-0:7 hi=-0:7
+lf_sub_int32_0_0 lo=+0:0 hi=+0:0
+lf_sub_int32_5_5 lo=+0:0 hi=+0:0
+lf_sub_int32_4_5 lo=-0:1 hi=-0:1
+lf_mul_int32_3_4 lo=+0:12 hi=+0:12
+lf_mul_int32_-3_4 lo=-0:12 hi=-0:12
+lf_mul_int32_-3_-4 lo=+0:12 hi=+0:12
+lf_mul_int32_0_-5 lo=+0:0 hi=+0:0
+lf_mul_int32_7_-8 lo=-0:56 hi=-0:56
+lf_mul_int32_-2147483648_2 lo=-1:0 hi=-1:0
+lf_mul_int32_2147483648_3 lo=+1:2147483648 hi=+1:2147483648
+lf_mul_int32_1099511627776_1048576 lo=+268435456:0 hi=+268435456:0
+lf_max_int32_3_4 lo=+0:4 hi=+0:4
+lf_max_int32_-3_4 lo=+0:4 hi=+0:4
+lf_max_int32_3_-4 lo=+0:3 hi=+0:3
+lf_max_int32_-3_-4 lo=-0:3 hi=-0:3
+lf_max_int32_0_0 lo=+0:0 hi=+0:0
+lf_max_int32_1099511627776_-1099511627776 lo=+256:0 hi=+256:0
+lf_cmplt_int32_3_4 lo=+0:1 hi=+0:1
+lf_cmplt_int32_-3_4 lo=+0:1 hi=+0:1
+lf_cmplt_int32_4_3 lo=+0:0 hi=+0:0
+lf_cmplt_int32_-4_-3 lo=+0:1 hi=+0:1
+lf_cmplt_int32_3_3 lo=+0:0 hi=+0:0
+lf_cmplt_int32_-3_-3 lo=+0:0 hi=+0:0
+lf_cmplt_int32_1099511627776_-1099511627776 lo=+0:0 hi=+0:0
+lf_cmpne_int32_3_4 lo=+0:1 hi=+0:1
+lf_cmpne_int32_-3_4 lo=+0:1 hi=+0:1
+lf_cmpne_int32_4_3 lo=+0:1 hi=+0:1
+lf_cmpne_int32_-4_-3 lo=+0:1 hi=+0:1
+lf_cmpne_int32_3_3 lo=+0:0 hi=+0:0
+lf_cmpne_int32_-3_-3 lo=+0:0 hi=+0:0
+lf_cmpne_int32_5_5 lo=+0:0 hi=+0:0
+lf_andint_int32_5_255 lo=+0:0 hi=+0:5
+lf_andint_int32_0_255 lo=+0:0 hi=+0:0
+lf_andint_int32_-1_255 lo=+0:0 hi=+0:255
+lf_andint_int32_5_0 lo=+0:0 hi=+0:0
+lf_andint_int32_2147483648_7 lo=+0:0 hi=+0:7
+lf_andint_int32_-2147483648_7 lo=+0:0 hi=+0:7
+lf_andint_int32_8_255 lo=+0:0 hi=+0:8
+lf_andint_int32_255_8 lo=+0:0 hi=+0:8
+lf_andint_int32_1099511627776_1073741824 lo=+0:0 hi=+0:1073741824
+lf_xor_int32_5_-1 lo=-0:6 hi=-0:6
+lf_xor_int32_-5_-1 lo=+0:4 hi=+0:4
+lf_xor_int32_0_-1 lo=-0:1 hi=-0:1
+lf_xor_int32_2147483648_-1 lo=-0:2147483649 hi=-0:2147483649
+lf_shl_int32_1_3 lo=+0:8 hi=+0:8
+lf_shl_int32_-1_3 lo=-0:8 hi=-0:8
+lf_shl_int32_255_4 lo=+0:4080 hi=+0:4080
+lf_shl_int32_-8_2 lo=-0:32 hi=-0:32
+lf_shl_int32_1099511627776_8 lo=+65536:0 hi=+65536:0
+lf_shl_int32_7_0 lo=+0:7 hi=+0:7
+lf_shr_int32_1_3 lo=+0:0 hi=+0:0
+lf_shr_int32_-1_3 lo=-0:1 hi=-0:1
+lf_shr_int32_255_4 lo=+0:15 hi=+0:15
+lf_shr_int32_-8_2 lo=-0:2 hi=-0:2
+lf_shr_int32_-9_1 lo=-0:5 hi=-0:5
+lf_shr_int32_1099511627776_8 lo=+1:0 hi=+1:0
+lf_shr_int32_7_0 lo=+0:7 hi=+0:7
+lf_orb_True_False lo=+0:1 hi=+0:1
+lf_orb_False_True lo=+0:1 hi=+0:1
+lf_orb_True_True lo=+0:1 hi=+0:1
+lf_orb_False_False lo=+0:0 hi=+0:0
+lf_andb_True_False lo=+0:0 hi=+0:0
+lf_andb_False_True lo=+0:0 hi=+0:0
+lf_andb_True_True lo=+0:1 hi=+0:1
+lf_andb_False_False lo=+0:0 hi=+0:0
+lf_ft_cmpeq lo=+0:0 hi=+0:1
+lf_where1 lo=-0:4 hi=+0:3
+lf_where2 lo=-0:3 hi=+0:4
+lf_where3 lo=+0:3 hi=+0:4
+lf_padf lo=+0:0 hi=F1.5
+lf_padn lo=F-1.5 hi=+0:0
+lf_mv_reshape lo=+0:3 hi=+0:3
+lf_mv_expand lo=+0:3 hi=+0:3
+lf_mv_permute lo=+0:3 hi=+0:3
+lf_mv_shrink lo=+0:3 hi=+0:3
+lf_mv_flip lo=+0:3 hi=+0:3
+lf_mv_index lo=+0:3 hi=+0:3
+lf_mv_stage lo=+0:3 hi=+0:3
+lf_mv_after lo=+0:3 hi=+0:3
+lf_mv_detach lo=+0:3 hi=+0:3
+lf_mv_copy lo=+0:3 hi=+0:3
+lf_mv_contiguous_backward lo=+0:3 hi=+0:3
+lf_mv_pad lo=+0:0 hi=+0:3
+lf_c0 lo=+0:0 hi=+0:0
+lf_c1 lo=+0:1 hi=+0:1
+lf_cm1 lo=-0:1 hi=-0:1
+lf_c31 lo=+0:2147483648 hi=+0:2147483648
+lf_cf lo=F1.5 hi=F1.5
+lf_cfn lo=F-1.5 hi=F-1.5
+lf_cb lo=+0:1 hi=+0:1
+lf_cbf lo=+0:0 hi=+0:0
+lf_cinv lo=+0:0 hi=+0:1
+lf_cnan lo=NInf hi=PInf
+lf_range4 lo=+0:0 hi=+0:3
+lf_spec4 lo=+0:0 hi=+0:3
+lf_range0 lo=+0:0 hi=-0:1
+lf_spec0 lo=+0:0 hi=-0:1
+lf_rangen3 lo=+0:0 hi=-0:4
+lf_specn3 lo=+0:0 hi=-0:4
+lf_stack1 lo=+0:3 hi=+0:3
+lf_stack2 lo=-0:2 hi=+0:1
+lf_stack3 lo=-0:2 hi=+0:5
+lf_stack4 lo=-0:2147483648 hi=+0:2147483648
+lf_param0 lo=+0:3 hi=+0:7
+lf_param0_alloc lo=+0:3 hi=+0:7
+lf_param1 lo=-256:0 hi=-0:1
+lf_param1_alloc lo=-256:0 hi=-0:1
+lf_param2 lo=+0:0 hi=+0:0
+lf_param2_alloc lo=+0:0 hi=+0:0
+lf_sat_add lo=PInf hi=PInf
+lf_sat_sub lo=NInf hi=NInf
+lf_sat_mul lo=PInf hi=PInf
+lf_sat_addneg lo=NInf hi=NInf
+mm_add_zero 0:0
+mm_add_small 0:12
+mm_add_carrylo 1:0
+mm_add_carryhi 1:0
+mm_add_hilo 1:4294967295
+mm_add_over64 OVER
+mm_add_maxmax OVER
+mm_add_2p31 1:0
+mm_sub_ok 0:2
+mm_sub_zero 0:0
+mm_sub_borrow OVER
+mm_sub_borrowhi 0:4294967295
+mm_sub_under64 OVER
+mm_sub_tomax OVER
+mm_sub_maxmax 0:0
+mm_mul_small 2:1410065408
+mm_mul_16sq 0:4294836225
+mm_mul_31sq 1073741823:1
+mm_mul_32sq 4294967294:1
+mm_mul_2p32sq OVER
+mm_mul_over64 4294967295:0
+mm_mul_maxsq OVER
+mm_mul_1e12 232:3567587328
+mm_mul_6x 1:2
+mm_mul_zero 0:0
+mm_mul_2p63 2147483648:0
+mm_mul_2p32m 4294967294:1
+mm_mul_2p48sq OVER
+mm_mul_2p47sq OVER
+mm_shl_0 0:1
+mm_shl_1 0:2
+mm_shl_31 0:2147483648
+mm_shl_32 1:0
+mm_shl_63 2147483648:0
+mm_shl_64 OVER
+mm_shl_hi1 2:0
+mm_shl_hi32 OVER
+mm_shl_hi63 OVER
+mm_shl_over63 OVER
+mm_shl_over32 OVER
+mm_shl_edge32 OVER
+mm_shl_max32 4294967295:0
+mm_shl_max31 2147483647:2147483648
+mm_shl_max63 OVER
+mm_shl_0hi 1:0
+mm_shl_bigk OVER
+mm_shr_0 1:5
+mm_shr_1 0:2147483650
+mm_shr_31 0:1
+mm_shr_32 0:1
+mm_shr_63 0:0
+mm_shr_64 0:0
+mm_shr_max 2147483647:4294967295
+mm_shr_max40 0:16777215
+mm_shr_bigk 0:0
+mm_div_17_5 q=0:3 r=0:2
+mm_div_17_1 q=0:17 r=0:0
+mm_div_2p32_3 q=0:1431655765 r=0:1
+mm_div_7_2p32 q=0:0 r=0:7
+mm_div_maxmax q=0:1 r=0:0
+mm_div_max_2p32m q=1:1 r=0:0
+mm_div_2p32m_x q=0:5 r=0:715827880
+mm_div_max_2p32 q=0:4294967295 r=0:4294967295
+mm_div_2p33_7 q=0:613566757 r=0:2
+mm_div_max_p1 q=4294967295:4294967295 r=0:0
+mm_div_100_7 q=0:14 r=0:2
+mm_div_max_3 q=1431655765:1431655765 r=0:0
+mm_div_2p32_2p32m q=0:1 r=0:1
+mm_div_max_2 q=2147483647:4294967295 r=0:1
+mm_div_1_2 q=0:0 r=0:1
+mm_div_2p63_max q=0:0 r=2147483648:0
+mm_div_2p63_2p62 q=0:2 r=0:0
+bl_bl_0 0
+bl_bl_1 1
+bl_bl_2 2
+bl_bl_3 2
+bl_bl_4 3
+bl_bl_5 3
+bl_bl_15 4
+bl_bl_16 5
+bl_bl_255 8
+bl_bl_256 9
+bl_bl_65535 16
+bl_bl_65536 17
+bl_bl_2p24 25
+bl_bl_2p31 32
+bl_bl_2p31m1 31
+bl_bl_2p32 33
+bl_bl_2p32m1 32
+bl_bl_2p32p1 33
+bl_bl_2p48 49
+bl_bl_2p48m1 48
+bl_bl_2p63 64
+bl_bl_2p63m1 63
+bl_bl_max 64
+bl_bl_maxm1 64
+bl_bl_1000000 20
+bl_bl_123456789 27
+bl_mk_0_0 0:0
+bl_mk_5_255 0:7
+bl_mk_255_5 0:5
+bl_mk_256_256 0:256
+bl_mk_256_m1 0:511
+bl_mk_65535_m1 0:65535
+bl_mk_65536_m1 0:131071
+bl_mk_2p31m1_m1 0:2147483647
+bl_mk_2p32_m1 1:4294967295
+bl_mk_m1_m1 4294967295:4294967295
+bl_mk_m1_2p32 1:0
+bl_mk_7_2p63 0:0
+bl_dt_boolean lo=+0:0 hi=+0:1
+bl_dt_weakint lo=NInf hi=PInf
+bl_dt_int8 lo=-0:128 hi=+0:127
+bl_dt_uint8 lo=+0:0 hi=+0:255
+bl_dt_int16 lo=-0:32768 hi=+0:32767
+bl_dt_uint16 lo=+0:0 hi=+0:65535
+bl_dt_int32 lo=-0:2147483648 hi=+0:2147483647
+bl_dt_uint32 lo=+0:0 hi=+0:4294967295
+bl_dt_int64 lo=-2147483648:0 hi=+2147483647:4294967295
+bl_dt_uint64 lo=+0:0 hi=+4294967295:4294967295
+bl_dt_weakfloat lo=NInf hi=PInf
+bl_dt_float8_e4m3 lo=F-448 hi=F448
+bl_dt_float8_e4m3fnuz lo=F-240 hi=F240
+bl_dt_float8_e5m2 lo=NInf hi=PInf
+bl_dt_float8_e5m2fnuz lo=F-57344 hi=F57344
+bl_dt_float16 lo=NInf hi=PInf
+bl_dt_bfloat16 lo=NInf hi=PInf
+bl_dt_float32 lo=NInf hi=PInf
+bl_dt_float64 lo=NInf hi=PInf
+bl_dt_void lo=+0:0 hi=+0:1
+bl_dt_w65_signed lo=NInf hi=PInf
+bl_dt_w65_unsigned lo=NInf hi=PInf
+bl_dt_w127_signed lo=NInf hi=PInf
+bl_dt_w800_signed lo=NInf hi=PInf
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=695 MB (ceiling 1024)  1s  :: ./bin/bend tinybendygrad/uop/fold.bend

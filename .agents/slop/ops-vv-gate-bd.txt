@@ -1,5 +1,0 @@
-vv_two=(0:7,0:9)
-vv_one=(0:7)
-vv_zero=(0:0)
-vv_none=()
-vv_miss_second=none

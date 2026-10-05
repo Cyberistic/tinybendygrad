@@ -1,5 +1,0 @@
-nbufs 2
-in_bufs 16 16
-out_bufs 0
-global_size 1 1 1
-vals 

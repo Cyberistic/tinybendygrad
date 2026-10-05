@@ -1,5 +1,0 @@
-port md5=1dbc8e00   oracle md5=1dbc8e00   lanes BYTE-IDENTICAL: True
-the SHARED reader (rebase-gate.py:rows()) over each lane: 201 names on the port, 201 on the oracle -- 0 only it finds, 0 only this reader finds, 201 in common
-physical rows on stdout: port 206, oracle 206
-gated 201   agree 201   disagree []
-AGREE

@@ -93,7 +93,33 @@ PROTECTED = re.compile(
 DIFFER = {"graphcmp.py", "graphcmp.bend", "graphcmp-oracle.py",
           "graphcmp-run.sh", "graphcmp-repro.sh", "graphcmp-dbg-oracle.py"}
 
-LIVE_UNITS = ("deadreg", "differverdict", "gatecensus", "coldness", "shadowtrees", "wallrule")
+# A DIRECTORY WHOSE OWN NAME DECLARES ITS ROLE CLASSIFIES ITS WHOLE SUBTREE. MEASURED 2026-10-05:
+# `oracles/` (79 files, 520 KB, named by 4 reports) held 60 `.txt` of EXPECTED VALUES and was about to
+# be deleted, because the verdict is computed per FILE from its BASENAME — and a file called
+# `blob-bn.txt` inside a directory called `oracles` looks like a row dump. **THE ROLE IS A PROPERTY OF
+# THE DIRECTORY AND WAS BEING READ FROM THE FILE.** These are the four names this project uses to
+# mean a role, so a directory that is one of them is one.
+ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE",
+             "strays": "PROTECTED", "strays-root": "PROTECTED"}
+
+LIVE_UNITS = (
+    # finished
+    "deadreg", "differverdict", "gatecensus", "coldness", "shadowtrees", "wallrule",
+    # LIVE RIGHT NOW. MEASURED 2026-10-05: this list was written before the current four were
+    # dispatched, and the plan put **255 files of a running unit's** (`e2epy/`) into the DELETE
+    # bucket. A live unit's exclusion cannot live in a hand-maintained list that nobody updates at
+    # dispatch time, so the mtime window is the real guard and this list is only a second belt.
+    "e2efix", "trigger", "gateport", "bf16",
+    # a port that just completed but whose tree is still the cleanest evidence of a migration
+    "e2epy", "substrate",
+)
+
+# Four MUTATION ARMS, NOT A COPY. `dd-cone-wt/` is 43 MB and 572 files, and the shadowtrees unit
+# measured that its four arms differ in exactly TWO files and that `codegen/decomp/dtype.bend` is
+# FOUR DISTINCT STATES: **deleting three of the arms destroys three arms.** It is the record of what
+# four mutations did, and a mutation's value is its DIFFERENCE from the real file, so the evidence
+# is the four-way divergence rather than any one of the trees.
+PROTECTED_DIRS = ("dd-cone-wt",)
 
 
 def committed_named_text() -> str:
@@ -156,18 +182,34 @@ def verdict_for(rel: str, mentioned: set[str]) -> str:
     parts = rel.split(os.sep)
     top = parts[2] if len(parts) > 2 else ""
 
+    # A role directory decides for its whole subtree, before any per-file judgement.
+    for part in parts:
+        if part in ROLE_DIRS:
+            return ROLE_DIRS[part]
     if PROTECTED.search(rel):
         return "PROTECTED"
     # A live unit's own directory, by name. The mtime window catches files; this catches the
     # DIRECTORY a unit is about to write into.
     if top in LIVE_UNITS:
         return "LIVE-UNIT"
+    if top in PROTECTED_DIRS:
+        return "PROTECTED"
     if name.endswith(".md"):
         return "DOC"
     if name in DIFFER:
         return "GATE"
     if ORACLE_WORD.search(name) and not name.endswith((".sh", ".py")):
         return "ORACLE"
+    # A FILE A COMMITTED REPORT NAMES IS **NEVER** DELETE. MEASURED 2026-10-05: the first sweep
+    # deleted 3,603 files and `checks/repro-paths.py` went from 24 dangling reproduction paths to
+    # **166** — because the GATE rule required a gate-shaped NAME *and* a citation, and everything
+    # else fell through to DELETE. So a `.bend` fixture named by a report, and a `.py` an oracle
+    # script needed, were both deletable while a report still pointed at them.
+    #
+    # **THE CITATION IS A LOWER BOUND ON VALUE, NOT A SUFFICIENT CONDITION FOR KEEPING.**
+    # Naming something proves SOMEBODY DEPENDS ON IT; the name only decides which bucket.
+    if name in mentioned:
+        return "KEEP-CITED"
     if (GATE_WORD.search(name) or os.access(os.path.join(ROOT, rel), os.X_OK)) \
             and name in mentioned:
         return "GATE"

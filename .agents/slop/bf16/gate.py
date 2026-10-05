@@ -27,7 +27,11 @@ gate.py adjudicates every pattern that census flags, against CPython.
 import os, struct, subprocess, sys, hashlib
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
+# HERE is .agents/slop/bf16 -- THREE levels deep. MEASURED, not guessed: with
+# `..`/`..` this resolved DTYPE_C to `.agents/tinybendygrad/runtime/dtype.c`,
+# which does not exist, and the only symptom was clang saying `dtype.c` was not
+# found -- a complaint about a file that plainly exists, three hops away.
+ROOT = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 DTYPE_C = os.path.join(ROOT, "tinybendygrad", "runtime", "dtype.c")
 EXE = os.path.join(os.environ.get("TMPDIR", "/tmp"), "bf16")
 

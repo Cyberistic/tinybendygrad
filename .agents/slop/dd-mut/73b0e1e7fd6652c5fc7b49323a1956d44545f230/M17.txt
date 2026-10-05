@@ -1,1 +1,0 @@
-MOVED	lgl,lglp,lgqsig,lgrsig,lgs,lgssig,lgtsig

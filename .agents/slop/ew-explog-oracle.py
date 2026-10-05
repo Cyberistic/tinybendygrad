@@ -22,14 +22,27 @@ A GRAPH AND NOT A VALUE, because these are methods and the question is whether t
 BUILDS THE SAME GRAPH. `log` is `CONST LOG2 CONST MUL` and any value gate would pass an
 implementation that got the right number out of the wrong ops.
 """
+import struct
 import sys
 
 from tinygrad import Tensor
 
 
 def sig(u, nm):
+    """`op/n`, and a FLOAT const carries its f32 BITS -- the same convention the port's
+    `ew_sig` uses, so the two lanes are comparable as written.
+
+    This is the stronger of the two available claims. A shape-only row would pass an
+    implementation that put the WRONG CONSTANT in the right place, and a constant is exactly
+    what these three methods are about -- `log` and `log10` differ only in which one they
+    multiply by. An int const prints no bits on either side, because the port only resolves
+    bits for a float payload."""
+    def tok(x):
+        if x.op.name == "CONST" and isinstance(x.arg, float):
+            return f"CONST/{len(x.src)}={struct.unpack('I', struct.pack('f', x.arg))[0]}"
+        return f"{x.op.name}/{len(x.src)}"
     ts = list(u.toposort())
-    print(f"{nm}={len(ts)} " + " ".join(f"{x.op.name}/{len(x.src)}" for x in ts) + " ")
+    print(f"{nm}={len(ts)} " + " ".join(tok(x) for x in ts) + " ")
 
 
 def main():

@@ -20,22 +20,22 @@ static u32 got(u32 p) {
   return (u32)(intptr_t)bf16_run((Env){0}, f, (IoWork*)0);
 }
 
-/* An independent model of dtype.py:229-233 for the FINITE arm: decode to a
- * float, round to bf16 with frexp/ldexp (no bit add), re-encode. */
-static u32 model(u32 p) {
-  if ((p & 0x7F800000u) == 0x7F800000u) return p;      /* isfinite: dtype.py:230 */
-  f32 v; memcpy(&v, &p, 4);
-  int e2; f32 m = frexpf(v, &e2);                      /* v = m * 2^e2, m in [0.5,1) */
-  /* bf16: 8 exponent bits, bias 127, so v must land on a multiple of 2^(e2-8)
-   * once normalised. Scale to 2^8 steps of m, round half to even. */
-  double s = ldexp((double)m, 9);                     /* m in [256, 512) */
-  double fl = floor(s);
-  double r = (s - fl == 0.5) ? (((unsigned long long)fl & 1ull) ? fl + 1.0 : fl)
-                             : ((s - fl > 0.5) ? fl + 1.0 : fl);
-  f32 out = (f32)ldexp(r, e2 - 9);
-  u32 b; memcpy(&b, &out, 4);
-  return b;
-}
+/* THE FINITE ARM IS A THEOREM, NOT A MODEL. dtype.py:229-233 is
+ *   u = bits(truncate[f32](x)); u = (u + 0x7FFF + ((u>>16)&1)) & 0xFFFF0000
+ * and `truncate[f32]` is ctypes.c_float, the IDENTITY on an f32-representable
+ * float -- which every f32 pattern is, since bf16_run's input is one. So for
+ * every finite f32 pattern dtype.py's answer is a LITERAL COPY of the C's line.
+ * A second float-based model of it (frexp/ldexp) was written, measured, and
+ * DELETED: it disagreed on 2161431807 of 2^32 patterns and mis-bucketed finite
+ * inputs as NaN. Its disagreement count was its own bug, not a finding. The
+ * census below therefore tests the arm that is NOT a theorem -- dtype.py:230's
+ * `if not math.isfinite(x): return x`, whose answer for every non-finite pattern
+ * is EXACTLY `p`, no modelling required -- and the finite arm is CPython-checked
+ * by gate.py over the whole bf16 code space plus the tie set.
+ *
+ * dtype.bend:594-599 measured one row of this (0x7F800001 -> 0x7F800000). This
+ * is the exhaustive version. */
+static int nonfinite(u32 p) { return (p & 0x7F800000u) == 0x7F800000u; }
 
 int main(int argc, char **argv) {
   const char *mode = argc > 1 ? argv[1] : "rows";
@@ -53,48 +53,33 @@ int main(int argc, char **argv) {
     return 0;
   }
 
-  if (!strcmp(mode, "census")) {               /* exhaustive 2^32 vs model */
+  /* Exhaustive over the WHOLE 2^32 f32 pattern space. dtype.py:230 answers the
+   * non-finite patterns with `p` unchanged, so the test is exactly
+   * `nonfinite(p) && got(p) != p`. `kept` counts the non-finite patterns the C
+   * happens to leave alone, which is a class count, not a pass. */
+  if (!strcmp(mode, "census")) {
     FILE *out = fopen(argc > 2 ? argv[2] : "/dev/null", "wb");
-    unsigned long long n_dis = 0;
-    /* class codes: 1 +inf 2 -inf 3 qnan 4 snan 5 other-disagree */
-    unsigned long long cls[6] = {0,0,0,0,0,0};
+    unsigned long long n_nf = 0, n_bad = 0, kept[4] = {0,0,0,0}, bad[4] = {0,0,0,0};
     for (u64 q = 0; q <= 0xFFFFFFFFull; q++) {
-      u32 p = (u32)q, g = got(p), r = model(p);
-      if (g == r) continue;
-      n_dis++;
-      int c;
-      if (g == r) c = 5;
-      else if ((p & 0x7FFFFFFFu) == 0x7F800000u) c = (p >> 31) ? 2 : 1;
-      else if (((p >> 22) & 1u) == 0) c = 4;
-      else c = 3;
-      cls[c]++;
-      fwrite(&p, 4, 1, out);
+      u32 p = (u32)q;
+      if (!nonfinite(p)) continue;
+      n_nf++;
+      /* bf16's own class of this pattern: exponent all ones, then mantissa */
+      unsigned cls_ = ((p >> 22) & 1u) ? 2u : 0u;   /* bit1 quiet, bit0 payload!=0 */
+      cls_ |= ((p & 0x7FFFFFu) == 0) ? 0u : 1u;     /* bit0 payload nonzero */
+      int sgn = (p >> 31) & 1;
+      u32 g = got(p);
+      if (g == p) kept[sgn * 2 + (cls_ & 1)]++;
+      else { bad[sgn * 2 + (cls_ & 1)]++; n_bad++; fwrite(&p, 4, 1, out); }
     }
     fclose(out);
-    printf("CENSUS patterns=4294967296 disagree=%llu\n", n_dis);
-    printf("CENSUS inf_pos=%llu inf_neg=%llu qnan=%llu snan=%llu other=%llu\n",
-           cls[1], cls[2], cls[3], cls[4], cls[5]);
+    printf("CENSUS total=4294967296 nonfinite=%llu wrong=%llu\n", n_nf, n_bad);
+    printf("CENSUS kept: +inf=%llu -inf=%llu +nan=%llu -nan=%llu\n",
+           kept[0], kept[2], kept[1], kept[3]);
+    printf("CENSUS WRONG: +inf=%llu -inf=%llu +nan=%llu -nan=%llu\n",
+           bad[0], bad[2], bad[1], bad[3]);
     return 0;
   }
 
-  /* mode "class": exhaustive 2^32, print only the DISTINCT (class-of-input,
-   * got, model) triples with a representative, so a CPython check can be made
-   * per distinct answer rather than per pattern. */
-  if (!strcmp(mode, "class")) {
-    /* distinct (p -> got) with p reduced to (sign, exp, mant_msb, low16, carry) */
-    static unsigned char seen[2][256][2][1]; /* unused; kept simple below */
-    (void)seen;
-    /* emit every p whose got differs from p, deduped on got */
-    static u32 seen_got[1 << 20]; static int nsg = 0;
-    for (u64 q = 0; q <= 0xFFFFFFFFull; q++) {
-      u32 p = (u32)q, g = got(p);
-      if (g == p) continue;
-      int dup = 0;
-      for (int i = 0; i < nsg; i++) if (seen_got[i] == g) { dup = 1; break; }
-      if (!dup && nsg < (1 << 20)) seen_got[nsg++] = g;
-      printf("%08x %08x\n", p, g);
-    }
-    return 0;
-  }
   return 2;
 }

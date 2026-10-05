@@ -1,4 +1,0 @@
-set_end_none=Ops.AFTER(Ops.BUFFER Ops.STORE)
-set_end_one=Ops.AFTER(Ops.BUFFER Ops.END)
-set_end_two=Ops.AFTER(Ops.BUFFER Ops.END)
-set_end_two_src=Ops.AFTER(Ops.BUFFER Ops.END)

@@ -1,5 +1,0 @@
-M06	intercepted	dd-mut-tether.py: DELETING l2i_cast.got's `case 3` arm compiled and the output stayed BYTE-IDENTICAL to the 172-row baseline. Removing the INTERCEPTOR (l2i_cast.ldt's `case 3`) instead changed 129 of 174 lines, so the arm is dead precisely because l2i_cast.ldt takes sel==3 first -- interception, not unreachability.
-M23	unreachable	dd-mut-proof.py: renaming `def reindex(` compiled and the output stayed BYTE-IDENTICAL. reindex.scaled is inside reindex, which the gate cannot reach.
-M33	unreachable	dd-mut-proof.py: renaming `def l2i_define(` compiled and the output stayed BYTE-IDENTICAL. l2i_define.size2 is inside l2i_define.
-M34	unreachable	dd-mut-proof.py: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. f2f.up.tail is reachable only via f2f.up <- f2f.sel <- f2f.
-M35	unreachable	dd-mut-proof.py: renaming `def f2f(` compiled and the output stayed BYTE-IDENTICAL. rne.sel's only caller is f2f.down.norm, inside f2f.

@@ -1,7 +1,0 @@
-# ./bin/bend .agents/slop/w64/w4_f64add.bend
-# 1.5+2.25 -> hi=0x400e0000 lo=0x00000000 (CPython)
-# 1.0+0.5 -> hi=0x3ff80000 lo=0x00000000 (CPython)
-# 0.0+0.0 -> hi=0x00000000 lo=0x00000000 (CPython)
-W-4 row0 hi=1074659328 lo=0
-W-4 row1 hi=1073217536 lo=0
-W-4 row2 hi=0 lo=0

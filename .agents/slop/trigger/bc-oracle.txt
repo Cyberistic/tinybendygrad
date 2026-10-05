@@ -1,0 +1,377 @@
+itemsize pairs probed: [(1, 2), (1, 4), (1, 8), (2, 1), (2, 4), (2, 8), (4, 1), (4, 2), (4, 8), (8, 1), (8, 2), (8, 4)]
+
+--- non-negative dims, dim*inp < 2**32  (what the comment claims) ---
+ok   dim=0 inp=1 out=2 cpython=0 port=0
+ok   dim=0 inp=1 out=4 cpython=0 port=0
+ok   dim=0 inp=1 out=8 cpython=0 port=0
+ok   dim=0 inp=2 out=1 cpython=0 port=0
+ok   dim=0 inp=2 out=4 cpython=0 port=0
+ok   dim=0 inp=2 out=8 cpython=0 port=0
+ok   dim=0 inp=4 out=1 cpython=0 port=0
+ok   dim=0 inp=4 out=2 cpython=0 port=0
+ok   dim=0 inp=4 out=8 cpython=0 port=0
+ok   dim=0 inp=8 out=1 cpython=0 port=0
+ok   dim=0 inp=8 out=2 cpython=0 port=0
+ok   dim=0 inp=8 out=4 cpython=0 port=0
+ok   dim=1 inp=1 out=2 cpython=raise port=raise
+ok   dim=1 inp=1 out=4 cpython=raise port=raise
+ok   dim=1 inp=1 out=8 cpython=raise port=raise
+ok   dim=1 inp=2 out=1 cpython=2 port=2
+ok   dim=1 inp=2 out=4 cpython=raise port=raise
+ok   dim=1 inp=2 out=8 cpython=raise port=raise
+ok   dim=1 inp=4 out=1 cpython=4 port=4
+ok   dim=1 inp=4 out=2 cpython=2 port=2
+ok   dim=1 inp=4 out=8 cpython=raise port=raise
+ok   dim=1 inp=8 out=1 cpython=8 port=8
+ok   dim=1 inp=8 out=2 cpython=4 port=4
+ok   dim=1 inp=8 out=4 cpython=2 port=2
+ok   dim=2 inp=1 out=2 cpython=1 port=1
+ok   dim=2 inp=1 out=4 cpython=raise port=raise
+ok   dim=2 inp=1 out=8 cpython=raise port=raise
+ok   dim=2 inp=2 out=1 cpython=4 port=4
+ok   dim=2 inp=2 out=4 cpython=1 port=1
+ok   dim=2 inp=2 out=8 cpython=raise port=raise
+ok   dim=2 inp=4 out=1 cpython=8 port=8
+ok   dim=2 inp=4 out=2 cpython=4 port=4
+ok   dim=2 inp=4 out=8 cpython=1 port=1
+ok   dim=2 inp=8 out=1 cpython=16 port=16
+ok   dim=2 inp=8 out=2 cpython=8 port=8
+ok   dim=2 inp=8 out=4 cpython=4 port=4
+ok   dim=3 inp=1 out=2 cpython=raise port=raise
+ok   dim=3 inp=1 out=4 cpython=raise port=raise
+ok   dim=3 inp=1 out=8 cpython=raise port=raise
+ok   dim=3 inp=2 out=1 cpython=6 port=6
+ok   dim=3 inp=2 out=4 cpython=raise port=raise
+ok   dim=3 inp=2 out=8 cpython=raise port=raise
+ok   dim=3 inp=4 out=1 cpython=12 port=12
+ok   dim=3 inp=4 out=2 cpython=6 port=6
+ok   dim=3 inp=4 out=8 cpython=raise port=raise
+ok   dim=3 inp=8 out=1 cpython=24 port=24
+ok   dim=3 inp=8 out=2 cpython=12 port=12
+ok   dim=3 inp=8 out=4 cpython=6 port=6
+ok   dim=5 inp=1 out=2 cpython=raise port=raise
+ok   dim=5 inp=1 out=4 cpython=raise port=raise
+ok   dim=5 inp=1 out=8 cpython=raise port=raise
+ok   dim=5 inp=2 out=1 cpython=10 port=10
+ok   dim=5 inp=2 out=4 cpython=raise port=raise
+ok   dim=5 inp=2 out=8 cpython=raise port=raise
+ok   dim=5 inp=4 out=1 cpython=20 port=20
+ok   dim=5 inp=4 out=2 cpython=10 port=10
+ok   dim=5 inp=4 out=8 cpython=raise port=raise
+ok   dim=5 inp=8 out=1 cpython=40 port=40
+ok   dim=5 inp=8 out=2 cpython=20 port=20
+ok   dim=5 inp=8 out=4 cpython=10 port=10
+ok   dim=8 inp=1 out=2 cpython=4 port=4
+ok   dim=8 inp=1 out=4 cpython=2 port=2
+ok   dim=8 inp=1 out=8 cpython=1 port=1
+ok   dim=8 inp=2 out=1 cpython=16 port=16
+ok   dim=8 inp=2 out=4 cpython=4 port=4
+ok   dim=8 inp=2 out=8 cpython=2 port=2
+ok   dim=8 inp=4 out=1 cpython=32 port=32
+ok   dim=8 inp=4 out=2 cpython=16 port=16
+ok   dim=8 inp=4 out=8 cpython=4 port=4
+ok   dim=8 inp=8 out=1 cpython=64 port=64
+ok   dim=8 inp=8 out=2 cpython=32 port=32
+ok   dim=8 inp=8 out=4 cpython=16 port=16
+ok   dim=16 inp=1 out=2 cpython=8 port=8
+ok   dim=16 inp=1 out=4 cpython=4 port=4
+ok   dim=16 inp=1 out=8 cpython=2 port=2
+ok   dim=16 inp=2 out=1 cpython=32 port=32
+ok   dim=16 inp=2 out=4 cpython=8 port=8
+ok   dim=16 inp=2 out=8 cpython=4 port=4
+ok   dim=16 inp=4 out=1 cpython=64 port=64
+ok   dim=16 inp=4 out=2 cpython=32 port=32
+ok   dim=16 inp=4 out=8 cpython=8 port=8
+ok   dim=16 inp=8 out=1 cpython=128 port=128
+ok   dim=16 inp=8 out=2 cpython=64 port=64
+ok   dim=16 inp=8 out=4 cpython=32 port=32
+ok   dim=1024 inp=1 out=2 cpython=512 port=512
+ok   dim=1024 inp=1 out=4 cpython=256 port=256
+ok   dim=1024 inp=1 out=8 cpython=128 port=128
+ok   dim=1024 inp=2 out=1 cpython=2048 port=2048
+ok   dim=1024 inp=2 out=4 cpython=512 port=512
+ok   dim=1024 inp=2 out=8 cpython=256 port=256
+ok   dim=1024 inp=4 out=1 cpython=4096 port=4096
+ok   dim=1024 inp=4 out=2 cpython=2048 port=2048
+ok   dim=1024 inp=4 out=8 cpython=512 port=512
+ok   dim=1024 inp=8 out=1 cpython=8192 port=8192
+ok   dim=1024 inp=8 out=2 cpython=4096 port=4096
+ok   dim=1024 inp=8 out=4 cpython=2048 port=2048
+ok   dim=65535 inp=1 out=2 cpython=raise port=raise
+ok   dim=65535 inp=1 out=4 cpython=raise port=raise
+ok   dim=65535 inp=1 out=8 cpython=raise port=raise
+ok   dim=65535 inp=2 out=1 cpython=131070 port=131070
+ok   dim=65535 inp=2 out=4 cpython=raise port=raise
+ok   dim=65535 inp=2 out=8 cpython=raise port=raise
+ok   dim=65535 inp=4 out=1 cpython=262140 port=262140
+ok   dim=65535 inp=4 out=2 cpython=131070 port=131070
+ok   dim=65535 inp=4 out=8 cpython=raise port=raise
+ok   dim=65535 inp=8 out=1 cpython=524280 port=524280
+ok   dim=65535 inp=8 out=2 cpython=262140 port=262140
+ok   dim=65535 inp=8 out=4 cpython=131070 port=131070
+ok   dim=1048576 inp=1 out=2 cpython=524288 port=524288
+ok   dim=1048576 inp=1 out=4 cpython=262144 port=262144
+ok   dim=1048576 inp=1 out=8 cpython=131072 port=131072
+ok   dim=1048576 inp=2 out=1 cpython=2097152 port=2097152
+ok   dim=1048576 inp=2 out=4 cpython=524288 port=524288
+ok   dim=1048576 inp=2 out=8 cpython=262144 port=262144
+ok   dim=1048576 inp=4 out=1 cpython=4194304 port=4194304
+ok   dim=1048576 inp=4 out=2 cpython=2097152 port=2097152
+ok   dim=1048576 inp=4 out=8 cpython=524288 port=524288
+ok   dim=1048576 inp=8 out=1 cpython=8388608 port=8388608
+ok   dim=1048576 inp=8 out=2 cpython=4194304 port=4194304
+ok   dim=1048576 inp=8 out=4 cpython=2097152 port=2097152
+    -> agree=120 DIFFER=0 unbuildable=0
+
+--- the last in-window dim per inp: 2**32//inp - 1 ---
+ok   dim=4294967295 inp=1 out=2 cpython=raise port=raise
+ok   dim=4294967295 inp=1 out=4 cpython=raise port=raise
+ok   dim=4294967295 inp=1 out=8 cpython=raise port=raise
+DIFF dim=4294967295 inp=2 out=1 cpython=8589934590 port=4294967294
+ok   dim=4294967295 inp=2 out=4 cpython=raise port=raise
+ok   dim=4294967295 inp=2 out=8 cpython=raise port=raise
+DIFF dim=4294967295 inp=4 out=1 cpython=17179869180 port=4294967292
+DIFF dim=4294967295 inp=4 out=2 cpython=8589934590 port=2147483646
+ok   dim=4294967295 inp=4 out=8 cpython=raise port=raise
+DIFF dim=4294967295 inp=8 out=1 cpython=34359738360 port=4294967288
+DIFF dim=4294967295 inp=8 out=2 cpython=17179869180 port=2147483644
+DIFF dim=4294967295 inp=8 out=4 cpython=8589934590 port=1073741822
+ok   dim=2147483647 inp=1 out=2 cpython=raise port=raise
+ok   dim=2147483647 inp=1 out=4 cpython=raise port=raise
+ok   dim=2147483647 inp=1 out=8 cpython=raise port=raise
+ok   dim=2147483647 inp=2 out=1 cpython=4294967294 port=4294967294
+ok   dim=2147483647 inp=2 out=4 cpython=raise port=raise
+ok   dim=2147483647 inp=2 out=8 cpython=raise port=raise
+DIFF dim=2147483647 inp=4 out=1 cpython=8589934588 port=4294967292
+DIFF dim=2147483647 inp=4 out=2 cpython=4294967294 port=2147483646
+ok   dim=2147483647 inp=4 out=8 cpython=raise port=raise
+DIFF dim=2147483647 inp=8 out=1 cpython=17179869176 port=4294967288
+DIFF dim=2147483647 inp=8 out=2 cpython=8589934588 port=2147483644
+DIFF dim=2147483647 inp=8 out=4 cpython=4294967294 port=1073741822
+ok   dim=1073741823 inp=1 out=2 cpython=raise port=raise
+ok   dim=1073741823 inp=1 out=4 cpython=raise port=raise
+ok   dim=1073741823 inp=1 out=8 cpython=raise port=raise
+ok   dim=1073741823 inp=2 out=1 cpython=2147483646 port=2147483646
+ok   dim=1073741823 inp=2 out=4 cpython=raise port=raise
+ok   dim=1073741823 inp=2 out=8 cpython=raise port=raise
+ok   dim=1073741823 inp=4 out=1 cpython=4294967292 port=4294967292
+ok   dim=1073741823 inp=4 out=2 cpython=2147483646 port=2147483646
+ok   dim=1073741823 inp=4 out=8 cpython=raise port=raise
+DIFF dim=1073741823 inp=8 out=1 cpython=8589934584 port=4294967288
+DIFF dim=1073741823 inp=8 out=2 cpython=4294967292 port=2147483644
+DIFF dim=1073741823 inp=8 out=4 cpython=2147483646 port=1073741822
+ok   dim=536870911 inp=1 out=2 cpython=raise port=raise
+ok   dim=536870911 inp=1 out=4 cpython=raise port=raise
+ok   dim=536870911 inp=1 out=8 cpython=raise port=raise
+ok   dim=536870911 inp=2 out=1 cpython=1073741822 port=1073741822
+ok   dim=536870911 inp=2 out=4 cpython=raise port=raise
+ok   dim=536870911 inp=2 out=8 cpython=raise port=raise
+ok   dim=536870911 inp=4 out=1 cpython=2147483644 port=2147483644
+ok   dim=536870911 inp=4 out=2 cpython=1073741822 port=1073741822
+ok   dim=536870911 inp=4 out=8 cpython=raise port=raise
+ok   dim=536870911 inp=8 out=1 cpython=4294967288 port=4294967288
+ok   dim=536870911 inp=8 out=2 cpython=2147483644 port=2147483644
+ok   dim=536870911 inp=8 out=4 cpython=1073741822 port=1073741822
+    -> agree=34 DIFFER=14 unbuildable=0
+
+--- the FIRST out-of-window dim per inp: 2**32//inp ---
+ok   dim=536870912 inp=1 out=2 cpython=268435456 port=268435456
+ok   dim=536870912 inp=1 out=4 cpython=134217728 port=134217728
+ok   dim=536870912 inp=1 out=8 cpython=67108864 port=67108864
+ok   dim=536870912 inp=2 out=1 cpython=1073741824 port=1073741824
+ok   dim=536870912 inp=2 out=4 cpython=268435456 port=268435456
+ok   dim=536870912 inp=2 out=8 cpython=134217728 port=134217728
+ok   dim=536870912 inp=4 out=1 cpython=2147483648 port=2147483648
+ok   dim=536870912 inp=4 out=2 cpython=1073741824 port=1073741824
+ok   dim=536870912 inp=4 out=8 cpython=268435456 port=268435456
+DIFF dim=536870912 inp=8 out=1 cpython=4294967296 port=0
+DIFF dim=536870912 inp=8 out=2 cpython=2147483648 port=0
+DIFF dim=536870912 inp=8 out=4 cpython=1073741824 port=0
+ok   dim=1073741824 inp=1 out=2 cpython=536870912 port=536870912
+ok   dim=1073741824 inp=1 out=4 cpython=268435456 port=268435456
+ok   dim=1073741824 inp=1 out=8 cpython=134217728 port=134217728
+ok   dim=1073741824 inp=2 out=1 cpython=2147483648 port=2147483648
+ok   dim=1073741824 inp=2 out=4 cpython=536870912 port=536870912
+ok   dim=1073741824 inp=2 out=8 cpython=268435456 port=268435456
+DIFF dim=1073741824 inp=4 out=1 cpython=4294967296 port=0
+DIFF dim=1073741824 inp=4 out=2 cpython=2147483648 port=0
+DIFF dim=1073741824 inp=4 out=8 cpython=536870912 port=0
+DIFF dim=1073741824 inp=8 out=1 cpython=8589934592 port=0
+DIFF dim=1073741824 inp=8 out=2 cpython=4294967296 port=0
+DIFF dim=1073741824 inp=8 out=4 cpython=2147483648 port=0
+ok   dim=2147483648 inp=1 out=2 cpython=1073741824 port=1073741824
+ok   dim=2147483648 inp=1 out=4 cpython=536870912 port=536870912
+ok   dim=2147483648 inp=1 out=8 cpython=268435456 port=268435456
+DIFF dim=2147483648 inp=2 out=1 cpython=4294967296 port=0
+DIFF dim=2147483648 inp=2 out=4 cpython=1073741824 port=0
+DIFF dim=2147483648 inp=2 out=8 cpython=536870912 port=0
+DIFF dim=2147483648 inp=4 out=1 cpython=8589934592 port=0
+DIFF dim=2147483648 inp=4 out=2 cpython=4294967296 port=0
+DIFF dim=2147483648 inp=4 out=8 cpython=1073741824 port=0
+DIFF dim=2147483648 inp=8 out=1 cpython=17179869184 port=0
+DIFF dim=2147483648 inp=8 out=2 cpython=8589934592 port=0
+DIFF dim=2147483648 inp=8 out=4 cpython=4294967296 port=0
+DIFF dim=4294967296 inp=1 out=2 cpython=2147483648 port=0
+DIFF dim=4294967296 inp=1 out=4 cpython=1073741824 port=0
+DIFF dim=4294967296 inp=1 out=8 cpython=536870912 port=0
+DIFF dim=4294967296 inp=2 out=1 cpython=8589934592 port=0
+DIFF dim=4294967296 inp=2 out=4 cpython=2147483648 port=0
+DIFF dim=4294967296 inp=2 out=8 cpython=1073741824 port=0
+DIFF dim=4294967296 inp=4 out=1 cpython=17179869184 port=0
+DIFF dim=4294967296 inp=4 out=2 cpython=8589934592 port=0
+DIFF dim=4294967296 inp=4 out=8 cpython=2147483648 port=0
+DIFF dim=4294967296 inp=8 out=1 cpython=34359738368 port=0
+DIFF dim=4294967296 inp=8 out=2 cpython=17179869184 port=0
+DIFF dim=4294967296 inp=8 out=4 cpython=8589934592 port=0
+    -> agree=18 DIFFER=30 unbuildable=0
+
+--- far past the window ---
+DIFF dim=8589934592 inp=1 out=2 cpython=4294967296 port=0
+DIFF dim=8589934592 inp=1 out=4 cpython=2147483648 port=0
+DIFF dim=8589934592 inp=1 out=8 cpython=1073741824 port=0
+DIFF dim=8589934592 inp=2 out=1 cpython=17179869184 port=0
+DIFF dim=8589934592 inp=2 out=4 cpython=4294967296 port=0
+DIFF dim=8589934592 inp=2 out=8 cpython=2147483648 port=0
+DIFF dim=8589934592 inp=4 out=1 cpython=34359738368 port=0
+DIFF dim=8589934592 inp=4 out=2 cpython=17179869184 port=0
+DIFF dim=8589934592 inp=4 out=8 cpython=4294967296 port=0
+DIFF dim=8589934592 inp=8 out=1 cpython=68719476736 port=0
+DIFF dim=8589934592 inp=8 out=2 cpython=34359738368 port=0
+DIFF dim=8589934592 inp=8 out=4 cpython=17179869184 port=0
+DIFF dim=17179869184 inp=1 out=2 cpython=8589934592 port=0
+DIFF dim=17179869184 inp=1 out=4 cpython=4294967296 port=0
+DIFF dim=17179869184 inp=1 out=8 cpython=2147483648 port=0
+DIFF dim=17179869184 inp=2 out=1 cpython=34359738368 port=0
+DIFF dim=17179869184 inp=2 out=4 cpython=8589934592 port=0
+DIFF dim=17179869184 inp=2 out=8 cpython=4294967296 port=0
+DIFF dim=17179869184 inp=4 out=1 cpython=68719476736 port=0
+DIFF dim=17179869184 inp=4 out=2 cpython=34359738368 port=0
+DIFF dim=17179869184 inp=4 out=8 cpython=8589934592 port=0
+DIFF dim=17179869184 inp=8 out=1 cpython=137438953472 port=0
+DIFF dim=17179869184 inp=8 out=2 cpython=68719476736 port=0
+DIFF dim=17179869184 inp=8 out=4 cpython=34359738368 port=0
+DIFF dim=1099511627776 inp=1 out=2 cpython=549755813888 port=0
+DIFF dim=1099511627776 inp=1 out=4 cpython=274877906944 port=0
+DIFF dim=1099511627776 inp=1 out=8 cpython=137438953472 port=0
+DIFF dim=1099511627776 inp=2 out=1 cpython=2199023255552 port=0
+DIFF dim=1099511627776 inp=2 out=4 cpython=549755813888 port=0
+DIFF dim=1099511627776 inp=2 out=8 cpython=274877906944 port=0
+DIFF dim=1099511627776 inp=4 out=1 cpython=4398046511104 port=0
+DIFF dim=1099511627776 inp=4 out=2 cpython=2199023255552 port=0
+DIFF dim=1099511627776 inp=4 out=8 cpython=549755813888 port=0
+DIFF dim=1099511627776 inp=8 out=1 cpython=8796093022208 port=0
+DIFF dim=1099511627776 inp=8 out=2 cpython=4398046511104 port=0
+DIFF dim=1099511627776 inp=8 out=4 cpython=2199023255552 port=0
+    -> agree=0 DIFFER=36 unbuildable=0
+
+--- negative dims -- upstream `isinstance(ps[-1], int)` is TRUE for these ---
+skip  dim=-1 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-1 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -1)
+skip  dim=-2 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-2 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -2)
+skip  dim=-3 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-3 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -3)
+skip  dim=-4 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-4 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -4)
+skip  dim=-8 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-8 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -8)
+skip  dim=-16 inp=1 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=1 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=1 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=2 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=2 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=2 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=4 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=4 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=4 out=8 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=8 out=1 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=8 out=2 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+skip  dim=-16 inp=8 out=4 :: cpython will not build it: ValueError: shape can't contain negative numbers (1, -16)
+    -> agree=0 DIFFER=0 unbuildable=72
+
+--- THE THRESHOLD ITSELF, one dim either side, per inp ---
+ok   dim=4294967295 inp=1 out=2 cpython=raise port=raise
+ok   dim=4294967295 inp=1 out=4 cpython=raise port=raise
+ok   dim=4294967295 inp=1 out=8 cpython=raise port=raise
+DIFF dim=4294967296 inp=1 out=2 cpython=2147483648 port=0
+DIFF dim=4294967296 inp=1 out=4 cpython=1073741824 port=0
+DIFF dim=4294967296 inp=1 out=8 cpython=536870912 port=0
+ok   dim=2147483647 inp=2 out=1 cpython=4294967294 port=4294967294
+ok   dim=2147483647 inp=2 out=4 cpython=raise port=raise
+ok   dim=2147483647 inp=2 out=8 cpython=raise port=raise
+DIFF dim=2147483648 inp=2 out=1 cpython=4294967296 port=0
+DIFF dim=2147483648 inp=2 out=4 cpython=1073741824 port=0
+DIFF dim=2147483648 inp=2 out=8 cpython=536870912 port=0
+ok   dim=1073741823 inp=4 out=1 cpython=4294967292 port=4294967292
+ok   dim=1073741823 inp=4 out=2 cpython=2147483646 port=2147483646
+ok   dim=1073741823 inp=4 out=8 cpython=raise port=raise
+DIFF dim=1073741824 inp=4 out=1 cpython=4294967296 port=0
+DIFF dim=1073741824 inp=4 out=2 cpython=2147483648 port=0
+DIFF dim=1073741824 inp=4 out=8 cpython=536870912 port=0
+ok   dim=536870911 inp=8 out=1 cpython=4294967288 port=4294967288
+ok   dim=536870911 inp=8 out=2 cpython=2147483644 port=2147483644
+ok   dim=536870911 inp=8 out=4 cpython=1073741822 port=1073741822
+DIFF dim=536870912 inp=8 out=1 cpython=4294967296 port=0
+DIFF dim=536870912 inp=8 out=2 cpython=2147483648 port=0
+DIFF dim=536870912 inp=8 out=4 cpython=1073741824 port=0
+    -> agree=12 DIFFER=12  EXPECTED agree=12 DIFFER=12
+
+TOTAL rows=324 agree=172 DIFFER=80 unbuildable=72
+THRESHOLD BAND rows=24 agree=12 DIFFER=12 (EXPECTED 12 / 12)
+
+THE THRESHOLD, computed rather than typed. `U32.mul` overflows when
+`dim*inp >= 2**32`, so the largest exact dim is 2**32//inp - 1:
+  inp=1: exact while dim <= 4294967295, first divergence at dim = 4294967296
+  inp=2: exact while dim <= 2147483647, first divergence at dim = 2147483648
+  inp=4: exact while dim <= 1073741823, first divergence at dim = 1073741824
+  inp=8: exact while dim <= 536870911, first divergence at dim = 536870912

@@ -1,1 +1,0 @@
-MOVED	l2idt0,l2idt1,lg2,lg2n,lg2sig,lg3,lg3n,lg3sig,lg6,lg6n,lg6sig,lg7n,lgo,lgosig,lgv,lgvn,lgvsig,lgw,lgwn,lgwsig,lgx,lgxn,lgxsig
