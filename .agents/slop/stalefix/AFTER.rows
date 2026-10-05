@@ -1,0 +1,43 @@
+# the claim: a FAILED run must leave no previous run's bytes behind, and must not
+# leave a staged temp either.  A gate is SUPPOSED to fail; the question is the disk.
+
+--- NEW gates/gatekit.py ---
+S0 green    rc=0   1.08s  LEFT=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+          no defect. Proves the FIX IS NOT A VERDICT CHANGE: both sides must still pass here, and must still publish the same seven artifacts.
+S1 typeerr  rc=1   0.09s
+          said: repro: bend said: SOME PROOFS FAIL | Error: | - expected : a defined name (rc=1)
+          LEFT=NOTHING
+          STALE the last GREEN run's bytes=NOTHING
+          FRESH this RED run's bytes=NOTHING
+          TEMP left by a staging fix=NOTHING
+          fails in `_warm`, before any lane. Nothing of this run reaches disk, so EVERY leftover is the previous green run's.
+S2 shortrow rc=1   0.78s
+          said: repro: py.txt has 2 rows, expected 3
+          LEFT=NOTHING
+          STALE the last GREEN run's bytes=NOTHING
+          FRESH this RED run's bytes=NOTHING
+          TEMP left by a staging fix=NOTHING
+          fails on the row count, after every lane wrote. The `.sub` files are never reached, so they keep the previous run's bytes while `py.txt` already holds this run's.
+--- OLD gatekit-old.py ---
+S0 green    rc=0   0.75s  LEFT=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+          no defect. Proves the FIX IS NOT A VERDICT CHANGE: both sides must still pass here, and must still publish the same seven artifacts.
+S1 typeerr  rc=1   1.81s
+          said: repro: bend produced no --check-only output in 25 tries (the stack flake)
+          LEFT=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+          STALE the last GREEN run's bytes=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+          FRESH this RED run's bytes=NOTHING
+          TEMP left by a staging fix=NOTHING
+          fails in `_warm`, before any lane. Nothing of this run reaches disk, so EVERY leftover is the previous green run's.
+S2 shortrow rc=1   0.72s
+          said: repro: py.txt has 2 rows, expected 3
+          LEFT=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+          STALE the last GREEN run's bytes=bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub
+          FRESH this RED run's bytes=py.txt
+          TEMP left by a staging fix=NOTHING
+          fails on the row count, after every lane wrote. The `.sub` files are never reached, so they keep the previous run's bytes while `py.txt` already holds this run's.
+
+  side                     S0 rc=0  S0 7 files | red rc=1  red EMPTY  red no-TEMP  VERDICT
+  NEW gates/gatekit.py            yes        yes        yes        yes        yes  holds the claim
+  OLD gatekit-old.py              yes        yes        yes         NO        yes  REPRODUCES THE BUG
+
+# VERDICT: DISCRIMINATES -- the fix holds and the old code does not

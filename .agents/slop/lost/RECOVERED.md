@@ -31,7 +31,18 @@ that always fails.*
 
 `gates/gatekit.py:130`, **the flake guard asked only about stdout**, so a deterministic type error matched
 the flake exactly. Measured: `rc=1, stdout 0 bytes, stderr 246 bytes`. **STDERR IS THE DISCRIMINATOR.**
-`_lane` had the identical bug and the same 25x retry waste. **THIS FIX SURVIVED** (4 `stderr` mentions).
+`_lane` had the identical bug and the same 25x retry waste.
+
+> *** **CORRECTION, 2026-10-05, WRITTEN BY THE UNIT THAT REBUILT IT: **THIS FIX WAS **NOT** IN THE TREE.**
+> I RECORDED IT AS SURVIVED BECAUSE I COUNTED 4 `stderr` MENTIONS IN `gates/gatekit.py` AND INFERRED THE
+> FIX FROM A KEYWORD. `_warm` GUARDED ON `not stdout and rc != 0` — **THE FLAKE'S SHAPE *AND* A TYPE ERROR'S
+> SHAPE.** I COMMITTED A DOCUMENT THAT SAID A GUARD SURVIVED BECAUSE ITS SUBJECT APPEARED IN A `grep`. ***
+
+**AND THE TRAP THAT HAD TO BE KILLED TO FIX IT PROPERLY:** `bend` PRINTS
+`... is available: run bend update` **ON STDERR ON EVERY INVOCATION, GREEN ONES INCLUDED — 42 BYTES,
+MEASURED.** SO **"STDERR NON-EMPTY" IS NOT "BEND SAID SOMETHING."** `_said()` STRIPS IT. **AN INSTRUMENT
+THAT PROVES A DISCRIMINATOR WORKS MUST FIRST MEASURE THE BACKGROUND NOISE ON A HEALTHY INPUT, OR IT WILL
+DISCRIMINATE NOTHING AND STILL LOOK LIKE IT DISCRIMINATES.**
 
 **THE STALE-ARTIFACT FIX DID NOT SURVIVE.** Three findings:
 

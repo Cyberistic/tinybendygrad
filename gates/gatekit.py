@@ -44,6 +44,39 @@ PY = ROOT / ".venv" / "bin" / "python"
 
 WARM = "ALL PROOFS CHECK"
 
+# `checks/differ.py`'s OWN staging convention, reused rather than reinvented: a staged file is
+# dot-named and lives in the artifact directory, so promoting it is a SAME-DIRECTORY atomic
+# rename (`differ.py:158,163`) and nothing can observe a half-written file under a name anybody
+# looks up. `differ.py:242` clears stale temps at the start of a run for the same reason.
+TMP = ".tmp."
+
+# `bend` prints `bend <ver> is available: run bend update` on STDERR on EVERY invocation --
+# MEASURED on a fully green `--check-only`, 42 bytes of it -- so "stderr is non-empty" is not
+# "bend said something", and a flake guard cannot ask about stderr without asking about THIS.
+NOTICE = re.compile(r"^bend \S+ is available: run bend update$")
+
+
+def _staged(name):
+    """The name a run WRITES. `checks/differ.py:158`'s convention, unchanged."""
+    return f"{TMP}{name}"
+
+
+def _said(stream, lines=3):
+    """What `bend` SAID, as against what it ANNOUNCED: the stderr lines that are neither blank
+    nor the update notice, joined and truncated.
+
+    STDERR IS THE DISCRIMINATOR between the two failures that look identical from stdout and the
+    exit status. MEASURED on a driver with a type error in it: `bend --check-only` answers
+    `rc=1`, **0 bytes on stdout**, and `SOME PROOFS FAIL / Error: / - expected : a defined name`
+    on stderr. `bend`'s machine stack overflow answers no stdout and no error at all. A guard
+    that asks only about stdout cannot tell them apart, so it retried a deterministic type error
+    25 times and then reported "the stack flake" -- a lie about a file that has a type error in
+    it, and 25 wasted runs of a 1.4 GB process.
+    """
+    said = [l.strip() for l in (stream or "").splitlines()
+            if l.strip() and not NOTICE.match(l.strip())]
+    return " | ".join(said[:lines])
+
 
 def oracle_drift(pins):
     """Every frozen shell oracle's ACTUAL sha against its pin. An empty list means intact.
@@ -161,6 +194,10 @@ class Gate:
         # green a minute earlier and said only that bend had no first line. Both steps now
         # tolerate the same measured flake, and NEITHER retries a real failure: 25 tries, and
         # a file that is genuinely cold or genuinely empty still fails.
+        #
+        # WHAT COUNTS AS THE FLAKE IS `_said(stderr)` AND NOT THE EXIT STATUS -- see `_said`.
+        # The guard was `not stdout and rc != 0`, which is the flake's shape AND a type error's
+        # shape, so a deterministic failure was retried 25 times and then reported AS the flake.
         for _ in range(25):
             out = subprocess.run([str(BEND), str(self.bend), "--check-only"],
                                  capture_output=True, text=True)
@@ -171,7 +208,8 @@ class Gate:
                     return False
                 self.warm_out = out.stdout
                 return True
-            if not (out.stdout or "").strip() and out.returncode != 0:
+            said = _said(out.stderr)
+            if not said and not (out.stdout or "").strip():
                 continue  # the stack-overflow flake: no output at all
             # REPORTED, THEN ANSWERED IN THE GATE'S OWN SHAPE. `warm="report"` is a ported
             # shell's `|| true`: the run continues and the lanes are still diffed, because
@@ -179,8 +217,9 @@ class Gate:
             # what this gate gates on. Failing here instead would be a VERDICT CHANGE, and it
             # is a change the two shells did not make in the first place.
             self.warm_out = out.stdout
-            self._say(f"--check-only's first line is {first!r}, not {WARM!r} "
-                      f"(rc={out.returncode})"
+            self._say((f"bend said: {said}" if said
+                       else f"--check-only's first line is {first!r}, not {WARM!r}")
+                      + f" (rc={out.returncode})"
                       + (" -- REPORTED, not gated on: the shell ran this `|| true`"
                          if self.warm_mode == "report" else ""))
             return self.warm_mode == "report"
@@ -192,142 +231,203 @@ class Gate:
         if r.returncode != 0:
             self._say(f"the oracle failed rc={r.returncode}: {r.stderr.strip()[:200]}")
             return False
-        (self.dir / "py.txt").write_text(r.stdout)
+        (self.dir / _staged("py.txt")).write_text(r.stdout)
         return True
 
-    def _lane(self, argv, out):
+    def _lane(self, argv, name):
         """Retried while it emits the wrong ROW COUNT, because `bend`'s machine stack
         overflows on roughly 1 run in 20 and prints ZERO rows -- indistinguishable from
-        'did not start'."""
+        'did not start'.
+
+        `name` is the PUBLISHED name and the file is staged under it, so a failure names the
+        path a reader looks up rather than a temp -- which is also the only way the staged form
+        could not leak into a verdict.
+        """
+        out = self.dir / _staged(name)
         for _ in range(25):
             r = subprocess.run(argv, capture_output=True, text=True)
             if r.returncode == 0 and len(_lines_text(r.stdout)) == self.rows:
                 out.write_text(r.stdout)
                 return True
-        self._say(f"lane {out.name} did not produce {self.rows} rows in 25 tries: "
-                  f"{(r.stderr or '').strip()[:200]}")
+            if _said(r.stderr):
+                break  # bend NAMED it, so it is not the flake and 24 more tries cannot help
+        said = _said(r.stderr)
+        self._say(f"lane {name} did not produce {self.rows} rows"
+                  + (f" -- {said}" if said else " in 25 tries (the flake)"))
         return False
 
     def run(self):
-        if not self._warm():
-            return 1
-        if not self._oracle():
-            return 1
-        bd, bn, binp = self.dir / "bd.txt", self.dir / "bn.txt", self.dir / "gate.bin"
-        if not self._lane([str(BEND), str(self.bend)], bd):
-            return 1
-        c = subprocess.run([str(BEND), str(self.bend), "-o", str(binp)],
-                           capture_output=True, text=True)
-        if c.returncode != 0:
-            self._say(f"the native compile failed: {(c.stderr or '').strip()[:200]}")
-            return 1
-        if not self._lane([str(binp)], bn):
-            return 1
+        """STAGE EVERY WRITE, AND SETTLE ON EVERY EXIT -- INCLUDING A RAISED ONE.
 
-        lanes = {"py": self.dir / "py.txt", "bd": bd, "bn": bn}
-        # DERIVED, NOT DECLARED, AND THIS IS A FIX. The check used to demand `self.rows` of
-        # EVERY lane, which makes the documented `port_only` shape UNREACHABLE: a port-only row
-        # is by definition absent from the oracle, so the oracle lane is short by exactly
-        # `len(port_only)`. `gates/README.md` claim 3 has therefore been describing a shape
-        # that could not be constructed. MEASURED on the two gates ported here: `mixin` prints
-        # 36 port rows against 32 oracle rows, 4 of them port-only, and the old check rejected
-        # that as "py.txt has 32 rows, expected 36". Derived from `port_only` rather than
-        # passed in, because a second number that can disagree with the first is a number
-        # nobody can check.
-        for tag, f in lanes.items():
-            want = self.rows - len(self.port_only) if tag == "py" else self.rows
-            n = len(_lines(f))
-            if n != want:
-                self._say(f"{f.name} has {n} rows, expected {want}"
-                          + (f" ({self.rows} less {len(self.port_only)} port-only)"
-                             if tag == "py" and self.port_only else ""))
+        THE FAILURE THIS EXISTS TO STOP. A run that failed used to leave the PREVIOUS run's
+        `bd.txt` exactly where it was, so a diff of `gates/artifacts/<gate>/bd.txt` after a RED
+        run diffed the last **GREEN** run. Same shape as `bend -o` leaving the previous exe,
+        which is how a stage runs a stale binary and prints a plausible number. MEASURED on the
+        live tree before this fix: after a red run, 7 of 7 artifacts were byte-identical to the
+        previous green run's, and a second red shape left 6 of 7 stale with `py.txt` fresh.
+
+        TWO HALVES, AND NEITHER IS ENOUGH ALONE. `_clear()` empties the directory FIRST, so a run
+        that fails with nothing staged ends with an EMPTY directory; promotion by itself would
+        leave the previous run's promoted files untouched, which IS the bug. `_settle()` then
+        runs in ONE `finally`, so all sixteen `return 1`s below reach it AND so does an exception
+        -- seventeen exits in all, counting the one at the bottom. The reasoning this replaces --
+        "a failure-path cleanup is sixteen chances to forget one" -- is true per `return` and
+        false for one `finally`: this method has seventeen exits and only that block has to know
+        which of them were successes.
+        """
+        ok = False
+        try:
+            self._clear()
+            if not self._warm():
+                return 1
+            if not self._oracle():
+                return 1
+            bd, bn, binp = (self.dir / _staged(n) for n in ("bd.txt", "bn.txt", "gate.bin"))
+            if not self._lane([str(BEND), str(self.bend)], "bd.txt"):
+                return 1
+            c = subprocess.run([str(BEND), str(self.bend), "-o", str(binp)],
+                               capture_output=True, text=True)
+            if c.returncode != 0:
+                self._say(f"the native compile failed: {(c.stderr or '').strip()[:200]}")
+                return 1
+            if not self._lane([str(binp)], "bn.txt"):
                 return 1
 
-        # BOTH SIDES ARE FILTERED. Filtering only the port would compare the row that is
-        # KNOWN to differ, which is how a divergence list stops working.
-        skip = list(self.diverges) + self.port_only + self.canon
-        pat = re.compile(r"^(" + "|".join(re.escape(k) for k in skip) + r")=") if skip else None
-        subs = {}
-        for tag, f in lanes.items():
-            kept = [l for l in _lines(f) if not (pat and pat.match(l))]
-            if len(kept) != self.compared:
-                self._say(f"{tag} has {len(kept)} COMPARED rows, expected {self.compared}")
-                return 1
-            # `if skip:`, NOT `if self.diverges:`. The old guard ran the stale-exclusion check
-            # only for a gate that happened to have a divergence, so a gate whose exclusions are
-            # ALL port-only -- which is exactly the shape `mixin` and `bmn` have -- checked
-            # nothing. The check is what makes a fifth BEND-ONLY row a gate failure instead of a
-            # silently absorbed extra row.
-            if skip:
-                hits = [l for l in _lines(f) if pat.match(l)]
-                want = len(skip)
-                if tag == "py":
-                    want = len(self.diverges) + len(self.canon)
-                if len(hits) != want:
-                    self._say(f"{tag} carries {len(hits)} excluded rows, expected {want} "
-                              f"-- the exclusion list is stale")
+            lanes = {t: self.dir / _staged(f"{t}.txt") for t in ("py", "bd", "bn")}
+            # DERIVED, NOT DECLARED, AND THIS IS A FIX. The check used to demand `self.rows` of
+            # EVERY lane, which makes the documented `port_only` shape UNREACHABLE: a port-only row
+            # is by definition absent from the oracle, so the oracle lane is short by exactly
+            # `len(port_only)`. `gates/README.md` claim 3 has therefore been describing a shape
+            # that could not be constructed. MEASURED on the two gates ported here: `mixin` prints
+            # 36 port rows against 32 oracle rows, 4 of them port-only, and the old check rejected
+            # that as "py.txt has 32 rows, expected 36". Derived from `port_only` rather than
+            # passed in, because a second number that can disagree with the first is a number
+            # nobody can check.
+            for tag, f in lanes.items():
+                want = self.rows - len(self.port_only) if tag == "py" else self.rows
+                n = len(_lines(f))
+                if n != want:
+                    self._say(f"{tag}.txt has {n} rows, expected {want}"
+                              + (f" ({self.rows} less {len(self.port_only)} port-only)"
+                                 if tag == "py" and self.port_only else ""))
                     return 1
-            s = self.dir / f"{tag}.sub"
-            s.write_text("\n".join(kept) + "\n")
-            subs[tag] = s
 
-        base = _lines(subs["py"])
-        for tag in ("bd", "bn"):
-            other = _lines(subs[tag])
-            if other != base:
-                bad = [(x, y) for x, y in zip(base, other) if x != y][:2]
-                extra = (f" (len {len(base)} vs {len(other)})"
-                          if len(base) != len(other) else "")
-                self._say(f"DISAGREE ({tag}){extra}: {bad}")
-                return 1
-
-        # PINNED ROWS, for the claims a diff cannot express. `want` here is the lane the
-        # row must be present in, not its text -- a row's CONTENT is pinned by `diverges`,
-        # and pinning text twice is how the two drift apart.
-        for lane, row in self.pins:
-            if not any(l.startswith(row + "=") for l in _lines(lanes[lane])):
-                self._say(f"{lane} has no {row!r} row -- a pinned claim changed")
-                return 1
-        for row, (want_py, want_port) in self.diverges.items():
-            for lane, want in (("py", want_py), ("bd", want_port), ("bn", want_port)):
-                if want not in _lines(lanes[lane]):
-                    self._say(f"{lane}'s {row} is not {want!r} -- if the divergence is fixed, "
-                              f"drop it from DIVERGES; if it moved, update the pin")
+            # BOTH SIDES ARE FILTERED. Filtering only the port would compare the row that is
+            # KNOWN to differ, which is how a divergence list stops working.
+            skip = list(self.diverges) + self.port_only + self.canon
+            pat = re.compile(r"^(" + "|".join(re.escape(k) for k in skip) + r")=") if skip else None
+            subs = {}
+            for tag, f in lanes.items():
+                kept = [l for l in _lines(f) if not (pat and pat.match(l))]
+                if len(kept) != self.compared:
+                    self._say(f"{tag} has {len(kept)} COMPARED rows, expected {self.compared}")
                     return 1
-        # A PORT-ONLY ROW: present in both port lanes, ABSENT from the oracle. The absence
-        # is asserted too, because a gate that only checked the row would pass the moment the
-        # oracle grew it -- and then the exclusion would be hiding a real comparison.
-        for row in self.port_only:
-            for lane in ("bd", "bn"):
+                # `if skip:`, NOT `if self.diverges:`. The old guard ran the stale-exclusion check
+                # only for a gate that happened to have a divergence, so a gate whose exclusions are
+                # ALL port-only -- which is exactly the shape `mixin` and `bmn` have -- checked
+                # nothing. The check is what makes a fifth BEND-ONLY row a gate failure instead of a
+                # silently absorbed extra row.
+                if skip:
+                    hits = [l for l in _lines(f) if pat.match(l)]
+                    want = len(skip)
+                    if tag == "py":
+                        want = len(self.diverges) + len(self.canon)
+                    if len(hits) != want:
+                        self._say(f"{tag} carries {len(hits)} excluded rows, expected {want} "
+                                  f"-- the exclusion list is stale")
+                        return 1
+                s = self.dir / _staged(f"{tag}.sub")
+                s.write_text("\n".join(kept) + "\n")
+                subs[tag] = s
+
+            base = _lines(subs["py"])
+            for tag in ("bd", "bn"):
+                other = _lines(subs[tag])
+                if other != base:
+                    bad = [(x, y) for x, y in zip(base, other) if x != y][:2]
+                    extra = (f" (len {len(base)} vs {len(other)})"
+                              if len(base) != len(other) else "")
+                    self._say(f"DISAGREE ({tag}){extra}: {bad}")
+                    return 1
+
+            # PINNED ROWS, for the claims a diff cannot express. `want` here is the lane the
+            # row must be present in, not its text -- a row's CONTENT is pinned by `diverges`,
+            # and pinning text twice is how the two drift apart.
+            for lane, row in self.pins:
                 if not any(l.startswith(row + "=") for l in _lines(lanes[lane])):
-                    self._say(f"{lane} lost its port-only row {row!r}")
+                    self._say(f"{lane} has no {row!r} row -- a pinned claim changed")
                     return 1
-            if any(l.startswith(row + "=") for l in _lines(lanes["py"])):
-                self._say(f"the ORACLE now emits {row!r} -- drop it from port_only and let "
-                          f"the two sides COMPARE it")
-                return 1
+            for row, (want_py, want_port) in self.diverges.items():
+                for lane, want in (("py", want_py), ("bd", want_port), ("bn", want_port)):
+                    if want not in _lines(lanes[lane]):
+                        self._say(f"{lane}'s {row} is not {want!r} -- if the divergence is fixed, "
+                                  f"drop it from DIVERGES; if it moved, update the pin")
+                        return 1
+            # A PORT-ONLY ROW: present in both port lanes, ABSENT from the oracle. The absence
+            # is asserted too, because a gate that only checked the row would pass the moment the
+            # oracle grew it -- and then the exclusion would be hiding a real comparison.
+            for row in self.port_only:
+                for lane in ("bd", "bn"):
+                    if not any(l.startswith(row + "=") for l in _lines(lanes[lane])):
+                        self._say(f"{lane} lost its port-only row {row!r}")
+                        return 1
+                if any(l.startswith(row + "=") for l in _lines(lanes["py"])):
+                    self._say(f"the ORACLE now emits {row!r} -- drop it from port_only and let "
+                              f"the two sides COMPARE it")
+                    return 1
 
-        # AN ORDER-ONLY DIVERGENCE: the tokens are equal and the ORDER is not. Compared as a
-        # multiset, then BOTH orders are asserted from the file rather than from a literal
-        # here, so this module carries no knowledge of any gate's rows.
-        for row in self.canon:
-            got = {}
-            for lane, f in lanes.items():
-                line = next((l for l in _lines(f) if l.startswith(row + "=")), None)
-                if line is None:
-                    self._say(f"{lane} has no {row!r} row")
+            # AN ORDER-ONLY DIVERGENCE: the tokens are equal and the ORDER is not. Compared as a
+            # multiset, then BOTH orders are asserted from the file rather than from a literal
+            # here, so this module carries no knowledge of any gate's rows.
+            for row in self.canon:
+                got = {}
+                for lane, f in lanes.items():
+                    line = next((l for l in _lines(f) if l.startswith(row + "=")), None)
+                    if line is None:
+                        self._say(f"{lane} has no {row!r} row")
+                        return 1
+                    got[lane] = line
+                toks = {k: sorted(v.split(" ")) for k, v in got.items()}
+                if not (toks["py"] == toks["bd"] == toks["bn"]):
+                    self._say(f"{row}'s node MULTISET differs: "
+                              f"py={toks['py']} port={toks['bd']}")
                     return 1
-                got[lane] = line
-            toks = {k: sorted(v.split(" ")) for k, v in got.items()}
-            if not (toks["py"] == toks["bd"] == toks["bn"]):
-                self._say(f"{row}'s node MULTISET differs: "
-                          f"py={toks['py']} port={toks['bd']}")
-                return 1
-            if got["py"] == got["bd"]:
-                self._say(f"{row}: the port's order now MATCHES CPython's -- drop it from "
-                          f"`canon` and let the line diff have it")
-                return 1
-        return 0
+                if got["py"] == got["bd"]:
+                    self._say(f"{row}: the port's order now MATCHES CPython's -- drop it from "
+                              f"`canon` and let the line diff have it")
+                    return 1
+            ok = True
+        finally:
+            self._settle(ok)
+        return 0 if ok else 1
+
+    def _clear(self):
+        """The directory, EMPTIED, before anything is written.
+
+        THE HALF OF THE FIX THAT PROMOTION CANNOT SUPPLY. Staging alone would leave a run that
+        failed before its first write -- the warm check, or the oracle -- with the previous run's
+        promoted files exactly where they were, which is the bug in its purest form. Emptied
+        first, a red run ends with an EMPTY directory, and an empty directory cannot be diffed by
+        accident. It also removes a `.tmp.` left by a run that was killed, which is the one
+        residue `differ.py:242` clears for the same reason.
+        """
+        for p in self.dir.iterdir():
+            p.unlink()
+
+    def _settle(self, ok):
+        """PROMOTE OR DISCARD, in ONE place, for EVERY exit -- see `run`.
+
+        `ok` promotes each staged file onto its published name with `os.replace`, a
+        same-directory atomic rename and therefore the same shape `checks/differ.py:163` already
+        uses. Not-`ok` unlinks it, so a red run leaves neither a half-written artifact nor a temp:
+        the first fix at this bug did the first without the second, and its own second scenario
+        is what caught it.
+        """
+        for t in self.dir.glob(f"{TMP}*"):
+            if ok:
+                os.replace(t, self.dir / t.name[len(TMP):])
+            else:
+                t.unlink()
 
 
 def _lines_text(s):
