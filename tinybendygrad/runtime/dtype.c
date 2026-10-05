@@ -197,6 +197,12 @@ static Term bf16_run(Env e, Term* f, IoWork* w) {
   // the half above. NOTE the explicit u32: f32_rewrap takes an f32, so handing
   // it a u32 would reinterpret the bits as a float and back.
   u32 x = (u32)f[0];
+  // dtype.py:230 `if not math.isfinite(x): return x`. This is a PASS-THROUGH and
+  // not saturation: upstream hands a non-finite back untouched, so the NaN's
+  // payload AND its sign survive, and rounding is precisely what destroys them.
+  // `math.isfinite` on a pattern is "the exponent field is not all ones"
+  // (dtype.bend:601), which is the mask below.
+  if ((x & 0x7F800000u) == 0x7F800000u) return (Term)(intptr_t)x;
   return (Term)(intptr_t)((x + 0x7FFFu + ((x >> 16) & 1u)) & 0xFFFF0000u);
 }
 
