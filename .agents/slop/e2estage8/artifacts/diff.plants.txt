@@ -1,0 +1,106 @@
+## plant-pass   exit: oracle=1  port=1
+  stage 3 gpu (node)                                 oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 4 gate (matmul vs CPython, via WebGPU)       oracle=PASS                       port=PASS                      
+  stage 5 ops_bend (kernel executes in Bend)         oracle=PASS                       port=PASS                      
+  stage 6 port (matmul THROUGH the port, no Node)    oracle=PASS                       port=PASS                      
+  stage 7 f64 (double through the port, no Node)     oracle=PASS                       port=PASS                      
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  block 2 IDENTICAL  == 3/4 gpu (real WebGPU adapter, headless Chrome)
+  block 3 IDENTICAL  == 4/4 gate
+  block 4 IDENTICAL  == 5/5 port's own device (the port's ops_bend runtime executes)
+  block 5 IDENTICAL  PASS
+  block 6 IDENTICAL  == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+  block 7 IDENTICAL  == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  block 8 IDENTICAL  --- verdicts: 1 failed, 0 skipped ---
+  block 9 IDENTICAL  FAIL -- 1 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+  stdout: IDENTICAL (1264 vs 1264 bytes)
+  stderr: IDENTICAL (833 vs 833 bytes)
+## plant-passskip   exit: oracle=1  port=1
+  stage 3 gpu (node)                                 oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 4 gate (matmul vs CPython, via WebGPU)       oracle=PASS                       port=PASS                      
+  stage 5 ops_bend (kernel executes in Bend)         oracle=PASS                       port=PASS                      
+  stage 6 port (matmul THROUGH the port, no Node)    oracle=PASS                       port=PASS                      
+  stage 7 f64 (double through the port, no Node)     oracle=SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.txt port=SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.txt
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  block 2 IDENTICAL  == 3/4 gpu (real WebGPU adapter, headless Chrome)
+  block 3 IDENTICAL  == 4/4 gate
+  block 4 IDENTICAL  == 5/5 port's own device (the port's ops_bend runtime executes)
+  block 5 IDENTICAL  PASS
+  block 6 IDENTICAL  == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+  block 7 IDENTICAL  == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  block 8 IDENTICAL  --- verdicts: 1 failed, 1 skipped ---
+  block 9 IDENTICAL  FAIL -- 1 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+  stdout: IDENTICAL (1355 vs 1355 bytes)
+  stderr: IDENTICAL (837 vs 837 bytes)
+## plant-refuse   exit: oracle=1  port=1
+  stage 3 gpu (node)                                 oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 4 gate (matmul vs CPython, via WebGPU)       oracle=PASS                       port=PASS                      
+  stage 5 ops_bend (kernel executes in Bend)         oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 6 port (matmul THROUGH the port, no Node)    oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 7 f64 (double through the port, no Node)     oracle=SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.txt port=SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.txt
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  block 2 IDENTICAL  == 3/4 gpu (real WebGPU adapter, headless Chrome)
+  block 3 IDENTICAL  == 4/4 gate
+  block 4 IDENTICAL  == 5/5 port's own device (the port's ops_bend runtime executes)
+  block 5 IDENTICAL  PASS
+  block 6 IDENTICAL  == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+  block 7 IDENTICAL  == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  block 8 IDENTICAL  --- verdicts: 3 failed, 1 skipped ---
+  block 9 IDENTICAL  FAIL -- 3 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+  stdout: IDENTICAL (1367 vs 1367 bytes)
+  stderr: IDENTICAL (835 vs 835 bytes)
+## plant-no-node   exit: oracle=0  port=0
+  stage 3 gpu (node)                                 oracle=SKIP -- no `node` on PATH; stage 3 measured nothing port=SKIP -- no `node` on PATH; stage 3 measured nothing
+  stage 4 gate (matmul vs CPython, via WebGPU)       oracle=PASS                       port=PASS                      
+  stage 5 ops_bend (kernel executes in Bend)         oracle=PASS                       port=PASS                      
+  stage 6 port (matmul THROUGH the port, no Node)    oracle=PASS                       port=PASS                      
+  stage 7 f64 (double through the port, no Node)     oracle=PASS                       port=PASS                      
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  block 2 IDENTICAL  == 3/4 gpu (real WebGPU adapter, headless Chrome)
+  block 3 IDENTICAL  == 4/4 gate
+  block 4 IDENTICAL  == 5/5 port's own device (the port's ops_bend runtime executes)
+  block 5 IDENTICAL  PASS
+  block 6 IDENTICAL  == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+  block 7 IDENTICAL  == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  block 8 IDENTICAL  --- verdicts: 0 failed, 1 skipped ---
+  block 9 IDENTICAL  PASS WITH 1 SKIP(S) -- nothing failed, but 1 stage(s) measured NOTHING.
+  stdout: IDENTICAL (1217 vs 1217 bytes)
+  stderr: IDENTICAL (0 vs 0 bytes)
+## plant-no-zsh   exit: oracle=1  port=1
+  stage 3 gpu (node)                                 oracle=FAIL (rc=1)                port=FAIL (rc=1)               
+  stage 4 gate (matmul vs CPython, via WebGPU)       oracle=PASS                       port=PASS                      
+  stage 5 ops_bend (kernel executes in Bend)         oracle=PASS                       port=PASS                      
+  stage 6 port (matmul THROUGH the port, no Node)    oracle=FAIL (rc=127)              port=FAIL (rc=127)             
+  stage 7 f64 (double through the port, no Node)     oracle=SKIP -- `zsh` is not available; stage 7 measured NOTHING port=SKIP -- `zsh` is not available; stage 7 measured NOTHING
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  block 2 IDENTICAL  == 3/4 gpu (real WebGPU adapter, headless Chrome)
+  block 3 IDENTICAL  == 4/4 gate
+  block 4 IDENTICAL  == 5/5 port's own device (the port's ops_bend runtime executes)
+  block 5 IDENTICAL  PASS
+  block 6 IDENTICAL  == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+  block 7 IDENTICAL  == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  block 8 IDENTICAL  --- verdicts: 2 failed, 1 skipped ---
+  block 9 IDENTICAL  FAIL -- 2 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+  stdout: IDENTICAL (1253 vs 1156 bytes)
+  stderr: IDENTICAL (835 vs 835 bytes)
+## plant-thin   exit: oracle=2  port=2
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  stdout: IDENTICAL (100 vs 100 bytes)
+  stderr: IDENTICAL (416 vs 416 bytes)
+## plant-deadbend   exit: oracle=2  port=2
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  block 1 IDENTICAL  == 2/4 port (pure bend, no GPU)
+  stdout: IDENTICAL (100 vs 100 bytes)
+  stderr: IDENTICAL (416 vs 416 bytes)
+## plant-stage1red   exit: oracle=3  port=3
+  block 0 IDENTICAL  == 1/4 oracle (CPython tinygrad, DEV=CPU)
+  stdout: IDENTICAL (68 vs 68 bytes)
+  stderr: IDENTICAL (0 vs 0 bytes)
+
+0 of 8 set(s) disagree.  artifacts: .agents/slop/e2epy/artifacts/

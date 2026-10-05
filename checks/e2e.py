@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""THE EIGHT-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
+"""THE SEVEN-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
 
 `.venv/bin/python checks/e2e.py --help` says what it gates and each verdict's DENOMINATOR.
 `.agents/slop/e2e.sh` is a short `exec` shim, and the shell's body is frozen at
@@ -51,16 +51,20 @@ WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
                  **EXIT 3 FROM `run-f64.sh` IS A VERDICT, NOT A FAILURE TO REPRODUCE:** it refuses
                  without running a lane when its substrate is cold, and refusing is a third
                  outcome alongside PASS and FAIL. So is rc 127: no `zsh`, nothing measured.
-  8  js lane     `jstage.py` runs `runtime/dtype.js` through `bend -o` under node.
-                 DENOMINATOR, and this is the whole of the claim: **20 rows asked, of which 12 REACH
-                 `dtype.js` and 8 are pure `dtype.bend`, and 19 of the 20 are ones CPython can
-                 answer.** `ceildiv(x, 0)` answers 0 in both lanes where CPython raises, so that row
-                 counts `diverge` and is in NEITHER pass nor fail. The gate derives the 12/8 split from
-                 the substrate's own declarations on every run, so a tree that moves back is counted
-                 correctly without an edit here. RED AND NOT MINE: the unit that owns it measured
-                 the true denominator as **0** and the stage's own answer is that it should be
-                 RETIRED rather than re-pointed.
-                 rc 3 is REFUSAL (its substrate would not compile) and is SKIP, never PASS.
+  8  js lane     **RETIRED, AND NOT RE-POINTED: ITS DENOMINATOR IS 0.** It was `jstage.py`
+                 running `runtime/dtype.js` through `bend -o` under node over 20 rows.
+                 `dtype.bend` declares 0 `IO(` laws, so `rows that REACH dtype.js` is **0**,
+                 the other 20 are pure `dtype.bend` arithmetic, and `runtime/dtype.js` is not
+                 one byte of the emitted bundle. ITS OWN REPORT SAID SO OUT LOUD: `FAIL  the
+                 plant moved 0 rows, so this stage CANNOT fail on the bug it exists for`.
+                 **A GATE WHOSE DENOMINATOR IS ZERO IS NOT A GATE -- it can never fail, so it can
+                 never pass either, and it makes the seven around it look like a suite.** What
+                 replaces it is a CITATION, not a stage: `.agents/slop/lastlaw/run.py` measures
+                 the same pure arithmetic at **1330/1330** (102 i64 + 1228 fp8) against the same
+                 CPython callables, so stage 8 was a 19-row echo of a 1330-row gate. Re-point it
+                 only if a `Dt.*` law becomes a seam again; evidence `.agents/slop/deadreg/
+                 REPORT.md` §2. `.agents/slop/e2estage8/verdicts.py` is the census that keeps it
+                 gone: it exits 1 on any emitted stage whose denominator counts 0.
 
 THE THREE OUTCOMES, NOT TWO. `PASS` / `FAIL` / `SKIP`, and `SKIP IS NOT PASS`: a stage that could
 not run has measured nothing, and reporting that as a pass is the same defect one level up. The
@@ -83,7 +87,7 @@ and the two statuses the shell reaches by ABORTING under `set -e` -- stage 1's o
 the frozen oracle moved, so there is nothing to be a port of.
 
 ARGUMENTS: THE SHELL READS NONE, AND NEITHER DOES THIS, EXCEPT `-h`/`--help`. `e2e.sh foo bar baz`
-runs all eight stages and ignores every word, so `checks/e2e.py foo bar baz` does the same rather
+runs all seven stages and ignores every word, so `checks/e2e.py foo bar baz` does the same rather
 than failing on an argument the shell would have ignored. `--help` IS THE ONE DELIBERATE ADDITION
 and it is not a verdict.
 """
@@ -98,17 +102,17 @@ from pathlib import Path
 
 ROOT = Path(os.environ["E2E_ROOT"] if os.environ.get("E2E_ROOT") else Path(__file__).resolve().parents[1])
 # THE TREE BEING JUDGED IS NOT ALWAYS THE TREE THAT SHIPS THIS FILE, and the pins must belong to the
-# second one. `E2E_ROOT` points the eight stages at a FIXTURE tree so every branch is reachable
+# second one. `E2E_ROOT` points the seven stages at a FIXTURE tree so every branch is reachable
 # without a compiler, a browser or a GPU; a pin resolved against `ROOT` would then look for the
 # oracle inside the fixture and report DRIFT on a tree that is perfectly intact -- which is the
 # first run of this driver's answer, and it refused to compare anything at all.
 REPO = Path(__file__).resolve().parents[1]
 # `$PY` IS ABSOLUTE, like the shell's `PY="$ROOT/.venv/bin/python"`. It does not change any status,
-# but it makes each stage's ARGV byte-identical to the shell's, and a stage that prints its own
-# arguments -- `jsstage.py` prints the substrate path it measured -- is then diffable on argv alone.
+# but it makes each stage's ARGV byte-identical to the shell's, which is how `.agents/slop/e2epy/
+# diff.py` compares a stage's whole command line without the two sides differing in spelling.
 PY, RUN = str(ROOT / ".venv/bin/python"), ROOT / "runs/e2e"
 # `env -u PYTHONPATH` IS NOT APPLIED HERE, and that is fidelity rather than an oversight: the shell
-# never applies it, so the eight stages inherit whatever `PYTHONPATH` the caller had. Removing it
+# never applies it, so the seven stages inherit whatever `PYTHONPATH` the caller had. Removing it
 # would change what `e2e_mm.py` can import, i.e. change a verdict.
 ENV = dict(os.environ)
 # ONE BEND AT A TIME IS A STRUCTURAL PROPERTY OF THIS PROGRAM, NOT A FLAG: `stage()` blocks, so no
@@ -127,8 +131,15 @@ ENV = dict(os.environ)
 # but ONLY IF IT IS STILL THERE: a pin on a file another unit is entitled to delete becomes a gate
 # reporting drift about a deletion instead of about a change. THE ORACLE IS THE SURVIVOR, which is
 # the entire reason the migration rule freezes one.
-ORACLE_SHA = "e0eb23d5cb7340d5bc24000675d80aba44f5b83c9ea1ef3fe3136d610d7f7e04"
-BODY_SHA = "f222c02c9481d9827dcc94c932177a033ef454514be515ab5b80492c1d42b605"
+# THE PIN MOVED TWICE ON 2026-10-05 AND BOTH MOVES ARE THE PIN WORKING. Once when stage 8 was
+# retired, and once when a TODO comment was added to stage 5: the second time it is the proof that
+# this pin is read, because `checks/e2e.py` refused to start a single stage and exited 3 on a change
+# that moved no code at all. **A PIN THAT HAS NEVER FIRED IS A PIN IN A COMMENT**, and `checks/
+# differ.py` shipped one (`RECOVERED.md` §6). Current pair below; the stage-8-only pair was
+# ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
+# e0eb23d5cb7340d5 / f222c02c9481d982.
+ORACLE_SHA = "9ee46f84ca41453a4f3422f4636e12ab37e85d6517b0adc09d87c924b628b5d3"
+BODY_SHA = "e75c9e38e22ff7297300735381373ab60617cf9fe7ed1645a35405ff2fa3a217"
 ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}',
                'ROOT=$(cd "$(dirname "$0")/../.." && pwd)')
 
@@ -138,13 +149,6 @@ HELP = __doc__
 F64_RE = re.compile(
     rb"STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|"
     rb"THEOREM \[|F64-[0-9]")
-# STAGE 8'S OWN FILTER, `checks/e2e.sh:323`. The backticks are LITERAL: the shell wrote them inside
-# single quotes, so the pattern really is "`node` exit" and a reader's shell does not expand them.
-JS_RE = re.compile(
-    rb"^(?:THE CLAIM|  substrate measured|  rows asked|  rows that|  CIDs|  rows CPython|"
-    rb"  `node` exit|  ROWS PRESENT|  node agrees|  PLANT|  DISARM|===== VERDICT|REFUSED|"
-    rb"SUBSTRATE MEASURED)")
-RC_STAMP_RE = re.compile(rb"^rc=([0-9]*)$", re.M)
 
 FAILS = SKIPS = 0  # THE VERDICT ACCUMULATOR. See `checks/e2e.sh:75-83`, added after a measured defect.
 
@@ -300,7 +304,7 @@ def say_err(s: bytes) -> None:
     sys.stderr.buffer.flush()
 
 
-# --------------------------------------------------------------------------- the eight stages
+# --------------------------------------------------------------------------- the seven stages
 def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
         say(HELP)
@@ -342,6 +346,12 @@ def main() -> int:
     ops = RUN / "e2e-opsbend.txt"
     rc = stage(["./.agents/slop/opsbend-milestone.sh"], ops)
     tail_file(ops, 3)      # THE DENOMINATOR: the milestone's own last three lines.
+    # TODO(stage-5-denominator): `tail -3` IS THE DENOMINATOR AND IT IS ALSO WHAT A CRASH REPLACES,
+    # so a stage that ran and printed NOTHING COUNTABLE leaves the artifact unable to say what it
+    # would have measured. NOT FIXED HERE, DELIBERATELY, and for the same reason the shell's copy says
+    # so: changing what this stage prints is a change to the artifact on BOTH sides of the porting
+    # rule, and the oracle is frozen so such a change is a separate deliberate act rather than a side
+    # effect of retiring stage 8. `e2estage8/verdicts.py` reports it as `DENOMINATOR None` until then.
     verdict("stage 5 ops_bend (kernel executes in Bend)", rc)
 
     say("== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)")
@@ -363,44 +373,37 @@ def main() -> int:
         grep_file(f64, F64_RE)
         verdict("stage 7 f64 (double through the port, no Node)", rc)
 
-    say("== 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)")
-    # ONE TEMP, ONE WRITE, ONE ATOMIC MOVE (`checks/e2e.sh:309-313`). The version that appended
-    # `rc=$?` to the SAME file the child had just written left a window between the two, and a run
-    # killed in it produced a report MISSING its last line and with no `rc=` stamp -- which the
-    # stability step then reported as a reproducibility difference.
-    tmp, rep = RUN / ".tmp.e2e-jsstage.txt", RUN / "e2e-jsstage.txt"
-    tmp.unlink(missing_ok=True)
-    jrc = stage([PY, ".agents/slop/jstage/jsstage.py"], tmp)
-    with open(tmp, "a") as fh:
-        fh.write(f"rc={jrc}\n")
-    try:
-        os.replace(tmp, rep)
-        jsrc = 0
-    except OSError:
-        jsrc = 1
-    # `jsrc` IS `mv`'s AND THE GATE'S STATUS IS THE LAST `rc=` LINE. It is read with `sed` and not
-    # with a pipeline, for the same reason stage 4 does not pipe its gate into `tee`.
-    # `grep -c '^rc='` COUNTS LINES, NOT OCCURRENCES, so a report containing `rc=` mid-line does not
-    # satisfy it. `: "${jsstage_rc:=-1}"` IS AN EMPTY-STRING TEST: no stamp at all is `-1`, and a
-    # stamp that is not a number never reaches here because the `sed` did not match it.
-    body = raw(rep)
-    stamps = sum(1 for ln in body.splitlines() if ln.startswith(b"rc="))
-    found = RC_STAMP_RE.findall(body)
-    jrc = int(found[-1]) if found else -1
-    grep_file(rep, JS_RE)
-    if jsrc != 0 or stamps != 1:
-        # THE STAGE ITSELF DID NOT RUN. Nothing measured, so SKIP and not FAIL -- but not PASS
-        # either, and it says which of the two went wrong.
-        skip("stage 8 js lane (node on runtime/dtype.js)",
-             f"the gate did not complete: mv rc={jsrc}, rc= stamps={stamps} (want 1/1); "
-             f"see {RUN}/e2e-jsstage.txt")
-    elif jrc == 3:
-        skip("stage 8 js lane (node on runtime/dtype.js)",
-             f"jsstage.py REFUSED (rc 3): its substrate would not compile; "
-             f"see {RUN}/e2e-jsstage.txt")
-    else:
-        verdict("stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython)", jrc)
-
+# ---------------------------------------------------------------------------
+    # STAGE 8, THE JAVASCRIPT LANE. RETIRED, NOT RE-POINTED, BECAUSE ITS DENOMINATOR IS 0.
+    # Its prose went with its code on purpose: an essay about a stage that no longer runs is how a
+    # reader is told a stage exists when it does not, and the docstring is the one a reader trusts.
+    # THAT DISAGREEMENT IS THE DEFECT THIS BLOCK WAS FOUND BY, and it is why the census below is
+    # part of the fix rather than a report about it.
+    #
+    # WHAT IT WAS. `jstage.py` ran `runtime/dtype.js` through `bend -o` under node over 20 rows.
+    #
+    # WHY 0, IN THE STAGE'S OWN WORDS, because it printed the denominator every run and then said
+    # the rest out loud:
+    #     rows that REACH `dtype.js`      0
+    #     rows that are pure `dtype.bend` 20   (NOT the JS lane)
+    #     FAIL  the plant moved 0 rows, so this stage CANNOT fail on the bug it exists for
+    # `dtype.bend` declares 0 `IO(` laws, 0 of 137+ `.bend` files import `runtime/dtype.{c,js}`,
+    # and `runtime/dtype.js` is not one byte of the emitted bundle. A GATE WHOSE DENOMINATOR IS
+    # ZERO IS NOT A GATE: it can never fail, so it can never pass either, and it makes the seven
+    # around it look like a suite.
+    #
+    # WHAT REPLACES IT IS A CITATION, NOT A STAGE. `.agents/slop/lastlaw/run.py` measures the same
+    # pure `dtype.bend` arithmetic at 1330/1330 (102 i64 + 1228 fp8) against the same CPython
+    # callables, so stage 8's 19 rows were a 19-row echo of a 1330-row gate. Evidence:
+    # `.agents/slop/deadreg/REPORT.md` §2. Re-point this stage ONLY if a `Dt.*` law becomes a seam
+    # again -- the one change that would make the denominator non-zero, and the one
+    # `.agents/slop/LASTLAW.md` undid. A row count is not a reason to undo it.
+    #
+    # THE CENSUS THAT KEEPS IT GONE IS `.agents/slop/e2estage8/verdicts.py`: it counts every
+    # emitted stage's denominator out of a run's artifact and exits 1 on any stage emitted with 0,
+    # and on any disagreement between the stage names in this docstring, the headers this code
+    # emits, and the headers in the transcript. A retirement nobody can check is a comment.
+    # ---------------------------------------------------------------------------
     say(f"--- verdicts: {FAILS} failed, {SKIPS} skipped ---")
     if FAILS:
         say(f"FAIL -- {FAILS} stage(s) ran and failed. The per-stage verdicts above stand on "

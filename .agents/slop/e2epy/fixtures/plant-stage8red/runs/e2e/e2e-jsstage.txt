@@ -1,2 +1,0 @@
-PLANT stub: stage8 jsstage
-rc=1

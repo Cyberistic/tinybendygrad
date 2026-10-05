@@ -106,7 +106,9 @@ dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no 
                                          Neither edited: `jslane2/` is not this
                                          unit's. `.agents/slop/abi4/`,
                                          `.agents/slop/DTYPE-ABI.md`, ABI4-1..6.
- e2e-js-lane    [##########] 3/3    **`e2e.sh` STAGE 8: THE JS LANE, AND IT WAS THE ONLY LANE OF SEVEN THAT NO
+ e2e-js-lane    [##########] 3/3    **STAGE 8 IS NOW RETIRED** -- see `deadreg` and `E2ESTAGE8` below.
+                                    The record below is what it claimed WHEN IT RAN, kept as written.
+                                    **`e2e.sh` STAGE 8: THE JS LANE, AND IT WAS THE ONLY LANE OF SEVEN THAT NO
                                     STAGE RAN.** All 7 stages drove Bend or C; `node` appeared once, in stage 3, as a
                                     BROWSER DRIVER. The JS lane shipped THREE SILENT BUGS (two frame slots where the
                                     seam has one argument, returning two allocation addresses; `p.fst`/`p.snd` against
@@ -333,7 +335,7 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       cache key.
 - [x] **THE OTHER TWO `*-gate.py` FILES THAT ARE NOT GATES ARE OTHER UNITS' — reported with
       `file:line`, not edited.** `nv_gate.py:8,19` appends a gate body from `$TMPDIR` into the
-      live port; `tools/reorder-gate.py:109` rewrites a `.bend`. The six driverless emitters
+      live port; `checks/reorder-gate.py:109` rewrites a `.bend`. The six driverless emitters
       (`mm-gate`, `mm-bl-gate`, `mm-dt-gate`, `mm-walk-gate`, `state-gate`, `nn-gate`) are already
       recorded as **NOT A GATE** at `LANE-LIVENESS.md:190,194`, the accurate place for that, and
       are left as-is.
@@ -948,7 +950,7 @@ day rediscovering that `2n+p` is not an even-case test.
         rides on the FIRST entry (`gr_show.repl.go.first`) and not only on
         the tail (`gr_show.repl.go.bind`), because the first entry has no
         predecessor to have appended one.
-      * **THE GATE ITSELF.** `.agents/slop/gr-diff.sh` counts repl entries on
+      * **THE GATE ITSELF.** `oracles/gateport/oracles/gr-diff.sh` counts repl entries on
         both sides and exits 1 with both lanes printed on a mismatch. It
         COUNTS rather than diffs byte-for-byte because the port prints
         arena indices and CPython prints op+arg, and the two arenas number
@@ -956,7 +958,7 @@ day rediscovering that `2n+p` is not an even-case test.
         of two unrelated numberings. The count is the coarse gate; per-entry
         comparison needs the port's printer to NAME ops, which is the next
         unit.
-      * Gate: `bash .agents/slop/gr-diff.sh` prints `AGREE on 4 repl
+      * Gate: `bash oracles/gateport/oracles/gr-diff.sh` prints `AGREE on 4 repl
         entries`. `codegen/__init__.bend`, `uop/ops.bend` and
         `uop/spec.bend` are all `ALL PROOFS CHECK`, and the interpreted and
         native lanes of the engine are byte-identical.
@@ -973,7 +975,7 @@ day rediscovering that `2n+p` is not an even-case test.
 Read: `.agents/slop/grw-stage1.md`, `grw-stage2-3.md`, `grw-stage4.md`.
 Gates: `bash .agents/slop/grw-gate.sh` (exit 0),
 `python3 .agents/slop/grw-mut.py`, `python3 .agents/slop/grw-mut-selftest.py`,
-`bash .agents/slop/gr-diff.sh`.
+`bash oracles/gateport/oracles/gr-diff.sh`.
 
 - [x] `graph_rewrite` (the dispatcher, ops.py:1888-1890) — the dispatch rule is
       a ternary on one `Bool` and it is ported. `unified_rewrite` is a REAL
@@ -1028,7 +1030,7 @@ Gates: `bash .agents/slop/grw-gate.sh` (exit 0),
       `:1897` `_pm_resolve_params`, `:1904` `remove_all_tags`, `:1907` `pm_drop_after`)
       as four `PMEntrys` on tags 40-43, with the bodies `pm_r_drop_m`, `pm_r_rp_m`,
       `pm_r_tag_m` and `pm_sub_m`. `pm_dispatch_m` went from THREE reachable bodies
-      to FIVE. Gate: `sh .agents/slop/lintable/lintable-gate.sh` — **36 rows, 3 lanes
+      to FIVE. Gate: `sh checks/lintable-gate.sh` — **36 rows, 3 lanes
       identical** (CPython, bend interpreted, bend native), plus a plant that moves 7
       rows and makes the gate red, with its paired disarm restoring the baseline
       exactly. Write-up: `.agents/slop/LINEAR-TABLE.md` and
@@ -1668,7 +1670,7 @@ language limitation. Consequence for this plan: a share of lever 3 and of the
       SIDE B (998-1980, another agent) starts on `allclose`. **32 shared rows,
       CPython == interpreted == native, byte for byte**; `--check-only` = `ALL PROOFS
       CHECK`. Oracles `.agents/slop/mixin-op-gate.py` (CPython) and
-      `.agents/slop/mixin-op-gate.sh` (three lanes), mutator
+      `oracles/gateport/oracles/mixin-op-gate.sh` (three lanes), mutator
       `.agents/slop/mixin-op-mutate.py`.
 - [x] PORTED AND GATED: `min` (op.py:473), `mean` (:496), `var` (:523), `var_mean`
       (:551), `std` (:568), `std_mean` (:592), `normalize(p=0)` (:609), `logsumexp`
@@ -5618,7 +5620,7 @@ Report: `.agents/slop/unobservable-report.md`. Tools: `unobservable-census.py`,
 
 - [x] **A COUNT-ONLY GATE IS A GATE THAT CANNOT FAIL ON A VALUE. ONE EXISTS.**
       `--countgate` swept every `.sh`/`.py` in slop (~250). Exactly **one** gate's
-      SOLE pass condition is a count comparison: `.agents/slop/gr-diff.sh`,
+      SOLE pass condition is a count comparison: `oracles/gateport/oracles/gr-diff.sh`,
       `if [ "$py_count" -eq "$bend_count" ]`. Two other count comparisons are
       correct RUN-HEALTH guards against the bend ~1-in-20 stack overflow.
 
@@ -8252,9 +8254,9 @@ Report: `.agents/slop/notes/c2d-refusal-gate.md`. Rules `CT-1`…`CT-5` appended
       `wire_parse.py`: one appended ` + ' PLANT'` in a value, rc 0 -> 1, named, restored, rc 0.
 
 **OWED, REPORTED NOT FIXED** (not this unit's files, or not safely mine):
-- `cstyle-gate.py`, `cs-fixpy.py`, `llvmir-gate.py`, `eq/nl-gate.py`, `eq/rn-gate.py` hold SIX
+- `cstyle-gate.py`, `cs-fixpy.py`, `llvmir-gate.py`, `checks/nl-gate.py`, `checks/rn-gate.py` hold SIX
   `rows_strict` / `row_strict` / `split_py` triples with the SAME contract. `llvmir-gate.py`'s is
-  **byte-identical in behaviour** to `eq/nl-gate.py`'s (same census signature `1e9d42d3d219`).
+  **byte-identical in behaviour** to `checks/nl-gate.py`'s (same census signature `1e9d42d3d219`).
   Four of the five files are other units' live gates.
 - `cstyle-shapes-selftest.py`'s "REAL LANES" case currently FAILS, and **not because of this
   unit**: `cstyle-gate.py`'s `judge()` returns 6 `bad` entries naming 8 of cstyle.bend's 227 row
@@ -8889,7 +8891,7 @@ unfalsifiable    [##########] 4/4   the four headline numbers, each with plant+d
 ## slop(wallmap) — a census and a RANKING of every refusal recorded in the port
 
 `.agents/slop/WALLMAP.md`, with the machine-readable census in
-`.agents/slop/wallmap/census.tsv` (1,028 rows) and the frozen tree + sha256 manifest beside it.
+`checks/census.tsv` (1,028 rows) and the frozen tree + sha256 manifest beside it.
 
 **This is a census, not another port. It counts, classifies, deduplicates and RANKS the
 backlog, and it found the backlog is not the thing the marker count said it was.**
@@ -9346,7 +9348,7 @@ code; you have to count ABSENCE.**
 
 ### [x] **THE PORT CALLS: `runtime/autogen/libclang.bend` answers the oracle's ten rows**
 
-`python3 .agents/slop/clangshim/cl-port-gate.py --plants` -> **FAILURES: 0**, four runs,
+`python3 checks/cl-port-gate.py --plants` -> **FAILURES: 0**, four runs,
 every one with a row census.  Report **`.agents/slop/LIBclang-live.md`**, rules
 **LC-1…LC-9** in `notes/bend2-constraints.md`.
 
@@ -9714,7 +9716,7 @@ Report `.agents/slop/arith/REACH-ARITH.md`; claim `.agents/slop/arith/CLAIM.md`;
 baselines `.agents/slop/arith/baseline/`. **Nothing committed.**
 
 - [x] **Re-measure FIRST, both sides, with the `py-only`/`bend-only` split.**
-      `.agents/slop/arith/both-census.py`. The old census (`reach/census.py:20`) counts the
+      `checks/both-census.py`. The old census (`reach/census.py:20`) counts the
       **py side only**, so the 53 was never measured by an instrument that could see the two
       sides differ. BEFORE 53/53/53, split `[]`/`[]`, 24 unreached. AFTER 59/59/59, split
       still `[]`/`[]`, 18 unreached. BEFORE recomputed from the pre-edit row cache, not from
@@ -9767,7 +9769,7 @@ baselines `.agents/slop/arith/baseline/`. **Nothing committed.**
       `:2978`); the wall is true and now fixed structurally by inheriting `DEV` at process
       birth. 15/24 arith py row sets MEASURED stale. 59 SURVIVES, re-measured 3x, 2 runs
       byte-identical. Six controls, `audit-hermetic.py` rc 0. `.agents/slop/HERMETIC.md`.
-- [ ] **NOT MINE, REPORTED — `arith/both-census.py:39` STILL READS THE STALE CACHE.** Its
+- [ ] **NOT MINE, REPORTED — `checks/both-census.py:39` STILL READS THE STALE CACHE.** Its
       15 stale py row sets are still on disk and its default still trusts them; deleting or
       re-publishing them is the owner's call. `hermetic-census.py --check --out
       .agents/slop/arith` names every one, rc 3.
@@ -10534,7 +10536,7 @@ Walls `CF-1`..`CF-8` at `.agents/slop/CLANGFILL.md` §6.
       is **not** the mechanism (45 uses, all value positions; the `def` is never
       entered, so no arm is reached or skipped).
 
-- [x] **DISARM FIRST, THEN PLANT.** `.agents/slop/nvrows/nvrows-deadrow-gate.py` tags
+- [x] **DISARM FIRST, THEN PLANT.** `checks/nvrows-deadrow-gate.py` tags
       every site's row NAME `Snnn:` and counts ABSENCE; Bend has no `sys.settrace`.
       Output-neutral by construction (`DISARM OUTPUT-NEUTRAL: True` in every cell).
       Matrix: `ORPHAN` (3 more uncalled rows) → 9 dead while `bend` rc 0 and the printed
@@ -11096,7 +11098,7 @@ Rule prefix `PROBE-`, ledger `.agents/slop/PROBES.md`, instruments
 - [ ] **PROBE-7** **TRAP, measured today.** zsh reads a script INCREMENTALLY, so editing
       `substrate-check.sh` while a 138-file run is in flight made it resume at a stale byte
       offset and print `substrate-check.sh:309: parse error near ()'` — half a verdict that
-      reads like a result. Do not edit a running shell script; `probes/demo.sh` is a
+      reads like a result. Do not edit a running shell script; `checks/demo.sh` is a
       repeatable artifact for exactly this reason.
 - [x] **PROBE-8** **TWO BUGS IN MY OWN `PROVENANCE` BLOCK, AND ONLY ONE WAS SAFE.**
       Dropping the `tinygrad/` prefix from the mirror test printed `port=1 non-port=137
@@ -11120,7 +11122,7 @@ Rule prefix `PROBE-`, ledger `.agents/slop/PROBES.md`, instruments
       of a predicate is one more thing that can be true. `probes/{demo.sh,disarm.sh}`
       remain — they are demonstration artifacts, not a second implementation.
 - [x] **PROBE-11** ⚠ **A STALE FILE LIST IS A WAY TO MAKE A DENOMINATOR LIE, AND IT IS
-      SILENT.** `probes/demo.sh`'s first cut snapshotted `find tinybendygrad -name '*.bend'`
+      SILENT.** `checks/demo.sh`'s first cut snapshotted `find tinybendygrad -name '*.bend'`
       ONCE, before planting anything, so all four passes printed IDENTICAL numbers, `of 138`
       four times — a list frozen before the probe was planted does not contain the probe, and a
       DELETED file still gets classified because the *path* is still listed. **The instrument
@@ -11725,7 +11727,7 @@ Unit `.agents/slop/lastlaw/`, prefix `LL-`, notes `.agents/slop/LASTLAW.md`.
       now the bare `0x7fc00000`; `dtype.py:275` is a bare `return math.nan` and is
       unsigned whatever the code's top bit was. e5m2's, at `:103-104`, keeps its
       sign — `dtype.py:273`'s `copysign`.
-- [x] **`JFP-3` THE MISSING DECODE GATE, BUILT — `.agents/slop/jsfp8/gate.py`.**
+- [x] **`JFP-3` THE MISSING DECODE GATE, BUILT — `checks/gate.py`.**
       `Dt.fp8_to` is PURE (`dtype.bend:916`, no `.js` import), so `dtype.js`'s
       decoder is unreached from any `.bend` and no gate could ever see finding 4.
       205,121 rows, every expectation CALLED from `tinygrad/dtype.py`.
@@ -11974,7 +11976,7 @@ Progress: [=============================-------] 7/7
       float CONST is `1.0`, the one value `%g` cannot get wrong.  **THE FIXTURE
       THAT EXPOSES `%g` IS TWO DIFFERENT VALUES INSIDE ONE SIDE**, a row shape no
       gate in this tree has.  Added: all four cases on both lanes in `norm/`, the
-      plants in `norm/canon.selftest.py`, both lint branches in `norm/lint_demo.sh`.
+      plants in `norm/canon.selftest.py`, both lint branches in `checks/lint_demo.sh`.
       **Not added, and why:** the three-line fixtures that would expose the four
       baseline sites belong to other units (`fixtures.txt` writes them out to paste).
 - [x] **`NORM-8` `jslane2/gen_f32_seam.py` HAD NEVER RUN, AND THAT IS THE MOST
@@ -12409,13 +12411,29 @@ hits for them are all comments). Nothing calls the twenty registrations.
       `F32.from_bits` landed) and `dtype.js`'s ABI paragraph (`Dt.bf16 -> IO(F32)` and
       two others no longer declared). Comment-only diff, +76/-14, and the ten `#ifdef`
       plus ten `io_eff` are untouched, so no `file:line` in `dtype.bend` was renumbered.
-- [ ] **`e2e.sh` STAGE 8 ITSELF — NOT MINE, REPORTED.** Its denominator is 0 and its
-      plant cannot fire, which is the correct behaviour of an honest gate. The 20 rows
-      now measure `dtype.bend`'s pure arithmetic, which `.agents/slop/lastlaw/run.py`
-      already covers at **1330/1330** (102 i64 + 1228 fp8) against the same CPython
-      callables — so keeping stage 8 is a 19-row echo of a larger gate. Re-point it
-      only if a `Dt.*` law becomes a seam again; otherwise retire it. **`jsstage.py`
-      and `e2e.sh` are not mine to edit.**
+- [x] **`e2e.sh` STAGE 8 RETIRED, AND `e2e.py` WITH IT — LANDED by the E2ESTAGE8 unit, which
+      owns both.** Zero denominator, so it could never fail and could never pass, and it made the
+      other seven look like a suite. **Retired, not re-pointed**, in `checks/e2e.sh`,
+      `.agents/slop/e2epy/oracle-e2e.sh` (re-frozen by replacing the ONE line `ORACLE_EDIT`
+      names) and `checks/e2e.py`, with both pins moved: ORACLE_SHA `245a10db…`, BODY_SHA
+      `558554c8…` (were `e0eb23d5…`/`f222c02c…`) and `oracle_drift()` returns empty.
+      **BOTH SIDES OF THE PROSE WERE RECONCILED**: the docstring's stage-8 row is now
+      `**RETIRED**` and the code at the old `:402` is gone, and the old "EIGHT-STAGE" is
+      "SEVEN-STAGE". A retirement nobody can check is a comment, so
+      **`.agents/slop/e2estage8/verdicts.py`** counts every emitted stage's denominator
+      out of an artifact and exits 1 on any stage emitted with 0, and on any disagreement
+      between `e2e.py`'s PROSE, its emitted headers and a transcript's headers — which is
+      the check that would have caught this retirement's own two failures, the second of
+      which put `RETIRED` in the docstring while the stage was still emitted.
+      **PLANT + DISARM: 6 of 6 arms** (`e2estage8/plant.py`, no `bend`/`node`/`cc`): shipped
+      vs an 8-stage transcript, prose-RETIRED-plus-code-emits, prose-LIVE-plus-code-retired,
+      a whitespace-free rewording that must NOT move the verdict, the CONTROL (7 stages,
+      7 denominators, 3 readers agree ⇒ rc 0, without which the other five prove nothing),
+      and the ORACLE PIN planted by deleting the frozen oracle ⇒ **rc 3 before any stage
+      runs**. Porting rule: **8 of 8 plants agree, 0 disagree**, stdout byte-identical on
+      7 of 8 (`plant-no-zsh`'s 97-byte difference is the shell's own `line N:` prefix,
+      which `diff.py` normalises and documents). Artifacts and verdict diffs in
+      `.agents/slop/e2estage8/artifacts/`.
 - [ ] **THE ASYMMETRY, IF A LAW IS EVER RE-SEAMED** (recorded, not fixed):
       `dtype.c` guards each registration with `#ifdef CID(...)` and registers **one
       law at a time**; `dtype.js` has no guard and would register **all ten** from any

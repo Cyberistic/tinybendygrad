@@ -226,7 +226,23 @@ STAGE 6 PASS -- 64/64 u32 words through the port's own renderer, diff 0 bytes, a
   stage 6 port (matmul THROUGH the port, no Node): PASS
 == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
   stage 7 f64 (double through the port, no Node): SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/e2e/e2e-f64.txt
---- verdicts: 2 failed, 1 skipped ---
-FAIL -- 2 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+== 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)
+  THE CLAIM, with its denominator
+    substrate measured             /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/dtype.js
+    rows asked for                 20
+    rows that REACH `dtype.js`      0   
+    rows that are pure `dtype.bend` 20   (NOT the JS lane)
+    CIDs `dtype.js` registers that `dtype.bend` no longer calls  10  bf16, fp16, fp8_from, fp8_to, i64_cdiv, i64_ceildiv, i64_cmod, i64_floor_div, i64_floor_mod, i64_trunc
+    rows CPython can answer        19   (1 diverge: CPython raises, so there is no answer -- ceildiv_by0)
+    `node` exit status             0
+    ROWS PRESENT == ROWS EXPECTED  yes   (20/20)
+    node agrees with CPython on    19/19
+    PLANT  `p.hi`/`p.lo` -> `p.fst`/`p.snd` (ABI-2 as shipped)   moved 0/20
+    DISARM `<<32n |` -> `* 2**32n +`, BigInt, same function     moved 0/20   -- 0 is the only correct count
+    PLANT  the same in NUMBER arithmetic (NOT a disarm)          moved 0/20
+  ===== VERDICT: FAIL =====
+  stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython): FAIL (rc=1)
+--- verdicts: 3 failed, 1 skipped ---
+FAIL -- 3 stage(s) ran and failed. The per-stage verdicts above stand on their own:
        a failing stage does not retract the others' claims, and this script now says so in
        its exit status, which it did not before.

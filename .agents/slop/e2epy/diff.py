@@ -178,7 +178,7 @@ def _hunks(a: bytes, b: bytes, show: int) -> list[bytes]:
 # port resolves `ROOT` from its own `__file__`. That is FINDING 1, reproduced on the live tree.
 SETS = {"live": ENV | {"E2E_ROOT": str(ROOT)}}
 # `codes` is the exit status of, IN ORDER: stage 1's oracle, stage 4's gate, stage 5's ops_bend,
-# stage 6's port mm, stage 7's run-f64, stage 8's jsstage. `bend` is how many `name=value` rows the
+# stage 6's port mm, stage 7's run-f64. `bend` is how many `name=value` rows the
 # stub compiler emits: 25 PASSES stage 2's `> 20 rows` denominator, 5 does not and drives the RETRY
 # PATH to its `set -e` abort, 0 emits nothing and exits 0 -- which is the exact failure `bend_run`
 # exists for, since bend stack-overflows on roughly one run in twenty and prints nothing.
@@ -187,15 +187,14 @@ SETS = {"live": ENV | {"E2E_ROOT": str(ROOT)}}
 # asymmetry in the shell, and the one place a missing tool is a failure in one stage and a skip in
 # the next, so it is compared rather than tidied.
 PLANTS = {
-    "plant-pass":      dict(codes="0,0,0,0,0,0", bend=25),
-    "plant-passskip":  dict(codes="0,0,0,0,3,0", bend=25),
-    "plant-refuse":    dict(codes="0,0,1,1,3,0", bend=25),
-    "plant-stage8red": dict(codes="0,0,0,0,0,1", bend=25),
-    "plant-no-node":   dict(codes="0,0,0,0,0,0", bend=25, hide="node"),
-    "plant-no-zsh":    dict(codes="0,0,0,0,0,0", bend=25, hide="zsh"),
-    "plant-thin":      dict(codes="0,0,0,0,0,0", bend=5),
-    "plant-deadbend":  dict(codes="0,0,0,0,0,0", bend=0),
-    "plant-stage1red": dict(codes="3,0,0,0,0,0", bend=25),
+    "plant-pass":      dict(codes="0,0,0,0,0", bend=25),
+    "plant-passskip":  dict(codes="0,0,0,0,3", bend=25),
+    "plant-refuse":    dict(codes="0,0,1,1,3", bend=25),
+    "plant-no-node":   dict(codes="0,0,0,0,0", bend=25, hide="node"),
+    "plant-no-zsh":    dict(codes="0,0,0,0,0", bend=25, hide="zsh"),
+    "plant-thin":      dict(codes="0,0,0,0,0", bend=5),
+    "plant-deadbend":  dict(codes="0,0,0,0,0", bend=0),
+    "plant-stage1red": dict(codes="3,0,0,0,0", bend=25),
 }
 # EVERY TOOL THE ORACLE ITSELF NEEDS, so a `hide` removes the ONE under test. A `hide` that also
 # removed `grep` or `sed` would not be testing availability, it would be testing a broken plant.
@@ -235,12 +234,17 @@ def _build_plant(tag: str, spec: dict) -> Path:
         p.chmod(0o755)
 
     stub(".venv/bin/python", f"""#!/bin/sh
-# STUB for $ROOT/.venv/bin/python: it answers each of the three scripts the gate runs with the exit
-# code this plant names, and prints one identifiable line so the artifact shows which stub ran.
+# STUB for $ROOT/.venv/bin/python: it answers each of the scripts the gate runs with the exit code
+# this plant names, and prints one identifiable line so the artifact shows which stub ran.
+#
+# IT ALSO PRINTS THE DENOMINATOR THE REAL GATE PRINTS, because `run-f64.sh`'s filter matching
+# nothing on both sides would diff IDENTICAL and prove nothing, and a DENOMINATOR LINE is the same
+# argument one level up: a plant whose stage reports no count cannot be counted by
+# `e2estage8/verdicts.py`, so the census could never be shown to PASS on any artifact.
 case "$1" in
   *e2e_mm.py)      echo "PLANT stub: stage1 oracle"; exit {codes[0]} ;;
-  *e2e_mm_gate.py) echo "PLANT stub: stage4 gate, 20/20 rows vs CPython"; exit {codes[1]} ;;
-  *jsstage.py)     echo "PLANT stub: stage8 jsstage"; exit {codes[5]} ;;
+  *e2e_mm_gate.py) echo "PLANT stub: stage4 gate, 20/20 rows vs CPython"
+                    echo "mm_e2e_buffers=6"; echo "mm_e2e_out_words=64"; exit {codes[1]} ;;
   *)               echo "PLANT stub: $1"; exit 0 ;;
 esac
 """)
@@ -250,17 +254,22 @@ esac
 i=0; while [ $i -lt {spec["bend"]} ]; do echo "PLANT.row$i=$i"; i=$((i+1)); done
 exit 0
 """)
+    # `tail -3` KEEPS THREE LINES, so each of these stubs prints EXACTLY THREE: adding a fourth to
+    # carry a denominator would silently drop the line that says which stub ran.
     stub(".agents/slop/opsbend-milestone.sh",
          f"#!/bin/sh\necho 'PLANT stub: stage5 ops_bend milestone'\n"
-         f"echo 'expected: 1 2 3'\necho 'PACKET.out: 1 2 3'\nexit {codes[2]}\n")
+         f"echo '# 0 failed of 3 rows read'\necho 'PASS'\nexit {codes[2]}\n")
     stub(".agents/slop/e2e_port/run-port-mm.sh",
-         f"#!/bin/sh\necho 'PLANT stub: stage6 port matmul, 64/64 words'\nexit {codes[3]}\n")
+         f"#!/bin/sh\necho 'PLANT stub: stage6 port matmul, 64/64 words'\n"
+         f"echo 'words port=64  CPython=64  differing lines=0  diff bytes=0'\n"
+         f"echo 'STAGE 6 PASS'\nexit {codes[3]}\n")
     # `run-f64.sh` PRINTS THE LINES STAGE 7 FILTERS FOR, so stage 7's `grep -E` is compared and not
     # skipped: a filter that matches nothing on both sides would diff IDENTICAL and prove nothing.
     stub(".agents/slop/f64/run-f64.sh", f"""#!/bin/sh
 echo 'PLANT stub: run-f64.sh'
 [ {codes[4]} -eq 3 ] && echo 'REFUSED[ cold substrate: renderer/amd/generate.bend is 0 bytes ]'
 [ {codes[4]} -eq 0 ] && {{ echo '   STAGE 7 PASS'; echo '   64/64 MET'; echo '   GREEN [C0]'; }}
+echo '     F64-1 words_port=64'
 exit {codes[4]}
 """)
     box = fx / "sandbox"

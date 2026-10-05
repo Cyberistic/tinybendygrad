@@ -164,9 +164,8 @@ FAIL
         rule with a compiler attached.
    copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
     planted cstyle.bend: 1 site, 81 -> 81 bytes
-         PORT PROTOTYPE : extern void mm(float* restrict data3_4, float* restrict data2_4, float* restrict data1_4, float* restrict data0_4);
-         SHIM CALL      : data3_4, data2_4, data1_4, data0_4
-    RED   [C1 THE PORT reverses its own emitted buffer order]
+    *** RED BUT NOT SEMANTIC [C1 THE PORT reverses its own emitted buffer order] -- it fell over instead of answering wrongly ***
+        FAIL[mm] gen_ffi.py: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//e2e-port-mm/copy/.agents/slop/portexec/run-kernel.sh:80: no such file or directory: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/e2e-port-mm/copy/.venv/bin/python 
 
 -- C2  VACUITY -- the second dot reads data1_4 instead of the local tmp, so the kernel
         computes a REAL matmul A@C instead of (A@B)@C: 64 real multiply-adds still
@@ -220,13 +219,13 @@ FAIL
        builds BOTH lanes from a recorded stdout, so all 227 of ITS rows are TEXT.
 
 --------------------------------------------------------------------------------
-STAGE 6 PASS -- 64/64 u32 words through the port's own renderer, diff 0 bytes, and
-               every negative control went red.
-(this stage's own exit status, for a caller that wants it: 0)
-  stage 6 port (matmul THROUGH the port, no Node): PASS
+STAGE 6 FAILED -- stages 1-5's verdict above stands on its own; the script's exit
+               status is STILL stage 4's and is unaffected by this line.
+(this stage's own exit status, for a caller that wants it: 1)
+  stage 6 port (matmul THROUGH the port, no Node): FAIL (rc=1)
 == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
   stage 7 f64 (double through the port, no Node): SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/e2e/e2e-f64.txt
---- verdicts: 2 failed, 1 skipped ---
-FAIL -- 2 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+--- verdicts: 3 failed, 1 skipped ---
+FAIL -- 3 stage(s) ran and failed. The per-stage verdicts above stand on their own:
        a failing stage does not retract the others' claims, and this script now says so in
        its exit status, which it did not before.

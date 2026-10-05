@@ -2,7 +2,10 @@
 # .agents/slop/e2e.sh -- THE ONE COMMAND. `./.agents/slop/e2e.sh` and it either
 # prints PASS or FAIL and exits 0 or 1.
 #
-# FOUR STAGES, and the order is the order the claims come in:
+# SEVEN STAGES, and the order is the order the claims come in. Stages 5, 6 and 7 were ADDED and
+# are described at their own blocks, which are the only place their claims are written down; this
+# header is a table of contents, not the claim. Stage 8 is RETIRED -- see its block below, and the
+# reason is a denominator of 0, which is not a smaller stage but the absence of one:
 #
 #   1. ORACLE      `.venv/bin/python .agents/slop/e2e_mm.py` traces a real
 #                  `(A @ B) @ C` out of tinygrad on DEV=CPU, takes tinygrad's own
@@ -146,6 +149,14 @@ set +e
 msrc=$?
 set -e
 tail -3 "$RUN/e2e-opsbend.txt"
+# TODO(stage-5-denominator): `tail -3` IS THE DENOMINATOR AND IT IS ALSO WHAT A CRASH REPLACES. The
+# milestone's own last three lines are the expectation-file comparison, but when it dies first they
+# are a traceback (measured 2026-10-05: `FileNotFoundError: .agents/slop/
+# ops_bend-milestone-expected.txt`), so a stage that ran and printed NOTHING COUNTABLE leaves the
+# artifact unable to say what it would have measured. NOT FIXED HERE, DELIBERATELY: changing what
+# this stage prints is a change to the artifact on BOTH sides of the porting rule, and the oracle is
+# frozen so that such a change is a separate deliberate act rather than a side effect of retiring
+# stage 8. `.agents/slop/e2estage8/verdicts.py` reports it as `DENOMINATOR None` until then.
 verdict "stage 5 ops_bend (kernel executes in Bend)" "$msrc"
 # THE COMMENT THAT USED TO BE HERE WAS RIGHT AND INCOMPLETE. "A failure here must not
 # retract a green matmul: the two claims are independent" -- TRUE, and each verdict is
@@ -235,108 +246,38 @@ else
 fi
 
 # ---------------------------------------------------------------------------
-# STAGE 8, THE JAVASCRIPT LANE.  ADDED, NOT SUBSTITUTED: bytes 1..12449 above are
-# UNCHANGED, stages 1-7 are byte-for-byte as they were, and each of their verdicts
-# is still exactly what its own line says.  Read stage 8 as a SEPARATE claim with
-# its own verdict, because it answers the question stages 1-7 cannot.
+# STAGE 8, THE JAVASCRIPT LANE.  RETIRED, NOT RE-POINTED, BECAUSE ITS DENOMINATOR
+# IS 0.  Its prose went with its code on purpose: an essay about a stage that no
+# longer runs is how a reader is told a stage exists when it does not, and the
+# docstring is the one a reader trusts.
 #
-# STAGES 1-7 ALL RUN THE BEND OR C LANE.  Every one of them: `e2e_mm.py` traces
-# tinygrad, `e2e_mm.bend` runs the pure half, `e2e_mm_run.mjs` drives a real WebGPU
-# adapter, `run-port-mm.sh` emits C and compiles it with `cc`, `run-f64.sh` does the
-# same one dtype wider.  `node` appears ONCE, in stage 3, and there it is a BROWSER
-# DRIVER -- `navigator.gpu` -- and no part of the port's runtime is in that path.
-# `bend -o out.js` is a real target and `tinybendygrad/runtime/dtype.js` is a real
-# lane, and as of this line NO stage above executed either.
+# WHAT IT WAS.  `jstage.py` ran `runtime/dtype.js` through `bend -o` under node and
+# compared 20 rows against CPython.
 #
-# WHAT THAT COST, MEASURED, IN ORDER, AND NONE OF IT WAS A LOUD FAILURE:
-#   * `dtype.c:205` read two FRAME SLOTS where the seam has one argument and
-#     returned TWO ALLOCATION ADDRESSES.
-#   * `dtype.js:137` read `p.fst`/`p.snd` against fields `hi`/`lo`.  Both were
-#     `undefined`, and `undefined >>> 0 === 0`, so `i64_of` was identically 0 --
-#     `Dt.i64_trunc`, the IDENTITY, was not the identity -- and the lane disagreed
-#     with CPython on 9 of 12 rows while printing a plausible row for each.
-#   * three `of32` misplacements: 57/98 -> 98/98 once found.
-# A gate caught each one.  A GATE IS NOT THE ARTIFACT, and this file is the
-# artifact a reader runs.
+# WHY 0, IN THE STAGE'S OWN WORDS, because it printed the denominator every run and
+# then said the rest out loud:
+#     rows that REACH `dtype.js`      0
+#     rows that are pure `dtype.bend` 20   (NOT the JS lane)
+#     FAIL  the plant moved 0 rows, so this stage CANNOT fail on the bug it exists for
+# `dtype.bend` declares 0 `IO(` laws, 0 of 137+ `.bend` files import
+# `runtime/dtype.{c,js}`, and `runtime/dtype.js` is not one byte of the emitted
+# bundle.  A GATE WHOSE DENOMINATOR IS ZERO IS NOT A GATE: it can never fail, so it
+# can never pass either, and it makes the seven around it look like a suite.
 #
-# THE CLAIM, IN ONE SENTENCE, WITH ITS DENOMINATOR -- the whole of it, and it is
-# SMALL on purpose:  `node` runs `runtime/dtype.js` through `bend -o`, exits 0,
-# prints all 20 rows the gate asks for, and agrees with CPython on the 19 of them
-# CPython can answer.  `ceildiv(x, 0)` answers 0 in both lanes where CPython
-# raises, so that row is counted `diverge` and is in NEITHER pass nor fail.
+# WHAT REPLACES IT IS A CITATION, NOT A STAGE.  `.agents/slop/lastlaw/run.py`
+# measures the same pure `dtype.bend` arithmetic at 1330/1330 (102 i64 + 1228 fp8)
+# against the same CPython callables, so stage 8's 19 rows were a 19-row echo of a
+# 1330-row gate.  Evidence: `.agents/slop/deadreg/REPORT.md` §2.  Re-point this
+# stage ONLY if a `Dt.*` law becomes a seam again, which is the one change that
+# would make a denominator non-zero -- re-declaring one as a seam is what
+# `.agents/slop/LASTLAW.md` undid, and it must not be undone to keep a row count.
 #
-# OF THOSE 20, 12 REACH `dtype.js` AND 8 DO NOT, and the gate prints the split on
-# its own line rather than letting a reader assume 20.  MEASURED 2026-10-05:
-# `dtype.bend` has been rewritten so that `Dt.bf16`, `Dt.fp16` and `Dt.fp8_to` are
-# PURE defs, so the three CIDs `dtype.js` registers for them are DEAD -- registered
-# and never called -- and those rows measure `dtype.bend`.  The gate derives that
-# split from the substrate's own declarations on every run, so a tree that moves
-# back is counted correctly without an edit here.
-#
-# WHAT THE STAGE'S OWN HEADER STATES AS ITS LIMIT, because a reader who reads only
-# this file must not be able to quote it as more:  EXECUTED IS NOT BOUND.  The
-# census that says so with numbers is `.agents/slop/CLANGFILL.md` §2 -- 320
-# executed, 256 of them called with at least one NULL argument, 175 answering a
-# refusal sentinel -- and it is `clangfill/gate.py`, which drives `cc` against
-# `libclang`.  IT IS NOT A JS CENSUS: `clangshim/apply-port-lane.py:130` records
-# that the libclang lane cannot be emitted to JS at all.  What stage 8 borrows is
-# the SHAPE of that caution and states its own limit in the terms it can measure --
-# every argument in it is a bend literal, so there is no NULL-argument class here.
-#
-# THE THREE OUTCOMES ARE THE THREE OUTCOMES.  A stage that COULD NOT RUN is `SKIP`
-# and never `PASS`, and the refusal is REAL rather than theoretical: with the
-# substrate cold -- a zero-byte `cstyle.bend` planted, or `dtype.bend` under
-# concurrent edit as it was on 2026-10-05 -- `bend -o` fails and the gate exits 3
-# having measured nothing.  That is `SKIP`, exactly as `run-f64.sh`'s exit 3 is at
-# stage 7, and a gate that refuses must not be reported green.
-#
-# AND THE LESSON THIS STAGE IS BUILT ON, WHICH COST THE JS LANE TWICE: node's exit
-# status is READ, and a row that is ABSENT is a FAILURE rather than a neutral.
-# `abi4_gate.py` once passed 98/98 and `abi_gate.py` once reported "node agrees with
-# CPython on 12/12" while `node` had exited 1 with EMPTY stdout, because `vs()`
-# excludes absent rows from `bad` -- so A DEAD LANE COUNTED AS A LANE NEVER WRONG.
-# Both gates now exit on node's status or a short row set, and so does this one.
+# THE CENSUS THAT KEEPS IT GONE IS `e2estage8/verdicts.py`: it counts every
+# emitted stage's denominator out of the artifact and exits 1 on any stage that is
+# emitted with 0, and it exits 1 on any disagreement between the stage names in this
+# file's prose, the stage headers this file emits, and the stage headers in a run's
+# transcript.  A retirement nobody can check is a comment.
 # ---------------------------------------------------------------------------
-echo "== 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)"
-# ONE TEMP, ONE WRITE, ONE ATOMIC MOVE.  This is the shape `graphcmp-run.sh:38-56`
-# adopted after the SECOND time this project was bitten by it: the version that
-# appended `rc=$?` to the SAME file the child had just written left a window between
-# the two, and a run killed in that window produced a report MISSING its last line
-# and with no `rc=` stamp -- which the stability step then reported as a
-# reproducibility difference where the difference was "the second file is shorter".
-# The temp is INSIDE `$RUN` and dot-named, so `mv` is same-directory and therefore
-# atomic, and a temp left by a kill is never read as a report.
-rm -f "$RUN"/.tmp.e2e-jsstage.txt
-set +e
-{ "$PY" .agents/slop/jstage/jsstage.py > "$RUN/.tmp.e2e-jsstage.txt" 2>&1
-  echo "rc=$?" >> "$RUN/.tmp.e2e-jsstage.txt"; }
-mv "$RUN/.tmp.e2e-jsstage.txt" "$RUN/e2e-jsstage.txt"
-jsrc=$?
-set -e
-# `jsrc` is `mv`'s, and the GATE's status is the LAST LINE of the report.  It is
-# read with `tail` and not with a pipeline, for the same reason stage 4 does not
-# pipe its gate into `tee`: POSIX sh has no PIPESTATUS, so `$?` after a pipe is the
-# status of the LAST command in it and a gate that CRASHED would print PASS.
-jsgate=$(grep -c '^rc=' "$RUN/e2e-jsstage.txt" || true)
-jsstage_rc=$(sed -n 's/^rc=\([0-9]*\)$/\1/p' "$RUN/e2e-jsstage.txt" | tail -1)
-: "${jsstage_rc:=-1}"
-grep -E '^(THE CLAIM|  substrate measured|  rows asked|  rows that|  CIDs|  rows CPython|  `node` exit|  ROWS PRESENT|  node agrees|  PLANT|  DISARM|===== VERDICT|REFUSED|SUBSTRATE MEASURED)' \
-  "$RUN/e2e-jsstage.txt" | sed 's/^/  /'
-if [ "$jsrc" -ne 0 ] || [ "$jsgate" -ne 1 ]; then
-  # THE STAGE ITSELF DID NOT RUN.  Nothing was measured, so this is SKIP and not
-  # FAIL -- but it is also not PASS, and it says which of the two went wrong.
-  skip "stage 8 js lane (node on runtime/dtype.js)" \
-    "the gate did not complete: mv rc=$jsrc, rc= stamps=$jsgate (want 1/1); see $RUN/e2e-jsstage.txt"
-elif [ "$jsstage_rc" -eq 3 ]; then
-  # REFUSAL, and THE SUBSTANCE OF IT IS ABOVE: `bend -o` would not emit, so the
-  # lane never ran.  `SKIP` IS NOT `PASS` -- a stage that could not run has measured
-  # NOTHING, and saying PASS here is the same defect one level up.
-  skip "stage 8 js lane (node on runtime/dtype.js)" \
-    "jsstage.py REFUSED (rc 3): its substrate would not compile; see $RUN/e2e-jsstage.txt"
-else
-  verdict "stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython)" "$jsstage_rc"
-fi
-
 # ---------------------------------------------------------------------------
 # THE EXIT STATUS. IT IS NO LONGER STAGE 4's, AND THAT IS THE FIX.
 #

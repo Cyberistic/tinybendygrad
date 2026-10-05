@@ -42,11 +42,17 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   are a contract, not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not
   copied) and nothing else, and renaming them means the pin has to move with them in one commit.
   See `checks/README.md` and `.agents/slop/difftxt/`.**
-- `e2e.py` — the 8-stage end-to-end gate. Do not rewrite it to tidy it. **NOT CURRENTLY GREEN, AND IT
-  WAS NOT SINCE `371cc64c9`:** stage 1 exits 2 because the sweep deleted `e2e_mm.py`, so **stages 2-8
-  never ran and there were no 8 verdicts to read.** The fixtures are restored and stage 1 runs; stages
-  2-8 need `bend` and `node`, so **run it with nothing else compiling.** Stage 8's true denominator is 0
-  and the correct action is to retire it rather than re-point it.
+- `e2e.py` — **the SEVEN-stage end-to-end gate**, and `e2e.sh` beside it. Do not rewrite it to tidy it.
+  **NOT CURRENTLY GREEN, AND NOT FOR ONE REASON:** stage 1 runs again (`e2e_mm.py` is restored), and all
+  seven stages run, but **stage 3 needs `.agents/slop/xd2/cdp.mjs` and stage 5 needs
+  `.agents/slop/ops_bend-milestone-expected.txt`, and the sweep deleted BOTH** — the same class as the
+  `e2e_mm.py` deletion: **a gate's own required input was deletable while the gate still named it.**
+  Stage 7 refuses (rc 3, cold substrate) and stage 6's lane is **not reproducible run-to-run** (measured:
+  `run-port-mm.sh` twice on one tree, rc 1 then rc 0). Stages 2-7 need `bend`, `node` and `cc`, so **run
+  it with nothing else compiling.** Stage 8 is **RETIRED**: its denominator was 0 (`runtime/dtype.js` is
+  not one byte of the emitted bundle), so it was retired rather than re-pointed, and
+  `.agents/slop/e2estage8/verdicts.py` exits 1 on any emitted stage whose denominator counts 0 or on any
+  disagreement between `e2e.py`'s prose, its emitted headers and a run's transcript.
 - `checks/no-txt.py` — **there is no `.txt` file in this project.** It exits 1 and prints each path.
   `.rows` is expected values, `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose.
 - `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
