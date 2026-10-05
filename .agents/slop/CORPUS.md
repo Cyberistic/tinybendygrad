@@ -3,16 +3,52 @@
 **Regenerate with `checks/corpus-figure.py`.** Nothing else in this tree may state a corpus
 coverage figure without pointing here.
 
-<!-- CORPUS.md FIGURE BLOCK — regenerate with checks/corpus-figure.py -->
-- **53 of 77 ops** reached, by set UNION over **22 graphs** (22 built, 0 failed)
-- the per-graph SUM is **157** and is **not** this figure
-- not reached: REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA NEG CDIV CMOD CMPEQ THREEFRY SUB FDIV MULACC CUSTOM CUSTOMI INS STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION UNSHARD ALLREDUCE PYLITERAL
+<!-- CORPUS.md FIGURE BLOCK — regenerate with checks/corpus-figure.py; REQUIRES `DEV=CPU` -->
+- **61 of 77 ops** reached, by set UNION over **25 graphs** (25 built, 0 failed), **`DEV=CPU`**
+- the per-graph SUM is **181** and is **not** this figure
+- not reached: REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA THREEFRY MULACC CUSTOM CUSTOMI INS STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD PYLITERAL
+
+### THE NUMBER ABOVE IS WRONG BY ONE OP IF YOU RUN THE INSTRUMENT WITHOUT `DEV=CPU`
+
+`checks/corpus-figure.py` **NEVER PINS `DEV`** (it calls `load_graphcmp()` at `:51`, which resolves
+the device from the environment). MEASURED 2026-10-05, same tree, same command, same instrument:
+
+| invocation | union | the difference |
+|---|---|---|
+| `DEV=CPU .venv/bin/python checks/corpus-figure.py` | **61 of 77** | `FDIV` reached |
+| `.venv/bin/python checks/corpus-figure.py` (this host → `METAL`) | **60 of 77** | **`FDIV` MISSING** |
+
+`g_late`'s `a / b` becomes `FDIV` only when the device's OWN renderer table lists it —
+`ClangRenderer` does (`tinygrad/codegen/decomp/op.py:123 if Ops.FDIV in ops`), `MetalRenderer` and
+`NullRenderer` do not, and `a / b` then stays `MUL(a, RECIPROCAL(b))`. **A COVERAGE FIGURE WHOSE
+VALUE IS DECIDED BY AN ENVIRONMENT VARIABLE NOBODY SET IS NOT A COVERAGE FIGURE; IT IS A
+MEASUREMENT OF THE HOST.** The fix is one line in the instrument (pin `DEV` before
+`load_graphcmp()`), which is not this file's to make.
+
+### AND NEITHER 61 NOR 60 IS A STATEMENT ABOUT THE PORT
+
+**THE PORT-SIDE UNION OVER ALL 25 GRAPHS IS `0 of 77`.** `.agents/slop/graphcmp.bend:373`
+`argstr` has 19 of the 20 `Arg` arms and is missing `AOpLit`
+(`tinybendygrad/uop/ops.bend:1079`), so the port's differ emitter **does not compile**
+(`bend: expected : cases for …AOpLit / observed : \{\}`) and every one of the 25 emits **0 rows**.
+`not-comparable=16` is therefore **not a disagreement — there was nothing to disagree with**, and
+`D0-run-summary.txt`'s `graphs=16` is `len(WANT)`, a hand-written 16-name table at
+`checks/differ.py:89-103` that the run loop at `checks/differ.py:250` iterates **instead of**
+`graphcmp.GRAPHS`. Measurement: `.agents/slop/graphrestore/RESTORE.md`.
 
 ## WHY THIS FILE HAS TO EXIST: THE FIGURE EXISTED IN NINE FORMS AT ONCE
 
 Measured across `.agents/slop/*.md`, `.agents/TODO.md`, `AGENTS.md` and `checks/*.md`:
-`13`, `34`, `35`, `43`, `54`, `59`, `60`, `61`, `73` and `77 of 77`. And `22 graphs [SUPERSEDED: was 25; see CORPUS.md]` against a
-measured `22`.
+`13`, `34`, `35`, `43`, `54`, `59`, `60`, `61`, `73` and `77 of 77`. And `22 graphs` against a
+measured `25`.
+
+> **THE `22` WAS NOT A SUPERSEDED `25`. IT WAS A `25` THAT WAS LOST, AND THE TWO ARE ONLY BEING
+> TOLD APART NOW.** `allred`, `cdiv` and `late` were in `graphcmp.GRAPHS` in commit `db95da7bf`
+> (2026-10-04) and in **no commit that is an ancestor of HEAD**, so the corpus lost them and the
+> union fell **61 → 53** — exactly the eight ops those three graphs carry. They are restored
+> (`graphcmp.py:1388`, 25 entries) and the measurement is `.agents/slop/graphrestore/RESTORE.md`.
+> **A NUMBER THAT WAS TRUE WHEN WRITTEN IS NOT THEREBY STILL TRUE; NEITHER IS ONE THAT WAS TRUE
+> ONCE AND THEN STOPPED BEING MEASURED AT ALL.**
 
 **THREE OF THEM WERE ARITHMETICALLY IMPOSSIBLE AS A COVERAGE CLAIM:**
 

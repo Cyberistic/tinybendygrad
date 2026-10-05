@@ -12656,3 +12656,51 @@ The rule they enforced is intact in `RULE.md`. Rebuilt at `checks/wallcheck.py` 
       this was written, and `uop/fold.bend` was edited under it. Every graded verdict held across
       the move, and the report now prints the resolved commit and NAMES every file that differs
       from it, so `SPLIT` is attributable rather than surprising.
+
+---
+
+## Session 2026-10-05 — the 103 `.txt` under `runs/graphcmp/D/`
+
+```
+difftxt-contract  [##########] 3/3
+```
+
+- [x] **INVENTORY, DERIVED NOT TYPED.** `.agents/slop/difftxt/inventory.py` imports
+      `checks/differ.py` and builds the declared set out of its own `WANT`/`CONTROLS`/`PLANTS`/
+      `STAB` plus 13 literals: **103 names, 25 families, 103 on disk, 0 orphans, 0 declared-but-
+      absent. 103 of 103 are named by TWO OR MORE instruments.** Readers: `differ.py` writes all
+      and reads 12 by name (`:350-369`); `diffpy/oracle-run.sh` (pinned) writes all and reads 12
+      (`:283-308`); `diffpy/oracle-repro.sh` (pinned) reads `D0-run-summary.txt` at `:61` and
+      globs `*.txt` at `:105` + 5 families at `:114`; **`checks/corpus-figure.py:72` — NOT MINE —
+      reads `D0-run-summary.txt` and returns 1 without it.** Docs: `checks/README.md` 16 names,
+      `AGENTS.md` 1, `.agents/TODO.md` 8. Globs in `differ.py`: 8 sites, `:448` was the load-bearing
+      one. `.agents/slop/difftxt/inventory.out`.
+- [x] **THE EXPERIMENT, AND IT SETTLED THE DECISION.** `.agents/slop/difftxt/rename-experiment.sh`
+      renames one extension and nothing else, then runs the FROZEN oracle's `healthy()` and
+      `artefacts_ok()` (extracted verbatim by line range, digests in `oracle-probe.sh`) plus
+      `differ.py`'s own, against three populations. **MEASURED: the pin reported
+      `[] -- PIN INTACT` in all three; `artefacts_ok()` went 53 -> 0 -> 0.** The third row is the
+      real finding: **it reported ZERO on a directory holding nothing, so it was never a guard and
+      the rename only exposed that.** Also measured: `oracle-repro.sh`'s `healthy()` is FALSE on
+      the LIVE tree already (its pins read `graphs=24/22/21`, this driver writes `16/14/14`), so it
+      gates nothing today; `corpus-figure.py` is LOUD (`NO RUN SUMMARY`, exit 1), not silent.
+- [x] **ANSWER 2: LEAVE THE NAMES, CARVE OUT EXPLICITLY — and fix the guard that made the
+      rename dangerous.** `.agents/slop/difftxt/DECISION.md`. `checks/no-txt.py` now excuses
+      `differ.declared()` — **imported, not copied** — so an orphan `.txt` under `runs/graphcmp/D/`
+      is still reported (measured: 602 -> 603 hard, and `artefacts_ok()` says `UNEXPECTED`).
+      `artefacts_ok()` takes its population from `declared()` and reports `MISSING`/`UNEXPECTED`:
+      on the renamed population it now reports **103 `MISSING`** where it reported none. `unhealthy()`
+      now NAMES a missing summary instead of raising `FileNotFoundError` (measured). **`repro 1` is
+      byte-identical before and after: rc=2, same 11 offenders, `settled()` = `SOME PROOFS FAIL`**
+      — verdict-neutral, and the substrate is cold so this is NOT a measurement either way.
+- [x] **ORACLE BYTES UNTOUCHED, PIN UNTOUCHED.** `oracle-run.sh` still
+      `94e7108d428bae3f…`, `oracle-repro.sh` still `a5d23505b3e93816…`, `check_oracle()` -> `[]`.
+      Nothing to re-pin, which is the point of answer 2.
+- [ ] **UNSETTLED, NOT MINE:** `differverdict/` holds `.txt` snapshot copies of the shell-vs-py
+      artifact SET (`shell-D/`, `py-D/`, `warm-*/`, `python-*`), which is the one comparison a
+      rename would destroy — `VERDICT.md` reads "147 of 151 artifacts are byte-identical".
+      `gates/artifacts/*/{bd,bn,py}.txt` are `gatekit`'s, and `checks/{census,e2e-mm-gate,gate}.txt`.
+      Left alone deliberately.
+- [ ] **`differ.py:458`'s "Reported, not fixed -- see DIFFPY.md" STILL POINTS AT NOTHING.**
+      `DIFFPY.md` exists nowhere. In my file, and the sentence is about the `ready() &&` ordering I
+      did not change. Needs one of: the file, or the sentence.

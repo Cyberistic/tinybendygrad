@@ -137,6 +137,39 @@ PINS = {
     "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
 }
+# THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
+# `oracle-run.sh` writes all 103 and reads twelve of them by name in its own summary block;
+# `oracle-repro.sh` reads one by name (`:61`) and globs five families (`:105`, `:114`); this file
+# reads twelve by name and globs the rest; `checks/corpus-figure.py:72` reads `D0-run-summary.txt`
+# and refuses on it. So the list lives with the GENERATOR and the two things that must agree with
+# it -- `artefacts_ok()`'s population and `checks/no-txt.py`'s `.txt` carve-out -- ask it here
+# rather than carrying a second copy that would go stale without anyone noticing.
+LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-cross-range",
+            "D7-conf", "D8-dbg-012", "D8-dbg-03", "D9-stability", "D10-zerorow-guard",
+            "D0-coverage-census", "D8b-cpython-dbg1-reachability", "D0-ops-probe")
+# THE `diff` REPORTS, by the prefix a glob in the frozen oracle spells. Named here rather than
+# inline at the one call site because `oracle-repro.sh:114` uses the identical five, so this is
+# the same list twice in two languages.
+REPORTS = ("D1-graph-", "D3-control-", "D5-plant-", "D6-", "D9-stability-")
+
+
+def declared() -> set[str]:
+    """Every `.txt` artifact `cmd_run` writes, with its extension, as a set of names.
+
+    DERIVED, never typed: a list written out here is a third copy of the tables above, and the
+    measured failure of a stale copy is in `differverdict/VERDICT.md`, where 4 LOST and 4 NEW
+    artifact names sat between two runs of the SAME driver and only a name-by-name diff found
+    them. `cmd_run` builds these names out of `WANT`/`CONTROLS`/`PLANTS`/`STAB`, so this reads
+    the same tables it does.
+    """
+    return {f"{n}.txt" for n in LITERALS} \
+        | {f"D1-graph-{g}.txt" for g in WANT} \
+        | {f"D2-canon-{s}-{g}.txt" for g in WANT for s in ("py", "bend")} \
+        | {f"D2-cmp-{g}.txt" for g in WANT} \
+        | {f"D3-control-{g}.txt" for g in CONTROLS} \
+        | {f"D5-plant-{p}.txt" for p, _ in PLANTS} \
+        | {f"D6-{g}-{k}.txt" for g in ("matmul", "commute") for k in ("ordered", "equiv")} \
+        | {f"D9-stability-{g}-{s}.txt" for g, _ in STAB for s in "ab"}
 
 
 def gc(*args, **kw):
@@ -429,7 +462,18 @@ def unhealthy():
     The shell's `healthy()` answered one boolean, so a stale pin was indistinguishable from a
     broken run. That is the whole reason this returns the offenders: a health gate that says
     only "not healthy" has spent an hour of wall clock saying nothing about why.
+
+    IT ALSO NAMES A MISSING SUMMARY INSTEAD OF RAISING, which is the second half of the same
+    rule. This used to `text("D0-run-summary.txt")` straight, so the one state in which there is
+    no run at all -- an empty artifact directory, or a driver whose output names moved -- came
+    out as a `FileNotFoundError` traceback. A traceback says which line raised and nothing about
+    which run or which pin, which is the "says only that something is wrong" failure this
+    function exists to remove. MEASURED 2026-10-05: renaming the artifacts `*.txt` -> `*.rows`
+    took `check_oracle()` to `[] -- PIN INTACT` and this call to exactly that traceback.
     """
+    if not (D / "D0-run-summary.txt").exists():
+        return ["D0-run-summary.txt ABSENT -- there is no run to be healthy about, so every pin "
+                "below is unknown rather than matched"]
     got = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
     return [f"{k}={v} (expected {PINS[k]})" for k, v in got.items() if k in PINS and v != PINS[k]] \
         + [f"{k} ABSENT" for k in PINS if k not in got]
@@ -440,16 +484,34 @@ def artefacts_ok():
 
     A gate that reads the summary trusts that the summary and the files were written at the
     same time by the same attempt, and they were not when a step can fail. So this counts the
-    SHAPE of every artifact: no `.txt` may be empty, and no diff REPORT may be a single
+    SHAPE of every artifact: no artifact may be empty, and no diff REPORT may be a single
     `rc=` line -- the 0-row failure shape, and two of them compared equal. `*.err` files are
     legitimately empty and are excluded: a rule that flags a correct file is a rule that
     always fails, and then it is not a rule.
+
+    **THE POPULATION IS `declared()`, NOT A GLOB.** This is the finding, and it was measured
+    before it was fixed. The first version globbed `*.txt`, and a glob is a set of names this
+    file chooses, so the day those names move the guard inspects NOTHING and reports NOTHING.
+    MEASURED 2026-10-05 by renaming one extension with nothing else changed:
+
+        population      findings
+        live              53
+        renamed to .rows    0     <- the guard stopped existing, and said so by succeeding
+        no files at all     0     <- so it was never a guard; the rename only found it
+
+    while `check_oracle()` reported `[] -- PIN INTACT` throughout, because a sha256 over an
+    oracle's bytes says nothing about which names that oracle reads. So the guard now NAMES its
+    population: `MISSING` for a declared artifact that is absent -- which is exactly the state a
+    rename produces -- and `UNEXPECTED` for something no command writes, which is the stale
+    residue `cmd_run` prunes and which only a name-aware check can see.
     """
-    bad = [f"EMPTY {p.relative_to(ROOT)}" for p in sorted(D.glob("*.txt")) if not p.stat().st_size]
-    reports = {p for pattern in ("D1-graph-*.txt", "D3-control-*.txt", "D5-plant-*.txt",
-                                 "D6-*.txt", "D9-stability-*.txt") for p in D.glob(pattern)}
-    bad += [f"ONE-LINE {p.relative_to(ROOT)}" for p in sorted(reports) if one_line(p.name)]
-    return bad
+    present = {p.name for p in D.glob("*.txt")}
+    here = present & declared()
+    return [f"MISSING {n}" for n in sorted(declared() - present)] \
+        + [f"UNEXPECTED {n}" for n in sorted(present - declared())] \
+        + [f"EMPTY {(D / n).relative_to(ROOT)}" for n in sorted(here) if not (D / n).stat().st_size] \
+        + [f"ONE-LINE {(D / n).relative_to(ROOT)}" for n in sorted(here)
+           if n.startswith(REPORTS) and one_line(n)]
 
 
 def clean_run(label, wait):

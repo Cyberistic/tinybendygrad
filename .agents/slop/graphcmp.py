@@ -1385,11 +1385,95 @@ def g_flip():
   return UOp.group(a.flip(0).uop)
 
 
+# --- THE THREE RESTORED GRAPHS (2026-10-05).  `allred`, `cdiv` and `late` were in `GRAPHS` in
+# commit `db95da7bf` and are in NO commit that is an ancestor of HEAD, so the corpus silently lost
+# them and the CPYTHON-side union fell 61 -> 53.  Recovered verbatim from that commit; the bodies
+# are unchanged and the measured censuses are beside each one.  WHAT RESTORING THEM PROVES is
+# CPYTHON-SIDE REACHABILITY and nothing else -- see `.agents/slop/graphrestore/RESTORE.md`.
+def g_allred():
+  """`Tensor.empty(4,3,f32).uop.copy_to_device(('CPU','CPU')).allreduce(Ops.ADD, ('CPU','CPU'))`
+  -- 9 nodes, and it reaches TWO ops no eager single-device graph can: `ALLREDUCE` and `COPY`.
+  MEASURED census: `ALLOC=1 ALLREDUCE=1 CONST=3 COPY=1 RANGE=1 RESHAPE=1 STACK=1`.
+
+  NOT A HAND-WRITTEN `UOp(Ops.ALLREDUCE, ...)`.  `UOp.allreduce` (ops.py:679) ASSERTS
+  `isinstance(self.device, tuple)`, so the only way to get one is a genuinely multi-device UOp,
+  and `UOp.copy_to_device` (ops.py:765) is what mints it -- appending the DEVICE RANGE itself
+  (`UOp.device_range_src`, ops.py:766, `UOp.range(len(device), 0, AxisType.DEVICE)`).  So the
+  `RANGE` in this graph is not a fixture choice: `spec.py:31-34` `valid_device_range` REQUIRES
+  exactly one src, a DEVICE-axis RANGE, and `int(rng.vmax)+1 == len(device)`, and the graph would
+  fail spec without it.  `('CPU','CPU')` is not a fake multi-device setup in the sense that
+  matters -- `valid_device_range` and `Ops.allreduce` only test that it is a TUPLE, and
+  `Device.default` is CPU under the differ's pin, so the graph is byte-identical on any host."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.float)
+  return a.uop.copy_to_device(("CPU", "CPU")).allreduce(Ops.ADD, ("CPU", "CPU"))
+
+
+def g_cdiv():
+  """`a.fmod(b)` and `a.div(b, rounding_mode="trunc")` over two `int` tensors -- 10 nodes, and it
+  is the ONLY route to `CDIV` and `CMOD`: both are minted from `int` dtypes only
+  (`mixin/elementwise.py:226` and `:251`), so every float graph spells them `MUL`+`RECIPROCAL`
+  or `FLOORDIV`/`FLOORMOD` instead.  MEASURED census:
+  `ALLOC=2 CDIV=1 CMOD=1 CONST=2 GROUP=1 RESHAPE=2 STACK=1`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.int)
+  b = Tensor.empty(4, 3, dtype=dtypes.int)
+  return UOp.group(a.fmod(b).uop, a.div(b, rounding_mode="trunc").uop)
+
+
+# `SUB` / `NEG` / `CMPEQ` / `FDIV` -- FOUR ops that are NOT IN AN EAGER GRAPH AT ALL.  This graph is
+# upstream's OWN late rewrite applied to upstream's own eager graph.  MEASURED at 12 nodes on
+# `DEV=CPU`, census `ALLOC=2 CMPEQ=1 CONST=2 FDIV=1 GROUP=1 NEG=1 RESHAPE=2 STACK=1 SUB=1`.
+# FOUR NEW OPS.  It is 13 nodes and gains only THREE on a device whose renderer lacks `FDIV` --
+# MEASURED on `MetalRenderer` and `NullRenderer`, `a / b` stays `MUL(a, RECIPROCAL(b))`.
+#
+# **THE FINDING THIS GRAPH RECORDS IS THAT FOUR OF THE SIX ARITHMETIC OPS ARE REWRITE-ONLY IN THIS
+# TREE**, and each one's EAGER SPELLING IS EXACTLY THE LEFT-HAND SIDE OF THE REWRITE THAT MINTS IT.
+# MEASURED, by CALLING CPython and reading the emitted rows (not by reading `Ops`):
+#     op      eager construction                        eager census            upstream's rule
+#     SUB     a - b        (elementwise.py:123)          ADD=1 MUL=1 CONST=3     op.py:106
+#     NEG     a.neg()      (elementwise.py:74)           MUL=1 CONST=3            op.py:105
+#     CMPEQ   a.eq(b)      (elementwise.py:337)          CMPNE=2 CONST=3         op.py:117
+#     FDIV    a.reciprocal()(elementwise.py:468)          RECIPROCAL=1            op.py:124
+# so `a - b` is `ADD(a, NEG(b))` spelled `ADD(a, MUL(b, CONST -1))`, `a.neg()` is `MUL(a, CONST -1)`,
+# `a.eq(b)` is `CMPNE(a, b).logical_not()`, and `a / b` is `MUL(a, reciprocal(b))`.
+#
+# **`supported_ops` IS THE DEVICE'S OWN TABLE AND NOT A LIST I CHOSE.**  It is read exactly as
+# `codegen/__init__.py:350` reads it -- `tuple(renderer.code_for_op.keys())` on
+# `Device.default.renderer`, which follows `DEV`.  MEASURED per backend:
+# `ClangRenderer` (18 keys) has `NEG SUB CMPEQ FDIV`; `MetalRenderer` (21) and `NullRenderer` (23)
+# have `NEG SUB CMPEQ` and NOT `FDIV`; **NO renderer in this tree lists `MULACC`** (it needs a ptx
+# backend, and `op.py:118`'s `if Ops.MULACC in ops` is the only gate).  So WHICH four of the six
+# this graph reaches is a PROPERTY OF THE BACKEND, and **the corpus figure is device-dependent** --
+# `checks/corpus-figure.py` never pins `DEV`, and this file's `g_late` is the graph that shows it.
+#
+# WHAT THE PORT IS AND IS NOT BEING ASKED HERE, because it is the easy thing to overstate: the PY
+# side is upstream's rewrite applied to upstream's eager graph.  The PORT side builds the
+# REWRITTEN graph directly in its arena; it does NOT implement `get_late_rewrite_patterns` and
+# this graph says nothing about whether it could.  The same shape as `g_gate`, which takes
+# `pm_linearize_cleanups`' output and never runs the matcher.  The claim is that the port's op
+# surface, dtype rules and arena reproduce upstream's rewritten graph -- NOT that the port can
+# rewrite.
+def g_late():
+  from tinygrad import Tensor
+  from tinygrad.device import Device
+  from tinygrad.helpers import DISABLE_FAST_IDIV
+  from tinygrad.uop.ops import graph_rewrite
+  from tinygrad.codegen.decomp.op import get_late_rewrite_patterns
+  a = Tensor.empty(4, 3, dtype=dtypes.float)
+  b = Tensor.empty(4, 3, dtype=dtypes.float)
+  eager = UOp.group((a - b).uop, a.neg().uop, a.eq(b).uop, (a / b).uop)
+  pm = get_late_rewrite_patterns(tuple(Device.default.renderer.code_for_op.keys()),
+                                 bool(DISABLE_FAST_IDIV))
+  return graph_rewrite(eager, pm, name="arith/late")
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
           "sym": g_sym, "lin": g_lin, "loop": g_loop, "gate": g_gate, "bw": g_bw,
-          "alu": g_alu, "bit": g_bit, "where": g_where, "move": g_move, "flip": g_flip}
+          "alu": g_alu, "bit": g_bit, "where": g_where, "move": g_move, "flip": g_flip,
+          "allred": g_allred, "cdiv": g_cdiv, "late": g_late}
 
 _BASE: dict[str, UOp] = {}
 

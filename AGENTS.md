@@ -37,7 +37,11 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   coverage census, and (repro) that one run is reproducible. Artifacts in `runs/graphcmp/D`,
   read `D0-run-summary.txt` first; `checks/README.md` names every file. `graphcmp-run.sh` /
   `graphcmp-repro.sh` are shims onto it, and the shell bodies are the oracle in
-  `.agents/slop/diffpy/`.
+  `.agents/slop/diffpy/`, **sha256-pinned in code at `differ.py:58` and read BY ARTIFACT NAME —
+  `oracle-repro.sh:61` and `:105`, and `checks/corpus-figure.py:72`. So the 103 `.txt` names there
+  are a contract, not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not
+  copied) and nothing else, and renaming them means the pin has to move with them in one commit.
+  See `checks/README.md` and `.agents/slop/difftxt/`.**
 - `e2e.py` — the 8-stage end-to-end gate. Do not rewrite it to tidy it. **NOT CURRENTLY GREEN, AND IT
   WAS NOT SINCE `371cc64c9`:** stage 1 exits 2 because the sweep deleted `e2e_mm.py`, so **stages 2-8
   never ran and there were no 8 verdicts to read.** The fixtures are restored and stage 1 runs; stages
