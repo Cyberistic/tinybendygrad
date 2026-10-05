@@ -15,6 +15,10 @@ General:
 Development:
 
 - No external dependancies. 
+- **No `.txt` files, ever.** Use `.rows` for expected values and row dumps, `.out`/`.err` for captured
+  streams, `.tsv` for tabular, `.md` for prose. `checks/no-txt.py` enforces it. A `.txt` extension is a
+  declaration that the author did not know what the file was, and a sweep that reads basenames cannot
+  tell a row dump from a diary entry. 
 - Always stay turing-incomplete. Any turing completeness must be approved first. 
 
 
@@ -34,7 +38,13 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   read `D0-run-summary.txt` first; `checks/README.md` names every file. `graphcmp-run.sh` /
   `graphcmp-repro.sh` are shims onto it, and the shell bodies are the oracle in
   `.agents/slop/diffpy/`.
-- `e2e.sh` — the 8-stage end-to-end gate, green. Do not rewrite it to tidy it.
+- `e2e.py` — the 8-stage end-to-end gate. Do not rewrite it to tidy it. **NOT CURRENTLY GREEN, AND IT
+  WAS NOT SINCE `371cc64c9`:** stage 1 exits 2 because the sweep deleted `e2e_mm.py`, so **stages 2-8
+  never ran and there were no 8 verdicts to read.** The fixtures are restored and stage 1 runs; stages
+  2-8 need `bend` and `node`, so **run it with nothing else compiling.** Stage 8's true denominator is 0
+  and the correct action is to retire it rather than re-point it.
+- `checks/no-txt.py` — **there is no `.txt` file in this project.** It exits 1 and prints each path.
+  `.rows` is expected values, `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose.
 - `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
 - `gates/*.py` — per-def gates, and they are **Python, never shell**. `.agents/slop/` is being
   pruned, so nothing new goes there. A gate names its `.bend` driver and its CPython oracle,
