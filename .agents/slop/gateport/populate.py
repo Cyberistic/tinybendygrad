@@ -22,8 +22,8 @@ already paid for:
   4. THE POPULATION IS THE FILESYSTEM (os.walk), and every file's existence is re-checked at
      report time — because the census's own rows outlived the files they describe.
 
-    .venv/bin/python .agents/slop/gateport/enum.py            # the table
-    .venv/bin/python .agents/slop/gateport/enum.py --json     # rows for the selector
+    .venv/bin/python .agents/slop/gateport/populate.py            # the table
+    .venv/bin/python .agents/slop/gateport/populate.py --json     # rows for the selector
 """
 from __future__ import annotations
 
@@ -87,7 +87,7 @@ def main() -> int:
     print(f"#     with a shell shebang                             {sum(1 for r in sh if r['shebang_sh'])}")
     print(f"#     executable bit set                              {sum(1 for r in sh if r['exec'])}")
     print(f"#     carrying an ORACLE_PIN (already ported)           {sum(1 for r in sh if r['sh'] and pin(r['rel']))}")
-    print(f"#   GATE-SHAPED BY NAME (see NAME_SHAPED)              {len([r for r in sh if NAME_SHAPED(r['rel'])])}")
+    print(f"#   GATE-SHAPED BY NAME (see NAME_SHAPED)              {len([r for r in sh if NAME_SHAPED.search(r["rel"])])}")
     if "--json" in sys.argv:
         json.dump(rows, sys.stdout)
         return 0
@@ -101,6 +101,7 @@ def main() -> int:
 # migration order, and the 16 NAME-ONLY gates exist because a name is not a measurement.
 NAME_SHAPED = re.compile(
     r"(^|[-_/])(gate|check|verify|oracle|sweep|census|assert|audit|compare|diff)([-_.]|$)")
+NAME_SHAPED.search  # `re.Pattern` is not callable; the name stays a pattern and is applied with .search
 
 
 def pin(r: str) -> bool:
