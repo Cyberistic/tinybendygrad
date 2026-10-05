@@ -25,6 +25,8 @@ the 34/35 pair happened. A graph that fails to build is **printed and counted se
 skipped quietly: a coverage figure that silently drops a graph understates the coverage it claims.
 """
 from __future__ import annotations
+import re
+from pathlib import Path
 
 import argparse
 import importlib.util
@@ -51,6 +53,32 @@ def load_graphcmp():
               "GroupOp", "Context"):
         setattr(sys.modules["gc"], n, getattr(gc, n))
     return gc
+
+
+def run_health() -> str:
+    """The RUN's own verdict, or a loud statement that there isn't one.
+
+    MEASURED 2026-10-05. This function did not exist, and its absence is the whole defect: the
+    instrument printed `graphs built 22 / FAILED 0` while `runs/graphcmp/D/D0-run-summary.txt` — which
+    `checks/README.md:44` calls "the run's verdict" and `:67` "the only file `repro` reads for health" —
+    said `graphs=16  graphs-agree=0  not-comparable=16  stable-failed=5 of 5`, and
+    `D0-coverage-census.txt` said **in its own body** `emit bend: 0 rows after 5 attempts -- a FAILURE,
+    not a verdict`. `D2-canon-bend-indexed.txt` is **0 bytes**.
+
+    **A COVERAGE FIGURE PRINTED OVER A RUN THAT COMPARED NOTHING IS NOT A COVERAGE FIGURE.** The number
+    was not wrong by being miscounted; it was answering a different question and wearing this
+    instrument's name. So the run's health is read from the run, and `main` refuses on it.
+    """
+    summary = Path(__file__).resolve().parents[1] / "runs/graphcmp/D/D0-run-summary.txt"
+    if not summary.exists():
+        return "RUN HEALTH        : **NO RUN SUMMARY** -- there is no run to corroborate anything"
+    kv = dict(re.findall(r"^(\S+)=(\S+)$", summary.read_text(), re.M))
+    agree, nc = int(kv.get("graphs-agree", -1)), int(kv.get("not-comparable", -1))
+    total = int(kv.get("graphs", 0))
+    if nc == 0 and agree == total and total > 0:
+        return f"RUN HEALTH        : OK -- {agree} of {total} graphs agree"
+    return (f"RUN HEALTH        : **FAILED** -- {agree} of {total} graphs agree, "
+            f"{nc} not comparable. THE UNION ABOVE IS NOT A VERDICT.")
 
 
 def main() -> int:
@@ -90,7 +118,12 @@ def main() -> int:
     for g, why in broken.items():
         print(f"    {g}: {why}")
     print(f"denominator len(Ops) : {len(names)}")
-    print(f"UNION  ops reached   : {len(union)} of {len(names)}")
+    print(f"CPYTHON-SIDE UNION   : {len(union)} of {len(names)}")
+    print("  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE 22 GRAPH DEFINITIONS.")
+    print("     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), \"py\")`")
+    print("     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH")
+    print("     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.")
+    print(run_health())
     print(f"per-graph SUM        : {per_graph_sum}   <- NOT the figure; it counts an op once "
           f"per graph that has it")
     print(f"NOT reached ({len(missing)}): {' '.join(missing)}")
@@ -104,7 +137,10 @@ def main() -> int:
         print(f"- not reached: {' '.join(missing)}")
 
     # A figure that cannot be reproduced is not a measurement. Non-zero exit says so.
-    return 0 if built == len(gc.GRAPHS) else 1
+    # THE EXIT CODE REFUSES ON THE RUN, NOT ONLY ON THE DECLARATION. A green exit over a failed
+    # run is how `graphs built 22 / FAILED 0` was printed beside `graphs-agree=0` for a whole
+    # session. **AN INSTRUMENT THAT CANNOT SEE A TOTAL FAILURE IN ITS OWN INPUT IS A FIGURE.**
+    return 0 if built == len(gc.GRAPHS) and "FAILED" not in run_health() else 1
 
 
 if __name__ == "__main__":
