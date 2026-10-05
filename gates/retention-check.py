@@ -179,7 +179,7 @@ def attempts(directory, slack=600):
     directory holds, and the ones the EARLIEST left behind.
 
     NOT newest-versus-the-rest. MEASURED: a single correct run writes its seven files over 2-11
-    SECONDS (`py.txt`, `bd.txt`, `gate.bin`, then the `.sub`s, with the native compile in the
+    SECONDS (`py.rows`, `bd.out`, `gate.bin`, then the `.sub`s, with the native compile in the
     middle), so "older than the newest" names six of seven files in a directory produced by one
     GOOD run -- a rule that fires on a correct file is a rule that always fails. The
     discriminator is a CLUSTER: files written within `slack` seconds of each other are one

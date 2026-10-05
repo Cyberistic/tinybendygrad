@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate
+from gatekit import Gate, LANE_OUT as GATE_OUT, LANE_ROWS as GATE_ROWS
 
 GATE = Gate(
     "wk-f32-gate",
@@ -53,7 +53,7 @@ if __name__ == "__main__":
         vals = {}
         for lane in ("py", "bd", "bn"):
             rows = dict(l.split("=", 1) for l in
-                        (GATE.dir / f"{lane}.txt").read_text().splitlines() if "=" in l)
+                        (GATE.dir / f"{lane}{GATE_ROWS if lane == 'py' else GATE_OUT}").read_text().splitlines() if "=" in l)
             vals[lane] = (rows["neg1"], rows["neg2"])
         if vals["py"][0] == vals["py"][1]:
             print("wk-f32-gate: the ORACLE says neg1 and neg2 are the same f32 -- the table "

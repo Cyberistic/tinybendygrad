@@ -66,7 +66,7 @@ def f32_bits(x):
 
 
 def main():
-    out = pathlib.Path('.agents/slop/wk-f32-table.txt')
+    out = pathlib.Path('gates/wk-f32-table.rows')
     lines = []
     for nm, hi, lo in ROWS:
         v = signed(hi, lo)

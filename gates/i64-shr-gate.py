@@ -20,11 +20,11 @@ the pair shift. `bd == bn` is the anti-constant-folding check on the runtime amo
 THE CLAIMS RUN WHATEVER THE DIFF DID, and that ordering is not cosmetic. `gatekit.run()`
 returning 1 on a lane disagreement is exactly when "the two routes reached DIFFERENT
 amounts" is the thing worth saying, so a gate that skipped its claims on a failed diff
-could never report the failure it exists to report. They run on `bd.txt` and are SKIPPED,
+could never report the failure it exists to report. They run on `bd.out` and are SKIPPED,
 loudly, unless that file holds exactly ROWS rows -- a stale artifact from a previous run
 would otherwise be read as this run's answer, which is a claim about nothing. (That is a
 known defect: `gatekit.run()` returns before writing, so a FAILED run leaves the last
-green `bd.txt` in place.)
+green `bd.out` in place.)
 """
 import os
 import sys
@@ -61,7 +61,7 @@ GATE = Gate(
 
 
 def lane_file(lane):
-    """`gates/artifacts/i64-shr/<lane>.txt`, wherever `gatekit` decided to stage it.
+    """`gates/artifacts/i64-shr/<lane>.out`, wherever `gatekit` decided to stage it.
 
     RESOLVED, NOT ASSUMED. `gatekit`'s staging policy moved under this file once while it
     was being written -- it publishes lanes under `self.dir` for `run()`'s own reads and
@@ -70,10 +70,10 @@ def lane_file(lane):
     layouts are accepted, and the resolution FAILS LOUDLY if neither exists rather than
     falling through to an empty dict, which is the `"" == ""` shape.
     """
-    p = GATE.dir / f"{lane}.txt"
+    p = GATE.dir / f"{lane}.{'rows' if lane == 'py' else 'out'}"
     if p.exists():
         return p
-    staged = sorted(GATE.dir.glob(f".tmp*/{lane}.txt")) + sorted(GATE.dir.glob(f"{lane}.txt.*"))
+    staged = sorted(GATE.dir.glob(f".tmp*/{lane}*.out")) + sorted(GATE.dir.glob(f"{lane}.txt.*"))
     if staged:
         return staged[0]
     raise SystemExit(f"i64-shr-gate: no lane file for {lane} under {GATE.dir} -- the claims "
@@ -103,7 +103,7 @@ def main():
     ok = GATE.run() == 0
 
     # THE FRESHNESS GUARD, and it is the sibling gate's recorded finding: `gatekit.run()`
-# returned BEFORE writing, so a red run left the LAST GREEN `bd.txt` in place and a diff of
+# returned BEFORE writing, so a red run left the LAST GREEN `bd.out` in place and a diff of
 # that path after a failure was a diff of the wrong run. The count is the guard -- and it is
 # checked BEFORE the claims read a single row, because a claim made from a stale file is a
 # claim about nothing. `gatekit` has since grown a clear-and-promote policy for its own

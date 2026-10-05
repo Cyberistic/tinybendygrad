@@ -56,6 +56,10 @@ TMP = ".tmp."
 NOTICE = re.compile(r"^bend \S+ is available: run bend update$")
 
 
+LANE_ROWS = ".rows"   # the oracle's EXPECTED VALUES
+LANE_OUT = ".out"     # the two CAPTURED STREAMS
+
+
 def _staged(name):
     """The name a run WRITES. `checks/differ.py:158`'s convention, unchanged."""
     return f"{TMP}{name}"
@@ -231,7 +235,7 @@ class Gate:
         if r.returncode != 0:
             self._say(f"the oracle failed rc={r.returncode}: {r.stderr.strip()[:200]}")
             return False
-        (self.dir / _staged("py.txt")).write_text(r.stdout)
+        (self.dir / _staged("py.rows")).write_text(r.stdout)
         return True
 
     def _lane(self, argv, name):
@@ -260,11 +264,11 @@ class Gate:
         """STAGE EVERY WRITE, AND SETTLE ON EVERY EXIT -- INCLUDING A RAISED ONE.
 
         THE FAILURE THIS EXISTS TO STOP. A run that failed used to leave the PREVIOUS run's
-        `bd.txt` exactly where it was, so a diff of `gates/artifacts/<gate>/bd.txt` after a RED
+        `bd.out` exactly where it was, so a diff of `gates/artifacts/<gate>/bd.out` after a RED
         run diffed the last **GREEN** run. Same shape as `bend -o` leaving the previous exe,
         which is how a stage runs a stale binary and prints a plausible number. MEASURED on the
         live tree before this fix: after a red run, 7 of 7 artifacts were byte-identical to the
-        previous green run's, and a second red shape left 6 of 7 stale with `py.txt` fresh.
+        previous green run's, and a second red shape left 6 of 7 stale with `py.rows` fresh.
 
         TWO HALVES, AND NEITHER IS ENOUGH ALONE. `_clear()` empties the directory FIRST, so a run
         that fails with nothing staged ends with an EMPTY directory; promotion by itself would
@@ -282,32 +286,34 @@ class Gate:
                 return 1
             if not self._oracle():
                 return 1
-            bd, bn, binp = (self.dir / _staged(n) for n in ("bd.txt", "bn.txt", "gate.bin"))
-            if not self._lane([str(BEND), str(self.bend)], "bd.txt"):
+            bd, bn, binp = (self.dir / _staged(n) for n in ("bd.out", "bn.out", "gate.bin"))
+            if not self._lane([str(BEND), str(self.bend)], "bd.out"):
                 return 1
             c = subprocess.run([str(BEND), str(self.bend), "-o", str(binp)],
                                capture_output=True, text=True)
             if c.returncode != 0:
                 self._say(f"the native compile failed: {(c.stderr or '').strip()[:200]}")
                 return 1
-            if not self._lane([str(binp)], "bn.txt"):
+            if not self._lane([str(binp)], "bn.out"):
                 return 1
 
-            lanes = {t: self.dir / _staged(f"{t}.txt") for t in ("py", "bd", "bn")}
+            lanes = {t: self.dir / _staged(f"{t}{LANE_ROWS if t == 'py' else LANE_OUT}")
+                     for t in ("py", "bd", "bn")}
             # DERIVED, NOT DECLARED, AND THIS IS A FIX. The check used to demand `self.rows` of
             # EVERY lane, which makes the documented `port_only` shape UNREACHABLE: a port-only row
             # is by definition absent from the oracle, so the oracle lane is short by exactly
             # `len(port_only)`. `gates/README.md` claim 3 has therefore been describing a shape
             # that could not be constructed. MEASURED on the two gates ported here: `mixin` prints
             # 36 port rows against 32 oracle rows, 4 of them port-only, and the old check rejected
-            # that as "py.txt has 32 rows, expected 36". Derived from `port_only` rather than
+            # that as "py.rows has 32 rows, expected 36". Derived from `port_only` rather than
             # passed in, because a second number that can disagree with the first is a number
             # nobody can check.
             for tag, f in lanes.items():
                 want = self.rows - len(self.port_only) if tag == "py" else self.rows
                 n = len(_lines(f))
                 if n != want:
-                    self._say(f"{tag}.txt has {n} rows, expected {want}"
+                    self._say(f"{tag}{LANE_ROWS if tag == 'py' else LANE_OUT} has {n} rows, "
+                              f"expected {want}"
                               + (f" ({self.rows} less {len(self.port_only)} port-only)"
                                  if tag == "py" and self.port_only else ""))
                     return 1
@@ -336,7 +342,7 @@ class Gate:
                         self._say(f"{tag} carries {len(hits)} excluded rows, expected {want} "
                                   f"-- the exclusion list is stale")
                         return 1
-                s = self.dir / _staged(f"{tag}.sub")
+                s = self.dir / _staged(f"{tag}{LANE_ROWS}")
                 s.write_text("\n".join(kept) + "\n")
                 subs[tag] = s
 

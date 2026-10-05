@@ -75,7 +75,7 @@ if __name__ == "__main__":
         # checking replaces: the gate's rows must SPAN both answers, and the interior
         # must not have been sacrificed to make that true. A universe of 39 failures
         # would pass a `0 DIFFER` check just as happily as 39 successes.
-        lane = {k: dict(l.split("=", 1) for l in (GATE.dir / f"{k}.txt").read_text().splitlines()
+        lane = {k: dict(l.split("=", 1) for l in (GATE.dir / f"{k}.{'rows' if k == 'py' else 'out'}").read_text().splitlines()
                         if "=" in l) for k in ("py", "bd", "bn")}
         refuses = sum(1 for n, v in lane["bd"].items() if v == "raise")
         shapes = sum(1 for n, v in lane["bd"].items() if v != "raise")

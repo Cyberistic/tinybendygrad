@@ -66,7 +66,7 @@ GATE = Gate(
 
 def rows_of(lane):
     out = {}
-    for line in (GATE.dir / f"{lane}.txt").read_text().splitlines():
+    for line in (GATE.dir / f"{lane}.{'rows' if lane == 'py' else 'out'}").read_text().splitlines():
         if "=" in line:
             k, v = line.split("=", 1)
             out[k] = v
@@ -80,13 +80,13 @@ def main():
     # `gatekit.run()` returning 1 on a lane disagreement is exactly the situation in
     # which "the two routes reached DIFFERENT amounts" is the thing worth saying, so a
     # gate that skipped its claims on a failed diff could never report the failure it
-    # exists to report.  They run on `bd.txt` and are SKIPPED, loudly, unless that file
+    # exists to report.  They run on `bd.out` and are SKIPPED, loudly, unless that file
     # holds exactly ROWS rows -- a stale artifact from a previous run would otherwise be
     # read as this run's answer, which is a claim about nothing.
-    fresh = [(GATE.dir / "bd.txt").exists()
-             and len([l for l in (GATE.dir / "bd.txt").read_text().splitlines() if l]) == ROWS]
+    fresh = [(GATE.dir / "bd.out").exists()
+             and len([l for l in (GATE.dir / "bd.out").read_text().splitlines() if l]) == ROWS]
     if not fresh[0]:
-        print("i64-shl-gate: bd.txt is absent or not %d rows, so the literal-vs-runtime "
+        print("i64-shl-gate: bd.out is absent or not %d rows, so the literal-vs-runtime "
               "claim is SKIPPED rather than answered from a stale file" % ROWS,
               file=sys.stderr)
         ok = False
