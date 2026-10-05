@@ -1,8 +1,0 @@
-BEFORE  rows=574  distinct=547  DUPLICATE NAMES=27  surplus=27  sha256(nv-oracle.py)=995767bf35fb0717
-AFTER   rows=547  distinct=547  DUPLICATE NAMES=0  surplus=0
-  duplicate NAMES: 27 -> 0  closed=['nv_bpt_1_48428', 'nv_copy_nsteps_4294967295', 'nv_errstr_0', 'nv_errstr_2', 'nv_errstr_4096', 'nv_errstr_8', 'nv_errstr_999', 'nv_iowr_0_0', 'nv_iowr_1280_2', 'nv_iowr_40_43', 'nv_iowr_4_1', 'nv_iowr_64_44', 'nv_iowr_8191_136', 'nv_iowr_8192_1', 'nv_iowr_8192_255', 'nv_iowr_96_65', 'nv_launch_ok_1024_1024', 'nv_launch_ok_1024_8192', 'nv_paccess_0', 'nv_paccess_2', 'nv_paccess_4', 'nv_reloc_bad_n', 'nv_reloc_bad_refused', 'nv_reloc_kind_n', 'nv_reloc_msg_0', 'nv_reloc_msg_100', 'nv_reloc_msg_3']
-  distinct names:  547 -> 547  (EQUAL = no name invented and none lost)
-  VALUE SET identical: True   only in BEFORE []   only in AFTER []
-  names LOST entirely: []   names GAINED: []
-  source lines: 1227 -> 1207   hunks: 16
-CHECK OK -- nothing written.  27 duplicate names closed, 0 remain, value set identical.

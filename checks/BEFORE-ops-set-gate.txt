@@ -1,3 +1,0 @@
-bend 2.0.35 is available: run bend update
-bend 2.0.35 is available: run bend update
-ops-set-gate: 4 rows, 3 lanes identical

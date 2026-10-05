@@ -119,6 +119,11 @@ LIVE_UNITS = (
     # bucket. A live unit's exclusion cannot live in a hand-maintained list that nobody updates at
     # dispatch time, so the mtime window is the real guard and this list is only a second belt.
     "readback", "jsbf16", "bitcastrow", "corpus24", "i64shl", "shfinish", "wallcheck",
+    # DISPATCHED AFTER THAT LIST WAS WRITTEN, WHICH IS THE THIRD TIME IT HAS BEEN WRONG. The mtime
+    # window catches files a unit is actively writing; it does NOT catch the directory a unit is about
+    # to write into, which is why this list exists at all. **A GUARD THAT IS CORRECT EXCEPT FOR THE
+    # LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER.**
+    "staleruns", "straysunit", "noreports", "runskeep", "dotxt",
     # FINISHED UNITS US TO BE PINNED HERE WERE THE WHOLE PROBLEM. MEASURED 2026-10-05: six names
     # sat under a `# finished` heading and had never been removed, and two of them were
     # `differverdict` (**1,382 files**) and `gatecensus` (**971**) — **2,353 of the 4,455 files in

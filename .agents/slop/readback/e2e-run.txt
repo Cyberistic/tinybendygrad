@@ -1,3 +1,0 @@
-== 1/4 oracle (CPython tinygrad, DEV=CPU)
-/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python: can't open file '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2e_mm.py': [Errno 2] No such file or directory
-WHOLE-RUN-EXIT=2
