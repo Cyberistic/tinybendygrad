@@ -9,7 +9,7 @@ allows. **Nothing committed. `renderer/cstyle.bend` was not edited** — sha256
 One command, from a clean `$TMPDIR`, whole tree snapshotted:
 
 ```
-zsh .agents/slop/cstyle2/run-all.sh
+zsh checks/run-all.sh
 ```
 
 Verified end to end at rc=0. Apple clang 21.0.0 (arm64), `bend` 2.0.34 (2.0.35 available).

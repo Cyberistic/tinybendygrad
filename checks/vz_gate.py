@@ -13,8 +13,8 @@ agree:
 than the usual `dtype.bend` 14-unfilled-laws situation: `serve.bend` imports
 `LAWS/spec.bend`, not `dtype.bend`, so nothing foreign reaches it.
 
-    .venv/bin/python .agents/slop/vz/vz_gate.py            # verify
-    .venv/bin/python .agents/slop/vz/vz_gate.py --mutate   # mutation table
+    .venv/bin/python checks/vz_gate.py            # verify
+    .venv/bin/python checks/vz_gate.py --mutate   # mutation table
 
 A LANE THAT EMITS 0 ROWS IS NOT A PASS. One oracle in this repo printed 0 rows and
 exited 1 while the gate printed 432. So the row count is checked first, on every

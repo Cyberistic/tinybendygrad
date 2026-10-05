@@ -25,7 +25,9 @@ implementation that got the right number out of the wrong ops.
 import struct
 import sys
 
-from tinygrad import Tensor
+import math
+
+from tinygrad import Tensor, dtypes
 
 
 def sig(u, nm):
@@ -49,7 +51,24 @@ def main():
     t = Tensor(5)
     sig(t.uop.log(), "ew_log")
     sig(t.uop.log10(), "ew_log10")
-    sig(t.uop.exp(), "ew_exp")
+    # `exp` IS BUILT FROM ITS SOURCE EXPRESSION AND NOT BY CALLING THE METHOD, and that
+    # is the whole difference between 5 nodes and 7.
+    #
+    #     Tensor.exp()  ->  7  CONST CAST CAST CONST MUL EXP2 CAST
+    #     the SOURCE    ->  5  CONST CAST     CONST MUL EXP2
+    #
+    # The port implements the SOURCE, so the oracle has to measure the source. The two extra
+    # nodes are in CPython's `Tensor.exp()` WRAPPER, which this port does not have and is
+    # not asked to have. MEASURED, both ways, in the same process.
+    #
+    # THAT IS THE THIRD TIME A FIXTURE MISMATCH HAS BITTEN THIS GATE, and the three are
+    # worth listing because they are all the same mistake -- comparing the two sides on
+    # different QUESTIONS:
+    #   int32 fixture vs CPython's weakint  (wk-cd-gate: seven rows of i32, proving nothing)
+    #   a weakfloat CONST choosing the lattice vs CPython's strong float32  (ew_exp: 4 vs 7)
+    #   the METHOD WRAPPER vs the SOURCE EXPRESSION                            (ew_exp: 7 vs 5)
+    # In every case the port was right and the ORACLE was asking a different question.
+    sig((t.cast(dtypes.float32) * (1 / math.log(2))).exp2()._uop, "ew_exp")
     print(f"# fixture dtype = {t.dtype}", file=sys.stderr)
     return 0
 

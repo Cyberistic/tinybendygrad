@@ -4,7 +4,7 @@
 
 ## 1. RE-MEASURED FIRST, both sides, with the split
 
-Instrument: `.agents/slop/arith/both-census.py`. The previous instrument
+Instrument: `checks/both-census.py`. The previous instrument
 (`.agents/slop/reach/census.py`) **only counted the py side**, so "both sides read 53" in
 `REACH.md` was not produced by anything that could have found the two sides differing. This
 one emits every graph on both sides and prints the split.

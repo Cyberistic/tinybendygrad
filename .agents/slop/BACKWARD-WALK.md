@@ -6,7 +6,7 @@ CPython. Steps 2 and 3 (`grad_set`, the `bw` graph) are **not** here and are not
 
 - Row: `.agents/slop/backward/walk-row.txt`
 - Plant/disarm: `.agents/slop/backward/walk-plant.md`
-- Harness: `.agents/slop/backward/walk-mutate.sh`
+- Harness: `checks/walk-mutate.sh`
 - Oracle (pre-existing, `58344623cd`): `.agents/slop/backward/oracle-cg.{py,txt}`
 
 ---

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 r"""nvrows-deadrow-gate.py -- A CENSUS OF GATE-ROW CALL SITES THAT NEVER EXECUTE.
 
-    python3 .agents/slop/nvrows/nvrows-deadrow-gate.py
-    python3 .agents/slop/nvrows/nvrows-deadrow-gate.py --plant STRIP|ORPHAN
-    python3 .agents/slop/nvrows/nvrows-deadrow-gate.py --plant SELF
+    python3 checks/nvrows-deadrow-gate.py
+    python3 checks/nvrows-deadrow-gate.py --plant STRIP|ORPHAN
+    python3 checks/nvrows-deadrow-gate.py --plant SELF
 
 WHY IT EXISTS, MEASURED.  `nvdev.bend` has 374 `IP.{,u,s}row(` call sites.  Output
 counting cannot see a dead one: the site's own name never appears, so it costs

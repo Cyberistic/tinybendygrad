@@ -8,10 +8,10 @@
     ../oracles/mm-range.py  FIXED: asked NULL, got NULL, proved by its printed device
 
 ```
-python3 .agents/slop/devgate/devgate.py . --check        # rc 1 iff some file assigns DEV after importing
-python3 .agents/slop/devgate/devgate.py . --why          # per-file write line -> boundary line
-python3 .agents/slop/devgate/devgate.py . --crosscheck   # AST vs an independent regex scan
-python3 .agents/slop/devgate/devgate.py --heldout        # the error rate
+python3 checks/devgate.py . --check        # rc 1 iff some file assigns DEV after importing
+python3 checks/devgate.py . --why          # per-file write line -> boundary line
+python3 checks/devgate.py . --crosscheck   # AST vs an independent regex scan
+python3 checks/devgate.py --heldout        # the error rate
 ```
 
 ## 1. `mm-range.py` — FIXED, and proved by the device it prints

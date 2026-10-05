@@ -15,7 +15,7 @@ with CPython, reproduced twice.**
 Everything below is produced by CALLING, never transcribed. Regenerate:
 
 ```
-.venv/bin/python  .agents/slop/tensor-surface/stage1-census.py
+.venv/bin/python  checks/stage1-census.py
 .venv/bin/python  .agents/slop/tensor-surface/stage2-exercised.py
 env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/tensor-surface/stage3-path.py
 .venv/bin/python  .agents/slop/tensor-surface/stage4-falsify.py
@@ -444,7 +444,7 @@ census could have produced.
 
 | file | what |
 |---|---|
-| `.agents/slop/tensor-surface/stage1-census.py` / `.txt` | the 57-row mapping table, the denominator, the seven names |
+| `checks/stage1-census.py` / `.txt` | the 57-row mapping table, the denominator, the seven names |
 | `.agents/slop/tensor-surface/stage2-exercised.py` / `.txt` | the def graph, the 19 dead defs, 15/17 exercised, 77/77 ops, 0 gradient callers |
 | `.agents/slop/tensor-surface/stage3-path.py` / `.txt` | the `engine/` path, the `DEV=NULL` measurement, the 8 missing pieces, the 3 steps |
 | `.agents/slop/tensor-surface/stage4-falsify.py` / `.txt` | the plant, the oracle, the 5-of-5 diff, the control probe |

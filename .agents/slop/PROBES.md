@@ -103,7 +103,7 @@ port however it is named, and the residue is now printed beside the total instea
 folded into it. `.bend handed` still has to move — it is a count of files on disk — but
 it is no longer the only number on the line.
 
-The paired disarm (`probes/disarm.sh`), because a red with no paired green proves
+The paired disarm (`checks/disarm.sh`), because a red with no paired green proves
 nothing:
 
 | | not-in-index | PORT ALARM |

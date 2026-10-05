@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gate.py -- the fp8 DECODE gate that did not exist, over the live dtype.js.
 
-    python3 .agents/slop/jsfp8/gate.py [--tree PATH] [--predict] [--quick]
+    python3 checks/gate.py [--tree PATH] [--predict] [--quick]
 
 WHAT THIS GATES, AND WHY IT HAD TO BE BUILT RATHER THAN EXTENDED.
 `DTYPEB.md` and `FP8FIX.md:160` both record `Dt.fp8_to` as red and unreached,

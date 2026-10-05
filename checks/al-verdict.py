@@ -9,9 +9,9 @@ numbers. This instrument takes the bend-side rows from a FILE instead, so the BE
 (`arglit/patir-AFTER.txt`, `AOpLit`-spelled) are compared by the same code against the
 same py rows.
 
-    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/arglit/al-verdict.py \
+    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python checks/al-verdict.py \
         .agents/slop/noneshape/patir-run1.txt BEFORE
-    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/arglit/al-verdict.py \
+    env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python checks/al-verdict.py \
         .agents/slop/arglit/patir-AFTER.txt AFTER
 
 THE `AssertionError` WIDENING IS INHERITED FROM `ns-argplant.py` and is NOT PART OF ANY

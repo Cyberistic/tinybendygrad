@@ -473,7 +473,7 @@ event, and only the second one is a disagreement.**
 
 > ## ⚠ §5 IS THE MOST STALE SECTION IN THIS FILE. IT IS A 16-GRAPH, 34-OF-77 BASELINE.
 > The current figure is **59 of 77 over 24 graphs**, measured 2026-10-04 by
-> `.agents/slop/hermetic/hermetic-census.py --no-publish` (rc=0), and it is reproduced in
+> `checks/hermetic-census.py --no-publish` (rc=0), and it is reproduced in
 > full in `.agents/slop/notes-sweep/01-GROUND-TRUTH.md`. **The per-op table and the
 > NOT-REACHED list below are both wrong now**, and so is the commutative count.
 >
@@ -840,7 +840,7 @@ Full text: `.agents/slop/HERMETIC.md`. `graphcmp.py` is byte-unchanged by this u
 (md5 `c7096ee70cdfef447aec10cd784ef3ac`); these are measurements OF it.
 
 - **THE DIFFER CANNOT SEE A CORRUPT INPUT IT IS NOT GIVEN.** The published py row sets this
-  differ's census reads (`arith/both-census.py:39`) disagree with a fresh process for **15 of
+  differ's census reads (`checks/both-census.py:39`) disagree with a fresh process for **15 of
   24 graphs** — same row count, differing only in the `45:`/`46:` `ParamArg` chunk's `slot`
   field (`graphcmp.py:708`). The coverage number read **59** anyway, because the census reads
   field 1, the op. **A verdict computed from an input that cannot be reproduced inherits that

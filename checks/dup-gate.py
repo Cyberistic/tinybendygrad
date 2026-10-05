@@ -2,9 +2,9 @@
 """dup-gate.py -- THE GUARD FOR THE DUPLICATE-ROW-NAME CLASS.  GUARD 0 runs before any value is
 compared, and it is the only thing on most of these lanes that can be red.
 
-    .venv/bin/python .agents/slop/dup/dup-gate.py --port PORT.txt --oracle ORACLE.txt
-    .venv/bin/python .agents/slop/dup/dup-gate.py --port P --oracle O --selftest
-    .venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE.txt AFTER.txt
+    .venv/bin/python checks/dup-gate.py --port PORT.txt --oracle ORACLE.txt
+    .venv/bin/python checks/dup-gate.py --port P --oracle O --selftest
+    .venv/bin/python checks/dup-gate.py --compare BEFORE.txt AFTER.txt
 
 WHAT IT GUARDS, AND WHY IT IS NOT A VALUE CHECK.  `rebase-gate.py:rows()` is `{name: value}` with
 LAST WINS, so a name printed twice costs `n-1` measurements and the surviving row is the last

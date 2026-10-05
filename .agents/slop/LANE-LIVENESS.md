@@ -174,14 +174,14 @@ Legend: **DRIVER** = a script that runs both sides and compares. **EMITTER** = p
 | `opsbend_milestone_gate.py` | **RECORDED** (`rows.txt`, argv) | **RECORDED** `ops_bend-milestone-expected.txt` (`:27`) | n/a | no | **NO** | **RECORDED-VS-RECORDED** |
 | `dsp2-gate.py` | **RECORDED** (argv[2]) | **RECORDED** (argv[1]) | n/a | no | only if re-recorded | RECORDED-VS-RECORDED |
 | `rend_gate.py` | **RECORDED** (argv[1]) | **RECORDED** (argv[2]) | n/a | no | only if re-recorded | RECORDED-VS-RECORDED |
-| `dup/dup-gate.py` | **RECORDED** (`--port PORT.txt`) | **RECORDED** (`--oracle ORACLE.txt`) | n/a | n/a | only if re-recorded | RECORDED-VS-RECORDED (a name-set guard over files) |
+| `checks/dup-gate.py` | **RECORDED** (`--port PORT.txt`) | **RECORDED** (`--oracle ORACLE.txt`) | n/a | n/a | only if re-recorded | RECORDED-VS-RECORDED (a name-set guard over files) |
 | `drift-gate.py` | interp LIVE (`:43`); native **CACHED** unless `-r` (`:54`) | **CACHED** unless `-r` (`:76`) | n/a | n/a | **only with `-r`** | **LIVE-VS-RECORDED by default** |
 | `ansi_gate.py` | **LIVE** — `./bin/bend .agents/slop/ansi_probe.bend [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` (`:64`) | **LIVE** `ansi_oracle.py` (`:61`) | no | no | YES | LIVE-VS-LIVE |
 | `cpulink_gate.py` | **LIVE** `ops_cpu.bend` | **LIVE** `cpulink_oracle.py` | no | no | YES (3 rows) | LIVE-VS-LIVE |
 | `validate-gate.py` | **LIVE** | **LIVE** | no | no | YES | LIVE-VS-LIVE |
-| `eq/nl-gate.py` | **LIVE** (`:429` fall-through) | **LIVE** | no | n/a | YES | LIVE-VS-LIVE |
-| `eq/rn-gate.py` | **LIVE** (`:416`) | **LIVE** | no | n/a | YES | LIVE-VS-LIVE |
-| `vz/vz_gate.py` | **LIVE** (`os.popen`/`os.system`) | **LIVE** `vz_oracle.py` | no | no | YES | LIVE-VS-LIVE · `--mutate` writes the port in place |
+| `checks/nl-gate.py` | **LIVE** (`:429` fall-through) | **LIVE** | no | n/a | YES | LIVE-VS-LIVE |
+| `checks/rn-gate.py` | **LIVE** (`:416`) | **LIVE** | no | n/a | YES | LIVE-VS-LIVE |
+| `checks/vz_gate.py` | **LIVE** (`os.popen`/`os.system`) | **LIVE** `vz_oracle.py` | no | no | YES | LIVE-VS-LIVE · `--mutate` writes the port in place |
 | `rebase-gate-selftest.py` | synthetic lanes + **two deliberately-dead REAL lanes** | — | — | — | n/a | selftest of the instrument |
 | `cstyle-shapes-selftest.py` | RECORDED inputs | RECORDED | n/a | n/a | n/a | ARMED/RED control per row shape |
 | `naming-gate-selftest.py`, `zero-selftest.py`, `mutanchor-writes-selftest.py` | — | — | — | — | n/a | instrument selftests |
@@ -195,7 +195,7 @@ Legend: **DRIVER** = a script that runs both sides and compares. **EMITTER** = p
 | `dsp2-gate.py` (shape) | — | — | — | — | — | see above |
 | `mm-dt-gate.py` | — | — | — | — | — | reads tinygrad from `TG_TREE` env, default `.` |
 | **`nv_gate.py`** | **it WRITES the port.** `open(P,"w").write(src + GATE)` where `GATE = $TMPDIR/opencode/gate.bend` (`:8,19`) | — | — | — | **the gate body lives in a scratch dir** | **NOT A GATE · a mutator whose payload is in `$TMPDIR`** |
-| **`tools/reorder-gate.py`** | **it REWRITES a `.bend`** (`open(path,'w')`, `:109`) | — | — | — | — | **NOT A GATE · a code-mover named `-gate`** |
+| **`checks/reorder-gate.py`** | **it REWRITES a `.bend`** (`open(path,'w')`, `:109`) | — | — | — | — | **NOT A GATE · a code-mover named `-gate`** |
 | **`helpers-tc-gate.py`** | — | — | — | — | — | **NOT PYTHON. 199 lines of recorded `name=value` rows** (`trange_0_len=0`, `gc_bumped_ops=12`) — it is the *output* `helpers-tc-gate.sh` writes, because that script's output prefix is `GT=.agents/slop/helpers-tc-gate` and it writes `$GT.py`. A `.py` that is an artefact. |
 
 ---
@@ -276,12 +276,12 @@ column to disagree with, because `renderer_oracle.py` prints the pin's reading i
 | `amdev_check.py` | `amdev_check.py:14-15` opens `amdev_interp.txt` / `amdev_py.txt` and runs nothing | make the check a driver: bend → temp, oracle → temp, then compare; the recorded dumps are 1+ day older than `amdev.bend` |
 | `e2e_mm_gate.py` | `e2e_mm_gate.py:44-46, 246` reads `runs/e2e/e2e-mm-{oracle,gpu,bend}` | have the driver re-run the bend lane and re-run the oracle before comparing; `e2e-mm-bend.txt` is 434 bytes today |
 | `opsbend_milestone_gate.py` | `opsbend_milestone_gate.py:27` `EXPECTED = …/ops_bend-milestone-expected.txt`; argv carries `rows.txt`, `PACKET.in`, `PACKET.out` | same: generate the three inputs in the run |
-| `ga_gate.py`, `dsp2-gate.py`, `rend_gate.py`, `dup/dup-gate.py` | all take **file paths on argv**; none runs a lane | one wrapper that runs the lanes and calls the existing differ with temp paths — the differs are fine, the wiring is not |
+| `ga_gate.py`, `dsp2-gate.py`, `rend_gate.py`, `checks/dup-gate.py` | all take **file paths on argv**; none runs a lane | one wrapper that runs the lanes and calls the existing differ with temp paths — the differs are fine, the wiring is not |
 | `drift-gate.py` (default invocation) | `drift-gate.py:54` and `:76` return `$TMPDIR/drift-gate-cache/*.txt` unless `-r` (`drift-gate.py:98`) | make `-r` the default, or key the cache on the port's sha256 so a stale entry cannot be read silently |
 | `mm-gate.py`, `mm-bl-gate.py`, `mm-dt-gate.py`, `mm-walk-gate.py` | **no driver exists at all** — the docstrings are a manual `diff` recipe and there is no `mm-*-gate.sh` | one `sh` driver each, exactly as `mixin-op-gate.sh` already does for `mixin-op-gate.py` |
 | `state-gate.py`, `nn-gate.py` | EMITTERs with no `.sh` and no `BASE_ORACLES` entry — the only recipe is a `diff` in the docstring | one `.sh` each |
 | `nv_gate.py` | `nv_gate.py:8` `GATE = $TMPDIR/opencode/gate.bend`, `:19` appends it to `tinybendygrad/runtime/support/nv/nvdev.bend` | put the gate block in `.agents/slop/` (oracles live there, per `agent-core.md`) and make the script idempotent on a content hash rather than a sentinel row |
-| `tools/reorder-gate.py` | it is a `.bend` **mutator** (`open(path,'w')`), not a comparison | rename it; a file called `-gate` that rewrites the port invites exactly this miscount |
+| `checks/reorder-gate.py` | it is a `.bend` **mutator** (`open(path,'w')`), not a comparison | rename it; a file called `-gate` that rewrites the port invites exactly this miscount |
 | `helpers-tc-gate.py` | it is **not a program** — 199 lines of recorded rows, the *output* of `helpers-tc-gate.sh` (whose `GT=` prefix makes it write `$GT.py`) | point `helpers-tc-gate.sh`'s prefix at `.txt`; today a `.py` in the gate namespace is an artefact |
 | `BASE_ORACLES` #26 `runtime/ops_cpu.bend` | not a liveness failure — a **denominator** failure: 3 shared of 20 oracle rows, and 17 of those are host `findlib_*` answers | already stated in the `BASE_ORACLES` comment; the honest number is 3 |
 

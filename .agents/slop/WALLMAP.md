@@ -8,7 +8,7 @@ the import closure — underneath the first pass of this census.
 frozen at            2026-10-04T13:00:35Z
 tracked .bend files  134          (manifest.sha256, all 134 verified on extract)
 files carrying markers 82
-markers              1,028        (.agents/slop/wallmap/census.tsv, 1,028 rows + header)
+markers              1,028        (checks/census.tsv, 1,028 rows + header)
 drift during census  3 of 134 files moved (mixin/gradient.bend, uop/ops.bend, uop/render.bend)
                       the TOTAL stayed 1,028 throughout; the claim-line count went 817 -> 816
 ```
@@ -402,7 +402,7 @@ Nothing in the tree will ever report those again.
 
 ## 7. THE TOOLS, AND THE THREE INSTRUMENTS THAT DISAGREE
 
-`wallmap/census.tsv` — all 1,028 markers, `W-1`…`W-1028`, with tag, claim-vs-reference,
+`checks/census.tsv` — all 1,028 markers, `W-1`…`W-1028`, with tag, claim-vs-reference,
 verdict, label, resolved upstream path, reason. `wallmap/verdicts.json`,
 `wallmap/closed.json`, `wallmap/rank.json`, `wallmap/manifest.sha256`,
 `wallmap/tree.tar` (the frozen tree, 11 MB, hash-verified on extract).

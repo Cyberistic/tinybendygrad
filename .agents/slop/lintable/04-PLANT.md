@@ -1,7 +1,7 @@
 # THE PLANT AND ITS PAIRED DISARM
 
-    sh .agents/slop/lintable/lintable-gate.sh --plant    # plants, proves red, disarms
-    sh .agents/slop/lintable/lintable-gate.sh --disarm   # the standalone check
+    sh checks/lintable-gate.sh --plant    # plants, proves red, disarms
+    sh checks/lintable-gate.sh --disarm   # the standalone check
 
 Both live in `lintable-gate.sh`, so a red cannot be reported without the green that
 puts it back, and both are the **same edit at the same place**. A plant that lands
@@ -72,7 +72,7 @@ change detector.
 
 ## THE DISARM
 
-`sh .agents/slop/lintable/lintable-gate.sh --plant` disarms itself and then checks
+`sh checks/lintable-gate.sh --plant` disarms itself and then checks
 that the disarmed lane is byte-identical to the baseline, exiting 1 if it is not. The
 separate `--disarm` mode is the standalone check and it exits 0 **only** because
 neither arm of the mutation is present in the live `ops.bend`:

@@ -2,14 +2,14 @@
 """jsfix_gate.py -- the dtype seam's JS lane, executed, checked, and planted.
 
 Reproduce (from the repo root):
-    python3 .agents/slop/jsfix/jsfix_gate.py
+    python3 checks/jsfix_gate.py
 
 WHAT THIS IS FOR.  `runtime/dtype.js` shipped reading `p.fst`/`p.snd` on a record
 whose Bend fields are `hi`/`lo`, and answering with `io_tup(...)` =
 `Tuple{fst,snd}` where generated code reads `{hi, lo}`.  Both halves were `undefined`
 on the way in and a wrong shape on the way out, and `undefined >>> 0 === 0` made the
 inbound read TOTAL rather than loud: the identity seam `Dt.i64_trunc` answered 0.
-Node disagreed with CPython on 9 of 12 rows of `abi/abi_gate.py` and on 0 of 30
+Node disagreed with CPython on 9 of 12 rows of `checks/abi_gate.py` and on 0 of 30
 rows of `jslane2/gen_js_seam.py`.
 
 The declaration is `.agents/slop/abi/abi.json`; this file cites it by id and does
@@ -605,7 +605,7 @@ def main() -> None:
     print("\n" + "=" * 78)
     print("WHAT THIS GATE STILL CANNOT SEE")
     print("=" * 78)
-    print("  The 12 F32 rows of abi/abi_gate.py (bf16, fp16, fp8_from, fp8_to).")
+    print("  The 12 F32 rows of checks/abi_gate.py (bf16, fp16, fp8_from, fp8_to).")
     print("  fp16(1.5) and fp8_to(0x3C) are ABI-4, a DIFFERENT convention in a")
     print("  DIFFERENT half of the same file, and all 30 rows here are I64.")
     print("  ABI-6 (both lanes answer 0 where tinygrad's helpers raise")

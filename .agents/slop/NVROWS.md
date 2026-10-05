@@ -101,7 +101,7 @@ six lines. (`ip.bend` in `strays/origin/` is also byte-identical to live,
 
 ## 5. THE DISARM, BUILT FIRST
 
-`.agents/slop/nvrows/nvrows-deadrow-gate.py`
+`checks/nvrows-deadrow-gate.py`
 
 Bend has no `sys.settrace` and no reflection, so the Bend analogue of a line tracer
 is: **give every call site a unique row name, then look for that name in stdout. A
@@ -209,7 +209,7 @@ called, and cannot be called.** Same class, one file over.
 - **A false citation, if this report's own numbers are quoted later without the
   denominator.** "313 dead rows" is true of a file that does not compile and false
   of the file in the tree. Both numbers, always.
-- **The instrument to stop it:** `.agents/slop/nvrows/nvrows-deadrow-gate.py`, rc 0
+- **The instrument to stop it:** `checks/nvrows-deadrow-gate.py`, rc 0
   on a clean file, rc 1 on this one, **output-neutral by construction**, and with
   its own blind spot (`SELF`) printed rather than promised.
 

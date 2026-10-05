@@ -2,9 +2,9 @@
 # lintable-gate.sh -- the CPython gate for the ops.py linear rule table in
 # `tinybendygrad/uop/ops.bend`.
 #
-#   sh .agents/slop/lintable/lintable-gate.sh
-#   sh .agents/slop/lintable/lintable-gate.sh --plant    # plant, show red
-#   sh .agents/slop/lintable/lintable-gate.sh --disarm   # remove plant, show green
+#   sh checks/lintable-gate.sh
+#   sh checks/lintable-gate.sh --plant    # plant, show red
+#   sh checks/lintable-gate.sh --disarm   # remove plant, show green
 #
 # THREE LANES, and the diff IS the test:
 #   * CPython    -- `.agents/slop/lintable/lintable-oracle.py`, every expectation

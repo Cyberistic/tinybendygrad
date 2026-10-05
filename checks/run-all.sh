@@ -1,7 +1,7 @@
 #!/bin/zsh
 # run-all.sh -- EVERY number in CSTYLE2.md, from a clean $TMPDIR, with one command.
 #
-#   zsh .agents/slop/cstyle2/run-all.sh
+#   zsh checks/run-all.sh
 #
 # THE TREE IS SNAPSHOTTED, NOT PATCHED. `tinybendygrad/` is copied whole into $TMPDIR and
 # every bend run in this unit executes against the COPY, because a `$TMPDIR` single-file

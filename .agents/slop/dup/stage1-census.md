@@ -1,6 +1,6 @@
 # STAGE 1 — the duplicate-name census, FROM DATA, both sides of every lane
 
-Tool: `.agents/slop/dup/dup-census.py`.  Capture: `.agents/slop/dup/dup-capture.py`.
+Tool: `checks/dup-census.py`.  Capture: `.agents/slop/dup/dup-capture.py`.
 Raw output: `.agents/slop/dup/stage1-census.txt`.  Lane texts: `.agents/slop/dup/dup/lanes/`.
 
 ## 0. WHY EVERY LANE TEXT HERE IS FRESH
@@ -117,8 +117,8 @@ reconciliation needs them separated:
 
 ```
 .venv/bin/python .agents/slop/dup/dup-capture.py            # 78 live captures, closure-digested
-.venv/bin/python .agents/slop/dup/dup-census.py --all        # the table above
-.venv/bin/python .agents/slop/dup/dup-census.py --names      # every offending name, per lane
+.venv/bin/python checks/dup-census.py --all        # the table above
+.venv/bin/python checks/dup-census.py --names      # every offending name, per lane
 ```
 
 A note on the method's own history, because it is the same species as the bug it measures: the

@@ -267,7 +267,7 @@ think it read.**
 
 ```
 python3  .agents/slop/audit/proof-plants.py            # 01, 7 plants
-env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/audit/graphcmp-census-audit.py
+env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python checks/graphcmp-census-audit.py
 env -u PYTHONPATH LC_ALL=C DEV=NONE .venv/bin/python .agents/slop/audit/sched-cmp-audit.py
 env -u PYTHONPATH LC_ALL=C DEV=NONE .venv/bin/python .agents/slop/audit/sched-cmp-audit2.py
 env -u PYTHONPATH LC_ALL=C          .venv/bin/python .agents/slop/audit/ffi-port-cost-audit.py

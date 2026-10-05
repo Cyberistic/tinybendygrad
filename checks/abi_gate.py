@@ -2,7 +2,7 @@
 """abi_gate.py -- both lanes of the dtype seam, checked against ONE declaration.
 
 Reproduce (from the repo root):
-    python3 .agents/slop/abi/abi_gate.py
+    python3 checks/abi_gate.py
 
 THE DELIVERABLE IS NOT A ROW COUNT.  It is the ATTRIBUTION: every disagreement
 between the two lanes, or between a lane and CPython, is assigned to exactly one
@@ -215,7 +215,7 @@ JS_FP8TO_FIXED = """function dtype_fp8_to(x, kind) {
 # the smallest f32 subnormal -- and bits32 of that denormal is 1.  It is observable
 # only THROUGH the missing conversion at dtype_fp8_to, because this arm carries
 # exactly ONE fp8_to row and that row needs both.  That is the whole reason the
-# 98-row instrument at .agents/slop/abi4/abi4_gate.py exists and a comment did not.
+# 98-row instrument at checks/abi4_gate.py exists and a comment did not.
 JS_FP8DEC_OLD = """  const v = of32(exp === 0
     ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)
     : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));
@@ -406,7 +406,7 @@ def fence(base: dict[str, str], arm: dict[str, str], owned: set[str]) -> list[st
 # a row-count fence on that arm passed or failed for reasons nobody could read.
 # This one reads the BYTES each arm would apply and refuses any JS edit that names
 # another ABI's token.  It is checked for the ABI-4 arms here and for EVERY arm in
-# .agents/slop/abi4/abi4_gate.py, because the entanglement was never about which
+# checks/abi4_gate.py, because the entanglement was never about which
 # convention -- it was about an arm quietly carrying two.
 JS_ARM_TOKENS = ("p.hi", "p.lo", "p.fst", "p.snd", "io_tup", "BigInt",
                  "asIntN", "<< 32n", ">>> 32n")
@@ -689,7 +689,7 @@ def main() -> None:
     print(f"    and reads the answer back OUT, so either half alone breaks all of them")
     print(f"    (inbound {sorted(ain)}")
     print(f"     outbound {sorted(aout)}).")
-    print("    .agents/slop/jsfix/jsfix_gate.py is the instrument that separates them:")
+    print("    checks/jsfix_gate.py is the instrument that separates them:")
     print("    30 rows x 10 arms, 28/30 vs 30/30, and the VALUES differ -- `0:0`")
     print("    everywhere (a totalisation) against something that is not a hi:lo pair.")
     print("    The disarms re-spell the SAME conforming reads as p[\"hi\"]/p[\"lo\"] and")
@@ -704,7 +704,7 @@ def main() -> None:
     print("    The repair is IN the tree, so `shipped` is GREEN and the plant re-breaks")
     print("    all three sites at once.  This gate CANNOT tell the three sites apart:")
     print("    it carries one fp8_to row and that row needs two of them.  The")
-    print("    98-row instrument at .agents/slop/abi4/abi4_gate.py separates them, and")
+    print("    98-row instrument at checks/abi4_gate.py separates them, and")
     print("    it is the only thing that can: NEEDS 10 / 40 / 30 with FIXES 10 / 10 / 0.")
 
     # arity-2 liveness, measured on the ABI-1 plant
@@ -747,7 +747,7 @@ def main() -> None:
         # of this set.  That is a property of these 12 fixtures -- every one reads a
         # record IN and reads the answer back OUT, so either half alone breaks all
         # five -- and it is NOT evidence that they are one defect.  The 30-row gate
-        # at .agents/slop/jsfix/jsfix_gate.py is the instrument that separates them
+        # at checks/jsfix_gate.py is the instrument that separates them
         # (28/30 and 30/30, differing on floor_mod|-8|4 and cmod|-8|4), and it adds
         # the values: the inbound plant answers `0:0` everywhere, a totalisation,
         # while the outbound one answers something that is not a hi:lo pair at all.

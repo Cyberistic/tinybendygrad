@@ -2,7 +2,7 @@
 
 Fixer: `.agents/slop/nvdup/nvdup-fix-nv.py` (16 text-asserted hunks, `--check` writes nothing,
 counts measured by RUNNING the patched source in `$TMPDIR`).
-Gate/proof: `.agents/slop/dup/dup-gate.py --compare`, **imported, not forked**.
+Gate/proof: `checks/dup-gate.py --compare`, **imported, not forked**.
 
 ## 1. THE ONE RULE, AND WHERE IT STOPS
 
@@ -33,7 +33,7 @@ is the one whose subject is a helper defined in the oracle itself.
 ## 3. THE MULTISET PROOF — from the committed gate, not a re-implementation
 
 ```
-$ .venv/bin/python .agents/slop/dup/dup-gate.py --compare \
+$ .venv/bin/python checks/dup-gate.py --compare \
       .agents/slop/nvdup/nv-oracle-BEFORE.txt .agents/slop/dup/lanes/…ops_nv.bend.oracle0.txt
 ROWS       574 -> 547 lines; 574 -> 547 read; 547 -> 547 distinct names -- EQUAL distinct counts is
            the collision check: a rename created no name
@@ -156,6 +156,6 @@ because a fixer that writes a broken oracle and reports success is worse than no
 .venv/bin/python .agents/slop/nvdup/nvdup-fix-nv.py --check          # runs BOTH oracles, writes nothing
 .venv/bin/python .agents/slop/nvdup/nvdup-fix-nv.py --apply          # backup at .agents/slop/nvdup/nv-oracle-PREFIX.py
 .venv/bin/python .agents/slop/dup/dup-capture.py --only ops_nv       # re-capture both sides
-.venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE AFTER  # the multiset proof
-.venv/bin/python .agents/slop/dup/dup-gate.py --port P --oracle O     # the lane, rc 1 on the PORT's 11
+.venv/bin/python checks/dup-gate.py --compare BEFORE AFTER  # the multiset proof
+.venv/bin/python checks/dup-gate.py --port P --oracle O     # the lane, rc 1 on the PORT's 11
 ```

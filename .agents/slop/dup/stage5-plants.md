@@ -1,6 +1,6 @@
 # STAGE 5 — the guard, and the plants WITH THEIR DISARM
 
-Guard: `.agents/slop/dup/dup-gate.py`.  `--selftest` over the REAL captured pair.
+Guard: `checks/dup-gate.py`.  `--selftest` over the REAL captured pair.
 
 ## 1. WHAT THE GUARD DOES, IN ORDER
 
@@ -37,7 +37,7 @@ a **tautological zero** and the byte diff is the gate.
 ## 2. THE PLANT MATRIX — `nir_llvmir`, a BYTE-IDENTICAL pair
 
 ```
-.venv/bin/python .agents/slop/dup/dup-gate.py \
+.venv/bin/python checks/dup-gate.py \
     --port   .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].port.txt \
     --oracle .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt --selftest
 
@@ -134,9 +134,9 @@ just fixed.
 ## 6. REPRODUCE
 
 ```
-.venv/bin/python .agents/slop/dup/dup-gate.py --port P.txt --oracle O.txt            # rc 0/1
-.venv/bin/python .agents/slop/dup/dup-gate.py --port P.txt --oracle O.txt --selftest # the matrix
-.venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE.txt AFTER.txt         # multiset proof
+.venv/bin/python checks/dup-gate.py --port P.txt --oracle O.txt            # rc 0/1
+.venv/bin/python checks/dup-gate.py --port P.txt --oracle O.txt --selftest # the matrix
+.venv/bin/python checks/dup-gate.py --compare BEFORE.txt AFTER.txt         # multiset proof
 ```
 
 On a lane with duplicates this exits **1** today. That is the guard armed, and it is the same rc a

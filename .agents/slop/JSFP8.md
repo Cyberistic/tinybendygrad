@@ -136,7 +136,7 @@ census of every float-spelling comparator in the tree, measured by reading each:
 | `jslane2/gen_f32_seam.py:100` | **DEFECT — fixed here** |
 | `mm-dt-gate.py:60`, `mm-walk-gate.py:44`, `mm-lift-gate.py:158` | `%g`/`repr` with no round trip — another unit's tree |
 | `dc-oracle.py:135` | `f"{a:g}"` — another unit's tree, and its author **knew** (`:131`) |
-| `abi/abi_gate.py:118`, `abi4/abi4_gate.py:235` | correct (f32 round trip), DO-NOT-TOUCH |
+| `checks/abi_gate.py:118`, `checks/abi4_gate.py:235` | correct (f32 round trip), DO-NOT-TOUCH |
 | `jstage/jsstage.py:315` | correct — `repr` at the oracle, `f32()` on both sides at `:328` |
 | `ew-consts-oracle.py:14-34`, `dd-oracle.py:28-42` | correct — deliberately bits-based |
 | `validate-oracle.py:80`, `codegen-init-measure.py:240`, `arena-audit.py:121` | not float comparators |
@@ -209,10 +209,10 @@ the test for kind 2 alone, and the arm is guarded by `x === 0x80`, so `EXACT`.**
 ## REPRODUCE
 
 ```sh
-python3 .agents/slop/jsfp8/gate.py            # 205,121 rows, 1.1 s
+python3 checks/gate.py            # 205,121 rows, 1.1 s
 python3 .agents/slop/jsfp8/plants.py          # 8 trees, BASE proven by md5
-python3 .agents/slop/jsfp8/norm_check.py      # the `norm` fix and its plant
-node    .agents/slop/jsfp8/nan_census.mjs  "$TMPDIR/jfp"
+python3 checks/norm_check.py      # the `norm` fix and its plant
+node    checks/nan_census.mjs  "$TMPDIR/jfp"
 zsh .agents/slop/substrate-check.sh tinybendygrad/runtime/dtype.js
 ```
 

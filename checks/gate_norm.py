@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gate_norm.py -- the F32 seams' rows, canonicalised at ONE width, on BOTH lanes.
 
-    python3 .agents/slop/norm/gate_norm.py      # writes norm/gate.txt
+    python3 checks/gate_norm.py      # writes norm/gate.txt
 
 WHAT IT CLAIMS, with its denominator printed beside it:
 

@@ -214,7 +214,7 @@ def audit_dev_sites() -> None:
   # green is a gate nobody reads, so findings outside the corpus path are reported with
   # file:line and do not gate. The corpus path is `graphcmp`, `isolate`, `hermetic-census`, and
   # `arith/both-census` (whose `ops_of` this census imports).
-  GATE_SCOPE = ("graphcmp.py", "graphcmp-oracle.py", "hermetic/", "arith/both-census.py",
+  GATE_SCOPE = ("graphcmp.py", "graphcmp-oracle.py", "hermetic/", "checks/both-census.py",
                 "reach/census.py", "reach/rows.py")
   mine, theirs, checked = [], [], 0
   for f in sorted(SLOP.rglob("*.py")):

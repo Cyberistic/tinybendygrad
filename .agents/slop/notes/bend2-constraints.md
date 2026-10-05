@@ -17092,7 +17092,7 @@ It also finds the two adjacent defects, and both are mechanical:
 
   * **A COUNT-ONLY GATE IS A GATE THAT CANNOT FAIL ON A VALUE.**
     `.agents/slop/unobservable-census.py --countgate` found exactly ONE such
-    gate in ~250 committed slop scripts: `.agents/slop/gr-diff.sh`, whose entire
+    gate in ~250 committed slop scripts: `oracles/gateport/oracles/gr-diff.sh`, whose entire
     pass condition is `py_count -eq bend_count`. The `codegen/__init__.bend`
     mutation that started this unit changes `SINK->SINK` to `SINK->NOOP` and
     leaves the count at 4. A count check is a legitimate FIRST check -- two
@@ -23592,7 +23592,7 @@ a name is not a program.**
 `nv_gate.py:19` does `open(P,"w").write(src + GATE)` on
 `tinybendygrad/runtime/support/nv/nvdev.bend`, with `GATE = $TMPDIR/opencode/gate.bend`
 (`nv_gate.py:8`) -- **the gate body lives in a scratch directory and the port carries a
-`nvdev-done=1` sentinel row because of it.** `tools/reorder-gate.py:109` rewrites a `.bend`
+`nvdev-done=1` sentinel row because of it.** `checks/reorder-gate.py:109` rewrites a `.bend`
 in place. Neither compares anything.
 
 ### L-5 AN EMITTER IS NOT A GATE. THE DRIVER IS THE `.sh`, AND SOMETIMES THERE ISN'T ONE.
@@ -24436,7 +24436,7 @@ that a length heuristic would delete.
 `trange_0_seq=`, written **into the repo** by `helpers-tc-gate.sh`'s own `GT=` prefix. Renamed to
 `oracles/helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
 identical, rc=0. `.bd` / `.bn` are fine — those extensions name no language. Similarly
-`nv_gate.py` appends a gate body from `$TMPDIR` into the live port and `tools/reorder-gate.py`
+`nv_gate.py` appends a gate body from `$TMPDIR` into the live port and `checks/reorder-gate.py`
 rewrites a `.bend`: **a file called `-gate` that mutates the port invites exactly this miscount.**
 
 **V-10. KEY A CACHE ON WHAT IT CACHES, OR IT IS A DIFFERENT ANSWER WITH THE SAME NAME.**
@@ -25301,7 +25301,7 @@ M R S U V W X`, and `F G L C T G-` were reported as live-or-collided elsewhere, 
 was picked as a pair that is unused here and unlikely to be chosen next.  Every number
 below was measured on bend **2.0.35**, arm64 macOS, against
 `/Library/Developer/CommandLineTools/usr/lib/libclang.dylib` (Apple clang 17.0.0,
-`clang-1700.6.3.2`).  Gate: `.agents/slop/clangshim/cl-port-gate.py --plants`, 0 failures.
+`clang-1700.6.3.2`).  Gate: `checks/cl-port-gate.py --plants`, 0 failures.
 Report: `.agents/slop/LIBclang-live.md`.
 
 **LC-1 — `CXCursor` IS 32 BYTES, `{int kind; int xdata; const void *data[3]}`, AND A
@@ -26120,7 +26120,7 @@ Numbering continues from the `LT-` block above and uses its own prefix, because
 rule NUMBERS REPEAT across units and the index at the top of this file is why.
 Cite these by PREFIX (`NV-4`), never by a bare number. All measured on
 `tinybendygrad/runtime/support/nv/nvdev.bend` with `Bend 2.0.34`.
-Instrument: `.agents/slop/nvrows/nvrows-deadrow-gate.py`. Full matrix:
+Instrument: `checks/nvrows-deadrow-gate.py`. Full matrix:
 `.agents/slop/nvrows/census-MATRIX.txt`. Report: `.agents/slop/NVROWS.md`.
 
 - **NV-1. A ROW SITE INSIDE A `def` NOTHING CALLS IS DEAD, AND IT IS INVISIBLE TO EVERY
@@ -26318,7 +26318,7 @@ Instrument: `.agents/slop/nvrows/nvrows-deadrow-gate.py`. Full matrix:
   eaten as the `:t` modifier, `git diff` and pipes swallowing exit status): **the failure
   mode of an instrument is a plausible number.** The remedy that generalises is not a
   discipline note but a shape — put the runnable artifact somewhere it cannot be edited
-  under itself (`.agents/slop/probes/demo.sh` regenerates the whole demonstration), and
+  under itself (`checks/demo.sh` regenerates the whole demonstration), and
   check the LAST line of any instrument's output, not just the verdict.
 
 - **CSH-11. A DENOMINATOR THAT MOVES BY ONE STILL LOOKS LIKE A DENOMINATOR.** Measured
@@ -26484,7 +26484,7 @@ numbers; rule numbers have collided three times.
 - **JFP-1. A SWEEP CENTRE READ OUT OF THE CODE UNDER TEST IS A TRANSCRIPT.**
   `fp8fix/gen_fp8.py:35` builds its overflow-threshold sweep from `dtype.c`'s own
   `OVF`, so the defect it was built to catch was IN the fixture; it worked only
-  because `t-1,t,t+1,t+2` happens to include `t`. `.agents/slop/jsfp8/gate.py`
+  because `t-1,t,t+1,t+2` happens to include `t`. `checks/gate.py`
   derives its centres from `tinygrad`'s `_fp8_cfg` and sweeps **both** f32
   spellings of each, so a tree that moves back is counted rather than
   accommodated.
@@ -26641,7 +26641,7 @@ Cite POSITIONS, never numbers: rule numbers have collided three times already.
 
 - **`rows` RECURS ONCE PER PATTERN AND NODE'S STACK IS THE LIMIT.** A 65,536-row
   sweep of `f32show.bend` dies with `bend: memory fault (machine stack overflow?)`;
-  4,096 rows per process runs.  `frombits/gate_dtype.bend:8-13` measured the same
+  4,096 rows per process runs.  `checks/gate_dtype.bend:8-13` measured the same
   shape of cost for the same reason, and JavaScript's rope strings make the
   quadratic-accumulator traps free -- so a JS-lane sweep this size would not have
   noticed either.

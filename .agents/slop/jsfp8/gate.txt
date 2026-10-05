@@ -1,5 +1,5 @@
 # jsfp8/gate.txt -- the fp8 DECODE gate for tinybendygrad/runtime/dtype.js
-# rule prefix JFP- .  reproduce: python3 .agents/slop/jsfp8/gate.py
+# rule prefix JFP- .  reproduce: python3 checks/gate.py
 
 ROWS EXPECTED 205121  by family {'D': 1024, 'E': 204097}
 every expectation was CALLED from tinygrad/dtype.py; none typed

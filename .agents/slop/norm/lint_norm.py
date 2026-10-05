@@ -31,7 +31,7 @@ from a spelling one.
 
 That split is the whole design.  A lint pinned to a constant is a fifth instance
 of the family it exists to stop; so is a lint that is red forever, because a red
-nobody acts on is background noise.  `norm/lint_demo.sh` plants one site in a
+nobody acts on is background noise.  `checks/lint_demo.sh` plants one site in a
 `$TMPDIR` copy and shows the status flip, so both branches are measurements.
 
 ## WHAT THIS LINT IS NOT
@@ -120,9 +120,9 @@ OUT_OF_SCOPE = ("xd1/", "opstree/", "runs/", "__pycache__/", "node_modules/")
 
 #: PLANTS AND THIS UNIT'S OWN FILES.  `norm/` holds the two normalisers this unit
 #: RUNS AGAINST ITSELF, so a plant that the lint did not flag would be a plant
-#: nobody can find; `jsfp8/norm_check.py` is another unit's plant of the same
+#: nobody can find; `checks/norm_check.py` is another unit's plant of the same
 #: defect, written before this file existed.
-EXCUSED = ("norm/", "jsfp8/norm_check.py")
+EXCUSED = ("norm/", "checks/norm_check.py")
 
 #: THE BASELINE: the non-round-tripping sites that exist today, each in a file this
 #: unit may not touch.  `file:line` is the key, so a site that MOVES is reported as
@@ -148,10 +148,10 @@ BASELINE = {
 #: oracle as a defect -- which is how a census stops being read.  These are listed
 #: with the line that PUTS THEM ON THE HELPER, so the exemption is checkable.
 ORACLE_BUILDERS = {
-    "abi/abi_gate.py": "its own `norm` at :132 is `repr(struct.unpack(\"<f\", "
+    "checks/abi_gate.py": "its own `norm` at :132 is `repr(struct.unpack(\"<f\", "
                        "struct.pack(\"<f\", v))[0])`, which round-trips BOTH sides, and "
                        "the file is EXPLICITLY DO-NOT-TOUCH.",
-    "abi4/abi4_gate.py": "same shape at :240, EXPLICITLY DO-NOT-TOUCH.",
+    "checks/abi4_gate.py": "same shape at :240, EXPLICITLY DO-NOT-TOUCH.",
     "jstage/jsstage.py": "another unit's tree; its `f32` at :308 round-trips both sides "
                          "and its `agree` at :328 handles NaN with `math.isnan`.",
     "jslane2/gen_f32_seam.py": "THIS UNIT'S GATE, moved onto `canon` already: `norm` at "
@@ -240,7 +240,7 @@ def main() -> int:
         "## WHAT THIS LINT FAILS ON, AND HOW THAT IS SHOWN",
         "",
         "  It fails on a non-round-tripping site that is not on the baseline.",
-        "  `norm/lint_demo.sh` plants one in a `$TMPDIR` copy of the tree and runs this",
+        "  `checks/lint_demo.sh` plants one in a `$TMPDIR` copy of the tree and runs this",
         "  file against it, so both branches of the exit status are measurements.",
         "",
         f"  baseline present {len(base)}/{len(BASELINE)}   NEW {len(new)} {new}",

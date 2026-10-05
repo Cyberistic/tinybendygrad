@@ -398,13 +398,13 @@ ambiguous rows.**
 ```
 .venv/bin/python .agents/slop/eq/eq-census2.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --all            # the re-census
 .venv/bin/python .agents/slop/eq/eq-census2.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --names           # every offending name, per lane
-.venv/bin/python .agents/slop/eq/nl-gate.py                      # live nir_llvmir gate, rc=0
-.venv/bin/python .agents/slop/eq/nl-gate.py --selftest
-.venv/bin/python .agents/slop/eq/nl-gate.py --compare .agents/slop/eq/nl-pre-port.txt \
+.venv/bin/python checks/nl-gate.py                      # live nir_llvmir gate, rc=0
+.venv/bin/python checks/nl-gate.py --selftest
+.venv/bin/python checks/nl-gate.py --compare .agents/slop/eq/nl-pre-port.txt \
                                                       .agents/slop/eq/nl-port-post.txt
 sh .agents/slop/eq/nl-control.sh                                # the matrix above
-.venv/bin/python .agents/slop/eq/rn-gate.py                      # live render gate, rc=1
-.venv/bin/python .agents/slop/eq/rn-gate.py --selftest
+.venv/bin/python checks/rn-gate.py                      # live render gate, rc=1
+.venv/bin/python checks/rn-gate.py --selftest
 .venv/bin/python .agents/slop/eq/nl-rename.py --check            # the count assertions, no writes
 ```
 

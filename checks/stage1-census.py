@@ -12,7 +12,7 @@ each upstream method's `TODO(p3) tensor.py:<line> <name>` marker and each
 `def tn_*` body -- never by grepping the upstream name for a def of that name.
 That is the error this census exists to avoid (see .agents/slop/notes T-numbers).
 
-Run:  .venv/bin/python .agents/slop/tensor-surface/stage1-census.py
+Run:  .venv/bin/python checks/stage1-census.py
 """
 from __future__ import annotations
 import ast, re, sys, collections, importlib

@@ -2,7 +2,7 @@
 
 The file: `tinybendygrad/codegen/__init__.bend`. Nothing else in the tree was
 edited except the two harnesses this unit owns the contract of
-(`.agents/slop/gr-diff.sh`) and the notes.
+(`oracles/gateport/oracles/gr-diff.sh`) and the notes.
 
 ## THE UPSTREAM DISPATCH RULE, READ FROM THE SOURCE
 
@@ -229,7 +229,7 @@ instead of reporting 9 zero-moving mutations.
 Baselines captured BEFORE the first edit: `.agents/slop/grw-base-sched81.txt`,
 `.agents/slop/grw-base-fixt60.txt`, `.agents/slop/grw-baseline.sha256`.
 
-## `.agents/slop/gr-diff.sh` HAD TO CHANGE, AND WHY
+## `oracles/gateport/oracles/gr-diff.sh` HAD TO CHANGE, AND WHY
 
 The port used to print one line; it now prints 27. `gr-diff.sh` counted `->`
 across the WHOLE output, so adding a gate row would have turned a green gate red

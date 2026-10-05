@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """nl-gate.py -- the gate for tinybendygrad/renderer/nir_llvmir.bend, and the `=`-bearing names.
 
-    .venv/bin/python .agents/slop/eq/nl-gate.py                  # live port + live oracle
-    .venv/bin/python .agents/slop/eq/nl-gate.py --unrename       # put the `=` back, in BYTES
-    .venv/bin/python .agents/slop/eq/nl-gate.py --compare A B    # the rename audit
-    .venv/bin/python .agents/slop/eq/nl-gate.py --plant ROW      # corrupt ONE VALUE
-    .venv/bin/python .agents/slop/eq/nl-gate.py --plant-shape OLD NEW   # rename a NAME
-    .venv/bin/python .agents/slop/eq/nl-gate.py --selftest
-    .venv/bin/python .agents/slop/eq/nl-gate.py --names
+    .venv/bin/python checks/nl-gate.py                  # live port + live oracle
+    .venv/bin/python checks/nl-gate.py --unrename       # put the `=` back, in BYTES
+    .venv/bin/python checks/nl-gate.py --compare A B    # the rename audit
+    .venv/bin/python checks/nl-gate.py --plant ROW      # corrupt ONE VALUE
+    .venv/bin/python checks/nl-gate.py --plant-shape OLD NEW   # rename a NAME
+    .venv/bin/python checks/nl-gate.py --selftest
+    .venv/bin/python checks/nl-gate.py --names
 
 THE ROW SHAPE, WHICH IS WHY A NAME MAY CONTAIN A SPACE BUT NOT AN `=`:
 

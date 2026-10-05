@@ -16,13 +16,13 @@ this file plus a tamper check that `--check` already does at zero emission cost.
 **THE FAILURE THIS IS BUILT AGAINST, AND IT IS NOT HYPOTHETICAL.** Measured: 15 of the 24
 published py row sets under `.agents/slop/arith/` disagree with a fresh process, every one of
 them with the SAME row count and differing only inside the `45:`/`46:` chunk -- the
-`ParamArg` record, whose first field is `slot`. `arith/both-census.py:39` reads that file by
+`ParamArg` record, whose first field is `slot`. `checks/both-census.py:39` reads that file by
 default, so its number was computed from bytes no fresh run could reproduce. The union still
 read 59 because the census reads field 1, the OP, and the op census is INVARIANT to the slot:
 the agreement was luck, not verification. A census that cannot see a 15-of-24 byte corruption
 in its own inputs is not a coverage statement.
 
-`ops_of` is IMPORTED from `arith/both-census.py` rather than retyped, because that file's own
+`ops_of` is IMPORTED from `checks/both-census.py` rather than retyped, because that file's own
 comment asks for it ("Kept as one function so both instruments cannot drift") and a second
 copy of the field-1 read is a second thing to be wrong about.
 """
@@ -35,7 +35,7 @@ sys.path.insert(0, str(HERE)); sys.path.insert(0, str(REPO / ".agents" / "slop" 
 sys.path.insert(0, str(REPO / ".agents" / "slop")); sys.path.insert(0, str(REPO))
 import graphcmp as G
 import isolate
-# `arith/both-census.py` has a HYPHEN, so it is not importable by name; load it by path rather
+# `checks/both-census.py` has a HYPHEN, so it is not importable by name; load it by path rather
 # than retyping its `ops_of`. That file asks for this in its own comment ("Kept as one function so
 # both instruments cannot drift"), and a second copy of the field-1 read is a second thing to be
 # wrong about. It is another unit's file, so a MISSING or RENAMED copy is loud, not silent.

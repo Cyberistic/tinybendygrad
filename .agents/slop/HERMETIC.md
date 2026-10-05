@@ -7,12 +7,12 @@ before and after. It needed no edit — see §3, where the briefed defect turned
 audit reads it and never writes it.
 
     hermetic/isolate.py          the mechanism: ONE graph, ONE side, in a fresh process
-    hermetic/hermetic-census.py  the census. no cache on the verdict path. `--check`
+    checks/hermetic-census.py  the census. no cache on the verdict path. `--check`
     hermetic/audit-hermetic.py   a PLANT and a DISARM for each defect; rc 1 unless all pass
     hermetic/rows/               the published artifact, 48 row sets
 
-    .venv/bin/python .agents/slop/hermetic/hermetic-census.py          # census, 23 s
-    .venv/bin/python .agents/slop/hermetic/hermetic-census.py --check  # rc 3 if any artifact is stale
+    .venv/bin/python checks/hermetic-census.py          # census, 23 s
+    .venv/bin/python checks/hermetic-census.py --check  # rc 3 if any artifact is stale
     .venv/bin/python .agents/slop/hermetic/audit-hermetic.py          # the six controls
 
 ## 1. THE SLOT LEAK — fresh process per graph, and WHY NOT A RESET

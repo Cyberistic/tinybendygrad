@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """dup-census.py -- THE DUPLICATE-ROW-NAME CENSUS.  Both sides of every lane, from DATA.
 
-    .venv/bin/python .agents/slop/dup/dup-census.py --all
-    .venv/bin/python .agents/slop/dup/dup-census.py --names
-    .venv/bin/python .agents/slop/dup/dup-census.py --one FILE [FILE...]
+    .venv/bin/python checks/dup-census.py --all
+    .venv/bin/python checks/dup-census.py --names
+    .venv/bin/python checks/dup-census.py --one FILE [FILE...]
 
 WHY A DUPLICATE IS THE SAME SPECIES OF BUG AS AN `=` IN A NAME.  `rebase-gate.py:rows()` is
 `{name: value}` keyed on the producer's name, so the LAST row on a key wins and every earlier

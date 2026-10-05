@@ -1,7 +1,7 @@
 # STAGE 3 — the fix, and its MULTISET proof
 
 Fixer: `.agents/slop/dup/dup-fix-usb.py` (count-asserted, `--check` writes nothing).
-Gate/proof: `.agents/slop/dup/dup-gate.py` (`--compare`, and `--selftest` for Stage 5).
+Gate/proof: `checks/dup-gate.py` (`--compare`, and `--selftest` for Stage 5).
 
 ## 1. WHAT WAS FIXED, AND WHY IT IS **ORACLE-ONLY**
 
@@ -46,7 +46,7 @@ below reads `shared names: 939 of 940 port / 939 oracle`.
 ## 3. THE MULTISET PROOF
 
 ```
-$ .venv/bin/python .agents/slop/dup/dup-gate.py --compare \
+$ .venv/bin/python checks/dup-gate.py --compare \
       .agents/slop/dup/usb-oracle-BEFORE.txt \
       .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt
 ROWS       1014 -> 939 lines; 1014 -> 939 read; 939 -> 939 distinct names -- EQUAL distinct counts is

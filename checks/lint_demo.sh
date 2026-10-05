@@ -1,7 +1,7 @@
 #!/bin/zsh
 # lint_demo.sh -- show BOTH branches of lint_norm.py's exit status, as measurements.
 #
-#   zsh .agents/slop/norm/lint_demo.sh
+#   zsh checks/lint_demo.sh
 #
 # A lint pinned to a constant is the fifth instance of the family it exists to
 # stop, and so is a lint nobody has watched fail.  So: the live tree is COPIED to

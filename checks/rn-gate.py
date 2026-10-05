@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """rn-gate.py -- the gate for tinybendygrad/uop/render.bend, and for the `=`-bearing names.
 
-    .venv/bin/python .agents/slop/eq/rn-gate.py                # live port + live oracle
-    .venv/bin/python .agents/slop/eq/rn-gate.py --plant ROW    # corrupt ONE VALUE
-    .venv/bin/python .agents/slop/eq/rn-gate.py --plant-shape OLD NEW
-    .venv/bin/python .agents/slop/eq/rn-gate.py --selftest
-    .venv/bin/python .agents/slop/eq/rn-gate.py --names
+    .venv/bin/python checks/rn-gate.py                # live port + live oracle
+    .venv/bin/python checks/rn-gate.py --plant ROW    # corrupt ONE VALUE
+    .venv/bin/python checks/rn-gate.py --plant-shape OLD NEW
+    .venv/bin/python checks/rn-gate.py --selftest
+    .venv/bin/python checks/rn-gate.py --names
 
 THE ROW SHAPE, written by `py_row` at `render.bend:2148`:
 

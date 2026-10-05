@@ -1,7 +1,7 @@
 # THE PLANT / DISARM TRANSCRIPT -- `compute_gradient`'s walk
 # ==============================================================================
 # PORT    tinybendygrad/mixin/gradient.bend
-# HARNESS sh .agents/slop/backward/walk-mutate.sh <arm>
+# HARNESS sh checks/walk-mutate.sh <arm>
 #          arms: base plant_reverse plant_noguard disarm_comment disarm_name
 #
 # EVERY ARM RUNS IN `$TMPDIR/walkplant` OVER A REAL `cp -R` OF THE WHOLE TREE (notes T-2:

@@ -1,7 +1,7 @@
 # THE PROBE — every row prints both spellings, and the pairs are labelled
 
     ./bin/bend .agents/slop/lintable/lintable-probe.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]
-    sh .agents/slop/lintable/lintable-gate.sh        # 36 rows, 3 lanes identical
+    sh checks/lintable-gate.sh        # 36 rows, 3 lanes identical
 
 Baseline: `.agents/slop/lintable/AFTER-probe.txt` (captured AFTER the last edit and
 never re-recorded; the pre-edit baselines are `BEFORE-ops-gate.txt` and

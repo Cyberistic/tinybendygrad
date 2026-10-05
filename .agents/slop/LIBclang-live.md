@@ -6,7 +6,7 @@ oracle's on the same fixture bytes and the same pinned dylib — and the file, w
 **red** (`duplicate declaration: U32`) and could not be compiled at all, compiles.
 
 ```
-python3 .agents/slop/clangshim/cl-port-gate.py --plants
+python3 checks/cl-port-gate.py --plants
 FAILURES: 0
 ```
 
@@ -283,7 +283,7 @@ Unchanged from the audit, and not claimed:
 ```
 B=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad
 python3 $B/.agents/slop/clangshim/oracle.py                       # the ten rows
-python3 $B/.agents/slop/clangshim/cl-port-gate.py --plants        # 0 failures
+python3 $B/checks/cl-port-gate.py --plants        # 0 failures
 
 # and the four working commands, by hand:
 cd $TMPDIR/cl-port-gate
@@ -302,4 +302,4 @@ cc -I. port.gen.c -L/Library/Developer/CommandLineTools/usr/lib -lclang \
 | `.agents/slop/clangshim/fixture.h` | the fixture, twice: the bytes (`CL_FIXTURE_SRC`) and the C declaration, plus the shared `CL_FIELD_NAMES`/`CL_FIELD_SPELL` |
 | `.agents/slop/clangshim/ffi-lane.bend` | the lane's text, in ONE place, so the header comment cannot drift from the code |
 | `.agents/slop/clangshim/apply-port-lane.py` | applies the four fixes and appends the lane. idempotent, `--check` |
-| `.agents/slop/clangshim/cl-port-gate.py` | the gate: the join, the census, the two derivations, two plants and a disarm |
+| `checks/cl-port-gate.py` | the gate: the join, the census, the two derivations, two plants and a disarm |

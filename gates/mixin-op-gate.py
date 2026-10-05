@@ -22,7 +22,7 @@ EXIT STATUS: 0 all three lanes identical · 1 a warm check failed, a lane took t
 count, the oracle failed, the native compile failed, or the lanes disagree · 2 the frozen
 oracle moved. **3 AND 4 ARE NOT VERDICTS AND THIS GATE NEVER RETURNS THEM**; see THE BOUND.
 
-IT IS THE PORT OF `.agents/slop/mixin-op-gate.sh`, and the rule the port had to satisfy was that
+IT IS THE PORT OF `oracles/gateport/oracles/mixin-op-gate.sh`, and the rule the port had to satisfy was that
 THE PYTHON REPRODUCES THE SHELL'S VERDICT ON EVERY INPUT OR IT DOES NOT MOVE. The shell body is
 frozen verbatim at `.agents/slop/mixinop/oracle-op-gate.sh` and still runnable, because that rule
 is only checkable while the shell exists; its sha256 is in ORACLE_PIN and is CHECKED IN CODE on

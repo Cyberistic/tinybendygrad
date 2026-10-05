@@ -305,7 +305,7 @@ def count_only_gates() -> list[tuple[str, str, str]]:
     a row's VALUE but not how many rows there are.
 
     This is the general form of the defect that prompted this unit.
-    `tinybendygrad/codegen/__init__.bend`'s gate, `.agents/slop/gr-diff.sh`, does:
+    `tinybendygrad/codegen/__init__.bend`'s gate, `oracles/gateport/oracles/gr-diff.sh`, does:
 
         py_count=$(printf '%s' "$py_line" | tr ',' '\\n' | grep -c -- '->')
         bend_count=$(printf '%s' "$bend_line" | tr ',' '\\n' | grep -c -- '->')

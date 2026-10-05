@@ -25,8 +25,8 @@ something.
                        control that can say the division is a division and not a
                        second, independent reading.
 
-    python3 .agents/slop/clangshim/cl-port-gate.py            # 1-3
-    python3 .agents/slop/clangshim/cl-port-gate.py --plants   # 1-4
+    python3 checks/cl-port-gate.py            # 1-3
+    python3 checks/cl-port-gate.py --plants   # 1-4
 
 Nothing here patches the live tree.  Every plant lives in a scratch directory and
 every file the port needs is COPIED there; the only thing the live tree lends is

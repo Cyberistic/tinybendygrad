@@ -201,7 +201,7 @@ not 9/12.
 
 `NEEDS(s)` = rows green as shipped and red with site *s* re-broken.
 `FIXES(s)` = rows *s* is sufficient, alone, for. 98 rows × 15 arms, every expectation
-`tinygrad.dtype`-called, at `.agents/slop/abi4/abi4_gate.py`.
+`tinygrad.dtype`-called, at `checks/abi4_gate.py`.
 
 | site | NEEDS | FIXES | separable by row? |
 |---|---|---|---|
@@ -283,7 +283,7 @@ helper, so its moving 0 is a **theorem about its row set**, not evidence of loca
 
 - **`gen_js_seam.py` — quarantined by supersession, still aborts.** `READ_SHIPPED` is
   ABI-2's pre-repair `p.fst`/`p.snd` text and occurs 0× now. Everything it measured is
-  reproduced and exceeded by `jsfix/jsfix_gate.py` + `jsfix_e2e.py` (same 30 rows, same
+  reproduced and exceeded by `checks/jsfix_gate.py` + `jsfix_e2e.py` (same 30 rows, same
   `int64.min`, same `tinygrad.helpers`-called oracle, 10 arms not 4, including the
   outbound-only plant it lacked). **Do not re-anchor it; there is nothing left for it
   to measure.**

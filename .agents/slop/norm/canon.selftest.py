@@ -72,7 +72,7 @@ BEND = REPO / "bin" / "bend"
 F32 = 2 ** 32
 #: `rows` RECURSES once per pattern, and node's stack is the limit: 65,536 of them
 #: is `bend: memory fault (machine stack overflow?)`, MEASURED.  4,096 is the
-#: chunk that runs, and `frombits/gate_dtype.bend:8-13` measured the same shape of
+#: chunk that runs, and `checks/gate_dtype.bend:8-13` measured the same shape of
 #: cost for the same reason.
 CHUNK = 4096
 

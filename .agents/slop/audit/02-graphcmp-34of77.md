@@ -121,7 +121,7 @@ exercised across 34 ops".
 
 ```
 env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python \
-  .agents/slop/audit/graphcmp-census-audit.py
+  checks/graphcmp-census-audit.py
 ```
 
 Runs the oracle's real `main()` five times: baseline, three plants, one disarm.

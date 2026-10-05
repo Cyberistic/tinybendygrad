@@ -12,7 +12,7 @@ Detail in `.agents/slop/lintable/`:
 | `05-TOTALITY.md` | where the port is total and Python raises |
 | `06-UNBLOCKED.md` | what actually unblocked, with the denominator |
 
-Gate: `sh .agents/slop/lintable/lintable-gate.sh` — **36 rows, 3 lanes identical**
+Gate: `sh checks/lintable-gate.sh` — **36 rows, 3 lanes identical**
 (CPython, bend interpreted, bend native).
 
 ---

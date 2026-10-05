@@ -11,7 +11,7 @@
 | 3 — the fix and the multiset proof | `.agents/slop/dup/stage3-multiset.md` |
 | 4 — `uop/fold.bend`'s 93 | `.agents/slop/dup/stage4-fold.md` |
 | 5 — the guard and the plants | `.agents/slop/dup/stage5-plants.md` |
-| tools | `.agents/slop/dup/dup-census.py`, `dup-capture.py`, `dup-gate.py`, `dup-fix-usb.py` |
+| tools | `checks/dup-census.py`, `dup-capture.py`, `dup-gate.py`, `dup-fix-usb.py` |
 | raw | `.agents/slop/dup/stage1-census.txt`, `stage2-classify.txt`, `dup-census.json`, `lanes/` |
 
 ## 1. STAGE 1 — the census
@@ -173,9 +173,9 @@ reason this unit forked no reader.
 
 ```
 .venv/bin/python .agents/slop/dup/dup-capture.py                 # 78 live captures
-.venv/bin/python .agents/slop/dup/dup-census.py --all             # the table
-.venv/bin/python .agents/slop/dup/dup-census.py --names           # every offending name
+.venv/bin/python checks/dup-census.py --all             # the table
+.venv/bin/python checks/dup-census.py --names           # every offending name
 .venv/bin/python .agents/slop/dup/dup-fix-usb.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --check          # the count assertions, no writes
-.venv/bin/python .agents/slop/dup/dup-gate.py --port P --oracle O --selftest
-.venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE.txt AFTER.txt
+.venv/bin/python checks/dup-gate.py --port P --oracle O --selftest
+.venv/bin/python checks/dup-gate.py --compare BEFORE.txt AFTER.txt
 ```

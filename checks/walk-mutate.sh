@@ -1,6 +1,6 @@
 #!/bin/sh
 # THE PLANT/DISARM HARNESS for `compute_gradient`'s walk.  ONE STEP, run from the repo
-# root:  sh .agents/slop/backward/walk-mutate.sh <arm>
+# root:  sh checks/walk-mutate.sh <arm>
 #
 # arms: base plant_reverse plant_noguard disarm_comment disarm_name
 #

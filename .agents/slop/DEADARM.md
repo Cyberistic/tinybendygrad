@@ -111,7 +111,7 @@ incalled  dead  instrument
       15    15  .agents/slop/x86/x86_oracle.py
       15    15  .agents/slop/x86/x86-oracle.py
       14    15  .agents/slop/nir/nir_mutate.py
-      13    23  .agents/slop/eq/nl-gate.py
+      13    23  checks/nl-gate.py
       12    22  .agents/slop/llvmir-gate.py
       12    14  .agents/slop/nvdup/nvdup-fix-nv.py
 ```

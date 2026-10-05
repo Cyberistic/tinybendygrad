@@ -5,7 +5,7 @@ so it is stated. Scratch: `$TMPDIR/nsweep`.
 
 ## A. The corpus coverage number
 
-Instrument: `.agents/slop/hermetic/hermetic-census.py --no-publish` — one process per graph,
+Instrument: `checks/hermetic-census.py --no-publish` — one process per graph,
 no cache on the verdict path, `--no-publish` so the measurement writes nothing. rc=0.
 
 ```

@@ -3,8 +3,8 @@
 CONVENTION OR THREE COINCIDENCES.  Measured, not read.
 
 Reproduce (from the repo root):
-    python3 .agents/slop/abi4/abi4_gate.py        # ~2 min, writes nothing live
-    python3 .agents/slop/abi4/abi4_gate.py --save # persist the rows beside it
+    python3 checks/abi4_gate.py        # ~2 min, writes nothing live
+    python3 checks/abi4_gate.py --save # persist the rows beside it
 
 THE QUESTION.  `abi.json` declares ABI-4 as "a scalar crosses as bits in C and
 as a value under node, and each lane must undo that on the way IN and NOT undo
@@ -461,8 +461,8 @@ def main() -> None:
     print("    patches a copy, so it could not see the tree's own syntax: a dangling")
     print("    paren passed 98/98 here until node's exit status was checked.")
 
-    ag = rc_of(REPO / ".agents/slop/abi/abi_gate.py")
-    jg = rc_of(REPO / ".agents/slop/jsfix/jsfix_gate.py")
+    ag = rc_of(REPO / "checks/abi_gate.py")
+    jg = rc_of(REPO / "checks/jsfix_gate.py")
     jn = re.findall(r"^\s+shipped\s+(\d+)/(\d+)$", jg[1], re.M)
     print(f"  by the OTHER GATES: abi_gate rc={ag[0]}  jsfix_gate rc={jg[0]}"
           + (f"  jsfix shipped {jn[0][0]}/{jn[0][1]}" if jn else ""))

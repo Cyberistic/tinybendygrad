@@ -2,7 +2,7 @@
 # mixin-op-gate.sh -- run BOTH lanes of tinybendygrad/mixin/op.bend and diff them against
 # the CPython oracle. Every step is `set -e`, so the script fails loudly.
 #
-#   sh .agents/slop/mixin-op-gate.sh
+#   sh oracles/gateport/oracles/mixin-op-gate.sh
 #
 # THREE LANES and they must agree byte for byte:
 #

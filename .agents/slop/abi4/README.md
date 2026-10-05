@@ -3,7 +3,7 @@
 Rule prefix: **`ABI4-`**. Instrument: `abi4_gate.py` (98 rows × 15 arms).
 Output: `abi4-gate.txt`. Rows persisted: `rows.json`. Gate **rc 0, 16 PASS / 0 FAIL**.
 
-Reproduce: `python3 .agents/slop/abi4/abi4_gate.py` — ~2 min, the live tree is never
+Reproduce: `python3 checks/abi4_gate.py` — ~2 min, the live tree is never
 written; every arm is built from `pristine` and from nothing else.
 
 ## The answer, in one line
@@ -109,7 +109,7 @@ both are dispositioned here so neither can be mistaken for a passing gate.
 - **`gen_js_seam.py` — QUARANTINED BY SUPERSESSION. Still aborts, by design of its
   own anchors.** `READ_SHIPPED` is ABI-2's pre-repair `p.fst`/`p.snd` text and occurs
   **0** times now, so it exits with `anchor not unique (0x)`. Its content is
-  reproduced, and exceeded, by `.agents/slop/jsfix/jsfix_gate.py` and `jsfix_e2e.py`:
+  reproduced, and exceeded, by `checks/jsfix_gate.py` and `jsfix_e2e.py`:
   the same 30 rows, the same `int64.min` fixture, the same `tinygrad.helpers`-called
   oracle, and 10 arms instead of 4 — including the *outbound-only* plant that
   `gen_js_seam.py` lacked and which is what proved ABI-2 was two defects.

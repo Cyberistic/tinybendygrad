@@ -2173,7 +2173,7 @@ def t_fx2_kids_n() -> U32: kids_n(pass2(fx2.ar(), pass1(fx2.ar(), fx2.top())))
 
 # ===========================================================================
 # THE TWELVE'S ROWS. Every expectation is `sb-oracle.py`'s printed output and
-# NONE is typed. Run `sh .agents/slop/schedule-bodies/sb-gate.sh`, which diffs
+# NONE is typed. Run `sh checks/sb-gate.sh`, which diffs
 # whole `name=value` LINES and never row names.
 #
 # `gate.code` gains ALLOC and PROGRAM. Both are NEW codes no base row reads, so

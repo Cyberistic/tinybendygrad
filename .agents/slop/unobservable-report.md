@@ -65,7 +65,7 @@ every row reported below is a **closed** case, not a suspicion.
 
 - **COUNT-ONLY GATES.** `--countgate` swept every `.sh` and `.py` in slop
   (~250 scripts). Exactly **ONE** gate's *sole* pass condition is a count
-  comparison: `.agents/slop/gr-diff.sh`, `if [ "$py_count" -eq "$bend_count" ]`.
+  comparison: `oracles/gateport/oracles/gr-diff.sh`, `if [ "$py_count" -eq "$bend_count" ]`.
   Two other count comparisons are correct and are **run-health** guards against
   the bend ~1-in-20 stack overflow (`runrows.sh`, `e2e_negctl.sh`). So this
   defect class is rare, and where it occurs it is total.

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """norm_check.py -- prove `jslane2/gen_f32_seam.py`'s `norm` round-trips, or does not.
 
-    python3 .agents/slop/jsfp8/norm_check.py
+    python3 checks/norm_check.py
 
 `gen_f32_seam.py` itself no longer reaches `bend`: `Dt.bf16` and `Dt.fp16` became
 SEAMS in `dtype.bend` (a file another unit owns and is editing), so its `SRC`

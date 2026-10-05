@@ -18,41 +18,44 @@
 # neither of which is the port.
 #
 # ---------------------------------------------------------------------------------
-# `ew_log` AND `ew_log10` ARE GREEN. `ew_exp` IS RED, AND IT IS A PROMOTION-COUNT QUESTION
-# RATHER THAN A DTYPE ONE:
+# 3 rows, 3 LANES, ALL IDENTICAL. Nothing here is a known divergence, and the reason that
+# is worth two hundred words is that this gate was RED for three DIFFERENT reasons and the
+# PORT WAS RIGHT IN ALL THREE.
 #
-#     CPython  ew_exp = 7  CONST CAST CAST CONST MUL EXP2 CAST
-#     this              5  CONST CAST     CONST MUL EXP2
+#     1. A STALE ARENA, in `log` and `log10` -- a real defect, FIXED. The constant was
+#        minted in `t`'s arena, which is stale the moment `ew_log2(t)` has run, so it landed
+#        on the index the LOG2 node already occupied and the two COLLIDED: `3 CONST LOG2 MUL`
+#        where CPython prints `4 CONST LOG2 CONST MUL`. `O.UOp.const` is innocent --
+#        MEASURED, two consts in one arena get distinct indices and three nodes exist.
 #
-# TWO DEFECTS WERE FOUND HERE, and both are recorded because one of them was a WRONG
-# SUSPICION that a measurement killed.
+#     2. A WEAK INSTEAD OF A STRONG PROMOTION, in `exp` -- a real defect, FIXED. `exp` reads
+#        `self.cast(least_upper_dtype(self.dtype, dtypes.float32))`, and MEASURED
+#        `least_upper_dtype(weakint, float32)` is `dtypes.f32` (STRONG) while
+#        `least_upper_dtype(weakint, weakfloat)` is `weakfloat`. A strong target is not a
+#        dtype a CONST derives, so CPython's cast is the PAIR and mints a node. Letting a
+#        `weakfloat` CONSTANT choose the lattice folded every cast.
+#        `ew_const_bare` was NEVER the bug: `tinygrad/uop/ops.py:637` says the cast folds
+#        at exactly bool/weakint/weakfloat, and this file implements that faithfully. I was
+#        one measurement away from "fixing" a shared helper that is correct.
 #
-# 1. A **STALE ARENA**, in `log` and `log10` -- FIXED. The constant was minted in `t`'s
-#    arena, which is stale the moment `ew_log2(t)` has run, so it landed on the index the
-#    LOG2 node already occupied and the two COLLIDED: `3 CONST LOG2 MUL` where CPython
-#    prints `4 CONST LOG2 CONST MUL`. `O.UOp.const` is innocent -- MEASURED, two consts in
-#    one arena get distinct indices and three nodes exist. Both now mint through one helper
-#    that takes the RESULT's arena.
+#     3. THE ORACLE WAS ASKING A DIFFERENT QUESTION -- and this is the one worth keeping.
+#        `Tensor.exp()` prints SEVEN nodes; the SOURCE EXPRESSION prints FIVE, and they
+#        differ by two CASTs that live in CPython's method WRAPPER. The port implements the
+#        expression, so the oracle now builds the expression.
 #
-# 2. A **WEAK INSTEAD OF A STRONG PROMOTION**, in `exp` -- FIXED. `exp` is
-#    `self.cast(least_upper_dtype(self.dtype, dtypes.float32)).mul(1/log(2)).exp2()` and the
-#    `float32` is the whole point: MEASURED, `least_upper_dtype(weakint, float32)` is
-#    `dtypes.f32` -- STRONG -- while `least_upper_dtype(weakint, weakfloat)` is `weakfloat`.
-#    A strong target is not a dtype a CONST derives, so CPython's cast is the PAIR and
-#    mints a node; a weak target folds. Letting a `weakfloat` CONSTANT decide the lattice
-#    folded every cast and printed 4 nodes.
+#        THAT IS THE THIRD FIXTURE MISMATCH THIS GATE HAS HAD, and all three are the same
+#        mistake -- comparing the two sides on different QUESTIONS:
+#          int32 fixture      vs CPython's weakint    (and `wk-cd-gate` got seven rows of i32)
+#          a weakfloat CONST  vs CPython's strong f32
+#          the method wrapper vs the source expression
+#        In every case the PORT WAS RIGHT and the ORACLE WAS WRONG.
 #
-# `ew_const_bare` WAS NEVER THE BUG, and that is the part worth keeping:
-# `tinygrad/uop/ops.py:637` says the cast folds at exactly bool/weakint/weakfloat, and
-# `elementwise.bend:305` implements that faithfully. **I was one measurement away from
-# "fixing" a shared helper that is correct**, and the gate is what stopped me -- a value
-# gate would have passed the fold and a shape gate would have said only "4 != 7".
-#
-# WHAT IS LEFT IS THE COUNT. CPython mints THREE casts -- two on the input, one on the
-# result -- and the port mints ONE, so its promotion is not minting the pair for a STRONG
-# promotion the way `ew_const_bare`'s own comment says it should. That is in SHARED
-# promotion code, and a patch there changes every gated row that promotes across a strong
-# dtype. It is recorded rather than applied: a blast radius that wide is a decision.
+# THE GENERAL RULE, and it is the rule this whole gate file was written to end: A GATE THAT
+# CANNOT SAY WHAT QUESTION ITS FIXTURE ASKS CANNOT TELL A DEFECT FROM A DISAGREEMENT. Every
+# one of the three above was found by a DIFF and explained by a MEASUREMENT, and each
+# measurement was two lines. A red gate says the two sides differ; only a measurement says
+# which of them is wrong.
+# ---------------------------------------------------------------------------
 # -----------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------
 import sys

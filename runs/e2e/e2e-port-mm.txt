@@ -113,9 +113,8 @@
         PREFIX is not a comparison, and 63 agreeing words are not 64.
    copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
     planted e2e-mm-oracle.json: answer_u32[37] ^= 1  ->  3243163649
-         PORT PROTOTYPE : extern void mm(float* restrict data0_4, float* restrict data1_4, float* restrict data2_4, float* restrict data3_4);
-         SHIM CALL      : data0_4, data1_4, data2_4, data3_4
-    RED   [C3 one bit of one expected word, and only that word]
+    *** RED BUT NOT SEMANTIC [C3 one bit of one expected word, and only that word] -- it fell over instead of answering wrongly ***
+        FAIL[mm] emit-mm.bend did not run
 
 -- C4  THE PORT, on lane A's one-input row kern2 CLANG. Reported because the answer
         was NOT the predicted one: that kernel reads ONE buffer, so reversing its two
@@ -150,6 +149,6 @@
        builds BOTH lanes from a recorded stdout, so all 227 of ITS rows are TEXT.
 
 --------------------------------------------------------------------------------
-STAGE 6 PASS -- 64/64 u32 words through the port's own renderer, diff 0 bytes, and
-               every negative control went red.
-(this stage's own exit status, for a caller that wants it: 0)
+STAGE 6 FAILED -- stages 1-5's verdict above stands on its own; the script's exit
+               status is STILL stage 4's and is unaffected by this line.
+(this stage's own exit status, for a caller that wants it: 1)

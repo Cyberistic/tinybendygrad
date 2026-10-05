@@ -292,7 +292,7 @@ duplicate instance.
 .venv/bin/python .agents/slop/nvdup/nvdup-deadarm.py --selftest          # the matrix, rc 0
 .venv/bin/python .agents/slop/nvdup/nvdup-deadarm.py --selftest --file .agents/slop/nvdup/nv-oracle-PREFIX.py   # rc 1, THE PROOF
 .venv/bin/python .agents/slop/dup/dup-capture.py --only ops_nv            # re-capture both sides, live
-.venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE AFTER       # the multiset proof
-.venv/bin/python .agents/slop/dup/dup-gate.py --port P --oracle O --selftest   # rc 1: the port's 11
-.venv/bin/python .agents/slop/dup/dup-census.py --all                     # the tree-wide table
+.venv/bin/python checks/dup-gate.py --compare BEFORE AFTER       # the multiset proof
+.venv/bin/python checks/dup-gate.py --port P --oracle O --selftest   # rc 1: the port's 11
+.venv/bin/python checks/dup-census.py --all                     # the tree-wide table
 ```

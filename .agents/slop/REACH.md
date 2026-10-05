@@ -25,7 +25,7 @@ coordinator afterwards**, against the tree as it stands. Nothing is transcribed.
 > VERDICTS              : 22 AGREE / 2 DISAGREE (lin, loop -- forward-only on purpose)
 > ```
 >
-> Instrument: `hermetic/hermetic-census.py --no-publish` (one process per graph, no cache on
+> Instrument: `checks/hermetic-census.py --no-publish` (one process per graph, no cache on
 > the verdict path), and `graphcmp.py diff --graph <g>` once per graph for the verdicts. Both
 > rc=0. The `18 not reached` were derived by me from the census's own per-graph op dicts and
 > `{o.name for o in list(Ops)}` — see `.agents/slop/notes-sweep/01-GROUND-TRUTH.md`.
@@ -212,7 +212,7 @@ a misleading `rc=0`** when captured to a file. Use `perl -e 'alarm N; exec @ARGV
 # ADDED 2026-10-04 by the `arith` unit — 53 -> 59, all six arithmetic ops
 
 Full report, mutations and walls: **`.agents/slop/arith/REACH-ARITH.md`**. Re-measured with
-`.agents/slop/arith/both-census.py`, which emits **both sides** — the census that produced the
+`checks/both-census.py`, which emits **both sides** — the census that produced the
 53 above (`reach/census.py`) counts the **py side only**, so "both sides read 53" was not
 produced by an instrument that could have found the two differing.
 

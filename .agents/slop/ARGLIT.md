@@ -16,7 +16,7 @@ Substrate pins at every measurement are in `oracles/arglit/AFTER-pins.txt`. Noth
 
 Files, all mine: `arglit/al-oparg.bend` (a bare `Op` as an `Arg`, **compiles**),
 `arglit/al-patir.bend` (the same graph as `ns-patir.bend` with `AOpLit`),
-`arglit/al-verdict.py` (two-sided verdict, denominator printed, no monkeypatch),
+`checks/al-verdict.py` (two-sided verdict, denominator printed, no monkeypatch),
 `arglit/al-transcription.py` (the table's claims vs upstream, **planted and fired**),
 `arglit/al-plant-carg.py` (the arm removed and restored, md5-proven).
 Transcripts: `arglit/plant-A.txt`, `arglit/plant-B.txt`,

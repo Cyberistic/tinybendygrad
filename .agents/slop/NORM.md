@@ -5,9 +5,9 @@ Rule prefix for this unit: **`NORM-`**. Files: `.agents/slop/norm/`.
 
 ```
 python3 .agents/slop/norm/canon.selftest.py   # the four rows + the property + the plants
-python3 .agents/slop/norm/gate_norm.py        # both lanes, four verdicts, never summed
+python3 checks/gate_norm.py        # both lanes, four verdicts, never summed
 python3 .agents/slop/norm/lint_norm.py        # the census; exit 1 on a NEW bad normaliser
-zsh    .agents/slop/norm/lint_demo.sh         # both of the lint's branches, measured
+zsh    checks/lint_demo.sh         # both of the lint's branches, measured
 ```
 
 ## THE CLASS, IN ONE LINE
@@ -41,8 +41,8 @@ in `norm/census.txt`; 998 gate files scanned.
 | `mm-walk-gate.py:44` | the same line | none | **NO** — copy 2 of 3 |
 | `mm-lift-gate.py:158` | the same line | none | **NO** — copy 3 of 3 |
 | `dc-oracle.py:135` | `f"C({a:g})"` | none | **NO** — and the author said so |
-| `abi/abi_gate.py:132` (`norm`) | `repr(unpack("<f",pack("<f",v)))` | f32 | **yes** — do-not-touch, already correct |
-| `abi4/abi4_gate.py:240` (`norm`) | the same | f32 | **yes** — do-not-touch, already correct |
+| `checks/abi_gate.py:132` (`norm`) | `repr(unpack("<f",pack("<f",v)))` | f32 | **yes** — do-not-touch, already correct |
+| `checks/abi4_gate.py:240` (`norm`) | the same | f32 | **yes** — do-not-touch, already correct |
 | `jstage/jsstage.py:308` (`f32`) | `unpack("<f",pack("<f",x))` + `isnan` | f32 | **yes** — another unit, already correct |
 | `graphcmp.py:459` | `ATOMS["float"] + str(f32bits(x))` | f32 bits | **yes** — instance 3, the fix |
 | `tx-oracle.py:17-21` (`fbits`) | `str(unpack("<I",pack("<f",x)))` | f32 bits | **yes** |
@@ -117,8 +117,8 @@ already has eight live ABI ones.**
 
 | gate | why not | is it correct? |
 |---|---|---|
-| `abi/abi_gate.py` | **explicitly do-not-touch** | **yes**, `:132` round-trips |
-| `abi4/abi4_gate.py` | **explicitly do-not-touch** | **yes**, `:240` round-trips |
+| `checks/abi_gate.py` | **explicitly do-not-touch** | **yes**, `:132` round-trips |
+| `checks/abi4_gate.py` | **explicitly do-not-touch** | **yes**, `:240` round-trips |
 | `jstage/jsstage.py` | another unit's tree | **yes**, `:308` round-trips + `isnan` |
 | `graphcmp.py` | **do-not-touch** | **yes**, already bits-based |
 | `mm-dt-gate.py` · `mm-walk-gate.py` · `mm-lift-gate.py` | another unit's tree | **NO** — baseline, §1 |
@@ -202,9 +202,9 @@ reading the spellings it emits:
 | `mm-walk-gate.py` | none at all | **NO** — the arm is **unreachable** |
 | `dc-oracle.py` | `C(1.0)` | **NO** — and `%g` cannot get 1.0 wrong |
 
-**What I added:** all four cases on both lanes in `norm/gate_norm.bend` +
+**What I added:** all four cases on both lanes in `checks/gate_norm.bend` +
 `gate_norm.py`; the plants in `norm/canon.selftest.py`; both of the lint's exit
-branches in `norm/lint_demo.sh`.
+branches in `checks/lint_demo.sh`.
 
 **What I did not add, and why:** the three-line fixtures that would expose
 `dc-oracle.py:131` and the `mm-*` gates belong to other units, and adding a row to

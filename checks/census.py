@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """DENOM census -- reach for BOTH sides, caching into THIS unit's own directory.
 
-WHY A COPY AND NOT `.agents/slop/arith/both-census.py`: that script's cache directory is
+WHY A COPY AND NOT `checks/both-census.py`: that script's cache directory is
 `HERE` = `.agents/slop/arith/`, so running it would OVERWRITE another unit's `rows-*.txt`.
 Read-only use of its ideas, own cache, own output. Everything it does that matters is
 here: both sides emitted, the py-only/bend-only split, the denominator MEASURED at run
