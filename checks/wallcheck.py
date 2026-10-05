@@ -31,9 +31,18 @@ LEDGER = ".agents/slop/wallcheck/walls.tsv"
 TRUTH = ".agents/slop/wallcheck/walls.truth.tsv"
 
 # Trees that hold COPIES of the source tree. A walk that entered one would count a claim as
-# stated in N places when the N-th copy is a snapshot. Named, printed, and excluded from every walk.
-EXCLUDED = (".git/", "references/", "runs/", "oracles/", "tinygrad/", ".agents/slop/differverdict/",
-            ".agents/slop/xd1/", ".agents/slop/wallcheck/")
+# stated in N places when the N-th copy is a snapshot. PRUNED during the walk, not filtered after
+# it -- `rglob` descends into `.git` and only then drops it, which is how a census of 14 rows
+# turns into 14 full traversals of the object store.
+EXCLUDED = (".git", "references", "runs", "oracles", "tinygrad", "test", "examples",
+            ".agents/slop/differverdict", ".agents/slop/xd1", ".agents/slop/wallcheck",
+            ".venv", "node_modules", "__pycache__")
+
+# A claim is stated where a reader meets one: a file header, a note, a doc. One walk, one read per
+# file, cached, then queried per row.
+WALK_ROOTS = ("tinybendygrad", ".agents/slop", "docs", "checks", "gates", "AGENTS.md", "README.md")
+SUFFIXES = {".bend", ".py", ".sh", ".md", ".tsv", ".txt", ".c", ".h", ".js", ".mjs", ".rs", ".toml"}
+MAX_BYTES = 2_000_000
 
 # POSIX classes are NESTED SETS to python's re: `[[:space:]]` compiles and matches a colon, an
 # s, and the literal "pace". Anchors are authored in POSIX because they are greps a reader can
@@ -90,13 +99,31 @@ def code_only(text: str) -> str:
 
 
 def walk(root: Path):
-    for p in sorted(root.rglob("*")):
-        if p.is_symlink() or not p.is_file():
+    """One pruned pass, yielding (path, relpath). Directories are removed from `dirs` in place so
+    the walk never descends into a tree copy or the object store."""
+    import os
+    for top in WALK_ROOTS:
+        base = root / top
+        if base.is_file():
+            if base.stat().st_size <= MAX_BYTES:
+                yield base, top
             continue
-        rel = p.relative_to(root).as_posix()
-        if any(rel.startswith(e) for e in EXCLUDED):
-            continue
-        yield p, rel
+        for dirpath, dirs, files in os.walk(base):
+            dirs[:] = [d for d in dirs if d not in EXCLUDED]
+            for name in sorted(files):
+                p = Path(dirpath) / name
+                if p.suffix in SUFFIXES and p.stat().st_size <= MAX_BYTES:
+                    yield p, p.relative_to(root).as_posix()
+
+
+_CORPUS: list[tuple[str, str]] | None = None
+
+
+def corpus() -> list[tuple[str, str]]:
+    global _CORPUS
+    if _CORPUS is None:
+        _CORPUS = [(rel, p.read_text(errors="ignore")) for p, rel in walk(ROOT)]
+    return _CORPUS
 
 
 class Pin:
@@ -237,23 +264,9 @@ def redundancy(r: Row) -> tuple[int, list[str]]:
         return 0, []
     key, absent = re.compile(posix2re(r.key)), re.compile(ABSENCE_WORDS)
     ref = re.compile(posix2re(r.refuted)) if r.refuted not in ("", "-") else None
-    states = []
-    for p, rel in walk(ROOT):
-        try:
-            text = p.read_text(errors="ignore")
-        except OSError:
-            continue
-        if key.search(text) and absent.search(text):
-            states.append(rel)
-    stale = [rel for rel in states if ref is None or not _has(p, ref)]
+    states = [rel for rel, text in corpus() if key.search(text) and absent.search(text)]
+    stale = [rel for rel in states if ref is None or not ref.search(dict(corpus())[rel])]
     return len(states), stale
-
-
-def _has(p: Path, ref: re.Pattern) -> bool:
-    try:
-        return bool(ref.search(p.read_text(errors="ignore")))
-    except OSError:
-        return False
 
 
 def report(rows, ck, truth, want, rev):

@@ -20,12 +20,21 @@ HERE = Path(__file__).resolve().parent
 
 
 def rows(path):
+    """WHOLE `name=value` LINES, as a MULTISET keyed on `name`.
+
+    A multiset and not a dict, because `fold.bend` emits `lf_sub_int32_-3_4` TWICE (two
+    fixtures, the same name, both measured correct) and a dict silently collapsed them:
+    the lane then counted 333 while the file held 334, and `--rows 334` failed for a
+    reason that had nothing to do with the change under test. A duplicate NAME is real
+    data here, so it is counted rather than resolved.
+    """
     out = {}
     for line in Path(path).read_text().splitlines():
         line = line.strip()
-        if "=" in line and not line.startswith(("bend ", "[bounded]")):
-            name, val = line.split("=", 1)
-            out[name] = val
+        if not line or line.startswith(("bend ", "[bounded]")):
+            continue
+        name = line.split("=", 1)[0] if "=" in line else "<no-eq>"
+        out.setdefault(name, []).append(line)
     return out
 
 
@@ -39,23 +48,26 @@ def main(argv):
     want = int(flags[flags.index("--rows") + 1]) if "--rows" in flags else None
 
     base, new = rows(base_p), rows(new_p)
-    # NON-EMPTINESS ASSERTED BEFORE ANY COMPARISON. Two empty dicts compare equal and
-    # "UNCHANGED" would be a vacuous pass.
+    # NON-EMPTINESS ASSERTED BEFORE ANY COMPARISON. Two empty lanes compare equal and
+    # "UNCHANGED" would be a vacuous pass -- the `""` vs `""` failure gates/README.md
+    # records for the retired shell form.
     for tag, d, f in (("baseline", base, base_p), ("new", new, new_p)):
         if not d:
             print(f"{label}: the {tag} lane {f} has NO ROWS -- the comparison below would "
                   f"report UNCHANGED vacuously", file=sys.stderr)
             return 1
-    if want is not None and len(base) != want:
-        print(f"{label}: the baseline has {len(base)} rows, expected {want}", file=sys.stderr)
+    nb, nn = sum(len(v) for v in base.values()), sum(len(v) for v in new.values())
+    if want is not None and nb != want:
+        print(f"{label}: the baseline has {nb} rows, expected {want}", file=sys.stderr)
         return 1
     if set(base) != set(new):
-        print(f"{label}: ROW SETS DIFFER: only-baseline={sorted(set(base)-set(new))} "
+        print(f"{label}: ROW NAMES DIFFER: only-baseline={sorted(set(base)-set(new))} "
               f"only-new={sorted(set(new)-set(base))}", file=sys.stderr)
         return 1
 
-    moved = [(n, base[n], new[n]) for n in sorted(base) if base[n] != new[n]]
-    print(f"{label}: {len(base)} rows compared, {len(moved)} MOVED")
+    moved = [(n, b, x) for n in sorted(base)
+             for b, x in zip(base[n], new[n]) if b != x]
+    print(f"{label}: {nb} rows compared, {len(moved)} MOVED")
     for n, b, x in moved:
         print(f"  {n}: {b}  ->  {x}")
     if need is not None and len(moved) < need:

@@ -68,10 +68,17 @@ class Gate:
               canonicalisation silently absorbs.
     pins      extra (lane, row_name) assertions -- that row is PRESENT in that lane -- for
               claims a diff cannot express. Its CONTENT, if it matters, goes in `diverges`.
+    warm      "fatal" (default) or "report". THE SHELL'S TWO VERDICT SHAPES, because the two
+              gates being ported did NOT agree on this and a port that picks one is a verdict
+              change: `mixin-op-gate.sh:22` runs `--check-only` bare under `set -e`, so a COLD
+              driver aborts the gate at that line; `beautiful-mnist-gate.sh:29` runs it
+              `--check-only || true` and says in its own header that it "does NOT gate on that
+              line", so a COLD driver is REPORTED and the lanes are diffed anyway. Same driver,
+              same verdict, opposite exit status, and the difference is the shell's.
     """
 
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
-                 pins=None, port_only=None, canon=None):
+                 pins=None, port_only=None, canon=None, warm="fatal"):
         self.name = name
         # A GATE'S INPUTS LIVE BESIDE THE GATE. `.agents/slop/` is being pruned, and a
         # prune took seven of nine driver and oracle files out from under these gates --
