@@ -508,10 +508,34 @@ def bitcast_dims.put(i: U32, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<
 
 # `if isinstance(ps[-1], int) and (ps[-1]*input_sz) % output_sz: raise RuntimeError
 # ("unsupported size in bitcast")` then `return ps[:-1]+(ssimplify((ps[-1]*input_sz)
-# // output_sz),)`. The arithmetic is U32 and is exact here: a dim is a
-# non-negative count and an itemsize is 1, 2, 4 or 8, so the product fits a U32.
-# (`helpers.bend` has `i64_add` and `i64_sub` but no `i64_mul` or `i64_div`, and a
-# dim is not a value this port needs 64-bit arithmetic for.)
+# // output_sz),)`. `bitcast_dims.scale` truncates to a U32 TWICE -- `H.lo32(sint)` and
+# `U32.mul` -- so this arithmetic is U32 and it is exact ONLY WHILE `dim*inp < 2**32`.
+#
+# THE THRESHOLD IS MEASURED, NOT ASSUMED: `.agents/slop/trigger/bc-oracle.py` calls the
+# real `tinygrad` BITCAST arm through `Tensor.bitcast` (2026-10-05, 324 rows, 252 of them
+# buildable, 80 divergent) and the boundary band lands on 12 agree / 12 DIFFER exactly as
+# predicted, so the largest exact dim is `2**32//inp - 1` -- 4294967295 at inp 1,
+# 2147483647 at 2, 1073741823 at 4, 536870911 at 8. `dim = 2**32//inp` is where the port
+# answers 0 and CPython answers `2**32//out`.
+#
+# THE OLD WARRANT FOR THIS DECISION WAS A `helpers.bend` TABLE ENTRY AND IT WAS FALSE.
+# It read "`helpers.bend` has `i64_add` and `i64_sub` but no `i64_mul` or `i64_div`".
+# All four of `i64_shl`, `i64_div`, `i64_mod` and `i64_mul` are PURE in `helpers.bend`
+# now (`i64_div`/`i64_mod` beside the 64-step restoring divider, `i64_mul` over
+# `u64_mul_parts`). So U32 IS NO LONGER FORCED, and the decision above rests on nothing
+# but its own range claim -- "a dim is a non-negative count and an itemsize is 1, 2, 4 or
+# 8, so the product fits a U32" -- which is what those rows refute past the threshold.
+# THE ANSWER, restated: U32 is exact while `dim*inp < 2**32` and WRAPS SILENTLY above it.
+# No raise, no `None`, just 0. REOPEN: if this becomes an `H.i64_mul`/`H.i64_div` shape
+# the threshold stops mattering and this paragraph goes with it.
+#
+# TODO(fold-bitcast-u32): those out-of-window rows are a real port divergence, and
+# `fold.bend`'s own `main` has ZERO rows naming `bitcast` (measured: 334 rows, none of
+# them mention it), so nothing in this file notices. The fix has both halves available
+# -- `i64_mul`/`i64_div` exist -- but the gate half has to come FIRST, with expectations
+# CALLED from CPython as the oracle does. A negative dim is NOT part of this gap: upstream
+# refuses to build one at all ("shape can't contain negative numbers"), measured, so
+# `H.lo32` of a negative is unreachable rather than wrong.
 def bitcast_dims.scale(d: O.Sint, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
   match d:
     case O.SU{u}: None{}
@@ -2651,13 +2675,42 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 # and `.agents/slop/mm-gate.py` for the gate whose fixtures and rows are BOTH
 # CPython output.
 #
-# WHY IT IS HERE AND NOT IN helpers.bend. `mixin/dtype.bend`'s header says the wall
-# is that `i64_mul`, a shift, `i64_div` and `i64_mod` do not exist -- and that
-# div/mod DO exist in `tinybendygrad/dtype.bend` but as `IO(..)` effect seams, which
-# a fold cannot call. This section is the same set of operations written PURE, which
-# is the only shape `_min_max` can use. It is spelled under the same notice that
-# `promo_mask`/`least_upper` carry ("THE LATTICE IS HOISTED"): when helpers.bend grows
-# them these defs go there and the callers do not change.
+# WHY IT IS HERE AND NOT IN helpers.bend. **MEASURED 2026-10-05: THE WALL THIS SAT ON
+# IS GONE, ALL FOUR OPS OF IT, AND IT WAS GONE BEFORE THIS PARAGRAPH SAID SO.** The old
+# text read: "`mixin/dtype.bend`'s header says the wall is that `i64_mul`, a shift,
+# `i64_div` and `i64_mod` do not exist -- and that div/mod DO exist in
+# `tinybendygrad/dtype.bend` but as `IO(..)` effect seams, which a fold cannot call",
+# under the notice "when helpers.bend grows them these defs go there and the callers do
+# not change". Four claims, four dead:
+#   * `i64_mul`, `i64_div` and `i64_mod` are PURE in `helpers.bend` now -- beside the
+#     64-step restoring divider and over `u64_mul_parts`. The premise was a `helpers.bend`
+#     INVENTORY and it was out of date, which is the way an inventory goes out of date.
+#   * The shift was never a scope wall HERE: `bnd.pw2` passes `U32.to_nat(U32.sub(bits,
+#     1))` into `mm.u64.shl`'s `+k: Nat` and `bnd.pw2`'s `bits` is a runtime `U32`
+#     PARAMETER. A runtime shift amount IS a `Nat`; this file is `ALL PROOFS CHECK`.
+#   * The `IO(..)` seam half died in its own subject: `tinybendygrad/dtype.bend` carries
+#     `IO(` 0 times, `import "./runtime/dtype.*"` 0 times, `SOME PROOFS FAIL` 0 times.
+#   * AND `mixin/dtype.bend` had ALREADY CORRECTED THIS RECORD IN WORDS, naming
+#     `uop/fold.bend` as one of the two files still carrying the wrong wall. So this was
+#     the OLDEST of four copies, not the only one.
+#
+# THE NOTICE'S OWN PROMISE WAS FALSE, which is why it was never executed. "The callers do
+# not change": there are 84 `mm.u64.*` call sites in this file and 0 outside it, and every
+# one of them would need a namespace qualifier, because `H` is how this file reaches
+# `helpers.bend`. The block already makes 95 `H.` calls; a move is 84 more, not zero.
+#
+# SO THE REAL ANSWER IS THE OPPOSITE DIRECTION, and this is what a reader should now do.
+# `helpers.bend` already owns the UNSIGNED PRIMITIVES this block reimplements --
+# `i64_of_hi_lo`, `u64_lt`, `u64_divmod`, `u64_mul_parts` -- and `mm.u64.mul` IS
+# `u64_mul_parts` plus one thing: `mm.u64.of` answers `None` and THAT `None` IS the
+# unsigned overflow, which every caller turns into `PInf`/`NInf`. `i64_mul` and `u64_mul`
+# WRAP mod 2**64 and cannot report it. **THE CONTRACT IS DIFFERENT, SO THIS IS NOT
+# DUPLICATED LOGIC AND NOT A MOVE.** What `helpers.bend` lacks is a CHECKED unsigned 64-bit
+# operation -- one that answers `Maybe` on overflow -- not the arithmetic.
+# REOPEN: when `helpers.bend` grows a checked unsigned 64-bit contract, `mm.u64.*` becomes
+# duplicated logic and SHOULD move, and that is the only condition under which it should.
+# Keep this paragraph either way: `helpers.bend`'s note above `i64_or` and `uop/weak.bend`'s
+# header both point here, so a deleted wall is a wall somebody re-derives.
 #
 # THE WIDTH IS SIGN-PLUS-UNSIGNED-64 and it is MEASURED, not chosen. See
 # `.agents/slop/oracles/mm-range.py`: a plain 8x8 matmul has 21 of 232 nodes whose
