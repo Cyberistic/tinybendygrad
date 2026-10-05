@@ -67,6 +67,7 @@ from pathlib import Path
 
 ROOT = Path(os.environ["SUBSTRATE_ROOT"] if os.environ.get("SUBSTRATE_ROOT")
             else Path(__file__).resolve().parents[1])
+GATES = Path(__file__).resolve().parents[1] / "gates"   # for `gatekit`, below
 PY, BOUNDED = ".venv/bin/python", "checks/bounded.py"
 # `env -u PYTHONPATH`: contamination is real here and `differ.py` measures it in a control.
 ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
@@ -91,6 +92,13 @@ C_PROBE_FOREIGN = "tinybendygrad/runtime/dtype.c"
 CC_WHY = "cc and a compiling bend C context are both required, and one is absent"
 SHELL_SECONDS = 300   # the shell's `alarm 300`, kept so the TIME a run may take does not change
 DEFAULT_MB = 2048     # above the measured 1,152 MB maximum; see the docstring
+
+# `gates/gatekit.py`'s OWN update-notice regex, imported rather than re-typed, and the reason is
+# measured: `bend` prints `bend <ver> is available: run bend update` on STDERR on EVERY invocation,
+# 42 bytes of it, so "stderr is non-empty" is not "bend said something" and a first-line rule that
+# forgets the notice reads it as the instrument's answer on a perfectly healthy file.
+sys.path.insert(0, str(GATES))
+from gatekit import NOTICE  # noqa: E402  (the path has to exist before this line runs)
 
 IF_OPEN = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef)")
 IF_CLOSE = re.compile(r"^\s*#\s*endif")
@@ -183,23 +191,50 @@ def bounded(cmd: list[str], opts: argparse.Namespace, what: str) -> tuple[str, i
     THE SHELL'S FOUR INVOCATIONS ARE `perl -e 'alarm 300; exec @ARGV'` (bend, node) or BARER
     (both `cc` calls, at what are now lines 157 and 228). That idiom bounds TIME and nothing
     else, and two unbounded `bend` processes took this machine's memory to zero on 2026-10-05.
-    `checks/bounded.py` watches the child's RSS and kills it: exit 3 = killed on memory, exit 4 =
-    timed out, and EITHER WAY THE RUN PROVES NOTHING.
+    `checks/bounded.py` watches the child's RSS and kills it: exit 3 = killed on memory, 4 = timed
+    out, 5 = could not start, 6 = measured nothing. EITHER WAY THE RUN PROVES NOTHING.
 
-    `bounded.py` prints its own `[bounded] ...` provenance lines. They are stripped BEFORE the
-    first line is taken, because a killed child produced no output under the shell's alarm
-    either -- so the verdict line is the shell's, byte for byte, and the fact that this one was
-    KILLED goes to stderr, on a channel of its own, where it cannot contaminate the artifact. A
-    gate is a text: a line added to the artifact is a line the oracle does not have.
+    ITS OWN LINES ARE ON ITS OWN CHANNEL. `bounded.py` guarantees its stdout is the child's stdout
+    byte for byte and prints its `[bounded] ...` record on stderr, so the verdict line below is the
+    shell's, byte for byte, and the fact that this one was KILLED goes to stderr, where it cannot
+    contaminate the artifact. A gate is a text: a line added to the artifact is a line the oracle
+    does not have. (The old code stripped `[bounded] ` lines out of what it thought was the merged
+    stream; that stream was stdout and the record was never in it, so the strip did nothing for the
+    verdict and the diagnostics it did remove were the child's.)
     """
     p = subprocess.run(
         [PY, BOUNDED, "--seconds", str(opts.seconds), "--mb", str(opts.mb), "--", *cmd],
         env=ENV, capture_output=True, text=True)
-    lines = [ln for ln in p.stdout.split("\n") if not ln.startswith("[bounded] ")]
-    for ln in p.stdout.split("\n"):
-        if ln.startswith("[bounded] ") and ("peak-RSS=" in ln or "PROVES NOTHING" in ln):
+    # `bounded.py`'s contract, and the reason this changed at all: STDOUT IS THE CHILD'S, byte for
+    # byte, and the `[bounded]` record is on STDERR. The strip below was deleting lines from the
+    # child's own stdout that were never there -- it was removing the verdict line bounded.py used
+    # to print INTO the stream it was measuring, and leaving the diagnostics it had merged there.
+    # The verdict therefore arrives where it belongs, on a channel of its own.
+    lines = [ln for ln in p.stdout.split("\n") if ln]
+    for ln in p.stderr.split("\n"):
+        if ln.startswith("[bounded] ") or ln.startswith("  "):
             print(f"[substrate] {what}: {ln}", file=sys.stderr)
-    return (lines[0] if lines else ""), p.returncode, "\n".join(lines)
+    # THE SHELL'S `COLD` IS "the FIRST LINE of the instrument's MERGED output is not `ALL PROOFS
+    # CHECK`", and `bend` puts its two streams in different places: a healthy file answers on
+    # STDOUT, a broken one answers NOTHING on stdout and `SOME PROOFS FAIL / Error: / - expected`
+    # on STDERR (MEASURED, both on this tree). So the two are joined HERE, in this function, where
+    # the shell's merge used to be -- stdout first, because that is the order `2>&1` gave, and the
+    # 42-byte update notice is not one of the two answers. `bounded.py` no longer merges anything;
+    # this gate still needs the merged FIRST LINE, and saying so is cheaper than a second
+    # definition of what `COLD` means.
+    said = [ln for ln in p.stderr.split("\n")
+            if ln.strip() and not NOTICE.match(ln.strip()) and not ln.startswith(("[bounded]", "  "))]
+    merged = lines + said
+    # A KILL, A TIMEOUT AND A NON-MEASUREMENT ARE NOT VERDICTS, and each has its own status:
+    # 3 = killed on memory, 4 = timed out, 5 = could not start, 6 = measured nothing. Under the
+    # shell's alarm every one of those produced NO first line either, so the verdict line below is
+    # unchanged -- but saying which is true, on stderr, is what keeps "COLD :: <empty>" from being
+    # read as a property of the file under test. `bounded.py`'s OWN token is `WITHIN-LIMITS` for
+    # all four, so the status is what distinguishes them and it is read HERE, once.
+    if p.returncode in (3, 4, 5, 6):
+        print(f"[substrate] {what}: bounded.py reports exit {p.returncode} -- THIS RUN PROVES "
+              "NOTHING, it was killed or never ran. NOT a verdict about the file.", file=sys.stderr)
+    return (merged[0] if merged else ""), p.returncode, "\n".join(merged)
 
 
 class Ctx:
