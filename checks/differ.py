@@ -9,8 +9,9 @@ ORACLE the port is diffed against.
 Two gates, and WHAT EACH ONE CLAIMS, because a gate whose scope is a comment is a gate
 nobody can check:
 
-  run     the per-graph VERDICT line and its DENOMINATOR line for 16 graphs (14 AGREE;
-          `lin` and `loop` DISAGREE for named measured causes), the canonical py-vs-bend
+  run     the per-graph VERDICT line and its DENOMINATOR line for every graph in the
+          CORPUS (`graphcmp.GRAPHS`), each against the verdict `WANT` expects of it, plus a
+          separate count of how many had NO expectation at all; then the canonical py-vs-bend
           byte identity of each graph, 5 same-side controls, 1 cross-graph comparison, 7
           plants that must DISAGREE and name something, the ordered/`--equiv` split on the
           same reordered pair, 4 conflations, the DEBUG-level comparison, 5 two-run
@@ -82,10 +83,41 @@ def check_oracle() -> list[str]:
             bad.append(f"{name}: {got[:16]} != pinned {want[:16]}")
     return bad
 
+def corpus() -> tuple[str, ...]:
+    """`graphcmp.GRAPHS` -- the graphs this run is ANSWERABLE ABOUT, read from the generator.
+
+    THE CORPUS IS THE AUTHORITY ON WHAT EXISTS; `WANT` IS THE AUTHORITY ON WHAT IT MUST PRINT.
+    Two questions, two tables, and the defect was that one table was doing both jobs: the run
+    loop iterated `WANT`, so a graph absent from `WANT` was never run and never counted, and
+    `graphs=` counted what `WANT` wrote. MEASURED: 25 declared, 16 in the table, 9 in neither,
+    and `git log -S'"flip": "AGREE"' -- checks/differ.py` returns nothing -- those 9 were never
+    in ANY run, not dropped from one.
+
+    IMPORTED, not copied, for the reason `checks/no-txt.py` gives: a second list of graph
+    names is a contract with no generator, which is the failure this whole change exists to
+    remove. `graphcmp.py` imports no tinygrad and runs no `bend` at module scope (MEASURED:
+    0.01s, `tinygrad` absent from `sys.modules`), so asking it for its own keys is cheap and
+    side-effect-free -- and it is the SAME object `diff --graph` validates against, so a name
+    here is a name the run can actually run.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("graphcmp_corpus", ROOT / GCMP)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return tuple(sorted(mod.GRAPHS))
+
+
 # THE GRAPHS AND THE VERDICT EACH MUST PRINT, IN ONE TABLE, in the order the shell listed
 # them. Two lists can disagree, and a graph that runs but is not checked is a graph nobody
 # looked at. No default verdict is available here: a claim with no denominator, or an
 # expectation that reads a variable, is a claim nobody can check.
+#
+# **THIS TABLE IS NOT THE LIST OF GRAPHS. IT IS THE LIST OF *EXPECTATIONS*, and the run is
+# INCOMPLETE while it is shorter than `corpus()`.** See `cmd_run` for what an expectation-free
+# graph does and for the non-zero exit. A graph with no entry here is RUN, RECORDED and marked
+# UNSET -- never skipped, and never counted as though it had been checked.
+# `.agents/slop/want/census.py` prints the two sides against each other and exits non-zero on
+# a gap, so the gap is checkable without running anything.
 WANT = {
     "matmul": "AGREE", "reduce": "AGREE", "buffer": "AGREE", "sink": "AGREE",
     "range": "AGREE", "rangeflat": "AGREE", "cast": "AGREE", "special": "AGREE",
@@ -126,7 +158,15 @@ STAB = tuple((g, ()) for g in ("group", "sym", "loop", "gate")) + (("commute", (
 # three are MEASURED against a run of THIS driver on 2026-10-05 (the shell's `24/22/21` were
 # transcribed from a 24-graph corpus this driver does not run); the rest are the shell's.
 PINS = {
-    "graphs": "16", "graphs-agree": "14", "byte-identical": "14", "not-comparable": "0",
+    # `graphs` is the CORPUS size and `graphs-unset` the gap, and BOTH are pinned: a corpus
+    # that grows without a matching expectation cannot pass, and one that SHRINKS cannot pass
+    # either. The 2026-10-05 pins (`graphs=16`, `graphs-agree=14`, `byte-identical=14`) were
+    # measured against a COLD substrate -- every bend emission was a 0-row failure -- so they
+    # are not comparable to a warm one. Only the first three are functions of the CORPUS;
+    # every other pin here is a function of the PORT and moves when the port's next fix
+    # lands. `.agents/slop/want/DECISION.md` records which is which.
+    "graphs": "25", "graphs-unset": "9", "graphs-answered": "16",
+    "graphs-agree": "19", "byte-identical": "19", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
@@ -159,13 +199,21 @@ def declared() -> set[str]:
     DERIVED, never typed: a list written out here is a third copy of the tables above, and the
     measured failure of a stale copy is in `differverdict/VERDICT.md`, where 4 LOST and 4 NEW
     artifact names sat between two runs of the SAME driver and only a name-by-name diff found
-    them. `cmd_run` builds these names out of `WANT`/`CONTROLS`/`PLANTS`/`STAB`, so this reads
-    the same tables it does.
+    them. `cmd_run` builds these names out of `corpus()`/`CONTROLS`/`PLANTS`/`STAB`, so this
+    reads the same sources it does.
+
+    **IT READS `corpus()`, NOT `WANT`.** The run now writes one `D1-graph-`, two `D2-canon-`
+    and one `D2-cmp-` artifact for EVERY graph in the corpus, including the nine with no
+    expectation, because those nine are run and recorded rather than skipped. A `declared()`
+    built from `WANT` would call all 36 of those `UNEXPECTED` and leave 9 graphcmp `.txt`
+    files with no `.txt` policy -- the exact orphan `checks/no-txt.py`'s carve-out is for.
+    A DECLARATION THAT MISSES ONE NAME IS A POPULATION THAT EXCLUDES IT.
     """
+    graphs = corpus()
     return {f"{n}.txt" for n in LITERALS} \
-        | {f"D1-graph-{g}.txt" for g in WANT} \
-        | {f"D2-canon-{s}-{g}.txt" for g in WANT for s in ("py", "bend")} \
-        | {f"D2-cmp-{g}.txt" for g in WANT} \
+        | {f"D1-graph-{g}.txt" for g in graphs} \
+        | {f"D2-canon-{s}-{g}.txt" for g in graphs for s in ("py", "bend")} \
+        | {f"D2-cmp-{g}.txt" for g in graphs} \
         | {f"D3-control-{g}.txt" for g in CONTROLS} \
         | {f"D5-plant-{p}.txt" for p, _ in PLANTS} \
         | {f"D6-{g}-{k}.txt" for g in ("matmul", "commute") for k in ("ordered", "equiv")} \
@@ -279,17 +327,38 @@ def cmd_run(_a):
 
     # ONE LINE OF SUBSTANCE PER GRAPH: `diff --graph NAME` prints exactly one `# VERDICT:`
     # line and its `# DENOMINATOR:` line, and NAME is the only argument. The verdict step
-    # ASSERTS each graph rather than leaving a reader to check sixteen files by eye.
-    for g in WANT:
+    # ASSERTS each graph rather than leaving a reader to check twenty-five files by eye.
+    #
+    # **THE LOOP IS OVER `corpus()`, NOT OVER `WANT`.** This is the whole defect, and the
+    # loop itself was the evidence: it used to read `for g in WANT:`, which meant
+    # `graphcmp.GRAPHS` was never consulted by the run at all and every graph the corpus
+    # declared but the table omitted was INVISIBLE -- not failed, not skipped, INVISIBLE,
+    # while `graphs=` reported the table's own length as though it were the corpus.
+    #
+    # A GRAPH WITH NO EXPECTATION IS RUN ANYWAY. It is not skipped (a skip is a silent
+    # hole), and it is not compared against a default (a default is a gate that cannot
+    # fail). It is run, its real verdict is recorded, and it is marked UNSET -- and UNSET
+    # makes the whole run INCOMPLETE, because a run that silently accepts nine graphs nobody
+    # has an opinion about is a run whose denominator is a subset of its own numerator.
+    graphs = corpus()
+    unset = [g for g in graphs if g not in WANT]
+    for g in graphs:
         run(f"D1-graph-{g}.txt", "diff", "--graph", g)
-    moved = [f"{g}: VERDICT={v} EXPECTED={WANT[g]}" for g in WANT
-             if (v := verdict(f"D1-graph-{g}.txt")) != WANT[g]]
-    ng, na = len(WANT), sum(v == "AGREE" for v in WANT.values())
-    bad = [g for g, v in WANT.items() if v != "AGREE"]
+    moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED={WANT[g]}" for g in graphs
+             if g in WANT and verdict(f"D1-graph-{g}.txt") != WANT[g]]
+    na = sum(WANT[g] == "AGREE" for g in graphs if g in WANT)
+    bad = [g for g in graphs if WANT.get(g) == "DISAGREE"]
     write("D1-verdicts.txt", "\n".join(moved + [
+        f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, "
+        f"NOT COMPARED. The corpus declares this graph and `WANT` has no expectation for it, "
+        f"so the run cannot say whether that verdict is right." for g in unset
+    ] + [
         "AT LEAST ONE GRAPH'S VERDICT MOVED" if moved else
-        f"all {ng} graphs: verdict as expected ({na} AGREE; {conjoin(bad)} DISAGREE, each "
-        f"with a named cause in the WANT comment above)"]) + "\n")
+        (f"all {len(graphs) - len(unset)} graphs with an expectation: verdict as expected "
+         f"({na} AGREE; {conjoin(bad)} DISAGREE, each with a named cause in the WANT comment "
+         f"above)") if not unset else
+        f"{len(graphs) - len(unset)} of {len(graphs)} graphs compared; "
+        f"**RUN INCOMPLETE -- {len(unset)} HAVE NO EXPECTATION**"]) + "\n")
 
     # THE CANONICAL FILES ARE BYTE-IDENTICAL, the cheapest check here: it fails first when an
     # atom letter moves. THIS STEP WAS A VACUOUS PASS until 2026-10-04: it ran `emit py` /
@@ -297,7 +366,7 @@ def cmd_run(_a):
     # children exited 2 having written ZERO BYTES and `cmp -s` on two empty files returns
     # success. Hence the byte-count guard: a verdict line cannot tell an empty comparison
     # from a satisfied one.
-    for g in WANT:
+    for g in graphs:
         # A BARE redirect, deliberately not `run()`: this step needs stdout in two files at
         # once, so neither is staged and either can be left 0 bytes.
         sides = {}
@@ -381,7 +450,16 @@ def cmd_run(_a):
         stale.unlink()
 
     write("D0-run-summary.txt", "\n".join([
-        f"graphs={len(list(D.glob('D1-graph-*.txt')))}",
+        # `graphs` COUNTS WHAT WAS ASKED FOR -- `len(corpus())` -- AND NOT WHAT WAS ANSWERED.
+        # It used to be `len(list(D.glob('D1-graph-*.txt')))`, which counted the artifacts
+        # `WANT` wrote and therefore reported the TABLE's length wearing the CORPUS's name:
+        # 9 graphs were declared, never run, and the line said nothing. A denominator that
+        # counts only the answered cases is a denominator that cannot shrink and so cannot be
+        # wrong. `graphs-unset` is the separate count the brief asks for, and it is what makes
+        # the run INCOMPLETE rather than passing (see `census` and `unhealthy`).
+        f"graphs={len(graphs)}",
+        f"graphs-answered={len(graphs) - len(unset)}",
+        f"graphs-unset={len(unset)}",
         f"graphs-agree={files_with('D1-graph-*.txt', 'VERDICT: AGREE')}",
         f"graphs-disagree={files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')}",
         f"byte-identical={lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')}",
@@ -401,6 +479,19 @@ def cmd_run(_a):
         f"oracle-selfcheck={grep_line('D0-coverage-census.txt', 'ORACLE SELFCHECK')}",
         f"census-rc={last_line('D0-coverage-census.txt')}"]) + "\n")
     print(f"wrote {D.relative_to(ROOT)}")
+    # **A RUN WITH AN UNANSWERED GRAPH IS INCOMPLETE, AND SAYS SO BY EXITING NON-ZERO.**
+    # This is the choice between the three answers, and it is the run's EXIT STATUS that
+    # carries it -- not a line in the summary, because a line in the summary is something a
+    # reader has to know to look for. Every artifact is still written: the measurement is
+    # real, the nine graphs really ran, and their real verdicts are in `D1-verdicts.txt`
+    # marked UNSET. What is refused is the CLAIM that the run answered the corpus.
+    if unset:
+        print(f"RUN INCOMPLETE: {len(unset)} of {len(graphs)} graphs have NO expectation in "
+              f"WANT: {', '.join(unset)}. Each was run and recorded (D1-verdicts.txt, marked "
+              f"UNSET) and each is in `graphs=`; add an expectation for each to complete the "
+              f"run. A corpus growth that must be answered for is a corpus that cannot "
+              f"silently grow.", file=sys.stderr)
+        return 1
     return 0
 
 
@@ -515,9 +606,23 @@ def artefacts_ok():
 
 
 def clean_run(label, wait):
-    """Run until healthy, bounded. `ready && <run>` is the SHELL's order, defect included:
-    when the substrate never settles the runner is not executed and `unhealthy()` then reads
-    the PREVIOUS run's summary. Reported, not fixed -- see DIFFPY.md."""
+    """Run until healthy, bounded, and record the DEFECT below rather than pointing at a file.
+
+    `ready() && <run>` is the SHELL's order and it is wrong, and this is where it lives. When
+    the substrate never settles, `ready` is False, the runner is never executed, and
+    `unhealthy()` then reads the PREVIOUS run's summary -- so a gate reports the last good
+    run's health while waiting for a run that did not happen. Reported, not fixed: fixing it
+    means running unconditionally and letting the pins judge the result, which changes what a
+    `repro` refusal MEANS and is not this function's decision to make.
+
+    **THIS USED TO END "Reported, not fixed -- see DIFFPY.md", AND `DIFFPY.md` EXISTED
+    NOWHERE IN THE REPO** (MEASURED: 0 files; the pointer was carried by `checks/README.md:93`
+    and by a ticked `- [x] Report.` box at `.agents/TODO.md:12108`). A pointer to a document
+    that is not there is not a dangling path, it is a claim that a fix was reported SOMEWHERE
+    and the somewhere is absent -- so the finding now lives HERE, in the function that has the
+    defect, where a reader of the defect finds it. `checks/README.md:93` still points at the
+    missing file; that pointer is NOT MINE and is reported, not edited.
+    """
     for attempt in range(wait):
         if ready(wait):
             subprocess.run([sys.executable, str(Path(__file__).resolve()), "run"], cwd=ROOT,

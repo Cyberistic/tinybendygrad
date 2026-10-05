@@ -92,3 +92,33 @@ summary afterwards; if the substrate moved mid-run, the summary's `rc=` and
 
 See `.agents/slop/DIFFPY.md` for the port, its measured agreement with the shell, and the
 pins.
+
+## `checks/residue.py` — a second opinion on `sweep.py`'s DELETE bucket
+
+`checks/sweep.py` sorts the residue into four buckets and acts on three. `checks/residue.py`
+**consumes `sweep.verdict_for()` and never replaces it**, and exists because `DELETE` is
+`verdict_for`'s *default* rather than a verdict: it is reached whenever `PROTECTED`,
+`LIVE_UNITS`, `ORACLE_WORD` and the citation test all decline to fire, so every "I am not sure"
+leaks into the only bucket `--apply` destroys.
+
+    .venv/bin/python checks/residue.py                  # classify, write the report, act on nothing
+    .venv/bin/python checks/residue.py --plant          # assert every verdict on a synthetic tree
+    .venv/bin/python checks/residue.py --disarm NAME    # plant again with one resolver OFF; a pass is exit 3
+
+The three positive questions are `AUTHORED` (does a naming authority **render** this name —
+`differ.declared()`, the same call `checks/no-txt.py` already makes), `LIVE` (is a **directory**
+being written, measured per directory so no roster can go stale), and `DERIVED` (regenerable by
+construction). Everything a test cannot answer is **`UNKNOWN`, which is reported, never acted on,
+and carries the `needs=` that would settle it.** `UNNAMED` is the only deletion *candidate* and is
+explicitly not a verdict.
+
+**MEASURED, and the reason to read the report rather than the bucket count: 181 of the residue's
+rows are rendered by `checks/differ.py` out of `declared()` and are visible as a literal token in
+`checks/` + `gates/` exactly once.** The corpus indexes literal tokens; the project's naming
+authority constructs names. **The DELETE bucket is a count of files unreferenced by the INSTRUMENT,
+not a count of junk.**
+
+**Its own output is excluded from its own citation corpus, by a belt.** `000-the-residue.md` names
+every residue row by path, so a bare `git add` of it made the next run find every row cited by this
+check's own report. `--plant` builds a `git init`ed temp tree with `os.utime` ages and a
+hand-written expectation column, and `--disarm` requires each of the eight branches to MOVE.
