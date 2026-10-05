@@ -5,8 +5,9 @@
 #   sh .agents/slop/helpers-tc-gate.sh
 #
 #   py    CPython,   .agents/slop/helpers-oracle.py   (CALLS tinygrad.helpers)
-#   bd    Bend,      ./bin/bend .agents/slop/helpers-tc.bend
-#   bn    Bend,      ./bin/bend .agents/slop/helpers-tc.bend -o BIN && BIN
+#         -> $GT.rows, the EXPECTED VALUES the other two lanes are diffed against
+#   bd    Bend,      ./bin/bend .agents/slop/helpers-tc.bend                 -> $GT.bd
+#   bn    Bend,      ./bin/bend .agents/slop/helpers-tc.bend -o BIN && BIN   -> $GT.bn
 #
 # `py` and `bd` MUST agree, and `bn` MUST equal `bd`. STDOUT only: `tqdm` draws its
 # bar on stderr and that is measured, not gated (see the oracle's header).
@@ -26,12 +27,19 @@
 set -e
 cd "$(dirname "$0")/../.."
 
+# ONE PREFIX, THREE LANES, AND THEY ARE FILES. The `mkdir -p "$GT"` this line used to carry
+# created a DIRECTORY named `helpers-tc-gate` while every lane wrote a FILE whose name started
+# with that same string, and nothing anywhere read the directory -- so a sweep of this prefix saw
+# two unrelated objects and could not say which one was the evidence.
 GT=.agents/slop/helpers-tc-gate
-mkdir -p "$GT"
 env DEFAULT_FLOAT=f16 DEFAULT_INT=i64 NO_COLOR=1 "$@" true
 export DEFAULT_FLOAT=f16 DEFAULT_INT=i64 NO_COLOR=1
 
-.venv/bin/python .agents/slop/helpers-oracle.py > "$GT.py" 2> "$GT.py.err"
+# `.rows`, and it was `.py` until 2026-10-06. `REVIVE.md:217`, `.agents/TODO.md:320` and
+# `bend2-constraints.md:24437` ALL THREE already recorded this rename, and all three were wrong
+# about the only thing that matters: the driver. A renamed file whose generator still writes the
+# old name is not a rename, and it survived three documents that agreed with each other.
+.venv/bin/python .agents/slop/helpers-oracle.py > "$GT.rows" 2> "$GT.rows.err"
 
 run_lane() {  # $1 = output file, rest = the bend invocation
   out=$1; shift
@@ -53,6 +61,6 @@ run_lane "$GT.bd" ./bin/bend .agents/slop/helpers-tc.bend
 ./bin/bend .agents/slop/helpers-tc.bend -o "$GT.bin"
 run_lane "$GT.bn" "$GT.bin"
 
-diff "$GT.py" "$GT.bd"
+diff "$GT.rows" "$GT.bd"
 diff "$GT.bd" "$GT.bn"
-echo "helpers-tc-gate: $(wc -l < "$GT.py" | tr -d ' ') shared rows, 3 lanes identical"
+echo "helpers-tc-gate: $(wc -l < "$GT.rows" | tr -d ' ') shared rows, 3 lanes identical"

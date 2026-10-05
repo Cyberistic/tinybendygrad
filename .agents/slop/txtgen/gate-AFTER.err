@@ -1,0 +1,2 @@
+[bounded] NO-VERDICT  rc=2  peak-RSS=2 MB (ceiling 2048)  1s  :: sh .agents/slop/helpers-tc-gate.sh  out=0B err=0B
+  NOT A MEASUREMENT: the child exited non-zero having written nothing and said nothing beyond the update notice. That is either a failure that printed nothing or `bend`'s machine-stack overflow -- which prints nothing at all, roughly 1 run in 20 -- and the two are indistinguishable from here. Do not read this as a pass and do not read it as a clean failure; RETRY, and if it persists, say so.

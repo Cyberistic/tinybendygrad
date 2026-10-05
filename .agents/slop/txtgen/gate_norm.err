@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/bounded.py", line 405, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/bounded.py", line 235, in main
+    now, watch = tree(watch)
+                 ^^^^
+NameError: name 'tree' is not defined. Did you mean: 'True'?

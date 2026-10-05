@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gate_norm.BEFORE.py", line 47, in <module>
+    import canon  # noqa: E402
+    ^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'canon'

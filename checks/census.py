@@ -21,7 +21,10 @@ def ops_of(rows):
 
 
 def side(name, which, dev, fresh):
-  cache = HERE / f"rows-{name}-{which}.txt"
+  # `.rows`, and it was `.txt` until 2026-10-06: these ARE expected values -- one lane's rows,
+  # cached so a re-run does not re-pay for it -- which is the thing `.rows` names in this project.
+  # Read and written here and nowhere else, so the extension is this file's own business.
+  cache = HERE / f"rows-{name}-{which}.rows"
   if cache.exists() and not fresh:
     rows = [ln for ln in cache.read_text().splitlines() if ln.strip()]
     return ("CACHE", len(rows), ops_of(rows), set())

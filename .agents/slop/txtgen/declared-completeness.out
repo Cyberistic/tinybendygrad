@@ -1,0 +1,7 @@
+declared()          139
+produced by cmd_run 139  (of 196 files total, incl .err/.tmp)
+
+PRODUCED BUT NOT DECLARED  0   <- each would be an UNEXCUSED .txt
+DECLARED BUT NOT PRODUCED  0   <- each would be an UNEXCUSED .txt
+
+VERDICT: declared() is EXACTLY what cmd_run writes.

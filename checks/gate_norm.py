@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """gate_norm.py -- the F32 seams' rows, canonicalised at ONE width, on BOTH lanes.
 
-    python3 checks/gate_norm.py      # writes norm/gate.txt
+    python3 checks/gate_norm.py      # writes checks/gate.out
 
 WHAT IT CLAIMS, with its denominator printed beside it:
 
@@ -222,7 +222,11 @@ def main() -> int:
             "  `base.bend` is not this unit's file -- REPORTED, not edited."]
 
     text = "\n".join(log) + "\n"
-    (HERE / "gate.txt").write_text(text)
+    # `.out`, and it was `gate.txt`, while THIS FILE'S OWN DOCSTRING said `norm/gate.txt`. Both
+    # halves were wrong -- the extension by the project rule, the directory by the write below --
+    # and nothing read the file, so the disagreement cost nothing until a sweep counted it. A
+    # report a gate both prints and writes is a captured stream, which is what `.out` names.
+    (HERE / "gate.out").write_text(text)
     print(text)
     return 1 if any(k in tally for k in ("DISAGREE", "LANE-LOSS", "?ABSENT")) else 0
 
