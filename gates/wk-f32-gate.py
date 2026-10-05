@@ -35,8 +35,8 @@ from gatekit import Gate
 
 GATE = Gate(
     "wk-f32-gate",
-    bend=".agents/slop/wk-f32.bend",
-    oracle=".agents/slop/wk-f32-rows.py",
+    bend="wk-f32.bend",
+    oracle="wk-f32-rows.py",
     rows=18,
     pins=[
         ("py", "neg1"), ("py", "neg2"), ("py", "negm32"), ("py", "i64min"),

@@ -48,7 +48,7 @@ and the class had exactly **1** member, not 8 and not 37.
 
 ```
 EARLY  .agents/slop/oracles/mm-range.py:14   -> boundary 15
-EARLY  .agents/slop/hermetic/isolate.py:46   -> boundary  -    (G.load_tinygrad() at :47, same scope)
+EARLY  .agents/slop/hermetic/isolate.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]:46   -> boundary  -    (G.load_tinygrad() at :47, same scope)
 EARLY  runs/margsym/snap/graphcmp.py:2366     -> boundary 2488
 EARLY  .agents/slop/wip/optprobe/diff.py:2   -> boundary 3
 ```

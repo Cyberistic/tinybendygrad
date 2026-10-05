@@ -1,7 +1,7 @@
 # REBASE-PLAN.md — the executable sequence for closing upstream drift
 
 Every verdict below is **measured**, not argued. Batches come from
-`python3 .agents/slop/rebase-plan.py`; every "required / droppable" claim comes from
+`python3 .agents/slop/rebase-plan.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]`; every "required / droppable" claim comes from
 `.agents/slop/rebase-try.sh --shrink <id>`, which builds the batch in a throwaway tree and
 drops one file at a time.
 

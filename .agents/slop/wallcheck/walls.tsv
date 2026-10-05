@@ -1,0 +1,38 @@
+# WALL LEDGER — one row per wall. TAB-separated, 11 columns, no tabs inside a field.
+# id  pol  scope  pattern  expect  home  refuted_by  key  date  claim  reopen
+#
+# pol    MISSING | DEFECT/code | DEFECT/prose | RUN
+#          MISSING      the wall says a CAPABILITY is absent; verdict LANDED when pattern matches
+#          DEFECT/code  the wall says a DEFECT is present IN CODE; verdict GONE when pattern has no match
+#          DEFECT/prose the defect is a SENTENCE, so comments count (RULE.md's `PROSE`)
+#          RUN          the prerequisite is a re-run, not a symbol -> REFUSED, never guessed at
+# scope   a FILE. Never a directory, never a tree (WALL/1a). Read in the working copy AND at $PIN.
+# pattern POSIX ERE, translated to python `re` before use (WALL/`[[:space:]]`). Translated, not rewritten.
+# expect  the site count THE CLAIM ASSIGNS. arity 1 = this claim is about exactly one thing.
+# home    the file that carries the wall's WORDS. `reopen` is audited there, not at the anchor.
+# refuted_by  a regex proving the file itself now calls this claim FALSE. A defect that survives on
+#          disk with its own refutation beside it is ANNOTATED-GONE, and the token is printed.
+# key     a regex for the claim's SUBJECT, walked tree-wide to count how many files state it.
+#
+# W3's scope is the ORIGINAL BROKEN SCOPE, kept verbatim, so guard 3 reproduces on real data
+# instead of on a synthetic fixture. `runtime/dtype.c emit` is not a path.
+# id	pol	scope	pattern	expect	home	refuted_by	key	date	claim	reopen
+W1a	MISSING	tinybendygrad/helpers.bend	^def i64_mul\(	1	tinybendygrad/mixin/dtype.bend	i64_mul` is PURE in `i64_mul	i64_mul	2026-10-05	i64_mul is absent - "NOWHERE. Not helpers.bend, not dtype.bend, not any tinygrad .py" (mixin/dtype.bend:52)	rg -n '^def i64_mul\(' tinybendygrad/helpers.bend
+W1b	MISSING	tinybendygrad/helpers.bend	^def (i64_div|i64_mod)\(	2	tinybendygrad/mixin/dtype.bend	i64_mod` are PURE in `i64_mod	i64_div	2026-10-05	i64_div and i64_mod do not exist, so _min_max cannot be total (mixin/dtype.bend:65)	rg -n '^def (i64_div|i64_mod)\(' tinybendygrad/helpers.bend
+W2	MISSING	tinybendygrad/dtype.bend	def (Dt\.fp8_from|float_to_fp8)\(	2	tinybendygrad/dtype.bend	-	fp8_from	2026-10-05	Dt.fp8_from is blocked on an fp8 seam	rg -n 'def (Dt\.fp8_from|float_to_fp8)\(' tinybendygrad/dtype.bend
+W3	RUN	tinybendygrad/runtime/dtype.c emit	-	-	tinybendygrad/runtime/ops_cl.bend	-	-	2026-10-05	the dtype seam's C lane cannot compile (#ifdef CID(x) under a cc run) - its prerequisite is an EMIT	.venv/bin/python checks/bounded.py --seconds 300 --mb 1024 -- ./bin/bend .agents/slop/probe-c.bend -o /dev/null
+W4	MISSING	tinybendygrad/uop/ops.bend	ParamArg\.no_slot	10	tinybendygrad/uop/ops.bend	-	no_slot	2026-10-05	O.ParamArg.no_slot is missing	rg -c 'ParamArg\.no_slot' tinybendygrad/uop/ops.bend
+W5	RUN	.agents/slop/opspy/corpus.py	-	-	.agents/slop/notes/bend2-constraints.md	-	-	2026-10-05	the corpus is 13 / 34 of 77; 43 not reached	env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/opspy/corpus.py
+W6	RUN	checks/substrate-check.sh	-	-	checks/substrate-check.sh	-	-	2026-10-05	substrate-check.sh does not run (line 245)	zsh checks/substrate-check.sh tinybendygrad/uop/ops.bend
+W7	DEFECT/code	tinybendygrad/runtime/support/nv/nvdev.bend	CID	0	tinybendygrad/runtime/support/nv/nvdev.bend	-	CID	2026-10-05	nvdev.bend has one unguarded CID site	rg -n 'CID' tinybendygrad/runtime/support/nv/nvdev.bend | rg -v '^[0-9]+:#'
+W8	MISSING	tinybendygrad/uop/ops.bend	AOpLit\{op: Op\}	1	tinybendygrad/noneshape/ns-oparg.bend	-	AOpLit	2026-10-05	Arg cannot carry a bare Op - that file says no constructor exists	rg -n 'AOpLit\{op: Op\}' tinybendygrad/uop/ops.bend
+W9	RUN	.agents/slop/jsfp8/nan_census.mjs	-	-	.agents/slop/JS-LANE.md	-	-	2026-10-05	JS keeps 0 of 199,999 NaN payloads	node .agents/slop/jsfp8/nan_census.mjs <workdir>
+W10	MISSING	tinybendygrad/uop/ops.bend	def UPat\.is_any\(	1	tinybendygrad/uop/ops.bend	-	is_any	2026-10-05	the store walk is blocked on is_any	rg -n 'def UPat\.is_any\(' tinybendygrad/uop/ops.bend
+W11	DEFECT/code	tinybendygrad/dtype.bend	^import "	0	tinybendygrad/dtype.bend	-	dtype.bend	2026-10-05	dtype.bend's 14 seams make every importer red	rg -c '^import "' tinybendygrad/dtype.bend
+U1	DEFECT/prose	tinybendygrad/uop/fold.bend	i64_add. and .i64_sub. but no .i64_mul	1	tinybendygrad/uop/fold.bend	OLD WARRANT FOR THIS DECISION WAS A	helpers.bend	2026-10-05	helpers.bend has i64_add and i64_sub but no i64_mul or i64_div - the stated warrant for the U32 decision (fold.bend:513)	rg -n 'OLD WARRANT FOR THIS DECISION WAS A' tinybendygrad/uop/fold.bend
+U2	DEFECT/code	tinybendygrad/uop/fold.bend	def mm\.u64\.of\(	1	tinybendygrad/uop/fold.bend	-	mm.u64	2026-10-05	when helpers.bend grows them these defs go there and the callers do not change (fold.bend:2655)	rg -n 'REOPEN' tinybendygrad/uop/fold.bend
+U3	RUN	.agents/slop/opspy/corpus.py	-	-	.agents/slop/notes/bend2-constraints.md	-	-	2026-10-05	the corpus over the 25 graphs graphcmp.GRAPHS is 60 of 77	env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/opspy/corpus.py
+U4	DEFECT/prose	.agents/slop/opspy/corpus.py	61 of 77	1	.agents/slop/opspy/corpus.py	-	of 77	2026-10-05	corpus.py docstring says 61 of 77 while the script prints 53 of 77	rg -n '61 of 77' .agents/slop/opspy/corpus.py
+U5	DEFECT/prose	tinybendygrad/uop/weak.bend	i64_mul	1	tinybendygrad/uop/weak.bend	all of which now exist	i64_mul	2026-10-05	weak.bend names i64_mul, i64_div, i64_mod as missing (weak.bend:15)	rg -n 'all of which now exist' tinybendygrad/uop/weak.bend
+U6	DEFECT/prose	tinybendygrad/runtime/ops_python.bend	^type Args is Data:	1	tinybendygrad/runtime/ops_python.bend	-	type Args	2026-10-05	the domain arg type is Arg (uop/ops.bend) but the file declares a local `type Args` gather row (ops_python.bend:1464)	rg -n '^type Args is Data:' tinybendygrad/runtime/ops_python.bend
+U7	DEFECT/code	tinybendygrad/runtime/support/nv/nvdev.bend	def t_const\(	1	tinybendygrad/runtime/support/nv/nvdev.bend	-	t_const	2026-10-05	def t_const has 0 call sites, so its 6 IP rows are dead code (nvdev.bend:1272)	rg -n 'def t_const\(' tinybendygrad/runtime/support/nv/nvdev.bend

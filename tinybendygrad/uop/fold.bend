@@ -499,47 +499,63 @@ def some_if(a, -A: Kind(a), ok: Bool, x: A) -> Maybe<a, A>:
     case True{}: Some{x}
     case False{}: None{}
 
-def bitcast_dims.put.of(+n: U32, +out: U32, +x: Sized) -> Maybe<&2, List<&2, O.Sint>>:
-  some_if(&2, List<&2, O.Sint>, U32.is_zero(U32.mod(n, out)),
-    List.append(&2, O.Sint, Sized.s(drop_last(x)), [sint_of(U32.div(n, out))]))
+# THE THREE ARITHMETIC DEFS, IN I64, and the product is what makes it exact. `n` is the
+# product `dim*input_sz` as an `H.I64` rather than a `U32`, so `U32.mul`'s wrap is gone,
+# and `out` -- an itemsize, so 1, 2, 4 or 8 -- goes through `H.i64_of_i32`, which is
+# exact for it.
+#
+# THE QUOTIENT IS `O.SI{H.i64_div(...)}` AND NOT `sint_of(...)`, and that is the THIRD
+# truncation and not a detail: `sint_of` is `H.i64_of_i32`, which SIGN EXTENDS, so it
+# turned every quotient of 2**31 or more into a NEGATIVE dim -- `dim=2**31, inp=2,
+# out=1` answered `-2147483648` where CPython answers `2147483648`. `sint_of` is right
+# for the small counts it was written for ("it is under 2^31") and wrong here, because
+# `dim*inp//out` is not a small count.
+def bitcast_dims.put.of(+n: H.I64, +out: U32, +x: Sized) -> Maybe<&2, List<&2, O.Sint>>:
+  some_if(&2, List<&2, O.Sint>, H.i64_is_zero(H.i64_mod(n, H.i64_of_i32(out))),
+    List.append(&2, O.Sint, Sized.s(drop_last(x)), [O.SI{H.i64_div(n, H.i64_of_i32(out))}]))
 
-def bitcast_dims.put(i: U32, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
-  bitcast_dims.put.of(U32.mul(i, inp), out, sized(ps))
+def bitcast_dims.put(i: H.I64, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
+  bitcast_dims.put.of(H.i64_mul(i, H.i64_of_i32(inp)), out, sized(ps))
 
 # `if isinstance(ps[-1], int) and (ps[-1]*input_sz) % output_sz: raise RuntimeError
 # ("unsupported size in bitcast")` then `return ps[:-1]+(ssimplify((ps[-1]*input_sz)
-# // output_sz),)`. `bitcast_dims.scale` truncates to a U32 TWICE -- `H.lo32(sint)` and
-# `U32.mul` -- so this arithmetic is U32 and it is exact ONLY WHILE `dim*inp < 2**32`.
+# // output_sz),)`. CPython's `ps[-1]` is an `int` of UNBOUNDED width, and the whole
+# question this paragraph used to answer was how many bits the port had to carry.
 #
-# THE THRESHOLD IS MEASURED, NOT ASSUMED: `.agents/slop/trigger/bc-oracle.py` calls the
-# real `tinygrad` BITCAST arm through `Tensor.bitcast` (2026-10-05, 324 rows, 252 of them
-# buildable, 80 divergent) and the boundary band lands on 12 agree / 12 DIFFER exactly as
-# predicted, so the largest exact dim is `2**32//inp - 1` -- 4294967295 at inp 1,
-# 2147483647 at 2, 1073741823 at 4, 536870911 at 8. `dim = 2**32//inp` is where the port
-# answers 0 and CPython answers `2**32//out`.
+# FIXED (2026-10-05). THE PORT TRUNCATED TO U32 ***THREE*** TIMES, NOT ONCE, AND THE
+# THREE HAVE DIFFERENT BOUNDARIES, so the single threshold `dim*inp < 2**32` that used
+# to stand here was WRONG IN TWO WAYS. Measured, 39 rows, `gates/bc-u32-gate.py`:
 #
-# THE OLD WARRANT FOR THIS DECISION WAS A `helpers.bend` TABLE ENTRY AND IT WAS FALSE.
-# It read "`helpers.bend` has `i64_add` and `i64_sub` but no `i64_mul` or `i64_div`".
-# All four of `i64_shl`, `i64_div`, `i64_mod` and `i64_mul` are PURE in `helpers.bend`
-# now (`i64_div`/`i64_mod` beside the 64-step restoring divider, `i64_mul` over
-# `u64_mul_parts`). So U32 IS NO LONGER FORCED, and the decision above rests on nothing
-# but its own range claim -- "a dim is a non-negative count and an itemsize is 1, 2, 4 or
-# 8, so the product fits a U32" -- which is what those rows refute past the threshold.
-# THE ANSWER, restated: U32 is exact while `dim*inp < 2**32` and WRAPS SILENTLY above it.
-# No raise, no `None`, just 0. REOPEN: if this becomes an `H.i64_mul`/`H.i64_div` shape
-# the threshold stops mattering and this paragraph goes with it.
+#   L1  `H.lo32(i)`      the DIM ITSELF.      wrong from `dim >= 2**32`.
+#   L2  `U32.mul(i,inp)` the PRODUCT.         wrong from `dim*inp >= 2**32`.
+#   L3  `sint_of(q)`     the QUOTIENT, via `H.i64_of_i32`'s SIGN EXTENSION.
+#       wrong from `dim*inp//out >= 2**31`, i.e. -- for `out == 1`, from
+#       `dim*inp >= 2**31`, which is INSIDE the window the old text called exact.
 #
-# TODO(fold-bitcast-u32): those out-of-window rows are a real port divergence, and
-# `fold.bend`'s own `main` has ZERO rows naming `bitcast` (measured: 334 rows, none of
-# them mention it), so nothing in this file notices. The fix has both halves available
-# -- `i64_mul`/`i64_div` exist -- but the gate half has to come FIRST, with expectations
-# CALLED from CPython as the oracle does. A negative dim is NOT part of this gap: upstream
-# refuses to build one at all ("shape can't contain negative numbers"), measured, so
-# `H.lo32` of a negative is unreachable rather than wrong.
+# L3 WAS NOT IN THE PREVIOUS CENSUS AT ALL. `.agents/slop/trigger/bc-oracle.py` modelled
+# the port's answer as a Python int, so it never went through `sint_of` and never saw
+# the sign extension; that is why its "the boundary band lands on 12 agree / 12 DIFFER
+# exactly as predicted" was true OF ITS OWN MODEL and false OF THE PORT. THE 80 ROWS IT
+# REPORTED WERE 80 OF A LARGER SET. (The same mistake as the one agent-core.md records
+# for `nv_query_litter`: a port and an oracle both wrong is agreement, not corroboration.)
+# `dim = 2**30, inp = 2, out = 1` has `dim*inp == 2**31 < 2**32`, so the old paragraph
+# called it exact; it answered `-2147483648` where CPython answers `2147483648`.
+#
+# THE NEW WINDOW IS `dim*inp < 2**63`, NOT `2**64`, and that is `helpers.bend`'s own
+# divider, not a caution: `i64_mul` WRAPS mod 2**64 and `i64_divmod` READS BIT 63 OF
+# THE DIVIDEND AS A SIGN. Two rows at `dim*inp == 2**63` (`G_g_i8_at`, `G_g_i4_at`) sit
+# one bit past it and are PINNED AS DIVERGENCES in the gate rather than excluded -- the
+# fix moved the window, it did not abolish one.
+#
+# A NEGATIVE DIM IS NOT PART OF THIS GAP: upstream refuses to build one at all ("shape
+# can't contain negative numbers"), measured, so it is unreachable rather than wrong.
+# REOPEN IF: a dim can exceed `2**63/inp`, which needs a CHECKED product -- `i64_mul`
+# wraps and cannot report it, and `mm.u64.mul`'s `None` is the only overflow signal in
+# this tree that a caller can turn into a refusal.
 def bitcast_dims.scale(d: O.Sint, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
   match d:
     case O.SU{u}: None{}
-    case O.SI{i}: bitcast_dims.put(H.lo32(i), out, inp, ps)
+    case O.SI{i}: bitcast_dims.put(i, out, inp, ps)
 
 def bitcast_dims.last(m: Maybe<&2, O.Sint>, out: U32, inp: U32, ps: List<&2, O.Sint>) -> Maybe<&2, List<&2, O.Sint>>:
   match m:

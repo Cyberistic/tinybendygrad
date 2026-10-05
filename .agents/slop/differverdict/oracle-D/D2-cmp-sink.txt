@@ -1,1 +1,0 @@
-sink NOT COMPARED: py=112 bytes bend=0 bytes (a 0-byte side is a FAILURE, not a pass)

@@ -396,8 +396,8 @@ ambiguous rows.**
 ## 11. REPRODUCE
 
 ```
-.venv/bin/python .agents/slop/eq/eq-census2.py --all            # the re-census
-.venv/bin/python .agents/slop/eq/eq-census2.py --names           # every offending name, per lane
+.venv/bin/python .agents/slop/eq/eq-census2.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --all            # the re-census
+.venv/bin/python .agents/slop/eq/eq-census2.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --names           # every offending name, per lane
 .venv/bin/python .agents/slop/eq/nl-gate.py                      # live nir_llvmir gate, rc=0
 .venv/bin/python .agents/slop/eq/nl-gate.py --selftest
 .venv/bin/python .agents/slop/eq/nl-gate.py --compare .agents/slop/eq/nl-pre-port.txt \

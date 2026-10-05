@@ -22,7 +22,7 @@ the reader's OWN loss: accepted 22970 - keys 22867 = 103
 | `runtime/ops_nv.bend` PORT | 611 | 600 | **11** | 11 | `tinybendygrad/runtime/ops_nv.bend` — **DO NOT TOUCH** |
 | `runtime/support/hcq2.bend` ORACLE | 165 | 163 | 2 | 2 | `.agents/slop/hcq2-oracle.py` — not this unit's |
 | `renderer/llvmir.bend` PORT | 471 | 470 | 1 | 1 | producer is `llvmir-oracle.py:866` — not this unit's |
-| `renderer/llvmir.bend` ORACLE | 471 | 470 | 1 | 1 | `.agents/slop/llvmir-oracle.py:866` — not this unit's |
+| `renderer/llvmir.bend` ORACLE | 471 | 470 | 1 | 1 | `.agents/slop/llvmir-oracle.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]:866` — not this unit's |
 | `renderer/tc_ptx.bend` PORT | 334 | 333 | 1 | 1 | producer is `tcptx-oracle.py:394` — not this unit's |
 | `renderer/tc_ptx.bend` ORACLE | 334 | 333 | 1 | 1 | `.agents/slop/tcptx-oracle.py:394` — not this unit's |
 | `uop/fold.bend` PORT | 241 | 240 | 1 | 1 | producer is `mm-lift-gate.py:31` — not this unit's |
@@ -84,7 +84,7 @@ line whose fixture list names the same key twice** — the same shape as the
 |---|---|---|
 | `fold` | `.agents/slop/mm-lift-gate.py:31` | `("sub","SUB",[(3,4),(-3,4),(-3,-4),(3,-4),**(-3, 4)**,(0,0),(5,5),(4,5)])` |
 | `tc_ptx` | `.agents/slop/tcptx-oracle.py:394` | `lines = [..., "ret;", ..., "ret;"]` |
-| `llvmir` | `.agents/slop/llvmir-oracle.py:865-866` | `for cnt,d,ptr in ((1,f32,True),(4,f32,False),(4,f32,True),**(1,f32,True)**,(8,f64,False),(2,bf16,True))` |
+| `llvmir` | `.agents/slop/llvmir-oracle.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]:865-866` | `for cnt,d,ptr in ((1,f32,True),(4,f32,False),(4,f32,True),**(1,f32,True)**,(8,f64,False),(2,bf16,True))` |
 | `viz` | `.agents/slop/vz/viz_oracle.py:79-80` | `[..., "GPU Memory", ..., **"GPU Memory "**]` — **TRAILING SPACE** |
 
 **"Symmetric" has the direction backwards on `llvmir` and `tc_ptx`.**  The port lines are
@@ -92,7 +92,7 @@ line whose fixture list names the same key twice** — the same shape as the
 
 ```
 tinybendygrad/renderer/llvmir.bend:981   r_ltn("lt 1 ptr f32", ...) x2 on ONE line
-.agents/slop/llvmir-oracle.py:866        (1, dtypes.f32, True) is in the tuple TWICE
+.agents/slop/llvmir-oracle.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]:866        (1, dtypes.f32, True) is in the tuple TWICE
 
 tinybendygrad/renderer/tc_ptx.bend:878   r_fmt1("ret;", ...) x2 on ONE line
 .agents/slop/tcptx-oracle.py:394         "ret;" is in the list literal TWICE

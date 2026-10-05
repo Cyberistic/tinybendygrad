@@ -39,8 +39,8 @@ from gatekit import Gate
 # nobody notices until a gelu output drifts.
 GATE = Gate(
     "ew-consts-gate",
-    bend=".agents/slop/ew-consts.bend",
-    oracle=".agents/slop/ew-consts-oracle.py",
+    bend="ew-consts.bend",
+    oracle="ew-consts-oracle.py",
     rows=21,
     pins=[("py", "k_log10_2"), ("py", "k_selu_gamma"), ("py", "k_sqrt_2_over_pi"),
           ("py", "k_inv_log2"),

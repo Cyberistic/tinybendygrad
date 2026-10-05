@@ -176,7 +176,7 @@ Legend: **DRIVER** = a script that runs both sides and compares. **EMITTER** = p
 | `rend_gate.py` | **RECORDED** (argv[1]) | **RECORDED** (argv[2]) | n/a | no | only if re-recorded | RECORDED-VS-RECORDED |
 | `dup/dup-gate.py` | **RECORDED** (`--port PORT.txt`) | **RECORDED** (`--oracle ORACLE.txt`) | n/a | n/a | only if re-recorded | RECORDED-VS-RECORDED (a name-set guard over files) |
 | `drift-gate.py` | interp LIVE (`:43`); native **CACHED** unless `-r` (`:54`) | **CACHED** unless `-r` (`:76`) | n/a | n/a | **only with `-r`** | **LIVE-VS-RECORDED by default** |
-| `ansi_gate.py` | **LIVE** — `./bin/bend .agents/slop/ansi_probe.bend` (`:64`) | **LIVE** `ansi_oracle.py` (`:61`) | no | no | YES | LIVE-VS-LIVE |
+| `ansi_gate.py` | **LIVE** — `./bin/bend .agents/slop/ansi_probe.bend [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` (`:64`) | **LIVE** `ansi_oracle.py` (`:61`) | no | no | YES | LIVE-VS-LIVE |
 | `cpulink_gate.py` | **LIVE** `ops_cpu.bend` | **LIVE** `cpulink_oracle.py` | no | no | YES (3 rows) | LIVE-VS-LIVE |
 | `validate-gate.py` | **LIVE** | **LIVE** | no | no | YES | LIVE-VS-LIVE |
 | `eq/nl-gate.py` | **LIVE** (`:429` fall-through) | **LIVE** | no | n/a | YES | LIVE-VS-LIVE |

@@ -1,1 +1,0 @@
-indexed BYTE-IDENTICAL (420 bytes both sides)

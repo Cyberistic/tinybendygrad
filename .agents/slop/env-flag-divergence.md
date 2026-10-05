@@ -7,7 +7,7 @@ Reproduce the two measurements:
 
     uv run python .agents/slop/env-coercion-table.py > .agents/slop/env-coercion-table.txt
     uv run python .agents/slop/nocolor-oracle.py   > .agents/slop/nocolor-oracle.txt
-    ./bin/bend .agents/slop/nocolor-probe.bend    > .agents/slop/nocolor-bend.txt
+    ./bin/bend .agents/slop/nocolor-probe.bend [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]    > .agents/slop/nocolor-bend.txt
     uv run python .agents/slop/nocolor-diff.py
 
 ---

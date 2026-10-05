@@ -1,1 +1,0 @@
-/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/deadarm-shadow-17146/.agents/slop/differverdict/py-phase.sh:13: no such file or directory: .venv/bin/python

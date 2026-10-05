@@ -9,7 +9,7 @@ Reproduced from the live tree, matching the committed
 `.agents/slop/ffi-experiment/libclang-cost.txt` byte for byte:
 
 ```
-.venv/bin/python .agents/slop/ffi-port-cost.py --pybind tinygrad/runtime/autogen/libclang.py
+.venv/bin/python .agents/slop/ffi-port-cost.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --pybind tinygrad/runtime/autogen/libclang.py
     entry points  : 324      mechanically derivable : 307/324 (95%)
     denominator   : 324      coverage      : 324/324 = 100.0%
     BLOCKED       : 17       need a layout decision : 203

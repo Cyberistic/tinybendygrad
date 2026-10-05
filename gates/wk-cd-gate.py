@@ -46,8 +46,8 @@ from gatekit import Gate, main
 
 GATE = Gate(
     "wk-cd-gate",
-    bend=".agents/slop/wk-cd.bend",
-    oracle=".agents/slop/wk-cd-oracle.py",
+    bend="wk-cd.bend",
+    oracle="wk-cd-oracle.py",
     rows=7,
     compared=6,
     # row -> (the ORACLE's line, the PORT's line). A pair, because a divergence is where

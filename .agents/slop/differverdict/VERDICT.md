@@ -257,5 +257,5 @@ all 16 `ops-reached=<py>/<bend> of 77` denominators, and all 15 summary keys agr
 ```sh
 sh .agents/slop/differverdict/mkwarm.sh      # scratch tree at 3a68607fb198 = WARM
 sh .agents/slop/differverdict/warmboth.sh    # both drivers, each from an EMPTY D/
-.venv/bin/python .agents/slop/differverdict/cmpwarm.py
+.venv/bin/python .agents/slop/differverdict/cmpwarm.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]
 ```

@@ -51,8 +51,8 @@ from gatekit import Gate
 
 GATE = Gate(
     "ew-explog-gate",
-    bend=".agents/slop/ew-explog.bend",
-    oracle=".agents/slop/ew-explog-oracle.py",
+    bend="ew-explog.bend",
+    oracle="ew-explog-oracle.py",
     rows=3,
     pins=[("py", "ew_log"), ("py", "ew_log10"), ("py", "ew_exp"),
           ("bd", "ew_log"), ("bd", "ew_log10"), ("bd", "ew_exp")],

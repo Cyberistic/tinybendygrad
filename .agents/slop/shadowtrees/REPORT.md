@@ -15,7 +15,7 @@ The largest item now is one the brief does not mention at all:
 **`.agents/slop/differverdict/root/` is a 231 MB full copy of the REPO ROOT, and it contains a
 150 MB nested copy of `.agents/slop` — which itself contains a nested copy of every shadow tree.**
 
-`.agents/slop/differverdict/mkroot.sh` line 18 is `git archive HEAD | tar -x -C "$DST"`, and
+`.agents/slop/differverdict/mkroot.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` line 18 is `git archive HEAD | tar -x -C "$DST"`, and
 `.agents/slop` is **tracked**. So `mkroot.sh` archived the slop tree, and the slop tree inside it
 re-archived the slop tree inside it. That is where 150 MB of the 231 MB went.
 
@@ -161,7 +161,7 @@ why "delete the copy, keep the diff" is the wrong instinct here.
 
 | tree | bytes | SAME | DIFF | EXTRA | MISS | recreatable by | cited | only copy? |
 |---|---|---|---|---|---|---|---|---|
-| `differverdict/root` | 242.5 M | — | — | — | — | `sh .agents/slop/differverdict/mkroot.sh` | 0 | **LIVE — do not touch** |
+| `differverdict/root` | 242.5 M | — | — | — | — | `sh .agents/slop/differverdict/mkroot.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` | 0 | **LIVE — do not touch** |
 | `dd-cone-wt/*` (4) | 45.1 M | 5.45 M | 4.41 M ea | 0.56 M | 17 | `cp -R tinybendygrad` + 2 file edits | 1 (census) | **yes — 4 distinct `dtype.bend` states** |
 | `proof-close/MUTANT` | 11.3 M | 6.76 M | 3.78 M | 0.08 M | 12 | `cp -R` + mutation harness | 6 | **yes — mutation states** |
 | `proof-close/MUTANT2` | 11.0 M | 5.01 M | 4.77 M | 0.56 M | 18 | `cp -R` + mutation harness | 6 | **yes — mutation states** |

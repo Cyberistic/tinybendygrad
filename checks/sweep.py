@@ -63,8 +63,19 @@ ORACLES = os.path.join(ROOT, "oracles")
 # the KEEP set was inflated by exactly the files the sweep should have removed.
 #
 # **A CITATION INDEX BUILT FROM THE TREE BEING SWEPT IS NOT A CITATION INDEX.**
+#
+# **`checks/*.py` AND `gates/*.py` WERE MISSING, AND THAT IS WHY THE e2e GATE DIED.** MEASURED
+# 2026-10-05: this list was byte-identical before and after the sweep that deleted `e2e_mm.py`,
+# `e2e_mm.bend` and `e2e_mm_run.mjs` — stage 1's driver, so `checks/e2e.py` exited 2 in stage 1 and
+# stages 2-8 NEVER RAN. The guard was not broken; **the gate was not in the corpus.** Both
+# `checks/e2e.py` and `checks/sweep.py` name `e2e_mm.py`, and `checks/README.md` has named it
+# **0 times, then and now** — so the ONLY thing keeping the project's one artifact alive was
+# `.agents/slop/E2E-THROUGH-PORT.md`. **AN INSTRUMENT'S SURVIVAL DEPENDED ON A REPORT MENTIONING IT.**
+#
+# **A GATE NAMES ITS OWN INPUTS. THAT IS STRUCTURAL; A REPORT MENTIONING THEM IS A COINCIDENCE.**
 NAMED_BY = [":(glob).agents/slop/*.md", "AGENTS.md", ":(glob)checks/*.md",
-            ":(glob)gates/*.md", ":(glob).agents/*.md"]
+            ":(glob)gates/*.md", ":(glob).agents/*.md",
+            ":(glob)checks/*.py", ":(glob)gates/*.py"]
 
 # A gate names itself with these words. `-gate`/`-check` decide; `probe`/`mutate`/`gen`/`fix` are
 # a thing that was run once. The distinction is the project's own vocabulary, not mine.
@@ -103,13 +114,19 @@ ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE",
              "strays": "PROTECTED", "strays-root": "PROTECTED"}
 
 LIVE_UNITS = (
-    # finished
-    "deadreg", "differverdict", "gatecensus", "coldness", "shadowtrees", "wallrule",
     # LIVE RIGHT NOW. MEASURED 2026-10-05: this list was written before the current four were
     # dispatched, and the plan put **255 files of a running unit's** (`e2epy/`) into the DELETE
     # bucket. A live unit's exclusion cannot live in a hand-maintained list that nobody updates at
     # dispatch time, so the mtime window is the real guard and this list is only a second belt.
-    "e2efix", "trigger", "gateport", "bf16",
+    "readback", "jsbf16", "bitcastrow", "corpus24", "i64shl", "shfinish", "wallcheck",
+    # FINISHED UNITS US TO BE PINNED HERE WERE THE WHOLE PROBLEM. MEASURED 2026-10-05: six names
+    # sat under a `# finished` heading and had never been removed, and two of them were
+    # `differverdict` (**1,382 files**) and `gatecensus` (**971**) — **2,353 of the 4,455 files in
+    # `.slop`, 53%**, every one of them **100% tracked in git** and named by **0 files outside
+    # themselves**. A finished unit's tree is not evidence of anything a reader can check; it is a
+    # copy, and `git show` is the copy. **THE MTIME WINDOW IS THE LIVENESS GUARD, EXACTLY AS THE
+    # COMMENT ABOVE SAYS -- AND A LIST THAT OUTLIVES ITS UNITS IS NOT A SECOND BELT, IT IS THE
+    # ONLY BELT, WHICH IS HOW 53% OF THE TREE BECAME PERMANENT.**
     # a port that just completed but whose tree is still the cleanest evidence of a migration
     "e2epy", "substrate",
 )

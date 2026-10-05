@@ -35,8 +35,9 @@ import subprocess
 import sys
 from pathlib import Path
 
-ROOT = Path(__file__).resolve().parent.parent
-ART = Path(__file__).resolve().parent / "artifacts"
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+ART = HERE / "artifacts"
 BEND = ROOT / "bin" / "bend"
 PY = ROOT / ".venv" / "bin" / "python"
 
@@ -72,8 +73,12 @@ class Gate:
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
                  pins=None, port_only=None, canon=None):
         self.name = name
-        self.bend = bend if os.path.isabs(bend) else ROOT / bend
-        self.oracle = oracle if os.path.isabs(oracle) else ROOT / oracle
+        # A GATE'S INPUTS LIVE BESIDE THE GATE. `.agents/slop/` is being pruned, and a
+        # prune took seven of nine driver and oracle files out from under these gates --
+        # every one of them went red on "no such file" rather than on a value. A gate whose
+        # inputs live somewhere the tree is clearing is a gate with a shelf life.
+        self.bend = self._resolve(bend)
+        self.oracle = self._resolve(oracle)
         self.rows = rows
         self.compared = compared if compared is not None else rows
         self.diverges = dict(diverges or {})
@@ -82,6 +87,16 @@ class Gate:
         self.pins = list(pins or [])
         self.dir = ART / name
         self.dir.mkdir(parents=True, exist_ok=True)
+
+    def _resolve(self, p):
+        """beside the gate first, then the repo root, then as given"""
+        q = Path(p)
+        if q.is_absolute():
+            return q
+        for base in (HERE, ROOT):
+            if (base / q).exists():
+                return base / q
+        return HERE / q
 
     # ---- one step, so a failure names the STEP and not the script ------------
     def _say(self, msg):
@@ -96,16 +111,29 @@ class Gate:
         a unit that then saw green. A gate that trusts the exit status alone would have
         reported a truncated file as warm.
         """
-        out = subprocess.run([str(BEND), str(self.bend), "--check-only"],
-                             capture_output=True, text=True)
-        first = (out.stdout or "").splitlines()[:1]
-        if not first or first[0].strip() != WARM:
-            self._say(f"--check-only's first line is {first!r}, not {WARM!r}")
+        # RETRIED, and that is not defensive padding. `bend`'s machine stack overflows on
+        # roughly 1 run in 20 and prints NOTHING -- no stdout, no error -- which is
+        # indistinguishable from "did not start". The lanes were already retried on their
+        # row count; the warm check had no retry, so that one flake failed a gate that was
+        # green a minute earlier and said only that bend had no first line. Both steps now
+        # tolerate the same measured flake, and NEITHER retries a real failure: 25 tries, and
+        # a file that is genuinely cold or genuinely empty still fails.
+        for _ in range(25):
+            out = subprocess.run([str(BEND), str(self.bend), "--check-only"],
+                                 capture_output=True, text=True)
+            first = (out.stdout or "").splitlines()[:1]
+            if first and first[0].strip() == WARM:
+                if self.bend.stat().st_size == 0:
+                    self._say("the driver is 0 bytes, and an empty file typechecks")
+                    return False
+                return True
+            if not (out.stdout or "").strip() and out.returncode != 0:
+                continue  # the stack-overflow flake: no output at all
+            self._say(f"--check-only's first line is {first!r}, not {WARM!r} "
+                      f"(rc={out.returncode})")
             return False
-        if self.bend.stat().st_size == 0:
-            self._say("the driver is 0 bytes, and an empty file typechecks")
-            return False
-        return True
+        self._say("bend produced no --check-only output in 25 tries (the stack flake)")
+        return False
 
     def _oracle(self):
         r = subprocess.run([str(PY), str(self.oracle)], capture_output=True, text=True)

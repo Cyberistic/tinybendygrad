@@ -42,7 +42,7 @@ unreachable from CPython — but the **renderer** is not. codegen's `pm_to_progr
 writes an `Ops.SOURCE` uop before anything is compiled, and
 `tinygrad/engine/realize.py:160 exec_kernel` is the one place that knows every
 launch's binding order, dispatch geometry and buffer contents. So
-`.agents/slop/xd2/trace_forward.py` wraps `exec_kernel`, runs the model on
+`.agents/slop/xd2/trace_forward.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` wraps `exec_kernel`, runs the model on
 `DEV=CPU` for real, and captures both the numbers and the WGSL. The browser then
 replays the launches.
 
@@ -79,7 +79,7 @@ clang may fuse a multiply-add that WGSL does not.
 
 ```
 # regenerate the trace and the oracle from CPython (needs .venv with numpy)
-.venv/bin/python .agents/slop/xd2/trace_forward.py
+.venv/bin/python .agents/slop/xd2/trace_forward.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]
 
 # the gate: opens the page in Chrome, waits, diffs against oracle.json
 node .agents/slop/xd2/e2e.mjs          # exit 0 = match

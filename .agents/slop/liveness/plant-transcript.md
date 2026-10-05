@@ -295,7 +295,7 @@ restored `202de0e8ac053481…` == pristine
 And re-recording it does not fix it, because the recorded file is **not reproducible**:
 
 ```
-$ .venv/bin/python .agents/slop/dsl_oracle.py > dsl_oracle_live.txt    # the documented command
+$ .venv/bin/python .agents/slop/dsl_oracle.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] > dsl_oracle_live.txt    # the documented command
 recorded sha: 02a3b49cd616f262b25c587b
 live     sha: 165381d2ef10160c78a1eb85
 DIFFER:

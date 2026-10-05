@@ -1197,11 +1197,20 @@ def ew_tanh(+t: T.Tensor) -> T.Tensor: ew_sub(ew_mul2(t, ew_sigmoid(ew_mul2(t, e
 # TENSOR, because a `CFloat` in an `ECon` is the representation the promotion path reads.
 # The operand ORDER is CPython's and it is load-bearing: the signature row is the only thing
 # in this port that can see it, which is the same reason `sigmoid`'s ADD is reversed.
+# THE CONSTANT MUST BE MINTED IN THE **RESULT'S** ARENA, NOT IN `t`'s: `t`'s arena is
+# STALE the moment `ew_log2(t)` has run, so a const minted there lands on the index the
+# LOG2 node already occupies and the two COLLIDE -- `3 CONST LOG2 MUL` where CPython
+# prints `4 CONST LOG2 CONST MUL`. `O.UOp.const` is innocent: MEASURED, two consts in one
+# arena get distinct indices and three nodes exist. Both methods mint through one helper,
+# because two copies of a stale arena is two places to forget.
+def ew_log.mul(+t: T.Tensor, +c: F32) -> T.Tensor:
+  ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), c)), False{})
+
 def ew_log(+t: T.Tensor) -> T.Tensor:
-  ew_mul2(ew_log2(t), ew_ct(ew_cf(T.Tensor.ar(t), ew_k.log2())), False{})
+  ew_log.mul(ew_log2(t), ew_k.log2())
 
 def ew_log10(+t: T.Tensor) -> T.Tensor:
-  ew_mul2(ew_log2(t), ew_ct(ew_cf(T.Tensor.ar(t), ew_k.log10_2())), False{})
+  ew_log.mul(ew_log2(t), ew_k.log10_2())
 
 # `exp` is `self.cast(least_upper_dtype(self.dtype, float32)).mul(1/math.log(2)).exp2()`, and
 # the CAST is a NODE in CPython's graph. Whether the port's promotion mints it or folds it

@@ -175,7 +175,7 @@ reason this unit forked no reader.
 .venv/bin/python .agents/slop/dup/dup-capture.py                 # 78 live captures
 .venv/bin/python .agents/slop/dup/dup-census.py --all             # the table
 .venv/bin/python .agents/slop/dup/dup-census.py --names           # every offending name
-.venv/bin/python .agents/slop/dup/dup-fix-usb.py --check          # the count assertions, no writes
+.venv/bin/python .agents/slop/dup/dup-fix-usb.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --check          # the count assertions, no writes
 .venv/bin/python .agents/slop/dup/dup-gate.py --port P --oracle O --selftest
 .venv/bin/python .agents/slop/dup/dup-gate.py --compare BEFORE.txt AFTER.txt
 ```

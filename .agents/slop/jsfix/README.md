@@ -8,7 +8,7 @@ reads `{hi, lo}`. Inbound and outbound, two defects, one file. Reproduce:
 
 ```
 python3 .agents/slop/jsfix/jsfix_gate.py   # rc 0 -- 30 rows x 10 arms, node
-python3 .agents/slop/jsfix/jsfix_e2e.py    # rc 0 -- the live lane, 30/30
+python3 .agents/slop/jsfix/jsfix_e2e.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]    # rc 0 -- the live lane, 30/30
 python3 .agents/slop/abi/abi_gate.py       # rc 0 -- both lanes, 12 rows
 ```
 

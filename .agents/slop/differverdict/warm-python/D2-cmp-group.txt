@@ -1,1 +1,0 @@
-group BYTE-IDENTICAL (469 bytes both sides)

@@ -1,0 +1,7 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/i64shl/shl-oracle.py", line 180, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/i64shl/shl-oracle.py", line 137, in main
+    assert s64 == exact, f"{vname} k={k}: {s64} != {exact}"
+           ^^^^^^^^^^^^
+AssertionError: both k=31: 5575015949918011392 != 2817001333840509744300687360

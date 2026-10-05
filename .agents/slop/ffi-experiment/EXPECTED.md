@@ -1,6 +1,6 @@
 # EXPECTATIONS — written BEFORE running. Corrections recorded at the bottom.
 
-Reproduce with: `zsh .agents/slop/ffi-experiment/run-all.sh`  (8/8 PASS)
+Reproduce with: `zsh .agents/slop/ffi-experiment/run-all.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]`  (8/8 PASS)
 
 ## WHAT I EXPECTED FIRST, AND WHAT ACTUALLY HAPPENED
 

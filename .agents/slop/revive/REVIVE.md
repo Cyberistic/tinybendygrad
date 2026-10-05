@@ -58,7 +58,7 @@ else moved**, which is the claim §3 has to earn.
 subprocess, sys`. Measured before the fix:
 
 ```
-$ DEV=NULL .venv/bin/python .agents/slop/rebase-oracle-ops.py
+$ DEV=NULL .venv/bin/python .agents/slop/rebase-oracle-ops.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]
 NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?   rc=1   0 rows
 ```
 

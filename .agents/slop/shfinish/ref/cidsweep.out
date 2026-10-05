@@ -1,0 +1,22 @@
+== C1  dtype.c  -- 10 registrations, 10 guards, 0 constructor ids       [expect WARM]
+  dtype: reaches ONE dtype.c seam        bend rc=1  NO EMIT            cc rc=n/a
+  dtype: reaches NO seam                 bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0
+0 [ok] registrations-landing=14,
+== C2  sz.c     -- 2 registrations, 2 guards, CID(Nil)/CID(Con) INSIDE  [expect WARM]
+  sz: reaches NOTHING                    bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0
+0 [ok] registrations-landing=14,
+  sz: reaches Sz.is_dir                  bend rc=1 emit=  3230L #define CID_*=16  cc rc=0 err=0
+0 [ok] registrations-landing=14,15,
+  sz: reaches Sz.read_dir                bend rc=1 emit=  3286L #define CID_*=18  cc rc=0 err=0
+0 [ok] registrations-landing=16,17,
+== C3  libclang-tramp.c -- 325 registrations, 325 guards                [expect WARM]
+  libclang: reaches ONE tramp effect     bend rc=1 emit=  7317L #define CID_*=16  cc rc=1 err=1  [COLD] registrations-landing=15,
+== C4  libclang-ffi.c   -- 10 registrations, 0 guards      *** CIDS-1 *** [expect COLD]
+  libclang: reaches NOTHING              bend rc=1 emit=  3006L #define CID_*=15  cc rc=0 err=0
+0 [ok] registrations-landing=14,
+  libclang: reaches ONE ffi effect       bend rc=1 emit=  3269L #define CID_*=15  cc rc=1 err=1  [COLD] registrations-landing=,,,,,,,,,14,
+== C5  JS lane -- no conditional compilation exists; node is the instrument [expect PASS]
+  js: #ifdef=0 #endif=0 defined(=0   node --check: COLD   node-runs=rc1
+
+GATE FAIL  4 cold seam(s) -- see CIDS-1 in .agents/slop/CIDSWEEP.md
+EXIT=4

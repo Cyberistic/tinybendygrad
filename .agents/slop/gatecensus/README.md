@@ -1,6 +1,6 @@
 # gate census — which gate-shaped files are REAL GATES, and which of them RUN
 
-    .venv/bin/python .agents/slop/gatecensus/enum.py            # the denominator, alone
+    .venv/bin/python .agents/slop/gatecensus/enum.py [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]            # the denominator, alone
     .venv/bin/python .agents/slop/gatecensus/classify.py --list  # the classification
     .venv/bin/python .agents/slop/gatecensus/classify.py --selftest   # prove each fix moved a number
     .venv/bin/python .agents/slop/gatecensus/run.py --dry-run   # enumerate, run nothing

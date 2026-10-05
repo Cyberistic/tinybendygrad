@@ -15,7 +15,7 @@ THE HAZARD, MEASURED
 --------------------
 `grep -rn 'def foo' .` prints
 
-    .agents/slop/proof-close/MUTANT/tinybendygrad/helpers.bend:1055:...
+    .agents/slop/proof-close/MUTANT/tinybendygrad/helpers.bend [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]:1055:...
 
 for a file that is NOT `tinybendygrad/helpers.bend`. Two files, one relative path,
 one definition, no signal in the text. A unit that greps for a definition can land
