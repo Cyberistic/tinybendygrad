@@ -18,30 +18,42 @@
 # neither of which is the port.
 #
 # ---------------------------------------------------------------------------------
-# THIS GATE IS CURRENTLY **RED**, and the cause is a REAL DEFECT IN `ew_log` / `ew_log10`
-# -- not a fixture mismatch, which is what this header first claimed.
+# `ew_log` AND `ew_log10` ARE GREEN. `ew_exp` IS RED, AND IT IS A PROMOTION-COUNT QUESTION
+# RATHER THAN A DTYPE ONE:
 #
-#   THE FIXTURE IS FINE, and that took a measurement to establish. `g_i32()` is named for
-#   int32 and is actually **weakint**: `uop/fold.bend:1949` types a bare `O.CInt` const as
-#   `S.weakint()`. So the port's fixture and CPython's `Tensor(5)` -- also weakint -- ARE the
-#   same dtype, and the two shapes to compare are CPython's weakint ones:
+#     CPython  ew_exp = 7  CONST CAST CAST CONST MUL EXP2 CAST
+#     this              5  CONST CAST     CONST MUL EXP2
 #
-#       CPython  ew_log = 4  CONST LOG2 CONST MUL
-#       this              3  CONST LOG2 MUL
-#       CPython  ew_exp = 7  CONST CAST CAST CONST MUL EXP2 CAST
-#       this              4  CONST CONST MUL EXP2
+# TWO DEFECTS WERE FOUND HERE, and both are recorded because one of them was a WRONG
+# SUSPICION that a measurement killed.
 #
-#   SO THE MISSING NODE IS THE FLOAT CONSTANT. `ew_log` is
-#   `ew_mul2(ew_log2(t), ew_ct(ew_cf(T.Tensor.ar(t), ew_k.log2())), False{})` and the
-#   constant is not appearing in the MUL's srcs at all -- the MUL's two srcs are the input
-#   const and the LOG2. `ew_exp` has the same defect with the opposite sign: its constants
-#   ARE nodes (both print with f32 bits) but it mints no CASTs, and CPython's does because
-#   `least_upper_dtype(weakint, float32)` is not the weakint's own dtype.
+# 1. A **STALE ARENA**, in `log` and `log10` -- FIXED. The constant was minted in `t`'s
+#    arena, which is stale the moment `ew_log2(t)` has run, so it landed on the index the
+#    LOG2 node already occupied and the two COLLIDED: `3 CONST LOG2 MUL` where CPython
+#    prints `4 CONST LOG2 CONST MUL`. `O.UOp.const` is innocent -- MEASURED, two consts in
+#    one arena get distinct indices and three nodes exist. Both now mint through one helper
+#    that takes the RESULT's arena.
 #
-#   The next unit is therefore NOT a fixture change. It is: why does a const TENSOR built
-#   by `ew_ct(ew_cf(...))` in the tensor's own arena stop being a distinct node, and where
-#   the promotion is supposed to put the CASTs. Both are questions about `ew_mul2` and the
-#   weak arm of `ew_promote`, and both are answerable with a row rather than by reasoning.
+# 2. A **WEAK INSTEAD OF A STRONG PROMOTION**, in `exp` -- FIXED. `exp` is
+#    `self.cast(least_upper_dtype(self.dtype, dtypes.float32)).mul(1/log(2)).exp2()` and the
+#    `float32` is the whole point: MEASURED, `least_upper_dtype(weakint, float32)` is
+#    `dtypes.f32` -- STRONG -- while `least_upper_dtype(weakint, weakfloat)` is `weakfloat`.
+#    A strong target is not a dtype a CONST derives, so CPython's cast is the PAIR and
+#    mints a node; a weak target folds. Letting a `weakfloat` CONSTANT decide the lattice
+#    folded every cast and printed 4 nodes.
+#
+# `ew_const_bare` WAS NEVER THE BUG, and that is the part worth keeping:
+# `tinygrad/uop/ops.py:637` says the cast folds at exactly bool/weakint/weakfloat, and
+# `elementwise.bend:305` implements that faithfully. **I was one measurement away from
+# "fixing" a shared helper that is correct**, and the gate is what stopped me -- a value
+# gate would have passed the fold and a shape gate would have said only "4 != 7".
+#
+# WHAT IS LEFT IS THE COUNT. CPython mints THREE casts -- two on the input, one on the
+# result -- and the port mints ONE, so its promotion is not minting the pair for a STRONG
+# promotion the way `ew_const_bare`'s own comment says it should. That is in SHARED
+# promotion code, and a patch there changes every gated row that promotes across a strong
+# dtype. It is recorded rather than applied: a blast radius that wide is a decision.
+# -----------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------
 import sys
 from pathlib import Path

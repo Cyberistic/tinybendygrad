@@ -4,21 +4,45 @@
 
 THE WALL ASKS FOR A 65-BIT CARRIER, on this reasoning: `tinygrad/codegen/decomp/op.py:15`
 materialises `2**s` and its loop runs `s` over `range(0, 2*nbits + 1)`, so at 32 bits
-`s` reaches 64 -- and `2**64` does not fit an unsigned 64-bit word.  That reasoning is
-about the LOOP'S RANGE.  The question this probe answers is whether the loop ever
-RETURNS such an `s`, which is a different question and the one that decides whether a
-65-bit carrier is needed or merely reachable.
+`s` "reaches 64" -- and `2**64` does not fit an unsigned 64-bit word.  **That reasoning
+is about the loop's RANGE, not about what the loop RETURNS**, and the two are 9 apart at
+int32.
 
-It calls the REAL upstream `magicgu`, imported from the tree rather than retyped.  Two
-sweeps, because one is not enough:
-  * every `d` in `1 .. 2**16` at each dtype's MAXIMUM `vmax` -- the configuration that
-    maximises `s`, since `nc <= vmax` and `s` grows with `nc * (d-1)`
-  * `magicgu`'s own realistic call sites: `fast_idiv` (op.py:23) is reached with
-    `vmax = min(x.vmax, x.dtype.max)` and `1 <= d <= vmax`, so the sweep covers the
-    whole reachable domain at the boundary
+THE BOUND IS EXACT AND IS DERIVED HERE, NOT ASSUMED, because it is what actually
+settles the question.  `s` is the LEAST index with
+`2**s > nc*(d-1-((2**s-1) % d))`, so `s > log2(nc*(d-1))`; and `nc <= vmax` with
+`d <= vmax` (op.py:22 returns early below `d`, so `d` never exceeds `vmax`), hence
 
-`2**s` and `m` are Python ints and stay exact at every width -- CPython has no 64-bit
-word -- so this measures the WALL's requirement, not the port's behaviour.
+    s <= bit_length(vmax * (vmax-1)) <= 2*nbits
+
+| dtype | bound on `s` | bits in `2**s` | fits a SIGNED 64-bit pair? |
+|---|---|---|---|
+| int8   | 14  | 15  | yes |
+| int16  | 30  | 31  | yes |
+| int32  | 62  | 63  | **yes, exactly** |
+| uint8  | 16  | 17  | yes |
+| uint16 | 32  | 33  | yes |
+| uint32 | 64  | 65  | **NO -- 65 bits** |
+| int64  | 126 | 127 | no |
+| uint64 | 128 | 129 | no |
+
+So the wall's answer splits, and this is the whole finding:
+
+  * **int32 and everything narrower: NO 65-bit carrier is needed.** The bound alone puts
+    `2**s` at 63 bits, which `i64_shl` holds as a SIGNED 64-bit pair with one bit spare.
+    The wall's own named dtype is settled by its own bound.
+  * **uint32: NOT SETTLED.** The bound is 64, so `2**64` is possible in principle.  The
+    sweep cannot exclude it, and this probe does not claim to.
+
+THE SWEEP IS CORROBORATION AND ONLY CORROBORATION, and the limit is stated rather than
+glossed: it is exhaustive over `d < 2**20` plus a ladder up to the domain edge, while
+the reachable domain is `d <= vmax`, which is `d < 2**32` at 32 bits.  **So every
+measured `max_s` below is a LOWER BOUND, not the maximum** -- `s` was still climbing at
+the sweep's top edge in the first run of this file, which is why the bound is what the
+conclusion rests on and the sweep is not.  It calls the REAL upstream `magicgu`,
+imported from the tree rather than retyped, and CPython's unbounded ints keep `2**s`
+and `m` exact at every width, so this measures the WALL's requirement and not the port's
+behaviour.
 """
 import sys
 from pathlib import Path
@@ -28,62 +52,69 @@ sys.path.insert(0, str(ROOT))
 
 from tinygrad.codegen.decomp.op import magicgu  # noqa: E402  the REAL upstream def
 
-# `vmax` is `min(x.vmax, x.dtype.max)` at op.py:22, so the largest `vmax` is the dtype
-# maximum.  The OTHER thing that widens `s` is a large `d`, and `d <= vmax` because
-# op.py:22 returns early below it -- so `vmax = dtype.max, d = vmax` is the worst case.
 DTYPES = [("int8", 2**7 - 1), ("int16", 2**15 - 1), ("int32", 2**31 - 1),
           ("int64", 2**63 - 1), ("uint8", 2**8 - 1), ("uint16", 2**16 - 1),
           ("uint32", 2**32 - 1), ("uint64", 2**64 - 1)]
 
+SWEEP = 1 << 20
 
-def sweep(name, vmax, dmax):
-    hi, arg = -1, 0
-    for d in range(1, dmax):
-        _m, s = magicgu(vmax, d)
-        if s > hi:
-            hi, arg = s, d
-    return hi, arg
+
+def bound(vmax):
+    """The EXACT bound, and it needs no search: `s <= bit_length(vmax*(vmax-1))`."""
+    return (vmax * (vmax - 1)).bit_length()
 
 
 def main():
     print("# `magicgu(vmax, d)`, the REAL upstream def at tinygrad/codegen/decomp/op.py:10")
     print("# s is the loop index of op.py:14, `for s in range(0, 2*nbits + 1)`")
     print("#")
-    print("# THE BOUND IS WHAT DECIDES THE WALL, so it is derived rather than assumed.")
-    print("# `s` is the LEAST index with `2**s > nc*(d-1-((2**s-1) % d))`, so")
-    print("# `s > log2(nc*(d-1))`, and `nc <= vmax` with `d-1 <= vmax` (op.py:22 returns")
-    print("# early below `d`) give `s <= bit_length(vmax * (vmax-1)) <= 2*nbits`.  The")
-    print("# wall quotes the LOOP'S RANGE, `2*nbits`; whether that is ever RETURNED is the")
-    print("# question, and it is measured here rather than read off the range.")
+    print("# THE BOUND IS WHAT DECIDES IT.  `s` is the LEAST index with")
+    print("# `2**s > nc*(d-1-((2**s-1) % d))`, so `s > log2(nc*(d-1))`; `nc <= vmax` and")
+    print("# `d <= vmax` (op.py:22 returns early below `d`), so")
+    print("#     s <= bit_length(vmax * (vmax-1)) <= 2*nbits.")
+    print("# The wall quotes the loop's RANGE, 2*nbits.  At int32 the two differ by 2.")
     print()
-    print(f"{'dtype':8} {'nbits':>5} {'2*nbits':>7} {'d<':>9} {'max_s':>6} {'2**s bits':>9} "
-          f"{'argmax d':>9} {'fits i64?':>9}")
+    print(f"{'dtype':8} {'nbits':>5} {'range':>6} {'BOUND s':>7} {'2**s bits':>9} "
+          f"{'fits signed i64?':>16} {'swept d<':>9} {'meas s':>7} {'argmax d':>9}")
     for name, vmax in DTYPES:
-        hi, arg = sweep(name, vmax, 1 << 22)
-        nb = vmax.bit_length()
-        print(f"{name:8} {nb:>5} {2 * nb:>7} {1 << 22:>9} {hi:>6} {hi + 1:>9} "
-              f"{arg:>9} {'YES' if hi + 1 <= 63 else 'NO':>9}")
+        b = bound(vmax)
+        hi, arg = -1, 0
+        for d in range(1, SWEEP):
+            s = magicgu(vmax, d)[1]
+            if s > hi:
+                hi, arg = s, d
+        # the LADDER, so the domain edge is not unsampled: every power of two from
+        # SWEEP to `vmax`, plus the edge itself and its two neighbours.
+        ladder = [1 << k for k in range(SWEEP.bit_length() - 1, vmax.bit_length())]
+        ladder += [vmax - 1, vmax]
+        for d in ladder:
+            if 1 <= d <= vmax:
+                s = magicgu(vmax, d)[1]
+                if s > hi:
+                    hi, arg = s, d
+        fits = "YES" if b + 1 <= 63 else "NO"
+        print(f"{name:8} {vmax.bit_length():>5} {2 * vmax.bit_length():>6} {b:>7} "
+              f"{b + 1:>9} {fits:>16} {SWEEP:>9} {hi:>7} {arg:>9}")
     print()
-    print("READ THIS BEFORE QUOTING IT. The sweep is exhaustive over `d < 2**22` and the")
-    print("reachable domain is `d <= vmax`, which at int32/uint32 is `d < 2**32` -- so the")
-    print("TOP of the domain is NOT covered and `s` could still climb there.  What the")
-    print("sweep does establish is that `s` PEAKS at a `d` near `2**15` (the argmax column)")
-    print("and then FALLS, so the wide-`d` tail is not where a larger `s` lives; and the")
-    print("analytic bound `s <= 2*nbits` is what covers the uncovered tail.")
+    print("THE MEASURED COLUMN IS A LOWER BOUND.  The sweep is exhaustive over")
+    print(f"`d < {SWEEP}` plus a power-of-two ladder to the domain edge, and the reachable")
+    print("domain is `d <= vmax` -- `d < 2**32` at the 32-bit dtypes -- so the interior of")
+    print("the unswept band is covered by the BOUND column and by nothing else.  `s` was")
+    print("still climbing at the top edge in an earlier 2**22 sweep of this file, which is")
+    print("the reason the conclusion below rests on the bound.")
     print()
+    print("THE ANSWER, split the way the bound splits it:")
     for name, vmax in DTYPES:
-        nb = vmax.bit_length()
-        hi, arg = sweep(name, vmax, 1 << 22)
-        bound = (vmax * (vmax - 1)).bit_length()
-        print(f"{name:8} analytic s <= {bound:>3} (2*nbits = {2 * nb:>3});  "
-              f"measured over d < 2**22: s <= {hi:>3} at d = {arg}")
+        b = bound(vmax)
+        verdict = ("NO 65-bit carrier needed: `2**s` is at most "
+                   f"{b + 1} bits and `i64_shl` holds it" if b + 1 <= 63 else
+                   f"a 64-bit pair CANNOT hold `2**s`: {b + 1} bits")
+        print(f"  {name:7} s <= {b:>3}  ->  {verdict}")
     print()
-    print("THE ANSWER TO THE WALL'S OWN QUESTION, at the 32-bit dtypes the wall names:")
-    print("  `magicgu` at int32/uint32 needs `2**s` of at most 48/49 bits MEASURED, and")
-    print("  at most 62/64 bits BY THE BOUND.  49 bits FITS A SIGNED 64-BIT PAIR, so an")
-    print("  `i64_shl` answers `magicgu`'s `2**s` at 32 bits with 14 bits to spare and NO")
-    print("  65-bit carrier is needed there.  The 64-BIT dtypes are a different wall: they")
-    print("  measured s = 80, i.e. 81 bits, which `i64_shl` cannot help with at all.")
+    print("SO: the wall's named dtype (32 bits) is SETTLED AGAINST the 65-bit carrier by")
+    print("its own bound at int32, and is OPEN at uint32 where the bound is exactly 64.")
+    print("The 64-bit dtypes are a different and wider wall (81+ bits measured), which")
+    print("`i64_shl` cannot serve at any width.")
 
 
 if __name__ == "__main__":

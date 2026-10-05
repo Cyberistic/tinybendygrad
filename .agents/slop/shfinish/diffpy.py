@@ -111,20 +111,26 @@ def build_plant() -> None:
     # the wrong place -- rc 126/127, LOUDLY, but a loud failure that costs a whole run.
     shutil.copy2(ROOT / "bin/bend", PLANT / "bin/bend")
     os.chmod(PLANT / "bin/bend", 0o755)
-    for g in GATES.values():
-        for rel in (g["shell"], g["oracle"]):
-            # `g["shell"]` IS `.agents/slop/<dir>/oracle-<name>.sh`, so the destination is the
-            # path itself. The earlier version joined it onto `.agents/slop` twice and wrote the
-            # oracle to `.agents/slop/.agents/slop/...` -- a path that cannot exist, so the first
-            # `clean` run reported rc 127 for BOTH implementations and agreed about nothing.
-            dst = PLANT / rel
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(ROOT / rel, dst)
+    for rel in sorted({r for g in GATES.values() for r in (g["shell"], g["oracle"])}):
+        # `g["shell"]` IS `.agents/slop/<dir>/oracle-<name>.sh`, so the destination is the path
+        # itself. The earlier version joined it onto `.agents/slop` twice and wrote the oracle to
+        # `.agents/slop/.agents/slop/...` -- a path that cannot exist, so the first `clean` run
+        # reported rc 127 for BOTH implementations and agreed about nothing.
+        dst = PLANT / rel
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(ROOT / rel, dst)
+        os.chmod(dst, 0o755)
     # THE ORACLE PINS ARE PINNED TO THE COPIES, and the copies are byte-for-byte, so the pinned
     # sha256 in each gate still holds inside the plant tree. If it does not, the pin fires and
     # the Python exits 2 -- which is the right answer, not a harness bug to be worked around.
+    # HOISTED OUT OF THE LOOP, and that is a bug this harness had: the `.venv` symlink was created
+    # once per GATE, so the second gate's `symlink_to` raised FileExistsError and the whole
+    # 14-input-set diff never ran. `copy2` and the symlink are idempotent only ONCE.
     (PLANT / ".venv").symlink_to(ROOT / ".venv")
-
+    # `gatekit.py` computes ROOT as `parents[1]` of ITS OWN file, so inside the plant tree the
+    # gate and gatekit resolve to the PLANT's `gates/`, which is the point: its artifacts and its
+    # `bin/bend` come from the plant. `gates/` IS in the copytree above, so the plant's gates are
+    # the plant's. Without that copy every plant would be planted on a file nobody ran.
 
 def run(argv: list[str], cwd: Path) -> tuple[str, int]:
     """argv[0]'s stdout AND exit status. `env -u PYTHONPATH` because contamination is real in this

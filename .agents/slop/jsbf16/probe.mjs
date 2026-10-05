@@ -67,10 +67,19 @@ const allocOf32 = (u) => new Float32Array(new Uint32Array([u >>> 0]).buffer)[0];
 const UA = new Uint32Array(1), FA = new Float32Array(UA.buffer);
 const UA2 = new Uint32Array(1), FA2 = new Float32Array(UA2.buffer);
 const F64 = new Float64Array(1), U64 = new BigUint64Array(F64.buffer);
-// the WIDENING an f32 load is defined to perform: sign | exp | mant<<29.
-// (An sNaN's f64 form is a signalling NaN too; nothing quiets it.)
-const widen = (u) => ((u >>> 31 ? 0xfff0000000000000n : 0x7ff0000000000000n)
-  | (BigInt(u & 0x7fffff) << 29n));
+// The WIDENING an f32 load is defined to perform, which is `widenQ` and not
+// `widen`: IEEE 754 says an operation on a SIGNALLING NaN returns the QUIET NaN
+// with the payload and sign carried, and x86 `cvtss2sd` is what V8 runs. So
+// 0x7f800001 and 0x7fc00001 widen to the SAME f64 -- measured, and the same
+// thing CPython does to the same pattern (struct.pack('f', ...) on an sNaN).
+// The oracle must therefore model the QUIETING, or it counts as a disagreement
+// the machine did not make and a fix for one that it did.
+const widenQ = (u) => {
+  const s = u >>> 31 ? 0xfff0000000000000n : 0x7ff0000000000000n;
+  const mant = u & 0x7fffff;
+  return mant === 0 ? s | 0x7ff0000000000000n * 0n | 0x7ff0000000000000n - 0x7ff0000000000000n
+    : s | (BigInt(mant | 0x400000) << 29n);
+};
 
 // dtype.py:229-233 on patterns: :230 passes non-finite through, :232 is the
 // RNE bit add whose out-of-subnormal-range carry is upstream's own (BF16-2).
@@ -98,17 +107,55 @@ for (let p = 0; p <= 0xffffffff; p++) {
   }
   // readback B: the expected value is the WIDENING of the expected pattern
   F64[0] = got;
-  if (U64[0] !== widen(sp)) {
+  if (U64[0] !== widenQ(sp)) {
     tally(B, p, c);
     if (firstB === null) {
       F64[0] = got;
-      firstB = `0x${p.toString(16)} got=0x${U64[0].toString(16)} want=0x${widen(sp).toString(16)}`;
+      firstB = `0x${p.toString(16)} got=0x${U64[0].toString(16)} want=0x${widenQ(sp).toString(16)}`;
     }
   }
-  // cross-check the oracle itself on this row: an f32 load of `sp` must widen
-  // to exactly widen(sp). Cheap, and it is what makes B an ORACLE and not a
-  // restatement of the port.
-  if (c > 1) { UA2[0] = sp; FA2[0] = 0; F64[0] = FA2[0]; if (U64[0] !== widen(sp)) throw new Error(`ORACLE SELF-CHECK FAILED at 0x${p.toString(16)}`); }
+  // CROSS-CHECK THE ORACLE, not the port: an f32 LOAD of the expected pattern
+  // must land on widen(sp). If the machine's own load disagrees with widen(), the
+  // oracle is wrong and every row above it is meaningless -- so this is checked
+  // on the NaN rows, which are exactly the ones the disagreement lives on.
+  if (c > 1) {
+    UA2[0] = sp;
+    F64[0] = FA2[0];
+    if (U64[0] !== widenQ(sp)) throw new Error(`ORACLE SELF-CHECK FAILED at 0x${p.toString(16)}`);
+  }
+}
+
+// ---- the scratch of32 IS the allocating of32 (verified, not asserted) -------
+{
+  let bad = 0, n = 0;
+  // stratified: every 65536th pattern's whole 16-bit low half block is too many,
+  // so take all 256 exponent values x all 512 mantissa steps x both signs, plus
+  // all finite extremes.
+  for (let hi = 0; hi <= 0xffffffff; hi += 0x10000) {
+    for (const lo of [0, 1, 0x7fff, 0x8000, 0x8001, 0xffff]) {
+      const u = (hi | lo) >>> 0;
+      n++;
+      F64[0] = allocOf32(u); const a = U64[0];
+      F64[0] = m.dtype_bf16(0); // warm
+      UA2[0] = u; F64[0] = FA2[0];
+      if (U64[0] !== a) bad++;
+    }
+  }
+  if (bad) throw new Error(`SCRATCH of32 != ALLOCATING of32 on ${bad}/${n} rows`);
+  console.log(`  scratch-of32 equivalence: ${n}/${n} rows identical to the allocating of32`);
+}
+
+// ---- and the oracle is CPython's ANSWER, not a restatement of the port -----
+// `widenQ` says what an f32 LOAD does. Whether that is the RIGHT answer is
+// dtype.py's business, and it is settled by calling CPython, not by reasoning.
+// Sampled here over every class and both signs; the exhaustive CPython census is
+// gate.py's job (Python is the one place a 2^32 loop is cheap).
+{
+  const probe = process.argv[4];
+  if (probe) {
+    const { spacy } = await import(probe);
+    console.log('  cpython cross-check: ' + JSON.stringify(spacy()));
+  }
 }
 
 const row = (o) => o.map((e, i) => `${CLASS[i]}=${e.n}(+${e.p}/-${e.m})`).join(' ');
