@@ -15,5 +15,14 @@ if only there was a typed, affine, proof-based language which utilizes all of th
 
 
 
+## even more yaps
+
+yeah yeah speed doesn't matter for generating the graph, but it does feel good to get OOM's of speed. like I ported sz.py to sz.bend and it's almost x3 faster? 
+also bend compiles to both C and js, and through C you can use the headers and basically port tinygrad to any language you want? can even do WASM and basically run it anywhere. 
+after the port, my next objective is to port tinybendygrad to python (exercising my free will and wasting tokens). 
+also of course typescript through js and through emscripten (wasm)
+you can just do things
+I love AI
+
 
 
