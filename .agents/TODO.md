@@ -12722,3 +12722,71 @@ difftxt-contract  [##########] 3/3
 - [ ] **`differ.py:458`'s "Reported, not fixed -- see DIFFPY.md" STILL POINTS AT NOTHING.**
       `DIFFPY.md` exists nowhere. In my file, and the sentence is about the `ready() &&` ordering I
       did not change. Needs one of: the file, or the sentence.
+
+## 2026-10-05 — STALEFIX unit: `gates/gatekit.py` left the PREVIOUS run's artifacts on disk (prefix `SF-`)
+
+**THE CLAIM, from `.agents/slop/lost/RECOVERED.md` §2: a FAILED gate run left the previous run's
+`bd.txt` in place, so a diff after a RED run diffed the last *GREEN* run.** Same shape as `bend -o`
+leaving the previous exe. It is fixed, and the fix is `stage, then promote in ONE finally`.
+
+- [x] **`SF-1` REPRO FIRST, BOTH SIDES, TWO FAILURE SCENARIOS.** `.agents/slop/stalefix/stale-repro.py`
+      runs one repro against `gates/gatekit.py` AND against `gatekit-old.py`, a frozen byte-for-byte
+      copy of it as it stood (`sha256 cba801e6…`). S1 fails in `_warm` on a deterministic type error;
+      S2 fails on the row count *after every lane wrote*, which is the shape that leaves a mixed set.
+      S0 is a green run, so a red column cannot be mistaken for a verdict change.
+      **BEFORE**: S1 left **7 of 7** artifacts byte-identical to the previous green run's, and said
+      *"bend produced no --check-only output in 25 tries (the stack flake)"* — a LIE, the driver has a
+      type error. S2 left **6 of 7** stale with `py.txt` fresh.
+      **AFTER**: both leave **NOTHING**, and S1 says `bend said: SOME PROOFS FAIL | Error: | - expected : a defined name (rc=1)`
+      in **0.07 s instead of 1.98 s**. Rows: `stalefix/BEFORE.rows`, `stalefix/AFTER.rows`.
+- [x] **`SF-2` THE FIX.** `gates/gatekit.py`: every write goes to `_staged(name)` = `differ.py:158`'s
+      own `.tmp.` convention; `_clear()` empties the directory FIRST (promotion alone cannot help —
+      a run that fails before its first write would leave the previous run's files untouched, which
+      IS the bug); `_settle(ok)` promotes with `os.replace` or unlinks, in ONE `finally` that all
+      **16 `return 1`s** and an exception reach. **A `finally` cannot run under SIGKILL** — measured,
+      `gates/artifacts/beautiful-mnist-gate/` held `.tmp.bd.txt` + `.tmp.py.txt` after `bounded.py`
+      killed it at 2,130 MB. The next run's `_clear()` sweeps them (planted and measured).
+- [x] **`SF-3` THE STDERR DISCRIMINATOR WAS **NOT** IN THE TREE.** `RECOVERED.md` §2 says that fix
+      "SURVIVED"; it had not. `_warm` guarded on `not stdout and rc != 0`, so a deterministic type
+      error matched `bend`'s stack flake exactly, and S1 measured it at 25 wasted runs and a false
+      cause. Now `_said(stderr)`, minus `bend`'s `… is available: run bend update` notice, which goes
+      to stderr on **every** invocation including a green one. `_lane` had the identical bug and now
+      breaks on the first diagnostic.
+- [x] **`SF-4` PLANT AND DISARM.** `.agents/slop/stalefix/plant-disarm.py`, planted
+      `bd.txt` / `gate.bin` / `.tmp.bd.txt` (each carrying a marker string) into
+      `gates/artifacts/wk-f32-gate/` and into a red run's directory. Every plant gone, no temp
+      survived, and the green site published its own 7.
+- [x] **`SF-5` NO VERDICT CHANGE, ALL 9 GATES, BOTH SIDES.** `.agents/slop/stalefix/gate-matrix.py`
+      runs each gate against the frozen OLD gatekit in a shadow tree and against the live NEW one,
+      every gate wrapped in `checks/bounded.py`. **Identical verdicts: 8 green at 7 artifacts each,
+      `mixin-op-gate` rc=2 on ORACLE DRIFT** (`.agents/slop/mixinop/oracle-op-gate.sh`
+      `e8792d0f… != pinned 178cf5f7…`). Rows: `stalefix/MATRIX.rows`.
+- [x] **`SF-6` THE THREE REPORTED BUGS WERE ALREADY FIXED, `file:line`.** `if self.diverges:` →
+      `gates/gatekit.py:330` `if skip:`. `port_only` unreachable → `:307` derives the oracle's
+      expectation as `rows - len(port_only)`. `warm=` → `:143,157` and `:220-225`. **NONE REGRESSED.**
+- [ ] **UNSETTLED, NOT MINE, TWO GATES EXIT BEFORE `run()`.** `gates/mixin-op-gate.py:91` and
+      `gates/beautiful-mnist-gate.py:87` `sys.exit(2)` on `oracle_drift` **before** `GATE.run()`, so
+      `_clear()` never runs and the previous run's 7 artifacts survive a red run. Measured: `mixin`
+      left 7 files at rc=2. The guarantee is therefore exactly *after `Gate.run()` returns 1 the
+      directory is empty*, and a gate that never calls `run()` has no run. The fix belongs in those
+      two `__main__` blocks.
+- [ ] **UNSETTLED, NOT MINE, `retention-check.py`'s clause II cannot see a `finally`.**
+      `gates/retention-check.py:212` computes `ok = bool(clears) and late == 0`, and `late` counts
+      `return`s after the first `self.dir`. Measured on both versions: **15/17** — identical, because
+      all 16 `return 1`s are inside the `try`. What my fix DID move is `clears`: `NONE` →
+      `['glob', 'iterdir', 'unlink']`. Restructuring `run()` into a wrapper would make `late` 0 by
+      making the denominator **0**, i.e. a green with no denominator — the "missing baseline is not a
+      passing baseline" failure this repo exists to catch. Left as a loud `15/17` instead.
+- [ ] **UNSETTLED, NOT MINE, the two instruments disagree about a staged temp.**
+      `gates/retention-check.py:133` `residues()` counts EVERY file including dotfiles, so it printed
+      `I RESIDUE gates/artifacts/beautiful-mnist-gate: 2 undeclared ['.tmp.bd.txt', '.tmp.py.txt']`.
+      `checks/differ.py:400-402` `snap()` prunes them (`not any(part.startswith("."))`). One of the
+      two has to be right.
+- [ ] **OUT OF SCOPE, REPORTED: `gatekit`'s artifact names are `.txt` and `checks/no-txt.py` exits 1.**
+      `gates/artifacts/*/{bd,bn,py}.txt` + `.sub` are carved out of nothing — `checks/no-txt.py`
+      excuses `differ.declared()` and nothing else. Renaming is a contract change across 9 gates
+      (6 of which read `GATE.dir / f"{lane}.txt"`), `retention-check.py:57`'s transcribed
+      `GATEKIT_OUTPUT`, and `gates/README.md`. Not mine to break; not done.
+- [ ] **NO MEMORY BOUND ADDED, DELIBERATELY.** Neither shell had one, `bounded.py` returns 3 for
+      memory and 4 for time, and neither is a status these lanes produce. `bounded.py` appears in the
+      MATRIX harness, which is a measurement, not a gate. TODO(GXR-12).

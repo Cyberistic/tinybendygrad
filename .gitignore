@@ -132,3 +132,13 @@ tinybendygrad/test/_probe/
 #   runs/           pre-split oracle baselines, tabulated in runs/README.md; the
 #                   *-gate.sh scripts diff against those exact bytes.
 #   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.
+
+# GENERATED OUTPUT IS NOT A SOURCE FILE. `gates/retention-check.py` CLAUSE III: "an output directory is
+# not in the index" -- and it was RED with 219 entries. THE INSTRUMENT COULD NOT FIX IT BECAUSE
+# `.gitignore` CANNOT UNTRECK; ONLY A COMMIT CAN, WHICH IS WHY restorekit REPORTED IT AS
+# "UNSATISFIABLE-BY-ITSELF". THIS IS THAT COMMIT. THE BYTES STAY ON DISK AND IN HISTORY.
+#
+# A TRACKED ARTIFACT IS A FILE WHOSE VALUE LIES IN BEING REGENERABLE, AND TRACKING IT GUARANTEES THE NEXT
+# GATE RUN SHOWS A DIFF THAT IS NOT A CHANGE.
+gates/artifacts/
+runs/
