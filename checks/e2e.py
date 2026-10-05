@@ -103,7 +103,10 @@ ROOT = Path(os.environ["E2E_ROOT"] if os.environ.get("E2E_ROOT") else Path(__fil
 # oracle inside the fixture and report DRIFT on a tree that is perfectly intact -- which is the
 # first run of this driver's answer, and it refused to compare anything at all.
 REPO = Path(__file__).resolve().parents[1]
-PY, RUN = ".venv/bin/python", ROOT / "runs/e2e"
+# `$PY` IS ABSOLUTE, like the shell's `PY="$ROOT/.venv/bin/python"`. It does not change any status,
+# but it makes each stage's ARGV byte-identical to the shell's, and a stage that prints its own
+# arguments -- `jsstage.py` prints the substrate path it measured -- is then diffable on argv alone.
+PY, RUN = str(ROOT / ".venv/bin/python"), ROOT / "runs/e2e"
 # `env -u PYTHONPATH` IS NOT APPLIED HERE, and that is fidelity rather than an oversight: the shell
 # never applies it, so the eight stages inherit whatever `PYTHONPATH` the caller had. Removing it
 # would change what `e2e_mm.py` can import, i.e. change a verdict.
@@ -133,15 +136,15 @@ HELP = __doc__
 # STAGE 7's OWN FILTER, `checks/e2e.sh:232`. Only these lines of `run-f64.sh`'s output reach the
 # artifact; the stage's exit status is read from the command.
 F64_RE = re.compile(
-    r"STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|"
-    r"THEOREM \[|F64-[0-9]")
+    rb"STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|"
+    rb"THEOREM \[|F64-[0-9]")
 # STAGE 8'S OWN FILTER, `checks/e2e.sh:323`. The backticks are LITERAL: the shell wrote them inside
 # single quotes, so the pattern really is "`node` exit" and a reader's shell does not expand them.
 JS_RE = re.compile(
-    r"^(?:THE CLAIM|  substrate measured|  rows asked|  rows that|  CIDs|  rows CPython|"
-    r"  `node` exit|  ROWS PRESENT|  node agrees|  PLANT|  DISARM|===== VERDICT|REFUSED|"
-    r"SUBSTRATE MEASURED)")
-RC_STAMP_RE = re.compile(r"^rc=([0-9]*)$", re.M)
+    rb"^(?:THE CLAIM|  substrate measured|  rows asked|  rows that|  CIDs|  rows CPython|"
+    rb"  `node` exit|  ROWS PRESENT|  node agrees|  PLANT|  DISARM|===== VERDICT|REFUSED|"
+    rb"SUBSTRATE MEASURED)")
+RC_STAMP_RE = re.compile(rb"^rc=([0-9]*)$", re.M)
 
 FAILS = SKIPS = 0  # THE VERDICT ACCUMULATOR. See `checks/e2e.sh:75-83`, added after a measured defect.
 
@@ -159,39 +162,79 @@ def stage(argv: list[str], into: Path | None = None) -> int:
     `> FILE 2>&1`, so the child's whole stream is captured and printed later by `tail`/`cat`/`grep`
     exactly where the shell printed it. NEVER parallel: a second `stage()` before the first returns
     is what took this machine down on 2026-10-05, and this function makes it impossible to write.
+
+    **A COMMAND THAT DOES NOT EXIST IS STATUS 127, NOT A TRACEBACK.** The shell runs `zsh` by name
+    at stage 6 and `node` by name at stage 3; when the tool is absent `sh` prints `zsh: command not
+    found` and continues, and stage 7 has a whole SKIP branch for `rc -eq 127` that is unreachable if
+    the gate dies first. MEASURED by `plant-no-zsh`: the first cut raised `FileNotFoundError` out of
+    stage 6, so stages 7 and 8 never ran, the summary never printed, and the gate exited 1 by
+    crashing instead of by deciding. `PermissionError` is 126 for the same reason -- a non-executable
+    `opsbend-milestone.sh` is a stage-5 FAIL in the shell, not a dead gate.
     """
     sys.stdout.flush()
     sys.stderr.flush()
-    if into is None:
-        return subprocess.run(argv, env=ENV, cwd=ROOT).returncode
-    with open(into, "wb") as fh:
-        return subprocess.run(argv, env=ENV, cwd=ROOT, stdout=fh, stderr=subprocess.STDOUT).returncode
-
-
-def text(path: Path) -> str:
     try:
-        return path.read_text(errors="replace")
+        if into is None:
+            return subprocess.run(argv, env=ENV, cwd=ROOT).returncode
+        with open(into, "wb") as fh:
+            return subprocess.run(argv, env=ENV, cwd=ROOT,
+                                  stdout=fh, stderr=subprocess.STDOUT).returncode
+    except (FileNotFoundError, PermissionError) as exc:
+        # THE SHELL'S OWN COMPLAINT, IN ITS OWN WORDS, AND TO THE STREAM THE STAGE CAPTURES INTO --
+        # `zsh: command not found` inside `$RUN/e2e-port-mm.txt`, which stage 6 then `cat`s, exactly
+        # where the shell put it. Writing it to the gate's stderr instead would be invisible in the
+        # artifact the reader is shown.
+        #
+        # **THE LINE PREFIX IS THE SHELL'S, NOT OURS, AND IT NAMES THE SCRIPT.** `sh` reports the
+        # location with its own `$0`, so the oracle's line is
+        # `…/oracle-e2e.sh: line 185: zsh: command not found` and a bare `zsh: command not found`
+        # diffed against it. `checks/e2e.py` has no line 185 to name, so it prints the prefix a
+        # reader needs -- WHICH PROGRAM COULD NOT BE FOUND -- and the driver normalises the shell's
+        # location prefix away, because the two are answering the same question with the only
+        # difference being which file asked it.
+        status = 127 if isinstance(exc, FileNotFoundError) else 126
+        note = (f"{argv[0]}: {'command not found' if status == 127 else 'Permission denied'}\n")
+        if into is None:
+            sys.stderr.write(note)
+            sys.stderr.flush()
+        else:
+            with open(into, "ab") as fh:
+                fh.write(note.encode())
+        return status
+
+
+def raw(path: Path) -> bytes:
+    """BYTES, NEVER TEXT. `cat`, `tail` and `grep` are byte-transparent, so a stage that printed one
+    non-UTF-8 byte must reach the artifact unchanged; `read_text(errors="replace")` would substitute
+    U+FFFD and the artifact would differ from the shell's on a byte the reader cannot see. An absent
+    file reads as empty, which is what the shell's `cat` under `set -e` never got to print."""
+    try:
+        return path.read_bytes()
     except OSError:
-        return ""
+        return b""
+
+
+def emit(data: bytes) -> None:
+    """Write to the artifact's own stdout, unbuffered against the children that inherit it."""
+    sys.stdout.flush()
+    sys.stdout.buffer.write(data)
+    sys.stdout.buffer.flush()
 
 
 def echo_file(path: Path) -> None:
-    """`cat FILE`. An absent file prints nothing here, where the shell's `cat` would have aborted
-    under `set -e`; every `cat`/`tail` in the shell follows the command that just created the file."""
-    sys.stdout.write(text(path))
+    """`cat FILE`."""
+    emit(raw(path))
 
 
 def tail_file(path: Path, n: int) -> None:
-    """`tail -n FILE`."""
-    sys.stdout.write("".join(text(path).splitlines(keepends=True)[-n:]))
+    """`tail -n FILE`: the last `n` lines, and a last line with NO trailing newline stays that way."""
+    emit(b"".join(raw(path).splitlines(keepends=True)[-n:]))
 
 
-def grep_file(path: Path, rx: re.Pattern[str], indent: str = "") -> None:
+def grep_file(path: Path, rx: re.Pattern[bytes]) -> None:
     """`grep -E PATTERN FILE | sed 's/^/  /'`. Exit status is `sed`'s and is discarded, because a
     pipeline's status is its LAST command's -- one of the traps this gate's own comments name."""
-    for ln in text(path).splitlines():
-        if rx.search(ln):
-            say(f"{indent}{ln}")
+    emit(b"".join(b"  " + ln + b"\n" for ln in raw(path).splitlines() if rx.search(ln)))
 
 
 def verdict(name: str, rc: int) -> None:
@@ -233,23 +276,28 @@ def bend_run() -> int:
             rc = subprocess.run(["./bin/bend", ".agents/slop/e2e_mm.bend"], env=ENV, cwd=ROOT,
                                 stdout=out, stderr=fail).returncode
         if rc == 0:
-            rows = str(sum(1 for ln in txt.read_text(errors="replace").splitlines() if "=" in ln))
+            rows = str(sum(1 for ln in raw(txt).splitlines() if b"=" in ln))
             if int(rows) > 20:
                 say(f"bend: {rows} rows (attempt {i})")
                 return 0
-        say_err(f"bend: attempt {i} produced {rows} rows, retrying")
+        # `echo ... >&2` IS AN ECHO, SO THE NEWLINE IS PART OF THE LINE AND IS NOT OPTIONAL. An
+        # earlier cut wrote these without one and `plant-thin` diffed 9 stderr lines against 1.
+        say_err(f"bend: attempt {i} produced {rows} rows, retrying\n".encode())
         time.sleep(1)
-    say_err("bend: no run produced rows in 8 attempts -- SUBSTRATE OR FIXTURE, not a verdict")
-    say_err("".join(text(err).splitlines(keepends=True)[:3]))
+    say_err(b"bend: no run produced rows in 8 attempts -- SUBSTRATE OR FIXTURE, not a verdict\n")
+    say_err(b"".join(raw(err).splitlines(keepends=True)[:3]))   # `head -3`, unmodified
     return 2
 
 
-def say_err(s: str) -> None:
-    """`>&2`. The shell's `head -3 FILE >&2 2>/dev/null` is `>&2` FIRST and `2>/dev/null` SECOND, so
-    `head`'s stdout keeps the ORIGINAL stderr and only the complaint about a missing file is
-    discarded. Writing to stderr directly is the same destination."""
-    sys.stderr.write(s)
+def say_err(s: bytes) -> None:
+    """`>&2`, BYTES. The shell's `head -3 FILE >&2 2>/dev/null` applies `>&2` FIRST and
+    `2>/dev/null` SECOND, so `head`'s stdout keeps the ORIGINAL stderr and only the complaint about a
+    missing file is discarded; writing to stderr is the same destination. NO NEWLINE IS ADDED, and
+    that is measured rather than tidy: the caller passes `b"...\\n"` for an `echo >&2` and passes
+    `head`'s own lines unmodified, because a file whose last line has no newline must not gain one."""
     sys.stderr.flush()
+    sys.stderr.buffer.write(s)
+    sys.stderr.buffer.flush()
 
 
 # --------------------------------------------------------------------------- the eight stages
@@ -261,7 +309,7 @@ def main() -> int:
         for line in drift:
             print(f"ORACLE DRIFT: {line}", file=sys.stderr)
         print("  the frozen shell oracle moved, so this run would compare against nothing. "
-              "Restore it, or re-freeze it deliberately and update ORACLE_PIN in checks/e2e.py -- "
+              "Restore it, or re-freeze it deliberately and update ORACLE_SHA in checks/e2e.py -- "
               "do not delete the pin.", file=sys.stderr)
         return 3
     os.chdir(ROOT)   # the shell's `cd "$(dirname "$0")/../.."`
@@ -312,7 +360,7 @@ def main() -> int:
         skip("stage 7 f64 (double through the port, no Node)",
              "`zsh` is not available; stage 7 measured NOTHING")
     else:
-        grep_file(f64, F64_RE, "  ")
+        grep_file(f64, F64_RE)
         verdict("stage 7 f64 (double through the port, no Node)", rc)
 
     say("== 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)")
@@ -332,10 +380,14 @@ def main() -> int:
         jsrc = 1
     # `jsrc` IS `mv`'s AND THE GATE'S STATUS IS THE LAST `rc=` LINE. It is read with `sed` and not
     # with a pipeline, for the same reason stage 4 does not pipe its gate into `tee`.
-    stamps = sum(1 for ln in text(rep).splitlines() if ln.startswith("rc="))
-    found = RC_STAMP_RE.findall(text(rep))
+    # `grep -c '^rc='` COUNTS LINES, NOT OCCURRENCES, so a report containing `rc=` mid-line does not
+    # satisfy it. `: "${jsstage_rc:=-1}"` IS AN EMPTY-STRING TEST: no stamp at all is `-1`, and a
+    # stamp that is not a number never reaches here because the `sed` did not match it.
+    body = raw(rep)
+    stamps = sum(1 for ln in body.splitlines() if ln.startswith(b"rc="))
+    found = RC_STAMP_RE.findall(body)
     jrc = int(found[-1]) if found else -1
-    grep_file(rep, JS_RE, "  ")
+    grep_file(rep, JS_RE)
     if jsrc != 0 or stamps != 1:
         # THE STAGE ITSELF DID NOT RUN. Nothing measured, so SKIP and not FAIL -- but not PASS
         # either, and it says which of the two went wrong.

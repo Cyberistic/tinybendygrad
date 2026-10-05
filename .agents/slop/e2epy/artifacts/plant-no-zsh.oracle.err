@@ -2,7 +2,7 @@ node:internal/modules/cjs/loader:1573
   throw err;
   ^
 
-Error: Cannot find module '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-pass/.agents/slop/e2e_mm_run.mjs'
+Error: Cannot find module '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/plant-no-zsh/.agents/slop/e2e_mm_run.mjs'
     at Module._resolveFilename (node:internal/modules/cjs/loader:1569:15)
     at wrapResolveFilename (node:internal/modules/cjs/loader:1123:27)
     at defaultResolveImplForCJSLoading (node:internal/modules/cjs/loader:1147:10)

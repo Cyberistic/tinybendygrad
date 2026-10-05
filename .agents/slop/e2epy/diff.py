@@ -84,16 +84,33 @@ def verdicts_of(stdout: str) -> dict[str, str]:
     return {m.group(1): m.group(2) for m in (VERDICT.match(ln) for ln in stdout.splitlines()) if m}
 
 
+# THE ONE NORMALISATION, AND IT IS THE SHELL'S OWN LINE PREFIX. `sh` reports a command it cannot find
+# with its location -- `<script>: line 185: zsh: command not found` -- and `checks/e2e.py` has no line
+# 185 to name, because it is not the shell. So the prefix is stripped from BOTH sides and the
+# remaining question ("which program is missing?") is compared byte for byte. Nothing else is
+# touched: no whitespace folding, no path rewriting, no timestamp masking, no case folding. If the
+# two still disagree, the disagreement is reported as it stands.
+SHELL_LOC = re.compile(rb"^.*: line \d+: ", re.M)
+
+
+def canon(raw_: bytes) -> bytes:
+    return SHELL_LOC.sub(b"", raw_)
+
+
 def compare(tag: str, env: dict[str, str], show: int) -> list[str]:
     """ONE PAIR, ORACLE FIRST THEN PORT, SEQUENTIALLY, and the per-stage report.
 
-    `zsh` IS INVOKED BY ABSOLUTE PATH so the `plant-no-zsh` plant can withhold it from the PATH the
-    oracle sees -- that is the only way to compare what the gate does when `zsh` is unavailable,
-    rather than what the driver does when it cannot find its own interpreter. Both sides are invoked
-    from the REPOSITORY ROOT and differ only in their environment; each script `cd`s to `E2E_ROOT`
-    itself, so the pair stays a fair test.
+    `sh` IS INVOKED BY ABSOLUTE PATH, BECAUSE THE ORACLE'S SHEBANG IS `#!/bin/sh` AND MEASURED HERE:
+    `env -i PATH=/tmp/emptydir /bin/sh -c 'echo $PATH'` prints `/tmp/emptydir`, and the same
+    command under `/bin/zsh` prints `/Users/cyberistic/.nub/node-shim:/Users/cyberistic/.cargo/bin:
+    /tmp/emptydir` -- zsh REWRITES `PATH` before the first line of any script runs. An earlier cut of
+    this driver invoked the oracle with `zsh`, and the two `hide` plants duly disagreed: the oracle
+    found the node its own PATH had been stripped of, and `stage-no-node` reported `FAIL rc=1` where
+    the port, run under python and therefore under no rewriting shell, correctly reported `SKIP`.
+    **THAT WAS THE DRIVER DISAGREEING WITH ITSELF, NOT THE PORT.** Absolute `sh` also leaves
+    `plant-no-zsh` able to withhold zsh from the gate while this driver still has an interpreter.
     """
-    orc, oout, oerr = run([ZSH, str(ROOT / ORACLE)], env, f"{tag}.oracle")
+    orc, oout, oerr = run([SH, str(ROOT / ORACLE)], env, f"{tag}.oracle")
     prc, pout, perr = run([PY, str(ROOT / PORT)], env, f"{tag}.port")
     lines = [f"## {tag}   exit: oracle={orc}  port={prc}"
              f"{'' if orc == prc else '   *** EXIT STATUS DIFFERS ***'}"]
@@ -111,7 +128,12 @@ def compare(tag: str, env: dict[str, str], show: int) -> list[str]:
     # the other is its own outcome: a gate that lost a stage has lost reproducibility without saying
     # so, and a byte diff alone would bury that. Matched blocks are compared IN ORDER, because the
     # order is the order the claims come in.
-    ob, pb = split_stages(oout), split_stages(pout)
+    # CANON IS APPLIED HERE TOO, not only to the byte comparison below. The stage blocks are split
+    # from the RAW text, so without this a single shell line-prefix inside one block marks that block
+    # DIFFERS while the stream as a whole reports IDENTICAL -- two verdicts for one difference, and
+    # the reader cannot tell which one to believe.
+    ob, pb = split_stages(canon(oout.encode()).decode(errors="replace")), \
+        split_stages(canon(pout.encode()).decode(errors="replace"))
     if len(ob) != len(pb):
         lines.append(f"  *** STAGE BLOCK COUNT DIFFERS: oracle={len(ob)} port={len(pb)}")
     for i, ((ha, ba), (hb, bb)) in enumerate(zip(ob, pb)):
@@ -123,19 +145,22 @@ def compare(tag: str, env: dict[str, str], show: int) -> list[str]:
         lines.append(f"  block {i} MISSING ON {'PORT' if len(ob) > len(pb) else 'ORACLE'}: "
                      f"{extra[0]}   *** A LOST STAGE IS NOT A BYTE DIFF ***")
     for name, a, b in (("stdout", oout, pout), ("stderr", oerr, perr)):
-        same = a == b
+        ca, cb = canon(a.encode()), canon(b.encode())
+        same = ca == cb
         lines.append(f"  {name}: {'IDENTICAL' if same else 'DIFFERS'} "
                      f"({len(a)} vs {len(b)} bytes)")
         if not same:
-            lines += [f"  --- {name} diff (oracle < / port >) ---", *_hunks(a, b, show)]
+            lines.append(f"  --- {name} diff (oracle < / port >) ---")
+            lines += [ln.decode(errors="replace") for ln in _hunks(ca, cb, show)]
     return lines
 
 
-def _hunks(a: str, b: str, show: int) -> list[str]:
+def _hunks(a: bytes, b: bytes, show: int) -> list[bytes]:
     import difflib
-    d = [ln.rstrip("\n") for ln in difflib.unified_diff(a.splitlines(), b.splitlines(),
-                                                        "oracle", "port", lineterm="", n=1)]
-    return [f"    {ln}" for ln in (d[:show * 4] or ["<no textual difference>"])]
+    d = list(difflib.unified_diff(a.decode(errors="replace").splitlines(),
+                                  b.decode(errors="replace").splitlines(),
+                                  "oracle", "port", lineterm="", n=1))
+    return [f"    {ln}".encode() for ln in (d[:show * 4] or ["<no textual difference>"])]
 
 
 # ------------------------------------------------------------------ the input sets
@@ -144,7 +169,14 @@ def _hunks(a: str, b: str, show: int) -> list[str]:
 # edited, so each branch is COMPARED rather than argued about. No real `bend`, `cc`, `node` or `zsh`
 # runs in any plant, and nothing is copied from the live tree -- every stub is a few lines, because
 # a plant that copies the thing it is meant to displace cannot prove anything.
-SETS = {"live": ENV}
+#
+# **`live` SETS `E2E_ROOT` EXPLICITLY, AND THAT IS NOT OPTIONAL.** Left to its own `dirname $0`/../..,
+# the oracle -- three levels deep, in `e2epy/` -- computes `ROOT` as `<repo>/.agents`, which EXISTS,
+# so `cd "$ROOT"` succeeds and the gate proceeds in a directory that is not the repository. Measured:
+# the first `live` run died at `…/.agents/.venv/bin/python: No such file or directory` and printed
+# ONE line, `== 1/4 oracle`, before stopping -- and the port printed all eight stages, because the
+# port resolves `ROOT` from its own `__file__`. That is FINDING 1, reproduced on the live tree.
+SETS = {"live": ENV | {"E2E_ROOT": str(ROOT)}}
 # `codes` is the exit status of, IN ORDER: stage 1's oracle, stage 4's gate, stage 5's ops_bend,
 # stage 6's port mm, stage 7's run-f64, stage 8's jsstage. `bend` is how many `name=value` rows the
 # stub compiler emits: 25 PASSES stage 2's `> 20 rows` denominator, 5 does not and drives the RETRY
@@ -170,7 +202,21 @@ PLANTS = {
 SHELL_TOOLS = ("grep", "sed", "head", "tail", "cat", "mkdir", "sleep", "rm", "wc", "tr", "diff",
                "ls", "env", "chmod", "cp", "mv")
 FX = ROOT / ".agents/slop/e2epy/fixtures"
-ZSH = shutil.which("zsh") or "/bin/zsh"
+# THE ORACLE SHEBANG IS `#!/bin/sh`, so `sh` IS ITS INTERPRETER -- see `compare` docstring.
+SH = shutil.which("sh") or "/bin/sh"
+
+
+def _real_node() -> str | None:
+    """A node that is NOT `/Users/cyberistic/.nub/node-shim/node`, which is a Mach-O binary that
+    probes for an installed node version on every invocation. Measured: it costs ~15 s per call,
+    which is most of a 36 s plant, and a plant that spends its time probing node is a plant whose
+    duration is not the thing under test. Falls back to `which node` so a machine with only the shim
+    still gets a working sandbox."""
+    for d in os.environ.get("PATH", "").split(os.pathsep):
+        p = os.path.join(d, "node") if d else "node"
+        if os.access(p, os.X_OK) and ".nub" not in p:
+            return p
+    return shutil.which("node")
 
 
 def _build_plant(tag: str, spec: dict) -> Path:
@@ -218,9 +264,11 @@ echo 'PLANT stub: run-f64.sh'
 exit {codes[4]}
 """)
     box = fx / "sandbox"
-    for t in [x for x in SHELL_TOOLS if shutil.which(x)] + \
-             [x for x in ("node", "zsh") if x != spec.get("hide") and shutil.which(x)]:
-        (box / t).symlink_to(shutil.which(t))
+    tools = {t: shutil.which(t) for t in SHELL_TOOLS}
+    tools["node"], tools["zsh"] = _real_node(), shutil.which("zsh")
+    for t, real in tools.items():
+        if t != spec.get("hide") and real:
+            (box / t).symlink_to(real)
     return fx
 
 

@@ -13,16 +13,13 @@ expected: 1 2 3
 PACKET.out: 1 2 3
   stage 5 ops_bend (kernel executes in Bend): PASS
 == 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
-PLANT stub: stage6 port matmul, 64/64 words
-  stage 6 port (matmul THROUGH the port, no Node): PASS
+zsh: command not found
+  stage 6 port (matmul THROUGH the port, no Node): FAIL (rc=127)
 == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
-     STAGE 7 PASS
-     64/64 MET
-     GREEN [C0]
-  stage 7 f64 (double through the port, no Node): PASS
+  stage 7 f64 (double through the port, no Node): SKIP -- `zsh` is not available; stage 7 measured NOTHING
 == 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)
-  stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython): FAIL (rc=1)
---- verdicts: 2 failed, 0 skipped ---
+  stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython): PASS
+--- verdicts: 2 failed, 1 skipped ---
 FAIL -- 2 stage(s) ran and failed. The per-stage verdicts above stand on their own:
        a failing stage does not retract the others' claims, and this script now says so in
        its exit status, which it did not before.
