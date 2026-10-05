@@ -189,7 +189,9 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
       MEASURED.** `14 of 137` (`agent-core.md` §2), `6 of 137` (`OPSPY.md`), `COLD 35 of 139`
       (`substrate-check.sh`). `.agents/slop/coldness/COLDNESS.md` — `COLD` quoted from
-      `substrate-check.sh:199-206` (a **`head -1` string compare, not an exit code**), each
+      `substrate-check.sh:199-206` (a **`head -1` string compare, not an exit code**; **NOW PORTED VERBATIM
+      TO `checks/substrate.py`, and the semantics are preserved deliberately — see the Tooling
+      section below**), each
       number's definition, the 138-row `TABLE.tsv`, and the cause collapse.
       **RE-MEASURED 2026-10-05 14:19 OVER 138 `.bend` FILES: `COLD 35`, `BAD 46`,
       `unresolved=50`, `dead_import=37` — the guard's own last output reproduced EXACTLY,
@@ -214,6 +216,41 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       (`references/bend/bend2/main.ts:815`), so **`grep -c TODO` is 0 and wrong** —
       `PROOF.bend` reports 18 and has no `TODO` string. CLD-1..CLD-3 appended at
       `bend2-constraints.md` 26748+.
+
+### Tooling — the substrate gate is Python, and the shell survives as the oracle
+
+- [x] **`substrate-check.sh` (470 lines) PORTED TO `checks/substrate.py`, BEHIND TWO `exec`
+      SHIMS, WITH THE SHELL FROZEN AS A RUNNABLE ORACLE.** `.agents/slop/substrate/SUBSTRATE.md`.
+      **THE MIGRATION RULE WAS MET: 6 INPUT SETS, `stdout=IDENTICAL` ON ALL SIX — every verdict,
+      every denominator, every exit status, and the whole 344-line output over the WHOLE
+      `tinybendygrad/` tree (152 arguments, 138 `.bend`). `ROUTE bend=138 cc=0 node=4
+      no-instrument=10` · `port=127 non-port=25` · `DENOMINATOR … => 113` · `BAD 0` ·
+      `SUBSTRATE NOT CLEAN: 8`, exit 1 both sides. NO VERDICT WAS CHANGED.**
+- [x] **THE ZERO-ARGUMENT REFUSAL IS PORTED AND TESTED** (`refused` set: exit **3** both sides,
+      4 lines byte-identical). A guard that measures nothing must not report agreement.
+- [x] **THE MEMORY BOUND IS NEW AND THE SHELL HAD ONLY AN ALARM.** All four shell instrument
+      invocations were `perl -e 'alarm 300'` or, for both `cc` calls, **not bounded at all**; all
+      four now go through `checks/bounded.py`, one `bend` at a time. **The ceiling is 2048 MB, NOT
+      THE CENSUS'S 1024: re-measured through the port, `sz.bend` peaks at 1,468 MB and
+      `renderer/nir.bend` at 1,435 MB (census: 1,108 and 1,152) — A CEILING BELOW THE POPULATION'S
+      OWN MAXIMUM IS A CEILING THAT CHANGES VERDICTS**, and a plant proves it.
+- [x] **`ORACLE_PIN` IS IN CODE, NOT IN A COMMENT, AND IT FIRED TWICE.** It refused with exit 3
+      on an appended byte AND on the coordinator's own cleanup sweep DELETING the oracle — which is
+      the pin catching a deliberate, correct action rather than a mistake, and the better of the
+      two cases to have measured.
+- [x] **THREE BUGS IN THE PORT, NONE FOUND BY READING IT — all by a test set added because the
+      class was untested:** `"tinybendygrad/"` where the shell has `"tinygrad/"`; **the shell's
+      string-literal regex reproduced verbatim, because the shell's single-quoted `python3 -c`
+      passes FOUR backslashes through and the port's "obvious" version disagreed by one `unseen`**;
+      and `--mb` consuming its own value twice.
+- [x] **5 PLANTS, ALL FIRED, ALL DISARMED** — the ceiling, the `WARM`/`COLD` literal, both
+      fixtures, and the pin itself. **THREE HARNESS BUGS FOUND BY THE PLANTS**, including one that
+      passed for the wrong reason (a crashed port produces zero bytes, which "differs"), which is
+      why a plant must show ITS OWN SIGNATURE in the verdict lines.
+- [x] **`CONCURRENT-EDIT`, BECAUSE A WHOLE-TREE DIFF ON THIS TREE IS NOT A THING YOU CAN RUN
+      TWICE.** It fired **3 times in 40 minutes** on 3 files belonging to 3 different units. It
+      hashes CONTENT, not mtime: an mtime stamp declared two comparisons void over rewrites that
+      changed no byte either driver could read, and **a guard that cries wolf gets turned off.**
 
 ### Lane liveness — how many of the gated lanes actually RAN the port
 

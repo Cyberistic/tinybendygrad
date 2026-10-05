@@ -1188,6 +1188,27 @@ def ew_quick_gelu(+t: T.Tensor) -> T.Tensor: ew_mul2(t, ew_sigmoid(ew_mul2(t, ew
 # thing in this port that can see an operand order at all.
 def ew_tanh(+t: T.Tensor) -> T.Tensor: ew_sub(ew_mul2(t, ew_sigmoid(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), 2.0)), True{})), True{}), ECon{O.CFloat{1.0}}, False{})
 
+# `log`, `log10` and `exp` (elementwise.py:840, :852, :511) are the first three methods the
+# CONSTANT wall unblocked, and all three are TWO NODES over things that already exist:
+# `ew_log2` / `ew_exp2` (the unary alu family) and the `ew_k` constants. Nothing here is new
+# arithmetic -- it is the wall being gone.
+#
+# CPython writes the constant as a PYTHON FLOAT, and the port writes it as an `F32` const
+# TENSOR, because a `CFloat` in an `ECon` is the representation the promotion path reads.
+# The operand ORDER is CPython's and it is load-bearing: the signature row is the only thing
+# in this port that can see it, which is the same reason `sigmoid`'s ADD is reversed.
+def ew_log(+t: T.Tensor) -> T.Tensor:
+  ew_mul2(ew_log2(t), ew_ct(ew_cf(T.Tensor.ar(t), ew_k.log2())), False{})
+
+def ew_log10(+t: T.Tensor) -> T.Tensor:
+  ew_mul2(ew_log2(t), ew_ct(ew_cf(T.Tensor.ar(t), ew_k.log10_2())), False{})
+
+# `exp` is `self.cast(least_upper_dtype(self.dtype, float32)).mul(1/math.log(2)).exp2()`, and
+# the CAST is a NODE in CPython's graph. Whether the port's promotion mints it or folds it
+# is a MEASUREMENT and not a design choice, so the row is here to find out.
+def ew_exp(+t: T.Tensor) -> T.Tensor:
+  ew_exp2(ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), ew_k.inv_log2())), False{}))
+
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 
 # THE MISSING MATRIX CELL, and the fixture pair is chosen so the fold is VISIBLE. `2` and
@@ -1213,6 +1234,9 @@ def g_i32c(v: U32, +t: T.Tensor) -> T.Tensor: ew_ct(ew_ci(T.Tensor.ar(t), v))
 def t_detach() -> IO(Unit): ew_sig("ew_detach", g_unary(UDetach{}))
 def t_sigmoid() -> IO(Unit): ew_sig("ew_sigmoid", ew_sigmoid(g_i32()))def t_swish() -> IO(Unit): ew_sig("ew_swish", ew_swish(g_i32()))
 def t_silu() -> IO(Unit): ew_sig("ew_silu", ew_silu(g_i32()))
+def t_log() -> IO(Unit): ew_sig("ew_log", ew_log(g_i32()))
+def t_log10() -> IO(Unit): ew_sig("ew_log10", ew_log10(g_i32()))
+def t_exp() -> IO(Unit): ew_sig("ew_exp", ew_exp(g_i32()))
 def g_wf_wi() -> T.Tensor:
   +f = g_f32c()
   g_i32c(2, f)
@@ -1511,6 +1535,9 @@ def main() -> IO(Unit):
     t : Unit <- t_sigmoid()
     bh : Unit <- t_swish()
     bi : Unit <- t_silu()
+    ax : Unit <- t_log()
+    bk : Unit <- t_log10()
+    bl : Unit <- t_exp()
     bh : Unit <- t_quick_gelu()
     bh : Unit <- t_tanh()
     bh : Unit <- t_promo_wf_wi()

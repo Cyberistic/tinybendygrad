@@ -364,7 +364,7 @@ def BL_LOAD_SYSDRV() -> U32: 65536
 def BL_LOAD_SOSDRV() -> U32: 131072
 def BL_LOAD_KEY_DATABASE() -> U32: 524288
 def BL_LOAD_SOS_SPL_TABLE() -> U32: 268435456
-def BL_LOAD_SOCDRV() -> U32: 720897
+def BL_LOAD_SOCDRV() -> U32: 720896
 def BL_LOAD_DBGDRV() -> U32: 786432
 def BL_LOAD_INTFDRV() -> U32: 851968
 def BL_LOAD_RASDRV() -> U32: 917504
@@ -1616,7 +1616,7 @@ def amp_reg_135() -> Row:
 def amp_reg_136() -> Row:
   Row.of(136, "en_def_flags", ["pde0_protection_fault_enable_default", "dummy_page_protection_fault_enable_default", "range_protection_fault_enable_default", "valid_protection_fault_enable_default", "read_protection_fault_enable_default", "write_protection_fault_enable_default", "execute_protection_fault_enable_default"])
 def amp_reg_137() -> Row:
-  Row.of(137, "reg{ip}VM_CONTEXT{vmid}_CNTL", ["pde0_protection_fault_enable_interrupt", "dummy_page_protection_fault_enable_interrupt", "range_protection_fault_enable_interrupt", "valid_protection_fault_enable_interrupt", "read_protection_fault_enable_interrupt", "write_protection_fault_enable_interrupt", "execute_protection_fault_enable_interrupt", "pde0_protection_fault_enable_default", "dummy_page_protection_fault_enable_default", "range_protection_fault_enable_default", "valid_protection_fault_enable_default", "read_protection_fault_enable_default", "write_protection_fault_enable_default", "execute_protection_fault_enable_default", "enable_context", "page_table_depth", "page_table_block_size", "inst"])
+  Row.of(137, "reg{ip}VM_L2_CONTEXT1_IDENTITY_APERTURE_LOW_ADDR", ["pde0_protection_fault_enable_interrupt", "dummy_page_protection_fault_enable_interrupt", "range_protection_fault_enable_interrupt", "valid_protection_fault_enable_interrupt", "read_protection_fault_enable_interrupt", "write_protection_fault_enable_interrupt", "execute_protection_fault_enable_interrupt", "pde0_protection_fault_enable_default", "dummy_page_protection_fault_enable_default", "range_protection_fault_enable_default", "valid_protection_fault_enable_default", "read_protection_fault_enable_default", "write_protection_fault_enable_default", "execute_protection_fault_enable_default", "enable_context", "page_table_depth", "page_table_block_size", "inst"])
 def amp_reg_170() -> Row:
   Row.of(170, "reg{ip}VM_L2_CONTEXT1_IDENTITY_APERTURE_LOW_ADDR", ["_LO32", "_HI32"])
 def amp_reg_171() -> Row:

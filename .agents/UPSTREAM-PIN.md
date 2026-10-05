@@ -69,8 +69,8 @@ python3 .agents/slop/upstream-delta.py --files  # every changed file, not just o
 > every one of them on demand:
 >
 > ```bash
-> .agents/slop/rebase-try.sh --solo tinygrad/uop/ops.py        # ImportError: axis_to_pos
-> .agents/slop/rebase-try.sh --solo tinygrad/renderer/cstyle.py # AttributeError: dtypes.i8
+> .agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --solo tinygrad/uop/ops.py        # ImportError: axis_to_pos
+> .agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --solo tinygrad/renderer/cstyle.py # AttributeError: dtypes.i8
 > ```
 >
 > The error is not that upstream's commits are large. It is that upstream moves a **name**
@@ -110,9 +110,9 @@ inside a function body, so the tree imports cleanly and dies on the first kernel
 ### Step 2 — confirm each batch empirically, out of tree
 
 ```bash
-.agents/slop/rebase-try.sh --all          # build each batch in a throwaway tree and run it
-.agents/slop/rebase-try.sh --shrink 1     # try to MINIMISE a batch, one file at a time
-.agents/slop/rebase-try.sh --solo <file>  # vendor ONE file alone -- the negative control
+.agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --all          # build each batch in a throwaway tree and run it
+.agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --shrink 1     # try to MINIMISE a batch, one file at a time
+.agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git] --solo <file>  # vendor ONE file alone -- the negative control
 ```
 
 This vendors nothing: it unpacks the pin into a temp dir, overlays one batch at HEAD, and
@@ -150,7 +150,7 @@ while all 230 blobs matched the pin. **After B1 and B2, 19 of them do not**, so 
 set" no longer describes the operation anyone performs — the operation is
 `git checkout upstream/master -- <files>` **applied to the working tree**.
 
-`.agents/slop/rebase-try.sh` therefore grew `--from-work` and `--solo-work` (overlay on the
+`.agents/slop/rebase-try.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]` therefore grew `--from-work` and `--solo-work` (overlay on the
 working tree) and `--shrink-work` (minimise an explicit file list against it). `--shrink`
 against a plan batch is now the *wrong question* too: BATCH 1 is 23 files of which 8 were
 already at HEAD, so shrinking all 23 minimises a set that includes 8 no-ops.
