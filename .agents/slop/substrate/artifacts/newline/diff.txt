@@ -1,5 +1,0 @@
-label=set newline
-inputs=1
-exit=oracle:1 port:1
-stdout=IDENTICAL (14 lines vs 14)
-verdict+denominator lines=IDENTICAL (10 each)

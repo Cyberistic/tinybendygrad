@@ -15,7 +15,7 @@ The brief, and `dup/stage2-classify.md:106-109`, both say:
 disagree, from two different instruments over two different things:
 
 ```
-$ grep -n 'nv_reloc_bad_refused' .agents/slop/dup/lanes/tinybendygrad_runtime_ops_nv.bend.oracle0.txt
+$ grep -n 'nv_reloc_bad_refused' .agents/slop/dup/lanes/tinybendygrad_runtime_ops_nv.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt
 319:nv_reloc_bad_n=1
 320:nv_reloc_bad_refused=True          <- from :721
 560:nv_reloc_bad_refused=True          <- from :1161

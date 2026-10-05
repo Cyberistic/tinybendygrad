@@ -8,7 +8,7 @@ ceiling was never raised. Compiler Bend 2.0.34.
 Reproduce:
 
 ```sh
-.venv/bin/python .agents/slop/deadreg/build4.py    # the four configurations
+.venv/bin/python .agents/slop/deadreg/build4.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]    # the four configurations
 .venv/bin/python .agents/slop/deadreg/plant.py     # plant + disarm, five configurations
 ```
 

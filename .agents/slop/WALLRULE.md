@@ -81,7 +81,7 @@ instrument with no error rate is not reporting.
 
 ## Checker
 
-`zsh .agents/slop/wallrule/wallcheck.sh <WALLID>…` — one grep per wall against its anchor.
+`zsh .agents/slop/wallrule/wallcheck.sh [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] <WALLID>…` — one grep per wall against its anchor.
 Exit 0 = anchors still absent (wall stands). Exit 1 = an anchor now exists (wall is stale or retired).
 Exit 2 = a wall is missing anchor / reopen / date (wall is a story, regardless of exit status).
 Zero arguments is refused, not `CLEAN`.

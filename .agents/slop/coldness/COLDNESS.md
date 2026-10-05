@@ -241,7 +241,7 @@ those three being implicit. The three that bit hardest:
 
 ```sh
 zsh .agents/slop/coldness/sweep.sh                                   # 138 bounded --check-only runs
-.venv/bin/python .agents/slop/coldness/coldness.py                    # the table + the causes
+.venv/bin/python .agents/slop/coldness/coldness.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]                    # the table + the causes
 zsh .agents/slop/substrate-check.sh -n $(cat .agents/slop/coldness/population.txt)   # HALF 2 only
 ```
 

@@ -12479,3 +12479,56 @@ hits for them are all comments). Nothing calls the twenty registrations.
       the substrate.** Before believing a wall, ASK WHICH LAYER IT IS ABOUT: the language,
       the port's own arithmetic, or the import graph. The third is invisible in a marker's
       phrasing, because a wall is written as a property of the language and read as one.
+
+## 2026-10-05 — E2EPY unit: `checks/e2e.sh` ported to `checks/e2e.py`, and four `.sh` shims that exit 0 having measured nothing
+
+`checks/e2e.py` (+`--help` naming each stage's DENOMINATOR), shim `.agents/slop/e2e.sh`, frozen
+oracle `.agents/slop/e2epy/oracle-e2e.sh` (sha-checked IN CODE, exit 3 on drift), per-stage diff
+driver `.agents/slop/e2epy/diff.py`, report `.agents/slop/e2epy/report.md`. **Not committed.**
+
+- [x] **`live`: oracle and port BYTE-IDENTICAL** — 15,705 bytes, same sha256
+      `1f9744cbebaecd99ce624dd214c02b955a726561c2c0089c493996d734123fd6`, exit 1 both,
+      all **20** stage blocks identical (reported per block, never as one aggregate).
+- [x] **9 plants, `0 of 9 disagree`**, reaching exit statuses **0, 1, 2 and 3** — including
+      `plant-thin`/`plant-deadbend` (`bend` prints nothing, exits 0 → eight retries → `set -e`
+      abort, status 2) and `plant-no-node` (exit **0**, `PASS WITH 1 SKIP(S)`).
+- [x] **The concurrency question, measured:** `&`, `wait`, `$!`, `xargs -P`, `Popen`, threads,
+      `Promise.all` all **0** across `e2e.sh` and all four stage scripts. The shell is strictly
+      sequential and so is the port. **`ulimit` appears 0 times and no memory bound was added** —
+      because a kill reads as exit 3, which stages 7 AND 8 both interpret as a VERDICT.
+- [x] **Arguments:** the shell has no `getopts`/`shift`/`$@`/`$*`; `-x` and `foo bar baz` are
+      byte-identical on both sides. **`--help` is the one declared divergence** (the shell runs all
+      eight stages and ignores it).
+- [x] **Three port bugs found by plants, not by reading:** `FileNotFoundError` out of stage 6 when
+      `zsh` is absent (now 127/126 with the shell's own words); `echo >&2` lines written without
+      their newline (9 lines diffed as 1); `read_text(errors="replace")` where `cat`/`grep` are
+      byte-transparent.
+- [x] **Stage 6 and stage 8 NOT fixed, re-pointed, retired or retuned.** Fidelity only. Stage 6
+      now reads PASS on the current tree where the brief's reference said FAIL rc=1 — **that is the
+      substrate moving, and both sides of the diff report it identically**; stage 8 is still
+      `FAIL rc=1` with `rows that REACH dtype.js` = **0**.
+
+- [ ] **REPORTED, NOT FIXED — a `cd "$(dirname "$0")/../.."` shim exits 0 HAVING RUN NOTHING.**
+      MEASURED: with a PATH containing no `dirname`, `.agents/slop/e2e.sh` printed
+      `line 16: dirname: command not found`, `cd ""` failed, it `exec`'d `/.venv/bin/python`, and
+      **exited 0** — three failures, one green status. **`checks/substrate-check.sh:16-17` has the
+      same two lines and the same exposure**, and `checks/e2e.sh:30` / `substrate-check.sh` share
+      the wrong-depth `ROOT` trap (FINDING 1/8: `../..` from three levels deep is `.agents/`, WHICH
+      EXISTS, so the gate proceeds in the wrong tree).
+      **FIX IS ONE LINE EACH — `cd "${0%/*}/../.."` — AND IT NEEDS THE COORDINATOR** because two of
+      the four files belong to other units. Until then, **A SHIM'S EXIT STATUS PROVES NOTHING IF
+      `dirname` IS ABSENT FROM `PATH`.**
+
+- [ ] **REPORTED — the live cleanup unit `qmyqvmnpsloz` ("103 ONE-OFF `.sh` DELETED") TRUNCATED
+      `checks/e2e.sh` to 0 BYTES, mid-port.** Not deleted: emptied, still executable. **A 0-byte
+      `#!/bin/sh` runs and exits 0 printing NOTHING** — the oldest failure in this project
+      (`--check-only` answers `ALL PROOFS CHECK` for an empty file) landing on the ONE artifact.
+      Restored byte-exactly from the frozen oracle. **The oracle is what made that recoverable**,
+      which is the migration rule paying for itself. Whether a cleanup should truncate rather than
+      delete, and whether `checks/e2e.py` becomes the single entry point, are the coordinator's.
+
+- [ ] **DECISION NEEDED — `AGENTS.md` now routes new gate code to `gates/*.py` and says
+      `.agents/slop/` is being pruned, while my brief assigned `.agents/slop/e2epy/` and
+      `agent-core.md` says oracles live in `.agents/slop/`.** I followed my brief. If the new rule
+      wins: the **diff driver** moves to `gates/`; the **oracle must not**, or "oracles live beside
+      the code they check" stops being true. The 9 plant fixtures are generated, so they go too.

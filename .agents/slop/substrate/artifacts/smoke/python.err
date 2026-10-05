@@ -1,3 +1,0 @@
-[substrate] .agents/slop/substrate/fixtures/tiny.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 2048)  0s  :: ./bin/bend .agents/slop/substrate/fixtures/tiny.bend --check-only
-[substrate] .agents/slop/substrate/fixtures/broken.bend: [bounded] WITHIN-LIMITS  rc=1  peak-RSS=0 MB (ceiling 2048)  0s  :: ./bin/bend .agents/slop/substrate/fixtures/broken.bend --check-only
-[substrate] tinybendygrad/runtime/dtype.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=6 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/dtype.js

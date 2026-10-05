@@ -24,11 +24,11 @@ two executables and `gate.py` drives them.
 | `gate.txt`, `sweep.txt` | the two logs |
 
 **BELOW: `bend -o` is dead for `.c` files right now.** `substrate-check.sh:134` builds
-its `cc` context from `bend -o .agents/slop/guardfix/probe-c.bend`, and that emits
+its `cc` context from `bend -o .agents/slop/guardfix/probe-c.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]`, and that emits
 nothing:
 
 ```
-./bin/bend .agents/slop/guardfix/probe-c.bend -o gen.c  ->  rc 1, no gen.c
+./bin/bend .agents/slop/guardfix/probe-c.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] -o gen.c  ->  rc 1, no gen.c
 expected : Nat / observed : U32 / Location: fp16_flat / dtype.bend:687
 ```
 

@@ -100,7 +100,7 @@ COMMENT THAT ADDS UP.** Report its **hit rate and its error rate against a state
 instruments over one ledger is a second dialect, which is WALL/1's own disease. Its `hit
 rate`-style self-report is reproduced here and its `landed` computation was dead code —
 assigned on two consecutive lines and read by neither.)
-Run: `.venv/bin/python .agents/slop/wallrule/wallcheck.py [ID ...]`
+Run: `.venv/bin/python .agents/slop/wallrule/wallcheck.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] [ID ...]`
 
 Verdicts: `STANDS` · `LANDED` (MISSING wall's capability arrived) · `GONE` (DEFECT wall's defect
 is fixed) · `SPLIT` (trees disagree — **wait**) · `NO-SCOPE` · `STORY` · `OUT-OF-SCOPE`.

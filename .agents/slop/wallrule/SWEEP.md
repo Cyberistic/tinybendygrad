@@ -1,6 +1,6 @@
 # SWEEP — every recorded wall, and what happened to it. 2026-10-05.
 
-Reproduce: `.venv/bin/python .agents/slop/wallrule/wallcheck.py` (writes `wallcheck.out`)
+Reproduce: `.venv/bin/python .agents/slop/wallrule/wallcheck.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]` (writes `wallcheck.out`)
 Read the instrument's reasoning and the disagreement history: `walls.truth.tsv`.
 
 **19 rows. 15 graded against an independently hand-measured truth. 4 refused (3 `RUN`, whose

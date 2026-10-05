@@ -1,5 +1,0 @@
-label=set names
-inputs=4
-exit=oracle:0 port:0
-stdout=IDENTICAL (23 lines vs 23)
-verdict+denominator lines=IDENTICAL (16 each)

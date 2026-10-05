@@ -1,4 +1,0 @@
-SOME PROOFS FAIL
-Error: 16 TODOs found.
-The code is incomplete, and not a valid proof yet.
-bend 2.0.35 is available: run bend update

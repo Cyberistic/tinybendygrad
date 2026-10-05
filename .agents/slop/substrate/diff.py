@@ -131,6 +131,33 @@ def verdict_lines(text: str) -> list[str]:
     return [ln for ln in text.splitlines() if ln.startswith(keys)]
 
 
+def stamp(paths: list[str]) -> dict[str, tuple[int, int] | None]:
+    """`(size, mtime_ns)` per input, or `None` if absent.
+
+    **THE TREE IS EDITED BY OTHER UNITS WHILE THIS RUNS, AND A DIFF THAT CANNOT SEE IT REPORTS A
+    DISAGREEMENT THAT IS NOT ONE.** MEASURED 2026-10-05 on the whole-tree run: the oracle finished
+    at 15:27 and the port at 15:30, and in that window a live unit created and then deleted
+    `tinybendygrad/runtime/support/rdma/bnxtdev.bend.sweep`. Both drivers were handed the IDENTICAL
+    argv -- the population is enumerated once, before either -- so the disagreement was
+    `PORT ALARM 1` vs `2` on a file neither of them had anything to do with. A harness that
+    reports that as a port bug is measuring the other units' clock. **IT HAS SINCE FIRED TWICE**,
+    the second time on `tinybendygrad/mixin/elementwise.bend`, which grew 83,515 -> 85,060 bytes
+    mid-run, so this is not a one-off.
+
+    So the population is stamped before and after BOTH runs, and a change is reported as its own
+    verdict, `CONCURRENT-EDIT`, which is neither agreement nor disagreement and is the one thing
+    this harness must never resolve in the port's favour.
+    """
+    out = {}
+    for p in paths:
+        try:
+            st = os.stat(p)
+            out[p] = (st.st_size, st.st_mtime_ns)
+        except OSError:
+            out[p] = None
+    return out
+
+
 def compare(name: str, files: list[str], label: str, extra: list[str] = (),
             port_extra: list[str] = ()) -> bool:
     """`extra` reaches BOTH drivers; `port_extra` reaches the PORT only. The split exists because
@@ -144,17 +171,35 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
     # ONE argv, PASSED AS ONE argv. `xargs` and `for f in $(...)` would re-split the embedded
     # newline in the `newline` set and destroy the very thing that set measures.
     # SEQUENTIAL. Never `&`, never `xargs -P`: two `bend` processes is the crash.
+    before = stamp(files)
     rc_o = run(["zsh", ORACLE, *extra, *files], dest / "oracle")
     rc_p = run([PY, PORT, *extra, *port_extra, *files], dest / "python")
+    after = stamp(files)
+    moved = [f"{p} {before[p]} -> {after[p]}" for p in files if before[p] != after[p]]
     o = self_norm((dest / "oracle.out").read_text(errors="replace"))
     p = self_norm((dest / "python.out").read_text(errors="replace"))
     (dest / "oracle.norm").write_text(o)
     (dest / "python.norm").write_text(p)
     vo, vp = verdict_lines(o), verdict_lines(p)
-    moved = [f"  ORACLE only: {ln}" for ln in vo if ln not in vp] \
+    movedv = [f"  ORACLE only: {ln}" for ln in vo if ln not in vp] \
         + [f"  PORT   only: {ln}" for ln in vp if ln not in vo]
     same_rc = rc_o == rc_p
     same_txt = o == p
+    # A MOVED FILE MAKES THE COMPARISON VACUOUS, so it is refused rather than resolved. TWO
+    # IDENTICAL FAILURES COMPARE EQUAL, and here two DIFFERENT POPULATIONS compare unequal: both
+    # shapes are ways of reading a verdict off a run that did not measure what it claims to.
+    if moved:
+        print(f"CONCURRENT-EDIT  {name:<22} {len(moved)} input(s) changed WHILE the two drivers "
+              f"ran -- this comparison is VOID, not a disagreement:")
+        for m in moved[:6]:
+            print(f"    {m}")
+        print("           re-run. Do NOT read this as the port being wrong: both drivers were "
+              "handed the same argv and saw a different tree.")
+        (dest / "diff.txt").write_text("\n".join([
+            f"label={label}",
+            f"VOID -- the population changed under the two runs: {len(moved)} file(s)",
+            *moved]) + "\n")
+        return False
     # A 0-BYTE SIDE IS A FAILURE, NOT A PASS. `cmp -s` on two empty files succeeds, and a run
     # killed mid-write produces exactly that -- so the shapes are asserted, not just compared.
     # (This harness was bitten by the same shape one level down: the plant-literal mutant printed
@@ -174,7 +219,7 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
             f"verdict+denominator lines={'IDENTICAL' if vo == vp else 'DIFFER'} "
             f"({len(vo)} each)",
             *(f"SHAPE: {s}" for s in shapes),
-            *moved]
+            *movedv]
     if not same_txt:
         body.append("--- STREAM DIFF (first 60 lines) ---")
         q = subprocess.run(["diff", str(dest / "oracle.norm"), str(dest / "python.norm")],

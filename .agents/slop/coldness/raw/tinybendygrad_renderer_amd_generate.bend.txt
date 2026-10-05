@@ -1,9 +1,0 @@
-SOME PROOFS FAIL
-Error:
-- message  : a declared constructor (unknown: Nil)
-Location:
-6 |   match got, want:
-7>|     case Nil{}, Nil{}:
-  |          ^^^^^
-8 |       g(String.concat([nm, " lines"]), U32.show(U32.from_nat(i)), wc)
-bend 2.0.35 is available: run bend update

@@ -48,7 +48,7 @@ below reads `shared names: 939 of 940 port / 939 oracle`.
 ```
 $ .venv/bin/python .agents/slop/dup/dup-gate.py --compare \
       .agents/slop/dup/usb-oracle-BEFORE.txt \
-      .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend.oracle0.txt
+      .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt
 ROWS       1014 -> 939 lines; 1014 -> 939 read; 939 -> 939 distinct names -- EQUAL distinct counts is
            the collision check: a rename created no name
 VALUES     same multiset: False   distinct 365 -> 365   only in BEFORE []   only in AFTER []
@@ -78,7 +78,7 @@ Read as five separate claims, because they are five:
 
 ```
 $ diff .agents/slop/dup/usb-oracle-BEFORE.txt \
-       .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend.oracle0.txt
+       .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt
 744d743
 < usb_enum_refused_5_is_checked=True
 746,819d744

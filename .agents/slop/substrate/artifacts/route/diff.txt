@@ -1,5 +1,0 @@
-label=set route
-inputs=9
-exit=oracle:1 port:1
-stdout=IDENTICAL (35 lines vs 35)
-verdict+denominator lines=IDENTICAL (24 each)

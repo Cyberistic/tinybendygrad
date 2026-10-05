@@ -83,7 +83,7 @@ move both**, and `fold.bend` is do-not-touch.
 them is an `mm_*` or a `bl_*` row**:
 
 ```
-$ grep -c '^mm_\|^bl_' .agents/slop/dup/lanes/tinybendygrad_uop_fold.bend.oracle0.txt
+$ grep -c '^mm_\|^bl_' .agents/slop/dup/lanes/tinybendygrad_uop_fold.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt
 0
 ```
 

@@ -38,8 +38,8 @@ a **tautological zero** and the byte diff is the gate.
 
 ```
 .venv/bin/python .agents/slop/dup/dup-gate.py \
-    --port   .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend.port.txt \
-    --oracle .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend.oracle0.txt --selftest
+    --port   .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].port.txt \
+    --oracle .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.].oracle0.txt --selftest
 
 [selftest base] the REAL captured pair: 205 shared names, 0 duplicate name(s), byte-identical=True
   cell     verdict  dup(port) dup(oracle)  byteIdent disagree

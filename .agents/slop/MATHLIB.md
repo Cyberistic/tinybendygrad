@@ -181,7 +181,7 @@ inf_gt_big=True
 inf_times_zero_is_nan=True
 ```
 
-And `.agents/slop/mathlib/const_probe.bend` builds exactly the constants the band
+And `.agents/slop/mathlib/const_probe.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]` builds exactly the constants the band
 names, in the shape `uop/ops.bend:810` says a CONST carries (`CFloat{f: F32}`):
 
 ```
@@ -204,7 +204,7 @@ Determinism: three consecutive runs of each probe, byte-identical
 
 ```bash
 ./bin/bend .agents/slop/mathlib/lit_probe2.bend
-./bin/bend .agents/slop/mathlib/const_probe.bend
+./bin/bend .agents/slop/mathlib/const_probe.bend [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]
 ```
 
 ### 3a. Three measured gotchas a `math` library would hit immediately

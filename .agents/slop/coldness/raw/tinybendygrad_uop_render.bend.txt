@@ -1,9 +1,0 @@
-SOME PROOFS FAIL
-Error:
-- message  : a declared constructor (unknown: ops.AOpLit)
-Location:
-713 |     # same expression `areduce_repr`/`aallred_repr` already use for their first field.
-714>|     case O.AOpLit{op}: O.Ops.name(op)
-    |          ^^^^^^^^^^^^
-715 |     case O.AWmma{dims, dt, threads, tc}: awmma_repr(dims, dt, threads, tc)
-bend 2.0.35 is available: run bend update

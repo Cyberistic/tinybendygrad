@@ -9,13 +9,13 @@ concurrently. `tinybendygrad/` held **153 files, 138 of them `.bend`**.
 
 ## 1. THE FILES, AND WHAT EACH ONE CLAIMS
 
-| file | what it is |
-|---|---|
-| `checks/substrate.py` | the port. `--help` states what it gates and each verdict's denominator |
-| `checks/substrate-check.sh` | `exec` shim (was the 470-line body) |
-| `.agents/slop/substrate-check.sh` | `exec` shim (was the 470-line body) |
+| file | what it is | lines |
+|---|---|---|
+| `checks/substrate.py` | the port. `--help` states what it gates and each verdict's denominator | 763 |
+| `checks/substrate-check.sh` | `exec` shim (was the 470-line body) | 27 |
+| `.agents/slop/substrate-check.sh` | `exec` shim (was the 470-line body) | 20 |
 | `.agents/slop/substrate/oracle-check.sh` | the **frozen oracle**, still `+x`, still runnable. sha256 `6d1000712f0f…600e`, pinned in CODE in `checks/substrate.py` `ORACLE_PIN` and refused with exit 3 on drift |
-| `.agents/slop/substrate/diff.py` | the diff harness: 6 input sets, 4 plants, disarms all of them |
+| `.agents/slop/substrate/diff.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]` | the diff harness: 6 input sets, 4 plants, disarms all of them |
 | `.agents/slop/substrate/fixtures/` | the 4 fixture files the input classes are made of |
 | `.agents/slop/substrate/artifacts/<set>/` | per set: `oracle.{out,err,rc}`, `python.{out,err,rc}`, `{oracle,python}.norm`, `diff.txt` |
 
@@ -38,7 +38,19 @@ Six sets, all `stdout=IDENTICAL`, all exit statuses equal:
 | `newline` | ONE argument containing an embedded newline | 1 | 14 |
 | `refused` | **zero arguments** | **3** | 4 |
 | `route` | all four routes over real tree files, incl. `sz.bend` and `renderer/nir.bend` | 1 | 35 |
-| `pop` | **every file under `tinybendygrad/`** — 153 arguments | 1 | see `artifacts/pop/diff.txt` |
+| `pop` | **every file under `tinybendygrad/`** — **152** arguments, 138 `.bend` | 1 | **344** |
+
+The whole tree, both sides, **byte-identical over 344 lines and 311 verdict/denominator lines**:
+`ROUTE bend=138 cc=0 node=4 no-instrument=10 (of 152)` · `PROVENANCE port=127 non-port=25` ·
+`PORT ALARM 1` · `DENOMINATOR .bend handed=138, of which non-port=25 => 113` ·
+`TOTALS refs=37728 exact=37728 suffix=0 unresolved=0 unseen=58412 missing_module=0
+dead_import=37` · `BAD 0` · **`SUBSTRATE NOT CLEAN: 8 finding(s)`**, exit 1 both.
+
+**THE DENOMINATOR IS 113, AND IT IS NOT 138.** `COLDNESS.md` §2 measured the guard's strict
+`port=` at **113** with `no-upstream=25`, and the port reproduces **25** and **113** exactly on a
+different run with a different population. `BAD 0` here is also worth naming: `validate.bend`'s
+41 sites are gone because a live unit fixed them, so `BAD` counts **deduped sites in the files
+handed**, and a number that depends on a neighbour is not a number to steer by.
 
 The comparison is byte identity of **stdout** plus **exit-status equality**, and it asserts the
 **SHAPE** of both sides (no 0-byte stream, a verdict line present) — because `cmp` on two empty
@@ -94,9 +106,10 @@ fact that it was KILLED is reported on its own channel:
 ```
 **A gate is a text: a line added to the artifact is a line the oracle does not have.**
 
-## 5. TWO BUGS THE DIFF CAUGHT IN THE PORT, BOTH FROM THE NEW TEST SETS
+## 5. THREE BUGS THE DIFF CAUGHT IN THE PORT, AND NONE BY READING THE CODE
 
-Both were found by a set added *because* the class was untested — not by reading the code.
+Every one was found by a set added *because* the class was untested. A diff that had only been
+run over `smoke` would have reported a clean port.
 
 1. **`"tinybendygrad/"` where the shell has `"tinygrad/"`** (PROVENANCE). The upstream `.py` lives
    in the **other** tree. Every live `.bend` read `no-upstream`, `port=` fell to 0, and the PORT
@@ -110,7 +123,15 @@ Both were found by a set added *because* the class was untested — not by readi
    line: one mis-stripped literal turned a quoted name into a `Foo.bar` reference.
    **The oracle is right by accident and the port was wrong on purpose. Nothing to fix — only to
    reproduce**, and the comment at `checks/substrate.py` `STRING` is the only thing standing
-   between the next reader and a well-meaning repair that breaks the gate.
+   between the next reader and a well-meaning repair that breaks the gate. Caught by the `route`
+   set.
+3. **`--mb` CONSUMED ITS OWN VALUE TWICE.** `split_leading` advanced `i` by `VALUED[a]` — one
+   slot — instead of one plus the value, so `--mb 1` reached argparse as `--mb` followed by the
+   *file name*. The port exited 2 with `expected one argument` on every `--mb` invocation, and the
+   ceiling plant appeared to "fire" because the port produced **zero bytes**. That is the same
+   trap as the mutant's `ORACLE DRIFT`: **an empty side differs from a full one**, so a diff that
+   reads only "did they differ" calls a crash a disagreement. Caught by requiring the plant to
+   show **its own signature** in the verdict lines.
 
 ## 6. PLANTS AND DISARM — FOUR, ALL FIRED, ALL DISARMED
 
@@ -121,6 +142,19 @@ Both were found by a set added *because* the class was untested — not by readi
 | `fixtures/broken.bend` made valid | the set's output must MOVE (it is the only COLD row) | **moved, as demanded** |
 | `fixtures/empty.bend` made non-empty | the set's output must MOVE (this is the trap the gate exists for) | **moved, as demanded** |
 | all four disarmed | the real port, same inputs | **AGREE, byte-identical** |
+
+**AND A FIFTH, RUN BY HAND, ON THE PIN ITSELF** — the one gate here with no harness, because it is
+the pin's own self-test and a harness for it would need the pin it is testing:
+```
+$ printf '\n# drift\n' >> .agents/slop/substrate/oracle-check.sh
+$ .venv/bin/python checks/substrate.py tinybendygrad/device.bend ; echo rc=$?
+ORACLE DRIFT: substrate/oracle-check.sh: d132d4c4b3413044 != pinned 6d1000712f0f290c
+  the frozen shell oracle moved, so this run would compare against nothing. Restore it, or
+  re-freeze it deliberately and update ORACLE_PIN in checks/substrate.py -- do not delete the pin.
+rc=3
+$ git checkout -- .agents/slop/substrate/oracle-check.sh && shasum -a 256 …
+6d1000712f0f290ca479539f863dc76c6793cf4bbe94e983f94d56698994600e    # and the gate runs again
+```
 
 **Two harness bugs the plants found in the harness, which is the point:**
 
@@ -153,6 +187,31 @@ owner up in the names the files **under test** declare, so `DECLARED NOWHERE` me
 Python reproduces the shell's verdict on **every input**. Every diff above was run without it. It
 cannot change a verdict or an exit status.
 
+Measured on two COLD files:
+
+```
+CAUSES  (NOT the gate. This is what the COLD count above is counting, and a count
+        whose value depends on a neighbour's contents is measuring the wrong thing.)
+COLD counts 2 FILES. Those files are 2 CAUSES. THE UNIT OF WORK IS A CAUSE.
+    1 file(s)  FOREIGN        7      a COUNT, not a name -- nothing to look up
+                   :: tinybendygrad/sz.bend
+    1 file(s)  HOLES          34     a COUNT, not a name -- nothing to look up
+                   :: tinybendygrad/LAWS.bend
+```
+
+**TWO THINGS THIS GOT WRONG FIRST, AND BOTH ARE WHY IT READS THE WAY IT DOES.**
+
+1. **MATCHING THE FIRST LINE ATTRIBUTED 2 FILES TO `UNATTRIBUTED`.** The first line of every
+   failing `--check-only` is `SOME PROOFS FAIL`, which is bend's answer to "this file is not a
+   complete proof" and names no cause. **The `COLD` verdict's own message contains none of the
+   information `--causes` needs** — so the patterns are matched against the FULL output. Verified
+   against the real text: `Error: 7 defs rely on unsafe or foreign code:` → `FOREIGN 7`,
+   `Error: 34 TODOs found.` → `HOLES 34`.
+2. **THE OWNER LOOKUP WAS A DECORATION.** It ran on every symbol and printed `DECLARED NOWHERE`
+   for a count, which is a true sentence about a question nobody asked. **A lookup whose answer is
+   always the same is not a lookup**, so `whereof()` says so explicitly for a count-shaped symbol,
+   and only a name-shaped one (`MISSING-DEF O.ParamArg.no_slot`) is looked up.
+
 **`COLD` IS A COUNT OF FILES AND THAT IS STATED, NOT CHANGED.** `COLD` is still exactly "the
 first line of `bend --check-only` is not `ALL PROOFS CHECK`", still a **per-file string compare**
 with the **exit status discarded** (`--check-only` exits 1 on 14 clean files), and still over the
@@ -161,6 +220,59 @@ imports. **The semantics are the shell's, deliberately. Preserved first, then qu
 this is the report's answer to that question: *a closure-level COLD count is the wrong number to
 steer work by, and `--causes` exists so the file count can be read next to the cause count. It
 does not replace the verdict.*
+
+## 7b. THE WHOLE-TREE RUN, AND A CONCURRENT EDIT THAT IS NOT A DISAGREEMENT
+
+The first `pop` run (153 arguments, every file under `tinybendygrad/`) came back **DISAGREE** on
+four lines, and every one of them was another unit's clock rather than the port's:
+
+```
+< PROVENANCE  port=128  non-port=25   of which not-in-index=1 no-upstream=25   (of 153)
+> PROVENANCE  port=127  non-port=26   of which not-in-index=2 no-upstream=25   (of 153)
+>   NOT-PORT      tinybendygrad/runtime/support/rdma/bnxtdev.bend.sweep
+< PORT ALARM  1 file(s) ...                                            > PORT ALARM  2 file(s) ...
+```
+
+`bnxtdev.bend.sweep` **does not exist now, and was not in git either time.** The oracle finished
+at **15:27** and the port at **15:30**; in that window a live unit created the file and deleted it
+again. Both drivers were handed the **identical argv** — the population is enumerated once, before
+either — so the two runs judged two different populations and the difference was a third party's
+`.sweep`.
+
+**A HARNESS THAT CANNOT SEE THIS REPORTS IT AS THE PORT BEING WRONG**, and would have sent the
+next reader to fix a `git ls-files` call that was correct. So `diff.py` now stamps every input's
+`(size, mtime_ns)` **before and after both runs** and reports any change as its own verdict —
+and it has now fired **TWICE, on two different files, for two different units**, which is the
+measurement that says the guard is earning its place:
+
+```
+CONCURRENT-EDIT  pop    1 input(s) changed WHILE the two drivers ran -- this comparison is VOID,
+                       not a disagreement:
+    tinybendygrad/mixin/elementwise.bend (83515, …) -> (85060, …)
+```
+
+(the first firing was `tinybendygrad/runtime/support/rdma/bnxtdev.bend.sweep`, created **and**
+deleted inside the window). The form it prints:
+
+```
+CONCURRENT-EDIT  pop    1 input(s) changed WHILE the two drivers ran -- this comparison is VOID
+                        , not a disagreement:
+    tinybendygrad/runtime/support/rdma/bnxtdev.bend.sweep 2400 1759670... -> None
+           re-run. Do NOT read this as the port being wrong: both drivers were handed the same
+           argv and saw a different tree.
+```
+
+``CONCURRENT-EDIT` is neither agreement nor disagreement, and it is **not** resolved in the port's
+favour — it refuses the comparison. This is the same family as `differ.py`'s 0-row guard and its
+`${=SUB}` hash guard: **two identical failures compare equal, and here two different populations
+compare unequal.** Both are ways of reading a verdict off a run that did not measure what it
+claims to.
+
+**THE RE-RUN WAS 152 FILES, NOT 153, AND THAT IS THE SAME EDIT.** `bnxtdev.bend.sweep` was the
+153rd and is now gone for good (`bnxtdev.bend` is the only file left in that directory). So the
+population this report quotes is **152 files / 138 `.bend`** and every number in it is a timestamp,
+which is `COLDNESS.md` §7.3's own rule: **a denominator taken from a tree under concurrent edit is
+a timestamp.** Re-run for your own.
 
 ## 8. WHAT COULD NOT BE PORTED, AND WHERE
 
@@ -190,15 +302,36 @@ does not replace the verdict.*
    the port pins `encoding="utf-8"` explicitly, so the two agree on ASCII and would agree on any
    UTF-8 tree; they would diverge only on a tree that is neither, which is not this one.
 
+## 8b. A CLEANUP UNIT DELETED THIS UNIT'S FILES MID-RUN, AND THE PIN RESTORED THEM EXACTLY
+
+At ~16:00 the coordinator's **Python-only cleanup** swept `.agents/slop/` (measured: **103
+one-off `.sh` deleted, 100 duplicates removed, `.slop` 673 MB → 184 MB**) and it took
+**`oracle-check.sh`, `diff.py` and all four fixtures with it** — the files a commit shortly before
+had put there. `checks/substrate.py` survived and every run after the sweep **refused with
+`ORACLE DRIFT: substrate/oracle-check.sh: MISSING -- the frozen oracle is gone`, exit 3.**
+
+**So the pin did its job in the one direction it was built for, unasked:** not because someone
+appended a byte to the oracle but because a legitimate, deliberate, project-wide cleanup removed
+it, and a gate whose whole purpose is "compare against the shell" refused to compare against
+nothing. Restored with `git show HEAD:… > …`; the sha256 came back
+`6d1000712f0f290ca479539f863dc76c6793cf4bbe94e983f94d56698994600e`, **unchanged**, and
+`empty.bend` (0 bytes, and therefore invisible to a diff of contents) had to be recreated with
+`: >`. **`checks/disarm.sh` calls the same failure mode "the drift guard caught my own mistake"
+and this is the second instance in this tree.**
+
+`checks/substrate-check.sh` was also deleted earlier in the same sweep and is restored, with the
+deletion recorded in its own header. **Both shims exist so that "every existing invocation path
+keeps working" is a claim with two files behind it.**
+
 ## 9. REPRODUCE
 
 ```sh
 .venv/bin/python checks/substrate.py --help                 # what it gates, and each denominator
 zsh .agents/slop/substrate-check.sh tinybendygrad/device.bend   # the shim, still working
 SUBSTRATE_REPO=$PWD zsh .agents/slop/substrate/oracle-check.sh tinybendygrad/device.bend  # the oracle
-.venv/bin/python .agents/slop/substrate/diff.py                       # 6 sets
-.venv/bin/python .agents/slop/substrate/diff.py --plants --sets smoke names newline refused route
-.venv/bin/python .agents/slop/substrate/diff.py --sets smoke names newline refused route pop   # the
+.venv/bin/python .agents/slop/substrate/diff.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]                       # 6 sets
+.venv/bin/python .agents/slop/substrate/diff.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] --plants --sets smoke names newline refused route
+.venv/bin/python .agents/slop/substrate/diff.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.] --sets smoke names newline refused route pop   # the
                                                                                                 # whole tree
 ```
 `--plants` needs `smoke` in `--sets` (it is the fixture plants' baseline). Artifacts:

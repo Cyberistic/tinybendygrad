@@ -170,7 +170,7 @@ matter what the port computes, and the header's own "measured byte-identical to 
 to the oracle" is the same fact. **The byte diff is this lane's gate; GUARD 0 is the only thing
 here that can be red.** The gate prints that as a line rather than leaving it to be inferred.
 
-## 5. THE CONTROL MATRIX — `sh .agents/slop/li/li-control.sh`
+## 5. THE CONTROL MATRIX — `sh .agents/slop/li/li-control.sh [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]`
 
 `li/control-matrix.txt`. Every cell is a real process and **every `rc` is that process's `rc`**,
 captured immediately after it and before any `grep`. Cell 1 runs
@@ -273,7 +273,7 @@ by any name, on both sides, under a green verdict. That is the whole failure.
 ```
 .venv/bin/python .agents/slop/llvmir-gate.py                    # live gate, rc=1 on the duplicate alone
 .venv/bin/python .agents/slop/llvmir-gate.py --selftest         # rc=0
-sh .agents/slop/li/li-control.sh                                # the matrix above
+sh .agents/slop/li/li-control.sh [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]                                # the matrix above
 .venv/bin/python .agents/slop/llvmir-gate.py --compare .agents/slop/li/pre-port.txt .agents/slop/li/post-port.txt
 ```
 
