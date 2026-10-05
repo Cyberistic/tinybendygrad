@@ -63,6 +63,17 @@ VALUES = [
 
 AMOUNTS = [0, 1, 31, 32, 33, 62, 63, 64, 65, 127]
 
+# the row name -> the LITERAL amount, and the row name -> the RUNTIME amount. The
+# driver indexes one table of ten `Nat` literals twice, once at the row's own slot and
+# once at `(seed + i) mod 10` where `seed` is read from the environment, so the two
+# routes differ ONLY in whether the index is syntax or runtime data.
+def lit_amt(i):
+    return AMOUNTS[i]
+
+
+def rt_amt(seed, i):
+    return AMOUNTS[(seed + i) % len(AMOUNTS)]
+
 
 def signed(hi, lo):
     """`hi:lo` read back as a signed 64-bit integer, which is how the port's pair is
@@ -81,36 +92,44 @@ def main():
     seed = int(os.environ["I64SHL_SEED"])
     out = [f"seed={seed}"]
 
+    # THE WALL'S CLAIM, AS A CROSS-CHECK ON THE ORACLE'S OWN TABLE: for each value and
+    # each amount, the runtime route and the literal route are two independent
+    # evaluations of `i64_shl`, so if they ever differed the table itself would be
+    # suspect. Keyed on the VALUE, not on the row, so a drift is caught.
     signed_out, zero_out = [], []
+    by_amount = {}
     for name, hi, lo in VALUES:
         x = signed(hi, lo)
         for i in range(len(AMOUNTS)):
-            amt = AMOUNTS[(seed + i) % len(AMOUNTS)]
+            kl, kr = lit_amt(i), rt_amt(seed, i)
             n = f"sh_{name}_{i}"
             out.append(f"{n}_x={hi}:{lo}")
-            out.append(f"{n}_amt={amt}")
-            out.append(f"{n}_lit={AMOUNTS[i]}")
-            out.append(f"{n}_rt={pair(x, amt)}")
-            out.append(f"{n}_lc={pair(x, AMOUNTS[i])}")
+            out.append(f"{n}_amt={kl}")
+            out.append(f"{n}_lc={pair(x, kl)}")
+            out.append(f"{n}_rt_amt={kr}")
+            out.append(f"{n}_rt={pair(x, kr)}")
 
-            # THE THREE BOUNDARIES, asserted on this row's own numbers.
-            got, exact = pair(x, amt), x << amt
-            if amt <= 62:
-                assert got != "0:0", f"{n}: in range, yet the pair is zero"
-                assert unpair(got) == exact, f"{n}: {unpair(got)} != {exact}"
-            elif amt == 63:
-                if unpair(got) != exact:
-                    signed_out.append(f"{name}:{amt}")
-                    assert not (SIGN_MIN <= exact <= SIGN_MAX), (
-                        f"{n}: {unpair(got)} != {exact} yet the exact answer FITS signed, "
-                        "so the pair lost it")
-                assert int(got.replace(":", "")) == exact & M64, (
-                    f"{n}: the pair must HOLD the k=63 answer unsigned")
-            else:
-                zero_out.append(f"{name}:{amt}")
-                assert got == "0:0" and exact != 0, f"{n}: the pair should be 0:0"
-            # the literal route must reach the same place as the runtime route
-            assert pair(x, AMOUNTS[i]) == got, f"{n}: the two routes disagree"
+            for amt, got in ((kl, pair(x, kl)), (kr, pair(x, kr))):
+                key = (name, amt)
+                if key in by_amount:
+                    assert by_amount[key] == got, f"{name}@{amt}: the two routes disagree"
+                by_amount[key] = got
+                exact = x << amt
+                # THE THREE BOUNDARIES, asserted on this row's own numbers.
+                if amt <= 62:
+                    assert got != "0:0", f"{name}@{amt}: in range, yet the pair is zero"
+                    assert unpair(got) == exact, f"{name}@{amt}: {unpair(got)} != {exact}"
+                elif amt == 63:
+                    if unpair(got) != exact:
+                        signed_out.append(f"{name}:{amt}")
+                        assert not (SIGN_MIN <= exact <= SIGN_MAX), (
+                            f"{name}@{amt}: {unpair(got)} != {exact} yet the exact answer "
+                            "FITS signed, so the pair lost it")
+                    assert unpair_u(got) == exact & M64, (
+                        f"{name}@{amt}: the pair must HOLD the k=63 answer unsigned")
+                else:
+                    zero_out.append(f"{name}:{amt}")
+                    assert got == "0:0" and exact != 0, f"{name}@{amt}: should be 0:0"
 
     # THE UNIVERSE CHECK, and it is the whole point of the fixture set: the `k = 63`
     # boundary must be crossed in BOTH directions, or the boundary is not a boundary.
@@ -119,13 +138,20 @@ def main():
     assert "lowhi:31" in signed_out, f"lowhi@31 was expected past signed, got {signed_out}"
     # and the k >= 64 rows must not all be one value's worth of evidence
     assert len({n.split(":")[0] for n in zero_out}) == 3, f"k>=64 only hit {zero_out}"
+    # EVERY amount must be reachable on the runtime route, or the runtime rows are a
+    # subset of the literal ones and the claim is untested
+    assert len({a for (_, a) in by_amount}) == len(AMOUNTS), sorted({a for (_, a) in by_amount})
 
     print("\n".join(out))
 
 
-def unpair(s):
+def unpair_u(s):
     hi, lo = (int(w) for w in s.split(":"))
-    v = (hi << 32) | lo
+    return (hi << 32) | lo
+
+
+def unpair(s):
+    v = unpair_u(s)
     return v - (1 << 64) if v >> 63 else v
 
 

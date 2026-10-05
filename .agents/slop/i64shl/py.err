@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/i64shl/shl-oracle.py", line 155, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/i64shl/shl-oracle.py", line 128, in main
+    assert int(got.replace(":", "")) == exact & M64, (
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: neg1@63: the pair must HOLD the k=63 answer unsigned

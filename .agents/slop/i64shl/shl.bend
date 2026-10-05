@@ -9,14 +9,12 @@
 # `rg '^def (i64_|hi32|lo32)'` over it must find nothing.
 #
 # TWO ROUTES TO THE SAME `i64_shl`, ONE LITERAL AND ONE RUNTIME, ON EVERY ROW. That
-# pairing IS the test. `_lit` passes the amount as a `Nat` literal; `_rt` passes
-# `U32.to_nat` of a `U32` read out of a table at an index computed from the PROCESS
-# ENVIRONMENT (`H.getenv_int`, helpers.bend:298, itself `IO.get_env`). The amount is
-# therefore not in this file's text at all, which is the shape
-# `uop/fold.bend:3234 bnd.pw2` uses (`U32.to_nat(U32.sub(bits, 1))`, `bits` a runtime
-# `U32` parameter) and `codegen/decomp/dtype.bend:1604` uses (`U32.to_nat(j)`). So
-# `_amt` is printed as a ROW, which is what makes a drifting amount a diff on the
-# input rather than a silent wrong answer.
+# pairing IS the test. `_amt`/`_lc` take the amount as a `Nat` LITERAL out of a table;
+# `_rt_amt`/`_rt` take the SAME amount out of the SAME table but at an index computed
+# from the PROCESS ENVIRONMENT. So the amounts are one table of ten `Nat` literals, and
+# the only difference between the two routes is whether the index is syntax or runtime
+# data -- which is precisely what the wall's claim turns on. Both amounts are printed as
+# ROWS, so a drifting amount is a diff on the input rather than a silent wrong answer.
 #
 # THE VALUE SET IS THE UNIVERSE, and it is chosen so the rows CAN see the defect.
 # A set of small values cannot: for both words below 2**32 the high arm and the low
@@ -42,51 +40,54 @@ def pu(+nm: String, v: U32) -> IO(Unit):
 def lit64(hi: U32, lo: U32) -> H.I64:
   H.i64_of_hi_lo(hi, lo)
 
-# ---- the amount table, and the RUNTIME index into it ----------------------
+# ---- the amount table, and the TWO ROUTES INTO IT ---------------------------
 #
 # TEN AMOUNTS, and each is a boundary rather than a sample. `0` is one of the two
 # amounts where the low form and the high form MEET (helpers.bend:1797-1799), so the
 # pick's two arms must agree there. `31` is the last amount `U32.shln`'s saturation
 # does not eat. `32` is the OTHER meeting amount and the edge of the `k <= 32` test.
 # `33` is the first amount the high arm serves. `62` and `63` are the widest in-range
-# amounts, and `63` is the widest a signed 64-bit pair can express at all. `64` is
+# amounts, and `63` is the widest a SIGNED 64-bit pair can express at all. `64` is
 # `2**64` -- THE WALL'S AMOUNT, which no 64-bit pair holds. `65` is past it. `127` is
 # far enough past 64 that a `& 63` CLAMP would also answer 0, so `127` is the row that
 # tells "wraps to zero" apart from "clamps to a bit width", which `64` alone cannot.
-def amounts() -> List<&2, U32>:
-  [0, 1, 31, 32, 33, 62, 63, 64, 65, 127]
+def nats() -> List<&2, Nat>:
+  [0n, 1n, 31n, 32n, 33n, 62n, 63n, 64n, 65n, 127n]
 
-def amt_len() -> U32:
-  U32.from_nat(List.length(&2, U32, amounts()))
+# THE CONTROL. The index is the row's own slot, so the `Nat` comes straight out of the
+# table with nothing computed -- this is a shift amount that is a LITERAL.
+def amt_lit(i: U32) -> Nat:
+  Maybe.default(&2, Nat, List.get(&2, Nat, nats(), U32.to_nat(i)), 999n)
 
-# THE INDEX IS `(seed + i) mod len`, so a permutation of the table rather than a walk
-# of it: ten rows reach all ten amounts with any seed, and changing the seed changes
-# which amount each row carries -- which is what makes the seed a fixture rather than
-# decoration.
-def amt_index(seed: U32, i: U32) -> U32:
-  U32.mod(U32.add(seed, i), amt_len())
+# THE CLAIM UNDER TEST. Same table, same amounts, but the INDEX is
+# `(seed + i) mod 10` and `seed` is read from the PROCESS ENVIRONMENT
+# (`H.getenv_int`, helpers.bend:298, itself `IO.get_env`), so the `Nat` handed to
+# `i64_shl` is derived from a runtime `U32` and is nowhere in this file's text. That is
+# the shape of `uop/fold.bend:3234 bnd.pw2` (`U32.to_nat(U32.sub(bits, 1))`, `bits` a
+# runtime `U32` parameter) and of `codegen/decomp/dtype.bend:1604` (`U32.to_nat(j)`).
+#
+# `(seed + i) mod len` is a PERMUTATION, so with any seed the ten rows reach all ten
+# amounts and changing the seed changes which amount each row carries. That is what
+# makes the seed a fixture: `seed` is printed as a ROW, so a drifting seed is a diff on
+# the input rather than ten silently wrong answers.
+def amt_rt(seed: U32, i: U32) -> Nat:
+  Maybe.default(&2, Nat, List.get(&2, Nat, nats(), U32.to_nat(U32.mod(U32.add(seed, i), 10))), 999n)
 
-def amt_rt(seed: U32, i: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, amounts(), U32.to_nat(amt_index(seed, i))), 999)
-
-def amt_lit(i: U32) -> U32:
-  Maybe.default(&2, U32, List.get(&2, U32, amounts(), U32.to_nat(i)), 999)
-
-# ---- one row: the value, BOTH amounts, and BOTH answers -------------------
+# ---- one row: the value, and BOTH routes' amount and answer ----------------
 #
 # `hi`/`lo` rather than a decimal because `2**63` has no `U32` image and
 # `H.i64_text` prints the two halves (helpers.bend:1698-1700): a decimal fixture would
 # have to be transcribed on one side and derived on the other.
 def shift_go(seed: U32, +nm: String, xh: U32, xl: U32, +i: U32) -> IO(Unit):
   +x = lit64(xh, xl)
-  +kr = amt_rt(seed, i)
   +kl = amt_lit(i)
+  +kr = amt_rt(seed, i)
   do IO<Unit>:
     p(String.concat([nm, "_x"]), H.i64_text(x))
-    pu(String.concat([nm, "_amt"]), kr)
-    pu(String.concat([nm, "_lit"]), kl)
-    p(String.concat([nm, "_rt"]), H.i64_text(H.i64_shl(x, U32.to_nat(kr))))
-    p(String.concat([nm, "_lc"]), H.i64_text(H.i64_shl(x, U32.to_nat(kl))))
+    p(String.concat([nm, "_amt"]), Nat.show(kl))
+    p(String.concat([nm, "_lc"]), H.i64_text(H.i64_shl(x, kl)))
+    p(String.concat([nm, "_rt_amt"]), Nat.show(kr))
+    p(String.concat([nm, "_rt"]), H.i64_text(H.i64_shl(x, kr)))
 
 def v_neg1(+seed: U32) -> IO(Unit):
   do IO<Unit>:

@@ -1,8 +1,0 @@
-/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/dsp_oracle2.py:7: SyntaxWarning: invalid escape sequence '\['
-  ops_dsp.bend"). 512 rows, `grep -c 'py=\[' tinybendygrad/runtime/ops_dsp.bend` -> 0.
-Exception ignored in: <function DSPCompiler.__del__ at 0x10af56ac0>
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/ops_dsp.py", line 116, in __del__
-    if not self.mock: os.unlink(self.link_ld.name)
-                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-FileNotFoundError: [Errno 2] No such file or directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmps6q8a8_1'

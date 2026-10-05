@@ -215,7 +215,18 @@ def verdict_for(rel: str, mentioned: set[str]) -> str:
         return "DOC"
     if name in DIFFER:
         return "GATE"
-    if ORACLE_WORD.search(name) and not name.endswith((".sh", ".py")):
+    # ORACLE IS NOT A WORD SHAPE. MEASURED 2026-10-05: this test was `ORACLE_WORD.search(name)` and
+    # nothing else, so **670 of 675 ORACLE files were classified by their FILENAME and were named by NO
+    # GATE AT ALL** — `gatecensus/` 167, `arith/` 51, `denom/` 50, `hermetic/` 49, `hdrbase/` 33, `eq/`
+    # 32, `name-census-lanes/` 31: **finished units' row dumps that matched `rows|oracle|pins|baseline`
+    # in a basename.** Only **5** are named by a live `checks/*.py` or `gates/*.py`.
+    #
+    # THIS IS THE SAME DEFECT AS `LIVE_UNITS`, ONE LEVEL UP, AND THE FILE ALREADY DIAGNOSED IT:
+    # "the verdict is computed per FILE from its BASENAME — and a file called `blob-bn.txt` inside a
+    # directory called `oracles` looks like a row dump. **THE ROLE IS A PROPERTY OF THE DIRECTORY AND
+    # WAS BEING READ FROM THE FILE.**" `ROLE_DIRS` fixed it for four directory NAMES; the word shape
+    # reintroduced it for every basename. **A FILE THAT NOBODY NAMES IS NOT REFERENCE DATA.**
+    if name in mentioned and ORACLE_WORD.search(name) and not name.endswith((".sh", ".py")):
         return "ORACLE"
     # A FILE A COMMITTED REPORT NAMES IS **NEVER** DELETE. MEASURED 2026-10-05: the first sweep
     # deleted 3,603 files and `checks/repro-paths.py` went from 24 dangling reproduction paths to
