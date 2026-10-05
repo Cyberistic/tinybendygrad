@@ -21,7 +21,7 @@ for a file that is NOT `tinybendygrad/helpers.bend`. Two files, one relative pat
 one definition, no signal in the text. A unit that greps for a definition can land
 in the wrong copy and cannot tell. That already happened once: a unit reported
 `tinybendygrad/helpers.bend` as a RENAME to
-`.agents/slop/nested/baseline-probe.err`, and the coordinator's note on it is the
+`oracles/nested/baseline-probe.err`, and the coordinator's note on it is the
 reason this file exists -- AN EMPTIED FILE AND A MOVED FILE ARE THE SAME OBSERVATION
 AT THE PORCELAIN LEVEL, so "it is not at the old path" is not evidence of anything.
 

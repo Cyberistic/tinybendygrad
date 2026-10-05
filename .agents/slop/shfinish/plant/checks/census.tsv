@@ -1,0 +1,1029 @@
+W	port_file	port_line	tag	kind	verdict	label	upstream	reason
+W-1	__init__.bend	25	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-2	__init__.bend	30	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-3	__init__.bend	38	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-4	__init__.bend	50	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-5	codegen/decomp/op.bend	1012	TODO(p3)	claim	STILL-A-WALL		codegen/decomp/op.py:9	subject unported or a residual arm of a ported def
+W-6	codegen/decomp/transcendental.bend	1993	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/decomp/transcendental.py:126	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-7	codegen/decomp/transcendental.bend	1998	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/decomp/transcendental.py:135	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-8	codegen/decomp/transcendental.bend	2001	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/decomp/transcendental.py:79	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-9	codegen/kernel.bend	99	TODO(p3)	REFERENCE	PROSE-REFERENCE	index	uop/ops.py:581	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-10	codegen/kernel.bend	213	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(3)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-11	codegen/kernel.bend	400	TODO(p3)	claim	UNVERIFIABLE		A-AMBIGUOUS(10)	bare basename resolves to A-AMBIGUOUS(10); needs a content probe
+W-12	codegen/kernel.bend	472	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(3)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-13	codegen/kernel.bend	480	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(3)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-14	codegen/kernel.bend	539	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(3)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-15	codegen/kernel.bend	595	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(3)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-16	codegen/kernel.bend	654	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(2)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-17	codegen/kernel.bend	742	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(2)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-18	codegen/kernel.bend	778	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-AMBIGUOUS(2)	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-19	codegen/kernel.bend	806	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/__init__.py:509	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-20	codegen/kernel.bend	833	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/__init__.py:425	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-21	codegen/late/linearizer.bend	392	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/late/linearizer.py:50	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-22	codegen/late/linearizer.bend	825	TODO(p3)	REFERENCE	PROSE-REFERENCE		codegen/late/linearizer.py:48	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-23	codegen/opt/search.bend	154	TODO(p3)	claim	STILL-A-WALL		codegen/opt/search.py:138	subject unported or a residual arm of a ported def
+W-24	codegen/opt/search.bend	164	TODO(p3)	claim	STILL-A-WALL		codegen/opt/search.py:128	subject unported or a residual arm of a ported def
+W-25	codegen/opt/search.bend	167	TODO(p3)	claim	STILL-A-WALL		codegen/opt/search.py:15	subject unported or a residual arm of a ported def
+W-26	codegen/opt/search.bend	171	TODO(p3)	claim	STILL-A-WALL		codegen/opt/search.py:108	subject unported or a residual arm of a ported def
+W-27	codegen/opt/search.bend	174	TODO(p3)	claim	STILL-A-WALL		codegen/opt/search.py:116	subject unported or a residual arm of a ported def
+W-28	device.bend	22	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-29	device.bend	248	TODO(p3)	claim	STILL-A-WALL		device.py:37	subject unported or a residual arm of a ported def
+W-30	device.bend	289	TODO(p3)	claim	STILL-A-WALL		device.py:39	subject unported or a residual arm of a ported def
+W-31	device.bend	442	TODO(p3)	claim	STILL-A-WALL		device.py:23	subject unported or a residual arm of a ported def
+W-32	device.bend	529	TODO(p3)	claim	STILL-A-WALL		device.py:110	subject unported or a residual arm of a ported def
+W-33	device.bend	768	TODO(p3)	claim	STILL-A-WALL		device.py:191	subject unported or a residual arm of a ported def
+W-34	device.bend	868	TODO(p3)	claim	STILL-A-WALL		device.py:357	subject unported or a residual arm of a ported def
+W-35	device.bend	1030	TODO(p3)	claim	STILL-A-WALL		device.py:404	subject unported or a residual arm of a ported def
+W-36	device.bend	1192	TODO(p3)	claim	STILL-A-WALL		device.py:357	subject unported or a residual arm of a ported def
+W-37	engine/jit.bend	62	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-38	engine/jit.bend	435	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-39	engine/jit.bend	1091	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-40	engine/realize.bend	823	TODO(p3)	claim	STILL-A-WALL		engine/realize.py:107	subject unported or a residual arm of a ported def
+W-41	engine/realize.bend	827	TODO(p3)	claim	STILL-A-WALL		engine/realize.py:108	subject unported or a residual arm of a ported def
+W-42	engine/realize.bend	837	TODO(p3)	claim	STILL-A-WALL		engine/realize.py:116	subject unported or a residual arm of a ported def
+W-43	engine/realize.bend	1161	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-44	engine/realize.bend	1319	TODO(p3)	claim	STILL-A-WALL		engine/realize.py:135	subject unported or a residual arm of a ported def
+W-45	engine/realize.bend	1322	TODO(p3)	claim	STILL-A-WALL		engine/realize.py:141	subject unported or a residual arm of a ported def
+W-46	engine/worker.bend	254	TODO(p3)	claim	STILL-A-WALL		engine/worker.py:31	subject unported or a residual arm of a ported def
+W-47	engine/worker.bend	372	TODO(p3)	claim	STILL-A-WALL		engine/worker.py:45	subject unported or a residual arm of a ported def
+W-48	engine/worker.bend	398	TODO(p3)	claim	STILL-A-WALL		engine/worker.py:48	subject unported or a residual arm of a ported def
+W-49	engine/worker.bend	406	TODO(p3)	claim	STILL-A-WALL		engine/worker.py:54	subject unported or a residual arm of a ported def
+W-50	function.bend	251	TODO(p3)	REFERENCE	PROSE-REFERENCE	buf_uop	uop/ops.py:925	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-51	function.bend	379	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-52	function.bend	1073	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1239	subject unported or a residual arm of a ported def
+W-53	function.bend	1078	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:532	subject unported or a residual arm of a ported def
+W-54	function.bend	1081	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1272	subject unported or a residual arm of a ported def
+W-55	function.bend	1084	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:245	subject unported or a residual arm of a ported def
+W-56	function.bend	1090	TODO(p3)	claim	STILL-A-WALL		function.py:53	subject unported or a residual arm of a ported def
+W-57	function.bend	1093	TODO(p3)	claim	STILL-A-WALL		function.py:61	subject unported or a residual arm of a ported def
+W-58	function.bend	1098	TODO(p3)	claim	STILL-A-WALL		function.py:64	subject unported or a residual arm of a ported def
+W-59	function.bend	1100	TODO(p3)	claim	STILL-A-WALL		function.py:51	subject unported or a residual arm of a ported def
+W-60	function.bend	1102	TODO(p3)	claim	STILL-A-WALL		function.py:48	subject unported or a residual arm of a ported def
+W-61	function.bend	1106	TODO(p3)	claim	STILL-A-WALL		function.py:82	subject unported or a residual arm of a ported def
+W-62	function.bend	1109	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:925	subject unported or a residual arm of a ported def
+W-63	helpers.bend	430	TODO(p6)	claim	STILL-A-WALL		helpers.py:176	subject unported or a residual arm of a ported def
+W-64	helpers.bend	2327	TODO(p4)	claim	STILL-A-WALL		helpers.py:305	subject unported or a residual arm of a ported def
+W-65	mixin/creation.bend	30	TODO(p3)	REFERENCE	PROSE-REFERENCE		mixin/creation.py:86	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-66	mixin/creation.bend	41	TODO(p3)	claim	STILL-A-WALL		mixin/creation.py:83	subject unported or a residual arm of a ported def
+W-67	mixin/creation.bend	60	TODO(p3)	claim	STILL-A-WALL		mixin/movement.py:128	subject unported or a residual arm of a ported def
+W-68	mixin/creation.bend	93	TODO(p3)	claim	STILL-A-WALL		mixin/creation.py:42	subject unported or a residual arm of a ported def
+W-69	mixin/creation.bend	407	TODO(p3)	REFERENCE	PROSE-REFERENCE		mixin/creation.py:105	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-70	mixin/creation.bend	409	TODO(p3)	claim	STILL-A-WALL		mixin/creation.py:102	subject unported or a residual arm of a ported def
+W-71	mixin/elementwise.bend	48	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-72	mixin/elementwise.bend	49	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-73	mixin/elementwise.bend	746	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:500	subject unported or a residual arm of a ported def
+W-74	mixin/elementwise.bend	747	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:511	subject unported or a residual arm of a ported def
+W-75	mixin/elementwise.bend	748	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:840	subject unported or a residual arm of a ported def
+W-76	mixin/elementwise.bend	749	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:852	subject unported or a residual arm of a ported def
+W-77	mixin/elementwise.bend	750	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:613	subject unported or a residual arm of a ported def
+W-78	mixin/elementwise.bend	751	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:623	subject unported or a residual arm of a ported def
+W-79	mixin/elementwise.bend	752	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:633	subject unported or a residual arm of a ported def
+W-80	mixin/elementwise.bend	753	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:654	subject unported or a residual arm of a ported def
+W-81	mixin/elementwise.bend	754	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:685	subject unported or a residual arm of a ported def
+W-82	mixin/elementwise.bend	755	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:709	subject unported or a residual arm of a ported def
+W-83	mixin/elementwise.bend	756	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:721	subject unported or a residual arm of a ported def
+W-84	mixin/elementwise.bend	757	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:744	subject unported or a residual arm of a ported def
+W-85	mixin/elementwise.bend	758	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:757	subject unported or a residual arm of a ported def
+W-86	mixin/elementwise.bend	759	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:769	subject unported or a residual arm of a ported def
+W-87	mixin/elementwise.bend	760	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:779	subject unported or a residual arm of a ported def
+W-88	mixin/elementwise.bend	761	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:796	subject unported or a residual arm of a ported def
+W-89	mixin/elementwise.bend	762	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:808	subject unported or a residual arm of a ported def
+W-90	mixin/elementwise.bend	763	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:854	subject unported or a residual arm of a ported def
+W-91	mixin/elementwise.bend	764	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:866	subject unported or a residual arm of a ported def
+W-92	mixin/elementwise.bend	765	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:878	subject unported or a residual arm of a ported def
+W-93	mixin/elementwise.bend	766	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:890	subject unported or a residual arm of a ported def
+W-94	mixin/elementwise.bend	767	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:921	subject unported or a residual arm of a ported def
+W-95	mixin/elementwise.bend	768	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:931	subject unported or a residual arm of a ported def
+W-96	mixin/elementwise.bend	769	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:944	subject unported or a residual arm of a ported def
+W-97	mixin/elementwise.bend	770	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:954	subject unported or a residual arm of a ported def
+W-98	mixin/elementwise.bend	771	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:964	subject unported or a residual arm of a ported def
+W-99	mixin/elementwise.bend	772	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:976	subject unported or a residual arm of a ported def
+W-100	mixin/elementwise.bend	773	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:988	subject unported or a residual arm of a ported def
+W-101	mixin/elementwise.bend	774	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1000	subject unported or a residual arm of a ported def
+W-102	mixin/elementwise.bend	775	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1010	subject unported or a residual arm of a ported def
+W-103	mixin/elementwise.bend	776	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1022	subject unported or a residual arm of a ported def
+W-104	mixin/elementwise.bend	777	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1034	subject unported or a residual arm of a ported def
+W-105	mixin/elementwise.bend	778	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1046	subject unported or a residual arm of a ported def
+W-106	mixin/elementwise.bend	779	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:1058	subject unported or a residual arm of a ported def
+W-107	mixin/elementwise.bend	780	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:410	subject unported or a residual arm of a ported def
+W-108	mixin/elementwise.bend	781	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:418	subject unported or a residual arm of a ported def
+W-109	mixin/elementwise.bend	782	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:820	subject unported or a residual arm of a ported def
+W-110	mixin/elementwise.bend	790	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:40	subject unported or a residual arm of a ported def
+W-111	mixin/elementwise.bend	791	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:41	subject unported or a residual arm of a ported def
+W-112	mixin/elementwise.bend	796	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:59	subject unported or a residual arm of a ported def
+W-113	mixin/elementwise.bend	802	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:586	subject unported or a residual arm of a ported def
+W-114	mixin/elementwise.bend	803	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:599	subject unported or a residual arm of a ported def
+W-115	mixin/elementwise.bend	810	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:820	subject unported or a residual arm of a ported def
+W-116	mixin/gradient.bend	593	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:82	subject unported or a residual arm of a ported def
+W-117	mixin/gradient.bend	605	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:83	subject unported or a residual arm of a ported def
+W-118	mixin/gradient.bend	645	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:87	subject unported or a residual arm of a ported def
+W-119	mixin/gradient.bend	655	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:88	subject unported or a residual arm of a ported def
+W-120	mixin/gradient.bend	681	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:91	subject unported or a residual arm of a ported def
+W-121	mixin/gradient.bend	697	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:92	subject unported or a residual arm of a ported def
+W-122	mixin/gradient.bend	709	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:93	subject unported or a residual arm of a ported def
+W-123	mixin/gradient.bend	742	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:98	subject unported or a residual arm of a ported def
+W-124	mixin/gradient.bend	811	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:102	subject unported or a residual arm of a ported def
+W-125	mixin/gradient.bend	842	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:109	subject unported or a residual arm of a ported def
+W-126	mixin/gradient.bend	867	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:132	subject unported or a residual arm of a ported def
+W-127	mixin/gradient.bend	882	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:20	subject unported or a residual arm of a ported def
+W-128	mixin/gradient.bend	890	TODO(p3)	claim	STILL-A-WALL		mixin/gradient.py:102	subject unported or a residual arm of a ported def
+W-129	mixin/gradient.bend	1077	TODO(p3)	REFERENCE	PROSE-REFERENCE		mixin/gradient.py:132	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-130	mixin/op.bend	55	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:89	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-131	mixin/op.bend	292	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:62	subject unported or a residual arm of a ported def
+W-132	mixin/op.bend	414	TODO(p3)	claim	UNVERIFIABLE		A-AMBIGUOUS(2)	bare basename resolves to A-AMBIGUOUS(2); needs a content probe
+W-133	mixin/op.bend	968	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-134	mixin/rand.bend	11	TODO(p3)	REFERENCE	PROSE-REFERENCE		A-DEAD	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-135	mixin/rand.bend	32	TODO(pN)	REFERENCE	PROSE-REFERENCE		mixin/rand.py:26	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-136	mixin/rand.bend	41	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:166	subject unported or a residual arm of a ported def
+W-137	mixin/rand.bend	49	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-138	mixin/rand.bend	50	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:731	subject unported or a residual arm of a ported def
+W-139	mixin/rand.bend	55	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:103	subject unported or a residual arm of a ported def
+W-140	mixin/rand.bend	60	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:500	subject unported or a residual arm of a ported def
+W-141	mixin/rand.bend	63	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:830	subject unported or a residual arm of a ported def
+W-142	mixin/rand.bend	67	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:270	subject unported or a residual arm of a ported def
+W-143	mixin/rand.bend	68	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:275	subject unported or a residual arm of a ported def
+W-144	mixin/rand.bend	72	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:296	subject unported or a residual arm of a ported def
+W-145	mixin/rand.bend	76	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-146	mixin/rand.bend	77	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:315	subject unported or a residual arm of a ported def
+W-147	mixin/rand.bend	78	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:319	subject unported or a residual arm of a ported def
+W-148	mixin/rand.bend	79	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:323	subject unported or a residual arm of a ported def
+W-149	mixin/rand.bend	80	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:327	subject unported or a residual arm of a ported def
+W-150	mixin/rand.bend	81	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:82	subject unported or a residual arm of a ported def
+W-151	mixin/rand.bend	82	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:249	subject unported or a residual arm of a ported def
+W-152	mixin/rand.bend	167	TODO(p3)	claim	STILL-A-WALL		mixin/movement.py:128	subject unported or a residual arm of a ported def
+W-153	mixin/rand.bend	230	TODO(delete)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-154	mixin/rand.bend	256	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:282	subject unported or a residual arm of a ported def
+W-155	mixin/rand.bend	307	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:752	subject unported or a residual arm of a ported def
+W-156	mixin/rand.bend	327	TODO(p3)	REFERENCE	PROSE-REFERENCE		mixin/op.py:193	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-157	mixin/rand.bend	328	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:191	subject unported or a residual arm of a ported def
+W-158	mixin/rand.bend	329	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:193	subject unported or a residual arm of a ported def
+W-159	mixin/rand.bend	330	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:187	subject unported or a residual arm of a ported def
+W-160	mixin/rand.bend	345	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:833	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-161	mixin/rand.bend	351	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:833	subject unported or a residual arm of a ported def
+W-162	mixin/rand.bend	455	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:21	subject unported or a residual arm of a ported def
+W-163	mixin/rand.bend	510	TODO(p3)	claim	UNVERIFIABLE		A-AMBIGUOUS(3)	bare basename resolves to A-AMBIGUOUS(3); needs a content probe
+W-164	mixin/rand.bend	512	TODO(p3)	claim	STILL-A-WALL		dtype.py:302	subject unported or a residual arm of a ported def
+W-165	mixin/rand.bend	626	TODO(p3)	claim	STILL-A-WALL		tensor.py:468	subject unported or a residual arm of a ported def
+W-166	mixin/rand.bend	629	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-167	mixin/rand.bend	672	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:82	subject unported or a residual arm of a ported def
+W-168	mixin/rand.bend	683	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:500	subject unported or a residual arm of a ported def
+W-169	mixin/rand.bend	690	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-170	mixin/rand.bend	691	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:830	subject unported or a residual arm of a ported def
+W-171	mixin/rand.bend	795	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:249	subject unported or a residual arm of a ported def
+W-172	mixin/rand.bend	806	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:270	subject unported or a residual arm of a ported def
+W-173	mixin/rand.bend	807	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:275	subject unported or a residual arm of a ported def
+W-174	mixin/rand.bend	824	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:296	subject unported or a residual arm of a ported def
+W-175	mixin/rand.bend	840	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:315	subject unported or a residual arm of a ported def
+W-176	mixin/rand.bend	841	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:319	subject unported or a residual arm of a ported def
+W-177	mixin/rand.bend	842	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:323	subject unported or a residual arm of a ported def
+W-178	mixin/rand.bend	843	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:327	subject unported or a residual arm of a ported def
+W-179	nn/__init__.bend	94	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-180	nn/__init__.bend	104	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-181	nn/__init__.bend	223	TODO(p3)	claim	STILL-A-WALL		mixin/rand.py:190	subject unported or a residual arm of a ported def
+W-182	nn/__init__.bend	227	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:1254	subject unported or a residual arm of a ported def
+W-183	nn/__init__.bend	229	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:1662	subject unported or a residual arm of a ported def
+W-184	nn/__init__.bend	230	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:1644	subject unported or a residual arm of a ported def
+W-185	nn/__init__.bend	231	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-186	nn/__init__.bend	232	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-187	nn/__init__.bend	233	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-188	nn/__init__.bend	235	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:166	subject unported or a residual arm of a ported def
+W-189	nn/__init__.bend	237	TODO(p3)	claim	STILL-A-WALL		mixin/reduce.py:20	subject unported or a residual arm of a ported def
+W-190	nn/__init__.bend	241	TODO(p3)	claim	STILL-A-WALL		mixin/elementwise.py:426	subject unported or a residual arm of a ported def
+W-191	nn/__init__.bend	242	TODO(p3)	claim	STILL-A-WALL		mixin/op.py:1971	subject unported or a residual arm of a ported def
+W-192	nn/__init__.bend	244	TODO(p3)	claim	STILL-A-WALL		nn/__init__.py:307	subject unported or a residual arm of a ported def
+W-193	nn/__init__.bend	251	TODO(p3)	claim	STILL-A-WALL		nn/__init__.py:369	subject unported or a residual arm of a ported def
+W-194	nn/__init__.bend	255	TODO(p3)	claim	STILL-A-WALL		nn/__init__.py:374	subject unported or a residual arm of a ported def
+W-195	nn/__init__.bend	258	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:1	subject unported or a residual arm of a ported def
+W-196	nn/__init__.bend	752	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-197	nn/__init__.bend	832	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-198	nn/datasets.bend	9	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-199	nn/datasets.bend	81	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:6	subject unported or a residual arm of a ported def
+W-200	nn/datasets.bend	82	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:11	subject unported or a residual arm of a ported def
+W-201	nn/datasets.bend	86	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:12	subject unported or a residual arm of a ported def
+W-202	nn/datasets.bend	93	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:7	subject unported or a residual arm of a ported def
+W-203	nn/datasets.bend	94	TODO(p3)	claim	STILL-A-WALL		nn/datasets.py:14	subject unported or a residual arm of a ported def
+W-204	nn/onnx.bend	65	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-205	nn/onnx.bend	95	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-206	nn/onnx.bend	1901	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-207	nn/onnx.bend	1905	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:73	subject unported or a residual arm of a ported def
+W-208	nn/onnx.bend	1909	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:121	subject unported or a residual arm of a ported def
+W-209	nn/onnx.bend	1912	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:361	subject unported or a residual arm of a ported def
+W-210	nn/onnx.bend	1914	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:367	subject unported or a residual arm of a ported def
+W-211	nn/onnx.bend	1918	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:475	subject unported or a residual arm of a ported def
+W-212	nn/onnx.bend	1921	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:543	subject unported or a residual arm of a ported def
+W-213	nn/onnx.bend	1924	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:601	subject unported or a residual arm of a ported def
+W-214	nn/onnx.bend	1925	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:606	subject unported or a residual arm of a ported def
+W-215	nn/onnx.bend	1928	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:622	subject unported or a residual arm of a ported def
+W-216	nn/onnx.bend	1931	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:643	subject unported or a residual arm of a ported def
+W-217	nn/onnx.bend	1933	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:647	subject unported or a residual arm of a ported def
+W-218	nn/onnx.bend	1937	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:679	subject unported or a residual arm of a ported def
+W-219	nn/onnx.bend	1939	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:724	subject unported or a residual arm of a ported def
+W-220	nn/onnx.bend	1942	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:896	subject unported or a residual arm of a ported def
+W-221	nn/onnx.bend	1945	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:963	subject unported or a residual arm of a ported def
+W-222	nn/onnx.bend	1947	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:969	subject unported or a residual arm of a ported def
+W-223	nn/onnx.bend	1949	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:982	subject unported or a residual arm of a ported def
+W-224	nn/onnx.bend	1952	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:1133	subject unported or a residual arm of a ported def
+W-225	nn/onnx.bend	1955	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:1211	subject unported or a residual arm of a ported def
+W-226	nn/onnx.bend	1958	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:1265	subject unported or a residual arm of a ported def
+W-227	nn/onnx.bend	1964	TODO(p3)	claim	STILL-A-WALL		nn/onnx.py:1305	subject unported or a residual arm of a ported def
+W-228	nn/optim.bend	581	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-229	nn/state.bend	100	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-230	nn/state.bend	497	TODO(p3)	claim	STILL-A-WALL		nn/state.py:8	subject unported or a residual arm of a ported def
+W-231	nn/state.bend	500	TODO(p3)	claim	STILL-A-WALL		nn/state.py:38	subject unported or a residual arm of a ported def
+W-232	nn/state.bend	503	TODO(p3)	claim	STILL-A-WALL		nn/state.py:44	subject unported or a residual arm of a ported def
+W-233	nn/state.bend	505	TODO(p3)	claim	STILL-A-WALL		nn/state.py:51	subject unported or a residual arm of a ported def
+W-234	nn/state.bend	507	TODO(p3)	claim	STILL-A-WALL		nn/state.py:64	subject unported or a residual arm of a ported def
+W-235	nn/state.bend	513	TODO(p3)	claim	STILL-A-WALL		nn/state.py:128	subject unported or a residual arm of a ported def
+W-236	nn/state.bend	518	TODO(p3)	claim	STILL-A-WALL		nn/state.py:168	subject unported or a residual arm of a ported def
+W-237	nn/state.bend	521	TODO(p3)	claim	STILL-A-WALL		nn/state.py:188	subject unported or a residual arm of a ported def
+W-238	nn/state.bend	523	TODO(p3)	claim	STILL-A-WALL		nn/state.py:207	subject unported or a residual arm of a ported def
+W-239	nn/state.bend	533	TODO(p3)	REFERENCE	PROSE-REFERENCE		nn/state.py:207	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-240	nn/torch.bend	57	TODO(p3)	claim	STILL-A-WALL		nn/torch.py:3	subject unported or a residual arm of a ported def
+W-241	nn/torch.bend	63	TODO(p3)	claim	STILL-A-WALL		nn/torch.py:3	subject unported or a residual arm of a ported def
+W-242	nn/torch.bend	69	TODO(p3)	claim	STILL-A-WALL		nn/torch.py:4	subject unported or a residual arm of a ported def
+W-243	renderer/__init__.bend	70	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1886	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-244	renderer/__init__.bend	173	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:513	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-245	renderer/__init__.bend	174	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1886	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-246	renderer/__init__.bend	232	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-247	renderer/__init__.bend	391	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/__init__.py:26	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-248	renderer/__init__.bend	395	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-249	renderer/__init__.bend	405	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/__init__.py:83	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-250	renderer/__init__.bend	410	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/__init__.py:77	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-251	renderer/__init__.bend	412	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/__init__.py:75	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-252	renderer/__init__.bend	415	TODO(p3)	claim	NEVER-WAS-A-WALL		renderer/__init__.py:11	the marker's own text says the work is done
+W-253	renderer/__init__.bend	416	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:26	subject unported or a residual arm of a ported def
+W-254	renderer/__init__.bend	417	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:75	subject unported or a residual arm of a ported def
+W-255	renderer/__init__.bend	418	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:77	subject unported or a residual arm of a ported def
+W-256	renderer/__init__.bend	419	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:81	subject unported or a residual arm of a ported def
+W-257	renderer/__init__.bend	420	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:83	subject unported or a residual arm of a ported def
+W-258	renderer/__init__.bend	421	TODO(p3)	claim	STILL-A-WALL		renderer/__init__.py:84	subject unported or a residual arm of a ported def
+W-259	renderer/amd/elf.bend	21	TODO(p3)	REFERENCE	PROSE-REFERENCE		mixin/movement.py:55	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-260	renderer/amd/elf.bend	45	TODO(p3)	claim	STILL-A-WALL		renderer/amd/elf.py:16	subject unported or a residual arm of a ported def
+W-261	renderer/amd/sqtt.bend	74	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/amd/sqtt.py:744	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-262	renderer/amd/sqtt.bend	78	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-263	renderer/amd/sqtt.bend	79	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/amd/sqtt.py:752	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-264	renderer/cstyle.bend	47	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-265	renderer/cstyle.bend	60	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1886	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-266	renderer/cstyle.bend	233	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-267	renderer/cstyle.bend	294	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-268	renderer/cstyle.bend	434	TODO(p3)	claim	STILL-A-WALL		renderer/cstyle.py:55	subject unported or a residual arm of a ported def
+W-269	renderer/cstyle.bend	1255	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-270	renderer/cstyle.bend	1266	TODO(p3)	claim	STILL-A-WALL		renderer/cstyle.py:112	subject unported or a residual arm of a ported def
+W-271	renderer/cstyle.bend	1300	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1886	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-272	renderer/cstyle.bend	1312	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1886	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-273	renderer/cstyle.bend	1316	TODO(p3)	claim	STILL-A-WALL		renderer/cstyle.py:157	subject unported or a residual arm of a ported def
+W-274	renderer/cstyle.bend	2047	TODO(p3)	claim	STILL-A-WALL		renderer/cstyle.py:448	subject unported or a residual arm of a ported def
+W-275	renderer/isa/x86.bend	66	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:752	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-276	renderer/isa/x86.bend	89	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:90	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-277	renderer/isa/x86.bend	91	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:148	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-278	renderer/isa/x86.bend	94	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:315	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-279	renderer/isa/x86.bend	100	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:458	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-280	renderer/isa/x86.bend	105	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:126	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-281	renderer/isa/x86.bend	110	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:129	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-282	renderer/isa/x86.bend	116	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:144	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-283	renderer/isa/x86.bend	120	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:162	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-284	renderer/isa/x86.bend	122	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:188	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-285	renderer/isa/x86.bend	136	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:191	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-286	renderer/isa/x86.bend	138	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:199	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-287	renderer/isa/x86.bend	142	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:210	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-288	renderer/isa/x86.bend	148	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:247	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-289	renderer/isa/x86.bend	150	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:267	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-290	renderer/isa/x86.bend	153	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:297	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-291	renderer/isa/x86.bend	155	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:689	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-292	renderer/isa/x86.bend	159	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:711	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-293	renderer/isa/x86.bend	161	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:717	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-294	renderer/isa/x86.bend	165	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:719	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-295	renderer/isa/x86.bend	168	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:752	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-296	renderer/isa/x86.bend	1562	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/isa/x86.py:752	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-297	renderer/nir.bend	38	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/nir.py:50	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-298	renderer/nir.bend	1637	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/autogen/mesa.py:989	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-299	renderer/nir.bend	1644	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/nir.py:121	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-300	renderer/nir.bend	1649	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/nir.py:169	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-301	renderer/nir.bend	1656	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/nir.py:69	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-302	renderer/nir.bend	1666	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/nir.py:312	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-303	renderer/ptx.bend	28	TODO(p3)	REFERENCE	PROSE-REFERENCE		renderer/ptx.py:42	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-304	renderer/tc.bend	58	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-305	renderer/tc_ptx.bend	24	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:145	subject unported or a residual arm of a ported def
+W-306	renderer/tc_ptx.bend	41	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:145	subject unported or a residual arm of a ported def
+W-307	renderer/tc_ptx.bend	187	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:13	subject unported or a residual arm of a ported def
+W-308	renderer/tc_ptx.bend	191	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:16	subject unported or a residual arm of a ported def
+W-309	renderer/tc_ptx.bend	396	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:42	subject unported or a residual arm of a ported def
+W-310	renderer/tc_ptx.bend	397	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:43	subject unported or a residual arm of a ported def
+W-311	renderer/tc_ptx.bend	398	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:44	subject unported or a residual arm of a ported def
+W-312	renderer/tc_ptx.bend	399	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:46	subject unported or a residual arm of a ported def
+W-313	renderer/tc_ptx.bend	400	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:49	subject unported or a residual arm of a ported def
+W-314	renderer/tc_ptx.bend	401	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:52	subject unported or a residual arm of a ported def
+W-315	renderer/tc_ptx.bend	402	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:55	subject unported or a residual arm of a ported def
+W-316	renderer/tc_ptx.bend	403	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:56	subject unported or a residual arm of a ported def
+W-317	renderer/tc_ptx.bend	535	TODO(p3)	claim	STILL-A-WALL		renderer/ptx.py:230	subject unported or a residual arm of a ported def
+W-318	renderer/wgsl.bend	13	TODO(p3)	claim	STILL-A-WALL		renderer/wgsl.py:7	subject unported or a residual arm of a ported def
+W-319	renderer/wgsl.bend	14	TODO(p3)	claim	STILL-A-WALL		renderer/wgsl.py:15	subject unported or a residual arm of a ported def
+W-320	renderer/wgsl.bend	15	TODO(p3)	claim	STILL-A-WALL		renderer/wgsl.py:23	subject unported or a residual arm of a ported def
+W-321	renderer/wgsl.bend	16	TODO(p3)	claim	STILL-A-WALL		renderer/wgsl.py:34	subject unported or a residual arm of a ported def
+W-322	renderer/wgsl.bend	17	TODO(p3)	claim	STILL-A-WALL		renderer/wgsl.py:41	subject unported or a residual arm of a ported def
+W-323	renderer/wgsl.bend	23	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-324	runtime/ops_amd.bend	166	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:596	subject unported or a residual arm of a ported def
+W-325	runtime/ops_amd.bend	167	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:613	subject unported or a residual arm of a ported def
+W-326	runtime/ops_amd.bend	168	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:631	subject unported or a residual arm of a ported def
+W-327	runtime/ops_amd.bend	169	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:665	subject unported or a residual arm of a ported def
+W-328	runtime/ops_amd.bend	170	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:685	subject unported or a residual arm of a ported def
+W-329	runtime/ops_amd.bend	171	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:702	subject unported or a residual arm of a ported def
+W-330	runtime/ops_amd.bend	179	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:740	subject unported or a residual arm of a ported def
+W-331	runtime/ops_amd.bend	180	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:753	subject unported or a residual arm of a ported def
+W-332	runtime/ops_amd.bend	181	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:772	subject unported or a residual arm of a ported def
+W-333	runtime/ops_amd.bend	182	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:731	subject unported or a residual arm of a ported def
+W-334	runtime/ops_amd.bend	186	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:812	subject unported or a residual arm of a ported def
+W-335	runtime/ops_amd.bend	187	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:822	subject unported or a residual arm of a ported def
+W-336	runtime/ops_amd.bend	188	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:824	subject unported or a residual arm of a ported def
+W-337	runtime/ops_amd.bend	197	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:842	subject unported or a residual arm of a ported def
+W-338	runtime/ops_amd.bend	198	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:843	subject unported or a residual arm of a ported def
+W-339	runtime/ops_amd.bend	199	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:889	subject unported or a residual arm of a ported def
+W-340	runtime/ops_amd.bend	200	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:890	subject unported or a residual arm of a ported def
+W-341	runtime/ops_amd.bend	201	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:891	subject unported or a residual arm of a ported def
+W-342	runtime/ops_amd.bend	208	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:706	subject unported or a residual arm of a ported def
+W-343	runtime/ops_amd.bend	209	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:714	subject unported or a residual arm of a ported def
+W-344	runtime/ops_amd.bend	210	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:715	subject unported or a residual arm of a ported def
+W-345	runtime/ops_amd.bend	223	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:544	subject unported or a residual arm of a ported def
+W-346	runtime/ops_amd.bend	231	TODO(p3)	claim	STILL-A-WALL		runtime/ops_amd.py:558	subject unported or a residual arm of a ported def
+W-347	runtime/ops_amd.bend	1257	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:66	subject unported or a residual arm of a ported def
+W-348	runtime/ops_bend.bend	105	TODO(p3)	claim	STILL-A-WALL		runtime/ops_bend.py:118	subject unported or a residual arm of a ported def
+W-349	runtime/ops_bend.bend	710	TODO(p3)	claim	STILL-A-WALL		runtime/ops_bend.py:180	subject unported or a residual arm of a ported def
+W-350	runtime/ops_cl.bend	146	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:80	subject unported or a residual arm of a ported def
+W-351	runtime/ops_cl.bend	147	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cuda.py:23	subject unported or a residual arm of a ported def
+W-352	runtime/ops_cl.bend	148	TODO(p3)	claim	STILL-A-WALL		runtime/ops_hip.py:71	subject unported or a residual arm of a ported def
+W-353	runtime/ops_cl.bend	159	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:75	subject unported or a residual arm of a ported def
+W-354	runtime/ops_cl.bend	160	TODO(p3)	claim	STILL-A-WALL		runtime/ops_hip.py:57	subject unported or a residual arm of a ported def
+W-355	runtime/ops_cl.bend	166	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:29	subject unported or a residual arm of a ported def
+W-356	runtime/ops_cl.bend	167	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:105	subject unported or a residual arm of a ported def
+W-357	runtime/ops_cl.bend	173	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:10	subject unported or a residual arm of a ported def
+W-358	runtime/ops_cl.bend	179	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cl.py:118	subject unported or a residual arm of a ported def
+W-359	runtime/ops_cl.bend	204	TODO(p3)	claim	STILL-A-WALL		runtime/ops_hip.py:10	subject unported or a residual arm of a ported def
+W-360	runtime/ops_cpu.bend	45	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cpu.py:62	subject unported or a residual arm of a ported def
+W-361	runtime/ops_cpu.bend	50	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cpu.py:21	subject unported or a residual arm of a ported def
+W-362	runtime/ops_cpu.bend	54	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cpu.py:70	subject unported or a residual arm of a ported def
+W-363	runtime/ops_cuda.bend	282	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cuda.py:98	subject unported or a residual arm of a ported def
+W-364	runtime/ops_disk.bend	112	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:86	subject unported or a residual arm of a ported def
+W-365	runtime/ops_disk.bend	121	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:57	subject unported or a residual arm of a ported def
+W-366	runtime/ops_disk.bend	122	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:58	subject unported or a residual arm of a ported def
+W-367	runtime/ops_disk.bend	123	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:60	subject unported or a residual arm of a ported def
+W-368	runtime/ops_disk.bend	129	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:35	subject unported or a residual arm of a ported def
+W-369	runtime/ops_disk.bend	1362	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:119	subject unported or a residual arm of a ported def
+W-370	runtime/ops_disk.bend	1363	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:122	subject unported or a residual arm of a ported def
+W-371	runtime/ops_disk.bend	1364	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:128	subject unported or a residual arm of a ported def
+W-372	runtime/ops_disk.bend	1365	TODO(p3)	claim	STILL-A-WALL		runtime/ops_disk.py:139	subject unported or a residual arm of a ported def
+W-373	runtime/ops_dsp.bend	95	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:118	subject unported or a residual arm of a ported def
+W-374	runtime/ops_dsp.bend	96	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:125	subject unported or a residual arm of a ported def
+W-375	runtime/ops_dsp.bend	104	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:81	subject unported or a residual arm of a ported def
+W-376	runtime/ops_dsp.bend	105	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:83	subject unported or a residual arm of a ported def
+W-377	runtime/ops_dsp.bend	106	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:132	subject unported or a residual arm of a ported def
+W-378	runtime/ops_dsp.bend	107	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:172	subject unported or a residual arm of a ported def
+W-379	runtime/ops_dsp.bend	115	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:199	subject unported or a residual arm of a ported def
+W-380	runtime/ops_dsp.bend	116	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:215	subject unported or a residual arm of a ported def
+W-381	runtime/ops_dsp.bend	117	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:218	subject unported or a residual arm of a ported def
+W-382	runtime/ops_dsp.bend	118	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:223	subject unported or a residual arm of a ported def
+W-383	runtime/ops_dsp.bend	119	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:227	subject unported or a residual arm of a ported def
+W-384	runtime/ops_dsp.bend	120	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:229	subject unported or a residual arm of a ported def
+W-385	runtime/ops_dsp.bend	121	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:233	subject unported or a residual arm of a ported def
+W-386	runtime/ops_dsp.bend	122	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:237	subject unported or a residual arm of a ported def
+W-387	runtime/ops_dsp.bend	129	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:71	subject unported or a residual arm of a ported def
+W-388	runtime/ops_dsp.bend	130	TODO(p3)	claim	STILL-A-WALL		runtime/ops_dsp.py:292	subject unported or a residual arm of a ported def
+W-389	runtime/ops_dsp.bend	668	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-390	runtime/ops_metal.bend	171	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:18	subject unported or a residual arm of a ported def
+W-391	runtime/ops_metal.bend	172	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:35	subject unported or a residual arm of a ported def
+W-392	runtime/ops_metal.bend	183	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:23	subject unported or a residual arm of a ported def
+W-393	runtime/ops_metal.bend	188	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:41	subject unported or a residual arm of a ported def
+W-394	runtime/ops_metal.bend	193	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:76	subject unported or a residual arm of a ported def
+W-395	runtime/ops_metal.bend	200	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:190	subject unported or a residual arm of a ported def
+W-396	runtime/ops_metal.bend	201	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:193	subject unported or a residual arm of a ported def
+W-397	runtime/ops_metal.bend	202	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:217	subject unported or a residual arm of a ported def
+W-398	runtime/ops_metal.bend	217	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:281	subject unported or a residual arm of a ported def
+W-399	runtime/ops_metal.bend	277	TODO(p1)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-400	runtime/ops_metal.bend	824	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:26	subject unported or a residual arm of a ported def
+W-401	runtime/ops_metal.bend	828	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:52	subject unported or a residual arm of a ported def
+W-402	runtime/ops_metal.bend	957	TODO(p3)	claim	STILL-A-WALL		runtime/ops_metal.py:68	subject unported or a residual arm of a ported def
+W-403	runtime/ops_npy.bend	87	TODO(p3)	claim	STILL-A-WALL		device.py:307	subject unported or a residual arm of a ported def
+W-404	runtime/ops_npy.bend	88	TODO(p3)	claim	STILL-A-WALL		helpers.py:573	subject unported or a residual arm of a ported def
+W-405	runtime/ops_npy.bend	92	TODO(p3)	claim	STILL-A-WALL		device.py:315	subject unported or a residual arm of a ported def
+W-406	runtime/ops_npy.bend	98	TODO(p3)	claim	STILL-A-WALL		device.py:328	subject unported or a residual arm of a ported def
+W-407	runtime/ops_nv.bend	64	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:353	subject unported or a residual arm of a ported def
+W-408	runtime/ops_nv.bend	68	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:385	subject unported or a residual arm of a ported def
+W-409	runtime/ops_nv.bend	71	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:403	subject unported or a residual arm of a ported def
+W-410	runtime/ops_nv.bend	75	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:434	subject unported or a residual arm of a ported def
+W-411	runtime/ops_nv.bend	76	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:447	subject unported or a residual arm of a ported def
+W-412	runtime/ops_nv.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:516	subject unported or a residual arm of a ported def
+W-413	runtime/ops_nv.bend	81	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:530	subject unported or a residual arm of a ported def
+W-414	runtime/ops_nv.bend	83	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:664	subject unported or a residual arm of a ported def
+W-415	runtime/ops_nv.bend	85	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:677	subject unported or a residual arm of a ported def
+W-416	runtime/ops_nv.bend	89	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:717	subject unported or a residual arm of a ported def
+W-417	runtime/ops_nv.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:750	subject unported or a residual arm of a ported def
+W-418	runtime/ops_nv.bend	95	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:24	subject unported or a residual arm of a ported def
+W-419	runtime/ops_nv.bend	96	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:50	subject unported or a residual arm of a ported def
+W-420	runtime/ops_nv.bend	106	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:101	subject unported or a residual arm of a ported def
+W-421	runtime/ops_python.bend	104	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:18	subject unported or a residual arm of a ported def
+W-422	runtime/ops_python.bend	105	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:30	subject unported or a residual arm of a ported def
+W-423	runtime/ops_python.bend	106	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:135	subject unported or a residual arm of a ported def
+W-424	runtime/ops_python.bend	111	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:33	subject unported or a residual arm of a ported def
+W-425	runtime/ops_python.bend	255	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:138	subject unported or a residual arm of a ported def
+W-426	runtime/ops_python.bend	2369	TODO(p3)	claim	STILL-A-WALL		runtime/ops_python.py:160	subject unported or a residual arm of a ported def
+W-427	runtime/ops_rdma.bend	132	TODO(p3)	claim	STILL-A-WALL		runtime/ops_rdma.py:56	subject unported or a residual arm of a ported def
+W-428	runtime/ops_rdma.bend	138	TODO(p3)	claim	STILL-A-WALL		runtime/ops_rdma.py:60	subject unported or a residual arm of a ported def
+W-429	runtime/ops_rdma.bend	139	TODO(p3)	claim	STILL-A-WALL		runtime/ops_rdma.py:22	subject unported or a residual arm of a ported def
+W-430	runtime/ops_rdma.bend	145	TODO(p3)	claim	STILL-A-WALL		runtime/ops_rdma.py:46	subject unported or a residual arm of a ported def
+W-431	runtime/ops_rdma.bend	151	TODO(p3)	claim	STILL-A-WALL		runtime/ops_rdma.py:140	subject unported or a residual arm of a ported def
+W-432	runtime/ops_webgpu.bend	8	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-433	runtime/ops_webgpu.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:13	subject unported or a residual arm of a ported def
+W-434	runtime/ops_webgpu.bend	80	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:14	subject unported or a residual arm of a ported def
+W-435	runtime/ops_webgpu.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:37	subject unported or a residual arm of a ported def
+W-436	runtime/ops_webgpu.bend	92	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:141	subject unported or a residual arm of a ported def
+W-437	runtime/ops_webgpu.bend	100	TODO(p3)	claim	STILL-A-WALL		runtime/ops_webgpu.py:204	subject unported or a residual arm of a ported def
+W-438	runtime/support/am/amdev.bend	2157	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:112	subject unported or a residual arm of a ported def
+W-439	runtime/support/am/amdev.bend	2161	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:377	subject unported or a residual arm of a ported def
+W-440	runtime/support/am/amdev.bend	2166	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:20	subject unported or a residual arm of a ported def
+W-441	runtime/support/am/amdev.bend	2174	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/amdev.py:73	subject unported or a residual arm of a ported def
+W-442	runtime/support/am/ip.bend	68	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-443	runtime/support/am/ip.bend	1803	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:411	subject unported or a residual arm of a ported def
+W-444	runtime/support/am/ip.bend	1804	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:367	subject unported or a residual arm of a ported def
+W-445	runtime/support/am/ip.bend	1810	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:260	subject unported or a residual arm of a ported def
+W-446	runtime/support/am/ip.bend	1811	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:389	subject unported or a residual arm of a ported def
+W-447	runtime/support/am/ip.bend	1812	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:646	subject unported or a residual arm of a ported def
+W-448	runtime/support/am/ip.bend	1817	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:177	subject unported or a residual arm of a ported def
+W-449	runtime/support/am/ip.bend	1818	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:230	subject unported or a residual arm of a ported def
+W-450	runtime/support/am/ip.bend	1825	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:250	subject unported or a residual arm of a ported def
+W-451	runtime/support/am/ip.bend	1826	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:228	subject unported or a residual arm of a ported def
+W-452	runtime/support/am/ip.bend	1833	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:113	subject unported or a residual arm of a ported def
+W-453	runtime/support/am/ip.bend	1834	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:219	subject unported or a residual arm of a ported def
+W-454	runtime/support/am/ip.bend	1840	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:278	subject unported or a residual arm of a ported def
+W-455	runtime/support/am/ip.bend	1841	TODO(p3)	claim	STILL-A-WALL		runtime/support/am/ip.py:331	subject unported or a residual arm of a ported def
+W-456	runtime/support/amd.bend	74	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:34	subject unported or a residual arm of a ported def
+W-457	runtime/support/amd.bend	75	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:36	subject unported or a residual arm of a ported def
+W-458	runtime/support/amd.bend	76	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:47	subject unported or a residual arm of a ported def
+W-459	runtime/support/amd.bend	82	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:47	subject unported or a residual arm of a ported def
+W-460	runtime/support/amd.bend	90	TODO(p3)	claim	STILL-A-WALL	regs	runtime/support/amd.py:20	subject unported or a residual arm of a ported def
+W-461	runtime/support/amd.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:21	subject unported or a residual arm of a ported def
+W-462	runtime/support/amd.bend	98	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:26	subject unported or a residual arm of a ported def
+W-463	runtime/support/amd.bend	99	TODO(p3)	claim	STILL-A-WALL		runtime/support/amd.py:37	subject unported or a residual arm of a ported def
+W-464	runtime/support/c.bend	70	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:68	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-465	runtime/support/c.bend	74	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:69	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-466	runtime/support/c.bend	160	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:12	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-467	runtime/support/c.bend	179	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:35	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-468	runtime/support/c.bend	398	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:69	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-469	runtime/support/c.bend	608	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:83	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-470	runtime/support/c.bend	776	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:90	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-471	runtime/support/c.bend	781	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:127	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-472	runtime/support/c.bend	813	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:20	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-473	runtime/support/c.bend	816	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:25	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-474	runtime/support/c.bend	818	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/c.py:32	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-475	runtime/support/c.bend	849	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-476	runtime/support/compiler_amd.bend	112	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:3	subject unported or a residual arm of a ported def
+W-477	runtime/support/compiler_amd.bend	113	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:36	subject unported or a residual arm of a ported def
+W-478	runtime/support/compiler_amd.bend	114	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:21	subject unported or a residual arm of a ported def
+W-479	runtime/support/compiler_amd.bend	121	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:93	subject unported or a residual arm of a ported def
+W-480	runtime/support/compiler_amd.bend	132	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:97	subject unported or a residual arm of a ported def
+W-481	runtime/support/compiler_amd.bend	136	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_amd.py:108	subject unported or a residual arm of a ported def
+W-482	runtime/support/compiler_cpu.bend	21	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:21	subject unported or a residual arm of a ported def
+W-483	runtime/support/compiler_cpu.bend	22	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:21	subject unported or a residual arm of a ported def
+W-484	runtime/support/compiler_cpu.bend	82	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:21	subject unported or a residual arm of a ported def
+W-485	runtime/support/compiler_cpu.bend	83	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:29	subject unported or a residual arm of a ported def
+W-486	runtime/support/compiler_cpu.bend	88	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:24	subject unported or a residual arm of a ported def
+W-487	runtime/support/compiler_cpu.bend	89	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:30	subject unported or a residual arm of a ported def
+W-488	runtime/support/compiler_cpu.bend	100	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cpu.py:21	subject unported or a residual arm of a ported def
+W-489	runtime/support/compiler_cpu.bend	108	TODO(p3)	claim	STILL-A-WALL		device.py:337	subject unported or a residual arm of a ported def
+W-490	runtime/support/compiler_cuda.bend	24	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:28	subject unported or a residual arm of a ported def
+W-491	runtime/support/compiler_cuda.bend	63	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:29	subject unported or a residual arm of a ported def
+W-492	runtime/support/compiler_cuda.bend	64	TODO(p3)	claim	STILL-A-WALL		helpers.py:41	subject unported or a residual arm of a ported def
+W-493	runtime/support/compiler_cuda.bend	75	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:7	subject unported or a residual arm of a ported def
+W-494	runtime/support/compiler_cuda.bend	109	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:4	subject unported or a residual arm of a ported def
+W-495	runtime/support/compiler_cuda.bend	110	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:52	subject unported or a residual arm of a ported def
+W-496	runtime/support/compiler_cuda.bend	111	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:57	subject unported or a residual arm of a ported def
+W-497	runtime/support/compiler_cuda.bend	112	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:93	subject unported or a residual arm of a ported def
+W-498	runtime/support/compiler_cuda.bend	115	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:28	subject unported or a residual arm of a ported def
+W-499	runtime/support/compiler_cuda.bend	124	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:40	subject unported or a residual arm of a ported def
+W-500	runtime/support/compiler_cuda.bend	125	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:41	subject unported or a residual arm of a ported def
+W-501	runtime/support/compiler_cuda.bend	132	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:41	subject unported or a residual arm of a ported def
+W-502	runtime/support/compiler_cuda.bend	133	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_cuda.py:71	subject unported or a residual arm of a ported def
+W-503	runtime/support/compiler_llvm.bend	35	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:24	subject unported or a residual arm of a ported def
+W-504	runtime/support/compiler_llvm.bend	47	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:36	subject unported or a residual arm of a ported def
+W-505	runtime/support/compiler_llvm.bend	80	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:4	subject unported or a residual arm of a ported def
+W-506	runtime/support/compiler_llvm.bend	81	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:15	subject unported or a residual arm of a ported def
+W-507	runtime/support/compiler_llvm.bend	82	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:52	subject unported or a residual arm of a ported def
+W-508	runtime/support/compiler_llvm.bend	83	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:62	subject unported or a residual arm of a ported def
+W-509	runtime/support/compiler_llvm.bend	93	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:6	subject unported or a residual arm of a ported def
+W-510	runtime/support/compiler_llvm.bend	94	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:9	subject unported or a residual arm of a ported def
+W-511	runtime/support/compiler_llvm.bend	98	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:76	subject unported or a residual arm of a ported def
+W-512	runtime/support/compiler_llvm.bend	99	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:88	subject unported or a residual arm of a ported def
+W-513	runtime/support/compiler_llvm.bend	105	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:36	subject unported or a residual arm of a ported def
+W-514	runtime/support/compiler_llvm.bend	106	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_llvm.py:51	subject unported or a residual arm of a ported def
+W-515	runtime/support/compiler_mesa.bend	73	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:1	subject unported or a residual arm of a ported def
+W-516	runtime/support/compiler_mesa.bend	74	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:10	subject unported or a residual arm of a ported def
+W-517	runtime/support/compiler_mesa.bend	75	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:16	subject unported or a residual arm of a ported def
+W-518	runtime/support/compiler_mesa.bend	76	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:23	subject unported or a residual arm of a ported def
+W-519	runtime/support/compiler_mesa.bend	77	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:59	subject unported or a residual arm of a ported def
+W-520	runtime/support/compiler_mesa.bend	78	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:68	subject unported or a residual arm of a ported def
+W-521	runtime/support/compiler_mesa.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:86	subject unported or a residual arm of a ported def
+W-522	runtime/support/compiler_mesa.bend	81	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:91	subject unported or a residual arm of a ported def
+W-523	runtime/support/compiler_mesa.bend	82	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:112	subject unported or a residual arm of a ported def
+W-524	runtime/support/compiler_mesa.bend	83	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:119	subject unported or a residual arm of a ported def
+W-525	runtime/support/compiler_mesa.bend	85	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:131	subject unported or a residual arm of a ported def
+W-526	runtime/support/compiler_mesa.bend	86	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:133	subject unported or a residual arm of a ported def
+W-527	runtime/support/compiler_mesa.bend	92	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:77	subject unported or a residual arm of a ported def
+W-528	runtime/support/compiler_mesa.bend	97	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:16	subject unported or a residual arm of a ported def
+W-529	runtime/support/compiler_mesa.bend	98	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:45	subject unported or a residual arm of a ported def
+W-530	runtime/support/compiler_mesa.bend	99	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:78	subject unported or a residual arm of a ported def
+W-531	runtime/support/compiler_mesa.bend	100	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_mesa.py:108	subject unported or a residual arm of a ported def
+W-532	runtime/support/compiler_mesa.bend	106	TODO(p3)	claim	STILL-A-WALL		helpers.py:526	subject unported or a residual arm of a ported def
+W-533	runtime/support/compiler_qcom.bend	56	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:6	subject unported or a residual arm of a ported def
+W-534	runtime/support/compiler_qcom.bend	57	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:17	subject unported or a residual arm of a ported def
+W-535	runtime/support/compiler_qcom.bend	58	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:18	subject unported or a residual arm of a ported def
+W-536	runtime/support/compiler_qcom.bend	60	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:36	subject unported or a residual arm of a ported def
+W-537	runtime/support/compiler_qcom.bend	61	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:42	subject unported or a residual arm of a ported def
+W-538	runtime/support/compiler_qcom.bend	70	TODO(p3)	claim	STILL-A-WALL		device.py:352	subject unported or a residual arm of a ported def
+W-539	runtime/support/compiler_qcom.bend	71	TODO(p3)	claim	STILL-A-WALL		device.py:353	subject unported or a residual arm of a ported def
+W-540	runtime/support/compiler_qcom.bend	72	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:35	subject unported or a residual arm of a ported def
+W-541	runtime/support/compiler_qcom.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:8	subject unported or a residual arm of a ported def
+W-542	runtime/support/compiler_qcom.bend	80	TODO(p3)	claim	STILL-A-WALL		runtime/support/compiler_qcom.py:46	subject unported or a residual arm of a ported def
+W-543	runtime/support/compileserver.bend	64	TODO(p3)	claim	STILL-A-WALL		runtime/support/compileserver.py:7	subject unported or a residual arm of a ported def
+W-544	runtime/support/compileserver.bend	65	TODO(p3)	claim	STILL-A-WALL		runtime/support/compileserver.py:8	subject unported or a residual arm of a ported def
+W-545	runtime/support/compileserver.bend	66	TODO(p3)	claim	STILL-A-WALL		runtime/support/compileserver.py:12	subject unported or a residual arm of a ported def
+W-546	runtime/support/compileserver.bend	67	TODO(p3)	claim	STILL-A-WALL		runtime/support/compileserver.py:13	subject unported or a residual arm of a ported def
+W-547	runtime/support/compileserver.bend	68	TODO(p3)	claim	STILL-A-WALL		device.py:352	subject unported or a residual arm of a ported def
+W-548	runtime/support/compileserver.bend	75	TODO(p3)	claim	STILL-A-WALL		runtime/support/compileserver.py:6	subject unported or a residual arm of a ported def
+W-549	runtime/support/hcq2.bend	90	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-550	runtime/support/hcq2.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:104	subject unported or a residual arm of a ported def
+W-551	runtime/support/hcq2.bend	92	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:114	subject unported or a residual arm of a ported def
+W-552	runtime/support/hcq2.bend	93	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:156	subject unported or a residual arm of a ported def
+W-553	runtime/support/hcq2.bend	94	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:337	subject unported or a residual arm of a ported def
+W-554	runtime/support/hcq2.bend	95	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:428	subject unported or a residual arm of a ported def
+W-555	runtime/support/hcq2.bend	96	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:468	subject unported or a residual arm of a ported def
+W-556	runtime/support/hcq2.bend	97	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:496	subject unported or a residual arm of a ported def
+W-557	runtime/support/hcq2.bend	98	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:523	subject unported or a residual arm of a ported def
+W-558	runtime/support/hcq2.bend	99	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:593	subject unported or a residual arm of a ported def
+W-559	runtime/support/hcq2.bend	129	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:81	subject unported or a residual arm of a ported def
+W-560	runtime/support/hcq2.bend	130	TODO(p3)	claim	STILL-A-WALL		runtime/support/hcq2.py:94	subject unported or a residual arm of a ported def
+W-561	runtime/support/hcq2.bend	137	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-562	runtime/support/nv/ip.bend	102	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:39	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-563	runtime/support/nv/ip.bend	103	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:43	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-564	runtime/support/nv/ip.bend	104	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:146	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-565	runtime/support/nv/ip.bend	105	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:147	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-566	runtime/support/nv/ip.bend	106	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:374	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-567	runtime/support/nv/ip.bend	107	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:394	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-568	runtime/support/nv/ip.bend	108	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:438	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-569	runtime/support/nv/ip.bend	109	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:530	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-570	runtime/support/nv/ip.bend	110	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:551	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-571	runtime/support/nv/ip.bend	111	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:582	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-572	runtime/support/nv/ip.bend	112	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:595	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-573	runtime/support/nv/ip.bend	113	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:597	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-574	runtime/support/nv/ip.bend	114	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:605	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-575	runtime/support/nv/ip.bend	115	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:612	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-576	runtime/support/nv/ip.bend	116	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:622	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-577	runtime/support/nv/ip.bend	117	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:626	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-578	runtime/support/nv/ip.bend	123	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:99	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-579	runtime/support/nv/ip.bend	124	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:111	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-580	runtime/support/nv/ip.bend	125	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:167	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-581	runtime/support/nv/ip.bend	126	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:199	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-582	runtime/support/nv/ip.bend	132	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:174	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-583	runtime/support/nv/ip.bend	133	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:303	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-584	runtime/support/nv/ip.bend	134	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:402	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-585	runtime/support/nv/ip.bend	135	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:429	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-586	runtime/support/nv/ip.bend	144	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:22	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-587	runtime/support/nv/ip.bend	145	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:52	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-588	runtime/support/nv/ip.bend	146	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:274	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-589	runtime/support/nv/ip.bend	147	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:640	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-590	runtime/support/nv/ip.bend	154	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:111	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-591	runtime/support/nv/ip.bend	155	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:123	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-592	runtime/support/nv/ip.bend	190	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:442	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-593	runtime/support/nv/ip.bend	191	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:605	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-594	runtime/support/nv/ip.bend	210	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:242	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-595	runtime/support/nv/ip.bend	211	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:253	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-596	runtime/support/nv/ip.bend	212	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:99	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-597	runtime/support/nv/ip.bend	1376	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:448	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-598	runtime/support/nv/ip.bend	1531	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/nv/ip.py:395	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-599	runtime/support/nv/nvdev.bend	10	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-600	runtime/support/nv/nvdev.bend	12	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:353	subject unported or a residual arm of a ported def
+W-601	runtime/support/nv/nvdev.bend	13	TODO(p3)	claim	STILL-A-WALL		runtime/ops_nv.py:385	subject unported or a residual arm of a ported def
+W-602	runtime/support/objc.bend	64	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:25	subject unported or a residual arm of a ported def
+W-603	runtime/support/objc.bend	65	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:30	subject unported or a residual arm of a ported def
+W-604	runtime/support/objc.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:13	subject unported or a residual arm of a ported def
+W-605	runtime/support/objc.bend	88	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:49	subject unported or a residual arm of a ported def
+W-606	runtime/support/objc.bend	89	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:71	subject unported or a residual arm of a ported def
+W-607	runtime/support/objc.bend	1060	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:25	subject unported or a residual arm of a ported def
+W-608	runtime/support/objc.bend	1061	TODO(p3)	claim	STILL-A-WALL		runtime/support/objc.py:30	subject unported or a residual arm of a ported def
+W-609	runtime/support/objc.bend	1062	TODO(p3)	claim	STILL-A-WALL		runtime/ops_cpu.py:19	subject unported or a residual arm of a ported def
+W-610	runtime/support/rdma/bnxtdev.bend	166	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:77	subject unported or a residual arm of a ported def
+W-611	runtime/support/rdma/bnxtdev.bend	167	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:87	subject unported or a residual arm of a ported def
+W-612	runtime/support/rdma/bnxtdev.bend	168	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:131	subject unported or a residual arm of a ported def
+W-613	runtime/support/rdma/bnxtdev.bend	169	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:149	subject unported or a residual arm of a ported def
+W-614	runtime/support/rdma/bnxtdev.bend	175	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:32	subject unported or a residual arm of a ported def
+W-615	runtime/support/rdma/bnxtdev.bend	179	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:45	subject unported or a residual arm of a ported def
+W-616	runtime/support/rdma/bnxtdev.bend	186	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:54	subject unported or a residual arm of a ported def
+W-617	runtime/support/rdma/bnxtdev.bend	187	TODO(p3)	claim	STILL-A-WALL		runtime/support/rdma/bnxtdev.py:157	subject unported or a residual arm of a ported def
+W-618	runtime/support/rdma/bnxtdev.bend	195	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/rdma/bnxtdev.py:95	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-619	runtime/support/system.bend	77	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:96	subject unported or a residual arm of a ported def
+W-620	runtime/support/system.bend	78	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:175	subject unported or a residual arm of a ported def
+W-621	runtime/support/system.bend	79	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:448	subject unported or a residual arm of a ported def
+W-622	runtime/support/system.bend	89	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:58	subject unported or a residual arm of a ported def
+W-623	runtime/support/system.bend	90	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:75	subject unported or a residual arm of a ported def
+W-624	runtime/support/system.bend	91	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:198	subject unported or a residual arm of a ported def
+W-625	runtime/support/system.bend	92	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:247	subject unported or a residual arm of a ported def
+W-626	runtime/support/system.bend	103	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:62	subject unported or a residual arm of a ported def
+W-627	runtime/support/system.bend	104	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:65	subject unported or a residual arm of a ported def
+W-628	runtime/support/system.bend	105	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:89	subject unported or a residual arm of a ported def
+W-629	runtime/support/system.bend	113	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:108	subject unported or a residual arm of a ported def
+W-630	runtime/support/system.bend	114	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:110	subject unported or a residual arm of a ported def
+W-631	runtime/support/system.bend	115	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:111	subject unported or a residual arm of a ported def
+W-632	runtime/support/system.bend	772	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:53	subject unported or a residual arm of a ported def
+W-633	runtime/support/system.bend	1607	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/support/system.py:208	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-634	runtime/support/system.bend	2266	TODO(p3)	claim	STILL-A-WALL		runtime/support/system.py:454	subject unported or a residual arm of a ported def
+W-635	runtime/support/usb.bend	42	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/ops_amd.py:812	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-636	runtime/support/usb.bend	43	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/ops_amd.py:824	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-637	runtime/support/usb.bend	682	TODO(p3)	claim	STILL-A-WALL		runtime/support/usb.py:107	subject unported or a residual arm of a ported def
+W-638	runtime/support/usb.bend	1317	TODO(p3)	claim	STILL-A-WALL		runtime/support/usb.py:16	subject unported or a residual arm of a ported def
+W-639	runtime/support/usb.bend	1318	TODO(p3)	claim	STILL-A-WALL		runtime/support/usb.py:102	subject unported or a residual arm of a ported def
+W-640	runtime/support/usb.bend	1319	TODO(p3)	claim	STILL-A-WALL		runtime/support/usb.py:129	subject unported or a residual arm of a ported def
+W-641	runtime/support/usb.bend	1320	TODO(p3)	claim	STILL-A-WALL		runtime/support/usb.py:133	subject unported or a residual arm of a ported def
+W-642	runtime/support/usb.bend	1755	TODO(p3)	REFERENCE	PROSE-REFERENCE		runtime/ops_amd.py:812	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-643	runtime/support/usb.bend	2325	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-644	runtime/support/usb.bend	2327	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-645	runtime/webgpu_call.bend	5	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-646	schedule/__init__.bend	13	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-647	schedule/__init__.bend	50	TODO(p3)	REFERENCE	PROSE-REFERENCE		schedule/__init__.py:29	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-648	schedule/__init__.bend	78	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:925	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-649	schedule/__init__.bend	111	TODO(p3)	claim	STILL-A-WALL		schedule/__init__.py:22	subject unported or a residual arm of a ported def
+W-650	schedule/__init__.bend	112	TODO(p3)	claim	STILL-A-WALL		schedule/__init__.py:29	subject unported or a residual arm of a ported def
+W-651	schedule/__init__.bend	113	TODO(p3)	claim	STILL-A-WALL		schedule/__init__.py:61	subject unported or a residual arm of a ported def
+W-652	schedule/__init__.bend	115	TODO(p3)	claim	STILL-A-WALL		schedule/__init__.py:79	subject unported or a residual arm of a ported def
+W-653	schedule/__init__.bend	119	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:925	subject unported or a residual arm of a ported def
+W-654	schedule/__init__.bend	120	TODO(p3)	claim	STILL-A-WALL		schedule/__init__.py:66	subject unported or a residual arm of a ported def
+W-655	schedule/allreduce.bend	8	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:680	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-656	schedule/allreduce.bend	688	TODO(p3)	REFERENCE	PROSE-REFERENCE		schedule/allreduce.py:68	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-657	schedule/multi.bend	7	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:614	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-658	schedule/multi.bend	16	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1104	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-659	schedule/multi.bend	547	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-660	schedule/multi.bend	2048	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-661	schedule/multi.bend	3428	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-662	schedule/multi.bend	3437	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:646	subject unported or a residual arm of a ported def
+W-663	schedule/multi.bend	3438	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:646	subject unported or a residual arm of a ported def
+W-664	schedule/multi.bend	3439	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:646	subject unported or a residual arm of a ported def
+W-665	schedule/multi.bend	3440	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:646	subject unported or a residual arm of a ported def
+W-666	schedule/multi.bend	3441	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:646	subject unported or a residual arm of a ported def
+W-667	schedule/multi.bend	3444	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:700	subject unported or a residual arm of a ported def
+W-668	schedule/multi.bend	3445	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:700	subject unported or a residual arm of a ported def
+W-669	schedule/multi.bend	3446	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:700	subject unported or a residual arm of a ported def
+W-670	schedule/multi.bend	3447	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:700	subject unported or a residual arm of a ported def
+W-671	schedule/multi.bend	3448	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:700	subject unported or a residual arm of a ported def
+W-672	schedule/multi.bend	3451	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-673	schedule/multi.bend	3452	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-674	schedule/multi.bend	3453	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-675	schedule/multi.bend	3454	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-676	schedule/multi.bend	3455	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-677	schedule/multi.bend	3456	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-678	schedule/multi.bend	3457	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-679	schedule/multi.bend	3458	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-680	schedule/multi.bend	3459	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-681	schedule/multi.bend	3460	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-682	schedule/multi.bend	3461	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-683	schedule/multi.bend	3462	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-684	schedule/multi.bend	3463	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-685	schedule/multi.bend	3464	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:723	subject unported or a residual arm of a ported def
+W-686	schedule/multi.bend	3467	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:612	subject unported or a residual arm of a ported def
+W-687	schedule/multi.bend	3468	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:612	subject unported or a residual arm of a ported def
+W-688	schedule/multi.bend	3469	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:617	subject unported or a residual arm of a ported def
+W-689	schedule/multi.bend	3470	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-690	schedule/multi.bend	3471	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:790	subject unported or a residual arm of a ported def
+W-691	schedule/multi.bend	3472	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:790	subject unported or a residual arm of a ported def
+W-692	schedule/multi.bend	3473	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:640	subject unported or a residual arm of a ported def
+W-693	schedule/multi.bend	3474	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:660	subject unported or a residual arm of a ported def
+W-694	schedule/multi.bend	3475	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:640	subject unported or a residual arm of a ported def
+W-695	schedule/multi.bend	3476	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:660	subject unported or a residual arm of a ported def
+W-696	schedule/multi.bend	3477	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:606	subject unported or a residual arm of a ported def
+W-697	schedule/multi.bend	3478	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:612	subject unported or a residual arm of a ported def
+W-698	schedule/multi.bend	3479	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:712	subject unported or a residual arm of a ported def
+W-699	schedule/multi.bend	3480	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:826	subject unported or a residual arm of a ported def
+W-700	schedule/multi.bend	3481	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:800	subject unported or a residual arm of a ported def
+W-701	schedule/multi.bend	3482	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:826	subject unported or a residual arm of a ported def
+W-702	schedule/multi.bend	3483	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-703	schedule/multi.bend	3484	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-704	schedule/multi.bend	3485	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:660	subject unported or a residual arm of a ported def
+W-705	schedule/multi.bend	3486	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:612	subject unported or a residual arm of a ported def
+W-706	schedule/multi.bend	3487	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:670	subject unported or a residual arm of a ported def
+W-707	schedule/multi.bend	3488	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:800	subject unported or a residual arm of a ported def
+W-708	schedule/multi.bend	3489	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-709	schedule/multi.bend	3490	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:680	subject unported or a residual arm of a ported def
+W-710	schedule/multi.bend	3491	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-711	schedule/multi.bend	3492	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-712	schedule/multi.bend	3493	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-713	schedule/multi.bend	3494	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-714	schedule/multi.bend	3495	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:600	subject unported or a residual arm of a ported def
+W-715	schedule/multi.bend	3501	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1104	subject unported or a residual arm of a ported def
+W-716	schedule/multi.bend	3506	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:520	subject unported or a residual arm of a ported def
+W-717	schedule/rangeify.bend	7	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-718	schedule/rangeify.bend	45	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-719	schedule/rangeify.bend	2642	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:784	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-720	schedule/rangeify.bend	2657	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:24	subject unported or a residual arm of a ported def
+W-721	schedule/rangeify.bend	2658	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:50	subject unported or a residual arm of a ported def
+W-722	schedule/rangeify.bend	2659	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:120	subject unported or a residual arm of a ported def
+W-723	schedule/rangeify.bend	2660	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:124	subject unported or a residual arm of a ported def
+W-724	schedule/rangeify.bend	2661	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:127	subject unported or a residual arm of a ported def
+W-725	schedule/rangeify.bend	2662	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:208	subject unported or a residual arm of a ported def
+W-726	schedule/rangeify.bend	2663	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:259	subject unported or a residual arm of a ported def
+W-727	schedule/rangeify.bend	2664	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:263	subject unported or a residual arm of a ported def
+W-728	schedule/rangeify.bend	2665	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:283	subject unported or a residual arm of a ported def
+W-729	schedule/rangeify.bend	2666	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:292	subject unported or a residual arm of a ported def
+W-730	schedule/rangeify.bend	2667	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:305	subject unported or a residual arm of a ported def
+W-731	schedule/rangeify.bend	2668	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:335	subject unported or a residual arm of a ported def
+W-732	schedule/rangeify.bend	2670	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:45	subject unported or a residual arm of a ported def
+W-733	schedule/rangeify.bend	2671	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:176	subject unported or a residual arm of a ported def
+W-734	schedule/rangeify.bend	2672	TODO(p3)	claim	STILL-A-WALL		schedule/rangeify.py:351	subject unported or a residual arm of a ported def
+W-735	schedule/rangeify.bend	2676	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:470	subject unported or a residual arm of a ported def
+W-736	schedule/rangeify.bend	2677	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:483	subject unported or a residual arm of a ported def
+W-737	schedule/rangeify.bend	2678	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:497	subject unported or a residual arm of a ported def
+W-738	schedule/rangeify.bend	2679	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:532	subject unported or a residual arm of a ported def
+W-739	schedule/rangeify.bend	2680	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:603	subject unported or a residual arm of a ported def
+W-740	schedule/rangeify.bend	2681	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:784	subject unported or a residual arm of a ported def
+W-741	schedule/rangeify.bend	2682	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:890	subject unported or a residual arm of a ported def
+W-742	schedule/rangeify.bend	2683	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:925	subject unported or a residual arm of a ported def
+W-743	schedule/rangeify.bend	2684	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1104	subject unported or a residual arm of a ported def
+W-744	schedule/rangeify.bend	2685	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1886	subject unported or a residual arm of a ported def
+W-745	schedule/rangeify.bend	2686	TODO(p3)	claim	STILL-A-WALL		schedule/indexing.py:57	subject unported or a residual arm of a ported def
+W-746	schedule/rangeify.bend	2687	TODO(p3)	claim	STILL-A-WALL		schedule/indexing.py:171	subject unported or a residual arm of a ported def
+W-747	schedule/rangeify.bend	2688	TODO(p3)	claim	STILL-A-WALL		schedule/indexing.py:190	subject unported or a residual arm of a ported def
+W-748	schedule/rangeify.bend	2689	TODO(p3)	claim	STILL-A-WALL		schedule/prepare.py:76	subject unported or a residual arm of a ported def
+W-749	schedule/rangeify.bend	2696	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:1339	subject unported or a residual arm of a ported def
+W-750	sz.bend	120	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-751	sz.bend	128	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-752	tensor.bend	14	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-753	tensor.bend	29	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:532	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-754	tensor.bend	83	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-755	tensor.bend	94	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-756	tensor.bend	295	TODO(p3)	claim	STILL-A-WALL		tensor.py:104	subject unported or a residual arm of a ported def
+W-757	tensor.bend	304	TODO(p3)	claim	STILL-A-WALL		tensor.py:122	subject unported or a residual arm of a ported def
+W-758	tensor.bend	308	TODO(p3)	claim	STILL-A-WALL		tensor.py:74	subject unported or a residual arm of a ported def
+W-759	tensor.bend	327	TODO(p3)	claim	STILL-A-WALL	cannot	tensor.py:136	subject unported or a residual arm of a ported def
+W-760	tensor.bend	447	TODO(p3)	claim	STILL-A-WALL		tensor.py:73	subject unported or a residual arm of a ported def
+W-761	tensor.bend	608	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:821	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-762	tensor.bend	625	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-763	tensor.bend	883	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-764	tensor.bend	888	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:616	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-765	tensor.bend	896	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-766	tensor.bend	907	TODO(p3)	claim	STILL-A-WALL		tensor.py:236	subject unported or a residual arm of a ported def
+W-767	tensor.bend	951	TODO(p3)	claim	STILL-A-WALL		tensor.py:490	subject unported or a residual arm of a ported def
+W-768	tensor.bend	984	TODO(p3)	claim	STILL-A-WALL		tensor.py:536	subject unported or a residual arm of a ported def
+W-769	tensor.bend	985	TODO(p3)	claim	STILL-A-WALL		tensor.py:537	subject unported or a residual arm of a ported def
+W-770	tensor.bend	986	TODO(p3)	claim	STILL-A-WALL		tensor.py:538	subject unported or a residual arm of a ported def
+W-771	tensor.bend	987	TODO(p3)	claim	STILL-A-WALL		tensor.py:539	subject unported or a residual arm of a ported def
+W-772	tensor.bend	988	TODO(p3)	claim	STILL-A-WALL		tensor.py:540	subject unported or a residual arm of a ported def
+W-773	tensor.bend	989	TODO(p3)	claim	STILL-A-WALL		tensor.py:541	subject unported or a residual arm of a ported def
+W-774	tensor.bend	990	TODO(p3)	claim	STILL-A-WALL		tensor.py:542	subject unported or a residual arm of a ported def
+W-775	tensor.bend	991	TODO(p3)	claim	STILL-A-WALL		tensor.py:543	subject unported or a residual arm of a ported def
+W-776	tensor.bend	992	TODO(p3)	claim	STILL-A-WALL		tensor.py:544	subject unported or a residual arm of a ported def
+W-777	tensor.bend	993	TODO(p3)	claim	STILL-A-WALL		tensor.py:545	subject unported or a residual arm of a ported def
+W-778	tensor.bend	994	TODO(p3)	claim	STILL-A-WALL		tensor.py:546	subject unported or a residual arm of a ported def
+W-779	tensor.bend	995	TODO(p3)	claim	STILL-A-WALL		tensor.py:547	subject unported or a residual arm of a ported def
+W-780	tensor.bend	996	TODO(p3)	claim	STILL-A-WALL		tensor.py:549	subject unported or a residual arm of a ported def
+W-781	tensor.bend	1001	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-782	tensor.bend	1023	TODO(p3)	claim	STILL-A-WALL		tensor.py:167	subject unported or a residual arm of a ported def
+W-783	tensor.bend	1031	TODO(p3)	claim	STILL-A-WALL		tensor.py:212	subject unported or a residual arm of a ported def
+W-784	tensor.bend	1036	TODO(p3)	claim	STILL-A-WALL		tensor.py:219	subject unported or a residual arm of a ported def
+W-785	tensor.bend	1047	TODO(p3)	claim	STILL-A-WALL		tensor.py:38	subject unported or a residual arm of a ported def
+W-786	tensor.bend	1048	TODO(p3)	claim	STILL-A-WALL		tensor.py:153	subject unported or a residual arm of a ported def
+W-787	tensor.bend	1049	TODO(p3)	claim	STILL-A-WALL		tensor.py:156	subject unported or a residual arm of a ported def
+W-788	tensor.bend	1050	TODO(p3)	claim	STILL-A-WALL		tensor.py:159	subject unported or a residual arm of a ported def
+W-789	tensor.bend	1051	TODO(p3)	claim	STILL-A-WALL		tensor.py:276	subject unported or a residual arm of a ported def
+W-790	tensor.bend	1052	TODO(p3)	claim	STILL-A-WALL		tensor.py:285	subject unported or a residual arm of a ported def
+W-791	tensor.bend	1053	TODO(p3)	claim	STILL-A-WALL		tensor.py:287	subject unported or a residual arm of a ported def
+W-792	tensor.bend	1054	TODO(p3)	claim	STILL-A-WALL		tensor.py:306	subject unported or a residual arm of a ported def
+W-793	tensor.bend	1057	TODO(p3)	claim	STILL-A-WALL		tensor.py:328	subject unported or a residual arm of a ported def
+W-794	tensor.bend	1058	TODO(p3)	claim	STILL-A-WALL		tensor.py:344	subject unported or a residual arm of a ported def
+W-795	tensor.bend	1062	TODO(p3)	claim	STILL-A-WALL		tensor.py:353	subject unported or a residual arm of a ported def
+W-796	tensor.bend	1064	TODO(p3)	claim	STILL-A-WALL		tensor.py:369	subject unported or a residual arm of a ported def
+W-797	tensor.bend	1065	TODO(p3)	claim	STILL-A-WALL		tensor.py:377	subject unported or a residual arm of a ported def
+W-798	tensor.bend	1067	TODO(p3)	claim	STILL-A-WALL		tensor.py:395	subject unported or a residual arm of a ported def
+W-799	tensor.bend	1068	TODO(p3)	claim	STILL-A-WALL		tensor.py:401	subject unported or a residual arm of a ported def
+W-800	tensor.bend	1069	TODO(p3)	claim	STILL-A-WALL		tensor.py:411	subject unported or a residual arm of a ported def
+W-801	tensor.bend	1070	TODO(p3)	claim	STILL-A-WALL		tensor.py:425	subject unported or a residual arm of a ported def
+W-802	tensor.bend	1071	TODO(p3)	claim	STILL-A-WALL		tensor.py:441	subject unported or a residual arm of a ported def
+W-803	tensor.bend	1072	TODO(p3)	claim	STILL-A-WALL		tensor.py:459	subject unported or a residual arm of a ported def
+W-804	tensor.bend	1073	TODO(p3)	claim	STILL-A-WALL		tensor.py:502	subject unported or a residual arm of a ported def
+W-805	tensor.bend	1076	TODO(p3)	claim	STILL-A-WALL		tensor.py:530	subject unported or a residual arm of a ported def
+W-806	tensor.bend	1077	TODO(p3)	claim	STILL-A-WALL		tensor.py:553	subject unported or a residual arm of a ported def
+W-807	tensor.bend	1086	TODO(p3)	claim	STILL-A-WALL		tensor.py:107	subject unported or a residual arm of a ported def
+W-808	tensor.bend	1089	TODO(p3)	claim	STILL-A-WALL		tensor.py:570	subject unported or a residual arm of a ported def
+W-809	tensor.bend	1090	TODO(p3)	claim	STILL-A-WALL	it	tensor.py:578	subject unported or a residual arm of a ported def
+W-810	tensor.bend	1091	TODO(p3)	claim	STILL-A-WALL		tensor.py:588	subject unported or a residual arm of a ported def
+W-811	uop/divandmod.bend	852	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:13	subject unported or a residual arm of a ported def
+W-812	uop/divandmod.bend	856	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:17	subject unported or a residual arm of a ported def
+W-813	uop/divandmod.bend	861	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:13	subject unported or a residual arm of a ported def
+W-814	uop/divandmod.bend	867	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:23	subject unported or a residual arm of a ported def
+W-815	uop/divandmod.bend	871	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:27	subject unported or a residual arm of a ported def
+W-816	uop/divandmod.bend	873	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:37	subject unported or a residual arm of a ported def
+W-817	uop/divandmod.bend	883	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:50	subject unported or a residual arm of a ported def
+W-818	uop/divandmod.bend	887	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:57	subject unported or a residual arm of a ported def
+W-819	uop/divandmod.bend	899	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:77	subject unported or a residual arm of a ported def
+W-820	uop/divandmod.bend	904	TODO(p3)	claim	STILL-A-WALL		uop/divandmod.py:11	subject unported or a residual arm of a ported def
+W-821	uop/fold.bend	6133	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-822	uop/fold.bend	6140	TODO(p3)	claim	UNVERIFIABLE	sym_infer	NO-REF	no upstream file:line in the marker's own text
+W-823	uop/fold.bend	6141	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:199	subject unported or a residual arm of a ported def
+W-824	uop/fold.bend	6144	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:218	subject unported or a residual arm of a ported def
+W-825	uop/fold.bend	6145	TODO(p3)	claim	STILL-A-WALL	dtype	uop/ops.py:246	subject unported or a residual arm of a ported def
+W-826	uop/fold.bend	6146	TODO(p3)	claim	STILL-A-WALL	key	uop/ops.py:267	subject unported or a residual arm of a ported def
+W-827	uop/fold.bend	6150	TODO(p3)	claim	STILL-A-WALL	backward_slice	uop/ops.py:278	subject unported or a residual arm of a ported def
+W-828	uop/fold.bend	6152	TODO(p3)	claim	STILL-A-WALL	_bool_slice	uop/ops.py:290	subject unported or a residual arm of a ported def
+W-829	uop/fold.bend	6155	TODO(p3)	claim	STILL-A-WALL	tuplize	uop/ops.py:322	subject unported or a residual arm of a ported def
+W-830	uop/fold.bend	6158	TODO(p3)	claim	STILL-A-WALL	_shape	uop/ops.py:329	subject unported or a residual arm of a ported def
+W-831	uop/fold.bend	6165	TODO(p3)	claim	STILL-A-WALL	shape	uop/ops.py:456	subject unported or a residual arm of a ported def
+W-832	uop/fold.bend	6169	TODO(p3)	claim	STILL-A-WALL	shard_shape	uop/ops.py:461	subject unported or a residual arm of a ported def
+W-833	uop/fold.bend	6171	TODO(p3)	claim	STILL-A-WALL	ended_ranges	uop/ops.py:470	subject unported or a residual arm of a ported def
+W-834	uop/fold.bend	6172	TODO(p3)	claim	STILL-A-WALL	_ranges	uop/ops.py:483	subject unported or a residual arm of a ported def
+W-835	uop/fold.bend	6180	TODO(p3)	claim	STILL-A-WALL	ranges	uop/ops.py:497	subject unported or a residual arm of a ported def
+W-836	uop/fold.bend	6183	TODO(p3)	claim	STILL-A-WALL	axis_id	uop/ops.py:502	subject unported or a residual arm of a ported def
+W-837	uop/fold.bend	6186	TODO(p3)	claim	STILL-A-WALL	axis_type	uop/ops.py:507	subject unported or a residual arm of a ported def
+W-838	uop/fold.bend	6187	TODO(p3)	claim	STILL-A-WALL	simplify	uop/ops.py:513	subject unported or a residual arm of a ported def
+W-839	uop/fold.bend	6191	TODO(p3)	claim	STILL-A-WALL	ssimplify	uop/ops.py:518	subject unported or a residual arm of a ported def
+W-840	uop/fold.bend	6197	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:520	subject unported or a residual arm of a ported def
+W-841	uop/fold.bend	6198	TODO(p3)	claim	STILL-A-WALL	trace_num	uop/ops.py:544	subject unported or a residual arm of a ported def
+W-842	uop/fold.bend	6201	TODO(p3)	claim	STILL-A-WALL	body	uop/ops.py:565	subject unported or a residual arm of a ported def
+W-843	uop/fold.bend	6209	TODO(p3)	claim	STILL-A-WALL	axis	uop/ops.py:718	subject unported or a residual arm of a ported def
+W-844	uop/fold.bend	6211	TODO(p3)	claim	STILL-A-WALL	base	uop/ops.py:785	subject unported or a residual arm of a ported def
+W-845	uop/fold.bend	6212	TODO(p3)	claim	STILL-A-WALL	unsharded_base	uop/ops.py:790	subject unported or a residual arm of a ported def
+W-846	uop/fold.bend	6214	TODO(p3)	claim	STILL-A-WALL	storage_base	uop/ops.py:801	subject unported or a residual arm of a ported def
+W-847	uop/fold.bend	6235	TODO(p3)	claim	STILL-A-WALL	device	uop/ops.py:890	subject unported or a residual arm of a ported def
+W-848	uop/fold.bend	6236	TODO(p3)	claim	STILL-A-WALL	is_virtual	uop/ops.py:905	subject unported or a residual arm of a ported def
+W-849	uop/fold.bend	6239	TODO(p3)	claim	STILL-A-WALL	addrspace	uop/ops.py:910	subject unported or a residual arm of a ported def
+W-850	uop/fold.bend	6240	TODO(p3)	claim	STILL-A-WALL	is_realized	uop/ops.py:1008	subject unported or a residual arm of a ported def
+W-851	uop/fold.bend	6242	TODO(p3)	claim	STILL-A-WALL	variable	uop/ops.py:1013	subject unported or a residual arm of a ported def
+W-852	uop/fold.bend	6245	TODO(p3)	claim	STILL-A-WALL	variables	uop/ops.py:1047	subject unported or a residual arm of a ported def
+W-853	uop/fold.bend	6247	TODO(p3)	claim	STILL-A-WALL	const_factor	uop/ops.py:1058	subject unported or a residual arm of a ported def
+W-854	uop/fold.bend	6347	TODO(p3)	claim	STILL-A-WALL	_sym_fxn	uop/ops.py:1166	subject unported or a residual arm of a ported def
+W-855	uop/fold.bend	6348	TODO(p3)	claim	STILL-A-WALL	alloc	uop/ops.py:1196	subject unported or a residual arm of a ported def
+W-856	uop/fold.bend	6350	TODO(p3)	claim	STILL-A-WALL	param	uop/ops.py:1227	subject unported or a residual arm of a ported def
+W-857	uop/fold.bend	6351	TODO(p3)	claim	STILL-A-WALL	__reduce__	uop/ops.py:1400	subject unported or a residual arm of a ported def
+W-858	uop/fold.bend	6353	TODO(p3)	claim	STILL-A-WALL	safe_exp2	uop/ops.py:1412	subject unported or a residual arm of a ported def
+W-859	uop/fold.bend	6355	TODO(p3)	claim	STILL-A-WALL	safe_pow	uop/ops.py:1412	subject unported or a residual arm of a ported def
+W-860	uop/fold.bend	6356	TODO(p3)	claim	STILL-A-WALL	exec_alu	uop/ops.py:1427	subject unported or a residual arm of a ported def
+W-861	uop/movement.bend	235	TODO(p3)	REFERENCE	PROSE-REFERENCE	index	uop/ops.py:581	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-862	uop/movement.bend	432	TODO(p3)	claim	STILL-A-WALL		uop/movement.py:7	subject unported or a residual arm of a ported def
+W-863	uop/ops.bend	2576	TODO(p3)	claim	STILL-A-WALL		dtype.py:297	subject unported or a residual arm of a ported def
+W-864	uop/ops.bend	2644	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-865	uop/ops.bend	2819	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-866	uop/ops.bend	2894	TODO(p3)	claim	UNVERIFIABLE		NO-REF	no upstream file:line in the marker's own text
+W-867	uop/ops.bend	2911	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-868	uop/ops.bend	4044	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:201	subject unported or a residual arm of a ported def
+W-869	uop/ops.bend	4214	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-870	uop/ops.bend	4247	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-871	uop/ops.bend	4249	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-872	uop/ops.bend	4293	TODO(p3)	claim	STILL-A-WALL	srender	uop/ops.py:74	subject unported or a residual arm of a ported def
+W-873	uop/ops.bend	4296	TODO(p3)	claim	STILL-A-WALL	sym_infer	uop/ops.py:93	subject unported or a residual arm of a ported def
+W-874	uop/ops.bend	4301	TODO(p3)	claim	STILL-A-WALL	__init__	uop/ops.py:219	subject unported or a residual arm of a ported def
+W-875	uop/ops.bend	4302	TODO(p3)	claim	STILL-A-WALL	__get__	uop/ops.py:224	subject unported or a residual arm of a ported def
+W-876	uop/ops.bend	4309	TODO(p3)	claim	STILL-A-WALL	__del__	uop/ops.py:248	subject unported or a residual arm of a ported def
+W-877	uop/ops.bend	4312	TODO(p3)	claim	STILL-A-WALL	__reduce__	uop/ops.py:251	subject unported or a residual arm of a ported def
+W-878	uop/ops.bend	4315	TODO(p3)	claim	STILL-A-WALL	key	uop/ops.py:269	subject unported or a residual arm of a ported def
+W-879	uop/ops.bend	4319	TODO(p3)	claim	STILL-A-WALL	_bool_slice	uop/ops.py:292	subject unported or a residual arm of a ported def
+W-880	uop/ops.bend	4320	TODO(p3)	claim	STILL-A-WALL	bool_slice	uop/ops.py:295	subject unported or a residual arm of a ported def
+W-881	uop/ops.bend	4325	TODO(p3)	claim	STILL-A-WALL	tuplize	uop/ops.py:324	subject unported or a residual arm of a ported def
+W-882	uop/ops.bend	4329	TODO(p3)	claim	STILL-A-WALL	shard_shape	uop/ops.py:459	subject unported or a residual arm of a ported def
+W-883	uop/ops.bend	4330	TODO(p3)	claim	STILL-A-WALL	max_shard_shape	uop/ops.py:465	subject unported or a residual arm of a ported def
+W-884	uop/ops.bend	4340	TODO(p3)	claim	STILL-A-WALL	ranges	uop/ops.py:495	subject unported or a residual arm of a ported def
+W-885	uop/ops.bend	4347	TODO(p3)	claim	STILL-A-WALL	simplify	uop/ops.py:511	subject unported or a residual arm of a ported def
+W-886	uop/ops.bend	4350	TODO(p3)	claim	STILL-A-WALL	ssimplify	uop/ops.py:92	subject unported or a residual arm of a ported def
+W-887	uop/ops.bend	4352	TODO(p3)	claim	STILL-A-WALL	_eval	uop/ops.py:521	subject unported or a residual arm of a ported def
+W-888	uop/ops.bend	4354	TODO(p3)	claim	STILL-A-WALL	__bool__	uop/ops.py:527	subject unported or a residual arm of a ported def
+W-889	uop/ops.bend	4356	TODO(p3)	claim	STILL-A-WALL	__int__	uop/ops.py:528	subject unported or a residual arm of a ported def
+W-890	uop/ops.bend	4358	TODO(p3)	claim	STILL-A-WALL	__float__	uop/ops.py:529	subject unported or a residual arm of a ported def
+W-891	uop/ops.bend	4360	TODO(p3)	claim	STILL-A-WALL	substitute	uop/ops.py:530	subject unported or a residual arm of a ported def
+W-892	uop/ops.bend	4362	TODO(p3)	claim	STILL-A-WALL	__index__	uop/ops.py:537	subject unported or a residual arm of a ported def
+W-893	uop/ops.bend	4365	TODO(p3)	claim	STILL-A-WALL	trace_num	uop/ops.py:542	subject unported or a residual arm of a ported def
+W-894	uop/ops.bend	4372	TODO(p3)	claim	STILL-A-WALL	__getitem__	uop/ops.py:582	subject unported or a residual arm of a ported def
+W-895	uop/ops.bend	4374	TODO(p3)	claim	STILL-A-WALL	_uop	uop/ops.py:597	subject unported or a residual arm of a ported def
+W-896	uop/ops.bend	4376	TODO(p3)	claim	STILL-A-WALL	_wrap_uop	uop/ops.py:599	subject unported or a residual arm of a ported def
+W-897	uop/ops.bend	4378	TODO(p3)	claim	STILL-A-WALL	const_like	uop/ops.py:600	subject unported or a residual arm of a ported def
+W-898	uop/ops.bend	4381	TODO(p3)	claim	STILL-A-WALL	ufix	uop/ops.py:609	subject unported or a residual arm of a ported def
+W-899	uop/ops.bend	4383	TODO(p3)	claim	STILL-A-WALL	store	uop/ops.py:616	subject unported or a residual arm of a ported def
+W-900	uop/ops.bend	4386	TODO(p3)	claim	STILL-A-WALL	ins	uop/ops.py:622	subject unported or a residual arm of a ported def
+W-901	uop/ops.bend	4388	TODO(p3)	claim	STILL-A-WALL	contract	uop/ops.py:623	subject unported or a residual arm of a ported def
+W-902	uop/ops.bend	4393	TODO(p3)	claim	STILL-A-WALL	cconst	uop/ops.py:640	subject unported or a residual arm of a ported def
+W-903	uop/ops.bend	4397	TODO(p3)	claim	STILL-A-WALL	wmma	uop/ops.py:649	subject unported or a residual arm of a ported def
+W-904	uop/ops.bend	4401	TODO(p3)	claim	STILL-A-WALL	invalid	uop/ops.py:663	subject unported or a residual arm of a ported def
+W-905	uop/ops.bend	4403	TODO(p3)	claim	STILL-A-WALL	valid	uop/ops.py:664	subject unported or a residual arm of a ported def
+W-906	uop/ops.bend	4405	TODO(p3)	claim	STILL-A-WALL	get_idx	uop/ops.py:665	subject unported or a residual arm of a ported def
+W-907	uop/ops.bend	4408	TODO(p3)	claim	STILL-A-WALL	reduce	uop/ops.py:674	subject unported or a residual arm of a ported def
+W-908	uop/ops.bend	4410	TODO(p3)	claim	STILL-A-WALL	overflows	uop/ops.py:680	subject unported or a residual arm of a ported def
+W-909	uop/ops.bend	4446	TODO(p3)	claim	STILL-A-WALL	unshard	uop/ops.py:689	subject unported or a residual arm of a ported def
+W-910	uop/ops.bend	4449	TODO(p3)	claim	STILL-A-WALL	bounds	uop/ops.py:709	subject unported or a residual arm of a ported def
+W-911	uop/ops.bend	4451	TODO(p3)	claim	STILL-A-WALL	axis	uop/ops.py:715	subject unported or a residual arm of a ported def
+W-912	uop/ops.bend	4453	TODO(p3)	claim	STILL-A-WALL	_shard	uop/ops.py:748	subject unported or a residual arm of a ported def
+W-913	uop/ops.bend	4455	TODO(p3)	claim	STILL-A-WALL	shard	uop/ops.py:754	subject unported or a residual arm of a ported def
+W-914	uop/ops.bend	4458	TODO(p3)	claim	STILL-A-WALL	store_call	uop/ops.py:766	subject unported or a residual arm of a ported def
+W-915	uop/ops.bend	4460	TODO(p3)	claim	STILL-A-WALL	on_disk	uop/ops.py:775	subject unported or a residual arm of a ported def
+W-916	uop/ops.bend	4463	TODO(p3)	claim	STILL-A-WALL	on_creation_device	uop/ops.py:776	subject unported or a residual arm of a ported def
+W-917	uop/ops.bend	4465	TODO(p3)	claim	STILL-A-WALL	needs_storage	uop/ops.py:777	subject unported or a residual arm of a ported def
+W-918	uop/ops.bend	4473	TODO(p3)	claim	STILL-A-WALL	new_buffer	uop/ops.py:850	subject unported or a residual arm of a ported def
+W-919	uop/ops.bend	4475	TODO(p3)	claim	STILL-A-WALL	from_buffer	uop/ops.py:857	subject unported or a residual arm of a ported def
+W-920	uop/ops.bend	4477	TODO(p3)	claim	STILL-A-WALL	empty_like	uop/ops.py:861	subject unported or a residual arm of a ported def
+W-921	uop/ops.bend	4479	TODO(p3)	claim	STILL-A-WALL	_frompy	uop/ops.py:867	subject unported or a residual arm of a ported def
+W-922	uop/ops.bend	4481	TODO(p3)	claim	STILL-A-WALL	clone	uop/ops.py:879	subject unported or a residual arm of a ported def
+W-923	uop/ops.bend	4484	TODO(p3)	claim	STILL-A-WALL	is_virtual	uop/ops.py:902	subject unported or a residual arm of a ported def
+W-924	uop/ops.bend	4487	TODO(p3)	claim	STILL-A-WALL	contiguous_view	uop/ops.py:931	subject unported or a residual arm of a ported def
+W-925	uop/ops.bend	4489	TODO(p3)	claim	STILL-A-WALL	contiguous_view_offset	uop/ops.py:952	subject unported or a residual arm of a ported def
+W-926	uop/ops.bend	4491	TODO(p3)	claim	STILL-A-WALL	_base_buffer_is_realized	uop/ops.py:961	subject unported or a residual arm of a ported def
+W-927	uop/ops.bend	4493	TODO(p3)	claim	STILL-A-WALL	_buffer_view	uop/ops.py:968	subject unported or a residual arm of a ported def
+W-928	uop/ops.bend	4495	TODO(p3)	claim	STILL-A-WALL	buffer	uop/ops.py:974	subject unported or a residual arm of a ported def
+W-929	uop/ops.bend	4497	TODO(p3)	claim	STILL-A-WALL	realized	uop/ops.py:999	subject unported or a residual arm of a ported def
+W-930	uop/ops.bend	4499	TODO(p3)	claim	STILL-A-WALL	is_realized	uop/ops.py:1010	subject unported or a residual arm of a ported def
+W-931	uop/ops.bend	4584	TODO(p3)	claim	STILL-A-WALL	const_factor	uop/ops.py:1060	subject unported or a residual arm of a ported def
+W-932	uop/ops.bend	4587	TODO(p3)	claim	STILL-A-WALL	divides	uop/ops.py:1069	subject unported or a residual arm of a ported def
+W-933	uop/ops.bend	4589	TODO(p3)	claim	STILL-A-WALL	pop_const	uop/ops.py:1082	subject unported or a residual arm of a ported def
+W-934	uop/ops.bend	4591	TODO(p3)	claim	STILL-A-WALL	gcd	uop/ops.py:1085	subject unported or a residual arm of a ported def
+W-935	uop/ops.bend	4593	TODO(p3)	claim	STILL-A-WALL	divide_exact	uop/ops.py:1091	subject unported or a residual arm of a ported def
+W-936	uop/ops.bend	4595	TODO(p3)	claim	STILL-A-WALL	vmin	uop/ops.py:1102	subject unported or a residual arm of a ported def
+W-937	uop/ops.bend	4597	TODO(p3)	claim	STILL-A-WALL	vmax	uop/ops.py:1104	subject unported or a residual arm of a ported def
+W-938	uop/ops.bend	4599	TODO(p3)	claim	STILL-A-WALL	_min_max	uop/ops.py:1106	subject unported or a residual arm of a ported def
+W-939	uop/ops.bend	4601	TODO(p3)	claim	STILL-A-WALL	_sym_fxn	uop/ops.py:1168	subject unported or a residual arm of a ported def
+W-940	uop/ops.bend	4603	TODO(p3)	claim	STILL-A-WALL	sym_infer	uop/ops.py:93	subject unported or a residual arm of a ported def
+W-941	uop/ops.bend	4605	TODO(p3)	claim	STILL-A-WALL	render	uop/ops.py:1183	subject unported or a residual arm of a ported def
+W-942	uop/ops.bend	4607	TODO(p3)	claim	STILL-A-WALL	pyrender	uop/ops.py:1191	subject unported or a residual arm of a ported def
+W-943	uop/ops.bend	4609	TODO(p3)	claim	STILL-A-WALL	alloc	uop/ops.py:1198	subject unported or a residual arm of a ported def
+W-944	uop/ops.bend	4611	TODO(p3)	claim	STILL-A-WALL	alloc_like	uop/ops.py:1203	subject unported or a residual arm of a ported def
+W-945	uop/ops.bend	4613	TODO(p3)	claim	STILL-A-WALL	placeholder	uop/ops.py:1206	subject unported or a residual arm of a ported def
+W-946	uop/ops.bend	4615	TODO(p3)	claim	STILL-A-WALL	placeholder_like	uop/ops.py:1219	subject unported or a residual arm of a ported def
+W-947	uop/ops.bend	4658	TODO(p3)	claim	STILL-A-WALL	param	uop/ops.py:1229	subject unported or a residual arm of a ported def
+W-948	uop/ops.bend	4660	TODO(p3)	claim	STILL-A-WALL	param_like	uop/ops.py:1241	subject unported or a residual arm of a ported def
+W-949	uop/ops.bend	4662	TODO(p3)	claim	STILL-A-WALL	view_as	uop/ops.py:1250	subject unported or a residual arm of a ported def
+W-950	uop/ops.bend	4674	TODO(p3)	claim	STILL-A-WALL	call	uop/ops.py:1261	subject unported or a residual arm of a ported def
+W-951	uop/ops.bend	4676	TODO(p3)	claim	STILL-A-WALL	call_with_outputs	uop/ops.py:1274	subject unported or a residual arm of a ported def
+W-952	uop/ops.bend	4678	TODO(p3)	claim	STILL-A-WALL	mint	uop/ops.py:1292	subject unported or a residual arm of a ported def
+W-953	uop/ops.bend	4680	TODO(p3)	claim	STILL-A-WALL	call_with_output	uop/ops.py:1312	subject unported or a residual arm of a ported def
+W-954	uop/ops.bend	4683	TODO(p3)	claim	STILL-A-WALL	custom_kernel	uop/ops.py:1313	subject unported or a residual arm of a ported def
+W-955	uop/ops.bend	4685	TODO(p3)	claim	STILL-A-WALL	to_elf	uop/ops.py:1318	subject unported or a residual arm of a ported def
+W-956	uop/ops.bend	4687	TODO(p3)	claim	STILL-A-WALL	uopfunc	uop/ops.py:1331	subject unported or a residual arm of a ported def
+W-957	uop/ops.bend	4689	TODO(p3)	claim	STILL-A-WALL	param	uop/ops.py:1229	subject unported or a residual arm of a ported def
+W-958	uop/ops.bend	4691	TODO(p3)	claim	STILL-A-WALL	outlined	uop/ops.py:1333	subject unported or a residual arm of a ported def
+W-959	uop/ops.bend	4693	TODO(p3)	claim	STILL-A-WALL	launch_dims	uop/ops.py:1361	subject unported or a residual arm of a ported def
+W-960	uop/ops.bend	5342	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-961	uop/ops.bend	6905	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-962	uop/ops.bend	7124	TODO(p3)	claim	STILL-A-WALL	const_factor	uop/ops.py:1060	subject unported or a residual arm of a ported def
+W-963	uop/ops.bend	7157	TODO(p3)	claim	STILL-A-WALL	divides	uop/ops.py:1069	subject unported or a residual arm of a ported def
+W-964	uop/ops.bend	7163	TODO(p3)	claim	STILL-A-WALL	gcd	uop/ops.py:1085	subject unported or a residual arm of a ported def
+W-965	uop/ops.bend	7168	TODO(p3)	claim	STILL-A-WALL	divide_exact	uop/ops.py:1091	subject unported or a residual arm of a ported def
+W-966	uop/render.bend	108	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-967	uop/render.bend	132	TODO(p3)	REFERENCE	PROSE-REFERENCE	in	uop/render.py:45	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-968	uop/render.bend	1831	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:497	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-969	uop/render.bend	1836	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1181	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-970	uop/render.bend	1837	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:513	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-971	uop/render.bend	1839	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:814	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-972	uop/render.bend	1870	TODO(p3)	claim	STILL-A-WALL	pretty_print	uop/render.py:6	subject unported or a residual arm of a ported def
+W-973	uop/render.bend	2039	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:562	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-974	uop/spec.bend	3076	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-975	uop/spec.bend	3080	TODO(p3)	claim	STILL-A-WALL	pyrender_globals	uop/spec.py:286	subject unported or a residual arm of a ported def
+W-976	uop/spec.bend	3084	TODO(p3)	claim	STILL-A-WALL	eval_pyrender	uop/spec.py:292	subject unported or a residual arm of a ported def
+W-977	uop/spec.bend	3088	TODO(p3)	claim	STILL-A-WALL	test_pyrender	uop/spec.py:296	subject unported or a residual arm of a ported def
+W-978	uop/spec.bend	3091	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:37	subject unported or a residual arm of a ported def
+W-979	uop/spec.bend	3095	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:26	subject unported or a residual arm of a ported def
+W-980	uop/spec.bend	3098	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:7	subject unported or a residual arm of a ported def
+W-981	uop/spec.bend	3107	TODO(p3)	claim	STILL-A-WALL	validate_index	uop/spec.py:11	subject unported or a residual arm of a ported def
+W-982	uop/spec.bend	3114	TODO(p3)	claim	STILL-A-WALL	valid_device_range	uop/spec.py:30	subject unported or a residual arm of a ported def
+W-983	uop/spec.bend	3118	TODO(p3)	claim	STILL-A-WALL	type_verify	uop/spec.py:35	subject unported or a residual arm of a ported def
+W-984	uop/spec.bend	3122	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:133	subject unported or a residual arm of a ported def
+W-985	uop/spec.bend	3129	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:57	subject unported or a residual arm of a ported def
+W-986	uop/spec.bend	3135	TODO(p3)	claim	STILL-A-WALL		uop/spec.py:148	subject unported or a residual arm of a ported def
+W-987	uop/symbolic.bend	19	TODO(p3)	claim	STILL-A-WALL		uop/ops.py:483	subject unported or a residual arm of a ported def
+W-988	uop/symbolic.bend	3005	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-989	uop/symbolic.bend	3048	TODO(p3)	claim	STILL-A-WALL	lt_folding	uop/symbolic.py:203	subject unported or a residual arm of a ported def
+W-990	uop/symbolic.bend	3052	TODO(p3)	claim	STILL-A-WALL	canonicalize_simplex	uop/symbolic.py:209	subject unported or a residual arm of a ported def
+W-991	uop/symbolic.bend	3054	TODO(p3)	claim	STILL-A-WALL	fold_where_closure	uop/symbolic.py:228	subject unported or a residual arm of a ported def
+W-992	uop/symbolic.bend	3058	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:236	subject unported or a residual arm of a ported def
+W-993	uop/symbolic.bend	3063	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:328	subject unported or a residual arm of a ported def
+W-994	uop/symbolic.bend	3068	TODO(p3)	claim	STILL-A-WALL	reduce_mul_chain	uop/symbolic.py:390	subject unported or a residual arm of a ported def
+W-995	uop/symbolic.bend	3070	TODO(p3)	claim	STILL-A-WALL	drop_and_clauses	uop/symbolic.py:400	subject unported or a residual arm of a ported def
+W-996	uop/symbolic.bend	3073	TODO(p3)	claim	STILL-A-WALL	gated_given_valid	uop/symbolic.py:427	subject unported or a residual arm of a ported def
+W-997	uop/symbolic.bend	3076	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:452	subject unported or a residual arm of a ported def
+W-998	uop/symbolic.bend	3082	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:454	subject unported or a residual arm of a ported def
+W-999	uop/symbolic.bend	3086	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:466	subject unported or a residual arm of a ported def
+W-1000	uop/symbolic.bend	3090	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:472	subject unported or a residual arm of a ported def
+W-1001	uop/symbolic.bend	3097	TODO(p3)	claim	STILL-A-WALL		uop/symbolic.py:306	subject unported or a residual arm of a ported def
+W-1002	uop/symbolic.bend	3101	TODO(p3)	claim	STILL-A-WALL	logical_not	mixin/elementwise.py:50	subject unported or a residual arm of a ported def
+W-1003	uop/symbolic.bend	3271	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1004	uop/upat.bend	1642	TODO(p3)	claim	STILL-A-WALL	upat_interpret	uop/ops.py:1590	subject unported or a residual arm of a ported def
+W-1005	uop/upat.bend	1646	TODO(p3)	claim	STILL-A-WALL	get_location	uop/ops.py:1459	subject unported or a residual arm of a ported def
+W-1006	uop/upat.bend	1648	TODO(p3)	claim	STILL-A-WALL		uop/upat.py:186	subject unported or a residual arm of a ported def
+W-1007	uop/validate.bend	1210	TODO(p3)	claim	STILL-A-WALL		uop/validate.py:99	subject unported or a residual arm of a ported def
+W-1008	uop/validate.bend	1215	TODO(p3)	claim	STILL-A-WALL		uop/validate.py:100	subject unported or a residual arm of a ported def
+W-1009	uop/weak.bend	745	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:40	subject unported or a residual arm of a ported def
+W-1010	uop/weak.bend	770	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:69	subject unported or a residual arm of a ported def
+W-1011	uop/weak.bend	772	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:73	subject unported or a residual arm of a ported def
+W-1012	uop/weak.bend	773	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:75	subject unported or a residual arm of a ported def
+W-1013	uop/weak.bend	774	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:77	subject unported or a residual arm of a ported def
+W-1014	uop/weak.bend	783	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:98	subject unported or a residual arm of a ported def
+W-1015	uop/weak.bend	806	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/weak.py:40	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1016	uop/weak.bend	1398	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:1104	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1017	uop/weak.bend	1442	TODO(p3)	claim	STILL-A-WALL	cast_weak_srcs	uop/weak.py:27	subject unported or a residual arm of a ported def
+W-1018	uop/weak.bend	1447	TODO(p3)	claim	STILL-A-WALL	absorb_weak_src	uop/weak.py:48	subject unported or a residual arm of a ported def
+W-1019	uop/weak.bend	1449	TODO(p3)	claim	STILL-A-WALL	lower_weak_node	uop/weak.py:53	subject unported or a residual arm of a ported def
+W-1020	uop/weak.bend	1453	TODO(p3)	claim	STILL-A-WALL	cast_consts	uop/weak.py:92	subject unported or a residual arm of a ported def
+W-1021	uop/weak.bend	1456	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:69	subject unported or a residual arm of a ported def
+W-1022	uop/weak.bend	1460	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:73	subject unported or a residual arm of a ported def
+W-1023	uop/weak.bend	1461	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:75	subject unported or a residual arm of a ported def
+W-1024	uop/weak.bend	1462	TODO(p3)	claim	STILL-A-WALL		uop/weak.py:98	subject unported or a residual arm of a ported def
+W-1025	viz/serve.bend	67	TODO(p3)	REFERENCE	PROSE-REFERENCE		NO-REF	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1026	viz/serve.bend	69	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:544	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1027	viz/serve.bend	74	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:76	the tag appears MID-LINE; it cites a marker recorded elsewhere
+W-1028	viz/serve.bend	547	TODO(p3)	REFERENCE	PROSE-REFERENCE		uop/ops.py:76	the tag appears MID-LINE; it cites a marker recorded elsewhere

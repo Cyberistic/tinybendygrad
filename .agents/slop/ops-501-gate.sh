@@ -35,7 +35,7 @@
 set -e
 cd "$(dirname "$0")/../.."
 
-F=.agents/slop/oracles/ops501
+F=oracles/ops501
 P=${OPS501_PORT:-tinybendygrad/uop/ops.bend}
 
 # ⚠ THE DIAGNOSTICS ARE ON STDERR. Measured: `--check-only` on a file that does not

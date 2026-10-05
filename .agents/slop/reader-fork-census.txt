@@ -187,7 +187,7 @@ NOT ROW READERS (309) -- excluded from the drift denominator, listed so the
     NOT-COMPARABLE   .agents/slop/nv_ip_diff.py:32  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/nv_mutate.py:50  rows(?)  def-time NameError: name 'SRC' is not defined
     NOT-COMPARABLE   .agents/slop/ops-python-render-oracle.py:45  row(?)  def-time ImportError: reader-fork-census sandbox: 'traceback' not allowed
-    NOT-COMPARABLE   .agents/slop/oracles/fold-mut.py:136  rows_of(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
+    NOT-COMPARABLE   oracles/fold-mut.py:136  rows_of(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prep-mutate.py:17  rows(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prep-mutate.py:42  rows_txt(?)  def-time ImportError: reader-fork-census sandbox: 'tempfile' not allowed
     NOT-COMPARABLE   .agents/slop/prepare-oracle.py:66  row(?)  def-time NameError: name 'I32' is not defined
@@ -335,9 +335,9 @@ NOT ROW READERS (309) -- excluded from the drift denominator, listed so the
     not-single-arg   .agents/slop/ops-vrn-oracle.py:59  row(nm, name, lo, hi, mult, dt)  ARITY row() missing 5 required positional arguments: 'name', 'lo', 'hi', 'mult', and 'dt
     not-single-arg   .agents/slop/ops-vv-oracle.py:60  row(nm, got)  ARITY row() missing 1 required positional argument: 'got'
     not-single-arg   .agents/slop/oracle-search.py:41  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
-    not-single-arg   .agents/slop/oracles/fold-mvt-oracle.py:57  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
-    not-single-arg   .agents/slop/oracles/fold-mvt-rows.py:62  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
-    not-single-arg   .agents/slop/oracles/fold-rng-oracle.py:41  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
+    not-single-arg   oracles/fold-mvt-oracle.py:57  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
+    not-single-arg   oracles/fold-mvt-rows.py:62  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
+    not-single-arg   oracles/fold-rng-oracle.py:41  row(tag, u)  ARITY row() missing 1 required positional argument: 'u'
     not-single-arg   .agents/slop/order-verdicts.py:102  row_source(oracle_py: pathlib.Path, name: str)  ARITY row_source() missing 1 required positional argument: 'name'
     not-single-arg   .agents/slop/qcom-oracle.py:48  row(name, value)  ARITY row() missing 1 required positional argument: 'value'
     not-single-arg   .agents/slop/sqtt_spec.py:45  row(name, val)  ARITY row() missing 1 required positional argument: 'val'

@@ -288,7 +288,7 @@ containing an `ADD` whose two children are **distinguishable nodes** (e.g.
 defect has somewhere to land. Expected value: call
 `tinygrad/codegen/linearizer.py` on that graph and read the `ins` stream.
 
-**NOT LANDED** — `codegen/late/*.bend` is another unit's and `late-oracle.txt`
+**NOT LANDED** — `codegen/late/*.bend` is another unit's and `oracles/late-oracle.txt`
 is a byte-diff whose row order is documented as exact, per agent-core's own
 caution about adding rows to it.
 
@@ -388,7 +388,7 @@ unit:
 |---|---|
 | **`codegen/__init__.bend`** (owner: whoever holds it NOW) | D1. Drop `O.PMEntry{0, [O.OpsSINK{}], Nil{}}` — upstream's table has no SINK rule. Then fix the arena wall. Then fix the :48-50 comment. Wire `gr.sink_srcs` from `.agents/slop/unobservable-gr-probe.bend`. Do **not** simply restore `rebuilt`: measured, that moves the row to `-`, away from CPython. |
 | **`runtime/support/c.bend`** (owner: `c-oracle.py`'s) | D2. One line: make `sname_ctor_idx_given` a call. |
-| **`codegen/late/{linearizer,regalloc,gater}.bend`** (owner: `late-gate.sh`/`late-oracle.txt`'s) | D4, D5. `ra0_uops`/`ra1_uops`/`gt_ops4..5`. |
+| **`codegen/late/{linearizer,regalloc,gater}.bend`** (owner: `late-gate.sh`/`oracles/late-oracle.txt`'s) | D4, D5. `ra0_uops`/`ra1_uops`/`gt_ops4..5`. |
 | **`renderer/cstyle.bend`** | D7 is closed by `field_offsets`. **This file was mid-edit by another agent during this run and is currently unparseable at line 590 — reported, not fixed.** |
 | **`runtime/ops_bend`** | §5: 98 sibling_blind transpositions, unclassified. |
 | **`codegen/decomp/dtype.bend`, `renderer/tc_ptx.bend`, `runtime/ops_dsp.bend`** | §5: 10360 order-weak rows, unclassified. |

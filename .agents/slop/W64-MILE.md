@@ -300,7 +300,7 @@ alone, and it is the next thing to measure.
 - **WHY IT DID NOT RUN IN PLACE, and the hazard it hid.** For a large part of this
   session `tinybendygrad/helpers.bend` was **0 bytes** in the working copy — another
   agent had emptied it, and `jj status` inferred a rename
-  `{tinybendygrad/helpers.bend => .agents/slop/nested/baseline-probe.err}` between two
+  `{tinybendygrad/helpers.bend => oracles/nested/baseline-probe.err}` between two
   empty files. Every `.bend` in the tree could not be checked in place, so the work ran
   on a `$TMPDIR` copy with `helpers.bend` restored from `HEAD`. It was back at
   116,479 bytes (HEAD is 116,482) by the end, so **the hazard was a live agent's and

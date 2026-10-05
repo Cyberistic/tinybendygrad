@@ -333,4 +333,4 @@ bl_dt_w65_unsigned lo=NInf hi=PInf
 bl_dt_w127_signed lo=NInf hi=PInf
 bl_dt_w800_signed lo=NInf hi=PInf
 bend 2.0.35 is available: run bend update
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=674 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/uop/fold.bend
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=794 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/uop/fold.bend

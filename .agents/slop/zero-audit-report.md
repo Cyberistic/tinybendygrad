@@ -234,7 +234,7 @@ that admits its age.**
 |---|---|---|
 | `dd-mutations.frozen.bend` / `dd-mutations.txt` / `dd-mutations.txt.tsv` | target **`e4618a7127ce`**, tree **`e17d3f7dd48c`** | **NO.** live `dtype.bend` is **`cdd85227d359`** |
 | `dd-gate-base-182.txt` | target `e4618a71` + tree `e17d3f7dd48c` | reproduces **byte-identically** (`sha1 78c79061a587…`, 182 rows, 184 lines) — re-verified today |
-| `dd-oracle.txt` | CPython's tree as of 2026-10-03 22:41 | re-run today → `sha1 8f80df08413a…`, **byte-identical** |
+| `oracles/dd-oracle.txt` | CPython's tree as of 2026-10-03 22:41 | re-run today → `sha1 8f80df08413a…`, **byte-identical** |
 | `dd-mutations-classified.txt` | the **old** 172-row table, snapshot `73b0e1e7` | **superseded.** Its `M09 SAME / REQUEST` is the misdiagnosis this unit exists to correct |
 | `dd-mutations-proofs.tsv` | snapshot `73b0e1e7` | **all five re-proved on `e4618a71` today** → `.agents/slop/dd-zero-verdicts.tsv` |
 | `zero-selftest.py` CASE 2 | snapshot **`73b0e1e7`** deliberately | live by design — it is the DEFECTIVE snapshot |

@@ -60,7 +60,7 @@ assuming one, and refuses to measure at all if no candidate can import `tinygrad
 
 The sweep did finish — one pass, all 50 targets. NOT-STARTED splits as **34 "no baseline
 recorded" + 12 "no oracle wired"**. There are **zero UNCHANGED and zero RE-PORTED** because
-`rebase/baseline.json` (mtime Oct 2 18:42) predates the oracle widening to 38; every wired
+`oracles/rebase/baseline.json` (mtime Oct 2 18:42) predates the oracle widening to 38; every wired
 port has lanes that ran and agreed but no baseline to move against.
 
 ### Every BROKEN port, with its reason
@@ -371,7 +371,7 @@ which my census prints so a lane that changes shape cannot hide.
 | rebase-gate / 12 ports | NOT-STARTED, no oracle | author a CPython oracle | yes — the structural gap |
 
 **The one that matters most:** 34 wired ports run their lanes, agree, and report
-NOT-STARTED purely because `rebase/baseline.json` predates the widening to 38 oracles. Until
+NOT-STARTED purely because `oracles/rebase/baseline.json` predates the widening to 38 oracles. Until
 `--record` runs on a tree known green, **`rebase-gate.py` cannot say UNCHANGED or RE-PORTED
 about anything**, so its headline capability is untested on the real tree. `--record` is
 explicitly the wrong tool on a tree this red: it would freeze today's state as the baseline.

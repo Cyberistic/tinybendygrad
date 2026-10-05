@@ -598,7 +598,7 @@ Reproduce both tables with `.agents/slop/drift-cstyle-head.py`.
   -> EXIT 0
 ```
 
-It was written to a probe path, not to `rebase/baseline.json`, so the recorded baseline was
+It was written to a probe path, not to `oracles/rebase/baseline.json`, so the recorded baseline was
 not touched. **Nothing mechanical blocks it.** What blocks adopting the result is that
 `--record` faithfully records what the oracles currently emit, and right now:
 

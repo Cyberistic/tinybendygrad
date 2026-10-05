@@ -38,7 +38,7 @@ census is printed anyway because a rename with an unmeasured citation list is ho
 un-gates a lane, and the two cases are indistinguishable from the outside.
 
 **The one citation that needed checking rather than listing** is
-`.agents/slop/rebase/baseline.json`, because `rebase-gate.py`'s GUARD 1 is an ABSOLUTE row count.
+`oracles/rebase/baseline.json`, because `rebase-gate.py`'s GUARD 1 is an ABSOLUTE row count.
 It stores 3 occurrences of each name, and `rows()`'s key set is **939 before and 939 after**, so
 GUARD 1 is satisfied by the fix rather than tripped by it.  Measured, not assumed: the gate line
 below reads `shared names: 939 of 940 port / 939 oracle`.

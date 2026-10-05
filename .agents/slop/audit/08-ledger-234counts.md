@@ -59,7 +59,7 @@ def qualified(lineno, lines):
 ```
 
 The load test **needs a line number**. And the claim the guard reports for
-`amdev-baseline-552.txt` is `(unidentified capture): ?=552` — the number is
+`oracles/amdev-baseline-552.txt` is `(unidentified capture): ?=552` — the number is
 derived from the **filename**, so the claim has no line to anchor a window to. A
 load token anywhere in that 700-line file cannot be near a claim that has no
 position.

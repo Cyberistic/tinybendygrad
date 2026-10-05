@@ -96,7 +96,7 @@ def main():
     # each amount, the runtime route and the literal route are two independent
     # evaluations of `i64_shl`, so if they ever differed the table itself would be
     # suspect. Keyed on the VALUE, not on the row, so a drift is caught.
-    signed_out, zero_out = [], []
+    out_signed, in_signed, zero_out = [], [], []
     by_amount = {}
     for name, hi, lo in VALUES:
         x = signed(hi, lo)
@@ -115,32 +115,62 @@ def main():
                     assert by_amount[key] == got, f"{name}@{amt}: the two routes disagree"
                 by_amount[key] = got
                 exact = x << amt
-                # THE THREE BOUNDARIES, asserted on this row's own numbers.
-                if amt <= 62:
-                    assert got != "0:0", f"{name}@{amt}: in range, yet the pair is zero"
-                    assert unpair(got) == exact, f"{name}@{amt}: {unpair(got)} != {exact}"
-                elif amt == 63:
-                    if unpair(got) != exact:
-                        signed_out.append(f"{name}:{amt}")
-                        assert not (SIGN_MIN <= exact <= SIGN_MAX), (
-                            f"{name}@{amt}: {unpair(got)} != {exact} yet the exact answer "
-                            "FITS signed, so the pair lost it")
-                    assert unpair_u(got) == exact & M64, (
-                        f"{name}@{amt}: the pair must HOLD the k=63 answer unsigned")
-                else:
-                    zero_out.append(f"{name}:{amt}")
-                    assert got == "0:0" and exact != 0, f"{name}@{amt}: should be 0:0"
 
-    # THE UNIVERSE CHECK, and it is the whole point of the fixture set: the `k = 63`
-    # boundary must be crossed in BOTH directions, or the boundary is not a boundary.
-    assert "one:63" in signed_out, f"one@63 was expected past signed range, got {signed_out}"
-    assert "neg1:63" not in signed_out, f"neg1@63 must fit signed, got {signed_out}"
-    assert "lowhi:31" in signed_out, f"lowhi@31 was expected past signed, got {signed_out}"
-    # and the k >= 64 rows must not all be one value's worth of evidence
-    assert len({n.split(":")[0] for n in zero_out}) == 3, f"k>=64 only hit {zero_out}"
-    # EVERY amount must be reachable on the runtime route, or the runtime rows are a
-    # subset of the literal ones and the claim is untested
+                # THE CLAIM, AS ONE PREDICATE, WHICH IS ALL OF THE WALL:
+                #   `i64_shl` answers `x << k` EXACTLY iff `x << k` fits a SIGNED 64-bit
+                #   word, and the boundary is therefore `k + bit_length(x)`, NOT a
+                #   constant amount. `helpers.bend:1819` returns a SIGNED pair, so the
+                #   pair's range is [-2**63, 2**63-1].
+                #
+                #   * in signed range  -> the pair reads back as `x << k`, equal decimals
+                #   * out of it        -> the pair still HOLDS the low 64 bits unsigned,
+                #                          and reads back signed with the wrong sign
+                #   * `x == 0`        -> the exact answer is 0 at every amount, so it
+                #                          always "fits" and is never evidence
+                fits = SIGN_MIN <= exact <= SIGN_MAX
+                if fits:
+                    assert unpair(got) == exact, f"{name}@{amt}: {unpair(got)} != {exact}"
+                    in_signed.append(f"{name}:{amt}")
+                else:
+                    out_signed.append(f"{name}:{amt}")
+                    # THE PART THAT IS STILL TRUE PAST THE EDGE. If this ever failed, the
+                    # pair would have LOST the answer rather than re-signed it, and the
+                    # two failures are worth telling apart.
+                    assert unpair_u(got) == exact & M64, (
+                        f"{name}@{amt}: the pair lost the low 64 bits entirely")
+                    if unpair_u(got) == 0:
+                        zero_out.append(f"{name}:{amt}")
+
+    # ---- THE UNIVERSE CHECKS, and they are the point of the fixture set ----
+    #
+    # 1. THE WALL'S AMOUNT MUST LOSE, for every value. `k >= 64` cannot fit any nonzero
+    #    value in 64 bits, so if `64` were not in `out_signed` the width claim is untested.
+    for name, _hi, _lo in VALUES:
+        for amt in (64, 65, 127):
+            assert f"{name}:{amt}" in out_signed, f"{name}@{amt} must be out of signed range"
+    # 2. THE SIGNED BOUNDARY MUST ALSO BE CROSSED BELOW 64, or `k = 64` is the only
+    #    boundary and this says nothing a 64-bit unsigned carrier would not. `lowhi` is
+    #    33 bits, so it leaves signed range at `k = 31` -- a row the wall never names.
+    assert "lowhi:31" in out_signed, f"lowhi@31 must be out of signed, got {out_signed}"
+    # 3. AND IT MUST BE CROSSED IN BOTH DIRECTIONS: `neg1` at 63 still FITS, `one` at
+    #    63 does not. Without both, `k = 63` is not a boundary but a cliff.
+    assert "neg1:63" in in_signed, f"neg1@63 must fit signed, got {out_signed}"
+    assert "one:63" in out_signed, f"one@63 must NOT fit signed, got {in_signed}"
+    # 4. EVERY amount must be reachable, or the runtime rows are a subset of the literal
+    #    ones and the claim is untested.
     assert len({a for (_, a) in by_amount}) == len(AMOUNTS), sorted({a for (_, a) in by_amount})
+    # 5. THE WIDTH ROWS MUST ALL BE `0:0`, or the port's documented "THE AMOUNT IS
+    #    MODULO 2**64" (helpers.bend:1806-1809) is not what the table says. `lowhi`
+    #    reaches it at 62 rather than 64 -- its 33 bits overflow 64 at 31 -- which is the
+    #    same width law seen from the other side.
+    # 6. AND `neg1` AT 63 MUST NOT BE AMONG THEM, because `-1 << 63` is exactly the
+    #    int64 sign bit: it is the one row where 63 and 64 cannot be collapsed.
+    z = set(zero_out)
+    for name in ("neg1", "one", "lowhi"):
+        for amt in (64, 65, 127):
+            assert f"{name}:{amt}" in z, f"{name}@{amt} must answer 0:0"
+    assert "lowhi:62" in z, f"lowhi@62 must answer 0:0, got {sorted(z)}"
+    assert "neg1:63" not in z, f"neg1@63 is the int64 sign bit and cannot be 0:0"
 
     print("\n".join(out))
 

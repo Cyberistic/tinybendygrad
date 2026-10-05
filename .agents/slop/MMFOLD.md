@@ -308,7 +308,7 @@ identical, which is what makes the plant's redness attributable to a changed **v
    Same cause, same fix shape.
 4. **`dsl_gate.py:87 unstable_rows` is an unregistered reader** — pre-existing, and the reason
    `reader-guard.py` still exits 1. Not mine; recorded here so the rc=1 is not misread as my row
-   failing. `.agents/slop/LANE-LIVENESS.md:275` names its real obstacle (`dsl_oracle.txt` embeds a
+   failing. `.agents/slop/LANE-LIVENESS.md:275` names its real obstacle (`oracles/dsl_oracle.txt` embeds a
    heap address).
 5. **`.agents/slop/rebase-oracle-ops.py:54` still lacks `import importlib`** (briefed; confirmed
    present, untouched — not mine). This is the lane `LANE-LIVENESS.md:70` calls

@@ -284,11 +284,11 @@ restored `202de0e8ac053481…` == pristine
 
 ### The oracle side, and why it is not live
 
-`dsl_gate.py:24`  `ORACLE = ROOT / ".agents/slop/dsl_oracle.txt"`
+`dsl_gate.py:24`  `ORACLE = ROOT / "oracles/dsl_oracle.txt"`
 `dsl_gate.py:54`  `orc = parse(ORACLE.read_text())` — **nothing is executed.**
 
 ```
--rw-r--r--  44383  Oct  2 22:48  .agents/slop/dsl_oracle.txt     <- the recorded oracle
+-rw-r--r--  44383  Oct  2 22:48  oracles/dsl_oracle.txt     <- the recorded oracle
 -rw-r--r-- 174628  Oct  4 14:16  tinybendygrad/renderer/amd/dsl.bend   <- the live port
 ```
 

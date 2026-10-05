@@ -26,7 +26,7 @@ Two details are load-bearing and both were measured, not designed:
 ## THE RESULT: 6 specs, 10 fields each, 60/60 AGREE, 0 DISAGREE
 
 `sched-cmp.py` recomputes CPython's side by CALLING `create_schedule` a second
-time -- not by reading `sched-oracle.txt` -- and diffs whole `name=value` lines.
+time -- not by reading `oracles/sched-oracle.txt` -- and diffs whole `name=value` lines.
 
 ```
 # specs_attempted=6 specs_scheduled=6 fields_compared=60

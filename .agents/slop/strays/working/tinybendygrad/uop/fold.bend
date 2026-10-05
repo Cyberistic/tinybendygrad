@@ -1498,7 +1498,7 @@ def Pairs.ok(x: Pairs) -> Bool:
 # a `Maybe` is read once, cannot be `+`, and cannot be a scrutinee that a second
 # `match` re-reads. So the WALK takes the three of them and does the unpacking itself:
 # a three-scrutinee `match` on three `Maybe`s with `_ _ _` as the cover is the only
-# spelling that sees all three, and it is the shape `.agents/slop/oracles/
+# spelling that sees all three, and it is the shape `oracles/
 # fold-probe-mvt.bend`'s P1 already measured.
 #
 # `Nil Nil Nil` is the whole triple consumed, and `_ _ _` is BOTH failures in one
@@ -1516,7 +1516,7 @@ def Pairs.ok(x: Pairs) -> Bool:
 #     check but needs a THIRD def for the heads, which is back to two;
 #   * folding the `Maybe`s into a `Data` record needs the record read three times,
 #     which is `+` on a record and not on the walk.
-# What works is the shape `.agents/slop/oracles/fold-probe-mvt2.bend` P6 measured:
+# What works is the shape `oracles/fold-probe-mvt2.bend` P6 measured:
 # the walk takes THREE PLAIN LISTS and does the three-scrutinee `match` itself, so
 # the tails are binders and the self-call decreases in the first parameter it
 # forwards. The `Maybe`s are resolved OUTSIDE it, by `pair3` below, which is NOT
@@ -1768,7 +1768,7 @@ def shrink_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShap
 # `resolve` is `bool(sx.vmin) if sx.vmin == sx.vmax else False` (ops.py:66), so it
 # is DECIDABLE -- and True -- when the two products' intervals are DISJOINT, and a
 # port that cannot multiply intervals cannot see that. `mv_reshsymdis` in
-# `.agents/slop/oracles/fold-mvt-rows.py` is the measured fixture: CPython raises
+# `oracles/fold-mvt-rows.py` is the measured fixture: CPython raises
 # `bad reshape` and this fold answers. One input class, named, in place of the
 # whole class of symbolic margs that used to refuse.
 # ===========================================================================
@@ -2592,7 +2592,7 @@ def UOp.axis_type(+ar: O.Arena, +i: U32) -> Maybe<&2, O.AxisType>:
 # them these defs go there and the callers do not change.
 #
 # THE WIDTH IS SIGN-PLUS-UNSIGNED-64 and it is MEASURED, not chosen. See
-# `.agents/slop/oracles/mm-range.py`: a plain 8x8 matmul has 21 of 232 nodes whose
+# `oracles/mm-range.py`: a plain 8x8 matmul has 21 of 232 nodes whose
 # bound leaves i64, and the widest bound in 21 real graphs is 96 bits.
 # `dtypes.uint64.max` = 2**64-1 does not fit a SIGNED 64-bit word, so the magnitude
 # is UNSIGNED and the sign is a separate `Bool`. Bend's only runtime numbers are
@@ -4667,7 +4667,7 @@ def min_maxed(+ar: O.Arena) -> MMed:
   MMed.of(ar, UOp.fold(ar))
 
 # ===========================================================================
-# THE RANGES ROWS. `.agents/slop/oracles/fold-rng-oracle.py` builds the same twelve
+# THE RANGES ROWS. `oracles/fold-rng-oracle.py` builds the same twelve
 # graphs node for node and prints CPython's own `u.ranges`, so `diff` of the two lanes
 # IS the test. The label is a RANGE's axis, never an index: CPython's interning order
 # is not the arena's, so a number neither lane means the same thing by.
@@ -4829,7 +4829,7 @@ def rng_of_row(nm: String, +f: O.Found) -> IO(Unit):
 # ===========================================================================
 # THE MOVEMENT FIXTURES AND ROWS: `dt_shape`'s arms for ops.py:414-431's five
 # deferred movement ops. Every `g_mv*` is built node for node against
-# `.agents/slop/oracles/fold-mvt-oracle.py`, and every row prints the FOUR FACTS
+# `oracles/fold-mvt-oracle.py`, and every row prints the FOUR FACTS
 # PLUS THE ANSWER as ONE STRING.
 #
 # WHY ONE STRING. Four separate rows let a fixture drop one of them, and a PAD or
@@ -5790,7 +5790,7 @@ def main() -> IO(Unit):
     me : Unit <- row("meet_and", t_meet_and())
     bv : Unit <- row("bnd_void_is_bool", t_bnd_void_is_bool())
     # THE MOVEMENT ROWS. Four facts plus the answer, one string each, and the
-    # expectations are `.agents/slop/oracles/fold-mvt-oracle.py`'s -- CPython's own
+    # expectations are `oracles/fold-mvt-oracle.py`'s -- CPython's own
     # `n= op= nsrc= srcops= shape= dtype=`, so `diff` of the two IS the test.
     mv_of("exp1", g_mv_exp1())
     mv_of("exp23", g_mv_exp23())
@@ -6281,7 +6281,7 @@ def main() -> IO(Unit):
 #   lanes and a 21-entry mutation table of which 20 move rows.
 #
 #   THE WIDTH IS SETTLED BY MEASUREMENT, and it is not 64 SIGNED bits.
-#   `.agents/slop/oracles/mm-range.py` walks 21 real graphs: a plain 8x8 matmul has
+#   `oracles/mm-range.py` walks 21 real graphs: a plain 8x8 matmul has
 #   21 of 232 nodes whose bound leaves i64, the widest bound seen is 96 bits, and the
 #   values that leave are `dtypes.uint64.max` = 2**64-1 and `uint64.max << 10`. A
 #   signed 64-bit word cannot hold 2**64-1, so the port is a SIGN BIT PLUS AN
@@ -6453,7 +6453,7 @@ def main() -> IO(Unit):
 #
 # ===========================================================================
 # THE MUTATION TABLE for the FIVE MOVEMENT ARMS, MEASURED, run in BOTH lanes.
-# `.agents/slop/oracles/fold-mut.py` applies each edit, re-runs both lanes and diffs
+# `oracles/fold-mut.py` applies each edit, re-runs both lanes and diffs
 # the rows; the table is its output and nothing here is transcribed by hand.
 #
 # | # | mutation | rows MOVED | what it is testing |

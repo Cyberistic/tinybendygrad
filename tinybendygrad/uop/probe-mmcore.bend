@@ -21,7 +21,7 @@ import ./../LAWS/spec.bend as S
 # THE WIDTH, AND IT IS NOT A CHOICE -- IT IS MEASURED.
 #
 # Python's ints are arbitrary precision, and `_min_max`'s bounds LEAVE int64 on real
-# graphs. Measured by `.agents/slop/oracles/mm-range.py` over 21 tinygrad graphs:
+# graphs. Measured by `oracles/mm-range.py` over 21 tinygrad graphs:
 #
 #   graph      nodes   widest bound (bit length)   nodes with a bound past i64
 #   --------   -----   ------------------------   ---------------------------

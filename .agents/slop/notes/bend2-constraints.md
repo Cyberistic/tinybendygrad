@@ -7397,7 +7397,7 @@ between "I diffed it" and "I checked it".
 
 Appended, not edited. All nine are Bend 2.0.34, each cost at least one compile cycle
 or one wrong answer that typechecked and ran, and every reproducer is in
-`.agents/slop/oracles/`. This unit wrote five `_shape` arms (`expand_ds`, `pad_ds`,
+`oracles/`. This unit wrote five `_shape` arms (`expand_ds`, `pad_ds`,
 `shrink_ds`, `perm_ds`, `flip_ds`) into a file that already had the Kahn worklist, so
 these are the rules for adding an arm to an existing recursive fold.
 
@@ -7417,7 +7417,7 @@ match ps os szs:                                # List, Maybe, Maybe
 The scrutinees must share a shape. The fix is to make all three the same type: keep
 the two `Maybe` answers as `Maybe<&2, List<&2, O.Sint>>` through a NON-recursive
 `.of`/`.os`/`.oz` chain (a chain is free, only a *cycle* is refused) and hand the walk
-three plain lists. `.agents/slop/oracles/fold-probe-mvt2.bend` P6 is the working
+three plain lists. `oracles/fold-probe-mvt2.bend` P6 is the working
 shape and `pad_shrink.go` is it in the port.
 
 ### 2. A LIST-PATTERN HEAD **AND** A `Maybe` PATTERN CANNOT SHARE ONE ARM, BUT A
@@ -7485,7 +7485,7 @@ its `Some` binder is `Some{+p}`.
 `show_sym()` and `show_plain()` each call the builder and the second call finds the
 node the first one added. That is the notes' "call the pure function twice" form, and
 it is the only spelling that works where a `do` block cannot hold the values.
-`.agents/slop/oracles/probe-su.bend` is the reproducer.
+`oracles/probe-su.bend` is the reproducer.
 
 ### 8. `Data` TYPES ARE NOMINAL AND `X.of` MAY NOT BE CALLED BEFORE `X`'s WHOLE CHAIN
 ###     IS DECLARED — BUT THE ERROR NAMES THE LAST DEF, NOT THE ONE TO MOVE
@@ -11322,7 +11322,7 @@ as `if NO_COLOR: return st`, so the observable is `bool(int(os.getenv("NO_COLOR"
 
 `helpers.bend` had `no_color_of(v) = not String.is_empty(v)`. That is the `bool`
 rule. MEASURED against live CPython over 32 probes (one process each,
-`.agents/slop/nocolor-oracle.txt` vs `.agents/slop/nocolor-bend.txt`):
+`oracles/nocolor-oracle.txt` vs `.agents/slop/nocolor-bend.txt`):
 
 - **6 INVERSIONS**: `"0"`, `"00"`, `"-0"`, `"+0"`, `"0 "`, `" 0"` all read as 0 in
   CPython, so colour stays ON; the port answered OFF. A user who wrote `NO_COLOR=0`
@@ -12357,7 +12357,7 @@ relocation time.**  The actual failure is downstream, at `elf.py:13`, because
 libSystem.dylib` and `/usr/lib/libm.dylib` are in the dyld shared cache and not on
 disk, so `dyld_info` reads a header and reports nothing at all.  Gate on the LINE
 COUNT, never on the per-symbol count -- see the position of the `UNAVAILABLE` line
-in `.agents/slop/objc/symtab_oracle.txt`.
+in `oracles/objc/symtab_oracle.txt`.
 
 ### 11. `DLL.findlib`'s `is_file()` GATE REJECTS A LIBRARY THAT `ctypes` CAN DLPOPEN
 
@@ -12367,7 +12367,7 @@ fine.  So routing `objc.py:30`'s literal path through `DLL` would **break a
 binding that works today**, silently -- `DLL.__init__` records no path, sets no
 `emsg`, and `__getattr__` only raises once something looks a symbol up.
 
-Measured both ways in `.agents/slop/objc/symtab_oracle.txt`
+Measured both ways in `oracles/objc/symtab_oracle.txt`
 (`objc.py:30` resolves; `c.py:102 via DLL()` reports `NEVER LOADED`).
 
 ### 12. A HAND-TYPED `py=` HALF IS A TRANSCRIPTION, AND TWO OF THEM WERE WRONG
@@ -13944,7 +13944,7 @@ u.f` and whose value is `v; return u.t; }` -- a row split mid-identifier). A nam
 thing a comparability guard reads as evidence, so a differ that manufactures names
 manufactures evidence: a loud failure becomes a quiet pass.
 
-    * THIS IS NOT HYPOTHETICAL. `.agents/slop/rebase/baseline.json`'s `cpython:renderer_oracle`
+    * THIS IS NOT HYPOTHETICAL. `oracles/rebase/baseline.json`'s `cpython:renderer_oracle`
       lane holds 33 recorded rows and **18 of them are this noise**, including
       `'for (weakint gidx0' = '0; gidx0 < ((weakint)(val0)); gidx0++) {'` -- a recorded
       expectation that `weakint` is C output -- and
@@ -14255,7 +14255,7 @@ of the 353 shared ones**.
 GUARD 4 cannot see them (no shared name) so the wire is right; GUARD 1 compares them, so
 `--record` followed by a re-gate yields RE-PORTED **forever**. `elf.bend` was probe-recorded
 and returned RE-PORTED with 8+ "moved" rows, not one of them gated. **Do not record elf in
-`rebase/baseline.json`.** Same species as `ops_cpu`'s `findlib_*` rows and 74x smaller. The
+`oracles/rebase/baseline.json`.** Same species as `ops_cpu`'s `findlib_*` rows and 74x smaller. The
 general form: a recording freezes every row the LANE prints, including the ones no comparison
 depends on, so a lane is only recordable if the whole lane -- not just the intersection -- is
 reproducible.
@@ -15390,7 +15390,7 @@ in the file separates `fp8e5m2` from `fp8e5m2fnuz`.
 ### 5. `Float32`/`F32` IS A TRAP-FREE PLACE TO MEASURE AN OVERFLOW, BUT IT IS NOT THE SAME QUESTION
 
 `struct.pack('f', 1.7976931348623157e+308)` RAISES `OverflowError` (CPython 3.14.6) -- so a
-`numpy`-free `fbits` cannot render the f64 maximum, and the `.agents/slop/dd-oracle.txt`
+`numpy`-free `fbits` cannot render the f64 maximum, and the `oracles/dd-oracle.txt`
 baseline's `c7=F(2139095040)` (= `0x7F800000`, f32 `+inf`) is NOT reachable through it.
 `2139095040` is what a SATURATING conversion gives, and it is also the real CPython answer
 for the OTHER `fr`. This is the third time on this fixture that a value was read off a
@@ -15519,7 +15519,7 @@ captured at the bottom were 164 and 172 rows and were NOT comparable; the real r
 delta of the two fixes is **0**, measured against `dd_rs.go`'s own frozen snapshot
 (`dd-cone-variants.py snap`) and its `revert-both` arm, which share a key set exactly.
 
-Corollary for this file's gate: `dd-oracle.txt` carries a hand-added comment line
+Corollary for this file's gate: `oracles/dd-oracle.txt` carries a hand-added comment line
 (`# l2i const sources -- appended 2026-10-03, called, not transcribed`) that a fresh run of
 `dd-oracle.py` does not print, so a byte-diff of the two reports 20 phantom changed lines.
 The VALUES are identical; compare rows, not bytes.
@@ -15836,7 +15836,7 @@ materialisation" concept to the detector would have been the same move with a be
 
 ### 21. WHEN A RULE TABLE WRITES A FILE, NOTHING CHECKS THE FILE AGAINST THE TABLE — SO A HAND EDIT IS A SILENT TIME BOMB.
 
-The gate reads `naming-gate-baseline.txt`; the generator WRITES it from `RULES`. Between them
+The gate reads `oracles/naming-gate-baseline.txt`; the generator WRITES it from `RULES`. Between them
 was no assertion, so a hand-added line keeps the gate green and the next generator run
 silently deletes it — and the gate then goes red with no edit to point at. `naming-gate-ledger-check.py`
 now asserts byte-equality between the file and what the generator would write, plus full
@@ -21014,7 +21014,7 @@ of what was measured at unknown load.
     that emitted none is **EXCLUDED AND NAMED**. "printed nothing" and "printed nothing because it
     ran out of time" are different claims and this file cannot tell them apart.
   * **AN INSTRUMENT MUST NOT APPEAR IN ITS OWN POPULATION.** The ledger's `*baseline*.txt` glob
-    matched `baseline-ledger.txt`, so **the ledger counted its own output**: denominator 234, then
+    matched `oracles/baseline-ledger.txt`, so **the ledger counted its own output**: denominator 234, then
     **235** seconds later, no edit in between. `load-census.py`'s `SELF` already excluded its own
     files from the *text* layer and simply was not applied to the ledger's glob. Same omission, two
     places.
@@ -21022,7 +21022,7 @@ of what was measured at unknown load.
 **THREE COUNTING-UNIT COLLISIONS found while doing this, all on the one lane the invariant rests on:**
 
   * **`787` / `780` / `768`.** `loadwatch.py` `_OBSERVED["full_rows"] = 787` (quoted from NV7, "787
-    rows in 0.5 s"). The stored capture `boot42_baseline_port.txt` holds **780** rows in **780**
+    rows in 0.5 s"). The stored capture `oracles/boot42_baseline_port.txt` holds **780** rows in **780**
     non-blank lines, of which **768 are distinct names** — six names are emitted **3× each**
     (`nv_largebar_0000_0000`, `nv_reserve_ptable_0000_0000`, `nv_sysmem_default_0000_0000`,
     `nv_sysmem_0000_0000_{None,True,False}`) — and its last line is the sentinel `nvdev-done=1`.
@@ -21037,8 +21037,8 @@ of what was measured at unknown load.
     `_OBSERVED["max_load_with_full_count"]` is `None`. The threshold may be reasonable; nothing in
     the corpus establishes it. It is a typed constant wearing a measured provenance.
 
-**TWO STORED BASELINES DISAGREE.** `rebase/baseline.json` (30 ports, 90 counts) and
-`rebase/baseline-DEMO.json` (8 ports, 24 counts) share **7 ports**; of **21** common (port, lane)
+**TWO STORED BASELINES DISAGREE.** `oracles/rebase/baseline.json` (30 ports, 90 counts) and
+`oracles/rebase/baseline-DEMO.json` (8 ports, 24 counts) share **7 ports**; of **21** common (port, lane)
 pairs, **7 disagree** — `codegen/opt/search.bend` interpreted/native **38 vs 18**, `uop/ops.bend`
 interpreted/native **115 vs 104** and its oracle **68 vs 63**, `uop/spec.bend` interpreted/native
 **25 vs 21**. `DEMO` is ~23 h older and both `record-2026-10-03.txt` and
@@ -23502,7 +23502,7 @@ per-number detail in `.agents/slop/audit/`.
 
 * **A-7. A COUNT IN A FILENAME HAS NO LINE, SO A CONTEXT-WINDOW TEST CANNOT REACH IT.**
   `load-census.py:104` is `def qualified(lineno, lines)` -- it needs a line number. The claim for
-  `amdev-baseline-552.txt` is `(unidentified capture): ?=552`, i.e. derived from the FILENAME. So
+  `oracles/amdev-baseline-552.txt` is `(unidentified capture): ?=552`, i.e. derived from the FILENAME. So
   `0 of 234 carry a load` is, for that sub-population, TRUE BY CONSTRUCTION rather than by
   measurement. MEASURED: three plants (end of file, beside the first count, as a non-claim context
   line) all left it at 0. The right label for that class is "structurally unqualifiable".
@@ -23562,7 +23562,7 @@ executes nothing. **PLANT-PROVEN DISARMED**: `dtype.bend:381` `i64_max_u case 32
 from `H.i64_of_hi_lo(0, 4294967295)` to `(12345, 4294967295)` in a copy, the live port lane's
 stdout demonstrably changed (`u32 … 0:4294967295` -> `12345:4294967295`), and the gate printed
 `14766 rows compared, 1 declared, 0 unexpected`, **rc=0**. THE SAME IS TRUE OF
-`dsl_gate.py:24` (`ORACLE = ROOT/".agents/slop/dsl_oracle.txt"`), `ga_gate.py:54`,
+`dsl_gate.py:24` (`ORACLE = ROOT/"oracles/dsl_oracle.txt"`), `ga_gate.py:54`,
 `opsbend_milestone_gate.py:27`, `dsp2-gate.py`/`rend_gate.py`/`dup-gate.py` (file paths on
 argv), `amdev_check.py:14-15`, and `e2e_mm_gate.py:44-46,246`.
 
@@ -23662,7 +23662,7 @@ Two of the 39 `BASE_ORACLES` lanes compared **0 rows** on both sides at measurem
 
 ### L-10 A RECORDED ORACLE CAN CONTAIN A ROW NO RE-RECORDING CAN REPRODUCE.
 
-`.agents/slop/dsl_oracle.txt` (recorded Oct 2 22:48) contains
+`oracles/dsl_oracle.txt` (recorded Oct 2 22:48) contains
 `fixed_hilo=<tinygrad.renderer.amd.dsl.FixedBitField object at 0x10911a510>.hi,0`.
 Running the documented `dsl_oracle.py` today produces `0x1099ce810`. **ASLR changes it on
 every process launch**, so that row can never match and re-recording it changes it again.
@@ -24420,21 +24420,21 @@ port that said nothing.** Exit **2** with the port's stderr now, never 1. Same l
 `VALUES-DIFFER`, `only-in-port`, `only-in-oracle` as three numbers with three names.
 
 **V-8. AN UNREPRODUCIBLE ROW IS EXCLUDED BY MEASURING IT TWICE, NOT BY NAMING IT.**
-`dsl_oracle.txt:1604` embeds a CPython `repr`:
+`oracles/dsl_oracle.txt:1604` embeds a CPython `repr`:
 `fixed_hilo=<…dsl.FixedBitField object at 0x10911a510>.hi,0`. Every launch yields a different
 heap address; re-recording today gives `0x1099ce810`. `BASE_ORACLES` excludes the 14
 `elf_built_*` rows **by name**, which is a typed list and a judgement that goes stale — and
 `fixed_hilo` proves it was missed, because nobody generalised it. **Run the oracle twice and
 exclude every row whose value differs between the two launches, printing the name and both
 values on every run.** A heap address is not a special case; it is one instance of "this row is
-not a function of the source". ⚠ And `0x[0-9a-f]{9,}` is NOT the shape: `dsl_oracle.txt` also
+not a function of the source". ⚠ And `0x[0-9a-f]{9,}` is NOT the shape: `oracles/dsl_oracle.txt` also
 carries `inst_sdwa=0x3e4000000`, `pos_5=0x4814060a00` and ten other legitimate 64-bit constants
 that a length heuristic would delete.
 
 **V-9. A `.py` IN THE GATE NAMESPACE MUST BE A PROGRAM.** `.agents/slop/helpers-tc-gate.py` was
 **199 lines of recorded `name=value` rows** raising `SyntaxError: invalid syntax` at
 `trange_0_seq=`, written **into the repo** by `helpers-tc-gate.sh`'s own `GT=` prefix. Renamed to
-`helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
+`oracles/helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
 identical, rc=0. `.bd` / `.bn` are fine — those extensions name no language. Similarly
 `nv_gate.py` appends a gate body from `$TMPDIR` into the live port and `tools/reorder-gate.py`
 rewrites a `.bend`: **a file called `-gate` that mutates the port invites exactly this miscount.**

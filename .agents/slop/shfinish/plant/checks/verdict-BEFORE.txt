@@ -1,0 +1,10 @@
+# VERDICT BEFORE  (patir-run1.txt)
+#   denominator: 4 py rows x 6 fields = 24 field-records; 4 bend rows
+  node 1 CUSTOMI    AGREE
+  node 2 PYLITERAL  MISMATCH arg
+#       arg    py=OADD   bend=rd(OADD,i0)
+  node 3 CUSTOM     AGREE
+  node 4 AND        MISMATCH dtype, shape
+#       dtype  py=void   bend=?
+#       shape  py=R   bend=?
+# VERDICT BEFORE: DISAGREE -- 3 field mismatches of 24; 21 agree

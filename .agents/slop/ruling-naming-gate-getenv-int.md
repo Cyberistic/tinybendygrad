@@ -47,7 +47,7 @@ what the briefing did:
 the `RENAMED/n` bucket, exempted by a ledger line that already existed:
 
 ```
-naming-gate-baseline.txt:47   helpers.py  getenv  _str  LANG-CONSTRAINED:no-generics-one-def-per-element-type
+oracles/naming-gate-baseline.txt:47   helpers.py  getenv  _str  LANG-CONSTRAINED:no-generics-one-def-per-element-type
 ```
 
 So the precedent the briefing points at is a **ledger line**, and the mechanism to extend
@@ -102,7 +102,7 @@ Three files, all under `.agents/slop/`:
 
 1. `naming-gate-ledger.py:76-93` -- `int` added to the monomorphisation regex, with the
    reasoning inline so the next reader does not re-litigate it.
-2. `naming-gate-baseline.txt:47` -- one line added, hand-placed at the position the
+2. `oracles/naming-gate-baseline.txt:47` -- one line added, hand-placed at the position the
    generator's `sorted()` puts it (`_int` < `_str` for the same `(file, name)`).
 3. `naming-gate-ledger-check.py` (new) -- asserts the ledger FILE is byte-identical to what
    the generator WOULD write, plus full coverage and no dead rule.

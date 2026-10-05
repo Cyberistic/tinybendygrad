@@ -133,7 +133,7 @@ file; immediately after the file's first count line; as a non-claim context line
 beside the first count. **All three left `0 of 235`.**
 
 `load-census.py:104` — `def qualified(lineno, lines)` — **needs a line number.**
-The claim the guard reports for `amdev-baseline-552.txt` is
+The claim the guard reports for `oracles/amdev-baseline-552.txt` is
 `(unidentified capture): ?=552`: the number is in the **filename**, so the claim
 has no line and no context window can reach it.
 

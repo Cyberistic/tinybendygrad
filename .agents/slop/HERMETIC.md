@@ -130,11 +130,11 @@ One more, in my own readout: the slot display was a 2-char slice, so two-digit s
 
 ## 5. STILL DISAGREES, WITH `file:line`
 
-- **`.agents/slop/oracles/mm-range.py:12` and `:59` — a LIVE late-`DEV`.** `:12` imports tinygrad
+- **`oracles/mm-range.py:12` and `:59` — a LIVE late-`DEV`.** `:12` imports tinygrad
   at module scope; `:59` sets `DEV='NULL'`; **MEASURED `Device.DEFAULT` is `METAL`**, and `:60`
   prints it. (It then dies at `:69` on `Tensor.floordiv`, separate rot.) Another unit's oracle:
   reported, **not fixed**, per `agent-core.md`.
-- **`.agents/slop/oracles/mm-range.py`** and 7 vendored `tinygrad/device.py` /
+- **`oracles/mm-range.py`** and 7 vendored `tinygrad/device.py` /
   `xd1/*/external_test_train.py` sites are reported by `C3b` and do not gate. The `device.py`
   ones are upstream's own contract (`DEV = ContextVar`), not defects.
 - **`arith/REACH-ARITH.md` §5 wall 6 cites `ops.py:842`**; the counter is at **`ops.py:839`**

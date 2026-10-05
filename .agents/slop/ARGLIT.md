@@ -12,7 +12,7 @@ Unit `ARGLIT`, 2026-10-05. **Four files touched:**
 ¹ `graphcmp.py`'s md5 equals `ops.bend`'s at that pin. Coincidence of content, not an
 aliasing bug — they are different files and both were read.
 
-Substrate pins at every measurement are in `arglit/AFTER-pins.txt`. Nothing committed.
+Substrate pins at every measurement are in `oracles/arglit/AFTER-pins.txt`. Nothing committed.
 
 Files, all mine: `arglit/al-oparg.bend` (a bare `Op` as an `Arg`, **compiles**),
 `arglit/al-patir.bend` (the same graph as `ns-patir.bend` with `AOpLit`),

@@ -369,7 +369,7 @@ says "resolved" and a resolved limit with an unnamed remainder is a lie. `fold.b
 SPECIAL `'N'` over an END OF ZERO has) or negative, because ops.py:408's `all(x >= 0)` is
 then DECIDABLE and this fold is not; and `reshape_ok` answers `resolve`'s DEFAULT without
 deciding its VALUE, so it does not raise when the two products' intervals are **DISJOINT**,
-which is the case where CPython raises. Two rows in `.agents/slop/oracles/fold-mvt-rows.py`
+which is the case where CPython raises. Two rows in `oracles/fold-mvt-rows.py`
 name them and both are in that file's DIVERGES block: `mv_expsym` (the fold REFUSES where
 CPython answers) and `mv_reshbare_dis` (the fold ANSWERS where CPython raises). **Neither
 input class occurs in this corpus** -- no graph here carries a SPECIAL dim or a disjoint

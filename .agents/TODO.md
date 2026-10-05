@@ -307,7 +307,7 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       calls three LIVE lanes dead. Rules **V-11**, **V-12** (bend is **2.0.34**; 2.0.35 is
       *available*, not installed — every failing run says so).
 - [x] **`dsl_gate.py`: LIVE oracle run TWICE, exclusions derived by MEASUREMENT, zero-row guard.**
-      MEASURED, all three: (a) `dsl_oracle.txt:1604` embeds a heap address (`0x10911a510`,
+      MEASURED, all three: (a) `oracles/dsl_oracle.txt:1604` embeds a heap address (`0x10911a510`,
       re-recording gives `0x1099ce810`) — caught with **no name list** by running the oracle
       twice and dropping rows that differ; (b) a non-compiling plant reported
       `rows port=0 mismatched=1576`, now `THE PORT PRODUCED ZERO ROWS … rc=2 … NOT A
@@ -315,7 +315,7 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       which is unreadable — measured, **0 of 617 shared rows differ**, and `1503 = 959
       oracle-only + 544 port-only`, so the lane was **value-green and set-red**. Rules **V-6**,
       **V-7**, **V-8**.
-- [x] **`helpers-tc-gate.py` RENAMED to `helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
+- [x] **`helpers-tc-gate.py` RENAMED to `oracles/helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
       `$GT.rows`.** It was **199 lines of recorded rows raising `SyntaxError`** at
       `trange_0_seq=`, written into the repo by its own `GT=` prefix. Re-ran the driver:
       `237 shared rows, 3 lanes identical`, rc=0. Rule **V-9**.
@@ -747,12 +747,12 @@ day rediscovering that `2n+p` is not an even-case test.
       largest unlock in the file and `simplify` is not**, which REORDERS the "what next"
       list at the foot of `fold.bend`.
       **THE E2E MEASUREMENT, which is what retires the eight downstream walls**
-      (`.agents/slop/oracles/fold-mvt-e2e.bend`): a graph whose ROOT is a STORE over an
+      (`oracles/fold-mvt-e2e.bend`): a graph whose ROOT is a STORE over an
       EXPAND, and one whose root is an AFTER over a PERMUTE, both read
       `settled=False shape=ABSENT dtype=ABSENT` on the pre-change file and
       `settled=True shape=() dtype=void` / `shape=(3,2) dtype=int` now — CPython's own
       answers. That is constraints-note rule 18 (position ~4099) retired for movement ops.
-      **14 mutations measured** (`.agents/slop/oracles/fold-mut.py`), 12 move rows; the
+      **14 mutations measured** (`oracles/fold-mut.py`), 12 move rows; the
       2 zero-movers are MEASURED EQUIVALENCES, not gaps — M9 is unreachable (`O.SU` has
       no producer anywhere in the tree) and M10 is a symmetry of PAD's own `o+s<=sz`.
       Both are reported as equivalences rather than closed with rows that encode the bug.
@@ -775,7 +775,7 @@ day rediscovering that `2n+p` is not an even-case test.
         so a node `dt_shape` DEFERS (UNSHARD, STAGE, CUSTOM, CUSTOMI) has no `ended` list
         and its set is not answered, where Python has no such limit. Carried by an `ok`
         FLAG rather than a silent empty set, and pinned by `rg_absent`.
-      **12 `rg_*` rows, byte-identical to CPython** (`.agents/slop/oracles/fold-rng-oracle.py`,
+      **12 `rg_*` rows, byte-identical to CPython** (`oracles/fold-rng-oracle.py`,
       same twelve graphs node for node; `diff` of the two lanes is the test). **19 mutations
       measured** (`.agents/slop/fold-rng-mutate.py`), **15 move rows**, and all 4 zeros are
       classified: three harness controls (R1, R2b, R11) and one THEOREM (R2 — the union's
@@ -3557,11 +3557,11 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
       `ops_metal.py:86` as a TODO against a `SELECTORS`/`MSGSEND` shape the tree no
       longer has, and this is the same file's `:243`.
 - [x] **THE DEMONSTRATION BASELINE IS NOT THE PIN BASELINE.**
-      `.agents/slop/rebase/baseline-DEMO.json` records the CURRENT tree and exists to prove
+      `oracles/rebase/baseline-DEMO.json` records the CURRENT tree and exists to prove
       the four states are reachable on REAL ports: `TALLY BROKEN=3 NOT-STARTED=13
       UNCHANGED=5`, with the three BROKEN being `uop/spec.bend` (2 rows), 
       `codegen/opt/search.bend` (5 rows) and `codegen/rewriter.bend` (3 rows, all
-      row-name collisions). **`.agents/slop/rebase/baseline.json` is untouched** and still
+      row-name collisions). **`oracles/rebase/baseline.json` is untouched** and still
       holds one port. Delete `baseline-DEMO.json` when a real pin baseline is recorded —
       leaving it is how a demonstration baseline becomes a silent pass later.
 
@@ -3572,14 +3572,14 @@ exist and are dead **[3]** · measured with no oracle at all **[11]** ·
 - [x] **`tinybendygrad/renderer/amd/generate.bend` — PORTED AND GREEN AT 91 ROWS.**
       `ALL PROOFS CHECK`; `./bin/bend tinybendygrad/renderer/amd/generate.bend` prints
       91 rows and `ga_gate.py` reports **91 rows, 91 agree, 0 differ** against
-      `.agents/slop/ga-oracle.txt` (**892 rows**, regenerated from CPython this
+      `oracles/ga-oracle.txt` (**892 rows**, regenerated from CPython this
       session and verified byte-for-byte reproducible). 2,699 bend lines, 413 defs,
       23 record types. Ported: `_strip_enc`, `_norm_field`, `_map_flat`,
       `field_def`, `write_common`, `write_enum`, `write_ins` (all four folds),
       `write_operands`, `write_pcode`, plus the module tables (`FIXES`,
       `FIELD_FIXES`, `FIXED_FIELDS`, `ARCHS`, `_SKIP_ENCODINGS`, `NAME_MAP`).
       Toolchain, all reproducible from the inherited state:
-      `ga-oracle.py` -> `ga-oracle.txt`, `ga_fix.py` -> fixture+gate,
+      `ga-oracle.py` -> `oracles/ga-oracle.txt`, `ga_fix.py` -> fixture+gate,
       `ga_splice.py` (the tail is 10 defs and NOT contiguous),
       `ga_topo.py` (callee-first), `ga_dedup.py`, `ga_plus.py`, `ga_gate.py`,
       `ga_mutate.py`, `ga_probe.sh`.
@@ -3689,7 +3689,7 @@ Progress: `██████████` 1/1
       arm is absent (unreachable through `pm_long_decomp`); (D) no f16/bf16/f64 SOURCE
       for `f2f`/`f2f_clamp`; (E) no f64 `f2f_clamp` TARGET (`mx` is the f64 max).
 - [x] `.agents/slop/dd-oracle.py` — 412 rows by CALLING CPython's `dtype.py`, exit 0,
-      `.agents/slop/dd-oracle.txt`. Two decisions that a naive port gets wrong and that
+      `oracles/dd-oracle.txt`. Two decisions that a naive port gets wrong and that
       are measured, not reasoned: the promotion CASTs are marked by the CALLING
       PYTHON FRAME (`sys._getframe(1).co_name` in `promote`/`logical_not`) and `r is
       not self` keeps `promote`'s identity fold out of the marker; a float CONST prints
@@ -3986,7 +3986,7 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
       * a BLANK/`UNREVIEWED` reason is not a ruling;
       * STALE AMNESTY is unearned amnesty, so a vanished candidate also fails;
       * a gate that goes red WITHOUT SAYING WHY is not a gate.
-- [x] **`naming-gate-ledger.py` + `naming-gate-baseline.txt` — the 667 rulings.**
+- [x] **`naming-gate-ledger.py` + `oracles/naming-gate-baseline.txt` — the 667 rulings.**
       The detector proposes, the ledger adjudicates: one line per rename, each with
       a hand-verified reason drawn from a short vocabulary (`UPSTREAM-PREFIX`,
       `LANG-CONSTRAINED`, `CONVENTION`, `COINCIDENCE`, `PORT-LOCAL`,
@@ -4076,7 +4076,7 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
       whole-kernel C values span lines whose continuations contain `=` constantly, so 96
       physical lines became **33 names of which 15 are claims and 18 are line noise**
       (`float val0`, `*(data1_4+0)`, `int g0`, `for (int gidx0`, and one row split
-      mid-identifier). 18 of the 33 oracle rows in `rebase/baseline.json` are that noise --
+      mid-identifier). 18 of the 33 oracle rows in `oracles/rebase/baseline.json` are that noise --
       including a recorded expectation `'for (weakint gidx0' = '0; gidx0 < ((weakint)(val0));
       gidx0++) {'`. `renderer/cstyle.bend` documents the hazard and fixes it on ITS side
       (`esc_row` at `kern2_row`); the oracle never got it. CLOSED on both sides:
@@ -4088,9 +4088,9 @@ Progress: remaining renames ████████░░ DONE (11 renamed; 2 b
 - [x] **The row-naming collision: RECOMMENDATION IS TO RE-POINT THE ORACLE, NOT TO RENAME
       EITHER SIDE'S NAMES INTO A CROSSWALK.** Measured: 0 shared names (port 225 unique,
       oracle 15 claims; even the 18 shredded names share 0). Keep the port's
-      (construct, target, mode) axis -- it is recorded in `rebase/baseline.json` (225
+      (construct, target, mode) axis -- it is recorded in `oracles/rebase/baseline.json` (225
       interpreted + 225 native), `drift-record-probe.json`, `rebase/survey-cache.json`,
-      `hdrbase/tinybendygrad_renderer_cstyle.bend.rows`, `wip/main_rows.txt`, and cited at
+      `oracles/hdrbase/tinybendygrad_renderer_cstyle.bend.rows`, `oracles/wip/main_rows.txt`, and cited at
       POSITION ~9496 and ~13685 of the notes -- and it is the axis that can LOCALISE a bug
       (`rd` alone is 42 rows over 6 devices x 7 dtypes; the oracle's `k1_load_store` collapses
       all six devices into one). G-12 (POSITION ~13685) already ruled that GUARD 4 reporting
@@ -4538,7 +4538,7 @@ the verdict. A `0/0` is printed too, because it is a measurement.
       is false — `dtype.bend:1734` has been there the whole time. (b) "fresh oracle vs saved
       baseline is 416 shared, 0 disagreements" is false: 416 shared, **1** disagreement,
       `c7` = `F(ovf)` fresh vs `F(2139095040)` saved. Both are correct CPython output for
-      different `fr`, so neither is a typo. `dd-oracle.txt` line 305 corrected to the value
+      different `fr`, so neither is a typo. `oracles/dd-oracle.txt` line 305 corrected to the value
       a fresh run produces; all 416 names now agree with a fresh run.
 - [x] **THE CHECKER THAT MAKES ABSENCE AN ERROR**: `.agents/slop/dd-divE-check.py`.
       `dd-cmp.py:65` compares `keys = [k for k in port if k in ora]`, so a row the port never
@@ -4554,12 +4554,12 @@ the verdict. A `0/0` is printed too, because it is a measurement.
 
 ### Outside this unit's files
 
-- **`.agents/slop/dd-oracle.txt` had a stale `c7`** (`F(2139095040)`, a saturating-conversion
+- **`oracles/dd-oracle.txt` had a stale `c7`** (`F(2139095040)`, a saturating-conversion
   value a `struct.pack`-based oracle cannot emit). Corrected to `F(ovf)`. Owner of the file is
   me; anyone who scored a lane against the old value has one stale row.
 - **`dd-oracle.py:36`'s `mxc*` citation names no row.** `mxc` is a Bend record FIELD binder at
   `dtype.bend:1226`. Third stale-docstring instance on this file. Fixed.
-- **`.agents/slop/dd-oracle.txt` line 2693's "412 rows" is 416**; line 2699's "66 of 121
+- **`oracles/dd-oracle.txt` line 2693's "412 rows" is 416**; line 2699's "66 of 121
   byte-identical" predates the current `dd-gate.txt`, which scores **99 of 164 agreeing,
   65 disagreeing** against the oracle. All 65 are `l2i`-family rows and none are mine.
   Owner: the `l2i` arm. Not touched.
@@ -4617,7 +4617,7 @@ the verdict. A `0/0` is printed too, because it is a measurement.
   `dd_cmx.rows(8n, ...)` and rewrote `f2f_clamp_max`'s ocp/e4m hoisting), so any before/after
   captured at different times in one session is not comparable. Freezing one snapshot first
   is not optional here.
-- **`.agents/slop/dd-oracle.txt` carries a hand-added comment line a fresh run does not
+- **`oracles/dd-oracle.txt` carries a hand-added comment line a fresh run does not
   print**, so a byte-diff against it reports 20 phantom changed lines. Compare rows.
 
 ## Session 2026-10-03 (c) — `DEBUG` IS WIRED: the seven gated prints, `getenv_int`, and a
@@ -4886,7 +4886,7 @@ Progress: naming gate ██████████ PASS (668 candidates, 0 una
       with a mandatory reason, written by `naming-gate-ledger.py`'s `RULES` table.
       **`getenv_str` was never in the QUALIFIED tally either** — it was an adjudicated
       rename in the `RENAMED/n` bucket, exempted by a ledger line that already existed at
-      `naming-gate-baseline.txt:47`. So the precedent is a ledger line and the mechanism to
+      `oracles/naming-gate-baseline.txt:47`. So the precedent is a ledger line and the mechanism to
       extend it is one token in one tight per-file regex, not a new def in a `.bend` file.
       **`RESULT: FAIL` (exit 1, 1 unadjudicated) -> `PASS` (exit 0, 0 unadjudicated).**
       `naming-gate.py` ITSELF was not touched: mtime still 13:00:38.
@@ -5013,7 +5013,7 @@ All six were measured first by CALLING CPython. Four fixed, two ruled out or bou
       one-token difference from the `ctl-comment` cone arm is the CORRECT one — upstream
       `walk_rewrite` does `pm_rewrite(new_n)` on the REBUILT node.
 
-- [x] **6. `dd-oracle.txt` 20 phantom lines — STILL CURRENT, FIXED.** Byte-diff vs a fresh run:
+- [x] **6. `oracles/dd-oracle.txt` 20 phantom lines — STILL CURRENT, FIXED.** Byte-diff vs a fresh run:
       20 duplicated `lg*` rows plus 1 hand-written comment (`# l2i const sources — appended
       2026-10-03, called, not transcribed`) at file lines 407-427, shadowing the real block at
       328-347. **The brief's count is exact.** Regenerated; a fresh run now reproduces the file
@@ -5825,7 +5825,7 @@ Report: this section. Tools: `order-lin-probe.py`, `order-lin-sweep.sh`,
       between the literal and the arena. `lin_edg`'s `blind_swaps` is **1**, the
       lowest in the file; `lin_vm`'s is 137.
       Gate: `codegen/late/{linearizer,regalloc,gater}.bend` **128 -> 130 rows**,
-      `MATCHES the CPython oracle`, `late-oracle.txt` re-derived by CALLING
+      `MATCHES the CPython oracle`, `oracles/late-oracle.txt` re-derived by CALLING
       CPython (never typed). **NOTE FOR THE COORDINATOR: `.agents/slop/late-pre-split.bend`
       is the pre-split 128-row invariant and adding two rows breaks it.**
       `late-gate.sh --base` will now report 2 added rows and nothing else.
@@ -7424,7 +7424,7 @@ list (M8, 34); `z3_lt`, z3's `a < n` -> `n > a` canonicalisation (M9, 5).
 ## Session 2026-10-04 — `f2f`'s region: a FORWARD REFERENCE, and the gate rows that make it cost something
 
 `codegen/decomp/dtype.bend` is 209 rows / `ALL PROOFS CHECK`; **the 182 pre-existing rows
-are BYTE-IDENTICAL and in order**, and the differ against `dd-oracle.txt` still reports
+are BYTE-IDENTICAL and in order**, and the differ against `oracles/dd-oracle.txt` still reports
 exactly the same **7** disagreements (`c7 lgu lgun lg1n lg6n lg9n lgqn`). 28 new rows.
 
 **THE DEFECT WAS A GRAPH THAT CANNOT EXIST, NOT A WRONG ANSWER.**
@@ -7907,11 +7907,11 @@ sweep are DONE; **3 are OPEN and are NOT this unit's files** (`loadwatch.py`, `b
       printed *"215 of 234 carry a load"* because it computed `total − SUSPECT`, so every
       `RE-MEASURED-ALONGSIDE` row silently counted as **qualified** and the headline contradicted
       its own detail table three lines below; and the ledger's `*baseline*.txt` glob matched
-      `baseline-ledger.txt`, so **the ledger counted its own output** (234 → **235**, no edit in
+      `oracles/baseline-ledger.txt`, so **the ledger counted its own output** (234 → **235**, no edit in
       between). A fifth, in `starvation_retrospective()`: the `G_checkonly_f16` cell's 0-row reps
       are the `--check-only` **CONTROL**, which prints no rows by design — a deliberate zero read
       as a starved lane. Excluded and named: 3 reps.
-- [ ] **OPEN, NOT FIXED — `rebase/baseline.json` is read-only for this unit.**
+- [ ] **OPEN, NOT FIXED — `oracles/rebase/baseline.json` is read-only for this unit.**
       `renderer/cstyle.bend` carries `cpython:renderer_oracle = 33` while
       `stability-2026-10-03.json` measured the same oracle at **15**, and
       `rebase/record-2026-10-03.txt` **EXCLUDED this port four times** with the reason "a baseline
@@ -7924,13 +7924,13 @@ sweep are DONE; **3 are OPEN and are NOT this unit's files** (`loadwatch.py`, `b
       787 (max **79**), with `_OBSERVED["max_load_with_full_count"] = None`. It is a typed constant
       wearing a measured provenance.
 - [ ] **OPEN, NOT FIXED — the anchor has three values and no unit.** `787` (NV7 prose) / **780**
-      (rows `boot42_baseline_port.txt` emits) / **768** (DISTINCT names — six names are emitted 3×
+      (rows `oracles/boot42_baseline_port.txt` emits) / **768** (DISTINCT names — six names are emitted 3×
       each). The baseline layer counts distinct names; the starvation slope's axis is a line count.
       They differ by **19** on the one lane the invariant rests on. Separately
       `nv_nvdev_mutrun.py:13` records "**24 min** for 787 rows" for the same count NV7 quotes at
       "0.5 s".
 
-**REPORTED, NOT FIXED:** `rebase/baseline.json` and `rebase/baseline-DEMO.json` both call
+**REPORTED, NOT FIXED:** `oracles/rebase/baseline.json` and `oracles/rebase/baseline-DEMO.json` both call
 themselves a baseline, share **7 ports**, and **disagree on 7 of 21** common (port, lane) counts —
 `search` 38 vs 18, `uop/ops.bend` 115 vs 104 (oracle 68 vs 63), `spec` 25 vs 21. `DEMO` is ~23 h
 older and both other artefacts side with `baseline.json`, but **nothing says which file a reader
@@ -9771,7 +9771,7 @@ baselines `.agents/slop/arith/baseline/`. **Nothing committed.**
       15 stale py row sets are still on disk and its default still trusts them; deleting or
       re-publishing them is the owner's call. `hermetic-census.py --check --out
       .agents/slop/arith` names every one, rc 3.
-- [ ] **NOT MINE, REPORTED — `.agents/slop/oracles/mm-range.py:12`+`:59` is a LIVE late-`DEV`.**
+- [ ] **NOT MINE, REPORTED — `oracles/mm-range.py:12`+`:59` is a LIVE late-`DEV`.**
       Module-scope tinygrad import, then `DEV='NULL'`; MEASURED `Device.DEFAULT` is `METAL`
       and `:60` prints it. Also dies at `:69` on `Tensor.floordiv` (separate rot).
 - [ ] **NOT MINE, REPORTED — two STALE `file:line` in `arith/REACH-ARITH.md` §5.** Wall 6 says
@@ -12088,7 +12088,7 @@ Progress: [=============================-------] 7/7
   `agent-core.md`'s 14-file cold table is stale (6 now; `uop/upat.bend` is COLD and
   `upat.bend:397 arg_int` is a completeness defect, `expected : cases for
   ops.AOpLit` — a third verdict neither instrument shares).
-  `backward/oracle-cg.txt` still carries a `RuntimeError` traceback in both RUN
+  `oracles/backward/oracle-cg.txt` still carries a `RuntimeError` traceback in both RUN
   blocks (`oracle-cg.py:116`). `backward-graph/BW-GRAPH.md` still quotes 35 of 77.
 
 ## DIFFPY — the two shell drivers, ported to Python (`checks/differ.py`)
@@ -12569,3 +12569,90 @@ driver `.agents/slop/e2epy/diff.py`, report `.agents/slop/e2epy/report.md`. **No
       `agent-core.md` says oracles live in `.agents/slop/`.** I followed my brief. If the new rule
       wins: the **diff driver** moves to `gates/`; the **oracle must not**, or "oracles live beside
       the code they check" stops being true. The 9 plant fixtures are generated, so they go too.
+
+## Session 2026-10-05 — `bitcastrow`: `bitcast_dims`' RANGE FIXED, AND THE ROW THAT COULD SEE IT
+
+- [x] **THE ROWS FIRST, THEN THE FIX — `TODO(fold-bitcast-u32)`, now CLOSED.**
+      `fold.bend`'s `bitcast_dims` truncated to U32 ***THREE*** TIMES, not once, and the
+      three have DIFFERENT boundaries. `.agents/slop/trigger/bc-oracle.py` modelled the
+      port's answer as a Python int, so it never saw `sint_of`'s sign extension, so the
+      census's "12 agree / 12 DIFFER exactly as predicted" was true OF ITS OWN MODEL and
+      false OF THE PORT — `nv_query_litter`'s mistake (a port and an oracle both wrong is
+      agreement, not corroboration). **80 OF A LARGER SET.** `gates/bc-u32-gate.py`, 39 rows
+      across 6 bands, 3 lanes: **20 disagree before, 2 after.**
+
+- [x] **L3, THE TRUNCATION THE CENSUS COULD NOT SEE.** `sint_of` is `H.i64_of_i32`, which
+      SIGN EXTENDS, so every quotient of 2**31 or more became a NEGATIVE dim.
+      `dim=2**30, inp=2, out=1` has `dim*inp == 2**31 < 2**32` — INSIDE the window the old
+      comment called exact — and answered `-2147483648` where CPython answers `2147483648`.
+      Band C's three rows are pinned BY NAME in the gate.
+
+- [x] **THE FIX: `i64_mul`/`i64_mod`/`i64_div`, and `O.SI{quotient}` instead of `sint_of`.**
+      **`tinybendygrad/uop/fold.bend:513-518, 555-558`.** The stale warrant paragraph above
+      them is REPLACED, not annotated. **THE NEW WINDOW IS `dim*inp < 2**63`, NOT `2**64`** —
+      `i64_mul` wraps mod 2**64 and `i64_divmod` reads bit 63 of the dividend as a sign.
+      **THE FIX MOVED THE WINDOW; IT DID NOT ABOLISH ONE.**
+
+- [x] **THE TWO SURVIVING DIVERGENCES ARE PINNED ON BOTH SIDES, NOT EXCLUDED.**
+      `G_g_i8_at` / `G_g_i4_at` at `dim*inp == 2**63`. A divergence nobody checks is a
+      tolerance. 334 `fold.bend` rows: **BYTE-IDENTICAL before and after.**
+
+- [x] **THREE PLANTS, THREE DISTINCT SETS OF ROW NAMES, TWO DISARMS AT ZERO.** Plant B
+      (divisor -> 1) 17 moved; plant A (multiplicand -> 1) 17 moved; plant C (sign
+      extension alone) 11 moved. Each disarmed back to 0. Diffing whole `name=value` lines,
+      as a MULTISET — `fold.bend` emits `lf_sub_int32_-3_4` TWICE and a dict collapsed the
+      pair, so the lane counted 333 for 334 rows.
+
+- [ ] **UNSETTLED — a dim above `2**63/inp` is still wrong, and CLOSING THAT NEEDS A CHECKED
+      PRODUCT.** `i64_mul` wraps and cannot report it. `mm.u64.mul`'s `None` is the only
+      overflow signal in this tree a caller can turn into a refusal, and it is `PInf`/`NInf`
+      today. **The real gap is a CHECKED op, and it is not one line.**
+      `tinybendygrad/uop/fold.bend:557-558` (`bitcast_dims.scale`/`put`) and
+      `.agents/slop/bitcastrow/table.py` band G.
+
+## 2026-10-05 — WALLCHECK REBUILD: the checker was pruned with its ledger, and it had a SIXTH failure
+
+`.agents/slop/wallrule/wallcheck.{py,sh}`, `walls.tsv` and `walls.truth.tsv` were never committed.
+The rule they enforced is intact in `RULE.md`. Rebuilt at `checks/wallcheck.py` +
+`.agents/slop/wallcheck/` — 21 rows, hand-measured truth column, `--selftest` for the guards.
+
+- [x] **SIX FAILURES REPRODUCED, SIX GUARDS BUILT.** The five the deleted instrument documented
+      about itself (`--selftest` prints each with the measurement that shows it is true), **plus
+      one it never found: `^` without `re.M` matches offset 0 only, so every line-anchored anchor
+      in the ledger read 0 forever.** That is the mirror of its failure #1 — not "matches too
+      much" but "matches nothing" — and it invalidated 7 rows. **FOUND BY THE SELFTEST, NOT BY
+      READING: an instrument reports its other rows while it is wrong.**
+- [x] **THE COARSE-ANCHOR FIX IS NOW MECHANICAL, NOT A MANUAL SPLIT.** Drop each alternative,
+      re-ask; if no drop moves the verdict the row is `COARSE`. It flagged `W1b` and `W2`, which
+      were split into `W1a`/`W1b`/`W1c` and `W2a`/`W2b`. **REPRODUCED ON LIVE DATA:** the shipped
+      4-way anchor reads `work=4`, the plant moves it to 3, verdict `LANDED` both times.
+- [x] **A TREE COPY IS PRUNED BY SHAPE, NOT BY NAME.** The brief named `differverdict` and `xd1`;
+      `dd-cone-wt`, `rf2root`, `strays/origin`, `strays/working` hold copies too and were being
+      counted as places a claim is stated. Partial copies included; the pruned list is printed.
+- [x] **21 ROWS -> 16 GRADED, 5 REFUSED, ERROR RATE 0/16, ONE LABELLER.** Refusals: `W3` `W5`
+      `W6` `W9` `U3` — prerequisites that are a re-run, declined rather than guessed at.
+      **`W6` is `NRUN` and NOT `GONE` as the sweep recorded: `checks/substrate-check.sh` and
+      `.agents/slop/substrate-check.sh` have IDENTICAL bodies and only ONE of them runs, so a
+      grep cannot tell them apart. Two files, one name: WALL/1a again, one level down.**
+- [x] **`STALE/UN-RE-ASKED` 11 OF 16 IS THE HEADLINE, AND IT IS NOT `KEPT`.** These walls'
+      capabilities ARRIVED, but the file carrying the words has no `REOPEN:` clause, so nothing
+      marks them re-asked. **`disposition` keeps WALL/1's two retirement acts apart, and the
+      void-but-un-re-asked set is the copy that gets forwarded as fact.** Only `U1` is `RE-DATED`.
+- [x] **REDUNDANCY IS PER LINE NOW.** A per-FILE conjunction counted 109 files for the key `CID`
+      (a comment on one line, "cannot be" 300 lines later). Per line, `WINDOW=2`:
+      **`U2` 1 place, `U4` 1, and `W2a`/`W2b`/`W4`/`W8`/`W10` 2 each — and
+      `tinybendygrad/mixin/dtype.bend` is the uncorrected copy in the 12-file rows, which is
+      exactly what WALL/7 predicted.** `KEY-TOO-BROAD` fires above 12 files: past that a count is
+      a sentence length, not a census.
+- [ ] **THE OTHER FIVE DANGLING PATHS ARE OTHER UNITS' GATES** (`blob-intern-gate.sh`,
+      `ops-gate.sh`, `li-control.sh`, `guardfix/probe-c.bend`, `mathlib/const_probe.bend`).
+      `probe-c.bend` is named by `FP8FIX.md` as the `W3` emit, and it is the one wall here whose
+      prerequisite cannot be rebuilt from the reports that cite it. **NOT RESTORED: a gate I do
+      not own, restored from a citation, is the false-warrant shape WALL/3 is about.**
+- [ ] **`RULE.md` AND `SWEEP.md` STILL NAME THE DELETED PATH**, so three `repro-paths.py` hits
+      are now stale references *out of my own unit's files*. Repointing them edits another unit's
+      records; left for the coordinator.
+- [ ] **RUN IT ON LOAD; DO NOT READ THE VERDICT.** `master` moved `eed25a30b` -> `8575adaab` while
+      this was written, and `uop/fold.bend` was edited under it. Every graded verdict held across
+      the move, and the report now prints the resolved commit and NAMES every file that differs
+      from it, so `SPLIT` is attributable rather than surprising.

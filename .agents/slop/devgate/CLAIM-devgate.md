@@ -1,7 +1,7 @@
 # devgate — is the `DEV` assignment in this file a SETTING, or a COMMENT?
 
 2026-10-04. Nothing committed. NEW files only; no other unit's tree touched except
-`.agents/slop/oracles/mm-range.py`, which the brief assigned and which is fixed (it now prints
+`oracles/mm-range.py`, which the brief assigned and which is fixed (it now prints
 `device: NULL`). Read `DEV-GATE.md` for the measured counts, the error rate, and the four bugs
 this instrument had in its own readout.
 

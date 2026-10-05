@@ -30,18 +30,18 @@ glob, never typed — a lane stdout dump (`*baseline*.txt`), a recorded lane map
 
 | file | counts | what it is |
 |---|---:|---|
-| `rebase/baseline.json` | 90 | **the** baseline: 30 ports × {interpreted, native, cpython oracle} |
+| `oracles/rebase/baseline.json` | 90 | **the** baseline: 30 ports × {interpreted, native, cpython oracle} |
 | `rebase/stability-2026-10-03.json` | 110 | 38 ports × lanes, each lane run **twice** |
-| `rebase/baseline-DEMO.json` | 24 | 8 ports × 3 lanes — see finding F1, it **disagrees** with the above |
-| `boot42_baseline_port.txt` | 1 | 768 distinct row names — the `nvdev.bend` capture NV7 quotes |
-| `memory-baseline-889.txt` | 1 | 889 |
-| `naming-gate-baseline.txt` | 1 | 668 |
-| `wgsl-baseline-172.txt` | 1 | 172 |
-| `vw-mut-baseline.txt` | 1 | 159 |
-| `amdev-baseline-552.txt` | 1 | 552 |
-| `ops-python-baseline-85.txt` | 1 | 85 |
-| `arena-jit-baseline.txt` | 1 | 137 — identified as `engine/jit.bend native` |
-| `rangeify-baseline-126.txt` | 1 | 126 — identified as `schedule/rangeify.bend native` |
+| `oracles/rebase/baseline-DEMO.json` | 24 | 8 ports × 3 lanes — see finding F1, it **disagrees** with the above |
+| `oracles/boot42_baseline_port.txt` | 1 | 768 distinct row names — the `nvdev.bend` capture NV7 quotes |
+| `oracles/memory-baseline-889.txt` | 1 | 889 |
+| `oracles/naming-gate-baseline.txt` | 1 | 668 |
+| `oracles/wgsl-baseline-172.txt` | 1 | 172 |
+| `oracles/vw-mut-baseline.txt` | 1 | 159 |
+| `oracles/amdev-baseline-552.txt` | 1 | 552 |
+| `oracles/ops-python-baseline-85.txt` | 1 | 85 |
+| `oracles/arena-jit-baseline.txt` | 1 | 137 — identified as `engine/jit.bend native` |
+| `oracles/rangeify-baseline-126.txt` | 1 | 126 — identified as `schedule/rangeify.bend native` |
 | `.mine-baseline.txt` | 1 | 40 — another unit's file, unidentified |
 
 This is the ledger. **It reads as almost entirely un-green, and it should.** The whole corpus was
@@ -112,7 +112,7 @@ row here standing as a record of what was measured at unknown load.
 
 ### F1 — Two files both called "baseline" disagree on 7 of 21 shared lane counts
 
-`rebase/baseline.json` (30 ports, 90 counts) and `rebase/baseline-DEMO.json` (8 ports, 24 counts)
+`oracles/rebase/baseline.json` (30 ports, 90 counts) and `oracles/rebase/baseline-DEMO.json` (8 ports, 24 counts)
 share **7 ports**. Of their **21** common (port, lane) pairs, **7 disagree**:
 
 | port / lane | `baseline.json` | `baseline-DEMO.json` |
@@ -133,7 +133,7 @@ rather than harmonised.
 ### F2 — The anchor number of the starvation invariant has three values and no unit
 
 `loadwatch.py` `_OBSERVED["full_rows"] = 787`, quoted from NV7 ("787 rows in 0.5 s"). The stored
-capture of that lane, `boot42_baseline_port.txt`, holds:
+capture of that lane, `oracles/boot42_baseline_port.txt`, holds:
 
 * **780** rows in **780** non-blank lines (787 total lines, 7 blank),
 * of which **768 are distinct names** — six names are emitted **3× each**
@@ -203,7 +203,7 @@ four were found *here* rather than by a reader.
   headline contradicted its own detail table three lines below it, which is the most expensive
   shape there is: a summary flattering itself while its own detail disproves it. Now computed from
   the load and elapsed-time facts alone, and it reads **0 of 234**.
-* **F10.** The ledger's `*baseline*.txt` glob matched `baseline-ledger.txt`, so **the ledger
+* **F10.** The ledger's `*baseline*.txt` glob matched `oracles/baseline-ledger.txt`, so **the ledger
   counted its own output**: the denominator read 234, then **235** seconds later, with no edit in
   between. `SELF` already excluded the census's own files from the *text* layer; it simply was not
   applied to the ledger's glob. Fixed, and the denominator is now stable at 234 across runs.

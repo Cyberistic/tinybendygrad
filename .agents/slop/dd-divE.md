@@ -44,7 +44,7 @@ and the two errors cancelled on the fnuz dtypes, which is why nothing noticed.
 the eight. For `c7` the oracle's row is a function of `dt` alone and has no single answer; the
 fresh run prints `F(ovf)`, the saved baseline prints `F(2139095040)`, and **both are correct
 CPython output** — for different `fr`. That is the one disagreement between the fresh oracle
-and `.agents/slop/dd-oracle.txt`, not a hand-typed constant.
+and `oracles/dd-oracle.txt`, not a hand-typed constant.
 
 `dd-oracle.py`'s `clamp_mx` drops `const_like`, which is a reimplementation of
 `dtype.py:128-131` in a file whose header says "nothing here is a reimplementation of it".
@@ -99,6 +99,6 @@ Note `c2` and `c3` are the SAME number in CPython (57344.0 by two different rout
     compared and eight missing fixtures read exactly like eight passing ones.
   * `dd-divE-run.sh` — run-health guard; self-tested `ok: healthy run on attempt 1`.
   * `dd-divE-prefix-bug.txt` — the FAIL-BEFORE capture (bug reverted in a copy of the tree).
-  * `dd-divE-after.txt` / `dd-divE-rows-degraded.txt` — the PASS-AFTER capture and a
+  * `dd-divE-after.txt` / `oracles/dd-divE-rows-degraded.txt` — the PASS-AFTER capture and a
     stack-overflowed run of the same code, kept because the pair is the evidence that a
     degraded run is indistinguishable from a passing one by row count alone.

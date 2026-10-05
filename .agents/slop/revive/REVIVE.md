@@ -214,7 +214,7 @@ failing run prints `bend 2.0.35 is available: run bend update`.
 
 | file | what it really is | what was done |
 |---|---|---|
-| `helpers-tc-gate.py` | **not a program.** 199 lines of recorded `name=value` rows (`trange_0_len=0`), raising `SyntaxError: invalid syntax` at `trange_0_seq=`. It is the *output* of `helpers-tc-gate.sh`, whose `GT=` prefix made it write `$GT.py` **into the repo**. | **RENAMED** to `helpers-tc-gate.rows` (+ `.rows.err`), and `helpers-tc-gate.sh` now writes `$GT.rows`. Re-ran the driver: `helpers-tc-gate: 237 shared rows, 3 lanes identical`, rc=0. `.bd`/`.bn` keep their names — those extensions name no language. |
+| `helpers-tc-gate.py` | **not a program.** 199 lines of recorded `name=value` rows (`trange_0_len=0`), raising `SyntaxError: invalid syntax` at `trange_0_seq=`. It is the *output* of `helpers-tc-gate.sh`, whose `GT=` prefix made it write `$GT.py` **into the repo**. | **RENAMED** to `oracles/helpers-tc-gate.rows` (+ `.rows.err`), and `helpers-tc-gate.sh` now writes `$GT.rows`. Re-ran the driver: `helpers-tc-gate: 237 shared rows, 3 lanes identical`, rc=0. `.bd`/`.bn` keep their names — those extensions name no language. |
 | `drift-gate.py` | a real driver that **served `$TMPDIR/drift-gate-cache/<stem>.{native,cpython}.txt` by default**, so a default run compared a live port against rows a different revision produced. | Cache is now **keyed on the port's sha256**, so a stale entry is unreachable; every served-from-cache lane says so on stdout; `--no-cache` forces a live run; `-r` also rebuilds. Also pinned through `oracle_py.resolve()` so it inherits the L-11 refusal instead of using `sys.executable`, and its `--check-only` note was corrected to the 14/122 table above. |
 | `nv_gate.py` | **appends a gate body from `$TMPDIR` into the live port** (`GATE = $TMPDIR/opencode/gate.bend`, `:8,19`). A mutator with a scratch-dir payload. | **NOT MINE — reported, not edited.** Shortest honest path: put the block in `.agents/slop/` (oracles live there per `agent-core.md`) and make it idempotent on a content hash, not a sentinel row. |
 | `tools/reorder-gate.py` | **rewrites a `.bend`** (`open(path,'w')`, `:109`). A code-mover wearing a gate's name. | **NOT MINE — reported, not edited.** It should be renamed; a file called `-gate` that rewrites the port invites exactly this miscount. |
@@ -282,7 +282,7 @@ three numbers with three names, and the verdict line says the set differences ar
 agreement about them.
 
 `dsl_gate.py` also compares against a **live** oracle run **twice** now, and excludes any row
-whose value differs between the two launches — which catches `dsl_oracle.txt:1604`'s
+whose value differs between the two launches — which catches `oracles/dsl_oracle.txt:1604`'s
 `fixed_hilo=<…FixedBitField object at 0x10911a510>.hi,0` heap address with **no name list**.
 MEASURED: the live oracle differs from the recorded file on exactly one line, `fixed_hilo`, and
 two consecutive launches differ from each other on that same one line and on no other. That is
@@ -300,7 +300,7 @@ the generalisation of `BASE_ORACLES`' name-based `elf_built_*` exclusion, done b
 * **`codegen/decomp/dtype.bend` is still RED on `c7`** (`refused:unported` vs `F(2139095040)`),
   reproducibly, on a plant of its own. Untouched here.
 * **`renderer/llvmir.bend`'s lane reads RE-PORTED at rest**, before and after this pass. That
-  is pre-existing baseline drift against `rebase/baseline.json`, not a consequence of anything
+  is pre-existing baseline drift against `oracles/rebase/baseline.json`, not a consequence of anything
   in this file; it is recorded rather than explained because I did not run it down.
 * **Row counts on `uop/ops.bend` are lower bounds**: load1 was 15–26 for most of this pass, so
   every verdict carrying it printed its own `STARVED` marker and said so.

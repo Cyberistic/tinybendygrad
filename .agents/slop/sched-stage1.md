@@ -1,10 +1,10 @@
 # STAGE 1 -- CPython's `create_schedule`, recorded field by field
 
 Oracle: `.agents/slop/sched-oracle.py` (run twice, `--twice`).
-Recorded output: `.agents/slop/sched-oracle.txt`.
+Recorded output: `oracles/sched-oracle.txt`.
 
     env -u PYTHONPATH LC_ALL=C DEV=NONE .venv/bin/python \
-      .agents/slop/sched-oracle.py --twice > .agents/slop/sched-oracle.txt
+      .agents/slop/sched-oracle.py --twice > oracles/sched-oracle.txt
 
 **DENOMINATOR: 6 specs attempted, 6 produced a schedule, 12 `create_schedule`
 calls, 12/12 deterministic across two runs. Plus 1 control.**

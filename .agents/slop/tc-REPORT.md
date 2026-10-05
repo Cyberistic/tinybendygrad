@@ -8,7 +8,7 @@
 | 3 | **discover the existing port** | DONE | `tinybendygrad/codegen/transcendental.bend` (TODO round 4, 891 rows) ports the GRAPH; TODO leaves the float64 coefficients "NOT independently verified". This file is that missing half. |
 | 4 | prove the float32 lane is expressible | DONE | `F32.bits(F32.read(repr))` == `struct.pack('<f', …)`; all 12 F32 arithmetic probes bit-exact |
 | 5 | coefficient authority, by CALLING tinygrad | DONE | `.agents/slop/tc-audit.txt`, 146 constants, 3 channels (polyN spy, `shr`/`shl` spy, source eval) |
-| 6 | value oracle, by CALLING tinygrad | DONE | `.agents/slop/tc-rows-value.txt`, 558 rows, `DEV=PYTHON`, `Tensor(tinygrad_fn(uop)).numpy()` |
+| 6 | value oracle, by CALLING tinygrad | DONE | `oracles/tc-rows-value.txt`, 558 rows, `DEV=PYTHON`, `Tensor(tinygrad_fn(uop)).numpy()` |
 | 7 | coefficient rows generated into the Bend source | DONE | `tc-gen.py`; **no digit in the file is mine** |
 | 8 | port the value layer | DONE (partial — see GAPS) | `ALL PROOFS CHECK`, 1164 lines, 194 defs/types, 737 rows printed |
 | 9 | two-lane diff | PARTIAL | `.agents/slop/tc-diff.py`, whole `name=value` lines |
@@ -102,7 +102,7 @@ matches CPython.** The remaining 3 are `xf_pi_a` (1 ULP, real) and the two
 integer-vs-f32 spelling mismatches.
 
 Oracles, all in `.agents/slop/`: `tc-audit.py` (+ `.txt`), `tc-value.py`
-(+ `tc-rows-value.txt`), `tc-gen.py rows` (+ `tc-rows-coef.txt`), `tc-diff.py`,
+(+ `oracles/tc-rows-value.txt`), `tc-gen.py rows` (+ `oracles/tc-rows-coef.txt`), `tc-diff.py`,
 `tc-build.py`, `tc-mutate.py`, `tc-rows.py`.
 
 # MUTATION TABLE — NOT RUN, and why
