@@ -38,6 +38,9 @@ from tinygrad import Device, dtypes
 
 def build(dtype_c=DTYPE_C, exe=EXE):
     r = subprocess.run(
+        # dtype_c is an ABSOLUTE path but `#include "dtype.c"` resolves against
+        # the includer's dir then -I, so the dir must be on -I. Measured, not
+        # guessed: dropping it is the whole of the failure above.
         ["cc", "-O2", "-I", HERE, "-I", os.path.dirname(dtype_c), "-o", exe,
          os.path.join(HERE, "bf16_gate.c"), "-lm"],
         capture_output=True, text=True)
