@@ -1819,6 +1819,81 @@ def i64_shl.put(low: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
 def i64_shl(+x: I64, +k: Nat) -> I64:
   i64_shl.put(U32.is_le(U32.from_nat(k), 32), hi32(x), lo32(x), k)
 
+# THE RIGHT SHIFT, AND IT IS ARITHMETIC. `tinygrad/uop/ops.py:1429` binds `Ops.SHR` to
+# `operator.rshift`, which on a CPython int IS the sign-extending (floor) shift, and
+# `tinygrad/codegen/decomp/dtype.py:48` says it twice -- "vacated high word: sign bits
+# when signed, else 0" and `fill = a1 >> 31 if dt == dtypes.int else zero`. So SHR of an
+# `int64` extends the sign and SHR of a `uint64` does not, and the two differ on exactly
+# one bit pattern: the sign. `i64_shr` IS the arithmetic one, because the pair is signed
+# (`i64_is_neg` reads bit 63 of the high word) -- a logical `int64` shift does not exist
+# upstream, and the unsigned reading is a `BITCAST` away rather than a second def.
+#
+# THE FOUR TERMS, for `k <= 32`, and each one is necessary:
+#     lo' = (lo >> k) | (hi << (32-k))    the low word keeps lo's top bits and receives
+#                                         hi's low `k` bits, which is the ONLY place the
+#                                         high word reaches the low one
+#     hi' = (hi >> k) | (fill << (32-k))  the high word keeps hi's top bits and receives
+#                                         the SIGN repeated, which is what makes the shift
+#                                         arithmetic
+#
+# THE FILL IS INVISIBLE ON EVERY NON-NEGATIVE VALUE, which is half the fixture set and the
+# reason half of it cannot see a deleted fill: the fill is `0` when the high word's bit 31
+# is clear, so dropping it changes nothing for `zero`, `one` or `max` and everything for
+# `neg1`, `signmin` or `spill`. Planted and MEASURED: 18 of 301 rows move, all six on
+# those three values, `.agents/slop/ishr/plant.py` P1. `spill` is what makes the remaining
+# four terms load-bearing -- its high word is negative AND not all ones AND its bit 0 is
+# set, so at `k = 1` all four terms are individually necessary.
+#
+# THE SIGN FILL IS NEEDED IN **BOTH** WORDS FOR `k > 32`, AND OMITTED FOR `k <= 32`. This
+# is the whole asymmetry with `i64_shl` and it is a property of the BIT INDEXES, not a
+# choice. Bit `j` of the result is bit `j+k` of `x` while `j+k <= 63`, and the sign after
+# that. The HIGH word is bits 32..63, so for every `k` it is past the top of `x` and is
+# ALL fill. The LOW word is bits 0..31: for `k <= 32` all of `j+k` is at most 63, so the
+# low word holds REAL bits and no fill at all; for `k > 32` its top `k-32` bits are past
+# the top of `x` and are fill too. Writing the fill into the high word only is the
+# plausible version and it is WRONG for every amount above 32 -- `i64_shr(-1, 33)` comes
+# out `0xFFFFFFFF:0x00000000` where the answer is `0xFFFFFFFF:0xFFFFFFFF`. Gate row
+# `sr_neg1_3`, amount 33; planted as P2, and 36 of 301 rows move, NOT ONE of them at an
+# amount at or below 32 -- which is the 60 cells that implementation still gets right.
+#
+# `k == 0` AND `k == 32` ARE THE TWO AMOUNTS WHERE THE TWO FORMS MEET, and both are
+# answered by the SAME arm, so the test is `k <= 32` and not `k < 32`: at 32 the low word
+# is `hi >> 0 | hi << 0 = hi` and the high word is the fill alone.
+#
+# FOR `k > 32` NOTHING OF `lo` SURVIVES -- `lo` supplies only the bits that land in the
+# high word's bottom `k-32` positions -- so this is the mirror of `i64_shl`'s "FOR
+# `k >= 32` THE HIGH WORD COMES FROM `lo` AND ONLY FROM `lo`", and, as there, `Nat.sub`
+# TRUNCATES so the eagerly-evaluated other arm of the `Bool.pick` is harmless.
+#
+# THE FILL AMOUNT PAST 64 IS `Nat.sub` TRUNCATION, NOT A CLAMP, AND IT IS RIGHT BY THE
+# WIDTH LAW: for every `k >= 64` the answer is the fill, and `Nat.sub(32n, k-32)` is 0
+# there, so `U32.shln(fill, 0n)` is the fill -- the saturation `U32.shln` would have done
+# is never reached, and both agree anyway.
+#
+# THERE IS NO WIDTH BOUNDARY, WHICH IS WHERE THIS DIFFERS FROM `i64_shl`. `x >> k` is
+# `floor(x / 2**k)`, so `|x >> k| <= |x| <= 2**63` for every `k <= 63` and for every
+# `k >= 64` it is `-1` (x < 0) or `0` (x >= 0) -- ALL IN RANGE. So this def is EXACT AT
+# EVERY `Nat` AMOUNT for every `int64`, the answer is always representable as the pair,
+# and there is nothing to check: no `Maybe`, no wider carrier, no `u1`. `i64_shl` grows in
+# magnitude and loses the top bit past `k + bit_length(x) <= 63`; a right shift cannot.
+# `U32.shrn` SATURATES to 0 past 31, which is what supplies the `0` in `lo' >= 64` and
+# the whole of the `k >= 64` answer for a non-negative `x`, and `match_hi` supplies the
+# `-1`.
+def i64_shr.lo(+neg: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
+  i64_of_hi_lo(U32.or(U32.shrn(hi, k), U32.shln(match_hi(neg), Nat.sub(32n, k))),
+    U32.or(U32.shrn(lo, k), U32.shln(hi, Nat.sub(32n, k))))
+
+def i64_shr.hi(+neg: Bool, +hi: U32, +k: Nat) -> I64:
+  i64_of_hi_lo(match_hi(neg), U32.or(U32.shrn(hi, Nat.sub(k, 32n)),
+    U32.shln(match_hi(neg), Nat.sub(64n, k))))
+
+def i64_shr.put(+neg: Bool, +hi: U32, +lo: U32, +k: Nat) -> I64:
+  Bool.pick(I64, U32.is_le(U32.from_nat(k), 32), i64_shr.lo(neg, hi, lo, k),
+    i64_shr.hi(neg, hi, k))
+
+def i64_shr(+x: I64, +k: Nat) -> I64:
+  i64_shr.put(i64_is_neg(x), hi32(x), lo32(x), k)
+
 # ===========================================================================
 # THE 64-STEP UNSIGNED RESTORING DIVIDER
 #
