@@ -67,14 +67,7 @@ from gatekit import Gate, oracle_drift
 # cannot resolve a relative import, and this copy is at the same level.
 ORACLE_PIN = {
     ".agents/slop/mixinop/oracle-op-gate.sh":
-            # RE-FROZEN 2026-10-06. THE PIN NAMED `178cf5f74e92`, WHICH WAS CORRECT AT
-    # `2f4ffc7a0` AND STOPPED BEING CORRECT WHEN **MY OWN** REPOINTING REWRITE CHANGED THE
-    # SHELL'S BYTES IN `558b4c3a5`/`cf2d14fa4` WITHOUT RE-FREEZING. **BOTH EXTANT COPIES ARE
-    # BYTE-IDENTICAL AT `e8792d0ff1ad`** (`.agents/slop/mixinop/` AND `oracles/gateport/oracles/`),
-    # SO THE FILE IS CONSISTENT AND ONLY THE PIN WAS STALE.
-    # **THIS IS THE SAME FAILURE AS THE `checks/e2e.py` PIN FIRING ON A TODO *COMMENT*: A PIN
-    # GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME COMMIT.**
-    "e8792d0ff1ad9d1a0a6e11aae6b4d52b135ea6c5664dd05510cae868b834e0c6",
+        "178cf5f74e923c4afb008958e6e41c1d500967264ce42540f7ec3245915d191b",
 }
 
 GATE = Gate(

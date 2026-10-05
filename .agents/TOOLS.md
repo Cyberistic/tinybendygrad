@@ -1388,3 +1388,44 @@ group are literals on both sides. See NV-2 in the notes.
 | `.agents/slop/bitcastrow/bc-gen.py` | Emits `bc-rows.bend` AND `bc-oracle.py` from `table.py`, and asserts the driver's row count against the table in the same breath. Every dim goes in as an `(hi, lo)` word pair through `i64_of_hi_lo`: `i64_of_i32` sign-extends, so it cannot express `dim = 2**60` — the defect under test is also the fixture-encoding limit. |
 | `.agents/slop/bitcastrow/bc-diff.py` | Compares whole `name=value` lines, as a **multiset**. `fold.bend` emits `lf_sub_int32_-3_4` TWICE and a dict collapsed the pair — the lane then counted 333 for 334 rows and `--rows 334` failed for a reason unrelated to the change. **Asserts non-emptiness BEFORE comparing**, which is the `""` vs `""` failure `gates/README.md` records for the retired shell form. |
 | `.venv/bin/python checks/bounded.py --seconds 900 --mb 2048 -- ./bin/bend F` | Every `bend` invocation. **2048, NOT 1024**: `sz.bend` peaks at 1,468 MB, so a ceiling below the population's own maximum is a ceiling that CHANGES VERDICTS. Parse the VERDICT TOKEN, not the exit code. |
+
+### `txtgen` (2026-10-06) — the `.txt` GENERATORS, and two declarations that had never been measured
+
+| tool | why |
+| --- | --- |
+| `.venv/bin/python .agents/slop/txtgen/declared-completeness.py` | **Answers the question `.agents/slop/difftxt/DECISION.md` rested on evidence for:** is `checks/differ.py`'s `declared()` COMPLETE, or merely correct about ONE run's tree? It RUNS `cmd_run` with `D` sandboxed and every subprocess stubbed to `rc=0`/0 bytes, then diffs what the driver WROTE against the declaration. **Reading the source cannot answer this** — four static checks found zero divergence while re-deriving from the same tables `declared()` derives from, which is exactly the evidence that cannot detect drift. It is also the only method that survives `differ.py:301`, which opens `D2-canon-*.txt` **directly** and so bypasses `run`/`write`/`capture` — instrumenting the choke points would have missed 32 names and reported a false pass. **MEASURED COMPLETE TWICE: 103 = 103, then 139 = 139 after another unit rewrote `cmd_run` to iterate `corpus()` instead of `WANT`.** rc 0/1. |
+| `.venv/bin/python .agents/slop/txtgen/orphan-plant.py` | **Plants both directions of the carve-out's sharp edge.** Plant A: an orphan `runs/graphcmp/D/*.txt` → unexcused + `UNEXPECTED` (reproduces DECISION.md's 602 → 603 as **448 → 449**). **Plant B: a DECLARED name removed from the tree → `MISSING`. Nobody had planted B** — the declaration and the tree diverging *silently* is the other way this rots. Both undo in a `finally`; `runs/graphcmp/D` verified byte-identical after. rc 0/1. |
+| `.venv/bin/python .agents/slop/txtgen/docs-agree-with-driver.py [--against HEAD]` | **A rename claim is a claim about a `>` REDIRECTION, so it is checkable.** Reads the driver's `GT=` prefix and the lanes it names, whitespace-normalises each document, and asserts the claimed destination starts with the driver's own prefix. `--against HEAD` replays the committed driver **AND** the committed documents together. **Measured 3/3 DISAGREE against HEAD, 3/3 agree in the working tree.** Caught in the act: all three documents claimed `oracles/` (nothing was ever moved) AND "the driver now writes `$GT.rows`" (it wrote `$GT.py`), while quoting `237 shared rows` — a line the driver prints EITHER WAY, so the evidence certified nothing. |
+| `.venv/bin/python .agents/slop/txtgen/census-cache-plant.py` | Proves a rename whose gate **cannot run** still moved its READ site. `checks/census.py` cannot import (`graphcmp` swept), so the usual "run it, read the verdict" is unavailable and an unrunnable rename is exactly what survives three documents. Stubs the dead import — the emit functions RAISE, so a run that missed the cache could not pass — plants a warm cache at the new name, and asserts the reader finds it. **`CACHE, 1 row`; a `.txt` cache beside it is ignored.** |
+
+**THE GENERAL RULE, now an amendment to V-9 in `bend2-constraints.md`: a citation and a write path
+are the same token, and three documents restating one another are ONE witness, not three.** All
+three of `.txt` generators under this heading are **DEAD** — the sweep `371cc64c9` deleted
+`helpers-oracle.py`, `helpers-tc.bend`, `canon.py` and `checks/graphcmp.py` while keeping the
+drivers and the citations, which is the same defect as the two `sys.exit(2)` gates and as e2e
+stages 3/5: **a gate's inputs are a NECESSARY condition for the gate.** Report:
+`.agents/slop/txtgen/REPORT.md`.
+
+### `clearfix` (2026-10-06) — the two gates' pre-run `sys.exit`, and four harness defects
+
+| tool | why |
+| --- | --- |
+| `.venv/bin/python .agents/slop/clearfix/clearfix-repro.py` | **Green / drift / disagree × 3 lanes, both gates, STALE as sha256 against that lane's own previous green run.** The lane that matters runs the **LIVE gate unedited** against a repaired library, so it measures the *mechanism*; the lane beside it runs the **frozen pre-fix gate** against the same library, so it shows the repair does not depend on the gate having been updated. The third beat — a diff *inside* `run()` — is the **negative control**: if it read STALE the way the drift beat does, the drift reading would mean "red run", not "last green run's bytes". `REPRO HOLDS`. |
+| `.venv/bin/python .agents/slop/clearfix/gate-matrix.py` | **All 9 gates, both `gatekit`s, real drivers, no shadow tree.** Verifies a cleanup fix against the whole population instead of a fixture. Its **failure shape is chosen by the gate**: a PINNED gate is red via a pin nothing can match, which exits *before* `run()` and is the bug's own shape; an UNPINNED gate is red via the diff *inside* `run()` and is a **CONTROL** — clean under every lane, and printed as such because an instrument that fires on everything measures nothing. `2 of 2 MEASURED` gates strand 6 files under HEAD, `0` under OPT2. |
+| `.venv/bin/python .agents/slop/clearfix/plant-disarm.py` | **Plants the artifacts themselves** (marker bytes → STALE against the planted bytes, so sha256 reads content not presence), **removes the repair** (6/6 STALE: the bug is back), and **re-inserts the early `sys.exit` at three positions** — module scope, after construction, beside the drift check — each `ast.parse`d and each disarmed by rebuilding from `HEAD` and **sha-verifying**. Also **builds options 1 and 3 as diffs** and runs them, because "all three are defensible" is only a claim if two of them were made into code. |
+| `.venv/bin/python .agents/slop/clearfix/freeze.py` | Materialises `gk/` and `gk2/` from `HEAD:gates/gatekit.py` and prints every sha, plus the diff. **`gk2` is `gk` plus one line**, so the whole matrix is attributable to that line. Anchors are asserted present — a fixture that silently patches nothing is worse than one that fails. |
+
+**THE GENERAL RULE: a cleanup fix belongs at CONSTRUCTION, not at exit.** `Gate.run()`'s
+`_clear()` covers every exit *reached*; `Gate.__init__`'s covers every exit *existing*, and it
+survives an early exit at MODULE SCOPE that no caller-side line can. MEASURED against
+option 3 (a public `clear()` the caller must place correctly): placed right it clears, placed
+one line lower — between the drift check and `run()` — it strands **6/6**, because
+`sys.exit(2)` is two lines above it. **A caller-side repair has a correct position and a
+plausible wrong one, and only review distinguishes them.**
+
+**AND `bounded.py`'s verdict token goes to STDERR, not stdout.** Reading stdout alone printed
+`NO TOKEN` for a run that had completed. Three of this harness's four defects were its own:
+a shared scratch root deleted a *staged* `.tmp.gate.bin` mid-compile (`ld: errno=2`, a failure
+that never happened); a frozen library could not resolve drivers living in `gates/`, so six of
+nine gates read as broken; and the green and red beats ran in **different directories**, so
+the red beat began EMPTY and one gate printed `cleared`.

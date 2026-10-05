@@ -37,8 +37,8 @@ import sys
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-ROOT = HERE.parent
-ART = HERE / "artifacts"
+ROOT = next(p for p in HERE.parents if (p / "bin" / "bend").is_file())
+ART = HERE / "gk-artifacts"
 BEND = ROOT / "bin" / "bend"
 PY = ROOT / ".venv" / "bin" / "python"
 
@@ -146,16 +146,6 @@ class Gate:
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
                  pins=None, port_only=None, canon=None, warm="fatal"):
         self.name = name
-        # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
-        # MEASURED 2026-10-06: `_clear()` sat in `run()`, and **5 of 17 exits are AFTER the lanes write** —
-        # plus `gates/mixin-op-gate.py` and `gates/beautiful-mnist-gate.py` call `sys.exit(2)` *before*
-        # `GATE.run()` is reached, so 6 artifacts survived a red run BYTE-IDENTICAL. Under this placement
-        # both gates go rc=2 with an EMPTY directory.
-        #
-        # **A CALLER-SIDE REPAIR HAS A CORRECT POSITION AND A PLAUSIBLE WRONG ONE:** wrapped before the
-        # first check it is EMPTY, wrapped between the drift check and `run()` it strands 6/6 STALE,
-        # because `sys.exit(2)` is two lines above it. **ONLY CONSTRUCTION IS BEFORE EVERY PATH.**
-        # THIS SURVIVES AN EARLY EXIT AT MODULE SCOPE, BEFORE `Gate(...)` EVEN EXISTS.
         # A GATE'S INPUTS LIVE BESIDE THE GATE. `.agents/slop/` is being pruned, and a
         # prune took seven of nine driver and oracle files out from under these gates --
         # every one of them went red on "no such file" rather than on a value. A gate whose
@@ -177,24 +167,13 @@ class Gate:
         self.warm_out = ""
         self.dir = ART / name
         self.dir.mkdir(parents=True, exist_ok=True)
-        # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
-        # MEASURED 2026-10-06: `_clear()` sat in `run()`, AND **5 OF 17 EXITS ARE AFTER THE LANES WRITE** --
-        # PLUS `gates/mixin-op-gate.py` AND `gates/beautiful-mnist-gate.py` CALL `sys.exit(2)` *BEFORE*
-        # `GATE.run()` IS REACHED, SO **6 ARTIFACTS SURVIVED A RED RUN BYTE-IDENTICAL.** UNDER THIS
-        # PLACEMENT BOTH GATES GO rc=2 WITH AN EMPTY DIRECTORY.
-        #
-        # **A CALLER-SIDE REPAIR HAS A CORRECT POSITION AND A PLAUSIBLE WRONG ONE:** WRAPPED BEFORE THE
-        # FIRST CHECK IT IS EMPTY; WRAPPED BETWEEN THE DRIFT CHECK AND `run()` IT STRANDS 6/6 STALE,
-        # BECAUSE `sys.exit(2)` IS TWO LINES ABOVE IT. **ONLY CONSTRUCTION IS BEFORE EVERY PATH**, AND IT
-        # SURVIVES AN EARLY EXIT AT MODULE SCOPE, BEFORE `Gate(...)` EVEN EXISTS.
-        self._clear()
 
     def _resolve(self, p):
         """beside the gate first, then the repo root, then as given"""
         q = Path(p)
         if q.is_absolute():
             return q
-        for base in (HERE, ROOT):
+        for base in (HERE, ROOT, ROOT / "gates"):
             if (base / q).exists():
                 return base / q
         return HERE / q

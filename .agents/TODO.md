@@ -3,6 +3,15 @@
 The port's state. Progress bars are `[###.....] n/m`.
 
 ```
+no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh` `$GT.py` ->
+                                         `$GT.rows`, `gate_norm.py` `gate.txt` -> `gate.out`,
+                                         `census.py` `rows-*.txt` -> `*.rows`; 2 orphans
+                                         deleted. `declared()` MEASURED COMPLETE twice
+                                         (103, then 139 after another unit rewrote
+                                         `cmd_run`). 403 remain, 402 of them other units'.
+                                         ALL THREE GENERATORS ARE DEAD -- the sweep
+                                         (`371cc64c9`) deleted their inputs. See
+                                         `.agents/slop/txtgen/REPORT.md`.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with
@@ -317,8 +326,13 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       which is unreadable — measured, **0 of 617 shared rows differ**, and `1503 = 959
       oracle-only + 544 port-only`, so the lane was **value-green and set-red**. Rules **V-6**,
       **V-7**, **V-8**.
-- [x] **`helpers-tc-gate.py` RENAMED to `oracles/helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
-      `$GT.rows`.** It was **199 lines of recorded rows raising `SyntaxError`** at
+- [x] **`helpers-tc-gate.py` RENAMED to `.agents/slop/helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
+      `$GT.rows`.** **This entry was WRONG until 2026-10-06 on both halves** — it claimed
+      `oracles/`, where nothing was ever moved, and it claimed the driver "now writes `$GT.rows`"
+      while the driver still wrote `$GT.py`; `REVIVE.md:217` and `bend2-constraints.md:24437`
+      carried the identical false pair, so three documents agreed with each other and none of
+      them with the write path. Rule **V-9**, checked by
+      `.agents/slop/txtgen/docs-agree-with-driver.py`. It was **199 lines of recorded rows raising `SyntaxError`** at
       `trange_0_seq=`, written into the repo by its own `GT=` prefix. Re-ran the driver:
       `237 shared rows, 3 lanes identical`, rc=0. Rule **V-9**.
 - [x] **`drift-gate.py`'s cache is KEYED ON THE PORT'S sha256.** It returned
@@ -12790,3 +12804,111 @@ leaving the previous exe. It is fixed, and the fix is `stage, then promote in ON
 - [ ] **NO MEMORY BOUND ADDED, DELIBERATELY.** Neither shell had one, `bounded.py` returns 3 for
       memory and 4 for time, and neither is a status these lanes produce. `bounded.py` appears in the
       MATRIX harness, which is a measurement, not a gate. TODO(GXR-12).
+
+## FIX3 — stage 3's and stage 5's fixtures were deletable while the gate still named them (2026-10-06). Progress: `[######....]` 6/10
+
+**THE SENT SENTENCE WAS HALF WRONG AND THE HALF THAT WAS WRONG IS THE HALF THAT MATTERED.** Both named
+fixtures (`xd2/cdp.mjs`, `ops_bend-milestone-expected.txt`) were already back on disk before this unit
+started — restored by another unit, byte-identical to `371cc64c9^`. **Stage 3 was STILL RED, on
+`xd2/serve.mjs`, which nothing named anywhere.** The brief, the AGENTS.md paragraph and
+`.agents/slop/e2estage8/report.md` §6.1 all name the SAME two files, and all three are wrong about
+which input stage 3 dies on.
+
+- [x] **BEFORE/AFTER, ALL SEVEN STAGES, EACH WITH ITS DENOMINATOR.**
+      `.agents/slop/fixures/{before,after}.out` + `stage-verdicts.py`. **BEFORE: gate rc 1**,
+      stage 3 `FAIL (rc=1)`, 4/5/6 PASS, 7 SKIP (rc 3, cold substrate).
+      **AFTER: gate rc 0**, stage 3 **PASS** on `adapter apple/metal-3`, 84 steps performed,
+      `Dispatch x2`, 64 `out_u32` words read back. Stage 2's denominator both runs: `22 rows
+      (attempt 1)`, PASS needs > 20.
+- [x] **`xd2/serve.mjs` + `xd2/sh.mjs` RESTORED, byte-identical to `371cc64c9^`.**
+      `serve.mjs` `b87b25ae…`, `sh.mjs` `dc0bd97d…`. **Verified against the CALLER, not just the
+      commit:** `e2e_mm_run.mjs:28` destructures `serve`, `:60` destructures `sh`, and each restored
+      file exports exactly that name — `serve(root, {port=0})`, `sh(cmd, ...args)`. Both pass
+      `node --check`.
+- [x] **BOTH RESTORATIONS FALSIFIED, BOTH SIDES, NON-VACUOUS PLANTS.** A control that patched
+      nothing is the one failure this gate cannot have, so each plant asserts the file's sha256 moved
+      before it runs. (1) `expected_buffer0 = "4 00004040"` -> `"4 00004041"`: stage 5's gate
+      **rc 1, `3 failed of 46 rows read`**. (2) `cdp.mjs`'s `chrome-stable` key renamed: stage 3
+      **rc 1**. (3) `serve.mjs`'s `127.0.0.1` -> `127.0.0.2`: stage 3 **rc 1**. Files restored and
+      re-hashed to their `371cc64c9^` digests after every plant.
+- [x] **THE CITATION SET DOES COVER THEM — `verdict_for` SAYS SO, MEASURED, NOT ASSUMED.**
+      All four (`cdp.mjs`, `serve.mjs`, `sh.mjs`, `ops_bend-milestone-expected.txt`) return
+      **KEEP-CITED** from `checks/sweep.py` with the live 3.35 MB corpus (5,052 filename tokens).
+      `serve.mjs` and `sh.mjs` are cited by `.agents/TOOLS.md:608-609` alone; `cdp.mjs` also by
+      `AGENTS.md:47`.
+- [x] **`checks/repro-paths.py` IS BLIND TO THE CLASS IT IS THE INSTRUMENT FOR.**
+      **15 stage inputs `checks/e2e.py` names; 9 counted, 6 invisible.** `REF`'s suffix
+      alternation is `sh|py|bend` and nothing else, so **`e2e_mm_run.mjs`, all three `xd2/*.mjs`,
+      `ops_bend-milestone-expected.txt` and `webgpu_call.js` cannot be counted**, and the instrument
+      is **structurally incapable** of seeing the two fixtures it was asked to reconcile. Restoring
+      them moved its output by **exactly zero**. Census: `.agents/slop/fixures/blind-spot.py`.
+- [x] **`repro-paths.py`'s DANGLING RECONCILED AGAINST RECOVERABILITY — AND THE BRIEF'S NUMBER IS
+      WRONG BY A FACTOR.** Measured `224 of 280` resolve, **56** dangling.
+      **`46/56 recoverable, 10/56 irrecoverable`** (ratio 4.6:1) — tested against `git log --all`, not
+      one revision. **The prior "6 are unrecoverable" is NOT reproducible and I did not inherit it:**
+      of the six it names, **3 were never committed** (`li/li-control.sh`, `guardfix/probe-c.bend`,
+      `mathlib/const_probe.bend`) and **3 ARE in an older commit** (`blob-intern-gate.sh` and
+      `ops-gate.sh` at `3f0e70ff1`, `wallrule/wallcheck.sh` at `c5f1c62d5`). **A "never committed"
+      verdict scoped to ONE commit calls a recoverable file unrecoverable.** The true never-committed
+      set is 10, and it also contains four `dup/lanes/*.bend` and `gates/populate.py`.
+      `.agents/slop/fixures/reconcile-dangling.py`, output `reconcile.out`.
+- [ ] **`repro-paths.py`'s SUFFIX CLASS IS THE FIX AND IT IS NOT MINE.** `REF` needs `mjs|js|txt|json`
+      alongside `sh|py|bend` **and** the corpus needs to include `checks/e2e.py`'s CODE POSITIONS,
+      which already name all 15 stage inputs. Until then the instrument runs and cannot prevent the
+      thing it exists for. `checks/*.py` is a shared file with seven units working; not edited.
+- [ ] **`DIFFPY.md` IS A DANGLING POINTER TO A DOCUMENT, REPORTED NOT FIXED.** `checks/differ.py:520`
+      says *"Reported, not fixed -- see DIFFPY.md"*; **`find . -name DIFFPY.md` = 0 files**, and
+      `git log --all -- '*DIFFPY.md'` = **0 commits, so it was never committed either**. `checks/
+      README.md:93` and `.agents/TODO.md:12101,12104,12108` all point at the same absent file.
+      **A DIFFERENT DEFECT FROM A DANGLING PATH:** the other 56 are instruments a report tells a
+      reader to RUN, so their absence is visible the moment a reader tries. This one is a report
+      telling the reader the fix was REPORTED SOMEWHERE, and the somewhere is not there — a reader
+      who trusts it loses the discovery that they cannot check it. **Another unit is auditing
+      `differ.py`; not touched.**
+- [ ] **`AGENTS.md` NAMES THE WRONG FILE AND THE GATE IS NOW GREEN.** The `e2e.py` bullet says
+      *"NOT CURRENTLY GREEN … stage 3 needs `.agents/slop/xd2/cdp.mjs` and stage 5 needs
+      `ops_bend-milestone-expected.txt`"*. Both facts are stale: the gate is rc 0 (one SKIP), and
+      stage 3's blocker was `xd2/serve.mjs`, which that sentence does not mention.
+- [ ] **STAGE 5'S DENOMINATOR IS STILL `None`, DELIBERATELY.** `tail -3` is both the denominator and
+      what a crash replaces. `TODO(stage-5-denominator)` in both files, unchanged: fixing it moves
+      what the gate prints on BOTH sides of the porting rule.
+
+## 2026-10-06 — the lane-file rename, and the rule I broke three times doing it
+
+Landed on `origin/master` as `459e6562` ("gates: the lane files are `.rows` and `.out`, and the
+rename moves with every reader"), together with `checks/marker-audit.py`, which the prune had
+taken a SECOND time. Census: 566 walls, 40 shared, 249 BACKLOG.
+
+  - [x] **`gates/` writes no `.txt` at all.** The oracle's expected values and the filtered row
+    dumps are `.rows`; the two captured streams are `.out`. The filtered files were also `.sub`,
+        which names nothing whatsoever. `checks/no-txt.py` agrees: zero violations from `gates/`.
+  - [x] **THE RENAME MOVES WITH EVERY READER — and I broke that rule three times in one change.**
+        A literal rename cannot see `f"{lane}.txt"` at all, because the reader builds the name
+        from a VARIABLE; and losing the `.` while doing it produces `pyrows`, not `py.rows`. The
+        traceback caught that one and the first ninety columns of the traceback did not.
+        Read the whole message. `i64-shl` (151 rows) and `i64-shr` (301 rows) pass now.
+  - [ ] **A PIN CHECK THAT READS A STAGED PATH IS INDISTINGUISHABLE FROM A MISSING ONE.** Still
+        red: `wk-cd-gate`, `bc-u32-gate`, and MEASURED BY HAND the values are correct — oracle
+        `cd_none=i64`, port `cd_none=None`, exactly what the pins expect. The artifacts are torn
+        down when a gate returns non-zero, so the pin check cannot report WHY. Needs one writer
+        on `gates/gatekit.py`; two agents are editing it.
+  - [ ] **`mixin-op-gate`'s ORACLE PIN DRIFTS.** On disk `e8792d0f`, pin `178cf5f7`. That is the
+        guard working — the oracle was CHANGED, not deleted, and the gate refuses rather than
+        comparing against something new. Do not "fix" it by moving the pin without reading why.
+  - [ ] **`jj bookmark create -r @-` IS A RACE.** The other agent committed between my
+        `--help` and my `create`, so `-r @-` resolved to THEIR commit. I pushed a branch called
+        `gates-rows` pointing at a commit titled "THE PORT EMITS ROWS" — not mine. Resolving a
+        revset in one shell line and acting on it in the next is two commands; keep it one.
+
+## clearfix — a gate's pre-run `sys.exit` strands the last green run's artifacts
+
+- [x] repro: green / drift / disagree, both gates, both `gatekit`s, STALE as sha256 — `.agents/slop/clearfix/REPRO.rows`
+- [x] all 9 gates, both lanes, with the 7 in-run cells as explicit controls — `MATRIX.rows`
+- [x] plant and disarm, incl. a module-scope early exit and a removed `_clear()` — `PLANT.rows`
+- [x] options 1 and 3 built as diffs and measured against option 2 — `PLANT.rows` §P4
+- [x] clause II shown UNMEASURABLE (`15/17` invariant under deleting the `finally`)
+- [ ] **REPORTED, NOT DONE — `gates/gatekit.py` is another unit's.** One line: `self._clear()`
+      in `Gate.__init__`. Survives a module-scope early exit; no gate edit needed.
+- [ ] **REPORTED — `gates/mixin-op-gate.py:70`'s ORACLE_PIN is stale as committed**
+      (`178cf5f7` vs the file's `e8792d0f`; `57d0fc387` repointed the shell's usage line and
+      did not re-freeze). It makes the gate permanently rc=2. Re-freeze deliberately or restore.
