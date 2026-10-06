@@ -1,0 +1,1 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=663 MB (ceiling 2048)  46s  :: .venv/bin/python .agents/slop/abi4check/table-now.py  out=7266B err=0B
