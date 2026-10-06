@@ -242,7 +242,8 @@ PINS = {
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
 }
 # THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
-# `oracle-run.sh` writes all 103 and reads twelve of them by name in its own summary block;
+# `oracle-run.sh` writes all `declared()` names and reads twelve of them by name in its own
+# summary block;
 # `oracle-repro.sh` reads one by name (`:61`) and globs five families (`:105`, `:114`); this file
 # reads twelve by name and globs the rest; `checks/corpus-figure.py:72` reads `D0-run-summary.txt`
 # and refuses on it. So the list lives with the GENERATOR and the two things that must agree with
