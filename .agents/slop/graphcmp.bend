@@ -1333,60 +1333,6 @@ def g_flip() -> O.Found:
 # chooses an arm, so at runtime only one read happens, but `String` is linear and bend
 # counts the two static reads -- MEASURED: without `+` this is
 # "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
-def rows.pick3(+name: String) -> O.Found:
-  Bool.pick(O.Found, String.eq(name, "alu"), g_alu(),
-    Bool.pick(O.Found, String.eq(name, "bit"), g_bit(),
-      Bool.pick(O.Found, String.eq(name, "where"), g_where(),
-        Bool.pick(O.Found, String.eq(name, "move"), g_move(),
-          Bool.pick(O.Found, String.eq(name, "flip"), g_flip(),
-    Bool.pick(O.Found, String.eq(name, "lin"), g_lin(),
-      Bool.pick(O.Found, String.eq(name, "loop"), g_loop(),
-        Bool.pick(O.Found, String.eq(name, "gate"), g_gate(),
-          Bool.pick(O.Found, String.eq(name, "bw"), g_bw(),
-            Bool.pick(O.Found, String.eq(name, "group"), g_group(),
-              Bool.pick(O.Found, String.eq(name, "commute"), g_commute(),
-                Bool.pick(O.Found, String.eq(name, "indexed"), g_indexed(),
-                  Bool.pick(O.Found, String.eq(name, "sym"), g_sym(),
-                    Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
-                      Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
-                        Bool.pick(O.Found, String.eq(name, "range"), g_range(),
-                          Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
-                            Bool.pick(O.Found, String.eq(name, "special"), g_special(),
-                              Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
-                                Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
-                                  Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
-                                    Bool.pick(O.Found, String.eq(name, "threefry"), g_threefry(),
-                                      Bool.pick(O.Found, String.eq(name, "mulacc"), g_mulacc(),
-                                        Bool.pick(O.Found, String.eq(name, "getaddr"), g_getaddr(),
-                                          Bool.pick(O.Found, String.eq(name, "unshard"), g_unshard(),
-                                            Bool.pick(O.Found, String.eq(name, "wmma"), g_wmma(),
-                                              g_matmul()))))))))))))))))))))))))))
-
-def rows.pick(name: String) -> O.Found:
-  # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
-  # local binder either (measured: both `match String.eq(..)` and `match <local>` are compile
-  # errors), so a CHOICE between two values is `Bool.pick`.
-  rows.pick3(name)
-
-# ===========================================================================
-# THE FIVE UNEXERCISED-OPS GRAPHS (2026-10-06). `graphcmp.py`'s `GRAPHS` grew five
-# names -- `threefry`, `mulacc`, `getaddr`, `unshard`, `wmma` -- and THIS FILE had no
-# arm for any of them, so an unknown name fell through `rows.pick3`'s bottom rung to
-# `g_matmul()`: the bend side built the MATMUL while the py side built the real graph
-# and the differ compared two different graphs. A dispatcher whose fallback is a REAL
-# graph is worse than one that refuses, because it reports a disagreement that is the
-# dispatcher and not the port.
-#
-# Every arm below is the py fixture's OWN emitted rows, read off
-# `emit --side py --graph NAME` and mirrored node for node, in TOPOSORT ORDER (the
-# `id` column is a toposort position). Node counts MEASURED on the py side:
-# threefry 12, mulacc 10, getaddr 2, unshard 8, wmma 11 -- and the fixtures'
-# docstrings' own censuses are wrong (mulacc/unshard/wmma say "4 nodes"; the rows are
-# 10/8/11), so the ROWS are the specification and the prose is not.
-
-# `--graph getaddr`: `UOp(Ops.GETADDR, src=(alloc,), arg="CPU")`, 2 nodes. The ALLOC
-# is `alloc(0, 12)` -- f32, bind_on_realize True. GETADDR's arg is the port's `ADev`,
-# a `S.Dev`, resolved to a NAME through the arena's own device table (`sCPU`).
 def g_getaddr() -> O.Found:
   +ar = O.Arena.empty()
   +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
@@ -1471,6 +1417,61 @@ def g_wmma() -> O.Found:
 
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
+
+def rows.pick3(+name: String) -> O.Found:
+  Bool.pick(O.Found, String.eq(name, "alu"), g_alu(),
+    Bool.pick(O.Found, String.eq(name, "bit"), g_bit(),
+      Bool.pick(O.Found, String.eq(name, "where"), g_where(),
+        Bool.pick(O.Found, String.eq(name, "move"), g_move(),
+          Bool.pick(O.Found, String.eq(name, "flip"), g_flip(),
+    Bool.pick(O.Found, String.eq(name, "lin"), g_lin(),
+      Bool.pick(O.Found, String.eq(name, "loop"), g_loop(),
+        Bool.pick(O.Found, String.eq(name, "gate"), g_gate(),
+          Bool.pick(O.Found, String.eq(name, "bw"), g_bw(),
+            Bool.pick(O.Found, String.eq(name, "group"), g_group(),
+              Bool.pick(O.Found, String.eq(name, "commute"), g_commute(),
+                Bool.pick(O.Found, String.eq(name, "indexed"), g_indexed(),
+                  Bool.pick(O.Found, String.eq(name, "sym"), g_sym(),
+                    Bool.pick(O.Found, String.eq(name, "binblob"), g_binblob(),
+                      Bool.pick(O.Found, String.eq(name, "cast"), g_cast(),
+                        Bool.pick(O.Found, String.eq(name, "range"), g_range(),
+                          Bool.pick(O.Found, String.eq(name, "rangeflat"), g_rangeflat(),
+                            Bool.pick(O.Found, String.eq(name, "special"), g_special(),
+                              Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
+                                Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
+                                  Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
+                                    Bool.pick(O.Found, String.eq(name, "threefry"), g_threefry(),
+                                      Bool.pick(O.Found, String.eq(name, "mulacc"), g_mulacc(),
+                                        Bool.pick(O.Found, String.eq(name, "getaddr"), g_getaddr(),
+                                          Bool.pick(O.Found, String.eq(name, "unshard"), g_unshard(),
+                                            Bool.pick(O.Found, String.eq(name, "wmma"), g_wmma(),
+                                              g_matmul()))))))))))))))))))))))))))
+
+def rows.pick(name: String) -> O.Found:
+  # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
+  # local binder either (measured: both `match String.eq(..)` and `match <local>` are compile
+  # errors), so a CHOICE between two values is `Bool.pick`.
+  rows.pick3(name)
+
+# ===========================================================================
+# THE FIVE UNEXERCISED-OPS GRAPHS (2026-10-06). `graphcmp.py`'s `GRAPHS` grew five
+# names -- `threefry`, `mulacc`, `getaddr`, `unshard`, `wmma` -- and THIS FILE had no
+# arm for any of them, so an unknown name fell through `rows.pick3`'s bottom rung to
+# `g_matmul()`: the bend side built the MATMUL while the py side built the real graph
+# and the differ compared two different graphs. A dispatcher whose fallback is a REAL
+# graph is worse than one that refuses, because it reports a disagreement that is the
+# dispatcher and not the port.
+#
+# Every arm below is the py fixture's OWN emitted rows, read off
+# `emit --side py --graph NAME` and mirrored node for node, in TOPOSORT ORDER (the
+# `id` column is a toposort position). Node counts MEASURED on the py side:
+# threefry 12, mulacc 10, getaddr 2, unshard 8, wmma 11 -- and the fixtures'
+# docstrings' own censuses are wrong (mulacc/unshard/wmma say "4 nodes"; the rows are
+# 10/8/11), so the ROWS are the specification and the prose is not.
+
+# `--graph getaddr`: `UOp(Ops.GETADDR, src=(alloc,), arg="CPU")`, 2 nodes. The ALLOC
+# is `alloc(0, 12)` -- f32, bind_on_realize True. GETADDR's arg is the port's `ADev`,
+# a `S.Dev`, resolved to a NAME through the arena's own device table (`sCPU`).
 def fz_name(as: List<String>) -> String:
   Maybe.default(&1, String, List.get(&1, String, as, 0n), "")
 

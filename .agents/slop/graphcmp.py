@@ -1533,6 +1533,60 @@ def g_wmma():
   return UOp(Ops.WMMA, src=(a, b, acc), arg=((3, 4, 4), dtypes.float, 256, None))
 
 
+# --- THE FOUR REMAINING UNEXERCISED OPS (2026-10-06). `CUSTOM_FUNCTION`, `MSELECT`, `MSTACK`
+# and `STAGE` all sit in the enum's section 6, "ops that don't exist in programs" -- but the
+# SAME section holds `COPY` and a graph reaches it, so the section is not uniformly
+# unreachable and each of these four is REACHED here on the py side with no device.
+# `g_custom_function` `UOp.custom_function(name, *src)` (ops.py:1257-1259); the arg is a
+#                     `CustomFunction(name, dtype)` (ops.py:1393-1397). dtype `void` -> the
+#                     shape column is `R` (ops.py:374, `_shape` None).
+# `g_mselect`        `UOp.mselect(arg)` (ops.py:769) over a `copy_to_device(("CPU","CPU"))`
+#                     value: MSELECT's spec REQUIRES a tuple-device src (spec.py:183), and
+#                     `copy_to_device` is what mints the DEVICE range (ops.py:765).
+# `g_mstack`         `UOp.mstack(*srcs)` (ops.py:770) over two single-device ALLOCs -- the
+#                     spec accepts all-single-device srcs (spec.py:184).
+# `g_stage`          `Tensor.contiguous()` (mixin/elementwise.py:59-66), the one eager route:
+#                     it mints `uop.alu(Ops.STAGE)` only when the value has NO buffer
+#                     identity, and `Tensor.empty`'s ALLOC has one (ops.py:954-959), so the
+#                     fixture takes `+ 1` first.
+def g_custom_function():
+  """`UOp.custom_function("myfn", Tensor.empty(4,3).uop)` -- 6 nodes. Reaches
+  `Ops.CUSTOM_FUNCTION`. MEASURED census:
+  `ALLOC=1 CONST=2 CUSTOM_FUNCTION=1 RESHAPE=1 STACK=1`; the row is
+  `CUSTOM_FUNCTION dtype=void shape=R arg=cF(smyfn,Dvoid)`."""
+  from tinygrad import Tensor
+  return UOp.custom_function("myfn", Tensor.empty(4, 3).uop)
+
+
+def g_mselect():
+  """`Tensor.empty(4,3).uop.copy_to_device(("CPU","CPU")).mselect(0)` -- 9 nodes. Reaches
+  `Ops.MSELECT`. MEASURED census:
+  `ALLOC=1 CONST=3 COPY=1 MSELECT=1 RANGE=1 RESHAPE=1 STACK=1`; the row is
+  `MSELECT dtype=f32 shape=(l0:4,l0:3) arg=i0`."""
+  from tinygrad import Tensor
+  return Tensor.empty(4, 3).uop.copy_to_device(("CPU", "CPU")).mselect(0)
+
+
+def g_mstack():
+  """`UOp.mstack(a.uop, b.uop)` over two `Tensor.empty(4,3)` -- 8 nodes. Reaches
+  `Ops.MSTACK`. MEASURED census:
+  `ALLOC=2 CONST=2 MSTACK=1 RESHAPE=2 STACK=1`; the row is
+  `MSTACK dtype=f32 shape=(l0:4,l0:3) arg=N`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3).uop
+  b = Tensor.empty(4, 3).uop
+  return UOp(Ops.MSTACK, src=(a, b))
+
+
+def g_stage():
+  """`(Tensor.empty(4,3) + 1).contiguous().uop` -- 8 nodes. Reaches `Ops.STAGE`.
+  MEASURED census: `ADD=1 ALLOC=1 CONST=3 RESHAPE=1 STACK=1 STAGE=1`; the row is
+  `STAGE dtype=f32 shape=(l0:4,l0:3) arg=N`. The `+ 1` is load-bearing: `contiguous` returns
+  an ALLOC unchanged because it already has buffer identity."""
+  from tinygrad import Tensor
+  return (Tensor.empty(4, 3) + 1).contiguous().uop
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
@@ -1540,7 +1594,9 @@ GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_
           "alu": g_alu, "bit": g_bit, "where": g_where, "move": g_move, "flip": g_flip,
           "allred": g_allred, "cdiv": g_cdiv, "late": g_late,
           "threefry": g_threefry, "mulacc": g_mulacc, "getaddr": g_getaddr,
-          "unshard": g_unshard, "wmma": g_wmma}
+          "unshard": g_unshard, "wmma": g_wmma,
+          "custom_function": g_custom_function, "mselect": g_mselect,
+          "mstack": g_mstack, "stage": g_stage}
 
 _BASE: dict[str, UOp] = {}
 
