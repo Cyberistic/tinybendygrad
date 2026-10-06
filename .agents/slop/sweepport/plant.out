@@ -1,0 +1,7 @@
+# PLANT: port arm, two states
+#   state A: 1 files  buckets={'KEEP-CITED': 1}  needs={}
+#   state B: 2 files  buckets={'KEEP-CITED': 1, 'UNKNOWN': 1}  needs={'commit-or-drop': 1}
+#   funnel MOVED   (1 -> 2 files): True
+#   verdict CHANGED (['KEEP-CITED'] -> ['KEEP-CITED', 'UNKNOWN']): True
+#   UNKNOWN ADDED   (0 -> 1): 1
+# PLANT PASSED

@@ -209,7 +209,7 @@ def house_excluded(root: str, rel: str) -> bool:
     `xd1/`, `strays/`, `strays-root/`, `rf2root/`, `diffpy/`, `e2e*/`, `f64/`, `portexec/`,
     `gates/{oracles,artifacts}/` and every live unit's directory from every walk. Those names live in
     `checks/residue.py`, which is another unit's file, and a second copy of them here would be a
-    contract with no generator -- the shape that produced `LIVE_UNITS`, `ORACLE_WORD` and the 103
+    contract with no generator -- the shape that produced `LIVE_UNITS`, `ORACLE_WORD` and the 139
     `.txt` names in one session. So the question is ASKED.
 
     ONE PREDICATE FOR BOTH ROLES. A path that is out of census must be out of census for the CITATION
@@ -572,6 +572,49 @@ def walk_residue(root: str = ROOT) -> list[tuple[str, int]]:
     return out
 
 
+def port_files(root: str = ROOT, base: str | None = None) -> list[str]:
+    """Every file under the SHIPPED PORT, `tinybendygrad/`, by walk -- no suffix filter.
+
+    **A POPULATION `walk_residue` HAS NEVER SEEN, AND `verdict_for` CANNOT CLASSIFY IT BECAUSE
+    NOTHING EVER ASKS.** MEASURED 2026-10-06: `RESIDUE_ROOTS` is `(.agents/slop, runs)`, so all 144
+    files of the port reach no verdict -- a missing population is invisible exactly like an
+    unclassifiable row, and this one hides behind a walk that simply does not descend.
+
+    `base` IS A PARAMETER because `witness_committed`'s lesson is the same one level up: a walk that
+    reads a module global can only ever describe the production tree, so the arm could not be planted
+    against a fixture and a test that cannot be run is not a test.
+    """
+    out = []
+    for dirpath, _d, files in os.walk(base or os.path.join(root, "tinybendygrad")):
+        for f in files:
+            p = os.path.join(dirpath, f)
+            try:
+                os.lstat(p)
+            except OSError:
+                continue
+            out.append(os.path.relpath(p, root))
+    return sorted(out)
+
+
+def port_report(f: Facts, population: list[str] | None = None
+                ) -> tuple[collections.Counter, collections.Counter, int]:
+    """Classify the port under the SAME rules, and RETURN the counts. REPORT-ONLY.
+
+    **THE PORT IS NEVER A BUCKET `--apply` CAN REACH.** The tree SHIPS, and a population a
+    DELETE-capable pass can walk is a population it can destroy -- so this returns counts to the
+    plan and is never fed into `rows`. `UNKNOWN` is the interesting column: a file the rules cannot
+    place is the whole finding, and reporting it is what ends the silence, not classifying it.
+    """
+    population = port_files(f.root) if population is None else population
+    buckets: collections.Counter = collections.Counter()
+    needs: collections.Counter = collections.Counter()
+    for rel in population:
+        v = verdict_for(rel, f.mentioned, f, set())
+        buckets[bucket(v)] += 1
+        if v.startswith(UNKNOWN):
+            needs[v.partition(":")[2].split(" (")[0]] += 1
+    return buckets, needs, len(population)
+
 
 @functools.cache
 def facts(root: str = ROOT) -> Facts:
@@ -853,6 +896,21 @@ def main() -> int:
         vals = [needsp[w][k] for w in windows]
         nature = "CONSTANT" if len(set(vals)) == 1 else "MOVES"
         print(f"#   needs={k:32s}" + " ".join(f"{v:8d}" for v in vals) + f"  {nature}")
+
+    # ---- THE PORT: A POPULATION THIS WALK HAS NEVER DESCENDED INTO. ----
+    # `walk_residue` walks `RESIDUE_ROOTS`, and the shipped `tinybendygrad/` tree is not one of them,
+    # so every file there reaches NO verdict at all. It is REPORTED here and never acted on: the tree
+    # ships, and a population a DELETE-capable pass can walk is a population it can destroy. It is
+    # not in `rows`, so no `--apply` argument can reach it. **A MISSING POPULATION AND AN
+    # UNCLASSIFIABLE ROW ARE THE SAME SILENCE, AND `UNKNOWN` IS WHAT BREAKS IT.**
+    pb, pn, ptot = port_report(f)
+    print(f"\n# THE SHIPPED PORT, REPORT-ONLY (never a bucket `--apply` can reach): "
+          f"{ptot} files under tinybendygrad/")
+    for b in ("DOC", "GATE", "ORACLE", "AUTHORED", "KEEP-CITED", "DELETE", "UNKNOWN"):
+        if pb[b]:
+            print(f"#   {b:11s} {pb[b]:6d} files")
+    for k, n in pn.most_common():
+        print(f"#     needs={k:38s} {n:6d} rows")
 
     if args.plan or not args.apply:
         keep = counts["DOC"] + counts["GATE"] + counts["ORACLE"] + counts["AUTHORED"]
