@@ -176,6 +176,13 @@ def u32s.go(+ys: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
 def us(ys: List<&2, U32>) -> String:
   String.concat(["n(", String.join(u32s.go(ys, Nil{}), ","), ")"])
 
+# The `n(...)` twin of `mum`: `wmma`'s `tc_upcast_axes` is `None | tuple` (`PIN ops.py:652-654`),
+# so absence is `N` and a PRESENT tuple is `n(...)`. `N` and `n()` are different values.
+def um(m: Maybe<&2, List<&2, U32>>) -> String:
+  match m:
+    case Some{x}: us(x)
+    case _: "N"
+
 def img2(m: O.Img) -> String:
   match m:
     case O.Img{h, w}: String.concat(["n(", U32.show(h), ",", U32.show(w), ")"])
@@ -442,7 +449,7 @@ def argstr(a: O.Arg, depth: U32) -> String:
     # carry `PYLITERAL` on either side, so the deletion cannot change one byte of output).
     # One arm in one file this work does own is the whole of the difference.
     case O.AOpLit{op}: opx(op)
-    case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", U32.show(threads), ",", us(tc), ")"])
+    case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", i(threads), ",", um(tc), ")"])
     case O.ATuple{ys}: us(ys)
     case O.AStr{s}: bstr(s)
     case O.AInk{ins, idt}: String.concat(["in(", bstr(ins), ",", dt(idt), ")"])
@@ -1418,7 +1425,7 @@ def g_wmma() -> O.Found:
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +acc0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{alloc(2, 12)}, O.TNone{})
   +racc = O.UOp.new(O.Found.ar(acc0), O.OpsRESHAPE{}, [O.Found.i(acc0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  O.UOp.wmma(O.Found.ar(racc), O.Found.i(r44), O.Found.i(r43), O.Found.i(racc), [3, 4, 4], S.single(), 256, Nil{})
+  O.UOp.wmma(O.Found.ar(racc), O.Found.i(r44), O.Found.i(r43), O.Found.i(racc), [3, 4, 4], S.single(), 256, None{})
 
 # ===========================================================================
 # THE THREE RESTORED GRAPHS' ARMS (2026-10-06). `allred`, `cdiv` and `late` are in
@@ -1484,6 +1491,72 @@ def g_late() -> O.Found:
   +fd = O.UOp.new(O.Found.ar(eq), O.OpsFDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(fd), O.OpsGROUP{}, [O.Found.i(sb), O.Found.i(ng), O.Found.i(eq), O.Found.i(fd)], O.ANone{}, O.TNone{})
 
+# --- THE FOUR REMAINING SUBSTITUTED GRAPHS (2026-10-06). `custom_function`, `mselect`,
+# `mstack` and `stage` are in `graphcmp.py`'s `GRAPHS` and had NO arm here either, so each
+# name fell through `rows.pick3`'s bottom rung to `g_matmul()` -- the SILENT substitution
+# the three arms above just closed for `allred`/`cdiv`/`late`, still open for these four.
+# Py node counts MEASURED with `emit --side py --graph NAME`: custom_function 6, mselect 9,
+# mstack 8, stage 8.  The py rows are the specification.
+#
+# `--graph custom_function`: `UOp.custom_function("myfn", Tensor.empty(4,3).uop)` -- 6
+# nodes, the only route to `CUSTOM_FUNCTION`. Built through the PORT'S constructor
+# `O.UOp.custom_function`, whose `arg` is `ACustom{CustomFunction{"myfn", void}}`; void is
+# upstream's own default and renders `cF(smyfn,Dvoid)`. Order: ALLOC CONST CONST STACK
+# RESHAPE CUSTOM_FUNCTION.
+def g_custom_function() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  O.UOp.custom_function(O.Found.ar(r43), "myfn", [O.Found.i(r43)], S.void())
+
+# `--graph mselect`: `Tensor.empty(4,3).uop.copy_to_device(("CPU","CPU")).mselect(0)` -- 9
+# nodes, the only route to `MSELECT`. `copy_to_device` is the PORT'S constructor and mints
+# the DEVICE RANGE (its `k` is None, so the COPY input is the value itself); `mselect` is
+# the port's own. Order: ALLOC CONST CONST STACK RESHAPE CONST RANGE COPY MSELECT.
+def g_mselect() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +cp = O.UOp.copy_to_device(O.Found.ar(r43), O.Found.i(r43), None{}, S.Dn{[0, 0]})
+  O.UOp.mselect(O.Found.ar(cp), O.Found.i(cp), 0)
+
+# `--graph mstack`: `UOp.mstack(a.uop, b.uop)` over two `Tensor.empty(4,3)` -- 8 nodes.
+# The port's `UOp.mstack(ar, self, srcs)` builds `src=(self,)+srcs`, which is upstream's
+# `(self,)+srcs`, so `a` is `self` and `b` is the one-element `srcs`. Order: ALLOC CONST
+# CONST STACK RESHAPE ALLOC RESHAPE MSTACK.
+def g_mstack() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  O.UOp.mstack(O.Found.ar(r1), O.Found.i(r0), [O.Found.i(r1)])
+
+# `--graph stage`: `(Tensor.empty(4,3) + 1).contiguous().uop` -- 8 nodes, the only route to
+# `STAGE`. Hand-assembled with `ANone{}`: upstream's `contiguous` mints the node via
+# `uop.alu(Ops.STAGE)` and the port's own `UOp.bufferize` answers `ABad{}` where this node's
+# arg is `None`, so the `ANone` arm is the one upstream builds. Order: ALLOC CONST CONST
+# STACK RESHAPE CONST ADD STAGE.
+def g_stage() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +c1f = O.UOp.const(O.Found.ar(r43), O.CFloat{1.0})
+  +ad = O.UOp.new(O.Found.ar(c1f), O.OpsADD{}, [O.Found.i(r43), O.Found.i(c1f)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(ad), O.OpsSTAGE{}, [O.Found.i(ad)], O.ANone{}, O.TNone{})
+
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
 
@@ -1517,7 +1590,11 @@ def rows.pick3(+name: String) -> O.Found:
                                               Bool.pick(O.Found, String.eq(name, "allred"), g_allred(),
                                                 Bool.pick(O.Found, String.eq(name, "cdiv"), g_cdiv(),
                                                   Bool.pick(O.Found, String.eq(name, "late"), g_late(),
-                                                    g_matmul())))))))))))))))))))))))))))))
+                                                    Bool.pick(O.Found, String.eq(name, "custom_function"), g_custom_function(),
+                                                      Bool.pick(O.Found, String.eq(name, "mselect"), g_mselect(),
+                                                        Bool.pick(O.Found, String.eq(name, "mstack"), g_mstack(),
+                                                          Bool.pick(O.Found, String.eq(name, "stage"), g_stage(),
+                                                            g_matmul())))))))))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a

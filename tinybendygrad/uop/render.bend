@@ -603,8 +603,13 @@ def axis_repr(a: O.AxisType) -> String:
 def arange_repr(ids: List<&2, U32>, at: O.AxisType) -> String:
   String.concat(["(", axis_repr(at), ", ", String.join(u32_list_repr.go(ids), ", "), ")"])
 
-def awmma_repr(dims: List<&2, U32>, dt: S.Dt, th: U32, tc: List<&2, U32>) -> String:
-  String.concat(["([", String.join(u32_list_repr.go(dims), ", "), "], ", dt_repr(dt), ", ", U32.show(th), ", [", String.join(u32_list_repr.go(tc), ", "), "])"])
+def awmma_tc(tc: Maybe<&2, List<&2, U32>>) -> String:
+  match tc:
+    case Some{x}: u32_list_repr(x)
+    case _: "None"
+
+def awmma_repr(dims: List<&2, U32>, dt: S.Dt, th: U32, tc: Maybe<&2, List<&2, U32>>) -> String:
+  String.concat(["([", String.join(u32_list_repr.go(dims), ", "), "], ", dt_repr(dt), ", ", U32.show(th), ", ", awmma_tc(tc), ")"])
 
 def aink_repr(ins: String, dt: S.Dt) -> String:
   String.concat(["('", ins, "', ", dt_repr(dt), ")"])

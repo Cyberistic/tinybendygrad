@@ -1138,7 +1138,7 @@ type CallInfo is Data:
 #                                     a bare `Ops`; `__init__.py:101` says the literal is
 #                                     "a Python literal", and it is one of four -- Ops here,
 #                                     a DType (:39), a str (:44) and `self.arg` (:29))
-#   (dims, DType, threads, tc_upcast_axes)   AWmma   WMMA arg
+#   (dims, DType, threads, tc_upcast_axes)   AWmma   WMMA arg. `tc` is a `Maybe` (upstream's slot is `tuple|None`)
 #   tuple[int, ...]         ATuple     PERMUTE arg (`movement.py:231`), UNSHARD arg
 #                                     (`ops.py:691`: "the tuple of sharded axes, sorted")
 #   -- and this is the WRONG SPELLING FOR A FLIP, which is `tuple[bool, ...]`:
@@ -1194,7 +1194,7 @@ type Arg is Data:
   # `expected : O.Arg / observed : O.Op`. `AReduce{op, 0}` renders as `rd(OADD,i0)` and
   # `AAllred` needs a device, so a paired constructor is a LYING answer, not a close one.
   AOpLit{op: Op}
-  AWmma{dims: List<&2, U32>, dt: S.Dt, threads: U32, tc: List<&2, U32>}
+  AWmma{dims: List<&2, U32>, dt: S.Dt, threads: U32, tc: Maybe<&2, List<&2, U32>>}
   ATuple{ys: List<&2, U32>}
   AStr{s: String}
   AInk{ins: String, dt: S.Dt}
@@ -1632,6 +1632,13 @@ def eq_opt_u32(x: Maybe<&2, U32>, y: Maybe<&2, U32>) -> Bool:
     case None{} Some{b}: False{}
     case Some{a} None{}: False{}
 
+def eq_opt_u32s(x: Maybe<&2, List<&2, U32>>, y: Maybe<&2, List<&2, U32>>) -> Bool:
+  match x y:
+    case None{} None{}: True{}
+    case Some{a} Some{b}: eq_u32(a, b)
+    case None{} Some{b}: False{}
+    case Some{a} None{}: False{}
+
 def eq_opt_str(x: Maybe<&2, String>, y: Maybe<&2, String>) -> Bool:
   match x y:
     case None{} None{}: True{}
@@ -2027,9 +2034,9 @@ def eq_arg.AOpLit(y: Arg, +op: Op) -> Bool:
     case AOpLit{y1}: U32.is_eq(Ops.value(op), Ops.value(y1))
     case _: False{}
 
-def eq_arg.AWmma(y: Arg, +dims: List<&2, U32>, +dt: S.Dt, +threads: U32, +tc: List<&2, U32>) -> Bool:
+def eq_arg.AWmma(y: Arg, +dims: List<&2, U32>, +dt: S.Dt, +threads: U32, +tc: Maybe<&2, List<&2, U32>>) -> Bool:
   match y:
-    case AWmma{y1, y2, y3, y4}: Bool.and(eq_u32(dims, y1), Bool.and(eq_dt(dt, y2), Bool.and(U32.is_eq(threads, y3), eq_u32(tc, y4))))
+    case AWmma{y1, y2, y3, y4}: Bool.and(eq_u32(dims, y1), Bool.and(eq_dt(dt, y2), Bool.and(U32.is_eq(threads, y3), eq_opt_u32s(tc, y4))))
     case _: False{}
 
 def eq_arg.ATuple(y: Arg, +ys: List<&2, U32>) -> Bool:
@@ -7322,7 +7329,7 @@ def UOp.ins.of(+ar: Arena, +self: U32, nm: String, dt: S.Dt) -> Found:
 # src[0].dtype) because bitcast rewrites change src dtypes" -- so `dt` is the
 # arg's OWN field, and that comment is why this def takes it rather than reading
 # it back off `a`.
-def UOp.wmma(ar: Arena, a: U32, b: U32, acc: U32, dims: List<&2, U32>, dt: S.Dt, threads: U32, tc: List<&2, U32>) -> Found:
+def UOp.wmma(ar: Arena, a: U32, b: U32, acc: U32, dims: List<&2, U32>, dt: S.Dt, threads: U32, tc: Maybe<&2, List<&2, U32>>) -> Found:
   UOp.new(ar, OpsWMMA{}, [a, b, acc], AWmma{dims, dt, threads, tc}, TNone{})
 
 # `has_unbound_outputs` -- ops.py:570. `self.op is Ops.CALL and any((b:=
@@ -7509,7 +7516,7 @@ def sg.index.rows2(+ar: Arena) -> IO(Unit):
     c : Unit <- sg.minted.row("sg_store_gate", UOp.store(ar, 5, 1, Some{2}))
     d : Unit <- sg.minted.row("sg_ins_tag", UOp.ins.of(ar, 6, "x", S.int32()))
     g : Unit <- sg.minted.row("sg_ins_none", UOp.ins.of(ar, 24, "x", S.int32()))
-    h : Unit <- sg.minted.row("sg_wmma", UOp.wmma(ar, 5, 1, 6, [16, 16, 16], S.int32(), 32, Nil{}))
+    h : Unit <- sg.minted.row("sg_wmma", UOp.wmma(ar, 5, 1, 6, [16, 16, 16], S.int32(), 32, None{}))
     i : Unit <- sg.ufix.rows(ar)
     sg.idx.tail(ar)
 
