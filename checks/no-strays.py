@@ -50,6 +50,7 @@ must be a WHOLE PATH TOKEN, matched by `WORD`, never `in`.
 """
 from __future__ import annotations
 
+import os
 import re
 import subprocess
 import sys
@@ -85,6 +86,35 @@ def root_files() -> list[Path]:
     return sorted(p for p in ROOT.iterdir() if p.is_file() and p.name not in ROOT_ENTRIES)
 
 
+# A scratch SHAPE is debris WHEREVER it sits in a SOURCE tree. Four `ops.staged-blob-*` files
+# and three `memory.staged-mem-*` sat inside `tinybendygrad/` for two days and this guard could
+# not see them: its population was `ROOT.iterdir()`, ONE LEVEL TOO HIGH.
+#
+# **`SCRATCH_NAME` IS A ROOT-LEVEL HEURISTIC AND CANNOT BE REUSED AT DEPTH**: its `^\.` and `^_`
+# arms catch `.gitignore` and `__init__.py`, which are ordinary everywhere but the root. Reusing
+# it flagged 134 files including upstream's own `schedule/__init__.py`. So the deep check uses
+# only the shapes that are residue ANYWHERE: a staging suffix carrying a PID, a mutation
+# leftover, an editor backup. A name heuristic is not portable to a population it was not
+# written for, which is this project's own rule about populations.
+RESIDUE_NAME = re.compile(r"\.staged-(mem|blob)-\d+$|\.mut$|~\d*$|\.(bak|orig|rej|swp)$")
+SKIP_DIRS = {".git", ".venv", "__pycache__", "node_modules", "references"}
+SCRATCH_BELONGS = {".agents", "runs", "oracles"}
+
+
+def stray_shapes_anywhere() -> list[Path]:
+    """A residue-shaped file in a SOURCE tree, at any depth.  The same name under
+    `SCRATCH_BELONGS` is a run's output and is expected; beside source it is debris."""
+    out: list[Path] = []
+    for dirpath, dirnames, filenames in os.walk(ROOT):
+        rel = Path(dirpath).relative_to(ROOT)
+        if rel.parts and rel.parts[0] in SCRATCH_BELONGS:
+            dirnames[:] = []
+            continue
+        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+        out.extend(Path(dirpath) / f for f in filenames if RESIDUE_NAME.search(f))
+    return sorted(out)
+
+
 def machine_path_ratio(text: str) -> float:
     lines = [ln for ln in text.splitlines() if ln.strip()]
     if not lines:
@@ -106,13 +136,20 @@ def cited_by_a_report(path: Path) -> list[str]:
 
 
 def main() -> int:
+    # THE SHAPE FIRST, AT ANY DEPTH IN A SOURCE TREE. A scratch name is debris wherever it is,
+    # and `ROOT.iterdir()` could not see past the root.
+    deep = stray_shapes_anywhere()
+    for p in deep:
+        print(f"  STRAY-SHAPE  {str(p.relative_to(ROOT)):<48} {p.stat().st_size:>9d} B   "
+              f"scratch name in a source tree")
+
     all_files = [p for p in sorted(ROOT.iterdir()) if p.is_file()]
     strays = root_files()
     print(f"no-strays: {len(all_files)} files at the root, {len(ROOT_ENTRIES)} entries allowed, "
-          f"{len(strays)} to explain")
+          f"{len(strays)} to explain; {len(deep)} scratch-shaped in source trees")
     if not strays:
         print("  CLEAN: every root file is named in ROOT_ENTRIES")
-        return 0
+        return 1 if deep else 0
 
     unexplained = []
     for p in strays:
@@ -144,6 +181,9 @@ def main() -> int:
     print(f"  {len(unexplained)} unexplained of {len(all_files)} root files")
     if unexplained:
         print("  NOT CLEAN. A root file nobody can explain is how a repo stops being navigable.")
+    if deep:
+        print(f"  NOT CLEAN. {len(deep)} scratch-shaped file(s) in a source tree -- a run's "
+              f"output belongs under {' or '.join(sorted(SCRATCH_BELONGS))}, beside the source.")
     return 1
 
 
