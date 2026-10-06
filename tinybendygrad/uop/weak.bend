@@ -249,6 +249,26 @@ def wk_eval_bool(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, H.I64>:
                              wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
             wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
             None{})
+# `UOp.is_virtual` -- ops.py:902. `self.device is None or self.dtype in dtypes.weaks`, which is
+# ONE LINE in CPython and TWO CLAIMS here, because the port's device is a `Maybe<Dev>` rather
+# than a `str|None` and "absent" has to be said as a Bool to go into an `or`.
+#
+# THE NESTED Maybe IS NOT A TYPO. `F.fold.device` answers `Maybe<Maybe<Dev>>` -- the outer is
+# "does this node carry a device at all" and the inner is "is it there", and `wk_dev_of` above
+# flattens them for the callers that want a device. `is_virtual` wants them SEPARATE, because
+# flattening first would lose the one case it is asking about.
+def no_dev(m: Maybe<&2, Maybe<&2, S.Dev>>) -> Bool:
+  match m:
+    case Some{s}:
+      match s:
+        case Some{d}: False{}
+        case _: True{}
+    case _: True{}
+
+def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
+  Bool.or(no_dev(F.fold.device(F.Folded.ar(fx), F.Folded.t(fx), i)),
+          D.md_weak(wk_dt(fx, i)))
+
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 # `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is
 # spelled here rather than taken as a parameter because all nine callers want the same one.

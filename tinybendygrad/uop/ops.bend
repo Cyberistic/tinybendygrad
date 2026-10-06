@@ -4817,7 +4817,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:879  def clone
 
 
-# TODO(p3) ops.py:902  def is_virtual
+# DONE(p3) ops.py:902 def is_virtual -- `wk_is_virtual` in `weak.bend`, `no_dev` beside it.
+#   PORTED BUT UNGATED, AND THE REASON IS A FIXTURE, NOT A DEF. `is_virtual` answers
+#   `device is None or dtype in weaks`, and the device half needs a node that CARRIES a `Dev`:
+#   `fold.bend`'s `mw_pa` hard-codes `ParamArg`'s device field to `None{}` and no def in the port
+#   sets it, so EVERY node is virtual and the reader has no negative witness. MEASURED: both
+#   candidate rows came out `True`, and two rows that are always `True` cannot fail -- adding them
+#   would have been a denominator counting nothing, which is the defect this project keeps removing.
+#   The rows appear when something populates `Dev`; the reader is already there to be gated.
 
 
 # TODO(p3) ops.py:931  def contiguous_view
