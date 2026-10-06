@@ -65,7 +65,10 @@ PIN = {
   "cdiv":   dict(row=1, fields=("dtype", "arg"), shape="NOT A ROW", fault="HARNESS"),
   "late":   dict(row=6, fields=("dtype", "shape", "arg"), shape="NOT A ROW", fault="HARNESS"),
   "flip":   dict(row=6, fields=("arg",), shape="BOTH", fault="HARNESS+PORT"),
-  "lin":    dict(row=46, fields=("arg",), shape="WRONG SHAPE", fault="PORT"),
+  # `lin` LEFT THIS TABLE. Its cause was that the port typed `applied_opts` as `List<&2, U32>`
+  # where the pin has a three-field `Opt`; the port now defines `OPT{op, axis, arg}` in
+  # `uop/ops.bend` and `graphcmp.bend` renders it. MEASURED on the live driver: row 46 goes
+  # 45/46 -> 46/46 and the corpus fraction 311/336 -> 312/336 with no other graph moving.
   # `loop` LEFT THIS TABLE: the port's `callinfo` printed the dtype slot unconditionally
   # where the PIN's own `__repr__` suppresses it for void (`ops.py:1404`), so row 25 read
   # `cI(shcq_fence,b0,b0,Dvoid)` against `cI(shcq_fence,b0,b0)`.  MEASURED 25/25
@@ -79,7 +82,7 @@ SUBSTITUTED = ("allred", "cdiv", "late", "matmul")
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
   # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1317, "def rows.pick3",
+  (".agents/slop/graphcmp.bend", 1336, "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   (".agents/slop/graphcmp.py", 1393, "def g_allred", "the py fixture that has no bend twin"),
   (".agents/slop/graphcmp.py", 1412, "def g_cdiv", "ditto"),
@@ -88,9 +91,9 @@ CITES = (
    "`UOp.group` of ONE src is the src, so `g_flip` builds NO GROUP node"),
   (".agents/slop/graphcmp.py", 1385, "UOp.group(a.flip(0).uop)",
    "a ONE-element group -- the whole of the bend-only GROUP#7"),
-  (".agents/slop/graphcmp.bend", 1309, "OpsGROUP",
+  (".agents/slop/graphcmp.bend", 764, "OpsGROUP",
    "the bend fixture builds that GROUP by hand, bypassing `UOp.group`"),
-  ("tinybendygrad/uop/ops.bend", 1057, "dtype: S.Dt",
+  ("tinybendygrad/uop/ops.bend", 1117, "dtype: S.Dt",
    "the port's CallInfo carries `dtype`, and SO DOES THE PIN -- `ops.py:1398`"),
   ("ad117c928^:tinygrad/uop/ops.py", 1398, "dtype: DType = dtypes.void",
    "the PIN's LAST CallInfo field IS `dtype`, so 'upstream has no dtype' is false"),
@@ -102,8 +105,9 @@ CITES = (
    "upstream reads the CALL dtype off the BODY, never off CallInfo"),
   ("tinybendygrad/uop/fold.bend", 1154, "CallInfo.dtype",
    "the port reads it off the field the PIN HAS -- a spelling, not a shape"),
-  ("tinybendygrad/uop/ops.bend", 919, "applied_opts: List<&2, U32>",
-   "`lin`'s cause; this line is a COMMENT recording the measurement, not a declaration"),
+  ("tinybendygrad/uop/ops.bend", 999, "applied_opts: List<&2, OPT>",
+   "`lin`'s cause, and THE CAUSE IS FIXED: the port typed these `U32` and this is now `OPT` — "
+   "the pin's own three-field `Opt` — which is why `lin` LEAVES `PIN`"),
 )
 
 
