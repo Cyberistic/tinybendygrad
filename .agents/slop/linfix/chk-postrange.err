@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=296 MB (ceiling 2048)  2s  :: ./bin/bend tinybendygrad/codegen/opt/postrange.bend --check-only  out=58B err=42B
+bend 2.0.35 is available: run bend update

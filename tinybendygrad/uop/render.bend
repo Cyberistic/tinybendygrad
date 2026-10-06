@@ -650,12 +650,13 @@ def acall_repr(+ci: O.CallInfo) -> String:
 # dataclass repr prints it, so the literal below is printed in its place. It is
 # None for every kernel this port can build, so the text agrees -- but it IS a
 # literal, and saying so is cheaper than pretending the field is carried.
-def akernel_estimates(m: Maybe<&2, List<&2, U32>>) -> String: "estimates=None"
+def akernel_estimates(m: Maybe<&2, List<&2, O.OPT>>) -> String: "estimates=None"
 
-# `applied_opts` is a tuple of `Opt`, which ops.bend carries as UOp INDICES, and
-# a real `Opt`'s repr is a dataclass repr the port cannot read. A kernel with
-# options applied prints `()` for a field that is not empty.
-def akernel_applied(xs: List<&2, U32>) -> String:
+# `applied_opts` is a tuple of `Opt`, which ops.bend now carries as `O.OPT`. This
+# `pretty_print` path still prints `<Opt>` for a non-empty list because a real
+# `Opt`'s repr is a dataclass repr -- the CANONICAL normal form spells it in
+# `.agents/slop/graphcmp.bend`'s `opt`, which is what the corpus compares.
+def akernel_applied(xs: List<&2, O.OPT>) -> String:
   match xs:
     case Nil{}: "()"
     case _ <> _: "<Opt>"

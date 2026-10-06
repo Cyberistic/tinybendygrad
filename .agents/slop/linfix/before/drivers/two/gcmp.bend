@@ -318,43 +318,23 @@ def callinfo(ci: O.CallInfo) -> String:
 # `runs/graphcmp/probe/pb-buf-binary.bend` Q1b). Now both sides render it and that
 # divergence is a reported one.
 #
-# THE OPTION LISTS ARE CONTENTS NOW, not counts. ops.bend's `KernelInfo` carries
-# `List<&2, OPT>` and `OPT` is the port's own `Opt` (moved down from
-# `codegen/opt/postrange.bend` for exactly this); upstream renders it through
-# `_carg`'s dataclass arm as `Opt(op=<enum>,axis=<int>,arg=<value>)`, with the
-# `name=value` pairs CONCATENATED -- no separators -- and the arg's tuple spelled
-# by the generic grammar. So this is that arm, field for field, and the arg's
-# three tuple shapes are what CPython has, `OA_SPLIT`'s `top` a `Maybe` because
-# upstream's split arg is a 2-tuple `(amt, target)` or a 3-tuple.
-def optops(o: O.OPTOPS) -> String:
-  match o:
-    case O.OPS_TC{}: "EOptOps.TC"
-    case O.OPS_SPLIT{}: "EOptOps.SPLIT"
-    case O.OPS_PADTO{}: "EOptOps.PADTO"
-    case _: "EOptOps.SWAP"
-
-def optarg(a: O.OPTARG) -> String:
-  match a:
-    case O.OA_NONE{}: "N"
-    case O.OA_INT{v}: i(v)
-    case O.OA_SPLIT{O.SPL{amt, t, Some{b}}}: String.concat(["n(", i(amt), ",", axis1(t), ",", bo(b), ")"])
-    case O.OA_SPLIT{O.SPL{amt, t, None{}}}: String.concat(["n(", i(amt), ",", axis1(t), ")"])
-    case O.OA_TC{O.TC{any, sel, lvl, use}}: String.concat(["n(", i(sel), ",", i(lvl), ",", i(use), ")"])
-
-def opt(o: O.OPT) -> String:
-  match o:
-    case O.OPT{op, axis, arg}:
-      String.concat(["Opt(op=", optops(op), "axis=", i(axis), "arg=", optarg(arg), ")"])
-
-def opts.go(+ys: List<&2, O.OPT>, acc: List<&2, String>) -> List<&2, String>:
+# THE OPTION LISTS ARE COUNTS, NOT CONTENTS, and that is a refusal rather than a
+# comparison. ops.bend:978 types both as `List<&2,U32>`; upstream's elements are `Opt`
+# dataclasses (`Opt(op=OptOps.TC, axis=0, arg=4)`, codegen/opt/__init__.py:11). MEASURED:
+# `KernelInfo.of().applied_opts` is EMPTY and no port file ever writes a non-empty one,
+# so `uop/render.bend:655`'s "UOp INDICES" reading of those U32s is UNVERIFIED -- there
+# is no construction site to verify it against. So one `q` per option: the count compares,
+# the content is a named refusal, and nothing here copies the port's answer into the
+# oracle.
+def opts.go(+ys: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ys:
     case Nil{}: acc
-    case o <> r: opts.go(r, List.append(&2, String, acc, [opt(o)]))
+    case _ <> r: opts.go(r, List.append(&2, String, acc, ["q"]))
 
-def opts(ys: List<&2, O.OPT>) -> String:
+def opts(ys: List<&2, U32>) -> String:
   String.concat(["n(", String.join(opts.go(ys, Nil{}), ","), ")"])
 
-def optsm(m: Maybe<&2, List<&2, O.OPT>>) -> String:
+def optsm(m: Maybe<&2, List<&2, U32>>) -> String:
   match m:
     case Some{x}: opts(x)
     case _: "N"
@@ -976,14 +956,15 @@ def g_lin() -> O.Found:
   +st = O.UOp.new(O.Found.ar(a1), O.OpsSTORE{}, [O.Found.i(ix0), O.Found.i(a1)], O.ANone{}, O.TNone{})
   +e1 = O.UOp.new(O.Found.ar(st), O.OpsEND{}, [O.Found.i(st), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +e0 = O.UOp.new(O.Found.ar(e1), O.OpsEND{}, [O.Found.i(e1), O.Found.i(ra)], O.ANone{}, O.TNone{})
-  # THE SINK'S ARG. `applied_opts` is the ONE `Opt` the py side really carries --
-  # `Opt(OptOps.SPLIT, axis=2, arg=(0, AxisType.UPCAST))` from `heuristic.py:109`
-  # -- spelled with the port's own `O.OPT` (ops.bend) and rendered by `opt` above.
-  # The axis is the SECOND split rng's index; the arg is the 2-tuple, so `top` is
-  # `None{}` and not `Some{False{}}`. This is the node `lin`'s disagreement was in.
+  # THE SINK'S ARG. `applied_opts` is ONE `q` because the port cannot fill it -- `Opt` is a
+  # dataclass upstream (codegen/opt/__init__.py:11) and the port's slot is `List<&2,U32>`
+  # (ops.bend:978). So this node is EXPECTED TO DISAGREE on `arg` and it is the FIRST node
+  # in the corpus to do so on a graph that is not `sym`. That disagreement is the measured
+  # form of the `applied_opts` residual LIMITS.md 2 records as a count-only comparison, and
+  # it is 1 node of 46 -- `applied_opts` being in the `core` makes it one-sided, but the
+  # SINK is the ROOT, so nothing cascades.
   O.UOp.new(O.Found.ar(e0), O.OpsSINK{}, [O.Found.i(e0)],
-    O.AKernel{O.KernelInfo{"r_4_5_3",
-      [O.OPT{O.OPS_SPLIT{}, 2, O.OA_SPLIT{O.SPL{0, O.AXIS_UPCAST{}, None{}}}}], None{}, 0}}, O.TInt{1})
+    O.AKernel{O.KernelInfo{"r_4_5_3", [0], None{}, 0}}, O.TInt{1})
 
 # `hcq_fence`'s three named PARAMs plus the one it takes as an argument. MEASURED off the
 # py side's rows: `slots` is slot 0 and UNVOLATILE, `tl` is slot 1 and VOLATILE --

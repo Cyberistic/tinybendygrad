@@ -116,67 +116,11 @@ import ./../../helpers.bend as H
 import ./../../uop/ops.bend as O
 
 # ===========================================================================
-# opt/__init__.py
+# opt/__init__.py -- `OptOps`, `Opt` and `Opt.arg` live in `uop/ops.bend` now
+# (this file imports that one, and `KernelInfo` carries an `Opt`, so the types
+# had to move to the bottom). `O.OPT` / `O.OPTOPS` are the spellings; the three
+# readers below stay here with the `Sched` that uses them.
 # ===========================================================================
-
-type OPTOPS is Data:
-  OPS_TC{}
-  OPS_SPLIT{}
-  OPS_PADTO{}
-  OPS_SWAP{}
-
-# `auto()` numbering is the declaration order, and `OptOps.__lt__` is the only
-# reader of it -- which nothing calls. Kept anyway: it is one ladder and it is
-# the enum's documented value.
-def OPTOPS.value(o: OPTOPS) -> U32:
-  match o:
-    case OPS_TC{}: 1
-    case OPS_SPLIT{}: 2
-    case OPS_PADTO{}: 3
-    case _: 4
-
-# `Opt.arg: int|tuple|None`. A `Data` record may not hold a `Maybe` field, so
-# the three shapes are three constructors. `OA_TC` is its own because the TC arg
-# is a 3-tuple of INTEGERS and a SPLIT arg is a 2- or 3-tuple whose third is a
-# BOOL -- folding them into one record would need a `Maybe` for the bool.
-# `SPL` and `TC` ARE `Opt.arg`'s TWO TUPLE SHAPES, as records. They exist
-# because `Sched.split` reads `amt` and `t` once EACH and there is no way to
-# pass two `U32`s that way -- `+` is refused on a `U32` -- so the pair travels as
-# the `Data` record Python already had it as, and `OA_SPLIT{a: SPL}` is the
-# constructor that names the variant.
-type SPL is Data:
-  SPL{amt: U32, t: O.AxisType, top: Bool}
-
-type TC is Data:
-  TC{any: Bool, sel: U32, lvl: U32, use: U32}
-
-type OPTARG is Data:
-  OA_NONE{}
-  OA_INT{i: U32}
-  OA_SPLIT{a: SPL}
-  OA_TC{a: TC}
-
-type OPT is Data:
-  OPT{op: OPTOPS, axis: U32, arg: OPTARG}
-
-# `axis: int|None` in Python and NO construction site in `search.py`,
-# `heuristic.py` or `postrange.py` passes None -- `actions` always has an int,
-# every `apply_opt` call site has an int, and `_apply_tc_opt`'s PADTO has
-# `self.rngs.index(a)`. So `axis` is a `U32` here and the two
-# `check(opt.axis is not None, ...)` are vacuous, which is why they are not
-# ported. If a `None` axis ever appears, `OA_NONE` on `arg` is not the fix;
-# `axis` needs a `Maybe` and this record needs a `Bool` alongside it.
-def OPT.op(x: OPT) -> OPTOPS:
-  match x:
-    case OPT{op, axis, arg}: op
-
-def OPT.axis(x: OPT) -> U32:
-  match x:
-    case OPT{op, axis, arg}: axis
-
-def OPT.arg(x: OPT) -> OPTARG:
-  match x:
-    case OPT{op, axis, arg}: arg
 
 # the only thing that ever reads `arg` is the `match opt.arg is ...` ladder in
 # `apply_opt`, so the ladder destructures the record directly.
@@ -184,21 +128,26 @@ def OPT.arg(x: OPT) -> OPTARG:
 # pattern binder is a NAME lookup and fails, so every reader of a nested record
 # is a nested pattern -- `case OA_SPLIT{SPL{amt, t, top}}` -- which is also
 # ops.bend's `case AParam{pa}: match pa:` shape written on one line.
-def opt_amt(a: OPTARG) -> U32:
+# `top` is `Maybe` because the arg can be a 2- or 3-tuple; `opt_top` answers its
+# resolved value, which is what `apply_opt`'s `(*opt.arg, False)[0:3]` does.
+def opt_amt(a: O.OPTARG) -> U32:
   match a:
-    case OA_SPLIT{SPL{amt, t, top}}: amt
-    case OA_INT{i}: i
-    case OA_TC{TC{any, sel, lvl, use}}: sel
+    case O.OA_SPLIT{O.SPL{amt, t, top}}: amt
+    case O.OA_INT{i}: i
+    case O.OA_TC{O.TC{any, sel, lvl, use}}: sel
     case _: 0
 
-def opt_top(a: OPTARG) -> Bool:
+def opt_top(a: O.OPTARG) -> Bool:
   match a:
-    case OA_SPLIT{SPL{amt, t, top}}: top
+    case O.OA_SPLIT{O.SPL{amt, t, top}}:
+      match top:
+        case Some{b}: b
+        case _: False{}
     case _: False{}
 
-def opt_target(a: OPTARG) -> O.AxisType:
+def opt_target(a: O.OPTARG) -> O.AxisType:
   match a:
-    case OA_SPLIT{SPL{amt, t, top}}: t
+    case O.OA_SPLIT{O.SPL{amt, t, top}}: t
     case _: O.AXIS_LOOP{}
 
 # ===========================================================================
@@ -305,7 +254,7 @@ def rng_le(a: RNG, b: RNG) -> Bool:
     case RNG{id, +t, sz} RNG{j, +u, w}: rng_le.k(U32.is_eq(pos_key(t), pos_key(u)), pos_key(t), id, pos_key(u), j)
 
 type Sched is Data:
-  Sched{ren: REN, rngs: List<&2, RNG>, opts: List<&2, OPT>}
+  Sched{ren: REN, rngs: List<&2, RNG>, opts: List<&2, O.OPT>}
 
 def Sched.ren(x: Sched) -> REN:
   match x:
@@ -315,7 +264,7 @@ def Sched.rngs(x: Sched) -> List<&2, RNG>:
   match x:
     case Sched{ren, rngs, opts}: rngs
 
-def Sched.opts(x: Sched) -> List<&2, OPT>:
+def Sched.opts(x: Sched) -> List<&2, O.OPT>:
   match x:
     case Sched{ren, rngs, opts}: opts
 
@@ -557,23 +506,23 @@ def Sched.max_id(x : Sched) -> U32:
 # amt: U32, nt: AxisType` -- is unwritable: `axis` is read twice, `amt` is read
 # twice, and `U32` cannot be `+`. `OPT` is `Data`, so `+o` licenses every read
 # and the pair `{axis, arg}` travels the way it travels in Python.
-def opt_spl(a: OPTARG) -> SPL:
+def opt_spl(a: O.OPTARG) -> O.SPL:
   match a:
-    case OA_SPLIT{SPL{amt, t, top}}: SPL{amt, t, top}
-    case _: SPL{0, O.AXIS_LOOP{}, False{}}
+    case O.OA_SPLIT{O.SPL{amt, t, top}}: O.SPL{amt, t, top}
+    case _: O.SPL{0, O.AXIS_LOOP{}, None{}}
 
 # `replaced_rng` -- same `axis_id`, `new_type`, size `old_sz`.
-def rep_rng(+r: RNG, a: SPL) -> RNG:
+def rep_rng(+r: RNG, a: O.SPL) -> RNG:
   match a:
-    case SPL{amt, t, top}: RNG{RNG.id(r), t, U32.div(RNG.sz(r), amt)}
+    case O.SPL{amt, t, top}: RNG{RNG.id(r), t, U32.div(RNG.sz(r), amt)}
 
 # `new_rng` -- `UOp.range(amount, next(self.opt_range), new_type)`. The id is
 # `max(id) + 1`, which is what `opt_range`'s `count(start=max+1)` hands out.
-def new_rng(mid: U32, a: SPL) -> RNG:
+def new_rng(mid: U32, a: O.SPL) -> RNG:
   match a:
-    case SPL{amt, t, top}: RNG{mid, t, amt}
+    case O.SPL{amt, t, top}: RNG{mid, t, amt}
 
-def split_new(x: Sched, a: SPL) -> List<&2, RNG>:
+def split_new(x: Sched, a: O.SPL) -> List<&2, RNG>:
   [new_rng(U32.add(Sched.max_id(x), 1), a)]
 
 # `rngs[at] = replaced_rng`, then the `rngs` PROPERTY re-sorts. The new pair
@@ -582,35 +531,35 @@ def split_new(x: Sched, a: SPL) -> List<&2, RNG>:
 # axis 0 of a `[GLOBAL, REDUCE]` kernel moves that axis from index 0 to index 1.
 # `U32.is_eq(List.length(acc), OPT.axis(o))` is `i == axis` for the element the
 # walk is ON, because `acc` already holds exactly the elements before it.
-def at_it(acc: List<&2, RNG>, o: OPT) -> Bool:
-  U32.is_eq(U32.from_nat(List.length(&2, RNG, acc)), OPT.axis(o))
+def at_it(acc: List<&2, RNG>, o: O.OPT) -> Bool:
+  U32.is_eq(U32.from_nat(List.length(&2, RNG, acc)), O.OPT.axis(o))
 
-def put_at.at(here: Bool, acc: List<&2, RNG>, +o: OPT, h: RNG) -> List<&2, RNG>:
+def put_at.at(here: Bool, acc: List<&2, RNG>, +o: O.OPT, h: RNG) -> List<&2, RNG>:
   match here:
-    case True{}: List.append(&2, RNG, acc, [rep_rng(h, opt_spl(OPT.arg(o)))])
+    case True{}: List.append(&2, RNG, acc, [rep_rng(h, opt_spl(O.OPT.arg(o)))])
     case False{}: List.append(&2, RNG, acc, [h])
 
-def put_at(+acc: List<&2, RNG>, +o: OPT, h: RNG) -> List<&2, RNG>:
+def put_at(+acc: List<&2, RNG>, +o: O.OPT, h: RNG) -> List<&2, RNG>:
   put_at.at(at_it(acc, o), acc, o, h)
 
 
-def put_go(rs: List<&2, RNG>, +o: OPT, +acc: List<&2, RNG>) -> List<&2, RNG>:
+def put_go(rs: List<&2, RNG>, +o: O.OPT, +acc: List<&2, RNG>) -> List<&2, RNG>:
   match rs:
     case Nil{}: acc
     case +h <> t: put_go(t, o, put_at(acc, o, h))
 
-def split_rngs(+x: Sched, +o: OPT) -> List<&2, RNG>:
-  List.sort(RNG, rng_le, List.append(&2, RNG, put_go(Sched.rngs(x), o, Nil{}), split_new(x, opt_spl(OPT.arg(o)))))
+def split_rngs(+x: Sched, +o: O.OPT) -> List<&2, RNG>:
+  List.sort(RNG, rng_le, List.append(&2, RNG, put_go(Sched.rngs(x), o, Nil{}), split_new(x, opt_spl(O.OPT.arg(o)))))
 
 # `Sched.split` -- the rng bookkeeping of `apply_opt(SPLIT)` + `shift_to`. `amt`
 # is ALREADY resolved: `apply_opt` turns `amt == 0` into `int(rng.vmax+1)` before
 # `shift_to` runs. `top` is carried and IGNORED -- it picks which of the two is
 # the fast axis of `sub_axis`, and `sub_axis` is WALL #2.
-def SPLIT_OPT(axis: U32, amt: U32, t: O.AxisType, top: Bool) -> OPT:
-  OPT{OPS_SPLIT{}, axis, OA_SPLIT{SPL{amt, t, top}}}
+def SPLIT_OPT(axis: U32, amt: U32, t: O.AxisType, top: Bool) -> O.OPT:
+  O.OPT{O.OPS_SPLIT{}, axis, O.OA_SPLIT{O.SPL{amt, t, Some{top}}}}
 
-def Sched.split(+x: Sched, +o: OPT) -> Sched:
-  Sched{Sched.ren(x), split_rngs(x, o), List.append(&2, OPT, Sched.opts(x), [o])}
+def Sched.split(+x: Sched, +o: O.OPT) -> Sched:
+  Sched{Sched.ren(x), split_rngs(x, o), List.append(&2, O.OPT, Sched.opts(x), [o])}
 
 # ---------------------------------------------------------------------------
 # `opt_ok` -- EVERY `check` in `apply_opt`'s SPLIT, PADTO and SWAP arms, plus
@@ -725,7 +674,7 @@ def REN.n_tc(x: REN) -> U32:
 # the ONLY scrutinee in the def -- `match a x:` would be a two-scrutinee match
 # over a 4-field record and a `Sched`.
 def n_opts(x: Sched) -> U32:
-  U32.from_nat(List.length(&2, OPT, Sched.opts(x)))
+  U32.from_nat(List.length(&2, O.OPT, Sched.opts(x)))
 
 # `opt_ok.tc` -- `apply_opt`'s TC arm, all four `check`s.
 # `check(0 < use_tensor_cores <= 2, "use_tensor_cores value is not valid")` --
@@ -741,9 +690,9 @@ def n_opts(x: Sched) -> U32:
 def ck_use(use: U32) -> Bool:
   U32.is_le(U32.sub(use, 1), 1)
 
-def opt_ok.tc(a: TC, +x: Sched, no_opts: U32) -> Bool:
+def opt_ok.tc(a: O.TC, +x: Sched, no_opts: U32) -> Bool:
   match a:
-    case TC{any, sel, lvl, use}:
+    case O.TC{any, sel, lvl, use}:
       # `check(0 <= tc_opt <= 2)` and `check(0 < use_tensor_cores <= 2)`
       Bool.and(
         Bool.and(U32.is_le(lvl, 2),
@@ -807,18 +756,18 @@ def row(nm: String, v: U32) -> IO(Unit):
 # `apply_opt` and `opt_ok` take the RESOLVED amount, so a fixture states the
 # amount Python would have resolved `0` to. `plus_opt(i)` is the four actions
 # `get_kernel_actions` accepts on the 1-axis kernel, by their `enumerate` index.
-def plus_pair(i: U32) -> OPTARG:
+def plus_pair(i: U32) -> O.OPTARG:
   match i:
-    case 1: OA_SPLIT{SPL{4, O.AXIS_UPCAST{}, False{}}}
-    case 11: OA_SPLIT{SPL{2, O.AXIS_UPCAST{}, False{}}}
-    case 121: OA_SPLIT{SPL{4, O.AXIS_LOCAL{}, False{}}}
-    case _: OA_SPLIT{SPL{2, O.AXIS_LOCAL{}, False{}}}
+    case 1: O.OA_SPLIT{O.SPL{4, O.AXIS_UPCAST{}, None{}}}
+    case 11: O.OA_SPLIT{O.SPL{2, O.AXIS_UPCAST{}, None{}}}
+    case 121: O.OA_SPLIT{O.SPL{4, O.AXIS_LOCAL{}, None{}}}
+    case _: O.OA_SPLIT{O.SPL{2, O.AXIS_LOCAL{}, None{}}}
 
-def plus_opt(i: U32) -> OPT:
-  OPT{OPS_SPLIT{}, 0, plus_pair(i)}
+def plus_opt(i: U32) -> O.OPT:
+  O.OPT{O.OPS_SPLIT{}, 0, plus_pair(i)}
 
-def plus_ok.of(+o: OPT, s: Sched) -> Bool:
-  opt_ok.at(s, Q.of(0, opt_amt(OPT.arg(o)), opt_target(OPT.arg(o))))
+def plus_ok.of(+o: O.OPT, s: Sched) -> Bool:
+  opt_ok.at(s, Q.of(0, opt_amt(O.OPT.arg(o)), opt_target(O.OPT.arg(o))))
 
 def plus_ok(i: U32) -> Bool:
   plus_ok.of(plus_opt(i), plus_sched())
@@ -865,27 +814,27 @@ def ok_axis_oob() -> U32:
 # and a mutation that drops the `Bool.or(a.any, ...)` moves it to 0 -- which is
 # the bug where every TC candidate is rejected on a device with no tensor cores.
 def ok_tc_any() -> U32:
-  b2u(opt_ok.tc(TC{True{}, 0, 2, 1}, plus_sched(), n_opts(plus_sched())))
+  b2u(opt_ok.tc(O.TC{True{}, 0, 2, 1}, plus_sched(), n_opts(plus_sched())))
 
 # `ok_tc_sel` -- the SAME check with `any = False` and `sel = 0`, `n_tc = 0`.
 # `0 < 0` is False, so this is 0. The pair pins that `any` is doing the work and
 # not the magnitude.
 def ok_tc_sel() -> U32:
-  b2u(opt_ok.tc(TC{False{}, 0, 2, 1}, plus_sched(), n_opts(plus_sched())))
+  b2u(opt_ok.tc(O.TC{False{}, 0, 2, 1}, plus_sched(), n_opts(plus_sched())))
 
 # `ok_tc_lvl` -- `check(0 <= tc_opt <= 2)`, the FALSE arm at lvl 3.
 def ok_tc_lvl() -> U32:
-  b2u(opt_ok.tc(TC{True{}, 0, 3, 1}, plus_sched(), n_opts(plus_sched())))
+  b2u(opt_ok.tc(O.TC{True{}, 0, 3, 1}, plus_sched(), n_opts(plus_sched())))
 
 # `ok_tc_use` -- `check(0 < use_tensor_cores <= 2)`, the FALSE arm at use 3.
 def ok_tc_use() -> U32:
-  b2u(opt_ok.tc(TC{True{}, 0, 2, 3}, plus_sched(), n_opts(plus_sched())))
+  b2u(opt_ok.tc(O.TC{True{}, 0, 2, 3}, plus_sched(), n_opts(plus_sched())))
 
 # `ok_tc_first` -- `check(len(self.applied_opts) == 0)`. `Sched.split` appends,
 # so a scheduler with one opt must REJECT a TC. This row is the False arm, and
 # it is the row that moves if `Sched.split` stops appending.
 def ok_tc_first() -> U32:
-  b2u(opt_ok.tc(TC{True{}, 0, 2, 1}, Sched.split(plus_sched(), SPLIT_OPT(0, 2, O.AXIS_UPCAST{}, False{})), n_opts(Sched.split(plus_sched(), SPLIT_OPT(0, 2, O.AXIS_UPCAST{}, False{})))))
+  b2u(opt_ok.tc(O.TC{True{}, 0, 2, 1}, Sched.split(plus_sched(), SPLIT_OPT(0, 2, O.AXIS_UPCAST{}, False{})), n_opts(Sched.split(plus_sched(), SPLIT_OPT(0, 2, O.AXIS_UPCAST{}, False{})))))
 
 # `ul_plus` / `ul_red` -- `get_kernel_actions`' `up`/`lcl` on each fixture.
 # CPython: after a successful SPLIT the products are over the NEW axis types,
@@ -1043,7 +992,7 @@ def main() -> IO(Unit):
     w3 : Unit <- row("split_fs2", split_fs_2())
     x : Unit <- row("pos_red", pos_key(O.AXIS_REDUCE{}))
     y : Unit <- row("pos_dev", pos_key(O.AXIS_DEVICE{}))
-    z : Unit <- row("opsval_swap", OPTOPS.value(OPS_SWAP{}))
+    z : Unit <- row("opsval_swap", O.OPTOPS.value(O.OPS_SWAP{}))
     st : Unit <- row("stgt_local", U32.from_nat(List.length(&2, O.AxisType, split_targets(O.AXIS_LOCAL{}))))
     s2 : Unit <- row("ck_tgt_bad", ck_tgt_bad())
     s3 : Unit <- row("ck_tgt_ok", ck_tgt_ok())

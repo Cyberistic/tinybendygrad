@@ -912,31 +912,91 @@ type Tag is Data:
 # they read UOps.
 # ===========================================================================
 
+# ===========================================================================
+# opt/__init__.py: `OptOps` and `Opt` (with its `arg`), MOVED DOWN from
+# `codegen/opt/postrange.bend` because `KernelInfo` below CARRIES them and
+# `postrange.bend` imports THIS file -- a file cannot import its own importer, so
+# the types live at the bottom. `postrange.bend` reads them as `O.OPTOPS` /
+# `O.OPT` / `O.SPL` / `O.OPTARG`; `search.bend` and `heuristic.bend` reach them
+# through `postrange` and are unchanged.
+# ===========================================================================
+type OPTOPS is Data:
+  OPS_TC{}
+  OPS_SPLIT{}
+  OPS_PADTO{}
+  OPS_SWAP{}
+
+# `auto()` numbering is the declaration order, and `OptOps.__lt__` is the only
+# reader of it -- which nothing calls. Kept anyway: it is the enum's documented value.
+def OPTOPS.value(o: OPTOPS) -> U32:
+  match o:
+    case OPS_TC{}: 1
+    case OPS_SPLIT{}: 2
+    case OPS_PADTO{}: 3
+    case _: 4
+
+# `Opt.arg: int|tuple|None`. `SPL` and `TC` ARE that arg's TWO TUPLE SHAPES, as
+# records: `apply_opt` reads two of the three split fields at once and a `U32`
+# cannot be `+`, so the pair travels as the `Data` record Python already had it as.
+# `top: Maybe<&2, Bool>` because upstream's split arg is a 2-tuple `(amt, target)`
+# or a 3-tuple `(amt, target, top)` (`postrange.py:114` checks `len(opt.arg) in
+# (2, 3)` and `:115` defaults `top` to False), and the canonical form prints WHICH.
+type SPL is Data:
+  SPL{amt: U32, t: AxisType, top: Maybe<&2, Bool>}
+
+type TC is Data:
+  TC{any: Bool, sel: U32, lvl: U32, use: U32}
+
+type OPTARG is Data:
+  OA_NONE{}
+  OA_INT{i: U32}
+  OA_SPLIT{a: SPL}
+  OA_TC{a: TC}
+
+type OPT is Data:
+  OPT{op: OPTOPS, axis: U32, arg: OPTARG}
+
+# `axis: int|None` in Python, but NO construction site in `search.py`,
+# `heuristic.py` or `postrange.py` passes None, so `axis` is a `U32` here and the
+# `check(opt.axis is not None)` is vacuous. If a `None` axis ever appears, `axis`
+# needs a `Maybe` and this record a `Bool` beside it, not an `OA_NONE` arg.
+def OPT.op(x: OPT) -> OPTOPS:
+  match x:
+    case OPT{op, axis, arg}: op
+
+def OPT.axis(x: OPT) -> U32:
+  match x:
+    case OPT{op, axis, arg}: axis
+
+def OPT.arg(x: OPT) -> OPTARG:
+  match x:
+    case OPT{op, axis, arg}: arg
+
+# ===========================================================================
+# The three arg payloads, moved UP from ops.py:1339-1404.
+#
+# They are moved because `Arg` holds them and `eq_arg` -- the ucache key --
+# compares them, and Bend resolves a call at compile time while Python resolves
+# a lambda at call time. Their order AMONG THEMSELVES is Python's: KernelInfo,
+# ProgramInfo, OPAQUE_CALL_BODIES, CallInfo. The METHODS of ProgramInfo
+# (`launch_dims`, `vals`, `from_sink`) stay down at ops.py's position, because
+# they read UOps.
+# ===========================================================================
+
 # KernelInfo -- ops.py:1339. `estimates: Estimates|None` is NOT PORTED:
 # `Estimates` is `tinygrad.renderer`'s cost model, P5. A field the port cannot
 # read is a field that would silently always be None.
 #
-# `applied_opts: List<&2, U32>` IS ALSO WRONG, and MEASURED on a fresh run rather
-# than read off a type. Upstream's elements are `Opt` dataclasses
-# (`codegen/opt/__init__.py:11`, `op: OptOps, axis: int|None, arg: int|tuple|None`),
-# and `--graph lin` really does carry one: MEASURED by calling the py side,
+# `applied_opts`/`opts_to_apply` ARE `List<&2, OPT>` and not `List<&2, U32>`:
+# upstream's elements are `Opt` dataclasses (pin ops.py:1342,1343 `tuple`), and
+# `--graph lin` carries one, MEASURED by calling the py side,
 #   SINK applied_opts=(Opt(op=OptOps.SPLIT, axis=2, arg=(0, AxisType.UPCAST)),)
 # which is `heuristic.py:109`'s own `Opt(OptOps.SPLIT, axis, (0, AxisType.UPCAST))`.
-# A `U32` cannot hold an `Opt`, so the canonical row reads the LEDGER MARKER `q`
-# (graphcmp.py:326, `"opt": "q"`) and the CONTENT is unobservable: MEASURED, changing
-# the fixture's payload `0` to `7` moves NOT ONE BYTE of the row, while changing the
-# COUNT from one option to two moves it to `n(q,q)`. So the `1 = 1` count agreement is
-# a property of the device pin (MEASURED: `DEV=CPU` gives one option and the default
-# device gives TWO) and of a hard-coded `[0]` in the fixture -- it is not evidence
-# that the port models `Opt`.
-# THE CORRECT TYPE IS `List<&2, OPT>` AND `OPT` ALREADY EXISTS, at
-# `codegen/opt/postrange.bend:159` -- but that file does `import ../../uop/ops.bend`,
-# so `ops.bend` cannot import it back: the type has to MOVE DOWN first, which is
-# `postrange.bend`, `search.bend` and `heuristic.bend`, none of them this file's.
-# `OPT{axis: U32}` also cannot spell upstream's `axis: int|None`; see that file's
-# own note at :163.
+# A `U32` could not hold it, so the canonical row printed one ledger `q` per option
+# and the CONTENT was unobservable -- MEASURED, changing a fixture's payload `0` to
+# `7` moved no byte. `OPT` now lives above.
 type KernelInfo is Data:
-  KernelInfo{name: String, applied_opts: List<&2, U32>, opts_to_apply: Maybe<&2, List<&2, U32>>, beam: U32}
+  KernelInfo{name: String, applied_opts: List<&2, OPT>, opts_to_apply: Maybe<&2, List<&2, OPT>>, beam: U32}
 
 def KernelInfo.of() -> KernelInfo:
   # name: str = "test"            # name of the kernel
@@ -1454,11 +1514,11 @@ def KernelInfo.name(x: KernelInfo) -> String:
   match x:
     case KernelInfo{name, applied_opts, opts_to_apply, beam}: name
 
-def KernelInfo.applied_opts(x: KernelInfo) -> List<&2, U32>:
+def KernelInfo.applied_opts(x: KernelInfo) -> List<&2, OPT>:
   match x:
     case KernelInfo{name, applied_opts, opts_to_apply, beam}: applied_opts
 
-def KernelInfo.opts_to_apply(x: KernelInfo) -> Maybe<&2, List<&2, U32>>:
+def KernelInfo.opts_to_apply(x: KernelInfo) -> Maybe<&2, List<&2, OPT>>:
   match x:
     case KernelInfo{name, applied_opts, opts_to_apply, beam}: opts_to_apply
 
@@ -1626,10 +1686,52 @@ def eq_opt_dev(x: Maybe<&2, S.Dev>, y: Maybe<&2, S.Dev>) -> Bool:
     case None{} Some{b}: False{}
     case Some{a} None{}: False{}
 
-def KernelInfo.eq_opts(x: Maybe<&2, List<&2, U32>>, y: Maybe<&2, List<&2, U32>>) -> Bool:
+# `Opt` equality, field by field, for `eq_arg`'s AKernel arm. `OPTOPS.value` and
+# `AxisType.value` rather than a new `==`: both are `auto()` ladders defined above.
+def eq_optops(x: OPTOPS, y: OPTOPS) -> Bool:
+  U32.is_eq(OPTOPS.value(x), OPTOPS.value(y))
+
+def eq_optbool(x: Maybe<&2, Bool>, y: Maybe<&2, Bool>) -> Bool:
   match x y:
     case None{} None{}: True{}
-    case Some{a} Some{b}: eq_u32(a, b)
+    case Some{a} Some{b}: eq_bool(a, b)
+    case None{} Some{b}: False{}
+    case Some{a} None{}: False{}
+
+def eq_spl(x: SPL, y: SPL) -> Bool:
+  match x y:
+    case SPL{a, t, p} SPL{b, u, q}:
+      Bool.and(U32.is_eq(a, b), Bool.and(U32.is_eq(AxisType.value(t), AxisType.value(u)), eq_optbool(p, q)))
+
+def eq_tc(x: TC, y: TC) -> Bool:
+  match x y:
+    case TC{a, b, c, d} TC{e, f, g, h}:
+      Bool.and(eq_bool(a, e), Bool.and(U32.is_eq(b, f), Bool.and(U32.is_eq(c, g), U32.is_eq(d, h))))
+
+def eq_optarg(x: OPTARG, y: OPTARG) -> Bool:
+  match x y:
+    case OA_NONE{} OA_NONE{}: True{}
+    case OA_INT{i} OA_INT{j}: U32.is_eq(i, j)
+    case OA_SPLIT{a} OA_SPLIT{b}: eq_spl(a, b)
+    case OA_TC{a} OA_TC{b}: eq_tc(a, b)
+    case _ _: False{}
+
+def eq_opt(x: OPT, y: OPT) -> Bool:
+  match x y:
+    case OPT{a, b, c} OPT{d, e, f}:
+      Bool.and(eq_optops(a, d), Bool.and(U32.is_eq(b, e), eq_optarg(c, f)))
+
+def eq_opts(xs: List<&2, OPT>, ys: List<&2, OPT>) -> Bool:
+  match xs ys:
+    case Nil{} Nil{}: True{}
+    case x <> t y <> u: Bool.and(eq_opt(x, y), eq_opts(t, u))
+    case Nil{} _ <> _: False{}
+    case _ <> _ Nil{}: False{}
+
+def KernelInfo.eq_opts(x: Maybe<&2, List<&2, OPT>>, y: Maybe<&2, List<&2, OPT>>) -> Bool:
+  match x y:
+    case None{} None{}: True{}
+    case Some{a} Some{b}: eq_opts(a, b)
     case None{} Some{b}: False{}
     case Some{a} None{}: False{}
 
@@ -1850,7 +1952,7 @@ def eq_paramarg(x: ParamArg, y: ParamArg) -> Bool:
 def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
   match x y:
     case KernelInfo{name, applied_opts, opts_to_apply, beam} KernelInfo{n2, o2, p2, b2}:
-      Bool.and(String.eq(name, n2), Bool.and(eq_u32(applied_opts, o2),
+      Bool.and(String.eq(name, n2), Bool.and(eq_opts(applied_opts, o2),
         Bool.and(KernelInfo.eq_opts(opts_to_apply, p2), U32.is_eq(beam, b2))))
 
 def eq_programinfo(x: ProgramInfo, y: ProgramInfo) -> Bool:
