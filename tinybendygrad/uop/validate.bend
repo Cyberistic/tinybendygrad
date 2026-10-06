@@ -1207,12 +1207,12 @@ def vz_zat(m: Maybe<&1, Z>, i: U32, n: U32) -> Z:
 
 # `solver.model()` -- NOT PORTED. It is a solver output and the header calls the
 # solver the wall; a model cannot be rendered without solving.
-# TODO(p3) validate.py:99  the `{solver.model()}` tail of the sat message.
+# WALL(p3) validate.py:99  the `{solver.model()}` tail of the sat message. -- BLOCKED: needs `solver.model()`, a Z3 SOLVER OUTPUT on the `z3.sat` branch of the out-of-bounds report (`validate.py:98`). The port has no Z3, and a model cannot be rendered without solving -- which the file says two lines above, so this line is the marker for a documented wall rather than a new gap.
 def vd_model() -> String:
   "solver.model() is not ported"
 
 # `solver.reason_unknown()` -- the same shape, the other non-unsat branch.
-# TODO(p3) validate.py:100  the `{solver.reason_unknown()}` tail.
+# WALL(p3) validate.py:100  the `{solver.reason_unknown()}` tail. -- BLOCKED: needs `solver.reason_unknown()` on the `z3.unknown` branch -- the same shape as `:99`, the other non-unsat arm.
 def vd_reason() -> String:
   "solver.reason_unknown() is not ported"
 
