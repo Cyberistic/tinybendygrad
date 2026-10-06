@@ -459,7 +459,7 @@ def sc_split(+ar: O.Arena, +after: U32) -> Split:
   sp_go(ar, sc_src_from(ar, after, 1), Split{Nil{}, Nil{}})
 
 # ===========================================================================
-# `gate_kernel_sink` -- ops.py:1901 -- and the second copy of `Topo.step`.
+# `gate_kernel_sink` -- ops.py:1909 -- and the second copy of `Topo.step`.
 #
 #     if node in cache: continue                      <- sc_topo.seen
 #     if not visited: if gate(node): push(n, True); push srcs
@@ -554,7 +554,7 @@ def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
 def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
   Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
 
-# `t not in k.backward_slice` -- ops.py:278 is `toposort(enter_calls=False)` minus
+# `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
 def sc_in_bs(+ar: O.Arena, +k: U32, +t: U32) -> Bool:
   List.contains(U32, U32.is_eq, O.UOp.toposort_nocalls(O.Arena.budget(ar), ar, k), t)
@@ -1002,7 +1002,7 @@ def bu_go(+ar: O.Arena, ss: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
     case Nil{}     : acc
     case s <> rest : bu_go(ar, rest, bu_step(ar, s, acc))
 
-# `k.replace(src=(k.body, *buf_uops))`. `k` is a CALL here -- __init__.py:73
+# `k.replace(src=(k.body, *buf_uops))`. `k` is a CALL here -- __init__.py:75
 # asserts it -- so `k.body` is `src[0]`. This is the ONE place in the file that
 # interns, so it is the ONE place the arena is handed back.
 def replace(+ar: O.Arena, +k: U32) -> O.Found:

@@ -193,7 +193,7 @@ def mu_shard.go(axs: List<&2, U32>, ns: List<&2, U32>, acc: List<&2, Sh>) -> Lis
     case a <> at n <> nt: mu_shard.go(at, nt, List.append(&2, Sh, acc, [Sh{a, n}]))
     case _ _: acc
 
-# `if self.op is Ops.UNSHARD else ()` -- the outer guard of ops.py:707, and it is
+# `if self.op is Ops.UNSHARD else ()` -- the outer guard of ops.py:706, and it is
 # a GUARD and not a filter: a non-UNSHARD has an EMPTY sharding, and that is
 # what makes every `if m.sharding:` in multi.py a UNSHARD test.
 def mu_shard.zip.go(unsh: Bool, +ar: O.Arena, +self: U32) -> List<&2, Sh>:
@@ -279,7 +279,7 @@ def mu_move_ops() -> List<&2, O.Op>:
 def mu_pass_ops() -> List<&2, O.Op>:
   [O.OpsCAST{}, O.OpsBITCAST{}, O.OpsSTAGE{}, O.OpsDETACH{}, O.OpsCONTIGUOUS_BACKWARD{}]
 
-# `_early_allreduce` (multi.py:48) -- ONE rule, and its body is
+# `_early_allreduce` (multi.py:50) -- ONE rule, and its body is
 # `allreduce.bend`'s `handle_allreduce`.
 def mu_ea_ops() -> List<&2, O.Op>: [O.OpsALLREDUCE{}]
 
@@ -364,7 +364,7 @@ def mu_table(cfg: Cfg) -> List<&2, O.PMEntry>:
 # THE SHAPES. Every decision in multi.py that reads a shape reads it as an
 # INTEGER -- `prod(shape[:ax])`, `shape[ax] % count`, `len(out_shape)`,
 # `len(mlb.shape)` -- so a shape here is `List<&2, U32>` and the dims are
-# concrete. A SYMBOLIC dim is the wall: `ssimplify` (ops.py:520) is not ported
+# concrete. A SYMBOLIC dim is the wall: `ssimplify` (ops.py:518) is not ported
 # and `reshape_multi`'s `arg_acc` and `prod(multi.shape[:ax])` both need it.
 # `mu_sym_dim()` is the marker and it is 0, the same convention
 # `LAWS/spec.bend`'s `dim_of` uses for an `SS{..}` and `allreduce.bend`'s
@@ -446,7 +446,7 @@ def mu_prod_upto(xs: List<&2, U32>, n: Nat) -> U32:
 def mu_scalar(xs: List<&2, U32>) -> Bool:
   List.is_empty(&2, U32, xs)
 
-# `tuple(x.shape) == tuple(multi.shape)` -- multi.py:81 and :96 and :265. It is
+# `tuple(x.shape) == tuple(multi.shape)` -- multi.py:264 and :96 and :265. It is
 # a SHAPE COMPARISON, so it is a fold over two lists and not a length test:
 # two shapes of the same length can differ, and `can_handle` turns on it.
 # THE TWO-CONS ARM COMES FIRST. `case _ _: False{}` in second position SWALLOWS
@@ -2055,7 +2055,7 @@ def mu_early.go(+have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
     case Nil{}: True{}
     case o <> t: mu_and2(O.op_in(have, o), mu_early.go(have, t))
 
-# `early_reject` is a NECESSARY CONDITION despite the name (ops.py:1609 is
+# `early_reject` is a NECESSARY CONDITION despite the name (ops.py:1617 is
 # `if not early_reject.issubset(ler): continue`): the rule FIRES when its op set
 # IS a subset of the node's src ops, and the empty set is a subset of everything.
 def mu_early(+ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:

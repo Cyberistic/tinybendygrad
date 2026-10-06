@@ -784,7 +784,7 @@ def ix_ar_acc0() -> U32: 1
 # The last one is a `Bool` PARAMETER (`ix_nr_passthru`) rather than a `match` on
 # a computed op, because `O.eq_op` is a CALL (bend2-constraints rule 2).
 
-# `if isinstance(s, UOp) and s.op is Ops.RANGE: return s` -- indexing.py:20, the
+# `if isinstance(s, UOp) and s.op is Ops.RANGE: return s` -- indexing.py:19, the
 # PASS-THROUGH arm, and the one arm whose answer is a NODE rather than a dim.
 # `ix_nr_through` returns the input index unchanged and falls through to `ridx`
 # otherwise, so the row is a real comparison against the input node: a port that
@@ -1146,7 +1146,7 @@ def grm_table() -> O.PMEntrys:
 
 # --- pm_apply_rangeify -- indexing.py:136-147, FIVE rules ------------------
 
-# `GroupOp.All` is `set(Ops)` (uop/__init__.py:135), i.e. EVERY op INCLUDING
+# `GroupOp.All` is `set(Ops)` (tinygrad/uop/__init__.py:135), i.e. EVERY op INCLUDING
 # SINK. `par_3_all` is that fact, and it is a fact about the WHOLE op space, so
 # `par_all_n` is its count (79) and `par_3_all_sink` is the row that would catch
 # a "every op except SINK" reading -- which is what this file used to claim.
@@ -1160,7 +1160,7 @@ def par_3_all(_: O.Op) -> Bool: True{}
 
 def par_all_n() -> U32: 79
 
-# `GroupOp.Movement` (uop/__init__.py:118) is SIX ops and `ops.bend:443` owns
+# `GroupOp.Movement` (tinygrad/uop/__init__.py:118) is SIX ops and `ops.bend:443` owns
 # the PREDICATE, not the list. `PMEntry.ops` is a list, so this is the one place
 # the six are written out; `mv_ops_n` is the row that would notice an omission.
 
@@ -1416,11 +1416,11 @@ def g_ds() -> IO(Unit):
     IO.print("")
 
 # ===========================================================================
-# 3. `broadcast_axes` -- ops.py:89-92.  The ORDER is load-bearing: the leading
+# 3. `broadcast_axes` -- ops.py:87-92.  The ORDER is load-bearing: the leading
 #    `range(nleft)` comes first and the `resolve(s == 1)` filter second, so
 #    `bax6=0,2` is not `2,0`.  `bax_neg` is the `raise` arm and it is a row.
 
-# `bax_neg` is the `raise` arm (ops.py:91). The port CANNOT raise -- Bend has no
+# `bax_neg` is the `raise` arm (tinygrad/uop/ops.py:89). The port CANNOT raise -- Bend has no
 # effect to raise in a pure def -- so `ix_bax_pick.of` answers the empty tuple and
 # the row prints what Python does, not what the port returns. That is a DELIBERATE
 # divergence and it is the reason `ix_bax` cannot be used where a `RuntimeError`

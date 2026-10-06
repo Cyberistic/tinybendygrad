@@ -277,7 +277,7 @@ import ../../LAWS/spec.bend as S
 # its own value is a wrong submission waiting for a driver.
 # ===========================================================================
 
-# hcq2.py:19 `ContextVar("HCQ_CACHE_THRESH", 64)`. :565 reads it as
+# hcq2.py:18 `ContextVar("HCQ_CACHE_THRESH", 64)`. :565 reads it as
 # `len(linear.src) < HCQ_CACHE_THRESH`.
 def HCQ_CACHE_THRESH() -> U32: 64
 
@@ -663,7 +663,7 @@ def all_in.go(+ds: List<&2, String>, nm: String, hit: Bool) -> Bool:
 def all_in(+ds: List<&2, String>) -> Bool: all_in.go(ds, "", True{})
 
 # ===========================================================================
-# hcq2.py:74-76 `layout_args`. THE CITED ONE -- ops_nv.bend names it at :14,
+# hcq2.py:69-76 `layout_args`. THE CITED ONE -- ops_nv.bend names it at :14,
 # :181, :205, :1439, :1873 and :1892.
 #
 #   words = [a if isinstance(a, UOp) else UOp.const(a, dtypes.uint32) for a in args]
@@ -730,7 +730,7 @@ def layout_ts(+ks: List<&2, U32>, base: U32) -> List<&2, U32>:
   layout_k.go(List.length(&2, U32, ks), layout(ks, base), Nil{})
 
 # ===========================================================================
-# hcq2.py:78-83 `pack_args`. THE WORD SEQUENCE, and two things about it are easy
+# hcq2.py:73-83 `pack_args`. THE WORD SEQUENCE, and two things about it are easy
 # to get wrong:
 #
 #   1. A PAD IS A WORD. `[UOp(Ops.BINARY, arg=bytes(offset - end)), arg]` and
@@ -776,7 +776,7 @@ def pack.pad(n: U32) -> Pk: Pk{PK_PAD(), n}
 
 def pack.word(+k: U32) -> Pk: Pk{PK_WORD(), k}
 
-# `words, end = [], 0` (hcq2.py:79) and `end = offset + arg.dtype.itemsize`
+# `words, end = [], 0` (tinygrad/runtime/support/hcq2.py:74) and `end = offset + arg.dtype.itemsize`
 # (:82) -- `end` starts at ZERO and not at the first offset, which is why a
 # non-zero base becomes a LEADING pad.
 def end_of.go(n: Nat, +as: List<&2, Arg>, +end: U32) -> U32:
@@ -912,7 +912,7 @@ def cstruct_ib_rows() -> List<&2, U32>: [8, 16, 24]
 
 def cstruct_cmd_rows() -> List<&2, U32>: [8, 16, 20, 56]
 
-# AND THE CDTYPE EACH ROW IS CAST TO (hcq2.py:102's `v.cast(flds[n][1])`), which
+# AND THE CDTYPE EACH ROW IS CAST TO (hcq2.py:89's `v.cast(flds[n][1])`), which
 # is `flds[n][1].itemsize`. A descriptor that carries the right offset and the
 # wrong width writes the right bytes at the wrong scale.
 def cstruct_cmd_rows_k() -> List<&2, U32>: [8, 4, 4, 4]
@@ -1009,7 +1009,7 @@ def pk_last(+xs: List<&2, Pk>) -> Pk: Maybe.default(&2, Pk, List.last(&2, Pk, xs
 
 # ===========================================================================
 # THE FIXTURES, and each one is a dtype ITEMSIZE list because that is the only
-# thing `layout_args` reads (hcq2.py:76 builds `w.dtype` from the word).
+# thing `layout_args` reads (tinygrad/runtime/support/hcq2.py:71 builds `w.dtype` from the word).
 #
 # `MIXED` is THE FIXTURE. Every uniform list agrees with an implementation that
 # advances off the UNROUNDED offset, because with all widths equal to `k` the
@@ -1926,7 +1926,7 @@ def t_pack() -> IO(Unit):
     srow("hq2_pack_buf3_8_32", pk_str(pack.trail(layout(BUF3(), 8), 32)))
     srow("hq2_pack_buf3_8_40", pk_str(pack.trail(layout(BUF3(), 8), 40)))
     srow("hq2_pack_buf3_512_536", pk_str(pack.trail(layout(BUF3(), 512), 536)))
-    # THE REFUSAL: `bytes(size - end)` with `end > size` (hcq2.py:83).
+    # THE REFUSAL: `bytes(size - end)` with `end > size` (hcq2.py:78).
     srow("hq2_pack_mixed_0_24", pk_str(pack.trail(layout(MIXED(), 0), 24)))
     row("hq2_pack_refused_24", U32.is_eq(Pk.k(pk_last(pack.trail(layout(MIXED(), 0), 24))), PK_ERR()))
     # THE EMPTY LIST IS ONE WORD, the trailing pad, at every size.

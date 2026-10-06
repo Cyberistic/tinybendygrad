@@ -200,7 +200,7 @@ def CQ_ENTRIES() -> U32: 4096
 def MTU() -> U32: 4096
 
 # the psn is 24 bits in TWO places (:145) and the doorbell index is 24 bits in
-# `db_value` (bnxtdev.py:15). Two constants, one width, and confusing them is
+# `db_value` (bnxtdev.py:164). Two constants, one width, and confusing them is
 # invisible until a psn wraps.
 def PSN_MASK() -> U32: 16777215
 def DB_INDEX_MASK() -> U32: 16777215
@@ -706,7 +706,7 @@ def qp_itemsize(+k: U32) -> U32:
   Bool.pick(U32, qp_is_counter(k), S.Dt.itemsize(S.uint64()), S.Dt.itemsize(S.uint8()))
 
 # ===========================================================================
-# `to_name` (support/hcq2.py:63) -- `"_".join(parts).replace(":", "_").lower()`.
+# `to_name` (tinygrad/helpers.py:24) -- `"_".join(parts).replace(":", "_").lower()`.
 # It is the TAG every `rdma_mem` placeholder carries and the key every
 # `pm_bufferize` rule matches on (:84), so a `to_name` that did not lower-case
 # would match nothing and a rule table that is silently empty posts nothing.

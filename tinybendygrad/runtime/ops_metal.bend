@@ -1367,7 +1367,7 @@ def check_family(sup: List<&2, U32>, f: String) -> U32:
 #     answers, and only a zero reaches "Mac". `mt_arch_or` is that row;
 #  2. `[12:]` drops the fourteen-character prefix `MTLGPUFamily`, leaving
 #     `Apple8`, which is what :146 parses with `int(self.dev.arch[5:]) < 9` and
-#     what cstyle.py:361 parses with `target.arch[5:]` for the tensor cores.
+#     what cstyle.py:363 parses with `target.arch[5:]` for the tensor cores.
 #     The name the port leaves is the SAME string the renderer reads, and
 #     `mt_arch_slice` is the row that says so.
 def FAM_PREFIX() -> Nat: 12n

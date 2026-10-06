@@ -62,7 +62,7 @@ def nr.has_copy_queue() -> U32: 1
 # five ops pads.
 # ===========================================================================
 
-# ops_null.py:21, `EXEC, COPY, WAIT, STORE, TIMESTAMP = range(5)`. Five tags,
+# ops_null.py:22, `EXEC, COPY, WAIT, STORE, TIMESTAMP = range(5)`. Five tags,
 # zero-based, and the tag is word 0 of every command.
 def NEXEC() -> U32: 0
 def NCOPY() -> U32: 1
@@ -113,12 +113,12 @@ def nr.exec(kernargs: U32, nargs: U32, ev: U32) -> List<&2, U32>:
 # ops_null.py:31, `self.cmd(COPY, dst, src, self.event(...))`.
 def nr.copy(dst: U32, src: U32, ev: U32) -> List<&2, U32>: nr.words(NCOPY(), dst, src, ev)
 
-# ops_null.py:32, `self.cmd(WAIT, signal, value, int(eq))` -- `int(eq)` is a
+# ops_null.py:36, `self.cmd(WAIT, signal, value, int(eq))` -- `int(eq)` is a
 # Bool widened, and it is the LAST word, so `eq` never collides with a pad.
 def nr.wait(sig: U32, val: U32, eq: Bool) -> List<&2, U32>:
   nr.words(NWAIT(), sig, val, Bool.to_u32(eq))
 
-# ops_null.py:33, `self.cmd(STORE, signal, value)` -- TWO args, so ONE pad, and
+# ops_null.py:37, `self.cmd(STORE, signal, value)` -- TWO args, so ONE pad, and
 # the pad is word 3. That the pad is a CONSTANT ZERO and `value` may also be zero
 # is why the gate reads the arity rather than counting zero words.
 def nr.signal(sig: U32, val: U32) -> List<&2, U32>: nr.words(NSTORE(), sig, val, 0)
@@ -138,7 +138,7 @@ def nr.copy_name(+src_dev: String, +dst_dev: String) -> String:
 
 
 # ===========================================================================
-# ops_null.py:22 and :26 -- `null_events` and `event`. A process-global dict
+# ops_null.py:48 and :26 -- `null_events` and `event`. A process-global dict
 # keyed by `(device, name, key)` and `setdefault`'d with `len(null_events)`, so
 # AN EVENT'S ID IS ITS FIRST-APPEARANCE INDEX and two events with the same key
 # share one id. `key` is `bytes | None` and only identity matters, so the port
@@ -266,7 +266,7 @@ def pk.nsrc(nargs: U32, pads: U32) -> U32: U32.add(U32.add(nargs, 1), pads)
 # `pk_tail_88` is 0 and not "absent".
 def pk.tail(nargs: U32, end: U32) -> U32: U32.sub(pk.size(nargs), end)
 
-# the interior-pad count, which is the port of hcq2.py:81's `if offset != end`:
+# the interior-pad count, which is the port of hcq2.py:76's `if offset != end`:
 # it counts the offsets that are NOT contiguous with the running end. FIVE of the
 # SEVEN measured layouts give 0 and `[4,8,4]` gives 1, because a 1-byte argument
 # between two 4-byte ones makes `layout_args` place the third at slot 8 rather

@@ -186,7 +186,7 @@ import ./../../uop/ops.bend as O
 # one; that is what makes the search deterministic and reviewable.
 #
 # `BEAM_ESTIMATE` IS NOT HERE. Python's `beam_search` never reads it: it arrives
-# as `allow_test_size` from `apply_opts` (`postrange.py:271`), and that is the
+# as `allow_test_size` from `apply_opts` (`tinygrad/codegen/opt/postrange.py:239`), and that is the
 # name this port keeps.
 # ===========================================================================
 

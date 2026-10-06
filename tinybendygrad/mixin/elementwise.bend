@@ -1141,7 +1141,7 @@ def g_unary(u: Un) -> T.Tensor:
   b = ew_i32(O.Arena.empty())
   ew_unary.at(u, ew_ct(b))
 
-# `sigmoid` is `(1 + (self * (-1/math.log(2))).exp2()).reciprocal()` (elementwise.py:693),
+# `sigmoid` is `(1 + (self * (-1/math.log(2))).exp2()).reciprocal()` (elementwise.py:695),
 # and the constant is the one the refuted wall said could not be written. It is
 # `F32.neg(ew_k.inv_log2())` and it is BIT-EXACT -- ew-consts-gate.sh row `k_inv_log2` --
 # so this is the first of the 22 unmarked methods whose stated blocker is measurably gone.
@@ -1156,7 +1156,7 @@ def ew_sigmoid(+t: T.Tensor) -> T.Tensor:
 def ew_threefry(+t: T.Tensor, +e: Ew) -> T.Tensor: ew_binop(O.OpsTHREEFRY{}, t, e, False{})
 
 
-# `swish` is `self * self.sigmoid()` (elementwise.py:801) and `silu` is `self.swish()`
+# `swish` is `self * self.sigmoid()` (elementwise.py:806) and `silu` is `self.swish()`
 # (:814), so both are one line over something that now exists -- which is the whole
 # return on landing `sigmoid` first. `sigmoid` is called on the SAME tensor, so the
 # MUL's two srcs are the tensor and the sigmoid of the tensor, and the signature row is

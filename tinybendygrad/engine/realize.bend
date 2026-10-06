@@ -498,7 +498,7 @@ def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
 def get_call_var_uops(+ar: O.Arena, call: U32, prg: U32) -> RList:
   rz_var_uops.go(rz_pvars(ar, prg), RList{ar, Nil{}}, rz_bound_map(ar, call))
 
-# `(outs, ins)` -- realize.py:21-27. A pair is a `Type` and every reader would
+# `(outs, ins)` -- realize.py:31-27. A pair is a `Type` and every reader would
 # have to match a computed value, so it is a two-field `Data` record.
 type OutsIns is Data:
   OutsIns{outs: List<&2, U32>, ins: List<&2, U32>}
@@ -1064,7 +1064,7 @@ def rz_res_fuel(ar: O.Arena) -> Nat:
 # `early_reject` IS A VETO HERE, and that is a DIFFERENCE FROM `spec.bend`.
 # `spec.bend`'s six tables carry four non-empty reject sets and all four are
 # implied by their own src-op test, so there the subset test decides nothing. Here
-# `pm_flatten_linear` carries `custom_early_reject={Ops.LINEAR}` (realize.py:205)
+# `pm_flatten_linear` carries `custom_early_reject={Ops.LINEAR}` (realize.py:204)
 # and that set is the WHOLE of the rule's claim beyond the op: a LINEAR with NO
 # LINEAR child is REJECTED and `rewrite` answers `None`, while a LINEAR with one
 # fires. `lin_none` and `lin_fired` are the two rows that pin it.
@@ -1230,7 +1230,7 @@ def bm_new.call(+sink: O.Found, +call: U32, ctx: U32) -> O.Found:
 def bm_new(+ar: O.Arena, +call: U32, +ctx: U32) -> O.Found:
   bm_new.call(rz_beam_sink(ar, call, ctx), call, ctx)
 
-# `# ctx is beam value` -- realize.py:216 -- and the CLAIM. The body additionally
+# `# ctx is beam value` -- realize.py:215 -- and the CLAIM. The body additionally
 # fires only when `sink.arg.beam == 0`; `bm_zero` is that test and `bm_new` is the
 # rewrite, so `beam_fired` is "the claim held AND the beam was 0".
 def bm_zero(+ar: O.Arena, +self: U32) -> Bool:
@@ -1243,7 +1243,7 @@ def beam_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsCALL{}], Nil{}}]}
 
 # ---------------------------------------------------------------------------
-# `_get_call_to_compile` -- realize.py:227-233. The PREDICATE is group [a] and the
+# `_get_call_to_compile` -- realize.py:226-233. The PREDICATE is group [a] and the
 # Renderer it returns is group [b], so this answers the ast or `None`.
 #
 #     if (ast.op is Ops.SINK and isinstance(ast.arg, KernelInfo)) or \
@@ -1265,7 +1265,7 @@ def gcc_sink.go(op: O.Op, a: O.Arg) -> Bool:
 def gcc_sink(+ar: O.Arena, +ast: U32) -> Bool:
   gcc_sink.go(O.Arena.op(ar, ast), O.Arena.arg(ar, ast))
 
-# `ast.src[-1].op is Ops.BINARY` -- realize.py:231. `nsrc` is 0 for a srcless node
+# `ast.src[-1].op is Ops.BINARY` -- realize.py:230. `nsrc` is 0 for a srcless node
 # and then there IS no `src[-1]`, so the empty case answers False rather than
 # reading the arena's bottom.
 def gcc_prog_bin.of(n: U32, +ast: U32, +ar: O.Arena) -> Bool:
@@ -1447,7 +1447,7 @@ def buf_arg(+w: Slot) -> O.ParamArg:
              Some{cpu_dev()}, False{}, None{}, Some{0}, False{}, None{}}
 
 # A kernel-graph VARIABLE: `size=None`, `addrspace=ALU`, a `vmin_vmax`, and
-# `val=None` -- which is exactly what makes `is_bound_var` FALSE (ops.py:1023).
+# `val=None` -- which is exactly what makes `is_bound_var` FALSE (ops.py:1025).
 def var_arg(+w: Slot) -> O.ParamArg:
   O.ParamArg{Slot.slot(w), S.int32(), None{}, Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
              None{}, False{}, None{}, Some{0}, False{}, None{}}
@@ -1789,7 +1789,7 @@ def t_dnum_d(+l: Land) -> U32:
 def t_dnum_n(+l: Land) -> U32:
   bl_of(has_dnum(Land.ar(l), Land.callN(l)))
 
-# --- realize.py:227 `_get_call_to_compile`. `gcc_P` is a kernel that still needs
+# --- realize.py:226 `_get_call_to_compile`. `gcc_P` is a kernel that still needs
 # lowering; `gcc_C` is a PROGRAM whose last src is a BINARY, i.e. ALREADY compiled,
 # and the pair is what makes the `src[-1]` test load-bearing rather than decorative.
 def t_gcc_p(+l: Land) -> U32:
@@ -1811,7 +1811,7 @@ def t_est_copy_s(+l: Land) -> U32:
 def t_est_copy_p(+l: Land) -> U32:
   bl_of(rz_est_of(Land.ar(l), Land.callP(l)))
 
-# --- realize.py:118 `ExecContext`'s defaults.
+# --- realize.py:289 `ExecContext`'s defaults.
 def t_ctx_stats() -> U32: bl_of(ExecContext.update_stats(ExecContext.of()))
 
 def t_ctx_jit() -> U32: bl_of(ExecContext.jit(ExecContext.of()))

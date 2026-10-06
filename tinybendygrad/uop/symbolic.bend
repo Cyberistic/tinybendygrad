@@ -172,7 +172,7 @@ def sy_dt_of(m: Maybe<&2, S.Dt>) -> S.Dt:
     case Some{d}: d
     case None{}: S.void()
 
-# `UPat.dtype`'s default IS `dtypes.void` (ops.py:1481), so a node the fold does
+# `UPat.dtype`'s default IS `dtypes.void` (ops.py:1486), so a node the fold does
 # not answer has the dtype a pattern with no dtype constraint would match.
 def sy_dt1(+x: F.Folded, +u: U32) -> S.Dt: sy_dt_of(sy_dt(x, u))
 
@@ -261,7 +261,7 @@ def sy_is_invalid.go(m: Maybe<&2, O.Const>) -> Bool:
     case Some{O.CInvalid{}}: True{}
     case _ : False{}
 
-# `UOp.is_invalid` -- ops.py:265, `self.op is Ops.CONST and self.val is Invalid`
+# `UOp.is_invalid` -- ops.py:267, `self.op is Ops.CONST and self.val is Invalid`
 def sy_is_invalid(+x: F.Folded, +u: U32) -> Bool: sy_is_invalid.go(sy_val(x, u))
 
 def sy_is_const(+x: F.Folded, +u: U32) -> Bool: sy_is_op(x, u, O.OpsCONST{})
@@ -562,7 +562,7 @@ def Popped.v(p: Popped) -> O.Const:
   match p:
     case Popped{t, v}: v
 
-# `exec_alu` -- ops.py:1427, and the answer is two lanes, `U32` and `F32`, with
+# `exec_alu` -- ops.py:1433, and the answer is two lanes, `U32` and `F32`, with
 # tinygrad's own overflow and sign semantics. `if any(isinstance(x, tuple) for x in
 # operands)` is the vectorised ALIKE branch and it is DEFERRED (see the TODO block);
 # what IS here is the scalar spine:
@@ -920,7 +920,7 @@ def exec_alu.trunc(trunc_it: Bool, dt: S.Dt, m: Maybe<&1, O.Const>) -> Maybe<&1,
     case True{}: sy_trunc(dt, sy_maybe_c(m))
     case False{}: m
 
-# `exec_alu` -- ops.py:1427, the scalar spine in Python's order, one def per
+# `exec_alu` -- ops.py:1433, the scalar spine in Python's order, one def per
 # arity an ALU op can have. They are three defs rather than one taking a list
 # because the list is affine and the call site needs its operands in two places:
 # the lane test and the lane.
@@ -1080,7 +1080,7 @@ def p_nconst(+x: F.Folded, u: U32) -> U32:
 
 def p_nc(+x: F.Folded, +u: U32) -> U32: sy_src(x, u, p_nconst(x, u))
 
-# THE DTYPE SETS. `dtypes.ints` is a Python TUPLE (dtype.py:157, `uints + sints`)
+# THE DTYPE SETS. `dtypes.ints` is a Python TUPLE (tinygrad/dtype.py:159, `uints + sints`)
 # and the three places symbolic.py spells it are three different tuples, so it is
 # three LISTS here and not one predicate: `dtypes.ints` is EIGHT concrete widths,
 # `ints + (bool, weakint)` is TEN and `ints + (weakint,)` is NINE. The previous
@@ -1107,7 +1107,7 @@ def dt_intish(d: S.Dt) -> Bool: dt_in(DTS_INTISH(), d)
 
 def p_intish(x: F.Folded, u: U32) -> Bool: dt_intish(sy_dt1(x, u))
 
-# `dtypes.ints + (dtypes.weakint,)` -- symbolic.py:135 and :307, NINE of them.
+# `dtypes.ints + (dtypes.weakint,)` -- tinygrad/dtype.py:93 and :307, NINE of them.
 def dt_intweak(d: S.Dt) -> Bool: dt_in(DTS_INTWEAK(), d)
 
 def p_intweak(x: F.Folded, u: U32) -> Bool: dt_intweak(sy_dt1(x, u))
@@ -2092,7 +2092,7 @@ def sym_table() -> O.PMEntrys:
     O.PMEntry{10, [O.OpsRECIPROCAL{}],                       Nil{}},           # 463
     O.PMEntry{11, [O.OpsGROUP{}],                            Nil{}},           # 444
     O.PMEntry{12, [O.OpsSINK{}, O.OpsGROUP{}],               Nil{}},           # 445
-    # `early_reject` IS ops.py:1478's `{pp.op[0] for pp in src[0] if pp.op is
+    # `early_reject` IS ops.py:1714's `{pp.op[0] for pp in src[0] if pp.op is
     # not None and len(pp.op) == 1}` READ OFF THE FIRST PERMUTATION, and every set
     # below was READ OUT OF CPython's own `UPat.early_reject` for the pattern at
     # that line -- not derived by reading ops.py. `rej` in the gate is the count,
@@ -3481,7 +3481,7 @@ def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
     case 99: O.UOp.const(ar, O.CInt{H.i64_of_hi_lo(0, fz_num(String.drop(w, 1n)))})
     case _: O.UOp.const(ar, O.CInt{fz_i64_neg(fz_num(String.drop(w, 1n)))})
 
-# `UOp.variable` -- ops.py:1013, "a Variable is a scalar ALU PARAM with a name
+# `UOp.variable` -- ops.py:1055, "a Variable is a scalar ALU PARAM with a name
 # and a value range", which is the whole of the `ParamArg` this driver states.
 def fz_var(dt: S.Dt) -> O.Found:
   O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},

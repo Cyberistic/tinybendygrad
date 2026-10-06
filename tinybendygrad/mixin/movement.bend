@@ -227,7 +227,7 @@ def mx_i_(nd: Nat, nk: Nat, shp: List<&2, U32>) -> List<&2, U32>:
 
 # `noop = [None] * (self.ndim - len(k_))` -- the leading dims `_pool` leaves
 # alone. It is a LENGTH here, because the two places it is used
-# (movement.py:610-614, :616) are `[1] * len(noop)` and `range(len(noop))`, and
+# (tinygrad/mixin/movement.py:616-614, :616) are `[1] * len(noop)` and `range(len(noop))`, and
 # both are counts.
 def mx_nnoop(nd: Nat, nk: Nat) -> Nat: mx_drop(nd, nk)
 
@@ -679,7 +679,7 @@ def mxm_pick_all(xs: List<&2, U32>, ys: List<&2, U32>) -> List<&2, U32>:
   List.reverse(&2, U32, mxm_pick.go(xs, ys, Nil{}))
 
 # `tuple(ssimplify(sz) for _,sz in self.marg)` -- the PAD and SHRINK arms
-# (ops.py:420, :425), and the `ssimplify` is the whole point: for a CONCRETE shape
+# (tinygrad/uop/ops.py:426, :425), and the `ssimplify` is the whole point: for a CONCRETE shape
 # the sizes are python ints and `ssimplify` is the identity, so the arm is "the
 # second element of each pair". The `mxm_simplify_sz` name is the wall's name, and
 # the row `mxm_sym_NONE` is what says the symbolic half is not here.
@@ -691,7 +691,7 @@ def mxm_szs.go(+ps: List<&2, List<&2, U32>>, acc: List<&2, U32>) -> List<&2, U32
 def mxm_szs(ps: List<&2, List<&2, U32>>) -> List<&2, U32>:
   List.reverse(&2, U32, mxm_szs.go(ps, Nil{}))
 
-# `tuple(self.marg) + ps` -- the EXPAND arm (ops.py:414). `mx_cat` is `xs ++ ys` and
+# `tuple(self.marg) + ps` -- the EXPAND arm (ops.py:413). `mx_cat` is `xs ++ ys` and
 # the order is marg-THEN-source, which is the whole of the arm.
 def mxm_shape.expand(m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
   mx_cat(MxMarg.ds(m), ps)
@@ -701,7 +701,7 @@ def mxm_shape.expand(m: MxMarg, ps: List<&2, U32>) -> List<&2, U32>:
 def mxm_reshape_shape(m: MxMarg) -> List<&2, U32>:
   MxMarg.ds(m)
 
-# `sorted(self.marg) != list(range(len(ps)))` (ops.py:416) -- the PERMUTE validity check, and
+# `sorted(self.marg) != list(range(len(ps)))` (ops.py:415) -- the PERMUTE validity check, and
 # it is PURE INTEGER ARITHMETIC with no `resolve` and no `ssimplify`, so unlike the rest of
 # `_shape`'s movement arms it is fully expressible. It is written as a fold rather than
 # `List.sort` because `List.sort`'s comparator takes ONE binder and answers `Bool`, so a
@@ -915,10 +915,10 @@ def mx_ulen(xs: List<&2, U32>) -> U32: mxm_len_u32(xs)
 # `mxm_shape` takes the SOURCE's shape as a parameter for exactly that reason.
 # ===========================================================================
 
-# A CONST of an int, which is `UOp.const(x)` (ops.py:631) for a shape dim.
+# A CONST of an int, which is `UOp.const(x)` (ops.py:608) for a shape dim.
 def G.ci(v: U32) -> O.Const: O.CInt{H.i64_of_i32(v)}
 
-# A STACK of CONSTs, which is `shape_to_shape_arg` (ops.py:106-110) for a length > 1.
+# A STACK of CONSTs, which is `shape_to_shape_arg` (ops.py:104-110) for a length > 1.
 # THE BARE-CONST CASE IS A DIFFERENT NODE and that is the row `mxm_reshape1`:
 # `fold.bend`'s `reshape_ds` answers a STACK shape arg and not a bare CONST one, so a
 # one-dimensional RESHAPE is un-answered for a SECOND and independent reason
@@ -940,7 +940,7 @@ def G.c1(+ar: O.Arena, v: U32) -> O.Found: O.UOp.const(ar, G.ci(v))
 # A STACK OF FOUR CONSTS, interned in a given arena. This is the ONE place a shape arg
 # is built, and both the PAD and the RESHAPE fixtures go through it, so the two cannot
 # disagree about what a shape arg is -- which is the whole content of
-# `shape_to_shape_arg` (ops.py:106-110).
+# `shape_to_shape_arg` (ops.py:104-110).
 def G.stk4(+ar: O.Arena, a: U32, b: U32, c: U32, d: U32) -> O.Found:
   +a0 = G.c1(ar, a)
   +a1 = G.c1(O.Found.ar(a0), b)
@@ -979,7 +979,7 @@ def G.pad(+ar: O.Arena, +lo: List<&2, U32>, +hi: List<&2, U32>) -> O.Found:
   +a = G.mstack(O.Found.ar(b), lo)
   G.pad.of(b, a, G.mstack(O.Found.ar(a), hi))
 
-# A PERMUTE, whose marg is `self.arg` (ops.py:818) -- the ORDER case and the one that
+# A PERMUTE, whose marg is `self.arg` (ops.py:815) -- the ORDER case and the one that
 # needs no `as_shape` at all, so it is the arm that was ALWAYS answerable and the
 # reason the wall is `ssimplify` rather than the dispatch.
 def G.permute(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
@@ -1077,7 +1077,7 @@ def marg_pad_row(n: U32) -> IO(Unit):
 
 # THE PERMUTE ROW. `perm_shape` is CPython's `permute_1_0 ... shape=(4, 1, 8, 8)`
 # and `perm_marg` is the `ATuple` read -- the arm that was ALWAYS answerable, and the
-# reason the wall is `ssimplify` rather than the dispatch. `perm_ok` is ops.py:416's
+# reason the wall is `ssimplify` rather than the dispatch. `perm_ok` is ops.py:1384's
 # check and `perm_bad` is the SAME order applied to a source of the wrong width, which
 # is the negative side: it asks for `False` rather than for a particular index, so a
 # wrong-but-present answer cannot satisfy it.
@@ -1155,7 +1155,7 @@ def f_neg_row() -> IO(Unit):
 # dead code and Bend does not say so", stated the other way round: a catch-all with no
 # fixture is equally invisible). A NON-MOVEMENT op is the fixture, and its marg must be
 # the empty `MDim`, so `add_tag = 2`. Python RAISES here
-# (`RuntimeError(f"{self.op} is not a MovementOp")`, ops.py:819) and so has no answer to
+# (`RuntimeError(f"{self.op} is not a MovementOp")`, ops.py:816) and so has no answer to
 # match; the port answers the catch-all rather than refusing, and `2` is that answer.
 # M8 changes the catch-all to `MPair` and moves this row, which is the point: the arm
 # has a fixture.

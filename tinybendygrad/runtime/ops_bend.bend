@@ -979,7 +979,7 @@ def bases.go(+ls: List<&2, Line>, +j: U32, +last: U32, +acc: List<&2, U32>, +c: 
         is_chain(Line.op(h)))
 
 # THE TABLE IS 0-BASED, and it WAS 1-BASED. `ls_at` is 0-based and `store_base.of`
-# feeds it `u.src[0]-1` -- CPython's `b = u.srcs[0]-1` (ops_bend.py:208) -- so the
+# feeds it `u.src[0]-1` -- CPython's `b = u.srcs[0]-1` (ops_bend.py:207) -- so the
 # table has to be indexed by the same number. MEASURED with the table 1-based:
 # `base[j]` for `j = 9` read entry 10, and CPython's own answer is 0. The `j`
 # that reaches `bases.go` now starts at 0 and the `1n` seed with `ls_at(ls, 0n)`

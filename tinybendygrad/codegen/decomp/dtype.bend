@@ -394,7 +394,7 @@ def dd_bcast(isu: Bool, +ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
 # divergence B. A def's order is the order CPython creates nodes in, because the
 # arena's creation order is one of the gate's four facts.
 #
-# `a == b` IS NOT A `CMPEQ`: `elementwise.py:336` is `self.ne(x).logical_not()`
+# `a == b` IS NOT A `CMPEQ`: `elementwise.py:337` is `self.ne(x).logical_not()`
 # and `logical_not` (`:57`) is `self.cast(bool).ne(True)`, so it is TWO `CMPNE`s
 # and the outer one's src1 is a BOOL CONST -- never `C(1)`. `a >= b` is
 # `(a < b).logical_not()` for the same reason, and `a != b` is one `CMPNE`.
@@ -2893,7 +2893,7 @@ def l2i.hi42(nm: String, +ga: Ga) -> Ga:
   +ws = dd_ws(ga, 4n, 3)
   l2i.hi.put(nm, l2i(Ga.ar(ga), O.OpsSHL{}, S.uint32(), S.int32(), ws), ga, from)
 
-# ---- the `c*` rows: `f2f_clamp`'s `mx` CONSTANT (dtype.py:131), as a VALUE
+# ---- the `c*` rows: `f2f_clamp`'s `mx` CONSTANT (tinygrad/codegen/decomp/dtype.py:127), as a VALUE
 #
 # These are the ONLY fixtures that reach `f2f_clamp_max`, and until they existed
 # nothing in this file called it from the gate at all: `f2f_clamp` is the only

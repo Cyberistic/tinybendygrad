@@ -101,7 +101,7 @@ def rf_dt(+fx: F.Folded, self: U32) -> Maybe<&2, S.Dt>:
 def rf_dt_or(+fx: F.Folded, self: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, rf_dt(fx, self), S.void())
 
-# `x.addrspace` -- ops.py:910 -- is also a double `Maybe`, and the inner is
+# `x.addrspace` -- ops.py:1052 -- is also a double `Maybe`, and the inner is
 # `One` (the fold) or `None`. `handle_after` (293) and the PARAM rule (316)
 # both want the inner.
 def rf_addr.go(m: Maybe<&2, Maybe<&2, S.Addr>>) -> Maybe<&2, S.Addr>:
@@ -139,7 +139,7 @@ def rf_base(+fx: F.Folded, self: U32) -> U32:
 def rf_ended(+fx: F.Folded, self: U32) -> List<&2, U32>:
   Maybe.default(&2, List<&2, U32>, F.UOp.ended_ranges(rf_ar(fx), rf_tb(fx), self), Nil{})
 
-# `x.axis_type` -- ops.py:507 -- PORTED, and NOT a fold property: a RANGE's arg
+# `x.axis_type` -- ops.py:1054 -- PORTED, and NOT a fold property: a RANGE's arg
 # is the pair, so it is a read of the node's own arg.
 def rf_axis.go(m: Maybe<&2, O.AxisType>) -> O.AxisType:
   match m:
@@ -204,7 +204,7 @@ def rf_ranges_miss() -> Bool: True{}
 # rule, which turns the whole rule into "no answer".
 def rf_in_ranges(ar: O.Arena, r: U32) -> Bool: False{}
 
-# `is_noop_after_dep` -- rangeify.py:246-247. FULLY PORTED, and the smallest complete
+# `is_noop_after_dep` -- rangeify.py:248-247. FULLY PORTED, and the smallest complete
 # thing in the file. In Python it is a bounded descent; in Bend it is a FUEL FOLD whose
 # fuel is `Arena.budget(ar)`, the same bound `UOp.toposort` takes, and the fuel is the
 # FIRST parameter because the self-call must be decreasing left to right. The step is a
@@ -567,7 +567,7 @@ def rf_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 def rf_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
   Bool.and(O.pm_claimed(ops, ar, self), rf_early(ar, self, rej))
 
-# `ret is not uop` -- ops.py:1610. IT IS NOT `M.hop_self`, and the reason is a MEASURED BUG
+# `ret is not uop` -- tinygrad/uop/ops.py:1618. IT IS NOT `M.hop_self`, and the reason is a MEASURED BUG
 # in `movement.bend`, reported here and not fixed there. `movement.bend:67`'s
 # `hop_self.of` has its arms swapped: `b` is "the answer is `self`, or the answer is
 # none", `True` KEEPS the answer and `False` -- a genuinely NEW node -- DROPS it, which is
@@ -634,7 +634,7 @@ def rb_2.of(noop: Bool, +ar: O.Arena, self: U32) -> M.Hop:
 def rb_2(+ar: O.Arena, +self: U32) -> M.Hop:
   rb_2.of(M.mp_is(ar, M.mp_src0(ar, self), O.OpsNOOP{}), ar, self)
 
-# rb_0: `remove_bufferize` -- rangeify.py:50-102, and it is NOT PORTED. The wall
+# rb_0: `remove_bufferize` -- rangeify.py:48-102, and it is NOT PORTED. The wall
 # is spelled out at the foot; what is here is the CLAIM, so the table length and
 # the claim count are right even though the body is absent.
 def rb_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
@@ -679,7 +679,7 @@ def rb_table() -> List<&2, O.PMEntry>:
 def rb_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   rb_scan(rb_table(), self, M.Hop{ar, 0})
 
-# TABLE 2: `pm_no_indexing_calls` -- rangeify.py:160-162. ONE RULE, and its body
+# TABLE 2: `pm_no_indexing_calls` -- rangeify.py:366-162. ONE RULE, and its body
 # `no_indexing_calls` is the fold above, fully ported. It is a LATE table in
 # `get_kernel_graph` (line 368), after `split_kernels`, and it is the last rewrite that
 # can still see a CALL carrying views -- which is why the upstream comment at 164 is the
@@ -711,7 +711,7 @@ def nic_table() -> List<&2, O.PMEntry>:
 def nic_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
   nic_scan(nic_table(), self, M.Hop{ar, 0})
 
-# TABLE 3: `pm_no_views` -- rangeify.py:165-168. ONE RULE, body FULLY PORTED, and it is the
+# TABLE 3: `pm_no_views` -- rangeify.py:367-168. ONE RULE, body FULLY PORTED, and it is the
 # smallest table in the file. The comment above it is upstream's and is the whole reason
 # the rule exists: "the kernel graph is what gets executed: no shape views left in it, the
 # storage of a value is just the storage".
@@ -1277,7 +1277,7 @@ def dg_3.of(alu: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
 def dg_3(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   dg_3.of(rf_addr_eq(fx, M.mp_src0(ar, self), S.Aalu{}), ar, self)
 
-# dg_6: `renumber_range` -- rangeify.py:299, ported above. The dispatch threads
+# dg_6: `renumber_range` -- rangeify.py:297, ported above. The dispatch threads
 # the counter as a PARAMETER, which is the `ctx.range` wall; the gate feeds it
 # CPython's value, and `ren7_*` is the row for a non-zero start.
 def dg_6_of(n: U32) -> U32: n
@@ -1338,7 +1338,7 @@ def dg_2(+fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   rf_param_slot(Bool.or(rf_param_tagged(ar, self),
                         Bool.or(rf_param_alu(fx, self), rf_param_shapeless(fx, self))), ar, self)
 
-# dg_4: `handle_after` -- rangeify.py:292-297. NOT PORTED: the guard
+# dg_4: `handle_after` -- rangeify.py:290-297. NOT PORTED: the guard
 # `after.addrspace == AddrSpace.LOCAL` IS ported, and `after.buf_uop` is the
 # wall. The comment is kept -- "NOTE: this is bottom up, so we only add it once"
 # -- and it is about the mutable `ctx.map`, the other half of the same wall.
@@ -1469,7 +1469,7 @@ def lb_table() -> List<&2, O.PMEntry>:
 def lb_rewrite(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   lb_scan(lb_table(), fx, self, M.Hop{ar, 0})
 
-# TABLE 11: `pm_add_buffers` -- rangeify.py:254-272. TEN RULES, the BIGGEST composition in
+# TABLE 11: `pm_add_buffers` -- rangeify.py:364-272. TEN RULES, the BIGGEST composition in
 # the file: `pm_mops + pm_flatten_bufferize + 6 own`, so three foreign rules, one of which
 # (`pm_flatten_bufferize`) is THIS file's table 8 and IS ported.
 #
@@ -1537,7 +1537,7 @@ def ab_8.of(pat: Bool, +ar: O.Arena) -> M.Hop:
 def ab_8(+fx: F.Folded, +ar: O.Arena, self: U32) -> M.Hop:
   ab_8.of(ab_8.pat(ar, self), ar)
 
-# ab_4: `bufferize_to_store` -- rangeify.py:208-232. NOT PORTED, and the comment block above
+# ab_4: `bufferize_to_store` -- rangeify.py:253-232. NOT PORTED, and the comment block above
 # it (200-206) is kept because it explains what the rule is FOR even though the body is
 # absent:
 #
@@ -1586,7 +1586,7 @@ def ab_5(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 # RESHAPEs through MSELECT/MSTACK".
 def ab_6(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
-# ab_9: `remove_noop_afters` -- rangeify.py:271, ported above as a def. The
+# ab_9: `remove_noop_afters` -- rangeify.py:269, ported above as a def. The
 # table entry is the ONLY thing new here.
 def ab_9(+fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop: rf_self(remove_noop_afters(ar, self), self)
 

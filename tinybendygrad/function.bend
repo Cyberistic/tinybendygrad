@@ -375,7 +375,7 @@ def FnCtx.hold(+c: FnCtx, slot: U32) -> FnCtx:
 # and `add_ref_len`). That is a fact about the code rather than a simplification,
 # and the row `add_ref_slot` is the one that would see it change.
 #
-# The capture arm is `x.param_like(len(ctx[0]))`, a SEAM (ops.py:1239), so the
+# The capture arm is `x.param_like(len(ctx[0]))`, a SEAM (tinygrad/function.py:11), so the
 # SLOT is what the port answers and the NODE is `TODO(p3)`; the slot is the whole
 # of what the gate can check, and `param_like`'s own behaviour (an ALU PARAM keeps
 # its shape and drops name/val) is ops.bend's business, not this file's.

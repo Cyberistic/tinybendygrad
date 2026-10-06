@@ -1183,7 +1183,7 @@ def idx_names() -> List<&2, String>: ["NIR_INTRINSIC_ALIGN_MUL","NIR_INTRINSIC_W
 
 # The op names `nalu` is asked for OUTSIDE the three tables: `mov` from
 # `nchannel`, `vecN` from `tovec` and the `STACK` arm, and the `iadd`/`imul`/
-# `ilt` of `nif`, `END` and `BACKEDGE` (nir.py:215, :222, :224).
+# `ilt` of `nif`, `END` and `BACKEDGE` (tinygrad/renderer/nir.py:216, :222, :224).
 def alu_names() -> List<&2, String>: ["mov","vec2","vec3","vec4","vec5","vec8","vec16","iadd","imul","ilt"]
 
 # THE SELECTOR IS A `U32` TAG, NOT A FUNCTION ARGUMENT: a `String -> U32`

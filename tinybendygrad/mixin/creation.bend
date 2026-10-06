@@ -223,7 +223,7 @@ def cr_const_of(+ar: O.Arena, +v: O.Const, +dt: S.Dt) -> T.Tensor:
   +c0 = cr_from_py(v)
   cr_cast(D.md_dt_eq(c0, dt), T.tn_const(ar, v), dt)
 
-# `shape_to_shape_arg`'s `UOp.const(x)` per dim (ops.py:107). `T.tn_mop`'s `ADims{ds}`
+# `shape_to_shape_arg`'s `UOp.const(x)` per dim (tinygrad/uop/ops.py:105). `T.tn_mop`'s `ADims{ds}`
 # takes the CONSTS rather than the ints, and `tn_mop.dims` interns them in the arena it
 # then builds the node in -- so the order is CONST-then-node, which is what CPython's
 # own toposort prints.
@@ -267,7 +267,7 @@ def cr_alloc.arg(slot: U32, +dt: S.Dt, size: U32, dev: S.Dev) -> O.ParamArg:
   O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
     False{}, None{}, None{}, True{}, None{}}
 
-# `next(UOp.unique_num)` -- ops.py:842 -- is a MONOTONE slot counter that "must never be
+# `next(UOp.unique_num)` -- ops.py:1208 -- is a MONOTONE slot counter that "must never be
 # reset", and `ops.bend:940` says the arena's length IS that counter. `Arena.next` on
 # the arena the ALLOC is about to be interned into is therefore this port's
 # `next(UOp.unique_num)`, and it is WHAT MAKES TWO `full`s NOT SHARE AN ALLOC. CPython

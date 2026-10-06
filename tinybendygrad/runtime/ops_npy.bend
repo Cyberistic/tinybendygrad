@@ -144,7 +144,7 @@ def RUNTIME_NONE() -> U32: 0
 # `renderers or [Renderer]` and `[]` is falsy.
 def RENDERERS_PASSED() -> U32: 0
 def RENDERERS_EFFECTIVE() -> U32: 1
-# `self.arch` is None, and device.py:488 asks `if self.arch` -- so NO arch kwarg
+# `self.arch` is None, and device.py:483 asks `if self.arch` -- so NO arch kwarg
 # reaches `DEV.target`.
 def ARCH_KWARG() -> U32: 0
 
@@ -394,7 +394,7 @@ def npy.mview(size: U32, t: Tr) -> Tr: Tr.emit(CALL_MVIEW(), size, t)
 # 5-byte allocation asks mmap for FIVE bytes.
 def npy.mmap(size: U32, t: Tr) -> Tr: Tr.emit(CALL_MMAP(), size, t)
 
-# device.py:307 `self.dev.synchronize()` -- FIRST in BOTH directions, before
+# device.py:325 `self.dev.synchronize()` -- FIRST in BOTH directions, before
 # the view and before the write. The order is load-bearing and the gate reads
 # it in `npy_copyin_sync_first` and `npy_copyout_sync_first`.
 def npy.sync(t: Tr) -> Tr: Tr.emit(CALL_SYNC(), 0, t)
@@ -407,7 +407,7 @@ def npy.sync(t: Tr) -> Tr: Tr.emit(CALL_SYNC(), 0, t)
 def npy.copyin(+len: U32, t: Tr) -> Tr:
   Tr.emit(CALL_MVWRITE(), len, npy.mview(len, npy.sync(t)))
 
-# device.py:317-318 `_copyout` is the same three calls in the same order with
+# device.py:324-318 `_copyout` is the same three calls in the same order with
 # `dest.nbytes` -- the DESTINATION's length this time, because there the
 # memoryview being assigned is `dest`. Two defs for two Python defs even though
 # the trace is identical; `npy_copyout_order` and `npy_copyin_order` are the
@@ -430,7 +430,7 @@ def Sz.size(s: Sz) -> U32:
   match s:
     case Sz{size, msg}: size
 
-# device.py:308 `return BufferStorage(view.addr, meta, view)` -- THREE
+# device.py:311 `return BufferStorage(view.addr, meta, view)` -- THREE
 # arguments, so the storage carries the address, the mmap AND the memoryview.
 # `npy_map_args` is the contrast: `_map` returns a ONE-argument BufferStorage.
 def npy.alloc.go(+s: Sz, t: Tr) -> Tr: npy.mview(Sz.size(s), npy.mmap(Sz.size(s), t))

@@ -377,7 +377,7 @@ def PCI_GPU_INSTANCE() -> U32: 0
 
 # :649-651 `_gpu_map_to_cpu`'s mmio size and `setup_usermode`'s.
 def MMIO_SZ() -> U32: 65536
-# MEASURED: ops_nv.py:544 is `map_bar(bar=0, fmt='I', off=0xbb0000, size=0x10000)`.
+# MEASURED: ops_nv.py:545 is `map_bar(bar=0, fmt='I', off=0xbb0000, size=0x10000)`.
 # The first version of this file wrote 12247040, which is 0xBAE000 -- a hex
 # literal misread by one digit-pair. `nv_pci_mmio_off` is the row.
 def PCI_MMIO_OFF() -> U32: 12255232

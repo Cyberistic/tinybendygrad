@@ -810,7 +810,7 @@ def lt_hq.go(rem: Nat, +h: HP, +srt: List<&2, LtKey>, +ar: O.Arena, +acc: List<&
                          List.append(&2, U32, acc, [PS.v(lt_hq.step(h, srt, ar))]))
 
 # THE PASS. `linearize(sink)` is `lst` in, `newlst` out, and `lst` is a PARAMETER
-# because `sink.toposort(enter_calls=False)` is ops.py:294 -- a graph walk with a
+# because `sink.toposort(enter_calls=False)` is ops.py:1378 -- a graph walk with a
 # visited flag, not a list operation, and the file this unit owns does not own it.
 # `out_degree` is fed `lst` and NOT the sorted list even though the counts are
 # order-independent: the sorted list would make the KEY ORDER observable, and
@@ -903,7 +903,7 @@ def lt_fix() -> KER.K:
      O.Found.i(r_b), O.Found.i(ad2), O.Found.i(st2), O.Found.i(en2), O.Found.i(sk),
      O.Found.i(cll), O.Found.i(sk2)]}
 
-# THE TOPOSORT, as `ops.py:294`'s `toposort(enter_calls=False)` returns it. It is
+# THE TOPOSORT, as `ops.py:1378`'s `toposort(enter_calls=False)` returns it. It is
 # a LITERAL and not a walk because the walk is ops.py's and not this file's, and
 # a literal that disagrees with the oracle is a GATE ROW (`lin_srcs`) rather than
 # a silent difference in every row below it. Read off `lin_srcs`:

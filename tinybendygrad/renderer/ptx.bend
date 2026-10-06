@@ -144,7 +144,7 @@ def wal0() -> Wal: Wal{Nil{}, Nil{}, Nil{}, "test", ""}
 # of it. `addr` is the node's OWN address space for BUFFER/PARAM and `src[0]`'s
 # for INDEX/SHRINK/LOAD -- the only way those two reads are told apart.
 # `refs` are INDICES into the registers emitted SO FAR; `idx` is
-# `src[1].src[0].val` and `idx_ok` is ptx.py:202's CONST-of-CAST guard.
+# `src[1].src[0].val` and `idx_ok` is ptx.py:204's CONST-of-CAST guard.
 type Wk is Data:
   Wk{op: O.Op, dt: S.Dt, addr: S.Addr, nmn: U32, nm: String, refs: List<&2, U32>, idx: U32, idx_ok: Bool}
 def Wk.op(w: Wk) -> O.Op:

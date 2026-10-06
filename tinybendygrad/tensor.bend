@@ -167,7 +167,7 @@ def Tensors.holds.go(+u: U32, +ts: List<&2, U32>) -> Bool:
 def Tensors.holds(xs: Tensors, +u: U32) -> Bool:
   Tensors.holds.go(u, Tensors.ts(xs))
 
-# `u in all_uops` -- tensor.py:487's `t.uop in all_uops`. The same walk, and it is
+# `u in all_uops` -- tensor.py:488's `t.uop in all_uops`. The same walk, and it is
 # the same def on purpose: `Tensors` is the registry and `all_uops` is a list of
 # indices in the same arena, so there is nothing to abstract over.
 def Tensors.member(+u: U32, xs: List<&2, U32>) -> Bool:
@@ -283,7 +283,7 @@ def Tensor.grad_of(+t: Tensor) -> U32:
 def Tensor.grad_set(+t: Tensor, g: U32) -> Tensor:
   Tensor{Tensor.ar(t), Tensor.u(t), Tensor.flag(t), g}
 
-# `_apply_uop`'s tail -- tensor.py:109-113. `ret = Tensor.__new__(Tensor); ret.uop,
+# `_apply_uop`'s tail -- tensor.py:500-113. `ret = Tensor.__new__(Tensor); ret.uop,
 # ret.grad, ret.is_param = new_uop, None, True`. The `__new__` and the `all_tensors`
 # insert are WALL 1; `grad=None` is the reserved 0.
 
@@ -581,7 +581,7 @@ def tn_as_param.of(slot: U32, +src: O.ParamArg) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
   # buffer, bind_on_realize, val. `buffer=None` and `val=None`: a PARAM carries no Buffer
   # (that is WALL 2, and `ParamArg.buffer` is its one device field, as `g_buf` already
-  # states), and `param_like` CLEARS `val` upstream (ops.py:1243) so re-slotting a bound
+  # states), and `param_like` CLEARS `val` upstream (ops.py:1300) so re-slotting a bound
   # Variable drops its binding -- arm 1, a named TODO, and `tn_asparam_slot` is the row
   # that would move if it were ported.
   O.ParamArg{slot, O.ParamArg.dtype(src), O.ParamArg.size(src), None{}, None{}, None{},
@@ -605,7 +605,7 @@ def tn_as_param(+ar: O.Arena, +t: Tensor, slot: U32) -> Maybe<&2, Tensor>:
   tn_as_param.src(O.Arena.arg(ar, Tensor.u(t)), ar, slot)
 
 # ===========================================================================
-# `shape_to_shape_arg` -- ops.py:106. `src = tuple(x if isinstance(x, UOp) else
+# `shape_to_shape_arg` -- ops.py:104. `src = tuple(x if isinstance(x, UOp) else
 # UOp.const(x) for x in arg); return src[0] if len(src) == 1 else UOp(Ops.STACK,
 # src=src)`. THREE arms, and the middle one is the one that matters: ONE element is
 # the CONST ITSELF and more than one is a STACK, which is why `(2, 2)` is a STACK and

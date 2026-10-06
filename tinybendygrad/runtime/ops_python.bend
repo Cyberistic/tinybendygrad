@@ -287,7 +287,7 @@ import ../uop/symbolic.bend as SY
 # SIZE) the outer list is one element, so a uop's value is a RUN of elements.
 #
 # `S.Dt` travels with a scalar because Python's int/float distinction is what
-# picks `exec_alu`'s lane AND what makes CAST sign-aware: ops_python.py:133 reads
+# picks `exec_alu`'s lane AND what makes CAST sign-aware: ops_python.py:154 reads
 # the SOURCE dtype, and a uint32 and an int32 hold the same 32 bits.
 # ===========================================================================
 
@@ -316,7 +316,7 @@ def Elem.is_scalar(+e: Elem) -> Bool:
     case _: False{}
 
 # The `(buffer, offset)` of an element, with a bare memoryview reading as offset
-# zero. ops_python.py:19/28 branch on `i is None` and :121 on
+# zero. ops_python.py:16/28 branch on `i is None` and :121 on
 # `isinstance(m, tuple)`, so both spellings have to meet in one place.
 
 def Elem.buf(+e: Elem) -> U32:
@@ -1886,7 +1886,7 @@ def Prog.buf(+p: Prog, +u: Uop) -> Buf: Buf.at(Prog.fs(p), Elem.buf(Prog.src(p, 
 # off a table instead of off the packet.
 # ===========================================================================
 
-# `_step(m, dtype)` -- ops_python.py:21, storage elements per lane. It is 1 for
+# `_step(m, dtype)` -- ops_python.py:25, storage elements per lane. It is 1 for
 # every v1 lane, and it is spelled out rather than assumed so that a buffer whose
 # storage word is narrower than the dtype still indexes the way ops_python does.
 def Prog.lane(+p: Prog, +u: Uop) -> U32:
@@ -2003,7 +2003,7 @@ def Prog.alu.at(+p: Prog, +u: Uop, +one: Bool, +two: Bool) -> Prog:
 
 # ===========================================================================
 # THE INTERPRETER LOOP. One recursion per instruction: Bend has no loop and no
-# `continue`, so `run` IS the `while i < len(self.uops)` of ops_python.py:62.
+# `continue`, so `run` IS the `while i < len(self.uops)` of ops_python.py:131.
 #
 # FUEL is the bound, and running out of it is a loud refusal rather than a wrong
 # answer -- a RANGE-driven kernel has no static step count, and this is also the

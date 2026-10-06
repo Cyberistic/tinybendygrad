@@ -1728,7 +1728,7 @@ def enc_missing_names() -> String: String.join(Enc.missing(), ",")
 # concatenation: `HexBad` returned a literal for every input, so the row asserted nothing
 # and three of them were as unfalsifiable as the eighty `hex.*` rows. `HexBad` is GONE.
 
-# `Cls` -- `X86Renderer`'s own class attributes, x86.py:701-709 and :770.
+# `Cls` -- `X86Renderer`'s own class attributes, tinygrad/renderer/isa/x86.py:701-709 and :770.
 
 def Cls.device() -> String: "CPU"
 

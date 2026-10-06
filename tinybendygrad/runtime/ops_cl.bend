@@ -692,7 +692,7 @@ type Call is Data:
 type Tr is Data:
   Tr{calls: List<&2, Call>, next: U32, bad_at: U32, refused: Bool}
 
-# ONE `(name, slot, dtype, shape)` of `TinyELF.signature` (device.py:361). `isimg`
+# ONE `(name, slot, dtype, shape)` of `TinyELF.signature` (device.py:360). `isimg`
 # is `is_image_shape(shape)`, `bits` is `dt.bitsize` and `isz` is `dt.itemsize`;
 # `h`/`w` are shape[0]/shape[1] and are only read on the image arm -- note the
 
@@ -707,7 +707,7 @@ type Sig is Data:
 type Arg is Data:
   Arg{i: U32, slot: U32, kind: U32, size: U32, off: U32}
 
-# ops_cl.py:110 `BufferStorage` reduced to what the three allocators and the three
+# ops_cl.py:83 `BufferStorage` reduced to what the three allocators and the three
 # free paths read: the handle `.buf` and the byte count. `nbytes` is NOT a field
 # of device.bend's Buffer either -- it is `size * itemsize`, so the two cannot
 # disagree here either.
@@ -1202,7 +1202,7 @@ def cl.pending_init() -> U32: 0
 
 # cl:118 `CLCompiler(self, f"{hashlib.md5(device_name.encode() +
 # driver_version.encode()).hexdigest()}")` and Compiler.__init__'s
-# `f"compile_cl_{compile_key}"` (device.py:337). The PREFIX and the two
+# `f"compile_cl_{compile_key}"` (tinygrad/runtime/ops_cl.py:24). The PREFIX and the two
 # concatenated fields are portable; the md5 is WALL 5, so the key carries the two
 # fields with a `|` between them and the seam replaces the digest.
 def cl.key_prefix() -> String: "compile_cl_"
@@ -1689,7 +1689,7 @@ def copy.copyout(nbytes: U32, +t: Tr) -> Tr: cl.sync(Tr.emit(OP_COPY_OUT(), U32.
 def cl.count(p: Prb) -> U32: Prb.n(p)
 
 # ===========================================================================
-# helpers.py:37 -- `is_image_shape(shape)` is `shape is not None and len(shape) ==
+# helpers.py:38 -- `is_image_shape(shape)` is `shape is not None and len(shape) ==
 # 3 and shape[-1] == 4`. The LAST dim is 4 and not the first, so `(4, 8, 8)` is a
 # plain buffer and `(8, 8, 4)` is an image. Two fixtures and the difference is
 # the whole of `img.is_image`.

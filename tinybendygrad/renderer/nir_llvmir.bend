@@ -578,7 +578,7 @@ def Llvm.smax(x: Llvm) -> U32:
 def abi_str(has: Bool, tag: U32) -> String:
   Bool.pick(String, has, Bool.pick(String, U32.is_eq(tag, 1), "amdgpu_kernel", "None"), "AttributeError")
 
-# `Renderer`'s OWN record -- llvmir.py:63-87 read through __init__.bend.
+# `Renderer`'s OWN record -- llvmir.py:279-87 read through __init__.bend.
 def Renderer_of() -> Llvm:
   Llvm{False{}, 0, True{}, True{}, "", [2415919103, 2415919103, 2415919103], [2415919103, 2415919103, 2415919103],
        False{}, Nil{}, 32768}

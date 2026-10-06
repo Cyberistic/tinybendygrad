@@ -237,7 +237,7 @@ def mem_can_plan(+fx: F.Folded, +self: U32, held: List<&2, U32>, unpl: List<&2, 
 # ===========================================================================
 # `mem_numel` / `mem_itemsize` / `mem_raw` -- `b.max_numel() * b.dtype.itemsize`.
 #
-# `max_numel` is `prod(to_max_shape(shape))` and `to_max_shape` (ops.py:1886) is
+# `max_numel` is `prod(to_max_shape(shape))` and `to_max_shape` (tinygrad/uop/ops.py:1894) is
 # not ported. It does not bite here and the reason is worth stating rather than
 # hiding: `_collect_bufs` returns BUFFERS AND NOTHING ELSE, a BUFFER's shape is
 # literally `(arg.size,)` and that size is concrete by construction, so

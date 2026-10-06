@@ -756,7 +756,7 @@ def tag_repr(t: O.Tag) -> String:
     case O.TInt{i}: U32.show(i)
     case O.TTuple{xs}: String.concat(["(", String.join(tag_str.go(xs), ", "), ")"])
 
-# `UOp.tagstr` -- ops.py:275, `f", tag={self.tag}" if self.tag is not None else ""`
+# `UOp.tagstr` -- ops.py:277, `f", tag={self.tag}" if self.tag is not None else ""`
 def tag_is_none(t: O.Tag) -> Bool:
   match t:
     case O.TNone{}: True{}
@@ -840,7 +840,7 @@ def strip_binary_parens(+ar: O.Arena, +u: U32, left: String, right: String) -> S
   sbp_arm(has_precedence(O.Arena.op(ar, u)), ar, u, precedence_of(O.Arena.op(ar, u)), left, right)
 
 # ===========================================================================
-# `range_str` -- ops.py:97. Rebuilt here because it is ABSENT from ops.bend
+# `range_str` -- ops.py:95. Rebuilt here because it is ABSENT from ops.bend
 # (ops.bend:537 says "range_str does not read it", i.e. ops.py's own note that
 # the op is not consulted -- it is `AxisType` that matters and that IS in
 # ops.bend). `AxisType`, `axis_colors` and `sint_show` are all present, so this
@@ -877,7 +877,7 @@ def range_str.color(f: H.Flags, at: O.AxisType, s: String) -> String:
   H.colored(f, s, H.color_of(O.axis_colors(at)), False{})
 
 # ===========================================================================
-# `multirange_str` -- ops.py:101.
+# `multirange_str` -- ops.py:99.
 #
 #     ret = ','.join([range_str(x, color=color) for x in sorted(rngs, key=lambda x: x.arg)])
 #     if pad is not None: ret += " " * (pad-ansilen(ret))
@@ -1397,7 +1397,7 @@ def sugar_args.go(ar: O.Arena, +ctx: Ctx, u: U32, +ss: List<&2, U32>, +acc: List
 # `', '.join([f'arg={repr(x.arg)}'] if x.arg is not None else [])` -- one element
 # or none, so the comma belongs to the clause and not to the join.
 # ===========================================================================
-# `consumer_map_from_toposort` -- ops.py:112.
+# `consumer_map_from_toposort` -- ops.py:110.
 #
 #     ret: dict[UOp, dict[UOp, None]] = {}
 #     for u in lst:

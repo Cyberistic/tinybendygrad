@@ -963,7 +963,7 @@ def r_ftrc(+nm: String, +py: String) -> String: r(nm, ftr.cpu(), py)
 def r_ftrp(+i: U32, +py: String) -> String:
   r(String.concat(["ftr cpu part ", U32.show(i)]), ftr.cpu_part(i), py)
 
-# `AMDLLVMRenderer.is_rdna4` -- llvmir.py:273: `arch.split(':')[0] in {'gfx1200',
+# `AMDLLVMRenderer.is_rdna4` -- llvmir.py:279: `arch.split(':')[0] in {'gfx1200',
 # 'gfx1201'}`. The `:` matters and so does the `split`: `gfx1200:xnack-` is True
 # and `gfx1200x` is False, and a `starts_with("gfx1200")` reader gets the second
 # right and the third WRONG -- which is why `is_rdna4 gfx12001` and

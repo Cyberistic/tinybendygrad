@@ -833,7 +833,7 @@ def tc.xexp2_lo(+d: F32) -> Bool: F32.is_lt(d, tc.f(sp.xexp2_lo_32()))
 def tc.xexp2_nan(+d: F32) -> Bool: F32.is_eq(d, d)
 
 # `xlog2` (:219-255).  MEASURED on a float32 UOp: EVERY node in the graph is
-# float32, because `UOp.const`'s `weakfloat` (ops.py:186) lets the consumer's
+# float32, because `UOp.const`'s `weakfloat` (ops.py:1893) lets the consumer's
 # dtype win -- so `d * (2.0 ** 64)` at :229 is a binary32 multiply and the
 # denormal arm is NOT a float64 detour.
 def tc.xexp2(+d: F32) -> F32:

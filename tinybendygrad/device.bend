@@ -425,12 +425,12 @@ def iface_filter(+m: Mk, es: List<&2, AEnt>, +want_mock: Bool, acc: U32) -> U32:
     case k <> t: iface_filter(m, t, want_mock,
                               U32.add(acc, go_keep(want_mock, bit(m, AEnt.ix(k)))))
 
-# device.py:415, `has_copy_queue` is `True` on the base class and the subclasses
+# device.py:406, `has_copy_queue` is `True` on the base class and the subclasses
 # that answer False are the ones with no separate DMA path.
 def has_copy_queue() -> Bool:
   True{}
 
-# device.py:459-463, `return self.iface.count if hasattr(self, 'iface') else 1`.
+# device.py:458-463, `return self.iface.count if hasattr(self, 'iface') else 1`.
 # One device unless the interface says otherwise, and the two cases are
 # different KINDS of answer -- a count and a default, not two counts.
 def count(has_iface: Bool, n: U32) -> U32:
@@ -650,7 +650,7 @@ def is_allocated.bar(+ar: Bar, +b: Bn) -> U32:
 def is_allocated(+ar: Bar, i: U32) -> U32:
   is_allocated.bar(ar, bar_at(ar, i))
 
-# device.py:122, `assert offset == 0` for a base-less buffer -- the check that
+# device.py:123, `assert offset == 0` for a base-less buffer -- the check that
 # stops a view of a view from claiming to be a root.
 def bvalid_root(off: U32) -> Bool:
   U32.is_zero(off)
@@ -747,7 +747,7 @@ def too_big(c: Cap, null: Bool) -> Bool:
       Bool.and(Bool.not(null),
                Bool.and(U32.is_gt(size, cap), Bool.and(U32.is_gt(cap, 0), Bool.not(ext))))
 
-# device.py:190, `GlobalCounters.mem_used += self.nbytes` and the per-device
+# device.py:189, `GlobalCounters.mem_used += self.nbytes` and the per-device
 # counter beside it. Both are running totals and the per-device one is the sum
 # of a SUBSET, which is the only reason it is not the same number twice.
 def go_add_same(+b: Bn, dev: U32) -> Bool:
@@ -990,7 +990,7 @@ def dev_id(ix: String) -> U32:
   dev_id.go(Nat.read(part(ix, 1n)))
 
 # ===========================================================================
-# `pm_bufferize` -- device.py:403-405. THE RULE TABLE.
+# `pm_bufferize` -- device.py:390-405. THE RULE TABLE.
 #
 #   PatternMatcher([
 #     (UPat(Ops.PARAM, tag="timeline"),           lambda ctx: ctx.timeline),
@@ -1056,7 +1056,7 @@ def Pn.named_b(x: Pn) -> Bool:
   match x:
     case Pn{is_param, timeline, named_b}: named_b
 
-# rule 1's body (device.py:405) is a `Buffer` of `b.max_numel()` elements at
+# rule 1's body (device.py:431) is a `Buffer` of `b.max_numel()` elements at
 # `b.dtype` with `BufferSpec(cpu_access=True, nolru=True)`. It GROWS the arena.
 # The two answers, interned so the gate can print one. 0 is Python's `None` and
 # 1 is the device's timeline buffer. There was a 3 -- a `cfunc_buf` -- and it was

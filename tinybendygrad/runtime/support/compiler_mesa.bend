@@ -178,7 +178,7 @@ def dc.fixed.of(+len: Nat, +w: U32, +s: String) -> String:
 def dc.fixed(w: U32, +n: U32) -> String: dc.fixed.of(String.length(U32.show(n)), w, U32.show(n))
 
 # ===========================================================================
-# :80  helpers.data64 -- `(data >> 32, data & 0xFFFFFFFF)`, helpers.py:80.
+# :80  helpers.data64 -- `(data >> 32, data & 0xFFFFFFFF)`, helpers.py:81.
 #
 # 64-bit, so it arrives as the two words `hi`/`lo` it would have produced, and
 # that is not a dodge: bend has no 64-bit type (see the header), and the rest
@@ -376,7 +376,7 @@ def nv.fail(+e: String) -> String:
   String.concat(["Failed to generate SASS ", e, " Make sure your PATH contains nvdisasm binary of compatible version."])
 
 # ===========================================================================
-# :51  cpu_objdump's command. helpers.py:530 writes `kernel.o` into a
+# :51  cpu_objdump's command. helpers.py:533 writes `kernel.o` into a
 # `TemporaryDirectory` and runs `objdump -d <path>`.
 # ===========================================================================
 def dso.tool() -> String: "objdump"

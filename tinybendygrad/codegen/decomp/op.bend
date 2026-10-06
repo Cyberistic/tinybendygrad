@@ -1604,7 +1604,7 @@ def dc_is_not(+ar: O.Arena,+s: U32) -> Bool:
   Bool.and(O.op_is(ar, s, O.OpsCMPNE{}),
     Bool.and(dc_isn2(ar, s), U32.is_eq(dc_ival(dc_val(ar, O.Arena.src(ar, s, 1))), 1)))
 
-# `vmax < d` -- op.py:22. `dc_ival` on the `None` from `_min_max` is 0, and
+# `vmax < d` -- tinygrad/uop/divandmod.py:68. `dc_ival` on the `None` from `_min_max` is 0, and
 # Python's `vmax` for a node whose `_min_max` is unreadable is ALSO not
 # something this port can answer, so the guard reads the two arms the port CAN:
 # a CONST and a PARAM. `dc_vmax_of` is that reader.

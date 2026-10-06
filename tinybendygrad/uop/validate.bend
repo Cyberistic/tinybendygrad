@@ -1081,7 +1081,7 @@ def ren_t7(+ar: O.Arena, +self: U32) -> Bool:
 def ren_t8(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(O.eq_op(O.Arena.op(ar, self), O.OpsCAST{}), U32.is_eq(O.Arena.nsrc(ar, self), 1))
 
-# `tuple(z3_alu)` -- the ELEVEN keys of validate.py:45-48. A list is the honest
+# `tuple(z3_alu)` -- the ELEVEN keys of validate.py:77-48. A list is the honest
 # spelling: a closure value in a `Data` field would force `Type` and make the
 # table linear (the notes' "CLOSURE IN A DATATYPE FIELD" section), and the KEYS
 # are all this rule reads. `n_z3_alu` is the COUNT row that pins the membership.
@@ -2373,7 +2373,7 @@ def dv_cdiv4() -> String:
 def dv_cmod4() -> String:
   dv_alu.of(O.OpsCMOD{}, 4, "dv_cmod4")
 
-# --- `Ops.FLOORDIV` (validate.py:13), the other `0<b`-shaped test and a different one.
+# --- `Ops.FLOORDIV` (validate.py:46), the other `0<b`-shaped test and a different one.
 def dv_floordiv4() -> String:
   dv_alu.of(O.OpsFLOORDIV{}, 4, "dv_floordiv4")
 

@@ -143,7 +143,7 @@ def nn_i64_app(xs: List<&2, H.I64>, v: H.I64) -> List<&2, H.I64>:
   List.append(&2, H.I64, xs, [v])
 
 # ---------------------------------------------------------------------------
-# `make_tuple` -- tinygrad/helpers.py:50, `(x,)*cnt` when x is an int and
+# `make_tuple` -- tinygrad/helpers.py:51, `(x,)*cnt` when x is an int and
 # `tuple(x)` otherwise. `H.make_tuple_rep` (helpers.bend:828) and
 # `H.to_tuple_seq` (helpers.bend:839) are that pair already, so
 # they are CALLED and not re-spelled; the two arms are the two call sites
@@ -209,7 +209,7 @@ def nn_same(dil: U32, +ks: List<&2, U32>) -> List<&2, U32>:
 def nn_scale(f: F32, n: F32) -> F32: F32.div(1.0, F32.sqrt(F32.mul(f, n)))
 def nn_bound(n: F32) -> F32: F32.div(1.0, F32.sqrt(n))
 
-# `Tensor.glorot_uniform`'s bound -- mixin/rand.py:197,
+# `Tensor.glorot_uniform`'s bound -- mixin/rand.py:201,
 # `(6 / (argfix(*shape)[0] + prod(argfix(*shape)[1:]))) ** 0.5`. It is a `sqrt` of
 # a RATIO and NOT `1/sqrt`, and the two differ by `sqrt(6)`: measured,
 # `nn.Embedding(10,3)`'s bound is `0.6793662204867574` where `1/sqrt(13)` is

@@ -308,7 +308,7 @@ def QUERY_BUF_SIZE() -> U32: 16
 type Call is Data:
   Call{k: U32, arg: U32}
 
-# ops_webgpu.py:110 `BufferStorage` reduced to the two fields this file reads:
+# ops_webgpu.py:163 `BufferStorage` reduced to the two fields this file reads:
 # `.buf` (:163, :96) and the size `wgpuBufferGetSize` answers (:18, :96, :207).
 type Buf is Data:
   Buf{id: U32, size: U32}

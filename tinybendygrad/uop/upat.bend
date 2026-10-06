@@ -25,7 +25,7 @@
 # three such places and all three were wrong at first: `wrap` numbered a shared
 # literal twice, `dup` emitted `k` where Python emits `dict_stores[k]`, and
 # `do_process_and` never read `Ds.out` at all. A permutation `src`
-# (`itertools.permutations`, ops.py:1469) visits the same sub-pattern once per
+# (`itertools.permutations`, ops.py:1470) visits the same sub-pattern once per
 # alternative and is the case that made the numbering visible; the fuel below
 # bounds the visit count. The clause IR is finite and acyclic by construction, so
 # nothing here needs the arena's index-into-a-store.

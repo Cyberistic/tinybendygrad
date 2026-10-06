@@ -464,7 +464,7 @@ def Field.store(mem: List<&2, U32>, +f: Field, v: U32) -> List<&2, U32>:
   Field.bset(mem, Field.wide(f), v, True{})
 
 # ===========================================================================
-# `_resolve`'s THROWAWAY ctypes CLASS. c.py:70-72
+# `_resolve`'s THROWAWAY ctypes CLASS. c.py:81-72
 #
 #     else: cf = type(self.name, (ctypes.Structure,), {"_layout_": "ms", "_pack_": 1,
 #       "_fields_": [(str(i), ctypes.c_byte*0) for i in range(self.idx)] +

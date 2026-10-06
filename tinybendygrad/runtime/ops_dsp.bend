@@ -1316,7 +1316,7 @@ def compiler_args_first(mock: Bool) -> String:
 
 def compiler_args_has_T(mock: Bool) -> Bool: Bool.not(mock)
 
-# :113 `super().__init__(None if mock else "compile_dsp")`, and device.py:337 then
+# :113 `super().__init__(None if mock else "compile_dsp")`, and tinygrad/runtime/ops_dsp.py:113 then
 # gates it on CCACHE. So the cachekey is None for MOCKDSP AND whenever CCACHE is 0 --
 # TWO independent reasons, and `dsp_cachekey_*` has a row for each.
 def compiler.cachekey_of(+mock: Bool, +ccache: Bool) -> String:

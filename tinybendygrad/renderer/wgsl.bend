@@ -243,7 +243,7 @@ def is_packed_of(+ar: O.Arena, +tb: F.Table, +u: U32) -> Bool:
 # FIVE INTEGERS are not, and they are the whole rule: the mask is the sign bit
 # cleared and the threshold is the largest finite magnitude.
 #
-# `dtypes.finfo` -- dtype.py:113, `(exponent, mantissa)`. A TABLE, not a
+# `dtypes.finfo` -- tinygrad/dtype.py:114, `(exponent, mantissa)`. A TABLE, not a
 # formula, and the table is spelled here rather than imported from dtype.bend for
 # the reason codegen/transcendental.bend gives at its own `tx_finfo_e`: the
 # table is eight rows, dtype.bend's own copy is unreachable from a file that must
@@ -495,7 +495,7 @@ def render_cast(+dt: S.Dt, val: String) -> String:
 # recorded rather than dressed up as five unused arguments.
 def _render_dtype(dt: S.Dt, sz: U32, addr: S.Addr, mutable: Bool, ovr: Bool, shp: List<&2, O.Sint>) -> String: "var"
 
-# `render_dtype` -- cstyle.py:203, `_render_dtype(dt, 1, AddrSpace.REG)`. The
+# `render_dtype` -- tinygrad/renderer/cstyle.py:205, `_render_dtype(dt, 1, AddrSpace.REG)`. The
 # LEGACY spelling WGSLRenderer inherits; the buffer prologue reaches it through
 # base_rewrite's BUFFER arm.
 def render_dtype(dt: S.Dt, mutable: Bool) -> String: _render_dtype(dt, 1, S.AReg{}, mutable, False{}, Nil{})
@@ -550,7 +550,7 @@ def sp_name(+ar: O.Arena, +u: U32) -> String: sp_name.of(O.Arena.arg(ar, u))
 
 def sp_is_local(+nm: String) -> Bool: String.eq(String.take(nm, 1n), "l")
 
-# `u.src[0].ssimplify()` -- ops.py:520, a symbolic fold. A local bound in a
+# `u.src[0].ssimplify()` -- ops.py:1384, a symbolic fold. A local bound in a
 # compiled kernel is `CAST(int, CONST(n))` or a bare CONST, and symbolic
 # folding the first is a CONST, so those two arms are the port. Anything else
 # is the wall: `graph_rewrite(u, symbolic)` is a rewrite ENGINE call, and

@@ -170,7 +170,7 @@ def group_max.of(qcom: Bool) -> U32:
 def group_max(x: PR.Sched) -> U32:
   group_max.of(PR.dev_is(PR.REN.dev(PR.Sched.ren(x)), PR.DEV_QCOM{}))
 
-# `if k.group_for_reduces: return k` -- heuristic.py:90, block #5. The ONLY
+# `if k.group_for_reduces: return k` -- heuristic.py:89, block #5. The ONLY
 # block of the thirteen that is a single pure predicate, and it is ported in
 # postrange.bend as `Sched.group_for_reduces`.
 def group_for(x: PR.Sched) -> U32:

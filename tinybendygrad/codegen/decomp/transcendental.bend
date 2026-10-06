@@ -234,7 +234,7 @@ def tx_shl(+ar: O.Arena, +x: U32, +y: U32) -> O.Found:
   tx_alu2(O.Found.ar(c), O.OpsMUL{}, x, O.Found.i(c))
 
 # ===========================================================================
-# `dtypes.finfo` -- dtype.py:113, `(exponent, mantissa)`. A TABLE, not a
+# `dtypes.finfo` -- tinygrad/dtype.py:114, `(exponent, mantissa)`. A TABLE, not a
 # formula; header note 5. `Dt.pri` is the discriminant and it is unique per
 # dtype, so one `match` on the binder reads the whole table.
 # ===========================================================================
@@ -1727,7 +1727,7 @@ def w_xlog2() -> O.Arena:
 def w_xpow() -> O.Arena:
   O.Found.ar(xpow(t_fixtures(), t_d(), t_c2f()))
 
-# `dtypes.floats` -- dtype.py:22 -- IS A TABLE in this order, and BOTH `dtype=`
+# `dtypes.floats` -- dtype.py:213 -- IS A TABLE in this order, and BOTH `dtype=`
 # conjuncts of the table are read off it. The oracle prints the DType's ATTRIBUTE
 # name, which is `repr(dtype)` -- and `__repr__` CHANGED in tinygrad 793abbb: it
 # was `f"dtypes.{INVERSE_DTYPES_DICT[self.name]}"` and is now

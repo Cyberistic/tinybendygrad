@@ -384,7 +384,7 @@ def element_size(blocked: Bool, dt: S.Dt) -> Maybe<&1, U32>:
     case False{}: Some{S.Dt.itemsize(dt)}
 
 # ===========================================================================
-# is_floating_point -- tinygrad/dtype.py:77. `dtypes.is_float(self.dtype)` is `x in dtypes.floats
+# is_floating_point -- tinygrad/mixin/dtype.py:77. `dtypes.is_float(self.dtype)` is `x in dtypes.floats
 # + (dtypes.weakfloat,)`, so it is `Cls.is_float` and it DOES include weakfloat.
 # ===========================================================================
 def is_floating_point(dt: S.Dt) -> Bool: S.Dt.is_float(dt)
@@ -425,7 +425,7 @@ def fx_wi(ar: O.Arena) -> O.Found: O.UOp.const(ar, O.CInt{H.i64_of_i32(3)})
 def fx_wi2(ar: O.Arena, +a: O.Found) -> O.Found: O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(5)})
 
 # ADD(CONST(3), CONST(5)) -- weakint by derivation, and NOT a CONST, which is the node
-# `absorb_weak_src` (weak.py:50) commits and the node `_min_max` would have to walk.
+# `absorb_weak_src` (weak.py:55) commits and the node `_min_max` would have to walk.
 def g_fix() -> Fix:
   +c3 = fx_wi(O.Arena.empty())
   +c5 = fx_wi2(O.Arena.empty(), c3)

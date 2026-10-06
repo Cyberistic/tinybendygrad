@@ -139,7 +139,7 @@ def Ker.at(x: Ker) -> U32:
 def ker_hit(+f: O.Found) -> Ker:
   Ker{O.Found.ar(f), O.Found.i(f)}
 
-# `ret is not uop` -- ops.py:1610, inverted exactly as `hop_self` inverts it.
+# `ret is not uop` -- ops.py:1618, inverted exactly as `hop_self` inverts it.
 def ker_self.of(drop: Bool, +r: Ker) -> Ker:
   match drop:
     case True{} : Ker{Ker.ar(r), 0}
@@ -341,7 +341,7 @@ def kn_np.of(+fresh: Bool, +ar: O.Arena, i: U32, +n: U32) -> NP:
 def kn_np(+ar: O.Arena, +i: U32, n: U32) -> NP:
   kn_np.of(kn_slot_missing(ar, i), ar, i, n)
 
-# The table: `pm_number_params`, __init__.py:38-40. ONE rule, `UPat(PARAM,
+# The table: `pm_number_params`, __init__.py:36-40. ONE rule, `UPat(PARAM,
 # name="x")`, and the `slot != -1` test is the RULE'S OWN BODY, not `early_reject`.
 # So `rej` is `Nil{}` and `ops` is `[PARAM]`.
 def np_table() -> List<&2, O.PMEntry>:
@@ -575,7 +575,7 @@ def pm_add_loads(+fx: F.Folded, self: U32) -> Ker:
   al_scan(al_table(), F.Folded.t(fx), F.Folded.ar(fx), self, Ker{F.Folded.ar(fx), 0})
 
 # ===========================================================================
-# `_is_local_store` -- __init__.py:249. PORTED. `x.op is Ops.STORE and
+# `_is_local_store` -- __init__.py:247. PORTED. `x.op is Ops.STORE and
 # x.addrspace is AddrSpace.LOCAL`, and the `is` on an enum is an identity test, so
 # the second conjunct is `ALocal{}` and nothing else. `LocalStore` uses `is`, so
 # `AddrSpace.GLOBAL` is a DIFFERENT node and `ib_local` is the row for that.
@@ -607,7 +607,7 @@ def ib_table() -> List<&2, O.PMEntry>:
    O.PMEntry{1, [O.OpsEND{}, O.OpsBACKEDGE{}], Nil{}}]   # :272  END|BACKEDGE add_war_barrier
 
 # ===========================================================================
-# `pm_alloc_to_buf` -- __init__.py:405. ONE rule, and it is the WHOLE of the
+# `pm_alloc_to_buf` -- __init__.py:406. ONE rule, and it is the WHOLE of the
 # function: `((buf:=x.replace(op=Ops.BUFFER)), [buf])`. It changes the OP and
 # keeps everything else, so `UOp.new` with the BUFFER op and `self`'s own src, arg
 # and tag is exactly it. PORTED IN FULL -- this is the one rule in the file with no

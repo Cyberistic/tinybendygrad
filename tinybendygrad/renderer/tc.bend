@@ -234,7 +234,7 @@ def n012() -> List<&2, U32>: cd3(nk(0), nk(1), nk(2))
 def n0123() -> List<&2, U32>: cd4(nk(0), nk(1), nk(2), nk(3))
 
 # ===========================================================================
-# `TensorCore` -- tc.py:8-11. FIVE FIELDS, SEVEN `U32` LISTS, because a
+# `TensorCore` -- tc.py:138-11. FIVE FIELDS, SEVEN `U32` LISTS, because a
 # fragment is Python's `(lane_bits, element_bits)` pair and Bend has no tuple
 # (brief: a `Data` record per pair would cost four more reader defs and read
 # worse). The lane list comes first in every constructor because tc.py's

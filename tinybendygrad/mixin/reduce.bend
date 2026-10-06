@@ -107,7 +107,7 @@ def rc_axs.go(+td: U32, xs: List<&2, Ax>, +acc: List<&2, U32>) -> List<&2, U32>:
     case +a <> t: rc_axs.go(td, t, List.append(&2, U32, acc,
       [M.mo_resolve(Ax.neg(a), Ax.dim(a), td)]))
 
-# `total = self.ndim` is `_resolve_dim`'s `extra=0` total (movement.py:83), so it is
+# `total = self.ndim` is `_resolve_dim`'s `extra=0` total (movement.py:82), so it is
 # the SOURCE's rank and not the caller's.
 def rc_axs(+t: T.Tensor, xs: List<&2, Ax>) -> List<&2, U32>:
   rc_axs.go(U32.from_nat(M.mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))), xs, Nil{})

@@ -119,7 +119,7 @@
 # NOT PORTED AT ALL, and these are the gaps a reader should weigh first:
 #
 #   :89-113 `kernargs`               WALL 1+2  the argument trace proper. What
-#        survives here is `layout_args`/`pack_args` (hcq2.py:74-83), the two
+#        survives here is `layout_args`/`pack_args` (hcq2.py:69-83), the two
 #        functions `kernargs` is built from, and the pad SEQUENCE they produce.
 #        The buffer/image/sampler SELECTION at :91-94 and the `tex_to_image`
 #        permutation at :94 are not ported.
@@ -3299,7 +3299,7 @@ def t_submit() -> IO(Unit):
     urow("qc_io_shift_nr", IOCTL_SHIFT_NR())
 
 # --- 20: `layout_args` / `pack_args` -- THE KERNEL ARGUMENT LAYOUT ------
-# hcq2.py:74-83. `layout_args` places each word at a 4-BYTE STRIDED offset
+# hcq2.py:69-83. `layout_args` places each word at a 4-BYTE STRIDED offset
 # from the block base -- a u16 argument still occupies four -- and
 # `pack_args` walks the offsets in SORTED order emitting one BINARY pad per
 # GAP, then a final pad of `size - end`. The gap SEQUENCE is the kernel

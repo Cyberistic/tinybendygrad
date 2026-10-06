@@ -281,7 +281,7 @@ def mo_dims.of(m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> List<&2, O.Sint>:
 def mo_dims(+fx: F.Folded, i: U32) -> List<&2, O.Sint>:
   mo_dims.of(F.fold.shape(F.Folded.ar(fx), F.Folded.t(fx), i))
 
-# `self.ndim` (mixin/movement.py:27) -- `len(self.shape)`.
+# `self.ndim` (mixin/movement.py:599) -- `len(self.shape)`.
 def mo_ndim(+fx: F.Folded, i: U32) -> Nat:
   List.length(&2, O.Sint, mo_dims(fx, i))
 
@@ -331,7 +331,7 @@ def mo_range.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
 def mo_range(n: Nat) -> List<&2, U32>: mo_range.go(n, Nil{})
 
 # ===========================================================================
-# THE CONSTS. `UOp.const` (ops.py:629) is a BARE CONST here because `dtypes.from_py`
+# THE CONSTS. `UOp.const` (ops.py:630) is a BARE CONST here because `dtypes.from_py`
 # and `truncate` are P3 (ops.bend's own `TODO`), and every CONST this file builds is
 # already the dtype Python would derive: an int literal is weakint and a float
 # literal is weakfloat, which is exactly `dtypes.from_py`.
@@ -376,7 +376,7 @@ def mo_c_i64(v: O.Const) -> H.I64:
     case O.CInt{i}: i
     case _: H.i64_of_i32(1)
 
-# `1/math.log(2)` and `math.log(2)` -- elementwise.py:511 and :830. Both are the
+# `1/math.log(2)` and `math.log(2)` -- elementwise.py:695 and :830. Both are the
 # literals Python's module prints rather than an F32 computation, and rule 5 is why
 # an F32 literal is available at all.
 def mo_log2e() -> F32: 1.4426950408889634
@@ -629,7 +629,7 @@ def mo_where(+t: T.Tensor, +x: T.Tensor, v: O.Const) -> T.Tensor:
 # ===========================================================================
 
 # THE `List<&2, O.Sint>` IMAGE OF A SHAPE ARG, and it is here for a MEASURED reason.
-# `mo_reshape`'s identity test is `ret.shape == self.shape` (movement.py:185), and the
+# `mo_reshape`'s identity test is `ret.shape == self.shape` (movement.py:281), and the
 # obvious spelling asks the fold for `ret`'s shape -- which does NOT always answer.
 # MEASURED on bend 2.0.34: `fold.bend`'s `reshape_ds` (:1537) answers a RESHAPE whose
 # shape arg is a STACK and does NOT answer one whose shape arg is a BARE CONST, and a
@@ -672,7 +672,7 @@ def mo_permute.pick(isid: Bool, +t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
 def mo_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
   mo_permute.pick(O.eq_u32(ys, mo_range(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))), t, ys)
 
-# `squeeze(dim)` -- movement.py:308. `self if not self.ndim or self.shape[dim] != 1
+# `squeeze(dim)` -- tinygrad/mixin/movement.py:287. `self if not self.ndim or self.shape[dim] != 1
 # else self.reshape(self.shape[:dim] + self.shape[dim+1:])`. The two arms are
 # `ndim == 0` and `shape[dim] == 1`, so `keep` is their conjunction (rule 1).
 #
@@ -825,7 +825,7 @@ def mo_max(kd: Bool, +t: T.Tensor, +axis: List<&2, U32>) -> T.Tensor:
 # `mixin/elementwise.py` methods it spells, and each carries the line it ports.
 # ===========================================================================
 
-# `reciprocal` -- elementwise.py:820. `self.alu(Ops.RECIPROCAL)`, and `E.ew_reciprocal`
+# `reciprocal` -- elementwise.py:468. `self.alu(Ops.RECIPROCAL)`, and `E.ew_reciprocal`
 # IS that one line, so this is the CALL -- elementwise.bend's own export, reused.
 def mo_recip(+t: T.Tensor) -> T.Tensor: E.ew_reciprocal(t)
 

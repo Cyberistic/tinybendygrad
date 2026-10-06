@@ -221,7 +221,7 @@ def gsub.go(+ar: O.Arena, x: U32, y: U32) -> O.Found:
 
 def gsub(+ar: O.Arena, x: U32, y: U32) -> O.Found: gsub.go(ar, x, y)
 
-# `where(mask, a, b)` -- `elementwise.py:426`, `mask.where(value, self)`, so `Ops.WHERE`
+# `where(mask, a, b)` -- `elementwise.py:455`, `mask.where(value, self)`, so `Ops.WHERE`
 # with the MASK FIRST. The `MAX` and `POW` rules are the users.
 def gwhere(+ar: O.Arena, m: U32, a: U32, b: U32) -> O.Found: gnew(ar, O.OpsWHERE{}, [m, a, b], O.ANone{})
 
@@ -251,7 +251,7 @@ def gnot(+ar: O.Arena, x: U32) -> O.Found:
   +t = gconst_raw(ar, O.CBool{True{}})
   gnew(O.Found.ar(t), O.OpsCMPNE{}, [x, O.Found.i(t)], O.ANone{})
 
-# `x.pow(e)` -- `elementwise.py:569`, `alu(Ops.POW, exponent)`.
+# `x.pow(e)` -- `elementwise.py:567`, `alu(Ops.POW, exponent)`.
 def gpow(+ar: O.Arena, b: U32, e: U32) -> O.Found: gnew(ar, O.OpsPOW{}, [b, e], O.ANone{})
 
 # THE UNARY ALU. Each is a unary `alu` in Python (`elementwise.py:480-536`), and each is
@@ -1004,7 +1004,7 @@ def gr_dispatch.go(tag: U32, +ar: O.Arena, +ctx: U32, self: U32) -> GRes:
 def gr_dispatch(tag: U32, +ar: O.Arena, +ctx: U32, self: U32) -> GRes:
   gr_dispatch.go(tag, ar, ctx, self)
 
-# ONE RULE'S ENTRY CONDITIONS, which is Python's `_get_clause` (upat.py:158) with the
+# ONE RULE'S ENTRY CONDITIONS, which is Python's `_get_clause` (upat.py:163) with the
 # `_fxn(...) is not None` tail removed -- that tail is `gs_keep` below. The conditions
 # are: the node's op is in the entry's op set, and `early_reject` is a subset of the
 # node's ops. Both are necessary conditions Python checks BEFORE running the body.
@@ -1016,7 +1016,7 @@ def gr_rej.go(+have: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
     case Nil{}: True{}
     case o <> t: Bool.and(O.op_in(have, o), gr_rej.go(have, t))
 
-# `ler` is `{u.op for u in uop.src}` -- ops.py:1608 -- over EVERY src. ops.bend's own
+# `ler` is `{u.op for u in uop.src}` -- tinygrad/uop/ops.py:1615 -- over EVERY src. ops.bend's own
 # `pm_ler` reads only `src[0]` and `src[1]`, which is enough for `spec.py`'s tables and
 # NOT enough here: tag 29's node is `AFTER(AFTER(STORE))` and its three-node chain puts
 # AFTER, STORE and whatever is under them in `ler`, and a two-src `ler` cannot see all of

@@ -879,7 +879,7 @@ def CKey.same(a: CKey, +b: CKey) -> Bool:
 # THE EVICTION, and the negative case. `ops_amd.py` has NO eviction of its own:
 # `_amd_program_cache` and `prog_bufs` are plain dicts that only grow. The ONE
 # eviction policy the file reaches is `Allocator.free`'s four conjuncts
-# (device.py:280), through a `BufferSpec`:
+# (device.py:435), through a `BufferSpec`:
 #
 #   `if LRU and self.lru and not spec.nolru and spec.external_ptr is None: cache`
 #

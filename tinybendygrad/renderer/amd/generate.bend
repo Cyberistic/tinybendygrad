@@ -900,7 +900,7 @@ def arg3(+kind: U32, base_fmt: String) -> String:
 # its most literal form.
 
 # THE ONLY PLACE `hi` IS NOT `hi`.  The inherited file defined this and never
-# called it, so the `BitField(12, {lo})` arm of generate.py:317 was DEAD in the
+# called it, so the `BitField(12, {lo})` arm of generate.py:315 was DEAD in the
 # port and every GLOBAL/SCRATCH `offset` came out as `BitField(14, 0)`.
 
 def field_def.hi(kind: U32, +hi: U32) -> U32:

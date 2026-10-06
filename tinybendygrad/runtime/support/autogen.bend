@@ -862,7 +862,7 @@ def emit_record_head(tnm: String, size: U32) -> List<&2, String>:
   ["@c.record", String.concat(["class ", tnm, "(c.Struct):"]),
    String.concat(["  SIZE = ", U32.show(size)])]
 
-# autogen.py:151 `f"  {f}: {typehint(ty)}"` -- ONE FIELD, in ORDER. The order is
+# autogen.py:152 `f"  {f}: {typehint(ty)}"` -- ONE FIELD, in ORDER. The order is
 # the point: a swapped pair of these is a silently wrong register write, and
 # `ops_cl`'s unit found `Sig`'s field names INVERTED behind a green gate.
 def emit_field_line(fname: String, hint: String) -> String:

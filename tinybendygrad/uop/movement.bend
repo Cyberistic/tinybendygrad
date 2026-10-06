@@ -195,7 +195,7 @@ def arg_tuple.go(a: O.Arg) -> Maybe<&2, List<&2, U32>>:
 def arg_tuple(a: O.Arg) -> Maybe<&2, List<&2, U32>>:
   arg_tuple.go(a)
 
-# The value of a CONST as an `I64` -- `.val` reads `self.arg` (ops.py:259). `CBool` is
+# The value of a CONST as an `I64` -- `.val` reads `self.arg` (tinygrad/uop/ops.py:261). `CBool` is
 # Python's `True`/`False` and `True == 1`, so a bool CONST answers 1/0; a `CFloat`
 # answers nothing (a float CONST where an int is wanted, see the header).
 def const_i64.go(a: O.Arg) -> Maybe<&2, H.I64>:
@@ -321,7 +321,7 @@ def as_shape.one(+ar: O.Arena, +i: U32) -> Maybe<&1, List<&2, H.I64>>:
 
 # `tuple(s.val if s.op is CONST else ssimplify(s) for s in self.src)`, split in two
 # because a `Maybe` cannot be an accumulator. `mp_const_val`'s 0 default is unreachable:
-# `shape_to_shape_arg` (ops.py:106) raises unless every element is an int.
+# `shape_to_shape_arg` (ops.py:104) raises unless every element is an int.
 def as_shape.allc.go(ss: List<&2, U32>, +ar: O.Arena) -> Bool:
   match ss:
     case Nil{}  : True{}

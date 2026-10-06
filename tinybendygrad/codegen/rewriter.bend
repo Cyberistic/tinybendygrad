@@ -134,7 +134,7 @@ def Rew.at(x: Rew) -> U32:
 def rew_hit(+f: O.Found) -> Rew:
   Rew{O.Found.ar(f), O.Found.i(f)}
 
-# `ret is not uop` -- ops.py:1610, inverted exactly as `hop_self` inverts it.
+# `ret is not uop` -- ops.py:1618, inverted exactly as `hop_self` inverts it.
 def rew_self.of(drop: Bool, +r: Rew) -> Rew:
   match drop:
     case True{} : Rew{Rew.ar(r), 0}

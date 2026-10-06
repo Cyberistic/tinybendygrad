@@ -228,7 +228,7 @@ def Uses.half_any(u: Uses) -> Bool:
 # are grouped rather than spread for that reason and no other.
 #
 # `caller` and `has_prefix` are the `prefix` ARGUMENT, kept as a pair because
-# `prefix=[]` and `prefix=None` are different kernels (cstyle.py:166) and a
+# `prefix=[]` and `prefix=None` are different kernels (cstyle.py:558) and a
 # `List` cannot tell them apart. `vecs`, `ockl` and `ocml` are the uop-derived
 # lines Python appends to `prefix`; see the `TODO(p3)` at the foot for which of
 # them this port produces and which it names.
@@ -290,11 +290,11 @@ def emit_min() -> Emit_: emit_of(uses_off(), Nil{}, Nil{}, Nil{}, Nil{}, False{}
 # EVERY STRING IS MEASURED against CPython on this `tinygrad/` tree, and the
 # empty ones are as load-bearing as the long ones. `CStyleLanguage.abi` is `""`
 # and `ClangRenderer.abi` is `""` on darwin and `"__attribute__((ms_abi)) "` on
-# win32 (cstyle.py:297-299, a `sys.platform` branch); the port does not take the
+# win32 (cstyle.py:300-299, a `sys.platform` branch); the port does not take the
 # win32 branch and that is the `TODO(p3)` at the foot.
 # ===========================================================================
 
-# `kernel_typedef` -- cstyle.py:125, :285, :324, :363, :425, :530 -- IS A
+# `kernel_typedef` -- tinygrad/renderer/cstyle.py:122, :285, :324, :363, :425, :530 -- IS A
 # HEAD/TAIL PAIR AROUND THE BOUND, NOT ONE STRING WITH A FIELD IN IT.
 #
 # Python's spelling is a `{launch_bounds}` FORMAT FIELD and
@@ -347,7 +347,7 @@ def kernel_typedef(+dev: U32, +lb: U32) -> String:
   Bool.pick(String, has_bounds(dev),
     String.concat([kernel_typedef_head(dev), U32.show(lb), kernel_typedef_tail(dev)]), kernel_typedef_head(dev))
 
-# `buffer_prefix` -- cstyle.py:126, :325, :364. EMPTY on the base, on Clang and
+# `buffer_prefix` -- tinygrad/renderer/cstyle.py:123, :325, :364. EMPTY on the base, on Clang and
 # on both GPU vendors, and that is why a CUDA kernel argument is a plain `float*`.
 def buffer_prefix.of(+dev: U32) -> String:
   match dev:
@@ -355,7 +355,7 @@ def buffer_prefix.of(+dev: U32) -> String:
     case 3: "device "
     case _: ""
 
-# `smem_prefix` -- cstyle.py:129, :327, :365, :426, :534. HIP'S SPELLING HAS NO
+# `smem_prefix` -- tinygrad/renderer/cstyle.py:126, :327, :365, :426, :534. HIP'S SPELLING HAS NO
 # TRAILING SPACE and `render_buffer` concatenates the prefix straight onto the
 # type, so HIP renders `__attribute__((shared, aligned(16)))float L0[1];` with no
 # space at all. That is CPython's output, measured, and it is a gate row
@@ -369,7 +369,7 @@ def smem_prefix.of(+dev: U32) -> String:
     case 5: "__attribute__((shared, aligned(16)))"
     case _: ""
 
-# `smem_align` -- cstyle.py:128, :326. Only OpenCL sets it and only
+# `smem_align` -- tinygrad/renderer/cstyle.py:125, :326. Only OpenCL sets it and only
 # `render_buffer` reads it, which is why a base device's local buffer and an
 # OpenCL one differ by exactly this prefix.
 def smem_align.of(+dev: U32) -> String:
@@ -377,7 +377,7 @@ def smem_align.of(+dev: U32) -> String:
     case 2: "__attribute__ ((aligned (16))) "
     case _: ""
 
-# `buffer_suffix` -- cstyle.py:127, :286. Clang's `restrict` is the ONLY
+# `buffer_suffix` -- tinygrad/renderer/cstyle.py:124, :286. Clang's `restrict` is the ONLY
 # non-empty one, and it is the whole difference between a Clang kernel argument
 # `float* restrict data0_4` and an OpenCL one, `__global float* data0_4`.
 def buffer_suffix.of(+dev: U32) -> String:
@@ -385,7 +385,7 @@ def buffer_suffix.of(+dev: U32) -> String:
     case 1: " restrict"
     case _: ""
 
-# `var_prefix` / `var_suffix` -- cstyle.py:131-132, :366-367. METAL'S PAIR IS THE
+# `var_prefix` / `var_suffix` -- tinygrad/renderer/cstyle.py:128-132, :366-367. METAL'S PAIR IS THE
 # INTERESTING ONE: `constant ` and `&`, so a Metal ALU value is
 # `constant float& alu0 = ...` where every other device says `const float alu0`.
 def var_prefix.of(+dev: U32) -> String:
@@ -444,7 +444,7 @@ def float4.of(+dev: U32) -> String:
     case 5: "make_float4"
     case _: ""
 
-# `float4_style` -- cstyle.py:137, :277. Clang's is the ONLY pair that is not
+# `float4_style` -- tinygrad/renderer/cstyle.py:134, :277. Clang's is the ONLY pair that is not
 # `('(', ')')`, and it is what makes a Clang STACK render `(float4){(a),(b)}`
 # where an OpenCL one renders `(float4)((a),(b))`.
 def float4_open(+dev: U32) -> String:
@@ -457,7 +457,7 @@ def float4_close(+dev: U32) -> String:
     case 1: "}"
     case _: ")"
 
-# `gep_arr_threshold` -- cstyle.py:138, :278, :430. Clang's is 0, CUDA's is 8 and
+# `gep_arr_threshold` -- tinygrad/renderer/cstyle.py:135, :278, :430. Clang's is 0, CUDA's is 8 and
 # every other device's is 4, and it is the cut between `buf[i]` and `buf.x` in
 # `render_index` -- see there for why 0 is not "never".
 def gep_arr_threshold.of(+dev: U32) -> U32:
@@ -467,7 +467,7 @@ def gep_arr_threshold.of(+dev: U32) -> U32:
     case _: 4
 
 # ===========================================================================
-# `type_map: dict[DType, str]` -- cstyle.py:139, :287, :331, :373, :439, :539.
+# `type_map: dict[DType, str]` -- tinygrad/renderer/cstyle.py:136, :287, :331, :373, :439, :539.
 # The KEY is the dtype's NAME, because two `DType`s with one name are the same
 # `dtypes` singleton in Python, so the name IS the identity -- the same argument
 # `uop/render.bend` makes for `ctx`'s `U32.show(u)` key.
@@ -1171,7 +1171,7 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, String>, +d: S.Dt) -> Strin
     case _: code_for_base.of(op, xs)
 
 # ===========================================================================
-# `code_for_workitem` -- cstyle.py:134, :330, :370, :431, :531. Five devices
+# `code_for_workitem` -- tinygrad/renderer/cstyle.py:131, :330, :370, :431, :531. Five devices
 # spell the workitem id and the BASE has an EMPTY dict, so a SPECIAL on the base
 # CStyleLanguage is a `KeyError` in Python. `""` is the port's marker and it is
 # NOT reachable for a real kernel: every GPU renderer defines both entries.
@@ -1196,7 +1196,7 @@ def code_for_workitem.g(+dev: U32, +k: String, n: U32) -> String:
     case _: ""
 
 # ===========================================================================
-# `_wmma_name` -- cstyle.py:115-117, and the one place a NAME is built from a
+# `_wmma_name` -- cstyle.py:113-117, and the one place a NAME is built from a
 # dtype and sanitised.
 #
 #     return f"WMMA_{'_'.join(map(str, u.arg[0]))}_{u.arg[1].name}_{u.dtype.name}".replace(" ", "_")
@@ -1263,7 +1263,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # separate defs either: both are already one Bool each in the `Uses` record
 # above (`is_alu_addr` is the ALU filter and `is_void` is `dtype != dtypes.void`),
 # so a def per filter would be a second spelling of a field.
-#   TODO(p3) cstyle.py:112-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
+#   TODO(p3) cstyle.py:110-113  `uops_to_dtypes`. Needs the fold (wall (a)); its
 #   result ORDER feeds `ClangRenderer._render_defines`, so it is not a set.
 
 # ===========================================================================
@@ -1323,7 +1323,7 @@ def wmma_name(+a: O.Arg, dout: S.Dt) -> String:
 # formatting and this def only joins -- which is what makes the two halves
 # separately gateable.
 #
-# `extra_args` -- cstyle.py:372, and ONLY Metal sets it. Three lines appended to
+# `extra_args` -- cstyle.py:375, and ONLY Metal sets it. Three lines appended to
 # the SAME `", ".join` as the buffer types, which is why a Metal kernel signature
 # carries `constant args_t& args [[buffer(0)]]` between the buffers and the two
 # `uint3` position attributes.
@@ -1405,7 +1405,7 @@ def add(a: List<&2, String>, b: List<&2, String>) -> List<&2, String>: List.appe
 # two vendor overrides. `inc_if` is the whole conditional-append idiom.
 def inc_if(on: Bool, s: String) -> List<&2, String>: Bool.pick(List<&2, String>, on, [s], Nil{})
 
-# CUDA's four unconditional lines (cstyle.py:456-457). `tg_bitcast` is one line
+# CUDA's four unconditional lines (cstyle.py:448-457). `tg_bitcast` is one line
 # in the source and one line in the output, which is why it is a single string
 # here rather than a def: nothing in it varies with the device or the kernel.
 def cuda_static() -> List<&2, String>:
@@ -2044,7 +2044,7 @@ def emit_cuda(u: Uses) -> Emit_: emit_of(u, Nil{}, Nil{}, Nil{}, Nil{}, False{})
 # on ONE line and HIP a `typedef ...;` then a `static inline ...` on TWO. So the
 # two fixtures are separate lists rather than one shared `vecs`, and the two rows
 # are what says a vendor prefix cannot be shared between them.
-#   TODO(p3) cstyle.py:448, :550  `render_vector_prefix` itself. It needs the fold
+#   TODO(p3) tinygrad/renderer/cstyle.py:303, :550  `render_vector_prefix` itself. It needs the fold
 #   (`uops_to_dtypes`), so `vecs` arrives as a finished `List<&2, String>`.
 def g_cuda_vecs() -> List<&2, String>:
   ["struct __align__(8) half4 { half x, y, z, w; }; __device__ half4 make_half4(half x, half y, half z, half w) { half4 r={x, y, z, w}; return r; }"]
