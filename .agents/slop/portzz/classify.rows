@@ -1,0 +1,6 @@
+kind	path	lines	tracked	in_HEAD	imported_by_bend	byte_copies_in_index	citers_outside_slop
+ip_scratch_sweep.bend	tinybendygrad/runtime/support/am/ip_scratch_sweep.bend	2791	yes	yes	-	2	-
+zz_objc_mutant.bend	tinybendygrad/runtime/support/zz_objc_mutant.bend	1129	yes	yes	-	2	-
+zzdiag.bend	tinybendygrad/runtime/zzdiag.bend	18	yes	yes	-	2	HEAD:checks/census.json
+zzread.bend	tinybendygrad/runtime/zzread.bend	14	yes	yes	-	2	HEAD:checks/census.json,HEAD:checks/disarm.sh
+zzsplit.bend	tinybendygrad/runtime/zzsplit.bend	25	yes	yes	-	2	-
