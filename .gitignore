@@ -129,8 +129,14 @@ tinybendygrad/test/_probe/
 # These are tracked on purpose and a future sweep must leave them alone:
 #   arange-ucache/  TOOLS.md's ledger and notes/bend2-constraints.md cite it as the
 #                   measurement behind the ARange ucache collision.
-#   runs/           pre-split oracle baselines, tabulated in runs/README.md; the
-#                   *-gate.sh scripts diff against those exact bytes.
+#   runs/           ROOT `runs/` is GENERATED OUTPUT and is ignored -- see the
+#                   `/runs/` rule at the foot of this file. It was this bullet's
+#                   claim ("tracked on purpose") that hid the bug: as written it
+#                   matched `runs/` at ANY depth and suppressed renamed evidence
+#                   one level down. `runs/README.md`, which this line used to
+#                   cite, does NOT exist (measured 2026-10-06). The gate input
+#                   `runs/e2e/e2e-mm-oracle.json` is STILL ignored by `/runs/`
+#                   and gates/retention-check.py clause V records that conflict.
 #   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.
 
 # GENERATED OUTPUT IS NOT A SOURCE FILE. `gates/retention-check.py` CLAUSE III: "an output directory is
@@ -140,5 +146,27 @@ tinybendygrad/test/_probe/
 #
 # A TRACKED ARTIFACT IS A FILE WHOSE VALUE LIES IN BEING REGENERABLE, AND TRACKING IT GUARANTEES THE NEXT
 # GATE RUN SHOWS A DIFF THAT IS NOT A CHANGE.
+# `checks/gen/` joins them, and the reason is the same as theirs: it is output, not source.
+# MEASURED 2026-10-06. `checks/abi_gate.py:606` is `gendir.mkdir(exist_ok=True)` on
+# `HERE / "gen"` and `:616` is `subprocess.run([BEND, probe, "-o", str(gendir / f"probe.{ext}")])`
+# -- 268,523 bytes of `bend` backend written PER RUN, whose two index entries were git's EMPTY
+# BLOB (`e69de29`) while the worktree held the real bytes. Nine `checks/abi.json` citations resolve
+# INTO those files and `abi_gate.py:624` READS THEM BACK, so any checkout that has not run the
+# generator first sees 9/9 STALE POINTERS -- a gate that depends on a file that is empty in every
+# clone. `checks/census.py:64` writes `checks/rows-<name>-<side>.rows` into `checks/` for the same
+# reason: 51 more, tracked the same way. `gates/gendirs.py` DISCOVERS all of it by scanning write
+# sites, so nothing here is a list that has to be kept in step with the tree.
+checks/gen/
+checks/rows-*.rows
+checks/check.out
 gates/artifacts/
-runs/
+
+# ROOT `runs/` ONLY -- the leading `/` IS the rule. Without it this caught
+# `figure2/**/runs/...`, `e2epy/fixtures/*/runs/...` and every `.agents/slop/`
+# `*/runs/` at depth: 715 untracked paths (measured 2026-10-06 14:04, all under
+# `.agents/slop/`), the last 22 of no-txt.py's 24 `.txt`, and 149 of
+# declared472's 472 renames, which were otherwise un-committable. The rule was
+# written for `runs/e2e/` and `runs/graphcmp/D/` at the root and is now exactly
+# that. Renamed EVIDENCE under a nested `runs/` (e2epy fixtures, differverdict
+# pristine) is the reason to free it, not the reason to keep it.
+/runs/

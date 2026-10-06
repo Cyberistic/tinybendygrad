@@ -1,0 +1,12 @@
+total_before=6396 total_now=7099 delta=703
+added=703 removed=0
+added_under_runs=671
+added_not_runs=32
+dir=.agents/slop/e2epy/fixtures tracked_before=288 tracked_now=339
+dir=.agents/slop/checkshells/runs tracked_before=0 tracked_now=21
+dir=.agents/slop/figure2/plant tracked_before=8 tracked_now=10
+dir=.agents/slop/differverdict/pristine tracked_before=11 tracked_now=22
+dir=.agents/slop/figurefix tracked_before=206 tracked_now=401
+dir=.agents/slop/declared473 tracked_before=421 tracked_now=812
+dir=.agents/slop/corpuswire tracked_before=4 tracked_now=5
+dir=runs tracked_before=0 tracked_now=0
