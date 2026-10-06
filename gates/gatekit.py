@@ -34,6 +34,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -90,6 +91,47 @@ def _said(stream, lines=3):
     said = [l.strip() for l in (stream or "").splitlines()
             if l.strip() and not NOTICE.match(l.strip())]
     return " | ".join(said[:lines])
+
+
+def output_dir_plant() -> int:
+    """THE TWO STATES OF A GATE'S OUTPUT DIRECTORY, IN TOKEN AND EXIT CODE -- no `bend` runs.
+
+        .venv/bin/python gates/wk-cd-gate.py --plant
+
+    A gate OWNS `gates/artifacts/<name>`, and that directory is `.gitignore`d, so its absence is
+    not a precondition -- it is created. The only refusal is a directory that CANNOT be created.
+    The three states are asserted HERE rather than in each gate because the plumbing is
+    `gatekit`'s and a second copy of a plant is a second contract:
+
+      absent   the constructor's `_ensure_dir` CREATES it -> token `OUTPUT-CREATED`, no exception
+      present  an existing directory is left as-is        -> token `OUTPUT-PRESENT`, rc 0
+      blocked  a FILE sits where the dir must go          -> token `REFUSED, NOT A VERDICT`, rc 3
+    """
+    global ART
+    keep, bad = ART, []
+    try:
+        with tempfile.TemporaryDirectory() as td:
+            ART = Path(td) / "fresh" / "artifacts"
+            g = Gate("plant-absent", bend="unused.bend", oracle="unused.py", rows=1)
+            hit = g.dir.is_dir()
+            print(f"  absent   {'OUTPUT-CREATED' if hit else 'OUTPUT-MISSING'}")
+            bad += [] if hit else ["absent: the output directory was not created"]
+
+            ART.mkdir(parents=True, exist_ok=True)
+            g = Gate("plant-present", bend="unused.bend", oracle="unused.py", rows=1)
+            print(f"  present  OUTPUT-PRESENT  rc={g.dir_rc}")
+            bad += [] if g.dir_rc == PASS else [f"present: rc={g.dir_rc}, expected 0"]
+
+            blocker = Path(td) / "blocked"
+            blocker.write_text("not a directory\n")
+            ART = blocker
+            g = Gate("plant-blocked", bend="unused.bend", oracle="unused.py", rows=1)
+            print(f"  blocked  REFUSED, NOT A VERDICT  rc={g.dir_rc}")
+            bad += [] if g.dir_rc == REFUSED else [f"blocked: rc={g.dir_rc}, expected {REFUSED}"]
+    finally:
+        ART = keep
+    print(f"--plant: {'all three states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    return 1 if bad else 0
 
 
 def oracle_drift(pins):
@@ -183,7 +225,7 @@ class Gate:
         # oracle on the green path for no reason a reader could name.
         self.warm_out = ""
         self.dir = ART / name
-        self.dir.mkdir(parents=True, exist_ok=True)
+        self.dir_rc = self._ensure_dir()      # CREATED here, before any module-scope `sys.exit(2)`
         # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
         # MEASURED 2026-10-06: `_clear()` sat in `run()`, AND **5 OF 17 EXITS ARE AFTER THE LANES WRITE** --
         # PLUS `gates/mixin-op-gate.py` AND `gates/beautiful-mnist-gate.py` CALL `sys.exit(2)` *BEFORE*
@@ -309,6 +351,8 @@ class Gate:
         """
         ok = False
         try:
+            if (rc := self._ensure_dir()) != PASS:
+                return rc               # the output directory cannot be created: REFUSED
             self._clear()
             if not self._warm():
                 return REFUSED          # the substrate could not be checked at all
@@ -420,6 +464,31 @@ class Gate:
             self._settle(ok)
         return 0 if ok else 1
 
+    def _ensure_dir(self) -> int:
+        """The OUTPUT directory this gate owns, `gates/artifacts/<name>`, CREATED if absent.
+
+        AN OUTPUT DIRECTORY IS NOT A PRECONDITION: a gate that OWNS it can `mkdir -p` it, so
+        its absence is not a REFUSAL -- only an INPUT a gate cannot find is (see the input
+        `_resolve`/`_warm`/`_oracle` paths, which return `REFUSED`). `gates/artifacts/` is
+        `.gitignore`d, and `AGENTS.md` records `rm -rf gates/artifacts` as a live command, so
+        the directory can be removed BETWEEN construction and the first write. That is why this
+        runs at BOTH ends and not only in `__init__`: this file's own rule is "ONLY CONSTRUCTION
+        IS BEFORE EVERY PATH", but a directory another process can delete needs a second glance
+        before the path it deletes.
+
+        MEASURED before this guard: removing the directory after construction made `_oracle`
+        raise `FileNotFoundError` at the staged `py.rows` write -- the exact traceback a caller
+        reads as "bend failed", aliased onto no verdict at all.
+        """
+        try:
+            self.dir.mkdir(parents=True, exist_ok=True)
+        except OSError as e:
+            self._say(f"cannot create the output directory {self.dir}: {e}")
+            print(f"== REFUSED, NOT A VERDICT: output directory absent and uncreatable: "
+                  f"{self.dir}", file=sys.stderr)
+            return REFUSED
+        return PASS
+
     def _clear(self):
         """The directory, EMPTIED, before anything is written.
 
@@ -429,7 +498,15 @@ class Gate:
         first, a red run ends with an EMPTY directory, and an empty directory cannot be diffed by
         accident. It also removes a `.tmp.` left by a run that was killed, which is the one
         residue `differ.py:242` clears for the same reason.
+
+        A DIRECTORY THAT IS NOT THERE IS NOTHING TO EMPTY, AND A FILE THERE IS NOT A DIRECTORY
+        TO EMPTY EITHER. MEASURED: an uncreatable output directory -- a FILE where the gate's
+        directory must go -- made `_ensure_dir` REFUSE at construction and then `_clear` raise
+        `NotADirectoryError` on `iterdir`, so the constructor crashed before `run()` could
+        return the refusal. `_ensure_dir`'s exit 3 is the verdict; this cannot be an exception.
         """
+        if not self.dir.is_dir():
+            return
         for p in self.dir.iterdir():
             p.unlink()
 

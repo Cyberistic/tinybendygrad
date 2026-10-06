@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, gate as run_gate
+from gatekit import Gate, gate as run_gate, output_dir_plant
 
 GATE = Gate(
     "wk-cd-gate",
@@ -59,6 +59,8 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
+    if "--plant" in sys.argv:
+        sys.exit(output_dir_plant())
     sys.exit(run_gate(
         GATE, "wk-cd-gate: 7 rows identical, 3 lanes, 0 documented divergences -- the cd_none "
             "row that this gate was pinned on is closed (commit_dtype.weak now supplies the widest int64 "

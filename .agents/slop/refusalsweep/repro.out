@@ -1,0 +1,6 @@
+A dir ABSENT at construction:      crashed=False  _oracle() -> True  (constructor `_ensure_dir` creates it -- no exception)
+B dir removed mid-run, NO ensure:   crashed=True  FileNotFoundError at gatekit.py:308 (in _oracle): [Errno 2] No such file or directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp85x_n3r4/artifacts/repro/.tmp.py.rows'
+C dir removed mid-run, WITH ensure: crashed=False  _oracle() -> True  ensure_rc=0
+D out dir UNCREATABLE:              constructor_ok=True  _ensure_dir rc=3 (REFUSED=3)
+
+BOTH-WAYS: OK -- B crashes where C does not; D refuses; A creates

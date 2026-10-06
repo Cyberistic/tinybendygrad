@@ -31,7 +31,8 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import FAIL, Gate, PASS, gate as run_gate, LANE_OUT as GATE_OUT, LANE_ROWS as GATE_ROWS
+from gatekit import (FAIL, Gate, PASS, gate as run_gate, output_dir_plant,
+                     LANE_OUT as GATE_OUT, LANE_ROWS as GATE_ROWS)
 
 GATE = Gate(
     "wk-f32-gate",
@@ -71,4 +72,6 @@ def f32_rows_differ() -> bool:
 
 
 if __name__ == "__main__":
+    if "--plant" in sys.argv:
+        sys.exit(output_dir_plant())
     sys.exit(run_gate(GATE, "wk-f32-gate: 18 rows, 3 lanes byte-identical", f32_rows_differ))
