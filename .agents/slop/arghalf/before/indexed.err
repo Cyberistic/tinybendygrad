@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=461 MB (ceiling 2048)  2s  :: ./bin/bend .agents/slop/arghalf/tree/drivers/two/gcmp.bend indexed  out=450B err=42B
+bend 2.0.35 is available: run bend update

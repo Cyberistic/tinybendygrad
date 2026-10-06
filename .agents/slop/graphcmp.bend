@@ -289,16 +289,21 @@ def custom_fn(c: O.CustomFunction) -> String:
   match c:
     case O.CustomFunction{cname, cdtype}: String.concat(["cF(", bstr(cname), ",", dt(cdtype), ")"])
 
-# `CallInfo` (ops.py:1400) is NOT a dataclass: it is a plain class with class-level
-# defaults, `grad_fxn` first and `aux` last, and its `__repr__` (ops.py:1408-1410) prints
-# `id(self.grad_fxn)` -- a per-process address. The port's record carries FOUR fields
-# (ops.bend:1059-1060) where the tree this gate reads has dropped the `dtype` one. Both
-# facts show up as a NAMED field mismatch on a CALL node rather than as an agreement by
-# accident.
+# `CallInfo` (ops.py:1392) is NOT a dataclass: a plain class with class-level defaults,
+# `grad_fxn` first and `aux` last, and `dtype: DType = dtypes.void` (ops.py:1398). Its
+# `__repr__` (ops.py:1401-1404) prints `id(self.grad_fxn)` -- a per-process address -- and
+# SUPPRESSES the dtype slot when that dtype is void (ops.py:1404). The port's record carries
+# the field (ops.bend:1057), so this renderer makes the slot CONDITIONAL: printing it always
+# made the port render a fourth field CPython's own repr refuses, and that reads as a shape
+# disagreement when it is a SPELLING one.
 def callinfo(ci: O.CallInfo) -> String:
   match ci:
     case O.CallInfo{cname, precompile, precompile_backward, cdtype}:
-      String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ",", dt(cdtype), ")"])
+      match cdtype:
+        case S.Dt{_, _, S.CVoid{}, _}:
+          String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ")"])
+        case _:
+          String.concat(["cI(", nm(cname), ",", bo(precompile), ",", bo(precompile_backward), ",", dt(cdtype), ")"])
 
 # FOUR SLOTS: name, applied_opts, opts_to_apply, beam -- `KernelInfo`'s own fields in
 # DECLARATION order (ops.py:1342-1347) minus `estimates`, which ops.bend DROPPED (P5,
