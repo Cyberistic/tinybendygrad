@@ -13266,3 +13266,207 @@ Instrument **`checks/citation-gate.py`**, evidence **`.agents/slop/speccite/READ
 - [ ] **THE 4,341 UNBOUND CITATIONS CARRY NO QUOTABLE SOURCE** and raising reach is a per-file decision
   about whether those comments are meant to be checkable. **DO NOT raise reach with a fuzzy rule:**
   the two wider rules tried are measured at 5,538 adjudicable / **81% false** and 913 / 33% prose.
+
+## devpin — the DEVICE is a declared precondition of the graphcmp comparison (2026-10-06)
+
+- [x] **NAME THE DEVICE EVERY EXISTING RUN WAS TAKEN UNDER, AND HOW.** `DEV=CPU`, three ways:
+  `graphcmp.py:2839` defaults `--dev CPU` and `:2853` writes it into `os.environ["DEV"]` before
+  `load_tinygrad()`, `differ.py` never passes `--dev`; 99 of 139 artifacts carry `sCPU` (52 by
+  header, 52 by `ParamArg` field); and `--dev CPU` re-emits `D2-canon-py-lin.txt` **byte for
+  byte** while `NULL`/`METAL`/`PYTHON` do not. `.agents/slop/devpin/00-device.md`.
+- [x] **THE RUN ALREADY RECORDS THE DEVICE — IN 99 OF 139 ARTIFACTS, AND `D0-run-summary.txt`
+  IS ONE OF THE 40 THAT DO NOT.** So there was nothing to add to the record; the defect is that
+  `corpus-figure.py:39-55` imports `graphcmp.py` by path and calls `load_tinygrad()` at `:51`,
+  which **never passes through `main()`**, so `:2853` never runs and the figure floats.
+- [x] **ENV TABLE: 147 flags, AST-counted, one subprocess each, two lanes.** 8 can move a
+  verdict (`DEV` `IMAGE` `NOOPT` `DEFAULT_FLOAT` move the ROWS; `DEBUG` `DEBUG_RANGEIFY`
+  `MAX_BUFFER_SIZE` move the ARTIFACT only), 5 refuse, 128 measured inert, 6 excluded with a
+  reason each. `.agents/slop/devpin/01-env-table.md`.
+- [x] **`lin`: NONE OF THE THREE ANSWERS, BECAUSE THE PREMISE FALSIFIES.** `WANT["lin"] ==
+  "DISAGREE"` HOLDS ON ALL FOUR DEVICES MEASURED (py carries 1 `Opt` on `CPU`/`NULL`, 2 on
+  `METAL`/`PYTHON`, and disagrees with the port's single `q` either way), so `expect-moved=0`
+  cannot fire on it from the device. **14 AGREE rows CAN — `alu binblob bit buffer bw cast
+  commute group matmul move reduce sym where` — and they are protected only by an argparse
+  DEFAULT in a third file.** `.agents/slop/devpin/02-lin-decision.md`.
+- [x] **CANONICAL FORM IS INJECTIVE ON THE 25 GRAPHS' ROWS: 88 live dataclass instances → 44
+  strings, 0 collisions, 0 ambiguous parses.** The `""`-join's blind spot is real and
+  constructed (2 parses), and it did NOT fire. `.agents/slop/devpin/03-injectivity.md`.
+- [x] **`checks/devpin.py` — the gate, two methods that share no assumption (M1 reads device
+  NAMES, M2 reproduces BYTES), both plants green: `--plant satisfied` rc=0, `--pin METAL
+  --plant moved` rc=0, bare rc=0/1.**
+- [x] **`checks/corpus-figure.py` refuses on the new `DEVICE PRECONDITION` and STILL PRINTS
+  THE FIGURE** (`DEV=CPU` rc=0, `DEV=METAL` rc=1, unset rc=1).
+- [ ] **NOT DONE, AND IT IS NOT MINE:** `checks/differ.py` records no device in
+  `D0-run-summary.txt`. Exact line and text in `.agents/slop/devpin/02-lin-decision.md`; a
+  correct comment for `differ.py:126-129` is quoted there too.
+- [ ] **NOT DONE, NEEDS `bend`:** the BEND side's injectivity. The 50 recorded
+  `D2-canon-bend-*.txt` were read, never regenerated.
+
+### Meta-instruments — the twelfth generated directory, and the population both of them shared (2026-10-06)
+
+- [x] **`checks/gen/` WAS INVISIBLE TO BOTH.** `gates/retention-check.py` had a TWO-ITEM
+  `Output(...)` registry and `gates/gates-pop.py` had `HOMES = ("checks", "gates")`. **A POPULATION
+  DEFINED BY A THREE-ITEM LIST CANNOT BE WRONG ABOUT A FOURTH ITEM BECAUSE IT NEVER LOOKS AT ONE.**
+- [x] **IT WAS TRACKED AS TWO GIT EMPTY BLOBS WHILE THE WORKTREE HELD 268,523 BYTES** — and
+  **a clone got NOTHING AT ALL**: `git ls-tree -r HEAD -- checks/gen` exits 0 with **zero lines**,
+  so the empty blobs were in the working-copy index only and never committed. The brief's premise
+  ("a clone gets two empty files") is measurably wrong in the *safer* direction.
+- [x] **9 OF 9 CITATIONS DEPEND ON IT AND ALL 9 ARE STALE AGAINST THE EMPTY BLOB.**
+  `checks/abi.json` declares 9 `site` entries whose `file` is `gen/probe.js` / `gen/probe.gen.c`
+  (ABI-1 ×2, ABI-2 ×4, ABI-4 ×3), `checks/abi_gate.py:624` READS BOTH FILES BACK to check them,
+  and `checks/abi4_gate.py:501` shells out to that gate and reads its exit status. **A GATE THAT
+  DEPENDS ON A FILE THAT IS EMPTY IN EVERY CLONE.**
+- [x] **`checks/gen/` UNTRACKED AND GITIGNORED, following clause III's OWN precedent** — beside
+  `runs/` and `gates/artifacts/`, which went 219 tracked generated files → 0 the same way.
+  **AND NO INDEX COMMAND WAS RUN:** the project commits with **jj**, and jj does not snapshot
+  ignored paths into its working-copy commit, so the ignore rule alone moved the files out.
+  **`.gitignore` CANNOT UNTRECK UNDER GIT. IT CAN, UNDER JJ.** The 268 KB stay on disk and are
+  regenerable by one `bend -o`.
+- [x] **THE SAME SHAPE, 51 MORE TIMES: `checks/rows-*.rows`.** `checks/census.py:64` writes
+  `checks/rows-<name>-<side>.rows` into `checks/` — 51 files, tracked as empty blobs, now ignored.
+  **THE TWELFTH GENERATED DIRECTORY WAS NOT ONE BUT A SHAPE WITH AT LEAST THREE INSTANCES**
+  (`checks/gen/`, `checks/rows-*.rows`, `checks/check.out`).
+- [x] **`gates/gendirs.py` — THE POPULATION IS DISCOVERED, NOT LISTED.** 194 directories from
+  1,560 source files, four writer shapes (literal, module constant, **no positional arg**,
+  **a compiler `-o` in a subprocess**), nine measured fixes to see `checks/gen/`, and a printed
+  lower bound. `.agents/slop/gendirs/properties.md` evaluates the brief's four candidate
+  properties and **rejects three on measurement**: `checks/gen/` was not ignored (so that is a
+  defect in the TREE, not in a predicate), it is cited 9 times (so P3 names it NOT-generated), and
+  a `.gitignore` rule is P1 restated.
+- [x] **`git check-ignore` WITHOUT `--no-index` REPORTS "NOT IGNORED" FOR EVERY TRACKED PATH** —
+  a fifth instance: **A GUARD WHOSE QUERY CANNOT SEE ITS OWN SUBJECT.** It would have answered
+  "fine" for every member of the population it governs.
+- [x] **ONE POPULATION, TWO CONSUMERS.** `retention-check.py` clause V and `gates-pop.py` clause
+  IV import `gates/gendirs.py` **by path** and both print **194**. Not reconciled — one function.
+  **TWO INSTRUMENTS WITH TWO LISTS HAVE NO AUTHORITY OVER EACH OTHER AND THEIR DISAGREEMENT WOULD
+  BE A THIRD FINDING WITH NO WAY TO SETTLE IT.**
+- [x] **CLAUSE V FAILS ON A PROPERTY THAT NEEDS NO LIST:** a directory **in the index AND named by
+  a `.gitignore` rule** — the tree contradicting itself in two of its own files. It would have
+  caught `runs/` and `gates/artifacts/` before clause III's 219-entry red. It fired on
+  `checks/gen`; it reads 0/194 now.
+- [x] **BOTH TOOLS CHECKED FOR THE BRIEF'S OWN ERROR SHAPE, AND ONE HAD IT.**
+  `gates/gates-pop.py` reported **ITSELF off-repo**: `ROOT_INLINE` matched
+  `FALLBACK_PRE_FIX["checks/census.py"]`, a **synthetic gate held in a string**, and `code_of`'s
+  docstring blanking deliberately keeps non-docstring strings. Plant 7 asserted the COMMENT layer
+  and was green. **PROSE IS NOT CODE; A FIXTURE IS NOT EITHER.** Three more measurements to fix it
+  (compare the token's **VALUE**, and by **substring**, because `"..." + MAIN` is several tokens),
+  and one rule that a fix that made the subject invisible would break: **A FIXTURE IS DATA ONLY TO
+  THE FILE THAT OWNS IT** — applied unconditionally, `GOOD_ROOT` blanked itself and plants 1 and 5
+  went red.
+- [x] **9 PLANTS IN `gates-pop.py` (was 8) AND 7 IN `gendirs.py`, ALL GREEN, PLUS AN INERTNESS
+  ASSERTION ON EACH.** `gendirs.py`'s inertness fingerprints the LIVE `checks/gen/` BYTES, not a
+  re-run of the discovery: two live scans cost 40 s on a tree with six units writing and **compare
+  two different moments — AN INERTNESS CHECK THAT MEASURES A MOVING TARGET MEASURES THE OTHER
+  UNITS, NOT ITSELF.** `gates-pop.py`'s new plant 8 asserts **this file, read by this file, is
+  on-repo** — a meta-instrument that cannot measure itself cleanly is the one measurement nobody
+  else makes.
+- [ ] **NOT DONE, AND IT IS NOT SETTLED BY MEASUREMENT:** `discovered()` is a **lower bound**.
+  `checks/abi4_gate.py:501` → `rc_of` → `checks/abi_gate.py` → `checks/gen/` is a **two-process**
+  chain and the middle link names no output path. Closing it needs EXECUTION. Nothing here
+  executes a gate, deliberately: `bend` peaks at 1,468 MB against a 2,048 MB ceiling with six units
+  live. **THE WRITER IS NAMED BY A CALL AND THE TARGET BY A CONVENTION INSIDE ANOTHER PROGRAM.**
+- [ ] **NOT DONE: `"something writes here"` IS NOT `"generated"`.** The vendored `tinygrad/` tree
+  is written into by its own build and is SOURCE. Clause V prints the 101 indexed directories as a
+  **CENSUS WITH A COUNT, not a verdict**, and no static property separates them.
+
+### graphcmp-oracle: the three defects that made `retention-check` clause IV RED  [x] FIXED, NOT COMMITTED
+`retention-check` clause IV fired on two rows, `oracle-selfcheck=FAIL` and `census-rc=rc=1`, and
+all three causes are in `.agents/slop/graphcmp-oracle.py`. MEASURED before: `# ORACLE SELFCHECK:
+FAIL`, one complaint, `unmapped arg atom letters: C`. MEASURED after (one real run, 25 `bend`
+invocations, output to slop): `# ORACLE SELFCHECK: OK`, rc=0.
+
+- [x] **DEFECT 28 — a device NAME counted as an atom letter.** `al(OADD,sCPU,CPU)` is the arg of a
+      2-device ALLREDUCE: `graphcmp.py`'s `dev()` spells a device **tuple** as ONE `s` atom whose
+      payload is the names joined by `,`, and that `,` re-opens `atoms()`' offset-0 rule on the
+      second name. `al(` is the ONLY arg shape in the corpus where an alnum token follows a payload
+      rather than an atom, and the SAME tuple spelled field-wise (`n(sCPU,sCPU)`) was always read
+      correctly — so it was `dev()`'s comma, not the grammar's. Fixed by `PAYLOAD_LAST_FIELD`, a
+      **declared** table beside `G.COMPOSITE`, NOT by adding `C` to `ATOMS` (a legal `C` is a legal
+      `COPY` prefix). MEASURED over all 25 graphs: **removes exactly `C`, adds nothing, and changes
+      exactly ONE arg string in the corpus.**
+- [x] **DEFECT 29 — `setdefault("DEV", "CPU")` is a no-op in the only environment that matters.**
+      `checks/differ.py:47` puts `DEV=NULL` in the ENV every step gets at `:314`, and `setdefault`
+      does nothing when the variable is set. So one run censused on NULL and diffed on CPU. Now
+      `graphcmp_dev()` reads `graphcmp.py`'s OWN `--dev` default **from its AST** (a third literal
+      would be the same defect as silent drift), it is exported to both sides, printed as `# DEV=`,
+      and `main()` refuses if the two sides' `devnames` disagree — the `_dispatch` precondition at
+      `graphcmp.py:2958` that this file could never reach because it calls `emit_py`/`emit_bend`
+      directly. **MEASURED: the census now moves 313 -> 312 and the op vocabulary gains `FDIV`, and
+      both are re-derivable from the one `# DEV=CPU` line.**
+- [x] **DEFECT 30 — the last unsorted set print, and the comment that denied there was one.**
+      `PY-BEND OPs DIFFER: {py['ops'] ^ bd['ops']}` now sorts, and `:151`'s "every OTHER iteration of
+      a set in this file is already `sorted(...)`" is corrected **in the same edit**. MEASURED over
+      five `PYTHONHASHSEED` values: **5 distinct renderings before, 1 after.** A pin is a seed and a
+      sort is a law; `repro` could never be green on a hash-ordered print.
+- [x] **A FRAGILITY THE FIX INTRODUCED, FOUND BY THE PLANTS, NOW REFUSED.** `tinygrad.Device.DEFAULT`
+      is resolved at IMPORT: MEASURED, after `load_tinygrad()` an `os.environ["DEV"] = "CPU"` changes
+      nothing and the census stays 313 while printing `# DEV=CPU`. The order was correct and
+      correctness-dependent, so `main()` now REFUSES if tinygrad is already imported.
+- [x] **PLANTS: `.agents/slop/selfcheck/plants.py`, 3 plants / 15 beats, all PASS post-fix and all FAIL
+      on `jj file show -r @-`.** TWO OF MY OWN BEATS WERE WORTHLESS AND ARE RECORDED: a
+      `x == {"n","s"} | x` tautology, and a `diff_ops()` that ended in `sorted(...)` — it tidied its
+      own evidence, so "the order equals `sorted`" PASSED on the pre-fix file with an empty list. A
+      plant that cannot fail is not a plant.
+- [ ] **NOT MINE, STILL OPEN: `runs/graphcmp/D` still holds the OLD artifacts**, so clause IV stays
+      RED until `checks/differ.py run` is run by whoever owns it. Verified green by SUBSTITUTION on a
+      scratch copy of `D` (`retention-check.py --dir graphcmp=<copy>`): `IV OK ... last run healthy`.
+- [ ] **NOT MINE, STILL OPEN: `checks/env-precond.py --check` still refuses**, because the run
+      summary records none of `dev=`/`pythonhashseed=`/`noopt=`/`lc_all=`. The census artifact now
+      carries `# DEV=`, which is one witness; the summary carrying it is a second, and it is not mine.
+
+- [x] **THE 326 `file:line` FINDINGS, ADJUDICATED: **182 RESTORED, 144 NOT BROKEN, 57 FENCED,
+      10 DECLINED.** Evidence **`.agents/slop/stale269/README.md`**, ledger **`FINAL.tsv`** (326 rows,
+      one verdict each, the target line PASTED), hand decisions **`resolutions.tsv`** (69 rows, each
+      `why` naming which reading of the claim the number is), plants
+      **`.agents/slop/stale269/plants.py`** (3 arms, tree never modified). **Nothing committed.**
+      **THE HEADLINE IS NOT 326: THE CENSUS'S OWN OUTPUT CANNOT SEPARATE THE 182 THAT WERE BROKEN
+      FROM THE 144 THAT WERE NOT, AND THREE MEASURED FALSE-POSITIVE MODES ACCOUNT FOR THE DIFFERENCE.**
+      | mode | n | the pin that fails |
+      |---|---:|---|
+      | RANGE | 36 | `CITE` matches `name.py:A-B` and adjudicates only `A` |
+      | MIS-PIN | 42 | the LONGEST backtick span on the citation line, which is often not the span the citation is about |
+      | PREFIX | 1 caught | `UOp.device` accepted inside `UOp.device_range_src` -- `abi4_gate.py`'s `S.Dt`/`S.DtX`, live |
+      **A RANGE OR A MIS-PIN IS NOT A DEFECT, AND RESTORING IT PUTS A CONFIDENT WRONG NUMBER IN THE
+      PORT WHERE NONE WAS.** **THE RESTORE IS BLOB-ANCHORED, NOT HEAD-ANCHORED**: `git log -L` on the
+      port line gives the blob the author had, the historical line is taken from it, and its CURRENT
+      address is found by **WHOLE-LINE TEXT** -- **168 of 172 exact, and NEAREST-OCCURRENCE IS NOT USED
+      ANYWHERE IN THE RESTORE PATH**. **177 of the 269 `STALE-LINE` WERE `MISNUMBERED`, i.e. WRONG WHEN
+      WRITTEN**: "the line moved" is right for 92 and wrong for two thirds.
+      **`git diff -U0`: 58 files, 181 comment-line pairs, 0 CODE LINES** -- and that check caught TWO
+      WRITER BUGS IN ME (an inverted trailing-newline condition, and a first pass that retyped the
+      number but not the FILE, leaving 12 rows naming the right line in the wrong file, which is the
+      worst outcome because it looks done). **THE WRITER REFUSED 26 OF ITS OWN ROWS**, 16 because the
+      claim line names SEVERAL lines and one pass cannot say which the quote belongs to.
+      **THE 57 FENCED (`ops.bend` 37, `fold.bend` 17, `helpers.bend` 3) ARE COMPUTED AND NAMED, NOT
+      EDITED.** **THE 10 DECLINED NEED INVENTING** and include 2 `ops-501-oracle.py` citations proven
+      absent with `git log --all -S` **ACROSS ALL REFS** -- a pruned oracle, not a missing file.
+      Census `STALE-LINE` 269->109, `WRONG-FILE` 27->20, `NO-FILE` 26->23, `PAST-EOF` 4->3,
+      **`STALE-RULE` 5->5 UNTOUCHED**, 0 regressions in the files I touched.
+      **ONE LINE OF `checks/citation-gate.py` IS MINE** (`CITEGATE_ROWS`, proved
+      behaviour-identical at 0); **THE THREE FALSE-POSITIVE MODES ARE NOT FIXED IN THE INSTRUMENT**,
+      because fixing them moves 60 rows out of its own findings and that is a decision about the gate.
+      **THE 5 `STALE-RULE` ARE REPORTED AND LEFT** (see `stale269/README.md` for the owners).
+## 2026-10-06 — the ops.bend marker campaign, and the fifth defect closed in the TREE
+
+Progress: ops.bend backlog `████░░░░░░░░░░░░░░░░░░` **7/43** (36 remaining, from a start of 43)
+
+**`AGENTS.md` recorded the fifth defect as CLOSED while it was closed in `gatekit.py` and THREE gates.**
+That is the thirteenth-stale-citation shape its own header paragraph describes, one file along from
+where the paragraph is aimed — so it is now closed in **11 of 11**, and the seven gates that needed it
+each took a two-line edit with none of their own logic moving.
+
+  - [x] **`DEAD` AND `REFUSED` HAVE EXITS.** `PASS 0 · FAIL 1 · REFUSED 3 · SKIP 4 · DEAD 5`. Every
+        failure in `gates/gatekit.py` used to exit 1 and print `FAILED`, so a lane that emitted NOTHING
+        and a lane that emitted the WRONG ANSWER were the same number to a caller reading `$?`.
+        PLANTED: a driver emitting nothing gives DEAD/5, an oracle refusing gives REFUSED/3.
+  - [x] **A GATE MAY HAVE CHECKS OF ITS OWN WITHOUT LOSING THE VERDICT** — `gatekit.gate(g, summary,
+        checks)`. `bc-u32`'s discrimination assertion, `i64-shl`'s literal-vs-runtime agreement and the
+        other four are untouched and still drive `ok`; they just no longer collapse the exit.
+  - [x] **TWO PLANTS OF MINE WERE MY OWN BAD PLANT**, both correctly answered REFUSED: one truncated a
+        driver mid-import, the other left an unbalanced paren. **THE PLANT IS THE WEAKEST LINK IN THIS
+        PROJECT, NOT THE HARNESS** — third time this session, and the first two were generating files
+        I edited by hand (`gates/wk-f32-rows.py` owns both `wk-f32.bend` and its table).
+  - [ ] **THE SIX LARGE ONES ARE NOT STARTED**: `gcd` needs `Counter`/`split_uop`/`const_factor`,
+        `__getitem__` needs slice normalisation and `argfix`, `mint`/`custom_kernel`/`outlined` are
+        the custom-function machinery, `alloc` needs `unique_num` AND `view_as` (both ABSENT from the
+        port — checked, not assumed). These are not more of what came before.
