@@ -42,8 +42,8 @@ WHAT IT GATES, AND THE DENOMINATOR. Two generator families, not "every directory
 generated": clause I is only decidable against a DECLARED set, so a directory whose generator
 declares nothing would enter with a denominator it cannot support.
 
-  gates/artifacts/<gate>/   8 dirs, generator gates/gatekit.py
-  runs/graphcmp/D/          1 dir,  generator checks/differ.py
+  gates/artifacts/<gate>/   one per gate, generator gates/gatekit.py
+  runs/graphcmp/D/          1 dir,       generator checks/differ.py
 
 The other tracked directories under runs/ are NOT in the denominator and are printed as
 unregistered, because a rule that grows its own denominator stops being a measurement.
@@ -63,6 +63,10 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "checks"))
 sys.path.insert(0, str(ROOT / "gates"))
 
+# `gatekit` is imported HERE, after the two `sys.path` lines above, because it is only a name once
+# `gates/` is on the path. It is imported for its CONSTANTS, not its behavior.
+import gatekit  # noqa: E402
+
 # THE FALLBACK SETS BELOW ARE OURS, NOT THE GENERATORS', and each is used ONLY when the generator
 # publishes no `declared()` of its own. `checks/differ.py:156` DOES publish one -- derived from
 # `WANT`/`CONTROLS`/`PLANTS`/`STAB`, the same tables `cmd_run` builds its names from -- so its
@@ -72,9 +76,19 @@ sys.path.insert(0, str(ROOT / "gates"))
 # two runs of the SAME driver. A fallback that loses to the generator is a fallback; a fallback
 # that can WIN is a second opinion, which is the thing this file exists to avoid.
 #
-# `gates/gatekit.py` publishes no `declared()`, so `GATEKIT_OUTPUT` is transcribed from the seven
-# names `Gate.run` writes. It is the one set here this file owns, and the report SAYS SO.
-GATEKIT_OUTPUT = frozenset(f"{lane}.{ext}" for lane in ("py", "bd", "bn") for ext in ("txt", "sub")) | {"gate.bin"}
+# `gates/gatekit.py` publishes no `declared()`, so this fallback is still ours -- but it is DERIVED
+# from gatekit's OWN naming constants (`LANE_ROWS`/`LANE_OUT`/`LANE_CMP`, `gatekit.py:68-70`), never
+# transcribed beside them. The transcription this replaces named `*.txt`/`*.sub`, which gatekit
+# stopped writing when its lanes became `.rows`/`.out`/`.cmp`: clause I then named the ENTIRE
+# contents of every gate dir as residue and no gate dir could ever be clean. MEASURED before the
+# fix: 66 computed residue files over 11 gate dirs, every one of them a file gatekit MEANT to write.
+# `gate.bin` is the one literal, staged by `gatekit.py:317` (`_staged("gate.bin")`).
+GATEKIT_OUTPUT = frozenset({
+    f"py{gatekit.LANE_ROWS}",
+    *(f"{lane}{gatekit.LANE_OUT}" for lane in ("bd", "bn")),
+    *(f"{lane}{gatekit.LANE_CMP}" for lane in ("py", "bd", "bn")),
+    "gate.bin",
+})
 # `artefacts_ok()` excludes `*.err` because a healthy run may hold legitimately empty stderr.
 # The DECLARED SET must not: the `.err` beside every artifact is declared output, and a set that
 # omitted it would call every correct run a residue.
@@ -99,8 +113,8 @@ class Output:
     def dirs(self):
         """Every output directory this family owns. `graphcmp` names its output DIRECTORY
         (`runs/graphcmp/D`), while `gates` names the PARENT and owns the children -- so one
-        family contributes 1 and the other 8, and the total is 9. Getting this wrong is how a
-        denominator silently shrinks by the one directory the rule is about.
+        family contributes one directory and the other one per gate in it. Getting this wrong is
+        how a denominator silently shrinks by the one directory the rule is about.
         """
         root = ROOT / self.path
         if not root.is_dir():
@@ -317,8 +331,9 @@ def registry(graphcmp_dir=None, gates_dir=None):
     REFERENCE, and its `D` is rebound when `--dir` moves the corpus, so a plant exercises differ's
     real code rather than a copy of it. `gates` has NO health callable and NO declared(): the
     verdict `gatekit` computes never reaches the disk, so a gate output directory cannot say
-    whether its own run was healthy. That is reported as UNMEASURABLE against a denominator of 8,
-    because a missing baseline is not a passing baseline.
+    whether its own run was healthy. That is reported as UNMEASURABLE against a denominator of one
+    per gate dir, because a missing baseline is not a passing baseline -- and it is NOT a failure:
+    clause IV's `continue` leaves `red` alone, so rc is never charged to an unmeasured family.
     """
     import differ
     if graphcmp_dir:
@@ -335,9 +350,64 @@ def registry(graphcmp_dir=None, gates_dir=None):
         Output("gates", gates_dir or str(Path("gates/artifacts")), "gates/gatekit.py",
                GATEKIT_OUTPUT, None,
                "declared = THIS FILE (gatekit publishes no declared()); health = NONE: it prints "
-               "its verdict and never writes it, so 0 of 8 gate dirs can say whether they were "
-               "healthy"),
+               "its verdict -- the five exits PASS/FAIL/REFUSED/SKIP/DEAD -- and never writes it, "
+               "so NO gate dir can say whether its run was healthy. UNMEASURABLE is reported and "
+               "is NOT a failure: rc comes from clauses I/II/III/V, never from this line"),
     ]
+
+
+# ---- clause II: does the generator clear its own output before it writes ---------
+def clause_ii(res):
+    """The clause as a function so the plant can drive it directly, and so the four states are
+    NAMED in one place rather than inferred from a summary count.
+
+    FOUR STATES, EACH ITS OWN TOKEN, because a reader must tell them apart in the token alone --
+    the summary that follows is a COUNT, and a count cannot carry a name:
+
+      OK          a class-scoped `run` with a NON-EMPTY exit denominator, every exit covered by
+                  cleanup. Green, and the only green state.
+      FALSE       measured, and an exit escapes cleanup. Red.
+      UNMEASURED  NO class-scoped `run`, so the denominator is EMPTY. **RED, NOT GREEN**: an empty
+                  denominator cannot be wrong, so it cannot be OK either. `checks/differ.py` is
+                  this state -- it has no `class` at all (`rg '^class ' checks/differ.py` = 0), its
+                  writer is module-level `cmd_run` (`checks/differ.py:385`) over the module-level
+                  `run` (`:292`), and that writer clears `.tmp.*` and os.replace-promotes each fixed
+                  name, which does NOT clear the directory. There is no class-`run` clear to read.
+      MISSING     the generator file itself is gone. A different hole from UNMEASURED. Red.
+    """
+    ok_gens = measured = unmeasured = missing = 0
+    for o in res:
+        source = ROOT / o.generator
+        if not source.is_file():
+            missing += 1
+            print(f"II {'MISSING':<10} {o.generator} is gone -- it is what declares the set")
+        else:
+            exits, clears = writer_exits(source.read_text())
+            if not exits:
+                unmeasured += 1
+                print(f"II {'UNMEASURED':<10} {o.generator}: no class-scoped `run` in its AST, so "
+                      f"the exit\n               denominator is EMPTY -- an empty denominator is "
+                      f"NOT A PASS, it is a REFUSAL.")
+            else:
+                late = sum(l for _, _, l in exits)
+                total_exits = sum(t for _, t, _ in exits)
+                ok = bool(clears) and late == 0
+                ok_gens, measured = ok_gens + ok, measured + 1
+                print(f"II {'OK' if ok else 'FALSE':<10} {o.generator}: "
+                      f"{late}/{total_exits} exits NOT covered by a cleanup `finally`, "
+                      f"clears={sorted(clears) or 'NONE'}")
+        # The LEFTOVER scan reads the DIRECTORY, not the generator, so it runs either way: it is
+        # the only part of clause II that still measures `runs/graphcmp/D`, whose generator has
+        # no class-scoped writer.
+        for d in o.dirs():
+            n, oldest = attempts(d)
+            if n > 1:
+                print(f"II  LEFTOVER   {label(d)}: {n} runs' worth of files, "
+                      f"{len(oldest)} from the earliest, e.g. {oldest[:3]}")
+    print(f"II  clears its own output: {ok_gens}/{measured} MEASURED, "
+          f"{unmeasured} UNMEASURED, {missing} MISSING")
+    print()
+    return int(bool(measured - ok_gens) or bool(unmeasured) or bool(missing))
 
 
 # ---- the report ------------------------------------------------------------------
@@ -366,48 +436,7 @@ def report(res):
 
     # II -- per GENERATOR, from its AST. `gates/gatekit.py` and `checks/differ.py` share no
     # plumbing, so the two verdicts are independent measurements and neither can launder the other.
-    ok_gens = measured = unmeasured = 0
-    for o in res:
-        source = ROOT / o.generator
-        if not source.is_file():
-            print(f"II UNMEASURED  {o.generator} is gone -- it is what declares the set")
-            red = 1
-        else:
-            exits, clears = writer_exits(source.read_text())
-            if not exits:
-                # THE VACUOUS PASS, caught in this file's own first run and NOT left in. A
-                # generator with no `class X: def run` gives an empty exit list, and `late == 0`
-                # over nothing reads as "0/0 exits, clears OK" -- a green verdict with NO
-                # DENOMINATOR, which is the exact defect this repo's rules exist to catch.
-                # `checks/differ.py` writes from module-level functions, so it is genuinely not
-                # measurable this way; the reader is told where its clear would have to live.
-                unmeasured += 1
-                print(f"II UNMEASURED  {o.generator}: no class-scoped `run` writes this output, so "
-                      f"the exit\n               count has no denominator. It stages `.tmp.` and "
-                      f"os.replace-promotes, which leaves\n               no partial file but does NOT "
-                      f"clear, and it unlinks 2 hardcoded stale\n               names "
-                      f"(`D9-stability-{{a,b}}.txt`) rather than the directory.")
-            else:
-                late = sum(l for _, _, l in exits)
-                total_exits = sum(t for _, t, _ in exits)
-                ok = bool(clears) and late == 0
-                ok_gens, measured = ok_gens + ok, measured + 1
-                print(f"II {'OK        ' if ok else 'FALSE     '} {o.generator}: "
-                      f"{late}/{total_exits} exits NOT covered by a cleanup `finally`, "
-                      f"clears={sorted(clears) or 'NONE'}")
-                red |= not ok
-        # The LEFTOVER scan reads the DIRECTORY, not the generator, so it runs either way: it is
-        # the only part of clause II that still measures `runs/graphcmp/D`, whose generator has
-        # no AST-measurable writer.
-        for d in o.dirs():
-            n, oldest = attempts(d)
-            if n > 1:
-                print(f"II  LEFTOVER   {label(d)}: {n} runs' worth of files, "
-                      f"{len(oldest)} from the earliest, e.g. {oldest[:3]}")
-    print(f"II  clears its own output: {ok_gens}/{measured} MEASURED generators "
-          f"({unmeasured} unmeasurable)")
-    print()
-    red |= bool(measured - ok_gens)
+    red |= clause_ii(res)
 
     # III -- the index. UNSATISFIABLE BY ITSELF and reported as such; `--apply` writes the ignore
     # block and does not touch the index.
@@ -548,8 +577,8 @@ def main():
     ap = argparse.ArgumentParser(
         prog="gates/retention-check.py", description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="DENOMINATOR: 8 gate dirs + 1 graphcmp dir = 9 output directories, 2 generators. "
-               "A verdict with no denominator is a claim nobody can check.")
+        epilog="DENOMINATOR: one dir per gate under gates/artifacts/ + runs/graphcmp/D, 2 "
+               "generators. A verdict with no denominator is a claim nobody can check.")
     ap.add_argument("--dir", action="append", metavar="KEY=PATH",
                     help="point a family's output somewhere else (plant/disarm only)")
     ap.add_argument("--apply", action="store_true",
