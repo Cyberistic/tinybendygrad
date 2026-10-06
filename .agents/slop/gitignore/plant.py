@@ -37,8 +37,11 @@ def main():
             verdict = "IGNORED" if rc == 0 else "NOT-IGNORED"
             print(f"state={state} path={p}")
             print(f"state={state} check-ignore={verdict} rule={out or '(none)'}")
-        # a REAL member of the 22 .txt that could not be renamed
-        real = ".agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt"
+        # a REAL capture under a NESTED runs/ -- a `.out`, which is what the `.txt`
+        # retirement renamed it to (plancarve 5ed3ad771). It was named as a `.txt` until
+        # then, and this line kept pointing at the old name: a probe path that dangles is
+        # a demonstration of a file that is no longer there.
+        real = ".agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.out"
         rc, out = sh(["git", "check-ignore", "-v", "--no-index", real])
         print(f"state=REAL path={real} check-ignore="
               f"{'IGNORED' if rc == 0 else 'NOT-IGNORED'} rule={out or '(none)'}")

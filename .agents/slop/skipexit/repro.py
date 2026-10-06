@@ -65,7 +65,12 @@ sys.path.insert(0, str(ROOT / ".agents/slop/e2epy"))
 import diff as plantlib     # noqa: E402  -- the ALREADY-VALIDATED builder, not a re-implementation
 
 PY = str(ROOT / ".venv/bin/python")
-GATES = (("post-fix", ROOT / "checks/e2e.py"), ("pre-fix", PREFIX_ROOT / "checks/e2e.py"))
+# THE STAGE-7 CAPTURE IS NAMED PER LANE, AND THAT NAME IS THE `.txt` RETIREMENT: the
+# post-fix gate writes `e2e-f64.out` (plancarve 5ed3ad771); the FROZEN PRE-FIX GATE still
+# writes `e2e-f64.txt`. One name served both until the rename, and reading that one name
+# afterwards points at a file the post-fix lane never wrote.
+GATES = (("post-fix", ROOT / "checks/e2e.py", "runs/e2e/e2e-f64.out"),
+         ("pre-fix", PREFIX_ROOT / "checks/e2e.py", "runs/e2e/e2e-f64.txt"))
 
 # THE THREE COLUMNS. `codes` is the exit status of, IN ORDER, stage 1's oracle, stage 4's gate,
 # stage 5's ops_bend, stage 6's port mm, stage 7's run-f64. Stage 3 is the stub, always 0.
@@ -94,18 +99,20 @@ def build(tag: str, spec: dict) -> Path:
     return fx
 
 
-def run(gate: Path, env: dict[str, str], tag: str, fx: Path) -> tuple[int, bytes, bool]:
+def run(gate: Path, env: dict[str, str], tag: str, fx: Path,
+        capture: str) -> tuple[int, bytes, bool]:
     """ONE INVOCATION, and both methods read from its single result -- so the two methods cannot
     disagree because they ran against different states. Nothing is deleted between gates."""
     ART.mkdir(parents=True, exist_ok=True)
     out = ART / f"{tag}.out"
     with open(out, "wb") as o, open(ART / f"{tag}.err", "wb") as e:
         rc = subprocess.run([PY, str(gate)], cwd=ROOT, env=env, stdout=o, stderr=e).returncode
-    # THE PLANT-MOVED PROOF, from the plant's own captured stage-7 file. Read AFTER the run, and
-    # never deleted, because a belt that rmtree's the artifact between beats deletes the state
-    # under test and then reads LEFT=NOTHING on BOTH sides -- a plant that cannot move is a plant
-    # that passes.
-    return rc, out.read_bytes(), STUB_MARK in (fx / "runs/e2e/e2e-f64.txt").read_bytes()
+    # THE PLANT-MOVED PROOF, from the plant's own captured stage-7 file. The name is the lane's
+    # (see GATES): the frozen pre-fix gate predates the `.txt`->`.out` rename and writes the old
+    # one. Read AFTER the run, and never deleted, because a belt that rmtree's the artifact between
+    # beats deletes the state under test and then reads LEFT=NOTHING on BOTH sides -- a plant that
+    # cannot move is a plant that passes.
+    return rc, out.read_bytes(), STUB_MARK in (fx / capture).read_bytes()
 
 
 def report(name: str) -> tuple[list[str], list[str]]:
@@ -114,9 +121,9 @@ def report(name: str) -> tuple[list[str], list[str]]:
     fx = build(name.lower(), spec)
     env = plantlib.ENV | {"E2E_ROOT": str(fx), "PATH": f"{fx}/sandbox"}
     lines, bad, got = [], [], {}
-    for label, gate in GATES:
+    for label, gate, capture in GATES:
         want_here = want if label == "post-fix" else want_pre
-        rc, blob, ok_stub = run(gate, env, f"{name}.{label}", fx)
+        rc, blob, ok_stub = run(gate, env, f"{name}.{label}", fx, capture)
         got[label] = rc
         # METHOD 1: the number, from the kernel. No text involved.
         # METHOD 2: byte arithmetic only -- length, a count, and an `in` test. No regex anywhere.

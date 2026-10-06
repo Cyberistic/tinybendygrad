@@ -176,7 +176,7 @@ gates/artifacts/
 # written for `runs/e2e/` and `runs/graphcmp/D/` at the root and is now exactly
 # that. Renamed EVIDENCE under a nested `runs/` (e2epy fixtures, differverdict
 # pristine) is the reason to free it, not the reason to keep it.
-runs/
+/runs/
 
 # `checks/both-census.py` writes these BESIDE itself and READS them when present
 # (`if cache.exists() and not fresh`), so the default run reads a cache. A cache is
