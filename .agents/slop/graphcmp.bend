@@ -1355,13 +1355,119 @@ def rows.pick3(+name: String) -> O.Found:
                               Bool.pick(O.Found, String.eq(name, "buffer"), g_buffer(),
                                 Bool.pick(O.Found, String.eq(name, "sink"), g_sink(),
                                   Bool.pick(O.Found, String.eq(name, "reduce"), g_reduce(),
-                                    g_matmul())))))))))))))))))))))
+                                    Bool.pick(O.Found, String.eq(name, "threefry"), g_threefry(),
+                                      Bool.pick(O.Found, String.eq(name, "mulacc"), g_mulacc(),
+                                        Bool.pick(O.Found, String.eq(name, "getaddr"), g_getaddr(),
+                                          Bool.pick(O.Found, String.eq(name, "unshard"), g_unshard(),
+                                            Bool.pick(O.Found, String.eq(name, "wmma"), g_wmma(),
+                                              g_matmul()))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
   # local binder either (measured: both `match String.eq(..)` and `match <local>` are compile
   # errors), so a CHOICE between two values is `Bool.pick`.
   rows.pick3(name)
+
+# ===========================================================================
+# THE FIVE UNEXERCISED-OPS GRAPHS (2026-10-06). `graphcmp.py`'s `GRAPHS` grew five
+# names -- `threefry`, `mulacc`, `getaddr`, `unshard`, `wmma` -- and THIS FILE had no
+# arm for any of them, so an unknown name fell through `rows.pick3`'s bottom rung to
+# `g_matmul()`: the bend side built the MATMUL while the py side built the real graph
+# and the differ compared two different graphs. A dispatcher whose fallback is a REAL
+# graph is worse than one that refuses, because it reports a disagreement that is the
+# dispatcher and not the port.
+#
+# Every arm below is the py fixture's OWN emitted rows, read off
+# `emit --side py --graph NAME` and mirrored node for node, in TOPOSORT ORDER (the
+# `id` column is a toposort position). Node counts MEASURED on the py side:
+# threefry 12, mulacc 10, getaddr 2, unshard 8, wmma 11 -- and the fixtures'
+# docstrings' own censuses are wrong (mulacc/unshard/wmma say "4 nodes"; the rows are
+# 10/8/11), so the ROWS are the specification and the prose is not.
+
+# `--graph getaddr`: `UOp(Ops.GETADDR, src=(alloc,), arg="CPU")`, 2 nodes. The ALLOC
+# is `alloc(0, 12)` -- f32, bind_on_realize True. GETADDR's arg is the port's `ADev`,
+# a `S.Dev`, resolved to a NAME through the arena's own device table (`sCPU`).
+def g_getaddr() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  O.UOp.getaddr(O.Arena.budget(ar), ar, O.Found.i(a0), S.D1{0})
+
+# `--graph unshard`: `UOp(Ops.UNSHARD, src=(a.uop, r), arg=(0,))`, 8 nodes. `r` is
+# `UOp.range(2, 0, AxisType.DEVICE)`, so its atom is `XDEVICE` -- a non-WEAK axis the
+# corpus reaches here for the second time (`indexed` has LOOP). The root is the
+# UNSHARD and NOT a GROUP: the py fixture's docstring claims `GROUP=1`, but its own
+# rows carry none, so the rows win. `arg=(0,)` is `ATuple`, the same spelling PERMUTE
+# and FLIP share.
+def g_unshard() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +c2 = O.UOp.const(O.Found.ar(r43), O.CInt{H.i64_of_i32(2)})
+  +rg = O.UOp.range_end(O.Found.ar(c2), O.Found.i(c2), [0], O.AXIS_DEVICE{})
+  O.UOp.new(O.Found.ar(rg), O.OpsUNSHARD{}, [O.Found.i(r43), O.Found.i(rg)], O.ATuple{[0]}, O.TNone{})
+
+# `--graph threefry`: `UOp.group(a.threefry(s1).uop, a.threefry(s2).uop)` over three
+# `Tensor.empty(4,3,uint64)`, 12 nodes. Three ALLOCs (slots 0,1,2), the shared `(4,3)`
+# shape STACK reused by all three RESHAPEs, two THREEFRYs and the GROUP. THREEFRY is
+# `uint64` output regardless of input dtype. `allocd` and not `alloc` because the
+# dtype is u64, not the f32 `alloc` spells.
+def g_threefry() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.uint64(), 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{allocd(1, S.uint64(), 12)}, O.TNone{})
+  +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +tf0 = O.UOp.new(O.Found.ar(r1), O.OpsTHREEFRY{}, [O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
+  +a2 = O.UOp.new(O.Found.ar(tf0), O.OpsALLOC{}, Nil{}, O.AParam{allocd(2, S.uint64(), 12)}, O.TNone{})
+  +r2 = O.UOp.new(O.Found.ar(a2), O.OpsRESHAPE{}, [O.Found.i(a2), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +tf1 = O.UOp.new(O.Found.ar(r2), O.OpsTHREEFRY{}, [O.Found.i(r0), O.Found.i(r2)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(tf1), O.OpsGROUP{}, [O.Found.i(tf0), O.Found.i(tf1)], O.ANone{}, O.TNone{})
+
+# `--graph mulacc`: `UOp(Ops.MULACC, src=(a.uop, b.uop, c.uop))` over three
+# `Tensor.empty(4,3)`, 10 nodes. The root is the MULACC with an `ANone` arg -- no
+# GROUP in the py rows, whatever the fixture's docstring says.
+def g_mulacc() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +a2 = O.UOp.new(O.Found.ar(r1), O.OpsALLOC{}, Nil{}, O.AParam{alloc(2, 12)}, O.TNone{})
+  +r2 = O.UOp.new(O.Found.ar(a2), O.OpsRESHAPE{}, [O.Found.i(a2), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(r2), O.OpsMULACC{}, [O.Found.i(r0), O.Found.i(r1), O.Found.i(r2)], O.ANone{}, O.TNone{})
+
+# `--graph wmma`: `UOp(Ops.WMMA, src=(a, b, acc), arg=((3,4,4), f32, 256, None))`,
+# 11 nodes. `a` is `(4,4)`, `b` and `acc` are `(4,3)` and SHARE the `(4,3)` shape
+# STACK (the py row's `n(i7)` twice). `UOp.wmma` is the port's own constructor.
+#
+# THE ONE KNOWN COLUMN DIVERGENCE, stated here because an arm that looks finished is
+# where a reader stops. The py arg's FOURTH slot is `None` and renders `N`; the port's
+# `AWmma.tc` is a `List<&2, U32>` with no `Maybe` (`ops.bend:1197`), so an absent `tc`
+# renders `n()` and `argstr`'s `wm(..)` arm always emits `us(tc)`. The node count and
+# every other column agree; only that slot disagrees, and it is a PORT SPELLING GAP
+# (the same class as `flip`'s `tuple[bool]`) reported rather than papered over.
+def g_wmma() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 16)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +s44 = O.UOp.new(O.Found.ar(c4), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c4)], O.ANone{}, O.TNone{})
+  +r44 = O.UOp.new(O.Found.ar(s44), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s44)], O.ANone{}, O.TNone{})
+  +b0 = O.UOp.new(O.Found.ar(r44), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +c3 = O.UOp.const(O.Found.ar(b0), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +acc0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{alloc(2, 12)}, O.TNone{})
+  +racc = O.UOp.new(O.Found.ar(acc0), O.OpsRESHAPE{}, [O.Found.i(acc0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  O.UOp.wmma(O.Found.ar(racc), O.Found.i(r44), O.Found.i(r43), O.Found.i(racc), [3, 4, 4], S.single(), 256, Nil{})
 
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
