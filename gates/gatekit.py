@@ -56,8 +56,9 @@ TMP = ".tmp."
 NOTICE = re.compile(r"^bend \S+ is available: run bend update$")
 
 
-LANE_ROWS = ".rows"   # the oracle's EXPECTED VALUES
-LANE_OUT = ".out"     # the two CAPTURED STREAMS
+LANE_ROWS = ".rows"   # the oracle's EXPECTED VALUES, verbatim
+LANE_OUT = ".out"     # the two CAPTURED STREAMS, verbatim
+LANE_CMP = ".cmp"     # the rows that SURVIVED the exclusion list -- what the diff saw
 
 
 def _staged(name):
@@ -339,6 +340,15 @@ class Gate:
                                  if tag == "py" and self.port_only else ""))
                     return 1
 
+            # THE RAW ROWS, SNAPSHOTTED, BECAUSE A PIN IS A CLAIM ABOUT THEM. The filtered
+            # files below are written to the lanes' OWN paths, so after filtering `lanes[tag]`
+            # no longer names what the program printed -- it names what survived the exclusion.
+            # A pin is exactly the claim a diff CANNOT express, and the excluded rows are
+            # precisely the pinned ones, so reading a pin off the filtered lane is asking
+            # whether a row that was just deleted is still there. `wk-cd-gate` reported
+            # "py's cd_none is not 'cd_none=i64'" with the value CORRECT on both sides.
+            raw = {t: _lines(f) for t, f in lanes.items()}
+
             # BOTH SIDES ARE FILTERED. Filtering only the port would compare the row that is
             # KNOWN to differ, which is how a divergence list stops working.
             skip = list(self.diverges) + self.port_only + self.canon
@@ -363,7 +373,7 @@ class Gate:
                         self._say(f"{tag} carries {len(hits)} excluded rows, expected {want} "
                                   f"-- the exclusion list is stale")
                         return 1
-                s = self.dir / _staged(f"{tag}{LANE_ROWS}")
+                s = self.dir / _staged(f"{tag}{LANE_CMP}")
                 s.write_text("\n".join(kept) + "\n")
                 subs[tag] = s
 
@@ -381,12 +391,12 @@ class Gate:
             # row must be present in, not its text -- a row's CONTENT is pinned by `diverges`,
             # and pinning text twice is how the two drift apart.
             for lane, row in self.pins:
-                if not any(l.startswith(row + "=") for l in _lines(lanes[lane])):
+                if not any(l.startswith(row + "=") for l in raw[lane]):
                     self._say(f"{lane} has no {row!r} row -- a pinned claim changed")
                     return 1
             for row, (want_py, want_port) in self.diverges.items():
                 for lane, want in (("py", want_py), ("bd", want_port), ("bn", want_port)):
-                    if want not in _lines(lanes[lane]):
+                    if want not in raw[lane]:
                         self._say(f"{lane}'s {row} is not {want!r} -- if the divergence is fixed, "
                                   f"drop it from DIVERGES; if it moved, update the pin")
                         return 1
@@ -395,10 +405,10 @@ class Gate:
             # oracle grew it -- and then the exclusion would be hiding a real comparison.
             for row in self.port_only:
                 for lane in ("bd", "bn"):
-                    if not any(l.startswith(row + "=") for l in _lines(lanes[lane])):
+                    if not any(l.startswith(row + "=") for l in raw[lane]):
                         self._say(f"{lane} lost its port-only row {row!r}")
                         return 1
-                if any(l.startswith(row + "=") for l in _lines(lanes["py"])):
+                if any(l.startswith(row + "=") for l in raw["py"]):
                     self._say(f"the ORACLE now emits {row!r} -- drop it from port_only and let "
                               f"the two sides COMPARE it")
                     return 1
