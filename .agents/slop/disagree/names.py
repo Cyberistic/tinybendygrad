@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 """NAME THE 6 DISAGREEING GRAPHS, AND FOR EACH THE FIRST ROW THAT DISAGREES.
 
-READ-ONLY over `runs/graphcmp/D/`.  RUNS NOTHING: every number printed here is read
-back out of the artifacts `checks/differ.py run` left on disk, so this script cannot
-perturb the run it reads and cannot be accused of agreeing with itself -- it has no
-arithmetic of its own on the port.
+READ-ONLY over `runs/graphcmp/D/` AND over the harness source that declares the
+population (`graphcmp.py`'s `GRAPHS`) and its dispatcher (`graphcmp.bend`'s `rows.pick3`).
+RUNS NOTHING: every number printed here is read back out of the artifacts `checks/differ.py
+run` left on disk, or out of those two source files, so this script cannot perturb the run
+it reads and cannot be accused of agreeing with itself -- it has no arithmetic of its own on
+the port.
 
 A canonical row is `N:i<id>` then SEVEN length-prefixed chunks -- the op NAME and the
 SIX fields the differ compares, in this fixed wire order.  `fields=6` on every
@@ -38,6 +40,8 @@ from pathlib import Path
 HERE = Path(__file__).resolve()
 ROOT = HERE.parents[3]  # .agents/slop/disagree/names.py -> repo root
 D = ROOT / "runs" / "graphcmp" / "D"
+BEND = ROOT / ".agents" / "slop" / "graphcmp.bend"
+PY = ROOT / ".agents" / "slop" / "graphcmp.py"
 
 # chunk 0 is the op name: matched, not compared.  Named once so the script cannot
 # invent a column and cannot silently drop one either.
@@ -47,6 +51,12 @@ FIELDS = CHUNKS[1:]
 VERDICT = re.compile(r"^# VERDICT: (\w+)$", re.M)
 ROWS = re.compile(r"^# py rows=(\d+)\s+bend rows=(\d+)\b", re.M)
 HUNK = re.compile(r"^(\d+)(?:,(\d+))?([acd])(\d+)(?:,(\d+))?$", re.M)
+
+# the dispatcher's structure: an ARM is `String.eq(name, "x"), g_x()`, and the FALLBACK is
+# the one `g_*()` call in `rows.pick3` no arm routes to.
+ARM = re.compile(r'String\.eq\(name, "([^"]+)"\),\s*(g_\w+)\(\)')
+CALL = re.compile(r"\b(g_\w+)\(\)")
+GRAPH_KEY = re.compile(r'"([^"]+)":\s*(g_\w+)')
 
 
 class Tree:
@@ -236,6 +246,35 @@ def silent_default_cluster(t: Tree, graphs: list[str]) -> dict[str, list[str]]:
   return {h: sorted(v) for h, v in by_hash.items() if len(v) > 1}
 
 
+def dispatcher_substitutions(bend: Path, py: Path) -> list[str]:
+  """Every `GRAPHS` name `rows.pick3` has no arm for and whose fallback is a DIFFERENT
+  graph.  A substitution is a property of the DISPATCHER, not of any run: a name with no
+  `String.eq` arm falls through to `rows.pick3`'s single fallback builder, the bend side
+  builds THAT graph while the py side built the real one, and the differ compares two
+  different graphs -- AGENTS.md's `SKIP`, which a per-graph verdict cannot see because the
+  substituted report prints `ops-reached=n/n` and looks symmetrical.
+
+  THE POPULATION IS DERIVED: `GRAPHS` is the population, the dispatcher's own arms are the
+  ARMED set, and the fallback's name leaves the set with no edit.  The hand list this
+  replaced (`("allred","cdiv","late")`) could only ever name the three it already knew --
+  the very fault this gate exists to catch, inside the gate.  BOTH FILES ARE RE-READ ON
+  EVERY CALL: a discovery that baked 29/34 would be a hand list with extra steps."""
+  text = bend.read_text()
+  start = text.index("def rows.pick3")
+  body = text[start:text.index("def rows.pick(", start)]
+  pairs = ARM.findall(body)
+  armed, builders = {n for n, _ in pairs}, {b for _, b in pairs}
+  defaults = set(CALL.findall(body)) - builders
+  if len(defaults) != 1:
+    raise ValueError(f"rows.pick3 has {len(defaults)} fallback builders, expected 1: "
+                     f"{sorted(defaults)}")
+  fallback = next(iter(defaults)).removeprefix("g_")
+  source = py.read_text()
+  graphs = source[source.index("GRAPHS = {"):]
+  graphs = graphs[:graphs.index("}")]
+  return sorted(g for g, _ in GRAPH_KEY.findall(graphs) if g not in armed and g != fallback)
+
+
 def main() -> int:
   import argparse
 
@@ -260,8 +299,7 @@ def main() -> int:
   graphs = [t.graph(p) for p in t.rows()]
   bad = wire_shape_agrees(t, graphs)
   clusters = silent_default_cluster(t, graphs)
-  substituted = sorted({g for v in clusters.values()
-                        if any(x in v for x in ("allred", "cdiv", "late")) for g in v})
+  substituted = dispatcher_substitutions(BEND, PY)
 
   if a.json:
     import json
@@ -277,6 +315,8 @@ def main() -> int:
 
   print(f"# graphs on disk: {len(graphs)}")
   print(f"# {t.summary('graphs-disagree')}")
+  print(f"# SUBSTITUTED, derived from `GRAPHS` and `rows.pick3`'s dispatch (a property of "
+        f"the harness, not of this run): {substituted or 'none'}")
   print(f"# WIRE SHAPE, both sides, all graphs: "
         f"{'SAME 7-chunk length-prefixed wire on every row -- a serialisation defect is FALSIFIED' if bad is None else bad}")
   if bad is not None:
@@ -305,7 +345,9 @@ def main() -> int:
     for h, names in sorted(clusters.items()):
       print(f"# BEND-SIDE CANONICAL FILES THAT ARE ONE FILE: {names}  sha256={h[:16]}")
     print("#   ^ every name in such a cluster got the SAME graph back from the bend side;")
-    print("#     a missing fixture cannot disagree, it substitutes.")
+    print("#     a missing fixture cannot disagree, it substitutes.  THIS IS A PROPERTY OF")
+    print("#     THE RUN's artifacts and can lag the dispatcher; the derived set above is")
+    print("#     the harness's current state.")
   return 0
 
 

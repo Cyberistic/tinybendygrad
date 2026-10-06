@@ -93,15 +93,18 @@ PIN = {
   # byte-identical on the live driver, and the field itself is CORRECT (`ops.bend:1057`
   # against `ops.py:1398`), so the row was a SPELLING and not a shape.
 }
-# The bend side had no fixture for these three, and `rows.pick3`'s default is the matmul --
-# so all three got the matmul back and none of them was compared at all.  Each now has its
-# own arm (`arms_wired`), so the cluster is EMPTY; a non-empty one is a fresh substitution.
-SUBSTITUTED = ()
+# NO HAND LIST HERE.  `names.py` DERIVES the substituted set from `graphcmp.py`'s `GRAPHS`
+# against `rows.pick3`'s own arms: a name with no arm falls through to the dispatcher's
+# single fallback builder, so the two sides build DIFFERENT graphs and the disagreement is
+# the dispatcher, not the port -- a `SKIP`.  A hand list here could only name what it
+# already knew, which is the fault this gate exists to catch, so the set is CONSUMED from
+# its generator (the `names.py` JSON this file already loads by path) and must be EMPTY: a
+# non-empty one is a fresh substitution.
 
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
   # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1490, "def rows.pick3",
+  (".agents/slop/graphcmp.bend", 1563, "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   (".agents/slop/graphcmp.py", 1394, "def g_allred", "the py fixture that has no bend twin"),
   (".agents/slop/graphcmp.py", 1413, "def g_cdiv", "ditto"),
@@ -153,8 +156,9 @@ def lane_pin(tree: Path) -> list[str]:
                    f"{g['first_row_from_cmp']} -> {g['first_row']} (pin {p['row']})")
     if tuple(g["fields"]) != p["fields"]:
       fails.append(f"{g['graph']}: fields moved {g['fields']} (pin {list(p['fields'])})")
-  if got["substituted"] != list(SUBSTITUTED):
-    fails.append(f"the substituted-fixture cluster moved: {got['substituted']}")
+  if got["substituted"]:
+    fails.append(f"names with no arm in rows.pick3, falling through its fallback: "
+                 f"{got['substituted']}")
   if got["wire_shape_defect"] is not None:
     fails.append(f"the canonical wire itself is malformed: {got['wire_shape_defect']}")
   summary = (tree / "D0-run-summary.txt").read_text().splitlines()
