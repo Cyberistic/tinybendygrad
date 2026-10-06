@@ -167,7 +167,8 @@
 #   resolves a field AT RUNTIME from a string, and the name is built per call.
 # | WALL(p3) bnxtdev.py:87  out.from_buffer_copy(bytes(self.resp[:sizeof])). -- BLOCKED. #   `out.from_buffer_copy(bytes(self.resp[:sizeof]))` IS CTYPES BUFFER ALIASING -- a Python object
 #   whose memory IS the packet, reinterpreted in place.
-#      TODO(p3) bnxtdev.py:131 getattr(bnxt, f"struct_cmdq_{name}").
+#      WALL(p3) bnxtdev.py:131 getattr(bnxt, f"struct_cmdq_{name}"). -- BLOCKED. THE SAME
+#      RUNTIME NAME RESOLUTION as the marker at :77, one family over.
 #      TODO(p3) bnxtdev.py:149 resp_t.from_buffer_copy(self.creq.read(...)).
 #   2. THE 64-BIT PHYSICAL ADDRESSES (`build_pbl`'s entries, `db_value`, the
 #      doorbell word, `struct_cmdq_*.pbl`). There is no U64 in Bend 2.0.34.
