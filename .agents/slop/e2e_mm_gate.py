@@ -247,4 +247,4 @@ def performed_names(res):
 
 
 if __name__ == "__main__":
-  sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else ROOT / "runs/e2e/e2e-mm-bend.txt"))
+  sys.exit(main(sys.argv[1] if len(sys.argv) > 1 else ROOT / "runs/e2e/e2e-mm-bend.out"))

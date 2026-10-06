@@ -52,7 +52,7 @@ if __name__ == "__main__":
     os.makedirs(TMP)
     for f in os.listdir(RUNS):
         shutil.copy(os.path.join(RUNS, f), os.path.join(TMP, f))
-    bend = os.path.join(TMP, "e2e-mm-bend.txt")
+    bend = os.path.join(TMP, "e2e-mm-bend.out")
     g = load()
 
     print("BASELINE (live oracle, live GPU result)")
