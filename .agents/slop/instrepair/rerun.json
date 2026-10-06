@@ -1,0 +1,155 @@
+{
+ "cstyle-shapes-selftest.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "rc": 1
+ },
+ "substrate-audit.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "rc": 0
+ },
+ "pin-tables.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "rc": 1
+ },
+ "ga_mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 41,
+   "once": 41,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "nn-init-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 15,
+   "once": 15,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "state-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 12,
+   "once": 12,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "tools/mutate-dm.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "rc": 1,
+  "anchors": {
+   "n": 18,
+   "once": 13,
+   "zero": 1,
+   "multi": 4,
+   "subject_exists": true,
+   "zero_labels": [
+    "case False{}: q"
+   ]
+  }
+ },
+ "rf2-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 42,
+   "once": 42,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "fold-rng-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 19,
+   "once": 19,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "mixin-op-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 17,
+   "once": 17,
+   "zero": 0,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ },
+ "tcptx-mutate.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 51,
+   "once": 37,
+   "zero": 14,
+   "multi": 0,
+   "subject_exists": true,
+   "zero_labels": [
+    "def cd(+bit: U32, +ax: U32) -> U32: U32.or(U32.shln(bit, 2n), ax",
+    "def AX_K() -> U32: 2",
+    "def Tc.used(+t: Tc) -> List<&2, U32>: cc4(Tc.la(t), Tc.ea(t), Tc",
+    "def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))",
+    "def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))",
+    "def cacc(+bs: List<&2, U32>, v: U32, +d: U32) -> U32: cacc.go(bs",
+    "U32.add(acc, U32.shln(U32.and(U32.shrn(v, U32.to_nat(j)), 1), U3",
+    "def Tc.cover(+t: Tc, la: List<&2, U32>, +ea: List<&2, U32>, ax0:",
+    "def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), mk(1",
+    "def fnv(+s: String) -> U32: fnv.go(s, 2166136261)",
+    "def pow2(n: U32) -> U32: U32.shln(1, U32.to_nat(n))",
+    "def dsh_half.go(+ts: List<&2, Tc>, +acc: List<&2, Tc>) -> List<&",
+    "def dsh_half.keep(+t: Tc) -> Bool: Bool.or(O.eq_dt(Tc.di(t), S.h",
+    "String.concat([r_sd(75, \"bool,double,float,half,int,long,short,s"
+   ]
+  }
+ },
+ "tools/mutate-sz.py": {
+  "exists": true,
+  "missing_imports": [],
+  "unbound": [],
+  "anchors": {
+   "n": 9,
+   "once": 7,
+   "zero": 0,
+   "multi": 2,
+   "subject_exists": true,
+   "zero_labels": []
+  }
+ }
+}

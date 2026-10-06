@@ -1,0 +1,22 @@
+pin-tables.py -- WRITE THE PIN INTO EACH MUTATION TABLE, OR WRITE WHY NOT.
+
+`table-pin.py` computes the three numbers.  This writes them, because a pin that
+lives only in a tool's output is not in the artifact a reader opens.
+
+THE RULE THAT MAKES THIS SAFE TO AUTOMATE, and it is the whole reason the file
+exists rather than a shell loop: a pin is only worth writing for a table whose
+figure was MEASURED.  For every other table this writes
+
+    PIN NOT WRITTEN -- UNSTATED.  <the reason>
+
+and that is a better record than a pin nobody measured.  A pin is a claim about a
+run; a fabricated pin is a claim about a run that never happened, and it is
+indistinguishable from a real one forever after.
+
+MEASURED is passed in, never inferred.  There is no code path in this file that
+decides a table reproduces: it can only be told.
+
+    usage: pin-tables.py --out DIR <measured...>
+      measured  `table:rev:file:rows:nrows` for each table MEASURED today, where
+                `rows` is the row-set digest and `nrows` its row count.
+
