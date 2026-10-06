@@ -1,0 +1,8 @@
+distinct paths: 333
+present: 153
+absent: 180
+absent instruments: 16
+absent oracles: 21
+absent under .agents/slop/: 96
+total lines: 1543
+lines naming >=1 path: 373
