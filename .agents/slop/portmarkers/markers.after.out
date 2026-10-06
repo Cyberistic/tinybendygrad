@@ -1,0 +1,45 @@
+# files walked: 138
+# markers found: 747
+   TODO(p3)     716
+   TODO(pN>3)   3
+   FIXME        0
+   NOT PORTED   28
+   UNPORTED     0
+   BACKLOG      0
+   OPEN CLAIM   17   (bend's own TODO, PROOF closure)
+
+# classification of the 716 TODO(p3) markers: {'REASONED': 598, 'REACHABLE': 87, 'STALE': 6, 'REASONED(shared)': 25}
+
+## STALE -- the marker names a def that now EXISTS
+  tinybendygrad/schedule/__init__.bend:113  names `t not in k.backward_slice` -> tinybendygrad/uop/ops.bend:3076
+     # TODO(p3) __init__.py:61  `t not in k.backward_slice` is read as a nocalls
+  tinybendygrad/schedule/__init__.bend:1701  names `.bitcast` -> tinybendygrad/runtime/ops_python.bend:1851
+     #     TODO(p3) __init__.py:212  `buf[a:b]` (SHRINK) and `.bitcast`.
+  tinybendygrad/schedule/multi.bend:3514  names `ms.replace` -> tinybendygrad/runtime/support/compiler_cuda.bend:488
+     #   TODO(p3) ops.py:617 multi.py:22   `mstack_early_shrink`, `ms.replace`
+  tinybendygrad/schedule/multi.bend:3516  names `.pad_to` -> tinybendygrad/uop/fold.bend:378
+     #   TODO(p3) ops.py:790 multi.py:27   `lower_broadcast_copy`, `.pad_to`
+  tinybendygrad/schedule/multi.bend:3534  names `UOp.after` -> tinybendygrad/runtime/ops_cuda.bend:565
+     #   TODO(p3) ops.py:600 multi.py:254  `store_after_multi`, `UOp.after`
+  tinybendygrad/schedule/multi.bend:3538  names `call.replace` -> tinybendygrad/runtime/support/compiler_cuda.bend:488
+     #   TODO(p3) ops.py:600 multi.py:278  `rewrite_into_function`, `call.replace`
+  (6 stale)
+
+## OPEN CLAIMS -- laws the PROOF closure declares with no def
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:201  neg_is_mul_by_minus_one
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:205  sub_is_add_of_neg
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:210  div_is_mul_by_recip
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:215  cmp_gt_is_cmp_lt_swapped
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:220  cmp_ge_is_ne_of_cmp_lt
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:225  cmp_le_is_ne_of_cmp_lt_swapped
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:230  cmp_eq_is_double_neg
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:235  not_is_ne_one
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:239  mulacc_is_add_of_mul
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:255  comparison_is_bool
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:260  comparison_ne_is_bool
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:271  store_is_void
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:277  call_is_void
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:282  range_is_index
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:286  binary_is_uint8
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:292  detach_preserves_dtype
+  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/LAWS.bend:295  detach_preserves_numel

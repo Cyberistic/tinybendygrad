@@ -478,6 +478,12 @@ def L.max_is_elementwise(a, b, premise):
 def L.store_matches_its_buffer(buf, val, gate, premise):
   premise
 
+# Section V, the dtype column. `Where` takes its SECOND operand's dtype
+# (spec.bend:806), and it is the arm a port is most likely to write as src[0]
+# without any other row noticing. One arm of `Sp.dtype`, so definitional.
+def L.where_takes_the_second_operand_dtype(p, a, b):
+  {==}
+
 # ===========================================================================
 # Both laws are closed. The measurements that justified the rulings:
 #
