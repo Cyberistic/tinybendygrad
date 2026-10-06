@@ -251,7 +251,10 @@ def spawnv_env_copied() -> Bool:
 # FORCED to 0 because `multiprocessing` reaps the process itself, and the env is a
 # COPY so a later `os.environ` mutation (pytest does it, and worker.py:29's comment
 # says so) cannot leak in. The Popen and the pid are the seam.
-# TODO(p3) tinygrad/engine/worker.py:31  subprocess.Popen / p.pid / os.environ._data
+# WALL(p3) tinygrad/engine/worker.py:31  subprocess.Popen / p.pid / os.environ._data -- BLOCKED. AN OS SUBPROCESS. `subprocess.Popen(args, executable=path, pass_fds=..., env=...)` spawns a
+#   child and hands it fds and an environment. Bend has no process-spawning effect: the port's
+#   only uses of the word are COMMENTS (8 of 8 under `runtime/ops_bend.bend`, all starting
+#   `#`), documenting what it does not do. `IO.fork` is a concurrent FIBER, not a child.
 def spawnv_returncode() -> U32:
   0
 
@@ -369,7 +372,9 @@ def main_is_none(has_main: Bool) -> Bool:
 # `PARALLEL.value` is the cpu count (12 on this machine), so `get_worker_pool()`
 # CREATES a pool from the main process with PARALLEL != 0 -- and both gate rows below
 # take a guard that Python would take and a guard it would not.
-# TODO(p3) tinygrad/engine/worker.py:45  multiprocessing.current_process().daemon
+# WALL(p3) tinygrad/engine/worker.py:45  multiprocessing.current_process().daemon -- BLOCKED. PYTHON'S `multiprocessing`. `current_process().daemon` asks whether THIS process is a
+#   daemonised pool worker -- a property of a `multiprocessing` Pool, which the port has no
+#   analogue of.
 def pool_refused(is_daemon: Bool, parallel: U32) -> Bool:
   Bool.or(is_daemon, U32.is_zero(parallel))
 
@@ -395,7 +400,8 @@ def pool_get(is_daemon: Bool, parallel: U32, pool: Maybe<&2, Pool>, id: U32, max
 # worker.py:49 -- `@atexit.register def close_pool(pool=worker_pool): pool.close()`.
 # There is no `atexit` in Bend, so `close_pool` is a def the CALLER owns, and the
 # guard is the only thing Python gets for free from the registration.
-# TODO(p3) tinygrad/engine/worker.py:48  atexit.register
+# WALL(p3) tinygrad/engine/worker.py:48  atexit.register -- BLOCKED. `atexit.register` -- a hook Python runs at INTERPRETER shutdown. There is no interpreter to
+#   shut down; the port compiles to a native executable.
 def close_pool(pool: Maybe<&2, Pool>) -> Bool:
   has_pool(pool)
 
@@ -403,7 +409,8 @@ def close_pool(pool: Maybe<&2, Pool>) -> Bool:
 # worker_pool.terminate()` then `worker_pool = None`. TWO statements, and the second
 # is the load-bearing one: after this the pool is gone whether or not it terminated,
 # so a SECOND call is a no-op rather than a crash. That is the `terminate_twice` row.
-# TODO(p3) tinygrad/engine/worker.py:54  pool.terminate()
+# WALL(p3) tinygrad/engine/worker.py:54  pool.terminate() -- BLOCKED. `worker_pool.terminate()` -- a `multiprocessing.Pool` method. Same absent runtime as the
+#   marker above it.
 def terminated(pool: Maybe<&2, Pool>) -> Bool:
   has_pool(pool)
 

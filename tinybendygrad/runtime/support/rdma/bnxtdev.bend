@@ -163,8 +163,10 @@
 #      with its byte offset, gated by name) and the verb names are the trace's
 #      job; the CONSTRUCTION is not. The `wait_cond` on `resp_len`/`seq_id` is
 #      the same shape as `ops_webgpu.bend`'s `Tr.pop`: a WAIT, in the trace.
-#      TODO(p3) bnxtdev.py:77  getattr(bnxt, f"struct_hwrm_{name}_input").
-#      TODO(p3) bnxtdev.py:87  out.from_buffer_copy(bytes(self.resp[:sizeof])).
+# | WALL(p3) bnxtdev.py:77  getattr(bnxt, f"struct_hwrm_{name}_input"). -- BLOCKED. #   DYNAMIC ATTRIBUTE LOOKUP BY A CONSTRUCTED NAME: `getattr(bnxt, f"struct_hwrm_{name}_input")`
+#   resolves a field AT RUNTIME from a string, and the name is built per call.
+# | WALL(p3) bnxtdev.py:87  out.from_buffer_copy(bytes(self.resp[:sizeof])). -- BLOCKED. #   `out.from_buffer_copy(bytes(self.resp[:sizeof]))` IS CTYPES BUFFER ALIASING -- a Python object
+#   whose memory IS the packet, reinterpreted in place.
 #      TODO(p3) bnxtdev.py:131 getattr(bnxt, f"struct_cmdq_{name}").
 #      TODO(p3) bnxtdev.py:149 resp_t.from_buffer_copy(self.creq.read(...)).
 #   2. THE 64-BIT PHYSICAL ADDRESSES (`build_pbl`'s entries, `db_value`, the
@@ -172,7 +174,8 @@
 #      Every one of them is carried as TWO U32 halves, and -- MEASURED -- every
 #      flag this file sets lives in the LOW half, so the port loses nothing.
 #      `pbl_hi_untouched` is the row that says the high half is the paddr's.
-#      TODO(p3) bnxtdev.py:32  struct.pack(f"<{len(values)}Q", *values).
+# | WALL(p3) bnxtdev.py:32  struct.pack(f"<{len(values)}Q", *values). -- BLOCKED. #   A FORMAT STRING BUILT FROM THE ARGUMENT COUNT -- `struct.pack(f"<{len(values)}Q", *values)` --
+#   and `*values` splats a variable-length tuple.
 #   3. `MMIOInterface` (:42-45). A byte-addressed slice of host memory over a
 #      BAR. `read` and `write` COMPUTE the offsets, and that arithmetic is
 #      ported and gated; the slice itself is the seam.
@@ -183,7 +186,8 @@
 #   5. `self.pci_dev.pcibus` (:54), `DEBUG`/`BNXT_DEBUG` and `print` (:61,:74,
 #      :157,:217). The verbosity levels are WALLS (`getenv` is IO); the device
 #      node string is `nic.node` in `ops_rdma.bend`, which already ports it.
-#      TODO(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus.
+# | WALL(p3) bnxtdev.py:54  self.devfmt = pci_dev.pcibus. -- BLOCKED. #   `self.devfmt = pci_dev.pcibus` READS A FIELD OFF A LIVE PCI DEVICE OBJECT. There is no live
+#   device object in the port: `Dev` is a `U32` tag (`LAWS/spec.bend:85`).
 #      TODO(p3) bnxtdev.py:157 `if BNXT_DEBUG >= 1: print(...)`.
 #   6. `System.list_devices` / `PCIDevice` probing. Not in this file at all;
 #      WALL 2 of `ops_rdma.bend` owns it and names `bnxtdev.py`.

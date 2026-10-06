@@ -1314,10 +1314,13 @@ def t_remote() -> IO(Unit):
 # FOUR of them cannot be rendered here and are named as the seam: `{address:#x}`
 # and `{ltssm:02X}` need hex (Bend 2.0.34 has `U32.show` and no radix), and
 # `libusb_strerror` is a C call whose return is the message's tail.
-#     TODO(p3) tinygrad/runtime/support/usb.py:16   `libusb_strerror(rc)`.
-#     TODO(p3) tinygrad/runtime/support/usb.py:102  `0x{ltssm:02X}`.
-#     TODO(p3) tinygrad/runtime/support/usb.py:129  `address={address:#x}`.
-#     TODO(p3) tinygrad/runtime/support/usb.py:133  `f'Reserved (0b{cpl_status:03b})'`.
+# | WALL(p3) tinygrad/runtime/support/usb.py:16   `libusb_strerror(rc)`. -- BLOCKED. #   `libusb_strerror(rc)` IS A C LIBRARY CALL, and the message also interpolates `fn.__name__` --
+#   the NAME OF A PYTHON FUNCTION OBJECT. The port declares its own C; it has no generic `fn(*args)`.
+# | WALL(p3) tinygrad/runtime/support/usb.py:102  `0x{ltssm:02X}`. -- BLOCKED. #   THE FORMAT IS NOT THE BLOCKER -- the port has `byte_hex`/`hex_of`/`hex_digits` in
+#   `helpers.bend`. What is missing is the PCIe LINK-UP CHECK that raises with it.
+# | WALL(p3) tinygrad/runtime/support/usb.py:129  `address={address:#x}`. -- BLOCKED. #   `address={address:#x}` -- the same shape as the marker above: a format in a raise site this
+#   driver layer does not have.
+# | WALL(p3) tinygrad/runtime/support/usb.py:133  `f'Reserved (0b{cpl_status:03b})'`. -- BLOCKED. #   A `dict.get` ON `status_map` PLUS A BINARY FORMAT, again in a raise the port does not have.
 # ===========================================================================
 
 def MSG_BULK_OUT() -> String: "bulk OUT 0x02 failed"
