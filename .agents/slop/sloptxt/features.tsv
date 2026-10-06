@@ -1,0 +1,691 @@
+path	bytes	lines	live	kv_frac	dom_shape	prose_frac	tab_frac	mime	first
+.agents/slop/dd-gate-base-172.txt	48462	174	173	0.994	0.191	0.0	0.0	text/plain	l2idt0=i64->i32
+.agents/slop/dd-gate-base-182.txt	69013	184	183	0.995	0.191	0.0	0.0	text/plain	l2idt0=i64->i32
+.agents/slop/dd-gate.txt	69033	184	183	0.995	0.191	0.0	0.0	text/plain	l2idt0=i64->i32
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-coverage-census.txt	4364	35	35	0.029	0.343	0.429	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-ops-probe.txt	13923	196	190	0.0	0.142	0.1	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.txt	293	15	15	1.0	0.267	0.0	0.0	text/plain	graphs=16
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D1-verdicts.txt	121	1	1	0.0	1.0	1.0	0.0	text/plain	all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D2-bytediff.txt	1026	24	24	0.0	0.583	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D4-cross-range.txt	13113	102	102	0.01	0.059	0.578	0.0	text/plain	# py range rows=2  py binblob rows=19  plant=range-vs-binblob  mode=ORDERED
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-012.txt	10893	88	88	0.011	0.08	0.682	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-03.txt	5992	52	52	0.019	0.135	0.615	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/differverdict/py-D/D0-coverage-census.txt	1252	9	9	0.111	0.556	0.778	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/py-D/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/py-D/D4-cross-range.txt	6604	48	48	0.021	0.042	0.688	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+.agents/slop/differverdict/py-D/D7-conf.txt	16736	104	104	0.01	0.038	0.788	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+.agents/slop/differverdict/shell-D/D0-coverage-census.txt	5447	45	45	0.022	0.444	0.378	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/shell-D/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/shell-D/D0-run-summary.txt	293	15	15	1.0	0.267	0.0	0.0	text/plain	graphs=16
+.agents/slop/differverdict/shell-D/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/differverdict/shell-D/D1-verdicts.txt	121	1	1	0.0	1.0	1.0	0.0	text/plain	all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a
+.agents/slop/differverdict/shell-D/D2-bytediff.txt	1026	24	24	0.0	0.583	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/differverdict/shell-D/D4-cross-range.txt	13297	96	96	0.01	0.042	0.698	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+.agents/slop/differverdict/shell-D/D5-plant-sym1.txt	5849	40	40	0.025	0.025	0.725	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/differverdict/shell-D/D7-conf.txt	16736	104	104	0.01	0.038	0.788	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+.agents/slop/differverdict/shell-D/D8-dbg-012.txt	12431	92	92	0.011	0.076	0.696	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/shell-D/D8-dbg-03.txt	6761	54	54	0.019	0.13	0.63	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/shell-D/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/differverdict/warm-oracle/D0-coverage-census.txt	5129	42	42	0.024	0.405	0.405	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/warm-oracle/D0-run-summary.txt	293	15	15	1.0	0.267	0.0	0.0	text/plain	graphs=16
+.agents/slop/differverdict/warm-oracle/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/differverdict/warm-oracle/D1-verdicts.txt	121	1	1	0.0	1.0	1.0	0.0	text/plain	all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a
+.agents/slop/differverdict/warm-oracle/D2-bytediff.txt	1026	24	24	0.0	0.583	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/differverdict/warm-oracle/D4-cross-range.txt	11745	92	92	0.011	0.152	0.641	0.0	text/plain	# py range rows=2  py alu rows=14  plant=range-vs-alu  mode=ORDERED
+.agents/slop/differverdict/warm-oracle/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/differverdict/warm-oracle/D8-dbg-012.txt	10893	88	88	0.011	0.08	0.682	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-oracle/D8-dbg-03.txt	5992	52	52	0.019	0.135	0.615	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-oracle/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/differverdict/warm-planted/D0-coverage-census.txt	5129	42	42	0.024	0.405	0.405	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/warm-planted/D0-run-summary.txt	293	15	15	1.0	0.267	0.0	0.0	text/plain	graphs=16
+.agents/slop/differverdict/warm-planted/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/differverdict/warm-planted/D1-verdicts.txt	120	1	1	0.0	1.0	1.0	0.0	text/plain	all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a
+.agents/slop/differverdict/warm-planted/D2-bytediff.txt	1028	26	24	0.0	0.583	0.0	0.0	text/plain	sym BYTE-IDENTICAL (792 bytes both sides)
+.agents/slop/differverdict/warm-planted/D4-cross-range.txt	11745	92	92	0.011	0.152	0.641	0.0	text/plain	# py range rows=2  py alu rows=14  plant=range-vs-alu  mode=ORDERED
+.agents/slop/differverdict/warm-planted/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/differverdict/warm-planted/D8-dbg-012.txt	10893	88	88	0.011	0.08	0.682	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-planted/D8-dbg-03.txt	5992	52	52	0.019	0.135	0.615	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-planted/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/differverdict/warm-python/D0-coverage-census.txt	5129	42	42	0.024	0.405	0.405	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/differverdict/warm-python/D0-run-summary.txt	293	15	15	1.0	0.267	0.0	0.0	text/plain	graphs=16
+.agents/slop/differverdict/warm-python/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/differverdict/warm-python/D1-verdicts.txt	120	1	1	0.0	1.0	1.0	0.0	text/plain	all 16 graphs: verdict as expected (14 AGREE; lin and loop DISAGREE, each with a
+.agents/slop/differverdict/warm-python/D2-bytediff.txt	1028	26	24	0.0	0.583	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/differverdict/warm-python/D4-cross-range.txt	11745	92	92	0.011	0.152	0.641	0.0	text/plain	# py range rows=2  py alu rows=14  plant=range-vs-alu  mode=ORDERED
+.agents/slop/differverdict/warm-python/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/differverdict/warm-python/D8-dbg-012.txt	10893	88	88	0.011	0.08	0.682	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-python/D8-dbg-03.txt	5992	52	52	0.019	0.135	0.615	0.0	text/plain	# DEBUG=0 attempt 1: 25 rows
+.agents/slop/differverdict/warm-python/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/dtypeb/gate.txt	3976	70	69	0.0	0.159	0.159	0.0	text/plain	BASE  --check-only:  SOME PROOFS FAIL
+.agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-f64.txt	91	5	5	0.0	0.2	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-f64.txt	23	1	1	0.0	1.0	0.0	0.0	text/plain	zsh: command not found
+.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-port-mm.txt	23	1	1	0.0	1.0	0.0	0.0	text/plain	zsh: command not found
+.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-f64.txt	91	5	5	0.0	0.2	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.txt	113	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.txt	113	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.txt	65	5	5	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-f64.txt	88	2	2	0.0	0.5	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-gate.txt	47	1	1	0.0	1.0	1.0	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-opsbend.txt	72	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-port-mm.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-f64.txt	91	5	5	0.0	0.2	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt	91	5	5	0.0	0.2	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-f64.txt	113	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: run-f64.sh
+.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-bend.txt	355	25	25	1.0	1.0	0.0	0.0	text/plain	PLANT.row0=0
+.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-gate.txt	84	3	3	0.667	0.667	0.333	0.0	text/plain	PLANT stub: stage4 gate, 20/20 rows vs CPython
+.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-opsbend.txt	69	3	3	0.0	0.333	0.333	0.0	text/plain	PLANT stub: stage5 ops_bend milestone
+.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-port-mm.txt	116	3	3	0.0	0.333	0.0	0.0	text/plain	PLANT stub: stage6 port matmul, 64/64 words
+.agents/slop/figurefix/plant/D-live/D0-coverage-census.txt	6887	58	58	0.017	0.31	0.552	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/figurefix/plant/D-live/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/figurefix/plant/D-live/D0-run-summary.txt	386	22	22	1.0	0.318	0.0	0.0	text/plain	graphs=25
+.agents/slop/figurefix/plant/D-live/D0-selfcheck.txt	216	3	3	0.333	0.333	0.333	0.0	text/plain	# SELFCHECK: FAIL
+.agents/slop/figurefix/plant/D-live/D1-graph-allred.txt	6095	50	50	0.02	0.06	0.54	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-alu.txt	4552	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-binblob.txt	4650	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 19 rows, # root=19 nodes=20 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-bit.txt	4507	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 10 rows, # root=10 nodes=11 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-buffer.txt	4513	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 5 rows, # root=5 nodes=6 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-bw.txt	4708	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 32 rows, # root=32 nodes=33 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-cast.txt	4473	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 6 rows, # root=6 nodes=7 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-cdiv.txt	7220	65	65	0.015	0.046	0.508	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-commute.txt	4584	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-flip.txt	5071	39	39	0.026	0.051	0.744	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-gate.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-group.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-indexed.txt	4484	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-late.txt	6905	59	59	0.017	0.051	0.525	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-lin.txt	5449	38	38	0.026	0.053	0.763	0.0	text/plain	# bend attempt 1: 46 rows, # root=46 nodes=47 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-loop.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-matmul.txt	4573	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-move.txt	4551	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 22 rows, # root=22 nodes=23 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-range.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-rangeflat.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-reduce.txt	4488	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-sink.txt	4426	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-special.txt	4429	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-sym.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/D-live/D1-graph-where.txt	4502	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/D-live/D1-verdicts.txt	785	7	7	0.0	0.714	0.857	0.0	text/plain	loop: VERDICT=AGREE EXPECTED=DISAGREE
+.agents/slop/figurefix/plant/D-live/D10-zerorow-guard.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/D-live/D2-bytediff.txt	4815	98	93	0.0	0.215	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-allred.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-cdiv.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-flip.txt	415	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-late.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-lin.txt	2445	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-allred.txt	573	9	9	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/figurefix/plant/D-live/D2-canon-py-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-cdiv.txt	625	10	10	0.0	0.4	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-flip.txt	370	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-late.txt	747	12	12	0.0	0.417	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-lin.txt	2489	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/figurefix/plant/D-live/D2-canon-py-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-py-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-py-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-py-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/D-live/D2-canon-py-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-canon-py-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/D-live/D2-cmp-allred.txt	1180	21	20	0.0	0.15	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-cmp-alu.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	alu BYTE-IDENTICAL (828 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-binblob.txt	47	1	1	0.0	1.0	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-bit.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bit BYTE-IDENTICAL (599 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-buffer.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	buffer BYTE-IDENTICAL (310 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-bw.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bw BYTE-IDENTICAL (2066 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-cast.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	cast BYTE-IDENTICAL (366 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-cdiv.txt	1130	22	21	0.0	0.19	0.0	0.0	text/plain	cdiv DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-cmp-commute.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	commute BYTE-IDENTICAL (870 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-flip.txt	198	7	6	0.0	0.167	0.0	0.0	text/plain	flip DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-cmp-gate.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	gate BYTE-IDENTICAL (844 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-group.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	group BYTE-IDENTICAL (469 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-indexed.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	indexed BYTE-IDENTICAL (420 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-late.txt	1211	22	21	0.0	0.19	0.0	0.0	text/plain	late DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-cmp-lin.txt	210	6	5	0.0	0.2	0.0	0.0	text/plain	lin DIFFERS:
+.agents/slop/figurefix/plant/D-live/D2-cmp-loop.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	loop BYTE-IDENTICAL (1476 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-matmul.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	matmul BYTE-IDENTICAL (1161 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-move.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	move BYTE-IDENTICAL (1329 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-range.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	range BYTE-IDENTICAL (120 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-rangeflat.txt	48	1	1	0.0	1.0	0.0	0.0	text/plain	rangeflat BYTE-IDENTICAL (117 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-reduce.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	reduce BYTE-IDENTICAL (434 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-sink.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	sink BYTE-IDENTICAL (112 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-special.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	special BYTE-IDENTICAL (104 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-sym.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	sym BYTE-IDENTICAL (792 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D2-cmp-where.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	where BYTE-IDENTICAL (478 bytes both sides)
+.agents/slop/figurefix/plant/D-live/D3-control-binblob.txt	9261	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/D-live/D3-control-gate.txt	9621	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/D-live/D3-control-group.txt	8903	62	62	0.016	0.032	0.774	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/D-live/D3-control-loop.txt	9487	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/D-live/D3-control-matmul.txt	9107	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/D-live/D4-cross-range.txt	12234	96	96	0.01	0.052	0.635	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+.agents/slop/figurefix/plant/D-live/D5-plant-bytes.txt	4948	35	35	0.029	0.057	0.743	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-dtype.txt	6675	62	62	0.016	0.161	0.581	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-opt.txt	4864	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-pyuop.txt	4748	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-shape.txt	5698	45	45	0.022	0.133	0.711	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-srcswap.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/D-live/D6-commute-equiv.txt	4585	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D6-commute-ordered.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D6-matmul-equiv.txt	4574	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D6-matmul-ordered.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/D-live/D7-conf.txt	14429	98	98	0.01	0.041	0.776	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+.agents/slop/figurefix/plant/D-live/D8-dbg-012.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/D-live/D8-dbg-03.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/D-live/D8b-cpython-dbg1-reachability.txt	1122	12	12	0.0	0.667	0.167	0.0	text/plain	# MARK searched for: 'memory reduced from'  (memory.py:59)
+.agents/slop/figurefix/plant/D-live/D9-stability-commute-a.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-commute-b.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-gate-a.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-gate-b.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-group-a.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-group-b.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-loop-a.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-loop-b.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-sym-a.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability-sym-b.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/D-live/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-coverage-census.txt	6887	58	58	0.017	0.31	0.552	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-selfcheck.txt	216	3	3	0.333	0.333	0.333	0.0	text/plain	# SELFCHECK: FAIL
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-allred.txt	6095	50	50	0.02	0.06	0.54	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-alu.txt	4552	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-binblob.txt	4650	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 19 rows, # root=19 nodes=20 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-bit.txt	4507	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 10 rows, # root=10 nodes=11 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-buffer.txt	4513	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 5 rows, # root=5 nodes=6 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-bw.txt	4708	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 32 rows, # root=32 nodes=33 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-cast.txt	4473	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 6 rows, # root=6 nodes=7 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-cdiv.txt	7220	65	65	0.015	0.046	0.508	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-commute.txt	4584	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-flip.txt	5071	39	39	0.026	0.051	0.744	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-gate.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-group.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-indexed.txt	4484	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-late.txt	6905	59	59	0.017	0.051	0.525	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-lin.txt	5449	38	38	0.026	0.053	0.763	0.0	text/plain	# bend attempt 1: 46 rows, # root=46 nodes=47 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-loop.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-matmul.txt	4573	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-move.txt	4551	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 22 rows, # root=22 nodes=23 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-range.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-rangeflat.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-reduce.txt	4488	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-sink.txt	4426	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-special.txt	4429	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-sym.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-where.txt	4502	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-verdicts.txt	785	7	7	0.0	0.714	0.857	0.0	text/plain	loop: VERDICT=AGREE EXPECTED=DISAGREE
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D10-zerorow-guard.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-bytediff.txt	4815	98	93	0.0	0.215	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-allred.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-cdiv.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-flip.txt	415	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-late.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-lin.txt	2445	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-allred.txt	573	9	9	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-cdiv.txt	625	10	10	0.0	0.4	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-flip.txt	370	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-late.txt	747	12	12	0.0	0.417	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-lin.txt	2489	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-allred.txt	1180	21	20	0.0	0.15	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-alu.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	alu BYTE-IDENTICAL (828 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-binblob.txt	47	1	1	0.0	1.0	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-bit.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bit BYTE-IDENTICAL (599 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-buffer.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	buffer BYTE-IDENTICAL (310 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-bw.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bw BYTE-IDENTICAL (2066 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-cast.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	cast BYTE-IDENTICAL (366 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-cdiv.txt	1130	22	21	0.0	0.19	0.0	0.0	text/plain	cdiv DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-commute.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	commute BYTE-IDENTICAL (870 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-flip.txt	198	7	6	0.0	0.167	0.0	0.0	text/plain	flip DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-gate.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	gate BYTE-IDENTICAL (844 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-group.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	group BYTE-IDENTICAL (469 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-indexed.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	indexed BYTE-IDENTICAL (420 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-late.txt	1211	22	21	0.0	0.19	0.0	0.0	text/plain	late DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-lin.txt	210	6	5	0.0	0.2	0.0	0.0	text/plain	lin DIFFERS:
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-loop.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	loop BYTE-IDENTICAL (1476 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-matmul.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	matmul BYTE-IDENTICAL (1161 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-move.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	move BYTE-IDENTICAL (1329 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-range.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	range BYTE-IDENTICAL (120 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-rangeflat.txt	48	1	1	0.0	1.0	0.0	0.0	text/plain	rangeflat BYTE-IDENTICAL (117 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-reduce.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	reduce BYTE-IDENTICAL (434 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-sink.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	sink BYTE-IDENTICAL (112 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-special.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	special BYTE-IDENTICAL (104 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-sym.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	sym BYTE-IDENTICAL (792 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-where.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	where BYTE-IDENTICAL (478 bytes both sides)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-binblob.txt	9261	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-gate.txt	9621	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-group.txt	8903	62	62	0.016	0.032	0.774	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-loop.txt	9487	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-matmul.txt	9107	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D4-cross-range.txt	12234	96	96	0.01	0.052	0.635	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-bytes.txt	4948	35	35	0.029	0.057	0.743	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-dtype.txt	6675	62	62	0.016	0.161	0.581	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-opt.txt	4864	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-pyuop.txt	4748	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-shape.txt	5698	45	45	0.022	0.133	0.711	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-srcswap.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-commute-equiv.txt	4585	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-commute-ordered.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-matmul-equiv.txt	4574	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-matmul-ordered.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D7-conf.txt	14429	98	98	0.01	0.041	0.776	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8-dbg-012.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8-dbg-03.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8b-cpython-dbg1-reachability.txt	1122	12	12	0.0	0.667	0.167	0.0	text/plain	# MARK searched for: 'memory reduced from'  (memory.py:59)
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-commute-a.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-commute-b.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-gate-a.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-gate-b.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-group-a.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-group-b.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-loop-a.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-loop-b.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-sym-a.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-sym-b.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/fixures/opsbend/ops_bend-milestone-expected.txt	4626	91	91	0.0	0.132	0.385	0.0	text/plain	# ops_bend MILESTONE 1 -- THE EXPECTED BYTES, WRITTEN BEFORE ANY RUN.
+.agents/slop/fp8fix/gate.txt	12536	153	153	0.0	0.131	0.281	0.0	text/plain	TREE /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//fp8fix.LwSCZK   live md5 
+.agents/slop/i64shl/py.txt	3201	151	151	1.0	0.596	0.0	0.0	text/plain	seed=7
+.agents/slop/inst13/tree/.agents/slop/e2e-gpu-probe.txt	1092	84	82	0.0	0.427	0.0	0.0	text/plain	### chrome-stable  headless=new
+.agents/slop/jsfp8/gate.txt	1529	35	28	0.0	0.286	0.25	0.0	text/plain	# jsfp8/gate.txt -- the fp8 DECODE gate for tinybendygrad/runtime/dtype.js
+.agents/slop/norm/census.txt	5225	74	60	0.0	0.083	0.817	0.0	text/plain	CENSUS -- every float normaliser in the tree's gates, and the one question
+.agents/slop/norm/gate.txt	4074	51	46	0.0	0.087	0.652	0.0	text/plain	GATE NORM -- one normaliser, one declared width per row, both lanes
+.agents/slop/ops_bend-milestone-expected.txt	4626	91	91	0.0	0.132	0.385	0.0	text/plain	# ops_bend MILESTONE 1 -- THE EXPECTED BYTES, WRITTEN BEFORE ANY RUN.
+.agents/slop/opsbend-milestone/build.txt	42	1	1	0.0	1.0	1.0	0.0	text/plain	bend 2.0.35 is available: run bend update
+.agents/slop/opsbend-milestone/check.txt	100	3	3	0.0	0.333	0.333	0.0	text/plain	ALL PROOFS CHECK
+.agents/slop/opsbend-milestone/gate.txt	1464	36	35	0.0	0.2	0.229	0.0	text/plain	== the milestone: expected bytes, written before the run
+.agents/slop/opsbend-milestone/milestone.txt	1108	63	58	0.983	0.466	0.017	0.0	text/plain	bend_alloc_bump0=0
+.agents/slop/peakrss/census.txt	12541	161	159	0.0	0.497	0.031	0.0	text/plain	# peak-RSS census over 138 port .bend files, ceiling 1024 MB each, SEQUENTIAL
+.agents/slop/rerun/D-before/D0-coverage-census.txt	5677	46	46	0.022	0.37	0.435	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/rerun/D-before/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+.agents/slop/rerun/D-before/D0-run-summary.txt	329	17	17	1.0	0.353	0.0	0.0	text/plain	graphs=25
+.agents/slop/rerun/D-before/D0-selfcheck.txt	21	2	2	0.5	0.5	0.0	0.0	text/plain	# SELFCHECK: OK
+.agents/slop/rerun/D-before/D1-graph-allred.txt	6095	50	50	0.02	0.06	0.54	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D1-graph-alu.txt	4552	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D1-graph-binblob.txt	4650	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 19 rows, # root=19 nodes=20 settled=True
+.agents/slop/rerun/D-before/D1-graph-bit.txt	4507	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 10 rows, # root=10 nodes=11 settled=True
+.agents/slop/rerun/D-before/D1-graph-buffer.txt	4513	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 5 rows, # root=5 nodes=6 settled=True
+.agents/slop/rerun/D-before/D1-graph-bw.txt	4708	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 32 rows, # root=32 nodes=33 settled=True
+.agents/slop/rerun/D-before/D1-graph-cast.txt	4473	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 6 rows, # root=6 nodes=7 settled=True
+.agents/slop/rerun/D-before/D1-graph-cdiv.txt	7220	65	65	0.015	0.046	0.508	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D1-graph-commute.txt	4584	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D1-graph-flip.txt	5071	39	39	0.026	0.051	0.744	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/rerun/D-before/D1-graph-gate.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D1-graph-group.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/rerun/D-before/D1-graph-indexed.txt	4484	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/rerun/D-before/D1-graph-late.txt	6905	59	59	0.017	0.051	0.525	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D1-graph-lin.txt	5449	38	38	0.026	0.053	0.763	0.0	text/plain	# bend attempt 1: 46 rows, # root=46 nodes=47 settled=True
+.agents/slop/rerun/D-before/D1-graph-loop.txt	5487	40	40	0.025	0.05	0.725	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=False
+.agents/slop/rerun/D-before/D1-graph-matmul.txt	4573	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D1-graph-move.txt	4551	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 22 rows, # root=22 nodes=23 settled=True
+.agents/slop/rerun/D-before/D1-graph-range.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/rerun/D-before/D1-graph-rangeflat.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/rerun/D-before/D1-graph-reduce.txt	4488	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+.agents/slop/rerun/D-before/D1-graph-sink.txt	4426	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/rerun/D-before/D1-graph-special.txt	4429	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+.agents/slop/rerun/D-before/D1-graph-sym.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/rerun/D-before/D1-graph-where.txt	4502	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/rerun/D-before/D1-verdicts.txt	1809	10	10	0.0	0.9	1.0	0.0	text/plain	allred: VERDICT=DISAGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED. The c
+.agents/slop/rerun/D-before/D10-zerorow-guard.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/rerun/D-before/D2-bytediff.txt	4961	103	97	0.0	0.196	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/rerun/D-before/D2-canon-bend-allred.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/rerun/D-before/D2-canon-bend-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-cdiv.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-flip.txt	415	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/rerun/D-before/D2-canon-bend-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-late.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-lin.txt	2445	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-loop.txt	1479	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/rerun/D-before/D2-canon-bend-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-bend-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-bend-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-bend-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-bend-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-bend-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-allred.txt	573	9	9	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+.agents/slop/rerun/D-before/D2-canon-py-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-cdiv.txt	625	10	10	0.0	0.4	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-flip.txt	370	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+.agents/slop/rerun/D-before/D2-canon-py-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-late.txt	747	12	12	0.0	0.417	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-lin.txt	2489	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+.agents/slop/rerun/D-before/D2-canon-py-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-py-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-py-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-py-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+.agents/slop/rerun/D-before/D2-canon-py-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-canon-py-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+.agents/slop/rerun/D-before/D2-cmp-allred.txt	1180	21	20	0.0	0.15	0.0	0.0	text/plain	allred DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-alu.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	alu BYTE-IDENTICAL (828 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-binblob.txt	47	1	1	0.0	1.0	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-bit.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bit BYTE-IDENTICAL (599 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-buffer.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	buffer BYTE-IDENTICAL (310 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-bw.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bw BYTE-IDENTICAL (2066 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-cast.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	cast BYTE-IDENTICAL (366 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-cdiv.txt	1130	22	21	0.0	0.19	0.0	0.0	text/plain	cdiv DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-commute.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	commute BYTE-IDENTICAL (870 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-flip.txt	198	7	6	0.0	0.167	0.0	0.0	text/plain	flip DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-gate.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	gate BYTE-IDENTICAL (844 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-group.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	group BYTE-IDENTICAL (469 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-indexed.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	indexed BYTE-IDENTICAL (420 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-late.txt	1211	22	21	0.0	0.19	0.0	0.0	text/plain	late DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-lin.txt	210	6	5	0.0	0.2	0.0	0.0	text/plain	lin DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-loop.txt	190	6	5	0.0	0.2	0.0	0.0	text/plain	loop DIFFERS:
+.agents/slop/rerun/D-before/D2-cmp-matmul.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	matmul BYTE-IDENTICAL (1161 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-move.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	move BYTE-IDENTICAL (1329 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-range.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	range BYTE-IDENTICAL (120 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-rangeflat.txt	48	1	1	0.0	1.0	0.0	0.0	text/plain	rangeflat BYTE-IDENTICAL (117 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-reduce.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	reduce BYTE-IDENTICAL (434 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-sink.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	sink BYTE-IDENTICAL (112 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-special.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	special BYTE-IDENTICAL (104 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-sym.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	sym BYTE-IDENTICAL (792 bytes both sides)
+.agents/slop/rerun/D-before/D2-cmp-where.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	where BYTE-IDENTICAL (478 bytes both sides)
+.agents/slop/rerun/D-before/D3-control-binblob.txt	9261	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/rerun/D-before/D3-control-gate.txt	9621	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/rerun/D-before/D3-control-group.txt	8903	62	62	0.016	0.032	0.774	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/rerun/D-before/D3-control-loop.txt	9556	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/rerun/D-before/D3-control-matmul.txt	9107	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+.agents/slop/rerun/D-before/D4-cross-range.txt	12234	96	96	0.01	0.052	0.635	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+.agents/slop/rerun/D-before/D5-plant-bytes.txt	4948	35	35	0.029	0.057	0.743	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-dtype.txt	6675	62	62	0.016	0.161	0.581	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-opt.txt	4864	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-pyuop.txt	4748	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-shape.txt	5698	45	45	0.022	0.133	0.711	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-srcswap.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/rerun/D-before/D6-commute-equiv.txt	4585	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D6-commute-ordered.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D6-matmul-equiv.txt	4574	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D6-matmul-ordered.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+.agents/slop/rerun/D-before/D7-conf.txt	14429	98	98	0.01	0.041	0.776	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+.agents/slop/rerun/D-before/D8-dbg-012.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/rerun/D-before/D8-dbg-03.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+.agents/slop/rerun/D-before/D8b-cpython-dbg1-reachability.txt	1122	12	12	0.0	0.667	0.167	0.0	text/plain	# MARK searched for: 'memory reduced from'  (memory.py:59)
+.agents/slop/rerun/D-before/D9-stability-commute-a.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D9-stability-commute-b.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D9-stability-gate-a.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D9-stability-gate-b.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+.agents/slop/rerun/D-before/D9-stability-group-a.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/rerun/D-before/D9-stability-group-b.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+.agents/slop/rerun/D-before/D9-stability-loop-a.txt	5487	40	40	0.025	0.05	0.725	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=False
+.agents/slop/rerun/D-before/D9-stability-loop-b.txt	5487	40	40	0.025	0.05	0.725	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=False
+.agents/slop/rerun/D-before/D9-stability-sym-a.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/rerun/D-before/D9-stability-sym-b.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+.agents/slop/rerun/D-before/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+.agents/slop/rerun/probe-flip-METAL.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+.agents/slop/rerun/probe-flip-NULL.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+.agents/slop/rerun/probe-lin-METAL.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+.agents/slop/rerun/probe-lin-NULL.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+.agents/slop/strays-root/after.txt	33736	80	80	0.0	0.312	0.75	0.0	text/plain	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//i64div-closure/tinybendygrad/L
+.agents/slop/strays-root/before.txt	3059	19	19	0.0	0.211	0.211	0.0	text/plain	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//i64div-closure/tinybendygrad/L
+.agents/slop/strays-root/closure.txt	13908	138	138	0.0	0.58	0.0	0.0	text/plain	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T//i64div-closure/tinybendygrad/L
+oracles/rows-bd.txt	0	0	0	0.0	0.0	0.0	0.0	inode/x-empty	
+runs/e2e/e2e-f64.txt	2066	32	28	0.0	0.143	0.393	0.0	text/plain	
+runs/e2e/e2e-mm-bend.txt	434	22	22	1.0	0.455	0.0	0.0	text/plain	mm_buffer_len=8
+runs/e2e/e2e-mm-gate.txt	1526	55	54	0.815	0.389	0.019	0.0	text/plain	# adapter            apple/metal-3
+runs/e2e/e2e-opsbend.txt	1727	42	41	0.0	0.171	0.244	0.0	text/plain	== 1/3 executor up to date (/Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+runs/e2e/e2e-port-mm.txt	9603	155	138	0.0	0.058	0.652	0.0	text/plain	
+runs/graphcmp/D/D0-coverage-census.txt	6882	58	58	0.017	0.31	0.552	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+runs/graphcmp/D/D0-ops-probe.txt	15098	205	199	0.0	0.136	0.095	0.0	text/plain	# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+runs/graphcmp/D/D0-run-summary.txt	386	22	22	1.0	0.318	0.0	0.0	text/plain	graphs=25
+runs/graphcmp/D/D0-selfcheck.txt	216	3	3	0.333	0.333	0.333	0.0	text/plain	# SELFCHECK: FAIL
+runs/graphcmp/D/D1-graph-allred.txt	6095	50	50	0.02	0.06	0.54	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D1-graph-alu.txt	4552	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D1-graph-binblob.txt	4650	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 19 rows, # root=19 nodes=20 settled=True
+runs/graphcmp/D/D1-graph-bit.txt	4507	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 10 rows, # root=10 nodes=11 settled=True
+runs/graphcmp/D/D1-graph-buffer.txt	4513	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 5 rows, # root=5 nodes=6 settled=True
+runs/graphcmp/D/D1-graph-bw.txt	4708	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 32 rows, # root=32 nodes=33 settled=True
+runs/graphcmp/D/D1-graph-cast.txt	4473	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 6 rows, # root=6 nodes=7 settled=True
+runs/graphcmp/D/D1-graph-cdiv.txt	7220	65	65	0.015	0.046	0.508	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D1-graph-commute.txt	4584	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D1-graph-flip.txt	5071	39	39	0.026	0.051	0.744	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+runs/graphcmp/D/D1-graph-gate.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D1-graph-group.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+runs/graphcmp/D/D1-graph-indexed.txt	4484	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+runs/graphcmp/D/D1-graph-late.txt	6905	59	59	0.017	0.051	0.525	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D1-graph-lin.txt	4730	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 46 rows, # root=46 nodes=47 settled=True
+runs/graphcmp/D/D1-graph-loop.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+runs/graphcmp/D/D1-graph-matmul.txt	4573	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D1-graph-move.txt	4551	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 22 rows, # root=22 nodes=23 settled=True
+runs/graphcmp/D/D1-graph-range.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+runs/graphcmp/D/D1-graph-rangeflat.txt	4427	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+runs/graphcmp/D/D1-graph-reduce.txt	4488	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+runs/graphcmp/D/D1-graph-sink.txt	4426	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+runs/graphcmp/D/D1-graph-special.txt	4429	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 2 rows, # root=2 nodes=3 settled=True
+runs/graphcmp/D/D1-graph-sym.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+runs/graphcmp/D/D1-graph-where.txt	4502	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+runs/graphcmp/D/D1-verdicts.txt	784	7	7	0.0	0.714	0.857	0.0	text/plain	lin: VERDICT=AGREE EXPECTED=DISAGREE
+runs/graphcmp/D/D10-zerorow-guard.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+runs/graphcmp/D/D2-bytediff.txt	4648	93	89	0.0	0.236	0.0	0.0	text/plain	allred DIFFERS:
+runs/graphcmp/D/D2-canon-bend-allred.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+runs/graphcmp/D/D2-canon-bend-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-cdiv.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-flip.txt	415	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+runs/graphcmp/D/D2-canon-bend-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-late.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-lin.txt	2489	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+runs/graphcmp/D/D2-canon-bend-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-bend-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-bend-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-bend-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-bend-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-bend-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-allred.txt	573	9	9	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-alu.txt	828	14	14	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-binblob.txt	1236	19	19	0.0	0.211	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-bit.txt	599	10	10	0.0	0.5	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-buffer.txt	310	5	5	0.0	0.4	0.0	0.0	text/plain	2:i1 6:BUFFER 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,
+runs/graphcmp/D/D2-canon-py-bw.txt	2066	32	32	0.0	0.219	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i1,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-cast.txt	366	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-cdiv.txt	625	10	10	0.0	0.4	0.0	0.0	text/plain	2:i1 5:ALLOC 3:i32 7:(l0:12) 2:i0 1:N 45:P(i0,Di32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-commute.txt	870	14	14	0.0	0.571	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-flip.txt	370	6	6	0.0	0.333	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-gate.txt	844	14	14	0.0	0.357	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:16) 2:i0 1:N 47:P(i0,Df32,i16,N,N,sv0,SGLOBAL,sCPU,b0,N
+runs/graphcmp/D/D2-canon-py-group.txt	469	8	8	0.0	0.375	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-indexed.txt	420	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-late.txt	747	12	12	0.0	0.417	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-lin.txt	2489	46	46	0.0	0.478	0.0	0.0	text/plain	2:i1 5:PARAM 3:f32 7:(l0:20) 2:i0 1:N 45:P(i0,Df32,i20,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-loop.txt	1476	25	25	0.0	0.28	0.0	0.0	text/plain	2:i1 5:PARAM 3:u64 6:(l0:1) 2:i0 1:N 49:P(i0,Du64,i1,N,N,sslots,SGLOBAL,sCPU,b0,
+runs/graphcmp/D/D2-canon-py-matmul.txt	1161	18	18	0.0	0.222	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-move.txt	1329	22	22	0.0	0.318	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-range.txt	120	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-py-rangeflat.txt	117	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-py-reduce.txt	434	7	7	0.0	0.286	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:32) 2:i0 1:N 45:P(i0,Df32,i32,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-sink.txt	112	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-py-special.txt	104	2	2	0.0	0.5	0.0	0.0	text/plain	2:i1 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+runs/graphcmp/D/D2-canon-py-sym.txt	792	12	12	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-canon-py-where.txt	478	8	8	0.0	0.25	0.0	0.0	text/plain	2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N
+runs/graphcmp/D/D2-cmp-allred.txt	1180	21	20	0.0	0.15	0.0	0.0	text/plain	allred DIFFERS:
+runs/graphcmp/D/D2-cmp-alu.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	alu BYTE-IDENTICAL (828 bytes both sides)
+runs/graphcmp/D/D2-cmp-binblob.txt	47	1	1	0.0	1.0	0.0	0.0	text/plain	binblob BYTE-IDENTICAL (1236 bytes both sides)
+runs/graphcmp/D/D2-cmp-bit.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bit BYTE-IDENTICAL (599 bytes both sides)
+runs/graphcmp/D/D2-cmp-buffer.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	buffer BYTE-IDENTICAL (310 bytes both sides)
+runs/graphcmp/D/D2-cmp-bw.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	bw BYTE-IDENTICAL (2066 bytes both sides)
+runs/graphcmp/D/D2-cmp-cast.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	cast BYTE-IDENTICAL (366 bytes both sides)
+runs/graphcmp/D/D2-cmp-cdiv.txt	1130	22	21	0.0	0.19	0.0	0.0	text/plain	cdiv DIFFERS:
+runs/graphcmp/D/D2-cmp-commute.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	commute BYTE-IDENTICAL (870 bytes both sides)
+runs/graphcmp/D/D2-cmp-flip.txt	198	7	6	0.0	0.167	0.0	0.0	text/plain	flip DIFFERS:
+runs/graphcmp/D/D2-cmp-gate.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	gate BYTE-IDENTICAL (844 bytes both sides)
+runs/graphcmp/D/D2-cmp-group.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	group BYTE-IDENTICAL (469 bytes both sides)
+runs/graphcmp/D/D2-cmp-indexed.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	indexed BYTE-IDENTICAL (420 bytes both sides)
+runs/graphcmp/D/D2-cmp-late.txt	1211	22	21	0.0	0.19	0.0	0.0	text/plain	late DIFFERS:
+runs/graphcmp/D/D2-cmp-lin.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	lin BYTE-IDENTICAL (2489 bytes both sides)
+runs/graphcmp/D/D2-cmp-loop.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	loop BYTE-IDENTICAL (1476 bytes both sides)
+runs/graphcmp/D/D2-cmp-matmul.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	matmul BYTE-IDENTICAL (1161 bytes both sides)
+runs/graphcmp/D/D2-cmp-move.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	move BYTE-IDENTICAL (1329 bytes both sides)
+runs/graphcmp/D/D2-cmp-range.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	range BYTE-IDENTICAL (120 bytes both sides)
+runs/graphcmp/D/D2-cmp-rangeflat.txt	48	1	1	0.0	1.0	0.0	0.0	text/plain	rangeflat BYTE-IDENTICAL (117 bytes both sides)
+runs/graphcmp/D/D2-cmp-reduce.txt	45	1	1	0.0	1.0	0.0	0.0	text/plain	reduce BYTE-IDENTICAL (434 bytes both sides)
+runs/graphcmp/D/D2-cmp-sink.txt	43	1	1	0.0	1.0	0.0	0.0	text/plain	sink BYTE-IDENTICAL (112 bytes both sides)
+runs/graphcmp/D/D2-cmp-special.txt	46	1	1	0.0	1.0	0.0	0.0	text/plain	special BYTE-IDENTICAL (104 bytes both sides)
+runs/graphcmp/D/D2-cmp-sym.txt	42	1	1	0.0	1.0	0.0	0.0	text/plain	sym BYTE-IDENTICAL (792 bytes both sides)
+runs/graphcmp/D/D2-cmp-where.txt	44	1	1	0.0	1.0	0.0	0.0	text/plain	where BYTE-IDENTICAL (478 bytes both sides)
+runs/graphcmp/D/D3-control-binblob.txt	9261	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+runs/graphcmp/D/D3-control-gate.txt	9621	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+runs/graphcmp/D/D3-control-group.txt	8903	62	62	0.016	0.032	0.774	0.0	text/plain	== CONTROL py vs itself: rc=0
+runs/graphcmp/D/D3-control-loop.txt	9487	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+runs/graphcmp/D/D3-control-matmul.txt	9107	62	62	0.016	0.032	0.806	0.0	text/plain	== CONTROL py vs itself: rc=0
+runs/graphcmp/D/D4-cross-range.txt	12234	96	96	0.01	0.052	0.635	0.0	text/plain	# py range rows=2  py allred rows=9  plant=range-vs-allred  mode=ORDERED
+runs/graphcmp/D/D5-plant-bytes.txt	4948	35	35	0.029	0.057	0.743	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-dtype.txt	6675	62	62	0.016	0.161	0.581	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-opt.txt	4864	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-pyuop.txt	4748	33	33	0.03	0.03	0.788	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-shape.txt	5698	45	45	0.022	0.133	0.711	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-srcswap.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D5-plant-sym1.txt	5080	38	38	0.026	0.026	0.711	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+runs/graphcmp/D/D6-commute-equiv.txt	4585	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D6-commute-ordered.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D6-matmul-equiv.txt	4574	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D6-matmul-ordered.txt	5139	38	38	0.026	0.079	0.763	0.0	text/plain	# bend attempt 1: 18 rows, # root=18 nodes=19 settled=True
+runs/graphcmp/D/D7-conf.txt	14429	98	98	0.01	0.041	0.776	0.0	text/plain	# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.
+runs/graphcmp/D/D8-dbg-012.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+runs/graphcmp/D/D8-dbg-03.txt	5	1	1	1.0	1.0	0.0	0.0	text/plain	rc=1
+runs/graphcmp/D/D8b-cpython-dbg1-reachability.txt	1122	12	12	0.0	0.667	0.167	0.0	text/plain	# MARK searched for: 'memory reduced from'  (memory.py:59)
+runs/graphcmp/D/D9-stability-commute-a.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D9-stability-commute-b.txt	5117	36	36	0.028	0.056	0.778	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D9-stability-gate-a.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D9-stability-gate-b.txt	4830	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 14 rows, # root=14 nodes=15 settled=True
+runs/graphcmp/D/D9-stability-group-a.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+runs/graphcmp/D/D9-stability-group-b.txt	4468	31	31	0.032	0.032	0.774	0.0	text/plain	# bend attempt 1: 8 rows, # root=8 nodes=9 settled=True
+runs/graphcmp/D/D9-stability-loop-a.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+runs/graphcmp/D/D9-stability-loop-b.txt	4763	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 25 rows, # root=25 nodes=26 settled=True
+runs/graphcmp/D/D9-stability-sym-a.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+runs/graphcmp/D/D9-stability-sym-b.txt	4530	31	31	0.032	0.032	0.806	0.0	text/plain	# bend attempt 1: 12 rows, # root=12 nodes=13 settled=True
+runs/graphcmp/D/D9-stability.txt	143	5	5	0.0	1.0	0.0	0.0	text/plain	group: 2 runs BYTE-IDENTICAL
+test/models/efficientnet/imagenet1000_clsidx_to_labels.txt	30564	1000	1000	0.0	0.305	0.024	0.0	text/plain	{0: 'tench, Tinca tinca',
