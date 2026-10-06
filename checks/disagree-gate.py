@@ -114,7 +114,7 @@ PIN = {
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
   # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1564, "def rows.pick3",
+  (".agents/slop/graphcmp.bend", 1571, "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   (".agents/slop/graphcmp.py", 1394, "def g_allred", "the py fixture that has no bend twin"),
   (".agents/slop/graphcmp.py", 1413, "def g_cdiv", "ditto"),
