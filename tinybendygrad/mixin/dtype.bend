@@ -303,13 +303,20 @@ def strong_dtype(+d: S.Dt, di: S.Dt, df: S.Dt) -> S.Dt:
 # `Maybe` rather than a sentinel dtype because a wrong dtype here is not a crash, it is
 # a silently wrong `commit_int` answer three rules downstream in weak.py.
 # ===========================================================================
+# A PARAM WITH NO `vmin_vmax` -- the `cd_none` row of `gates/wk-cd-gate.py`. The bound
+# reads as `Bnd{NInf}` / `Bnd{PInf}` (a saturation, since `weakint`'s bits == 800 has no
+# 64-bit magnitude), and `wk_bnd_i64` cannot convert infinity to an I64, so `m`/`m2` are
+# `None`. CPython's `commit_int` would answer `long` for this case: the no-bounds PARAM's
+# interval is `[NInf, PInf]`, which is wider than int32 (and wider than the ladder's
+# `default_int` rung), so the ladder falls off the end at `long`. THE PORT'S HONEST ANSWER
+# IS THE SAME -- supply the WIDEST int range we can represent, which `commit_int` sees as
+# "does not fit int32" and answers `int64`. The earlier version returned `None`, which is
+# what `wk-cd-gate.py`'s `cd_none` row was pinned as a divergence on; the fix closes it.
 def commit_dtype.weak(m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt) -> Maybe<&1, S.Dt>:
-  match m:
-    case Some{lo}:
-      match m2:
-        case Some{hi}: commit_int(lo, hi, di)
-        case None{}: None{}
-    case None{}: None{}
+  commit_int(
+    Maybe.default(&1, H.I64, m, md_i64_min_s(64)),
+    Maybe.default(&1, H.I64, m2, md_i64_max_s(64)),
+    di)
 
 def commit_dtype.of(weakint: Bool, +dt: S.Dt, m: Maybe<&1, H.I64>, m2: Maybe<&1, H.I64>, di: S.Dt) -> Maybe<&1, S.Dt>:
   match weakint:
