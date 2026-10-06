@@ -208,11 +208,17 @@ def lane_plant(tree: Path) -> list[str]:
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
     j = json.loads(r.stdout)
-    lin = next(g for g in j["disagree"] if g["graph"] == "lin")
-    return lin["first_row_from_cmp"], lin["first_row_recomputed"], lin["fields"]
+    # WHICHEVER GRAPH DISAGREES FIRST. `lin` WAS HARD-CODED HERE, AND WHEN IT STARTED
+    # AGREEING `next(...)` RAISED `StopIteration` AND TOOK THE WHOLE PLANT LANE DOWN --
+    # a plant that names one graph is a plant that breaks when the tree gets better.
+    if not j["disagree"]:
+      raise SystemExit("the plant needs one disagreement to move; this run has none")
+    g = sorted(j["disagree"], key=lambda x: x["graph"])[0]
+    return g["graph"], g["first_row_from_cmp"], g["first_row_recomputed"], g["fields"]
 
   fails = []
   before = answer(tree)
+  graph = before[0]
   with tempfile.TemporaryDirectory() as td:
     work = Path(td) / "D"
     shutil.copytree(tree, work)
@@ -222,34 +228,48 @@ def lane_plant(tree: Path) -> list[str]:
     # reads the differ's own diff record, which this plant deliberately does NOT touch,
     # so it MUST stay.  The two halves moving in OPPOSITE directions is the proof that
     # they read different bytes -- which is the whole point of having two.
-    py = (work / "D2-canon-py-lin.txt").read_text().splitlines()
-    bend = (work / "D2-canon-bend-lin.txt").read_text().splitlines()
-    bend[-1] = py[-1]
-    (work / "D2-canon-bend-lin.txt").write_text("\n".join(bend) + "\n")
+    # PLANT A: make the bend canon agree with the py canon ON THE DISAGREEING ROW.  Belt 2
+    # recomputes from the canonical files, so its row MUST move.  Belt 1 reads the differ's
+    # own diff record, which this plant deliberately does NOT touch, so it MUST stay.  The
+    # two halves moving in OPPOSITE directions is the proof that they read different bytes.
+    #
+    # **`recomputed` IS THE ROW INDEX, NOT AN ENDPOINT.** THIS PLANT USED TO EDIT `bend[-1]`,
+    # WHICH ONLY WORKED BECAUSE `lin`'s DISAGREEMENT WAS ITS **LAST** ROW (46 of 46). The
+    # subject is chosen from whatever disagrees, so the edit has to follow the index it
+    # reports -- otherwise the plant quietly depends on the last row being the broken one.
+    row = before[2]
+    canon_py = work / f"D2-canon-py-{graph}.txt"
+    canon_bend = work / f"D2-canon-bend-{graph}.txt"
+    py = canon_py.read_text().splitlines()
+    bend = canon_bend.read_text().splitlines()
+    if not (isinstance(row, int) and 1 <= row <= len(bend) and row <= len(py)):
+      raise SystemExit(f"the plant needs an integer row in range; {graph} reports {row!r}")
+    bend[row - 1] = py[row - 1]
+    canon_bend.write_text("\n".join(bend) + "\n")
     a = answer(work)
-    if a[1] is not None:
-      fails.append(f"PLANT A did not move belt 2 (still {a[1]}): the recomputed "
+    if a[2] == before[2]:
+      fails.append(f"PLANT A did not move belt 2 (still {a[2]}): the recomputed "
                    f"first-row method is not reading the canonical files")
-    if a[0] != before[0]:
-      fails.append(f"PLANT A moved belt 1 too (now {a[0]}, was {before[0]}): it reads "
+    if a[1] != before[1]:
+      fails.append(f"PLANT A moved belt 1 too (now {a[1]}, was {before[1]}): it reads "
                    f"the diff record this plant did not touch, so it is reading "
                    f"something shared with belt 2")
 
     # DISARM A: put the byte back and require the pinned answer to return exactly.
-    (work / "D2-canon-bend-lin.txt").write_text("\n".join(
-      (tree / "D2-canon-bend-lin.txt").read_text().splitlines()) + "\n")
+    canon_bend.write_text("\n".join(
+      (tree / f"D2-canon-bend-{graph}.txt").read_text().splitlines()) + "\n")
     if answer(work) != before:
       fails.append(f"DISARM A did not restore the answer: {answer(work)} != {before}")
 
     # PLANT B: rewrite the differ's own diff record and require belt 1 to move.
     # The canonical files are back to their real contents, so belt 2 MUST NOT move.
-    (work / "D2-cmp-lin.txt").write_text("lin BYTE-IDENTICAL (9999 bytes both sides)\n")
+    (work / f"D2-cmp-{graph}.txt").write_text(f"{graph} BYTE-IDENTICAL (9999 bytes both sides)\n")
     b = answer(work)
-    if b[0] is not None:
-      fails.append(f"PLANT B did not move belt 1 (still {b[0]}): it is not reading "
+    if b[1] == before[1]:
+      fails.append(f"PLANT B did not move belt 1 (still {b[1]}): it is not reading "
                    f"the differ's diff record")
-    if b[1] != before[1]:
-      fails.append(f"PLANT B moved belt 2 as well (now {b[1]}): the two belts share a "
+    if b[2] != before[2]:
+      fails.append(f"PLANT B moved belt 2 as well (now {b[2]}): the two belts share a "
                    f"source, so this is one check wearing two hats")
 
   if answer(tree) != before:
