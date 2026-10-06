@@ -1,2 +1,0 @@
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=55 MB (ceiling 2048)  1s  :: .venv/bin/python .agents/slop/graphcmp.py emit  out=2489B err=102B  said=# graph=lin plant=none tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
-# graph=lin plant=none tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py

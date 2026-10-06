@@ -1,5 +1,0 @@
-[untracked pathspec commit] rc=1 err="error: pathspec 'u.rows' did not match any file(s) known to git" out=''
-[shared index vs resetter] staged ['s.rows'] -> []  WIPED (hazard confirmed)
-[private index vs resetter] staged ['s.rows'] -> ['s.rows']  SURVIVES
-[private-index commit] rc=0 err=''
-[committed] c575f84 agent: s.rows

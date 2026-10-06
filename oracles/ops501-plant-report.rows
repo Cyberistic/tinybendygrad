@@ -1,3 +1,0 @@
-denominators: ops501-plant-py.txt=101 | ops501-plant-bad.txt=101
-DISAGREE ops501-plant-bad.txt: shared=101 py-only=0 ops501-plant-bad.txt-only=0 value-disagreements=1
-  ROW DISAGREE s5_ga_param: cpython=Ops.GETADDR/Ops.PARAM ops501-plant-bad.txt=Ops.PARAM

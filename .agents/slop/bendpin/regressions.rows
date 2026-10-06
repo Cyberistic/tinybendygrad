@@ -1,6 +1,0 @@
-lane=--check-only
-tag_worktree=/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/bendtag
-erased_field_bare_arm	#1157 a match inside a TYPE	in_tag=False	tag=ALL PROOFS CHECK	head=ALL PROOFS CHECK	check_same=yes	sha_tag=b3f3e95b1f4646e7	sha_head=b3f3e95b1f4646e7	oos_tag=4	oos_head=0	oos_same=NO	oos_which=dependent_field,erased_field_arms,erased_field_call,erased_field_default	elab_bytes=3432/4255	elab_same=NO
-spec_arg_depth	#1168 a SPECIALIZED argument's DEPTH	in_tag=False	tag=ALL PROOFS CHECK	head=ALL PROOFS CHECK	check_same=yes	sha_tag=b3f3e95b1f4646e7	sha_head=b3f3e95b1f4646e7	oos_tag=2	oos_head=0	oos_same=NO	oos_which=main,spec_arg_depth_result	elab_bytes=2131/2799	elab_same=NO
-spec_arg_unused_column	#1178 a SPECIALIZED argument's LIVENESS	in_tag=False	tag=ALL PROOFS CHECK	head=ALL PROOFS CHECK	check_same=yes	sha_tag=b3f3e95b1f4646e7	sha_head=b3f3e95b1f4646e7	oos_tag=0	oos_head=0	oos_same=yes	oos_which=	elab_bytes=1571/1596	elab_same=NO
-SUMMARY	tests=3	check_disagree=0	oos_disagree=2	elab_disagree=3

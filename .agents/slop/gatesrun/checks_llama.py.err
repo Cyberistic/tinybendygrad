@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/llama.py", line 12, in <module>
-    from extra.models.llama import Transformer, convert_from_huggingface, fix_bf16
-ModuleNotFoundError: No module named 'extra'

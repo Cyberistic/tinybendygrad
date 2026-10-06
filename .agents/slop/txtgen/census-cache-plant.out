@@ -1,5 +1,0 @@
-cache at the NEW name `rows-demo-py.rows`  -> CACHE, 1 row(s)
-the reader consulted the NEW name         True
-a `.txt` cache left beside it is ignored   True (present, unread)
-
-VERDICT: the read site moved with the write site.

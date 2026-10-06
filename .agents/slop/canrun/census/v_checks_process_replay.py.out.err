@@ -1,2 +1,0 @@
-running process replay with ASSERT_DIFF=1
-process replay err: process_replay_24 isn't accessible in master, did DB_VERSION change?

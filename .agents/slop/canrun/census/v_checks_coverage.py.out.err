@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/coverage.py", line 40, in <module>
-    from census import PREAMBLE, classify            # noqa: E402  -- the committed classifier
-    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-ImportError: cannot import name 'PREAMBLE' from 'census' (/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/census.py)

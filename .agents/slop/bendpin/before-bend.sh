@@ -1,2 +1,0 @@
-#!/bin/sh
-exec bun /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/references/bend/bend2/main.ts "$@"

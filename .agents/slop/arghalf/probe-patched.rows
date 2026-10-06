@@ -1,7 +1,0 @@
-void   named -> [cI(shcq_fence,b0,b0)]
-void   anon  -> [cI(N,b0,b0)]
-i32    named -> [cI(sf,b0,b0,Di32)]
-weak   named -> [cI(sf,b0,b0,Dweakint)]
-u32    pre   -> [cI(N,b1,b0,Du32)]
-f16    back  -> [cI(N,b0,b1,Df16)]
-

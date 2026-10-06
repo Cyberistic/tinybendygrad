@@ -1,1 +1,0 @@
-tinygrad is already imported, so `DEV` can no longer choose this census's device: `Device.DEFAULT` is frozen at import. A census that prints one device and runs on another is a number about a graph no artifact holds.

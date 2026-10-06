@@ -1,2 +1,0 @@
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=528 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/linfix/before/drivers/two/gcmp.bend cast  out=396B err=42B
-bend 2.0.35 is available: run bend update

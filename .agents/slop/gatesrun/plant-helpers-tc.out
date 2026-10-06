@@ -1,6 +1,0 @@
-subjects: helpers-tc-gate.rows 4800B, helpers-tc-gate.bd 4800B
-  PASS  GREEN   fixed .rows vs .bd: diff rc=0 (want 0)
-        pre-change oracle rc=0, 237 rows
-  PASS  PLANT-A pre-change oracle vs .bd: diff rc=1 (want 1)
-  PASS  PLANT-B broken .bd vs fixed .rows: diff rc=1 (want 1)
-PLANTS GREEN (3/3)

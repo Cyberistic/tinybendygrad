@@ -1,5 +1,0 @@
-<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
-<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
-SUBJECT: .agents/slop/clauseII/plant-unmeasured.py -- exactly `checks/differ.py`'s shape (module-level `run`, no `class`)
-OLD report() red=0  => UNMEASURED alone is GREEN: a pass!
-NEW report() red=1  => UNMEASURED alone is red: the refusal is counted

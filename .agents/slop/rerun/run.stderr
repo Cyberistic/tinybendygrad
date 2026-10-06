@@ -1,1 +1,0 @@
-RUN INCOMPLETE: 5 of 25 graphs have NO expectation in WANT: alu, bit, bw, move, where. Each was run and recorded (D1-verdicts.txt, marked UNSET) and each is in `graphs=`; add an expectation for each to complete the run. A corpus growth that must be answered for is a corpus that cannot silently grow.

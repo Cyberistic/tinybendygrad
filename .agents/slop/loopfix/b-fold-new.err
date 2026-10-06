@@ -1,2 +1,0 @@
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1509 MB (ceiling 2048)  15s  :: ./bin/bend .agents/slop/loopfix/tree/tinybendygrad/uop/fold.bend -o  out=0B err=42B
-bend 2.0.35 is available: run bend update

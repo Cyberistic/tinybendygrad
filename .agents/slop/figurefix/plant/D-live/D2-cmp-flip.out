@@ -1,7 +1,0 @@
-flip DIFFERS:
-6c6,7
-< 2:i6 4:FLIP 3:f32 11:(l0:4,l0:3) 2:i0 1:N 8:n(b1,b0) 5:n(i5)
----
-> 2:i6 4:FLIP 3:f32 11:(l0:4,l0:3) 2:i0 1:N 8:n(i1,i0) 5:n(i5)
-> 2:i7 5:GROUP 4:void 1:R 2:i0 1:N 1:N 5:n(i6)
-

@@ -1,3 +1,0 @@
-# SELFCHECK: FAIL
-#   the `?` ledger row counts ?=0 on `--graph loop`'s CALL, not 2 (one unsettled node x two columns). The two-column row is the claim; `sym` cannot test it any more because its wall is closed.
-rc=1

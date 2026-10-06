@@ -1,6 +1,0 @@
-loop DIFFERS:
-25c25
-< 3:i25 4:CALL 4:void 1:R 2:i0 1:N 20:cI(shcq_fence,b0,b0) 18:n(i23,i24,i24,i24)
----
-> 3:i25 4:CALL 1:? 1:? 2:i0 1:N 26:cI(shcq_fence,b0,b0,Dvoid) 18:n(i23,i24,i24,i24)
-

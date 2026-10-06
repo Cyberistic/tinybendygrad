@@ -1,1 +1,0 @@
-== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/drive.mjs  (this gate's driver; its last home was .agents/slop/jsfp8/drive.mjs, moved by 3f0e70ff1 and swept by 371cc64c9 -- recoverable from git at 371cc64c9^:.agents/slop/jsfp8/drive.mjs.  Restoring it is not this file's call.)  This gate cannot produce a denominator without it.

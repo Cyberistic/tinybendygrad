@@ -1,7 +1,0 @@
-loop: VERDICT=AGREE EXPECTED=DISAGREE
-alu: VERDICT=AGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED: an AGREE and nobody has said so -- a bookkeeping gap, not a known fault.
-bit: VERDICT=AGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED: an AGREE and nobody has said so -- a bookkeeping gap, not a known fault.
-bw: VERDICT=AGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED: an AGREE and nobody has said so -- a bookkeeping gap, not a known fault.
-move: VERDICT=AGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED: an AGREE and nobody has said so -- a bookkeeping gap, not a known fault.
-where: VERDICT=AGREE EXPECTED=UNSET -- RUN AND RECORDED, NOT COMPARED: an AGREE and nobody has said so -- a bookkeeping gap, not a known fault.
-AT LEAST ONE GRAPH'S VERDICT MOVED

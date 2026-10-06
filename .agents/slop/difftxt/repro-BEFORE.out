@@ -1,2 +1,0 @@
-# run A: run 1 summary was NOT healthy -- waiting: graphs-agree=0 (expected 14); byte-identical=0 (expected 14); not-comparable=16 (expected 0); stable-pairs=0 of 5 (expected 5 of 5); stable-failed=5 of 5 (expected 0 of 5); plants-disagree=0 of 7 (expected 7 of 7); cross=0 of 1 (expected 1 of 1); selfcheck=rc=1 (expected # SELFCHECK: OK); controls=0 of 5 (expected 5 of 5); oracle-selfcheck= (expected # ORACLE SELFCHECK: OK); census-rc=rc=1 (expected rc=0)
-# run A: no healthy run in 1 attempts -- this is NOT a measurement

@@ -1,1 +1,0 @@
-usage: checks/bounded.py [--seconds N] [--mb N] -- <command> [args ...]

@@ -1,2 +1,0 @@
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=402 MB (ceiling 2048)  1s  :: ./bin/bend .agents/slop/arghalf/tree/drivers/two/probe.bend  out=228B err=42B
-bend 2.0.35 is available: run bend update

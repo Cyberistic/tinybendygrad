@@ -1,6 +1,0 @@
-# DIFF: 4626 walked rows, 1149 reach residue.classify (one frozen scan, both modules)
-#   residue needs= PRE : belts-disagree=633 commit-or-drop=0 commit-the-report-that-explains-it=0 owner-decision=62 readlink-target=185 residue-internal-citer=0 unstage-self=0
-#   residue needs= POST: belts-disagree=633 commit-or-drop=0 commit-the-report-that-explains-it=0 owner-decision=62 readlink-target=185 residue-internal-citer=0 unstage-self=0
-#   residue OUTPUT IDENTICAL: True
-#   deleted from pre: ['commit-or-drop', 'commit-the-report-that-explains-it']
-#   sweep UNKNOWN: belts-disagree=78 commit-or-drop=99 commit-the-report-that-explains-it=105 residue-internal-citer=251

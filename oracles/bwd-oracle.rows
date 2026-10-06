@@ -1,2 +1,0 @@
-tn_bwd_row=CONST/0 BUFFER/0 MUL/2 ADD/2 BUFFER/0 CONST/0 MUL/2 CONST/0 | writes=3
-tn_bwd_grad=CONST/0 

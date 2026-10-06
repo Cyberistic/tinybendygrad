@@ -1,9 +1,0 @@
-SOME PROOFS FAIL
-Error:
-- expected : a term
-- observed : '-'
-Location:
- 8 |     IO.print("F32ROW abi4_fp16_1.1 = " ++ F32.show(v1))
- 9>|     v2 : F32 <- D.Dt.fp16(F32.neg(-2.25))
-   |                                   ^
-10 |     IO.print("F32ROW abi4_fp16_-2.25 = " ++ F32.show(v2))

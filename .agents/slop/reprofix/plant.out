@@ -1,8 +1,0 @@
-CENSUS PLANTS -- both halves of the detector
-  PASS  BEFORE the sort (the offending shape) FLAGS
-          observed: ['via name same']
-  PASS  AFTER the sort (the fix) is QUIET
-          observed: []
-  PASS  the REAL pre-fix oracle FLAGS
-          observed: ['via name graphs_of', 'via name tal', 'via name same']
-PLANT: GREEN (3/3)

@@ -1,7 +1,0 @@
-
-RE-VERIFY sha256 vs sha256(git show b504abf77:<path>)
-  rows           : 259
-  matches        : 258
-  mismatches     : 0
-  empty-blob skip: 1
-  absent@b504abf77    : 0

@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/census.py", line 15, in <module>
-    import graphcmp as G
-ModuleNotFoundError: No module named 'graphcmp'

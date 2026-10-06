@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/sz.py", line 6, in <module>
-    from tabulate import tabulate
-ModuleNotFoundError: No module named 'tabulate'

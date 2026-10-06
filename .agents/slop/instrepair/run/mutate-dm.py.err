@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/tools/mutate-dm.py", line 24, in <module>
-    _RG = importlib.util.spec_from_file_location("rebase_gate", pathlib.Path(__file__).resolve().parent.parent / "rebase-gate.py")
-          ^^^^^^^^^
-NameError: name 'importlib' is not defined. Did you forget to import 'importlib'?

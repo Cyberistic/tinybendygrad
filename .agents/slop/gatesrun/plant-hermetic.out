@@ -1,5 +1,0 @@
-  PASS  A ordering: module-level refuse() at [61, 67, 72], .txt sites at [114, 126]
-  PASS  B still refused: rc=3, names isolate.py=True
-  PASS  C guard removed: isolate refusal block removed on the copy
-  PASS  C unreachable twice: rc=1, wrote rows? False, err=ModuleNotFoundError: No module named 'isolate'
-PLANTS GREEN (4/4)

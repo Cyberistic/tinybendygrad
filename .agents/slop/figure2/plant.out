@@ -1,5 +1,0 @@
-GREEN STATE (real pin)   : rc=0
-  RUN HEALTH        : OK -- 17 of 17 pins green (checks/differ.py's PINS, imported; `graphs=25` and `not-comparable=0` among them)
-RED STATE   (selfcheck->FAIL): rc=1
-  RUN HEALTH        : **FAILED** -- 16 of 17 pins green. RED: selfcheck=# SELFCHECK: FAIL (expected # SELFCHECK: OK). THE UNION ABOVE IS NOT A VERDICT.
-PLANT: TWO STATES DISTINGUISHABLE

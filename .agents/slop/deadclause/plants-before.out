@@ -1,9 +1,0 @@
-# plant commit-or-drop
-#   post  -> UNKNOWN  needs=commit-or-drop present: YES FAIL
-#   pre   -> UNKNOWN  (FAILS the post assertion, as required)
-#   sweep -> UNKNOWN:commit-or-drop (verdict survives the delete)
-# plant commit-the-report-that-explains-it
-#   post  -> UNKNOWN  needs=commit-the-report-that-explains-it present: YES FAIL
-#   pre   -> UNKNOWN  (FAILS the post assertion, as required)
-#   sweep -> UNKNOWN:commit-the-report-that-explains-it (verdict survives the delete)
-# PLANTS FAIL

@@ -1,1 +1,0 @@
-.venv/bin/python checks/sweep.py --plan >  2>&1  158.74s user 118.91s system 97% cpu 4:46.16 total

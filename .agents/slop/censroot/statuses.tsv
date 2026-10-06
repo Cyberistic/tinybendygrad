@@ -1,3 +1,0 @@
-gate	before_rc	after_rc	before_verdict	after_verdict
-checks/census.py	1	0	ModuleNotFoundError: No module named 'graphcmp' (traceback, no denominator)	census: 25 graphs, denominator 77, reached BOTH 53, WALLS []
-checks/hermetic-census.py	1	3	ModuleNotFoundError: No module named 'graphcmp' (traceback, no denominator)	REFUSED, NOT A VERDICT: input absent: isolate.py (swept by 371cc64c9)

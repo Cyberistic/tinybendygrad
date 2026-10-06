@@ -343,7 +343,7 @@ class Ctx:
             break
         lines = body.splitlines(keepends=True)
         at = next((i + 1 for i, ln in enumerate(lines) if ln.rstrip(b"\n") == marker), 0)
-        if not at.isdigit() or at < 2:   # `case $at in ''|*[!0-9]*) return 1` then `[ $at -gt 1 ]`
+        if at < 2:   # `case $at in ''|*[!0-9]*) return 1` then `[ $at -gt 1 ]`; `at` is an int, 0 when absent
             return False
         pre = b"".join(lines[:at - 1])
         opened = sum(bool(IF_OPEN.match(ln)) for ln in lines[:at - 1])

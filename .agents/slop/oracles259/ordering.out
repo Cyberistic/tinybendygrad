@@ -1,9 +1,0 @@
-  BEFORE   files=259  stale=34  live=0
-  RENAMED  files=255  stale=30  live=0
-
-  stale rows LOST to the rename: 4   files removed from the census: 4
-  The gate is NOT fixed by this -- `checks/sb-gate.sh` still opens
-  `.agents/slop/schedule-bodies/BEFORE-rows.txt`, which is still absent. The rename
-  only stopped the census from being able to NAME the file the gate is missing.
-
-  RESTORED: files=259 stale=34 live=0

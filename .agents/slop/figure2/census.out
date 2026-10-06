@@ -1,6 +1,0 @@
-declared  : 17
-consulted : 17
-green     : 17
-red       : 0 []
-in summary but NOT pinned: ['dev', 'graphs-disagree', 'lc_all', 'noopt', 'pythonhashseed']
-space-bearing pinned values: ['selfcheck', 'stable-pairs', 'stable-failed', 'stable-differ', 'plants-disagree', 'cross', 'controls', 'conflations', 'oracle-selfcheck']

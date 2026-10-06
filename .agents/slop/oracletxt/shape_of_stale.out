@@ -1,8 +1,0 @@
-population: 259 `.txt` (pre-rename, committed census.json)
-reader tokens with an ABSENT path: 63
-  moved (sub-tree survived)  STALE  : 6
-  basename-only (namesake)   ABSENT : 57
-files, by verdict (LIVE/SHADOW dominate):
-  STALE  (a moved read, no live) : 2
-  ABSENT (a namesake only)       : 28
-  LIVE/SHADOW (outrank both)     : 4

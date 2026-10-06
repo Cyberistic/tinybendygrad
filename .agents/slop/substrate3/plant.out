@@ -1,8 +1,0 @@
-PLANT A  unseen-shaped ref
-  before: rc=0 BAD=0 UNSEEN=1
-  after : rc=0 BAD=0 UNSEEN=2  (delta UNSEEN=1, delta BAD=0)
-  STATE 1 GREEN rc=0? True   STATE 2 GREEN rc=0? True  <- the unseen ref MOVED the number and did NOT move the verdict
-PLANT B  broken import
-  broken  : rc=1 BAD=2 missing_module=1
-  restored: rc=0 BAD=0 missing_module=0
-  STATE 1 RED rc=1? True   STATE 2 GREEN rc=0? True

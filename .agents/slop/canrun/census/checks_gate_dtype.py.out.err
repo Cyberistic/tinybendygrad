@@ -1,5 +1,0 @@
-Traceback (most recent call last):
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gate_dtype.py", line 32, in <module>
-    from tinygrad.dtype import (fp8_to_float, float_to_bf16,  # noqa: E402
-                                float_to_fp16)
-ModuleNotFoundError: No module named 'tinygrad'

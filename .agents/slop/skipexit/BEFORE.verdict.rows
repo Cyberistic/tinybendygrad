@@ -1,4 +1,0 @@
---- verdicts: 0 failed, 1 skipped ---
-PASS WITH 1 SKIP(S) -- nothing failed, but 1 stage(s) measured NOTHING.
-       PASS-WITH-SKIP IS NOT PASS. Read the skipped lines above.
-rc=0

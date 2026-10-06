@@ -1,4 +1,0 @@
-[substrate] .agents/slop/substrate/fixtures/tiny.bend: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=33 MB (ceiling 2048)  0s  :: ./bin/bend .agents/slop/substrate/fixtures/tiny.bend --check-only  out=58B err=42B
-[substrate] .agents/slop/substrate/fixtures/broken.bend: [bounded] WITHIN-LIMITS  rc=1  peak-RSS=33 MB (ceiling 2048)  0s  :: ./bin/bend .agents/slop/substrate/fixtures/broken.bend --check-only  out=0B err=142B  said=SOME PROOFS FAIL | Error: | - expected : a name
-[substrate] .agents/slop/substrate/fixtures/broken.bend:   |       ^
-[substrate] tinybendygrad/runtime/dtype.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/dtype.js  out=0B err=0B

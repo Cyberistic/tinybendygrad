@@ -1,5 +1,0 @@
-RED STATE   (artifact graphs=25, corpus declares 34): rc=1
-  RUN HEALTH        : **FAILED** -- 16 of 17 pins green. RED: graphs=25 but the corpus DECLARES 34 -- the ARTIFACT and the CORPUS disagree, so the health gate is reading a stale run. THE UNION ABOVE IS NOT A VERDICT.
-GREEN STATE (artifact graphs=34, corpus declares 34): rc=0
-  RUN HEALTH        : OK -- 17 of 17 pins green (checks/differ.py's PINS, imported, plus `graphs` COMPARED TO THE CORPUS; `graphs=34` and `not-comparable=0` among them)
-PLANT: TWO STATES DISTINGUISHABLE

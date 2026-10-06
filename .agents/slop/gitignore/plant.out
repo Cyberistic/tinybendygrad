@@ -1,5 +1,0 @@
-state=A path=.agents/slop/gitignore/plant/nested/runs/plant-evidence.rows
-state=A check-ignore=NOT-IGNORED rule=(none)
-state=B path=runs/plant-probe/plant-output.rows
-state=B check-ignore=IGNORED rule=.gitignore:172:/runs/	runs/plant-probe/plant-output.rows
-state=REAL path=.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt check-ignore=NOT-IGNORED rule=(none)

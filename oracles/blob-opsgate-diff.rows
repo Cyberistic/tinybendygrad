@@ -1,6 +1,0 @@
-0a1,5
-> cfun_interns=True
-> cfun_dtype_splits=True
-> cfun_name_splits=True
-> cfun_arg=sel_registerName|u64
-> cfun_of=sel_registerName|void

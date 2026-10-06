@@ -1,5 +1,0 @@
-#!/bin/sh
-# STUB bend: 0 `name=value` rows, so stage 2's `> 20 rows` denominator is
-# NOT met, so the run is retried 8 times.
-i=0; while [ $i -lt 0 ]; do echo "PLANT.row$i=$i"; i=$((i+1)); done
-exit 0

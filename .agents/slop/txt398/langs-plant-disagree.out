@@ -1,2 +1,0 @@
-  GATE  langs/verify.sh:48 still writes a `.txt`
-rc=1
