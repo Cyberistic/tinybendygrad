@@ -856,8 +856,13 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:1058 erf          -- polyN, 0.3275911
 # TODO(p3) elementwise.py:410  copysign     -- -(mag := a.abs()) with a float 0 path
 # TODO(p3) elementwise.py:418  logaddexp    -- .isfinite(), 0
-# TODO(p3) elementwise.py:820  rsqrt        -- free of literals; blocked on sqrt's
-#                                                own fold, not on a constant
+# PORTED. `rsqrt` is elementwise.py:820, `return self.sqrt().reciprocal()`. The
+# old text said "blocked on sqrt's own fold, not on a constant" -- which was true
+# when `tn_sqrt` was a fold call, but `tn_sqrt` is now a `tn_alu` over an empty src
+# list, and `tn_reciprocal` is the same shape, so the chain `self.sqrt().reciprocal()`
+# is portable as `tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})` (the reciprocal's implicit
+# first src is the sqrt result, not the original input). Gated at
+# `gates/tn_sin_log2_exp2_rsqrt-gate.py` 11/11 rows.
 
 # WALLS THAT ARE NOT CONSTANTS.
 # `usum` / `uprod` -- elementwise.py:40-41 -- are `functools.reduce(op, argfix(*uops),
@@ -881,10 +886,11 @@ def ew_k.selu_gamma() -> F32: 1.050701
 #
 # `relu` / `relu6` / `hardtanh` / `isnan` / `abs` / `sign` / `sqr` are all
 # `where`/`ne` compositions of methods already here and are NOT deferred: they are
-# three lines each and they gate. `rsqrt` is the one composition that is free of
-# literals (`self.sqrt().reciprocal()`), so it is deferred on the SQRT fold rather
-# than on a constant, which is a different kind of deferral from every line above.
-# TODO(p3) elementwise.py:820  rsqrt   -- SQRT's fold, not a constant
+# three lines each and they gate. `rsqrt` USED TO be deferred on the SQRT fold
+# ("SQRT's fold, not a constant"), but `tn_sqrt` is now a `tn_alu` over an empty
+# src list and `tn_reciprocal` is the same shape, so the chain is portable.
+# Closed at `tensor.bend:tn_rsqrt` and gated at `gates/tn_sin_log2_exp2_rsqrt-gate.py`
+# 11/11 rows.
 #
 # `usum`'s `operator.or_ if self.dtype is dtypes.bool else operator.add` is the
 # only place the unit chooses BETWEEN TWO OPS on a dtype, and it is the reason

@@ -349,13 +349,13 @@ def tn_exp2(+t: Tensor) -> Tensor:
 # own fold, not on a constant". `tn_sqrt` and `tn_reciprocal` are both ported (gated
 # `tn_sqrt-gate.py` 5/5, `tn_trunc_reciprocal_threefry-gate.py` 9/9), so the COMBINED
 # shape is portable. The result is a LINEAR chain (sqrt, then reciprocal) which
-# grows the arena by one, and the `+` on the source + returned tensors threads it
-# through `tn_alu(t, O.OpsRECIPROCAL{}, [u])` where `u` is the sqrt's uop. The
-# dev's note "blocked on sqrt's own fold" is now stale: the chain is built by
-# `tn_alu`, not by a fold.
+# grows the arena by one. The SECOND `tn_alu` is on the SQRT node, not on `t`:
+# `reciprocal` reads its `self` as the implicit first src, and `self` IS the
+# sqrt result, not the original input. The dev's note "blocked on sqrt's own fold"
+# is now stale: the chain is built by `tn_alu`, not by a fold.
 def tn_rsqrt(+t: Tensor) -> Tensor:
   +sqrt = tn_sqrt(t)
-  tn_alu(t, O.OpsRECIPROCAL{}, [Tensor.u(sqrt)])
+  tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})
 
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return

@@ -43,16 +43,21 @@ def row_exp2_op() -> Bool:
   +r = T.tn_exp2(t)
   O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsEXP2{})
 
-# ROW 4-5: rsqrt (composed of sqrt -> reciprocal, both ported).
+# ROW 4: rsqrt (composed of sqrt -> reciprocal, both ported).
 def row_rsqrt_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_rsqrt(t)
   O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsRECIPROCAL{})
 
-def row_rsqrt_src() -> Bool:
+def row_rsqrt_arg() -> Bool:
   +t = mk_tensor()
   +r = T.tn_rsqrt(t)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)), [O.Arena.nsrc(O.Found.ar(O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)))), 0])
+  O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
+
+def row_rsqrt_src_count() -> Bool:
+  +t = mk_tensor()
+  +r = T.tn_rsqrt(t)
+  U32.is_eq(O.Arena.nsrc(T.Tensor.ar(r), T.Tensor.u(r)), 1)
 
 # ROW 6-9: purity + reachability.
 def row_purity() -> Bool:
@@ -79,7 +84,8 @@ def main() -> IO(Unit):
     b : Unit <- row("log2_op_is_log2", row_log2_op())
     c : Unit <- row("exp2_op_is_exp2", row_exp2_op())
     d : Unit <- row("rsqrt_op_is_reciprocal", row_rsqrt_op())
-    e : Unit <- row("rsqrt_src_is_sqrt_output", row_rsqrt_src())
+    e : Unit <- row("rsqrt_arg_is_anone", row_rsqrt_arg())
+    f : Unit <- row("rsqrt_has_one_src", row_rsqrt_src_count())
     f : Unit <- row("sin_does_not_mutate_input", row_purity())
     g : Unit <- row("sin_is_reachable", row_sin_reachable())
     h : Unit <- row("log2_is_reachable", row_log2_reachable())
