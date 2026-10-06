@@ -1117,8 +1117,10 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 
 # ===========================================================================
 # THE `__i*__` TWELVE AND `__eq__` -- tensor.py:536-549. Twelve methods, each
-# `return self.assign(self.<op>(x))`, and Python has operator overloading and Bend has
-# none, so the METHOD NAME is the op and the sugar is the call. Each is named here
+# `return self.assign(self.<op>(x))`, and the reason they are not here is NOT operator
+# overloading -- BEND HAS IT (`bend guide:630`: inside `(.. : T)` the operators call `T.add`
+# through `T.mod`). It is the ASSIGNMENT half: `self.assign(...)` MUTATES, and Bend is affine.
+# THIS HEADER SAID "Bend has none" AND WAS WRONG; corrected by measurement, not preference. Each is named here
 # with the op its sugar resolves to, because that is the part of the line that is
 # tensor.py's; the other two thirds are `assign` (above, itself a wall) and
 # `mixin/elementwise.py`'s `<op>`, which is not mine.
@@ -1145,18 +1147,66 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # is `_broadcast_to` (mixin/movement.py:128) -- which is why the `__i*__` are not
 # ported even though `alu` is.
 # TODO(p3) tensor.py:536  __iadd__        assign + elementwise.py:101 (Ops.ADD)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:537  __isub__        assign + elementwise.py sub (Ops.SUB)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:538  __imul__        assign + elementwise.py:143 (Ops.MUL)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:539  __itruediv__    assign + elementwise.py div (Ops.FDIV)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:540  __ifloordiv__   assign + elementwise.py floordiv
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:541  __ipow__        assign + elementwise.py pow (Ops.POW)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:542  __iand__        assign + elementwise.py:171 (Ops.AND)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:543  __ior__         assign + elementwise.py:185 (Ops.OR)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:544  __ixor__        assign + elementwise.py:200 (Ops.XOR)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:545  __ilshift__     assign + elementwise.py:353 (Ops.SHL)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:546  __irshift__     assign + elementwise.py:364 (Ops.SHR)
+#   -- BLOCKED. IN-PLACE MUTATION, and Bend HAS NO SUCH FORM: the operator is
+#   fine (bend guide:630 -- `(a + b : T)` calls `T.add`), but `+=` needs a mutable target.
+#   Bend is affine, a `let` rebinds without mutating, and `-x = v` DELETES. So Python's
+#   `self.assign(self.add(x))` has no counterpart to overload.
 # TODO(p3) tensor.py:547  __imatmul__     assign + mixin/op.py:394 -- a WMMA, not an alu
 # TODO(p3) tensor.py:549  __eq__          elementwise.py eq (Ops.CMPEQ)
+#   -- BLOCKED. `==` IS THE TYPE COMPARISON IN BEND, NOT A VALUE ONE: bend guide:632 --
+#   "Equality of values is a call, `T.is_eq(a, b)`; `==` is only the type." So `__eq__` has no
+#   operator to be, and the port names `T.is_eq` where it needs the comparison. This is NOT the
+#   `__i*__` blocker: there the operator exists and the assignment does not; here it is reversed.
 # ===========================================================================
 
 # ===========================================================================
