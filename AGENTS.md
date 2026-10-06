@@ -36,9 +36,13 @@ Development:
   declaration that the author did not know what the file was, and a sweep that reads basenames cannot
   tell a row dump from a diary entry.
   **THE RULE IS RIGHT AND THE TREE IS BEHIND IT, SO THE RULE STAYS WHILE THE COUNT IS NOT A FACT: as
-  measured today `checks/no-txt.py` exits 1 with 553 HARD and 139 EXCUSED — 692 owned `.txt`, of which
-  `oracle-txt-census.py` classes 249 of the 259 under `oracles/` as ROW DUMPS (the extension is wrong,
-  the content is exactly a `.rows`). 225 of those 259 are NAMED BY NOTHING. The 139 are excused by
+  measured today `checks/no-txt.py` exits 1 with **572 HARD and 139 EXCUSED — 711 owned `.txt`** (the HARD count
+  MOVES as units write; it read **830** before `oracles/`'s 258 `.txt`-to-`.rows` rename landed, and **258** is the
+  exact delta both ways), of which
+  `oracle-txt-census.py` classed 249 of the 259 under `oracles/` as ROW DUMPS (the extension was wrong, the content
+  is exactly a `.rows`), and 225 of those 259 were NAMED BY NOTHING. **THOSE 259 ARE NOW RENAMED — `oracles/` holds
+  277 `.rows` and ONE `.txt` (`rows-bd.txt`, which is 0 BYTES AND DELIBERATELY UNCLASSIFIED), and `no-txt.py`'s HARD
+  count fell by EXACTLY 258.** The 139 are excused by
   `differ.declared()` — IMPORTED, not copied — which is the correct shape for a carve-out and the reason
   it never moved while the total moved 398 -> 552 -> 562 -> 553 in one session. Write `.rows`.**
   **A CARVE-OUT MUST BE A GENERATOR'S DECLARATION LOADED BY PATH, NEVER A SECOND COPY OF THE LIST**,
@@ -109,7 +113,8 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   Stages 2-7 need `bend`, `node` and `cc`, so **run it with nothing else compiling**, and under the
   sum-precondition above.
 - `checks/no-txt.py` — **THE RULE IS REAL; THE CLAIM "there is no `.txt` file in this project" IS NOT.
-  IT EXITS 1 TODAY WITH 553 HARD AND 139 EXCUSED (692 OWNED), AND IT PRINTS 40 PATHS AND THEN
+  IT EXITS 1 TODAY WITH **572 HARD AND 139 EXCUSED (711 OWNED)** — AND THAT NUMBER MOVES, SO IT CARRIES THE READING
+  THAT PRODUCED IT — AND IT PRINTS A SAMPLE AND THEN
   `... and 513 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
   `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose. See Development, above.
 - `checks/substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree. **THE BARE NAME
