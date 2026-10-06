@@ -201,7 +201,7 @@ for nm in ["matmul", "mul", "add", "backward", "zero_grad", "realize",
 print()
 print("READING:")
 print("  mul/add/matmul are NOT tensor.py methods -- they are ElementwiseMixin and")
-print("  OpMixin methods, and the port has ew_mul/ew_add (mixin/elementwise.bend:543-544).")
+print("  OpMixin methods, and the port has ew_mul/ew_add (mixin/elementwise.bend:542-543).")
 print("  A name search of tensor.bend can NEVER find them, and its absence is not a fact")
 print("  about tensor.bend at all.  zero_grad is not a Tensor method at all (it is")
 print("  tinygrad/nn/optim.py, 2 hits) -- searching for it on Tensor is a phantom.")
