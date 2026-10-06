@@ -26,6 +26,19 @@ PLANT = HERE / "plant"
 SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"
 PY = str(ROOT / ".venv/bin/python")
 
+# THE TWO ROOTS AND THE SUMMARY EACH CARRIES. `checks/corpus-figure.py` reads
+# `runs/graphcmp/D/D0-run-summary.txt` under its OWN root, so each shadow root must carry that
+# exact path/name or the plant tests nothing. DECLARED here, USED by `make_root`/`main`, and
+# `checks/no-txt.py` loads `declared()` by path -- so the carve-out for these two forced `.txt`
+# moves WITH the name instead of going stale behind it.
+ROOTS = ("real", "broken")
+SUMMARY_REL = "runs/graphcmp/D/D0-run-summary.txt"
+
+
+def declared() -> set[str]:
+    """The `.txt` this plant writes, repo-relative. `checks/no-txt.py` loads it by path."""
+    return {str((PLANT / r / SUMMARY_REL).relative_to(ROOT)) for r in ROOTS}
+
 
 def make_root(name: str, summary_text: str) -> pathlib.Path:
     root = PLANT / name
@@ -35,9 +48,9 @@ def make_root(name: str, summary_text: str) -> pathlib.Path:
     for f in ("corpus-figure.py", "devpin.py", "differ.py"):
         shutil.copy2(ROOT / "checks" / f, root / "checks" / f)
     (root / ".agents").symlink_to(ROOT / ".agents")
-    d = root / "runs/graphcmp/D"
-    d.mkdir(parents=True)
-    (d / "D0-run-summary.txt").write_text(summary_text)
+    d = root / SUMMARY_REL
+    d.parent.mkdir(parents=True)
+    d.write_text(summary_text)
     return root
 
 
@@ -58,8 +71,8 @@ def main() -> int:
 
     # THE REAL SUMMARY IS NOT MUTATED -- prove it before and after.
     before = SUMMARY.read_bytes()
-    rc_green, line_green = run(make_root("real", real))
-    rc_red, line_red = run(make_root("broken", broken))
+    rc_green, line_green = run(make_root(ROOTS[0], real))
+    rc_red, line_red = run(make_root(ROOTS[1], broken))
     assert SUMMARY.read_bytes() == before, "runs/graphcmp/D/ WAS MUTATED -- abort"
 
     print(f"GREEN STATE (real pin)   : rc={rc_green}")

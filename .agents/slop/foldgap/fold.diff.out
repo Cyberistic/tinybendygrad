@@ -1,0 +1,115 @@
+diff --git a/tinybendygrad/uop/fold.bend b/tinybendygrad/uop/fold.bend
+index af9dbd7ad..e106d8916 100644
+--- a/tinybendygrad/uop/fold.bend
++++ b/tinybendygrad/uop/fold.bend
+@@ -115,8 +115,8 @@
+ #
+ # WHAT THE WALK'S PRICE IS, MEASURED RATHER THAN ASSUMED. Its dtype comes from the MAIN
+ # fold's table, so a node `dt_shape` DEFERS has no interval here where CPython has one, and
+-# the refused set is exactly `STAGE`, `CUSTOM`, `CUSTOMI`, `UNSHARD` and a RESHAPE over a
+-# symbolic marg. THE TWELVE `late()` MARKER OPS ARE NOT IN IT, and that is the measurement
++# the refused set is `CUSTOM`, `CUSTOMI`, `UNSHARD`, a STAGE with a range src, and a RESHAPE
++# over a symbolic marg. THE TWELVE `late()` MARKER OPS ARE NOT IN IT, and that is the measurement
+ # that shrank the set: `late()` hands them `void` with no shape, so their dtype IS known and
+ # a BACKEDGE answers `(False, True)` rather than refusing. `mmkx_*` is the recorded
+ # divergence, in the `lfx_` / `rg_absent` / `mv_expsym` arrangement.
+@@ -1291,11 +1291,32 @@ def index_ds(ar: O.Arena, i: U32, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+   index_ds.of(ar, i, srcs(ss))
+ 
+ # `a.shape[:-1]` for each of the three operands
+-def wmma_shapes.of(sh: Shapes) -> List<&2, Sized>:
+-  wmma_shapes.go(Shapes.ds(sh), Nil{})
++def wmma_shapes.put.go(+ds: List<&2, Sized>, acc: Shapes, first: Bool) -> Shapes:
++  match ds, first:
++    case Nil{}, _:
++      acc
++    case _ <> rest, _:
++      wmma_shapes.put.go(rest, wmma_shapes.put.fold(acc, ds), False{})
++
++def wmma_shapes.put.fold(acc: Shapes, ds: List<&2, Sized>) -> Shapes:
++  match ds:
++    case Nil{}: acc
++    case d <> t: wmma_shapes.put.fold(Shapes{List.append(&2, Sized, Shapes.ds(acc), [d]), Nat.max(Shapes.m(acc), Sized.n(d))}, t)
++
++def wmma_shapes.put(ds: List<&2, Sized>, acc: Shapes) -> Shapes:
++  wmma_shapes.put.go(ds, acc, True{})
++
++# `a.shape[:-1]` per operand, AS A `Shapes` -- NOT as the full shapes. The broadcast
++# walk right-aligns against `Shapes.m` and zips per dim, so broadcasting the FULL
++# shapes pairs `a`'s and `acc`'s LAST dims (K and N) and refuses the normal WMMA
++# where K != N. That refusal is the bug this def closes: `(4,4)`,`(4,3)`,`(4,3)`
++# broadcasts as `(4,4)`/`(4,3)` and raises, while upstream broadcasts `(4,)`,`(4,)`,
++# `(4,)` and answers `(4,) + (acc[-1],)`.
++def wmma_shapes.of(sh: Shapes) -> Shapes:
++  wmma_shapes.put(wmma_shapes.go(Shapes.ds(sh), Nil{}), Shapes{Nil{}, 0n})
+ 
+ def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Maybe<&2, DtShape>:
+-  wmma_ds.of(dt, bcast_shape(ws), last)
++  wmma_ds.of(dt, bcast_shape(Maybe.map(&2, Shapes, Shapes, wmma_shapes.of, ws)), last)
+ 
+ # WMMA: "wmma output shape = accumulator shape (src[2])", and the dtype is the
+ # accumulator dtype. `wmma_b = _broadcast_shape(self.src[0].shape[:-1],
+@@ -1304,6 +1325,27 @@ def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Mayb
+ def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
+ 
++# STAGE: "STAGE adds the existing shape to the front, opposite of INDEX" -- the dtype
++# passes through `src[0]` (ops.py:147-152 puts STAGE in the pass-through group) and the
++# shape is `tuple([int(r.vmax+1) for r in self.src[1:]]) + self.src[0].shape`
++# (ops.py:378-380). The prepend is EMPTY exactly when STAGE carries no range srcs -- the
++# same-device `bufferize` case -- and then the shape IS `src[0]`'s and the arm is total.
++# A range src needs `int(r.vmax+1)`, the RANGE's end read through `_min_max`, and
++# `dt_shape` is handed no `BTable`, so that case REFUSES rather than guess a width: the
++# whole node then reads `?`, and `int(r.vmax+1)` is the one line a later unit lands.
++# The tail is a PARAMETER and not a scrutinee: a call in scrutinee position is refused,
++# and `src_shape` needs the FULL src list, so both are read by passing `+ss` on.
++def stage_shape.of(tail: List<&2, Derived>, +ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
++  match tail:
++    case Nil{}: src_shape(0, ss)
++    case _ <> _: None{}
++
++def stage_shape(+ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
++  stage_shape.of(List.drop(&2, Derived, ss, 1n), ss)
++
++def stage_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
++  dt_of(src_dt(0, ss), stage_shape(ss))
++
+ # ===========================================================================
+ # `marg` -- ops.py:813, RESHAPE's arm of it, and the reason RESHAPE is the one
+ # movement shape this file ports.
+@@ -2428,7 +2470,7 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>)
+     # second walk, not a second oracle, and it now has one: `some_shapes`.
+     case O.OpsCUSTOM{}: custom_ds(arg, ss)
+     case O.OpsCUSTOMI{}: custom_ds(arg, ss)
+-    case O.OpsSTAGE{}: None{}
++    case O.OpsSTAGE{}: stage_ds(ss)
+     # "UNSHARD marker has no shape" is the LAST movement wall and it is a DIFFERENT one
+     # from the five that landed: the shape is
+     # `tuple(s*(int(self.src[1:][self.arg.index(a)].vmax)+1) if a in self.arg else s
+@@ -5510,17 +5552,19 @@ def mw_noop() -> O.Found:
+   +b = mw_b(O.Arena.empty())
+   O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
+ 
+-# A STAGE, and it is ALSO the sibling fixture's unanswerable node rather than a fixture
+-# of its own: `dt_shape` has no dtype arm for a STAGE, and CPython's answer is exactly its
+-# src's, so this row is the whole of the refusal in one place.
++# A STAGE over a CONST, with NO range src. `dt_shape`'s arm passes the dtype through
++# `src[0]` and, the prepend being empty, answers `src[0].shape -- so this node SETTLES.
++# The refusal case is a STAGE that CARRIES a range src (`stage_ds`), where the shape needs
++# `int(r.vmax+1)` and `dt_shape` has no `BTable`; this fixture is now the ANSWERED half.
+ def mw_stage() -> O.Found:
+   +a = mw_c(O.Arena.empty(), 0)
+   O.UOp.new(O.Found.ar(a), O.OpsSTAGE{}, [O.Found.i(a)], O.ANone{}, O.TNone{})
+ 
+-# THE PER-NODE ROW, and the one a whole-sweep flag cannot pass. The STAGE is unanswerable
+-# and this `ADD` is built ON TOP OF ITS ARENA, so the two nodes are one sweep, and a sweep
+-# that stopped at the first gap would leave the ADD unanswered. The STAGE is at a LOWER
+-# INDEX than the ADD, which is what makes the sweep's index order the thing under test.
++# THE PER-NODE ROW, and the one a whole-sweep flag cannot pass. This `ADD` is built ON TOP
++# OF THE STAGE'S ARENA, so the two nodes are one sweep, and the STAGE is at a LOWER INDEX
++# than the ADD -- which is what makes the sweep's index order the thing under test.
++# (The STAGE settled with `stage_ds`, so `mmkx_sibling_stage` now reads an interval where
++# it read `ABSENT`; only `bend` re-baselines that row.)
+ def mw_sibling(st: O.Found) -> O.Found:
+   +b = mw_c(O.Found.ar(st), 2)
+   +c = mw_c(O.Found.ar(b), 5)

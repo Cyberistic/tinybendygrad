@@ -37,8 +37,9 @@ the code:
               THOSE does -- answerable whatever the filesystem holds, which is what the plant needs.
 
 The hard set is IMPORTED from `no-txt.py`, never re-derived, so the carve-out cannot drift: a second
-walk here would be a second opinion about which 139 files are exempt, and a second opinion about an
-exemption is how an exemption becomes a blanket.
+walk here would be a second opinion about which files are exempt, and a second opinion about an
+exemption is how an exemption becomes a blanket. `no-txt.excused_names()` is the union of EVERY
+generator declaration `no-txt.py` loads, so this check and the guard hold one opinion, not two.
 """
 from __future__ import annotations
 
@@ -81,7 +82,7 @@ def hard_set() -> list[str]:
                 rel = os.path.relpath(os.path.join(dirpath, f), ROOT)
                 if nt.owned(rel):
                     found.append(rel)
-    return sorted(rel for rel in found if rel not in nt.graphcmp_artifacts())
+    return sorted(rel for rel in found if rel not in nt.excused_names())
 
 
 def resolve(tok: str, binds: dict[str, str]) -> tuple[str | None, str]:

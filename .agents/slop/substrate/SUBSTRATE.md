@@ -17,7 +17,7 @@ concurrently. `tinybendygrad/` held **153 files, 138 of them `.bend`**.
 | `.agents/slop/substrate/oracle-check.sh` | the **frozen oracle**, still `+x`, still runnable. sha256 `6d1000712f0f…600e`, pinned in CODE in `checks/substrate.py` `ORACLE_PIN` and refused with exit 3 on drift |
 | `.agents/slop/substrate/diff.py [DANGLING 2026-10-05: this path DOES NOT EXIST. It was pruned, or moved, or never committed -- do not assume which. `checks/repro-paths.py` lists all of them.]` | the diff harness: 6 input sets, 4 plants, disarms all of them |
 | `.agents/slop/substrate/fixtures/` | the 4 fixture files the input classes are made of |
-| `.agents/slop/substrate/artifacts/<set>/` | per set: `oracle.{out,err,rc}`, `python.{out,err,rc}`, `{oracle,python}.norm`, `diff.txt` |
+| `.agents/slop/substrate/artifacts/<set>/` | per set: `oracle.{out,err,rc}`, `python.{out,err,rc}`, `{oracle,python}.norm`, `diff.out` |
 
 **`.agents/slop/differverdict/root/` IS A FULL COPY OF THE REPOSITORY** made by a live unit —
 75 `.sh` under its own `.agents/slop/` alone. It is **EXCLUDED**: `diff.py` names its inputs
@@ -335,7 +335,7 @@ SUBSTRATE_REPO=$PWD zsh .agents/slop/substrate/oracle-check.sh tinybendygrad/dev
                                                                                                 # whole tree
 ```
 `--plants` needs `smoke` in `--sets` (it is the fixture plants' baseline). Artifacts:
-`.agents/slop/substrate/artifacts/<set>/diff.txt`.
+`.agents/slop/substrate/artifacts/<set>/diff.out`.
 
 **THE PIN IS IN CODE.** `ORACLE_PIN` in `checks/substrate.py` is checked on **every** run and
 refuses with **exit 3** and `ORACLE DRIFT: <file>: <got> != pinned <want>`. `checks/differ.py`

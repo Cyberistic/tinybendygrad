@@ -195,7 +195,7 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
             print(f"    {m}")
         print("           re-run. Do NOT read this as the port being wrong: both drivers were "
               "handed the same argv and saw a different tree.")
-        (dest / "diff.txt").write_text("\n".join([
+        (dest / "diff.out").write_text("\n".join([
             f"label={label}",
             f"VOID -- the population changed under the two runs: {len(moved)} file(s)",
             *moved]) + "\n")
@@ -225,7 +225,7 @@ def compare(name: str, files: list[str], label: str, extra: list[str] = (),
         q = subprocess.run(["diff", str(dest / "oracle.norm"), str(dest / "python.norm")],
                            capture_output=True, text=True)
         body += q.stdout.splitlines()[:60]
-    (dest / "diff.txt").write_text("\n".join(body) + "\n")
+    (dest / "diff.out").write_text("\n".join(body) + "\n")
     ok = same_rc and same_txt and vo == vp and not shapes
     # THE STREAM, not the one-word summary. `AGREE` was printed for the `refused` set while the
     # two drivers' exit statuses were 3 and 3 and stdout was byte-identical, because `ok` was
@@ -398,7 +398,7 @@ def main() -> int:
                             True, f"set {n}")) for n in a.sets]
     ok = all(ok for _, ok in results)
     print(f"VERDICT: {sum(ok for _, ok in results)} of {len(results)} set(s) AGREE with the "
-          f"oracle" + ("" if ok else " -- SEE diff.txt"))
+          f"oracle" + ("" if ok else " -- SEE diff.out"))
     if a.plants:
         # A PLANT'S SUCCESS IS A DISAGREEMENT, so `plants()` reports its own expectation against
         # each result and must NOT be folded into the sets' `ok`. The first version did fold it in

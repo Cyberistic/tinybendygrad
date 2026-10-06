@@ -35,6 +35,14 @@ OVERRIDE = {
     "oracles/usb-arith-rows.bend.txt": "oracles/usb-arith-rows.bend",
 }
 
+# THE DELIBERATE 0-BYTE REMNANT(S). This script LEFT these a `.txt` on purpose
+# (`CLS_EXT["rowdump?/empty"] = None`): the file is EMPTY, so its extension claims nothing about
+# content there is none of. `oracles/rows-bd.txt` has NO generator -- it is the orphan of
+# `checks/sb-gate.sh`'s `rows-bd.txt` row-dump name, whose live counterpart is
+# `oracles/schedule-bodies/rows-bd.rows`. `checks/no-txt.py` loads this by path AND re-checks that
+# the file is still 0 bytes, so the excuse lapses the moment it gains content.
+LEFT_EMPTY = ("oracles/rows-bd.txt",)
+
 
 def target(rel, cls):
     if rel in OVERRIDE:

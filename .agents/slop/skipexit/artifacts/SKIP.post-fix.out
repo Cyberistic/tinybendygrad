@@ -21,7 +21,7 @@ words port=64  CPython=64  differing lines=0  diff bytes=0
 STAGE 6 PASS
   stage 6 port (matmul THROUGH the port, no Node): PASS
 == 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
-  stage 7 f64 (double through the port, no Node): SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-f64.txt
+  stage 7 f64 (double through the port, no Node): SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-f64.out
 --- verdicts: 0 failed, 1 skipped ---
 PASS WITH 1 SKIP(S) -- nothing failed, but 1 stage(s) measured NOTHING.
        PASS-WITH-SKIP IS NOT PASS, AND THE EXIT STATUS SAYS SO: 4, NOT 0. Read the

@@ -1,0 +1,22 @@
+RUN 1 -- the copy as it stands:
+  exit 1
+!! arghalf/pin-tree/tinygrad/viz/serve.py:135       %g                   NO -- SIX significant digits
+!! arghalf/pin-tree/tinygrad/viz/serve.py:144       %g                   NO -- SIX significant digits
+!! canrun/belt/nc_probe.py:34                       repr(float(          NO -- no round trip
+!! canrun/belt/nc_probe.py:63                       repr(float(          NO -- no round trip
+  baseline present 3/4   NEW 4 ['arghalf/pin-tree/tinygrad/viz/serve.py:135', 'arghalf/pin-tree/tinygrad/viz/serve.py:144', 'canrun/belt/nc_probe.py:34', 'canrun/belt/nc_probe.py:63']
+
+PLANTING one non-round-tripping normaliser in mm-dt-gate.py.
+That file is ALREADY on the baseline, for :60 -- so the new site is NEW,
+and the lint has to say so rather than absorb it into the baseline.
+
+RUN 2 -- the same copy WITH the plant:
+  exit 1
+!! arghalf/pin-tree/tinygrad/viz/serve.py:135       %g                   NO -- SIX significant digits
+!! arghalf/pin-tree/tinygrad/viz/serve.py:144       %g                   NO -- SIX significant digits
+!! canrun/belt/nc_probe.py:34                       repr(float(          NO -- no round trip
+!! canrun/belt/nc_probe.py:63                       repr(float(          NO -- no round trip
+!! mm-dt-gate.py:139                                repr(float(          NO -- no round trip
+  baseline present 3/4   NEW 5 ['arghalf/pin-tree/tinygrad/viz/serve.py:135', 'arghalf/pin-tree/tinygrad/viz/serve.py:144', 'canrun/belt/nc_probe.py:34', 'canrun/belt/nc_probe.py:63', 'mm-dt-gate.py:139']
+
+THE LINT DID NOT FLIP -- one of the two numbers is a constant.
