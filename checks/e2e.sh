@@ -30,7 +30,16 @@
 # NOTHING IN THE LIVE PORT TREE IS EDITED. Stage 3 emits into .agents/slop/e2e/,
 # which is this unit's own directory, and stage 2 only reads.
 set -e
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+# ROOT IS ASSERTED, NOT COMPUTED. `../..` is `dirname "$0"` up two, which was correct while this
+# file lived at `.agents/slop/` and is WRONG here: `checks/` is one level shallower, so it resolved
+# to `/Users/cyberistic/src/tries` -- the repo's PARENT, a directory that exists, so `cd "$ROOT"`
+# succeeded and every stage then ran against a tree that is not the repository.
+# `.agents/slop/shells/README.md` holds the census; this was the seventeenth of seventeen.
+# `${0%/*}` is POSIX and spawns no `dirname`, and the `case` arm is the `$0` that carries no slash.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+ROOT=$(cd "$_d/.." && pwd)
+[ -f "$ROOT/pyproject.toml" ] && [ -d "$ROOT/tinybendygrad" ] ||
+  { echo "$0: not at the repo root (pwd $ROOT)" >&2; exit 2; }
 cd "$ROOT"
 PY="$ROOT/.venv/bin/python"
 RUN="$ROOT/runs/e2e"
@@ -287,7 +296,11 @@ fi
 #
 #   0  every stage ran and every stage agreed
 #   1  one or more stages RAN and FAILED
-#   2  eight `bend` attempts produced no rows -- `set -e`, aborted inside stage 2
+#   2  NOTHING WAS MEASURED. Either this file is not at a repo root -- asserted above, before any
+#      stage, so the directory it reached is named on stderr -- or eight `bend` attempts produced no
+#      rows, which `set -e` aborts inside stage 2. Both are refusals with no verdict lines at all,
+#      which is why they share a status: a caller cannot tell from the number which refusal it was,
+#      so a caller that needs to know reads the stderr, and both refusals say what they are.
 #   3  the frozen oracle moved: nothing was compared
 #   4  NOTHING FAILED BUT SOMETHING MEASURED NOTHING
 #

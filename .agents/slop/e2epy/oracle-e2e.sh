@@ -287,7 +287,11 @@ fi
 #
 #   0  every stage ran and every stage agreed
 #   1  one or more stages RAN and FAILED
-#   2  eight `bend` attempts produced no rows -- `set -e`, aborted inside stage 2
+#   2  NOTHING WAS MEASURED. Either this file is not at a repo root -- asserted above, before any
+#      stage, so the directory it reached is named on stderr -- or eight `bend` attempts produced no
+#      rows, which `set -e` aborts inside stage 2. Both are refusals with no verdict lines at all,
+#      which is why they share a status: a caller cannot tell from the number which refusal it was,
+#      so a caller that needs to know reads the stderr, and both refusals say what they are.
 #   3  the frozen oracle moved: nothing was compared
 #   4  NOTHING FAILED BUT SOMETHING MEASURED NOTHING
 #

@@ -1,0 +1,2 @@
+ORACLE DRIFT: checks/e2e.sh: 72dd28cbb72c3293 != 5df8c2082ba26d6e -- the live shell body no longer matches the frozen oracle
+  the frozen shell oracle moved, so this run would compare against nothing. Restore it, or re-freeze it deliberately and update ORACLE_SHA in checks/e2e.py -- do not delete the pin: it is the only thing that notices a change to `checks/e2e.sh` at all (`.agents/slop/e2esh/plant.py`).

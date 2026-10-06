@@ -2,12 +2,16 @@
 """THE SEVEN-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
 
 `.venv/bin/python checks/e2e.py --help` says what it gates and each verdict's DENOMINATOR.
-`.agents/slop/e2e.sh` is a short `exec` shim, and the shell's body is frozen at
+`checks/e2e.sh` is the shell body this port replaces, and it is still runnable: its root is ASSERTED
+(`pyproject.toml` + `tinybendygrad/`) rather than computed by `../..`, which was correct at
+`.agents/slop/` and resolved to the repo's PARENT from `checks/`. The shell's body is frozen at
 `.agents/slop/e2epy/oracle-e2e.sh` as the ORACLE this port is diffed against, because the rule this
 project wrote for itself is that the Python reproduces the shell's verdict on EVERY INPUT or it does
-not move. That oracle is BYTE-IDENTICAL to `checks/e2e.sh` -- sha256 in `ORACLE_PIN`, checked IN
-CODE on every run, refusing with exit 3 on drift. A pin in a comment is a pin that cannot fail, and
-`checks/differ.py` measured that lesson the hard way.
+not move. That oracle differs from `checks/e2e.sh` by exactly ONE documented edit -- `ORACLE_EDIT`,
+the `ROOT` preamble, because a fixture tree has no `pyproject.toml` for the assertion to find -- and
+both shas are pinned in `ORACLE_SHA` and `BODY_SHA`, CHECKED IN CODE on every run, refusing with exit
+3 on drift. A pin in a comment is a pin that cannot fail, and `checks/differ.py` measured that lesson
+the hard way.
 
 WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
 
@@ -167,30 +171,72 @@ ENV = dict(os.environ)
 # but ONLY IF IT IS STILL THERE: a pin on a file another unit is entitled to delete becomes a gate
 # reporting drift about a deletion instead of about a change. THE ORACLE IS THE SURVIVOR, which is
 # the entire reason the migration rule freezes one.
-# THE PIN MOVED THREE TIMES AND EVERY MOVE IS THE PIN WORKING. Once when stage 8 was
-# retired, once when a TODO comment was added to stage 5 -- the second time it is the proof that
-# this pin is read, because `checks/e2e.py` refused to start a single stage and exited 3 on a change
-# that moved no code at all -- and once on 2026-10-06 when PASS-with-SKIP became exit 4, which moved
-# the shell body too because a port that disagreed with its oracle on the one input the defect lives
-# on would not be a port. **A PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE
-# SAME COMMIT**, and a pin that has never fired is a pin in a comment, and `checks/differ.py` shipped
-# one (`RECOVERED.md` §6). Current pair below; the pair before the exit-status change was
+# THE PIN MOVED FOUR TIMES AND EVERY MOVE IS THE PIN WORKING, AND THE FOURTH IS THE ONE THAT
+# SETTLES WHETHER IT COULD BE DELETED. Once when stage 8 was retired, once when a TODO comment was
+# added to stage 5 -- the second time it is the proof that this pin is read, because `checks/e2e.py`
+# refused to start a single stage and exited 3 on a change that moved no code at all -- once on
+# 2026-10-06 when PASS-with-SKIP became exit 4, which moved the shell body too because a port that
+# disagreed with its oracle on the one input the defect lives on would not be a port, and once on
+# 2026-10-06 when `checks/e2e.sh`'s root was ASSERTED rather than computed (`.agents/slop/e2esh/`).
+#
+# **THE FOURTH MOVE WAS MEASURED BEFORE IT WAS PAID, AND IT IS WHY (3) IS STILL HERE.** Three commits
+# touched `checks/e2e.sh` and zero of them left the pin behind (`.agents/slop/e2esh/history.py`), which
+# is a fact about DISCIPLINE and not about the pin's ability to see. So the pin was planted two
+# changes and asked (`.agents/slop/e2esh/plant.py`): appending ONE COMMENT LINE, and the root fix
+# itself. Both gave `oracle_drift() -> ['checks/e2e.sh: <sha> != 24d7fbf1…']` and
+# `checks/e2e.py -> rc=3` with `== 1/4 oracle` never printed. **A CHANGE TO `checks/e2e.sh` FAILS
+# SOMETHING, AND THAT SOMETHING IS THIS GATE, SO DELETING (3) WOULD DELETE THE ONLY THING THAT
+# NOTICES.** The sibling unit's conclusion -- that deleting `checks/e2e.sh` is the clean unblock --
+# rests on the pin's own comment, not on a measurement, and the measurement does not support it.
+#
+# THE THING THAT WAS BELIEVED INSTEAD, AND MEASURED FALSE: that stdout fidelity already covers the
+# live shell, so the text pin is redundant with it. `diff.py` compares `checks/e2e.py` against the
+# FROZEN ORACLE and never reads `checks/e2e.sh`, and under both plants it reported
+# `1 of 1 set(s) disagree` with the entire disagreement being the port's own refusal --
+# `.agents/slop/e2epy/artifacts/plant-no-node.port.err` held two lines, both of them `ORACLE DRIFT`,
+# and `plant-no-node.port.out` was EMPTY. **THE PIN IS INSIDE THE MEASUREMENT, SO THE MEASUREMENT
+# CANNOT SEE PAST IT.** There is no stdout-level observer of the live shell to move the pin down to,
+# and `checks/e2e.sh` asserting its own root is what makes its bytes worth asserting at all.
+#
+# **A PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE SAME COMMIT**, and a pin
+# that has never fired is a pin in a comment, and `checks/differ.py` shipped one (`RECOVERED.md` §6).
+# Current pair below; the pair before the root fix was
+# ORACLE_SHA 6a198bbf… / BODY_SHA 24d7fbf1…, the pair before the exit-status change was
 # ORACLE_SHA 9ee46f84… / BODY_SHA e75c9e38…, the stage-8-only pair was
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
-ORACLE_SHA = "6a198bbf8fe1fcb1949009661b25a35d44ef765221bc4c2c8e35cfee0fc620be"
-BODY_SHA = "24d7fbf196661779c6820622447454d42f0cd044bf11db12bde0f7d5de58d1bc"
-ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}',
-               'ROOT=$(cd "$(dirname "$0")/../.." && pwd)')
+ORACLE_SHA = "fe56d307d05b97e12c09455405436dd7a6dce85bdca1ab1bfd5ac15b01032faf"
+BODY_SHA = "5df8c2082ba26d6edaa19fb962e8866ef93b319aafc59701e3763ca080828122"
+# THE ONE DOCUMENTED EDIT, AND IT IS STILL ONE. `diff.py` drives the oracle against a FIXTURE tree
+# through `E2E_ROOT`, and a fixture has no `pyproject.toml` and no `tinybendygrad/`, so the oracle
+# carries the redirect and NOT the assertion; the live shell carries the assertion and no redirect,
+# because nothing runs it against a fixture. Same single `ROOT` computation, two callers' needs.
+# IT IS A MULTI-LINE PAIR NOW, and that is a consequence of the fix rather than a loosening: the
+# assertion is six comment lines and four code lines, and one comment line is already a difference.
+# The invariant is unchanged and is still PROVED rather than asserted -- `.agents/slop/e2esh/refreeze.py`
+# re-derives both hashes from the two files and checks `revert(oracle) == shell`.
+# `(ORACLE_SIDE, SHELL_SIDE)`, in the order `oracle_drift()` replaces them: `str.replace(ORACLE,
+# SHELL)` on the frozen copy must yield the live body. So the ORACLE's line is the FIRST element.
+ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}\n', """# ROOT IS ASSERTED, NOT COMPUTED. `../..` is `dirname "$0"` up two, which was correct while this
+# file lived at `.agents/slop/` and is WRONG here: `checks/` is one level shallower, so it resolved
+# to `/Users/cyberistic/src/tries` -- the repo's PARENT, a directory that exists, so `cd "$ROOT"`
+# succeeded and every stage then ran against a tree that is not the repository.
+# `.agents/slop/shells/README.md` holds the census; this was the seventeenth of seventeen.
+# `${0%/*}` is POSIX and spawns no `dirname`, and the `case` arm is the `$0` that carries no slash.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+ROOT=$(cd "$_d/.." && pwd)
+[ -f "$ROOT/pyproject.toml" ] && [ -d "$ROOT/tinybendygrad" ] ||
+  { echo "$0: not at the repo root (pwd $ROOT)" >&2; exit 2; }
+""")
 
 HELP = __doc__
-# STAGE 7's OWN FILTER, `checks/e2e.sh:232`. Only these lines of `run-f64.sh`'s output reach the
+# STAGE 7's OWN FILTER, `checks/e2e.sh:256`. Only these lines of `run-f64.sh`'s output reach the
 # artifact; the stage's exit status is read from the command.
 F64_RE = re.compile(
     rb"STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|"
     rb"THEOREM \[|F64-[0-9]")
 
-FAILS = SKIPS = 0  # THE VERDICT ACCUMULATOR. See `checks/e2e.sh:75-83`, added after a measured defect.
+FAILS = SKIPS = 0  # THE VERDICT ACCUMULATOR. See `checks/e2e.sh:91-100`, added after a measured defect.
 
 
 def say(line: str = "") -> None:
@@ -282,7 +328,7 @@ def grep_file(path: Path, rx: re.Pattern[bytes]) -> None:
 
 
 def verdict(name: str, rc: int) -> None:
-    """`checks/e2e.sh:77`. PASS / FAIL, and FAIL is what reaches the exit status."""
+    """`checks/e2e.sh:93`. PASS / FAIL, and FAIL is what reaches the exit status."""
     global FAILS
     if rc == 0:
         say(f"  {name}: PASS")
@@ -292,7 +338,7 @@ def verdict(name: str, rc: int) -> None:
 
 
 def skip(name: str, why: str) -> None:
-    """`checks/e2e.sh:81`. THE THIRD OUTCOME. Measured nothing; not a pass."""
+    """`checks/e2e.sh:97`. THE THIRD OUTCOME. Measured nothing; not a pass."""
     global SKIPS
     say(f"  {name}: SKIP -- {why}")
     SKIPS += 1
@@ -300,7 +346,7 @@ def skip(name: str, why: str) -> None:
 
 # --------------------------------------------------------------------------- stage 2's retry
 def bend_run() -> int:
-    """`bend_run`, `checks/e2e.sh:39-56`. THE DENOMINATOR IS > 20 ROWS, NOT THE EXIT STATUS.
+    """`bend_run`, `checks/e2e.sh:51-68`. THE DENOMINATOR IS > 20 ROWS, NOT THE EXIT STATUS.
 
     bend stack-overflows on roughly one run in twenty and prints NOTHING, and a zero-row result is
     indistinguishable from "not started", so the run is RETRIED and the ROW COUNT is checked. This
@@ -354,7 +400,8 @@ def main() -> int:
             print(f"ORACLE DRIFT: {line}", file=sys.stderr)
         print("  the frozen shell oracle moved, so this run would compare against nothing. "
               "Restore it, or re-freeze it deliberately and update ORACLE_SHA in checks/e2e.py -- "
-              "do not delete the pin.", file=sys.stderr)
+              "do not delete the pin: it is the only thing that notices a change to "
+              "`checks/e2e.sh` at all (`.agents/slop/e2esh/plant.py`).", file=sys.stderr)
         return 3
     os.chdir(ROOT)   # the shell's `cd "$(dirname "$0")/../.."`
     RUN.mkdir(parents=True, exist_ok=True)   # `mkdir -p`, under `set -e`
@@ -374,7 +421,7 @@ def main() -> int:
         skip("stage 3 gpu (node)", "no `node` on PATH; stage 3 measured nothing")
 
     say("== 4/4 gate")
-    # THE EXIT STATUS IS THE GATE'S, NOT A PIPELINE'S. `checks/e2e.sh:104-112` names the trap this
+    # THE EXIT STATUS IS THE GATE'S, NOT A PIPELINE'S. `checks/e2e.sh:120-125` names the trap this
     # repo keeps paying for: `"$PY" gate.py | tee out` makes `$?` the status of `tee`, so a gate that
     # CRASHED printed `PASS`. POSIX sh has no PIPESTATUS.
     gate = RUN / "e2e-mm-gate.txt"
