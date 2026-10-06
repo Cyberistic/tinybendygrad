@@ -36,7 +36,7 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent / "portexec"))
+sys.path.insert(0, str(HERE.parent.parent.parent / ".agents" / "slop" / "portexec"))
 from census import PREAMBLE, classify            # noqa: E402  -- the committed classifier
 from exec_harness import port_rows                # noqa: E402
 
