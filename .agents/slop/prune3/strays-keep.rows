@@ -1,0 +1,31 @@
+# strays/ -- every file on disk after the sweep, against the MANIFEST.tsv verdict.
+# 29 files committed in HEAD (.agents/slop/strays); 28 rows below + MANIFEST.tsv itself.
+arm	role	rel_path	in_head	manifest_verdict	reproducible_elsewhere
+origin	VARIES	tinybendygrad/runtime/support/autogen.bend	yes	KEEP	no (unique blob, 23 revisions)
+origin	VARIES	tinybendygrad/runtime/autogen/libclang.bend	yes	KEEP	no (unique blob, 8 revisions)
+origin	VARIES	tinybendygrad/uop/fold.bend	yes	KEEP	no (unique blob, 122 revisions)
+working	VARIES	tinybendygrad/device.bend	yes	KEEP	no (unique blob, 12 revisions)
+working	VARIES	tinybendygrad/renderer/amd/dsl.bend	yes	KEEP	no (unique blob, 102 revisions)
+working	VARIES	tinybendygrad/renderer/amd/generate.bend	yes	KEEP	no (unique blob, 5 revisions)
+working	VARIES	tinybendygrad/renderer/amd/sqtt.bend	yes	KEEP	no (unique blob, 25 revisions)
+working	VARIES	tinybendygrad/schedule/prepare.bend	yes	KEEP	no (unique blob, 24 revisions)
+working	VARIES	tinybendygrad/runtime/ops_cpu.bend	yes	KEEP	no (unique blob, 84 revisions)
+working	VARIES	tinybendygrad/runtime/ops_disk.bend	yes	KEEP	no (unique blob, 5 revisions)
+working	VARIES	tinybendygrad/runtime/support/autogen.bend	yes	KEEP	no (unique blob, 35 revisions)
+working	VARIES	tinybendygrad/runtime/support/compiler_amd.bend	yes	KEEP	no (unique blob, 19 revisions)
+working	VARIES	tinybendygrad/runtime/support/compiler_mesa.bend	yes	KEEP	no (unique blob, 78 revisions)
+working	VARIES	tinybendygrad/runtime/support/usb.bend	yes	KEEP	no (unique blob, 27 revisions)
+working	VARIES	tinybendygrad/runtime/support/am/ip.bend	yes	KEEP	no (unique blob, 105 revisions)
+working	VARIES	tinybendygrad/runtime/support/nv/ip.bend	yes	KEEP	no (unique blob, 22 revisions)
+working	VARIES	tinybendygrad/runtime/support/nv/nvdev.bend	yes	KEEP	no (unique blob, 21 revisions)
+working	VARIES	tinybendygrad/runtime/autogen/libclang.bend	yes	KEEP	no (unique blob, 14 revisions)
+working	VARIES	tinybendygrad/codegen/__init__.bend	yes	KEEP	no (unique blob, 84 revisions)
+working	VARIES	tinybendygrad/codegen/gpudims.bend	yes	KEEP	no (unique blob, 20 revisions)
+working	VARIES	tinybendygrad/codegen/simplify.bend	yes	KEEP	no (unique blob, 10 revisions)
+working	VARIES	tinybendygrad/codegen/late/linearizer.bend	yes	KEEP	no (unique blob, 24 revisions)
+working	VARIES	tinybendygrad/uop/fold.bend	yes	KEEP	no (unique blob, 115 revisions)
+working	VARIES	tinybendygrad/engine/jit.bend	yes	KEEP	no (unique blob, 48 revisions)
+artifacts	VARIES	memory.staged-mem-33281	yes	KEEP	sole copy of its state
+artifacts	VARIES	memory.staged-mem-33929	yes	KEEP	sole copy of its state
+artifacts	VARIES	memory.staged-mem-44257	yes	KEEP	sole copy of its state
+artifacts	VARIES	ops.staged-blob-24323	yes	KEEP	sole copy of its state
