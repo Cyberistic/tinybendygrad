@@ -290,6 +290,14 @@ def Tensor.grad_set(+t: Tensor, g: U32) -> Tensor:
 def tn_alu(+t: Tensor, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.of(Tensor.ar(t), Tensor.u(t), op, srcs)
 
+# `sqrt` -- elementwise.py:480. `return self.alu(Ops.SQRT)`. The body is a single
+# `UOp.alu` over the empty src list (SQRT is a unary op, and `self` is the implicit
+# src[0] from `tn_alu`'s `List.append(&2, U32, [uop], srcs)`). ONE LINE in CPython and
+# ONE LINE here -- the call to `tn_alu` IS the port, and the wall `nn/__init__.bend:241`
+# that named `Tensor.sqrt` as missing is the wall this def closes.
+def tn_sqrt(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsSQRT{}, Nil{})
+
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this
 # file is its own def that builds the node and then calls `tn_new`. The wall is the

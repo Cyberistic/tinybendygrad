@@ -238,4 +238,10 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   mixin/op.bend (they are the reduce.py:73/:20/:47 hoists) and are callable. They
 #   are not inlined here because every `__call__` in this file is a mixin METHOD and
 #   naming the call IS the port; inlining a callee would be a second port.
-# TODO(p3) mixin/elementwise.py:426 x.where, :43 x.detach, :480 x.sqrt, :575 x.square -- BLOCKED. needs `Tensor.where` / `Tensor.detach` / `Tensor.sqrt` / `Tensor.square`: MEASURED, NONE of the four is a def in `tensor.bend` (comments excluded; the only `Tensor.where` hit is in `optim.bend:61` as a COMMENT, not a def). `ElementwiseMixin` (tensor.bend:15) has the other 100+ methods, so the mixin base is in place; these four are the per-element select / view-shape primitives that are not.
+# PARTIALLY PORTED. `Tensor.sqrt` is ported at `tensor.bend:294` as `tn_sqrt` and
+# gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.where`, `Tensor.detach`, and
+# `Tensor.square` remain walled: `where` is `self.alu(Ops.WHERE, x, y)` with a
+# `_broadcasted` up-stream step, `detach` is `self.replace(arg=KernelInfo())` (the
+# replace is now ported, but `KernelInfo` is the next piece), and `square` is
+# `self * self` (the `__mul__` method is a separate wall).
+# TODO(p3) mixin/elementwise.py:426 x.where, :43 x.detach, :575 x.square -- BLOCKED: see above.
