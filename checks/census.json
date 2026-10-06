@@ -8268,9 +8268,7 @@
   ],
   "port": "P-ELSEWHERE",
   "port_where": [
-   "tinybendygrad/runtime/zzdiag.bend",
-   "tinybendygrad/runtime/zzprobe2.bend",
-   "tinybendygrad/runtime/zzread.bend"
+   "tinybendygrad/runtime/zzprobe2.bend"
   ],
   "own_lex": [],
   "run_lex": [

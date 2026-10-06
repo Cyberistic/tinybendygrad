@@ -265,6 +265,10 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       so `35` is correct and `139` is not a `.bend` count (138 `.bend` + 1 `.js`).**
       **THE DENOMINATOR HAS FOUR VALUES: 138 on disk · 137 in the index · 113 1:1 with an
       upstream `.py` · 139 arguments handed. IT WAS 136 AT 05:47 AND 137 AT 06:16 TODAY.**
+      **RE-DERIVED 2026-10-06T12:19Z (HEAD `7f70b475`): THE PORT IS `134` `.bend` — four probes
+      relocated (`portzz`) — and `sweep.port_files()` is `140`. Commands:
+      `find tinybendygrad -name '*.bend' | wc -l` = 134 · `find tinybendygrad -type f | wc -l` = 140.
+      THE `138`/`137`/`139` ABOVE ARE THE 2026-10-05 READING AND STAY AS THAT READING.**
 - [x] **`OPSPY.md`'s `6 of 137` IS WRONG TWICE — ITS OWN LIST REMOVES 9 OF THE 14, LEAVING 5,
       AND 6 OF THOSE 9 ARE `COLD` AGAIN FOR A DIFFERENT CAUSE** (`O.ParamArg.no_slot` is
       declared nowhere; `uop/ops.bend` must declare it). `35` red FILES are **`15` causes**;
@@ -276,7 +280,8 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
 - [x] **THE ONE TRUE NUMBER: THE PORT HAS 0 COLD FILES.** Defined as `indeg == 0 ∧
       imports == 0 ∧ ¬driven` — nothing imports it and `bend` has nothing to run it on.
       **9 files satisfy it and all 9 are the empty `__init__.bend` markers with 0 defs and
-      0 laws.** 41 of 138 are WIRED, 120 of 138 are DRIVEN.
+      0 laws.** 41 of 138 are WIRED, 120 of 138 are DRIVEN (the 2026-10-05 reading over a
+      138-file port; **134** as of 2026-10-06T12:19Z, HEAD `7f70b475`).
 - [x] **`BAD 46` IS 1 PROBLEM.** Every one of the 46 sites reads `NOT DECLARED IN
       tinybendygrad/uop/ops.bend`; **41 of the 46 are in `uop/validate.bend`, which nothing
       imports.** 2 distinct defects, 1 owner. `Error: N TODOs found.` is `book.hols > 0`
@@ -290,7 +295,8 @@ arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2
       SHIMS, WITH THE SHELL FROZEN AS A RUNNABLE ORACLE.** `.agents/slop/substrate/SUBSTRATE.md`.
       **THE MIGRATION RULE WAS MET: 6 INPUT SETS, `stdout=IDENTICAL` ON ALL SIX — every verdict,
       every denominator, every exit status, and the whole 344-line output over the WHOLE
-      `tinybendygrad/` tree (152 arguments, 138 `.bend`). `ROUTE bend=138 cc=0 node=4
+      `tinybendygrad/` tree (152 arguments, 138 `.bend` — the 2026-10-05 migration reading; **134** `.bend`
+      as of 2026-10-06T12:19Z, HEAD `7f70b475`). `ROUTE bend=138 cc=0 node=4
       no-instrument=10` · `port=127 non-port=25` · `DENOMINATOR … => 113` · `BAD 0` ·
       `SUBSTRATE NOT CLEAN: 8`, exit 1 both sides. NO VERDICT WAS CHANGED.**
 - [x] **THE ZERO-ARGUMENT REFUSAL IS PORTED AND TESTED** (`refused` set: exit **3** both sides,
@@ -6377,6 +6383,11 @@ Report: `.agents/slop/zero-audit-report.md`. **No commit.** Rules appended at th
 
 ## Session 2026-10-04 — REPO HYGIENE: the dangling citations, the census, and the scratch in the tree
 
+**CURRENT READING (2026-10-06T12:19Z, HEAD `7f70b475`): the port is `134` `.bend`
+(`find tinybendygrad -name '*.bend' | wc -l`) and `140` files (`find tinybendygrad -type f | wc -l` =
+`sweep.port_files()`). Every count below is a dated 2026-10-04/05 reading of the tree as it then stood
+and stays as that reading; four probes relocated (`portzz`).**
+
 Report: `.agents/slop/hygiene-2026-10-04.md`. **No commit.** Changed: three comment lines, two
 `.gitignore` patterns, this block, an appended note in `bend2-constraints.md`, and two new
 harnesses (`.agents/slop/stale-snapshot-detect.py`, `.agents/slop/hygiene-2026-10-04.md`).
@@ -10966,6 +10977,9 @@ gate needs a row where the DIVISOR's magnitude is `2^63`.**
 ## MUT- (2026-10-05) — the mutated-copy hazard: labelled, measured, ledgered
 
 Ledger: `.agents/slop/MUT-LEDGER.md`. Instruments: `.agents/slop/mutledger/`.
+**CURRENT READING (2026-10-06T12:19Z, HEAD `7f70b475`): `134` `.bend` / `140` files in the port
+(`find tinybendygrad -name '*.bend' | wc -l` · `find tinybendygrad -type f | wc -l`). The
+`138`/`144`/`137` below are the 2026-10-05 readings and stay as those readings.**
 Markers: `.agents/slop/proof-close/00-MUTANTS-READ-THIS-FIRST.txt`, `MUTANT-TREE.md`.
 
 - [x] **MUT-1** Make the sandbox announce itself. `proof-close/mut` -> `MUTANT`, `mut2` -> `MUTANT2`.
@@ -11118,6 +11132,10 @@ Report: `.agents/slop/CIDSWEEP.md`.  Gate: `sh .agents/slop/cidsweep/gate.sh` (e
 ---
 
 ## PROBES — a probe or a plant in `tinybendygrad/` now announces itself to a TOOL (prefix `PROBE-`)
+
+**CURRENT READING (2026-10-06T12:19Z, HEAD `7f70b475`): `134` `.bend` / `140` files in the port
+(`find tinybendygrad -name '*.bend' | wc -l` · `find tinybendygrad -type f | wc -l`). The `138`/`144`
+below are the readings of the tree when these probes were counted.**
 
 Rule prefix `PROBE-`, ledger `.agents/slop/PROBES.md`, instruments
 `.agents/slop/probes/{classify.sh,demo.sh}` and the `PROVENANCE` block in
@@ -11661,6 +11679,9 @@ unit: `syntax error ... 'done'` at :245) and every other unit's slop tree untouc
 
 ## LASTLAW (2026-10-05) — `tinybendygrad/dtype.bend`'s 8 red laws: **8 -> 0**, LANDED. Not committed.
 Unit `.agents/slop/lastlaw/`, prefix `LL-`, notes `.agents/slop/LASTLAW.md`.
+**CURRENT READING (2026-10-06T12:19Z, HEAD `7f70b475`): `134` `.bend` / `140` files in the port
+(`find tinybendygrad -name '*.bend' | wc -l` · `find tinybendygrad -type f | wc -l`). The
+`137`/`138` below are the 2026-10-05 readings and stay as those readings.**
 
 ### Progress: [##########] 10/10
 

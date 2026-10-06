@@ -65,10 +65,12 @@ When using bend:
   run it to see the COUNT GO DOWN and do not report the red as a verdict about your change.**
 - **PARALLELISE EVERYTHING THAT IS NOT A `bend` PROCESS. FOR `bend`, THE PRECONDITION IS THE SUM, NOT
   THE COUNT: parallelise only when the sum of the concurrently-running files' MEASURED peak RSS is under
-  60% of `hw.memsize`. THE PER-FILE NUMBERS ARE IN `.agents/slop/peakrss/census.txt` — USE THAT TABLE, NOT
+  60% of `hw.memsize`. THE PER-FILE NUMBERS ARE IN `.agents/slop/peakrss/census.rows` — USE THAT TABLE, NOT
   A NUMBER YOU REMEMBER.** The population is BIMODAL, which is why the rule is a sum and not a ban:
   `nir` 1,152 MB · `sz` 1,108 MB · `ops_python` 864 · `nn/onnx` 777 · `uop/symbolic` 745 · `dtype` 683-699 ·
-  `helpers` 204 · **median 207 · 43 of 138 under 50 MB**. So `dtype ‖ helpers ‖ nn/onnx` is 1.4 GB and
+  `helpers` 204 · **median 207 · 43 of 138 under 50 MB** — the `138` is the frozen
+  `.agents/slop/peakrss/census.rows` reading (2026-10-05 20:59) over the port's `.bend` files; **the port is
+  134 `.bend` as of 2026-10-06T12:19Z, HEAD `7f70b475`, `find tinybendygrad -name '*.bend' | wc -l`**. So `dtype ‖ helpers ‖ nn/onnx` is 1.4 GB and
   safe, while `sz ‖ sz` is 2.8-3.1 GB and is not, on a machine whose OOM was recorded when it had half
   today's RAM. **`checks/bounded.py --mb` IS A PER-PROCESS WATCHDOG, NOT A MACHINE BUDGET** — it polls one
   child's RSS and kills that child, so two children under the same ceiling can together exceed it, and it
