@@ -99,11 +99,15 @@ ORACLE_PIN = {
         "6d1000712f0f290ca479539f863dc76c6793cf4bbe94e983f94d56698994600e",
 }
 
-HERE = ".agents/slop/guardfix"
-C_PROBE = f"{HERE}/probe-c.bend"
+# THE `.c` PROBE. `checks/c-context.bend` (26 lines, TRACKED, and NOT named `probe-*.bend` because
+# `.gitignore:37` ignores that pattern BY DESIGN -- and a GITIGNORED PROBE IS A GATE THAT PASSES HERE
+# AND IS ABSENT IN A CLONE). The predecessor `.agents/slop/guardfix/probe-c.bend` was NEVER COMMITTED
+# (no blob in any ref) AND its `dtype.c` seam was RETIRED (`9e9aaac47` dropped `dtype.bend`'s `.c`
+# import), so the `cc` instrument was DEAD over both `.c` files while the sweep counted them.
+C_PROBE = "checks/c-context.bend"
 # THE `.c` THAT PROBE PULLS IN, whose FIRST LINE marks where the foreign block begins in the emit.
 # NAMED, NOT GUESSED, and `c_context` FAILS LOUD if that exact line is not in the emit.
-C_PROBE_FOREIGN = "tinybendygrad/runtime/dtype.c"
+C_PROBE_FOREIGN = "tinybendygrad/runtime/sz.c"
 CC_WHY = "cc and a compiling bend C context are both required, and one is absent"
 SHELL_SECONDS = 300   # the shell's `alarm 300`, kept so the TIME a run may take does not change
 DEFAULT_MB = 2048     # above the measured 1,152 MB maximum; see the docstring
