@@ -1415,6 +1415,70 @@ def g_wmma() -> O.Found:
   +racc = O.UOp.new(O.Found.ar(acc0), O.OpsRESHAPE{}, [O.Found.i(acc0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   O.UOp.wmma(O.Found.ar(racc), O.Found.i(r44), O.Found.i(r43), O.Found.i(racc), [3, 4, 4], S.single(), 256, Nil{})
 
+# ===========================================================================
+# THE THREE RESTORED GRAPHS' ARMS (2026-10-06). `allred`, `cdiv` and `late` are in
+# `graphcmp.py`'s `GRAPHS` and had NO arm here, so each name fell through `rows.pick3`'s
+# bottom rung to `g_matmul()` -- the bend side built the MATMUL while the py side built
+# the real graph, and `checks/disagree-gate.py:78-80` pinned that as the HARNESS fault
+# `NOT A ROW`. These arms are the fix. Py node counts MEASURED with
+# `emit --side py --graph NAME`: allred 9, cdiv 10, late 12 -- and the py docstrings'
+# own censuses (`g_cdiv` "10 nodes", `g_late` "12") are right, contra the three of the
+# five earlier fixtures that were wrong.
+#
+# `--graph allred`: `Tensor.empty(4,3,f32).uop.copy_to_device(("CPU","CPU"))
+# .allreduce(Ops.ADD, ("CPU","CPU"))`, 9 nodes, the ONLY route to `ALLREDUCE` and the
+# only multi-device `COPY`. Built through the PORT'S OWN constructors -- `O.UOp.
+# copy_to_device` mints the DEVICE RANGE (ops.bend's `device_range_src`) and
+# `O.UOp.allreduce` the pair -- so the PORT, not this fixture, is on trial. Toposort
+# order: ALLOC CONST CONST STACK RESHAPE CONST RANGE COPY ALLREDUCE.
+def g_allred() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +cp = O.UOp.copy_to_device(O.Found.ar(r43), O.Found.i(r43), None{}, S.Dn{[0, 0]})
+  O.UOp.allreduce(O.Found.ar(cp), O.Found.i(cp), O.OpsADD{}, S.Dn{[0, 0]})
+
+# `--graph cdiv`: `UOp.group(a.fmod(b).uop, a.div(b, rounding_mode="trunc").uop)` over two
+# `Tensor.empty(4,3,int)` -- 10 nodes, the ONLY route to `CMOD` and `CDIV` (both minted
+# from int dtypes only). `b`'s CONST 4 / CONST 3 / STACK are the SHARED shape nodes, so
+# `b` adds only its ALLOC and RESHAPE. Order: ALLOC CONST CONST STACK RESHAPE ALLOC
+# RESHAPE CMOD CDIV GROUP.
+def g_cdiv() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.int32(), 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +b0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{allocd(1, S.int32(), 12)}, O.TNone{})
+  +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +cm = O.UOp.new(O.Found.ar(rb), O.OpsCMOD{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +cd = O.UOp.new(O.Found.ar(cm), O.OpsCDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(cd), O.OpsGROUP{}, [O.Found.i(cm), O.Found.i(cd)], O.ANone{}, O.TNone{})
+
+# `--graph late`: upstream's OWN late rewrite applied to its own eager graph -- 12 nodes,
+# the only route to `SUB`, `NEG`, `CMPEQ` and `FDIV`. The PORT builds the REWRITTEN graph
+# directly (it does not implement `get_late_rewrite_patterns`), which is all this fixture
+# asks. NEG takes ONE src -- a's RESHAPE, `a.neg()`. Order: ALLOC CONST CONST STACK
+# RESHAPE ALLOC RESHAPE SUB NEG CMPEQ FDIV GROUP.
+def g_late() -> O.Found:
+  +ar = O.Arena.empty()
+  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
+  +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
+  +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
+  +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +b0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
+  +sb = O.UOp.new(O.Found.ar(rb), O.OpsSUB{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +ng = O.UOp.new(O.Found.ar(sb), O.OpsNEG{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
+  +eq = O.UOp.new(O.Found.ar(ng), O.OpsCMPEQ{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  +fd = O.UOp.new(O.Found.ar(eq), O.OpsFDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
+  O.UOp.new(O.Found.ar(fd), O.OpsGROUP{}, [O.Found.i(sb), O.Found.i(ng), O.Found.i(eq), O.Found.i(fd)], O.ANone{}, O.TNone{})
+
 # `IO.args()` LEADS WITH THE PROGRAM NAME (symbolic.bend:2614), so the graph name is the
 # head of the TAIL and no argument at all is the default rather than an error.
 
@@ -1445,7 +1509,10 @@ def rows.pick3(+name: String) -> O.Found:
                                         Bool.pick(O.Found, String.eq(name, "getaddr"), g_getaddr(),
                                           Bool.pick(O.Found, String.eq(name, "unshard"), g_unshard(),
                                             Bool.pick(O.Found, String.eq(name, "wmma"), g_wmma(),
-                                              g_matmul()))))))))))))))))))))))))))
+                                              Bool.pick(O.Found, String.eq(name, "allred"), g_allred(),
+                                                Bool.pick(O.Found, String.eq(name, "cdiv"), g_cdiv(),
+                                                  Bool.pick(O.Found, String.eq(name, "late"), g_late(),
+                                                    g_matmul())))))))))))))))))))))))))))))
 
 def rows.pick(name: String) -> O.Found:
   # `match` may scrutinise a PARAMETER or a PATTERN binder, never a computed value and not a
@@ -1468,6 +1535,13 @@ def rows.pick(name: String) -> O.Found:
 # threefry 12, mulacc 10, getaddr 2, unshard 8, wmma 11 -- and the fixtures'
 # docstrings' own censuses are wrong (mulacc/unshard/wmma say "4 nodes"; the rows are
 # 10/8/11), so the ROWS are the specification and the prose is not.
+#
+# The three RESTORED graphs (`allred`, `cdiv`, `late`) have their own arm block ABOVE,
+# beside these five, and the same rule: the py rows are the specification.
+#
+# (This comment sits AFTER `rows.pick` because the dispatcher was MOVED to its top; the
+# eight arms are defined BEFORE `rows.pick3` because a forward reference does not
+# compile here -- MEASURED, commit `3ae870111`.)
 
 # `--graph getaddr`: `UOp(Ops.GETADDR, src=(alloc,), arg="CPU")`, 2 nodes. The ALLOC
 # is `alloc(0, 12)` -- f32, bind_on_realize True. GETADDR's arg is the port's `ADev`,
