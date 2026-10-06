@@ -1,0 +1,43 @@
+  139 `.txt` EXCUSED: `checks/differ.py`'s declared graphcmp artifacts, which a sha256-pinned oracle reads BY NAME (oracle-repro.sh:61, :105; corpus-figure.py:72).
+  550 .txt FILE(S). `.txt` IS NOT AN EXTENSION THIS PROJECT USES.
+    oracles/rows-bd.txt
+    test/models/efficientnet/imagenet1000_clsidx_to_labels.txt
+    .agents/slop/dd-gate-base-172.txt
+    .agents/slop/dd-gate-base-182.txt
+    .agents/slop/dd-gate.txt
+    .agents/slop/ops_bend-milestone-expected.txt
+    .agents/slop/strays-root/after.txt
+    .agents/slop/strays-root/before.txt
+    .agents/slop/strays-root/closure.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-coverage-census.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-ops-probe.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-selfcheck.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D1-verdicts.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D2-bytediff.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D4-cross-range.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D5-plant-sym1.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-012.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-03.txt
+    .agents/slop/differverdict/pristine/runs/graphcmp/D/D9-stability.txt
+    .agents/slop/differverdict/warm-oracle/D0-coverage-census.txt
+    .agents/slop/differverdict/warm-oracle/D0-run-summary.txt
+    .agents/slop/differverdict/warm-oracle/D0-selfcheck.txt
+    .agents/slop/differverdict/warm-oracle/D1-verdicts.txt
+    .agents/slop/differverdict/warm-oracle/D2-bytediff.txt
+    .agents/slop/differverdict/warm-oracle/D4-cross-range.txt
+    .agents/slop/differverdict/warm-oracle/D5-plant-sym1.txt
+    .agents/slop/differverdict/warm-oracle/D8-dbg-012.txt
+    .agents/slop/differverdict/warm-oracle/D8-dbg-03.txt
+    .agents/slop/differverdict/warm-oracle/D9-stability.txt
+    .agents/slop/differverdict/py-D/D0-coverage-census.txt
+    .agents/slop/differverdict/py-D/D0-ops-probe.txt
+    .agents/slop/differverdict/py-D/D4-cross-range.txt
+    .agents/slop/differverdict/py-D/D7-conf.txt
+    .agents/slop/differverdict/warm-python/D0-coverage-census.txt
+    .agents/slop/differverdict/warm-python/D0-run-summary.txt
+    .agents/slop/differverdict/warm-python/D0-selfcheck.txt
+    .agents/slop/differverdict/warm-python/D1-verdicts.txt
+    .agents/slop/differverdict/warm-python/D2-bytediff.txt
+    .agents/slop/differverdict/warm-python/D4-cross-range.txt
+    ... and 510 more
