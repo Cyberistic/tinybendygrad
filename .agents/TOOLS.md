@@ -4,6 +4,19 @@ Every tool, library and reference checkout this project uses, what it is
 pinned to, and why it is here. Nothing in this list is a dependency of the
 shipped code; the port has none.
 
+## This ledger is measured, not remembered
+
+The paths this file names are a population declared by THIS FILE, extracted by
+`.agents/slop/toolsledger/extract.py`: every backtick-quoted token containing
+`/`, normalized (markdown emphasis stripped, trailing punctuation stripped,
+`./` prefix stripped, URLs excluded). As of 2026-10-06: **333 distinct paths,
+160 present, 173 absent, 96 of the absent under `.agents/slop/`** (see
+`.agents/slop/toolsledger/REPORT.md`; re-run `extract.py` to refresh).
+Entries naming ABSENT paths are kept on purpose: a deleted path is evidence.
+A rule whose instrument cell names a file that no longer exists is a rule
+nobody can run — check the `INSTRUMENT` rows of
+`.agents/slop/toolsledger/paths.tsv` before citing a rule as live.
+
 ## Compiler
 
 | tool | version | pin | why |
@@ -1112,7 +1125,8 @@ all of it, one to measure whether the regeneration is reproducible.
 | `.agents/slop/graphcmp.bend` | the port side. READS `uop/ops.bend` and `uop/fold.bend` and PRINTS; it edits neither and adds nothing to either. Each graph is built node for node into its own `O.Arena.empty()`. **Every bend-side graph in the corpus is hand-built, including the three program graphs** — `schedule/__init__.bend` DEFERRs `__init__.py:82-301`, so the port cannot build a schedule. | `./bin/bend .agents/slop/graphcmp.bend NAME` |
 | `.agents/slop/graphcmp-p13-ops.py` | the raw CPython probe, and the answer to every coverage claim: does `Ops.GROUP` carry a `params` list (no), which Tensor op emits which NODE op, can two different symbolic dims be separated and by which field, what is a variable PARAM's slot, and the corpus-wide op/node/symbolic-dim/fan-in tally. **Everything is a CALL, never a transcription.** | `env -u PYTHONPATH LC_ALL=C DEV=CPU .venv/bin/python .agents/slop/graphcmp-p13-ops.py` |
 | `.agents/slop/graphcmp-p14{,-b,-c,-d,-e}.py` | the round-three probes: **what a real SCHEDULED program actually contains**. Q: does `schedule_linear` + `full_rewrite_to_sink` reach LOAD/STORE (yes, 46 nodes); does `hcq_fence` reach BACKEDGE (yes, 25 nodes); **does the scheduler ever mint a GATED STORE, which is the only input to the tree's one `Ops.ENDIF` rule (0 in 9 programs)**; and does the real `pm_linearize_cleanups` turn one into IF/ENDIF (yes, 14 nodes). | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-p14d.py` |
-| `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. Carries **three assertions of its own** (`# ORACLE SELFCHECK:`), which is where defect 21 is kept from coming back. | `env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py` |
+| `.agents/slop/graphcmp-oracle.py` | the coverage census, per graph and corpus-wide, with the PER-OP NODE COUNTS that are the denominator for every op claim. Carries **seven assertions of its own** (`# ORACLE SELFCHECK:`), which is where defects 21 and 28 are kept from coming back. **It names the device it ran on, on line 2** (`# DEV=`), read from `graphcmp.py`'s own `--dev` default via its AST — MEASURED, the py-side corpus is **313** nodes on `NULL`, **312** on `CPU` and **311** on `METAL`, and `late` is `RECIPROCAL` (13) on one and `FDIV` (12) on another, so a census whose device no artifact records is a number nobody can re-derive. **`DEV` in the environment no longer reaches it.** | `env -u PYTHONPATH LC_ALL=C .venv/bin/python .agents/slop/graphcmp-oracle.py` |
+| `.agents/slop/selfcheck/plants.py` | **three plants, one per defect fixed in `graphcmp-oracle.py`, and one of them CHANGES THE DEVICE** because two of the three defects are device-dependent and a plant that only permutes bytes cannot see that. Each plant must be able to MOVE: plant 1 asserts the corpus is device-dependent (non-vacuity), that the census follows `graphcmp.py`'s default (on a TEMP COPY — the real file is never edited), that it is immune to ambient `DEV`, and that the two-sides-different-device precondition FIRES, **with a control beat because the pre-fix file returns rc=1 for an unrelated reason and a bare "rc=1" beat would pass on the broken file for the wrong reason**; plant 2 compares RETURNED SETS and matches no text, and its second beat is a **BARE device name still counting `C`**, which is what separates the fix from a scanner that stopped looking; plant 3 drives `main()`'s real `PY-BEND OPs DIFFER` row under five `PYTHONHASHSEED` values. `ORACLE_UNDER_TEST=<path>` points the plants at a pre-fix copy — `jj file show -r @- .agents/slop/graphcmp-oracle.py` — which is how each plant was shown FAILING first. | `.venv/bin/python .agents/slop/selfcheck/plants.py` |
 | `.agents/slop/graphcmp-run.sh` | every artefact, one command. 16 graphs, five controls, cross, seven plants, the ordered/equiv split, the conflations, the DEBUG sweep, five stability pairs classified into **three** outcomes (identical / differ / **one side is a 0-row failure**), the fired 0-row guard, and a byte-identity step that **counts bytes on both sides before comparing**. Every output is written to a dot-named temp and `mv`d into place, so a run killed mid-write cannot leave a truncated file. Its summary counts every step — **a step that fails silently is not a step whose failure a gate can see**. | `sh .agents/slop/graphcmp-run.sh` |
 | `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary reads 16 graphs / 14 AGREE / byte-identical 14 / not-comparable 0 / selfcheck OK / census-rc 0 / **stable 5-0-0** / plants 7 / cross 1 / controls 5 / conflations 4 / oracle OK — the **negative** counts included, because a positive count alone cannot tell "it worked" from "it failed the same way twice" — then compares sha256 over non-blank lines. MEASURED **154 of 154 files identical**. It exists because the previous claim was backed by `find \| md5 -q`, which on macOS takes ONE file — and the corrected check found a real nondeterminism on its first run. | `sh .agents/slop/graphcmp-repro.sh` |
 
@@ -1500,3 +1514,30 @@ a shared scratch root deleted a *staged* `.tmp.gate.bin` mid-compile (`ld: errno
 that never happened); a frozen library could not resolve drivers living in `gates/`, so six of
 nine gates read as broken; and the green and red beats ran in **different directories**, so
 the red beat began EMPTY and one gate printed `cleared`.
+
+## devpin — the device pin and the environment census (2026-10-06)
+
+| tool | what it is |
+|---|---|
+| `checks/devpin.py` | **the gate**: the graphcmp comparison's device is a declared precondition. Two methods that share no assumption — **M1** reads device NAMES out of the run's own artifacts (the `# devices py=[...]` header and the `SGLOBAL,s<DEV>` `ParamArg` field, two separate regexes), **M2** re-emits `graphcmp.py emit --side py --graph lin` under the pinned `--dev` and byte-compares against the recorded `D2-canon-py-lin.txt`. `PINNED_DEV = "CPU"` is the ONE declaration; `checks/corpus-figure.py` READS it rather than keeping its own. `--plant satisfied` asserts the tree passes; `--plant moved --pin METAL` asserts a wrong pin is caught. Every value is printed before the exit, because a refusal you cannot read is a refusal you cannot test. |
+| `.agents/slop/devpin/hashall.py` | one sha256 over the 25 graphs' **row-shaped lines only**, plus a non-row count. The `ROW` regex is `^\d+:`, **not** `^\d+:\d+ ` — graphcmp's chunk form is `<len>:<len chars>`, so the second chunk's payload starts with an ATOM LETTER (`2:i1`), never a digit; the obvious spelling matches nothing and would hash 312 rows as 0. |
+| `.agents/slop/devpin/envsweep.py` | the environment census: 147 flags AST-counted off `tinygrad/`, **one subprocess each, two lanes**. Lane A is in-process and hashes rows; lane B is the subprocess `differ.py:452` actually runs and hashes the whole stdout. **One hash conflates them and I measured the conflation**: a first sweep reported `DEBUG`/`DEBUG_LINEARIZE`/`DEBUG_RANGEIFY` as moving rows, and they move only the artifact's non-row bytes. Six flags are excluded, each with a reason, because an exclusion no code names is how a pin rots. |
+| `.agents/slop/devpin/lin-decision.py` | which rows are device-dependent: re-emits all 25 graphs under four devices and diffs against the recorded py artifacts. **7** reproduce everywhere, **18** move, and **14 of the 18 are recorded `IDENTICAL`/`AGREE`** — the rows that would fire `expect-moved` and read as a port regression. |
+| `.agents/slop/devpin/injectivity.py` | is the canonical form injective? 88 live dataclass instances → 44 strings, 0 collisions; 0 ambiguous parses of the 6 `""`-joined renderings; and the join's blind spot constructed (a `str` value containing a later field's `name=` parses two ways, because `bstr` does not escape). The parse is a brute-force caret enumeration over field NAMES — **an earlier version offset the caret past the delimiter it had just matched and reported 0 parses for 88 of 88 unambiguous strings, which looks exactly like a clean result.** |
+
+## gendirs — the discovered generated-directory population (2026-10-06)
+
+| tool | what it is |
+|---|---|
+| `gates/gendirs.py` | **the population, discovered and shared.** Scans every `.py`/`.sh`/`.mjs`/`.js` in the tree for a write-shaped call and resolves each target through a constant-propagation FIXPOINT seeded with the source file's own `__file__`. **FOUR WRITER SHAPES, and version 1 knew one and found 1 of 12**: literal arg, module constant, **no positional arg** (`gendir.mkdir(exist_ok=True)` — the dir is the RECEIVER), and **a compiler `-o` in a subprocess** (`checks/abi_gate.py:616` hands the path to `bend -o` and never opens the file — the shape that hid `checks/gen/` from both meta-instruments). `--plant` is seven plants, **two of which assert OPPOSITE directions**: a NEW generated directory it MUST notice, and a NON-generated one it must **NOT** pick up. |
+| `gates/gendirs.py --no-index` | **not a flag of this file: a flag of `git check-ignore`, and it is the whole point.** MEASURED: `git check-ignore -v -- checks/gen/` → rc 1; `git check-ignore --no-index -v -- checks/gen/` → `.gitignore:153:checks/gen/`. Without `--no-index` git reports "not ignored" for every path **in the index**, i.e. for exactly the population the question governs. **A GUARD WHOSE QUERY CANNOT SEE ITS OWN SUBJECT.** |
+| `.agents/slop/gendirs/TABLE.md` | every directory in the tree something writes into, tracked / ignored / empty-blob, and which instrument can see it |
+| `.agents/slop/gendirs/properties.md` | the four candidate properties, each MEASURED, and why the answer is a scan |
+| `.agents/slop/gendirs/writetargets.py` | the standalone v1 scanner. **Kept for its four misses, which are the argument for the fixpoint** — it is the instrument that found 1 of 12 and could not see why. |
+
+**THE ADMITTED LIMIT, MEASURED.** The population is a **lower bound**, printed on every run
+(`1,560 of 2,048 source files read`). `checks/abi4_gate.py:501` reaches `checks/gen/` through
+`rc_of`, a `subprocess.run` that **names no output path at all**. **THE WRITER IS NAMED BY A CALL
+AND THE TARGET BY A CONVENTION INSIDE ANOTHER PROGRAM**, so no static scan closes it; closing it
+needs execution, and nothing here executes a gate (`bend` peaks at 1,468 MB against a 2,048 MB
+ceiling with six units live).
