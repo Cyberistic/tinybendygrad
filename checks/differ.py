@@ -130,10 +130,12 @@ WANT = {
     # answer with one `q` per option (`ops.bend:978` types them `List<U32>`; upstream's are
     # `Opt` dataclasses).
     "lin": "DISAGREE",
-    # `loop` DISAGREES on ONE node of 25 -- its CALL, whose dtype the port reads from
-    # `CallInfo.cdtype`, a field CPython's `CallInfo` does not have (`ops.py:130-131` reads
-    # `src[0].dtype`). Both are MEASURED causes, not tolerances.
-    "loop": "DISAGREE",
+    # `loop` AGREES NOW, AND THE CAUSE WAS NOT THE FIELD. It disagreed on ONE node of 25 -- its
+    # CALL -- and the PIN HAS that field (`ad117c928^:tinygrad/uop/ops.py:1398`). The port's
+    # `callinfo` printed the slot UNCONDITIONALLY where the pin's own `__repr__` suppresses it for
+    # void (`:1404`). Fixed in `3b183700a`, re-derived on the live driver at 25/25. **THE ENTRY
+    # STAYS because `unset` requires every graph here (`:407`); removing it would read as UNSET.**
+    "loop": "AGREE",
     "gate": "AGREE",
     # THE FOUR OF THE NINE THAT DISAGREE. Each row is a disagreement rather than a re-statement
     # of the last artifact, and each disagreement is a DIFFERENT KIND from `lin`/`loop`, which are
