@@ -10,10 +10,16 @@ the two must not be reported in the same way.
 It emits BOTH sides and tabulates the union, so a port op or atom the py side never
 produces shows up as a per-side difference rather than being absorbed into an AGREE.
 
-    env -u PYTHONPATH LC_ALL=C DEV=NULL .venv/bin/python .agents/slop/graphcmp-oracle.py
+IT RUNS ON graphcmp.py's OWN DEVICE, and prints which one on the first line. A coverage
+denominator computed on a device no artifact records is a number nobody can re-derive, and
+MEASURED the two are not interchangeable: the corpus is 313 py-side nodes on `NULL` and 312
+on `CPU`, and `late` is `RECIPROCAL` (13 nodes) on one and `FDIV` (12) on the other.
+
+    env -u PYTHONPATH LC_ALL=C .venv/bin/python .agents/slop/graphcmp-oracle.py
 """
 from __future__ import annotations
 
+import ast
 import collections
 import os
 import sys
@@ -22,8 +28,32 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import graphcmp as G  # noqa: E402
 
 
+# THE ONE COMPOSITE WHOSE LAST FIELD IS A `,`-JOINED PAYLOAD LIST, and the census counted a
+# letter out of it for a whole run. `graphcmp.py:404`'s `dev()` spells a device TUPLE as ONE
+# `s` atom carrying the names joined by `,`, so a 2-device ALLREDUCE is `al(OADD,sCPU,CPU)`
+# -- MEASURED -- and that `,` re-opens this function's offset-0 rule on the second `CPU`.
+# `al(` is the ONLY arg shape in the 25-graph corpus where an alnum token follows a payload
+# rather than an atom, and the SAME tuple spelled field-wise -- `n(sCPU,sCPU)`, which `tup()`
+# emits and which the scan below already reads correctly -- is what every other site produces.
+# So this is `dev()`'s spelling and not a property of the grammar, and the leaked letter is
+# the device NAME's first letter: a NAME is a payload, not an atom.
+#
+# WHY A TABLE AND NOT A PARSER: `al(OADD,sCPU,CPU)` and `al(OADD,sCPU,sCPU)` are
+# indistinguishable to `G.split_top`, so a `,` inside an `s` payload is ambiguous between
+# "next field" and "next element" and no tokenizer can settle it from the text alone. What IS
+# knowable without guessing is that `al(` has exactly TWO fields, so its FIRST `,` is the
+# field boundary and everything after it is one payload. That is a fact about the form, which
+# is why it sits beside `G.COMPOSITE` instead of inside the scan.
+#
+# **AND NOT BY ADDING THE LETTER TO `ATOMS`.** `C` is the second letter of `COPY` and `D` is
+# a dtype and `M`/`N`/`S` are already atoms; a legal `C` is a legal `COPY` prefix, so an atom
+# letter that a payload can contribute can collide with a real atom tomorrow. Deleting the
+# check and keeping the defect is not a fix.
+PAYLOAD_LAST_FIELD = ("al(",)
+
+
 def atoms(arg: str) -> set:
-  """The ATOM LETTERS in an arg. THREE conditions, and the first two versions had fewer and
+  """The ATOM LETTERS in an arg. FOUR conditions, and the first three versions had fewer and
   were visibly wrong on screen.
     * MEASURED, the first counted the SECOND character of every atom and the `)` of the
       `n()` empty-list spelling -- it reported `34DNPSbils` for a `ParamArg` and `)` for a
@@ -45,7 +75,29 @@ def atoms(arg: str) -> set:
       token's FIRST character and changed nothing, because `arg[i+1]` is `p`. The assertion
       at the bottom of this file is what made that visible in one run instead of one
       reading.
+    * DEFECT 28 (2026-10-06, `--graph allred`): a `,` inside an `s` PAYLOAD is not a field
+      boundary, and the scan had no way to know that -- so a 2-device ALLREDUCE
+      `al(OADD,sCPU,CPU)` reported `C` as an unmapped atom and the census's own SELFCHECK went
+      FAIL with rc=1 on a tree that was entirely correct. See `PAYLOAD_LAST_FIELD` for the
+      measurement and for why this is not fixed by teaching the scan to guess.
+
+  PAYLOAD-LAST FIELD: `al(` ends with one payload, so the letters past the first `,` are not
+  atoms and the only one that is counted is the field's own prefix. A BARE device name
+  (`al(OADD,CPU)`, no `s`) still counts its first letter, because that is a real atom-shaped
+  token at a real field boundary -- and the selfcheck asserts that it does.
   """
+  for p in PAYLOAD_LAST_FIELD:
+    if arg.startswith(p):
+      head, _, payload = arg.partition(",")
+      lead = payload[:1]
+      return _atoms(head) | ({lead} if lead.isalpha() else set())
+  return _atoms(arg)
+
+
+def _atoms(arg: str) -> set:
+  """The scan itself, with no form-specific knowledge in it. `atoms()` is the one that knows
+  a form's field layout, so a change to the layout cannot reach here and quietly become a
+  change to what counts as an atom."""
   out, i = set(), 0
   while i < len(arg):
     c = arg[i]
@@ -76,7 +128,38 @@ def census(lines: list[str]) -> dict:
         res.add(m)
   return {"nodes": len(lines), "ops": ops, "residual": res, "shapes": shapes,
           "depths": depths, "atoms": atom, "symdims": symdim_rows(lines),
-          "per_op": per_op}
+          "devs": G.devnames(lines), "per_op": per_op}
+
+
+def graphcmp_dev() -> str:
+  """The device `graphcmp.py` ITSELF runs on, read out of its own `--dev` default.
+
+  THE CENSUS AND THE GRAPH ARTIFACTS HAVE TO BE ABOUT THE SAME GRAPH, and one run had them
+  about two. `checks/differ.py:47` puts `DEV=NULL` in the ENV every step gets at `:314`, and
+  `graphcmp.py:2853` OVERWRITES `os.environ["DEV"]` with its own `--dev`, so the graph
+  artifacts were CPU while the census was whatever the environment said. This function's
+  predecessor was `os.environ.setdefault("DEV", "CPU")`, which cannot repair that:
+  `setdefault` is a no-op EXACTLY when the caller set the variable, and `differ.py` always
+  does. MEASURED, and it is not a rounding difference -- see the module docstring.
+
+  AND THE BEND SIDE IGNORES `dev` WHATEVER IT IS HANDED. MEASURED: `emit_bend("NULL", g)`
+  still reports `devnames() == {'sCPU'}`, because a device is the port's own arena tag 0
+  (`uop/render.bend:363`) and there is nothing in `DEV` for it to read. So a census that
+  asks the environment gets two sides on two devices, and passing the right string to
+  `emit_bend` does not repair it -- which is why the device comes from `graphcmp.py` and why
+  `main()` asserts the two sides' `devnames` AGREE instead of trusting the plumbing.
+
+  READ FROM THE AST AND NOT COPIED: a third literal `CPU` in this file would recreate this
+  exact defect as a silent drift the day `graphcmp.py`'s default moved, which is the failure
+  this whole function exists to remove. A copy of a constant is a check against a stale file.
+  """
+  tree = ast.parse((G.SLOP / "graphcmp.py").read_text())
+  for node in ast.walk(tree):
+    if isinstance(node, ast.Call) and getattr(node.func, "attr", "") == "add_argument" \
+        and node.args and getattr(node.args[0], "value", None) == "--dev":
+      return ast.literal_eval(next(k.value for k in node.keywords if k.arg == "default"))
+  raise SystemExit("graphcmp.py declares no --dev default, so the census cannot name the "
+                   "device it ran on -- a denominator whose device is unnamed is unauditable")
 
 
 def symdim_rows(lines: list[str]) -> list[str]:
@@ -88,11 +171,31 @@ def symdim_rows(lines: list[str]) -> list[str]:
 
 
 def main() -> int:
-  os.environ.setdefault("DEV", "CPU")
+  # ONE DEVICE, CHOSEN ONCE, EXPORTED TO BOTH SIDES, AND PRINTED. `os.environ["DEV"]` (not
+  # `setdefault`) because `emit_py` runs in THIS process and the census must be about the
+  # device it says it is about; the `dev=` argument is the same string, so `emit_bend` cannot
+  # disagree by construction. `checks/differ.py:47` setting `DEV=NULL` no longer reaches here.
+  #
+  # AND THE EXPORT HAS TO HAPPEN BEFORE TINYGRAD EXISTS, WHICH IS AN ORDERING NOBODY CAN SEE.
+  # MEASURED: `tinygrad.Device.DEFAULT` is resolved at IMPORT -- after `load_tinygrad()`,
+  # `os.environ["DEV"] = "CPU"` changes nothing at all, the corpus stays 313 nodes on the
+  # device that was in the environment when tinygrad was first imported, and the census prints
+  # a device it is not running on. `graphcmp.py` imports no tinygrad at module scope (which is
+  # why `differ.py` can import it for `corpus()`), so the order below is correct -- and a
+  # correct order that only correctness depends on is an order a later edit can break in one
+  # line. So it is REFUSED rather than assumed.
+  if any(m == "tinygrad" or m.startswith("tinygrad.") for m in sys.modules):
+    raise SystemExit("tinygrad is already imported, so `DEV` can no longer choose this census's "
+                     "device: `Device.DEFAULT` is frozen at import. A census that prints one "
+                     "device and runs on another is a number about a graph no artifact holds.")
+  DEV = graphcmp_dev()
+  os.environ["DEV"] = DEV
   G.load_tinygrad()
   G.COMM = G.commutative()
   import tinygrad
   print(f"# tree={tinygrad.__file__}")
+  print(f"# DEV={DEV} -- graphcmp.py's own `--dev` default, exported to BOTH sides. Every count "
+        f"below is about this device and about no other.")
   print(f"# {'graph':<10} {'nodes':>5} {'cnt':>4} {'ops':>4} {'arg-atoms':>9} "
         f"{'shapes':>6} {'depths':>6} {'sym':>5}  live-ledger")
   tot_nodes = 0
@@ -106,17 +209,28 @@ def main() -> int:
   bad: list[str] = []
   for g in sorted(G.GRAPHS):
     py = census(G.emit_py(g, None))
-    bd = census(G.emit_bend("CPU", g)[0])
+    bd = census(G.emit_bend(DEV, g)[0])
     tot_nodes += py["nodes"]
     tot_ops |= py["ops"] | bd["ops"]
     tot_atoms |= py["atoms"] | bd["atoms"]
     tot_comm |= py["ops"] & G.COMM
     tot_sym += len(py["symdims"])
+    # THE PRECONDITION `graphcmp.py` ALREADY HAS AND THIS FILE COULD NOT REACH. It lives in
+    # `_dispatch` (:2958), which checks `pdev != bdev` and calls it "NOT WELL-POSED, and this
+    # is NOT a verdict" -- and this file calls `emit_py` and `emit_bend` DIRECTLY, so the
+    # guard sat on a path the guarded thing never takes. An ALLOC's device selects its `core`,
+    # which propagates to every consumer, so a two-device census is a number about a graph no
+    # artifact contains. It is a FAILURE and not a note: the only channel this file has is `bad`.
+    if py["devs"] != bd["devs"]:
+      bad.append(f"{g}: the two sides opened DIFFERENT devices -- py {sorted(py['devs'])} "
+                 f"against bend {sorted(bd['devs'])} -- so this row's node/op/shape/atom "
+                 f"counts are about two different graphs")
     tal.update(py["per_op"])
     graphs_of.update(py["ops"])
     for m in py["residual"] | bd["residual"]:
       all_res[m] += 1
-    same = "same" if py["ops"] == bd["ops"] else f"PY-BEND OPs DIFFER: {py['ops'] ^ bd['ops']}"
+    same = ("same" if py["ops"] == bd["ops"]
+            else f"PY-BEND OPs DIFFER: {sorted(py['ops'] ^ bd['ops'])}")
     print(f"  {g:<10} {py['nodes']:>2}/{bd['nodes']:<2} {'ok' if py['nodes'] == bd['nodes'] else 'BAD':>4} "
           f"{len(py['ops']):>4} {''.join(sorted(py['atoms'])) or '-':>9} "
           f"{len(py['shapes']):>6} {len(py['depths']):>6} "
@@ -146,6 +260,20 @@ def main() -> int:
     bad.append("atoms() lost the ENUM atom `E` after the field-name fix")
   if unknown:
     bad.append(f"unmapped arg atom letters: {''.join(sorted(unknown))}")
+  # DEFECT 28, ASSERTED IN BOTH DIRECTIONS, because a fix that only ever fires has not been
+  # shown to still bite. The census reported `unmapped arg atom letters: C` -- where `C` is
+  # the first letter of the device NAME in `al(OADD,sCPU,CPU)`, i.e. a PAYLOAD, and NOT an
+  # atom. `PAYLOAD_LAST_FIELD` is the fix and the three lines below are what stop it from
+  # becoming "the scanner stopped looking".
+  if atoms("al(OADD,sCPU,CPU)") != {"a", "O", "s"}:
+    bad.append(f"a 2-device ALLREDUCE arg still leaks a letter out of the payload: "
+               f"{sorted(atoms('al(OADD,sCPU,CPU)'))}")
+  if atoms("al(OADD,sCPU,sCPU,METAL)") != {"a", "O", "s"}:
+    bad.append(f"a 4-element device tuple still leaks a letter out of the payload: "
+               f"{sorted(atoms('al(OADD,sCPU,sCPU,METAL)'))}")
+  if "C" not in atoms("al(OADD,CPU)"):
+    bad.append("a BARE device name (no `s` prefix) is no longer an unmapped atom, so "
+               "PAYLOAD_LAST_FIELD is now hiding a device name instead of a payload element")
   print(f"# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: "
         f"{dict(sorted(all_res.items())) or 'none'} of {len(G.LEDGER)} markers")
   print("#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check "
@@ -159,9 +287,30 @@ def main() -> int:
         "two-run sha256 check over `runs/graphcmp/D` caught it on `D0-coverage-census.txt` "
         "as the ONLY differing file out of 158.\n"
         "#   It is the exact class the brief names: a COUNT that is right and an ORDER that "
-        "is not, printed where a reader will read it as one line of fact. Every OTHER "
-        "iteration of a set in this file is already `sorted(...)` -- which is why 157 of "
-        "158 files were stable and this one was not.")
+        "is not, printed where a reader will read it as one line of fact. That is why 157 of "
+        "158 files were stable and this one was not.\n"
+        "#   AND THE CLASS HAD A SECOND MEMBER IN THIS FILE, WHICH THE PARAGRAPH ABOVE USED "
+        "TO\n"
+        "#   DENY: 'Every OTHER iteration of a set in this file is already `sorted(...)`'. That "
+        "sentence was\n"
+        "#   FALSE -- the `PY-BEND OPs DIFFER` row printed a SET LITERAL, `{py['ops'] ^ "
+        "bd['ops']}` -- so the\n"
+        "#   sort and the correction are in ONE edit, because a comment that has stopped "
+        "describing the code\n"
+        "#   is a pin that has stopped pinning. MEASURED, with no `bend` at all: three seeds "
+        "gave\n"
+        "#   `{'PERMUTE','RANGE','REDUCE','COPY','ALLREDUCE','MUL'}`, "
+        "`{'RANGE','COPY','MUL','REDUCE','PERMUTE','ALLREDUCE'}\n"
+        "#   and `{'MUL','COPY','ALLREDUCE','PERMUTE','REDUCE','RANGE'}` -- THREE renderings "
+        "of ONE fact, and a\n"
+        "#   `repro` lane that reported `D0-coverage-census.txt: 2 runs DIFFER` on 1 of 196.\n"
+        "#   WHY SORTING AND NOT PINNING A SEED: a PIN IS A SEED AND A SORT IS A LAW. A seed "
+        "fixes the order on\n"
+        "#   THIS interpreter and buys nothing on the next one, while the claim being "
+        "protected -- 'the port and\n"
+        "#   CPython disagree' -- must survive a Python upgrade. An oracle whose set print "
+        "follows the hash is a lane\n"
+        "#   that can never be green, and no amount of correctness in the port makes it so.")
   print(f"# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: "
         f"{[m for m, _, _, _ in G.LEDGER if m not in all_res] or 'none'}")
   print(f"# COMMUTATIVE OPS (read from CPython): {sorted(G.COMM)}")
