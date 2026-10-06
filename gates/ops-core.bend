@@ -34,6 +34,7 @@
 #                         the RANGE whose arg names the axis it closes over.
 
 import Base
+import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/LAWS/spec.bend as S
 import ./../tinybendygrad/uop/ops.bend as O
 
@@ -41,10 +42,63 @@ import ./../tinybendygrad/uop/ops.bend as O
 # the row is the CLAIM's verdict rather than the test's identity: two implementations of the
 # same property, one in Bend and one in Python, and no shared code between them to be wrong
 # together.
+# The pop_const rows spell their OWN whole line and print it, rather than handing a name and a
+# value to a printer -- three list elements in one `String.concat` is where the two shapes part
+# company, and a row builder that can print is one call shorter than one that describes.
+def prow(v: String) -> IO(Unit): IO.print(v)
+
 def row(nm: String, v: Bool) -> IO(Unit):
   match v:
     case True{}: IO.print(String.concat([nm, "=1"]))
     case _: IO.print(String.concat([nm, "=0"]))
+
+# `pop_const` -- ops.py:1082. `(src[0], src[1].val) if op is self.op and src[1].op is CONST else
+# (self, None)`. TWO rows per fixture, because the pair of conditions and the popped VALUE fail
+# independently: a reader that always refused would satisfy every `_val` row, and a reader that
+# always popped would satisfy every `_hits` row. The float CONST is the third shape -- it IS a
+# CONST, so `_hits` is true and `_val` is still absent, because `APy{CFloat{}}` carries an F32
+# and this reader hands back an I64.
+def g_add_const() -> O.Found:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
+  O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(c), O.Found.i(c)])
+
+# Right op, but `src[1]` is a RANGE and not a CONST.
+def g_add_noconst() -> O.Found:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(2)})
+  +r = O.UOp.range_end(O.Found.ar(c), O.Found.i(c), [0], O.AXIS_LOOP{})
+  O.UOp.alu(O.Found.ar(r), O.OpsADD{}, [O.Found.i(r), O.Found.i(r)])
+
+# Right second src, WRONG op -- the row that says the op is compared and not merely assumed.
+def g_mul_const() -> O.Found:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
+  O.UOp.alu(O.Found.ar(c), O.OpsMUL{}, [O.Found.i(c), O.Found.i(c)])
+
+def g_add_cfloat() -> O.Found:
+  +c = O.UOp.const(O.Arena.empty(), O.CFloat{2.5})
+  O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(c), O.Found.i(c)])
+
+# MATCHED RATHER THAN PASSED ON, because `Maybe<&1, H.I64>` is the reader's lifetime and the
+# printer's is its own -- the same rebind `wk-cd.bend`'s `show` does.
+# A MATCH MAY NOT SCRUTINISE A COMPUTED VALUE, so the reader is matched in a def of its own that
+# takes the `Maybe` -- `wk-cd.bend`'s `show`, and the reason that shape is a pair of defs there
+# too. `&1` rather than `&2` because the value is being consumed by the match, not returned.
+# ONE PRINTER FOR THE THREE CONST CLASSES, in the order `Const` declares them, and `none` for the
+# absent value -- which is a fourth case and NOT a fourth class.
+def cshow(m: Maybe<&1, O.Const>) -> String:
+  match m:
+    case Some{O.CBool{b}}: Bool.show(b)
+    case Some{O.CInt{i}}: H.i64_text(i)
+    case Some{O.CFloat{f}}: H.f32_show(f)
+    case _: "none"
+
+def popv(+f: O.Found) -> String:
+  cshow(O.UOp.pop_const_val(O.Found.ar(f), O.Found.i(f), O.OpsADD{}))
+
+def pc(+nm: String, +f: O.Found) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- prow(String.concat([nm, "_hits=",
+      Bool.show(O.UOp.pop_const_hits(O.Found.ar(f), O.Found.i(f), O.OpsADD{}))]))
+    prow(String.concat([nm, "_val=", popv(f)]))
 
 def rows() -> IO(Unit):
   do IO<Unit>:
@@ -52,14 +106,7 @@ def rows() -> IO(Unit):
     b : Unit <- row("zeros_differ", O.t_float_zeros_differ())
     c : Unit <- row("nan_interns", O.t_float_nan_interns())
     d : Unit <- row("bool_vs_int_key", O.t_dtype_key())
-    row("backedge_srcs", O.t_cycle())
-    # THE ARG-TYPE LANE. tinygrad's key is `(op, src, arg, tag, type(arg))` -- ops.py:201 --
-    # and that tuple carries an ASYMMETRY worth nine rows: it has `type(arg)` and NOT
-    # `type(tag)`, so `True` and `1` SPLIT as a top-level arg and MERGE everywhere else. Each
-    # `t_*` returns the CLAIM rather than a verdict, so a `0` is a correct answer and not a
-    # failure -- which is what makes these rows worth more than the five above: five rows of `1`
-    # cannot tell a comparator that always says True from one that is right, and three of these
-    # nine are `0`.
+    e : Unit <- row("backedge_srcs", O.t_cycle())
     f : Unit <- row("tag_bool_vs_int_interns", O.t_tag_bool_vs_int_interns())
     g : Unit <- row("tag_true_vs_false_splits", O.t_tag_true_vs_false_splits())
     h : Unit <- row("tag_none_vs_zero_interns", O.t_tag_none_vs_zero_interns())
@@ -68,6 +115,13 @@ def rows() -> IO(Unit):
     k : Unit <- row("pynest_int_distinct_interns", O.t_pynest_int_distinct_interns())
     l : Unit <- row("pynest_none_vs_zero_interns", O.t_pynest_none_vs_zero_interns())
     m : Unit <- row("pynest_cfloat_vs_int_interns", O.t_pynest_cfloat_vs_int_interns())
+    # THE POP_CONST FIXTURES, and `pop_mul_const` is popped with `ADD` on purpose: it is the row
+    # that says the op is COMPARED rather than assumed, and without it a reader that ignored the
+    # op argument would pass the other three.
+    n : Unit <- pc("pop_add_const", g_add_const())
+    o : Unit <- pc("pop_add_noconst", g_add_noconst())
+    q : Unit <- pc("pop_mul_const", g_mul_const())
+    r : Unit <- pc("pop_add_cfloat", g_add_cfloat())
     row("pynest_signed_zero_interns", O.t_pynest_signed_zero_interns())
 
 def main() -> IO(Unit): rows()

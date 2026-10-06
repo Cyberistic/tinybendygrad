@@ -54,7 +54,13 @@ ROWS = (
     "hashcons_same_index", "zeros_differ", "nan_interns", "bool_vs_int_key", "backedge_srcs",
     "tag_bool_vs_int_interns", "tag_true_vs_false_splits", "tag_none_vs_zero_interns",
     "const_bool_vs_int_splits", "pynest_bool_vs_int_interns", "pynest_int_distinct_interns",
-    "pynest_none_vs_zero_interns", "pynest_cfloat_vs_int_interns", "pynest_signed_zero_interns",
+    "pynest_none_vs_zero_interns", "pynest_cfloat_vs_int_interns",
+    "pynest_signed_zero_interns",
+    # `pop_const`, TWO rows per fixture: `_hits` is the PAIR of conditions and `_val` is the
+    # popped value, and they fail independently. A reader that always refused would satisfy every
+    # `_val` row; a reader that ignored the `op` argument would satisfy every `_hits` row.
+    "pop_add_const_hits", "pop_add_const_val", "pop_add_noconst_hits", "pop_add_noconst_val",
+    "pop_mul_const_hits", "pop_mul_const_val", "pop_add_cfloat_hits", "pop_add_cfloat_val",
 )
 
 GATE = Gate(
@@ -66,5 +72,5 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 14 rows, 3 lanes, ops.bend's CONST identity AND its arg-type "
-                        "asymmetry agree with CPython"))
+    sys.exit(main(GATE, "ops-core-gate: 22 rows, 3 lanes -- CONST identity, the arg-type asymmetry, and "
+                        "pop_const's two conditions -- all agree with CPython"))

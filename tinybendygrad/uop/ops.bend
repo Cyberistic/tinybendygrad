@@ -4922,7 +4922,14 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1069  def divides
 
-# TODO(p3) ops.py:1082  def pop_const
+# DONE(p3) ops.py:1082 def pop_const -- `UOp.pop_const_val` / `UOp.pop_const_hits` above, with
+#   `cval_arg`. Gated at `gates/ops-core-gate.py` in EIGHT rows over FOUR fixtures, and the
+#   fixtures are built so the def's TWO conditions fail SEPARATELY: a second src that is not a
+#   CONST, and a `MUL` popped as an `ADD`. Planted -- dropping the `op` comparison from
+#   `pop_const_hits` fails exactly `pop_mul_const_hits` and nothing else, which is what says the
+#   op is COMPARED rather than assumed. The value is a `Const` and not an `H.I64`: an I64-only
+#   reader recorded a divergence on the float fixture that was really just a narrow type, and
+#   `pop_const` returns whatever the CONST carries.
 
 # TODO(p3) ops.py:1085  def gcd
 
@@ -6848,6 +6855,44 @@ def UOp.reduce(ar: Arena, self: U32, srcs: List<&2, U32>, rop: Maybe<&2, Op>) ->
 def UOp.cconst(+ar: Arena, v: Const, dt: S.Dt) -> Found:
   +c = UOp.const(ar, v)
   UOp.new(Found.ar(c), OpsCAST{}, [Found.i(c)], ADt{dt}, TNone{})
+
+# `pop_const` -- ops.py:1082. The whole def is TWO CONDITIONS AND A PAIR:
+#
+#   (self.src[0], self.src[1].val) if self.op is op and self.src[1].op is Ops.CONST
+#   else (self, None)
+#
+# CPython returns a 2-tuple EITHER WAY, so "did not pop" is not a different shape -- it is the
+# same node with an absent value. That is why the port returns the VALUE and leaves the popped
+# node to be `Arena.src0`, which the caller can already read: returning it would return a thing
+# the reader hands out for free, and CPython only bundles it because a tuple is cheaper than a
+# re-read THERE.
+#
+# THE VALUE IS A `Const`, NOT AN `H.I64`, and that is not a wider type for its own sake. My first
+# version answered `Maybe<&1, H.I64>` and the gate's float fixture caught it: `pop_const` on an
+# ADD whose second src is a FLOAT CONST hits both conditions in CPython and returns `2.5`, while
+# an I64-only reader answers `none` and records a divergence that is really just a narrow reader.
+# `Const` is the sum the arg already holds, so answering with it costs one match arm and removes
+# the divergence entirely.
+def cval_arg(a: Arg) -> Maybe<&1, Const>:
+  match a:
+    case APy{CBool{b}}: Some{CBool{b}}
+    case APy{CInt{i}}: Some{CInt{i}}
+    case APy{CFloat{f}}: Some{CFloat{f}}
+    case _: None{}
+
+def UOp.pop_const_val(+ar: Arena, +i: U32, op: Op) -> Maybe<&1, Const>:
+  Bool.pick(Maybe<&1, Const>,
+            Bool.and(eq_op(Arena.op(ar, i), op),
+                     eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{})),
+            cval_arg(Arena.arg(ar, Arena.src(ar, i, 1))),
+            None{})
+
+# AND THE ROW THAT SAYS IT HIT, separately from the value's presence. A reader that always
+# returned `None{}` would satisfy every value row, and one that ignored the op would satisfy
+# every hit row; the pair is what makes both fail.
+def UOp.pop_const_hits(+ar: Arena, +i: U32, op: Op) -> Bool:
+  Bool.and(eq_op(Arena.op(ar, i), op),
+           eq_op(Arena.op(ar, Arena.src(ar, i, 1)), OpsCONST{}))
 
 # `index` -- ops.py:578. `UOp(Ops.INDEX, src=(self,)+tuple(new_srcs))`, and above it
 # a guard: a STACK indexed by ONE CONST is not an INDEX at all, it is that element

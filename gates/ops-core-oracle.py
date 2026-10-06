@@ -71,6 +71,28 @@ def tagged(tag):
     return UOp(Ops.SINK, src=(), arg=None, tag=tag)
 
 
+def i64_text(v: int) -> str:
+    """An I64 as its two words, because `H.i64_text` is -- `7` is `0:7`."""
+    return f"{v >> 32}:{v & 0xFFFFFFFF}"
+
+
+def show_const(v) -> str:
+    """A popped CONST, in the SAME three renderings the Bend lane uses.
+
+    `ConstFloat` takes the six-decimal form and an integer takes `hi:lo`, because `H.f32_show`
+    and `H.i64_text` do. That is the same choice made twice rather than one choice shared -- the
+    two lanes share no code by construction, and a third formatter here would be a third thing to
+    keep in step.
+    """
+    if v is None:
+        return "none"
+    if isinstance(v, bool):
+        return "True" if v else "False"
+    if isinstance(v, ConstFloat):
+        return f"{float(v):f}"
+    return i64_text(int(v))
+
+
 def main() -> None:
     nan = ConstFloat(float("nan"))
 
@@ -99,8 +121,33 @@ def main() -> None:
         ("pynest_cfloat_vs_int_interns", pa(ConstFloat(1.0)) is pa(1)),
         ("pynest_signed_zero_interns", pa(ConstFloat(-0.0)) is pa(ConstFloat(0.0))),
     )
+    rows = list(rows)
+    last = rows.pop()                       # pynest_signed_zero_interns, which the driver prints LAST
+    # `pop_const` -- ops.py:1082. `(src[0], src[1].val) if op is self.op and src[1].op is
+    # CONST else (self, None)`. TWO rows per fixture, and the fixtures are chosen so the two
+    # conditions fail SEPARATELY: a wrong second src, and a wrong op. The fourth is the row that
+    # caught the port answering an I64-only reader -- the value here is a FLOAT.
+    def pop(nm, u, op=Ops.ADD):
+        hit = u.op is op and u.src[1].op is Ops.CONST
+        return ((f"{nm}_hits", str(hit)),
+                (f"{nm}_val", show_const(u.pop_const(op)[1] if hit else None)))
+
+    c7 = UOp.const(7, dtypes.weakint)
+    r2 = UOp.const(2, dtypes.weakint)
+    add_const = UOp(Ops.ADD, src=(c7, c7))
+    add_noconst = UOp(Ops.ADD, src=(UOp.range(r2, 0, AxisType.LOOP),
+                                    UOp.range(r2, 0, AxisType.LOOP)))
+    mul_const = UOp(Ops.MUL, src=(c7, c7))
+    add_cfloat = UOp(Ops.ADD, src=(c7, UOp.const(ConstFloat(2.5), dtypes.weakfloat)))
+    rows.extend(pop("pop_add_const", add_const))
+    rows.extend(pop("pop_add_noconst", add_noconst))
+    rows.extend(pop("pop_mul_const", mul_const))
+    rows.extend(pop("pop_add_cfloat", add_cfloat))
+    rows.append(last)
+
+
     for name, value in rows:
-        print(f"{name}={b(value)}")
+        print(f"{name}={value if isinstance(value, str) else b(value)}")
 
 
 if __name__ == "__main__":
