@@ -1,0 +1,10 @@
+INS    void  OUTER-None -> ?
+INS    u64   Some{u64 ()}
+INS    i32   Some{i32 ()}
+INS    (no arg, the assert's None arm) OUTER-None -> ?
+CALL   void  OUTER-None -> ?
+CALL   u64   Some{u64 ()}
+CFUN   void  Some{void R}
+CFUN   u64   Some{u64 ()}
+CUSTOM void  Some{void R}
+CUSTOM u64   Some{u32 R}
