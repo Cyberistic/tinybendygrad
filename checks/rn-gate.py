@@ -63,9 +63,38 @@ import argparse, hashlib, importlib.util, pathlib, re, subprocess, sys
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/eq/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, which is where every `cwd=REPO` in this file pointed.  Note the trap:
+# `parents[1]` is ALSO wrong -- it is `/Users/cyberistic/src/tries`.
+REPO = HERE.parents[0]
+SLOP = REPO / ".agents" / "slop"
 PORT = "tinybendygrad/uop/render.bend"
 ORACLE = [".agents/slop/xd1/render-gate-oracle.py", "--gate"]
+
+
+def refuse(*why):
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE `load()` below, because both readers used to be SIBLINGS at `.agents/slop/eq/`
+  and the move carried this file without them, so `load()` raised `FileNotFoundError` FIRST --
+  and an assertion DOWNSTREAM of what it asserts cannot turn an exception into a refusal."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
+# substrate this root claim rests on, then the readers this gate LOADS at import.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+_SWEEP = "  (swept by 371cc64c9; recoverable from git at 371cc64c9^:.agents/slop/eq/%s.py)"
+for _n in ("rebase-gate", "eq-census2"):
+  _p = SLOP / "eq" / f"{_n}.py" if _n == "eq-census2" else SLOP / f"{_n}.py"
+  if not _p.is_file():
+    refuse(f"input absent: {_p}" + _SWEEP % _n
+           + "  This gate cannot produce a denominator without it.")
 SEP = "]   py=["      # `py_row`'s own three-space literal (render.bend:2148)
 ROW_OPEN = " = ["     # and its own name/value boundary, same line
 DEPTH = {"[": 1, "]": -1}
@@ -73,15 +102,14 @@ DEPTH = {"[": 1, "]": -1}
 
 def load(name):
   """`rebase-gate.py` has a `-` in its name, so it does not import by name.  ONE loader for every
-  reader this file uses, and the SIBLING `eq-census2.py` is a peer in this same directory."""
-  for d in (HERE, HERE.parent):
-    p = d / f"{name}.py"
-    if p.exists():
-      spec = importlib.util.spec_from_file_location(name, str(p))
-      mod = importlib.util.module_from_spec(spec)
-      spec.loader.exec_module(mod)
-      return mod
-  raise FileNotFoundError(f"{name}.py in neither {HERE} nor {HERE.parent}")
+  reader this file uses.  `SLOP` rather than a HERE-relative search, because both readers were
+  SIBLINGS at `.agents/slop/eq/` and `3f0e70ff1` carried this file to `checks/` without them;
+  `refuse()` above has already asserted both exist, so there is no search left to fall through."""
+  p = (SLOP / "eq" / f"{name}.py") if name == "eq-census2" else (SLOP / f"{name}.py")
+  spec = importlib.util.spec_from_file_location(name, str(p))
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
+  return mod
 
 
 _rebase = load("rebase-gate")

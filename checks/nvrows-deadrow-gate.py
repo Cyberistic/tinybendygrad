@@ -41,9 +41,36 @@ import subprocess
 import sys
 import tempfile
 
-REPO = pathlib.Path(__file__).resolve().parents[3]
+# `parents[1]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `Path(__file__).resolve()` walks from the FILE, so `parents[0]` is `checks/`.  `parents[3]` was
+# correct at this file's original home `.agents/slop/nvrows/`; `3f0e70ff1` moved it to `checks/`,
+# ONE level shallower, and carried the constant across without recomputing it -- so REPO became
+# `/Users/cyberistic/src`.  Note the trap: `parents[2]` is ALSO wrong (it is
+# `/Users/cyberistic/src/tries`), and `parents[3]` is wrong in the OTHER direction too -- one
+# level too few from a file, `parents[1]`, is the only depth that lands on the root.
+REPO = pathlib.Path(__file__).resolve().parents[1]
 TARGET = REPO / "tinybendygrad/runtime/support/nv/nvdev.bend"
 BEND = REPO / "bin/bend"
+
+
+def refuse(*why: str) -> None:
+    """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+    Placed BEFORE `import_closure` reads anything, because under the stale root `TARGET` was
+    `/Users/cyberistic/src/tinybendygrad/...` and `TARGET.read_text()` at `:243` raised -- and an
+    assertion DOWNSTREAM of what it asserts cannot turn an exception into a refusal."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
+# substrate this root claim rests on, then the lane and the compiler this gate runs.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+    refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+           f"(is `parents[N]` stale after a move?)")
+for _p in (TARGET, BEND):
+    if not _p.is_file():
+        refuse(f"input absent: {_p}  This gate cannot produce a denominator without it.")
 # `import Base` resolves against the package root, which is the directory named
 # `tinybendygrad` -- found by name, not by counting parents, because a fixed
 # depth is exactly the kind of citation that goes stale.

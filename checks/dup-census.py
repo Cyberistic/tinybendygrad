@@ -41,9 +41,41 @@ import argparse, importlib.util, json, pathlib, sys
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
-SLOP = HERE.parent
-REPO = HERE.parents[2]
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/dup/` to `checks/`, ONE level shallower, and
+# carried BOTH constants across without recomputing them: `SLOP = HERE.parent` became the repo
+# root (so `SLOP/"rebase-gate.py"` was `<repo>/rebase-gate.py`, which does not exist) and `REPO`
+# became `/Users/cyberistic/src`.  Note the trap: `parents[1]` is ALSO wrong -- it is
+# `/Users/cyberistic/src/tries`.  `SLOP` was `.agents/slop/` at the old depth, because that is
+# where `rebase-gate.py` and `eq/` lived, and `371cc64c9` swept `eq/eq-census2.py`.
+REPO = HERE.parents[0]
+SLOP = REPO / ".agents" / "slop"
 CACHE = HERE / "lanes"
+
+
+def refuse(*why) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE `load()` below, because under bare `python3` a stale `SLOP` made
+  `load()` raise `FileNotFoundError` FIRST, and an assertion DOWNSTREAM of what it asserts
+  cannot turn an exception into a refusal: rc 1 and a traceback, which carries no denominator
+  and so counts nowhere."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FOURTH relocation is a refusal rather than a third exception:
+# the substrate this root claim rests on, then every input this gate LOADS at import.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+_EQ = SLOP / "eq" / "eq-census2.py"
+for _p in (SLOP / "rebase-gate.py", _EQ):
+  if not _p.is_file():
+    refuse(f"input absent: {_p}"
+           + ("  (swept by 371cc64c9; recoverable from git at 371cc64c9^:)"
+              if _p == _EQ else "")
+           + "  This gate cannot produce a denominator without it.")
 
 
 def load(path, name):

@@ -13,7 +13,7 @@ two sides differing. This one emits every graph on BOTH sides and prints:
     reached BOTH             -- the honest coverage number
 
 The denominator is `len(list(Ops))`, MEASURED by CPython at run time. Nothing transcribed.
-Rows are cached under `.agents/slop/arith/rows-<graph>-<side>.txt` because the bend side
+Rows are cached beside this file as `both-rows-<graph>-<side>.rows` because the bend side
 runs the compiler and `--check-only`-style empty-output failures are indistinguishable
 from "no rows": `emit_bend` already retries 5x and RAISES on 0 rows, which is why the
 cache is only written after a non-empty row set.
@@ -21,8 +21,37 @@ cache is only written after a non-empty row set.
 import sys, pathlib, collections, argparse
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent))
-sys.path.insert(0, str(HERE.parents[2]))            # the tinygrad tree
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/arith/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, which MEASURED holds only `tries/`.  Both `sys.path.insert` lines above
+# were WRONG HERE FOR DIFFERENT REASONS, and `census.py` is this file's fixed TWIN (a copy, so the
+# two cannot share a cache): at the old depth `HERE.parent` was `.agents/slop`, which held
+# `graphcmp`, and `parents[2]` was the tinygrad tree.  Neither is reachable from `checks/`.
+REPO = HERE.parents[0]
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE the `sys.path` manipulation and before the `graphcmp` import, because under bare
+  `python3` the wrong root made THAT import raise `ModuleNotFoundError`, and an assertion
+  DOWNSTREAM of what it asserts cannot turn an exception into a refusal."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FOURTH relocation is a refusal rather than a traceback: the substrate
+# this file's root claim rests on, and the one module it imports.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+_GRAPH = REPO / ".agents" / "slop" / "graphcmp.py"
+if not _GRAPH.is_file():
+  refuse(f"input absent: {_GRAPH}")
+
+sys.path.insert(0, str(REPO))                    # the tinygrad tree
+sys.path.insert(0, str(_GRAPH.parent))           # `graphcmp`; reachable from NEITHER above
 import graphcmp as G
 
 
@@ -35,7 +64,14 @@ def ops_of(rows: list[str]) -> collections.Counter:
 
 
 def side(name: str, which: str, dev: str, fresh: bool) -> tuple[str, int, collections.Counter | None, str]:
-  cache = HERE / f"rows-{name}-{which}.txt"
+  # `.rows`, and a `both-` PREFIX, and both for a MEASURED reason: fixing the root made this
+  # gate REACHABLE for the first time since `3f0e70ff1`, and the cache it writes landed in
+  # `checks/` as `rows-<graph>-<side>.txt` -- which `checks/no-txt.py` exits 1 on outright.
+  # MEASURED, one run: `python3 checks/both-census.py --only=schedule --fresh` produced
+  # `checks/rows-schedule-bend.txt` and nothing else.  The prefix is `checks/census.py`'s own
+  # reason for existing at all ("running it would OVERWRITE this unit's rows"), so the two
+  # caches must not share a name either.
+  cache = HERE / f"both-rows-{name}-{which}.rows"
   if cache.exists() and not fresh:
     rows = [ln for ln in cache.read_text().splitlines() if ln.strip()]
     return ("CACHE", len(rows), ops_of(rows), "")

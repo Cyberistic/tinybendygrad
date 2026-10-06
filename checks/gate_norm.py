@@ -40,14 +40,46 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
-sys.path.insert(0, str(HERE))
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/norm/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, MEASURED holding only `tries/`, and BOTH imports below raised
+# (`canon`, then `tinygrad`).  Note the trap: `parents[1]` is ALSO wrong -- it is
+# `/Users/cyberistic/src/tries`.  `canon.py` was a SIBLING at the old depth, which is why
+# `sys.path.insert(str(HERE))` used to reach it; it now lives at `.agents/slop/norm/canon.py`.
+REPO = HERE.parents[0]
+NORM = REPO / ".agents" / "slop" / "norm"
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE the `sys.path` manipulation and before ANY import, because the wrong root made
+  `import canon` raise `ModuleNotFoundError` FIRST, and an assertion DOWNSTREAM of what it
+  asserts cannot turn an exception into a refusal."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a third exception: the
+# substrate this root claim rests on, then the canonicaliser this gate imports.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+if not (NORM / "canon.py").is_file():
+  refuse(f"input absent: {NORM / 'canon.py'}  (was this file's SIBLING at"
+         " .agents/slop/norm/, moved by 3f0e70ff1.  This gate cannot produce a denominator"
+         " without it.)")
+
+sys.path.insert(0, str(NORM))
 sys.path.insert(0, str(REPO))
 
 import canon  # noqa: E402
 from tinygrad import dtype as td  # noqa: E402
 
 BEND = REPO / "bin" / "bend"
+if not BEND.is_file():
+  refuse(f"input absent: {BEND}")
 ROW = re.compile(r"^(\S+)\s+show=(\S+)\s+bits=(\d+)$")
 
 F32 = "f32"

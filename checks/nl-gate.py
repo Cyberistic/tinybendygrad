@@ -52,9 +52,42 @@ import argparse, hashlib, importlib.util, pathlib, re, subprocess, sys
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/eq/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, which is where every `cwd=REPO` in this file pointed.  Note the trap:
+# `parents[1]` is ALSO wrong -- it is `/Users/cyberistic/src/tries`.
+REPO = HERE.parents[0]
 PORT = "tinybendygrad/renderer/nir_llvmir.bend"
 ORACLE = [".agents/slop/nl/nl-oracle.py", "rows"]
+SLOP = REPO / ".agents" / "slop"
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE `load("rebase-gate")` below, because that load used to raise
+  `FileNotFoundError` FIRST -- the reader was a SIBLING at `.agents/slop/eq/` and the move
+  carried the name but not the directory -- and an assertion DOWNSTREAM of what it asserts
+  cannot turn an exception into a refusal."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
+# substrate this root claim rests on, then the two inputs this gate LOADS at import -- the
+# shared row reader and the oracle it compares against.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+_SWEEP = ("  (swept by 371cc64c9; recoverable from git at 371cc64c9^:%s.  Restoring a swept"
+          " instrument is not this file's call.)")
+for _p, _at in ((SLOP / "rebase-gate.py", ".agents/slop/rebase-gate.py"),
+                (REPO / ORACLE[0], ORACLE[0])):
+  if not _p.is_file():
+    refuse(f"input absent: {_p}" + _SWEEP % _at
+           + "  This gate cannot produce a denominator without it.")
+
 SEP = "]   py=["      # `rebase-gate.py`'s spelling, and `r`'s own (nir_llvmir.bend:125)
 ROW_OPEN = " = ["     # THIS LANE'S OWN name/value boundary, verbatim from `r`
 
@@ -67,8 +100,11 @@ REVERSE_NAME = re.compile(r"^(sd cpullvm \w+ osx) ")
 
 
 def load(name):
-  """`rebase-gate.py` has a `-` in its name, so it does not import by name.  ONE loader."""
-  spec = importlib.util.spec_from_file_location(name, str(HERE.parent / f"{name}.py"))
+  """`rebase-gate.py` has a `-` in its name, so it does not import by name.  ONE loader.
+
+  `SLOP` rather than `HERE.parent`, because the reader was a SIBLING at `.agents/slop/eq/` and
+  `3f0e70ff1` carried this file to `checks/` without moving it."""
+  spec = importlib.util.spec_from_file_location(name, str(SLOP / f"{name}.py"))
   mod = importlib.util.module_from_spec(spec)
   spec.loader.exec_module(mod)
   return mod

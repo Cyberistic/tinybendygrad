@@ -37,7 +37,13 @@ from __future__ import annotations
 import argparse, base64, os, re, shutil, subprocess, sys
 from pathlib import Path
 
-REPO = Path(__file__).resolve().parents[3]
+# `parents[1]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `Path(__file__).resolve()` walks from the FILE, so `parents[0]` is `checks/`.  `parents[3]` was
+# correct at this file's original home `.agents/slop/clangshim/`; `3f0e70ff1` moved it to `checks/`,
+# ONE level shallower, and carried the constant across without recomputing it -- so REPO became
+# `/Users/cyberistic/src`, and `FIXH.read_text()` at the module level raised `FileNotFoundError`.
+# Note the trap: `parents[2]` is ALSO wrong (it is `/Users/cyberistic/src/tries`).
+REPO = Path(__file__).resolve().parents[1]
 BEND = REPO / "bin" / "bend"
 SHIM = REPO / ".agents" / "slop" / "clangshim"
 PORT = REPO / "tinybendygrad" / "runtime" / "autogen" / "libclang.bend"
@@ -46,6 +52,30 @@ CFFI = SHIM / "libclang-ffi.c"
 FIXH = SHIM / "fixture.h"
 CLIB = "/Library/Developer/CommandLineTools/usr/lib"
 LIVE_IMPORT = 'import "../../../.agents/slop/clangshim/libclang-ffi.c"'
+
+
+def refuse(*why: str) -> None:
+    """exit 2 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+    Placed BEFORE `FIXH.read_text()`, because that read is at MODULE level and the stale root made
+    it raise `FileNotFoundError` -- and an assertion DOWNSTREAM of what it asserts cannot turn an
+    exception into a refusal."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    sys.exit(2)
+
+
+# THREE TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
+# substrate this root claim rests on, then every input this gate reads -- including the two the
+# `371cc64c9` sweep took with it.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+    refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+           f"(is `parents[N]` stale after a move?)")
+for _p in (BEND, PORT, ORACLE, CFFI, FIXH):
+    if not _p.is_file():
+        refuse(f"input absent: {_p}  (swept by 371cc64c9; recoverable from git at "
+               f"371cc64c9^:.agents/slop/clangshim/{_p.name}.  Restoring a swept instrument is "
+               "not this file's call.)  This gate cannot produce a denominator without it.")
+
 C_SPELL_LIVE = re.search(r"#define CL_FIELD_SPELL\s+(.*)", FIXH.read_text()).group(1).strip()
 assert LIVE_IMPORT.split('"')[1] in PORT.read_text(), "the live libclang.bend does not carry the FFI import"
 

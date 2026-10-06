@@ -41,9 +41,35 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/jsfix/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, MEASURED holding only `tries/`, and `BEND`/`JS_LANE` pointed at
+# nothing.  This gate did NOT raise: it imported cleanly and reported on a tree that does not
+# exist, which is the worse of the two.  Note the trap: `parents[1]` is ALSO wrong -- it is
+# `/Users/cyberistic/src/tries`.
+REPO = HERE.parents[0]
 BEND = REPO / "bin" / "bend"
 JS_LANE = REPO / "tinybendygrad" / "runtime" / "dtype.js"
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE anything else, because this file's defect was NOT an exception -- it ran and
+  said nothing, on a tree one directory above the repo.  A refusal is the smallest thing that
+  is distinguishable from a pass."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a silent wrong tree.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+for _p in (BEND, JS_LANE):
+  if not _p.is_file():
+    refuse(f"input absent: {_p}  This gate cannot produce a denominator without it.")
 
 U32 = 0xFFFFFFFF
 MASK64 = (1 << 64) - 1

@@ -44,7 +44,40 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `3f0e70ff1` MOVED this file from `.agents/slop/jsfp8/` to `checks/`, ONE level shallower, and
+# carried the constant across without recomputing it -- so `parents[2]` became
+# `/Users/cyberistic/src`, MEASURED holding only `tries/`, and `import tinygrad` raised
+# `ModuleNotFoundError` under bare `python3`.  Note the trap: `parents[1]` is ALSO wrong -- it is
+# `/Users/cyberistic/src/tries`.  That `tinygrad/` is a top-level checkout of UPSTREAM, which is
+# why this tree has both `tinygrad/` and `tinybendygrad/`, and why `REPO` must be the root.
+REPO = HERE.parents[0]
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE the `tinygrad` import, because the wrong root made THAT import raise first, and
+  an assertion DOWNSTREAM of what it asserts cannot turn an exception into a refusal."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
+# substrate this root claim rests on, and the lane + driver this gate actually runs.
+JS_LANE = REPO / "tinybendygrad/runtime/dtype.js"
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+for _p in (JS_LANE, HERE / "drive.mjs"):
+  if not _p.is_file():
+    refuse(f"input absent: {_p}"
+           + ("  (this gate's driver; its last home was .agents/slop/jsfp8/drive.mjs, moved by"
+              " 3f0e70ff1 and swept by 371cc64c9 -- recoverable from git at"
+              " 371cc64c9^:.agents/slop/jsfp8/drive.mjs.  Restoring it is not this file's call.)"
+              if _p.name == "drive.mjs" else "")
+           + "  This gate cannot produce a denominator without it.")
+
 sys.path.insert(0, str(REPO))
 from tinygrad import dtype as td  # noqa: E402
 
@@ -190,7 +223,7 @@ def run(tree: pathlib.Path, work: pathlib.Path, rows: list[list]) -> tuple[dict,
 
 
 def live_tree() -> pathlib.Path:
-  return REPO / "tinybendygrad/runtime/dtype.js"
+  return JS_LANE
 
 
 def report(tag: str, rows: list[list], got: dict, want: dict) -> tuple[list, list, list]:
@@ -209,7 +242,7 @@ def report(tag: str, rows: list[list], got: dict, want: dict) -> tuple[list, lis
 
 def main() -> None:
   ap = argparse.ArgumentParser()
-  ap.add_argument("--tree", type=pathlib.Path, default=REPO / "tinybendygrad/runtime/dtype.js")
+  ap.add_argument("--tree", type=pathlib.Path, default=JS_LANE)
   ap.add_argument("--quick", action="store_true", help="drop the wide sweep")
   a = ap.parse_args()
 

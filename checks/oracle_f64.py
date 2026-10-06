@@ -56,7 +56,37 @@ import pathlib
 import struct
 import sys
 
-ROOT = pathlib.Path(__file__).resolve().parents[3]
+# `parents[1]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# `Path(__file__).resolve()` walks from the FILE, so `parents[0]` is `checks/`.  `parents[3]` was
+# correct at this file's original home `.agents/slop/f64/`; `3f0e70ff1` moved it to `checks/`, ONE
+# level shallower, and carried the constant across without recomputing it -- so ROOT became
+# `/Users/cyberistic/src`, MEASURED holding only `tries/`, and `import tinygrad` raised
+# `ModuleNotFoundError` under bare `python3`.  Note the trap: `parents[2]` is ALSO wrong (it is
+# `/Users/cyberistic/src/tries`).
+ROOT = pathlib.Path(__file__).resolve().parents[1]
+SLOP = ROOT / ".agents" / "slop" / "f64"
+
+
+def refuse(*why: str) -> None:
+    """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+    Placed BEFORE the `sys.path` manipulation and before ANY import, because the stale root made
+    `import numpy`/`import tinygrad` raise FIRST, and an assertion DOWNSTREAM of what it asserts
+    cannot turn an exception into a refusal: rc 1 and a traceback, which carries no denominator
+    and so counts nowhere."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the substrate
+# this root claim rests on, then the fixture whose DELTA literal `build()` re-derives.
+if not (ROOT / "pyproject.toml").is_file() or not (ROOT / "tinybendygrad").is_dir():
+    refuse(f"ROOT does not hold the tree: {ROOT} is not the repo root "
+           f"(is `parents[N]` stale after a move?)")
+if not (SLOP / "emit-f64.bend").is_file():
+    refuse(f"input absent: {SLOP / 'emit-f64.bend'}  This gate cannot produce a denominator "
+           "without it.")
+
 sys.path.insert(0, str(ROOT))
 
 import numpy as np
@@ -177,7 +207,7 @@ def check_fixture(work):
   if repr(DELTA) != DELTA_TEXT:
     sys.exit(f"FIXTURE CONSTANT MOVED: repr(2.0**-40) is {repr(DELTA)} but "
              f"emit-f64.bend says {DELTA_TEXT!r}. Refusing to emit an oracle.")
-  src = (ROOT / ".agents/slop/f64/emit-f64.bend").read_text()
+  src = (SLOP / "emit-f64.bend").read_text()
   if DELTA_TEXT not in src:
     sys.exit(f"FIXTURE CONSTANT ABSENT: {DELTA_TEXT!r} is not in emit-f64.bend.")
   return src
