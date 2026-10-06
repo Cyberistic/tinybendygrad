@@ -1,0 +1,12 @@
+scenario                               result
+------------------------------------------------------------------------------
+git add; jj commit                     staged 1->0  HEAD 1d637e3ea5ff->283ff7c505e5  RESET
+                                       reflog after: 283ff7c HEAD@{0}: export from jj
+git add; jj branching snapshot         staged 1->1  HEAD 1d637e3ea5ff->1d637e3ea5ff  no-op
+                                       reflog after: 1d637e3 HEAD@{0}: commit (initial): base
+git add; jj status                     staged 1->1  HEAD 88f77e067fea->88f77e067fea  no-op
+                                       reflog after: 88f77e0 HEAD@{0}: commit (initial): base
+unit git commit; git add; jj snapshot  staged 1->0  HEAD c8ec1a854b0e->c8ec1a854b0e  RESET
+                                       reflog after: c8ec1a8 HEAD@{0}: commit: unit git commit
+unit git commit; git add; jj commit    staged 1->0  HEAD ec0a9ec888b7->2d817a68e28c  RESET
+                                       reflog after: 2d817a6 HEAD@{0}: export from jj
