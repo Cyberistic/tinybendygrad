@@ -7,7 +7,8 @@ every `ALWAYS`, every `MUST`, every named command and every named path, and whet
 DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
 nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
 census from 61 of 77 ops to 26 of 77 with 14 of 25 graphs failing. It also told every agent to put a
-gate's inputs under `.agents/slop/`, and 99 of the 213 paths `.agents/TOOLS.md` names are gone. **A
+gate's inputs under `.agents/slop/`, and **173 of the 333 paths `.agents/TOOLS.md` names are gone, 16 of them
+INSTRUMENTS.** **A
 GOVERNING DOCUMENT THAT NOBODY CHECKS AGAINST REALITY PROPAGATES INTO EVERY BRIEF THAT CITES IT.**
 
 General:
@@ -111,15 +112,23 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   IT EXITS 1 TODAY WITH 553 HARD AND 139 EXCUSED (692 OWNED), AND IT PRINTS 40 PATHS AND THEN
   `... and 513 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
   `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose. See Development, above.
-- `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
+- `checks/substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree. **THE BARE NAME
+  `substrate-check.sh` RESOLVES TO NOTHING: `command -v` is absent and there is no root-level file. The real gate
+  is a 46-line shim onto `.venv/bin/python checks/substrate.py` (765 lines).**
 - `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
   A gate names its `.bend` driver and its CPython oracle; its OUTPUT goes to `gates/artifacts/`.
   **BUT DO NOT PUT A GATE'S INPUTS UNDER `.agents/slop/`. THAT PRESCRIPTION IS WHAT DELETED THEM.**
   `.agents/slop/` is being pruned and it holds no protection: `checks/sb-gate.sh:76` names
   `.agents/slop/schedule-bodies/BEFORE-rows.txt` — **absent, so the gate exits 3** — and `e2e.py:99`
   calls `cstyle-live/port.txt` a "DELETED FIXTURE" (`e2e.py:99-100`) — **absent, so stage 7 SKIPs.**
-  Of the 213 paths `.agents/TOOLS.md` names, **99 are gone.** **A GATE'S REQUIRED INPUT BELONGS BESIDE THE GATE, IN
-  `gates/artifacts/`, BECAUSE A PATH INSIDE A SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES IT.**
+  **RE-MEASURED RULE AND ITS NUMBERS: of the **333** distinct paths `.agents/TOOLS.md` names, **160 are present and
+  **173 are gone** — **96 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
+  enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this; six of the 16 are `*-mutate.py`).** **A GATE'S
+  REQUIRED INPUT BELONGS BESIDE THE GATE **IN GIT** — AND NOT IN `gates/artifacts/`, WHICH THIS LINE USED TO
+  RECOMMEND. THAT DIRECTORY IS `.gitignore`d **AND** IS WHERE GATE RUNS WRITE, SO ONE `rm -rf gates/artifacts`
+  DELETES ANYTHING KEPT THERE AND GIT CANNOT RESTORE IT. MEASURED: `e2efix` RESTORED STAGE 7's DELETED FIXTURE
+  THERE AND IT WAS **GONE** ON THE NEXT READ; IT NOW LIVES AT THE TRACKED `gates/cstyle-live.rows`.** **A PATH INSIDE
+  A SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES IT, AND SO IS A PATH INSIDE A GITIGNORED OUTPUT DIRECTORY.**
   The shared plumbing is `gates/gatekit.py` and it holds nothing but the three lanes, the row counts
   and the diff — the rows, the divergences and the pins are the gate's own. `gates/README.md` records
   why the shell form is retired, with the four ways a shell gate failed here (`&&` masking a diff
@@ -142,7 +151,7 @@ of the seven was found in a single session, which is why this section exists.**
 | `checks/differ.py:artefacts_ok()` | was `find -name '*.txt'` | **fixed, and re-verified today**: pointed at an empty directory it now returns **139 `MISSING`**; the glob returned `[]`, and *"the rename only revealed a guard that was never one."* |
 | `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend)` | **6 of 15** `e2e.py` stage inputs invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
 | `gates/gates-pop.py:95` `HOMES` | `("checks", "gates")` | its own author: *"A LIST, AND IT IS ADMITTED… this is the one universe this file names by hand."* Blind to the literal-list half of the class it exists for. |
-| `.agents/TOOLS.md` | 213 named paths | **99 are gone.** A ledger that names a path it does not own is a list. |
+| `.agents/TOOLS.md` | **333 paths: 160 present, 173 gone (96 under `.slop/`, **16 INSTRUMENTS**)** | A ledger that names a path it does not own is a list. |
 | **`AGENTS.md` — THIS FILE** | names gates by hand | 17 `checks/*.sh` exist; this file names 3 and calls none of them a population. **The governing document was the seventh member of the class.** |
 
 **THE RULE. A population is (a) a GENERATOR'S OWN DECLARATION, LOADED BY PATH — `differ.declared()`, which
@@ -196,7 +205,10 @@ When using Python:
 - **THOSE THREE EXACT COMMANDS DO NOT RUN IN THIS TREE TODAY, AND SAYING SO IS THE POINT: MEASURED,
   `.venv` HAS NO `pytest`, NO `mypy` AND NO `ruff` (`No module named …`, rc=1 each), so the three lines
   above are `uv`-installable rather than runnable. `ruff` 0.15.18 IS on PATH at `/opt/homebrew/bin/ruff`
-  and `ruff check .` RUNS — and it reports 797 errors, rc=1, so "the tree lints" is FALSE. `checks/`
+  and `ruff check .` RUNS — and it reports **18755** errors, rc=1, so "the tree lints" is FALSE. **THE `797` THIS
+LINE CARRIED WAS WRONG BY 23x, AND `18755` CARRIES ITS OWN TIME: AN EARLIER UNIT SAW 18752, THEN 18754, ON A RE-RUN
+WITH NO EDIT BY IT, BECAUSE OTHER UNITS WERE WRITING THE TREE WHILE IT COUNTED. QUOTE THIS NUMBER WITH A TIMESTAMP OR
+NOT AT ALL.** `checks/`
   and `gates/` are 2-space-indented and are not what `ruff` defaults to. The ledgers do not say which
   interpreter a prescription runs under, and that is why three of them read as done.**
 - Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules
