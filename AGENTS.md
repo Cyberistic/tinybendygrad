@@ -1,5 +1,15 @@
 You are one of Cyberistic's agents. He hates unclean code and hacks. He loves his documentations. LOCs IS a measure of quality, the LESS, the better.
 
+**EVERY PRESCRIPTION BELOW THAT MAKES A CLAIM ABOUT THIS TREE CARRIES THE MEASUREMENT THAT MADE IT
+TRUE, MEASURED 2026-10-06 BY RUNNING IT. `.agents/slop/agend/REPORT.md` is the audit — every `NEVER`,
+every `ALWAYS`, every `MUST`, every named command and every named path, and whether it is true today.
+**A LINE IN HERE WITH NO MEASUREMENT AND NO NAMED INSTRUMENT IS A LINE YOU MUST NOT TRUST, AND
+DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
+nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
+census from 61 of 77 ops to 26 of 77 with 14 of 25 graphs failing. It also told every agent to put a
+gate's inputs under `.agents/slop/`, and 99 of the 213 paths `.agents/TOOLS.md` names are gone. **A
+GOVERNING DOCUMENT THAT NOBODY CHECKS AGAINST REALITY PROPAGATES INTO EVERY BRIEF THAT CITES IT.**
+
 General:
 
 - You must use concise, clean code. No hacks should be used. If you need to write a paragraph-long comment to justify your code, you are doing it wrong. Find a better way.
@@ -7,26 +17,59 @@ General:
 - Shareable logic should be reused. Avoid copy-pasting code. Hoist up if it's needed elsewhere.
 - Use Jiujitsu version control for all your code. Make sure to commit often and write meaningful commit messages. If you launch multiple agents, use jiujitsu workspaces to manage them. If you are unsure about how to use Jiujitsu, ask for help. You have access to the jj mcp.
 - If you need to create Markdown files to track agent state, always place them under .agents/slop/
-- If I ask you to use a repo as reference, and it isn't tiny, you must clone it into `references/` and use it as a reference. Add the repo to `.gitignore` and link it under `references/` in your README.
+- If I ask you to use a repo as reference, and it isn't tiny, you must clone it into `references/` and use it as a reference. Add the repo to `.gitignore` and link it under `references/` in your README. **THE README PART IS OVERRIDDEN AND THE OVERRIDE LIVES IN THE OTHER FILE: `README.md` does not mention `references/` (measured, `grep references README.md` rc=1) and `.agents/TOOLS.md:51-52` says "Do not. The README is off limits. This table is the ledger instead." SO: GITIGNORE IT, AND PUT IT IN `.agents/TOOLS.md`. A DOCUMENT RESTATING A DOCUMENT IS ONE WITNESS, NOT TWO, AND THE TWO DISAGREE.**
 - Whenever you finish a task, make sure to tick it off in .agents/TODO.md, If the task is not in TODO.md, add it there and check it off. Keep a progress bar inside TODO.md for each category of tasks. If it's an implementation detail or a small task, do not add it to TODO.md. Only add tasks that are meaningful and require tracking.
 - Add TODO comments in the code for any tasks that are not yet completed, so we can use `rg` to search for TODO comments later on.
 - Update .agents/TOOLS.md with the tools or libraries you're using, it will act as a ledger and overview for the project.
 
 Development:
 
-- No external dependancies. 
+- No external dependancies. **MEASURED TRUE FOR THE PORT** — every import under `tinybendygrad/` is `Base`
+  or another `.bend` file in this repo, which is the one grep worth keeping. **BUT THE TOOLS ARE NOT IN
+  THE VENV AND NO LEDGER SAYS WHICH INTERPRETER A PRESCRIPTION RUNS UNDER: `ruff`, `mypy` and `pytest` are
+  all absent from `.venv`, and `uv.lock`'s 586 packages exist to run upstream's Python, not to build ours.
+  SO "NO EXTERNAL DEPENDENCIES" IS A RULE ABOUT WHAT THE PORT SHIPS, NOT ABOUT WHAT MAY BE INSTALLED TO
+  CHECK IT.** 
 - **No `.txt` files, ever.** Use `.rows` for expected values and row dumps, `.out`/`.err` for captured
   streams, `.tsv` for tabular, `.md` for prose. `checks/no-txt.py` enforces it. A `.txt` extension is a
   declaration that the author did not know what the file was, and a sweep that reads basenames cannot
-  tell a row dump from a diary entry. 
+  tell a row dump from a diary entry.
+  **THE RULE IS RIGHT AND THE TREE IS BEHIND IT, SO THE RULE STAYS WHILE THE COUNT IS NOT A FACT: as
+  measured today `checks/no-txt.py` exits 1 with 553 HARD and 139 EXCUSED — 692 owned `.txt`, of which
+  `oracle-txt-census.py` classes 249 of the 259 under `oracles/` as ROW DUMPS (the extension is wrong,
+  the content is exactly a `.rows`). 225 of those 259 are NAMED BY NOTHING. The 139 are excused by
+  `differ.declared()` — IMPORTED, not copied — which is the correct shape for a carve-out and the reason
+  it never moved while the total moved 398 -> 552 -> 562 -> 553 in one session. Write `.rows`.**
+  **A CARVE-OUT MUST BE A GENERATOR'S DECLARATION LOADED BY PATH, NEVER A SECOND COPY OF THE LIST**,
+  because a second copy is a contract with no generator and rots without anyone noticing. 
 - Always stay turing-incomplete. Any turing completeness must be approved first. 
 
 
 When using bend:
-- run `bend guide` to learn it
-- use `LAWS.bend` to keep important rules
-- run `bend PROOF.bend` before committing
-- parallelize the code whenever possible
+- run `bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
+- use `LAWS.bend` to keep important rules — **the path is `tinybendygrad/LAWS.bend`; there is no
+  `LAWS.bend` at the repo root, so the bare name resolves to nothing.** `--check-only` reports
+  `Error: 34 TODOs found. The code is incomplete, and not a valid proof yet.`
+- **run `bend PROOF.bend` before committing** — **the path is `tinybendygrad/PROOF.bend`; there is no
+  `PROOF.bend` at the repo root, so the bare name resolves to nothing. AND THE GATE IS RED AT REST:
+  `--check-only` reports `Error: 18 TODOs found. The code is incomplete, and not a valid proof yet.`
+  (both measured today under `checks/bounded.py --mb 2048`, verdict token `WITHIN-LIMITS`, peak 6 MB).
+  **A PRE-COMMIT GATE THAT CANNOT PASS TEACHES NOTHING AND WILL BE SKIPPED — so until those TODOs land,
+  run it to see the COUNT GO DOWN and do not report the red as a verdict about your change.**
+- **PARALLELISE EVERYTHING THAT IS NOT A `bend` PROCESS. FOR `bend`, THE PRECONDITION IS THE SUM, NOT
+  THE COUNT: parallelise only when the sum of the concurrently-running files' MEASURED peak RSS is under
+  60% of `hw.memsize`. THE PER-FILE NUMBERS ARE IN `.agents/slop/peakrss/census.txt` — USE THAT TABLE, NOT
+  A NUMBER YOU REMEMBER.** The population is BIMODAL, which is why the rule is a sum and not a ban:
+  `nir` 1,152 MB · `sz` 1,108 MB · `ops_python` 864 · `nn/onnx` 777 · `uop/symbolic` 745 · `dtype` 683-699 ·
+  `helpers` 204 · **median 207 · 43 of 138 under 50 MB**. So `dtype ‖ helpers ‖ nn/onnx` is 1.4 GB and
+  safe, while `sz ‖ sz` is 2.8-3.1 GB and is not, on a machine whose OOM was recorded when it had half
+  today's RAM. **`checks/bounded.py --mb` IS A PER-PROCESS WATCHDOG, NOT A MACHINE BUDGET** — it polls one
+  child's RSS and kills that child, so two children under the same ceiling can together exceed it, and it
+  will never see the sum. **MEASURED, `sz.bend --check-only` alone: 1,383 / 1,435 / 1,547 MB on three runs
+  today** (`.agents/slop/substrate/SUBSTRATE.md` says 1,468, `.agents/slop/PEAKRSS.md` says 1,152, and
+  `census.txt` says 1,108 — FIVE NUMBERS FOR ONE FILE, WHICH IS WHY THE RULE IS A SHAPE). **Read the
+  verdict TOKEN (`KILLED-ON-MEMORY`/`TIMED-OUT`/`WITHIN-LIMITS`), never the exit code** —
+  `checks/bounded.py`'s own header records a unit that lost 425 rows by believing the status.
 
 
 
@@ -35,57 +78,157 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
 - `checks/differ.py run` / `repro` / `snap` — the `graphcmp` corpus: CPython-vs-port VERDICT and
   DENOMINATOR per graph, canonical byte identity, controls, cross, plants, conflations, the
   coverage census, and (repro) that one run is reproducible. Artifacts in `runs/graphcmp/D`,
-  read `D0-run-summary.txt` first; `checks/README.md` names every file. `graphcmp-run.sh` /
-  `graphcmp-repro.sh` are shims onto it, and the shell bodies are the oracle in
-  `.agents/slop/diffpy/`, **sha256-pinned in code at `differ.py:58` and read BY ARTIFACT NAME —
-  `oracle-repro.sh:61` and `:105`, and `checks/corpus-figure.py:72`. So the 103 `.txt` names there
-  are a contract, not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not
-  copied) and nothing else, and renaming them means the pin has to move with them in one commit.
-  See `checks/README.md` and `.agents/slop/difftxt/`.**
+  read `D0-run-summary.txt` first; `checks/README.md` names every file. **`.agents/slop/graphcmp-run.sh`
+  and `.agents/slop/graphcmp-repro.sh`** are the shims onto it (they are NOT at the repo root), and the
+  shell bodies are the oracle in `.agents/slop/diffpy/`, **sha256-pinned in code at `differ.py:61`
+  (`ORACLE_PIN`; `:58` is a comment) and read BY ARTIFACT NAME — `oracle-repro.sh:61` and `:105`
+  (both verified today), and `checks/corpus-figure.py:137` (`:72` is `module_from_spec`, NOT the read).
+  So the **139** `.txt` names there — `len(differ.declared())` = **139**, and 139 on disk — are a contract,
+  not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not copied) and nothing
+  else, and renaming them means the pin has to move with them in one commit. **THE 103 IN
+  `checks/README.md:51-58` AND `checks/no-txt.py:19-30` IS STALE — this file, `checks/README.md` and
+  `checks/no-txt.py` are THREE WITNESSES TO ONE SUPERSEDED NUMBER, SO FIX ALL THREE OR SAY WHY ONLY ONE
+  IS AUTHORITATIVE.**
+  **THE LIVE RUN IS NOT HEALTHY AND TWO INSTRUMENTS DISAGREE ABOUT IT: `differ.py`'s `PINS` are red on
+  2 of 17 (`census-rc` absent, `oracle-selfcheck=# ORACLE SELFCHECK: FAIL`) and
+  `gates/retention-check.py` says `IV FIRES runs/graphcmp/D/` and exits 1, while `corpus-figure.py`
+  prints `RUN HEALTH : OK` and exits 0 because its `run_health()` reads 3 of those 17. TRUST THE RED
+  ONE.** See `checks/README.md` and `.agents/slop/difftxt/`.
 - `e2e.py` — **the SEVEN-stage end-to-end gate**, and `e2e.sh` beside it. Do not rewrite it to tidy it.
-  **NOT CURRENTLY GREEN, AND NOT FOR ONE REASON:** stage 1 runs again (`e2e_mm.py` is restored), and all
-  seven stages run, but **stage 3 needs `.agents/slop/xd2/cdp.mjs` and stage 5 needs
-  `.agents/slop/ops_bend-milestone-expected.txt`, and the sweep deleted BOTH** — the same class as the
-  `e2e_mm.py` deletion: **a gate's own required input was deletable while the gate still named it.**
-  Stage 7 refuses (rc 3, cold substrate) and stage 6's lane is **not reproducible run-to-run** (measured:
-  `run-port-mm.sh` twice on one tree, rc 1 then rc 0). Stages 2-7 need `bend`, `node` and `cc`, so **run
-  it with nothing else compiling.** Stage 8 is **RETIRED**: its denominator was 0 (`runtime/dtype.js` is
-  not one byte of the emitted bundle), so it was retired rather than re-pointed, and
-  `.agents/slop/e2estage8/verdicts.py` exits 1 on any emitted stage whose denominator counts 0 or on any
-  disagreement between `e2e.py`'s prose, its emitted headers and a run's transcript.
-- `checks/no-txt.py` — **there is no `.txt` file in this project.** It exits 1 and prints each path.
-  `.rows` is expected values, `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose.
+  **NOT GREEN, AND NOT FOR THE REASON PREVIOUSLY WRITTEN HERE.** Stages 3, 4, 5 and 6 all **PASS** on the
+  last transcript, and `.agents/slop/xd2/cdp.mjs` and `.agents/slop/ops_bend-milestone-expected.txt` —
+  the two inputs an earlier revision of this file called deleted — **BOTH EXIST**. The only stage that
+  measures nothing is **7**, which SKIPs because `run-f64.sh` refuses a cold substrate, so **`e2e.py`
+  RETURNS 4, NOT 0** (`e2e.py:510`), and `checks/e2e.sh:335` likewise `exit 4`. **A SKIP IS NOT A PASS AND
+  THE EXIT STATUS SAYS SO**; a caller reading only `$?` cannot mistake it. Stage 8 is **RETIRED**: its
+  denominator was 0 (`runtime/dtype.js` is not one byte of the emitted bundle), so it was retired rather
+  than re-pointed. **`.agents/slop/e2estage8/verdicts.py` IS CURRENTLY RED (rc=1)** — not on a zero
+  denominator but on `e2e.py: PROSE names [0] the CODE does not emit`, i.e. the docstring still names a
+  stage `0` — **so the prose in this file is a THIRD witness to that disagreement and is stale too.**
+  Stages 2-7 need `bend`, `node` and `cc`, so **run it with nothing else compiling**, and under the
+  sum-precondition above.
+- `checks/no-txt.py` — **THE RULE IS REAL; THE CLAIM "there is no `.txt` file in this project" IS NOT.
+  IT EXITS 1 TODAY WITH 553 HARD AND 139 EXCUSED (692 OWNED), AND IT PRINTS 40 PATHS AND THEN
+  `... and 513 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
+  `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose. See Development, above.
 - `substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree.
-- `gates/*.py` — per-def gates, and they are **Python, never shell**. `.agents/slop/` is being
-  pruned, so nothing new goes there. A gate names its `.bend` driver and its CPython oracle,
-  which stay in `.agents/slop/` beside every other oracle; its OUTPUT goes to
-  `gates/artifacts/`. The shared plumbing is `gates/gatekit.py` and it holds nothing but the
-  three lanes, the row counts and the diff — the rows, the divergences and the pins are the
-  gate's own. `gates/README.md` records why the shell form is retired, with the four ways a
-  shell gate failed here (`&&` masking a diff under `set -e`; an `EXIT` trap returning `rm`'s
-  status; `<( )` not parsing under `sh`; `${=SUB}` never expanding and a hash guard comparing
-  `""` to `""`).
+- `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
+  A gate names its `.bend` driver and its CPython oracle; its OUTPUT goes to `gates/artifacts/`.
+  **BUT DO NOT PUT A GATE'S INPUTS UNDER `.agents/slop/`. THAT PRESCRIPTION IS WHAT DELETED THEM.**
+  `.agents/slop/` is being pruned and it holds no protection: `checks/sb-gate.sh:76` names
+  `.agents/slop/schedule-bodies/BEFORE-rows.txt` — **absent, so the gate exits 3** — and `e2e.py:99`
+  calls `cstyle-live/port.txt` a "DELETED FIXTURE" (`e2e.py:99-100`) — **absent, so stage 7 SKIPs.**
+  Of the 213 paths `.agents/TOOLS.md` names, **99 are gone.** **A GATE'S REQUIRED INPUT BELONGS BESIDE THE GATE, IN
+  `gates/artifacts/`, BECAUSE A PATH INSIDE A SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES IT.**
+  The shared plumbing is `gates/gatekit.py` and it holds nothing but the three lanes, the row counts
+  and the diff — the rows, the divergences and the pins are the gate's own. `gates/README.md` records
+  why the shell form is retired, with the four ways a shell gate failed here (`&&` masking a diff
+  under `set -e`; an `EXIT` trap returning `rm`'s status; `<( )` not parsing under `sh`; `${=SUB}` never
+  expanding and a hash guard comparing `""` to `""`).
+
+
+## The two doctrines. Everything below is a measured instance, not a principle.
+
+
+### 1. AN INSTRUMENT DECLARES ITS POPULATION BY DISCOVERY, OR IT IS NOT A GATE
+
+**Six instruments in this repo got this wrong, and one governing document got it wrong too. Every one
+of the seven was found in a single session, which is why this section exists.**
+
+| instrument | population was declared by | what it cost |
+|---|---|---|
+| `checks/sweep.py:266` `LIVE_UNITS` | 14 literal directory names | six FINISHED units held **2,353 of 4,455 files = 53%** of `.slop`, 100% git-tracked, named by nothing. Its own comment: *"A GUARD THAT IS CORRECT EXCEPT FOR THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER."* |
+| `checks/sweep.py:658` `ORACLE_WORD` | a **basename regex** | **670 of 675** ORACLE files were classified by FILENAME and **5 were named by a live gate**. |
+| `checks/differ.py:artefacts_ok()` | was `find -name '*.txt'` | **fixed, and re-verified today**: pointed at an empty directory it now returns **139 `MISSING`**; the glob returned `[]`, and *"the rename only revealed a guard that was never one."* |
+| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend)` | **6 of 15** `e2e.py` stage inputs invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
+| `gates/gates-pop.py:95` `HOMES` | `("checks", "gates")` | its own author: *"A LIST, AND IT IS ADMITTED… this is the one universe this file names by hand."* Blind to the literal-list half of the class it exists for. |
+| `.agents/TOOLS.md` | 213 named paths | **99 are gone.** A ledger that names a path it does not own is a list. |
+| **`AGENTS.md` — THIS FILE** | names gates by hand | 17 `checks/*.sh` exist; this file names 3 and calls none of them a population. **The governing document was the seventh member of the class.** |
+
+**THE RULE. A population is (a) a GENERATOR'S OWN DECLARATION, LOADED BY PATH — `differ.declared()`, which
+`checks/no-txt.py` and `artefacts_ok()` both ask, which is why the `.txt` carve-out never moved while the
+total moved 398 → 552 → 562 → 553; or (b) a DIRECTORY WALK — `os.walk` + `endswith`, because
+`glob('*.bend')` returns `[]` when `.bend` is on disk and it did, tracked, 1,890 lines; or (c) a REGEX OVER
+THE TREE'S OWN WRITE SITES, with the list admitted in a comment and a ledger so the edit is visible.
+A BASENAME SHAPE, A SUFFIX SET, AND A HAND LIST ARE NOT POPULATIONS. AN INSTRUMENT THAT CANNOT SEE ITS
+POPULATION CANNOT BE WRONG, BECAUSE IT CANNOT BE ANYTHING.** Never list in this file what an instrument
+discovers.
+
+### 2. FIVE VERDICTS, AND `DEAD` IS THE ONE NOBODY WRITES DOWN
+
+`PASS` every stage ran and agreed · `FAIL` a stage ran and got the wrong answer · `SKIP` it could not run,
+so it measured nothing · `DEAD` it ran and emitted nothing · `REFUSED` a precondition was absent.
+
+**`SKIP IS NOT PASS`, and the exit status says so: `e2e.py:510` returns 4 and `checks/e2e.sh:335`
+`exit 4`** — the old 0 was defended and the defence was true of FAIL and not of SKIP.
+**`DEAD` IS NOT A ZERO AND NOT A PASS.** `.agents/slop/rebase-gate-selftest.py:1168-1180` already
+declares the SIX such states — *1 DEAD LANE the oracle exits non-zero → BROKEN, naming the lane · 2 EMPTY
+OUTPUT prints no `name=value` row → "compared nothing" · 3 NO SHARED ROW NAME · 4 A SHARED NAME DIFFERS ·
+5 AGREEMENT · 6 MALFORMED BASELINE* — and its own header says why: *"twelve committed files printed 0 rows
+for an hour and a harness reported success, because '0 disagreements' over '0 comparisons' is
+indistinguishable from agreement."* **BUT THAT FILE NO LONGER RUNS** (`import oracle_py` →
+`ModuleNotFoundError`, rc=1; `oracle_py.py` is one of the 99 deleted paths), **so the template exists as
+prose over dead code — which is exactly the state doctrine 1 above forbids, in this file.**
+`artefacts_ok()` reported zero on a directory holding nothing; and `checks/corpus-figure.py` still prints
+`RUN HEALTH : OK` and exits 0 over a run whose
+`oracle-selfcheck=# ORACLE SELFCHECK: FAIL`. **`DEAD` HAS NO EXIT ANYWHERE — THAT IS THE GAP, AND IT IS
+THE FIFTH DEFECT, NOT `checks/sb-gate.sh`, WHICH HAS NO SKIP BRANCH AT ALL (`grep -c SKIP` = 0) AND
+EXITS 3 WHEN REFUSED (`sh checks/sb-gate.sh` → `== REFUSED, NOT A VERDICT: the regression floor is
+absent`, rc=3).**
+**A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE, BECAUSE IT IS TRUSTED.**
 
 
 When using Python:
 - use uv and ty
+- **RUN PYTHON THROUGH `.venv/bin/python`, NOT BARE `python`/`python3`. MEASURED HERE: PATH's `python3` is
+  3.14 and has no `.pth`, `.venv` is 3.12 and has the editable `tinygrad` install, and a port oracle that
+  imports tinygrad answers 30 rows under one and 0 rows plus `ModuleNotFoundError` under the other.
+  `.agents/TOOLS.md`'s *Pin vs xd1/head* section records the instrument that pinned this; the file
+  itself, `.agents/slop/oracle_py.py`, IS AMONG THE 99 DELETED PATHS, so the rule has no enforcer left.**
 - Run tests with `-n12` for speed (e.g. `python -m pytest test/null/test_dtype.py -x -q -n12`)
 - Run `python -m mypy tinygrad/` to typecheck
 - Run `python -m ruff check .` to lint
+- **THOSE THREE EXACT COMMANDS DO NOT RUN IN THIS TREE TODAY, AND SAYING SO IS THE POINT: MEASURED,
+  `.venv` HAS NO `pytest`, NO `mypy` AND NO `ruff` (`No module named …`, rc=1 each), so the three lines
+  above are `uv`-installable rather than runnable. `ruff` 0.15.18 IS on PATH at `/opt/homebrew/bin/ruff`
+  and `ruff check .` RUNS — and it reports 797 errors, rc=1, so "the tree lints" is FALSE. `checks/`
+  and `gates/` are 2-space-indented and are not what `ruff` defaults to. The ledgers do not say which
+  interpreter a prescription runs under, and that is why three of them read as done.**
 - Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules
-- Do not do amend commits. Always do a new commit if a force push to origin would be required.
+- **Do not do amend commits, and do not REBASE. Always do a new commit if a force push to origin would
+  be required.** The previous revision said only "no amend", which is why the project's own pinned
+  upstream now CONTAINS `ad117c928` — *"rebase B1: 17 files, the tree imports again, and the GUARD that
+  was supposed to catch this is DEAD"*, an ancestor of HEAD that re-vendored 16 `tinygrad/` files and
+  broke a pin the tree cites. **THE RULE IS ABOUT OUR OWN HISTORY. THE UPSTREAM RE-VENDOR PLAN IS NOT THIS
+  RULE** — `ad117c928`'s own message names the tool it came from (`rebase-plan.py --json`, `rebase-try.sh`),
+  and BOTH ARE NOW DELETED, so the plan that re-vendored `tinygrad/` has no script left to audit it.
 - tinygrad has user space PCI drivers for AMD and NVIDIA GPUs. Do not insert the unneeded kernel modules.
 
 
 Testing:
 
-- NEVER write unit tests after you write code.
+- **NEVER write unit tests after you write code.** MEASURED, this is the rule the tree most often breaks
+  *in the right direction*: `.agents/slop/` holds 40+ `*-mutate.py` and `*-selftest.py` harnesses, because
+  "unmoved" conflates *no mutation was written* with *written and it did not move* — `.agents/TOOLS.md`
+  measured 487 mutations / 15 tables / 30 zeros of which **25 were unclassified**, and
+  `.agents/slop/zero-classify.py` (DELETED, one of the 99) was built to settle them by asking whether
+  CPython's answer appears in ANY row. **THE HARNESS YOU WRITE IS THE ONE THAT CAN FAIL, SO IT COMES
+  FIRST.**
 - Highly prefer E2E tests as the sole testing mechanism. Use them to verify complex features work. At the end of E2E tests, produce a verifiable and repeatable artifact.
 - If you must test a system in isolation, FIRST write all the ways it could fail, THEN write the code.
 - Tautological tests considered harmful.
 - Change-detector tests considered harmful.
 - Do not create regression tests for bug fixes without a genuine gap in behavior testing.
-- Inject time instead of sleeping: production code needing "now" takes it as a parameter, so tests pass a deterministic value instead of faking timers. 
+- Inject time instead of sleeping: production code needing "now" takes it as a parameter, so tests pass a deterministic value instead of faking timers.
+- **`test/` IS UPSTREAM TINYGRAD'S SUITE AND IS THE ORACLE, NOT OUR TESTS.** It runs unchanged against
+  the Bend build (`python -m pytest test/null/test_dtype.py -x -q -n12` — **but `pytest` is not in `.venv`
+  today**, see above). **A test that passes without exercising the Bend lanes is a change-detector, and
+  this project has measured four of them:** the `naming-gate` `VERBATIM` count read **283 vs 278** across
+  six runs 14 s apart (283 is settled substrate, 278 is substrate-in-flux); `elf.bend`'s row count read
+  **353 / 331 / 246 / 355** — **246 WAS A PARTIAL READ OF AN IN-FLIGHT RUN, RETRACTED**;
+  `elf-run`'s `354` was the harness's own `done rc=0` echo counted as a proof row; and
+  `run-port-mm.sh` on one tree read **rc 1 then rc 0**. **NEVER QUOTE A ROW COUNT WITHOUT THE RULE THAT
+  PRODUCED IT, AND NEVER QUOTE ONE FROM A JOB THAT MAY STILL BE RUNNING.** 
 
 
 Tinygrad Flags
@@ -102,7 +245,7 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `JIT`                | 1 (2 on OSX/x86) | 0=off, 1=on, 2=on but device graphs off                                             |
 | `VIZ`                | 0                | 1=record rewrites and open the viz UI (implies PROFILE)                             |
 | `PROFILE`            | VIZ              | 1=enable profiling infrastructure                                                   |
-| `SPEC`               | 1                | UOp spec validation level after rewrites (CI uses SPEC=2)                           |
+| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED here on the corpus: `SPEC=1` 61 of 77 ops · `SPEC=2` 26 of 77, 14 of 25 graphs FAIL, exit 1 · `SPEC=3` 0 of 77, all 25 FAIL |
 | `BEAM`               | 0                | Beam search iterations for kernel optimization                                      |
 | `NOOPT`              | 0                | 1=disable all kernel optimizations                                                  |
 | `DEFAULT_FLOAT`      | float32          | Default float dtype (HALF, BFLOAT16, FLOAT64)                                       |

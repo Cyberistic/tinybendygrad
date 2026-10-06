@@ -1,0 +1,38 @@
+DEVICE PRECONDITION : OK -- DEV=CPU, which is the declared pin
+graphs declared   : 25
+graphs built      : 0
+graphs FAILED     : 25
+    allred: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    alu: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    binblob: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    bit: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    buffer: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    bw: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    cast: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    cdiv: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    commute: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    flip: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    gate: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    group: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    indexed: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    late: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    lin: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    loop: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    matmul: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    move: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    range: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    rangeflat: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    reduce: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    sink: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    special: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    sym: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+    where: AssertionError: None input shape not supported for Ops.AND at ops.py:444
+denominator len(Ops) : 77
+CPYTHON-SIDE UNION   : 0 of 77
+  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE 22 GRAPH DEFINITIONS.
+     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), "py")`
+     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH
+     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.
+RUN HEALTH        : OK -- every one of 25 graphs was COMPARED, 19 agree and 6 disagree (disagreement is a recorded verdict, not an absence)
+per-graph SUM        : 0   <- NOT the figure; it counts an op once per graph that has it
+NOT reached (77): SPECIAL BUFFER ALLOC NOOP REWRITE_ERROR PARAM CALL PROGRAM LINEAR SOURCE BINARY SINK AFTER GROUP STACK GETADDR INDEX SHRINK LOAD STORE WMMA CAST BITCAST EXP2 LOG2 SIN SQRT RECIPROCAL NEG TRUNC ADD MUL SHL SHR CDIV MAX CMOD CMPLT CMPNE CMPEQ XOR OR AND THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE MULACC BARRIER RANGE IF END ENDIF BACKEDGE CONST CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE COPY MSELECT MSTACK CUSTOM_FUNCTION RESHAPE PERMUTE EXPAND PAD FLIP UNSHARD REDUCE ALLREDUCE PYLITERAL

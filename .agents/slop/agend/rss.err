@@ -1,0 +1,17 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=1383 MB (ceiling 2048)  3s  :: ./bin/bend tinybendygrad/sz.bend --check-only  out=0B err=179B  said=SOME PROOFS FAIL | Error: 7 defs rely on unsafe or foreign code: | - Sz.read_dir
+SOME PROOFS FAIL
+Error: 7 defs rely on unsafe or foreign code:
+- Sz.read_dir
+- Sz.is_dir
+- walk.item
+- walk.scan
+- walk
+- sz.main
+- main
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1387 MB (ceiling 2048)  3s  :: ./bin/bend tinybendygrad/renderer/nir.bend --check-only  out=58B err=42B
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=505 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/dtype.bend --check-only  out=58B err=42B
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=196 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/helpers.bend --check-only  out=58B err=42B
+bend 2.0.35 is available: run bend update
