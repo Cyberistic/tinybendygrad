@@ -43,8 +43,8 @@ bend_run() {
   i=0
   while [ "$i" -lt 8 ]; do
     i=$((i + 1))
-    if ./bin/bend .agents/slop/e2e_mm.bend > "$RUN/e2e-mm-bend.txt" 2> "$RUN/e2e-mm-bend.err"; then
-      n=$(grep -c '=' "$RUN/e2e-mm-bend.txt" || true)
+    if ./bin/bend .agents/slop/e2e_mm.bend > "$RUN/e2e-mm-bend.out" 2> "$RUN/e2e-mm-bend.err"; then
+      n=$(grep -c '=' "$RUN/e2e-mm-bend.out" || true)
       if [ "$n" -gt 20 ]; then
         echo "bend: $n rows (attempt $i)"
         return 0
@@ -114,10 +114,10 @@ echo "== 4/4 gate"
 # PIPESTATUS, so the gate writes its own file and the status is read from the
 # command itself.
 set +e
-"$PY" .agents/slop/e2e_mm_gate.py "$RUN/e2e-mm-bend.txt" > "$RUN/e2e-mm-gate.txt" 2>&1
+"$PY" .agents/slop/e2e_mm_gate.py "$RUN/e2e-mm-bend.out" > "$RUN/e2e-mm-gate.out" 2>&1
 rc=$?
 set -e
-cat "$RUN/e2e-mm-gate.txt"
+cat "$RUN/e2e-mm-gate.out"
 verdict "stage 4 gate (matmul vs CPython, via WebGPU)" "$rc"
 
 # ---------------------------------------------------------------------------
@@ -149,10 +149,10 @@ verdict "stage 4 gate (matmul vs CPython, via WebGPU)" "$rc"
 # ---------------------------------------------------------------------------
 echo "== 5/5 port's own device (the port's ops_bend runtime executes)"
 set +e
-./.agents/slop/opsbend-milestone.sh > "$RUN/e2e-opsbend.txt" 2>&1
+./.agents/slop/opsbend-milestone.sh > "$RUN/e2e-opsbend.out" 2>&1
 msrc=$?
 set -e
-tail -3 "$RUN/e2e-opsbend.txt"
+tail -3 "$RUN/e2e-opsbend.out"
 # TODO(stage-5-denominator): `tail -3` IS THE DENOMINATOR AND IT IS ALSO WHAT A CRASH REPLACES. The
 # milestone's own last three lines are the expectation-file comparison, but when it dies first they
 # are a traceback (measured 2026-10-05: `FileNotFoundError: .agents/slop/
@@ -197,10 +197,10 @@ verdict "stage 5 ops_bend (kernel executes in Bend)" "$msrc"
 # ---------------------------------------------------------------------------
 echo "== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)"
 set +e
-zsh .agents/slop/e2e_port/run-port-mm.sh > "$RUN/e2e-port-mm.txt" 2>&1
+zsh .agents/slop/e2e_port/run-port-mm.sh > "$RUN/e2e-port-mm.out" 2>&1
 psrc=$?
 set -e
-cat "$RUN/e2e-port-mm.txt"
+cat "$RUN/e2e-port-mm.out"
 verdict "stage 6 port (matmul THROUGH the port, no Node)" "$psrc"
 
 # ---------------------------------------------------------------------------
@@ -234,18 +234,18 @@ verdict "stage 6 port (matmul THROUGH the port, no Node)" "$psrc"
 # ---------------------------------------------------------------------------
 echo "== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)"
 set +e
-zsh .agents/slop/f64/run-f64.sh > "$RUN/e2e-f64.txt" 2>&1
+zsh .agents/slop/f64/run-f64.sh > "$RUN/e2e-f64.out" 2>&1
 fsrc=$?
 set -e
 # A stage that DID NOT RUN must be SKIP, never PASS.  `run-f64.sh` exits 3 without
 # running a lane when its substrate is cold, and 3 is a refusal, not a failure.
 if [ "$fsrc" -eq 3 ]; then
-  skip "stage 7 f64 (double through the port, no Node)" "run-f64.sh refused: its substrate is cold; see $RUN/e2e-f64.txt"
+  skip "stage 7 f64 (double through the port, no Node)" "run-f64.sh refused: its substrate is cold; see $RUN/e2e-f64.out"
 elif [ "$fsrc" -eq 127 ]; then
   skip "stage 7 f64 (double through the port, no Node)" "\`zsh\` is not available; stage 7 measured NOTHING"
 else
   grep -E 'STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\[|RED   \[|GREEN \[|THEOREM \[|F64-[0-9]' \
-    "$RUN/e2e-f64.txt" | sed 's/^/  /'
+    "$RUN/e2e-f64.out" | sed 's/^/  /'
   verdict "stage 7 f64 (double through the port, no Node)" "$fsrc"
 fi
 

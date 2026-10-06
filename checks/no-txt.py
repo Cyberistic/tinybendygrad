@@ -51,7 +51,16 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Trees that are not this project: the git object store, the upstream clone, the tinygrad checkouts
 # a port graph imports, and the report trees inside shadow copies of the source.
-SKIP = {".git", "references", "node_modules", "__pycache__"}
+#
+# `test/` IS UPSTREAM TINYGRAD'S OWN SUITE, NOT THIS PROJECT'S — `AGENTS.md`, `Testing`: *"`test/` IS
+# UPSTREAM TINYGRAD'S SUITE AND IS THE ORACLE, NOT OUR TESTS"* — and NO author of this project has a
+# commit under it (measured 2026-10-06: `git log --format=%ae -- test/` carries 287 distinct
+# addresses and 0 `tinybendygrad@localhost`). Its one `.txt`,
+# `test/models/efficientnet/imagenet1000_clsidx_to_labels.txt`, is the 999-line ImageNet index that
+# upstream's `test_efficientnet.py` reads; the last commit to touch it is upstream's own
+# `8919ca816 test cleanups` (George Hotz, 2023-03-03). This project does not own it, so owning it
+# here was the same class of false positive as walking `tinygrad/` would have been.
+SKIP = {".git", "references", "node_modules", "__pycache__", "test"}
 SKIP_PREFIX = ("tinygrad", ".venv", "node_modules")
 GRAPH_D = "runs/graphcmp/D"
 

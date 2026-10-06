@@ -211,8 +211,8 @@ ENV = dict(os.environ)
 # ORACLE_SHA 9ee46f84… / BODY_SHA e75c9e38…, the stage-8-only pair was
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
-ORACLE_SHA = "fe56d307d05b97e12c09455405436dd7a6dce85bdca1ab1bfd5ac15b01032faf"
-BODY_SHA = "5df8c2082ba26d6edaa19fb962e8866ef93b319aafc59701e3763ca080828122"
+ORACLE_SHA = "05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696"
+BODY_SHA = "aaea6adddba6e553f7c51d8d53d3bcb7b9ccde7a8d54d96012c78d2b0aafd5f8"
 # THE ONE DOCUMENTED EDIT, AND IT IS STILL ONE. `diff.py` drives the oracle against a FIXTURE tree
 # through `E2E_ROOT`, and a fixture has no `pyproject.toml` and no `tinybendygrad/`, so the oracle
 # carries the redirect and NOT the assertion; the live shell carries the assertion and no redirect,
@@ -277,7 +277,7 @@ def stage(argv: list[str], into: Path | None = None) -> int:
                                   stdout=fh, stderr=subprocess.STDOUT).returncode
     except (FileNotFoundError, PermissionError) as exc:
         # THE SHELL'S OWN COMPLAINT, IN ITS OWN WORDS, AND TO THE STREAM THE STAGE CAPTURES INTO --
-        # `zsh: command not found` inside `$RUN/e2e-port-mm.txt`, which stage 6 then `cat`s, exactly
+        # `zsh: command not found` inside `$RUN/e2e-port-mm.out`, which stage 6 then `cat`s, exactly
         # where the shell put it. Writing it to the gate's stderr instead would be invisible in the
         # artifact the reader is shown.
         #
@@ -362,7 +362,7 @@ def bend_run() -> int:
     success branch, so a bend that FAILS on attempt 1 prints `attempt 1 produced  rows` with
     nothing between the two words. Tidy that into `0` and the artifact changes.
     """
-    txt, err = RUN / "e2e-mm-bend.txt", RUN / "e2e-mm-bend.err"
+    txt, err = RUN / "e2e-mm-bend.out", RUN / "e2e-mm-bend.err"
     rows = ""
     for i in range(1, 9):
         # `> TXT 2> ERR` ARE TWO SEPARATE STREAMS, and the row count is read from the FIRST one
@@ -430,13 +430,13 @@ def main() -> int:
     # THE EXIT STATUS IS THE GATE'S, NOT A PIPELINE'S. `checks/e2e.sh:120-125` names the trap this
     # repo keeps paying for: `"$PY" gate.py | tee out` makes `$?` the status of `tee`, so a gate that
     # CRASHED printed `PASS`. POSIX sh has no PIPESTATUS.
-    gate = RUN / "e2e-mm-gate.txt"
-    rc = stage([PY, ".agents/slop/e2e_mm_gate.py", str(RUN / "e2e-mm-bend.txt")], gate)
+    gate = RUN / "e2e-mm-gate.out"
+    rc = stage([PY, ".agents/slop/e2e_mm_gate.py", str(RUN / "e2e-mm-bend.out")], gate)
     echo_file(gate)
     verdict("stage 4 gate (matmul vs CPython, via WebGPU)", rc)
 
     say("== 5/5 port's own device (the port's ops_bend runtime executes)")
-    ops = RUN / "e2e-opsbend.txt"
+    ops = RUN / "e2e-opsbend.out"
     rc = stage(["./.agents/slop/opsbend-milestone.sh"], ops)
     tail_file(ops, 3)      # THE DENOMINATOR: the milestone's own last three lines.
     # TODO(stage-5-denominator): `tail -3` IS THE DENOMINATOR AND IT IS ALSO WHAT A CRASH REPLACES,
@@ -448,17 +448,17 @@ def main() -> int:
     verdict("stage 5 ops_bend (kernel executes in Bend)", rc)
 
     say("== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)")
-    pmm = RUN / "e2e-port-mm.txt"
+    pmm = RUN / "e2e-port-mm.out"
     rc = stage(["zsh", ".agents/slop/e2e_port/run-port-mm.sh"], pmm)
     echo_file(pmm)
     verdict("stage 6 port (matmul THROUGH the port, no Node)", rc)
 
     say("== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)")
-    f64 = RUN / "e2e-f64.txt"
+    f64 = RUN / "e2e-f64.out"
     rc = stage(["zsh", ".agents/slop/f64/run-f64.sh"], f64)
     if rc == 3:
         skip("stage 7 f64 (double through the port, no Node)",
-             f"run-f64.sh refused: its substrate is cold; see {RUN}/e2e-f64.txt")
+             f"run-f64.sh refused: its substrate is cold; see {RUN}/e2e-f64.out")
     elif rc == 127:
         skip("stage 7 f64 (double through the port, no Node)",
              "`zsh` is not available; stage 7 measured NOTHING")
