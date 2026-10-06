@@ -738,17 +738,6 @@ def const_ds.pick(m: Maybe<&1, S.Dt>) -> Maybe<&2, DtShape>:
 def dt_of_nil(dt: S.Dt) -> DtShape:
   DtShape{dt, Some{Nil{}}}
 
-def call_ds.go(+dt: S.Dt, vd: S.Dt) -> Maybe<&2, DtShape>:
-  some_if(&2, DtShape, Bool.not(O.eq_dt(dt, vd)), dt_of_nil(dt))
-
-def ins_ds.shape(+dt: S.Dt, vd: S.Dt) -> Maybe<&2, DtShape>:
-  some_if(&2, DtShape, Bool.not(O.eq_dt(dt, vd)), dt_of_nil(dt))
-
-def ins_ds.pick(m: Maybe<&1, S.Dt>) -> Maybe<&2, DtShape>:
-  match m:
-    case Some{dt}: ins_ds.shape(dt, S.void())
-    case None{}: None{}
-
 # THE WALK'S TWO RESULTS, as one value, for the same reason as `Table`: the hit is
 # read once per src and both the accumulator and the flag need it.
 type Gathered is Data:
@@ -1104,6 +1093,27 @@ def fold.ended.of(m: Maybe<&2, Derived>) -> Maybe<&2, List<&2, U32>>:
 def late() -> Maybe<&2, DtShape>:
   Some{DtShape{S.void(), None{}}}
 
+# THE `() ` RULE, AND ONE DEF FOR THREE OPS BECAUSE UPSTREAM WRITES IT THREE TIMES:
+# `Ops.INS` (ops.py:339-341), `Ops.CUSTOM_FUNCTION` (ops.py:374) and `Ops.CALL`
+# (ops.py:386-388, where it is the PASSTHROUGH arm). THIS FILE ANSWERED IT THREE TIMES
+# AS WELL -- `custom_ds.of`, and TWO BYTE-IDENTICAL `some_if(not dt is void, …)` COPIES
+# named `call_ds.go` and `ins_ds.shape`. The 2026-10-05 fix landed in `custom_ds.of`'s
+# copy and LEFT BOTH TWINS WRONG, which is the whole of the lesson: A FIX TO ONE ARM OF
+# A RULE IS NOT A FIX TO THE RULE. What both twins got wrong is that their OUTER `None`
+# is the PORT-ONLY "the fold produced no `Derived`", which `derived.put` (fold.bend:2477)
+# passes on and `Kahn.ans.of` turns into A MISSING TABLE ENTRY -- so the node reads `?` in
+# BOTH columns, a hole CPython cannot print, rather than reading `R`. MEASURED on
+# `--graph loop`: ONE node of 26 absent, and `?=2/2` is ONE absence read twice.
+#
+# IT SITS HERE, BESIDE `late()`, and not up beside `dt_of_nil` with the other `_ds` arms,
+# because bend REFUSES A FORWARD REFERENCE -- MEASURED, a def calling a later def answers
+# "expected : a filled definition (an unfilled law is a dead claim: live code cannot use
+# it)" -- and `late()` is the void arm of this rule.
+def nil_ds.shape(+dt: S.Dt) -> Maybe<&2, DtShape>:
+  match dt:
+    case S.Dt{_, _, S.CVoid{}, _}: late()
+    case _: Some{dt_of_nil(dt)}
+
 def noop_ds.go(empty: Bool, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match empty:
     case True{}: late()
@@ -1147,8 +1157,18 @@ def call_dt(arg: O.Arg) -> S.Dt:
 # CALL: `return arg.dtype if isinstance(arg, CallInfo) else dtypes.void` in the
 # dtype ladder, and `return None if self.dtype is dtypes.void else ()` in `_shape`:
 # "a void CALL has no shape, the return value of a CALL has the shape of its dtype".
+#
+# THAT SECOND HALF IS A LINE THIS COMMENT QUOTED AND ops.py DOES NOT CARRY. MEASURED at
+# ops.py:386-388: `Ops.CALL` is in the PASSTHROUGH arm, `return self.src[0]._shape`, and
+# its dtype arm is `return src[0].dtype` (ops.py:130) -- "a call has the dtype of its
+# body". So upstream's rule is "the BODY decides both", and on `--graph loop` the two
+# rules AGREE: `src[0]` is a SINK, a late op, so the passthrough answers `None` and so
+# does this one. That is why the row cannot tell the two apart, and why the difference
+# is REPORTED rather than silently resolved by porting the passthrough -- which would also
+# need the dtype half re-based on the body, and that is LIMITS.md §2's named divergence.
+# WHAT IS SETTLED HERE IS THE HALF THAT IS WRONG UNDER BOTH READINGS: the outer `None`.
 def call_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
-  call_ds.go(call_dt(arg), S.void())
+  nil_ds.shape(call_dt(arg))
 
 def ins_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
   match arg:
@@ -1158,26 +1178,21 @@ def ins_dt(arg: O.Arg) -> Maybe<&1, S.Dt>:
 # INS: `arg is (instruction, dtype)`, "a queue command or an asm line is void",
 # which the arg's Dt already says, and `if self.dtype is dtypes.void: return None;
 # return ()` -- "INS shape is always scalar, vector width is in the instruction
-# encoding".
+# encoding". MEASURED, ops.py:339-341: that IS the line, so this arm states the rule.
+def ins_ds.pick(m: Maybe<&1, S.Dt>) -> Maybe<&2, DtShape>:
+  match m:
+    case Some{dt}: nil_ds.shape(dt)
+    case None{}: None{}
+
 def ins_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   ins_ds.pick(ins_dt(arg))
 
 # CUSTOM_FUNCTION -- ops.py:133-135 `return arg.dtype` and ops.py:374 `return None
 # if self.dtype is dtypes.void else ()`. It is NOT one of the always-void ops: ops.py
 # gives it its OWN arm in `dtype_from_uop` because the dtype is in the ARG.
-#
-# The void arm is `dt_is.is_void`'s pattern, on the CLASS alone rather than on bits as
-# well: `CVoid` is in exactly one dtype of the table, so it IS void, and arms on cls
-# survives a change to either of the first two fields -- which is the whole lesson of
-# `void`'s priority.
-def cfun_ds.shape(+dt: S.Dt) -> Maybe<&2, DtShape>:
-  match dt:
-    case S.Dt{_, _, S.CVoid{}, _}: late()
-    case _: Some{dt_of_nil(dt)}
-
 def cfun_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
   match arg:
-    case O.ACustom{cf}: cfun_ds.shape(O.CustomFunction.dtype(cf))
+    case O.ACustom{cf}: nil_ds.shape(O.CustomFunction.dtype(cf))
     case _: None{}      # `return arg.dtype` -- only a CustomFunction has a `.dtype`
 
 # CUSTOM | CUSTOMI -- ops.py:136-138 for the dtype and ops.py:370-372 for the shape:
@@ -1192,15 +1207,24 @@ def cfun_ds(arg: O.Arg) -> Maybe<&2, DtShape>:
 #   u32,   1 shaped src   -> (2,)        line 2, the broadcast
 #   u32,   shapeless+shaped -> (2,)      line 2 FILTERS the shapeless src
 #   void,  1 shaped src   -> None        line 1 runs FIRST; the srcs are never read
-# So the void arm is `cfun_ds.shape`'s void arm (ops.py:374 is the same test, and ops.py:371
+# So the void arm is `nil_ds.shape`'s void arm (ops.py:374 is the same test, and ops.py:371
 # is the same line), and it is `late()` again; and the else arm is `bcast_shape` over
-# `some_shapes`, whose empty answer is the line-3 `None`.
+# `some_shapes`, whose empty answer is the line-3 `None`. `custom_ds.of` cannot BE
+# `nil_ds.shape` -- its else arm is a broadcast and not `()` -- so it spells the same one
+# line of void arm for that reason.
 #
 # WHAT THIS IS NOT, and it is the defect this arm carried until 2026-10-05: the outer
 # `None` is the PORT-ONLY "the fold produced no `Derived`", which the differ spells `?`
 # (`graphcmp.bend`'s `shape_str`), while "no shape" is `Some{None{}}` -> `R`. Answering
 # the outer `None` here made a node upstream is HAPPY to describe read as a node the port
 # knows nothing about, which is the `?`/`R` conflation one level down in the ladder.
+#
+# THE OTHER TWO COPIES OF THAT SAME VOID ARM -- `call_ds.go` and `ins_ds.shape`, TWO
+# BYTE-IDENTICAL BODIES -- CARRIED IT TOO AND SURVIVED THE FIX. 2026-10-06 they are gone:
+# CALL, INS and CUSTOM_FUNCTION now all read ONE def, `nil_ds.shape`, so there is no
+# fourth copy to be left behind again. MEASURED on `--graph loop`, the graph that carried
+# the surviving twin: `settled=False` -> `settled=True`, and the one absent node of 26
+# became `4:CALL 4:void 1:R`.
 def custom_ds.of(+dt: S.Dt, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match dt:
     case S.Dt{_, _, S.CVoid{}, _}: late()
@@ -2395,7 +2419,8 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # The second correction: the note below claimed the arm needed "its own
     # `_broadcast_shape` oracle and its own rows" and left BOTH HALVES parked for it. The
     # void half needs neither -- it is ops.py:371, `if self.dtype is dtypes.void: return
-    # None`, which is `cfun_ds.shape`'s void arm verbatim, and `_broadcast_shape` was
+    # None`, which is `nil_ds.shape`'s void arm (it was `cfun_ds.shape`'s until that def was
+    # folded into `nil_ds.shape` on 2026-10-06), and `_broadcast_shape` was
     # already here as `where_ds` and `alu_ds` use it. The claim also called the shape half
     # "`all_shapes` + `bcast_shape`", and THAT is the half that was wrong: ops.py:372
     # FILTERS the shapeless srcs out (`[x._shape for x in self.src if x._shape is not
@@ -4899,27 +4924,37 @@ def rg_f_er() -> O.Found:
 # ends every range in `src[1:]`. The two rows are one condition apart, so neither can be
 # right while the other is wrong.
 #
-# THE CALL CARRIES A NON-VOID `CallInfo`, and that is not decoration. `call_ds.go` is
-# `some_if(not dt is void, ...)`, so a VOID CALL is a node `dt_shape` does not answer,
-# and then `ended` is not in the table and the whole set is refused -- measured, not
-# assumed: both rows read ABSENT with an `ANone{}` arg. The two rows are about
-# `ended_of.call`'s conditional, so they need a node that exists in the table.
-def rg_call(ar: O.Arena, body: U32, a: U32, b: U32) -> O.Found:
+# THE `CallInfo` DTYPE IS `src[0]`'s DTYPE, PER CANDIDATE, AND THAT IS THE WHOLE REASON
+# IT IS A PARAMETER NOW. The old fixture put `S.int32()` in the field of both rows and its
+# comment said the non-void was NECESSARY: `call_ds.go` was `some_if(not dt is void, ...)`,
+# so a VOID CALL was a node `dt_shape` did not answer, its `ended` was not in the table,
+# and both rows read ABSENT. **That reason died on 2026-10-06 with `call_ds.go` itself**,
+# so a non-void kept in place would have been a probe passing for a reason its own comment
+# had disowned. MEASURED, `.agents/slop/loopfix/callprobe.out`: CPython reads a CALL's
+# dtype off `src[0].dtype` (ops.py:130) and NEVER off the arg -- `arg=dtypes.i32` and
+# `arg=dtypes.void` give byte-identical `dtype`, `_shape` and `ranges` -- so upstream's own
+# answer for each row is the BODY's: `weakint` for the CONST body, and NOTHING for the
+# CUSTOM_FUNCTION body, where `oracles/fold-rng-oracle.py:116` passes a 2-tuple and
+# ops.py:135 reads `arg.dtype` off it and RAISES `AttributeError`. REPORTED, not patched --
+# that oracle is not this file's. So `rg_cf`'s row is carried by `S.void()`, which is what
+# `rg_cf`'s own `CustomFunction{"myext", S.void()}` states, and `rg_c`'s by `S.weakint()`,
+# which is what the port's `const_ds` answers and what CPython answers for an int CONST.
+def rg_call(ar: O.Arena, body: U32, a: U32, b: U32, dt: S.Dt) -> O.Found:
   O.UOp.new(ar, O.OpsCALL{}, [body, a, b],
-    O.ACall{O.CallInfo{None{}, False{}, False{}, S.int32()}}, O.TNone{})
+    O.ACall{O.CallInfo{None{}, False{}, False{}, dt}}, O.TNone{})
 
 def rg_f_call_cf() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
   +cf = rg_cf(O.Found.ar(r1))
-  rg_call(O.Found.ar(cf), O.Found.i(cf), O.Found.i(r0), O.Found.i(r1))
+  rg_call(O.Found.ar(cf), O.Found.i(cf), O.Found.i(r0), O.Found.i(r1), S.void())
 
 def rg_f_call_c() -> O.Found:
   +c = rg_c(O.Arena.empty(), 4)
   +r0 = rg_rng(O.Found.ar(c), O.Found.i(c), 0)
   +r1 = rg_rng(O.Found.ar(r0), O.Found.i(c), 1)
-  rg_call(O.Found.ar(r1), O.Found.i(c), O.Found.i(r0), O.Found.i(r1))
+  rg_call(O.Found.ar(r1), O.Found.i(c), O.Found.i(r0), O.Found.i(r1), S.weakint())
 
 # THE REFUSAL, and it is the divergence the header names: `STAGE` is a DEFERRED op in
 # `dt_shape`, so `ended_ranges` is not in the main table and neither is the set. CPython
