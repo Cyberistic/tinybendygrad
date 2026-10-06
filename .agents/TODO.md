@@ -13038,12 +13038,27 @@ taken a SECOND time. Census: 566 walls, 40 shared, 249 BACKLOG.
 - [x] **EACH ONE NOW COMPUTES THE ROOT FROM ITSELF AND ASSERTS IT**, on two tracked markers
       (`pyproject.toml` and `tinybendygrad/`), so a fourth relocation is a refusal and not a
       third exception. **17 of 17 assert; 1 of 17 did before.** Same measure in the clean
-      worktree, from a foreign CWD: **WRONG-ROOT 8 -> 1**, and the 1 is `checks/e2e.sh`.
+      worktree, from a foreign CWD: **WRONG-ROOT 8 -> 0**, and the 1 that was left WAS
+      `checks/e2e.sh`, fixed in `.agents/slop/e2esh/` (see below).
 - [x] **THE PLANT MOVES A SCRIPT ONE DIRECTORY DEEPER AND IT GOES RED: 14 of 14 caught, rc=3,
       naming the directory it actually reached.** Without the assertion these ran anyway.
       `plant.sh` and `lint_demo.sh` needed a second look and are now caught too — `lint_demo.sh`
       did not refuse on the first attempt because `${0:A:h:h}` collapses to a *string* that the
       marker test then never saw.
+- [x] **`checks/e2e.sh` FIXED, AND `checks/e2e.py`'s `BODY_SHA` KEPT — DELETING IT WOULD HAVE
+      DELETED THE ONLY THING THAT NOTICES.** It resolved to `/Users/cyberistic/src/tries`, the
+      repo's PARENT, where `cd "$ROOT"` **SUCCEEDED**: **all nine of the seven stages' paths are
+      ABSENT under it**, and a live run of HEAD's body died in stage 1 on `command not found`,
+      rc 1, with no verdict line ever printed. The pin made the fix unpayable, and the sibling
+      unit concluded deleting the pin was the clean unblock — **MEASURED, AND NOT SUPPORTED**:
+      planting one comment line, and dropping one root MARKER, both give `oracle_drift() != []`
+      and `checks/e2e.py rc=3` with `== 1/4 oracle` never printed. `diff.py` compares the PORT
+      against the FROZEN ORACLE and never reads `checks/e2e.sh`, so stdout fidelity is not a
+      second observer to move the pin down to: under both plants it reported `1 of 1 disagree`
+      and the ENTIRE disagreement was the port's own refusal, its stdout EMPTY. Both pins moved
+      with the edit; `revert(oracle) == e2e.sh` is still PROVED byte for byte. `live` + all
+      eight plants: **0 of 9 disagree**; the real `/bin/sh checks/e2e.sh` from `/` is **rc 4**
+      (stage 7's pre-existing cold-substrate skip). `.agents/slop/e2esh/FINDINGS.md` §1-9.
 - [x] **`checks/mutate.sh` DELETED.** It diffed against `/tmp/spec.gate.base`, which **it never
       creates and which does not exist**, so it could never report a row diff; it mutated
       `tinybendygrad/uop/spec.bend` in the live tree; it ran five unbounded `bend` processes.
@@ -13106,3 +13121,148 @@ assertions, no `bend`, `runs/graphcmp/D/` untouched). **NOT COMMITTED.**
       pinned to the 9/16 state. Reported, not edited.
 - [ ] **OPEN JUDGEMENT**: whether the five forced `AGREE`s deserve rows at all. The evidence is in
       the `WANT` comment; the call that a forced claim is not worth a row is arguable.
+
+## 2026-10-06 — which claims are REACHED, not which are written
+
+Rule from the session, and it generalises past the pins: **a check nobody runs is worth nothing,
+and a check nobody CAN run is worth less.** So the next question after "is this red" is "which of
+this harness's assertions is reachable at all". Two of four were not.
+
+  - [x] **`canon` IS DEAD CODE — 25 lines, ZERO of nine gates pass it.** `pins` 7 users,
+        `port_only` 2, `diverges` 2, `canon` 0. Its docstring promised that "Both sides' orders
+        are then asserted, so a change in EITHER toposort is a gate failure"; the code asserted
+        ONE thing about order — that the two lines DIFFER — which is what makes it an order-only
+        divergence at all, and it never pinned either order. Deleted. `gatekit.py` 477 -> 452.
+  - [x] **`port_only`'s absence half is PROVABLY UNREACHABLE, and I repaired it yesterday.**
+        The read was wrong (it read the filtered lane) AND the assertion was unreachable: py's
+        expectation is `rows - len(port_only)`, DERIVED, so an oracle that grows a port-only row
+        is one row too many and fails the row COUNT first, always. MEASURED with a probe over
+        three configurations — declaring `rows=7` to satisfy the count check does not help, `want`
+        is still 6. Deleted; the docstring now names the derived count as the thing that holds
+        the claim, because that is what holds it. 452 -> 450.
+  - [ ] **THE DERIVED COUNT IS THE ONLY GUARD, AND IT IS WORTH A DELIBERATE LOOK.** If `rows` is
+        ever passed for a gate whose oracle count is already known, the arithmetic stops being
+        independent of the oracle and the absence claim gets weaker silently. Nothing tests
+        `rows` against the oracle independently — it is the thing being asserted.
+
+## 2026-10-06 — the FIRST ops.bend gate, and the oracles come out of the pruning directory
+
+`ops.bend` had 55 `t_*` tests and no denominator at all: written, believed, unverified. Five are
+gated now (`gates/ops-core-gate.py`, 5 rows, 3 lanes, no new port code — the driver CALLS the
+tests the file already had, and the oracle builds the same graphs out of real tinygrad).
+
+  - [x] **THE CONST-IDENTITY CLUSTER IS GATED.** `hashcons_same_index`, `zeros_differ`,
+        `nan_interns`, `bool_vs_int_key`, `backedge_srcs`. `zeros_differ` and `nan_interns` are
+        the PAIR: IEEE equality disagrees with the packed-arg key in BOTH directions, so a port
+        keying on `F32.is_eq` gets exactly one of the two backwards and no single-cell test sees
+        it. That is why `decomp.bend:126` may keep `is_eq` — different question — and the two
+        rows keep that distinction from being an accident.
+  - [x] **ROW NAMES ARE PINNED, VALUES ARE ONLY DIFFED.** Planted a RENAME (same value, same
+        verdict): a value diff cannot see it at all, so the pins assert the question separately
+        from the answer. Pinning values too would pin the answer twice and let the two drift.
+  - [ ] **THE OTHER 50 `t_*` TESTS WANT `simplify` OR ARENA MACHINERY STILL BEHIND MARKERS.**
+        Gating them would make the denominator count rows nobody ran. Next clusters, in the order
+        I would take them: `t_dtype_key`/`t_hashcons` neighbours (const keys), then the
+        `backward_slice`/`toposort` walk, then anything needing `simplify` — which is blocked on
+        `ops.py:518 ssimplify` and is the real gate on this file.
+  - [x] **THE TWO PINNED SHELL ORACLES MOVED TO `gates/oracles/`.** They were the two most
+        exposed files in the tree — already deleted once and recovered twice today — sitting in
+        the directory being pruned, while their gates named them. Path and pin moved together;
+        the sha256 is over CONTENT, so both gates stayed green rather than being re-pinned to
+        whatever was on disk. `gates/README.md` said the OPPOSITE ("DRIVERS AND ORACLES STAY IN
+        `.agents/slop/`") and is fixed: that instruction is what put them there.
+
+## 2026-10-06 — the arg-type lane, 14 rows, and the FOURTH fixture mismatch
+
+`ops-core-gate` is at 14 rows. The nine new ones intern two nodes differing in nothing but the
+TYPE of a value and answer IDENTITY OF THE INDICES — never by reading the comparator, which is
+the thing under test.
+
+  - [x] **THE KEY IS `(op, src, arg, tag, type(arg))` — `ops.py:201` — SO THE ASYMMETRY IS:**
+        `True` and `1` are the SAME Python value (`True == 1`, same hash) yet SPLIT as a
+        top-level arg, MERGE in the tag (`type(tag)` is NOT in the key), and MERGE again in a
+        nested `ParamArg.val` (there `type(arg)` is `ParamArg` both sides). Three positions, two
+        answers; a comparator treating them alike passes any ONE of these rows and is wrong in
+        the other two.
+  - [x] **THREE OF THE NINE ROWS ARE `0`, WHICH IS WHY THEY ARE WORTH GATING.** `t_*` returns the
+        CLAIM, not a verdict, so `0` is correct. Five rows of `1` cannot distinguish a comparator
+        that always says True from one that is right. Planted an inversion to prove the gate sees
+        a `0`.
+  - [ ] **`PyConst` FLOATS ARE `ConstFloat`, AND THAT CHANGED AN ORACLE ANSWER.** `__hash__` is
+        `hash(self.bits)` and `__eq__` is `float.__eq__` (`dtype.py:14-21`), so
+        `ConstFloat(1.0) == 1` is True while `hash(ConstFloat(1.0)) != hash(1)` — equal values in
+        DIFFERENT buckets are never compared, so they are two keys. A bare Python `1.0` in an
+        oracle gives the OPPOSITE answer and is the FOURTH fixture mismatch this project has
+        produced, all one mistake: the two sides asked different questions. **Before writing any
+        oracle row for a float, use `ConstFloat` and MEASURE — do not reason about it from IEEE.**
+  - [ ] **STILL UNGATED IN ops.bend: the ~50 remaining `t_*`, and the blocker is named.** The next
+        clusters are the interning sweeps (`t_blob_*`, `t_afloat_*`, `t_addr_interns`,
+        `t_var_interns`, `t_cfun_interns`) — same shape as these nine, so they are cheap once this
+        gate's harness is trusted. The real wall is `ops.py:518 ssimplify` /
+        `ops.py:521 _eval`: `_eval` calls `self.simplify()`, so every row that needs a node
+        REWRITTEN before its value is read is behind it.
+
+---
+
+## SPECCITE — `file:line` CITATIONS, AND THE TENTH CLASS WAS NOT THE TENTH FINDING
+
+Instrument **`checks/citation-gate.py`**, evidence **`.agents/slop/speccite/README.md`**, pin
+**`checks/citation-gate.ledger.tsv`** (555 `git log -S` verdicts, keyed by quote), plants
+**`.agents/slop/speccite/plants.py`** (4 arms, tree never modified). **Nothing committed.**
+
+- [x] **THE CENSUS, WHICH IS A POPULATION AND NOT TEN INSTANCES.** `tinybendygrad/**` makes
+  **5,651** `file:line` citations into a Python tree. **331 are broken**: 269 `STALE-LINE`, 27
+  `WRONG-FILE`, 26 `NO-FILE`, 5 `STALE-RULE`, 4 `PAST-EOF`. **1,310 of 5,651 (23%) are adjudicable**
+  and 4,341 carry no quotable source at all. Nobody had counted them.
+- [x] **`spec.bend:412`/`:1092` DIAGNOSED AND FIXED.** `git log -S'x.dtype is x.arg.dtype'` on
+  `tinygrad/uop/spec.py` is **exactly two commits**: added `6f4bfde23`, removed `ad117c928`. **A RULE
+  CHANGE, not a field delete** — the same commit also changed `CUSTOM_FUNCTION`'s predicate from
+  `isinstance(x.arg, str)` to `isinstance(x.arg, CustomFunction)`. The line numbers were wrong
+  independently (`:412` said 113 which is right; `:1091` said **112**, the `#` comment above it).
+  Citation now names `spec.py:113`, quotes HEAD's whole rule, and **states that the port is STRICTER
+  THAN THE SPEC**. Behaviour unchanged; the divergence is now the most useful thing the comment says.
+- [x] **THE ELEVENTH INSTANCE, FOUND BY THE INSTRUMENT ON ITS FIRST RUN, IN THE SAME FILE, AND NOT
+  IN THE BRIEF'S LIST OF TEN.** `spec.bend:752`/`:756` cited `spec.py:211` for the SHRINK rule, which
+  is at **`spec.py:208`**; `spec.py:211` is `movement ops are not allowed in programs`.
+  `git log -S'UPat(Ops.CONST).or_casted()'` is `955037870` (added) and `ded106b18` (removed);
+  `ded106b18` renamed the constructor to `UPat.cvar()`, which **is** `UPat(Ops.CONST)` (`ops.py:1505`),
+  so the port was RIGHT and both citations were wrong. Fixed, with the rename recorded.
+- [x] **THE PLANT THE CHECK CANNOT SEE, AND WHY IT CANNOT SEE IT.** `PLANT-2` quotes
+  `lambda x: isinstance(x.arg, CallInfo)` from `spec.py:113` and then claims `sh_23` **is that rule,
+  verbatim**. File resolves, line is 113, substring is at 113, git is silent — **and the comment is
+  false**, because `sh_23.body` also compares a dtype. **The evidence is invariant under the very edit
+  that broke it:** `ad117c928` deleted a CONJUNCT and left its SIBLING, so the strongest available
+  static evidence cannot tell a true citation from a false one.
+- [x] **`PLANT-1` FIRES AND `PLANT-3` IS THE OTHER HALF OF THE BELT.** `PLANT-1` = the real defect
+  byte-for-byte from `git show HEAD:` → rc **1**, `STALE-RULE`. `PLANT-3` = one line number moved by
+  one → `STALE-LINE`, and **git is silent on it**. Two methods, no shared regex, opposite verdicts.
+  `CONTROL` (live bytes) is rc 0, so RED is the plant and not the harness. **4/4 arms as expected.**
+- [x] **A STATIC CHECK CANNOT ANSWER "DOES THIS CITATION STILL HOLD?", MEASURED THREE WAYS.** (1) The
+  evidence is invariant under conjunctive deletion (§PLANT-2). (2) **A FRAGMENT IS NOT A RULE:**
+  `STALE-RULE` fired 5 times and was WRONG 4 times — `mem_type(x)`→`mem_type(x: UOp)`, a line
+  restructured over 6 commits, a comprehension reformatted with spaces, and one rule that gained
+  `allow_any_len=True`. **Only reading the rule separates them and the rule is upstream.** The
+  `declared()` precedent pointed the other way: a verdict derived from the quoted fragment cannot
+  audit the rule the fragment is a sample of. (3) 77% of the corpus has no fragment to audit.
+- [x] **WHAT TO PIN: THE BLOB, NOT THE COMMENT.** A line number is only defined **relative to a blob**
+  and nothing here pins that blob — which is why `6f4bfde23`/`ad117c928` could move it unnoticed. Pin
+  the blob id of every cited Python file and a rebase becomes a pin diff to review.
+- [ ] **THE FIVE `STALE-RULE` ARE NOT MINE TO FIX. FOUR ARE RESPELLINGS AND ONE IS A REAL DELETION.**
+  `.venv/bin/python checks/citation-gate.py` is **RED at birth**, on purpose — the gate blocks on the
+  population because every member needs a human. **OWNERS, from the run:**
+
+  | file | cites | text | verdict |
+  |---|---|---|---|
+  | `tinybendygrad/uop/ops.bend:742` (**opshapes'**) | `ops.py:57` | `axis_to_pos` | **TRUE DELETION** — removed from `tinygrad/uop/ops.py` by `ad117c928` itself. Cite `AxisType` (`ops.py:57` no longer holds the dict) or drop it |
+  | `tinybendygrad/schedule/multi.bend:271` | `multi.py:41` | `UPat(GroupOp.Movement, src=(UPat.var("s"),), name="v")` | **LIKELY A REAL WIDENING** — HEAD reads `... allow_any_len=True, name="v")`. The rule accepts MORE, so the port is stricter. **Not established** |
+  | `tinybendygrad/renderer/tc_ptx.bend:165` | `ptx.py:59` | `mem_type(x)` | RESPELLING — `def mem_type(x: UOp)` still exists |
+  | `tinybendygrad/renderer/wgsl.bend:217` | `ops.py:913` | `return AddrSpace.REG` | RESPELLING — token survives at `ops.py:1004`, `:1213` |
+  | `tinybendygrad/mixin/movement.bend:250` | `movement.py:605` | `f_ = [smax(1, ceildiv(o*s - d, i)) ...` | RESPELLING — `movement.py:606` is the same comprehension with spaces |
+
+- [ ] **THE 269 `STALE-LINE` ARE NOT AUDITED.** Mechanically true ("the NEAREST occurrence is N lines
+  away") but I sampled **6**. One false-positive mode was found and fixed in the instrument (first
+  occurrence ≠ the occurrence meant: `Allocator` matched inside `BumpAllocator`). The other 263 are
+  sound but not necessarily *meant*.
+- [ ] **THE 4,341 UNBOUND CITATIONS CARRY NO QUOTABLE SOURCE** and raising reach is a per-file decision
+  about whether those comments are meant to be checkable. **DO NOT raise reach with a fuzzy rule:**
+  the two wider rules tried are measured at 5,538 adjudicable / **81% false** and 913 / 33% prose.

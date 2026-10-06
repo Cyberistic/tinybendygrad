@@ -337,7 +337,7 @@ def arg_blob.go(a: O.Arg) -> Bool:
     case O.ABlob{n}: True{}
     case _: False{}
 
-# `isinstance(x.arg, bytes)` -- spec.py:96. Only the length is ever read, and
+# `isinstance(x.arg, bytes)` -- spec.py:97. Only the length is ever read, and
 # `ABlob` carries it.
 def arg_blob(a: O.Arg) -> Bool:
   arg_blob.go(a)
