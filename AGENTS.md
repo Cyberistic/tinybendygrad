@@ -6,7 +6,7 @@ every `ALWAYS`, every `MUST`, every named command and every named path, and whet
 **A LINE IN HERE WITH NO MEASUREMENT AND NO NAMED INSTRUMENT IS A LINE YOU MUST NOT TRUST, AND
 DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
 nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
-census from 61 of 77 ops to 26 of 77 with 14 of 25 graphs failing. It also told every agent to put a
+census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) with 14 of 25 graphs failing. It also told every agent to put a
 gate's inputs under `.agents/slop/`, and **180 of the 333 paths `.agents/TOOLS.md` names are gone (measured
 2026-10-06 13:00; it was 173 when written — the 7 that moved are the `oracles/*.txt`→`.rows` rename) — **14 of them
 INSTRUMENTS** (`kind()` COUNTED 16; TWO ARE CLASSIFIER ERRORS, SEE THE CLASS TABLE BELOW).** **A
@@ -206,7 +206,7 @@ IN `checks/sb-gate.sh`, WHICH STILL HAS NO SKIP BRANCH AT ALL (`grep -c SKIP` = 
 NOW SPELLS THE FIVE AS EXITS — `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` — SO `DEAD` HAS EXIT **5**
 AND `REFUSED` EXIT **3**. MEASURED GREEN: `wk-f32-gate.py` rc=0, `gatekit.py` rc=0.**
 **THE CLAUSE THIS REPLACED NAMED **THREE** THINGS THAT ARE NOW FALSE, NOT ONE: `oracle-selfcheck` READS `OK`
-(`46c52f30d`, TWO FULL 25-GRAPH RUNS), `checks/corpus-figure.py` EXITS **1** WITH `DEV` UNSET (rc=0 **ONLY**
+(`46c52f30d`, TWO FULL RUNS OF THE THEN-25-GRAPH CORPUS; the corpus is 34 graphs as of 2026-10-06 14:16), `checks/corpus-figure.py` EXITS **1** WITH `DEV` UNSET (rc=0 **ONLY**
 WITH `DEV=CPU`), AND `DEAD` HAS AN EXIT.**
 > **AND `checks/sb-gate.sh` EXITS 3 WHEN REFUSED TOO, AND THE TWO 3s SHARE **ZERO** LINES: IT IS SHELL,
 GATEKIT IS PYTHON, AND `grep -c gatekit checks/sb-gate.sh` = **0**. A SHARED NUMBER IS NOT A SHARED
@@ -292,7 +292,7 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `JIT`                | 1 (2 on OSX/x86) | 0=off, 1=on, 2=on but device graphs off                                             |
 | `VIZ`                | 0                | 1=record rewrites and open the viz UI (implies PROFILE)                             |
 | `PROFILE`            | VIZ              | 1=enable profiling infrastructure                                                   |
-| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED here on the corpus: `SPEC=1` 61 of 77 ops · `SPEC=2` 26 of 77, 14 of 25 graphs FAIL, exit 1 · `SPEC=3` 0 of 77, all 25 FAIL |
+| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 enum members) on the 34-graph corpus, read 2026-10-06 14:16 · `SPEC=2` 26 of 77 enum members, 14 of 25 graphs FAIL, exit 1 · `SPEC=3` 0 of 77 enum members, all 25 FAIL — the `SPEC=2` and `SPEC=3` rows are 25-graph readings, STALE now that the corpus is 34 graphs, and re-taking them needs `bend` |
 | `BEAM`               | 0                | Beam search iterations for kernel optimization                                      |
 | `NOOPT`              | 0                | 1=disable all kernel optimizations                                                  |
 | `DEFAULT_FLOAT`      | float32          | Default float dtype (HALF, BFLOAT16, FLOAT64)                                       |
