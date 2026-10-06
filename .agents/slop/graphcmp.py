@@ -401,16 +401,6 @@ def dt(d: DType) -> str:
   return ATOMS["dtype"] + d.name
 
 
-def dev(x) -> str:
-  """`ParamArg.device` is `str|tuple[str, ...]|None` (ops.py:33) and both spellings are
-  NAMES: `Compiled.device` is the canonicalized device string (device.py:396/:29/:26).
-  graphcmp.bend emits the port's name for the same device, resolved through
-  `uop/render.bend:363`, so there is nothing to bind and nothing to declare here."""
-  if x is None:
-    return ATOMS["none"]
-  return ATOMS["str"] + ",".join(x) if isinstance(x, tuple) else bstr(str(x))
-
-
 def f32bits(x: float) -> str:
   """`Ops.CONST`'s float arm, as its IEEE-754 BINARY32 bits -- NOT as text.
 
@@ -475,6 +465,15 @@ def konst(x) -> str:
 # TEXT and not merely two structurally-similar ones. Only the ops whose CPython value is
 # SHAPED differently from the port's typed record need a case -- CAST's DType and PERMUTE's
 # tuple already render identically through `_carg`.
+#
+# A DEVICE IS ONE VALUE WITH ONE RENDERER. `Ops.COPY`'s arg is `str|tuple[str, ...]`
+# stored VERBATIM (`copy_to_device`'s `arg=device`, PIN `ops.py:768`; read back at
+# `ops.py:899`) and so is `Ops.ALLREDUCE`'s `arg[1]` (`ops.py:900`), so BOTH spell the
+# device through `_carg` and neither flattens it. The COPY arm exists to SAY that; before
+# it, COPY reached the same grammar by falling through and printed the same text while
+# `ALLREDUCE` ran a second renderer (`dev`) that flattened the tuple to `sCPU,CPU` -- one
+# value, two spellings, two nodes apart (`ADEV.md` §5). `dev` is deleted, not retuned
+# (ADEV-2).
 def carg(op: Ops, x) -> str:
   """R7, CPython side. Mirrors `argstr` in graphcmp.bend character for character."""
   if op is Ops.CONST:
@@ -494,8 +493,10 @@ def carg(op: Ops, x) -> str:
             + (tup([u(i) for i in tc]) if tc is not None else ATOMS["none"]) + ")")
   if op is Ops.INS:
     return f"in({bstr(x[0])},{dt(x[1])})"
+  if op is Ops.COPY:
+    return _carg(x)
   if op is Ops.ALLREDUCE:
-    return f"al({ATOMS['ops']}{x[0].name},{dev(x[1])})"
+    return f"al({ATOMS['ops']}{x[0].name},{_carg(x[1])})"
   if op is Ops.CUSTOM_FUNCTION:
     return f"cF({bstr(x.name)},{dt(x.dtype)})"
   if op is Ops.CALL:
@@ -711,7 +712,7 @@ def paramarg(pa: ParamArg) -> str:
     u(pa.multiple_of) if pa.multiple_of is not None else ATOMS["none"],
     bstr(pa.name) if pa.name is not None else ATOMS["none"],
     ATOMS["addr"] + (pa.addrspace.name if pa.addrspace is not None else "None"),
-    dev(pa.device),
+    _carg(pa.device),
     bo(pa.volatile),
     "n(" + u(pa.image[0]) + "," + u(pa.image[1]) + ")" if pa.image is not None else ATOMS["none"],
     ATOMS["buf"] if pa.buffer is not None else ATOMS["none"],

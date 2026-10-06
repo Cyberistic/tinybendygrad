@@ -152,11 +152,16 @@ def devs.go(+ts: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
     case Nil{}: acc
     case t <> r: devs.go(r, List.append(&2, String, acc, [dev1(t)]))
 
-# `device: str|tuple[str, ...]|None` (ops.py:33), and CPython's `dev()` renders the tuple
-# case as `s` over the comma-joined members -- NOT as a nested value, so this is the same
-# flat spelling rather than the `n(..)` this file uses for `O.ATuple`.
+# `device: str|tuple[str, ...]|None` (ops.py:33), and BOTH sides render the tuple as the
+# ONE value it is: `n(` over the comma-joined NAMES, exactly the `n(..)` this file already
+# uses for `O.ATuple` and CPython's `_carg` uses for a tuple. It is NOT flattened to
+# `sCPU,CPU`: `Dn` is the pair, and the flatten collides on `('CPU',) vs 'CPU'` and on
+# `('CPU,CPU',) vs ('CPU','CPU')`, distinctions upstream branches on (PIN ops.py:849,
+# :681, :699; spec.py:29, :140) -- ADEV-1. `devs.go` yields `dev1(t)`, which is ALREADY `bstr`'d,
+# so this must NOT wrap a second `bstr`: that double prefix printed `ssCPU,sCPU`, a THIRD
+# spelling matching neither side (ADEV-2). One value, one renderer.
 def devs(ts: List<&2, U32>) -> String:
-  bstr(String.join(devs.go(ts, Nil{}), ","))
+  String.concat(["n(", String.join(devs.go(ts, Nil{}), ","), ")"])
 
 def dev(dv: S.Dev) -> String:
   match dv:
