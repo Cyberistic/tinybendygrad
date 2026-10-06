@@ -53,5 +53,21 @@ def rows() -> IO(Unit):
     c : Unit <- row("nan_interns", O.t_float_nan_interns())
     d : Unit <- row("bool_vs_int_key", O.t_dtype_key())
     row("backedge_srcs", O.t_cycle())
+    # THE ARG-TYPE LANE. tinygrad's key is `(op, src, arg, tag, type(arg))` -- ops.py:201 --
+    # and that tuple carries an ASYMMETRY worth nine rows: it has `type(arg)` and NOT
+    # `type(tag)`, so `True` and `1` SPLIT as a top-level arg and MERGE everywhere else. Each
+    # `t_*` returns the CLAIM rather than a verdict, so a `0` is a correct answer and not a
+    # failure -- which is what makes these rows worth more than the five above: five rows of `1`
+    # cannot tell a comparator that always says True from one that is right, and three of these
+    # nine are `0`.
+    f : Unit <- row("tag_bool_vs_int_interns", O.t_tag_bool_vs_int_interns())
+    g : Unit <- row("tag_true_vs_false_splits", O.t_tag_true_vs_false_splits())
+    h : Unit <- row("tag_none_vs_zero_interns", O.t_tag_none_vs_zero_interns())
+    i : Unit <- row("const_bool_vs_int_splits", O.t_const_bool_vs_int_splits())
+    j : Unit <- row("pynest_bool_vs_int_interns", O.t_pynest_bool_vs_int_interns())
+    k : Unit <- row("pynest_int_distinct_interns", O.t_pynest_int_distinct_interns())
+    l : Unit <- row("pynest_none_vs_zero_interns", O.t_pynest_none_vs_zero_interns())
+    m : Unit <- row("pynest_cfloat_vs_int_interns", O.t_pynest_cfloat_vs_int_interns())
+    row("pynest_signed_zero_interns", O.t_pynest_signed_zero_interns())
 
 def main() -> IO(Unit): rows()

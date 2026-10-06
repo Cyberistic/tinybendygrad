@@ -915,6 +915,26 @@ type Tag is Data:
 # KernelInfo -- ops.py:1339. `estimates: Estimates|None` is NOT PORTED:
 # `Estimates` is `tinygrad.renderer`'s cost model, P5. A field the port cannot
 # read is a field that would silently always be None.
+#
+# `applied_opts: List<&2, U32>` IS ALSO WRONG, and MEASURED on a fresh run rather
+# than read off a type. Upstream's elements are `Opt` dataclasses
+# (`codegen/opt/__init__.py:11`, `op: OptOps, axis: int|None, arg: int|tuple|None`),
+# and `--graph lin` really does carry one: MEASURED by calling the py side,
+#   SINK applied_opts=(Opt(op=OptOps.SPLIT, axis=2, arg=(0, AxisType.UPCAST)),)
+# which is `heuristic.py:109`'s own `Opt(OptOps.SPLIT, axis, (0, AxisType.UPCAST))`.
+# A `U32` cannot hold an `Opt`, so the canonical row reads the LEDGER MARKER `q`
+# (graphcmp.py:326, `"opt": "q"`) and the CONTENT is unobservable: MEASURED, changing
+# the fixture's payload `0` to `7` moves NOT ONE BYTE of the row, while changing the
+# COUNT from one option to two moves it to `n(q,q)`. So the `1 = 1` count agreement is
+# a property of the device pin (MEASURED: `DEV=CPU` gives one option and the default
+# device gives TWO) and of a hard-coded `[0]` in the fixture -- it is not evidence
+# that the port models `Opt`.
+# THE CORRECT TYPE IS `List<&2, OPT>` AND `OPT` ALREADY EXISTS, at
+# `codegen/opt/postrange.bend:159` -- but that file does `import ../../uop/ops.bend`,
+# so `ops.bend` cannot import it back: the type has to MOVE DOWN first, which is
+# `postrange.bend`, `search.bend` and `heuristic.bend`, none of them this file's.
+# `OPT{axis: U32}` also cannot spell upstream's `axis: int|None`; see that file's
+# own note at :163.
 type KernelInfo is Data:
   KernelInfo{name: String, applied_opts: List<&2, U32>, opts_to_apply: Maybe<&2, List<&2, U32>>, beam: U32}
 
@@ -981,7 +1001,10 @@ def GroupOp.opaque_call_bodies(op: Op) -> Bool:
 #                                field is the whole reason the class exists:
 #                                `dtype_from_uop`'s CUSTOM_FUNCTION arm (ops.py:133)
 #                                is `return arg.dtype`, and upstream MOVED
-#                                `CallInfo.dtype` here to make it so.
+#                                `CallInfo.dtype` here to make it so. `CallInfo` here
+#                                has NOT been re-cut to match -- see the `CallInfo`
+#                                block below for the commit that took the field back
+#                                and the eleven sites a delete costs.
 # The dataclass is `frozen=True` with no `__eq__` of its own, so structural equality
 # over BOTH fields -- measured, not assumed: `CustomFunction("f") ==
 # CustomFunction("f", dtypes.uint64)` is False and so is a name change, which is what
@@ -1004,8 +1027,32 @@ def CustomFunction.of(name: String) -> CustomFunction:
 #   * `aux: Any` is the per-call side channel, written by the hcq paths in
 #     tinygrad/runtime/ops_*.py, which are out of scope (P6, hardware we do not
 #     have). Nothing in this file reads it except `__reduce__`.
-# `dtype: DType = dtypes.void` is the (possibly void) return dtype and IS read:
-# by `dtype_from_uop`'s CALL arm and by `_shape`'s.
+# `dtype: S.Dt` is a FOURTH FIELD UPSTREAM DOES NOT HAVE, and this comment used to
+# read "IS read: by `dtype_from_uop`'s CALL arm and by `_shape`'s". THAT CITATION IS
+# FALSE AND IT NAMES A FUNCTION AND A SHAPE, WHICH IS WHY IT LOOKED LIKE IT CONFIRMED
+# THE FIELD. MEASURED:
+#   * `tinygrad/uop/ops.py:130-132` is `case Ops.CALL:` / "a call has the dtype of its
+#     body, void for opaque bodies" / **`return src[0].dtype`** -- it reads the BODY.
+#     It never reads `CallInfo`.
+#   * `git log -S'dtype: DType = dtypes.void' -- tinygrad/uop/ops.py` returns exactly
+#     ONE commit, `6f4bfde23` "restrict allowed call bodies (#17925)", 2026-09-02 --
+#     and that commit's hunk is `+  dtype: DType = dtypes.void`, so it ADDS the field.
+#     `git show HEAD:tinygrad/uop/ops.py` has FIVE `CallInfo` fields and none is
+#     `dtype`. **THE PORT IS PINNED TO A COMMIT UPSTREAM HAS SINCE MOVED PAST.**
+#   * `tinygrad/uop/spec.py:112` at HEAD is `lambda x: isinstance(x.arg, CallInfo)` --
+#     a pure TYPE test. `spec.bend`'s `arg_call` still answers HEAD's pre-`6f4bfde23`
+#     `x.dtype is x.arg.dtype` half, so THAT citation is stale the same way.
+# THE COST OF NOT KNOWING THIS IS MEASURED, and it is the corpus's only live `?`:
+# `--graph loop`'s CALL#25 renders `dtype=? shape=?` because the fold never settles
+# that node (`settled=False` in `graphcmp.bend`'s own header). Deleting this field
+# moves the `arg` chunk to `cI(shcq_fence,b0,b0)` -- byte-identical to CPython -- and
+# leaves `? ?` exactly where it was, so the field and the `?` are TWO defects.
+# A delete costs ELEVEN sites in SEVEN files, four of them in this one: the type, the
+# three accessors, `eq_callinfo`, `CallInfo.of`, `sg.ci` and `sg.arena` here, plus
+# `fold.bend`'s `call_dt`/`call_ds` (repoint the CALL's dtype at `src[0]`),
+# `spec.bend`'s `arg_call`/`sh_23` (HEAD's rule is a pure type test), `render.bend`'s
+# two `arg_repr` fixtures, `engine/jit.bend`, `engine/realize.bend`, and the SETTLED
+# `graphcmp.bend` (`callinfo` renders this exact field, and `g_loop` hard-codes it).
 type CallInfo is Data:
   CallInfo{name: Maybe<&2, String>, precompile: Bool, precompile_backward: Bool, dtype: S.Dt}
 
@@ -1034,6 +1081,16 @@ type CallInfo is Data:
 #   (dims, DType, threads, tc_upcast_axes)   AWmma   WMMA arg
 #   tuple[int, ...]         ATuple     PERMUTE arg (`movement.py:231`), UNSHARD arg
 #                                     (`ops.py:691`: "the tuple of sharded axes, sorted")
+#   -- and this is the WRONG SPELLING FOR A FLIP, which is `tuple[bool, ...]`:
+#      `ops.py:428` asserts `all(isinstance(x, bool) for x in self.marg)` and
+#      MEASURED on a fresh src `UOp(Ops.FLIP, src, (1, 0))` RAISES
+#      `bad flip on (7, 3), (1, 0)` -- so the port can hold a shape CPython REJECTS,
+#      and `graphcmp.bend`'s `g_flip` holds one (`O.ATuple{[1, 0]}`). The correct
+#      type is a SEPARATE bool-carrying `Arg` variant, not this one narrowed,
+#      because PERMUTE and UNSHARD really are ints. Five files construct or read a
+#      FLIP's arg -- `fold.bend`'s `order_arg`, `schedule/prepare.bend:277`,
+#      `mixin/movement.bend:993` and `:1533`, and `graphcmp.bend`'s `g_flip` and its
+#      one `argstr` arm -- so this cannot be a one-file change.
 #   str                     AStr       SPECIAL name (`gpudims.py:104`), SOURCE text
 #                                     (`codegen/__init__.py:455`)
 #   (str, DType)            AInk       INS arg (`ops.py:622`), CUSTOM/CUSTOMI arg --
@@ -5024,14 +5081,21 @@ def g_chain() -> Found:
   +a0 = UOp.alu(Found.ar(r0), OpsADD{}, [Found.i(r0), Found.i(c0)])
   UOp.range_end(Found.ar(a0), Found.i(a0), [0], AXIS_GLOBAL{})
 
-# THE CONST-IDENTITY GATE. The five `t_*` below are the ones
-# `gates/ops-core-gate.py` puts a CPython-confirmed denominator under, so they are no longer
+# THE CONST-IDENTITY GATE, and the arg-type lane below it. Fourteen `t_*` in this file
+# have a CPython-confirmed denominator under `gates/ops-core-gate.py`, so they are no longer
 # written-and-believed: each row is diffed against tinygrad's own answer on three lanes (CPython,
 # bend interpreted, bend compiled). The oracle builds the same graphs out of real tinygrad UOps
 # and the two lanes share no code, so a row agrees only if two implementations of the property
-# say so. `zeros_differ` and `nan_interns` are the pair that pins the comparison: IEEE equality
-# disagrees with the packed-arg key in BOTH directions, so a port that keyed on `F32.is_eq`
-# instead of `F32.bits` would get exactly one of those two rows backwards.
+# say so.
+#
+# `zeros_differ` and `nan_interns` are the pair that pins the comparison: IEEE equality disagrees
+# with the packed-arg key in BOTH directions, so a port keying on `F32.is_eq` instead of `F32.bits`
+# gets exactly one of the two rows backwards and no single-cell test sees it.
+#
+# THREE OF THE ARG-TYPE ROWS ARE `0`, which is why they are here. The key is
+# `(op, src, arg, tag, type(arg))` -- it carries `type(arg)` and NOT `type(tag)` -- so `True` and
+# `1` SPLIT as a top-level arg and MERGE in the tag and in a nested `ParamArg.val`. A comparator
+# that treated the three positions alike would pass any ONE of these rows.
 def t_hashcons() -> Bool:
   # the same key again, on the arena that already holds it
   +f = g_const()
@@ -8292,6 +8356,12 @@ def main() -> IO(Unit):
 #     `sh_23` compares a DECLARED dtype against the node's own, and under HEAD
 #     there is no declared dtype to compare -- the CALL's dtype IS its body's. P3,
 #     with `dtype_from_uop`.
+#     MEASURED 2026-10-06, so the next reader does not have to re-derive it: the
+#     eleven-site, seven-file delete is APPLIED AND GREEN in a scratch copy of this
+#     tree, it moves `--graph loop`'s `arg` chunk to CPython's bytes, and it closes
+#     HALF the row -- `dtype` and `shape` stay `?` because `fold.bend` never settles
+#     that node, which is a second defect. See the `CallInfo` block above for the
+#     `git log -S` pin, and `spec.bend`'s own `arg_call` comment for its stale half.
 #   `UPat.custom_function(fn, **kwargs)` -- ops.py:1509 upstream, still NOT PORTED. A
 #     `PatternMatcher` rule constructor, so it lands with `uop/upat.py`.
 #   `UOp.param_like(slot, name=None)` -- ops.py:1241 upstream. `name` was added so a

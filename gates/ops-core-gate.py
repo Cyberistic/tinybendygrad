@@ -3,8 +3,8 @@
 
     .venv/bin/python gates/ops-core-gate.py
 
-5 rows, THREE LANES -- CPython, bend interpreted, bend compiled -- over the CONST-IDENTITY
-claims that `ops.bend` already asserts in-file.
+14 rows, THREE LANES -- CPython, bend interpreted, bend compiled -- over the CONST-IDENTITY
+claims that `ops.bend` already asserts in-file AND the arg-type asymmetry its key carries.
 
 WHAT THIS IS FOR. `ops.bend` carries 55 `t_*` tests and, until this gate, no denominator at all:
 each one was written, believed and unverified, which is the exact state the project rules call
@@ -43,29 +43,28 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, main
 
+# THE ROWS, NAMED ONCE. The row NAME is a claim about WHICH property is being asked, so it is
+# pinned on both lanes: a row renamed on one lane only is a gate that stopped asking its question
+# without saying so, and a value diff cannot see that at all -- same value, same verdict,
+# different question. MEASURED by planting exactly that rename and watching it fail.
+#
+# The VALUES are diffed and never pinned. The value is the claim, and pinning it here as well
+# would pin the answer twice over, which is how the two copies drift apart.
+ROWS = (
+    "hashcons_same_index", "zeros_differ", "nan_interns", "bool_vs_int_key", "backedge_srcs",
+    "tag_bool_vs_int_interns", "tag_true_vs_false_splits", "tag_none_vs_zero_interns",
+    "const_bool_vs_int_splits", "pynest_bool_vs_int_interns", "pynest_int_distinct_interns",
+    "pynest_none_vs_zero_interns", "pynest_cfloat_vs_int_interns", "pynest_signed_zero_interns",
+)
+
 GATE = Gate(
     "ops-core-gate",
     bend="ops-core.bend",
     oracle="ops-core-oracle.py",
-    rows=5,
-    # The row NAMES are claims about WHICH property is being asked, not about its answer, so
-    # they are pinned on both sides: a row renamed on one lane only would be a gate that had
-    # stopped asking its question without saying so. The VALUES are diffed, not pinned -- the
-    # value is the claim, and pinning it here as well would pin the answer twice over.
-    pins=[
-        ("py", "hashcons_same_index"),
-        ("py", "zeros_differ"),
-        ("py", "nan_interns"),
-        ("py", "bool_vs_int_key"),
-        ("py", "backedge_srcs"),
-        ("bd", "hashcons_same_index"),
-        ("bd", "zeros_differ"),
-        ("bd", "nan_interns"),
-        ("bd", "bool_vs_int_key"),
-        ("bd", "backedge_srcs"),
-    ],
+    rows=len(ROWS),
+    pins=[(lane, row) for lane in ("py", "bd") for row in ROWS],
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 5 rows, 3 lanes, ops.bend's CONST-identity claims "
-                        "agree with CPython"))
+    sys.exit(main(GATE, "ops-core-gate: 14 rows, 3 lanes, ops.bend's CONST identity AND its arg-type "
+                        "asymmetry agree with CPython"))
