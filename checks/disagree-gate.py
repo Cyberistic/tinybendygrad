@@ -11,27 +11,29 @@ the two could be edited apart.
 IT READS `runs/graphcmp/D/` AND NEVER WRITES IT.  The plant lane copies the directory
 into a temporary tree first; the run under test is not the thing being mutated.
 
-THREE LANES, because a lane that cannot fail is not a lane:
+FOUR LANES, because a lane that cannot fail is not a lane:
 
-  pin        the six, by name; for each, the first disagreeing canonical line, the
-             fields that differ, and the cause class.  Two independent methods read
+  pin        the disagreements, by name; for each, the first disagreeing canonical line,
+             the fields that differ, and the cause class.  Two independent methods read
              the first line and must agree (`.agents/slop/disagree/names.py`'s belt 1
              parses the differ's own `diff` record; belt 2 recomputes it from the two
              canonical files with difflib).
   citations  every source line this gate's diagnosis rests on is read and compared, so
              closing a defect makes THIS gate fail instead of quietly making the prose
              wrong.  A pin that tracks a moving file must be re-measured when the file
-             moves, which is exactly when nobody is looking.
+             moves, which is exactly when nobody is looking.  The ARMED dispatcher is
+             asserted here POSITIVELY (`arms_wired`): a name with no arm falls through to
+             `g_matmul()` and is never compared, and a negative claim cannot catch that.
   plant      prove the reader can be moved: copy the tree, move ONE byte, and require
              the answer to move with it -- then require it to move BACK.  A plant that
              cannot move is a plant that passes; a check that agrees with itself proves
              only that the check agrees with itself.
-  coverage   an op the py side reaches and the bend side does not is a SUBSTITUTION
-             ARTEFACT, not a coverage gap, whenever the only graph reaching it is a
-             substituted one.  That is eight ops today, and it is the one finding here a
-             per-graph verdict cannot see: every one of those eight reports prints
-             `ops-reached=n/n` and looks symmetrical, because the numerator and the
-             denominator are the same graph.
+  coverage   an op the py side reaches and the bend side does not means one side was never
+             asked the question -- a SUBSTITUTION, AGENTS.md's `SKIP`.  The population is
+             EMPTY today (allred/cdiv/late now have arms), which is the one finding here a
+             per-graph verdict cannot see: each substituted report prints `ops-reached=n/n`
+             and looks symmetrical, because the numerator and the denominator are the same
+             graph.
 
 Exit 0 iff every lane passes.  `--help` before you trust it.
 """
@@ -49,9 +51,14 @@ HERE = Path(__file__).resolve()
 ROOT = HERE.parents[1]  # checks/disagree-gate.py -> repo root
 D = ROOT / "runs" / "graphcmp" / "D"
 NAMES = ROOT / ".agents" / "slop" / "disagree" / "names.py"
+GRAPH_BEND = ROOT / ".agents" / "slop" / "graphcmp.bend"
+# The three graphs the bend dispatcher had no arm for.  They were SUBSTITUTED by
+# `rows.pick3`'s `g_matmul()` fallback; the arms landed 2026-10-06, so the pair is now
+# asserted POSITIVELY (see `arms_wired`) instead of by the negative claim that went stale.
+ARMED = ("allred", "cdiv", "late")
 
-# --- THE SIX.  `row` is the first disagreeing canonical LINE; `fields` are the chunks
-# that differ; `fault` is WHOSE it is; `shape` distinguishes the two bug classes.
+# --- THE DISAGREEMENTS.  `row` is the first disagreeing canonical LINE; `fields` are the
+# chunks that differ; `fault` is WHOSE it is; `shape` distinguishes the two bug classes.
 #
 # WRONG VALUE vs WRONG SHAPE is not a distinction without a definition.  Here:
 #   WRONG VALUE  both sides built the same node and one field's VALUE differs.
@@ -61,10 +68,21 @@ NAMES = ROOT / ".agents" / "slop" / "disagree" / "names.py"
 #   NOT A ROW    the bend side was never asked the question: its canonical file is
 #                byte-identical to another graph's.
 PIN = {
-  "allred": dict(row=6, fields=("arg",), shape="NOT A ROW", fault="HARNESS"),
-  "cdiv":   dict(row=1, fields=("dtype", "arg"), shape="NOT A ROW", fault="HARNESS"),
-  "late":   dict(row=6, fields=("dtype", "shape", "arg"), shape="NOT A ROW", fault="HARNESS"),
+  # *** PREDICTION, NOT A MEASUREMENT (2026-10-06). *** `allred` was SUBSTITUTED by the
+  # `g_matmul()` fallback and its old row 6 was matmul's CONST, not `allred`'s.  It now has
+  # an arm, so the bend side IS asked -- but no `bend` run has rewritten
+  # `runs/graphcmp/D/` for it.  `threegraphs` (§4) predicts the first disagreement is row 8,
+  # the COPY row, on the device tuple's NORMAL FORM (`n(sCPU,sCPU)` vs `ssCPU,sCPU`, two
+  # renderer spellings of one value, both sides the differ's own text).  Row 8, `arg`,
+  # `WRONG VALUE` are UNCONFIRMED until a fresh run exists: **A PIN TAKEN FROM A PREDICTION
+  # IS A PIN THAT CANNOT FAIL, so this note is IN THE TABLE, where a reader of the pin
+  # lands, and not in a commit message.**
+  "allred": dict(row=8, fields=("arg",), shape="WRONG VALUE", fault="HARNESS"),
   "flip":   dict(row=6, fields=("arg",), shape="BOTH", fault="HARNESS+PORT"),
+  # `cdiv` and `late` LEFT THIS TABLE (2026-10-06): they were NOT-A-ROW, i.e. never asked,
+  # and once armed their atoms matched field for field (`threegraphs` §4, predicted AGREE).
+  # They are not pinned-and-agreeing; they left, which is why `len(PIN)` is what
+  # `graphs-disagree` reads (see `lane_pin`).
   # `lin` LEFT THIS TABLE. Its cause was that the port typed `applied_opts` as `List<&2, U32>`
   # where the pin has a three-field `Opt`; the port now defines `OPT{op, axis, arg}` in
   # `uop/ops.bend` and `graphcmp.bend` renders it. MEASURED on the live driver: row 46 goes
@@ -75,9 +93,10 @@ PIN = {
   # byte-identical on the live driver, and the field itself is CORRECT (`ops.bend:1057`
   # against `ops.py:1398`), so the row was a SPELLING and not a shape.
 }
-# the bend side has no fixture for these three, and `rows.pick3`'s default is the
-# matmul -- so all three got the matmul back and none of them was compared at all.
-SUBSTITUTED = ("allred", "cdiv", "late", "matmul")
+# The bend side had no fixture for these three, and `rows.pick3`'s default is the matmul --
+# so all three got the matmul back and none of them was compared at all.  Each now has its
+# own arm (`arms_wired`), so the cluster is EMPTY; a non-empty one is a fresh substitution.
+SUBSTITUTED = ()
 
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
@@ -185,15 +204,29 @@ def lane_citations() -> list[str]:
       fails.append(f"{rel}:{n} -- past end of file ({len(lines)} lines); {why}")
     elif not cited(lines[n - 1], needle):
       fails.append(f"{rel}:{n} -- reads {lines[n-1].strip()!r}, expected {needle!r}; {why}")
-  # The NEGATIVE claim is the load-bearing one and no line can carry it: `rows.pick3`
-  # must have NO arm for the three substituted names, or they were compared after all.
-  pick3 = (ROOT / ".agents/slop/graphcmp.bend").read_text()
-  body = pick3[pick3.index("def rows.pick3"):]
-  body = body[:body.index("def rows.pick(")]
-  for g in ("allred", "cdiv", "late"):
-    if f'"{g}"' in body:
-      fails.append(f"rows.pick3 now HAS an arm for {g!r}, so it is no longer "
-                   f"substituted; the NOT-A-ROW diagnosis and its pin are both stale")
+  # THE POSITIVE CLAIM.  This used to assert the OPPOSITE -- that `rows.pick3` had NO arm
+  # for allred/cdiv/late -- and it went RED the moment the arms landed: a gate failing
+  # because the defect it recorded was FIXED.  A negative claim about a dispatch table rots
+  # in one direction, and only in the direction that hurts.  The positive claim below goes
+  # red when an arm is REMOVED -- the state that silently lies, because a missing arm is not
+  # a refusal: the name falls through to `g_matmul()` (a REAL graph) and the differ then
+  # compares two different graphs and reports a disagreement that is the dispatcher
+  # (AGENTS.md: a `SKIP` is not a pass).
+  fails += arms_wired(GRAPH_BEND.read_text())
+  return fails
+
+
+def arms_wired(text: str) -> list[str]:
+  """Each ARMED graph must route to a builder of its OWN, defined exactly once.  This is a
+  pure function of the dispatcher's text so the plant lane can run it against a scratch
+  copy with one arm broken -- a claim nothing can move is not a claim."""
+  fails = []
+  for g in ARMED:
+    if f'String.eq(name, "{g}"), g_{g}()' not in text:
+      fails.append(f"rows.pick3 no longer routes {g!r} to g_{g}(); an unarmed name falls "
+                   f"through to the g_matmul() fallback and is never compared")
+    if text.count(f"def g_{g}()") != 1:
+      fails.append(f"g_{g} is defined {text.count(f'def g_{g}()')} times, expected once")
   return fails
 
 
@@ -277,27 +310,25 @@ def lane_plant(tree: Path) -> list[str]:
   return fails
 
 
-# THE EIGHT OPS REACHED BY PY AND BY NOTHING ELSE, each on exactly one graph, and all
-# three of those graphs substituted.  This is the finding a per-graph verdict cannot
-# see: `D1-graph-late.txt` prints `ops-reached=9/9` and is symmetrical against itself,
-# because py's `late` and bend's `matmul` are two different graphs and only the py one
-# has the arithmetic in it.
-SUBSTITUTION_ARTEFACTS = {
-  "ALLREDUCE": "allred", "COPY": "allred",
-  "CDIV": "cdiv", "CMOD": "cdiv",
-  "FDIV": "late", "CMPEQ": "late", "NEG": "late", "SUB": "late",
-}
+# OPS REACHED BY PY AND BY NOTHING ELSE, each named to the graph that reaches it.  It is
+# EMPTY, and empty is the finding: the eight that were here (`ALLREDUCE COPY CDIV CMOD
+# FDIV CMPEQ NEG SUB`) were one-sided only because allred/cdiv/late fell through to
+# `g_matmul()` -- py built the real graph and bend a different one, so every one of those
+# three reports printed `ops-reached=n/n` and looked symmetrical, because the numerator and
+# the denominator were the same graph.  With the arms landed both sides reach all eight, so
+# a NON-EMPTY set is either a fresh substitution or a REAL one-sided op; the lane must not
+# be quiet about either, which is why the SET is pinned and the count is not.
+SUBSTITUTION_ARTEFACTS: dict[str, str] = {}
 PER_OP = re.compile(r"([A-Z_]+) (\d+)/(\d+)")
 
 
 def lane_coverage(tree: Path) -> list[str]:
   """Re-derive the per-op node counts from every `D1-graph-*.txt` and name every op the
-  py side reaches and the bend side does not.  A graph is substituted iff its bend
-  canonical file is byte-identical to another graph's, so this lane also refuses to let
-  a REAL one-sided op hide behind a fixture that has since been written."""
-  py, bend, where = {}, {}, {}
+  py side reaches and the bend side does not.  A one-sided op means one side was never
+  asked the question -- a fixture substitution, which is AGENTS.md's `SKIP` -- and no
+  per-graph verdict can see it."""
+  py, bend = {}, {}
   for p in sorted(tree.glob("D1-graph-*.txt")):
-    g = p.name.removeprefix("D1-graph-").removesuffix(".txt")
     for line in p.read_text().splitlines():
       # The OPS REACHED line is the only one shaped `#   NAME n/m  NAME n/m ...`; the
       # LEDGER rows below it start `#   z   arg  py=0 ...` and carry `=`, never `/`.
@@ -306,25 +337,15 @@ def lane_coverage(tree: Path) -> list[str]:
       for op, a, b in PER_OP.findall(line):
         py[op] = py.get(op, 0) + int(a)
         bend[op] = bend.get(op, 0) + int(b)
-        if int(a):
-          where.setdefault(op, set()).add(g)
 
+  # The SET is the whole assertion.  It is empty today because the arms landed, and the
+  # comparison is against a SET, so it goes red the moment a py-only op appears -- no
+  # per-op count loop and no per-op graph loop are needed to say that.
   fails = []
-  # The SET of one-sided ops is pinned; the node COUNT is a fact about the run, so it is
-  # reported when it is not 1 rather than pinned -- a fixture that grew an op into two
-  # nodes is a corpus change, and this lane's claim ("only the substituted graphs reach
-  # these") survives it, while the count does not.
   one_sided = {o: py[o] for o in py if py[o] and not bend.get(o)}
   if set(one_sided) != set(SUBSTITUTION_ARTEFACTS):
     fails.append(f"the py-only op SET moved: {sorted(one_sided)}, "
                  f"expected {sorted(SUBSTITUTION_ARTEFACTS)}")
-  for op, n in one_sided.items():
-    if n != 1 and op in SUBSTITUTION_ARTEFACTS:
-      fails.append(f"{op}: py-only node count moved {1} -> {n}")
-  for op, g in SUBSTITUTION_ARTEFACTS.items():
-    if where.get(op) != {g}:
-      fails.append(f"{op}: reached only by {sorted(where.get(op, ()))}, expected only {g!r}; "
-                   f"the substitution diagnosis is stale")
   return fails
 
 
