@@ -7,8 +7,8 @@ every `ALWAYS`, every `MUST`, every named command and every named path, and whet
 DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
 nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
 census from 61 of 77 ops to 26 of 77 with 14 of 25 graphs failing. It also told every agent to put a
-gate's inputs under `.agents/slop/`, and **173 of the 333 paths `.agents/TOOLS.md` names are gone, 16 of them
-INSTRUMENTS.** **A
+gate's inputs under `.agents/slop/`, and **173 of the 333 paths `.agents/TOOLS.md` names are gone — **14 of them
+INSTRUMENTS** (`kind()` COUNTED 16; TWO ARE CLASSIFIER ERRORS, SEE THE CLASS TABLE BELOW).** **A
 GOVERNING DOCUMENT THAT NOBODY CHECKS AGAINST REALITY PROPAGATES INTO EVERY BRIEF THAT CITES IT.**
 
 General:
@@ -123,7 +123,15 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   calls `cstyle-live/port.txt` a "DELETED FIXTURE" (`e2e.py:99-100`) — **absent, so stage 7 SKIPs.**
   **RE-MEASURED RULE AND ITS NUMBERS: of the **333** distinct paths `.agents/TOOLS.md` names, **160 are present and
   **173 are gone** — **96 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
-  enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this; six of the 16 are `*-mutate.py`).** **A GATE'S
+  enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this). **BY CONTENT IT IS **14**, NOT 16:
+`lostinst` VERIFIED 14 — **13 RECOVERABLE** (every restore `git cat-file blob` non-empty, 110 B – 23,711 B, all 14
+distinct) AND **1 GONE: `.agents/slop/xd1/mutate.py`** — NO BLOB IN ANY REF, AND ALL 75,336 HISTORY PATHS CONTAIN NO
+`xd1/mutate.py`. THE OTHER TWO ARE CLASSIFIER ERRORS: **`xd1/pin` IS A REVISION REFERENCE** (`TOOLS.md:645` says it
+equals `6c3d401cf324`, WHICH `git cat-file -t` ANSWERS AS `commit`) AND **`runs/elf-checkonly-2026-10-04.txt` IS A
+CAPTURED STDOUT** (110 B of `ALL PROOFS CHECK`). **A BASENAME REGEX MATCHED THE WORD `pin` AND THE SUBSTRING `check`,
+WHICH IS DOCTRINE 1's FAILURE REPRODUCED INSIDE THE CENSUS OF DOCTRINE 1.** **AND ALL 16 APPEAR **ONLY** UNDER
+`extract.py`'s RULE A: EVERY EXTENSION-GATED RULE DROPS `xd1/pin`, BECAUSE IT HAS NO EXTENSION — **THE SAME STRUCTURAL
+BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   REQUIRED INPUT BELONGS BESIDE THE GATE **IN GIT** — AND NOT IN `gates/artifacts/`, WHICH THIS LINE USED TO
   RECOMMEND. THAT DIRECTORY IS `.gitignore`d **AND** IS WHERE GATE RUNS WRITE, SO ONE `rm -rf gates/artifacts`
   DELETES ANYTHING KEPT THERE AND GIT CANNOT RESTORE IT. MEASURED: `e2efix` RESTORED STAGE 7's DELETED FIXTURE
@@ -151,7 +159,7 @@ of the seven was found in a single session, which is why this section exists.**
 | `checks/differ.py:artefacts_ok()` | was `find -name '*.txt'` | **fixed, and re-verified today**: pointed at an empty directory it now returns **139 `MISSING`**; the glob returned `[]`, and *"the rename only revealed a guard that was never one."* |
 | `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend)` | **6 of 15** `e2e.py` stage inputs invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
 | `gates/gates-pop.py:95` `HOMES` | `("checks", "gates")` | its own author: *"A LIST, AND IT IS ADMITTED… this is the one universe this file names by hand."* Blind to the literal-list half of the class it exists for. |
-| `.agents/TOOLS.md` | **333 paths: 160 present, 173 gone (96 under `.slop/`, **16 INSTRUMENTS**)** | A ledger that names a path it does not own is a list. |
+| `.agents/TOOLS.md` | **333 paths: 160 present, 173 gone (96 under `.slop/`); **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path it does not own is a list. |
 | **`AGENTS.md` — THIS FILE** | names gates by hand | 17 `checks/*.sh` exist; this file names 3 and calls none of them a population. **The governing document was the seventh member of the class.** |
 
 **THE RULE. A population is (a) a GENERATOR'S OWN DECLARATION, LOADED BY PATH — `differ.declared()`, which
@@ -193,14 +201,14 @@ DEFINES THE CLASS.**
 
 
 When using Python:
-- use uv and ty
+- use uv and ty. **MEASURED: `command -v uv` = `~/.local/bin/uv`; `command -v ty` = `~/.local/bin/ty`.**
 - **RUN PYTHON THROUGH `.venv/bin/python`, NOT BARE `python`/`python3`. MEASURED HERE: PATH's `python3` is
   3.14 and has no `.pth`, `.venv` is 3.12 and has the editable `tinygrad` install, and a port oracle that
   imports tinygrad answers 30 rows under one and 0 rows plus `ModuleNotFoundError` under the other.
   `.agents/TOOLS.md`'s *Pin vs xd1/head* section records the instrument that pinned this; the file
   itself, `.agents/slop/oracle_py.py`, IS AMONG THE 99 DELETED PATHS, so the rule has no enforcer left.**
-- Run tests with `-n12` for speed (e.g. `python -m pytest test/null/test_dtype.py -x -q -n12`)
-- Run `python -m mypy tinygrad/` to typecheck
+- Run `test/` with `-n12` for speed, e.g. `.venv/bin/python -m pytest test/null/test_dtype.py -x -q -n12`. **MEASURED TODAY: that command is rc=1, `No module named pytest` — `pytest` IS NOT IN `.venv`, so `test/` is the ORACLE this tree cannot currently run. The bare `python3` on PATH is 3.14 and has no `.pth`; `.venv` is 3.12 and holds the editable `tinygrad`.**
+- Run `.venv/bin/python -m mypy tinygrad/` to typecheck. **MEASURED TODAY: rc=1, `No module named mypy` — NOT INSTALLED IN `.venv`.**
 - Run `python -m ruff check .` to lint
 - **THOSE THREE EXACT COMMANDS DO NOT RUN IN THIS TREE TODAY, AND SAYING SO IS THE POINT: MEASURED,
   `.venv` HAS NO `pytest`, NO `mypy` AND NO `ruff` (`No module named …`, rc=1 each), so the three lines
@@ -211,7 +219,7 @@ WITH NO EDIT BY IT, BECAUSE OTHER UNITS WERE WRITING THE TREE WHILE IT COUNTED. 
 NOT AT ALL.** `checks/`
   and `gates/` are 2-space-indented and are not what `ruff` defaults to. The ledgers do not say which
   interpreter a prescription runs under, and that is why three of them read as done.**
-- Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules
+- Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules. **MEASURED: exists, 93 lines.**
 - **Do not do amend commits, and do not REBASE. Always do a new commit if a force push to origin would
   be required.** The previous revision said only "no amend". **`ad117c928` IS **OURS**, NOT UPSTREAM, AND AN
   EARLIER REVISION OF THIS LINE GOT IT BACKWARDS**: `git log -1` READS `author: tinybendygrad
