@@ -290,13 +290,13 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `BEAM_ESTIMATE` | 1 | 1=score candidates by estimated runtime, 0=real launches |
 | `BEAM_UPCAST_MAX` | 256 | Max upcast amount in candidates |
 | `BEAM_LOCAL_MAX` | 1024 | Max local size in candidates |
-| `BEAM_UOPS_MAX` | 1500 | Max uops allowed in a candidate kernel |
-| `BEAM_TIMEOUT_SEC` | — | Abort beam after N seconds |
-| `BEAM_MIN_PROGRESS` | — | Minimum estimated-improvement rate to continue |
-| `BEAM_MAX_TASKS_PER_CHILD` | — | Recycle beam worker processes |
-| `BEAM_PADTO` | — | Allow PADTO optimization in beam |
-| `BEAM_STRICT_MODE` | — | Stricter candidate acceptance |
-| `BEAM_DEV_TIMEOUT` | — | Per-launch device timeout during beam |
+| `BEAM_UOPS_MAX` | 3000 | Max uops allowed in a candidate kernel |
+| `BEAM_TIMEOUT_SEC` | 10 | Abort beam after N seconds |
+| `BEAM_MIN_PROGRESS` | 0.01 | Minimum estimated-improvement rate to continue |
+| `BEAM_MAX_TASKS_PER_CHILD` | 16 | Recycle beam worker processes |
+| `BEAM_PADTO` | 0 | Allow PADTO optimization in beam |
+| `BEAM_STRICT_MODE` | 0 | Stricter candidate acceptance |
+| `BEAM_DEV_TIMEOUT` | 1 | Per-launch device timeout during beam |
 | `BEAM_DEBUG` | 0 | Beam search trace |
 | `BEAM_LOG_SURPASS_MAX` | 0 | Log when candidates exceed uops/upcast/compute limits |
 | `IGNORE_BEAM_CACHE` | 0 | 1=ignore cached beam results |
@@ -322,15 +322,15 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `FUSE_OPTIM` | 0 | 1=fuse optimizer apply into the compute graph |
 | `MAX_KERNEL_BUFFERS` | 0 | >0=split kernels with more than N buffers |
 | `MV` | 1 | 0=disable matrix-vector tensor-core opt |
-| `MV_BLOCKSIZE` | — | MV opt: block size |
-| `MV_THREADS_PER_ROW` | — | MV opt: threads per row |
-| `MV_ROWS_PER_THREAD` | — | MV opt: rows per thread |
+| `MV_BLOCKSIZE` | 4 | MV opt: block size |
+| `MV_THREADS_PER_ROW` | 8 | MV opt: threads per row |
+| `MV_ROWS_PER_THREAD` | 4 | MV opt: rows per thread |
 | `OCCUPANCY_FLOOR` | 4096 | Skip local-group candidates below this global size |
 | `ALLOW_HALF8` | 0 | 1=allow 8-wide half loads in memory coalescing |
 | `ALIGNED` | 1 | 0=disable aligned vector loads in cstyle renderers |
 | `DMC` | 0 | 1=skip memory coalescing pass |
 | `UPAT_COMPILE` | 1 | 0=interpreted (slow) pattern matcher instead of compiled |
-| `EXPAND_SSA` | — | SSA expansion toggle (rarely used; dev knob) |
+| `EXPAND_SSA` | 0 | SSA expansion toggle (rarely used; dev knob) |
 
 ### Scheduler, JIT & graph
 
@@ -389,13 +389,13 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `NULL_ALLOW_COPYOUT` | 0 | Allow copyout on the NULL device |
 | `REMOTE` | "" | Comma-separated remote tinygpu PCIe devices |
 | `APL_REMOTE_SOCK` | temp path | Socket path for remote device IPC |
-| `REMOTE_TIMEOUT` | — | Remote device timeout |
+| `REMOTE_TIMEOUT` | 60 | Remote device timeout |
 | `VFIO` | 0 | 1=use VFIO for PCIe device access |
 | `IOCTL` | 0 | 1=import the ioctl test harness (nv/amd/qcom/dsp) |
 | `TINYFS_ENDPOINT` | localhost:6767 | tinyfs server address |
 | `TINYFS_TIMEOUT` | 60 | tinyfs request timeout |
 | `ASYNC_COPY_WORKERS` | 4 | tinyfs async copy pool size |
-| `HCQ2` | — | Opt into the newer HCQ implementation paths |
+| `HCQ2` | 1 | Opt into the newer HCQ implementation paths |
 | `HCQ_NUM_SDMA` | ≤8 | HCQ copy queue count |
 | `HCQDEV_WAIT_TIMEOUT_MS` | 30000 | HCQ device wait timeout |
 | `HCQ_VISIBLE_DEVICES` | — | Deprecated; errors with guidance |
@@ -407,18 +407,18 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `CUDA_PATH` | /usr/local/cuda | CUDA headers location |
 | `NV_DEBUG` | 0 | NV driver debug (≥4 dumps register writes) |
 | `PMA_BUFFER_SIZE` | 512 (MiB) | NV PMA buffer size |
-| `ROCM_PATH` | — | ROCm installation path |
+| `ROCM_PATH` | /opt/rocm | ROCm installation path |
 | `AMD_AQL` | — | AQL packet path for AMD |
 | `AMD_DISABLE_SDMA` | 0 | 1=disable AMD SDMA copy engines |
 | `AMD_SDMA_BIND` | 0 | 1=bind SDMA queues to devices |
-| `AMD_KFD_QUEUE_PRIORITY` | — | KFD queue priority override |
-| `WAVES_PER_SH` | — | AMD: force waves-per-SH in COMPUTE_RESOURCE_LIMITS |
-| `SQTT_BUFFER_SIZE` | — | AMD thread-trace buffer size |
+| `AMD_KFD_QUEUE_PRIORITY` | 7 | KFD queue priority override |
+| `WAVES_PER_SH` | 0 | AMD: force waves-per-SH in COMPUTE_RESOURCE_LIMITS |
+| `SQTT_BUFFER_SIZE` | 256 | AMD thread-trace buffer size |
 | `SQTT_EVENT` | -1 | AMD: record only this sqtt event id |
-| `MAX_SQTT_PKTS` | — | Cap decoded sqtt packets |
+| `MAX_SQTT_PKTS` | 50_000 | Cap decoded sqtt packets |
 | `PMC_COUNTERS` | — | AMD performance counters to enable |
 | `AM_DEBUG` | 0 | am (bare-metal AMD) debug level |
-| `AM_RESET` | — | am: reset device at init |
+| `AM_RESET` | 0 | am: reset device at init |
 | `AM_POWER_LIMIT` | 0.0 | am: cap power (fraction) |
 | `MOCKDSP` | 0 | 1=use the mock DSP device |
 | `QCOM_PRIORITY` | 8 | QCOM KGSL context priority |
