@@ -1,0 +1,36 @@
+# allred     py=CACHE 9     bend=CACHE 18   
+# alu        py=CACHE 14    bend=CACHE 14   
+# binblob    py=CACHE 19    bend=CACHE 19   
+# bit        py=CACHE 10    bend=CACHE 10   
+# buffer     py=CACHE 5     bend=CACHE 5    
+# bw         py=CACHE 32    bend=CACHE 32   
+# cast       py=CACHE 6     bend=CACHE 6    
+# cdiv       py=CACHE 10    bend=CACHE 18   
+# commute    py=CACHE 14    bend=CACHE 14   
+# flip       py=CACHE 6     bend=CACHE 7    
+# gate       py=CACHE 14    bend=CACHE 14   
+# group      py=CACHE 8     bend=CACHE 8    
+# indexed    py=CACHE 7     bend=CACHE 7    
+# late       py=CACHE 12    bend=CACHE 18   
+# lin        py=CACHE 46    bend=CACHE 46   
+# loop       py=CACHE 25    bend=CACHE 25   
+# matmul     py=CACHE 18    bend=CACHE 18   
+# move       py=CACHE 22    bend=CACHE 22   
+# range      py=CACHE 2     bend=CACHE 2    
+# rangeflat  py=CACHE 2     bend=CACHE 2    
+# reduce     py=CACHE 7     bend=CACHE 7    
+# sink       py=CACHE 2     bend=CACHE 2    
+# special    py=CACHE 2     bend=CACHE 2    
+# sym        py=CACHE 12    bend=CACHE 12   
+# where      py=CACHE 8     bend=CACHE 8    
+
+graphs      : 25
+denominator : 77   (measured len(list(Ops)))
+reached PY  : 61
+reached BEND: 53
+reached BOTH: 53
+py-only     : ['ALLREDUCE', 'CDIV', 'CMOD', 'CMPEQ', 'COPY', 'FDIV', 'NEG', 'SUB']
+bend-only   : []
+WALLS       : []
+NEITHER     : 16
+NEITHER-list:CUSTOM CUSTOMI CUSTOM_FUNCTION GETADDR INS MSELECT MSTACK MULACC PROGRAM PYLITERAL REWRITE_ERROR SOURCE STAGE THREEFRY UNSHARD WMMA
