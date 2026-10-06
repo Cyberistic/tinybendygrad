@@ -180,8 +180,13 @@ WANT = {
     #       called out for `stage`/`wmma`. `.agents/slop/foldgap/` is the unit fixing those arms;
     #       when they land these three rows move to AGREE and `expect-moved` fires -- which is the
     #       point of a pin that can fail.
-    "mselect": "DISAGREE",
-    "stage": "DISAGREE", "unshard": "DISAGREE", "wmma": "DISAGREE",
+    "mselect": "AGREE",
+    # `stage` and `wmma` JOINED THEM (2026-10-06, the CLEAN re-run): `mselectarg`'s `AInt` variant
+    # closed `mselect`, and `foldgap`'s WMMA-shape fix + STAGE arm closed those two -- both landed
+    # AFTER the first run, which is why the first run pinned all three DISAGREE. `unshard` STAYS
+    # DISAGREE: `foldgap` REFUSED it, because the fold needs `int(r.vmax+1)` and `dt_shape` gets no
+    # `BTable`, so claiming a shape would be a lie and the node stays an honest `?`.
+    "stage": "AGREE", "unshard": "DISAGREE", "wmma": "AGREE",
 }
 # THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
 # **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
@@ -245,7 +250,7 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "28", "byte-identical": "28", "not-comparable": "0",
+    "graphs-agree": "31", "byte-identical": "31", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5

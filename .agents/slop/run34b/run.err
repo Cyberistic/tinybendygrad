@@ -1,0 +1,6 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=814 MB (ceiling 2048)  169s  :: .venv/bin/python checks/differ.py run  out=22B err=569B  said=RUN INCOMPLETE: 1 of 34 graphs have NO expectation in WANT: getaddr. Each was run and recorded (D1-verdicts.txt, marked UNSET) and each is in `graphs=`; add an expectation for each to complete the run. A corpus growth that must be answered for is a corpus that cannot silently grow. | RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what the port emitted, and a run whose table is wrong is not a measurement of the table: | mselect: VERDICT=AGREE EXPECTED=DISAGREE
+RUN INCOMPLETE: 1 of 34 graphs have NO expectation in WANT: getaddr. Each was run and recorded (D1-verdicts.txt, marked UNSET) and each is in `graphs=`; add an expectation for each to complete the run. A corpus growth that must be answered for is a corpus that cannot silently grow.
+RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what the port emitted, and a run whose table is wrong is not a measurement of the table:
+  mselect: VERDICT=AGREE EXPECTED=DISAGREE
+  stage: VERDICT=AGREE EXPECTED=DISAGREE
+  wmma: VERDICT=AGREE EXPECTED=DISAGREE

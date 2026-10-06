@@ -77,8 +77,18 @@ PIN = {
   # `WRONG VALUE` are UNCONFIRMED until a fresh run exists: **A PIN TAKEN FROM A PREDICTION
   # IS A PIN THAT CANNOT FAIL, so this note is IN THE TABLE, where a reader of the pin
   # lands, and not in a commit message.**
-  "allred": dict(row=8, fields=("arg",), shape="WRONG VALUE", fault="HARNESS"),
+  # *** `allred` LEFT THIS TABLE (2026-10-06), AND IT LEFT BECAUSE THE RUN FALSIFIED IT. *** It was
+  # pinned from a PREDICTION -- the COPY row on the device tuple's normal form -- and `adevfix`
+  # fixed the normal form, so the CLEAN RE-RUN reads `VERDICT: AGREE` with `D2-cmp-allred.txt`
+  # BYTE-IDENTICAL. **A PIN TAKEN FROM A PREDICTION IS A PIN THAT CANNOT FAIL, which is why the
+  # prediction lived here where a reader of the pin lands -- and why its REFUTATION belongs here too.**
   "flip":   dict(row=6, fields=("arg",), shape="BOTH", fault="HARNESS+PORT"),
+  # `unshard` JOINED THIS TABLE FROM THE CLEAN RE-RUN: row 8, `dtype`/`shape` read `?` where py has
+  # `f32` and `(l0:8,l0:3)`. It was NEVER ASKED before (`armfour` armed it, `foldgap` measured it),
+  # and `foldgap` REFUSED the fix on purpose: the fold needs `int(r.vmax+1)` and `dt_shape` gets no
+  # `BTable`, so claiming a shape would be a LIE and the node stays an honest `?`. **A MEASURED
+  # REFUSAL IS NOT AN UNFIXED DEFECT, AND THIS ROW IS THE DIFFERENCE.**
+  "unshard": dict(row=8, fields=("dtype", "shape"), shape="WRONG SHAPE", fault="PORT"),
   # `cdiv` and `late` LEFT THIS TABLE (2026-10-06): they were NOT-A-ROW, i.e. never asked,
   # and once armed their atoms matched field for field (`threegraphs` §4, predicted AGREE).
   # They are not pinned-and-agreeing; they left, which is why `len(PIN)` is what
