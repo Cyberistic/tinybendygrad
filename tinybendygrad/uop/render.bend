@@ -725,6 +725,7 @@ def arg_repr(a: O.Arg) -> String:
     case O.AAllred{rop, dev}: aallred_repr(rop, dev)
     case O.ADev{dev}: dev_repr(dev)
     case O.ABlob{bs}: String.concat(["<bytes ", Nat.show(List.length(&2, U32, bs)), ">"])
+    case O.AInt{i}: U32.show(i)
     case O.AFloat{f}: f32_repr(f)
     case O.ABad{}: "ABad"
 

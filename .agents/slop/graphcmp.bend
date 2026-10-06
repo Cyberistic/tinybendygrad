@@ -463,6 +463,7 @@ def argstr(a: O.Arg, depth: U32) -> String:
     # `eq_arg.ABlob` (:1801) compares `bs` element-wise, so the port can answer the
     # question the column is asking.
     case O.ABlob{bs}: blobstr(bs)
+    case O.AInt{n}: i(n)
     case O.AFloat{f2}: String.concat(["f", F32.show(f2)])
     # THE BOTTOM. ops.bend:1154 calls this "a read of an index that was never interned".
     # It is not a node, so it must not read as an agreeing one.

@@ -415,6 +415,7 @@ def arg_int(a: O.Arg) -> Maybe<&2, U32>:
     case O.AAllred{_, _}: None{}
     case O.ADev{_}: None{}
     case O.ABlob{_}: None{}
+    case O.AInt{i}: Some{i}
     case O.AFloat{_}: None{}
     case O.ABad{}: None{}
 # `"{0}.arg == "+str(int(self.arg))` is INLINED, so no `a{n}` is spent on it --

@@ -1165,6 +1165,16 @@ type CallInfo is Data:
 #                                     OBJECT, so the key compares CONTENT -- see the
 #                                     BLOB block above `t_blob_*` for the measurement
 #                                     and for why `ABlob{n: U32}` was wrong.
+#   int                     AInt       MSELECT's shard index (`ops.py:772`), a bare int.
+#                                     It was `ABlob{[k]}` -- BYTES -- until 2026-10-06, when
+#                                     `--graph mselect` measured the two differ lanes
+#                                     disagreeing (`py=i0` vs `bend=y n(i0)`,
+#                                     `runs/graphcmp/D/D1-graph-mselect.txt`): `ops.py:201`'s
+#                                     key separates on `type(arg)`, so an int and a bytes are
+#                                     two kinds. It is a general `AInt` and NOT an
+#                                     `AMSelect`: the op is already in the key, and
+#                                     `upat.bend`'s `arg_int` asks the same question of any
+#                                     `Arg`.
 #   float                   AFloat     the one bare float, for `_frompy`'s
 #                                     `assert bdtype.fmt is not None` path
 #   -- and one this port adds, see Arena.bottom
@@ -1201,6 +1211,7 @@ type Arg is Data:
   AAllred{rop: Op, dev: S.Dev}
   ADev{dev: S.Dev}
   ABlob{bs: List<&2, U32>}
+  AInt{i: U32}
   AFloat{f: F32}
   ABad{}
 
@@ -2078,6 +2089,16 @@ def eq_arg.ABlob(y: Arg, +bs: List<&2, U32>) -> Bool:
     case ABlob{y1}: eq_u32(bs, y1)
     case _: False{}
 
+# The bare int (`AInt`). A plain `U32.is_eq`: an int overrides nothing, so its `type(arg)`
+# is already the key's fifth element and two equal ints are one key -- the `AInt` variant
+# IS the type tag. This is the counterpart of the measured int-vs-float cell below
+# (`type(arg)` keeps an `int` 0 and a `float` 0.0 apart) applied to the int-vs-bytes case
+# `MSELECT` exercised.
+def eq_arg.AInt(y: Arg, +i: U32) -> Bool:
+  match y:
+    case AInt{y1}: U32.is_eq(i, y1)
+    case _: False{}
+
 # IEEE EQUALITY IS CORRECT HERE, AND `F32.bits` WOULD BE A REGRESSION. `eq_const.CFloat`
 # one hundred lines up compares `F32.bits` and is right, so this arm LOOKS like the
 # same bug. It is the OPPOSITE bug, and the difference is the PYTHON CLASS of the
@@ -2136,6 +2157,7 @@ def eq_arg.sel(x: Arg, y: Arg) -> Bool:
     case AAllred{rop, dev}: eq_arg.AAllred(y, rop, dev)
     case ADev{dev}: eq_arg.ADev(y, dev)
     case ABlob{bs}: eq_arg.ABlob(y, bs)
+    case AInt{i}: eq_arg.AInt(y, i)
     case AFloat{f}: eq_arg.AFloat(y, f)
     case ABad{}: eq_arg.ABad(y)
 
@@ -4551,21 +4573,18 @@ def UOp.allreduce(ar: Arena, +self: U32, +rop: Op, +dev: S.Dev) -> Found:
   UOp.new(ar, OpsALLREDUCE{}, [self], AAllred{rop, dev}, TNone{})
 
 # `mselect` -- ops.py:772. `UOp(Ops.MSELECT, src=(self,), arg=arg)` where `arg` is
-# an INT -- a shard index into a multi-device tensor. `ABlob` is the arena's existing
-# "a bare number in the arg" arm, and reusing it is the honest choice over minting a new
-# one: MSELECT's arg is a number and nothing else reads it. Since `ABlob` now holds BYTES
-# rather than a length, the int is the ONE-BYTE blob `[k]` -- which is injective in `k`,
-# so two different shard indices are still two different keys, and it is what the key
-# needs since `eq_arg.ABlob` reads content. The op is in the key too, so an MSELECT's
-# `[k]` can never collide with a BINARY's bytes.
-# WALL(p3) ops.py:201 -- BLOCKED ON A CASE THAT HAS NOT ARISEN, and the trigger is written down.
-# `type(arg)` in `ops.py:201` separates an `int` arg from a `bytes` one; `eq_arg` has no such arm.
-# The port does not need one TODAY: `ABlob` holds BYTES rather than a length, so an MSELECT's `[k]`
-# is injective in `k` (two shard indices stay two keys) and the op is in the key too, so it cannot
-# collide with a BINARY's bytes. IF A LATER UNIT MUST TELL AN `int` FROM A `bytes` ON ONE NODE,
-# that is a NEW `Arg` arm and `eq_arg` grows an arm with it.
+# an INT -- a shard index into a multi-device tensor -- and the port spells it `AInt`.
+# `ABlob` is BINARY's BYTES, not "a bare number in the arg": `ops.py:201`'s key holds
+# `type(arg)`, so an int and a bytes are two kinds, and the port wrote a ONE-BYTE
+# `ABlob{[k]}` here until 2026-10-06. `--graph mselect` then measured the two differ
+# lanes disagreeing on exactly that (`arg py=i0 bend=y n(i0)`,
+# `runs/graphcmp/D/D1-graph-mselect.txt`, VERDICT DISAGREE), which is the wall this
+# comment used to carry. The `WALL(p3)` is CLOSED by the `AInt` variant and
+# `eq_arg.AInt` above -- a NEW `Arg` arm, which is what it said the fix was.
+# `ABlob` is injective in `k` was true and beside the point: injectivity is not the
+# same as the key agreeing with CPython's.
 def UOp.mselect(ar: Arena, +self: U32, k: U32) -> Found:
-  UOp.new(ar, OpsMSELECT{}, [self], ABlob{[k]}, TNone{})
+  UOp.new(ar, OpsMSELECT{}, [self], AInt{k}, TNone{})
 
 # `sharding` -- ops.py:707. `tuple(zip(self.arg, self.src[1:])) if self.op is
 # Ops.UNSHARD else ()`. The arg is the SORTED tuple of sharded axes and the srcs
@@ -7005,7 +7024,7 @@ def s5.ga.arena() -> Arena:
     Node{OpsBITCAST{}, [1], ADt{S.single()}, TNone{}},
     Node{OpsBINARY{}, [1], ANone{}, TNone{}},
     Node{OpsMSTACK{}, [1], ANone{}, TNone{}},
-    Node{OpsMSELECT{}, [1, 2], ABlob{BLOB_A()}, TNone{}},
+    Node{OpsMSELECT{}, [1, 2], AInt{0}, TNone{}},
     Node{OpsLINEAR{}, [1], ANone{}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}},
     Node{OpsRESHAPE{}, [1, 14], ATuple{[0]}, TNone{}},
