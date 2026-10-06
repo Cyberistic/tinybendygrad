@@ -332,6 +332,31 @@ def tn_reciprocal(+t: Tensor) -> Tensor:
 def tn_threefry(+t: Tensor, +seed: Tensor) -> Tensor:
   tn_alu(t, O.OpsTHREEFRY{}, [Tensor.u(seed)])
 
+# `sin` -- elementwise.py:494. `return self.alu(Ops.SIN)`. Same shape as `tn_trunc`.
+def tn_sin(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsSIN{}, Nil{})
+
+# `log2` -- elementwise.py:531. `return self.alu(Ops.LOG2)`. Same shape.
+def tn_log2(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsLOG2{}, Nil{})
+
+# `exp2` -- elementwise.py:543. `return self.alu(Ops.EXP2)`. Same shape.
+def tn_exp2(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsEXP2{}, Nil{})
+
+# `rsqrt` -- elementwise.py:820. `return self.sqrt().reciprocal()`. The wall text
+# at `mixin/elementwise.bend:859` calls this "free of literals; blocked on sqrt's
+# own fold, not on a constant". `tn_sqrt` and `tn_reciprocal` are both ported (gated
+# `tn_sqrt-gate.py` 5/5, `tn_trunc_reciprocal_threefry-gate.py` 9/9), so the COMBINED
+# shape is portable. The result is a LINEAR chain (sqrt, then reciprocal) which
+# grows the arena by one, and the `+` on the source + returned tensors threads it
+# through `tn_alu(t, O.OpsRECIPROCAL{}, [u])` where `u` is the sqrt's uop. The
+# dev's note "blocked on sqrt's own fold" is now stale: the chain is built by
+# `tn_alu`, not by a fold.
+def tn_rsqrt(+t: Tensor) -> Tensor:
+  +sqrt = tn_sqrt(t)
+  tn_alu(t, O.OpsRECIPROCAL{}, [Tensor.u(sqrt)])
+
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
 # self ^ self.dtype.max if dtypes.is_unsigned(self.dtype) else self ^ -1`. Only the
