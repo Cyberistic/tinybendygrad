@@ -2154,7 +2154,7 @@ def main() -> IO(Unit):
 #     `hashlib.sha256` (:113) is a digest. The FILENAME is ported -- `v.fmt3` and
 #     the `psp_`/`smu_`/`sdma_`/`gc_`/`imu_`/`rlc`/`_sos.bin` shapes are rows --
 #     and the bytes are the seam's.
-#     TODO(p3) runtime/support/am/amdev.py:112  fetch_fw.
+#     WALL(p3) runtime/support/am/amdev.py:112  fetch_fw -- BLOCKED: needs `fetch_fw` (a network DOWNLOAD, `fetch_fw("amdgpu", fname, fw.hashes[fname])` :112) and `hashlib.sha256` (:113), both seams; the FILENAME ladder IS ported (`v.fmt3`, :431, plus the `psp_`/`smu_`/`sdma_`/`gc_`/`imu_`/`rlc`/`_sos.bin` rows) and the bytes are the seam's.
 #   * `ctypes.addressof` / `from_address` / `from_buffer` (:37 :51 :365 :366 :373
 #     :377 :395) is pointer arithmetic over the image. The STRUCT LAYOUTS it reads
 #     are ported and gated by name, order and byte offset; the addresses are not.

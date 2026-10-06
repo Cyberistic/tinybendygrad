@@ -109,14 +109,14 @@
 #
 # NOT PORTED, one line each, with the wall behind it:
 # TODO(p3) __init__.py:22  `_states`' assert -- a raise, as above.
-# TODO(p3) __init__.py:29  the AssertionError in _split_after (see above)
-# TODO(p3) __init__.py:61  `t not in k.backward_slice` is read as a nocalls
-#   toposort; that is EXACT, and the header explains why.
+# WALL(p3) __init__.py:29  the AssertionError in _split_after (see above) -- BLOCKED: needs Python's `raise AssertionError`; the port DROPS the invalid src instead (`Split` carries only Python's two fields) and `split_bad_ks` pins the drop.
+# WALL(p3) __init__.py:61  `t not in k.backward_slice` is read as a nocalls
+#   toposort; that is EXACT, and the header explains why -- NOT A GAP: `sc_in_bs` reads `O.UOp.toposort_nocalls` and `wt_keep` applies `t is not k` FIRST (:885-886), so the two predicates are the SAME.
 # TODO(p3) __init__.py:79  `raise RuntimeError("cycle detected in assign graph")`
 #   -- a raise, as above. `COUNT_fx*_cyc` in the gate is the observable it guards,
 #   and it is 1 for fx2 and fx5 and 0 for fx1, so a cycle is visible as a
 #   non-empty answer even though the raise is not.
-# TODO(p3) ops.py:925     `buf_uop`'s MSELECT and MSTACK arms (see above)
+# WALL(p3) ops.py:925     `buf_uop`'s MSELECT and MSTACK arms (see above) -- BLOCKED: needs the arena threaded through a walk that CONSTRUCTS (interns) a UOp: MSELECT is `src[0].buf_uop.mselect(self.arg)` (tinygrad/uop/ops.py:924) and MSTACK rebuilds `UOp(MSTACK, ...)` (:925). Both arms are multi-device (`schedule/multi.py`) and read only by `create_schedule`'s `buf_uops` line; the port's walk is a fuel fold that STOPS at MSTACK.
 # TODO(p3) __init__.py:66-80  the `while queue` loop is a fuel fold, not a while.
 #   The queue is a `List` in Python's DEQUE ORDER -- `popleft` is a head pop and
 #   `append` is `List.append`, which is `qs ++ [x]` and O(n) -- so the loop's own
@@ -1336,7 +1336,7 @@ def cs_run(c: CallifyCtx, +ar: O.Arena, us: List<&2, U32>) -> CallifyCtx:
 #     and not the guard. The guard below is therefore cache-free BY CONSTRUCTION
 #     -- it takes no cache at all -- and `lsl_none_*` are real CPython calls of
 #     the real function, so they exercise the same early return.
-#   TODO(p3) __init__.py:133      `if SPEC: type_verify(function, spec_tensor)`
+#   WALL(p3) __init__.py:133      `if SPEC: type_verify(function, spec_tensor)` -- BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor` over `tensor_table()`; `type_verify`/`spec_tensor` are PORTED there (spec.bend:3121), NOT missing defs, and only the `SPEC > 1` and `DEBUG >= 3` arms are absent.
 #   TODO(p3) __init__.py:135      `get_kernel_graph(prepare_rangeify(function))`
 #     -- `schedule/rangeify.py` and `schedule/prepare.py`, out of scope.
 #   TODO(p3) __init__.py:141-150  the `inspect.stack()` DEBUG block.
@@ -1546,9 +1546,11 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # ARM 3 needs `UOp.variables` and `UOp.substitute` and NEITHER IS IN THE TREE:
 # `fold.bend`'s own header names `variables` as one of the three readers waiting
 # on the RANGES FOLD, and `ops.py:1239 UOp.substitute` waits behind it.
-# `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is already in
-# `uop/ops.bend` as tag 42's table, so arm 1 is REACHABLE and is not ported here
-# only because it needs `binds` (:107-109), which is `dict[int,UOp]` keyed by a
+# `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
+# an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
+# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:3989`) and no `def ...resolve_linear_call`
+# exists anywhere. See the corrected note at `__init__.py:279` for the measurement. Arm 1 is
+# therefore ALSO blocked on it, not on `binds` alone (:107-109), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
 #   TODO(p3) __init__.py:113  `s.variables()` -- no reader in the tree.
 #   TODO(p3) __init__.py:114  `s.substitute`   -- no reader in the tree.
@@ -1698,7 +1700,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #       the binding one: `:210` returns None when it is None, so without it the
 #       rule has no fallthrough case and answering anything else would be a
 #       fabrication.
-#     TODO(p3) __init__.py:212  `buf[a:b]` (SHRINK) and `.bitcast`.
+#     WALL(p3) __init__.py:212  `buf[a:b]` (SHRINK) and `.bitcast` -- BLOCKED: needs `UOp.shrink` (tinygrad/uop/ops.py:192, `apply_movement_op`), the SHRINK builder `rangeify.bend` records as a WALL; `.bitcast` is NOT missing -- it is `mixin/dtype.bend`'s `bitcast_at` (:372), which mints `OpsBITCAST`.
 #     TODO(p3) __init__.py:214  `.reshape` -- `mixin/movement.bend`'s.
 #     TODO(p3) __init__.py:208  `.unshard` -- ABSENT from the tree.
 #
@@ -1709,12 +1711,12 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     `UOp.variables`, the same reader arm 3 of `apply_binds` needs) and the
 #     `RuntimeError` bind-mismatch check at :292. Porting it before any of the
 #     five matchers it calls would be a name with no body.
-#     TODO(p3) __init__.py:276  `pm_schedule` -> `lower_sink_to_linear` (ported
-#       above) but the PASS is a rewriter.
-#     TODO(p3) __init__.py:279  `pm_resolve_linear_call` -> `resolve_linear_call`
-#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py`.
-#     TODO(p3) __init__.py:282  `pm_copy_from_store` -> the two bodies above plus
-#       `assert_all_same_devices`, and the PASS is a rewriter.
+#     WALL(p3) __init__.py:276  `pm_schedule` -> `lower_sink_to_linear` (ported
+#       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
+#     WALL(p3) __init__.py:279  `pm_resolve_linear_call` -> `resolve_linear_call`
+#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:3989), and `pm_flatten_linear` is absent too.
+#     WALL(p3) __init__.py:282  `pm_copy_from_store` -> the two bodies above plus
+#       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL PORTED (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:285  `used_vars` -- `UOp.variables`.
 #     TODO(p3) __init__.py:301  `memory_plan_rewrite` -- `schedule/memory.py`.
 

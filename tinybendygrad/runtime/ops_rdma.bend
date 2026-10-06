@@ -67,10 +67,14 @@
 #   :52  `_offset` returns `buf`      PORTED  `alloc.offset` -- IDENTITY, no call
 #   :53  `_unmap`                     PORTED  `alloc.unmap` -- `.meta`, not `.buf`
 #   :56  `functools.cache`            WALL 1  memoisation
-#   :57  `node`                       PORTED  `nic.node`  -- three fields, else ""
-#   :58  `bus`                        PORTED  `nic.bus`   -- last match, base 16
-#   :61  the `except RuntimeError`    PORTED  `nic.list` -- no pcie -> None
-#   :64  the closest NIC              PORTED  `nic.closest` -- min |bus - bus|, FIRST
+#   :57  `node`                       NOT PORTED -- a NESTED def inside `rdma_nic_for`
+#   :58  `bus`                        NOT PORTED -- a NESTED def inside `rdma_nic_for`
+#   :61  the `except RuntimeError`    NOT PORTED -- inside `rdma_nic_for`
+#   :64  the closest NIC              NOT PORTED -- inside `rdma_nic_for`, a `min(...)`
+#   THE FOUR ABOVE SAID "PORTED" AND WERE NOT. `node`/`bus` are nested defs INSIDE `rdma_nic_for`
+#   (ops_rdma.py:57-58) and the closest nic is a `min(...)` at :64; MEASURED, there is no `def
+#   nic.node` (or `.bus`/`.list`/`.closest`) anywhere in the port, and no `rdma_nic_for` either. The
+#   error's shape: a NAME was read in the CPython and a SAME-NAMED def assumed in the port.
 #   :67  `ifaces = [BNXTIface]`       PORTED  `Rdma.ifaces`
 #   :69-71 `RDMADevice.__init__`      PORTED  `dev.init` -- iface FIRST, then
 #                                               `BNXTAllocator(self), [], None`
@@ -135,7 +139,7 @@
 #    probing, `BNXTDev` firmware state and the mlx5/bnxt queues. All seams; the
 #    PCI ids, the bus number and the node string -- the three things those calls
 #    are asked FOR -- are ported.
-#    TODO(p3) ops_rdma.py:60  System.list_devices + filter_visible_devices.
+#    WALL(p3) ops_rdma.py:60  System.list_devices + filter_visible_devices -- BLOCKED: needs `System.list_devices(*BNXT_IDS)` + `filter_visible_devices` (netlink/driver seams, support/system.py; no def in the tree). CONTRADICTION: the :70-73 table says `nic.node`/`nic.bus`/`nic.list`/`nic.closest` are PORTED, but none is a def anywhere in `tinybendygrad/` -- they are LOCAL helpers inside `rdma_nic_for` (:56-64), which is unported, so the bus number and node string are NOT ported either.
 #    TODO(p3) ops_rdma.py:22  PCIDevice -- bar probing and firmware.
 # 3. `PCIIfaceBase.p2p_paddrs` (:46). The GPU-to-GPU translation into the NIC's
 #    address space, for a peer-to-peer mapping. It is a driver call against live

@@ -1921,41 +1921,41 @@ def main() -> IO(Unit):
 # TODO(p3) onnx.py:475  get_onnx_ops -- the 167 bodies. The NAME TABLE and
 #   `_select_op` are PORTED (:1067, :1240); everything below is not, and every one
 #   of these is a mixin method belonging to another file:
-# TODO(p3) onnx.py:543  contiguous_1 / :547 If / :564 Identity / :565 Constant /
+# WALL(p3) onnx.py:543  contiguous_1 / :547 If / :564 Identity / :565 Constant / -- BLOCKED: needs x.contiguous (elementwise.bend:873) and Tensor.eye (NOT defs); If needs an OnnxRunner VALUE (:67-69) and ImageDecoder needs PIL (:72).
 #   :575 Range / :578 ImageDecoder / :587 EyeLike / :591 OptionalHasElement /
 #   :593 ConstantOfShape / :597 Size / :598 Shape
-# TODO(p3) onnx.py:601  Not / Clip / IsInf
+# WALL(p3) onnx.py:601  Not / Clip / IsInf -- BLOCKED: needs x.clip (elementwise.bend:880) and x.isinf (:832) (NOT defs); x.logical_not IS ported (ew_logical_not).
 # TODO(p3) onnx.py:606  softmax_1 / softmax_13 / HardSigmoid / Gelu / BiasGelu /
 #   FastGelu / PRelu / LeakyRelu / ThresholdedRelu / LogSoftmax / Hardmax /
 #   Binarizer / Swish -- the Softmax ROUTING is PORTED, its two bodies are not.
-# TODO(p3) onnx.py:622  Add / Sub / Div / Pow / Less / LessOrEqual / Greater /
+# WALL(p3) onnx.py:622  Add / Sub / Div / Pow / Less / LessOrEqual / Greater / -- BLOCKED: needs the broadcasted binop mixins in mixin/elementwise.bend (ew_add/ew_sub/ew_div/ew_pow/ew_ge reverse=True for LessOrEqual/ew_fmod/ew_bitwise_*); not inlined here because a callee is its own file, not a second port (:63-66).
 #   GreaterOrEqual / Equal / And / Or / Xor / BitwiseAnd / BitwiseOr /
 #   BitwiseXor / BitwiseNot / Mod
 # TODO(p3) onnx.py:643  Cast / CastLike -- `OnnxDataType(to).to_dtype()` is
 #   PORTED (`onx_odt_dt`), so only `x.cast` is missing.
-# TODO(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin /
+# WALL(p3) onnx.py:647  Max / Min / Sum / Mean / ReduceMax / ReduceMin / -- BLOCKED: needs x.argmax and x.argmin (NOT defs, op.bend:11); the reduce mixins ARE ported (mo_max/mo_min/mo_sum/mo_mean, op.bend:819/:1117/:803/:883) and _axes is PORTED and GATED (:479).
 #   ReduceSum / ReduceMean / ReduceSumSquare / ReduceProd / ReduceL1 / ReduceL2 /
 #   ReduceLogSum / ReduceLogSumExp / ArgMax / ArgMin. `_axes` (:479) is PORTED and
 #   GATED, so only `x.max`/`x.min`/`x.sum`/`x.mean`/`x.argmax` are missing.
-# TODO(p3) onnx.py:679  Reshape / Flatten / Expand / Shrink / Transpose / Squeeze /
+# WALL(p3) onnx.py:679  Reshape / Flatten / Expand / Shrink / Transpose / Squeeze / -- BLOCKED: needs x.unsqueeze (NOT a def); x.reshape/x.pad/x.shrink ARE ported (mxw_reshape/mxw_pad/mxw_shrink) and _broadcast_shape IS bcast_shape (fold.bend:667); Pad's own wall is fold's PAD refusal (:96-100).
 #   Unsqueeze / Tile / Concat / Slice / Split / Pad / CenterCropPad
-# TODO(p3) onnx.py:724  AveragePool / MaxPool / Conv / ConvTranspose / MaxUnpool /
+# WALL(p3) onnx.py:724  AveragePool / MaxPool / Conv / ConvTranspose / MaxUnpool / -- BLOCKED: needs x.avg_pool2d/x.max_pool2d/x.conv2d/x.conv_transpose2d (NOT defs) -- the padding is decidable and the OUTPUT SHAPE is not (mixin/op.bend's `_pool`; fold.bend refuses EXPAND/SHRINK/PAD/FLIP), plus x.einsum (op.bend W2) and x.cumsum/x.trilu/x.topk.
 #   GlobalAveragePool / GlobalMaxPool / Gemm / Einsum / CumSum / Trilu / Resize /
 #   Upsample / TopK
-# TODO(p3) onnx.py:896  BatchNormalization / GroupNormalization /
+# WALL(p3) onnx.py:896  BatchNormalization / GroupNormalization / -- BLOCKED: needs x.batchnorm and x.layernorm (mixin/op.bend SIDE B, not built) and x.one_hot/x.unsqueeze (NOT defs).
 #   InstanceNormalization / LayerNormalization / SkipLayerNormalization /
 #   EmbedLayerNormalization / MeanVarianceNormalization / LpNormalization / OneHot
 # TODO(p3) onnx.py:963  DepthToSpace / SpaceToDepth -- `X.rearrange` is a REWRITE
 #   of the whole index expression and has no mixin method of its own.
 # TODO(p3) onnx.py:969  dropout_7 / dropout_6 -- legacy `numpy.random.RandomState`,
 #   which is a NUMPY seeding requirement the port cannot state.
-# TODO(p3) onnx.py:982  _window / HannWindow / HammingWindow / BlackmanWindow /
+# WALL(p3) onnx.py:982  _window / HannWindow / HammingWindow / BlackmanWindow / -- BLOCKED: needs x.rearrange (movement.bend WALL 2, a STRING FORMULA) and x.nll_loss (NOT a def); _window's x.cos is on the F32/`Word` wall (elementwise.bend:41-50); the three mixin chains' _select_op ROUTING is PORTED and GATED (:73-76), their bodies are not.
 #   LRN / NegativeLogLikelihoodLoss / SoftmaxCrossEntropyLoss / AffineGrid /
 #   attention_contrib / attention_onnx / RMSNormalization / RotaryEmbedding
-# TODO(p3) onnx.py:1133 NonZero / ArrayFeatureExtractor / Gather / Scatter /
+# WALL(p3) onnx.py:1133 NonZero / ArrayFeatureExtractor / Gather / Scatter / -- BLOCKED: needs x.gather, x.scatter and x.scatter_reduce (NOT defs); x.shrink/x.cat it also calls ARE ported (mxw_shrink/mx_cat).
 #   GatherND / ScatterND / TensorScatter / ScatterElements / GatherElements /
 #   Compress
-# TODO(p3) onnx.py:1211 QuantizeLinear / DynamicQuantizeLinear / DequantizeLinear /
+# WALL(p3) onnx.py:1211 QuantizeLinear / DynamicQuantizeLinear / DequantizeLinear / -- BLOCKED: needs x.repeat_interleave and x.scatter_reduce (NOT defs); the numeric dtypes predicate it also uses IS ported (dt_is_int/dt_is_float), contrary to the header note at :70-71.
 #   QLinearConv / QLinearMatMul / QLinearAdd / QLinearMul /
 #   QLinearGlobalAveragePool / ConvInteger / MatMulInteger
 # TODO(p3) onnx.py:1265 Adagrad / Adam / Momentum -- the `@_onnx_training`
