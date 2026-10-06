@@ -1,0 +1,90 @@
+# PLAN — every `.txt` that was hard (80) with classification, rename decision, and outcome.
+# Columns: action · old-path · new-path · content-class · size-B · reason-skipped
+# Content-class by rule, never by basename:
+#   ROWDUMP: ≥80% nonempty lines contain "=", or ≥80% lines are path-like structured
+#   CAPTURED-STREAM: multi-line output with shell/command markers (==, ---, ALL)
+#   PROSE: ≤5 lines, all <200 chars
+#   TABULAR: ≥50% lines contain tabs forming ≥3 columns
+#   SOURCE: all nonempty lines start with #
+#   EMPTY: 0 bytes
+#   UNCLASSIFIED: none of the above (fell to .out or .md after manual review)
+rename	.agents/slop/corpusproto/tree/D0-run-summary.txt	.agents/slop/corpusproto/tree/D0-run-summary.rows	ROWDUMP	341	—
+rename	.agents/slop/dd-gate-base-172.txt	.agents/slop/dd-gate-base-172.rows	ROWDUMP	48462	—
+rename	.agents/slop/dd-gate-base-182.txt	.agents/slop/dd-gate-base-182.rows	ROWDUMP	69013	—
+rename	.agents/slop/dd-gate.txt	.agents/slop/dd-gate.rows	ROWDUMP	69033	—
+rename	.agents/slop/declared473/tree/t2/.agents/slop/figurefix/plant/D-live/D0-run-summary.txt	.agents/slop/declared473/tree/t2/.agents/slop/figurefix/plant/D-live/D0-run-summary.rows	ROWDUMP	386	—
+rename	.agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.out	EMPTY	0	—
+rename	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-f64.md	PROSE	91	—
+rename	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-gate.md	PROSE	84	—
+rename	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-opsbend.md	PROSE	69	—
+rename	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-port-mm.md	PROSE	116	—
+rename	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-f64.md	PROSE	23	—
+rename	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-gate.md	PROSE	84	—
+rename	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-opsbend.md	PROSE	69	—
+rename	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-port-mm.md	PROSE	23	—
+rename	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-f64.md	PROSE	91	—
+rename	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-gate.md	PROSE	84	—
+rename	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-opsbend.md	PROSE	69	—
+rename	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-port-mm.md	PROSE	116	—
+rename	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.md	PROSE	113	—
+rename	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-gate.md	PROSE	84	—
+rename	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-opsbend.md	PROSE	69	—
+rename	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-port-mm.md	PROSE	116	—
+rename	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.md	PROSE	113	—
+rename	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-gate.md	PROSE	84	—
+rename	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-opsbend.md	PROSE	69	—
+rename	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-port-mm.md	PROSE	116	—
+rename	.agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.rows	ROWDUMP	65	—
+rename	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-f64.txt	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-f64.md	PROSE	88	—
+rename	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.txt	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.rows	ROWDUMP	355	—
+rename	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-gate.txt	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-gate.md	PROSE	47	—
+rename	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-opsbend.txt	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-opsbend.md	PROSE	72	—
+rename	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-port-mm.txt	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-port-mm.md	PROSE	44	—
+rename	.agents/slop/figurefix/plant/D-live/D0-run-summary.txt	.agents/slop/figurefix/plant/D-live/D0-run-summary.rows	ROWDUMP	386	—
+rename	.agents/slop/fixures/opsbend/ops_bend-milestone-expected.txt	.agents/slop/fixures/opsbend/ops_bend-milestone-expected.md	UNCLASSIFIED	4626	—
+rename	.agents/slop/i64shl/py.txt	.agents/slop/i64shl/py.rows	ROWDUMP	3201	—
+rename	.agents/slop/jsfp8/gate.txt	.agents/slop/jsfp8/gate.out	CAPTURED-STREAM	1529	—
+rename	.agents/slop/norm/census.txt	.agents/slop/norm/census.md	UNCLASSIFIED	5225	—
+rename	.agents/slop/norm/gate.txt	.agents/slop/norm/gate.md	UNCLASSIFIED	4074	—
+rename	.agents/slop/ops_bend-milestone-expected.txt	.agents/slop/ops_bend-milestone-expected.md	UNCLASSIFIED	4626	—
+rename	.agents/slop/opsbend-milestone/build.txt	.agents/slop/opsbend-milestone/build.md	PROSE	42	—
+rename	.agents/slop/opsbend-milestone/check.txt	.agents/slop/opsbend-milestone/check.md	PROSE	100	—
+rename	.agents/slop/opsbend-milestone/gate.txt	.agents/slop/opsbend-milestone/gate.out	CAPTURED-STREAM	1464	—
+rename	.agents/slop/opsbend-milestone/milestone.txt	.agents/slop/opsbend-milestone/milestone.rows	ROWDUMP	1108	—
+rename	.agents/slop/peakrss/census.txt	.agents/slop/peakrss/census.rows	ROWDUMP	12541	—
+rename	.agents/slop/rerun/probe-flip-METAL.txt	.agents/slop/rerun/probe-flip-METAL.out	EMPTY	0	—
+rename	.agents/slop/rerun/probe-flip-NULL.txt	.agents/slop/rerun/probe-flip-NULL.out	EMPTY	0	—
+rename	.agents/slop/rerun/probe-lin-METAL.txt	.agents/slop/rerun/probe-lin-METAL.out	EMPTY	0	—
+rename	.agents/slop/rerun/probe-lin-NULL.txt	.agents/slop/rerun/probe-lin-NULL.out	EMPTY	0	—
+rename	.agents/slop/strays-root/after.txt	.agents/slop/strays-root/after.rows	ROWDUMP	33736	—
+rename	.agents/slop/strays-root/before.txt	.agents/slop/strays-root/before.rows	ROWDUMP	3059	—
+rename	.agents/slop/strays-root/closure.txt	.agents/slop/strays-root/closure.rows	ROWDUMP	13908	—
+skip	oracles/rows-bd.txt	—	EMPTY	0	oracles/ (deliberately left, 0 bytes)
+skip	test/models/efficientnet/imagenet1000_clsidx_to_labels.txt	—	UNCLASSIFIED	30564	test/ (upstream vendered data, named by test/)
+skip	.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-f64.txt	—	PROSE	91	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-bend.txt	—	ROWDUMP	355	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-gate.txt	—	PROSE	84	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-opsbend.txt	—	PROSE	69	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-port-mm.txt	—	PROSE	116	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt	—	PROSE	91	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-bend.txt	—	ROWDUMP	355	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-gate.txt	—	PROSE	84	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-opsbend.txt	—	PROSE	69	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-port-mm.txt	—	PROSE	116	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-f64.txt	—	PROSE	113	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-bend.txt	—	ROWDUMP	355	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-gate.txt	—	PROSE	84	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-opsbend.txt	—	PROSE	69	gitignored (runs/ pattern)
+skip	.agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-port-mm.txt	—	PROSE	116	gitignored (runs/ pattern)
+skip	.agents/slop/figure2/plant/broken/runs/graphcmp/D/D0-run-summary.txt	—	ROWDUMP	386	gitignored (runs/ pattern)
+skip	.agents/slop/figure2/plant/real/runs/graphcmp/D/D0-run-summary.txt	—	ROWDUMP	384	gitignored (runs/ pattern)
+skip	runs/e2e/e2e-f64.txt	—	CAPTURED-STREAM	2066	gitignored (runs/ pattern)
+skip	runs/e2e/e2e-mm-bend.txt	—	ROWDUMP	434	gitignored (runs/ pattern)
+skip	runs/e2e/e2e-mm-gate.txt	—	ROWDUMP	1526	gitignored (runs/ pattern)
+skip	runs/e2e/e2e-opsbend.txt	—	CAPTURED-STREAM	1727	gitignored (runs/ pattern)
+skip	runs/e2e/e2e-port-mm.txt	—	CAPTURED-STREAM	9603	gitignored (runs/ pattern)
