@@ -63,3 +63,67 @@ cannot find the file for is not a pin.
 
 The corpus argument for slop does not survive contact with a pruning directory. What matters is
 that a gate's inputs are as hard to delete as the gate.
+
+## THE META-INSTRUMENTS, AND THE ONE POPULATION THEY SHARE
+
+Three files here are not gates over a subject; they are gates over the gates.
+
+| file | what it enumerates | how |
+|---|---|---|
+| `gates/gates-pop.py` | every gate in the tree | AST `__main__` for Python, self-dispatch for shell, `--ledger` diffs the previous run |
+| `gates/retention-check.py` | what a generated directory may hold | the generator's own `declared()` and `unhealthy()`, never a second opinion |
+| **`gates/gendirs.py`** | **every directory something WRITES INTO** | **a scan of every write site in the tree** |
+
+`gendirs.py` exists because `checks/gen/` was invisible to both of the others.
+`gates-pop.py` enumerates **gates** and `retention-check.py` enumerates **two registered output
+families**, and `checks/gen/` — written by `checks/abi_gate.py:616` through `bend -o` — is
+neither a gate nor a registered family. **A POPULATION DEFINED BY A THREE-ITEM LIST CANNOT BE
+WRONG ABOUT A FOURTH ITEM BECAUSE IT NEVER LOOKS AT ONE.**
+
+All three import `gendirs.py` **by path**, and all three print its count, so the population has
+one implementation and two consumers and the pair can be checked against each other. Measured
+2026-10-06: `retention-check.py` clause V and `gates-pop.py` clause IV both print **194**.
+
+    .venv/bin/python gates/gendirs.py            # the table: every written-into directory
+    .venv/bin/python gates/gendirs.py --plant    # seven plants, synthetic trees only
+
+`gendirs.py`'s population is a **lower bound** and says so on every run: `checks/abi4_gate.py:501`
+reaches `checks/gen/` through a `subprocess.run` that names no output path at all, so the writer is
+named by a *call* and the target by a *convention inside another program*. Closing that needs
+execution, and nothing here executes a gate. `.agents/slop/gendirs/` holds the table, the
+property evaluation, and the seven plants' reasoning.
+
+## CLAUSE IV: WHICH GENERATED DIRECTORIES CAN REPORT HEALTH
+
+Clause IV asks one question per output family: *does it carry a zero-argument `healthy` callable?*
+(`retention-check.py:520-525`). A family with `healthy=None` prints `UNMEASURABLE` and **`continue`s
+without touching `red`** (`:524`) — so it is **reported and NOT charged to rc**. The leniency is
+clause IV's alone: clause I's residue is red at `:435`, clause II's `UNMEASURED`/`MISSING`/`FALSE` at
+`:410`.
+
+| family | dirs | `healthy` | why |
+|---|---|---|---|
+| `runs/graphcmp/D/` | 1 | `differ.unhealthy() + differ.artefacts_ok()` | the run PERSISTS its verdict: `D0-run-summary.txt` is `name=value` rows incl. `census-rc=rc=0` |
+| `gates/artifacts/<gate>/` | one per gate | `None` | `gatekit`'s verdict is an **exit status** — printed, never written |
+
+The gate dirs are **discovered, not listed**: `Output.dirs()` (`:99-110`) walks `gates/artifacts/`
+with `iterdir`; `0/N dirs` is `len(dirs)`.
+
+**What a gate leaves on disk is lanes, not a verdict.** A green run promotes exactly seven fixed
+names — `py.rows`, `bd.out`, `bn.out`, `py.cmp`, `bd.cmp`, `bn.cmp`, `gate.bin` — through `_settle`
+(`gatekit.py:436-449`). The verdicts are the five exits (`gatekit.py:59`:
+`PASS, FAIL, REFUSED, SKIP, DEAD = 0,1,3,4,5`). Lanes cannot say whether their run was healthy, so
+`UNMEASURABLE` is the truthful token.
+
+**What would make them report:** `gatekit` would have to *persist* its verdict — one declared file
+per `Gate` dir, added to `GATEKIT_OUTPUT`, paired with a `healthy()` that reads it. That is
+`gatekit.py`'s change, not this file's, and it would cover **every** dir under `gates/artifacts/`
+(all are written by a `gatekit` `Gate`). Until then, forcing a verdict here would invent a health
+rule and widen what counts as healthy.
+
+**`GATEKIT_OUTPUT` is DERIVED from the generator, not transcribed beside it.** `gatekit` publishes
+no `declared()`, so this set is the one this file owns — built from gatekit's OWN lane constants
+(`LANE_ROWS`/`LANE_OUT`/`LANE_CMP`, `gatekit.py:68-70`) plus the one `gate.bin` literal
+(`gatekit.py:317`), imported at `retention-check.py:68`. The transcription this replaced named
+`*.txt`/`*.sub`, which gatekit had stopped writing: clause I then named the ENTIRE contents of all
+11 gate dirs residue. MEASURED before/after: `11 with residue / 66 files` → `12/12 dirs clean`.

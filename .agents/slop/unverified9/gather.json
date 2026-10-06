@@ -1,0 +1,1320 @@
+{
+  "NOLOCALS": {
+    "now": [],
+    "pin": []
+  },
+  "JIT_BATCH_SIZE": {
+    "now": [],
+    "pin": []
+  },
+  "PCONTIG": {
+    "now": [],
+    "pin": []
+  },
+  "GRAPH_ONE_KERNEL": {
+    "now": [
+      {
+        "file": ".github/workflows/benchmark.yml",
+        "line": "604",
+        "decl": false,
+        "text": "GRAPH_ONE_KERNEL=1 NSZ=8192 python3 test/speed/external_test_copy_speed.py TestCopySpeed.testCopyDefaulttoCPUJit"
+      },
+      {
+        "file": ".github/workflows/benchmark.yml",
+        "line": "605",
+        "decl": false,
+        "text": "GRAPH_ONE_KERNEL=1 NSZ=8192 python3 test/speed/external_test_copy_speed.py TestCopySpeed.testCopyCPUtoDefaultJit"
+      }
+    ],
+    "pin": [
+      {
+        "file": ".github/workflows/benchmark.yml",
+        "line": "604",
+        "decl": false,
+        "text": "GRAPH_ONE_KERNEL=1 NSZ=8192 python3 test/speed/external_test_copy_speed.py TestCopySpeed.testCopyDefaulttoCPUJit"
+      },
+      {
+        "file": ".github/workflows/benchmark.yml",
+        "line": "605",
+        "decl": false,
+        "text": "GRAPH_ONE_KERNEL=1 NSZ=8192 python3 test/speed/external_test_copy_speed.py TestCopySpeed.testCopyCPUtoDefaultJit"
+      }
+    ]
+  },
+  "BROWSER": {
+    "now": [
+      {
+        "file": "checks/census.json",
+        "line": "12204",
+        "decl": false,
+        "text": "\"run\": \"# tinybendygrad/runtime/ops_webgpu.bend -- port of tinygrad/runtime/ops_webgpu.py\\n#\\n# THE RUN SIDE OF THE BROWSER TARGET. ops_webg"
+      },
+      {
+        "file": "checks/e2e.sh",
+        "line": "108",
+        "decl": false,
+        "text": "# THE ONE STAGE THAT ASKS NODE. IT IS THE ONLY STAGE THAT NEEDS A BROWSER, SO IT IS"
+      },
+      {
+        "file": "checks/e2e.sh",
+        "line": "138",
+        "decl": false,
+        "text": "# adapter run it? The adapter is the BROWSER's, reached over"
+      },
+      {
+        "file": "checks/e2e.sh",
+        "line": "191",
+        "decl": false,
+        "text": "# Stage 6 runs the SAME `(A @ B) @ Cm` with NO NODE, NO BROWSER, NO"
+      },
+      {
+        "file": "checks/run-port-mm.sh",
+        "line": "8",
+        "decl": false,
+        "text": "# NODE, NO BROWSER, NO `navigator.gpu`, and NO TINYGRAD PYTHON SCHEDULER in the"
+      },
+      {
+        "file": "tinybendygrad/runtime/ops_webgpu.bend",
+        "line": "3",
+        "decl": false,
+        "text": "# THE RUN SIDE OF THE BROWSER TARGET. ops_webgpu.py is wgpu-py: every call is a"
+      },
+      {
+        "file": "tinybendygrad/runtime/ops_webgpu.bend",
+        "line": "129",
+        "decl": false,
+        "text": "# THE SYNC CALLS ARE ALSO WHERE THE BROWSER DIFFERS, and the port says so:"
+      },
+      {
+        "file": "tinybendygrad/runtime/webgpu_call.bend",
+        "line": "303",
+        "decl": false,
+        "text": "# changes neither the trace nor the bind group. It surfaced only in the BROWSER,"
+      },
+      {
+        "file": "tinybendygrad/runtime/webgpu_call.bend",
+        "line": "598",
+        "decl": false,
+        "text": "# surfaced in the BROWSER, at `BindGroup`, with \"Failed to convert value to"
+      },
+      {
+        "file": "tinybendygrad/runtime/webgpu_call.bend",
+        "line": "1104",
+        "decl": false,
+        "text": "# every handle came out 4294967295 and 50 rows were green; the BROWSER caught it."
+      }
+    ],
+    "pin": [
+      {
+        "file": "tinybendygrad/runtime/ops_webgpu.bend",
+        "line": "3",
+        "decl": false,
+        "text": "# THE RUN SIDE OF THE BROWSER TARGET. ops_webgpu.py is wgpu-py: every call is a"
+      },
+      {
+        "file": "tinybendygrad/runtime/ops_webgpu.bend",
+        "line": "129",
+        "decl": false,
+        "text": "# THE SYNC CALLS ARE ALSO WHERE THE BROWSER DIFFERS, and the port says so:"
+      }
+    ]
+  },
+  "THREADS": {
+    "now": [
+      {
+        "file": "docs/abstractions4.py",
+        "line": "23",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "25",
+        "decl": false,
+        "text": "assert SZ % (GLOBALS * THREADS) == 0"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "26",
+        "decl": false,
+        "text": "CHUNK = SZ // (GLOBALS * THREADS)"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "31",
+        "decl": false,
+        "text": "constexpr unsigned int BLOCK = {THREADS};"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "68",
+        "decl": false,
+        "text": "sink = UOp.sink(UOp.special(GLOBALS, 'gidx0'), UOp.special(THREADS, 'lidx0'), out, buf,"
+      },
+      {
+        "file": "extra/gemm/amd_asm_matmul.py",
+        "line": "440",
+        "decl": false,
+        "text": "THREADS = 128"
+      },
+      {
+        "file": "extra/gemm/amd_asm_matmul.py",
+        "line": "454",
+        "decl": false,
+        "text": "grid, local = (N // BLOCK_N, N // BLOCK_M, 1), (THREADS, 1, 1)"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "13",
+        "decl": false,
+        "text": "THREADS, ELEM = 128, 2"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "215",
+        "decl": false,
+        "text": "grid, local = (N//BLOCK_N, N//BLOCK_M, 1), (THREADS, 1, 1)"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "221",
+        "decl": false,
+        "text": "lidxs = [UOp.special(THREADS, \"lidx0\")]"
+      },
+      {
+        "file": "extra/gemm_fragment.py",
+        "line": "57",
+        "decl": false,
+        "text": "THREADS = TY * TX"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "27",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "32",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special((vocab+THREADS-1)//THREADS, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "36",
+        "decl": false,
+        "text": "defines = [f\"-DVOCAB={vocab}\", f\"-DTHREADS={THREADS}\", \"-DINIT_HEADS=1\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "43",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special((tokens+THREADS-1)//THREADS, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "47",
+        "decl": false,
+        "text": "defines = [f\"-DTOKENS={tokens}\", f\"-DVOCAB={vocab}\", f\"-DTHREADS={THREADS}\", \"-DBUILD_LINKS=1\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "55",
+        "decl": false,
+        "text": "threads = UOp.special(THREADS, \"lidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "56",
+        "decl": false,
+        "text": "workgroups = UOp.special(vocab*((embed+THREADS-1)//THREADS), \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "61",
+        "decl": false,
+        "text": "defines = [f\"-DTOKENS={tokens}\", f\"-DVOCAB={vocab}\", f\"-DEMBED={embed}\", f\"-DTHREADS={THREADS}\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_init_heads(int *__restrict__ head) {"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "const int v=blockIdx.x*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "24",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_build_links("
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "26",
+        "decl": false,
+        "text": "const int i=blockIdx.x*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "35",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_owner_reduce("
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "38",
+        "decl": false,
+        "text": "constexpr int D_BLOCKS=(EMBED+THREADS-1)/THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "39",
+        "decl": false,
+        "text": "const int token=blockIdx.x/D_BLOCKS, d=(blockIdx.x%D_BLOCKS)*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "constexpr int THREADS = 512;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "15",
+        "decl": false,
+        "text": "constexpr int ROWS_PER_WG = THREADS / WAVE;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void gptoss_embedding_fwd("
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "9",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "16",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special(n_partials, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "20",
+        "decl": false,
+        "text": "defines = [f\"-DN_ELEMS={n}\", f\"-DN_PARTIALS={n_partials}\", f\"-DTHREADS={THREADS}\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "29",
+        "decl": false,
+        "text": "n_partials = min(MAX_PARTIALS, max(1, (local_n + THREADS * 64 - 1) // (THREADS * 64)))"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "10",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "11",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "static_assert(THREADS % 64 == 0, \"THREADS must contain whole AMD waves\");"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void grad_norm_bf16_partials("
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "22",
+        "decl": false,
+        "text": "for (long long i = (long long)blockIdx.x * THREADS + threadIdx.x; i < N_VEC;"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "23",
+        "decl": false,
+        "text": "i += (long long)N_PARTIALS * THREADS) {"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "33",
+        "decl": false,
+        "text": "for (long long i = N_VEC * 8 + (long long)blockIdx.x * THREADS + threadIdx.x; i < N_ELEMS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "34",
+        "decl": false,
+        "text": "i += (long long)N_PARTIALS * THREADS) { const float v = (float)x[i]; sum0 = fmaf(v, v, sum0); }"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "39",
+        "decl": false,
+        "text": "__shared__ float wave_sums[THREADS / 64];"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "45",
+        "decl": false,
+        "text": "sum = lane < THREADS / 64 ? wave_sums[lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "4",
+        "decl": false,
+        "text": "#if !defined(ROWS) || !defined(HIDDEN) || !defined(THREADS) || !defined(EPS_LITERAL)"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "5",
+        "decl": false,
+        "text": "#error \"ROWS, HIDDEN, THREADS and EPS_LITERAL are required\""
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void gptoss_final_rmsnorm_denom_rrms("
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "const int row = blockIdx.x * THREADS + threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "17",
+        "decl": false,
+        "text": "static_assert(THREADS % 64 == 0, \"THREADS must contain whole AMD waves\");"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "constexpr int COLS_PER_THREAD = (HIDDEN + THREADS - 1) / THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "21",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void rmsnorm_mul_bwd("
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "34",
+        "decl": false,
+        "text": "__shared__ float pair_wave_sums[2][THREADS / 64];"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "44",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "71",
+        "decl": false,
+        "text": "dot0 = lane < THREADS / 64 ? pair_wave_sums[0][lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "72",
+        "decl": false,
+        "text": "dot1 = lane < THREADS / 64 ? pair_wave_sums[1][lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "88",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "100",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/router_topk/weight_backward.cpp",
+        "line": "6",
+        "decl": false,
+        "text": "constexpr int THREADS = NUM_WARPS * 64;"
+      },
+      {
+        "file": "extra/gptoss_kernels/router_topk/weight_backward.cpp",
+        "line": "15",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 2) void moe_router_fp32_wgrad("
+      },
+      {
+        "file": "extra/llama_kernels/quantize_mxfp4/quantize_mxfp4.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "constexpr int THREADS = 256;"
+      },
+      {
+        "file": "extra/llama_kernels/quantize_mxfp4/quantize_mxfp4.cpp",
+        "line": "59",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 8)"
+      },
+      {
+        "file": "extra/thunder/amd/moe_router_mfma.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "constexpr int THREADS = NUM_WARPS * WARP_THREADS;"
+      },
+      {
+        "file": "extra/thunder/amd/moe_router_mfma.cpp",
+        "line": "31",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 4) void moe_router_mfma("
+      },
+      {
+        "file": "tinybendygrad/codegen/decomp/transcendental.bend",
+        "line": "899",
+        "decl": false,
+        "text": "# EVERY STEP THREADS THE ARENA. Bend ELIMINATES a call whose result is unused,"
+      }
+    ],
+    "pin": [
+      {
+        "file": "docs/abstractions4.py",
+        "line": "23",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "25",
+        "decl": false,
+        "text": "assert SZ % (GLOBALS * THREADS) == 0"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "26",
+        "decl": false,
+        "text": "CHUNK = SZ // (GLOBALS * THREADS)"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "31",
+        "decl": false,
+        "text": "constexpr unsigned int BLOCK = {THREADS};"
+      },
+      {
+        "file": "docs/abstractions4.py",
+        "line": "68",
+        "decl": false,
+        "text": "sink = UOp.sink(UOp.special(GLOBALS, 'gidx0'), UOp.special(THREADS, 'lidx0'), out, buf,"
+      },
+      {
+        "file": "extra/gemm/amd_asm_matmul.py",
+        "line": "440",
+        "decl": false,
+        "text": "THREADS = 128"
+      },
+      {
+        "file": "extra/gemm/amd_asm_matmul.py",
+        "line": "454",
+        "decl": false,
+        "text": "grid, local = (N // BLOCK_N, N // BLOCK_M, 1), (THREADS, 1, 1)"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "13",
+        "decl": false,
+        "text": "THREADS, ELEM = 128, 2"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "215",
+        "decl": false,
+        "text": "grid, local = (N//BLOCK_N, N//BLOCK_M, 1), (THREADS, 1, 1)"
+      },
+      {
+        "file": "extra/gemm/rdna4_asm_matmul.py",
+        "line": "221",
+        "decl": false,
+        "text": "lidxs = [UOp.special(THREADS, \"lidx0\")]"
+      },
+      {
+        "file": "extra/gemm_fragment.py",
+        "line": "57",
+        "decl": false,
+        "text": "THREADS = TY * TX"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "27",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "32",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special((vocab+THREADS-1)//THREADS, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "36",
+        "decl": false,
+        "text": "defines = [f\"-DVOCAB={vocab}\", f\"-DTHREADS={THREADS}\", \"-DINIT_HEADS=1\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "43",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special((tokens+THREADS-1)//THREADS, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "47",
+        "decl": false,
+        "text": "defines = [f\"-DTOKENS={tokens}\", f\"-DVOCAB={vocab}\", f\"-DTHREADS={THREADS}\", \"-DBUILD_LINKS=1\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "55",
+        "decl": false,
+        "text": "threads = UOp.special(THREADS, \"lidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "56",
+        "decl": false,
+        "text": "workgroups = UOp.special(vocab*((embed+THREADS-1)//THREADS), \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/__init__.py",
+        "line": "61",
+        "decl": false,
+        "text": "defines = [f\"-DTOKENS={tokens}\", f\"-DVOCAB={vocab}\", f\"-DEMBED={embed}\", f\"-DTHREADS={THREADS}\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_init_heads(int *__restrict__ head) {"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "const int v=blockIdx.x*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "24",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_build_links("
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "26",
+        "decl": false,
+        "text": "const int i=blockIdx.x*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "35",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void embedding_bwd_owner_reduce("
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "38",
+        "decl": false,
+        "text": "constexpr int D_BLOCKS=(EMBED+THREADS-1)/THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_bwd.cpp",
+        "line": "39",
+        "decl": false,
+        "text": "const int token=blockIdx.x/D_BLOCKS, d=(blockIdx.x%D_BLOCKS)*THREADS+threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "constexpr int THREADS = 512;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "15",
+        "decl": false,
+        "text": "constexpr int ROWS_PER_WG = THREADS / WAVE;"
+      },
+      {
+        "file": "extra/gptoss_kernels/embedding/embedding_fwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void gptoss_embedding_fwd("
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "9",
+        "decl": false,
+        "text": "THREADS = 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "16",
+        "decl": false,
+        "text": "threads, workgroups = UOp.special(THREADS, \"lidx0\"), UOp.special(n_partials, \"gidx0\")"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "20",
+        "decl": false,
+        "text": "defines = [f\"-DN_ELEMS={n}\", f\"-DN_PARTIALS={n_partials}\", f\"-DTHREADS={THREADS}\"]"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/__init__.py",
+        "line": "29",
+        "decl": false,
+        "text": "n_partials = min(MAX_PARTIALS, max(1, (local_n + THREADS * 64 - 1) // (THREADS * 64)))"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "10",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "11",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "static_assert(THREADS % 64 == 0, \"THREADS must contain whole AMD waves\");"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void grad_norm_bf16_partials("
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "22",
+        "decl": false,
+        "text": "for (long long i = (long long)blockIdx.x * THREADS + threadIdx.x; i < N_VEC;"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "23",
+        "decl": false,
+        "text": "i += (long long)N_PARTIALS * THREADS) {"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "33",
+        "decl": false,
+        "text": "for (long long i = N_VEC * 8 + (long long)blockIdx.x * THREADS + threadIdx.x; i < N_ELEMS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "34",
+        "decl": false,
+        "text": "i += (long long)N_PARTIALS * THREADS) { const float v = (float)x[i]; sum0 = fmaf(v, v, sum0); }"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "39",
+        "decl": false,
+        "text": "__shared__ float wave_sums[THREADS / 64];"
+      },
+      {
+        "file": "extra/gptoss_kernels/grad_norm/sum_squares.cpp",
+        "line": "45",
+        "decl": false,
+        "text": "sum = lane < THREADS / 64 ? wave_sums[lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "4",
+        "decl": false,
+        "text": "#if !defined(ROWS) || !defined(HIDDEN) || !defined(THREADS) || !defined(EPS_LITERAL)"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "5",
+        "decl": false,
+        "text": "#error \"ROWS, HIDDEN, THREADS and EPS_LITERAL are required\""
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void gptoss_final_rmsnorm_denom_rrms("
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/fast_final_denom.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "const int row = blockIdx.x * THREADS + threadIdx.x;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "13",
+        "decl": false,
+        "text": "#ifndef THREADS"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "14",
+        "decl": false,
+        "text": "#define THREADS 256"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "17",
+        "decl": false,
+        "text": "static_assert(THREADS % 64 == 0, \"THREADS must contain whole AMD waves\");"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "19",
+        "decl": false,
+        "text": "constexpr int COLS_PER_THREAD = (HIDDEN + THREADS - 1) / THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "21",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS) void rmsnorm_mul_bwd("
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "34",
+        "decl": false,
+        "text": "__shared__ float pair_wave_sums[2][THREADS / 64];"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "44",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "71",
+        "decl": false,
+        "text": "dot0 = lane < THREADS / 64 ? pair_wave_sums[0][lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "72",
+        "decl": false,
+        "text": "dot1 = lane < THREADS / 64 ? pair_wave_sums[1][lane] : 0.0f;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "88",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/rmsnorm/rmsnorm_mul_bwd.cpp",
+        "line": "100",
+        "decl": false,
+        "text": "const int col = tid + j * THREADS;"
+      },
+      {
+        "file": "extra/gptoss_kernels/router_topk/weight_backward.cpp",
+        "line": "6",
+        "decl": false,
+        "text": "constexpr int THREADS = NUM_WARPS * 64;"
+      },
+      {
+        "file": "extra/gptoss_kernels/router_topk/weight_backward.cpp",
+        "line": "15",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 2) void moe_router_fp32_wgrad("
+      },
+      {
+        "file": "extra/llama_kernels/quantize_mxfp4/quantize_mxfp4.cpp",
+        "line": "16",
+        "decl": false,
+        "text": "constexpr int THREADS = 256;"
+      },
+      {
+        "file": "extra/llama_kernels/quantize_mxfp4/quantize_mxfp4.cpp",
+        "line": "59",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 8)"
+      },
+      {
+        "file": "extra/thunder/amd/moe_router_mfma.cpp",
+        "line": "18",
+        "decl": false,
+        "text": "constexpr int THREADS = NUM_WARPS * WARP_THREADS;"
+      },
+      {
+        "file": "extra/thunder/amd/moe_router_mfma.cpp",
+        "line": "31",
+        "decl": false,
+        "text": "extern \"C\" __global__ __launch_bounds__(THREADS, 4) void moe_router_mfma("
+      },
+      {
+        "file": "tinybendygrad/codegen/transcendental.bend",
+        "line": "893",
+        "decl": false,
+        "text": "# EVERY STEP THREADS THE ARENA. Bend ELIMINATES a call whose result is unused,"
+      }
+    ]
+  },
+  "APL_REMOTE_SOCK": {
+    "now": [
+      {
+        "file": "extra/hcq1/remote.py",
+        "line": "128",
+        "decl": true,
+        "text": "sock_path, sock = getenv(\"APL_REMOTE_SOCK\", temp(\"tinygpu.sock\")), socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)"
+      }
+    ],
+    "pin": [
+      {
+        "file": "extra/hcq1/remote.py",
+        "line": "128",
+        "decl": true,
+        "text": "sock_path, sock = getenv(\"APL_REMOTE_SOCK\", temp(\"tinygpu.sock\")), socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)"
+      }
+    ]
+  },
+  "TINYFS_ENDPOINT": {
+    "now": [],
+    "pin": []
+  },
+  "TINYFS_TIMEOUT": {
+    "now": [],
+    "pin": []
+  },
+  "ASYNC_COPY_WORKERS": {
+    "now": [],
+    "pin": []
+  },
+  "HCQDEV_WAIT_TIMEOUT_MS": {
+    "now": [
+      {
+        "file": "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "22",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/stable_diffusion/implementations/tinybox_8xMI300X/dev_run.sh",
+        "line": "30",
+        "decl": false,
+        "text": "export BEAM=2 BEAM_UOPS_MAX=8000 BEAM_UPCAST_MAX=256 BEAM_LOCAL_MAX=1024 BEAM_MIN_PROGRESS=5 IGNORE_JIT_FIRST_BEAM=1 HCQDEV_WAIT_TIMEOUT_MS="
+      },
+      {
+        "file": "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "23",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "24",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh",
+        "line": "10",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh",
+        "line": "10",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "extra/hcq1/hcq.py",
+        "line": "255",
+        "decl": true,
+        "text": "timeout = timeout or getenv(\"HCQDEV_WAIT_TIMEOUT_MS\", 30000)"
+      },
+      {
+        "file": "test/external/mlperf_stable_diffusion/external_test_eval.py",
+        "line": "46",
+        "decl": false,
+        "text": "for k,v in {\"BEAM\": \"2\", \"HCQDEV_WAIT_TIMEOUT_MS\": \"300000\", \"BEAM_UOPS_MAX\": \"8000\", \"BEAM_UPCAST_MAX\": \"256\", \"BEAM_LOCAL_MAX\": \"1024\","
+      }
+    ],
+    "pin": [
+      {
+        "file": "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "22",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v5.0/tinycorp/benchmarks/stable_diffusion/implementations/tinybox_8xMI300X/dev_run.sh",
+        "line": "30",
+        "decl": false,
+        "text": "export BEAM=2 BEAM_UOPS_MAX=8000 BEAM_UPCAST_MAX=256 BEAM_LOCAL_MAX=1024 BEAM_MIN_PROGRESS=5 IGNORE_JIT_FIRST_BEAM=1 HCQDEV_WAIT_TIMEOUT_MS="
+      },
+      {
+        "file": "examples/mlperf/training_submission_v5.1/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "23",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/bert/implementations/tinybox_red/run_and_time.sh",
+        "line": "24",
+        "decl": false,
+        "text": "export HCQDEV_WAIT_TIMEOUT_MS=100000  # prevents hang?"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_405b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.0/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh",
+        "line": "10",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/gpt_oss/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_beam_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/dev_run_mp.sh",
+        "line": "8",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "examples/mlperf/training_submission_v6.1/tinycorp/benchmarks/llama31_8b/implementations/tinybox_8xMI350X/run_and_time.sh",
+        "line": "10",
+        "decl": false,
+        "text": "export REWRITE_STACK_LIMIT=5000000 HCQDEV_WAIT_TIMEOUT_MS=240000"
+      },
+      {
+        "file": "extra/hcq1/hcq.py",
+        "line": "255",
+        "decl": true,
+        "text": "timeout = timeout or getenv(\"HCQDEV_WAIT_TIMEOUT_MS\", 30000)"
+      },
+      {
+        "file": "test/external/mlperf_stable_diffusion/external_test_eval.py",
+        "line": "46",
+        "decl": false,
+        "text": "for k,v in {\"BEAM\": \"2\", \"HCQDEV_WAIT_TIMEOUT_MS\": \"300000\", \"BEAM_UOPS_MAX\": \"8000\", \"BEAM_UPCAST_MAX\": \"256\", \"BEAM_LOCAL_MAX\": \"1024\","
+      }
+    ]
+  },
+  "AMD_SDMA_BIND": {
+    "now": [
+      {
+        "file": "extra/hcq1/ops_amd_old.py",
+        "line": "513",
+        "decl": true,
+        "text": "if not getenv(\"AMD_SDMA_BIND\", 0) or not dev.is_am(): return"
+      },
+      {
+        "file": "extra/hcqfuzz/spec.py",
+        "line": "39",
+        "decl": false,
+        "text": "\"AMD_SDMA_BIND\": random.randint(0, 1),"
+      }
+    ],
+    "pin": [
+      {
+        "file": "extra/hcq1/ops_amd_old.py",
+        "line": "513",
+        "decl": true,
+        "text": "if not getenv(\"AMD_SDMA_BIND\", 0) or not dev.is_am(): return"
+      },
+      {
+        "file": "extra/hcqfuzz/spec.py",
+        "line": "39",
+        "decl": false,
+        "text": "\"AMD_SDMA_BIND\": random.randint(0, 1),"
+      }
+    ]
+  },
+  "FIX_METAL_ICB": {
+    "now": [],
+    "pin": []
+  },
+  "MLX_IP": {
+    "now": [
+      {
+        "file": "extra/mlx_driver/connect.py",
+        "line": "18",
+        "decl": false,
+        "text": "SSH + [f\"cd ~/tinygrad && sudo PYTHONPATH=. MLX_DEBUG=1 MLX_PCI={REMOTE_PCI} MLX_IP={REMOTE_IP} python3 extra/mlx_driver/mlxdev.py --server\""
+      },
+      {
+        "file": "extra/mlx_driver/loopback.py",
+        "line": "15",
+        "decl": true,
+        "text": "MLX_IP = getenv(\"MLX_IP\", \"10.0.0.1\")"
+      },
+      {
+        "file": "extra/mlx_driver/loopback.py",
+        "line": "27",
+        "decl": false,
+        "text": "dev = MLXDev(PCIDevice(\"mlx5\", MLX_PCI), ip=MLX_IP)"
+      },
+      {
+        "file": "extra/mlx_driver/mlxdev.py",
+        "line": "106",
+        "decl": true,
+        "text": "def __init__(self, pci_dev:PCIDevice, ip:str=getenv(\"MLX_IP\", \"10.0.0.1\")):"
+      }
+    ],
+    "pin": [
+      {
+        "file": "extra/mlx_driver/connect.py",
+        "line": "18",
+        "decl": false,
+        "text": "SSH + [f\"cd ~/tinygrad && sudo PYTHONPATH=. MLX_DEBUG=1 MLX_PCI={REMOTE_PCI} MLX_IP={REMOTE_IP} python3 extra/mlx_driver/mlxdev.py --server\""
+      },
+      {
+        "file": "extra/mlx_driver/loopback.py",
+        "line": "15",
+        "decl": true,
+        "text": "MLX_IP = getenv(\"MLX_IP\", \"10.0.0.1\")"
+      },
+      {
+        "file": "extra/mlx_driver/loopback.py",
+        "line": "27",
+        "decl": false,
+        "text": "dev = MLXDev(PCIDevice(\"mlx5\", MLX_PCI), ip=MLX_IP)"
+      },
+      {
+        "file": "extra/mlx_driver/mlxdev.py",
+        "line": "106",
+        "decl": true,
+        "text": "def __init__(self, pci_dev:PCIDevice, ip:str=getenv(\"MLX_IP\", \"10.0.0.1\")):"
+      }
+    ]
+  }
+}
