@@ -1,0 +1,20 @@
+ok    PIN
+ok    CITATIONS
+ok    COVERAGE ARTEFACTS
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disagree-gate.py", line 351, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disagree-gate.py", line 334, in main
+    fails = fn()
+            ^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disagree-gate.py", line 330, in <lambda>
+    "plant": ("PLANT + DISARM", lambda: lane_plant(tree))}
+                                        ^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disagree-gate.py", line 215, in lane_plant
+    before = answer(tree)
+             ^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disagree-gate.py", line 211, in answer
+    lin = next(g for g in j["disagree"] if g["graph"] == "lin")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+StopIteration

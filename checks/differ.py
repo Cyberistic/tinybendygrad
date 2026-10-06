@@ -126,10 +126,12 @@ WANT = {
     "range": "AGREE", "rangeflat": "AGREE", "cast": "AGREE", "special": "AGREE",
     "binblob": "AGREE", "group": "AGREE", "commute": "AGREE", "indexed": "AGREE",
     "sym": "AGREE",
-    # `lin` DISAGREES on ONE node of 46 -- its SINK's `applied_opts`, which the port can only
-    # answer with one `q` per option (`ops.bend:978` types them `List<U32>`; upstream's are
-    # `Opt` dataclasses).
-    "lin": "DISAGREE",
+    # `lin` AGREES NOW, AND IT LEFT THE DISAGREEMENT SET ENTIRELY. It disagreed on ONE node of 46
+    # -- its SINK's `applied_opts` -- because the port typed them `List<U32>` where the pin has a
+    # three-field `Opt`; the port now defines `OPT{op, axis, arg}` in `uop/ops.bend` and
+    # `graphcmp.bend` renders it. MEASURED on the live driver: row 46 goes 45/46 -> 46/46 with no
+    # other graph moving. **THE ENTRY STAYS because `unset` requires every graph here (`:407`).**
+    "lin": "AGREE",
     # `loop` AGREES NOW, AND THE CAUSE WAS NOT THE FIELD. It disagreed on ONE node of 25 -- its
     # CALL -- and the PIN HAS that field (`ad117c928^:tinygrad/uop/ops.py:1398`). The port's
     # `callinfo` printed the slot UNCONDITIONALLY where the pin's own `__repr__` suppresses it for
@@ -228,7 +230,7 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "19", "byte-identical": "19", "not-comparable": "0",
+    "graphs-agree": "21", "byte-identical": "21", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
@@ -875,10 +877,14 @@ def plant():
                            bool(moved), f"dev=CPU row, sMETAL artifact -> {moved}"))
             # PLANT 4 -- THE ROWS ABSENT. `checks/env-precond.py --check` refused today for exactly
             # this, and a check that reports nothing when its input is missing is a printer.
+            # `kv` IS THE SUMMARY, and the summary CARRIES the rows, so the absence the plant
+            # claims to test has to be built: strip the four ROW_KEYS and require a complaint
+            # for each. Passing `kv` whole is a plant that can never fire (MEASURED: 0 of 4).
+            absent = {k: v for k, v in kv.items() if k not in ROW_KEYS}
             checks.append(("4: no rows at all is a REFUSAL, never a pass",
-                           len(preconditions_bad(kv)) == len(ROW_KEYS),
-                           f"{len(preconditions_bad(kv))} complaint(s) for {len(ROW_KEYS)} absent "
-                           f"row(s)"))
+                           len(preconditions_bad(absent)) == len(ROW_KEYS),
+                           f"{len(preconditions_bad(absent))} complaint(s) for {len(ROW_KEYS)} "
+                           f"absent row(s)"))
         finally:
             D = live
     print("PLANTS -- both halves of each, over a COPY of the live artifacts; no `bend`, no write "

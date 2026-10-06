@@ -2051,11 +2051,12 @@ LEDGER = (
    "no third state in either column and `?` cannot be produced by the py side. FIRST LIVE "
    "on `--graph sym`: fold.bend's `marg.of` answered None for a STACK element that is not a "
    "CONST (the `ssimplify` wall), which unsettled the RESHAPE's whole `Derived` and so took "
-   "`dtype` with it. NO LONGER LIVE THERE -- `sym_dim` and `reshape_ok` closed it and `sym` "
-   "reads `?=0`; the row is kept and asserted on `--graph loop`, whose CALL has a different "
-   "and still-open cause (`call_dt` reads `CallInfo.dtype`, which CPython's `CallInfo` does "
-   "not have). **It was TWO port defects, not one**: the revert of either half puts `sym` back "
-   "to `?=0/6` and DISAGREE (measured, `runs/margsym/M16-sym-DISAGREE.txt`)"),
+   "`dtype` with it. **NO LIVE FIXTURE ANY MORE**: `sym_dim`, `reshape_ok` and the void CALL "
+   "renderer closed it, and `sym`, `loop` and `bw` ALL read `?=0` (MEASURED on the live driver). "
+   "The row is kept as a REGRESSION row on `loop` and asserted directly on a fabricated "
+   "two-column line in `selfcheck` -- a claim with no fixture is a claim with no denominator. "
+   "**It was TWO port defects, not one**: the revert of either half puts `sym` back to "
+   "`?=0/6` and DISAGREE (measured, `runs/margsym/M16-sym-DISAGREE.txt`)"),
   ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
@@ -2504,9 +2505,10 @@ def selfcheck(dev: str = "CPU") -> int:
   # two rows that are each still true for a named reason:
   #   * `sym` must answer `?=0` -- a REGRESSION ROW on the closure, and its failure text says
   #     the wall is back rather than saying "expected 6, got 0";
-  #   * `loop` must answer `?=2` -- one CALL node x two columns -- which keeps the two-column
-  #     claim under test on a node that still has the wall, and `loop`'s wall has a DIFFERENT
-  #     cause (`call_dt` reads `CallInfo.dtype`, a field CPython does not have).
+  #   * `loop` must answer `?=0` -- `sym_dim`, `reshape_ok` and the void CALL renderer closed
+  #     its wall too, so NO live graph carries a `?`. THE TWO-COLUMN CLAIM NOW HAS A SYNTHETIC
+  #     FIXTURE -- a fabricated line with `?` in dtype AND shape, asserted below -- because a
+  #     claim with no fixture is a claim with no denominator.
   # HOISTED, because `emit_bend` is a subprocess and the failure message needed the number
   # too. MEASURED: the first version called it twice and `selfcheck` paid two full probe
   # runs to format one sentence.
@@ -2516,10 +2518,18 @@ def selfcheck(dev: str = "CPU") -> int:
     bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers ?={qsym} on the bend "
                f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1273`) says the "
                f"symbolic-dim case is closed and `--graph sym` VERDICT is AGREE")
-  if qloop != 2:
-    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`'s CALL, not 2 (one "
-               f"unsettled node x two columns). The two-column row is the claim; `sym` "
-               f"cannot test it any more because its wall is closed.")
+  if qloop != 0:
+    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`'s CALL, not 0. Every "
+               f"wall that produced `?` is closed (`sym`, `loop` and `bw` all read 0), so a "
+               f"nonzero here means one has REOPENED.")
+  # THE TWO-COLUMN ROW, DIRECTLY. `?` lands in `dtype` (field 2) and `shape` (field 3)
+  # together; every live graph that used to carry it is closed, so the count is asserted on a
+  # line this check fabricates -- the only way to keep the two-column claim tested.
+  qtwo = dict(ledger([" ".join(chunk(x) for x in
+                               ("i0", "ops", "?", "?", "i0", "km", "N", "N"))]))["?"]
+  if qtwo != 2:
+    bad.append(f"the `?` row is not counted in BOTH columns it lands in: a fabricated line "
+               f"with `?` in dtype and shape reads ?={qtwo}, not 2")
   # AND THE PY SIDE CANNOT PRODUCE `?` AT ALL, on any graph -- which is the other half of
   # the same row and the reason `?` is PORT-ONLY rather than a third upstream state.
   if dict(ledger(py_sym_rows()))["?"] != 0:
