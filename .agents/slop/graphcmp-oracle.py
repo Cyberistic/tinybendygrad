@@ -29,6 +29,16 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import graphcmp as G  # noqa: E402
 
+# THE WHOLE MARKERS, DERIVED FROM `graphcmp.py`'s OWN LEDGER. A LEDGER entry that is not an
+# atom letter is a multi-character TOKEN, not a letter: `BAD` the port's arena bottom, `X!` a
+# dead AxisType member, `?` the fold's absence. The LEDGER is the generator that DECLARES the
+# marker vocabulary, so the set is asked of it by path -- never a second copy of the
+# three-element tuple `graphcmp.py:2610` keeps in its own selfcheck, which is the exact fault
+# `AGENTS.md` names. MEASURED before this: `atoms("BAD")` was `{B}`, so `--graph getaddr`
+# reported `unmapped arg atom letters: B` and the census went rc=1 over a string the renderer
+# emitted correctly.
+WHOLE = tuple(m for m, _, _, _ in G.LEDGER if m not in set(G.ATOMS.values()))
+
 
 def atoms(arg: str) -> set:
   """The ATOM LETTERS in an arg, from the grammar and NOT from any form's field layout, so a

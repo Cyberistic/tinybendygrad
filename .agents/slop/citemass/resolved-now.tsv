@@ -1,0 +1,38 @@
+check	line	ref	N	end	anchor	target	verdict	actual
+checks/abi_gate.py	94	dtype.bend	1064		'def Dt.i64_trunc'	tinybendygrad/dtype.bend	HOLD	1064
+checks/differ.py	149	ops.bend	1066		'ATuple{ys: List<&2, U32>}'	tinybendygrad/uop/ops.bend	DRIFT	1208
+checks/differ.py	177	ops.bend	4554		'WALL(p3)'	tinybendygrad/uop/ops.bend	DRIFT	4582,4840,4851,4857,4866,4878,4950,5060,5064,5072,5120,5326,5329,5332,5336,5359
+checks/differ.py	177	ops.bend	4560		'ABlob'	tinybendygrad/uop/ops.bend	DRIFT	1163,1167,1169,1213,2079,2087,2089,2159,4577,4579,4584,5894,5895,5939,5940,5945,5946,5960,5965,5973,5980,6000,6001,6012,8617
+checks/disagree-gate.py	103	ops.bend	1057		'dtype: S.Dt'	tinybendygrad/uop/ops.bend	DRIFT	871,1075,1090,1117,1510
+checks/e2e.py	55	renderer/cstyle.bend	2984	3015	'rd_row'	tinybendygrad/renderer/cstyle.bend	DELETED	
+checks/e2e.sh	228	renderer/cstyle.bend	2984	3015	'rd_row'	tinybendygrad/renderer/cstyle.bend	DELETED	
+checks/env-precond.py	48	helpers.bend	308		'getenv_int("DEBUG"'	tinybendygrad/helpers.bend	HOLD	306,308
+checks/env-precond.py	48	helpers.bend	342	345	'NO_COLOR'	tinybendygrad/helpers.bend	HOLD	45,59,60,71,72,342,375,409,436,1047
+checks/gate_norm.py	242	base.bend	42		'0xFFC00001'	tinybendygrad/base.bend	DRIFT	41
+checks/nl-gate.py	16	nir_llvmir.bend	125		'String.concat([nm, " = ["'	tinybendygrad/renderer/nir_llvmir.bend	HOLD	125
+checks/nl-gate.py	39	ops.bend	7837		'vd_text'	tinybendygrad/uop/ops.bend	DRIFT	8416,8419,8422,8426,8427,8431
+checks/nl-gate.py	40	ops.bend	7874		'vd_dbg'	tinybendygrad/uop/ops.bend	NARR	
+checks/nl-gate.py	91	nir_llvmir.bend	125		'String.concat([nm, " = ["'	tinybendygrad/renderer/nir_llvmir.bend	HOLD	125
+checks/nl-gate.py	477	ops.bend	7837		'vd_text'	tinybendygrad/uop/ops.bend	DRIFT	8416,8419,8422,8426,8427,8431
+checks/nl-gate.py	477	ops.bend	7874		'vd_dbg'	tinybendygrad/uop/ops.bend	NARR	
+checks/nvrows-deadrow-gate.py	95	ip.bend	371		'import Base'	tinybendygrad/runtime/support/am/ip.bend	DRIFT	88
+checks/nvrows-deadrow-gate.py	96	LAWS/spec.bend	48		'import Base'	tinybendygrad/LAWS/spec.bend	HOLD	48
+checks/nvrows-deadrow-gate.py	213	nvdev.bend	1770		'def emit(xs: List<&2, String>)'	tinybendygrad/runtime/support/nv/nvdev.bend	HOLD	1770
+checks/rn-gate.py	10	render.bend	2148		'py_row'	tinybendygrad/uop/render.bend	DRIFT	2020,2913,2914,2915,2916,2917,2918,2919,2920,2921,2922,2923,2924,2925,2926,2927,2928,2929,2930,2931,2932,2933,2934,2935,2936,2937,2938,2939,2940,2941,2942,2946
+checks/rn-gate.py	26	render.bend	2148		'py_row'	tinybendygrad/uop/render.bend	DRIFT	2020,2913,2914,2915,2916,2917,2918,2919,2920,2921,2922,2923,2924,2925,2926,2927,2928,2929,2930,2931,2932,2933,2934,2935,2936,2937,2938,2939,2940,2941,2942,2946
+checks/rn-gate.py	40	render.bend	2809	2819	'IO.print'	tinybendygrad/uop/render.bend	DRIFT	2021,2096,2559,2838,2845,2857,2965,2966,2967,2968,2969,2970,2971,2972,2973,2974,2975,2976,2977,2978,2979,2980,2981,2982,2983,2984,2985,2986,2987,2993,2994,2995,3002,3003,3004,3005,3006,3007,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027
+checks/rn-gate.py	51	render.bend	2693	2703	'rnd_'	tinybendygrad/uop/render.bend	DRIFT	2437,2442,2448,2453,2456,2462,2463,2464,2465,2467,2470,2477,2487,2488,2490,2492,2493,2498,2500,2501,2503,2525,2526,2531,2532,2534,2537,2538,2539,2540,2541,2542,2553,2558,2559,2561,2562,2564,2565,2566,2567,2568,2569,2570,2571,2572,2573,2574,2912
+checks/rn-gate.py	98	render.bend	2148		'py_row'	tinybendygrad/uop/render.bend	DRIFT	2020,2913,2914,2915,2916,2917,2918,2919,2920,2921,2922,2923,2924,2925,2926,2927,2928,2929,2930,2931,2932,2933,2934,2935,2936,2937,2938,2939,2940,2941,2942,2946
+checks/rn-gate.py	133	render.bend	2809	2819	'IO.print'	tinybendygrad/uop/render.bend	DRIFT	2021,2096,2559,2838,2845,2857,2965,2966,2967,2968,2969,2970,2971,2972,2973,2974,2975,2976,2977,2978,2979,2980,2981,2982,2983,2984,2985,2986,2987,2993,2994,2995,3002,3003,3004,3005,3006,3007,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027
+checks/rn-gate.py	164	render.bend	2763		'pu_line'	tinybendygrad/uop/render.bend	DRIFT	2752,2761,2764,2767
+checks/rn-gate.py	171	render.bend	2148		'py_row'	tinybendygrad/uop/render.bend	DRIFT	2020,2913,2914,2915,2916,2917,2918,2919,2920,2921,2922,2923,2924,2925,2926,2927,2928,2929,2930,2931,2932,2933,2934,2935,2936,2937,2938,2939,2940,2941,2942,2946
+checks/rn-gate.py	172	render.bend	2693	2703	'rnd_'	tinybendygrad/uop/render.bend	DRIFT	2437,2442,2448,2453,2456,2462,2463,2464,2465,2467,2470,2477,2487,2488,2490,2492,2493,2498,2500,2501,2503,2525,2526,2531,2532,2534,2537,2538,2539,2540,2541,2542,2553,2558,2559,2561,2562,2564,2565,2566,2567,2568,2569,2570,2571,2572,2573,2574,2912
+checks/rn-gate.py	250	render.bend	2148		'py_row'	tinybendygrad/uop/render.bend	DRIFT	2020,2913,2914,2915,2916,2917,2918,2919,2920,2921,2922,2923,2924,2925,2926,2927,2928,2929,2930,2931,2932,2933,2934,2935,2936,2937,2938,2939,2940,2941,2942,2946
+checks/rn-gate.py	251	render.bend	2809	2819	'IO.print'	tinybendygrad/uop/render.bend	DRIFT	2021,2096,2559,2838,2845,2857,2965,2966,2967,2968,2969,2970,2971,2972,2973,2974,2975,2976,2977,2978,2979,2980,2981,2982,2983,2984,2985,2986,2987,2993,2994,2995,3002,3003,3004,3005,3006,3007,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027
+checks/rn-gate.py	399	render.bend	2809	2819	'IO.print'	tinybendygrad/uop/render.bend	DRIFT	2021,2096,2559,2838,2845,2857,2965,2966,2967,2968,2969,2970,2971,2972,2973,2974,2975,2976,2977,2978,2979,2980,2981,2982,2983,2984,2985,2986,2987,2993,2994,2995,3002,3003,3004,3005,3006,3007,3012,3013,3014,3015,3016,3017,3018,3019,3020,3021,3022,3023,3024,3025,3026,3027
+checks/run-f64.sh	411	cstyle.bend	1879		'def g_kernel'	tinybendygrad/renderer/cstyle.bend	DELETED	
+checks/run-port-mm.sh	27	cstyle.bend	49		'Ops.SHRINK'	tinybendygrad/renderer/cstyle.bend	HOLD	49
+checks/run-port-mm.sh	29	cstyle.bend	1879		'def g_kernel'	tinybendygrad/renderer/cstyle.bend	DELETED	
+checks/run-port-mm.sh	87	helpers.bend	2551		'GlobalCounters.reset'	tinybendygrad/helpers.bend	DRIFT	2549,2550,2576
+checks/stage1-census.py	204	mixin/elementwise.bend	542	543	'ew_add'	tinybendygrad/mixin/elementwise.bend	HOLD	542,1028,1030,1035,1037,1045,1047,1052,1054,1154,1357,1364,1371,1378,1387,1394,1406,1422,1433,1516,1518
+checks/unowned.py	66	ag-emit.bend	32		'bend2-constraints.md'	.agents/slop/ag-emit.bend	HOLD	32

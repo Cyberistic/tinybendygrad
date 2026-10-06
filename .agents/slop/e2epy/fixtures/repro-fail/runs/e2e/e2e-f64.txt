@@ -1,0 +1,5 @@
+PLANT stub: run-f64.sh
+   STAGE 7 PASS
+   64/64 MET
+   GREEN [C0]
+     F64-1 words_port=64

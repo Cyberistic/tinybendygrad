@@ -298,6 +298,13 @@ def tn_alu(+t: Tensor, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
 def tn_sqrt(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsSQRT{}, Nil{})
 
+# `detach` -- elementwise.py:43. `return self.alu(Ops.DETACH)`. Same shape as `sqrt`:
+# a single `tn_alu` call, with `OpsDETACH{}` as the op and an empty src list.
+# Closes the second of the four walls `nn/__init__.bend:241` named (the others --
+# `where` and `square` -- have separate deps; see the wall text).
+def tn_detach(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsDETACH{}, Nil{})
+
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this
 # file is its own def that builds the node and then calls `tn_new`. The wall is the
