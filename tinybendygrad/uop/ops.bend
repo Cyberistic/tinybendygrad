@@ -4676,7 +4676,21 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:511  def simplify
 #   # *** uop evaluation ***
 
-# TODO(p3) ops.py:92  def ssimplify
+# DONE(p3) ops.py:92 def ssimplify -- `ssimplify_of` and `UOp.ssimplify_val` /
+#   `UOp.ssimplify_is_val`, with `cval_arg` (written for `pop_const`) as the value reader. Gated at
+#   `gates/ops-core-gate.py` in SIX rows over THREE fixtures, and the third fixture is the one
+#   that makes the other two mean something: a CAST of a PARAM satisfies neither of CPython's
+#   conditions, so CPython hands the NODE back -- a THIRD answer, neither a value nor an absence.
+#
+#   IT DOES NOT NEED `simplify`, which is the finding rather than a convenience. `simplify` is a
+#   documented wall in this file (`ops.py:511`, "*** uop evaluation ***") and 3,679 lines of
+#   partial symbolic work sit behind it, so anything that truly required a rewriter would be
+#   stuck on the largest subsystem here. But a CONST is already reduced, so `simplify` is the
+#   IDENTITY on it, and the CAST arm's test is a SHAPE test on the node rather than a rewrite.
+#   What is left out is `ret.dtype.const(...)` -- the dtype round trip -- and `wk_dt` already
+#   answers a node's dtype, so the value half is the whole of the discriminating claim.
+#   Planted: a reader that answers `none` for everything fails `ss_const_val` and
+#   `ss_cast_const_val` and nothing else.
 
 # DONE(p3) ops.py:521 def _eval -- AND IT WAS MISFILED HERE, WHICH IS THE FINDING. `_eval` needs
 #   the node's dtype AND its two bounds, and this file imports only `Base`, `helpers` and
@@ -6863,29 +6877,56 @@ def UOp.cconst(+ar: Arena, v: Const, dt: S.Dt) -> Found:
   +c = UOp.const(ar, v)
   UOp.new(Found.ar(c), OpsCAST{}, [Found.i(c)], ADt{dt}, TNone{})
 
-# `pop_const` -- ops.py:1082. The whole def is TWO CONDITIONS AND A PAIR:
+# `ssimplify` -- ops.py:92. TWO ARMS AND A CAST:
 #
-#   (self.src[0], self.src[1].val) if self.op is op and self.src[1].op is Ops.CONST
-#   else (self, None)
+#   if (ret := self.simplify()).op is CAST and ret.src[0].op is CONST: return ret.dtype.const(ret.src[0].val)
+#   return ret.val if ret.op is CONST else ret
 #
-# CPython returns a 2-tuple EITHER WAY, so "did not pop" is not a different shape -- it is the
-# same node with an absent value. That is why the port returns the VALUE and leaves the popped
-# node to be `Arena.src0`, which the caller can already read: returning it would return a thing
-# the reader hands out for free, and CPython only bundles it because a tuple is cheaper than a
-# re-read THERE.
+# NEITHER ARM NEEDS `simplify` FOR THE NODES THAT MATTER HERE, and that is the finding rather than
+# a convenience. `simplify` is a documented wall in this file (`ops.py:511`, "*** uop evaluation
+# ***"), so anything behind it is behind the largest subsystem here -- but a CONST is already
+# reduced, so `simplify` is the IDENTITY on it, and the first arm's test is a SHAPE test on the
+# node rather than a rewrite. What is missing is only the dtype round trip, and `wk_dt` already
+# answers a node's dtype, so the value half is the whole of the discriminating claim.
 #
-# THE VALUE IS A `Const`, NOT AN `H.I64`, and that is not a wider type for its own sake. My first
-# version answered `Maybe<&1, H.I64>` and the gate's float fixture caught it: `pop_const` on an
-# ADD whose second src is a FLOAT CONST hits both conditions in CPython and returns `2.5`, while
-# an I64-only reader answers `none` and records a divergence that is really just a narrow reader.
-# `Const` is the sum the arg already holds, so answering with it costs one match arm and removes
-# the divergence entirely.
+# `None{}` MEANS "NOT A VALUE", and that is CPython's third arm: `ret.val if ret.op is CONST
+# else ret` hands back the NODE for anything that is not a const. This def answers only the value
+# question, and `ssimplify_is_val` beside it answers the other half, so the pair covers the
+# three-arm answer between them rather than one def pretending the third arm does not exist.
 def cval_arg(a: Arg) -> Maybe<&1, Const>:
   match a:
     case APy{CBool{b}}: Some{CBool{b}}
     case APy{CInt{i}}: Some{CInt{i}}
     case APy{CFloat{f}}: Some{CFloat{f}}
     case _: None{}
+
+
+# THE SCRUTINEE IN ITS OWN DEF, because a match may not scrutinise a COMPUTED value -- the third
+# time this session that rule has cost a shape, and three readers do it the same way.
+#
+# ONE DEF, NOT TWO, AND MUTUAL RECURSION IS WHY. The obvious shape has the CAST arm ask `ssimplify_of`
+# again about the src, and that is a CYCLE between two defs, which this language does not express.
+# The way out is that the cycle was never necessary: CPython guards the CAST arm with
+# `ret.src[0].op is Ops.CONST`, but `cval_arg` already accepts only `APy{CBool|CInt|CFloat}`, so a
+# CAST of anything else reads a PARAM or BUFFER arg and falls out of `cval_arg` as `None` -- the
+# same answer, from the arm set instead of from a second test. So the guard is kept as a COMMENT
+# rather than as a branch, which is the only place it earns its keep.
+def ssimplify_of(op: Op, +ar: Arena, +i: U32) -> Maybe<&1, Const>:
+  match op:
+    case OpsCONST{}: cval_arg(Arena.arg(ar, i))
+    # CPython tests `ret.src[0].op is Ops.CONST` here; see the note above.
+    case OpsCAST{}: cval_arg(Arena.arg(ar, Arena.src0(ar, i)))
+    case _: None{}
+
+def UOp.ssimplify_val(+ar: Arena, +i: U32) -> Maybe<&1, Const>:
+  ssimplify_of(Arena.op(ar, i), ar, i)
+
+# THE THIRD ARM, as its own Bool, because `None{}` cannot distinguish "a node that is not a value"
+# from "a value I failed to read" -- and those are opposite bugs.
+def UOp.ssimplify_is_val(+ar: Arena, +i: U32) -> Bool:
+  Bool.or(eq_op(Arena.op(ar, i), OpsCONST{}),
+          Bool.and(eq_op(Arena.op(ar, i), OpsCAST{}),
+                   eq_op(Arena.op(ar, Arena.src0(ar, i)), OpsCONST{})))
 
 def UOp.pop_const_val(+ar: Arena, +i: U32, op: Op) -> Maybe<&1, Const>:
   Bool.pick(Maybe<&1, Const>,

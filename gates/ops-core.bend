@@ -100,6 +100,39 @@ def pc(+nm: String, +f: O.Found) -> IO(Unit):
       Bool.show(O.UOp.pop_const_hits(O.Found.ar(f), O.Found.i(f), O.OpsADD{}))]))
     prow(String.concat([nm, "_val=", popv(f)]))
 
+# `ssimplify` -- ops.py:92 -- TWO rows per fixture, because the value and the "is this a value at
+# all" answer fail separately and CPython's third arm (`ret.val if CONST else ret`) hands back the
+# NODE, which is a different answer rather than an absent one. THREE shapes: a bare CONST, a CAST
+# of a CONST (the arm that does not need `simplify`), and a CAST of a PARAM (which is the third
+# arm, and is the row that says `cval_arg`'s arm set is doing the work).
+def cshow_of(+f: O.Found) -> String:
+  cshow(O.UOp.ssimplify_val(O.Found.ar(f), O.Found.i(f)))
+
+def ss_rows(+nm: String, +f: O.Found) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- prow(String.concat([nm, "_is_val=",
+      Bool.show(O.UOp.ssimplify_is_val(O.Found.ar(f), O.Found.i(f)))]))
+    prow(String.concat([nm, "_val=", cshow_of(f)]))
+
+def g_ss_const() -> O.Found:
+  +ar = O.Arena.empty()
+  O.UOp.const(ar, O.CInt{H.i64_of_i32(7)})
+
+# CAST of a CONST -- `cconst` is the forced cast, so this node's op is CAST and its src[0] is CONST.
+def g_ss_cast() -> O.Found:
+  +ar = O.Arena.empty()
+  O.UOp.cconst(ar, O.CFloat{2.5}, S.single())
+
+# CAST of a PARAM -- the third arm: not a value, and CPython hands the NODE back.
+def g_ss_cast_param() -> O.Found:
+  +ar = O.Arena.empty()
+  # The PARAM's arg is spelled here rather than through `fold.bend`'s `mw_pa`, so this driver
+  # keeps the three imports it already had. `cval_arg` refuses it because a PARAM's arg is an
+  # `AParam`, not one of the three `APy` arms -- which is the whole point of the fixture.
+  +p = O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{O.ParamArg{0, S.int32(), None{}, None{}, None{},
+    None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+  O.UOp.new(O.Found.ar(p), O.OpsCAST{}, [O.Found.i(p)], O.ADt{S.int32()}, O.TNone{})
+
 def rows() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("hashcons_same_index", O.t_hashcons())
@@ -122,6 +155,9 @@ def rows() -> IO(Unit):
     o : Unit <- pc("pop_add_noconst", g_add_noconst())
     q : Unit <- pc("pop_mul_const", g_mul_const())
     r : Unit <- pc("pop_add_cfloat", g_add_cfloat())
+    w : Unit <- ss_rows("ss_const", g_ss_const())
+    x : Unit <- ss_rows("ss_cast_const", g_ss_cast())
+    y : Unit <- ss_rows("ss_cast_param", g_ss_cast_param())
     row("pynest_signed_zero_interns", O.t_pynest_signed_zero_interns())
 
 def main() -> IO(Unit): rows()

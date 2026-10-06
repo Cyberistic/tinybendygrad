@@ -143,7 +143,24 @@ def main() -> None:
     rows.extend(pop("pop_add_noconst", add_noconst))
     rows.extend(pop("pop_mul_const", mul_const))
     rows.extend(pop("pop_add_cfloat", add_cfloat))
+    # `ssimplify` -- ops.py:92. `if (ret := self.simplify()).op is CAST and ret.src[0].op is
+    # CONST: return ret.dtype.const(ret.src[0].val); return ret.val if ret.op is CONST else ret`.
+    # THREE shapes, and the third is the one that matters: a CAST of a PARAM satisfies neither
+    # condition, so CPython hands the NODE back -- a different answer, not an absent one. Two rows
+    # per fixture, because "is a value" and "what value" fail independently.
+    def ss(nm, u):
+        val = u.ssimplify()
+        return ((f"{nm}_is_val", str(not isinstance(val, UOp))),
+                (f"{nm}_val", show_const(None if isinstance(val, UOp) else val)))
+
+    rows.extend(ss("ss_const", UOp.const(7, dtypes.weakint)))
+    # A CAST OF A CONST. `UOp.const(2.5, dtypes.float32)` is exactly that -- the cast folds nowhere
+    # but bool/weakint/weakfloat -- so this is CPython's own way of writing the arm.
+    rows.extend(ss("ss_cast_const", UOp.const(ConstFloat(2.5), F32)))
+    rows.extend(ss("ss_cast_param", UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.int32)).cast(dtypes.int32)))
+
     rows.append(last)
+
 
 
     for name, value in rows:

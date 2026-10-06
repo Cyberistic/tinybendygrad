@@ -61,6 +61,10 @@ ROWS = (
     # `_val` row; a reader that ignored the `op` argument would satisfy every `_hits` row.
     "pop_add_const_hits", "pop_add_const_val", "pop_add_noconst_hits", "pop_add_noconst_val",
     "pop_mul_const_hits", "pop_mul_const_val", "pop_add_cfloat_hits", "pop_add_cfloat_val",
+    # `ssimplify`, TWO rows per fixture: `_is_val` and `_val` fail independently, and CPython's
+    # third arm hands back the NODE rather than nothing -- a different answer, not an absent one.
+    "ss_const_is_val", "ss_const_val", "ss_cast_const_is_val", "ss_cast_const_val",
+    "ss_cast_param_is_val", "ss_cast_param_val",
 )
 
 GATE = Gate(
@@ -72,5 +76,5 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 22 rows, 3 lanes -- CONST identity, the arg-type asymmetry, and "
-                        "pop_const's two conditions -- all agree with CPython"))
+    sys.exit(main(GATE, "ops-core-gate: 28 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
+                        "pop_const's two conditions and ssimplify's three arms all agree with CPython"))
