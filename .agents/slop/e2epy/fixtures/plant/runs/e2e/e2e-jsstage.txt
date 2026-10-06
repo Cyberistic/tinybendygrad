@@ -1,2 +1,0 @@
-PLANT stub: stage8 jsstage, substrate would not compile
-rc=3
