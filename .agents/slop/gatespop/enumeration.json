@@ -1,0 +1,749 @@
+[
+ {
+  "path": "checks/abi4_gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/abi_gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/al-verdict.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/both-census.py",
+  "reason": "py-main",
+  "root": "sys.path.insert(0, str(HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/bounded-selftest.sh",
+  "reason": "sh-dispatch",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/bounded.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/census.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/cl-port-gate.py",
+  "reason": "py-main",
+  "root": "REPO = Path(__file__).resolve().parents[3]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/classify.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/cli.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/compile.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/corpus-figure.py",
+  "reason": "py-main",
+  "root": "ROOT = pathlib.Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/coverage.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/demo.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/devgate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/differ.py",
+  "reason": "py-main",
+  "root": "ROOT = Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/disagree-gate.py",
+  "reason": "py-main",
+  "root": "HERE = Path(__file__).resolve() ROOT = HERE.parents[1]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/disarm.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/dup-census.py",
+  "reason": "py-main",
+  "root": "REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/dup-gate.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/e2e.py",
+  "reason": "py-main",
+  "root": "ROOT = Path(os.environ[\"E2E_ROOT\"] if os.environ.get(\"E2E_ROOT\") else Path(__file__).resolve().parents[1]",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/e2e.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/fw_live.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/gate.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/gate_dtype.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/gate_norm.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/gen.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/graphcmp-census-audit.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/hermetic-census.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/jsfix_gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/lint_demo.sh",
+  "reason": "sh-selfref",
+  "root": "__file__.parent",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/lintable-gate.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/llama.py",
+  "reason": "py-main",
+  "root": "Path(__file__).parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/marker-audit.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/nl-gate-noguard.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/nl-gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/no-shrink.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/no-strays.py",
+  "reason": "py-main",
+  "root": "ROOT = Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/no-txt.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/norm_check.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/nvrows-deadrow-gate.py",
+  "reason": "py-main",
+  "root": "REPO = pathlib.Path(__file__).resolve().parents[3]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/oracle_f64.py",
+  "reason": "py-main",
+  "root": "ROOT = pathlib.Path(__file__).resolve().parents[3]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/plant.sh",
+  "reason": "sh-selfref",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/process_replay.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/render-gate-oracle.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/repair-dupes.py",
+  "reason": "py-main",
+  "root": "Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/repro-paths.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/residue.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/rn-gate.py",
+  "reason": "py-main",
+  "root": "HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[2]",
+  "asserts": false,
+  "on_root": false,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/romless.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/run-all.sh",
+  "reason": "sh-selfref",
+  "root": "__file__.parent",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/run-f64.sh",
+  "reason": "sh-selfref",
+  "root": "Path(__file__).resolve().parents[1]",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/run-port-mm.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/run.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/sb-gate.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/serve.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/substrate-check.sh",
+  "reason": "sh-dispatch",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/substrate.py",
+  "reason": "py-main",
+  "root": "Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/sweep.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/sz.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/test_rewrite_bottom_up_gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "checks/vz_gate.py",
+  "reason": "py-main",
+  "root": "__file__.parent",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/walk-mutate.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/wallcheck.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "checks/wt-sync.sh",
+  "reason": "sh-selfref",
+  "root": "-",
+  "asserts": true,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/bc-u32-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/beautiful-mnist-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ew-consts-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ew-consts-oracle.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ew-explog-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ew-explog-oracle.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/gates-pop.py",
+  "reason": "py-main",
+  "root": "sys.path.insert(0, str(HERE.parents[2]",
+  "asserts": true,
+  "on_root": false,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/i64-shl-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/i64-shr-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/mixin-op-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ops-core-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/ops-core-oracle.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ },
+ {
+  "path": "gates/retention-check.py",
+  "reason": "py-main",
+  "root": "ROOT = Path(__file__).resolve().parents[1]",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/wk-cd-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/wk-cd-oracle.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/wk-f32-gate.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": true,
+  "can_fail": "yes"
+ },
+ {
+  "path": "gates/wk-f32-rows.py",
+  "reason": "py-main",
+  "root": "-",
+  "asserts": false,
+  "on_root": true,
+  "via_gatekit": false,
+  "can_fail": "no"
+ }
+]
