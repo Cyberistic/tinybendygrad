@@ -1,17 +1,54 @@
 #!/usr/bin/env python
 """DENOM census -- reach for BOTH sides, caching into THIS unit's own directory.
 
-WHY A COPY AND NOT `checks/both-census.py`: that script's cache directory is
-`HERE` = `.agents/slop/arith/`, so running it would OVERWRITE another unit's `rows-*.txt`.
-Read-only use of its ideas, own cache, own output. Everything it does that matters is
-here: both sides emitted, the py-only/bend-only split, the denominator MEASURED at run
-time as `len(list(Ops))`, and a WALL reported as a WALL and never counted as a zero.
+WHY A COPY AND NOT `checks/both-census.py`: both now sit in `checks/`, so that script's
+cache is `checks/rows-<graph>-<side>.txt` -- the SAME DIRECTORY as this one's, so running
+it would OVERWRITE this unit's rows, and `.txt` is an extension `checks/no-txt.py`
+forbids outright (it exits 1 on the tree as it stands).  A copy, so the two cannot share
+a cache; own cache, own output.  Read-only use of its ideas.  Everything it does that
+matters is here: both sides emitted, the py-only/bend-only split, the denominator MEASURED
+at run time as `len(list(Ops))`, and a WALL reported as a WALL and never counted as a zero.
 """
 import sys, pathlib, collections, argparse
 
 HERE = pathlib.Path(__file__).resolve().parent
-sys.path.insert(0, str(HERE.parent))
-sys.path.insert(0, str(HERE.parents[2]))            # the tinygrad tree
+# `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
+# The pair of constants was copied VERBATIM (same `# the tinygrad tree` comment) from
+# `.agents/slop/arith/both-census.py:24`, where BOTH were correct: at that depth
+# `parents[0]` was `.agents/slop`, which held `graphcmp`, and `parents[2]` was the tinygrad
+# tree.  `3f0e70ff1` moved the copy to `checks/`, ONE level shallower, and carried both
+# constants across without recomputing them -- so `parents[2]` became `/Users/cyberistic/src`,
+# which MEASURED holds only `tries/`: no tinygrad, no graphcmp, no tinybendygrad.  One
+# constant stayed live by luck (this repo IS the tinygrad tree); the other became a NO-OP
+# THAT LOOKS LIKE A FIX -- `sys.path.insert` of a directory holding no importable module.
+# `graphcmp` was NEVER reachable from `checks/`: the dead copy in `checks/` was already
+# dead at `3f0e70ff1`, so `import graphcmp` raised and no one could see which line was to blame.
+REPO = HERE.parents[0]
+
+
+def refuse(*why: str) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE the `sys.path` manipulation and before the `graphcmp` import, because under
+  bare `python3` the wrong root made THAT import raise `ModuleNotFoundError` -- and an
+  assertion DOWNSTREAM of what it asserts cannot turn an exception into a refusal.  The
+  unfixed tree did exactly that: rc 1 and a traceback, which carries no denominator and so
+  counts nowhere."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# TWO TRACKED MARKERS, so a FOURTH relocation is a refusal rather than a third exception:
+# the substrate this file's root claim rests on, and the one module it imports.
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+_GRAPH = REPO / ".agents" / "slop" / "graphcmp.py"
+if not _GRAPH.is_file():
+  refuse(f"input absent: {_GRAPH}")
+
+sys.path.insert(0, str(REPO))                    # the tinygrad tree
+sys.path.insert(0, str(_GRAPH.parent))           # `graphcmp`; reachable from NEITHER above
 import graphcmp as G
 
 

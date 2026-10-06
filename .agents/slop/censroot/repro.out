@@ -1,0 +1,12 @@
+[A] correct root checks/census.py --only alu -> rc 0
+[B] census.py copied 1 deep -> rc 3; reached /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T
+[B] census.py copied 3 deep -> rc 3; reached /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/censrootc4kgspm7/x
+[B] hermetic-census.py copied 1 deep -> rc 3; reached /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T
+[C] root markers PRESENT, graphcmp absent -> rc 3; == REFUSED, NOT A VERDICT: input absent: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/censroots_qc
+[M2] checks/census.py: parents[N] depths in code = [0]
+[M2] checks/hermetic-census.py: parents[N] depths in code = [0]
+[M3] .agents/slop/arith holds 0 rows-*.txt
+[M3] checks/census.py: 0 citation(s) of a rows-*.txt cache under arith
+[M3] checks/hermetic-census.py: 0 citation(s) of a rows-*.txt cache under arith
+
+PASS: correct root green, both depths moved red naming the reached directory, and no executable `parents[N]` with N != 0

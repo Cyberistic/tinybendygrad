@@ -1,0 +1,36 @@
+# allred     py=OK    9     bend=OK    18   
+# alu        py=CACHE 14    bend=CACHE 14   
+# binblob    py=OK    19    bend=OK    19   
+# bit        py=OK    10    bend=OK    10   
+# buffer     py=OK    5     bend=OK    5    
+# bw         py=OK    32    bend=OK    32   
+# cast       py=OK    6     bend=OK    6    
+# cdiv       py=OK    10    bend=OK    18   
+# commute    py=OK    14    bend=OK    14   
+# flip       py=OK    6     bend=OK    7    
+# gate       py=OK    14    bend=OK    14   
+# group      py=OK    8     bend=OK    8    
+# indexed    py=OK    7     bend=OK    7    
+# late       py=OK    12    bend=OK    18   
+# lin        py=OK    46    bend=OK    46   
+# loop       py=OK    25    bend=OK    25   
+# matmul     py=OK    18    bend=OK    18   
+# move       py=OK    22    bend=OK    22   
+# range      py=OK    2     bend=OK    2    
+# rangeflat  py=OK    2     bend=OK    2    
+# reduce     py=OK    7     bend=OK    7    
+# sink       py=OK    2     bend=OK    2    
+# special    py=OK    2     bend=OK    2    
+# sym        py=OK    12    bend=OK    12   
+# where      py=OK    8     bend=OK    8    
+
+graphs      : 25
+denominator : 77   (measured len(list(Ops)))
+reached PY  : 61
+reached BEND: 53
+reached BOTH: 53
+py-only     : ['ALLREDUCE', 'CDIV', 'CMOD', 'CMPEQ', 'COPY', 'FDIV', 'NEG', 'SUB']
+bend-only   : []
+WALLS       : []
+NEITHER     : 16
+NEITHER-list:CUSTOM CUSTOMI CUSTOM_FUNCTION GETADDR INS MSELECT MSTACK MULACC PROGRAM PYLITERAL REWRITE_ERROR SOURCE STAGE THREEFRY UNSHARD WMMA
