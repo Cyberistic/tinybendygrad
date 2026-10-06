@@ -1,0 +1,1060 @@
+{
+  "TYPED": [
+    {
+      "file": "tinygrad/__init__.py",
+      "line": 2,
+      "default_expr": "\"0\"",
+      "context": "if int(os.getenv(\"TYPED\", \"0\")):"
+    }
+  ],
+  "MV_BLOCKSIZE": [
+    {
+      "file": "tinygrad/codegen/opt/heuristic.py",
+      "line": 61,
+      "default_expr": "4",
+      "context": "MV_BLOCKSIZE, MV_THREADS_PER_ROW, MV_ROWS_PER_THREAD = getenv(\"MV_BLOCKSIZE\", 4), getenv(\"MV_THREADS_PER_ROW\", 8), getenv(\"MV_ROWS_PER_THREAD\", 4)"
+    }
+  ],
+  "MV_THREADS_PER_ROW": [
+    {
+      "file": "tinygrad/codegen/opt/heuristic.py",
+      "line": 61,
+      "default_expr": "8",
+      "context": "MV_BLOCKSIZE, MV_THREADS_PER_ROW, MV_ROWS_PER_THREAD = getenv(\"MV_BLOCKSIZE\", 4), getenv(\"MV_THREADS_PER_ROW\", 8), getenv(\"MV_ROWS_PER_THREAD\", 4)"
+    }
+  ],
+  "MV_ROWS_PER_THREAD": [
+    {
+      "file": "tinygrad/codegen/opt/heuristic.py",
+      "line": 61,
+      "default_expr": "4",
+      "context": "MV_BLOCKSIZE, MV_THREADS_PER_ROW, MV_ROWS_PER_THREAD = getenv(\"MV_BLOCKSIZE\", 4), getenv(\"MV_THREADS_PER_ROW\", 8), getenv(\"MV_ROWS_PER_THREAD\", 4)"
+    }
+  ],
+  "MV": [
+    {
+      "file": "tinygrad/codegen/opt/heuristic.py",
+      "line": 62,
+      "default_expr": "1",
+      "context": "if k.ren.has_local and getenv(\"MV\",1) != 0 and (MV_BLOCKSIZE > 1 or MV_THREADS_PER_ROW > 1 or MV_ROWS_PER_THREAD > 1) and  \\"
+    }
+  ],
+  "OCCUPANCY_FLOOR": [
+    {
+      "file": "tinygrad/codegen/opt/heuristic.py",
+      "line": 106,
+      "default_expr": "4096",
+      "context": "if resolve(global_items_after < getenv(\"OCCUPANCY_FLOOR\", 4096), False): continue"
+    }
+  ],
+  "BEAM_ESTIMATE": [
+    {
+      "file": "tinygrad/codegen/opt/postrange.py",
+      "line": 250,
+      "default_expr": "1",
+      "context": "k = beam_search(k, rawbufs, var_vals, beam, bool(getenv(\"BEAM_ESTIMATE\", 1)))"
+    }
+  ],
+  "BEAM_PADTO": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 18,
+      "default_expr": "0",
+      "context": "if getenv(\"BEAM_PADTO\", 0): actions += [Opt(op=OptOps.PADTO, axis=axis, arg=amt) for amt in [32] for axis in range(7)]"
+    }
+  ],
+  "TC": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 20,
+      "default_expr": "1",
+      "context": "actions += [Opt(op=OptOps.TC, axis=0, arg=(-1, 0, getenv(\"TC\", 1)))]"
+    },
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 22,
+      "default_expr": "1",
+      "context": "actions += [Opt(op=OptOps.TC, axis=axis, arg=(-1, getenv(\"TC_OPT\", 2), getenv(\"TC\", 1))) for axis in range(9)]"
+    },
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 242,
+      "default_expr": "1",
+      "context": "USE_TC, TC_SELECT, TC_OPT, TC_MIN_GLOBALS = ContextVar(\"TC\", 1), ContextVar(\"TC_SELECT\", -1), ContextVar(\"TC_OPT\", 0), ContextVar(\"TC_MIN_GLOBALS\", 0)"
+    }
+  ],
+  "TC_OPT": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 22,
+      "default_expr": "2",
+      "context": "actions += [Opt(op=OptOps.TC, axis=axis, arg=(-1, getenv(\"TC_OPT\", 2), getenv(\"TC\", 1))) for axis in range(9)]"
+    },
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 242,
+      "default_expr": "0",
+      "context": "USE_TC, TC_SELECT, TC_OPT, TC_MIN_GLOBALS = ContextVar(\"TC\", 1), ContextVar(\"TC_SELECT\", -1), ContextVar(\"TC_OPT\", 0), ContextVar(\"TC_MIN_GLOBALS\", 0)"
+    }
+  ],
+  "BEAM_TIMEOUT_SEC": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 59,
+      "default_expr": "10",
+      "context": "signal.alarm(getenv(\"BEAM_TIMEOUT_SEC\", 10))"
+    }
+  ],
+  "BEAM_UOPS_MAX": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 68,
+      "default_expr": "3000",
+      "context": "if len(uops) >= (uops_max:=getenv(\"BEAM_UOPS_MAX\", 3000)) > 0:"
+    }
+  ],
+  "BEAM_UPCAST_MAX": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 86,
+      "default_expr": "256",
+      "context": "acted, max_up, max_lcl = {0:s} if include_0 else {}, getenv(\"BEAM_UPCAST_MAX\", 256) if max_up is None else max_up, getenv(\"BEAM_LOCAL_MAX\", 1024)"
+    }
+  ],
+  "BEAM_LOCAL_MAX": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 86,
+      "default_expr": "1024",
+      "context": "acted, max_up, max_lcl = {0:s} if include_0 else {}, getenv(\"BEAM_UPCAST_MAX\", 256) if max_up is None else max_up, getenv(\"BEAM_LOCAL_MAX\", 1024)"
+    }
+  ],
+  "BEAM_MIN_PROGRESS": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 118,
+      "default_expr": "0.01",
+      "context": "min_progress = getenv(\"BEAM_MIN_PROGRESS\", 0.01)/1e6"
+    }
+  ],
+  "BEAM_DEV_TIMEOUT": [
+    {
+      "file": "tinygrad/codegen/opt/search.py",
+      "line": 145,
+      "default_expr": "1",
+      "context": "dev_timeout=getenv(\"BEAM_DEV_TIMEOUT\", 1))"
+    }
+  ],
+  "HCQ_RUNTIME_DEV": [
+    {
+      "file": "tinygrad/device.py",
+      "line": 18,
+      "default_expr": "\"PYTHON\" if DEV.interface.startswith(\"MOCK\"",
+      "context": "HCQ_RUNTIME_DEV = ContextVar(\"HCQ_RUNTIME_DEV\", \"PYTHON\" if DEV.interface.startswith(\"MOCK\") else \"CPU\")"
+    }
+  ],
+  "SUM_DTYPE": [
+    {
+      "file": "tinygrad/dtype.py",
+      "line": 223,
+      "default_expr": "\"float32\"",
+      "context": "return least_upper_dtype(dt, to_dtype(getenv(\"SUM_DTYPE\", \"float32\")))"
+    }
+  ],
+  "JITBEAM": [
+    {
+      "file": "tinygrad/engine/jit.py",
+      "line": 36,
+      "default_expr": "BEAM.value",
+      "context": "linear = compile_linear(linear, beam=getenv(\"JITBEAM\", BEAM.value), input_uops=input_uops, cache=False)"
+    }
+  ],
+  "BEAM_MAX_TASKS_PER_CHILD": [
+    {
+      "file": "tinygrad/engine/worker.py",
+      "line": 47,
+      "default_expr": "16",
+      "context": "worker_pool = _WorkerContext().Pool(PARALLEL.value, _init_worker, (), getenv(\"BEAM_MAX_TASKS_PER_CHILD\", 16))"
+    }
+  ],
+  "DEVICE_IN_FUNCTION_BUG": [
+    {
+      "file": "tinygrad/function.py",
+      "line": 61,
+      "default_expr": "0",
+      "context": "with Context(ALLOW_DEVICE_USAGE=getenv(\"DEVICE_IN_FUNCTION_BUG\", 0)):"
+    }
+  ],
+  "DEBUG": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 237,
+      "default_expr": "0",
+      "context": "DEV, DEBUG, BEAM, NOOPT = _DEV(\"DEV\", \"\"), ContextVar(\"DEBUG\", 0), ContextVar(\"BEAM\", 0), ContextVar(\"NOOPT\", 0)"
+    }
+  ],
+  "BEAM": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 237,
+      "default_expr": "0",
+      "context": "DEV, DEBUG, BEAM, NOOPT = _DEV(\"DEV\", \"\"), ContextVar(\"DEBUG\", 0), ContextVar(\"BEAM\", 0), ContextVar(\"NOOPT\", 0)"
+    }
+  ],
+  "NOOPT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 237,
+      "default_expr": "0",
+      "context": "DEV, DEBUG, BEAM, NOOPT = _DEV(\"DEV\", \"\"), ContextVar(\"DEBUG\", 0), ContextVar(\"BEAM\", 0), ContextVar(\"NOOPT\", 0)"
+    }
+  ],
+  "IMAGE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 238,
+      "default_expr": "0",
+      "context": "IMAGE, FLOAT16, OPENPILOT_HACKS = ContextVar(\"IMAGE\", 0), ContextVar(\"FLOAT16\", 0), ContextVar(\"OPENPILOT_HACKS\", 0)"
+    }
+  ],
+  "FLOAT16": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 238,
+      "default_expr": "0",
+      "context": "IMAGE, FLOAT16, OPENPILOT_HACKS = ContextVar(\"IMAGE\", 0), ContextVar(\"FLOAT16\", 0), ContextVar(\"OPENPILOT_HACKS\", 0)"
+    }
+  ],
+  "OPENPILOT_HACKS": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 238,
+      "default_expr": "0",
+      "context": "IMAGE, FLOAT16, OPENPILOT_HACKS = ContextVar(\"IMAGE\", 0), ContextVar(\"FLOAT16\", 0), ContextVar(\"OPENPILOT_HACKS\", 0)"
+    }
+  ],
+  "JIT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 239,
+      "default_expr": "1",
+      "context": "JIT = ContextVar(\"JIT\", 1)"
+    }
+  ],
+  "WINO": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 240,
+      "default_expr": "0",
+      "context": "WINO, CAPTURING, TRACEMETA, NO_COLOR = ContextVar(\"WINO\", 0), ContextVar(\"CAPTURING\", 1), ContextVar(\"TRACEMETA\", 1), ContextVar(\"NO_COLOR\", 0)"
+    }
+  ],
+  "CAPTURING": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 240,
+      "default_expr": "1",
+      "context": "WINO, CAPTURING, TRACEMETA, NO_COLOR = ContextVar(\"WINO\", 0), ContextVar(\"CAPTURING\", 1), ContextVar(\"TRACEMETA\", 1), ContextVar(\"NO_COLOR\", 0)"
+    }
+  ],
+  "TRACEMETA": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 240,
+      "default_expr": "1",
+      "context": "WINO, CAPTURING, TRACEMETA, NO_COLOR = ContextVar(\"WINO\", 0), ContextVar(\"CAPTURING\", 1), ContextVar(\"TRACEMETA\", 1), ContextVar(\"NO_COLOR\", 0)"
+    }
+  ],
+  "NO_COLOR": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 240,
+      "default_expr": "0",
+      "context": "WINO, CAPTURING, TRACEMETA, NO_COLOR = ContextVar(\"WINO\", 0), ContextVar(\"CAPTURING\", 1), ContextVar(\"TRACEMETA\", 1), ContextVar(\"NO_COLOR\", 0)"
+    }
+  ],
+  "TRAINING": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 241,
+      "default_expr": "0",
+      "context": "TRAINING = ContextVar(\"TRAINING\", 0)"
+    }
+  ],
+  "TC_SELECT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 242,
+      "default_expr": "-1",
+      "context": "USE_TC, TC_SELECT, TC_OPT, TC_MIN_GLOBALS = ContextVar(\"TC\", 1), ContextVar(\"TC_SELECT\", -1), ContextVar(\"TC_OPT\", 0), ContextVar(\"TC_MIN_GLOBALS\", 0)"
+    }
+  ],
+  "TC_MIN_GLOBALS": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 242,
+      "default_expr": "0",
+      "context": "USE_TC, TC_SELECT, TC_OPT, TC_MIN_GLOBALS = ContextVar(\"TC\", 1), ContextVar(\"TC_SELECT\", -1), ContextVar(\"TC_OPT\", 0), ContextVar(\"TC_MIN_GLOBALS\", 0)"
+    }
+  ],
+  "TRANSCENDENTAL": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 243,
+      "default_expr": "1",
+      "context": "TRANSCENDENTAL = ContextVar(\"TRANSCENDENTAL\", 1)"
+    }
+  ],
+  "SPLIT_REDUCEOP": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 244,
+      "default_expr": "1",
+      "context": "SPLIT_REDUCEOP, NO_MEMORY_PLANNER, LRU = ContextVar(\"SPLIT_REDUCEOP\", 1), ContextVar(\"NO_MEMORY_PLANNER\", 0), ContextVar(\"LRU\", 1)"
+    }
+  ],
+  "NO_MEMORY_PLANNER": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 244,
+      "default_expr": "0",
+      "context": "SPLIT_REDUCEOP, NO_MEMORY_PLANNER, LRU = ContextVar(\"SPLIT_REDUCEOP\", 1), ContextVar(\"NO_MEMORY_PLANNER\", 0), ContextVar(\"LRU\", 1)"
+    }
+  ],
+  "LRU": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 244,
+      "default_expr": "1",
+      "context": "SPLIT_REDUCEOP, NO_MEMORY_PLANNER, LRU = ContextVar(\"SPLIT_REDUCEOP\", 1), ContextVar(\"NO_MEMORY_PLANNER\", 0), ContextVar(\"LRU\", 1)"
+    }
+  ],
+  "RING": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 245,
+      "default_expr": "1",
+      "context": "RING, ALL2ALL, ALLREDUCE_CAST = ContextVar(\"RING\", 1), ContextVar(\"ALL2ALL\", 0), ContextVar(\"ALLREDUCE_CAST\", 1)"
+    }
+  ],
+  "ALL2ALL": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 245,
+      "default_expr": "0",
+      "context": "RING, ALL2ALL, ALLREDUCE_CAST = ContextVar(\"RING\", 1), ContextVar(\"ALL2ALL\", 0), ContextVar(\"ALLREDUCE_CAST\", 1)"
+    }
+  ],
+  "ALLREDUCE_CAST": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 245,
+      "default_expr": "1",
+      "context": "RING, ALL2ALL, ALLREDUCE_CAST = ContextVar(\"RING\", 1), ContextVar(\"ALL2ALL\", 0), ContextVar(\"ALLREDUCE_CAST\", 1)"
+    }
+  ],
+  "ALLREDUCE_NODE_NDEVS": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 246,
+      "default_expr": "0",
+      "context": "ALLREDUCE_NODE_NDEVS = ContextVar(\"ALLREDUCE_NODE_NDEVS\", 0) # gpus per node, the nodes cabled gpu k to gpu k"
+    }
+  ],
+  "CACHELEVEL": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 247,
+      "default_expr": "2",
+      "context": "CACHELEVEL, IGNORE_BEAM_CACHE = ContextVar(\"CACHELEVEL\", 2), ContextVar(\"IGNORE_BEAM_CACHE\", 0)"
+    }
+  ],
+  "IGNORE_BEAM_CACHE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 247,
+      "default_expr": "0",
+      "context": "CACHELEVEL, IGNORE_BEAM_CACHE = ContextVar(\"CACHELEVEL\", 2), ContextVar(\"IGNORE_BEAM_CACHE\", 0)"
+    }
+  ],
+  "VALIDATE_WITH_CPU": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 248,
+      "default_expr": "0",
+      "context": "VALIDATE_WITH_CPU, HCQ2 = ContextVar(\"VALIDATE_WITH_CPU\", 0), ContextVar(\"HCQ2\", 1)"
+    }
+  ],
+  "HCQ2": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 248,
+      "default_expr": "1",
+      "context": "VALIDATE_WITH_CPU, HCQ2 = ContextVar(\"VALIDATE_WITH_CPU\", 0), ContextVar(\"HCQ2\", 1)"
+    }
+  ],
+  "DISABLE_FAST_IDIV": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 250,
+      "default_expr": "1",
+      "context": "DISABLE_FAST_IDIV = ContextVar(\"DISABLE_FAST_IDIV\", 1)"
+    }
+  ],
+  "FUSE_OPTIM": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 251,
+      "default_expr": "0",
+      "context": "FUSE_OPTIM = ContextVar(\"FUSE_OPTIM\", 0)"
+    }
+  ],
+  "ALLOW_DEVICE_USAGE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 252,
+      "default_expr": "1",
+      "context": "ALLOW_DEVICE_USAGE, MAX_BUFFER_SIZE = ContextVar(\"ALLOW_DEVICE_USAGE\", 1), ContextVar(\"MAX_BUFFER_SIZE\", 0)"
+    }
+  ],
+  "MAX_BUFFER_SIZE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 252,
+      "default_expr": "0",
+      "context": "ALLOW_DEVICE_USAGE, MAX_BUFFER_SIZE = ContextVar(\"ALLOW_DEVICE_USAGE\", 1), ContextVar(\"MAX_BUFFER_SIZE\", 0)"
+    }
+  ],
+  "MAX_KERNEL_BUFFERS": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 253,
+      "default_expr": "0",
+      "context": "MAX_KERNEL_BUFFERS = ContextVar(\"MAX_KERNEL_BUFFERS\", 0)"
+    }
+  ],
+  "EMULATED_DTYPES": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 254,
+      "default_expr": "\"\"",
+      "context": "EMULATED_DTYPES = ContextVar(\"EMULATED_DTYPES\", \"\")"
+    }
+  ],
+  "DEFAULT_FLOAT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 255,
+      "default_expr": "\"float32\"",
+      "context": "DEFAULT_FLOAT, DEFAULT_INT = ContextVar(\"DEFAULT_FLOAT\", \"float32\"), ContextVar(\"DEFAULT_INT\", \"int32\")"
+    }
+  ],
+  "DEFAULT_INT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 255,
+      "default_expr": "\"int32\"",
+      "context": "DEFAULT_FLOAT, DEFAULT_INT = ContextVar(\"DEFAULT_FLOAT\", \"float32\"), ContextVar(\"DEFAULT_INT\", \"int32\")"
+    }
+  ],
+  "CAPTURE_PROCESS_REPLAY": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 256,
+      "default_expr": "0",
+      "context": "CAPTURE_PROCESS_REPLAY = ContextVar(\"CAPTURE_PROCESS_REPLAY\", 0)"
+    }
+  ],
+  "NULL_ALLOW_COPYOUT": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 269,
+      "default_expr": "0",
+      "context": "NULL_ALLOW_COPYOUT = ContextVar(\"NULL_ALLOW_COPYOUT\", 0)"
+    }
+  ],
+  "VIZ": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 271,
+      "default_expr": "0",
+      "context": "VIZ = ContextVar(\"VIZ\", 0)"
+    }
+  ],
+  "PARALLEL": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 274,
+      "default_expr": "CPU_COUNT // max(1, getenv(\"PYTEST_XDIST_WORKER_COUNT\", 1",
+      "context": "PARALLEL = ContextVar(\"PARALLEL\", CPU_COUNT // max(1, getenv(\"PYTEST_XDIST_WORKER_COUNT\", 1)) if VIZ == 0 else 0)"
+    }
+  ],
+  "PROFILE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 275,
+      "default_expr": "abs(VIZ.value",
+      "context": "PROFILE = ContextVar(\"PROFILE\", abs(VIZ.value))"
+    }
+  ],
+  "SPEC": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 276,
+      "default_expr": "1",
+      "context": "SPEC = ContextVar(\"SPEC\", 1)"
+    }
+  ],
+  "CHECK_OOB": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 278,
+      "default_expr": "0",
+      "context": "CHECK_OOB = ContextVar(\"CHECK_OOB\", 0)"
+    }
+  ],
+  "DEBUG_RANGEIFY": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 279,
+      "default_expr": "0",
+      "context": "DEBUG_RANGEIFY = ContextVar(\"DEBUG_RANGEIFY\", 0)"
+    }
+  ],
+  "TUPLE_ORDER": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 281,
+      "default_expr": "1",
+      "context": "TUPLE_ORDER = ContextVar(\"TUPLE_ORDER\", 1)"
+    }
+  ],
+  "CCACHE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 283,
+      "default_expr": "1",
+      "context": "CCACHE = ContextVar(\"CCACHE\", 1)"
+    }
+  ],
+  "ALLOW_TF32": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 285,
+      "default_expr": "0",
+      "context": "ALLOW_TF32 = ContextVar(\"ALLOW_TF32\", 0)"
+    }
+  ],
+  "SCACHE": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 287,
+      "default_expr": "1",
+      "context": "SCACHE = ContextVar(\"SCACHE\", 1)"
+    }
+  ],
+  "USE_ATOMICS": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 289,
+      "default_expr": "0",
+      "context": "USE_ATOMICS = ContextVar(\"USE_ATOMICS\", 0)"
+    }
+  ],
+  "DISALLOW_BROADCAST": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 291,
+      "default_expr": "0",
+      "context": "DISALLOW_BROADCAST = ContextVar(\"DISALLOW_BROADCAST\", 0)"
+    }
+  ],
+  "XDG_CACHE_HOME": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 401,
+      "default_expr": "os.path.expanduser(\"~/Library/Caches\" if OSX else \"~/.cache\"",
+      "context": "cache_dir: str = os.path.join(getenv(\"XDG_CACHE_HOME\", os.path.expanduser(\"~/Library/Caches\" if OSX else \"~/.cache\")), \"tinygrad\")"
+    }
+  ],
+  "CACHEDB": [
+    {
+      "file": "tinygrad/helpers.py",
+      "line": 402,
+      "default_expr": "os.path.abspath(os.path.join(cache_dir, \"cache.db\"",
+      "context": "CACHEDB: str = getenv(\"CACHEDB\", os.path.abspath(os.path.join(cache_dir, \"cache.db\")))"
+    }
+  ],
+  "BENCHMARK_LOG": [
+    {
+      "file": "tinygrad/llm/cli.py",
+      "line": 192,
+      "default_expr": "\"\"",
+      "context": "if (log:=getenv(\"BENCHMARK_LOG\", \"\")): from extra.bench_log import WallTimeEvent, BenchEvent"
+    }
+  ],
+  "REALIZE": [
+    {
+      "file": "tinygrad/llm/model.py",
+      "line": 427,
+      "default_expr": "0",
+      "context": "realize=bool(getenv(\"REALIZE\", 0))) -> tuple[Transformer, dict]:"
+    }
+  ],
+  "HALF": [
+    {
+      "file": "tinygrad/llm/model.py",
+      "line": 432,
+      "default_expr": "1",
+      "context": "state_dict = {k:v.cast('float16') if getenv(\"HALF\", 1) else v for k,v in state_dict.items()}"
+    }
+  ],
+  "DEBUGONNX": [
+    {
+      "file": "tinygrad/nn/onnx.py",
+      "line": 365,
+      "default_expr": "\"0\"",
+      "context": "debug = int(getenv(\"DEBUGONNX\", \"0\"))"
+    }
+  ],
+  "ONNXLIMIT": [
+    {
+      "file": "tinygrad/nn/onnx.py",
+      "line": 366,
+      "default_expr": "\"-1\"",
+      "context": "limit = int(getenv(\"ONNXLIMIT\", \"-1\"))"
+    }
+  ],
+  "OPTIM_DTYPE": [
+    {
+      "file": "tinygrad/nn/optim.py",
+      "line": 17,
+      "default_expr": "\"float32\"",
+      "context": "self.param_dtype = to_dtype(getenv(\"OPTIM_DTYPE\", \"float32\"))"
+    }
+  ],
+  "SQTT_EVENT": [
+    {
+      "file": "tinygrad/renderer/amd/sqtt.py",
+      "line": 752,
+      "default_expr": "-1",
+      "context": "evt_num = getenv(\"SQTT_EVENT\", -1)"
+    }
+  ],
+  "ALIGNED": [
+    {
+      "file": "tinygrad/renderer/cstyle.py",
+      "line": 305,
+      "default_expr": "1",
+      "context": "alignment = 2**int(math.log2(dt.itemsize * count)) if getenv(\"ALIGNED\", 1) and not dtypes.is_bool(dt) else 1"
+    }
+  ],
+  "SQTT": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 31,
+      "default_expr": "abs(VIZ.value",
+      "context": "SQTT = ContextVar(\"SQTT\", abs(VIZ.value)>=2)"
+    }
+  ],
+  "SQTT_ITRACE_SE_MASK": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 33,
+      "default_expr": "0b11",
+      "context": "ContextVar(\"SQTT_ITRACE_SE_MASK\", 0b11), ContextVar(\"SQTT_LIMIT_SE\", 0), ContextVar(\"SQTT_SIMD_SEL\", 0), ContextVar(\"SQTT_TOKEN_EXCLUDE\", 0)"
+    }
+  ],
+  "SQTT_LIMIT_SE": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 33,
+      "default_expr": "0",
+      "context": "ContextVar(\"SQTT_ITRACE_SE_MASK\", 0b11), ContextVar(\"SQTT_LIMIT_SE\", 0), ContextVar(\"SQTT_SIMD_SEL\", 0), ContextVar(\"SQTT_TOKEN_EXCLUDE\", 0)"
+    }
+  ],
+  "SQTT_SIMD_SEL": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 33,
+      "default_expr": "0",
+      "context": "ContextVar(\"SQTT_ITRACE_SE_MASK\", 0b11), ContextVar(\"SQTT_LIMIT_SE\", 0), ContextVar(\"SQTT_SIMD_SEL\", 0), ContextVar(\"SQTT_TOKEN_EXCLUDE\", 0)"
+    }
+  ],
+  "SQTT_TOKEN_EXCLUDE": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 33,
+      "default_expr": "0",
+      "context": "ContextVar(\"SQTT_ITRACE_SE_MASK\", 0b11), ContextVar(\"SQTT_LIMIT_SE\", 0), ContextVar(\"SQTT_SIMD_SEL\", 0), ContextVar(\"SQTT_TOKEN_EXCLUDE\", 0)"
+    }
+  ],
+  "PMC": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 34,
+      "default_expr": "abs(VIZ.value",
+      "context": "PMC = ContextVar(\"PMC\", abs(VIZ.value)>=2)"
+    }
+  ],
+  "AMD_KFD_QUEUE_PRIORITY": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 687,
+      "default_expr": "7",
+      "context": "queue_type=queue_type, queue_percentage=kfd.KFD_MAX_QUEUE_PERCENTAGE|(xcc_id<<8), queue_priority=getenv(\"AMD_KFD_QUEUE_PRIORITY\", 7),"
+    }
+  ],
+  "AMD_AQL": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 883,
+      "default_expr": "int(self.xccs > 1",
+      "context": "self.is_aql = getenv(\"AMD_AQL\", int(self.xccs > 1))"
+    }
+  ],
+  "PROF_SLOTS": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 903,
+      "default_expr": "32",
+      "context": "self.prof_slots, self.prof_read, self.sqtt_next_cmd_id = getenv(\"PROF_SLOTS\", 32), 0, itertools.count(0)"
+    }
+  ],
+  "SQTT_BUFFER_SIZE": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 905,
+      "default_expr": "256",
+      "context": "self.sqtt_ses, self.sqtt_win = self.se_cnt * self.xccs, (getenv(\"SQTT_BUFFER_SIZE\", 256) << 20) // self.prof_slots # mb, per shader engine"
+    }
+  ],
+  "PMC_COUNTERS": [
+    {
+      "file": "tinygrad/runtime/ops_amd.py",
+      "line": 913,
+      "default_expr": "pmc_default",
+      "context": "self.pmc_names = getenv(\"PMC_COUNTERS\", pmc_default).split(\",\")"
+    }
+  ],
+  "EMULATE": [
+    {
+      "file": "tinygrad/runtime/ops_null.py",
+      "line": 65,
+      "default_expr": "\"\"",
+      "context": "assert (emu:=getenv(\"EMULATE\", \"\")) == \"\", \\"
+    },
+    {
+      "file": "tinygrad/runtime/ops_python.py",
+      "line": 167,
+      "default_expr": "\"\"",
+      "context": "assert (emu:=getenv(\"EMULATE\", \"\")) == \"\", (\"EMULATE is deprecated, use DEV=PYTHON::\" +"
+    }
+  ],
+  "PMA": [
+    {
+      "file": "tinygrad/runtime/ops_nv.py",
+      "line": 27,
+      "default_expr": "abs(VIZ.value",
+      "context": "PMA = ContextVar(\"PMA\", abs(VIZ.value)>=2)"
+    }
+  ],
+  "PMA_BUFFER_SIZE": [
+    {
+      "file": "tinygrad/runtime/ops_nv.py",
+      "line": 760,
+      "default_expr": "512",
+      "context": "self.pma_buf = Buffer(self.device, size:=getenv(\"PMA_BUFFER_SIZE\", 512) << 20, dtypes.uint8,"
+    }
+  ],
+  "QCOM_PRIORITY": [
+    {
+      "file": "tinygrad/runtime/ops_qcom.py",
+      "line": 320,
+      "default_expr": "8",
+      "context": "| flag(\"KGSL_CONTEXT_PRIORITY\", getenv(\"QCOM_PRIORITY\", 8)) | flag(\"KGSL_CONTEXT_PREEMPT_STYLE\", kgsl.KGSL_CONTEXT_PREEMPT_STYLE_FINEGRAIN)"
+    }
+  ],
+  "WEBGPU_BACKEND": [
+    {
+      "file": "tinygrad/runtime/ops_webgpu.py",
+      "line": 169,
+      "default_expr": "\"\"",
+      "context": "powerPreference=webgpu.WGPUPowerPreference_HighPerformance, backendType=backend_types.get(getenv(\"WEBGPU_BACKEND\", \"\"), 0)))"
+    }
+  ],
+  "AM_DEBUG": [
+    {
+      "file": "tinygrad/runtime/support/am/amdev.py",
+      "line": 11,
+      "default_expr": "0",
+      "context": "AM_DEBUG = getenv(\"AM_DEBUG\", 0)"
+    }
+  ],
+  "AM_RESET": [
+    {
+      "file": "tinygrad/runtime/support/am/amdev.py",
+      "line": 183,
+      "default_expr": "0",
+      "context": "self.partial_boot = (self.reg(\"regSCRATCH_REG7\").read() == AMDev.Version) and (getenv(\"AM_RESET\", 0) != 1)"
+    }
+  ],
+  "AM_POWER_LIMIT": [
+    {
+      "file": "tinygrad/runtime/support/am/amdev.py",
+      "line": 216,
+      "default_expr": "0.0",
+      "context": "if (max_power:=getenv(\"AM_POWER_LIMIT\", 0.0)) > 0:"
+    }
+  ],
+  "ROCM_PATH": [
+    {
+      "file": "tinygrad/runtime/support/compiler_amd.py",
+      "line": 102,
+      "default_expr": "\"/opt/rocm\"",
+      "context": "rocm_path = getenv(\"ROCM_PATH\", \"/opt/rocm\")"
+    }
+  ],
+  "CC": [
+    {
+      "file": "tinygrad/runtime/support/compiler_cpu.py",
+      "line": 21,
+      "default_expr": "'clang'",
+      "context": "return subprocess.check_output([getenv(\"CC\", 'clang'), '-c', '-x', 'c', '-O2', '-fPIC', '-ffreestanding', '-fno-math-errno', '-nostdlib',"
+    }
+  ],
+  "CUDA_PATH": [
+    {
+      "file": "tinygrad/runtime/support/compiler_cuda.py",
+      "line": 7,
+      "default_expr": "\"\"",
+      "context": "CUDA_PATH = getenv(\"CUDA_PATH\", \"\")"
+    }
+  ],
+  "LLVMOPT": [
+    {
+      "file": "tinygrad/runtime/support/compiler_llvm.py",
+      "line": 24,
+      "default_expr": "1",
+      "context": "if (opt:=getenv(\"LLVMOPT\", 1)):"
+    }
+  ],
+  "HCQ_CACHE_THRESH": [
+    {
+      "file": "tinygrad/runtime/support/hcq2.py",
+      "line": 18,
+      "default_expr": "64",
+      "context": "HCQ_CACHE_THRESH = ContextVar(\"HCQ_CACHE_THRESH\", 64)"
+    }
+  ],
+  "HCQ_NUM_SDMA": [
+    {
+      "file": "tinygrad/runtime/support/hcq2.py",
+      "line": 308,
+      "default_expr": "min(len(peers",
+      "context": "num_queues = max(1, getenv(\"HCQ_NUM_SDMA\", min(len(peers), 8) if ALL2ALL >= 1 else 1))"
+    }
+  ],
+  "MM_DEBUG": [
+    {
+      "file": "tinygrad/runtime/support/memory.py",
+      "line": 209,
+      "default_expr": "0",
+      "context": "if getenv(\"MM_DEBUG\", 0): print(f\"mm {self.dev.devfmt}: mapping {vaddr=:#x} ({size=:#x})\")"
+    },
+    {
+      "file": "tinygrad/runtime/support/memory.py",
+      "line": 228,
+      "default_expr": "0",
+      "context": "if getenv(\"MM_DEBUG\", 0): print(f\"mm {self.dev.devfmt}: unmapping {vaddr=:#x} ({size=:#x})\")"
+    }
+  ],
+  "GMMU": [
+    {
+      "file": "tinygrad/runtime/support/memory.py",
+      "line": 248,
+      "default_expr": "1",
+      "context": "if not getenv(\"GMMU\", 1):"
+    },
+    {
+      "file": "tinygrad/runtime/support/memory.py",
+      "line": 275,
+      "default_expr": "1",
+      "context": "if not getenv(\"GMMU\", 1): return self.pfree(vm.paddrs[0][0])"
+    }
+  ],
+  "NV_DEBUG": [
+    {
+      "file": "tinygrad/runtime/support/nv/nvdev.py",
+      "line": 10,
+      "default_expr": "0",
+      "context": "NV_DEBUG = getenv(\"NV_DEBUG\", 0)"
+    }
+  ],
+  "BNXT_DEBUG": [
+    {
+      "file": "tinygrad/runtime/support/rdma/bnxtdev.py",
+      "line": 8,
+      "default_expr": "0",
+      "context": "BNXT_DEBUG = getenv(\"BNXT_DEBUG\", 0)"
+    }
+  ],
+  "HCQ_VISIBLE_DEVICES": [
+    {
+      "file": "tinygrad/runtime/support/system.py",
+      "line": 12,
+      "default_expr": "\"\"",
+      "context": "assert (v:=getenv(\"HCQ_VISIBLE_DEVICES\", \"\")) == \"\", f\"HCQ_VISIBLE_DEVICES={v} is deprecated, use DEV={DEV.target(device, indices=v)} instead\""
+    }
+  ],
+  "REMOTE": [
+    {
+      "file": "tinygrad/runtime/support/system.py",
+      "line": 130,
+      "default_expr": "\"\"",
+      "context": "if getenv(\"REMOTE\", \"\"): return RemotePCIDevice.scan(vendor, devices, base_class)"
+    },
+    {
+      "file": "tinygrad/runtime/support/system.py",
+      "line": 399,
+      "default_expr": "\"\"",
+      "context": "for r in [r.strip() for r in getenv(\"REMOTE\", \"\").split(\",\") if r.strip()]:"
+    }
+  ],
+  "VFIO": [
+    {
+      "file": "tinygrad/runtime/support/system.py",
+      "line": 222,
+      "default_expr": "0",
+      "context": "if getenv(\"VFIO\", 0) and (vfio_fd:=System.vfio) is not None:"
+    }
+  ],
+  "REMOTE_TIMEOUT": [
+    {
+      "file": "tinygrad/runtime/support/system.py",
+      "line": 391,
+      "default_expr": "60",
+      "context": "sock = socket.create_connection((host, port), timeout=getenv(\"REMOTE_TIMEOUT\", 60))"
+    }
+  ],
+  "RING_ALLREDUCE_THRESHOLD": [
+    {
+      "file": "tinygrad/schedule/allreduce.py",
+      "line": 14,
+      "default_expr": "256_000",
+      "context": "use_all2all = concrete and (ALL2ALL >= 2 or (ndev > 2 and numel > getenv(\"RING_ALLREDUCE_THRESHOLD\", 256_000) and ALL2ALL >= 1))"
+    },
+    {
+      "file": "tinygrad/schedule/allreduce.py",
+      "line": 15,
+      "default_expr": "256_000",
+      "context": "use_ring = concrete and not use_all2all and (RING >= 2 or (ndev > 2 and numel > getenv(\"RING_ALLREDUCE_THRESHOLD\", 256_000) and RING >= 1))"
+    }
+  ],
+  "LATE_ALLREDUCE": [
+    {
+      "file": "tinygrad/schedule/multi.py",
+      "line": 50,
+      "default_expr": "1",
+      "context": "if not getenv(\"LATE_ALLREDUCE\", 1): replace_allreduce = _early_allreduce + replace_allreduce"
+    }
+  ],
+  "REDUCEOP_SPLIT_THRESHOLD": [
+    {
+      "file": "tinygrad/schedule/prepare.py",
+      "line": 105,
+      "default_expr": "32768",
+      "context": "if not SPLIT_REDUCEOP or not all_int(x.shape) or (prod(x.shape)//prod(reduce.shape))<getenv(\"REDUCEOP_SPLIT_THRESHOLD\", 32768): return None"
+    }
+  ],
+  "REDUCEOP_SPLIT_SIZE": [
+    {
+      "file": "tinygrad/schedule/prepare.py",
+      "line": 118,
+      "default_expr": "22",
+      "context": "for d in range(min(256,2**getenv(\"REDUCEOP_SPLIT_SIZE\",22)//prod(reduce.shape)),8-1,-1)"
+    }
+  ],
+  "UPAT_COMPILE": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1596,
+      "default_expr": "1",
+      "context": "def __init__(self, patterns:Sequence[tuple[UPat, Callable|tuple]], compiled=bool(getenv(\"UPAT_COMPILE\", 1))):"
+    }
+  ],
+  "TRACK_MATCH_STATS": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1623,
+      "default_expr": "2 if VIZ else 0",
+      "context": "TRACK_MATCH_STATS = ContextVar(\"TRACK_MATCH_STATS\", 2 if VIZ else 0)"
+    }
+  ],
+  "REWRITE_STACK_LIMIT": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1624,
+      "default_expr": "250000",
+      "context": "REWRITE_STACK_LIMIT = ContextVar(\"REWRITE_STACK_LIMIT\", 250000)"
+    }
+  ],
+  "PRINT_MATCH_STATS": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1746,
+      "default_expr": "int(TRACK_MATCH_STATS.value and not VIZ",
+      "context": "if getenv(\"PRINT_MATCH_STATS\", int(TRACK_MATCH_STATS.value and not VIZ)):"
+    }
+  ],
+  "REWRITE_DATA": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1761,
+      "default_expr": "\"\"",
+      "context": "args = ['--rewrites-path', os.getenv(\"REWRITE_DATA\", \"\")] if os.getenv(\"REWRITE_DATA\", \"\") else []"
+    },
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1761,
+      "default_expr": "\"\"",
+      "context": "args = ['--rewrites-path', os.getenv(\"REWRITE_DATA\", \"\")] if os.getenv(\"REWRITE_DATA\", \"\") else []"
+    }
+  ],
+  "PROFILE_DATA": [
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1762,
+      "default_expr": "\"\"",
+      "context": "args += ['--profile-path', os.getenv(\"PROFILE_DATA\", \"\")] if os.getenv(\"PROFILE_DATA\", \"\") else []"
+    },
+    {
+      "file": "tinygrad/uop/ops.py",
+      "line": 1762,
+      "default_expr": "\"\"",
+      "context": "args += ['--profile-path', os.getenv(\"PROFILE_DATA\", \"\")] if os.getenv(\"PROFILE_DATA\", \"\") else []"
+    }
+  ],
+  "MAX_SQTT_PKTS": [
+    {
+      "file": "tinygrad/viz/serve.py",
+      "line": 536,
+      "default_expr": "50_000",
+      "context": "if len(ret) > getenv(\"MAX_SQTT_PKTS\", 50_000): break"
+    },
+    {
+      "file": "tinygrad/viz/serve.py",
+      "line": 683,
+      "default_expr": "50_000",
+      "context": "if (events:=get_profile(viz_data, list(itertools.islice(sqtt_timeline(*data), None if (max_pkts:=getenv(\"MAX_SQTT_PKTS\", 50_000)) == -1"
+    }
+  ],
+  "PORT": [
+    {
+      "file": "tinygrad/viz/serve.py",
+      "line": 752,
+      "default_expr": "8000",
+      "context": "if s.connect_ex(((HOST:=\"http://127.0.0.1\").replace(\"http://\", \"\"), PORT:=getenv(\"PORT\", 8000))) == 0:"
+    }
+  ]
+}

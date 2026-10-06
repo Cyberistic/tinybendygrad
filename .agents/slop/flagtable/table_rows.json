@@ -1,0 +1,1170 @@
+[
+  {
+    "flag": "DEV",
+    "alias": null,
+    "table_default": "`\"\"` (auto)",
+    "desc": "Backend selection, `DEV=AMD:LLVM:gfx950`, `DEV=USB+AMD`, etc. See docs/env_vars.md",
+    "section": "Core UX",
+    "line": 253
+  },
+  {
+    "flag": "DEBUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=ops, 2=+mem/timings, 3=+applied opts, 4=+gen code, 5=+UOps, 6=+linearized, 7=+asm",
+    "section": "Core UX",
+    "line": 254
+  },
+  {
+    "flag": "JIT",
+    "alias": null,
+    "table_default": "1 (2 on OSX/x86)",
+    "desc": "0=off, 1=on, 2=on but device graphs off",
+    "section": "Core UX",
+    "line": 255
+  },
+  {
+    "flag": "VIZ",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=record rewrites and open the viz UI (implies PROFILE)",
+    "section": "Core UX",
+    "line": 256
+  },
+  {
+    "flag": "PROFILE",
+    "alias": null,
+    "table_default": "VIZ",
+    "desc": "1=enable profiling infrastructure",
+    "section": "Core UX",
+    "line": 257
+  },
+  {
+    "flag": "SPEC",
+    "alias": null,
+    "table_default": "1",
+    "desc": "UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED here on the corpus: `SPEC=1` 61 of 77 ops \u00b7 `SPEC=2` 26 of 77, 14 of 25 graphs FAIL, exit 1 \u00b7 `SPEC=3` 0 of 77, all 25 FAIL",
+    "section": "Core UX",
+    "line": 258
+  },
+  {
+    "flag": "BEAM",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Beam search iterations for kernel optimization",
+    "section": "Core UX",
+    "line": 259
+  },
+  {
+    "flag": "NOOPT",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=disable all kernel optimizations",
+    "section": "Core UX",
+    "line": 260
+  },
+  {
+    "flag": "DEFAULT_FLOAT",
+    "alias": null,
+    "table_default": "float32",
+    "desc": "Default float dtype (HALF, BFLOAT16, FLOAT64)",
+    "section": "Core UX",
+    "line": 261
+  },
+  {
+    "flag": "TRAINING",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=training mode (used via `Context(TRAINING=1)`)",
+    "section": "Core UX",
+    "line": 262
+  },
+  {
+    "flag": "IMAGE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=2d-specific (image) optimizations",
+    "section": "Core UX",
+    "line": 263
+  },
+  {
+    "flag": "FLOAT16",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=use float16 for images instead of float32",
+    "section": "Core UX",
+    "line": 264
+  },
+  {
+    "flag": "ALLOW_TF32",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow TensorFloat-32 on Ampere+",
+    "section": "Core UX",
+    "line": 265
+  },
+  {
+    "flag": "NO_COLOR",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=disable colored output",
+    "section": "Core UX",
+    "line": 266
+  },
+  {
+    "flag": "CPU_COUNT",
+    "alias": null,
+    "table_default": "host cores",
+    "desc": "Threads for CPU kernel launches",
+    "section": "Core UX",
+    "line": 267
+  },
+  {
+    "flag": "MAX_BUFFER_SIZE",
+    "alias": null,
+    "table_default": "0 (lib default)",
+    "desc": "Cap individual buffer size in bytes",
+    "section": "Core UX",
+    "line": 268
+  },
+  {
+    "flag": "ALLOW_DEVICE_USAGE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=forbid opening devices (used by viz server)",
+    "section": "Core UX",
+    "line": 269
+  },
+  {
+    "flag": "JITBEAM",
+    "alias": null,
+    "table_default": "BEAM",
+    "desc": "Beam level for kernels compiled inside the JIT",
+    "section": "Compiler & kernel search",
+    "line": 275
+  },
+  {
+    "flag": "IGNORE_JIT_FIRST_BEAM",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Skip beam on first JIT compile",
+    "section": "Compiler & kernel search",
+    "line": 276
+  },
+  {
+    "flag": "PARALLEL",
+    "alias": null,
+    "table_default": "cpu count",
+    "desc": "Worker processes for beam search",
+    "section": "Compiler & kernel search",
+    "line": 277
+  },
+  {
+    "flag": "BEAM_ESTIMATE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "1=score candidates by estimated runtime, 0=real launches",
+    "section": "Compiler & kernel search",
+    "line": 278
+  },
+  {
+    "flag": "BEAM_UPCAST_MAX",
+    "alias": null,
+    "table_default": "256",
+    "desc": "Max upcast amount in candidates",
+    "section": "Compiler & kernel search",
+    "line": 279
+  },
+  {
+    "flag": "BEAM_LOCAL_MAX",
+    "alias": null,
+    "table_default": "1024",
+    "desc": "Max local size in candidates",
+    "section": "Compiler & kernel search",
+    "line": 280
+  },
+  {
+    "flag": "BEAM_UOPS_MAX",
+    "alias": null,
+    "table_default": "1500",
+    "desc": "Max uops allowed in a candidate kernel",
+    "section": "Compiler & kernel search",
+    "line": 281
+  },
+  {
+    "flag": "BEAM_TIMEOUT_SEC",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Abort beam after N seconds",
+    "section": "Compiler & kernel search",
+    "line": 282
+  },
+  {
+    "flag": "BEAM_MIN_PROGRESS",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Minimum estimated-improvement rate to continue",
+    "section": "Compiler & kernel search",
+    "line": 283
+  },
+  {
+    "flag": "BEAM_MAX_TASKS_PER_CHILD",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Recycle beam worker processes",
+    "section": "Compiler & kernel search",
+    "line": 284
+  },
+  {
+    "flag": "BEAM_PADTO",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Allow PADTO optimization in beam",
+    "section": "Compiler & kernel search",
+    "line": 285
+  },
+  {
+    "flag": "BEAM_STRICT_MODE",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Stricter candidate acceptance",
+    "section": "Compiler & kernel search",
+    "line": 286
+  },
+  {
+    "flag": "BEAM_DEV_TIMEOUT",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Per-launch device timeout during beam",
+    "section": "Compiler & kernel search",
+    "line": 287
+  },
+  {
+    "flag": "BEAM_DEBUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Beam search trace",
+    "section": "Compiler & kernel search",
+    "line": 288
+  },
+  {
+    "flag": "BEAM_LOG_SURPASS_MAX",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Log when candidates exceed uops/upcast/compute limits",
+    "section": "Compiler & kernel search",
+    "line": 289
+  },
+  {
+    "flag": "IGNORE_BEAM_CACHE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=ignore cached beam results",
+    "section": "Compiler & kernel search",
+    "line": 290
+  },
+  {
+    "flag": "CACHELEVEL",
+    "alias": null,
+    "table_default": "2",
+    "desc": "Kernel cache level (0=no cache)",
+    "section": "Compiler & kernel search",
+    "line": 291
+  },
+  {
+    "flag": "CCACHE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable the compiler cache",
+    "section": "Compiler & kernel search",
+    "line": 292
+  },
+  {
+    "flag": "SCACHE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable the scheduler cache",
+    "section": "Compiler & kernel search",
+    "line": 293
+  },
+  {
+    "flag": "LRU",
+    "alias": null,
+    "table_default": "1",
+    "desc": "1=LRU eviction for the disk cache",
+    "section": "Compiler & kernel search",
+    "line": 294
+  },
+  {
+    "flag": "CACHEDB",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Disk cache database filename",
+    "section": "Compiler & kernel search",
+    "line": 295
+  },
+  {
+    "flag": "XDG_CACHE_HOME",
+    "alias": null,
+    "table_default": "std",
+    "desc": "Base dir for the tinygrad cache",
+    "section": "Compiler & kernel search",
+    "line": 296
+  },
+  {
+    "flag": "DISABLE_HTTP_CACHE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=never reuse `fetch()` downloads",
+    "section": "Compiler & kernel search",
+    "line": 297
+  },
+  {
+    "flag": "USE_TC",
+    "alias": "TC",
+    "table_default": "1",
+    "desc": "0=disable tensor cores",
+    "section": "Compiler & kernel search",
+    "line": 298
+  },
+  {
+    "flag": "TC_SELECT",
+    "alias": null,
+    "table_default": "-1",
+    "desc": "Force a specific tensor-core candidate",
+    "section": "Compiler & kernel search",
+    "line": 299
+  },
+  {
+    "flag": "TC_OPT",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Tensor-core optimization level",
+    "section": "Compiler & kernel search",
+    "line": 300
+  },
+  {
+    "flag": "WINO",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=enable Winograd convolution",
+    "section": "Compiler & kernel search",
+    "line": 301
+  },
+  {
+    "flag": "TRANSCENDENTAL",
+    "alias": null,
+    "table_default": "1",
+    "desc": "1=force software transcendental decomposition",
+    "section": "Compiler & kernel search",
+    "line": 302
+  },
+  {
+    "flag": "NOLOCALS",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=disable local memory",
+    "section": "Compiler & kernel search",
+    "line": 303
+  },
+  {
+    "flag": "SPLIT_REDUCEOP",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable splitting large reduces into two kernels",
+    "section": "Compiler & kernel search",
+    "line": 304
+  },
+  {
+    "flag": "REDUCEOP_SPLIT_THRESHOLD",
+    "alias": null,
+    "table_default": "32768",
+    "desc": "Min elements before reduce splitting applies",
+    "section": "Compiler & kernel search",
+    "line": 305
+  },
+  {
+    "flag": "REDUCEOP_SPLIT_SIZE",
+    "alias": null,
+    "table_default": "22",
+    "desc": "Log2 cap on split reduce output size",
+    "section": "Compiler & kernel search",
+    "line": 306
+  },
+  {
+    "flag": "DISALLOW_BROADCAST",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=forbid broadcasting (catches hidden expands)",
+    "section": "Compiler & kernel search",
+    "line": 307
+  },
+  {
+    "flag": "DISABLE_FAST_IDIV",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=enable fast integer division (marked broken for some indexing)",
+    "section": "Compiler & kernel search",
+    "line": 308
+  },
+  {
+    "flag": "USE_ATOMICS",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow atomics for embedding backward",
+    "section": "Compiler & kernel search",
+    "line": 309
+  },
+  {
+    "flag": "FUSE_OPTIM",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=fuse optimizer apply into the compute graph",
+    "section": "Compiler & kernel search",
+    "line": 310
+  },
+  {
+    "flag": "MAX_KERNEL_BUFFERS",
+    "alias": null,
+    "table_default": "0",
+    "desc": ">0=split kernels with more than N buffers",
+    "section": "Compiler & kernel search",
+    "line": 311
+  },
+  {
+    "flag": "MV",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable matrix-vector tensor-core opt",
+    "section": "Compiler & kernel search",
+    "line": 312
+  },
+  {
+    "flag": "MV_BLOCKSIZE",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "MV opt: block size",
+    "section": "Compiler & kernel search",
+    "line": 313
+  },
+  {
+    "flag": "MV_THREADS_PER_ROW",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "MV opt: threads per row",
+    "section": "Compiler & kernel search",
+    "line": 314
+  },
+  {
+    "flag": "MV_ROWS_PER_THREAD",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "MV opt: rows per thread",
+    "section": "Compiler & kernel search",
+    "line": 315
+  },
+  {
+    "flag": "OCCUPANCY_FLOOR",
+    "alias": null,
+    "table_default": "4096",
+    "desc": "Skip local-group candidates below this global size",
+    "section": "Compiler & kernel search",
+    "line": 316
+  },
+  {
+    "flag": "ALLOW_HALF8",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow 8-wide half loads in memory coalescing",
+    "section": "Compiler & kernel search",
+    "line": 317
+  },
+  {
+    "flag": "ALIGNED",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable aligned vector loads in cstyle renderers",
+    "section": "Compiler & kernel search",
+    "line": 318
+  },
+  {
+    "flag": "DMC",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=skip memory coalescing pass",
+    "section": "Compiler & kernel search",
+    "line": 319
+  },
+  {
+    "flag": "UPAT_COMPILE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=interpreted (slow) pattern matcher instead of compiled",
+    "section": "Compiler & kernel search",
+    "line": 320
+  },
+  {
+    "flag": "EXPAND_SSA",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "SSA expansion toggle (rarely used; dev knob)",
+    "section": "Compiler & kernel search",
+    "line": 321
+  },
+  {
+    "flag": "JIT_BATCH_SIZE",
+    "alias": null,
+    "table_default": "32",
+    "desc": "Max kernels per JIT batch",
+    "section": "Scheduler, JIT & graph",
+    "line": 327
+  },
+  {
+    "flag": "NO_MEMORY_PLANNER",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=disable buffer reuse by the memory planner",
+    "section": "Scheduler, JIT & graph",
+    "line": 328
+  },
+  {
+    "flag": "PCONTIG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow partial contiguous in rangeify",
+    "section": "Scheduler, JIT & graph",
+    "line": 329
+  },
+  {
+    "flag": "DEBUG_RANGEIFY",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Rangeify debug output",
+    "section": "Scheduler, JIT & graph",
+    "line": 330
+  },
+  {
+    "flag": "TUPLE_ORDER",
+    "alias": null,
+    "table_default": "1",
+    "desc": "1=tuplize linearizer sort order",
+    "section": "Scheduler, JIT & graph",
+    "line": 331
+  },
+  {
+    "flag": "RING",
+    "alias": null,
+    "table_default": "1",
+    "desc": "Ring allreduce: 0=off, 2=force",
+    "section": "Scheduler, JIT & graph",
+    "line": 332
+  },
+  {
+    "flag": "ALL2ALL",
+    "alias": null,
+    "table_default": "0",
+    "desc": "All-to-all allreduce: 1=on, 2=force",
+    "section": "Scheduler, JIT & graph",
+    "line": 333
+  },
+  {
+    "flag": "ALLREDUCE_CAST",
+    "alias": null,
+    "table_default": "1",
+    "desc": "1=cast before allreduce",
+    "section": "Scheduler, JIT & graph",
+    "line": 334
+  },
+  {
+    "flag": "RING_ALLREDUCE_THRESHOLD",
+    "alias": null,
+    "table_default": "256000",
+    "desc": "Min elements to prefer ring/all2all for ndev>2",
+    "section": "Scheduler, JIT & graph",
+    "line": 335
+  },
+  {
+    "flag": "LATE_ALLREDUCE",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=do allreduce early instead",
+    "section": "Scheduler, JIT & graph",
+    "line": 336
+  },
+  {
+    "flag": "GRAPH_ONE_KERNEL",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow single-kernel graph capture",
+    "section": "Scheduler, JIT & graph",
+    "line": 337
+  },
+  {
+    "flag": "UNSAFE_ALLOW_JIT_BUFFER",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=allow capturing buffers during JIT (unsafe)",
+    "section": "Scheduler, JIT & graph",
+    "line": 338
+  },
+  {
+    "flag": "REALIZE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "llm: realize weights at load",
+    "section": "Scheduler, JIT & graph",
+    "line": 339
+  },
+  {
+    "flag": "HALF",
+    "alias": null,
+    "table_default": "1",
+    "desc": "llm: cast loaded weights to float16 (0=keep dtype)",
+    "section": "Scheduler, JIT & graph",
+    "line": 340
+  },
+  {
+    "flag": "CHECK_OOB",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=check out-of-bounds in the PYTHON backend (slow)",
+    "section": "Debug, validation & dev infra",
+    "line": 346
+  },
+  {
+    "flag": "VALIDATE_WITH_CPU",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=validate every kernel's output against CPU",
+    "section": "Debug, validation & dev infra",
+    "line": 347
+  },
+  {
+    "flag": "ASSERT_COMPILE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=assert on any device compile (no-compile enforcement)",
+    "section": "Debug, validation & dev infra",
+    "line": 348
+  },
+  {
+    "flag": "TYPED",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=typeguard runtime type checking on import",
+    "section": "Debug, validation & dev infra",
+    "line": 349
+  },
+  {
+    "flag": "DEBUG_LINEARIZE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Print linearizer decisions",
+    "section": "Debug, validation & dev infra",
+    "line": 350
+  },
+  {
+    "flag": "DEBUG_RANGEIFY",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Rangeify debug output",
+    "section": "Debug, validation & dev infra",
+    "line": 351
+  },
+  {
+    "flag": "DEBUG_GC",
+    "alias": null,
+    "table_default": "0",
+    "desc": "GC debugging at exit",
+    "section": "Debug, validation & dev infra",
+    "line": 352
+  },
+  {
+    "flag": "DEBUGONNX",
+    "alias": null,
+    "table_default": "0",
+    "desc": "ONNX parser debug",
+    "section": "Debug, validation & dev infra",
+    "line": 353
+  },
+  {
+    "flag": "ONNXLIMIT",
+    "alias": null,
+    "table_default": "-1",
+    "desc": "Parse only first N onnx nodes",
+    "section": "Debug, validation & dev infra",
+    "line": 354
+  },
+  {
+    "flag": "TRACE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "PYTHON backend: print every executed op",
+    "section": "Debug, validation & dev infra",
+    "line": 355
+  },
+  {
+    "flag": "PRINT_MATCH_STATS",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Print pattern-match counts per rewrite",
+    "section": "Debug, validation & dev infra",
+    "line": 356
+  },
+  {
+    "flag": "TRACK_MATCH_STATS",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Record per-rule match stats (pickle)",
+    "section": "Debug, validation & dev infra",
+    "line": 357
+  },
+  {
+    "flag": "CAPTURE_PROCESS_REPLAY",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Capture kernels for process-replay tests",
+    "section": "Debug, validation & dev infra",
+    "line": 358
+  },
+  {
+    "flag": "REWRITE_DATA",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Path to rewrites pickle for viz (`--rewrites-path`)",
+    "section": "Debug, validation & dev infra",
+    "line": 359
+  },
+  {
+    "flag": "PROFILE_DATA",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Path to profile pickle for viz",
+    "section": "Debug, validation & dev infra",
+    "line": 360
+  },
+  {
+    "flag": "BROWSER",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "viz: auto-open browser at this host",
+    "section": "Debug, validation & dev infra",
+    "line": 361
+  },
+  {
+    "flag": "PORT",
+    "alias": null,
+    "table_default": "8000",
+    "desc": "viz server port",
+    "section": "Debug, validation & dev infra",
+    "line": 362
+  },
+  {
+    "flag": "NOSKIP",
+    "alias": null,
+    "table_default": "0",
+    "desc": "AMD sqtt: don't skip decode categories",
+    "section": "Debug, validation & dev infra",
+    "line": 363
+  },
+  {
+    "flag": "TEST_PICKLE",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Dev knob for pickle testing",
+    "section": "Debug, validation & dev infra",
+    "line": 364
+  },
+  {
+    "flag": "DEVICE_IN_FUNCTION_BUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Dev knob reproducing a device-in-function bug",
+    "section": "Debug, validation & dev infra",
+    "line": 365
+  },
+  {
+    "flag": "THREADS",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=single-threaded CPU renderers (llvmir/cstyle/x86)",
+    "section": "Device & runtime (cross-backend)",
+    "line": 371
+  },
+  {
+    "flag": "CC",
+    "alias": null,
+    "table_default": "clang",
+    "desc": "C compiler for the CLANG backend",
+    "section": "Device & runtime (cross-backend)",
+    "line": 372
+  },
+  {
+    "flag": "LLVMOPT",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable LLVM optimization passes",
+    "section": "Device & runtime (cross-backend)",
+    "line": 373
+  },
+  {
+    "flag": "MM_DEBUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Memory-manager map/unmap trace",
+    "section": "Device & runtime (cross-backend)",
+    "line": 374
+  },
+  {
+    "flag": "GMMU",
+    "alias": null,
+    "table_default": "1",
+    "desc": "0=disable GPU MMU usage",
+    "section": "Device & runtime (cross-backend)",
+    "line": 375
+  },
+  {
+    "flag": "EMULATED_DTYPES",
+    "alias": null,
+    "table_default": "\"\"",
+    "desc": "Dtypes to emulate (e.g. bfloat16)",
+    "section": "Device & runtime (cross-backend)",
+    "line": 376
+  },
+  {
+    "flag": "NULL_ALLOW_COPYOUT",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Allow copyout on the NULL device",
+    "section": "Device & runtime (cross-backend)",
+    "line": 377
+  },
+  {
+    "flag": "REMOTE",
+    "alias": null,
+    "table_default": "\"\"",
+    "desc": "Comma-separated remote tinygpu PCIe devices",
+    "section": "Device & runtime (cross-backend)",
+    "line": 378
+  },
+  {
+    "flag": "APL_REMOTE_SOCK",
+    "alias": null,
+    "table_default": "temp path",
+    "desc": "Socket path for remote device IPC",
+    "section": "Device & runtime (cross-backend)",
+    "line": 379
+  },
+  {
+    "flag": "REMOTE_TIMEOUT",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Remote device timeout",
+    "section": "Device & runtime (cross-backend)",
+    "line": 380
+  },
+  {
+    "flag": "VFIO",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=use VFIO for PCIe device access",
+    "section": "Device & runtime (cross-backend)",
+    "line": 381
+  },
+  {
+    "flag": "IOCTL",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=import the ioctl test harness (nv/amd/qcom/dsp)",
+    "section": "Device & runtime (cross-backend)",
+    "line": 382
+  },
+  {
+    "flag": "TINYFS_ENDPOINT",
+    "alias": null,
+    "table_default": "localhost:6767",
+    "desc": "tinyfs server address",
+    "section": "Device & runtime (cross-backend)",
+    "line": 383
+  },
+  {
+    "flag": "TINYFS_TIMEOUT",
+    "alias": null,
+    "table_default": "60",
+    "desc": "tinyfs request timeout",
+    "section": "Device & runtime (cross-backend)",
+    "line": 384
+  },
+  {
+    "flag": "ASYNC_COPY_WORKERS",
+    "alias": null,
+    "table_default": "4",
+    "desc": "tinyfs async copy pool size",
+    "section": "Device & runtime (cross-backend)",
+    "line": 385
+  },
+  {
+    "flag": "HCQ2",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Opt into the newer HCQ implementation paths",
+    "section": "Device & runtime (cross-backend)",
+    "line": 386
+  },
+  {
+    "flag": "HCQ_NUM_SDMA",
+    "alias": null,
+    "table_default": "\u22648",
+    "desc": "HCQ copy queue count",
+    "section": "Device & runtime (cross-backend)",
+    "line": 387
+  },
+  {
+    "flag": "HCQDEV_WAIT_TIMEOUT_MS",
+    "alias": null,
+    "table_default": "30000",
+    "desc": "HCQ device wait timeout",
+    "section": "Device & runtime (cross-backend)",
+    "line": 388
+  },
+  {
+    "flag": "HCQ_VISIBLE_DEVICES",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Deprecated; errors with guidance",
+    "section": "Device & runtime (cross-backend)",
+    "line": 389
+  },
+  {
+    "flag": "CUDA_PATH",
+    "alias": null,
+    "table_default": "/usr/local/cuda",
+    "desc": "CUDA headers location",
+    "section": "Backend-specific",
+    "line": 395
+  },
+  {
+    "flag": "NV_DEBUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "NV driver debug (\u22654 dumps register writes)",
+    "section": "Backend-specific",
+    "line": 396
+  },
+  {
+    "flag": "PMA_BUFFER_SIZE",
+    "alias": null,
+    "table_default": "512 (MiB)",
+    "desc": "NV PMA buffer size",
+    "section": "Backend-specific",
+    "line": 397
+  },
+  {
+    "flag": "ROCM_PATH",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "ROCm installation path",
+    "section": "Backend-specific",
+    "line": 398
+  },
+  {
+    "flag": "AMD_AQL",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "AQL packet path for AMD",
+    "section": "Backend-specific",
+    "line": 399
+  },
+  {
+    "flag": "AMD_DISABLE_SDMA",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=disable AMD SDMA copy engines",
+    "section": "Backend-specific",
+    "line": 400
+  },
+  {
+    "flag": "AMD_SDMA_BIND",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=bind SDMA queues to devices",
+    "section": "Backend-specific",
+    "line": 401
+  },
+  {
+    "flag": "AMD_KFD_QUEUE_PRIORITY",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "KFD queue priority override",
+    "section": "Backend-specific",
+    "line": 402
+  },
+  {
+    "flag": "WAVES_PER_SH",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "AMD: force waves-per-SH in COMPUTE_RESOURCE_LIMITS",
+    "section": "Backend-specific",
+    "line": 403
+  },
+  {
+    "flag": "SQTT_BUFFER_SIZE",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "AMD thread-trace buffer size",
+    "section": "Backend-specific",
+    "line": 404
+  },
+  {
+    "flag": "SQTT_EVENT",
+    "alias": null,
+    "table_default": "-1",
+    "desc": "AMD: record only this sqtt event id",
+    "section": "Backend-specific",
+    "line": 405
+  },
+  {
+    "flag": "MAX_SQTT_PKTS",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Cap decoded sqtt packets",
+    "section": "Backend-specific",
+    "line": 406
+  },
+  {
+    "flag": "PMC_COUNTERS",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "AMD performance counters to enable",
+    "section": "Backend-specific",
+    "line": 407
+  },
+  {
+    "flag": "AM_DEBUG",
+    "alias": null,
+    "table_default": "0",
+    "desc": "am (bare-metal AMD) debug level",
+    "section": "Backend-specific",
+    "line": 408
+  },
+  {
+    "flag": "AM_RESET",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "am: reset device at init",
+    "section": "Backend-specific",
+    "line": 409
+  },
+  {
+    "flag": "AM_POWER_LIMIT",
+    "alias": null,
+    "table_default": "0.0",
+    "desc": "am: cap power (fraction)",
+    "section": "Backend-specific",
+    "line": 410
+  },
+  {
+    "flag": "MOCKDSP",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=use the mock DSP device",
+    "section": "Backend-specific",
+    "line": 411
+  },
+  {
+    "flag": "QCOM_PRIORITY",
+    "alias": null,
+    "table_default": "8",
+    "desc": "QCOM KGSL context priority",
+    "section": "Backend-specific",
+    "line": 412
+  },
+  {
+    "flag": "FIX_METAL_ICB",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Metal indirect-command-buffer workaround",
+    "section": "Backend-specific",
+    "line": 413
+  },
+  {
+    "flag": "WEBGPU_BACKEND",
+    "alias": null,
+    "table_default": "auto",
+    "desc": "WebGPU native backend (Metal, Vulkan, ...)",
+    "section": "Backend-specific",
+    "line": 414
+  },
+  {
+    "flag": "MLX_IP",
+    "alias": null,
+    "table_default": "10.0.0.1",
+    "desc": "mlx (RDMA NIC) device IP",
+    "section": "Backend-specific",
+    "line": 415
+  },
+  {
+    "flag": "EMULATE",
+    "alias": null,
+    "table_default": "\u2014",
+    "desc": "Deprecated; errors and points at `DEV=PYTHON::`",
+    "section": "Backend-specific",
+    "line": 416
+  },
+  {
+    "flag": "SUM_DTYPE",
+    "alias": null,
+    "table_default": "float32",
+    "desc": "Accumulation dtype for sum reductions",
+    "section": "Optimizer / training knobs",
+    "line": 422
+  },
+  {
+    "flag": "OPTIM_DTYPE",
+    "alias": null,
+    "table_default": "float32",
+    "desc": "Optimizer parameter dtype",
+    "section": "Optimizer / training knobs",
+    "line": 423
+  },
+  {
+    "flag": "CONST_LR",
+    "alias": null,
+    "table_default": "0",
+    "desc": "1=scalar (unscheduled) learning rate",
+    "section": "Optimizer / training knobs",
+    "line": 424
+  },
+  {
+    "flag": "BENCHMARK_LOG",
+    "alias": null,
+    "table_default": "\"\"",
+    "desc": "llm: write benchmark events to this log",
+    "section": "Optimizer / training knobs",
+    "line": 425
+  },
+  {
+    "flag": "OPENPILOT_HACKS",
+    "alias": null,
+    "table_default": "0",
+    "desc": "Compatibility behaviors for openpilot models",
+    "section": "Optimizer / training knobs",
+    "line": 426
+  },
+  {
+    "flag": "CAPTURING",
+    "alias": null,
+    "table_default": "1",
+    "desc": "Internal: graph-capture state (dev knob)",
+    "section": "Optimizer / training knobs",
+    "line": 427
+  },
+  {
+    "flag": "TRACEMETA",
+    "alias": null,
+    "table_default": "1",
+    "desc": "Internal: include metadata in traces",
+    "section": "Optimizer / training knobs",
+    "line": 428
+  }
+]
