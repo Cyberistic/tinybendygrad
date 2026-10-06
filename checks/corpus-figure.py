@@ -25,7 +25,6 @@ the 34/35 pair happened. A graph that fails to build is **printed and counted se
 skipped quietly: a coverage figure that silently drops a graph understates the coverage it claims.
 """
 from __future__ import annotations
-import re
 from pathlib import Path
 
 import argparse
@@ -37,7 +36,7 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 
 # THE DEVICE IS A DECLARED PRECONDITION OF THIS FIGURE, AND THIS IS WHERE IT IS ENFORCED.
 #
-# WHY A NEW CONDITION HERE AND NOT A FOURTH VIEW OF AN EXISTING ONE.  The five conditions
+# WHY A NEW CONDITION HERE AND NOT A FOURTH VIEW OF AN EXISTING ONE.  The conditions
 # `checks/differ.py` pins all ask about THE COMPARISON: `graphs` how many graphs exist,
 # `graphs-agree` how many rows agreed, `not-comparable` whether every graph was PUT TO the
 # comparison, `expect-moved` whether the table's assertions held, `graphs-unset` whether
@@ -72,6 +71,27 @@ def pinned_dev() -> str:
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.PINNED_DEV
+
+
+def differ_pins() -> dict[str, str]:
+    """`checks/differ.py`'s `PINS` -- IMPORTED, never re-declared.
+
+    A second copy of the pin list is a contract with no generator: it rots without
+    anyone noticing, which is the failure `differ.declared()`'s docstring names for
+    artifact names and this file's own history names for graph names. The pins are the
+    run's verdict; an instrument that prints `OK` over a red run because it consulted
+    3 of the 17 is the defect this loader exists to remove.
+
+    `differ.py` imports only the standard library and runs nothing at module scope --
+    `gates/retention-check.py` already imports it the same way for `unhealthy()` -- so
+    asking it for its own table is side-effect-free.
+    """
+    spec = importlib.util.spec_from_file_location("differ_pins", ROOT / "checks/differ.py")
+    if spec is None or spec.loader is None:                    # `ty`: both are Optional, and
+        raise SystemExit("checks/differ.py has no importable spec -- the pins are unreadable")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.PINS
 
 
 def device_precondition() -> str:
@@ -120,8 +140,10 @@ def load_graphcmp():
     return gc
 
 
-def run_health() -> str:
-    """The RUN's own verdict, or a loud statement that there isn't one.
+def run_health() -> tuple[bool, str]:
+    r"""The RUN's own verdict, or a loud statement that there isn't one.
+
+    Returns `(every pin green, the line to print)`.
 
     MEASURED 2026-10-05. This function did not exist, and its absence is the whole defect: the
     instrument printed `graphs built 22 / FAILED 0` while `runs/graphcmp/D/D0-run-summary.txt` — which
@@ -133,26 +155,32 @@ def run_health() -> str:
     **A COVERAGE FIGURE PRINTED OVER A RUN THAT COMPARED NOTHING IS NOT A COVERAGE FIGURE.** The number
     was not wrong by being miscounted; it was answering a different question and wearing this
     instrument's name. So the run's health is read from the run, and `main` refuses on it.
+
+    MEASURED 2026-10-06, THE POPULATION WAS THE DEFECT. This consulted **3 of the 17** pins
+    `checks/differ.py` declares -- `graphs`, `graphs-agree`, `not-comparable` -- and printed
+    `RUN HEALTH : OK` over a run red on 4 of 17 (`expect-moved=1` against a pinned `0`,
+    `graphs-agree=20` and `byte-identical=20` against `19`, `selfcheck: FAIL` against `OK`).
+    Three green pins out of seventeen is not a health verdict, it is a sample, and the sample
+    happened to be the green part. **The pins are now IMPORTED from `differ.py` and every one is
+    consulted**, so `OK` means the run is green on all 17 -- and a summary with no pins at all
+    is 17 ABSENTs, not a pass. The parse is `differ.unhealthy()`'s own (split on the FIRST `=`,
+    because nine of the seventeen values contain spaces, which the old `^(\S+)=(\S+)$` regex
+    could not see at all).
     """
     summary = Path(__file__).resolve().parents[1] / "runs/graphcmp/D/D0-run-summary.txt"
     if not summary.exists():
-        return "RUN HEALTH        : **NO RUN SUMMARY** -- there is no run to corroborate anything"
-    kv = dict(re.findall(r"^(\S+)=(\S+)$", summary.read_text(), re.M))
-    agree, nc = int(kv.get("graphs-agree", -1)), int(kv.get("not-comparable", -1))
-    total = int(kv.get("graphs", 0))
-    # **COMPARED IS NOT AGREED.** I DEMANDED `agree == total`, WHICH IS A THIRD QUESTION AGAIN.
-    # MEASURED 2026-10-05: with the port emitting rows at all, the healthy run is
-    # `graphs-agree=14  not-comparable=0  total=16` — **because `checks/differ.py`'s `WANT` RECORDS TWO
-    # DELIBERATE `DISAGREE`s.** So `agree == total` CAN NEVER HOLD OVER A HEALTHY RUN OF THIS CORPUS, AND
-    # THIS INSTRUMENT REFUSED A TREE THAT HAD JUST BEEN FIXED. `not-comparable == 0` IS THE RIGHT TEST: IT
-    # ASKS "WAS EVERY GRAPH PUT TO THE COMPARISON", WHICH IS WHAT A COVERAGE FIGURE ACTUALLY DEPENDS ON.
-    # **A DISAGREEMENT IS A RESULT. AN UNCOMPARED GRAPH IS AN ABSENCE. ONLY THE ABSENCE BLOCKS A FIGURE.**
-    if nc == 0 and total > 0:
-        return (f"RUN HEALTH        : OK -- every one of {total} graphs was COMPARED, "
-                f"{agree} agree and {total - agree} disagree (disagreement is a recorded verdict, "
-                f"not an absence)")
-    return (f"RUN HEALTH        : **FAILED** -- {agree} of {total} graphs agree, "
-            f"{nc} not comparable. THE UNION ABOVE IS NOT A VERDICT.")
+        return (False, "RUN HEALTH        : **NO RUN SUMMARY** -- there is no run to corroborate "
+                       "anything, so every pin is unknown rather than matched")
+    pins = differ_pins()
+    got = dict(ln.split("=", 1) for ln in summary.read_text(errors="replace").splitlines() if "=" in ln)
+    red = [f"{k}={got[k]} (expected {pins[k]})" for k in pins if k in got and got[k] != pins[k]]
+    red += [f"{k} ABSENT" for k in pins if k not in got]
+    if red:
+        return (False, f"RUN HEALTH        : **FAILED** -- {len(pins) - len(red)} of {len(pins)} "
+                       f"pins green. RED: {'; '.join(red)}. THE UNION ABOVE IS NOT A VERDICT.")
+    return (True, f"RUN HEALTH        : OK -- {len(pins)} of {len(pins)} pins green "
+                  f"(checks/differ.py's PINS, imported; `graphs={got['graphs']}` and "
+                  f"`not-comparable={got['not-comparable']}` among them)")
 
 
 def main() -> int:
@@ -204,7 +232,8 @@ def main() -> int:
     print("     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), \"py\")`")
     print("     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH")
     print("     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.")
-    print(run_health())
+    health_ok, health = run_health()
+    print(health)
     print(f"per-graph SUM        : {per_graph_sum}   <- NOT the figure; it counts an op once "
           f"per graph that has it")
     print(f"NOT reached ({len(missing)}): {' '.join(missing)}")
@@ -223,7 +252,10 @@ def main() -> int:
     # session. **AN INSTRUMENT THAT CANNOT SEE A TOTAL FAILURE IN ITS OWN INPUT IS A FIGURE.**
     # `dev_ok` is ANDed in, not substituted: a run health failure is still a run health failure,
     # and ORing would let a healthy-looking run excuse a floating device (or the reverse).
-    return 0 if dev_ok and built == len(gc.GRAPHS) and "FAILED" not in run_health() else 1
+    # THE REFUSAL IS ON `health_ok`, NOT ON THE ABSENCE OF THE WORD "FAILED": a missing summary
+    # returns a line with neither, and the old check let it exit 0 -- a check that measured
+    # nothing reporting a pass, which is the `DEAD`-is-not-a-zero doctrine.
+    return 0 if dev_ok and built == len(gc.GRAPHS) and health_ok else 1
 
 
 if __name__ == "__main__":
