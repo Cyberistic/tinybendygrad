@@ -152,21 +152,36 @@ WANT = {
     # **This is the only row in the table whose expectation predates the measurement**, and it is
     # why a DISAGREE is the strong kind: it is the one that was already claimed.
     "flip": "DISAGREE",
-    # `allred`, `cdiv` and `late` DISAGREE FOR ONE REASON, AND IT IS NOT A WRONG VALUE: **the bend
-    # side emits `matmul`'s GRAPH.** MEASURED, three independent ways, in
-    # `.agents/slop/unsetexp/` (3 trials each, all STABLE, warm substrate):
-    #   - `emit --side bend` for `allred`, `cdiv`, `late` AND `matmul` is the same 18 lines and the
-    #     same sha256 (`9f39a6e3ee7a0e30...`) -- four names, one emission;
-    #   - the bend-only block of `cdiv` and `late` is BYTE-IDENTICAL to each other (12 nodes: a
-    #     15-element f32 ALLOC, two PERMUTEs, a MUL and a `REDUCE rd(OADD,i1)`), and `allred`'s is
-    #     that block plus one `RESHAPE (l0:3,l0:5)`;
-    #   - `allred`'s census loses `ALLREDUCE 1/0 COPY 1/0 RANGE 1/0` and `cdiv`'s loses
-    #     `CDIV 1/0 CMOD 1/0`, i.e. the port never emits the op the graph is FOR.
-    # `matmul` itself AGREES with CPython byte for byte, so the matmul rendering is RIGHT and
-    # these three names are rendered as the wrong FIXTURE. Root-causing that is
-    # `.agents/slop/disagree/`'s unit and not this file's: these rows exist to make the wrong
-    # fixture LOUD and to move the moment it is fixed.
-    "allred": "DISAGREE", "cdiv": "DISAGREE", "late": "DISAGREE",
+    # `allred`, `cdiv` and `late` MOVED TO AGREE (2026-10-06, run34). They were DISAGREE for one
+    # reason -- the bend side emitted `matmul`'s GRAPH because `rows.pick3` had no arm for them
+    # (`.agents/slop/unsetexp/`). `adevfix` (device-tuple normal form) and `armfour` (`c3b4da262`,
+    # the arms) landed, so the run now reads the real fixture: `D2-cmp-allred/cdiv/late.txt` are
+    # `BYTE-IDENTICAL` and `D1-graph-*.txt` read `VERDICT: AGREE`. `expect-moved` adjudicated it --
+    # it read 3 against these three rows and returns to 0 once they move here.
+    "allred": "AGREE", "cdiv": "AGREE", "late": "AGREE",
+    # THE FOURTEEN THE CORPUS DECLARED AND `WANT` NEVER ANSWERED (`.agents/slop/wantwire/REPORT.md`
+    # Phases 1-2). Each row is MEASURED by the run34 graph phase -- the phase that finished at
+    # 15:35:04, BEFORE the port went into flux at 15:35:12 -- so each is a real AGREE or DISAGREE
+    # and never a default. `getaddr` is deliberately ABSENT and stays UNSET: its bend emission is a
+    # single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr` exits
+    # 2 `NOT WELL-POSED`, so there is no verdict to answer with. That one UNSET keeps the run
+    # `RUN INCOMPLETE`, which is the honest state (wantwire (a)).
+    #
+    #   Phase 1 -- the armed fixtures whose rows AGREE:
+    "alu": "AGREE", "bit": "AGREE", "bw": "AGREE", "move": "AGREE", "where": "AGREE",
+    "threefry": "AGREE", "mulacc": "AGREE",
+    #   armfour's four, now armed -- two AGREE, two DISAGREE:
+    "custom_function": "AGREE", "mstack": "AGREE",
+    #   THE FOUR REAL DISAGREEMENTS THIS RUN FOUND, each DISAGREE for a NAMED cause, never deleted:
+    #     `mselect` -- `arg py=i0 bend=y n(i0)`: the port stores an int arg as a one-byte ABlob
+    #       (`ops.bend:4560`), the `WALL(p3)` trigger at `ops.bend:4554`.
+    #     `stage` / `unshard` / `wmma` -- the port's fold has no arm for the op, so BOTH columns are
+    #       unsettled (`dtype py=f32 bend=? shape py=(...) bend=?`), the class the armfour note
+    #       called out for `stage`/`wmma`. `.agents/slop/foldgap/` is the unit fixing those arms;
+    #       when they land these three rows move to AGREE and `expect-moved` fires -- which is the
+    #       point of a pin that can fail.
+    "mselect": "DISAGREE",
+    "stage": "DISAGREE", "unshard": "DISAGREE", "wmma": "DISAGREE",
 }
 # THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
 # **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
@@ -218,7 +233,7 @@ PINS = {
     # are not comparable to a warm one. Only the first three are functions of the CORPUS;
     # every other pin here is a function of the PORT and moves when the port's next fix
     # lands. `.agents/slop/want/DECISION.md` records which is which.
-    "graphs": "25", "graphs-unset": "5", "graphs-answered": "20",
+    "graphs": "34", "graphs-unset": "1", "graphs-answered": "33",
     # `expect-moved` is the ONLY pin that asks whether the table's ASSERTIONS HELD, and it is
     # not a function of the corpus: it is a function of the PORT against the TABLE. **It is 0 and
     # it is a ZERO-TOLERANCE INVARIANT, which is why it does not need re-pinning when the corpus
@@ -230,13 +245,23 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "21", "byte-identical": "21", "not-comparable": "0",
+    "graphs-agree": "28", "byte-identical": "28", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
     # attempts` file, so `cmp -s` called the pair BYTE-IDENTICAL and `stable-pairs` read 5 of
     # 5. **Two identical FAILURES compare equal.** So the gate reads the FAILED and DIFFER
     # counts, not the identical one.
+    # ***NOT MOVED, AND THEY ARE RED, BECAUSE THE RUN34 PORT WENT INTO FLUX MID-RUN.*** The port
+    # files were rewritten at 15:35:12 (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and
+    # 15:39:43 (`fold.bend`) -- ~10 s AFTER the graph phase's `D2-bytediff` landed at 15:35:04 --
+    # so every bend step from `control` onward wrote a 0-row failure (`emit bend: 0 rows after 5
+    # attempts`, stderr naming `argstr`/`arg_repr`), NOT a measurement. These pins keep the last
+    # HEALTHY run's values ON PURPOSE: pinning the broken readings (`stable-pairs=0 of 5`,
+    # `plants-disagree=0 of 7`, `census-rc=rc=1`, empty `oracle-selfcheck`) would make a health
+    # gate that exits 0 having measured nothing -- the doctrine this file exists for. They return
+    # to green on the next run taken under a settled substrate; the diff-phase pins above
+    # (`graphs`/`graphs-*`/`graphs-agree`/`byte-identical`) are the ones run34 validly moved.
     "stable-pairs": "5 of 5", "stable-failed": "0 of 5", "stable-differ": "0 of 5",
     "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
