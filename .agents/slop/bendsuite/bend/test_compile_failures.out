@@ -1,0 +1,182 @@
+FFs                                                                      [100%]
+=================================== FAILURES ===================================
+____________________ TestCompileFailures.test_add_max_uchar ____________________
+
+self = <test.null.test_compile_failures.TestCompileFailures testMethod=test_add_max_uchar>
+
+    def test_add_max_uchar(self):
+>     self.compile((Tensor.empty(1024, dtype='uint8') + Tensor.empty(1024, dtype='uint8')).max())
+
+test/null/test_compile_failures.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_compile_failures.py:10: in compile
+    compile_linear(out.schedule_linear())
+tinygrad/engine/realize.py:273: in compile_linear
+    linear = lower_and_compile(linear)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/engine/realize.py:249: in lower_and_compile
+    for i, prg in (map if pool is None else pool.imap_unordered)(_compile_kernel, tasks):
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/engine/realize.py:224: in _compile_kernel
+    with Context(**x[2]): return x[0], to_program(*x[1])
+                                       ^^^^^^^^^^^^^^^^^
+tinygrad/codegen/__init__.py:518: in to_program
+    if (prg:=to_program_cache.get(key:=to_program_key(ast, renderer))) is None: to_program_cache[key] = prg = do_to_program(ast, renderer)
+                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1684: in __wrapper
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+tinygrad/codegen/__init__.py:505: in do_to_program
+    prg = graph_rewrite(prg, pm_to_program, ctx=renderer, name="linearize/render")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1665: in __wrapper
+    if TRACK_MATCH_STATS < 2 and not new_ctx: return func(*args, **kwargs)
+                                                     ^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1890: in graph_rewrite
+    return rewrite_ctx.walk_rewrite(sink) if walk else rewrite_ctx.unified_rewrite(sink)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1860: in unified_rewrite
+    if self.pm is None or (new_src_n:=self.pm_rewrite(new_n)) is None:
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1783: in pm_rewrite
+    def pm_rewrite(self, x:UOp) -> UOp|None: return unwrap(self.pm).rewrite(x, self.ctx)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1618: in rewrite
+    if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+             ^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1592: in lazy_compile
+    return entry[1](uop, ctx)
+           ^^^^^^^^^^^^^^^^^^
+<string>:3: in compiled_match
+    ???
+tinygrad/codegen/__init__.py:458: in do_render
+    src = ctx.render(list(lin.src))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:241: in render
+    def render(self, uops:list[UOp]) -> str: return encode(uops)
+                                                    ^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:144: in encode
+    lines.append(f"{i+1}: {u.op.name} {wire_dtype(u)} {wire_arg(u)} {' '.join(str(idx[s]+1) for s in u.src)}".rstrip())
+                                       ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+u = UOp(Ops.PARAM, arg=ParamArg(0, dtypes.u8, 1, device='BEND'), src=())
+
+    def wire_dtype(u:UOp) -> str:
+      # `to_dtype` is dtype.py's `getattr(dtypes, name.lower())`, so it wants the ATTRIBUTE name.
+      # This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`, and that map is DELETED upstream as of
+      # 793abbb1 ("modernize tinygrad's dtype to match rust"), so `import tinygrad.dtype` raised
+      # ImportError and the whole BEND device was dead. `u.dtype.name` is now correct on its own:
+      # the rename made `DType.name` EQUAL the attribute -- uint32's name went from "unsigned int"
+      # (which needed the inverse map to become "uint") to "u32", which `getattr(dtypes, "u32")`
+      # resolves directly. The old comment below is what the rename invalidated.
+      if u.dtype in LANES or u.dtype in (dtypes.void, dtypes.weakint, dtypes.weakfloat): return u.dtype.name
+>     raise NotImplementedError(f"BEND v1 has no lane for {u.dtype} (on {u.op.name}); it has {sorted(LANES, key=str)}")
+E     NotImplementedError: BEND v1 has no lane for dtypes.u8 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+
+tinygrad/runtime/ops_bend.py:101: NotImplementedError
+__________________ TestCompileFailures.test_interpolate_atari __________________
+multiprocessing.pool.RemoteTraceback: 
+"""
+Traceback (most recent call last):
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 125, in worker
+    result = (True, func(*args, **kwds))
+                    ^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/realize.py", line 224, in _compile_kernel
+    with Context(**x[2]): return x[0], to_program(*x[1])
+                                       ^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py", line 518, in to_program
+    if (prg:=to_program_cache.get(key:=to_program_key(ast, renderer))) is None: to_program_cache[key] = prg = do_to_program(ast, renderer)
+                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1684, in __wrapper
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py", line 505, in do_to_program
+    prg = graph_rewrite(prg, pm_to_program, ctx=renderer, name="linearize/render")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1665, in __wrapper
+    if TRACK_MATCH_STATS < 2 and not new_ctx: return func(*args, **kwargs)
+                                                     ^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1890, in graph_rewrite
+    return rewrite_ctx.walk_rewrite(sink) if walk else rewrite_ctx.unified_rewrite(sink)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1860, in unified_rewrite
+    if self.pm is None or (new_src_n:=self.pm_rewrite(new_n)) is None:
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1783, in pm_rewrite
+    def pm_rewrite(self, x:UOp) -> UOp|None: return unwrap(self.pm).rewrite(x, self.ctx)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1618, in rewrite
+    if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+             ^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1592, in lazy_compile
+    return entry[1](uop, ctx)
+           ^^^^^^^^^^^^^^^^^^
+  File "<string>", line 3, in compiled_match
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/codegen/__init__.py", line 458, in do_render
+    src = ctx.render(list(lin.src))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/ops_bend.py", line 241, in render
+    def render(self, uops:list[UOp]) -> str: return encode(uops)
+                                                    ^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/ops_bend.py", line 144, in encode
+    lines.append(f"{i+1}: {u.op.name} {wire_dtype(u)} {wire_arg(u)} {' '.join(str(idx[s]+1) for s in u.src)}".rstrip())
+                                       ^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/runtime/ops_bend.py", line 101, in wire_dtype
+    raise NotImplementedError(f"BEND v1 has no lane for {u.dtype} (on {u.op.name}); it has {sorted(LANES, key=str)}")
+NotImplementedError: BEND v1 has no lane for dtypes.u8 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+"""
+
+The above exception was the direct cause of the following exception:
+
+self = <test.null.test_compile_failures.TestCompileFailures testMethod=test_interpolate_atari>
+
+    def test_interpolate_atari(self):
+>     self.compile(Tensor.empty(210, 160, dtype='uint8').interpolate((64, 64)))
+
+test/null/test_compile_failures.py:13: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_compile_failures.py:10: in compile
+    compile_linear(out.schedule_linear())
+tinygrad/engine/realize.py:273: in compile_linear
+    linear = lower_and_compile(linear)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/engine/realize.py:249: in lower_and_compile
+    for i, prg in (map if pool is None else pool.imap_unordered)(_compile_kernel, tasks):
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <multiprocessing.pool.IMapUnorderedIterator object at 0x1078fbaa0>
+timeout = None
+
+    def next(self, timeout=None):
+        with self._cond:
+            try:
+                item = self._items.popleft()
+            except IndexError:
+                if self._index == self._length:
+                    self._pool = None
+                    raise StopIteration from None
+                self._cond.wait(timeout)
+                try:
+                    item = self._items.popleft()
+                except IndexError:
+                    if self._index == self._length:
+                        self._pool = None
+                        raise StopIteration from None
+                    raise TimeoutError from None
+    
+        success, value = item
+        if success:
+            return value
+>       raise value
+E       NotImplementedError: BEND v1 has no lane for dtypes.u8 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py:873: NotImplementedError
+2 failed, 1 skipped in 0.54s

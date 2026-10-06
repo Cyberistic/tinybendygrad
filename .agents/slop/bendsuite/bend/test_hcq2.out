@@ -1,0 +1,233 @@
+......FFFFFF....F                                                        [100%]
+=================================== FAILURES ===================================
+___ TestHCQ2Schedule.test_a_device_without_a_copy_queue_copies_with_a_kernel ___
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_a_device_without_a_copy_queue_copies_with_a_kernel>
+
+    def test_a_device_without_a_copy_queue_copies_with_a_kernel(self):
+      with patch.object(type(Device["NULL"]), "has_copy_queue", property(lambda _: False)):
+>       b = self.batch((self.x.to("NULL:1") + 1).contiguous())
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_hcq2.py:168: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:153: in batch
+    def batch(self, *ts:Tensor) -> UOp: return unwrap(self.scheduled(*ts)[0])
+                                                      ^^^^^^^^^^^^^^^^^^^
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...        UOp(Ops.ADD, arg=None, src=(
+              x13,
+              x92,)),)),)),
+        x93,
+        x1,)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+_____________ TestHCQ2Schedule.test_a_host_kernel_splits_the_batch _____________
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_a_host_kernel_splits_the_batch>
+
+    def test_a_host_kernel_splits_the_batch(self):
+>     self.assertEqual(len(self.scheduled(((self.x + 1).contiguous().to("PYTHON") + 2).contiguous().to("NULL") + 3)), 2)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_hcq2.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...(Ops.INS, arg=('store', dtypes.void), src=(
+            x54,
+            x55,)),)),
+        x58,
+        x1,)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+____ TestHCQ2Schedule.test_a_peer_kernel_runs_after_the_copy_that_feeds_it _____
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_a_peer_kernel_runs_after_the_copy_that_feeds_it>
+
+    def test_a_peer_kernel_runs_after_the_copy_that_feeds_it(self):
+>     self.assertEqual(orders(self.batch((self.x.to("NULL:1") + 1).contiguous())), {(0, 1)})
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_hcq2.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:153: in batch
+    def batch(self, *ts:Tensor) -> UOp: return unwrap(self.scheduled(*ts)[0])
+                                                      ^^^^^^^^^^^^^^^^^^^
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...        UOp(Ops.ADD, arg=None, src=(
+              x13,
+              x29,)),)),)),
+        x32,
+        x1,)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+_______ TestHCQ2Schedule.test_batches_of_real_workloads_are_well_formed ________
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_batches_of_real_workloads_are_well_formed>
+
+    def test_batches_of_real_workloads_are_well_formed(self):
+      t = Tensor.ones(6).contiguous().realize().shard(("NULL", "NULL:1", "NULL:2"), axis=0)
+>     self.scheduled((t + 1).sum(0).contiguous())
+
+test/null/test_hcq2.py:177: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...INS, arg=('store', dtypes.void), src=(
+            x109,
+            x158,)),)),
+        x163,
+        x254,)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+__________________ TestHCQ2Schedule.test_kernels_run_in_order __________________
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_kernels_run_in_order>
+
+>   def test_kernels_run_in_order(self): self.assertEqual(orders(self.batch(chain(self.x, 3))), {(0, 1, 2)})
+                                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_hcq2.py:155: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:153: in batch
+    def batch(self, *ts:Tensor) -> UOp: return unwrap(self.scheduled(*ts)[0])
+                                                      ^^^^^^^^^^^^^^^^^^^
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...  x35,)),
+          UOp(Ops.SHRINK, arg=None, src=(
+            x61,
+            x18,
+            x35,)),)),)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+__ TestHCQ2Schedule.test_lanes_of_a_sharded_kernel_do_not_wait_for_each_other __
+
+self = <test.null.test_hcq2.TestHCQ2Schedule testMethod=test_lanes_of_a_sharded_kernel_do_not_wait_for_each_other>
+
+    def test_lanes_of_a_sharded_kernel_do_not_wait_for_each_other(self):
+      s = Tensor.ones(8).contiguous().realize().shard(("NULL", "NULL:1"), axis=0).contiguous().realize()
+>     b = self.batch((s + 1).contiguous())
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_hcq2.py:162: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_hcq2.py:153: in batch
+    def batch(self, *ts:Tensor) -> UOp: return unwrap(self.scheduled(*ts)[0])
+                                                      ^^^^^^^^^^^^^^^^^^^
+test/null/test_hcq2.py:152: in scheduled
+    def scheduled(self, *ts:Tensor) -> list[UOp]: return [self.check(b) for b in scheduled(*ts)]
+                                                          ^^^^^^^^^^^^^
+test/null/test_hcq2.py:139: in check
+    cs = calls(batch)
+         ^^^^^^^^^^^^
+test/null/test_hcq2.py:43: in calls
+    def calls(batch:UOp) -> list[UOp]: return [c for cmds in queues(batch).values() for c in cmds if c.op is Ops.CALL]
+                                                             ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+batch = UOp(Ops.CALL, arg=CallInfo(None, None, False, False), src=(
+  UOp(Ops.SINK, arg=KernelInfo(name='hcq_submit', applied_...        UOp(Ops.ADD, arg=None, src=(
+              x66,
+              x52,)),)),)),
+        x53,
+        x1,)),)),)),))
+
+    def queues(batch:UOp) -> dict[tuple[str, str], list[UOp]]:
+>     return {(lin.arg[0][0], lin.arg[1]): list(lin.src) for lin in (s.without_after.src[0] for s in batch.body.src)}
+               ^^^^^^^^^^
+E     TypeError: 'CustomFunction' object is not subscriptable
+
+test/null/test_hcq2.py:42: TypeError
+____________________ TestHCQ2Link.test_repeated_word_loops _____________________
+
+self = <test.null.test_hcq2.TestHCQ2Link testMethod=test_repeated_word_loops>
+
+    def test_repeated_word_loops(self): # for (i..10) cmdbuf[off[i]] = var
+      var, offs = UOp.placeholder((1,), dtypes.uint32, device="CPU", volatile=True, tag="var"), [4 * i * i for i in range(10)]
+      var = hcq2.patch(var, [], bytes(4)) # initialize at link: the allocator may return a reused buffer
+      hq = SimpleNamespace(blob=bytearray(offs[-1] + 4), patches=[(o, var.index(0).load()) for o in offs], devs=("CPU",), queue="COPY:0")
+>     sink = UOp.sink(var.after(hcq2.bufferize_cmdbuf(hq, "cmdbuf", "CPU")).index(0).store(var.index(0).load() + 1), arg=KernelInfo("patch"), tag=1)
+                                ^^^^^^^^^^^^^^^^^^^^^
+E     AttributeError: module 'tinygrad.runtime.support.hcq2' has no attribute 'bufferize_cmdbuf'. Did you mean: 'bufferize_buf'?
+
+test/null/test_hcq2.py:219: AttributeError
+7 failed, 10 passed in 0.94s

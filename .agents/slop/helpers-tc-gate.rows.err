@@ -1,0 +1,36 @@
+0it [00:00, ?it/s]0it [00:00, ?it/s]
+#ungated trange_0_iterable=range
+#ungated trange_0_disable=0
+#ungated trange_0_desc=''
+#ungated trange_0_unit='it'
+#ungated trange_0_rate=100
+  0%|                                                     | 0/1 [00:00<?, ?it/s]100%|██████████████████████████████████████████| 1/1 [00:00<00:00, 46783.62it/s]100%|██████████████████████████████████████████| 1/1 [00:00<00:00, 26402.64it/s]
+#ungated trange_1_iterable=range
+#ungated trange_1_disable=0
+#ungated trange_1_desc=''
+#ungated trange_1_unit='it'
+#ungated trange_1_rate=100
+  0%|                                                     | 0/2 [00:00<?, ?it/s] 50%|█████████████████████                     | 1/2 [00:00<00:00, 83333.31it/s]100%|██████████████████████████████████████████| 2/2 [00:00<00:00, 86643.83it/s]
+#ungated trange_2_iterable=range
+#ungated trange_2_disable=0
+#ungated trange_2_desc=''
+#ungated trange_2_unit='it'
+#ungated trange_2_rate=100
+  0%|                                                     | 0/3 [00:00<?, ?it/s] 33%|█████████████▋                           | 1/3 [00:00<00:00, 101687.92it/s]100%|█████████████████████████████████████████| 3/3 [00:00<00:00, 146634.71it/s]
+#ungated trange_3_iterable=range
+#ungated trange_3_disable=0
+#ungated trange_3_desc=''
+#ungated trange_3_unit='it'
+#ungated trange_3_rate=100
+  0%|                                                     | 0/5 [00:00<?, ?it/s] 20%|████████▍                                 | 1/5 [00:00<00:00, 73844.35it/s]100%|█████████████████████████████████████████| 5/5 [00:00<00:00, 181818.24it/s]
+#ungated trange_5_iterable=range
+#ungated trange_5_disable=0
+#ungated trange_5_desc=''
+#ungated trange_5_unit='it'
+#ungated trange_5_rate=100
+#ungated gc_init_time_s=0.0
+#ungated gc_bumped_time_s=0.375
+#ungated gc_after_time_s=0.0
+#ungated ctx_ooo_leaked_df=bfloat16
+#ungated ctx_key_count=55
+#ungated ctx_keys=ALL2ALL,ALLOW_DEVICE_USAGE,ALLOW_TF32,ALLREDUCE_CAST,ALLREDUCE_NODE_NDEVS,BEAM,CACHELEVEL,CAPTURE_PROCESS_REPLAY,CAPTURING,CCACHE,CHECK_OOB,DEBUG,DEBUG_RANGEIFY,DEFAULT_FLOAT,DEFAULT_INT,DEV,DISABLE_FAST_IDIV,DISALLOW_BROADCAST,EMULATED_DTYPES,FLOAT16,FUSE_OPTIM,HCQ2,HCQ_CACHE_THRESH,HCQ_RUNTIME_DEV,IGNORE_BEAM_CACHE,IMAGE,JIT,LRU,MAX_BUFFER_SIZE,MAX_KERNEL_BUFFERS,NOOPT,NO_COLOR,NO_MEMORY_PLANNER,NULL_ALLOW_COPYOUT,OPENPILOT_HACKS,PARALLEL,PROFILE,REWRITE_STACK_LIMIT,RING,SCACHE,SPEC,SPLIT_REDUCEOP,TC,TC_MIN_GLOBALS,TC_OPT,TC_SELECT,TRACEMETA,TRACK_MATCH_STATS,TRAINING,TRANSCENDENTAL,TUPLE_ORDER,USE_ATOMICS,VALIDATE_WITH_CPU,VIZ,WINO

@@ -1,0 +1,14 @@
+..........F.                                                           [100%]
+=================================== FAILURES ===================================
+___________________ TestCallCodegen.test_call_stack_pointer ____________________
+
+self = <test.null.test_call.TestCallCodegen testMethod=test_call_stack_pointer>
+
+    def test_call_stack_pointer(self):
+      slot = UOp.placeholder((1,), dtypes.uint32, addrspace=AddrSpace.REG)
+>     call = UOp.custom_function("callback").call(UOp.const(0, dtypes.uint64), slot[0], ret_dtype=dtypes.void)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E     TypeError: UOp.call() got an unexpected keyword argument 'ret_dtype'
+
+test/null/test_call.py:133: TypeError
+1 failed, 11 passed, 2 subtests passed in 0.12s
