@@ -42,7 +42,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, main
+from gatekit import Gate, gate as run_gate
 
 GATE = Gate(
     "wk-cd-gate",
@@ -62,7 +62,5 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    ok = GATE.run() == 0
-    print("wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)" if ok
-          else "wk-cd-gate: FAILED")
-    sys.exit(0 if ok else 1)
+    sys.exit(run_gate(
+        GATE, "wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)"))
