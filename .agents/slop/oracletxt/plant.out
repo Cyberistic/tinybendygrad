@@ -1,0 +1,25 @@
+PLANT 1 -- SHAPE, moved by rewriting the bytes
+  PASS  plant1 beat 1: rowdump at a name with no hint keeps its shape
+        zzz-no-hint.txt -> rowdump
+  PASS  plant1 beat 2: source bytes at the SAME name MOVES the verdict
+        zzz-no-hint.txt rowdump -> source-in-txt
+  PASS  plant1: a rowdump at an ORACLE-LOOKING name is still a rowdump (the name is not it)
+        oracle-looking.txt -> rowdump
+  PASS  plant1: a crash dump at a ROWS-LOOKING name is still a crash dump
+        rows-looking.txt -> crash-dump-in-txt
+
+PLANT 2 -- REACH, moved by the READER's path (STALE vs ABSENT)
+  PASS  plant2 beat 1: a reader whose path is GONE and whose SUB-TREE survived reads STALE
+        sub/rows.txt -> STALE
+  PASS  plant2 beat 2: a reader whose path is GONE with ONLY the basename reads ABSENT, not STALE
+        sub/rows.txt -> ABSENT
+  PASS  plant2 beat 3: a reader's path holding DIFFERENT bytes reads SHADOW
+        sub/rows.txt -> SHADOW
+  PASS  plant2 beat 4: a reader's path holding THESE bytes reads LIVE
+        sub/rows.txt -> LIVE
+  PASS  plant2: the four beats were DISTINCT STATES -- the plant MOVED
+        STALE -> ABSENT -> SHADOW -> LIVE
+  PASS  plant2: the file under test was never edited
+        donor bytes identical throughout
+
+  ALL PLANTS PASS

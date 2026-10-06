@@ -12,6 +12,13 @@ NOTHING.** It is a directory name and an extension. That is why the inherited me
 report "named by nothing" for all 259 and be right about the citations while missing the reads:
 a file becomes visible here by existing under a name that four unrelated tools glob for.
 
+**THE SUBJECT HAS MOVED AND THIS FILE NOW SAYS SO.** 258 of the 259 `oracles/**/*.txt` were renamed
+to `.rows`/`.err`/`.md`/`.tsv`/`.bend` in commit `4d0a2b258` (`notxt139`); `oracles/` now holds
+**277 `.rows` and ONE `.txt`** (`rows-bd.txt`, 0 bytes, deliberately unclassified, left in place).
+So `rglob("*.txt")` here finds **1**, not 259, and the census below describes a **remnant**. The
+259-row reading is retained above only as history -- to re-measure the pre-rename split, run
+`.agents/slop/oracletxt/shape_of_stale.py`, which replays the committed `census.json`.
+
 So this check answers the question the glob cannot, and it answers it by reading, not by name:
 
   SHAPE    what is inside, by three mechanisms that SHARE NO REGEX -- a hand-written predicate, a
@@ -20,12 +27,20 @@ So this check answers the question the glob cannot, and it answers it by reading
            FILENAME; this one is told the answer must not depend on the filename, and the plant
            proves it by renaming a file and watching the group hold.
 
-  REACH    for each file, whether anything READS it -- FOUR ways, because the project's own record
-           is that a literal basename search is blind. LIVE, SHADOW, STALE and NOTHING, where
-           STALE is a script naming the basename at a path that no longer exists while the file
-           survives under `oracles/`. **`checks/sb-gate.sh` is a measured instance** and it is why
-           this check exists: its inputs were moved to `oracles/schedule-bodies/` and it refuses
-           with exit 3, while a basename search over the tree reports the name as cited.
+  REACH    for each file, whether anything READS it -- FIVE ways, because the project's own record
+           is that a literal basename search is blind. LIVE, SHADOW, STALE, ABSENT and NOTHING.
+           **STALE AND ABSENT ARE TWO VERDICTS, AND COLLAPSING THEM WAS THIS FILE'S OWN ERROR.**
+           A reader whose path no longer exists is not thereby a reader whose input MOVED: a bare
+           basename match is a namesake, not evidence. STALE requires that the reader's sub-tree
+           survived -- `.agents/slop/schedule-bodies/BEFORE-rows.txt` was once
+           `oracles/schedule-bodies/BEFORE-rows.txt`, so `schedule-bodies/BEFORE-rows.txt` is shared
+           and the read MOVED. ABSENT is the reader whose path is gone with only the basename in
+           common: it may never have named this file. **MEASURED over the pre-rename population
+           (`.agents/slop/oracletxt/shape_of_stale.py`): the 63 absent-path reader tokens are
+           **6 moved and 57 namesakes**, so the old STALE count over-claimed by better than 10x.**
+           **`checks/sb-gate.sh` is the measured STALE instance**
+           and it is why this check exists: its inputs were moved to `oracles/schedule-bodies/` and
+           it refuses with exit 3, while a basename search over the tree reports the name as cited.
 
   SELF-NAMING IS EXCLUDED, BECAUSE A CENSUS THAT READS ITS OWN EXAMPLES IS NOT A CENSUS. This
   file names `oracles/baseline.txt`, `oracles/BEFORE-rows.txt` and four others in its own prose and
@@ -37,10 +52,10 @@ So this check answers the question the glob cannot, and it answers it by reading
 
 usage: .venv/bin/python checks/oracle-txt-census.py [--gate]
 
-  no flag   the census: shape groups, reach classes, and the stale-rooted reads. exit 0.
-  --gate    exit 1 if any script reads a `.txt` whose basename is ALIVE under `oracles/` at a path
-            that is not there -- a gate input that moved with no re-point. Answerable whatever the
-            filesystem holds.
+  no flag   the census: shape groups, reach classes, and the moved/absent reads. exit 0.
+  --gate    exit 1 if any script reads a `.txt` at a path that is GONE while the read MOVED with no
+            re-point (the sub-tree survived under `oracles/`). Answerable whatever the filesystem
+            holds.
 """
 from __future__ import annotations
 
@@ -196,14 +211,15 @@ def code_files() -> list[pathlib.Path]:
     evidence. `.agents/slop/oracles259/plants.py` names the same paths in its plant fixtures, and
     while the plants ran, the tree the census described was the tree the plants had written. **A
     PLANT THAT WRITES INTO THE POPULATION UNDER TEST IS A PLANT THAT MOVES THE ANSWER IT IS
-    MEASURING**, so the plants live outside `oracles/` and are excluded from the reader set.
+    MEASURING**, so the plants live outside `oracles/` -- `.agents/slop/oracletxt/`, this unit's, is
+    excluded whole -- and are out of the reader set.
     """
     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
     me = os.path.relpath(os.path.abspath(__file__), ROOT)
     skip = (me, ".agents/slop/oracles259/plants.py")
     return [ROOT / r for r in out
             if pathlib.Path(r).suffix in GATE_CODE
-            and not r.startswith(("references/", "tinygrad/"))
+            and not r.startswith(("references/", "tinygrad/", ".agents/slop/oracletxt/"))
             and r not in skip]
 
 
@@ -249,7 +265,7 @@ def readers() -> dict[str, list[tuple[str, str, str, bool]]]:
                         (str(rel.relative_to(ROOT)), raw, c,
                          os.path.exists(os.path.join(ROOT, c))))
                     break
-    return {k: v for k, v in hit.items()}
+    return dict(hit)
 
 
 def sha(p: pathlib.Path) -> str:
@@ -258,6 +274,20 @@ def sha(p: pathlib.Path) -> str:
         for c in iter(lambda: fh.read(1 << 16), b""):
             h.update(c)
     return h.hexdigest()
+
+
+def shared_tail(reader_path: str, file_path: str) -> int:
+    """Trailing path components the reader's absent path shares with the file, basename included.
+
+    A reader whose path is gone shares at least the basename (that is the join that found it). More
+    than the basename means the read kept its sub-tree and MOVED -- STALE. Exactly the basename is a
+    namesake: the file may never have been the one the reader named -- ABSENT.
+    """
+    a, b = reader_path.split("/"), file_path.split("/")
+    n = 0
+    while n < min(len(a), len(b)) and a[-1 - n] == b[-1 - n]:
+        n += 1
+    return n
 
 
 _BLESSED_MEDIAN = (0.0, 0.0, 0.0)
@@ -295,11 +325,14 @@ def census() -> list[dict]:
             continue
         rel = str(p.relative_to(ROOT))
         mention = read.get(p.name, [])
-        # REACH has THREE values, and collapsing any two of them is the mistake this file exists
+        # REACH has FIVE values, and collapsing any two of them is the mistake this file exists
         # next to. `live`     the reader opens THIS path -- the file is load-bearing today.
-        #                   `stale`  the reader opens a path that is ABSENT and this file is the
-        #                   basename it wanted -- a gate input that MOVED, invisible to a literal
-        #                   search and to a write-path attribution alike.
+        #                   `stale`  the reader opens a path that is ABSENT, and the reader's
+        #                   SUB-TREE survived: `.../schedule-bodies/before.rows` was once
+        #                   `oracles/schedule-bodies/before.rows`, so the read MOVED.
+        #                   `absent` the reader opens a path that is ABSENT and only the BASENAME is
+        #                   shared -- a namesake, not evidence this file moved. It may never have
+        #                   named this file at all.
         #                   `none`   nothing names it.
         # REACH IS ABOUT THE BYTES THE READER SEES, NOT ABOUT PATH STRINGS. MEASURED BY PLANT 2,
         # beat 3: writing this file's own bytes at the reader's path classified `shadow`, because
@@ -308,22 +341,29 @@ def census() -> list[dict]:
         #   live    the reader opens a path whose bytes ARE these bytes -- this path, or a copy.
         #   shadow  the reader opens a path that EXISTS and holds DIFFERENT bytes under this
         #           basename. Not this file and not a dead read: a namesake.
-        #   stale   the reader's path is ABSENT and this file is the basename it wanted. The gate
-        #           is broken, not the file -- and this is the real state of all 33 rows below.
-        live, shadow, stale = [], [], []
+        #   stale   the reader's path is ABSENT and the reader's sub-tree survived. The gate is
+        #           broken, not the file.
+        #   absent  the reader's path is ABSENT with only the basename in common. **THE OLD STALE
+        #           COUNT PUT ALL OF THESE IN ONE BUCKET** -- 63 absent-path tokens over the 259, of
+        #           which 6 preserve a sub-tree and 57 do not. A reader whose path is gone is not a
+        #           reader whose input moved, which is the one distinction the whole check is for.
+        live, shadow, stale, absent = [], [], [], []
         for reader, _, tok, ex in mention:
             if ex:
                 other = os.path.join(ROOT, tok)
                 same_bytes = os.path.isfile(other) and sha(pathlib.Path(other)) == digest(p)
                 (live if same_bytes else shadow).append((reader, tok))
-            else:
+            elif shared_tail(tok, rel) >= 2:
                 stale.append((reader, tok))
+            else:
+                absent.append((reader, tok))
         rows.append(dict(path=rel, bytes=p.stat().st_size, shape=shape(p, thr),
                          sha=digest(p),
                          live=sorted({r for r, _ in live}),
                          live_at=sorted({c for _, c in live}),
                          shadow=[list(s) for s in sorted(set(shadow))],
-                         stale=[list(s) for s in sorted(set(stale))]))
+                         stale=[list(s) for s in sorted(set(stale))],
+                         absent=[list(s) for s in sorted(set(absent))]))
     return rows, thr
 
 
@@ -349,30 +389,16 @@ def main() -> int:
     }
 
     if args.gate:
-        # A gate input that MOVED: named at a path that is absent, alive under oracles/.
-        live = {r["sha"] for r in rows}
-        stale = []
-        for rel in code_files():
-            body = rel.read_text(errors="replace")
-            binds = {m.group(1): m.group(2) for m in ASSIGN.finditer(body)
-                     if not NOT_A_PATH.search(m.group(2))}
-            for m in TXT_TOKEN.finditer(body):
-                tok = unbind(m.group(0), binds)
-                if "$" in tok or not tok.endswith(".txt"):
-                    continue
-                if os.path.exists(os.path.join(ROOT, tok)):
-                    continue
-                for cand in ORACLES.rglob(pathlib.Path(tok).name):
-                    if cand.is_file() and sha(cand) in live:
-                        stale.append((str(rel.relative_to(ROOT)), tok,
-                                      str(cand.relative_to(ROOT))))
-                        break
-        stale = sorted(set(stale))
+        # A gate input that MOVED: the reader's path is gone and the read's sub-tree survives under
+        # `oracles/`. The census already split absent-path readers into moved (`stale`) and namesake
+        # (`absent`); the gate flags only the moved -- a reader whose path is simply GONE is not a
+        # moved input, and flagging it is what made the old gate and the old census disagree.
+        stale = sorted({(reader, tok, r["path"]) for r in rows for reader, tok in r["stale"]})
         if not stale:
-            print("  GATE  no tracked script reads a `.txt` that is alive only under oracles/.")
+            print("  GATE  no tracked script reads a `.txt` whose sub-tree moved with no re-point.")
             return 0
-        print(f"  GATE  {len(stale)} STALE-ROOTED READ(S): a script reads a path that is gone, and "
-              f"the file survives under oracles/. Each is a gate input that moved with no re-point:")
+        print(f"  GATE  {len(stale)} STALE-ROOTED READ(S): a script reads a path that is gone and "
+              f"the read's sub-tree survives under oracles/. Each is a gate input that moved:")
         for reader, tok, cand in stale:
             print(f"    {reader}  reads  {tok}")
             print(f"        alive at  {cand}")
@@ -393,7 +419,9 @@ def main() -> int:
     live = [r for r in rows if r["live"]]
     shadow = [r for r in rows if r["shadow"] and not r["live"]]
     stale = [r for r in rows if r["stale"] and not r["live"] and not r["shadow"]]
-    print("\n  REACH. FOUR values, not two -- and the third one was found by a plant.\n")
+    absent = [r for r in rows if r["absent"] and not r["live"] and not r["shadow"]
+              and not r["stale"]]
+    print("\n  REACH. FIVE values, not two -- and the fourth one was found by a plant.\n")
     print(f"  LIVE       {len(live):3d} / {len(rows)}   a tracked script opens a path holding "
           f"THESE BYTES.")
     for r in sorted(live, key=lambda x: x["path"]):
@@ -406,16 +434,25 @@ def main() -> int:
             print(f"      {r['path']}")
             print(f"          {reader}  opens  {tok}   [EXISTS, DIFFERENT FILE]")
     print(f"\n  STALE      {len(stale):3d} / {len(rows)}   a tracked script opens a path that is "
-          f"ABSENT;\n                         this file is the basename it named. The gate is broken, "
-          f"not the file.")
+          f"ABSENT\n                         and the read's SUB-TREE survived -- the read MOVED. The "
+          f"gate is broken,\n                         not the file.")
     for r in sorted(stale, key=lambda x: x["path"]):
         print(f"      {r['path']}")
         for reader, tok in r["stale"]:
-            print(f"          {reader}  opens  {tok}   [ABSENT]")
+            print(f"          {reader}  opens  {tok}   [ABSENT, SUB-TREE SURVIVED]")
+    print(f"\n  ABSENT     {len(absent):3d} / {len(rows)}   a tracked script opens a path that is "
+          f"ABSENT\n                         with ONLY the basename in common. A namesake, not a moved "
+          f"input --\n                         it may never have named this file. **NOT STALE.**")
+    for r in sorted(absent, key=lambda x: x["path"]):
+        print(f"      {r['path']}")
+        for reader, tok in r["absent"]:
+            print(f"          {reader}  opens  {tok}   [ABSENT, BASENAME ONLY]")
     print(f"\n  NAMED BY NOTHING  "
-          f"{len(rows) - len(live) - len(shadow) - len(stale):3d} / {len(rows)}")
+          f"{len(rows) - len(live) - len(shadow) - len(stale) - len(absent):3d} / {len(rows)}")
 
-    pathlib.Path(ROOT / ".agents/slop/oracles259/census.json").write_text(json.dumps(rows, indent=1))
+    out = ROOT / ".agents/slop/oracletxt"
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "census.json").write_text(json.dumps(rows, indent=1))
     return 0
 
 
