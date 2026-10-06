@@ -11,12 +11,17 @@ MEASURED, zero pins in the tree reference any `oracles/` path (the sha256 pin fi
 `runs/graphcmp/D/*`), so a rename here cannot retire a pin. The hazard is the opposite one -- the
 rename retires the FINDING.
 
+THE RENAME IS NOW EXECUTED. 258 of the 259 `oracles/**/*.txt` became their class's extension (see
+`.agents/slop/txtexec/REPORT.md`); this script's own four rename pairs were among them. It was the
+ONE LIVE reader the census names, so its four `.txt` tokens were repointed to the new `.rows` names:
+a reader left naming a moved file is the failure the repoint exists for. It now asserts the four
+resolve, instead of moving files that are already named correctly.
+
 usage: .venv/bin/python .agents/slop/oracles259/ordering.py
 """
 import importlib.util
 import os
 import pathlib
-import shutil
 import sys
 
 ROOT = pathlib.Path(os.path.dirname(os.path.dirname(os.path.dirname(
@@ -32,35 +37,23 @@ def counts():
 
 
 def main():
-    a = counts()
-    print(f"  BEFORE   files={a[0]}  stale={a[1]}  live={a[2]}")
-
-    # Rename the four files of the ONE gate whose reads are all stale, in the group's own extension.
-    pairs = [(ROOT / "oracles/BEFORE-rows.txt", ROOT / "oracles/BEFORE-rows.rows"),
-             (ROOT / "oracles/schedule-bodies/BEFORE-rows.txt",
-              ROOT / "oracles/schedule-bodies/BEFORE-rows.rows"),
-             (ROOT / "oracles/sb-oracle.txt", ROOT / "oracles/sb-oracle.rows"),
-             (ROOT / "oracles/schedule-bodies/sb-oracle.txt",
-              ROOT / "oracles/schedule-bodies/sb-oracle.rows")]
-    try:
-        for src, dst in pairs:
-            shutil.move(src, dst)
-        b = counts()
-        print(f"  RENAMED  files={b[0]}  stale={b[1]}  live={b[2]}")
-        print(f"\n  stale rows LOST to the rename: {a[1] - b[1]}   "
-              f"files removed from the census: {a[0] - b[0]}")
-        print("  The gate is NOT fixed by this -- `checks/sb-gate.sh` still opens")
-        print("  `.agents/slop/schedule-bodies/BEFORE-rows.txt`, which is still absent. The rename")
-        print("  only stopped the census from being able to NAME the file the gate is missing.")
-    finally:
-        for src, dst in pairs:
-            if dst.exists():
-                shutil.move(dst, src)
-
-    c = counts()
-    ok = c == a
-    print(f"\n  {'RESTORED' if ok else 'RESTORE FAILED'}: files={c[0]} stale={c[1]} live={c[2]}")
-    return 0 if ok else 1
+    # The four files whose read was LIVE, now named at their POST-RENAME paths. Renaming the
+    # sources -- which this script used to perform -- has already happened, so the pairs are no
+    # longer (src, dst) and the move loop is gone. Naming an old `.txt` here would be exactly the
+    # dangling reference the repoint exists to prevent.
+    renamed = [ROOT / "oracles/BEFORE-rows.rows",
+               ROOT / "oracles/schedule-bodies/BEFORE-rows.rows",
+               ROOT / "oracles/sb-oracle.rows",
+               ROOT / "oracles/schedule-bodies/sb-oracle.rows"]
+    missing = [str(p.relative_to(ROOT)) for p in renamed if not p.exists()]
+    files, stale, live = counts()
+    print(f"  reader targets that RESOLVE: {len(renamed) - len(missing)}/{len(renamed)}")
+    for p in renamed:
+        print(f"    {'OK ' if p.exists() else 'MISSING'}  {p.relative_to(ROOT)}")
+    print(f"\n  census after the rename: files={files}  stale={stale}  live={live}")
+    print("  The gate is NOT fixed by this -- `checks/sb-gate.sh` still opens")
+    print("  `.agents/slop/schedule-bodies/BEFORE-rows.txt`, which is still absent.")
+    return 1 if missing else 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,19 @@
+digest column corrected: 18 row(s)
+  oracles/blob-bn.txt
+  oracles/cstyle-capture-oracle.txt
+  oracles/dsl_oracle_live.txt
+  oracles/fold-landed.txt
+  oracles/fold2_base.txt
+  oracles/jit-prune-oracle.txt
+  oracles/memory_oracle.txt
+  oracles/py_mv.txt
+  oracles/rows-allred-py.txt
+  oracles/rows-alu-py.txt
+  oracles/rows-binblob-py.txt
+  oracles/rows-bit-py.txt
+  oracles/rows-buffer-py.txt
+  oracles/rows-bw-py.txt
+  oracles/rows-cast-py.txt
+  oracles/rows-matmul-py.txt
+  oracles/tinybendygrad_renderer_cstyle.bend.renderer_oracle.txt
+  oracles/tinybendygrad_schedule_prepare.bend.prepare-oracle.txt

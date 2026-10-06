@@ -1,0 +1,15 @@
+RENAMED per class:
+  crash-dump-in-txt    7
+  rowdump              240
+  rowdump?/md          5
+  rowdump?/tsv         3
+  source-in-txt        3
+  TOTAL renamed: 258
+
+SKIPPED:
+  oracles/rows-bd.txt  (UNCLASSIFIED/empty -- left as .txt)
+
+FAILURES:
+
+RESIDUAL .txt under oracles/: 1
+  oracles/rows-bd.txt  (0 B)

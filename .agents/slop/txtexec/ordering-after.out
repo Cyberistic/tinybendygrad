@@ -1,0 +1,9 @@
+  reader targets that RESOLVE: 4/4
+    OK   oracles/BEFORE-rows.rows
+    OK   oracles/schedule-bodies/BEFORE-rows.rows
+    OK   oracles/sb-oracle.rows
+    OK   oracles/schedule-bodies/sb-oracle.rows
+
+  census after the rename: files=1  stale=1  live=0
+  The gate is NOT fixed by this -- `checks/sb-gate.sh` still opens
+  `.agents/slop/schedule-bodies/BEFORE-rows.txt`, which is still absent.
