@@ -45,7 +45,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate
+from gatekit import Gate, VERDICT
 
 ROWS = 39
 # The two rows at `dim*inp == 2**63`: the fix's own edge. Pin BOTH sides.
@@ -69,7 +69,8 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    ok = GATE.run() == 0
+    code = GATE.run()
+    ok = code == 0
     if ok:
         # THE DISCRIMINATION ASSERTION, and it is the one line no amount of value
         # checking replaces: the gate's rows must SPAN both answers, and the interior
@@ -92,5 +93,5 @@ if __name__ == "__main__":
                       f"the sign-extension defect is back or the row moved", file=sys.stderr)
                 ok = False
     print(f"bc-u32-gate: {ROWS} rows, 3 lanes, {len(DIVERGES)} pinned divergences "
-          f"at the 2**63 window edge" if ok else "bc-u32-gate: FAILED")
-    sys.exit(0 if ok else 1)
+          f"at the 2**63 window edge" if ok else f"{GATE.name}: {VERDICT[code]}")
+    sys.exit(code)

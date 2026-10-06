@@ -61,7 +61,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, oracle_drift
+from gatekit import Gate, oracle_drift, VERDICT
 
 ORACLE_PIN = {
     "gates/oracles/beautiful-mnist-oracle.sh":
@@ -87,10 +87,11 @@ if __name__ == "__main__":
               "Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not delete "
               "the pin.", file=sys.stderr)
         sys.exit(2)
-    ok = GATE.run() == 0
+    code = GATE.run()
+    ok = code == 0
     # THE SHELL'S OWN LINES. `|| true` lets `--check-only`'s stdout through to the reader
     # whatever it says, so this prints it either way rather than only when the gate is green.
     print(GATE.warm_out, end="" if GATE.warm_out.endswith("\n") else "\n")
     print(f"beautiful-mnist-gate: {GATE.compared} shared rows, 3 lanes identical"
-          if ok else "beautiful-mnist-gate: FAILED")
-    sys.exit(0 if ok else 1)
+          if ok else f"{GATE.name}: {VERDICT[code]}")
+    sys.exit(code)

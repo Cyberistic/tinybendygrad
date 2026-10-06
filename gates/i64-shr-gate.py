@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate  # noqa: E402
+from gatekit import Gate  # noqa: E402, VERDICT
 
 # THE FIXTURE, and it is read from the ENVIRONMENT because the driver reads it from the
 # environment too (`H.getenv_int("I64SHR_SEED", 7)` at shr.bend). Both port lanes inherit
@@ -100,7 +100,8 @@ def unpair(s):
 
 
 def main():
-    ok = GATE.run() == 0
+    code = GATE.run()
+    ok = code == 0
 
     # THE FRESHNESS GUARD, and it is the sibling gate's recorded finding: `gatekit.run()`
 # returned BEFORE writing, so a red run left the LAST GREEN `bd.out` in place and a diff of
@@ -240,7 +241,7 @@ def main():
     print(f"i64-shr-gate: {ROWS} rows, 3 lanes identical, both routes agree at all "
           f"{len(VALUES) * AMOUNTS} (value, amount) pairs, and every one of the "
           f"{wide} past-the-width cells saturates to the sign" if ok
-          else "i64-shr-gate: FAILED")
+          else f"{GATE.name}: {VERDICT[code]}")
     return 0 if ok else 1
 
 

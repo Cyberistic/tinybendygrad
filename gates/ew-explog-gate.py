@@ -62,7 +62,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate
+from gatekit import Gate, VERDICT
 
 GATE = Gate(
     "ew-explog-gate",
@@ -74,6 +74,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    ok = GATE.run() == 0
-    print("ew-explog-gate: 3 rows, 3 lanes byte-identical" if ok else "ew-explog-gate: FAILED")
-    sys.exit(0 if ok else 1)
+    code = GATE.run()
+    ok = code == 0
+    print("ew-explog-gate: 3 rows, 3 lanes byte-identical" if ok else f"{GATE.name}: {VERDICT[code]}")
+    sys.exit(code)

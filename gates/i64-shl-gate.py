@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate  # noqa: E402
+from gatekit import Gate  # noqa: E402, VERDICT
 
 # THE FIXTURE, and it is read from the ENVIRONMENT because the driver reads it from the
 # environment too -- `H.getenv_int("I64SHL_SEED", 7)` at shl.bend:137. Both port lanes
@@ -74,7 +74,8 @@ def rows_of(lane):
 
 
 def main():
-    ok = GATE.run() == 0
+    code = GATE.run()
+    ok = code == 0
 
     # THE CLAIMS RUN WHATEVER THE DIFF DID, and that ordering is not cosmetic.
     # `gatekit.run()` returning 1 on a lane disagreement is exactly the situation in
@@ -162,7 +163,7 @@ def main():
             ok = False
 
     print(f"i64-shl-gate: {ROWS} rows, 3 lanes identical, and the literal and runtime "
-          "routes agree at all 30 (value, amount) pairs" if ok else "i64-shl-gate: FAILED")
+          "routes agree at all 30 (value, amount) pairs" if ok else f"{GATE.name}: {VERDICT[code]}")
     return 0 if ok else 1
 
 

@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate
+from gatekit import Gate, VERDICT
 
 # The three rows whose OBVIOUS spelling measured wrong. They are pinned by NAME here, and
 # their CONTENT is pinned by the value gate next door -- so a later "simplification" back to
@@ -49,6 +49,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    ok = GATE.run() == 0
-    print("ew-consts-gate: 21 rows, 3 lanes byte-identical" if ok else "ew-consts-gate: FAILED")
-    sys.exit(0 if ok else 1)
+    code = GATE.run()
+    ok = code == 0
+    print("ew-consts-gate: 21 rows, 3 lanes byte-identical" if ok else f"{GATE.name}: {VERDICT[code]}")
+    sys.exit(code)

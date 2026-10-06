@@ -56,7 +56,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, oracle_drift
+from gatekit import Gate, oracle_drift, VERDICT
 
 # THE FROZEN SHELL ORACLE, PINNED IN CODE, AND CHECKED ON EVERY RUN. Same shape and same reason
 # as `checks/substrate.py`'s ORACLE_PIN. The hash is of the ORACLE COPY, which is a byte-for-byte
@@ -97,11 +97,12 @@ if __name__ == "__main__":
               "Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not delete "
               "the pin.", file=sys.stderr)
         sys.exit(2)
-    ok = GATE.run() == 0
+    code = GATE.run()
+    ok = code == 0
     # THE SHELL'S OWN LINES. `--check-only`'s stdout goes through to the reader in the shell,
     # because the shell does not capture it, and dropping it would make this artifact differ
     # from the oracle on the green path for no reason a reader could name.
     print(GATE.warm_out, end="" if GATE.warm_out.endswith("\n") else "\n")
     print(f"mixin-op-gate: {GATE.compared} shared rows, 3 lanes identical"
-          if ok else "mixin-op-gate: FAILED")
-    sys.exit(0 if ok else 1)
+          if ok else f"{GATE.name}: {VERDICT[code]}")
+    sys.exit(code)
