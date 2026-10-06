@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""THE SIX DISAGREEMENTS, PINNED.  What each one is, where it starts, and whose fault.
+"""THE DISAGREEMENTS, PINNED.  What each one is, where it starts, and whose fault.
 
-`checks/differ.py` reports `graphs-disagree=6` and stops there.  This gate says which
-six, the FIRST row of each, the field, and the cause -- and it re-derives every claim
+`checks/differ.py` reports `graphs-disagree=<n>` and stops there.  This gate says which
+ones, the FIRST row of each, the field, and the cause -- and it re-derives every claim
 from disk on every run, so a claim that goes stale is a MOVED FILE rather than a
-sentence a reader has to notice.
+sentence a reader has to notice.  **`<n>` IS `len(PIN)` AND IS NEVER WRITTEN DOWN HERE**:
+a second hand list of the same population is `checks/sweep.py`'s `LIVE_UNITS` fault, and
+the two could be edited apart.
 
 IT READS `runs/graphcmp/D/` AND NEVER WRITES IT.  The plant lane copies the directory
 into a temporary tree first; the run under test is not the thing being mutated.
@@ -64,7 +66,11 @@ PIN = {
   "late":   dict(row=6, fields=("dtype", "shape", "arg"), shape="NOT A ROW", fault="HARNESS"),
   "flip":   dict(row=6, fields=("arg",), shape="BOTH", fault="HARNESS+PORT"),
   "lin":    dict(row=46, fields=("arg",), shape="WRONG SHAPE", fault="PORT"),
-  "loop":   dict(row=25, fields=("dtype", "shape", "arg"), shape="WRONG SHAPE", fault="PORT"),
+  # `loop` LEFT THIS TABLE: the port's `callinfo` printed the dtype slot unconditionally
+  # where the PIN's own `__repr__` suppresses it for void (`ops.py:1404`), so row 25 read
+  # `cI(shcq_fence,b0,b0,Dvoid)` against `cI(shcq_fence,b0,b0)`.  MEASURED 25/25
+  # byte-identical on the live driver, and the field itself is CORRECT (`ops.bend:1057`
+  # against `ops.py:1398`), so the row was a SPELLING and not a shape.
 }
 # the bend side has no fixture for these three, and `rows.pick3`'s default is the
 # matmul -- so all three got the matmul back and none of them was compared at all.
@@ -73,7 +79,7 @@ SUBSTITUTED = ("allred", "cdiv", "late", "matmul")
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
   # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1312, "def rows.pick3",
+  (".agents/slop/graphcmp.bend", 1317, "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   (".agents/slop/graphcmp.py", 1393, "def g_allred", "the py fixture that has no bend twin"),
   (".agents/slop/graphcmp.py", 1412, "def g_cdiv", "ditto"),
@@ -82,18 +88,22 @@ CITES = (
    "`UOp.group` of ONE src is the src, so `g_flip` builds NO GROUP node"),
   (".agents/slop/graphcmp.py", 1385, "UOp.group(a.flip(0).uop)",
    "a ONE-element group -- the whole of the bend-only GROUP#7"),
-  (".agents/slop/graphcmp.bend", 1304, "OpsGROUP",
+  (".agents/slop/graphcmp.bend", 1309, "OpsGROUP",
    "the bend fixture builds that GROUP by hand, bypassing `UOp.group`"),
-  ("tinybendygrad/uop/ops.bend", 1010, "dtype: S.Dt",
-   "the port's CallInfo has a 4th field upstream's does not"),
+  ("tinybendygrad/uop/ops.bend", 1057, "dtype: S.Dt",
+   "the port's CallInfo carries `dtype`, and SO DOES THE PIN -- `ops.py:1398`"),
+  ("ad117c928^:tinygrad/uop/ops.py", 1398, "dtype: DType = dtypes.void",
+   "the PIN's LAST CallInfo field IS `dtype`, so 'upstream has no dtype' is false"),
+  ("ad117c928^:tinygrad/uop/ops.py", 1404, "self.dtype is not dtypes.void",
+   "the PIN's `__repr__` SUPPRESSES the dtype slot for void -- the spelling `loop` broke"),
   ("tinygrad/uop/ops.py", 1405, "aux: Any = None",
-   "upstream's LAST CallInfo field; the field before it is not `dtype`"),
+   "THE WORKTREE says `aux` is last; the PIN says `dtype` is. Cite the PIN for upstream."),
   ("tinygrad/uop/ops.py", 132, "return src[0].dtype",
    "upstream reads the CALL dtype off the BODY, never off CallInfo"),
-  ("tinybendygrad/uop/fold.bend", 1144, "CallInfo.dtype",
-   "the port reads it off the field upstream does not have"),
+  ("tinybendygrad/uop/fold.bend", 1154, "CallInfo.dtype",
+   "the port reads it off the field the PIN HAS -- a spelling, not a shape"),
   ("tinybendygrad/uop/ops.bend", 919, "applied_opts: List<&2, U32>",
-   "`lin`'s cause: an Opt dataclass has no port spelling"),
+   "`lin`'s cause; this line is a COMMENT recording the measurement, not a declaration"),
 )
 
 
@@ -125,8 +135,12 @@ def lane_pin(tree: Path) -> list[str]:
   if got["wire_shape_defect"] is not None:
     fails.append(f"the canonical wire itself is malformed: {got['wire_shape_defect']}")
   summary = (tree / "D0-run-summary.txt").read_text().splitlines()
-  if "graphs-disagree=6" not in summary:
-    fails.append("D0-run-summary.txt no longer reads graphs-disagree=6")
+  # DERIVED, not written down.  This used to read `graphs-disagree=6`, which made the
+  # denominator a second hand list of the same population `PIN` already declares -- and
+  # the two could be edited apart, which is exactly `checks/sweep.py`'s `LIVE_UNITS` fault.
+  # It still FAILS when the count moves: `differ.py`'s summary is the only witness that ran.
+  if f"graphs-disagree={len(PIN)}" not in summary:
+    fails.append(f"D0-run-summary.txt no longer reads graphs-disagree={len(PIN)}")
   return fails
 
 
@@ -139,14 +153,30 @@ def cited(line: str, needle: str) -> bool:
   return re.search(re.escape(needle) + r"(?![\w])", line) is not None
 
 
+def source(rel: str) -> str | None:
+  """A `rev:path` row names a BLOB, not a file.  It has to: `ad117c928` re-vendored 16
+  `tinygrad/` files, so `tinygrad/uop/ops.py` in the worktree puts `dtype` at :1397 and
+  `aux` last at :1405, while the PIN the whole port cites has `aux` at :1397 and `dtype`
+  LAST at :1398.  A row that says "upstream has no `dtype`" can only be false, and it
+  was false, because it read the worktree.  Reading a blob is how a citation about
+  upstream survives the next re-vendor."""
+  if ":" not in rel:
+    p = ROOT / rel
+    return p.read_text() if p.exists() else None
+  rev, path = rel.split(":", 1)
+  r = subprocess.run(["git", "show", f"{rev}:{path}"], cwd=ROOT,
+                     capture_output=True, text=True)
+  return r.stdout if r.returncode == 0 else None
+
+
 def lane_citations() -> list[str]:
   fails = []
   for rel, n, needle, why in CITES:
-    p = ROOT / rel
-    if not p.exists():
-      fails.append(f"{rel}:{n} -- file gone; {why}")
+    text = source(rel)
+    if text is None:
+      fails.append(f"{rel}:{n} -- gone; {why}")
       continue
-    lines = p.read_text().splitlines()
+    lines = text.splitlines()
     if not (1 <= n <= len(lines)):
       fails.append(f"{rel}:{n} -- past end of file ({len(lines)} lines); {why}")
     elif not cited(lines[n - 1], needle):
