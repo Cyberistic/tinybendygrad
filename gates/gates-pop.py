@@ -37,6 +37,12 @@ POPULATION:
       for Python and by SELF-DISPATCH for shell. The population is a MEASUREMENT.
   II  A POPULATION IS NOT EMPTY and not vacuously green. Reported per clause, always.
   III THE SET MOVED OR THE LEDGER SAYS WHY. `--ledger` diffs the previous run.
+  IV  THE GENERATED-DIRECTORY POPULATION, SHARED WITH `gates/retention-check.py`. Both
+      instruments import `gates/gendirs.py` and report the SAME `discovered()` count, because
+      **two instruments holding two lists have no authority over each other and their
+      disagreement would be a third finding with no way to settle it.** One module, one
+      population, two consumers -- a change to it moves both, which is what makes the pair
+      auditable instead of merely parallel.
 
 EXIT: 0 green, 1 red, 2 REFUSED -- a precondition was missing (no `pyproject.toml` at the
 root, so this file cannot tell the repo root from any other directory), because a check that
@@ -89,6 +95,36 @@ ROOT = HERE.parent
 HOMES = ("checks", "gates")
 LEDGER = HERE / "gates-pop.ledger.tsv"
 
+# THE GENERATED-DIRECTORY POPULATION IS NOT A SECOND LIST. It is `gates/gendirs.py`, loaded BY
+# PATH, and `gates/retention-check.py` loads the same file the same way. MEASURED, and the reason
+# is the whole subject of this clause: `checks/gen/` is written by `checks/abi_gate.py:616`
+# through `bend -o` and was invisible to BOTH instruments -- clause III here because `HOMES` is a
+# two-item tuple, and `retention-check.py` because its registry was two `Output(...)` calls.
+# **A POPULATION DEFINED BY A THREE-ITEM LIST CANNOT BE WRONG ABOUT A FOURTH ITEM BECAUSE IT NEVER
+# LOOKS AT ONE.** Clause IV below is what looks at the fourth item.
+def gendirs():
+    """`gates/gendirs.py` by path, never by name: `gates/` is not a package, and putting it on
+    `sys.path` would make `gendirs` a name any file in the tree could shadow -- an instrument
+    loaded by a bindable name is an instrument whose population anybody can choose."""
+    import importlib.util
+    p = HERE / "gendirs.py"
+    if not p.is_file():
+        refuse("gates/gendirs.py is gone -- it IS the shared generated-directory population, "
+               "and this file cannot answer clause IV without it")
+    spec = importlib.util.spec_from_file_location("gendirs", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+# WHAT THIS FILE STILL CANNOT SEE AFTER CLAUSE IV, AND IT IS NOT THE GENERATED DIRECTORIES. `HOMES`
+# is a list, and a third gate home means editing this line -- but the edit is VISIBLE, because the
+# ledger diffs every entry point and a home nobody scans contributes nothing to clause I. The
+# asymmetry that remains is this: clause I enumerates GATES, clause IV enumerates OUTPUT, and
+# nothing enumerates a gate that is BOTH absent from `HOMES` and absent from every write site --
+# which is to say, a gate nobody runs and nobody writes. That is the only hole left and it is
+# stated rather than papered over.
+
 # THE ROW-EXCLUSION PATTERN, AND WHY IT IS NOT THE POPULATION. A file is a POPULATION MEMBER
 # if it is a `.py` or `.sh` under a gate home; `__pycache__` is not scanned because
 # `HOMES` are read with `iterdir()` and filtered, not `rglob`ed. The trap this avoids is
@@ -109,7 +145,17 @@ def refuse(*why):
 
 
 # ---- clause I: DISCOVERY ----------------------------------------------------------------
-def code_of(src):
+def _value(t):
+    """The EVALUATED value of a string token, or None. Never raises: a token `ast.literal_eval`
+    cannot read is a non-literal, which is exactly as informative as `None` for this use."""
+    try:
+        v = ast.literal_eval(t.string)
+    except (ValueError, SyntaxError, TypeError):
+        return None
+    return v if isinstance(v, str) else None
+
+
+def code_of(src, blank=()):
     """`src` with COMMENTS removed and DOCSTRINGS blanked IN PLACE, by `tokenize`.
 
     MEASURED, and this is the brief's own failure wearing a new hat. Without this, the
@@ -153,7 +199,25 @@ def code_of(src):
     for t in toks:
         if t.type == tokenize.COMMENT:
             out.append(t._replace(string=""))
-        elif t.type == tokenize.STRING and t.start[0] in docs:
+        elif t.type == tokenize.STRING and (
+                t.start[0] in docs
+                # THE VALUE, NOT THE TOKEN TEXT. MEASURED: the first version compared `t.string`,
+                # which for a fixture written `"...\n" + MAIN` is the SOURCE SPELLING (with a
+                # backslash-n) while the value is the EVALUATED string (with a newline). They are
+                # never equal, so nothing was blanked and the instrument kept reporting ITSELF
+                # off-repo while the fix "passed". **A COMPARISON THAT CANNOT SUCCEED LOOKS
+                # EXACTLY LIKE A COMPARISON THAT FOUND NOTHING.**
+                or _value(t) in blank
+                # A FIXTURE WRITTEN `"..." + MAIN` IS SEVERAL TOKENS. MEASURED: `FALLBACK_PRE_FIX`
+                # holds `"sys.path.insert(...)  # the tinygrad tree\n" + MAIN`, so the source token
+                # is the CONCATENAND'S FIRST HALF and equals no fixture exactly -- and for
+                # `LIT_PY`, which is TWO adjacent literals, the offending token is the SECOND one
+                # and is a SUFFIX. So the test is SUBSTRING: this token's text appears inside a
+                # synthetic gate's text, which is not a guess, it is containment.
+                # **A COMPARISON THAT CAN NEVER SUCCEED LOOKS EXACTLY LIKE A COMPARISON THAT FOUND
+                # NOTHING**, and that is how the first version shipped a fix that did nothing.
+                or any(len(v := _value(t) or "") >= 8 and v in f
+                       for f in blank)):
             # KEEP THE QUOTES AND THE LENGTH: `untokenize` reconstructs source from token
             # geometry, so a changed length silently shifts every column after it.
             out.append(t._replace(string=t.string[0] + " " * (len(t.string) - 2) + t.string[-1]))
@@ -303,6 +367,34 @@ ROOT_INLINE = re.compile(
 REFUSE = re.compile(r"\brefuse\(|\bexit 3\b|not at the repo root|REFUSED, NOT A VERDICT")
 MARKER = re.compile(r"pyproject\.toml")
 
+# THE STRINGS IN THIS MODULE THAT ARE *SYNTHETIC GATES*, so their contents are DATA. Named by the
+# names this file already owns, not by a regex over the source: **a fixture is identified by what
+# it IS, not by how it is spelled**, and MEASURED, `sweep.py`'s `ORACLE` was a basename word-shape
+# that 670 of 675 files satisfied and no gate named.
+def _fixture_strings():
+    """The string TOKENS whose value is a synthetic gate, i.e. data to this instrument rather
+    than this instrument's own code. Built by IDENTITY against the modules this file owns, so a
+    fixture is recognised by WHAT IT IS -- MEASURED, `sweep.py`'s `ORACLE` was a basename
+    word-shape 670 of 675 files satisfied and no gate named."""
+    out = set()
+    for value in list(FALLBACK_PRE_FIX.values()) + [BAD_ROOT, GOOD_ROOT, LIT_PY, LIT_SH]:
+        if isinstance(value, str) and len(value) > 8:
+            out.add(value)
+    return frozenset(out)
+
+
+FIXTURES = ()          # rebound at the bottom of the module; see `_init_fixtures`
+
+
+def _init_fixtures():
+    """`FIXTURES` is a MODULE GLOBAL assigned ONCE, at the bottom of this file, because
+    `FALLBACK_PRE_FIX` is defined below the functions that read it. MEASURED: calling this at the
+    top raised `NameError: name 'FALLBACK_PRE_FIX' is not defined` at IMPORT -- a crash inside a
+    gate rather than a verdict. The same reason `LEDGER_PATH` is a module global."""
+    global FIXTURES
+    FIXTURES = _fixture_strings()
+MARKER = re.compile(r"pyproject\.toml")
+
 
 def resolve_root(p, depth, expr):
     """Where this file's own root expression RESOLVES, on the real tree.
@@ -358,11 +450,31 @@ def root_facts(p, root):
     front of it, because that is the state in which the gate reports on the wrong tree.
     """
     src = p.read_text(errors="replace")
-    # THE ROOT SCANNERS READ CODE, NOT PROSE. `code_of` strips comments and docstrings, so
-    # this file's own comment at :202 -- which quotes the very line the scanner hunts -- is not
-    # a finding about itself. MEASURED: before the strip, `gates/gates-pop.py` reported itself
-    # OFF-REPO and made the count 13 where the truth is 12.
-    code = code_of(src)
+    # THE ROOT SCANNERS READ CODE, NOT PROSE, AND NOT FIXTURES. `code_of` strips comments and
+    # docstrings, so this file's own comment quoting the very line the scanner hunts is not a
+    # finding about itself. MEASURED: before the strip, this file reported ITSELF off-repo.
+    #
+    # **AND THE STRIP IS NOT ENOUGH, WHICH IS THE SAME FAILURE ONE LAYER DEEPER.** `code_of`
+    # blanks only DOCSTRING tokens, deliberately, because a string that is an ARGUMENT can carry
+    # a path the scanner needs. But a string that is a **PLANT FIXTURE** carries a whole
+    # SYNTHETIC SOURCE FILE: `FALLBACK_PRE_FIX["checks/census.py"]` (line 629) is the literal text
+    # `sys.path.insert(0, str(HERE.parents[2]))`... MEASURED 2026-10-06: with the strip and
+    # nothing else, `ROOT_INLINE` matched **that string**, `resolve_root` evaluated it against the
+    # LIVE tree, and the run printed `gates/gates-pop.py ... resolves outside the repo` -- a
+    # FALSE finding about a file whose own root is `HERE.parents[0]`. Plant 7 asserted only the
+    # COMMENT layer (`lit_py`, which begins `# was:`), so it was green while the instrument was
+    # wrong about itself. **PROSE IS NOT CODE, AND A FIXTURE IS NOT EITHER: A STRING THAT HOLDS
+    # SOURCE IS DATA TO THIS INSTRUMENT WHOSE SOURCE IT IS NOT.** `FIXTURES` is the set of names
+    # whose string values are synthetic gates, named by the module that OWNS them.
+    code = code_of(src, FIXTURES if p.resolve() == Path(__file__).resolve() else ())    # noqa: E501
+    # **A FIXTURE IS DATA ONLY TO THE FILE THAT OWNS IT.** The blank set is applied when the file
+    # being read IS this file, and to nothing else. MEASURED: applying it unconditionally broke
+    # plants 1 and 5 -- a plant writes `GOOD_ROOT` into a synthetic `checks/good.py` and then asks
+    # `root_facts` about it, and with the blank on, the whole fixture was blanked, so `refuse(`
+    # and `pyproject.toml` both vanished and `GOOD_ROOT` read as a gate with NO root assertion.
+    # Two plants went red, which is the right outcome: **A FIX THAT MAKES THE SUBJECT INVISIBLE
+    # MAKES THE SUBJECT PASS, AND THAT IS THE `artefacts_ok()` SHAPE.** Scoping the rule by the
+    # OWNING FILE is not a special case for this instrument; it is the definition of "fixture".
     asserts = bool(REFUSE.search(code)) and bool(MARKER.search(code))
     # `ROOT_CONST` FIRST, then `ROOT_INLINE`, and the order matters only for what gets REPORTED:
     # both are measured the same way, so a file with both spellings is measured once and named
@@ -512,8 +624,30 @@ def report(root, ledger_mode, ledger_path=None):
     if ledger_mode != "check":
         write_ledger(rows, lpath)
         print(f"III LEDGER WRITTEN {lpath.name}: {len(rows)} row(s)\n")
+
+    # IV -- THE SHARED POPULATION. Both meta-instruments report `gendirs.discovered()`, so the
+    # count below and clause V of `gates/retention-check.py` are THE SAME MEASUREMENT and either
+    # both move or one is lying. `checks/gen/` is named HERE BY DISCOVERY and was invisible before:
+    # `HOMES` is a two-item tuple, so "inside a gate home" said nothing about it, and the file it
+    # is written by writes it by handing the path to `bend -o`.
+    gd = gendirs()
+    grows = gd.table()
+    read, present = gd.coverage()
+    contradiction = [r for r in grows if r["n_tracked"] and r["ignored"]]
+    print(f"IV  SHARED POPULATION with gates/retention-check.py: {len(grows)} generated "
+          f"director{'y' if len(grows) == 1 else 'ies'} in {read}/{present} source files "
+          f"(the SAME\n    number clause V prints -- one module, two consumers, so a drift "
+          f"between them is a BUG and\n    not a difference of opinion). "
+          f"{len(contradiction)} of them are in the index\n    AND `.gitignore`d")
+    for r in contradiction:
+        print(f"IV    CONTRADICTS {r['dir']}: {r['n_tracked']} index entr"
+              f"{'y' if r['n_tracked'] == 1 else 'ies'}, {r['n_empty_blob']} at git's EMPTY BLOB")
+    if ledger_mode == "check" and contradiction:
+        red = 1
+    print()
     print(f"GATES-POP: {'RED' if red else 'OK'} -- {len(rows)} entry points, {named} name a root, "
-          f"{named - unasserted} assert it, {offroot} resolve outside the repo")
+          f"{named - unasserted} assert it, {offroot} resolve outside the repo; "
+          f"{len(grows)} generated directories discovered (shared with retention-check)")
     return red
 
 
@@ -580,6 +714,15 @@ GOOD_ROOT = ("from pathlib import Path\nHERE = Path(__file__).resolve().parent\n
              "REPO = HERE.parents[0]\n"
              "def refuse(*w):\n    raise SystemExit(2)\n"
              "refuse('x') if not (REPO / 'pyproject.toml').is_file() else None\n" + MAIN)
+# THE PLANT-7 FIXTURES, HOISTED OUT OF `_plants` AND INTO MODULE CONSTANTS. MEASURED, and this is
+# the fourth measurement of the same fault: with `lit_py` living INSIDE the plant function, the
+# blanker could not see it -- `FIXTURES` is built from module-level names -- so `ROOT_INLINE` read
+# this file's own plant fixture as this file's own root and reported `gates/gates-pop.py`
+# off-repo. **A FIXTURE THAT IS NOT REACHABLE FROM THE BLANKER WILL BE READ AS CODE.** Plant 7
+# asserted the COMMENT layer only, and the STRING layer is where the finding actually lived.
+LIT_PY = ("# was: sys.path.insert(0, str(HERE.parents[2]))\n"
+          "HERE = pathlib.Path(__file__).resolve().parent\nREPO = HERE.parents[0]\n" + MAIN)
+LIT_SH = ('#!/bin/sh\n# used to cd "$(dirname "$0")/../../.."\n_d=${0%/*}\ncd "$_d/.."\n')
 
 
 def plants():
@@ -780,20 +923,36 @@ def _plants():
     # `gates-pop.py OFF-REPO`, making the count 13 where the truth is 12. Asserted in BOTH
     # languages, because `checks/sb-gate.sh:17` is the same trap in shell: a comment recording
     # that the gate USED to `cd $(dirname "$0")/../../..`, in a file that no longer does.
-    lit_py = ("# was: sys.path.insert(0, str(HERE.parents[2]))\n"
-              "HERE = pathlib.Path(__file__).resolve().parent\nREPO = HERE.parents[0]\n" + MAIN)
-    lit_sh = ('#!/bin/sh\n# used to cd "$(dirname "$0")/../../.."\n_d=${0%/*}\ncd "$_d/.."\n')
+    #
+    # AND THE PLANT IS NOW STRONGER THAN ITS OWN PROSE SAYS. The fixtures are `LIT_PY`/`LIT_SH`,
+    # module constants, so `FIXTURES` can blank them -- and plant 8 asserts the INVERSE, which is
+    # the direction that was green while the instrument was wrong about itself: **this file, read
+    # by this file, must be ON-REPO.** A meta-instrument that cannot measure ITSELF cleanly is the
+    # one measurement nobody else makes.
     with tempfile.TemporaryDirectory() as td:
         r = Path(td); _tree(r)
-        (r / "checks" / "documented.py").write_text(lit_py)
-        (r / "checks" / "documented.sh").write_text(lit_sh)
+        (r / "checks" / "documented.py").write_text(LIT_PY)
+        (r / "checks" / "documented.sh").write_text(LIT_SH)
         ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
                and root_facts(r / "checks" / "documented.sh", r)[2])
     checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
                    "finding (this file found itself)", ok7,
                    f"py_and_sh_both_reported_on_root={ok7}"))
 
-    print("PLANTS -- eight directions plus an inertness assertion, because a meta-gate's blind "
+    # PLANT 8 -- **THIS FILE, READ BY THIS FILE, MUST BE ON-REPO.** The one direction plant 7
+    # could not reach, and the one the instrument got WRONG while every plant was green.
+    # MEASURED 2026-10-06: `gates/gates-pop.py` reported ITSELF off-repo. `ROOT_INLINE` had
+    # matched the string literal `FALLBACK_PRE_FIX["checks/census.py"]` -- a SYNTHETIC GATE held
+    # in a dict in this file's own body -- and `code_of`'s docstring blanking deliberately keeps
+    # non-docstring strings, because "a string that is an ARGUMENT carries a path the scanner
+    # needs". Plant 7 asserted the COMMENT layer and passed. **PROSE IS NOT CODE; A FIXTURE IS NOT
+    # EITHER; AND A PLANT THAT COVERS THE COMMENT LAYER SAYS NOTHING ABOUT THE STRING LAYER.**
+    self_facts = root_facts(Path(__file__), HERE.parent)
+    checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+                   "measure itself cleanly is the one measurement nobody else makes",
+                   self_facts[2], f"gates/gates-pop.py -> {self_facts}"))
+
+    print("PLANTS -- nine directions plus an inertness assertion, because a meta-gate's blind "
           "spot is the one nobody\nelse checks")
     for name, ok, got in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
@@ -808,6 +967,11 @@ def report_quiet(root):
     import contextlib
     with contextlib.redirect_stdout(io.StringIO()):
         return report(root, "write")
+
+
+# `FIXTURES` LAST, because it is derived from names this module defines above it. MEASURED: bound
+# near the regexes it raised `NameError` at import -- see `_init_fixtures`.
+_init_fixtures()
 
 
 def main():
