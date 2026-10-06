@@ -30,40 +30,18 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import graphcmp as G  # noqa: E402
 
 
-# THE ONE COMPOSITE WHOSE LAST FIELD IS A `,`-JOINED PAYLOAD LIST, and the census counted a
-# letter out of it for a whole run. `graphcmp.py:404`'s `dev()` spells a device TUPLE as ONE
-# `s` atom carrying the names joined by `,`, so a 2-device ALLREDUCE is `al(OADD,sCPU,CPU)`
-# -- MEASURED -- and that `,` re-opens this function's offset-0 rule on the second `CPU`.
-# `al(` is the ONLY arg shape in the 25-graph corpus where an alnum token follows a payload
-# rather than an atom, and the SAME tuple spelled field-wise -- `n(sCPU,sCPU)`, which `tup()`
-# emits and which the scan below already reads correctly -- is what every other site produces.
-# So this is `dev()`'s spelling and not a property of the grammar, and the leaked letter is
-# the device NAME's first letter: a NAME is a payload, not an atom.
-#
-# WHY A TABLE AND NOT A PARSER: `al(OADD,sCPU,CPU)` and `al(OADD,sCPU,sCPU)` are
-# indistinguishable to `G.split_top`, so a `,` inside an `s` payload is ambiguous between
-# "next field" and "next element" and no tokenizer can settle it from the text alone. What IS
-# knowable without guessing is that `al(` has exactly TWO fields, so its FIRST `,` is the
-# field boundary and everything after it is one payload. That is a fact about the form, which
-# is why it sits beside `G.COMPOSITE` instead of inside the scan.
-#
-# **AND NOT BY ADDING THE LETTER TO `ATOMS`.** `C` is the second letter of `COPY` and `D` is
-# a dtype and `M`/`N`/`S` are already atoms; a legal `C` is a legal `COPY` prefix, so an atom
-# letter that a payload can contribute can collide with a real atom tomorrow. Deleting the
-# check and keeping the defect is not a fix.
-PAYLOAD_LAST_FIELD = ("al(",)
-
-
 def atoms(arg: str) -> set:
-  """The ATOM LETTERS in an arg. FOUR conditions, and the first three versions had fewer and
-  were visibly wrong on screen.
+  """The ATOM LETTERS in an arg, from the grammar and NOT from any form's field layout, so a
+  spelling change cannot quietly become a change to what counts as an atom. Three conditions,
+  and the first versions had fewer and were visibly wrong on screen.
     * MEASURED, the first counted the SECOND character of every atom and the `)` of the
       `n()` empty-list spelling -- it reported `34DNPSbils` for a `ParamArg` and `)` for a
       `KernelInfo` -- so the letter sits where a VALUE starts: offset 0, or right after
       `( , : =`, and the `D` inside `sDefault` is not an atom;
     * the letter is a LETTER and is followed by alnum/underscore or by nothing, and the scan
       then SKIPS the rest of the token, so `i0` contributes `i` and `Df32` contributes `D`.
-      That also stops `n()` contributing its `n` or its `)`.
+      That also stops `n()` contributing its `n` or its `)`: the tuple opener `n` is always
+      followed by `(`, which is why `n(..)` needs no prefix table.
     * DEFECT 21 (2026-10-04, `--graph lin`): a token whose LAST character is followed by
       `=` is a FIELD NAME and not a value, and the two conditions above do not separate
       them. So the census counted `o` from `Opt(op=EOptOps.SPLIT,axis=i2,...)` and `a` from
@@ -77,29 +55,15 @@ def atoms(arg: str) -> set:
       token's FIRST character and changed nothing, because `arg[i+1]` is `p`. The assertion
       at the bottom of this file is what made that visible in one run instead of one
       reading.
-    * DEFECT 28 (2026-10-06, `--graph allred`): a `,` inside an `s` PAYLOAD is not a field
-      boundary, and the scan had no way to know that -- so a 2-device ALLREDUCE
-      `al(OADD,sCPU,CPU)` reported `C` as an unmapped atom and the census's own SELFCHECK went
-      FAIL with rc=1 on a tree that was entirely correct. See `PAYLOAD_LAST_FIELD` for the
-      measurement and for why this is not fixed by teaching the scan to guess.
 
-  PAYLOAD-LAST FIELD: `al(` ends with one payload, so the letters past the first `,` are not
-  atoms and the only one that is counted is the field's own prefix. A BARE device name
-  (`al(OADD,CPU)`, no `s`) still counts its first letter, because that is a real atom-shaped
-  token at a real field boundary -- and the selfcheck asserts that it does.
-  """
-  for p in PAYLOAD_LAST_FIELD:
-    if arg.startswith(p):
-      head, _, payload = arg.partition(",")
-      lead = payload[:1]
-      return _atoms(head) | ({lead} if lead.isalpha() else set())
-  return _atoms(arg)
-
-
-def _atoms(arg: str) -> set:
-  """The scan itself, with no form-specific knowledge in it. `atoms()` is the one that knows
-  a form's field layout, so a change to the layout cannot reach here and quietly become a
-  change to what counts as an atom."""
+  DEFECT 28 (2026-10-06, `--graph allred`) WAS A FORM-SPECIFIC RULE HERE AND IS DELETED. The
+  ALLREDUCE device is a UNION whose two arms render differently -- a bare name `sCPU` and a
+  tuple `n(sCPU,sCPU)` -- and the port once FLATTENED the tuple to `sCPU,CPU`, whose trailing
+  `CPU` re-opened the offset-0 rule and leaked a `C`. `PAYLOAD_LAST_FIELD = ("al(",)"` hid that
+  `C` by reading only the field's first letter; ADEV-1 abolished the flattened spelling, so the
+  rule then turned the tuple opener `n` into an unmapped atom and became the defect itself.
+  With no form-specific knowledge, `al(OADD,n(sCPU,sCPU))` reads `{a,O,s}` and the bare
+  `al(OADD,CPU)` still reads a `C`; the bottom of this file asserts both."""
   out, i = set(), 0
   while i < len(arg):
     c = arg[i]
@@ -335,20 +299,26 @@ def main() -> int:
     bad.append("atoms() lost the ENUM atom `E` after the field-name fix")
   if unknown:
     bad.append(f"unmapped arg atom letters: {''.join(sorted(unknown))}")
-  # DEFECT 28, ASSERTED IN BOTH DIRECTIONS, because a fix that only ever fires has not been
-  # shown to still bite. The census reported `unmapped arg atom letters: C` -- where `C` is
-  # the first letter of the device NAME in `al(OADD,sCPU,CPU)`, i.e. a PAYLOAD, and NOT an
-  # atom. `PAYLOAD_LAST_FIELD` is the fix and the three lines below are what stop it from
-  # becoming "the scanner stopped looking".
-  if atoms("al(OADD,sCPU,CPU)") != {"a", "O", "s"}:
-    bad.append(f"a 2-device ALLREDUCE arg still leaks a letter out of the payload: "
-               f"{sorted(atoms('al(OADD,sCPU,CPU)'))}")
-  if atoms("al(OADD,sCPU,sCPU,METAL)") != {"a", "O", "s"}:
-    bad.append(f"a 4-element device tuple still leaks a letter out of the payload: "
-               f"{sorted(atoms('al(OADD,sCPU,sCPU,METAL)'))}")
+  # THE DEVICE SPELLING, ASSERTED BOTH WAYS, because a scan that only ever fires has not been
+  # shown to still bite. `al(`'s second field is a device that is EITHER a bare name (`sCPU`)
+  # OR a tuple spelled field-wise (`n(sCPU,sCPU)`); the census must read both without inventing
+  # an atom. The nested form's `n` is the tuple opener, followed by `(`, so the scan never
+  # counts it -- which is why DEFECT 28's form-specific `PAYLOAD_LAST_FIELD` is gone -- and the
+  # bare name's `C` still IS one atom letter. The FLATTENED `al(OADD,sCPU,CPU)` that ADEV-1
+  # abolished is deliberately NOT asserted here: it is exactly a leaked `C`, and the
+  # corpus-wide `unknown` check above is what refuses it.
+  if atoms("al(OADD,n(sCPU,sCPU))") != {"a", "O", "s"}:
+    bad.append(f"the field-wise device tuple `al(OADD,n(sCPU,sCPU))` does not read as three "
+               f"letters: {sorted(atoms('al(OADD,n(sCPU,sCPU))'))}")
+  if "n" in atoms("al(OADD,n(sCPU,sCPU))"):
+    bad.append("the tuple opener `n` is being counted as an atom, so the census accepts a "
+               "spelling the renderers do not emit")
+  if atoms("al(OADD,n(sCPU,sCPU,sMETAL,sMETAL))") != {"a", "O", "s"}:
+    bad.append(f"a 4-element device tuple does not behave as the 2-element one: "
+               f"{sorted(atoms('al(OADD,n(sCPU,sCPU,sMETAL,sMETAL))'))}")
   if "C" not in atoms("al(OADD,CPU)"):
-    bad.append("a BARE device name (no `s` prefix) is no longer an unmapped atom, so "
-               "PAYLOAD_LAST_FIELD is now hiding a device name instead of a payload element")
+    bad.append("a BARE device name (no `s` prefix) is no longer an unmapped atom, so the "
+               "scan has stopped looking at real device names")
   print(f"# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: "
         f"{dict(sorted(all_res.items())) or 'none'} of {len(G.LEDGER)} markers")
   print("#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check "

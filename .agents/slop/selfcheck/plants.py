@@ -26,12 +26,14 @@ measurement that says the quantity is not vacuous.
                  lives in `graphcmp.py`'s `_dispatch`, which this file cannot reach, so a beat
                  that never showed the refusal firing is a guard that has never been tested.
 
-  PLANT 2  THE PAYLOAD -- direct calls to `atoms()`, NO TEXT MATCHING ANYWHERE IN IT. A device
-           NAME is a payload and not an atom, so `al(OADD,sCPU,CPU)` must yield `Oas`. And the
-           beat that matters is the SECOND one: a BARE `al(OADD,CPU)` -- no `s` prefix -- must
-           STILL report `C`. Without that beat the fix is indistinguishable from "the scanner
-           stopped looking", which is the same failure as the two gates in this repo today that
-           reported DID NOT REFUSE for a CORRECT refusal.
+  PLANT 2  THE DEVICE SPELLING -- direct calls to `atoms()`, NO TEXT MATCHING ANYWHERE IN IT.
+           `al(`'s second field is EITHER a bare name `sCPU` OR a tuple `n(sCPU,sCPU)`, and the
+           census must read both without inventing an atom. So `al(OADD,n(sCPU,sCPU))` must
+           yield `Oas` -- the tuple opener `n` is NOT an atom -- while a BARE `al(OADD,CPU)`
+           must STILL report `C`, which separates a scan that reads the grammar from one that
+           stopped looking. The beat that proves DEFECT 28's form rule is GONE is the last: the
+           FLATTENED `al(OADD,sCPU,CPU)` ADEV-1 abolished must now LEAK its `C`, i.e. be
+           REJECTED rather than silently accepted.
 
   PLANT 3  THE HASH ORDER -- five `PYTHONHASHSEED` values over `main()`'s real
            `PY-BEND OPs DIFFER` row, which must come back as ONE rendering. Before the sort the
@@ -72,14 +74,12 @@ SEEDS = ("0", "1", "2", "3", "4")
 # symmetric difference non-empty and therefore what makes the hash-order row print at all.
 BEND_ARG = re.compile(r"(?<=,)(s)[A-Z]+(?=,)")
 
-# PLANT 2's FOURTH BEAT WAS TAUTOLOGICAL AND IT IS RECORDED BECAUSE IT IS THE CLASS THIS WHOLE
-# TASK IS ABOUT: it asserted `atoms(x) == {"n","s"} | atoms(x)`, which is `x == x` for every
-# `x`, so it could not fail and had never been tested. The measured truth it was reaching for is
-# different from the one it claimed: `n(` is a LIST OPENER, not an atom, and the scan requires a
-# letter to be followed by an alnum or the end of the string, so `n` is never counted -- in this
-# file, before and after this task, and identically on both sides. The beat below asserts the
-# thing that is actually true and that would actually catch a regression.
-LIST_OPENER = {"n"}
+# PLANT 2's OLD FOURTH BEAT WAS TAUTOLOGICAL AND IT IS RECORDED BECAUSE IT IS THE CLASS THIS
+# WHOLE TASK IS ABOUT: it asserted `atoms(x) == {"n","s"} | atoms(x)`, which is `x == x` for
+# every `x`, so it could not fail and had never been tested. The measured truth it was reaching
+# for is different from the one it claimed: `n(` is a TUPLE OPENER, not an atom, and the scan
+# requires a letter to be followed by an alnum or the end of the string, so `n` is never counted
+# -- identically on both sides. The beat below asserts the thing that is actually true.
 
 # `graphcmp` ALWAYS comes from the real slop dir: `ORACLE_UNDER_TEST` names the file under
 # test and nothing else, so pointing the plants at a pre-fix COPY (jj: `jj file show -r @-`) has
@@ -290,52 +290,42 @@ def plant1() -> bool:
 
 
 def plant2() -> bool:
-    """THE PAYLOAD. No text matching: this plant compares RETURNED SETS."""
-    print("\nPLANT 2 -- THE PAYLOAD (returned sets only; this plant matches no text)")
+    """THE DEVICE SPELLING. No text matching: this plant compares RETURNED SETS."""
+    print("\nPLANT 2 -- THE DEVICE SPELLING (returned sets only; this plant matches no text)")
     o = load_oracle()
     checks = []
-    # PLANT 2 DEPENDS ON A SYMBOL THAT ONLY EXISTS AFTER THE FIX, and that is the honest way to
-    # say "the pre-fix file cannot pass this plant". See PLANT 1 beat b for why a missing
-    # attribute is REPORTED rather than raised.
-    if not hasattr(o, "PAYLOAD_LAST_FIELD"):
-        checks.append(report("plant2: the scanner knows a form's field layout", False,
-                             f"NO `PAYLOAD_LAST_FIELD` in the file under test; "
-                             f"`al(OADD,sCPU,CPU)` -> {sorted(o.atoms('al(OADD,sCPU,CPU)'))}, "
-                             f"so a device NAME is counted as an atom letter"))
-    two = o.atoms("al(OADD,sCPU,CPU)")
-    four = o.atoms("al(OADD,sCPU,sCPU,METAL)")
+    two = o.atoms("al(OADD,n(sCPU,sCPU))")
+    four = o.atoms("al(OADD,n(sCPU,sCPU,sMETAL,sMETAL))")
     bare = o.atoms("al(OADD,CPU)")
-    checks.append(report("plant2: a 2-device ALLREDUCE yields the form prefix, the op atom and "
-                         "`s` -- and no letter out of the payload",
-                         two == {"a", "O", "s"}, f"al(OADD,sCPU,CPU) -> {sorted(two)}"))
-    checks.append(report("plant2: a 4-element device tuple behaves the SAME, so the fix is not "
+    flat = o.atoms("al(OADD,sCPU,CPU)")
+    checks.append(report("plant2: the field-wise device tuple yields the form prefix, the op "
+                         "atom and `s` -- and the tuple opener `n` is NOT an atom",
+                         two == {"a", "O", "s"} and "n" not in two,
+                         f"al(OADD,n(sCPU,sCPU)) -> {sorted(two)}; "
+                         f"`n` counted={('n' in two)}"))
+    checks.append(report("plant2: a 4-element device tuple behaves the SAME, so nothing here is "
                          "a two-element special case",
-                         four == two, f"al(OADD,sCPU,sCPU,METAL) -> {sorted(four)}"))
-    checks.append(report("plant2: A BARE device name (no `s`) is STILL an unmapped atom -- the "
-                         "beat that separates this fix from a scanner that stopped looking",
-                         "C" in bare and bare != two,
-                         f"al(OADD,CPU) -> {sorted(bare)}"))
-    checks.append(report("plant2: the field-wise spelling of the same tuple is read correctly and "
-                         "NEVER contributed a device letter, so the defect was `dev()`'s comma "
-                         "and not the grammar's -- and `n` is a list OPENER the scan has never "
-                         "counted, so it is not a letter the fix removed",
-                         o.atoms("n(sCPU,sCPU)") == {"s"}
-                         and "n" not in o.atoms("n(sCPU,sCPU)")
-                         and not (o.atoms("n(sCPU,sCPU)") & LIST_OPENER - {"n"}),
-                         f"n(sCPU,sCPU) -> {sorted(o.atoms('n(sCPU,sCPU)'))}; "
-                         f"`n` counted={('n' in o.atoms('n(sCPU,sCPU)'))}"))
-    checks.append(report("plant2: a plain ParamArg is UNCHANGED -- the exclusion did not widen",
-                         o.atoms("P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N,b0,N)")
-                         == getattr(o, "_atoms", o.atoms)(
-                             "P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N,b0,N)"),
-                         "P(...) routes to the same scan it always did"))
-    checks.append(report("plant2: the fix NARROWS the reached set and never WIDENS the accepted "
-                         "one -- `C` is NOT in ATOMS, which is the whole point",
+                         four == {"a", "O", "s"}, f"al(OADD,n(sCPU,sCPU,sMETAL,sMETAL)) -> "
+                         f"{sorted(four)}"))
+    checks.append(report("plant2: A BARE device name is STILL an unmapped atom -- the beat that "
+                         "separates a scan that reads the grammar from one that stopped looking",
+                         "C" in bare and bare != two, f"al(OADD,CPU) -> {sorted(bare)}"))
+    checks.append(report("plant2: and the FLATTENED spelling ADEV-1 abolished is now REJECTED "
+                         "(its `C` leaks, i.e. the census refuses it) rather than silently "
+                         "accepted -- the whole point of deleting the form rule",
+                         "C" in flat and flat != {"a", "O", "s"},
+                         f"al(OADD,sCPU,CPU) -> {sorted(flat)}"))
+    param = "P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N,b0,N)"
+    checks.append(report("plant2: a plain ParamArg scan is unchanged and PRECISE, not a "
+                         "passthrough comparison with itself",
+                         o.atoms(param) == {"i", "D", "s", "S", "b"},
+                         f"P(...) -> {sorted(o.atoms(param))}"))
+    checks.append(report("plant2: `C` is NOT in ATOMS, which is what makes the flattened leak a "
+                         "LEAK and not a second spelling of a real atom",
                          "C" not in set(G.ATOMS.values()) and two == {"a", "O", "s"},
                          f"ATOMS values = {''.join(sorted(set(G.ATOMS.values())))} "
                          f"(no `C`: {'C' not in set(G.ATOMS.values())}); "
-                         f"al(OADD,sCPU,CPU) -> {sorted(two)} "
-                         f"({'narrowed' if two == {'a','O','s'} else 'STILL LEAKS'})"))
+                         f"al(OADD,n(sCPU,sCPU)) -> {sorted(two)}"))
     return all(checks)
 
 

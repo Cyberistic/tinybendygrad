@@ -1,0 +1,51 @@
+PLANTS FOR .agents/slop/graphcmp-oracle.py -- three defects, three plants
+
+PLANT 1 -- THE DEVICE (beat a: does the corpus really depend on it?)
+  PASS  plant1a: the py-side corpus MOVES with the device, so a census that does not NAME its device is unauditable
+        NULL=387 CPU=386 METAL=385 nodes
+  PASS  plant1a: `late` is not merely a different SIZE on the other device, it is a different GRAPH
+        NULL has RECIPROCAL=True, CPU has RECIPROCAL=False
+
+PLANT 1 -- THE DEVICE (beat b: does the census follow graphcmp's OWN default?)
+  PASS  plant1b: the census's device IS graphcmp.py's `--dev` default
+        read from the AST: 'CPU'
+  PASS  plant1b: and it FOLLOWS a change to that default, so it is a reading and not a third literal (real graphcmp.py never touched)
+        mutated temp copy -> 'ZZTOP'; the real file still -> 'CPU'
+
+PLANT 1 -- THE DEVICE (beat c: is the census immune to the ambient DEV?)
+  PASS  plant1c: three DIFFERENT ambient DEV values all census on the SAME device, and it is graphcmp.py's
+        ambient NULL/METAL/unset -> ['# DEV=CPU']
+  PASS  plant1c: and the node TOTAL is the CPU one (312), NOT the NULL one (387) that differ.py's ENV would have produced
+        # TOTAL: 34 graphs, 386 nodes per side, 70 distinct ops: ADD AFTER ALLOC ALLREDUCE AND B
+
+PLANT 1 -- THE DEVICE (beat d: does the precondition FIRE?)
+  PASS  plant1d CONTROL: the same command with the bend side ALONE is clean, so the rc=1 below is the device and not something else
+        rc=0
+  PASS  plant1d: two sides on DIFFERENT devices are REFUSED, rc=1
+        planted rc=1, control rc=0
+  PASS  plant1d: and the refusal NAMES both device sets and says why
+        ["#   allred: the two sides opened DIFFERENT devices -- py ['sCPU'] against bend ['sMETAL'] -- so this row's node/op/shape/atom counts are about two different graphs"]
+
+PLANT 2 -- THE DEVICE SPELLING (returned sets only; this plant matches no text)
+  PASS  plant2: the field-wise device tuple yields the form prefix, the op atom and `s` -- and the tuple opener `n` is NOT an atom
+        al(OADD,n(sCPU,sCPU)) -> ['O', 'a', 's']; `n` counted=False
+  PASS  plant2: a 4-element device tuple behaves the SAME, so nothing here is a two-element special case
+        al(OADD,n(sCPU,sCPU,sMETAL,sMETAL)) -> ['O', 'a', 's']
+  PASS  plant2: A BARE device name is STILL an unmapped atom -- the beat that separates a scan that reads the grammar from one that stopped looking
+        al(OADD,CPU) -> ['C', 'O', 'a']
+  PASS  plant2: and the FLATTENED spelling ADEV-1 abolished is now REJECTED (its `C` leaks, i.e. the census refuses it) rather than silently accepted -- the whole point of deleting the form rule
+        al(OADD,sCPU,CPU) -> ['C', 'O', 'a', 's']
+  PASS  plant2: a plain ParamArg scan is unchanged and PRECISE, not a passthrough comparison with itself
+        P(...) -> ['D', 'S', 'b', 'i', 's']
+  PASS  plant2: `C` is NOT in ATOMS, which is what makes the flattened leak a LEAK and not a second spelling of a real atom
+        ATOMS values = DENOSXbfilqsuvyz (no `C`: True); al(OADD,n(sCPU,sCPU)) -> ['O', 'a', 's']
+
+PLANT 3 -- THE HASH ORDER (five PYTHONHASHSEED values, one rendering)
+  PASS  plant3: all five seeds printed a `PY-BEND OPs DIFFER` row at all -- the symmetric difference is 6 ops wide, which is what makes a set print's order visible at all
+        1 distinct rendering(s) of 6 ops over 5 seeds
+  PASS  plant3: the ONE rendering is in ASCENDING order, which a set literal is not under a randomised string hash
+        ['ALLOC', 'CONST', 'COPY', 'RANGE', 'RESHAPE', 'STACK']
+  PASS  plant3: and the order equals `sorted` on ALL FIVE seeds, which is what a law looks like and what a single agreeing seed cannot show
+        seeds ['0', '1', '2', '3', '4']: 0=S; 1=S; 2=S; 3=S; 4=S  (S=sorted, H=hash order). Distinct renderings: 1. seed 0: ['ALLOC', 'CONST', 'COPY', 'RANGE', 'RESHAPE', 'STACK']
+
+  ALL PLANTS PASS
