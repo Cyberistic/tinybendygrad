@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/romless.py", line 6, in <module>
+    from common import MMIO, open_gpu, wait_until
+ModuleNotFoundError: No module named 'common'

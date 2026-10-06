@@ -1,0 +1,61 @@
+#   allred     py   OK    rows=9    ops=7   {'ALLOC': 1, 'ALLREDUCE': 1, 'CONST': 3, 'COPY': 1, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   allred     bend OK    rows=18   ops=7   {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   alu        py   OK    rows=14   ops=13  {'ALLOC': 1, 'CONST': 2, 'DETACH': 1, 'EXP2': 1, 'GROUP': 1, 'LOG2': 1, 'POW': 1, 'RECIPROCAL': 1, 'RESHAPE': 1, 'SIN': 1, 'SQRT': 1, 'STACK': 1, 'TRUNC': 1}
+#   alu        bend OK    rows=14   ops=13  {'ALLOC': 1, 'CONST': 2, 'DETACH': 1, 'EXP2': 1, 'GROUP': 1, 'LOG2': 1, 'POW': 1, 'RECIPROCAL': 1, 'RESHAPE': 1, 'SIN': 1, 'SQRT': 1, 'STACK': 1, 'TRUNC': 1}
+#   binblob    py   OK    rows=19   ops=8   {'ALLOC': 2, 'BINARY': 1, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   binblob    bend OK    rows=19   ops=8   {'ALLOC': 2, 'BINARY': 1, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   bit        py   OK    rows=10   ops=9   {'ALLOC': 1, 'CONST': 2, 'FLOORDIV': 1, 'FLOORMOD': 1, 'GROUP': 1, 'RESHAPE': 1, 'SHL': 1, 'SHR': 1, 'STACK': 1}
+#   bit        bend OK    rows=10   ops=9   {'ALLOC': 1, 'CONST': 2, 'FLOORDIV': 1, 'FLOORMOD': 1, 'GROUP': 1, 'RESHAPE': 1, 'SHL': 1, 'SHR': 1, 'STACK': 1}
+#   buffer     py   OK    rows=5    ops=4   {'BUFFER': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   buffer     bend OK    rows=5    ops=4   {'BUFFER': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   bw         py   OK    rows=32   ops=10  {'ALLOC': 2, 'CAST': 1, 'CONST': 4, 'EXPAND': 2, 'GROUP': 1, 'MUL': 2, 'PERMUTE': 4, 'REDUCE': 2, 'RESHAPE': 8, 'STACK': 6}
+#   bw         bend OK    rows=32   ops=10  {'ALLOC': 2, 'CAST': 1, 'CONST': 4, 'EXPAND': 2, 'GROUP': 1, 'MUL': 2, 'PERMUTE': 4, 'REDUCE': 2, 'RESHAPE': 8, 'STACK': 6}
+#   cast       py   OK    rows=6    ops=5   {'ALLOC': 1, 'CAST': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   cast       bend OK    rows=6    ops=5   {'ALLOC': 1, 'CAST': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   cdiv       py   OK    rows=10   ops=7   {'ALLOC': 2, 'CDIV': 1, 'CMOD': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 2, 'STACK': 1}
+#   cdiv       bend OK    rows=18   ops=7   {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   commute    py   OK    rows=14   ops=11  {'ADD': 1, 'ALLOC': 2, 'AND': 1, 'CMPNE': 1, 'CONST': 2, 'GROUP': 1, 'MAX': 1, 'OR': 1, 'RESHAPE': 2, 'STACK': 1, 'XOR': 1}
+#   commute    bend OK    rows=14   ops=11  {'ADD': 1, 'ALLOC': 2, 'AND': 1, 'CMPNE': 1, 'CONST': 2, 'GROUP': 1, 'MAX': 1, 'OR': 1, 'RESHAPE': 2, 'STACK': 1, 'XOR': 1}
+#   flip       py   OK    rows=6    ops=5   {'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'RESHAPE': 1, 'STACK': 1}
+#   flip       bend OK    rows=7    ops=6   {'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1}
+#   gate       py   OK    rows=14   ops=12  {'BUFFER': 1, 'CMPLT': 1, 'CONST': 2, 'END': 1, 'ENDIF': 1, 'IF': 1, 'INDEX': 2, 'LINEAR': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1, 'STORE': 1}
+#   gate       bend OK    rows=14   ops=12  {'BUFFER': 1, 'CMPLT': 1, 'CONST': 2, 'END': 1, 'ENDIF': 1, 'IF': 1, 'INDEX': 2, 'LINEAR': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1, 'STORE': 1}
+#   group      py   OK    rows=8    ops=7   {'ADD': 1, 'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}
+#   group      bend OK    rows=8    ops=7   {'ADD': 1, 'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}
+#   indexed    py   OK    rows=7    ops=6   {'BARRIER': 1, 'CONST': 2, 'INDEX': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1}
+#   indexed    bend OK    rows=7    ops=6   {'BARRIER': 1, 'CONST': 2, 'INDEX': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1}
+#   late       py   OK    rows=12   ops=9   {'ALLOC': 2, 'CMPEQ': 1, 'CONST': 2, 'FDIV': 1, 'GROUP': 1, 'NEG': 1, 'RESHAPE': 2, 'STACK': 1, 'SUB': 1}
+#   late       bend OK    rows=18   ops=7   {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   lin        py   OK    rows=46   ops=11  {'ADD': 7, 'CAST': 6, 'CONST': 6, 'END': 2, 'INDEX': 7, 'LOAD': 6, 'MUL': 5, 'PARAM': 3, 'RANGE': 2, 'SINK': 1, 'STORE': 1}
+#   lin        bend OK    rows=46   ops=11  {'ADD': 7, 'CAST': 6, 'CONST': 6, 'END': 2, 'INDEX': 7, 'LOAD': 6, 'MUL': 5, 'PARAM': 3, 'RANGE': 2, 'SINK': 1, 'STORE': 1}
+#   loop       py   OK    rows=25   ops=14  {'ADD': 1, 'AFTER': 3, 'BACKEDGE': 1, 'CALL': 1, 'CAST': 1, 'CMPLT': 1, 'CONST': 2, 'INDEX': 4, 'LOAD': 2, 'NOOP': 1, 'PARAM': 4, 'RANGE': 1, 'SINK': 1, 'STORE': 2}
+#   loop       bend OK    rows=25   ops=14  {'ADD': 1, 'AFTER': 3, 'BACKEDGE': 1, 'CALL': 1, 'CAST': 1, 'CMPLT': 1, 'CONST': 2, 'INDEX': 4, 'LOAD': 2, 'NOOP': 1, 'PARAM': 4, 'RANGE': 1, 'SINK': 1, 'STORE': 2}
+#   matmul     py   OK    rows=18   ops=7   {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   matmul     bend OK    rows=18   ops=7   {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   move       py   OK    rows=22   ops=9   {'ALLOC': 2, 'BITCAST': 1, 'CONST': 7, 'CONTIGUOUS_BACKWARD': 1, 'GROUP': 1, 'PAD': 1, 'RESHAPE': 2, 'SHRINK': 1, 'STACK': 6}
+#   move       bend OK    rows=22   ops=9   {'ALLOC': 2, 'BITCAST': 1, 'CONST': 7, 'CONTIGUOUS_BACKWARD': 1, 'GROUP': 1, 'PAD': 1, 'RESHAPE': 2, 'SHRINK': 1, 'STACK': 6}
+#   range      py   OK    rows=2    ops=2   {'CONST': 1, 'RANGE': 1}
+#   range      bend OK    rows=2    ops=2   {'CONST': 1, 'RANGE': 1}
+#   rangeflat  py   OK    rows=2    ops=2   {'CONST': 1, 'RANGE': 1}
+#   rangeflat  bend OK    rows=2    ops=2   {'CONST': 1, 'RANGE': 1}
+#   reduce     py   OK    rows=7    ops=6   {'ALLOC': 1, 'CONST': 2, 'PERMUTE': 1, 'REDUCE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   reduce     bend OK    rows=7    ops=6   {'ALLOC': 1, 'CONST': 2, 'PERMUTE': 1, 'REDUCE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   sink       py   OK    rows=2    ops=2   {'CONST': 1, 'SINK': 1}
+#   sink       bend OK    rows=2    ops=2   {'CONST': 1, 'SINK': 1}
+#   special    py   OK    rows=2    ops=2   {'CONST': 1, 'SPECIAL': 1}
+#   special    bend OK    rows=2    ops=2   {'CONST': 1, 'SPECIAL': 1}
+#   sym        py   OK    rows=12   ops=6   {'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'PARAM': 2, 'RESHAPE': 3, 'STACK': 3}
+#   sym        bend OK    rows=12   ops=6   {'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'PARAM': 2, 'RESHAPE': 3, 'STACK': 3}
+#   where      py   OK    rows=8    ops=7   {'ALLOC': 1, 'CMPLT': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1, 'WHERE': 1}
+#   where      bend OK    rows=8    ops=7   {'ALLOC': 1, 'CMPLT': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1, 'WHERE': 1}
+#
+# graphs in corpus      : 25
+# ops UPSTREAM (denom) : 77   (measured len(list(Ops)))
+# reached PY            : 61
+# reached BEND          : 53
+# reached BOTH          : 53   <- the honest coverage number
+# py-only  (bend MISSING): ['ALLREDUCE', 'CDIV', 'CMOD', 'CMPEQ', 'COPY', 'FDIV', 'NEG', 'SUB']
+# bend-only (py MISSING) : []
+# reached by NEITHER    : 24
+# NOT REACHED (24): ['ALLREDUCE', 'CDIV', 'CMOD', 'CMPEQ', 'COPY', 'CUSTOM', 'CUSTOMI', 'CUSTOM_FUNCTION', 'FDIV', 'GETADDR', 'INS', 'MSELECT', 'MSTACK', 'MULACC', 'NEG', 'PROGRAM', 'PYLITERAL', 'REWRITE_ERROR', 'SOURCE', 'STAGE', 'SUB', 'THREEFRY', 'UNSHARD', 'WMMA']
+# WALLS: []

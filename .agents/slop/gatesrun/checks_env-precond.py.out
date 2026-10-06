@@ -1,0 +1,11 @@
+METHOD A -- the source lines that build the child environments:
+    ok       checks/differ.py:47 pins PYTHONHASHSEED,NOOPT
+    MISSING  checks/differ.py:509 lacks PYTHONHASHSEED,NOOPT
+    ok       .agents/slop/graphcmp-oracle.py:91 pins (nothing required)
+    MISSING  .agents/slop/graphcmp.py:1800 lacks PYTHONHASHSEED,NOOPT
+
+METHOD B -- what the run recorded, read with partition('='), no regex:
+    ok        dev=CPU (declared CPU)
+    ok        pythonhashseed=0 (declared 0)
+    ok        noopt=0 (declared 0)
+    ok        lc_all=C (declared C)

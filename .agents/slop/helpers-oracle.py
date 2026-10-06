@@ -283,12 +283,16 @@ for nm, (xh, xl), k in SHIFTS:
 # the fixture back as `hi:lo` AND the decimal, so the input and the output are both in
 # the diff.
 #
-# `d_i64min` IS A LIMIT AND NOT A CLAIM. CPython's `str(-2**63)` is
-# `-9223372036854775808`, and the port answers `2147483648:0` -- the bit pattern --
-# because Bend's `I64` cannot hold the magnitude 2**63. So this row is the ONE whose
-# two lanes are EXPECTED to differ, and it is emitted here through the same `fallback`
-# the port uses rather than skipped, so the disagreement is visible in the diff instead
-# of living in a comment.
+# `d_i64min` WAS A LIMIT AND IT WAS A LIE ABOUT THE PORT. The previous revision of this
+# block claimed CPython answers `-9223372036854775808` and "the port answers
+# `2147483648:0` -- the bit pattern -- because Bend's `I64` cannot hold the magnitude
+# 2**63", and emitted the port's answer here so the two lanes would differ in the diff.
+# MEASURED 2026-10-06 on the committed `.bd`/`.bn` (both lanes, byte-identical): the PORT
+# answers `-9223372036854775808`, CPython's true `str`, and the ONLY thing that differed
+# was this oracle's substitution. **AN EXPECTED VALUE THAT ENCODES THE PORT'S ASSERTED
+# ANSWER IS NOT CPYTHON'S EXPECTED VALUE, AND THE GATE WAS RED ON THE ONE ROW WHERE THE
+# ORACLE WAS WRONG.** So `_d` is CPython's `str` for every fixture, and the row is no
+# longer a limit: `deadgens` diagnosed it, this removes it.
 DEC_ROWS = [
     ("d_zero", 0, 0),
     ("d_one", 0, 1),
@@ -312,16 +316,11 @@ DEC_ROWS = [
 ]
 
 
-def dec_limit(x: int) -> bool:
-  """True where the port cannot hold |x| and answers the bit pattern instead."""
-  return x == -(1 << 63)
-
-
 def dec_rows():
   for nm, hi, lo in DEC_ROWS:
     v = signed(hi, lo)
     print(f"{nm}_x={words(v)}")
-    print(f"{nm}_d={words(v) if dec_limit(v) else v}")
+    print(f"{nm}_d={v}")
 
 
 dec_rows()
