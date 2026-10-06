@@ -44,7 +44,7 @@ PY, GCMP = ".venv/bin/python", ".agents/slop/graphcmp.py"
 # `env -u PYTHONPATH` is REQUIRED (it contaminates a control) and `LC_ALL=C` is REQUIRED (a
 # locale-colated sort fabricates diffs). `DEV=NULL` is the rebase gate's own setting;
 # graphcmp.py overrides it from its own `--dev`, which is why every artifact names its device.
-ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C", "DEV": "NULL"}
+ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} | {"LC_ALL": "C", "DEV": "NULL", "PYTHONHASHSEED": "0", "NOOPT": "0"}
 
 # THE FROZEN SHELL ORACLE IS PINNED HERE, IN CODE, AND CHECKED ON EVERY RUN.
 #
@@ -506,7 +506,7 @@ def cmd_run(_a):
         "--bend-probe", ".agents/slop/graphcmp-empty.bend")
     # THE COVERAGE DENOMINATOR, tabulated, emitting BOTH sides so an op or atom the py side
     # never produces shows up as a per-side difference rather than an absorbed AGREE.
-    capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)
+    capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
     # WHETHER CPYTHON's OWN `DEBUG >= 1` SITE CAN BE REACHED HERE. It cannot, on 13 real
     # graphs, which is why `dbg` is port-vs-port and says so in its own output.
     capture("D8b-cpython-dbg1-reachability.txt", ".agents/slop/graphcmp-dbg-oracle.py")
@@ -570,7 +570,15 @@ def cmd_run(_a):
         # The oracle's own assertions ride in the same summary as the differ's, because a
         # coverage claim whose printer is broken is a coverage claim about the printer.
         f"oracle-selfcheck={grep_line('D0-coverage-census.txt', 'ORACLE SELFCHECK')}",
-        f"census-rc={last_line('D0-coverage-census.txt')}"]) + "\n")
+        f"census-rc={last_line('D0-coverage-census.txt')}",
+        # THE FOUR ROWS, AND WHY FOUR ROWS AND NOT A NEW FILE. This summary is already parsed as
+        # `key=value` by `gates/retention-check.py`'s CLAUSE IV, by `checks/corpus-figure.py:140`,
+        # by `checks/disagree-gate.py:128` and by `checks/env-precond.py`'s METHOD B, so a row
+        # here is read by four consumers and NO NEW PARSER EXISTS ANYWHERE. A separate file would
+        # be a THIRD place the device is claimed, and two claims about one run is a second
+        # opinion -- which is the thing `gates/retention-check.py`'s own header says it exists to
+        # avoid.
+        *precondition_rows()]) + "\n")
     print(f"wrote {D.relative_to(ROOT)}")
     # **A RUN WITH AN UNANSWERED GRAPH IS INCOMPLETE, AND SAYS SO BY EXITING NON-ZERO.**
     # This is the choice between the three answers, and it is the run's EXIT STATUS that
@@ -599,6 +607,104 @@ def cmd_run(_a):
         if line:
             print(line, file=sys.stderr)
     return 1 if unset or moved else 0
+
+
+# ---- THE PRECONDITIONS, AND THE CROSS-CHECK THAT KEEPS THE ROWS FROM BEING LABELS ---------
+#
+# `differ.py` BUILDS the child environment (`ENV`, `:47`), so it can record what a run used
+# without asking a shell: a shell's environment is not a run's, and a harness's default is not a
+# run's value. `checks/env-precond.py` declares the same four and reads them out of this summary,
+# so every row has TWO INDEPENDENT readings -- a source line it scans, and this file.
+#
+# `dev` IS NOT READ OUT OF `ENV`, BECAUSE `ENV["DEV"]` IS DEAD. MEASURED: every consumer of `ENV`
+# overwrites it before `tinygrad`'s `Device.DEFAULT` resolves -- `graphcmp.py:2853` from its own
+# `--dev`, and `graphcmp-oracle.py` and `graphcmp-p13-ops.py:28` by assignment -- so the device is
+# read off the artifacts, which are the only place it survives.
+#
+# WHY A PIN IS NOT REDUNDANT WITH A SORT. MEASURED over five seeds of one 6-member set: **5
+# distinct `set(...)` renderings, 1 sorted rendering.** A PIN IS A SEED and a SORT IS A LAW -- a pin
+# fixes the order on THIS interpreter, a sort fixes it on EVERY interpreter, and the claim being
+# protected ("the port and CPython disagree") has to survive a Python upgrade. So recording the
+# seed is NECESSARY AND NOT SUFFICIENT, which is why both land; the sort is `graphcmp-oracle.py:233`,
+# which is not this file's.
+#
+# THE LEDGER IS EIGHT, NOT 147. MEASURED by AST-counting every `getenv`/`ContextVar` in `tinygrad/`
+# and sweeping each one in its own subprocess: **8 can move a verdict** -- `DEV` `IMAGE` `NOOPT`
+# `DEFAULT_FLOAT` `NO_COLOR` `DEBUG` `DEBUG_RANGEIFY` `MAX_BUFFER_SIZE` -- plus 5 that make the side
+# unbuildable, and **128 measured inert because the comparison never REALIZES a graph**, so every
+# runtime and compiler flag sits downstream of a boundary this harness does not cross. A LIST OF
+# VARIABLES A PROGRAM CAN READ IS NOT A LIST OF VARIABLES THAT MATTER.
+ROW_VALUES = {"lc_all": "C", "noopt": "0", "pythonhashseed": "0"}
+ROW_KEYS = ("dev",) + tuple(ROW_VALUES)
+
+
+def _pinned(key):
+    """`key` as every child was handed it, with `unset` and the EMPTY value spelled apart from a
+    zero. They are three states and they behave differently: MEASURED, `NOOPT=` is `int("")` at
+    `tinygrad/helpers.py:163` and raises `ValueError` AT IMPORT, so a row that collapsed the three
+    would report a crash as a zero."""
+    got = ENV.get(key.upper())
+    return "unset" if got is None else (got or "empty")
+
+
+def devices():
+    """(by the `# devices` HEADER, by the `SGLOBAL,s<DEV>` FIELD) over the run's own artifacts.
+
+    TWO METHODS THAT SHARE NO REGEX, because SELF-CONSISTENCY IS NOT INDEPENDENCE: the header is a
+    comment the report writes and the field is a substring of a `P(...)` arg, so a belt built on
+    one pattern catches only what that pattern sees. `devpin.observed()` is IMPORTED rather than
+    retyped -- it already knows that `N` is `ATOMS["none"]` (graphcmp's absence token) and not a
+    device called `N`, which is a distinction this tree has already paid for once.
+
+    MEASURED over the live 139 artifacts: 51 name a device by header, 50 by field, and both
+    answer `{CPU}`.
+
+    LOADED BY PATH, like `corpus()` loads `graphcmp.py`, because a bare `import devpin` works only
+    when this file happens to be `sys.path[0]` -- and four callers load it by path.
+    """
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("devpin", ROOT / "checks/devpin.py")
+    devpin = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(devpin)
+    devpin.D = D                     # the same rebinding `gates/retention-check.py` does
+    heads, fields, _, _ = devpin.observed()
+    return heads, fields
+
+
+def device_of_run():
+    """The ONE device the artifacts name, or a refusal that says why not. An empty or a mixed
+    answer is NOT silently `CPU`: a reader that found nothing must say so, because this string is
+    the only place a run states what it ran on."""
+    heads, fields = devices()
+    if not heads and not fields:
+        return "UNNAMED -- no artifact names a device"
+    if heads != fields or len(heads) != 1:
+        return f"DISPUTED headers={sorted(heads)} fields={sorted(fields)}"
+    return next(iter(heads))
+
+
+def precondition_rows():
+    """The four `key=value` lines, ready to join `D0-run-summary.txt`."""
+    return [f"dev={device_of_run()}"] + [f"{k}={_pinned(k)}" for k in ROW_VALUES]
+
+
+def preconditions_bad(got):
+    """THE ROWS AGAINST WHAT THEY PRECONDITION. Each row is a CLAIM; this is the check that
+    keeps it from being a LABEL -- a green row nothing compares to can never go red, which is the
+    `?`-assertion with no fixture.
+
+    `dev` is checked against the artifacts (99 independent witnesses) and the other three against
+    `ENV` (the dict every child was handed). `dev` is deliberately NOT also checked against a
+    pinned constant: that is `checks/devpin.py`'s question, and answering it twice here would be a
+    second opinion about one fact.
+    """
+    bad = [f"{k} ABSENT -- a precondition nothing records is a precondition nobody can audit"
+           for k in ROW_KEYS if k not in got]
+    bad += [f"{k}={got[k]} but ENV pins {ROW_VALUES[k]}" for k in ROW_VALUES
+            if k in got and got[k] != ROW_VALUES[k]]
+    if "dev" in got and (seen := device_of_run()) != got["dev"]:
+        bad.append(f"dev={got['dev']} but the artifacts say {seen}")
+    return bad
 
 
 def verdict(out):
@@ -672,8 +778,12 @@ def unhealthy():
         return ["D0-run-summary.txt ABSENT -- there is no run to be healthy about, so every pin "
                 "below is unknown rather than matched"]
     got = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
+    # THE PRECONDITION ROWS ARE HEALTH, NOT BOOKKEEPING, so they ride here rather than in a gate
+    # of their own: `gates/retention-check.py`'s CLAUSE IV calls THIS function by reference, so a
+    # run whose summary records no device -- or records one the artifacts contradict -- makes the
+    # retention rule fire with no new parser and no new clause.
     return [f"{k}={v} (expected {PINS[k]})" for k, v in got.items() if k in PINS and v != PINS[k]] \
-        + [f"{k} ABSENT" for k in PINS if k not in got]
+        + [f"{k} ABSENT" for k in PINS if k not in got] + preconditions_bad(got)
 
 
 def artefacts_ok():
@@ -709,6 +819,73 @@ def artefacts_ok():
         + [f"EMPTY {(D / n).relative_to(ROOT)}" for n in sorted(here) if not (D / n).stat().st_size] \
         + [f"ONE-LINE {(D / n).relative_to(ROOT)}" for n in sorted(here)
            if n.startswith(REPORTS) and one_line(n)]
+
+
+# ---- the plants --------------------------------------------------------------------------
+# FOUR PLANTS, AND BOTH HALVES OF EACH. A check that only proves it can fire is half a check --
+# two gates in this project failed the other half in OPPOSITE directions, one because it never
+# refused and one because it reported DID-NOT-REFUSE for a CORRECT refusal that exited before it
+# could print the value asserted. **EVERY VALUE IS PRINTED BEFORE THE EXIT**, for the second of
+# those two.
+#
+# PLANT 3 IS THE ONE NOBODY ASKED FOR AND IT IS THE POINT: **CHANGE A VALUE IN THE ARTIFACTS
+# WITHOUT CHANGING THE SUMMARY ROW, AND THE CHECK MUST GO RED.** If it does not, the row is a
+# label. This is the only plant that can distinguish "the row is right" from "the row is present".
+#
+# THE FIXTURE IS THE LIVE BYTES, COPIED, never a retyped row: a retyped fixture agrees with the
+# reader by construction, and one prior instrument in this project shipped a `satisfied` plant that
+# passed on its first run because its field regex was `^`-anchored and read ZERO values. And no
+# plant writes into `runs/graphcmp/D` -- a plant that mutates the state under test measures the
+# other units, not itself.
+def plant():
+    import shutil
+    import tempfile
+    global D
+    live = D
+    kv = dict(ln.split("=", 1) for ln in text("D0-run-summary.txt").splitlines() if "=" in ln)
+    checks = []
+    with tempfile.TemporaryDirectory() as td:
+        D = Path(td).resolve()
+        try:
+            for p in sorted(live.glob("*.txt")):
+                shutil.copy2(p, D / p.name)
+            rows = dict(ln.split("=", 1) for ln in precondition_rows())
+            # PLANT 1 -- THE PIN SATISFIED. Must be CLEAN, or nothing below means anything: a
+            # check that cannot pass is not a check.
+            checks.append(("1: the rows `differ.py` derives from the artifacts agree with those "
+                           "same artifacts -- the CLAIM and the WITNESSES",
+                           not preconditions_bad(kv | rows), f"rows={rows}"))
+            # PLANT 2 -- THE PIN MOVED, in the SUMMARY.
+            checks.append(("2: a summary row that contradicts ENV is caught",
+                           bool(preconditions_bad(kv | rows | {"noopt": "1"})),
+                           f"noopt=1 -> {preconditions_bad(kv | rows | {'noopt': '1'})}"))
+            # PLANT 3 -- ***THE ARTIFACTS MOVE AND THE ROW DOES NOT.*** The device in one wire
+            # file is rewritten; the summary is untouched.
+            wire = D / "D2-canon-py-lin.txt"
+            keep = wire.read_bytes()
+            wire.write_bytes(keep.replace(b"SGLOBAL,sCPU", b"SGLOBAL,sMETAL"))
+            try:
+                moved = preconditions_bad(kv | rows)
+            finally:
+                wire.write_bytes(keep)
+            checks.append(("3: ***AN ARTIFACT CHANGED WITH THE ROW UNCHANGED MUST GO RED*** -- the "
+                           "one plant that separates a CLAIM from a LABEL",
+                           bool(moved), f"dev=CPU row, sMETAL artifact -> {moved}"))
+            # PLANT 4 -- THE ROWS ABSENT. `checks/env-precond.py --check` refused today for exactly
+            # this, and a check that reports nothing when its input is missing is a printer.
+            checks.append(("4: no rows at all is a REFUSAL, never a pass",
+                           len(preconditions_bad(kv)) == len(ROW_KEYS),
+                           f"{len(preconditions_bad(kv))} complaint(s) for {len(ROW_KEYS)} absent "
+                           f"row(s)"))
+        finally:
+            D = live
+    print("PLANTS -- both halves of each, over a COPY of the live artifacts; no `bend`, no write "
+          "into runs/graphcmp/D")
+    for name, ok, got in checks:
+        print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")
+    bad = sum(1 for c in checks if not c[1])
+    print(f"PLANTS: {'GREEN' if not bad else 'RED'} ({len(checks) - bad}/{len(checks)})")
+    return 1 if bad else 0
 
 
 def clean_run(label, wait):
@@ -779,7 +956,10 @@ def main():
                    help="attempts per run, and 60s substrate probes per attempt "
                         "(the shell's WAIT; default 9)")
     sub.add_parser("snap", help="print the snapshot both gates are built from")
+    sub.add_parser("plant", help="assert the four precondition plants on a COPY of the artifacts")
     a = ap.parse_args()
+    if a.cmd == "plant":
+        return plant()
     D.mkdir(parents=True, exist_ok=True)
     drift = check_oracle()
     if drift:
