@@ -135,8 +135,15 @@ tinybendygrad/test/_probe/
 #                   matched `runs/` at ANY depth and suppressed renamed evidence
 #                   one level down. `runs/README.md`, which this line used to
 #                   cite, does NOT exist (measured 2026-10-06). The gate input
-#                   `runs/e2e/e2e-mm-oracle.json` is STILL ignored by `/runs/`
-#                   and gates/retention-check.py clause V records that conflict.
+#                   that was `runs/e2e/e2e-mm-oracle.json` is no longer there:
+#                   it lives at the TRACKED `checks/e2e-mm-oracle.json`, beside
+#                   `checks/run-port-mm.sh:58` which reads it, recovered
+#                   byte-identical from `cf2d14fa4^` (see `.agents/slop/runsgate/`).
+#                   NOTE (was `retention-check clause V`): clause V's
+#                   IGNORED-BUT-INDEXED rule only sees a directory that is BOTH
+#                   indexed AND ignored; `runs/e2e/` was neither, so clause V
+#                   NEVER reported this -- the citation was a third witness to a
+#                   rule that does not implement it.
 #   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.
 
 # GENERATED OUTPUT IS NOT A SOURCE FILE. `gates/retention-check.py` CLAUSE III: "an output directory is
@@ -169,4 +176,4 @@ gates/artifacts/
 # written for `runs/e2e/` and `runs/graphcmp/D/` at the root and is now exactly
 # that. Renamed EVIDENCE under a nested `runs/` (e2epy fixtures, differverdict
 # pristine) is the reason to free it, not the reason to keep it.
-/runs/
+runs/

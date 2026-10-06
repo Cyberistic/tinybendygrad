@@ -17,7 +17,9 @@ WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
 
   1  oracle      `e2e_mm.py` traces a real `(A @ B) @ C` out of CPython tinygrad on DEV=CPU,
                  takes tinygrad's own WGSL for each of the two launches, and writes
-                 `runs/e2e/e2e-mm-oracle.json` plus the `.bend` that will be run.
+                 `checks/e2e-mm-oracle.json` plus the `.bend` that will be run.
+                 (The oracle moved OUT of the ignored `runs/`; `checks/e2e.py:20`
+                 named the conflict and `.agents/slop/runsgate/REPORT.md` landed it.)
                  DENOMINATOR: none of its own -- it is the fixture every later stage is measured
                  against. Under `set -e`, so a failure here ABORTS the gate with its own status
                  and NO verdict line is ever printed.

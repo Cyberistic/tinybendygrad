@@ -105,6 +105,12 @@ def census(names: list[str], dev: str, out: pathlib.Path, publish: bool) -> tupl
         continue
       tot.update(ops := ops_of(rows))
       if publish:
+        # TODO(no-txt): this write is `.txt`, and the house rule is `.rows`. It is UNREACHABLE
+        # today -- the module-level `refuse()` at :71 calls `sys.exit(3)` at IMPORT, before
+        # `import isolate`, so `census()` never runs and `checks/no-txt.py` cannot see a file it
+        # never writes. That makes it a LATENT violation, not a clean one: restore `isolate.py`
+        # and this fires. Rename it here AND the reader in `check()` beside it to
+        # `rows-{name}-{which}.rows` before restoring.
         (out / f"rows-{name}-{which}.txt").write_text("\n".join(rows) + "\n")
       print(f"#   {name:<10} {which:<4} rows={len(rows):<4} ops={len(ops):<3} "
             f"md5={digest(rows)}  {dict(sorted(ops.items()))}")
@@ -117,7 +123,7 @@ def check(names: list[str], dev: str, out: pathlib.Path) -> int:
   bad = []
   for name in names:
     for which in ("py", "bend"):
-      f = out / f"rows-{name}-{which}.txt"
+      f = out / f"rows-{name}-{which}.txt"   # TODO(no-txt): the latent `.txt` from census(); see there
       if not f.exists():
         bad.append((f"{name}/{which}", "ABSENT")); continue
       published = [ln for ln in f.read_text().splitlines() if ln.strip()]
