@@ -7,7 +7,8 @@ every `ALWAYS`, every `MUST`, every named command and every named path, and whet
 DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
 nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
 census from 61 of 77 ops to 26 of 77 with 14 of 25 graphs failing. It also told every agent to put a
-gate's inputs under `.agents/slop/`, and **173 of the 333 paths `.agents/TOOLS.md` names are gone — **14 of them
+gate's inputs under `.agents/slop/`, and **180 of the 333 paths `.agents/TOOLS.md` names are gone (measured
+2026-10-06 13:00; it was 173 when written — the 7 that moved are the `oracles/*.txt`→`.rows` rename) — **14 of them
 INSTRUMENTS** (`kind()` COUNTED 16; TWO ARE CLASSIFIER ERRORS, SEE THE CLASS TABLE BELOW).** **A
 GOVERNING DOCUMENT THAT NOBODY CHECKS AGAINST REALITY PROPAGATES INTO EVERY BRIEF THAT CITES IT.**
 
@@ -28,7 +29,8 @@ Development:
 - No external dependancies. **MEASURED TRUE FOR THE PORT** — every import under `tinybendygrad/` is `Base`
   or another `.bend` file in this repo, which is the one grep worth keeping. **BUT THE TOOLS ARE NOT IN
   THE VENV AND NO LEDGER SAYS WHICH INTERPRETER A PRESCRIPTION RUNS UNDER: `ruff`, `mypy` and `pytest` are
-  all absent from `.venv`, and `uv.lock`'s 586 packages exist to run upstream's Python, not to build ours.
+  all absent from `.venv`, and `uv.lock`'s 173 `[[package]]` entries (2026-10-06 13:00; the lock is
+  `version = 1`) exist to run upstream's Python, not to build ours.
   SO "NO EXTERNAL DEPENDENCIES" IS A RULE ABOUT WHAT THE PORT SHIPS, NOT ABOUT WHAT MAY BE INSTALLED TO
   CHECK IT.** 
 - **No `.txt` files, ever.** Use `.rows` for expected values and row dumps, `.out`/`.err` for captured
@@ -36,7 +38,7 @@ Development:
   declaration that the author did not know what the file was, and a sweep that reads basenames cannot
   tell a row dump from a diary entry.
   **THE RULE IS RIGHT AND THE TREE IS BEHIND IT, SO THE RULE STAYS WHILE THE COUNT IS NOT A FACT: as
-  measured today `checks/no-txt.py` exits 1 with **572 HARD and 139 EXCUSED — 711 owned `.txt`** (the HARD count
+  measured 2026-10-06 13:00 `checks/no-txt.py` exits 1 with **550 HARD and 139 EXCUSED — 689 owned `.txt`** (the HARD count
   MOVES as units write; it read **830** before `oracles/`'s 258 `.txt`-to-`.rows` rename landed, and **258** is the
   exact delta both ways), of which
   `oracle-txt-census.py` classed 249 of the 259 under `oracles/` as ROW DUMPS (the extension was wrong, the content
@@ -87,24 +89,27 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   and `.agents/slop/graphcmp-repro.sh`** are the shims onto it (they are NOT at the repo root), and the
   shell bodies are the oracle in `.agents/slop/diffpy/`, **sha256-pinned in code at `differ.py:61`
   (`ORACLE_PIN`; `:58` is a comment) and read BY ARTIFACT NAME — `oracle-repro.sh:61` and `:105`
-  (both verified today), and `checks/corpus-figure.py:137` (`:72` is `module_from_spec`, NOT the read).
+  (both verified today), and `checks/corpus-figure.py:175` (`:170` is the summary path; `:72` is
+  `module_from_spec`, NOT the read).
   So the **139** `.txt` names there — `len(differ.declared())` = **139**, and 139 on disk — are a contract,
   not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not copied) and nothing
-  else, and renaming them means the pin has to move with them in one commit. **THE 103 IN
-  `checks/README.md:51-58` AND `checks/no-txt.py:19-30` IS STALE — this file, `checks/README.md` and
-  `checks/no-txt.py` are THREE WITNESSES TO ONE SUPERSEDED NUMBER, SO FIX ALL THREE OR SAY WHY ONLY ONE
-  IS AUTHORITATIVE.**
-  **THE LIVE RUN IS NOT HEALTHY AND TWO INSTRUMENTS DISAGREE ABOUT IT: `differ.py`'s `PINS` are red on
-  2 of 17 (`census-rc` absent, `oracle-selfcheck=# ORACLE SELFCHECK: FAIL`) and
-  `gates/retention-check.py` says `IV FIRES runs/graphcmp/D/` and exits 1, while `corpus-figure.py`
-  prints `RUN HEALTH : OK` and exits 0 because its `run_health()` reads 3 of those 17. TRUST THE RED
-  ONE.** See `checks/README.md` and `.agents/slop/difftxt/`.
+  else, and renaming them means the pin has to move with them in one commit. **THE `103` WAS FIXED IN BOTH
+  WITNESSES (measured 2026-10-06 13:00: `checks/README.md:51-58` now says `139`, and `checks/no-txt.py`
+  now computes `len(differ.declared())` and names no number at all) — so only this file still needs it
+  moved off `103`.**
+  **THE LIVE RUN IS HEALTHY AGAIN AND THE TWO INSTRUMENTS NOW AGREE: `differ.py`'s `PINS` are green on
+  17 of 17 (`census-rc=rc=0`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`; measured 2026-10-06 13:00 against
+  `runs/graphcmp/D/D0-run-summary.txt`), and
+  `gates/retention-check.py` says `IV OK runs/graphcmp/D/` (the run's own measure is healthy; its rc=1
+  is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
+  reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
+  green. TRUST THE RED ONE.** See `checks/README.md` and `.agents/slop/difftxt/`.
 - `e2e.py` — **the SEVEN-stage end-to-end gate**, and `e2e.sh` beside it. Do not rewrite it to tidy it.
   **NOT GREEN, AND NOT FOR THE REASON PREVIOUSLY WRITTEN HERE.** Stages 3, 4, 5 and 6 all **PASS** on the
   last transcript, and `.agents/slop/xd2/cdp.mjs` and `.agents/slop/ops_bend-milestone-expected.txt` —
   the two inputs an earlier revision of this file called deleted — **BOTH EXIST**. The only stage that
   measures nothing is **7**, which SKIPs because `run-f64.sh` refuses a cold substrate, so **`e2e.py`
-  RETURNS 4, NOT 0** (`e2e.py:510`), and `checks/e2e.sh:335` likewise `exit 4`. **A SKIP IS NOT A PASS AND
+  RETURNS 4, NOT 0** (`e2e.py:514`), and `checks/e2e.sh:335` likewise `exit 4`. **A SKIP IS NOT A PASS AND
   THE EXIT STATUS SAYS SO**; a caller reading only `$?` cannot mistake it. Stage 8 is **RETIRED**: its
   denominator was 0 (`runtime/dtype.js` is not one byte of the emitted bundle), so it was retired rather
   than re-pointed. **`.agents/slop/e2estage8/verdicts.py` IS CURRENTLY RED (rc=1)** — not on a zero
@@ -113,21 +118,25 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   Stages 2-7 need `bend`, `node` and `cc`, so **run it with nothing else compiling**, and under the
   sum-precondition above.
 - `checks/no-txt.py` — **THE RULE IS REAL; THE CLAIM "there is no `.txt` file in this project" IS NOT.
-  IT EXITS 1 TODAY WITH **572 HARD AND 139 EXCUSED (711 OWNED)** — AND THAT NUMBER MOVES, SO IT CARRIES THE READING
+  IT EXITS 1 AT 2026-10-06 13:00 WITH **550 HARD AND 139 EXCUSED (689 OWNED)** — AND THAT NUMBER MOVES, SO IT CARRIES THE READING
   THAT PRODUCED IT — AND IT PRINTS A SAMPLE AND THEN
-  `... and 513 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
+  it prints 40 paths and then `... and 510 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
   `.out`/`.err` are captured streams, `.tsv` is tabular, `.md` is prose. See Development, above.
 - `checks/substrate-check.sh` — import-graph and cold-file sweep over the `.bend` tree. **THE BARE NAME
   `substrate-check.sh` RESOLVES TO NOTHING: `command -v` is absent and there is no root-level file. The real gate
-  is a 46-line shim onto `.venv/bin/python checks/substrate.py` (765 lines).**
+  is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
+  it was 765 when written; the file is being edited live**).**
 - `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
   A gate names its `.bend` driver and its CPython oracle; its OUTPUT goes to `gates/artifacts/`.
   **BUT DO NOT PUT A GATE'S INPUTS UNDER `.agents/slop/`. THAT PRESCRIPTION IS WHAT DELETED THEM.**
-  `.agents/slop/` is being pruned and it holds no protection: `checks/sb-gate.sh:76` names
-  `.agents/slop/schedule-bodies/BEFORE-rows.txt` — **absent, so the gate exits 3** — and `e2e.py:99`
-  calls `cstyle-live/port.txt` a "DELETED FIXTURE" (`e2e.py:99-100`) — **absent, so stage 7 SKIPs.**
-  **RE-MEASURED RULE AND ITS NUMBERS: of the **333** distinct paths `.agents/TOOLS.md` names, **160 are present and
-  **173 are gone** — **96 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
+  `.agents/slop/` is being pruned and it holds no protection: `checks/sb-gate.sh:76` now reads its
+  baseline from the GIT-TRACKED `oracles/schedule-bodies/BEFORE-rows.rows`, but it still `exit 3`s —
+  **the CPython oracle `.agents/slop/schedule-bodies/sb-oracle.py` is absent (measured 13:02)** — and
+  `e2e.py:99`
+  now calls that defect **REPAIRED**: the fixture is recovered from git to the tracked
+  `gates/cstyle-live.rows` (`e2e.py:99-106`) — **stage 7 SKIPs on a COLD SUBSTRATE, not on the fixture.**
+  **RE-MEASURED RULE AND ITS NUMBERS: of the **333** distinct paths `.agents/TOOLS.md` names, **153 are present and
+  **180 are gone** — **96 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
   enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this). **BY CONTENT IT IS **14**, NOT 16:
 `lostinst` VERIFIED 14 — **13 RECOVERABLE** (every restore `git cat-file blob` non-empty, 110 B – 23,711 B, all 14
 distinct) AND **1 GONE: `.agents/slop/xd1/mutate.py`** — NO BLOB IN ANY REF, AND ALL 75,336 HISTORY PATHS CONTAIN NO
@@ -159,12 +168,12 @@ of the seven was found in a single session, which is why this section exists.**
 
 | instrument | population was declared by | what it cost |
 |---|---|---|
-| `checks/sweep.py:266` `LIVE_UNITS` | 14 literal directory names | six FINISHED units held **2,353 of 4,455 files = 53%** of `.slop`, 100% git-tracked, named by nothing. Its own comment: *"A GUARD THAT IS CORRECT EXCEPT FOR THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER."* |
+| `checks/sweep.py` `LIVE_UNITS` | was 14 literal directory names — **removed; `:291` records "LIVE_UNITS lived here, a tuple of 14 names. It is gone"** | six FINISHED units held **2,353 of 4,455 files = 53%** of `.slop`, 100% git-tracked, named by nothing. Its own comment: *"A GUARD THAT IS CORRECT EXCEPT FOR THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER."* |
 | `checks/sweep.py:658` `ORACLE_WORD` | a **basename regex** | **670 of 675** ORACLE files were classified by FILENAME and **5 were named by a live gate**. |
 | `checks/differ.py:artefacts_ok()` | was `find -name '*.txt'` | **fixed, and re-verified today**: pointed at an empty directory it now returns **139 `MISSING`**; the glob returned `[]`, and *"the rename only revealed a guard that was never one."* |
-| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend)` | **6 of 15** `e2e.py` stage inputs invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
+| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend\|mjs\|json)` — **fixed** | **6 of 15** `e2e.py` stage inputs were invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
 | `gates/gates-pop.py:95` `HOMES` | `("checks", "gates")` | its own author: *"A LIST, AND IT IS ADMITTED… this is the one universe this file names by hand."* Blind to the literal-list half of the class it exists for. |
-| `.agents/TOOLS.md` | **333 paths: 160 present, 173 gone (96 under `.slop/`); **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path it does not own is a list. |
+| `.agents/TOOLS.md` | **333 paths: 153 present, 180 gone (96 under `.slop/`) at 2026-10-06 13:00; **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path it does not own is a list. |
 | **`AGENTS.md` — THIS FILE** | names gates by hand | 17 `checks/*.sh` exist; this file names 3 and calls none of them a population. **The governing document was the seventh member of the class.** |
 
 **THE RULE. A population is (a) a GENERATOR'S OWN DECLARATION, LOADED BY PATH — `differ.declared()`, which
@@ -188,9 +197,10 @@ declares the SIX such states — *1 DEAD LANE the oracle exits non-zero → BROK
 OUTPUT prints no `name=value` row → "compared nothing" · 3 NO SHARED ROW NAME · 4 A SHARED NAME DIFFERS ·
 5 AGREEMENT · 6 MALFORMED BASELINE* — and its own header says why: *"twelve committed files printed 0 rows
 for an hour and a harness reported success, because '0 disagreements' over '0 comparisons' is
-indistinguishable from agreement."* **BUT THAT FILE NO LONGER RUNS** (`import oracle_py` →
-`ModuleNotFoundError`, rc=1; `oracle_py.py` is one of the 99 deleted paths), **so the template exists as
-prose over dead code — which is exactly the state doctrine 1 above forbids, in this file.**
+indistinguishable from agreement."* **AND THAT FILE RUNS AGAIN** (measured 2026-10-06 13:02: `oracle_py.py`
+was restored, so the import succeeds and the harness reaches its assertions) — **but it now dies with
+`KeyError: 'cpython:renderer_oracle'` at `rebase-gate-selftest.py:1095`, rc=1, so the six-state template
+it documents is driven by a harness that cannot finish.**
 `artefacts_ok()` reported zero on a directory holding nothing. **AND THE FIFTH DEFECT WAS CLOSED, AND NOT
 IN `checks/sb-gate.sh`, WHICH STILL HAS NO SKIP BRANCH AT ALL (`grep -c SKIP` = 0): `gates/gatekit.py:59`
 NOW SPELLS THE FIVE AS EXITS — `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` — SO `DEAD` HAS EXIT **5**
@@ -211,17 +221,18 @@ When using Python:
   3.14 and has no `.pth`, `.venv` is 3.12 and has the editable `tinygrad` install, and a port oracle that
   imports tinygrad answers 30 rows under one and 0 rows plus `ModuleNotFoundError` under the other.
   `.agents/TOOLS.md`'s *Pin vs xd1/head* section records the instrument that pinned this; the file
-  itself, `.agents/slop/oracle_py.py`, IS AMONG THE 99 DELETED PATHS, so the rule has no enforcer left.**
+  itself, `.agents/slop/oracle_py.py`, WAS among the 99 deleted paths and **was restored at
+  2026-10-06 13:01 (5551 B) — verify it still exists before citing this line, it appeared mid-run.**
 - Run `test/` with `-n12` for speed, e.g. `.venv/bin/python -m pytest test/null/test_dtype.py -x -q -n12`. **MEASURED TODAY: that command is rc=1, `No module named pytest` — `pytest` IS NOT IN `.venv`, so `test/` is the ORACLE this tree cannot currently run. The bare `python3` on PATH is 3.14 and has no `.pth`; `.venv` is 3.12 and holds the editable `tinygrad`.**
 - Run `.venv/bin/python -m mypy tinygrad/` to typecheck. **MEASURED TODAY: rc=1, `No module named mypy` — NOT INSTALLED IN `.venv`.**
 - Run `python -m ruff check .` to lint
 - **THOSE THREE EXACT COMMANDS DO NOT RUN IN THIS TREE TODAY, AND SAYING SO IS THE POINT: MEASURED,
   `.venv` HAS NO `pytest`, NO `mypy` AND NO `ruff` (`No module named …`, rc=1 each), so the three lines
   above are `uv`-installable rather than runnable. `ruff` 0.15.18 IS on PATH at `/opt/homebrew/bin/ruff`
-  and `ruff check .` RUNS — and it reports **18755** errors, rc=1, so "the tree lints" is FALSE. **THE `797` THIS
-LINE CARRIED WAS WRONG BY 23x, AND `18755` CARRIES ITS OWN TIME: AN EARLIER UNIT SAW 18752, THEN 18754, ON A RE-RUN
-WITH NO EDIT BY IT, BECAUSE OTHER UNITS WERE WRITING THE TREE WHILE IT COUNTED. QUOTE THIS NUMBER WITH A TIMESTAMP OR
-NOT AT ALL.** `checks/`
+  and `ruff check .` RUNS — and it reports **18781 at 12:59:48, 18797 at 13:00:36, 19677 at 13:02:53, 19679 at
+  13:03:01** (four reads, 193 s apart, same command, no edit by the unit that took them), rc=1, so "the tree lints"
+  is FALSE. **THE `797` THIS LINE USED TO CARRY WAS WRONG BY 23x, AND THE COUNT CARRIES ITS OWN TIME: OTHER UNITS
+  WERE WRITING THE TREE WHILE IT COUNTED. QUOTE THIS NUMBER WITH A TIMESTAMP OR NOT AT ALL.** `checks/`
   and `gates/` are 2-space-indented and are not what `ruff` defaults to. The ledgers do not say which
   interpreter a prescription runs under, and that is why three of them read as done.**
 - Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules. **MEASURED: exists, 93 lines.**
@@ -243,7 +254,8 @@ NOT AT ALL.** `checks/`
 Testing:
 
 - **NEVER write unit tests after you write code.** MEASURED, this is the rule the tree most often breaks
-  *in the right direction*: `.agents/slop/` holds 40+ `*-mutate.py` and `*-selftest.py` harnesses, because
+  *in the right direction*: `.agents/slop/` held 40+ `*-mutate.py` and `*-selftest.py` harnesses (9 + 7
+  survive at 2026-10-06 13:00; the rest were pruned), because
   "unmoved" conflates *no mutation was written* with *written and it did not move* — `.agents/TOOLS.md`
   measured 487 mutations / 15 tables / 30 zeros of which **25 were unclassified**, and
   `.agents/slop/zero-classify.py` (DELETED, one of the 99) was built to settle them by asking whether
