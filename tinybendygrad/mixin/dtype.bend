@@ -128,6 +128,42 @@ def md_weakint.cls(cls: S.Cls) -> Bool:
 
 def md_weakint(d: S.Dt) -> Bool: md_weakint.cls(S.Dt.cls(d))
 
+# THE THREE `_eval` DTYPE SETS -- tinygrad/uop/ops.py:527-529, each spelled there as a tuple
+# passed to `_eval`, and each a match on `Cls` here because the class tag is what makes them
+# three arms rather than a pair of flags:
+#
+#   __bool__   (dtypes.bool,)                        -> CBool
+#   __int__    dtypes.ints + (dtypes.weakint,)      -> CSint | CUint | CWeakInt
+#   __float__  dtypes.floats + (dtypes.weakfloat,)  -> CFloat | CWeakFloat
+#
+# `bool` IS IN NEITHER OF THE OTHER TWO and neither is in it, which is the whole reason this file
+# models `Cls` as seven tags instead of a signed/float pair: with two Bools, `__bool__` would
+# have to be spelled as "not an int and not a float", and that is a claim about the OTHER six
+# classes rather than about `bool`.
+def dt_is_bool.cls(cls: S.Cls) -> Bool:
+  match cls:
+    case S.CBool{}: True{}
+    case _: False{}
+
+def dt_is_bool(d: S.Dt) -> Bool: dt_is_bool.cls(S.Dt.cls(d))
+
+def dt_is_int.cls(cls: S.Cls) -> Bool:
+  match cls:
+    case S.CSint{}: True{}
+    case S.CUint{}: True{}
+    case S.CWeakInt{}: True{}
+    case _: False{}
+
+def dt_is_int(d: S.Dt) -> Bool: dt_is_int.cls(S.Dt.cls(d))
+
+def dt_is_float.cls(cls: S.Cls) -> Bool:
+  match cls:
+    case S.CFloat{}: True{}
+    case S.CWeakFloat{}: True{}
+    case _: False{}
+
+def dt_is_float(d: S.Dt) -> Bool: dt_is_float.cls(S.Dt.cls(d))
+
 # `dtypes.default_int` is `dtypes.i32` (tinygrad/dtype.py:139), which is what `default_int=None`
 # resolves to inside `commit_int` (tinygrad/dtype.py:173).
 def md_default_int() -> S.Dt: S.int32()

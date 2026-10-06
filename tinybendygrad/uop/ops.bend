@@ -4678,13 +4678,20 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:92  def ssimplify
 
-# TODO(p3) ops.py:521  def _eval
-
-# TODO(p3) ops.py:527  def __bool__
-
-# TODO(p3) ops.py:528  def __int__
-
-# TODO(p3) ops.py:529  def __float__
+# DONE(p3) ops.py:521 def _eval -- AND IT WAS MISFILED HERE, WHICH IS THE FINDING. `_eval` needs
+#   the node's dtype AND its two bounds, and this file imports only `Base`, `helpers` and
+#   `LAWS/spec`, while `UOp.vmin`/`vmax` are in `fold.bend` and the node-level dtype reader is in
+#   `weak.bend` -- and BOTH of those import `ops.bend`. So the def sits DOWNSTREAM of the file
+#   that wanted it: an import edge, not a language limit, and the same relocation
+#   `wk_commit_dtype` already got. It is now `wk_eval_int` / `wk_eval_float` / `wk_eval_bool` in
+#   `weak.bend`, gated at `gates/wk-eval-gate.py`: 16 rows, 3 lanes, 15 identical to CPython and
+#   ONE documented divergence.
+# TODO(p3) ops.py:527  def __bool__   -- DONE, same gate (`bool_true`, `bool_false`,
+#   `bool_on_i32`).
+# TODO(p3) ops.py:528  def __int__    -- DONE, same gate (`int_weakint`, `int_i32`,
+#   `int_on_range`).
+# TODO(p3) ops.py:529  def __float__  -- DONE, same gate (`float_weakfloat`,
+#   `float_on_i32`).
 
 # TODO(p3) ops.py:530  def substitute
 

@@ -175,6 +175,80 @@ def wk_bnd_i64(m: Maybe<&2, F.Bnd>) -> Maybe<&1, H.I64>:
     case Some{b}: wk_bnd_i64.of(b)
     case _: None{}
 
+# `__float__` NEEDS THE OTHER HALF OF `Bnd`, which is `BndFlt{v}` rather than `BndInt{neg,mag}`
+# -- a separate reader rather than a flag on this one, because the two arms return different
+# types and a `Maybe<(I64, F32)>` would make every caller match a tuple to get one number.
+def wk_bnd_f32.of(b: F.Bnd) -> Maybe<&1, F32>:
+  match b:
+    case F.BndFlt{v}: Some{v}
+    case _: None{}
+
+def wk_bnd_f32(m: Maybe<&2, F.Bnd>) -> Maybe<&1, F32>:
+  match m:
+    case Some{b}: wk_bnd_f32.of(b)
+    case _: None{}
+
+# `UOp._eval` -- tinygrad/uop/ops.py:521. THREE CHECKS, IN PYTHON'S ORDER:
+#
+#   1. assert self.dtype in dtype                 -- the caller's dtype SET
+#   2. if vmin != vmax: raise ValueError          -- the bounds must be a SINGLE number
+#   3. assert isinstance(vmin, expected_type)     -- the value's Python type
+#
+# AND CHECK 3 IS IMPLIED BY CHECK 1 HERE rather than merely resembling it: `Cls` IS the type of
+# the value, so a bound reading as an integer cannot sit under `CFloat` and one reading as a
+# float cannot sit under `CSint`. The gate pins both halves on the SAME node -- `dt_is_float` on
+# an int CONST is `False` while `wk_bnd_f32` on that node is `None` -- so they are shown to agree
+# per cell rather than assumed to.
+#
+# ONE BODY PER VALUE TYPE, THREE CALLERS. CPython spells the dunders as three one-liners differing
+# only in the tuple and the type; here they differ only in the classifier and the bound reader.
+#
+# THE BOUNDS ARE RE-READ RATHER THAN HELD, and that is forced by linearity rather than chosen: a
+# `case Some{a}` binder is consumed ONCE, so "compare the two bounds and then return one of them"
+# cannot hold `vmin` in a binder across the comparison. `bt` and `i` are parameters and may be
+# read repeatedly -- `wk_commit_dtype` above already reads each of them twice -- so asking the
+# sweep a second time is free and the comparison happens on values that are never held.
+def wk_same(lo: Maybe<&1, H.I64>, hi: Maybe<&1, H.I64>) -> Bool:
+  match lo, hi:
+    case Some{a}, Some{b}: O.eq_i64(a, b)
+    case _, _: False{}
+
+def wk_same_f(lo: Maybe<&1, F32>, hi: Maybe<&1, F32>) -> Bool:
+  match lo, hi:
+    case Some{a}, Some{b}: F32.is_eq(a, b)
+    case _, _: False{}
+
+# THE BOUNDS ARE RE-READ, NEVER HELD. A `Maybe` holding an I64 by value is LINEAR -- a `case`
+# binder consumes it once, and so does a plain parameter -- so "compare the two bounds and then
+# return one of them" cannot keep the value in hand across the comparison. A `+` PARAMETER may be
+# read as many times as the expression needs, which is what `wk_commit_dtype` below does with all
+# three of its, so asking the sweep again is what a copy would have bought.
+#
+# MEASURED, because the rule is the opposite of the obvious reading of `+`: a def with a PLAIN
+# parameter is refused at two uses, and the same def with `+` on that parameter compiles at five.
+def wk_eval_int(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, H.I64>:
+  Bool.pick(Maybe<&1, H.I64>,
+            Bool.and(D.dt_is_int(wk_dt(fx, i)),
+                     wk_same(wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+                             wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
+            wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+            None{})
+
+def wk_eval_float(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, F32>:
+  Bool.pick(Maybe<&1, F32>,
+            Bool.and(D.dt_is_float(wk_dt(fx, i)),
+                     wk_same_f(wk_bnd_f32(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+                               wk_bnd_f32(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
+            wk_bnd_f32(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+            None{})
+
+def wk_eval_bool(+fx: F.Folded, +bt: F.BTable, +i: U32) -> Maybe<&1, H.I64>:
+  Bool.pick(Maybe<&1, H.I64>,
+            Bool.and(D.dt_is_bool(wk_dt(fx, i)),
+                     wk_same(wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+                             wk_bnd_i64(F.UOp.vmax(F.Folded.ar(fx), bt, i)))),
+            wk_bnd_i64(F.UOp.vmin(F.Folded.ar(fx), bt, i)),
+            None{})
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 # `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is
 # spelled here rather than taken as a parameter because all nine callers want the same one.
