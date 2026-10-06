@@ -8,8 +8,8 @@ shipped code; the port has none.
 
 | tool | version | pin | why |
 | --- | --- | --- | --- |
-| [Bend 2](https://github.com/HigherOrderCO/Bend) | 2.0.34 | `references/bend`, commit `0187512` | the language this project is written in. Fetched by `tools/get-bend.sh`; gitignored, because it is a toolchain, not part of the port. |
-| `bin/bend` | — | this repo | two-line shim: `bun references/bend/bend2/main.ts "$@"`. |
+| [Bend 2](https://github.com/HigherOrderCO/Bend) | `v2.0.34-6-g0187512` | `references/bend`, commit `0187512` | the language this project is written in. Fetched by `tools/get-bend.sh`; gitignored, because it is a toolchain, not part of the port. **The version column said `2.0.34` and was WRONG: the checkout is 6 commits PAST the `v2.0.34` that `tools/get-bend.sh` fetches, and nothing checked.** The fix is in the version column alone, because `pin_check.py` reads these cells — and a cell it cannot read is a cell no checker can. **The commit cell is the pin that is actually enforced**; `bend version` cannot serve as the check, because `const VERSION` is `"2.0.34"` at BOTH commits (measured), so the compiler's own answer is identical either way. |
+| `bin/bend` | — | this repo | two-line shim resolving **relative to itself**, in the form `graphcmp-run.sh`/`e2e.sh`/`substrate-check.sh` use: `${0%/*}` and no `cd`. It used to hard-code `/Users/cyberistic/src/tries/.../bend2/main.ts`, which meant a copied tree silently ran **this machine's** compiler rather than failing — measured by planting a marker compiler in the copy's own `references/`: BEFORE `used_own_tree=False`, AFTER `used_own_tree=True`. It is gitignored, because `references/` is: the shim is a toolchain artefact and without `tools/get-bend.sh` there is nothing for it to point at. |
 | clang | 21 (Apple) | system | Bend compiles to C and calls `clang -std=c11 -O3 -lpthread -lm`. Also what the ported CPU device shells out to, the way `tinygrad` does. Needs clang 14+; 19+ for `!` GPU calls. |
 | bun | 1.3.13 | system | runs the Bend compiler, which is TypeScript. Also executes the `-o out.js` lane. |
 
@@ -55,7 +55,7 @@ to need changing, that is a finding to report, not an edit to make.
 | --- | --- | --- |
 | `tinygrad/` | this repo, tracked, **read-only** | the thing being ported, and the oracle. Never edited by a port agent. |
 | `spec/tinyspec.tex` | this repo, tracked | the specification. `tinybendygrad/LAWS.bend` is its machine-checked form. |
-| `references/bend` | gitignored, [HigherOrderCO/Bend](https://github.com/HigherOrderCO/Bend) @ `v2.0.34` | the language itself: `guide/GUIDE.md`, `guide/EFFECTS.md`, `guide/SHADERS.md`, `bend2/base.bend` (the prelude), `bend2/effs/*.c` (the effect ABI), `tests/` (the test convention). Fetched by `tools/get-bend.sh`. |
+| `references/bend` | gitignored, [HigherOrderCO/Bend](https://github.com/HigherOrderCO/Bend) @ `0187512` | the language itself: `guide/GUIDE.md`, `guide/EFFECTS.md`, `guide/SHADERS.md`, `bend2/base.bend` (the prelude), `bend2/effs/*.c` (the effect ABI), `tests/` (the test convention). Fetched by `tools/get-bend.sh`. **`0187512` is `v2.0.34-6-g0187512`, NOT the `v2.0.34` `tools/get-bend.sh`'s `BEND_REF` fetches** — one cell of this ledger disagreed with the checkout and nothing said so, which is the defect; `get-bend.sh` still fetches the tag, and `pin_check.py` exits 1 on that on purpose. **A ledger that names two refs in one cell is a cell no checker can read**, which is why this one names one. |
 | `references/tinyquery` | gitignored, [Cyberistic/tinyquery](https://github.com/Cyberistic/tinyquery) | Cyberistic's tinygrad-in-Odin. Not a dependency — a second opinion on the same port, so we can see the decisions a different language forced. Its `sz.odin` is the same line-counting tool we are porting to Bend; `slop/notes/sz-odin-precedent.md` records where it diverges from `sz.py` and which divergences we are deliberately not copying. |
 
 The distilled, hard-won facts about all of the above — the affinity rules, the
@@ -379,9 +379,80 @@ caught the non-idempotent patcher):
 
 `--check-only` exits 1 even when it is fine. **Read the FIRST LINE**: `ALL PROOFS CHECK`.
 
----
+## The pin-agreement unit — `bin/bend`, and `2.0.34` vs `v2.0.34-6-g0187512`
 
-## The autogen const audit (2026-10-03, ops_webgpu.bend + ops_cl.bend)
+Nothing here is a dependency: `bin/bend`, `git`, and `bun`. **Nothing is
+committed.** The unit's question was the general one — *a pin over a file does
+not cover the file's content* — and the two defects it was pointed at are the
+two smallest instances of it.
+
+| script | what it answers |
+| --- | --- |
+| `.agents/slop/bendpin/resolve.py` | **WHOSE checkout does `bin/bend` use?** Four places — this tree, a COPY with a **planted** compiler in its own `references/`, a copy with **no** `references/` (the clone's shape), and a copy symlinked to this machine's checkout. The plant is the whole trick: a shim with an absolute path does not fail in a copied tree, it runs another tree's compiler and exits 0, so "did it work" cannot see the defect and a marker compiler can. `--shim FILE` substitutes a shim, which is how BEFORE and AFTER went through one code path — and it **refuses to substitute into the live tree**, because the first version did exactly that and left six units running the defect. |
+| `.agents/slop/bendpin/pin_check.py` | **DO THE PIN AND THE CHECKOUT AGREE?** Four cells (this file's version cell, its commit cell, its `@` ref at line 58, and `get-bend.sh`'s `BEND_REF`) against `git rev-parse HEAD` and `git describe --tags`. Exits 1 while they disagree, **which is today**. `--mkworktree` builds the tag worktree for the compare and **refuses a worktree whose HEAD is not the tag's commit** — not ceremony: an empty `$(git rev-parse)` makes `git worktree add` succeed at HEAD, and a "tag lane" running HEAD would have measured the two lanes against each other. |
+| `.agents/slop/bendpin/compare.py` | **DOES THE PORT COMPILE THE SAME UNDER BOTH?** All **138 of 138** `.bend` files under `tinybendygrad/`, both lanes, one process at a time, each under `checks/bounded.py`'s 2,048 MB. `--tag` names the worktree. Writes `compare.rows`. |
+| `.agents/slop/bendpin/regressions.py` | **DO THE CONSTRUCTS THE SIX COMMITS CHANGED BEHAVE THE SAME?** Upstream's own three new tests (`erased_field_bare_arm` #1157, `spec_arg_depth` #1168, `spec_arg_unused_column` #1178), all of which exist ONLY at HEAD. Two lanes: `--check-only`, and the **kernel elaboration** via `-o .bendtt`, which needs no Lean. |
+| `.agents/slop/bendpin/twoarg-probe.bend` | the two-argument-application probe, written FROM upstream's syntax because both earlier attempts were invalid Bend. `#|91n`. |
+
+**FOUR THINGS TO KNOW BEFORE WRITING THE NEXT ONE, all measured.**
+
+- **A `--check-only` diff is blind to all three commits, and the byte diff is
+  what tells you so.** `compare.py`: `files=138 agree=138 disagree=0`, every
+  verdict token and every output sha identical. `regressions.py`: `check_disagree=0`.
+  **The drift is not in `bend.ts` — it is BYTE-IDENTICAL across all six commits**,
+  nor in `base.bend`. It is in `safe.ts` (the kernel elaboration), `comp.ts` (the
+  C emitter's cube scheduler), `main.ts` (`--publish` BOM stripping) and
+  `bendtt.lean`. So "the port compiles the same" is TRUE and nearly information-free.
+- **THE LANE THAT REACHES THE CHANGE IS `-o out.bendtt`, NOT `--verdict`.**
+  `--verdict` cannot run here at all: `lean` is not on PATH, and both compilers
+  say so identically. But `-o out.bendtt` runs `safe_emit`, which elaborates and
+  lists every def that goes **out of scope**, and Lean is only needed to *check*
+  the result. **`oos_tag` is 4 / 2 / 0 where `oos_head` is 0 / 0 / 0** — the
+  fixes are exactly the out-of-scope set going to empty, legible without Lean.
+  `spec_arg_unused_column` (#1178) is `0` at BOTH and still elaborates
+  differently: #1178 was a wrong body `--verdict` ACCEPTED, so no out-of-scope
+  row exists for it and only the bytes differ. **A lane that agreed on both
+  commits would still have missed that one.**
+- **`comp.ts`'s change reaches the EMITTED C, and it is a real fix, not a
+  comment.** `-o out.c` on the probe differs between the lanes in 2 hunks — the
+  cube scheduler's row-per-thread growth — and both compile and both print
+  `91n`. So `--check-only` and the `.bendtt` lane both say "same" while the
+  NATIVE artifact is not the same bytes. **A byte diff of one lane is not a byte
+  diff of the project.**
+- **`bend` PRINTS 42 BYTES TO STDERR ON EVERY INVOCATION, GREEN INCLUDED**, so
+  every hash here strips that line first. An early version of `compare.py`
+  reported **all 138 files as DIFF with identical verdict tokens** because the
+  sha covered `bounded.py`'s own `[bounded]` record, which prints the two lanes'
+  command lines — `bun /…/bendtag/bend2/main.ts` against `./bin/bend`. It was
+  comparing the two lanes' ARGUMENT VECTORS. `pin_check.py` had the same class of
+  bug in a different place: `rows[-1] == rows[-2]` compares two strings that
+  differ by their KEY, so it reported "the versions differ" on every run, and did
+  so on the run that proves they are the same.
+
+**WHAT THE MEASUREMENT SETTLES, AND WHAT IT DOES NOT.** The port's own
+138 files compile byte-identically under both, so moving the checkout to the tag
+changes no verdict in this repo — **the pin is cosmetic for the port.** But the
+compiler's behaviour is NOT unchanged: the kernel elaboration differs on all three
+of upstream's own new tests and on the emitted C, in each case toward HEAD being
+the fixed one. **So "the pin is cosmetic" is true of the artifacts measured here
+and is not a claim about the compiler.** The decision is not this unit's: six
+units run `bend` out of `references/bend` right now.
+
+**A WORKTREE AT THE TAG WORKS, AND THE `Module not found` STORY IS WRONG.** The
+checkout has no `node_modules` and needs none — `main.ts`/`bend.ts`/`comp.ts`/
+`safe.ts` import only `node:*` builtins and three sibling `.ts` files. `bun` runs
+the tag worktree directly and prints `bend 2.0.34`. **`Module not found` is the
+error for a path that does not exist, and it is not a dependency error** — handing
+`bun` the worktree's `bend2` DIRECTORY prints exactly
+`error: Module not found "…/bendtag/bend2"`. MEASURED, both messages:
+`Module not found "<path>"` for a missing ENTRY, `Cannot find module './x.ts' from
+'…'` for a missing SIBLING, and they are different sentences. `git worktree add
+--detach <dir> v2.0.34` from the shared checkout is the whole workaround, it
+writes only `references/bend/.git/worktrees/` and **does not move the shared
+checkout**, and it works from a shallow clone because the tag is inside the
+fetched depth (`get-bend.sh` uses `--depth 30`).
+
+---
 
 The lesson from `ops_nv`'s 33/219 wrong constants in a file with 590 green rows:
 a green gate tests GRAPHS, the constants answer to a C header nobody read, and the
