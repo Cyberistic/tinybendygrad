@@ -90,28 +90,56 @@ def root_files() -> list[Path]:
 # and three `memory.staged-mem-*` sat inside `tinybendygrad/` for two days and this guard could
 # not see them: its population was `ROOT.iterdir()`, ONE LEVEL TOO HIGH.
 #
-# **`SCRATCH_NAME` IS A ROOT-LEVEL HEURISTIC AND CANNOT BE REUSED AT DEPTH**: its `^\.` and `^_`
-# arms catch `.gitignore` and `__init__.py`, which are ordinary everywhere but the root. Reusing
-# it flagged 134 files including upstream's own `schedule/__init__.py`. So the deep check uses
-# only the shapes that are residue ANYWHERE: a staging suffix carrying a PID, a mutation
-# leftover, an editor backup. A name heuristic is not portable to a population it was not
-# written for, which is this project's own rule about populations.
-RESIDUE_NAME = re.compile(r"\.staged-(mem|blob)-\d+$|\.mut$|~\d*$|\.(bak|orig|rej|swp)$")
+# **THE FIRST DEEP VERSION WAS NARROWER AND STILL A SHAPE -- and a unit found six files it
+# missed.** It reused only the residue arms (`\.staged-`, `\.mut$`, `~`, backups). MEASURED
+# 2026-10-06 over all 144 files under `tinybendygrad/`: it flagged **0 of these six**, all
+# tracked scratch beside source:
+#
+#   runtime/zzdiag.bend                 runtime/zzread.bend
+#   runtime/zzsplit.bend                runtime/zzprobe2.bend   (`:1` = `# scratch probe -- DELETE.`)
+#   runtime/support/zz_objc_mutant.bend runtime/support/am/ip_scratch_sweep.bend
+#
+# Two say so in their own name (`_mutant`, `_scratch_sweep`); four carry a `zz` prefix this
+# project uses for "sorts last, scratch". So the shape they ARE is a NAME SHAPE.
+#
+# **THE STRUCTURAL TEST WAS MEASURED AND REJECTED.** "Nothing imports it AND it imports nothing"
+# fires on 32 of 138 `.bend` files, and 28 are REAL ports the .bend wiring simply does not reach
+# yet -- `runtime/support/{objc,c,hcq2,elf,system,usb}.bend`, every `compiler_*.bend`, the
+# `__init__.bend` hubs, `sz.bend`. The header test ("no self-port header") fires on 78. **The
+# import graph is incomplete, so "unreferenced" is NOT "not source"**; the population is the name
+# shape, admitted here as a regex over the tree (doctrine 1c).
+#
+# **`^\.` and `^_` FROM `SCRATCH_NAME` ARE STILL NOT REUSED AT DEPTH**: they catch `.gitignore`
+# and `__init__.py`, ordinary everywhere but the root. Only lone-underscore `_p6`-style names are
+# kept. **`probe` is deliberately NOT a bare token**: `uop/probe-mmcore.bend` matches it and a
+# gate cites it (`.agents/slop/mm-mutate.py:17` names it `SRC`), so it is KEPT --
+# `.agents/slop/hygiene-2026-10-04.md:145,157` records that exemption.
+#
+# **AND THE SHAPE IS A POPULATION ONLY FOR THE TREE IT WAS WRITTEN FOR.** Over the whole repo the
+# same regex hits upstream's own `test/amd/hw/test_scratch.py`; `test/` is tinygrad's oracle, not
+# this project's source. So the walk is scoped to `SOURCE_TREES`.
+SCRATCH_SHAPE = re.compile(
+    r"\.staged-(mem|blob)-\d+$|\.mut$|~\d*$|\.(bak|orig|rej|swp)$"   # residue anywhere
+    r"|^zz"                                                          # this project's scratch prefix
+    r"|(?:_|\.)(mutant|scratch|sweep|diag)(?:\.|_|$)"                # _mutant / _scratch_sweep
+    r"|^_[^_]"                                                       # _p6, a lone leading underscore
+)
 SKIP_DIRS = {".git", ".venv", "__pycache__", "node_modules", "references"}
-SCRATCH_BELONGS = {".agents", "runs", "oracles"}
+SOURCE_TREES = ("tinybendygrad",)
 
 
 def stray_shapes_anywhere() -> list[Path]:
-    """A residue-shaped file in a SOURCE tree, at any depth.  The same name under
-    `SCRATCH_BELONGS` is a run's output and is expected; beside source it is debris."""
+    """A scratch-shaped file in a SOURCE tree, at any depth. MEASURED over `tinybendygrad/`
+    (144 files, 2026-10-06): 7 hits -- the six strays above plus `runtime/_p6.bend` -- and 0 real
+    ports. `test/`, upstream's oracle, is not walked: it carries `test/amd/hw/test_scratch.py`."""
     out: list[Path] = []
-    for dirpath, dirnames, filenames in os.walk(ROOT):
-        rel = Path(dirpath).relative_to(ROOT)
-        if rel.parts and rel.parts[0] in SCRATCH_BELONGS:
-            dirnames[:] = []
+    for tree in SOURCE_TREES:
+        base = ROOT / tree
+        if not base.exists():
             continue
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
-        out.extend(Path(dirpath) / f for f in filenames if RESIDUE_NAME.search(f))
+        for dirpath, dirnames, filenames in os.walk(base):
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+            out.extend(Path(dirpath) / f for f in filenames if SCRATCH_SHAPE.search(f))
     return sorted(out)
 
 
@@ -182,8 +210,9 @@ def main() -> int:
     if unexplained:
         print("  NOT CLEAN. A root file nobody can explain is how a repo stops being navigable.")
     if deep:
-        print(f"  NOT CLEAN. {len(deep)} scratch-shaped file(s) in a source tree -- a run's "
-              f"output belongs under {' or '.join(sorted(SCRATCH_BELONGS))}, beside the source.")
+        print(f"  NOT CLEAN. {len(deep)} scratch-shaped file(s) in "
+              f"{' or '.join(SOURCE_TREES)} -- a run's output belongs under .agents/slop/, "
+              f"beside the source.")
     return 1
 
 
