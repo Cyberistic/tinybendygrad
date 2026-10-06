@@ -244,8 +244,13 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # The wall text said `detach` was `self.replace(arg=KernelInfo())` -- and that
 # description is the FULL version CPython uses, but the one-liner
 # `return self.alu(Ops.DETACH)` is what `Tensor.detach` does in `elementwise.py:43`,
-# and THAT is what the port covers. `Tensor.where` and `Tensor.square` remain walled:
-# `where` is `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
+# and THAT is what the port covers. `Tensor.bitwise_not` BOOL arm is ported at
+# `tensor.bend:338` as `tn_bitwise_not`, gated at `gates/tn_bitwise_not-gate.py` 8/8
+# rows; `Tensor.logical_not` is ported at `tensor.bend:352` as `tn_logical_not`,
+# gated at `gates/tn_logical_not-gate.py` 4/4 rows. The arith arms of `bitwise_not`
+# stay walled on the dtype fold + arith ops, named at `tensor.bend:308`.
+# `Tensor.where` and `Tensor.square` remain walled: `where` is
+# `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
 # `square` is `self * self` (the `__mul__` method is a separate wall, no arith ops
 # are ported yet).
 # TODO(p3) mixin/elementwise.py:426 x.where, :575 x.square -- BLOCKED: see above.
