@@ -38,49 +38,95 @@ import sys
 import tempfile
 
 HERE = pathlib.Path(__file__).resolve().parent
-REPO = HERE.parents[2]
-sys.path.insert(0, str(REPO))
-from tinygrad import dtype as td            # noqa: E402
-from tinygrad.helpers import floordiv       # noqa: E402
+# `parents[0]` is the immediate parent, which for `checks/<this file>` IS the repo
+# root.  The old `parents[2]` was right only at `.agents/slop/abi/`, and the move
+# to `checks/` carried the constant across without recomputing it: REPO became
+# `/Users/cyberistic/src`.  A `parents[N]` is a constant that silently expires
+# when the file MOVES, and under the wrong root this gate raised
+# `ModuleNotFoundError: tinygrad` -- an EXCEPTION, which is not a red gate: it has
+# no denominator and no disagreement, so it counted nowhere.  Note the trap:
+# `parents[1]` is ALSO wrong (it is `/Users/cyberistic/src/tries`); the depth is
+# PROVED by `refuse()` below, not assumed.
+REPO = HERE.parents[0]
 
 BEND = REPO / "bin" / "bend"
 C_LANE = REPO / "tinybendygrad" / "runtime" / "dtype.c"
 JS_LANE = REPO / "tinybendygrad" / "runtime" / "dtype.js"
 DECL = HERE / "abi.json"
 
+
+def refuse(*why: str) -> None:
+    """exit 3 = REFUSED, and NOT a verdict.  `sb-gate.sh` rule 1 and 2, in Python.
+
+    Every input this gate reads is asserted to EXIST before it is read, because a
+    missing input is not a passing input.  `checks/abi.json` was deleted by the
+    sweep `371cc64c9` and `DECL.read_text()` raised `FileNotFoundError` at `:532`;
+    the shape `sb-gate.sh` retired, except worse -- an exception carries no
+    denominator, and `abi4_gate.py:540` adjudicates `abi_gate.py exits 0 against
+    this tree`, so a gate that raises is indistinguishable from one that ran and
+    found nothing wrong.  A refusal is at least a number."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    sys.exit(3)
+
+
+# PROVE the depth rather than assume it: REPO must be the directory that actually
+# holds the substrate, and every input this gate reads must be there.  This
+# runs BEFORE the `tinygrad` import below, because a wrong REPO used to make
+# THAT import raise -- and an assertion that is itself downstream of the thing it
+# asserts cannot turn an exception into a refusal.
+if not C_LANE.is_file():
+    refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+           f"(is `parents[N]` stale after a move?)")
+for _p in (BEND, JS_LANE, DECL):
+    if not _p.exists():
+        refuse(f"input absent: {_p}")
+
+sys.path.insert(0, str(REPO))
+from tinygrad import dtype as td            # noqa: E402
+from tinygrad.helpers import floordiv       # noqa: E402
+
 # ---------------------------------------------------------------- the probe.
 # One program, twelve rows, keyed by the ABI id whose convention each row
 # exercises.  Every abi123_* row has hi != lo and both words nonzero, so no row
 # is blind to the pair order; that is a property of the fixture set and the gate
 # prints both words so it can be checked rather than believed.
+# The twelve binds are `=`, NOT `<-`.  `dtype.bend`'s seams are PURE today --
+# `def Dt.i64_trunc(x: H.I64) -> H.I64` at `dtype.bend:1064`, where at `135bf0204`
+# they returned `IO(H.I64)` -- so `<-` (an effect bind) no longer typechecks against
+# them and `bend` rejects the WHOLE program at the FIRST row.  This is the second
+# stale input in this gate and it is the SAME defect class as the restored
+# `abi.json`: a fixture written against a tree that has since moved.  It is NOT a
+# toolchain fault, and that is measured, not inherited -- `bin/bend` compiles and
+# RUNS this exact probe once the binds are `=` (12/12 rows, node rc 0); see
+# `.agents/slop/abifix/probe.rows`.
 PROBE = """import ./tinybendygrad/dtype.bend as D
 import ./tinybendygrad/helpers.bend as H
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    t1 : H.I64 <- D.Dt.i64_trunc(H.i64_of_hi_lo(15, 240))
+    t1 : H.I64 = D.Dt.i64_trunc(H.i64_of_hi_lo(15, 240))
     IO.print("abi123 trunc_A = " ++ H.i64_text(t1))
-    t2 : H.I64 <- D.Dt.i64_trunc(H.i64_of_hi_lo(3735928559, 305419896))
+    t2 : H.I64 = D.Dt.i64_trunc(H.i64_of_hi_lo(3735928559, 305419896))
     IO.print("abi123 trunc_B = " ++ H.i64_text(t2))
-    d1 : H.I64 <- D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(3, 0))
+    d1 : H.I64 = D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(3, 0))
     IO.print("abi123 fdiv_b3 = " ++ H.i64_text(d1))
-    d2 : H.I64 <- D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(5, 0))
+    d2 : H.I64 = D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(5, 0))
     IO.print("abi123 fdiv_b5 = " ++ H.i64_text(d2))
-    d3 : H.I64 <- D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(1, 0))
+    d3 : H.I64 = D.Dt.i64_floor_div(H.i64_of_hi_lo(7, 0), H.i64_of_hi_lo(1, 0))
     IO.print("abi123 fdiv_b1 = " ++ H.i64_text(d3))
-    c1 : U32 <- D.Dt.fp8_from(F32.bits(1.5), 0)
+    c1 : U32 = D.Dt.fp8_from(F32.bits(1.5), 0)
     IO.print("abi1 fp8from_e4m3 = " ++ U32.show(c1))
-    c2 : U32 <- D.Dt.fp8_from(F32.bits(1.5), 2)
+    c2 : U32 = D.Dt.fp8_from(F32.bits(1.5), 2)
     IO.print("abi1 fp8from_fnuz = " ++ U32.show(c2))
-    b1 : F32 <- D.Dt.bf16(F32.bits(1.5))
+    b1 : F32 = D.Dt.bf16(F32.bits(1.5))
     IO.print("abi1 bf16_1p5 = " ++ F32.show(b1))
-    e1 : F32 <- D.Dt.fp16(1.5)
+    e1 : F32 = D.Dt.fp16(1.5)
     IO.print("abi4 fp16_1p5 = " ++ F32.show(e1))
-    e2 : F32 <- D.Dt.fp16(1.1)
+    e2 : F32 = D.Dt.fp16(1.1)
     IO.print("abi4 fp16_1p1 = " ++ F32.show(e2))
-    e3 : F32 <- D.Dt.fp16(F32.neg(2.25))
+    e3 : F32 = D.Dt.fp16(F32.neg(2.25))
     IO.print("abi4 fp16_m2p25 = " ++ F32.show(e3))
-    f1 : F32 <- D.Dt.fp8_to(60, 0)
+    f1 : F32 = D.Dt.fp8_to(60, 0)
     IO.print("abi4 fp8to_0x3C = " ++ F32.show(f1))
 """
 
@@ -459,7 +505,10 @@ def undeclared_refs(decl) -> tuple[list[str], list[str]]:
             skipped += [f"{eid} historical x{len(refs)}"]
             continue
         for rel, ln in refs:
-            f = HERE / "abi" / rel if rel.startswith("gen/") else REPO / rel
+            # `gen/` is HERE-relative: `main` writes the backends to `gendir = HERE / "gen"`
+            # and `cite_ok` resolves `gen/x` as `gendir / x`.  A join that invents
+            # a `checks/abi/` directory is the same class as a stale `parents[N]`.
+            f = HERE / rel if rel.startswith("gen/") else REPO / rel
             if not f.exists():
                 stale.append(f"{eid} cites {rel}: no such file")
             elif int(ln) > len(f.read_text().splitlines()):
