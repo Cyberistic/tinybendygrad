@@ -237,7 +237,7 @@ NOT AT ALL.** `checks/`
   DELETED, SO THE PLAN THAT RE-VENDORED `tinygrad/` HAS NO SCRIPT LEFT TO AUDIT IT.** **THE PIN SURVIVES:
   `git show 'ad117c928^:tinygrad/uop/ops.py'` STILL ANSWERS EVERY CITATION, `:1398` `dtype: DType =
   dtypes.void` AND `:1404` THE CONDITIONAL `__repr__` — **SO `ad117c928^` IS THE PIN, NOT `ad117c928`.**
-- tinygrad has user space PCI drivers for AMD and NVIDIA GPUs. Do not insert the unneeded kernel modules.
+- tinygrad has user space PCI drivers for AMD and NVIDIA GPUs. Do not insert the unneeded kernel modules. **MEASURED: `rg -l 'PCIDevice' tinygrad/` = **8 files**; the class is at `tinygrad/runtime/support/system.py:206`, and `ops_amd.py:738` and `ops_nv.py:531` each define `PCIIface(PCIIfaceBase)`.**
 
 
 Testing:
