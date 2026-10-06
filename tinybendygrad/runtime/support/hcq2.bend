@@ -81,21 +81,31 @@
 # ===========================================================================
 # THE WALLS, named once each with the `hcq2.py` line that owns them.
 #
-# 1. THE UOP ARENA. `graph_rewrite` (`:510-512`, `:543`, `:567-572`), every
-#    `UPat` and `PatternMatcher` (`:116`, `:126`, `:339-358`, `:436-442`,
-#    `:453`, `:490-501`, `:553`, `:615-631`) and every `u.toposort()`
-#    (`:516`, `:526`, `:540`, `:546-547`, `:604`) read and write the UOp graph
-#    in `uop/ops.bend`. This file ports the VALUES those rules carry -- the
-#    group key, the offset arithmetic, the queue-order -- and names the graph
-#    with a `# TODO(p3)`. `hcq2.py` has no second copy of `Arena`.
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:104   pm_replace_buffers
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:114   pm_unwrap_multi
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:156   pm_insert_copy_staging
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:337   HWQueue.q_rewrite
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:428   pm_hcq_encode
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:468   pm_lift_deps
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:496   pm_lift
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:523   pm_encode
+# 1. THE UOP ARENA -- THE REASON THAT STOOD HERE WAS FALSE. MEASURED
+#    2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
+#    `uop/spec.bend:2596` `kernel_graph_rewrite`), `UOp.toposort` IS a def
+#    (`uop/ops.bend:3035`), and the port writes rules as `pm_*` defs over
+#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:3835`,
+#    `:4058`). So "every UPat/PatternMatcher/toposort reads and writes the UOp
+#    graph" is NOT the blocker. The real blocker per rule is the absent symbol
+#    its body calls: the SHAPED `UOp.param` (only the shape-less arm is ported,
+#    `uop/ops.bend:5207`, blocked on the absent `view_as`), `HCQInfo` (`CallInfo`
+#    dropped `aux`, `uop/ops.bend:1116`), the realized-buffer/engine family
+#    (`Buffer`/`_resolve`/`lower_and_compile`) and the `HWQueue` device methods.
+#    THE `PORTED` TABLE ABOVE IS NOT A WITNESS FOR THESE: its helper names
+#    (`view_*`, `pkey`, `submit_of`, `build_queues`, `finalize`, `hwq`, `enq_*`)
+#    have 0 defs here (`pkey` is `renderer/ptx.bend:222`, a different function).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:104   pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
+#    TODO(p3) tinygrad/runtime/support/hcq2.py:114   pm_unwrap_multi (unwritten; `get_enqueue_devs`/`select_lane` expand over `get_call_arg_uops`/`all_devices_in`/`UOp.mselect`).
+
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:156   pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:337   HWQueue.q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`).
+#    TODO(p3) tinygrad/runtime/support/hcq2.py:428   pm_hcq_encode (unwritten; `hcq_fence`/`encode_fence`/`unwrap_view` expand over existing arena builders).
+#
+#    TODO(p3) tinygrad/runtime/support/hcq2.py:468   pm_lift_deps (unwritten; every named dep (`graph_rewrite`, `UOp.after`, `dedup`) is a def).
+
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:496   pm_lift -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (:530 open TODO).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:523   pm_encode -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`).
 #    TODO(p3) tinygrad/runtime/support/hcq2.py:593   pm_link
 #
 #    THREE NAMES THAT WERE ON THIS LIST AND ARE NOT ANY MORE, each because

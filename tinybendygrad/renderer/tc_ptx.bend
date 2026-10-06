@@ -391,13 +391,17 @@ def pm_n_rules() -> U32: 8
 
 def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
 
-# `ptx_matcher` (ptx.py:40-57) is SEVEN rules and every one is a graph REWRITE:
+# `ptx_matcher` (ptx.py:40-57) is EIGHT rules and every one is a graph REWRITE:
 # three bool-only algebra rewrites, an upcast to float32, two bool-buffer
-# uint8 views and two uint casts of a shift amount. Each builds a NEW node
-# (`x.replace(src=(...))`, `UOp(x.op, src=..., arg=...)`), and the arena is
-# `Type`, so a rule returning an index the caller cannot dereference is the
-# wall `uop/divandmod.bend`'s header already names. THE COUNT is the row that
-# is derivable here; the seven rewrites are:
+# uint8 views and two uint casts of a shift amount. THE PARAGRAPH THAT STOOD
+# HERE WAS FALSE, measured 2026-10-06: the arena is `Data` (`uop/ops.bend:1244`),
+# NOT a `Type`; the port's `pm_*` rules DO return values (29 -> `Maybe<&2, ...>`,
+# 15 -> `Verdict`); and `uop/divandmod.bend`'s header names `UOp._min_max` and
+# mutual recursion, NOT an arena or a dereference. Every dependency these rules
+# need IS a def -- `with_storage` (`renderer/__init__.bend:149`), `doesnt_support_half`
+# (:361), `UOp.of`/`UOp.alu` (`uop/ops.bend:2422`, `:2678`) and `F.fold.dt`
+# (`uop/fold.bend:4391`) -- so no blocker is verified and the eight are
+# UNWRITTEN. THE COUNT is the row that is derivable here; the eight rewrites are:
 #   TODO(p3) ptx.py:42  bool NE -> x^y
 #   TODO(p3) ptx.py:43  bool EQ -> (x^y)^True
 #   TODO(p3) ptx.py:44  bool LT -> (x^True)&y
