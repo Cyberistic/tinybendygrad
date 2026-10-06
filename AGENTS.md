@@ -169,12 +169,17 @@ for an hour and a harness reported success, because '0 disagreements' over '0 co
 indistinguishable from agreement."* **BUT THAT FILE NO LONGER RUNS** (`import oracle_py` →
 `ModuleNotFoundError`, rc=1; `oracle_py.py` is one of the 99 deleted paths), **so the template exists as
 prose over dead code — which is exactly the state doctrine 1 above forbids, in this file.**
-`artefacts_ok()` reported zero on a directory holding nothing; and `checks/corpus-figure.py` still prints
-`RUN HEALTH : OK` and exits 0 over a run whose
-`oracle-selfcheck=# ORACLE SELFCHECK: FAIL`. **`DEAD` HAS NO EXIT ANYWHERE — THAT IS THE GAP, AND IT IS
-THE FIFTH DEFECT, NOT `checks/sb-gate.sh`, WHICH HAS NO SKIP BRANCH AT ALL (`grep -c SKIP` = 0) AND
-EXITS 3 WHEN REFUSED (`sh checks/sb-gate.sh` → `== REFUSED, NOT A VERDICT: the regression floor is
-absent`, rc=3).**
+`artefacts_ok()` reported zero on a directory holding nothing. **AND THE FIFTH DEFECT WAS CLOSED, AND NOT
+IN `checks/sb-gate.sh`, WHICH STILL HAS NO SKIP BRANCH AT ALL (`grep -c SKIP` = 0): `gates/gatekit.py:59`
+NOW SPELLS THE FIVE AS EXITS — `PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` — SO `DEAD` HAS EXIT **5**
+AND `REFUSED` EXIT **3**. MEASURED GREEN: `wk-f32-gate.py` rc=0, `gatekit.py` rc=0.**
+**THE CLAUSE THIS REPLACED NAMED **THREE** THINGS THAT ARE NOW FALSE, NOT ONE: `oracle-selfcheck` READS `OK`
+(`46c52f30d`, TWO FULL 25-GRAPH RUNS), `checks/corpus-figure.py` EXITS **1** WITH `DEV` UNSET (rc=0 **ONLY**
+WITH `DEV=CPU`), AND `DEAD` HAS AN EXIT.**
+> **AND `checks/sb-gate.sh` EXITS 3 WHEN REFUSED TOO, AND THE TWO 3s SHARE **ZERO** LINES: IT IS SHELL,
+GATEKIT IS PYTHON, AND `grep -c gatekit checks/sb-gate.sh` = **0**. A SHARED NUMBER IS NOT A SHARED
+VOCABULARY, AND **THIS FILE HAD BEEN READING IT AS ONE** — THE THIRTEENTH STALE CITATION, IN THE FILE THAT
+DEFINES THE CLASS.**
 **A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE, BECAUSE IT IS TRUSTED.**
 
 
@@ -196,12 +201,17 @@ When using Python:
   interpreter a prescription runs under, and that is why three of them read as done.**
 - Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules
 - **Do not do amend commits, and do not REBASE. Always do a new commit if a force push to origin would
-  be required.** The previous revision said only "no amend", which is why the project's own pinned
-  upstream now CONTAINS `ad117c928` — *"rebase B1: 17 files, the tree imports again, and the GUARD that
-  was supposed to catch this is DEAD"*, an ancestor of HEAD that re-vendored 16 `tinygrad/` files and
-  broke a pin the tree cites. **THE RULE IS ABOUT OUR OWN HISTORY. THE UPSTREAM RE-VENDOR PLAN IS NOT THIS
-  RULE** — `ad117c928`'s own message names the tool it came from (`rebase-plan.py --json`, `rebase-try.sh`),
-  and BOTH ARE NOW DELETED, so the plan that re-vendored `tinygrad/` has no script left to audit it.
+  be required.** The previous revision said only "no amend". **`ad117c928` IS **OURS**, NOT UPSTREAM, AND AN
+  EARLIER REVISION OF THIS LINE GOT IT BACKWARDS**: `git log -1` READS `author: tinybendygrad
+  <tinybendygrad@localhost>`, `Fri Oct 2 19:35:06 2026`, **16 FILES ALL UNDER `tinygrad/`**, AND
+  `git merge-base --is-ancestor ad117c928 HEAD` = **YES**. **SO THE RE-VENDOR THAT BROKE A PIN THE TREE CITES
+  WAS DONE BY THIS PROJECT, NOT BY UPSTREAM — WHICH IS WHY THE RULE IS ABOUT OUR OWN HISTORY AND WHY THE
+  EXCUSE THIS LINE USED TO CARRY COULD NOT HAVE EXCUSED IT.**
+  Its message is *"rebase B1: 17 files, the tree imports again, and the GUARD that was supposed to catch this
+  is DEAD"* and it names the tool it came from (`rebase-plan.py --json`, `rebase-try.sh`), **AND BOTH ARE NOW
+  DELETED, SO THE PLAN THAT RE-VENDORED `tinygrad/` HAS NO SCRIPT LEFT TO AUDIT IT.** **THE PIN SURVIVES:
+  `git show 'ad117c928^:tinygrad/uop/ops.py'` STILL ANSWERS EVERY CITATION, `:1398` `dtype: DType =
+  dtypes.void` AND `:1404` THE CONDITIONAL `__repr__` — **SO `ad117c928^` IS THE PIN, NOT `ad117c928`.**
 - tinygrad has user space PCI drivers for AMD and NVIDIA GPUs. Do not insert the unneeded kernel modules.
 
 
