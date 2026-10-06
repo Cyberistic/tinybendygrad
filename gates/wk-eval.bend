@@ -117,7 +117,53 @@ def p_flt(nm: String, lo: H.I64, hi: H.I64, dt: S.Dt) -> IO(Unit):
   +med = F.min_maxed(O.Found.ar(f))
   pr(shf(nm, W.wk_eval_float(F.folded(F.MMed.ar(med)), F.MMed.bt(med), O.Found.i(f))))
 
+# `param_noshape` -- ops.py:1229 -- TWO rows per fixture, and the pair is what matters: a STRONG
+# dtype must build a PARAM and a WEAK one must refuse, so a reader that answered `Some` for both (or
+# `None` for both) is caught by the disagreement. The `_dt` row names the dtype the node ended up
+# carrying, because "a PARAM exists" and "a PARAM of the dtype I asked for" are two claims.
+#
+# A `+` binding is DEF-BODY form and a `do` block takes `: Type <-`, so the fixture is built by a
+# def and only the two prints live in the block. `Maybe<Found>` cannot be a local either -- a match
+# may not scrutinise a local -- so the def answers the Maybe and the block matches it.
+def param_of(dt: S.Dt) -> Maybe<&1, O.Found>:
+  +ar = O.Arena.empty()
+  W.wk_param_noshape(ar, 0, dt, None{})
+
+# THE MATCHER IN ITS OWN DEF, taking the `Maybe` whole -- `wk-cd.bend`'s `show`, and the reason
+# the shape is two defs here too: a `match` heads a DEF BODY and a local may not be scrutinised.
+# `Found` is DESTRUCTURED rather than read through `Found.ar`/`Found.i` twice, because a `case`
+# binder is consumed once and the record already carries both halves.
+def pm_built(nm: String, m: Maybe<&1, O.Found>) -> String:
+  match m:
+    case Some{O.Found{a, i}}: String.concat([nm, "_built=",
+      Bool.show(O.eq_op(O.Arena.op(a, i), O.OpsPARAM{}))])
+    case _: String.concat([nm, "_built=none"])
+
+# THE SECOND ROW IS NOT THE DTYPE, and it was until `sg.ctor` answered `other`: `AParam` has no arm
+# in `sg.ctor`'s match, so that row would have said the same thing for every dtype and looked like a
+# claim. THIS one asks a DIFFERENT question -- CPython RAISES before building, so a refused dtype must
+# leave the arena UNCHANGED. A reader that allocated the node and then refused would pass `_built=none`
+# and fail here, which is the difference between "refused" and "refused after doing the work".
+def param_of_on(+ar: O.Arena, +dt: S.Dt) -> O.Found:
+  Bool.pick(O.Found, Bool.not(D.md_weak(dt)),
+            O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+                      O.AParam{O.ParamArg{0, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, None{},
+                                         False{}, None{}, None{}, False{}, None{}}}, O.TNone{}),
+            O.Found{ar, 0})
+
+def pm_alloc(nm: String, dt: S.Dt) -> U32:
+  +ar = O.Arena.empty()
+  +before = O.Arena.next(ar)
+  +made = param_of_on(ar, dt)
+  U32.sub(O.Arena.next(O.Found.ar(made)), before)
+
+def pm(+nm: String, +dt: S.Dt) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- pr(pm_built(nm, param_of(dt)))
+    pr(String.concat([nm, "_alloc=", U32.show(pm_alloc(nm, dt))]))
+
 def rows() -> IO(Unit):
+
   do IO<Unit>:
     a : Unit <- int_at("int_weakint", H.i64_of_i32(7), S.weakint())
     b : Unit <- flt_at("float_weakfloat", 0.5)
@@ -138,6 +184,12 @@ def rows() -> IO(Unit):
     o : Unit <- pr(dti("int_on_range", S.int32()))
     q : Unit <- pr(dtb("bool_on_i32", S.int32()))
     r : Unit <- pr(dtf("float_on_i32", S.int32()))
+    # `param_noshape`: a strong dtype builds, a weak one refuses. The refusal is CPython's
+    # `raise RuntimeError(f"cannot create param for weak dtype {dtype}")`, which the port answers
+    # with `None{}` -- and `None` is what `case _:` prints, so the two are the same row shape.
+    w : Unit <- pm("param_i32", S.int32())
+    x : Unit <- pm("param_weakint", S.weakint())
+    y : Unit <- pm("param_weakfloat", S.weakfloat())
     pr(dtb("bool_false", S.boolean()))
 
 def main() -> IO(Unit): rows()

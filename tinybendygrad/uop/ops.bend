@@ -5019,7 +5019,19 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # the IDIOM before writing the INSTANCE.
 #   # set is store+end+after
 
-# TODO(p3) ops.py:1229  def param
+# DONE(p3) ops.py:1229 def param -- THE SHAPE-LESS ARM ONLY, and it is in `weak.bend`. THE THIRD
+#   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
+#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `ops.bend:87` says so and it is TRUE, since
+#   dtype.bend's fp16/bf16/i64 C effects make the checker exit 1 for ANY importer. So the weaks guard
+#   `md_weak` is unreachable from this file, and `wk_param_noshape` lives in `uop/weak.bend` beside the
+#   other two. **THE RULE IS NOT "THOSE THREE WERE MISFILED" BUT "A DEF NEEDING A dtype PREDICATE OR A
+#   BOUND LIVES DOWNSTREAM OF `ops.bend`."**
+#   Gated at `gates/wk-eval-gate.py`: 22 rows, 3 lanes, 21 identical and the ONE documented
+#   `simplify` divergence. Planted -- removing the guard fails BOTH `_built` rows.
+#
+#   THE OTHER TWO ARMS ARE NOT PORTED and the reason is the missing piece, named: a shaped param is
+#   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and **`view_as` IS ABSENT FROM THE PORT**
+#   (so is `unique_num`). Checked, not assumed.
 
 # TODO(p3) ops.py:1241  def param_like
 
@@ -5050,7 +5062,19 @@ def UOp.custom_function(+ar: Arena, name: String, +srcs: List<&2, U32>, dt: S.Dt
 
 # TODO(p3) ops.py:1331  def uopfunc
 
-# TODO(p3) ops.py:1229  def param
+# DONE(p3) ops.py:1229 def param -- THE SHAPE-LESS ARM ONLY, and it is in `weak.bend`. THE THIRD
+#   def to arrive downstream for a THIRD distinct reason: `ops.bend` cannot NAME `fold.bend`'s bounds
+#   (`_eval`), and it cannot IMPORT `dtype.bend` at all -- `ops.bend:87` says so and it is TRUE, since
+#   dtype.bend's fp16/bf16/i64 C effects make the checker exit 1 for ANY importer. So the weaks guard
+#   `md_weak` is unreachable from this file, and `wk_param_noshape` lives in `uop/weak.bend` beside the
+#   other two. **THE RULE IS NOT "THOSE THREE WERE MISFILED" BUT "A DEF NEEDING A dtype PREDICATE OR A
+#   BOUND LIVES DOWNSTREAM OF `ops.bend`."**
+#   Gated at `gates/wk-eval-gate.py`: 22 rows, 3 lanes, 21 identical and the ONE documented
+#   `simplify` divergence. Planted -- removing the guard fails BOTH `_built` rows.
+#
+#   THE OTHER TWO ARMS ARE NOT PORTED and the reason is the missing piece, named: a shaped param is
+#   `prod(to_max_shape(shape))` plus a `view_as` RESHAPE, and **`view_as` IS ABSENT FROM THE PORT**
+#   (so is `unique_num`). Checked, not assumed.
 
 # TODO(p3) ops.py:1333  def outlined
 

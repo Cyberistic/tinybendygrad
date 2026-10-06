@@ -269,6 +269,28 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
   Bool.or(no_dev(F.fold.device(F.Folded.ar(fx), F.Folded.t(fx), i)),
           D.md_weak(wk_dt(fx, i)))
 
+# `UOp.param` -- ops.py:1229, THE SHAPE-LESS ARM. The THIRD def to arrive here rather than in
+# `ops.bend`, and the reason is the third distinct one:
+#
+#   * `_eval` and the three dunders -- `ops.bend` cannot NAME `fold.bend`'s bounds.
+#   * `param_noshape` -- `ops.bend` cannot IMPORT `dtype.bend`, because its fp16/bf16/i64 C
+#     effects make the checker exit 1 for ANY importer (`ops.bend:87`), so `md_weak` is
+#     unreachable from there. The file says so in its own header and it is TRUE: a two-line file
+#     that imports `dtype.bend` and does nothing else prints the same fourteen lines.
+#
+# So the rule is not "these three were misfiled" but "a def needing a dtype PREDICATE or a BOUND
+# lives downstream of `ops.bend`", and this file imports ops, fold and dtype already.
+#
+# CPython's `param` is three arms; the other two want `prod(to_max_shape(shape))` plus a `view_as`
+# RESHAPE, and `view_as` is ABSENT from the port (so is `unique_num`, which the other arm wants).
+def wk_param_noshape(ar: O.Arena, slot: U32, +dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> Maybe<&1, O.Found>:
+  Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),
+            Some{O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+                           O.AParam{O.ParamArg{slot, dt, None{}, vmm, None{}, None{}, S.AGlobal{},
+                                              None{}, False{}, None{}, None{}, False{}, None{}}},
+                           O.TNone{})},
+            None{})
+
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 # `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is
 # spelled here rather than taken as a parameter because all nine callers want the same one.

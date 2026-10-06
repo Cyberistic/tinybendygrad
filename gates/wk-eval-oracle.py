@@ -34,7 +34,7 @@ prettier one, and a prettier one would have meant a third formatter in the tree.
 
 from tinygrad import dtypes
 from tinygrad.dtype import ConstFloat
-from tinygrad.uop.ops import Ops, ParamArg, UOp
+from tinygrad.uop.ops import Ops, ParamArg, UOp, UOpMetaClass
 
 INTS = dtypes.ints + (dtypes.weakint,)
 FLOATS = dtypes.floats + (dtypes.weakfloat,)
@@ -97,6 +97,26 @@ def main() -> None:
     print(f"int_on_range_dt={bl(span.dtype, INTS)}")
     print(f"bool_on_i32_dt={bl(on_i32.dtype, (dtypes.bool,))}")
     print(f"float_on_i32_dt={bl(f_on_i32.dtype, FLOATS)}")
+    # `param_noshape` -- ops.py:1229, the shape-less arm. CPython's guard is
+    # `if dtype in dtypes.weaks: raise RuntimeError(...)` and it runs BEFORE the node is built, so
+    # the INTERNER'S SIZE is a second and INDEPENDENT claim: a port that allocated the node and
+    # then refused would print `_built=none` and still grow the cache.
+    #
+    # `UOpMetaClass.ucache` holds WEAK references, so the count only means anything while the node
+    # is held -- which `u` does, and why both measurements share one scope rather than two.
+    def pm(nm, dt):
+        before = len(UOpMetaClass.ucache)
+        try:
+            u = UOp.param(0, dt)
+            return (f"{nm}_built", "True"), (f"{nm}_alloc", str(len(UOpMetaClass.ucache) - before))
+        except RuntimeError:
+            return (f"{nm}_built", "none"), (f"{nm}_alloc", str(len(UOpMetaClass.ucache) - before))
+
+    for nm, dt in (("param_i32", dtypes.int32), ("param_weakint", dtypes.weakint),
+                   ("param_weakfloat", dtypes.weakfloat)):
+        for row in pm(nm, dt):
+            print(f"{row[0]}={row[1]}")
+
     print(f"bool_false_dt={bl(false_.dtype, (dtypes.bool,))}")
 
 

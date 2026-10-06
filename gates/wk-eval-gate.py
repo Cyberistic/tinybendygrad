@@ -50,7 +50,13 @@ ROWS = (
     "int_weakint_val", "float_weakfloat_val", "bool_true_val", "bool_false_val",
     "int_i32_val", "int_on_range_val", "bool_on_i32_val", "float_on_i32_val",
     "int_weakint_dt", "float_weakfloat_dt", "bool_true_dt", "int_i32_dt",
-    "int_on_range_dt", "bool_on_i32_dt", "float_on_i32_dt", "bool_false_dt",
+    "int_on_range_dt", "bool_on_i32_dt", "float_on_i32_dt",
+    # `param_noshape`, TWO rows per fixture, and the second is a DIFFERENT question rather than a
+    # restatement: a weak dtype must be refused AND must not have allocated a node to be refused
+    # about. A reader that built the node and then refused passes `_built=none` and fails `_alloc`.
+    "bool_false_dt",
+    "param_i32_built", "param_i32_alloc", "param_weakint_built", "param_weakint_alloc",
+    "param_weakfloat_built", "param_weakfloat_alloc",
 )
 
 GATE = Gate(
@@ -68,5 +74,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "wk-eval-gate: 16 rows, 3 lanes, _eval's dtype set and single-number check "
-                        "agree with CPython; 1 divergence (int_weakint, which needs simplify)"))
+    sys.exit(main(GATE, "wk-eval-gate: 22 rows, 3 lanes -- _eval's dtype set and single-number check, and "
+                        "param_noshape's weaks guard -- agree with CPython; 1 divergence "
+                        "(int_weakint, which needs simplify)"))
