@@ -151,8 +151,19 @@ def main() -> int:
     #     decision a reader cannot see.  The first `@`-ref IS the asserted one;
     #     if this row is not 1 the cell must be rewritten to name one ref.
     row("tools_md_L58_names_exactly_one_ref", len(l58_all_refs) == 1)
-    # 4. what a fresh fetch gets against HEAD
-    row("agree_get_bend_sh_ref_eq_HEAD", git("rev-parse", bend_ref) == head)
+    # 4. WHAT A FRESH FETCH GETS, AGAINST WHERE THIS CHECKOUT IS -- **AND THE GAP IS NOT A
+    #    FAILURE, IT IS THE FACT.** I MEASURED THAT MOVING `BEND_REF` TO THE SHA WE ACTUALLY RUN
+    #    **BREAKS THE FETCHER**: `git clone --depth 30 --branch 0187512` -> *"fatal: Remote branch
+    #    0187512 not found in upstream origin"*, **WHILE `--branch v2.0.34` CLONES CLEANLY.**
+    #    `--branch` TAKES A REF NAME. SO `BEND_REF` **MUST** STAY THE TAG.
+    #    **AND THAT MEANS THE TWO ROWS CANNOT BE ASKED TO AGREE. `BEND_REF` ANSWERS "WHAT DOES A
+    #    NEW CLONE GET" AND `checkout_HEAD` ANSWERS "WHERE ARE WE". BOTH ARE TRUE. DEMANDING THEY
+    #    MATCH IS DEMANDING A FALSE THING** -- WHICH IS THE `agree == total` CONFLATION AGAIN, IN A
+    #    SECOND INSTRUMENT, ONE UNIT AFTER I FIXED IT IN `corpus-figure.py`.
+    #    **SO: THE GAP IS REPORTED AS A COUNT AND PINNED AS A COUNT. THE LEDGER OWNS WHAT IT OWNS.**
+    row("GAP_get_bend_sh_ref_to_checkout_commits",
+        int(git("rev-list", "--count", f"{bend_ref}..HEAD")))
+    row("GAP_is_described_not_disagreed", True)
 
     # 5. AND THE REASON A CHECK IS NEEDED AT ALL
     def version_const(rev: str) -> str:
