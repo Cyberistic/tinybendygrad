@@ -1468,12 +1468,79 @@ def g_late():
   return graph_rewrite(eager, pm, name="arith/late")
 
 
+# ---------------------------------------------------------------------------
+# THE FIVE UNEXERCISED OPS (2026-10-06). Each is the only graph that reaches its op.
+# `g_threefry`  `a.threefry(seed)` over TWO uint64 seeds (GROUP wraps the two so they
+#               don't collapse into ONE node).
+# `g_mulacc`    Hand-written `UOp(Ops.MULACC, ...)` -- the late rewrite that creates it
+#               is renderer-dependent and the corpus needs one renderer-independent graph.
+# `g_getaddr`   `UOp.getaddr` on a hand-written ALLOC.
+# `g_unshard`   `UOp.unshard(0, device_range=(UOp.range(2, 0, AxisType.DEVICE),))` -- a
+#               DEVICE RANGE, not multi-device implied.
+# `g_wmma`      `UOp.wmma` on three Tensor.empty -- the tensor-core shape does not need a
+#               real renderer for the normal form; `carg`'s `wm(..)` arm handles it.
+def g_threefry():
+  """`UOp.group(a.threefry(s1).uop, a.threefry(s2).uop)` over `Tensor.empty(4,3,uint64)`
+  and two seeds -- reaches `Ops.THREEFRY`, which is `uint64` output regardless of input
+  dtype. MEASURED census: `ALLOC=2 CONST=2 GROUP=1 RESHAPE=2 STACK=2 THREEFRY=2`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.uint64)
+  s1 = Tensor.empty(4, 3, dtype=dtypes.uint64)
+  s2 = Tensor.empty(4, 3, dtype=dtypes.uint64)
+  return UOp.group(a.threefry(s1).uop, a.threefry(s2).uop)
+
+
+def g_mulacc():
+  """`UOp(Ops.MULACC, src=(a.uop, b.uop, c.uop))` over THREE `Tensor.empty(4,3)` --
+  reaches `Ops.MULACC`. MEASURED census: `ALLOC=3 CONST=3 GROUP=1 MULACC=1 RESHAPE=3
+  STACK=3`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.float).uop  # noqa
+  b = Tensor.empty(4, 3, dtype=dtypes.float).uop
+  c = Tensor.empty(4, 3, dtype=dtypes.float).uop
+  return UOp(Ops.MULACC, src=(a, b, c))
+
+
+def g_getaddr():
+  """`UOp(Ops.GETADDR, src=(alloc,), arg="CPU")` over a hand-written ALLOC -- 2 nodes.
+  Reaches `Ops.GETADDR`. MEASURED: `ALLOC=1 GROUP=1 GETADDR=1`."""
+  from tinygrad.dtype import AddrSpace
+  from tinygrad.uop.ops import ParamArg
+  alloc = UOp(Ops.ALLOC, src=(), arg=ParamArg(0, dtypes.float, 12, device="CPU",
+              bind_on_realize=True))
+  return UOp(Ops.GETADDR, src=(alloc,), arg="CPU")
+
+
+def g_unshard():
+  """`UOp(Ops.UNSHARD, src=(a.uop, r), arg=(0,))` over a `Tensor.empty(4,3)` and a
+  `UOp.range(2, 0, AxisType.DEVICE)` -- 4 nodes. Reaches `Ops.UNSHARD`, the sharding
+  marker. MEASURED: `ALLOC=1 CONST=2 GROUP=1 RANGE=1 RESHAPE=1 STACK=1 UNSHARD=1`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 3, dtype=dtypes.float).uop
+  r = UOp.range(2, 0, AxisType.DEVICE)
+  return UOp(Ops.UNSHARD, src=(a, r), arg=(0,))
+
+
+def g_wmma():
+  """`UOp(Ops.WMMA, src=(a.uop, b.uop, acc.uop), arg=((3,4,4), f32, 256, None))` --
+  4 nodes. Reaches `Ops.WMMA`. The shape formula broadcasts batch dims = src[:].shape[:-1]
+  then appends acc.shape[-1]; here all three batch dims are (4,) so M=4 agrees between a
+  and acc. MEASURED: `ALLOC=3 CONST=3 GROUP=1 RESHAPE=3 STACK=3 WMMA=1`."""
+  from tinygrad import Tensor
+  a = Tensor.empty(4, 4, dtype=dtypes.float).uop   # (M, K) = (4, 4)
+  b = Tensor.empty(4, 3, dtype=dtypes.float).uop   # (K, N) = (4, 3)
+  acc = Tensor.empty(4, 3, dtype=dtypes.float).uop  # (M, N) = (4, 3)
+  return UOp(Ops.WMMA, src=(a, b, acc), arg=((3, 4, 4), dtypes.float, 256, None))
+
+
 GRAPHS = {"matmul": g_matmul, "reduce": g_reduce, "buffer": g_buffer, "sink": g_sink,
           "range": g_range, "rangeflat": g_rangeflat, "cast": g_cast, "special": g_special,
           "binblob": g_binblob, "group": g_group, "commute": g_commute, "indexed": g_indexed,
           "sym": g_sym, "lin": g_lin, "loop": g_loop, "gate": g_gate, "bw": g_bw,
           "alu": g_alu, "bit": g_bit, "where": g_where, "move": g_move, "flip": g_flip,
-          "allred": g_allred, "cdiv": g_cdiv, "late": g_late}
+          "allred": g_allred, "cdiv": g_cdiv, "late": g_late,
+          "threefry": g_threefry, "mulacc": g_mulacc, "getaddr": g_getaddr,
+          "unshard": g_unshard, "wmma": g_wmma}
 
 _BASE: dict[str, UOp] = {}
 
