@@ -163,12 +163,12 @@
 #    `ctypes` in/out structures. Every ioctl is in the trace as an `OPEN`, a
 #    `GET_VERSION`, an `ACQUIRE_VM` or a `RUNTIME_ENABLE`; the bytes are the
 #    seam's.
-#    TODO(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd").
-#    TODO(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM.
-#    TODO(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU.
-#    TODO(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU.
-#    TODO(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE.
-#    TODO(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS.
+# | WALL(p3) runtime/ops_amd.py:596  FileIOInterface("/dev/kfd"). -- BLOCKED: needs `FileIOInterface("/dev/kfd")`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:613  AMDKFD_IOC_ACQUIRE_VM. -- BLOCKED: needs the `AMDKFD_IOC_ACQUIRE_VM` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:631  AMDKFD_IOC_ALLOC_MEMORY_OF_GPU. -- BLOCKED: needs the `AMDKFD_IOC_ALLOC_MEMORY_OF_GPU` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:665  AMDKFD_IOC_MAP_MEMORY_TO_GPU. -- BLOCKED: needs the `AMDKFD_IOC_MAP_MEMORY_TO_GPU` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:685  AMDKFD_IOC_CREATE_QUEUE. -- BLOCKED: needs the `AMDKFD_IOC_CREATE_QUEUE` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:702  AMDKFD_IOC_WAIT_EVENTS. -- BLOCKED: needs the `AMDKFD_IOC_WAIT_EVENTS` ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
 # 2. PCI / amdev (PCIIface, :737-804). `USBPCIDevice`/`PCIIfaceBase`, the BAR
 #    map, `AMDev`'s `sdma`/`gfx`/`ih` objects and `setup_ring`, and every
@@ -176,16 +176,16 @@
 #    `regSQ_THREAD_TRACE_*` are the register TABLES in `autogen/am/regs/*`, and
 #    the port carries their use (which register, with which field values) and
 #    not their offsets, which are the seam's.
-#    TODO(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098).
-#    TODO(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs.
-#    TODO(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring.
-#    TODO(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap.
+# | WALL(p3) runtime/ops_amd.py:740  PCIIfaceBase.__init__ (vendor 4098). -- BLOCKED: needs `PCIIfaceBase.__init__` to claim vendor 4098 -- a PCI config read: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:753  AMDev.gc_info / AMDev.gfx.xccs. -- BLOCKED: needs `AMDev.gc_info` / `AMDev.gfx.xccs`, which read a DEVICE PROPERTY through an ioctl: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:772  AMDev.{sdma,gfx}.setup_ring. -- BLOCKED: needs `AMDev.{sdma,gfx}.setup_ring`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:731-733  struct_drm_amdgpu_info_device.cu_bitmap. -- BLOCKED: needs `struct_drm_amdgpu_info_device.cu_bitmap`, a ctypes STRUCT FIELD: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
 # 3. USB3 (USBIface, :810-833). `USB3.list_devices`, `dma_view`, the
 #    `0/4096/20480` controller window and its `AddrSpace.SYS` mapping.
-#    TODO(p3) runtime/ops_amd.py:812  USB3.list_devices.
-#    TODO(p3) runtime/ops_amd.py:822  USBIface.ctrl's three map_range pieces.
-#    TODO(p3) runtime/ops_amd.py:824  pci_dev.dma_view(40960, 544768).
+# | WALL(p3) runtime/ops_amd.py:812  USB3.list_devices. -- BLOCKED: needs `USB3.list_devices`, which ENUMERATES devices through libusb: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:822  USBIface.ctrl's three map_range pieces. -- BLOCKED: needs `USBIface.ctrl`'s three `map_range` pieces -- an `mmap` of a BAR: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:824  pci_dev.dma_view(40960, 544768). -- BLOCKED: needs `pci_dev.dma_view(40960, 544768)`, a DMA mapping: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
 # 4. THE UOp MATCHER (:841-844, :888-892, :895-896, :905-906). `pm_encode`
 #    matches `CUSTOM_FUNCTION` nodes and `pm_bufferize` PREPENDS three rules to
@@ -194,19 +194,19 @@
 #    body is a UOp graph and building one needs `./uop/ops.bend` and the HCQ2
 #    lowering this file does not own. `amd_pmb_order` and `amd_pmb_prof` are the
 #    rows, and they are about ORDER, which is all that is portable here.
-#    TODO(p3) runtime/ops_amd.py:842  encode_submit(amd_compute_queue(submit)).
-#    TODO(p3) runtime/ops_amd.py:843  encode_submit(AMDSDMAQueue(submit)).
-#    TODO(p3) runtime/ops_amd.py:889  ctx.scratch_buffer(b.max_numel()).
-#    TODO(p3) runtime/ops_amd.py:890  ctx.program_buffer(b).
-#    TODO(p3) runtime/ops_amd.py:891  ctx.queue_buffer(b.tag).
+# | WALL(p3) runtime/ops_amd.py:842  encode_submit(amd_compute_queue(submit)). -- BLOCKED: needs `encode_submit(amd_compute_queue(submit))` -- a queue SUBMIT written into a mapped ring: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:843  encode_submit(AMDSDMAQueue(submit)). -- BLOCKED: needs `encode_submit(AMDSDMAQueue(submit))`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:889  ctx.scratch_buffer(b.max_numel()). -- BLOCKED: needs `ctx.scratch_buffer(b.max_numel())`, a device BUFFER: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:890  ctx.program_buffer(b). -- BLOCKED: needs `ctx.program_buffer(b)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
+# | WALL(p3) runtime/ops_amd.py:891  ctx.queue_buffer(b.tag). -- BLOCKED: needs `ctx.queue_buffer(b.tag)`: an FFI SEAM -- an `ioctl`/`mmap`/ctypes register write, and NONE of those can be anything in Bend but a foreign call (`ops_amd.bend:1-8`). The port declares no foreign seam here because `ops.bend:87` records that foreign code makes the checker exit 1 for any importer.
 #
 # 5. THE HANG PATH (:705-717, :800-802, :798). `on_device_hang` builds its
 #    report out of `queue_event_arr[i].memory_exception_data.failure`, whose
 #    `_real_fields_` it walks by name. A field NAME is a Python string table and
 #    a walk over it is a `dict`, so the port keeps the two refusal MESSAGES and
 #    the trace truncation and nothing of the report's body.
-#    TODO(p3) runtime/ops_amd.py:706  `_str(st)` over `st._real_fields_`.
-#    TODO(p3) runtime/ops_amd.py:714  the MMU-fault f-string.
+# | WALL(p3) runtime/ops_amd.py:706  `_str(st)` over `st._real_fields_`. -- BLOCKED: needs `_str(st)` over `st._real_fields_` -- PYTHON REFLECTION over a ctypes struct's field list, which a compiled language does not expose.
+# | WALL(p3) runtime/ops_amd.py:714  the MMU-fault f-string. -- BLOCKED: an MMU-FAULT f-string inside a signal-handler path the port does not have; the FORMAT is not the blocker.
 #    TODO(p3) runtime/ops_amd.py:715  the HW-fault f-string.
 #
 # ===========================================================================
@@ -1254,7 +1254,7 @@ def qb_arm(queue: String) -> U32:
 # lambda. What the port keeps instead is the RESULT for the five queue names
 # hcq2.py:235 spells, which is a table and not a transform, so the gate still
 # sees the folded spelling of every name the device can produce.
-# TODO(p3) runtime/support/hcq2.py:66  `to_name`'s lower+colon fold.
+# | WALL(p3) runtime/support/hcq2.py:66  `to_name`'s lower+colon fold. -- BLOCKED: needs `to_name`'s lower+colon fold -- a STRING transform (lowercase, then colon-join) over an op name.
 def fold_q(+q: String) -> String:
   Bool.pick(String, String.eq(q, "COMPUTE:0"), "compute_0",
     Bool.pick(String, String.eq(q, "SDMA:0"), "sdma_0",
