@@ -1,0 +1,12 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/corpus-figure.py", line 230, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/corpus-figure.py", line 171, in main
+    gc = load_graphcmp()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/corpus-figure.py", line 116, in load_graphcmp
+    gc.load_tinygrad()
+    ~~~~~~~~~~~~~~~~^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/graphcmp.py", line 284, in load_tinygrad
+    import tinygrad.dtype as dtm
+ModuleNotFoundError: No module named 'tinygrad'

@@ -26,34 +26,7 @@ import pathlib
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
-
-
-def refuse(*why: str) -> None:
-  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
-
-  Placed BEFORE `load()`, because the stale depth made `load()` raise
-  `FileNotFoundError` FIRST, and an assertion DOWNSTREAM of what it asserts cannot turn an
-  exception into a refusal."""
-  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-  sys.exit(3)
-
-
-# `parents[0]`, NOT `HERE.parent`.  `3f0e70ff1` MOVED this file from `.agents/slop/jslane2/` to
-# `checks/`, ONE level shallower, and carried the constant across: `HERE.parent` became the
-# REPO ROOT, so `JSL2` looked for `<root>/jslane2/gen_f32_seam.py` while the file sat at
-# `.agents/slop/jslane2/gen_f32_seam.py`, PRESENT AND IMPORTABLE.  MEASURED, and this is the
-# FIFTH spelling of this class -- the instrument's rule finds an instance by a `parents[N]`
-# regex, and this one spells the same depth as `HERE.parent / "jslane2"`, so it was invisible.
-# The depth is PROVED by `refuse()` below, not assumed.
-REPO = HERE.parents[0]
-if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
-  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
-         f"(is `parents[N]` stale after a move?)")
-JSL2 = REPO / ".agents" / "slop" / "jslane2" / "gen_f32_seam.py"
-if not JSL2.is_file():
-  refuse(f"input absent: {JSL2}  (the normaliser under test; recoverable from git at "
-         "371cc64c9^:.agents/slop/jslane2/gen_f32_seam.py.  This gate cannot produce a "
-         "denominator without it.)")
+JSL2 = HERE.parent / ".."/ ".agents" / "slop" / "jslane2" / "gen_f32_seam.py"
 
 # What the OLD `norm` was. This is the PLANT: a re-spelling of the defect, run
 # against the same gate, because a fix to a normaliser that nothing can fail is a
@@ -93,10 +66,7 @@ def main() -> None:
 
   plant = cases(old)
 
-  # `relative_to(REPO)`, not `relative_to(HERE.parents[1])`: `parents[1]` is the repo's PARENT,
-  # so it rendered the subject as `2026-09-30-tinybendygrad/jslane2/gen_f32_seam.py` -- the same
-  # off-by-one, one line down, and it did not raise because `parents[1]` still encloses the path.
-  print(f"gate under test: {JSL2.relative_to(REPO)}  norm -> {g.norm.__module__}")
+  print(f"gate under test: {JSL2.relative_to(HERE.parents[1])}  norm -> {g.norm.__module__}")
   print(f"                  CANON.canon(s, \"f32\"), not {OLD}\n")
   bad = 0
   for (label, got), (_, planted) in zip(rows, plant):

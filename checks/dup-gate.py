@@ -43,7 +43,39 @@ import argparse, hashlib, importlib.util, pathlib, sys
 from collections import Counter
 
 HERE = pathlib.Path(__file__).resolve().parent
-SLOP = HERE.parent
+
+
+def refuse(*why) -> None:
+  """exit 3 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+
+  Placed BEFORE `load()` below, because the stale depth made `load()` raise
+  `FileNotFoundError` FIRST, and an assertion DOWNSTREAM of what it asserts cannot turn an
+  exception into a refusal: rc 1 and a traceback, which carries no denominator and so counts
+  nowhere.  The twin `dup-census.py` says the same thing about the same defect."""
+  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+  sys.exit(3)
+
+
+# `parents[0]`, NOT `HERE.parent`.  `3f0e70ff1` MOVED this file from `.agents/slop/` to `checks/`,
+# ONE level shallower, and carried the constant across without recomputing it -- so `SLOP` became
+# the REPO ROOT and `load(SLOP / "rebase-gate.py")` asked for `<repo>/rebase-gate.py`, which has
+# never existed, while the real one sat at `.agents/slop/rebase-gate.py`.  MEASURED: the twin
+# `dup-census.py` was fixed for exactly this and this file was not, and it is NOT among the
+# twelve the instrument found because it names NO `parents[N]` -- a rule that finds an instance by
+# its SPELLING cannot find one that spells the same depth as `HERE.parent`.  The depth is PROVED by
+# `refuse()` below, not assumed.
+REPO = HERE.parents[0]
+if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_dir():
+  refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
+         f"(is `parents[N]` stale after a move?)")
+SLOP = REPO / ".agents" / "slop"
+_EQ = SLOP / "eq" / "eq-census2.py"
+for _p in (SLOP / "rebase-gate.py", _EQ):
+  if not _p.is_file():
+    refuse(f"input absent: {_p}"
+           + ("  (swept by 371cc64c9; recoverable from git at 371cc64c9^:)"
+              if _p == _EQ else "")
+           + "  This gate cannot produce a denominator without it.")
 
 
 def load(path, name):

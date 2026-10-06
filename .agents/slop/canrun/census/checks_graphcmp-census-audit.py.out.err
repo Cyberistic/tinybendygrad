@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/graphcmp-census-audit.py", line 45, in <module>
+    from tinygrad.uop.ops import Ops  # noqa: E402
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ModuleNotFoundError: No module named 'tinygrad'

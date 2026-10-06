@@ -1,0 +1,3 @@
+usage: gate_dtype.py [-h] --lane {js,c} [--bend BEND] [--binary BINARY]
+                     [--ranges]
+gate_dtype.py: error: the following arguments are required: --lane

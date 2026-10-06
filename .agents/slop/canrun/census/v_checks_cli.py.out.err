@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/cli.py", line 236, in <module>
+    try: main(get_arg_parser().parse_args())
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py", line 81, in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/cli.py", line 102, in main
+    if profile_bytes is None: raise RuntimeError(f"empty profile in {args.profile_path}")
+                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: empty profile in /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/profile.pkl.cyberistic

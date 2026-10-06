@@ -1,0 +1,2 @@
+no-shrink: 0 port files differ from HEAD uncommitted -- 0 GREW, 0 SHRANK, tolerance 40 lines
+  CLEAN: nothing shrank past tolerance, and no port file is zero bytes
