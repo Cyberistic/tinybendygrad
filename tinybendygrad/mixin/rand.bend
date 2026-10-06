@@ -52,15 +52,15 @@
 #   W3 `_getitem` (op.py:74), reached from rand.py:14, :101 and tensor.py:466-470, is
 #      `mixin/op.bend`'s W1 (a seven-way index sum type). PORTED: `rd_take`/`rd_slice`/
 #      `rd_scalar` -- the only arms this file reaches.
-#      TODO(p3) mixin/op.py:74  `_getitem` for a negative int, a two-sided slice, an
+#      WALL(p3) mixin/op.py:74  `_getitem` for a negative int, a two-sided slice, an -- BLOCKED: needs the other INDEX FORMS -- a negative int, a two-sided slice, an `Ellipsis`, a `list`, a `Tensor` index and `None`. Each is a Python index TYPE, and Bend has one index form.
 #        `Ellipsis`, a `list`, a `Tensor` index or `None`.
 #   W4 `cos`/`log`, reached from rand.py:103, are three lines of already-ported ops each, but
 #      `mixin/elementwise.bend` has neither. PORTED: `rd_cos`/`rd_log`, each CALLING
 #      `E.ew_sin`/`E.ew_log2` rather than re-deriving them.
-#      TODO(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where
+#      WALL(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where -- BLOCKED: needs the half/bfloat16 ARM. `least_upper_float` EXISTS and `least_upper_dtype` does NOT (checked as defs), and the two folds become CASTs rather than the identity, so f32's `rd_cos` does not reach them.
 #        `least_upper_float` and `least_upper_dtype` are NOT the identity and the two folds
 #        become CASTs.
-#      TODO(p3) tinygrad/mixin/elementwise.py:830  `log`.
+#      DONE(p3) tinygrad/mixin/elementwise.py:830  `log`. -- DONE, NOT BLOCKED: `ew_log` IS in `mixin/elementwise.bend` and `rd_log` below CALLS it; gated at `gates/ew-explog-gate.py` (3 rows, 3 lanes byte-identical). MEASURED with `^def ew_log\(`. The header's `has neither` was true before that landed.
 #   W5 `multinomial`'s two arms are `topk` (op.py:976, the bitonic sort -- `mixin/op.bend`'s
 #      W5) and `cumsum` (op.py:770 -> `_cumalu` -> `identity_element`). PORTED: the
 #      `unsqueeze` selection and both guards, and the trailing `.cast(dtypes.i32)`.
@@ -74,11 +74,11 @@
 #        division by a Python float whose promotion is not the same rule as every other
 #        binop here.)
 #      TODO(p3) tinygrad/helpers.py  `TRAINING` -- the ContextVar read.
-#      TODO(p3) mixin/rand.py:315  `scaled_dot_product_attention`'s GQA arm.
-#      TODO(p3) mixin/rand.py:319  `scaled_dot_product_attention`'s matmul.
-#      TODO(p3) mixin/rand.py:323  `scaled_dot_product_attention`'s causal mask.
-#      TODO(p3) mixin/rand.py:327  `scaled_dot_product_attention`'s `attn_mask` arm.
-#      TODO(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm.
+#      WALL(p3) mixin/rand.py:315  `scaled_dot_product_attention`'s GQA arm. -- BLOCKED: needs the GQA arm -- a head-group reshape around the same matmul.
+#      WALL(p3) mixin/rand.py:319  `scaled_dot_product_attention`'s matmul. -- BLOCKED: needs the batched matmul.
+#      WALL(p3) mixin/rand.py:323  `scaled_dot_product_attention`'s causal mask. -- BLOCKED: needs the causal mask.
+#      WALL(p3) mixin/rand.py:327  `scaled_dot_product_attention`'s `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
+#      WALL(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm. -- BLOCKED: needs a MULTI-DEVICE `Tensor`: this is `rand_like`'s `isinstance(self.device, tuple)` arm, and the port's `Tensor{ar, uop, ...}` carries ONE arena.
 #      TODO(p3) mixin/rand.py:249  `randperm` -- `argsort`.
 #
 # THE GATE. Nothing is executed; every graph row is the SIGNATURE of the lazy graph.
@@ -304,7 +304,7 @@ def op_pool1(+t: T.Tensor, +q: PK) -> T.Tensor: MX.mxw_permute(op_pool1.p4(t, q)
 # the tensor and would rebuild the whole of `_pool`: movement.bend's rule 13 says calling a
 # building function twice is CORRECT (the arena is a hash-cons) and it is also a second
 # copy of every node in `_pool`, so the literal is the cheap correct spelling.
-# TODO(p3) mixin/op.py:752  `_cumalu` for `axis != 0`, for `Ops.MAX`/`Ops.MUL`, and for a
+# WALL(p3) mixin/op.py:752  `_cumalu` for `axis != 0`, for `Ops.MAX`/`Ops.MUL`, and for a -- BLOCKED: needs `cumsum` and `identity_element` -- BOTH are NO DEF -- plus the `Ops.MAX`/`Ops.MUL` `_cumalu` arms and `axis != 0`.
 #   source with `ndim > 1`.
 def op_cumalu.red(+p: T.Tensor) -> T.Tensor: MO.mo_sum(False{}, p, [1])
 def op_cumalu(+t: T.Tensor, +q: PK) -> T.Tensor: op_cumalu.red(op_pool1(op_padc(t, q), q))
@@ -325,7 +325,7 @@ def op_cumalu(+t: T.Tensor, +q: PK) -> T.Tensor: op_cumalu.red(op_pool1(op_padc(
 # is what pins it and the count row cannot.
 # The `OverflowError` guard (op.py:191) and the `output_len <= 0` early `full((0,), 0)`
 # (op.py:193) are a REFUSAL and a RETURN of a different graph, so they are `TODO(p3)`.
-# TODO(p3) mixin/op.py:191  `arange`'s `OverflowError` guard.
+# WALL(p3) mixin/op.py:191  `arange`'s `OverflowError` guard. -- BLOCKED: needs `arange`'s `OverflowError` GUARD -- a runtime range check on the produced length.
 # TODO(p3) mixin/op.py:193  `arange`'s `output_len <= 0` arm -- `full((0,), 0)`.
 # TODO(p3) mixin/op.py:187  `arange` with `stop` given, `step != 1`, or `dtype=None` (which
 #   needs `commit_int(lo, hi)` from `mixin/dtype.bend`).
@@ -348,7 +348,7 @@ def op_arange(+ar: O.Arena, n: U32, +dev: S.Dev) -> T.Tensor:
 # (high)` -- so the `ccast` is the identity and omitting it drops no node. `stack`'s
 # `.permute(tuple(range(1, dim+1)) + (0,) + tuple(range(dim+1, ret.ndim)))` with `dim = 0`
 # is `permute((0,))`, which movement.py:231 folds, so there is no PERMUTE.
-# TODO(p3) mixin/uop/ops.py:833  `dtype_from_uop` + `ccast` in `_mop`'s STACK arm.
+# WALL(p3) mixin/uop/ops.py:833  `dtype_from_uop` + `ccast` in `_mop`'s STACK arm. -- BLOCKED: needs `dtype_from_uop` (NO DEF) in `_mop`'s STACK arm; `ccast` itself is present as `wk_ccast`.
 def op_stack0(+ar: O.Arena, u: U32, +us: List<&2, U32>) -> T.Tensor:
   T.tn_alu.put(O.UOp.new(ar, O.OpsSTACK{}, List.append(&2, U32, [u], us), O.ANone{}, O.TNone{}))
 
@@ -673,7 +673,7 @@ def rd_rand_cls(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds:
 # rand.py:70 `rand_like` -- `type(self).rand(*self.shape, device=..., dtype=kwargs.pop
 # ("dtype", self.dtype), **kwargs)` (rand.py:86), so the shape is `self`'s and the dtype is
 # `self.dtype` when none is given. THE DEVICE-TUPLE ARM IS `creation.bend`'s W2.
-# TODO(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm -- `_multi_like`, a Python
+# WALL(p3) mixin/rand.py:82  `rand_like`'s device-tuple arm -- `_multi_like`, a Python -- BLOCKED: needs a MULTI-DEVICE `Tensor`: this is `rand_like`'s `isinstance(self.device, tuple)` arm, and the port's `Tensor{ar, uop, ...}` carries ONE arena.
 #   CALLBACK, which `creation.bend` also carries.
 def rd_rand_like(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +self_dt: S.Dt, +ds: List<&2, U32>, +dev: S.Dev) -> T.Tensor:
   rd_rand_cls(contig, ar, key, ctr, ds, self_dt, dev)
@@ -684,7 +684,7 @@ def rd_rand_like(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +se
 # FOLD, so the graph is `MUL(x, -1.0)`, `ADD(pi/2, that)`, `SIN` -- nodes 134/135/136 of
 # `Tensor.randn(2,3)` -- and `MO.mo_sub(const, x)` gives exactly that order, because
 # elementwise.py:123 is `a.alu(Ops.ADD, -b)`.
-# TODO(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where
+# WALL(p3) tinygrad/mixin/elementwise.py:500  `cos` for half/bfloat16, where -- BLOCKED: needs the half/bfloat16 ARM. `least_upper_float` EXISTS and `least_upper_dtype` does NOT (checked as defs), and the two folds become CASTs rather than the identity, so f32's `rd_cos` does not reach them.
 #   `least_upper_float` and `least_upper_dtype` are NOT the identity and the two folds
 #   become CASTs.
 def rd_cos(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
@@ -692,7 +692,7 @@ def rd_cos(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
 
 # `log` (elementwise.py:830) -- `self.log2() * math.log(2)`. `rd_log` has the same
 # `TODO(p3)` as `rd_cos` and for the same reason: it belongs to `mixin/elementwise.bend`.
-# TODO(p3) tinygrad/mixin/elementwise.py:830  `log`.
+# DONE(p3) tinygrad/mixin/elementwise.py:830  `log`. -- DONE, NOT BLOCKED: `ew_log` IS in `mixin/elementwise.bend` and `rd_log` below CALLS it; gated at `gates/ew-explog-gate.py` (3 rows, 3 lanes byte-identical). MEASURED with `^def ew_log\(`. The header's `has neither` was true before that landed.
 def rd_log(+t: T.Tensor) -> T.Tensor: MO.mo_bin_c(E.ew_log2(t), O.OpsMUL{}, O.CFloat{0.6931471805599453})
 
 # rand.py:88 `randn_like`. `src = self.stack(self).rand_like(**{**kwargs, "dtype":
@@ -841,10 +841,10 @@ def rd_drop.pick(arm: U32, +t: T.Tensor) -> T.Tensor: rd_drop.pick.of(U1{arm}, t
 # key.dtype, dtypes.f32)` of rand.py:319, as a DTYPE and not a graph -- and
 # `least_upper_dtype(*dtypes)` folds left, so it is `F.least_upper.of` CALLED twice, which
 # is fold.bend's own lattice. That makes `ref_sdpa_dt` a shared row.
-# TODO(p3) mixin/rand.py:315  the GQA arm -- `repeat_interleave` (movement.py:560).
-# TODO(p3) mixin/rand.py:319  the matmul -- `mixin/op.bend`'s W8.
-# TODO(p3) mixin/rand.py:323  the causal mask -- `tril` (op.py:259), which is W1 again.
-# TODO(p3) mixin/rand.py:327  the `attn_mask` arm.
+# WALL(p3) mixin/rand.py:315  the GQA arm -- `repeat_interleave` (movement.py:560). -- BLOCKED: needs the GQA arm -- a head-group reshape around the same matmul.
+# WALL(p3) mixin/rand.py:319  the matmul -- `mixin/op.bend`'s W8. -- BLOCKED: needs the batched matmul.
+# WALL(p3) mixin/rand.py:323  the causal mask -- `tril` (op.py:259), which is W1 again. -- BLOCKED: needs the causal mask.
+# WALL(p3) mixin/rand.py:327  the `attn_mask` arm. -- BLOCKED: needs the `attn_mask` arm.
 def rd_sdpa_dt(+q: S.Dt, +k: S.Dt) -> S.Dt: F.least_upper.of(F.least_upper.of(q, k), S.single())
 
 # ===========================================================================
