@@ -14,6 +14,21 @@ two of them can agree with each other by construction:
   II   a run clears its own output before writing                 per GENERATOR, from its AST
   III  an output directory is not in the index                    per output directory, from git
   IV   a generated directory may exist only if its run was healthy per generator's OWN health fn
+  V    EVERY generated directory, DISCOVERED                        per DISCOVERED directory, from
+                                                                      a scan of every write site
+
+CLAUSE V IS THE ONE THAT CLOSES THE CLASS, AND IT IS NEW BECAUSE A TWO-ITEM REGISTRY IS A LIST
+THAT CANNOT BE WRONG ABOUT A THIRD ITEM. `Output("graphcmp", ...)` and `Output("gates", ...)` were
+this file's entire notion of where output goes, and `checks/gen/` -- written by
+`checks/abi_gate.py:616` through `bend -o`, tracked as two EMPTY BLOBS, and read back by that same
+gate at `:624` -- sat outside both. Clauses I-IV still run on the REGISTRY because they need a
+DECLARED SET to measure against; clause V runs on `gates/gendirs.py`'s DISCOVERY, which needs
+none, and it is what makes a fourth directory visible without anyone editing this file.
+
+THE POPULATION IS SHARED, NOT DUPLICATED. `gates/gates-pop.py` imports `gates/gendirs.py` and
+reports the same `discovered()` count, because **two instruments with two lists have no authority
+over each other, and the disagreement between them would be a third finding with no way to settle
+it.** One module, one population, two consumers -- and a change to it moves both.
 
 CLAUSE IV IS THE ONE THAT MATTERS, and the reason this file is a check and not an opinion is
 that it does not have a health opinion: it calls `checks/differ.py`'s own `unhealthy()` and
@@ -39,6 +54,7 @@ git, an output root that is not there), because a check that cannot measure must
 import argparse
 import ast
 import fnmatch
+import importlib.util
 import subprocess
 import sys
 from pathlib import Path
@@ -125,6 +141,24 @@ def git(*args):
     return r.stdout
 
 
+def load_gendirs():
+    """`gates/gendirs.py`, IMPORTED BY PATH and not by name.
+
+    `gates/` is not a package and putting it on `sys.path` would make `gendirs` a name ANY file in
+    the tree could shadow -- **AN INSTRUMENT LOADED BY A NAME ANYBODY CAN BIND IS AN INSTRUMENT
+    WHOSE POPULATION SOMEBODY ELSE CAN CHOOSE.** `gates/gates-pop.py` loads it the same way, so
+    both consumers share one implementation and one population.
+    """
+    p = ROOT / "gates" / "gendirs.py"
+    if not p.is_file():
+        raise SystemExit("retention-check: gates/gendirs.py is gone -- it IS the discovered "
+                         "population, and a check whose population is missing must not report 0")
+    spec = importlib.util.spec_from_file_location("gendirs", p)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 # ---- clause I: the declared set, and only the declared set ----------------------
 def residues(directory, declared):
     """Files present that the generator does not declare, and how many declared files are
@@ -146,9 +180,15 @@ def writer_exits(source):
     `gates/artifacts/*/` mtimes moved under the reader's feet, so a measurement taken by
     running the generator is a measurement of a moving target. The AST does not move.
 
-    `exits_after_the_first_write` is the number the RECOVERED report calls "5 of 17": the count
-    of `return`s after the line where the writer first touches its output directory. Each one is
-    a way for the run to end without having cleared anything. `clears` is the set of
+    STRUCTURAL, NOT A LINE MEASURE. The number the RECOVERED report calls "5 of 17" used to be
+    the count of `return`s after the line of the first `self.dir` attribute reference -- a LINE
+    measure of a property that is STRUCTURAL (every exit reaches `self._settle(ok)`). It was
+    invariant under deleting the `finally`, because it never looked at the `finally`. What follows
+    counts an exit as COVERED iff it sits either inside a `try` whose non-empty `finalbody` runs
+    cleanup, or after that `try` in the same body -- where the finally has already run by
+    construction. Delete the `finally` and every exit falls to UNCOVERED.
+
+    `clears` is the set of
     removal-shaped calls anywhere in the file -- `unlink`, `rmtree`, `remove`, `glob`,
     `iterdir`. An EMPTY set means the generator never removes anything at all, which is the
     whole of clause II: there is no clear to get wrong.
@@ -161,16 +201,49 @@ def writer_exits(source):
             fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
             if fn in remover:
                 clears.add(fn)
+
+    def _depths(node, depth):
+        """Yield the cleanup-depth of every `return` under `node`. Depth, not identity: the
+        `ast.Load` nodes are INTERNED, so a set of node ids answers TRUE for returns below the
+        `finally` too -- measured 13/13 on a function where 12/13 is the truth."""
+        if isinstance(node, ast.Try):
+            cleans = depth + 1 if (node.finalbody and any(
+                isinstance(s, (ast.Expr, ast.Assign, ast.AugAssign, ast.Delete))
+                for s in node.finalbody)) else depth
+            for s in node.body: yield from _depths(s, cleans)
+            for h in node.handlers:
+                for s in h.body: yield from _depths(s, cleans)
+            for s in node.orelse: yield from _depths(s, depth)
+            for s in node.finalbody: yield from _depths(s, 0)
+        elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.Lambda, ast.ClassDef)):
+            return                        # a nested scope has its own exits
+        elif isinstance(node, ast.Return):
+            yield depth
+        else:
+            for child in ast.iter_child_nodes(node):
+                yield from _depths(child, depth)
+
     exits = []
     for cls in (n for n in tree.body if isinstance(n, ast.ClassDef)):
         for fn in cls.body:
             if not isinstance(fn, ast.FunctionDef) or fn.name != "run":
                 continue
-            writes = [n.lineno for n in ast.walk(fn) if isinstance(n, ast.Attribute) and n.attr == "dir"]
-            if not writes:
-                continue
-            rets = sorted(n.lineno for n in ast.walk(fn) if isinstance(n, ast.Return))
-            exits.append((fn.lineno, len(rets), sum(1 for r in rets if r > min(writes))))
+            covered = uncovered = 0
+            seen_cleanup = False
+            for stmt in fn.body:
+                ds = list(_depths(stmt, 0))
+                if isinstance(stmt, ast.Try) and stmt.finalbody and any(
+                        isinstance(s, (ast.Expr, ast.Assign, ast.AugAssign, ast.Delete))
+                        for s in stmt.finalbody):
+                    covered += sum(1 for d in ds if d)
+                    uncovered += sum(1 for d in ds if not d)
+                    seen_cleanup = True
+                elif seen_cleanup:
+                    covered += len(ds)     # the finally has already run on these exits
+                else:
+                    uncovered += len(ds)
+            if covered or uncovered:
+                exits.append((fn.lineno, covered + uncovered, uncovered))
     return exits, clears
 
 
@@ -320,7 +393,7 @@ def report(res):
                 ok = bool(clears) and late == 0
                 ok_gens, measured = ok_gens + ok, measured + 1
                 print(f"II {'OK        ' if ok else 'FALSE     '} {o.generator}: "
-                      f"{late}/{total_exits} exits after the first write, "
+                      f"{late}/{total_exits} exits NOT covered by a cleanup `finally`, "
                       f"clears={sorted(clears) or 'NONE'}")
                 red |= not ok
         # The LEFTOVER scan reads the DIRECTORY, not the generator, so it runs either way: it is
@@ -359,6 +432,59 @@ def report(res):
         red = 1
     print()
     red |= bool(n_tracked)
+
+    # V -- THE DISCOVERED POPULATION, AND THE CLAUSE THAT CLOSES THE CLASS. I-IV run on a
+    # TWO-ITEM REGISTRY; this runs on `gates/gendirs.py`, which finds every directory in the tree
+    # that something WRITES INTO by scanning write sites and resolving them through a constant-
+    # propagation fixpoint. **A POPULATION DEFINED BY A LIST CANNOT BE WRONG ABOUT A FOURTH ITEM
+    # BECAUSE IT NEVER LOOKS AT ONE**, so the fourth item is looked at here instead.
+    print()
+    gendirs = load_gendirs()
+    rows = gendirs.table()
+    read, present = gendirs.coverage()
+    print(f"V  DISCOVERED {len(rows)} director{'y' if len(rows) == 1 else 'ies'} something in "
+          f"this tree WRITES\n   INTO, from {read} of {present} source files. A LOWER BOUND: a "
+          f"SUBPROCESS write is invisible\n   to a scanner that does not execute it -- "
+          f"`checks/gen/` is reached through `bend -o`.")
+
+    # V(1) -- RED, AND DECIDABLE FROM TWO GIT COMMANDS WITH NO LIST. A directory that is IN THE
+    # INDEX and ALSO named by a `.gitignore` rule is the tree contradicting ITSELF in two of its
+    # own files: one declares the directory is generated output that must not be tracked, the
+    # other tracks it. `checks/gen/` is the live instance -- 2 entries, BOTH git's EMPTY BLOB --
+    # and this is the form that would have caught `runs/` and `gates/artifacts/` before clause
+    # III's 219-entry red. It needs no knowledge of which directories exist.
+    contradiction = [r for r in rows if r["n_tracked"] and r["ignored"]]
+    for r in contradiction:
+        print(f"V  CONTRADICTS {r['dir']}: {r['n_tracked']} entr"
+              f"{'y' if r['n_tracked'] == 1 else 'ies'} in the index AND a `.gitignore` rule names "
+              f"it")
+        print(f"V              {r['n_empty_blob']} of them at git's EMPTY BLOB "
+              f"(e69de29) -- a tracked PLACEHOLDER, not a tracked artifact")
+    print(f"V  IGNORED-BUT-INDEXED: {len(contradiction)}/{len(rows)} dirs -- "
+          + ("none" if not contradiction else
+             "the tree declares them generated and tracks them anyway"))
+
+    # V(2) -- a CENSUS, NOT A VERDICT, AND IT IS NAMED AS A CENSUS. A directory something writes
+    # into is a LOWER bound on "generated": the vendored `tinygrad/` snapshot is written into by
+    # its own build and is SOURCE, and no static property separates the two. MEASURED, that is
+    # exactly the shape of `unregistered()` below and of `LIVE_UNITS`: a set that cannot be
+    # decided is printed with a number rather than silently scored.
+    indexed = [r for r in rows if r["n_tracked"]]
+    unignored = [r for r in indexed if not r["ignored"]]
+    print(f"V  CENSUS      {len(indexed)}/{len(rows)} discovered dirs are in the index "
+          f"({sum(r['n_tracked'] for r in indexed)} entr"
+          f"{'y' if sum(r['n_tracked'] for r in indexed) == 1 else 'ies'}), of which "
+          f"{len(unignored)} are\n               not `.gitignore`d. 'Something writes here' is a "
+          f"LOWER bound on 'generated' -- the vendored\n               `tinygrad/` tree is written "
+          f"into by its own build and is source -- so this row is\n               COUNTED, NOT "
+          f"FAILED, and the names are below.")
+    for r in unignored[:40]:
+        blob = f", {r['n_empty_blob']} at git's EMPTY BLOB" if r["n_empty_blob"] else ""
+        print(f"V    INDEXED   {r['dir']}: {r['n_tracked']} entr"
+              f"{'y' if r['n_tracked'] == 1 else 'ies'}{blob}")
+    if len(unignored) > 40:
+        print(f"V              ... and {len(unignored) - 40} more")
+    red |= bool(contradiction)
 
     # IV
     print()
