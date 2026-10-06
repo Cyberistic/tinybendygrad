@@ -1,0 +1,7 @@
+min of 3; the prebuilt walkbench Mach-O (a native run, not a bend process)
+      n     idx_s    walk_s    ratio
+   1024    0.0072    0.0025     2.9x
+   2048    0.0186    0.0023     8.0x
+   4096    0.0660    0.0024    27.9x
+   8192    0.2620    0.0025   105.6x
+  16384    1.0479    0.0028   370.4x

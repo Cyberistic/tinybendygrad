@@ -1,0 +1,5 @@
+min of 2 fresh DEV=BEND processes; B = n*n*4 bytes
+    n         B         s    us/elem
+   64     16384     8.475    2069.19
+   96     36864    19.669    2134.18
+  128     65536    47.685    2910.48
