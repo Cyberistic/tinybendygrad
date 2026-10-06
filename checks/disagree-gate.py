@@ -104,7 +104,7 @@ PIN = {
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
 CITES = (
   # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1563, "def rows.pick3",
+  (".agents/slop/graphcmp.bend", 1564, "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   (".agents/slop/graphcmp.py", 1394, "def g_allred", "the py fixture that has no bend twin"),
   (".agents/slop/graphcmp.py", 1413, "def g_cdiv", "ditto"),
@@ -113,7 +113,7 @@ CITES = (
    "`UOp.group` of ONE src is the src, so `g_flip` builds NO GROUP node"),
   (".agents/slop/graphcmp.py", 1386, "UOp.group(a.flip(0).uop)",
    "a ONE-element group -- the whole of the bend-only GROUP#7"),
-  (".agents/slop/graphcmp.bend", 776, "OpsGROUP",
+  (".agents/slop/graphcmp.bend", 777, "OpsGROUP",
    "the bend fixture builds that GROUP by hand, bypassing `UOp.group`"),
   ("tinybendygrad/uop/ops.bend", 1117, "dtype: S.Dt",
    "the port's CallInfo carries `dtype`, and SO DOES THE PIN -- `ops.py:1398`"),

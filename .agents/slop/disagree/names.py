@@ -49,6 +49,7 @@ CHUNKS = ("op", "dtype", "shape", "depth", "tag", "arg", "src")
 FIELDS = CHUNKS[1:]
 
 VERDICT = re.compile(r"^# VERDICT: (\w+)$", re.M)
+RC = re.compile(r"^rc=(\d+)$", re.M)
 ROWS = re.compile(r"^# py rows=(\d+)\s+bend rows=(\d+)\b", re.M)
 HUNK = re.compile(r"^(\d+)(?:,(\d+))?([acd])(\d+)(?:,(\d+))?$", re.M)
 
@@ -73,15 +74,21 @@ class Tree:
     return p.name.removeprefix("D1-graph-").removesuffix(".txt")
 
   def verdict(self, p: Path) -> str:
-    m = VERDICT.search(p.read_text())
-    if m is None:
-      raise ValueError(f"{p.name}: no VERDICT line, so this file says nothing")
-    return m.group(1)
+    text = p.read_text()
+    m = VERDICT.search(text)
+    if m is not None:
+      return m.group(1)
+    # NO VERDICT LINE: the graph RAN and emitted no verdict -- `DEAD` or `REFUSED`, the state
+    # `AGENTS.md` says nobody writes down. The `rc=` it DID write is the distinction: exit 2 is
+    # a precondition absent (`getaddr`, "NOT WELL-POSED"). Return it instead of crashing, so the
+    # graph reads as its own state rather than taking the caller down with it.
+    r = RC.search(text)
+    return f"NO-VERDICT(rc={r.group(1)})" if r else "NO-VERDICT"
 
   def rows_seen(self, p: Path) -> tuple[int, int]:
     m = ROWS.search(p.read_text())
     if m is None:
-      raise ValueError(f"{p.name}: no `py rows=`/`bend rows=` line")
+      return 0, 0        # same reason: a graph that emitted no rows has no row count
     return int(m.group(1)), int(m.group(2))
 
   def canon(self, g: str, side: str) -> list[str]:
