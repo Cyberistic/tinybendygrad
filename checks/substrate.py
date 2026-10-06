@@ -37,6 +37,17 @@ comment is a gate nobody can check.
     NAMES per file: modules, refs, exact, suffix-only, unresolved, unseen, unused-import
     TOTALS refs=, exact=, suffix=, unresolved=, unseen=, missing_module=, dead_import=
     BAD    deduped problem SITES, not files. Every site is +1 finding.
+    COVERAGE qualified=, checked=, UNSEEN= -- the DENOMINATOR the name check travels with, so
+      a reader sees the fraction of qualified refs it cannot decide. `unseen` counts qualified
+      `Foo.bar` refs whose `Foo` is NOT an import alias -- a LOCAL type declared in the same
+      file, or the unaliased `import Base` stdlib surface (`List`/`String`/`U32`/...). It is a
+      named class of refs OUTSIDE the graph, not a name-resolution result and NOT a finding:
+      the pool is built only from ALIASED imports, so these are unresolvable BY CONSTRUCTION.
+
+POPULATION: with no file arguments, `--root [DIR]` sweeps every instrumented file under DIR
+  (default `tinybendygrad`, the `.bend`/`.c`/`.js`/`.mjs` classes the router claims) discovered
+  by `os.walk`, so the tree can be swept WITHOUT a caller's `find`. File arguments still take
+  precedence and are judged exactly as before, so the 1-file and 2-file callers are unmoved.
 
 EXIT STATUS: 0 clean · 1 at least one finding · 2 the scratch directory could not be made ·
 3 no files given, or the frozen oracle moved. **ZERO ARGUMENTS IS A MISUSE, NOT A VERDICT:**
@@ -93,6 +104,28 @@ CC_WHY = "cc and a compiling bend C context are both required, and one is absent
 SHELL_SECONDS = 300   # the shell's `alarm 300`, kept so the TIME a run may take does not change
 DEFAULT_MB = 2048     # above the measured 1,152 MB maximum; see the docstring
 
+# THE POPULATION DECLARATION. The shell admitted the population was a caller's `find` and named
+# no generator of its own -- doctrine 1. The classes below are exactly the ones `instrument_for`
+# can judge; walking them is the tree sweep the usage line used to ask a caller to perform.
+POP_ROOT = "tinybendygrad"
+POP_SUFFIXES = (".bend", ".c", ".js", ".mjs")
+
+
+def discover(root: str) -> list[str]:
+    """Every instrumented file under `root`, by `os.walk`, in a stable order.
+
+    A DIRECTORY WALK, not a hand list and not a suffix over a caller's text: the extensions are
+    the router's own classes, and `os.walk` decides membership. The `*.staged-*` scratch copies
+    and `*.mut` mutants do not end in one of these, so they are excluded by the same rule that
+    includes the real files.
+    """
+    out: list[str] = []
+    for d, dirs, fs in os.walk(root):
+        dirs.sort()
+        out += [os.path.join(d, f) for f in sorted(fs) if f.endswith(POP_SUFFIXES)]
+    return out
+
+
 # `gates/gatekit.py`'s OWN update-notice regex, imported rather than re-typed, and the reason is
 # measured: `bend` prints `bend <ver> is available: run bend update` on STDERR on EVERY invocation,
 # 42 bytes of it, so "stderr is non-empty" is not "bend said something" and a first-line rule that
@@ -147,12 +180,25 @@ def split_leading(argv: list[str]) -> tuple[list[str], list[str]]:
     accept an option after a filename, so this program's own options are read from the LEADING
     block only, against THIS table, and the first argument that is not one of them ends the parse:
     the old grammar, plus "the new flags go first". AN UNRECOGNISED `-x` IS A FILENAME, which is
-    what the shell did with it, because the shell had no `-x` at all."""
+    what the shell did with it, because the shell had no `-x` at all.
+
+    `--root` TAKES AN OPTIONAL DIRECTORY. It consumes the next token only when that token is
+    itself a DIRECTORY -- the disambiguator is `os.path.isdir`, because a file argument is never
+    a directory, so `--root` followed by a file does not eat it. `--root` alone (or `--root=`)
+    means the default root.
+    """
     head: list[str] = []
     i = 0
     while i < len(argv):
         a = argv[i]
-        if a in FLAGS:
+        if a == "--root" or a.startswith("--root="):
+            head.append(a)
+            i += 1
+            if a == "--root" and i < len(argv) and not argv[i].startswith("-") \
+                    and os.path.isdir(argv[i]):
+                head.append(argv[i])
+                i += 1
+        elif a in FLAGS:
             head.append(a)
             i += 1
         elif a in VALUED:
@@ -181,6 +227,10 @@ def parse(head: list[str]) -> argparse.Namespace:
                          "maximum is a ceiling that changes verdicts)")
     ap.add_argument("--seconds", type=int, default=SHELL_SECONDS,
                     help=f"time ceiling per invocation (default {SHELL_SECONDS}, the shell's alarm)")
+    ap.add_argument("--root", nargs="?", const=POP_ROOT, default=None, metavar="DIR",
+                    help=f"with no file arguments, sweep the instrumented files under DIR by "
+                         f"os.walk (default {POP_ROOT}); file arguments, when given, take "
+                         "precedence and are judged as before")
     return ap.parse_args(head)
 
 
@@ -543,7 +593,7 @@ def code_only(line: str) -> str:
     return line[:i] if i >= 0 else line
 
 
-def half2(paths: list[str]) -> list[str]:
+def half2(paths: list[str]) -> tuple[list[str], Counter[str]]:
     """COLLECTIVE COMPLETENESS: does every `<Mod>.<name>` a file references exist in a module that
     file imports. HALF 1 ANSWERS "does this file parse?", which is a question about ONE FILE; the
     real failure today is the other question -- a file that compiles can still be missing a name
@@ -551,10 +601,14 @@ def half2(paths: list[str]) -> list[str]:
     for, because an empty provider declares nothing and every call into it goes unresolved.
 
     `BAD` COUNTS DEDUPED PROBLEM SITES, NOT FILES, and `unseen` counts the qualified references
-    this check is BLIND to -- an uppercase `Foo.bar` whose `Foo` is not an import alias, i.e. the
-    unaliased `import Base` stdlib surface. 49,134 of them in the shell's own census, 58% of
-    every qualified reference in the tree. An instrument that hides its own blind spot is the
-    defect this project has catalogued twenty times, so both numbers ride in the output.
+    this check is BLIND to -- an uppercase `Foo.bar` whose `Foo` is not an import alias. That is
+    TWO things and the earlier comment named only one: a LOCAL type declared in the same file
+    (`Reg.foo`, `Asm.foo`), and the unaliased `import Base` stdlib surface (`List`/`String`/
+    `U32`). Both are OUTSIDE the graph by construction, because the pool is built only from
+    ALIASED imports -- so `unseen` is a coverage class, not a name-resolution result. The
+    COVERAGE line carries the DENOMINATOR (qualified = refs + unseen) so the blind fraction is
+    legible. An instrument that hides its own blind spot is the defect this project has
+    catalogued twenty times, so the numbers ride in the output AND are tied to their whole.
     """
     t: Counter[str] = Counter()
     problems: dict[tuple[str, int, str], str] = {}
@@ -617,8 +671,18 @@ def half2(paths: list[str]) -> list[str]:
     lines.append(f"TOTALS refs={t['total']} exact={t['exact']} suffix={t['suffix']} "
                  f"unresolved={t['unres']} unseen={t['unseen']} missing_module={t['nomod']} "
                  f"dead_import={t['deadimport']}")
+    qualified = t["total"] + t["unseen"]
+    pct = (100.0 * t["unseen"] / qualified) if qualified else 0.0
+    # THE COVERAGE LINE IS THE DENOMINATOR THE NAME CHECK TRAVELS WITH. `unseen` is NOT a finding
+    # -- it is a named class of refs the import-graph pool cannot decide (see the docstring) --
+    # so it does not move a verdict, but a reader who sees only `exact=refs` would read 100%
+    # resolved. This line says the fraction that was never in scope.
+    lines.append(f"COVERAGE qualified={qualified} checked={t['total']} "
+                 f"UNSEEN={t['unseen']} ({pct:.1f}%)  <- unseen refs are OUTSIDE the import "
+                 "graph (local types + the unaliased `import Base` stdlib). NOT findings; an "
+                 "unaccounted surface.")
     lines.append(f"BAD {len(problems)}")
-    return lines
+    return lines, t
 
 
 # ------------------------------------------------------------------ --causes
@@ -680,12 +744,13 @@ def refuse(prog: str) -> int:
     for ln in ("REFUSED: no files given. A guard invoked with an empty population must not",
                "report agreement -- that is indistinguishable from a green run over nothing.",
                f"usage: {prog} <file.bend|file.c|file.js> [more ...]",
-               f"       or: find tinybendygrad -name '*.bend' | xargs {prog}"):
+               f"       or: {prog} --root [DIR]   (sweeps DIR by os.walk; DIR defaults to "
+               f"{POP_ROOT})"):
         print(ln)
     return 3
 
 
-def run(files: list[str], opts: argparse.Namespace, tmp: Path) -> int:
+def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | None = None) -> int:
     bend = "./bin/bend" if os.access("./bin/bend", os.X_OK) else which("bend")
     cc = which("cc", "clang")
     node = which("node")
@@ -701,15 +766,20 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path) -> int:
     out += half
     out.append(f"ROUTE   bend={tally['bend']}  cc={tally['cc']}  node={tally['node']}  "
                f"no-instrument={tally['none']}  (of {len(files)} file(s))")
+    if origin is not None:
+        out.append(f"POPULATION root={origin} files={len(files)} by os.walk "
+                   f"({' '.join(POP_SUFFIXES)})")
     prov, prov_rc = provenance(paths)
     # CAPTURED IMMEDIATELY, which is the point: `$?` after a `[` is that `[`'s status and not the
     # block's, and a vacuous verdict looks identical to a pass.
     out += prov or [""]
     findings += prov_rc
-    names = half2(paths)
+    names, ntot = half2(paths)
     out += names or [""]
     bad = next((int(ln[4:]) for ln in names if ln.startswith("BAD ")), 1)
     findings += max(bad, 1) if bad else 0
+    checked, unseen = ntot["total"], ntot["unseen"]
+    qualified = checked + unseen
     if opts.causes and cold:
         out += causes_section(cold, paths)
     if findings > 0:
@@ -724,15 +794,18 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path) -> int:
                     "(no instrument exists, or it produced nothing).",
                     "A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an "
                     "unmeasured surface."]
-        out.append(f"NAMES CLEAN: {len(files)} file(s), all non-empty, all cross-file names "
-                   "resolved. **VERDICT NOT TAKEN** (-n)." if opts.names_only else
+        out.append(f"NAMES CLEAN: {len(files)} file(s), all non-empty, {checked} of {qualified} "
+                   "qualified refs checked, all cross-file names resolved. "
+                   "**VERDICT NOT TAKEN** (-n)." if opts.names_only else
                    f"SUBSTRATE CLEAN: {len(files)} file(s), all non-empty, each judged by its OWN "
-                   "instrument, all cross-file names resolved.")
+                   f"instrument, all cross-file names resolved ({checked} of {qualified} qualified "
+                   f"refs checked; {unseen} unseen).")
         out += ["(name check is scoped to the IMPORT graph. It cannot see the unaliased "
                 "`import Base`",
-                " surface -- List. String. U32. -- which is most qualified refs in the tree. Read the",
-                " `unseen=` number, not just the verdict: an instrument that hides its own blind spot",
-                " is the defect this project has catalogued twenty times.)"]
+                " surface -- List. String. U32. -- nor a LOCAL type (`Reg.`/`Asm.`), which together",
+                " are the COVERAGE UNSEEN class. Read the `COVERAGE` and `unseen=` numbers, not just",
+                " the verdict: an instrument that hides its own blind spot is the defect this project",
+                " has catalogued twenty times.)"]
     if opts.causes and cold:
         out += causes_section(cold, paths)
     for ln in out:
@@ -757,9 +830,12 @@ def main() -> int:
     # `SCR=$(mktemp -d ...) || exit 2` came FIRST in the shell, so a scratch directory that cannot
     # be made is exit 2 and the refusal is exit 3 -- in that order.
     with tempfile.TemporaryDirectory(prefix="substrate.") as tmp:
+        origin = None
+        if not files and opts.root is not None:
+            origin, files = opts.root, discover(opts.root)
         if not files:
             return refuse(sys.argv[0])
-        return run(files, opts, Path(tmp))
+        return run(files, opts, Path(tmp), origin)
 
 
 if __name__ == "__main__":
