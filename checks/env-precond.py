@@ -3,30 +3,47 @@
 
     usage: .venv/bin/python checks/env-precond.py --declare | --check | --record
 
-WHY THIS IS NOT A GATE THAT SAYS "PASSED". `checks/differ.py:47` and
-`.agents/slop/graphcmp.py:1799` each build a child environment, and between them they pin
-`LC_ALL`, drop `PYTHONPATH`, and set `DEV` -- and pin NOTHING else. Three variables survive
-that scrubbing, and MEASURED on this tree, on this device:
+WHY THIS IS NOT A GATE THAT SAYS "PASSED". `checks/differ.py`'s `ENV` (which feeds the
+CPython oracle and every `capture`) and `.agents/slop/graphcmp.py`'s `clean_env` (which
+feeds `bin/bend`) each build a child environment, and between them they pin `LC_ALL`, drop
+`PYTHONPATH`, and set `DEV`. Three variables move the artifacts, and MEASURED on this tree,
+on this device:
 
-  PYTHONHASHSEED  NOT PINNED, and it MOVES AN ARTIFACT. `.agents/slop/graphcmp-oracle.py:119`
-      prints `py['ops'] ^ bd['ops']` as a `set`, unsorted, which is the only unsorted set
-      print left in that file. Its own comment (:150-160) claims every other set iteration
-      there is already `sorted(...)`, and that is now false. MEASURED: `runs/graphcmp/D` and
-      `.agents/slop/rerun/D-before/` disagree on `D0-coverage-census.txt` and on NOTHING
-      else -- 3 of 196 files, and all 3 are order-only.
-  NOOPT           NOT PINNED, and it MOVES THE COMPARED FIELD. MEASURED: `NOOPT=1` takes
-      `lin` from 46 nodes to 45 and its SINK arg from `n(Opt(op=EOptOps.SPLIT...))` to
-      `n()` -- the exact field the one recorded DISAGREE turns on -- and breaks the `46/46`
-      census count. It is not a knob on the harness; it is a knob on the SUBJECT.
+  PYTHONHASHSEED  WAS NOT PINNED and MOVED AN ARTIFACT; now pinned, and the oracle's real
+      fix was a SORT. The oracle printed `py['ops'] ^ bd['ops']` as an unsorted `set`;
+      MEASURED then, `runs/graphcmp/D` and `.agents/slop/rerun/D-before/` disagreed on
+      `D0-coverage-census.txt` and on NOTHING else -- 3 of 196 files, all order-only. The
+      file now SORTS those prints (`graphcmp-oracle.py:233,279`) under its own rule, 'a PIN
+      IS A SEED AND a SORT IS A LAW' (:307), so whether a seed still moves the census is
+      RE-MEASURABLE rather than settled.
+  NOOPT           WAS NOT PINNED and MOVES THE COMPARED FIELD (the CPython oracle, not the
+      bend side). MEASURED: `NOOPT=1` takes `lin` from 46 nodes to 45 and its SINK arg from
+      `n(Opt(op=EOptOps.SPLIT...))` to `n()` -- the exact field the one recorded DISAGREE
+      turns on -- and breaks the `46/46` census count. It is not a knob on the harness; it
+      is a knob on the SUBJECT. `differ.py`'s ENV pins it for the oracle; the bend side has
+      no reader (see PINS).
   DEV             SET BY THREE ROUTES TO THREE VALUES, and it MOVES A COUNT AND AN OP NAME.
       See `MEASURED` on `dev_route` below. This is the finding that changed the shape of
       this file.
 
 THE THREE ARE DECLARED IN ONE PLACE, HERE, and every other consumer READS them from here
 rather than restating them. `checks/differ.py` is not this file's to edit and its authority
-is committed; the lines it needs are named in `DIFFER_LINES` below as (file, line, exact
-text), so the change travels as a patch the owner applies, not as an edit made behind its
-back.
+is committed; the lines it needs are named in `PINS` below as (file, ANCHOR, tokens), so a
+required change travels as a patch the owner applies, not as an edit made behind its back.
+
+THE PINS ARE ANCHORED BY THEIR OWN TEXT, NOT BY A LINE NUMBER. The first revision named
+(file, line, exact text), and the line number rotted the moment an edit landed above it: the
+census capture was pinned at `checks/differ.py:509` while the call sat at `:513`, a miss that
+predated every edit that touched the file. A pin that names a line number is a hand list of
+one; a pin that names an anchor survives an edit above it. So METHOD A greps for the ANCHOR
+and asserts the tokens on the line it lands on.
+
+AND ONE PIN IS OVER-SPECIFIED, MEASURED RATHER THAN INHERITED. `graphcmp.py`'s `clean_env`
+feeds only `bin/bend` -- the `/bin/sh` -> `bun` shim -- and grep finds NO reader of `NOOPT`
+or `PYTHONHASHSEED` downstream of it: the port reads five flags (DEBUG, DEFAULT_FLOAT,
+DEFAULT_INT, NO_COLOR, SUM_DTYPE; `helpers.bend:308,342-345`) and bun reads none of these. So
+`clean_env` pins `LC_ALL` and `DEV`, the declaration asks for exactly that, and demanding the
+other two there would be an edit made to satisfy a regex.
 
 TWO PLANTS, AND THE SECOND HALF IS THE ONE THAT MATTERS. A check that only proves it can
 fire is half a check -- two gates here failed the other half in OPPOSITE directions, one
@@ -53,47 +70,49 @@ SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"
 # name, required value, what moves if it is absent, how it is enforced here
 PRECONDS: tuple[tuple[str, str, str], ...] = (
     ("LC_ALL", "C",
-     "already pinned at differ.py:47 and graphcmp.py:1800. Listed because a precondition "
-     "table that names only what is MISSING reads as a partial one."),
+     "already pinned by `differ.py`'s ENV and `graphcmp.py`'s clean_env (both named in "
+     "PINS below). Listed because a precondition table that names only what is MISSING "
+     "reads as a partial one."),
     ("DEV", "CPU",
-     "MEASURED, and this row is the reason the file exists. `differ.py:47` runs the census "
-     "with DEV=NULL; the graph steps pass `--dev CPU`. `graphcmp-oracle.py:91` writes "
-     "`os.environ.setdefault(\"DEV\", \"CPU\")`, which is a NO-OP precisely because NULL is "
-     "already set. So ONE run produced `D0-coverage-census.txt` under DEV=NULL and every "
-     "`D1-graph-*.txt` under DEV=CPU. MEASURED CONSEQUENCE: the census's `late` is 13 py "
-     "nodes reaching RECIPROCAL; `D2-canon-py-late.txt` is 12 nodes reaching FDIV; the "
-     "census's TOTAL is 313 where DEV=CPU gives 312. The census is measuring a different "
-     "graph than the one the verdict is about."),
+     "MEASURED, and this row is the reason the file exists. `differ.py`'s ENV runs the "
+     "census with DEV=NULL; the graph steps pass `--dev CPU`. The oracle's predecessor "
+     "wrote `os.environ.setdefault(\"DEV\", \"CPU\")`, a NO-OP precisely because NULL was "
+     "already set; today it ASSIGNS `os.environ[\"DEV\"] = graphcmp_dev()` "
+     "(`graphcmp-oracle.py:192`), read from graphcmp.py's own `--dev` default. So ONE run "
+     "produced `D0-coverage-census.txt` under DEV=NULL and every `D1-graph-*.txt` under "
+     "DEV=CPU. MEASURED CONSEQUENCE: the census's `late` is 13 py nodes reaching "
+     "RECIPROCAL; `D2-canon-py-late.txt` is 12 nodes reaching FDIV; the census's TOTAL is "
+     "313 where DEV=CPU gives 312. The census is measuring a different graph than the one "
+     "the verdict is about."),
     ("PYTHONHASHSEED", "0",
-     "MEASURED: the sole cause of the `D0-coverage-census.txt` difference between two runs "
-     "of this tree. `graphcmp-oracle.py:119` prints a set unsorted."),
+     "MEASURED: the cause of the `D0-coverage-census.txt` difference between two runs of "
+     "this tree, when the oracle printed a set unsorted. The oracle now SORTS those prints "
+     "(`graphcmp-oracle.py:233,279`), so whether a seed still moves the census is "
+     "RE-MEASURABLE rather than settled; it stays declared because the run records it."),
     ("NOOPT", "0",
      "MEASURED: `NOOPT=1` takes `lin` 46->45 nodes and its SINK arg to `n()`, moving the "
-     "field the recorded DISAGREE turns on. `NOOPT=` (EMPTY) is worse than either: it is "
-     "`type(0)(\"\")` at tinygrad/helpers.py:163 and raises ValueError on import."),
+     "field the recorded DISAGREE turns on. It is a knob on the CPython oracle, not on the "
+     "bend side. `NOOPT=` (EMPTY) is worse than either: it is `type(0)(\"\")` at "
+     "tinygrad/helpers.py:163 and raises ValueError on import."),
 )
 BY_NAME = {n: v for n, v, _ in PRECONDS}
 
-#: The lines `checks/differ.py` needs. NAMED, NOT EDITED -- `checks/differ.py` is not this
-#: file's, its authority is committed, and another unit is re-running it right now.
-DIFFER_LINES: tuple[tuple[str, str, str], ...] = (
-    ("checks/differ.py", "47",
-     'ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} '
-     '| {"LC_ALL": "C", "DEV": "CPU", "PYTHONHASHSEED": "0", "NOOPT": "0"}'),
-    ("checks/differ.py", "509",
-     'capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)  '
-     '# DEV/PYTHONHASHSEED/NOOPT are set by ENV above, not by this call'),
-)
-#: The same declaration for the ORACLE, which builds its own environment and would
-#: otherwise inherit a caller-set `DEV`/`NOOPT` and call it a precondition.
-ORACLE_LINES: tuple[tuple[str, str, str], ...] = (
-    (".agents/slop/graphcmp-oracle.py", "91",
-     'os.environ["DEV"] = "CPU"   # ASSIGNMENT, not setdefault: differ.py:47 already set '
-     'NULL, and setdefault against a set key is a no-op'),
-)
-GRAPH_LINES: tuple[tuple[str, str, str], ...] = (
-    (".agents/slop/graphcmp.py", "1800",
-     'e.update(LC_ALL="C", DEV=dev, PYTHONHASHSEED="0", NOOPT="0")'),
+#: Every line a child environment's correctness depends on, as (file, ANCHOR, must-carry).
+#: The ANCHOR is a literal substring naming the line's JOB, so an edit above it cannot move
+#: the pin; `must-carry` is the extra tokens the line is required to contain. NAMED, NOT
+#: EDITED -- `checks/differ.py` and `.agents/slop/graphcmp.py` are not this file's.
+PINS: tuple[tuple[str, str, tuple[str, ...]], ...] = (
+    # differ.py's ENV is what pins the CPython oracle's env, and the oracle reads both.
+    ("checks/differ.py", 'ENV = {k: v', ("PYTHONHASHSEED", "NOOPT")),
+    # :513, not the :509 the first revision named -- the census capture carries the note
+    # that its env comes from ENV above. ANCHORED, so the number is not pinned.
+    ("checks/differ.py", 'capture("D0-coverage-census.txt"', ("PYTHONHASHSEED", "NOOPT")),
+    # The oracle ASSIGNS DEV (:192), it does not setdefault -- differ.py already set NULL and
+    # setdefault against a set key is a no-op.
+    (".agents/slop/graphcmp-oracle.py", 'os.environ["DEV"] = DEV', ()),
+    # clean_env feeds bin/bend only; no reader of NOOPT/PYTHONHASHSEED exists downstream, so
+    # it pins LC_ALL (and DEV, its argument) and the declaration asks for no more.
+    (".agents/slop/graphcmp.py", 'e.update(LC_ALL="C", DEV=dev)', ()),
 )
 
 #: WHERE `DEV` IS RECORDED, so a run can SAY which device produced it. `D0-run-summary.txt`
@@ -134,24 +153,26 @@ def observed() -> dict[str, str]:
     # A 313 TOTAL with a 13-node `late` is DEV=NULL's census; MEASURED DEV=CPU gives 312
     # and a 12-node `late` reaching FDIV. Two independent witnesses, and they agree.
     dev = "NULL" if (re.search(r"^  late\s+13/", census_late, re.M) and "313 nodes" in census) else "CPU"
-    # `PYTHONHASHSEED` is NOT recorded anywhere, which is the finding. What IS knowable is
-    # that it was not 0 and not a constant: the same tree's two censuses differ in set
-    # order, and a fixed seed cannot do that.
+    # The summary is where a run RECORDS its env. METHOD B reads it with partition("="), and
+    # `observed` reads the same keys, so `--record` and `--check` cannot disagree about what
+    # the run left behind.
+    rec = declared_values(SUMMARY) if SUMMARY.exists() else {}
     return {
         "DEV": dev,
-        "PYTHONHASHSEED": "UNRECORDED (randomized per process)",
-        "NOOPT": "0",
-        "LC_ALL": "C",
+        "PYTHONHASHSEED": rec.get("pythonhashseed", "UNRECORDED"),
+        "NOOPT": rec.get("noopt", "UNRECORDED"),
+        "LC_ALL": rec.get("lc_all", "UNRECORDED"),
         "evidence": {
             "DEV": f"census line `{census_late.strip()[:60]}`; canon-py-late ops "
                    f"{'FDIV' if 'FDIV' in late_ops else 'RECIPROCAL'} -- DEV=NULL reaches "
                    f"RECIPROCAL on 13 nodes, DEV=CPU reaches FDIV on 12",
-            "PYTHONHASHSEED": "no artifact records it; D-before vs runs/graphcmp/D differ on "
-                              "D0-coverage-census.txt and on 2 bookkeeping files, and the "
-                              "census difference is 4 set prints in hash order",
+            "PYTHONHASHSEED": f"D0-run-summary.txt records pythonhashseed="
+                              f"{rec.get('pythonhashseed', '?')}; the census order it once "
+                              "moved is described in the module docstring",
             "NOOPT": f"census `lin` row and `D2-canon-py-lin.txt` both carry the 46-node "
-                     f"spelling; NOOPT=1 emits 45 and `n()`",
-            "LC_ALL": "differ.py:47 and graphcmp.py:1800 both set it",
+                     f"spelling; NOOPT=1 emits 45 and `n()`; summary records "
+                     f"noopt={rec.get('noopt', '?')}",
+            "LC_ALL": "differ.py's ENV and graphcmp.py's clean_env both set it",
         },
     }
 
@@ -176,8 +197,9 @@ def check(sources: dict[str, list[str]] | None = None,
 
     Two methods that DO NOT SHARE AN ASSUMPTION, because a single-method belt missed a defect
     in this project by sharing the tokenizer's blind spot:
-      * METHOD A -- reads the source LINES that make the pins, so a pin that was deleted is
-        caught even when the summary still carries a stale value that would satisfy B.
+      * METHOD A -- reads the source lines that make the pins, matched by ANCHOR rather than
+        line number, so a pin that was deleted or moved is caught even when the summary
+        still carries a stale value that would satisfy B.
       * METHOD B -- reads the summary's own `key=value` lines with `partition("=")` and NO
         regex, so a value that was never pinned but was written down is caught by A.
     Neither alone can be satisfied by a lie: A cannot see a lie in the summary, B cannot see
@@ -187,22 +209,22 @@ def check(sources: dict[str, list[str]] | None = None,
     a fabricated tree. A plant that called a private helper would prove the helper.
     """
     sources = sources if sources is not None else {
-        p: (ROOT / p).read_text().splitlines() for p in
-        {q for q, _, _ in DIFFER_LINES + ORACLE_LINES + GRAPH_LINES}}
+        p: (ROOT / p).read_text().splitlines() for p in {q for q, _, _ in PINS}}
     summary = summary if summary is not None else SUMMARY
     bad: list[str] = []
 
-    print("METHOD A -- the source lines that build the child environments:")
-    for path, line, text in DIFFER_LINES + ORACLE_LINES + GRAPH_LINES:
-        src = sources.get(path, [])
-        have = src[int(line) - 1] if int(line) <= len(src) else ""
-        want = [v for v in ("PYTHONHASHSEED", "NOOPT") if v in text]
-        miss = [v for v in want if v not in have]
-        if miss:
-            bad.append(f"{path}:{line} does not pin {','.join(miss)}")
-            print(f"    MISSING  {path}:{line} lacks {','.join(miss)}")
+    print("METHOD A -- the source lines that build the child environments, found by anchor:")
+    for path, anchor, required in PINS:
+        line = next((ln for ln in sources.get(path, []) if anchor in ln), "")
+        miss = [t for t in required if t not in line]
+        if not line:
+            bad.append(f"{path}: no line contains anchor {anchor!r}")
+            print(f"    MISSING  {path} has no line containing {anchor!r}")
+        elif miss:
+            bad.append(f"{path}: {anchor!r} does not pin {','.join(miss)}")
+            print(f"    MISSING  {anchor!r} lacks {','.join(miss)}")
         else:
-            print(f"    ok       {path}:{line} pins {','.join(want) or '(nothing required)'}")
+            print(f"    ok       {anchor!r} pins {','.join(required) or '(its own tokens)'}")
 
     print("\nMETHOD B -- what the run recorded, read with partition('='), no regex:")
     if not summary.exists():
@@ -234,10 +256,10 @@ def record() -> int:
     for k in ("DEV", "PYTHONHASHSEED", "NOOPT", "LC_ALL"):
         print(f"{k:<16}= {o[k]}")
         print(f"{'':<16}  because: {o['evidence'][k]}")
-    print("\nlines the owner of each file needs (NAMED, not edited here):")
-    for path, line, text in DIFFER_LINES + ORACLE_LINES + GRAPH_LINES:
-        print(f"  {path}:{line}")
-        print(f"      {text}")
+    print("\nlines each file must carry (NAMED, not edited here):")
+    for path, anchor, required in PINS:
+        carry = f" must carry {', '.join(required)}" if required else ""
+        print(f"  {path}: {anchor!r}{carry}")
     print(f"\nrecord these keys in D0-run-summary.txt so a run can say what produced it: "
           f"{', '.join(RECORD_KEYS)}")
     r = dev_route()
@@ -263,7 +285,8 @@ def plant(kind: str) -> int:
 
     TWO KINDS OF MUTATION, because one tokenizer ate a full stop in this project and its own
     belt missed the same defect by sharing the assumption: one moves a value METHOD B reads
-    (the summary's `NOOPT`) and one DELETES a pin METHOD A reads (`differ.py:47`). Neither
+    (the summary's `NOOPT`) and one REVERTS a pin METHOD A reads (`differ.py`'s `ENV`, whose
+    anchored line survives while its tokens do not). Neither
     method alone can see the other's defect, so a check that ran only one of them would be a
     check that could be satisfied by a lie in the other."""
     if kind not in ("satisfied", "moved"):
@@ -291,14 +314,12 @@ def _one_plant(move_summary: bool, move_pin: bool) -> int:
     satisfied and moved inputs cannot drift apart in how they are built -- two builders would
     differ in exactly the way the two plants are supposed to detect."""
     import tempfile
-    lines_of = {p: (ROOT / p).read_text().splitlines() for p in
-                {q for q, _, _ in DIFFER_LINES + ORACLE_LINES + GRAPH_LINES}}
-    for path, line, text in DIFFER_LINES + ORACLE_LINES + GRAPH_LINES:   # the pins as declared
-        n = int(line) - 1
-        if n < len(lines_of[path]):
-            lines_of[path][n] = text
-    if move_pin:      # DELETE the pin, as a revert would, rather than writing a wrong value
-        lines_of["checks/differ.py"][int(DIFFER_LINES[0][1]) - 1] = (
+    lines_of: dict[str, list[str]] = {}
+    for path, anchor, required in PINS:      # fabricate a tree where every pin holds
+        lines_of.setdefault(path, []).append(
+            anchor + "".join(f' {t}="0"' for t in required))
+    if move_pin:      # REVERT the ENV pin: the anchored line survives, its tokens do not
+        lines_of["checks/differ.py"][0] = (
             'ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} '
             '| {"LC_ALL": "C"}')
     with tempfile.TemporaryDirectory() as td:
