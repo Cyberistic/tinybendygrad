@@ -43,7 +43,7 @@ A `0` here is a correct answer and not a failure: these rows are CLAIMS, and thr
 """
 
 from tinygrad import dtypes
-from tinygrad.dtype import AddrSpace, ConstFloat
+from tinygrad.dtype import AddrSpace, ConstFloat, Invalid, InvalidType
 from tinygrad.uop.ops import AxisType, Ops, ParamArg, UOp
 
 F32 = dtypes.float32
@@ -91,6 +91,21 @@ def show_const(v) -> str:
     if isinstance(v, ConstFloat):
         return f"{float(v):f}"
     return i64_text(int(v))
+
+
+def sg_ctor(a) -> str:
+    """The port's `sg.ctor` arm for arm, over the four arms a WHERE's srcs can carry here."""
+    if a is None:
+        return "none"
+    if isinstance(a, bool):
+        return f"cbool:{a}"
+    if isinstance(a, InvalidType):
+        return "cinvalid"
+    if isinstance(a, int):
+        return "cint"
+    if isinstance(a, float):
+        return "cfloat"
+    return "other"
 
 
 def main() -> None:
@@ -159,7 +174,19 @@ def main() -> None:
     rows.extend(ss("ss_cast_const", UOp.const(ConstFloat(2.5), F32)))
     rows.extend(ss("ss_cast_param", UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.int32)).cast(dtypes.int32)))
 
+    # `valid` -- ops.py:664 -- is `cond.where(self, self.const_like(Invalid))`, so its whole
+    # content is the SHAPE of the node it returns. The three arms are DISTINGUISHABLE BY CLASS --
+    # a bool const, an int const, an Invalid -- so an order swap fails rather than passing on a
+    # count, which `sg_ctor` above is written to reproduce arm for arm.
+    cond = UOp.const(True, dtypes.bool)
+    selff = UOp.const(7, dtypes.weakint)
+    valid = cond.where(selff, selff.const_like(Invalid))
+    rows.append(("valid_is_where", str(valid.op is Ops.WHERE)))
+    for k, s in enumerate(valid.src, start=1):
+        rows.append((f"valid_src{k-1}", sg_ctor(s.arg)))
+
     rows.append(last)
+
 
 
 

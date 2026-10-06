@@ -133,6 +133,34 @@ def g_ss_cast_param() -> O.Found:
     None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
   O.UOp.new(O.Found.ar(p), O.OpsCAST{}, [O.Found.i(p)], O.ADt{S.int32()}, O.TNone{})
 
+# `valid` -- ops.py:664 -- is a SHAPE claim: a WHERE whose src[0] is the condition, src[1] is `self`
+# and src[2] is an Invalid. The three arms are made DISTINGUISHABLE BY THEIR CLASSES -- cond is a
+# bool const, `self` an INT const, the third an Invalid -- so a reader that put the three in another
+# order fails rather than passing on a count.
+#
+# ARENA DISCIPLINE IS LOAD-BEARING HERE and this row set is the reason the def is safe to trust:
+# each `UOp.const` grows the arena, so every node is built FROM THE PREVIOUS NODE'S ARENA and every
+# read uses the LAST node's. MEASURED with a probe before this was written: threaded wrongly the
+# three srcs all read `ANone{}`, which is what an earlier version of mine mistook for a defect in
+# `where` itself.
+def g_valid() -> O.Found:
+  +ar0 = O.Arena.empty()
+  +fc = O.UOp.const(ar0, O.CBool{True{}})
+  +fi = O.UOp.const(O.Found.ar(fc), O.CInt{H.i64_of_i32(7)})
+  +fn = O.UOp.invalid(O.Found.ar(fi))
+  O.UOp.valid_of(O.Found.ar(fn), O.Found.i(fi), O.Found.i(fn), O.Found.i(fc))
+
+def valid_rows(+f: O.Found) -> IO(Unit):
+  do IO<Unit>:
+    a : Unit <- prow(String.concat(["valid_is_where=",
+      Bool.show(O.eq_op(O.Arena.op(O.Found.ar(f), O.Found.i(f)), O.OpsWHERE{}))]))
+    b : Unit <- prow(String.concat(["valid_src0=",
+      O.sg.ctor(O.Arena.arg(O.Found.ar(f), O.Arena.src0(O.Found.ar(f), O.Found.i(f))))]))
+    c : Unit <- prow(String.concat(["valid_src1=",
+      O.sg.ctor(O.Arena.arg(O.Found.ar(f), O.Arena.src(O.Found.ar(f), O.Found.i(f), 1)))]))
+    prow(String.concat(["valid_src2=",
+      O.sg.ctor(O.Arena.arg(O.Found.ar(f), O.Arena.src(O.Found.ar(f), O.Found.i(f), 2)))]))
+
 def rows() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("hashcons_same_index", O.t_hashcons())
@@ -158,6 +186,7 @@ def rows() -> IO(Unit):
     w : Unit <- ss_rows("ss_const", g_ss_const())
     x : Unit <- ss_rows("ss_cast_const", g_ss_cast())
     y : Unit <- ss_rows("ss_cast_param", g_ss_cast_param())
+    v : Unit <- valid_rows(g_valid())
     row("pynest_signed_zero_interns", O.t_pynest_signed_zero_interns())
 
 def main() -> IO(Unit): rows()

@@ -65,6 +65,9 @@ ROWS = (
     # third arm hands back the NODE rather than nothing -- a different answer, not an absent one.
     "ss_const_is_val", "ss_const_val", "ss_cast_const_is_val", "ss_cast_const_val",
     "ss_cast_param_is_val", "ss_cast_param_val",
+    # `valid`, four rows, and the three srcs are DISTINGUISHABLE BY CLASS so an order swap fails
+    # rather than passing on a count.
+    "valid_is_where", "valid_src0", "valid_src1", "valid_src2",
 )
 
 GATE = Gate(
@@ -76,5 +79,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "ops-core-gate: 28 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
-                        "pop_const's two conditions and ssimplify's three arms all agree with CPython"))
+    sys.exit(main(GATE, "ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymmetry, "
+                        "pop_const's two conditions, ssimplify's three arms and valid's node "
+                        "shape all agree with CPython"))

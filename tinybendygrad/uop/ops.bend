@@ -2576,6 +2576,22 @@ def UOp.group(+ar: Arena, +srcs: List<&2, U32>) -> Found:
 def UOp.alu(ar: Arena, +op: Op, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, op, srcs, ANone{}, TNone{})
 
+# `where` -- mixin/elementwise.py:426, `self.alu(Ops.WHERE, x, y)`, i.e.
+# `UOp(Ops.WHERE, src=(cond, x, y))` with `cond` FIRST because `alu` puts `self` at src[0].
+def UOp.where(ar: Arena, +cond: U32, +x: U32, +y: U32) -> Found:
+  UOp.new(ar, OpsWHERE{}, [cond, x, y], ANone{}, TNone{})
+
+# `valid` -- ops.py:664. `cond.where(self, self.const_like(Invalid))`, and for the CONST case
+# `const_like` IS `UOp.const(Invalid)` -- no `_shape` to expand into, so no EXPAND. The shaped case
+# needs `_mop` and `_shape`, which is why the ROWS here are consts.
+#
+# THE ARENA IS THE CALLER'S AND IT MUST HOLD ALL THREE INDICES, which cost me a wrong diagnosis
+# earlier: I passed the ORIGINAL arena after siblings had grown it, read `ANone{}` back, and wrote
+# down that the constructor could not be verified. It can. Each `UOp.const` answers a node in the
+# GROWN arena -- the rule my own notes record as "mint derived consts in the result's arena".
+def UOp.valid_of(ar: Arena, +self: U32, +inv: U32, +cond: U32) -> Found:
+  UOp.where(ar, cond, self, inv)
+
 # backedge -- ops.py:620. `UOp(Ops.BACKEDGE, src=(self, loop, cond))`
 def UOp.backedge(ar: Arena, +self: U32, +loop: U32, +cond: U32) -> Found:
   UOp.new(ar, OpsBACKEDGE{}, [self, loop, cond], ANone{}, TNone{})
@@ -4767,7 +4783,24 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:663  def invalid
 
-# TODO(p3) ops.py:664  def valid
+# DONE(p3) ops.py:664 def valid -- `UOp.where` and `UOp.valid_of` above, gated at
+#   `gates/ops-core-gate.py` in FOUR rows. `where` is `mixin/elementwise.py:426`'s
+#   `self.alu(Ops.WHERE, x, y)`, i.e. `UOp(Ops.WHERE, src=(cond, x, y))`, and it is the constructor
+#   `UOp.valid_of` is one line on top of.
+#
+#   THIS WAS DIAGNOSED AS UNPORTABLE AND WAS NOT, AND THE MISDIAGNOSIS IS THE FINDING. I wrote both
+#   defs, could not read their own src fields back, and reverted them as "an unverifiable
+#   constructor". The truth is the ARENA RULE THIS PROJECT ALREADY RECORDS: each `UOp.const` GROWS
+#   the arena and answers a node in the GROWN one, so reading an index against the original `ar0`
+#   finds a different node -- I read `ANone{}` out of three srcs that were there all along. MEASURED
+#   with a probe: threaded wrongly, all three read `ANone{}`; threaded right,
+#   `cbool:True|cbool:True|cinvalid`.
+#
+#   SO THE RULE FOR THIS WHOLE FILE IS NARROWER THAN I WROTE IT LAST TIME. Three defs moved
+#   downstream because `ops.bend` cannot name `fold.bend`'s bounds or import `dtype.bend`. THIS one
+#   needed neither: it was a bug in the CALLER's arena discipline, and the def was always writable
+#   here. "Cannot read it back" is not evidence that it cannot be written.
+#   PLANTED: swapping the two trailing srcs fails `valid_src1` and `valid_src2` together.
 
 # TODO(p3) ops.py:665  def get_idx
 
