@@ -48,14 +48,14 @@ line, and it is what `repro` pins.
 `*.txt.err` is each step's stderr and is legitimately empty; every other `.txt` must have a
 body, or `repro` refuses the run.
 
-## Why these 103 names end in `.txt`, and why that is not `checks/no-txt.py`'s business
+## Why these 139 names end in `.txt`, and why that is not `checks/no-txt.py`'s business
 
-`checks/no-txt.py` refuses `.txt` everywhere else in this project and carves out exactly the 103
-names in the table above. The reason is that these names are an **output contract between two
-drivers**, not constants in one script: `.agents/slop/diffpy/oracle-run.sh` writes all 103 and is
+`checks/no-txt.py` refuses `.txt` everywhere else in this project and carves out exactly the 139
+names `differ.declared()` returns. The reason is that these names are an **output contract between two
+drivers**, not constants in one script: `.agents/slop/diffpy/oracle-run.sh` writes all 139 and is
 **sha256-pinned** by `differ.py:58`, and `oracle-repro.sh` — pinned the same way — reads
 `D0-run-summary.txt` by name at `:61` and globs `*.txt` at `:105`. `checks/corpus-figure.py:72`
-reads `D0-run-summary.txt` and refuses on it. **All 103 are named by two or more instruments.**
+reads `D0-run-summary.txt` and refuses on it. **All 139 are named by two or more instruments.**
 
 Renaming them is not merely effortful; it is that **a sha256 over an oracle's BYTES does not cover
 the names that oracle READS.** Measured 2026-10-05 in `.agents/slop/difftxt/`, by changing one
@@ -72,7 +72,7 @@ third row is the sharper one: **it reported zero on a directory holding nothing,
 revealed a guard that was never one.** So `artefacts_ok()` now takes its population from
 `differ.declared()` — the generator's own declaration — and reports `MISSING` for a declared
 artifact that is absent and `UNEXPECTED` for one no command writes. On the renamed population it
-now reports **103 `MISSING`** where it used to report none.
+now reports **139 `MISSING`** where it used to report none.
 
 **The carve-out is the declared set, imported — not the directory.** A `.txt` under
 `runs/graphcmp/D/` that `differ.declared()` does not name is still reported, by `no-txt.py` and by

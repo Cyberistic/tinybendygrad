@@ -16,18 +16,20 @@ tell a row dump from a diary entry — WHICH IS THE SAME FAILURE AS `ORACLE_WORD
 
     ## THE ONE CARVE-OUT, AND WHY IT IS NARROW
 
-    `runs/graphcmp/D/` holds **103 `.txt` files this project therefore does not flag**, and every one
-    of them is named by `checks/differ.py` — which is why the author *did* know what they were. They
-    are an OUTPUT CONTRACT between two drivers, not constants in one script:
+    `runs/graphcmp/D/` holds the `.txt` files `checks/differ.py` DECLARES and this project therefore
+    does not flag. The count is `len(differ.declared())` — computed below and never typed, because a
+    number in this docstring is a second witness to a set one function already owns. Every one of them
+    is named by `checks/differ.py` — which is why the author *did* know what they were. They are an
+    OUTPUT CONTRACT between two drivers, not constants in one script:
 
     | named by | how |
     |---|---|
-    | `checks/differ.py` | writes all 103; reads 12 by name in its own summary block |
-    | `.agents/slop/diffpy/oracle-run.sh` | **sha256-pinned**; writes all 103, reads 12 by name |
+    | `checks/differ.py` | writes every declared name; reads 12 by name in its own summary block |
+    | `.agents/slop/diffpy/oracle-run.sh` | **sha256-pinned**; writes every declared name, reads 12 by name |
     | `.agents/slop/diffpy/oracle-repro.sh` | **sha256-pinned**; reads `D0-run-summary.txt` at `:61`, globs `*.txt` at `:105` |
     | `checks/corpus-figure.py:72` | reads `D0-run-summary.txt` and refuses on it |
 
-    MEASURED: **103 of 103 are named by two or more instruments.** A rename must move all of them in
+    MEASURED: **every declared name is named by two or more instruments.** A rename must move all of them in
     one commit or a pair silently stops agreeing — and the pin cannot help, because a sha256 over an
     oracle's BYTES says nothing about which names that oracle READS. `.agents/slop/difftxt/` holds the
     inventory and the one-place-rename experiment, including the measurement that the emptiness guard
@@ -62,7 +64,7 @@ def owned(path: str) -> bool:
 def graphcmp_artifacts() -> set[str]:
     """The `.txt` names `checks/differ.py` DECLARES, as project-relative paths.
 
-    IMPORTED, NOT COPIED. A second list of 103 names in this file would itself be a contract with no
+    IMPORTED, NOT COPIED. A second list of the declared names in this file would itself be a contract with no
     generator, which is the failure this carve-out exists to avoid; `differ.py` is importable because
     its `main()` sits behind `if __name__ == "__main__"`. If the import fails the set is empty and the
     artifacts get REPORTED, because a carve-out that cannot be computed must never become a blanket
