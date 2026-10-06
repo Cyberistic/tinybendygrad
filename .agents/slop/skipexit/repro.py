@@ -53,6 +53,7 @@ supplies a stub. Nothing here does an `rmtree` between the two gates of a column
 """
 from __future__ import annotations
 
+import re
 import subprocess
 import sys
 from pathlib import Path

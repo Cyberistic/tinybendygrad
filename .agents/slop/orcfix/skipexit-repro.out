@@ -1,0 +1,12 @@
+## COLUMN GREEN   post-fix want 0   pre-fix want 0   plant codes=0,0,0,0,0
+  post-fix  M1 status=0 (want 0)   M2 count=1 stdout=1105B   M2 stub-ran=True
+  pre-fix   M1 status=0 (want 0)   M2 count=1 stdout=1105B   M2 stub-ran=True
+## COLUMN FAIL   post-fix want 1   pre-fix want 1   plant codes=0,0,1,0,0
+  post-fix  M1 status=1 (want 1)   M2 count=1 stdout=1288B   M2 stub-ran=True
+  pre-fix   M1 status=1 (want 1)   M2 count=1 stdout=1288B   M2 stub-ran=True
+## COLUMN SKIP   post-fix want 4   pre-fix want 0   plant codes=0,0,0,0,3
+  post-fix  M1 status=4 (want 4)   M2 count=1 stdout=1430B   M2 stub-ran=True
+  pre-fix   M1 status=0 (want 0)   M2 count=1 stdout=1281B   M2 stub-ran=True
+  DISCRIMINATES: post-fix=4 != pre-fix=0. The exit status alone now separates a partial run from a clean one, and the pre-fix 0 is the defect reproduced.
+
+0 of 3 column(s) failed.  artifacts: .agents/slop/skipexit/artifacts/
