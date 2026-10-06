@@ -3425,8 +3425,25 @@ def main() -> IO(Unit):
 # ===========================================================================
 
 # ===========================================================================
-# NOT PORTED. Every line is a `TODO(p3)` whose OWNING FILE is named, and every
-# one is a builder or an arithmetic helper the port cannot reach without it.
+# NOT PORTED. Every line is a `TODO(p3)` whose OWNING FILE is named, and the
+# marker's ENTRY must carry the reason -- a reason in a PRECEDING header is invisible
+# to `checks/marker-audit.py`, which reads a marker's line plus the lines that FOLLOW
+# it, so a block written this way reads as BACKLOG however well it is explained.
+#
+# "CANNOT REACH" IS THE RIGHT WORD AND "NOT PORTED" IS NOT, MEASURED: of the builders
+# these lines name, `G.permute`, `G.flip`, `UOp.copy_to_device`, `UOp.after`,
+# `UOp.allreduce`, `UOp.mselect`, `ssimplify` and `_min_max`/`vmin` are ALL PRESENT --
+# in `mixin/movement.bend`, `uop/weak.bend` and `uop/ops.bend`. What multi.bend does not
+# do is IMPORT the files that hold them. MEASURED: `tensor.bend`'s transitive closure is
+# six files and contains nothing under `schedule/`, so adding
+# `import ./../tensor.bend` here is CYCLE-FREE and Bend accepts it. So the largest part
+# of this block is REACHABILITY and unported RULE BODIES, not missing primitives, and a
+# reader who trusts "not ported" will under-scope the work.
+#
+# THE `unshard` FAMILY IS THE EXCEPTION AND IT IS THE ONE THAT IS REALLY BLOCKED:
+# fourteen markers end in `.unshard(...)`, and `unshard` is a WALL in `ops.bend` whose
+# own text names `_shard`, absent as a definition. Those carry the reason on their own
+# line now.
 # Nothing below is a decision that multi.py makes and this file declined: the
 # decision is present and gateable in every case, and what is missing is the
 # node it would have produced.
@@ -3449,19 +3466,47 @@ def main() -> IO(Unit):
 #
 #   `unshard` (ops.py:723) -- every rule's own conclusion, NINETEEN call sites.
 #   TODO(p3) ops.py:723 multi.py:100  `alu_multi`, the per-shard arm
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:105  `alu_multi`, the resharding fallback
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:123  `reduce_multi`, the piecewise arm
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:140  `reshape_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:145  `expand_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:152  `pad_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:157  `permute_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:181  `shrink_multi`, keeps `remaining`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:186  `flip_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:196  `stack_multi`, the same-sharding arm
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:200  `stack_multi`, the resharding fallback
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:254  `store_after_multi`
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:270  `passthrough_multi`, the two rules
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #   TODO(p3) ops.py:723 multi.py:296  the ALLREDUCE rule
+#     BLOCKED -- `unshard` (ops.py:689) is a WALL in `ops.bend`, itself
+#     blocked on `_shard`, which is absent as a definition.
 #
 #   THE REST, one line each, owner named by the method.
 #   TODO(p3) ops.py:612 multi.py:19   `mstack_early_shrink`, `.contiguous()`
