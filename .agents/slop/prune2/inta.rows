@@ -1,0 +1,27 @@
+dir	inta_bytes	inta_n	untracked_bytes	inhead_bytes	inhead_n
+declared473	1093584	406	997856	168576	9
+webgpu_call.fresh.mjs	1042121	1	0	0	0
+bendsuite	643305	103	0	0	0
+rf2root	193061	1	0	0	0
+loopfix	160155	239	10855096	123735	59
+figurefix	91084	62	628606	382698	143
+dd-gate.rows	69033	1	0	0	0
+dd-gate-base-182.rows	69013	1	0	0	0
+reader-fork-census.out	55267	1	0	0	0
+strays-root	50703	3	0	14752	2
+dd-gate-base-172.rows	48462	1	0	0	0
+slopfinal	43909	8	11679	0	0
+e2estage8	36853	5	7618	91534	9
+name-census-report.out	33079	1	0	0	0
+rerun	26956	9	0	452069	219
+tcptx-mutate.py	23711	1	0	0	0
+ga_mutate.py	15178	1	0	0	0
+substrate-audit.py	14796	1	0	0	0
+rf2-mutate.py	13774	1	0	0	0
+tools	12693	2	0	6078	2
+peakrss	12541	1	0	0	0
+fold-rng-mutate.py	11695	1	0	0	0
+pin-tables.py	10941	1	0	0	0
+dup	10527	1	0	62431	7
+mixin-op-mutate.py	9305	1	0	0	0
+# TOTAL index-not-head: 3860777 B = 3.9 MB across 880 files
