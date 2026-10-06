@@ -2777,6 +2777,25 @@ def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, Li
   same_tag = UOp.replace.same.cur.tag(new_op, cur_op, new_src, cur_src, new_arg, cur_arg, new_tag, cur_tag)
   UOp.replace.go(UOp.replace.all_same(same_op, same_src, same_arg, same_tag), new_op, new_src, new_arg, new_tag, ar, self)
 
+# cast -- mixin/dtype.py:19. `return self if self.dtype == dt else self.alu(Ops.CAST, arg=dt)`.
+#
+# DEVIATION FROM CPYTHON. CPython's identity check reads `self.dtype`, which is a
+# FOLD property (`dtype_from_uop`, ops.py:247). A rule body that has no fold
+# context (every PMEntry body in `pm_dispatch_m.go`) cannot read `self.dtype`, so the
+# identity check is unreachable from a rule body. THE PORT ALWAYS BUILDS A NEW NODE,
+# which means: when `self.dtype` already equals `dt`, the graph has ONE extra
+# `OpsCAST{}` node that CPython would have skipped.
+#
+# The extra node is a GRAPH BLOAT, not a correctness issue: the cast is a no-op on
+# the value, and downstream optimizations fold it. The four call sites that name
+# this def as a wall (renderer/tc_ptx.bend:46, :49, :52, :55, :56, plus
+# rangeify.bend:259 weak-CAST INDEX) get a `UOp.cast` to resolve against, which is
+# what unblocks the port. The full identity check would need a FOLD CONTEXT, which
+# is what `cast_at` in `mixin/dtype.bend:335` IS, and a future unit that wires
+# rule bodies into the fold can call THAT instead.
+def UOp.cast(ar: Arena, self: U32, dt: S.Dt) -> Found:
+  UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})
+
 # `(self,)*count` from `UOp.broadcast` below, written out. It is helpers.py's
 # `list(x) * n`, and it is why `UOp.broadcast` needs no variadic.
 def UOp.replicate.go(+self: U32, n: Nat, acc: List<&2, U32>) -> List<&2, U32>:

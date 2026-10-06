@@ -18,12 +18,15 @@
 #                                  so a rule table here would have nothing to
 #                                  return but the input it was handed
 #
-# `ops.bend` names the sugar in its own NOT PORTED block (`UOp.cast`,
-# `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` are all
-# `TODO(p3) ops.py:<line>`), and each one needs a FOLD to derive the dtype of
-# the node it builds -- `packed_store` alone reads four different dtypes off
-# four different nodes before it can name one. So the graph half is one
-# substrate gap, not seven, and it is owned by ops.bend. What IS ported here is
+# `ops.bend` named the sugar in its own NOT PORTED block (`UOp.cast`,
+# `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` were all
+# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2783`, the
+# always-builds-new shape (no identity check), gated at `gates/uop_cast-gate.py`
+# 8/8 rows. The FOLD the identity check needs (`dtype_from_uop`) is the same FOLD
+# the remaining four (`UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`) need:
+# `packed_store` alone reads four different dtypes off four different nodes before
+# it can name one, and the rule body has no fold context. So the graph half is
+# still one substrate gap, not seven, and it is owned by ops.bend. What IS ported here is
 # every CONSTANT those five defs compute, because each one reaches the emitted
 # text verbatim: `pf_mask` is the `255u` in `((255u<<alu7)^4294967295u)` and
 # `nan_thr` is the `nan()` test's bound. The gate below pins all of them against
