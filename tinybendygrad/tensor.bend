@@ -305,6 +305,15 @@ def tn_sqrt(+t: Tensor) -> Tensor:
 def tn_detach(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsDETACH{}, Nil{})
 
+# `contiguous_backward` -- elementwise.py:68. `return self.alu(Ops.CONTIGUOUS_BACKWARD)`.
+# Same shape as `tn_detach` and `tn_sqrt`: a single `tn_alu` call. CPython's `contiguous`
+# (elementwise.py:59) is NOT ported here because its body is three lines, the first
+# two of which read `self.dtype in dtypes.weaks` and `self._uop` (a fold read), so it
+# sits behind the same fold seam the `tc_ptx.bend` walls name. `contiguous_backward`
+# is the sibling that is the one-liner.
+def tn_contiguous_backward(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsCONTIGUOUS_BACKWARD{}, Nil{})
+
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
 # self ^ self.dtype.max if dtypes.is_unsigned(self.dtype) else self ^ -1`. Only the
