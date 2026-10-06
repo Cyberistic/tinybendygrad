@@ -463,21 +463,28 @@ def git(*args: str) -> str:
 
 
 def tracked_dirs(root: Path = ROOT) -> tuple[dict[str, int], dict[str, int]]:
-    """`(all, empty)`: `{dir: n index entries}` and, of those, entries whose blob is git's EMPTY
-    BLOB.
+    """`(all, empty)`: `{dir: n COMMITTED tree entries}` and, of those, entries whose blob is git's
+    EMPTY BLOB.
 
-    `git ls-files -s` PRINTS THE MODE IN FIELD 1 AND THE SHA IN FIELD 2. Confusing them makes an
-    empty blob read as a mode, which is exactly how `checks/gen/` looked like a normal file.
+    **`git ls-tree -r HEAD`, NOT `git ls-files -s`, AND THAT IS THE WHOLE POINT: `ls-files` READS
+    THE INDEX, AND THE INDEX HOLDS `git add --intent-to-add` PLACEHOLDERS WHOSE BLOB IS THE EMPTY
+    BLOB.** MEASURED: with 1006 intent-to-add entries staged, `ls-files -s` answered **1252**
+    empty blobs where the COMMITTED tree holds **246** — and **815 of the 1252 were 0-17 KB on
+    disk.** Clause V printed `… : 10 entries, 10 at git's EMPTY BLOB` for files that had content.
+
+    `git ls-tree` PRINTS THE MODE, THE TYPE AND THE SHA, IN THAT ORDER. This function used to read
+    `ls-files -s`'s TWO fields and had to reason about MODE-vs-SHA; the committed tree states the
+    type, so a submodule is `commit` and not a `160000` mode to be guessed at.
     """
     out: dict[str, int] = {}
     empty: dict[str, int] = {}
-    for line in git("ls-files", "-s").splitlines():
+    for line in git("ls-tree", "-r", "HEAD").splitlines():
         meta, _, path = line.partition("\t")
         parts = meta.split()
-        if len(parts) < 2:
+        if len(parts) < 3:
             continue
-        mode, sha = parts[0], parts[1]
-        if mode.startswith("160000"):                      # a submodule, not a blob
+        _mode, kind, sha = parts[0], parts[1], parts[2]
+        if kind != "blob":                                 # a submodule, not a blob
             continue
         d = os.path.dirname(path)
         out[d] = out.get(d, 0) + 1
