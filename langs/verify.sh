@@ -24,7 +24,7 @@ ROOT=$(cd "$(dirname "$0")/.." && pwd)
 cd "$ROOT"
 
 OUT=langs/out
-VEC=langs/vectors/payload.txt
+VEC=langs/vectors/payload.rows
 PAYLOAD=$(cat "$VEC")
 mkdir -p "$OUT"
 
@@ -39,13 +39,13 @@ echo ""
 # ---- 1. bend, interpreted ---------------------------------------------------
 ./bin/bend langs/core.bend --check-only >/dev/null 2>&1 \
   || { echo "FAIL bend: core.bend does not check"; exit 1; }
-./bin/bend langs/core.bend "$PAYLOAD" > "$OUT/bend.txt" 2>/dev/null \
+./bin/bend langs/core.bend "$PAYLOAD" > "$OUT/bend.out" 2>/dev/null \
   || { echo "FAIL bend: interpreted run failed"; exit 1; }
 echo "built  bend      interpreted, --check-only ALL PROOFS CHECK"
 
 # ---- 2. native binary, built by bend ---------------------------------------
 ./bin/bend langs/core.bend -o "$OUT/core_native" >/dev/null 2>&1
-"$OUT/core_native" "$PAYLOAD" > "$OUT/native.txt"
+"$OUT/core_native" "$PAYLOAD" > "$OUT/native.out"
 echo "built  native    $OUT/core_native, built by bend with its own clang"
 
 # ---- 3. the C source bend emits, compiled -----------------------------------
@@ -56,7 +56,7 @@ echo "built  native    $OUT/core_native, built by bend with its own clang"
 clang -std=c11 -O3 -ffp-contract=off langs/c/core.c -lpthread -lm \
   -o "$OUT/core_c" 2>"$OUT/clang.log" \
   || { echo "FAIL c: clang could not build langs/c/core.c"; cat "$OUT/clang.log"; exit 1; }
-"$OUT/core_c" "$PAYLOAD" > "$OUT/clang.txt"
+"$OUT/core_c" "$PAYLOAD" > "$OUT/clang.out"
 echo "built  c         $(wc -l < langs/c/core.c | tr -d ' ') lines of C, clang -O3 -ffp-contract=off"
 
 # ---- 4. the same C source, linked against a separate harness ----------------
@@ -64,12 +64,12 @@ clang -std=c11 -O3 -ffp-contract=off -Dmain=bend_main -c langs/c/core.c \
   -o "$OUT/core.o" 2>>"$OUT/clang.log"
 clang -std=c11 -O2 langs/c/core_harness.c "$OUT/core.o" -lpthread -lm \
   -o "$OUT/core_harness" 2>>"$OUT/clang.log"
-"$OUT/core_harness" "$PAYLOAD" > "$OUT/harness.txt"
+"$OUT/core_harness" "$PAYLOAD" > "$OUT/harness.out"
 echo "built  harness   core.c + core_harness.c, -Dmain=bend_main"
 
 # ---- 5. the JavaScript source bend emits -------------------------------------
 ./bin/bend langs/core.bend -o langs/js/core.js >/dev/null 2>&1
-node langs/js/core.js "$PAYLOAD" > "$OUT/js.txt" 2>&1
+node langs/js/core.js "$PAYLOAD" > "$OUT/js.out" 2>&1
 echo "built  js        $(wc -l < langs/js/core.js | tr -d ' ') lines of JS, node"
 
 # ---- 6. the SDK, on its JavaScript backend, over the emitted .mjs ------------
@@ -77,21 +77,21 @@ echo "built  js        $(wc -l < langs/js/core.js | tr -d ' ') lines of JS, node
 node --input-type=module -e '
   import { execute, bits, f32OfBits } from "./langs/js/bend_core.js";
   import { readFileSync } from "node:fs";
-  const data = readFileSync("langs/vectors/payload.txt", "utf8").trim().split(",").map(Number);
+  const data = readFileSync("langs/vectors/payload.rows", "utf8").trim().split(",").map(Number);
   const a = execute(data);
   const b = a.map(bits);
   console.log("loss=" + f32OfBits(b[0]) + " trace=," + b.join(",") + " in=" + data.slice(0, 10).join(","));
-' > "$OUT/sdk_js.txt"
+' > "$OUT/sdk_js.out"
 echo "built  sdk-js    BendLibrarySDK{forceJS} over core.mjs"
 
 # ---- 7. the SDK as a consumer inits it --------------------------------------
-node --experimental-strip-types --no-warnings langs/sdk/bench.ts > "$OUT/bench.txt" 2>&1 || true
-echo "built  sdk       $(grep -m1 'sdk/.* auto' "$OUT/bench.txt" | awk '{print $1, $2, $3}')"
+node --experimental-strip-types --no-warnings langs/sdk/bench.ts > "$OUT/bench.out" 2>&1 || true
+echo "built  sdk       $(grep -m1 'sdk/.* auto' "$OUT/bench.out" | awk '{print $1, $2, $3}')"
 
 # ---- 8. the wasm lane ------------------------------------------------------
 if [ -f langs/wasm/core.wasm ]; then
   node --no-warnings langs/wasm/wasi_run.mjs langs/wasm/core.wasm "$PAYLOAD" \
-    > "$OUT/wasm.txt" 2>&1 || true
+    > "$OUT/wasm.out" 2>&1 || true
   echo "built  wasm      langs/wasm/core.wasm"
 else
   # Never SKIP: a lane that cannot be built is the most important thing this
@@ -103,7 +103,7 @@ fi
 echo ""
 echo "--- what each lane printed ---"
 for lane in bend native clang harness js; do
-  printf '%-8s %s\n' "$lane" "$(cat "$OUT/$lane.txt")"
+  printf '%-8s %s\n' "$lane" "$(cat "$OUT/$lane.out")"
 done
 echo ""
 echo ""
@@ -111,13 +111,13 @@ echo "--- gate ---"
 
 fail=0
 wall=0
-REF="$OUT/native.txt"
+REF="$OUT/native.out"
 for lane in bend native clang harness js; do
-  if diff -q "$OUT/$lane.txt" "$REF" >/dev/null 2>&1; then
+  if diff -q "$OUT/$lane.out" "$REF" >/dev/null 2>&1; then
     printf 'AGREE  %-8s byte identical to native\n' "$lane"
   else
     printf 'FAIL   %-8s differs from native\n' "$lane"
-    diff "$REF" "$OUT/$lane.txt" || true
+    diff "$REF" "$OUT/$lane.out" || true
     fail=1
   fi
 done
@@ -129,7 +129,7 @@ trace_bits() {
   tr -d ' \n' < "$1" | sed -E 's/.*trace=([0-9,]+).*/\1/'
 }
 NATIVE_TRACE=$(trace_bits "$REF")
-SDK_TRACE=$(trace_bits "$OUT/sdk_js.txt")
+SDK_TRACE=$(trace_bits "$OUT/sdk_js.out")
 if [ "$SDK_TRACE" = "$NATIVE_TRACE" ]; then
   printf 'AGREE  %-8s trace byte identical to native\n' "sdk-js"
 else
@@ -139,12 +139,12 @@ else
   fail=1
 fi
 
-if [ -f langs/wasm/core.wasm ] && [ -f "$OUT/wasm.txt" ]; then
-  if diff -q "$OUT/wasm.txt" "$REF" >/dev/null 2>&1; then
+if [ -f langs/wasm/core.wasm ] && [ -f "$OUT/wasm.out" ]; then
+  if diff -q "$OUT/wasm.out" "$REF" >/dev/null 2>&1; then
     printf 'AGREE  %-8s byte identical to native\n' "wasm"
   else
     printf 'FAIL   %-8s differs from native\n' "wasm"
-    diff "$REF" "$OUT/wasm.txt" || true
+    diff "$REF" "$OUT/wasm.out" || true
     fail=1
   fi
 else
@@ -154,7 +154,7 @@ fi
 
 echo ""
 echo "--- bench (min of 5, with machine load) ---"
-sed -n '1,40p' "$OUT/bench.txt" | sed 's/^/  /'
+sed -n '1,40p' "$OUT/bench.out" | sed 's/^/  /'
 
 echo ""
 if [ "$fail" -eq 1 ]; then

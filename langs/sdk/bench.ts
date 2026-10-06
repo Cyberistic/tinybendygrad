@@ -28,7 +28,7 @@ const RUNS = 5;
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const langs = path.resolve(here, "..");
-const vector = path.resolve(langs, "vectors", "payload.txt");
+const vector = path.resolve(langs, "vectors", "payload.rows");
 
 /** The payload, as the 42 numbers every lane speaks. */
 function readPayload(): number[] {
@@ -96,7 +96,7 @@ function timeProcess(bin: string, args: readonly string[]): number | undefined {
 
 const data = readPayload();
 if (data.length !== PAYLOAD) {
-  throw new Error(`payload.txt holds ${data.length} numbers, wanted ${PAYLOAD}`);
+  throw new Error(`payload.rows holds ${data.length} numbers, wanted ${PAYLOAD}`);
 }
 
 console.log("Bend core_step benchmark");
