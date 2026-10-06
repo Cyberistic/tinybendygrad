@@ -1,0 +1,13 @@
+ #  OLD @ b504abf77                                NEW @ HEAD                                     sha256
+ 1  oracles/AFTER-pins.txt                         oracles/AFTER-pins.rows                        MATCH
+ 2  oracles/arglit/baseline.txt                    oracles/arglit/baseline.md                     MATCH
+ 3  oracles/backward/oracle-cg.txt                 oracles/backward/oracle-cg.err                 MATCH
+ 4  oracles/main_rows.txt                          oracles/main_rows.tsv                          MATCH
+ 5  oracles/usb-arith-rows.bend.txt                oracles/usb-arith-rows.bend                    MATCH
+ 6  oracles/dd-const-oracle.txt                    oracles/dd-const-oracle.rows                   MATCH
+ 7  oracles/jit-prune-oracle.txt                   oracles/jit-prune-oracle.rows                  MATCH
+ 8  oracles/opssugar-bd.txt                        oracles/opssugar-bd.rows                       MATCH
+ 9  oracles/rows-gate-py.txt                       oracles/rows-gate-py.rows                      MATCH
+10  oracles/tc-rows-bend.txt                       oracles/tc-rows-bend.rows                      MATCH
+
+PROVEN 10/10 rows: BOTH forms restore a non-empty blob whose sha256 equals the manifest's digest column.
