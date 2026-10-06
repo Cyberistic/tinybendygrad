@@ -47,6 +47,62 @@ clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
 gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +28 `f2f` rows:
                                         the whole float-decomp region, previously UNREACHABLE
                                         from `main` and therefore ungated for a whole session.
+dtype-js-abi-gate [#########.] 6/10  **`checks/abi_gate.py` HAD TWO STALE CONSTANTS AND NO
+                                        DECLARATION; it now runs, and its red is 2 clusters.**
+                                        **`parents[2]` -> `parents[0]`** (right only at
+                                        `.agents/slop/abi/`, 3 levels down; `57d0fc387`
+                                        moved the file up two and repointed every CITATION
+                                        while carrying both CONSTANTS). **`checks/abi.json`
+                                        WAS DELETED, not misplaced**: `371cc64c9` ("sweep:
+                                        3,603 FILES DELETED") removed
+                                        `.agents/slop/abi/abi.json` (441 lines) two commits
+                                        BEFORE the move -- so the slop->checks move carried
+                                        nothing, it found nothing to carry. Restored
+                                        BYTE-EXACT (`46db02f2`, one blob for its whole
+                                        life) and verified against the CALLER, not just for
+                                        existence: 0 shape errors, all 9 generated-body
+                                        citations resolve, **23/32 citations STALE --
+                                        0 stale against the tree at `135bf0204`**, so the
+                                        pins were right and the TREE moved. Pins NOT
+                                        re-pointed (that is authoring the declaration; 3
+                                        have no line to point at).
+                                        **`refuse()` = exit 3, placed BEFORE the `tinygrad`
+                                        import** -- under bare `python3` the old defect
+                                        raised IN that import, and an assertion downstream
+                                        of what it asserts cannot make it a refusal.
+                                        **Was green at `135bf0204`: 27 PASS / 0 FAIL,
+                                        `gate rc: 0`** (artifact recovered to
+                                        `.agents/slop/abifix/`). **After: rc 1, 20 PASS /
+                                        7 FAIL**, denominator 12 rows x 11 arms x 2 lanes
+                                        = **264, all executed**; the measurement itself is
+                                        green (cc 12/12, node 12/12, lanes disagree 0/12).
+                                        **THE 6 PLANT FAILs ARE A DISCONNECTION, NOT A
+                                        FIXTURE LIMIT: all 5 plants moved 0/12 where
+                                        `135bf0204` moved 4-5 each. `dtype.bend`'s seams
+                                        were `import "./runtime/dtype.{c,js}"` (20 at
+                                        `135bf0204`, 0 now) and are PURE, so the emitted
+                                        probe no longer CONTAINS either lane -- planting
+                                        UNCOMPILABLE C into `dtype.c` still yields bend rc
+                                        0, cc rc 0, 12/12 IDENTICAL rows. THE ELEVENTH
+                                        instance of "a lane that printed nothing counted as
+                                        never wrong", except this lane prints all 12 rows so
+                                        every presence guard passes.**
+                                        **THE TOOLCHAIN IS NOT BROKEN (measured here, not
+                                        inherited): `PROBE`'s eleven `<-` effect binds
+                                        were a THIRD stale fixture -- `dtype.bend:1064` is
+                                        now `-> H.I64` where it was `-> IO(H.I64)`, so
+                                        `<-` dies on the FIRST bind while `=` compiles and
+                                        runs 12/12. Fixed to `=`; the two runs differ by
+                                        one character per bind.** Also fixed: a latent
+                                        `HERE / "abi" / rel` join for `gen/` refs, a
+                                        directory that never existed. NOT SETTLED: whether
+                                        6 citations naming the unreachable lanes should
+                                        survive; `checks/gen/` is generated, uncommitted,
+                                        NOT gitignored; **`abi4_gate.py` is structurally
+                                        identical and NOT this unit's -- if its plants are
+                                        also 0, the NEEDS 10/40/30 / FIXES 10/10/0 table is
+                                        measuring `dtype.bend`, not `dtype.js`.**
+                                        `.agents/slop/abifix/`, ABIFIX-1..8.
 dtype-js-abi    [##########] 3/3    `runtime/dtype.js` read `p.fst`/`p.snd` against a record
                                         whose fields are `hi`/`lo` (helpers.bend:1639-1640) and
                                         answered with `io_tup` = `Tuple{fst,snd}`. **BOTH
@@ -12577,6 +12633,50 @@ driver `.agents/slop/e2epy/diff.py`, report `.agents/slop/e2epy/report.md`. **No
       substrate moving, and both sides of the diff report it identically**; stage 8 is still
       `FAIL rc=1` with `rows that REACH dtype.js` = **0**.
 
+- [x] **`checks/e2e.py` SAID `SKIP IS NOT PASS` AND EXITED 0 FOR PASS-WITH-SKIP. FIXED: PASS-with-SKIP
+      IS NOW EXIT 4, ON BOTH SIDES.** VERBATIM, same live tree, same seven stages, same one skip:
+      before `PASS WITH 1 SKIP(S) … PASS-WITH-SKIP IS NOT PASS. Read the skipped lines above.` **rc=0**;
+      after `PASS WITH 1 SKIP(S) … AND THE EXIT STATUS SAYS SO: 4, NOT 0 …` **rc=4**.
+      **THE TENSION RESOLVED BY MEASUREMENT, NOT PAPERED OVER.** The old `0` was defended with
+      *a passing stage does not retract the others' claims; a stage that RAN and FAILED is what
+      makes the gate exit 1* — which is CLAIM INDEPENDENCE, correct for FAIL, and **false for
+      SKIP**: it presupposes the passing stage measured something, and a stage that measured
+      NOTHING retracts even that. Three states came out of the exit status as two numbers, so a
+      caller reading only `$?` was told 0 for a run where the f64 lane had measured nothing.
+      **OPTION 1 (SKIP ⇒ 1) REJECTED**: `1` is this script's FAIL, so it would print `FAIL -- N
+      stage(s) ran and failed` for a run in which nothing failed and would lose the difference
+      between *the port is broken* and *this machine cannot judge*. **OPTION 3 (MAKE NOTHING SKIP)
+      REJECTED BY MEASUREMENT**: stage 7's refusal is `rc 2` from `repair-dupes.py:97-99`, whose
+      control file `.agents/slop/cstyle-live/port.txt` **does not exist**
+      (`git cat-file -t 0c6bb8889:…` → does not exist), on a substrate that was demonstrably WARM —
+      `./bin/bend -> rc=0 rows=227`. So: **not a retry** (nothing intermittent), **not a fixture
+      fix I may make** (regenerating it makes the check `X == X`, a check that cannot FAIL, and
+      launders 33 duplicated blocks in `renderer/cstyle.bend` into a baseline), and **a real skip**
+      pending whoever owns `cstyle-live/`. And option 3 would not have fixed it anyway: stage 3
+      SKIPs with no `node`, stage 7 on `rc 127` with no `zsh`. **CHOSE OPTION 2**, the
+      `bounded.py` precedent (5 `NOT-STARTED` / 6 `NO-VERDICT`, two units old). `4` is free:
+      **0** occurrences of `exit 4` across all six stage children.
+      **FIDELITY HELD: `0 of 8 set(s) disagree`** — stdout IDENTICAL and exit status identical on
+      all eight plants, `plant-no-node` (the only one reaching the SKIP summary with **no**
+      failure) now `oracle=4 port=4`. **BOTH PINS MOVED IN THE SAME EDIT**, ORACLE_SHA
+      9ee46f84…→6a198bbf…, BODY_SHA e75c9e38…→24d7fbf1…, `oracle_drift()` returns `[]`, and the
+      one-edit invariant is re-proved by re-substitution.
+      **A HAZARD ONLY THE FROZEN SHELL COULD SHOW**: `` `$?` `` is COMMAND SUBSTITUTION in `sh`, so
+      the first cut ran `0` as a command and put `line 314: 0: command not found` on stderr —
+      visible on `plant-no-node` ONLY, the one plant whose PATH is short enough to reach it.
+      **REPRO `.agents/slop/skipexit/repro.py`, rc 0**: GREEN(0) / FAIL(1) / SKIP(4), each against
+      the current gate AND a frozen pre-fix copy (`prefix/`, still hashing to the ORIGINAL 4c3e4214…
+      / e75c9e38… / 9ee46f84…), and the SKIP column DISCRIMINATES 4 ≠ 0. **Reverting `return 4`
+      to `return 0` in place makes the repro exit 1 with `THIS REPRO IS LYING`** — the required
+      direction of failure. Two methods that share no regex: M1 is `returncode` (no characters
+      parsed), M2 is byte counting. It also **found that `diff.py`'s plants were never green** —
+      stage 3 ran real `node` on a missing `e2e_mm_run.mjs` and FAILed `rc=1` in EVERY plant, so
+      `plant-pass` was a one-failure column with a misleading name; repro supplies a 3-line stub
+      and **reports** the gap rather than patching another unit's validated builder.
+      `.agents/slop/skipexit/{FINDINGS.md,repro.py,prefix/,artifacts/,BEFORE.*,AFTER2.*}`. **NOT
+      COMMITTED.** **NOT SETTLED:** whether `4` should be `2`; `diff.py --sets live` not re-run
+      (needs the machine to itself, and stage 6 is not run-to-run reproducible).
+
 - [ ] **REPORTED, NOT FIXED — a `cd "$(dirname "$0")/../.."` shim exits 0 HAVING RUN NOTHING.**
       MEASURED: with a PATH containing no `dirname`, `.agents/slop/e2e.sh` printed
       `line 16: dirname: command not found`, `cd ""` failed, it `exec`'d `/.venv/bin/python`, and
@@ -12887,14 +12987,27 @@ taken a SECOND time. Census: 566 walls, 40 shared, 249 BACKLOG.
         from a VARIABLE; and losing the `.` while doing it produces `pyrows`, not `py.rows`. The
         traceback caught that one and the first ninety columns of the traceback did not.
         Read the whole message. `i64-shl` (151 rows) and `i64-shr` (301 rows) pass now.
-  - [ ] **A PIN CHECK THAT READS A STAGED PATH IS INDISTINGUISHABLE FROM A MISSING ONE.** Still
-        red: `wk-cd-gate`, `bc-u32-gate`, and MEASURED BY HAND the values are correct — oracle
-        `cd_none=i64`, port `cd_none=None`, exactly what the pins expect. The artifacts are torn
-        down when a gate returns non-zero, so the pin check cannot report WHY. Needs one writer
-        on `gates/gatekit.py`; two agents are editing it.
-  - [ ] **`mixin-op-gate`'s ORACLE PIN DRIFTS.** On disk `e8792d0f`, pin `178cf5f7`. That is the
-        guard working — the oracle was CHANGED, not deleted, and the gate refuses rather than
-        comparing against something new. Do not "fix" it by moving the pin without reading why.
+  - [x] **A PIN CHECK THAT READS A FILTERED LANE CANNOT ASK WHETHER A DELETED ROW IS STILL
+        THERE.** Was red: `wk-cd-gate`, `bc-u32-gate`, with the values MEASURED correct by hand.
+        **MY regression, from the `.sub` -> `.rows` rename above** — `LANE_ROWS` was applied to
+        every tag, so the filtered ORACLE lane was written ON TOP of the raw one and only `py`
+        collided. Four reads moved to a `raw` snapshot. Fixed in `116f73fd`; 9 of 9 green.
+        **ONE OF THE FOUR WAS VACUOUS, WHICH IS WORSE:** `port_only`'s absence half asserted the
+        oracle does not emit a port-only row, off the lane the filter had just deleted it from.
+        It could not fire, on any gate, ever. A check that cannot fail is a comment with a call
+        in it. `.sub` named nothing and the DISTINCTION it carried was load-bearing — I collapsed
+        two artifacts onto one name because one name was inelegant.
+  - [ ] **`gates/artifacts/` HELD ONE DIRECTORY WITH TWO MEANINGS** — `py.rows` FILTERED beside
+        `bd.out` RAW, under extensions that promise a like-for-like diff across lanes. A reader
+        diffing them was diffing a filtered oracle against an unfiltered port, and the harness
+        would have called the lanes consistent. FIXED in `116f73fd`: compared rows are now
+        `.cmp` on every lane, so the raw lanes are verbatim and each extension means one thing.
+        Verify by diffing `py.rows` against `bd.out` on some gate and confirming the row COUNTS
+        match — nobody has done that yet, and it is the claim this file exists to keep honest.
+  - [x] **`mixin-op-gate`'s ORACLE PIN DRIFTED** — on disk `e8792d0f`, pin `178cf5f7`. That was the
+        guard working: the oracle was CHANGED, not deleted, and the gate refused rather than
+        comparing against something new. **The other agent re-froze it deliberately**; the gate is
+        green at 32 shared rows. Never "fix" a pin by moving it to match the disk.
   - [ ] **`jj bookmark create -r @-` IS A RACE.** The other agent committed between my
         `--help` and my `create`, so `-r @-` resolved to THEIR commit. I pushed a branch called
         `gates-rows` pointing at a commit titled "THE PORT EMITS ROWS" — not mine. Resolving a
@@ -12912,3 +13025,84 @@ taken a SECOND time. Census: 566 walls, 40 shared, 249 BACKLOG.
 - [ ] **REPORTED — `gates/mixin-op-gate.py:70`'s ORACLE_PIN is stale as committed**
       (`178cf5f7` vs the file's `e8792d0f`; `57d0fc387` repointed the shell's usage line and
       did not re-freeze). It makes the gate permanently rc=2. Re-freeze deliberately or restore.
+
+### Shell roots — every `checks/*.sh` now proves which tree it is standing in
+
+`checks/*.sh` [#########] 9/9 · `.agents/slop/shells/`
+
+- [x] **14 of 17 `checks/*.sh` RESOLVED A PATH AGAINST A DIRECTORY THAT IS NOT THE REPO.**
+      `dirname "$0"/../../..` from `checks/` is `/Users/cyberistic/src`, not the repo; two
+      hardcoded the absolute path of one checkout. MEASURED in a `git worktree` copy run from
+      `/`: **WRONG-ROOT 8 of 17, plus 1 SUSPECT that exited 0 while reading the wrong tree.**
+      `.agents/slop/shells/README.md`, `VERDICTS.tsv`.
+- [x] **EACH ONE NOW COMPUTES THE ROOT FROM ITSELF AND ASSERTS IT**, on two tracked markers
+      (`pyproject.toml` and `tinybendygrad/`), so a fourth relocation is a refusal and not a
+      third exception. **17 of 17 assert; 1 of 17 did before.** Same measure in the clean
+      worktree, from a foreign CWD: **WRONG-ROOT 8 -> 1**, and the 1 is `checks/e2e.sh`.
+- [x] **THE PLANT MOVES A SCRIPT ONE DIRECTORY DEEPER AND IT GOES RED: 14 of 14 caught, rc=3,
+      naming the directory it actually reached.** Without the assertion these ran anyway.
+      `plant.sh` and `lint_demo.sh` needed a second look and are now caught too — `lint_demo.sh`
+      did not refuse on the first attempt because `${0:A:h:h}` collapses to a *string* that the
+      marker test then never saw.
+- [x] **`checks/mutate.sh` DELETED.** It diffed against `/tmp/spec.gate.base`, which **it never
+      creates and which does not exist**, so it could never report a row diff; it mutated
+      `tinybendygrad/uop/spec.bend` in the live tree; it ran five unbounded `bend` processes.
+      Covered, with paired disarm, by `checks/lintable-gate.sh --plant`, `checks/plant.sh`,
+      `checks/walk-mutate.sh` and `.agents/slop/ops-501-mutate.py`. Nothing referenced it.
+- [x] **THE INSTRUMENT EXECUTES THE SCRIPTS AND NEVER PARSES THEM** (`rootcheck.sh` +
+      `verdicts.py`), because a tokenizer that shares an assumption with its own belt is the
+      defect this repo has already paid for twice. Its first cut read every script's evidence
+      out of one directory and so inherited `e2e.sh`'s failure into all seventeen verdicts;
+      that is recorded in `verdicts.py` rather than quietly fixed.
+- [ ] **REPORTED, NOT MINE — `bin/bend` CANNOT RUN IN A CLONE.** An absolute path into a
+      gitignored checkout. The correct form already exists at `checks/bend:3`:
+      `exec bun "$(dirname "$0")/../references/bend/bend2/main.ts" "$@"`. Another unit owns it.
+- [ ] **REPORTED, NOT MINE — `checks/e2e.sh` CANNOT BE FIXED FROM HERE.** `checks/e2e.py:182`
+      pins `BODY_SHA = 951c5b33…`, the sha256 of that very file, and refuses with exit 3 on
+      drift, so its `../..` cannot move without the pin moving in the same commit. The pin's own
+      comment says the check is deliberately not a failure when the file is ABSENT, so deleting
+      it is the clean unblock — the `checks/e2e.py` unit's call.
+- [ ] **REPORTED, NOT MINE — `checks/hermetic-census.py:33` and `checks/census.py:14` are still
+      on `parents[2]`, resolving to `/Users/cyberistic/src`,** and neither asserts. They want
+      `HERE.parents[0]` plus the `refuse()` that `checks/abi_gate.py:77` already demonstrates.
+
+## 2026-10-06 — UNSETEXP unit: the NINE graphs that ran with nothing said about them. Progress: `[######....]` 6/10
+
+First on disk: `.agents/slop/unsetexp/TABLE.md` — the nine, per graph, what it emits / what it
+emitted / whether it agreed. `probe.py` re-measures all 25, 3 trials, into that directory;
+`selftest.py` plants and disarms the new pin by RUNNING the driver against a stub (rc 0, 26
+assertions, no `bend`, `runs/graphcmp/D/` untouched). **NOT COMMITTED.**
+
+- [x] **THE NINE, MEASURED**: 5 AGREE (`alu` `bit` `bw` `move` `where`), 4 DISAGREE (`allred`
+      `cdiv` `flip` `late`), **3/3 trials STABLE each**, and the canonical-byte channel picks the
+      same 19 and the same 6 as the verdict channel over all 25.
+- [x] **HOW MANY OF `WANT`'s 16 HAD ONE OBSERVATION AND NOTHING TO CORROBORATE IT: 14** — every
+      `AGREE`. `runs/` is gitignored (`.gitignore:144`), all 14 entered in the single commit
+      `6d5509216`, no verdict has ever been recorded durably, and `g_flip`'s docstring is the ONLY
+      fixture in 25 that predicted its own verdict.
+- [x] **ANSWER 2 FOR THE FOUR** (`WANT` 16 → 20): `flip` on `arg` (predicted by its own docstring),
+      and `allred`/`cdiv`/`late` because **`emit --side bend` for those three AND `matmul` is the
+      same 18 lines and the same sha256 `9f39a6e3ee7a0e30…`** — four names, one emission, and
+      `matmul` itself matches CPython byte for byte, so they are rendered as the wrong FIXTURE.
+      Named for `.agents/slop/disagree/`'s unit; not diagnosed here.
+- [x] **ANSWER 3 FOR THE FIVE, DELIBERATELY**: an `AGREE` row there would assert nothing the
+      `D2-cmp-*` pin does not already assert, so writing five more would make 19 of 20 rows bare
+      one-observation claims. The gap stays open, `run` keeps exiting 1, and the UNSET line now
+      says per graph whether it is a bookkeeping gap or "the table is behind the port".
+- [x] **NEW PIN `expect-moved=0` + a second refusal.** `cmd_run` returned 0 whenever `unset` was
+      empty, so a run whose table was simply WRONG read healthy — and `graphs-agree` nets out, so
+      it misses one-row-to-AGREE-while-another-goes-to-DISAGREE. Different question from
+      `graphs`/`graphs-answered`/`graphs-unset` (how many ROWS) and from `graphs-agree` (how many
+      ARTIFACTS carry a verdict). Pins move to `graphs-unset=5`, `graphs-answered=20`.
+- [x] **`graphs-unanswered` DELIBERATELY NOT ADDED** — it is `graphs-unset` under a second name,
+      and two spellings of one number is the `agree == total` conflation `corpus-figure.py` already
+      paid for. `corpus-figure.py` read and left alone: it reads `graphs`, `graphs-agree` and
+      `not-comparable`, all unchanged, and its `not-comparable == 0` test is still the right one.
+- [ ] **`runs/graphcmp/D/` NOT REGENERATED** (shared tree, another unit auditing it). So
+      `unhealthy()` on the on-disk run names `graphs-answered=16`, `graphs-unset=9` and
+      `expect-moved ABSENT`; the three clear on the next `differ.py run` by the tree's owner.
+- [ ] **`.agents/slop/want/` IS TWO FILES BEHIND AND IS NOT MINE**: `census.py` still labels the
+      five `UNCOMPARED … NEVER RUN`, which is FALSE — they run; `selftest.py` fails 3 assertions
+      pinned to the 9/16 state. Reported, not edited.
+- [ ] **OPEN JUDGEMENT**: whether the five forced `AGREE`s deserve rows at all. The evidence is in
+      the `WANT` comment; the call that a forced claim is not worth a row is arguable.
