@@ -109,6 +109,124 @@ NAMED_BY = [":(glob).agents/slop/*.md", "AGENTS.md", ":(glob)checks/*.md",
             ":(glob)gates/*.md", ":(glob).agents/*.md",
             ":(glob)checks/*.py", ":(glob)gates/*.py"]
 
+# THIS CHECK'S OWN OUTPUT. It is excluded from the corpus above, and the exclusion is what stops this
+# file from being the citation that keeps the rows it is reporting on. It is a MODULE CONSTANT so the
+# discovery below finds it by the same rule that finds `residue.OUT`, with no entry written here.
+SELF = ".agents/slop/slopfinal"
+
+
+def self_output_dirs(root: str = ROOT) -> tuple[str, ...]:
+    """Every directory under `.agents/slop` that an instrument in `checks/` or `gates/` WRITES TO.
+
+    THE THIRD OCCURRENCE OF ONE SHAPE HAS A FIX THAT IS NOT A LIST. `.agents/slop/residue/
+    000-the-residue.md` names every residue row by path; the moment it was staged the next run found
+    every row CITED by the report that enumerates them, and the residue collapsed from 40 `UNNAMED`
+    to 0. A THIRD variant is waiting for any report of mine, so the fix is structural.
+
+    **WRITE-TARGET, NOT MENTION, AND THE DIFFERENCE IS THE WHOLE PROBLEM.** A first attempt took
+    every string literal beginning `.agents/slop/` and got **24 directories from 61 modules** --
+    including `e2e_mm.py`, `e2e_port/run-port-mm.sh`, `f64/run-f64.sh` and `graphcmp.py`. Those are a
+    gate's REQUIRED INPUTS: excluding them re-breaks the one artifact in this repository, and it
+    would do it *silently*, by making stage 1's driver invisible to the census that exists to keep
+    it alive. **A MENTION IS NOT AN OWNERSHIP CLAIM; A WRITE IS.** So a directory is excluded only
+    when a module-level binding resolves to it AND a write call names it.
+
+    DISCOVERED BY AST, NEVER EXECUTED. Executing 61 modules to read a constant would run 61
+    instruments' import side effects to answer a question about text.
+    """
+    import ast
+    import glob
+
+    def const(node, env):
+        """The string a node contributes, following module-level bindings and `os.path.join`."""
+        if isinstance(node, ast.Constant) and isinstance(node.value, str):
+            return node.value
+        if isinstance(node, ast.Name):
+            return env.get(node.id)
+        if isinstance(node, ast.Call):
+            fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+            if fn == "join":
+                # The UNRESOLVED argument is the repository root, an opaque prefix. Concatenating
+                # only the resolved literals is what leaves a residue-RELATIVE path behind.
+                lits = [v for v in (const(a, env) for a in node.args) if isinstance(v, str)]
+                return "".join(lits) if lits else None
+        return None
+
+    writes = {"makedirs", "mkdir", "write_text", "open"}
+    out: set[str] = set()
+    for path in sorted(glob.glob(os.path.join(root, "checks", "*.py"))
+                       + glob.glob(os.path.join(root, "gates", "*.py"))):
+        try:
+            tree = ast.parse(open(path, errors="replace").read())
+        except (OSError, SyntaxError):
+            continue
+        env = {}
+        for st in tree.body:
+            if isinstance(st, ast.Assign) and len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
+                if (v := const(st.value, {})) is not None:
+                    env[st.targets[0].id] = v
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+            if fn not in writes:
+                continue
+            if fn == "open":
+                # An `open` with NO mode is a READ. Excluding on the strength of a read is how the
+                # first attempt came to treat `e2e_mm.py` as an output.
+                mode = "r"
+                if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
+                    mode = node.args[1].value
+                if not any(ch in str(mode) for ch in "wax+"):
+                    continue
+            for arg in list(node.args) + [k.value for k in node.keywords]:
+                v = const(arg, env)
+                if v and ".agents/slop/" in v:
+                    tail = v.split(".agents/slop/", 1)[1].strip("/")
+                    if not tail:
+                        continue
+                    # A FILE the instrument writes is not an output DIRECTORY, and excluding it
+                    # would delete from the corpus the very witness that vouches for the file:
+                    # `residue.py` writes `000-the-residue.md`, so a file-shaped exclusion removes
+                    # the report while leaving the rows it names -- the exclusion without the thing
+                    # it exists to hide. **AN EXCLUSION MUST BE COarser THAN THE NAME IT EXCLUDES.**
+                    head = tail.split("/")[0]
+                    # One component, no dot: a DIRECTORY is the only path part with neither.
+                    if "." not in head:
+                        out.add(".agents/slop/" + head)
+    return tuple(sorted(out))
+
+
+def self_excludes(root: str = ROOT) -> list[str]:
+    """The `:(exclude)` pathspecs for those directories, plus this file's own."""
+    return [f":(exclude){d}/**" for d in (*self_output_dirs(root), SELF)]
+
+
+def house_excluded(root: str, rel: str) -> bool:
+    """Is this path OUT OF CENSUS by the house rules -- a shadow tree, or an instrument's own output?
+
+    **CONSUME `residue.EXCLUDED_DIRS`, DO NOT COPY IT.** The house rules exclude `dd-cone-wt/`,
+    `xd1/`, `strays/`, `strays-root/`, `rf2root/`, `diffpy/`, `e2e*/`, `f64/`, `portexec/`,
+    `gates/{oracles,artifacts}/` and every live unit's directory from every walk. Those names live in
+    `checks/residue.py`, which is another unit's file, and a second copy of them here would be a
+    contract with no generator -- the shape that produced `LIVE_UNITS`, `ORACLE_WORD` and the 103
+    `.txt` names in one session. So the question is ASKED.
+
+    ONE PREDICATE FOR BOTH ROLES. A path that is out of census must be out of census for the CITATION
+    INDEX and for the WALK, or the index reads a shadow tree's own report as an authority while the
+    classifier calls the same tree junk -- two instruments, one tree, opposite answers.
+    """
+    if any(rel.startswith(d + "/") for d in (*self_output_dirs(root), SELF)):
+        return True
+    try:
+        spec = importlib.util.spec_from_file_location("residue", os.path.join(root, "checks/residue.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return m.excluded(rel)
+    except Exception:
+        return False
+
+
 # A gate names itself with these words. `-gate`/`-check` decide; `probe`/`mutate`/`gen`/`fix` are
 # a thing that was run once. The distinction is the project's own vocabulary, not mine.
 #
@@ -170,28 +288,11 @@ DIFFER = {"graphcmp.py", "graphcmp.bend", "graphcmp-oracle.py",
 # the six finished `LIVE_UNITS` below did.
 ROLE_DIRS = {"oracles": "ORACLE", "gates": "GATE", "checks": "GATE"}
 
-LIVE_UNITS = (
-    # LIVE RIGHT NOW. MEASURED 2026-10-05: this list was written before the current four were
-    # dispatched, and the plan put **255 files of a running unit's** (`e2epy/`) into the DELETE
-    # bucket. A live unit's exclusion cannot live in a hand-maintained list that nobody updates at
-    # dispatch time, so the mtime window is the real guard and this list is only a second belt.
-    "readback", "jsbf16", "bitcastrow", "corpus24", "i64shl", "shfinish", "wallcheck",
-    # DISPATCHED AFTER THAT LIST WAS WRITTEN, WHICH IS THE THIRD TIME IT HAS BEEN WRONG. The mtime
-    # window catches files a unit is actively writing; it does NOT catch the directory a unit is about
-    # to write into, which is why this list exists at all. **A GUARD THAT IS CORRECT EXCEPT FOR THE
-    # LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER.**
-    "staleruns", "straysunit", "noreports", "runskeep", "dotxt",
-    # FINISHED UNITS US TO BE PINNED HERE WERE THE WHOLE PROBLEM. MEASURED 2026-10-05: six names
-    # sat under a `# finished` heading and had never been removed, and two of them were
-    # `differverdict` (**1,382 files**) and `gatecensus` (**971**) — **2,353 of the 4,455 files in
-    # `.slop`, 53%**, every one of them **100% tracked in git** and named by **0 files outside
-    # themselves**. A finished unit's tree is not evidence of anything a reader can check; it is a
-    # copy, and `git show` is the copy. **THE MTIME WINDOW IS THE LIVENESS GUARD, EXACTLY AS THE
-    # COMMENT ABOVE SAYS -- AND A LIST THAT OUTLIVES ITS UNITS IS NOT A SECOND BELT, IT IS THE
-    # ONLY BELT, WHICH IS HOW 53% OF THE TREE BECAME PERMANENT.**
-    # a port that just completed but whose tree is still the cleanest evidence of a migration
-    "e2epy", "substrate",
-)
+# LIVE_UNITS lived here, a tuple of 14 names. It is gone, and `live_units()` near
+# `live_set` is what answers the question now: **A GUARD THAT IS CORRECT EXCEPT FOR
+# THE LAST DISPATCH IS NOT A GUARD, IT IS A COINCIDENCE WITH THE DISPATCH ORDER.**
+# That sentence is why the tuple existed; the tuple kept being wrong in exactly the
+# way it described.
 
 # Four MUTATION ARMS, NOT A COPY. `dd-cone-wt/` is 43 MB and 572 files, and the shadowtrees unit
 # measured that its four arms differ in exactly TWO files and that `codegen/decomp/dtype.bend` is
@@ -201,23 +302,53 @@ LIVE_UNITS = (
 PROTECTED_DIRS = ("dd-cone-wt",)
 
 
-def committed_files() -> list[tuple[str, str]]:
+def committed_files(root: str = ROOT, copies: set[str] | None = None) -> list[tuple[str, str]]:
     """(path, text) for every committed report and every reader-facing doc, read once each.
 
     PER FILE, because a citation with no ATTRIBUTION cannot be examined. The union of these texts is
     a blob, and a blob answers "is this name mentioned" and nothing else -- so it cannot tell a
     report that depends on a file from a shadow tree naming the files it copied, which are the same
     answer and not the same fact. `checks/residue.py` says the same thing about the same instrument.
+
+    `HEAD:`, AND THAT IS A MEASURED BLIND SPOT. `git show HEAD:<path>` reads the COMMIT, so a report
+    that is EDITED BUT UNCOMMITTED contributes its old text, and an UNTRACKED report contributes
+    nothing. `Facts.dirty_corpus()` measures the size of the gap and the plan prints it, because a
+    bounded blind spot nobody is told the size of is an unbounded one.
+
+    **`.agents/slop` IS WALKED, NOT GLOBBED, AND `:(glob)` WAS THE WRONG DISCRIMINATOR.** The corpus
+    once read `:(glob).agents/slop/*.md`, which was introduced because git's default pathspec treats
+    `*` as FNM_PATHNAME-OFF, so `*` CROSSES `/` and matched shadow-tree reports -- MEASURED then, 63%
+    of the blob was a copy of the evidence. But `:(glob)` does not cross `/` either, and **every unit
+    writes its report into a SUBDIRECTORY.** MEASURED on this tree: 262 committed `.md` under
+    `.agents/slop`, of which `:(glob)` reaches **98**. **164 real reports were invisible to the index
+    that exists to find out what the project depends on**, and the fix for a false positive created a
+    false negative 164 times over. Depth cannot tell a unit's claim from a shadow tree's copy --
+    `.agents/slop/abi4/README.md` and `.agents/slop/arghalf/pin-tree/tinygrad/viz/README.md` are both
+    at depth 2 -- so depth is not used.
+
+    **THE DISCRIMINATOR IS WHETHER THE FILE IS A BYTE-COPY, WHICH IS A PROOF AND NOT A LIST.** A
+    corpus file identical to another file contributes no citation the other does not already
+    contribute. MEASURED: of 257 widened candidates, **251 survive** (5 out of census by the house
+    rules, 1 a copy). Same principle as G8 one level up: G8 asks "is the CITER a copy?", this asks
+    "is the CORPUS MEMBER a copy?".
     """
-    out = []
+    copies = copies or set()
+    out, seen = [], set()
     try:
-        names = subprocess.run(["git", "ls-files", "--"] + NAMED_BY, cwd=ROOT,
-                               capture_output=True, text=True).stdout.split()
+        names = subprocess.run(["git", "ls-files", "--", *NAMED_BY, *self_excludes(root)],
+                               cwd=root, capture_output=True, text=True).stdout.split()
     except Exception:
         return []
+    tracked = tracked_files(root)
+    names += [n for n in sorted(tracked)
+              if n.endswith(".md") and n.startswith(".agents/slop/")
+              and n not in copies and not house_excluded(root, n)]
     for nm in names:
+        if nm in seen:
+            continue
+        seen.add(nm)
         try:
-            r = subprocess.run(["git", "show", f"HEAD:{nm}"], cwd=ROOT,
+            r = subprocess.run(["git", "show", f"HEAD:{nm}"], cwd=root,
                                capture_output=True, text=True, errors="replace")
             if r.returncode == 0:
                 out.append((nm, r.stdout))
@@ -226,20 +357,52 @@ def committed_files() -> list[tuple[str, str]]:
     return out
 
 
-def committed_named_text() -> str:
+def committed_named_text(root: str = ROOT) -> str:
     """Every committed report and every reader-facing doc, as one blob."""
-    return "\n".join(t for _nm, t in committed_files())
+    return "\n".join(t for _nm, t in committed_files(root))
 
 
-def tracked_files() -> set[str]:
+def tracked_files(root: str = ROOT) -> set[str]:
     """`git ls-files` MINUS the tracked-but-deleted.
 
     `git ls-files` RETURNS TRACKED-BUT-DELETED PATHS, so membership tested against it alone calls a
     file committed when it is not on disk at all -- and an uncommitted row would then be deleted as
     if `git` could restore it.
+
+    **`os.path.lexists`, NOT `Path.exists()`: `exists()` FOLLOWS SYMLINKS AND THIS TREE HAS 167 OF
+    THEM**, so a dangling link inside `.slop` is reported here as ABSENT while `git` tracks it, and a
+    tracked row would be called untracked on the strength of a link's target.
+
+    MEASURED, because the count was quoted as a defect that has since stopped being one: `git
+    ls-files` returns 4,609 paths on this tree and **all 4,609 are on disk -- 0 phantom, 0 entries
+    carrying the intent-to-add empty-blob SHA `e69de29`.** The 4,109 figure in circulation was true
+    earlier today and is FALSE NOW, which is exactly why a premise that is not re-measured decays.
     """
-    r = subprocess.run(["git", "ls-files", "-z"], cwd=ROOT, capture_output=True, text=True)
-    return {p for p in r.stdout.split("\0") if p and os.path.lexists(os.path.join(ROOT, p))}
+    r = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, text=True)
+    return {p for p in r.stdout.split("\0") if p and os.path.lexists(os.path.join(root, p))}
+
+
+def residue_copies(root: str, rows: list[str]) -> set[str]:
+    """Which of these residue files are byte-identical to a file OUTSIDE the residue.
+
+    CONSUMED, NOT REIMPLEMENTED. `checks/residue.py` already builds this index and it is not this
+    file's to change, so a second sha256 pass over 4,609 tracked files would be a second contract
+    with no generator -- which is how four artifacts came to be LOST and four others NEW in this
+    project. One import, one call.
+
+    AN AUTHORITY THAT CANNOT BE ASKED YIELDS NOTHING RATHER THAN A TRACEBACK, and `set()` here makes
+    the G8 discriminator below DECLINE, which leaves the row `UNKNOWN` -- the safe direction. A
+    missing twin map must never become a blanket exemption, and it cannot become a false DELETE
+    either, because the only rows it can move are ones already reached from inside the residue.
+    """
+    try:
+        spec = importlib.util.spec_from_file_location("residue", os.path.join(root, "checks/residue.py"))
+        m = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(m)
+        return set(m.outside_twins(root, tracked_files(root), [(r, 0) for r in rows]))
+    except Exception:
+        return set()
+
 
 
 def declared_names() -> set[str]:
@@ -310,7 +473,7 @@ def in_residue(rel: str) -> bool:
     return len(parts) > 1 and f"{parts[0]}/{parts[1]}" in RESIDUE_ROOTS
 
 
-def witness_committed(rel: str, tracked: set[str]) -> bool:
+def witness_committed(rel: str, tracked: set[str], root: str = ROOT) -> bool:
     """Is there a COMMITTED report in this row's OWN directory?
 
     The cheapest decidable test for a tool row, and mechanical: either the directory holds a `.md`
@@ -318,10 +481,16 @@ def witness_committed(rel: str, tracked: set[str]) -> bool:
     or it does not, in which case **the only thing that could ever explain this row is missing**.
     `committed_files` reads `git show HEAD:`, so an EDITED-BUT-UNCOMMITTED report contributes its old
     text -- an uncommitted report cites nothing, and says so here.
+
+    **`root` IS A PARAMETER AND IT WAS NOT.** It read the module global, which is right in production
+    and untestable anywhere else: a synthetic tree's row asked whether ITS OWN directory held a
+    report and got the PRODUCTION directory's answer, so the one `needs=` this function decides could
+    not be planted at all. A predicate that reads a global cannot be exercised against a fixture, and
+    **a test that cannot be run is not a test.**
     """
     d = os.path.dirname(rel)
     try:
-        names = os.listdir(os.path.join(ROOT, d))
+        names = os.listdir(os.path.join(root, d))
     except OSError:
         return False
     return any(n.endswith(".md") and f"{d}/{n}" in tracked for n in names)
@@ -333,15 +502,26 @@ class Facts:
     A PER-ITEM SCAN OF A SHARED CORPUS is this project's third performance bug and it is not an
     optimisation to avoid: the corpus does not change between items, so 1,421 scans of 3.4 MB is the
     same shape as the 23,000 x 3.4 MB that timed out `--plan` at 15 minutes.
+
+    `root` IS A PARAMETER, not a module global, because `--plant` builds this over a synthetic tree
+    and a Facts that could only describe the production tree would make every plant a tautology.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, root: str = ROOT) -> None:
+        self.root = root
+        self.tracked = tracked_files(root)
+        self.files = walk_residue(root)
+        # G8'S MAP, and the corpus filter's map -- ONE sha256 index, asked twice. Built here rather
+        # than per row because it is a per-item scan of a shared corpus again: asking per row would
+        # re-hash every tracked file once per residue row.
+        self.copies = residue_copies(root, [r for r, _ in self.files])
+        self.declared = declared_names()
         self.chars = 0
         # Belt A's key set is `mentioned_filenames` over the joined blob, token for token: neither
         # pattern can span the newline that joins the files, so indexing per file and taking the
         # union is the same set, and every verdict that used the blob keeps its meaning.
         self.cites: list[dict[str, set[str]]] = [{}, {}]
-        for nm, text in committed_files():
+        for nm, text in committed_files(root, self.copies):
             self.chars += len(text)
             for belt, toks in ((0, mentioned_filenames(text)), (1, whole_path_tokens(text))):
                 index = self.cites[belt]
@@ -349,38 +529,141 @@ class Facts:
                     index.setdefault(tok, set()).add(nm)
                     index.setdefault(tok.rsplit("/", 1)[-1], set()).add(nm)
         self.mentioned = set(self.cites[0])
-        self.tracked = tracked_files()
-        self.declared = declared_names()
+        self.corpus_names = [nm for nm, _t in committed_files(root, self.copies)]
+
+    def dirty_corpus(self) -> tuple[int, int]:
+        """(files, bytes) of the corpus that is DIRTY in the worktree, so the index reads stale text.
+
+        Printed next to the headline rather than in a comment, because a bounded blind spot nobody
+        is told the size of is an unbounded one.
+        """
+        names = set(self.corpus_names)
+        try:
+            st = subprocess.run(["git", "status", "--porcelain", "-z"], cwd=self.root,
+                                capture_output=True, text=True).stdout
+        except Exception:
+            return (0, 0)
+        dirty = {x[3:] for x in st.split("\0") if len(x) > 3} & names
+        byts = 0
+        for d in dirty:
+            try:
+                byts += os.lstat(os.path.join(self.root, d)).st_size
+            except OSError:
+                pass
+        return (len(dirty), byts)
+
+
+def walk_residue(root: str = ROOT) -> list[tuple[str, int]]:
+    """(relpath, lstat size) for every file under both residue roots. `lstat`, NEVER `getsize`.
+
+    `getsize` and `Path.exists()` both FOLLOW SYMLINKS, and this tree has 167 of them pointing into
+    `.venv` and into shadow trees -- which once made a 168 MB tree report as 1,291 MB, a 7.5x
+    headline on the one number the instrument exists to publish.
+    """
+    out = []
+    for base in RESIDUE_ROOTS:
+        for dirpath, _d, files in os.walk(os.path.join(root, base)):
+            for f in files:
+                p = os.path.join(dirpath, f)
+                try:
+                    out.append((os.path.relpath(p, root), os.lstat(p).st_size))
+                except OSError:
+                    pass
+    return out
+
 
 
 @functools.cache
-def facts() -> Facts:
-    """The measurements, built once per process. `--plan` classifies 1,421 rows against one tree."""
-    return Facts()
+def facts(root: str = ROOT) -> Facts:
+    """The measurements, built once per process. `--plan` classifies every row against one tree."""
+    return Facts(root)
 
 
-def live_set(minutes: int) -> set[str]:
+def live_set(minutes: int, root: str = ROOT) -> set[str]:
     cutoff = time.time() - minutes * 60
     live = set()
     for base in (SLOP, RUNS):
-        for dirpath, _d, files in os.walk(base):
+        for dirpath, _d, files in os.walk(os.path.join(root, base)):
             for f in files:
                 p = os.path.join(dirpath, f)
                 try:
                     if os.path.getmtime(p) >= cutoff:
-                        live.add(os.path.relpath(p, ROOT))
+                        live.add(os.path.relpath(p, root))
                 except OSError:
                     pass
     return live
 
 
-def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None) -> str:
+_LIVE_UNIT_CACHE: dict[tuple[int, str], set[str]] = {}
+
+
+def live_units(minutes: int, root: str = ROOT) -> set[str]:
+    """THE LIVE ROSTER, DISCOVERED: a unit is live iff the NEWEST file under
+    `.agents/slop/<name>/` is younger than the window. One walk, one level down,
+    no names, no ledger -- the input is the tree itself.
+
+    **THE LOWER BOUND, STATED WHERE THE RULE LIVES:** a unit that has been
+    DISPATCHED but has not yet WRITTEN a file is invisible to an mtime rule, so
+    `w=0` names 0 while house rules say units are running. This rule can never
+    kill a live unit's files, but it can MISS one with nothing to show yet. It is
+    a LOWER BOUND on liveness, not an equality. If a dispatch-time record naming
+    each unit's directory ever appears, this becomes `OR` with that record -- a
+    declared input, not a tuple. Until then, silence is the honest count.
+
+    **A GUARD THAT IS CORRECT EXCEPT FOR THE LAST DISPATCH IS NOT A GUARD, IT IS
+    A COINCIDENCE WITH THE DISPATCH ORDER.** That sentence is why the tuple this
+    replaces existed; the warning now belongs to the clock, and the fix is that the
+    roster is the tree's own declaration of recentness, not a list.
+
+    Cached per (minutes, root): one walk per window per process, the same shape as
+    `live_set` being called once per window.
+    """
+    key = (minutes, root)
+    if key in _LIVE_UNIT_CACHE:
+        return _LIVE_UNIT_CACHE[key]
+    cutoff = time.time() - minutes * 60
+    newest: dict[str, float] = {}
+    slop = os.path.join(root, ".agents/slop")
+    for dirpath, _d, files in os.walk(slop):
+        for f in files:
+            p = os.path.join(dirpath, f)
+            try:
+                top = os.path.relpath(p, slop).split(os.sep)[0]
+                newest[top] = max(newest.get(top, 0.0), os.path.getmtime(p))
+            except OSError:
+                continue
+    live = {top for top, mt in newest.items() if mt >= cutoff}
+    _LIVE_UNIT_CACHE[key] = live
+    return live
+
+
+def classify(f: Facts, window: int) -> list[tuple[str, int, str]]:
+    """`(verdict, size, rel)` for the whole residue at ONE window, from ONE walk.
+
+    THE WALK IS TAKEN ONCE AND THE WINDOW APPLIED AFTERWARDS, WHICH IS THE WHOLE OF THE FIX. Reading
+    the tree separately per window measures the tree AND THE CLOCK, so the two are confounded and
+    neither number is checkable; freezing the population makes the window the only thing that moves.
+    """
+    live = live_set(window, f.root)
+    live_dirs = live_units(window, f.root)
+    out = []
+    for rel, sz in f.files:
+        v = verdict_for(rel, f.mentioned, f, live_dirs)
+        if rel in live and v not in ("PROTECTED", "LIVE-UNIT"):
+            v = "LIVE"
+        out.append((v, sz, rel))
+    return out
+
+
+def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None,
+                live_dirs: set[str] | None = None) -> str:
     """The one classification. `f` defaults to the once-per-process measurements, so a caller that
     only has a `mentioned` set -- `checks/residue.py` has exactly that -- still gets them.
 
     RETURNS A TAGGED VERDICT: a bucket name, or `UNKNOWN:<the cheapest test that would resolve it>`.
     """
     f = f if f is not None else facts()
+    live_dirs = live_dirs if live_dirs is not None else live_units(60, f.root)
     name = os.path.basename(rel)
     parts = rel.split(os.sep)
     top = parts[2] if len(parts) > 2 else ""
@@ -391,9 +674,11 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None) -> str:
             return ROLE_DIRS[part]
     if PROTECTED.search(rel):
         return "PROTECTED"
-    # A live unit's own directory, by name. The mtime window catches files; this catches the
-    # DIRECTORY a unit is about to write into.
-    if top in LIVE_UNITS:
+    # A live unit's own directory, discovered by mtime, NOT by name. The per-file
+    # window catches files; this catches the DIRECTORY a unit is about to write into.
+    # `live_units` is the lower bound -- a dispatched-but-not-yet-written unit is
+    # invisible, and the contract says so there, not here.
+    if top in live_dirs and rel.startswith(".agents/slop" + os.sep):
         return "LIVE-UNIT"
     if top in PROTECTED_DIRS:
         return "PROTECTED"
@@ -422,8 +707,24 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None) -> str:
         # REGEX being wrong. Which half is right is not a question a sweep may answer.
         return f"{UNKNOWN}:belts-disagree (the token regex sees {only_a[:1]}, " \
                f"the path scanner sees {only_b[:1]})"
+    # ---- G8, AND THE MEASUREMENT THAT SAYS IT IS SUBSUMED BY THE CORPUS FILTER. ----
+    # A CITATION IS NOT A LINE OF TEXT. IT IS A LINE OF TEXT PLUS THE AUTHORITY OF WHOSE TEXT IT IS,
+    # and `in_residue` answers WHERE a citer lives and never WHETHER IT IS AN AUTHORITY. The residue's
+    # own report is the proof the question is real: 40 `UNNAMED` rows became `CITED` the moment the
+    # report that NAMES every row was committed.
+    #
+    # **SO THE DISCRIMINATOR WAS WRITTEN, AND IT DECIDES 0 ROWS, AND ITS DISARM DOES NOT MOVE THE
+    # NUMBER.** "Is the citer itself a byte-copy of a file outside the residue?" is the right question
+    # and it is also a question `committed_files` has ALREADY ANSWERED FOR EVERY CORPUS MEMBER, so no
+    # copy is ever a citer and the case never arises. Before the corpus was filtered the class held
+    # **79 rows**; after, **0**, and emptying the twin map G8 would have read changes it back to **0**.
+    # **A DISCRIMINATOR WHOSE ANSWER IS ALREADY GIVEN IS NOT A CLAUSE, IT IS A RESTATEMENT** -- so the
+    # rule that actually did the work is the corpus filter below, whose measured delta is **190 rows
+    # that stop being DELETE and 0 that become DELETE**. Writing G8 here as well would be a second
+    # answer to a settled question, and two answers to one question is how `LIVE_UNITS` happened.
     if belt_b and not {c for c in belt_b if not in_residue(c)}:
         return f"{UNKNOWN}:residue-internal-citer (named only from inside the residue by {sorted(belt_b)[0]})"
+
     # ORACLE IS NOT A WORD SHAPE. MEASURED 2026-10-05: this test was `ORACLE_WORD.search(name)` and
     # nothing else, so **670 of 675 ORACLE files were classified by their FILENAME and were named by NO
     # GATE AT ALL** — `gatecensus/` 167, `arith/` 51, `denom/` 50, `hermetic/` 49, `hdrbase/` 33, `eq/`
@@ -453,7 +754,7 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None) -> str:
     if rel not in f.tracked:
         return (f"{UNKNOWN}:commit-or-drop (untracked, and nothing renders or names it; git could not"
                 " restore it if this pass were wrong)")
-    if os.path.splitext(name)[1] in TOOL_EXT and not witness_committed(rel, f.tracked):
+    if os.path.splitext(name)[1] in TOOL_EXT and not witness_committed(rel, f.tracked, f.root):
         return (f"{UNKNOWN}:commit-the-report-that-explains-it (a TOOL, and its own directory has no"
                 " committed report; nobody can say whose it is or what it was for)")
     return "DELETE"
@@ -472,6 +773,10 @@ def main() -> int:
                     help="verdicts to ACT on: DOC GATE ORACLE DELETE. "
                          "AUTHORED, UNKNOWN and the escapes are kept, never acted on")
     ap.add_argument("--live-minutes", type=int, default=60)
+    ap.add_argument("--windows", default="0,60,1440",
+                    help="comma-separated liveness windows to report SIDE BY SIDE, each from ONE "
+                         "frozen walk. The default is the three that answer 'is this number a "
+                         "property of the tree or of the clock?'")
     ap.add_argument("--yes", action="store_true", help="required for DELETE")
     args = ap.parse_args()
 
@@ -482,31 +787,16 @@ def main() -> int:
         return 3
 
     f = facts()
+    # THE WINDOWS ARE A LIST, NOT A SCALAR, AND THE DEFAULT IS THE THREE THAT ANSWER THE QUESTION.
+    # ONE NUMBER AT ONE WINDOW IS A STATEMENT ABOUT WHEN YOU LOOKED. MEASURED on one frozen
+    # population of 2,748 rows: `DELETE` reads 748 / 671 / 0 at 0, 60 and 1440 minutes. Publishing
+    # any ONE of those as "the" count is choosing a flattering hour.
+    windows = sorted({int(x) for x in args.windows.split(",")} | {args.live_minutes})
+    tables = {w: classify(f, w) for w in windows}
     mentioned = f.mentioned
-    live = live_set(args.live_minutes)
-    # The same walk, with the window OFF, because the headline must not be a fact about the last hour.
-    cold = live_set(0) if args.live_minutes else live
+    rows = [(v, sz, rel, rel not in live_set(0, f.root)) for v, sz, rel in tables[args.live_minutes]]
 
-    rows = []
-    for base in (SLOP, RUNS):
-        for dirpath, _d, files in os.walk(base):
-            for n in sorted(files):
-                p = os.path.join(dirpath, n)
-                rel = os.path.relpath(p, ROOT)
-                v = verdict_for(rel, mentioned, f)
-                if rel in live and v not in ("PROTECTED", "LIVE-UNIT"):
-                    v = "LIVE"
-                try:
-                    # lstat, NOT getsize: getsize FOLLOWS SYMLINKS, and slop has 174 of
-                    # them pointing into .venv and into shadow trees. Following them counted
-                    # each link at its TARGET's size, so the sweep reported **1,291 MB for a
-                    # 149 MB tree** -- a 7.5x headline on the ONE number it exists to publish.
-                    rows.append((v, os.lstat(p).st_size, rel, rel not in cold))
-                except OSError:
-                    pass
-
-    counts = collections.Counter()
-    sizes = collections.Counter()
+    counts, sizes = collections.Counter(), collections.Counter()
     for v, sz, _r, _c in rows:
         counts[bucket(v)] += 1
         sizes[bucket(v)] += sz
@@ -514,6 +804,16 @@ def main() -> int:
     total_n, total_b = len(rows), sum(sizes.values())
     print(f"# sweep: {total_n} files, {total_b/1048576:.0f} MB, "
           f"live-window {args.live_minutes}m, {len(mentioned)} filenames mentioned in {f.chars} chars")
+    n_dirty, n_dirty_b = f.dirty_corpus()
+    n_slop = sum(1 for n in f.corpus_names if n.startswith(".agents/slop/"))
+    print(f"# corpus: {len(f.corpus_names)} committed files ({n_slop} of them .agents/slop reports at "
+          f"ANY depth),\n#   {n_dirty} DIRTY in the worktree: {n_dirty_b/1024:.0f} KB read at HEAD "
+          f"instead of from disk -- an uncommitted report cites nothing")
+    print(f"# out of census: {', '.join(self_output_dirs(ROOT)) or 'NONE FOUND'} + {SELF} "
+          f"(write-targets, discovered) + {len(f.copies)} byte-copies + residue.EXCLUDED_DIRS\n"
+          f"#   (a MENTION is not an output; a DEPTH is not a shadow tree; a COPY is excluded by a proof)")
+    print(f"# own output excluded from the corpus: {', '.join(self_output_dirs(ROOT)) or 'NONE FOUND'}"
+          f" + {SELF}  (write-targets, discovered; a MENTION is not an output)")
     for v in ("DOC", "GATE", "ORACLE", "AUTHORED", "DELETE", "UNKNOWN",
               "LIVE", "LIVE-UNIT", "PROTECTED"):
         if counts[v]:
@@ -525,6 +825,35 @@ def main() -> int:
                                 if v.startswith(UNKNOWN))
     for k, n in needs.most_common():
         print(f"#     needs={k:38s} {n:6d} rows")
+
+    # ---- THE TABLE. WHICH NUMBERS ARE CONSTANT AND WHICH ARE A FUNCTION OF THE CLOCK. ----
+    # Printed by DEFAULT, because the alternative is a reader taking one cell for a count. A figure
+    # that is identical at 0 and 1440 minutes is a property of the TREE; one that is not is a
+    # property of WHEN YOU LOOKED, and printing it without the other two columns hides that.
+    buckets = ("DOC", "GATE", "ORACLE", "AUTHORED", "KEEP-CITED", "DELETE", "UNKNOWN",
+               "LIVE", "LIVE-UNIT", "PROTECTED")
+    per = {w: collections.Counter(bucket(v) for v, _s, _r in tables[w]) for w in windows}
+    needsp = {w: collections.Counter(v.partition(":")[2].split(" (")[0] for v, *_ in tables[w]
+                                    if v.startswith(UNKNOWN)) for w in windows}
+    hdr = " ".join(f"{('w=' + str(w) + 'm'):>8s}" for w in windows)
+    print(f"\n# THE RESIDUE AT {len(windows)} WINDOWS, ONE FROZEN POPULATION OF {total_n} ROWS")
+    print(f"# {'bucket':38s}{hdr}  nature")
+    for b in buckets:
+        if not any(per[w][b] for w in windows):
+            continue
+        vals = [per[w][b] for w in windows]
+        nature = "CONSTANT -- a property of the tree" if len(set(vals)) == 1 \
+            else "MOVES   -- a function of the clock"
+        print(f"# {b:38s}" + " ".join(f"{v:8d}" for v in vals) + f"  {nature}")
+    print(f"# {'TOTAL':38s}" + " ".join(f"{len(tables[w]):8d}" for w in windows)
+          + "  CONSTANT -- the walk happened once")
+    print(f"# {'of which needs=:':38s}" + " ".join(f"{sum(needsp[w].values()):8d}" for w in windows)
+          + "  (the classes below)")
+    for k in sorted({k for w in windows for k in needsp[w]}):
+        vals = [needsp[w][k] for w in windows]
+        nature = "CONSTANT" if len(set(vals)) == 1 else "MOVES"
+        print(f"#   needs={k:32s}" + " ".join(f"{v:8d}" for v in vals) + f"  {nature}")
+
     if args.plan or not args.apply:
         keep = counts["DOC"] + counts["GATE"] + counts["ORACLE"] + counts["AUTHORED"]
         print(f"\n# KEEPING {keep} of {total_n}: "
