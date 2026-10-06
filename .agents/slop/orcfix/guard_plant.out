@@ -1,0 +1,7 @@
+1. clean                             no-txt rc=0   (want 0)
+2. 15 declared lane outputs         no-txt rc=1   names 15/15
+3. same tree + one-line wiring        rc=0   (want 0; all named by declared())
+4. FRESH undeclared tinybendygrad/*.txt rc=1  names it=True  (want rc 1, True)
+5. cleaned                           no-txt rc=0   (want 0)
+
+VERDICT: PLANTS HOLD

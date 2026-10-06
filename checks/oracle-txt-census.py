@@ -62,6 +62,7 @@ from __future__ import annotations
 import argparse
 import collections
 import hashlib
+import importlib.util
 import json
 import os
 import pathlib
@@ -202,25 +203,43 @@ def unbind(tok: str, binds: dict[str, str]) -> str:
     return tok
 
 
+def plant_exclusions() -> frozenset[str]:
+    """The reader-set prefixes THIS check's own plant declares, LOADED BY PATH.
+
+    `.agents/slop/oracletxt/plant.py` names its own tree, derived from its `__file__`. A second
+    copy of that path typed here would be the hand-list fault this declaration replaces: the
+    plant moves itself and the exclusion moves with it. A loader that FAILS returns nothing --
+    never a blanket exemption -- so the plant's own `.txt` tokens are then REPORTED.
+    """
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "plant", ROOT / ".agents/slop/oracletxt/plant.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.excluded()
+    except Exception:
+        return frozenset()
+
+
 def code_files() -> list[pathlib.Path]:
-    """Tracked `.sh`/`.py`, MINUS THIS FILE AND THIS CHECK'S OWN PLANTS.
+    """Tracked `.sh`/`.py`, MINUS THIS FILE, MINUS THIS CHECK'S OWN PLANT TREE.
 
     The exclusions are the finding, not hygiene. A census that names `oracles/baseline.txt` in its
     own `RIGHT` table is a reader of that file by the token test, so the first version reported
     `LIVE 1/259` on a population where the true answer is 0 -- its own example, counted as
-    evidence. `.agents/slop/oracles259/plants.py` names the same paths in its plant fixtures, and
-    while the plants ran, the tree the census described was the tree the plants had written. **A
-    PLANT THAT WRITES INTO THE POPULATION UNDER TEST IS A PLANT THAT MOVES THE ANSWER IT IS
-    MEASURING**, so the plants live outside `oracles/` -- `.agents/slop/oracletxt/`, this unit's, is
-    excluded whole -- and are out of the reader set.
+    evidence. **A PLANT THAT WRITES INTO THE POPULATION UNDER TEST IS A PLANT THAT MOVES THE
+    ANSWER IT IS MEASURING**, so the plant is out of the reader set -- and it is out by its OWN
+    DECLARATION, loaded by path, not by a hand list here. The previous revision carried
+    `skip = (me, ".agents/slop/oracles259/plants.py")`: a hand list whose second name was a
+    SUPERSEDED plant, and a hand list is not a population (`AGENTS.md`, doctrine 1).
     """
     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
     me = os.path.relpath(os.path.abspath(__file__), ROOT)
-    skip = (me, ".agents/slop/oracles259/plants.py")
+    excluded = ("references/", "tinygrad/", *plant_exclusions())
     return [ROOT / r for r in out
             if pathlib.Path(r).suffix in GATE_CODE
-            and not r.startswith(("references/", "tinygrad/", ".agents/slop/oracletxt/"))
-            and r not in skip]
+            and not r.startswith(excluded)
+            and r != me]
 
 
 def readers() -> dict[str, list[tuple[str, str, str, bool]]]:

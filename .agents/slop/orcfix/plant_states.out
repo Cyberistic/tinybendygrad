@@ -1,0 +1,8 @@
+1. clean tree                      no-txt rc=0  (want 0)
+2. pre-fix lane run                0 .txt created under fixtures/
+3. UNWIRED no-txt                  rc=0  names 0/0 of them
+4. WIRED with repro.declared()     rc=0  (want 0; the 15-name lane excused)
+5. FRESH tinybendygrad/*.txt        rc=1  names it=True  (want rc 1, True)
+6. cleaned                          no-txt rc=0  (want 0)
+
+VERDICT: A PLANT DID NOT MOVE

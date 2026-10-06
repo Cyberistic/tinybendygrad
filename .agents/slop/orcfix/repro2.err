@@ -1,0 +1,20 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/skipexit/repro.py", line 202, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/skipexit/repro.py", line 187, in main
+    lines, col_bad = report(name)
+                     ^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/skipexit/repro.py", line 147, in report
+    rc, blob, ok_stub = run(gate, env, f"{name}.{label}", fx, capture)
+                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/skipexit/repro.py", line 136, in run
+    return rc, out.read_bytes(), STUB_MARK in (fx / capture).read_bytes()
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py", line 1019, in read_bytes
+    with self.open(mode='rb') as f:
+         ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.out'

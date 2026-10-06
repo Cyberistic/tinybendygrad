@@ -1,0 +1,88 @@
+diff --git a/.agents/slop/oracletxt/plant.py b/.agents/slop/oracletxt/plant.py
+index 222b954e7..00e129d24 100644
+--- a/.agents/slop/oracletxt/plant.py
++++ b/.agents/slop/oracletxt/plant.py
+@@ -31,6 +31,18 @@ HERE = pathlib.Path(__file__).resolve().parent
+ CENSUS = HERE.parents[2] / "checks/oracle-txt-census.py"
+ SPEC = importlib.util.spec_from_file_location("census", CENSUS)
+ 
++
++def excluded() -> frozenset[str]:
++    """The reader-set exclusions THIS plant declares to the census, derived from `__file__`.
++
++    This file names oracle `.txt` paths as fixture bytes, so the census would count it as a reader
++    of whatever it names. The exclusion is its OWN tree, computed rather than typed: move the plant
++    and the exclusion moves with it. `checks/oracle-txt-census.py:plant_exclusions()` loads this by
++    path, so this is the ONE declaration -- a second copy in the census is the hand-list fault the
++    `skip` tuple was.
++    """
++    return frozenset({f"{HERE.relative_to(HERE.parents[2])}/"})
++
+ ROWD = "alpha=1\nbeta=2\ngamma=3\n"
+ SRC = "def f(x: int) -> int:\n    return x\n\n\nclass C:\n    pass\n"
+ CRASH = "Traceback (most recent call last):\n  File \"o.py\", line 1\nValueError: boom\n"
+diff --git a/checks/oracle-txt-census.py b/checks/oracle-txt-census.py
+index 32bffe7f0..27b9a3a50 100644
+--- a/checks/oracle-txt-census.py
++++ b/checks/oracle-txt-census.py
+@@ -62,6 +62,7 @@ from __future__ import annotations
+ import argparse
+ import collections
+ import hashlib
++import importlib.util
+ import json
+ import os
+ import pathlib
+@@ -202,25 +203,43 @@ def unbind(tok: str, binds: dict[str, str]) -> str:
+     return tok
+ 
+ 
++def plant_exclusions() -> frozenset[str]:
++    """The reader-set prefixes THIS check's own plant declares, LOADED BY PATH.
++
++    `.agents/slop/oracletxt/plant.py` names its own tree, derived from its `__file__`. A second
++    copy of that path typed here would be the hand-list fault this declaration replaces: the
++    plant moves itself and the exclusion moves with it. A loader that FAILS returns nothing --
++    never a blanket exemption -- so the plant's own `.txt` tokens are then REPORTED.
++    """
++    try:
++        spec = importlib.util.spec_from_file_location(
++            "plant", ROOT / ".agents/slop/oracletxt/plant.py")
++        mod = importlib.util.module_from_spec(spec)
++        spec.loader.exec_module(mod)
++        return mod.excluded()
++    except Exception:
++        return frozenset()
++
++
+ def code_files() -> list[pathlib.Path]:
+-    """Tracked `.sh`/`.py`, MINUS THIS FILE AND THIS CHECK'S OWN PLANTS.
++    """Tracked `.sh`/`.py`, MINUS THIS FILE, MINUS THIS CHECK'S OWN PLANT TREE.
+ 
+     The exclusions are the finding, not hygiene. A census that names `oracles/baseline.txt` in its
+     own `RIGHT` table is a reader of that file by the token test, so the first version reported
+     `LIVE 1/259` on a population where the true answer is 0 -- its own example, counted as
+-    evidence. `.agents/slop/oracles259/plants.py` names the same paths in its plant fixtures, and
+-    while the plants ran, the tree the census described was the tree the plants had written. **A
+-    PLANT THAT WRITES INTO THE POPULATION UNDER TEST IS A PLANT THAT MOVES THE ANSWER IT IS
+-    MEASURING**, so the plants live outside `oracles/` -- `.agents/slop/oracletxt/`, this unit's, is
+-    excluded whole -- and are out of the reader set.
++    evidence. **A PLANT THAT WRITES INTO THE POPULATION UNDER TEST IS A PLANT THAT MOVES THE
++    ANSWER IT IS MEASURING**, so the plant is out of the reader set -- and it is out by its OWN
++    DECLARATION, loaded by path, not by a hand list here. The previous revision carried
++    `skip = (me, ".agents/slop/oracles259/plants.py")`: a hand list whose second name was a
++    SUPERSEDED plant, and a hand list is not a population (`AGENTS.md`, doctrine 1).
+     """
+     out = subprocess.run(["git", "ls-files"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+     me = os.path.relpath(os.path.abspath(__file__), ROOT)
+-    skip = (me, ".agents/slop/oracles259/plants.py")
++    excluded = ("references/", "tinygrad/", *plant_exclusions())
+     return [ROOT / r for r in out
+             if pathlib.Path(r).suffix in GATE_CODE
+-            and not r.startswith(("references/", "tinygrad/", ".agents/slop/oracletxt/"))
+-            and r not in skip]
++            and not r.startswith(excluded)
++            and r != me]
+ 
+ 
+ def readers() -> dict[str, list[tuple[str, str, str, bool]]]:

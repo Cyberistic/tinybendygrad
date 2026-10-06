@@ -31,6 +31,18 @@ HERE = pathlib.Path(__file__).resolve().parent
 CENSUS = HERE.parents[2] / "checks/oracle-txt-census.py"
 SPEC = importlib.util.spec_from_file_location("census", CENSUS)
 
+
+def excluded() -> frozenset[str]:
+    """The reader-set exclusions THIS plant declares to the census, derived from `__file__`.
+
+    This file names oracle `.txt` paths as fixture bytes, so the census would count it as a reader
+    of whatever it names. The exclusion is its OWN tree, computed rather than typed: move the plant
+    and the exclusion moves with it. `checks/oracle-txt-census.py:plant_exclusions()` loads this by
+    path, so this is the ONE declaration -- a second copy in the census is the hand-list fault the
+    `skip` tuple was.
+    """
+    return frozenset({f"{HERE.relative_to(HERE.parents[2])}/"})
+
 ROWD = "alpha=1\nbeta=2\ngamma=3\n"
 SRC = "def f(x: int) -> int:\n    return x\n\n\nclass C:\n    pass\n"
 CRASH = "Traceback (most recent call last):\n  File \"o.py\", line 1\nValueError: boom\n"

@@ -131,12 +131,23 @@ def empty_remnants() -> set[str]:
             and os.path.getsize(os.path.join(ROOT, p)) == 0}
 
 
+def skipexit_artifacts() -> set[str]:
+    """`skipexit/repro.py`'s PRE-FIX LANE outputs, DERIVED from the frozen lane's own write sites.
+
+    The lane it runs IS the pre-fix code (`.agents/slop/skipexit/prefix/checks/e2e.py` at `3ed5ab069^`),
+    so a run re-emits `.txt` under each fixture's `runs/e2e/`. Its `declared()` is that frozen gate's write
+    names crossed with the fixture roots, so it MOVES WITH THE LANE: rename a write and the excuse goes with it.
+    """
+    return set(load(".agents/slop/skipexit/repro.py", "skipexit_repro").declared())
+
+
 def carveouts() -> tuple[tuple[str, set[str]], ...]:
     """(label, declared set) per generator. A loader that raises contributes nothing but a report."""
     out = []
     for label, fn in (("`checks/differ.py`'s graphcmp artifacts + `.tmp.` staging", graphcmp_artifacts),
                       ("`.agents/slop/figure2/plant.py`'s forced plant summaries", plant_artifacts),
-                      ("`.agents/slop/txtexec/rename.py`'s deliberate 0-byte remnant", empty_remnants)):
+                      ("`.agents/slop/txtexec/rename.py`'s deliberate 0-byte remnant", empty_remnants),
+                      ("`.agents/slop/skipexit/repro.py`'s PRE-FIX LANE outputs", skipexit_artifacts)):
         try:
             out.append((label, fn()))
         except Exception as e:                     # a carve-out that cannot be computed is not one

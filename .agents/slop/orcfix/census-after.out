@@ -1,0 +1,32 @@
+  1 `.txt` under oracles/, grouped by WHAT IS INSIDE. m2 threshold (worst in-corpus NN distance) = 2.0794
+
+
+     1 files          0 B   prose-in-txt
+        correct extension: .md          generator to fix: the report writer; this is prose and `.txt` says nothing
+          oracles/rows-bd.txt  (0B)
+
+  REACH. FIVE values, not two -- and the fourth one was found by a plant.
+
+  LIVE         0 / 1   a tracked script opens a path holding THESE BYTES.
+
+  SHADOW       0 / 1   a tracked script opens a DIFFERENT file that has
+                         this basename and EXISTS. Not this file, not a dead read: a namesake.
+
+  STALE        0 / 1   a tracked script opens a path that is ABSENT
+                         and the read's SUB-TREE survived -- the read MOVED. The gate is broken,
+                         not the file.
+
+  ABSENT       1 / 1   a tracked script opens a path that is ABSENT
+                         with ONLY the basename in common. A namesake, not a moved input --
+                         it may never have named this file. **NOT STALE.**
+      oracles/rows-bd.txt
+          .agents/slop/oracles259/othercopies.py  opens  rows-bd.txt   [ABSENT, BASENAME ONLY]
+          .agents/slop/txtexec/rename.py  opens  .agents/slop/txtexec/rows-bd.txt   [ABSENT, BASENAME ONLY]
+          .agents/slop/txtexec/rename.py  opens  rows-bd.txt   [ABSENT, BASENAME ONLY]
+          .agents/slop/txtresidual/probe.py  opens  rows-bd.txt   [ABSENT, BASENAME ONLY]
+          checks/no-txt.py  opens  checks/rows-bd.txt   [ABSENT, BASENAME ONLY]
+          checks/no-txt.py  opens  rows-bd.txt   [ABSENT, BASENAME ONLY]
+          checks/sb-gate.sh  opens  .agents/slop/schedule-bodies/rows-bd.txt   [ABSENT, BASENAME ONLY]
+          checks/sb-gate.sh  opens  checks/rows-bd.txt   [ABSENT, BASENAME ONLY]
+
+  NAMED BY NOTHING    0 / 1
