@@ -30,10 +30,14 @@
 # is the only reason the four generator bugs recorded below were caught as
 # generator bugs instead of being read as language walls.
 #
-# cd: three levels up -- this script lives at .agents/slop/w64/. Getting it wrong
-# made all rows read DIED with "No such file or directory", i.e. the DRIVER
-# manufactured the failures.
-cd "$(dirname "$0")/../../.." || exit 1
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# The old comment here said "three levels up -- this script lives at .agents/slop/w64/",
+# and the arithmetic followed a comment about a location the file no longer occupies.
+# Getting it wrong made all rows read DIED with "No such file or directory": the DRIVER
+# manufactured the failures it then reported.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 1
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 D=.agents/slop/w64/cands
 mkdir -p "$D"
 

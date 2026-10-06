@@ -19,8 +19,13 @@
 # THE PLANT LIVES IN $TMPDIR. The live `tinybendygrad/` tree is never written to, and this
 # script ASSERTS that by hashing `renderer/cstyle.bend` before and after.
 set -euo pipefail
+# ROOT: DEMANDED, NOT COMPUTED -- the right shape. `REPO` has no default, so a caller that
+# forgets it gets an error instead of a guess, and this script had no depth arithmetic to
+# get wrong. All that was missing was the assertion on what it was handed, which is the
+# same assertion the 14 computed-root scripts now carry. See `.agents/slop/shells/README.md`.
 REPO=${REPO:?set REPO to the repo root}
 W=${W:?set W to a $TMPDIR workdir}
+[ -d "$REPO/tinybendygrad" ] || { echo "$0: REPO=$REPO is not a repo root" >&2; exit 3; }
 HERE=$(cd "$(dirname "$0")" && pwd)
 mkdir -p "$W"
 SNAP="$W/tree/tinybendygrad/renderer/cstyle.bend"

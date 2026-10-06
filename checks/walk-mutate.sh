@@ -25,7 +25,15 @@
 #   * stderr IS PRINTED on any zero, so a substrate failure is distinguishable from a
 #     real one.  It fired once for real: see walk-plant.md, "THE SUBSTRATE MOVED".
 set -u
-ROOT=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# This was an ABSOLUTE path to one checkout on one machine, which is worse than a wrong
+# depth: run from a `git worktree` copy it silently copied the LIVE tree, ran it, printed
+# `ALL PROOFS CHECK` and 88 rows, and exited 0 -- a green verdict about a tree the caller
+# was not standing in.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
+ROOT=$PWD
 W="$TMPDIR/walkplant"
 # THE BASE IS PERSISTED OUTSIDE $W, because each arm wipes and re-copies $W and a differ
 # that compares against a base it just deleted reports nothing at all.

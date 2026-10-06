@@ -12,7 +12,10 @@
 # script records the exact index state first and PROVES it restored at the end. It uses
 # `git update-index` (index-only, never touches the worktree) rather than `git add`/`rm`,
 # so no worktree file of another unit can be disturbed. It COMMITS NOTHING.
-cd "$(dirname "$0")/../../.." || exit 2
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 PROBE=tinybendygrad/runtime/PROBE-DISARM.bend
 say() { print -r -- "$1"; }
 # BOTH READINGS, because they disagreed once and I would rather over-record: with jj

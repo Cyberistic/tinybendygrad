@@ -61,7 +61,14 @@
 #
 # EXIT: 0 iff the lane passed AND every control went red AND the C-text diff is 0.
 set -u
-ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# NOT the same arithmetic as the `ed2_new=` line below: that one PATCHES
+# `.agents/slop/portexec/run-kernel.sh`, which is planted three levels down under a
+# workdir, so `../../..` is correct there and wrong here.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
+ROOT=$PWD
 PY="$ROOT/.venv/bin/python"
 F64="$ROOT/.agents/slop/f64"
 PLANT="$ROOT/.agents/slop/e2e_port/plant.py"

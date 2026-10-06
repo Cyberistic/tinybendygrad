@@ -12,6 +12,13 @@
 #   * `rows()`-style whole-`name=value` diffing, never name-keyed. A name-keyed harness
 #     reported 0 for all 30 mutations in one unit and all 68 in another.
 set -e
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# This script had NO root at all -- every path in it was relative, so it ran only when the
+# caller's shell happened to be sitting in the repo root, and from anywhere else it failed
+# on `.agents/slop/shlscope/gen.py`. Same defect as the others, one level of indirection out.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 SL=.agents/slop/shlscope
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/shlscope.XXXXXX")
 trap 'rm -rf "$OUT"' EXIT

@@ -25,7 +25,10 @@
 # COPY OF THE REPO TREE under `.agents/slop/lintable/plant/`, which keeps the relative
 # depth, and the live tree is never patched from a harness.
 set -e
-cd "$(dirname "$0")/../../.."
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 3
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 GT=.agents/slop/lintable
 PROBE=$GT/lintable-probe.bend
 

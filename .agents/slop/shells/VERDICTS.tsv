@@ -1,0 +1,45 @@
+
+=== /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/before
+script                     rc  verdict     evidence
+bounded-selftest.sh         0  RAN         reached its own work with rc=0 and nothing complained
+classify.sh                 0  RAN         reached its own work with rc=0 and nothing complained
+demo.sh                     0  WRONG-ROOT  could not open tinybendygrad, which the tree HAS -- it is not in the tree
+disarm.sh                   0  SUSPECT     exited 0 but complained; read the evidence -- a wrong root can exit 0
+e2e.sh                      1  WRONG-ROOT  named a repo path outside the tree: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/.venv/bin/python
+gate.sh                     2  ABSENT-INPUT needs .agents/slop/shlscope/gen.py, which this tree does not contain at all
+gen.sh                      0  WRONG-ROOT  could not open bin/bend, which the tree HAS -- it is not in the tree
+lint_demo.sh                1  WRONG-ROOT  raised inside its own scratch tree, so the copy it made was empty: it was reading a tree that was not there
+lintable-gate.sh            1  WRONG-ROOT  could not open bin/bend, which the tree HAS -- it is not in the tree
+plant.sh                    1  DEAD        found the root, then failed for another reason (rc=1)
+run-all.sh                  1  WRONG-ROOT  named a repo path outside the tree: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/tinybendygrad
+run-f64.sh                  1  WRONG-ROOT  named a repo path outside the tree: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tinybendygrad
+run-port-mm.sh              3  REFUSED     REFUSED, NOT A VERDICT: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/runs/e2e/e2e-mm-ora
+sb-gate.sh                  3  REFUSED     == REFUSED, NOT A VERDICT: the regression floor is absent: .agents/slop/schedule-bodies/BEFORE-rows.
+substrate-check.sh        127  WRONG-ROOT  could not open .venv/bin/python, which the tree HAS -- it is not in the tree
+walk-mutate.sh              0  RAN         reached its own work with rc=0 and nothing complained
+wt-sync.sh                  1  ABSENT-INPUT needs .agents/slop/xd1/wt, which this tree does not contain at all
+--- executed 17 of 18; ABSENT-INPUT=2  DEAD=1  RAN=3  REFUSED=2  SUSPECT=1  WRONG-ROOT=8
+
+=== /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/final
+script                     rc  verdict     evidence
+bounded-selftest.sh         0  RAN         reached its own work with rc=0 and nothing complained
+classify.sh                 0  RAN         reached its own work with rc=0 and nothing complained
+demo.sh                     0  RAN         reached its own work with rc=0 and nothing complained
+disarm.sh                   0  RAN         reached its own work with rc=0 and nothing complained
+e2e.sh                      1  WRONG-ROOT  named a repo path outside the tree: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/.venv/bin/python
+gate.sh                     2  ABSENT-INPUT needs .agents/slop/shlscope/gen.py, which this tree does not contain at all
+gen.sh                      0  RAN         reached its own work with rc=0 and nothing complained
+lint_demo.sh                0  RAN         reached its own work with rc=0 and nothing complained
+lintable-gate.sh            1  DEAD        found the root, then failed for another reason (rc=1)
+plant.sh                    1  DEAD        found the root, then failed for another reason (rc=1)
+run-all.sh                  2  ABSENT-INPUT needs /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/wt-a/checks/derive.py, which this tree does not contain at all
+run-f64.sh                  3  REFUSED     *** REFUSED, EXIT 3: the port's own rows could not be reproduced, so NO number
+run-port-mm.sh            142  ALARM       the harness's own alarm (rc=142); it proves only that it started
+sb-gate.sh                  3  REFUSED     == REFUSED, NOT A VERDICT: the regression floor is absent: .agents/slop/schedule-bodies/BEFORE-rows.
+substrate-check.sh          3  REFUSED     REFUSED: no files given. A guard invoked with an empty population must not
+walk-mutate.sh              0  RAN         reached its own work with rc=0 and nothing complained
+wt-sync.sh                  1  ABSENT-INPUT needs .agents/slop/xd1/wt, which this tree does not contain at all
+--- executed 17 of 18; ABSENT-INPUT=3  ALARM=1  DEAD=2  RAN=7  REFUSED=3  WRONG-ROOT=1
+
+=== both runs, for reference only -- a verdict is a property of ONE tree
+    ABSENT-INPUT=5  ALARM=1  DEAD=3  RAN=10  REFUSED=5  SUSPECT=1  WRONG-ROOT=9

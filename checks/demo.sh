@@ -13,7 +13,10 @@
 # the `PROVENANCE` block, because that block reads `git ls-files` and the filesystem and
 # does not need a verdict. **The split is a pre-gate**: you learn a probe is in the tree
 # in 2.4 s, before spending ten minutes finding out whether the port still compiles.
-cd "$(dirname "$0")/../../.." || exit 2
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 CHECK=.agents/slop/substrate-check.sh
 PLANT=tinybendygrad/runtime/PROBE-SELFDEMO.bend
 say() { print -r -- "$1"; }

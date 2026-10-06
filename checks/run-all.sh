@@ -9,7 +9,14 @@
 # tree. The live tree's hash is printed before and after and asserted equal, so "nothing was
 # planted in the live tree" is a measurement and not a promise.
 set -euo pipefail
-REPO=${REPO:-$(cd "$(dirname "$0")/../.." && pwd)}
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# `REPO` still overrides, because this script SNAPSHOTS a tree and a fixture tree is a
+# legitimate thing to snapshot -- but the assertion is on the tree it will actually copy,
+# so an override that points nowhere is refused instead of silently copying nothing.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+REPO=${REPO:-$_d/..}
+[ -f "$REPO/pyproject.toml" ] && [ -d "$REPO/tinybendygrad" ] || { echo "$0: not at a repo root (REPO=$REPO)" >&2; exit 3; }
+REPO=$(cd "$REPO" && pwd)
 export REPO
 W=${W:-${TMPDIR:-/tmp}/cstyle2}
 export W

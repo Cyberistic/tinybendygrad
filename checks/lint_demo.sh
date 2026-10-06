@@ -14,7 +14,17 @@
 # spots in one unit came from exactly that.
 
 HERE="${0:A:h}"
-REPO="$HERE/../../.."
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# `${0:A:h:h}` is `dirname "$0"` taken twice, in one expansion: `:A` resolves the path and
+# `:h` strips one trailing component, so this is the same form as the sh siblings.
+REPO="${0:A:h:h}"
+# The assertion, not the arithmetic: `REPO` is `dirname "$0"` taken twice either way, and only
+# the markers say whether that is the ROOT. MEASURED by moving this file to `checks/plant/`:
+# with the assertion it exits 3 naming the directory it reached; without it, the copy of
+# `.agents/slop` below proceeds on a truncated tree and `lint_norm.py` reports blind spots
+# against a `slop/` that is one level short of the one it was written against.
+[ -f "$REPO/pyproject.toml" ] && [ -d "$REPO/tinybendygrad" ] ||
+  { print -u2 -- "$0: not at a repo root (reached $REPO)"; exit 3 }
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/normdemo.XXXXXX")"
 trap 'rm -rf "$WORK"' EXIT
 

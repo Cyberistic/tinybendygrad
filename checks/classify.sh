@@ -9,7 +9,13 @@
 # that must not be reachable by accident, because a greping reader cannot tell it from
 # the real file without this ledger.
 set -u
-cd "$(dirname "$0")/../../.." || exit 1
+# ROOT: one level up from `checks/`, and ASSERTED. `../../..` was written when this file
+# lived at `.agents/slop/<unit>/` and left behind at the shallower depth, so it landed two
+# levels ABOVE the repo -- and then every `tinybendygrad/$f` lookup missed and all 3476
+# files were reported NOREF with exit 0. See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 1
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 ROOT="$1"
 H=.agents/slop/mutledger/BLOBHIST.tsv
 for f in $(cd "$ROOT" && find . -type f | sed 's|^\./||' | sort); do

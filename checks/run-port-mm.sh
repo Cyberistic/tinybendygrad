@@ -34,7 +34,15 @@
 #
 #   zsh .agents/slop/e2e_port/run-port-mm.sh [workdir]
 set -u
-ROOT=$(cd "$(dirname "$0")/../../.." && pwd)
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+# NOT the same arithmetic as the `ROOT=` line this script PATCHES into
+# `.agents/slop/portexec/run-kernel.sh` (see `mkcopy`): that copy is planted at
+# `.agents/slop/portexec/` under the workdir, which IS three levels down, so `../../..` is
+# correct there and wrong here.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
+ROOT=$PWD
 PY="$ROOT/.venv/bin/python"
 PORTEXEC="$ROOT/.agents/slop/portexec"
 PLANT="$ROOT/.agents/slop/e2e_port/plant.py"

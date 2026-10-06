@@ -13,7 +13,11 @@
 #
 # FLIP BACK as soon as that agent lands: delete this script and the tree.
 set -eu
-R="$(cd "$(dirname "$0")/../../.." && pwd)"
+# ROOT: one level up from `checks/`, and ASSERTED. See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 2; }
+R=$PWD
 W="$R/.agents/slop/xd1/wt"
 rm -rf "$W/tinybendygrad"
 cp -R "$R/tinybendygrad" "$W/"

@@ -12,5 +12,10 @@
 #
 # Run: sh checks/bounded-selftest.sh
 set -eu
-cd "$(dirname "$0")/.."
+# ROOT: one level up from `checks/`, and ASSERTED. This one was already CORRECT, which is
+# why it is in the set: a right `cd` with no assertion is one `mv` from the other 14.
+# See `.agents/slop/shells/README.md`.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+[ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 exec .venv/bin/python checks/bounded.py --selftest

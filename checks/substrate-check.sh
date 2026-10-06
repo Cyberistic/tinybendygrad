@@ -25,8 +25,22 @@
 # preamble depends on PATH reports "command not found" and then tries to exec a relative
 # path from the wrong place. MEASURED with dirname off PATH: e2e.sh exits 126, this exits
 # 127 -- both LOUDLY, so the severity is not "green having run nothing"; but neither needs
-# the dependency. `${0%/*}` is POSIX and spawns nothing, and the `[ "$d" = "$0" ]` arm is
-# the case where $0 has no slash at all.
-_d=${0%/*}; [ "$_d" = "$0" ] && _d=.
-cd "$_d/../.." || exit 2
+# the dependency. `${0%/*}` is POSIX and spawns nothing, and the `case` arm is the case
+# where $0 has no slash at all.  `case` rather than `[ .. ] && ..` because that AND-list
+# returns 1 when the test fails, which is fatal under `set -e` in a sibling shim.
+#
+# THE DEPTH IS `..`, NOT `../..`, AND THE SECOND ONE WAS A MEASURED 127.  This file is in
+# `checks/`, which is ONE level below the root, so `$_d/../..` is the PARENT OF THE REPO:
+# every relative path below then named a file that does not exist and the script exited
+# 127.  The comment above it used to say `dirname` off PATH gives 126 and *this* 127 --
+# two different exit codes for the same missing-preamble mistake, both LOUD, and the
+# louder one was hiding a wrong root behind an unrelated PATH story.
+_d=${0%/*}; case $_d in "$0") _d=.;; esac
+cd "$_d/.." || exit 2
+# AND THE ROOT IS ASSERTED, NOT ASSUMED.  `cd` does not care where it lands, so a
+# one-character depth slip is silent until something downstream fails for a reason that
+# has nothing to do with depth.  Two tracked markers that exist at the root and nowhere
+# else: a clone has both, and a stray parent directory has neither.
+[ -f pyproject.toml ] && [ -d tinybendygrad ] ||
+  { echo "$0: not at the repo root (pwd $(pwd))" >&2; exit 3; }
 exec env -u PYTHONPATH .venv/bin/python checks/substrate.py "$@"
