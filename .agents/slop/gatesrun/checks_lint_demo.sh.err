@@ -1,0 +1,2 @@
+checks/lint_demo.sh: line 20: 0: h:h: syntax error in expression (error token is ":h")
+checks/lint_demo.sh: line 72: syntax error: unexpected end of file

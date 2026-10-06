@@ -1,0 +1,28 @@
+[substrate] c_context emit: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=36 MB (ceiling 2048)  0s  :: ./bin/bend checks/c-context.bend -o  out=0B err=42B
+[substrate] c_context compile: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=16 MB (ceiling 2048)  0s  :: /usr/bin/cc -fsyntax-only /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/substrate.du7vg48s/pre.c  out=0B err=0B
+[substrate] tinybendygrad/runtime/dtype.c: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=16 MB (ceiling 2048)  0s  :: /usr/bin/cc -fsyntax-only /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/substrate.du7vg48s/frag.c  out=0B err=2257B  said=/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/substrate.du7vg48s/frag.c:3296:11: warning: extra tokens at end of #ifdef directive [-Wextra-tokens] | 3296 | #ifdef CID(Dt.bf16) | |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/dtype.c:       |           ^
+[substrate] tinybendygrad/runtime/dtype.c:       |           //
+[substrate] tinybendygrad/runtime/sz.c: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=16 MB (ceiling 2048)  0s  :: /usr/bin/cc -fsyntax-only /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/substrate.du7vg48s/frag.c  out=0B err=466B  said=/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/substrate.du7vg48s/frag.c:3043:11: warning: extra tokens at end of #ifdef directive [-Wextra-tokens] | 3043 | #ifdef CID(Sz.read_dir) | |           ^
+[substrate] tinybendygrad/runtime/sz.c:       |           ^
+[substrate] tinybendygrad/runtime/sz.c:       |           //
+[substrate] tinybendygrad/runtime/sz.c:       |           ^
+[substrate] tinybendygrad/runtime/sz.c:       |           //

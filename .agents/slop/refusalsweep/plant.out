@@ -1,0 +1,17 @@
+### wk-cd-gate.py --plant
+plant-blocked: cannot create the output directory /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp7j7l0f2_/blocked/plant-blocked: [Errno 20] Not a directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp7j7l0f2_/blocked/plant-blocked'
+== REFUSED, NOT A VERDICT: output directory absent and uncreatable: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmp7j7l0f2_/blocked/plant-blocked
+  absent   OUTPUT-CREATED
+  present  OUTPUT-PRESENT  rc=0
+  blocked  REFUSED, NOT A VERDICT  rc=3
+--plant: all three states OK
+rc=0
+
+### wk-f32-gate.py --plant
+plant-blocked: cannot create the output directory /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmpbddxejxg/blocked/plant-blocked: [Errno 20] Not a directory: '/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmpbddxejxg/blocked/plant-blocked'
+== REFUSED, NOT A VERDICT: output directory absent and uncreatable: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmpbddxejxg/blocked/plant-blocked
+  absent   OUTPUT-CREATED
+  present  OUTPUT-PRESENT  rc=0
+  blocked  REFUSED, NOT A VERDICT  rc=3
+--plant: all three states OK
+rc=0

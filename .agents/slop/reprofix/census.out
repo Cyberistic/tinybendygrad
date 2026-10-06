@@ -1,0 +1,28 @@
+population = 6 artifact-producing scripts, declared by checks/differ.py
+  .agents/slop/graphcmp-dbg-oracle.py
+  .agents/slop/graphcmp-oracle.py
+  .agents/slop/graphcmp-p13-ops.py
+  .agents/slop/graphcmp.py
+  checks/devpin.py
+  checks/differ.py
+write sites  = 119
+CANDIDATES   = 9 (order-bearing, unsorted -- to be vetted)
+clean        = 110
+  CANDIDATE .agents/slop/graphcmp-oracle.py:325 ['via name graphs_of', 'via name tal']
+      print("# " + " ".join(f"{op} {tal[op]}/{graphs_of[op]}" for op in sorted(tal)) + " (nodes/graphs)")
+  CANDIDATE .agents/slop/graphcmp-p13-ops.py:79 ['dir()']
+      print(f"# hasattr(group,'params')={hasattr(g, 'params')} " f"attributes mentioning 'param': {[a for a in dir(g) if 'param' in a.lower()]}")
+  CANDIDATE .agents/slop/graphcmp-p13-ops.py:106 ['dir()']
+      print(f"# UOp has no cmpeq/cmpne method: " f"{[a for a in dir(UOp) if 'cmp' in a.lower()]} (UOp.__eq__ is the ucache eq)")
+  CANDIDATE .agents/slop/graphcmp-p13-ops.py:168 ['via name graphs_of', 'via name tal']
+      print(f"# PER-OP (nodes/graphs): " + " ".join(f"{o} {tal[o]}/{graphs_of[o]}" for o in sorted(tal)))
+  CANDIDATE .agents/slop/graphcmp-p13-ops.py:66 ['via name edges', 'via name ix']
+      print(f" MULTI-PARENT NODES (op, id, in-edges, distinct parents): " f"{[(n.op.name, ix[id(n)], edges[id(n)], len(parents[id(n)])) for n in lst if len(parents[id(n)]) > 1]
+  CANDIDATE .agents/slop/graphcmp-p13-ops.py:51 ['via name ix']
+      print(" " + G.row_of(n, i + 1, ix))
+  CANDIDATE .agents/slop/graphcmp.py:2678 ['.items()']
+      print(f"# GRAPH HELD FIXED: digest per level " + " ".join(f"{L}={d[:12]}" for L, d in digs.items()) + f" distinct={len(uniq)}" + ("" if len(uniq) == 1 else " -- NOT WELL-
+  CANDIDATE .agents/slop/graphcmp.py:2821 ['via name out']
+      print("\n".join(out))
+  CANDIDATE checks/differ.py:431 ['via name moved']
+      write("D1-verdicts.txt", "\n".join(moved + [ f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, NOT " f"COMPARED: {untriaged(g)}." for g in

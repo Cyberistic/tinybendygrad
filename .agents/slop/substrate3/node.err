@@ -1,0 +1,4 @@
+[substrate] tinybendygrad/runtime/dtype.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/dtype.js  out=0B err=0B
+[substrate] tinybendygrad/runtime/sz.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/sz.js  out=0B err=0B
+[substrate] tinybendygrad/runtime/webgpu_call.js: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/webgpu_call.js  out=0B err=0B
+[substrate] tinybendygrad/runtime/webgpu_call.mjs: [bounded] WITHIN-LIMITS  rc=0  peak-RSS=14 MB (ceiling 2048)  0s  :: /Users/cyberistic/.nub/node-shim/node --check tinybendygrad/runtime/webgpu_call.mjs  out=0B err=0B

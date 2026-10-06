@@ -1,0 +1,13 @@
+DEVICE PRECONDITION : **VIOLATED** -- DEV=None and the declared pin is 'CPU'. THIS FIGURE WOULD BE A MEASUREMENT OF THE HOST: `g_late` reads the BACKEND's own op table, so the union moves with the device (MEASURED: 61 of 77 on CPU, 60 on NULL and METAL). Re-run as `DEV=CPU .venv/bin/python checks/corpus-figure.py`, or change the pin in `checks/devpin.py` AND re-take the run -- not this figure alone.
+graphs declared   : 25
+graphs built      : 25
+graphs FAILED     : 0
+denominator len(Ops) : 77
+CPYTHON-SIDE UNION   : 60 of 77
+  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE 22 GRAPH DEFINITIONS.
+     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), "py")`
+     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH
+     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.
+RUN HEALTH        : **FAILED** -- 13 of 17 pins green. RED: expect-moved=1 (expected 0); graphs-agree=20 (expected 19); byte-identical=20 (expected 19); selfcheck=# SELFCHECK: FAIL (expected # SELFCHECK: OK). THE UNION ABOVE IS NOT A VERDICT.
+per-graph SUM        : 181   <- NOT the figure; it counts an op once per graph that has it
+NOT reached (17): REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA THREEFRY FDIV MULACC CUSTOM CUSTOMI INS STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD PYLITERAL

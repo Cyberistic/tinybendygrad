@@ -1,0 +1,28 @@
+#!/usr/bin/env python
+"""Emit RECLASS.tsv: the 8 re-run instruments, their old class and their new one."""
+import csv
+
+ROWS = [
+    ("substrate-audit.py", "ORPHANED", "LIVE", "rc=0",
+     "4/4 substrate assertions hold (was 1/4); revision-ledger + wire_parse + rebase-scan-oracles + loadwatch restored"),
+    ("rf2-mutate.py", "ORPHANED", "READ-ONLY/UNSETTLED", "loads (needs bend)",
+     "subject restored from HEAD history (blob 52fa11a55c80); 42/42 anchors resolve once (was 0/42)"),
+    ("cstyle-shapes-selftest.py", "BROKEN", "ORPHANED", "rc=1",
+     "wiring fixed (was ModuleNotFoundError loadwatch); now dies on the DELETED real lanes blobrows/CURRENT/tinybendygrad__renderer__cstyle.bend.txt + cstyle-parity/oracle.txt"),
+    ("ga_mutate.py", "BROKEN", "READ-ONLY/UNSETTLED", "loads (needs bend)",
+     "patch_not_apply restored; imports resolve; subject 41/41 anchors"),
+    ("nn-init-mutate.py", "BROKEN", "READ-ONLY/UNSETTLED", "loads (needs bend)",
+     "patch_not_apply restored; imports resolve; subject 15/15 anchors"),
+    ("state-mutate.py", "BROKEN", "READ-ONLY/UNSETTLED", "loads (needs bend)",
+     "patch_not_apply restored; imports resolve; subject 12/12 anchors"),
+    ("tools/mutate-dm.py", "BROKEN", "BROKEN", "rc=1",
+     "wiring fixed (loadwatch restored) but the file still dies on its OWN defect: NameError: importlib used at :24-26, never imported"),
+    ("pin-tables.py", "ORPHANED", "ORPHANED", "rc=1",
+     "unchanged: its ~30 named mutation tables are still gone (only bend_mutations.md present)"),
+]
+with open(".agents/slop/instrepair/RECLASS.tsv", "w") as f:
+    w = csv.writer(f, delimiter="\t")
+    w.writerow(["instrument", "was", "now", "runs", "evidence"])
+    w.writerows(ROWS)
+for r in ROWS:
+    print(f"{r[1]:>18} -> {r[2]:<19} {r[0]}")

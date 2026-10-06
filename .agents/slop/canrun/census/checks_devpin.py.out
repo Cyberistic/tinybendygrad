@@ -1,0 +1,7 @@
+pin (declared)     : --dev CPU   (checks/devpin.py's PINNED_DEV='CPU')
+M1 headers say     : ['CPU']   from 99 artifacts
+M1 ParamArg fields : ['CPU']
+M1 per-graph files with NO device line : 0
+M2 byte reproduction: REPRODUCES -- re-emitted 46 rows under --dev CPU; recorded 46
+
+DEVICE PIN          : SATISFIED

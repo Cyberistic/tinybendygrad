@@ -1,0 +1,44 @@
+== 1 SPLIT + 2 NOISE (stdout must be the child's stdout, byte for byte; and stderr is 42 bytes on a GREEN run, so only `_said` is 'bend said something')
+   prefix           {'stdout_bytes': 277, 'child_stdout_bytes': 58, 'stdout_is_child_stdout': False, 'verdict_lines_in_stdout': 1, 'notice_bytes_in_stdout': 42, 'not_a_row': 4, 'stderr_notices': 0, 'stderr_said': '', 'token': 'WITHIN-LIMITS'}
+   current          {'stdout_bytes': 58, 'child_stdout_bytes': 58, 'stdout_is_child_stdout': True, 'verdict_lines_in_stdout': 0, 'notice_bytes_in_stdout': 0, 'not_a_row': 2, 'stderr_notices': 42, 'stderr_said': '[bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 4096)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/bin/bend tinybendygrad/mixin/__init__.bend --check-only  out=58B err=42B', 'token': 'WITHIN-LIMITS'}
+   _ground_truth    {'child_stdout_bytes': 58, 'child_stderr_bytes': 42, 'child_stderr_is_all_notice': True}
+
+== 3 COLLISION (a CORRECT REFUSAL and a REAL KILL are both exit 3)
+   prefix           {'refusal': {'exit': 3, 'token': 'WITHIN-LIMITS', 'peak': '0MB'}, 'memkill': {'exit': 3, 'token': 'KILLED-ON-MEMORY', 'peak': '1113MB'}, 'AMBIGUOUS_EXIT': True, 'TOKEN_SEPARATES': True}
+   current          {'refusal': {'exit': 3, 'token': 'WITHIN-LIMITS', 'peak': '0MB'}, 'memkill': {'exit': 3, 'token': 'KILLED-ON-MEMORY', 'peak': '1126MB'}, 'AMBIGUOUS_EXIT': True, 'TOKEN_SEPARATES': True}
+
+== 4 EMPTY (a 0-byte input that `bend --check-only` calls PROOF)
+   _ground_truth    {'exit': 0, 'stdout': 'ALL PROOFS CHECK\nUse --verdict for mathematical validity.', 'stderr_said': ''}
+   prefix           {'exit': 0, 'token': 'WITHIN-LIMITS', 'stdout_bytes': 323, 'peak': '2MB'}
+   current          {'exit': 0, 'token': 'WITHIN-LIMITS', 'stdout_bytes': 58, 'peak': '33MB'}
+
+== 5 SILENT (said nothing, exit 0 -- `cc -fsyntax-only` and `node --check` look like this)
+   prefix           {'exits0_silent': {'exit': 0, 'token': 'WITHIN-LIMITS', 'stdout': '[bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 4096)  0s  :: /usr/bin/true', 'said': ''}, 'exits1_silent': {'exit': 1, 'token': 'WITHIN-LIMITS', 'stdout': '[bounded] WITHIN-LIMITS  rc=1  peak-RSS=0 MB (ceiling 4096)  0s  :: /usr/bin/false', 'said': ''}, 'says_something': {'exit': 1, 'token': 'WITHIN-LIMITS', 'stdout': 'to-stderr\n[bounded] WITHIN-LIMITS  rc=1  peak-RSS=0 MB (ceiling 4096)  0s  :: sh -c echo to-stderr >&2; exit 1', 'said': ''}}
+   current          {'exits0_silent': {'exit': 0, 'token': 'WITHIN-LIMITS', 'stdout': '', 'said': '[bounded] WITHIN-LIMITS  rc=0  peak-RSS=0 MB (ceiling 4096)  0s  :: /usr/bin/true  out=0B err=0B'}, 'exits1_silent': {'exit': 6, 'token': 'NO-VERDICT', 'stdout': '', 'said': "[bounded] NO-VERDICT  rc=1  peak-RSS=0 MB (ceiling 4096)  0s  :: /usr/bin/false  out=0B err=0B | NOT A MEASUREMENT: the child exited non-zero having written nothing and said nothing beyond the update notice. That is either a failure that printed nothing or `bend`'s machine-stack overflow -- which prints nothing at all, roughly 1 run in 20 -- and the two are indistinguishable from here. Do not read this as a pass and do not read it as a clean failure; RETRY, and if it persists, say so."}, 'says_something': {'exit': 1, 'token': 'WITHIN-LIMITS', 'stdout': '', 'said': '[bounded] WITHIN-LIMITS  rc=1  peak-RSS=0 MB (ceiling 4096)  0s  :: sh -c echo to-stderr >&2; exit 1  out=0B err=10B  said=to-stderr | to-stderr'}}
+
+== 5b FILL (1 MB on stdout through a 64 KB pipe)
+   prefix           {'exit': 4, 'token': 'TIMED-OUT', 'stdout_bytes': 65785, 'peak': '5MB'}
+   current          {'exit': 0, 'token': 'WITHIN-LIMITS', 'stdout_bytes': 1000000, 'peak': '5MB'}
+
+== 6 NOT-STARTED (the docstring's exit 5, on a command that is not there)
+   prefix           {'exit': 1, 'token': 'NONE', 'traceback': True, 'said': 'Traceback (most recent call last): | File "/Users/cyberistic'}
+   current          {'exit': 5, 'token': 'NOT-STARTED', 'traceback': False, 'said': '[bounded] NOT-STARTED  rc=5  peak-RSS=0 MB (ceiling 4096)  0'}
+
+== 7 ORPHAN (a grandchild over the ceiling whose parent has ALREADY EXITED)
+   prefix           {'exit': 0, 'token': 'WITHIN-LIMITS', 'peak': '2MB'}
+   current          {'exit': 3, 'token': 'KILLED-ON-MEMORY', 'peak': '1284MB'}
+
+== FACTS
+   prefix.stdout_is_child_stdout      False
+   prefix.notice_bytes_in_stdout      42
+   prefix.not_a_row                   4
+   prefix.AMBIGUOUS_EXIT              True
+   prefix.TOKEN_SEPARATES             True
+   prefix.empty.token                 WITHIN-LIMITS
+   prefix.exits1_silent.token         WITHIN-LIMITS
+   prefix.exits0_silent.token         WITHIN-LIMITS
+   prefix.notstarted.exit             1
+   prefix.notstarted.traceback        True
+   prefix.fill.exit                   4
+   prefix.orphan.token                WITHIN-LIMITS
+   prefix.orphan.peak                 2MB

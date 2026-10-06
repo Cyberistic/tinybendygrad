@@ -1,0 +1,184 @@
+# Reference checkouts: fetched, pinned by the ledger in .agents/TOOLS.md, never edited.
+references/
+
+# The Bend launcher: a two-line shim over references/bend.
+/bin/bend
+
+# Native output from `bend x.bend -o x`, and the GPU program beside it.
+*.bin
+*.gpu
+
+# Python scratch from the oracle harness. The tinygrad/ tree itself is tracked
+# and must stay pristine: it is what the port is measured against.
+__pycache__/
+*.py[cod]
+*.egg-info/
+.hypothesis/
+.venv/
+# frozen upstream snapshot kept only for diffing; never committed
+.agents/slop/opstree/
+# pin/head/work/cur checkouts an agent makes to diff both ends of a rebase.
+# 191MB, and its autogen/nv_*.py are >1MiB each, so jj refuses to snapshot
+# them and warns on EVERY push. Untracked is not enough: one careless
+# `jj split` would sweep 191MB of another agent's scratch into a commit.
+.agents/slop/xd1/
+
+# agent scratch: in-place mutation backups and rejected merges. Committed twice
+# by accident today; a .bak is a copy of a file already in the tree.
+*.bak
+*.orig
+*.rej
+
+# in-place mutation scratch. Four COMPLETED PORTS were nearly lost because 5,336 uncommitted
+# files made real work invisible in `jj status`. These are never sources.
+*.mut.bend
+_mut_*.bend
+*mut.bend
+probe-*.bend
+probe-*.bend.mut
+# Two scratch names the four lines above MISS, found by asking the question the
+# patterns imply instead of the question they were written for: "does any `.bend`
+# in the tree still look like scratch?". `probe-*.bend` needs the hyphen, so
+# `renderer/csprobe.bend` (774 lines, a stale prefix of `cstyle.bend` -- measured
+# identical for its first 588 lines) slipped through; `_mut_*.bend` needs the
+# word, so `runtime/_p6.bend` (a 4-line F32.bits print) slipped through.
+# `*probe.bend` matches exactly 1 file in the tree and `_*[0-9].bend` exactly 2,
+# all three scratch, so neither pattern can eat a real port.
+#
+# BOTH ARE ALREADY TRACKED, AND A PATTERN WILL NOT UNTRACK THEM: `csprobe.bend`
+# and `_p6.bend` need `rm`, then the deletion committed. Do not read a green
+# `git status` here as fixed -- the same no-op is recorded twice above.
+*probe.bend
+_*[0-9].bend
+
+# ops501-atrest.sh stages a REVISION of ops.bend at its own relative path, because
+# a copy elsewhere cannot resolve `./../helpers.bend` and prints a phantom 0 rows.
+# So the stage is necessarily inside the source tree, and two traps follow from
+# that: a `for f in tinybendygrad/uop/*.bend` sweep counts it as a port and calls
+# it RED when the RED is the OLD revision (observed: `ops-ATREST-20808.bend` in a
+# 12-file `--check-only` sweep), and one careless `jj split` commits a whole stale
+# ops.bend. Matches 0 real files.
+tinybendygrad/**/*ATREST-*.bend
+
+# comment-realignment pass: the measurement + edit harness (spec*.py, apply.py,
+# final.py, cite.py, dist.py) and the four report artifacts. Never sources; the
+# 2.0 MB before/ snapshot it produced was deleted so this stays under 0.5 MB.
+# `.agents/slop/commentpass/README.md` says how to regenerate the snapshot.
+.agents/slop/commentpass/
+
+# browser/profile probes: an agent hunting for a WebGPU-capable browser drops a whole
+# Chrome profile here (35MB .tflite models, 22MB crx blobs). Never source, never a gate input.
+.agents/slop/probe/
+
+# MNIST net.json is 2.2MB of downloaded dataset. A page fetches it; a repo does not
+# carry it, and jj refuses to snapshot the whole fileset over one file.
+examples/webgpu/mnist/net.json
+examples/webgpu/mnist/*.gz
+.agents/slop/mirror/
+
+# Per-unit probe/working trees. An ORACLE (.py that calls CPython) and a GATE (.py/.sh that runs
+# it) are the deliverable and live at slop/ TOP LEVEL; the tree a unit probed inside is not.
+# NOTE: .gitignore cannot untrack a file that is already tracked -- these had to be DELETED, not
+# just ignored, and the failure mode looks exactly like success.
+.agents/slop/elf/
+.agents/slop/elfprobe/
+.agents/slop/agprobe/
+.agents/slop/li/
+.agents/slop/ptxown/
+.agents/slop/spec/
+.agents/slop/srch/
+.agents/slop/ddcheck/
+.agents/slop/mirror/
+
+# .ddmut is a broken mutant from a mutation run, same class as _mut_*.bend and
+# *.mut. A deliberate break in the source tree is a trap for the next reader.
+tinybendygrad/**/*.ddmut
+
+# probe-nat.bend and test/_probe/ are scratch: a hand-made probe that does not even parse
+# ("expected : a term / observed : end of input"). A broken probe in the source tree is a trap
+# for the next reader, not a fixture.
+tinybendygrad/uop/probe-*.bend
+tinybendygrad/test/_probe/
+.agents/slop/dd-mirror/
+.agents/slop/tv-scratch/
+
+# Measurement caches under .agents/slop. Both were COMMITTED and both had to be DELETED,
+# because .gitignore cannot untrack a file that is already tracked: a prior attempt to
+# untrack net.json silently no-opped four commits, and the failure mode looks exactly like
+# success. If one of these reappears, delete it -- do not treat this pattern as the fix.
+#
+#   ga_cache/   ga_sweep.py's output. 343 tracked files / 2.00 MB of tracked bytes
+#               (25 MB on disk with the .bin lanes), written as <port>/{lane.txt,lane.rc,
+#               lane.err} + lanes.json so a parser can be MEASURED offline instead of
+#               re-running bend per candidate. Header says "Run once". Regenerate with
+#               `python3 .agents/slop/ga_sweep.py`. NOTE ga_rows_blast.py reads it offline
+#               and will not run until the sweep is re-run.
+#   tv-scratch/ tree-verdict.py / state-audit.py's flat-tree working scratch, rebuilt on
+#               every run. 318 tracked files / 0.55 MB. Already ignored above by name; kept
+#               here so the two live together with the reason.
+.agents/slop/ga_cache/
+.agents/slop/*_cache/
+
+# dd-cone-wt/ is the same class -- a per-unit probe/working tree of full littlebendygrad
+# copies, 1684 tracked files -- but NOT deleted: a live agent is mid-flight in it and
+# deleting it would destroy their work. Ignored so that one careless `jj split` cannot
+# sweep it into a commit, for the same reason xd1/ is listed above.
+.agents/slop/dd-cone-wt/
+
+# DELIBERATELY NOT IGNORED. A cache-shaped path is not the test; "a report cites it" is.
+# These are tracked on purpose and a future sweep must leave them alone:
+#   arange-ucache/  TOOLS.md's ledger and notes/bend2-constraints.md cite it as the
+#                   measurement behind the ARange ucache collision.
+#   runs/           ROOT `runs/` is GENERATED OUTPUT and is ignored -- see the
+#                   `/runs/` rule at the foot of this file. It was this bullet's
+#                   claim ("tracked on purpose") that hid the bug: as written it
+#                   matched `runs/` at ANY depth and suppressed renamed evidence
+#                   one level down. `runs/README.md`, which this line used to
+#                   cite, does NOT exist (measured 2026-10-06). The gate input
+#                   that was `runs/e2e/e2e-mm-oracle.json` is no longer there:
+#                   it lives at the TRACKED `checks/e2e-mm-oracle.json`, beside
+#                   `checks/run-port-mm.sh:58` which reads it, recovered
+#                   byte-identical from `cf2d14fa4^` (see `.agents/slop/runsgate/`).
+#                   NOTE (was `retention-check clause V`): clause V's
+#                   IGNORED-BUT-INDEXED rule only sees a directory that is BOTH
+#                   indexed AND ignored; `runs/e2e/` was neither, so clause V
+#                   NEVER reported this -- the citation was a third witness to a
+#                   rule that does not implement it.
+#   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.
+
+# GENERATED OUTPUT IS NOT A SOURCE FILE. `gates/retention-check.py` CLAUSE III: "an output directory is
+# not in the index" -- and it was RED with 219 entries. THE INSTRUMENT COULD NOT FIX IT BECAUSE
+# `.gitignore` CANNOT UNTRECK; ONLY A COMMIT CAN, WHICH IS WHY restorekit REPORTED IT AS
+# "UNSATISFIABLE-BY-ITSELF". THIS IS THAT COMMIT. THE BYTES STAY ON DISK AND IN HISTORY.
+#
+# A TRACKED ARTIFACT IS A FILE WHOSE VALUE LIES IN BEING REGENERABLE, AND TRACKING IT GUARANTEES THE NEXT
+# GATE RUN SHOWS A DIFF THAT IS NOT A CHANGE.
+# `checks/gen/` joins them, and the reason is the same as theirs: it is output, not source.
+# MEASURED 2026-10-06. `checks/abi_gate.py:606` is `gendir.mkdir(exist_ok=True)` on
+# `HERE / "gen"` and `:616` is `subprocess.run([BEND, probe, "-o", str(gendir / f"probe.{ext}")])`
+# -- 268,523 bytes of `bend` backend written PER RUN, whose two index entries were git's EMPTY
+# BLOB (`e69de29`) while the worktree held the real bytes. Nine `checks/abi.json` citations resolve
+# INTO those files and `abi_gate.py:624` READS THEM BACK, so any checkout that has not run the
+# generator first sees 9/9 STALE POINTERS -- a gate that depends on a file that is empty in every
+# clone. `checks/census.py:64` writes `checks/rows-<name>-<side>.rows` into `checks/` for the same
+# reason: 51 more, tracked the same way. `gates/gendirs.py` DISCOVERS all of it by scanning write
+# sites, so nothing here is a list that has to be kept in step with the tree.
+checks/gen/
+checks/rows-*.rows
+checks/check.out
+gates/artifacts/
+
+# ROOT `runs/` ONLY -- the leading `/` IS the rule. Without it this caught
+# `figure2/**/runs/...`, `e2epy/fixtures/*/runs/...` and every `.agents/slop/`
+# `*/runs/` at depth: 715 untracked paths (measured 2026-10-06 14:04, all under
+# `.agents/slop/`), the last 22 of no-txt.py's 24 `.txt`, and 149 of
+# declared472's 472 renames, which were otherwise un-committable. The rule was
+# written for `runs/e2e/` and `runs/graphcmp/D/` at the root and is now exactly
+# that. Renamed EVIDENCE under a nested `runs/` (e2epy fixtures, differverdict
+# pristine) is the reason to free it, not the reason to keep it.
+/runs/
+
+# `checks/both-census.py` writes these BESIDE itself and READS them when present
+# (`if cache.exists() and not fresh`), so the default run reads a cache. A cache is
+# regenerated by `--fresh`, not committed: a committed cache is a run nobody re-took.
+checks/both-rows-*.rows

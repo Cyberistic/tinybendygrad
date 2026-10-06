@@ -1,0 +1,5 @@
+denominator (assigns DEV and reaches tinygrad): 31
+  EARLY         29
+  IMPORTLESS     1
+  UNRESOLVED     1
+  VENDORED       2

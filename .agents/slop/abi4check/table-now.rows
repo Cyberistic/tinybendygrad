@@ -1,0 +1,145 @@
+==============================================================================
+ROWS PRESENT vs ROWS EXPECTED  (a lane that prints nothing is not green)
+==============================================================================
+  shipped    present  98/98
+  break-A    present  98/98
+  break-B    present  98/98
+  break-C    present  98/98
+  break-AB   present  98/98
+  break-AC   present  98/98
+  break-BC   present  98/98
+  break-ABC  present  98/98
+  disarm-A   present  98/98
+  disarm-B   present  98/98
+  disarm-C   present  98/98
+  plant-A    present  98/98
+  plant-B    present  98/98
+  plant-C    present  98/98
+  ALT        present  98/98
+
+==============================================================================
+AGREEMENT WITH CPYTHON, `tinygrad.dtype` CALLED -- never transcribed
+==============================================================================
+  shipped     98/98 agree
+  break-A     98/98 agree
+  break-B     98/98 agree
+  break-C     98/98 agree
+  break-AB    98/98 agree
+  break-AC    98/98 agree
+  break-BC    98/98 agree
+  break-ABC   98/98 agree
+  disarm-A    98/98 agree
+  disarm-B    98/98 agree
+  disarm-C    98/98 agree
+  plant-A     98/98 agree
+  plant-B     98/98 agree
+  plant-C     98/98 agree
+  ALT         98/98 agree
+
+==============================================================================
+DISARMS FIRST -- re-spellings of the SHIPPING text, one site each
+==============================================================================
+  DISARM A  moved   0/98   0 is the only correct count
+  DISARM B  moved   0/98   0 is the only correct count
+  DISARM C  moved   0/98   0 is the only correct count
+
+==============================================================================
+PLANTS -- a SECOND mutation of the violation, not a copy of the break
+==============================================================================
+  PLANT A  moved   0/98   of32(v) moved to the return that consumes it   ** a plant that moved nothing proves nothing
+  PLANT B  moved   0/98   the REVERSE converter, bits32, at the argument   ** a plant that moved nothing proves nothing
+  PLANT C  moved   0/98   a DOUBLE of32 at the seam, pattern->value->pattern   ** a plant that moved nothing proves nothing
+
+==============================================================================
+WHICH SITE IS ABI-4 -- necessity and sufficiency, per site
+==============================================================================
+  NEEDS(s) = green as shipped, RED with site s re-broken
+  FIXES(s) = green with the other two re-broken, RED with all three
+
+  site A   NEEDS   0   FIXES   0
+    NEEDS: []
+    FIXES: []
+
+  site B   NEEDS   0   FIXES   0
+    NEEDS: []
+    FIXES: []
+
+  site C   NEEDS   0   FIXES   0
+    NEEDS: []
+    FIXES: []
+    NEEDS(A^B) = 0 []
+    NEEDS(A^C) = 0 []
+    NEEDS(B^C) = 0 []
+
+  READ AS FOLLOWS.  `of32` is PATTERN->VALUE, `bits32` is
+  VALUE->PATTERN, and `dtype.bend` declares `Dt.fp16(x: F32)` and
+  `Dt.fp8_to(..) -> IO(F32)`.
+    B  NEEDS 0, FIXES 0, and NEEDS(B) touches
+       no fp8_to row -> the INBOUND crossing, SEPARABLE BY ROW.
+    C  FIXES 0 of which 0 that A and B fix nothing
+       -> the OUTBOUND crossing, and the only site with a row set of its
+       OWN: fp8_decode's EARLY nan/inf returns never build `v`.
+    A  FIXES 0, and NEEDS(A) is a SUBSET of NEEDS(C) (0
+       shared) -> NOT separable from C by ANY fixture.  The same error
+       (`of32` on a value) one call INSIDE the lane, on C's path, and
+       reachable only through C.  Load-bearing, so not incidental -- and
+       not a seam crossing either.  `abi_gate.py` carries ONE fp8_to row,
+       which needs both, which is why its ABI-4 arm could never separate
+       them.
+
+  so: B and C are ABI-4 AT THE SEAM, A is ABI-4's error class applied
+  INTERNAL to the lane.  A SITE IS REDUNDANT.  NONE is incidental.
+
+  DIRECTION, BY VALUE -- the wrong answer NAMES the wrong representation
+  `Dt.fp16(x: F32)` receives a VALUE, and 1073741824 / 1069547520 are the
+  VALUE whose own f32 PATTERN is 2.0 / 1.5 -- so those rows read the
+  argument as a pattern BY NAME, which `fp16(1.5) = 0` cannot.
+
+  THE ALTERNATIVE SPELLING (`ALT`: fp8_decode answers a VALUE, the seam's
+  of32 removed) is green on 98/98, RED on exactly
+  0 rows, and that set IS FIXES(C): True.
+  So the conversion is FORCED ONTO THE SEAM, and the reason is structural:
+  fp8_decode returns straight from its nan/inf branches WITHOUT building
+  `v`, so a conversion placed at its `return` is bypassed by 10 of its 44
+  reachable rows.  Measured, and it is why the repair cannot be written
+  one call inward.
+
+==============================================================================
+LOCALITY -- by row set, by content, and by the tree's own bytes
+==============================================================================
+  by ROW SET: the repair moved 0/98 rows and 0 of them outside abi4_*  []
+  by CONTENT: the repair's diff (20 lines) mentions another ABI's
+    tokens: none.  A row-count fence cannot see an entangled
+    ARM; this can, because it reads the bytes the arm would apply.
+  EVERY ARM, 15 of them: edits naming another ABI: none
+  by THE TREE: `shipped` prints 98/98 and the
+    only arm that differs from it by a row is ALT (0 rows), so the
+    bytes in the repo ARE the repair -- measured, not asserted.  This gate
+    patches a copy, so it could not see the tree's own syntax: a dangling
+    paren passed 98/98 here until node's exit status was checked.
+  by the OTHER GATES: abi_gate rc=1  jsfix_gate rc=1
+    all 30 jsfix rows are `Dt.i64_*` and no arm of this repair touches an
+    I64 helper, so jsfix MOVING 0 is a THEOREM about its row set and not
+    evidence of locality.  Its rc is the only thing claimed for it here.
+
+==============================================================================
+VERDICT
+==============================================================================
+  PASS  every arm printed every row, so no arm is a silent no-op
+  FAIL  the re-broken tree is RED on abi4_ rows, so the gate has teeth
+  PASS  every DISARM moved 0 -- a disarm that moves is not a disarm
+  FAIL  every PLANT moved rows
+  PASS  the shipped tree agrees with CPython on all 98 rows
+  FAIL  every site is NECESSARY for a non-empty row set, so none is incidental
+  PASS  B is separable from A and C BY ROW: NEEDS(B) touches no fp8_to row
+  FAIL  C has an exclusive row set: it alone fixes rows A and B fix nothing
+  PASS  A alone fixes nothing, so no fixture can witness A by itself
+  PASS  A is NESTED in C rather than separable: NEEDS(A) is a SUBSET of NEEDS(C) -- stated as measured, and it is why abi_gate's 12 rows cannot tell them
+  FAIL  the ALT spelling is red on exactly FIXES(C), so the conversion is FORCED ONTO THE SEAM by fp8_decode's early returns
+  PASS  the repair moved no `loc_*` row (a row where no VALUE crosses)
+  PASS  the repair's diff mentions no other ABI's token -- the CONTENT fence
+  PASS  NO ARM of the 15 names another ABI's token: the entanglement was an ARM carrying another ABI's bytes, and a fence on the one arm that mattered today is a fence that will be wrong tomorrow
+  FAIL  abi_gate.py exits 0 against this tree
+  FAIL  jsfix_gate.py exits 0 against this tree
+
+  gate rc: 1

@@ -1,0 +1,95 @@
+gate                                             rc  state
+checks/abi4_gate.py                            SKIP  invokes bend (memory ceiling)
+checks/abi_gate.py                             SKIP  invokes bend (memory ceiling)
+checks/al-verdict.py                           rc=2  RED
+checks/both-census.py                          SKIP  invokes bend (memory ceiling)
+checks/bounded-selftest.sh                     rc=1  RED
+checks/bounded.py                              SKIP  invokes bend (memory ceiling)
+checks/census.py                               SKIP  invokes bend (memory ceiling)
+checks/citation-gate.py                        rc=1  RED
+checks/cl-port-gate.py                         SKIP  invokes bend (memory ceiling)
+checks/classify.sh                             rc=1  RED
+checks/cli.py                                  rc=1  RED
+checks/compile.py                              rc=1  RED
+checks/corpus-figure.py                        rc=1  RED
+checks/coverage.py                             rc=1  RED
+checks/demo.sh                                 rc=1  RED
+checks/devgate.py                              rc=0  GREEN
+checks/devpin.py                               rc=0  GREEN
+checks/differ.py                               SKIP  invokes bend (memory ceiling)
+checks/disagree-gate.py                        rc=1  RED
+checks/disarm.sh                               rc=1  RED
+checks/dup-census.py                           rc=3  REFUSED
+checks/dup-gate.py                             rc=3  REFUSED
+checks/e2e.py                                  SKIP  invokes bend (memory ceiling)
+checks/e2e.sh                                  SKIP  invokes bend (memory ceiling)
+checks/env-precond.py                          rc=1  RED
+checks/fw_live.py                              rc=1  RED
+checks/gate.py                                 rc=3  REFUSED
+checks/gate.sh                                 SKIP  invokes bend (memory ceiling)
+checks/gate_dtype.py                           rc=2  RED
+checks/gate_norm.py                            SKIP  invokes bend (memory ceiling)
+checks/gen.sh                                  SKIP  invokes bend (memory ceiling)
+checks/graphcmp-census-audit.py                rc=1  RED
+checks/hermetic-census.py                      SKIP  invokes bend (memory ceiling)
+checks/jsfix_gate.py                           SKIP  invokes bend (memory ceiling)
+checks/lint_demo.sh                            rc=1  RED
+checks/lintable-gate.sh                        SKIP  invokes bend (memory ceiling)
+checks/llama.py                                rc=1  RED
+checks/marker-audit.py                         rc=0  GREEN
+checks/nl-gate-noguard.py                      SKIP  invokes bend (memory ceiling)
+checks/nl-gate.py                              SKIP  invokes bend (memory ceiling)
+checks/no-shrink.py                            rc=0  GREEN
+checks/no-strays.py                            rc=0  GREEN
+checks/no-txt.py                               rc=1  RED
+checks/norm_check.py                           rc=0  GREEN
+checks/nvrows-deadrow-gate.py                  SKIP  invokes bend (memory ceiling)
+checks/oracle-txt-census.py                    rc=0  GREEN
+checks/oracle_f64.py                           rc=1  RED
+checks/plant.sh                                SKIP  invokes bend (memory ceiling)
+checks/process_replay.py                       rc=1  RED
+checks/render-gate-oracle.py                   rc=0  GREEN
+checks/repair-dupes.py                         SKIP  invokes bend (memory ceiling)
+checks/repro-paths.py                          rc=1  RED
+checks/residue.py                              rc=0  GREEN
+checks/rn-gate.py                              SKIP  invokes bend (memory ceiling)
+checks/romless.py                              rc=1  RED
+checks/run-all.sh                              SKIP  invokes bend (memory ceiling)
+checks/run-f64.sh                              SKIP  invokes bend (memory ceiling)
+checks/run-port-mm.sh                          SKIP  invokes bend (memory ceiling)
+checks/run.py                                  rc=1  RED
+checks/sb-gate.sh                              SKIP  invokes bend (memory ceiling)
+checks/serve.py                                SKIP  timeout
+checks/substrate-check.sh                      rc=1  RED
+checks/substrate.py                            SKIP  invokes bend (memory ceiling)
+checks/sweep.py                                SKIP  timeout
+checks/sz.py                                   rc=1  RED
+checks/test_rewrite_bottom_up_gate.py          rc=0  GREEN
+checks/txt-owners.py                           rc=0  GREEN
+checks/unowned.py                              SKIP  timeout
+checks/vz_gate.py                              SKIP  invokes bend (memory ceiling)
+checks/walk-mutate.sh                          SKIP  invokes bend (memory ceiling)
+checks/wallcheck.py                            rc=1  RED
+checks/wt-sync.sh                              SKIP  invokes bend (memory ceiling)
+gates/bc-u32-gate.py                           rc=0  GREEN
+gates/beautiful-mnist-gate.py                  SKIP  invokes bend (memory ceiling)
+gates/ew-consts-gate.py                        rc=0  GREEN
+gates/ew-consts-oracle.py                      rc=0  GREEN
+gates/ew-explog-gate.py                        rc=0  GREEN
+gates/ew-explog-oracle.py                      rc=0  GREEN
+gates/gates-pop.py                             SKIP  invokes bend (memory ceiling)
+gates/gendirs.py                               SKIP  invokes bend (memory ceiling)
+gates/i64-shl-gate.py                          rc=0  GREEN
+gates/i64-shr-gate.py                          rc=0  GREEN
+gates/mixin-op-gate.py                         SKIP  invokes bend (memory ceiling)
+gates/ops-core-gate.py                         rc=0  GREEN
+gates/ops-core-oracle.py                       rc=0  GREEN
+gates/retention-check.py                       rc=1  RED
+gates/wk-cd-gate.py                            rc=0  GREEN
+gates/wk-cd-oracle.py                          rc=0  GREEN
+gates/wk-eval-gate.py                          rc=0  GREEN
+gates/wk-eval-oracle.py                        rc=0  GREEN
+gates/wk-f32-gate.py                           rc=0  GREEN
+gates/wk-f32-rows.py                           rc=0  GREEN
+
+TOTALS: {'invokes bend (memory ceiling)': 33, 'RED': 27, 'GREEN': 26, 'REFUSED': 3, 'timeout': 3}  -- and 'SKIP' is itself the population this column would retire

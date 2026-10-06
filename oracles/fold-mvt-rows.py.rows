@@ -1,0 +1,6 @@
+mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=int
+mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=int
+mv_expnoop n=4 op=Ops.EXPAND nsrc=2 srcops=Ops.NOOP|Ops.CONST shape=(2,4) dtype=void
+mv_expsym n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,UOp(4312020016),4) dtype=int
+== DIVERGES (CPython answers, the fold refuses; fold.bend prints RAISE) ==
+  mv_expsym: CPython shape (2,UOp(4312020016),4) -- `s.val if s.op is Ops.CONST else ssimplify(s)` is the wall, and the fold cannot read a SPECIAL's value

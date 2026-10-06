@@ -1,0 +1,62 @@
+ref: b504abf77
+manifest rows: 259
+HEAD blob resolves:        259/259
+digest ALREADY correct:    241/259
+digest WRONG:              18/259
+unresolved HEAD path:      0
+
+WRONG ROWS (path, manifest_sha, head_sha, head_bytes, manifest_bytes):
+  oracles/blob-bn.txt
+     manifest=4e993fcfdd2efd3693b06ecd1cd7b0cdeb236d5a43fca964abf80e9c2e2faafd
+     head    =03f3443bca77f8ead381234fe141740a3162d462cbccdfa412d0f987070a1a39  (head 188 B, manifest 188 B)
+  oracles/cstyle-capture-oracle.txt
+     manifest=c51a2d101ff40debc417fb67262a8da1489f400c017f7857d073e1abe663ca1c
+     head    =2e4491ed20904a0fafd724d650453d3d0acec9d5b93264b90dfac221a0a63a1f  (head 24512 B, manifest 24512 B)
+  oracles/dsl_oracle_live.txt
+     manifest=02a3b49cd616f262b25c587b2d506be83dcf4e3e5ddb95cd58328072ef57206c
+     head    =165381d2ef10160c78a1eb855b7098f552346039e1c65d62449c0927bbaf32ae  (head 44383 B, manifest 44383 B)
+  oracles/fold-landed.txt
+     manifest=d85c271bf91574e0a4b0fc404ca849d717bec1974c79cf4ab9ae35aa4b4e21fd
+     head    =4369ae5de97b333479f3fe257678019fb01b8e202230bc61254687dda0d263ba  (head 4636 B, manifest 4636 B)
+  oracles/fold2_base.txt
+     manifest=d85c271bf91574e0a4b0fc404ca849d717bec1974c79cf4ab9ae35aa4b4e21fd
+     head    =4369ae5de97b333479f3fe257678019fb01b8e202230bc61254687dda0d263ba  (head 4636 B, manifest 4636 B)
+  oracles/jit-prune-oracle.txt
+     manifest=5e0dfdaf759a66ba83a7a0f79ef7aa069fc13676f1f84631fd66c17cb127f40c
+     head    =1d9aa8a250709461fadca8cc29a8fb141eaea12df18848dbd33044ff72612cf2  (head 180 B, manifest 180 B)
+  oracles/memory_oracle.txt
+     manifest=638bbf97ffe65ba5a3d69962fcdfd75c53b0dfe50e69c9e6c6269eeef4c382d8
+     head    =a53e88245facefefc0bcc0ddb3fd8e6ec8ac04a7f4dee7f212bc913f6c125aee  (head 20585 B, manifest 20585 B)
+  oracles/py_mv.txt
+     manifest=8566f20cdc85882e8f73f26bc4b45ccb08f9ef663e02b37ed280ee415b7df069
+     head    =59a5d9f3a0b49b31305c926ce67145b7eb41dbd85be424258368ca8976ceec78  (head 1389 B, manifest 1389 B)
+  oracles/rows-allred-py.txt
+     manifest=cf3e4f5abe166f56023e028304816cd3834b98be3822acc37347c8c68b7d4255
+     head    =a26fae5f072efd2820df22b6e357d9da04e89eb8fa3b41f8cb71050a32b48bc1  (head 573 B, manifest 573 B)
+  oracles/rows-alu-py.txt
+     manifest=5785cbbe5ad0586917fcac3e328149b8ecb71871580f288df3ebd86edc7bd876
+     head    =9888375d9647b49254d34489908febbe487feb19d88025abe82817ffe3237b25  (head 828 B, manifest 828 B)
+  oracles/rows-binblob-py.txt
+     manifest=59eccd1cbe5997a6b451ecede4b434afc7403b9401e3df5616aa23f9aea9a036
+     head    =da11d005975db427483c5eaa78419890be0aeaf9609ef186613b426ff2e10e5e  (head 1236 B, manifest 1236 B)
+  oracles/rows-bit-py.txt
+     manifest=0e78b33486ba4da5cd6fa48d99a20d933994c15c5a4ad955fdba83caaa6080bf
+     head    =bc2af7b45fd96c023dba0faadf439883d1af32216d738a4376085fca31eb66e8  (head 599 B, manifest 599 B)
+  oracles/rows-buffer-py.txt
+     manifest=bb152eac1014cb82c724ec0a1d206c0be87a17a1dd9cc528dfa1c6c621f1c453
+     head    =910a92545b3f99ccd74bfd3454a6f6c6f939a16ac86a5969aaa0e23c5240ef9c  (head 310 B, manifest 310 B)
+  oracles/rows-bw-py.txt
+     manifest=da222007d9f0a9e7bd5d844384294e79277884dbe25ce906d123159d88f04be5
+     head    =77eed6ce57db2d9a815a64a47f64c9a80292b2362b49e1cdd12fea92d5c81177  (head 2066 B, manifest 2066 B)
+  oracles/rows-cast-py.txt
+     manifest=45a37e2b53dbb3e3734b9185fca5a5e1eb81330b79bbae79c0c7bb97d98512ea
+     head    =61719fd630a163050e8ff0c8d6a6e9450aaab43817837ae91fc1e11dbb2b66d5  (head 366 B, manifest 366 B)
+  oracles/rows-matmul-py.txt
+     manifest=9f39a6e3ee7a0e3039038cb247277adeca534d7261ffe95f8fc1fd4c9fa399ab
+     head    =eade6b82eb4b6c69e487386717814081b63f9d87a24cabf47de5d6a8ad689a5b  (head 1161 B, manifest 1161 B)
+  oracles/tinybendygrad_renderer_cstyle.bend.renderer_oracle.txt
+     manifest=c51a2d101ff40debc417fb67262a8da1489f400c017f7857d073e1abe663ca1c
+     head    =2e4491ed20904a0fafd724d650453d3d0acec9d5b93264b90dfac221a0a63a1f  (head 24512 B, manifest 24512 B)
+  oracles/tinybendygrad_schedule_prepare.bend.prepare-oracle.txt
+     manifest=0add9ea595c2c55397dee8fc2b6fe0b37d663d7b019086e5ae5570f746d383fb
+     head    =0e8e5ef2593e576ac818e530c4f532c1ff3f85c6201e33cfbbc2a43f5928ee87  (head 62259 B, manifest 62259 B)

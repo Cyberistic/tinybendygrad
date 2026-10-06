@@ -1,0 +1,10 @@
+jj git init --colocate rc=0  Done importing changes from the underlying Git repo.
+Initialized repo in "."
+BEFORE (after `git add new.rows`): STAGED=1 HEAD=af8d81b1ffd2
+    staged: new.rows
+jj branching snapshot rc=0 out={"loadedOperationId":"8ae948392ed4dd0c4165f22a7696941b008b73ef5f0716f5140ec136a2a86ac988813999ec1ea6cf85cd80ee61f4d6874e6f6c164e1dce9ad68d6bfc90f45dd4","operationChanged":true,"operationId":"edfe2851d err=
+AFTER  (after one `jj branching snapshot` — a server tick): STAGED=1 HEAD=af8d81b1ffd2
+    staged: new.rows
+index-reset: staged 1 -> 1, HEAD af8d81b1ffd2 -> af8d81b1ffd2
+reflog action after tick: af8d81b HEAD@{0}: commit (initial): base
+VERDICT: NO-RESET

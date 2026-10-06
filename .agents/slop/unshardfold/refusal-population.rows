@@ -1,0 +1,88 @@
+member	arm	class
+OpsSPECIAL	rlike(ss)	cascade-refuse
+OpsBUFFER	param_ds(arg)	answer
+OpsALLOC	param_ds(arg)	answer
+OpsNOOP	noop_ds(ar, i, ss)	cascade-refuse
+OpsREWRITE_ERROR	late()	late
+OpsPARAM	param_ds(arg)	answer
+OpsCALL	call_ds(arg)	answer
+OpsPROGRAM	late()	late
+OpsLINEAR	late()	late
+OpsSOURCE	late()	late
+OpsBINARY	binary_ds(arg)	answer
+OpsSINK	late()	late
+OpsAFTER	thru0(ss)	cascade-refuse
+OpsGROUP	late()	late
+OpsSTACK	stack_ds(ss)	answer
+OpsGETADDR	addr_ds()	answer
+OpsINDEX	index_ds(ar, i, ss)	cascade-refuse
+OpsSHRINK	shrink_ds(ar, i, ss)	cascade-refuse
+OpsLOAD	thru0(ss)	cascade-refuse
+OpsSTORE	store_ds(ss)	cascade-refuse
+OpsWMMA	wmma_ds(ss)	cascade-refuse
+OpsCAST	cast_ds(arg, ss)	cascade-refuse
+OpsBITCAST	bitcast_ds(arg, ss)	answer
+OpsEXP2	unary_ds(ar, ss)	cascade-refuse
+OpsLOG2	unary_ds(ar, ss)	cascade-refuse
+OpsSIN	unary_ds(ar, ss)	cascade-refuse
+OpsSQRT	unary_ds(ar, ss)	cascade-refuse
+OpsRECIPROCAL	unary_ds(ar, ss)	cascade-refuse
+OpsNEG	thru0(ss)	cascade-refuse
+OpsTRUNC	thru0(ss)	cascade-refuse
+OpsADD	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsMUL	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsSHL	shift_ds(ar, ss)	cascade-refuse
+OpsSHR	shift_ds(ar, ss)	cascade-refuse
+OpsCDIV	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsMAX	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsCMOD	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsCMPLT	alu_ds(S.boolean(), ss)	cascade-refuse
+OpsCMPNE	alu_ds(S.boolean(), ss)	cascade-refuse
+OpsCMPEQ	alu_ds(S.boolean(), ss)	cascade-refuse
+OpsXOR	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsOR	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsAND	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsTHREEFRY	alu_ds(S.uint64(), ss)	cascade-refuse
+OpsSUB	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsFDIV	alu_ds(least_upper_float(promo_dtype(dts_of.go(ss, Nil{}))), ss)	cascade-refuse
+OpsPOW	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsFLOORDIV	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsFLOORMOD	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsWHERE	where_ds(ss)	cascade-refuse
+OpsMULACC	alu_ds(promo_dtype(dts_of.go(ss, Nil{})), ss)	cascade-refuse
+OpsBARRIER	late()	late
+OpsRANGE	rlike(ss)	cascade-refuse
+OpsIF	late()	late
+OpsEND	thru0(ss)	cascade-refuse
+OpsENDIF	late()	late
+OpsBACKEDGE	late()	late
+OpsCONST	const_ds(arg)	answer
+OpsCUSTOM	custom_ds(arg, ss)	answer
+OpsCUSTOMI	custom_ds(arg, ss)	answer
+OpsINS	ins_ds(arg)	answer
+OpsCONTIGUOUS_BACKWARD	thru0(ss)	cascade-refuse
+OpsDETACH	thru0(ss)	cascade-refuse
+OpsSTAGE	stage_ds(ss)	own-wall-refuse
+OpsCOPY	thru0(ss)	cascade-refuse
+OpsMSELECT	thru0(ss)	cascade-refuse
+OpsMSTACK	thru0(ss)	cascade-refuse
+OpsCUSTOM_FUNCTION	cfun_ds(arg)	answer
+OpsRESHAPE	reshape_ds(ar, i, ss)	own-wall-refuse
+OpsPERMUTE	perm_ds(ar, i, arg, ss)	cascade-refuse
+OpsEXPAND	expand_ds(ar, i, ss)	own-wall-refuse
+OpsPAD	pad_ds(ar, i, ss)	cascade-refuse
+OpsFLIP	flip_ds(ar, i, arg, ss)	cascade-refuse
+OpsUNSHARD	None{}	own-wall-refuse
+OpsREDUCE	reduce_ds(arg, ss)	cascade-refuse
+OpsALLREDUCE	thru0(ss)	cascade-refuse
+OpsPYLITERAL	late()	late
+
+# denominator (enum declaration is the population)
+# enum members	77
+# answer	13
+# cascade-refuse	49
+# own-wall-refuse	4
+# late	11
+# absent	0
+# own-wall (standalone) refusing members	OpsSTAGE,OpsRESHAPE,OpsEXPAND,OpsUNSHARD
+# cascade refusing members	OpsSPECIAL,OpsNOOP,OpsAFTER,OpsINDEX,OpsSHRINK,OpsLOAD,OpsSTORE,OpsWMMA,OpsCAST,OpsEXP2,OpsLOG2,OpsSIN,OpsSQRT,OpsRECIPROCAL,OpsNEG,OpsTRUNC,OpsADD,OpsMUL,OpsSHL,OpsSHR,OpsCDIV,OpsMAX,OpsCMOD,OpsCMPLT,OpsCMPNE,OpsCMPEQ,OpsXOR,OpsOR,OpsAND,OpsTHREEFRY,OpsSUB,OpsFDIV,OpsPOW,OpsFLOORDIV,OpsFLOORMOD,OpsWHERE,OpsMULACC,OpsRANGE,OpsEND,OpsCONTIGUOUS_BACKWARD,OpsDETACH,OpsCOPY,OpsMSELECT,OpsMSTACK,OpsPERMUTE,OpsPAD,OpsFLIP,OpsREDUCE,OpsALLREDUCE

@@ -1,0 +1,227 @@
+# port files: 144
+
+ROW tinybendygrad/codegen/decomp/dtype.bend
+  needs     = belts-disagree
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=98 n_beltB=97
+  only_A = ['checks/wallcheck.py']
+  only_B = []
+  citers_outside_residue = ['.agents/TODO.md', '.agents/TOOLS.md', '.agents/UPSTREAM-PIN.md', 'checks/README.md', 'checks/abi4_gate.py', 'checks/abi_gate.py', 'checks/differ.py', 'checks/e2e.py', 'checks/gate_dtype.py', 'checks/jsfix_gate.py', 'checks/norm_check.py', 'checks/substrate.py', 'checks/sweep.py', 'checks/vz_gate.py', 'checks/wallcheck.py', 'gates/i64-shr-gate.py', 'gates/wk-cd-gate.py', 'gates/wk-eval-gate.py']
+  citers_inside_residue  = ['.agents/slop/ADEV.md', '.agents/slop/ARGLIT.md', '.agents/slop/CIDSWEEP.md', '.agents/slop/CSTYLE2.md', '.agents/slop/DEADARM.md', '.agents/slop/DTYPEB.md', '.agents/slop/FP8FIX.md', '.agents/slop/FROMBITS.md', '.agents/slop/JS-LANE-GATE.md', '.agents/slop/JSFP8.md', '.agents/slop/JSTAGE.md', '.agents/slop/LANE-LIVENESS.md', '.agents/slop/LASTLAW.md', '.agents/slop/MATHLIB.md', '.agents/slop/MUT-LEDGER.md', '.agents/slop/NORM.md', '.agents/slop/OPSPY.md', '.agents/slop/PEAKRSS.md', '.agents/slop/PROBES.md', '.agents/slop/SPELLING.md', '.agents/slop/W64-MILE.md', '.agents/slop/W64.md', '.agents/slop/WALLMAP-CORRECTION.md', '.agents/slop/abi4/README.md', '.agents/slop/abi4check/README.md', '.agents/slop/abifix/README.md', '.agents/slop/adev/CLAIM.md', '.agents/slop/agend/REPORT.md', '.agents/slop/agent-core.md', '.agents/slop/audit/01-proofs-34of34.md', '.agents/slop/baseline-ledger.md', '.agents/slop/bf16/BF16.md', '.agents/slop/coldness/COLDNESS.md', '.agents/slop/commit-dtype-finding.md', '.agents/slop/cstyle-green.md', '.agents/slop/dd-divE.md', '.agents/slop/dd-mutations-report.md', '.agents/slop/deadreg/REPORT.md', '.agents/slop/denom/CLAIM.md', '.agents/slop/dtype-oracle-truth.md', '.agents/slop/dtypeb/00-stub.md', '.agents/slop/dup/REPORT.md', '.agents/slop/dup/stage1-census.md', '.agents/slop/dup/stage5-plants.md', '.agents/slop/e2epy/report.md', '.agents/slop/e2estage8/report.md', '.agents/slop/env-flag-divergence.md', '.agents/slop/frombits/00-stub.md', '.agents/slop/grw-stage1.md', '.agents/slop/guardfix/RESULTS.md', '.agents/slop/hygiene-2026-10-04.md', '.agents/slop/i64shl/REPORT.md', '.agents/slop/ishr/00-VERDICT.md', '.agents/slop/ishr/REPORT.md', '.agents/slop/jsfix/README.md', '.agents/slop/lanedeath-census.md', '.agents/slop/lastlaw/00-stub.md', '.agents/slop/liveness/plant-transcript.md', '.agents/slop/memory-report.md', '.agents/slop/name-census.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/notes/compare/uop-ops.md', '.agents/slop/notes/upstream-bugs.md', '.agents/slop/pin-tree-oracle-report.md', '.agents/slop/plans/00-master-plan.md', '.agents/slop/portmarkers/REPORT.md', '.agents/slop/revive/REVIVE.md', '.agents/slop/shadowtrees/REPORT.md', '.agents/slop/slopcopies/MANIFEST.md', '.agents/slop/state-audit-report.md', '.agents/slop/sweepport/REPORT.md', '.agents/slop/todo2/dashboard.md', '.agents/slop/todo2/discover.md', '.agents/slop/tree-verdict.md', '.agents/slop/trigger/STANDAL-INSTRUCTION-fold2655.md', '.agents/slop/unobservable-report.md', '.agents/slop/w64mile/STATUS.md', '.agents/slop/wallrule/RULE.md', '.agents/slop/wallrule/SWEEP.md', '.agents/slop/zero-audit-report.md']
+
+ROW tinybendygrad/codegen/decomp/transcendental_f32.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=4 n_beltB=4
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/MUT-LEDGER.md', '.agents/slop/PROBES.md', '.agents/slop/live-write-guard.md', '.agents/slop/notes/bend2-constraints.md']
+
+ROW tinybendygrad/codegen/gpudims.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=6 n_beltB=6
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/LANE-LIVENESS.md', '.agents/slop/TRIAGE.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/pin-tree-oracle-report.md', '.agents/slop/plans/00-master-plan.md', '.agents/slop/triage/NOTES.md']
+
+ROW tinybendygrad/codegen/late/coalesce.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/dtype.bend
+  needs     = belts-disagree
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=98 n_beltB=97
+  only_A = ['checks/wallcheck.py']
+  only_B = []
+  citers_outside_residue = ['.agents/TODO.md', '.agents/TOOLS.md', '.agents/UPSTREAM-PIN.md', 'checks/README.md', 'checks/abi4_gate.py', 'checks/abi_gate.py', 'checks/differ.py', 'checks/e2e.py', 'checks/gate_dtype.py', 'checks/jsfix_gate.py', 'checks/norm_check.py', 'checks/substrate.py', 'checks/sweep.py', 'checks/vz_gate.py', 'checks/wallcheck.py', 'gates/i64-shr-gate.py', 'gates/wk-cd-gate.py', 'gates/wk-eval-gate.py']
+  citers_inside_residue  = ['.agents/slop/ADEV.md', '.agents/slop/ARGLIT.md', '.agents/slop/CIDSWEEP.md', '.agents/slop/CSTYLE2.md', '.agents/slop/DEADARM.md', '.agents/slop/DTYPEB.md', '.agents/slop/FP8FIX.md', '.agents/slop/FROMBITS.md', '.agents/slop/JS-LANE-GATE.md', '.agents/slop/JSFP8.md', '.agents/slop/JSTAGE.md', '.agents/slop/LANE-LIVENESS.md', '.agents/slop/LASTLAW.md', '.agents/slop/MATHLIB.md', '.agents/slop/MUT-LEDGER.md', '.agents/slop/NORM.md', '.agents/slop/OPSPY.md', '.agents/slop/PEAKRSS.md', '.agents/slop/PROBES.md', '.agents/slop/SPELLING.md', '.agents/slop/W64-MILE.md', '.agents/slop/W64.md', '.agents/slop/WALLMAP-CORRECTION.md', '.agents/slop/abi4/README.md', '.agents/slop/abi4check/README.md', '.agents/slop/abifix/README.md', '.agents/slop/adev/CLAIM.md', '.agents/slop/agend/REPORT.md', '.agents/slop/agent-core.md', '.agents/slop/audit/01-proofs-34of34.md', '.agents/slop/baseline-ledger.md', '.agents/slop/bf16/BF16.md', '.agents/slop/coldness/COLDNESS.md', '.agents/slop/commit-dtype-finding.md', '.agents/slop/cstyle-green.md', '.agents/slop/dd-divE.md', '.agents/slop/dd-mutations-report.md', '.agents/slop/deadreg/REPORT.md', '.agents/slop/denom/CLAIM.md', '.agents/slop/dtype-oracle-truth.md', '.agents/slop/dtypeb/00-stub.md', '.agents/slop/dup/REPORT.md', '.agents/slop/dup/stage1-census.md', '.agents/slop/dup/stage5-plants.md', '.agents/slop/e2epy/report.md', '.agents/slop/e2estage8/report.md', '.agents/slop/env-flag-divergence.md', '.agents/slop/frombits/00-stub.md', '.agents/slop/grw-stage1.md', '.agents/slop/guardfix/RESULTS.md', '.agents/slop/hygiene-2026-10-04.md', '.agents/slop/i64shl/REPORT.md', '.agents/slop/ishr/00-VERDICT.md', '.agents/slop/ishr/REPORT.md', '.agents/slop/jsfix/README.md', '.agents/slop/lanedeath-census.md', '.agents/slop/lastlaw/00-stub.md', '.agents/slop/liveness/plant-transcript.md', '.agents/slop/memory-report.md', '.agents/slop/name-census.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/notes/compare/uop-ops.md', '.agents/slop/notes/upstream-bugs.md', '.agents/slop/pin-tree-oracle-report.md', '.agents/slop/plans/00-master-plan.md', '.agents/slop/portmarkers/REPORT.md', '.agents/slop/revive/REVIVE.md', '.agents/slop/shadowtrees/REPORT.md', '.agents/slop/slopcopies/MANIFEST.md', '.agents/slop/state-audit-report.md', '.agents/slop/sweepport/REPORT.md', '.agents/slop/todo2/dashboard.md', '.agents/slop/todo2/discover.md', '.agents/slop/tree-verdict.md', '.agents/slop/trigger/STANDAL-INSTRUCTION-fold2655.md', '.agents/slop/unobservable-report.md', '.agents/slop/w64mile/STATUS.md', '.agents/slop/wallrule/RULE.md', '.agents/slop/wallrule/SWEEP.md', '.agents/slop/zero-audit-report.md']
+
+ROW tinybendygrad/engine/worker.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=4 n_beltB=4
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/CIDSWEEP.md', '.agents/slop/env-flag-divergence.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/mixin/dtype.bend
+  needs     = belts-disagree
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=98 n_beltB=97
+  only_A = ['checks/wallcheck.py']
+  only_B = []
+  citers_outside_residue = ['.agents/TODO.md', '.agents/TOOLS.md', '.agents/UPSTREAM-PIN.md', 'checks/README.md', 'checks/abi4_gate.py', 'checks/abi_gate.py', 'checks/differ.py', 'checks/e2e.py', 'checks/gate_dtype.py', 'checks/jsfix_gate.py', 'checks/norm_check.py', 'checks/substrate.py', 'checks/sweep.py', 'checks/vz_gate.py', 'checks/wallcheck.py', 'gates/i64-shr-gate.py', 'gates/wk-cd-gate.py', 'gates/wk-eval-gate.py']
+  citers_inside_residue  = ['.agents/slop/ADEV.md', '.agents/slop/ARGLIT.md', '.agents/slop/CIDSWEEP.md', '.agents/slop/CSTYLE2.md', '.agents/slop/DEADARM.md', '.agents/slop/DTYPEB.md', '.agents/slop/FP8FIX.md', '.agents/slop/FROMBITS.md', '.agents/slop/JS-LANE-GATE.md', '.agents/slop/JSFP8.md', '.agents/slop/JSTAGE.md', '.agents/slop/LANE-LIVENESS.md', '.agents/slop/LASTLAW.md', '.agents/slop/MATHLIB.md', '.agents/slop/MUT-LEDGER.md', '.agents/slop/NORM.md', '.agents/slop/OPSPY.md', '.agents/slop/PEAKRSS.md', '.agents/slop/PROBES.md', '.agents/slop/SPELLING.md', '.agents/slop/W64-MILE.md', '.agents/slop/W64.md', '.agents/slop/WALLMAP-CORRECTION.md', '.agents/slop/abi4/README.md', '.agents/slop/abi4check/README.md', '.agents/slop/abifix/README.md', '.agents/slop/adev/CLAIM.md', '.agents/slop/agend/REPORT.md', '.agents/slop/agent-core.md', '.agents/slop/audit/01-proofs-34of34.md', '.agents/slop/baseline-ledger.md', '.agents/slop/bf16/BF16.md', '.agents/slop/coldness/COLDNESS.md', '.agents/slop/commit-dtype-finding.md', '.agents/slop/cstyle-green.md', '.agents/slop/dd-divE.md', '.agents/slop/dd-mutations-report.md', '.agents/slop/deadreg/REPORT.md', '.agents/slop/denom/CLAIM.md', '.agents/slop/dtype-oracle-truth.md', '.agents/slop/dtypeb/00-stub.md', '.agents/slop/dup/REPORT.md', '.agents/slop/dup/stage1-census.md', '.agents/slop/dup/stage5-plants.md', '.agents/slop/e2epy/report.md', '.agents/slop/e2estage8/report.md', '.agents/slop/env-flag-divergence.md', '.agents/slop/frombits/00-stub.md', '.agents/slop/grw-stage1.md', '.agents/slop/guardfix/RESULTS.md', '.agents/slop/hygiene-2026-10-04.md', '.agents/slop/i64shl/REPORT.md', '.agents/slop/ishr/00-VERDICT.md', '.agents/slop/ishr/REPORT.md', '.agents/slop/jsfix/README.md', '.agents/slop/lanedeath-census.md', '.agents/slop/lastlaw/00-stub.md', '.agents/slop/liveness/plant-transcript.md', '.agents/slop/memory-report.md', '.agents/slop/name-census.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/notes/compare/uop-ops.md', '.agents/slop/notes/upstream-bugs.md', '.agents/slop/pin-tree-oracle-report.md', '.agents/slop/plans/00-master-plan.md', '.agents/slop/portmarkers/REPORT.md', '.agents/slop/revive/REVIVE.md', '.agents/slop/shadowtrees/REPORT.md', '.agents/slop/slopcopies/MANIFEST.md', '.agents/slop/state-audit-report.md', '.agents/slop/sweepport/REPORT.md', '.agents/slop/todo2/dashboard.md', '.agents/slop/todo2/discover.md', '.agents/slop/tree-verdict.md', '.agents/slop/trigger/STANDAL-INSTRUCTION-fold2655.md', '.agents/slop/unobservable-report.md', '.agents/slop/w64mile/STATUS.md', '.agents/slop/wallrule/RULE.md', '.agents/slop/wallrule/SWEEP.md', '.agents/slop/zero-audit-report.md']
+
+ROW tinybendygrad/nn/datasets.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/notes/bend2-constraints.md']
+
+ROW tinybendygrad/runtime/ops_null.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=3 n_beltB=3
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/LANE-LIVENESS.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/runtime/support/am/ip_scratch_sweep.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/coldness/COLDNESS.md']
+
+ROW tinybendygrad/runtime/support/amd.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/runtime/support/autogen.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=6 n_beltB=6
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/TRIAGE.md', '.agents/slop/bendarms/REPORT.md', '.agents/slop/coldness/COLDNESS.md', '.agents/slop/live-write-guard.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/shadowtrees/REPORT.md']
+
+ROW tinybendygrad/runtime/support/compiler_amd.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=2 n_beltB=2
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/TRIAGE.md', '.agents/slop/notes/bend2-constraints.md']
+
+ROW tinybendygrad/runtime/support/compiler_cpu.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/DEADARM.md']
+
+ROW tinybendygrad/runtime/support/compiler_cuda.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/DEADARM.md']
+
+ROW tinybendygrad/runtime/support/compiler_llvm.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/runtime/support/compiler_qcom.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/notes/bend2-constraints.md']
+
+ROW tinybendygrad/runtime/support/compileserver.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/notes/bend2-constraints.md']
+
+ROW tinybendygrad/runtime/support/rdma/bnxtdev.bend
+  needs     = belts-disagree
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=5 n_beltB=4
+  only_A = ['.agents/slop/MUT-LEDGER.md']
+  only_B = []
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/MUT-LEDGER.md', '.agents/slop/env-flag-divergence.md', '.agents/slop/notes/bend2-constraints.md', '.agents/slop/substrate/SUBSTRATE.md', '.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/runtime/support/zz_objc_mutant.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/sweepport/REPORT.md']
+
+ROW tinybendygrad/runtime/zzdiag.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=2 n_beltB=2
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/MUT-LEDGER.md', '.agents/slop/PROBES.md']
+
+ROW tinybendygrad/runtime/zzread.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=3 n_beltB=3
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/MUT-LEDGER.md', '.agents/slop/PROBES.md', '.agents/slop/substrate2/REPORT.md']
+
+ROW tinybendygrad/runtime/zzsplit.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=2 n_beltB=2
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/MUT-LEDGER.md', '.agents/slop/PROBES.md']
+
+ROW tinybendygrad/viz/cli.bend
+  needs     = residue-internal-citer
+  tracked   = True
+  ext       = .bend
+  witness   = False
+  n_beltA=1 n_beltB=1
+  citers_outside_residue = []
+  citers_inside_residue  = ['.agents/slop/sweepport/REPORT.md']
+
+# buckets: {'KEEP-CITED': 119, 'UNKNOWN': 24, 'ORACLE': 1}

@@ -1,0 +1,5 @@
+tag	rc
+after-syn-clean	rc=1
+after-syn-plant	rc=1
+after-graphcmp-ok	rc=1
+after-graphcmp-broken	rc=1

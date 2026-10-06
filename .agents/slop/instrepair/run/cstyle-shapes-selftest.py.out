@@ -1,0 +1,25 @@
+control row names: 'ctl OPENCL sz1 k0' (spaces, no '=')   'ctlf3' (F3: single token only)
+
+F1  name=value
+  port lane   'ctl OPENCL sz1 k0=half'
+  oracle lane 'ctl OPENCL sz1 k0=half'
+  ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK
+  RED     shared=['ctl OPENCL sz1 k0']  disagree=['ctl OPENCL sz1 k0']  RED   expected=RED  OK
+          row `ctl OPENCL sz1 k0`  port left='halG'  cpy left='half'
+
+F2  name = [v]   py=[w]
+  port lane   'ctl OPENCL sz1 k0 = [half]   py=[half]'
+  oracle lane 'ctl OPENCL sz1 k0 = [half]'
+  ARMED   shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK
+  RED     shared=['ctl OPENCL sz1 k0']  disagree=['ctl OPENCL sz1 k0']  RED   expected=RED  OK
+          row `ctl OPENCL sz1 k0`  port left='[halG]'  cpy left='[half]'
+  DISARM case -- the plant is in the NON-COMPARED `py=` column only:
+  port lane   'ctl OPENCL sz1 k0 = [half]   py=[halG]'
+  DISARM  shared=['ctl OPENCL sz1 k0']  disagree=[]  AGREE  expected=AGREE  OK
+
+F3  name<SP><SP>value  (single-token name only)
+  port lane   'ctlf3  half'
+  oracle lane 'ctlf3  half'
+  ARMED   shared=['ctlf3']  disagree=[]  AGREE  expected=AGREE  OK
+  RED     shared=['ctlf3']  disagree=['ctlf3']  RED   expected=RED  OK
+          row `ctlf3`  port left='halG'  cpy left='half'

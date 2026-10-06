@@ -1,0 +1,14 @@
+{
+  "generated": "2026-10-06T12:13:55.833559",
+  "head": "dd256b0ecc9b3c6817b1a9fd0923a8e6f7ae3de2",
+  "index_total": 4832,
+  "head_total": 4832,
+  "index_empty_blob": 273,
+  "head_empty_blob": 273,
+  "class_counts": {
+    "HEAD-EMPTY": 273
+  },
+  "head_empty_ondisk_zero": 273,
+  "head_empty_ondisk_nonzero": 0,
+  "head_empty_ondisk_missing": 0
+}

@@ -1,0 +1,28 @@
+F.........                                                               [100%]
+=================================== FAILURES ===================================
+___________________________ TestEqStrDType.test_strs ___________________________
+
+self = <test.null.test_dtype.TestEqStrDType testMethod=test_strs>
+
+    def test_strs(self):
+>     self.assertEqual(str(dtypes.float32), "dtypes.float")
+E     AssertionError: 'dtypes.f32' != 'dtypes.float'
+E     - dtypes.f32
+E     ?         ^^
+E     + dtypes.float
+E     ?         ^^^^
+
+test/null/test_dtype.py:7: AssertionError
+==================================== PASSES ====================================
+=========================== short test summary info ============================
+PASSED test/null/test_dtype.py::TestToDtype::test_dtype_to_dtype
+PASSED test/null/test_dtype.py::TestToDtype::test_str_to_dtype
+PASSED test/null/test_dtype.py::TestCastConvenienceMethod::test_method
+PASSED test/null/test_dtype.py::TestDtypeTolist::test_bfloat16
+PASSED test/null/test_dtype.py::TestDtypeTolist::test_fp8
+PASSED test/null/test_dtype.py::TestCanLosslessCast::test_can_lossless_cast
+PASSED test/null/test_dtype.py::TestInvalidSingleton::test_pickle
+PASSED test/null/test_dtype.py::TestInvalidSingleton::test_singleton
+PASSED test/null/test_dtype.py::TestBitCast::test_shape_change_bitcast_exceptions
+FAILED test/null/test_dtype.py::TestEqStrDType::test_strs - AssertionError: '...
+1 failed, 9 passed in 0.12s

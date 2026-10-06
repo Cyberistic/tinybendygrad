@@ -1,0 +1,1318 @@
+id	line	state	section	text
+b8eab52b46	256	x	todo	**THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE
+f6c2d4e23f	268	x	todo	**`OPSPY.md`'s `6 of 137` IS WRONG TWICE — ITS OWN LIST REMOVES 9 OF THE 14, LEAVING 5,
+6b1853150b	272	x	todo	**`agent-core.md` §2's TABLE REPLACED** with what became of each of the 14 (3 WARM,
+ed0a890737	276	x	todo	**THE ONE TRUE NUMBER: THE PORT HAS 0 COLD FILES.** Defined as `indeg == 0 ∧
+ec7c1125a1	280	x	todo	**`BAD 46` IS 1 PROBLEM.** Every one of the 46 sites reads `NOT DECLARED IN
+438b0345aa	289	x	todo	**`substrate-check.sh` (470 lines) PORTED TO `checks/substrate.py`, BEHIND TWO `exec`
+d418239d04	296	x	todo	**THE ZERO-ARGUMENT REFUSAL IS PORTED AND TESTED** (`refused` set: exit **3** both sides,
+52e2f24a1b	298	x	todo	**THE MEMORY BOUND IS NEW AND THE SHELL HAD ONLY AN ALARM.** All four shell instrument
+569e0222d9	304	x	todo	**`ORACLE_PIN` IS IN CODE, NOT IN A COMMENT, AND IT FIRED TWICE.** It refused with exit 3
+6e47908ac8	308	x	todo	**THREE BUGS IN THE PORT, NONE FOUND BY READING IT — all by a test set added because the
+e3233b925b	313	x	todo	**5 PLANTS, ALL FIRED, ALL DISARMED** — the ceiling, the `WARM`/`COLD` literal, both
+c89790fc7d	317	x	todo	**`CONCURRENT-EDIT`, BECAUSE A WHOLE-TREE DIFF ON THIS TREE IS NOT A THING YOU CAN RUN
+55501298f0	324	x	todo	`.agents/slop/LANE-LIVENESS.md` — every lane in the tree classified by reading the code,
+782139ea1f	333	x	todo	6-lane plant/disarm matrix in a `$TMPDIR` COPY (`liveness/plant-transcript.md`).
+9e50dd7fb4	340	x	todo	13 `CANNOT-BE-MADE-LIVE` entries, each with the obstacle at `file:line`, and the
+78cf6629ba	342	x	todo	Rules `L-1`..`L-11` appended at the END of `notes/bend2-constraints.md`
+eff2bd6fc0	344	x	todo	**`rebase-oracle-ops.py:54` FIXED — `uop/ops.bend`'s lane is LIVE, and it was TWO walls, not
+3ca129ffd1	354	x	todo	**`row()` WAS READING 60 COMMENT LINES AS ROWS, AND REPORTED A PORT CHANGE.**
+b206e90b75	362	x	todo	**`rebase-gate.py` NOW SAYS SO WHEN `disagree` CANNOT FAIL.** Every lane carries its own
+d76c60d37d	368	x	todo	**`agent-core.md`'s `--check-only` wall CORRECTED TO NAME WHICH FILES.** Measured over all
+17be86b6a1	376	x	todo	**`dsl_gate.py`: LIVE oracle run TWICE, exclusions derived by MEASUREMENT, zero-row guard.**
+a5cc1ef92b	385	x	todo	**`helpers-tc-gate.py` RENAMED to `.agents/slop/helpers-tc-gate.rows`; `helpers-tc-gate.sh` writes
+84dcbe2405	394	x	todo	**`drift-gate.py`'s cache is KEYED ON THE PORT'S sha256.** It returned
+ca2eca62a0	401	x	todo	**5-lane plant/disarm matrix for this pass, every plant in a `$TMPDIR` copy, every restored
+5ba67c5238	406	x	todo	**THE OTHER TWO `*-gate.py` FILES THAT ARE NOT GATES ARE OTHER UNITS' — reported with
+2db490851e	412	 	todo	**`dtype.bend` IS A PORT DEFECT AND IS NOT MINE TO FIX.** `rc=1`, 0 stdout lines,
+cec94b0d03	419	 	todo	`codegen/decomp/dtype.bend`'s `BASE_ORACLES` lane is RED on exactly 1 of 109 shared
+687d5e5d28	425	x	todo	`.agents/slop/dup/` — the census, the classification, the fix and the guard.
+0d2bbf5e5b	431	x	todo	**`runtime/support/usb.bend`'s ORACLE: 75 lost → 0.** `usb-oracle-trace.py` wrote its
+4983ac1b15	438	 	todo	**`ops_nv`'s 38 (27 oracle + 11 port).** The oracle has seven row families emitted at
+f9d5701ea8	443	 	todo	**`llvmir` 2, `tc_ptx` 2, `fold` 2, `viz` 2, `hcq2` 2** — all SYMMETRIC (both sides
+b2b5117961	447	x	todo	**`uop/fold.bend`'s 93 unaddressable rows.** `fold.bend:4070-4077` prints ONE space and
+a9ad0abbef	478	x	todo	**`mm-lift-gate.py` WAS DEAD, NOT ZERO.** `mm-lift-gate.py:179`'s `from tinygrad import
+e92c23f7ae	488	 	todo	**STILL UNWIRED, and NOT this unit's:** `mm-dt-gate.py` (the 24 `bl_dt_*` F1 rows, read by
+b1e3ca99ee	493	x	todo	**The guard and its plants, with the disarm.** `dup-gate.py --selftest` over the real
+672990eec1	500	x	todo	**Three DEAD lane texts found while re-capturing, and one of them is a live defect.**
+d8a9c8374d	513	x	todo	**The 27 oracle-side duplicates of `ops_nv` CLOSED (27 -> 0, 27 measurements).**
+27a928c134	519	x	todo	**THE BRIEF'S PREMISE MEASURED AND CORRECTED. `nv_reloc_bad_refused="False"` at `:1159`
+21ddc54bc9	526	x	todo	**SO IT IS TWO DEFECTS, NOT ONE.** `D1` two sites for one name costs **1** measurement and
+3afc06fa62	531	x	todo	**A CENSUS FOR IT, because a multiplicity census cannot see it.**
+8dbb6471cd	537	x	todo	**THE REFUSAL IS NOW ADDRESSABLE, NOT MERELY UN-DUPLICATED.** `nv_reloc_bad_refused` and
+e4214822ec	540	x	todo	**THE BRIEF'S LEAD ANSWERED: the port's 11 and the oracle's 27 are DISJOINT** — empty
+3feef76d6a	543	x	todo	**THE PLANT/DISARM MATRIX, and PROOF BOTH SELFTESTS CAN FAIL.**
+2e8db0c953	552	 	todo	**REPORTED, NOT FIXED — the port's 11, in a do-not-touch file.** `ops_nv.bend`
+924b488717	560	 	todo	**REPORTED — the residual `nv_reloc_bad_n` dispute.** `:720`'s `1` measures
+fbf776e4a4	569	 	todo	**REPORTED — 16 of the 21 remaining are ONE-ELEMENT deletions in four `.agents/slop/`
+96cca43804	578	 	todo	**REPORTED, and it is NOT a mechanical deletion — `viz`.** `vz/viz_oracle.py:79-80` holds
+afca901eb2	584	 	todo	**REPORTED — 2 STALE line-number citations into `nv-oracle.py`, both in `.agents/slop/dup/**`
+58a12e6463	589	x	todo	**RULES APPENDED** at the END of `.agents/slop/notes/bend2-constraints.md`: **`DUP-2`**
+11898f2107	605	x	phase-p0-toolchain-and-scaffolding	`bin/bend` runs the pinned Bend 2 compiler
+43ae924753	606	x	phase-p0-toolchain-and-scaffolding	`tools/get-bend.sh` fetches it into `references/`
+12b2806809	607	x	phase-p0-toolchain-and-scaffolding	`.gitignore` excludes `references/` and native build output
+c3111d3436	608	x	phase-p0-toolchain-and-scaffolding	`.agents/TOOLS.md` tool ledger
+f0a41dab6d	609	x	phase-p0-toolchain-and-scaffolding	Fork `Cyberistic/tinybendygrad`, master only, remotes set
+f955717385	610	x	phase-p0-toolchain-and-scaffolding	`tools/sz` — Bend's answer to `sz.py` (token line count per file)
+0c4f8b8826	611	x	phase-p0-toolchain-and-scaffolding	`tinybendygrad/sz.bend` — `sz.py` ported: a CPython tokenizer in Bend, its
+410dbccda8	616	 	phase-p0-toolchain-and-scaffolding	`test/` harness that runs the ORIGINAL pytest suite against the Bend build
+617f0935ed	617	x	phase-p0-toolchain-and-scaffolding	`tools/check` — one command that runs every `bend --check-only`. **Done, and bucketed by
+93dd2ac640	627	x	phase-p1-the-contract	`.agents/slop/notes/bend2-constraints.md` — the Bend rules, all measured
+baeed0b62b	628	x	phase-p1-the-contract	`.agents/slop/plans/00-master-plan.md` — phases, the 1:1 rule, agent protocol
+b05287b516	629	x	phase-p1-the-contract	`LAWS/spec.bend` — the spec IR and its five derived properties
+8add611a9e	630	x	phase-p1-the-contract	`LAWS/alu.bend` — tinyspec's decomposed-elementwise-ops table
+26349cfe78	631	x	phase-p1-the-contract	`LAWS.bend` — 32 laws
+cd37e5066c	632	 	phase-p1-the-contract	**Audit against tinyspec**: coverage gaps, vacuous laws, stubs
+d969954d40	633	x	phase-p1-the-contract	`PROOF.bend` — shape half: reshape/permute/flip/pad/shrink/stack/detach
+ecb19df4b9	636	x	phase-p1-the-contract	`PROOF2.bend` — ALU/dtype half (16/16 proven)
+cf25eefab5	637	x	phase-p1-the-contract	`PROOF-ALL.bend` green — 0 TODOs. Reduce proved as
+e9337ce0cb	641	x	phase-p1-the-contract	`drop_n` drops `n`, not `n+1`, and the reduce-numel multiplier is
+fd8a61bcdf	673	x	phase-p2-trial-run	`tinygrad/dtype.bend`
+dbd86247fd	674	x	phase-p2-trial-run	`tinygrad/helpers.bend`
+47f060e7f3	675	~	phase-p2-trial-run	`uop/ops.bend` — **the gate: the arena WORKS.** A UOp is a `U32` index into
+de344db682	714	x	phase-p2-trial-run	`uop/ops.bend`, ops.py **[1, 500]** — the backward slice, and the queue.
+f5637894e2	735	x	phase-p2-trial-run	`uop/init.bend` — `Ops` and `GroupOp` from `tinygrad/uop/__init__.py`.
+a386f9effd	737	x	phase-p2-trial-run	`uop/upat.bend` — the COMPILER, `tinygrad/uop/upat.py`'s 186 lines.
+b8166eb5ff	787	 	phase-p2-trial-run	`uop/fold.bend` — the derived properties of `ops.py` as ONE Kahn worklist.
+6bb4999202	865	 	phase-p2-trial-run	`uop/spec.bend` — the SPEC>1 layer `UOpMetaClass.__call__` runs.
+67b1a12acd	866	x	phase-p2-trial-run	`uop/symbolic.bend` — `tinygrad/uop/symbolic.py`: the REWRITER. **HALF
+2c44859048	920	x	phase-p2-trial-run	`uop/weak.bend` — `tinygrad/uop/weak.py`: **1 of 17 `TODO(p3)` blocks CLOSED,
+8535b587a5	940	x	phase-p2-trial-run	`uop/divandmod.bend` — `tinygrad/uop/divandmod.py`: `div_and_mod_symbolic`,
+b598ad0167	954	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/__init__.bend` — `tinygrad/__init__.py` is 10 lines and a
+904ba2c64b	962	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/mixin/__init__.bend` — upstream is empty, ported as a
+e260987826	964	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/runtime/__init__.bend` — empty upstream, marker. **COMMITTED**.
+34a0324b2a	965	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/runtime/support/__init__.bend` — empty upstream, marker.
+c8d962a90a	967	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/engine/__init__.bend` — empty upstream, marker. **COMMITTED**.
+520e99c782	968	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/viz/__init__.bend` — already existed (17 lines).
+eb69420114	969	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/codegen/decomp/__init__.bend` — empty upstream, marker.
+8781ad1a86	971	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/codegen/late/__init__.bend` — empty upstream, marker.
+0bf928973b	973	x	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/codegen/opt/__init__.bend` — `tinygrad/codegen/opt/__init__.py`,
+957ec2339d	978	~	session-2026-10-03-the-package-boundary-gap-the-	`tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
+45e44ebaae	1050	x	session-2026-10-03-the-package-boundary-gap-the-	`graph_rewrite` (the dispatcher, ops.py:1888-1890) — the dispatch rule is
+6e85413bd8	1058	x	session-2026-10-03-the-package-boundary-gap-the-	**27 gate rows, every one calling `graph_rewrite` ITSELF** — never a
+e693cdb29b	1068	x	session-2026-10-03-the-package-boundary-gap-the-	**THE 81 `schedule/__init__.bend` ROWS AND THE 60 `sched-fixture.bend`
+6ee64dc9e4	1073	x	session-2026-10-03-the-package-boundary-gap-the-	**STAGE 1's COUNT, WITH ITS DENOMINATOR: the port has ZERO call sites of
+e83003ea5e	1082	x	session-2026-10-03-the-package-boundary-gap-the-	**THE DEFERRAL REASON AT `schedule/__init__.bend:7-13` DOES NOT SURVIVE
+893cf5a6bf	1097	x	session-2026-10-03-the-package-boundary-gap-the-	**THE LINEAR RULE TABLE IS BUILT, and C3 WAS THE WRONG WALL — it is now
+6aa7835556	1127	x	session-2026-10-03-the-package-boundary-gap-the-	**`cycles == 0` IS NOT CLAIMED.** The port has no cycle detector and no
+7b4057e212	1134	x	session-2026-10-03-the-package-boundary-gap-the-	**STAGE 4's YIELD: 4 of the 15 unblocked, 4 more unblocked-with-a-named-
+cb395235d4	1147	x	session-2026-10-03-the-package-boundary-gap-the-	**`gr-diff.sh` HAD TO CHANGE and the change found a real defect.** It
+63ba2cd87f	1397	~	phases-p3-p8-the-port	`engine/realize.bend` — `tinygrad/engine/realize.py`, 296 lines. Both lanes
+e89214b8a0	1428	x	phases-p3-p8-the-port	`schedule/__init__.bend` — `tinygrad/schedule/__init__.py:14-80`, the
+93326e7b0d	1495	 	phases-p3-p8-the-port	Translate the test suite into Bend. **Not started, and must not start
+a20c1772c5	1569	x	open-decisions	**Turing completeness.** Asked, answered: no `@unsafe`. Resolved without
+62da4f5512	1572	x	open-decisions	**Port directory name.** `bendgrad/` → `tinybendygrad/`, with the inner
+a4eee20941	1575	 	open-decisions	**Index arity bound.** How many indices `SpIdxN` should support. Waiting
+3cb45d72e6	1577	x	open-decisions	**The P3 fold shape: a Kahn worklist.** Decided. The property folds
+481d0bd56a	1617	 	open-decisions	Whether `Sp` (the spec IR) stays a pure tree with the compilation arena
+35bacb7e95	1620	 	open-decisions	**The empty-Stack case has no law.** tinyspec plus `Nil{} -> None{}` mean
+610b5d95e7	1624	x	session-2026-10-01-wrap-fuzz-trim-gate-wave	Property harnesses: szfuzz (template), upatfuzz, dmfuzz — all committed.
+09aa99aca0	1625	x	session-2026-10-01-wrap-fuzz-trim-gate-wave	upat wrap dedup root-caused (CPython keys by arg value, frozenset ==) + waitlist + fuel; 200 seeds depth 8 green.
+dbf98e5d57	1626	x	session-2026-10-01-wrap-fuzz-trim-gate-wave	Comment trim pass: movement/weak/divandmod/symbolic/fold/spec/helpers back to upstream's voice; code byte-identical.
+a434d904c0	1627	x	session-2026-10-01-wrap-fuzz-trim-gate-wave	spec walkthroughs: weak/divandmod/symbolic/movement/render + README.
+3cc54aa197	1628	x	session-2026-10-01-wrap-fuzz-trim-gate-wave	pyrender gated (24 CPython-diffed rows); six render bugs fixed; Ops.name/eq_addr/toposort(LIFO)/src_from/is_balanced fixed in shared files.
+3bbd3dc934	1629	 	session-2026-10-01-wrap-fuzz-trim-gate-wave	sz rounding divergence: port rounds exact rational, CPython %.1f rounds the double (154/509 tie pairs) — DESIGN DECISION: replicate the double or keep exact. TODO(p3) sz.bend.
+b6a607f784	1630	 	session-2026-10-01-wrap-fuzz-trim-gate-wave	dm_floordiv wraps at 32 bits for FLOORDIV(INT_MIN,-1) — needs i64 division (same wall as _min_max). Excluded in dmfuzz with TODO(p3).
+5d7e0e5c6e	1631	 	session-2026-10-01-wrap-fuzz-trim-gate-wave	render.bend local copies (tsort/src_tail) deletion gated on Topo N+E fuel fix — agent dispatched.
+f634bd2a45	1632	 	session-2026-10-01-wrap-fuzz-trim-gate-wave	Gate widenings: promote bad_ceil_* -> ok_ceil_* in dm gate; add SHR row to symbolic gate (asr revert currently moves nothing).
+3849c7d5dd	1633	 	session-2026-10-01-wrap-fuzz-trim-gate-wave	sym_10 divergence decision: Python's name-interning makes var("x")*var("x") match 1/(x*y); port is stricter. Needs a row either way.
+8d37979fd8	1635	x	session-2026-10-01-mixin-gradient-py	`tinybendygrad/mixin/gradient.bend` — `pm_gradient`'s 33-entry compiled rule
+1630130a8c	1642	 	session-2026-10-01-mixin-gradient-py	`compute_gradient`'s shaped-edge reduce (gradient.py:132) — needs
+21ef19cafa	1644	 	session-2026-10-01-mixin-gradient-py	`call_gradient` (gradient.py:20) — five subsystems. TODO(p3) in the file.
+546b4f9805	1645	 	session-2026-10-01-mixin-gradient-py	`reduce_gradient` (gradient.py:8), `_min_max` on tag 25, `has_buffer_identity`
+7957f8ddad	1650	x	session-2026-10-01-round-2-schedule-mixin-engine	tensor.bend (lazy-graph half, 29 CPython-identical rows), mixin/dtype+gradient, schedule __init__/memory/allreduce/multi/rangeify, engine/realize, codegen/decomp — all committed with gates.
+1a40ae4997	1651	x	session-2026-10-01-round-2-schedule-mixin-engine	movement.bend: hop_self inversion + 4 more bugs fixed; gate defect (G.ix bottom) root-caused; 26/26 rows == CPython.
+d22e19adf0	1652	x	session-2026-10-01-round-2-schedule-mixin-engine	dtype.bend: three i64 limit constants fixed (found by mixin/dtype hoist).
+7b13b8baeb	1653	x	session-2026-10-01-round-2-schedule-mixin-engine	fold.bend: RESHAPE _shape arm landed; ONE line short (reshape_ps must read Arena.src0, not ss[0] — the srcs.go double-reversal bug).
+26d9b51b08	1654	 	session-2026-10-01-round-2-schedule-mixin-engine	fold.bend reshape_ps one-liner, then retire: tensor tn_rop_gap (delete), tensor M4, movement mp_2 + movement.py:185 identity test, duplicated as_shape.
+b7ced3acc9	1655	 	session-2026-10-01-round-2-schedule-mixin-engine	engine/realize: ~20 rows rest on single-arm-case-_ Bool constants (bl_u); fix documented at top of file, mechanical; two converted as the pattern.
+1a2b69f18b	1656	 	session-2026-10-01-round-2-schedule-mixin-engine	sz rounding (exact vs double) and sym_10 divergence — still the owner's two calls.
+89c812c6b2	1657	 	session-2026-10-01-round-2-schedule-mixin-engine	decomp: 3 rules do not fire (9 rows, undiagnosed); magicgu/fast_idiv at the i64 wall.
+ae028f5b15	1658	x	session-2026-10-01-round-2-schedule-mixin-engine	`mixin/op.py` lines **1-997** — `tinybendygrad/mixin/op.bend`. 32 CPython rows
+4aa10529b3	1664	x	session-2026-10-01-round-3-mixin-elementwise-py	`tinybendygrad/mixin/elementwise.bend` — `_broadcasted`/`_binop`/`promote`/
+3b8e24d41c	1668	x	session-2026-10-01-round-3-mixin-elementwise-py	THE ARENA RULE HAS A SECOND HALF, and it cost the whole session. Rule 6 of
+c743df4fa5	1675	x	session-2026-10-01-round-3-mixin-elementwise-py	`+fx: F.Folded` as a parameter is a trap on any def that builds — it goes stale
+4f4d753c7c	1678	x	session-2026-10-01-round-3-mixin-elementwise-py	Two more `Found`-arena bugs, both silent: `ew_promote.b` paired a build's index
+352c413e3e	1681	x	session-2026-10-01-round-3-mixin-elementwise-py	`O.Arena.src_to` KEEPS the first k; `O.Arena.src_from` DROPS the first k. `remint`
+7d7e3b5c95	1683	x	session-2026-10-01-round-3-mixin-elementwise-py	ORACLE BUG FOUND AND FIXED: `ew-gate.py`'s `opat` used `k` as BOTH a toposort
+8760fe255e	1687	x	session-2026-10-01-round-3-mixin-elementwise-py	14 mutations measured. M3 and M5 measured ZERO and both were REAL GAPS, not
+8f4c6f24b5	1692	 	session-2026-10-01-round-3-mixin-elementwise-py	`remint`'s `+u.src[1:]` ORDER is still ungated (needs a Movement node with a
+282e65d898	1697	x	session-2026-10-01-round-4-codegen-decomp-transc	`tinybendygrad/codegen/transcendental.bend` — all 26 Python defs. 891 STRING gate
+12681c071b	1702	x	session-2026-10-01-round-4-codegen-decomp-transc	NO 64-BIT ARITHMETIC IS NEEDED. transcendental.py BUILDS GRAPHS; only 64-bit
+da6c2225da	1706	x	session-2026-10-01-round-4-codegen-decomp-transc	THREE MEASURED ERASURES IN THE ORACLE, all of which a naive port gets wrong:
+521da5359b	1711	x	session-2026-10-01-round-4-codegen-decomp-transc	`cody_waite_reduction`'s float16 and float64 arms are WRITTEN (not stubbed):
+549099fd00	1715	x	session-2026-10-01-round-4-codegen-decomp-transc	`tx_rintk`'s `dt` IS `d`'s OWN FLOAT DTYPE. A caller that pre-converts
+f1f3caf3bb	1719	x	session-2026-10-01-round-4-codegen-decomp-transc	`tx_cf_neg0`'s WORKAROUND is now UNNECESSARY. The defect it routed around is
+97d2e74b5e	1727	 	session-2026-10-01-round-4-codegen-decomp-transc	`tx_cf_neg0` itself: with `eq_const.CFloat` bitwise, re-check whether the
+43b7ad95d1	1730	 	session-2026-10-01-round-4-codegen-decomp-transc	NOT GATED, and stated in the file: the float16 and float64 windows, because the
+afec86f705	1734	 	session-2026-10-01-round-4-codegen-decomp-transc	`decomp.bend`'s table should IMPORT, not re-derive: `tx_tab`, `tx_t_apply`, and
+c87687e796	1738	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	`tinybendygrad/mixin/op.bend`, SIDE A. Boundary is **line 997**, a def boundary:
+e9770f318e	1745	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	PORTED AND GATED: `min` (op.py:473), `mean` (:496), `var` (:523), `var_mean`
+b862d91316	1751	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**THE ARENA RULE, MEASURED SIX TIMES.** Arguments read LEFT TO RIGHT, so
+af9e99f3a5	1756	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**W9 IS TWO DEFECTS, NOT ONE, and BOTH ARE NOW FIXED** (W9a in `elementwise.bend`
+52c40ce7d2	1768	 	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**`mo_promote` IS NOW A DUPLICATE AND SHOULD BE DELETED.** It was spelled out here
+fcf6ffb84d	1774	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**17 MUTATIONS MEASURED, 13 MOVE.** The four that do not are reported, not
+cf3f7d6cf0	1780	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**M10 CHANGED THE TABLE.** Dropping the arena re-wrap from `promote`'s
+482b090a73	1786	x	session-2026-10-01-round-5-mixin-op-py-lines-1-9	**THE TWO-RULES-CLAIM-ONE-NODE ROW is `t_two_rules`**: `softmax` (15) and
+c9c3ae6ca9	1789	 	session-2026-10-01-round-5-mixin-op-py-lines-1-9	`mixin/op.py` lines **998-1980** — second agent, same file, `mo2_*` / `mo_b_gate`,
+eb4bd613e6	1798	x	session-2026-10-02-the-device-wave-renderer-code	`runtime/ops_webgpu.bend` — `tinygrad/runtime/ops_webgpu.py`. 1738 -> 1811
+6a772f3bf4	1807	x	session-2026-10-02-the-device-wave-renderer-code	**THE CALL LAYER** — `runtime/webgpu_call.bend` (1312 lines, 58 rows, 0 False,
+4f1ab82011	1833	x	session-2026-10-02-the-device-wave-renderer-code	`renderer/wgsl.bend` — `tinygrad/renderer/wgsl.py`. 1062 lines, 168 string-diff
+e6c5df482e	1839	x	session-2026-10-02-the-device-wave-renderer-code	`renderer/tc_ptx.bend` STAGES 1 AND 2 — `tinygrad/renderer/tc.py` (141 lines) AND
+49569cc82c	1868	x	session-2026-10-02-the-device-wave-renderer-code	`codegen/{kernel,rewriter}.bend` — 2105 lines, 70 rows diffed against a Python
+df3690dbba	1876	x	session-2026-10-02-the-device-wave-renderer-code	`codegen/late.bend` — **regalloc is no longer a stub**: 3/118 → 115/118, and the
+fb4dd13638	1896	x	session-2026-10-02-the-device-wave-renderer-code	`examples/beautiful_mnist.ts` — 611 lines, mirrors the 48-line .py section by
+895ae0e923	1900	x	session-2026-10-02-the-device-wave-renderer-code	`mixin/elementwise.bend` — **`promote` was missing its second conjunct** (`95197de9`).
+f3d501ae32	1903	x	session-2026-10-02-the-device-wave-renderer-code	`uop/ops.bend` — **`eq_const.CFloat` was IEEE where CPython is bitwise** (`65b585e1`).
+c9c07d76ea	1905	x	session-2026-10-02-the-device-wave-renderer-code	`bend2-constraints.md` rule 8: `dtype.bend`'s fourteen seams make every importer
+883c848f42	1908	x	session-2026-10-02-the-device-wave-renderer-code	`bend2-constraints.md` rule 9: `bend base F32` prints nine defs and none of them
+3ca2f17435	1914	 	session-2026-10-02-the-device-wave-renderer-code	**`f32_fixed` TRUNCATES WHERE `%.Nf` ROUNDS — one decision, two call sites, not a
+57b4c77774	1939	x	session-2026-10-02-the-device-wave-renderer-code	`codegen/opt/` — the BEAM unit, LANDED (`b78672e4`): `postrange.bend` 1066,
+163b7f5ca8	1952	x	session-2026-10-02-the-device-wave-renderer-code	BEAM=1 round counts, measured from CPython and pinned as COUNT rows:
+5f90c288cf	1955	 	session-2026-10-02-the-device-wave-renderer-code	The BEAM loop itself, once `apply_opt` grows an AST. `Sched{ren,rngs,opts}` is one
+65796adae1	1958	x	session-2026-10-02-the-device-wave-renderer-code	`examples/beautiful_mnist.bend` 831 — LANDED (`d685f998`), and I re-ran its
+6057eada03	1974	x	session-2026-10-02-the-device-wave-renderer-code	`nn/state.bend` 834 and `nn/__init__.bend` 828 — LANDED, 38 gate rows all green on
+fe2ab20c82	2005	 	session-2026-10-02-the-device-wave-renderer-code	`nn/state.bend`'s remaining walls, all named at their Python lines and none of them
+4b96030ec8	2011	 	session-2026-10-02-the-device-wave-renderer-code	`nn/__init__.bend`'s eleven `__call__`s — every one is a single mixin method and
+23797347e5	2018	x	session-2026-10-02-device-bend	`device.bend` — `tinygrad/device.py`, 564 lines → 1546 (207 defs, 9 `# TODO(p3)`
+db40c66408	2030	x	session-2026-10-02-device-bend	Two registry and two rule-table first-wins claims, all with a row: the
+ad7f9a8a35	2036	x	session-2026-10-02-device-bend	Seven new Bend rules appended to `bend2-constraints.md`, of which three are
+6e0893a8b8	2049	x	session-2026-10-02-langs-the-four-lane-export-ma	**Does Bend emit C source? YES.** Checked before anything was designed,
+392e4c90ef	2052	x	session-2026-10-02-langs-the-four-lane-export-ma	**`langs/core.bend`** — `core_step(images: Array<F32>, labels: Array<U32>,
+09cd1c115e	2059	x	session-2026-10-02-langs-the-four-lane-export-ma	**SIX LANES BYTE IDENTICAL**: bend interpreted, bend native, the emitted
+c3cc375cff	2063	x	session-2026-10-02-langs-the-four-lane-export-ma	**The payload is u32 BIT PATTERNS, not decimals** — 42 fields, one wire
+2bbd4936bf	2068	x	session-2026-10-02-langs-the-four-lane-export-ma	**`langs/sdk/bend_sdk.ts`** — `BendLibrarySDK.init({forceJS?})` doing
+1c970edbe5	2073	x	session-2026-10-02-langs-the-four-lane-export-ma	**The wasm lane is a MEASURED wall, not a missing toolchain.** emcc absent,
+3291d67181	2082	x	session-2026-10-02-langs-the-four-lane-export-ma	**`langs/NOTES.md`** — eleven measured Bend 2.0.34 behaviours, each with a
+520fa7e1bc	2093	 	session-2026-10-02-langs-the-four-lane-export-ma	**`wasm/core.wasm`** — blocked on the corpus reservation above. The glue,
+5eedc8ef0d	2098	 	two-substrate-defects-found-by-mixin-reduce-bend	**`mo_resolve` (mixin/op.bend:718) COMPUTES THE WRONG THING FOR EVERY NEGATIVE
+fea69732f2	2109	 	two-substrate-defects-found-by-mixin-reduce-bend	**`T.tn_rop` (tensor.bend:867) ROUTES ON THE UNFILTERED AXIS LENGTH.**
+17dff4504f	2126	 	open-h-dedup-u32-reverses-and-nn-optim-s-filter-	**SUSPECTED DOUBLE CANCELLATION. NOT CONFIRMED, NOT FIXED, NOTHING COMMITTED.**
+b2069402b0	2170	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`tinybendygrad/runtime/ops_metal.bend` — `tinygrad/runtime/ops_metal.py`, 287 -> 3486
+2ffa9b1109	2235	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`.agents/slop/mt_oracle.py` — the FIRST oracle: `ast`-walks ops_metal.py for
+831dfc03c3	2241	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`.agents/slop/mt_rows.py` — the 167-row gate oracle, one `name=value` per row the
+3b1436ad63	2244	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`.agents/slop/mt_diff.py` — the three-lane diff: interpreted, native, CPython.
+168de43d84	2246	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`.agents/slop/mt_mutate.py` — 48 mutations, each reported with the rows it moved
+1f09075f6f	2249	x	session-2026-10-02-runtime-ops-metal-bend-the-me	`.agents/slop/notes/bend2-constraints.md` — twelve appended rules from this unit,
+296d3d3853	2254	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	`tinybendygrad/runtime/ops_cl.bend` — `ops_cl.py` (130) + `ops_cuda.py` (136) +
+a7ac307231	2259	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	**No `@extern` seams** (a departure from `dtype.bend`): the TRACE is the seam.
+dfb06c31a8	2284	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	Two DEAD rules found and DELETED, both with the mutation that proves it:
+abf032b4cb	2289	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	~~`$TMPDIR/opencode/opscl/oracle.py`~~ — **CANCELED, THIS PATH IS DEAD.** The
+2d18f72e89	2296	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	`oracle.py` (the CPython oracle, second independent transcription keyed by
+1296e552da	2303	x	session-2026-10-02-runtime-ops-cl-bend-one-devic	`.agents/slop/notes/bend2-constraints.md` — twelve appended rules, 62-73, on
+ac6c233caf	2310	x	session-2026-10-02-a-committed-gate-row-was-enco	**`tinybendygrad/device.bend:869` `go_slot` — REAL DEFECT, fixed in `7f170f64`.**
+e64f8ea5dc	2317	x	session-2026-10-02-a-committed-gate-row-was-enco	**THE ROW ENCODED THE BUG.** The committed gate read `sig=0 4 5` and its comment
+244e15d01e	2326	x	session-2026-10-02-a-committed-gate-row-was-enco	**Lesson, and it generalises past this file:** a self-consistent gate proves the
+3a96fefe48	2330	x	session-2026-10-02-a-committed-gate-row-was-enco	`tinybendygrad/runtime/ops_cpu_null.bend` — `ops_cpu.py` (96) + `ops_null.py` (68)
+9155cf998f	2333	x	session-2026-10-02-a-committed-gate-row-was-enco	**The ops_metal finding CONFIRMED on a second device:** no `SOME PROOFS FAIL`,
+15bef50aca	2337	x	session-2026-10-02-a-committed-gate-row-was-enco	109 mutations, 3 move nothing, **all three ARGUED not papered over**: two are
+abaa513b42	2343	x	session-2026-10-02-a-committed-gate-row-was-enco	**FOUR HOLES CLOSED RATHER THAN DECLARED**, one of which is *our own bug coming
+37b068940e	2349	x	session-2026-10-02-a-committed-gate-row-was-enco	**TWO FINDINGS BECAME DELETIONS:** M78 exposed `Tr.next` as a field whose rewind
+7e5dcd5ea1	2356	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	`tinybendygrad/runtime/ops_nv.bend` — `ops_nv.py`, 3836 lines, 606 rows,
+71fcaf4e86	2358	 	session-2026-10-02-runtime-ops-nv-bend-606-rows-	**RE-RUN THE MUTATION HARNESS FROM SCRATCH.** At 09:15 I saw no `ops_nv.bend`,
+fed3a26f0c	2367	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	**THE STANDOUT FINDING, verified by me against the authority: 33 of 219
+2a25217c2a	2372	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	**Why no gate could have found them — the lesson is bigger than this file:** a
+1c163b5573	2377	 	session-2026-10-02-runtime-ops-nv-bend-606-rows-	**GENERALISE IT — but MEASURED FIRST, and the answer is "hand maps, not a
+6fd74f6722	2399	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	The wrong values were not cosmetic. All eleven `CLASS_*` ids meant `iface`'s
+34902bc569	2404	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	**A TAUTOLOGY that had to be chased down:** the row `nv_qmd_ver_bwa` fed the
+c240ebdff5	2409	x	session-2026-10-02-runtime-ops-nv-bend-606-rows-	The incoming header **OVERCLAIMED on arrival**: it asserted all four stages had
+dee17f3ff0	2419	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	`tinybendygrad/runtime/ops_nv.bend` — `tinygrad/runtime/ops_nv.py` (841 lines) +
+5e6699033e	2424	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	**THE RECONCILIATION PASS: 73 rows that looked like coverage and were not.** The
+faa6642fa2	2429	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	**`nv_query_litter_n` was WRONG ON BOTH SIDES AND THEY AGREED.** The gate said two
+5302662220	2435	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	**Seven tautological rows deleted** (a hardcoded `"True"`, a hand-written
+6c3010546d	2439	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	`nv_vid_unk_is_none_new` was written `Bool.not(vid_unk_none(2097152))` and printed
+8412ffef54	2443	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	**M30 found its own blind spot**: dropping the 128 KiB rounding from `slm_bytes`
+6c3308ab92	2448	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	**The `device.bend` `iter_sig` BUG — REPORTED, THEN FIXED UPSTREAM, AND THE
+c000c288f2	2460	x	session-2026-10-02-runtime-ops-nv-bend-the-cuda-	`.agents/slop/notes/bend2-constraints.md` — four appended rules, **82-84**: a
+101e698986	2569	x	session-2026-10-02-runtime-ops-rdma-bend-runtime	`tinybendygrad/nn/torch.bend` (45 rows) — `nn/torch.py` is FOUR LINES and the
+4f331bdd54	2578	x	session-2026-10-02-runtime-ops-rdma-bend-runtime	`tinybendygrad/runtime/ops_npy.bend` (83 rows) — four lines overriding one
+0a7a5ff8bf	2583	x	session-2026-10-02-runtime-ops-rdma-bend-runtime	`tinybendygrad/runtime/ops_rdma.bend` (389 rows) — the buffer-registration
+4583b68028	2658	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	`tinybendygrad/runtime/ops_dsp.bend` — `tinygrad/runtime/ops_dsp.py`, 292 ->
+823aec6fb8	2663	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	**420 of the 496 rows carry a `py=` expectation GENERATED by CPython**, and
+c194eb1fb6	2672	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	`.agents/slop/dsp_oracle.py` — the CPython oracle. Beyond the pure tables it
+27075feab0	2677	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	`.agents/slop/dsp_mutate.py` — **68 mutations** (67 + a comment-only control),
+4a5646d94c	2680	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	`.agents/slop/dsp_gate_check.py` — the mechanical `py=` checker.
+df586c8782	2681	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	`.agents/slop/notes/bend2-constraints.md` — **eight more measured Bend rules**,
+bd1c54a4ca	2688	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	**`to_scalar`/`from_scalar` DO NOT EXIST in tinygrad.** The brief named them as
+5b54722e8f	2694	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	**`ops_qcom.bend` CANNOT BE CONTRADICTED BY THIS FILE.** Read at 2026-10-02, it
+42bb6be04f	2701	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	Four walls, each with `# TODO(p3) runtime/ops_dsp.py:<line>` in the file: the
+fd83768b63	2706	x	session-2026-10-02-runtime-ops-dsp-bend-the-gene	**The eviction NEGATIVE CASE is in this file's OWN code, not a fixture invented
+39f55aa60a	2719	x	session-2026-10-02-schedule-indexing-bend	**`prepare.py` in THIS checkout is `prepare_rangeify`, not `prepare_shape`.**
+7610d9315d	2724	x	session-2026-10-02-schedule-indexing-bend	**The file no longer imports `uop/fold.bend`.** RA-8 in
+7deebe487d	2733	x	session-2026-10-02-schedule-indexing-bend	**The mutation table found THREE dead decisions.** `ix_mv_flip_is_add`,
+1e1650848f	2739	x	session-2026-10-02-schedule-indexing-bend	**88 oracle rows this port cannot print**, in three buckets: 55 are `UPat`
+3bf6aafaa3	2745	 	session-2026-10-02-schedule-indexing-bend	**`schedule/prepare.bend` is STILL A STUB** (8 lines). Port it from
+a370db9221	2751	x	session-2026-10-02-schedule-indexing-bend	**`tinybendygrad/runtime/support/hcq2.bend`** — `tinygrad/runtime/support/hcq2.py`
+bbe639f6ad	2785	x	session-2026-10-02-schedule-indexing-bend	**`tinybendygrad/runtime/support/am/ip.bend`** — `tinygrad/runtime/support/am/ip.py`
+affae479d4	2845	x	session-2026-10-02-schedule-rangeify-bend-repair	**Bisected the pre-existing `expected : O.Arg` failure to `e959ece3798f`**
+ae7af3f9be	2853	x	session-2026-10-02-schedule-rangeify-bend-repair	Repaired all four sites by passing each rule's OWN node's arg
+8e220228c4	2857	x	session-2026-10-02-schedule-rangeify-bend-repair	**5 new gate rows**, `py=` generated by CALLING CPython (`.agents/slop/rf-arg-oracle.py`):
+1d82c92ae9	2860	x	session-2026-10-02-schedule-rangeify-bend-repair	Fixture gained `clik`/`clik0`: the fixture gave EVERY node a repaired rule can
+6cdf137168	2865	x	session-2026-10-02-schedule-rangeify-bend-repair	Mutation table, 11 mutations, whole-`name=value`-line diff
+e05bc3983d	2869	 	session-2026-10-02-schedule-rangeify-bend-repair	**NOT FIXED, REPORTED: `ct_table` carries the SUB-pattern's op for every `.f`
+e30f1ec278	2877	 	session-2026-10-02-schedule-rangeify-bend-repair	NOT FIXED, REPORTED: M1/M4 (arg at the AFTER and MSTACK sites) move 0 rows, and
+8485f7c4c3	2882	x	session-2026-10-02-schedule-rangeify-bend-repair	**`tinybendygrad/runtime/support/nv/ip.bend`** — `tinygrad/runtime/support/nv/ip.py`
+1ce8954421	2952	x	session-2026-10-02-schedule-rangeify-bend-repair	**`tinybendygrad/runtime/support/usb.bend`** — `tinygrad/runtime/support/usb.py`
+55b3178d51	3019	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**THE PROVEN BUG, CONFIRMED AND FIXED, AND IT WAS BIGGER THAN REPORTED.** A `.f()`
+9efc6ca335	3031	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**WHICH OF `ct_4` / `ct_5` / `ct_8` ARE LIVE, ASKED OF CPYTHON, NOT GUESSED: ALL
+eda6f50226	3043	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**16 NEW FIXTURE NODES AND 44 NEW ROWS**, all `py=` generated by CALLING
+8c0ad5d32a	3048	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**THREE MORE REAL DEFECTS, each found by the new fixtures and each now mutated:**
+e040c2991f	3055	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**THE PREVIOUS MUTATION TABLE'S M3 "PROOF" IS REFUTED.** It read "for a
+13e3958c1f	3062	x	session-2026-10-02-schedule-rangeify-bend-the-ct	`M12` was a zero because EVERY RANGE in the fixture was `AXIS_WEAK`, so
+cf6fd833c7	3065	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**M30 was a zero because `ct_7`'s reject set is satisfied by an AFTER in ANY
+35a480ea9c	3068	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**PART 2, ITEM BY ITEM, in file order** — `ct_3` still walled
+ed73a26e2b	3087	x	session-2026-10-02-schedule-rangeify-bend-the-ct	**41 mutations, 37 sharp, whole-`name=value`-line diff**
+a82e4cbb68	3092	x	session-2026-10-02-schedule-rangeify-bend-the-ct	Gate grew 81 → 126 rows. `ALL PROOFS CHECK`. The scratch is
+cd2b2f8c22	3096	 	session-2026-10-02-schedule-rangeify-bend-the-ct	**NOT COMMITTED**, per the task's instruction. Seven general rules appended to
+30fcfa556e	3102	x	session-2026-10-02-upstream-793abbb-modernize-ti	re-vendor `tinygrad/dtype.py` and `tinygrad/runtime/ops_null.py` at
+45a7c60324	3104	x	session-2026-10-02-upstream-793abbb-modernize-ti	`LAWS/spec.bend` — the `DType.name` layer, 16 `Dt` literals
+384de24691	3105	x	session-2026-10-02-upstream-793abbb-modernize-ti	`dtype.bend` — `promo_mask` / `can_lossless_cast.row` / `rank_of` /
+859410747b	3108	x	session-2026-10-02-upstream-793abbb-modernize-ti	`uop/render.bend` — `dt_attr` was `INVERSE_DTYPES_DICT`, which upstream
+3c5b8f14f1	3110	x	session-2026-10-02-upstream-793abbb-modernize-ti	`renderer/__init__.bend`, `renderer/cstyle.bend` (type_map keys),
+ac1ee7e333	3114	x	session-2026-10-02-upstream-793abbb-modernize-ti	`.agents/slop/**`: 1164 `dtypes.<legacy>` sites over 113 files, via
+f21ef6227e	3116	x	session-2026-10-02-upstream-793abbb-modernize-ti	`tinybendygrad/test/dtype_oracle.bend` — **was committed and did not
+558fe2213e	3120	x	session-2026-10-02-upstream-793abbb-modernize-ti	`dtype.bend` gate: 14 766 rows, both lanes byte-identical, **1 declared
+c758dc41ba	3124	 	session-2026-10-02-upstream-793abbb-modernize-ti	**OWNER DECISION — `tinygrad/runtime/ops_bend.py` imports the deleted
+edc2b6ff1b	3130	x	session-2026-10-02-upstream-793abbb-modernize-ti	`renderer/isa/x86.bend` — `tinygrad/renderer/isa/x86.py`. **The root cause of the
+85b928603c	3166	 	session-2026-10-02-upstream-793abbb-modernize-ti	`tinygrad/renderer/cstyle.py` **not** re-vendored (kept at the pin
+df7088915d	3172	x	session-2026-10-02-upstream-793abbb-modernize-ti	name-keyed tables left for their owners: `renderer/nir_llvmir.bend` (9),
+dc050e3f39	3182	 	session-2026-10-02-upstream-793abbb-modernize-ti	`renderer/isa/x86.bend` `Op.to_int` (`:750-754`) is STILL RED IN DISGUISE
+51c2b87455	3189	 	session-2026-10-02-upstream-793abbb-modernize-ti	`runtime/ops_dsp.bend`: `grep -c 'py=\[' ` is **ZERO** — all 512 printed
+28216c4e94	3197	 	session-2026-10-02-upstream-793abbb-modernize-ti	`runtime/ops_dsp.bend`'s ~40 gate-row literals (its 4 functional tables
+c041f42c6b	3204	x	green-on-570-of-995-rows	**`tinybendygrad/runtime/support/memory.bend`** — `tinygrad/runtime/support/memory.py`
+687019db8b	3210	x	green-on-570-of-995-rows	**THE GATE WAS NOT GREEN AND THE SUMMARY SAID IT WAS.** The two lanes agreed on **every
+00b34c3ac3	3221	x	green-on-570-of-995-rows	**ELEVEN REAL DEFECTS, all found by the diff and none by reading.** `va_allocator` hi words;
+e0cbfa5eeb	3230	x	green-on-570-of-995-rows	**THE PAGE-TABLE ASSERT LOOPS, and the order is the claim.** `map_range:214-215` reads
+624c9e0c85	3237	x	green-on-570-of-995-rows	**CITING FILES.** `schedule/memory.bend` CONFIRMED: no local TLSF reader, the offsets are
+34baa8dfec	3244	x	green-on-570-of-995-rows	**SIX BLIND SPOTS, none closed with a row that encodes the bug.** M09/M12/M13 are
+2b1e1b81ab	3252	x	green-on-570-of-995-rows	**THE TLSF FREE-LIST WALK IS NOT PORTED, AND THAT IS THE ONE PLACE THIS STOPS SHORT.**
+23c4093114	3257	x	green-on-570-of-995-rows	**M14 CLOSED WITH ONE FIXTURE.** The dropped `round_up` moved nothing because every
+b3faa55d66	3261	x	green-on-570-of-995-rows	**`.agents/slop/notes/bend2-constraints.md`** — 12 measured rules appended after line 9704,
+52d16aa0c3	3270	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**THE BREAK IS CLOSED.** `DEV=NULL` compiles a kernel again. `dtype.py` was already at
+d7221a6e64	3275	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**STAGED EXACTLY ONE FILE** (`tinygrad/renderer/cstyle.py`); `dtype.py` needed nothing.
+79dd226892	3277	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**GATE: cstyle.bend RE-PORTED, and the 9 pre-existing disagreements are BYTE-IDENTICAL
+5acad885a6	3281	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**TWO REAL FINDINGS, both silent-wrong-answer shaped rather than loud.**
+1e42135ca7	3295	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**`type_map` IS NOW OBSERVABLE, and the baked-literal count fell 94 → 13.** That number is
+4494d38cfe	3298	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**THE HEAD `KeyError` IS NOT AN UPSTREAM BUG, AND IT IS UNREACHABLE — measured, not
+bf2e496035	3306	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**NO `case`-ON-DTYPE-NAME SITE WAS SILENTLY BROKEN, and that is a measurement.**
+2ed443c167	3318	x	session-2026-10-02-rebase-batch-b2-dtype-py-rend	**`DTYPES_DICT` KEY-SPECIFIC FINDING.** `float8_e4m3` and friends are NOT keys at either
+c2ae581db2	3325	x	session-2026-10-02-env-flag-semantic-divergence-	**The `getenv` coercion table, MEASURED from live CPython** —
+4b724404c5	3335	x	session-2026-10-02-env-flag-semantic-divergence-	**`helpers.bend`'s `no_color_of` was INVERTED. Fixed and gated.**
+faaaab4826	3343	x	session-2026-10-02-env-flag-semantic-divergence-	**`helpers.bend`'s P6 comment corrected: 61 ContextVars, not ~40.**
+0fe6e7585d	3347	x	session-2026-10-02-env-flag-semantic-divergence-	**DIVERGENCE SITES: 3 real substitutions outside `helpers.bend`, plus 1 doc
+b46a9ed48f	3354	x	session-2026-10-02-env-flag-semantic-divergence-	**THE HEADLINE: of 146 flags, only 15 are named anywhere outside a comment in
+9456f64233	3359	x	session-2026-10-02-env-flag-semantic-divergence-	**BAKED GATE LITERALS named**: 13 rows that will all move on the day P6 lands,
+5ff4f795a3	3361	x	session-2026-10-02-env-flag-semantic-divergence-	**`helpers.bend` has NO `main`, so it had NO gate at all** — the file that owns
+fa137c3aec	3363	x	session-2026-10-02-env-flag-semantic-divergence-	Rules V-X-Y-Z appended to `.agents/slop/notes/bend2-constraints.md` (from
+cb2c15e47e	3365	 	session-2026-10-02-env-flag-semantic-divergence-	**P6 itself — NOT STARTED, and it needs its own unit with its own plan.** The
+758a0afd98	3376	x	session-2026-10-03-ungated-drift-closure-uop-ren	**The working `tinygrad/` is a MEASURED BROKEN HYBRID**, which is the first
+948b4c51e3	3383	x	session-2026-10-03-ungated-drift-closure-uop-ren	**`uop/render.bend`, 66 -> 80 gate rows** (14 ADDED, 4 RE-MEASURED, 0 removed),
+f614dfd423	3425	x	session-2026-10-03-ungated-drift-closure-uop-ren	**`codegen/rewriter.bend`, 32 -> 54 gate rows** (22 ADDED, 0 re-measured,
+65678560c5	3435	x	session-2026-10-03-ungated-drift-closure-uop-ren	**`rebase-plan.py`'s stem-matching bug, fixed and PROVEN.** The old map was
+754e74ff60	3442	x	session-2026-10-03-ungated-drift-closure-uop-ren	12 rules appended to `.agents/slop/notes/bend2-constraints.md` (from position
+39e8cd268a	3445	 	session-2026-10-03-ungated-drift-closure-uop-ren	**`tinybendygrad/helpers.bend` does not compile right now** (a live agent is
+5a45225024	3453	 	session-2026-10-03-ungated-drift-closure-uop-ren	**The 3 remaining `render.bend` disagreements need `ops.bend`** (`CallInfo`
+61ffb265c0	3467	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**THE FINDING.** `--batch 1` reported `TALLY NOT-STARTED=19` and every one
+6f87673b4d	3472	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**`rebase-survey.py` — WIRE BY THE ROW-NAME INTERSECTION, NOT BY THE
+08d06b5405	3478	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**WIRED, by measurement:** `ops_rdma` <- `oracle_rdma_gate.py` (389/389),
+87d5f73461	3485	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**ORACLE DEAD, named, never counted as coverage:** `hcq2-oracle2.py`
+db634fb20a	3493	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**A NEW FINDING, and the reason this unit existed.**
+a9ce35c306	3504	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**A ROW-NAME COLLISION THE GATE CANNOT SEE, measured.** `rs_claim_warp` is
+123d806d1c	3510	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**`ports_of()` SHIPPED A CRASH AND THIS SESSION HIT IT.**
+8bb5a63a12	3517	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**`rebase-survey.py` REPRODUCED, IN ITS OWN BODY, THE BUG
+3b7a1f8aa0	3522	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**`rebase-gate-selftest.py` IS NOW A TEMPLATE FOR EVERY ORACLE.** Six
+9773907342	3527	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**RED PROOFS, every one observed, every revert SHA-256 verified.**
+515c3d6913	3537	x	session-2026-10-03-rebase-gate-wiring-19-ports-w	**`runtime/ops_amd.bend` oracle wired.** 409 of 520 shared, 0 disagree.
+839187ac9d	3543	 	session-2026-10-03-rebase-gate-wiring-19-ports-w	**NO ORACLE EXISTS, measured against 104 candidates — these are the ports
+c39914420e	3551	 	session-2026-10-03-rebase-gate-wiring-19-ports-w	**THE BASELINE IS NOT RECORDED, DELIBERATELY.** `baseline.json` holds one
+4b65831d43	3564	x	session-2026-10-03-runtime-support-objc-bend-the	**`tinybendygrad/runtime/support/objc.bend`** — `tinygrad/runtime/support/objc.py`
+df90aec5da	3607	 	session-2026-10-03-runtime-support-objc-bend-the	**TREE DEFECT, REPORTED NOT FIXED — the Metal host kernel cannot link.**
+fe25614aa2	3619	 	session-2026-10-03-runtime-support-objc-bend-the	**`support/c.py:102-103` — `DLL.findlib`'s `is_file()` gate.** It silently
+65ec41856e	3624	 	session-2026-10-03-runtime-support-objc-bend-the	**`objc.py:30`'s `dispatch_data_create` is NOT a `libSystem` export.** It
+fbb99c2e8f	3631	x	session-2026-10-03-runtime-support-objc-bend-the	**THE DEMONSTRATION BASELINE IS NOT THE PIN BASELINE.**
+f37e64bc36	3644	x	session-2026-10-03-renderer-amd-generate-bend-th	**`tinybendygrad/renderer/amd/generate.bend` — PORTED AND GREEN AT 91 ROWS.**
+7748c8f447	3659	x	session-2026-10-03-renderer-amd-generate-bend-th	**`write_ins` is 100% ported and PINNED, not partially.** The inherited file
+a83969737b	3669	x	session-2026-10-03-renderer-amd-generate-bend-th	**`write_pcode` PORTED (generate.py:484-499), `extract_pcode` NOT, and the
+3b89c197c1	3681	x	session-2026-10-03-renderer-amd-generate-bend-th	**THE FIXTURE NOW HITS EVERY ARM OF `field_def`'s 19-ROW LADDER.** The
+ad6074b9e4	3692	x	session-2026-10-03-renderer-amd-generate-bend-th	**MUTATION TABLE: `.agents/slop/ga-mutate.txt`, 41 mutations, 40 MOVE ROWS.**
+eba9c36e1f	3698	x	session-2026-10-03-renderer-amd-generate-bend-th	**THE INHERITED 175 IS ACCOUNTED FOR AND WAS NOT A SUBSET.** It was the 84
+29e67327b0	3706	x	session-2026-10-03-renderer-amd-generate-bend-th	**`ga-oracle.py` print shape wired into `BASE_ORACLES`.** The gate's
+ac428219cd	3716	x	session-2026-10-03-renderer-amd-generate-bend-th	**EIGHT MEASURED BEND RULES APPENDED** to
+563439affd	3727	x	session-2026-10-03-renderer-amd-generate-bend-th	**TWO INHERITED PORT BUGS THE GATE CAUGHT, both reported to the file's
+58c38bf9f7	3734	x	session-2026-10-03-renderer-amd-generate-bend-th	**`field_rules()` HAD `pb=1` IN ALL EIGHT WIDTH-GUARDED ARMS.** The
+4c2090d447	3745	x	session-2026-10-03-dtype-bend-const-cast-refusal	`l2i(Ops.CAST, long, UOp.const(0, uint32))` called in CPython and in the
+34b266bc59	3754	x	session-2026-10-03-codegen-decomp-dtype-py	`tinybendygrad/codegen/decomp/dtype.bend`, one `.bend` at dtype.py's path, all
+712f5c9c8d	3758	x	session-2026-10-03-codegen-decomp-dtype-py	FIVE DIVERGENCES stated in the file header, each with its reason: (A)
+2942e27c86	3763	x	session-2026-10-03-codegen-decomp-dtype-py	`.agents/slop/dd-oracle.py` — 412 rows by CALLING CPython's `dtype.py`, exit 0,
+d4a2f3009b	3769	x	session-2026-10-03-codegen-decomp-dtype-py	THE GATE RUNS: `.agents/slop/dd-gate.txt`, **66 of 121 rows byte-identical** to
+76ce5d0522	3780	 	session-2026-10-03-codegen-decomp-dtype-py	`l2i_cast` REFUSES EVERY CAST FIXTURE: `lg2`, `lg3`, `lg4`, `lg5`, `lg6`, `lg7`
+6c9c0f680b	3785	 	session-2026-10-03-codegen-decomp-dtype-py	THE `none` SPELLING IS WRONG FOR A REFUSAL: the oracle prints
+5e08117634	3789	 	session-2026-10-03-codegen-decomp-dtype-py	`l2i_shl` / `l2i_shr` pick the wrong arm (`lg9`, `lga`, `lgb`: 12 rows). `lga` and
+f7d9ac6e99	3792	 	session-2026-10-03-codegen-decomp-dtype-py	`l2i_mul`'s last node is `ADD(ADD, NOOP)` where the oracle has `BITCAST(MUL)`, and
+78b1b21e95	3794	 	session-2026-10-03-codegen-decomp-dtype-py	OFF BY TWO on every `l2i` row's `n`/`sig`/`k`: the port counts dtype.py:22's
+924e95c930	3799	 	session-2026-10-03-codegen-decomp-dtype-py	NOT GATED YET: `f2fdt0..8`, `u32n`, `unpack32`, `reindex`, `rne`, the eight
+994792725d	3804	 	session-2026-10-03-codegen-decomp-dtype-py	MUTATION TABLE: not run. Every mutation so far is a type error caught by
+0bf8924fcb	3808	x	session-2026-10-03-codegen-decomp-dtype-py	GATE ROW SET RESTORED (2026-10-03). The 72-row run was M32, not `dd_fuel`: every
+76938e7a8f	3815	 	session-2026-10-03-codegen-decomp-dtype-py	`.agents/slop/ddcheck.sh` + `dd-patch-helpers.py` are a COMPILE WORKAROUND for
+b613b251b6	3821	x	session-2026-10-03-codegen-decomp-dtype-py	DEF-NAME VIOLATIONS AGAINST UPSTREAM: classify, then rename where it is real.
+7d11fd8eac	3853	x	session-2026-10-03-codegen-decomp-dtype-py	FINDING, REPORT NOT FIXED (not my file): `schedule/indexing.bend` has TWO defs
+c939c798d3	3861	x	session-2026-10-03-codegen-decomp-dtype-py	FINDING, REPORT NOT FIXED (not my file): `renderer/amd/sqtt.bend`'s six
+8d3761d9f5	3873	x	not-committed	**THE BRIEF'S THREE DESCRIPTIONS OF THE THREE NAMES DO NOT MATCH THE PINNED
+81cd7da593	3891	x	not-committed	**MUTABLE STATE, the central question: THREADED, and it is not a fake.**
+3ce0869ff0	3899	x	not-committed	**`Context.old_context` IS A SNAPSHOT, NOT A STACK, and the gate proves the
+151c0c1807	3905	x	not-committed	**THE GATE WAS GREEN FOR A WHILE AND WAS GATING A COPY.** The first
+0508a26971	3912	x	not-committed	**`helpers.bend` HAS NO `main`, SO IT HAD NO GATE AND STILL DOES NOT.** Its 64
+c61eb2e9f7	3917	x	not-committed	**WALL 1, the mutable global: there is no Bend construct for it.** Stated as
+a79f9d729f	3920	x	not-committed	**WALL 2, `getenv` is `functools.cache`d (helpers.py:162) and that is
+c4c1d9975f	3927	x	not-committed	**WALL 3, no signed integer and no F32 add, and BOTH are load-bearing.**
+43b1cfa251	3934	x	not-committed	**`tqdm.__init__`'s `disable` DEFAULT is `False`, not `None`
+27f49500c0	3937	x	not-committed	**`mem_used_per_device` is an ASSOC LIST, not a dense row vector**, because
+1430b7d588	3943	x	not-committed	10 rules appended to `.agents/slop/notes/bend2-constraints.md` from position
+2051bf8e0c	3945	 	not-committed	**`GlobalCounters.time_sum_s` still has no writer.** Owner: whoever owns P4
+7aa77a5220	3947	 	not-committed	**`ContextVar._cache` is still 4 of 61 keys and `Flags.snap1.go` still has a
+aa422fc757	3955	x	not-committed	**DEFECT 2 FIXED. `CustomFunction` was answering `(void, None)` for EVERY node.**
+d3d90ac091	3961	x	not-committed	**DEFECT 1 CHARACTERISED, NOT "FIXED": `-1` is COSMETIC and unrepresentable.**
+80317bd749	3971	x	not-committed	**A SECOND, WORSE BUG FOUND BY MY OWN ROW: `least_upper` was NOT commutative.**
+784a66bac8	3976	x	not-committed	**`fold.bend`'s `lowest` comment was FALSE and is corrected.** It claimed "every
+f97358949c	3980	x	not-committed	**M7 was a 0 and is now a FIXTURE, not a claim about a theorem.**
+fb79a283c4	3983	x	not-committed	**13 mutations, 13 detected, 0 blind spots, 0 typecheck failures.** Rows moved
+cc142e18ff	3985	x	not-committed	**Coverage hole named: `dtypes.all` is SEVENTEEN** (dtype.py:161 excludes void and
+bac463edad	4033	x	session-2026-10-03-the-naming-gate-the-def-name-	**`.agents/slop/naming-gate.py` — the ruling FAILS WHEN VIOLATED.** Owner
+6f5dc64148	4047	x	session-2026-10-03-the-naming-gate-the-def-name-	**`naming-gate-selftest.py` — 15/15 checks, and the gate was SEEN RED.**
+d478e96822	4061	x	session-2026-10-03-the-naming-gate-the-def-name-	**`naming-gate-ledger.py` + `oracles/naming-gate-baseline.txt` — the 667 rulings.**
+9a73ea582b	4068	x	session-2026-10-03-the-naming-gate-the-def-name-	**11 RENAMES, both lanes byte-identical, ZERO rows moved.**
+26d96caf96	4078	 	session-2026-10-03-the-naming-gate-the-def-name-	**BLOCKED, NOT MINE: `tx_shr` / `tx_shl` (upstream `shr` / `shl`).**
+8fb3e2117e	4086	 	session-2026-10-03-the-naming-gate-the-def-name-	**NEEDS AN OWNER RULING: the `dsl.bend` register-slice suffix (14 names).**
+ded72b1745	4096	x	session-2026-10-03-the-naming-gate-the-def-name-	**DISPROVEN BY HAND, not by pattern — substring matching has now produced**
+075191ad7c	4103	x	session-2026-10-03-the-naming-gate-the-def-name-	**`pm_` MUST STAY — it is UPSTREAM'S OWN PREFIX.** Upstream binds 92+
+6256e71370	4108	x	session-2026-10-03-the-naming-gate-the-def-name-	**MODULE ALIASES ARE THE DISAMBIGUATOR, and 102 of 128 `.bend` files already**
+d6852eb272	4114	x	session-2026-10-03-the-naming-gate-the-def-name-	NOTES: `.agents/slop/notes/bend2-constraints.md` section **DD-7** (at the END,
+c96c16ee72	4119	x	session-2026-10-03-the-naming-gate-the-def-name-	**`renderer/tc_ptx.bend` vs `tcptx-oracle.py`: the oracle was right.** Six
+f4431a6f44	4127	x	session-2026-10-03-the-naming-gate-the-def-name-	**`renderer_oracle.py`'s `KeyError: dtypes.weakint` is fixed, and the trace's "the bug
+d8dc5cb594	4146	x	session-2026-10-03-the-naming-gate-the-def-name-	**`rows()` shredding: DEMONSTRATED and CLOSED, and it was already in the baseline.**
+c25aec1386	4160	x	session-2026-10-03-the-naming-gate-the-def-name-	**The row-naming collision: RECOMMENDATION IS TO RE-POINT THE ORACLE, NOT TO RENAME
+1e482b0ade	4174	 	session-2026-10-03-the-naming-gate-the-def-name-	**REPORTED, NOT FIXED (owner: the `renderer/cstyle.bend` unit) -- `cstyle.bend` cannot be
+e59c9ef7b7	4196	 	session-2026-10-03-the-naming-gate-the-def-name-	**REPORTED (owner: `rebase-gate.py`, shared tool, no single owner).** The brief calls the
+bc8edd7e81	4204	 	session-2026-10-03-the-naming-gate-the-def-name-	**REPORTED (owner: whoever owns `.agents/slop/`).** `.agents/slop/tools/renderer-oracle.py`
+17aeeee195	4223	x	session-2026-10-03-ops-python-render-oracle-quot	**19 `repr()` disagreements fixed on the oracle, not the port, and the lane wired.**
+2ba40d9928	4236	x	session-2026-10-03-re-anchor-the-wire-pair-stand	**Retired the tc_ptx "6 disagreements" control.** The literals were fixed;
+0d8d2dee01	4248	x	session-2026-10-03-which-tree-the-wired-gates-im	**Measured pin vs xd1/head for every wired gate. Do not standardise on the pin.**
+b75f27cf13	4258	x	session-2026-10-03-arange-ucache-collision	**Closed the `ARange` ucache collision in `uop/ops.bend`.** Called, not
+f83f3dfa83	4276	x	session-2026-10-03-renderer-amd-elf-bend-the-amd	**`tinybendygrad/renderer/amd/elf.bend` COMPILES: `ALL PROOFS CHECK`, 114 rows,
+7fbf8dd80b	4286	x	session-2026-10-03-renderer-amd-elf-bend-the-amd	**BOTH UPSTREAM BINDINGS PRESENT VERBATIM.** `elf.py`'s only two
+857403ab92	4294	x	session-2026-10-03-renderer-amd-elf-bend-the-amd	**`kern.keyorder` ADDED, AND IT IS THE ROW THE OTHER TWO SORT ROWS COULD
+bcc073ca9e	4304	x	session-2026-10-03-renderer-amd-elf-bend-the-amd	**ALL 46 CONSTANTS AUDITED AGAINST LIVE CPYTHON: 46 agree, 0 disagree.**
+f42e31dc78	4312	x	session-2026-10-03-renderer-amd-elf-bend-the-amd	**MUTATIONS, MEASURED, REPORTED WITH THE ROWS THEY MOVED BY NAME.**
+7c43be668a	4324	x	session-2026-10-03-codegen-init-bend-the-rewrite	**`tinybendygrad/codegen/__init__.bend` — `walk_rewrite` (single-pass
+758c422bf2	4333	x	session-2026-10-03-codegen-init-bend-the-rewrite	**THE ENGINE HAS A REAL BUG: arena growth is LOST.** `wr.rebuild`
+1b4d69c23f	4350	x	session-2026-10-03-codegen-init-bend-the-rewrite	**`tinybendygrad/uop/ops.bend` — extended the `pm_rewrite_m` family
+969d775038	4363	x	session-2026-10-03-codegen-init-bend-the-rewrite	**`.agents/slop/gr-oracle.py` — the CPython oracle.** Runs
+d6ae0b7aa5	4370	x	session-2026-10-03-codegen-init-bend-the-rewrite	**The unit is in flight, NOT green.** A wall that compiles and a
+fee9876462	4390	x	not-committed	**THE NORMAL FORM: eight fields, each with a `tinygrad/...:line` citation.** `id`
+056a2ab010	4401	x	not-committed	**THE WIRE FORMAT is self-delimiting.** Eight `<bytecount>:<bytes>` chunks per node
+f8099f89f5	4406	x	not-committed	**THE DIFFER: three rungs, naming fields.** rung 1 = equal `core` (`UOp.key` with the
+21bd802ae3	4412	x	not-committed	**IT RUNS ON A REAL GRAPH, AND THE TWO STREAMS ARE BYTE-IDENTICAL.**
+7fd4c54c31	4420	x	not-committed	**IT DISCRIMINATES, four ways, all run.** `control` (each side vs ITSELF, AGREE) ·
+6334bcd5eb	4427	x	not-committed	**THE CONTROLS ANSWERED BY CONSTRUCTION, NOT BY CARE.** no `sort`/`comm` at all
+8729358d32	4434	x	not-committed	**RESIDUALS, NAMED, NOT SMOOTHED.** 8 of them, report §5. Headline: **the device is
+fde63f32c7	4442	x	not-committed	**A MEASURED THEOREM, NOT A ROW.** A dtype-only plant on a CONST is unreachable, and
+8051e1bd9d	4451	x	not-committed	**`pretty_print` was NOT the anchor and `uop/render.bend` was NOT touched.** Two
+c1e89760df	4459	x	not-committed	**NOTHING PATCHED FROM A HARNESS.** Every plant edits one side's COPY in memory.
+9cdab370c0	4461	x	not-committed	**NINE RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at positions
+6962e71c87	4490	x	not-committed	**R1 realized BUFFER: CLOSED, and it was a LIVE BUG.** The code emitted
+1958855753	4500	x	not-committed	**R2 `KernelInfo.applied_opts`: the py emitter CRASHED, and `Option` does not exist.**
+9549eef36c	4515	x	not-committed	**R3 `bytes`: a PORT BUG, not a normal-form limitation.** MEASURED both sides on the
+63a5f1d936	4522	x	not-committed	**R4 nested UOp: the JUSTIFICATION was false, and it was rendering as a STRING.** The
+3d8f93e0f2	4529	x	not-committed	**R5 AxisType: it is TWO, not three, and the report was WRONG.** MEASURED twice at
+d3e4cd1926	4536	x	not-committed	**A SIXTH FINDING, NOT ON THE LIST: the shape column's `N` was a LETTER COLLISION.**
+b058d97a9d	4546	x	not-committed	**ALL CONTROLS RE-RUN AND PASTED** in `runs/graphcmp/C*.txt`: `selfcheck`, `control`
+31992507aa	4553	x	not-committed	**SUPERSET CHECK.** `runs/graphcmp/C11-superset.txt`: the ONLY change to the matmul is
+9d880e2147	4560	x	not-committed	**FOUR RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at the END,
+8f6b5f02a0	4588	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	**THE 8 MISSING `cN=` FIXTURES, CLOSED 7 OF 8 AND THE 8TH MADE VISIBLE.** All eight
+8e848205cc	4594	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	**TWO REAL PORT BUGS, both in `f2f_clamp_max.put`, both now fixed.** `dtype.py:129-130`
+51c169c275	4599	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	`c0..c6` now AGREE with CPython, values called not typed:
+8c0e86ac08	4602	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	`c7` (`float64`) PRINTS `refused:unported`, so the name exists in both lanes with
+c1f1aaaf47	4609	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	**THE BRIEF'S PREMISE HALF WRONG, MEASURED.** (a) "the port emits no float-CONST path"
+0daa65ee1d	4615	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	**THE CHECKER THAT MAKES ABSENCE AN ERROR**: `.agents/slop/dd-divE-check.py`.
+0e49761734	4619	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	**RUN-HEALTH GUARD**: `.agents/slop/dd-divE-run.sh`. A stack-overflowed bend run prints
+caf2a4db83	4622	x	session-2026-10-03-b-the-eight-c-i-fixtures-code	CONTROL, per row, one factor at a time (`.agents/slop/dd-divE-math.py`):
+f37a708772	4646	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**BUG 1, `dd_rs.add` appended unconditionally**: a node with two parents was listed
+c93fa4b316	4651	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**BUG 2, `dd_rs.push` prepended left-to-right**: `dd_rs.cat(h, st) = h <> st` is a
+10403a1d80	4654	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**The three named rows now agree with CPython. THE PORT WAS WRONG, not the oracle:**
+0cd6f27eff	4657	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**Row count: DELTA 0.** 172 before, 172 after, identical key sets, 35 values changed.
+9d7893edd5	4658	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**A gate row per bug, each moving on its own revert** (`.agents/slop/dd-cone-variants.py`):
+83de313e90	4661	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**M26.** As written in `dd-mutate.py` it is **PATCH-NOT-APPLIED** — its anchor quotes
+272fce61de	4667	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**AGAINST CPYTHON, on the same 172-row key set: 106 agree / 66 disagree -> 120 / 52.
+47372acd80	4671	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	**52 rows still disagree and they are NOT the cone.** `l2i`'s CAST/shift arms: tree
+e3326466c9	4676	x	session-2026-10-03-the-two-dd-rs-cone-bugs-in-co	Evidence: `.agents/slop/dd-cone-report.txt`. Rules: `bend2-constraints.md`, appended at
+b2da6a8e0f	4698	x	five-level-gate-not-committed	**THE KNOB EXISTED NOWHERE.** MEASURED before the change: `DEBUG reads in ported
+d321803d79	4705	x	five-level-gate-not-committed	**`DEBUG` IS AN INT AND `helpers.py` IS THE AUTHORITY — NO `DEBUGLEVEL`.**
+2b832d4ed5	4716	x	five-level-gate-not-committed	**THE MECHANISM IS ONE NEW DEF PAIR IN `helpers.bend`, NOT A SECOND ENV MECHANISM.**
+b20b6ae26d	4732	x	five-level-gate-not-committed	**ALL SEVEN SITES WIRED, AT UPSTREAM'S OWN THRESHOLD.** The threshold is READ OUT
+628f69ccff	4741	x	five-level-gate-not-committed	**`nn/state.bend` WAS INVERTED ON EVERY MODULE WITH NO DOT, AND THE ROW CAUGHT IT.**
+3fde738708	4750	x	five-level-gate-not-committed	**`schedule/memory.bend`'s `Scan.tc` IS A TOUCH LIST, NOT `first_appearance`, AND
+1b93175f36	4768	x	five-level-gate-not-committed	**A GATE THAT CANNOT SEE A BRANCH: `memory.py:59`'s `!=` had no row.** The one
+72c184b06f	4777	x	five-level-gate-not-committed	**THE FIVE-LEVEL GATE: `sh .agents/slop/debug-gate.sh`.** 72 rows, at levels
+b607316615	4785	x	five-level-gate-not-committed	**LEVEL 1 IS DISTINGUISHED FROM LEVEL 2, BY MEASUREMENT, NOT BY PROSE.** The gate
+f0915794b3	4791	x	five-level-gate-not-committed	**THE EXPECTED STRINGS COME FROM CALLING CPYTHON, ON TWO INDEPENDENT LANES.**
+fe3bf48b56	4804	x	five-level-gate-not-committed	**MUTATIONS: 15 OF 17 MOVE. `.agents/slop/debug-mutate.py` ->
+cbac6daf9d	4812	 	five-level-gate-not-committed	**BLIND SPOT, REPORTED NOT CLOSED: `debug_print`.** Its mutation (write `""`
+343a08966c	4820	 	five-level-gate-not-committed	**BLIND SPOT, REPORTED AS A THEOREM: `mem_mb`'s `> 5000` -> `>= 5000`.** A tie at
+c18328f950	4832	x	five-level-gate-not-committed	**TWO DOCUMENTED NARROWINGS, BOTH MEASURED FROM BOTH SIDES, NOT PROMISES.**
+b7f59bef39	4840	x	five-level-gate-not-committed	**TWELVE RULES APPENDED** to `.agents/slop/notes/bend2-constraints.md` at position
+7ccecacb8c	4859	x	session-2026-10-03-renderer-amd-generate-bend-th	**THE 149 DIAGNOSED BY CAUSE, and the premise corrected.** `.agents/slop/ga_rows.py`
+8f4892d4bb	4869	x	session-2026-10-03-renderer-amd-generate-bend-th	**ROUTE CHOSEN: per-LINE rows keyed on an INDEX, plus one `lines` COUNT row per
+814ca1fada	4886	x	session-2026-10-03-renderer-amd-generate-bend-th	**THE WHOLE-FILE ROW IS NOT AVAILABLE HERE, MEASURED, and this lane was BROKEN HALF
+c26842869d	4895	x	session-2026-10-03-renderer-amd-generate-bend-th	**726 rows, 726 agree, 0 differ — corroborated twice.** `ga_gate.py`:
+ed3b5bfc9a	4901	x	session-2026-10-03-renderer-amd-generate-bend-th	**`ga-oracle.py` emits 778 rows** (was 892): 634 per-line + 8 counts replace 756
+49d62d01b9	4908	x	session-2026-10-03-renderer-amd-generate-bend-th	**FOUR CONTROLS, `.agents/slop/ga_controls.py`, all PASS.** (1) SUPERSET: 84 gated
+7078f5f249	4915	x	session-2026-10-03-renderer-amd-generate-bend-th	**`rebase-gate-selftest.py`: 66 PASS, 0 FAIL, rc=0.** Both rosters still agree.
+9711c917ba	4917	x	session-2026-10-03-renderer-amd-generate-bend-th	**ONE REAL BUG CAUGHT BY THE GATE, NOT BY ME.** The first `gl.go` destructured
+a8b96c55d4	4925	x	session-2026-10-03-renderer-amd-generate-bend-th	**`rebase-scan-oracles.py` CACHED FOREVER AND NEVER INVALIDATED — FIXED, AND THE FIX HAD
+234df4867a	4941	x	session-2026-10-03-renderer-amd-generate-bend-th	**`ORACLE_CONFORMANCE`'s hard-coded `84` — THE NUMBER IS NOW READ, NOT STORED.** All 38
+9f412a2bfe	4954	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**THE MECHANISM IS THE LEDGER, AND THE `QUALIFIED` TALLY IS NOT IT.** `naming-gate.py`
+dc04013124	4966	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**`helpers.py:156-163` READ, NOT PARAPHRASED.** One binding, `getenv`, that is
+d103158102	4973	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**WHY THE MONOMORPHISATION REASON AND NOT THE OVERLOADING ONE.** Both are true of
+bfbb42b366	4982	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**HAND-PLACED, NOT REGENERATED, AND PROVEN.** `naming-gate-ledger-check.py` (new)
+e47ee09031	4988	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**THE GATE STILL BITES — four controls on a throwaway mirror, live tree never
+730ce0623b	4994	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**`naming-gate-selftest.py`: 12 ok / 3 FAIL -> ALL 20 CHECKS PASS.** It was RED
+b68bc187c5	5003	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**QUALIFIED is 38 BEFORE AND 38 AFTER, and that is the honest answer.** All four
+bd64754d63	5010	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**THE EMPTY-NAMED-ROW CAUTION HOLDS, MEASURED.** `MIN_AFFIX = 3` means the detector
+ecfceabecd	5017	x	session-2026-10-03-n-naming-gate-back-to-pass-ge	**RULING NOTE: `.agents/slop/ruling-naming-gate-getenv-int.md`.** Rules 20-27
+42d1ad5dfd	5038	x	session-2026-10-03-six-adopted-defects-reported-	**1. `device.bend` `allow_lower` — STILL CURRENT, FIXED.** Port said `allow_lower=0`,
+0bae292442	5047	x	session-2026-10-03-six-adopted-defects-reported-	**2. `memory.bend` `Scan.tc` — CAUSE CURRENT, CLAIMED CONSEQUENCE WRONG, CLOSED.**
+88c4276a58	5055	x	session-2026-10-03-six-adopted-defects-reported-	**3. `UOp.axis_id` flat list / depth invisible — CAUSE CURRENT, FIX NOT LANDED (bounded).**
+bd0b60c712	5067	x	session-2026-10-03-six-adopted-defects-reported-	**4. `dd-oracle.py` `clamp_mx` — STILL CURRENT (the reimplementation), FIXED.** `clamp_mx`
+456fc95537	5078	x	session-2026-10-03-six-adopted-defects-reported-	**5. `codegen/__init__.bend` reads red — RULED OUT, and the specific error never existed.**
+f05544798b	5088	x	session-2026-10-03-six-adopted-defects-reported-	**6. `oracles/dd-oracle.txt` 20 phantom lines — STILL CURRENT, FIXED.** Byte-diff vs a fresh run:
+7371656264	5096	 	session-2026-10-03-six-adopted-defects-reported-	**NEW, FOUND WHILE TRIAGING #5, NOT LANDED — `codegen/__init__.bend` is being
+b49d8eb5ac	5119	x	session-2026-10-03-six-adopted-defects-reported-	**THE E2E: the port computes, proved end to end, with a repeatable artifact.**
+ce120c8144	5194	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`DType.const` is `int(val)` for an integer dtype, not a `truncate` width wrap
+b9f5815017	5198	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	Three ARENA-ALIASING defects — `l2i_shl.hi` (dtype.py:41-44), `l2i_cdiv.abs`
+ed17c32ded	5202	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`31 - n` is `ADD(C(31), MUL(n, C(-1)))`, measured by calling it; the port built
+a0c357736c	5204	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`bitcast`/`cast` fold at the same dtype (mixin/dtype.py:53/36); three call sites built
+347c7d15ac	5206	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`.logical_not()` is on `l2i(CMPLT, ...)`'s ANSWER (the `OR`), not on the comparison
+fdfb0ff39c	5208	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`return r if op is Ops.CMOD else q` (dtype.py:74) — the port's two arms were swapped,
+f731bb6431	5210	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	`shl(cond.cast(uint), i % 32)` (dtype.py:68) — the `% 32` was missing, so `i = 63`
+707a1924d5	5212	x	session-2026-10-04-codegen-decomp-dtype-bend-33-	dtype.py:54-55: `shr` reads the RAW product, one product yields TWO words (`shl` and
+10aaeec0e6	5216	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**OPEN, REPORTED NOT CLOSED — the `n` SLOT-COUNT rows: `lg1n` `lg6n` `lg9n` `lgqn`
+3e654f7515	5224	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**OPEN — `lg5k` `lg5n` `lg5sig` (3 of the 19): the float-SOURCE `CAST` arm,
+d01dfd3f14	5230	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**OPEN — the `CDIV`/`CMOD` cone rows: `lgqk` `lgqsig` `lgrk` `lgrsig` `lgsk` `lgssig`
+c54475db19	5238	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**OPEN, NOT MINE — `c7`, and it is a DECLARED REFUSAL.** `rebase-gate.py` (the
+6878a874ce	5244	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**OPEN, REPORTED — `rebase-gate.py` CANNOT SEE THIS PORT'S HARD ROWS.** It wires
+acb19b5ba8	5252	 	session-2026-10-04-codegen-decomp-dtype-bend-33-	**REPORTED, NOT FIXED: `tinybendygrad/runtime/executor.bend` is at the REPO ROOT,
+56dc77e292	5680	x	session-2026-10-03-04-unobservable-row-census-ro	**THE METRIC IS A THEOREM ABOUT THE ROW TEXT, NOT A SUSPICION.**
+e6ecb60ebe	5691	x	session-2026-10-03-04-unobservable-row-census-ro	**A COUNT-ONLY GATE IS A GATE THAT CANNOT FAIL ON A VALUE. ONE EXISTS.**
+b23ace5d34	5697	x	session-2026-10-03-04-unobservable-row-census-ro	**`codegen/__init__.bend` — THE `u` vs `rebuilt` QUESTION IS THE WRONG
+4da3f732cc	5717	x	session-2026-10-03-04-unobservable-row-census-ro	**THE FIX ORDER WAS RIGHT AND IT IS NOW DONE: ARENA THREADED, THEN THE
+d90c95d5fb	5771	x	session-2026-10-03-04-unobservable-row-census-ro	**THE FIXTURE, LANDED IN MY OWN FILE: `gr.sink_srcs`.**
+ab24480095	5805	x	session-2026-10-03-04-unobservable-row-census-ro	**`u` vs `rebuilt` IS A CLOSED CASE UPSTREAM, WITH A PROOF.**
+d68c92a041	5815	x	session-2026-10-03-04-unobservable-row-census-ro	**WHY NO ROW COULD SEE THE SINK IDENTITY: TWO INDEPENDENT BLINDS.**
+dcc67c530e	5822	x	session-2026-10-03-04-unobservable-row-census-ro	**THE CHEAP GENERAL DETECTOR BUILT AND MEASURED — AND IT FOUND A REAL ZERO.**
+a94a1a2f9e	5832	x	session-2026-10-03-04-unobservable-row-census-ro	**DANGEROUS ROWS FOUND, REPORTED TO THEIR OWNERS, NOT LANDED.**
+ea94f135c3	5841	x	session-2026-10-03-04-unobservable-row-census-ro	**CLOSED WITH A SIBLING, PROVEN NOT NEEDLESS.**
+dcae7f2cd3	5847	x	session-2026-10-03-04-unobservable-row-census-ro	**THREE WAYS THIS UNIT NEARLY PRODUCED A GREEN LIE, all recorded.**
+2f2a40550e	5860	 	session-2026-10-03-04-unobservable-row-census-ro	**OPEN, NEXT UNIT.** `runtime/ops_bend`'s **98 sibling-blind
+77b646c794	5877	x	session-2026-10-04-order-blind-gates-the-close-o	**D11 — THE CENSUS'S DIAGNOSIS WAS WRONG AND THE 0.0% HAD A DIFFERENT CAUSE.**
+d3bce9f023	5905	x	session-2026-10-04-order-blind-gates-the-close-o	**D2 — `sname_ctor_idx_given`, HAND-TYPED, WAS WORSE THAN A BAD FIXTURE.**
+e9fc248369	5916	x	session-2026-10-04-order-blind-gates-the-close-o	**D4 — CLOSED BY SIBLING, WITH THE SIBLING NAMED AND MEASURED.**
+ba683332f1	5928	x	session-2026-10-04-order-blind-gates-the-close-o	**D5 — `gt_ops0..5` IS A DECLARED WALL, AND THE CENSUS'S PRESCRIPTION WOULD
+8f8a524edd	5949	x	session-2026-10-04-order-blind-gates-the-close-o	**D9 + THE OTHER `runtime/support/c` ORDER-DEAD ROWS — ALL FOUR CLOSED BY A
+f7f2061a35	5964	x	session-2026-10-04-order-blind-gates-the-close-o	**`runtime/ops_bend`'s 98 SIBLING-BLIND TRANSPOSITIONS: INHERENT, PROVEN.**
+d147caa8da	5975	x	session-2026-10-04-order-blind-gates-the-close-o	**THE 290 HAND-TYPED ROWS, SAMPLED. `--handtyped` FINDS 224, NOT 290.**
+7bc7231bde	5995	x	session-2026-10-04-order-blind-gates-the-close-o	**RULES G-L APPENDED to `.agents/slop/notes/bend2-constraints.md`** at the
+65d0209efc	6002	 	session-2026-10-04-order-blind-gates-the-close-o	**STILL OPEN.** The **10360** order-weak rows in `codegen/decomp/dtype`,
+ba04e51566	6013	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**WHICH ORACLE IS TELLING THE TRUTH: `dd-oracle.py`, and the other one is a FILTER.**
+65d6d523c3	6029	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**THE 18 ARE NOT UNCHECKED ROWS. THEY ARE WRONG VALUES THE GATE CANNOT SEE.**
+ab0554123b	6036	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**`SKIP` IS NOT ONLY CREATION-ORDER ROWS, as its header claimed.** `dd-coverage.py`
+eb4406e442	6042	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**CONTROL (a), THE ONE THAT SETTLES IT.** `.agents/slop/dtype-oracle-MUTANT.py` is
+2ce52c0c97	6049	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**NEITHER ORACLE RE-IMPLEMENTS THE PORT — MEASURED, NOT READ.** `dd-audit.py` wraps
+e6a1abd3b6	6061	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**THE BIGGER FINDING THAN THE COUNT: 242 of 416 oracle rows have NO port row, and
+2d60aef6fd	6067	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**CLOSED ONE REAL DEFECT, AND IT CLOSED ZERO DISAGREEMENTS.**
+063c3d90fb	6078	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**CONTROL (b), ON THE PORT EDIT.** baseline copied aside, fix applied, port run, file
+294498d1b6	6087	x	session-2026-10-04-dtype-bend-s-two-oracles-disa	**`dtype-oracle.py` NOW PRINTS ITS OWN DENOMINATOR** as five `dtype_oracle_*` rows,
+3174352037	6094	 	session-2026-10-04-dtype-bend-s-two-oracles-disa	**OPEN — GATE OWNER'S CALL, one line.** Re-wire
+c3a385c879	6101	 	session-2026-10-04-dtype-bend-s-two-oracles-disa	**OPEN — THE TWO FAMILIES WORTH OPENING NEXT**, both port bugs, neither gated:
+121bec4d17	6111	 	session-2026-10-04-dtype-bend-s-two-oracles-disa	**OPEN — 242 rows the port does not emit** (five of ten public functions, §above).
+5604797da9	6120	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**THE FOUR "REASONS" RE-TESTED; NONE OF THEM HELD.**
+c309705468	6141	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**THE REAL BUG, AND IT WAS BIG: `type_map.base()` read `{}`.** `CStyleLanguage.type_map`
+14d11bdf3a	6149	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**A COMMITTED PARSE FAILURE, FIXED.** `b6abeb7f5` committed `type_map.base()` with the
+4f381d05a8	6155	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**19 STALE `py=` LITERALS REGENERATED** from live calls by `.agents/slop/cs-fixpy.py
+0635d4d1b9	6160	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**SIX ROWS MADE VISIBLE AS NAMED EXCLUSIONS, with the measurement for each**, printed on
+11907918c8	6172	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**CONTROLS: 18 rows across 18 families planted, every one BROKEN rc=1 naming the row**
+59567869cd	6178	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**THE LAST CALLER ON THE OLD LANE IS GONE.** `renderer_oracle.py cstyle` (the 15-row one)
+7580585354	6185	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**`cstyle.bend` IS WIRED INTO `rebase-gate.py`, AND IT WAS THE READER'S FAULT BOTH TIMES.**
+2f12ce7347	6198	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**THE REFUSAL MARKER MOVED OUT OF THE VALUE AND THE GAP WAS CLOSED WITH AN ASSERTION.**
+0b8bf4b9ef	6209	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**`schedule/multi.bend` IS STILL UNWIRED — AND THE PRIOR REASON WAS WRONG IN A WAY THAT
+29b6fa532a	6227	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**`multi.py:139`'s LEAKED LOOP VARIABLE IS A BLIND SPOT IN `rs_local`, MEASURED AND NOT
+b7e8b5fc45	6241	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**TWO HARNESS BUGS FOUND BY RUNNING THE CONTROLS, BOTH OF WHICH MADE A VERDICT WRONG.**
+e81a1ae6cd	6248	x	session-2026-10-04-renderer-cstyle-bend-225-rows	**CONTROLS: clean `rc=0`, one planted disagreement → `rc=1` NAMING `bx_none`, restore
+4b1062c7fb	6257	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**M26 RE-AIMED AND FIRING — 27 rows.** Its anchor quoted the PRE-fix `dd_rs.push`
+0e8a6ddeaf	6263	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**THE HARNESS NOW REFUSES TO PRODUCE A BOGUS TABLE.** `probe_substrate()` runs the
+dd26817ec2	6268	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**TARGET **AND** TREE PINNED.** The live `dtype.bend` moved `73b0e1e7`→`a2c68a7e`
+0861f3a0c3	6273	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**THE LIVE-TREE BAKE DELETED.** `tinybendygrad/codegen/decomp/dtype.bend.ddmut` was a
+c22e908a51	6277	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**FULL TABLE RE-RUN, 36 mutations, 3 controls SAME.** 28 MOVED · 5 THEOREM · 1 REQUEST ·
+a84838eaa4	6281	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**FIVE THEOREMS PROVED, NOT ASSERTED.** Four by renaming the enclosing def (a rename
+8daba305dc	6287	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**M09 CLOSED — MOVED, 8 rows. THE REQUEST WAS A MISDIAGNOSIS.** `l2i_shl.hi` was
+5a894331d9	6296	x	mutation-table-trustworthiness-dd-unit-2026-10-0	**THE TABLE HAS **ZERO REQUESTS** — 31 MOVED · 5 THEOREM · 0 REQUEST · 0
+609f196bb2	6305	x	mutation-table-trustworthiness-dd-unit-2026-10-0	~~**OPEN, OWNER: the dtype unit — `l2i_cdiv.uns` HAS ITS ARMS SWAPPED**~~ **FIXED by
+f12e4c4e68	6318	x	zero-classification-zero-unit-2026-10-04	**A ZERO CLASSIFIES ITSELF. FIVE VERDICTS AND NO SIXTH:** `UNREACHABLE+proof` /
+ee8e05d257	6323	x	zero-classification-zero-unit-2026-10-04	**THE MECHANICAL TEST SEPARATING 2 FROM 4, and it is two string questions.**
+9e4133969a	6330	x	zero-classification-zero-unit-2026-10-04	**THE DISCRIMINATION IS TESTED ON REAL SNAPSHOTS, NOT FIXTURES.**
+3d303f364f	6335	x	zero-classification-zero-unit-2026-10-04	**THE DENOMINATOR, WHICH NO TABLE WAS PRINTING.** 487 mutations across 15 tables carry
+a1555cf143	6342	x	zero-classification-zero-unit-2026-10-04	**A RULE D VIOLATION, LIVE, IN A COMMITTED RECORD.** `ops-python-mutate.py:107` prints
+ef237e7426	6348	x	zero-classification-zero-unit-2026-10-04	**`l2i_dt` / `f2f_dt` HAD NO MUTATION AT ALL — 11 of 23 unmoved rows.** M37–M41 added to
+bcba16e174	6355	x	zero-classification-zero-unit-2026-10-04	**`shape()` IS A SAMPLE, NOT A CLAIM — and it passes a corrupt baseline.** It is
+19bc213002	6362	x	zero-classification-zero-unit-2026-10-04	**THE WARN-vs-REFUSE DEVIATION IN `dd-mut-base.sh`: ACCEPTED, WITH THE ROW-SET DIGEST
+e4a618ff0a	6369	x	zero-classification-zero-unit-2026-10-04	**PIN DISCIPLINE, per table.** The dd verdict is valid for target `e4618a7127ce` + tree
+753afe244a	6384	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE BRIEF'S PREMISE WAS WRONG AND THE HAZARD IS NOT RESOLVED. `tinybendygrad/.bend`
+3e67ed3712	6392	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**IT IS ALSO A STALE DUPLICATE, WHICH SETTLES THE DELETE.** `diff` against
+1ceadb3093	6398	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE GLOB PROOF. `tree-verdict.py` DOES NOT GLOB — IT `os.walk`s** (`bend_files()` at
+c820db1949	6404	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE CENSUS HAS A BIGGER HOLE IN THE OTHER DIRECTION: 4 `.bend` FILES ON DISK ARE NOT
+8ad2917574	6409	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**CORRECTED PORT SIZE, AS A BRACKET — the file count is the trustworthy half.**
+0dbcb6ee04	6419	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE CENSUS IS UNSTABLE, MEASURED FOUR TIMES IN ONE SESSION:**
+86aa07099a	6425	 	session-2026-10-04-repo-hygiene-the-dangling-cit	**OWNER: COORDINATOR — `rm` + COMMIT `renderer/csprobe.bend` (774 lines).** It is a stale
+34d2dba2e6	6433	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**`.gitignore` GAP CLOSED, AND IT IS THE RIGHT QUESTION.** `probe-*.bend` needs the hyphen
+89758a8c68	6439	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**`uop/probe-mmcore.bend` (471 lines) MUST NOT BE DELETED, DESPITE THE `probe-` PREFIX.**
+f1e1150ea6	6446	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE BRIEF'S FIVE `*_work.bend` FILES ARE NOT IN THE TREE AND WERE NOT TRACKED THERE.**
+1c7a6e59f7	6453	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**DANGLING `executor.bend` CITATIONS — 3 REPOINTED, 3 REPORTED.**
+835d373513	6464	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**STALE NUMBERS MARKED UNSTABLE, NOT REWRITTEN. History is not edited to agree.**
+147871d5ff	6474	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE `ops_cpu` libm/objc REPORT IS ALREADY RECORDED** at `TODO.md:2831-2842`, open and
+cc242fcd05	6481	x	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE DOTTED-SEGMENT IMPORT RULE IS ALREADY RECORDED AND I RE-MEASURED IT.**
+3e6c002630	6489	 	session-2026-10-04-repo-hygiene-the-dangling-cit	**OWNER: `uop/symbolic.bend`'s agent — two dangling `executor.bend` citations at :875 and
+8990ffb56e	6492	 	session-2026-10-04-repo-hygiene-the-dangling-cit	**OWNER: whoever owns `.jjconflict-{base,side-0,side-1}/`** — each holds a
+a9e9dda3ea	6495	 	session-2026-10-04-repo-hygiene-the-dangling-cit	**THE LEDGER'S OWN COUNTS ARE LIVE, WHICH IS THE POINT.** `TODO.md` measured **4,946 lines,
+37cf350ccb	6512	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**THE FIXTURE EXISTS AND IT READS THE ORDER.** `hi42` roots the cone at `dtype.py:42`'s `|`
+41ff61a681	6519	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**`b0 < 32` WAS ALREADY COVERED AND I MEASURED IT.** `l2i_cdiv` calls
+e2a924978c	6525	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**THE SWEEP FOUND A REQUEST THE TABLE DID NOT HAVE.** Re-aiming M05 read 0 rows, and
+adb8dbcb23	6530	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**A BASELINE WAS THE M09 MUTANT, AND RULE C CAUGHT IT.** `hi42=OR(SHR(SHR,ADD),…)` sat in the
+537bb4805f	6538	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**ONE DELIBERATE DEVIATION, REPORTED.** `dd-mut-base.sh` WARNs instead of refusing when the
+4b89640164	6544	x	session-2026-10-04-m09-closed-two-fixture-rows-t	**NOT DONE, AND IT IS NOT A COVERAGE CLAIM.** The table has **no mutation entry for
+c3df376cae	6561	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**`eq_arg.AFloat`'s `F32.is_eq` IS CORRECT AND `U32.is_eq(F32.bits(f), F32.bits(y1))`
+eca06f7436	6580	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**`AFloat` IS LATENT, and the evidence is that ZERO of its 8 occurrences in the live
+ff07269382	6592	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**FOUR `afloat_*` ROWS LANDED, PLUS THE COMMENT THAT STOPS THE NEXT UNIT REPEATING
+17d4e68099	6614	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**SIBLING SWEEP, RE-DONE AGAINST THE UPSTREAM RULE AND NOT AGAINST "IS IT CONTENT".**
+fa80c23a75	6650	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**TASK B — `ops-gate.sh` WAS RED ON THE PRISTINE TREE. DIAGNOSIS: (a) MISSING FROM
+9e36593177	6671	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**BLAST RADIUS, THE SAME METHOD AS THE `ABlob` FIX, AND IT IS PROVABLY LOCAL.**
+af6e97a712	6683	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**TASK C — NO CustomFunction UNIT IS LIVE AND NONE OWNS `ops-oracle.py`. THE NINE BLOB
+492314dfff	6697	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**A SECOND RED-AT-REST GATE, REPORTED AND NOT TOUCHED: `sh .agents/slop/ops-501-gate.sh`.**
+b8fa609241	6708	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**3 rules appended to `bend2-constraints.md` at the END (position 18633), numbered
+9b1d5a7951	6717	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**A CONCURRENT UNIT OVERWROTE `uop/ops.bend` MID-RUN AND TOOK BOTH FIXES WITH IT.
+792dc5d853	6757	x	session-2026-10-04-uop-ops-bend-s-three-loose-en	**AND THE OVERWROTE `ops-oracle.py` TOO — the SAME EVENT, one file later.** Five
+40483ec829	6779	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**CENSUS: what does each stale-anchor branch print today?** Taken from the AST
+c09f76ac8d	6787	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**ONE SHARED REPORTER.** `.agents/slop/patch_not_apply.py` — `MARKER`,
+53a999652c	6794	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**CONVERTED 34 files**, including a **second live instance of the `0` defect the
+ad76ea8fe8	6801	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**MECHANICAL AUDIT THAT CANNOT BE FOOLED.** `not-applied-audit.py`, four
+f2437b646a	6809	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**TWO BUGS THE AUDITOR FOUND IN ITSELF, both recorded as Z-4** (position 18934):
+d164e08f94	6815	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**SWEEP OF PUBLISHED RECORDS.** `.agents/slop/false-zero-sweep.py`. **32 committed
+244120c0ec	6821	x	mutation-zero-verbosity-one-marker-for-a-patch-t	**PER-TABLE REVISION LEDGER.** `.agents/slop/revision-ledger.py`. **22 tables: 2
+079e158b02	6862	x	session-2026-10-04-late-instruments-fixed-and-th	`rows()` reads all three lane formats. **Superset proof over all 39 wired
+a7806e6666	6865	x	session-2026-10-04-late-instruments-fixed-and-th	`renderer/cstyle.bend` WIRED — 222 shared / 0 disagree. Given up
+82eee129ff	6867	x	session-2026-10-04-late-instruments-fixed-and-th	`schedule/multi.bend` format readable (0 -> 213) but LEFT UNWIRED. A `t_`
+00faedfe18	6870	x	session-2026-10-04-late-instruments-fixed-and-th	`dtype.bend` **19 -> 7** disagreements. Four cone defects; **A1's proof is
+218952cad1	6873	x	session-2026-10-04-late-instruments-fixed-and-th	`lg5k` — the port never modelled `_broadcasted`'s weak-CONST remint.
+80207130a9	6875	x	session-2026-10-04-late-instruments-fixed-and-th	M09 **MOVED, 8 rows**. `hi42` makes the `|` the row's own text. The REQUEST
+48c6918eea	6878	x	session-2026-10-04-late-instruments-fixed-and-th	Mutation zero classifier: **5 verdicts**, `WRONG` asked before `VISIBLE`.
+ea1f9c2ce2	6880	x	session-2026-10-04-late-instruments-fixed-and-th	One `PATCH-NOT-APPLY` reporter, 30 stale-anchor branches converted,
+e92e2b952f	6883	x	session-2026-10-04-late-instruments-fixed-and-th	Arena threaded through the rewrite engine; the spurious SINK rule is
+4035be9b9c	6885	x	session-2026-10-04-late-instruments-fixed-and-th	Order-blind gates: all closed. `linearizer`'s 0.0% hit rate was the READER
+de0187a443	6888	x	session-2026-10-04-late-instruments-fixed-and-th	`device.bend` is **not broken**; the quoted BROKEN never reproduced.
+07b55dbb1d	6892	x	session-2026-10-04-late-instruments-fixed-and-th	`eq_arg.AFloat` "one-word fix" **REFUSED**: it is a double regression.
+3d122ff10c	6895	x	session-2026-10-04-late-instruments-fixed-and-th	**Comparing the `py=` column REFUSED** — it is a literal in the PORT file,
+e8cd707e0b	6898	x	session-2026-10-04-late-instruments-fixed-and-th	`gt_ops4`/`gt_ops5` **DECLARED A WALL.** A fixture could separate them
+f1a1399e82	6901	x	session-2026-10-04-late-instruments-fixed-and-th	The 5 slot counts were an **ORACLE bug**, not a port defect.
+e0ccde0843	6905	 	session-2026-10-04-late-instruments-fixed-and-th	**`uop/ops.bend` DOES NOT COMPILE** — `DRng.of` is an unfilled law. **72
+e1a3791a24	6907	 	session-2026-10-04-late-instruments-fixed-and-th	**`ABlob` false-intern is LOST from source.** The fix was never committed
+6eee17f24b	6911	 	session-2026-10-04-late-instruments-fixed-and-th	**Four comparators weaker than upstream's key**: `eq_callinfo` substitutes
+a1b9dcd53b	6915	 	session-2026-10-04-late-instruments-fixed-and-th	**Five `dd_band` call sites pass `O.Found.i(...)` as the mask** — the A1
+77f30adffb	6917	 	session-2026-10-04-late-instruments-fixed-and-th	**25 of 30 mutation zeros still unclassified**; **20 of 22 tables name no
+43c0008861	6920	 	session-2026-10-04-late-instruments-fixed-and-th	**224 hand-typed oracle rows, 192 never read.** `hand_typed` matches only
+4b35065b0e	6922	x	session-2026-10-04-late-instruments-fixed-and-th	`ops-501-gate.sh` red at rest — 101 oracle `s5_*` rows vs 82 in the Bend.
+68da19280d	6927	 	session-2026-10-04-late-instruments-fixed-and-th	Gate cluster (`kxrmluuw`) committed but **unverified** while `ops.bend`
+5923108f03	6929	 	session-2026-10-04-late-instruments-fixed-and-th	`c7`, `lgu`, `lgun` — declared refusals. `c7 = F(2139095040)`, confirmed
+75008c800a	6950	x	session-2026-10-04-substrate-unit-the-ablob-inte	**`eq_arg.ABlob` compares CONTENT, not LENGTH.** `ABlob{bs: List<&2, U32>}`
+3134a68523	6957	x	session-2026-10-04-substrate-unit-the-ablob-inte	**The key holds the BYTES, and that is now CHECKABLE rather than argued.**
+ec405d13f6	6963	x	session-2026-10-04-substrate-unit-the-ablob-inte	**CONTROL, measured on a MIRROR, never on the live tree.**
+d57ea9598e	6971	x	session-2026-10-04-substrate-unit-the-ablob-inte	**Blast radius is PROVABLY LOCAL.** Against the recorded 12,429 baseline the corpus is
+6c9ae5f00a	6976	x	session-2026-10-04-substrate-unit-the-ablob-inte	**The 72 = 59 direct + 12 transitive + `ops.bend`.** Bend imports are UNQUOTED
+bdeccef535	6979	 	session-2026-10-04-substrate-unit-the-ablob-inte	**`ops.bend` is under concurrent edit at ~7 writes / 2 minutes and the blocker
+313bc3fc1d	6987	 	session-2026-10-04-substrate-unit-the-ablob-inte	**`.agents/slop/blob-intern-mutate.py` IS A LIVE WEAPON and should not be run
+e26c894465	7127	x	comparison-and-a-proof-that-the-differ-can-fail	**RE-VERIFIED THE FOUR EXISTING GRAPHS ONCE, THEN MOVED ON.** matmul 18 nodes, reduce
+00d1d1808f	7132	x	comparison-and-a-proof-that-the-differ-can-fail	**WIDENED 4 -> 9 GRAPHS. All nine `AGREE`, each printed with its denominator:**
+f8b7f4df0f	7141	x	comparison-and-a-proof-that-the-differ-can-fail	**THE DEBUG-LEVEL COMPARISON.** `E dbg --levels 0,1,2` runs the port probe once per
+a13a4528df	7151	x	comparison-and-a-proof-that-the-differ-can-fail	**THE DIFFER CAN FAIL, AND IT NAMES THE NODE.** All six plants `DISAGREE`. The
+195cf1d8b2	7155	x	comparison-and-a-proof-that-the-differ-can-fail	**THE THREE CONFLATIONS, `E conf`, one verdict line each, `ALL THREE DISTINGUISHED`.**
+1395caa09b	7163	x	comparison-and-a-proof-that-the-differ-can-fail	**THE LIMITS ARE WRITTEN DOWN WITH THEIR REASONS.** `.agents/slop/graphcmp-LIMITS.md`:
+077e563b2c	7167	x	comparison-and-a-proof-that-the-differ-can-fail	**REPRODUCIBLE BYTE-FOR-BYTE.** `D9-stability.txt`: two runs of `diff --graph binblob`
+ef1d6dc9e5	7205	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**CENSUS.** `arena-audit.py` walks all 1100 `O.Arena.{node,src,src0,op,arg,tag,srcs,
+3aa9308635	7212	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**DEFECT FOUND AND FIXED: `engine/jit.bend` `pl_step`.** Both arms appended the arena
+ed969a0603	7218	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**DEFECT FOUND, NOT FULLY GATED: `uop/validate.bend` `dv_shr2.of` / `dv_and.put`.**
+9b6ab6c501	7231	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**DETECTOR, `arena-noop-scan.py`,** over the 73 committed gate outputs / 12720 rows.
+670acf77e8	7234	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**DETECTOR, `arena-noop-probe.bend`,** the `at`-based one, with a NEGATIVE CONTROL that
+9624be1a25	7236	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**THE `+` MARKER IS NOT AN OWNERSHIP MARKER** (`arena-affine-probe.bend`). Two
+3a5bac0aba	7241	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**SIZE SWEEP at k = 0,1,2,5,17,64** (`arena-sweep.sh` + `arena-sweep-jit.bend`), which
+9c81b7b114	7362	x	arena-aliasing-sweep-o-arena-node-is-total-so-a-	**KEY-FIDELITY ROUND ON `tinybendygrad/uop/ops.bend` (sole owner this round). THE
+aafe17f408	7410	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**THE RULE AND ITS TEST.** *A tool that matches a form cannot see the instance that
+8342715770	7416	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**THE CENSUS, WITH ITS DENOMINATOR.** Every selector under `.agents/slop/` extracted
+1bf139250f	7424	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**THE MEASURED FLOOR.** `rows()` cannot read **3,298 lines** inside the **835** `.txt`
+df95009681	7430	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**BLAST RADIUS.** **9 tools call `rows()`** and **156 fork a reader**
+e850f9e8a8	7434	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**MECHANICAL AUDITS, NOT ARGUMENTS.** `formblind-audit.py`: 17 constructed variants,
+091247d52a	7442	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**FIXED — `--handtyped`, where a wrong number reached a repeated claim.** Its regex
+fb4931c799	7452	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**FIXED — `dd-band-census.py` §C, which printed 0 where §A printed 7.** TWO blind
+de696313d8	7459	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**A CLAIMED BLIND VARIANT THAT WAS NOT ONE.** `hand_typed`'s `bare` arm `f"[^"{]*"`
+4d0bbf7d1e	7462	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**THE OTHER ROOT CAUSE, AND WHETHER IT BELONGS HERE.** *A tool that measures the right
+a9c2d705d9	7485	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**`cstyle-gate.py:rows_shipped` SAYS "rebase-gate.py's `rows()`, verbatim". MEASURED
+28a79093e0	7492	x	form-blind-spots-md-rules-fb-1-fb-7-at-bend2-con	**REPORTED, NOT FIXED.** `rebase-gate.py:rows()` audits A1–A4 (another unit this
+c5775c061b	7571	x	commutative-ops-and-the-symbolic-dim-limit-measu	**`--graph group` — `UOp.group(sh+sh, sh*sh)`, 8 nodes, `AGREE`.** Reaches GROUP
+9378f4ec17	7574	x	commutative-ops-and-the-symbolic-dim-limit-measu	**`--graph commute` — 6 commutative ops in one 14-node GROUP, `AGREE`.** Each rung
+1a8be1be88	7579	x	commutative-ops-and-the-symbolic-dim-limit-measu	**`--graph indexed` — PARAM / INDEX / BARRIER, 7 nodes, `AGREE`.** `UOp.range`'s
+c9dbca18cd	7582	x	commutative-ops-and-the-symbolic-dim-limit-measu	**`--graph sym` — two DIFFERENT symbolic dims, 12 nodes, `DISAGREE ON PURPOSE.****
+fa14054185	7591	x	commutative-ops-and-the-symbolic-dim-limit-measu	**THE `GROUP`-BODY `params` QUESTION, ANSWERED: THERE IS NO SUCH FIELD AT THIS TREE.**
+810996d1dd	7598	x	commutative-ops-and-the-symbolic-dim-limit-measu	**FOUR MORE DEFECTS IN THIS FILE'S OWN NORMAL FORM** (limits §6 #12-#15). The headline
+42d5164c9c	7611	x	commutative-ops-and-the-symbolic-dim-limit-measu	**A FIFTH DEFECT, AND IT IS IN MY OWN PROSE** (limits §6 #16). Three sentences
+e9cca8ed4f	7642	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**THE SCALE IS INVENTORIED FROM CPython's OWN SOURCE, NOT TRANSCRIBED.** 76
+9d6d3b966c	7653	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**THE PORT HAS NO SITE AT LEVELS 3..7. That is the coverage fact, and it is stated
+d99c7fe2ad	7660	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**LEVEL 6 CONTRADICTS THE BRIEF'S SCALE.** The scale says `6 = + linearized`; this
+77b42ccba0	7668	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**LEVEL 5'S ABSENCE IS A GAP, NOT A STRUCTURAL IMPOSSIBILITY.**
+586ecb204d	7676	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**LEVELS ARE CUMULATIVE IN UPSTREAM, MEASURED, AND THE PORT IS ASKED THE SAME
+35766c1999	7684	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**THE GRAPH IS HELD FIXED BY CONSTRUCTION *AND* CHECKED**, the way
+cf669f45b7	7695	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**THE DIGEST GUARD WAS VACUOUS AND THE GATE WAS GREEN THROUGH IT.** Fixed and found:
+266217df3b	7703	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**CONTROLS: THE GATE HAS BEEN SEEN RED AT 4, 5, 6 AND 7.**
+b300f2e360	7712	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**MUTATIONS: `fires_L*` AND `pin_*` ARE LOAD-BEARING.** 21 mutations over levels
+f88d54ec44	7728	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**THE GATE IS STILL STANDALONE, AND THE MEASUREMENTS THE OWNER NEEDS ARE IN
+6c4f12fbc0	7741	x	session-2026-10-04-dl-debug-gate-levels-4-5-6-7-	**LIMITS STATED IN `.agents/slop/debug-LIMITS.md`**, the `graphcmp-LIMITS.md` model,
+d8af5b24e3	7754	x	session-2026-10-04-mutation-table-anchors-re-aim	**NINE STALE ANCHORS RE-AIMED AND RE-RUN. All nine MOVE ROWS, so none of them
+f7fd4063ca	7778	x	session-2026-10-04-mutation-table-anchors-re-aim	**A LIVE PORT-DEFECT FOUND WHILE RE-AIMING `nv_mutate.py`, and it is NOT MINE TO FIX.**
+4da9a30489	7789	x	session-2026-10-04-mutation-table-anchors-re-aim	**THAT DEFECT IS NOW MINE, FIXED, GATED, AND THE PREMISE WAS WRONG.**
+76b52e7a9d	7825	x	session-2026-10-04-mutation-table-anchors-re-aim	**AND THE WHOLE FIELD TABLE IS NOW CHECKED, NOT JUST THE ONE PAIR.**
+3f3e91abd0	7832	x	session-2026-10-04-mutation-table-anchors-re-aim	**A CORRECTION I HAD TO MAKE TO MYSELF, KEPT IN WRITING BECAUSE I GOT IT WRONG.**
+772a444275	7843	x	session-2026-10-04-mutation-table-anchors-re-aim	**AND THE BLIND SPOT IS MEASURED, EXACTLY CHARACTERISED, AND CLOSED.**
+8dc606249b	7860	x	session-2026-10-04-mutation-table-anchors-re-aim	**`nv_mutate.py`: 7 ENTRIES COULD NOT BE MEASURED AS WRITTEN. 5 WERE A `+`, AND 2
+de896811b0	7876	x	session-2026-10-04-mutation-table-anchors-re-aim	**17 OF 24 TABLES NOW PIN WHAT THEY DESCRIBE — and the 7 that do not say so in
+bcbc5246ed	7885	x	session-2026-10-04-mutation-table-anchors-re-aim	**`memory-mutate.py` HAD A HARNESS THAT COULD NOT RUN AT ALL.** It treated any stderr
+3c86654acb	7892	x	session-2026-10-04-mutation-table-anchors-re-aim	**`ops-python-mutate.py` PUBLISHED 170 ROWS THAT DO NOT EXIST.** M17 and M22 each lost
+b05eaa6fc9	7910	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**D1 — `rows_shipped` IS NOW THE IMPORTED READER.** `rebase-scan-oracles.py` already imports
+b1cdc76b45	7915	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**D2 — IS THE GREEN TRUSTWORTHY? THE VERDICT YES; THE TREE NO — and the tree's answer
+ec6cd2404d	7927	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**D3 — ONE CONTROL PER SHAPE, ARMED AND RED.** F1 and F2 on `ctl OPENCL sz1 k0`, F3 on `ctlf3`
+9fb8f58b77	7933	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**`cstyle-gate.py --oracle-stdout` USED TO DISCARD THE ORACLE'S STDERR**, so `count_refusals`
+7ff0a4e85a	7936	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**CAPTURE MODE PRINTED `live port lane rc=0` WHILE RUNNING NOTHING.** The rc came from the
+c97df3b7c4	7938	x	session-2026-10-04-cstyle-gate-reader-agents-slo	**THE SHRED LINE PRINTED `-2`.** `len(readerA) - len(readerB)` labelled "shredded rows" is not
+c7aca05200	7958	x	session-2026-10-04-load-unit-the-baseline-ledger	**THE LEDGER — `.agents/slop/baseline-ledger.{md,txt,json}`.** Every recorded baseline with
+1640e300aa	7963	x	session-2026-10-04-load-unit-the-baseline-ledger	**RECOVERABLE / UNRECOVERABLE: 0 and 234.** A capture records a load in **0 of 234**, an
+f1b3b82555	7968	x	session-2026-10-04-load-unit-the-baseline-ledger	**THE MECHANICAL TEST — `load-census.py --guard`**, in the style of `parser_cache_guard()`.
+781dc6eadf	7971	x	session-2026-10-04-load-unit-the-baseline-ledger	**THE STARVATION RETROSPECTIVE — 0 of 18, and 0 is the finding.** 18 stored BROKEN verdicts
+89f1bf4fa9	7976	x	session-2026-10-04-load-unit-the-baseline-ledger	**FOUR DEFECTS FOUND IN THE CENSUS ITSELF, all fixed, all recorded:** its header claimed
+146fd849b7	7986	 	session-2026-10-04-load-unit-the-baseline-ledger	**OPEN, NOT FIXED — `oracles/rebase/baseline.json` is read-only for this unit.**
+853cd42d14	7993	 	session-2026-10-04-load-unit-the-baseline-ledger	**OPEN, NOT FIXED — `loadwatch.py` is not this unit's file.** ⚠ `THRESHOLD = 4.0` is
+3df120ed7e	7998	 	session-2026-10-04-load-unit-the-baseline-ledger	**OPEN, NOT FIXED — the anchor has three values and no unit.** `787` (NV7 prose) / **780**
+c11eb032ef	8036	x	backedge-load-store-are-compared-at-last	**THE GAP NAMED IN THE BRIEF, CLOSED: THE CORPUS WAS NOT A KERNELIZED PROGRAM.**
+25059681b1	8042	x	backedge-load-store-are-compared-at-last	**`lin` — `full_rewrite_to_sink(schedule_linear(matmul))`.** The first graph here that
+f0ae56047d	8045	x	backedge-load-store-are-compared-at-last	**`loop` — `hcq_fence(tv, tv, tv, 0)`, tinygrad's OWN HCQ2 poll-loop kernel**
+738105cbfd	8050	x	backedge-load-store-are-compared-at-last	**`gate` — a gated STORE through the REAL `pm_linearize_cleanups`** (the one rule in
+f56b37ee8e	8054	x	backedge-load-store-are-compared-at-last	**`ENDIF`'s ROUTE MEASURED, WITH A DENOMINATOR.** `Ops.ENDIF` has exactly ONE minting
+ee1250c749	8059	x	backedge-load-store-are-compared-at-last	**`LOAD`/`STORE` NEED NO KERNEL EXECUTOR — PROVED, NOT ASSUMED.** `lin` is a real
+8f7ba4b8ca	8064	x	backedge-load-store-are-compared-at-last	**DOES THE DIFFER STILL AGREE? 14 of 16, and the 2 that do not each have a NAMED
+20e58b66a0	8069	x	backedge-load-store-are-compared-at-last	**TEN MORE DEFECTS IN THE DIFFER'S OWN NORMAL FORM AND CHECKS** (17-26), of which
+c6ebbbcef0	8108	x	backedge-load-store-are-compared-at-last	**REPRODUCIBILITY, NOW AN ACTUAL CHECK.** `graphcmp-repro.sh`: waits for the substrate,
+59bc7373c8	8117	x	backedge-load-store-are-compared-at-last	**A LIMIT WAS CLOSED BY ANOTHER UNIT WHILE THIS ROUND RAN, AND THE THREE PINNED
+7e6f69a83a	8134	x	backedge-load-store-are-compared-at-last	**`graphcmp-LIMITS.md` REWRITTEN WITH NEW DENOMINATORS.** Every claim I resolved
+f52447b42b	8157	x	session-2026-10-04-name-shape-unit-a-row-name-co	**THE EIGHT `kern` NAMES RENAMED, AND THE RENAME CITES THE VALUE, NOT THE SEPARATOR.**
+d9bf973522	8169	x	session-2026-10-04-name-shape-unit-a-row-name-co	**`cstyle-gate.py`'s `reshape()` (GUARD 0): A COVERAGE DELTA THAT CHANGES THE VERDICT.**
+5a0412d1e2	8176	x	session-2026-10-04-name-shape-unit-a-row-name-co	**THE CONTROL A VALUE PLANT CANNOT FAKE: `--plant-shape OLD NEW`, on BOTH lanes.**
+edccde216f	8184	x	session-2026-10-04-name-shape-unit-a-row-name-co	**THE CENSUS, EVERY WIRED LANE, WITH THE DENOMINATOR THAT MATTERS.**
+32b73e1d59	8194	x	session-2026-10-04-name-shape-unit-a-row-name-co	**FOUR DEFECTS THE CENSUS FOUND IN ITSELF, three of which reported a CLEAN NUMBER.**
+56835bfe54	8201	x	session-2026-10-04-name-shape-unit-a-row-name-co	**MY OWN HARNESS STARVED 25 OF 39 PORT LANES, AND THAT IS THE POINT.**
+d95a09075c	8220	x	was-wrong-three-times-over-the-reusal-is-a-retur	**READ CPYTHON'S OWN TEXT, THEN CALL IT: `ops.py:761` IS A BARE `assert`.** `raise` at
+fa9cc96e60	8226	x	was-wrong-three-times-over-the-reusal-is-a-retur	**THE BRIEF'S FIXTURE WAS FALSE, AND MEASURED, NOT INHERITED.** "`node 4` is
+c836c4dba0	8232	x	was-wrong-three-times-over-the-reusal-is-a-retur	**THE REFUSAL SURVIVES, BY A ROUTE NOBODY HAD.** `UOp.device` (`ops.py:887-899`) has NO
+aac5aac245	8237	x	was-wrong-three-times-over-the-reusal-is-a-retur	**THE ORACLE'S FIXTURE WAS A THIRD THING, AND `sig()` CANNOT SEE ANY OF IT.**
+8f57e74cd9	8245	x	was-wrong-three-times-over-the-reusal-is-a-retur	**TWELVE FIXTURE-IDENTITY ROWS, because a signature is not an identity.**
+cb721510b1	8250	x	was-wrong-three-times-over-the-reusal-is-a-retur	**`s5_copy_sel` REPLACED BY A ROW I OWN, AND IT IS RED.**
+8db0533f9b	8255	x	was-wrong-three-times-over-the-reusal-is-a-retur	**19 SHARED OUTCOME ROWS, 7 RED / 12 GREEN, DENOMINATOR NAMED.** Every red has its
+87af794f17	8260	x	was-wrong-three-times-over-the-reusal-is-a-retur	**`arg=0` REFUSES -- A BOUNDARY THE FIRST DRAFT DID NOT HAVE.** `arg is None` is an
+bc851e6615	8263	x	was-wrong-three-times-over-the-reusal-is-a-retur	**BOUNDARIES RE-DERIVED BY EXHAUSTION, `vw-boundaries.py` 131 rows, md5 stable twice.**
+50f8ba7f83	8270	x	was-wrong-three-times-over-the-reusal-is-a-retur	**6 ROWS THE PORT CANNOT PRINT, REPORTED NOT HIDDEN** (`c2d_oracle_only_n = 5` + the load
+8316f9c8f2	8273	x	was-wrong-three-times-over-the-reusal-is-a-retur	**THE CHANGE `ops.bend` NEEDS: A RETURN-TYPE CHANGE, NOT A `Bool` GUARD.**
+9e0b44c7a1	8295	x	session-2026-10-04-reader-fork-unit-156-forked-r	**THE CENSUS, WITH THE DRIFT MEASURED AND A DENOMINATOR ON EVERY NUMBER.**
+4e464ff3cc	8302	x	session-2026-10-04-reader-fork-unit-156-forked-r	**19 FORKS CONVERTED TO AN IMPORT** (`reader-fork-convert.py`, mechanical + a parse check
+4db6929a24	8310	x	session-2026-10-04-reader-fork-unit-156-forked-r	**THE FORKS I KEPT, EACH WITH ITS CONTRACT** in `.agents/slop/reader-contracts.tsv`.
+0e8de7aecd	8318	x	session-2026-10-04-reader-fork-unit-156-forked-r	**THE GUARD**: `.agents/slop/reader-guard.py`, in the shape of `parser_cache_guard()` --
+fc47b2aabb	8323	x	session-2026-10-04-reader-fork-unit-156-forked-r	**THE GUARD IS SHOWN ARMED AND RED**, in `--self-test` (8 cases) and by a LIVE fire on
+b32989c1a4	8353	x	session-2026-10-04-schedule-init-py-82-301-the-c	**STAGE 1 — the oracle, BEFORE any port code.** `.agents/slop/sched-oracle.py`, run twice.
+fe4927be39	8361	x	session-2026-10-04-schedule-init-py-82-301-the-c	**STAGE 2 — one real spec end to end, then six.** `.agents/slop/sched-emit.py` emits a Bend
+5cc5b1fabe	8368	x	session-2026-10-04-schedule-init-py-82-301-the-c	**STAGE 3 — the table.** `.agents/slop/sched-stage3.md`. **4 of 19 present, 15 absent.** The
+6aae5876b3	8370	x	session-2026-10-04-schedule-init-py-82-301-the-c	**THE REWRITER EXISTS.** `codegen/__init__.bend:146 walk_rewrite` WORKS (gate green).
+e877cdfa4f	8416	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**EXECUTE the port's emitted C through its own renderer.** `zsh .agents/slop/portexec/stage1.sh`
+22aa2e766a	8418	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**CALL that kernel FROM BEND** (the FFI chain, kernel pointer as a `Nat`).
+1582eee189	8420	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**THE WHOLE 8x8x8x8 MATMUL through the port.** `zsh .agents/slop/portexec/run-kernel.sh mm`
+4f9e61181d	8426	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**MEASURE how much of the 227-row gate is text and how much is execution.**
+99c8301f40	8432	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**RULE: `render_kernel`'s SIGNATURE is live; its BODY is a fixture.** Reported at
+8e9efa857d	8437	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**FINDING, reported not fixed: two of the 227 rows assert a string no compiler accepts.**
+4ab2933a08	8443	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**FOUND IN MY OWN HARNESS, BY A CONTROL: Stage 2 was green through a SELF-ALIASED call.**
+8307672b4a	8450	x	session-2026-10-04-portexec-unit-the-port-s-c-ra	**RULES appended** to `notes/bend2-constraints.md` at the END (PORTEXEC-1..4, positions cited):
+bd9617fe51	8468	x	audit-can-fail-can-this-headline-number-go-red-2	**8 headline numbers audited by PLANT and DISARM**, never by grepping a name and never by
+d4fc230b5b	8486	x	audit-can-fail-can-this-headline-number-go-red-2	**4 FINDINGS, each reported with the plant that proves it, each NOT fixed** (every file is
+27933f72c7	8488	 	audit-can-fail-can-this-headline-number-go-red-2	`graphcmp-oracle.py` — assert `tot_ops ⊆ Ops`; append `py≠bd` node counts to `bad`; stop
+1bde8806cb	8490	 	audit-can-fail-can-this-headline-number-go-red-2	`ffi-port-cost.py:496` — `denom` is `uniq`; take it from the dylib or drop the
+0a00d11626	8492	 	audit-can-fail-can-this-headline-number-go-red-2	`sched-cmp.py:132` — implement the uncoded-op census or delete the sentence claiming it
+a4d2b7c00f	8494	 	audit-can-fail-can-this-headline-number-go-red-2	`graphcmp-LIMITS.md:431` — the "ten ops" list is **eleven**; `CMPLT` is missing.
+3970ec9e07	8495	x	audit-can-fail-can-this-headline-number-go-red-2	**5 of my own plants were green for reasons that were MINE** (`pick_dim = \a->a`; an
+319336accb	8499	x	audit-can-fail-can-this-headline-number-go-red-2	**12 rules appended** to `notes/bend2-constraints.md` at the END as **A-1 … A-12** (the `F-`
+6866025a3d	8501	x	audit-can-fail-can-this-headline-number-go-red-2	**NOT COMMITTED**, per brief.
+1228972a97	8507	x	session-2026-10-04-tensor-surface-census-read-on	**PREMISE TESTED AND CORRECTED.** The brief's name search of `tensor.bend`
+476d431dd9	8518	x	session-2026-10-04-tensor-surface-census-read-on	**THE 2.7x ASYMMETRY RESOLVED, and the answer is NEITHER option.** Classified by
+d09c7bb4f7	8524	x	session-2026-10-04-tensor-surface-census-read-on	**STAGE 1 — the mapping table, denominator 57.** 57 `def`s in `class Tensor`
+394fdc5f0e	8531	x	session-2026-10-04-tensor-surface-census-read-on	**STAGE 2 — present vs EXERCISED, with denominators.** `tensor.bend`: 174 defs,
+cf2bdfff16	8541	x	session-2026-10-04-tensor-surface-census-read-on	**THE GRADIENT DRIVER, measured: 0 callers in the whole port tree** for
+24bc78f39f	8546	x	session-2026-10-04-tensor-surface-census-read-on	**STAGE 3 — the path, the scope, the three steps.** `tinygrad/engine.py` does
+d3354fe713	8559	x	session-2026-10-04-tensor-surface-census-read-on	**STAGE 4 — THE FALSIFICATION SUCCEEDED, AND MY OWN CLAIM WAS WRONG.** Planted
+518d28138b	8570	x	session-2026-10-04-tensor-surface-census-read-on	**STAGE 5 (2026-10-04) — STEP 1 IS LANDED: `compute_gradient` + `_deepwalk` are
+4eb0015c78	8605	x	session-2026-10-04-tensor-surface-census-read-on	**FOUR PLANT FAILURES THAT WERE NOT RESULTS** (each a rule the port already
+2f04cd8745	8612	x	session-2026-10-04-tensor-surface-census-read-on	**ONE FAILURE THAT WAS A RESULT: A STALE ARENA CLOBBERED THE SEED.**
+f72a7ab221	8618	x	session-2026-10-04-tensor-surface-census-read-on	**CONCURRENCY, REPORTED NOT FIXED: `tinybendygrad/helpers.bend` was mid-edit TWICE**
+cd4a48b615	8625	x	session-2026-10-04-tensor-surface-census-read-on	**6 rules appended** to `notes/bend2-constraints.md` at the END as **T-1 … T-6**
+f008ec814d	8628	x	session-2026-10-04-tensor-surface-census-read-on	**`tensor.bend` NOT edited.** The brief says to report the mapping and ask for
+cce98923eb	8633	x	session-2026-10-04-tensor-surface-census-read-on	**NOT COMMITTED**, per brief.
+102d6b672f	8643	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**STAGE 1 — does the emitted C compile?** **It does NOT, and that is the finding.**
+41a9cfef19	8651	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**Supplying that one input: the port's text is BYTE-IDENTICAL to CPython's.**
+5dca8375ed	8657	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**STAGE 2 — does it RUN and AGREE?** **YES, diff = 0 bytes.** Two fixtures × two
+2a4b3cfead	8662	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**STAGE 3 — call it FROM BEND.** `law` + `import "./shim3.c"` + `bend -o` + `cc`, all
+fcbfe4f5d2	8666	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**Allocator: `ops_bend.bend`'s, imported, not rewritten** — `Mem`, `Mem.of`,
+9999d17a34	8673	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**STAGE 4 — the conversion, AS EVIDENCE ONLY.** `convert.py` walks all 227 rows with
+347f9c3b54	8684	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**I DID NOT decide what counts as LIVE-VS-LIVE** (another unit censors per lane and two
+6ce7fd1c5e	8686	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**CORRECTION TO THE SLOT'S PREMISE, measured:** `cstyle-gate.py:554` is the CAPTURE
+c3297b4fde	8691	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**8 rules appended** as **C-1 … C-8** at the END of `notes/bend2-constraints.md`
+973f3ae9bc	8695	x	session-2026-10-04-cstyle-live-renderer-cstyle-b	**CONCURRENT-AGENT OBSERVATION.** Mid-session the live tree stopped compiling, rc=1 and
+173a9fa9a1	8703	 	session-2026-10-04-cstyle-live-renderer-cstyle-b	**RECOMMENDED, AND IT NEEDS THE COORDINATOR'S CALL.** Make `emit_min()` carry the
+1ad125d5a3	8711	x	session-2026-10-04-round-2-i64-dec-the-signed-de	**`i64_dec` in `helpers.bend`: Python's `str(int)` for an `I64`, gated on 19 rows
+3b48d83612	8775	x	session-2026-10-04-the-four-headline-numbers-own	**FIX 1 — `sched-cmp.py`'s uncoded-op census.** The detector was a loop that
+27528166d4	8787	x	session-2026-10-04-the-four-headline-numbers-own	**FIX 2 — the string literals in `sched-cmp.py:123,125`.** `specs_attempted=6` was
+78cdfb0b43	8795	x	session-2026-10-04-the-four-headline-numbers-own	**THE STALENESS WINDOW (bonus, invited by the brief).** The comparator now RUNS
+fe01ba69d7	8804	x	session-2026-10-04-the-four-headline-numbers-own	**FIX 3 — `ffi-port-cost.py`'s `X/X`.** `coverage : 324/324 = 100.0%` with
+5a896a71b8	8816	x	session-2026-10-04-the-four-headline-numbers-own	**FIX 4 — `graphcmp-LIMITS.md`'s own denominator.** Eleven ops, not ten; `CMPLT` was
+0e6c5c7503	8824	~	session-2026-10-04-the-four-headline-numbers-own	**RECORD: `222` is a retired READER's number, not a population.** Corrected in
+41f26af7e9	8859	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**STAGE 6 ADDED, NOTHING REPLACED.** `.agents/slop/e2e.sh:122-161` is the whole
+bb7cf85ee2	8866	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**THE JOIN.** `zsh .agents/slop/e2e_port/run-port-mm.sh` -> exit 0. The same
+42daa41026	8874	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**THE COVERAGE STATEMENT, IN THE ARTIFACT'S OWN OUTPUT.** `e2e_port/coverage.py`
+b5a5e789f8	8880	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**7 NEGATIVE CONTROLS, 7 RED.** 4 new: **C0** the unmutated copy must be GREEN
+745a41845a	8892	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**THE `kern2 alu` UNFALSIFIABLE PAIR IS NOT TOUCHED AND NOT COUNTED**, and the
+13e3794082	8898	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**6 FINDINGS REPORTED, NOT FIXED** (every file is held by a live unit) --
+c42aab082f	8908	x	session-2026-10-04-e2e-through-port-e2e-sh-stage	**10 RULES appended** to `notes/bend2-constraints.md` at the END as **X-1 … X-10**,
+f321383a01	8914	x	session-2026-10-04-round-3-print-uops-gated-and-	**`print_uops` (render.py:18) is gated: 9 rows, 3 lanes, byte-identical.** The gate is
+3f5b1a315d	9281	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**`?` REACHES 0/0** — and the row is asserted, and it is a row that **DID** fire: the
+b2815b63e0	9286	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**OPS 34 -> 35 of 77, AND ONLY ONE OP IS NEW.** `EXPAND` was in the 43 NOT REACHED and
+b32d39c3a4	9291	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**DEFECT 27, IN THE DIFFER'S OWN NORMAL FORM, ON BOTH SIDES AT ONCE.** `bw` is the
+bc1840720c	9298	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**THE PLANT AND A PAIRED DISARM.** `--plant dsexpand` (names the second `EXPAND` by its
+bf85e86aab	9304	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**THE FIRST PLANT DIED, AND THE DEATH IS THE FINDING.** It dropped a dim instead of
+03412b9464	9308	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**ALL THREE NEW `selfcheck` ROWS SHOWN FIRING** (`bw-p3.py`, monkeypatched in-process,
+7851f13416	9313	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**TWO BUGS IN MY OWN PROBE, BOTH CAUGHT BY THE EVIDENCE STANDARD, BOTH RECORDED.** (i)
+d758b0d8aa	9318	x	session-2026-10-04-bw-graphcmp-a-backward-graph-	**NOT HALF-REGISTERED.** All five things landed: `GRAPHS`, the graph function, the
+20129e8476	9327	 	session-2026-10-04-bw-graphcmp-a-backward-graph-	§2's float-CONST entry (says "untested"; it is measured and was wrong twice)
+95f01ee5cf	9328	 	session-2026-10-04-bw-graphcmp-a-backward-graph-	§5's `34 of 77` / `189` nodes / `1134` field-records / `16 graphs`; `EXPAND` leaves NOT
+1d9052ad22	9330	 	session-2026-10-04-bw-graphcmp-a-backward-graph-	§0/§2's "TWO GRAPHS DISAGREE" — still true, and `bw` is a third AGREE
+e11d5cf05a	9331	 	session-2026-10-04-bw-graphcmp-a-backward-graph-	`graphcmp-run.sh` `$ALL`: add `bw:AGREE` + the graph loop (a graph in `GRAPHS` that
+245692f564	9333	 	session-2026-10-04-bw-graphcmp-a-backward-graph-	`graphcmp-repro.sh`: `graphs-agree=14` -> **15**, and "sixteen graphs" -> seventeen
+75db032f4d	9365	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**Generalised `nvdup-deadarm.py`'s textual `^\s*row(` selector into a SEMANTIC one** — `ast`
+9450ba2f45	9372	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**Shown to fail, in both directions.** `deadarm.py --selftest` 5/5 (DISARM measured not typed;
+494e3d1a0c	9376	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**The port side, which is harder and matters more.** `comp.ts:3055`'s JS name is a reversible
+376c5d1d74	9384	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**`run-kernel.sh:22`'s lesson generalised.** Every artefact in `$TMPDIR`; a **shadow root with
+be90817ea0	9388	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**The ranked table with "would anything notice?" as the last column**: `.agents/slop/DEADARM.md`
+7b71f9801c	9413	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	schedule rule bodies (12 of 15 unported): EIGHT ported, FOUR walled with file:line -- `.agents/slop/SCHEDULE-BODIES.md`
+7d46166d44	9414	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	gate ROWS for the eight: 89 oracle rows built (`sb-oracle.py`), Bend side does not compile in main exhausted do-block
+f69a40317e	9415	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	delete `sc_body`/`sc_store` local copies when ops.bend regains ops.py:562/622
+403c2c1789	9416	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	contiguous_mops_to_view :199 is the binding wall: `src.contiguous_view()` absent from the tree
+e4d51bd91b	9417	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	replace_input_buffer :248 blocked by `UOp.param_like` TODO(p3) ops.py:1239 (recorded deferral, not a gap)
+9bfa898904	9425	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**STEP 1 — one size.** `clang_Type_getSizeOf` on `int` links, is called and
+a66f4538f7	9430	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**STEP 2 — `FIELD b`**: `offof_bits=32 offof_bytes=4 sizeOf=1 spelling=char
+88a1b00373	9433	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**STEP 3 — `RECORD CXCursor sizeof=32` LANDED, and 32 is the REAL ABI**, not the
+27829b3cfb	9463	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	**`CXType` and `CXString` have measured sizes (24, 16) and no rows.**  The comments
+0202f27693	9465	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	**40 more struct records / their fields.**  41 minus `CXCursor`.
+52159df668	9466	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	**`clang_getOffsetOfBase`: a `const char *` PARAMETER.**  The `bend_cstr` cons walk
+3c6a6a6cf4	9469	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	**311 of the 324 trampolines are still `None{}`.**  The lane replaced none of them:
+ea5fb94651	9476	x	x-dead-arm-census-the-parts-of-the-tree-no-instr	**`backward` step 2: `tensor.bend`'s zip (`TODO(p3) tensor.py:490`).** DONE. The zip
+0c5c82d47e	9484	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	`backward` step 3: `mixin/elementwise.bend` reachability of CAST/CONST/EXPAND
+d419bcd6ae	9486	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	REPORTED, NOT MINE: `mixin/gradient.bend:1188`'s `dw_keep_test` does not drop a
+7f4dbe19a3	9489	 	x-dead-arm-census-the-parts-of-the-tree-no-instr	REPORTED: `tinybendygrad/tensor.bend` carried a leaked `tensor-mutate.py` M2
+441801b49e	9496	x	session-2026-10-04-round-4-the-range-column-and-	**`print_uops`'s range column is gated: `ops-pu-gate` is 14 rows, 3 lanes, byte-identical.**
+cc4cda1fd7	9564	x	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-1** `dtype.bend`'s six `Dt.i64_*` as PURE Bend. `IO(H.I64)` -> `H.I64`,
+a5328e7146	9567	x	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-2** the 16 blocked libclang bindings over two `U32` halves: **15/16
+f7f482c125	9570	x	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-3** what is left, with `file:line`: `i64_mul` absent, `i64_shr` absent,
+5b1bf8c1f3	9573	 	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-4** apply `dtype-i64.patch` to the live tree once its substrate is quiet.
+2f19897228	9574	 	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-5** decide one 64-bit route: pure `H.I64` (M-1), two `U32` halves (M-2),
+54daa7efb7	9577	 	m-the-last-64-bit-mile-agents-slop-w64-mile-md	**M-6** MEASURE whether one foreign def can return a 64-bit pair as a tuple.
+8b419a0719	9587	x	sub-collective-completeness-does-a-parsing-file-	**SUB-1** `substrate-check.sh` keeps half 1 (size first, verdict second). VERIFIED
+e591398210	9589	x	sub-collective-completeness-does-a-parsing-file-	**SUB-2** half 2 resolves every `<Mod>.<name>` a file references against what the
+535727fa9d	9592	x	sub-collective-completeness-does-a-parsing-file-	**SUB-3** IT REPORTS ITS OWN COVERAGE, printed next to the verdict.
+8483c2df93	9596	x	sub-collective-completeness-does-a-parsing-file-	**SUB-4** PLANT + PAIRED DISARM, in `$TMPDIR`, whole-tree copy so relative imports
+4c2f10d590	9601	x	sub-collective-completeness-does-a-parsing-file-	**SUB-5** IT WOULD HAVE CAUGHT TODAY'S FAILURE, using the artifact that is still
+c65632daa3	9605	 	sub-collective-completeness-does-a-parsing-file-	**SUB-6** REPORTED, NOT FIXED: `renderer/ptx.bend:657` has 13 `P.r(` where `r` is
+917b4b8b1f	9623	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-1** an `f64` KERNEL through the port's own renderer. The port emits
+d090f445a3	9627	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-2** the 64/64 bar, with `f64` operands: **64 words, diff 0 bytes** against
+cb2d207a00	9633	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-3** the row only `f64` can have: `out[0] = 1.0 + 2**-40 = 0x3FF0000000001000`,
+28bc109f96	9636	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-4** the plant and the paired disarm: P1 the constant in the KERNEL and P1b
+bdf59f4af9	9640	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-5** wired into `e2e.sh` as stage 7, additively, with a `SKIP` path for a
+8959ff8341	9642	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-6** `renderer/cstyle.bend:2984-3015` calls `rd_row` for SEVEN dtypes and
+1e63c35b38	9646	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-7** WALL, `portexec/gen_ffi.py:188`: the launch casts every buffer to a
+64c3f9e185	9653	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-8** REPORTED, NOT FIXED: `renderer/cstyle.bend` was at `bed462b6…` and would
+90830ef5c9	9659	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-9** two bugs that were MINE, both silent and both kept: `(lo, hi)` is not
+40099b9359	9664	 	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**F-10** OPEN, and it is the cheap one: `render_dtype` on `f64` is still not a
+4aec98a0cc	9668	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**W64M-A** DONE: `tinybendygrad/runtime/dtype.c:205-206` reads an `H.I64`
+91a95f946b	9679	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**W64M-B** DONE: refuted two of our own walls rather than reconciling them,
+4c1a5fbbee	9687	x	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**W64M-C** DONE by unit `JSL2` — report `.agents/slop/JS-LANE-GATE.md`,
+ef82285859	9699	 	f-the-f64-kernel-not-the-f64-scalar-agents-slop-	**W64M-D** OPEN: choose ONE of the three 64-bit routes and delete the other
+1f47d3f21a	9712	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-1** Does the JS lane execute? **YES** — `bend -o out.js` embeds
+52a767a4fc	9717	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-2** 30-row gate on `w64mile/gen_seam.py`'s exact 6 DEFS, 5 FIXTURES
+39003d4cad	9721	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-3** Can `BigInt.asIntN(64,·)` and `(s64)` be made to differ?
+08011a5a63	9727	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-4** Disarm first, and it must move 0. DISARM `h * 2n**32n + l`
+b332ad43b9	9732	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-5** F32 seams, `gen_f32_seam.py`, 6 rows: node 3/6, cc 6/6, lanes
+7ff497967c	9736	 	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-6** OPEN, for the coordinator, not for this unit: **declare the ABI
+160499fc0f	9741	 	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-7** OPEN: `ceildiv(x, 0)` answers `0` in both lanes where CPython
+1de2c5541a	9743	 	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**JSL2-8** OPEN: **no gate in this tree runs `node`.** Two now exist; nothing
+52213ca4ec	9752	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Locate the extra `GROUP`: **`.agents/slop/graphcmp.bend:1274`**, the fixture calling
+1d128dd3a7	9756	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Locate the `FLIP` arg atom: **`.agents/slop/graphcmp.bend:1273`** over
+e4fc1da45e	9760	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Settle defect-vs-presentation WITHOUT hedging, by measuring what upstream does:
+4e789077cd	9764	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	`flip` reads **AGREE at `nodes=6/6`** (NOT 7/7 — the `GROUP=1` census printed at
+700bbd2b50	9767	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Denominator before/after reported, and the other 21 graphs proved unmoved by a
+3dc3b2e20f	9769	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Canonicalisation made countable and falsifiable (`canon_flip`, `B` ledger row,
+21c8eca3fd	9772	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Pins held: unresolvable names still rejected; `selfcheck: OK`; `control` and
+8666e3de58	9774	x	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	Report: `.agents/slop/flip/FLIPR.md`, addendum in `.agents/slop/REACH.md`.
+c08df64337	9775	 	jsl2-the-js-dtype-lane-gate-unit-jsl2-2026-10-04	**OPEN, for the port's owner, not mine:** `ATuple` still cannot express
+b52c321432	9788	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**Re-measure FIRST, both sides, with the `py-only`/`bend-only` split.**
+0dcb8c8064	9794	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**CDIV + CMOD from the EAGER path**, no rewrite: `a.fmod(b)` and
+53790e8fd7	9797	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**SUB + NEG + CMPEQ + FDIV, and the finding that they are REWRITE-ONLY.** Each eager
+c543351b22	9802	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**`supported_ops` read from `Device.default.renderer.code_for_op`**, upstream's own
+2b985a5920	9807	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**`late` documented as REPRODUCIBLE-NOT-PRODUCIBLE**: the port writes the rewritten
+027189ba5a	9810	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**Every ledger marker `0/0` on both graphs** (`z y u q X! BAD E ?`), `RESIDUALS: none`,
+0a9c1c2389	9813	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**Three mutations, both modes, named rows**: M1 `SUB` children swapped, M2
+3c1aab928e	9819	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**`graphcmp.bend` reverted byte-for-byte after every mutation run**, md5 asserted in the
+059997bc4e	9821	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**COLLISION, REPORTED NOT PAPERED OVER.** The `flip` unit added `canon_flip` to
+6dcd74140c	9825	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	Eight walls written up with `file:line`, including three of my own: `unchunks(r[1:])`
+9d5f7dc0d2	9828	 	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**NOT MINE, REPORTED:** `graphcmp-LIMITS.md` still carries `13 of 77`, `34 of 77` and
+f108389d95	9833	x	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**hermetic: corpus results independent of process and cache.** `UOp.unique_num`
+fba880b2b1	9842	 	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**NOT MINE, REPORTED — `checks/both-census.py:39` STILL READS THE STALE CACHE.** Its
+523a0fd82b	9846	 	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**NOT MINE, REPORTED — `oracles/mm-range.py:12`+`:59` is a LIVE late-`DEV`.**
+ee67284755	9849	 	2026-10-04-arith-the-six-arithmetic-ops-ops-reac	**NOT MINE, REPORTED — two STALE `file:line` in `arith/REACH-ARITH.md` §5.** Wall 6 says
+9ca70e2000	9855	x	s-spelling-one-64-bit-spelling-for-the-tree	**Ruling, against evidence.** `H.I64` (`helpers.bend:1639-1640`, `I64{hi: U32, lo: U32}`)
+3de9427c1e	9861	x	s-spelling-one-64-bit-spelling-for-the-tree	**WHAT IT COSTS, measured.** Canonicalisation of `libclang.bend` is IMPOSSIBLE, not
+1742cbae6d	9867	x	s-spelling-one-64-bit-spelling-for-the-tree	**THE BRIEFED PREMISE WAS FALSE.** The nullary 64-bit declarations do not make the
+c3f651cb46	9871	x	s-spelling-one-64-bit-spelling-for-the-tree	**The file COMPILES: `bend -o out.c` rc 0, `cc` rc 0, 13 correct rows.** It cannot
+9c81c05915	9875	x	s-spelling-one-64-bit-spelling-for-the-tree	**The fix is in the generator, not the product.** `apply-port-lane.py`'s two-entry
+2d73fbbc24	9880	x	s-spelling-one-64-bit-spelling-for-the-tree	**THE JS LANE MUST READ `hi`/`lo`, IN BOTH DIRECTIONS.** Measured by execution on 4
+44e79e8af0	9886	x	s-spelling-one-64-bit-spelling-for-the-tree	**Plants and disarms: 5 controls, all PASS, plus 3 controls that MOVED and were
+42710535c0	9892	x	s-spelling-one-64-bit-spelling-for-the-tree	`.agents/slop/SPELLING.md` + `.agents/slop/spelling/{NOTES.md,roundtrip.py,jslane-probe.js,jslane-probe.bend,scratch.sh}`.
+46db0f8c9a	9893	 	s-spelling-one-64-bit-spelling-for-the-tree	**NOT MINE, REPORTED — the generated body is now cited by line again after a header-only
+fec30f9f7e	9896	 	s-spelling-one-64-bit-spelling-for-the-tree	**NOT MINE, REPORTED — two more STALE `file:line`.** `renderer/amd/dsl.bend:64` cites
+2d36a2ca18	9900	 	s-spelling-one-64-bit-spelling-for-the-tree	**NOT MINE, REPORTED — `libclang.bend` needs a `.js` half.** Its 10 FFI laws import
+fdc51e3239	9907	x	session-2026-10-04-round-5-an-f32-constant-wall-	**REFUTED AND GATED: `.agents/slop/ew-consts-gate.sh`, 21 rows, 3 lanes byte-identical.**
+c9d8e27f1a	10021	x	triage-the-21-stray-bend-copies-2026-10-04	**classify all 21 preserved copies** — **19 DAMAGE · 1 PARTIAL · 1 REAL WORK.**
+b7d8c225e3	10026	x	triage-the-21-stray-bend-copies-2026-10-04	**apply + gate the one REAL WORK: `runtime/autogen/libclang.bend`** — applied at the
+226f8cc4f8	10034	x	triage-the-21-stray-bend-copies-2026-10-04	**answer the two questions the brief asked, measured** — (a) the +200 is **in the product,
+83d1dcac82	10041	x	triage-the-21-stray-bend-copies-2026-10-04	**`S-6` (`helpers.bend:1167` vs the real `:1639`) — NOT from the stray copy.** It occurs
+60ec99f092	10046	 	triage-the-21-stray-bend-copies-2026-10-04	**OWNER: `runtime/autogen/libclang.bend` was rolled BACK by the restore, not forward.**
+fdaa4680e7	10053	 	triage-the-21-stray-bend-copies-2026-10-04	**OWNER: `dsl_gen.py` and `ga_fix.py` are NON-IDEMPOTENT.** Both truncate at a marker and
+89f8d500fd	10060	 	triage-the-21-stray-bend-copies-2026-10-04	**the 19 DAMAGE files are silent, not loud — worth a sweep.** The shape is
+e159659d52	10070	 	triage-the-21-stray-bend-copies-2026-10-04	**the 6 artifacts, all DAMAGE, none appliable** — `elf.bend.mut` md5 == live `elf.bend`
+90242f80b1	10085	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**The brief's stated test, run as asked — "no `UOp` is ever constructed with it" — finds
+bdcd27fdb9	10090	x	denom-the-77-denominator-unit-denom-2026-10-04-p	Per-op verdict with the deciding `file:line` — 18 rows, `DENOMINATOR.md` §2.
+8f0099e828	10091	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**The reachable denominator: 77 of 77 reachable as a UOp graph; 73 of 77 emittable by
+002524f641	10095	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**`CUSTOM CUSTOMI PYLITERAL` blocked by the INSTRUMENT, not tinygrad:** `cshape` catches
+4963d6b57d	10098	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**`MULACC` is device-gated, not dead:** one rule at `op.py:118`, gated on `code_for_op`,
+bb3180e372	10100	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**Graph added: `g_allred` (`copy_to_device` + `allreduce`, upstream's own calls), 9 nodes,
+a255b28b9b	10105	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**VERDICT for the new graph is `DISAGREE`, and the headline is the verdict, not the
+f3ab0f2f9c	10112	x	denom-the-77-denominator-unit-denom-2026-10-04-p	**The claim NOT made:** not that the corpus compares training graphs. `bw` is one eager
+64a353537d	10115	 	denom-the-77-denominator-unit-denom-2026-10-04-p	*(left for a successor, deliberately)* the other 13 emittable candidates —
+c4a2b8e029	10119	 	denom-the-77-denominator-unit-denom-2026-10-04-p	*(left for a successor)* widen `graphcmp.py:750`'s `except RuntimeError` so a shapeless
+16c5eb7bfa	10124	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-1` THE DEFECT, IN ONE MEASUREMENT.** Half 1 ran `bend --check-only` on every
+db4165fd47	10130	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-2` THE ROUTING TABLE.** `.bend` -> `bend --check-only`; `.c` -> `cc -fsyntax-only`
+1ae2520292	10135	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-3` `.c` IS NOT A TRANSLATION UNIT, AND THE OBVIOUS FIX IS ALSO WRONG.**
+fe33bcc6e7	10142	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-4` AND THE GENERATED UNIT CANNOT BE HALVED.** Emit lines 1..2839 carry **44
+8cc6367f6b	10150	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-5` A FALSE RED, CAUGHT BY THE TOOL, CORRECTED IN THE INSTRUMENT.**
+4cf2a56378	10158	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-6` THE PLANT-TO-PASS IS CLOSED AND THE DISARM IS 6/6.** A byte copy of
+41cb627f07	10164	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-7` THE ROUTING IS PRINTED BESIDE THE VERDICTS.** Every line carries its
+b975cce914	10168	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-8` WHOLE TREE, AFTER.** `COLD` by instrument: **14 `[bend --check-only]`, 0 from
+193bec4a3d	10172	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-9` REPORTED, NOT FIXED — `runtime/sz.c` AND `sz.bend`.** `sz.c` registers
+f5034f881f	10179	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-10` NO `TODO` LEFT IN THE SCRIPT.** The `.c` context has two named
+e2875fbe49	10184	x	guardfix-substrate-check-sh-half-1-routes-by-wha	**`GXR-12` THE ROUTE CAUGHT A LIVE CONCURRENT BREAKAGE — and it is the argument for the
+24b371b1de	10195	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-1` THE 6 `Dt.i64_*` ARE PURE.** They were `IO(..)` foreign defs with no body.
+eabdfe7714	10205	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-2` `Dt.fp8_from` + `float_to_fp8` ARE PURE — 14 -> 6.** `fp8_encode`
+33524185f7	10210	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-3` THE 6 THAT REMAIN ARE ONE MISSING PRIMITIVE.** `F32.bits` exists and is a
+cc81ab62ae	10216	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-4` THE GATES RAN AGAINST A CALLED ORACLE, 1330 rows, present==expected every run.**
+3f962f139e	10221	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-5` DISARM FIRST, THEN PLANT.** Disarms moved **0**. The i64 plant (drop the
+04d6f58af9	10226	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-6` THREE BUGS FOUND, TWO MINE AND ONE IN `runtime/dtype.c` (reported, not fixed,
+cd42502f78	10234	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-7` A STALE CITATION, IN THE REPORT THAT MADE IT.** W64-MILE.md's ADDENDUM item
+3a25b17ca3	10238	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-8` A WALL THAT IS NOW HALF STALE.** `mixin/dtype.bend:50-58` records CAST, CDIV,
+622d040ebd	10245	x	dtb-dtype-bend-s-red-laws-14-6-full-write-up-in-	**`DTB-9` NO LAW WAS DELETED.** All 14 names are still declared exactly once each
+bc8ef699fc	10255	x	session-2026-10-04-round-6-the-method-surface-wa	**`.agents/slop/ew-gate.sh` LANDED: 71 rows, 3 lanes byte-identical, 1 documented
+48e7897ce1	10309	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-1` `oracles/mm-range.py` ASKED FOR NULL AND GOT METAL. FIXED, PROVED BY ITS
+af66019b95	10317	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-2` THE DENOMINATOR IS 55, NOT 37, AND THE CLASS HAD EXACTLY ONE MEMBER.**
+ef8c039cb3	10323	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-3` THE ERROR RATE, ON DATA THE CLASSIFIER WAS NOT TUNED AGAINST.** 15 held-out
+4a0293cc05	10330	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-4` AN INDEPENDENT SECOND INSTRUMENT, 68 AGREE / 1 DISAGREE.** `--crosscheck`
+b4edad8992	10336	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-5` THE CHECK, WITH ITS HIT RATE STATED.** `--check` is **rc 1** on the recovered
+246cf85001	10340	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-6` FOUR BUGS IN MY OWN READOUT, ALL "A COMPARISON THAT CANNOT FAIL".**
+7b20391913	10347	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-7` SOURCE ORDER IS NOT EXECUTION ORDER, MEASURED.** An unsound classifier called
+13c83d7903	10351	x	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-8` `HERMETIC.md` §5's CITATION FOR `tinygrad/device.py:59` IS STALE.** The
+270b33a332	10356	 	devg-is-dev-a-setting-or-a-comment-unit-devg-202	**`DEVG-9` OPEN.** (a) `mm-range.py:70`'s `Tensor.floordiv` is rot I did not touch — the
+c982441d7a	10364	x	session-2026-10-04-round-7-the-first-method-land	**`sigmoid` LANDED (elementwise.py:693). `ew-gate` is 72 rows, 3 lanes identical**, its
+c09eede7ad	10414	x	session-2026-10-04-unit-adev-the-copy-device-nor	**DECIDE against upstream, not taste.** A device PAIR is canonical.
+ab9aaff9d3	10419	x	session-2026-10-04-unit-adev-the-copy-device-nor	**MAKE IT REPRESENTABLE — no new `Arg` variant.** The premise was WRONG about the
+521c2037b2	10427	x	session-2026-10-04-unit-adev-the-copy-device-nor	**`g_allred` DISAGREE -> AGREE, denominator unmoved.** BY REAL REVERT of the same
+0e930f401b	10431	x	session-2026-10-04-unit-adev-the-copy-device-nor	**THE 13 RE-EXAMINED, AGAINST 13.** `emittable: 13 of 14`, `moved by ADEV-1: 1 of 14`
+43bfadfc0b	10436	x	session-2026-10-04-unit-adev-the-copy-device-nor	**PLANT + DISARM as a paired experiment.** `devpair` DISAGREE naming `arg`
+e180508190	10441	x	session-2026-10-04-unit-adev-the-copy-device-nor	**MY FIRST PLANT REPORTED AGREE.** `_rebuild_with` skips the ROOT
+a59e000193	10443	x	session-2026-10-04-unit-adev-the-copy-device-nor	**REFUSED THE CLAIM.** The corpus does NOT compare training graphs. `bw` is the
+ce2de17bb9	10448	x	session-2026-10-04-unit-adev-the-copy-device-nor	**OPEN, NOT MINE:** `cshape`'s one-arm `except` still gates `CUSTOM`/`CUSTOMI`/
+45db605372	10454	x	session-2026-10-04-round-8-swish-and-silu-three-	**`swish` (elementwise.py:801) and `silu` (:814) LANDED. `ew-gate` is 74 rows, 3 lanes
+fb6dbe9c7c	10507	x	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**Establish what bend emits for a `CID` used OUTSIDE an `#ifdef`.** It is a **textual
+c303fe383e	10510	x	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**Fix defect 1 (bare registration)** by wrapping **2** registrations in
+2d39d00b2b	10514	x	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**Settle `CID_NIL`/`CID_CON` vs `CID_SNIL`/`CID_SCON`.** **The reported mismatch is a
+420ecc15f1	10519	x	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**Gate it.** Four builds, all `cc -fsyntax-only` rc 0 after the fix; two were rc 1
+b742d9bfbf	10523	x	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**Name what the guard's `#define CID(x) 0` masks.** Three things, two of them not
+bf196ded7e	10528	 	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**NOT MINE, REPORTED BACK:** `substrate-check.sh`'s C lane is `bend -o`'s blind spot in
+bce8f476e9	10533	 	szlane-runtime-sz-c-s-bare-registrations-unit-sz	**NOT MINE, REPORTED BACK:** `sz.bend` is one of the 14 known-cold files (its own 7
+4228c814a3	10545	x	libclang-trampolines-the-324-none-bodies-cf	**Fill all 324 through the generator.** `None{}` bodies **324 → 0**, denominator
+e0dedecc47	10554	x	libclang-trampolines-the-324-none-bodies-cf	**Build the `const char*` marshalling walk — it is a CALL, not a build.**
+d039b759f4	10560	x	libclang-trampolines-the-324-none-bodies-cf	**Gate against a real clang index.** **320 of 324 EXECUTED**, **4 ungated** and
+b9e68e9da5	10566	 	libclang-trampolines-the-324-none-bodies-cf	**THE SECOND NUMBER, still open: 256 of the 320 executed rows ran with at least
+709dfcdd62	10573	 	libclang-trampolines-the-324-none-bodies-cf	**NOT MINE, REPORTED BACK:** upstream `tinygrad/runtime/autogen/libclang.py`'s own
+5949b2c0c4	10579	 	libclang-trampolines-the-324-none-bodies-cf	**NOT MINE, REPORTED BACK:** `clang_getOffsetOfBase`, `clang_getTypePrettyPrinted`,
+891d51abee	10590	x	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**THE 313 ARE FALSE OF THE LIVE FILE.** Live `nvdev.bend` (md5
+767d9cd23e	10596	x	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**THE 6 DEAD, AND THE `file:line`.** All 6 are the body of
+82a134c913	10601	x	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**CLASS: PRE-EXISTING ROT, and a real bug report.** Uncalled in all three
+caf4024782	10609	x	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**DISARM FIRST, THEN PLANT.** `checks/nvrows-deadrow-gate.py` tags
+b3d54288f5	10617	 	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**THE FIX, NOT APPLIED (brief forbids planting in the live tree).** One line in
+68643ed2ae	10620	 	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**BUT THE FIX ALONE BUYS 4 MEASUREMENTS, NOT 6.** `nv_nvdev_oracle.py` emits
+91d179681c	10625	x	nvrows-the-313-dead-nvdev-bend-gate-rows-unit-nv	**SECOND DEAD DEF, REPORTED NOT FIXED: `nvdev.bend:1770` `def emit(...)`** is
+f9cdd48863	10637	x	session-2026-10-04-05-round-9-one-method-landed-	**`quick_gelu` LANDED (elementwise.py:769). `ew-gate` is 75 rows, 3 lanes identical**,
+1b7b7052d2	10639	 	session-2026-10-04-05-round-9-one-method-landed-	**`tanh` (:757) HELD**, blocked on a real defect found while landing it. Not a wall, a
+071d9f40ff	10700	x	progress-9-10	**Per-arm yield, over the 25 corpus graphs PLUS the pattern IR — 316 nodes. The whole
+8e2d1a69df	10703	x	progress-9-10	**WHICH WIDENING BOUGHT WHICH OP: `+ AssertionError` buys all three of
+31d10ba2f3	10707	x	progress-9-10	**WHAT EACH WIDENING COSTS, priced per raising SITE over all 77 ops x 2 arities, not
+c3d8f65c1c	10714	x	progress-9-10	**THE PRICED WIDENING IS ONE PREDICATIVE (`CSH-1`), and the plant measures it:**
+bd590b61d6	10718	x	progress-9-10	**THE `AND`-ROOTED RULE IS UPSTREAM'S, IT IS LOAD-BEARING, AND IT ASSERTS — the
+a19044d0ff	10724	x	progress-9-10	**REACHED, py side from upstream's own construction** (`_get_clause(UPat(Ops.ADD),
+fc08900829	10727	x	progress-9-10	**THE WIDENING IS NECESSARY AND NOT SUFFICIENT, and the sufficiency failure is TWO
+badfd60e5f	10735	x	progress-9-10	**THE `AND` ROOT'S SHAPE HAS NO CORRECT ANSWER ON EITHER SIDE.** `all_shapes`
+f3c52a2e33	10739	x	progress-9-10	**`Arg` has no home for the matcher IR's args in a SHARED spelling:** py
+d098b1e7aa	10744	x	progress-9-10	**VERDICT AS THE HEADLINE. py(W1) vs bend: `DISAGREE`, 9 field mismatches of 24
+2ed313e7aa	10748	x	progress-9-10	**CORPUS BEFORE/AFTER against 77, both sides, split: LIVE UNCHANGED at
+9c25b82137	10755	x	progress-9-10	**AND THE 64/64/64 IS EXACTLY THE FALSE THEOREM: on the same graph the verdict is
+481735f2e9	10759	x	progress-9-10	**PLANT AND DISARM, DISARM FIRST. Disarm = remove this unit's probes, and it must
+06f9dd95de	10766	 	progress-9-10	**THE PROPOSAL IS `R` FOR ops.py:444 AND THAT IS WRONG** — `R` means "the op is in
+d023cdab00	10843	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-1 `i64_mul` derived from `H.I64`'s two `U32` halves, every intermediate
+164c857088	10849	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-2 Overflow semantics stated, and upstream's `*` CALLED not assumed.**
+0c5c5b233c	10854	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-3 Gate: rows-present vs rows-expected, every run, against a CALLED oracle.**
+e5e44ecb74	10858	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-4 `cmod` upstream's way, and the redundancy verdict.**
+804447c29c	10865	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-5 Plant and disarm, disarm first.** 8 disarms ALL move rows (66/66/538/134/
+bf5dfae09b	10870	x	i64mul-unit-im-1-im-6-i64-mul-derived-gated-land	**IM-6 The `hi == lo` census.** Only 4 of 221 fixtures have BOTH operands
+2f4df8624c	10903	 	session-2026-10-05-round-2-the-promotion-matrix-	**`ew_promo_wf_wi` is a NAMED, PINNED divergence: the weak-const promotion FOLDS where
+cf686352ff	10971	x	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-1** Make the sandbox announce itself. `proof-close/mut` -> `MUTANT`, `mut2` -> `MUTANT2`.
+55d83aa781	10976	x	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-2** Ledger. 287 files in the two sandboxes; 287/287 shadow a real port file; **2 armed
+2de15d7b36	10979	x	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-3** Same shape elsewhere: **1,834 `.bend` files in 13 nested shadow trees**, not 287.
+1a274a8b8c	10982	x	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-4** Live tree: 31 of 144 files have no upstream `.py`. 8 are probes, 6 are seam/lane
+348d592be0	10984	x	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-5** Router denominator measured: 138 `.bend`; `138 - probe_f32lit.bend = 137`, so the
+d49a7933da	10986	 	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-6** **NEEDS AN OWNER — `tinybendygrad/runtime/ops_bend.mut.bend` is an armed plant in
+db1995cf8b	10991	 	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-7** 8 live probes are still in the `bend=` routing total: `probe_f32lit.bend` (live
+78cbd8bc0d	10994	 	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-8** 13 nested shadow trees are still unlabelled (`render-wt`, `xd1/wt`, `dd-cone-wt/*`,
+eeb335fa72	10997	 	mut-2026-10-05-the-mutated-copy-hazard-labelled-	**MUT-9** `git rm --cached` the tracked shadow copies + an ignore rule, so a whole-repo grep
+5d6a352643	11006	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-0** Census, per file, with denominators.  **`.bend`: 5 empty of 27,993 declared** (140
+6eae8aaf40	11011	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-1** `io_eff(CID(…))` census: **337 guarded / 10 unguarded** across the C lane.
+8481cfff0a	11015	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-2** Per-seam BUILD gate, 12 builds, `cc -fsyntax-only` on the emit.
+cddf379e28	11019	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-3** **`clangshim/libclang-ffi.c:271-280` — 10 UNGUARDED registrations.  LIVE DEFECT.**
+a00dbb39cc	11026	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-4** **`clangshim/libclang-tramp.c` — 39 constructor uses (`CID(Unit)`×37, `CID(SCon)`×2)
+7adbbf047f	11032	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-5** **`.js` seams (12 registrations, none guarded) are BENIGN — rebuilt, not cited.**
+7c415d437e	11039	x	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-6** Refusal / NULL, re-run not cited: **`libclang` 320 executed, 175 (55%) answer a
+3f79920182	11042	 	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-7** **CIDS-1 and CIDS-4 both need `clangshim`'s owner.**  Two questions for them:
+fe22d47194	11045	 	cidsweep-the-rest-of-the-tree-after-libclang-ben	**CIDS-8** `gate.sh` exits 1 by design until CIDS-1 lands.  Whoever applies it should re-run it
+c9f18d5835	11050	 	session-2026-10-05-round-3-the-promotion-defect-	**The weak-const promotion returns the FLOAT const's value for the INT operand,
+b1ee8731ac	11126	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-1** **THE MECHANISM.** A file in `tinybendygrad/` is PORT iff `git ls-files`
+4730776538	11138	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-2** **THE INSTRUMENT.** `substrate-check.sh`'s `ROUTE` now prints its own
+20369579c9	11145	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-3** **`runtime/ops_bend.mut.bend` IS A HARNESS RESIDUE, NOT AN ARMED PLANT.**
+5fcc7fc92f	11157	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-4** **CLASSIFIED all 31 non-port files of 144** in `PROBES.md` §5: 1 mutant
+bf9d45a5ca	11160	 	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-5** **NOT FIXED, REPORTED.** `.agents/slop/guardfix/probe-c.bend` does not
+fdadd7ad0e	11165	 	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-6** **NOT FIXED, NEEDS A COMMIT.** 6 of the 8 live probes are **tracked**, so
+0f824b038e	11168	 	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-7** **TRAP, measured today.** zsh reads a script INCREMENTALLY, so editing
+c42535865f	11173	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-8** **TWO BUGS IN MY OWN `PROVENANCE` BLOCK, AND ONLY ONE WAS SAFE.**
+c765faa733	11184	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-9** `no-upstream` is asked ONLY of `.bend` files: mirroring a `.bend` to
+cc860ef403	11190	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-10** Deleted a redundant second copy of the predicate: a standalone
+7f43cf6b07	11194	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-11** ⚠ **A STALE FILE LIST IS A WAY TO MAKE A DENOMINATOR LIE, AND IT IS
+40b4c1a687	11203	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-12** **DEMONSTRATED, MEASURED, WITH THE PAIRED DISARM.**
+5db4b04147	11209	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**PROBE-13** **THE PLANT IS BYTE-IDENTICAL TO `bend_mutate.py`'s M3 AND TO NOTHING
+694092031d	11218	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-1** **RE-MEASURED the count instead of inheriting it: 18 -> 19 of 57, missing
+fdece18123	11221	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-2** **`TENSOR-SURFACE.md`'s ABSENT LIST IS ONE NAME SHORT AND SAYS 39.** It lists
+aa380f1683	11227	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-3** **CLOSED `as_param`** -> `tn_as_param`, arm 3 of `UOp.param_like`, reading
+304d9c7e80	11231	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-4** **CLASSIFIED 38 into 3 bins BY WHAT A CALLER MUST BE ABLE TO DO, not by
+9c21ec53bb	11238	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-5** **DELIBERATELY NOT CLOSED `__bool__` and `__delitem__`.** Both are refusals
+a781bc64d8	11243	x	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-6** **UPSTREAM DEFECT, REPORTED NOT FIXED:** `Tensor.decode_hevc_frame` is
+6772cb521d	11247	 	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-7** **THE GAP IS IN BIN A, AND BIN A IS THE SMALLEST OF THE THREE.** 4 of its 9
+cfcade1628	11252	 	probes-a-probe-or-a-plant-in-tinybendygrad-now-a	**S2-8** **`manual_seed` / `__bool__` / `__delitem__` need a REFUSAL convention in
+2403153805	11259	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**`e2e.sh` STAGE 8, ADDITIVELY.** Stages 1-7 **byte-identical** over 12449 B
+1321417172	11263	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**THE STAGE'S CLAIM, AND ITS DENOMINATOR IS TWO NUMBERS, NOT ONE.** `node` runs
+f4acae6b87	11270	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**THREE OUTCOMES, ALL THREE EXERCISED THROUGH `e2e.sh` ITSELF.** rc 0 → `PASS`;
+4b97b65ddb	11275	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**A MISSING SUBSTRATE IS `SKIP`; A REVERTED SEAM IS `FAIL`.** `--tree` at a
+ae54a2283f	11280	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**`ROWS PRESENT == ROWS EXPECTED` IS ITS OWN OBLIGATION, and an absent row is a
+b9f5e2acf2	11285	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**PLANT AND DISARM, RUN.** ABI-2 as shipped (`p.hi`→`p.fst`) **moved 8/20**; the
+a505031bc5	11290	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**THE PLANT'S UNMOVED ROWS ARE ATTRIBUTED, each a theorem:** 8 never reach
+e452a41f80	11293	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**THE TEMP-AND-MOVE DISCIPLINE IS KEPT** (one temp inside `$RUN`, one write, one
+637e3e68a2	11299	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**TWO FIXTURE BUGS OF MY OWN, BOTH FOUND BY A NUMBER, BOTH MINE.** A hand-typed
+269c77a759	11308	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**THE FIXTURE FOLLOWS `dtype.bend`, WHICH IS MOVING UNDER IT.** The three F32
+62ccdb6996	11314	x	e2e-js-lane-stage-8-of-e2e-sh-the-js-lane-js8-1-	**CENSUS CORRECTED, NOT REPEATED.** The "320 executed / 256 with a NULL argument
+65692dc304	11333	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**DEFECT #1, `fold.bend:2296-2297`: `None{}` WHERE UPSTREAM ANSWERS `None`.**
+7c75ba832c	11343	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**EIGHT graphs, one question each — 8/8 `settled=True`, 7/8 were `False`.**
+fe431721f8	11347	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**WHICH OF THE THREE SETTLE: `CUSTOM` and `CUSTOMI` now (`4:void 1:R`); `PYLITERAL`
+6b79c5f7c4	11350	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**DEFECT #2 SPLIT IN TWO, AND THEY ARE NOT THE SAME KIND.**
+23f042f8e1	11359	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
+cec8eb011e	11361	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**THE BASELINE IS PROVEN, NOT CLAIMED**: `noneshape/ns-revert.py` reverses the three
+c6c7854740	11364	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**CORPUS, both sides, against 77:** live **61/77, `py-only=[]`, `bend-only=[]`,
+d4ff3193b2	11367	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**THE VERDICT IS THE HEADLINE, NOT THE CENSUS.** Same py rows, same probe,
+407d4ab33d	11371	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**THE THIRD BLOCKER UNTOUCHED, AND THE REFUSAL IS THE RESULT.** `AND`'s shape has no
+5423c6c117	11376	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**`NON-1..NON-8` appended** at `notes/bend2-constraints.md` 26341+. The ones that
+2a5fe59d89	11390	x	done-noneshape-none-vs-none-and-an-arg-that-cann	**`FB-1` `def F32.from_bits`, AND THE SIX `dtype.bend` LAWS IT UNBLOCKED.**
+05e9f0187c	11431	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-1` A C-LANE INSTRUMENT, because the 1,228-row gate runs the BEND port.**
+f4e6d2d4a8	11440	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-2` `bend -o` IS DEAD FOR EVERY `.c` FILE RIGHT NOW, and it is not mine.**
+77add17512	11451	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-3` THE ASSIGNED DEFECT, `dtype.c:40`, FIXED: the dropped `-1`. 15 E rows.**
+099f6087d5	11458	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-4` THE SECOND ASSIGNED DEFECT IS NOT IN THIS FILE. THE 3-RUNG LADDER IS IN
+4fbe9005f7	11463	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-5` THIRD DEFECT, `dtype.c:107`, FIXED: EVERY fp8 SUBNORMAL DECODED TO HALF
+6de6d98f13	11467	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-6` FOURTH DEFECT, `dtype.c:104`, FIXED: e4m3's NaN IS SIGNED AND UPSTREAM'S
+b678b0ce5f	11471	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-7` WHY 1,228 ROWS NEVER SAW EITHER: `fp8_to_float` WAS NOT IN THE GATE AT
+cf204dfbba	11474	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-8` THE DENOMINATOR, BEFORE AND AFTER.** E 81,852/81,852, **MISMATCH 15 → 0**.
+176e22bde8	11478	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-9` THE PREDICTIONS, PRINTED BEFORE ANY PLANT RAN** (`gate.py --predict`).
+1a2a64a254	11486	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-10` WHY A SUBSET ASSERTION, NOT `moved == derived` EVERYWHERE.** For C and D
+70b39cc352	11492	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-11` A ZERO WITH A PROOF IS A THEOREM: `A-plant-ge` MOVED 0 OF 8.**
+20fd7fc09c	11499	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-12` IS "THREE OF FOUR THRESHOLDS" UPSTREAM'S RULE? YES, BY DESIGN, AND THE
+14d86502f0	11505	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-13` THE LADDER'S WIDTH, WRITTEN OUT AND CHECKED AGAINST EACH BOUNDARY.**
+9d4c4e0737	11512	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-14` THE FIXTURE TRAP: `gen_fp8.py:35` SWEEPS AROUND `dtype.c`'s OWN `OVF`,
+42639dadf9	11518	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-15` TWO OF MY OWN INSTRUMENT BUGS, BOTH OF WHICH MOVED ROWS, NEITHER A
+567f21b00b	11523	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-16` A ROW NAME THAT CAN BE READ AS FALSE IS A DEFECT IN THE FIXTURE.**
+fc33363fce	11526	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-17` BASE IS PROVEN, NOT ASSUMED.** It is reconstructed by reverse-applying
+ca4ef9ca4d	11529	x	fp8fix-2026-10-05-the-c-lane-of-runtime-dtype-c-	**`FX-18` THE CID SWEEP HAD NOT LANDED IN `dtype.c`.** The diff is **3 CODE LINES**
+91f4af07af	11543	x	session-2026-10-05-round-4-the-promotion-defect-	**`ew_promo_wf_wi` WITHDRAWN as a divergence and now a COMPARED CELL.** `ew-gate` is
+58bc1f245a	11546	 	session-2026-10-05-round-4-the-promotion-defect-	**`tanh` STILL HELD, and now on a LOCATED bug that is not the fixture.**
+7c789da5ae	11602	 	session-2026-10-05-round-5-wk-i64-to-f32-s-formu	**`tanh`'s blocker is DIAGNOSED, not merely located.** `wk_i64_to_f32` (uop/weak.bend:271)
+c59d0284b4	11667	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-1` THE SCOPING WAS A STALE DEPENDENCY, NOT A WALL. ALL EIGHT FILL.**
+35e7a933d6	11679	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-2` `i64_mul` IS NOT A WALL AND WAS NEVER THE DEPENDENCY OF SEVEN LAWS.**
+13091de891	11686	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-3` THE EIGHTH LAW'S BLOCKER WAS NAMED WRONG, AND BOTH NOTES WERE WRONG.**
+7b4c9bdf29	11694	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-4` ROWS PASSED AGAINST ROWS EXPECTED: 1330 / 1330, 0 disagreements.**
+ddb388bfc3	11700	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-5` THE HELPER-INVERSION PLANT FIRES: 65 rows.** `PINV` inverts `i64_is_neg`
+b999dc0830	11708	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-6` 3 DISARMS 0, 3 PLANTS DERIVED-EXACT.** `D1` `i64_trunc` `x`->`x|0` 0;
+121f519def	11716	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-7` `P1` MOVED **0 ROWS** ON THE FIRST RUN AND THE REASON WAS A DEFECT IN
+675063cb93	11725	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-8` THREE MORE HARNESS DEFECTS, ALL MINE, TWO FOUND BY A SUSPECT NUMBER.**
+47d3bb610a	11734	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-9` GUARDS.** `run.py:guard()` **REFUSES** a lane with 0 rows emitted, 0 rows
+22b3ed3323	11751	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-10` `Dt.i64_ceildiv` IS THE ONLY ARITHMETRIC WRITTEN HERE, AND IT IS
+c14080890f	11757	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-11` REPORTED, NOT FIXED — `runtime/dtype.c`'s registrations are now DEAD.**
+667de35cfb	11765	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-12` FOUR STALE WALLS, all now false, none of them my file to edit.**
+7238a51d30	11775	x	lastlaw-2026-10-05-tinybendygrad-dtype-bend-s-8-	**`LL-13` UNCHANGED, PREVIOUSLY REPORTED, STILL TRUE.** `runtime/dtype.c:168-176`
+bd18bf5367	11788	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-1` FINDING 1 FIXED — `runtime/dtype.js:46-48`.** `FP8_CFG`'s
+61f79e38c1	11796	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-2` FINDING 4 FIXED — `runtime/dtype.js:109`.** e4m3's decode NaN is
+f05ed2b7fe	11800	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-3` THE MISSING DECODE GATE, BUILT — `checks/gate.py`.**
+1bf9817081	11806	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-4` `norm` FIXED — `jslane2/gen_f32_seam.py:100`.** Was
+8fae0ebcc5	11810	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-5` NAN CENSUS, EXHAUSTIVE, AND IT REFUTES TWO NOTES.**
+f3eae5cc29	11819	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-6` PLANT AND DISARM — `plants.py`.** BASE proven byte-identical by
+2d037fa3a1	11825	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-7` THE THIRD `norm`, FOUND — `.agents/slop/mm-lift-gate.py:158`.**
+a30b9aba2d	11831	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-8` NOT FIXED, NOT MINE — `dtype.js:162` `dtype_fp8_to` is registered
+1f32e2f96a	11835	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-9` NOT FIXED, PRE-EXISTING — both `jslane2` gates are RED against the
+c67edb13a3	11841	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`JFP-10` NOT SWEPT EXHAUSTIVELY — `dtype.js:83-90`'s subnormal ladder.**
+1691ae2367	11846	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-1` `AOpLit{op: Op}` LANDS — the 20th `Arg` constructor.** `ops.bend`'s
+32299579f8	11854	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-2` `carg`'s CUSTOM/CUSTOMI ARM LANDS, and `ops.bend:137` is a
+9fc17df27b	11861	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-3` THE TWO FIXES ARE SEPARABLE, MEASURED AS A 2x2.** Denominator
+78c8bd1d84	11867	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-4` THE `ops.bend` TABLE HAD THREE LIES IN ONE LINE, NOT ONE.**
+2d6f960279	11872	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-5` THE SAME FALSE TABLE WAS IN A SECOND FILE AND IN A FIXTURE.**
+c82e7857ee	11877	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-6` FOUR PLANTS, ALL FIRED.** A: `AOpLit` deleted -> `al-oparg.bend`
+11ca68876f	11882	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-7` THE GATE WAS TAUTOLOGICAL FIRST, AND SAYING SO IS THE POINT.**
+91650b25be	11887	x	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-8` `uop/render.bend` EDITED — A DELIBERATE DO-NOT-TOUCH EXCEPTION.**
+a7691a7757	11893	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-9` `patir` NOT ADDED TO `GRAPHS`, DELIBERATELY.** The dict is
+ddc8fb666f	11900	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-10` NOT FIXED, ANOTHER UNIT'S — `cshape/cs-plantir.bend:56`** builds
+1dd2247451	11904	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-11` STALE-CITATION CLASS, REPORTED NOT SWEPT.** ~25 `ops.bend:NNNN`
+2cdad8e35b	11909	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-12` NOT FIXED, BY DESIGN — `frozenset` literals**
+8651d5bacb	11913	 	jsfp8-the-js-fp8-lane-runtime-dtype-js-a-decode-	**`ARGL-13` CORRECTION TO agent-core.md's SUBSTRATE NOTE —**
+bcef14c7bc	11922	x	session-2026-10-05-round-6-the-conversion-is-fix	**`wk_i64_to_f32` is a 24-bit-chunk Horner, gated 18 rows / 3 lanes byte-identical.**
+bb4000245b	11925	x	session-2026-10-05-round-6-the-conversion-is-fix	**`tanh` LANDED (elementwise.py:757).** `ew-gate` is 77 rows compared, 3 lanes
+0a45051de8	11992	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-1` THE CENSUS: EVERY FLOAT NORMALISER IN THE TREE'S GATES, CLASSIFIED
+0891f49d54	12004	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-2` THE THREE INSTANCES ARE ONE DEFECT WEARING THREE COATS, AND THE
+d431c9de32	12012	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-3` ONE SHARED HELPER, `.agents/slop/norm/canon.py`, WITH THE WIDTH AS
+7ffa4e4e91	12019	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-4` WHAT THE HELPER COSTS, STATED BECAUSE IT IS A NINTH CONVENTION IN
+63857b1afe	12026	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-5` THE FOUR MOTIVATING CASES, EACH SHOWN PASSING, ON BOTH LANES.**
+fcc12db4a4	12033	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-6` THE PLANTS, SO EACH ROW IS SHOWN ABLE TO FAIL.**  `repr(float(s))`
+f9e20f6f57	12040	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-7` THE ROWS THAT WERE MISSING RATHER THAN WRONG.**  Every gate on the
+95acb4910f	12052	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-8` `jslane2/gen_f32_seam.py` HAD NEVER RUN, AND THAT IS THE MOST
+3f1a0f944a	12061	x	norm-one-float-normaliser-for-every-gate-and-the	**`NORM-9` MEASURED CORRECTIONS TO THINGS THE BRIEF AND OTHER NOTES STATE.**
+2b85a97812	12079	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-A` RE-MEASURED, AND THE RECORDED SPLIT DOES NOT REPRODUCE.** The note
+d9c91cf96e	12085	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-B` THE DENOMINATOR IS DERIVED, NOT TRANSCRIBED.** `derive.py` counts
+f950e8c0d8	12089	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-C` "226 still text" IS A MIXTURE OF FOUR THINGS AND (a) DOMINATES.**
+c90c425711	12097	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-D` 30 ROWS CONVERTED FROM TEXT TO RUNNING C, EACH GATED THREE WAYS.**
+d0143c56d8	12104	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-E` THE ONE DISAGREEMENT IS tinygrad's, NOT THE PORT's, AND IT IS A
+8a78ee3826	12112	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-F` PLANT AND DISARM, TWICE, LIVE TREE HASH-ASSERTED UNTOUCHED.**
+94ada37520	12121	 	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-G` NEXT, AND IT IS (b)**: make a `kern2` body that the RENDERER renders.
+b7862abb5b	12126	 	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-H` `-x c++` accepts `hipockl`/`hipocml` as they stand**; the BASE lane is
+a1d2423b05	12129	x	session-2026-10-05-cstyle2-renderer-cstyle-bend-	**`CS2-I` RULES CS2-1 … CS2-6** appended to `.agents/slop/notes/bend2-constraints.md`
+ee2c73217e	12136	x	session-2026-10-05-opspy-runtime-ops-python-bend	**The dedup.** `w32`/`f32_of` (`ops_python.bend:274-278`) deleted; `import
+6d18e1b3d9	12141	x	session-2026-10-05-opspy-runtime-ops-python-bend	**The coldness cause, split.** OWN laws: **zero**. INHERITED: 8, every one
+ad57ce32ba	12143	x	session-2026-10-05-opspy-runtime-ops-python-bend	**Reachability.** **7 of the 8 had ZERO call sites**; the 8th
+03288eae19	12146	x	session-2026-10-05-opspy-runtime-ops-python-bend	**Retired:** 0 laws, 0 defs, no `IO` added. The cause is `dtype.bend`'s and
+360f3f143f	12149	x	session-2026-10-05-opspy-runtime-ops-python-bend	**Plant/disarm.** DISARM D1 (same function longhand) moved 0. PLANT P1
+c8a82dc681	12152	x	session-2026-10-05-opspy-runtime-ops-python-bend	**Re-measured the two figures I was told to distrust.** Corpus is
+d79dc7cb58	12157	x	session-2026-10-05-opspy-runtime-ops-python-bend	**Notes.** `.agents/slop/OPSPY.md`, `.agents/slop/opspy/*`, and OPS-1..OPS-6
+8cd56b558a	12159	 	session-2026-10-05-opspy-runtime-ops-python-bend	**REPORTED, NOT FIXED — other units' files.**
+e25566d910	12168	x	diffpy-the-two-shell-drivers-ported-to-python-ch	**`graphcmp-run.sh` (308 lines, `#!/bin/sh`) ported** to `checks/differ.py run`.
+76e570fc12	12172	x	diffpy-the-two-shell-drivers-ported-to-python-ch	**`graphcmp-repro.sh` (149 lines, `#!/bin/sh`) ported** to `checks/differ.py repro`.
+1a7a5ff4a4	12175	x	diffpy-the-two-shell-drivers-ported-to-python-ch	**Discoverability.** `checks/differ.py --help` prints what each gate claims;
+e6d8cf4aeb	12178	x	diffpy-the-two-shell-drivers-ported-to-python-ch	**Report.** `.agents/slop/DIFFPY.md`.
+73668aad55	12179	 	diffpy-the-two-shell-drivers-ported-to-python-ch	**REPORTED, NOT FIXED — in the shell body, kept as-is because the port must reproduce
+392ae7eadc	12187	x	session-2026-10-05-round-7-five-gates-could-lie-	**Five gate harnesses could report success while printing a diff.** This is the same
+a07b3f5723	12253	x	session-2026-10-05-round-8-three-walls-retired-a	**Three false walls retired**, each refuted by something this port ALREADY SHIPS and
+28b53a54ed	12290	x	session-2026-10-05-round-9-the-primary-gate-coul	**`checks/differ.py run` CRASHED and could not complete at all.** Fixed: one missing
+d097e6deb9	12292	 	session-2026-10-05-round-9-the-primary-gate-coul	**The new `AGENTS.md` names four gates, and one of them DOCUMENTS the exact failure
+af48c645fd	12346	x	session-2026-10-05-round-10-four-files-are-0-byt	**`checks/differ.py`'s `anchored()` fixed** (one missing `bool()`), so the primary gate
+fd3e0411ce	12348	 	session-2026-10-05-round-10-four-files-are-0-byt	**THE TREE IS WRECKED AND THE FIX IS ONE LINE THAT IS NOT MINE TO MAKE UNILATERALLY.**
+5991f22964	12400	x	session-2026-10-05-round-11-the-0-byte-files-are	**All four 0-byte files restored.** `helpers.bend` is byte-identical to master again,
+9ded917f43	12463	x	to-retire-the-stage-not-to-reach-the-rows	Classify the 10 C + 10 JS registrations dead-or-reachable, over FOUR
+c6ae08c3b3	12467	x	to-retire-the-stage-not-to-reach-the-rows	`build4.py` also corrects two instrument defects found on the way: a raw
+7a953a4090	12472	x	to-retire-the-stage-not-to-reach-the-rows	**PLANT + DISARM** (`.agents/slop/deadreg/plant.py`): deleting the twenty
+55d914a270	12477	x	to-retire-the-stage-not-to-reach-the-rows	**REMOVED: nothing load-bearing.** The registrations cost 0 registered effects
+c72e0efaa4	12484	x	to-retire-the-stage-not-to-reach-the-rows	**`e2e.sh` STAGE 8 RETIRED, AND `e2e.py` WITH IT — LANDED by the E2ESTAGE8 unit, which
+1a00ed6427	12507	 	to-retire-the-stage-not-to-reach-the-rows	**THE ASYMMETRY, IF A LAW IS EVER RE-SEAMED** (recorded, not fixed):
+2d8309a6b9	12514	x	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**THE RULE WRITTEN AND THE INSTRUMENT MEASURED.** `.agents/slop/wallrule/RULE.md`
+89993e728a	12519	x	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**THE NINE WALLS SWEPT. RETIRED 7, RE-DATED 8, NONE DELETED-BECAUSE-STALE.**
+2f99104111	12527	x	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**`noneshape/ns-oparg.bend` REPORTED, NOT EDITED — IT IS THE POINT OF THE RULE.**
+100d484106	12531	 	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**TWO WALLS NOBODY CAN CLEAR TODAY, AND ONE IS A DECISION I CANNOT UNMAKE.**
+107c703b83	12541	 	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**THE `agent-core.md` ADDITION IS REPORTED, NOT MADE** (`WALL/7`): *a wall in a file
+8d6e4a0555	12546	 	2026-10-05-wallrule-unit-a-wall-names-its-prereq	**A COLD SET IS A WALL AND IT IS NOT SELF-REFreshing.** W11's retirement rests on
+f2d795a559	12554	 	session-2026-10-05-round-12-a-wall-that-is-true-	**NINE markers in `uop/weak.bend` are one missing reader, and the wall is an IMPORT
+c254b9f342	12614	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**`live`: oracle and port BYTE-IDENTICAL** — 15,705 bytes, same sha256
+a938e9a1bb	12617	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**9 plants, `0 of 9 disagree`**, reaching exit statuses **0, 1, 2 and 3** — including
+94c8dd569d	12620	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**The concurrency question, measured:** `&`, `wait`, `$!`, `xargs -P`, `Popen`, threads,
+fffeb2a3ff	12624	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**Arguments:** the shell has no `getopts`/`shift`/`$@`/`$*`; `-x` and `foo bar baz` are
+c158540a95	12627	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**Three port bugs found by plants, not by reading:** `FileNotFoundError` out of stage 6 when
+42610da293	12631	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**Stage 6 and stage 8 NOT fixed, re-pointed, retired or retuned.** Fidelity only. Stage 6
+cc88aec5e4	12636	x	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**`checks/e2e.py` SAID `SKIP IS NOT PASS` AND EXITED 0 FOR PASS-WITH-SKIP. FIXED: PASS-with-SKIP
+f7c4cc3540	12680	 	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**REPORTED, NOT FIXED — a `cd "$(dirname "$0")/../.."` shim exits 0 HAVING RUN NOTHING.**
+f38e86cc7e	12691	 	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**REPORTED — the live cleanup unit `qmyqvmnpsloz` ("103 ONE-OFF `.sh` DELETED") TRUNCATED
+bf30c9f182	12699	 	2026-10-05-e2epy-unit-checks-e2e-sh-ported-to-ch	**DECISION NEEDED — `AGENTS.md` now routes new gate code to `gates/*.py` and says
+2ba0d4119e	12707	x	session-2026-10-05-bitcastrow-bitcast-dims-range	**THE ROWS FIRST, THEN THE FIX — `TODO(fold-bitcast-u32)`, now CLOSED.**
+faab54bba8	12716	x	session-2026-10-05-bitcastrow-bitcast-dims-range	**L3, THE TRUNCATION THE CENSUS COULD NOT SEE.** `sint_of` is `H.i64_of_i32`, which
+09c19dc134	12722	x	session-2026-10-05-bitcastrow-bitcast-dims-range	**THE FIX: `i64_mul`/`i64_mod`/`i64_div`, and `O.SI{quotient}` instead of `sint_of`.**
+226830a050	12728	x	session-2026-10-05-bitcastrow-bitcast-dims-range	**THE TWO SURVIVING DIVERGENCES ARE PINNED ON BOTH SIDES, NOT EXCLUDED.**
+93294e4cc6	12732	x	session-2026-10-05-bitcastrow-bitcast-dims-range	**THREE PLANTS, THREE DISTINCT SETS OF ROW NAMES, TWO DISARMS AT ZERO.** Plant B
+6a3fef0bfe	12738	 	session-2026-10-05-bitcastrow-bitcast-dims-range	**UNSETTLED — a dim above `2**63/inp` is still wrong, and CLOSING THAT NEEDS A CHECKED
+2073309fd0	12751	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**SIX FAILURES REPRODUCED, SIX GUARDS BUILT.** The five the deleted instrument documented
+5613696acd	12757	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**THE COARSE-ANCHOR FIX IS NOW MECHANICAL, NOT A MANUAL SPLIT.** Drop each alternative,
+e962b9d7b8	12761	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**A TREE COPY IS PRUNED BY SHAPE, NOT BY NAME.** The brief named `differverdict` and `xd1`;
+8c2692f8d1	12764	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**21 ROWS -> 16 GRADED, 5 REFUSED, ERROR RATE 0/16, ONE LABELLER.** Refusals: `W3` `W5`
+b0bcbf7c99	12769	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**`STALE/UN-RE-ASKED` 11 OF 16 IS THE HEADLINE, AND IT IS NOT `KEPT`.** These walls'
+e44109a4ae	12773	x	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**REDUNDANCY IS PER LINE NOW.** A per-FILE conjunction counted 109 files for the key `CID`
+68482b9663	12779	 	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**THE OTHER FIVE DANGLING PATHS ARE OTHER UNITS' GATES** (`blob-intern-gate.sh`,
+bd2816e20c	12784	 	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**`RULE.md` AND `SWEEP.md` STILL NAME THE DELETED PATH**, so three `repro-paths.py` hits
+c82c119ad3	12787	 	2026-10-05-wallcheck-rebuild-the-checker-was-pru	**RUN IT ON LOAD; DO NOT READ THE VERDICT.** `master` moved `eed25a30b` -> `8575adaab` while
+9611efcc7f	12800	x	session-2026-10-05-the-103-txt-under-runs-graphc	**INVENTORY, DERIVED NOT TYPED.** `.agents/slop/difftxt/inventory.py` imports
+c3d8d5a21e	12810	x	session-2026-10-05-the-103-txt-under-runs-graphc	**THE EXPERIMENT, AND IT SETTLED THE DECISION.** `.agents/slop/difftxt/rename-experiment.sh`
+264cb28fa3	12819	x	session-2026-10-05-the-103-txt-under-runs-graphc	**ANSWER 2: LEAVE THE NAMES, CARVE OUT EXPLICITLY — and fix the guard that made the
+3ef29f551d	12828	x	session-2026-10-05-the-103-txt-under-runs-graphc	**ORACLE BYTES UNTOUCHED, PIN UNTOUCHED.** `oracle-run.sh` still
+e309fdaea2	12831	 	session-2026-10-05-the-103-txt-under-runs-graphc	**UNSETTLED, NOT MINE:** `differverdict/` holds `.txt` snapshot copies of the shell-vs-py
+b99927e81a	12836	 	session-2026-10-05-the-103-txt-under-runs-graphc	**`differ.py:458`'s "Reported, not fixed -- see DIFFPY.md" STILL POINTS AT NOTHING.**
+b906f197fc	12846	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-1` REPRO FIRST, BOTH SIDES, TWO FAILURE SCENARIOS.** `.agents/slop/stalefix/stale-repro.py`
+5fb0d88534	12856	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-2` THE FIX.** `gates/gatekit.py`: every write goes to `_staged(name)` = `differ.py:158`'s
+c62fbaee52	12863	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-3` THE STDERR DISCRIMINATOR WAS **NOT** IN THE TREE.** `RECOVERED.md` §2 says that fix
+d9e6e0314f	12869	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-4` PLANT AND DISARM.** `.agents/slop/stalefix/plant-disarm.py`, planted
+b2c7ee0312	12873	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-5` NO VERDICT CHANGE, ALL 9 GATES, BOTH SIDES.** `.agents/slop/stalefix/gate-matrix.py`
+edb9c6c459	12878	x	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**`SF-6` THE THREE REPORTED BUGS WERE ALREADY FIXED, `file:line`.** `if self.diverges:` →
+6c298401e4	12881	 	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**UNSETTLED, NOT MINE, TWO GATES EXIT BEFORE `run()`.** `gates/mixin-op-gate.py:91` and
+a7ab971db6	12887	 	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**UNSETTLED, NOT MINE, `retention-check.py`'s clause II cannot see a `finally`.**
+c76bb80f5a	12894	 	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**UNSETTLED, NOT MINE, the two instruments disagree about a staged temp.**
+8ca7d3794e	12899	 	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**OUT OF SCOPE, REPORTED: `gatekit`'s artifact names are `.txt` and `checks/no-txt.py` exits 1.**
+6913cae78b	12904	 	2026-10-05-stalefix-unit-gates-gatekit-py-left-t	**NO MEMORY BOUND ADDED, DELIBERATELY.** Neither shell had one, `bounded.py` returns 3 for
+500349956e	12917	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**BEFORE/AFTER, ALL SEVEN STAGES, EACH WITH ITS DENOMINATOR.**
+911cb2fa7c	12923	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`xd2/serve.mjs` + `xd2/sh.mjs` RESTORED, byte-identical to `371cc64c9^`.**
+4cdd4f08e6	12928	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**BOTH RESTORATIONS FALSIFIED, BOTH SIDES, NON-VACUOUS PLANTS.** A control that patched
+8c905245ae	12934	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**THE CITATION SET DOES COVER THEM — `verdict_for` SAYS SO, MEASURED, NOT ASSUMED.**
+a774690c48	12939	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`checks/repro-paths.py` IS BLIND TO THE CLASS IT IS THE INSTRUMENT FOR.**
+cb38bb48b8	12945	x	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`repro-paths.py`'s DANGLING RECONCILED AGAINST RECOVERABILITY — AND THE BRIEF'S NUMBER IS
+d418ace11b	12955	 	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`repro-paths.py`'s SUFFIX CLASS IS THE FIX AND IT IS NOT MINE.** `REF` needs `mjs|js|txt|json`
+d49542871f	12959	 	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`DIFFPY.md` IS A DANGLING POINTER TO A DOCUMENT, REPORTED NOT FIXED.** `checks/differ.py:520`
+2bc47c3ddf	12968	 	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**`AGENTS.md` NAMES THE WRONG FILE AND THE GATE IS NOW GREEN.** The `e2e.py` bullet says
+2d9e3b91fe	12972	 	fix3-stage-3-s-and-stage-5-s-fixtures-were-delet	**STAGE 5'S DENOMINATOR IS STILL `None`, DELIBERATELY.** `tail -3` is both the denominator and
+390ad8099e	12982	x	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**`gates/` writes no `.txt` at all.** The oracle's expected values and the filtered row
+22c45deeaa	12985	x	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**THE RENAME MOVES WITH EVERY READER — and I broke that rule three times in one change.**
+d68e0409ef	12990	x	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**A PIN CHECK THAT READS A FILTERED LANE CANNOT ASK WHETHER A DELETED ROW IS STILL
+6e8980809c	13000	 	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**`gates/artifacts/` HELD ONE DIRECTORY WITH TWO MEANINGS** — `py.rows` FILTERED beside
+b2c5cd0938	13007	x	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**`mixin-op-gate`'s ORACLE PIN DRIFTED** — on disk `e8792d0f`, pin `178cf5f7`. That was the
+12f9a77b70	13011	 	2026-10-06-the-lane-file-rename-and-the-rule-i-b	**`jj bookmark create -r @-` IS A RACE.** The other agent committed between my
+fcc05263ca	13018	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	repro: green / drift / disagree, both gates, both `gatekit`s, STALE as sha256 — `.agents/slop/clearfix/REPRO.rows`
+8ebb8d51d9	13019	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	all 9 gates, both lanes, with the 7 in-run cells as explicit controls — `MATRIX.rows`
+c10cae370c	13020	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	plant and disarm, incl. a module-scope early exit and a removed `_clear()` — `PLANT.rows`
+09bd7ceb9e	13021	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	options 1 and 3 built as diffs and measured against option 2 — `PLANT.rows` §P4
+e23aa7d3bf	13022	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	clause II shown UNMEASURABLE (`15/17` invariant under deleting the `finally`)
+d2f2eb46ba	13023	 	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**REPORTED, NOT DONE — `gates/gatekit.py` is another unit's.** One line: `self._clear()`
+53bebeaf83	13025	 	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**REPORTED — `gates/mixin-op-gate.py:70`'s ORACLE_PIN is stale as committed**
+566b75b30c	13033	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**14 of 17 `checks/*.sh` RESOLVED A PATH AGAINST A DIRECTORY THAT IS NOT THE REPO.**
+f37173cf2c	13038	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**EACH ONE NOW COMPUTES THE ROOT FROM ITSELF AND ASSERTS IT**, on two tracked markers
+4e4c7e3cc0	13043	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**THE PLANT MOVES A SCRIPT ONE DIRECTORY DEEPER AND IT GOES RED: 14 of 14 caught, rc=3,
+0e04128972	13048	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**`checks/e2e.sh` FIXED, AND `checks/e2e.py`'s `BODY_SHA` KEPT — DELETING IT WOULD HAVE
+77c88f793f	13062	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**`checks/mutate.sh` DELETED.** It diffed against `/tmp/spec.gate.base`, which **it never
+4ddeac9a10	13067	x	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**THE INSTRUMENT EXECUTES THE SCRIPTS AND NEVER PARSES THEM** (`rootcheck.sh` +
+bb26fb62a8	13072	 	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**REPORTED, NOT MINE — `bin/bend` CANNOT RUN IN A CLONE.** An absolute path into a
+b28edc408b	13075	 	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**REPORTED, NOT MINE — `checks/e2e.sh` CANNOT BE FIXED FROM HERE.** `checks/e2e.py:182`
+c9a9fbdcdb	13080	 	clearfix-a-gate-s-pre-run-sys-exit-strands-the-l	**REPORTED, NOT MINE — `checks/hermetic-census.py:33` and `checks/census.py:14` are still
+7e226bcb99	13091	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**THE NINE, MEASURED**: 5 AGREE (`alu` `bit` `bw` `move` `where`), 4 DISAGREE (`allred`
+7182477f9b	13094	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**HOW MANY OF `WANT`'s 16 HAD ONE OBSERVATION AND NOTHING TO CORROBORATE IT: 14** — every
+0339587f2e	13098	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**ANSWER 2 FOR THE FOUR** (`WANT` 16 → 20): `flip` on `arg` (predicted by its own docstring),
+0fdbda7072	13103	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**ANSWER 3 FOR THE FIVE, DELIBERATELY**: an `AGREE` row there would assert nothing the
+61d66da6aa	13107	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**NEW PIN `expect-moved=0` + a second refusal.** `cmd_run` returned 0 whenever `unset` was
+283415aa91	13112	x	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**`graphs-unanswered` DELIBERATELY NOT ADDED** — it is `graphs-unset` under a second name,
+b47ea3699e	13116	 	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**`runs/graphcmp/D/` NOT REGENERATED** (shared tree, another unit auditing it). So
+0598b5288a	13119	 	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**`.agents/slop/want/` IS TWO FILES BEHIND AND IS NOT MINE**: `census.py` still labels the
+6c72e9077b	13122	 	2026-10-06-unsetexp-unit-the-nine-graphs-that-ra	**OPEN JUDGEMENT**: whether the five forced `AGREE`s deserve rows at all. The evidence is in
+f9d073ac44	13131	x	2026-10-06-which-claims-are-reached-not-which-ar	**`canon` IS DEAD CODE — 25 lines, ZERO of nine gates pass it.** `pins` 7 users,
+c74d6e925a	13136	x	2026-10-06-which-claims-are-reached-not-which-ar	**`port_only`'s absence half is PROVABLY UNREACHABLE, and I repaired it yesterday.**
+42a2a8edc6	13143	 	2026-10-06-which-claims-are-reached-not-which-ar	**THE DERIVED COUNT IS THE ONLY GUARD, AND IT IS WORTH A DELIBERATE LOOK.** If `rows` is
+808bc4ec50	13154	x	2026-10-06-the-first-ops-bend-gate-and-the-oracl	**THE CONST-IDENTITY CLUSTER IS GATED.** `hashcons_same_index`, `zeros_differ`,
+4188e7f4ec	13160	x	2026-10-06-the-first-ops-bend-gate-and-the-oracl	**ROW NAMES ARE PINNED, VALUES ARE ONLY DIFFED.** Planted a RENAME (same value, same
+2b5cd6439f	13163	 	2026-10-06-the-first-ops-bend-gate-and-the-oracl	**THE OTHER 50 `t_*` TESTS WANT `simplify` OR ARENA MACHINERY STILL BEHIND MARKERS.**
+4d7d6e270d	13168	x	2026-10-06-the-first-ops-bend-gate-and-the-oracl	**THE TWO PINNED SHELL ORACLES MOVED TO `gates/oracles/`.** They were the two most
+aa151f534d	13181	x	2026-10-06-the-arg-type-lane-14-rows-and-the-fou	**THE KEY IS `(op, src, arg, tag, type(arg))` — `ops.py:201` — SO THE ASYMMETRY IS:**
+89804efb7b	13187	x	2026-10-06-the-arg-type-lane-14-rows-and-the-fou	**THREE OF THE NINE ROWS ARE `0`, WHICH IS WHY THEY ARE WORTH GATING.** `t_*` returns the
+a102d4a58b	13191	 	2026-10-06-the-arg-type-lane-14-rows-and-the-fou	**`PyConst` FLOATS ARE `ConstFloat`, AND THAT CHANGED AN ORACLE ANSWER.** `__hash__` is
+6caef4f4ed	13198	 	2026-10-06-the-arg-type-lane-14-rows-and-the-fou	**STILL UNGATED IN ops.bend: the ~50 remaining `t_*`, and the blocker is named.** The next
+8f5e4193b7	13213	x	speccite-file-line-citations-and-the-tenth-class	**THE CENSUS, WHICH IS A POPULATION AND NOT TEN INSTANCES.** `tinybendygrad/**` makes
+b445183f0d	13217	x	speccite-file-line-citations-and-the-tenth-class	**`spec.bend:412`/`:1092` DIAGNOSED AND FIXED.** `git log -S'x.dtype is x.arg.dtype'` on
+66278c5f05	13224	x	speccite-file-line-citations-and-the-tenth-class	**THE ELEVENTH INSTANCE, FOUND BY THE INSTRUMENT ON ITS FIRST RUN, IN THE SAME FILE, AND NOT
+89d17388f3	13230	x	speccite-file-line-citations-and-the-tenth-class	**THE PLANT THE CHECK CANNOT SEE, AND WHY IT CANNOT SEE IT.** `PLANT-2` quotes
+3362eded21	13236	x	speccite-file-line-citations-and-the-tenth-class	**`PLANT-1` FIRES AND `PLANT-3` IS THE OTHER HALF OF THE BELT.** `PLANT-1` = the real defect
+ea8da60c30	13240	x	speccite-file-line-citations-and-the-tenth-class	**A STATIC CHECK CANNOT ANSWER "DOES THIS CITATION STILL HOLD?", MEASURED THREE WAYS.** (1) The
+5b3238bee1	13247	x	speccite-file-line-citations-and-the-tenth-class	**WHAT TO PIN: THE BLOB, NOT THE COMMENT.** A line number is only defined **relative to a blob**
+93fb248014	13250	 	speccite-file-line-citations-and-the-tenth-class	**THE FIVE `STALE-RULE` ARE NOT MINE TO FIX. FOUR ARE RESPELLINGS AND ONE IS A REAL DELETION.**
+60b0dad6ce	13262	 	speccite-file-line-citations-and-the-tenth-class	**THE 269 `STALE-LINE` ARE NOT AUDITED.** Mechanically true ("the NEAREST occurrence is N lines
+ca34a83d78	13266	 	speccite-file-line-citations-and-the-tenth-class	**THE 4,341 UNBOUND CITATIONS CARRY NO QUOTABLE SOURCE** and raising reach is a per-file decision
+2979ac8dcd	13272	x	devpin-the-device-is-a-declared-precondition-of-	**NAME THE DEVICE EVERY EXISTING RUN WAS TAKEN UNDER, AND HOW.** `DEV=CPU`, three ways:
+f279d3b5c6	13277	x	devpin-the-device-is-a-declared-precondition-of-	**THE RUN ALREADY RECORDS THE DEVICE — IN 99 OF 139 ARTIFACTS, AND `D0-run-summary.txt`
+bf1f2f9a40	13281	x	devpin-the-device-is-a-declared-precondition-of-	**ENV TABLE: 147 flags, AST-counted, one subprocess each, two lanes.** 8 can move a
+eb1b68634f	13285	x	devpin-the-device-is-a-declared-precondition-of-	**`lin`: NONE OF THE THREE ANSWERS, BECAUSE THE PREMISE FALSIFIES.** `WANT["lin"] ==
+614a0fc3a4	13291	x	devpin-the-device-is-a-declared-precondition-of-	**CANONICAL FORM IS INJECTIVE ON THE 25 GRAPHS' ROWS: 88 live dataclass instances → 44
+1e216605d9	13294	x	devpin-the-device-is-a-declared-precondition-of-	**`checks/devpin.py` — the gate, two methods that share no assumption (M1 reads device
+62a9f44e0d	13297	x	devpin-the-device-is-a-declared-precondition-of-	**`checks/corpus-figure.py` refuses on the new `DEVICE PRECONDITION` and STILL PRINTS
+272659ea16	13299	 	devpin-the-device-is-a-declared-precondition-of-	**NOT DONE, AND IT IS NOT MINE:** `checks/differ.py` records no device in
+3ee43cb687	13302	 	devpin-the-device-is-a-declared-precondition-of-	**NOT DONE, NEEDS `bend`:** the BEND side's injectivity. The 50 recorded
+9d7415e0f5	13307	x	devpin-the-device-is-a-declared-precondition-of-	**`checks/gen/` WAS INVISIBLE TO BOTH.** `gates/retention-check.py` had a TWO-ITEM
+2a8359a324	13310	x	devpin-the-device-is-a-declared-precondition-of-	**IT WAS TRACKED AS TWO GIT EMPTY BLOBS WHILE THE WORKTREE HELD 268,523 BYTES** — and
+9e40d404be	13314	x	devpin-the-device-is-a-declared-precondition-of-	**9 OF 9 CITATIONS DEPEND ON IT AND ALL 9 ARE STALE AGAINST THE EMPTY BLOB.**
+cd40adc0f8	13319	x	devpin-the-device-is-a-declared-precondition-of-	**`checks/gen/` UNTRACKED AND GITIGNORED, following clause III's OWN precedent** — beside
+a6b312db55	13325	x	devpin-the-device-is-a-declared-precondition-of-	**THE SAME SHAPE, 51 MORE TIMES: `checks/rows-*.rows`.** `checks/census.py:64` writes
+8a58ab10ab	13329	x	devpin-the-device-is-a-declared-precondition-of-	**`gates/gendirs.py` — THE POPULATION IS DISCOVERED, NOT LISTED.** 194 directories from
+f564979627	13336	x	devpin-the-device-is-a-declared-precondition-of-	**`git check-ignore` WITHOUT `--no-index` REPORTS "NOT IGNORED" FOR EVERY TRACKED PATH** —
+5a2a8c6dff	13339	x	devpin-the-device-is-a-declared-precondition-of-	**ONE POPULATION, TWO CONSUMERS.** `retention-check.py` clause V and `gates-pop.py` clause
+b97f83bb19	13343	x	devpin-the-device-is-a-declared-precondition-of-	**CLAUSE V FAILS ON A PROPERTY THAT NEEDS NO LIST:** a directory **in the index AND named by
+8bcb7c8a7e	13347	x	devpin-the-device-is-a-declared-precondition-of-	**BOTH TOOLS CHECKED FOR THE BRIEF'S OWN ERROR SHAPE, AND ONE HAD IT.**
+79a3bda365	13356	x	devpin-the-device-is-a-declared-precondition-of-	**9 PLANTS IN `gates-pop.py` (was 8) AND 7 IN `gendirs.py`, ALL GREEN, PLUS AN INERTNESS
+481d2c267f	13363	 	devpin-the-device-is-a-declared-precondition-of-	**NOT DONE, AND IT IS NOT SETTLED BY MEASUREMENT:** `discovered()` is a **lower bound**.
+a9f3174abb	13368	 	devpin-the-device-is-a-declared-precondition-of-	**NOT DONE: `"something writes here"` IS NOT `"generated"`.** The vendored `tinygrad/` tree
+21f60113f3	13378	x	devpin-the-device-is-a-declared-precondition-of-	**DEFECT 28 — a device NAME counted as an atom letter.** `al(OADD,sCPU,CPU)` is the arg of a
+e6a160dee6	13387	x	devpin-the-device-is-a-declared-precondition-of-	**DEFECT 29 — `setdefault("DEV", "CPU")` is a no-op in the only environment that matters.**
+45a45f804a	13396	x	devpin-the-device-is-a-declared-precondition-of-	**DEFECT 30 — the last unsorted set print, and the comment that denied there was one.**
+80e04f9d96	13401	x	devpin-the-device-is-a-declared-precondition-of-	**A FRAGILITY THE FIX INTRODUCED, FOUND BY THE PLANTS, NOW REFUSED.** `tinygrad.Device.DEFAULT`
+3a948c0918	13405	x	devpin-the-device-is-a-declared-precondition-of-	**PLANTS: `.agents/slop/selfcheck/plants.py`, 3 plants / 15 beats, all PASS post-fix and all FAIL
+6524776dad	13410	 	devpin-the-device-is-a-declared-precondition-of-	**NOT MINE, STILL OPEN: `runs/graphcmp/D` still holds the OLD artifacts**, so clause IV stays
+290910b62f	13413	 	devpin-the-device-is-a-declared-precondition-of-	**NOT MINE, STILL OPEN: `checks/env-precond.py --check` still refuses**, because the run
+a61197dae5	13417	x	devpin-the-device-is-a-declared-precondition-of-	**THE 326 `file:line` FINDINGS, ADJUDICATED: **182 RESTORED, 144 NOT BROKEN, 57 FENCED,
+a6e5374a73	13458	x	2026-10-06-the-ops-bend-marker-campaign-and-the-	**`DEAD` AND `REFUSED` HAVE EXITS.** `PASS 0 · FAIL 1 · REFUSED 3 · SKIP 4 · DEAD 5`. Every
+7ce932d559	13462	x	2026-10-06-the-ops-bend-marker-campaign-and-the-	**A GATE MAY HAVE CHECKS OF ITS OWN WITHOUT LOSING THE VERDICT** — `gatekit.gate(g, summary,
+05a75213d6	13465	x	2026-10-06-the-ops-bend-marker-campaign-and-the-	**TWO PLANTS OF MINE WERE MY OWN BAD PLANT**, both correctly answered REFUSED: one truncated a
+022e960a5a	13469	 	2026-10-06-the-ops-bend-marker-campaign-and-the-	**THE SIX LARGE ONES ARE NOT STARTED**: `gcd` needs `Counter`/`split_uop`/`const_factor`,
+ba01986abd	13473	x	2026-10-06-the-ops-bend-marker-campaign-and-the-	**THE ROSTER IS DISCOVERED, NOT LISTED.** `checks/sweep.py`’s `LIVE_UNITS` (14 names,

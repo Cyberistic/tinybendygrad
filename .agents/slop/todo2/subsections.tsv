@@ -1,0 +1,44 @@
+title	line	items	done	open	bars
+Coldness — the three numbers, and the one that is allowed to be written bare	254	5	5	0	0
+Tooling — the substrate gate is Python, and the shell survives as the oracle	287	7	7	0	0
+Lane liveness — how many of the gated lanes actually RAN the port	322	15	13	2	0
+The duplicate-row-name class — `usb` FIXED, and the census RECONCILES	423	9	6	3	0
+The duplicate class, continued — `ops_nv`'s ORACLE closed, and the "lost refusal" corrected	508	32	25	7	0
+The fuel detour — done, and it is worth remembering	645	21	17	2	0
+`graph_rewrite` — the dispatcher, DONE. Both walls above are closed; the header's reason is CORRECTED, not softened.	1043	9	9	0	0
+P4 — `schedule/`	1395	2	1	0	0
+Deferred until the oracle is green	1493	1	0	1	0
+A retraction that belongs with this plan	1554	67	45	22	0
+In flight when the machine went quiet (uncommitted, agents still writing)	1930	57	48	9	0
+Health rule, learned three times today	2558	3	3	0	0
+SIX MEASURED BEND RULES APPENDED	2644	150	123	27	1
+SEVEN MEASURED RULES APPENDED	4021	42	37	5	2
+Outside this unit's files	4464	9	9	0	0
+Outside this unit's files	4574	8	8	0	0
+Outside this unit's files	4627	9	9	0	0
+Outside this unit's files	4679	15	13	2	0
+Outside this unit's files	4843	8	8	0	0
+Outside this unit's files	4923	11	11	0	1
+Outside this unit's files	5020	127	111	16	4
+Closed	6860	11	11	0	0
+Refused — and two of these were MY error, corrected by the unit	6890	4	4	0	0
+OPEN, and named	6903	9	1	8	0
+Process, learned the hard way	6932	7	5	2	1
+Found, not fixed	7092	7	7	0	0
+Done	7203	7	7	0	0
+Found, not fixed	7336	19	19	0	0
+Reported, NOT fixed (the files are not this unit's)	7618	121	112	8	1
+Walls, and what I did not touch	8833	8	8	0	0
+[x] **ONE `bw` GRAPH IN THE DIFFER, `AGREE` AT FIELD-RECORD LEVEL, `?=0/0`**	9274	8	8	0	0
+[ ] **FOR `graphcmp`'s OWNER — six pins that must move, REPORTED NOT APPLIED**	9322	5	0	5	0
+[ ] **TWO SUBSTRATE MOVES UNDER THIS RUN, BOTH ANOTHER UNIT'S, NEITHER WORKED AROUND**	9343	5	5	0	0
+[ ] **NOT MEASURED, and the reason**	9395	5	1	4	0
+[x] **THE PORT CALLS: `runtime/autogen/libclang.bend` answers the oracle's ten rows**	9419	46	30	16	0
+FLIPR — `flip`'s DISAGREE located, split into two causes, and closed (`nodes=6/7` -> `6/6`)	9750	136	112	24	0
+TWO OF MY OWN MISTAKES, RECORDED BECAUSE BOTH NEARLY SHIPPED	10890	10	5	5	0
+Progress: [#########.] 9/10	11004	23	17	6	0
+S2 — Tensor surface: which missing methods a RUNTIME DEVICE needs (`.agents/slop/SURFACE2.md`)	11216	51	47	4	0
+Progress: [##########] 10/10	11665	154	113	41	1
+Shell roots — every `checks/*.sh` now proves which tree it is standing in	13029	48	33	15	0
+Meta-instruments — the twelfth generated directory, and the population both of them shared (2026-10-06)	13305	13	11	2	0
+graphcmp-oracle: the three defects that made `retention-check` clause IV RED  [x] FIXED, NOT COMMITTED	13372	13	10	3	1

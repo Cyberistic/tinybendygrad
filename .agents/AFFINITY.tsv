@@ -1,0 +1,29 @@
+# bend,	affinity,	why it is not `+`/why it is affine,	reviewer note
+#
+# The port's affinity ledger. Every `@unsafe` and every `+` decision that is not
+# mechanically obvious gets a row here, so a reviewer can check ownership
+# without re-deriving it, and so a *new* `@unsafe` stands out as unlisted.
+#
+# Kinds of row:
+#   unsafe <file> <def> <reason>            a def the termination check cannot see through
+#   unsafe-group <file> <group> <reason>    a mutually recursive group, one row for all of it
+#   data <file> <def> <reason>               a def that takes a `+` (reusable) argument and why
+#   affine <file> <def> <reason>            a def that must stay affine (consuming) and why
+#
+# Rules a reviewer enforces:
+#   * an `@unsafe` with no row here is a REJECT, not a discussion;
+#   * a `+` on a Type-kinded thing is a type error, so it cannot hide;
+#   * a `+` on a Data-kinded thing costs a refcount at runtime, so every row for
+#     `data` must say what buys the reuse.
+
+# ---------------------------------------------------------------------------
+# bendgrad/LAWS/spec.bend -- the pure spec IR
+# ---------------------------------------------------------------------------
+
+unsafe-group	bendgrad/LAWS/spec.bend	prod, dim_of, dim_of.go, Sp.concat_shapes, Sp.concat_shapes.go, Sp.index_shape, Sp.index_shape.go, Sp.index_shape.join, Sp.stack_shape, Sp.stack_shape.go, Sp.reduce_shape, Sp.broadcast, Sp.broadcast2, Sp.numel, Sp.bitcast_shape, Sp.unshard_shape, Sp.shape, Sp.dtype, Sp.stack_dtype	one mutually recursive group: Sp.shape and Sp.dtype fold over the Sp tree and call the shape folds, and the shape folds call back into Sp.shape through on_shape. Every member is a structural fold over a FINITE tree, so it terminates; @unsafe is used only to say "the decrease check cannot follow the subterm through the helper split". It is NOT hiding a loop that might not stop. An adversarial reviewer must re-check that claim by reading the fold: every recursive arm recurses on a strictly smaller child (a src field, a list tail) and no other exit exists.
+
+data	bendgrad/LAWS/spec.bend	Shape.of, Shape.ndim, Shape.to_dims	the dim list is read once by the caller and then the Shape is passed on, so the list is `+`: a Shape is Data and a shape is read by several derived properties (shape, numel, dtype-adjacent checks) in the same law. Without `+` each law would have to rebuild the list.
+
+data	bendgrad/LAWS/spec.bend	Shape.drop, drop_dims	the dim list is destructured and rebuilt; `+` keeps the rebuild from consuming the caller's copy so a law can quote the same shape twice.
+
+data	bendgrad/LAWS/bendgrad/LAWS.bend	numel_of, shape_of, dtype_of, stack_dims, stack_numel	the same shape is quoted by the premise and by the conclusion of the movement-op laws; `+` is what lets both quote it. See bendgrad/LAWS.bend section II.

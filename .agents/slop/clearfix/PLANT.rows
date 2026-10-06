@@ -1,0 +1,27 @@
+start: gates/mixin-op-gate.py sha=f34a33dfb493764a
+
+== P3  PLANT MARKER BYTES INTO A PROMOTED ARTIFACT, THEN DRIFT
+   drift rc=2  6 files were there, py.rows was given MARKER bytes
+   py.rows=STALE  -- STALE against the PLANTED bytes, so the instrument reads the file's own content and not merely its presence
+
+== P2  REMOVE THE REPAIR: `_clear()` out of `Gate.__init__`
+   green rc=0, then drift rc=2: 6/6 STALE  THE BUG IS BACK -- the repair is what made the difference
+
+== P1  RE-INSERT THE EARLY `sys.exit(2)` INTO A REPAIRED GATE, THREE POSITIONS
+   P1a  2/3 exits before run(), clears before run()=NONE  ->  rc=2  EMPTY (0 files)
+   disarmed: gates/mixin-op-gate.py == HEAD  sha=f34a33dfb493764a  OK
+   P1b  2/3 exits before run(), clears before run()=NONE  ->  rc=2  EMPTY (0 files)
+   disarmed: gates/mixin-op-gate.py == HEAD  sha=f34a33dfb493764a  OK
+   P1c  2/3 exits before run(), clears before run()=NONE  ->  rc=2  EMPTY (0 files)
+   disarmed: gates/mixin-op-gate.py == HEAD  sha=f34a33dfb493764a  OK
+
+== P4  OPTIONS 1 AND 3, BUILT AS DIFFS AGAINST THE SAME gatekit
+   option 1  pins= + drift inside run()
+      with the caller left ALONE:  rc=2  6 STALE  bd.out=STALE  bd.rows=STALE  bn.out=STALE  bn.rows=STALE  gate.bin=STALE  py.rows=STALE
+   option 3  public clear() + caller try/finally
+      with the caller left ALONE:  rc=2  6 STALE  bd.out=STALE  bd.rows=STALE  bn.out=STALE  bn.rows=STALE  gate.bin=STALE  py.rows=STALE
+      with the caller WRAPPED:    rc=2  EMPTY (0 files)
+      with `clear()` MISPLACED:   rc=2  bd.out=STALE  bd.rows=STALE  bn.out=STALE  bn.rows=STALE  gate.bin=STA
+
+VERDICT: PLANT AND DISARM HOLDS
+   tree: gates/mixin-op-gate.py restored byte-for-byte

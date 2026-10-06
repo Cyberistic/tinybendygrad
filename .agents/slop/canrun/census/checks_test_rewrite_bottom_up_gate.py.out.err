@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/test_rewrite_bottom_up_gate.py", line 2, in <module>
+    from tinygrad.uop.ops import PatternMatcher, UOp, graph_rewrite, Ops, UPat, BottomUpGate
+ModuleNotFoundError: No module named 'tinygrad'

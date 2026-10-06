@@ -1,0 +1,26 @@
+### A. AS IT STANDS -- the live tree, every .bend it holds
+PROVENANCE  port=113  non-port=25   of which not-in-index=1 no-upstream=25   (of 138)
+PORT ALARM  1 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=138, of which non-port=25  =>  the port count to compare against is 113
+
+### B. A PROBE WITH AN INNOCENT NAME, PLANTED IN THE LIVE TREE
+    (neither *.mut.bend nor probe-*.bend: nothing to remember, nothing to match, and
+     it COMPILES, so it cannot be waved off as broken debris)
+PROVENANCE  port=113  non-port=26   of which not-in-index=2 no-upstream=26   (of 139)
+PORT ALARM  2 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=139, of which non-port=26  =>  the port count to compare against is 113
+
+### C. THE SAME FILE REMOVED -- the split returns to A
+PROVENANCE  port=113  non-port=25   of which not-in-index=1 no-upstream=25   (of 138)
+PORT ALARM  1 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=138, of which non-port=25  =>  the port count to compare against is 113
+
+### D. THE PLANT THIS UNIT OWNS DELETED: runtime/ops_bend.mut.bend (md5 9bdb1dd8...)
+PROVENANCE  port=113  non-port=25   of which not-in-index=1 no-upstream=25   (of 138)
+PORT ALARM  1 file(s) inside tinybendygrad/ are not in the index.
+DENOMINATOR .bend handed=138, of which non-port=25  =>  the port count to compare against is 113
+
+### E. STATE
+PROBE-SELFDEMO leftover? no
+ops_bend.mut.bend       ? deleted, by design
+index untouched by this script? it never calls git

@@ -1,0 +1,15 @@
+{
+  "collision_at": {
+    "Di32": [
+      "DType@lin",
+      "DType@move"
+    ]
+  },
+  "collisions": {},
+  "distinct_strings": 5,
+  "distinct_structures": 5,
+  "graphs_emitted": 25,
+  "graphs_failed": {},
+  "renderings": 11,
+  "rows": 312
+}

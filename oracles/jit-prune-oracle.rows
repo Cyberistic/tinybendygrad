@@ -1,0 +1,5 @@
+prune_sig_kept=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.CALL
+prune_sig_once=n=1 op=Ops.LINEAR nsrc=1 srcops=Ops.BUFFER
+kept_src_ops=['CALL']
+once_src_ops=['BUFFER']
+needed_is_b1=BUFFER

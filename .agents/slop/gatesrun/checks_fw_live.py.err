@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/fw_live.py", line 10, in <module>
+    from common import MMIO, open_gpu, wait_until
+ModuleNotFoundError: No module named 'common'

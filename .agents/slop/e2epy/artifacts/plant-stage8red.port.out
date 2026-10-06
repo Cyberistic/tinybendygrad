@@ -1,0 +1,28 @@
+== 1/4 oracle (CPython tinygrad, DEV=CPU)
+PLANT stub: stage1 oracle
+== 2/4 port (pure bend, no GPU)
+bend: 25 rows (attempt 1)
+== 3/4 gpu (real WebGPU adapter, headless Chrome)
+  stage 3 gpu (node): FAIL (rc=1)
+== 4/4 gate
+PLANT stub: stage4 gate, 20/20 rows vs CPython
+  stage 4 gate (matmul vs CPython, via WebGPU): PASS
+== 5/5 port's own device (the port's ops_bend runtime executes)
+PLANT stub: stage5 ops_bend milestone
+expected: 1 2 3
+PACKET.out: 1 2 3
+  stage 5 ops_bend (kernel executes in Bend): PASS
+== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+PLANT stub: stage6 port matmul, 64/64 words
+  stage 6 port (matmul THROUGH the port, no Node): PASS
+== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+     STAGE 7 PASS
+     64/64 MET
+     GREEN [C0]
+  stage 7 f64 (double through the port, no Node): PASS
+== 8/8 the JS dtype LANE under node (bend -o emits JS; node is what runs it)
+  stage 8 js lane (node on runtime/dtype.js, 20 rows vs CPython): FAIL (rc=1)
+--- verdicts: 2 failed, 0 skipped ---
+FAIL -- 2 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+       a failing stage does not retract the others' claims, and this script now says so in
+       its exit status, which it did not before.

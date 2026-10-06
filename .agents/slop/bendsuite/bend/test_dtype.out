@@ -1,0 +1,16 @@
+F.........                                                               [100%]
+=================================== FAILURES ===================================
+___________________________ TestEqStrDType.test_strs ___________________________
+
+self = <test.null.test_dtype.TestEqStrDType testMethod=test_strs>
+
+    def test_strs(self):
+>     self.assertEqual(str(dtypes.float32), "dtypes.float")
+E     AssertionError: 'dtypes.f32' != 'dtypes.float'
+E     - dtypes.f32
+E     ?         ^^
+E     + dtypes.float
+E     ?         ^^^^
+
+test/null/test_dtype.py:7: AssertionError
+1 failed, 9 passed in 0.12s

@@ -1,0 +1,35 @@
+
+==============================================================================
+BIND '<-'
+==============================================================================
+  STEP 1 -- IS THE LANE IN THE ARTIFACT?  (shipped probe, compiled)
+                  emitted probe   dtype.js on disk
+    of32                      5                  5
+    bits32                    4                  4
+    fp8_decode                2                  2
+    i64_of                   18                 18
+    pack64                    7                  7
+    dtype.js                  1                   
+    dtype.c                   3                   
+    -> LANE PRESENT: the tokens the plants edit are in the artifact
+  STEP 2 -- MOVED ROWS, shipped vs each arm
+    disarm-A     moved   0/98   (the only correct count)
+    plant-A      moved  30/98   e.g. ['abi4_fp8to_0_01', 'abi4_fp8to_0_04']
+    disarm-B     moved   0/98   (the only correct count)
+    plant-B      moved   8/98   e.g. ['abi4_fp16_1p5', 'abi4_fp16_1p1']
+    disarm-C     moved   0/98   (the only correct count)
+    plant-C      moved  40/98   e.g. ['abi4_fp8to_0_01', 'abi4_fp8to_0_04']
+
+==============================================================================
+BIND '='
+==============================================================================
+  shipped      NO BACKEND  bend rc=1
+      | SOME PROOFS FAIL
+      | Error:
+      | - expected : F32
+      | - observed : @-R:Type -> @k:(@_:F32 -> IO.OP<R>) -> IO.OP<R>
+      | Location: main
+      | 4 |   do IO<Unit>:
+      | 5>|     v0 : F32 = D.Dt.fp16(1.5)
+
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/abi4check/at-135bf0204/plant-measure.json

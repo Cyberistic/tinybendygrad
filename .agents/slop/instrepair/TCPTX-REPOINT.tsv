@@ -1,0 +1,15 @@
+mith	dead_anchor_first_line	tc_ptx_count	tc_bend_count	tc_bend_lines	action
+M1	def cd(+bit: U32, +ax: U32) -> U32: U32.or(U32.shln(bit, 2n)	0	1	[124]	repoint subject -> tinybendygrad/renderer/tc.bend line 124
+M2	def AX_K() -> U32: 2	0	1	[122]	repoint subject -> tinybendygrad/renderer/tc.bend line 122
+M3	def Tc.used(+t: Tc) -> List<&2, U32>: cc4(Tc.la(t), Tc.ea(t)	0	1	[302]	repoint subject -> tinybendygrad/renderer/tc.bend line 302
+M4	def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))	0	1	[333]	repoint subject -> tinybendygrad/renderer/tc.bend line 333
+M4b	def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))	0	1	[333]	repoint subject -> tinybendygrad/renderer/tc.bend line 333
+M5	def cacc(+bs: List<&2, U32>, v: U32, +d: U32) -> U32: cacc.g	0	1	[411]	repoint subject -> tinybendygrad/renderer/tc.bend line 411
+M6	      U32.add(acc, U32.shln(U32.and(U32.shrn(v, U32.to_nat(j	0	1	[409]	repoint subject -> tinybendygrad/renderer/tc.bend line 409
+M7	def Tc.cover(+t: Tc, la: List<&2, U32>, +ea: List<&2, U32>, 	0	1	[515]	repoint subject -> tinybendygrad/renderer/tc.bend line 515
+M8	def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), 	0	1	[554]	repoint subject -> tinybendygrad/renderer/tc.bend line 554
+M9	def fnv(+s: String) -> U32: fnv.go(s, 2166136261)	0	1	[455]	repoint subject -> tinybendygrad/renderer/tc.bend line 455
+M10	def pow2(n: U32) -> U32: U32.shln(1, U32.to_nat(n))	0	1	[97]	repoint subject -> tinybendygrad/renderer/tc.bend line 97
+M14	def dsh_half.go(+ts: List<&2, Tc>, +acc: List<&2, Tc>) -> Li	0	0	[]	STAYS in tc_ptx.bend:603; re-quote anchor: `Tc` -> `T.Tc` on every line (def line is `def dsh_half.go(+ts: List<&2, T.Tc>, +acc: List<&2, T.Tc>) -> List<&2, T.Tc>:`, body `List.append(&2, T.Tc, ...)`)
+M18	def dsh_half.keep(+t: Tc) -> Bool: Bool.or(O.eq_dt(Tc.di(t),	0	0	[]	STAYS in tc_ptx.bend:597; re-quote anchor: `def dsh_half.keep(+t: T.Tc) -> Bool: Bool.or(O.eq_dt(T.Tc.di(t), S.half()), O.eq_dt(T.Tc.di(t), S.single()))`
+M48	  String.concat([r_sd(75, "bool,double,float,half,int,long,s	0	0	[]	STAYS in tc_ptx.bend:621; re-quote anchor: dtype-name string rewritten to `bool,f16,f32,f64,i16,i32,i64,i8,u16,u32,u64,u8` and the three r_sd(75/53/80,...) calls are now on ONE line

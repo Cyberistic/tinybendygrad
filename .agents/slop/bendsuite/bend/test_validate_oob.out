@@ -1,0 +1,17 @@
+
+==================================== ERRORS ====================================
+_______________ ERROR collecting test/null/test_validate_oob.py ________________
+ImportError while importing test module '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/test/null/test_validate_oob.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test/null/test_validate_oob.py:6: in <module>
+    from tinygrad.uop.validate import validate_index_with_z3
+tinygrad/uop/validate.py:5: in <module>
+    import z3
+E   ModuleNotFoundError: No module named 'z3'
+=========================== short test summary info ============================
+ERROR test/null/test_validate_oob.py
+1 error in 0.07s

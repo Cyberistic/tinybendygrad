@@ -1,0 +1,5 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=30 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/PROOF.bend --check-only  out=0B err=133B  said=SOME PROOFS FAIL | Error: 17 TODOs found. | The code is incomplete, and not a valid proof yet.
+SOME PROOFS FAIL
+Error: 17 TODOs found.
+The code is incomplete, and not a valid proof yet.
+bend 2.0.35 is available: run bend update

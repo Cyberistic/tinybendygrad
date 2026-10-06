@@ -1,0 +1,2 @@
+  RESTORE PROVEN 241/259 rows: every file was removed from a scratch root and rebuilt from its `restore` column,
+  then compared by sha256 against the manifest's own digest column.

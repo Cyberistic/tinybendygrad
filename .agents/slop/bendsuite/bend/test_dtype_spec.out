@@ -1,0 +1,15 @@
+
+==================================== ERRORS ====================================
+________________ ERROR collecting test/null/test_dtype_spec.py _________________
+ImportError while importing test module '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/test/null/test_dtype_spec.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/importlib/__init__.py:90: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+test/null/test_dtype_spec.py:6: in <module>
+    from hypothesis import given, settings, strategies as strat
+E   ModuleNotFoundError: No module named 'hypothesis'
+=========================== short test summary info ============================
+ERROR test/null/test_dtype_spec.py
+1 error in 0.08s

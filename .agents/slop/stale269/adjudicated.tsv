@@ -1,0 +1,4 @@
+verdict	census	port	pl	rp	cl	new	span	gatespan	fenced	coord	claim	newline
+NO-SPAN	PAST-EOF	tinybendygrad/codegen/opt/search.bend	189	tinygrad/codegen/opt/postrange.py	271		postrange.py:271	postrange.py:271	False	tinygrad/codegen/opt/postrange.py:271 -> ?  span `postrange.py:271`	# as `allow_test_size` from `apply_opts` (`postrange.py:271`), and that is the	
+STALE-LINE	PAST-EOF	tinybendygrad/uop/fold.bend	319	tinygrad/uop/ops.py	1925	1917	int|UOp	 is ops.py:1925's 	True	tinygrad/uop/ops.py:1925 -> 1917  span `int|UOp`	# THE SHAPE ALGEBRA. `sint` is ops.py:1925's `int|UOp` and `ops.bend` already	sint = int|UOp
+STALE-LINE	PAST-EOF	tinybendygrad/uop/ops.bend	813	tinygrad/uop/ops.py	1925	1917	sint = int|UOp	 is ops.py:1925's 	True	tinygrad/uop/ops.py:1925 -> 1917  span `sint = int|UOp`	# `Sint` is ops.py:1925's `sint = int|UOp`, spelled out. It is the element type	sint = int|UOp

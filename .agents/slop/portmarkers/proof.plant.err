@@ -1,0 +1,15 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=32 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/PROOF.bend --check-only  out=0B err=303B  said=SOME PROOFS FAIL | Error: | - expected : S.Sp.dtype(a)
+SOME PROOFS FAIL
+Error:
+- expected : S.Sp.dtype(a)
+- observed : S.Sp.dtype(b)
+Context:
+- p : S.Sp
+- a : S.Sp
+- b : S.Sp
+Location: L.where_takes_the_second_operand_dtype
+484 | def L.where_takes_the_second_operand_dtype(p, a, b):
+485>|   {==}
+    |   ^^^^
+486 | 
+bend 2.0.35 is available: run bend update

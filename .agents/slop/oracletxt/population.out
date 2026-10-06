@@ -1,0 +1,20 @@
+on disk: 358 files under oracles/
+    .rows    277
+    .json    20
+    .bend    16
+    .err     12
+    .py      7
+    .md      5
+    .names   5
+    .tsv     4
+    .sh      4
+    .PRENAME 2
+    .all     1
+    .txt     1
+    .sha256  1
+    .log     1
+    .orig-stage0 1
+    .BASELINE 1
+  .txt  1  -> ['oracles/rows-bd.txt']
+  .rows 277
+tracked .txt: 1

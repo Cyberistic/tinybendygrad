@@ -1,0 +1,30 @@
+# loopfix -- `fold.bend`'s SELF-TEST NATIVE BUILD IS THE PROJECT'S MARGINAL LANE
+#
+# Six attempts at ONE file, ONE ceiling (2048 MB), and it is a coin flip: FOUR killed.
+# This is a measurement OF THE LANE, not a defect in the change -- the SAME source built at
+# 1,344 MB and was killed at 2,177 MB, and it is unrelated to the 2026-10-06 fix (the
+# PRE-EDIT `fold.bend` was killed once and built at 2,013 MB on the retry).
+#
+# EVERY TOKEN, PARSED FROM `[bounded]`, NEVER THE EXIT CODE -- because a memory kill and a
+# printing refusal are both rc 3 in this guard's table and only the token separates them.
+#
+# THE STALE-EXE TRAP, AND IT IS IN THIS FILE ON PURPOSE. `-o` ON A KILLED BUILD LEAVES THE
+# PREVIOUS EXE. Every attempt here `rm -f`'d the output FIRST, so a kill left NOTHING rather
+# than something stale -- and the consequence was measured rather than assumed: after
+# attempt 6 (a kill) the next invocation of the exe answered
+#     [bounded] NOT-STARTED  rc=5
+# and the captured stdout was 0 BYTES, sha256 e3b0c442… which is the sha256 of THE EMPTY
+# STRING. A reader who had trusted the exit code, or who had counted rows without checking
+# emptiness, would have recorded a 0-row self-test as a pass. `checks/bounded.py` caught it,
+# and that is the only reason this paragraph is short.
+#
+attempt	token	exe_after_this_attempt
+attempt1	KILLED-ON-MEMORY  rc=-9  peak-RSS=2177 MB	NO
+attempt2	KILLED-ON-MEMORY  rc=-9  peak-RSS=2075 MB	NO
+attempt3	KILLED-ON-MEMORY  rc=-9  peak-RSS=2070 MB	NO
+attempt4	WITHIN-LIMITS  rc=0  peak-RSS=2004 MB	yes
+attempt5	WITHIN-LIMITS  rc=0  peak-RSS=1724 MB	yes
+attempt6	KILLED-ON-MEMORY  rc=-9  peak-RSS=2076 MB	NO
+then:	the exe was invoked after attempt 6 and answered NOT-STARTED rc=5, 0 bytes out
+retry1	WITHIN-LIMITS  rc=0  peak-RSS=1946 MB	yes (1,077,912 B)
+then:	WITHIN-LIMITS  rc=0 -> 334 rows, sha256 232be7fe302e80b94b69f3ab04912e81c601a9374de940910aeb3dda8c6e0530

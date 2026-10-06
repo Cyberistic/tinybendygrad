@@ -1,0 +1,18 @@
+path	class	drives	drivers	rc	token	agents_named	hazards	note
+checks/bounded-selftest.sh	SHIM	exec .venv/bin/python checks/bounded.py --selftest	checks/bounded.py	0	selftest PASS	no	none	ran once, before the bend case was found: bounded.py --selftest case 12 runs ./bin/bend --check-only (x2)
+checks/classify.sh	DRIVER	classify a mutation sandbox against the live tree + git blob history	.agents/slop/mutledger/BLOBHIST.tsv [GONE]	0	(no stdout)	no	none	captured earlier
+checks/demo.sh	DRIVER	the substrate PROVENANCE split, with a probe planted and removed	.agents/slop/substrate-check.sh	0	index untouched by this script? it never calls git	no	none	captured earlier
+checks/disarm.sh	DRIVER	the paired disarm of the substrate PORT ALARM via git update-index	.agents/slop/substrate-check.sh	(read-only)	(not run)	no	none	compiles bend
+checks/e2e.sh	GATE	the seven-stage end-to-end gate	.agents/slop/e2e_mm.py;.agents/slop/e2e_mm.bend;.agents/slop/e2e_mm_run.mjs;.agents/slop/e2e_mm_gate.py;.agents/slop/opsbend-milestone.sh;.agents/slop/e2e_port/run-port-mm.sh;.agents/slop/f64/run-f64.sh	(read-only)	(not run)	path+base	none	compiles bend
+checks/gate.sh	GATE	the shlscope SHIFT-AMOUNT gate: CPython vs Bend, two lanes	.agents/slop/shlscope/gen.py [GONE];bin/bend	2	(no stdout)	no	&&-difftrap-EXIT-rm	captured earlier
+checks/gen.sh	DRIVER	the W-2 ladder generator + driver around ./bin/bend	bin/bend	(read-only)	(not run)	no	none	compiles bend
+checks/lint_demo.sh	GATE	show both branches of .agents/slop/norm/lint_norm.py	.agents/slop/norm/lint_norm.py;.agents/slop/mm-dt-gate.py	1	DID NOT FLIP	no	trap-EXIT-rm	captured earlier
+checks/lintable-gate.sh	GATE	the ops.py linear-rule-table gate: CPython vs interpreted vs native	.agents/slop/lintable/lintable-oracle.py;.agents/slop/lintable/lintable-probe.bend [GONE];bin/bend	(read-only)	(not run)	no	none	compiles bend
+checks/plant.sh	DRIVER	plant one token in cstyle.bend's fixture and count rows moved	checks/derive.py [GONE];checks/measure.py [GONE];checks/convert2.py [GONE];checks/agree.py [GONE];bin/bend	(read-only)	(not run)	no	none	compiles bend
+checks/run-all.sh	DRIVER	every number in CSTYLE2.md from a $TMPDIR snapshot	checks/derive.py [GONE];checks/measure.py [GONE];checks/empty-probe.py [GONE];checks/preamble-oracle.py [GONE];checks/convert2.py [GONE];checks/agree.py [GONE];bin/bend	(read-only)	(not run)	no	none	compiles bend
+checks/run-f64.sh	GATE	an f64 kernel through the port (e2e stage 7)	.agents/slop/portexec/run-kernel.sh;.agents/slop/f64/oracle_f64.py;.agents/slop/f64/emit-f64.bend;.agents/slop/f64/repair-dupes.py	(read-only)	(not run)	+base	&&-diff<( )	compiles bend
+checks/run-port-mm.sh	GATE	the matmul through the port (e2e stage 6)	.agents/slop/portexec/run-kernel.sh;.agents/slop/e2e_port/coverage.py;.agents/slop/e2e_port/plant.py	(read-only)	(not run)	+base	trap-EXIT-rm<( )	compiles bend
+checks/sb-gate.sh	GATE	the rule-body gate: base rows + CPython oracle vs the port	oracles/schedule-bodies/BEFORE-rows.rows;.agents/slop/schedule-bodies/sb-oracle.py [GONE];.agents/slop/schedule-bodies/sb-diff.py [GONE];bin/bend	3 ; 0	REFUSED | SUBSTRATE	path+base	none	captured earlier
+checks/substrate-check.sh	SHIM	exec .venv/bin/python checks/substrate.py	checks/substrate.py	(read-only)	(not run)	path+base	none	compiles bend
+checks/walk-mutate.sh	DRIVER	arm a plant/disarm and diff whole name=value rows	bin/bend	(read-only)	(not run)	no	none	compiles bend
+checks/wt-sync.sh	DRIVER	mirror tinybendygrad/ into the workaround tree	(none)	0	# workaround tree at /Users/cyberistic/src/tries/2026-09-30-tinybendyg	no	none	captured earlier

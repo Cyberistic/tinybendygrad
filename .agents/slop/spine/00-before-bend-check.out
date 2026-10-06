@@ -1,0 +1,11 @@
+SOME PROOFS FAIL
+Error:
+- expected : cases for ../../tinybendygrad/uop/ops.AOpLit
+- observed : \{}
+Location: argstr
+373 | def argstr(a: O.Arg, depth: U32) -> String:
+374>|   match a:
+    |   ^^^^^^^^
+375 |     case O.ANone{}: "N"
+bend 2.0.35 is available: run bend update
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=308 MB (ceiling 2048)  1s  :: ./bin/bend .agents/slop/graphcmp.bend --check-only

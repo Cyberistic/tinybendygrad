@@ -1,0 +1,44 @@
+  139 `.txt` EXCUSED: `checks/differ.py`'s declared graphcmp artifacts, which a sha256-pinned oracle reads BY NAME (oracle-repro.sh:61, :105; corpus-figure.py:72).
+  553 .txt FILE(S). `.txt` IS NOT AN EXTENSION THIS PROJECT USES.
+    oracles/AFTER-pins.txt
+    oracles/BEFORE-rows.txt
+    oracles/FINAL_11.txt
+    oracles/FINAL_int.txt
+    oracles/FINAL_mv.txt
+    oracles/FINAL_nat.txt
+    oracles/LIVE-rows.txt
+    oracles/ag-abi-oracle.re.txt
+    oracles/ag-abi-oracle.txt
+    oracles/ag-emit-oracle.re.txt
+    oracles/ag-emit-oracle.txt
+    oracles/ag-oracle.re.txt
+    oracles/ag-oracle.txt
+    oracles/amd_oracle.txt
+    oracles/amdev-baseline-552.txt
+    oracles/ansi_oracle.txt
+    oracles/arena-jit-baseline.txt
+    oracles/base_interp.txt
+    oracles/base_native.txt
+    oracles/baseline-ledger.txt
+    oracles/baseline-probe.txt
+    oracles/baseline.txt
+    oracles/bend_mv.txt
+    oracles/bl-py.txt
+    oracles/blob-bd.txt
+    oracles/blob-bn.txt
+    oracles/blob-opsgate-diff.txt
+    oracles/blob-opsgate.txt
+    oracles/blob-py.txt
+    oracles/boot42_baseline_port.txt
+    oracles/bwd-oracle.txt
+    oracles/c11.txt
+    oracles/c11b.txt
+    oracles/cpulink_oracle.txt
+    oracles/cstyle-capture-oracle-preren.txt
+    oracles/cstyle-capture-oracle.txt
+    oracles/dd-const-oracle.txt
+    oracles/dd-divE-rows-degraded.txt
+    oracles/dd-oracle-fresh.txt
+    oracles/dd-oracle.txt
+    ... and 513 more
+rc=1

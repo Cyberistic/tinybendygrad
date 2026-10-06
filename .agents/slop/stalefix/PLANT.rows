@@ -1,0 +1,16 @@
+repro: py.txt has 2 rows, expected 3
+# every planted byte carries PLANTED-BY-plant-disarm.py, so a survivor is unmistakable
+
+A REAL GATE, GREEN: gates/artifacts/wk-f32-gate/
+  PLANTED into gates/artifacts/wk-f32-gate: bd.txt=e71770ec06c1, gate.bin=e71770ec06c1, .tmp.bd.txt=e71770ec06c1   (the published name, bend -o's output, and a SIGKILL temp)
+  ARMED?   yes -- the plant is still on disk
+  run rc=0
+  DISARMED? yes   published now: bd.sub|bd.txt|bn.sub|bn.txt|gate.bin|py.sub|py.txt
+
+A RED RUN: the repro gate, whose oracle is one row short
+  PLANTED into /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/stalefix-plant/repro/repro: bd.txt=e71770ec06c1, gate.bin=e71770ec06c1, .tmp.bd.txt=e71770ec06c1   (on top of a GREEN run, so the red run has something stale to fail over)
+  ARMED?   yes -- the plant is still on disk
+  run rc=1
+  DISARMED? yes   published now: NOTHING
+
+# VERDICT: every plant disarmed, no temp survived

@@ -1,0 +1,22 @@
+A wl       dtypes.weakint [dtypes.weakint, dtypes.weakint]
+A u.dtype   dtypes.half | src dts [dtypes.weakint, dtypes.half]
+A dts       (dtypes.half, dtypes.half)
+A commit    8.0 | dtypes.half | src dts [dtypes.half, dtypes.half]
+B store dt  [dtypes.half, dtypes.weakfloat]
+B rewritten [dtypes.half, dtypes.half] | same node? False
+C src ops   [Ops.MUL, Ops.CAST] [dtypes.half, dtypes.half]
+C promo     dtypes.half | u.dtype dtypes.half
+C uncast    [dtypes.half, dtypes.weakfloat] | same node? False
+D load dts  None | u.dtype dtypes.weakint
+E dts       None | meet weak? True
+L weakint ^ weakint = weakint
+L weakint ^ weakfloat = weakfloat
+L weakfloat ^ weakfloat = weakfloat
+L weakint ^ int = int
+L weakint ^ half = half
+L weakfloat ^ half = half
+S weakint strong= int weak= weakint
+S weakfloat strong= float weak= weakfloat
+S int strong= int weak= weakint
+S half strong= half weak= weakfloat
+S bool strong= bool weak= bool

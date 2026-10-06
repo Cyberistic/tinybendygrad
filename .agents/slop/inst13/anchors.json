@@ -1,0 +1,160 @@
+{
+ "fold-rng-mutate.py": {
+  "subject": "tinybendygrad/uop/fold.bend",
+  "subject_exists": true,
+  "n_anchors": 19,
+  "resolved_once": 19,
+  "zero": 0,
+  "multi": 0,
+  "zero_labels": [],
+  "multi_labels": []
+ },
+ "ga_mutate.py": {
+  "subject": "tinybendygrad/renderer/amd/generate.bend",
+  "subject_exists": true,
+  "n_anchors": 41,
+  "resolved_once": 41,
+  "zero": 0,
+  "multi": 0,
+  "zero_labels": [],
+  "multi_labels": []
+ },
+ "mixin-op-mutate.py": {
+  "subject": "tinybendygrad/mixin/op.bend",
+  "subject_exists": true,
+  "n_anchors": 17,
+  "resolved_once": 17,
+  "zero": 0,
+  "multi": 0,
+  "zero_labels": [],
+  "multi_labels": []
+ },
+ "nn-init-mutate.py": {
+  "subject": "tinybendygrad/nn/__init__.bend",
+  "subject_exists": true,
+  "n_anchors": 15,
+  "resolved_once": 15,
+  "zero": 0,
+  "multi": 0,
+  "zero_labels": [],
+  "multi_labels": []
+ },
+ "rf2-mutate.py": {
+  "subject": ".agents/slop/rf2root/schedule/rf2_work.bend",
+  "subject_exists": false,
+  "n_anchors": 42,
+  "resolved_once": 0,
+  "zero": 0,
+  "multi": 42,
+  "zero_labels": [],
+  "multi_labels": [
+   "-1x:case True{} : M.Hop{M.hop_ar(r), 0}",
+   "-1x:U32.is_eq(M.mp_src(ar, self, 0), M.mp_src(ar, self",
+   "-1x:case o <> t: Bool.and(O.op_in(have, o), rf_early.g",
+   "-1x:O.PMEntry{3, [O.OpsINDEX{}],  [O.OpsPARAM{}]},    ",
+   "-1x:Bool.and(M.mp_is(ar, self, O.OpsNOOP{}), M.mp_nsrc",
+   "-1x:raf.keep.go(ar, O.Arena.src_from(ar, self, 1), [M.",
+   "-1x:Nat.is_eq(List.length(&2, U32, kept), 1n)",
+   "-1x:Bool.and(M.mp_is(ar, self, O.OpsSHRINK{}), rf_zero",
+   "-1x:case True{} : List.append(&2, U32, acc, [M.mp_src0",
+   "-1x:Bool.and(M.mp_is(ar, self, O.OpsPARAM{}), rf_addr_",
+   "-1x:rf_renumber.of(rf_tag_is_empty(ar, self), ar, self",
+   "-1x:O.ARange{[n], rf_axis(ar, self)}, rf_no_tag()))",
+   "-1x:Bool.and(M.mp_is(ar, self, O.OpsSTAGE{}), M.mp_nsr",
+   "-1x:U32.is_eq(M.mp_nsrc(ar, self), 2)",
+   "-1x:O.eq_arg(M.mp_arg(ar, x), O.APy{O.CInvalid{}})",
+   "-1x:case O.OpsAFTER{}  : True{}",
+   "-1x:dg_3.of(rf_addr_eq(fx, M.mp_src0(ar, self), S.Aalu",
+   "-1x:def t_claim_ab_stg3() -> U32: claim_full(ab_table(",
+   "-1x:O.PMEntry{6, [O.OpsRANGE{}],  Nil{}}]             ",
+   "-1x:O.PMEntry{7, [O.OpsINDEX{}],   [O.OpsAFTER{}]},   ",
+   "-1x:O.PMEntry{8, [O.OpsINDEX{}],   [O.OpsMSTACK{}]}]  ",
+   "-1x:O.PMEntry{4, [O.OpsSTAGE{}],   [O.OpsINDEX{}]},   ",
+   "-1x:O.PMEntry{8, [O.OpsINDEX{}],   [O.OpsMSTACK{}]}]  ",
+   "-1x:O.PMEntry{5, [O.OpsSTAGE{}],   Nil{}},            ",
+   "-1x:def MOPS_ROOT_FB() -> List<&2, O.Op>: [O.OpsINDEX{",
+   "-1x:def MOPS_ROOT_AF() -> List<&2, O.Op>: [O.OpsAFTER{",
+   "-1x:def MOPS_ROOT_EN() -> List<&2, O.Op>: [O.OpsEND{}]",
+   "-1x:Bool.and(M.mp_is(ar, M.mp_src0(ar, self), O.OpsIND",
+   "-1x:def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -",
+   "-1x:def dev_none_shape(d: S.Dev) -> Bool: True{}",
+   "-1x:case 0: mop",
+   "-1x:case 6: cvar2",
+   "-1x:case 7: after",
+   "-1x:List.append(&2, U32, [M.mp_src(ar, M.mp_src0(ar, s",
+   "-1x:def ct_8.of(devless: Bool, +ar: O.Arena, +self: U3",
+   "-1x:def ab_7(+fx: F.Folded, +ar: O.Arena, +self: U32) ",
+   "-1x:ct_8.of(Bool.and(ct_8_claim(ar, self),",
+   "-1x:case o <> t: Bool.and(O.op_in(have, o), rf_early.g",
+   "-1x:ct_6.of(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONS",
+   "-1x:Bool.or(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONS",
+   "-1x:def hop_srcops(+r: M.Hop) -> String: srcops_n(M.ho",
+   "-1x:case +x <> t  : srcops.go(ar, t, String.concat([ac"
+  ]
+ },
+ "state-mutate.py": {
+  "subject": "tinybendygrad/nn/state.bend",
+  "subject_exists": true,
+  "n_anchors": 12,
+  "resolved_once": 12,
+  "zero": 0,
+  "multi": 0,
+  "zero_labels": [],
+  "multi_labels": []
+ },
+ "tcptx-mutate.py": {
+  "subject": "tinybendygrad/renderer/tc_ptx.bend",
+  "subject_exists": true,
+  "n_anchors": 51,
+  "resolved_once": 37,
+  "zero": 14,
+  "multi": 0,
+  "zero_labels": [
+   "def cd(+bit: U32, +ax: U32) -> U32: U32.or(U32.shln(bit, 2n)",
+   "def AX_K() -> U32: 2",
+   "def Tc.used(+t: Tc) -> List<&2, U32>: cc4(Tc.la(t), Tc.ea(t)",
+   "def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))",
+   "def Tc.threads(+t: Tc) -> U32: pow2(ln(Tc.lc(t)))",
+   "def cacc(+bs: List<&2, U32>, v: U32, +d: U32) -> U32: cacc.g",
+   "U32.add(acc, U32.shln(U32.and(U32.shrn(v, U32.to_nat(j)), 1)",
+   "def Tc.cover(+t: Tc, la: List<&2, U32>, +ea: List<&2, U32>, ",
+   "def c_mma_lane() -> List<&2, U32>: cd5(nk(1), nk(2), mk(0), ",
+   "def fnv(+s: String) -> U32: fnv.go(s, 2166136261)",
+   "def pow2(n: U32) -> U32: U32.shln(1, U32.to_nat(n))",
+   "def dsh_half.go(+ts: List<&2, Tc>, +acc: List<&2, Tc>) -> Li",
+   "def dsh_half.keep(+t: Tc) -> Bool: Bool.or(O.eq_dt(Tc.di(t),",
+   "String.concat([r_sd(75, \"bool,double,float,half,int,long,sho"
+  ],
+  "multi_labels": []
+ },
+ "tools/mutate-dm.py": {
+  "subject": "tinybendygrad/uop/divandmod.bend",
+  "subject_exists": true,
+  "n_anchors": 18,
+  "resolved_once": 13,
+  "zero": 1,
+  "multi": 4,
+  "zero_labels": [
+   "case False{}: q"
+  ],
+  "multi_labels": [
+   "2x:case False{} True{}: 1",
+   "2x:case False{} True{}: 1",
+   "2x:Bool.and(dm_isn2(ar, self), Bool.and(dm_has(dm_val",
+   "4x:case None{}: False{}"
+  ]
+ },
+ "tools/mutate-sz.py": {
+  "subject": "tinybendygrad/sz.bend",
+  "subject_exists": true,
+  "n_anchors": 9,
+  "resolved_once": 7,
+  "zero": 0,
+  "multi": 2,
+  "zero_labels": [],
+  "multi_labels": [
+   "4x:walk(16777216n, Nil{},",
+   "4x:walk(16777216n, Nil{},"
+  ]
+ }
+}

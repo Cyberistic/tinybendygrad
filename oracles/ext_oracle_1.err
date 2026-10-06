@@ -1,0 +1,244 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ext_oracle.py", line 1067, in main
+    try: globals()[ENTRY[nm]]()
+         ^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ext_oracle.py", line 1009, in env
+    row("env.getenv_CC_bare", repr(h.getenv("CC")))
+                                   ^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/helpers.py", line 163, in getenv
+    def getenv(key:str, default:Any=0): return type(default)(os.getenv(key, default))
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ValueError: invalid literal for int() with base 10: 'mycc'
+cpu.x86_64.kind=ok
+cpu.x86_64.kindname=ok
+cpu.x86_64.n=2
+cpu.x86_64.arch=x86_64
+cpu.x86_64.cpu=znver2
+cpu.x86_64.feats=
+cpu.x86_64.args=-march=znver2
+cpu.x86_64.args_n=1
+cpu.x86_64.key=compile_clang_obj_x86_64_znver2
+cpu.x86_64.comp_kind=bytes
+cpu.x86_64.comp_n=1
+cpu.x86_64.argv_n=15
+cpu.x86_64.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=x86_64-none-unknown-elf -march=znver2 - -o -
+cpu.x86_64.prog=mycc
+cpu.x86_64.stdin='int f(void){return 1;}'
+cpu.x86_64.dis_n=1
+cpu.x86_64.dis=7f454c462d66616b65
+cpu.x86_64f.kind=ok
+cpu.x86_64f.kindname=ok
+cpu.x86_64f.n=6
+cpu.x86_64f.arch=x86_64
+cpu.x86_64f.cpu=znver2
+cpu.x86_64f.feats=-sse,-avx2,+fma,nosse
+cpu.x86_64f.args=-march=znver2 -mno-sse -mno-avx2 -m+fma -mnosse
+cpu.x86_64f.args_n=5
+cpu.x86_64f.key=compile_clang_obj_x86_64_znver2_-sse_-avx2_+fma_nosse
+cpu.x86_64f.comp_kind=bytes
+cpu.x86_64f.comp_n=1
+cpu.x86_64f.argv_n=19
+cpu.x86_64f.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=x86_64-none-unknown-elf -march=znver2 -mno-sse -mno-avx2 -m+fma -mnosse - -o -
+cpu.x86_64f.prog=mycc
+cpu.x86_64f.stdin='int f(void){return 1;}'
+cpu.x86_64f.dis_n=1
+cpu.x86_64f.dis=7f454c462d66616b65
+cpu.x86empty.kind=AssertionError: invalid arch string: 'x86_64', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')
+cpu.x86empty.kindname=AssertionError
+cpu.x86empty.n=1
+cpu.x86empty.err=AssertionError: invalid arch string: 'x86_64', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')
+cpu.x86empty2.kind=AssertionError: invalid arch string: '', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')
+cpu.x86empty2.kindname=AssertionError
+cpu.x86empty2.n=0
+cpu.x86empty2.err=AssertionError: invalid arch string: '', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')
+cpu.arm64.kind=ok
+cpu.arm64.kindname=ok
+cpu.arm64.n=2
+cpu.arm64.arch=arm64
+cpu.arm64.cpu=apple-m1
+cpu.arm64.feats=
+cpu.arm64.args=-ffixed-x18 -mcpu=apple-m1
+cpu.arm64.args_n=2
+cpu.arm64.key=compile_clang_obj_arm64_apple-m1
+cpu.arm64.comp_kind=bytes
+cpu.arm64.comp_n=1
+cpu.arm64.argv_n=16
+cpu.arm64.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=arm64-none-unknown-elf -ffixed-x18 -mcpu=apple-m1 - -o -
+cpu.arm64.prog=mycc
+cpu.arm64.stdin='int f(void){return 1;}'
+cpu.arm64.dis_n=1
+cpu.arm64.dis=7f454c462d66616b65
+cpu.arm64f.kind=ok
+cpu.arm64f.kindname=ok
+cpu.arm64f.n=5
+cpu.arm64f.arch=arm64
+cpu.arm64f.cpu=apple-m1
+cpu.arm64f.feats=-sve,+crypto,-lse
+cpu.arm64f.args=-ffixed-x18 -mcpu=apple-m1+nosve++crypto+nolse
+cpu.arm64f.args_n=2
+cpu.arm64f.key=compile_clang_obj_arm64_apple-m1_-sve_+crypto_-lse
+cpu.arm64f.comp_kind=bytes
+cpu.arm64f.comp_n=1
+cpu.arm64f.argv_n=16
+cpu.arm64f.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=arm64-none-unknown-elf -ffixed-x18 -mcpu=apple-m1+nosve++crypto+nolse - -o -
+cpu.arm64f.prog=mycc
+cpu.arm64f.stdin='int f(void){return 1;}'
+cpu.arm64f.dis_n=1
+cpu.arm64f.dis=7f454c462d66616b65
+cpu.arm64dash.kind=ok
+cpu.arm64dash.kindname=ok
+cpu.arm64dash.n=2
+cpu.arm64dash.arch=arm64
+cpu.arm64dash.cpu=-sve
+cpu.arm64dash.feats=
+cpu.arm64dash.args=-ffixed-x18 -mcpu=-sve
+cpu.arm64dash.args_n=2
+cpu.arm64dash.key=compile_clang_obj_arm64_-sve
+cpu.arm64dash.comp_kind=bytes
+cpu.arm64dash.comp_n=1
+cpu.arm64dash.argv_n=16
+cpu.arm64dash.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=arm64-none-unknown-elf -ffixed-x18 -mcpu=-sve - -o -
+cpu.arm64dash.prog=mycc
+cpu.arm64dash.stdin='int f(void){return 1;}'
+cpu.arm64dash.dis_n=1
+cpu.arm64dash.dis=7f454c462d66616b65
+cpu.riscv64n.kind=ok
+cpu.riscv64n.kindname=ok
+cpu.riscv64n.n=2
+cpu.riscv64n.arch=riscv64
+cpu.riscv64n.cpu=native
+cpu.riscv64n.feats=
+cpu.riscv64n.args=-march=rv64g
+cpu.riscv64n.args_n=1
+cpu.riscv64n.key=compile_clang_obj_riscv64_native
+cpu.riscv64n.comp_kind=bytes
+cpu.riscv64n.comp_n=1
+cpu.riscv64n.argv_n=15
+cpu.riscv64n.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=riscv64-none-unknown-elf -march=rv64g - -o -
+cpu.riscv64n.prog=mycc
+cpu.riscv64n.stdin='int f(void){return 1;}'
+cpu.riscv64n.dis_n=1
+cpu.riscv64n.dis=7f454c462d66616b65
+cpu.riscv64nf.kind=ok
+cpu.riscv64nf.kindname=ok
+cpu.riscv64nf.n=4
+cpu.riscv64nf.arch=riscv64
+cpu.riscv64nf.cpu=native
+cpu.riscv64nf.feats=+zba,+zve64d
+cpu.riscv64nf.args=-march=rv64g_+zba_+zve64d
+cpu.riscv64nf.args_n=1
+cpu.riscv64nf.key=compile_clang_obj_riscv64_native_+zba_+zve64d
+cpu.riscv64nf.comp_kind=bytes
+cpu.riscv64nf.comp_n=1
+cpu.riscv64nf.argv_n=15
+cpu.riscv64nf.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=riscv64-none-unknown-elf -march=rv64g_+zba_+zve64d - -o -
+cpu.riscv64nf.prog=mycc
+cpu.riscv64nf.stdin='int f(void){return 1;}'
+cpu.riscv64nf.dis_n=1
+cpu.riscv64nf.dis=7f454c462d66616b65
+cpu.riscv64.kind=ok
+cpu.riscv64.kindname=ok
+cpu.riscv64.n=4
+cpu.riscv64.arch=riscv64
+cpu.riscv64.cpu=rv64gc
+cpu.riscv64.feats=+zve64d,-v
+cpu.riscv64.args=-march=rv64gc_+zve64d_-v
+cpu.riscv64.args_n=1
+cpu.riscv64.key=compile_clang_obj_riscv64_rv64gc_+zve64d_-v
+cpu.riscv64.comp_kind=bytes
+cpu.riscv64.comp_n=1
+cpu.riscv64.argv_n=15
+cpu.riscv64.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=riscv64-none-unknown-elf -march=rv64gc_+zve64d_-v - -o -
+cpu.riscv64.prog=mycc
+cpu.riscv64.stdin='int f(void){return 1;}'
+cpu.riscv64.dis_n=1
+cpu.riscv64.dis=7f454c462d66616b65
+cpu.sparc.kind=RuntimeError: unsupported arch: 'sparc64'
+cpu.sparc.kindname=RuntimeError
+cpu.sparc.n=2
+cpu.sparc.err=RuntimeError: unsupported arch: 'sparc64'
+cpu.X86.kind=RuntimeError: unsupported arch: 'X86_64'
+cpu.X86.kindname=RuntimeError
+cpu.X86.n=2
+cpu.X86.err=RuntimeError: unsupported arch: 'X86_64'
+cpu.x86blank.kind=ok
+cpu.x86blank.kindname=ok
+cpu.x86blank.n=3
+cpu.x86blank.arch=x86_64
+cpu.x86blank.cpu=znver2
+cpu.x86blank.feats=
+cpu.x86blank.args=-march=znver2 -m
+cpu.x86blank.args_n=2
+cpu.x86blank.key=compile_clang_obj_x86_64_znver2_
+cpu.x86blank.comp_kind=bytes
+cpu.x86blank.comp_n=1
+cpu.x86blank.argv_n=16
+cpu.x86blank.argv=mycc -c -x c -O2 -fPIC -ffreestanding -fno-math-errno -nostdlib -fno-ident --target=x86_64-none-unknown-elf -march=znver2 -m - -o -
+cpu.x86blank.prog=mycc
+cpu.x86blank.stdin='int f(void){return 1;}'
+cpu.x86blank.dis_n=1
+cpu.x86blank.dis=7f454c462d66616b65
+cpu.assert_msg=invalid arch string: 'x86_64', expected '<arch>,<cpu>,[<feats>]' (eg. 'x86_64,znver2')
+cpu.ge2_one=0
+cpu.ge2_zero=0
+cpu.ge2_two=1
+cpu.x86key=None
+cpu.x86_ok=7f454c46
+cpu.x86_ok_n=4
+cpu.x86_ok_pos=-1
+cpu.x86_ok_ok=1
+cpu.x86_empty=
+cpu.x86_empty_n=0
+cpu.x86_empty_pos=-1
+cpu.x86_empty_ok=1
+cpu.x86_sp=7f454c
+cpu.x86_sp_n=3
+cpu.x86_sp_pos=-1
+cpu.x86_sp_ok=1
+cpu.x86_upper=deadbeef
+cpu.x86_upper_n=4
+cpu.x86_upper_pos=-1
+cpu.x86_upper_ok=1
+cpu.x86_odd=ValueError: non-hexadecimal number found in fromhex() arg at position 7
+cpu.x86_odd_n=-1
+cpu.x86_odd_pos=7
+cpu.x86_odd_ok=0
+cpu.x86_bad=ValueError: non-hexadecimal number found in fromhex() arg at position 0
+cpu.x86_bad_n=-1
+cpu.x86_bad_pos=0
+cpu.x86_bad_ok=0
+cpu.x86_nodash=ValueError: non-hexadecimal number found in fromhex() arg at position 2
+cpu.x86_nodash_n=-1
+cpu.x86_nodash_pos=2
+cpu.x86_nodash_ok=0
+cpu.x86_dot=ValueError: non-hexadecimal number found in fromhex() arg at position 2
+cpu.x86_dot_n=-1
+cpu.x86_dot_pos=2
+cpu.x86_dot_ok=0
+cpu.x86dis_n=1
+cpu.x86dis=9090:x86_64
+env.raw_CC='mycc'
+env.raw_CUDA_PATH='<unset>'
+env.raw_LLVMOPT='<unset>'
+env.raw_NO_COLOR='1'
+env.raw_CCACHE='<unset>'
+env.raw_CUDA_ARCH='<unset>'
+env.getenv_CC=mycc
+env.FATAL=yes
+cache.before='default'
+cache.after='default'
+cache.os_after='mutated'
+cache.other_default='mutated'
+cache.bare_after=ValueError: invalid literal for int() with base 10: 'mutated'
+cache.cache_info=CacheInfo(hits=10, misses=70, maxsize=None, currsize=68)
+cache.module_before=''
+cache.module_after=''
+cache.getenv_after=''
+cache.env_after='/mutated/after/import'
+cache.os_after_2='mutated'
+META.am.rows=0
+META.cpu.rows=208
+META.ll.rows=0
+META.cu.rows=0
+META.env.rows=8
+META.cache.rows=11

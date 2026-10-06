@@ -1,0 +1,8 @@
+label=set smoke
+inputs=7
+exit=oracle:1 port:1
+stdout=DIFFERS (24 lines vs 25)
+verdict+denominator lines=IDENTICAL (19 each)
+--- STREAM DIFF (first 60 lines) ---
+20a21
+> COVERAGE qualified=33 checked=0 UNSEEN=33 (100.0%)  <- unseen refs are OUTSIDE the import graph (local types + the unaliased `import Base` stdlib). NOT findings; an unaccounted surface.

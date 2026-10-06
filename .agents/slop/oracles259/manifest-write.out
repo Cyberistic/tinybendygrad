@@ -1,0 +1,6 @@
+  WROTE .agents/slop/oracles259/MANIFEST.tsv: 259 rows, every row with a restore command.
+     188  DELETE-CANDIDATE
+      34  KEEP-ALIVE
+      37  KEEP-DUPLICATE
+
+  NOTHING HAS BEEN DELETED. The 188 DELETE-CANDIDATE rows are candidates, and a candidate that is not restored by `--prove` is not a candidate.

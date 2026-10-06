@@ -1,0 +1,11 @@
+=== LIVE tree (no strays: the filter has nothing to hide) ===
+live:  files=144  old_rule=144  delta=0
+
+=== SCRATCH tree (four ops.staged-blob-* restored from git) ===
+scratch:  files=148  old_rule=144  delta=4
+    SEEN only by new rule: uop/ops.staged-blob-36145
+    SEEN only by new rule: uop/ops.staged-blob-64022
+    SEEN only by new rule: uop/ops.staged-blob-66397
+    SEEN only by new rule: uop/ops.staged-blob-97648
+
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/substratepop/discover.rows

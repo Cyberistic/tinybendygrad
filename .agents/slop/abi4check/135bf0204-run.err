@@ -1,0 +1,1 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=592 MB (ceiling 2048)  104s  :: .venv/bin/python /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/abi4-135bf0204/.agents/slop/abi4/abi4_gate.py  out=8034B err=0B

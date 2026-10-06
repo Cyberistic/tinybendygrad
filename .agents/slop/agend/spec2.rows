@@ -1,0 +1,244 @@
+DEVICE PRECONDITION : OK -- DEV=CPU, which is the declared pin
+graphs declared   : 25
+graphs built      : 11
+graphs FAILED     : 14
+    alu: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.SQRT, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(1, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),)),
+  UOp(Ops.RECIPROCAL, arg=None, src=(
+    x1,)),
+  UOp(Ops.POW, arg=None, src=(
+    x1,
+    x1,)),
+  UOp(Ops.LOG2, arg=None, src=(
+    x1,)),
+  UOp(Ops.EXP2, arg=None, src=(
+    x1,)),
+  UOp(Ops.SIN, arg=None, src=(
+    x1,)),
+  UOp(Ops.TRUNC, arg=None, src=(
+    x1,)),
+  UOp(Ops.DETACH, arg=None, src=(
+    x1,)),)) at ops.py:212
+    binblob: RuntimeError: SPEC ISSUE None: UOp(Ops.BINARY, arg=b'tiny', src=(
+  UOp(Ops.REDUCE, arg=(Ops.ADD, 1), src=(
+    UOp(Ops.PERMUTE, arg=(2, 0, 1), src=(
+      UOp(Ops.MUL, arg=None, src=(
+        UOp(Ops.RESHAPE, arg=None, src=(
+          UOp(Ops.RESHAPE, arg=None, src=(
+            UOp(Ops.ALLOC, arg=ParamArg(2, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+            UOp(Ops.STACK, arg=None, src=(
+              x7:=UOp(Ops.CONST, arg=4, src=()),
+              x8:=UOp(Ops.CONST, arg=3, src=()),)),)),
+          UOp(Ops.STACK, arg=None, src=(
+            x7,
+            x10:=UOp(Ops.CONST, arg=1, src=()),
+            x8,)),)),
+        UOp(Ops.PERMUTE, arg=(0, 2, 1), src=(
+          UOp(Ops.RESHAPE, arg=None, src=(
+            UOp(Ops.RESHAPE, arg=None, src=(
+              UOp(Ops.ALLOC, arg=ParamArg(3, dtypes.f32, 15, device='CPU', bind_on_realize=True), src=()),
+              UOp(Ops.STACK, arg=None, src=(
+                x8,
+                x16:=UOp(Ops.CONST, arg=5, src=()),)),)),
+            UOp(Ops.STACK, arg=None, src=(
+              x10,
+              x8,
+              x16,)),)),)),)),)),)),)) at ops.py:212
+    bit: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.SHL, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(4, dtypes.i32, 12, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),
+    x1,)),
+  UOp(Ops.SHR, arg=None, src=(
+    x1,
+    x1,)),
+  UOp(Ops.FLOORDIV, arg=None, src=(
+    x1,
+    x1,)),
+  UOp(Ops.FLOORMOD, arg=None, src=(
+    x1,
+    x1,)),)) at ops.py:212
+    bw: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.RESHAPE, arg=None, src=(
+    UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.REDUCE, arg=(Ops.ADD, 1), src=(
+        UOp(Ops.PERMUTE, arg=(1, 0, 2), src=(
+          UOp(Ops.MUL, arg=None, src=(
+            UOp(Ops.PERMUTE, arg=(0, 2, 1), src=(
+              UOp(Ops.RESHAPE, arg=None, src=(
+                UOp(Ops.RESHAPE, arg=None, src=(
+                  UOp(Ops.ALLOC, arg=ParamArg(8, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+                  x9:=UOp(Ops.STACK, arg=None, src=(
+                    x10:=UOp(Ops.CONST, arg=3, src=()),
+                    x11:=UOp(Ops.CONST, arg=4, src=()),)),)),
+                UOp(Ops.STACK, arg=None, src=(
+                  x13:=UOp(Ops.CONST, arg=1, src=()),
+                  x10,
+                  x11,)),)),)),
+            x14:=UOp(Ops.PERMUTE, arg=(1, 2, 0), src=(
+              UOp(Ops.EXPAND, arg=None, src=(
+                UOp(Ops.EXPAND, arg=None, src=(
+                  UOp(Ops.CAST, arg=dtypes.f32, src=(
+                    UOp(Ops.CONST, arg=ConstFloat(1.0), src=()),)),
+                  UOp(Ops.STACK, arg=None, src=(
+                    x11,
+                    x11,)),)),
+                x10,)),)),)),)),)),
+      x20:=UOp(Ops.STACK, arg=None, src=(
+        x11,
+        x13,
+        x10,)),)),
+    x21:=UOp(Ops.STACK, arg=None, src=(
+      x11,
+      x10,)),)),
+  UOp(Ops.RESHAPE, arg=None, src=(
+    UOp(Ops.PERMUTE, arg=(0, 2, 1), src=(
+      UOp(Ops.RESHAPE, arg=None, src=(
+        UOp(Ops.REDUCE, arg=(Ops.ADD, 1), src=(
+          UOp(Ops.MUL, arg=None, src=(
+            UOp(Ops.RESHAPE, arg=None, src=(
+              UOp(Ops.RESHAPE, arg=None, src=(
+                UOp(Ops.ALLOC, arg=ParamArg(7, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+                x21,)),
+              x20,)),
+            x14,)),)),
+        UOp(Ops.STACK, arg=None, src=(
+          x13,
+          x11,
+          x10,)),)),)),
+    x9,)),)) at ops.py:212
+    cdiv: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.CMOD, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(10, dtypes.i32, 12, device='CPU', bind_on_realize=True), src=()),
+      x3:=UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),
+    x6:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(11, dtypes.i32, 12, device='CPU', bind_on_realize=True), src=()),
+      x3,)),)),
+  UOp(Ops.CDIV, arg=None, src=(
+    x1,
+    x6,)),)) at ops.py:212
+    commute: RuntimeError: SPEC ISSUE False: UOp(Ops.AND, arg=None, src=(
+  UOp(Ops.RESHAPE, arg=None, src=(
+    UOp(Ops.ALLOC, arg=ParamArg(12, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+    x2:=UOp(Ops.STACK, arg=None, src=(
+      UOp(Ops.CONST, arg=4, src=()),
+      UOp(Ops.CONST, arg=3, src=()),)),)),
+  UOp(Ops.RESHAPE, arg=None, src=(
+    UOp(Ops.ALLOC, arg=ParamArg(13, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+    x2,)),)) at ops.py:212
+    gate: RuntimeError: SPEC ISSUE False: UOp(Ops.BUFFER, arg=ParamArg(1, dtypes.f32, 16, device='CPU'), src=()) at ops.py:212
+    group: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.ADD, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(15, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),
+    x1,)),
+  UOp(Ops.MUL, arg=None, src=(
+    x1,
+    x1,)),)) at ops.py:212
+    late: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.ADD, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(16, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+      x3:=UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),
+    UOp(Ops.MUL, arg=None, src=(
+      x7:=UOp(Ops.RESHAPE, arg=None, src=(
+        UOp(Ops.ALLOC, arg=ParamArg(17, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+        x3,)),
+      x9:=UOp(Ops.CONST, arg=ConstFloat(-1.0), src=()),)),)),
+  UOp(Ops.MUL, arg=None, src=(
+    x1,
+    x9,)),
+  UOp(Ops.CMPNE, arg=None, src=(
+    UOp(Ops.CMPNE, arg=None, src=(
+      x1,
+      x7,)),
+    UOp(Ops.CONST, arg=True, src=()),)),
+  UOp(Ops.MUL, arg=None, src=(
+    x1,
+    UOp(Ops.RECIPROCAL, arg=None, src=(
+      x7,)),)),)) at ops.py:212
+    lin: RuntimeError: SPEC ISSUE False: UOp(Ops.RANGE, arg=(1, AxisType.WEAK), src=(
+  UOp(Ops.CONST, arg=4, src=()),)) at ops.py:212
+    move: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.PAD, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(24, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        UOp(Ops.CONST, arg=4, src=()),
+        x5:=UOp(Ops.CONST, arg=3, src=()),)),)),
+    UOp(Ops.STACK, arg=None, src=(
+      x7:=UOp(Ops.CONST, arg=0, src=()),
+      x7,)),
+    UOp(Ops.STACK, arg=None, src=(
+      x9:=UOp(Ops.CONST, arg=5, src=()),
+      x9,)),)),
+  UOp(Ops.SHRINK, arg=None, src=(
+    UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(25, dtypes.f32, 64, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        x14:=UOp(Ops.CONST, arg=8, src=()),
+        x14,)),)),
+    UOp(Ops.STACK, arg=None, src=(
+      UOp(Ops.CONST, arg=1, src=()),
+      UOp(Ops.CONST, arg=2, src=()),)),
+    UOp(Ops.STACK, arg=None, src=(
+      x5,
+      x5,)),)),
+  UOp(Ops.CONTIGUOUS_BACKWARD, arg=None, src=(
+    x1,)),
+  UOp(Ops.BITCAST, arg=dtypes.i32, src=(
+    x1,)),)) at ops.py:212
+    range: RuntimeError: SPEC ISSUE False: UOp(Ops.RANGE, arg=(AxisType.WEAK, (0, 1)), src=(
+  UOp(Ops.CONST, arg=4, src=()),)) at ops.py:212
+    sym: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.RESHAPE, arg=None, src=(
+    x1:=UOp(Ops.RESHAPE, arg=None, src=(
+      UOp(Ops.ALLOC, arg=ParamArg(27, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+      UOp(Ops.STACK, arg=None, src=(
+        x4:=UOp(Ops.CONST, arg=4, src=()),
+        UOp(Ops.CONST, arg=3, src=()),)),)),
+    UOp(Ops.STACK, arg=None, src=(
+      UOp(Ops.PARAM, arg=ParamArg(0, dtypes.weakint, vmin_vmax=(1, 100), multiple_of=1, name='n', addrspace=AddrSpace.ALU), src=()),
+      x4,)),)),
+  UOp(Ops.RESHAPE, arg=None, src=(
+    x1,
+    UOp(Ops.STACK, arg=None, src=(
+      UOp(Ops.PARAM, arg=ParamArg(0, dtypes.weakint, vmin_vmax=(1, 100), multiple_of=1, name='m', addrspace=AddrSpace.ALU), src=()),
+      x4,)),)),)) at ops.py:212
+    where: RuntimeError: SPEC ISSUE None: UOp(Ops.GROUP, arg=None, src=(
+  UOp(Ops.WHERE, arg=None, src=(
+    x1:=UOp(Ops.CMPLT, arg=None, src=(
+      x2:=UOp(Ops.RESHAPE, arg=None, src=(
+        UOp(Ops.ALLOC, arg=ParamArg(28, dtypes.f32, 12, device='CPU', bind_on_realize=True), src=()),
+        UOp(Ops.STACK, arg=None, src=(
+          UOp(Ops.CONST, arg=4, src=()),
+          UOp(Ops.CONST, arg=3, src=()),)),)),
+      x2,)),
+    x2,
+    x2,)),
+  x1,)) at ops.py:212
+denominator len(Ops) : 77
+CPYTHON-SIDE UNION   : 26 of 77
+  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE 22 GRAPH DEFINITIONS.
+     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), "py")`
+     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH
+     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.
+RUN HEALTH        : OK -- every one of 25 graphs was COMPARED, 19 agree and 6 disagree (disagreement is a recorded verdict, not an absence)
+per-graph SUM        : 60   <- NOT the figure; it counts an op once per graph that has it
+NOT reached (51): REWRITE_ERROR PROGRAM LINEAR SOURCE BINARY GROUP GETADDR SHRINK WMMA BITCAST EXP2 LOG2 SIN SQRT RECIPROCAL NEG TRUNC SHL SHR CDIV MAX CMOD CMPNE CMPEQ XOR OR AND THREEFRY SUB FDIV POW FLOORDIV FLOORMOD WHERE MULACC IF END ENDIF CUSTOM CUSTOMI INS CONTIGUOUS_BACKWARD DETACH STAGE MSELECT MSTACK CUSTOM_FUNCTION EXPAND PAD UNSHARD PYLITERAL

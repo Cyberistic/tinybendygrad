@@ -1,0 +1,1101 @@
+{
+  "summary": {
+    "head": "46cfa894a0f4433af55f6d57dbe110c1c26c302b",
+    "tracked_paths": 4854,
+    "empty_blob": 273
+  },
+  "empty": [
+    {
+      "path": ".agents/slop/abi4check/at-135bf0204/bind-lt.shipped.said",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/abi4check/now-py3.stdout",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/abi4check/now-venv.stdout",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/abi4check/now/bind-eq.bend.said",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/abi4check/now/bind-eq.shipped.said",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/agend/spec0.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/agend/spec1.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/agend/spec2.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/agend/spec3.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/arghalf/arity.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/bitcastrow/fold-base.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/abi4.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/beltA.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/beltB.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_al-verdict.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_cli.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_compile.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_devpin.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_dup-gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_fw_live.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_gate_dtype.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_graphcmp-census-audit.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_marker-audit.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_no-shrink.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_no-strays.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_no-txt.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_norm_check.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_process_replay.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_run.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_sweep.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_sz.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_test_rewrite_bottom_up_gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_unowned.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/checks_unowned.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_al-verdict.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_bounded.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_cli.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_compile.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_corpus-figure.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_coverage.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_devpin.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_dup-gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_fw_live.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_gate_dtype.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_graphcmp-census-audit.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_marker-audit.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_no-shrink.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_no-strays.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_no-txt.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_norm_check.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_process_replay.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_run.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_sweep.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_sz.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_unowned.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/census/v_checks_unowned.py.out.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/dup-census.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/dup-gate.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/dup-gate2.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/final-dup-gate.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/final-norm_check.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/gate.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/herm.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/canrun/norm_check.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/after-census.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/after-hermetic.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/before-census.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/before-hermetic.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/full-corpus.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/censroot/repro.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/live.oracle.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/live.port.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/plant-no-node.oracle.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/plant-no-node.port.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/plant-stage1red.oracle.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/artifacts/plant-stage1red.port.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/fixures/after.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_al-verdict.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_both-census.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_classify.sh.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_compile.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_corpus-figure.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_devgate.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_devpin.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_dup-gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_env-precond.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_fw_live.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_hermetic-census.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_lint_demo.sh.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_llama.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_no-shrink.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_no-strays.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_no-txt.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_norm_check.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_process_replay.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_repro-paths.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_romless.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_run.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_sz.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/checks_test_rewrite_bottom_up_gate.py.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/gates_ew-consts-oracle.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/gates_ops-core-oracle.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/gatesrun/gates_wk-eval-oracle.py.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-fold-new.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-fold-old.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-fold-probe.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-fold-v2.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-gcmp-final.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-gcmp-new.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-gcmp-old.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-gcmp-v2.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-insprobe-old.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-insprobe-v2.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/b-insprobe.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/build-base.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/fbuild-base.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/loop-before.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/loopfix/oracle-rng.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/needsaudit/live.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/needsaudit/plant.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D0-selfcheck.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-allred.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-alu.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-binblob.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-bit.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-buffer.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-bw.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-cast.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-cdiv.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-commute.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-flip.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-gate.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-group.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-indexed.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-late.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-lin.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-loop.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-matmul.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-move.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-range.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-rangeflat.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-reduce.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-sink.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-special.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-sym.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D1-graph-where.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D3-control-binblob.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D3-control-gate.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D3-control-group.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D3-control-loop.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D3-control-matmul.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D4-cross-range.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-bytes.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-dtype.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-opt.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-pyuop.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-shape.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-srcswap.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D5-plant-sym1.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D6-commute-equiv.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D6-commute-ordered.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D6-matmul-equiv.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D6-matmul-ordered.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D7-conf.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-commute-a.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-commute-b.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-gate-a.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-gate-b.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-group-a.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-group-b.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-loop-a.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-loop-b.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-sym-a.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/D-before/D9-stability-sym-b.txt.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-flip-CPU.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-flip-METAL.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-flip-NULL.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-lin-METAL.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-lin-NULL.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-lin-cpu.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-loop-CPU.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-loop-METAL.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/probe-loop-NULL.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rerun/retention-after.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/rosterwire/plantprobe/fresh.md",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/AFTER.stderr",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/AFTER2.stderr",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/BEFORE.stderr",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/FAIL.post-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/FAIL.pre-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/GREEN.post-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/GREEN.pre-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/SKIP.post-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/skipexit/artifacts/SKIP.pre-fix.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/00-before-bend-check.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/01-after-bend-check.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/02-bend-matmul.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-binblob.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-buffer.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-cast.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-commute.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-gate.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-group.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-indexed.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-lin.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-loop.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-matmul.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-range.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-rangeflat.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-reduce.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-sink.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-special.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/spine/03-diff-sym.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/substrate/artifacts/pop/oracle.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/substrate/fixtures/empty.bend",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/txtgen/gate-AFTER.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/txtgen/gate-BEFORE.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/txtgen/gate_norm-BEFORE.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": ".agents/slop/txtgen/gate_norm.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "checks/check.out",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "examples/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "extra/hcq1/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "extra/torch_backend/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "langs/out/clang.log",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "oracles/baseline-probe.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "oracles/nested/baseline-probe.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "oracles/ops501-py.txt.all",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "oracles/rows-bd.txt",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "oracles/sb-oracle.err",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/amd/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/amd/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/cl/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/cpu/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/dsp/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/metal/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/nv/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/python/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/qcom/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/device/webgpu/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/mockgpu/am/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/models/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/null/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/runtime/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "test/testextra/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/codegen/decomp/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/codegen/late/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/engine/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/llm/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/llm/kernels/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/mixin/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/py.typed",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/autogen/amd/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/autogen/amd/cdna/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/autogen/amd/rdna3/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/autogen/amd/rdna4/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/support/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/support/am/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/support/nv/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/runtime/support/rdma/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    },
+    {
+      "path": "tinygrad/viz/__init__.py",
+      "sha": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    }
+  ]
+}

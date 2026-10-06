@@ -1,0 +1,104 @@
+# shadow: 9 gates; tinybendygrad COPIED; .agents/bin/.venv/examples symlinked
+
+==============================================================================
+OLD gatekit (frozen) -- FIRST RUN, each dir empty
+==============================================================================
+  gate                        rc  bounded         peak MB  left on disk    stale from the green run
+  bc-u32-gate                  0  WITHIN-LIMITS       614             7                        none
+      | bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 window edge
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=614 MB (ceiling 2048)  4s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  beautiful-mnist-gate         3  NO-TOKEN           2048             2                        none
+      | [bounded] KILLED-ON-MEMORY  rc=-9  peak-RSS=2048 MB (ceiling 2048)  10s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /pri
+      | [bounded] THIS IS NOT A TIMEOUT. rc=137 is SIGKILL, so it looks like the project's alarm (rc=142) but is not: the term being built did not terminate. 
+  ew-consts-gate               0  WITHIN-LIMITS       747             7                        none
+      | ew-consts-gate: 21 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=747 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  ew-explog-gate               0  WITHIN-LIMITS      1654             7                        none
+      | ew-explog-gate: 3 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1654 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/
+  i64-shl-gate                 0  WITHIN-LIMITS       392             7                        none
+      | i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all 30 (value, amount) pairs
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=392 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  i64-shr-gate                 0  WITHIN-LIMITS       449             7                        none
+      | i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pairs, and every one of the 18 past-the-width cells saturates t
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=449 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  mixin-op-gate                2  WITHIN-LIMITS         2             0                        none
+      | ORACLE DRIFT: .agents/slop/mixinop/oracle-op-gate.sh: e8792d0ff1ad9d1a != pinned 178cf5f74e923c4a
+      |   the frozen shell oracle moved, so this run would compare against nothing. Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not d
+      | [bounded] WITHIN-LIMITS  rc=2  peak-RSS=2 MB (ceiling 2048)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/var
+  wk-cd-gate                   0  WITHIN-LIMITS      1551             7                        none
+      | wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1551 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/
+  wk-f32-gate                  0  WITHIN-LIMITS       480             7                        none
+      | wk-f32-gate: 18 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=480 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+
+==============================================================================
+OLD gatekit -- SECOND RUN, first run's artifacts still on disk
+==============================================================================
+  gate                        rc  bounded         peak MB  left on disk    stale from the green run
+  bc-u32-gate                  0  WITHIN-LIMITS       680             7                        none
+      | bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 window edge
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=680 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  beautiful-mnist-gate         0  WITHIN-LIMITS      1902             7                        none
+      | Use --verdict for mathematical validity.
+      | beautiful-mnist-gate: 30 shared rows, 3 lanes identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1902 MB (ceiling 2048)  13s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private
+  ew-consts-gate               0  WITHIN-LIMITS       726             7                        none
+      | ew-consts-gate: 21 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=726 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  ew-explog-gate               0  WITHIN-LIMITS      1517             7                        none
+      | ew-explog-gate: 3 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1517 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/
+  i64-shl-gate                 0  WITHIN-LIMITS       418             7                        none
+      | i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all 30 (value, amount) pairs
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=418 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  i64-shr-gate                 0  WITHIN-LIMITS       440             7                        none
+      | i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pairs, and every one of the 18 past-the-width cells saturates t
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=440 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+  mixin-op-gate                2  WITHIN-LIMITS         2             0                        none
+      | ORACLE DRIFT: .agents/slop/mixinop/oracle-op-gate.sh: e8792d0ff1ad9d1a != pinned 178cf5f74e923c4a
+      |   the frozen shell oracle moved, so this run would compare against nothing. Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not d
+      | [bounded] WITHIN-LIMITS  rc=2  peak-RSS=2 MB (ceiling 2048)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/var
+  wk-cd-gate                   0  WITHIN-LIMITS      1658             7                        none
+      | wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1658 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/
+  wk-f32-gate                  0  WITHIN-LIMITS       518             7                        none
+      | wk-f32-gate: 18 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=518 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /private/v
+
+  OLD, after a second run of the SAME gates: 56 files held, 56 unchanged from the previous run's
+
+==============================================================================
+NEW gates/gatekit.py -- the real tree, every dir already populated
+==============================================================================
+  gate                        rc  bounded         peak MB  left on disk    stale from the green run
+  bc-u32-gate                  0  WITHIN-LIMITS       592             7                        none
+      | bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 window edge
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=592 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyb
+  beautiful-mnist-gate         0  WITHIN-LIMITS      1786             7                        none
+      | Use --verdict for mathematical validity.
+      | beautiful-mnist-gate: 30 shared rows, 3 lanes identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1786 MB (ceiling 2048)  13s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/c
+  ew-consts-gate               0  WITHIN-LIMITS       599             7                        none
+      | ew-consts-gate: 21 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=599 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyb
+  ew-explog-gate               0  WITHIN-LIMITS      1700             7                        none
+      | ew-explog-gate: 3 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1700 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cy
+  i64-shl-gate                 0  WITHIN-LIMITS       422             7                        none
+      | i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all 30 (value, amount) pairs
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=422 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyb
+  i64-shr-gate                 0  WITHIN-LIMITS       444             7                        none
+      | i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pairs, and every one of the 18 past-the-width cells saturates t
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=444 MB (ceiling 2048)  2s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyb
+  mixin-op-gate                2  WITHIN-LIMITS         1             7                        none
+      | ORACLE DRIFT: .agents/slop/mixinop/oracle-op-gate.sh: e8792d0ff1ad9d1a != pinned 178cf5f74e923c4a
+      |   the frozen shell oracle moved, so this run would compare against nothing. Restore it, or re-freeze it deliberately and update ORACLE_PIN -- do not d
+      | [bounded] WITHIN-LIMITS  rc=2  peak-RSS=1 MB (ceiling 2048)  0s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyber
+  wk-cd-gate                   0  WITHIN-LIMITS      1657             7                        none
+      | wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=1657 MB (ceiling 2048)  9s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cy
+  wk-f32-gate                  0  WITHIN-LIMITS       472             7                        none
+      | wk-f32-gate: 18 rows, 3 lanes byte-identical
+      | [bounded] WITHIN-LIMITS  rc=0  peak-RSS=472 MB (ceiling 2048)  3s  :: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python /Users/cyb

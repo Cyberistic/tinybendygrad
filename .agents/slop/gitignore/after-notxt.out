@@ -1,0 +1,26 @@
+  139 `.txt` EXCUSED: `checks/differ.py`'s declared graphcmp artifacts, which a sha256-pinned oracle reads BY NAME (oracle-repro.sh:61, :105; corpus-figure.py:72).
+  24 .txt FILE(S). `.txt` IS NOT AN EXTENSION THIS PROJECT USES.
+    oracles/rows-bd.txt
+    test/models/efficientnet/imagenet1000_clsidx_to_labels.txt
+    .agents/slop/figure2/plant/broken/runs/graphcmp/D/D0-run-summary.txt
+    .agents/slop/figure2/plant/real/runs/graphcmp/D/D0-run-summary.txt
+    .agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-f64.txt
+    .agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-bend.txt
+    .agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-mm-gate.txt
+    .agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-opsbend.txt
+    .agents/slop/e2epy/fixtures/repro-skip/runs/e2e/e2e-port-mm.txt
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-bend.txt
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-mm-gate.txt
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-opsbend.txt
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-port-mm.txt
+    .agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-f64.txt
+    .agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-bend.txt
+    .agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-mm-gate.txt
+    .agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-opsbend.txt
+    .agents/slop/e2epy/fixtures/repro-fail/runs/e2e/e2e-port-mm.txt
+    runs/e2e/e2e-f64.txt
+    runs/e2e/e2e-mm-bend.txt
+    runs/e2e/e2e-mm-gate.txt
+    runs/e2e/e2e-opsbend.txt
+    runs/e2e/e2e-port-mm.txt

@@ -1,0 +1,1 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=522 MB (ceiling 2048)  9s  :: .venv/bin/python .agents/slop/abi4check/plant-measure.py /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/abi4-135bf0204  out=1698B err=0B

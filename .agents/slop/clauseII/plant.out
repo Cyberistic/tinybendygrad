@@ -1,0 +1,6 @@
+[PASS] ok          red=0 want=0  II OK         .agents/slop/clauseII/plant-ok.py: 0/1 exits NOT covered by a cleanup `finally`, clears=['unlink']
+[PASS] false       red=1 want=1  II FALSE      .agents/slop/clauseII/plant-false.py: 1/1 exits NOT covered by a cleanup `finally`, clears=['unlink']
+[PASS] unmeasured  red=1 want=1  II UNMEASURED .agents/slop/clauseII/plant-unmeasured.py: no class-scoped `run` in its AST, so the exit
+[PASS] missing     red=1 want=1  II MISSING    .agents/slop/clauseII/plant-missing.py is gone -- it is what declares the set
+
+PLANT: GREEN  (4/4 cases as expected)

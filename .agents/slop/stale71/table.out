@@ -1,0 +1,80 @@
+PATH                                               OWNER      HEAD   CIT  EXE  WRT  VERDICT
+.agents/TODO.md                                    25d054a2f  True   348    7    0  LOAD-BEARING  7 committed EXECUTION site(s) open/launch it
+.agents/slop/e2e/e2e_mm.mjs                        25d054a2f  True     7    3    1  GENERATED  written by 1 committed site(s) -> untrack
+.agents/slop/e2e/webgpu_call.mjs                   25d054a2f  True    10    4    1  GENERATED  written by 1 committed site(s) -> untrack
+.agents/slop/gendirs/properties.py                 25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+.agents/slop/gendirs/writetargets.py               25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+.agents/slop/helpers-tc-gate.bd                    25d054a2f  False    2    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/helpers-tc-gate.bd.err                25d054a2f  False    2    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/helpers-tc-gate.bn                    25d054a2f  False    2    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/helpers-tc-gate.bn.err                25d054a2f  False    2    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/helpers-tc-gate.rows                  25d054a2f  False    7    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/helpers-tc-gate.rows.err              25d054a2f  False    2    0    0  GENERATED via .agents/slop/helpers-tc-gate.sh (template 'GT=.agents/slop/helpers-tc-gate') pin HOLDS -> untrack
+.agents/slop/loopq/00-rows.md                      ec08adcfb  True     0    0    0  INERT      no committed citer
+.agents/slop/notes/bend2-constraints.md            25d054a2f  True   404   36    0  LOAD-BEARING  36 committed EXECUTION site(s) open/launch it
+.agents/slop/offrepo/callers.py                    25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+.agents/slop/offrepo/reached.tsv                   25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+.agents/slop/offrepo/where.py                      25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+.agents/slop/ops_bend-milestone-expected.txt       25d054a2f  False   28    6    0  LOAD-BEARING  6 committed EXECUTION site(s) open/launch it
+.agents/slop/residue/000-the-residue.md            25d054a2f  True    11    2    1  GENERATED  written by 1 committed site(s) -> untrack
+.agents/slop/residue/002-unknown.md                25d054a2f  True     5    2    1  GENERATED  written by 1 committed site(s) -> untrack
+.agents/slop/residue/003-disagreements.md          25d054a2f  True     6    3    1  GENERATED  written by 1 committed site(s) -> untrack
+.agents/slop/shells/README.md                      25d054a2f  True    41    9    0  LOAD-BEARING  9 committed EXECUTION site(s) open/launch it
+.agents/slop/webgpu_call.fresh.mjs                 25d054a2f  False    5    1    0  LOAD-BEARING  1 committed EXECUTION site(s) open/launch it
+bin/bin                                            25d054a2f  False    0    0    0  INERT      no committed citer, never committed
+checks/gen/probe.gen.c                             25d054a2f  False   24    1    0  GENERATED via checks/abi_gate.py (template 'gendir = HERE / "gen"') pin HOLDS -> untrack
+checks/gen/probe.js                                25d054a2f  False   29    3    0  GENERATED via checks/abi_gate.py (template 'gendir = HERE / "gen"') pin HOLDS -> untrack
+checks/rows-allred-bend.rows                       25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-allred-py.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-alu-bend.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-alu-py.rows                            25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-binblob-bend.rows                      25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-binblob-py.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-bit-bend.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-bit-py.rows                            25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-buffer-bend.rows                       25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-buffer-py.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-bw-bend.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-bw-py.rows                             25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-cast-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-cast-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-cdiv-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-cdiv-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-commute-bend.rows                      25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-commute-py.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-flip-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-flip-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-gate-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-gate-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-group-bend.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-group-py.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-indexed-bend.rows                      25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-indexed-py.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-late-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-late-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-lin-bend.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-lin-py.rows                            25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-loop-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-loop-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-matmul-bend.rows                       25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-matmul-py.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-move-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-move-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-range-bend.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-range-py.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-rangeflat-bend.rows                    25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-rangeflat-py.rows                      25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-reduce-bend.rows                       25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-reduce-py.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-sink-bend.rows                         25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-sink-py.rows                           25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-special-bend.rows                      25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-special-py.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-sym-bend.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-sym-py.rows                            25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-trange-bend.rows                       25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-where-bend.rows                        25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+checks/rows-where-py.rows                          25d054a2f  False    0    0    0  GENERATED via checks/census.py (template 'rows-{name}-{which}.rows') pin HOLDS -> untrack
+tinygrad/tinygrad                                  25d054a2f  False    1    1    0  LOAD-BEARING  1 committed EXECUTION site(s) open/launch it
+
+77 path(s). owner=`git log --all -1`; CIT/EXE/WRT are WHOLE-TOKEN hits in HEAD, EXE/WRT only in CODE files; live staging under .agents/slop/rerun/ excluded.

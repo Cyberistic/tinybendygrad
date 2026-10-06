@@ -1,0 +1,85 @@
+
+=== line 157: runs/ ===
+matched=955 tracked=9 freed=719
+tracked matching paths:
+   TRACKED .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.err
+   TRACKED .agents/slop/runs/README.md
+freed extensions: {'(none)': 47, '.out': 273, '.rows': 172, '.txt': 18, '.err': 184, '.md': 24, '.tsv': 1}
+freed by unit under .agents/slop: {'OUTSIDE-slp': 322, 'figurefix': 397}
+freed NOT under .agents/slop: ['.agents/slop/differverdict/pristine/runs', '.agents/slop/differverdict/pristine/runs/graphcmp', '.agents/slop/differverdict/pristine/runs/graphcmp/D', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D5-plant-sym1.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-selfcheck.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-ops-probe.rows', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-03.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D4-cross-range.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-coverage-census.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D1-verdicts.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-012.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.rows', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D2-bytediff.out', '.agents/slop/differverdict/pristine/runs/graphcmp/D/D9-stability.out', '.agents/slop/figure2/plant/broken/runs', '.agents/slop/figure2/plant/broken/runs/graphcmp', '.agents/slop/figure2/plant/broken/runs/graphcmp/D', '.agents/slop/figure2/plant/broken/runs/graphcmp/D/D0-run-summary.txt', '.agents/slop/figure2/plant/real/runs', '.agents/slop/figure2/plant/real/runs/graphcmp', '.agents/slop/figure2/plant/real/runs/graphcmp/D', '.agents/slop/figure2/plant/real/runs/graphcmp/D/D0-run-summary.txt', '.agents/slop/corpuswire/tree/runs', '.agents/slop/corpuswire/tree/runs/graphcmp', '.agents/slop/corpuswire/tree/runs/graphcmp/D', '.agents/slop/corpuswire/tree/runs/graphcmp/D/D0-run-summary.txt', '.agents/slop/figurefix/plant/scratch/runs', '.agents/slop/figurefix/plant/scratch/runs/graphcmp', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-alu.txt.err', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-sym.rows', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-sym1.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-flip.rows', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-where.rows', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-binblob.rows', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-cast.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-selfcheck.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-group.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-allred.txt.err', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-matmul.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-group-a.txt.err', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-bit.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-range.txt.err', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-matmul.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-lin.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-rangeflat.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-commute.out', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-binblob.txt.err', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-ops-probe.rows', '.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-bit.rows']
+
+=== line 8: *.bin ===
+matched=37 tracked=0 freed=27
+tracked matching paths:
+freed extensions: {'.bin': 27}
+freed by unit under .agents/slop: {'OUTSIDE-slp': 27}
+freed NOT under .agents/slop: ['checks/ag-emit.bin', '.agents/slop/helpers-tc-gate.bin', '.agents/slop/loopfix/insprobe-v2.bin', '.agents/slop/loopfix/fold-v2.bin', '.agents/slop/loopfix/insprobe.bin', '.agents/slop/loopfix/gcmp-v2.bin', '.agents/slop/loopfix/fold-probe.bin', '.agents/slop/loopfix/gcmp-final.bin', '.agents/slop/loopfix/insprobe-old.bin', '.agents/slop/loopfix/gcmp-new.bin', '.agents/slop/loopfix/fold-old.bin', '.agents/slop/loopfix/fold-base.bin', '.agents/slop/loopfix/fold-new.bin', '.agents/slop/loopfix/gcmp-old.bin', '.agents/slop/loopfix/gcmp-base.bin', '.agents/slop/loopfix/rss-ledger/fold.bin', '.agents/slop/gatehealth/gates-syn/wk-cd-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/beautiful-mnist-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/ew-consts-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/i64-shr/gate.bin', '.agents/slop/gatehealth/gates-syn/ew-explog-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/ops-core-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/mixin-op-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/bc-u32-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/i64-shl/gate.bin', '.agents/slop/gatehealth/gates-syn/wk-eval-gate/gate.bin', '.agents/slop/gatehealth/gates-syn/wk-f32-gate/gate.bin']
+
+=== line 13: __pycache__/ ===
+matched=491 tracked=0 freed=70
+tracked matching paths:
+freed extensions: {'(none)': 70}
+freed by unit under .agents/slop: {'OUTSIDE-slp': 67, 'figurefix': 2, '__pycache__': 1}
+freed NOT under .agents/slop: ['gates/__pycache__', 'test/__pycache__', 'test/null/__pycache__', 'test/mockgpu/__pycache__', 'test/external/process_replay/__pycache__', 'tinygrad/renderer/isa/__pycache__', 'tinygrad/renderer/__pycache__', 'tinygrad/renderer/amd/__pycache__', 'tinygrad/schedule/__pycache__', 'tinygrad/llm/kernels/__pycache__', 'tinygrad/llm/__pycache__', 'tinygrad/nn/__pycache__', 'tinygrad/mixin/__pycache__', 'tinygrad/runtime/__pycache__', 'tinygrad/runtime/support/__pycache__', 'tinygrad/runtime/support/rdma/__pycache__', 'tinygrad/runtime/autogen/__pycache__', 'tinygrad/runtime/autogen/amd/cdna/__pycache__', 'tinygrad/runtime/autogen/amd/__pycache__', 'tinygrad/runtime/autogen/amd/rdna4/__pycache__', 'tinygrad/runtime/autogen/amd/rdna3/__pycache__', 'tinygrad/__pycache__', 'tinygrad/codegen/__pycache__', 'tinygrad/codegen/decomp/__pycache__', 'tinygrad/codegen/opt/__pycache__', 'tinygrad/codegen/late/__pycache__', 'tinygrad/viz/__pycache__', 'tinygrad/uop/__pycache__', 'tinygrad/engine/__pycache__', 'checks/__pycache__', '.agents/slop/opdenom/__pycache__', '.agents/slop/sloptxt/__pycache__', '.agents/slop/figure2/plant/broken/checks/__pycache__', '.agents/slop/figure2/plant/real/checks/__pycache__', '.agents/slop/e2esh/__pycache__', '.agents/slop/bitcastrow/__pycache__', '.agents/slop/jslane2/__pycache__', '.agents/slop/gendirs/__pycache__', '.agents/slop/censroot/__pycache__', '.agents/slop/corpuswire/tree/checks/__pycache__', '.agents/slop/__pycache__', '.agents/slop/clauseII/__pycache__', '.agents/slop/norm/__pycache__', '.agents/slop/bendarms/__pycache__', '.agents/slop/figurefix/plant/__pycache__', '.agents/slop/figurefix/plant/scratch/checks/__pycache__', '.agents/slop/e2estage8/__pycache__', '.agents/slop/sbgate/__pycache__', '.agents/slop/selfcheck/__pycache__', '.agents/slop/e2epy/__pycache__']
+
+=== tracked paths containing a runs/ component: 53 ===
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-coverage-census.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-ops-probe.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-selfcheck.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D1-verdicts.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D2-bytediff.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D4-cross-range.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D5-plant-sym1.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-012.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-03.txt
+   .agents/slop/differverdict/pristine/runs/graphcmp/D/D9-stability.txt
+   .agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-deadbend/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant-no-node/runs/e2e/e2e-port-mm.txt
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant-no-zsh/runs/e2e/e2e-port-mm.txt
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant-pass/runs/e2e/e2e-port-mm.txt
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-port-mm.txt
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-port-mm.txt
+   .agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant-thin/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-f64.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-jsstage.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.err
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-bend.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-mm-gate.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-opsbend.txt
+   .agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-port-mm.txt
+   .agents/slop/runs/README.md

@@ -1,0 +1,30 @@
+  PASS  plant2 beat 1: a reader whose path is GONE and whose SUB-TREE survived reads STALE
+        sub/rows.txt -> STALE
+  FAIL  plant2 beat 2: a reader whose path is GONE with ONLY the basename reads ABSENT, not STALE
+        sub/rows.txt -> STALE
+  PASS  plant2 beat 3: a reader's path holding DIFFERENT bytes reads SHADOW
+        sub/rows.txt -> SHADOW
+  PASS  plant2 beat 4: a reader's path holding THESE bytes reads LIVE
+        sub/rows.txt -> LIVE
+  FAIL  plant2: the four beats were DISTINCT STATES -- the plant MOVED
+        STALE -> STALE -> SHADOW -> LIVE
+  PASS  plant2: the file under test was never edited
+        donor bytes identical throughout
+  PASS  plant2 beat 1: a reader whose path is GONE and whose SUB-TREE survived reads STALE
+        sub/rows.txt -> STALE
+  PASS  plant2 beat 2: a reader whose path is GONE with ONLY the basename reads ABSENT, not STALE
+        sub/rows.txt -> ABSENT
+  PASS  plant2 beat 3: a reader's path holding DIFFERENT bytes reads SHADOW
+        sub/rows.txt -> SHADOW
+  PASS  plant2 beat 4: a reader's path holding THESE bytes reads LIVE
+        sub/rows.txt -> LIVE
+  PASS  plant2: the four beats were DISTINCT STATES -- the plant MOVED
+        STALE -> ABSENT -> SHADOW -> LIVE
+  PASS  plant2: the file under test was never edited
+        donor bytes identical throughout
+  GATE  1 STALE-ROOTED READ(S): a script reads a path that is gone and the read's sub-tree survives under oracles/. Each is a gate input that moved:
+    reader.py  reads  gone/sub/rows.txt
+        alive at  oracles/sub/rows.txt
+
+  PASS  plant_reach is RED under the pre-fix census and GREEN under the fix; `--gate` exits 1 on the moved read
+        pre-fix: red; beat 2 caught the collapse   fix: green   gate: rc=1 (want 1)

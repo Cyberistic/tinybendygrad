@@ -1,0 +1,3 @@
+call	result
+((4, 4), (4, 3), (4, 3))	RAISES IndexError
+((4,), (4,), (4,))	(4,)

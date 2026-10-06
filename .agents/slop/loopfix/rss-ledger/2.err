@@ -1,0 +1,2 @@
+[bounded] KILLED-ON-MEMORY  rc=-9  peak-RSS=2075 MB (ceiling 2048)  4s  :: ./bin/bend .agents/slop/loopfix/tree/tinybendygrad/uop/fold.bend -o  out=0B err=0B
+  THIS IS NOT A TIMEOUT, AND THIS RUN PROVES NOTHING: the term being built did not terminate and the watchdog killed it. Look for Peano `Nat` arithmetic near its 2^48-1 ceiling, or a plant that made a multiplier symbolic. Note the PEAK is where it got to, not where the ceiling is -- this guard polls.

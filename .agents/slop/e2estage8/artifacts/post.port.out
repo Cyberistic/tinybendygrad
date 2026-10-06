@@ -1,0 +1,231 @@
+== 1/4 oracle (CPython tinygrad, DEV=CPU)
+launches 2  uploads 3 (768 words)  ids {'b0': 100, 'b1': 101, 'b2': 102, 'b3': 103, 'b4': 104}  answer_u32[:4]=[1044381696, 1079115776, 1050148864, 3231514624]  csum=-287.156250
+wrote .agents/slop/e2e_mm.bend and runs/e2e/e2e-mm-oracle.json
+== 2/4 port (pure bend, no GPU)
+bend: 22 rows (attempt 1)
+== 3/4 gpu (real WebGPU adapter, headless Chrome)
+  stage 3 gpu (node): FAIL (rc=1)
+== 4/4 gate
+# adapter            apple/metal-3
+# program            (A @ B) @ C, 2 launches, 5 buffers
+# steps performed    84  writes 3  dispatches 2
+# wrong-answer distances (max abs, must exceed 1.0):
+#   abad   24.343750
+#   atc    25.796875
+#   bada   22.453125
+#   ctb    30.031250
+#   self   22.843750
+#   zero   21.343750
+
+mm_e2e_all_ops_armed=True
+mm_e2e_answer_nonzero=True
+mm_e2e_answer_not_an_input=True
+mm_e2e_buffers=6
+mm_e2e_dispatches=2
+mm_e2e_finish_equals_submit=3
+mm_e2e_gpu_arch=metal-3
+mm_e2e_gpu_present=True
+mm_e2e_in_bits_equal=True
+mm_e2e_init_once=[True, True, True, True, True, True, True, True]
+mm_e2e_inputs_distinct=True
+mm_e2e_l0_bg_bufs=['100', '101', '102']
+mm_e2e_l0_bg_ids=0,1,2,3
+mm_e2e_l0_bg_sizes=4,256,256,256
+mm_e2e_l0_nowait=True
+mm_e2e_l0_uniform_not_a_buffer=True
+mm_e2e_l1_bg_bufs=['103', '100', '104']
+mm_e2e_l1_bg_ids=0,1,2,3
+mm_e2e_l1_bg_sizes=4,256,256,256
+mm_e2e_l1_nowait=True
+mm_e2e_l1_uniform_not_a_buffer=True
+mm_e2e_layout=0,1,1,2,2,2,3,2
+mm_e2e_map_ops=[2, 1]
+mm_e2e_mapped=1
+mm_e2e_one_copy=1
+mm_e2e_one_object_per_launch=[True, True, True, True, True, True, True, True, True, True]
+mm_e2e_out_bits_equal=True
+mm_e2e_out_finite=True
+mm_e2e_out_words=64
+mm_e2e_readback_encoder_extra=1
+mm_e2e_scopes_balanced=True
+mm_e2e_steps=84
+mm_e2e_uniforms_per_launch=2
+mm_e2e_upload_count=3
+mm_e2e_uploads_eq_fixture=True
+mm_e2e_walk_completed=True
+mm_e2e_writes=3
+mm_power_abad=True
+mm_power_atc=True
+mm_power_bada=True
+mm_power_ctb=True
+mm_power_self=True
+mm_power_zero=True
+mm_e2e_failed=0
+  stage 4 gate (matmul vs CPython, via WebGPU): PASS
+== 5/5 port's own device (the port's ops_bend runtime executes)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/ops_bend-milestone-expected.txt'
+FAIL
+  stage 5 ops_bend (kernel executes in Bend): FAIL (rc=1)
+== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
+
+--------------------------------------------------------------------------------
+== 6/6 THE MATMUL THROUGH THE PORT  -- execution: no Node, no browser, no adapter,
+        no tinygrad Python scheduler in the execution path
+
+--------------------------------------------------------------------------------
+   [EXEC] lane A -- kern2 CLANG, ONE OF THE PORT'S OWN 227 ROWS
+  [EXEC] zsh portexec/run-kernel.sh stage2   -- steps 1..6, each named in the log
+      \n== STEP 1  bend -o
+      \n== STEP 2  cc the PORT's kernel alone (-Wall -Werror)
+      \n== STEP 3  cc bend's run.c (-Wall only; bend's own runtime warns)
+      \n== STEP 4  LINK run.o + kernel.o
+      \n== STEP 5  RUN (twice; the WORD lines must be cmp-identical)
+      \n== STEP 6  COMPARE against CPython, byte for byte
+         equal  : True   diff bytes: 0   (4/4 words)
+      PASS [4] 4 u32 words bit-identical to CPython, through the port's own runtime
+         RED [kernel: +1.0f -> +2.0f (the PORT's own body text)]
+         RED [bend program: fill the OUTPUT buffer, not the input (re-runs bend -o)]
+         RED [shim: never call the kernel (re-runs bend -o)]
+
+--------------------------------------------------------------------------------
+   [EXEC] lane B -- the four-buffer (A@B)@Cm kernel from emit-mm.bend, called FROM BEND
+  [EXEC] zsh portexec/run-kernel.sh mm   -- steps 1..6, each named in the log
+      \n== STEP 1  bend -o
+      \n== STEP 2  cc the PORT's kernel alone (-Wall -Werror)
+      \n== STEP 3  cc bend's run.c (-Wall only; bend's own runtime warns)
+      \n== STEP 4  LINK run.o + kernel.o
+      \n== STEP 5  RUN (twice; the WORD lines must be cmp-identical)
+      \n== STEP 6  COMPARE against CPython, byte for byte
+         equal  : True   diff bytes: 0   (64/64 words)
+      PASS [64] 64 u32 words bit-identical to CPython, through the port's own runtime
+         RED [kernel: the first dot's 8 taps become 7]
+         RED [bend program: fill B into A's buffer (re-runs bend -o)]
+         RED [shim: never call the kernel (re-runs bend -o)]
+
+   THE 64/64, RECOMPUTED WITH diff AND NOT READ OUT OF THE LANE:
+     words port=64  CPython=64  differing lines=0  diff bytes=0
+     first 8 port   : 1044381696 1079115776 1050148864 3231514624 1088487424 3221946368 1048576000 1091551232 
+     first 8 CPython: 1044381696 1079115776 1050148864 3231514624 1088487424 3221946368 1048576000 1091551232 
+
+--------------------------------------------------------------------------------
+== COVERAGE  how much of the port is EXECUTION and how much is TEXT, with the denominator
+  rows in the port's own stdout  (THE DENOMINATOR)            227  100.00%
+  TEXT ONLY -- a fragment, not a translation unit             216  95.15%
+  C SOURCE -- a `void N(...)` signature and a body             11   4.85%
+    ...of those, `cc` ACCEPTS on this machine                   6   2.64%
+    ...of those, `cc` REJECTS                                   5   2.20%
+    ...of those, EXECUTED here and compared against CPython     1   0.44%
+  kernels EXECUTED that are NOT among those rows                1      --
+  --------------------------------------------------------------------------
+  STILL TEXT: 226 of 227 rows (99.56%).   EXECUTED: 1 of 227 (0.44%).
+  Executed C artefacts in total, counting the one outside the rows: 2.
+
+  -- what each lane log claims, and whether its row is one of the rows --
+    kern2 CLANG                                    EXECUTED, 4 words, diff 0 bytes              one of the 227
+    emit-mm.bend (the port's own render_kernel, 4 bufs) EXECUTED, 64 words, diff 0 bytes             NOT one of the 227 rows
+
+  -- the 5 REJECTIONS, with cc's own words (temporary paths stripped) --
+    kern2 BASE  alu      error: use of undeclared identifier 'data1_4'
+    kern2 CLANG alu      error: use of undeclared identifier 'data1_4'
+    kern2 OPENCL         error: unknown type name '__kernel'
+    kern2 OPENCL f16     error: unknown type name '__kernel'
+    kern2 OPENCL pref2   error: unknown type name '__kernel'
+
+  *** THE UNFALSIFIABLE PAIR, AND WHY IT IS NOT COUNTED HERE. ***
+      `kern2 BASE alu` and `kern2 CLANG alu` pair an ALU-space SIGNATURE with the
+      gate's `g_kernel()` BODY, which names `data1_4`; `renderer_oracle.py:551-552`
+      hands upstream the SAME mismatched pair, so BOTH lanes of the text gate agree
+      on a string no compiler has ever accepted. No execution can falsify them.
+      THIS STAGE USES NEITHER ROW: its executed kernel is `emit-mm.bend`'s four-buffer
+      `mm`, which is not one of the 227 rows at all, so it has no py= twin to agree with.
+{
+ "rows": 227,
+ "fragments": 216,
+ "c_source": 11,
+ "cc_accepts": 6,
+ "cc_rejects": 5,
+ "executed_of_the_rows": 1,
+ "executed_outside_the_rows": 1,
+ "still_text": 226
+}
+
+--------------------------------------------------------------------------------
+== NEGATIVE CONTROLS  -- a lane that has never failed is not known to work.
+   C0 is mandatory: without a GREEN unmutated copy, nothing below means anything.
+
+-- C0  the copy, UNMUTATED, must be green
+   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
+    GREEN [C0 the unmutated copy]
+
+-- C1  THE PORT -- cstyle.bend's buftypes.go accumulates at the HEAD instead of the
+        tail, so render_kernel emits the four buffers in REVERSE order. List.append(a,
+        A, xs, ys) IS xs ++ ys -- bend2-constraints.md position 1590, and this is that
+        rule with a compiler attached.
+   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
+    planted cstyle.bend: 1 site, 81 -> 81 bytes
+         PORT PROTOTYPE : extern void mm(float* restrict data3_4, float* restrict data2_4, float* restrict data1_4, float* restrict data0_4);
+         SHIM CALL      : data3_4, data2_4, data1_4, data0_4
+    RED   [C1 THE PORT reverses its own emitted buffer order]
+
+-- C2  VACUITY -- the second dot reads data1_4 instead of the local tmp, so the kernel
+        computes a REAL matmul A@C instead of (A@B)@C: 64 real multiply-adds still
+        execute and 64 real words still come back. If the lane accepted this, then
+        what it was checking was a matmul and not the CHAINED dot.
+   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
+    planted emit-mm.bend: 1 site, 45 -> 49 bytes
+         PORT PROTOTYPE : extern void mm(float* restrict data0_4, float* restrict data1_4, float* restrict data2_4, float* restrict data3_4);
+         SHIM CALL      : data0_4, data1_4, data2_4, data3_4
+    RED   [C2 a single matmul A@C is not (A@B)@C]
+
+-- C3  THE EXPECTATION -- ONE BIT of word 37 of the 64 answer words, in the copy's
+        oracle record. One bit must turn it red AND name index 37 and no other: a
+        PREFIX is not a comparison, and 63 agreeing words are not 64.
+   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
+    planted e2e-mm-oracle.json: answer_u32[37] ^= 1  ->  3243163649
+    *** RED BUT NOT SEMANTIC [C3 one bit of one expected word, and only that word] -- it fell over instead of answering wrongly ***
+        FAIL[mm] emit-mm.bend did not run
+
+-- C4  THE PORT, on lane A's one-input row kern2 CLANG. Reported because the answer
+        was NOT the predicted one: that kernel reads ONE buffer, so reversing its two
+        parameters was expected to be a THEOREM, as portexec's stage-2 theorems are.
+        It is not. The harness readback address is fixed by POSITION, so the buffer
+        that must be read lands on the one that must be written, and word 0 goes to 0.
+   copy: tinybendygrad + portexec copied; bin/ references/ tinygrad/ .venv/ symlinked
+    planted cstyle.bend: 1 site, 81 -> 81 bytes
+         PORT PROTOTYPE : extern void E_4(float* restrict data1_4, float* restrict data0_4);
+         SHIM CALL      : data1_4, data0_4
+    RED   [C4 THE PORT, on the one-input row]
+
+--------------------------------------------------------------------------------
+-- INHERITED, NOT RE-COUNTED: portexec/run-kernel.sh runs three plants of its own
+    inside EVERY lane above, and each went red in this run:
+       RED [bend program: fill B into A's buffer (re-runs bend -o)]
+       RED [bend program: fill the OUTPUT buffer, not the input (re-runs bend -o)]
+       RED [kernel: +1.0f -> +2.0f (the PORT's own body text)]
+       RED [kernel: the first dot's 8 taps become 7]
+       RED [shim: never call the kernel (re-runs bend -o)]
+
+--------------------------------------------------------------------------------
+== WHERE EACH STAGE OF e2e.sh GETS ITS DEVICE, so this cannot be quoted as stronger
+   than it is:
+   1  oracle       CPython tinygrad DEV=CPU            the EXPECTATION, not an execution
+   2  port (pure)  no device; prints a program        TEXT
+   3  gpu          NODE + headless Chrome + navigator.gpu (apple/metal-3)   ASKS NODE
+   4  gate         diffs two recorded texts           TEXT
+   5  ops_bend     the port's own runtime, in Bend     EXECUTION (one f32 add, 3 scalars)
+   6  THIS STAGE   the port's render_kernel + cc + Bend   EXECUTION (64/64 matmul words)
+   --  and the 227-row cstyle gate this stage does NOT re-run: cstyle-gate.py:554
+       builds BOTH lanes from a recorded stdout, so all 227 of ITS rows are TEXT.
+
+--------------------------------------------------------------------------------
+STAGE 6 FAILED -- stages 1-5's verdict above stands on its own; the script's exit
+               status is STILL stage 4's and is unaffected by this line.
+(this stage's own exit status, for a caller that wants it: 1)
+  stage 6 port (matmul THROUGH the port, no Node): FAIL (rc=1)
+== 7/7 the SAME kernel in f64 THROUGH THE PORT (no Node, no browser, no adapter)
+  stage 7 f64 (double through the port, no Node): SKIP -- run-f64.sh refused: its substrate is cold; see /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/runs/e2e/e2e-f64.txt
+--- verdicts: 3 failed, 1 skipped ---
+FAIL -- 3 stage(s) ran and failed. The per-stage verdicts above stand on their own:
+       a failing stage does not retract the others' claims, and this script now says so in
+       its exit status, which it did not before.

@@ -1,0 +1,35 @@
+
+==============================================================================
+BIND '<-'
+==============================================================================
+  shipped      NO BACKEND  bend rc=1
+      | SOME PROOFS FAIL
+      | Error:
+      | - expected : @-R:Type -> @k:(@_:F32 -> IO.OP<R>) -> IO.OP<R>
+      | - observed : F32
+      | Location: main
+      | 4 |   do IO<Unit>:
+      | 5>|     v0 : F32 <- D.Dt.fp16(1.5)
+
+==============================================================================
+BIND '='
+==============================================================================
+  STEP 1 -- IS THE LANE IN THE ARTIFACT?  (shipped probe, compiled)
+                  emitted probe   dtype.js on disk
+    of32                      0                  5
+    bits32                    0                  4
+    fp8_decode               31                  2
+    i64_of                    0                 18
+    pack64                    0                  7
+    dtype.js                  0                   
+    dtype.c                   0                   
+    -> LANE ABSENT: `of32` and `bits32` are BOTH 0 in the emitted probe, so NO plant or break can reach them
+  STEP 2 -- MOVED ROWS, shipped vs each arm
+    disarm-A     moved   0/98   (the only correct count)
+    plant-A      moved   0/98   ** A PLANT THAT MOVED NOTHING -- IT PROVES NOTHING
+    disarm-B     moved   0/98   (the only correct count)
+    plant-B      moved   0/98   ** A PLANT THAT MOVED NOTHING -- IT PROVES NOTHING
+    disarm-C     moved   0/98   (the only correct count)
+    plant-C      moved   0/98   ** A PLANT THAT MOVED NOTHING -- IT PROVES NOTHING
+
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/abi4check/now/plant-measure.json

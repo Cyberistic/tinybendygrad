@@ -1,0 +1,76 @@
+=== RUN 1 ===
+oracle_dag_n_toposort=6
+oracle_dag_walk=MUL/2 ADD/2 ADD/2
+oracle_dag_walk_n=3
+oracle_dag_inpath=0 0 1 0 1 1
+oracle_dag_n_inpath=3
+oracle_dag_grads_n=6
+oracle_dag_grad_a=5 root=ADD/2 srcs=ADD/2 BUFFER/0 CAST/1 CONST/0 MUL/2
+oracle_dag_grad_b=4 root=MUL/2 srcs=BUFFER/0 CAST/1 CONST/0 MUL/2
+oracle_dag_grad_c=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_p=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_q=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_r=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_keys=ADD/2 MUL/2 ADD/2 BUFFER/0 BUFFER/0 BUFFER/0
+oracle_dag_skip_n=0
+oracle_dag_hole_n=0
+oracle_hole_n_toposort=8
+oracle_hole_walk=MUL/2 ADD/2 EXPAND/2 ADD/2
+oracle_hole_walk_n=4
+oracle_hole_inpath=0 0 1 0 1 1 0 1
+oracle_hole_n_inpath=4
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 144, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 116, in main
+    one("hole", r2, {a2, b2, d2},
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 83, in one
+    grads = compute_gradient(root, UOp.const(1.0, dtypes.float32), targets)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/gradient.py", line 133, in compute_gradient
+    v = v.cast(sum_acc_dtype(v.dtype))._rop(Ops.ADD, broadcast_axes(k.shape, v.shape)).reshape(k.shape).cast(v.dtype)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 89, in broadcast_axes
+    if (nleft:=len(out_shape)-len(src_shape)) < 0: raise RuntimeError(f"cannot broadcast {src_shape} into {out_shape}")
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=(
+  UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.f32), src=()),
+  UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.f32), src=()),)),) into ()
+=== RUN 2 ===
+oracle_dag_n_toposort=6
+oracle_dag_walk=MUL/2 ADD/2 ADD/2
+oracle_dag_walk_n=3
+oracle_dag_inpath=0 0 1 0 1 1
+oracle_dag_n_inpath=3
+oracle_dag_grads_n=6
+oracle_dag_grad_a=5 root=ADD/2 srcs=ADD/2 BUFFER/0 CAST/1 CONST/0 MUL/2
+oracle_dag_grad_b=4 root=MUL/2 srcs=BUFFER/0 CAST/1 CONST/0 MUL/2
+oracle_dag_grad_c=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_p=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_q=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_grad_r=2 root=CAST/1 srcs=CAST/1 CONST/0
+oracle_dag_keys=ADD/2 MUL/2 ADD/2 BUFFER/0 BUFFER/0 BUFFER/0
+oracle_dag_skip_n=0
+oracle_dag_hole_n=0
+oracle_hole_n_toposort=8
+oracle_hole_walk=MUL/2 ADD/2 EXPAND/2 ADD/2
+oracle_hole_walk_n=4
+oracle_hole_inpath=0 0 1 0 1 1 0 1
+oracle_hole_n_inpath=4
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 144, in <module>
+    main()
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 116, in main
+    one("hole", r2, {a2, b2, d2},
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/backward/oracle-cg.py", line 83, in one
+    grads = compute_gradient(root, UOp.const(1.0, dtypes.float32), targets)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/mixin/gradient.py", line 133, in compute_gradient
+    v = v.cast(sum_acc_dtype(v.dtype))._rop(Ops.ADD, broadcast_axes(k.shape, v.shape)).reshape(k.shape).cast(v.dtype)
+                                                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 89, in broadcast_axes
+    if (nleft:=len(out_shape)-len(src_shape)) < 0: raise RuntimeError(f"cannot broadcast {src_shape} into {out_shape}")
+                                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cannot broadcast (UOp(Ops.ADD, arg=None, src=(
+  UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.f32), src=()),
+  UOp(Ops.BUFFER, arg=ParamArg(2, dtypes.f32), src=()),)),) into ()

@@ -1,0 +1,92 @@
+usage: checks/substrate.py [-h] [-n] [--causes] [--mb MB] [--seconds SECONDS]
+                           [--root [DIR]]
+
+The substrate gate: HALF 1 judges each file by ITS OWN instrument, HALF 2 resolves every
+`<Mod>.<name>` a file references against the modules that file imports.
+
+It is the Python successor of `checks/substrate-check.sh` / `.agents/slop/substrate-check.sh`.
+Both `.sh` files stay on disk as `exec` shims, and the shell's body is frozen at
+`.agents/slop/substrate/oracle-check.sh` as the ORACLE this port is diffed against, because the
+rule this project wrote for itself is that the Python reproduces the shell's verdict on EVERY
+INPUT or it does not move. Its sha256 is in `ORACLE_PIN`, checked IN CODE on every run: a pin in
+a comment is a pin that cannot fail.
+
+WHAT IT GATES, AND THE DENOMINATOR EACH VERDICT TRAVELS WITH -- because a gate whose scope is a
+comment is a gate nobody can check.
+
+  HALF 1, per file, in the order the files were given:
+    MISSING          the path is not a file.                                       +1 finding
+    EMPTY            0 lines OR 0 bytes. `bend --check-only` answers `ALL PROOFS CHECK` for an
+                     empty file, so the verdict is meaningless and is not taken.  +1 finding
+    WARM / COLD       `.bend` -> `bend --check-only`   [.bend on disk; `bend=` counts what it
+                       `.c`   -> `cc -fsyntax-only` +  was HANDED, which may be more]
+                       `.mjs`     bend's generated C
+                       anything else -> NO INSTRUMENT, counted apart, never COLD
+    SKIP-VERDICT      `-n`, and the file has an instrument.
+  `COLD` is EXACTLY: the FIRST line of the instrument's merged output is not the literal string
+  `ALL PROOFS CHECK` (bend), or the exit status is non-zero (node, cc). IT IS A COUNT OF FILES,
+  NOT OF CAUSES -- `--causes` says how many causes those files are, because the unit of work is a
+  cause (`COLDNESS.md` §5: 35 red files, 15 causes, one missing def reddens 19). `--check-only`
+  loads the whole transitive import closure, so a COLD file is very often red because of something
+  it merely imports; THE SEMANTICS ARE THE SHELL'S, DELIBERATELY, because a port that changes the
+  verdict is not a port.
+    ROUTE   bend=, cc=, node=, no-instrument=, of N file(s) handed.
+  PROVENANCE `port=` / `non-port=` derived from `git ls-files`, plus a PORT ALARM for any
+    `tinybendygrad/` path that is not in the index. Reported, never silently absorbed.
+
+  HALF 2, over the router-class subset of the same discovered files (a source name-check is
+  meaningless on a file with no `.bend` import graph), and it reports its own coverage because an
+  instrument that silently skips most of its input is the defect this project has catalogued
+  twenty times:
+    NAMES per file: modules, refs, exact, suffix-only, unresolved, unseen, unused-import
+    TOTALS refs=, exact=, suffix=, unresolved=, unseen=, missing_module=, dead_import=
+    BAD    deduped problem SITES, not files. Every site is +1 finding.
+    COVERAGE qualified=, checked=, UNSEEN= -- the DENOMINATOR the name check travels with, so
+      a reader sees the fraction of qualified refs it cannot decide. `unseen` counts qualified
+      `Foo.bar` refs whose `Foo` is NOT an import alias -- a LOCAL type declared in the same
+      file, or the unaliased `import Base` stdlib surface (`List`/`String`/`U32`/...). It is a
+      named class of refs OUTSIDE the graph, not a name-resolution result and NOT a finding:
+      the pool is built only from ALIASED imports, so these are unresolvable BY CONSTRUCTION.
+
+POPULATION: with no file arguments, `--root [DIR]` sweeps EVERY file under DIR (default
+  `tinybendygrad`) by `os.walk`, so the tree can be swept WITHOUT a caller's `find` and nothing a
+  suffix filter would hide is dropped -- `endswith` decides what the ROUTER does with a file, never
+  what the WALK sees. A non-source file is printed `NO INSTRUMENT` and the `UNJUDGED` line names
+  how many discovered files were NOT judged. File arguments still take precedence and are judged
+  exactly as before, so the 1-file and 2-file callers are unmoved.
+
+EXIT STATUS: 0 clean · 1 at least one finding · 2 the scratch directory could not be made ·
+3 no files given, or the frozen oracle moved. **ZERO ARGUMENTS IS A MISUSE, NOT A VERDICT:**
+refused with a usage line, because `SUBSTRATE CLEAN: 0 file(s)` is the same verdict as a green
+run over a population.
+
+THE MEMORY BOUND IS NEW AND THE SHELL HAD NONE. All four instrument invocations in the shell are
+`perl -e 'alarm 300; exec @ARGV'` or worse: that idiom bounds TIME and nothing else, `ulimit`
+appears ZERO times in `agent-core.md`, `substrate-check.sh` and `e2e.sh` combined, and two
+unbounded `bend` processes took this machine's memory to zero on 2026-10-05. Every invocation
+here goes through `checks/bounded.py`, which watches the child's RSS and kills it, and ONE `bend`
+PROCESS RUNS AT A TIME because 1,152 MB + 1,108 MB is the crash (`PEAKRSS.md`). The ceiling is
+2048 MB rather than the 1 GB used for the census BECAUSE the measured maximum of the population is
+1,152 MB (`renderer/nir.bend`) and `sz.bend` is 1,108 MB -- a ceiling below the population's own
+maximum is a ceiling that changes verdicts. Kills and timeouts are reported on STDERR, never in
+the verdict line, so the artifact stays the shell's byte for byte.
+
+options:
+  -h, --help         show this help message and exit
+  -n                 HALF 2 only: suppress every per-file verdict and judge
+                     nothing
+  --causes           after the gate, group the COLD files by CAUSE and say
+                     whether the count is over files or causes. Does not
+                     change a verdict or an exit status; costs one full
+                     compiler pass over the COLD files
+  --mb MB            per-invocation memory ceiling in MB (default 2048, above
+                     the measured 1,152 MB maximum, because a ceiling below
+                     the population's own maximum is a ceiling that changes
+                     verdicts)
+  --seconds SECONDS  time ceiling per invocation (default 300, the shell's
+                     alarm)
+  --root [DIR]       with no file arguments, sweep EVERY file under DIR by
+                     os.walk (default tinybendygrad); each is routed, and
+                     those with no instrument class are named, never dropped.
+                     File arguments, when given, take precedence and are
+                     judged as before

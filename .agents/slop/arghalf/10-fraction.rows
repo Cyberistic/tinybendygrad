@@ -1,0 +1,29 @@
+graph	rows	py	before-agree	after-agree	before	after	state
+allred	18	9	9	9	9/18	9/18	COUNT-MISMATCH
+alu	14	14	14	14	14/14	14/14	AGREE
+binblob	19	19	19	19	19/19	19/19	AGREE
+bit	10	10	10	10	10/10	10/10	AGREE
+buffer	5	5	5	5	5/5	5/5	AGREE
+bw	32	32	32	32	32/32	32/32	AGREE
+cast	6	6	6	6	6/6	6/6	AGREE
+cdiv	18	10	10	10	10/18	10/18	COUNT-MISMATCH
+commute	14	14	14	14	14/14	14/14	AGREE
+flip	7	6	6	6	6/7	6/7	COUNT-MISMATCH
+gate	14	14	14	14	14/14	14/14	AGREE
+group	8	8	8	8	8/8	8/8	AGREE
+indexed	7	7	7	7	7/7	7/7	AGREE
+late	18	12	12	12	12/18	12/18	COUNT-MISMATCH
+lin	46	46	45	45	45/46	45/46	DISAGREE
+loop	25	25	24	25	24/25	25/25	AGREE
+matmul	18	18	18	18	18/18	18/18	AGREE
+move	22	22	22	22	22/22	22/22	AGREE
+range	2	2	2	2	2/2	2/2	AGREE
+rangeflat	2	2	2	2	2/2	2/2	AGREE
+reduce	7	7	7	7	7/7	7/7	AGREE
+sink	2	2	2	2	2/2	2/2	AGREE
+special	2	2	2	2	2/2	2/2	AGREE
+sym	12	12	12	12	12/12	12/12	AGREE
+where	8	8	8	8	8/8	8/8	AGREE
+
+TOTAL	336 rows	before 310/336 = 0.9226	after 311/336 = 0.9256
+loop	25	before 24/25 = 0.9600	after 25/25 = 1.0000  (measured above, not assumed)

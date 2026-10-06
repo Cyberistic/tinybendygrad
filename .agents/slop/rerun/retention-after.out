@@ -1,0 +1,28 @@
+I  RESIDUE  gates/artifacts/bc-u32-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/beautiful-mnist-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/ew-consts-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/ew-explog-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/i64-shl: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/i64-shr: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/mixin-op-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/ops-core-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/wk-cd-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I  RESIDUE  gates/artifacts/wk-f32-gate: 6 undeclared ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'py.cmp', 'py.rows']
+I   declared set only: 1/11 dirs clean, 10 with residue, 60 declared file(s) ABSENT (reported, not failed -- that is II/IV)
+
+II UNMEASURED  checks/differ.py: no class-scoped `run` writes this output, so the exit
+               count has no denominator. It stages `.tmp.` and os.replace-promotes, which leaves
+               no partial file but does NOT clear, and it unlinks 2 hardcoded stale
+               names (`D9-stability-{a,b}.txt`) rather than the directory.
+II FALSE      gates/gatekit.py: 11/13 exits after the first write, clears=['glob', 'iterdir', 'unlink']
+II  clears its own output: 0/1 MEASURED generators (1 unmeasurable)
+
+III not in the index: 11/11 dirs, 0 tracked entries total
+
+
+IV FIRES     runs/graphcmp/D/: the directory exists and its last run was NOT healthy: 2 complaint(s)
+IV              oracle-selfcheck=# ORACLE SELFCHECK: FAIL (expected # ORACLE SELFCHECK: OK)
+IV              census-rc=rc=1 (expected rc=0)
+IV UNMEASURABLE gates/artifacts/: 0/10 dirs can report health -- declared = THIS FILE (gatekit publishes no declared()); health = NONE: it prints its verdict and never writes it, so 0 of 8 gate dirs can say whether they were healthy
+
+RETENTION: RED

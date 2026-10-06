@@ -1,0 +1,2894 @@
+[
+ {
+  "path": "oracles/AFTER-pins.txt",
+  "bytes": 132,
+  "shape": "rowdump",
+  "sha": "66e6653095f6af5917612224843cf79e43732d03d0d781e606954a34b3851eec",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/BEFORE-rows.txt",
+  "bytes": 1131,
+  "shape": "rowdump",
+  "sha": "7a3aa4a4b9e2110004a809b9757951a5f0f7471ac02f2edaed76e7705cba7eb2",
+  "live": [
+   ".agents/slop/oracles259/ordering.py"
+  ],
+  "live_at": [
+   "oracles/schedule-bodies/BEFORE-rows.txt"
+  ],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/ordering.py",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/oracles259/ordering.py",
+    "BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/sbgate/plant.py",
+    ".agents/slop/sbgate/BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/sbgate/plant.py",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    "checks/BEFORE-rows.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/FINAL_11.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/FINAL_int.txt",
+  "bytes": 1553,
+  "shape": "rowdump",
+  "sha": "c05641bb58c115409b7f5c2bb53666d4f7c331eb8e675d78608dd8b7d1b91227",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/FINAL_mv.txt",
+  "bytes": 1389,
+  "shape": "rowdump",
+  "sha": "8566f20cdc85882e8f73f26bc4b45ccb08f9ef663e02b37ed280ee415b7df069",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/FINAL_nat.txt",
+  "bytes": 1553,
+  "shape": "rowdump",
+  "sha": "c05641bb58c115409b7f5c2bb53666d4f7c331eb8e675d78608dd8b7d1b91227",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/LIVE-rows.txt",
+  "bytes": 1131,
+  "shape": "rowdump",
+  "sha": "7a3aa4a4b9e2110004a809b9757951a5f0f7471ac02f2edaed76e7705cba7eb2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-abi-oracle.re.txt",
+  "bytes": 1812,
+  "shape": "rowdump",
+  "sha": "71395b416e9693c68fc4af09fff1bf062e7826529227ded723720c47dc8759ef",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-abi-oracle.txt",
+  "bytes": 1812,
+  "shape": "rowdump",
+  "sha": "71395b416e9693c68fc4af09fff1bf062e7826529227ded723720c47dc8759ef",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-emit-oracle.re.txt",
+  "bytes": 1848,
+  "shape": "rowdump",
+  "sha": "fa2132c4d8c40bd445c0d0ad20bc4e687d09555d134a72d875d60a5d6c7e5de8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-emit-oracle.txt",
+  "bytes": 1848,
+  "shape": "rowdump",
+  "sha": "fa2132c4d8c40bd445c0d0ad20bc4e687d09555d134a72d875d60a5d6c7e5de8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-oracle.re.txt",
+  "bytes": 3772,
+  "shape": "rowdump",
+  "sha": "0bc66a2d5e41e3a15de9f605bdb5dfb49e78b5a18a8cd52450fd795b5a425214",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ag-oracle.txt",
+  "bytes": 3772,
+  "shape": "rowdump",
+  "sha": "0bc66a2d5e41e3a15de9f605bdb5dfb49e78b5a18a8cd52450fd795b5a425214",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/othercopies.py",
+    ".agents/slop/ag-oracle.txt"
+   ],
+   [
+    ".agents/slop/oracles259/othercopies.py",
+    "ag-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/amd_oracle.txt",
+  "bytes": 27357,
+  "shape": "rowdump",
+  "sha": "20468171aee84212e40dd38d6229285ac2aa501ccf42520c7fba7d05fa11d489",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/amdev-baseline-552.txt",
+  "bytes": 12494,
+  "shape": "rowdump",
+  "sha": "818bddc81d7d1effa23e465f81137bceab65d04a6fd40c59a849123c9072ef85",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/table-pin.py",
+    ".agents/slop/amdev-baseline-552.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ansi_oracle.txt",
+  "bytes": 567,
+  "shape": "rowdump",
+  "sha": "0508418a1e0a645c099a2f43a2b88fc317d9e59b0942705cc853f571855a99e8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/arange-ucache/baseline.txt",
+  "bytes": 2327,
+  "shape": "rowdump",
+  "sha": "2da577711139d7c9d73e3c6b6c672b246535e334e4f76854b6604e75ba993169",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/arange-ucache/oracle.txt",
+  "bytes": 6826,
+  "shape": "rowdump",
+  "sha": "6dcb1ad2ae25ea383b774bb763db7ff58f273f0639b53d07bec938652780499a",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/fp8fix/gate.py",
+    ".agents/slop/fp8fix/oracle.txt"
+   ],
+   [
+    ".agents/slop/usb-diff.py",
+    ".agents/slop/oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/arena-jit-baseline.txt",
+  "bytes": 5344,
+  "shape": "rowdump",
+  "sha": "49222155d1dd8f7a5e94511ebb9631bb0f666b0017785637402b22a1a2fb2c14",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/arglit/AFTER-pins.txt",
+  "bytes": 132,
+  "shape": "rowdump",
+  "sha": "66e6653095f6af5917612224843cf79e43732d03d0d781e606954a34b3851eec",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/arglit/baseline.txt",
+  "bytes": 1441,
+  "shape": "rowdump",
+  "sha": "6d8808f3337644948c5247fdae52a263d8fc86aa693a1324c4edd12f9f39e90d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/backward/oracle-cg.txt",
+  "bytes": 4402,
+  "shape": "crash-dump-in-txt",
+  "sha": "352823cb7acf43ef64ae9bc63e75560f32aebbffc24d4c03b43b86561c298499",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/base_interp.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/base_native.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/baseline-ledger.txt",
+  "bytes": 33508,
+  "shape": "rowdump",
+  "sha": "766a1d2205cb395cddf6d979aa8d57cd6446aabcb101536f674ac908ae85cc70",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/load-census.py",
+    ".agents/slop/baseline-ledger.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/baseline-probe.txt",
+  "bytes": 18464,
+  "shape": "rowdump",
+  "sha": "70391c3b8c684790a1f56b42c1129cd15b54e7f45a05cfc5dd2b5470f8a71037",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/baseline.txt",
+  "bytes": 1441,
+  "shape": "rowdump",
+  "sha": "6d8808f3337644948c5247fdae52a263d8fc86aa693a1324c4edd12f9f39e90d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/bend_mv.txt",
+  "bytes": 1389,
+  "shape": "rowdump",
+  "sha": "8566f20cdc85882e8f73f26bc4b45ccb08f9ef663e02b37ed280ee415b7df069",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/bl-py.txt",
+  "bytes": 607,
+  "shape": "rowdump",
+  "sha": "44affc6347df6a2f48a30865e361e49d9ad426915662e41abdc8caf53808e270",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/blob-bd.txt",
+  "bytes": 188,
+  "shape": "rowdump",
+  "sha": "4e993fcfdd2efd3693b06ecd1cd7b0cdeb236d5a43fca964abf80e9c2e2faafd",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/blob-bn.txt",
+  "bytes": 188,
+  "shape": "rowdump",
+  "sha": "03f3443bca77f8ead381234fe141740a3162d462cbccdfa412d0f987070a1a39",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    "checks/sweep.py",
+    "checks/blob-bn.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/blob-opsgate-diff.txt",
+  "bytes": 139,
+  "shape": "rowdump",
+  "sha": "3586ff2c371630ccdb61ff5d794ac34771b6bb5e4adddf81b023f5205affcc85",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/blob-opsgate.txt",
+  "bytes": 282,
+  "shape": "rowdump",
+  "sha": "813bb3cb10a549fe35c5d464a12555c2edf1601ad2281811ae96c4d07b7897ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/blob-py.txt",
+  "bytes": 188,
+  "shape": "rowdump",
+  "sha": "4e993fcfdd2efd3693b06ecd1cd7b0cdeb236d5a43fca964abf80e9c2e2faafd",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/boot42_baseline_port.txt",
+  "bytes": 21258,
+  "shape": "rowdump",
+  "sha": "dca6bb7cb10e3555d5de44fd90c504d9b4407f02c02e436d15d5d9fe9bbbe235",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/bwd-oracle.txt",
+  "bytes": 103,
+  "shape": "rowdump",
+  "sha": "4071c358f254041f8f998016f30742c699716239f137442eb29cf276cd672c26",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/c11.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/c11b.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/cpulink_oracle.txt",
+  "bytes": 819,
+  "shape": "rowdump",
+  "sha": "6ae80d19d53535082c24b6ccf635b145c26ec80aa5f75aa85cc99f9779185a8d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/cshape/rows-run0.txt",
+  "bytes": 1639,
+  "shape": "rowdump",
+  "sha": "3d4beb8d9287bbd956534adc181ed27722ddd1308d19af765a1c63e092296ff8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/cstyle-capture-oracle-preren.txt",
+  "bytes": 24512,
+  "shape": "rowdump",
+  "sha": "c51a2d101ff40debc417fb67262a8da1489f400c017f7857d073e1abe663ca1c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/cstyle-capture-oracle.txt",
+  "bytes": 24512,
+  "shape": "rowdump",
+  "sha": "2e4491ed20904a0fafd724d650453d3d0acec9d5b93264b90dfac221a0a63a1f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/cstyle-parity/oracle.txt",
+  "bytes": 24512,
+  "shape": "rowdump",
+  "sha": "c51a2d101ff40debc417fb67262a8da1489f400c017f7857d073e1abe663ca1c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/fp8fix/gate.py",
+    ".agents/slop/fp8fix/oracle.txt"
+   ],
+   [
+    ".agents/slop/usb-diff.py",
+    ".agents/slop/oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/dd-const-oracle.txt",
+  "bytes": 590,
+  "shape": "rowdump",
+  "sha": "b7072d12254cf9418f5abff201e99a414e425f95b294caf147f98f5c46a738c4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/dd-divE-rows-degraded.txt",
+  "bytes": 2966,
+  "shape": "rowdump",
+  "sha": "0aea2b9cb0f034fa6051dff299c1bbb00e4be64ced9f49aedfb9d169e2f7cb35",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/dd-oracle-fresh.txt",
+  "bytes": 83724,
+  "shape": "rowdump",
+  "sha": "022b859be6396e341c9aae211a13ee3b3a66a8beaa36b070a163532e68a206ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/dd-oracle.txt",
+  "bytes": 83716,
+  "shape": "rowdump",
+  "sha": "c576751a285ec56e2b917a9bdfec6f7a8b2d865c0583913ec958b6ec61b47321",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/dd-divE-run.sh",
+    ".agents/slop/dd-oracle.txt"
+   ],
+   [
+    ".agents/slop/zero-selftest.py",
+    ".agents/slop/dd-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/dsl_oracle.txt",
+  "bytes": 44383,
+  "shape": "rowdump",
+  "sha": "02a3b49cd616f262b25c587b2d506be83dcf4e3e5ddb95cd58328072ef57206c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/dsl_gate.py",
+    ".agents/slop/dsl_oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/dsl_oracle_live.txt",
+  "bytes": 44383,
+  "shape": "rowdump",
+  "sha": "165381d2ef10160c78a1eb855b7098f552346039e1c65d62449c0927bbaf32ae",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/dsp_oracle.txt",
+  "bytes": 42598,
+  "shape": "rowdump",
+  "sha": "9fa8e9c30d58ffc99fa5db46b9ff3df099eb450045fd299e76158e1656a2a465",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/dt-py.txt",
+  "bytes": 890,
+  "shape": "rowdump",
+  "sha": "12704dbf172beb1dcec690a681db91e3c328fb900b5c098fc5817fbbd156941e",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/dtype-gate.py",
+    ".agents/slop/dt-py.txt"
+   ],
+   [
+    ".agents/slop/unobservable-census.py",
+    ".agents/slop/dt-py.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/dt32-rows.txt",
+  "bytes": 63202,
+  "shape": "rowdump",
+  "sha": "b00942b6fbe446b0850f9c77ac8629354b4af3bdb1b97a85fa738510ef75bee0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/elf_oracle.txt",
+  "bytes": 57077,
+  "shape": "rowdump",
+  "sha": "359741dfafc6dd2f4bcec152df422130be456f5fc1abd9cc9b10ea3466ee30db",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/elf_oracle_all.txt",
+  "bytes": 68946,
+  "shape": "rowdump",
+  "sha": "4d093f7564f3d92684f5689c9ddd81212b6b8ec9d4580d0e80bfa3c712daa5ff",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/elf_rows.txt",
+  "bytes": 62366,
+  "shape": "rowdump",
+  "sha": "d944cdbd21344d4888164913835126f6b87fa472af11d5ae0f49a26ddc662ec0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/expect.txt",
+  "bytes": 180,
+  "shape": "rowdump",
+  "sha": "5e0dfdaf759a66ba83a7a0f79ef7aa069fc13676f1f84631fd66c17cb127f40c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_0.txt",
+  "bytes": 32905,
+  "shape": "crash-dump-in-txt",
+  "sha": "65e9542e1da6320fcad5387fad29717ca7f5d2e7b5109204e5c4f6d1871743cb",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_1.txt",
+  "bytes": 8809,
+  "shape": "crash-dump-in-txt",
+  "sha": "9eb6ef17d3a0dc45e9e245362c6e9c247e4aa7c93f941a700231b37cefdd3f18",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_2.txt",
+  "bytes": 2156,
+  "shape": "crash-dump-in-txt",
+  "sha": "1e126242d738c41734a0f4a2d9527bc8cac215dec975bf27d5b5f28ed2f8ef3d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_3.txt",
+  "bytes": 9427,
+  "shape": "rowdump",
+  "sha": "d41ace4939c0655470e0351627364a3ea18bc760d88fc61f45cc60d083540161",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_4.txt",
+  "bytes": 2115,
+  "shape": "crash-dump-in-txt",
+  "sha": "de3f8191e2bd2f5430969ea80eb4659b5d618e3386f8c13fb3e7c26cc9038481",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ext_oracle_am.txt",
+  "bytes": 14104,
+  "shape": "rowdump",
+  "sha": "94d02b1520293fd93ecfcfffea91d17d104aa0f1a46ace04f373db988213e0d0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/f2f-bitcast-oracle.txt",
+  "bytes": 977,
+  "shape": "rowdump",
+  "sha": "9c7ce4ad1b27859f6edbb208f5c0e257f903ac66b5906b8475670ac2136cc058",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-committed-base.txt",
+  "bytes": 3186,
+  "shape": "rowdump",
+  "sha": "bf92d9bde31a77455d70fb8fc9d10d5bbd5c42fee0bd27f278250a71c7d1c6ff",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-final.txt",
+  "bytes": 320,
+  "shape": "rowdump",
+  "sha": "ed6d5424771fc0fc64406255af757a5c1984afc5fbffe60fee7cf4cdd698cbb1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-ladder.txt",
+  "bytes": 4636,
+  "shape": "rowdump",
+  "sha": "d85c271bf91574e0a4b0fc404ca849d717bec1974c79cf4ab9ae35aa4b4e21fd",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-landed.txt",
+  "bytes": 4636,
+  "shape": "rowdump",
+  "sha": "4369ae5de97b333479f3fe257678019fb01b8e202230bc61254687dda0d263ba",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-lift-run.txt",
+  "bytes": 9038,
+  "shape": "rowdump",
+  "sha": "233656884fa93c94afa8f162cd244e3f7641527471b5d8908b2af145a4dcb759",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-mut.txt",
+  "bytes": 6190,
+  "shape": "source-in-txt",
+  "sha": "c91b6f7b66943ab4ca8bb111d62b55156df315547855a245bc3a80460829daf1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-mvt-oracle.py.txt",
+  "bytes": 2743,
+  "shape": "rowdump",
+  "sha": "894ea59020e71c7481eb1d76d78439c3f46e7c587f58e763724a998d23dfe8bc",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-mvt-rows.py.txt",
+  "bytes": 585,
+  "shape": "rowdump",
+  "sha": "fca4348cfeb477990b334892661b90d825334098335792eb3df30fbf41041781",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-rows-after.txt",
+  "bytes": 9165,
+  "shape": "rowdump",
+  "sha": "9df1656df4f82a2af0c85f59ec176cddd9558287d88cdcd801e4a47936f7cc9d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold-rows-before.txt",
+  "bytes": 9038,
+  "shape": "rowdump",
+  "sha": "233656884fa93c94afa8f162cd244e3f7641527471b5d8908b2af145a4dcb759",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold2_base.txt",
+  "bytes": 4636,
+  "shape": "rowdump",
+  "sha": "4369ae5de97b333479f3fe257678019fb01b8e202230bc61254687dda0d263ba",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fold2_mut.txt",
+  "bytes": 2972,
+  "shape": "rowdump",
+  "sha": "64ad41286b22d17c538ed6b1dbb101c515b06414af38bb88feff6a9a84966a35",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/fp8fix/oracle.txt",
+  "bytes": 2195512,
+  "shape": "rowdump",
+  "sha": "4e7e68ee886f7fba28eef5b96848146ed0b327434cdf0105fc3647c009740980",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/fp8fix/gate.py",
+    ".agents/slop/fp8fix/oracle.txt"
+   ],
+   [
+    ".agents/slop/usb-diff.py",
+    ".agents/slop/oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ga-oracle.txt",
+  "bytes": 139892,
+  "shape": "rowdump",
+  "sha": "d89f58d33f6a1ef2045d6b46b4fe619c180a0b161d6ca8e7a2ee31afc6c6c6ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/ga_gate.py",
+    ".agents/slop/ga-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/gd-oracle.txt",
+  "bytes": 901,
+  "shape": "rowdump",
+  "sha": "36d9241ccdf868151513bb49f3da3c970de86073e032bc890ca6950108218e5b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/unobservable-census.py",
+    "gd-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/grw-baseline-port.txt",
+  "bytes": 87,
+  "shape": "rowdump",
+  "sha": "4949ef4627c1743306f751ec597849823a49f7611672de006a94f90afad17e05",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/grw-oracle.txt",
+  "bytes": 314,
+  "shape": "rowdump",
+  "sha": "d4ef122e69aaea001c7a07c2f103dcc836e241cd949fcb0fb185478211bda9d4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/grw-rows.txt",
+  "bytes": 692,
+  "shape": "rowdump",
+  "sha": "9bf79e1291dc9ed75718f6e1fee9979158198fc03e8db2b92e75a1bd17cbd7f0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/hdr_rows.txt",
+  "bytes": 3201,
+  "shape": "rowdump",
+  "sha": "dac5696dabf92b16eaeaaaa41aeffdfd1baa1ce6c0864cf8f670b1ab9129a36f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/hq-oracle.txt",
+  "bytes": 9340,
+  "shape": "rowdump",
+  "sha": "ddd3fadd21b57fb8d6a14b33a496cfbed43535e0bb3cf3027a72fae155bf2c16",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/int2.txt",
+  "bytes": 1163,
+  "shape": "rowdump",
+  "sha": "d907e9f66b094491964c59e15b15963a0071c920f7268fbdb4000be3b3ef51e5",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/int3.txt",
+  "bytes": 1553,
+  "shape": "rowdump",
+  "sha": "c05641bb58c115409b7f5c2bb53666d4f7c331eb8e675d78608dd8b7d1b91227",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/interp_full.txt",
+  "bytes": 507,
+  "shape": "rowdump",
+  "sha": "58d1dff866b14b0a4da3205cab1ec7fb9ae2307fe9563aa6b3e7ac0c8f0bf4d0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/jit-prune-oracle.txt",
+  "bytes": 180,
+  "shape": "rowdump",
+  "sha": "1d9aa8a250709461fadca8cc29a8fb141eaea12df18848dbd33044ff72612cf2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/late-oracle.txt",
+  "bytes": 3764,
+  "shape": "rowdump",
+  "sha": "a2de7f74e25175471e78d58df5c6d87790100c02244201c24831e6f0ac712cc9",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/late-gate.sh",
+    ".agents/slop/late-oracle.txt"
+   ],
+   [
+    ".agents/slop/unobservable-census.py",
+    ".agents/slop/late-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/lift-mut.txt",
+  "bytes": 37,
+  "shape": "rowdump",
+  "sha": "5fd8d2509a34f2acfb47936afd980fdf66aad780c5b74fb3f33078c1777cf942",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/lift-py-final.txt",
+  "bytes": 4657,
+  "shape": "rowdump",
+  "sha": "a9ac16484923cf39c0ea46117a1b2638ea6b20d4b9135f37ae9a82e56e0de6c0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/lift-py.txt",
+  "bytes": 4657,
+  "shape": "rowdump",
+  "sha": "a9ac16484923cf39c0ea46117a1b2638ea6b20d4b9135f37ae9a82e56e0de6c0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/lintable-oracle.txt",
+  "bytes": 3590,
+  "shape": "rowdump",
+  "sha": "6b30018aaa33d43742543ca82bd3d10b2f8213fa4d10a92ea12beb87e0f8e6aa",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    "checks/lintable-gate.sh",
+    ".agents/slop/lintable-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/main_rows.txt",
+  "bytes": 39021,
+  "shape": "rowdump",
+  "sha": "5726d8be7a31c88ebab1e4fb9f903d7a63ca362aef130d11dfc4780f7576001d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/memory-baseline-889.txt",
+  "bytes": 20585,
+  "shape": "rowdump",
+  "sha": "638bbf97ffe65ba5a3d69962fcdfd75c53b0dfe50e69c9e6c6269eeef4c382d8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/table-pin.py",
+    ".agents/slop/memory-baseline-889.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/memory_oracle.txt",
+  "bytes": 20585,
+  "shape": "rowdump",
+  "sha": "a53e88245facefefc0bcc0ddb3fd8e6ec8ac04a7f4dee7f212bc913f6c125aee",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/mv_downstream_after.txt",
+  "bytes": 1807,
+  "shape": "rowdump",
+  "sha": "91e99f171e72554cce70cbf83f39104c192761854f11800872877f1c70a405c6",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/naming-gate-baseline.txt",
+  "bytes": 60004,
+  "shape": "rowdump",
+  "sha": "00267243f5dcdf76811a8e1fa4a1d6a68f969ffd22f78d55a00ebd83426d29eb",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/naming-gate-selftest.py",
+    ".agents/slop/naming-gate-baseline.txt"
+   ],
+   [
+    ".agents/slop/naming-gate.py",
+    ".agents/slop/naming-gate-baseline.txt"
+   ],
+   [
+    ".agents/slop/unobservable-census.py",
+    ".agents/slop/naming-gate-baseline.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/nat2.txt",
+  "bytes": 1163,
+  "shape": "rowdump",
+  "sha": "d907e9f66b094491964c59e15b15963a0071c920f7268fbdb4000be3b3ef51e5",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/nat3.txt",
+  "bytes": 1553,
+  "shape": "rowdump",
+  "sha": "c05641bb58c115409b7f5c2bb53666d4f7c331eb8e675d78608dd8b7d1b91227",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/native11.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/native_full.txt",
+  "bytes": 507,
+  "shape": "rowdump",
+  "sha": "58d1dff866b14b0a4da3205cab1ec7fb9ae2307fe9563aa6b3e7ac0c8f0bf4d0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/native_mv.txt",
+  "bytes": 507,
+  "shape": "rowdump",
+  "sha": "58d1dff866b14b0a4da3205cab1ec7fb9ae2307fe9563aa6b3e7ac0c8f0bf4d0",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/nocolor-oracle.txt",
+  "bytes": 206,
+  "shape": "rowdump",
+  "sha": "73b1d7c9ad49de4e0c985386f804fe437cb98febcb8a4ce2ddbc620786c9693e",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/nocolor-diff.py",
+    ".agents/slop/nocolor-oracle.txt"
+   ],
+   [
+    ".agents/slop/nocolor-oracle.py",
+    ".agents/slop/nocolor-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/nv-oracle-BEFORE.txt",
+  "bytes": 14216,
+  "shape": "rowdump",
+  "sha": "64129df02365fb576a5a11c78442e695b5752df106bfd4018f5798993e34c350",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/nv_ip_rows.txt",
+  "bytes": 35512,
+  "shape": "rowdump",
+  "sha": "8768855123ad3abd83c02d5175440c1ee638ba5085989330f28ba096aa07e20c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/nv_ip_gen.py",
+    ".agents/slop/nv_ip_rows.txt"
+   ],
+   [
+    ".agents/slop/nv_ip_oracle.py",
+    ".agents/slop/nv_ip_rows.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/nv_nvdev_oracle.txt",
+  "bytes": 83684,
+  "shape": "rowdump",
+  "sha": "839c941d2701827288856899cc1ed8f50833526db1e5ee61dda26150675d651b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/objc/objc_oracle.txt",
+  "bytes": 8423,
+  "shape": "rowdump",
+  "sha": "1ca3525c877517db0926e9183f4aed8bcd1578125abe13e317851c0ef8a6e302",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/objc/symtab_oracle.txt",
+  "bytes": 3711,
+  "shape": "rowdump",
+  "sha": "ce3bad2af8415b43dc3d84716752c01e5c7e5a40103088e591262174c39372c1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/objc_oracle.txt",
+  "bytes": 8423,
+  "shape": "rowdump",
+  "sha": "1ca3525c877517db0926e9183f4aed8bcd1578125abe13e317851c0ef8a6e302",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-base.txt",
+  "bytes": 393,
+  "shape": "rowdump",
+  "sha": "b2d253f12be2cae3be36695d45c6f10f4ccd5942be596ab06dd422940ff6cc67",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-bd.txt",
+  "bytes": 2752,
+  "shape": "rowdump",
+  "sha": "e16766e3db8c4314a45cf3e26a0c7ef838dd049362c33869b0029c93f776b536",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-bn.txt",
+  "bytes": 2752,
+  "shape": "rowdump",
+  "sha": "e16766e3db8c4314a45cf3e26a0c7ef838dd049362c33869b0029c93f776b536",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-mutations.txt",
+  "bytes": 5891,
+  "shape": "source-in-txt",
+  "sha": "b2f50c918f6bd5d8e0cbd7957a64ebc5879c2b698464c9017a53a8daee0cadd2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/zero-audit.py",
+    ".agents/slop/ops-mutations.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ops-py-pin.txt",
+  "bytes": 4956,
+  "shape": "rowdump",
+  "sha": "4bef668d8d173a5c01e0103eca0a70cb8aa8b12a95d2db886a8ec5b04ad741c1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-py-upstream.txt",
+  "bytes": 4882,
+  "shape": "rowdump",
+  "sha": "a31a55a1af22392cbb66b35c9eb7a1b301a3508b3785c1ee60d7172d7c5c1617",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-py.txt",
+  "bytes": 2752,
+  "shape": "rowdump",
+  "sha": "e16766e3db8c4314a45cf3e26a0c7ef838dd049362c33869b0029c93f776b536",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-python-baseline-85.txt",
+  "bytes": 2053,
+  "shape": "rowdump",
+  "sha": "ccbc5060b145aae49f6e5c30915096f0551f565315cf70c282ca6feffc98abb3",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/table-pin.py",
+    ".agents/slop/ops-python-baseline-85.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ops-python-render-oracle.txt",
+  "bytes": 10207,
+  "shape": "rowdump",
+  "sha": "3df2101b77bee6c0dfff3d29f7e17359176b1d1f836b8066dcc9448e62670d2c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops-rnd-gate-oracle.txt",
+  "bytes": 324,
+  "shape": "rowdump",
+  "sha": "f374f84c7de942934eaabdf8d2a84e0fc5444e31a1ad10abe03e1389b7d44dc2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-bd.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/ops-501-gate.sh",
+    "ops501-bd.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ops501-bn.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/ops-501-gate.sh",
+    "ops501-bn.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/ops501-ctl-bd.txt",
+  "bytes": 2163,
+  "shape": "rowdump",
+  "sha": "f38b935f366bb0765f03ef7c080192cedaef5c397bfb3e994708acfb8068eeb6",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-ctl-bn.txt",
+  "bytes": 2163,
+  "shape": "rowdump",
+  "sha": "f38b935f366bb0765f03ef7c080192cedaef5c397bfb3e994708acfb8068eeb6",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-ctl-py.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-plant-bad.txt",
+  "bytes": 2821,
+  "shape": "rowdump",
+  "sha": "4f952d373fa376721ff81d1122ae73595e469f142359277c279461e341adc2ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-plant-clean.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-plant-py.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-plant-report.txt",
+  "bytes": 256,
+  "shape": "rowdump",
+  "sha": "ccdf51f481defb8c7205b6dba697bb59f2dacbd28b351733c7f3ed31eeba1350",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/ops501-py.txt",
+  "bytes": 2833,
+  "shape": "rowdump",
+  "sha": "a9abcd10d55b4128f77787fb3579f9f58241f78c762ea78ba88b721c0230a094",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/ops-501-gate.sh",
+    "ops501-py.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/opssugar-bd.txt",
+  "bytes": 1702,
+  "shape": "rowdump",
+  "sha": "a40d96d34689bb9fe96755cb21a5a56ce89c8f916ceefc6bbe581f6289af1245",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/opssugar-bn.txt",
+  "bytes": 1702,
+  "shape": "rowdump",
+  "sha": "a40d96d34689bb9fe96755cb21a5a56ce89c8f916ceefc6bbe581f6289af1245",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/opssugar-py.txt",
+  "bytes": 1702,
+  "shape": "rowdump",
+  "sha": "a40d96d34689bb9fe96755cb21a5a56ce89c8f916ceefc6bbe581f6289af1245",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle-cg.txt",
+  "bytes": 4402,
+  "shape": "crash-dump-in-txt",
+  "sha": "352823cb7acf43ef64ae9bc63e75560f32aebbffc24d4c03b43b86561c298499",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle-search-padto.txt",
+  "bytes": 1633,
+  "shape": "rowdump",
+  "sha": "c74e786be9e17399b8466be2585a32f5e44ef7279739a98a14228145e85ec88f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle-search.txt",
+  "bytes": 1605,
+  "shape": "rowdump",
+  "sha": "2a33b282170afdcc966dd7869691103b1c6604e5f058f6c31ceb2a3b35508ae1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle-spec.txt",
+  "bytes": 270,
+  "shape": "rowdump",
+  "sha": "55e56cf6a59f211e2c51e81609c6ccebf05a0cefbd9cfc41d97ed1502bf450ef",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle-system.txt",
+  "bytes": 31307,
+  "shape": "rowdump",
+  "sha": "c6acc255883e96f0501df4788d68916ffa58aa17afd9751708c3ceac9763710a",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle.f.txt",
+  "bytes": 1534,
+  "shape": "rowdump",
+  "sha": "176fe1969084c20f50b9ae1c7bd38690f8c5a7e249cf784a1113ae6c0de6272d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/oracle.txt",
+  "bytes": 2195512,
+  "shape": "rowdump",
+  "sha": "4e7e68ee886f7fba28eef5b96848146ed0b327434cdf0105fc3647c009740980",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/fp8fix/gate.py",
+    ".agents/slop/fp8fix/oracle.txt"
+   ],
+   [
+    ".agents/slop/usb-diff.py",
+    ".agents/slop/oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/prepare-gate-oracle.txt",
+  "bytes": 62259,
+  "shape": "rowdump",
+  "sha": "0add9ea595c2c55397dee8fc2b6fe0b37d663d7b019086e5ae5570f746d383fb",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/prepare-oracle.txt",
+  "bytes": 63044,
+  "shape": "rowdump",
+  "sha": "d3f2932a51d5f439e30f5f4f89a4c87c747c6b11ff1da5ce389cbebf10f61b28",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/py-mvt-rows.txt",
+  "bytes": 3182,
+  "shape": "rowdump",
+  "sha": "21ec5213624d7462f292c5506fa100bfc702c744a36d2e1286e0fcae40ef431a",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/py_mv.txt",
+  "bytes": 1389,
+  "shape": "rowdump",
+  "sha": "59a5d9f3a0b49b31305c926ce67145b7eb41dbd85be424258368ca8976ceec78",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rangeify-baseline-126.txt",
+  "bytes": 1672,
+  "shape": "rowdump",
+  "sha": "89efb9f3de9e4338e5e049d3ca2a337cc346c8a1101c13f474f292334ad06ea2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/table-pin.py",
+    ".agents/slop/rangeify-baseline-126.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/red-baseline.txt",
+  "bytes": 1260,
+  "shape": "rowdump",
+  "sha": "8c1faea2800ae37a06e2fd1bcd4ab3cf9c86276ab802c483192aaa2fe05d6c99",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/restored.txt",
+  "bytes": 164,
+  "shape": "rowdump",
+  "sha": "ee67562cd363cef427c20716163b77c437200ea141944a500638a39d2fbaa9cf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rf-arg-oracle.txt",
+  "bytes": 761,
+  "shape": "rowdump",
+  "sha": "d8f5c91765f14f687380211a56164ca63e0c8635bee4f3790cb08c1393e8866b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rf-ct-oracle.txt",
+  "bytes": 9451,
+  "shape": "rowdump",
+  "sha": "88613d5abb8a1280e8e73746bbb0567c9a34ecbaf1fd805818329c65df05d91d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-allred-bend.txt",
+  "bytes": 573,
+  "shape": "rowdump",
+  "sha": "cf3e4f5abe166f56023e028304816cd3834b98be3822acc37347c8c68b7d4255",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-allred-py.txt",
+  "bytes": 573,
+  "shape": "rowdump",
+  "sha": "a26fae5f072efd2820df22b6e357d9da04e89eb8fa3b41f8cb71050a32b48bc1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-alu-bend.txt",
+  "bytes": 828,
+  "shape": "rowdump",
+  "sha": "5785cbbe5ad0586917fcac3e328149b8ecb71871580f288df3ebd86edc7bd876",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-alu-py.txt",
+  "bytes": 828,
+  "shape": "rowdump",
+  "sha": "9888375d9647b49254d34489908febbe487feb19d88025abe82817ffe3237b25",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-bd.txt",
+  "bytes": 0,
+  "shape": "rowdump",
+  "sha": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/othercopies.py",
+    "rows-bd.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/rows-bd.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    "checks/rows-bd.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/rows-binblob-bend.txt",
+  "bytes": 1236,
+  "shape": "rowdump",
+  "sha": "59eccd1cbe5997a6b451ecede4b434afc7403b9401e3df5616aa23f9aea9a036",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-binblob-py.txt",
+  "bytes": 1236,
+  "shape": "rowdump",
+  "sha": "da11d005975db427483c5eaa78419890be0aeaf9609ef186613b426ff2e10e5e",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-bit-bend.txt",
+  "bytes": 599,
+  "shape": "rowdump",
+  "sha": "0e78b33486ba4da5cd6fa48d99a20d933994c15c5a4ad955fdba83caaa6080bf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-bit-py.txt",
+  "bytes": 599,
+  "shape": "rowdump",
+  "sha": "bc2af7b45fd96c023dba0faadf439883d1af32216d738a4376085fca31eb66e8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-buffer-bend.txt",
+  "bytes": 310,
+  "shape": "rowdump",
+  "sha": "bb152eac1014cb82c724ec0a1d206c0be87a17a1dd9cc528dfa1c6c621f1c453",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-buffer-py.txt",
+  "bytes": 310,
+  "shape": "rowdump",
+  "sha": "910a92545b3f99ccd74bfd3454a6f6c6f939a16ac86a5969aaa0e23c5240ef9c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-bw-bend.txt",
+  "bytes": 2066,
+  "shape": "rowdump",
+  "sha": "da222007d9f0a9e7bd5d844384294e79277884dbe25ce906d123159d88f04be5",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-bw-py.txt",
+  "bytes": 2066,
+  "shape": "rowdump",
+  "sha": "77eed6ce57db2d9a815a64a47f64c9a80292b2362b49e1cdd12fea92d5c81177",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-cast-bend.txt",
+  "bytes": 366,
+  "shape": "rowdump",
+  "sha": "45a37e2b53dbb3e3734b9185fca5a5e1eb81330b79bbae79c0c7bb97d98512ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-cast-py.txt",
+  "bytes": 366,
+  "shape": "rowdump",
+  "sha": "61719fd630a163050e8ff0c8d6a6e9450aaab43817837ae91fc1e11dbb2b66d5",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-cdiv-bend.txt",
+  "bytes": 625,
+  "shape": "rowdump",
+  "sha": "4f40fc44743a6c2d6680c057f2d382611ec9011399ba2687ee49b50340a1914c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-cdiv-py.txt",
+  "bytes": 627,
+  "shape": "rowdump",
+  "sha": "0d30045cef81a175736f43811bc8de6a5485c734322f451804243837b6ff9515",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-coef.txt",
+  "bytes": 6484,
+  "shape": "rowdump",
+  "sha": "4f7a540c3cc6da8fcffaeabb428d370380d7b813fc2339e3e1a3407166317d08",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-coef2.txt",
+  "bytes": 6503,
+  "shape": "rowdump",
+  "sha": "96a5b3cb41f76bc1f69a622cb3526cbb65de4611edf19a85462b95809b578759",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-coef3.txt",
+  "bytes": 6724,
+  "shape": "rowdump",
+  "sha": "b796ca5e3c5a7da4885a0c3685e9ce482781b6c59be912c55b5cb1ecabcf5c3b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-commute-bend.txt",
+  "bytes": 870,
+  "shape": "rowdump",
+  "sha": "703b2bc0b2e97f2e77fa4b5032d931e7accd4e4908398bc2d4288d8f0af85ff9",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-commute-py.txt",
+  "bytes": 872,
+  "shape": "rowdump",
+  "sha": "85de1165596d0cd46005aca4273d3905c00d915ebe6f2a33b987e2f713910c2a",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-flip-bend.txt",
+  "bytes": 370,
+  "shape": "rowdump",
+  "sha": "531fd8e7be3f2a0952620e3dd0223b0a041789673ec77bf01393674e437d8382",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-flip-py.txt",
+  "bytes": 371,
+  "shape": "rowdump",
+  "sha": "57870daaa0b1a248d58ccfa166be7ffb0680f0c3759d5cc5cbf4d4779d156f30",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-gate-bend.txt",
+  "bytes": 844,
+  "shape": "rowdump",
+  "sha": "180a51c5b292a8a558857dbd9230b1687722cad32c5d37f6ccd0556499c2136c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-gate-py.txt",
+  "bytes": 844,
+  "shape": "rowdump",
+  "sha": "180a51c5b292a8a558857dbd9230b1687722cad32c5d37f6ccd0556499c2136c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-group-bend.txt",
+  "bytes": 469,
+  "shape": "rowdump",
+  "sha": "87384750206cbba932c094be49b794e2293f147b7f2904fce804eac16f0fc344",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-group-py.txt",
+  "bytes": 470,
+  "shape": "rowdump",
+  "sha": "eb19db932d1a4b5b7b2e8fa29ca952c4e34a602c9b157cb4f333d3bdb86ef72c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-indexed-bend.txt",
+  "bytes": 420,
+  "shape": "rowdump",
+  "sha": "ac823d5115e6fc54aebaadc81590806fef03c1d6fdf4bc65eeee12d1f22c3be1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-indexed-py.txt",
+  "bytes": 420,
+  "shape": "rowdump",
+  "sha": "ac823d5115e6fc54aebaadc81590806fef03c1d6fdf4bc65eeee12d1f22c3be1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-late-bend.txt",
+  "bytes": 747,
+  "shape": "rowdump",
+  "sha": "ec88113984fd126ebf577318eca132e07b736af5370fbafca47328de5847f470",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-late-py.txt",
+  "bytes": 749,
+  "shape": "rowdump",
+  "sha": "002959b1362ffe82c9d706435353827dec643c7d2b9d1bb2a20294183b8fa5fe",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-lin-bend.txt",
+  "bytes": 2445,
+  "shape": "rowdump",
+  "sha": "d9638140a8ea57b3c008808f0adb32217d814e2777a61d91861c580450381821",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-lin-py.txt",
+  "bytes": 2544,
+  "shape": "rowdump",
+  "sha": "8e04055b9c43b8b769029bc57efff55aaa4de41b43823411486c3cda1792b6b7",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-loop-bend.txt",
+  "bytes": 1479,
+  "shape": "rowdump",
+  "sha": "8f49e519e8ddd5ede0a349a237e7e37f4474afb4c2a04f653f4854f15cc944bf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-loop-py.txt",
+  "bytes": 1476,
+  "shape": "rowdump",
+  "sha": "89e5be649f6e1b5be614452883d13543c056cee4d607a8032ff3e33f03692575",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-matmul-bend.txt",
+  "bytes": 1161,
+  "shape": "rowdump",
+  "sha": "9f39a6e3ee7a0e3039038cb247277adeca534d7261ffe95f8fc1fd4c9fa399ab",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-matmul-py.txt",
+  "bytes": 1161,
+  "shape": "rowdump",
+  "sha": "eade6b82eb4b6c69e487386717814081b63f9d87a24cabf47de5d6a8ad689a5b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-move-bend.txt",
+  "bytes": 1329,
+  "shape": "rowdump",
+  "sha": "02a9cec5d3e68fc2399902d47fc47a274826d5095106258516d67e769640e1f1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-move-py.txt",
+  "bytes": 1331,
+  "shape": "rowdump",
+  "sha": "0f902fa9d6e28ef55ecb9d97b13684014e6c26bcf9862c10760e4ab92f1938df",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-range-bend.txt",
+  "bytes": 120,
+  "shape": "rowdump",
+  "sha": "effd7402527e992c54f0aad18788e0deb95c9ceebc1cbfa0ab46e259b724ee53",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-range-py.txt",
+  "bytes": 120,
+  "shape": "rowdump",
+  "sha": "effd7402527e992c54f0aad18788e0deb95c9ceebc1cbfa0ab46e259b724ee53",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-rangeflat-bend.txt",
+  "bytes": 117,
+  "shape": "rowdump",
+  "sha": "2b9f1e859ec6079867454c66c38162f812e07a1bc60e78ef6e5d82a02c5d86a4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-rangeflat-py.txt",
+  "bytes": 117,
+  "shape": "rowdump",
+  "sha": "2b9f1e859ec6079867454c66c38162f812e07a1bc60e78ef6e5d82a02c5d86a4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-reduce-bend.txt",
+  "bytes": 434,
+  "shape": "rowdump",
+  "sha": "1b134163d04e6c8fad32ab6cb018f5ea61092fa2f80d4a4704885bf14bce20c7",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-reduce-py.txt",
+  "bytes": 435,
+  "shape": "rowdump",
+  "sha": "5f36fb69aaaf31c3091726d26b8c7dafd422ec32a50668ea32082f1d1bac0fda",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-run0.txt",
+  "bytes": 1639,
+  "shape": "rowdump",
+  "sha": "3d4beb8d9287bbd956534adc181ed27722ddd1308d19af765a1c63e092296ff8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-sink-bend.txt",
+  "bytes": 112,
+  "shape": "rowdump",
+  "sha": "0554fa6bd3416d2690147cd8de3d3b25e68aece37a8e9fcc96452e4e0a818829",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-sink-py.txt",
+  "bytes": 112,
+  "shape": "rowdump",
+  "sha": "0554fa6bd3416d2690147cd8de3d3b25e68aece37a8e9fcc96452e4e0a818829",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-special-bend.txt",
+  "bytes": 104,
+  "shape": "rowdump",
+  "sha": "07063aaabebdb92c2af8d92675c15a106c3765b2e754d69a4afad6b483f08bbe",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-special-py.txt",
+  "bytes": 104,
+  "shape": "rowdump",
+  "sha": "07063aaabebdb92c2af8d92675c15a106c3765b2e754d69a4afad6b483f08bbe",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-sym-bend.txt",
+  "bytes": 792,
+  "shape": "rowdump",
+  "sha": "563e4f8b5b8ac92e0d34eaaa0275388552f972be981aaf9b3b04213da3c33dc8",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-sym-py.txt",
+  "bytes": 793,
+  "shape": "rowdump",
+  "sha": "23c77ed73b4fa6f46c1d7d8f272fcc4e260e4329787d13aa259cade429f550e4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-value-v2.txt",
+  "bytes": 13771,
+  "shape": "rowdump",
+  "sha": "db272b640bbd441aeefc1561044524279afac7c7d3f5961e932e55baa03df8c1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-where-bend.txt",
+  "bytes": 478,
+  "shape": "rowdump",
+  "sha": "93365cb58e266654f30b68dd33d25b9dc8f721269645c99e90302e925f8acc95",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/rows-where-py.txt",
+  "bytes": 479,
+  "shape": "rowdump",
+  "sha": "b07bdd4a9bc6a781f57009c3a987fee1ba83f8f36e2eaa9dcea776d0ca521d59",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/sb-oracle.txt",
+  "bytes": 1155,
+  "shape": "rowdump",
+  "sha": "b7d067f462562c03989f53040a43078039cb16b78ea0bb769d9fa814fe26fab5",
+  "live": [
+   ".agents/slop/oracles259/ordering.py"
+  ],
+  "live_at": [
+   "oracles/schedule-bodies/sb-oracle.txt"
+  ],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/ordering.py",
+    "sb-oracle.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/sb-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/sched-oracle.txt",
+  "bytes": 20174,
+  "shape": "rowdump",
+  "sha": "34b8bcfce1a9e61a9c4f844c03822164cd329f06dbea1ed5e4d1cccc8f84faf4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/sched-oracle.py",
+    ".agents/slop/sched-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/schedule-bodies/BEFORE-rows.txt",
+  "bytes": 1131,
+  "shape": "rowdump",
+  "sha": "7a3aa4a4b9e2110004a809b9757951a5f0f7471ac02f2edaed76e7705cba7eb2",
+  "live": [
+   ".agents/slop/oracles259/ordering.py"
+  ],
+  "live_at": [
+   "oracles/schedule-bodies/BEFORE-rows.txt"
+  ],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/ordering.py",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/oracles259/ordering.py",
+    "BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/sbgate/plant.py",
+    ".agents/slop/sbgate/BEFORE-rows.txt"
+   ],
+   [
+    ".agents/slop/sbgate/plant.py",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/BEFORE-rows.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    "checks/BEFORE-rows.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/schedule-bodies/LIVE-rows.txt",
+  "bytes": 1131,
+  "shape": "rowdump",
+  "sha": "7a3aa4a4b9e2110004a809b9757951a5f0f7471ac02f2edaed76e7705cba7eb2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/schedule-bodies/rows-bd.txt",
+  "bytes": 1131,
+  "shape": "rowdump",
+  "sha": "7a3aa4a4b9e2110004a809b9757951a5f0f7471ac02f2edaed76e7705cba7eb2",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/othercopies.py",
+    "rows-bd.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/rows-bd.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    "checks/rows-bd.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/schedule-bodies/sb-oracle.txt",
+  "bytes": 1155,
+  "shape": "rowdump",
+  "sha": "b7d067f462562c03989f53040a43078039cb16b78ea0bb769d9fa814fe26fab5",
+  "live": [
+   ".agents/slop/oracles259/ordering.py"
+  ],
+  "live_at": [
+   "oracles/schedule-bodies/sb-oracle.txt"
+  ],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/oracles259/ordering.py",
+    "sb-oracle.txt"
+   ],
+   [
+    "checks/sb-gate.sh",
+    ".agents/slop/schedule-bodies/sb-oracle.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/search.oracle-merged.txt",
+  "bytes": 505,
+  "shape": "rowdump",
+  "sha": "768b380ba75d4612cf67749d0cb75b7b456059d168a7d39fb5e3a05d9cc94924",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/search.oracle-padto.txt",
+  "bytes": 481,
+  "shape": "rowdump",
+  "sha": "2e67282eae949f169a2ab3faff0b7bbea603bcd893ffdbb975ffb7d238ad5041",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/search.oracle.txt",
+  "bytes": 476,
+  "shape": "rowdump",
+  "sha": "21ca0657e02b897a03a754f0bdbaf25932421ad796388c64948a895104c549f3",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/sqtt_oracle.txt",
+  "bytes": 42366,
+  "shape": "rowdump",
+  "sha": "6f5fc693410e457f5a5ed6b43b66c5e87b29f36169fe161369a00c3402966079",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/symtab_oracle.txt",
+  "bytes": 3711,
+  "shape": "rowdump",
+  "sha": "ce3bad2af8415b43dc3d84716752c01e5c7e5a40103088e591262174c39372c1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/system-rows.txt",
+  "bytes": 10736,
+  "shape": "rowdump",
+  "sha": "86b9bc8e77c47259c52afb214b553bf9aa3012f6efc2d755b0daefc9cf01d459",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tc-rows-bend.txt",
+  "bytes": 21496,
+  "shape": "rowdump",
+  "sha": "84f4410ae3f62a84b912f968b288a7ded01c102f9d2bfe3d37736a66eae2fe6c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tc-rows-coef.txt",
+  "bytes": 6779,
+  "shape": "rowdump",
+  "sha": "a6080fabef85a3546bc5e269ac454a98f52206703cab599f80564c05e91c7778",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tc-rows-value.txt",
+  "bytes": 13771,
+  "shape": "rowdump",
+  "sha": "db272b640bbd441aeefc1561044524279afac7c7d3f5961e932e55baa03df8c1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_codegen_decomp_dtype.bend.dtype-oracle.txt",
+  "bytes": 17181,
+  "shape": "rowdump",
+  "sha": "86587966a013888076d50c50e8a7213c7821960e8001346ac3071f131c0d1637",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_codegen_gpudims.bend.rw-gate-oracle.txt",
+  "bytes": 771,
+  "shape": "rowdump",
+  "sha": "64c35f6c563f2bb37e156b79750d3980a4f07f9b520ee49e5427887eee30daea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_codegen_opt_search.bend.rebase-oracle-search.txt",
+  "bytes": 535,
+  "shape": "rowdump",
+  "sha": "ddae7a4a74d6ca4152f927e70b09bdd60d1284e30e8e0a83a77b3ddde51fb74c",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_codegen_simplify.bend.rw-oracle.txt",
+  "bytes": 901,
+  "shape": "rowdump",
+  "sha": "36d9241ccdf868151513bb49f3da3c970de86073e032bc890ca6950108218e5b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_device.bend.device-oracle.txt",
+  "bytes": 308,
+  "shape": "rowdump",
+  "sha": "f6d4937deda6c6e2240fda06bba914642ca427577818b62fc786b581f36fdd7b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_amd_generate.bend.ga-oracle.txt",
+  "bytes": 139892,
+  "shape": "rowdump",
+  "sha": "d89f58d33f6a1ef2045d6b46b4fe619c180a0b161d6ca8e7a2ee31afc6c6c6ea",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_cstyle.bend.renderer_oracle.txt",
+  "bytes": 24512,
+  "shape": "rowdump",
+  "sha": "2e4491ed20904a0fafd724d650453d3d0acec9d5b93264b90dfac221a0a63a1f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_llvmir.bend.llvmir-oracle.txt",
+  "bytes": 35870,
+  "shape": "rowdump",
+  "sha": "d3967284ad8dd422cf8967825238eec95720b0ddcd5c0522802b4da623931e6f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_nir_llvmir.bend.nl-oracle.txt",
+  "bytes": 34169,
+  "shape": "rowdump",
+  "sha": "156a09de386c7ba421876a9b46c217b511dcf00fd26e84a30a8cefb544371e70",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_ptx.bend.ptx-s3-oracle.txt",
+  "bytes": 18115,
+  "shape": "rowdump",
+  "sha": "16883cdc2a02fb402d17000162c0361a8e732f1a59cfd09a9844abcb34d8b9f9",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_renderer_tc_ptx.bend.tcptx-oracle.txt",
+  "bytes": 21541,
+  "shape": "rowdump",
+  "sha": "42c0a891739d04fb387dda50ff4e5ba3f34af215fbd04e20681a5449bdcf135f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_amd.bend.amd_oracle.txt",
+  "bytes": 27601,
+  "shape": "rowdump",
+  "sha": "16577b4e152d9b6338130fc4a21a19a46f643688e313f87b71bfbb4ec005d5f1",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_cpu.bend.cpulink_oracle.txt",
+  "bytes": 1019,
+  "shape": "rowdump",
+  "sha": "685dac1b6a45c3d92b018a897ab5ba4b7569196beb1cee1701a69ce5c6f016a9",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_metal.bend.mt_seam_rows.txt",
+  "bytes": 319,
+  "shape": "rowdump",
+  "sha": "b97333101d821c4ec7ec11910ddffd6dd1c7bf7472a2f3663246bfb4fdf7ff22",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_null.bend.null-oracle.txt",
+  "bytes": 327,
+  "shape": "rowdump",
+  "sha": "174a5334649e58b11c1a5a5b7c599771a4dad563971732ff4b26dde284dd116f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_nv.bend.nv-oracle.txt",
+  "bytes": 14216,
+  "shape": "rowdump",
+  "sha": "64129df02365fb576a5a11c78442e695b5752df106bfd4018f5798993e34c350",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_python.bend.ops-python-render-oracle.txt",
+  "bytes": 10808,
+  "shape": "rowdump",
+  "sha": "72e1c03f90a66678519e0c273356c40ba97699e1f7f37ccec96fa9ddb78828e3",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_qcom.bend.qcom-oracle.txt",
+  "bytes": 10616,
+  "shape": "rowdump",
+  "sha": "00e7fd5948a249cb8b2d3d1b6baeb24633bfef65a616661301d3b2e0b9b8e496",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_ops_rdma.bend.oracle_rdma_gate.txt",
+  "bytes": 8370,
+  "shape": "rowdump",
+  "sha": "7d8d8769b933d184669fd84eb828b7a4826a5762640fff496219b4730031acc4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_support_c.bend.c-oracle.txt",
+  "bytes": 3968,
+  "shape": "rowdump",
+  "sha": "bf9a425ed5e5dd49aeaec3ae58b6a4dd4e8e2186ba115900c5a76626790d6e7e",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_support_elf.bend.elf_rows.txt",
+  "bytes": 62310,
+  "shape": "rowdump",
+  "sha": "f764c22e791b89fe29eca006a757a614ab58017bd2695311162012d7a7ecb043",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_support_hcq2.bend.hcq2-oracle.txt",
+  "bytes": 4834,
+  "shape": "rowdump",
+  "sha": "856496dfa488125e6aecb13fa6fb7bf540a599ddad268bec015752501fb5a5a9",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_runtime_support_usb.bend.usb-oracle-run.txt",
+  "bytes": 41602,
+  "shape": "rowdump",
+  "sha": "8ecd49c4e7acc19a04982a5166bb39a141346b2ee4ac82aa6f03ca3e21601ffe",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_schedule_indexing.bend.indexing-oracle.txt",
+  "bytes": 1608,
+  "shape": "rowdump",
+  "sha": "1d8a847ea600b90727d2e4465188b628218d0f7a0eced703f4eac35b331e4b17",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_schedule_prepare.bend.prepare-oracle.txt",
+  "bytes": 62259,
+  "shape": "rowdump",
+  "sha": "0e8e5ef2593e576ac818e530c4f532c1ff3f85c6201e33cfbbc2a43f5928ee87",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_schedule_rangeify.bend.rangeify-oracle.txt",
+  "bytes": 1245,
+  "shape": "rowdump",
+  "sha": "a997163b503a3a9e911772a0fe67e6c3bb451e22a7ea763ebea1195aed260c6e",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_uop_ops.bend.rebase-oracle-ops.txt",
+  "bytes": 2633,
+  "shape": "rowdump",
+  "sha": "7a1ea848a97bfe1a7d61796a2461095ada6d7015f443e80b239e354e83fc51a5",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_uop_render.bend.render-gate-oracle.txt",
+  "bytes": 7683,
+  "shape": "rowdump",
+  "sha": "2f2b77e59e07ee3644d0445b76db1fe265dc19fa74b976e20f629fbe4ca5834b",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_uop_spec.bend.rebase-oracle-spec.txt",
+  "bytes": 270,
+  "shape": "rowdump",
+  "sha": "55e56cf6a59f211e2c51e81609c6ccebf05a0cefbd9cfc41d97ed1502bf450ef",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tinybendygrad_viz_serve.bend.viz_oracle.txt",
+  "bytes": 5733,
+  "shape": "rowdump",
+  "sha": "c72c02f3a1660069ddf81aa944b1d6ddf24fde8c1f9b17ab7166745cef1b661f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/tx-oracle.txt",
+  "bytes": 10612,
+  "shape": "crash-dump-in-txt",
+  "sha": "59905a3951da4b8b4ccf4326ee6a6679a2beaf466ace5f219ec1e04c20474298",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/usb-arith-rows.bend.txt",
+  "bytes": 26447,
+  "shape": "source-in-txt",
+  "sha": "a2a3722404737842e7cf667b914372008d85b85d46d24d024ab58601a77c995d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/usb-build.py",
+    ".agents/slop/usb-arith-rows.bend.txt"
+   ],
+   [
+    ".agents/slop/usb-gen.py",
+    ".agents/slop/usb-arith-rows.bend.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/usb-oracle-BEFORE.txt",
+  "bytes": 41602,
+  "shape": "rowdump",
+  "sha": "8ecd49c4e7acc19a04982a5166bb39a141346b2ee4ac82aa6f03ca3e21601ffe",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/validate-oracle-run1.txt",
+  "bytes": 10684,
+  "shape": "rowdump",
+  "sha": "132d19a4b98201b757b84d3870a08a6cba8f842fec120d26a7c76687f5b66edf",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/vw-mut-baseline.txt",
+  "bytes": 6938,
+  "shape": "rowdump",
+  "sha": "495864514e557a68b3f135ff8a8806f89c0ad70f4fe6bbe8c5294420fb78b8bc",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/weak_oracle.txt",
+  "bytes": 925,
+  "shape": "rowdump",
+  "sha": "75964e7b063c2af594e328bc1990cee894d92a473a1cbb812a19b92b050d34fa",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/webgpu_call_oracle_out.txt",
+  "bytes": 4478,
+  "shape": "rowdump",
+  "sha": "dda17f6ddcf5b98bccdd457015675091c8f9373cf84a24cae545929abb89c46f",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/webgpu_call_rows.txt",
+  "bytes": 2027,
+  "shape": "rowdump",
+  "sha": "06079d503136a9c8892132d547ef85936698c876139e180cdc222d6a9189ba93",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ },
+ {
+  "path": "oracles/wgsl-baseline-172.txt",
+  "bytes": 9754,
+  "shape": "rowdump",
+  "sha": "073151fbc1e908f367e4c32ba25f76ead45f402b89f2442b75d9e9b396edc0b4",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": [
+   [
+    ".agents/slop/table-pin.py",
+    ".agents/slop/wgsl-baseline-172.txt"
+   ]
+  ]
+ },
+ {
+  "path": "oracles/wip/main_rows.txt",
+  "bytes": 39021,
+  "shape": "rowdump",
+  "sha": "5726d8be7a31c88ebab1e4fb9f903d7a63ca362aef130d11dfc4780f7576001d",
+  "live": [],
+  "live_at": [],
+  "shadow": [],
+  "stale": []
+ }
+]
