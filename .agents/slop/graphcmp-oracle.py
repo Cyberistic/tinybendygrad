@@ -22,6 +22,8 @@ from __future__ import annotations
 import ast
 import collections
 import os
+import pathlib
+import re
 import sys
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -168,6 +170,79 @@ def symdim_rows(lines: list[str]) -> list[str]:
   position straight off the wire so the census has no dependency on `build`."""
   return [G.unchunks(ln)[0][1:] for ln in lines
           if G.unchunks(ln)[3].startswith("(") and "U" in G.split_top(G.unchunks(ln)[3][1:-1])]
+
+
+# THE DENOMINATOR, BY DISCOVERY RATHER THAN BY COUNT. `len(list(Ops)) == 77` is a true count
+# of the ENUM and a false count of the OPERATIONS: the enum's own comment sections say which
+# members are not graph nodes at all. So the section structure is PARSED out of the enum's
+# source -- the same declaration the oracle already imports for its names -- and the
+# complement is computed, never typed:
+#   1 defines/special · 2 non op uops · 3 load/store · 4 math · 5 control flow/consts/custom
+#   · 6 ops that don't exist in programs · 7 pattern compiler IR (used in upat.py)
+# FROM `61 of 77` TO THREE ACTABLE NUMBERS. The old line folded two different failures into
+# one: members that CANNOT be a program node however many graphs you write, and members that
+# merely have no graph yet. Only the second is a coverage gap. A member is EXCLUDED from the
+# program-op denominator when its section title or its own comment declares it not a rendered
+# node -- one of the five markers below. The corpus is the SECOND witness and it only ever
+# RESCUES: an op a graph reaches is demonstrably a program node, so NOOP, LINEAR and BINARY,
+# which the same comments cover, stay in the denominator. NOTHING is added to the exclusion
+# set by the corpus, so the unexercised count is not derived from the very table it reports.
+#   MEASURED, DEV=CPU: 77 enum members -> 70 program ops; 7 excluded by construction
+#   (REWRITE_ERROR PROGRAM SOURCE PYLITERAL CUSTOM CUSTOMI INS); 61 reached; 9 unexercised
+#   (GETADDR WMMA THREEFRY MULACC STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD). 61 of 70 IS
+#   the corrected figure; 61 of 77 is kept BESIDE it, not replaced, because it is the honest
+#   count of the enum and the two answer different questions.
+NON_NODE_MARKERS = ("aren't rendered", "renderer", "pattern compiler IR",
+                    "output strings into codegen", "machine instruction")
+SECTION_RE = re.compile(r"^\s*# \*\* (\d+) -- (.+?) \*\*\s*$")
+ASSIGN_RE = re.compile(r"\b([A-Z][A-Z0-9_]*)\s*=\s*auto\(\)")
+CLASS_RE = re.compile(r"^class Ops\(FastEnum\):")
+
+
+def enum_sections(path: str) -> list[tuple[int, str, list[tuple[str, str]]]]:
+  """The `Ops` class body, split by its own `# ** N -- title **` headers, each member paired
+  with the comment block above it (or its trailing comment). Comments are a DECLARATION and
+  this reads them instead of transcribing them; `main()` then checks the parse against the
+  live `Ops` instead of trusting it. A blank line ends a comment block, and an assignment can
+  hold several members (`BUFFER = auto(); ALLOC = auto()`), so the line is scanned for every
+  `NAME = auto()` it carries."""
+  lines = pathlib.Path(path).read_text().splitlines()
+  start = next(i for i, l in enumerate(lines) if CLASS_RE.match(l))
+  sections: list[tuple[int, str, list[tuple[str, str]]]] = []
+  cur: tuple[int, str, list[tuple[str, str]]] | None = None
+  pending: list[str] = []
+  for l in lines[start + 1:]:
+    if l and not l.startswith(" "):
+      break                                              # end of the class body
+    s = l.strip()
+    m = SECTION_RE.match(l)
+    if m:
+      cur = (int(m.group(1)), m.group(2), [])
+      sections.append(cur)
+      pending = []
+    elif s.startswith("#"):
+      pending.append(s.lstrip("# ").strip())
+    elif s == "":
+      pending = []
+    elif cur is not None:
+      comment = s.split("#", 1)[1].strip() if "#" in s else " ".join(pending)
+      cur[2].extend((name, comment) for name in ASSIGN_RE.findall(s))
+      pending = []
+  return sections
+
+
+def program_op_split(sections, reached: set) -> dict:
+  """The three numbers, from the parse plus the reached set. `by_construction` is the
+  declared-non-node set MINUS anything a graph reached (a reached op is proof the comment
+  is about rendering, not membership); `unexercised` is the rest of the program ops with no
+  graph; `program` is the corrected denominator. Pure, so `main()` prints and asserts the
+  same values it computes."""
+  declared = {n for _, title, ops in sections for n, c in ops
+              if any(m in f"{title} {c}" for m in NON_NODE_MARKERS)}
+  by_construction = declared - reached
+  program = {n for _, _, ops in sections for n, _ in ops} - by_construction
+  return {"by_construction": by_construction, "program": program,
+          "unexercised": program - reached}
 
 
 def main() -> int:
@@ -324,8 +399,48 @@ def main() -> int:
   print("# PER-OP NODE COUNTS ACROSS THE CORPUS -- the denominator for every op claim:")
   print("#   " + "  ".join(f"{op} {tal[op]}/{graphs_of[op]}" for op in sorted(tal))
           + "   (nodes/graphs)")
-  print(f"# NOT REACHED ({len(list(G.Ops)) - len(tal)} of {len(list(G.Ops))}): "
+  # THE DENOMINATOR, SPLIT. The old line `NOT REACHED (16 of 77)` is kept -- it is the
+  # honest count of the ENUM -- and the two numbers a reader can act on are printed beside
+  # it: the members no graph could ever contain, and the members a graph has not contained
+  # YET. See `NON_NODE_MARKERS` for the exclusion rule and why the corpus only rescues.
+  ops_path = sys.modules[G.Ops.__module__].__file__
+  sections = enum_sections(ops_path)
+  known_ops = {o.name for o in G.Ops}
+  split = program_op_split(sections, set(tal))
+  by_construction, program, unexercised = (split["by_construction"], split["program"],
+                                           split["unexercised"])
+  print("# OPS PER ENUM SECTION (parsed from " + ops_path + "): "
+        + "; ".join(f"{n} {t}: {len(ops)}" for n, t, ops in sections))
+  print(f"# NOT REACHED ({len(known_ops) - len(tal)} of {len(known_ops)} ENUM MEMBERS): "
         + " ".join(o.name for o in G.Ops if o.name not in tal))
+  print(f"#   OF WHICH {len(by_construction)} CANNOT APPEAR IN A PROGRAM GRAPH AT ALL "
+        f"(by construction): " + " ".join(sorted(by_construction)))
+  print(f"#   AND {len(unexercised)} ARE PROGRAM OPS NO GRAPH DRIVES YET (unexercised): "
+        + " ".join(sorted(unexercised)))
+  print(f"# DENOMINATOR: {len(known_ops)} enum members -> {len(program)} PROGRAM OPS "
+        f"({len(by_construction)} excluded by the enum's own markers: "
+        + ", ".join(NON_NODE_MARKERS) + ")")
+  print(f"# COVERAGE: {len(tal)} of {len(program)} program ops === {len(tal)} of "
+        f"{len(known_ops)} enum members (the denominators answer different questions)")
+  # THE SPLIT, ASSERTED. The parse is checked against the live `Ops` rather than trusted,
+  # and the three-way partition is checked to be total and disjoint, so a future enum edit
+  # that a comment does not describe fails HERE instead of printing a smaller denominator
+  # over a corpus that did not change.
+  parsed = [n for _, _, ops in sections for n, _ in ops]
+  if sorted(parsed) != sorted(known_ops):
+    bad.append(f"the enum parse and the live Ops disagree: {len(parsed)} parsed against "
+               f"{len(known_ops)} members; symmetric difference "
+               f"{sorted(set(parsed) ^ known_ops)}")
+  if by_construction & set(tal):
+    bad.append(f"a graph reached an op the enum calls a non-node: "
+               f"{sorted(by_construction & set(tal))} -- the exclusion rule is wrong")
+  if by_construction & program or (len(program) + len(by_construction) != len(known_ops)):
+    bad.append("the program-op partition is not total and disjoint: "
+               f"{len(program)} + {len(by_construction)} != {len(known_ops)}")
+  if len(by_construction) + len(unexercised) != len(known_ops) - len(tal):
+    bad.append("the NOT-REACHED split does not sum: "
+               f"{len(by_construction)} by-construction + {len(unexercised)} unexercised "
+               f"!= {len(known_ops) - len(tal)} not reached")
   # THE VOCABULARY OF THE COVERAGE NUMBER, ASSERTED. `tot_ops` is a `set[str]` of
   # whatever `unchunks(ln)[1]` yields, from BOTH sides, so an op name that is not a
   # member of `Ops` used to be counted as reached: MEASURED, a well-formed wire line
@@ -334,7 +449,6 @@ def main() -> int:
   # a name that is in neither `Ops` nor reality moves the numerator and nothing else.
   # Measured, not assumed: every name in the corpus IS an `Ops` member today, so this
   # is a guard on the number's own meaning, and it is planted on every run below.
-  known_ops = {o.name for o in G.Ops}
   unknown_ops = sorted(tot_ops - known_ops)
   if unknown_ops:
     bad.append(f"the op census counted {len(unknown_ops)} name(s) that are NOT "

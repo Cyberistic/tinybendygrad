@@ -1,0 +1,40 @@
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+BASELINE  both sides, emit_bend mirrored
+    graphs=25 nodes=312 distinct=61 NOT REACHED=16 [by-construction=7 unexercised=9] of 70 program ops, SELFCHECK OK (rc=0)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+PLANT 1  drop lin/loop/gate from the corpus
+    graphs=22 nodes=227 distinct=51 NOT REACHED=26 [by-construction=9 unexercised=17] of 68 program ops, SELFCHECK OK (rc=0)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+PLANT 2  PORT DEAD: emit_bend returns 0 rows
+    graphs=25 nodes=312 distinct=61 NOT REACHED=16 [by-construction=7 unexercised=9] of 70 program ops, SELFCHECK FAIL (rc=1)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+PLANT 3  PORT INVENTS: bend prints an op not in Ops
+    graphs=25 nodes=312 distinct=62 NOT REACHED=16 [by-construction=7 unexercised=9] of 70 program ops, SELFCHECK FAIL (rc=1)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+PLANT 4  remove the op only ONE graph reaches
+    graphs=25 nodes=309 distinct=60 NOT REACHED=17 [by-construction=7 unexercised=10] of 70 program ops, SELFCHECK OK (rc=0)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================
+DISARM 1  py side 0 rows (the side NOT REACHED reads)
+    graphs=25 nodes=0 distinct=0 NOT REACHED=77 [by-construction=10 unexercised=67] of 67 program ops, SELFCHECK OK (rc=0)
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+==============================================================================
+DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)
+==============================================================================

@@ -1,85 +1,107 @@
 #!/usr/bin/env python3
-"""graphcmp-census-audit.py -- can "34 of 77 ops" go RED?
+"""graphcmp-census-audit.py -- can the coverage census go RED, and can its denominator move?
 
-SUBJECT:    which of tinygrad's 77 `Ops` the SIXTEEN-GRAPH CORPUS reaches.
-INSTRUMENT: `.agents/slop/graphcmp-oracle.py`'s own `main()`, which prints
-              `# TOTAL: 16 graphs, 189 nodes per side, 34 distinct ops: ...`
-              `# NOT REACHED (43 of 77): ...`
-              `# ORACLE SELFCHECK: OK`      <- this one is the disambiguator
+SUBJECT:  the numbers `.agents/slop/graphcmp-oracle.py` prints, and whether they can be
+          wrong rather than merely printed.
+INSTRUMENT: the LIVE oracle, loaded by path and run through its REAL `main()`, one
+          subprocess per state so each census is about the device it names.
 
-This script imports the LIVE oracle module and calls its REAL `main()`, capturing
-stdout, so the number read here is the number the oracle prints. It never edits
-any file under `.agents/slop/`: every case is an in-process monkeypatch that is
-restored in a `finally`.
+WHY ONE PROCESS PER STATE, MEASURED: `main()` REFUSES to run once `tinygrad` is imported,
+because `Device.DEFAULT` freezes at import and a second census would print a device it is
+not running on. `main()` is called six times below and in ONE process the second call
+raises `SystemExit` -- so the earlier revision of this file was already dead on its second
+state. `--all` re-invokes this file per state.
 
-READING THE ORACLE'S SOURCE (not its prose), graphcmp-oracle.py:
-  line 110  `tot_ops |= py["ops"] | bd["ops"]`  -> "34 distinct" is a UNION
-  line 111  `tal.update(py["per_op"])`            -> the per-op table is PY ONLY
-  line 178  `NOT REACHED = len(list(Ops)) - len(tal)` -> 43 is PY ONLY
-So the two halves of the printed ratio are built from DIFFERENT SIDES, and they
-agree only because py and bend happen to reach the same 34 ops.
+WHY `emit_bend` IS MIRRORED (the py stream) FOR THE BASELINE, AND SAID SO. The orchestrator
+owns `bend` exclusively. The four PORT plants below OVERRIDE the mirror deliberately, so the
+vocabulary union (`tot_ops`), the both-sides device precondition and the selfcheck are still
+driven by a planted port stream. What the mirror CANNOT test is the real port; that is what
+the differ's own `D0-coverage-census.txt` is for, and this file says so rather than hiding it.
 
-`len(list(Ops))` is MEASURED by calling CPython here, never transcribed.
+READING THE ORACLE'S SOURCE (not its prose):
+  `tot_ops |= py["ops"] | bd["ops"]`   -> "N distinct" is a UNION of both sides
+  `tal.update(py["per_op"])`           -> the per-op table, and NOT REACHED, are PY ONLY
+  `program_op_split(sections, tal)`    -> the corrected denominator, PY-side and enum-side
+So the two halves of `N of 77` are built from DIFFERENT SIDES, and they coincide only
+because the port reaches a SUBSET of the py ops today.
 """
-import collections
+from __future__ import annotations
 import contextlib
+import importlib.util
 import io
 import os
 import re
+import subprocess
 import sys
 
-REPO = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad"
-sys.path.insert(0, os.path.join(REPO, ".agents/slop"))
-os.chdir(REPO)
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, ".agents", "slop"))
 os.environ.pop("PYTHONPATH", None)
+os.environ["PYTHONHASHSEED"] = "0"
 os.environ["LC_ALL"] = "C"
-os.environ["DEV"] = "NULL"
+os.environ["DEV"] = "CPU"
 
-import graphcmp as G            # noqa: E402
-import importlib.util           # noqa: E402
-_spec = importlib.util.spec_from_file_location(
-    "graphcmp_oracle", os.path.join(REPO, ".agents/slop/graphcmp-oracle.py"))
-O = importlib.util.module_from_spec(_spec)
-_spec.loader.exec_module(O)    # .agents/slop/graphcmp-oracle.py, loaded by PATH
+import graphcmp as G  # noqa: E402
 
-from tinygrad.uop.ops import Ops  # noqa: E402
+# THE CORPUS IS LIVE. `OPDENOM_PIN` restricts `G.GRAPHS` to the list RECORDED in an artifact
+# (column 1 of its two-space-indented table), so the states below are comparable to the
+# baseline the artifact holds even while another unit is adding graphs to `graphcmp.py`.
+# Without a pin the audit runs on whatever corpus exists, which is the gate's normal mode.
+_PIN = os.environ.get("OPDENOM_PIN")
+if _PIN:
+    _names = {ln.split()[0] for ln in open(_PIN).read().splitlines()
+              if ln.startswith("  ") and ln.split()}
+    _dropped = sorted(set(G.GRAPHS) - _names)
+    for _k in _dropped:
+        del G.GRAPHS[_k]
+    print(f"# PINNED to {len(G.GRAPHS)} graphs from {_PIN} (dropped {_dropped})")
 
-FIELDS = ("graphs", "nodes", "distinct", "not_reached", "selfcheck", "py_only")
+FIELDS = ("graphs", "nodes", "distinct", "not_reached", "by_construction", "unexercised",
+          "program", "selfcheck", "rc", "names")
 
 
-def measure(label, mutate=None):
-    """Run the oracle's real main() and parse what it PRINTS."""
-    saved = (dict(G.GRAPHS), G.emit_bend, G.emit_py)
-    try:
-        if mutate:
-            mutate()
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            rc = O.main()
-        text = buf.getvalue()
-    finally:
-        G.GRAPHS.clear(); G.GRAPHS.update(saved[0])
-        G.emit_bend, G.emit_py = saved[1], saved[2]
+def _oracle():
+    spec = importlib.util.spec_from_file_location(
+        "graphcmp_oracle", os.path.join(REPO, ".agents", "slop", "graphcmp-oracle.py"))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
-    def grab(pat, default="?"):
-        m = re.search(pat, text)
-        return m.group(1) if m else default
 
-    got = {
-        "graphs": grab(r"TOTAL: (\d+) graphs"),
-        "nodes": grab(r"graphs, (\d+) nodes per side"),
-        "distinct": int(grab(r"nodes per side, (\d+) distinct ops")),
-        "not_reached": int(grab(r"NOT REACHED \((\d+) of \d+\)")),
-        "selfcheck": grab(r"ORACLE SELFCHECK: (\w+)"),
+def _mirror(dev, graph, *a, **k):
+    """A declared plant: the port stream is the py stream. Keeps the both-sides precondition
+    satisfiable and exercises every assertion without spawning a compiler."""
+    return (G.emit_py(graph, None), ["(emit_bend mirrored -- no bend process)"])
+
+
+def _grab(text, pat, default="?"):
+    m = re.search(pat, text)
+    return m.group(1) if m else default
+
+
+def measure(state: str, mutate=None) -> dict:
+    """Run the oracle's real `main()` ONCE and parse what it PRINTS. `mutate` is applied after
+    the mirror and may override `emit_bend`/`emit_py` for a PORT or DISARM plant."""
+    O = _oracle()
+    G.emit_bend = _mirror
+    if mutate:
+        mutate()
+    buf = io.StringIO()
+    with contextlib.redirect_stdout(buf):
+        rc = O.main()
+    text = buf.getvalue()
+    return {
+        "graphs": _grab(text, r"TOTAL: (\d+) graphs"),
+        "nodes": _grab(text, r"graphs, (\d+) nodes per side"),
+        "distinct": int(_grab(text, r"nodes per side, (\d+) distinct ops")),
+        "not_reached": int(_grab(text, r"NOT REACHED \((\d+) of \d+")),
+        "by_construction": int(_grab(text, r"OF WHICH (\d+) CANNOT APPEAR")),
+        "unexercised": int(_grab(text, r"AND (\d+) ARE PROGRAM OPS")),
+        "program": int(_grab(text, r"-> (\d+) PROGRAM OPS")),
+        "selfcheck": _grab(text, r"ORACLE SELFCHECK: (\w+)"),
         "rc": rc,
-        "names": grab(r"distinct ops: (.*)"),
-        "py_only": len(O.census(G.emit_py("matmul", None))["ops"]),
+        "names": _grab(text, r"distinct ops: (.*)"),
     }
-    print(f"{label}")
-    print(f"    TOTAL: {got['graphs']} graphs, {got['nodes']} nodes/side, "
-          f"{got['distinct']} distinct ops, NOT REACHED {got['not_reached']}, "
-          f"SELFCHECK {got['selfcheck']} (rc={got['rc']})")
-    return got
 
 
 def drop_three():
@@ -92,36 +114,65 @@ def kill_bend():
 
 
 def bend_invents_op():
-    # a WELL-FORMED wire line, same chunking as a real one:
-    #   2:n0 8:INVENTED 7:weakint 2:() 2:n0 1:N 4:l0:4 3:n()
-    #         ^^^^^^^^ 8 chars, and NOT a member of tinygrad.uop.ops.Ops
     fake = "2:n0 8:INVENTED 7:weakint 2:() 2:n0 1:N 4:l0:4 3:n()"
     G.emit_bend = lambda dev, graph, *a, **k: ([fake], ["PLANT"])
 
 
 def kill_py():
-    G.emit_py = lambda graph, plant: []
+    G.emit_py = lambda graph, plant, *a, **k: []
+
+
+def drop_sole_op():
+    """Remove the op the corpus reaches in EXACTLY ONE graph -- the only removal that moves
+    the reached set. DISCOVERED from the corpus, lazily on the first emission, because
+    tinygrad is loaded by `main()` and the oracle refuses to run after an early import."""
+    orig = G.emit_py
+    st: dict = {"done": False}
+
+    def wrapper(graph, plant, *a, **k):
+        if not st["done"]:
+            from collections import Counter
+            gof: Counter = Counter()
+            for g in sorted(G.GRAPHS):
+                gof.update({G.unchunks(ln)[1] for ln in orig(g, None)})
+            st["op"] = min(op for op, c in gof.items() if c == 1)
+            st["graph"] = next(g for g in sorted(G.GRAPHS)
+                               if any(G.unchunks(ln)[1] == st["op"] for ln in orig(g, None)))
+            st["done"] = True
+            print(f"# PLANT drop-sole-op: removing `{st['op']}` from `{st['graph']}`")
+        rows = orig(graph, plant, *a, **k)
+        return [r for r in rows if G.unchunks(r)[1] != st["op"]] if graph == st["graph"] else rows
+    G.emit_py = wrapper
+
+
+STATES = (
+    ("baseline", None, "BASELINE  both sides, emit_bend mirrored"),
+    ("drop-three", drop_three, "PLANT 1  drop lin/loop/gate from the corpus"),
+    ("port-dead", kill_bend, "PLANT 2  PORT DEAD: emit_bend returns 0 rows"),
+    ("port-invents", bend_invents_op, "PLANT 3  PORT INVENTS: bend prints an op not in Ops"),
+    ("drop-sole-op", drop_sole_op, "PLANT 4  remove the op only ONE graph reaches"),
+    ("py-dead", kill_py, "DISARM 1  py side 0 rows (the side NOT REACHED reads)"),
+)
+
+
+def one(name: str) -> int:
+    mutate = next(m for n, m, _ in STATES if n == name)
+    label = next(l for n, _, l in STATES if n == name)
+    got = measure(name, mutate)
+    print(f"{label}")
+    print(f"    graphs={got['graphs']} nodes={got['nodes']} distinct={got['distinct']} "
+          f"NOT REACHED={got['not_reached']} [by-construction={got['by_construction']} "
+          f"unexercised={got['unexercised']}] of {got['program']} program ops, "
+          f"SELFCHECK {got['selfcheck']} (rc={got['rc']})")
+    return got["rc"] if got["selfcheck"] == "OK" else 0  # a RED selfcheck is this file's point
 
 
 if __name__ == "__main__":
     print("=" * 78)
-    print(f"DENOMINATOR  len(list(Ops)) = {len(list(Ops))}   (CPython, run A)")
+    print("DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)")
     print("=" * 78)
-    base = measure("BASELINE  16 graphs, nothing patched")
-    p1 = measure("PLANT 1  SUBJECT: drop lin/loop/gate from the corpus", drop_three)
-    p2 = measure("PLANT 2  PORT DEAD: emit_bend returns 0 rows for every graph", kill_bend)
-    p3 = measure("PLANT 3  PORT INVENTS: bend claims an op CPython never emits", bend_invents_op)
-    d1 = measure("DISARM 1  py side 0 rows (the side the per-op table reads)", kill_py)
-
-    lost = set(base["names"].split()) - set(p1["names"].split()) if p1["names"] != "?" else set()
-    print("\n" + "=" * 78)
-    print("READING")
-    print(f"  PLANT 1  34 -> {p1['distinct']}. Ops lost by dropping lin/loop/gate ({len(lost)}):")
-    print(f"           {' '.join(sorted(lost))}")
-    print(f"  PLANT 2  distinct stayed {p2['distinct']} with the bend side emitting ZERO nodes.")
-    print(f"           The ONLY thing that moved is SELFCHECK {base['selfcheck']} -> {p2['selfcheck']}"
-          f" (rc {base['rc']} -> {p2['rc']}).")
-    print(f"  PLANT 3  distinct {base['distinct']} -> {p3['distinct']}: the union accepts ANY")
-    print(f"           string the bend side prints as an op name, with no membership check.")
-    print(f"  DISARM 1 distinct stayed {d1['distinct']} but NOT REACHED {d1['not_reached']} of 77:")
-    print(f"           a dead PY side leaves '34 distinct' standing and only moves the complement.")
+    if len(sys.argv) > 1 and sys.argv[1] == "--all":
+        for name, _, _ in STATES:
+            subprocess.run([sys.executable, os.path.abspath(__file__), name])
+        raise SystemExit(0)
+    sys.exit(one(sys.argv[1] if len(sys.argv) > 1 else "baseline"))

@@ -1,0 +1,31 @@
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+===== STATE baseline  (rc=0) =====
+# COMMUTATIVE OPS REACHED BY A NODE: 8/8 ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED [] (--equiv is MEASURED on 8 of 8)
+# OPS PER ENUM SECTION (parsed from /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/__init__.py): 1 defines/special: 3; 2 non op uops: 13; 3 load/store: 4; 4 math: 31; 5 control flow / consts / custom: 10; 6 ops that don't exist in programs: 15; 7 pattern compiler IR (used in upat.py): 1
+# NOT REACHED (16 of 77 ENUM MEMBERS): REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA THREEFRY MULACC CUSTOM CUSTOMI INS STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD PYLITERAL
+#   OF WHICH 7 CANNOT APPEAR IN A PROGRAM GRAPH AT ALL (by construction): CUSTOM CUSTOMI INS PROGRAM PYLITERAL REWRITE_ERROR SOURCE
+# DENOMINATOR: 77 enum members -> 70 PROGRAM OPS (7 excluded by the enum's own markers: aren't rendered, renderer, pattern compiler IR, output strings into codegen, machine instruction)
+# COVERAGE: 61 of 70 program ops === 61 of 77 enum members (the denominators answer different questions)
+# ORACLE SELFCHECK: OK
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+===== STATE drop-alloc  (rc=0) =====
+# COMMUTATIVE OPS REACHED BY A NODE: 8/8 ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED [] (--equiv is MEASURED on 8 of 8)
+# OPS PER ENUM SECTION (parsed from /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/__init__.py): 1 defines/special: 3; 2 non op uops: 13; 3 load/store: 4; 4 math: 31; 5 control flow / consts / custom: 10; 6 ops that don't exist in programs: 15; 7 pattern compiler IR (used in upat.py): 1
+# NOT REACHED (16 of 77 ENUM MEMBERS): REWRITE_ERROR PROGRAM SOURCE GETADDR WMMA THREEFRY MULACC CUSTOM CUSTOMI INS STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD PYLITERAL
+#   OF WHICH 7 CANNOT APPEAR IN A PROGRAM GRAPH AT ALL (by construction): CUSTOM CUSTOMI INS PROGRAM PYLITERAL REWRITE_ERROR SOURCE
+# DENOMINATOR: 77 enum members -> 70 PROGRAM OPS (7 excluded by the enum's own markers: aren't rendered, renderer, pattern compiler IR, output strings into codegen, machine instruction)
+# COVERAGE: 61 of 70 program ops === 61 of 77 enum members (the denominators answer different questions)
+# ORACLE SELFCHECK: OK
+# PINNED to 25 graphs from runs/graphcmp/D/D0-coverage-census.txt (dropped ['getaddr', 'mulacc', 'threefry', 'unshard', 'wmma'])
+===== STATE drop-sole-op  (rc=0) =====
+# PLANT: removed every `AFTER` row from graph `loop` -- the ONE graph reaching it (discovered from the corpus, no bend)
+# COMMUTATIVE OPS REACHED BY A NODE: 8/8 ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED [] (--equiv is MEASURED on 8 of 8)
+# OPS PER ENUM SECTION (parsed from /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/__init__.py): 1 defines/special: 3; 2 non op uops: 13; 3 load/store: 4; 4 math: 31; 5 control flow / consts / custom: 10; 6 ops that don't exist in programs: 15; 7 pattern compiler IR (used in upat.py): 1
+# NOT REACHED (17 of 77 ENUM MEMBERS): REWRITE_ERROR PROGRAM SOURCE AFTER GETADDR WMMA THREEFRY MULACC CUSTOM CUSTOMI INS STAGE MSELECT MSTACK CUSTOM_FUNCTION UNSHARD PYLITERAL
+#   OF WHICH 7 CANNOT APPEAR IN A PROGRAM GRAPH AT ALL (by construction): CUSTOM CUSTOMI INS PROGRAM PYLITERAL REWRITE_ERROR SOURCE
+# DENOMINATOR: 77 enum members -> 70 PROGRAM OPS (7 excluded by the enum's own markers: aren't rendered, renderer, pattern compiler IR, output strings into codegen, machine instruction)
+# COVERAGE: 60 of 70 program ops === 60 of 77 enum members (the denominators answer different questions)
+# ORACLE SELFCHECK: OK
+
+
+
