@@ -1,0 +1,522 @@
+[
+ {
+  "path": ".agents/slop/cstyle-shapes-selftest.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 2d84b114e0cc 8798B in commit 64b174c0abd5",
+  "restore": "git cat-file blob 2d84b114e0ccc5dcce9e266143191f2de37f1429 > .agents/slop/cstyle-shapes-selftest.py",
+  "tools_lines": [
+   [
+    1208,
+    "| `.agents/slop/cstyle-shapes-selftest.py` | One control per row shape \u2014 F1 `name=value`, F2 `name = [v]   py=[w]`, F3 `name\u2423\u2423value` \u2014 each run **ARMED and RED*"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/e2e_gpu_probe.mjs",
+  "state": "RECOVERABLE",
+  "evidence": "blob 1733e593348d 6826B in commit 44713fe03b63",
+  "restore": "git cat-file blob 1733e593348d90913ae8559d2cb748639b24dbbb > .agents/slop/e2e_gpu_probe.mjs",
+  "tools_lines": [
+   [
+    703,
+    "- **`.agents/slop/e2e_gpu_probe.mjs`** -> `e2e-gpu-probe.txt` \u2014 is there a device that"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/fold-rng-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob c366ea73e4e8 11695B in commit cbd6005f0a41",
+  "restore": "git cat-file blob c366ea73e4e8e09e6e35b52318b05259dd6c58db > .agents/slop/fold-rng-mutate.py",
+  "tools_lines": [
+   [
+    731,
+    "- **`.agents/slop/fold-rng-mutate.py`** \u2014 19 mutations of the ranges fold and of"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/ga_mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 13c5e0f2cc51 15178B in commit 7fe55a5938b9",
+  "restore": "git cat-file blob 13c5e0f2cc51442317ea68452ff08bc3ee2b898e > .agents/slop/ga_mutate.py",
+  "tools_lines": [
+   [
+    575,
+    "| `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/mixin-op-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 0a20af04016a 9305B in commit 2e577f8667fc",
+  "restore": "git cat-file blob 0a20af04016a5f387854898cb6774b9502fa232a > .agents/slop/mixin-op-mutate.py",
+  "tools_lines": [
+   [
+    50,
+    "| `.agents/slop/mixin-op-mutate.py` | 17 one-token mutations of `mixin/op.bend`. Each is applied, **BOTH Bend lanes are run and required to agree**, the rows ar"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/nn-init-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 78bec34a9967 6211B in commit 7fe55a5938b9",
+  "restore": "git cat-file blob 78bec34a99672021c06962fb94b14f1945f1035e > .agents/slop/nn-init-mutate.py",
+  "tools_lines": [
+   [
+    53,
+    "| `.agents/slop/state-mutate.py` and `.agents/slop/nn-init-mutate.py` | one-token mutations of the two `nn/` files; each is applied, the rows are diffed against"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/pin-tables.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 79a3981dc87b 10941B in commit 0acd87f1358a",
+  "restore": "git cat-file blob 79a3981dc87bec08b058ad80d2c70b1f3d2096b2 > .agents/slop/pin-tables.py",
+  "tools_lines": [
+   [
+    1177,
+    "| `.agents/slop/pin-tables.py` | WRITES the pin into each table \u2014 or writes `PIN NOT WRITTEN -- UNSTATED. <reason>`. | **A pin is a claim about a run, so it may"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/rf2-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob d469dc20c6a8 13774B in commit 7fe55a5938b9",
+  "restore": "git cat-file blob d469dc20c6a85df8e567946b33d73355bf50e187 > .agents/slop/rf2-mutate.py",
+  "tools_lines": [
+   [
+    319,
+    "- **`.agents/slop/rf2-mutate.py` \u2192 `.agents/slop/rf2-mutations.txt`.** The mutation"
+   ],
+   [
+    329,
+    "while it runs.** It happened twice here: `rf2-mutate.py` writes `WORK` from a"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/runs/elf-checkonly-2026-10-04.txt",
+  "state": "RECOVERABLE",
+  "evidence": "blob d5b616bbd602 110B in commit e64f30b5bb7c",
+  "restore": "git cat-file blob d5b616bbd602fd8d9cb7dd873fd7a9a98d5f619b > .agents/slop/runs/elf-checkonly-2026-10-04.txt",
+  "tools_lines": [
+   [
+    628,
+    "stdout carries one (`.agents/slop/runs/elf-checkonly-2026-10-04.txt`)."
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/state-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob ea5a0652b2c0 4598B in commit 7fe55a5938b9",
+  "restore": "git cat-file blob ea5a0652b2c05248954f5f2c9af4dcec38eb458d > .agents/slop/state-mutate.py",
+  "tools_lines": [
+   [
+    53,
+    "| `.agents/slop/state-mutate.py` and `.agents/slop/nn-init-mutate.py` | one-token mutations of the two `nn/` files; each is applied, the rows are diffed against"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/substrate-audit.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob e61dd6eb11fe 14796B in commit 14eb322d7789",
+  "restore": "git cat-file blob e61dd6eb11fe5ef250909136d66cf71a4c83f450 > .agents/slop/substrate-audit.py",
+  "tools_lines": [
+   [
+    1040,
+    "| `.agents/slop/substrate-audit.py` | The OTHER root cause: 4 instruments that are right about a form and wrong about the substrate. A census that reads FORMS c"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/tcptx-mutate.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob e0ac3181c709 23711B in commit 3f3b786ed162",
+  "restore": "git cat-file blob e0ac3181c709068d55dad0c6e23c0cdae93aa6ef > .agents/slop/tcptx-mutate.py",
+  "tools_lines": [
+   [
+    55,
+    "| `.agents/slop/tcptx-mutate.py` | 51 one-edit mutations of `renderer/tc_ptx.bend`, each applied to a scratch copy **in the same directory** (the imports are re"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/tools/mutate-dm.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 68a4e41b4645 5765B in commit 0056b78451f0",
+  "restore": "git cat-file blob 68a4e41b464572b990af3f36f7275e7144135199 > .agents/slop/tools/mutate-dm.py",
+  "tools_lines": [
+   [
+    42,
+    "| `.agents/slop/tools/mutate-dm.py` | applies one edit to `uop/divandmod.bend`, runs the interpreted lane, diffs the rows against `/tmp/dm-base.txt` and RESTORE"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/tools/mutate-sz.py",
+  "state": "RECOVERABLE",
+  "evidence": "blob 01ce3f85863a 6928B in commit 6e738cbffc34",
+  "restore": "git cat-file blob 01ce3f85863a8be26f34bf35577e0e85fbb9cfae > .agents/slop/tools/mutate-sz.py",
+  "tools_lines": [
+   [
+    45,
+    "| `.agents/slop/tools/mutate-sz.py` | one edit at a time to `tinybendygrad/sz.bend`, compiled from a scratch copy (**it never edits the source**, so there is no"
+   ]
+  ]
+ },
+ {
+  "path": ".agents/slop/xd1/mutate.py",
+  "state": "GENERATED",
+  "evidence": "generator: ./.agents/slop/dd-mut-base.sh:80; ./.agents/slop/loopfix/tree/tinybendygrad/function.bend:1915; ./.agents/slop/loopfix/tree/tinybendygrad/renderer/nir.bend:1449",
+  "restore": "./.agents/slop/dd-mut-base.sh:80",
+  "tools_lines": [
+   [
+    50,
+    "| `.agents/slop/mixin-op-mutate.py` | 17 one-token mutations of `mixin/op.bend`. Each is applied, **BOTH Bend lanes are run and required to agree**, the rows ar"
+   ],
+   [
+    53,
+    "| `.agents/slop/state-mutate.py` and `.agents/slop/nn-init-mutate.py` | one-token mutations of the two `nn/` files; each is applied, the rows are diffed against"
+   ],
+   [
+    55,
+    "| `.agents/slop/tcptx-mutate.py` | 51 one-edit mutations of `renderer/tc_ptx.bend`, each applied to a scratch copy **in the same directory** (the imports are re"
+   ],
+   [
+    174,
+    "| `mt_mutate.py` | what does this gate NOT see? | 48 mutations, one text edit each, applied to a scratch copy **also beside the .bend file**, then the INTERPRET"
+   ],
+   [
+    193,
+    "| `dsp_mutate.py` | what does this gate NOT see? | 68 one-edit mutations (67 + a comment-only control), each applied to a scratch copy **beside the .bend file**"
+   ],
+   [
+    211,
+    "| `ra-mutate.py` | what does the regalloc gate NOT see? | 38 one-edit mutations of the ported pass, each applied to `late.bend` in place, run, and RESTORED in a"
+   ],
+   [
+    278,
+    "| `nv_ip_mutate.py` | what does the LOGIC gate not see? | one textual edit per rule, applied to the file **at its real path**, interpreted lane re-run, whole `n"
+   ],
+   [
+    319,
+    "- **`.agents/slop/rf2-mutate.py` \u2192 `.agents/slop/rf2-mutations.txt`.** The mutation"
+   ],
+   [
+    329,
+    "while it runs.** It happened twice here: `rf2-mutate.py` writes `WORK` from a"
+   ],
+   [
+    344,
+    "| `.agents/slop/memory-mutate.py` | 70 mutations (M01\u2013M70), rewrites a `.mut` copy, reports rows moved **by name**, and prints its own blind-spot list. Currentl"
+   ],
+   [
+    377,
+    "| `.agents/slop/usb-mutate.py --md` | 45 mutations, one edit each, whole-line diff, and it WRITES the table the port quotes. `44 move rows, 1 theorem`. |"
+   ],
+   [
+    391,
+    "python3 .agents/slop/usb-mutate.py --md .agents/slop/usb-mutations.md"
+   ],
+   [
+    526,
+    "| `.agents/slop/xd1/mutate.py` / `rw-mutate.py` | the mutation tables: 13 and 10 one-edit reverts of this unit's own fixes, each compiled, run, and diffed again"
+   ],
+   [
+    575,
+    "| `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a"
+   ],
+   [
+    731,
+    "- **`.agents/slop/fold-rng-mutate.py`** \u2014 19 mutations of the ranges fold and of"
+   ],
+   [
+    741,
+    "- **`.agents/slop/fold-lift-mutate.py`** \u2014 the `_min_max` op table's 35-entry table. The"
+   ],
+   [
+    750,
+    "`.agents/slop/ops-501-mutate.py`. It is a SEPARATE gate from `ops-gate.sh` rather"
+   ],
+   [
+    888,
+    "| `.agents/slop/dd-mutate.py` | the harness. Builds a MIRROR (`git archive <PINNED REV> tinybendygrad` + the FROZEN `dtype.bend`), asserts the mirror reproduces"
+   ],
+   [
+    894,
+    "| `.agents/slop/zero-audit.py` | audits **every** mutation table in `.agents/slop` and prints **THE DENOMINATOR** \u2014 mutations recorded vs zeros, controls exclud"
+   ],
+   [
+    946,
+    "(471) MUST STAY**, because `.agents/slop/mm-mutate.py:17` names it `SRC` and `mm-gate.py:12` runs"
+   ],
+   [
+    997,
+    "| `ops-501-mutate.py` | 23 mutations, all moving the rows they name. **Stages `jj file show -r @` and never writes `ops.bend`** \u2014 the previous version did, and "
+   ],
+   [
+    1083,
+    "| `validate-mutate.py` | 11 mutants run through BOTH lanes, so a row that moved TOWARD CPython is distinguishable from one that moved away; restores from memory"
+   ],
+   [
+    1174,
+    "| `.agents/slop/mutanchor.py` | THE shared static reader: `targets()` (which files a harness patches), `anchors()` (which literal each mutation looks for), `wri"
+   ],
+   [
+    1175,
+    "| `.agents/slop/anchor-audit.py` | Which anchors are stale, and which harnesses may be run at all. 49 harnesses, all `patch_not_apply` consumers. | **The anchor"
+   ],
+   [
+    1188,
+    "\u2014 and `ops-python-mutate.py`'s M17/M22 had been reporting the second as the first while"
+   ],
+   [
+    1290,
+    "- **`.agents/slop/nv_one_mutation.py`** \u2014 one `nv_mutate.py` entry, full row list with"
+   ],
+   [
+    1291,
+    "before/after values. `nv_mutate.py` prints only the first three moved rows, and a mutation"
+   ]
+  ]
+ },
+ {
+  "path": "xd1/pin",
+  "state": "GENERATED",
+  "evidence": "generator: ./test/helpers.py:69; ./test/null/test_memory_planner.py:41; ./tinygrad/renderer/llvmir.py:210",
+  "restore": "./test/helpers.py:69",
+  "tools_lines": [
+   [
+    4,
+    "pinned to, and why it is here. Nothing in this list is a dependency of the"
+   ],
+   [
+    22,
+    "| tool | version | pin | why |"
+   ],
+   [
+    24,
+    "| [Bend 2](https://github.com/HigherOrderCO/Bend) | `v2.0.34-6-g0187512` | `references/bend`, commit `0187512` | the language this project is written in. Fetche"
+   ],
+   [
+    47,
+    "| `.agents/slop/tools/tx-mut.py` | 13 mutations of `codegen/transcendental.bend`, one hand edit at a time, each re-checked and each row-set diffed against `.age"
+   ],
+   [
+    55,
+    "| `.agents/slop/tcptx-mutate.py` | 51 one-edit mutations of `renderer/tc_ptx.bend`, each applied to a scratch copy **in the same directory** (the imports are re"
+   ],
+   [
+    71,
+    "| `references/bend` | gitignored, [HigherOrderCO/Bend](https://github.com/HigherOrderCO/Bend) @ `0187512` | the language itself: `guide/GUIDE.md`, `guide/EFFECT"
+   ],
+   [
+    72,
+    "| `references/tinyquery` | gitignored, [Cyberistic/tinyquery](https://github.com/Cyberistic/tinyquery) | Cyberistic's tinygrad-in-Odin. Not a dependency \u2014 a sec"
+   ],
+   [
+    139,
+    "| tool | version | pin | why |"
+   ],
+   [
+    143,
+    "| typescript | 5.2.2 | global npm, unused | installed, but `langs/` adds no build step on purpose: node's own type stripping runs the SDK, so a `tsc` would be a"
+   ],
+   [
+    183,
+    "(`csrc_pad` dropping a subtraction, and the ICB header rows hardcoding the"
+   ],
+   [
+    395,
+    "## The pin-agreement unit \u2014 `bin/bend`, and `2.0.34` vs `v2.0.34-6-g0187512`"
+   ],
+   [
+    398,
+    "committed.** The unit's question was the general one \u2014 *a pin over a file does"
+   ],
+   [
+    404,
+    "| `.agents/slop/bendpin/resolve.py` | **WHOSE checkout does `bin/bend` use?** Four places \u2014 this tree, a COPY with a **planted** compiler in its own `references"
+   ],
+   [
+    405,
+    "| `.agents/slop/bendpin/pin_check.py` | **DO THE PIN AND THE CHECKOUT AGREE?** Four cells (this file's version cell, its commit cell, its `@` ref at line 58, an"
+   ],
+   [
+    406,
+    "| `.agents/slop/bendpin/compare.py` | **DOES THE PORT COMPILE THE SAME UNDER BOTH?** All **138 of 138** `.bend` files under `tinybendygrad/`, both lanes, one pr"
+   ],
+   [
+    407,
+    "| `.agents/slop/bendpin/regressions.py` | **DO THE CONSTRUCTS THE SIX COMMITS CHANGED BEHAVE THE SAME?** Upstream's own three new tests (`erased_field_bare_arm`"
+   ],
+   [
+    408,
+    "| `.agents/slop/bendpin/twoarg-probe.bend` | the two-argument-application probe, written FROM upstream's syntax because both earlier attempts were invalid Bend."
+   ],
+   [
+    417,
+    "C emitter's cube scheduler), `main.ts` (`--publish` BOM stripping) and"
+   ],
+   [
+    440,
+    "comparing the two lanes' ARGUMENT VECTORS. `pin_check.py` had the same class of"
+   ],
+   [
+    447,
+    "changes no verdict in this repo \u2014 **the pin is cosmetic for the port.** But the"
+   ],
+   [
+    450,
+    "the fixed one. **So \"the pin is cosmetic\" is true of the artifacts measured here"
+   ],
+   [
+    521,
+    "| `.agents/slop/xd1/wt-sync.sh` | **A COMPILER WORKAROUND, not a design.** A live agent is mid-edit on `tinybendygrad/helpers.bend` and it does not compile (eig"
+   ],
+   [
+    524,
+    "| `.agents/slop/xd1/render-gate-oracle.py` / `rw-gate-oracle.py` | the CPython halves, run against `.agents/slop/xd1/head` (`git archive upstream/master`) becau"
+   ],
+   [
+    552,
+    "| `.agents/slop/rebase-oracle-spec.py` | NEW oracle for `uop/spec.bend`, 11 of 21 rows, **RED on 2**: `te_len` 56 vs 55 and `fu_len` 71 vs 70, which is the \"TWE"
+   ],
+   [
+    553,
+    "| `.agents/slop/rebase-oracle-ops.py` | `ops-oracle.py` plus the filter `ops-gate.sh` already applies, with the bend-only prefix list **DERIVED from the oracle'"
+   ],
+   [
+    565,
+    "`rebase-plan.py` started mapping one upstream file to a LIST of ports; and"
+   ],
+   [
+    572,
+    "| `.agents/slop/ga-oracle.py` -> `oracles/ga-oracle.txt` | the ORACLE for `renderer/amd/generate.bend`: **892 rows, every one produced by CALLING CPython**, and"
+   ],
+   [
+    573,
+    "| `.agents/slop/ga_fix.py`, `ga_splice.py`, `ga_topo.py`, `ga_dedup.py`, `ga_plus.py` | the fixture/gate GENERATOR and the three repair passes. `ga_splice.py` r"
+   ],
+   [
+    644,
+    "- `.agents/slop/pin-tree-oracle.py` \u2014 which tree each wired oracle imports, and the"
+   ],
+   [
+    645,
+    "GUARD 3/2/4 verdict under the pin (`xd1/pin` = `6c3d401cf324`) and under `xd1/head`."
+   ],
+   [
+    647,
+    "Never patches a live tree. Report: `.agents/slop/pin-tree-oracle-report.md`."
+   ],
+   [
+    648,
+    "Snapshots: `runs/pin-tree-oracle/`."
+   ],
+   [
+    656,
+    "- `.agents/slop/oracle_py.py` \u2014 WHICH PYTHON RUNS THE CPYTHON ORACLES, pinned in one place."
+   ],
+   [
+    668,
+    "with exit 2** rather than reporting zero rows; `ORACLE_PY=` overrides the pin and is probed"
+   ],
+   [
+    718,
+    "its own until this session \u2014 it is the only file in the port whose 300 rows were pinned by"
+   ],
+   [
+    795,
+    "selects the tree and the answers are IDENTICAL on the vendored pin and on"
+   ],
+   [
+    846,
+    "Harness rules learned here and worth keeping:"
+   ],
+   [
+    876,
+    "* **load the gate's parser, do not write one** \u2014 a second parser is a second opinion"
+   ],
+   [
+    889,
+    "| `.agents/slop/dd-mutations.frozen.bend` | the pinned snapshot, `73b0e1e7\u2026`. **The live file is a concurrent unit's** and moved under the run. |"
+   ],
+   [
+    1104,
+    "a claim about the ENVIRONMENT and it expires; VZ-11 a new oracle must pin the inputs the port"
+   ],
+   [
+    1108,
+    "**THE GENERAL LESSON, and it is the one worth keeping: `agent-core.md` warns that an instrument"
+   ],
+   [
+    1142,
+    "(`fold.bend:1296`), which moved three pinned numbers in this harness at once \u2014 including a"
+   ],
+   [
+    1176,
+    "| `.agents/slop/table-pin.py` | rev + **FILE** digest + **ROWS** digest per table, 24 tables. `ROWS` is the row SET (names AND values, sorted) taken from the ha"
+   ],
+   [
+    1177,
+    "| `.agents/slop/pin-tables.py` | WRITES the pin into each table \u2014 or writes `PIN NOT WRITTEN -- UNSTATED. <reason>`. | **A pin is a claim about a run, so it may"
+   ],
+   [
+    1181,
+    "python3 .agents/slop/table-pin.py                       # what each table describes"
+   ],
+   [
+    1207,
+    "| `.agents/slop/cstyle-reader-parity.py` | Answers \"does the green survive the correct reader?\" three ways: **(1)** each reader's name set, value-by-value agree"
+   ],
+   [
+    1406,
+    "byte comparison + the live md5 pinned), then the blast radius of each arm on all 312 rows"
+   ],
+   [
+    1452,
+    "`.agents/slop/norm/lint_norm.py` (exit 1 on a NEW non-round-tripping normaliser;"
+   ],
+   [
+    1489,
+    "`helpers-oracle.py`, `helpers-tc.bend`, `canon.py` and `checks/graphcmp.py` while keeping the"
+   ],
+   [
+    1499,
+    "| `.venv/bin/python .agents/slop/clearfix/gate-matrix.py` | **All 9 gates, both `gatekit`s, real drivers, no shadow tree.** Verifies a cleanup fix against the w"
+   ],
+   [
+    1518,
+    "## devpin \u2014 the device pin and the environment census (2026-10-06)"
+   ],
+   [
+    1522,
+    "| `checks/devpin.py` | **the gate**: the graphcmp comparison's device is a declared precondition. Two methods that share no assumption \u2014 **M1** reads device NAM"
+   ],
+   [
+    1523,
+    "| `.agents/slop/devpin/hashall.py` | one sha256 over the 25 graphs' **row-shaped lines only**, plus a non-row count. The `ROW` regex is `^\\d+:`, **not** `^\\d+:\\"
+   ],
+   [
+    1524,
+    "| `.agents/slop/devpin/envsweep.py` | the environment census: 147 flags AST-counted off `tinygrad/`, **one subprocess each, two lanes**. Lane A is in-process an"
+   ],
+   [
+    1525,
+    "| `.agents/slop/devpin/lin-decision.py` | which rows are device-dependent: re-emits all 25 graphs under four devices and diffs against the recorded py artifacts"
+   ],
+   [
+    1526,
+    "| `.agents/slop/devpin/injectivity.py` | is the canonical form injective? 88 live dataclass instances \u2192 44 strings, 0 collisions; 0 ambiguous parses of the 6 `\""
+   ]
+  ]
+ }
+]
