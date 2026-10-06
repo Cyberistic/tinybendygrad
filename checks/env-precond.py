@@ -3,6 +3,10 @@
 
     usage: .venv/bin/python checks/env-precond.py --declare | --check | --record
 
+    EXIT: 0 declared-and-recorded · 1 a declared value MOVED (FAIL) · 2 usage · 3 REFUSED -- a
+    required input is ABSENT, so nothing was measured. gatekit.py:59's REFUSED; a traceback is
+    none of the five verdicts, and MEASURED it aliased an absent run onto a FAIL's exit 1.
+
 WHY THIS IS NOT A GATE THAT SAYS "PASSED". `checks/differ.py`'s `ENV` (which feeds the
 CPython oracle and every `capture`) and `.agents/slop/graphcmp.py`'s `clean_env` (which
 feeds `bin/bend`) each build a child environment, and between them they pin `LC_ALL`, drop
@@ -59,9 +63,35 @@ import os
 import pathlib
 import re
 import sys
+import tempfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"
+RUN = ROOT / "runs/graphcmp/D"
+SUMMARY = RUN / "D0-run-summary.txt"
+CENSUS = RUN / "D0-coverage-census.txt"
+LATE = RUN / "D2-canon-py-late.txt"
+
+#: gatekit.py:59 spells the five verdicts as exits (`PASS, FAIL, REFUSED, SKIP, DEAD = 0,1,3,4,5`);
+#: `checks/abi_gate.py` is that rule's wording in this directory's idiom. REFUSED is NOT a verdict:
+#: it means a precondition was absent, so nothing was measured.
+REFUSED = 3
+
+
+def refuse(*why: str) -> int:
+    """A missing input is REFUSED, not a verdict. MEASURED, `runs/graphcmp/D` absent: `--record`
+    raised `FileNotFoundError` at `observed()`'s FIRST read (`:149`) and exited 1 -- the SAME exit
+    a FAIL uses, so an absent run was indistinguishable from a wrong answer but for the traceback --
+    and `--check` returned 1 with `no run summary`, reporting an absent run AS a FAIL. A traceback
+    is none of the five verdicts. `checks/abi_gate.py`'s wording, exit 3."""
+    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
+    return REFUSED
+
+
+def require(*paths: pathlib.Path) -> int:
+    """0 if every input exists, else REFUSED naming each absent one. CALLED BEFORE THE READ, so the
+    read can never be the thing that discovers the absence -- which is the crash this closes."""
+    missing = [str(p) for p in paths if not p.exists()]
+    return refuse(*(f"input absent: {m}" for m in missing)) if missing else 0
 
 # ---------------------------------------------------------------------------
 # THE DECLARATION. One table, three columns, and the third column is the reason each row
@@ -131,8 +161,8 @@ RECORD_KEYS = ("dev", "pythonhashseed", "noopt", "lc_all")
 # ---------------------------------------------------------------------------
 def dev_route() -> dict[str, str]:
     """Which `DEV` produced which artifact, read off the artifacts themselves."""
-    census = (ROOT / "runs/graphcmp/D/D0-coverage-census.txt").read_text()
-    late = ROOT / "runs/graphcmp/D/D2-canon-py-late.txt"
+    census = CENSUS.read_text()
+    late = LATE
     ops = sorted({ln.split()[1].split(":")[1] for ln in late.read_text().splitlines() if ln.strip()})
     return {
         "D0-coverage-census.txt": "NULL",
@@ -146,9 +176,9 @@ def dev_route() -> dict[str, str]:
 def observed() -> dict[str, str]:
     """The three variables as the RUN THAT EXISTS left them. Each with its evidence."""
     late_ops = {ln.split()[1].split(":")[1]
-                for ln in (ROOT / "runs/graphcmp/D/D2-canon-py-late.txt").read_text().splitlines()
+                for ln in LATE.read_text().splitlines()
                 if ln.strip()}
-    census = (ROOT / "runs/graphcmp/D/D0-coverage-census.txt").read_text()
+    census = CENSUS.read_text()
     census_late = next((ln for ln in census.splitlines() if ln.startswith("  late")), "")
     # A 313 TOTAL with a 13-node `late` is DEV=NULL's census; MEASURED DEV=CPU gives 312
     # and a 12-node `late` reaching FDIV. Two independent witnesses, and they agree.
@@ -208,8 +238,13 @@ def check(sources: dict[str, list[str]] | None = None,
     `sources` and `summary` are PARAMETERS so the plants exercise this exact function against
     a fabricated tree. A plant that called a private helper would prove the helper.
     """
-    sources = sources if sources is not None else {
-        p: (ROOT / p).read_text().splitlines() for p in {q for q, _, _ in PINS}}
+    if sources is None:
+        # REFUSED BEFORE THE READ: the PINS sources are inputs, and a missing one used to be a
+        # `FileNotFoundError` from the comprehension below -- the same absence shape as the run dir.
+        paths = sorted({q for q, _, _ in PINS})
+        if rc := require(*(ROOT / p for p in paths)):
+            return rc
+        sources = {p: (ROOT / p).read_text().splitlines() for p in paths}
     summary = summary if summary is not None else SUMMARY
     bad: list[str] = []
 
@@ -228,9 +263,8 @@ def check(sources: dict[str, list[str]] | None = None,
 
     print("\nMETHOD B -- what the run recorded, read with partition('='), no regex:")
     if not summary.exists():
-        bad.append("no run summary: there is no run whose preconditions could be checked")
         print("    MISSING  no run summary")
-        return 1
+        return refuse("no run summary: there is no run whose preconditions could be checked")
     kv: dict[str, str] = {}
     for raw in summary.read_text().splitlines():
         if "=" in raw:
@@ -252,6 +286,8 @@ def check(sources: dict[str, list[str]] | None = None,
 
 def record() -> int:
     """PRINT the values and the evidence, for pasting next to a run. Does not write."""
+    if rc := require(CENSUS, LATE):
+        return rc
     o = observed()
     for k in ("DEV", "PYTHONHASHSEED", "NOOPT", "LC_ALL"):
         print(f"{k:<16}= {o[k]}")
@@ -276,19 +312,25 @@ def plant(kind: str) -> int:
     could not pass until the owner of `checks/differ.py` applied the pins -- which measures
     the owner's schedule, not the instrument. A plant that cannot pass proves nothing.
 
-    THREE PLANTS, and the `--plant` ARGUMENT IS NOT ONE OF THEM. `kind` selects which plants
+    FIVE PLANTS, and the `--plant` ARGUMENT IS NOT ONE OF THEM. `kind` selects which plants
     RUN, never what they assert: an argument that changed the expected exit would let a
     caller make this file pass by asking for the wrong thing, which is the same defect as a
-    plant that computes its own expectation. Both directions run the SAME three plants with
+    plant that computes its own expectation. Both directions run the SAME five plants with
     the SAME expected exits, and the only difference is that `--plant moved` additionally
-    requires that a mutation is caught -- which all three already are.
+    requires that a mutation is caught -- which all three mutations already are.
 
     TWO KINDS OF MUTATION, because one tokenizer ate a full stop in this project and its own
     belt missed the same defect by sharing the assumption: one moves a value METHOD B reads
     (the summary's `NOOPT`) and one REVERTS a pin METHOD A reads (`differ.py`'s `ENV`, whose
     anchored line survives while its tokens do not). Neither
     method alone can see the other's defect, so a check that ran only one of them would be a
-    check that could be satisfied by a lie in the other."""
+    check that could be satisfied by a lie in the other.
+
+    THE LAST TWO ARE THE ABSENT INPUT, and they are NOT `!= 0` like a moved value: they MUST be
+    EXACTLY `REFUSED` (3). MEASURED, `runs/graphcmp/D` absent, the two crash sites this guard
+    closes: `--record`'s first read (`observed():149`) and `--check`'s absent summary. A plant
+    that only proved a mutation is caught would leave the crash where an absent input aliases a
+    FAIL's exit 1 unmeasured."""
     if kind not in ("satisfied", "moved"):
         print(f"unknown plant {kind!r}", file=sys.stderr)
         return 2
@@ -302,22 +344,32 @@ def plant(kind: str) -> int:
         if (rc != 0) != nonzero:
             bad.append(f"{name}: expected {'non-zero' if nonzero else '0'}, got {rc}")
         print()
-    print(f"--plant {kind}: all three plants ran with FIXED expectations. "
+    for name, got in (("absent-record", _absent_record()), ("absent-summary", _absent_summary())):
+        print(f"PLANT {name} -- MUST exit {REFUSED} (a refusal is not a verdict)\n")
+        print(f"    -> exit {got}: {'CORRECT' if got == REFUSED else 'WRONG'}\n")
+        if got != REFUSED:
+            bad.append(f"{name}: expected {REFUSED}, got {got}")
+    print(f"--plant {kind}: all five plants ran with FIXED expectations. "
           + ("OK" if not bad else "FAILED"))
     for b in bad:
         print(f"PLANT FAILED: {b}")
     return 1 if bad else 0
 
 
+def _pin_lines() -> dict[str, list[str]]:
+    """A fabricated tree where every pin holds. Shared by the moved plants and the absent ones,
+    so the satisfied input and the absent input cannot drift apart in how they are built."""
+    lines_of: dict[str, list[str]] = {}
+    for path, anchor, required in PINS:
+        lines_of.setdefault(path, []).append(anchor + "".join(f' {t}="0"' for t in required))
+    return lines_of
+
+
 def _one_plant(move_summary: bool, move_pin: bool) -> int:
     """One run of `check()` against a fabricated tree. Both directions share it, so the
     satisfied and moved inputs cannot drift apart in how they are built -- two builders would
     differ in exactly the way the two plants are supposed to detect."""
-    import tempfile
-    lines_of: dict[str, list[str]] = {}
-    for path, anchor, required in PINS:      # fabricate a tree where every pin holds
-        lines_of.setdefault(path, []).append(
-            anchor + "".join(f' {t}="0"' for t in required))
+    lines_of = _pin_lines()
     if move_pin:      # REVERT the ENV pin: the anchored line survives, its tokens do not
         lines_of["checks/differ.py"][0] = (
             'ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"} '
@@ -332,6 +384,25 @@ def _one_plant(move_summary: bool, move_pin: bool) -> int:
             vals["noopt"] = "1"
         summary.write_text("\n".join(keep + [f"{k}={v}" for k, v in vals.items()]) + "\n")
         return check(sources=lines_of, summary=summary)
+
+
+def _absent_record() -> int:
+    """`record()` with `runs/graphcmp/D`'s files ABSENT. Patches this module's own CENSUS/LATE
+    rather than moving the live tree, so the plant cannot disturb a run and needs no cleanup."""
+    global CENSUS, LATE
+    keep = CENSUS, LATE
+    CENSUS = LATE = pathlib.Path(tempfile.gettempdir()) / "env-precond-absent"
+    try:
+        return record()
+    finally:
+        CENSUS, LATE = keep
+
+
+def _absent_summary() -> int:
+    """`check()` with the run summary ABSENT and the pins satisfied, so the ONLY absent thing is
+    the run -- the exact `--check` case that used to return 1 and read as a FAIL."""
+    with tempfile.TemporaryDirectory() as td:
+        return check(sources=_pin_lines(), summary=pathlib.Path(td) / "absent.txt")
 
 
 def main() -> int:
