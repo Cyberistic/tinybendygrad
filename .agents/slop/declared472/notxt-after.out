@@ -1,0 +1,43 @@
+  139 `.txt` EXCUSED: `checks/differ.py`'s declared graphcmp artifacts, which a sha256-pinned oracle reads BY NAME (oracle-repro.sh:61, :105; corpus-figure.py:72).
+  356 .txt FILE(S). `.txt` IS NOT AN EXTENSION THIS PROJECT USES.
+    oracles/rows-bd.txt
+    test/models/efficientnet/imagenet1000_clsidx_to_labels.txt
+    .agents/slop/dd-gate-base-172.txt
+    .agents/slop/dd-gate-base-182.txt
+    .agents/slop/dd-gate.txt
+    .agents/slop/ops_bend-milestone-expected.txt
+    .agents/slop/strays-root/after.txt
+    .agents/slop/strays-root/before.txt
+    .agents/slop/strays-root/closure.txt
+    .agents/slop/figure2/plant/broken/runs/graphcmp/D/D0-run-summary.txt
+    .agents/slop/figure2/plant/real/runs/graphcmp/D/D0-run-summary.txt
+    .agents/slop/i64shl/py.txt
+    .agents/slop/rerun/probe-flip-METAL.txt
+    .agents/slop/rerun/probe-flip-NULL.txt
+    .agents/slop/rerun/probe-lin-METAL.txt
+    .agents/slop/rerun/probe-lin-NULL.txt
+    .agents/slop/fixures/opsbend/ops_bend-milestone-expected.txt
+    .agents/slop/gatehealth/graphcmp-ok/D0-coverage-census.txt
+    .agents/slop/gatehealth/graphcmp-ok/D0-ops-probe.txt
+    .agents/slop/gatehealth/graphcmp-ok/D0-run-summary.txt
+    .agents/slop/gatehealth/graphcmp-ok/D0-selfcheck.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-allred.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-alu.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-binblob.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-bit.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-buffer.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-bw.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-cast.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-cdiv.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-commute.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-flip.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-gate.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-group.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-indexed.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-late.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-lin.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-loop.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-matmul.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-move.txt
+    .agents/slop/gatehealth/graphcmp-ok/D1-graph-range.txt
+    ... and 316 more
