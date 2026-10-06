@@ -4721,9 +4721,26 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:582  def __getitem__
 
-# TODO(p3) ops.py:597  def _uop
+# DONE(p3) ops.py:597 def _uop -- AND THE HONEST ANSWER IS THAT THERE IS NOTHING TO
+#   WRITE. CPython's is `def _uop(self) -> UOp: return self`, which is the IDENTITY, and
+#   it is the identity because `Tensor` SUBCLASSES `UOp`. This port's
+#   `type Tensor is Data: Tensor{ar, uop, is_param, grad}` (`tensor.bend:190`) is a RECORD
+#   WRAPPING a U32 index, so it is not a UOp -- and the port's node reference is already a
+#   `Found`, which IS the UOp reference. There is no unwrap on this side to perform.
+#   THE TENSOR SIDE OF THE SAME NAME IS PORTED AND GATED ELSEWHERE: `tensor.bend:196-200`
+#   names `Tensor.u` as `_uop -- tensor.py:118` and every graph-building method there
+#   reads that field in place of `self.uop`. So the NAME is done, from the side that has
+#   something to do.
 
-# TODO(p3) ops.py:599  def _wrap_uop
+# DONE(p3) ops.py:599 def _wrap_uop -- SAME REASON, AND IT IS THE STRONGER ONE.
+#   CPython's is `@classmethod def _wrap_uop(cls, u: UOp) -> UOp: return u`, so it returns
+#   its argument UNCHANGED. It exists at all because `Tensor` subclasses `UOp`: without the
+#   subclassing, a `UOp` passed where a `Tensor` is expected would not be one, and this
+#   would have to convert rather than hand back. The port has no such gap -- `Tensor` is a
+#   record wrapping a `U32` and a `Found` is a `U32` plus an arena -- so there is no
+#   coercion to bridge and no def to write. **A MARKER THAT ASKS FOR A FUNCTION WHICH IS
+#   CORRECTLY ABSENT IS A WALL, NOT A GAP**, and the reason it was a marker at all is that
+#   nobody had written down WHICH kind it was.
 
 # TODO(p3) ops.py:600  def const_like
 
@@ -4805,9 +4822,12 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 # TODO(p3) ops.py:754  def shard
 
 
-# TODO(p3) ops.py:766  def store_call
+#   `def param_like` IS ABSENT, and `store_call`'s body is two of them:
+# TODO(p3) ops.py:766  def store_call  -- BLOCKED, and is `self.param_like(0).store(...).call(self, src)`.
 
-# TODO(p3) ops.py:775  def on_disk
+#   A DEVICE IS A `U32` TAG HERE, NOT A STRING: `type Dev is Data: D1{tag: U32}`. So a device NAME has no prefix to test, and the two below are exactly a `startswith`:
+# TODO(p3) ops.py:775  def on_disk  -- BLOCKED, and is `device.startswith("DISK")`.
+# TODO(p3) ops.py:776  def on_creation_device  -- BLOCKED, and is `device.startswith(...)`.
 #   # little helpers
 
 # TODO(p3) ops.py:776  def on_creation_device
@@ -4824,7 +4844,9 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:857  def from_buffer
 
-# TODO(p3) ops.py:861  def empty_like
+#   `def canonicalize_device` and `def is_disk_device` ARE BOTH ABSENT, and both start with one:
+# TODO(p3) ops.py:861  def empty_like  -- BLOCKED, and opens `canonicalize_device(...)`.
+# TODO(p3) ops.py:879  def clone  -- BLOCKED, and opens `canonicalize_device(...)` then tests `is_disk_device`.
 
 # TODO(p3) ops.py:867  def _frompy
 
@@ -4843,9 +4865,15 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:931  def contiguous_view
 
-# TODO(p3) ops.py:952  def contiguous_view_offset
+#   `def contiguous_view` IS ABSENT, and both of these ask it first:
+# TODO(p3) ops.py:952  def contiguous_view_offset  -- BLOCKED, and is `None if (view := self.contiguous_view()) is None`.
+# TODO(p3) ops.py:968  def _buffer_view  -- BLOCKED, and raises on `self.contiguous_view() is None`.
 
-# TODO(p3) ops.py:961  def _base_buffer_is_realized
+# WALL(p3) -- STORAGE, DEVICE AND ALLOC. NO LIVE `Buffer` -- there is no `type Buffer is Data` anywhere in the port and ZERO `Buffer{` constructors. tinygrad's Buffer is an ALLOCATED OBJECT with a `realized` field and a `memory`
+# TODO(p3) ops.py:961  def _base_buffer_is_realized  -- BLOCKED, and walks the AFTER chain then reads `u.base.realized`.
+# TODO(p3) ops.py:999  def realized  -- BLOCKED, and ANSWERS a Buffer.
+# TODO(p3) ops.py:1010  def is_realized  -- BLOCKED, and is `self.base.realized is not None`.
+# TODO(p3) ops.py:777  def needs_storage  -- BLOCKED, and is `not is_virtual and (storage_base.op is ALLOC or base.realized)`.
 
 # TODO(p3) ops.py:968  def _buffer_view
 
@@ -4970,7 +4998,11 @@ def gate_kernel_sink(+ar: Arena, +x: U32) -> Bool:
 
 # TODO(p3) ops.py:1191  def pyrender
 
-# TODO(p3) ops.py:1198  def alloc
+#   `def view_as` IS ABSENT, and the alloc family ends in one:
+# TODO(p3) ops.py:1198  def alloc  -- BLOCKED, and ends `ret.view_as(shape)`.
+# TODO(p3) ops.py:1203  def alloc_like  -- BLOCKED, and delegates to `alloc`.
+# TODO(p3) ops.py:1206  def placeholder  -- BLOCKED, and ends `view_as`.
+# TODO(p3) ops.py:1219  def placeholder_like  -- BLOCKED, and delegates to `placeholder`.
 
 # TODO(p3) ops.py:1203  def alloc_like
 
