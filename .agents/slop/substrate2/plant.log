@@ -1,0 +1,4 @@
+1 GREEN clean          rc=0  BAD 0  NAMES CLEAN: 2 file(s), all non-empty, all cross-file names resolved. **VERDICT NOT TAKEN** (-n).
+2 RED name-broken      rc=1  BAD 1  SUBSTRATE NOT CLEAN: 1 finding(s) across 2 file(s) -- empty, missing, cold, or collectively incomplete.
+3 RED module-absent    rc=1  BAD 3  SUBSTRATE NOT CLEAN: 3 finding(s) across 2 file(s) -- empty, missing, cold, or collectively incomplete.
+4 GREEN restored       rc=0  BAD 0  NAMES CLEAN: 2 file(s), all non-empty, all cross-file names resolved. **VERDICT NOT TAKEN** (-n).
