@@ -1,0 +1,5 @@
+  POPULATION (os.walk oracles/ + endswith .txt): 259
+  classes : {'rowdump': 240, 'rowdump?/md': 5, 'crash-dump-in-txt': 7, 'source-in-txt': 3, 'rowdump?/tsv': 3, 'rowdump?/empty': 1}
+  reach   : {'LIVE': 4, 'SHADOW': 0, 'STALE': 30, 'NOTHING': 225}
+  declared() names any oracles/.txt? NONE
+  ORACLE_PIN names any oracles/.txt? NONE (pins .agents/slop/diffpy/*.sh)
