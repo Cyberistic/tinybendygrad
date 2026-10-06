@@ -30,7 +30,7 @@ change the port.  And its correctness is not asserted, it is CHECKED, two ways:
   * `./bin/bend` must compile the result, and
   * the result must print **the same rows, byte for byte**, as the last known
     GOOD run of this file, which is committed at
-    `.agents/slop/cstyle-live/port.txt` (46291 bytes, 227 gate rows, taken at
+    `gates/artifacts/cstyle-live/port.txt` (46291 bytes, 227 gate rows, taken at
     sha256 07ae2766...).
 
 The second check is what makes this a repair rather than a guess: if deleting
@@ -45,7 +45,7 @@ import pathlib
 import subprocess
 import sys
 
-GOOD = pathlib.Path(__file__).resolve().parents[1] / "cstyle-live" / "port.txt"
+GOOD = pathlib.Path(__file__).resolve().parents[1] / "gates" / "cstyle-live.rows"
 MAXP = 512
 
 

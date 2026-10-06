@@ -96,9 +96,13 @@ judge* -- a distinction the three outcomes were built to keep. The precedent is 
 and in the tree: `checks/bounded.py` added `5 NOT-STARTED` and `6 NO-VERDICT` for this reason and
 its own header records the cost of a status that cannot mean one thing ("a unit lost 425 rows by
 believing the status instead of the token"). Evidence `.agents/slop/skipexit/FINDINGS.md` §2,
-which also disposes of the third option by measurement: stage 7's refusal is a DELETED FIXTURE
-(`repair-dupes.py:97` cannot find `cstyle-live/port.txt`), which is neither retryable nor mine to
-regenerate -- regenerating it would make the check `X == X`, a check that cannot fail.
+which also disposes of the third option by measurement: stage 7's refusal is a COLD
+SUBSTRATE; the separate deleted-fixture defect at `repair-dupes.py:97`
+(`cstyle-live/port.txt` under the swept tree) is REPAIRED as of this unit — the recorded
+good run is recovered from git and lives at `gates/cstyle-live.rows`, a TRACKED path. **NOT
+under `gates/artifacts/`: that directory is `.gitignore`d AND is where gate runs write, so a
+`rm -rf gates/artifacts` deletes anything kept there — which is how the first restore of this
+fixture vanished. A gate's INPUT has to be in git or it is one cleanup away from gone.**
 
 ONE `bend` PROCESS AT A TIME, ALWAYS, AND THE SHELL HAS NO CONCERN ABOUT IT. Measured 2026-10-05:
 `ulimit` appears ZERO times in `e2e.sh`, and two `bend` processes took this machine's memory to
