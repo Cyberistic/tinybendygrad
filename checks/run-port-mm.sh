@@ -47,7 +47,15 @@ PY="$ROOT/.venv/bin/python"
 PORTEXEC="$ROOT/.agents/slop/portexec"
 PLANT="$ROOT/.agents/slop/e2e_port/plant.py"
 W=${1:-${TMPDIR}/e2e-port-mm}
-ORACLE="$ROOT/runs/e2e/e2e-mm-oracle.json"
+# BESIDE THE GATE, IN GIT.  This was `$ROOT/runs/e2e/e2e-mm-oracle.json`, under the
+# ROOT `runs/` ignore rule (`cf2d14fa4` untracked it with 168 siblings).  A gate's
+# required input under an ignore rule cannot be seen in a clone: `checks/e2e.py:20`
+# and `.gitignore:137` both recorded the conflict and neither fixed it.  The bytes are
+# RECOVERED BYTE-IDENTICAL from `cf2d14fa4^` (`sha256 39686a96...`), exactly as
+# `e2efix` recovered stage 7's fixture to the tracked `gates/cstyle-live.rows`.  A
+# `.gitignore` negation inside `runs/` was REJECTED: it would leave `runs/e2e/`
+# ignored, so tracking the file would make clause V's IGNORED-BUT-INDEXED rule fire.
+ORACLE="$ROOT/checks/e2e-mm-oracle.json"
 NC="$W/copy"
 rc=0
 ok=1
@@ -155,10 +163,10 @@ say "== COVERAGE  how much of the port is EXECUTION and how much is TEXT, with t
 mkcopy() {
   ok=1
   rm -rf "$NC"
-  mkdir -p "$NC/.agents/slop" "$NC/runs/e2e" || return 1
+  mkdir -p "$NC/.agents/slop" "$NC/checks" || return 1
   cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || return 1
   cp -R "$PORTEXEC" "$NC/.agents/slop/portexec" || return 1
-  cp "$ORACLE" "$NC/runs/e2e/e2e-mm-oracle.json" || return 1
+  cp "$ORACLE" "$NC/checks/e2e-mm-oracle.json" || return 1
   ln -s "$ROOT/bin" "$NC/bin"; ln -s "$ROOT/references" "$NC/references"
   ln -s "$ROOT/tinygrad" "$NC/tinygrad"; ln -s "$ROOT/.venv" "$NC/.venv"
   "$PY" "$PLANT" "$NC/.agents/slop/portexec/run-kernel.sh" \
@@ -257,7 +265,7 @@ say "-- C3  THE EXPECTATION -- ONE BIT of word 37 of the 64 answer words, in the
 say "        oracle record. One bit must turn it red AND name index 37 and no other: a"
 say "        PREFIX is not a comparison, and 63 agreeing words are not 64."
 ok=1
-mkcopy && "$PY" - "$NC/runs/e2e/e2e-mm-oracle.json" <<'EOF' || ok=0
+mkcopy && "$PY" - "$NC/checks/e2e-mm-oracle.json" <<'EOF' || ok=0
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1]); d = json.loads(p.read_text())
 assert len(d["answer_u32"]) == 64, len(d["answer_u32"])

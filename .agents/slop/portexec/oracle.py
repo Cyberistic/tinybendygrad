@@ -133,11 +133,14 @@ def main():
          "clang_kernel_caller": emit_kernel("CLANG", prefix=CALLER),
          "vec4_typedef": vec4_typedef()}
   # THE E2E MATMUL, AND EVERY WORD OF IT COMES FROM `e2e_mm.py`'s OWN RECORD.
-  # `runs/e2e/e2e-mm-oracle.json` is that script's output: `mats.A/B/Cm` are the
+  # `checks/e2e-mm-oracle.json` is that script's output: `mats.A/B/Cm` are the
   # three 8x8 f32 inputs as u32 bit patterns and `answer_u32` is the 64-word answer
   # for `(A @ B) @ Cm`. Re-running `e2e_mm.py` is left to `e2e.sh`; this lane READS
-  # the record rather than recomputing, so the two lanes cannot drift.
-  e2e = ROOT / "runs/e2e/e2e-mm-oracle.json"
+  # the record rather than recomputing, so the two lanes cannot drift. THE RECORD
+  # MOVED OUT OF THE IGNORED `runs/` to the TRACKED `checks/` -- see
+  # `.agents/slop/runsgate/REPORT.md`; `ROOT` is the copy's own root under the
+  # controls, so the plant lives at `<copy>/checks/e2e-mm-oracle.json`.
+  e2e = ROOT / "checks/e2e-mm-oracle.json"
   if e2e.exists():
     d = json.loads(e2e.read_text())
     res["mm_A"], res["mm_B"], res["mm_C"] = d["mats"]["A"], d["mats"]["B"], d["mats"]["Cm"]

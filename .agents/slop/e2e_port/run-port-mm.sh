@@ -39,7 +39,7 @@ PY="$ROOT/.venv/bin/python"
 PORTEXEC="$ROOT/.agents/slop/portexec"
 PLANT="$ROOT/.agents/slop/e2e_port/plant.py"
 W=${1:-${TMPDIR}/e2e-port-mm}
-ORACLE="$ROOT/runs/e2e/e2e-mm-oracle.json"
+ORACLE="$ROOT/checks/e2e-mm-oracle.json"
 NC="$W/copy"
 rc=0
 ok=1
@@ -147,10 +147,10 @@ say "== COVERAGE  how much of the port is EXECUTION and how much is TEXT, with t
 mkcopy() {
   ok=1
   rm -rf "$NC"
-  mkdir -p "$NC/.agents/slop" "$NC/runs/e2e" || return 1
+  mkdir -p "$NC/.agents/slop" "$NC/checks" || return 1
   cp -R "$ROOT/tinybendygrad" "$NC/tinybendygrad" || return 1
   cp -R "$PORTEXEC" "$NC/.agents/slop/portexec" || return 1
-  cp "$ORACLE" "$NC/runs/e2e/e2e-mm-oracle.json" || return 1
+  cp "$ORACLE" "$NC/checks/e2e-mm-oracle.json" || return 1
   ln -s "$ROOT/bin" "$NC/bin"; ln -s "$ROOT/references" "$NC/references"
   ln -s "$ROOT/tinygrad" "$NC/tinygrad"; ln -s "$ROOT/.venv" "$NC/.venv"
   "$PY" "$PLANT" "$NC/.agents/slop/portexec/run-kernel.sh" \
@@ -249,7 +249,7 @@ say "-- C3  THE EXPECTATION -- ONE BIT of word 37 of the 64 answer words, in the
 say "        oracle record. One bit must turn it red AND name index 37 and no other: a"
 say "        PREFIX is not a comparison, and 63 agreeing words are not 64."
 ok=1
-mkcopy && "$PY" - "$NC/runs/e2e/e2e-mm-oracle.json" <<'EOF' || ok=0
+mkcopy && "$PY" - "$NC/checks/e2e-mm-oracle.json" <<'EOF' || ok=0
 import json, pathlib, sys
 p = pathlib.Path(sys.argv[1]); d = json.loads(p.read_text())
 assert len(d["answer_u32"]) == 64, len(d["answer_u32"])

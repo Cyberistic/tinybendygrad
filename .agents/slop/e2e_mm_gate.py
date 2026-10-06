@@ -1,5 +1,6 @@
 # .agents/slop/e2e_mm_gate.py -- THE GATE. One command, one verdict, and every
-# expectation taken from runs/e2e/e2e-mm-oracle.json, which is the record of the
+# expectation taken from checks/e2e-mm-oracle.json (moved out of the ignored
+# `runs/`), which is the record of the
 # CPython call that produced it.
 #
 # WHAT IT CHECKS, and why each row is here:
@@ -41,8 +42,11 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-ORACLE = ROOT / "runs/e2e/e2e-mm-oracle.json"
-GPU = ROOT / "runs/e2e/e2e-mm-gpu.json"
+ORACLE = ROOT / "checks/e2e-mm-oracle.json"  # MOVED out of the ignored `runs/`; the
+# record is a TRACKED gate input now, beside `checks/run-port-mm.sh`. See
+# `.agents/slop/runsgate/REPORT.md`.
+GPU = ROOT / "runs/e2e/e2e-mm-gpu.json"  # stage 3's OUTPUT, written this run -- a
+# gate may require what it is about to make; it may not require a RECORD it did not.
 
 
 def rows_of(path):
