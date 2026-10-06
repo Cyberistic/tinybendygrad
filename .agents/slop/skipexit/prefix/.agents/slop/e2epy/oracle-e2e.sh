@@ -30,7 +30,7 @@
 # NOTHING IN THE LIVE PORT TREE IS EDITED. Stage 3 emits into .agents/slop/e2e/,
 # which is this unit's own directory, and stage 2 only reads.
 set -e
-ROOT=$(cd "$(dirname "$0")/../.." && pwd)
+ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}
 cd "$ROOT"
 PY="$ROOT/.venv/bin/python"
 RUN="$ROOT/runs/e2e"
@@ -75,10 +75,6 @@ bend_run() {
 #     Also true, and it is what was missing.
 # Hence three outcomes, not two. `SKIP` IS NOT `PASS`: a stage that could not run
 # has measured nothing, and reporting it as a pass is the same defect one level up.
-# NOTE THE ASYMMETRY, WHICH THE EXIT STATUS BELOW MAKES EXPLICIT: CLAIM INDEPENDENCE
-# is why `FAIL` is 1 and not 2 or 3, and it is a claim only about stages that RAN.
-# A stage that measured NOTHING retracts even that, which is why `SKIP` is its own
-# status, 4, and not 0.  Evidence `.agents/slop/skipexit/FINDINGS.md` §2.
 FAILS=0
 SKIPS=0
 verdict () {  # verdict <stage> <rc>
@@ -283,24 +279,11 @@ fi
 # transcript.  A retirement nobody can check is a comment.
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
-# THE EXIT STATUS. NO LONGER STAGE 4's, AND NOT 0 FOR A RUN THAT MEASURED NOTHING.
+# THE EXIT STATUS. IT IS NO LONGER STAGE 4's, AND THAT IS THE FIX.
 #
-#   0  every stage ran and every stage agreed
-#   1  one or more stages RAN and FAILED
-#   2  eight `bend` attempts produced no rows -- `set -e`, aborted inside stage 2
-#   3  the frozen oracle moved: nothing was compared
-#   4  NOTHING FAILED BUT SOMETHING MEASURED NOTHING
-#
-# WHY 4 AND NOT 0, because the earlier 0 was defended with a reason that is true of FAIL
-# and NOT of SKIP.  It said: a passing stage does not retract the others' claims; a stage
-# that RAN and FAILED is what makes the gate exit 1.  That is claim independence and it is
-# correct -- but it presupposes the passing stage measured SOMETHING.  A skipped stage
-# measured nothing, and a stage that measured nothing retracts every claim resting on it,
-# including the passing stages' claim to be evidence about this tree.  So three states came
-# out of the exit status as TWO NUMBERS, and a caller reading only `$?` was told 0 for a
-# run in which the port was never judged.  A gate that exits 0 having done nothing is worse
-# than no gate, because it is trusted.  `checks/bounded.py` added `5`/`6` for this same
-# reason and records the cost of a status that cannot mean one thing.
+# Every stage that RAN and FAILED now decides. `SKIP` does not -- a stage that could
+# not run measured nothing, and must not be laundered into a pass by the same
+# arithmetic that would hide a real failure.
 echo "--- verdicts: $FAILS failed, $SKIPS skipped ---"
 if [ "$FAILS" -gt 0 ]; then
   echo "FAIL -- $FAILS stage(s) ran and failed. The per-stage verdicts above stand on their own:"
@@ -310,16 +293,8 @@ if [ "$FAILS" -gt 0 ]; then
 fi
 if [ "$SKIPS" -gt 0 ]; then
   echo "PASS WITH $SKIPS SKIP(S) -- nothing failed, but $SKIPS stage(s) measured NOTHING."
-  echo "       PASS-WITH-SKIP IS NOT PASS, AND THE EXIT STATUS SAYS SO: 4, NOT 0. Read the"
-  # THE BACKTICKS ARE ESCAPED, AND THAT IS MEASURED, NOT TYPOGRAPHY. `sh` reads an unescaped
-# backtick pair as COMMAND SUBSTITUTION, so the first cut of this line ran `\$?` -- i.e. `0` -- as a
-# command and put `line 314: 0: command not found` on the gate's STDERR. It showed up as a
-# `stderr: DIFFERS (118 vs 0 bytes)` on `plant-no-node` and nowhere else, because that is the only
-# plant whose PATH is short enough for the subshell to reach. The port prints a literal string and
-# has no such hazard; escaping makes the two sides emit the same bytes.
-echo "       skipped lines above. A caller that only reads \`\$?\` can no longer mistake this"
-  echo "       for a clean pass; that was the defect."
-  exit 4
+  echo "       PASS-WITH-SKIP IS NOT PASS. Read the skipped lines above."
+  exit 0
 fi
 echo "PASS -- every stage ran and every stage agreed."
 exit 0

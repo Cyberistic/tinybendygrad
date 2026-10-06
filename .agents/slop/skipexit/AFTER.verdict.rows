@@ -1,0 +1,5 @@
+PASS WITH 1 SKIP(S) -- nothing failed, but 1 stage(s) measured NOTHING.
+       PASS-WITH-SKIP IS NOT PASS, AND THE EXIT STATUS SAYS SO: 4, NOT 0. Read the
+       skipped lines above. A caller that only reads `$?` can no longer mistake this
+       for a clean pass; that was the defect.
+rc=4

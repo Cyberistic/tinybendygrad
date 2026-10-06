@@ -67,34 +67,9 @@ WHAT IT GATES, IN ORDER, AND THE ORDER IS THE ORDER THE CLAIMS COME IN:
                  gone: it exits 1 on any emitted stage whose denominator counts 0.
 
 THE THREE OUTCOMES, NOT TWO. `PASS` / `FAIL` / `SKIP`, and `SKIP IS NOT PASS`: a stage that could
-not run has measured nothing, and reporting that as a pass is the same defect one level up. **AND
-THE EXIT STATUS NOW SAYS SO, WHICH IS THE WHOLE POINT OF A THREE-OUTCOME VERDICT.**
-
-THE OLD 0 WAS DEFENDED AND THE DEFENCE WAS TRUE OF FAIL AND NOT OF SKIP. It said: *a passing stage
-does not retract the others' claims; a stage that RAN and FAILED is what makes the gate exit 1.*
-That is CLAIM INDEPENDENCE and it is correct -- stage 6 failing must not retract "stage 4's matmul
-is green". But it presupposes the passing stage measured something. A SKIPPED stage measured
-**NOTHING**, and a stage that measured nothing retracts every claim resting on it, INCLUDING the
-passing stages' claim to be evidence about this tree. So the rule that made `FAIL` non-zero does
-not transfer, and the three states came out of the exit status as TWO NUMBERS:
-
-| what happened                                | before | now |
-| -------------------------------------------- | ------ | --- |
-| every stage ran, every stage agreed           | 0      | 0   |
-| a stage RAN and got the wrong answer          | 1      | 1   |
-| a stage measured nothing at all               | **0**  | **4** |
-
-**A GATE THAT EXITS 0 HAVING DONE NOTHING IS WORSE THAN NO GATE, BECAUSE IT IS TRUSTED**, so
-PASS-with-SKIP is now `4` and `4` MEANS EXACTLY THAT AND NOTHING ELSE. Collapsing it into `1`
-was rejected: it would print `FAIL -- N stage(s) ran and failed` for a run in which no stage
-failed, and would lose the difference between *the port is broken* and *this machine cannot
-judge* -- a distinction the three outcomes were built to keep. The precedent is two units old
-and in the tree: `checks/bounded.py` added `5 NOT-STARTED` and `6 NO-VERDICT` for this reason and
-its own header records the cost of a status that cannot mean one thing ("a unit lost 425 rows by
-believing the status instead of the token"). Evidence `.agents/slop/skipexit/FINDINGS.md` §2,
-which also disposes of the third option by measurement: stage 7's refusal is a DELETED FIXTURE
-(`repair-dupes.py:97` cannot find `cstyle-live/port.txt`), which is neither retryable nor mine to
-regenerate -- regenerating it would make the check `X == X`, a check that cannot fail.
+not run has measured nothing, and reporting that as a pass is the same defect one level up. The
+summary says so and then still EXITS 0 for PASS-with-SKIP, because a passing stage does not retract
+the others' claims -- a stage that RAN and FAILED is what makes the gate exit 1.
 
 ONE `bend` PROCESS AT A TIME, ALWAYS, AND THE SHELL HAS NO CONCERN ABOUT IT. Measured 2026-10-05:
 `ulimit` appears ZERO times in `e2e.sh`, and two `bend` processes took this machine's memory to
@@ -106,21 +81,10 @@ kill as exit 3 or a timeout as exit 4, and stage 7 READS 3 AS A VERDICT. A bound
 verdict is a change to the artifact, and the migration rule is fidelity. The gap is reported by
 `.agents/slop/e2epy/report.md` instead.
 
-EXIT STATUS, and the shell's, because the shell body carries this change too -- a port that
-disagreed with its oracle on the very input the defect lives on would not be a port:
-
-  0  every stage ran and every stage agreed
-  1  one or more stages RAN and FAILED
-  2  eight `bend` attempts produced no rows -- `set -e`, aborted inside stage 2, BEFORE any
-     per-stage verdict exists to read
-  3  THE FROZEN ORACLE MOVED (this file's own addition, and the shell's too): there is nothing
-     to be a port of, so nothing was compared
-  4  NOTHING FAILED BUT SOMETHING MEASURED NOTHING. Distinct from 0 so a caller reading only `$?`
-     -- which is all most CI runners read -- can tell a clean pass from a partial one.
-
-Plus the shell's `set -e` passthrough: stage 1's own status if `e2e_mm.py` fails. `4` is free --
-nothing in `e2e.sh`, `run-f64.sh` or `run-port-mm.sh` emits it, and their `3`s are a DIFFERENT
-namespace, read at `e2e.py:380` before the summary is reached.
+EXIT STATUS, exactly the shell's: 0 PASS, 0 PASS-with-SKIP, 1 one or more stages RAN and FAILED,
+and the two statuses the shell reaches by ABORTING under `set -e` -- stage 1's own status if
+`e2e_mm.py` fails, and 2 if eight bend attempts produced no rows. 3 is this file's own addition:
+the frozen oracle moved, so there is nothing to be a port of.
 
 ARGUMENTS: THE SHELL READS NONE, AND NEITHER DOES THIS, EXCEPT `-h`/`--help`. `e2e.sh foo bar baz`
 runs all seven stages and ignores every word, so `checks/e2e.py foo bar baz` does the same rather
@@ -167,19 +131,15 @@ ENV = dict(os.environ)
 # but ONLY IF IT IS STILL THERE: a pin on a file another unit is entitled to delete becomes a gate
 # reporting drift about a deletion instead of about a change. THE ORACLE IS THE SURVIVOR, which is
 # the entire reason the migration rule freezes one.
-# THE PIN MOVED THREE TIMES AND EVERY MOVE IS THE PIN WORKING. Once when stage 8 was
-# retired, once when a TODO comment was added to stage 5 -- the second time it is the proof that
+# THE PIN MOVED TWICE ON 2026-10-05 AND BOTH MOVES ARE THE PIN WORKING. Once when stage 8 was
+# retired, and once when a TODO comment was added to stage 5: the second time it is the proof that
 # this pin is read, because `checks/e2e.py` refused to start a single stage and exited 3 on a change
-# that moved no code at all -- and once on 2026-10-06 when PASS-with-SKIP became exit 4, which moved
-# the shell body too because a port that disagreed with its oracle on the one input the defect lives
-# on would not be a port. **A PIN GUARDS A FILE, AND ANY EDIT TO THAT FILE MUST MOVE THE PIN IN THE
-# SAME COMMIT**, and a pin that has never fired is a pin in a comment, and `checks/differ.py` shipped
-# one (`RECOVERED.md` §6). Current pair below; the pair before the exit-status change was
-# ORACLE_SHA 9ee46f84… / BODY_SHA e75c9e38…, the stage-8-only pair was
+# that moved no code at all. **A PIN THAT HAS NEVER FIRED IS A PIN IN A COMMENT**, and `checks/
+# differ.py` shipped one (`RECOVERED.md` §6). Current pair below; the stage-8-only pair was
 # ORACLE_SHA 245a10db… / BODY_SHA 558554c8…, and the pair before the retirement was
 # e0eb23d5cb7340d5 / f222c02c9481d982.
-ORACLE_SHA = "6a198bbf8fe1fcb1949009661b25a35d44ef765221bc4c2c8e35cfee0fc620be"
-BODY_SHA = "24d7fbf196661779c6820622447454d42f0cd044bf11db12bde0f7d5de58d1bc"
+ORACLE_SHA = "9ee46f84ca41453a4f3422f4636e12ab37e85d6517b0adc09d87c924b628b5d3"
+BODY_SHA = "e75c9e38e22ff7297300735381373ab60617cf9fe7ed1645a35405ff2fa3a217"
 ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}',
                'ROOT=$(cd "$(dirname "$0")/../.." && pwd)')
 
@@ -444,9 +404,6 @@ def main() -> int:
     # and on any disagreement between the stage names in this docstring, the headers this code
     # emits, and the headers in the transcript. A retirement nobody can check is a comment.
     # ---------------------------------------------------------------------------
-    # THE SUMMARY, AND THE THREE RETURNS BELOW ARE THE WHOLE OF THE VERDICT. `return 4` IS THE
-    # FIX, and `4` is quoted in the docstring's exit-status table rather than derived from here, so
-    # a reader who greps for `return 4` finds the claim and the prose that justifies it together.
     say(f"--- verdicts: {FAILS} failed, {SKIPS} skipped ---")
     if FAILS:
         say(f"FAIL -- {FAILS} stage(s) ran and failed. The per-stage verdicts above stand on "
@@ -457,10 +414,8 @@ def main() -> int:
         return 1
     if SKIPS:
         say(f"PASS WITH {SKIPS} SKIP(S) -- nothing failed, but {SKIPS} stage(s) measured NOTHING.")
-        say("       PASS-WITH-SKIP IS NOT PASS, AND THE EXIT STATUS SAYS SO: 4, NOT 0. Read the")
-        say("       skipped lines above. A caller that only reads `$?` can no longer mistake this")
-        say("       for a clean pass; that was the defect.")
-        return 4
+        say("       PASS-WITH-SKIP IS NOT PASS. Read the skipped lines above.")
+        return 0
     say("PASS -- every stage ran and every stage agreed.")
     return 0
 

@@ -279,19 +279,28 @@ plant `stdout: IDENTICAL`, `stderr: IDENTICAL`, exit status equal.
 | `plant-passskip` | stage 7 refuses (rc 3) | 7 stages + 1 SKIP | 1 | identical |
 | `plant-refuse` | stages 5, 6 fail; 7 refuses | all 8 | 1 | identical |
 | `plant-stage8red` | stage 8 exits 1 | all 8 | 1 | identical |
-| `plant-no-node` | **`node` off `PATH`** | stage 3 → SKIP | **0** | identical |
+| `plant-no-node` | **`node` off `PATH`** | stage 3 → SKIP | **4** | identical |
 | `plant-no-zsh` | **`zsh` off `PATH`** | stage 6 FAIL 127, **stage 7 SKIP** | 1 | identical |
 | `plant-thin` | `bend` emits 5 rows | **stage 2 aborts, exit 2** | 2 | identical |
 | `plant-deadbend` | `bend` emits 0 rows, exit 0 | **stage 2 aborts, exit 2** | 2 | identical |
 | `plant-stage1red` | stage 1 exits 3 | **stage 1 aborts, exit 3** | 3 | identical |
 
-**Exit statuses 0, 1, 2 AND 3 are all reached and all agree**, which is the part a single run cannot
-show. **`plant-thin` and `plant-deadbend` are the ones that matter most**: they are the eight-attempt
-retry path, `bend` printing nothing while exiting 0 — the exact failure `bend_run` exists for — and
-both sides abort at **status 2 with the `set -e` shape**, no verdict line, no summary.
+**Exit statuses 0, 1, 2, 3 AND 4 are all reached and all agree**, which is the part a single run
+cannot show. **`plant-thin` and `plant-deadbend` are the ones that matter most**: they are the
+eight-attempt retry path, `bend` printing nothing while exiting 0 — the exact failure `bend_run`
+exists for — and both sides abort at **status 2 with the `set -e` shape**, no verdict line, no
+summary.
 
-`plant-no-node` exits **0** and says `PASS WITH 1 SKIP(S)`. That is the shape worth having compared:
-`SKIP IS NOT PASS`, the summary says so, and the exit status is 0 anyway.
+`plant-no-node` says `PASS WITH 1 SKIP(S)` and now exits **4**. That shape is the one worth having
+compared, and it was found by this very driver: on 2026-10-06 the summary printed
+`SKIP IS NOT PASS` and the exit status was **0** anyway — three states in the exit status as two
+numbers, so a caller reading only `$?` was told the port passed on a run where the f64 lane had
+measured nothing. **A gate that exits 0 having done nothing is worse than no gate, because it is
+trusted.** Both sides now exit 4 (`plant-no-node` is the only plant whose PATH is short enough to
+reach the summary with no failure), the pin moved with the body in the same commit, and the
+repro is `.agents/slop/skipexit/repro.py` — green, plus a FAIL column and a SKIP column, against
+both the current gate and a frozen pre-fix copy, so it discriminates both ways. Measurement and the
+two rejected options: `FINDINGS.md` §2.
 
 ## WHAT I COULD NOT PORT, WITH `file:line` — nothing, and here is the audit
 
