@@ -1,0 +1,27 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+=== clause V's three numbers, OLD (index, ls-files -s) vs NEW (HEAD, ls-tree) ===
+number                                OLD/index     NEW/HEAD
+CENSUS entries                             1577         1377
+CENSUS dirs indexed                         121          107
+CENSUS entries at EMPTY BLOB                265           65
+IGNORED-BUT-INDEXED dirs                      0            0
+
+=== per-dir lines that MOVE (OLD != NEW), sorted by |delta entries| ===
+  .agents/slop                                         entries  260->255   empty    5->0   
+  .agents/slop/arghalf/pin-tree/tinygrad               entries    7->0     empty    7->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/llm           entries    7->0     empty    7->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/mixin         entries    9->0     empty    9->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/renderer      entries    7->0     empty    7->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/runtime       entries   17->0     empty   17->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/runtime/autogen entries   38->0     empty   38->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/runtime/autogen/am entries   19->0     empty   19->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/runtime/support entries   17->0     empty   17->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/uop           entries   10->0     empty   10->0   
+  .agents/slop/arghalf/pin-tree/tinygrad/viz           entries    6->0     empty    6->0   
+  .agents/slop/figurefix/plant                         entries    1->0     empty    1->0   
+  .agents/slop/figurefix/plant/scratch/.agents/slop    entries    1->0     empty    1->0   
+  .agents/slop/figurefix/plant/scratch/checks          entries    3->0     empty    3->0   
+  bin                                                  entries    1->0     empty    1->0   
+  checks                                               entries  143->92    empty   52->1   
+  tinygrad                                             entries    8->7     empty    2->1   
+MOVED DIRS: 17

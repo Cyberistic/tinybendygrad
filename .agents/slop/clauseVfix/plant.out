@@ -1,0 +1,28 @@
+target: .agents/slop/canrun/PLANT.intent-to-add.rows
+
+1) BEFORE plant
+  before       OLD/index entries=33  OLD/index empty=11  NEW/HEAD entries=33  NEW/HEAD empty=11
+
+2) PLANT: 11 bytes on disk, `git add --intent-to-add`
+  git status --porcelain=v2: '1 .A N... 000000 000000 100644 0000000000000000000000000000000000000000 0000000000000000000000000000000000000000 .agents/slop/canrun/PLANT.intent-to-add.rows'
+  on disk: 10 bytes   index blob: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391
+
+3) MEASURE under the planted state
+  planted      OLD/index entries=34  OLD/index empty=12  NEW/HEAD entries=33  NEW/HEAD empty=11
+
+4) ASSERTIONS
+  PASS  OLD counts the placeholder as a tracked entry
+  PASS  OLD counts it at git's EMPTY BLOB
+  PASS  NEW does NOT add an entry (it is not in HEAD)
+  PASS  NEW does NOT count it empty
+
+5) UNSTAGE and remove
+
+6) RESTORE PROOF
+  git ls-files -- .agents/slop/canrun/PLANT.intent-to-add.rows       -> '' (want empty)
+  git diff --cached -- .agents/slop/canrun/PLANT.intent-to-add.rows  -> '' (want empty)
+  git status --porcelain      -> '' (want empty)
+  index empty-blob entries now: 1318
+  PASS  tree restored for .agents/slop/canrun/PLANT.intent-to-add.rows
+
+PLANT: GREEN
