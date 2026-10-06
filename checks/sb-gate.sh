@@ -38,17 +38,21 @@
 #      separated from the row census, so "bend died" and "bend emitted no rows"
 #      are different findings and neither is green.
 #
-# This gate gates NOTHING at present and says so: sb-oracle.py, sb-diff.py and
-# BEFORE-rows.txt are all absent from .agents/slop/schedule-bodies/. Exit 3 with
-# the list is the correct verdict for that state, not a failure to fix here --
-# inventing an oracle to make the gate run would fabricate its own reference.
+# This gate still gates nothing: the BASELINE is recovered and git-tracked, but
+# sb-oracle.py and sb-diff.py are absent, so exit 3 with the list is the correct
+# verdict for that state. Inventing an oracle to make the gate run would fabricate
+# its own reference.
 set -eu
 cd "$(dirname "$0")/.."
 
 D=.agents/slop/schedule-bodies
 PORT=tinybendygrad/schedule/__init__.bend
 BEND=.venv/bin/python\ checks/bounded.py\ --seconds\ 900\ --mb\ 2048\ --\ ./bin/bend
-BASE=$D/BEFORE-rows.txt
+# THE BASELINE IS GIT-TRACKED. It was written under .agents/slop/schedule-bodies/, which
+# is pruned scratch and had no protection; the oracle role directory at the repo root
+# holds the recovered copy, and this reads THAT. A gate's required input belongs in git,
+# beside the gate, not in a swept tree -- putting it in .agents/slop/ is what deleted it.
+BASE=oracles/schedule-bodies/BEFORE-rows.rows
 ORACLE=$D/sb-oracle.py
 DIFFER=$D/sb-diff.py
 
