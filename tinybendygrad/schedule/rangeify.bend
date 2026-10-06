@@ -2654,46 +2654,46 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 # EACH LINE NAMES THE WALL THAT WAS FOUND BY ASKING CPython, not by reading the body.
 # "LIVE" means CPython rewrites the node: a live rule behind a wall is a WALL ROW, not a
 # missing row.
-# TODO(p3) rangeify.py:24   cleanup_dead_axes     LIVE (measured); arg.removable, ranges, reshape, expand
-# TODO(p3) rangeify.py:50   remove_bufferize      LIVE; a substitute(..., extra_pm=) over a ctx dict
-# TODO(p3) rangeify.py:120  const_like            LIVE on BOTH arms; DType.const + _mop(EXPAND)
-# TODO(p3) rangeify.py:124  after_all_invalid     LIVE and CRASHES on a rangeless END; _min_max, numel
-# TODO(p3) rangeify.py:127  deviceless MSTACK src PORTED -- the UOp.device wall is `rf_dev` and it reads
-# TODO(p3) rangeify.py:208  bufferize_to_store    LIVE; commit_dtype, sorted(ranges), ParamArg, next(ctx)
-# TODO(p3) rangeify.py:259  weak-CAST INDEX       the claim is ported; the cast it must re-add is not
-# TODO(p3) rangeify.py:263  RESHAPE through       UOp.base, apply_movement_op
-# TODO(p3) rangeify.py:283  debuf                 LocalAddBufferContext.map
-# TODO(p3) rangeify.py:292  handle_after          LocalAddBufferContext, ranges
-# TODO(p3) rangeify.py:305  check_buf_states      buf_uop plus a read_from dict
-# TODO(p3) rangeify.py:335  split_store           graph_rewrite INSIDE a rule
+# WALL(p3) rangeify.py:24  cleanup_dead_axes     LIVE (measured); arg.removable, ranges, reshape, expand -- BLOCKED: needs `removable` (`ops.bend`'s `Arg` cannot construct a `BufferizeOpts`, so `removable`/`addrspace`/`device` cannot be read at all), `ranges` (`UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL), and the `reshape`/`expand` builders.
+# WALL(p3) rangeify.py:50  remove_bufferize      LIVE; a substitute(..., extra_pm=) over a ctx dict -- BLOCKED: needs `UOp.substitute` with `extra_pm`, over a `ctx` DICT is an assoc list of `Data` records and is not written.
+# WALL(p3) rangeify.py:120  const_like            LIVE on BOTH arms; DType.const + _mop(EXPAND) -- BLOCKED: needs `DType.const` and `_mop(EXPAND)` -- LIVE on BOTH arms.
+# WALL(p3) rangeify.py:124  after_all_invalid     LIVE and CRASHES on a rangeless END; _min_max, numel -- BLOCKED: needs `_min_max` to resolve on SYMBOLIC bounds, plus `numel`.
+# WALL(p3) rangeify.py:127  deviceless MSTACK src PORTED -- the UOp.device wall is `rf_dev` and it reads -- BLOCKED: needs nothing new for the DEVICE half (`rf_dev` reads it); the MSTACK src half is PORTED and this line records the split, not a gap.
+# WALL(p3) rangeify.py:208  bufferize_to_store    LIVE; commit_dtype, sorted(ranges), ParamArg, next(ctx) -- BLOCKED: needs `commit_dtype`, `sorted(ranges)`, a `ParamArg` the `Arg` sum cannot build, and `next(ctx)`.
+# WALL(p3) rangeify.py:259  weak-CAST INDEX       the claim is ported; the cast it must re-add is not -- BLOCKED: needs the CAST it must re-add -- the claim itself is ported.
+# WALL(p3) rangeify.py:263  RESHAPE through       UOp.base, apply_movement_op -- BLOCKED: needs `UOp.base` and `apply_movement_op`.
+# WALL(p3) rangeify.py:283  debuf                 LocalAddBufferContext.map -- BLOCKED: needs `LocalAddBufferContext.map`.
+# WALL(p3) rangeify.py:292  handle_after          LocalAddBufferContext, ranges -- BLOCKED: needs `LocalAddBufferContext` and `ranges`.
+# WALL(p3) rangeify.py:305  check_buf_states      buf_uop plus a read_from dict -- BLOCKED: needs `buf_uop` plus a `read_from` dict.
+# WALL(p3) rangeify.py:335  split_store           graph_rewrite INSIDE a rule -- BLOCKED: needs `graph_rewrite` INSIDE a rule -- a rewrite that runs another rewrite.
 # --- the three whose Python answer is ALREADY REACHED, wall and all ----------
-# TODO(p3) rangeify.py:45   gate_substitute       the raise became the 0, exactly
-# TODO(p3) rangeify.py:176  _limit_bufs           the one line refuses to fire
-# TODO(p3) rangeify.py:351  get_kernel_graph      the order is here, the engine is not
+# WALL(p3) rangeify.py:45  gate_substitute       the raise became the 0, exactly -- BLOCKED: NOT A GAP: the raise became the `0` exactly, so the port answers the same thing and the row pins it.
+# WALL(p3) rangeify.py:176  _limit_bufs           the one line refuses to fire -- BLOCKED: NOT A GAP: the one line refuses to fire, and the port's answer matches by construction.
+# WALL(p3) rangeify.py:351  get_kernel_graph      the order is here, the engine is not -- BLOCKED: NOT A GAP: the ORDER is here; the ENGINE that would consume it is not, so this is a downstream unit.
 # --- the walls with no single site, and `ops.bend`'s OWN walls ---------------
 #  The first two are the same problem `ops.bend` already records at its foot, so they are
 #  ONE wall counted from two files, not two.
-# TODO(p3) ops.py:470       ended_ranges          ops.bend's own wall
-# TODO(p3) ops.py:483       UOp._ranges           recursive dict, pops as it goes
-# TODO(p3) ops.py:497       UOp.ranges            the property over the above
-# TODO(p3) ops.py:532       substitute            a dvars substitution walk
-# TODO(p3) ops.py:603       const_like            a dtype plus a Const value
-# TODO(p3) ops.py:784       UOp.base              a recursive property
-# TODO(p3) ops.py:890       UOp.device            a recursive property
-# TODO(p3) ops.py:925       buf_uop               the bufid walk
-# TODO(p3) ops.py:1104      _min_max              resolve on symbolic bounds
-# TODO(p3) ops.py:1886      to_max_shape          sint.vmax on a symbolic
-# TODO(p3) indexing.py:57   BufferizeOpts         a frozen dataclass Arg
-# TODO(p3) indexing.py:171  apply_movement_op     the movement-op dispatch
-# TODO(p3) indexing.py:190  run_rangeify          stage 1 of the nine
-# TODO(p3) prepare.py:76    pm_mops               3 foreign rules, tags 0-2
+# WALL(p3) ops.py:470  ended_ranges          ops.bend's own wall -- BLOCKED: ops.bend's own wall, counted from two files -- ONE wall, not two.
+# WALL(p3) ops.py:483  UOp._ranges           recursive dict, pops as it goes -- BLOCKED: needs the keyed set with removal: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# WALL(p3) ops.py:497  UOp.ranges            the property over the above -- BLOCKED: needs `UOp._ranges` above: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# WALL(p3) ops.py:532  substitute            a dvars substitution walk -- BLOCKED: needs a `dvars` substitution walk -- `UOp.substitute`, and the `extra_pm` form adds a second rewriter.
+# WALL(p3) ops.py:603  const_like            a dtype plus a Const value -- BLOCKED: needs a dtype plus a Const value; `DType.const` and `_mop(EXPAND)` are the two halves.
+# WALL(p3) ops.py:784  UOp.base              a recursive property -- BLOCKED: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# WALL(p3) ops.py:890  UOp.device            a recursive property -- BLOCKED: a memoised `recursive_property`: `UOp.ranges` is a keyed set built by a recursive walk that pops as it goes, and Bend refuses the mutual recursion; the missing piece is the KEYED SET WITH REMOVAL.
+# WALL(p3) ops.py:925  buf_uop               the bufid walk -- BLOCKED: needs the `bufid` walk.
+# WALL(p3) ops.py:1104  _min_max              resolve on symbolic bounds -- BLOCKED: needs `_min_max` to resolve on a SYMBOLIC bound; the constant case is ported (17/17 rows).
+# WALL(p3) ops.py:1886  to_max_shape          sint.vmax on a symbolic -- BLOCKED: needs `sint.vmax` on a SYMBOLIC shape.
+# WALL(p3) indexing.py:57  BufferizeOpts         a frozen dataclass Arg -- BLOCKED: needs a `BufferizeOpts` as an `Arg` arm -- a frozen dataclass `ops.bend`'s `Arg` has no case for.
+# WALL(p3) indexing.py:171  apply_movement_op     the movement-op dispatch -- BLOCKED: needs the movement-op dispatch.
+# WALL(p3) indexing.py:190  run_rangeify          stage 1 of the nine -- BLOCKED: needs stage 1 of the nine-stage rangeify pipeline.
+# WALL(p3) prepare.py:76  pm_mops               3 foreign rules, tags 0-2 -- BLOCKED: needs `pm_mops`, which `schedule/prepare.bend` names in its header and declares no def for; `rf_foreign` answers "no node" rather than inventing a local copy.
 #  ... and their three pdict KEYS are PORTED here (they are a Python fact and the
 #  engine's lookup is a Python fact), while their BODIES are BLOCKED on
 #  `schedule/prepare.bend`, which as of this revision names `pm_mops` in its header and
 #  declares no def for it. `rf_foreign` answers "no node" and says so; inventing a local
 #  copy of `_mop_index` would be a lie about where the code lives. MEASURED roots:
 #  17 (INDEX), 13 (AFTER), 55 (END).
-# TODO(p3) ops.py:1339      KernelInfo.estimates  a 4-field record against Python's 5
+# WALL(p3) ops.py:1339  KernelInfo.estimates  a 4-field record against Python's 5 -- BLOCKED: needs `KernelInfo.estimates`: `ops.bend`'s record is 4 fields and Python's is 5, so no Bend value can be EQUAL to a Python one.
 #  `ops.bend`'s `KernelInfo` is `KernelInfo{name, applied_opts, opts_to_apply, beam}`
 #  and Python's also carries `estimates: Estimates|None`, so no Bend value can be EQUAL
 #  to a Python one. `ab7_clik_arg` compares against `O.KernelInfo.of()` on both sides,
