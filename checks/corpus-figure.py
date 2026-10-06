@@ -35,6 +35,64 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 
+# THE DEVICE IS A DECLARED PRECONDITION OF THIS FIGURE, AND THIS IS WHERE IT IS ENFORCED.
+#
+# WHY A NEW CONDITION HERE AND NOT A FOURTH VIEW OF AN EXISTING ONE.  The five conditions
+# `checks/differ.py` pins all ask about THE COMPARISON: `graphs` how many graphs exist,
+# `graphs-agree` how many rows agreed, `not-comparable` whether every graph was PUT TO the
+# comparison, `expect-moved` whether the table's assertions held, `graphs-unset` whether
+# anybody wrote a row.  **THIS ONE ASKS ABOUT THE CONDITIONS THE MEASUREMENT WAS TAKEN
+# UNDER, WHICH IS NONE OF THOSE.** All five were measured to be `OK` on `DEV=CPU`, `DEV=NULL`
+# and `DEV=METAL` alike (MEASURED: `not-comparable=0` and the `RUN HEALTH` line printed OK in
+# all three), which is exactly why none of them can stand in for it -- **five conditions that
+# agree across three devices are not five views of the sixth, they are five conditions blind
+# to it.** That is also why `graphs-unanswered` was correctly NOT added: it would have asked
+# `graphs-agree`'s question again.
+#
+# WHY IT IS NOT A SECOND SOURCE OF TRUTH.  The pin is DECLARED once, in `checks/devpin.py`'s
+# `PINNED_DEV`, and READ here -- not re-derived from `runs/graphcmp/D/`, which would make the
+# gate's precondition a fact about the artifact it is gating, which is the failure `differ.py`
+# already paid for once ("a pin no code consults cannot fail" -> the reverse, "a pin derived
+# from its own output cannot fail either").  MEASURED: `runs/graphcmp/D/D0-run-summary.txt`
+# records no device at all (`grep -i 'dev|cpu|metal|device' ... ; echo rc=$?` -> `rc=1`),
+# so there is nothing there to read even in principle.
+#
+# MEASURED 2026-10-06, this instrument, this tree, one command and three answers:
+#   DEV=CPU    CPYTHON-SIDE UNION : 61 of 77   (g_late reaches FDIV)
+#   DEV=NULL   CPYTHON-SIDE UNION : 60 of 77   (a / b stays MUL(a, RECIPROCAL(b)))
+#   DEV=METAL  CPYTHON-SIDE UNION : 60 of 77
+# `g_late` reads `Device.default.renderer.code_for_op.keys()` (graphcmp.py:1441-1448), so the
+# op set is a property of the BACKEND.  **A COVERAGE FIGURE WHOSE DENOMINATOR MOVES WITH THE
+# MACHINE IS A MEASUREMENT OF THE HOST.**
+def pinned_dev() -> str:
+    """`checks/devpin.py`'s `PINNED_DEV` -- the one declaration of the device."""
+    spec = importlib.util.spec_from_file_location("devpin", ROOT / "checks/devpin.py")
+    if spec is None or spec.loader is None:                    # `ty`: both are Optional, and
+        raise SystemExit("checks/devpin.py has no importable spec -- the pin is unreadable")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.PINNED_DEV
+
+
+def device_precondition() -> str:
+    """THE NEW CONDITION. Returns a line to print and the rc it demands.
+
+    The device has to be read BEFORE `load_graphcmp()`, because `load_tinygrad()` is the call
+    that imports tinygrad and `tinygrad.helpers.DEV` is resolved at IMPORT (graphcmp.py:277-280).
+    Reading it after would read a value the import already consumed, which is the
+    read-after-side-effect shape of the same bug.
+    """
+    import os
+    pin, got = pinned_dev(), os.environ.get("DEV")
+    if got == pin:
+        return f"DEVICE PRECONDITION : OK -- DEV={pin}, which is the declared pin"
+    return (f"DEVICE PRECONDITION : **VIOLATED** -- DEV={got!r} and the declared pin is "
+            f"{pin!r}. THIS FIGURE WOULD BE A MEASUREMENT OF THE HOST: `g_late` reads the "
+            f"BACKEND's own op table, so the union moves with the device (MEASURED: 61 of 77 "
+            f"on CPU, 60 on NULL and METAL). Re-run as `DEV={pin} .venv/bin/python "
+            f"checks/corpus-figure.py`, or change the pin in `checks/devpin.py` AND re-take "
+            f"the run -- not this figure alone.")
+
 
 def load_graphcmp():
     """Import the differ by path, then force its DEFERRED tinygrad imports.
@@ -44,6 +102,13 @@ def load_graphcmp():
     enough** — measured: without the call, every graph raises `NameError` and a union over zero
     built graphs prints `0 of 77` beside a denominator that looks perfectly healthy. That is where
     one of the impossible figures in the reports came from.
+
+    NOTE WHAT THIS BYPASSES, because it is the defect this file's pin now names:
+    `graphcmp.py:2839` defaults `--dev CPU` and `:2853` writes it into `os.environ["DEV"]`
+    inside `main()`. This function never calls `main()`, so **that pin does not run here** and
+    `os.environ["DEV"]` is whatever the caller's shell held. `checks/differ.py` IS pinned (it
+    goes through `main()`); this file was not, and `device_precondition()` is what makes the
+    difference checkable instead of incidental.
     """
     spec = importlib.util.spec_from_file_location("gc", ROOT / ".agents/slop/graphcmp.py")
     gc = importlib.util.module_from_spec(spec)
@@ -95,6 +160,13 @@ def main() -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--write", action="store_true", help="also print the CORPUS.md figure block")
     args = ap.parse_args()
+
+    # THE PRECONDITION IS ASKED **FIRST** and its answer is PRINTED WITH THE FIGURE, not
+    # instead of it: a refused figure that printed nothing is indistinguishable from an
+    # instrument that crashed, and this one has already had that ambiguity once.
+    device = device_precondition()
+    print(device)
+    dev_ok = "OK" in device.split("\n", 1)[0]
 
     gc = load_graphcmp()
     from tinygrad.uop.ops import Ops
@@ -149,7 +221,9 @@ def main() -> int:
     # THE EXIT CODE REFUSES ON THE RUN, NOT ONLY ON THE DECLARATION. A green exit over a failed
     # run is how `graphs built 22 / FAILED 0` was printed beside `graphs-agree=0` for a whole
     # session. **AN INSTRUMENT THAT CANNOT SEE A TOTAL FAILURE IN ITS OWN INPUT IS A FIGURE.**
-    return 0 if built == len(gc.GRAPHS) and "FAILED" not in run_health() else 1
+    # `dev_ok` is ANDed in, not substituted: a run health failure is still a run health failure,
+    # and ORing would let a healthy-looking run excuse a floating device (or the reverse).
+    return 0 if dev_ok and built == len(gc.GRAPHS) and "FAILED" not in run_health() else 1
 
 
 if __name__ == "__main__":
