@@ -152,8 +152,8 @@ def discover(root: str) -> list[str]:
 sys.path.insert(0, str(GATES))
 from gatekit import NOTICE  # noqa: E402  (the path has to exist before this line runs)
 
-IF_OPEN = re.compile(r"^\s*#\s*(?:if|ifdef|ifndef)")
-IF_CLOSE = re.compile(r"^\s*#\s*endif")
+IF_OPEN = re.compile(rb"^\s*#\s*(?:if|ifdef|ifndef)")
+IF_CLOSE = re.compile(rb"^\s*#\s*endif")
 FRAG_LOC = re.compile(r"frag\.c:(\d+):")
 FRAG_STRIP = re.compile(r"^.*frag\.c:\d+:\d+:\s*")
 NODE_ERR = re.compile(r"^[A-Za-z]*Error")
