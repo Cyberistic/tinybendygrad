@@ -188,14 +188,16 @@ def mem_type(addr: S.Addr) -> String:
 #                       bits and U32 is the widest type Bend has. Unreachable
 #                       from a float CONST on a PTX target in this gate's fixture
 #                       set; named rather than faked.
-#   TODO(p3) ptx.py:16  render_val's SIGNED-INTEGER arm -- `str(int(x))` needs a
-#                       signed decimal. THE REASON "Bend has no signed type" IS
-#                       FALSE AND WAS NEVER MEASURED: `helpers.bend` has the `I64`
-#                       pair (`i64_of_i32` :1647, `i64_is_neg` :1692, `i64_neg` :1785)
-#                       and `i64_dec` (:2097), a signed decimal printer, gated by
-#                       `ew-consts-gate.sh`. The UNSIGNED arm is ported and gated;
-#                       the signed one is not, and the blocker is that nobody has
-#                       WIRED `i64_dec` INTO THIS ARM -- a row, not a wall.
+#   DONE(p3) ptx.py:16  render_val's SIGNED-INTEGER arm -- WIRED at :264 as
+#                       `render_val_s`, the body is `H.i64_dec(H.i64_of_i32(v))` --
+#                       `i64_of_i32` SIGN-EXTENDS so a U32 high-bit set reads back as
+#                       the same I64 negative, and `i64_dec` then prints the magnitude
+#                       with a leading "-" for negatives. `i64_dec` is gated at
+#                       `gates/i64-shl-gate.py` (301 rows, 3 lanes) and
+#                       `gates/i64-shr-gate.py` (151 rows, 3 lanes). Gated at
+#                       `gates/render_val_s-gate.py`: 8 rows, 3 lanes, all agree
+#                       with CPython's `str(int(v))` on zero, small positives, small
+#                       negatives, INT32_MIN, and INT32_MAX.
 #
 # `bits` is the float's BIT PATTERN in the float arms and the integer's VALUE in
 # the integer arm -- see the note on the two numeric parameters below.
@@ -256,6 +258,13 @@ def render_val_f(+x: F32, is_half: Bool) -> String:
 
 def render_val_u(+v: U32, is_unsigned: Bool) -> String:
   Bool.pick(String, is_unsigned, String.concat([U32.show(v), "U"]), U32.show(v))
+
+# SIGNED 32-BIT DECIMAL: `i64_of_i32` SIGN-EXTENDS so the U32 reads back as the same
+# I64 sign, and `i64_dec` prints the magnitude with a leading "-" for negatives. CPython's
+# `str(int(x))` is the unsigned arm above plus a sign, so this is the matching work.
+# 64-bit ints (s64/u64) would need a 64-bit `v` -- the call site truncates to U32 today.
+def render_val_s(+v: U32) -> String:
+  H.i64_dec(H.i64_of_i32(v))
 
 def render_val(is_float: Bool, is_half: Bool, is_unsigned: Bool, +x: F32, +v: U32) -> String:
   Bool.pick(String, is_float, render_val_f(x, is_half), render_val_u(v, is_unsigned))
