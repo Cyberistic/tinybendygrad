@@ -305,6 +305,84 @@ def tn_sqrt(+t: Tensor) -> Tensor:
 def tn_detach(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsDETACH{}, Nil{})
 
+# `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
+# three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
+# self ^ self.dtype.max if dtypes.is_unsigned(self.dtype) else self ^ -1`. Only the
+# BOOL ARM is ported here, because `self.dtype` is a FOLD property (ops.py:247
+# `dtype_from_uop`, fold.bend:4443 `UOp.dtype`) and reading it from a method body
+# needs a fold context the port does not carry; `mixin/elementwise.bend:530`'s
+# `ew_bitwise_not` answers the same body under the fold context `ew_fx` builds.
+# HERE, the bool arm is `self.logical_not()`, which is `self.cast(dtypes.bool).ne(True)`
+# (elementwise.py:49, :333) -- a CAST and a CMPNE, both already deps (`UOp.cast` at
+# ops.bend:2825, gate rc=0; CMPNE built via `UOp.new`). The def builds the two-node
+# graph and returns its Tensor.
+#
+# THE ARITH ARMS (`self ^ self.dtype.max` when UNSIGNED, `self ^ -1` otherwise) stay
+# WALL, and the wall is ONE THING: `self.dtype` is a FOLD property and the method body
+# has no fold context. The other deps are PORTED:
+#   * `DType.max` is `S.Dt.max` (LAWS/spec.bend:221), which reads a `Dt` directly --
+#     VERIFIED: `grep -rE "^ *def [A-Za-z_.]*(Dt\.max|DType\.max|dt\.max)" tinybendygrad/`
+#     returns ONE row, `Dt.max` at spec.bend:221. NOT WALL.
+#   * `dtypes.is_unsigned` is `S.Dt.is_unsigned` (LAWS/spec.bend:170) -- VERIFIED:
+#     same grep shape, one row at spec.bend:170. NOT WALL.
+#   * `-1` literal is `CInt{H.i64_of_i32(4294967295)}` (two's complement; `H.i64_of_i32`
+#     sign-EXTENDS a U32), the same `tn_neg.arith` (line 373) builds. NOT WALL.
+#   * `^` (`Ops.XOR`) is `O.OpsXOR{}`, and the call shape is `tn_alu(t, O.OpsXOR{}, [c])`,
+#     the same shape `tn_sqrt` (line 298) uses. NOT WALL.
+# So the wall is NOT the deps but THE FOLD: the dispatch needs to read `self.dtype`, and
+# reading it from `tensor.bend`'s method body needs a fold context. `mixin/elementwise.bend`'s
+# `ew_fx` carries one. Both arms close when the fold is threaded in.
+def tn_bitwise_not.cast(+ar: O.Arena, +u: U32) -> O.Found:
+  O.UOp.new(ar, O.OpsCAST{}, [u], O.ADt{S.boolean()}, O.TNone{})
+
+def tn_bitwise_not(+t: Tensor) -> Tensor:
+  +cast = tn_bitwise_not.cast(Tensor.ar(t), Tensor.u(t))
+  +true_ = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
+  tn_alu(tn_alu.put(cast), O.OpsCMPNE{}, [O.Found.i(true_)])
+
+# `logical_not` -- elementwise.py:49. `return self.cast(dtypes.bool).ne(True)`.
+# The graph is CAST(self, bool) -> CMPNE(cast, CONST(True)), and the three deps are
+# PORTED: `O.UOp.cast` (ops.bend:2825, gate rc=0), `OpsCMPNE{}` (the auto-generated
+# constructor used as `OpsSQRT{}` and `OpsDETACH{}` are), and `O.UOp.const`. Same
+# shape as the BOOL ARM of `tn_bitwise_not` above -- the two graphs ARE equal for a
+# bool self, and CPython's `logical_not` always builds them (the `.cast(dtypes.bool)`
+# half is not a fold-around the same graph). One new def, mirroring `tn_bitwise_not`,
+# because `logical_not` and `bitwise_not` are sibling elementwise methods (`:49`, `:145`)
+# and the port holds the two apart.
+def tn_logical_not(+t: Tensor) -> Tensor:
+  +cast = O.UOp.cast(Tensor.ar(t), Tensor.u(t), S.boolean())
+  +true_c = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
+  tn_alu(tn_alu.put(cast), O.OpsCMPNE{}, [O.Found.i(true_c)])
+
+# `neg` -- elementwise.py:74. `return self.logical_not() if self.dtype == dtypes.bool
+# else self * (-1)`. TWO ARMS, and BOTH are ported here. The bool arm IS
+# `tn_logical_not`; the arith arm is `self * (-1)` = `MUL(self, -1)`, and `OpsMUL{}`
+# is the same auto-generated constructor family `tn_sqrt` uses. The `-1` literal is
+# `H.i64_of_i32(4294967295)` -- the two's complement pair, because `i64_of_i32`
+# SIGN-EXTENDS a U32 (`mixin/elementwise.bend:484`'s `ew_neg.go` builds the same).
+# `tn_alu` handles the binary op with `self` at src[0], so the call is
+# `tn_alu(t, O.OpsMUL{}, [c])` for a CONST `c`. The dtype gate is `tn_dtype` -- a
+# fold property (`UOp.dtype`, fold.bend:4443), and the `None{}` arm falls through
+# to the arith branch as the conservative answer (the fold cannot answer, the dtype
+# is NOT bool by elimination, and the value is whatever `self * (-1)` is). The two
+# arms are split into helper defs because a `match` arm body is a single expression.
+def tn_neg.arith(+t: Tensor) -> Tensor:
+  +m1 = O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(4294967295)})
+  tn_alu(t, O.OpsMUL{}, [O.Found.i(m1)])
+
+def tn_neg.go(is_bool: Bool, +t: Tensor) -> Tensor:
+  match is_bool:
+    case True{}: tn_logical_not(t)
+    case False{}: tn_neg.arith(t)
+
+def tn_neg.is_bool.of(m: Maybe<&2, S.Dt>) -> Bool:
+  match m:
+    case Some{dt}: S.Dt.is_bool(dt)
+    case None{}: False{}
+
+def tn_neg(+t: Tensor) -> Tensor:
+  tn_neg.go(tn_neg.is_bool.of(tn_dtype(t)), t)
+
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this
 # file is its own def that builds the node and then calls `tn_new`. The wall is the

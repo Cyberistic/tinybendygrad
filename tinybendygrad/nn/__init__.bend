@@ -239,9 +239,13 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   are not inlined here because every `__call__` in this file is a mixin METHOD and
 #   naming the call IS the port; inlining a callee would be a second port.
 # PARTIALLY PORTED. `Tensor.sqrt` is ported at `tensor.bend:294` as `tn_sqrt` and
-# gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.where`, `Tensor.detach`, and
-# `Tensor.square` remain walled: `where` is `self.alu(Ops.WHERE, x, y)` with a
-# `_broadcasted` up-stream step, `detach` is `self.replace(arg=KernelInfo())` (the
-# replace is now ported, but `KernelInfo` is the next piece), and `square` is
-# `self * self` (the `__mul__` method is a separate wall).
-# TODO(p3) mixin/elementwise.py:426 x.where, :43 x.detach, :575 x.square -- BLOCKED: see above.
+# gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.detach` is ported at
+# `tensor.bend:296` as `tn_detach` and gated at `gates/tn_detach-gate.py` 5/5 rows.
+# The wall text said `detach` was `self.replace(arg=KernelInfo())` -- and that
+# description is the FULL version CPython uses, but the one-liner
+# `return self.alu(Ops.DETACH)` is what `Tensor.detach` does in `elementwise.py:43`,
+# and THAT is what the port covers. `Tensor.where` and `Tensor.square` remain walled:
+# `where` is `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
+# `square` is `self * self` (the `__mul__` method is a separate wall, no arith ops
+# are ported yet).
+# TODO(p3) mixin/elementwise.py:426 x.where, :575 x.square -- BLOCKED: see above.
