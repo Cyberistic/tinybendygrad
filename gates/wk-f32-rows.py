@@ -102,7 +102,10 @@ def main():
         body.append(f'    row("{nm}", {hi}, {lo})' if i == len(ROWS) - 1
                     else f'    {letters[i]} : Unit <- {call}')
     body += ['', 'def main() -> IO(Unit): rows()', '']
-    # W is weak.bend; the driver lives in slop so it reaches two levels down.
+    # W is weak.bend; the driver sits BESIDE this generator in gates/, which is what the
+    # import path above is written for -- `./../tinybendygrad/` from gates/.
+    # (A comment here used to say the driver lives in slop. It has not since the
+    #  generator was moved, and the sentence outlived the fact.)
     body[2] = 'import ./../tinybendygrad/uop/weak.bend as W'
     b.write_text('\n'.join(body))
     # TO STDERR, and that is not cosmetic: the gate redirects this script's STDOUT into

@@ -50,6 +50,15 @@ WARM = "ALL PROOFS CHECK"
 # looks up. `differ.py:242` clears stale temps at the start of a run for the same reason.
 TMP = ".tmp."
 
+# THE FIVE VERDICTS, AS EXITS. `AGENTS.md`: "`SKIP` it could not run, so it measured nothing ·
+# `DEAD` it ran and emitted nothing · `REFUSED` a precondition was absent" and "DEAD HAS NO EXIT
+# ANYWHERE -- THAT IS THE GAP". It was a gap HERE: every failure in this file exited 1, so a lane
+# that emitted nothing and a lane that emitted the WRONG ANSWER were the same number to a caller
+# reading `$?`, and `main()` printed `FAILED` for both. 4 is `e2e.py`'s SKIP and 3 is
+# `checks/sb-gate.sh`'s REFUSED, so a reader who knows those two recognises 5 as DEAD.
+PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
+VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
+
 # `bend` prints `bend <ver> is available: run bend update` on STDERR on EVERY invocation --
 # MEASURED on a fully green `--check-only`, 42 bytes of it -- so "stderr is non-empty" is not
 # "bend said something", and a flake guard cannot ask about stderr without asking about THIS.
@@ -302,19 +311,19 @@ class Gate:
         try:
             self._clear()
             if not self._warm():
-                return 1
+                return REFUSED          # the substrate could not be checked at all
             if not self._oracle():
-                return 1
+                return REFUSED          # CPython did not run, so nothing was compared
             bd, bn, binp = (self.dir / _staged(n) for n in ("bd.out", "bn.out", "gate.bin"))
             if not self._lane([str(BEND), str(self.bend)], "bd.out"):
-                return 1
+                return DEAD             # `bend` ran and emitted no rows to compare
             c = subprocess.run([str(BEND), str(self.bend), "-o", str(binp)],
                                capture_output=True, text=True)
             if c.returncode != 0:
                 self._say(f"the native compile failed: {(c.stderr or '').strip()[:200]}")
-                return 1
+                return REFUSED          # the compiled lane's precondition, not its answer
             if not self._lane([str(binp)], "bn.out"):
-                return 1
+                return DEAD
 
             lanes = {t: self.dir / _staged(f"{t}{LANE_ROWS if t == 'py' else LANE_OUT}")
                      for t in ("py", "bd", "bn")}
@@ -335,7 +344,7 @@ class Gate:
                               f"expected {want}"
                               + (f" ({self.rows} less {len(self.port_only)} port-only)"
                                  if tag == "py" and self.port_only else ""))
-                    return 1
+                    return DEAD if n == 0 else FAIL
 
             # THE RAW ROWS, SNAPSHOTTED, BECAUSE A PIN IS A CLAIM ABOUT THEM. The filtered
             # files below are written to the lanes' OWN paths, so after filtering `lanes[tag]`
@@ -444,7 +453,31 @@ def _lines_text(s):
     return [l for l in s.splitlines() if l.strip() != ""]
 
 
+def gate(g, summary, checks=None):
+    """`run()`, the gate's OWN checks if it has them, then THE EXIT THE RUN MEANT.
+
+    Nine of the gates in this directory used to read `ok = GATE.run() == 0` and exit
+    `0 if ok else 1`, which is how the DEAD/REFUSED distinction this file just gained was
+    invisible in every one of them: a lane that emitted nothing and a lane that emitted the
+    wrong answer were both "not ok". The rule this encodes is that a gate may add checks of its
+    own -- `wk-f32-gate` asserts its two rows are DIFFERENT f32s -- and must not throw the
+    verdict away while doing it. `checks` returns a Bool and a False one is a FAIL, not a crash.
+    """
+    code = g.run()
+    if code == PASS and checks is not None and not checks():
+        code = FAIL
+    print(summary if code == PASS else f"{g.name}: {VERDICT[code]}")
+    return code
+
+
 def main(gate, summary):
-    ok = gate.run() == 0
-    print(summary if ok else f"{gate.name}: FAILED")
-    return 0 if ok else 1
+    """The gate's OWN verdict, by NAME and by EXIT.
+
+    `FAILED` used to be the word for all four non-PASS verdicts, which is how a lane that emitted
+    nothing and a lane that emitted the wrong answer came to read the same in a transcript. The word
+    is now the one the exit means, so a caller that only reads stdout cannot mistake DEAD for FAIL
+    either -- which is the same reason `e2e.py` returns 4 rather than 0 for a SKIP.
+    """
+    code = gate.run()
+    print(summary if code == PASS else f"{gate.name}: {VERDICT[code]}")
+    return code

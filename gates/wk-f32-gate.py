@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, LANE_OUT as GATE_OUT, LANE_ROWS as GATE_ROWS
+from gatekit import FAIL, Gate, PASS, gate as run_gate, LANE_OUT as GATE_OUT, LANE_ROWS as GATE_ROWS
 
 GATE = Gate(
     "wk-f32-gate",
@@ -44,25 +44,31 @@ GATE = Gate(
     ],
 )
 
+def f32_rows_differ() -> bool:
+    """`neg1` and `neg2` must be DIFFERENT f32s on every lane.
+
+    They are the rows the old formula made identical, and the oracle's two answers are different
+    numbers, so a table that let them collapse would pass a reader that had lost the magnitude.
+    Both halves print WHY before returning False -- the "checks" argument exists so a gate can
+    have checks of its own, not so it can have an opaque one.
+    """
+    vals = {}
+    for lane in ("py", "bd", "bn"):
+        rows = dict(l.split("=", 1) for l in
+                    (GATE.dir / f"{lane}{GATE_ROWS if lane == 'py' else GATE_OUT}").read_text().splitlines()
+                    if "=" in l)
+        vals[lane] = (rows["neg1"], rows["neg2"])
+    if vals["py"][0] == vals["py"][1]:
+        print("wk-f32-gate: the ORACLE says neg1 and neg2 are the same f32 -- the table is wrong, "
+              "and the check below cannot mean anything", file=sys.stderr)
+        return False
+    for lane in ("py", "bd", "bn"):
+        if vals[lane][0] == vals[lane][1]:
+            print(f"wk-f32-gate: {lane} gives neg1 and neg2 the SAME f32 -- the magnitude was lost",
+                  file=sys.stderr)
+            return False
+    return True
+
+
 if __name__ == "__main__":
-    ok = GATE.run() == 0
-    if ok:
-        # neg1 and neg2 must be DIFFERENT f32s. They are the rows the old formula made
-        # identical, and the oracle's two answers are different numbers, so a table that let
-        # them collapse would pass a reader that had lost the magnitude.
-        vals = {}
-        for lane in ("py", "bd", "bn"):
-            rows = dict(l.split("=", 1) for l in
-                        (GATE.dir / f"{lane}{GATE_ROWS if lane == 'py' else GATE_OUT}").read_text().splitlines() if "=" in l)
-            vals[lane] = (rows["neg1"], rows["neg2"])
-        if vals["py"][0] == vals["py"][1]:
-            print("wk-f32-gate: the ORACLE says neg1 and neg2 are the same f32 -- the table "
-                  "is wrong, and the check below cannot mean anything", file=sys.stderr)
-            ok = False
-        for lane in ("py", "bd", "bn"):
-            if vals[lane][0] == vals[lane][1]:
-                print(f"wk-f32-gate: {lane} gives neg1 and neg2 the SAME f32 -- the "
-                      f"magnitude was lost", file=sys.stderr)
-                ok = False
-    print("wk-f32-gate: 18 rows, 3 lanes byte-identical" if ok else "wk-f32-gate: FAILED")
-    sys.exit(0 if ok else 1)
+    sys.exit(run_gate(GATE, "wk-f32-gate: 18 rows, 3 lanes byte-identical", f32_rows_differ))
