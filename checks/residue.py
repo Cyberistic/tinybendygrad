@@ -314,42 +314,27 @@ def outside_twins(root: str, tracked: set[str], rows: list[tuple[str, int]]) -> 
 # ---------------------------------------------------------------- the classification
 # `needs=` on an UNKNOWN row is the CHEAPEST TEST THAT WOULD RESOLVE IT. A group with no deciding test
 # is a group that has been labelled, not analysed.
-RESOLVERS = ("authored", "live", "derived", "copy", "cited", "witness")
+RESOLVERS = ("authored", "live", "derived", "copy", "cited")
 
-# THE TWO SOURCES OF `UNKNOWN` THAT ARE CONDITIONS RATHER THAN RESOLVERS. They get names anyway, so
-# that `--disarm` can prove their branches are live: an UNKNOWN that cannot be made to move is an
-# UNKNOWN that is not being computed.
-CONDITIONS = ("excluded", "untracked")
-
-# A ROW THAT IS A TOOL IS A DIFFERENT KIND OF CLAIM FROM A ROW THAT IS AN OUTPUT. An output nobody
-# names is junk; a TOOL nobody names is a question about a person. `checks/sweep.py` cannot tell them
-# apart, which is part of why its DELETE bucket is a number with two populations in it.
-TOOL_EXT = (".py", ".sh", ".mjs", ".c", ".js", ".ts", ".bend")
-
-
-def witness_committed(root: str, rel: str, tracked: set[str]) -> bool:
-    """Is there a COMMITTED report in this row's own directory?
-
-    The cheapest decidable test for a tool row, and it is mechanical: either the directory has a `.md`
-    that is in git, in which case the citation belts have already asked it whether it names the tool,
-    or it does not, in which case **the only thing that could ever explain this row is missing** and
-    the honest verdict is UNKNOWN with the fix attached. `committed_named_text()` reads `git show
-    HEAD:`, so a report that is EDITED BUT NOT COMMITTED contributes its old text -- measured just now:
-    6 of the 174 files `NAMED_BY` tracks are dirty in the worktree, and `.agents/TODO.md` at HEAD does
-    not mention `stage-verdicts.py` while the worktree does. An uncommitted report cites nothing.
-    """
-    d = os.path.dirname(rel)
-    try:
-        names = os.listdir(os.path.join(root, d))
-    except OSError:
-        return False
-    return any(n.endswith(".md") and f"{d}/{n}" in tracked for n in names)
+# THE ONE SOURCE OF `UNKNOWN` THAT IS A CONDITION RATHER THAN A RESOLVER. It gets a name anyway, so
+# that `--disarm` can prove its branch is live: an UNKNOWN that cannot be made to move is an UNKNOWN
+# that is not being computed.
+#
+# `untracked` AND `witness` ARE GONE, AND WITH THEM THE TWO `needs=` THAT NEVER FIRED. `main()` puts
+# only the rows `sweep.verdict_for` calls DELETE through `classify`, and `sweep` answers
+# `UNKNOWN:commit-or-drop` and `UNKNOWN:commit-the-report-that-explains-it` for EXACTLY the rows those
+# two branches named -- same `tracked` set, same `TOOL_EXT`, same witness test. So they were a SECOND
+# AUTHORITY OVER A QUESTION `sweep.py` had already decided: plantable inside `classify` (1 -> 0) and
+# unreachable in the pipeline that calls it, deciding 0 rows while sweep's originals fire 114 and 110.
+# MEASURED 2026-10-06: deleting them changes no residue verdict on the live tree, and sweep still emits
+# both tags. See `.agents/slop/deadclause/REPORT.md`.
+CONDITIONS = ("excluded",)
 
 
 def classify(root: str, rel: str, size: int, *, sweep_named: set[str], first_pass,
              auth: dict[str, set[str]], age: dict[str, float], window: int,
              twins: dict[str, list[str]], cites: dict[str, set[str]],
-             tracked: set[str], disabled: set[str]) -> tuple[str, str, str]:
+             disabled: set[str]) -> tuple[str, str, str]:
     """-> (sweep verdict, residue verdict, why/needs). Pure: takes every measurement as an argument so
     `--plant` can drive it over a synthetic tree with no production file involved."""
     first = first_pass(rel, sweep_named)
@@ -396,12 +381,9 @@ def classify(root: str, rel: str, size: int, *, sweep_named: set[str], first_pas
             return first, "UNKNOWN", (f"named only from inside the residue by {sorted(internal)[0]}; "
                                       "a tool chain or a shadow tree, indistinguishable here; "
                                       "needs=residue-internal-citer")
-    if "untracked" not in disabled and rel not in tracked:
-        return first, "UNKNOWN", "untracked, and nothing renders or names it; needs=commit-or-drop"
-    if "witness" not in disabled and os.path.splitext(name)[1] in TOOL_EXT \
-            and not witness_committed(root, rel, tracked):
-        return first, "UNKNOWN", ("a TOOL whose own directory has no committed report; "
-                                  "needs=commit-the-report-that-explains-it")
+    # `rel not in tracked` AND the TOOL-with-no-report case never arrive here: those are `sweep`'s
+    # `UNKNOWN:commit-or-drop` and `UNKNOWN:commit-the-report-that-explains-it`, and `main()` puts only
+    # `sweep=DELETE` rows through here. A second branch for them decided 0 rows; it is deleted.
     return first, "UNNAMED", "every test ran; nothing renders or names it. A CANDIDATE, not a verdict"
 
 
@@ -474,7 +456,7 @@ def plant(root: str, fixture: str, disabled: set[str]) -> tuple[int, list[str]]:
                 continue
             _first, v, why = classify(tmp, rel, 0, sweep_named=set(), first_pass=first, auth=auth,
                                        age=age, window=3600, twins=twins, cites=cites,
-                                       tracked=tracked, disabled=disabled)
+                                       disabled=disabled)
             if v != expect:
                 bad.append(f"    {rel}: want {expect}, got {v} ({why})")
     return (1 if bad else 0), bad
@@ -530,8 +512,7 @@ def main() -> int:
     out = []
     for rel, sz, _first in residue_rows:
         sw, v, why = classify(ROOT, rel, sz, sweep_named=named, first_pass=first, auth=auth, age=age,
-                              window=args.live_minutes, twins=twins, cites=cites, tracked=tracked,
-                              disabled=set())
+                              window=args.live_minutes, twins=twins, cites=cites, disabled=set())
         out.append((v, sz, rel, sw, why))
     out.sort(key=lambda r: (r[0], -r[1], r[2]))
 

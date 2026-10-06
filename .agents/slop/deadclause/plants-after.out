@@ -1,0 +1,9 @@
+# plant commit-or-drop
+#   post  -> UNNAMED  needs=commit-or-drop present: no PASS
+#   pre   -> UNKNOWN  (FAILS the post assertion, as required)
+#   sweep -> UNKNOWN:commit-or-drop (verdict survives the delete)
+# plant commit-the-report-that-explains-it
+#   post  -> UNNAMED  needs=commit-the-report-that-explains-it present: no PASS
+#   pre   -> UNKNOWN  (FAILS the post assertion, as required)
+#   sweep -> UNKNOWN:commit-the-report-that-explains-it (verdict survives the delete)
+# PLANTS PASS -- each fails on the pre-change file

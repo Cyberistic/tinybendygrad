@@ -53,12 +53,12 @@ keep/namer.py	run .agents/slop/cited/named.py	-	2592000	yes
 # (`a.error` is a different token). The plant fails if a belt ever agrees with the other by sharing an
 # assumption.
 #
-# `a.err` is an OUTPUT with no witness, so it is UNNAMED. `graphcmp.py` is a TOOL with no witness, so it
-# is UNKNOWN -- and it is the SAME directory and the SAME missing report as `a.err`, which is the whole
-# point of the extension test: an output nobody names is junk, a tool nobody names is a question about
-# a person. Only whole-token matching plus that distinction produces these three answers.
+# `a.err` and `graphcmp.py` both fall through to UNNAMED. The extension test that once separated an
+# unnamed TOOL (UNKNOWN) from an unnamed OUTPUT (UNNAMED) is `sweep.py`'s
+# `UNKNOWN:commit-the-report-that-explains-it`, and `residue` classifies only `sweep=DELETE` rows, so
+# its copy of that test decided 0 rows and is deleted.
 .agents/slop/traps/a.err	x	UNNAMED	2592000	yes
-.agents/slop/traps/graphcmp.py	x	UNKNOWN	2592000	yes
+.agents/slop/traps/graphcmp.py	x	UNNAMED	2592000	yes
 .agents/slop/traps/xgraphcmp.py	x	CITED	2592000	yes
 keep/liar.py	a.error and xgraphcmp.py appear in this comment alone	-	2592000	yes
 
@@ -74,11 +74,10 @@ keep/orig.rows	name=shared value=1	-	2592000	yes
 .agents/slop/self/x.rows	name=self	UNKNOWN	2592000	yes
 .agents/slop/residue/000-the-residue.md	.agents/slop/self/x.rows is a row	-	2592000	yes
 
-# UNKNOWN. A TOOL whose own directory has no committed report. The only thing that could ever explain
-# this row is missing, and the fix is attached to the row: commit the report. An OUTPUT in the same
-# position (the `.rows` below) is UNNAMED, because an output nobody names is junk and a tool nobody
-# names is a question about a person -- and the difference is the extension, not a judgement.
-.agents/slop/w/plant.py	print()	UNKNOWN	2592000	yes
+# UNNAMED. A TOOL whose own directory has no committed report, and an OUTPUT beside it, both fall
+# through: `needs=commit-the-report-that-explains-it` is `sweep.py`'s test, and `residue` sees only
+# `sweep=DELETE` rows. The literal oracle here is the fall-through, not the tag.
+.agents/slop/w/plant.py	print()	UNNAMED	2592000	yes
 .agents/slop/w/out.rows	name=w value=1	UNNAMED	2592000	yes
 
 # UNNAMED. Tracked, nothing renders it, nothing names it, not live, not derived, not a copy. A
@@ -86,13 +85,10 @@ keep/orig.rows	name=shared value=1	-	2592000	yes
 # different sentences, and only the first one is true here.
 .agents/slop/u/orphan.rows	name=orphan value=1	UNNAMED	2592000	yes
 
-# UNKNOWN. Untracked and unreferenced. `sweep` calls this DELETE, which is not a verdict but the
-# ABSENCE of one, and it is the only bucket `--apply` destroys. The row carries the test that settles
-# it instead. `u/README.md` is committed ON PURPOSE: without a witness here the `witness` resolver
-# would answer UNKNOWN too and `--disarm untracked` would move nothing, which is how a branch stops
-# being computed without anybody noticing.
-.agents/slop/u/new-thing.py	print()	UNKNOWN	2592000	no
-.agents/slop/u/README.md	the witness for this directory	-	2592000	yes
+# UNNAMED. Untracked and unreferenced. `sweep` answers `UNKNOWN:commit-or-drop` -- "git could not
+# restore it if this pass were wrong" -- and `residue` classifies only `sweep=DELETE` rows, so its copy
+# decided 0 rows and is deleted. The untracked row now falls through to UNNAMED.
+.agents/slop/u/new-thing.py	print()	UNNAMED	2592000	no
 
 # UNKNOWN. Excluded by the house rules. An excluded row is STILL COUNTED, because a group excluded from
 # the walk is a group hidden rather than analysed, and a hidden group is the LIVE_UNITS shape again.
