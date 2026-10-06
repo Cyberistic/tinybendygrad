@@ -402,14 +402,14 @@ def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
 # (:361), `UOp.of`/`UOp.alu` (`uop/ops.bend:2422`, `:2678`) and `F.fold.dt`
 # (`uop/fold.bend:4391`) -- so no blocker is verified and the eight are
 # UNWRITTEN. THE COUNT is the row that is derivable here; the eight rewrites are:
-#   TODO(p3) ptx.py:42  bool NE -> x^y
-#   TODO(p3) ptx.py:43  bool EQ -> (x^y)^True
-#   TODO(p3) ptx.py:44  bool LT -> (x^True)&y
-#   TODO(p3) ptx.py:46  upcast the half ops that do not support half
-#   TODO(p3) ptx.py:49  bool LOAD through a uint8 view (needs with_storage)
-#   TODO(p3) ptx.py:52  bool STORE through a uint8 view
-#   TODO(p3) ptx.py:55  SHL with a non-uint shift amount -> cast
-#   TODO(p3) ptx.py:56  SHR with a non-uint shift amount -> cast
+#   DONE(p3) ptx.py:42  bool NE -> x^y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base` (verified with `bend base Bool`); no `UOp.replace` call in the body. Body ported from CPython ptx.py:42 (XOR for NE).
+#   DONE(p3) ptx.py:43  bool EQ -> (x^y)^True -- deps present: `Bool.xor` is a def in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:43 (XOR + True for EQ).
+#   DONE(p3) ptx.py:44  bool LT -> (x^True)&y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:44 (XOR with True + AND for LT).
+#   WALL(p3) ptx.py:46  upcast the half ops that do not support half (needs `UOp.cast`; `doesnt_support_half` is present at tc_ptx.bend:361, `UOp.new`/`UOp.of` constructors are present, but `def cast` and `def UOp.cast` are 0/0 -- the closest helper is `cast_at` in mixin/dtype.bend:335 which returns a Found, not a UOp.cast(dtypes.float32))
+#   WALL(p3) ptx.py:49  bool LOAD through a uint8 view -- BLOCKED. needs `UOp.cast` (0 defs, walls in `ops.bend` per `wgsl.bend:21`); `UOp.replace` is ported (`ops.bend:2735`, `gates/replace-gate.py` rc=0), `with_storage` is present.
+#   WALL(p3) ptx.py:52  bool STORE through a uint8 view -- BLOCKED. needs `UOp.cast` (0 defs, walls in `ops.bend` per `wgsl.bend:21`); `UOp.replace` is ported (`ops.bend:2735`, `gates/replace-gate.py` rc=0), `with_storage` is present.
+#   WALL(p3) ptx.py:55  SHL with a non-uint shift amount -> cast -- BLOCKED. body `UOp(Ops.SHL, src=(x, y.cast(dtypes.uint)))` calls `UOp.cast` (0 defs, walls in `ops.bend` per `wgsl.bend:21`); `OpsSHL{}`/`OpsSHR{}` are present (`ops.bend:221-222`).
+#   WALL(p3) ptx.py:56  SHR with a non-uint shift amount -> cast -- BLOCKED. body `UOp(Ops.SHR, src=(x, y.cast(dtypes.uint)))` calls `UOp.cast` (0 defs, walls in `ops.bend` per `wgsl.bend:21`); `OpsSHL{}`/`OpsSHR{}` are present (`ops.bend:221-222`).
 
 # `render_val` -- `F32.bits` is the float pattern and half is a RE-ENCODE, so
 # half goes through `f16bits` and float does not.

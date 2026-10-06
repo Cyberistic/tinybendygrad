@@ -2733,6 +2733,50 @@ def UOp.mstack.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Fou
 def UOp.mstack(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
   UOp.mstack.go(srcs, ar, self, UOp.new(ar, OpsMSTACK{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
 
+# replace -- ops.py:253. `b.replace(op=..., src=..., arg=..., tag=...)` is a
+# copy with up to four fields swapped. Each `Maybe` says: `Some{v}` means use
+# v, `None{}` means keep the current. Identity is returned when all four
+# `Some` values match the current (or all four are `None`); otherwise a new
+# node is built via `UOp.new`. This is the SEAM ABOVE `substitute`, which is
+# the matcher-driven form. `ParamArg` is a 13-field Data record, so an
+# `arg=replace(b.arg, ...)` call site is a 13-field literal at every rewrite
+# -- the field-by-field copy is what `pm_replace_buffers` (hcq2.py:103) and
+# the bool LOAD/STORE rules (ptx.py:49/52) reach for.
+def UOp.replace.go(same: Bool, +new_op: Op, +new_src: List<&2, U32>, +new_arg: Arg, +new_tag: Tag, ar: Arena, self: U32) -> Found:
+  match same:
+    case True{}: Found{ar, self}
+    case False{}: UOp.new(ar, new_op, new_src, new_arg, new_tag)
+
+def UOp.replace.same.cur.op(new_op: Op, cur_op: Op, new_src: List<&2, U32>, cur_src: List<&2, U32>, new_arg: Arg, cur_arg: Arg, new_tag: Tag, cur_tag: Tag) -> Bool:
+  eq_op(new_op, cur_op)
+
+def UOp.replace.same.cur.src(new_op: Op, cur_op: Op, new_src: List<&2, U32>, cur_src: List<&2, U32>, new_arg: Arg, cur_arg: Arg, new_tag: Tag, cur_tag: Tag) -> Bool:
+  eq_u32(new_src, cur_src)
+
+def UOp.replace.same.cur.arg(new_op: Op, cur_op: Op, new_src: List<&2, U32>, cur_src: List<&2, U32>, new_arg: Arg, cur_arg: Arg, new_tag: Tag, cur_tag: Tag) -> Bool:
+  eq_arg(new_arg, cur_arg)
+
+def UOp.replace.same.cur.tag(new_op: Op, cur_op: Op, new_src: List<&2, U32>, cur_src: List<&2, U32>, new_arg: Arg, cur_arg: Arg, new_tag: Tag, cur_tag: Tag) -> Bool:
+  eq_tag(new_tag, cur_tag)
+
+def UOp.replace.all_same(same_op: Bool, same_src: Bool, same_arg: Bool, same_tag: Bool) -> Bool:
+  Bool.and(Bool.and(same_op, same_src), Bool.and(same_arg, same_tag))
+
+def UOp.replace(+ar: Arena, +self: U32, +mop: Maybe<&2, Op>, +msrc: Maybe<&2, List<&2, U32>>, +marg: Maybe<&2, Arg>, +mtag: Maybe<&2, Tag>) -> Found:
+  +cur_op = Arena.op(ar, self)
+  +cur_src = Arena.srcs(ar, self)
+  +cur_arg = Arena.arg(ar, self)
+  +cur_tag = Arena.tag(ar, self)
+  +new_op = Maybe.default(&2, Op, mop, cur_op)
+  +new_src = Maybe.default(&2, List<&2, U32>, msrc, cur_src)
+  +new_arg = Maybe.default(&2, Arg, marg, cur_arg)
+  +new_tag = Maybe.default(&2, Tag, mtag, cur_tag)
+  same_op = UOp.replace.same.cur.op(new_op, cur_op, new_src, cur_src, new_arg, cur_arg, new_tag, cur_tag)
+  same_src = UOp.replace.same.cur.src(new_op, cur_op, new_src, cur_src, new_arg, cur_arg, new_tag, cur_tag)
+  same_arg = UOp.replace.same.cur.arg(new_op, cur_op, new_src, cur_src, new_arg, cur_arg, new_tag, cur_tag)
+  same_tag = UOp.replace.same.cur.tag(new_op, cur_op, new_src, cur_src, new_arg, cur_arg, new_tag, cur_tag)
+  UOp.replace.go(UOp.replace.all_same(same_op, same_src, same_arg, same_tag), new_op, new_src, new_arg, new_tag, ar, self)
+
 # `(self,)*count` from `UOp.broadcast` below, written out. It is helpers.py's
 # `list(x) * n`, and it is why `UOp.broadcast` needs no variadic.
 def UOp.replicate.go(+self: U32, n: Nat, acc: List<&2, U32>) -> List<&2, U32>:

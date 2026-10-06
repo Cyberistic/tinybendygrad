@@ -1081,12 +1081,13 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # TODO(p3) ops.py:1272  `UOp.call_with_outputs` -- `uret.call_with_outputs(...)`.
 #   It is the PROGRAM/CallInfo construction and it needs `grad_fxn`, which is a
 #   Python callable; a function value in a record forces `Type`, not `Data`.
-# TODO(p3) ops.py:245   `UOp.replace` -- `b.replace(op=ALLOC, arg=replace(b.arg,
-#   slot=i, buffer=None, bind_on_realize=False))`. `ParamArg` is a `Data` record
-#   of thirteen fields, so the `replace` is a thirteen-field literal: it is
-#   WRITABLE and it is not written here because `substitute` is the seam ABOVE it
-#   and a builder with no caller is a lie. `fn_renum` is the NUMBERING, which is
-#   the part with a behaviour.
+# TODO(p3) ops.py:245   `UOp.replace` -- PORTED, `ops.bend:2735` `def UOp.replace` and
+#   the four `.go` helpers. The thirteen-field `ParamArg` is no longer a lie:
+#   `replace(arg=ParamArg{...})` is a single-arg call to a def that takes the new
+#   arg as `Maybe<&2, Arg>`, and the identity case (no kwargs) is the row that
+#   `gates/replace-gate.py`'s `identity_returns_self` pins (8 rows, 3 lanes, gate
+#   rc=0, 2026-10-06). The seam ABOVE is `substitute` (still a TODO), and
+#   `fn_renum` is the NUMBERING, which is the part with a behaviour.
 # TODO(p3) function.py:53  `get_state_dict((args, kwargs))` -- `nn/state.bend` has
 #   `get_state_dict(Obj)` and not the `(args, kwargs)` TUPLE wrapper, which is a
 #   two-field `Data` record plus a `type(t) is Tensor` / `is UOp` filter.
