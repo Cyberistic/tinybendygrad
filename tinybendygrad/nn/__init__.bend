@@ -249,6 +249,10 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # rows; `Tensor.logical_not` is ported at `tensor.bend:352` as `tn_logical_not`,
 # gated at `gates/tn_logical_not-gate.py` 4/4 rows. The arith arms of `bitwise_not`
 # stay walled on the dtype fold + arith ops, named at `tensor.bend:308`.
+# `Tensor.contiguous_backward`, `Tensor.trunc`, `Tensor.reciprocal`, and
+# `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
+# :474, :460, :457), at `tensor.bend:302, 307, 311, 315`, gated at
+# `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
 # `Tensor.where` and `Tensor.square` remain walled: `where` is
 # `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
 # `square` is `self * self` (the `__mul__` method is a separate wall, no arith ops

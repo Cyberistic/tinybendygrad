@@ -314,6 +314,24 @@ def tn_detach(+t: Tensor) -> Tensor:
 def tn_contiguous_backward(+t: Tensor) -> Tensor:
   tn_alu(t, O.OpsCONTIGUOUS_BACKWARD{}, Nil{})
 
+# `trunc` -- elementwise.py:474. `return self.alu(Ops.TRUNC)`. Same shape as
+# `tn_contiguous_backward`: a single `tn_alu` call, with `OpsTRUNC{}` as the op and
+# an empty src list.
+def tn_trunc(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsTRUNC{}, Nil{})
+
+# `reciprocal` -- elementwise.py:460. `return self.alu(Ops.RECIPROCAL)`. Same shape
+# as `tn_trunc` and `tn_contiguous_backward`.
+def tn_reciprocal(+t: Tensor) -> Tensor:
+  tn_alu(t, O.OpsRECIPROCAL{}, Nil{})
+
+# `threefry` -- elementwise.py:457. `return self.alu(Ops.THREEFRY, seed)`. The seed
+# is a Tensor (not a constant), so the body is `tn_alu(t, O.OpsTHREEFRY{}, [seed_uop])`
+# -- the SAME `tn_alu` builder, with `seed`'s uop appended to the src list. CPython's
+# `seed` is `Self` (a Tensor); the port reads `Tensor.u(seed)` to extract the uop.
+def tn_threefry(+t: Tensor, +seed: Tensor) -> Tensor:
+  tn_alu(t, O.OpsTHREEFRY{}, [Tensor.u(seed)])
+
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
 # self ^ self.dtype.max if dtypes.is_unsigned(self.dtype) else self ^ -1`. Only the
