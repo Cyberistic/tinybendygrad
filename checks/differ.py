@@ -10,13 +10,15 @@ Two gates, and WHAT EACH ONE CLAIMS, because a gate whose scope is a comment is 
 nobody can check:
 
   run     the per-graph VERDICT line and its DENOMINATOR line for every graph in the
-          CORPUS (`graphcmp.GRAPHS`), each against the verdict `WANT` expects of it, plus a
-          separate count of how many had NO expectation at all; then the canonical py-vs-bend
-          byte identity of each graph, 5 same-side controls, 1 cross-graph comparison, 7
-          plants that must DISAGREE and name something, the ordered/`--equiv` split on the
-          same reordered pair, 4 conflations, the DEBUG-level comparison, 5 two-run
-          stability pairs, the 0-row guard fired on purpose, the both-sides coverage census,
-          the CPython `DEBUG>=1` reachability question, and the raw CPython ops probe.
+          CORPUS (`graphcmp.GRAPHS`), each against the verdict `WANT` expects of it, plus
+          separate counts of how many had NO expectation at all and of how many rows were
+          WRONG; then the canonical py-vs-bend byte identity of each graph, 5 same-side
+          controls, 1 cross-graph comparison, 7 plants that must DISAGREE and name something,
+          the ordered/`--equiv` split on the same reordered pair, 4 conflations, the DEBUG-level
+          comparison, 5 two-run stability pairs, the 0-row guard fired on purpose, the both-sides
+          coverage census, the CPython `DEBUG>=1` reachability question, and the raw CPython ops
+          probe. It REFUSES (exit 1) while any corpus graph has no expectation, or while any row
+          disagrees with what the port emitted.
 
   repro   that ONE run is reproducible: two clean runs, sha256 over the non-blank lines of
           every artifact, byte-compared. It first WAITS for the substrate (`--check-only`'s
@@ -91,7 +93,8 @@ def corpus() -> tuple[str, ...]:
     loop iterated `WANT`, so a graph absent from `WANT` was never run and never counted, and
     `graphs=` counted what `WANT` wrote. MEASURED: 25 declared, 16 in the table, 9 in neither,
     and `git log -S'"flip": "AGREE"' -- checks/differ.py` returns nothing -- those 9 were never
-    in ANY run, not dropped from one.
+    in ANY run, not dropped from one. Of those nine, **four now carry a row and five do not**:
+    see the four `DISAGREE`s and the five-name block under `WANT`.
 
     IMPORTED, not copied, for the reason `checks/no-txt.py` gives: a second list of graph
     names is a contract with no generator, which is the failure this whole change exists to
@@ -132,7 +135,53 @@ WANT = {
     # `src[0].dtype`). Both are MEASURED causes, not tolerances.
     "loop": "DISAGREE",
     "gate": "AGREE",
+    # THE FOUR OF THE NINE THAT DISAGREE. Each row is a disagreement rather than a re-statement
+    # of the last artifact, and each disagreement is a DIFFERENT KIND from `lin`/`loop`, which are
+    # one located field on 45 and 24 matched cores. These four read `field-mismatches=0`: no two
+    # nodes pair, so nothing is compared and nothing differs. The disagreement is the NODE SET.
+    #
+    # `flip` DISAGREES ON `arg`, and the fixture PREDICTS IT: `g_flip`'s own docstring reads
+    # "**EXPECTED TO DISAGREE, ON `arg`**" with the CPython call behind it (`a.flip(0).uop.arg` ->
+    # `(True, False)`; `ops.py:428` refuses an int tuple) and the port side at `ops.bend:1066`,
+    # which types one `ATuple{ys: List<&2, U32>}` for PERMUTE and FLIP together so a bool has no
+    # spelling. MEASURED: `arg py=n(b1,b0) bend=n(i1,i0)`, and the port adds one `GROUP` node.
+    # **This is the only row in the table whose expectation predates the measurement**, and it is
+    # why a DISAGREE is the strong kind: it is the one that was already claimed.
+    "flip": "DISAGREE",
+    # `allred`, `cdiv` and `late` DISAGREE FOR ONE REASON, AND IT IS NOT A WRONG VALUE: **the bend
+    # side emits `matmul`'s GRAPH.** MEASURED, three independent ways, in
+    # `.agents/slop/unsetexp/` (3 trials each, all STABLE, warm substrate):
+    #   - `emit --side bend` for `allred`, `cdiv`, `late` AND `matmul` is the same 18 lines and the
+    #     same sha256 (`9f39a6e3ee7a0e30...`) -- four names, one emission;
+    #   - the bend-only block of `cdiv` and `late` is BYTE-IDENTICAL to each other (12 nodes: a
+    #     15-element f32 ALLOC, two PERMUTEs, a MUL and a `REDUCE rd(OADD,i1)`), and `allred`'s is
+    #     that block plus one `RESHAPE (l0:3,l0:5)`;
+    #   - `allred`'s census loses `ALLREDUCE 1/0 COPY 1/0 RANGE 1/0` and `cdiv`'s loses
+    #     `CDIV 1/0 CMOD 1/0`, i.e. the port never emits the op the graph is FOR.
+    # `matmul` itself AGREES with CPython byte for byte, so the matmul rendering is RIGHT and
+    # these three names are rendered as the wrong FIXTURE. Root-causing that is
+    # `.agents/slop/disagree/`'s unit and not this file's: these rows exist to make the wrong
+    # fixture LOUD and to move the moment it is fixed.
+    "allred": "DISAGREE", "cdiv": "DISAGREE", "late": "DISAGREE",
 }
+# THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
+# **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
+#   - 3 of 3 trials, warm substrate, all five STABLE (`.agents/slop/unsetexp/trials.tsv`);
+#   - canonical bytes IDENTICAL on all five (`emit py` == `emit bend`), so the two channels pick
+#     the same 19 and the same 6 over all 25 -- MEASURED, not proved;
+#   - `RESIDUALS IN THIS RUN: none` on all five, so no column was compared by count or presence
+#     instead of in full. That third clause is what makes the pair non-trivial: `binblob` and
+#     `buffer` are byte-identical AND AGREE *with* a residual, so byte identity alone does not
+#     certify "compared in full".
+# Writing five `AGREE` rows anyway would be the answer `DECISION.md` §2 rejects. MEASURED: **14
+# of the 16 rows this file carried were bare `AGREE` with ONE observation and no independent
+# corroboration that they were anything but `AGREE`** -- `runs/` is gitignored (`.gitignore:144`),
+# so no verdict has ever been recorded durably, all 14 entered in the single commit `6d5509216`,
+# and only `g_flip` had ever predicted its own verdict. Five more would make it 19 of 20. So the
+# gap stays OPEN and the run keeps refusing, which is answer 3: **an uncomparison blocks a figure,
+# and these five are compared and unanswered.** Whoever wants the table closed has everything the
+# row needs in this comment, and this file has made the row's content checkable in the meantime --
+# `expect-moved`, which is 0 over all 20 rows and 3 trials.
 # THE PLANTS. Every one must DISAGREE and NAME something; a plant that agrees is a plant that
 # is not load-bearing. `sym1` needs the `sym` graph and the others need the matmul, so they
 # are not one loop. NOT the attributable measurement for the symbolic dim: a plant edits the
@@ -165,7 +214,18 @@ PINS = {
     # are not comparable to a warm one. Only the first three are functions of the CORPUS;
     # every other pin here is a function of the PORT and moves when the port's next fix
     # lands. `.agents/slop/want/DECISION.md` records which is which.
-    "graphs": "25", "graphs-unset": "9", "graphs-answered": "16",
+    "graphs": "25", "graphs-unset": "5", "graphs-answered": "20",
+    # `expect-moved` is the ONLY pin that asks whether the table's ASSERTIONS HELD, and it is
+    # not a function of the corpus: it is a function of the PORT against the TABLE. **It is 0 and
+    # it is a ZERO-TOLERANCE INVARIANT, which is why it does not need re-pinning when the corpus
+    # grows** -- a graph that grows into `WANT` and agrees contributes nothing, and a graph that
+    # grows into `WANT` and disagrees is exactly what this counts. Nothing pinned it and nothing
+    # exited on it: `cmd_run` returned 0 whenever `unset` was empty, so a run in which a row was
+    # simply WRONG was healthy and green, and the only thing that would have noticed is
+    # `graphs-agree` -- which nets out, and so misses the case where one row moves to AGREE while
+    # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
+    # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
+    "expect-moved": "0",
     "graphs-agree": "19", "byte-identical": "19", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
@@ -338,8 +398,10 @@ def cmd_run(_a):
     # A GRAPH WITH NO EXPECTATION IS RUN ANYWAY. It is not skipped (a skip is a silent
     # hole), and it is not compared against a default (a default is a gate that cannot
     # fail). It is run, its real verdict is recorded, and it is marked UNSET -- and UNSET
-    # makes the whole run INCOMPLETE, because a run that silently accepts nine graphs nobody
+    # makes the whole run INCOMPLETE, because a run that silently accepts graphs nobody
     # has an opinion about is a run whose denominator is a subset of its own numerator.
+    # **MEASURED 2026-10-06: 9 became 5** -- four of the nine disagreed with a located cause and
+    # took a row, and the five that agree have none yet, deliberately. See the block under `WANT`.
     graphs = corpus()
     unset = [g for g in graphs if g not in WANT]
     for g in graphs:
@@ -348,10 +410,25 @@ def cmd_run(_a):
              if g in WANT and verdict(f"D1-graph-{g}.txt") != WANT[g]]
     na = sum(WANT[g] == "AGREE" for g in graphs if g in WANT)
     bad = [g for g in graphs if WANT.get(g) == "DISAGREE"]
+
+    def untriaged(g):
+        """THE ONE CLAUSE PER UNSET GRAPH, AND THE TWO ARE NOT THE SAME SENTENCE.
+
+        A recorded DISAGREE with nobody to say whether it is right is the strongest possible
+        signal that the table is BEHIND THE PORT -- it can fail, so it is worth writing down. An
+        AGREE with nobody to say whether it is right is a bookkeeping gap: it cannot fail, so
+        there is nothing to check. MEASURED 2026-10-06, the nine read five AGREE and four
+        DISAGREE, and the artifact printed all nine with one identical sentence, so a reader could
+        not tell which five were a one-line row away from closed and which four needed a
+        diagnosis. This is that difference, computed from the artifacts rather than asserted.
+        """
+        return ("a recorded DISAGREE and nobody has said whether it is right -- a claim that can "
+                "fail, and the table is behind the port" if verdict(f"D1-graph-{g}.txt") == "DISAGREE"
+                else "an AGREE and nobody has said so -- a bookkeeping gap, not a known fault")
+
     write("D1-verdicts.txt", "\n".join(moved + [
-        f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, "
-        f"NOT COMPARED. The corpus declares this graph and `WANT` has no expectation for it, "
-        f"so the run cannot say whether that verdict is right." for g in unset
+        f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPECTED=UNSET -- RUN AND RECORDED, NOT "
+        f"COMPARED: {untriaged(g)}." for g in unset
     ] + [
         "AT LEAST ONE GRAPH'S VERDICT MOVED" if moved else
         (f"all {len(graphs) - len(unset)} graphs with an expectation: verdict as expected "
@@ -457,9 +534,25 @@ def cmd_run(_a):
         # counts only the answered cases is a denominator that cannot shrink and so cannot be
         # wrong. `graphs-unset` is the separate count the brief asks for, and it is what makes
         # the run INCOMPLETE rather than passing (see `census` and `unhealthy`).
+        #
+        # **`graphs`, `graphs-answered` and `graphs-unset` ARE NOT THREE QUESTIONS AND A READER
+        # MAY COUNT THEM AS FOUR.** MEASURED: they are `n`, `n - u`, `u` -- three views of two
+        # numbers, so one of them is a restatement and a pin on all three can only ever catch
+        # what a pin on any two already catches. All three are kept because each names a
+        # DIFFERENT thing to a reader (`the corpus`, `the coverage`, `the gap`) and because a
+        # health gate that answers one number in three spellings is easier to notice rot in.
+        # `expect-moved`, two lines below, is the first line here that is NOT a view of `n` and
+        # `u`.
         f"graphs={len(graphs)}",
         f"graphs-answered={len(graphs) - len(unset)}",
         f"graphs-unset={len(unset)}",
+        # **THE COUNT OF ROWS THAT ARE WRONG**, which nothing counted until now. Distinct from
+        # every line above it: `graphs`/`graphs-answered`/`graphs-unset` are about how many ROWS
+        # the table has, `graphs-agree`/`graphs-disagree` are about how many ARTIFACTS carry a
+        # verdict (unset graphs included, so an unset graph that agrees counts in both), and this
+        # one is about whether the rows that exist were RIGHT. All four can be self-consistent
+        # and wrong at once, which is the state this file ran in until now.
+        f"expect-moved={len(moved)}",
         f"graphs-agree={files_with('D1-graph-*.txt', 'VERDICT: AGREE')}",
         f"graphs-disagree={files_with('D1-graph-*.txt', 'VERDICT: DISAGREE')}",
         f"byte-identical={lines_with('D2-bytediff.txt', 'BYTE-IDENTICAL')}",
@@ -483,16 +576,29 @@ def cmd_run(_a):
     # This is the choice between the three answers, and it is the run's EXIT STATUS that
     # carries it -- not a line in the summary, because a line in the summary is something a
     # reader has to know to look for. Every artifact is still written: the measurement is
-    # real, the nine graphs really ran, and their real verdicts are in `D1-verdicts.txt`
+    # real, the graphs really ran, and their real verdicts are in `D1-verdicts.txt`
     # marked UNSET. What is refused is the CLAIM that the run answered the corpus.
-    if unset:
-        print(f"RUN INCOMPLETE: {len(unset)} of {len(graphs)} graphs have NO expectation in "
-              f"WANT: {', '.join(unset)}. Each was run and recorded (D1-verdicts.txt, marked "
-              f"UNSET) and each is in `graphs=`; add an expectation for each to complete the "
-              f"run. A corpus growth that must be answered for is a corpus that cannot "
-              f"silently grow.", file=sys.stderr)
-        return 1
-    return 0
+    #
+    # **AND A ROW THAT IS WRONG IS A SECOND, SEPARATE REFUSAL, WHICH THIS USED NOT TO RAISE.**
+    # MEASURED: the exit was `if unset` and nothing else, so with every graph answered a run
+    # in which a row was simply WRONG returned 0 and read HEALTHY -- and the one pin that could
+    # have noticed, `graphs-agree`, NETS OUT over the corpus and so misses the case where one
+    # row moves to AGREE while another moves to DISAGREE. That is the failure this whole file is
+    # about (a claim with no denominator, or a count that cannot distinguish right from wrong),
+    # and it was in the gate itself. The two refusals are reported separately because they are
+    # different questions: `graphs-unset` says nobody wrote a row, `expect-moved` says a row is
+    # wrong, and only the second is a claim the port made.
+    for line in (f"RUN INCOMPLETE: {len(unset)} of {len(graphs)} graphs have NO expectation in "
+                 f"WANT: {', '.join(unset)}. Each was run and recorded (D1-verdicts.txt, marked "
+                 f"UNSET) and each is in `graphs=`; add an expectation for each to complete the "
+                 f"run. A corpus growth that must be answered for is a corpus that cannot "
+                 f"silently grow." if unset else None,
+                 "RUN WRONG: expect-moved=N -- these rows' EXPECTED verdicts did not match what "
+                 "the port emitted, and a run whose table is wrong is not a measurement of the "
+                 "table:\n  " + "\n  ".join(moved) if moved else None):
+        if line:
+            print(line, file=sys.stderr)
+    return 1 if unset or moved else 0
 
 
 def verdict(out):
