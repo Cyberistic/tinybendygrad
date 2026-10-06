@@ -24,7 +24,7 @@ oracle moved. **3 AND 4 ARE NOT VERDICTS AND THIS GATE NEVER RETURNS THEM**; see
 
 IT IS THE PORT OF `oracles/gateport/oracles/mixin-op-gate.sh`, and the rule the port had to satisfy was that
 THE PYTHON REPRODUCES THE SHELL'S VERDICT ON EVERY INPUT OR IT DOES NOT MOVE. The shell body is
-frozen verbatim at `.agents/slop/mixinop/oracle-op-gate.sh` and still runnable, because that rule
+frozen verbatim at `gates/oracles/mixin-op-oracle.sh` and still runnable, because that rule
 is only checkable while the shell exists; its sha256 is in ORACLE_PIN and is CHECKED IN CODE on
 every run, because a pin in a comment is a pin that cannot fail.
 
@@ -66,7 +66,7 @@ from gatekit import Gate, oracle_drift
 # `checks/e2epy` and `lintable-gate.sh` both record that a $TMPDIR copy one level shallower
 # cannot resolve a relative import, and this copy is at the same level.
 ORACLE_PIN = {
-    ".agents/slop/mixinop/oracle-op-gate.sh":
+    "gates/oracles/mixin-op-oracle.sh":
             # RE-FROZEN 2026-10-06. THE PIN NAMED `178cf5f74e92`, WHICH WAS CORRECT AT
     # `2f4ffc7a0` AND STOPPED BEING CORRECT WHEN **MY OWN** REPOINTING REWRITE CHANGED THE
     # SHELL'S BYTES IN `558b4c3a5`/`cf2d14fa4` WITHOUT RE-FREEZING. **BOTH EXTANT COPIES ARE

@@ -43,7 +43,7 @@ shells disagreed -- and a port that picked one of them silently would have been 
 
 IT IS THE PORT OF `.agents/slop/beautiful-mnist-gate.sh`, under the rule that THE PYTHON
 REPRODUCES THE SHELL'S VERDICT ON EVERY INPUT OR IT DOES NOT MOVE. The shell body is frozen
-verbatim at `.agents/slop/bmn/oracle-mnist-gate.sh` and is still runnable; its sha256 is in
+verbatim at `gates/oracles/beautiful-mnist-oracle.sh` and is still runnable; its sha256 is in
 ORACLE_PIN and is CHECKED IN CODE on every run, because a pin in a comment is a pin that cannot
 fail. MEASURED over 8 input sets, shell and Python: verdict and exit status agree on all 8.
 
@@ -64,7 +64,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, oracle_drift
 
 ORACLE_PIN = {
-    ".agents/slop/bmn/oracle-mnist-gate.sh":
+    "gates/oracles/beautiful-mnist-oracle.sh":
         "d4243578cca6053fb2b9af56631475439db3dd4c81886880be39808425d06ada",
 }
 

@@ -5024,6 +5024,14 @@ def g_chain() -> Found:
   +a0 = UOp.alu(Found.ar(r0), OpsADD{}, [Found.i(r0), Found.i(c0)])
   UOp.range_end(Found.ar(a0), Found.i(a0), [0], AXIS_GLOBAL{})
 
+# THE CONST-IDENTITY GATE. The five `t_*` below are the ones
+# `gates/ops-core-gate.py` puts a CPython-confirmed denominator under, so they are no longer
+# written-and-believed: each row is diffed against tinygrad's own answer on three lanes (CPython,
+# bend interpreted, bend compiled). The oracle builds the same graphs out of real tinygrad UOps
+# and the two lanes share no code, so a row agrees only if two implementations of the property
+# say so. `zeros_differ` and `nan_interns` are the pair that pins the comparison: IEEE equality
+# disagrees with the packed-arg key in BOTH directions, so a port that keyed on `F32.is_eq`
+# instead of `F32.bits` would get exactly one of those two rows backwards.
 def t_hashcons() -> Bool:
   # the same key again, on the arena that already holds it
   +f = g_const()
