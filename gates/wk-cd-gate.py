@@ -49,10 +49,7 @@ GATE = Gate(
     bend="wk-cd.bend",
     oracle="wk-cd-oracle.py",
     rows=7,
-    compared=6,
-    # row -> (the ORACLE's line, the PORT's line). A pair, because a divergence is where
-    # the two sides DIFFER, and pinning one string could only ever describe half of it.
-    diverges={"cd_none": ("cd_none=i64", "cd_none=None")},
+    compared=7,
     pins=[
         ("py", "cd_big_2p40"),
         ("py", "cd_one_2p40"),
@@ -63,4 +60,6 @@ GATE = Gate(
 
 if __name__ == "__main__":
     sys.exit(run_gate(
-        GATE, "wk-cd-gate: 6 rows identical, 3 lanes, 1 documented divergence (cd_none)"))
+        GATE, "wk-cd-gate: 7 rows identical, 3 lanes, 0 documented divergences -- the cd_none "
+            "row that this gate was pinned on is closed (commit_dtype.weak now supplies the widest int64 "
+            "range when bounds are unavailable, and commit_int answers i64 the same way CPython's commit_int does)"))

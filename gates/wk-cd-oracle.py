@@ -58,7 +58,7 @@ CASES = [
     ("cd_strong", 0, 10, dtypes.int32),
 ]
 
-DIVERGES = "cd_none"
+DIVERGES = ""
 
 
 def main():
