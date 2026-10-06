@@ -393,7 +393,7 @@ def InInfo.of(v: U32, vars: List<&2, String>, dt: S.Dt, dev: String) -> InInfo:
 def ii_vars(exprs: List<&2, String>) -> List<&2, String>:
   ssort(exprs)
 
-# The UOp repr. CPython's `UOp.__repr__` (ops.py:269) is `pretty_print(self)`, and
+# The UOp repr. CPython's `UOp.__repr__` (ops.py:273) is `pretty_print(self)`, and
 # for a substituted base that is ONE LINE: `UOp(Ops.NOOP, arg=None, src=())`.
 # Measured. For a VIEW it is `pretty_print`'s MULTILINE tree:
 #   UOp(Ops.RESHAPE, arg=None, src=(
@@ -1211,7 +1211,7 @@ def fx_pad(fuel: Nat, +call: U32, acc: List<&2, U32>) -> List<&2, U32>:
     case 1n+p: fx_pad(p, call, List.append(&2, U32, acc, [call]))
 
 # `ParamArg` field for field -- 13 fields, and the device is `S.D1{0}` because
-# `UOp.device` is `str|None` (ops.py:890) and "PYTHON" is device 0 in this gate.
+# `UOp.device` is `str|None` (ops.py:1199) and "PYTHON" is device 0 in this gate.
 def fx_pa(slot: U32, dt: S.Dt, size: U32) -> O.ParamArg:
   O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, None{}, False{}, None{}}

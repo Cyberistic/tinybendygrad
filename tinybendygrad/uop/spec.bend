@@ -208,7 +208,7 @@ def sp_shape_same(+fx: F.Folded, j: U32, k: U32) -> Bool:
 def sp_base(+fx: F.Folded, self: U32) -> Maybe<&1, U32>:
   F.fold.base(sp_ar(fx), sp_tb(fx), self)
 
-# `x.is_invalid` -- ops.py:265, `self.op is Ops.CONST and self.val is Invalid`.
+# `x.is_invalid` -- ops.py:267, `self.op is Ops.CONST and self.val is Invalid`.
 # The fold is not consulted: the test is on the node's OWN arg, which is why this
 # reader is total where `sp_base` is not.
 def is_invalid_of(a: O.Arg, op: O.Op) -> Bool:
@@ -230,7 +230,7 @@ def sp_base_invalid.pick(b: Maybe<&1, U32>, ar: O.Arena) -> Bool:
 def sp_base_invalid.of(b: Maybe<&1, U32>, ar: O.Arena) -> Bool:
   sp_base_invalid.pick(b, ar)
 
-# `x.base.is_invalid` -- `matches_dtype` (spec.py:47) and four rule bodies. A node
+# `x.base.is_invalid` -- `matches_dtype` (spec.py:48) and four rule bodies. A node
 # the fold has not answered has no base, and the test is then False.
 def sp_base_invalid(+fx: F.Folded, self: U32) -> Bool:
   sp_base_invalid.of(sp_base(fx, self), sp_ar(fx))
@@ -311,7 +311,7 @@ def arg_str.go(a: O.Arg) -> Bool:
     case O.AStr{s}: True{}
     case _: False{}
 
-# `isinstance(x.arg, str)` -- spec.py:161, :224, :236. At THE PIN this list was five
+# `isinstance(x.arg, str)` -- tinygrad/uop/spec.py:236, :224, :236. At THE PIN this list was five
 # long and started at :110; at HEAD :110 reads `isinstance(x.arg, CustomFunction)`
 # and the CUSTOM_FUNCTION rule that was at :161 in `spec_tensor` is deleted, so
 # `arg_str` is a SPECIAL and REWRITE_ERROR question and nothing else. The pin's
@@ -324,7 +324,7 @@ def arg_customfunction.go(a: O.Arg) -> Bool:
     case O.ACustom{cf}: True{}
     case _: False{}
 
-# `isinstance(x.arg, CustomFunction)` -- spec.py:110. `ACustom` IS that class and it
+# `isinstance(x.arg, CustomFunction)` -- spec.py:111. `ACustom` IS that class and it
 # is the only constructor that is, so the whole body is one arm. `cf` is bound and
 # not read because the question is the TYPE, not the value -- CPython measured
 # `CustomFunction("f") == CustomFunction("g", dtypes.uint64)` as False, so the value
@@ -347,7 +347,7 @@ def arg_none.go(a: O.Arg) -> Bool:
     case O.ANone{}: True{}
     case _: False{}
 
-# `x.arg is None` -- spec.py:86, :88, :89, :113, :242, :243.
+# `x.arg is None` -- tinygrad/uop/spec.py:87, :88, :89, :113, :242, :243.
 def arg_none(a: O.Arg) -> Bool:
   arg_none.go(a)
 
@@ -517,7 +517,7 @@ def all_int(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
 def sp_range_int(+fx: F.Folded, +s: U32) -> Bool:
   Bool.and(O.op_is(sp_ar(fx), s, O.OpsRANGE{}), sp_is_int(fx, s))
 
-# `u.op is Ops.RANGE and dtypes.is_int(u.dtype)` -- spec.py:86.
+# `u.op is Ops.RANGE and dtypes.is_int(u.dtype)` -- spec.py:87.
 def all_range_int(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -2976,7 +2976,7 @@ def t_tag_rej() -> U32:
   t_tag_rej.of(rej_is(O.PMEntry.rej(entry_at(shared_table(), 15)), [O.OpsRANGE{}]),
                rej_len(entry_at(tensor_own(), 21)))
 
-# spec.py:51 -- a SINK is `True` in `spec_shared`, with no arity test.
+# tinygrad/uop/spec.py:52 -- a SINK is `True` in `spec_shared`, with no arity test.
 def t_sink_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.sink(main_arena())))
 
 # spec.py:54 -- a NOOP is `True` in every table EXCEPT `spec_kernel_graph`, which is
@@ -3064,7 +3064,7 @@ def t_hcq_plain() -> U32: show_v(hcq_rewrite(Land.fx(main_arena()), Land.ga_plai
 
 def t_hcq_after() -> U32: show_v(hcq_rewrite(Land.fx(main_arena()), Land.ga_after(main_arena())))
 
-# spec.py:33 -- `int(rng.vmax)+1 == len(device)`, with `device` a two-name tuple and
+# spec.py:34 -- `int(rng.vmax)+1 == len(device)`, with `device` a two-name tuple and
 # the range's end a CONST(2). `_min_max` reduces a RANGE's `vmax` to
 # `(src[0]-1).vmax`, so this is `2 == 2`.
 def t_multidev_ok() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_DEVICE{})), Mdev.buf(main_mdev(O.AXIS_DEVICE{}))))
