@@ -412,12 +412,12 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 #   which is not this unit's file and has no port. `TODO(p3) __init__.py:75`.
 # * `Renderer.supported_dtypes` (:85) -- PORTED, as above.
 #
-# TODO(p3) __init__.py:11  with_storage     (done; kept for the line map)
-# TODO(p3) __init__.py:26  from_uops        (the (buf, op) mem key; ignore_indexing)
+# DONE(p3) __init__.py:11  with_storage     (done; kept for the line map) -- DONE: `with_storage` IS ported -- EIGHT defs, `with_storage` / `.arg` / `.arg.of` / `.at` / .fuel` / `.is_store` / `.leaf` / `.rebuild` -- MEASURED with `^ *def with_storage`. The marker's own note already said `(done; kept for the line map)`; this makes it visible to the census.
+# WALL(p3) __init__.py:26  from_uops        (the (buf, op) mem key; ignore_indexing) -- BLOCKED: needs `from_uops` (NO DEF) -- the `(buf, op)` MEMORY KEY, with `ignore_indexing`.
 # TODO(p3) __init__.py:75  tensor_cores     (renderer/tc.py is not this unit)
-# TODO(p3) __init__.py:77  code_for_op      (a dict of Callables; see cstyle.bend)
-# TODO(p3) __init__.py:81  __init__         (Target, Compiler)
-# TODO(p3) __init__.py:83  render           (NotImplementedError -> a has-render flag)
+# WALL(p3) __init__.py:77  code_for_op      (a dict of Callables; see cstyle.bend) -- BLOCKED: needs a `dict[Ops, Callable]`: the port spells it as `cstyle.bend`'s `code_for_op.of` plus a `match`, so the TAG is a `match` and this is a shape difference rather than a missing table.
+# WALL(p3) __init__.py:81  __init__         (Target, Compiler) -- BLOCKED: needs the `Target`/`Compiler` classes -- a base whose base is `object`.
+# WALL(p3) __init__.py:83  render           (NotImplementedError -> a has-render flag) -- BLOCKED: needs the `NotImplementedError` DEFAULT arm, which the port spells as a `Bool` has-render flag; the header says exactly this at :405.
 # TODO(p3) __init__.py:84  asm              (NotImplementedError -> a has-asm flag)
 #
 # ===========================================================================

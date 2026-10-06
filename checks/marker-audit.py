@@ -104,7 +104,7 @@ def main():
     print(f"{str(p):44} {len(walls):6} {len(shared):7} {len(backlog):8}")
     for n, t in backlog:
       head = t.split(chr(10))[0].strip()
-      print(f"    BACKLOG {p.name}:{n}  {head[:86]}")
+      print(f"    BACKLOG {p}:{n}  {head[:86]}")
   print(f"{'TOTAL':44} {gw:6} {gs:7} {gb:8}")
   print(f"""
 {gb} BACKLOG, {gs} reason stated elsewhere, {gw} walls. Only BACKLOG is work.
