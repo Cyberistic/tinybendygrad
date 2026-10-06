@@ -140,7 +140,7 @@ def load_graphcmp():
     return gc
 
 
-def run_health() -> tuple[bool, str]:
+def run_health(declared: int) -> tuple[bool, str]:
     r"""The RUN's own verdict, or a loud statement that there isn't one.
 
     Returns `(every pin green, the line to print)`.
@@ -166,6 +166,18 @@ def run_health() -> tuple[bool, str]:
     is 17 ABSENTs, not a pass. The parse is `differ.unhealthy()`'s own (split on the FIRST `=`,
     because nine of the seventeen values contain spaces, which the old `^(\S+)=(\S+)$` regex
     could not see at all).
+
+    MEASURED 2026-10-06, ONE LEVEL UP: A PIN THE INSTRUMENT AND THE ARTIFACT SHARE IS A PIN
+    THAT CANNOT SEE A GAP BETWEEN THEM. `checks/differ.py:221` pins `graphs` as the literal
+    `"25"`, and the run that produced `runs/graphcmp/D/` wrote `graphs=25`; the corpus had
+    grown to **34** (`graphcmp.GRAPHS`, `:1590`). So this printed
+    `graphs declared : 34` beside `RUN HEALTH : OK (… graphs=25 …)`, rc=0 -- **the figure and
+    the health gate were two witnesses to one stale run, not a comparison of the run to the
+    corpus.** `graphs` is therefore NOT treated as a pin here: it is a DISCOVERY
+    (`len(gc.GRAPHS)`, the same `gc` this instrument already holds), and it is compared to the
+    artifact's `graphs=`. The literal in `differ.py` stays for `differ.unhealthy()`; this
+    instrument derives. A corpus that grows now makes the artifact RED until it is re-taken,
+    and no hand edit re-pins it -- which is the difference between a population and a list.
     """
     summary = Path(__file__).resolve().parents[1] / "runs/graphcmp/D/D0-run-summary.txt"
     if not summary.exists():
@@ -173,14 +185,23 @@ def run_health() -> tuple[bool, str]:
                        "anything, so every pin is unknown rather than matched")
     pins = differ_pins()
     got = dict(ln.split("=", 1) for ln in summary.read_text(errors="replace").splitlines() if "=" in ln)
-    red = [f"{k}={got[k]} (expected {pins[k]})" for k in pins if k in got and got[k] != pins[k]]
-    red += [f"{k} ABSENT" for k in pins if k not in got]
+    # `graphs` IS DERIVED, NOT PINNED. Every other pin is a fact about the PORT or the RUN that
+    # nobody can compute here; the corpus size is neither -- it is `len(gc.GRAPHS)`, a discovery.
+    pinned = {k: v for k, v in pins.items() if k != "graphs"}
+    red = [f"{k}={got[k]} (expected {pins[k]})" for k in pinned if k in got and got[k] != pins[k]]
+    red += [f"{k} ABSENT" for k in pinned if k not in got]
+    if "graphs" not in got:
+        red.append("graphs ABSENT -- the artifact records no corpus size to compare")
+    elif got["graphs"] != str(declared):
+        red.append(f"graphs={got['graphs']} but the corpus DECLARES {declared} -- the ARTIFACT "
+                   f"and the CORPUS disagree, so the health gate is reading a stale run")
+    total = len(pinned) + 1
     if red:
-        return (False, f"RUN HEALTH        : **FAILED** -- {len(pins) - len(red)} of {len(pins)} "
+        return (False, f"RUN HEALTH        : **FAILED** -- {total - len(red)} of {total} "
                        f"pins green. RED: {'; '.join(red)}. THE UNION ABOVE IS NOT A VERDICT.")
-    return (True, f"RUN HEALTH        : OK -- {len(pins)} of {len(pins)} pins green "
-                  f"(checks/differ.py's PINS, imported; `graphs={got['graphs']}` and "
-                  f"`not-comparable={got['not-comparable']}` among them)")
+    return (True, f"RUN HEALTH        : OK -- {total} of {total} pins green "
+                  f"(checks/differ.py's PINS, imported, plus `graphs` COMPARED TO THE CORPUS; "
+                  f"`graphs={got['graphs']}` and `not-comparable={got['not-comparable']}` among them)")
 
 
 def main() -> int:
@@ -228,11 +249,11 @@ def main() -> int:
         print(f"    {g}: {why}")
     print(f"denominator len(Ops) : {len(names)}")
     print(f"CPYTHON-SIDE UNION   : {len(union)} of {len(names)}")
-    print("  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE 22 GRAPH DEFINITIONS.")
+    print(f"  ^^ THIS IS A CENSUS OF **CPYTHON'S** OWN OP INVENTORY OVER THE {len(gc.GRAPHS)} GRAPH DEFINITIONS.")
     print("     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), \"py\")`")
     print("     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH")
     print("     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.")
-    health_ok, health = run_health()
+    health_ok, health = run_health(len(gc.GRAPHS))
     print(health)
     print(f"per-graph SUM        : {per_graph_sum}   <- NOT the figure; it counts an op once "
           f"per graph that has it")

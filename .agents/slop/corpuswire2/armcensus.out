@@ -1,0 +1,24 @@
+corpus  graphcmp.GRAPHS     : 34
+table   differ.WANT         : 20
+armed   rows.pick3 rungs    : 26
+WANT but not in corpus      : []
+THE GAP: corpus not in WANT : 14
+  alu              ARMED
+  bit              ARMED
+  bw               ARMED
+  custom_function  NO ARM -> substitutes g_matmul()
+  getaddr          ARMED
+  move             ARMED
+  mselect          NO ARM -> substitutes g_matmul()
+  mstack           NO ARM -> substitutes g_matmul()
+  mulacc           ARMED
+  stage            NO ARM -> substitutes g_matmul()
+  threefry         ARMED
+  unshard          ARMED
+  where            ARMED
+  wmma             ARMED
+
+UNARMED over the WHOLE corpus (8): allred cdiv custom_function late matmul mselect mstack stage
+  matmul is the bottom rung itself; allred cdiv late are IN WANT as DISAGREE and
+  unarmed -- the matmul substitution; custom_function mselect mstack stage are the
+  four that substitute and have no row.
