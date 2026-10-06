@@ -1,0 +1,474 @@
+path	bucket	reader
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/differverdict/pristine/runs/graphcmp/D/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/differverdict/py-D/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/py-D/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/differverdict/py-D/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/py-D/D7-conf.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:155
+.agents/slop/differverdict/shell-D/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/shell-D/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/differverdict/shell-D/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/differverdict/shell-D/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/differverdict/shell-D/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/differverdict/shell-D/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/differverdict/shell-D/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/shell-D/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/differverdict/shell-D/D7-conf.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:155
+.agents/slop/differverdict/shell-D/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/differverdict/shell-D/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/differverdict/shell-D/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/differverdict/warm-oracle/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/warm-oracle/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/differverdict/warm-oracle/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/differverdict/warm-oracle/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/differverdict/warm-oracle/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/differverdict/warm-oracle/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/warm-oracle/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/differverdict/warm-oracle/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/differverdict/warm-oracle/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/differverdict/warm-oracle/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/differverdict/warm-planted/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/warm-planted/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/differverdict/warm-planted/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/differverdict/warm-planted/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/differverdict/warm-planted/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/differverdict/warm-planted/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/warm-planted/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/differverdict/warm-planted/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/differverdict/warm-planted/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/differverdict/warm-planted/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/differverdict/warm-python/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/differverdict/warm-python/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/differverdict/warm-python/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/differverdict/warm-python/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/differverdict/warm-python/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/differverdict/warm-python/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/differverdict/warm-python/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/differverdict/warm-python/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/differverdict/warm-python/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/differverdict/warm-python/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/figurefix/plant/D-live/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/figurefix/plant/D-live/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/figurefix/plant/D-live/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/figurefix/plant/D-live/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/figurefix/plant/D-live/D1-graph-allred.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-alu.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-bit.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-bw.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-cast.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-commute.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-flip.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-gate.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-group.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-indexed.txt	named-by-reader	.agents/slop/unsetexp/selftest.py:214
+.agents/slop/figurefix/plant/D-live/D1-graph-late.txt	named-by-reader	checks/disagree-gate.py:282
+.agents/slop/figurefix/plant/D-live/D1-graph-lin.txt	named-by-reader	.agents/slop/arghalf/tree/drivers/one/gcmp.bend:891
+.agents/slop/figurefix/plant/D-live/D1-graph-loop.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-move.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-range.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-sink.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-special.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-sym.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-graph-where.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/figurefix/plant/D-live/D10-zerorow-guard.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:218
+.agents/slop/figurefix/plant/D-live/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-allred.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-alu.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-bit.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-bw.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-cast.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-commute.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-flip.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-gate.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-group.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-indexed.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:103
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-late.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-lin.txt	named-by-reader	.agents/slop/devpin/lin-decision.py:82
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-loop.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-move.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-range.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-sink.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-special.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-sym.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-bend-where.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-allred.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-alu.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-bit.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-bw.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-cast.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-commute.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-flip.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-gate.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-group.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-indexed.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-late.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:74
+.agents/slop/figurefix/plant/D-live/D2-canon-py-lin.txt	named-by-reader	.agents/slop/devpin/envsweep.py:11
+.agents/slop/figurefix/plant/D-live/D2-canon-py-loop.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-move.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-range.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-sink.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-special.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-sym.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-canon-py-where.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-allred.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-alu.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-bit.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-bw.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-cast.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-commute.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-flip.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-gate.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-group.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-indexed.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-late.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-lin.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-loop.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-move.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-range.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-sink.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-special.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-sym.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D2-cmp-where.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D3-control-binblob.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:124
+.agents/slop/figurefix/plant/D-live/D3-control-gate.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:126
+.agents/slop/figurefix/plant/D-live/D3-control-group.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:125
+.agents/slop/figurefix/plant/D-live/D3-control-loop.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:127
+.agents/slop/figurefix/plant/D-live/D3-control-matmul.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:123
+.agents/slop/figurefix/plant/D-live/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/figurefix/plant/D-live/D5-plant-bytes.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-dtype.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-opt.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-pyuop.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-shape.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-srcswap.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/figurefix/plant/D-live/D6-commute-equiv.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:152
+.agents/slop/figurefix/plant/D-live/D6-commute-ordered.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:151
+.agents/slop/figurefix/plant/D-live/D6-matmul-equiv.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D6-matmul-ordered.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D7-conf.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:155
+.agents/slop/figurefix/plant/D-live/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/figurefix/plant/D-live/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/figurefix/plant/D-live/D8b-cpython-dbg1-reachability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:234
+.agents/slop/figurefix/plant/D-live/D9-stability-commute-a.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-commute-b.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-gate-a.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-gate-b.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-group-a.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-group-b.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-loop-a.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-loop-b.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-sym-a.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability-sym-b.txt	declared-only	
+.agents/slop/figurefix/plant/D-live/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-allred.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-alu.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-bit.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-bw.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-cast.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-commute.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-flip.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-gate.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-group.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-indexed.txt	named-by-reader	.agents/slop/unsetexp/selftest.py:214
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-late.txt	named-by-reader	checks/disagree-gate.py:282
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-lin.txt	named-by-reader	.agents/slop/arghalf/tree/drivers/one/gcmp.bend:891
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-loop.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-move.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-range.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-sink.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-special.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-sym.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-graph-where.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D10-zerorow-guard.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:218
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-allred.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-alu.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-bit.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-bw.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-cast.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-commute.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-flip.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-gate.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-group.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-indexed.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:103
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-late.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-lin.txt	named-by-reader	.agents/slop/devpin/lin-decision.py:82
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-loop.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-move.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-range.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-sink.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-special.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-sym.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-bend-where.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-allred.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-alu.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-bit.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-bw.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-cast.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-commute.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-flip.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-gate.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-group.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-indexed.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-late.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:74
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-lin.txt	named-by-reader	.agents/slop/devpin/envsweep.py:11
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-loop.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-move.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-range.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-sink.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-special.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-sym.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-canon-py-where.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-allred.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-alu.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-binblob.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-bit.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-buffer.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-bw.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-cast.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-cdiv.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-commute.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-flip.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-gate.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-group.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-indexed.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-late.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-lin.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-loop.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-matmul.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-move.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-range.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-rangeflat.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-reduce.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-sink.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-special.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-sym.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D2-cmp-where.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-binblob.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:124
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-gate.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:126
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-group.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:125
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-loop.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:127
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D3-control-matmul.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:123
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-bytes.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-dtype.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-opt.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-pyuop.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-shape.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-srcswap.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-commute-equiv.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:152
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-commute-ordered.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:151
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-matmul-equiv.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D6-matmul-ordered.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D7-conf.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:155
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D8b-cpython-dbg1-reachability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:234
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-commute-a.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-commute-b.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-gate-a.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-gate-b.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-group-a.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-group-b.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-loop-a.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-loop-b.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-sym-a.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability-sym-b.txt	declared-only	
+.agents/slop/figurefix/plant/scratch/runs/graphcmp/D/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
+.agents/slop/rerun/D-before/D0-coverage-census.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:73
+.agents/slop/rerun/D-before/D0-ops-probe.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:241
+.agents/slop/rerun/D-before/D0-run-summary.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:46
+.agents/slop/rerun/D-before/D0-selfcheck.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:61
+.agents/slop/rerun/D-before/D1-graph-allred.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-alu.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-binblob.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-bit.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-buffer.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-bw.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-cast.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-cdiv.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-commute.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-flip.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-gate.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-group.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-indexed.txt	named-by-reader	.agents/slop/unsetexp/selftest.py:214
+.agents/slop/rerun/D-before/D1-graph-late.txt	named-by-reader	checks/disagree-gate.py:282
+.agents/slop/rerun/D-before/D1-graph-lin.txt	named-by-reader	.agents/slop/arghalf/tree/drivers/one/gcmp.bend:891
+.agents/slop/rerun/D-before/D1-graph-loop.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-matmul.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-move.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-range.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-rangeflat.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-reduce.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-sink.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-special.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-sym.txt	declared-only	
+.agents/slop/rerun/D-before/D1-graph-where.txt	declared-only	
+.agents/slop/rerun/D-before/D1-verdicts.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:110
+.agents/slop/rerun/D-before/D10-zerorow-guard.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:218
+.agents/slop/rerun/D-before/D2-bytediff.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:115
+.agents/slop/rerun/D-before/D2-canon-bend-allred.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-alu.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-binblob.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-bit.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-buffer.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-bw.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-cast.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-cdiv.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-commute.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-flip.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-gate.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-group.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-indexed.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:103
+.agents/slop/rerun/D-before/D2-canon-bend-late.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-lin.txt	named-by-reader	.agents/slop/devpin/lin-decision.py:82
+.agents/slop/rerun/D-before/D2-canon-bend-loop.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-matmul.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-move.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-range.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-rangeflat.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-reduce.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-sink.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-special.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-sym.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-bend-where.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-allred.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-alu.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-binblob.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-bit.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-buffer.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-bw.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-cast.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-cdiv.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-commute.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-flip.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-gate.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-group.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-indexed.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-late.txt	named-by-reader	.agents/slop/devrecord/xcheck.py:74
+.agents/slop/rerun/D-before/D2-canon-py-lin.txt	named-by-reader	.agents/slop/devpin/envsweep.py:11
+.agents/slop/rerun/D-before/D2-canon-py-loop.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-matmul.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-move.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-range.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-rangeflat.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-reduce.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-sink.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-special.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-sym.txt	declared-only	
+.agents/slop/rerun/D-before/D2-canon-py-where.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-allred.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-alu.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-binblob.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-bit.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-buffer.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-bw.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-cast.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-cdiv.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-commute.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-flip.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-gate.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-group.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-indexed.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-late.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-lin.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-loop.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-matmul.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-move.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-range.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-rangeflat.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-reduce.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-sink.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-special.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-sym.txt	declared-only	
+.agents/slop/rerun/D-before/D2-cmp-where.txt	declared-only	
+.agents/slop/rerun/D-before/D3-control-binblob.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:124
+.agents/slop/rerun/D-before/D3-control-gate.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:126
+.agents/slop/rerun/D-before/D3-control-group.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:125
+.agents/slop/rerun/D-before/D3-control-loop.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:127
+.agents/slop/rerun/D-before/D3-control-matmul.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:123
+.agents/slop/rerun/D-before/D4-cross-range.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:130
+.agents/slop/rerun/D-before/D5-plant-bytes.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-dtype.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-opt.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-pyuop.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-shape.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-srcswap.txt	declared-only	
+.agents/slop/rerun/D-before/D5-plant-sym1.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:138
+.agents/slop/rerun/D-before/D6-commute-equiv.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:152
+.agents/slop/rerun/D-before/D6-commute-ordered.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:151
+.agents/slop/rerun/D-before/D6-matmul-equiv.txt	declared-only	
+.agents/slop/rerun/D-before/D6-matmul-ordered.txt	declared-only	
+.agents/slop/rerun/D-before/D7-conf.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:155
+.agents/slop/rerun/D-before/D8-dbg-012.txt	named-by-reader	.agents/slop/diffpy/oracle-repro.sh:111
+.agents/slop/rerun/D-before/D8-dbg-03.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:159
+.agents/slop/rerun/D-before/D8b-cpython-dbg1-reachability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:234
+.agents/slop/rerun/D-before/D9-stability-commute-a.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-commute-b.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-gate-a.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-gate-b.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-group-a.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-group-b.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-loop-a.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-loop-b.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-sym-a.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability-sym-b.txt	declared-only	
+.agents/slop/rerun/D-before/D9-stability.txt	named-by-reader	.agents/slop/diffpy/oracle-run.sh:214
