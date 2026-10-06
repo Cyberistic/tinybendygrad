@@ -127,12 +127,10 @@ class Gate:
               the two sides differ: pinning one string can only ever describe half of it.
     port_only  row names the PORT emits and the ORACLE DELIBERATELY DOES NOT. Excluded from
               the diff like a divergence, but with nothing to pin on the oracle side -- the
-              absence IS the claim, and a gate that only asserted the row's presence would
-              pass the moment the oracle grew it.
-    canon      row names compared as a TOKEN MULTISET rather than verbatim, for a difference
-              that is ORDER and not content. Both sides' orders are then asserted, so a
-              change in EITHER toposort is a gate failure rather than something the
-              canonicalisation silently absorbs.
+              ABSENCE is the claim, and it is the DERIVED ORACLE ROW COUNT that holds it:
+              `want = rows - len(port_only)`, so an oracle that grows one of these rows
+              is one row too many and fails the count, which is why there is no separate
+              assertion of the absence here. MEASURED, not assumed; see the commit.
     pins      extra (lane, row_name) assertions -- that row is PRESENT in that lane -- for
               claims a diff cannot express. Its CONTENT, if it matters, goes in `diverges`.
     warm      "fatal" (default) or "report". THE SHELL'S TWO VERDICT SHAPES, because the two
@@ -145,7 +143,7 @@ class Gate:
     """
 
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
-                 pins=None, port_only=None, canon=None, warm="fatal"):
+                 pins=None, port_only=None, warm="fatal"):
         self.name = name
         # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
         # MEASURED 2026-10-06: `_clear()` sat in `run()`, and **5 of 17 exits are AFTER the lanes write** —
@@ -167,7 +165,6 @@ class Gate:
         self.compared = compared if compared is not None else rows
         self.diverges = dict(diverges or {})
         self.port_only = list(port_only or [])
-        self.canon = list(canon or [])
         self.pins = list(pins or [])
         self.warm_mode = warm
         # THE WARM CHECK'S OWN STDOUT, kept so a gate can REPRODUCE the shell's whole output
@@ -351,7 +348,7 @@ class Gate:
 
             # BOTH SIDES ARE FILTERED. Filtering only the port would compare the row that is
             # KNOWN to differ, which is how a divergence list stops working.
-            skip = list(self.diverges) + self.port_only + self.canon
+            skip = list(self.diverges) + self.port_only
             pat = re.compile(r"^(" + "|".join(re.escape(k) for k in skip) + r")=") if skip else None
             subs = {}
             for tag, f in lanes.items():
@@ -368,7 +365,7 @@ class Gate:
                     hits = [l for l in _lines(f) if pat.match(l)]
                     want = len(skip)
                     if tag == "py":
-                        want = len(self.diverges) + len(self.canon)
+                        want = len(self.diverges)
                     if len(hits) != want:
                         self._say(f"{tag} carries {len(hits)} excluded rows, expected {want} "
                                   f"-- the exclusion list is stale")
@@ -408,31 +405,7 @@ class Gate:
                     if not any(l.startswith(row + "=") for l in raw[lane]):
                         self._say(f"{lane} lost its port-only row {row!r}")
                         return 1
-                if any(l.startswith(row + "=") for l in raw["py"]):
-                    self._say(f"the ORACLE now emits {row!r} -- drop it from port_only and let "
-                              f"the two sides COMPARE it")
-                    return 1
 
-            # AN ORDER-ONLY DIVERGENCE: the tokens are equal and the ORDER is not. Compared as a
-            # multiset, then BOTH orders are asserted from the file rather than from a literal
-            # here, so this module carries no knowledge of any gate's rows.
-            for row in self.canon:
-                got = {}
-                for lane, f in lanes.items():
-                    line = next((l for l in _lines(f) if l.startswith(row + "=")), None)
-                    if line is None:
-                        self._say(f"{lane} has no {row!r} row")
-                        return 1
-                    got[lane] = line
-                toks = {k: sorted(v.split(" ")) for k, v in got.items()}
-                if not (toks["py"] == toks["bd"] == toks["bn"]):
-                    self._say(f"{row}'s node MULTISET differs: "
-                              f"py={toks['py']} port={toks['bd']}")
-                    return 1
-                if got["py"] == got["bd"]:
-                    self._say(f"{row}: the port's order now MATCHES CPython's -- drop it from "
-                              f"`canon` and let the line diff have it")
-                    return 1
             ok = True
         finally:
             self._settle(ok)
