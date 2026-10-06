@@ -1,0 +1,185 @@
+title	start	end	items	done	open	tilde	bars
+TODO	1	602	49	39	10	0	0
+Phase P0 — toolchain and scaffolding	603	624	9	8	1	0	0
+Phase P1 — the contract	625	670	10	9	1	0	0
+Phase P2 — trial run	671	951	11	8	2	1	0
+Session 2026-10-03 — the package-boundary gap + the wall, taken head-on	952	1155	19	18	0	1	0
+Session 2026-10-04 — P3 parallel wave, and the queue count is NOT a backlog	1156	1325	0	0	0	0	0
+Phases P3–P8 — the port	1326	1498	3	1	1	1	0
+DEFERRED — the LOC-reduction plan (2026-10-02, owner: revisit AFTER the port works)	1499	1566	0	0	0	0	0
+Open decisions	1567	1622	6	3	3	0	0
+Session 2026-10-01 wrap (fuzz + trim + gate wave)	1623	1633	10	5	5	0	0
+Session 2026-10-01 — `mixin/gradient.py`	1634	1648	4	1	3	0	0
+Session 2026-10-01 round 2 (schedule/mixin/engine/tensor/decomp wave)	1649	1662	9	5	4	0	0
+Session 2026-10-01 round 3 — `mixin/elementwise.py`	1663	1695	8	7	1	0	0
+Session 2026-10-01 round 4 — `codegen/decomp/transcendental.py`	1696	1736	9	6	3	0	0
+Session 2026-10-01 round 5 — `mixin/op.py` lines 1-997	1737	1791	9	7	2	0	0
+Session 2026-10-02 — the device wave (renderer, codegen/opt, nn, langs) + two shared defects	1792	2015	19	15	4	0	0
+Session 2026-10-02 — `device.bend`	2016	2041	3	3	0	0	0
+Session 2026-10-02 — `langs/` the four-lane export matrix	2042	2095	8	7	1	0	0
+TWO SUBSTRATE DEFECTS found by mixin/reduce.bend (committed f3b4c9cf) -- MINE, NOT FIXED	2096	2123	2	0	2	0	0
+OPEN — `H.dedup_u32` reverses, and `nn/optim`'s filter reverses, and they may be CANCELLING	2124	2167	1	0	1	0	0
+Session 2026-10-02 — `runtime/ops_metal.bend` (the Metal device: the half that SUBMITS)	2168	2251	6	6	0	0	0
+Session 2026-10-02 — `runtime/ops_cl.bend` (ONE device, THREE vendor spellings)	2252	2307	6	6	0	0	0
+Session 2026-10-02 — a COMMITTED GATE ROW WAS ENCODING A BUG (found by the ops_cpu unit)	2308	2353	8	8	0	0	0
+Session 2026-10-02 — `runtime/ops_nv.bend` (606 rows, TWO AGENTS, ONE FILE)	2354	2416	8	6	2	0	0
+Session 2026-10-02 — `runtime/ops_nv.bend` (the CUDA device: the words it uploads)	2417	2464	8	8	0	0	0
+STANDING INSTRUCTION (owner, 2026-10-02) — the agent pipeline does not idle	2465	2562	0	0	0	0	0
+Session 2026-10-02 — `runtime/ops_rdma.bend`, `runtime/ops_npy.bend`, `nn/torch.bend`	2563	2655	3	3	0	0	0
+Session 2026-10-02 — `runtime/ops_dsp.bend` (the generic C-backend-for-a-DSP wrapper)	2656	2712	10	10	0	0	0
+Session 2026-10-02 — `schedule/indexing.bend`	2713	2842	7	6	1	0	0
+Session 2026-10-02 — schedule/rangeify.bend REPAIR (not extension)	2843	3016	9	7	2	0	0
+Session 2026-10-02 — schedule/rangeify.bend: THE `ct` TABLE'S OP SETS WERE THE CHILD'S	3017	3099	11	10	1	0	0
+Session 2026-10-02 — upstream `793abbb` "modernize tinygrad's dtype to match rust"	3100	3200	15	10	5	0	0
+Session 2026-10-02 — `runtime/support/memory.bend`: the allocator PORT, and the gate that was	3201	3201	0	0	0	0	0
+green on 570 of 995 rows	3202	3267	9	9	0	0	0
+Session 2026-10-02 — REBASE BATCH B2 (`dtype.py` + `renderer/cstyle.py`, 2 files, atomic)	3268	3322	8	8	0	0	0
+Session 2026-10-02 — env-flag semantic divergence audit (owner: the audit unit)	3323	3370	9	8	1	0	0
+Session 2026-10-03 — ungated-drift closure: `uop/render.bend`, `codegen/rewriter.bend`, `rebase-plan.py`	3371	3456	7	5	2	0	0
+Session 2026-10-03 — REBASE GATE WIRING: 19 ports with gates and no instrument	3457	3561	13	11	2	0	0
+Session 2026-10-03 — `runtime/support/objc.bend`: the FFI seam that is MOSTLY logic	3562	3641	5	2	3	0	0
+Session 2026-10-03 — `renderer/amd/generate.bend` (the ISA-XML GENERATOR: 541 py, 346 logic)	3642	3740	10	10	0	0	0
+Session 2026-10-03 — dtype.bend const CAST refusal (measured, not the note)	3741	3752	1	1	0	0	1
+Session 2026-10-03 — `codegen/decomp/dtype.py`	3753	3868	16	8	8	0	0
+Session 2026-10-03 — `trange`, `GlobalCounters`, `Context` in	3869	3869	0	0	0	0	0
+`tinybendygrad/helpers.bend` (the only unit permitted to edit that file).	3870	3870	0	0	0	0	0
+**NOT COMMITTED.**	3871	3951	13	11	2	0	0
+Session 2026-10-03 — `void`'s priority and `CustomFunction`'s dtype (`uop/fold.bend` only)	3952	3952	0	0	0	0	0
+**NOT COMMITTED.**	3953	4028	7	7	0	0	0
+Session 2026-10-03 — THE NAMING GATE: the def-name ruling, enforced	4029	4216	17	12	5	0	2
+Session 2026-10-03 — `ops_python` render oracle quoting	4217	4229	1	1	0	0	0
+Session 2026-10-03 — re-anchor the wire-pair standing control	4230	4241	1	1	0	0	0
+Session 2026-10-03 — which tree the wired gates import	4242	4251	1	1	0	0	0
+Session 2026-10-03 — ARange ucache collision	4252	4269	1	1	0	0	0
+Session 2026-10-03 — `renderer/amd/elf.bend` (the AMD ELF PACKER: 111 py, 1 def)	4270	4321	5	5	0	0	0
+Session 2026-10-03 — `codegen/__init__.bend`: the rewrite engine's SHAPE	4322	4375	5	5	0	0	0
+Session 2026-10-03 — `graphcmp`: a CANONICAL GRAPH NORMAL FORM both sides emit, and a differ over it	4376	4376	0	0	0	0	0
+**NOT COMMITTED.**	4377	4477	11	11	0	0	0
+Session 2026-10-03 (gc2) — `graphcmp`: THE FIVE RESIDUALS, classified and closed-or-counted	4478	4478	0	0	0	0	0
+**NOT COMMITTED.**	4479	4585	9	9	0	0	0
+Session 2026-10-03 (b) — the eight `c{i}` fixtures, `codegen/decomp/dtype.py`	4586	4643	8	8	0	0	0
+Session 2026-10-03 — the two `dd_rs` cone bugs in codegen/decomp/dtype.bend (measured)	4644	4694	9	9	0	0	0
+Session 2026-10-03 (c) — `DEBUG` IS WIRED: the seven gated prints, `getenv_int`, and a	4695	4695	0	0	0	0	0
+five-level gate. **NOT COMMITTED.**	4696	4856	15	13	2	0	0
+Session 2026-10-03 — `renderer/amd/generate.bend`: THE 149 UNGATED ROWS (233 -> 726)	4857	4949	10	10	0	0	0
+Session 2026-10-03 (n) — NAMING GATE BACK TO PASS: `getenv :: _int` is QUALIFIED, AND IT IS A LEDGER RULING, NOT A TALLY	4950	5032	9	9	0	0	1
+Session 2026-10-03 — six ADOPTED defects (reported, never picked up)	5033	5186	8	7	1	0	0
+Session 2026-10-04 — `codegen/decomp/dtype.bend`: 33 of 52 gate disagreements closed	5187	5286	14	8	6	0	0
+ops.py:501-1928 (the base family, the movers, `split_uop`) -- 14 defs LANDED, 149 remain	5287	5358	0	0	0	0	0
+[DONE] Reconcile the gate's verdict with the selftest's number, entry by entry (2026-10-04)	5359	5418	0	0	0	0	1
+[DONE] rebase-gate: BROKEN is one word for five things — cause, denominator, reconciliation (2026-10-04)	5419	5568	0	0	0	0	1
+[DONE] LANE PROVENANCE: a lane-death now names the FILE and the REVISION (2026-10-04)	5569	5637	0	0	0	0	1
+[DONE] rebase-gate: restore `AGREE-UNRECORDED` and record 29 proven-stable lanes (2026-10-04)	5638	5673	0	0	0	0	1
+Session 2026-10-03/04 — UNOBSERVABLE-ROW CENSUS: rows that cannot tell two behaviours apart	5674	5868	12	11	1	0	0
+Session 2026-10-04 — ORDER-BLIND GATES, the close-out of the census	5869	6010	9	8	1	0	0
+Session 2026-10-04 — `dtype.bend`'s TWO ORACLES DISAGREE (19 vs 1), and the 1 is a lie of omission	6011	6115	12	9	3	0	0
+Session 2026-10-04 — `renderer/cstyle.bend`: 225 rows, ZERO verification -> **221 of 227 compared to a live CPython call**	6116	6254	13	13	0	0	0
+Mutation-table trustworthiness (dd unit, 2026-10-04)	6255	6312	9	9	0	0	0
+ZERO CLASSIFICATION (zero unit, 2026-10-04)	6313	6377	9	9	0	0	0
+Session 2026-10-04 — REPO HYGIENE: the dangling citations, the census, and the scratch in the tree	6378	6504	17	13	4	0	0
+Session 2026-10-04 — M09 CLOSED: two fixture rows, the REQUEST sweep, and a baseline that was a mutant	6505	6552	6	6	0	0	0
+Session 2026-10-04 — `uop/ops.bend`'s three loose ends: the `AFloat` premise is FALSIFIED, the `cfun_*` gate is GREEN, and `ops-oracle.py` is unowned	6553	6776	11	11	0	0	0
+MUTATION-ZERO VERBOSITY — one marker for a patch that did not apply (2026-10-04)	6777	6835	7	7	0	0	0
+Session 2026-10-04 (late) — INSTRUMENTS FIXED, AND THE TALLY OF WHAT THEY GOT WRONG	6836	6947	24	16	8	0	0
+Session 2026-10-04 (substrate unit) — the `ABlob` intern key is GREEN and PROVEN, and `ops.bend` is being edited faster than it can be gated	6948	6993	7	5	2	0	0
+[DONE] ops-501-gate: THE PORT WAS MISSING THREE DEFS, and `@` is not "at rest" (2026-10-04)	6994	7113	0	0	0	0	1
+Session 2026-10-04 (gc3) — `graphcmp`: WIDENED TO NINE GRAPHS, A DEBUG-LEVEL	7114	7114	0	0	0	0	0
+COMPARISON, AND A PROOF THAT THE DIFFER CAN FAIL	7115	7194	7	7	0	0	0
+ARENA ALIASING SWEEP — `O.Arena.node` is TOTAL, so a wrong index is a plausible value	7195	7404	8	8	0	0	0
+[x] FORM-BLINDNESS CENSUS — every tool that matches a form cannot see the instance	7405	7405	0	0	0	0	0
+that lacks it. Six findings, one root cause, one checkable test.	7406	7406	0	0	0	0	0
+`.agents/slop/{rowform,formblind-census,formblind-audit,substrate-audit}.py`	7407	7407	0	0	0	0	0
++ `FORM-BLIND-SPOTS.md`. Rules `FB-1`…`FB-7` at `bend2-constraints.md` ~19941.	7408	7495	11	11	0	0	0
+Session 2026-10-04 — `f2f`'s region: a FORWARD REFERENCE, and the gate rows that make it cost something	7496	7553	0	0	0	0	0
+Session 2026-10-04 (gc4) — `graphcmp`: GROUP, INDEX/BARRIER, SEVEN OF EIGHT	7554	7554	0	0	0	0	0
+COMMUTATIVE OPS, AND THE SYMBOLIC-DIM LIMIT MEASURED	7555	7639	7	7	0	0	0
+Session 2026-10-04 (dl) — `debug-gate`: LEVELS 4, 5, 6, 7 GATED, AND THE SCALE INVENTORIED	7640	7751	11	11	0	0	0
+Session 2026-10-04 — mutation-table ANCHORS re-aimed, and every table PINNED	7752	7905	10	10	0	0	0
+Session 2026-10-04 — CSTYLE-GATE READER (`.agents/slop/cstyle-gate.py`, the gate, not the port)	7906	7952	6	6	0	0	0
+Session 2026-10-04 (load unit) — THE BASELINE LEDGER: 0 of 234 recorded counts carry a load, and 0 of 18 stored reds can be reclassified	7953	8017	8	5	3	0	0
+Session 2026-10-04 (gc5) — `graphcmp`: A REAL LINEARIZED PROGRAM, SO `ENDIF` /	8018	8018	0	0	0	0	0
+`BACKEDGE` / `LOAD` / `STORE` ARE COMPARED AT LAST	8019	8154	11	11	0	0	0
+Session 2026-10-04 (name-shape unit) — A ROW NAME CONTAINING `=` HAS ONE NAME PER READER	8155	8210	6	6	0	0	0
+Session 2026-10-04 (c2d unit) — `s5_copy_sel` GATED A NODE CPYTHON REFUSES, AND THE FIXTURE	8211	8211	0	0	0	0	0
+WAS WRONG THREE TIMES OVER. THE REUSAL IS A RETURN-TYPE CHANGE.	8212	8292	11	11	0	0	0
+Session 2026-10-04 (reader-fork unit) — 156 FORKED READERS, AND 32 OF 38 HAVE DRIFTED	8293	8342	5	5	0	0	0
+Session 2026-10-04 — `schedule/__init__.py:82-301` (the "cannot build a schedule" hole)	8343	8413	4	4	0	0	0
+Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ARE EXECUTION NOW.	8414	8458	8	8	0	0	0
+AUDIT-CAN-FAIL — "can this headline number go RED?" (2026-10-04)	8459	8504	9	5	4	0	1
+Session 2026-10-04 — tensor-surface census (read-only; `.agents/slop/TENSOR-SURFACE.md`)	8505	8634	14	14	0	0	0
+Session 2026-10-04 — `cstyle-live`: `renderer/cstyle.bend`'s emitted C, COMPILED and RUN	8635	8708	11	10	1	0	0
+Session 2026-10-04 round 2 — `i64_dec`, the signed-decimal printer	8709	8763	1	1	0	0	0
+Session 2026-10-04 — the four headline numbers (owner: the unfalsifiable unit)	8764	8856	6	5	0	1	0
+Session 2026-10-04 — e2e-through-port: `e2e.sh` STAGE 6, THE MATMUL RUN THROUGH THE PORT	8857	8911	7	7	0	0	0
+Session 2026-10-04 round 3 — `print_uops` GATED, and three of five bugs were formatting	8912	8960	1	1	0	0	0
+slop(wallmap) — a census and a RANKING of every refusal recorded in the port	8961	9143	0	0	0	0	0
+Session 2026-10-04 (mathlib unit) — RANK 1 IS NOT A MISSING LIBRARY. `math.*` IS 91 COMMENTS AND 0 CALL SITES.	9144	9266	0	0	0	0	0
+Session 2026-10-04 (BW) — `graphcmp`: A BACKWARD GRAPH, `?=0/0`, and the corpus's FIRST FLOAT CONST	9267	9353	13	8	5	0	0
+[x] **DEAD-ARM CENSUS — the parts of the tree NO instrument can observe**  (2026-10-04)	9354	9493	21	10	11	0	0
+Session 2026-10-04 round 4 — the RANGE COLUMN, and a colour bug that was never a range bug	9494	9559	1	1	0	0	0
+M — the last 64-bit mile. `.agents/slop/W64-MILE.md`	9560	9582	6	3	3	0	0
+SUB — collective completeness: does a PARSING file still have the NAMES its callers need?	9583	9613	6	5	1	0	0
+F — the f64 KERNEL, not the f64 scalar. `.agents/slop/F64-KERNEL.md`	9614	9706	14	12	2	0	0
+JSL2 — the JS dtype lane gate (unit `JSL2`, 2026-10-04)	9707	9782	17	13	4	0	0
+2026-10-04 — `arith`: the six arithmetic ops. Ops reached 53 -> 59 of 77, BOTH SIDES.	9783	9852	15	11	4	0	0
+S- — SPELLING: one 64-bit spelling for the tree	9853	9904	11	8	3	0	0
+Session 2026-10-04 round 5 — an F32 CONSTANT WALL THAT WAS NEVER TRUE	9905	9963	1	1	0	0	0
+`notes-sweep` unit, 2026-10-04 — the notes' numbers were audited against runs	9964	10018	0	0	0	0	0
+TRIAGE — the 21 stray `.bend` copies (2026-10-04)	10019	10078	8	4	4	0	0
+`DENOM` — the 77 denominator (unit `DENOM`, 2026-10-04). Progress: [==========] 10/10	10079	10121	10	8	2	0	0
+GUARDFIX — `substrate-check.sh` half 1 ROUTES BY WHAT THE FILE IS (`GXR-*`)	10122	10192	11	11	0	0	0
+`DTB-` dtype.bend's red laws — 14 -> 6. Full write-up in `.agents/slop/DTYPEB.md`.	10193	10252	9	9	0	0	0
+Session 2026-10-04 round 6 — the method surface was 71/71 correct and UNGATED	10253	10306	1	1	0	0	0
+`DEVG` — is `DEV` a SETTING or a COMMENT? (unit `DEVG`, 2026-10-04). Progress: `[#########.]` 9/10	10307	10361	9	8	1	0	0
+Session 2026-10-04 round 7 — the FIRST method landed since the constant wall fell	10362	10406	1	1	0	0	0
+Session 2026-10-04 — unit `ADEV`: the `COPY`/device NORMAL FORM. `g_allred` now AGREEs.	10407	10451	8	8	0	0	0
+Session 2026-10-04 round 8 — `swish` and `silu`: THREE methods for one composition	10452	10502	1	1	0	0	0
+SZLANE — `runtime/sz.c`'s bare registrations (unit `szlane`, 2026-10-04)	10503	10542	7	5	2	0	0
+libclang trampolines: the 324 `None{}` bodies  [CF]	10543	10587	6	3	3	0	0
+NVROWS — the 313 dead `nvdev.bend` gate rows (unit `NVROWS-*`)	10588	10634	7	5	2	0	0
+Session 2026-10-04/05 round 9 — one method landed, one HELD, and the gate found a bug in the hour it was made stricter	10635	10690	2	1	1	0	0
+`CSH` — widen `cshape`'s `except`, or prove it cannot be (unit `CSH`, 2026-10-04/05).	10691	10691	0	0	0	0	0
+Progress: [#########.] 9/10	10692	10775	14	13	1	0	0
+Session 2026-10-05 — `tanh`'s blocker, characterised rather than guessed at	10776	10834	0	0	0	0	0
+i64mul unit (IM-1..IM-6) -- `i64_mul` DERIVED, GATED, LANDED. Not committed.	10835	10900	6	6	0	0	0
+Session 2026-10-05 round 2 — the promotion matrix's MISSING CELL, and it is a real defect	10901	10965	1	0	1	0	0
+MUT- (2026-10-05) — the mutated-copy hazard: labelled, measured, ledgered	10966	10999	9	5	4	0	0
+CIDSWEEP — the rest of the tree after `libclang.bend`'s 324 → 0 (unit `cidsweep`, 2026-10-05)	11000	11047	9	7	2	0	0
+Session 2026-10-05 round 3 — the promotion defect ISOLATED to one operand shape	11048	11119	1	0	1	0	0
+PROBES — a probe or a plant in `tinybendygrad/` now announces itself to a TOOL (prefix `PROBE-`)	11120	11256	21	16	5	0	0
+`e2e-js-lane` — STAGE 8 OF `e2e.sh`, THE JS LANE (JS8-1..7)	11257	11326	11	11	0	0	0
+[DONE] noneshape: `None` vs `None{}`, and an `Arg` that cannot hold an `Op` (2026-10-05)	11327	11428	11	11	0	0	0
+FP8FIX (2026-10-05) — the C lane of `runtime/dtype.c`: 3 FIXED, 1 NOT A DEFECT (unit `fp8fix`, prefix `FX-`)	11429	11540	18	18	0	0	0
+Session 2026-10-05 round 4 — the "promotion defect" was MY FIXTURE. The third time.	11541	11599	2	1	1	0	0
+Session 2026-10-05 round 5 — `wk_i64_to_f32`'s FORMULA is unsound, and it is not a wrong function	11600	11661	1	0	1	0	0
+LASTLAW (2026-10-05) — `tinybendygrad/dtype.bend`'s 8 red laws: **8 -> 0**, LANDED. Not committed.	11662	11783	13	13	0	0	0
+JSFP8 — the JS fp8 lane (`runtime/dtype.js` + a decode gate). Rule prefix `JFP-`.	11784	11919	23	15	8	0	1
+Session 2026-10-05 round 6 — the conversion is FIXED and GATED, and `tanh` is IN	11920	11987	2	2	0	0	0
+NORM — one float normaliser for every gate, and the four that each had their own	11988	12077	9	9	0	0	0
+Session 2026-10-05 — CSTYLE2: `renderer/cstyle.bend`'s 227 ROWS IN FOUR COLUMNS	12078	12134	9	7	2	0	0
+Session 2026-10-05 — `opspy`: `runtime/ops_python.bend` bitcast dedup + its coldness	12135	12165	8	7	1	0	0
+DIFFPY — the two shell drivers, ported to Python (`checks/differ.py`)	12166	12184	5	4	1	0	0
+Session 2026-10-05 round 7 — FIVE GATES COULD LIE, and a parallel audit found 12 more false walls	12185	12250	1	1	0	0	0
+Session 2026-10-05 round 8 — three walls RETIRED, and the tree is red through no fault of ours	12251	12287	1	1	0	0	0
+Session 2026-10-05 round 9 — the PRIMARY gate could not run, and there is already a gate for the failure I diagnosed	12288	12343	2	1	1	0	0
+Session 2026-10-05 round 10 — FOUR FILES ARE 0 BYTES IN THE WORKING COPY, and one of them is helpers.bend	12344	12397	2	1	1	0	0
+Session 2026-10-05 round 11 — the 0-byte files are REPAIRED, and one of them was my fault	12398	12450	1	1	0	0	0
+deadreg (2026-10-05) — `e2e.sh` STAGE 8's DENOMINATOR IS **0**, AND THE ANSWER IS	12451	12451	0	0	0	0	0
+TO RETIRE THE STAGE, NOT TO REACH THE ROWS	12452	12511	6	5	1	0	0
+2026-10-05 — WALLRULE unit: a wall names its prerequisite, and nine walls that did were believed	12512	12551	6	3	3	0	0
+Session 2026-10-05 round 12 — a wall that is TRUE and attached to the WRONG SUBJECT	12552	12607	1	0	1	0	0
+2026-10-05 — E2EPY unit: `checks/e2e.sh` ported to `checks/e2e.py`, and four `.sh` shims that exit 0 having measured nothing	12608	12704	10	7	3	0	0
+Session 2026-10-05 — `bitcastrow`: `bitcast_dims`' RANGE FIXED, AND THE ROW THAT COULD SEE IT	12705	12744	6	5	1	0	0
+2026-10-05 — WALLCHECK REBUILD: the checker was pruned with its ledger, and it had a SIXTH failure	12745	12793	9	6	3	0	0
+Session 2026-10-05 — the 103 `.txt` under `runs/graphcmp/D/`	12794	12839	6	4	2	0	0
+2026-10-05 — STALEFIX unit: `gates/gatekit.py` left the PREVIOUS run's artifacts on disk (prefix `SF-`)	12840	12907	11	6	5	0	0
+FIX3 — stage 3's and stage 5's fixtures were deletable while the gate still named them (2026-10-06). Progress: `[######....]` 6/10	12908	12975	10	6	4	0	0
+2026-10-06 — the lane-file rename, and the rule I broke three times doing it	12976	13015	6	4	2	0	0
+clearfix — a gate's pre-run `sys.exit` strands the last green run's artifacts	13016	13083	16	11	5	0	0
+2026-10-06 — UNSETEXP unit: the NINE graphs that ran with nothing said about them. Progress: `[######....]` 6/10	13084	13124	9	6	3	0	0
+2026-10-06 — which claims are REACHED, not which are written	13125	13147	3	2	1	0	0
+2026-10-06 — the FIRST ops.bend gate, and the oracles come out of the pruning directory	13148	13174	4	3	1	0	0
+2026-10-06 — the arg-type lane, 14 rows, and the FOURTH fixture mismatch	13175	13206	4	2	2	0	0
+SPECCITE — `file:line` CITATIONS, AND THE TENTH CLASS WAS NOT THE TENTH FINDING	13207	13269	10	7	3	0	0
+devpin — the DEVICE is a declared precondition of the graphcmp comparison (2026-10-06)	13270	13448	30	24	6	0	0
+2026-10-06 — the ops.bend marker campaign, and the fifth defect closed in the TREE	13449	13477	5	4	1	0	1
