@@ -32,7 +32,9 @@ comment is a gate nobody can check.
   PROVENANCE `port=` / `non-port=` derived from `git ls-files`, plus a PORT ALARM for any
     `tinybendygrad/` path that is not in the index. Reported, never silently absorbed.
 
-  HALF 2, over the same files, and it reports its own coverage because an instrument that
+  HALF 2, over the same discovered files (the shell oracle name-checks every argument, `print -l
+  -- "$@"`, and `diff.py:72`'s `pop` set already hands it `rglob('*')` -- so `--root` now hands
+  HALF 2 exactly that population), and it reports its own coverage because an instrument that
   silently skips most of its input is the defect this project has catalogued twenty times:
     NAMES per file: modules, refs, exact, suffix-only, unresolved, unseen, unused-import
     TOTALS refs=, exact=, suffix=, unresolved=, unseen=, missing_module=, dead_import=
@@ -44,10 +46,12 @@ comment is a gate nobody can check.
       named class of refs OUTSIDE the graph, not a name-resolution result and NOT a finding:
       the pool is built only from ALIASED imports, so these are unresolvable BY CONSTRUCTION.
 
-POPULATION: with no file arguments, `--root [DIR]` sweeps every instrumented file under DIR
-  (default `tinybendygrad`, the `.bend`/`.c`/`.js`/`.mjs` classes the router claims) discovered
-  by `os.walk`, so the tree can be swept WITHOUT a caller's `find`. File arguments still take
-  precedence and are judged exactly as before, so the 1-file and 2-file callers are unmoved.
+POPULATION: with no file arguments, `--root [DIR]` sweeps EVERY file under DIR (default
+  `tinybendygrad`) by `os.walk`, so the tree can be swept WITHOUT a caller's `find` and nothing a
+  suffix filter would hide is dropped -- `endswith` decides what the ROUTER does with a file, never
+  what the WALK sees. A non-source file is printed `NO INSTRUMENT` and the `UNJUDGED` line names
+  how many discovered files were NOT judged. File arguments still take precedence and are judged
+  exactly as before, so the 1-file and 2-file callers are unmoved.
 
 EXIT STATUS: 0 clean · 1 at least one finding · 2 the scratch directory could not be made ·
 3 no files given, or the frozen oracle moved. **ZERO ARGUMENTS IS A MISUSE, NOT A VERDICT:**
@@ -105,24 +109,35 @@ SHELL_SECONDS = 300   # the shell's `alarm 300`, kept so the TIME a run may take
 DEFAULT_MB = 2048     # above the measured 1,152 MB maximum; see the docstring
 
 # THE POPULATION DECLARATION. The shell admitted the population was a caller's `find` and named
-# no generator of its own -- doctrine 1. The classes below are exactly the ones `instrument_for`
-# can judge; walking them is the tree sweep the usage line used to ask a caller to perform.
+# no generator of its own -- doctrine 1. THE POPULATION IS EVERY FILE UNDER `POP_ROOT`; the
+# suffixes below are only the classes `instrument_for` can ROUTE, and the ROUTER, not the walk,
+# decides what to DO with each file. A discovery-time suffix FILTER was the fourth producer found
+# blind to its own subject (`no-strays.py:89-91`): the docstring here once CLAIMED the `*.staged-*`
+# and `*.mut` strays "are excluded by the same rule that includes the real files" -- TRUE, and
+# exactly the defect. Four tracked `ops.staged-blob-*` and three `memory.staged-mem-*` sat in this
+# tree for two days; the `.bend` count never moved (138), and a suffix-filtered walk could not have
+# named one of them. A `*.staged-*` file is NOT a scratch name to exclude -- it is a file this walk
+# must SEE and the router must judge (or, having no class, declare unjudged).
 POP_ROOT = "tinybendygrad"
 POP_SUFFIXES = (".bend", ".c", ".js", ".mjs")
 
 
 def discover(root: str) -> list[str]:
-    """Every instrumented file under `root`, by `os.walk`, in a stable order.
+    """EVERY file under `root`, by `os.walk`, in a stable order.
 
-    A DIRECTORY WALK, not a hand list and not a suffix over a caller's text: the extensions are
-    the router's own classes, and `os.walk` decides membership. The `*.staged-*` scratch copies
-    and `*.mut` mutants do not end in one of these, so they are excluded by the same rule that
-    includes the real files.
+    A DIRECTORY WALK, not a hand list and not a suffix over a caller's text. `endswith` is NOT
+    applied here: applying it here is a filter at DISCOVERY time, and a population an instrument
+    FILTERS is a population it cannot be wrong about -- because it cannot be anything. A file with
+    no instrument class is still DISCOVERED; `instrument_for` answers `none` for it, `half1` prints
+    `NO INSTRUMENT <path>` and counts it, and `run` states how many discovered files were NOT judged
+    and NAMES them. MEASURED 2026-10-06: `tinybendygrad/` holds exactly 144 files, every one already
+    a router class, so this rule changes TODAY's denominator by ZERO -- its only effect is on the
+    file a suffix filter would have hidden, which is the whole point.
     """
     out: list[str] = []
     for d, dirs, fs in os.walk(root):
         dirs.sort()
-        out += [os.path.join(d, f) for f in sorted(fs) if f.endswith(POP_SUFFIXES)]
+        out += [os.path.join(d, f) for f in sorted(fs)]
     return out
 
 
@@ -228,8 +243,9 @@ def parse(head: list[str]) -> argparse.Namespace:
     ap.add_argument("--seconds", type=int, default=SHELL_SECONDS,
                     help=f"time ceiling per invocation (default {SHELL_SECONDS}, the shell's alarm)")
     ap.add_argument("--root", nargs="?", const=POP_ROOT, default=None, metavar="DIR",
-                    help=f"with no file arguments, sweep the instrumented files under DIR by "
-                         f"os.walk (default {POP_ROOT}); file arguments, when given, take "
+                    help=f"with no file arguments, sweep EVERY file under DIR by os.walk "
+                         f"(default {POP_ROOT}); each is routed, and those with no instrument "
+                         "class are named, never dropped. File arguments, when given, take "
                          "precedence and are judged as before")
     return ap.parse_args(head)
 
@@ -767,8 +783,17 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | Non
     out.append(f"ROUTE   bend={tally['bend']}  cc={tally['cc']}  node={tally['node']}  "
                f"no-instrument={tally['none']}  (of {len(files)} file(s))")
     if origin is not None:
-        out.append(f"POPULATION root={origin} files={len(files)} by os.walk "
-                   f"({' '.join(POP_SUFFIXES)})")
+        # WHAT THE SWEEP DID NOT LOOK AT, BY NAME, so a green over a discovered population cannot
+        # hide the files the router dropped. A file that is not a router class is an UNMEASURED
+        # SURFACE, not a finding -- `no-strays.py` owns residue -- but silence about the
+        # denominator is exactly the defect this whole sweep exists to stop.
+        unjudged = [f for f in files if not f.endswith(POP_SUFFIXES)]
+        out.append(f"POPULATION root={origin} files={len(files)} by os.walk (EVERY file; router "
+                   f"classes {' '.join(POP_SUFFIXES)})")
+        out.append(f"UNJUDGED  {len(unjudged)} of {len(files)} discovered file(s) are not a "
+                   "router class: NO INSTRUMENT ran on them (HALF 2 still name-checks every "
+                   "discovered file, as the oracle does): "
+                   + (", ".join(unjudged) if unjudged else "(none)"))
     prov, prov_rc = provenance(paths)
     # CAPTURED IMMEDIATELY, which is the point: `$?` after a `[` is that `[`'s status and not the
     # block's, and a vacuous verdict looks identical to a pass.

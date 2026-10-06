@@ -1,12 +1,15 @@
 {
-  "ALIGNED": [],
+  "ALIGNED": [
+    "tinygrad/renderer/cstyle.py:305"
+  ],
   "ALL2ALL": [
     "tinygrad/helpers.py:245",
     "tinygrad/runtime/support/hcq2.py:7",
     "tinygrad/runtime/support/hcq2.py:308",
     "tinygrad/runtime/support/hcq2.py:538",
     "tinygrad/schedule/allreduce.py:2",
-    "tinygrad/schedule/allreduce.py:14"
+    "tinygrad/schedule/allreduce.py:14",
+    "tinygrad/schedule/allreduce.py:16"
   ],
   "ALLOW_DEVICE_USAGE": [
     "tinygrad/codegen/__init__.py:476",
@@ -22,7 +25,9 @@
     "tinygrad/viz/cli.py:78",
     "tinygrad/viz/serve.py:756"
   ],
-  "ALLOW_HALF8": [],
+  "ALLOW_HALF8": [
+    "tinygrad/codegen/late/coalesce.py:145"
+  ],
   "ALLOW_TF32": [
     "tinygrad/codegen/__init__.py:4",
     "tinygrad/codegen/__init__.py:510",
@@ -35,9 +40,15 @@
     "tinygrad/schedule/multi.py:1",
     "tinygrad/schedule/multi.py:116"
   ],
-  "AMD_AQL": [],
-  "AMD_DISABLE_SDMA": [],
-  "AMD_KFD_QUEUE_PRIORITY": [],
+  "AMD_AQL": [
+    "tinygrad/runtime/ops_amd.py:883"
+  ],
+  "AMD_DISABLE_SDMA": [
+    "tinygrad/runtime/ops_amd.py:968"
+  ],
+  "AMD_KFD_QUEUE_PRIORITY": [
+    "tinygrad/runtime/ops_amd.py:687"
+  ],
   "AMD_SDMA_BIND": [],
   "AM_DEBUG": [
     "tinygrad/runtime/support/am/amdev.py:11",
@@ -46,15 +57,23 @@
     "tinygrad/runtime/support/am/amdev.py:309",
     "tinygrad/runtime/support/am/amdev.py:324"
   ],
-  "AM_POWER_LIMIT": [],
-  "AM_RESET": [],
+  "AM_POWER_LIMIT": [
+    "tinygrad/runtime/support/am/amdev.py:216"
+  ],
+  "AM_RESET": [
+    "tinygrad/runtime/support/am/amdev.py:183"
+  ],
   "APL_REMOTE_SOCK": [],
-  "ASSERT_COMPILE": [],
+  "ASSERT_COMPILE": [
+    "tinygrad/device.py:341"
+  ],
   "ASYNC_COPY_WORKERS": [],
   "BEAM": [
     "tinygrad/codegen/__init__.py:297",
     "tinygrad/codegen/__init__.py:479",
     "tinygrad/codegen/opt/heuristic.py:21",
+    "tinygrad/codegen/opt/search.py:52",
+    "tinygrad/codegen/opt/search.py:147",
     "tinygrad/device.py:511",
     "tinygrad/engine/jit.py:4",
     "tinygrad/engine/jit.py:36",
@@ -74,18 +93,44 @@
     "tinygrad/codegen/opt/search.py:151",
     "tinygrad/codegen/opt/search.py:172"
   ],
-  "BEAM_DEV_TIMEOUT": [],
-  "BEAM_ESTIMATE": [],
-  "BEAM_LOCAL_MAX": [],
-  "BEAM_LOG_SURPASS_MAX": [],
-  "BEAM_MAX_TASKS_PER_CHILD": [],
-  "BEAM_MIN_PROGRESS": [],
-  "BEAM_PADTO": [],
-  "BEAM_STRICT_MODE": [],
-  "BEAM_TIMEOUT_SEC": [],
-  "BEAM_UOPS_MAX": [],
-  "BEAM_UPCAST_MAX": [],
-  "BENCHMARK_LOG": [],
+  "BEAM_DEV_TIMEOUT": [
+    "tinygrad/codegen/opt/search.py:145"
+  ],
+  "BEAM_ESTIMATE": [
+    "tinygrad/codegen/opt/postrange.py:250"
+  ],
+  "BEAM_LOCAL_MAX": [
+    "tinygrad/codegen/opt/search.py:86"
+  ],
+  "BEAM_LOG_SURPASS_MAX": [
+    "tinygrad/codegen/opt/search.py:69",
+    "tinygrad/codegen/opt/search.py:99",
+    "tinygrad/codegen/opt/search.py:140"
+  ],
+  "BEAM_MAX_TASKS_PER_CHILD": [
+    "tinygrad/engine/worker.py:47"
+  ],
+  "BEAM_MIN_PROGRESS": [
+    "tinygrad/codegen/opt/search.py:118"
+  ],
+  "BEAM_PADTO": [
+    "tinygrad/codegen/opt/search.py:18"
+  ],
+  "BEAM_STRICT_MODE": [
+    "tinygrad/codegen/opt/search.py:75"
+  ],
+  "BEAM_TIMEOUT_SEC": [
+    "tinygrad/codegen/opt/search.py:59"
+  ],
+  "BEAM_UOPS_MAX": [
+    "tinygrad/codegen/opt/search.py:68"
+  ],
+  "BEAM_UPCAST_MAX": [
+    "tinygrad/codegen/opt/search.py:86"
+  ],
+  "BENCHMARK_LOG": [
+    "tinygrad/llm/cli.py:192"
+  ],
   "BROWSER": [],
   "CACHEDB": [
     "tinygrad/helpers.py:402",
@@ -115,7 +160,9 @@
   ],
   "CC": [
     "tinygrad/runtime/autogen/llvm.py:1006",
-    "tinygrad/runtime/autogen/llvm.py:1208"
+    "tinygrad/runtime/autogen/llvm.py:1208",
+    "tinygrad/runtime/ops_dsp.py:121",
+    "tinygrad/runtime/support/compiler_cpu.py:21"
   ],
   "CCACHE": [
     "tinygrad/device.py:7",
@@ -127,9 +174,12 @@
     "tinygrad/uop/ops.py:211",
     "tinygrad/uop/spec.py:7",
     "tinygrad/uop/spec.py:18",
-    "tinygrad/uop/spec.py:26"
+    "tinygrad/uop/spec.py:26",
+    "tinygrad/uop/validate.py:9"
   ],
-  "CONST_LR": [],
+  "CONST_LR": [
+    "tinygrad/nn/optim.py:20"
+  ],
   "CPU_COUNT": [
     "tinygrad/helpers.py:268",
     "tinygrad/helpers.py:274"
@@ -262,9 +312,15 @@
     "tinygrad/viz/serve.py:739",
     "tinygrad/viz/serve.py:740"
   ],
-  "DEBUGONNX": [],
-  "DEBUG_GC": [],
-  "DEBUG_LINEARIZE": [],
+  "DEBUGONNX": [
+    "tinygrad/nn/onnx.py:365"
+  ],
+  "DEBUG_GC": [
+    "tinygrad/helpers.py:390"
+  ],
+  "DEBUG_LINEARIZE": [
+    "tinygrad/codegen/late/linearizer.py:48"
+  ],
   "DEBUG_RANGEIFY": [
     "tinygrad/helpers.py:279",
     "tinygrad/schedule/rangeify.py:8",
@@ -275,45 +331,69 @@
     "tinygrad/codegen/__init__.py:511",
     "tinygrad/dtype.py:5",
     "tinygrad/dtype.py:145",
+    "tinygrad/dtype.py:167",
     "tinygrad/helpers.py:255"
   ],
   "DEV": [
     "tinygrad/device.py:8",
     "tinygrad/device.py:18",
     "tinygrad/device.py:50",
+    "tinygrad/device.py:52",
+    "tinygrad/device.py:56",
+    "tinygrad/device.py:59",
+    "tinygrad/device.py:482",
     "tinygrad/device.py:483",
+    "tinygrad/device.py:490",
     "tinygrad/device.py:491",
+    "tinygrad/device.py:543",
     "tinygrad/device.py:548",
+    "tinygrad/device.py:550",
+    "tinygrad/helpers.py:234",
     "tinygrad/helpers.py:237",
+    "tinygrad/runtime/autogen/__init__.py:164",
+    "tinygrad/runtime/autogen/__init__.py:165",
     "tinygrad/runtime/autogen/mesa.py:7",
     "tinygrad/runtime/autogen/mesa.py:9",
     "tinygrad/runtime/ops_amd.py:12",
     "tinygrad/runtime/ops_amd.py:742",
     "tinygrad/runtime/ops_cuda.py:3",
     "tinygrad/runtime/ops_cuda.py:15",
+    "tinygrad/runtime/ops_null.py:66",
+    "tinygrad/runtime/ops_python.py:167",
     "tinygrad/runtime/support/hcq2.py:7",
     "tinygrad/runtime/support/hcq2.py:118",
     "tinygrad/runtime/support/system.py:6",
+    "tinygrad/runtime/support/system.py:12",
     "tinygrad/runtime/support/system.py:13",
     "tinygrad/runtime/support/system.py:454",
     "tinygrad/runtime/support/usb.py:4",
     "tinygrad/runtime/support/usb.py:473"
   ],
-  "DEVICE_IN_FUNCTION_BUG": [],
+  "DEVICE_IN_FUNCTION_BUG": [
+    "tinygrad/function.py:61"
+  ],
   "DISABLE_FAST_IDIV": [
     "tinygrad/codegen/__init__.py:3",
     "tinygrad/codegen/__init__.py:357",
     "tinygrad/codegen/__init__.py:510",
     "tinygrad/helpers.py:250"
   ],
-  "DISABLE_HTTP_CACHE": [],
+  "DISABLE_HTTP_CACHE": [
+    "tinygrad/helpers.py:470"
+  ],
   "DISALLOW_BROADCAST": [
     "tinygrad/helpers.py:291",
     "tinygrad/uop/ops.py:12",
     "tinygrad/uop/ops.py:445"
   ],
-  "DMC": [],
-  "EMULATE": [],
+  "DMC": [
+    "tinygrad/codegen/late/coalesce.py:110"
+  ],
+  "EMULATE": [
+    "tinygrad/runtime/ops_null.py:65",
+    "tinygrad/runtime/ops_null.py:66",
+    "tinygrad/runtime/ops_python.py:167"
+  ],
   "EMULATED_DTYPES": [
     "tinygrad/codegen/__init__.py:3",
     "tinygrad/codegen/__init__.py:510",
@@ -324,7 +404,9 @@
     "tinygrad/renderer/__init__.py:87",
     "tinygrad/runtime/support/hcq2.py:540"
   ],
-  "EXPAND_SSA": [],
+  "EXPAND_SSA": [
+    "tinygrad/renderer/cstyle.py:253"
+  ],
   "FIX_METAL_ICB": [],
   "FLOAT16": [
     "tinygrad/helpers.py:238",
@@ -344,14 +426,19 @@
     "tinygrad/nn/optim.py:11",
     "tinygrad/nn/optim.py:74",
     "tinygrad/nn/optim.py:84",
+    "tinygrad/nn/optim.py:91",
     "tinygrad/nn/optim.py:102",
     "tinygrad/nn/optim.py:132",
     "tinygrad/nn/optim.py:139",
     "tinygrad/nn/optim.py:153"
   ],
-  "GMMU": [],
+  "GMMU": [
+    "tinygrad/runtime/support/memory.py:248",
+    "tinygrad/runtime/support/memory.py:275"
+  ],
   "GRAPH_ONE_KERNEL": [],
   "HALF": [
+    "tinygrad/llm/model.py:432",
     "tinygrad/runtime/support/usb.py:208",
     "tinygrad/runtime/support/usb.py:212",
     "tinygrad/runtime/support/usb.py:216",
@@ -370,14 +457,20 @@
     "tinygrad/runtime/support/hcq2.py:19"
   ],
   "HCQDEV_WAIT_TIMEOUT_MS": [],
-  "HCQ_NUM_SDMA": [],
-  "HCQ_VISIBLE_DEVICES": [],
+  "HCQ_NUM_SDMA": [
+    "tinygrad/runtime/support/hcq2.py:308"
+  ],
+  "HCQ_VISIBLE_DEVICES": [
+    "tinygrad/runtime/support/system.py:12"
+  ],
   "IGNORE_BEAM_CACHE": [
     "tinygrad/codegen/opt/search.py:8",
     "tinygrad/codegen/opt/search.py:108",
     "tinygrad/helpers.py:247"
   ],
-  "IGNORE_JIT_FIRST_BEAM": [],
+  "IGNORE_JIT_FIRST_BEAM": [
+    "tinygrad/engine/jit.py:131"
+  ],
   "IMAGE": [
     "tinygrad/codegen/__init__.py:3",
     "tinygrad/codegen/__init__.py:510",
@@ -394,6 +487,7 @@
     "tinygrad/mixin/op.py:1462",
     "tinygrad/mixin/op.py:1589",
     "tinygrad/renderer/cstyle.py:7",
+    "tinygrad/renderer/cstyle.py:342",
     "tinygrad/renderer/cstyle.py:620",
     "tinygrad/runtime/ops_python.py:9",
     "tinygrad/runtime/ops_python.py:177",
@@ -403,21 +497,46 @@
     "tinygrad/uop/symbolic.py:430",
     "tinygrad/uop/symbolic.py:431"
   ],
-  "IOCTL": [],
+  "IOCTL": [
+    "tinygrad/runtime/ops_amd.py:26",
+    "tinygrad/runtime/ops_cuda.py:14",
+    "tinygrad/runtime/ops_dsp.py:10",
+    "tinygrad/runtime/ops_hip.py:7",
+    "tinygrad/runtime/ops_nv.py:23",
+    "tinygrad/runtime/ops_qcom.py:18"
+  ],
   "JIT": [
     "tinygrad/engine/jit.py:4",
+    "tinygrad/engine/jit.py:29",
+    "tinygrad/engine/jit.py:47",
+    "tinygrad/engine/jit.py:92",
+    "tinygrad/engine/jit.py:97",
+    "tinygrad/engine/jit.py:120",
     "tinygrad/engine/jit.py:128",
+    "tinygrad/engine/jit.py:144",
+    "tinygrad/engine/jit.py:146",
+    "tinygrad/engine/jit.py:172",
+    "tinygrad/engine/jit.py:174",
     "tinygrad/helpers.py:239",
+    "tinygrad/llm/cli.py:147",
     "tinygrad/llm/cli.py:179",
     "tinygrad/llm/model.py:410",
     "tinygrad/nn/onnx.py:390",
+    "tinygrad/nn/onnx.py:433",
     "tinygrad/nn/onnx.py:436",
+    "tinygrad/tensor.py:280",
     "tinygrad/uop/ops.py:1007"
   ],
-  "JITBEAM": [],
+  "JITBEAM": [
+    "tinygrad/engine/jit.py:36"
+  ],
   "JIT_BATCH_SIZE": [],
-  "LATE_ALLREDUCE": [],
-  "LLVMOPT": [],
+  "LATE_ALLREDUCE": [
+    "tinygrad/schedule/multi.py:50"
+  ],
+  "LLVMOPT": [
+    "tinygrad/runtime/support/compiler_llvm.py:24"
+  ],
   "LRU": [
     "tinygrad/device.py:6",
     "tinygrad/device.py:280",
@@ -433,27 +552,41 @@
     "tinygrad/schedule/rangeify.py:8",
     "tinygrad/schedule/rangeify.py:177"
   ],
-  "MAX_SQTT_PKTS": [],
+  "MAX_SQTT_PKTS": [
+    "tinygrad/viz/serve.py:536",
+    "tinygrad/viz/serve.py:683"
+  ],
   "MLX_IP": [],
-  "MM_DEBUG": [],
-  "MOCKDSP": [],
-  "MV": [],
+  "MM_DEBUG": [
+    "tinygrad/runtime/support/memory.py:209",
+    "tinygrad/runtime/support/memory.py:228"
+  ],
+  "MOCKDSP": [
+    "tinygrad/runtime/ops_dsp.py:79",
+    "tinygrad/runtime/ops_dsp.py:130"
+  ],
+  "MV": [
+    "tinygrad/codegen/opt/heuristic.py:62"
+  ],
   "MV_BLOCKSIZE": [
     "tinygrad/codegen/opt/heuristic.py:61",
     "tinygrad/codegen/opt/heuristic.py:62",
     "tinygrad/codegen/opt/heuristic.py:70",
+    "tinygrad/codegen/opt/heuristic.py:72",
     "tinygrad/codegen/opt/heuristic.py:76"
   ],
   "MV_ROWS_PER_THREAD": [
     "tinygrad/codegen/opt/heuristic.py:61",
     "tinygrad/codegen/opt/heuristic.py:62",
     "tinygrad/codegen/opt/heuristic.py:70",
+    "tinygrad/codegen/opt/heuristic.py:72",
     "tinygrad/codegen/opt/heuristic.py:77"
   ],
   "MV_THREADS_PER_ROW": [
     "tinygrad/codegen/opt/heuristic.py:61",
     "tinygrad/codegen/opt/heuristic.py:62",
     "tinygrad/codegen/opt/heuristic.py:70",
+    "tinygrad/codegen/opt/heuristic.py:72",
     "tinygrad/codegen/opt/heuristic.py:74"
   ],
   "NOLOCALS": [],
@@ -464,7 +597,9 @@
     "tinygrad/codegen/opt/postrange.py:251",
     "tinygrad/helpers.py:237"
   ],
-  "NOSKIP": [],
+  "NOSKIP": [
+    "tinygrad/renderer/amd/sqtt.py:741"
+  ],
   "NO_COLOR": [
     "tinygrad/helpers.py:42",
     "tinygrad/helpers.py:240",
@@ -487,14 +622,20 @@
     "tinygrad/runtime/support/nv/nvdev.py:10",
     "tinygrad/runtime/support/nv/nvdev.py:94"
   ],
-  "OCCUPANCY_FLOOR": [],
-  "ONNXLIMIT": [],
+  "OCCUPANCY_FLOOR": [
+    "tinygrad/codegen/opt/heuristic.py:106"
+  ],
+  "ONNXLIMIT": [
+    "tinygrad/nn/onnx.py:366"
+  ],
   "OPENPILOT_HACKS": [
     "tinygrad/helpers.py:238",
     "tinygrad/schedule/prepare.py:6",
     "tinygrad/schedule/prepare.py:276"
   ],
-  "OPTIM_DTYPE": [],
+  "OPTIM_DTYPE": [
+    "tinygrad/nn/optim.py:17"
+  ],
   "PARALLEL": [
     "tinygrad/engine/worker.py:3",
     "tinygrad/engine/worker.py:45",
@@ -504,13 +645,21 @@
     "tinygrad/helpers.py:274"
   ],
   "PCONTIG": [],
-  "PMA_BUFFER_SIZE": [],
-  "PMC_COUNTERS": [],
+  "PMA_BUFFER_SIZE": [
+    "tinygrad/runtime/ops_nv.py:760"
+  ],
+  "PMC_COUNTERS": [
+    "tinygrad/runtime/ops_amd.py:913"
+  ],
   "PORT": [
+    "tinygrad/llm/cli.py:146",
     "tinygrad/viz/serve.py:752",
+    "tinygrad/viz/serve.py:753",
     "tinygrad/viz/serve.py:764"
   ],
-  "PRINT_MATCH_STATS": [],
+  "PRINT_MATCH_STATS": [
+    "tinygrad/uop/ops.py:1746"
+  ],
   "PROFILE": [
     "tinygrad/device.py:6",
     "tinygrad/device.py:191",
@@ -518,6 +667,7 @@
     "tinygrad/device.py:500",
     "tinygrad/device.py:520",
     "tinygrad/device.py:529",
+    "tinygrad/device.py:531",
     "tinygrad/engine/realize.py:6",
     "tinygrad/engine/realize.py:72",
     "tinygrad/engine/realize.py:81",
@@ -539,23 +689,53 @@
     "tinygrad/runtime/ops_qcom.py:336",
     "tinygrad/uop/ops.py:11",
     "tinygrad/uop/ops.py:1737",
-    "tinygrad/uop/ops.py:1759"
+    "tinygrad/uop/ops.py:1759",
+    "tinygrad/uop/ops.py:1760"
   ],
-  "PROFILE_DATA": [],
-  "QCOM_PRIORITY": [],
-  "REALIZE": [],
-  "REDUCEOP_SPLIT_SIZE": [],
-  "REDUCEOP_SPLIT_THRESHOLD": [],
-  "REMOTE": [],
-  "REMOTE_TIMEOUT": [],
-  "REWRITE_DATA": [],
+  "PROFILE_DATA": [
+    "tinygrad/uop/ops.py:1762"
+  ],
+  "QCOM_PRIORITY": [
+    "tinygrad/runtime/ops_qcom.py:320"
+  ],
+  "REALIZE": [
+    "tinygrad/llm/model.py:427"
+  ],
+  "REDUCEOP_SPLIT_SIZE": [
+    "tinygrad/schedule/prepare.py:118"
+  ],
+  "REDUCEOP_SPLIT_THRESHOLD": [
+    "tinygrad/schedule/prepare.py:105"
+  ],
+  "REMOTE": [
+    "tinygrad/runtime/support/system.py:130",
+    "tinygrad/runtime/support/system.py:399"
+  ],
+  "REMOTE_TIMEOUT": [
+    "tinygrad/runtime/support/system.py:391"
+  ],
+  "REWRITE_DATA": [
+    "tinygrad/uop/ops.py:1755",
+    "tinygrad/uop/ops.py:1761"
+  ],
   "RING": [
     "tinygrad/helpers.py:245",
     "tinygrad/schedule/allreduce.py:2",
+    "tinygrad/schedule/allreduce.py:15",
+    "tinygrad/schedule/allreduce.py:16"
+  ],
+  "RING_ALLREDUCE_THRESHOLD": [
+    "tinygrad/schedule/allreduce.py:14",
     "tinygrad/schedule/allreduce.py:15"
   ],
-  "RING_ALLREDUCE_THRESHOLD": [],
-  "ROCM_PATH": [],
+  "ROCM_PATH": [
+    "tinygrad/runtime/autogen/__init__.py:119",
+    "tinygrad/runtime/autogen/__init__.py:123",
+    "tinygrad/runtime/autogen/comgr.py:8",
+    "tinygrad/runtime/autogen/comgr_3.py:8",
+    "tinygrad/runtime/autogen/hip.py:8",
+    "tinygrad/runtime/support/compiler_amd.py:102"
+  ],
   "SCACHE": [
     "tinygrad/helpers.py:287",
     "tinygrad/schedule/__init__.py:8",
@@ -584,6 +764,7 @@
     "tinygrad/uop/ops.py:206",
     "tinygrad/uop/ops.py:207",
     "tinygrad/uop/ops.py:209",
+    "tinygrad/uop/ops.py:212",
     "tinygrad/uop/render.py:103",
     "tinygrad/uop/spec.py:7",
     "tinygrad/uop/spec.py:38"
@@ -593,18 +774,27 @@
     "tinygrad/schedule/prepare.py:6",
     "tinygrad/schedule/prepare.py:105"
   ],
-  "SQTT_BUFFER_SIZE": [],
-  "SQTT_EVENT": [],
-  "SUM_DTYPE": [],
+  "SQTT_BUFFER_SIZE": [
+    "tinygrad/runtime/ops_amd.py:905",
+    "tinygrad/runtime/ops_amd.py:1047"
+  ],
+  "SQTT_EVENT": [
+    "tinygrad/renderer/amd/sqtt.py:752"
+  ],
+  "SUM_DTYPE": [
+    "tinygrad/dtype.py:223"
+  ],
   "TC": [
     "tinygrad/codegen/opt/__init__.py:7",
     "tinygrad/codegen/opt/heuristic.py:31",
     "tinygrad/codegen/opt/heuristic.py:32",
     "tinygrad/codegen/opt/postrange.py:88",
     "tinygrad/codegen/opt/postrange.py:117",
+    "tinygrad/codegen/opt/postrange.py:172",
     "tinygrad/codegen/opt/search.py:20",
     "tinygrad/codegen/opt/search.py:22",
-    "tinygrad/codegen/opt/search.py:88"
+    "tinygrad/codegen/opt/search.py:88",
+    "tinygrad/helpers.py:242"
   ],
   "TC_OPT": [
     "tinygrad/codegen/__init__.py:4",
@@ -614,6 +804,7 @@
     "tinygrad/codegen/opt/heuristic.py:27",
     "tinygrad/codegen/opt/heuristic.py:28",
     "tinygrad/codegen/opt/heuristic.py:32",
+    "tinygrad/codegen/opt/search.py:22",
     "tinygrad/helpers.py:242"
   ],
   "TC_SELECT": [
@@ -624,11 +815,15 @@
     "tinygrad/codegen/opt/heuristic.py:32",
     "tinygrad/helpers.py:242"
   ],
-  "TEST_PICKLE": [],
+  "TEST_PICKLE": [
+    "tinygrad/uop/ops.py:1571"
+  ],
   "THREADS": [],
   "TINYFS_ENDPOINT": [],
   "TINYFS_TIMEOUT": [],
-  "TRACE": [],
+  "TRACE": [
+    "tinygrad/runtime/ops_python.py:66"
+  ],
   "TRACEMETA": [
     "tinygrad/helpers.py:240",
     "tinygrad/tensor.py:7",
@@ -659,6 +854,7 @@
     "tinygrad/uop/ops.py:1746",
     "tinygrad/uop/ops.py:1754",
     "tinygrad/uop/ops.py:1759",
+    "tinygrad/uop/ops.py:1760",
     "tinygrad/uop/spec.py:40",
     "tinygrad/uop/upat.py:166"
   ],
@@ -688,12 +884,19 @@
     "tinygrad/codegen/late/linearizer.py:36",
     "tinygrad/helpers.py:281"
   ],
-  "TYPED": [],
-  "UNSAFE_ALLOW_JIT_BUFFER": [],
-  "UPAT_COMPILE": [],
+  "TYPED": [
+    "tinygrad/__init__.py:2"
+  ],
+  "UNSAFE_ALLOW_JIT_BUFFER": [
+    "tinygrad/tensor.py:278"
+  ],
+  "UPAT_COMPILE": [
+    "tinygrad/uop/ops.py:1596"
+  ],
   "USE_ATOMICS": [
     "tinygrad/helpers.py:289",
     "tinygrad/nn/__init__.py:5",
+    "tinygrad/nn/__init__.py:312",
     "tinygrad/nn/__init__.py:393"
   ],
   "USE_TC": [
@@ -710,7 +913,9 @@
     "tinygrad/engine/realize.py:284",
     "tinygrad/helpers.py:248"
   ],
-  "VFIO": [],
+  "VFIO": [
+    "tinygrad/runtime/support/system.py:222"
+  ],
   "VIZ": [
     "tinygrad/codegen/__init__.py:3",
     "tinygrad/codegen/__init__.py:383",
@@ -746,18 +951,26 @@
     "tinygrad/uop/ops.py:1623",
     "tinygrad/uop/ops.py:1627",
     "tinygrad/uop/ops.py:1746",
+    "tinygrad/uop/ops.py:1760",
     "tinygrad/uop/ops.py:1764",
     "tinygrad/uop/ops.py:1765",
     "tinygrad/uop/ops.py:1766",
+    "tinygrad/viz/cli.py:3",
     "tinygrad/viz/serve.py:61",
     "tinygrad/viz/serve.py:301"
   ],
-  "WAVES_PER_SH": [],
-  "WEBGPU_BACKEND": [],
+  "WAVES_PER_SH": [
+    "tinygrad/runtime/ops_amd.py:423"
+  ],
+  "WEBGPU_BACKEND": [
+    "tinygrad/runtime/ops_webgpu.py:169"
+  ],
   "WINO": [
     "tinygrad/helpers.py:240",
     "tinygrad/mixin/op.py:11",
     "tinygrad/mixin/op.py:1590"
   ],
-  "XDG_CACHE_HOME": []
+  "XDG_CACHE_HOME": [
+    "tinygrad/helpers.py:401"
+  ]
 }

@@ -24434,8 +24434,18 @@ that a length heuristic would delete.
 **V-9. A `.py` IN THE GATE NAMESPACE MUST BE A PROGRAM.** `.agents/slop/helpers-tc-gate.py` was
 **199 lines of recorded `name=value` rows** raising `SyntaxError: invalid syntax` at
 `trange_0_seq=`, written **into the repo** by `helpers-tc-gate.sh`'s own `GT=` prefix. Renamed to
-`oracles/helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
-identical, rc=0. `.bd` / `.bn` are fine — those extensions name no language. Similarly
+`.agents/slop/helpers-tc-gate.rows`; the driver now writes `$GT.rows`; re-ran: 237 shared rows, 3 lanes
+identical, rc=0. `.bd` / `.bn` are fine — those extensions name no language.
+
+**CORRECTED 2026-10-06. THE CLAIM ABOVE WAS FALSE WHEN IT WAS FIRST WRITTEN, AND SO WERE ITS TWO
+SIBLINGS.** This paragraph, `REVIVE.md:217` and `.agents/TODO.md:320` all said `oracles/`, and all
+three said the driver "now writes `$GT.rows`". Neither was true: the driver wrote `$GT.py` and
+nothing was ever moved into `oracles/`. The run they all quote — `237 shared rows, 3 lanes
+identical` — is a line the driver prints EITHER WAY, so quoting it certified nothing about the
+extension at all. **THE GENERAL RULE THIS ADDS:** *a citation and a write path are the same token,
+and three documents restating one another are one witness, not three.* A rename claim is a claim
+about a `>` redirection, so it is checkable, and `docs-agree-with-driver.py` checks it by reading
+the driver's `GT=` prefix and the lanes it names rather than believing prose about either. Similarly
 `nv_gate.py` appends a gate body from `$TMPDIR` into the live port and `checks/reorder-gate.py`
 rewrites a `.bend`: **a file called `-gate` that mutates the port invites exactly this miscount.**
 

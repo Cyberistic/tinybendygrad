@@ -144,14 +144,27 @@ one directory away, in `checks/bend`:
 exec bun "$(dirname "$0")/../references/bend/bend2/main.ts" "$@"
 ```
 
-## `checks/e2e.sh` CANNOT BE FIXED FROM HERE
+## `checks/e2e.sh` IS FIXED, AND THE PIN WAS KEPT — SEE `.agents/slop/e2esh/`
 
-`checks/e2e.py:182` pins `BODY_SHA = 951c5b33…`, which is the sha256 of `checks/e2e.sh` as it
-stands, and `:495` **refuses with exit 3** if that file drifts. So `checks/e2e.sh` is
-sha256-frozen by another unit's in-flight gate, and its `../..` — correct at
-`.agents/slop/` and wrong at `checks/` — cannot be edited without moving that pin in the same
-commit. It is counted in the table as one of the broken ones and is deliberately untouched.
+This section used to say it could not be fixed from here, and recommended deleting the file. **Both
+were checked, and the recommendation does not survive the measurement.** Kept as the record of what
+was believed, and of what decided it.
 
-The pin's own comment says the check is "deliberately NOT a failure when the file is absent", so
-**deleting `checks/e2e.sh` is the clean unblock** and leaves the oracle's questions (1) and (2)
-answerable from the one file that survives. That is a decision for the `checks/e2e.py` unit.
+`checks/e2e.py` pins the sha256 of `checks/e2e.sh`, so its root could not be edited without moving
+that pin — that part was true, and `BODY_SHA` is still there. It resolved to
+`/Users/cyberistic/src/tries`, the repo's PARENT, where `cd "$ROOT"` **SUCCEEDED**, so nothing
+refused: **all nine of the seven stages' paths are ABSENT under that root**, and a live run of the
+old body died in stage 1 on `command not found`, rc 1, with no verdict line ever printed.
+
+**THE DELETION RECOMMENDATION RESTED ON THE PIN'S COMMENT** saying the check "is deliberately NOT a
+failure when the file is absent". That is about a **missing** file. The pin fires on a file that is
+present and **changed**, which is the ordinary case, and two plants measured it: appending one
+comment line, and dropping one root MARKER, both gave `oracle_drift() != []` and `checks/e2e.py
+rc=3` with `== 1/4 oracle` never printed. **Deleting the pin would have deleted the only thing that
+notices.**
+
+`diff.py` is not a second observer to move the pin down to: it compares the PORT against the frozen
+ORACLE and never reads `checks/e2e.sh`, so under both plants its only disagreement was the port's own
+refusal, its stdout empty. Both pins moved with the edit and `revert(oracle) == e2e.sh` is still
+proved byte for byte. Evidence: `.agents/slop/e2esh/FINDINGS.md` §1-5, and `VERDICTS.tsv`'s `e2e.sh`
+row, which is a **pre-fix** measurement — the census is `rootcheck.sh`'s to re-run.

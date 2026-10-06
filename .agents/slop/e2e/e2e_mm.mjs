@@ -8192,6 +8192,35 @@ function $$$$047$$$047tinybendygrad$047helpers$i64_shl$(_x_0, _k_0) {
   return $$$$047$$$047tinybendygrad$047helpers$i64_shl$put$((_x_1 <= 32), ($$$$047$$$047tinybendygrad$047helpers$hi32$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$lo32$(_x_0)), _k_0);
 }
 
+function $$$$047$$$047tinybendygrad$047helpers$i64_shr$lo$(_neg_0, _hi_0, _lo_0, _k_0) {
+  const _x_0 = ($$$$047$$$047tinybendygrad$047helpers$match_hi$(_neg_0));
+  const _x_1 = (32 < _k_0 ? 0 : 32 - _k_0);
+  const _x_2 = (_k_0 >= 32 ? 0 : (_hi_0 >>> _k_0) >>> 0);
+  const _x_3 = (_x_1 >= 32 ? 0 : (_x_0 << _x_1) >>> 0);
+  const _x_4 = (32 < _k_0 ? 0 : 32 - _k_0);
+  const _x_5 = (_k_0 >= 32 ? 0 : (_lo_0 >>> _k_0) >>> 0);
+  const _x_6 = (_x_4 >= 32 ? 0 : (_hi_0 << _x_4) >>> 0);
+  return $$$$047$$$047tinybendygrad$047helpers$i64_of_hi_lo$(((_x_2 | _x_3) >>> 0), ((_x_5 | _x_6) >>> 0));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_shr$hi$(_neg_0, _hi_0, _k_0) {
+  const _x_0 = (_k_0 < 32 ? 0 : _k_0 - 32);
+  const _x_1 = ($$$$047$$$047tinybendygrad$047helpers$match_hi$(_neg_0));
+  const _x_2 = (64 < _k_0 ? 0 : 64 - _k_0);
+  const _x_3 = (_x_0 >= 32 ? 0 : (_hi_0 >>> _x_0) >>> 0);
+  const _x_4 = (_x_2 >= 32 ? 0 : (_x_1 << _x_2) >>> 0);
+  return $$$$047$$$047tinybendygrad$047helpers$i64_of_hi_lo$(($$$$047$$$047tinybendygrad$047helpers$match_hi$(_neg_0)), ((_x_3 | _x_4) >>> 0));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_shr$put$(_neg_0, _hi_0, _lo_0, _k_0) {
+  const _x_0 = (_k_0 >>> 0);
+  return $Bool$pick$((_x_0 <= 32), ($$$$047$$$047tinybendygrad$047helpers$i64_shr$lo$(_neg_0, _hi_0, _lo_0, _k_0)), ($$$$047$$$047tinybendygrad$047helpers$i64_shr$hi$(_neg_0, _hi_0, _k_0)));
+}
+
+function $$$$047$$$047tinybendygrad$047helpers$i64_shr$(_x_0, _k_0) {
+  return $$$$047$$$047tinybendygrad$047helpers$i64_shr$put$(($$$$047$$$047tinybendygrad$047helpers$i64_is_neg$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$hi32$(_x_0)), ($$$$047$$$047tinybendygrad$047helpers$lo32$(_x_0)), _k_0);
+}
+
 function $$$$047$$$047tinybendygrad$047helpers$u64_lt$(_ah_0, _al_0, _bh_0, _bl_0) {
   const _x_0 = (_ah_0 < _bh_0);
   const _x_1 = ($Bool$and$((_ah_0 === _bh_0), (_al_0 < _bl_0)));
@@ -13133,6 +13162,10 @@ const TAB_0 = [0, 1, 2];export default {
   "../../tinybendygrad/helpers.i64_shl.hi": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shl$hi$((a0), nat_host(a1)))); (a0); BigInt(a1); return r; }, 2),
   "../../tinybendygrad/helpers.i64_shl.put": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shl$put$((a0), (a1), (a2), nat_host(a3)))); (a0); (a1); (a2); BigInt(a3); return r; }, 4),
   "../../tinybendygrad/helpers.i64_shl": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shl$((a0), nat_host(a1)))); (a0); BigInt(a1); return r; }, 2),
+  "../../tinybendygrad/helpers.i64_shr.lo": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shr$lo$((a0), (a1), (a2), nat_host(a3)))); (a0); (a1); (a2); BigInt(a3); return r; }, 4),
+  "../../tinybendygrad/helpers.i64_shr.hi": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shr$hi$((a0), (a1), nat_host(a2)))); (a0); (a1); BigInt(a2); return r; }, 3),
+  "../../tinybendygrad/helpers.i64_shr.put": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shr$put$((a0), (a1), (a2), nat_host(a3)))); (a0); (a1); (a2); BigInt(a3); return r; }, 4),
+  "../../tinybendygrad/helpers.i64_shr": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$i64_shr$((a0), nat_host(a1)))); (a0); BigInt(a1); return r; }, 2),
   "../../tinybendygrad/helpers.u64_lt": run_lib((a0, a1, a2, a3) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$u64_lt$((a0), (a1), (a2), (a3)))); (a0); (a1); (a2); (a3); return r; }, 4),
   "../../tinybendygrad/helpers.div_bit": run_lib((a0, a1, a2) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$div_bit$((a0), (a1), nat_host(a2)))); (a0); (a1); BigInt(a2); return r; }, 3),
   "../../tinybendygrad/helpers.div_shift": run_lib((a0, a1) => { const r = (run_loop($$$$047$$$047tinybendygrad$047helpers$div_shift$((a0), (a1)))); (a0); (a1); return r; }, 2),

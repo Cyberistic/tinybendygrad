@@ -65,10 +65,13 @@ is a raw sha (detached), and `.git/logs/HEAD` holds ten `export from jj` entries
 
 - **Passive watch** (`watch_index.py` → `passive-watch.tsv`, 115 s, no `jj`/`git` invoked by me):
   index inode/size changed twice and HEAD moved `c0d2689e7 → b3a4c476b18a`.
-- **Attribution** (`watch_correlate.py` → `correlate.tsv`, 117 s, heartbeat file rewritten every 20 s):
-  **every** index/HEAD change had a live `git`/`jj` process (`git_procs=1`), and the HEAD move is the
-  unit commit `agendop2` (`reflog: commit: agendop2`, 14:18:00). jj's **op-store mtime never advanced
-  from `14:15:53`** in 8+ minutes — the snapshot loop wrote **zero** operations.
+- **Attribution** (`watch_correlate.py` → `correlate.tsv`, 300 s, heartbeat file rewritten every 20 s):
+  jj's **op-store mtime never advanced from `1791285353509060632` (= 14:15:53)** for the entire
+  window — the snapshot loop wrote **zero** operations. Meanwhile the index was rewritten ~10 times
+  and HEAD moved 4 times (`b3a4c476b18a`→`956de35262a2`→`1e9507f92fdd`→`800161b016f6`→`bcd715b5df28`),
+  each a unit commit. Most writes sampled with a live `git`/`jj` process (`git_procs=1`);
+  the few that read `0` occurred *between* a unit's stage and its commit (the process came and went
+  inside one 5 s interval) — and the constant op-store mtime rules jj out for all of them.
 - **Staged-file test** (`repro_index_reset.py` → `repro.out`, 120 s): staged count stayed `1` the whole
   window; `NO CHANGE within window`.
 
