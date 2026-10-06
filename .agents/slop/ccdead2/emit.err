@@ -1,0 +1,11 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=71 MB (ceiling 2048)  0s  :: ./bin/bend .agents/slop/ccdead2/probe-c.bend -o  out=0B err=280B  said=SOME PROOFS FAIL | Error: | - expected : an import ('import Base', or 'import <path> as <Name>')
+SOME PROOFS FAIL
+Error:
+- expected : an import ('import Base', or 'import <path> as <Name>')
+- observed : 'import ../../../tinybendygrad/dtype.bend'
+Location:
+1 | import Base
+2>| import ../../../tinybendygrad/dtype.bend
+  |        ^
+3 | 
+bend 2.0.35 is available: run bend update

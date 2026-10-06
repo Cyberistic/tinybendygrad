@@ -82,7 +82,7 @@ def atoms(arg: str) -> set:
       j = i
       while j + 1 < len(arg) and (arg[j + 1].isalnum() or arg[j + 1] == "_"):
         j += 1
-      if not (j + 1 < len(arg) and arg[j + 1] == "="):
+      if not (j + 1 < len(arg) and arg[j + 1] == "=") and arg[i:j + 1] not in WHOLE:
         out.add(c)
       i = j
     i += 1
@@ -329,6 +329,15 @@ def main() -> int:
   if "C" not in atoms("al(OADD,CPU)"):
     bad.append("a BARE device name (no `s` prefix) is no longer an unmapped atom, so the "
                "scan has stopped looking at real device names")
+  # A WHOLE MARKER IS NOT AN ATOM LETTER. `BAD` is `graphcmp.py`'s declared arena-bottom
+  # marker at field 6 (the same `arg` column the scan reads), so the token walk used to
+  # answer `B` for it and the corpus-wide `unknown` check fired `unmapped arg atom
+  # letters: B` over a marker the renderer emitted correctly. `WHOLE` is the generator's
+  # own declaration of that vocabulary and `atoms()` now consults it -- but no LIVE graph
+  # emits `BAD` once `getaddr` threads its arena, so the exclusion has no fixture and is
+  # asserted directly here. This is the plant: it can be seen to fire.
+  if atoms("BAD") != set():
+    bad.append(f"the whole marker `BAD` is read as an atom letter: {sorted(atoms('BAD'))}")
   print(f"# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: "
         f"{dict(sorted(all_res.items())) or 'none'} of {len(G.LEDGER)} markers")
   print("#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check "

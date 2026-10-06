@@ -463,6 +463,7 @@ def argstr(a: O.Arg, depth: U32) -> String:
     # `eq_arg.ABlob` (:1801) compares `bs` element-wise, so the port can answer the
     # question the column is asking.
     case O.ABlob{bs}: blobstr(bs)
+    case O.AInt{n}: i(n)
     case O.AFloat{f2}: String.concat(["f", F32.show(f2)])
     # THE BOTTOM. ops.bend:1154 calls this "a read of an index that was never interned".
     # It is not a node, so it must not read as an agreeing one.
@@ -1348,7 +1349,14 @@ def g_flip() -> O.Found:
 def g_getaddr() -> O.Found:
   +ar = O.Arena.empty()
   +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
-  O.UOp.getaddr(O.Arena.budget(ar), ar, O.Found.i(a0), S.D1{0})
+  # THE ARENA `UOp.new` RETURNED, NOT THE ONE IT WAS HANDED. Arena is immutable and
+  # `UOp.new.of` returns `Found{made, ..}` -- the ALLOC lives in `Found.ar(a0)`, whose
+  # index `Found.i(a0)` names it. Passing the PRE-`new` `ar` put `Found.i(a0)` past its
+  # end, so `Arena.op` answered the arena BOTTOM (`BAD/NOOP`): peel said "not an ALLOC",
+  # getaddr returned `self` unchanged, and the graph was one BAD row. Every other arm
+  # threads `O.Found.ar(prev)`; this one was the exception.
+  +a1 = O.Found.ar(a0)
+  O.UOp.getaddr(O.Arena.budget(a1), a1, O.Found.i(a0), S.D1{0})
 
 # `--graph unshard`: `UOp(Ops.UNSHARD, src=(a.uop, r), arg=(0,))`, 8 nodes. `r` is
 # `UOp.range(2, 0, AxisType.DEVICE)`, so its atom is `XDEVICE` -- a non-WEAK axis the

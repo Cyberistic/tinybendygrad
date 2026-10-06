@@ -1044,7 +1044,7 @@ def Prog.zeros(+fs: List<&2, Buf>, acc: List<&2, U32>) -> List<&2, U32>:
 # observable -- they are all zero -- so they are prepended, which is the cheap
 # direction.
 def Prog.bytes(+b: Build, fs: List<&2, Buf>) -> List<&2, U32>:
-  Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), Build.bp(b))
+  Prog.zeros(List.drop(&2, Buf, fs, U32.to_nat(Build.nb(b))), List.reverse(&2, U32, Build.bp(b)))
 
 def Prog.load.put(+b: Build, us: List<&2, Uop>, +fs: List<&2, Buf>) -> Load:
   Load{us, fs, Prog.bytes(b, fs), List.replicate(Elem, U32.to_nat(Build.slot(b)), Elem.zero()),
@@ -1160,49 +1160,49 @@ def Prog.one.of(m: Maybe<&2, Uop>, +b: Build) -> Build:
 # ===========================================================================
 
 # ===========================================================================
-# A HEX STRING IS READ BY POSITION, and that is the whole point of this block.
-# Byte k is characters 2k and 2k+1, high nibble first. Any other order is wrong
+# BYTE k IS CHARACTERS 2k AND 2k+1, high nibble first. Any other order is wrong
 # in a way the round trip hides: `Prog.line` writes nibbles back the same way it
 # read them, so a PURE COPY of a buffer looks perfect while the arena holds
 # nonsense (MEASURED: the buffer line `8 0000803f`, which is 1.0f, landed in the
 # arena as the word 0xF3080000 -- both bytes nibble-swapped -- and only the
 # arithmetic fixtures noticed).
 #
-# `bytes_of` cannot do this job. Its accumulator prepends, so it answers the
-# bytes in REVERSE order and pairs the characters from wherever the walk starts;
-# `Prog.chars1` and `Prog.bytes` each reverse around it and those two reversals
-# cancel, which is why `bytes_of` is still right for its own callers and wrong
-# here. A positional walk has no order to get wrong.
+# THE WALK IS A CONS WALK, NOT A POSITIONAL READ. The old read took byte k with
+# `List.get(cs, 2k)`/`List.get(cs, 2k+1)`, each O(k), so the whole wire was
+# O(bytes^2) -- the binding cost of every DEV=BEND launch (MEASURED, one 1-uop
+# packet: 8192->16384->32768 B was 2.50->7.13->25.68 s). `Prog.hex.go` folds the
+# character list head first, two chars per byte, and PREPENDS, so it answers the
+# line's bytes REVERSED. `Prog.hex.app` prepends that onto the reversed packet
+# accumulator and `Prog.bytes` reverses once -- the arena still sees wire order.
+#
+# `bytes_of` cannot do this job: it pairs the characters from wherever its walk
+# starts, so it has no notion of the byte boundary. `Prog.chars1` and `Prog.bytes`
+# reverse around it and those two reversals cancel, which is why `bytes_of` is
+# still right for its own callers and wrong here.
 # ===========================================================================
 
-# a missing or junk character is '0', whose value is 0 -- so a short hex line
-# shortens the arena rather than refusing it, and the byte COUNT is what refuses
-def Prog.hex.at(+cs: List<&2, Char>, k: Nat) -> Char:
-  Maybe.default(&2, Char, List.get(&2, Char, cs, k), Char.from_u32(48))
+# Two chars fold into one byte with `high` tracking the nibble: the even-indexed
+# char is the HIGH nibble, so a completed byte is `hi*16 + nib`. A trailing odd
+# char never completes and contributes no byte, which is what the old `floor(n/2)`
+# countdown did.
+def Prog.hex.go(+cs: List<&2, Char>, +hi: U32, +high: Bool, acc: List<&2, U32>) -> List<&2, U32>:
+  match cs high:
+    case Nil{} _: acc
+    case h <> t True{}: Prog.hex.go(t, hexdig_val(Char.to_u32(h)), False{}, acc)
+    case h <> t False{}: Prog.hex.go(t, 0, True{}, U32.add(U32.mul(hi, 16), hexdig_val(Char.to_u32(h))) <> acc)
 
-def Prog.hex.nib(+cs: List<&2, Char>, k: Nat) -> U32:
-  hexdig_val(Char.to_u32(Prog.hex.at(cs, k)))
-
-def Prog.hex.byte(+cs: List<&2, Char>, +k: Nat) -> U32:
-  U32.add(U32.mul(Prog.hex.nib(cs, Nat.mul(k, 2n)), 16),
-    Prog.hex.nib(cs, Nat.add(Nat.mul(k, 2n), 1n)))
-
-# PREPENDED, and `Prog.hex.app` below appends, so the block lands in wire order
-# without a `List.reverse` anywhere: the two directions cancel inside one line.
-def Prog.hex.go(+cs: List<&2, Char>, +k: Nat, acc: List<&2, U32>) -> List<&2, U32>:
-  match k:
-    case 0n: acc
-    case 1n+p: Prog.hex.go(cs, p, Prog.hex.byte(cs, p) <> acc)
-
+# PREPEND ALL of `bs` onto `acc`, O(|bs|). `List.append(acc, [h])` walked `acc`
+# once per element -- the second half of the O(bytes^2) wire.
 def Prog.hex.app(bs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
   match bs:
     case Nil{}: acc
-    case h <> t: Prog.hex.app(t, List.append(&2, U32, acc, [h]))
+    case h <> t: h <> Prog.hex.app(t, acc)
 
 # `(Bool & List<U32>)` is a PAIR and may be consumed once, so it is destructured
-# here rather than asked twice through `list_of`/`bytes_ok`. The bytes go up from
-# `&1` into the arena's `&2` (see `Prog.bytes1`), which also reverses them --
-# `Prog.bytes` reverses once more, and the arena sees them in wire order.
+# here rather than asked twice through `list_of`/`bytes_ok`. `bs` is the line's
+# bytes REVERSED (see `Prog.hex.go`), and `Prog.hex.app` prepends it onto the
+# reversed packet accumulator, so `Build.bp` holds the whole packet's bytes
+# REVERSED; `Prog.bytes` reverses once and the arena sees them in wire order.
 def Prog.hex.put(+b: Build, r: (Bool & List<&2, U32>)) -> Build:
   (ok, bs) = r
   Build{Build.us(b), Build.sp(b), Build.ss(b), Prog.hex.app(bs, Build.bp(b)), Build.nu(b), Build.nb(b), Build.nbp(b), Build.sbn(b),
@@ -1212,7 +1212,7 @@ def Prog.hex.of(+ws: List<&2, String>, +b: Build) -> Build:
   +cs = String.to_list(w(ws, 1n))
   +n = U32.from_nat(List.length(&2, Char, cs))
   Prog.hex.put(b, (U32.is_eq(n, U32.mul(2, Maybe.default(&2, U32, num(w(ws, 0n)), 0))),
-    Prog.hex.go(cs, U32.to_nat(U32.div(n, 2)), Nil{})))
+    Prog.hex.go(cs, 0, True{}, Nil{})))
 
 def Prog.hex(l: String, +b: Build) -> Build: Prog.hex.of(words(l), b)
 
@@ -1256,7 +1256,7 @@ def Arg.dec(s: String) -> Maybe<&2, U32>: Arg.dec2(String.split(s, Char.from_u32
 # 4. Going through the line path is what makes the two agree by construction.
 def Arg.hex(h1: String) -> Maybe<&2, U32>:
   +b = Prog.hex(String.concat(["4 ", h1]), Build.blank())
-  Bool.pick(Maybe<&2, U32>, Build.ok(b), Some{Mem.ld4(Build.bp(b), 0)}, None{})
+  Bool.pick(Maybe<&2, U32>, Build.ok(b), Some{Mem.ld4(List.reverse(&2, U32, Build.bp(b)), 0)}, None{})
 
 def Arg.letter.of(+c: U32, +v: U32) -> Maybe<&2, Arg>:
   Bool.pick(Maybe<&2, Arg>, U32.is_lt(c, 3), Some{Arg{U32.add(2, c), v, 0}},
@@ -2168,14 +2168,22 @@ def Prog.line.put2(acc: List<&2, Char>, +v: U32) -> List<&2, Char>:
 def Prog.line.put(acc: List<&2, Char>, +b: U32) -> List<&2, Char>:
   Prog.line.put2(Prog.line.dig(U32.div(b, 16)) <> acc, U32.mod(b, 16))
 
-def Prog.line.go(+ms: List<&2, U32>, +n: Nat, +at: U32, acc: List<&2, Char>) -> List<&2, Char>:
-  match n:
-    case 0n: acc
-    case 1n+p: Prog.line.go(ms, p, U32.add(at, 1), Prog.line.put(acc, Mem.byte(ms, at)))
+# A CONS WALK over the store, not `Mem.byte(ms, at)` per byte: `Mem.byte` is
+# `List.get(ms, at)`, O(at), and `at` climbs from `base` to `base + w*e`, so the
+# output was O(bytes^2) too. `Prog.line` drops `base` once (O(base)) and this walk
+# takes `n` consecutive cons cells. A short store pads with the 0 `Mem.byte`
+# defaulted to, which keeps the old behaviour when a buffer named more bytes than
+# the arena holds.
+def Prog.line.go(+ms: List<&2, U32>, +n: Nat, acc: List<&2, Char>) -> List<&2, Char>:
+  match ms n:
+    case _ 0n: acc
+    case Nil{} 1n+p: Prog.line.go(Nil{}, p, Prog.line.put(acc, 0))
+    case h <> t 1n+p: Prog.line.go(t, p, Prog.line.put(acc, h))
 def Prog.line(+f: Buf, +ms: List<&2, U32>) -> String:
   String.concat([U32.show(U32.mul(Buf.w(f), Buf.e(f))), " ",
     Prog.line.hex(List.reverse(&2, Char,
-      Prog.line.go(ms, U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), Buf.base(f), Nil{}))), "\n"])
+      Prog.line.go(List.drop(&2, U32, ms, U32.to_nat(Buf.base(f))),
+        U32.to_nat(U32.mul(Buf.w(f), Buf.e(f))), Nil{}))), "\n"])
 
 # THE BUFFER BLOCK, in buffer-id order, which is the order ops_bend hands the
 # buffers in (A1). The walk counts DOWN from `nb`, so the index is `nb - n` and

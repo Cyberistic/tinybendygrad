@@ -15,6 +15,22 @@
    ],
    [
     ".agents/slop/txtexec/rename.py",
+    ".agents/slop/txtexec/rows-bd.txt"
+   ],
+   [
+    ".agents/slop/txtexec/rename.py",
+    "rows-bd.txt"
+   ],
+   [
+    ".agents/slop/txtresidual/probe.py",
+    "rows-bd.txt"
+   ],
+   [
+    "checks/no-txt.py",
+    "checks/rows-bd.txt"
+   ],
+   [
+    "checks/no-txt.py",
     "rows-bd.txt"
    ],
    [
