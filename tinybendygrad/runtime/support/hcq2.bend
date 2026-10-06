@@ -96,13 +96,13 @@
 #    (`view_*`, `pkey`, `submit_of`, `build_queues`, `finalize`, `hwq`, `enq_*`)
 #    have 0 defs here (`pkey` is `renderer/ptx.bend:222`, a different function).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:104   pm_replace_buffers -- BLOCKED: needs the shaped `UOp.param` (`view_as` absent).
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:114   pm_unwrap_multi (unwritten; `get_enqueue_devs`/`select_lane` expand over `get_call_arg_uops`/`all_devices_in`/`UOp.mselect`).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:114   pm_unwrap_multi -- BLOCKED: rule body unwritten here (`UOp.mselect`/`UOp.replace` are defs at `ops.bend`; no `def pm_unwrap_multi` in this file).
 
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:156   pm_insert_copy_staging -- BLOCKED: needs `Buffer`/`_resolve`/`lower_and_compile`.
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:337   HWQueue.q_rewrite -- BLOCKED: needs the `HWQueue` device methods (`exec`/`copy`/`encdec`).
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:428   pm_hcq_encode (unwritten; `hcq_fence`/`encode_fence`/`unwrap_view` expand over existing arena builders).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:428   pm_hcq_encode -- BLOCKED: needs `hcq_fence` (the `UPat.custom_function` target), `encode_fence`/`unwrap_view`/`patch`/`timeline`/`timeline_value` (the body's helpers): MEASURED, zero defs of each across `tinybendygrad/`.
 #
-#    TODO(p3) tinygrad/runtime/support/hcq2.py:468   pm_lift_deps (unwritten; every named dep (`graph_rewrite`, `UOp.after`, `dedup`) is a def).
+#    WALL(p3) tinygrad/runtime/support/hcq2.py:468   pm_lift_deps -- BLOCKED: rule body unwritten here (`graph_rewrite` x3 / `UOp.after` x27 / `dedup` x2 are all defs; no `def pm_lift_deps` in this file).
 
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:496   pm_lift -- BLOCKED: needs the shaped `UOp.param` and `UOp.substitute` (:530 open TODO).
 #    WALL(p3) tinygrad/runtime/support/hcq2.py:523   pm_encode -- BLOCKED: needs `HCQInfo`; `CallInfo` has no `aux` (`uop/ops.bend:1116`).
