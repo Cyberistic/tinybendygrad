@@ -1,0 +1,36 @@
+name	rc	token
+.agents/slop/canrun/gate.out	3	REFUSED
+checks/check.out	-	SOME PROOFS FAIL
+.agents/slop/loopfix/b-fold-new.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-fold-old.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-fold-probe.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-fold-v2.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-gcmp-final.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-gcmp-new.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-gcmp-old.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-gcmp-v2.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-insprobe-old.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-insprobe-v2.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/b-insprobe.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/build-base.out	0	WITHIN-LIMITS
+.agents/slop/loopfix/fbuild-base.out	0	WITHIN-LIMITS
+.agents/slop/arghalf/arity.out	1	SOME PROOFS FAIL
+.agents/slop/bitcastrow/fold-base.err	-	producer-unknown
+.agents/slop/censroot/full-corpus.err	-	not-recorded
+.agents/slop/censroot/repro.err	-	PASS
+.agents/slop/rerun/probe-flip-CPU.err	-	producer-unknown
+.agents/slop/rerun/probe-lin-cpu.err	-	producer-unknown
+.agents/slop/rerun/probe-loop-CPU.err	-	producer-unknown
+.agents/slop/rerun/probe-loop-METAL.err	-	producer-unknown
+.agents/slop/rerun/probe-loop-NULL.err	-	producer-unknown
+.agents/slop/rerun/retention-after.err	-	producer-unknown
+.agents/slop/skipexit/artifacts/FAIL.post-fix.err	-	not-recorded
+.agents/slop/skipexit/artifacts/FAIL.pre-fix.err	-	not-recorded
+.agents/slop/skipexit/artifacts/GREEN.post-fix.err	-	not-recorded
+.agents/slop/skipexit/artifacts/GREEN.pre-fix.err	-	not-recorded
+.agents/slop/skipexit/artifacts/SKIP.post-fix.err	-	not-recorded
+.agents/slop/skipexit/artifacts/SKIP.pre-fix.err	-	not-recorded
+oracles/baseline-probe.err	-	producer-unknown
+oracles/nested/baseline-probe.err	-	producer-unknown
+.agents/slop/canrun/beltA.out	3	REFUSED
+.agents/slop/canrun/beltB.out	3	REFUSED
