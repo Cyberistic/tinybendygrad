@@ -1,0 +1,8 @@
+bounded-selftest.sh.0	0
+classify.sh.0	0
+demo.sh.0	0
+gate.sh.0	2
+lint_demo.sh.0	1
+sb-gate.sh.0	3
+sb-gate.sh.1	0
+wt-sync.sh.0	0
