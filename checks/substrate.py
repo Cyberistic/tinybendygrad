@@ -383,28 +383,33 @@ def instrument_for(path: str) -> tuple[str, str, str]:
     return "none", "no instrument exists for this file class", "no instrument exists for this file class"
 
 
-def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: str,
-          ctx: Ctx) -> tuple[list[str], int, dict[str, int], list[tuple[str, str]]]:
-    """Every per-file verdict, in the order the files were given.
+def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: str, ctx: Ctx,
+          emit) -> tuple[int, dict[str, int], list[tuple[str, str]]]:
+    """Every per-file verdict, in the order the files were given, EMITTED AS PRODUCED.
+
+    A verdict is printed the moment it is taken, not buffered into a list and printed at exit.
+    THE ANSWER IS UNCHANGED -- same lines, same order -- and that is the point: HALF 1 is the
+    minutes-long part (one instrument subprocess per file), so an instrument that prints nothing
+    until exit is indistinguishable from a hung one to its caller. `emit` is the caller's sink and
+    it flushes; the oracle diff compares the resulting stream byte for byte.
 
     `cold` is returned as `(path, first line)` pairs so `--causes` can attribute them without a
     second compiler pass in the common case; the text is only kept when `--causes` asked for it.
     """
-    out: list[str] = []
     findings = 0
     tally = {"bend": 0, "cc": 0, "node": 0, "none": 0}
     cold: list[tuple[str, str]] = []
     for path in files:
         if not os.path.isfile(path):
-            out.append(f"MISSING     {path}")
+            emit(f"MISSING     {path}")
             findings += 1
             continue
         body = Path(path).read_bytes()
         # `wc -l` is a count of NEWLINES, so a non-empty file with no trailing newline is EMPTY.
         lines, size = body.count(b"\n"), len(body)
         if lines == 0 or size == 0:
-            out.append(f"EMPTY       {path}  ({lines} lines, {size} bytes)  "
-                       "<-- THE VERDICT IS MEANINGLESS")
+            emit(f"EMPTY       {path}  ({lines} lines, {size} bytes)  "
+                 "<-- THE VERDICT IS MEANINGLESS")
             findings += 1
             continue
         inst, tag, why = instrument_for(path)
@@ -415,23 +420,23 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
         if inst == "bend" and not bend:
             inst, why = "none", "bend is not installed"
         if opts.names_only and inst != "none":
-            out.append(f"SKIP-VERDICT {path}  ({lines} lines, verdict suppressed by -n)")
+            emit(f"SKIP-VERDICT {path}  ({lines} lines, verdict suppressed by -n)")
             continue
         head = f"{path}  ({lines} lines)"
         if inst == "none":
             tally["none"] += 1
-            out.append(f"NO INSTRUMENT  {head}  :: {why} -- **NOT JUDGED, AND NOT COLD**")
+            emit(f"NO INSTRUMENT  {head}  :: {why} -- **NOT JUDGED, AND NOT COLD**")
             continue
         if inst == "bend":
             tally["bend"] += 1
             first, _, full = bounded([bend, path, "--check-only"], opts, path)
             if first == "ALL PROOFS CHECK":
-                out.append(f"WARM        {head}  [{tag}]")
+                emit(f"WARM        {head}  [{tag}]")
             else:
                 # THE EXIT STATUS IS DISCARDED, deliberately: `--check-only` exits 1 on 14 clean
                 # files (`dtype.bend`'s permanently-red laws), so the status is not the signal
                 # and the FIRST LINE is.
-                out.append(f"COLD        {head}  [{tag}]  :: {first}")
+                emit(f"COLD        {head}  [{tag}]  :: {first}")
                 findings += 1
                 if opts.causes:
                     cold.append((path, full))
@@ -441,7 +446,7 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
             first, rc, full = bounded([node, "--check", path], opts, path)
             err = full.split("\n")
             if rc == 0:
-                out.append(f"WARM        {head}  [{tag}]")
+                emit(f"WARM        {head}  [{tag}]")
             else:
                 # node's FIRST line is only the path and the line number; the sentence that says
                 # what is wrong is the `...Error:` line. A verdict that prints a path is not a
@@ -449,8 +454,8 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
                 hit = next((ln for ln in err if NODE_ERR.match(ln)), err[0] if err else "")
                 top = err[0] if err else ""
                 loc = NODE_LOC.match(top)
-                out.append(f"COLD        {head}  [{tag}]  :: {hit}  :: "
-                           f"{path}:{loc.group(1) if loc else top}")
+                emit(f"COLD        {head}  [{tag}]  :: {hit}  :: "
+                     f"{path}:{loc.group(1) if loc else top}")
                 findings += 1
                 if opts.causes:
                     cold.append((path, full))
@@ -459,7 +464,7 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
             tally["none"] += 1
             # NO `-- **NOT JUDGED, AND NOT COLD**` HERE, and that asymmetry is the shell's. The
             # unrouteable class says it; a missing context says only why.
-            out.append(f"NO INSTRUMENT  {head}  :: {why}")
+            emit(f"NO INSTRUMENT  {head}  :: {why}")
             continue
         tally["cc"] += 1
         frag = ctx.tmp / "frag.c"
@@ -468,20 +473,20 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
         frag.write_bytes(ctx.pre.read_bytes() + body)
         _, rc, full = bounded([cc, "-fsyntax-only", str(frag)], opts, path)
         if rc == 0:
-            out.append(f"WARM        {head}  [{tag}]")
+            emit(f"WARM        {head}  [{tag}]")
             continue
         msg = next((ln for ln in full.split("\n") if "error:" in ln), "")
         at = FRAG_LOC.search(msg)
         # REWRITTEN, because `frag.c:2891` names a file that does not exist in the repo. THE
         # FIRST `error:` ONLY: cc cascades, and seven lines saying the same thing is not seven
         # findings.
-        out.append(f"COLD        {head}  [{tag}]  :: "
-                   + (msg if not at else f"{path}:{int(at.group(1)) - ctx.lines}: "
-                                          + FRAG_STRIP.sub("", msg)))
+        emit(f"COLD        {head}  [{tag}]  :: "
+             + (msg if not at else f"{path}:{int(at.group(1)) - ctx.lines}: "
+                                    + FRAG_STRIP.sub("", msg)))
         findings += 1
         if opts.causes:
             cold.append((path, full))
-    return out, findings, tally, cold
+    return findings, tally, cold
 
 
 # ------------------------------------------------------------------ PROVENANCE
@@ -773,13 +778,22 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | Non
     out: list[str] = []
     findings = 0
     ctx = Ctx(tmp, opts, bend, cc)
+
+    def emit(line: str) -> None:
+        """One HALF 1 verdict, written NOW and flushed. `flush` is the whole point: a verdict that
+        sits in the stdout buffer until exit is indistinguishable from a hung instrument, and a
+        caller cannot tell a slow walk from a stuck one. The lines and their order are unchanged."""
+        print(line, flush=True)
+
     # HALF 1 iterates the RAW arguments. HALF 2 iterates what `print -l -- "$@"` fed to
     # `python3 -c`, which SPLITS AN ARGUMENT ON AN EMBEDDED NEWLINE and drops an empty one --
     # so an argument containing a newline is judged by one file and name-checked as two. Kept,
     # because it is the shell's shape and a silent tidy-up is not a port.
     paths = [ln for a in files for ln in a.split("\n") if ln]
-    half, findings, tally, cold = half1(files, opts, bend, cc, node, ctx)
-    out += half
+    # HALF 1 EMITS ITS OWN LINES, as each verdict is taken, so the minutes-long instrument pass is
+    # observable while it runs. Its lines still come FIRST and in argument order, so the stream is
+    # the oracle's byte for byte; only the moment of the write changed.
+    findings, tally, cold = half1(files, opts, bend, cc, node, ctx, emit)
     out.append(f"ROUTE   bend={tally['bend']}  cc={tally['cc']}  node={tally['node']}  "
                f"no-instrument={tally['none']}  (of {len(files)} file(s))")
     if origin is not None:
