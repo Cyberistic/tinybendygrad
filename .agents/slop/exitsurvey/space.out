@@ -1,0 +1,102 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:135: SyntaxWarning: invalid escape sequence '\s'
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:135: SyntaxWarning: invalid escape sequence '\s'
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:135: SyntaxWarning: invalid escape sequence '\s'
+==============================================================================
+A. IS `SKIP` STILL LIVE? -- ACROSS EVERY CONSUMER, NOT ONE FILE
+------------------------------------------------------------------------------
+CONSUMERS (an AST import of `gatekit`, over a directory walk): 51
+  gates/msgdiff-gate.py:341  return SKIP
+  gates/msgdiff-gate.py:318  return SKIP
+  gates/msgdiff-gate.py:329  return SKIP
+
+`return SKIP` / `exit SKIP` / `exit <name bound to 4>` SITES OVER ALL 51 CONSUMERS: 3
+  in the OWNER gates/gatekit.py itself: 0 -- a constant nothing in the owner names is not a constant nothing can produce
+
+==============================================================================
+B. THE DELIBERATE PRODUCERS -- BY AST, OVER THE WHOLE TREE (not grep for `exit(2)`)
+------------------------------------------------------------------------------
+  .agents/slop/bendpin/compare.py                        1 site(s)  [128]
+  .agents/slop/bendpin/pin_check.py                      1 site(s)  [89]
+  .agents/slop/bitcastrow/bc-diff.py                     1 site(s)  [44]
+  .agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py   1 site(s)  [89]
+  .agents/slop/clearfix/frozen-prefix/mixin-op-gate.py   1 site(s)  [92]
+  .agents/slop/coindependent/vocab.py                    1 site(s)  [164]
+  .agents/slop/corpuswire/tree/checks/differ.py          1 site(s)  [940]
+  .agents/slop/corpuswire/tree/checks/differ_wantdummy.py   1 site(s)  [941]
+  .agents/slop/dd-band-diff.py                           1 site(s)  [68]
+  .agents/slop/debug-gate.py                             2 site(s)  [87, 690]
+  .agents/slop/disagree/names.py                         2 site(s)  [300, 303]
+  .agents/slop/dsl_gate.py                               1 site(s)  [118]
+  .agents/slop/dsp2-gate.py                              2 site(s)  [43, 49]
+  .agents/slop/f64/repair-dupes.py                       1 site(s)  [99]
+  .agents/slop/figure2/plant/broken/checks/differ.py     1 site(s)  [940]
+  .agents/slop/figure2/plant/real/checks/differ.py       1 site(s)  [940]
+  .agents/slop/gatecensus/census.py                      1 site(s)  [155]
+  .agents/slop/graphcmp.py                               2 site(s)  [2819, 3101]
+  .agents/slop/graphrestore/union.py                     1 site(s)  [147]
+  .agents/slop/grw-mut.py                                6 site(s)  [106, 110, 119, 124, 130, 137]
+  .agents/slop/ishr/plant.py                             1 site(s)  [173]
+  .agents/slop/kn-ops-mutate.py                          1 site(s)  [115]
+  .agents/slop/ledger/runit.py                           1 site(s)  [85]
+  .agents/slop/loopfix/belt.py                           1 site(s)  [142]
+  .agents/slop/memory-diff.py                            2 site(s)  [46, 50]
+  .agents/slop/midrun/midrun.py                          1 site(s)  [257]
+  .agents/slop/mmfold/mmfold-lane.py                     3 site(s)  [97, 106, 111]
+  .agents/slop/notes/kn-truth.py                         1 site(s)  [200]
+  .agents/slop/nv-iowr-mutate.py                         2 site(s)  [171, 180]
+  .agents/slop/nvdup/nvdup-fix-nv.py                     1 site(s)  [207]
+  .agents/slop/onemodule/vocab-check.py                  1 site(s)  [57]
+  .agents/slop/opsbend_milestone_gate.py                 1 site(s)  [86]
+  .agents/slop/opshapes/opshapes.py                      2 site(s)  [192, 196]
+  .agents/slop/quiesce/quiesce.py                        1 site(s)  [210]
+  .agents/slop/quiesce/snapshot.py                       1 site(s)  [254]
+  .agents/slop/skipexit/prefix/checks/e2e.py             1 site(s)  [293]
+  .agents/slop/speccite/plants.py                        2 site(s)  [66, 69]
+  .agents/slop/stale269/plants.py                        1 site(s)  [71]
+  .agents/slop/todo2/bars.py                             1 site(s)  [117]
+  .agents/slop/todo2/tick.py                             1 site(s)  [89]
+  .agents/slop/usb-diff.py                               2 site(s)  [26, 43]
+  .agents/slop/usb-mutate.py                             1 site(s)  [317]
+  checks/al-verdict.py                                   1 site(s)  [125]
+  checks/differ.py                                       1 site(s)  [1184]
+  checks/disagree-gate.py                                2 site(s)  [377, 380]
+  checks/dup-gate.py                                     1 site(s)  [338]
+  checks/e2e.py                                          1 site(s)  [388]
+  checks/env-precond.py                                  1 site(s)  [336]
+  checks/nvrows-deadrow-gate.py                          1 site(s)  [294]
+  checks/repair-dupes.py                                 1 site(s)  [99]
+  checks/substrate-id.py                                 1 site(s)  [529]
+  checks/txt-owners.py                                   1 site(s)  [230]
+  checks/wallcheck.py                                    3 site(s)  [589, 600, 635]
+  extra/thunder/tiny/visualize_tile.py                   2 site(s)  [55, 63]
+  gates/beautiful-mnist-gate.py                          1 site(s)  [89]
+  gates/gate-surface.py                                  2 site(s)  [150, 331]
+  gates/gates-pop.py                                     1 site(s)  [582]
+  gates/mixin-op-gate.py                                 1 site(s)  [99]
+  test/amd/disasm.py                                     2 site(s)  [72, 79]
+  test/mockgpu/am/amgpu.py                               1 site(s)  [183]
+  tinygrad/renderer/amd/dsl.py                           1 site(s)  [408]
+
+  61 .py FILE(S) return/exit 2 ON PURPOSE, by AST over the tree
+  6 .sh file(s) spell a bare `exit 2`: ['checks/gate.sh', '.agents/slop/debug-gate.sh', '.agents/slop/grw-gate.sh', '.agents/slop/opsbend-milestone.sh', '.agents/slop/lastlaw/sweep.sh', 'langs/verify.sh']
+
+==============================================================================
+C. THE ADMISSIBLE SPACE -- WHAT IS LEFT AFTER THE ACCIDENTS
+------------------------------------------------------------------------------
+  0  TAKEN. gatekit PASS (also the shell's, also every gate's -- not up for reassignment)
+  1  TAKEN. gatekit FAIL (also `hooks/run.py` calls a traceback-exiting rc 1 DEAD; see E)
+  2  TAKEN. THE DELIBERATE PRODUCERS above, AND `argparse`'s own 2 since 2.7 -- a mistyped argv reads as a refusal whether or not anyone means one
+  3  TAKEN. gatekit REFUSED, and `checks/sb-gate.sh`'s historical REFUSED -- `gatekit.py:59` says so
+  4  TAKEN. gatekit SKIP, and `e2e.py`'s SKIP -- `gatekit.py:59` says so
+  5  TAKEN. gatekit DEAD (the exit `exitcode` closed)
+
+  codes >= 10, which is where a NEW verdict could sit without colliding with a stdlib
+  contract, a shell, or anything a reader already knows: [10, 11, 12, 13, 14, 15, 16, 17] ... (a further 246)
+  NOTHING IN THE TREE CLAIMS 6, 7, 8 or 9 TODAY -- measured below, by AST.
+  codes 6-9 in EXIT position across the whole tree: 0 site(s) []
