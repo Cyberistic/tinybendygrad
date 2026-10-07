@@ -1,0 +1,4 @@
+  175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` staging (loaded by path, imported not copied).
+  2 `.txt` EXCUSED: `.agents/slop/figure2/plant.py`'s forced plant summaries (loaded by path, imported not copied).
+  1 `.txt` EXCUSED: `.agents/slop/txtexec/rename.py`'s deliberate 0-byte remnant (loaded by path, imported not copied).
+  CLEAN: no .txt anywhere the project owns, outside those named exceptions

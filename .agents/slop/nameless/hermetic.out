@@ -1,0 +1,77 @@
+#   allred     py   rows=9    ops=7   md5=578846b8f817c165bd896514024ed61b  {'ALLOC': 1, 'ALLREDUCE': 1, 'CONST': 3, 'COPY': 1, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   allred     bend rows=9    ops=7   md5=578846b8f817c165bd896514024ed61b  {'ALLOC': 1, 'ALLREDUCE': 1, 'CONST': 3, 'COPY': 1, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   alu        py   rows=14   ops=13  md5=a1dca77320085700bec70b04afc16371  {'ALLOC': 1, 'CONST': 2, 'DETACH': 1, 'EXP2': 1, 'GROUP': 1, 'LOG2': 1, 'POW': 1, 'RECIPROCAL': 1, 'RESHAPE': 1, 'SIN': 1, 'SQRT': 1, 'STACK': 1, 'TRUNC': 1}
+#   alu        bend rows=14   ops=13  md5=a1dca77320085700bec70b04afc16371  {'ALLOC': 1, 'CONST': 2, 'DETACH': 1, 'EXP2': 1, 'GROUP': 1, 'LOG2': 1, 'POW': 1, 'RECIPROCAL': 1, 'RESHAPE': 1, 'SIN': 1, 'SQRT': 1, 'STACK': 1, 'TRUNC': 1}
+#   binblob    py   rows=19   ops=8   md5=842558f91e5bc673b1d129cedfff6bd9  {'ALLOC': 2, 'BINARY': 1, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   binblob    bend rows=19   ops=8   md5=842558f91e5bc673b1d129cedfff6bd9  {'ALLOC': 2, 'BINARY': 1, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   bit        py   rows=10   ops=9   md5=b547dd3392cccb90db7eeb1c8e823694  {'ALLOC': 1, 'CONST': 2, 'FLOORDIV': 1, 'FLOORMOD': 1, 'GROUP': 1, 'RESHAPE': 1, 'SHL': 1, 'SHR': 1, 'STACK': 1}
+#   bit        bend rows=10   ops=9   md5=b547dd3392cccb90db7eeb1c8e823694  {'ALLOC': 1, 'CONST': 2, 'FLOORDIV': 1, 'FLOORMOD': 1, 'GROUP': 1, 'RESHAPE': 1, 'SHL': 1, 'SHR': 1, 'STACK': 1}
+#   buffer     py   rows=5    ops=4   md5=368a21adc5811ef5d8739ff822334aa8  {'BUFFER': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   buffer     bend rows=5    ops=4   md5=368a21adc5811ef5d8739ff822334aa8  {'BUFFER': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   bw         py   rows=32   ops=10  md5=059b02a9af82ef7d6170f582ed1e366c  {'ALLOC': 2, 'CAST': 1, 'CONST': 4, 'EXPAND': 2, 'GROUP': 1, 'MUL': 2, 'PERMUTE': 4, 'REDUCE': 2, 'RESHAPE': 8, 'STACK': 6}
+#   bw         bend rows=32   ops=10  md5=059b02a9af82ef7d6170f582ed1e366c  {'ALLOC': 2, 'CAST': 1, 'CONST': 4, 'EXPAND': 2, 'GROUP': 1, 'MUL': 2, 'PERMUTE': 4, 'REDUCE': 2, 'RESHAPE': 8, 'STACK': 6}
+#   cast       py   rows=6    ops=5   md5=3107ca85745a9dc7d92f634dd5e06a0b  {'ALLOC': 1, 'CAST': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   cast       bend rows=6    ops=5   md5=3107ca85745a9dc7d92f634dd5e06a0b  {'ALLOC': 1, 'CAST': 1, 'CONST': 2, 'RESHAPE': 1, 'STACK': 1}
+#   cdiv       py   rows=10   ops=7   md5=066263f9b39b5fa03558b7fc49cf1fe4  {'ALLOC': 2, 'CDIV': 1, 'CMOD': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 2, 'STACK': 1}
+#   cdiv       bend rows=10   ops=7   md5=066263f9b39b5fa03558b7fc49cf1fe4  {'ALLOC': 2, 'CDIV': 1, 'CMOD': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 2, 'STACK': 1}
+#   commute    py   rows=14   ops=11  md5=fe98e9158b02cc19486b68f52519ac63  {'ADD': 1, 'ALLOC': 2, 'AND': 1, 'CMPNE': 1, 'CONST': 2, 'GROUP': 1, 'MAX': 1, 'OR': 1, 'RESHAPE': 2, 'STACK': 1, 'XOR': 1}
+#   commute    bend rows=14   ops=11  md5=fe98e9158b02cc19486b68f52519ac63  {'ADD': 1, 'ALLOC': 2, 'AND': 1, 'CMPNE': 1, 'CONST': 2, 'GROUP': 1, 'MAX': 1, 'OR': 1, 'RESHAPE': 2, 'STACK': 1, 'XOR': 1}
+#   custom_function py   rows=6    ops=5   md5=99c5cac4a998828de74542b1ed92ab4a  {'ALLOC': 1, 'CONST': 2, 'CUSTOM_FUNCTION': 1, 'RESHAPE': 1, 'STACK': 1}
+#   custom_function bend rows=6    ops=5   md5=99c5cac4a998828de74542b1ed92ab4a  {'ALLOC': 1, 'CONST': 2, 'CUSTOM_FUNCTION': 1, 'RESHAPE': 1, 'STACK': 1}
+#   flip       py   rows=6    ops=5   md5=7c334c319d6c6da4d13e71ac8322b3e3  {'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'RESHAPE': 1, 'STACK': 1}
+#   flip       bend rows=7    ops=6   md5=cd34beb2f7d59538651c502e346d5fd3  {'ALLOC': 1, 'CONST': 2, 'FLIP': 1, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1}
+#   gate       py   rows=14   ops=12  md5=bd8f773335b8e0cd7948aea7a7755007  {'BUFFER': 1, 'CMPLT': 1, 'CONST': 2, 'END': 1, 'ENDIF': 1, 'IF': 1, 'INDEX': 2, 'LINEAR': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1, 'STORE': 1}
+#   gate       bend rows=14   ops=12  md5=bd8f773335b8e0cd7948aea7a7755007  {'BUFFER': 1, 'CMPLT': 1, 'CONST': 2, 'END': 1, 'ENDIF': 1, 'IF': 1, 'INDEX': 2, 'LINEAR': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1, 'STORE': 1}
+#   getaddr    py   rows=2    ops=2   md5=867c830034a6ebd919d1fe976937985e  {'ALLOC': 1, 'GETADDR': 1}
+#   getaddr    bend rows=2    ops=2   md5=867c830034a6ebd919d1fe976937985e  {'ALLOC': 1, 'GETADDR': 1}
+#   group      py   rows=8    ops=7   md5=a1e9f3515c9afc2132c2a852bc185561  {'ADD': 1, 'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}
+#   group      bend rows=8    ops=7   md5=a1e9f3515c9afc2132c2a852bc185561  {'ADD': 1, 'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'MUL': 1, 'RESHAPE': 1, 'STACK': 1}
+#   indexed    py   rows=7    ops=6   md5=73867e97cd95d2663fb3d20529e17a89  {'BARRIER': 1, 'CONST': 2, 'INDEX': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1}
+#   indexed    bend rows=7    ops=6   md5=73867e97cd95d2663fb3d20529e17a89  {'BARRIER': 1, 'CONST': 2, 'INDEX': 1, 'PARAM': 1, 'RANGE': 1, 'SINK': 1}
+#   late       py   rows=12   ops=9   md5=16368f03a2a3ff45d85995c2473c7ee8  {'ALLOC': 2, 'CMPEQ': 1, 'CONST': 2, 'FDIV': 1, 'GROUP': 1, 'NEG': 1, 'RESHAPE': 2, 'STACK': 1, 'SUB': 1}
+#   late       bend rows=12   ops=9   md5=16368f03a2a3ff45d85995c2473c7ee8  {'ALLOC': 2, 'CMPEQ': 1, 'CONST': 2, 'FDIV': 1, 'GROUP': 1, 'NEG': 1, 'RESHAPE': 2, 'STACK': 1, 'SUB': 1}
+#   lin        py   rows=46   ops=11  md5=5907fabb8667c83efe329dfd938df873  {'ADD': 7, 'CAST': 6, 'CONST': 6, 'END': 2, 'INDEX': 7, 'LOAD': 6, 'MUL': 5, 'PARAM': 3, 'RANGE': 2, 'SINK': 1, 'STORE': 1}
+#   lin        bend rows=46   ops=11  md5=5907fabb8667c83efe329dfd938df873  {'ADD': 7, 'CAST': 6, 'CONST': 6, 'END': 2, 'INDEX': 7, 'LOAD': 6, 'MUL': 5, 'PARAM': 3, 'RANGE': 2, 'SINK': 1, 'STORE': 1}
+#   loop       py   rows=25   ops=14  md5=c1b5e4e23c88bf1e067fe0e9e49f2b63  {'ADD': 1, 'AFTER': 3, 'BACKEDGE': 1, 'CALL': 1, 'CAST': 1, 'CMPLT': 1, 'CONST': 2, 'INDEX': 4, 'LOAD': 2, 'NOOP': 1, 'PARAM': 4, 'RANGE': 1, 'SINK': 1, 'STORE': 2}
+#   loop       bend rows=25   ops=14  md5=c1b5e4e23c88bf1e067fe0e9e49f2b63  {'ADD': 1, 'AFTER': 3, 'BACKEDGE': 1, 'CALL': 1, 'CAST': 1, 'CMPLT': 1, 'CONST': 2, 'INDEX': 4, 'LOAD': 2, 'NOOP': 1, 'PARAM': 4, 'RANGE': 1, 'SINK': 1, 'STORE': 2}
+#   matmul     py   rows=18   ops=7   md5=8a3e19b6282ca13aed316de8b974a547  {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   matmul     bend rows=18   ops=7   md5=8a3e19b6282ca13aed316de8b974a547  {'ALLOC': 2, 'CONST': 4, 'MUL': 1, 'PERMUTE': 2, 'REDUCE': 1, 'RESHAPE': 4, 'STACK': 4}
+#   move       py   rows=22   ops=9   md5=05169a7c670218e58f9e3395948b8063  {'ALLOC': 2, 'BITCAST': 1, 'CONST': 7, 'CONTIGUOUS_BACKWARD': 1, 'GROUP': 1, 'PAD': 1, 'RESHAPE': 2, 'SHRINK': 1, 'STACK': 6}
+#   move       bend rows=22   ops=9   md5=05169a7c670218e58f9e3395948b8063  {'ALLOC': 2, 'BITCAST': 1, 'CONST': 7, 'CONTIGUOUS_BACKWARD': 1, 'GROUP': 1, 'PAD': 1, 'RESHAPE': 2, 'SHRINK': 1, 'STACK': 6}
+#   mselect    py   rows=9    ops=7   md5=a3dadeb6ea987fe0372ef382eeb79b12  {'ALLOC': 1, 'CONST': 3, 'COPY': 1, 'MSELECT': 1, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   mselect    bend rows=9    ops=7   md5=a3dadeb6ea987fe0372ef382eeb79b12  {'ALLOC': 1, 'CONST': 3, 'COPY': 1, 'MSELECT': 1, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   mstack     py   rows=8    ops=5   md5=891ca2285da594b8447e5f480467a13e  {'ALLOC': 2, 'CONST': 2, 'MSTACK': 1, 'RESHAPE': 2, 'STACK': 1}
+#   mstack     bend rows=8    ops=5   md5=891ca2285da594b8447e5f480467a13e  {'ALLOC': 2, 'CONST': 2, 'MSTACK': 1, 'RESHAPE': 2, 'STACK': 1}
+#   mulacc     py   rows=10   ops=5   md5=8eadfdcf16d84c12286e25471d1c9aa9  {'ALLOC': 3, 'CONST': 2, 'MULACC': 1, 'RESHAPE': 3, 'STACK': 1}
+#   mulacc     bend rows=10   ops=5   md5=8eadfdcf16d84c12286e25471d1c9aa9  {'ALLOC': 3, 'CONST': 2, 'MULACC': 1, 'RESHAPE': 3, 'STACK': 1}
+#   range      py   rows=2    ops=2   md5=e12e5207e77f5be72cd707a7e46f40c8  {'CONST': 1, 'RANGE': 1}
+#   range      bend rows=2    ops=2   md5=e12e5207e77f5be72cd707a7e46f40c8  {'CONST': 1, 'RANGE': 1}
+#   rangeflat  py   rows=2    ops=2   md5=e855a759d3ce0380ff49e1d53e74e910  {'CONST': 1, 'RANGE': 1}
+#   rangeflat  bend rows=2    ops=2   md5=e855a759d3ce0380ff49e1d53e74e910  {'CONST': 1, 'RANGE': 1}
+#   reduce     py   rows=7    ops=6   md5=f5ba170aa1a68cd4c1c6957c279367d8  {'ALLOC': 1, 'CONST': 2, 'PERMUTE': 1, 'REDUCE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   reduce     bend rows=7    ops=6   md5=f5ba170aa1a68cd4c1c6957c279367d8  {'ALLOC': 1, 'CONST': 2, 'PERMUTE': 1, 'REDUCE': 1, 'RESHAPE': 1, 'STACK': 1}
+#   sink       py   rows=2    ops=2   md5=3c35e217e9e3fc8b669f3f0fcd8281ed  {'CONST': 1, 'SINK': 1}
+#   sink       bend rows=2    ops=2   md5=3c35e217e9e3fc8b669f3f0fcd8281ed  {'CONST': 1, 'SINK': 1}
+#   special    py   rows=2    ops=2   md5=313af7ba3b2cc22219279b352fa5ef56  {'CONST': 1, 'SPECIAL': 1}
+#   special    bend rows=2    ops=2   md5=313af7ba3b2cc22219279b352fa5ef56  {'CONST': 1, 'SPECIAL': 1}
+#   stage      py   rows=8    ops=6   md5=276616790f67a511277539797a2c8bc6  {'ADD': 1, 'ALLOC': 1, 'CONST': 3, 'RESHAPE': 1, 'STACK': 1, 'STAGE': 1}
+#   stage      bend rows=8    ops=6   md5=276616790f67a511277539797a2c8bc6  {'ADD': 1, 'ALLOC': 1, 'CONST': 3, 'RESHAPE': 1, 'STACK': 1, 'STAGE': 1}
+#   sym        py   rows=12   ops=6   md5=1e8651c956a35c32e90ebcaeb513f72d  {'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'PARAM': 2, 'RESHAPE': 3, 'STACK': 3}
+#   sym        bend rows=12   ops=6   md5=1e8651c956a35c32e90ebcaeb513f72d  {'ALLOC': 1, 'CONST': 2, 'GROUP': 1, 'PARAM': 2, 'RESHAPE': 3, 'STACK': 3}
+#   threefry   py   rows=12   ops=6   md5=5bbf3b468887baf785f687ad5048fb6a  {'ALLOC': 3, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 3, 'STACK': 1, 'THREEFRY': 2}
+#   threefry   bend rows=12   ops=6   md5=5bbf3b468887baf785f687ad5048fb6a  {'ALLOC': 3, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 3, 'STACK': 1, 'THREEFRY': 2}
+#   unshard    py   rows=8    ops=6   md5=28ec0ab820502e9c299273e3b3692bd6  {'ALLOC': 1, 'CONST': 3, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1, 'UNSHARD': 1}
+#   unshard    bend rows=8    ops=6   md5=28ec0ab820502e9c299273e3b3692bd6  {'ALLOC': 1, 'CONST': 3, 'RANGE': 1, 'RESHAPE': 1, 'STACK': 1, 'UNSHARD': 1}
+#   where      py   rows=8    ops=7   md5=40681e6e634a6f8d7ba4b82207eae198  {'ALLOC': 1, 'CMPLT': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1, 'WHERE': 1}
+#   where      bend rows=8    ops=7   md5=40681e6e634a6f8d7ba4b82207eae198  {'ALLOC': 1, 'CMPLT': 1, 'CONST': 2, 'GROUP': 1, 'RESHAPE': 1, 'STACK': 1, 'WHERE': 1}
+#   wmma       py   rows=11   ops=5   md5=4624e33ac9929f1135a9380d4f82f0a2  {'ALLOC': 3, 'CONST': 2, 'RESHAPE': 3, 'STACK': 2, 'WMMA': 1}
+#   wmma       bend rows=11   ops=5   md5=4624e33ac9929f1135a9380d4f82f0a2  {'ALLOC': 3, 'CONST': 2, 'RESHAPE': 3, 'STACK': 2, 'WMMA': 1}
+#
+# graphs in corpus       : 34
+# ops UPSTREAM (denom)  : 77   (measured len(list(Ops)))
+# reached PY             : 70
+# reached BEND           : 70
+# reached BOTH           : 70   <- the honest coverage number
+# py-only  (bend MISSING): []
+# bend-only (py MISSING) : []
+# WALLS                  : []

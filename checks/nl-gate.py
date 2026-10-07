@@ -413,7 +413,17 @@ def selftest():
   own control, so the real run's verdict can never be mistaken for the gate being broken.  `shape`
   and `collide` are BROKEN with `disagree=[]` -- EVERY VALUE AGREES -- which is the property a
   value plant cannot have."""
-  live = (HERE / "nl-port-post.txt").read_text()
+  _live = HERE / "nl-port-post.txt"
+  if not _live.is_file():
+    # A CRASH is not a SKIP: the subject was ABSENT and `read_text` raised `FileNotFoundError`,
+    # which reads as "the gate is broken" beside the four lanes that all agree. MEASURED: the file
+    # is in NO commit (`git log --all -- checks/nl-port-post.txt` answers nothing), so unlike the
+    # pair above there is nothing to restore -- which makes REFUSE the only honest answer, and the
+    # `hermetic-census.py:86` shape (search, then refuse) is the template this already follows.
+    refuse(f"selftest input absent: {_live}.  Swept, and NOT RECOVERABLE -- no commit carries it,"
+           " so unlike `rebase-gate.py` there is no parent to restore from.  The four LANES above are"
+           " unaffected and their verdict stands; this gate cannot produce a CONTROL without it.")
+  live = _live.read_text()
   if not rows_strict(live)[0]:
     print("SELFTEST ABORTED: the captured port lane is empty or unreadable, so a 'clean' lane "
           "would not be the real lane. Re-capture it; a control over a fixture that is not the "
@@ -524,10 +534,17 @@ def main():
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
+# because import RUNS a gate.
+#
+# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
+# MODULE SCOPE, above every `argparse` -- the geometry is measured by
+# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
+# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
+# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
+# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
+# than this file claiming a plant it does not have.
 VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
-PLANTS = {}
-
+PLANTS = {3: []}
 
 if __name__ == "__main__":
   sys.exit(main())

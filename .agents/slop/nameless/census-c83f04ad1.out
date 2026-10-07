@@ -1,0 +1,52 @@
+THE CLASS AT `c83f04ad1` (`c83f04ad1c125b5496e724583cde86fd7ef95396`) -- every path a TRACKED gates/gates-pop.py:HOMES `*.py` reader NAMES.
+
+  gate homes (loaded by path)     : ('checks', 'gates')  <- gates/gates-pop.py:HOMES
+  tracked readers (walk, `*.py`)  : 150
+  string constants in those readers: 15374  (docstrings 624, excluded)
+  DISTINCT PATHS NAMED            : 119
+  of those, ABSENT from HEAD      : 22
+  absent BY CLASS                : LOST 13, IGNORED 6, PREFIX 3
+  LOST (the class under study)   : 13
+  rows written                   : .agents/slop/nameless/subjects-c83f04ad1.rows  (340 rows)
+  EXCLUDED as PLANTS (a gate's own control, discovered by AST walk of `--plant` functions): 66 names, 23 naming sites
+
+  NAMING INSTANCES of absent subjects: 13 (checks 7, gates 6, in-slop peers 0 -- THIS census reads only checks/+gates/, so the peer share is 0 by construction and the 94% `readerdecl` measured is over a DIFFERENT population)
+
+ABSENT BY DESIGN (9) -- named, absent from HEAD, and NOT a loss:
+  PREFIX     checks/
+  IGNORED    checks/gen
+  IGNORED    checks/gen/
+  IGNORED    checks/gen/probe.gen.c
+  IGNORED    checks/gen/probe.js
+  IGNORED    gates/artifacts
+  IGNORED    gates/artifacts/
+  PREFIX     tinybendygrad/
+  PREFIX     tinygrad/
+
+THE 13 LOST SUBJECTS:
+  checks/BASELINE.tsv
+      named by 1: checks/slop-declare.py
+  checks/abi_gate.py.fixed
+      named by 1: gates/gates-pop.py
+  checks/canon.py
+      named by 1: checks/gate_norm.py
+  checks/declare.tsv
+      named by 1: checks/slop-declare.py
+  checks/drive.mjs
+      named by 1: checks/gate.py
+  checks/gate.out
+      named by 1: checks/gate_norm.py
+  checks/isolate.py
+      named by 1: checks/hermetic-census.py
+  checks/lanes
+      named by 1: checks/dup-census.py
+  checks/nl-port-post.txt
+      named by 1: checks/nl-gate.py
+  checks/rn-orc.txt
+      named by 1: checks/rn-gate.py
+  checks/rn-port.txt
+      named by 1: checks/rn-gate.py
+  checks/rows
+      named by 1: checks/hermetic-census.py
+  checks/rows.json
+      named by 2: checks/abi4_gate.py, checks/jsfix_gate.py

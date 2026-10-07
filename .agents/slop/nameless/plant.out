@@ -1,0 +1,90 @@
+THE CLASS AT `HEAD` (`75ab9b8f8984b31f64eb0c5a088559bceb5d04c8`) -- every path a TRACKED gates/gates-pop.py:HOMES `*.py` reader NAMES.
+
+  gate homes (loaded by path)     : ('checks', 'gates')  <- gates/gates-pop.py:HOMES
+  tracked readers (walk, `*.py`)  : 152
+  string constants in those readers: 15421  (docstrings 627, excluded)
+  DISTINCT PATHS NAMED            : 122
+  of those, ABSENT from HEAD      : 23
+  absent BY CLASS                : LOST 14, IGNORED 6, PREFIX 3
+  LOST (the class under study)   : 14
+  rows written                   : .agents/slop/nameless/subjects.rows  (345 rows)
+  EXCLUDED as PLANTS (a gate's own control, discovered by AST walk of `--plant` functions): 66 names, 24 naming sites
+
+  NAMING INSTANCES of absent subjects: 14 (checks 8, gates 6, in-slop peers 0 -- THIS census reads only checks/+gates/, so the peer share is 0 by construction and the 94% `readerdecl` measured is over a DIFFERENT population)
+
+ABSENT BY DESIGN (9) -- named, absent from HEAD, and NOT a loss:
+  PREFIX     checks/
+  IGNORED    checks/gen
+  IGNORED    checks/gen/
+  IGNORED    checks/gen/probe.gen.c
+  IGNORED    checks/gen/probe.js
+  IGNORED    gates/artifacts
+  IGNORED    gates/artifacts/
+  PREFIX     tinybendygrad/
+  PREFIX     tinygrad/
+
+THE 14 LOST SUBJECTS:
+  checks/BASELINE.tsv
+      named by 1: checks/slop-declare.py
+  checks/abi_gate.py.fixed
+      named by 1: gates/gates-pop.py
+  checks/canon.py
+      named by 1: checks/gate_norm.py
+  checks/declare.tsv
+      named by 1: checks/slop-declare.py
+  checks/drive.mjs
+      named by 1: checks/gate.py
+  checks/gate.out
+      named by 1: checks/gate_norm.py
+  checks/isolate.py
+      named by 1: checks/hermetic-census.py
+  checks/lanes
+      named by 1: checks/dup-census.py
+  checks/lanes/
+      named by 1: checks/no-txt.py
+  checks/nl-port-post.txt
+      named by 1: checks/nl-gate.py
+  checks/rn-orc.txt
+      named by 1: checks/rn-gate.py
+  checks/rn-port.txt
+      named by 1: checks/rn-gate.py
+  checks/rows
+      named by 1: checks/hermetic-census.py
+  checks/rows.json
+      named by 2: checks/abi4_gate.py, checks/jsfix_gate.py
+
+PLANT:
+  (1) a planted ABSENT subject classifies absent
+  ok    planted absent is in_head=no: want True got True
+  (2) a planted PRESENT subject does NOT classify absent
+  ok    planted present (.agents/AFFINITY.tsv) in_head=yes: want True got True
+  (3) NO gate naming an absent subject may be PASS, and at least ONE must be REFUSED
+  FAIL  no gate naming an absent subject is PASS: want [] got ['checks/devgate.py', 'checks/hermetic-census.py', 'checks/nl-gate.py', 'checks/no-txt.py', 'checks/oracle-txt-census.py', 'gates/gatekit.py', 'gates/gendirs.py']
+        checks/abi4_gate.py                        FAIL
+        checks/abi_gate.py                         FAIL
+        checks/devgate.py                          PASS
+        checks/dup-census.py                       REFUSED
+        checks/gate.py                             REFUSED
+        checks/gate_norm.py                        FAIL
+        checks/hermetic-census.py                  PASS
+        checks/jsfix_gate.py                       FAIL
+        checks/nl-gate.py                          PASS
+        checks/no-txt.py                           PASS
+        checks/oracle-txt-census.py                PASS
+        checks/rn-gate.py                          FAIL
+        checks/slop-declare.py                     REFUSED
+        checks/substrate.py                        REFUSED
+        checks/txt-owners.py                       TIMEOUT
+        checks/unowned.py                          TIMEOUT
+        gates/gate-surface.py                      FAIL
+        gates/gatekit.py                           PASS
+        gates/gates-pop.py                         FAIL
+        gates/gendirs.py                           PASS
+        gates/retention-check.py                   FAIL
+  ok    at least one gate REFUSED a missing precondition: want True got True
+  (4) the five verdicts are FIVE and a bare PASS exists as a token
+  ok    five tokens: want {'REFUSED', 'DEAD', 'PASS', 'FAIL', 'SKIP'} got {'PASS', 'REFUSED', 'DEAD', 'FAIL', 'SKIP'}
+  (5) the denominator REPRODUCES: a second walk is identical
+  ok    readers reproduce: want ['checks/abi4_gate.py', 'checks/abi_gate.py', 'checks/al-verdict.py', 'checks/both-census.py', 'checks/bounded.py', 'checks/census.py', 'checks/citation-gate.py', 'checks/cl-port-gate.py', 'checks/cli.py', 'checks/coindep.py', 'checks/compile.py', 'checks/corpus-figure.py', 'checks/coverage.py', 'checks/denominator.py', 'checks/devgate.py', 'checks/devpin.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/dup-census.py', 'checks/dup-gate.py', 'checks/e2e.py', 'checks/env-precond.py', 'checks/fw_live.py', 'checks/gate.py', 'checks/gate_dtype.py', 'checks/gate_norm.py', 'checks/gen_gate.py', 'checks/git-index-guard.py', 'checks/graphcmp-census-audit.py', 'checks/hermetic-census.py', 'checks/jsfix_gate.py', 'checks/llama.py', 'checks/marker-audit.py', 'checks/nl-gate-noguard.py', 'checks/nl-gate.py', 'checks/no-shrink.py', 'checks/no-strays.py', 'checks/no-txt.py', 'checks/norm_check.py', 'checks/nvrows-deadrow-gate.py', 'checks/oracle-txt-census.py', 'checks/oracle_f64.py', 'checks/plant.py', 'checks/process_replay.py', 'checks/render-gate-oracle.py', 'checks/reorder-gate.py', 'checks/repair-dupes.py', 'checks/repro-paths.py', 'checks/reset.py', 'checks/residue.py', 'checks/rn-gate.py', 'checks/romless.py', 'checks/run.py', 'checks/rw-gate-oracle.py', 'checks/serve.py', 'checks/slop-declare.py', 'checks/stage1-census.py', 'checks/substrate-id.py', 'checks/substrate.py', 'checks/sweep.py', 'checks/sz.py', 'checks/test_rewrite_bottom_up_gate.py', 'checks/txt-owners.py', 'checks/unowned.py', 'checks/vz_gate.py', 'checks/wallcheck.py', 'gates/bc-u32-gate.py', 'gates/bc-u32-gen.py', 'gates/bc-u32-oracle.py', 'gates/bc_u32_table.py', 'gates/beautiful-mnist-gate.py', 'gates/beautiful-mnist-oracle.py', 'gates/ew-consts-gate.py', 'gates/ew-consts-oracle.py', 'gates/ew-explog-gate.py', 'gates/ew-explog-oracle.py', 'gates/gate-surface.py', 'gates/gatekit.py', 'gates/gates-pop.py', 'gates/gendirs.py', 'gates/git-massdelete-gate.py', 'gates/i64-shl-gate.py', 'gates/i64-shl-oracle.py', 'gates/i64-shr-gate.py', 'gates/i64-shr-oracle.py', 'gates/indexread-gate.py', 'gates/mixin-op-gate.py', 'gates/mixin-op-oracle.py', 'gates/msgdiff-gate.py', 'gates/ops-core-gate.py', 'gates/ops-core-oracle.py', 'gates/render_val_s-gate.py', 'gates/render_val_s-oracle.py', 'gates/replace-gate.py', 'gates/replace-oracle.py', 'gates/retention-check.py', 'gates/tn_add_sub-gate.py', 'gates/tn_add_sub-oracle.py', 'gates/tn_and_or_xor-gate.py', 'gates/tn_and_or_xor-oracle.py', 'gates/tn_binop2_cmp-gate.py', 'gates/tn_binop2_cmp-oracle.py', 'gates/tn_binop_arena-gate.py', 'gates/tn_binop_arena-oracle.py', 'gates/tn_bitwise_not-gate.py', 'gates/tn_bitwise_not-oracle.py', 'gates/tn_ceil_floor-gate.py', 'gates/tn_ceil_floor-oracle.py', 'gates/tn_contiguous_backward-gate.py', 'gates/tn_contiguous_backward-oracle.py', 'gates/tn_detach-gate.py', 'gates/tn_detach-oracle.py', 'gates/tn_dunder_neg-gate.py', 'gates/tn_dunder_neg-oracle.py', 'gates/tn_fdiv_mod-gate.py', 'gates/tn_fdiv_mod-oracle.py', 'gates/tn_isfinite-gate.py', 'gates/tn_isfinite-oracle.py', 'gates/tn_logical_not-gate.py', 'gates/tn_logical_not-oracle.py', 'gates/tn_lshift_rshift-gate.py', 'gates/tn_lshift_rshift-oracle.py', 'gates/tn_maximum-gate.py', 'gates/tn_maximum-oracle.py', 'gates/tn_mul-gate.py', 'gates/tn_mul-oracle.py', 'gates/tn_nary_arena-gate.py', 'gates/tn_nary_arena-oracle.py', 'gates/tn_neg-gate.py', 'gates/tn_neg-oracle.py', 'gates/tn_pow-gate.py', 'gates/tn_pow-oracle.py', 'gates/tn_relu-gate.py', 'gates/tn_relu-oracle.py', 'gates/tn_relu6-gate.py', 'gates/tn_relu6-oracle.py', 'gates/tn_sin_log2_exp2_rsqrt-gate.py', 'gates/tn_sin_log2_exp2_rsqrt-oracle.py', 'gates/tn_sqrt-gate.py', 'gates/tn_sqrt-oracle.py', 'gates/tn_trunc_reciprocal_threefry-gate.py', 'gates/tn_trunc_reciprocal_threefry-oracle.py', 'gates/tn_where-gate.py', 'gates/tn_where-oracle.py', 'gates/uop_cast-gate.py', 'gates/uop_cast-oracle.py', 'gates/wk-cd-gate.py', 'gates/wk-cd-oracle.py', 'gates/wk-eval-gate.py', 'gates/wk-eval-oracle.py', 'gates/wk-f32-gate.py', 'gates/wk-f32-rows.py'] got ['checks/abi4_gate.py', 'checks/abi_gate.py', 'checks/al-verdict.py', 'checks/both-census.py', 'checks/bounded.py', 'checks/census.py', 'checks/citation-gate.py', 'checks/cl-port-gate.py', 'checks/cli.py', 'checks/coindep.py', 'checks/compile.py', 'checks/corpus-figure.py', 'checks/coverage.py', 'checks/denominator.py', 'checks/devgate.py', 'checks/devpin.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/dup-census.py', 'checks/dup-gate.py', 'checks/e2e.py', 'checks/env-precond.py', 'checks/fw_live.py', 'checks/gate.py', 'checks/gate_dtype.py', 'checks/gate_norm.py', 'checks/gen_gate.py', 'checks/git-index-guard.py', 'checks/graphcmp-census-audit.py', 'checks/hermetic-census.py', 'checks/jsfix_gate.py', 'checks/llama.py', 'checks/marker-audit.py', 'checks/nl-gate-noguard.py', 'checks/nl-gate.py', 'checks/no-shrink.py', 'checks/no-strays.py', 'checks/no-txt.py', 'checks/norm_check.py', 'checks/nvrows-deadrow-gate.py', 'checks/oracle-txt-census.py', 'checks/oracle_f64.py', 'checks/plant.py', 'checks/process_replay.py', 'checks/render-gate-oracle.py', 'checks/reorder-gate.py', 'checks/repair-dupes.py', 'checks/repro-paths.py', 'checks/reset.py', 'checks/residue.py', 'checks/rn-gate.py', 'checks/romless.py', 'checks/run.py', 'checks/rw-gate-oracle.py', 'checks/serve.py', 'checks/slop-declare.py', 'checks/stage1-census.py', 'checks/substrate-id.py', 'checks/substrate.py', 'checks/sweep.py', 'checks/sz.py', 'checks/test_rewrite_bottom_up_gate.py', 'checks/txt-owners.py', 'checks/unowned.py', 'checks/vz_gate.py', 'checks/wallcheck.py', 'gates/bc-u32-gate.py', 'gates/bc-u32-gen.py', 'gates/bc-u32-oracle.py', 'gates/bc_u32_table.py', 'gates/beautiful-mnist-gate.py', 'gates/beautiful-mnist-oracle.py', 'gates/ew-consts-gate.py', 'gates/ew-consts-oracle.py', 'gates/ew-explog-gate.py', 'gates/ew-explog-oracle.py', 'gates/gate-surface.py', 'gates/gatekit.py', 'gates/gates-pop.py', 'gates/gendirs.py', 'gates/git-massdelete-gate.py', 'gates/i64-shl-gate.py', 'gates/i64-shl-oracle.py', 'gates/i64-shr-gate.py', 'gates/i64-shr-oracle.py', 'gates/indexread-gate.py', 'gates/mixin-op-gate.py', 'gates/mixin-op-oracle.py', 'gates/msgdiff-gate.py', 'gates/ops-core-gate.py', 'gates/ops-core-oracle.py', 'gates/render_val_s-gate.py', 'gates/render_val_s-oracle.py', 'gates/replace-gate.py', 'gates/replace-oracle.py', 'gates/retention-check.py', 'gates/tn_add_sub-gate.py', 'gates/tn_add_sub-oracle.py', 'gates/tn_and_or_xor-gate.py', 'gates/tn_and_or_xor-oracle.py', 'gates/tn_binop2_cmp-gate.py', 'gates/tn_binop2_cmp-oracle.py', 'gates/tn_binop_arena-gate.py', 'gates/tn_binop_arena-oracle.py', 'gates/tn_bitwise_not-gate.py', 'gates/tn_bitwise_not-oracle.py', 'gates/tn_ceil_floor-gate.py', 'gates/tn_ceil_floor-oracle.py', 'gates/tn_contiguous_backward-gate.py', 'gates/tn_contiguous_backward-oracle.py', 'gates/tn_detach-gate.py', 'gates/tn_detach-oracle.py', 'gates/tn_dunder_neg-gate.py', 'gates/tn_dunder_neg-oracle.py', 'gates/tn_fdiv_mod-gate.py', 'gates/tn_fdiv_mod-oracle.py', 'gates/tn_isfinite-gate.py', 'gates/tn_isfinite-oracle.py', 'gates/tn_logical_not-gate.py', 'gates/tn_logical_not-oracle.py', 'gates/tn_lshift_rshift-gate.py', 'gates/tn_lshift_rshift-oracle.py', 'gates/tn_maximum-gate.py', 'gates/tn_maximum-oracle.py', 'gates/tn_mul-gate.py', 'gates/tn_mul-oracle.py', 'gates/tn_nary_arena-gate.py', 'gates/tn_nary_arena-oracle.py', 'gates/tn_neg-gate.py', 'gates/tn_neg-oracle.py', 'gates/tn_pow-gate.py', 'gates/tn_pow-oracle.py', 'gates/tn_relu-gate.py', 'gates/tn_relu-oracle.py', 'gates/tn_relu6-gate.py', 'gates/tn_relu6-oracle.py', 'gates/tn_sin_log2_exp2_rsqrt-gate.py', 'gates/tn_sin_log2_exp2_rsqrt-oracle.py', 'gates/tn_sqrt-gate.py', 'gates/tn_sqrt-oracle.py', 'gates/tn_trunc_reciprocal_threefry-gate.py', 'gates/tn_trunc_reciprocal_threefry-oracle.py', 'gates/tn_where-gate.py', 'gates/tn_where-oracle.py', 'gates/uop_cast-gate.py', 'gates/uop_cast-oracle.py', 'gates/wk-cd-gate.py', 'gates/wk-cd-oracle.py', 'gates/wk-eval-gate.py', 'gates/wk-eval-oracle.py', 'gates/wk-f32-gate.py', 'gates/wk-f32-rows.py']
+
+PLANT FAIL: no gate naming an absent subject is PASS

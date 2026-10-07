@@ -1,0 +1,19 @@
+PATH                               BASENAME-SEEN-IN-HISTORY VERDICT
+.agents/slop/nl/nl-oracle.py       7                      RECOVERABLE  .agents/slop/dd-mirror/.agents/slop/nl/nl-oracle.py@32f854987=24306B
+checks/abi_gate.py.fixed           0                      NO-BLOB-ANYWHERE  (basename never appears)
+checks/BASELINE.tsv                1                      RECOVERABLE  .agents/slop/declare/BASELINE.tsv@b199c56a9=794B
+checks/canon.py                    2                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/norm/canon.py@0d44a5a1b=11270B
+checks/declare.tsv                 1                      RECOVERABLE  .agents/slop/declare/declare.tsv@b199c56a9=8585B
+checks/drive.mjs                   3                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/jsfp8/drive.mjs@0d44a5a1b=3438B
+checks/gate.out                    8                      RECOVERABLE  .agents/slop/dtypeb/gate.out@813bbec3e=3976B
+checks/isolate.py                  3                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/hermetic/isolate.py@0d44a5a1b=4181B
+checks/lanes                       0                      NO-BLOB-ANYWHERE  (basename never appears)
+checks/nl-port-post.txt            3                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/eq/nl-port-post.txt@0d44a5a1b=34169B
+checks/rn-orc.txt                  3                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/eq/rn-orc.txt@0d44a5a1b=7683B
+checks/rn-port.txt                 3                      RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/eq/rn-port.txt@0d44a5a1b=8734B
+checks/rows.json                   21                     RECOVERABLE  .agents/slop/differverdict/root/.agents/slop/abi4/rows.json@0d44a5a1b=64288B
+
+RECOVERABLE 11 / 13   UNRECOVERABLE 2 / 13
+UNRECOVERABLE, named:
+  checks/abi_gate.py.fixed
+  checks/lanes

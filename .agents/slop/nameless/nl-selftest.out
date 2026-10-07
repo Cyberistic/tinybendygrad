@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/nl-gate.py", line 540, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/nl-gate.py", line 459, in main
+    return selftest()
+           ^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/nl-gate.py", line 416, in selftest
+    live = (HERE / "nl-port-post.txt").read_text()
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py", line 1027, in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/nl-port-post.txt'
