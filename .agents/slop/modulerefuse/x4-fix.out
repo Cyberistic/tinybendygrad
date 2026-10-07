@@ -1,0 +1,25 @@
+BEFORE (the live file, unmodified) and AFTER (a SCRATCH COPY with the refusal hoisted below
+`parse_args()`). The scratch tree lives under the repo root so `REPO = parents[n]` still resolves.
+
+gate                         transform                                   none        --help           bad
+----------------------------------------------------------------------------------------------------------------------
+checks/gate.py               lifted 2 block(s) to the end of th 3->         1 3->         0 3->         2
+checks/nl-gate.py            lifted 2 block(s) to the end of th 3->         1 3->         0 3->         2
+checks/nl-gate-noguard.py    lifted 2 block(s) to the end of th 3->         0 3->         0 3->         2
+checks/dup-gate.py           lifted 2 block(s) to the end of th 3->         1 3->         1 3->         1
+checks/dup-census.py         lifted 2 block(s) to the end of th 3->         1 3->         1 3->         1
+checks/rn-gate.py            lifted 2 block(s) to the end of th 3->         1 3->         1 3->         1
+checks/hermetic-census.py    lifted 3 block(s) to the end of th 3->         1 3->         1 3->         1
+checks/cl-port-gate.py       lifted 2 block(s) to the end of th 3->         1 3->         1 3->         1
+
+RESIDUE AFTER ALL RUNS: 0 scratch cop(y|ies) left under checks/ []
+
+WHAT EACH TRANSFORMED GATE NOW SAYS WITH NO ARGV -- whether it refused for the SAME reason or a NEW one:
+  checks/cl-port-gate.py       Traceback (most recent call last):
+  checks/dup-census.py         Traceback (most recent call last):
+  checks/dup-gate.py           Traceback (most recent call last):
+  checks/gate.py               ROWS EXPECTED 205121  by family {'D': 1024, 'E': 204097}
+  checks/hermetic-census.py    Traceback (most recent call last):
+  checks/nl-gate-noguard.py    port md5=4f221ed7   oracle md5=d41d8cd9   lanes BYTE-IDENTICAL: False
+  checks/nl-gate.py            live port rc=0 md5=4f221ed7   live oracle rc=2 md5=d41d8cd9
+  checks/rn-gate.py            Traceback (most recent call last):

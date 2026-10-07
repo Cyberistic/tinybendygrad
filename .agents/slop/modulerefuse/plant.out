@@ -1,0 +1,21 @@
+    refusal says: == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nl/
+    refusal says: == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/nl/
+    checks/nl-gate-noguard.py gated 205 row(s) and said AGREE
+    checks/nl-gate.py gated 205 row(s) and said AGREE
+    with an EMPTY oracle lane: rc=0 gated=0 verdict-line=['AGREE']
+
+PLANTS -- three directions, each with its own denominator
+
+  PASS  REFUSED, subject absent: checks/nl-gate-noguard.py
+          observed: rc=3, names the absent path=True
+  PASS  REFUSED, subject absent: checks/nl-gate.py
+          observed: rc=3, names the absent path=True
+  PASS  GREEN, and it GATED ROWS: checks/nl-gate-noguard.py
+          observed: rc=0 gated=205 (0 would be agreement over NOTHING)
+  PASS  GREEN, and it GATED ROWS: checks/nl-gate.py
+          observed: rc=0 gated=205 (0 would be agreement over NOTHING)
+  PASS  VACUOUS green is CAUGHT: an empty oracle lane makes nl-gate-noguard.py answer rc=0 and 'AGREE' having gated 0 rows,
+       so the DENOMINATOR is the assertion and the verdict alone is not
+          observed: rc=0 gated=0 -- the gate says AGREE and it means NOTHING; this harness scores it 0
+
+PLANTS: GREEN (5/5)

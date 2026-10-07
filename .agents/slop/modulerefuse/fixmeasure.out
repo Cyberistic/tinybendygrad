@@ -1,0 +1,33 @@
+BEFORE -- the live tree, three argv cases. ALL SEVEN ARE rc=3 FOR ALL THREE, so the module
+scope is what makes `--help` and a bad flag indistinguishable from no argv.
+
+file                             none  --help   bad
+checks/dup-census.py                3       3     3
+checks/dup-gate.py                  3       3     3
+checks/gate.py                      3       3     3
+checks/hermetic-census.py           3       3     3
+checks/nl-gate-noguard.py           3       3     3
+checks/nl-gate.py                   3       3     3
+checks/rn-gate.py                   3       3     3
+
+AFTER -- refusal hoisted into `__moved_refuse__()`, called AFTER `parse_args()`
+
+file                             none  --help   bad   no-argv says                            
+checks/dup-census.py                1       1     1   FileNotFoundError: [Errno 2] No such fil
+checks/dup-gate.py                  1       1     1   FileNotFoundError: [Errno 2] No such fil
+checks/gate.py                      1       0     2   Node.js v26.8.1
+checks/hermetic-census.py           1       1     1   ModuleNotFoundError: No module named 'is
+checks/nl-gate-noguard.py           0       0     2   
+checks/nl-gate.py                   1       0     2   
+checks/rn-gate.py                   1       1     1   FileNotFoundError: [Errno 2] No such fil
+
+MODULE-SCOPE WORK THE REFUSAL STANDS IN FRONT OF -- this decides the fix's SHAPE
+
+file                           module-scope work beyond the guard
+checks/dup-census.py           exec_module, sys.path.insert
+checks/dup-gate.py             exec_module
+checks/gate.py                 sys.path.insert
+checks/hermetic-census.py      exec_module, sys.path.insert, import graphcmp/isolate
+checks/nl-gate-noguard.py      exec_module
+checks/nl-gate.py              exec_module
+checks/rn-gate.py              exec_module

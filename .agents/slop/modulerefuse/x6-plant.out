@@ -1,0 +1,41 @@
+RESTORING THE SUBJECT FROM GIT, ONE GATE AT A TIME. Bytes written are compared against `git cat-file blob 371cc64c9^:<path>`.
+
+gate                           subject                             restored  rc at rest  verdict
+--------------------------------------------------------------------------------------------------------------------
+checks/nl-gate.py              .agents/slop/nl/nl-oracle.py       YES 24306B           0  live port rc=0 md5=4f221ed7   live oracle rc   [gated 205]
+checks/nl-gate-noguard.py      .agents/slop/nl/nl-oracle.py       YES 24306B           0  port md5=4f221ed7   oracle md5=4f221ed7   la   [gated 205]
+checks/dup-gate.py             .agents/slop/eq/eq-census2.py      YES 24098B           2  give --port and --oracle, or --compare BEFOR
+checks/dup-census.py           .agents/slop/eq/eq-census2.py      YES 24098B           3  == REFUSED, NOT A VERDICT: dup-census lanes:
+checks/rn-gate.py              .agents/slop/eq/eq-census2.py      YES 24098B           1  live port rc=0 md5=f697a083   live oracle rc
+checks/hermetic-census.py      .agents/slop/hermetic/isolate.py   YES 4181B           1  Traceback (most recent call last):
+checks/cl-port-gate.py         .agents/slop/clangshim/oracle.py   YES 9458B           3  == REFUSED, NOT A VERDICT: input absent: /Us
+
+PLANTS, BOTH DIRECTIONS, each one able to FAIL:
+
+  PASS  REFUSED  checks/nl-gate.py
+          rc=3 names nl-oracle.py=True
+  PASS  REFUSED  checks/nl-gate-noguard.py
+          rc=3 names nl-oracle.py=True
+  PASS  REFUSED  checks/hermetic-census.py
+          rc=3 names isolate.py=True
+  PASS  GREEN    checks/nl-gate-noguard.py -- identical lanes, gated > 0
+          rc=0 gated=205
+  PASS  VACUOUS  checks/nl-gate-noguard.py -- an EMPTY lane greens the gate (harness scores this a FAIL)
+          rc=0 gated=0 and the gate said AGREE
+
+5/5 assertions hold.
+
+RESIDUE: 0 un-removed, 0 subject path(s) still on disk: []
+GATE HOMES: 19 tracked change(s) under checks/ and gates/ after the whole run
+    M checks/citation-gate.ledger.tsv
+    M checks/dup-census.py
+    M checks/dup-gate.py
+    M checks/gate.py
+    M checks/hermetic-census.py
+    M checks/nl-gate.py
+    M checks/rn-gate.py
+    M gates/gates-pop.ledger.tsv
+   ?? checks/.err
+   ?? checks/.out
+   ?? gates/tn_add_sub.bend
+   ?? gates/tn_and_or_xor.bend
