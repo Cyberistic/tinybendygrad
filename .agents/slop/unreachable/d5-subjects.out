@@ -1,0 +1,35 @@
+read 19:11:29. GIT_INDEX_FILE=.git/agent-index; git ls-tree/log/cat-file only, never git ls-files.
+
+PART 1 -- the subject, three ways
+gate                           subject                                                disk  HEAD   recoverable-from
+
+PART 2 -- the gate's verdict NOW, and with each missing subject restored
+
+checks/cl-port-gate.py   NOW rc=3  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybend
+    no missing subject on disk -> nothing to restore
+
+checks/dup-census.py   NOW rc=3  == REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /User
+    no missing subject on disk -> nothing to restore
+
+checks/dup-gate.py   NOW rc=2  give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+    no missing subject on disk -> nothing to restore
+
+checks/gate.py   NOW rc=3  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybend
+    no missing subject on disk -> nothing to restore
+
+checks/hermetic-census.py   NOW rc=TIMED-OUT  
+    no missing subject on disk -> nothing to restore
+
+checks/nl-gate.py   NOW rc=3  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybend
+    no missing subject on disk -> nothing to restore
+
+checks/nl-gate-noguard.py   NOW rc=3  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybend
+    no missing subject on disk -> nothing to restore
+
+checks/oracle_f64.py   NOW rc=3  == REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s). Without them th
+    no missing subject on disk -> nothing to restore
+
+checks/rn-gate.py   NOW rc=1  live port rc=0 md5=f697a083   live oracle rc=2 md5=d41d8cd9
+    no missing subject on disk -> nothing to restore
+
+RESIDUE: 0 restored, 0 still on disk 

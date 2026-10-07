@@ -1,0 +1,52 @@
+THE DECLARATION CENSUS at 389aa61c5d50  (389aa61c5)
+
+population: tracked `.agents/slop/*/` directories AT THAT COMMIT : 265
+  plus NESTED directories at depth > 0, which are rows of their OWN : 232
+
+THE THREE SHAPES, over one population:
+  R  report-shaped name  (report.md, readme.md, findings.md) : 153
+  M  manifest-shaped name(manifest.tsv, manifest.md, manifest.rows) : 4   (of which also R: 1)
+  R|M  THE NAME SET -- `orcdecide`'s and `declare`'s declaration : 156
+  P  ANY `.md` at depth 0 -- a SHAPE, not a name  : 216
+  R|M AND ALSO P                                    : 154
+  R|M AND ALSO NOT P  (declared under a name, no `.md`!) : 2
+  NEITHER a name nor a `.md`                         : 47
+
+NESTED, NOT RIVAL. P is a superset of R|M here in the sense that matters: every R|M
+directory that has a `.md` is inside P, and the two sets of DIRECTORIES that differ are
+2 (a declaring NAME with no `.md`) and 62 (a `.md` under another
+name). So the answer to "which is right" is: they answer different questions, and the
+question decides the tool. See the REPORT.
+
+UNDECLARED under R|M : 109
+  of those, holding a `.md` under ANOTHER name (the rename candidates) : 62
+  of those, holding no `.md` at all (no rename exists)                  : 47
+  of the 109 undeclared, opened by an exact `git grep -F` : 107
+
+THE EXACT TEST `prune4` DID NOT RUN, on the DECLARED set:
+  declared AND some tracked file OUTSIDE opens one of its files by exact path : 140 of 156
+  declared AND NOTHING opens one of its files                                : 16
+    ['.agents/slop/adevfix', '.agents/slop/agendop2', '.agents/slop/armfour', '.agents/slop/awmma', '.agents/slop/censusfix', '.agents/slop/citetruth', '.agents/slop/envguard', '.agents/slop/flipport', '.agents/slop/mselectarg', '.agents/slop/plancarve', '.agents/slop/plantthe46', '.agents/slop/refusalsweep', '.agents/slop/subtree', '.agents/slop/threegraphs', '.agents/slop/unshardtable', '.agents/slop/wmmafix']
+
+THE NESTED INHERITANCE CONTROL -- an undeclared directory INSIDE a declared one:
+  nested directories holding a declaring name of their OWN : 0 of 232
+  nested directories that are UNDECLARED while their parent is declared : 56
+  a parent REPORT.md does NOT speak for a child directory; each is its own row. Named
+  here because `orcdecide` measured 108 `.md` DIRxFILE pairs whose own directory
+  declared nothing -- that is the shape a depth-1 walk cannot see.
+
+FRESHNESS IS A MEASUREMENT, NOT A SHAPE -- mtime of the newest FILE, worktree, right now:
+  over the whole population : 0.0 .. 174.7 h  (174.7 h span)
+  over the UNDECLARED set    : 0.0 .. 174.7 h  (174.7 h span)
+  histogram by whole hour    : [(0, 5), (12, 1), (13, 3), (26, 4), (27, 5), (28, 2), (30, 2), (31, 1), (33, 1), (36, 2), (37, 8), (42, 7), (43, 10), (46, 16), (47, 4), (48, 1), (50, 15), (51, 2), (64, 1), (65, 3), (66, 2), (67, 2), (68, 3), (70, 1), (71, 2), (72, 1), (74, 1), (75, 1), (79, 1), (121, 1), (174, 1)]
+  THE DISTRIBUTION is the result; no window is baked in. A reader who wants "finished"
+  draws their own line, and the line is an opinion about a working session, not a fact
+  about a directory. The 13-fresh/35-stale split `declare` published is one such line:
+  at 24 h. Re-measured here, the undeclared set's MEDIAN moved with the session, so the
+  split is a property of WHEN it was taken, and it carries its timestamp or it is nothing.
+
+THE INDEX, WHICH IS WHY 256 AND 262 ARE NOT DISAGREEMENTS:
+  `git ls-files` right now  : 460
+  this commit               : 497
+  in the INDEX, not the commit (21): ['.agents/slop/citeresolve', '.agents/slop/coindependent', '.agents/slop/declare', '.agents/slop/exitzero', '.agents/slop/flipblock', '.agents/slop/getaddrwire', '.agents/slop/livenum', '.agents/slop/midrun', '.agents/slop/midrun/evidence', '.agents/slop/modulerefuse', '.agents/slop/msgdiff', '.agents/slop/nl', '.agents/slop/orcdecide', '.agents/slop/orcdecide/retired', '.agents/slop/pairs', '.agents/slop/pinindep', '.agents/slop/quiesce', '.agents/slop/repropin', '.agents/slop/runfinal', '.agents/slop/slowgate', '.agents/slop/surface']
+  in the commit, not the INDEX (58): ['.agents/slop/denominator/probe/.agents', '.agents/slop/differverdict/pristine', '.agents/slop/differverdict/pristine/runs', '.agents/slop/differverdict/pristine/runs/graphcmp', '.agents/slop/e2epy/fixtures', '.agents/slop/e2epy/fixtures/plant', '.agents/slop/e2epy/fixtures/plant-deadbend', '.agents/slop/e2epy/fixtures/plant-deadbend/.agents', '.agents/slop/e2epy/fixtures/plant-deadbend/runs', '.agents/slop/e2epy/fixtures/plant-no-node', '.agents/slop/e2epy/fixtures/plant-no-node/.agents', '.agents/slop/e2epy/fixtures/plant-no-node/runs', '.agents/slop/e2epy/fixtures/plant-no-zsh', '.agents/slop/e2epy/fixtures/plant-no-zsh/.agents', '.agents/slop/e2epy/fixtures/plant-no-zsh/runs', '.agents/slop/e2epy/fixtures/plant-pass', '.agents/slop/e2epy/fixtures/plant-pass/.agents', '.agents/slop/e2epy/fixtures/plant-pass/runs', '.agents/slop/e2epy/fixtures/plant-passskip', '.agents/slop/e2epy/fixtures/plant-passskip/.agents', '.agents/slop/e2epy/fixtures/plant-passskip/runs', '.agents/slop/e2epy/fixtures/plant-refuse', '.agents/slop/e2epy/fixtures/plant-refuse/.agents', '.agents/slop/e2epy/fixtures/plant-refuse/runs', '.agents/slop/e2epy/fixtures/plant-stage1red', '.agents/slop/e2epy/fixtures/plant-stage1red/.agents', '.agents/slop/e2epy/fixtures/plant-thin', '.agents/slop/e2epy/fixtures/plant-thin/.agents', '.agents/slop/e2epy/fixtures/plant-thin/runs', '.agents/slop/e2epy/fixtures/plant/.agents', '.agents/slop/e2epy/fixtures/plant/runs', '.agents/slop/e2epy/fixtures/repro-fail', '.agents/slop/e2epy/fixtures/repro-fail/.agents', '.agents/slop/e2epy/fixtures/repro-fail/runs', '.agents/slop/e2epy/fixtures/repro-green', '.agents/slop/e2epy/fixtures/repro-green/.agents', '.agents/slop/e2epy/fixtures/repro-skip', '.agents/slop/e2epy/fixtures/repro-skip/.agents', '.agents/slop/e2epy/fixtures/repro-skip/runs', '.agents/slop/figure2/plant', '.agents/slop/figure2/plant/broken/runs', '.agents/slop/figure2/plant/broken/runs/graphcmp', '.agents/slop/figure2/plant/real/runs', '.agents/slop/figure2/plant/real/runs/graphcmp', '.agents/slop/gatehealth/gates-syn', '.agents/slop/linfix/before', '.agents/slop/linfix/before/drivers', '.agents/slop/portzz/relocated', '.agents/slop/skipexit/prefix', '.agents/slop/skipexit/prefix/.agents', '.agents/slop/skipexit/prefix/.agents/slop', '.agents/slop/strays/origin', '.agents/slop/strays/origin/tinybendygrad', '.agents/slop/strays/origin/tinybendygrad/runtime', '.agents/slop/strays/working', '.agents/slop/strays/working/tinybendygrad/renderer', '.agents/slop/substrate/artifacts', '.agents/slop/unreachable']

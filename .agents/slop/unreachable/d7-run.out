@@ -1,0 +1,82 @@
+read 19:06:39. BUDGET=180s. git cat-file blob, GIT_INDEX_FILE set.
+
+===== checks/nl-gate.py
+      rc=3           0.1s
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/sl
+    restore: .agents/slop/nl/nl-oracle.py 24306 B <- 371cc64c9^:.agents/slop/nl/nl-oracle.py byte-exact=True
+    WITH THE SUBJECT RESTORED, argv = (none)
+      rc=0           2.1s
+      lane    rows read  names (gate)  names (shipped)  `=` unaddressable  unreadable  dup names   name sets
+      port          205           205              205    0             0           0          0   IDENTICAL (
+      oracle        205           205              205    0             0           0          0   IDENTICAL (
+      gated 205   agree 205   disagree []
+      STALE-LITERAL 0 `py=` literal(s) disagree with the other lane's answer: []
+      AGREE
+      >>> DENOMINATOR the gate printed: gated=205
+    WITH THE SUBJECT RESTORED, argv = --compare
+      rc=2           0.2s
+      usage: nl-gate.py [-h] [--selftest] [--plant PLANT] [--plant-shape OLD NEW]
+                        [--unrename] [--compare BEFORE AFTER] [--names]
+                        [--port-stdout PORT_STDOUT] [--oracle-stdout ORACLE_STDOUT]
+      nl-gate.py: error: argument --compare: expected 2 arguments
+    WITH THE SUBJECT RESTORED, argv = --port-stdout @empty --oracle-stdout @empty
+      rc=1           0.1s
+      !! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the CAPTURE, never ab
+      CAPTURED port rc=0 md5=d41d8cd9   CAPTURED oracle rc=0 md5=d41d8cd9
+      a lane printed NOTHING, so nothing was compared. NOT a pass.
+
+===== checks/nl-gate-noguard.py
+      rc=0           3.7s
+      port md5=4f221ed7   oracle md5=4f221ed7   lanes BYTE-IDENTICAL: True
+      the SHARED reader (rebase-gate.py:rows()) over each lane: 205 names on the port, 205 on the oracle -- 0 
+      physical rows on stdout: port 206, oracle 206
+      gated 205   agree 205   disagree []
+      AGREE
+    restore: .agents/slop/nl/nl-oracle.py ALREADY ON DISK (24306 B) -- not ours, not touched
+    NOTHING RESTORED -- the gate will refuse again, and that is the finding
+
+===== checks/gate.py
+      rc=3           0.0s
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/dri
+    restore: checks/drive.mjs 3438 B <- 371cc64c9^:.agents/slop/jsfp8/drive.mjs byte-exact=True
+    WITH THE SUBJECT RESTORED, argv = (none)
+      rc=0           1.9s
+      SRC_MD5 44294858354c23b02c595f423aacef40  (matches the live file: True)
+      FIXED      present 205121/205121  MISMATCH 0
+          D     1024 rows   MISMATCH 0
+          R     3057 rows   MISMATCH 0
+          T     1040 rows   MISMATCH 0
+          W   200000 rows   MISMATCH 0
+    WITH THE SUBJECT RESTORED, argv = --quick
+      rc=0           0.3s
+      tree /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/runtime/dtype.js
+      SRC_MD5 44294858354c23b02c595f423aacef40  (matches the live file: True)
+      FIXED      present 5121/5121  MISMATCH 0
+          D     1024 rows   MISMATCH 0
+          R     3057 rows   MISMATCH 0
+          T     1040 rows   MISMATCH 0
+
+===== checks/cl-port-gate.py
+      rc=3           0.1s
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/sl
+    restore: .agents/slop/clangshim/oracle.py 9458 B <- 371cc64c9^:.agents/slop/clangshim/oracle.py byte-exact=True
+    restore: .agents/slop/clangshim/libclang-ffi.c 14071 B <- 371cc64c9^:.agents/slop/clangshim/libclang-ffi.c byte-exact=True
+    restore: .agents/slop/clangshim/fixture.h 1517 B <- 371cc64c9^:.agents/slop/clangshim/fixture.h byte-exact=True
+    WITH THE SUBJECT RESTORED, argv = (none)
+      rc=0           1.8s
+      FIXTURE port=57B oracle=57B  same=True
+      BASE: rc port=0 oracle=0  port stderr=2225B oracle stderr=0B
+      BASE: ROWS shared port=10/10 oracle=10/10   port-only=3/3
+      BASE: DIFF 0 port-only, 0 oracle-only -- all 10 rows equal
+      BASE: DERIV spelling==c and offof_bytes*8==offof_bits on 3/3 FIELD rows: yes
+      FAILURES: 0
+    WITH THE SUBJECT RESTORED, argv = --plants
+      rc=0           4.9s
+      disarm-comment: DISARM same lever, same line, opposite outcome -- the row set is byte-identical to the u
+      plant-div: sites patched in the C = 2  rc=0  rows=10/10
+        THEOREM FIELD a offof_bytes cannot move: 0/n == 0 for every n
+        ONE MEASUREMENT TWO READERS  FIELD b  offof_bits stayed 32  while  offof_bytes moved 4 -> 8
+        ONE MEASUREMENT TWO READERS  FIELD c  offof_bits stayed 64  while  offof_bytes moved 8 -> 16
+      FAILURES: 0
+
+RESTORED 5 path(s); RESIDUE 0 []

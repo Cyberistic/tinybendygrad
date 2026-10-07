@@ -1,0 +1,42 @@
+PLANT 1 -- A DIRECTORY WITH A DECLARATION IS EXCUSED (each shape on its own)
+  PASS  census exits 0 on a fixture ()
+  PASS  REPORT.md -> R=1
+  PASS  MANIFEST.tsv -> M=1
+  PASS  README.md -> R=1
+  PASS  a bare rows-only dir is 0/0
+  PASS  no `.md` at all -> P=0
+  PASS  exactly one undeclared dir is counted
+PLANT 2 -- A DIRECTORY WITHOUT A DECLARATION IS NAMED
+  PASS  CLAIM.md is P=1 and STILL R=0 -- the name set does not see it
+  PASS  CLAIM.md is reported by NAME, so a human can rename it
+  PASS  no `.md` -> P=0
+  PASS  BOTH undeclared dirs are named, by full path
+  PASS  the RENAME PLAN moves only the `.md`-bearing one -- `nothing/` has nothing to move
+PLANT 3 -- THE CONTROL THAT CAN BE FALSE: a DECLARATION is not LIVENESS
+  PASS  BOTH declared dirs are opened-by NOTHING -- a declaration is NOT liveness
+  PASS  still R=1: the name is present even though nothing reads it
+  PASS  still M=1: the manifest name is present too
+PLANT 4 -- A READER MAKES IT OPENED (the control's other direction)
+  PASS  a reader FLIPS `opened_by` from - to the reader's path
+  PASS  and only the STILL-unopened directory remains -- one row moved, named
+PLANT 5 -- AN UNDECLARED DIRECTORY NESTED INSIDE A DECLARED ONE MUST BE NAMED TOO
+  PASS  the NESTED dir is a ROW of its own, full path
+  PASS  the nested dir does NOT inherit the parent's REPORT.md -> R=0
+  PASS  its own CLAIM.md counts for IT (P=1) even though the parent speaks for nothing
+  PASS  the nested dir with no `.md` at all is named too -> P=0
+  PASS  the parent is still declared
+  PASS  depth distinguishes a unit from a capture directory
+PLANT 6 -- A `.md` NESTED DEEP DOES NOT DECLARE ITS PARENT (depth is the discriminator)
+  PASS  a `.md` four levels down is a CAPTURE, not a declaration -> P=0
+  PASS  and the directory that ACTUALLY holds the `.md` declares ITSELF -> P=1
+PLANT 7 -- FALSIFY: THE ROWS THAT DIFFER FROM THE PRE-CHANGE BEHAVIOUR
+  PASS  BOTH rows differ FROM orcdecide's test: `selfcite`'s own file cites its path 2x, so `big.count(tok) <= own.count(tok)` EXCUSES it and the census does not
+  PASS  neither is declared, so the DECLARED-set exact test moves by 0 -- named, not implied
+PLANT 7b -- FALSIFY THE OTHER DIRECTION: a reader a DECLARED dir never sees
+  PASS  still declared: R=1
+  PASS  a directory citing ITSELF is not opened BY anyone -> opened_by is -, which is the row `orcdecide`'s count test reads as 'referenced'
+PLANT 8 -- REFUSED, NOT PASS, ON AN EMPTY POPULATION (a 0-row walk is DEAD)
+  PASS  exit 3 = REFUSED on a tree with 0 `.agents/slop/*/` dirs (got 3)
+  PASS  the word PASS is absent from the 0-row reading
+
+31/31 assertions PASS
