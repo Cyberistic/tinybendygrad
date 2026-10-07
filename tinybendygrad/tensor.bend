@@ -357,6 +357,18 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
   +sqrt = tn_sqrt(t)
   tn_alu(sqrt, O.OpsRECIPROCAL{}, Nil{})
 
+# `where` -- elementwise.py:426. `x, y = self.ufix(x)._broadcasted(y); return
+# self.alu(Ops.WHERE, x, y)`. The wall at `nn/__init__.bend:241` calls the
+# `_broadcasted` step the blocker. The no-broadcasting case (both x and y are
+# already Tensors of the same shape) is portable: the body reduces to
+# `tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])`, the same `tn_alu`
+# builder with three src nodes. `O.UOp.where` (ops.bend:2712) is the primitive
+# this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
+# no-broadcasting case; the broadcasting case stays walled on `_broadcasted`
+# (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
+def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
+  tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])
+
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
 # self ^ self.dtype.max if dtypes.is_unsigned(self.dtype) else self ^ -1`. Only the
