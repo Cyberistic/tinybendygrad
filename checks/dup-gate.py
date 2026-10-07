@@ -73,7 +73,7 @@ _EQ = SLOP / "eq" / "eq-census2.py"
 for _p in (SLOP / "rebase-gate.py", _EQ):
   if not _p.is_file():
     refuse(f"input absent: {_p}"
-           + ("  (swept by 371cc64c9; recoverable from git at 371cc64c9^:)"
+           + ("  (restored from git at 371cc64c9^:.agents/slop/eq/eq-census2.py, 24 098 B)"
               if _p == _EQ else "")
            + "  This gate cannot produce a denominator without it.")
 
@@ -343,10 +343,40 @@ def main():
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
+# because import RUNS a gate.
+#
+# ⚠ THE PREVIOUS REVISION OF THIS COMMENT WAS FALSE IN BOTH HALVES, AND THE INSTRUMENT MEASURED
+# IT: it reported `UNPLANTED 0`, `UNPLANTED 1`, `UNPLANTED 2` and `MISPLANT 3 'REFUSED' -- plant []
+# produced 2`.  The old text claimed `PLANTS[3]` was "the only state argv can reach" because "no
+# argument of any shape gets past" the module-scope refusal.  **The refusal is CONDITIONAL** -- it
+# fires when an input is ABSENT -- and `.agents/slop/eq/eq-census2.py` is RECOVERABLE (24 098 B at
+# `371cc64c9^`) and restored, so with the precondition satisfied the parser IS reached and every
+# code below is reachable.  `modulerefuse` proved the refusal must not MOVE; it did not prove it
+# always fires, and nobody had checked which.
+#
+# EVERY PLANT BELOW IS MEASURED, on this tree, at the argv shown -- and two of the three inputs
+# were FOUND, not invented: `gates/cstyle-live.rows` is the tracked repaired fixture `AGENTS.md`
+# names for stage 7, and `oracles/usb-oracle-BEFORE.rows` is a tracked lane that already carries 2
+# duplicate names, so the red plant is the tree's own and not a synthetic file.
+#
+# `2` IS `USAGE` AND STAYS `USAGE`.  It is `argparse`'s own exit code, and
+# `gates/gatekit.py:75` records that 13 files here return `2` on purpose with `USAGE` in their own
+# declaration among them; `gates/gatekit.py:97`'s `verdict_of()` gives an unassigned code a name
+# that is NOT `DEAD`, and `.agents/slop/exitcode/plant.py:74` PLANTS that `VERDICT[2]` raises
+# `KeyError` as the correct design.  Adding `2` to `gates/gatekit.py`'s `VERDICT` would break that
+# planted assertion, and moving it to `3` here would erase this gate's USAGE/REFUSED distinction --
+# the same collision one level down.  `2` is UNOWNED BY `gatekit`, which is `gates/gate-surface.py`'s
+# `UNOWNED` class doing its job, and NOT a defect in this file.
 VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED"}
-PLANTS = {}
-
+PLANTS = {
+  0: ["--compare", "gates/cstyle-live.rows", "gates/cstyle-live.rows"],
+  1: ["--compare", "gates/cstyle-live.rows", "oracles/usb-oracle-BEFORE.rows"],
+  # 3 IS NOT PLANTED, AND DELIBERATELY SO: with the inputs present, NO argv reaches 3 without
+  # running a comparison, and 3 is reachable only while an input is ABSENT -- a broken tree.  The
+  # old `PLANTS[3] = []` claimed a plant that measured 2, which is `MISPLANT`, a lie.  An
+  # UNPLANTED verdict is a true gap; a MISPLANTED one is a false witness.
+  2: [],
+}
 
 if __name__ == "__main__":
   sys.exit(main())
