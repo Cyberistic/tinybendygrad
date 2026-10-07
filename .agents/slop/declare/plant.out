@@ -1,0 +1,46 @@
+plants for checks/slop-declare.py
+  plant_declaration
+  PASS  PLANT 1a  an undeclared directory is named
+        declared='-' code_readers=0
+  PASS  PLANT 1b  MANIFEST.tsv silences it
+        declared='MANIFEST.tsv'
+  plant_basename_reader
+  PASS  PLANT 2a  an open by BASENAME credits NO reader
+        code_readers=0 for `Path('evid')/'x.json'`
+  PASS  PLANT 2b  ...and the directory is still DECLARED, not a defect
+        declared='REPORT.md'
+  plant_declared_unread_is_not_a_defect
+  PASS  PLANT 3a  declared + unread -> 0 code readers
+        code_readers=0
+  PASS  PLANT 3b  it is in `declared`, and in NEITHER gated set
+        declared=['evidence'] unread_stale=[]
+  plant_freshness
+  PASS  PLANT 4a  a 2000 stamp is STALE
+        age_h=234630.2 commit_age_h=234630.2
+  PASS  PLANT 4b  a stamp from now is IN PROGRESS, counted, and not gated
+        unread_fresh=['fresh'] unread_stale=[]
+  plant_reset_clock
+tracked `.agents/slop/*/` directories : 4
+  DECLARED (report or manifest)  : 0
+  UNDECLARED                     : 4   -- no full-path CODE reader: 4
+    IN PROGRESS (<24h mtime, counted, never a verdict) : 3
+    STALE (gated)                 : 1   -- 0 already in the 48-name baseline
+  mtimes, whole population         : 25.0 h span   (commit age of the gated set: 1 distinct value -- DEGENERATE, so the mtime column is the one that decided)
+    ~ d1                     1 files    16.7h mtime  IN PROGRESS
+    ~ d2                     1 files     8.3h mtime  IN PROGRESS
+    ~ d3                     1 files     0.0h mtime  IN PROGRESS
+  FAIL  1 stale undeclared-and-unread beyond the baseline:
+    ! d0                     1 files    25.0h mtime
+REFUSED: all 4 directories' mtimes span 0.0 h -- the whole tree carries ONE stamp, so the clock is a checkout and every name would read IN PROGRESS. `git ls-files` answered, so this is not DEAD; the RULER is what is missing.
+  PASS  PLANT 6a  four mtimes 25 h..6 h old -> a real verdict, not a refusal
+        exit=1 (FAIL: stale undeclared-and-unread, nothing in the baseline)
+  PASS  PLANT 6b  ONE mtime for the whole tree -> REFUSED (3), not PASS
+        exit=3 (a reset ruler must not read as progress)
+  plant_non_verdicts
+DEAD: the walk found 0 tracked `.agents/slop/*/` directories
+REFUSED: `git ls-files` did not answer
+  PASS  PLANT 5a  no `.agents/slop/` -> DEAD (5), not PASS
+        exit=5
+  PASS  PLANT 5b  a root git refuses -> REFUSED (3), not PASS
+        exit=3
+--plant: all plants pass   (12 assertions)
