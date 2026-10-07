@@ -267,4 +267,58 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # (elementwise.py:575, `return self * self`) is a one-liner: `tn_square` at
 # `tensor.bend:481` is `tn_mul(t, t)`, gated by the same 13/13 gate. The
 # broadcasting case for `__mul__`/`__rmul__` stays walled on `_broadcasted` (same
-# wall as `where`).
+# wall as `where`). `Tensor.__add__` (elementwise.py:267) and its `__radd__` arm
+# (elementwise.py:295) are ported at `tensor.bend:518, 523, 526` as
+# `tn_add.go` / `tn_add` / `tn_radd` for the no-broadcasting case (CPython's
+# `add` writes `a.alu(Ops.ADD, -b)` at elementwise.py:84, :123 -- the `-b` is a
+# CONST trap and a unary minus on a Tensor is also walled, so for two same-shape
+# Tensors the body collapses to `_binop`'s shape with `MUL` replaced by `ADD`:
+# `tn_alu(self, ADD, [Tensor.u(x)])` for `__add__` and `tn_alu(x, ADD, [Tensor.u(self)])`
+# for `__radd__`), gated at `gates/tn_add_sub-gate.py` 17/17 rows. `Tensor.__sub__`
+# (elementwise.py:270) and its `__rsub__` arm (elementwise.py:297) are ported at
+# `tensor.bend:536, 541, 544` as `tn_sub.go` / `tn_sub` / `tn_rsub` for the
+# no-broadcasting case (CPython's `sub` is the same `-b` shape at
+# elementwise.py:103, :123, so the port is `_binop`'s shape with `SUB`: same
+# gate). The broadcasting case for `__add__`/`__radd__`/`__sub__`/`__rsub__`
+# stays walled on `_broadcasted` (same wall as `where` and `__mul__`).
+# `Tensor.__lt__`/`__gt__` (elementwise.py:321, :324, via `_binop(Ops.CMPLT, ...)`),
+# `Tensor.__ne__`/`ne` (:339, :333, via `_binop(Ops.CMPNE, ...)`),
+# `Tensor.__and__`/`__rand__` (:285, :309, via `bitwise_and`'s `_binop(Ops.AND, ...)`),
+# `Tensor.__or__`/`__ror__` (:288, :312), `Tensor.__xor__`/`__rxor__` (:291, :315),
+# `Tensor.maximum` (:378, `self._binop(Ops.MAX, x, False)`),
+# `Tensor.__lshift__`/`__rlshift__` (:366, :372, via `lshift`'s `_binop(Ops.SHL, ...)`),
+# `Tensor.__rshift__`/`__rrshift__` (:369, :375),
+# `Tensor.__pow__`/`__rpow__` (:569, :572, via `pow`'s `_broadcasted + alu(Ops.POW, ...)`)
+# are all ported at `tensor.bend:554-704` as
+# `tn_cmplt.go`/`tn_cmplt`/`tn_rcmplt`,
+# `tn_cmpne.go`/`tn_cmpne`/`tn_rne`,
+# `tn_and.go`/`tn_and`/`tn_rand`,
+# `tn_or.go`/`tn_or`/`tn_ror`,
+# `tn_xor.go`/`tn_xor`/`tn_rxor`,
+# `tn_max`,
+# `tn_shl.go`/`tn_shl`/`tn_rshl`,
+# `tn_shr.go`/`tn_shr`/`tn_rshr`,
+# `tn_pow.go`/`tn_pow`/`tn_rpow`
+# for the no-broadcasting case (each is `_binop`'s body with `MUL` replaced by
+# `Ops.<OP>`, mirroring `tn_add.go`/`tn_mul.go`). The shape with `Pow` is the
+# same, and the `isinstance(x, ConstType)` guard upstream is unreachable for two
+# Tensors. Gated at `gates/tn_binop2_cmp-gate.py` and
+# `gates/tn_binop2_ops-gate.py`. `Tensor.__ge__` (:327, `(self < x).logical_not()`)
+# and `Tensor.__le__` (:330, `(self > x).logical_not()`) are ported at
+# `tensor.bend:691`/`698` as `tn_dunder_ge`/`tn_dunder_le` -- the chain
+# `tn_logical_not(tn_cmplt(...))` / `tn_logical_not(tn_rcmplt(...))` -- and
+# `Tensor.eq` (:336, `self.ne(x).logical_not()`) is `tn_eq` at `tensor.bend:704`,
+# the chain `tn_logical_not(tn_cmpne(...))`. All three gates are at
+# `gates/tn_binop2_cmp-gate.py`. `Tensor.__invert__` (:264, `self.bitwise_not()`)
+# is ported as `tn_dunder_invert` at `tensor.bend:479`, one of the ONE-ARM
+# ports: `bitwise_not`'s BOOL arm IS `tn_logical_not` (gated 4/4); the arith
+# arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, :157) stay
+# walled on the dtype fold + arith ops (tensor.bend:385 -- `self.dtype` is a
+# FOLD property and `tn_bitwise_not`'s arith arms are `None`). Returns
+# `Maybe<&2, Tensor>` and lets the caller decide; the port convention
+# (`tn_replace`, `tn_as_param`) is the same shape. Gated at
+# `gates/tn_dunder_invert-gate.py`. The broadcasting case for all
+# `__lt__`/`__gt__`/`__ne__`/`__and__`/`__rand__`/`__or__`/`__ror__`/`__xor__`/
+# `__rxor__`/`maximum`/`__lshift__`/`__rlshift__`/`__rshift__`/`__rrshift__`/
+# `__pow__`/`__rpow__`/`__ge__`/`__le__`/`eq` stays walled on `_broadcasted`
+# (same wall as `__add__`/`__sub__`/`__mul__`/`__rmul__`/`where`).

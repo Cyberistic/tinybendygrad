@@ -1,8 +1,0 @@
-
-ORACLE PYTHON IMPORTS THE WRONG tinygrad: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denominator/sandbox/.venv/bin/python
-  resolved /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
-  wanted  /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denominator/sandbox/tinygrad/__init__.py
-  Every row this gate prints would be measured against a tree that is not the one
-  the port is ported from. Refusing.
-  Nothing was checked.
-

@@ -1,7 +1,0 @@
-key	value
-roots	checks,gates
-excluded	.agents,references,node_modules,.git,.venv
-py_files_in_scope	124
-files_with_a_hit	52
-candidate_lines	179
-method	AST-parse then per-line shape match; UNPARSED counted, never dropped
