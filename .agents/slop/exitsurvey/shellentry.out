@@ -1,0 +1,62 @@
+POPULATION gates-pop.discover() BY PATH: 130 entry points; 17 of them are `.sh` (`gates-pop.py:141` SUFFIXES puts both in one set)
+OWNER gates/gatekit.py: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+
+GATE                                via PY (gate-surface:311)   via bash   AGREE?
+------------------------------------------------------------------------------------------
+checks/bounded-selftest.sh                                  1          1   yes
+checks/classify.sh                                          1          1   yes
+checks/demo.sh                                              1       None   OVER-CAP -> measured nothing
+checks/disarm.sh                                            1        127   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: ROUTE   bend=2  cc=0  node=0  no-instrument=0  (of 2 file(s))
+checks/e2e.sh                                               1       None   OVER-CAP -> measured nothing
+checks/gate.sh                                              1          2   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framewor
+checks/gen.sh                                               1          0   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: SURVIVED k=0  W-2 k=0 v=281474976645120
+checks/lint_demo.sh                                         1          2   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lint_d
+checks/lintable-gate.sh                                     1          1   yes
+checks/plant.sh                                             1          1   yes
+checks/run-all.sh                                           1          2   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: === repo /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+checks/run-f64.sh                                           1          2   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-f6
+checks/run-port-mm.sh                                       1          2   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-po
+checks/sb-gate.sh                                           1          3   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: == REFUSED, NOT A VERDICT: the CPython oracle is absent: .agents/s
+checks/substrate-check.sh                                   1          3   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: REFUSED: no files given. A guard invoked with an empty population 
+checks/walk-mutate.sh                                       1          0   NO
+                                   python said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/
+                                   bash   said: === arm=base  live tree NOT touched; working copy sha256=0f13630d9
+checks/wt-sync.sh                                           1          1   yes
+------------------------------------------------------------------------------------------
+5 AGREE, 10 DIFFER, 2 over-cap (measured nothing, and a SKIP is not a pass)
+
+THE UNASSIGNED-CODE CLASS IN THE SHELL HALF, at the gate's OWN exit: 6
+  checks/disarm.sh                   rc=127  UNASSIGNED (code 127 is not one of the five)
+      ROUTE   bend=2  cc=0  node=0  no-instrument=0  (of 2 file(s))
+  checks/gate.sh                     rc=2  UNASSIGNED (code 2 is not one of the five)
+      /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Vers
+  checks/lint_demo.sh                rc=2  UNASSIGNED (code 2 is not one of the five)
+      /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lint_demo.sh
+  checks/run-all.sh                  rc=2  UNASSIGNED (code 2 is not one of the five)
+      === repo /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+  checks/run-f64.sh                  rc=2  UNASSIGNED (code 2 is not one of the five)
+      /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-f64.sh: 
+  checks/run-port-mm.sh              rc=2  UNASSIGNED (code 2 is not one of the five)
+      /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-port-mm.
+
+A `.sh` PLANT MEASURED BY `gate-surface.py:311` IS NOT A VERDICT ABOUT THE GATE.
+It is the verdict of a Python parser meeting a shebang, and 6 of the five codes can be
+produced by either accident: `rc 1` from a SyntaxError is indistinguishable from FAIL.

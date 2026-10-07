@@ -1,0 +1,46 @@
+SCOPE: top-level checks/*.py + gates/*.py, iterdir(). 144 files.
+PREDICATE (execution): rc=3 with NO argv AND no argv the gate itself declares reaches an exit other than 3.
+ROUNDS: 3, gap 75s. This file exists because d1 and d2 counted this population minutes apart and disagreed.
+
+ROUND 1  (18:55:30)  rc=3 with no argv: 9
+    checks/cl-port-gate.py             --help=3 badflag=3
+    checks/dup-census.py               --help=0 badflag=2
+    checks/e2e.py                      --help=0 badflag=3
+    checks/gate.py                     --help=3 badflag=3
+    checks/git-index-guard.py          --help=3 badflag=3
+    checks/nl-gate-noguard.py          --help=3 badflag=3
+    checks/nl-gate.py                  --help=3 badflag=3
+    checks/oracle_f64.py               --help=3 badflag=3
+    checks/substrate.py                --help=0 badflag=1
+    ... sleeping 75s
+
+ROUND 2  (19:00:09)  rc=3 with no argv: 9
+    checks/cl-port-gate.py             --help=3 badflag=3
+    checks/dup-census.py               --help=0 badflag=2
+    checks/e2e.py                      --help=0 badflag=3
+    checks/gate.py                     --help=3 badflag=3
+    checks/git-index-guard.py          --help=3 badflag=3
+    checks/nl-gate-noguard.py          --help=3 badflag=3
+    checks/nl-gate.py                  --help=3 badflag=3
+    checks/oracle_f64.py               --help=3 badflag=3
+    checks/substrate.py                --help=0 badflag=1
+    MOVED SINCE ROUND 1: 2
+      gates/gate-surface.py              TIMED-OUT -> 1
+      gates/wk-f32-gate.py               TIMED-OUT -> 0
+    ... sleeping 75s
+
+ROUND 3  (19:04:51)  rc=3 with no argv: 9
+    checks/cl-port-gate.py             --help=3 badflag=3
+    checks/dup-census.py               --help=0 badflag=2
+    checks/e2e.py                      --help=0 badflag=3
+    checks/gate.py                     --help=3 badflag=3
+    checks/git-index-guard.py          --help=3 badflag=3
+    checks/nl-gate-noguard.py          --help=3 badflag=3
+    checks/nl-gate.py                  --help=3 badflag=3
+    checks/oracle_f64.py               --help=3 badflag=3
+    checks/substrate.py                --help=0 badflag=1
+    MOVED SINCE ROUND 2: 2
+      gates/bc-u32-gate.py               TIMED-OUT -> 0
+      gates/gate-surface.py              1 -> TIMED-OUT
+
+wrote d3-census.rows

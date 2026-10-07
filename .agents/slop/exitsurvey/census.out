@@ -1,0 +1,214 @@
+checks/abi4_gate.py                          bare    rc=1       FAIL                 1.8s  no backend for arm shipped: rc=1
+checks/abi_gate.py                           bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/al-verdict.py                         bare    rc=2       UNASSIGNED (code 2 is not one of the five)                 0.1s  al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WIT
+checks/both-census.py                        bare    rc=0       PASS                 0.1s  #   allred     py   CACHE rows=9    ops=7   {'ALLOC': 1, 'ALLREDUCE': 
+checks/bounded-selftest.sh                   bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/boun
+checks/bounded.py                            bare    rc=5       DEAD                 0.0s  usage: checks/bounded.py [--seconds N] [--mb N] -- <command> [args ...
+checks/census.py                             bare    rc=0       PASS                 0.2s  # allred     py=CACHE 9     bend=CACHE 18
+checks/citation-gate.py                      bare    rc=1       FAIL                 9.3s  5509 `file:line` citations into a Python tree, from tinybendygrad/**
+checks/cl-port-gate.py                       bare    rc=3       REFUSED                 0.0s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/classify.sh                           bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/clas
+checks/cli.py                                bare    rc=1       FAIL                 0.4s  Traceback (most recent call last):
+checks/compile.py                            bare    rc=1       FAIL                 0.0s  Traceback (most recent call last):
+checks/corpus-figure.py                      bare    rc=1       FAIL                 0.8s  DEVICE PRECONDITION : **VIOLATED** -- DEV=None and the declared pin is
+checks/coverage.py                           bare    rc=1       FAIL                 0.0s  Traceback (most recent call last):
+checks/demo.sh                               bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/demo
+checks/devgate.py                            bare    rc=0       PASS                38.6s  denominator (assigns DEV and reaches tinygrad): 36
+checks/devpin.py                             bare    rc=0       PASS                 0.6s  pin (declared)     : --dev CPU   (checks/devpin.py's PINNED_DEV='CPU')
+checks/differ.py                             bare    rc=2       UNASSIGNED (code 2 is not one of the five)                 0.0s  usage: checks/differ.py [-h] {run,repro,snap,plant} ...
+checks/disagree-gate.py                      bare    rc=0       PASS                 0.7s  ok    PIN
+checks/disarm.sh                             bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disa
+checks/dup-census.py                         bare    rc=3       REFUSED                 0.4s  == REFUSED, NOT A VERDICT: dup-census lanes: population source is not 
+checks/dup-census.py                         argv3   rc=3       REFUSED                 0.4s  == REFUSED, NOT A VERDICT: dup-census lanes: population source is not 
+checks/dup-gate.py                           bare    rc=2       UNASSIGNED (code 2 is not one of the five)                 0.3s  give --port and --oracle, or --compare BEFORE AFTER, or --selftest wit
+checks/dup-gate.py                           argv0   rc=0       PASS                 0.3s  ROWS       227 -> 227 lines; 227 -> 227 read; 227 -> 227 distinct name
+checks/dup-gate.py                           argv1   rc=1       FAIL                 0.4s  ROWS       227 -> 1014 lines; 227 -> 1014 read; 227 -> 939 distinct na
+checks/dup-gate.py                           argv2   rc=2       UNASSIGNED (code 2 is not one of the five)                 0.3s  give --port and --oracle, or --compare BEFORE AFTER, or --selftest wit
+checks/e2e.py                                bare    rc=3       REFUSED                 0.0s  ORACLE DRIFT: checks/e2e.sh: fcf647cdadeaaf88 != aaea6adddba6e553 -- t
+checks/e2e.sh                                bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/e2e.
+checks/env-precond.py                        bare    rc=0       PASS                 0.1s  METHOD A -- the source lines that build the child environments, found 
+checks/env-precond.py                        argv0   rc=0       PASS                 0.1s  PLANT satisfied -- MUST exit 0
+checks/env-precond.py                        argv2   rc=2       UNASSIGNED (code 2 is not one of the five)                 0.0s  usage: env-precond.py [-h] [--check] [--declare] [--record]
+checks/fw_live.py                            bare    rc=1       FAIL                 0.0s  Traceback (most recent call last):
+checks/gate.py                               bare    rc=3       REFUSED                 0.0s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/gate.py                               argv3   rc=3       REFUSED                 0.1s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/gate.sh                               bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gate
+checks/gate_dtype.py                         bare    rc=2       UNASSIGNED (code 2 is not one of the five)                 0.1s  usage: gate_dtype.py [-h] --lane {js,c} [--bend BEND] [--binary BINARY
+checks/gate_norm.py                          bare    rc=1       FAIL                 0.2s  bend -o emitted no JS:
+checks/gen.sh                                bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gen.
+checks/git-index-guard.py                    bare    rc=3       REFUSED                 0.1s  usage: git-index-guard.py (snap | check --expect <token>)
+checks/graphcmp-census-audit.py              bare    rc=0       PASS                 0.4s  ======================================================================
+checks/hermetic-census.py                    bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/jsfix_gate.py                         bare    rc=1       FAIL                 7.1s  --- arm shipped ---
+checks/lint_demo.sh                          bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lint
+checks/lintable-gate.sh                      bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lint
+checks/llama.py                              bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+checks/marker-audit.py                       bare    rc=0       PASS                 0.5s  file                                          walls  shared  BACKLOG
+checks/nl-gate-noguard.py                    bare    rc=3       REFUSED                 0.1s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/nl-gate-noguard.py                    argv3   rc=3       REFUSED                 0.1s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/nl-gate.py                            bare    rc=3       REFUSED                 0.1s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/nl-gate.py                            argv3   rc=3       REFUSED                 0.2s  == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2
+checks/no-shrink.py                          bare    rc=0       PASS                 0.2s  no-shrink: 2 port files differ from HEAD uncommitted -- 2 GREW, 0 SHRA
+checks/no-strays.py                          bare    rc=1       FAIL                 0.1s  STRAY-SHAPE  tinybendygrad/runtime/_p6.bend                         20
+checks/no-txt.py                             bare    rc=0       PASS                 0.6s  175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` 
+checks/no-txt.py                             argv0   rc=0       PASS                 0.2s  175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` 
+checks/no-txt.py                             argv1   rc=1       FAIL                 0.1s  Traceback (most recent call last):
+checks/norm_check.py                         bare    rc=0       PASS                 0.4s  gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen
+checks/norm_check.py                         argv0   rc=0       PASS                 0.4s  gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen
+checks/norm_check.py                         argv1   rc=1       FAIL                 0.2s  FAIL  one f32, two spellings agree        (the defect's pair) the old 
+checks/nvrows-deadrow-gate.py                bare    rc=1       FAIL                 6.9s  ======================================================================
+checks/oracle-txt-census.py                  bare    rc=0       PASS                 4.0s  1 `.txt` under oracles/, grouped by WHAT IS INSIDE. m2 threshold (wors
+checks/oracle_f64.py                         bare    rc=3       REFUSED                 0.4s  == REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s
+checks/oracle_f64.py                         argv3   rc=3       REFUSED                 0.3s  == REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s
+checks/plant.sh                              bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/plan
+checks/process_replay.py                     bare    rc=1       FAIL                 0.3s  running process replay with ASSERT_DIFF=1
+checks/render-gate-oracle.py                 bare    rc=0       PASS                 0.7s  pyrender const=ast = UOp.const(3)
+checks/repair-dupes.py                       bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+checks/repro-paths.py                        bare    rc=1       FAIL                39.5s  repro-paths: 519 committed reports name 482 distinct paths (+2 written
+checks/residue.py                            bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/residue.py                            argv0   rc=0       PASS                 0.7s  # plant: armed; PASS
+checks/residue.py                            argv3   rc=3       REFUSED                 0.7s  # plant: disarmed DELETE; PASS
+checks/rn-gate.py                            bare    rc=1       FAIL                20.6s  live port rc=0 md5=f697a083   live oracle rc=2 md5=d41d8cd9
+checks/rn-gate.py                            argv3   rc=1       FAIL                21.6s  live port rc=0 md5=f697a083   live oracle rc=2 md5=d41d8cd9
+checks/romless.py                            bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+checks/run-all.sh                            bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-
+checks/run-f64.sh                            bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-
+checks/run-port-mm.sh                        bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-
+checks/run.py                                bare    rc=1       FAIL                 0.3s  Traceback (most recent call last):
+checks/sb-gate.sh                            bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/sb-g
+checks/serve.py                              bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/slop-declare.py                       bare    rc=0       PASS                26.0s  tracked `.agents/slop/*/` directories : 269
+checks/substrate-check.sh                    bare    rc=1       FAIL                 0.0s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/subs
+checks/substrate-id.py                       bare    rc=2       UNASSIGNED (code 2 is not one of the five)                 0.0s  usage: substrate-id.py [-h] [--rows] [--hash] [--judge FILE] [--plant]
+checks/substrate.py                          bare    rc=3       REFUSED                 0.1s  REFUSED: no files given. A guard invoked with an empty population must
+checks/sweep.py                              bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/sz.py                                 bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+checks/test_rewrite_bottom_up_gate.py        bare    rc=0       PASS                 0.5s  ..
+checks/txt-owners.py                         bare    rc=0       PASS                 7.6s  0 `.txt` reported by checks/no-txt.py, attributed to OWNING GENERATORS
+checks/unowned.py                            bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+checks/vz_gate.py                            bare    rc=1       FAIL                 0.4s  ORACLE EXITED 512 -- its output is not evidence
+checks/walk-mutate.sh                        bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/walk
+checks/wallcheck.py                          bare    rc=1       FAIL                18.4s  wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc
+checks/wallcheck.py                          argv0   rc=0       PASS                 0.2s  G1 tree anchor: {len(hit)}/3 patterns match the wall's own sentence ->
+checks/wallcheck.py                          argv1   rc=1       FAIL                 0.6s  wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc
+checks/wallcheck.py                          argv2   rc=2       UNASSIGNED (code 2 is not one of the five)                 0.2s  LEDGER UNREADABLE: /no/such/walls.tsv does not exist. A missing ledger
+checks/wallcheck.py                          argv3   rc=3       REFUSED                 0.5s  wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc
+checks/wallcheck.py                          argv4   rc=4       SKIP                 0.6s  wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc
+checks/wallcheck.py                          argv5   rc=5       DEAD                 0.8s  wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc
+checks/wt-sync.sh                            bare    rc=1       FAIL                 0.1s  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/wt-s
+gates/bc-u32-gate.py                         bare    rc=0       PASS                43.6s  bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 windo
+gates/bc-u32-gen.py                          bare    rc=0       PASS                 0.1s  wrote bc-u32.bend (39 rows) and bc-u32-oracle.py (39 rows)
+gates/bc-u32-oracle.py                       bare    rc=0       PASS                 1.4s  A_a_one=[1,2]
+gates/bc_u32_table.py                        bare    rc=0       PASS                 1.1s  row                              dim in out  mode     cpython         
+gates/beautiful-mnist-gate.py                bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/ew-consts-gate.py                      bare    rc=0       PASS                20.0s  ew-consts-gate: 21 rows, 3 lanes byte-identical
+gates/ew-consts-oracle.py                    bare    rc=0       PASS                 0.0s  k_log2=1060205080
+gates/ew-explog-gate.py                      bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/ew-explog-oracle.py                    bare    rc=0       PASS                 0.8s  ew_log=4 CONST/0 LOG2/1 CONST/0=1060205080 MUL/2
+gates/gate-surface.py                        bare    rc=1       FAIL                15.0s  I  DISCOVERED 129 entry point(s) under checks/gates/ (+36 module(s) wi
+gates/gate-surface.py                        argv0   rc=0       PASS                 0.9s  PLANTS -- three directions, the blind spot, and the classes, because a
+gates/gate-surface.py                        argv1   rc=1       FAIL                 0.2s  <SILENT>
+gates/gate-surface.py                        argv2   rc=2       UNASSIGNED (code 2 is not one of the five)                 0.1s  I  EMPTY POPULATION: no entry point under checks/gates/ -- and an empt
+gates/gates-pop.py                           bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/gendirs.py                             bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/git-massdelete-gate.py                 bare    rc=4       SKIP                 0.1s  usage: git-massdelete-gate.py {check <rev> | staged | push | --plant}
+gates/i64-shl-gate.py                        bare    rc=0       PASS                10.7s  i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime
+gates/i64-shl-oracle.py                      bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+gates/i64-shr-gate.py                        bare    rc=0       PASS                10.2s  i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60
+gates/i64-shr-oracle.py                      bare    rc=1       FAIL                 0.1s  Traceback (most recent call last):
+gates/indexread-gate.py                      bare    rc=1       FAIL                 1.1s  INDEXREAD TREE-COMMITTED 6510  INDEX 6669  DIVERGENCE -159
+gates/mixin-op-gate.py                       bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/msgdiff-gate.py                        bare    rc=4       SKIP                 0.1s  usage: msgdiff-gate.py {check <rev> | range <rev-list args...> | --pla
+gates/ops-core-gate.py                       bare    rc=0       PASS                16.0s  ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymme
+gates/ops-core-oracle.py                     bare    rc=0       PASS                 0.2s  hashcons_same_index=1
+gates/render_val_s-gate.py                   bare    rc=0       PASS                14.1s  render_val_s-gate: 8 rows, 3 lanes -- render_val_s's signed 32-bit dec
+gates/replace-gate.py                        bare    rc=0       PASS                14.2s  replace-gate: 8 rows, 3 lanes -- UOp.replace's identity, single-field 
+gates/retention-check.py                     bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/tn_add_sub-gate.py                     bare    rc=0       PASS                17.4s  tn_add_sub-gate: 17 rows, 3 lanes -- tn_add, tn_radd, tn_sub, and tn_r
+gates/tn_and_or_xor-gate.py                  bare    rc=0       PASS                18.7s  tn_and_or_xor-gate: 25 rows, 3 lanes -- tn_and, tn_rand, tn_or, tn_ror
+gates/tn_binop2_cmp-gate.py                  bare    rc=0       PASS                23.9s  tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, tn_cmpne,
+gates/tn_bitwise_not-gate.py                 bare    rc=0       PASS                19.5s  tn_bitwise_not-gate: 8 rows, 3 lanes -- tn_bitwise_not's bool-arm CMPN
+gates/tn_contiguous_backward-gate.py         bare    rc=0       PASS                18.0s  tn_contiguous_backward-gate: 5 rows, 3 lanes -- tn_contiguous_backward
+gates/tn_detach-gate.py                      bare    rc=1       FAIL                19.3s  Traceback (most recent call last):
+gates/tn_dunder_neg-gate.py                  bare    rc=0       PASS                42.6s  tn_dunder_neg-gate: 5 rows, 3 lanes -- tn_dunder_neg (the __neg__ dund
+gates/tn_fdiv_mod-gate.py                    bare    rc=0       PASS                21.4s  tn_fdiv_mod-gate: 17 rows, 3 lanes -- tn_fdiv, tn_rfdiv, tn_mod, and t
+gates/tn_logical_not-gate.py                 bare    rc=0       PASS                19.4s  tn_logical_not-gate: 4 rows, 3 lanes -- tn_logical_not's CMPNE/CAST/CO
+gates/tn_lshift_rshift-gate.py               bare    rc=0       PASS                15.8s  tn_lshift_rshift-gate: 9 rows, 3 lanes -- tn_lshift / tn_rlshift / tn_
+gates/tn_maximum-gate.py                     bare    rc=0       PASS                17.0s  tn_maximum-gate: 7 rows, 3 lanes -- tn_maximum / tn_rmaximum both agre
+gates/tn_mul-gate.py                         bare    rc=0       PASS                18.8s  tn_mul-gate: 13 rows, 3 lanes -- tn_mul, tn_rmul, and tn_square all ag
+gates/tn_neg-gate.py                         bare    rc=0       PASS                32.0s  tn_neg-gate: 7 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) and ar
+gates/tn_pow-gate.py                         bare    rc=0       PASS                11.6s  tn_pow-gate: 9 rows, 3 lanes -- tn_pow and tn_rpow both agree with CPy
+gates/tn_relu-gate.py                        bare    rc=0       PASS                10.4s  tn_relu-gate: 5 rows, 3 lanes -- tn_relu's op/arg/srcs/purity and reac
+gates/tn_relu6-gate.py                       bare    rc=0       PASS                12.7s  tn_relu6-gate: 5 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity and re
+gates/tn_sin_log2_exp2_rsqrt-gate.py         bare    rc=0       PASS                17.4s  tn_sin_log2_exp2_rsqrt-gate: 11 rows, 3 lanes -- tn_sin, tn_log2, tn_e
+gates/tn_sqrt-gate.py                        bare    rc=0       PASS                12.2s  tn_sqrt-gate: 5 rows, 3 lanes -- tn_sqrt's op/src/arg set, input purit
+gates/tn_trunc_reciprocal_threefry-gate.py   bare    rc=0       PASS                12.4s  tn_trunc_reciprocal_threefry-gate: 9 rows, 3 lanes -- tn_trunc, tn_rec
+gates/tn_where-gate.py                       bare    rc=0       PASS                11.1s  tn_where-gate: 5 rows, 3 lanes -- tn_where's op/arg/srcs set, input pu
+gates/uop_cast-gate.py                       bare    rc=0       PASS                 6.7s  uop_cast-gate: 8 rows, 3 lanes -- UOp.cast's op/src/arg set, new-node 
+gates/wk-cd-gate.py                          bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/wk-cd-oracle.py                        bare    rc=0       PASS                 1.7s  cd_big_2p40=i64
+gates/wk-eval-gate.py                        bare    rc=TIMEOUT SKIP                45.0s  <OVER-CAP 45.0s: cost UNKNOWN>
+gates/wk-eval-oracle.py                      bare    rc=0       PASS                 0.5s  int_weakint_val=0:7
+gates/wk-f32-gate.py                         bare    rc=0       PASS                14.8s  wk-f32-gate: 18 rows, 3 lanes byte-identical
+gates/wk-f32-rows.py                         bare    rc=0       PASS                 0.1s  z=0
+
+==============================================================================
+POPULATION gates-pop.discover() BY PATH: 127 entry points (+34 modules with no entry guard)
+INVOCATIONS: 153 = 127 gates x (1 bare + declared PLANTS)
+COMPLETED: 139, OVER-CAP (measured nothing, and a SKIP is not a pass): 14
+OWNER gates/gatekit.py: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+
+BARE (113 of 127 gates ran): PASS=53, FAIL=43, REFUSED=9, UNASSIGNED (code 2 is not one of the five)=5, SKIP=2, DEAD=1
+
+THE UNASSIGNED-CODE CLASS: 9 invocation(s) returned a code gates/gatekit.py does not name, over 127 gates x 1 invocation(s) each
+  DECLARED     5
+      checks/dup-gate.py [bare] argv='' rc=2 declared=0|1|2|3 :: give --port and --oracle, or --compare BEFORE AFTER, or --se
+      checks/dup-gate.py [argv2] argv='' rc=2 declared=0|1|2|3 :: give --port and --oracle, or --compare BEFORE AFTER, or --se
+      checks/env-precond.py [argv2] argv='--plant nonsense' rc=2 declared=0|1|2 :: usage: env-precond.py [-h] [--check] [--declare] [--record]
+      checks/wallcheck.py [argv2] argv='--ledger /no/such/walls.tsv' rc=2 declared=0|1|2|3|4|5 :: LEDGER UNREADABLE: /no/such/walls.tsv does not exist. A miss
+      gates/gate-surface.py [argv2] argv='--root /dev/null' rc=2 declared=0|1|2 :: I  EMPTY POPULATION: no entry point under checks/gates/ -- a
+  MISUSE       3
+      checks/differ.py [bare] argv='' rc=2 declared=- :: usage: checks/differ.py [-h] {run,repro,snap,plant} ...
+      checks/gate_dtype.py [bare] argv='' rc=2 declared=- :: usage: gate_dtype.py [-h] --lane {js,c} [--bend BEND] [--bin
+      checks/substrate-id.py [bare] argv='' rc=2 declared=- :: usage: substrate-id.py [-h] [--rows] [--hash] [--judge FILE]
+  UNATTRIBUTED 1
+      checks/al-verdict.py [bare] argv='' rc=2 declared=- :: al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPIL
+  CRASH        0
+
+DISTINCT GATES in that class: 8
+  checks/dup-gate.py: BARE rc=2 (UNASSIGNED (code 2 is not one of the five)) but WITH ARGV [''] rc=[2] (['UNASSIGNED (code 2 is not one of the five)']) -- THE INVOCATION DECIDED
+
+WHAT gatekit.charge() DOES WITH EACH CASE (the owner's own function):
+  (a) DECLARED -- gate spells a code the owner does not name     charge(2) = REFUSED
+  (b) CRASH -- rc 1 + Traceback                                  charge(1) = FAIL  <- NOT charge()'s business: hooks/run.py:138 catches the traceback FIRST
+  (c) MISUSE -- argparse's own 2                                 charge(2) = REFUSED
+  a hypothetical code 6                                charge(6) = REFUSED
+
+STATIC SUPERSET (AST, not reachable): 127 gates, 1360 exit/return sites
+UNSOUND DECLARATION SHAPE: 17 gate(s) made gates/gate-surface.py:declaration() return a tuple whose length is not 4, which its own
+   call site at :359 unpacks positionally -- it CRASHES the reader rather than describing the file:
+      checks/bounded-selftest.sh: declaration() returned a 3-tuple
+      checks/classify.sh: declaration() returned a 3-tuple
+      checks/demo.sh: declaration() returned a 3-tuple
+      checks/disarm.sh: declaration() returned a 3-tuple
+      checks/e2e.sh: declaration() returned a 3-tuple
+      checks/gate.sh: declaration() returned a 3-tuple
+      checks/gen.sh: declaration() returned a 3-tuple
+      checks/lint_demo.sh: declaration() returned a 3-tuple
+      checks/lintable-gate.sh: declaration() returned a 3-tuple
+      checks/plant.sh: declaration() returned a 3-tuple
+      checks/run-all.sh: declaration() returned a 3-tuple
+      checks/run-f64.sh: declaration() returned a 3-tuple
+      checks/run-port-mm.sh: declaration() returned a 3-tuple
+      checks/sb-gate.sh: declaration() returned a 3-tuple
+      checks/substrate-check.sh: declaration() returned a 3-tuple
+      checks/walk-mutate.sh: declaration() returned a 3-tuple
+      checks/wt-sync.sh: declaration() returned a 3-tuple
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/exitsurvey/census.py", line 297, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/exitsurvey/census.py", line 290, in main
+    f.write = out
+    ^
+NameError: name 'f' is not defined

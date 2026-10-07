@@ -1,0 +1,6 @@
+case	gate	rc	declared	exit2_sites	first line
+UNATTRIBUTED	checks/al-verdict.py	2		125	al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE
+MISUSE	checks/differ.py	2		1184	usage: checks/differ.py [-h] {run,repro,snap,plant} ...
+DECLARED	checks/dup-gate.py	2	0,1,2,3	338	give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+CRASH	checks/repair-dupes.py	1		99	Traceback (most recent call last):
+MISUSE	checks/substrate-id.py	2		529	usage: substrate-id.py [-h] [--rows] [--hash] [--judge FILE] [--plant]
