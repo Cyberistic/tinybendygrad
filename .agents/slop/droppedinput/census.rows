@@ -1,0 +1,28 @@
+ROWS population(os.walk .py under checks, gates, .agents/slop) = 870  committed=805 uncommitted=65
+ROWS declaration+consumer sites = 26  of which DROPS-ABSENT = 3
+handles-absent         uncommitted  .agents/slop/coindependent/pairs.py:38  HOMES(2 member(s))  consumed For at :72, guard at :72  handles-absent=True
+handles-absent         committed  .agents/slop/difftxt/inventory.py:38  DOCS(4 member(s))  consumed For at :108, guard at :108  handles-absent=True
+DROPS-ABSENT           committed  .agents/slop/flipthird/build.py:20  OWNED(5 member(s))  consumed comprehension at :74, guard at :74  handles-absent=False
+handles-absent         committed  .agents/slop/gatesrun/run.py:34  HOMES(2 member(s))  consumed For at :171, guard at :171  handles-absent=True
+handles-absent         committed  .agents/slop/gatesrun/scan.py:17  HOMES(2 member(s))  consumed For at :105, guard at :105  handles-absent=True
+handles-absent         committed  .agents/slop/inst13/deps.py:9  DEPS(24 member(s))  consumed For at :38, guard at :38  handles-absent=True
+handles-absent         committed  .agents/slop/inst13/runner.py:19  DEPS(3 member(s))  consumed For at :25, guard at :25  handles-absent=True
+handles-absent         committed  .agents/slop/lostinst/citations.py:10  SCAN_FILES(3 member(s))  consumed For at :14, guard at :14  handles-absent=True
+handles-absent         committed  .agents/slop/modulerefuse/discover.py:28  HOMES(2 member(s))  consumed For at :85, guard at :85  handles-absent=True
+handles-absent         committed  .agents/slop/modulerefuse/restore.py:50  GATES(7 member(s))  consumed For at :102, guard at :102  handles-absent=True
+handles-absent         committed  .agents/slop/modulerefuse/x1-derive.py:28  HOMES(2 member(s))  consumed For at :106, guard at :106  handles-absent=True
+handles-absent         committed  .agents/slop/modulerefuse/x3-class.py:42  HOMES(2 member(s))  consumed For at :55, guard at :55  handles-absent=True
+handles-absent         committed  .agents/slop/nv_ip_build.py:26  PARTS(10 member(s))  consumed For at :35, guard at :35  handles-absent=True
+DROPS-ABSENT           committed  .agents/slop/offrepo/callers.py:41  SEARCH_DIRS(4 member(s))  consumed comprehension at :51, guard at :51  handles-absent=False
+handles-absent         uncommitted  .agents/slop/quiesce/snapshot.py:63  COPIES(10 member(s))  consumed For at :92, guard at :92  handles-absent=True
+handles-absent         uncommitted  .agents/slop/quiesce/snapshot.py:62  TOOLING(3 member(s))  consumed For at :129, guard at :129  handles-absent=True
+handles-absent         uncommitted  .agents/slop/quiesce/snapshot.py:63  COPIES(10 member(s))  consumed For at :195, guard at :195  handles-absent=True
+handles-absent         uncommitted  .agents/slop/quiesce/snapshot.py:62  TOOLING(3 member(s))  consumed comprehension at :141, guard at :141  handles-absent=True
+handles-absent         uncommitted  .agents/slop/runfinal/quietwatch.py:9  TARGETS(2 member(s))  consumed For at :17, guard at :17  handles-absent=True
+handles-absent         committed  .agents/slop/strayblobs/delete.py:18  PIDS(4 member(s))  consumed For at :24, guard at :24  handles-absent=True
+DROPS-ABSENT           committed  .agents/slop/subtree/measure5.py:22  DEEPER(2 member(s))  consumed For at :69, guard at :69  handles-absent=False
+handles-absent         committed  .agents/slop/subtree/plant.py:80  CLONE_FILES(1 member(s))  consumed For at :101, guard at :101  handles-absent=True
+handles-absent         committed  checks/differ.py:845  SUBSTRATE_INPUTS(8 member(s))  consumed For at :882, guard at :882  handles-absent=True
+handles-absent         committed  checks/no-strays.py:139  SOURCE_TREES(1 member(s))  consumed For at :149, guard at :149  handles-absent=True
+handles-absent         committed  checks/wallcheck.py:47  WALK_ROOTS(7 member(s))  consumed For at :141, guard at :141  handles-absent=True
+handles-absent         committed  gates/indexread-gate.py:61  ROOTS(3 member(s))  consumed For at :105, guard at :105  handles-absent=True
