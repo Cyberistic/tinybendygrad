@@ -1,0 +1,22 @@
+graphs=34
+graphs-answered=34
+graphs-unset=0
+expect-moved=34
+graphs-agree=0
+graphs-disagree=0
+byte-identical=0
+not-comparable=34
+stable-pairs=0 of 5
+stable-failed=5 of 5
+stable-differ=0 of 5
+plants-disagree=0 of 7
+cross=0 of 1
+selfcheck=rc=1
+conflations=4 of 4
+controls=0 of 5
+oracle-selfcheck=
+census-rc=rc=1
+dev=CPU
+lc_all=C
+noopt=0
+pythonhashseed=0
