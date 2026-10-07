@@ -1546,3 +1546,11 @@ the red beat began EMPTY and one gate printed `cleared`.
 AND THE TARGET BY A CONVENTION INSIDE ANOTHER PROGRAM**, so no static scan closes it; closing it
 needs execution, and nothing here executes a gate (`bend` peaks at 1,468 MB against a 2,048 MB
 ceiling with six units live).
+
+### `msgdiff` (2026-10-07) — a commit MESSAGE against its own DIFF
+
+| tool | why |
+| --- | --- |
+| `gates/msgdiff-gate.py` | **the guard `git-massdelete-gate.py` names as its residual: a wrong commit message is invisible to every diff-only gate.** Resolves a deletion ASSERTION (`Deleted X`) against the commit's `D` set and its tree, and an explicit `N files changed\|deleted\|...` against the diff's file count. `REFUSED` (3), not `FAIL`: it does not know the message is wrong, only that THIS DIFF does not witness it (`MESSAGE_DIFF_ACK=` records the explanation). MEASURED: `range --since=2026-10-06T12:00 HEAD` = **147 commits, 146 PASS, 1 REFUSED**, the one real defect `00b101574`; `--plant` = six states, rc 0. **COUNTS pids, never judges them** (a pid is a live measurement in an immutable message). Separate file, not an extension of the mass-delete gate: that gate's subject is the DIFF, this one's is the MESSAGE, and one commit with two subjects cannot say which failed. |
+| `.agents/slop/msgdiff/run.py` | Regenerates the evidence by REPLAYING the real commits, not synthetic ones. Writes `verdicts.rows`, `plant.out/err`, `range.out/err`. |
+| `.agents/slop/msgdiff/REPORT.md` | The claim grammar: which shapes are checkable (deletion, file count), which are unfalsifiable (units/sites/arms), which are counted and passed (pids), and the seam to the PROSE layer (`citeresolve`, 2 448 prose claims) which is a different population and a different instrument. |

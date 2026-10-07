@@ -158,6 +158,20 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   why the shell form is retired, with the four ways a shell gate failed here (`&&` masking a diff
   under `set -e`; an `EXIT` trap returning `rm`'s status; `<( )` not parsing under `sh`; `${=SUB}` never
   expanding and a hash guard comparing `""` to `""`).
+- `gates/msgdiff-gate.py` — **a commit MESSAGE against its own DIFF**, the guard `jjreset`'s
+  mass-delete gate names as its residual (*it cannot see a wrong message*). It is a gate on
+  `gatekit`'s five exits and returns **`REFUSED` (3), not `FAIL`**, when a message claims a
+  deletion its diff does not witness; `MESSAGE_DIFF_ACK=` records the explanation and passes.
+  MEASURED 2026-10-07: `range --since=2026-10-06T12:00 HEAD` is **147 commits, 146 PASS, 1
+  REFUSED**, and the refusal is the one real defect — `00b101574`'s *"Deleted the superseded
+  `oracles259/plants.py`"* over an **empty `git diff-tree --diff-filter=D`**, the file present in
+  that tree at blob `e6e31707`; `--plant` is six states, `rc=0`. **IT CANNOT SEE A CLAIM THAT NAMES
+  NOTHING CHECKABLE** — the relayed `41%`, a dead pid, an invented config key — and it **counts
+  pids rather than judging them**, because a pid is a live measurement in an immutable message.
+  It is a SEPARATE gate from the mass-delete guard (that one's subject is the DIFF, this one's is
+  the MESSAGE; one commit with two subjects cannot say which failed), and the PROSE layer
+  (`citeresolve`: 2 448 claims) is a different population for a different instrument. See
+  `.agents/slop/msgdiff/REPORT.md`.
 
 
 ## The two doctrines. Everything below is a measured instance, not a principle.

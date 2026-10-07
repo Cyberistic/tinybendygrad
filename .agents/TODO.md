@@ -12,6 +12,15 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.
+msgdiff-gate    [#########] 1/1      a commit MESSAGE vs its own DIFF. `00b101574`'s "Deleted the
+                                        superseded `oracles259/plants.py`" is REFUSED (3) over an
+                                        EMPTY `git diff-tree --diff-filter=D`, the file present at
+                                        blob `e6e31707`. `range --since=2026-10-06T12:00 HEAD` =
+                                        147 commits, 146 PASS, 1 REFUSED; `--plant` 6 states rc=0.
+                                        COUNTS pids, cannot judge them (a pid is a live
+                                        measurement in an immutable message); the PROSE layer is a
+                                        different population. `gates/msgdiff-gate.py`,
+                                        `.agents/slop/msgdiff/REPORT.md`.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with

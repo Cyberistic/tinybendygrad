@@ -1,0 +1,8 @@
+REFUSED, NOT A VERDICT: HEAD -- the message claims a change the diff does not witness (1 checked, 0 uncheckable)
+  claim: Deleted keep.py and added other.py
+  file:  keep.py  (present in this commit's tree, not deleted by it)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+REFUSED, NOT A VERDICT: HEAD -- the message claims a change the diff does not witness (1 checked, 0 uncheckable)
+  claim: changed 9 files
+  file:  9 files  (the diff changes 1 file)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view

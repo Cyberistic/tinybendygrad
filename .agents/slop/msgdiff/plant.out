@@ -1,0 +1,5 @@
+PASS: HEAD -- 1 deletion claims checked, 0 uncheckable (pids=0, counts=unfalsifiable, meta=0)
+PASS: HEAD -- 0 deletion claims checked, 1 uncheckable (pids=1, counts=unfalsifiable, meta=0)
+PASS: HEAD~1 -- 1 deletion claims checked, 0 uncheckable (pids=0, counts=unfalsifiable, meta=0) (ack: the diff is a partial view)
+PASS: HEAD -- 1 deletion claims checked, 0 uncheckable (pids=0, counts=unfalsifiable, meta=0)
+--plant: all states OK
