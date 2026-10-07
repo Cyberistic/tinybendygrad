@@ -248,7 +248,7 @@ def declaration(p):
     try:
         tree = ast.parse(p.read_text(errors="replace"))
     except SyntaxError as e:
-        return None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
+        return None, None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
     found = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):
@@ -349,7 +349,7 @@ def report(root, charge=True):
 
     declared_total = reached_total = 0
     unplanted = misplant = nogreen = malformed = 0
-    unowned = 0
+    unowned = renamed = 0
     declaring = 0
     rows = []
     classes = {}
@@ -391,6 +391,20 @@ def report(root, charge=True):
                 unowned += 1
                 issues.append(f"UNOWNED    {rc} {verdicts[rc]!r} -- gates/gatekit.py has no name "
                               f"for this exit code, so a caller aggregating it is guessing")
+            elif verdicts[rc] != vocab[rc]:
+                # THE HALF THAT WAS MISSING, MEASURED. Checking only `rc not in vocab` is blind to
+                # a table that names a code the owner DOES have a name for, differently: it is not
+                # UNOWNED, so nothing above fired, and `checks/wallcheck.py` sat at `4: "NO-ROW"`
+                # while the owner said `4: "SKIP"` -- and a runner that charges by INTEGER printed
+                # the owner's word for a gate that had not said it. That is 1 of 14 verdict tables
+                # in 131 discovered entries (`.agents/slop/verdictcollide/`), and the count of
+                # UNOWNED codes here was 4, which is why the census was worth writing separately:
+                # UNOWNED counted the codes nobody claimed and was blind to the one code two owners
+                # claimed in two words. The NAME is compared here, by the owner's own word.
+                renamed += 1
+                issues.append(f"RENAMED    {rc} {verdicts[rc]!r} -- gates/gatekit.py calls this code "
+                              f"{vocab[rc]!r}, so a caller charging by integer prints a word this "
+                              f"gate never used")
         klass, why = classify(red_is, reached, verdicts)
         classes[str(p.relative_to(root))] = (klass, why)
         rows.append((p, verdicts, reached, issues, (klass, why)))
@@ -424,10 +438,13 @@ def report(root, charge=True):
     # owner has no name for is CHARGED, because two witnesses disagree about what the number means
     # and a disagreement is not a pass.
     print(f"V EXIT CODES: {unowned} declared verdict code(s) that `gates/gatekit.py` has no name "
-          f"for. A gate\n   that declares one is saying `exit {sorted({rc for rc in vocab})}` "
-          f"means something here that the tree does\n   not know, and an aggregator either guesses "
-          f"or calls it DEAD. Both are `refusalsweep`'s\n   failure: a gate that crashes where it "
-          f"should have refused cannot say which.\n")
+          f"for, and {renamed}\n   declared code(s) the owner HAS a name for, under a different one. "
+          f"A gate declaring an unowned one is saying `exit {sorted({rc for rc in vocab})}`\n   means "
+          f"something here that the tree does not know, and an aggregator either guesses or calls it "
+          f"DEAD;\n   a gate declaring a RENAMED one is worse in the way that matters least and most: "
+          f"the code is\n   known, so a runner charging by integer silently prints the OWNER'S word "
+          f"for a gate that never used it.\n   Both are `refusalsweep`'s failure: a gate that crashes "
+          f"where it should have refused cannot say which.\n")
 
     # CLAUSE IV: THE CLASSES. A RUNNER READS THIS AND NEEDS NO GATE NAME. The three counts are
     # printed before the individual rows because a reader asking "can a runner exist?" wants the
@@ -455,7 +472,7 @@ def report(root, charge=True):
     print()
     print(f"GATE-SURFACE: {'RED' if red else 'OK'} -- {declaring} gate(s) declare a surface, "
           f"{reached_total}/{declared_total} verdicts reached, {unplanted} unplanted, "
-          f"{nogreen} NO-GREEN, {unowned} UNOWNED exit code(s)")
+          f"{nogreen} NO-GREEN, {unowned} UNOWNED exit code(s), {renamed} RENAMED exit code(s)")
     return 1 if (charge and red) else 0
 
 
