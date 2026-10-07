@@ -615,6 +615,28 @@ def tn_relu6(+t: Tensor) -> Tensor:
   +r = tn_relu(t)
   tn_relu6.go(t, r, tn_relu6.lt6(t, r, c6), c6)
 
+# `maximum` -- elementwise.py:378. `self._binop(Ops.MAX, x, False)`. Same shape as
+# `tn_add` / `tn_mul` with `OpsMAX{}` instead of `OpsMUL{}`. The no-broadcasting
+# case is `self.alu(MAX, x.uop)`, the broadcasting case stays walled on
+# `_broadcasted`.
+def tn_maximum.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsMAX{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsMAX{}, [Tensor.u(rhs)])
+
+def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_maximum.go(False{}, lhs, rhs)
+
+def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_maximum.go(True{}, lhs, rhs)
+
+# `minimum` is NOT ported: CPython's `Tensor.minimum` (elementwise.py:387) has
+# dtype promotion (the int `^k` trick at elementwise.py:390 and the float arm
+# `-(-t).alu(MAX, -x)`), and `OpsMIN{}` IS NOT IN THE SUBSTRATE (verified:
+# `grep -c OpsMIN tinybendygrad/uop/ops.bend` -> 0). The no-broadcasting case
+# would need `OpsMIN{}` to build `self.alu(MIN, x.uop)`, and the port has no
+# such constructor. Stays walled on the MIN-op + the dtype-promotion seam.
+
 # `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
 # (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`
 # instead of `Ops.CMPLT`. The `reverse` arm is unused upstream (`ne` has no
