@@ -456,6 +456,11 @@ def cmd_run(_a):
     for tmp in D.glob(".tmp.*"):
         tmp.unlink()
 
+    # THE FIRST HALF OF THE PAIR, taken before anything is emitted. Everything below re-reads
+    # these bytes -- `graphcmp.py` is re-loaded by every `gc()` -- so a run is a mixture of two
+    # substrates the moment any of them moves, and nothing else in `D/` can see it.
+    substrate_start = substrate_digest()
+
     run("D0-selfcheck.txt", "selfcheck")
 
     # ONE LINE OF SUBSTANCE PER GRAPH: `diff --graph NAME` prints exactly one `# VERDICT:`
@@ -667,7 +672,11 @@ def cmd_run(_a):
         # be a THIRD place the device is claimed, and two claims about one run is a second
         # opinion -- which is the thing `gates/retention-check.py`'s own header says it exists to
         # avoid.
-        *precondition_rows()]) + "\n")
+        *precondition_rows(),
+        # THE SECOND HALF OF THE PAIR, after the last `emit` and before the summary is written.
+        # Both halves ride here because this summary is already parsed as `key=value` by four
+        # consumers and a fifth file would be a second place the run is claimed.
+        *substrate_rows(substrate_start, substrate_digest())]) + "\n")
     print(f"wrote {D.relative_to(ROOT)}")
     # **A RUN WITH AN UNANSWERED GRAPH IS INCOMPLETE, AND SAYS SO BY EXITING NON-ZERO.**
     # This is the choice between the three answers, and it is the run's EXIT STATUS that
@@ -804,6 +813,101 @@ def preconditions_bad(got):
     return bad
 
 
+# ---- THE SUBSTRATE: WHICH BYTES PRODUCED THIS RUN, IN TWO ROWS --------------------------------
+#
+# WHY TWO ROWS AND NOT ONE. One `substrate=H` says what the substrate WAS. That is a LABEL, and
+# a label cannot go red. Two rows say what the substrate was BEFORE the first `emit` and what it
+# was AFTER the last one, and the PAIR is a comparison: `start != end` means this run is a
+# MIXTURE of two substrates, so no artifact set in `D/` describes one thing. MEASURED by
+# `midrun` on 2026-10-07: a `PROOF.bend` edit mid-run moved the substrate and changed no
+# artifact, no row and no pin, "because no row can name bytes". These are the first two rows in
+# `D/` that can, and they answer the case `pinindep` names as never tested: all eleven of its
+# perturbations edited a FINISHED artifact set.
+#
+# WHERE H0 COMES FROM, WHICH IS THE PART THAT LOOKS LIKE IT NEEDS A LEDGER AND DOES NOT. It is not
+# pinned and must not be: a pin on a substrate digest would have to be re-pinned every time the
+# port moves, which is `pinindep`'s finding -- 17 pins on ONE file is one measurement wearing 17
+# hats -- made worse by a pin that is red by construction after any real edit. So H0 is
+# `substrate-start`, written by this run, into the file four parsers already read; H1 is
+# `substrate-end`, written by the same run. Both live in the one artifact, so the comparison
+# needs no second witness, no external ledger and no new parser.
+SUBSTRATE_ROWS = ("substrate-start", "substrate-end")
+
+#: The inputs, by DISCOVERY where the tree can be walked and by this file's OWN declarations
+#: where it cannot. The port is a DIRECTORY WALK. The eight named files are the ones `run`
+#: hands to a subprocess or reads itself, and each is anchored to the line that names it:
+#:   :43 GCMP        .agents/slop/graphcmp.py      :845 ./bin/bend
+#:   :845 BEND_PROBE .agents/slop/graphcmp.bend    :763 devpin
+#:   :544,:547,:551 the three `capture()` oracle scripts
+#:   and `checks/differ.py` itself, which every artifact's driver is. A path here with no
+#: anchor would be a bare hand-list entry, and `--declare` in `.agents/slop/quiesce/snapshot.py`
+#: is the instrument that checks this table against the tree.
+SUBSTRATE_INPUTS = ("checks/differ.py", "checks/devpin.py", "bin/bend",
+                    ".agents/slop/graphcmp.py", ".agents/slop/graphcmp.bend",
+                    ".agents/slop/graphcmp-oracle.py", ".agents/slop/graphcmp-dbg-oracle.py",
+                    ".agents/slop/graphcmp-p13-ops.py")
+
+
+def substrate_digest() -> str:
+    """sha256 over `(relpath, sha256(bytes))` for every declared input, SORTED by relpath.
+
+    Keyed on CONTENT and on the path RELATIVE TO `ROOT`. Never on `st_mtime`, never on the
+    absolute path: a fresh clone of one tree writes every file at the moment it is cloned, so an
+    mtime key is a fact about THIS TREE and two clones would disagree. MEASURED
+    (`.agents/slop/substrateid/measure.py`, re-testing `pinindep`'s blocker 2): rewriting every
+    mtime of a second copy across a 4e12 ns spread left the digest byte-identical.
+
+    A declared path that is ABSENT contributes the token `ABSENT`, so a deletion and an addition
+    both move the digest and the population cannot silently shrink -- the defect
+    `quiesce/snapshot.py:80-85` has, where `inputs()` appends only `elif p.is_file()` and two
+    declared inputs (`graphcmp-dbg.bend`, `graphcmp-empty.bend`) are named at `:65-66` and
+    dropped from the build that prints `froze 148` and exits 0.
+    """
+    h = hashlib.sha256()
+    for rel, blob in sorted(substrate_entries()):
+        h.update(rel.encode())
+        h.update(b"\0")
+        h.update(blob.encode())
+        h.update(b"\0")
+    return h.hexdigest()
+
+
+def substrate_entries() -> list[tuple[str, str]]:
+    """`(relpath, sha256)` per input: the walk plus the named files, ABSENT where not on disk."""
+    out = [(p.relative_to(ROOT).as_posix(), hashlib.sha256(p.read_bytes()).hexdigest())
+           for p in (ROOT / "tinybendygrad").rglob("*")
+           if p.is_file() and "__pycache__" not in p.parts]
+    for rel in SUBSTRATE_INPUTS:
+        p = ROOT / rel
+        out.append((rel, hashlib.sha256(p.read_bytes()).hexdigest() if p.is_file() else "ABSENT"))
+    return out
+
+
+def substrate_rows(start: str, end: str) -> list[str]:
+    """The two lines, in summary order. `start` is taken before the first `emit` and `end`
+    after the last, so the pair BRACKETS the whole run rather than sampling it once."""
+    return [f"{k}={v}" for k, v in zip(SUBSTRATE_ROWS, (start, end))]
+
+
+def substrate_bad(got) -> list[str]:
+    """THE TWO ROWS AGAINST EACH OTHER. Empty means the run is one substrate; anything here is a
+    run whose artifacts cannot be read as a measurement of one thing.
+
+    ABSENT IS A COMPLAINT AND NOT A PASS: a summary carrying neither row was written before these
+    rows existed, so its other 22 pins are claims about bytes nobody recorded. That is the same
+    rule `preconditions_bad()` applies to `dev` and the three ENV rows, and it is why this is a
+    function beside `unhealthy()` rather than a branch inside `PINS`.
+    """
+    if absent := [k for k in SUBSTRATE_ROWS if k not in got]:
+        return [f"{k} ABSENT -- a run that does not say which bytes produced it is a measurement "
+                f"with no subject; re-run `checks/differ.py run`" for k in absent]
+    a, b = (got[k] for k in SUBSTRATE_ROWS)
+    return [] if a == b else [
+        f"{SUBSTRATE_ROWS[0]}={a[:12]} but {SUBSTRATE_ROWS[1]}={b[:12]} -- THE SUBSTRATE MOVED "
+        f"WHILE THE RUN WAS IN FLIGHT, so D/ holds a MIXTURE of two substrates and no artifact "
+        f"set here describes one thing"]
+
+
 def verdict(out):
     """`grep -o 'VERDICT: [A-Z]*' ... | tail -1 | cut -d' ' -f2`. The LAST one, because a
     report carries the verdict twice and the operative line is the one at the bottom."""
@@ -880,7 +984,8 @@ def unhealthy():
     # run whose summary records no device -- or records one the artifacts contradict -- makes the
     # retention rule fire with no new parser and no new clause.
     return [f"{k}={v} (expected {PINS[k]})" for k, v in got.items() if k in PINS and v != PINS[k]] \
-        + [f"{k} ABSENT" for k in PINS if k not in got] + preconditions_bad(got)
+        + [f"{k} ABSENT" for k in PINS if k not in got] + preconditions_bad(got) \
+        + substrate_bad(got)
 
 
 def repro_bad() -> list[str]:

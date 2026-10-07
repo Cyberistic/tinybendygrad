@@ -1,0 +1,32 @@
+== THE TWO DECLARATIONS OF ONE POPULATION ==
+  differ.py SUBSTRATE_INPUTS + walk : 148
+  snapshot.py COPIES      + walk     : 148
+  IDENTICAL SETS : True
+  same COUNT 148==148 but different SETS : False
+  => 0 of 148 paths disagree. A COUNT CANNOT SEE THIS;
+     a set comparison can, which is why this instrument prints sets and not totals.
+  The RESIDUAL is conditional, not current: they agree TODAY because `bin/` happens to hold
+  exactly one file. Add a second file under `bin/` and snapshot.py's recursive walk joins it
+  to the freeze while differ.py names only `bin/bend`, and the two drift with nothing saying
+  so. Two declarations of one population is the shape doctrine 1 warns about; they are
+  separate instruments and cannot import each other, so the honest guard is a set diff.
+
+== BLOCKER 3, THE ONLY ONE THAT BITES A SHA: the four parsers ==
+  rows added : substrate-start=dbbeafb1... / substrate-end=dbbeafb137...
+  summary 22 rows -> 24
+  differ.py unhealthy()      : 1 non-substrate complaint(s) WITHOUT the two rows, 1 WITH them -> UNCHANGED
+  differ.py unhealthy()      : 2 complaint(s) against the LIVE summary, all of them the two new ABSENT rows
+                               -> THE LANDING MAKES EVERY PRE-EXISTING RUN UNHEALTHY until
+                                  one fresh `differ.py run` rewrites the summary. That IS
+                                  blocker 3 biting, and it bites in the SAFE direction:
+                                  REFUSAL, not FAIL, and not a silent green.
+  checks/disagree-gate.py    reads 'graphs-disagree=' by name -> an extra row is invisible to it: True
+  checks/env-precond.py      reads 'declared_values' by name -> an extra row is invisible to it: False
+  checks/corpus-figure.py    : parses by `key=value` split; 0 chars emitted when driven with no args
+
+== LOC ==
+  checks/differ.py : 1238 lines, 77316 bytes
+  new files added by this unit : 0 under checks/ or gates/
+  `checks/substrate-id.py` (533 lines) predates this landing, is wired into NOTHING, and is now REDUNDANT with it.
+    its rows it claims to write: substrate-start, substrate-end -- the same two.
+    it is NOT deleted here: this unit does not own it and deleting is how inputs vanish.

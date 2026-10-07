@@ -1,0 +1,29 @@
+CLAIM	field	value
+CLAIM	discover_span	324-342
+CLAIM	walk_site:137	# `HOMES` are read with `iterdir()` and filtered, not `rglob`ed. The trap this avoids is
+CLAIM	walk_site:191	for node in ast.walk(ast.parse(src)):
+CLAIM	walk_site:258	return any(isinstance(n, ast.If) and "__main__" in ast.dump(n.test) for n in ast.walk(tree))
+CLAIM	walk_site:327	`iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
+CLAIM	walk_site:337	for p in sorted(h.iterdir()):
+CLAIM	walk_site:821	live_sh = sorted((HERE.parent / "checks").glob("*.sh"))
+CLAIM	doc_claims_recursion	False
+CLAIM	doc_negates_recursion	True
+CLAIM	doc_len	69
+CLAIM	doc_first_40	`(entries, libs)`, by walking the two homes. NEVER a literal list of files. `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and
+MEASURE	homes	checks/gates
+MEASURE	suffixes	.py/.sh
+MEASURE	discover_entries	123
+MEASURE	discover_libs	30
+MEASURE	discover_total	153
+MEASURE	recursive_walk_total	155
+MEASURE	only_discover	0
+MEASURE	only_walk	2
+DEEPER	gates/oracles/beautiful-mnist-oracle.sh	sh-selfref
+DEEPER	gates/oracles/mixin-op-oracle.sh	sh-selfref
+DENOM	gates_top_level_py_sh	153
+DENOM	deeper_py_sh	2
+DENOM	under_gates_deeper	2
+DENOM	under_checks_deeper	0
+REASON	pycache_on_disk	['checks/__pycache__/abi4_gate.cpython-312.pyc', 'checks/__pycache__/abi_gate.cpython-312.pyc', 'checks/__pycache__/both-census.cpython-314.pyc', 'checks/__pycache__/census.cpython-312.pyc', 'checks/__pycache__/citation-gate.cpython-312.pyc', 'checks/__pycache__/citation-gate.cpython-314.pyc', 'checks/__pycache__/cl-port-gate.cpython-312.pyc', 'checks/__pycache__/cl-port-gate.cpython-314.pyc', 'checks/__pycache__/coindep.cpython-312.pyc', 'checks/__pycache__/corpus-figure.cpython-312.pyc', 'checks/__pycache__/coverage.cpython-312.pyc', 'checks/__pycache__/denominator.cpython-312.pyc', 'checks/__pycache__/devpin.cpython-312.pyc', 'checks/__pycache__/devpin.cpython-314.pyc', 'checks/__pycache__/differ.cpython-312.pyc', 'checks/__pycache__/differ.cpython-314.pyc', 'checks/__pycache__/disagree-gate.cpython-312.pyc', 'checks/__pycache__/dup-census.cpython-312.pyc', 'checks/__pycache__/dup-census.cpython-314.pyc', 'checks/__pycache__/dup-gate.cpython-312.pyc', 'checks/__pycache__/e2e.cpython-312.pyc', 'checks/__pycache__/env-precond.cpython-312.pyc', 'checks/__pycache__/gate.cpython-312.pyc', 'checks/__pycache__/gate.cpython-314.pyc', 'checks/__pycache__/gate_norm.cpython-314.pyc', 'checks/__pycache__/git-index-guard.cpython-312.pyc', 'checks/__pycache__/graphcmp-census-audit.cpython-312.pyc', 'checks/__pycache__/hermetic-census.cpython-312.pyc', 'checks/__pycache__/jsfix_gate.cpython-314.pyc', 'checks/__pycache__/marker-audit.cpython-312.pyc', 'checks/__pycache__/nl-gate-noguard.cpython-312.pyc', 'checks/__pycache__/nl-gate-noguard.cpython-314.pyc', 'checks/__pycache__/nl-gate.cpython-312.pyc', 'checks/__pycache__/nl-gate.cpython-314.pyc', 'checks/__pycache__/no-strays.cpython-312.pyc', 'checks/__pycache__/no-txt.cpython-312.pyc', 'checks/__pycache__/no-txt.cpython-314.pyc', 'checks/__pycache__/norm_check.cpython-312.pyc', 'checks/__pycache__/nvrows-deadrow-gate.cpython-314.pyc', 'checks/__pycache__/oracle-txt-census.cpython-312.pyc', 'checks/__pycache__/oracle_f64.cpython-312.pyc', 'checks/__pycache__/oracle_f64.cpython-314.pyc', 'checks/__pycache__/repair-dupes.cpython-312.pyc', 'checks/__pycache__/residue.cpython-312.pyc', 'checks/__pycache__/rn-gate.cpython-312.pyc', 'checks/__pycache__/rn-gate.cpython-314.pyc', 'checks/__pycache__/slop-declare.cpython-312.pyc', 'checks/__pycache__/substrate-id.cpython-312.pyc', 'checks/__pycache__/substrate.cpython-312.pyc', 'checks/__pycache__/sweep.cpython-312.pyc', 'checks/__pycache__/txt-owners.cpython-312.pyc', 'checks/__pycache__/txt-owners.cpython-314.pyc', 'checks/__pycache__/unowned.cpython-312.pyc', 'checks/__pycache__/wallcheck.cpython-312.pyc', 'gates/__pycache__/bc-u32-gate.cpython-312.pyc', 'gates/__pycache__/bc-u32-gen.cpython-312.pyc', 'gates/__pycache__/bc-u32-oracle.cpython-312.pyc', 'gates/__pycache__/bc_u32_table.cpython-312.pyc', 'gates/__pycache__/beautiful-mnist-gate.cpython-312.pyc', 'gates/__pycache__/beautiful-mnist-oracle.cpython-312.pyc', 'gates/__pycache__/gate-surface.cpython-312.pyc', 'gates/__pycache__/gatekit.cpython-312.pyc', 'gates/__pycache__/gatekit.cpython-314.pyc', 'gates/__pycache__/gates-pop.cpython-312.pyc', 'gates/__pycache__/gates-pop.cpython-314.pyc', 'gates/__pycache__/gendirs.cpython-312.pyc', 'gates/__pycache__/gendirs.cpython-314.pyc', 'gates/__pycache__/i64-shl-gate.cpython-312.pyc', 'gates/__pycache__/i64-shl-oracle.cpython-312.pyc', 'gates/__pycache__/i64-shr-gate.cpython-312.pyc', 'gates/__pycache__/i64-shr-oracle.cpython-312.pyc', 'gates/__pycache__/indexread-gate.cpython-312.pyc', 'gates/__pycache__/mixin-op-gate.cpython-312.pyc', 'gates/__pycache__/mixin-op-oracle.cpython-312.pyc', 'gates/__pycache__/msgdiff-gate.cpython-312.pyc', 'gates/__pycache__/ops-core-gate.cpython-312.pyc', 'gates/__pycache__/ops-core-oracle.cpython-312.pyc', 'gates/__pycache__/retention-check.cpython-312.pyc']
+REASON	pycache_seen_by_walk	[]
+REASON	pycache_in_disc	[]

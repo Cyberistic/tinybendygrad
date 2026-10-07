@@ -1,0 +1,52 @@
+PART6	field	value
+MECH	field	value
+MECH	checks/__pycache__	is_dir=True suffix='' in_SUFFIXES=False is_file=False files_inside=54
+MECH	checks/gen	is_dir=True suffix='' in_SUFFIXES=False is_file=False files_inside=2
+MECH	gates/__pycache__	is_dir=True suffix='' in_SUFFIXES=False is_file=False files_inside=24
+MECH	gates/artifacts	is_dir=True suffix='' in_SUFFIXES=False is_file=False files_inside=0
+MECH	gates/oracles	is_dir=True suffix='' in_SUFFIXES=False is_file=False files_inside=2
+MECH	VERDICT	`iterdir()` RETURNS the directory; line 338 drops it on `p.suffix not in SUFFIXES` because a directory's suffix is ''. The walk VISITED gates/oracles and DISCARDED it.
+MECH	gates/oracles files matching SUFFIXES	2
+MECH	  inside	gates/oracles/beautiful-mnist-oracle.sh
+MECH	  inside	gates/oracles/mixin-op-oracle.sh
+MECH	gates/oracles ALL files	['gates/oracles/beautiful-mnist-oracle.sh', 'gates/oracles/mixin-op-oracle.sh']
+CONSUMERS	loads_gates_pop_by_path	24
+CONSUMERS	  loads	.agents/slop/agend2/measure.py
+CONSUMERS	  loads	.agents/slop/coindependent/probe.py
+CONSUMERS	  loads	.agents/slop/coindependent/vocab.py
+CONSUMERS	  loads	.agents/slop/gatesrun/finalize.py
+CONSUMERS	  loads	.agents/slop/gatesrun/run.py
+CONSUMERS	  loads	.agents/slop/gendirs/writetargets.py
+CONSUMERS	  loads	.agents/slop/hooks/run.py
+CONSUMERS	  loads	.agents/slop/hooks/wire.py
+CONSUMERS	  loads	.agents/slop/modulerefuse/x1-derive.py
+CONSUMERS	  loads	.agents/slop/offrepo/where.py
+CONSUMERS	  loads	.agents/slop/onemodule/plant.py
+CONSUMERS	  loads	.agents/slop/onemodule/vocab-check.py
+CONSUMERS	  loads	.agents/slop/plantthe46/reach.py
+CONSUMERS	  loads	.agents/slop/subtree/measure.py
+CONSUMERS	  loads	.agents/slop/subtree/measure2.py
+CONSUMERS	  loads	.agents/slop/subtree/measure3.py
+CONSUMERS	  loads	.agents/slop/subtree/measure4.py
+CONSUMERS	  loads	.agents/slop/subtree/measure6.py
+CONSUMERS	  loads	.agents/slop/subtree/plant.py
+CONSUMERS	  loads	checks/substrate-id.py
+CONSUMERS	  loads	gates/gate-surface.py
+CONSUMERS	  loads	gates/gates-pop.py
+CONSUMERS	  loads	gates/gendirs.py
+CONSUMERS	  loads	gates/retention-check.py
+CONSUMERS	calls_discover	12
+CONSUMERS	  calls	.agents/slop/declareverdict/runner.py	os.walk=False names_control=False prints_two_counts=False -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/hooks/_probe_pop.py	os.walk=False names_control=False prints_two_counts=False -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/hooks/cost.py	os.walk=False names_control=False prints_two_counts=False -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/hooks/run.py	os.walk=True names_control=False prints_two_counts=False -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/onemodule/plant.py	os.walk=True names_control=True prints_two_counts=False -> prints the ceiling
+CONSUMERS	  calls	.agents/slop/onemodule/probe.py	os.walk=True names_control=True prints_two_counts=True -> prints the ceiling
+CONSUMERS	  calls	.agents/slop/plantthe46/reach.py	os.walk=False names_control=False prints_two_counts=True -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/subtree/measure.py	os.walk=True names_control=True prints_two_counts=True -> prints the ceiling
+CONSUMERS	  calls	.agents/slop/subtree/measure3.py	os.walk=True names_control=False prints_two_counts=False -> no ceiling -- prints `discover()`'s number alone
+CONSUMERS	  calls	.agents/slop/subtree/measure6.py	os.walk=True names_control=True prints_two_counts=True -> prints the ceiling
+CONSUMERS	  calls	.agents/slop/subtree/plant.py	os.walk=True names_control=True prints_two_counts=False -> prints the ceiling
+CONSUMERS	  calls	gates/gate-surface.py	os.walk=True names_control=True prints_two_counts=True -> prints the ceiling
+OWNER	gates-pop.py_is_in_its_own_entries	True
+OWNER	discover_has_main_guard	True

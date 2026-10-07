@@ -1,0 +1,69 @@
+== 1. THE POPULATION ==
+  snapshot.py:78-79  DIRECTORY WALK  tinybendygrad/**        : 140 files
+  snapshot.py:80-85  HAND LIST       COPIES (:63-67)         : 8 files over 10 entries
+  inputs() total                                                    : 148
+  DISCOVERY (walk)  140   LIST (COPIES) 8
+  ratio list/total : 8/148 = 5.4%
+
+== 1b. ANCHORS ON THE HAND LIST ==
+  COPY                                     DISK     FILES-tbl  named-in-consumer
+  bin                                      yes              0  checks/differ.py:1, checks/differ.py:43
+  checks/differ.py                         yes              6  checks/differ.py:95, checks/differ.py:169
+  checks/devpin.py                         yes              1  checks/differ.py:763, checks/differ.py:795
+  .agents/slop/graphcmp.py                 yes              2  checks/differ.py:43, checks/differ.py:46
+  .agents/slop/graphcmp.bend               yes              0  checks/differ.py:132, checks/differ.py:168
+  .agents/slop/graphcmp-dbg.bend           ABSENT           0  checks/differ.py:579, .agents/slop/graphcmp.py:274
+  .agents/slop/graphcmp-empty.bend         ABSENT           0  checks/differ.py:576, checks/differ.py:588
+  .agents/slop/graphcmp-oracle.py          yes              1  checks/differ.py:383, checks/differ.py:598
+  .agents/slop/graphcmp-dbg-oracle.py      yes              1  checks/differ.py:601
+  .agents/slop/graphcmp-p13-ops.py         yes              1  checks/differ.py:605, checks/differ.py:718
+
+  COPIES entries with NO row in the FILES anchor table : 4 of 10
+  COPIES entries named NOWHERE in code or comment      : 0 of 10
+  `--declare` asserts the table, so it can only see the first 4.
+
+== 1c. THE TWO ABSENT INPUTS ==
+  declared-but-absent on disk : 2 -> .agents/slop/graphcmp-dbg.bend, .agents/slop/graphcmp-empty.bend
+  `--declare` exit code        : 1  (REFUSES)
+  .agents/slop/graphcmp-dbg.bend           in inputs()? False   in COPIES? True
+  .agents/slop/graphcmp-empty.bend         in inputs()? False   in COPIES? True
+  => inputs() returns 148; the declaration names 10 entries.
+  => build() prints `froze 148`, exit 0, and the 2 named inputs are NOT in the
+     freeze. THE DECLARATION EXITS 1 AND THE BUILD EXITS 0 ON THE SAME TREE.
+  walk before delete ['a.bend', 'b.bend'] -> after ['a.bend']; the deleted name is emitted NOWHERE.
+
+== 3. THE THREE mtime BLOCKERS, RE-TESTED AGAINST A CONTENT SHA ==
+  (1) differ.py:58-60 refuses a `git` dependency ON PURPOSE.
+      `git` on PATH here: True; the digest path imports only
+      ['hashlib', 'os', 'pathlib']. It calls no subprocess and reads no ref, so
+      the dependency `differ.py` declines is one this row never takes.  NOT HIT.
+  (2) runs/ is gitignored, so an mtime is a fact about THIS TREE.
+      clone A digest : 72f4b3f9eac6b905   clone B digest : 72f4b3f9eac6b905   -> AGREE
+      after rewriting every mtime of B (now 3 distinct values, spread 4000000000000 ns): 72f4b3f9eac6b905 -> UNCHANGED
+      an mtime rule would have had to compare those 3 numbers; a content sha
+      never reads one.  NOT HIT.
+  (3) writing two rows moves consumers it does not own.
+      live summary rows 22, keys ['byte-identical', 'census-rc', 'conflations', 'controls', 'cross', 'dev', 'expect-moved', 'graphs', 'graphs-agree', 'graphs-answered', 'graphs-disagree', 'graphs-unset', 'lc_all', 'noopt', 'not-comparable', 'oracle-selfcheck', 'plants-disagree', 'pythonhashseed', 'selfcheck', 'stable-differ', 'stable-failed', 'stable-pairs']
+      'substrate-start' is inside the PINS table, so unhealthy() would JUDGE it: False
+      'substrate-end' is inside the PINS table, so unhealthy() would JUDGE it: False
+      `unhealthy()` judges `k in PINS` only, so a key outside PINS is INVISIBLE to it:
+      that is WHY these two rows must NOT be pinned -- a pin on a substrate digest would
+      have to be re-pinned every time the port moves, which is `pinindep`'s finding that
+      17 pins on one file is one measurement wearing 17 hats, made worse.
+      unhealthy() on the PADDED summary : 0 complaint(s), unchanged from the unpadded 0  -> True
+      checks/disagree-gate.py      parses it by: summary = (tree / "D0-run-summary.txt").read_text().splitlines()
+      checks/corpus-figure.py      parses it by: # from its own output cannot fail either").  MEASURED: `runs/graphcmp/D/D0-run
+      NOT HIT, and only because the rows are additive keys outside PINS.
+
+== 6. COST ==
+  population 148 inputs, 11.35 MB
+  one digest : warm  min 401.5 ms  median 551.6 ms  max 1858.9 ms
+               COLD  min 501.1 ms  median 612.5 ms  max 1397.5 ms
+  TWO digests (start+end), warm median: 1103.2 ms
+    vs run34 warm run 294 s         : 0.3752 %
+    vs ONE cold bend launch ~2.8 s  : 39.4011 %
+    as a percentage of warm 294 s run34            : 0.3752 %
+  emitted rows into D0-run-summary.txt : 2
+  new parsers : 0    new files : 0    new pins : 0
+
+rows -> /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/substrateid/population.rows

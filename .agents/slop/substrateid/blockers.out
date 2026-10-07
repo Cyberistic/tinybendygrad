@@ -1,0 +1,60 @@
+== BLOCKER 1: does the digest need `git`? ==
+  'git' appears in checks/substrate-id.py : 1 times (check below)
+  `differ.py:58-60` reason, verbatim:
+    # documented edit -- a `GCMP_REPO` default in its first `cd`, so the copy can be run from
+    # anywhere -- and pinning the copy is what detects the copy drifting. Pinning the committed body
+    # instead would be a check against `git`, which is a dependency this file does not otherwise have.
+    ORACLE_PIN = {
+  -> a sha256 over (relpath, bytes) calls hashlib and pathlib and nothing else, so the
+     dependency `differ.py` declines is one this row never takes.  NOT HIT.
+
+== BLOCKER 2: is an mtime clone-dependent and a sha clone-independent? ==
+  mtime is st_mtime: a fresh `git clone` of the SAME commit yields a different number on
+  every file, because the clone is written now. A sha256 over content is a function of the
+  BYTES, so two clones of one commit agree and one clone at two commits does not.
+  clone A digest            : 1c51d9ae19e50129  (3 inputs)
+  clone A again             : 1c51d9ae19e50129  -> STABLE
+  clone A after os.utime()  : 1c51d9ae19e50129  -> UNCHANGED
+  and those 3 file(s) now span 0.0 s of mtime, which is what
+  an mtime rule would have had to compare and this digest never has to.
+  NOT HIT -- and this is the one blocker a sha is strictly BETTER than an mtime on.
+
+== BLOCKER 3: does writing two rows move a consumer? ==
+  live summary: 22 key=value rows, 384 bytes
+  env-precond declared_values(): 15 keys, substrate rows read: True
+    value survives intact: True
+  differ.py unhealthy(): 24 keys; a key NOT in PINS is IGNORED (only `k in PINS` is judged) -> substrate rows cannot redden a pin
+    'substrate-start' in PINS: False
+  disagree-gate: `graphs-disagree=` still present in the padded file: True
+  corpus-figure run_health(): same parse, same answer, extra keys invisible
+
+  pinindep/derive.py CONTROL on the padded summary:
+    rederive == the file on disk : False   <-- THIS IS THE CONSUMER THAT MUST MOVE WITH THE ROWS
+    the only disagreement is the 2 new row(s): substrate-start, substrate-end
+
+  the judge, asked about the padded copy of a run taken from THIS tree:
+PASS: this tree IS the substrate that produced the run -- 148 inputs, 11340992 bytes, digest 925fedbb6b5e
+  NOTE, not a verdict: 2 DECLARED input(s) are ABSENT and are in the digest as the token ABSENT -- .agents/slop/graphcmp-dbg.bend, .agents/slop/graphcmp-empty.bend. The digest still matches, which is why this is not a refusal, but the run did not measure them.
+    exit 0 (PASS)  -- PASS when the tree has not moved, which is the
+      whole claim: the row is a MEASUREMENT of this substrate, not a label about one.
+    ...and REFUSES against a moved tree -- `checks/substrate-id.py --plant` case 2
+       drives `verdict_for` with a one-line-changed tree and asserts REFUSED(3); it is
+       not repeated here because copying the live tree a second time costs more than
+       the whole rest of this measurement.
+  the judge, asked about the LIVE summary (neither row present):
+REFUSED, NOT A VERDICT: records no substrate-start= -- a run that does not say which bytes produced it is a measurement with no subject. Re-run `checks/differ.py run`
+  NOTE, not a verdict: 2 DECLARED input(s) are ABSENT and are in the digest as the token ABSENT -- .agents/slop/graphcmp-dbg.bend, .agents/slop/graphcmp-empty.bend. The digest still matches, which is why this is not a refusal, but the run did not measure them.
+    exit 3 (REFUSED)
+    -> an ABSENT row is a complaint, not a pass. Nothing silently reads green.
+
+  THE THREE READS THAT WOULD HAVE TO BE FALSE FOR THIS TO BE SAFE, and none is:
+    a key outside PINS is ignored by unhealthy()   : True
+    disagreement is confined to the 2 new rows      : True
+    the judge PASSes on an unmoved tree              : True
+
+== AND THE ROW COUNT, because it is the whole claim ==
+  rows added to D0-run-summary.txt : 2  (2 of 24 = 8.3%)
+  new parsers                       : 0
+  new files                         : 0
+  new pins that must be re-pinned    : 0  (a substrate digest is a MEASUREMENT; a pin on
+                                        it would have to move every time the port does)
