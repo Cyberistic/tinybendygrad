@@ -64,18 +64,16 @@ GATE = Gate(
     bend="wk-eval.bend",
     oracle="wk-eval-oracle.py",
     rows=len(ROWS),
-    # The previous divergence `int_weakint_val = none (port) vs 0:7 (cpython)` is
-    # CLOSED. The cause was a missing `case O.OpsCAST{}: mm.lift.mv(srcs)` in
-    # `mm.lift.rest` (`uop/fold.bend:4052`): a CAST of a CONST was falling through
-    # to `mm.default(d)`, which returned the dtype's full range as `BndFlt` (for
-    # `bits > 64` like weakint), and `wk_bnd_i64` returns `None` for `BndFlt`. The
-    # fix is a one-line addition that says "CAST is a passthrough", which is what
-    # CPython's `simplify` would do symbolically. `compared` is back to 22.
+    # A divergence is a PAIR: where the two sides DIFFER. `int(UOp.const(7, weakint))` is `7` in
+    # CPython and `none` here, and one string could only ever have described half of that.
+    diverges={"int_weakint_val": ("int_weakint_val=0:7", "int_weakint_val=none")},
+    compared=len(ROWS) - 1,
+    # Row NAMES are the question, pinned on both lanes; the VALUES are the answer, and pinning
+    # them here as well would pin the answer twice over.
     pins=[(lane, row) for lane in ("py", "bd") for row in ROWS],
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "wk-eval-gate: 22 rows, 3 lanes, 0 documented divergences -- "
-                        "_eval's dtype set, single-number check, and CAST passthrough "
-                        "all agree with CPython (the int_weakint row that this gate was "
-                        "pinned on is now closed)"))
+    sys.exit(main(GATE, "wk-eval-gate: 22 rows, 3 lanes -- _eval's dtype set and single-number check, and "
+                        "param_noshape's weaks guard -- agree with CPython; 1 divergence "
+                        "(int_weakint, which needs simplify)"))

@@ -1,0 +1,44 @@
+REFUSED, NOT A VERDICT: HEAD deletes 6000 files / 6000 lines -- envelope: normal churn <= 500 files / 900000 lines (measured over 120 commits, churn.rows); ack=''
+  D f0.bend
+  D f1.rows
+  D f10.bend
+  D f100.bend
+  D f1000.bend
+  D f1001.rows
+  D f1002.bend
+  D f1003.rows
+  D f1004.bend
+  D f1005.rows
+  D f1006.bend
+  D f1007.rows
+  D f1008.bend
+  D f1009.rows
+  D f101.rows
+  D f1010.bend
+  D f1011.rows
+  D f1012.bend
+  D f1013.rows
+  D f1014.bend
+  D f1015.rows
+  D f1016.bend
+  D f1017.rows
+  D f1018.bend
+  D f1019.rows
+  D f102.bend
+  D f1020.bend
+  D f1021.rows
+  D f1022.bend
+  D f1023.rows
+  D f1024.bend
+  D f1025.rows
+  D f1026.bend
+  D f1027.rows
+  D f1028.bend
+  D f1029.rows
+  D f103.rows
+  D f1030.bend
+  D f1031.rows
+  D f1032.bend
+  ... and 5960 more
+  re-run with MASS_DELETE_ACK="<reason>" if the loss is intended
+REFUSED, NOT A VERDICT: refs/heads/m -> refs/heads/m is not a fast-forward (a force push); this tree forbids rewriting pushed history

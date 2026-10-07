@@ -1,0 +1,64 @@
+I  DISCOVERED 114 entry point(s) under checks/gates/ (+22 module(s) with no entry guard)
+
+I  POPULATION CONTROL: `discover()` sees 136 file(s) (114 entries + 22 libs) vs
+   recursive `os.walk` 138 -- reusing the shared function makes the two numbers ONE BY
+   CONSTRUCTION, which is not the same as settling which was right. 2 file(s) the
+   recursive walk sees and `discover()` does not:
+I    WALK-ONLY gates/oracles/beautiful-mnist-oracle.sh
+I    WALK-ONLY gates/oracles/mixin-op-oracle.sh
+
+II DECLARATIONS: 13/114 entries declare VERDICTS -- 101 do not, and each
+   one is a gate whose surface nobody has written down (the backlog, counted not hidden)
+
+   checks/dup-census.py                         declared 0/3              reached (none)
+     RED checks/dup-census.py: UNPLANTED 0 'OK' -- declared, no plant
+     RED checks/dup-census.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/dup-gate.py                           declared 0/1/2/3          reached (none)
+     RED checks/dup-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/dup-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/dup-gate.py: UNPLANTED 2 'USAGE' -- declared, no plant
+     RED checks/dup-gate.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/env-precond.py                        declared 0/1/2            reached 0/2
+     RED checks/env-precond.py: UNPLANTED 1 'FAIL' -- declared, no plant
+   checks/gate.py                               declared 0/1/3            reached (none)
+     RED checks/gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/gate.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/hermetic-census.py                    declared 0/3              reached (none)
+     RED checks/hermetic-census.py: UNPLANTED 0 'OK' -- declared, no plant
+     RED checks/hermetic-census.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/nl-gate-noguard.py                    declared 0/1/3            reached 3
+     RED checks/nl-gate-noguard.py: UNPLANTED 0 'AGREE' -- declared, no plant
+     RED checks/nl-gate-noguard.py: UNPLANTED 1 'BROKEN' -- declared, no plant
+   checks/nl-gate.py                            declared 0/1/3            reached (none)
+     RED checks/nl-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/nl-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/nl-gate.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/no-txt.py                             declared 0/1              reached 0
+     RED checks/no-txt.py: UNPLANTED 1 'RED' -- declared, no plant
+   checks/norm_check.py                         declared 0/1/3            reached 0
+     RED checks/norm_check.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/norm_check.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/oracle_f64.py                         declared 0/1/3            reached (none)
+     RED checks/oracle_f64.py: UNPLANTED 0 'OK' -- declared, no plant
+     RED checks/oracle_f64.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/oracle_f64.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/residue.py                            declared 0/3              reached 0/3
+   checks/rn-gate.py                            declared 0/1/3            reached (none)
+     RED checks/rn-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/rn-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/rn-gate.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/wallcheck.py                          declared 0/1/2/3/4/5      reached 0/4
+     RED checks/wallcheck.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/wallcheck.py: UNPLANTED 2 'USAGE' -- declared, no plant
+     RED checks/wallcheck.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+     RED checks/wallcheck.py: UNPLANTED 5 'DEAD' -- declared, no plant
+
+II SURFACE: 39 verdicts declared, 9 reached by a declared plant,
+   30 not reached, 30 unplanted, 0 misplant, 0 NO-GREEN
+
+III RED: at least one declared verdict has no plant, or a plant missed its verdict, or a
+gate declares no green. EACH IS A CLAIM OF UNKNOWN VALUE (`AGENTS.md`: "a check nobody has
+ever seen fire is a check of unknown value").
+
+GATE-SURFACE: RED -- 13 gate(s) declare a surface, 9/39 verdicts reached, 30 unplanted, 0 NO-GREEN

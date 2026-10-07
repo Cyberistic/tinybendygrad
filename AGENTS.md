@@ -93,7 +93,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   (`ORACLE_PIN`; `:58` is a comment) and read BY ARTIFACT NAME — `oracle-repro.sh:61` and `:105`
   (both verified today), and `checks/corpus-figure.py:175` (`:170` is the summary path; `:72` is
   `module_from_spec`, NOT the read).
-  So the **139** `.txt` names there — `len(differ.declared())` = **139**, and 139 on disk — are a contract,
+  So the **175** `.txt` names there — `len(differ.declared())` = **175**, and 175 on disk (2026-10-07; `len(differ.declared())`) — are a contract,
   not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not copied) and nothing
   else, and renaming them means the pin has to move with them in one commit. **THE `103` WAS FIXED IN BOTH
   WITNESSES (measured 2026-10-06 13:00: `checks/README.md:51-58` now says `139`, and `checks/no-txt.py`
@@ -128,7 +128,7 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `substrate-check.sh` RESOLVES TO NOTHING: `command -v` is absent and there is no root-level file. The real gate
   is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
   it was 765 when written; the file is being edited live**).**
-- `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
+- `gates/*.py` — per-def gates, and they are **Python, never shell** (measured 2026-10-07: 56 `.py`, 0 `.sh`; `ls gates/*.py | wc -l`).
   A gate names its `.bend` driver and its CPython oracle; its OUTPUT goes to `gates/artifacts/`.
   **BUT DO NOT PUT A GATE'S INPUTS UNDER `.agents/slop/`. THAT PRESCRIPTION IS WHAT DELETED THEM.**
   `.agents/slop/` is being pruned and it holds no protection: `checks/sb-gate.sh:76` now reads its
@@ -137,8 +137,8 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `e2e.py:99`
   now calls that defect **REPAIRED**: the fixture is recovered from git to the tracked
   `gates/cstyle-live.rows` (`e2e.py:99-106`) — **stage 7 SKIPs on a COLD SUBSTRATE, not on the fixture.**
-  **RE-MEASURED RULE AND ITS NUMBERS: of the **333** distinct paths `.agents/TOOLS.md` names, **153 are present and
-  **180 are gone** — **96 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
+  **RE-MEASURED RULE AND ITS NUMBERS (2026-10-07): of the **333** distinct paths `.agents/TOOLS.md` names, **164 are present and
+  **169 are gone** — **85 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
   enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this). **BY CONTENT IT IS **14**, NOT 16:
 `lostinst` VERIFIED 14 — **13 RECOVERABLE** (every restore `git cat-file blob` non-empty, 110 B – 23,711 B, all 14
 distinct) AND **1 GONE: `.agents/slop/xd1/mutate.py`** — NO BLOB IN ANY REF, AND ALL 75,336 HISTORY PATHS CONTAIN NO

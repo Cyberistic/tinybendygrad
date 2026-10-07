@@ -8,7 +8,7 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          `census.py` `rows-*.txt` -> `*.rows`; 2 orphans
                                          deleted. `declared()` MEASURED COMPLETE twice
                                          (103, then 139 after another unit rewrote
-                                         `cmd_run`). 403 remain, 402 of them other units'.
+                                         `cmd_run`). 0 unexcused remain (2026-10-07, `checks/no-txt.py` rc=0).
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.

@@ -4071,7 +4071,6 @@ def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2
     case O.OpsDETACH{}: mm.lift.mv(srcs)
     case O.OpsCOPY{}: mm.lift.mv(srcs)
     case O.OpsCONTIGUOUS_BACKWARD{}: mm.lift.mv(srcs)
-    case O.OpsCAST{}: mm.lift.mv(srcs)
     case _: mm.default(d)
 
 def mm.lift(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2:

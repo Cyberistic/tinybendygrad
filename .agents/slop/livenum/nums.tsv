@@ -1,0 +1,1453 @@
+surface	line	claim	kind	source_line
+AGENTS.md	9	25	DATED	census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) w
+AGENTS.md	9	70 of 70	DATED	census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) w
+AGENTS.md	9	70 of 77	DATED	census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) w
+AGENTS.md	9	26 of 77	DATED	census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) w
+AGENTS.md	9	14 of 25	DATED	census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) w
+AGENTS.md	10	333	DATED	gate's inputs under `.agents/slop/`, and **180 of the 333 paths `.agents/TOOLS.md` names are gone (measured
+AGENTS.md	41	00	DATED	measured 2026-10-06 13:00 `checks/no-txt.py` exits 1 with **550 HARD and 139 EXCUSED — 689 owned `.txt`** (the HARD count
+AGENTS.md	42	258	DATED	MOVES as units write; it read **830** before `oracles/`'s 258 `.txt`-to-`.rows` rename landed, and **258** is the
+AGENTS.md	46	277	DATED	277 `.rows` and ONE `.txt` (`rows-bd.txt`, which is 0 BYTES AND DELIBERATELY UNCLASSIFIED), and `no-txt.py`'s HARD
+AGENTS.md	46	0	DATED	277 `.rows` and ONE `.txt` (`rows-bd.txt`, which is 0 BYTES AND DELIBERATELY UNCLASSIFIED), and `no-txt.py`'s HARD
+AGENTS.md	56	677	LIVE	- run `bend guide` to learn it — **MEASURED rc=0, 677 lines. This is the one that works.**
+AGENTS.md	63	6	LIVE	(both measured today under `checks/bounded.py --mb 2048`, verdict token `WITHIN-LIMITS`, peak 6 MB).
+AGENTS.md	70	152	LIVE	`nir` 1,152 MB · `sz` 1,108 MB · `ops_python` 864 · `nn/onnx` 777 · `uop/symbolic` 745 · `dtype` 683-699 ·
+AGENTS.md	70	108	LIVE	`nir` 1,152 MB · `sz` 1,108 MB · `ops_python` 864 · `nn/onnx` 777 · `uop/symbolic` 745 · `dtype` 683-699 ·
+AGENTS.md	71	50	DATED	`helpers` 204 · **median 207 · 43 of 138 under 50 MB** — the `138` is the frozen
+AGENTS.md	71	43 of 138	DATED	`helpers` 204 · **median 207 · 43 of 138 under 50 MB** — the `138` is the frozen
+AGENTS.md	73	134	DATED	134 `.bend` as of 2026-10-06T12:19Z, HEAD `7f70b475`, `find tinybendygrad -name '*.bend' | wc -l`**. So `dtype ‖ helpers ‖ nn/onnx` is 1.4 GB and
+AGENTS.md	77	547	LIVE	will never see the sum. **MEASURED, `sz.bend --check-only` alone: 1,383 / 1,435 / 1,547 MB on three runs
+AGENTS.md	81	425	LIVE	`checks/bounded.py`'s own header records a unit that lost 425 rows by believing the status.
+AGENTS.md	103	17 of 17	DATED	17 of 17 (`census-rc=rc=0`, `oracle-selfcheck=# ORACLE SELFCHECK: OK`; measured 2026-10-06 13:00 against
+AGENTS.md	106	11	LIVE	is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
+AGENTS.md	125	40	LIVE	it prints 40 paths and then `... and 510 more`, SO IT DOES NOT "PRINT EACH PATH" EITHER.** `.rows` is expected values,
+AGENTS.md	129	766	DATED	is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
+AGENTS.md	131	21	LIVE	- `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
+AGENTS.md	131	0	LIVE	- `gates/*.py` — per-def gates, and they are **Python, never shell** (measured: 21 `.py`, 0 `.sh`).
+AGENTS.md	135	3	DATED	baseline from the GIT-TRACKED `oracles/schedule-bodies/BEFORE-rows.rows`, but it still `exit 3`s —
+AGENTS.md	144	1	LIVE	distinct) AND **1 GONE: `.agents/slop/xd1/mutate.py`** — NO BLOB IN ANY REF, AND ALL 75,336 HISTORY PATHS CONTAIN NO
+AGENTS.md	173	14	LIVE	| `checks/sweep.py` `LIVE_UNITS` | was 14 literal directory names — **removed; `:291` records "LIVE_UNITS lived here, a tuple of 14 names. It is gone"** | six FINISHED units held **2,353 of 4,455 file
+AGENTS.md	173	455	LIVE	| `checks/sweep.py` `LIVE_UNITS` | was 14 literal directory names — **removed; `:291` records "LIVE_UNITS lived here, a tuple of 14 names. It is gone"** | six FINISHED units held **2,353 of 4,455 file
+AGENTS.md	173	2 of 4	LIVE	| `checks/sweep.py` `LIVE_UNITS` | was 14 literal directory names — **removed; `:291` records "LIVE_UNITS lived here, a tuple of 14 names. It is gone"** | six FINISHED units held **2,353 of 4,455 file
+AGENTS.md	174	670 of 675	LIVE	| `checks/sweep.py:658` `ORACLE_WORD` | a **basename regex** | **670 of 675** ORACLE files were classified by FILENAME and **5 were named by a live gate**. |
+AGENTS.md	175	139	LIVE	| `checks/differ.py:artefacts_ok()` | was `find -name '*.txt'` | **fixed, and re-verified today**: pointed at an empty directory it now returns **139 `MISSING`**; the glob returned `[]`, and *"the ren
+AGENTS.md	176	2	LIVE	| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend\|mjs\|json)` — **fixed** | **6 of 15** `e2e.py` stage inputs were invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO.
+AGENTS.md	176	6 of 15	LIVE	| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend\|mjs\|json)` — **fixed** | **6 of 15** `e2e.py` stage inputs were invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO.
+AGENTS.md	178	333	DATED	| `.agents/TOOLS.md` | **333 paths: 153 present, 180 gone (96 under `.slop/`) at 2026-10-06 13:00; **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path i
+AGENTS.md	178	153	DATED	| `.agents/TOOLS.md` | **333 paths: 153 present, 180 gone (96 under `.slop/`) at 2026-10-06 13:00; **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path i
+AGENTS.md	178	180	DATED	| `.agents/TOOLS.md` | **333 paths: 153 present, 180 gone (96 under `.slop/`) at 2026-10-06 13:00; **14 INSTRUMENTS by content**, 13 recoverable + `xd1/mutate.py` GONE** | A ledger that names a path i
+AGENTS.md	179	17	DATED	| **`AGENTS.md` — THIS FILE** | names gates by hand | 17 `checks/*.sh` exist; this file names 3 and calls none of them a population. **The governing document was the seventh member of the class.** |
+AGENTS.md	184	890	LIVE	`glob('*.bend')` returns `[]` when `.bend` is on disk and it did, tracked, 1,890 lines; or (c) a REGEX OVER
+AGENTS.md	200	0	LIVE	5 AGREEMENT · 6 MALFORMED BASELINE* — and its own header says why: *"twelve committed files printed 0 rows
+AGENTS.md	211	34	DATED	(`46c52f30d`, TWO FULL RUNS OF THE THEN-25-GRAPH CORPUS; the corpus is 34 graphs as of 2026-10-06 14:16), `checks/corpus-figure.py` EXITS **1** WITH `DEV` UNSET (rc=0 **ONLY**
+AGENTS.md	224	30	LIVE	imports tinygrad answers 30 rows under one and 0 rows plus `ModuleNotFoundError` under the other.
+AGENTS.md	224	0	LIVE	imports tinygrad answers 30 rows under one and 0 rows plus `ModuleNotFoundError` under the other.
+AGENTS.md	235	193	DATED	13:03:01** (four reads, 193 s apart, same command, no edit by the unit that took them), rc=1, so "the tree lints"
+AGENTS.md	240	93	LIVE	- Read `./tinygrad/viz/README.md` for profiling and debugging rewrite rules. **MEASURED: exists, 93 lines.**
+AGENTS.md	244	16	DATED	<tinybendygrad@localhost>`, `Fri Oct 2 19:35:06 2026`, **16 FILES ALL UNDER `tinygrad/`**, AND
+AGENTS.md	248	17	DATED	Its message is *"rebase B1: 17 files, the tree imports again, and the GUARD that was supposed to catch this
+AGENTS.md	253	8	LIVE	- tinygrad has user space PCI drivers for AMD and NVIDIA GPUs. Do not insert the unneeded kernel modules. **MEASURED: `rg -l 'PCIDevice' tinygrad/` = **8 files**; the class is at `tinygrad/runtime/sup
+AGENTS.md	262	487	DATED	measured 487 mutations / 15 tables / 30 zeros of which **25 were unclassified**, and
+AGENTS.md	262	15	DATED	measured 487 mutations / 15 tables / 30 zeros of which **25 were unclassified**, and
+AGENTS.md	262	30	DATED	measured 487 mutations / 15 tables / 30 zeros of which **25 were unclassified**, and
+AGENTS.md	276	14	LIVE	six runs 14 s apart (283 is settled substrate, 278 is substrate-in-flux); `elf.bend`'s row count read
+AGENTS.md	297	25	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	34	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	70 of 70	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	70 of 77	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	26 of 77	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	14 of 25	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+AGENTS.md	297	0 of 77	DATED	| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 en
+.agents/TOOLS.md	13	164	DATED	164 present, 169 absent, 85 of the absent under `.agents/slop/`** (see
+.agents/TOOLS.md	13	169	DATED	164 present, 169 absent, 85 of the absent under `.agents/slop/`** (see
+.agents/TOOLS.md	45	15	LIVE	| `.agents/slop/tools/mutate-sz.py` | one edit at a time to `tinybendygrad/sz.bend`, compiled from a scratch copy (**it never edits the source**, so there is nothing to restore), run on four fixtures,
+.agents/TOOLS.md	45	3	LIVE	| `.agents/slop/tools/mutate-sz.py` | one edit at a time to `tinybendygrad/sz.bend`, compiled from a scratch copy (**it never edits the source**, so there is nothing to restore), run on four fixtures,
+.agents/TOOLS.md	47	13	DATED	| `.agents/slop/tools/tx-mut.py` | 13 mutations of `codegen/transcendental.bend`, one hand edit at a time, each re-checked and each row-set diffed against `.agents/slop/tx-arena.txt`. `--one <name>` r
+.agents/TOOLS.md	50	4 of 17	DATED	| `.agents/slop/mixin-op-mutate.py` | 17 one-token mutations of `mixin/op.bend`. Each is applied, **BOTH Bend lanes are run and required to agree**, the rows are diffed against the unmutated output, a
+.agents/TOOLS.md	54	180	LIVE	| `.agents/slop/tcptx-oracle.py` | the ORACLE for `renderer/tc_ptx.bend`: `rows` prints all 620 string-diff rows, `stage1` (286) and `stage2` (334) print the halves for a localised diff. **The `py=` h
+.agents/TOOLS.md	174	48	DATED	| `mt_mutate.py` | what does this gate NOT see? | 48 mutations, one text edit each, applied to a scratch copy **also beside the .bend file**, then the INTERPRETED lane, then a diff of row NAMES. It RE
+.agents/TOOLS.md	174	0	DATED	| `mt_mutate.py` | what does this gate NOT see? | 48 mutations, one text edit each, applied to a scratch copy **also beside the .bend file**, then the INTERPRETED lane, then a diff of row NAMES. It RE
+.agents/TOOLS.md	198	0	LIVE	mutations as "0 rows moved"**, because a mutation almost always changes a value
+.agents/TOOLS.md	209	128	LIVE	| `late-oracle.py` | what does CPython say about the LOWERER? | drives `tinygrad/codegen/late/{linearizer,regalloc,gater}.py` over FIXED fixtures and prints all 128 rows. Its regalloc half supplies th
+.agents/TOOLS.md	210	128	LIVE	| `oracles/late-oracle.txt` | what did it say, checked in? | the oracle's 128 rows. The acceptance test is `diff oracles/late-oracle.txt <(./bin/bend tinybendygrad/codegen/late.bend)`, and the native 
+.agents/TOOLS.md	235	755	LIVE	(755 lines). It keeps to the `ops_webgpu.bend` **trace lane** — `Tr`/`Call`/`Row` records,
+.agents/TOOLS.md	242	447	LIVE	| `ip_oracle.py` | what does CPython say? | imports `tinygrad/runtime/support/am/ip.py` for real, walks the `am` autogen enums, imports the four `smu_<maj>_<min>_<pat>` modules for the per-arch table,
+.agents/TOOLS.md	259	447	LIVE	dropped high word and the oracle's dropped high word cancelled and all 447 rows were
+.agents/TOOLS.md	262	115	LIVE	- **Two Python lines may share an f-string register name.** Sixteen of the 115 names are
+.agents/TOOLS.md	272	401	DATED	| `nv_ip_oracle.py` | what does CPython say about the ARITHMETIC? | asserts its own `round_up`/`round_down`/`ceildiv` against `tinygrad.helpers` at five probes **before** using them, then evaluates qu
+.agents/TOOLS.md	273	394	DATED	| `nv_ip_oracle3.py` | what does CPython say about the TRACE? | lifts `_checksum` and `_send_rpc_record` out of `NVRpcQueue` **verbatim** and runs them over the real `nv.GSP_MSG_QUEUE_ELEMENT` / `nv.r
+.agents/TOOLS.md	274	62	LIVE	| `nv_ip_oracle4.py` | what does CPython say about a REFUSAL? | **executes** `_send_rpc_record` with the fault raised at call ordinal N, against a real `nv.msgqTxHeader`, and reads `tx.writePtr` and `
+.agents/TOOLS.md	278	37	DATED	| `nv_ip_mutate.py` | what does the LOGIC gate not see? | one textual edit per rule, applied to the file **at its real path**, interpreted lane re-run, whole `name=value` lines diffed. 37 mutations, e
+.agents/TOOLS.md	302	37	LIVE	- **A `0` needs a reason.** Four of the 37 mutations move nothing because the mutant is
+.agents/TOOLS.md	342	889	LIVE	| `oracles/memory_oracle.txt` | the snapshot, 889 rows. Regenerate, never edit. |
+.agents/TOOLS.md	344	70	LIVE	| `.agents/slop/memory-mutate.py` | 70 mutations (M01–M70), rewrites a `.mut` copy, reports rows moved **by name**, and prints its own blind-spot list. Currently **6 moved nothing**. |
+.agents/TOOLS.md	352	547	LIVE	570 compared / **0 value disagreements** / **547 rows on one side only** — the lanes agreed
+.agents/TOOLS.md	367	357	LIVE	| `.agents/slop/usb-gen.py` | writes `oracles/usb-arith-rows.bend.txt`: 17 flat row sections, 357 rows. A row that is a `#` comment is emitted verbatim, which is how the two "do not re-spell this row 
+.agents/TOOLS.md	370	2596	LIVE	| `.agents/slop/usb-build.py` | the assembler. Reads the pieces in DEPENDENCY order and writes `tinybendygrad/runtime/support/usb.bend`, 2596 lines. The mutation table and the seam list are read back 
+.agents/TOOLS.md	376	339	LIVE	| `.agents/slop/usb-dead.py` | a def nothing calls is invisible to every other check. `339 defs, 0 dead`. |
+.agents/TOOLS.md	377	45	LIVE	| `.agents/slop/usb-mutate.py --md` | 45 mutations, one edit each, whole-line diff, and it WRITES the table the port quotes. `44 move rows, 1 theorem`. |
+.agents/TOOLS.md	406	048	DATED	| `.agents/slop/bendpin/compare.py` | **DOES THE PORT COMPILE THE SAME UNDER BOTH?** All **138 of 138** `.bend` files under `tinybendygrad/` (the run's reading, 2026-10-06 05:17; the population MOVED 
+.agents/TOOLS.md	406	138 of 138	DATED	| `.agents/slop/bendpin/compare.py` | **DOES THE PORT COMPILE THE SAME UNDER BOTH?** All **138 of 138** `.bend` files under `tinybendygrad/` (the run's reading, 2026-10-06 05:17; the population MOVED 
+.agents/TOOLS.md	430	2	LIVE	comment.** `-o out.c` on the probe differs between the lanes in 2 hunks — the
+.agents/TOOLS.md	435	42	LIVE	- **`bend` PRINTS 42 BYTES TO STDERR ON EVERY INVOCATION, GREEN INCLUDED**, so
+.agents/TOOLS.md	437	138	DATED	reported **all 138 files as DIFF with identical verdict tokens** (the run's population; the port is now **134** `.bend`, 2026-10-06T12:19Z, HEAD `7f70b475`) because the
+.agents/TOOLS.md	446	138	DATED	138 files (the run's population; **134** `.bend` as of 2026-10-06T12:19Z, HEAD `7f70b475`, `find tinybendygrad -name '*.bend' | wc -l`) compile byte-identically under both, so moving the checkout to t
+.agents/TOOLS.md	473	18 of 222	LIVE	is documented to be one and reaches only 0-18 of 222 `ops_nv` consts because the
+.agents/TOOLS.md	502	31	LIVE	| `.agents/slop/nocolor-probe.bend` | the Bend half: `no_color_of` over the same 31 probes in the same order, one answer per line. `ALL PROOFS CHECK`. |
+.agents/TOOLS.md	503	0 of 32	LIVE	| `.agents/slop/nocolor-diff.py` | diffs WHOLE LINES. `REFUSED` requires `False` (rule X: a refusal is not a value, so the port takes the default reading); one line is an allowlisted NAMED BOUNDARY wi
+.agents/TOOLS.md	504	4	LIVE	| `.agents/slop/flag-def-scan.py` | every `def <FLAG>() -> U32: <default>` in the tree, i.e. the mechanical signature of a substituted flag. 4 hits, 2 real. |
+.agents/TOOLS.md	522	78	DATED	| `.agents/slop/xd1/verify.py` | the check `agent-core.md` asks for and that NOTHING in this repo had: a port and its own embedded `py=` oracle can AGREE AND BOTH BE WRONG (`nv_query_litter` was wrong
+.agents/TOOLS.md	522	0	DATED	| `.agents/slop/xd1/verify.py` | the check `agent-core.md` asks for and that NOTHING in this repo had: a port and its own embedded `py=` oracle can AGREE AND BOTH BE WRONG (`nv_query_litter` was wrong
+.agents/TOOLS.md	522	41 of 78	DATED	| `.agents/slop/xd1/verify.py` | the check `agent-core.md` asks for and that NOTHING in this repo had: a port and its own embedded `py=` oracle can AGREE AND BOTH BE WRONG (`nv_query_litter` was wrong
+.agents/TOOLS.md	527	4	DATED	| `.agents/slop/xd1/stem-bug.py` | the proof for the `rebase-plan.py` fix: old map **34 ported / 15 NONE**, new map **38 ported / 11 NONE, 0 lost**. 4 files the planner had never seen, 3 whose status 
+.agents/TOOLS.md	530	80	LIVE	Current state: `render.bend` **66 -> 80 rows** (14 added, 4 re-measured, 0 removed),
+.agents/TOOLS.md	532	54	LIVE	(`CustomFunction` added, `CallInfo.dtype` dropped). `rewriter.bend` **32 -> 54 rows**
+.agents/TOOLS.md	551	364	LIVE	| `.agents/slop/rebase-survey.py` | **WIRE AN ORACLE BY ITS OUTPUT, NEVER BY ITS FILENAME.** Runs every candidate under `.agents/slop/`, `xd1/`, `notes/`, `oracle/` and `oracles/`, and reports the row
+.agents/TOOLS.md	551	104	LIVE	| `.agents/slop/rebase-survey.py` | **WIRE AN ORACLE BY ITS OUTPUT, NEVER BY ITS FILENAME.** Runs every candidate under `.agents/slop/`, `xd1/`, `notes/`, `oracle/` and `oracles/`, and reports the row
+.agents/TOOLS.md	552	21	LIVE	| `.agents/slop/rebase-oracle-spec.py` | NEW oracle for `uop/spec.bend`, 11 of 21 rows, **RED on 2**: `te_len` 56 vs 55 and `fu_len` 71 vs 70, which is the "TWENTY-THIRD TENSOR RULE" the port's own he
+.agents/TOOLS.md	552	10	LIVE	| `.agents/slop/rebase-oracle-spec.py` | NEW oracle for `uop/spec.bend`, 11 of 21 rows, **RED on 2**: `te_len` 56 vs 55 and `fu_len` 71 vs 70, which is the "TWENTY-THIRD TENSOR RULE" the port's own he
+.agents/TOOLS.md	552	11 of 21	LIVE	| `.agents/slop/rebase-oracle-spec.py` | NEW oracle for `uop/spec.bend`, 11 of 21 rows, **RED on 2**: `te_len` 56 vs 55 and `fu_len` 71 vs 70, which is the "TWENTY-THIRD TENSOR RULE" the port's own he
+.agents/TOOLS.md	554	18	DATED	| `.agents/slop/rebase-oracle-search.py` | NEW oracle for `codegen/opt/search.bend`, 12 of 18 rows, **RED on 5**, and it exists because `tinygrad/codegen/opt/search.py` **in the vendored tree does not
+.agents/TOOLS.md	554	0	DATED	| `.agents/slop/rebase-oracle-search.py` | NEW oracle for `codegen/opt/search.bend`, 12 of 18 rows, **RED on 5**, and it exists because `tinygrad/codegen/opt/search.py` **in the vendored tree does not
+.agents/TOOLS.md	554	12 of 18	DATED	| `.agents/slop/rebase-oracle-search.py` | NEW oracle for `codegen/opt/search.bend`, 12 of 18 rows, **RED on 5**, and it exists because `tinygrad/codegen/opt/search.py` **in the vendored tree does not
+.agents/TOOLS.md	557	470	DATED	| `.agents/slop/rows-blast.py` | **THE BLAST RADIUS OF `rows()`, MEASURED OVER EVERY WIRED LANE.** Runs all pairs LIVE, keeps the RAW stdout, and applies the shipped parser and any candidate to the sa
+.agents/TOOLS.md	557	0	DATED	| `.agents/slop/rows-blast.py` | **THE BLAST RADIUS OF `rows()`, MEASURED OVER EVERY WIRED LANE.** Runs all pairs LIVE, keeps the RAW stdout, and applies the shipped parser and any candidate to the sa
+.agents/TOOLS.md	572	892	DATED	| `.agents/slop/ga-oracle.py` -> `oracles/ga-oracle.txt` | the ORACLE for `renderer/amd/generate.bend`: **892 rows, every one produced by CALLING CPython**, and the file is checked in so the gate does
+.agents/TOOLS.md	573	618	DATED	| `.agents/slop/ga_fix.py`, `ga_splice.py`, `ga_topo.py`, `ga_dedup.py`, `ga_plus.py` | the fixture/gate GENERATOR and the three repair passes. `ga_splice.py` removes the ten generated defs (`g`, `gl`
+.agents/TOOLS.md	574	30	DATED	| `.agents/slop/ga_gate.py` | diffs a `bend` run against the oracle by diffing whole `name=[value]` ROWS, never row NAMES -- a name-comparing harness reported 0 moved rows for all 30 mutations of the 
+.agents/TOOLS.md	575	2 of 12	DATED	| `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a documented deliberate no-op (`NULL` is 
+.agents/TOOLS.md	575	0 of 8	DATED	| `.agents/slop/ga_mutate.py` -> `ga-mutate.txt` | 41 one-token mutations of `renderer/amd/generate.bend`: **40 move gate rows**, and the one that does not is a documented deliberate no-op (`NULL` is 
+.agents/TOOLS.md	611	87	LIVE	count is not a defect count — one planted `def` in `LAWS/spec.bend` reds 87 files. Attribute
+.agents/TOOLS.md	622	355	LIVE	and 355 lines. **246 was a partial read of an in-flight run.** Reported here because the
+.agents/TOOLS.md	634	14	DATED	- **THE NAMING GATE'S `VERBATIM` COUNT IS NOT A CONSTANT EITHER — 283 vs 278.** Six runs 14 s
+.agents/TOOLS.md	659	30	LIVE	`.venv/bin/python tensor-gate.py` printed 30 rows and `python3 tensor-gate.py` printed 0
+.agents/TOOLS.md	697	40	LIVE	- **`.agents/slop/e2e_mm_gate.py`** — 40 rows, diffed by whole `name=value` line. No
+.agents/TOOLS.md	701	11	LIVE	relative layout intact (`tinybendygrad/` copied = 11 MB; `bin/` and the 227 MB
+.agents/TOOLS.md	701	227	LIVE	relative layout intact (`tinybendygrad/` copied = 11 MB; `bin/` and the 227 MB
+.agents/TOOLS.md	707	7 of 8	LIVE	GPU on 7 of 8 — which is the rule about transcribing an expectation, caught by the
+.agents/TOOLS.md	718	300	LIVE	its own until this session — it is the only file in the port whose 300 rows were pinned by
+.agents/TOOLS.md	723	12	LIVE	(`UOp._ranges` ops.py:483, `UOp.ranges` ops.py:497). 12 rows, one per fixture, spelled
+.agents/TOOLS.md	731	19	LIVE	- **`.agents/slop/fold-rng-mutate.py`** — 19 mutations of the ranges fold and of
+.agents/TOOLS.md	743	276	LIVE	no-ops and took 276 rows with them, and they were REMOVED rather than counted, because a
+.agents/TOOLS.md	745	14	LIVE	- **`oracles/fold-mut.py`** — the movement arms' 14 mutations, both lanes.
+.agents/TOOLS.md	752	82	LIVE	row ORDER is the contract, and this unit's 82 rows are a different unit with a
+.agents/TOOLS.md	762	75	LIVE	turns "75 rows" into "the same 75 rows".
+.agents/TOOLS.md	840	17684	LIVE	| `.agents/slop/unobservable-census.py` | static blind-transposition census over every committed oracle; `--handtyped`; `--countgate` | 17684 rows / 10 ORDER-DEAD / 10374 order-weak / 14136 blind tran
+.agents/TOOLS.md	881	14	DATED	14 s before a run and broke the typecheck, and every count-only harness read that as
+.agents/TOOLS.md	888	3	LIVE	| `.agents/slop/dd-mutate.py` | the harness. Builds a MIRROR (`git archive <PINNED REV> tinybendygrad` + the FROZEN `dtype.bend`), asserts the mirror reproduces the snapshot's digest, runs 3 controls 
+.agents/TOOLS.md	888	36	LIVE	| `.agents/slop/dd-mutate.py` | the harness. Builds a MIRROR (`git archive <PINNED REV> tinybendygrad` + the FROZEN `dtype.bend`), asserts the mirror reproduces the snapshot's digest, runs 3 controls 
+.agents/TOOLS.md	892	0	DATED	| **`.agents/slop/zero-classify.py`** | **A ZERO CLASSIFIES ITSELF: five verdicts and no sixth** — `UNREACHABLE+proof` / `PORT-DEFECT` / `PATCH-NOT-APPLY` / `INVISIBLE-to-reader` / `NO-MUTATION-WRITTE
+.agents/TOOLS.md	894	487	LIVE	| `.agents/slop/zero-audit.py` | audits **every** mutation table in `.agents/slop` and prints **THE DENOMINATOR** — mutations recorded vs zeros, controls excluded — because "unmoved" conflates *no mut
+.agents/TOOLS.md	894	15	LIVE	| `.agents/slop/zero-audit.py` | audits **every** mutation table in `.agents/slop` and prints **THE DENOMINATOR** — mutations recorded vs zeros, controls excluded — because "unmoved" conflates *no mut
+.agents/TOOLS.md	894	30	LIVE	| `.agents/slop/zero-audit.py` | audits **every** mutation table in `.agents/slop` and prints **THE DENOMINATOR** — mutations recorded vs zeros, controls excluded — because "unmoved" conflates *no mut
+.agents/TOOLS.md	895	41	DATED	| `.agents/slop/dd-zero-{aim,family,site-answer}.tsv` | the three declarations `zero-classify.py` is driven by for `codegen/decomp/dtype.bend`: which site each of the 41 mutations is aimed at, which f
+.agents/TOOLS.md	898	81	LIVE	| `.agents/slop/dd-mut-reach.py` | the call graph from `main` to every def. **Evidence, not proof** (a regex over source can miss an indirect use), but it names the 81 defs no fixture reaches. |
+.agents/TOOLS.md	925	138	LIVE	| A. `find … -name '*.bend'` — **the published method** | **137-138 files / ~197.9k lines** | 136-137 / ~196.8k |
+.agents/TOOLS.md	927	128	LIVE	| C. B minus scratch (`tree-verdict.py`'s `SCRATCH_RE`) | **128 files / 195,016-195,188 lines** | **127 / ~193.9k** |
+.agents/TOOLS.md	927	188	LIVE	| C. B minus scratch (`tree-verdict.py`'s `SCRATCH_RE`) | **128 files / 195,016-195,188 lines** | **127 / ~193.9k** |
+.agents/TOOLS.md	930	137	LIVE	**State the SET and the RULE, then the number. "137 `.bend` files" without either is
+.agents/TOOLS.md	936	890	LIVE	did, tracked, 1,890 lines, invisible to `find tinybendygrad`. `os.walk` + `endswith` (what
+.agents/TOOLS.md	947	8	LIVE	**The scratch that is in the tree, and the one that must stay.** 8 files match
+.agents/TOOLS.md	964	128	LIVE	| `order-lin-probe.py` | CPython-side src-swap probe. Rebuilds `late-oracle.py`'s `lin_fixture` with one src list permuted and prints the SAME 128 rows, so a diff measures the swap and not a second tr
+.agents/TOOLS.md	965	10	LIVE	| `order-lin-sweep.sh` | the sweep. Asserts the probe's unswapped rows equal the committed `oracles/late-oracle.txt` FIRST (a probe that does not reproduce is a failure, not a run), then prints which 
+.agents/TOOLS.md	966	4 of 7	DATED	| `order-lin-cand.py` | scores CANDIDATE rows by how many swaps they can see, so the fix is chosen on measured movement. `DEGK` (out_degree key order) sees 4 of 7; `EDG` (the edge list) sees 7 of 7. *
+.agents/TOOLS.md	966	7 of 7	DATED	| `order-lin-cand.py` | scores CANDIDATE rows by how many swaps they can see, so the fix is chosen on measured movement. `DEGK` (out_degree key order) sees 4 of 7; `EDG` (the edge list) sees 7 of 7. *
+.agents/TOOLS.md	968	20	DATED	| `order-late-gate.sh` | `late-gate.sh` with a substrate stamp on BOTH ends over eight `.bend` files, retrying through the ~1-in-20 stack overflow and through a concurrent agent. Prints `SUBSTRATE MOV
+.agents/TOOLS.md	969	3 of 6	DATED	| `order-gate-probe.py` | D5. Reads the six `pm_move_gates_from_index` pattern OBJECTS and renders a structural fingerprint (`UPat.src` is a tuple OF GROUPS, a group is a tuple of UPats or a bare name
+.agents/TOOLS.md	969	6 of 6	DATED	| `order-gate-probe.py` | D5. Reads the six `pm_move_gates_from_index` pattern OBJECTS and renders a structural fingerprint (`UPat.src` is a tuple OF GROUPS, a group is a tuple of UPats or a bare name
+.agents/TOOLS.md	970	98 of 98	LIVE	| `order-verdicts.py` | the two verdicts. (1) resolves every `ops_bend` sibling-blind family's oracle VALUE ARGUMENT and classifies it CALL vs LITERAL, following one assignment including tuple unpacki
+.agents/TOOLS.md	983	22	LIVE	| `revision-ledger.py` | Which revision each committed table is valid for. Records **two** digests per table — the file it patches AND the baseline ROW SET — because a digest protects the MUTANT, not 
+.agents/TOOLS.md	997	82	LIVE	| `ops501-atrest.sh [REV]` | The `s5_` rows of a REVISION of `uop/ops.bend`, default `@-`. **The at-rest state is `@-`, not `@`** — in Jujutsu `@` IS the working-copy commit, so `jj file show -r @ f` 
+.agents/TOOLS.md	1002	23	LIVE	| `ops-501-mutate.py` | 23 mutations, all moving the rows they name. **Stages `jj file show -r @` and never writes `ops.bend`** — the previous version did, and its `finally` restore would have permane
+.agents/TOOLS.md	1008	77	LIVE	| `graphcmp.py` | The differ. `diff --graph NAME` is **the artifact**: one command, one argument, one `# VERDICT:` line, and a `# DENOMINATOR:` line above it. Nine graphs (63 nodes/side, 13 of 77 ops)
+.agents/TOOLS.md	1008	13 of 77	LIVE	| `graphcmp.py` | The differ. `diff --graph NAME` is **the artifact**: one command, one argument, one `# VERDICT:` line, and a `# DENOMINATOR:` line above it. Nine graphs (63 nodes/side, 13 of 77 ops)
+.agents/TOOLS.md	1012	0 of 8	LIVE	| `graphcmp-dbg-oracle.py` | Whether CPython's own `DEBUG >= 1` site (`memory.py:59-60`) can be reached on this host. Measured **0 of 8 real graphs**, which is why `dbg` is a port-vs-port comparison a
+.agents/TOOLS.md	1057	298	LIVE	**3,298 lines** inside the **835** `.txt` lanes it does read.
+.agents/TOOLS.md	1060	329	LIVE	329 rows it could not see, and 1 it reported that does not exist — it now delegates to
+.agents/TOOLS.md	1082	68	LIVE	for all 68 mutations in one unit):
+.agents/TOOLS.md	1088	11	LIVE	| `validate-mutate.py` | 11 mutants run through BOTH lanes, so a row that moved TOWARD CPython is distinguishable from one that moved away; restores from memory and asserts the md5 | `DEV=NULL python3
+.agents/TOOLS.md	1091	155	LIVE	Current measurement: **port 155 rows, oracle 364, shared 138, agree 123, disagree 15 (89.1%).** Of
+.agents/TOOLS.md	1092	11	LIVE	the 11 mutants, 10 move rows AWAY from CPython and 1 (M10, `range_str`'s axis-id separator) moves
+.agents/TOOLS.md	1111	10	DATED	onto 10 names before the fix).
+.agents/TOOLS.md	1135	16	DATED	| `.agents/slop/graphcmp-run.sh` | every artefact, one command. 16 graphs, five controls, cross, seven plants, the ordered/equiv split, the conflations, the DEBUG sweep, five stability pairs classifie
+.agents/TOOLS.md	1136	16	DATED	| `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary r
+.agents/TOOLS.md	1136	154	DATED	| `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary r
+.agents/TOOLS.md	1136	154 of 154	DATED	| `.agents/slop/graphcmp-repro.sh` | **the reproducibility check, as a script rather than as a comment.** Waits for the substrate (`--check-only`'s FIRST LINE), accepts a run only if its own summary r
+.agents/TOOLS.md	1140	16	LIVE	Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
+.agents/TOOLS.md	1140	77	LIVE	Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
+.agents/TOOLS.md	1140	34 of 77	LIVE	Current measurement: **16 graphs, 189 nodes per side, 1134 field-records, 34 of 77 ops, 7 of
+.agents/TOOLS.md	1141	14 of 16	LIVE	the 8 commutative ops, 2 symbolic-dim nodes of 189 on BOTH sides, 14 of 16 `AGREE`
+.agents/TOOLS.md	1142	14 of 16	LIVE	(`lin`/`loop` DISAGREE, each with a named measured port gap), 14 of 16 byte-identical, 5 of
+.agents/TOOLS.md	1143	7	LIVE	5 stability pairs identical with 0 differing and 0 failed, 7 of 7 plants, 5 of 5 controls,
+.agents/TOOLS.md	1143	5	LIVE	5 stability pairs identical with 0 differing and 0 failed, 7 of 7 plants, 5 of 5 controls,
+.agents/TOOLS.md	1143	7 of 7	LIVE	5 stability pairs identical with 0 differing and 0 failed, 7 of 7 plants, 5 of 5 controls,
+.agents/TOOLS.md	1143	5 of 5	LIVE	5 stability pairs identical with 0 differing and 0 failed, 7 of 7 plants, 5 of 5 controls,
+.agents/TOOLS.md	1144	4 of 4	LIVE	4 of 4 conflations, `cross` 1 of 1, both selfchecks OK.** `graphcmp-repro.sh` measures
+.agents/TOOLS.md	1144	1 of 1	LIVE	4 of 4 conflations, `cross` 1 of 1, both selfchecks OK.** `graphcmp-repro.sh` measures
+.agents/TOOLS.md	1145	154	LIVE	**154 of 154 files byte-identical across two clean runs**. **A limit closed mid-round:** the
+.agents/TOOLS.md	1145	154 of 154	LIVE	**154 of 154 files byte-identical across two clean runs**. **A limit closed mid-round:** the
+.agents/TOOLS.md	1180	8 of 13	LIVE	| `.agents/slop/anchor-audit.py` | Which anchors are stale, and which harnesses may be run at all. 49 harnesses, all `patch_not_apply` consumers. | **The anchor cell index is a property of the HARNESS
+.agents/TOOLS.md	1181	24	LIVE	| `.agents/slop/table-pin.py` | rev + **FILE** digest + **ROWS** digest per table, 24 tables. `ROWS` is the row SET (names AND values, sorted) taken from the harness's own baseline file. | A digest pr
+.agents/TOOLS.md	1196	70	LIVE	**RECONSTRUCTED RECORDS:** `memory-mutations.txt` (70 mutations; the harness had exited 2 on
+.agents/TOOLS.md	1205	20	DATED	| `.agents/slop/phantom-run.py` | Reproduces the four-lane death end to end, and measures the blast radius per error class. `--event` / `--event-order` / default matrix. Fixture in `phantom-repro/`, s
+.agents/TOOLS.md	1205	4 of 4	DATED	| `.agents/slop/phantom-run.py` | Reproduces the four-lane death end to end, and measures the blast radius per error class. `--event` / `--event-order` / default matrix. Fixture in `phantom-repro/`, s
+.agents/TOOLS.md	1215	0 of 234	DATED	## The load census and the baseline ledger (2026-10-04) — 0 of 234 recorded counts carry a load
+.agents/TOOLS.md	1219	108	DATED	| `.agents/slop/load-census.py` | **One scanner, three questions.** `--ledger` every recorded baseline with its revision, row count, load-or-`UNKNOWN` and verdict; `--guard` the mechanical test; `--st
+.agents/TOOLS.md	1219	13	DATED	| `.agents/slop/load-census.py` | **One scanner, three questions.** `--ledger` every recorded baseline with its revision, row count, load-or-`UNKNOWN` and verdict; `--guard` the mechanical test; `--st
+.agents/TOOLS.md	1219	92 of 1	DATED	| `.agents/slop/load-census.py` | **One scanner, three questions.** `--ledger` every recorded baseline with its revision, row count, load-or-`UNKNOWN` and verdict; `--guard` the mechanical test; `--st
+.agents/TOOLS.md	1220	110 of 110	DATED	| `.agents/slop/load-census.py::captures` / `verdict` | The ledger's row builder. Identifies a `*baseline*.txt` dump against `baseline.json` by **ROW-NAME-SET EQUALITY**, never by a typed port name. |
+.agents/TOOLS.md	1221	0 of 18	DATED	| `.agents/slop/load-census.py::starvation_retrospective` | Of the **18** `BROKEN` verdicts stored in `_coord-sweep.json`, `dev-wholetree-2.json` and `rebase/postrecord-2026-10-03.json` (**14** distin
+.agents/TOOLS.md	1221	15 of 18	DATED	| `.agents/slop/load-census.py::starvation_retrospective` | Of the **18** `BROKEN` verdicts stored in `_coord-sweep.json`, `dev-wholetree-2.json` and `rebase/postrecord-2026-10-03.json` (**14** distin
+.agents/TOOLS.md	1222	0 of 18	DATED	| `.agents/slop/loadwatch.py` | The load beside the count: `snapshot()`, `stamp()`, `counts_stamp()`, and the pair **`starved_at(x)` / `unknown(x)`**. | ⚠ `THRESHOLD = 4.0` is **derived from an observ
+.agents/TOOLS.md	1223	18	LIVE	| `.agents/slop/lane-load-measurements.tsv` / `lane-load-sweep.sh` | The only place starvation is **DEMONSTRATED** rather than guessed: 5 cells × 3 reps on `nvdev.bend` md5 `2019c2c6…`, varying lane a
+.agents/TOOLS.md	1223	79	LIVE	| `.agents/slop/lane-load-measurements.tsv` / `lane-load-sweep.sh` | The only place starvation is **DEMONSTRATED** rather than guessed: 5 cells × 3 reps on `nvdev.bend` md5 `2019c2c6…`, varying lane a
+.agents/TOOLS.md	1223	18 of 18	LIVE	| `.agents/slop/lane-load-measurements.tsv` / `lane-load-sweep.sh` | The only place starvation is **DEMONSTRATED** rather than guessed: 5 cells × 3 reps on `nvdev.bend` md5 `2019c2c6…`, varying lane a
+.agents/TOOLS.md	1229	215 of 234	LIVE	*"215 of 234 carry a load"* because it computed `total − SUSPECT`, so every `RE-MEASURED-ALONGSIDE`
+.agents/TOOLS.md	1271	471	LIVE	157 of its 471 rows in that class, 48 on a single key; cstyle held 8 of 227.
+.agents/TOOLS.md	1271	8 of 227	LIVE	157 of its 471 rows in that class, 48 on a single key; cstyle held 8 of 227.
+.agents/TOOLS.md	1274	25 of 39	LIVE	rows for 25 of 39 ports; `./bin/bend tinybendygrad/renderer/cstyle.bend` alone prints 227.
+.agents/TOOLS.md	1308	324	LIVE	(324 rows of ctypes spellings) plus `tinygrad/runtime/autogen/libclang.py` for
+.agents/TOOLS.md	1319	324	LIVE	(**324 defs, 0 missing, 0 arity disagreements** — that is what licenses the
+.agents/TOOLS.md	1319	0	LIVE	(**324 defs, 0 missing, 0 arity disagreements** — that is what licenses the
+.agents/TOOLS.md	1335	1 of 3	DATED	## Backward walk (2026-10-04) — `mixin/gradient.bend`, step 1 of 3
+.agents/TOOLS.md	1355	0	DATED	replaced" and "0 rows moved", which this harness did once.
+.agents/TOOLS.md	1367	110	LIVE	**110 rows compared, 0 disagreements.** A child that fails prints `DIED` and exits **2** —
+.agents/TOOLS.md	1371	1	LIVE	`ctl single half` → 1 row; refuses F1, F2, F3-two-space, F4 and F6-TAB → 0 rows each. Reads
+.agents/TOOLS.md	1371	0	LIVE	`ctl single half` → 1 row; refuses F1, F2, F3-two-space, F4 and F6-TAB → 0 rows each. Reads
+.agents/TOOLS.md	1395	77	LIVE	**77 ops at two arities**, which is where a widening's COST lives: `except
+.agents/TOOLS.md	1411	312	LIVE	byte comparison + the live md5 pinned), then the blast radius of each arm on all 312 rows
+.agents/TOOLS.md	1468	3	DATED	| `zsh .agents/slop/coldness/sweep.sh` | **SUPERSEDED FOR VERDICTS BY `checks/substrate.py`, WHICH IS NOW MEMORY-BOUND.** This sweep exists because `substrate-check.sh:200` ran bend under `perl -e 'al
+.agents/TOOLS.md	1469	468	DATED	| **`checks/substrate.py`** | **THE SUBSTRATE GATE, NOW PYTHON.** HALF 1 judges each file by its OWN instrument (`.bend` → `bend --check-only`; `.c` → `cc -fsyntax-only` + bend's generated C context; 
+.agents/TOOLS.md	1469	435	DATED	| **`checks/substrate.py`** | **THE SUBSTRATE GATE, NOW PYTHON.** HALF 1 judges each file by its OWN instrument (`.bend` → `bend --check-only`; `.c` → `cc -fsyntax-only` + bend's generated C context; 
+.agents/TOOLS.md	1469	1	DATED	| **`checks/substrate.py`** | **THE SUBSTRATE GATE, NOW PYTHON.** HALF 1 judges each file by its OWN instrument (`.bend` → `bend --check-only`; `.c` → `cc -fsyntax-only` + bend's generated C context; 
+.agents/TOOLS.md	1476	39	DATED	| `gates/bc-u32-gate.py` | **39 rows, 3 lanes, against the real tinygrad BITCAST arm.** Built BEFORE the fix and measured against the unfixed tree, because a row written after the code it approves can
+.agents/TOOLS.md	1476	3	DATED	| `gates/bc-u32-gate.py` | **39 rows, 3 lanes, against the real tinygrad BITCAST arm.** Built BEFORE the fix and measured against the unfixed tree, because a row written after the code it approves can
+.agents/TOOLS.md	1477	39	DATED	| `.agents/slop/bitcastrow/table.py` | **The ONE fixture list**, from which both lanes are generated. Also carries the port's semantics as CODE rather than prose: `lo32`, `U32.mul`, and `sint_of`'s si
+.agents/TOOLS.md	1479	334	DATED	| `.agents/slop/bitcastrow/bc-diff.py` | Compares whole `name=value` lines, as a **multiset**. `fold.bend` emits `lf_sub_int32_-3_4` TWICE and a dict collapsed the pair — the lane then counted 333 for
+.agents/TOOLS.md	1480	468	DATED	| `.venv/bin/python checks/bounded.py --seconds 900 --mb 2048 -- ./bin/bend F` | Every `bend` invocation. **2048, NOT 1024**: `sz.bend` peaks at 1,468 MB, so a ceiling below the population's own maxim
+.agents/TOOLS.md	1486	0	LIVE	| `.venv/bin/python .agents/slop/txtgen/declared-completeness.py` | **Answers the question `.agents/slop/difftxt/DECISION.md` rested on evidence for:** is `checks/differ.py`'s `declared()` COMPLETE, o
+.agents/TOOLS.md	1486	32	LIVE	| `.venv/bin/python .agents/slop/txtgen/declared-completeness.py` | **Answers the question `.agents/slop/difftxt/DECISION.md` rested on evidence for:** is `checks/differ.py`'s `declared()` COMPLETE, o
+.agents/TOOLS.md	1489	1	LIVE	| `.venv/bin/python .agents/slop/txtgen/census-cache-plant.py` | Proves a rename whose gate **cannot run** still moved its READ site. `checks/census.py` cannot import (`graphcmp` swept), so the usual 
+.agents/TOOLS.md	1503	3	DATED	| `.venv/bin/python .agents/slop/clearfix/clearfix-repro.py` | **Green / drift / disagree × 3 lanes, both gates, STALE as sha256 against that lane's own previous green run.** The lane that matters run
+.agents/TOOLS.md	1504	9	DATED	| `.venv/bin/python .agents/slop/clearfix/gate-matrix.py` | **All 9 gates, both `gatekit`s, real drivers, no shadow tree.** Verifies a cleanup fix against the whole population instead of a fixture. It
+.agents/TOOLS.md	1504	6	DATED	| `.venv/bin/python .agents/slop/clearfix/gate-matrix.py` | **All 9 gates, both `gatekit`s, real drivers, no shadow tree.** Verifies a cleanup fix against the whole population instead of a fixture. It
+.agents/TOOLS.md	1504	2 of 2	DATED	| `.venv/bin/python .agents/slop/clearfix/gate-matrix.py` | **All 9 gates, both `gatekit`s, real drivers, no shadow tree.** Verifies a cleanup fix against the whole population instead of a fixture. It
+.agents/TOOLS.md	1528	25	DATED	| `.agents/slop/devpin/hashall.py` | one sha256 over the 25 graphs' **row-shaped lines only**, plus a non-row count. The `ROW` regex is `^\d+:`, **not** `^\d+:\d+ ` — graphcmp's chunk form is `<len>:<
+.agents/TOOLS.md	1528	312	DATED	| `.agents/slop/devpin/hashall.py` | one sha256 over the 25 graphs' **row-shaped lines only**, plus a non-row count. The `ROW` regex is `^\d+:`, **not** `^\d+:\d+ ` — graphcmp's chunk form is `<len>:<
+.agents/TOOLS.md	1530	25	DATED	| `.agents/slop/devpin/lin-decision.py` | which rows are device-dependent: re-emits all 25 graphs under four devices and diffs against the recorded py artifacts. **7** reproduce everywhere, **18** mov
+.agents/TOOLS.md	1531	88 of 88	DATED	| `.agents/slop/devpin/injectivity.py` | is the canonical form injective? 88 live dataclass instances → 44 strings, 0 collisions; 0 ambiguous parses of the 6 `""`-joined renderings; and the join's bli
+.agents/TOOLS.md	1537	1 of 12	LIVE	| `gates/gendirs.py` | **the population, discovered and shared.** Scans every `.py`/`.sh`/`.mjs`/`.js` in the tree for a write-shaped call and resolves each target through a constant-propagation FIXPO
+.agents/TOOLS.md	1541	1 of 12	LIVE	| `.agents/slop/gendirs/writetargets.py` | the standalone v1 scanner. **Kept for its four misses, which are the argument for the fixpoint** — it is the instrument that found 1 of 12 and could not see 
+.agents/TOOLS.md	1544	1 of 2	LIVE	(`1,560 of 2,048 source files read`). `checks/abi4_gate.py:501` reaches `checks/gen/` through
+.agents/TOOLS.md	1547	468	LIVE	needs execution, and nothing here executes a gate (`bend` peaks at 1,468 MB against a 2,048 MB
+.agents/TOOLS.md	1547	048	LIVE	needs execution, and nothing here executes a gate (`bend` peaks at 1,468 MB against a 2,048 MB
+.agents/TODO.md	6	3/3	LIVE	no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh` `$GT.py` ->
+.agents/TODO.md	15	0	LIVE	spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
+.agents/TODO.md	15	9/9	LIVE	spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
+.agents/TODO.md	15	5/96	LIVE	spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
+.agents/TODO.md	16	1/3	LIVE	backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
+.agents/TODO.md	17	15	LIVE	`mixin/gradient.bend`. **15/15 rows AGREE with
+.agents/TODO.md	21	7	LIVE	BYTE-IDENTICAL. `plant_reverse` moves 7 rows,
+.agents/TODO.md	32	34/34	LIVE	proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
+.agents/TODO.md	32	5/5	LIVE	proofs          [##########] 34/34   oracle-green     [#####.....] 5/5
+.agents/TODO.md	33	6/7	LIVE	walkthroughs    [######...] 6/7      E2E-PROVES-COMPUTE 1/1  <- runs/e2e/
+.agents/TODO.md	34	7/10	LIVE	clangshim       [#######...] 7/10    ONE generated .c, ONE import, ONE cc:
+.agents/TODO.md	40	19	LIVE	function. Stage 4 all 19 drops attributed.
+.agents/TODO.md	47	9/10	DATED	gate-disagree   [#########] 9/10    dtype rows 209, 7 disagreements (was 19). +28 `f2f` rows:
+.agents/TODO.md	50	6/10	LIVE	dtype-js-abi-gate [#########.] 6/10  **`checks/abi_gate.py` HAD TWO STALE CONSTANTS AND NO
+.agents/TODO.md	57	603	DATED	3,603 FILES DELETED") removed
+.agents/TODO.md	58	441	DATED	`.agents/slop/abi/abi.json` (441 lines) two commits
+.agents/TODO.md	76	12	LIVE	7 FAIL**, denominator 12 rows x 11 arms x 2 lanes
+.agents/TODO.md	76	11	LIVE	7 FAIL**, denominator 12 rows x 11 arms x 2 lanes
+.agents/TODO.md	76	2	LIVE	7 FAIL**, denominator 12 rows x 11 arms x 2 lanes
+.agents/TODO.md	80	5	LIVE	FIXTURE LIMIT: all 5 plants moved 0/12 where
+.agents/TODO.md	88	12	LIVE	never wrong", except this lane prints all 12 rows so
+.agents/TODO.md	106	3/3	LIVE	dtype-js-abi    [##########] 3/3    `runtime/dtype.js` read `p.fst`/`p.snd` against a record
+.agents/TODO.md	121	3	LIVE	dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no net line
+.agents/TODO.md	121	3/3	LIVE	dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no net line
+.agents/TODO.md	127	98	LIVE	(98 rows x 15 arms, tinygrad CALLED).
+.agents/TODO.md	127	15	LIVE	(98 rows x 15 arms, tinygrad CALLED).
+.agents/TODO.md	145	3	LIVE	3 disarms 0/0/0; 3 plants (2nd mutations,
+.agents/TODO.md	146	0	LIVE	not copies) 30/8/40; 0 rows moved outside
+.agents/TODO.md	148	15	LIVE	15 arms and catches an entangled arm at the
+.agents/TODO.md	174	3/3	DATED	e2e-js-lane    [##########] 3/3    **STAGE 8 IS NOW RETIRED** -- see `deadreg` and `E2ESTAGE8` below.
+.agents/TODO.md	177	7	LIVE	STAGE RAN.** All 7 stages drove Bend or C; `node` appeared once, in stage 3, as a
+.agents/TODO.md	183	20	LIVE	CLAIM: `node` runs `runtime/dtype.js` via `bend -o`, rc 0, **20/20 rows present**,
+.agents/TODO.md	186	8	LIVE	DEAD in `dtype.js` and 8 rows measure `dtype.bend`. The split is DERIVED from the
+.agents/TODO.md	192	20	LIVE	20/20 rows present and 11/19: a full row set over a wrong lane is NOT a partial
+.agents/TODO.md	207	0	LIVE	row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
+.agents/TODO.md	207	3/3	LIVE	row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
+.agents/TODO.md	208	11/11	LIVE	lane-liveness   [###########] 11/11  census: the 39 wired lanes tabulated
+.agents/TODO.md	210	38 of 39	LIVE	**38 of 39 now run both sides; 31 of those 38
+.agents/TODO.md	212	1 of 7	LIVE	BYTE-IDENTICAL stdout (1,408 of 7,917 shared
+.agents/TODO.md	222	8/10	LIVE	dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port, hcq2,
+.agents/TODO.md	225	11 of 78	LIVE	not make. 78 live lane texts / 39 ports: 11 of 78
+.agents/TODO.md	228	0	DATED	(75 -> 0, oracle-only, 0 names renamed, port bytes
+.agents/TODO.md	232	9/11	LIVE	nvdup           [#########.] 9/11   `.agents/slop/NVDUP.md` + `nvdup/stage{1,2,3,4}-*.md`.
+.agents/TODO.md	234	20	DATED	and 4 DEAD `try:` ARMS; 20 lines deleted, 3 replaced,
+.agents/TODO.md	235	547	DATED	0 added; 574 -> 547 rows; 547 -> 547 distinct names;
+.agents/TODO.md	248	2	LIVE	line-number citations. 2 rules appended at
+.agents/TODO.md	250	2	LIVE	arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
+.agents/TODO.md	250	2/10	LIVE	arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
+.agents/TODO.md	257	14 of 137	LIVE	MEASURED.** `14 of 137` (`agent-core.md` §2), `6 of 137` (`OPSPY.md`), `COLD 35 of 139`
+.agents/TODO.md	257	6 of 137	LIVE	MEASURED.** `14 of 137` (`agent-core.md` §2), `6 of 137` (`OPSPY.md`), `COLD 35 of 139`
+.agents/TODO.md	257	35 of 139	LIVE	MEASURED.** `14 of 137` (`agent-core.md` §2), `6 of 137` (`OPSPY.md`), `COLD 35 of 139`
+.agents/TODO.md	263	138	DATED	**RE-MEASURED 2026-10-05 14:19 OVER 138 `.bend` FILES: `COLD 35`, `BAD 46`,
+.agents/TODO.md	265	138	LIVE	so `35` is correct and `139` is not a `.bend` count (138 `.bend` + 1 `.js`).**
+.agents/TODO.md	265	1	LIVE	so `35` is correct and `139` is not a `.bend` count (138 `.bend` + 1 `.js`).**
+.agents/TODO.md	272	6 of 137	DATED	- [x] **`OPSPY.md`'s `6 of 137` IS WRONG TWICE — ITS OWN LIST REMOVES 9 OF THE 14, LEAVING 5,
+.agents/TODO.md	282	9	DATED	**9 files satisfy it and all 9 are the empty `__init__.bend` markers with 0 defs and
+.agents/TODO.md	282	0	DATED	**9 files satisfy it and all 9 are the empty `__init__.bend` markers with 0 defs and
+.agents/TODO.md	283	41 of 138	DATED	0 laws.** 41 of 138 are WIRED, 120 of 138 are DRIVEN (the 2026-10-05 reading over a
+.agents/TODO.md	283	120 of 138	DATED	0 laws.** 41 of 138 are WIRED, 120 of 138 are DRIVEN (the 2026-10-05 reading over a
+.agents/TODO.md	294	470	LIVE	- [x] **`substrate-check.sh` (470 lines) PORTED TO `checks/substrate.py`, BEHIND TWO `exec`
+.agents/TODO.md	298	138	DATED	`tinybendygrad/` tree (152 arguments, 138 `.bend` — the 2026-10-05 migration reading; **134** `.bend`
+.agents/TODO.md	303	4	LIVE	4 lines byte-identical). A guard that measures nothing must not report agreement.
+.agents/TODO.md	306	2048	LIVE	four now go through `checks/bounded.py`, one `bend` at a time. **The ceiling is 2048 MB, NOT
+.agents/TODO.md	307	468	LIVE	THE CENSUS'S 1024: re-measured through the port, `sz.bend` peaks at 1,468 MB and
+.agents/TODO.md	308	435	LIVE	`renderer/nir.bend` at 1,435 MB (census: 1,108 and 1,152) — A CEILING BELOW THE POPULATION'S
+.agents/TODO.md	319	5	LIVE	- [x] **5 PLANTS, ALL FIRED, ALL DISARMED** — the ceiling, the `WARM`/`COLD` literal, both
+.agents/TODO.md	324	3	LIVE	TWICE.** It fired **3 times in 40 minutes** on 3 files belonging to 3 different units. It
+.agents/TODO.md	333	2	LIVE	**THE GAP, NAMED: 39 wired − 37 that ran both sides = 2 lanes that have never run
+.agents/TODO.md	335	0	LIVE	at `rebase-oracle-ops.py:54`; and `dtype.bend`, whose port lane prints 0 rows with rc=1).
+.agents/TODO.md	336	30	LIVE	AND THE SHARPER NUMBER: 37 − 7 byte-identical = 30 lanes whose `disagree` can fail.
+.agents/TODO.md	340	9 of 110	LIVE	ARMED: `device.bend` via `rebase-gate.py` (9 of 110 named), `llvmir.bend`,
+.agents/TODO.md	341	3 of 240	LIVE	`cstyle.bend` (64 gated rows named), `fold.bend` (3 of 240 named),
+.agents/TODO.md	344	14766	LIVE	output demonstrably changed, gate printed `14766 rows compared, 1 declared,
+.agents/TODO.md	352	0	LIVE	every invocation raised `NameError`, rc=1, 0 rows) **and** the next line's
+.agents/TODO.md	356	319	LIVE	imports the gate's own `rows`): **port 315–319 rows · oracle 108 · 108 shared · 0 disagree ·
+.agents/TODO.md	365	39	DATED	Blast radius over all 39 lanes: 4 oracles lose comment rows, **0** disagreements change,
+.agents/TODO.md	365	4	DATED	Blast radius over all 39 lanes: 4 oracles lose comment rows, **0** disagreements change,
+.agents/TODO.md	366	4	DATED	**0** lanes go red, 3 shared sets untouched. The 4 rows no longer counted are named
+.agents/TODO.md	370	470 of 470	LIVE	MEASURED on the llvmir lane: `⚠ 470 of 470 shared row name(s) … green is BY CONSTRUCTION`.
+.agents/TODO.md	375	136	LIVE	136 `.bend` files: **14 exit 1, 122 exit 0**, and **6 of the 14 also exit 1 when run**
+.agents/TODO.md	388	0 of 617	LIVE	which is unreadable — measured, **0 of 617 shared rows differ**, and `1503 = 959
+.agents/TODO.md	397	199	LIVE	`.agents/slop/txtgen/docs-agree-with-driver.py`. It was **199 lines of recorded rows raising `SyntaxError`** at
+.agents/TODO.md	399	3	LIVE	`237 shared rows, 3 lanes identical`, rc=0. Rule **V-9**.
+.agents/TODO.md	419	14	LIVE	`14 defs rely on unsafe or foreign code: - Dt.bf16 … - fp8_to_float`. The 14 are the
+.agents/TODO.md	425	1 of 109	LIVE	- [ ] `codegen/decomp/dtype.bend`'s `BASE_ORACLES` lane is RED on exactly 1 of 109 shared
+.agents/TODO.md	438	73	LIVE	accumulated row list out TWICE — `:268` with 73 rows and `:340` with 126 — and two
+.agents/TODO.md	441	940	DATED	940 rows over 940 keys with 0 duplicates, so **no row name changed, no citing file
+.agents/TODO.md	467	58	DATED	and were equally unwired. Contract row appended to `reader-contracts.tsv` (58 rows; census
+.agents/TODO.md	476	127	LIVE	its 127 rows the entire time `mm-lift-gate.py` was dead; (b) `mm-lift-gate.py` gates the
+.agents/TODO.md	479	334	LIVE	334 lines carrying 333 names. Root cause `mm-lift-gate.py:31` (`(-3, 4)` twice, already
+.agents/TODO.md	479	333	LIVE	334 lines carrying 333 names. Root cause `mm-lift-gate.py:31` (`(-3, 4)` twice, already
+.agents/TODO.md	486	0	DATED	install is only in `.venv`'s 3.12) and prints **0 lines**, rc 1 — measured before and after.
+.agents/TODO.md	488	132	LIVE	byte-identical stdout** (132 lines = 127 `lf_` + 4 `satcp_` + 1 `DUPLICATE`), and a run that
+.agents/TODO.md	509	2	LIVE	which `rebase-gate.py`'s GUARD 2 names as a FAILED ORACLE. `dtype.bend`'s PORT cannot be
+.agents/TODO.md	510	0	LIVE	captured at all (the 14-unfilled-laws wall, rc=1, 0 rows) and `engine/jit.bend`'s oracle
+.agents/TODO.md	512	0	DATED	**0 bytes**, so the earlier "78 lane texts" denominator included two empty files.
+.agents/TODO.md	555	4 of 5	LIVE	`.agents/slop/nvdup/nv-oracle-PREFIX.py` **4 of 5 assertions go red, rc 1**. The `dup` and
+.agents/TODO.md	561	5	LIVE	`:3608-3612`/`:3648-3652` **two byte-identical 5-row blocks** (5 names),
+.agents/TODO.md	688	14	LIVE	"14 defs rely on unsafe or foreign code" and exit 1 for ANY importer
+.agents/TODO.md	690	3	LIVE	comes from `./LAWS/spec.bend`, which is the ONE datatype. 3 defs
+.agents/TODO.md	693	238	DATED	**OUTSTANDING, counted properly this time.** 238 rows, 5 of the
+.agents/TODO.md	697	212	LIVE	The backlog is `rg "TODO\(p3\)"` — 212 rows, each naming its Python line.
+.agents/TODO.md	725	14	LIVE	forward references. **14 rows, three lanes byte-identical**:
+.agents/TODO.md	733	19	LIVE	**The other 19 entries in [1, 500] were not a backlog, they were a lie:**
+.agents/TODO.md	737	14	LIVE	rediscover it. `rg "TODO(p3)"` for this range is now 14 lines, each with its
+.agents/TODO.md	743	186	LIVE	- [x] `uop/upat.bend` — the COMPILER, `tinygrad/uop/upat.py`'s 186 lines.
+.agents/TODO.md	815	15 of 16	LIVE	STRING each (`n= op= nsrc= srcops= shape= dtype=`), and **15 of 16 byte-identical
+.agents/TODO.md	823	5	LIVE	`Bool` picking the arm (mutation M2 exchanges the sums and moves 5 rows). UNSHARD
+.agents/TODO.md	833	14	DATED	**14 mutations measured** (`oracles/fold-mut.py`), 12 move rows; the
+.agents/TODO.md	838	8	LIVE	bound) and 8 lines came out.
+.agents/TODO.md	857	19	LIVE	same twelve graphs node for node; `diff` of the two lanes is the test). **19 mutations
+.agents/TODO.md	858	4	LIVE	measured** (`.agents/slop/fold-rng-mutate.py`), **15 move rows**, and all 4 zeros are
+.agents/TODO.md	874	17	DATED	green and identical; 27 gate rows, 22 green; 17 mutations measured; 23 of 47
+.agents/TODO.md	874	23 of 47	DATED	green and identical; 27 gate rows, 22 green; 17 mutations measured; 23 of 47
+.agents/TODO.md	875	3 of 5	DATED	`symbolic_simple` rules and 3 of 5 reciprocal rules. **2026-10-04 PASS: 10 of
+.agents/TODO.md	899	5	LIVE	closed tree in TWO lanes, `simplify_pow` (2 of 5 arms), `fold_bitcast`,
+.agents/TODO.md	899	2 of 5	LIVE	closed tree in TWO lanes, `simplify_pow` (2 of 5 arms), `fold_bitcast`,
+.agents/TODO.md	901	25	LIVE	`ret is not uop` + the name-rebind identity check), and 25 RULES: 23 in
+.agents/TODO.md	926	1 of 17	LIVE	- [x] `uop/weak.bend` — `tinygrad/uop/weak.py`: **1 of 17 `TODO(p3)` blocks CLOSED,
+.agents/TODO.md	947	55	LIVE	three rules plus `fold_divmod_general`. Both lanes green, 55 rows, 18
+.agents/TODO.md	948	3	LIVE	mutations measured. `fold_divmod_general` is 3 arms of 89 lines and the rest
+.agents/TODO.md	948	89	LIVE	mutations measured. `fold_divmod_general` is 3 arms of 89 lines and the rest
+.agents/TODO.md	960	10	DATED	- [x] `tinybendygrad/__init__.bend` — `tinygrad/__init__.py` is 10 lines and a
+.agents/TODO.md	974	17	DATED	- [x] `tinybendygrad/viz/__init__.bend` — already existed (17 lines).
+.agents/TODO.md	980	19	LIVE	19 lines. `OptOps` enum (4 members: TC, SPLIT, PADTO, SWAP), `Opt` dataclass
+.agents/TODO.md	980	4	LIVE	19 lines. `OptOps` enum (4 members: TC, SPLIT, PADTO, SWAP), `Opt` dataclass
+.agents/TODO.md	984	519	LIVE	- [~] `tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
+.agents/TODO.md	1069	6 of 8	LIVE	rule reads `ctx[1][99]` into a two-entry ctx). 6 of 8 comparable rows
+.agents/TODO.md	1071	9	LIVE	divergences. **9 mutations, 9 move rows, 0 blind spots**, and the harness
+.agents/TODO.md	1080	132	LIVE	this def.** 132 `.bend` files, 11 non-comment lines naming
+.agents/TODO.md	1084	86	LIVE	(86 comments, 22 markers, of 884 in the tree), not of callers.
+.agents/TODO.md	1084	22	LIVE	(86 comments, 22 markers, of 884 in the tree), not of callers.
+.agents/TODO.md	1091	9 of 15	LIVE	C1 "every rule in it is a `graph_rewrite`" **FAILS for 9 of 15** (four
+.agents/TODO.md	1095	8 of 15	LIVE	15** on the direct reading and for **8 of 15** transitively through the
+.agents/TODO.md	1109	36	LIVE	to FIVE. Gate: `sh checks/lintable-gate.sh` — **36 rows, 3 lanes
+.agents/TODO.md	1109	3	LIVE	to FIVE. Gate: `sh checks/lintable-gate.sh` — **36 rows, 3 lanes
+.agents/TODO.md	1126	15	LIVE	is the next thing to measure, not the table. Denominator recounted at 15 defs;
+.agents/TODO.md	1143	14	LIVE	own. Of the 22 `TODO(p3)` walls that name the dispatcher across 14 files,
+.agents/TODO.md	1167	935	DATED	the tree SHRANK by 7,935 lines because a dead snapshot was deleted rather
+.agents/TODO.md	1172	5	LIVE	| `ops.bend` | 192 | 170 | 5 defs (backward_slice family, 14 rows) + 14 defs (base/buf_uop/bufferize/split_uop/sharding/sint_to_uop, 82 rows over three lanes) |
+.agents/TODO.md	1172	14	LIVE	| `ops.bend` | 192 | 170 | 5 defs (backward_slice family, 14 rows) + 14 defs (base/buf_uop/bufferize/split_uop/sharding/sint_to_uop, 82 rows over three lanes) |
+.agents/TODO.md	1172	82	LIVE	| `ops.bend` | 192 | 170 | 5 defs (backward_slice family, 14 rows) + 14 defs (base/buf_uop/bufferize/split_uop/sharding/sint_to_uop, 82 rows over three lanes) |
+.agents/TODO.md	1174	10	LIVE	| `symbolic.bend` | 32 | 17 | 10 rules, 30 rows |
+.agents/TODO.md	1174	30	LIVE	| `symbolic.bend` | 32 | 17 | 10 rules, 30 rows |
+.agents/TODO.md	1175	4	LIVE	| `weak.bend` | 17 | 16 | `_lower_weak_ops`, 4 rows |
+.agents/TODO.md	1179	48	LIVE	roughly 20 of the 48 markers they closed were *already done* with a
+.agents/TODO.md	1253	5	LIVE	The ops.py-lines-1-500 agent took 23 queue lines and landed **5 defs**. The
+.agents/TODO.md	1268	185	LIVE	**SO THE HONEST NUMBER IS: of 185 markers in `ops.bend`, roughly 60 are real
+.agents/TODO.md	1334	591	LIVE	96 handwritten Python files, 25,591 lines by `sz.py`, in dependency order.
+.agents/TODO.md	1338	3/12	LIVE	| P3 | `uop/` | 12 | [###.........] 3/12 |
+.agents/TODO.md	1339	1/10	LIVE	| P4 | `schedule/` `engine/` | 10 | [#.........] 1/10 |
+.agents/TODO.md	1340	6/30	LIVE	| P5 | `codegen/` `renderer/` | 30 | [###......] 6/30 |
+.agents/TODO.md	1341	3/36	LIVE	| P6 | `runtime/` | 36 | [...........] 3/36 |
+.agents/TODO.md	1342	6/15	LIVE	| P7 | `tensor` `mixin/` `nn/` | 15 | [##.......] 6/15 |
+.agents/TODO.md	1343	1/15	LIVE	| P8 | `llm/` `viz/` `function.py` `device.py` | 15 | [##.......] 1/15 |
+.agents/TODO.md	1347	12	LIVE	`uop/` is 12 files, not 10, and **3 are at zero markers** (`__init__.bend`,
+.agents/TODO.md	1351	264	LIVE	264 markers remain, and they are **not** 265 tasks. `.agents/slop/marker-audit.py`
+.agents/TODO.md	1390	1588	DATED	first, so "renumbering" `ops.py:1588 def __init__` to 220 would point it at a
+.agents/TODO.md	1395	20 of 48	LIVE	**THE MEASURE THAT IS NOT A COUNT.** Across the four-agent wave, ~20 of 48
+.agents/TODO.md	1403	296	LIVE	- [~] `engine/realize.bend` — `tinygrad/engine/realize.py`, 296 lines. Both lanes
+.agents/TODO.md	1405	2036	LIVE	rows plus a `gate_count` COUNT row, 2036 lines, no `@unsafe`.
+.agents/TODO.md	1409	50	LIVE	them is a CONSTANT. 20 of the 50 rows therefore read `0`/`9` where CPython
+.agents/TODO.md	1418	50	LIVE	**30 of the 50 rows are CPython-VERIFIED**, and the expectations are the
+.agents/TODO.md	1436	1515	LIVE	`create_schedule` in full. 1515 lines, 286 defs, 9 `Data` records, no
+.agents/TODO.md	1436	286	LIVE	`create_schedule` in full. 1515 lines, 286 defs, 9 `Data` records, no
+.agents/TODO.md	1438	81	LIVE	print the SAME 81 rows and `--check-only` is `ALL PROOFS CHECK`.
+.agents/TODO.md	1439	81	LIVE	**78 of the 81 rows are checked against Python** — `sched-truth.py`'s
+.agents/TODO.md	1512	434	LIVE	Measured shape: **36 matched files, 19,931 py code lines vs 45,434 bend code lines
+.agents/TODO.md	1525	499	LIVE	| 1 | one hand-written reader per record field (rule 27: no auto-projections) | **3,499 defs** | a generator reads the `type X is Data:` decls and emits the readers into a committed `.bend` — the same
+.agents/TODO.md	1526	15	LIVE	| 2 | duplicated dispatch scan (Python has one `graph_rewrite` loop) | 81 table-scan defs, ~15 lines each ≈ **1,200** | hoist one generic dispatcher keyed on stage id; the pattern is ALREADY proven by
+.agents/TODO.md	1532	933	LIVE	- **The 216,933 lines of `runtime/autogen/*` + `support/*` + `renderer/{amd,isa}`**
+.agents/TODO.md	1542	8	LIVE	against 8 files; it is a research project, not a trim.
+.agents/TODO.md	1544	000	LIVE	**Projected outcome if all four run:** ~13,000-17,000 lines recovered, landing the
+.agents/TODO.md	1645	72	LIVE	two-sided. 72 rows, both lanes identical, `--check-only` ALL PROOFS CHECK,
+.agents/TODO.md	1646	17	LIVE	**17 mutations and every one moves at least one row**. 14 of 17 node-tree
+.agents/TODO.md	1646	14 of 17	LIVE	**17 mutations and every one moves at least one row**. 14 of 17 node-tree
+.agents/TODO.md	1657	26	LIVE	- [x] movement.bend: hop_self inversion + 4 more bugs fixed; gate defect (G.ix bottom) root-caused; 26/26 rows == CPython.
+.agents/TODO.md	1661	20	LIVE	- [ ] engine/realize: ~20 rows rest on single-arm-case-_ Bool constants (bl_u); fix documented at top of file, mechanical; two converted as the pattern.
+.agents/TODO.md	1663	3	LIVE	- [ ] decomp: 3 rules do not fire (9 rows, undiagnosed); magicgu/fast_idiv at the i64 wall.
+.agents/TODO.md	1663	9	LIVE	- [ ] decomp: 3 rules do not fire (9 rows, undiagnosed); magicgu/fast_idiv at the i64 wall.
+.agents/TODO.md	1665	17	LIVE	byte-identical on both lanes, `--check-only` = `ALL PROOFS CHECK`, 17 mutations
+.agents/TODO.md	1683	14	LIVE	weak -> the CAST arm). Removed from 14 defs; `ew_fx` folds at the point of use.
+.agents/TODO.md	1693	14	LIVE	- [x] 14 mutations measured. M3 and M5 measured ZERO and both were REAL GAPS, not
+.agents/TODO.md	1706	13	LIVE	harness `.agents/slop/tools/tx-mut.py`. 13 mutations, all still `checks`, all move
+.agents/TODO.md	1780	17	LIVE	- [x] **17 MUTATIONS MEASURED, 13 MOVE.** The four that do not are reported, not
+.agents/TODO.md	1805	267	LIVE	lines, 267 defs, 147 rows, both lanes byte-identical, `ALL PROOFS CHECK`
+.agents/TODO.md	1805	147	LIVE	lines, 267 defs, 147 rows, both lanes byte-identical, `ALL PROOFS CHECK`
+.agents/TODO.md	1813	1312	LIVE	- [x] **THE CALL LAYER** — `runtime/webgpu_call.bend` (1312 lines, 58 rows, 0 False,
+.agents/TODO.md	1813	58	LIVE	- [x] **THE CALL LAYER** — `runtime/webgpu_call.bend` (1312 lines, 58 rows, 0 False,
+.agents/TODO.md	1814	502	LIVE	`ALL PROOFS CHECK`) + `runtime/webgpu_call.js` (502 lines) + the emitted
+.agents/TODO.md	1819	147	LIVE	make `Tr.emit` answer `IO(Tr)` and DESTROY the pure gate the 147 rows depend
+.agents/TODO.md	1823	4	LIVE	**`ALL 147 ORIGINAL ROWS BYTE-IDENTICAL`, both lanes**, and 4 rows ADDED: a
+.agents/TODO.md	1839	1062	LIVE	- [x] `renderer/wgsl.bend` — `tinygrad/renderer/wgsl.py`. 1062 lines, 168 string-diff
+.agents/TODO.md	1845	141	LIVE	- [x] `renderer/tc_ptx.bend` STAGES 1 AND 2 — `tinygrad/renderer/tc.py` (141 lines) AND
+.agents/TODO.md	1846	231	LIVE	`tinygrad/renderer/ptx.py` (231 lines) in ONE file, because they are one feature
+.agents/TODO.md	1847	2035	LIVE	(`ptx.py:4` imports `tc`). 2035 lines, **620 string-diff rows** (286 + 334),
+.agents/TODO.md	1848	51	LIVE	`ALL PROOFS CHECK`, interpreted and native lanes byte-identical, 51 mutations
+.agents/TODO.md	1853	0	LIVE	the same function. The mutation table says 0 rows and the control (reading
+.agents/TODO.md	1861	0	LIVE	cons-vs-append mutation moves 0 rows where `tensor_cores`' moves 3. Where the
+.agents/TODO.md	1874	2105	LIVE	- [x] `codegen/{kernel,rewriter}.bend` — 2105 lines, 70 rows diffed against a Python
+.agents/TODO.md	1874	70	LIVE	- [x] `codegen/{kernel,rewriter}.bend` — 2105 lines, 70 rows diffed against a Python
+.agents/TODO.md	1883	243	DATED	lowerer is whole (240/243 lines across the three Python files). 45 rows added and
+.agents/TODO.md	1883	45	DATED	lowerer is whole (240/243 lines across the three Python files). 45 rows added and
+.agents/TODO.md	1884	128	LIVE	128 rows diffed against `.agents/slop/late-oracle.py` with a zero diff in BOTH
+.agents/TODO.md	1902	611	LIVE	- [x] `examples/beautiful_mnist.ts` — 611 lines, mirrors the 48-line .py section by
+.agents/TODO.md	1947	14	LIVE	20/20 and 14/14 mutations localised. **BEAM=1 IS PARTIAL, and the split matters:**
+.agents/TODO.md	1982	27	LIVE	**27 mutations measured, 25 of which move rows and 2 of which are proper controls
+.agents/TODO.md	2024	564	LIVE	- [x] `device.bend` — `tinygrad/device.py`, 564 lines → 1546 (207 defs, 9 `# TODO(p3)`
+.agents/TODO.md	2024	207	LIVE	- [x] `device.bend` — `tinygrad/device.py`, 564 lines → 1546 (207 defs, 9 `# TODO(p3)`
+.agents/TODO.md	2025	107	LIVE	walls, 107 gate rows). **Both lanes byte-identical and all 107 rows match the
+.agents/TODO.md	2056	7597	DATED	because lane 1's shape depends on it: `-o core.c` is C source (7597 lines for
+.agents/TODO.md	2172	11	LIVE	baseline (11 rows, zero False). `helpers.bend` and `nn/optim.bend` restored via jj.
+.agents/TODO.md	2177	455	LIVE	lines, 455 defs/types, **329 gate rows**, `ALL PROOFS CHECK`, the interpreted
+.agents/TODO.md	2178	329	LIVE	and native lanes **byte-identical**, and **167 of 329 rows answered by a CPython
+.agents/TODO.md	2178	167 of 329	LIVE	and native lanes **byte-identical**, and **167 of 329 rows answered by a CPython
+.agents/TODO.md	2215	48	LIVE	* **48 mutations measured, TWO move nothing, and ONE of those is a finding about
+.agents/TODO.md	2216	0	LIVE	the PYTHON.** `M26b` (M1's `tag="mtl_sel"` conjunct) is 0 rows because
+.agents/TODO.md	2225	19	LIVE	has is `enum_MTLGPUFamily` (19 members), and `check_family`'s REVERSED
+.agents/TODO.md	2227	8	LIVE	(`mt_fam_*`, `mt_arch_*`), with a last-wins mutation (M30, 8 rows) because
+.agents/TODO.md	2252	48	DATED	- [x] `.agents/slop/mt_mutate.py` — 48 mutations, each reported with the rows it moved
+.agents/TODO.md	2254	0	DATED	which is what makes "0 rows moved" honest.
+.agents/TODO.md	2261	3200	LIVE	`ops_hip.py` (71) in ONE file, because they are one 39-op device. 3200 lines,
+.agents/TODO.md	2262	508	LIVE	508 defs/types, **447 rows, THREE LANES BYTE-IDENTICAL** (interpreted, native,
+.agents/TODO.md	2262	447	LIVE	508 defs/types, **447 rows, THREE LANES BYTE-IDENTICAL** (interpreted, native,
+.agents/TODO.md	2269	39	LIVE	* **`vend.cl` had 40 cells for 39 ops**, and `cuModuleLoadData` /
+.agents/TODO.md	2297	445	DATED	the 445 rows are reproducible by running the `.bend` but the CPython *comparison*
+.agents/TODO.md	2304	50	LIVE	(50 mutations, each reported with the rows it moved BY NAME; refuses to run a
+.agents/TODO.md	2305	1	DATED	mutation whose anchor does not match exactly once). **47 move >= 1 row, 1
+.agents/TODO.md	2337	308	LIVE	in ONE file. 308 rows, THREE LANES BYTE-IDENTICAL, `ALL PROOFS CHECK`, **GREEN**.
+.agents/TODO.md	2343	109	LIVE	- [x] 109 mutations, 3 move nothing, **all three ARGUED not papered over**: two are
+.agents/TODO.md	2360	606	DATED	## Session 2026-10-02 — `runtime/ops_nv.bend` (606 rows, TWO AGENTS, ONE FILE)
+.agents/TODO.md	2362	3836	LIVE	- [x] `tinybendygrad/runtime/ops_nv.bend` — `ops_nv.py`, 3836 lines, 606 rows,
+.agents/TODO.md	2362	606	LIVE	- [x] `tinybendygrad/runtime/ops_nv.bend` — `ops_nv.py`, 3836 lines, 606 rows,
+.agents/TODO.md	2373	33 of 219	LIVE	- [x] **THE STANDOUT FINDING, verified by me against the authority: 33 of 219
+.agents/TODO.md	2387	18 of 222	LIVE	COVERAGE is the finding: name-matching reaches only **0-18 of 222** consts,
+.agents/TODO.md	2397	25	DATED	constants across 25 files, not 533 across 7.** Counting every `def X() -> U32: <digits>`
+.agents/TODO.md	2413	3	LIVE	literal `52672` made it a test (now moves 3 rows). **New rule appended: a gate
+.agents/TODO.md	2417	1111	LIVE	`dev.vid_hw` were absent **AND THERE WAS NO `main` AT ALL** — 1111 lines of defs
+.agents/TODO.md	2425	841	LIVE	- [x] `tinybendygrad/runtime/ops_nv.bend` — `tinygrad/runtime/ops_nv.py` (841 lines) +
+.agents/TODO.md	2426	3897	LIVE	`hcq2.py:63`/`:74-76`. 3897 lines, 630 defs, **600 gate rows**, `--check-only` is
+.agents/TODO.md	2426	630	LIVE	`hcq2.py:63`/`:74-76`. 3897 lines, 630 defs, **600 gate rows**, `--check-only` is
+.agents/TODO.md	2427	543	LIVE	`ALL PROOFS CHECK`. **543 rows cross-checked against CPython with ZERO
+.agents/TODO.md	2428	56	LIVE	disagreements**, 56 Bend-only, 4 oracle-only. `.agents/slop/nv-oracle.py`,
+.agents/TODO.md	2430	73	LIVE	- [x] **THE RECONCILIATION PASS: 73 rows that looked like coverage and were not.** The
+.agents/TODO.md	2490	22	LIVE	**nowhere** — 22 hits for `ops_nv.py`, 10 for `hcq2.py`, **0** for `nv/ip.py`.
+.agents/TODO.md	2519	74	LIVE	(74 names -> 63 unique codes). The 50 PORT_ONLY are the 41 OP_* trace tags,
+.agents/TODO.md	2534	174	LIVE	150,174 lines over 35 files, NOT 216,933.** The 216,933 figure was stale twice over — the
+.agents/TODO.md	2534	35	LIVE	150,174 lines over 35 files, NOT 216,933.** The 216,933 figure was stale twice over — the
+.agents/TODO.md	2535	54	LIVE	rebase moved the tree to 208,917, and 54 files / ~59k lines under `runtime/autogen/` come
+.agents/TODO.md	2537	736	LIVE	independently: 32 static `load()` names = 72,736 lines, plus the three dynamic arms are
+.agents/TODO.md	2543	289	LIVE	289 lines port and gate today; `tname`'s dispatch, `all_fields` and the ObjC half do not.
+.agents/TODO.md	2547	979	LIVE	until one shrinks)"). It would buy 30,979 rows of *emission* and nothing else — the tables
+.agents/TODO.md	2548	174	LIVE	are the value, and 79,087 of 150,174 lines are tables/hex the generator already computes.
+.agents/TODO.md	2548	79 of 150	LIVE	are the value, and 79,087 of 150,174 lines are tables/hex the generator already computes.
+.agents/TODO.md	2549	7 of 9	LIVE	The output is also what bend **cannot hold**: 7 of 9 required constructs are ABSENT, and the
+.agents/TODO.md	2552	1219	LIVE	Landed: 1219 lines, 525 code, **0 dead defs**, 149 rows both lanes byte-identical, 3 oracles
+.agents/TODO.md	2552	149	LIVE	Landed: 1219 lines, 525 code, **0 dead defs**, 149 rows both lanes byte-identical, 3 oracles
+.agents/TODO.md	2552	3	LIVE	Landed: 1219 lines, 525 code, **0 dead defs**, 149 rows both lanes byte-identical, 3 oracles
+.agents/TODO.md	2553	44	LIVE	all from calling the real generator, 44 mutations with 42 moving. The 2 non-moving are
+.agents/TODO.md	2561	8	DATED	lands `indexing` and `prepare` is still 8 lines, that agent is dead: re-dispatch
+.agents/TODO.md	2572	517	LIVE	in both lanes and against a CPython oracle.** 45 + 83 + 389 = 517 rows, zero
+.agents/TODO.md	2575	45	LIVE	- [x] `tinybendygrad/nn/torch.bend` (45 rows) — `nn/torch.py` is FOUR LINES and the
+.agents/TODO.md	2584	83	LIVE	- [x] `tinybendygrad/runtime/ops_npy.bend` (83 rows) — four lines overriding one
+.agents/TODO.md	2589	389	LIVE	- [x] `tinybendygrad/runtime/ops_rdma.bend` (389 rows) — the buffer-registration
+.agents/TODO.md	2642	12	LIVE	it. The CPython oracle allocated 12 bytes on a real `NpyDevice('NPY')`, wrote
+.agents/TODO.md	2665	2827	LIVE	2827 lines, 385 defs/types, **496 rows**, both lanes byte-identical,
+.agents/TODO.md	2665	385	LIVE	2827 lines, 385 defs/types, **496 rows**, both lanes byte-identical,
+.agents/TODO.md	2665	496	LIVE	2827 lines, 385 defs/types, **496 rows**, both lanes byte-identical,
+.agents/TODO.md	2669	496	LIVE	- [x] **420 of the 496 rows carry a `py=` expectation GENERATED by CPython**, and
+.agents/TODO.md	2683	68	LIVE	- [x] `.agents/slop/dsp_mutate.py` — **68 mutations** (67 + a comment-only control),
+.agents/TODO.md	2693	68	LIVE	lines reports all 68 mutations as "0 rows moved"**.
+.agents/TODO.md	2693	0	LIVE	lines reports all 68 mutations as "0 rows moved"**.
+.agents/TODO.md	2717	3	LIVE	`nolru` moves exactly 3 rows (M59).
+.agents/TODO.md	2721	328	LIVE	`tinygrad/schedule/indexing.py` (328 lines) is ported and **green in both lanes with
+.agents/TODO.md	2727	0	LIVE	tinygrad/` is 0 hits. The brief's framing was wrong, so `schedule/prepare.bend`
+.agents/TODO.md	2735	8	LIVE	are now two LOCAL readers over `ARange{ids, at}` (8 lines) and `UOp.base` is a
+.agents/TODO.md	2751	8	LIVE	- [ ] **`schedule/prepare.bend` is STILL A STUB** (8 lines). Port it from
+.agents/TODO.md	2755	631	LIVE	`/…/iprep/pp-rows.py` -> 631 rows in `pp-truth.txt`, clean.
+.agents/TODO.md	2758	646	LIVE	(646 lines). **All three stages landed and checked.** 2243 lines, 360 gate rows,
+.agents/TODO.md	2758	2243	LIVE	(646 lines). **All three stages landed and checked.** 2243 lines, 360 gate rows,
+.agents/TODO.md	2760	240	LIVE	disagreements** against CPython on the 240 rows both sides compute.
+.agents/TODO.md	2792	755	LIVE	(755 lines). **All four stages landed and checked.** 2792 lines, 447 gate rows,
+.agents/TODO.md	2792	2792	LIVE	(755 lines). **All four stages landed and checked.** 2792 lines, 447 gate rows,
+.agents/TODO.md	2794	444	LIVE	against CPython over the 444 row names both sides compute. `ip.py` imports with NO
+.agents/TODO.md	2802	3	LIVE	(:177-195), the per-arch SMU message table 3 rows x 20 columns both directions
+.agents/TODO.md	2822	447	LIVE	re-transcribed `lo, _ = data64_le(...)`. All 447 rows were green on a packet that was
+.agents/TODO.md	2829	21	LIVE	`ip_mutate.sh` (45 hand-written LOGIC mutations, one per rule; 42 move 1-21 rows) and
+.agents/TODO.md	2831	588	LIVE	and every register row twice, on its LINE and on its NAME; 354 move, 588 row
+.agents/TODO.md	2839	115 of 115	LIVE	the reason `Row` is keyed on `(ln, reg)`: the LINE perturbation moves on 115 of 115.
+.agents/TODO.md	2871	11	LIVE	- [x] Mutation table, 11 mutations, whole-`name=value`-line diff
+.agents/TODO.md	2873	4	LIVE	`nic_clik_arg`), M8 = the original defect and does not compile. **4 zeros
+.agents/TODO.md	2877	0	LIVE	fire.** M9/M10/M11 all move 0 rows; M11 (forcing `ct_4`'s claim to `True{}`) is
+.agents/TODO.md	2883	0	LIVE	- [ ] NOT FIXED, REPORTED: M1/M4 (arg at the AFTER and MSTACK sites) move 0 rows, and
+.agents/TODO.md	2889	661	LIVE	(661 lines). **All four stages landed and checked.** 185 KB, 543 defs, **1394 gate
+.agents/TODO.md	2889	185	LIVE	(661 lines). **All four stages landed and checked.** 185 KB, 543 defs, **1394 gate
+.agents/TODO.md	2889	543	LIVE	(661 lines). **All four stages landed and checked.** 185 KB, 543 defs, **1394 gate
+.agents/TODO.md	2890	57	LIVE	rows**, `ALL PROOFS CHECK`, interpreted and native lanes BYTE-IDENTICAL (57 KB),
+.agents/TODO.md	2891	1394	LIVE	and **0 disagreements** against CPython on 1394 of 1394 row names. `ip.py` imports
+.agents/TODO.md	2891	1394 of 1394	LIVE	and **0 disagreements** against CPython on 1394 of 1394 row names. `ip.py` imports
+.agents/TODO.md	2917	37	LIVE	37 mutations, **33 move rows, 4 are provably EQUIVALENT mutants, 0 blind, 0 failed
+.agents/TODO.md	2959	473	LIVE	(473 lines). 2596 lines, 339 defs, **939 gate rows**, `ALL PROOFS CHECK`,
+.agents/TODO.md	2959	2596	LIVE	(473 lines). 2596 lines, 339 defs, **939 gate rows**, `ALL PROOFS CHECK`,
+.agents/TODO.md	2959	339	LIVE	(473 lines). 2596 lines, 339 defs, **939 gate rows**, `ALL PROOFS CHECK`,
+.agents/TODO.md	2960	939	LIVE	**0 disagreements** against CPython on 939 of 939 row names.
+.agents/TODO.md	2960	939 of 939	LIVE	**0 disagreements** against CPython on 939 of 939 row names.
+.agents/TODO.md	2968	33 of 219	LIVE	project gets burned on — `ops_nv`'s audit found 33 of 219 constants wrong in a
+.agents/TODO.md	2990	73	LIVE	it meant and every COUNT stayed right. `M31` is the mutation: 73 rows.
+.agents/TODO.md	3000	45	LIVE	**45 mutations, 44 move rows, 1 THEOREM, 0 blind spots.** The zero is `M6`,
+.agents/TODO.md	3008	0	LIVE	LAST-wins became unobservable and `M36` fell to 0 rows. A zero is a REQUEST FOR
+.agents/TODO.md	3011	111	LIVE	**NOT PORTED, and every one with its Python line**: 111 lines, generated by
+.agents/TODO.md	3093	41	DATED	- [x] **41 mutations, 37 sharp, whole-`name=value`-line diff**
+.agents/TODO.md	3098	126	LIVE	- [x] Gate grew 81 → 126 rows. `ALL PROOFS CHECK`. The scratch is
+.agents/TODO.md	3112	61	LIVE	`finfo.of` / `fmax.of` / `fp8_kind` re-keyed (61 arms), `to_dtype_of`
+.agents/TODO.md	3120	113	LIVE	- [x] `.agents/slop/**`: 1164 `dtypes.<legacy>` sites over 113 files, via
+.agents/TODO.md	3126	766	LIVE	- [x] `dtype.bend` gate: 14 766 rows, both lanes byte-identical, **1 declared
+.agents/TODO.md	3132	240	LIVE	The file is OURS (240 lines, no upstream counterpart — `git diff 6c3d401cf324`
+.agents/TODO.md	3138	760	LIVE	760 rows, `diff .agents/slop/x86/{i,py1}.txt` **empty**, interpreted and native
+.agents/TODO.md	3140	372 of 77	DATED	well, so 372 of 77 [SUPERSEDED - see CORPUS.md: a per-graph SUM compared against a set]0 Python lines are covered. Five findings worth carrying:
+.agents/TODO.md	3158	48	LIVE	A constants sweep finds NONE of them; `.agents/slop/x86/x86-rules.py` (48 rules)
+.agents/TODO.md	3163	205 of 707	LIVE	* **THE BLIND LIST IS A FIXTURE LIST.** 205 of 707 constants move nothing, and the
+.agents/TODO.md	3168	7900	LIVE	* The file also lost **7900 lines of blank** (9878 → 2649) with byte-identical
+.agents/TODO.md	3169	760	LIVE	output, and its 760 row literals are now written by `x86-gen.py`.
+.agents/TODO.md	3185	44	LIVE	re-measured at 44 entries with M40/M40b reproducing the regression on
+.agents/TODO.md	3208	995	DATED	## green on 570 of 995 rows
+.agents/TODO.md	3208	570 of 995	DATED	## green on 570 of 995 rows
+.agents/TODO.md	3211	288	LIVE	(288 lines). 2,634 lines, no foreign effect, the seam is a `Tr` trace (the
+.agents/TODO.md	3211	634	LIVE	(288 lines). 2,634 lines, no foreign effect, the seam is a `Tr` trace (the
+.agents/TODO.md	3214	70	LIVE	disagreements=0`; interpreted lane == compiled lane byte for byte; **70 mutations, 6 blind
+.agents/TODO.md	3217	547	DATED	row they shared** — 570 compared, **0 value disagreements** — and **547 rows existed on
+.agents/TODO.md	3218	122	DATED	exactly one side**: 425 oracle-only and 122 Bend-only. `disagreements=0` was arithmetically
+.agents/TODO.md	3219	684	LIVE	impossible with 684 Bend rows and 570 compared, so the "green" reading was wrong, and the
+.agents/TODO.md	3256	6	LIVE	counts by value cannot see; M69 (retag onto `PT_VALID`, which IS emitted) moves 6 rows and
+.agents/TODO.md	3266	5	LIVE	and overflow while the unpadded one compares 162 and does not. 0 → 5 rows.
+.agents/TODO.md	3274	2	DATED	## Session 2026-10-02 — REBASE BATCH B2 (`dtype.py` + `renderer/cstyle.py`, 2 files, atomic)
+.agents/TODO.md	3299	62	LIVE	gave the base a real 14-entry table, 62 rows moved. `cu32` in `uop/render.bend` passes
+.agents/TODO.md	3318	40	LIVE	(28 → 40 keys; a strict superset), so no `[...]` lookup can start missing.
+.agents/TODO.md	3345	32	LIVE	colour OFF for all six. **18 of 32 probes disagreed**; post-fix **0 disagree**
+.agents/TODO.md	3345	18 of 32	LIVE	colour OFF for all six. **18 of 32 probes disagreed**; post-fix **0 disagree**
+.agents/TODO.md	3365	13	LIVE	- [x] **BAKED GATE LITERALS named**: 13 rows that will all move on the day P6 lands,
+.agents/TODO.md	3391	80	LIVE	**77 of 80 rows verified against live CPython**
+.agents/TODO.md	3391	77 of 80	LIVE	**77 of 80 rows verified against live CPython**
+.agents/TODO.md	3408	5	LIVE	moves 5 rows; restoring the dispatch arm alone moves **0** — because the
+.agents/TODO.md	3429	13	LIVE	* 13 mutations, 11 move rows; the two zeros are theorems (`peek_str`/`range_pieces`
+.agents/TODO.md	3435	54 of 54	LIVE	byte-identical, **54 of 54 verified against live CPython, 0 disagree**.
+.agents/TODO.md	3439	10	LIVE	PORTED** (guard + rebuild, pure, no wall). 10 mutations, 9 move rows; N-e's zero
+.agents/TODO.md	3443	4	LIVE	4 files the planner had never seen (`codegen/__init__.py`, `codegen/gpudims.py`,
+.agents/TODO.md	3448	12	DATED	- [x] 12 rules appended to `.agents/slop/notes/bend2-constraints.md` (from position
+.agents/TODO.md	3481	364	LIVE	value: `qc_oracle.py` runs, exits 0, emits 364 rows and shares ZERO names
+.agents/TODO.md	3482	34 of 92	LIVE	with `ops_qcom.bend`'s 750; `rf-rows.py` shares 34 of 92 with
+.agents/TODO.md	3492	26	LIVE	(`AttributeError: 'HCQInfo' has no attribute 'nargs'` after 26 rows, so it
+.agents/TODO.md	3494	0	LIVE	`oracle/dtype_tables.py` (TSV, 0 rows, exit 0), `mt_rows.py`
+.agents/TODO.md	3504	0	DATED	**18** amt-0 entries where the port counts **28**; `zero_un9` and
+.agents/TODO.md	3526	38	LIVE	minutes while `./bin/bend` on it printed 38 rows throughout. Every cache
+.agents/TODO.md	3543	409 of 520	LIVE	- [x] **`runtime/ops_amd.bend` oracle wired.** 409 of 520 shared, 0 disagree.
+.agents/TODO.md	3550	38	LIVE	the rebase gate genuinely cannot see.** `codegen/kernel.bend` (38 rows,
+.agents/TODO.md	3559	20	LIVE	`upstream/master` (`git diff 6c3d401cf324 HEAD -- tinygrad/` is 20 files),
+.agents/TODO.md	3571	77	DATED	(77 lines). Verified genuinely unported before starting: `objc.py` was cited
+.agents/TODO.md	3572	1129	DATED	**zero** times by any `.bend` file. 1129 lines, 123 gate rows, 111 of them
+.agents/TODO.md	3574	18	LIVE	(md5 `5b89106f…`), 18 mutations, control M17 at 0.
+.agents/TODO.md	3604	23	LIVE	version it replaced compared 23 rows and left 87 uncompared.
+.agents/TODO.md	3640	2	LIVE	UNCHANGED=5`, with the three BROKEN being `uop/spec.bend` (2 rows),
+.agents/TODO.md	3641	5	LIVE	`codegen/opt/search.bend` (5 rows) and `codegen/rewriter.bend` (3 rows, all
+.agents/TODO.md	3641	3	LIVE	`codegen/opt/search.bend` (5 rows) and `codegen/rewriter.bend` (3 rows, all
+.agents/TODO.md	3650	91	LIVE	- [x] **`tinybendygrad/renderer/amd/generate.bend` — PORTED AND GREEN AT 91 ROWS.**
+.agents/TODO.md	3652	91	LIVE	91 rows and `ga_gate.py` reports **91 rows, 91 agree, 0 differ** against
+.agents/TODO.md	3653	892	LIVE	`oracles/ga-oracle.txt` (**892 rows**, regenerated from CPython this
+.agents/TODO.md	3654	699	LIVE	session and verified byte-for-byte reproducible). 2,699 bend lines, 413 defs,
+.agents/TODO.md	3654	413	LIVE	session and verified byte-for-byte reproducible). 2,699 bend lines, 413 defs,
+.agents/TODO.md	3661	10	LIVE	`ga_splice.py` (the tail is 10 defs and NOT contiguous),
+.agents/TODO.md	3669	168	LIVE	`ins` gate rows diff a WHOLE generated `ins.py` (168 lines each) against
+.agents/TODO.md	3698	41	LIVE	- [x] **MUTATION TABLE: `.agents/slop/ga-mutate.txt`, 41 mutations, 40 MOVE ROWS.**
+.agents/TODO.md	3728	2 of 12	LIVE	stack is not a fixed budget and the green file failed 2 of 12 back-to-back
+.agents/TODO.md	3741	17	LIVE	inherited report claimed all 17 arms were gated; they were not, because the
+.agents/TODO.md	3755	164	LIVE	port already accepted both. Gate 147 → 164 rows. `lgn` (FLOORDIV) stays
+.agents/TODO.md	3762	174	LIVE	174 defs; imports `P.dc_*`, `P.dc_opname`, `T.tx_*`, `T.exponent_bias`,
+.agents/TODO.md	3769	412	LIVE	- [x] `.agents/slop/dd-oracle.py` — 412 rows by CALLING CPython's `dtype.py`, exit 0,
+.agents/TODO.md	3775	121	LIVE	- [x] THE GATE RUNS: `.agents/slop/dd-gate.txt`, **66 of 121 rows byte-identical** to
+.agents/TODO.md	3775	66 of 121	LIVE	- [x] THE GATE RUNS: `.agents/slop/dd-gate.txt`, **66 of 121 rows byte-identical** to
+.agents/TODO.md	3795	12	LIVE	- [ ] `l2i_shl` / `l2i_shr` pick the wrong arm (`lg9`, `lga`, `lgb`: 12 rows). `lga` and
+.agents/TODO.md	3799	5	LIVE	the stray `NOOP` is `O.Arena.src0` of a node with no srcs (`lge`: 5 rows).
+.agents/TODO.md	3817	147	LIVE	Measured on a copy: 147 rows → 72, missing 27 `sig` + 27 `k` + 21 `p`. Live file
+.agents/TODO.md	3818	147	DATED	has the guard un-inverted. Verified run: 147 rows, comment-only control SAME.
+.agents/TODO.md	3862	0	LIVE	caller) and `broadcast_rngs` (0 callers). A body mutation of each moves 0 rows
+.agents/TODO.md	3914	62	LIVE	`H.Flags`. 62 rows agreed with CPython and a mutation of `helpers.bend` moved
+.agents/TODO.md	3921	64	LIVE	`tinygrad.helpers`) by `sh .agents/slop/helpers-tc-gate.sh`. **62 -> 64 rows,
+.agents/TODO.md	3922	3	LIVE	3 lanes (CPython / interp / native) byte-identical.**
+.agents/TODO.md	3949	10	LIVE	- [x] 10 rules appended to `.agents/slop/notes/bend2-constraints.md` from position
+.agents/TODO.md	3953	61	LIVE	- [ ] **`ContextVar._cache` is still 4 of 61 keys and `Flags.snap1.go` still has a
+.agents/TODO.md	3953	4 of 61	LIVE	- [ ] **`ContextVar._cache` is still 4 of 61 keys and `Flags.snap1.go` still has a
+.agents/TODO.md	3973	39 of 400	LIVE	KeyError and `least_upper_dtype` KeyErrors on 39 of 400 pairs. Mutations M10/M11
+.agents/TODO.md	3974	3	LIVE	move void's stored priority to 16 and to 1 and exactly 3 rows move
+.agents/TODO.md	3987	188 of 361	LIVE	`.agents/slop/dtype-pri-m7.py`: 188 of 361 ordered pairs separate `ma` from
+.agents/TODO.md	3989	13	LIVE	- [x] **13 mutations, 13 detected, 0 blind spots, 0 typecheck failures.** Rows moved
+.agents/TODO.md	4045	527	DATED	excluded -- and classifies each of 1,527 names as VERBATIM / QUALIFIED /
+.agents/TODO.md	4049	1 of 1	DATED	**PASSES ON ABSENT, loudly: 1,090 of 1,527 upstream bindings (71.4%) are
+.agents/TODO.md	4053	15	LIVE	- [x] **`naming-gate-selftest.py` — 15/15 checks, and the gate was SEEN RED.**
+.agents/TODO.md	4076	033	LIVE	-> the upstream `class X(Enum)` names, bare. 1,033 rows byte-identical.
+.agents/TODO.md	4078	891	LIVE	rintk,trig_poly}` -> upstream names. 891 rows byte-identical.
+.agents/TODO.md	4079	319 of 1	LIVE	VERBATIM 270 -> 281 (18.4%); with QUALIFIED, 319 of 1,527.
+.agents/TODO.md	4092	14	LIVE	- [ ] **NEEDS AN OWNER RULING: the `dsl.bend` register-slice suffix (14 names).**
+.agents/TODO.md	4114	128	LIVE	- [x] **MODULE ALIASES ARE THE DISAMBIGUATOR, and 102 of 128 `.bend` files already**
+.agents/TODO.md	4114	102 of 128	LIVE	- [x] **MODULE ALIASES ARE THE DISAMBIGUATOR, and 102 of 128 `.bend` files already**
+.agents/TODO.md	4143	17	LIVE	first 17 lines is empty, and it unblocks 7 rows. Without it the oracle still dies on
+.agents/TODO.md	4143	7	LIVE	first 17 lines is empty, and it unblocks 7 rows. Without it the oracle still dies on
+.agents/TODO.md	4155	33	LIVE	physical lines became **33 names of which 15 are claims and 18 are line noise**
+.agents/TODO.md	4164	33	LIVE	duplicate name as an error per G-60. 33 rows / 18 shreds -> **15 rows / 0 shreds**.
+.agents/TODO.md	4164	15	LIVE	duplicate name as an error per G-60. 33 rows / 18 shreds -> **15 rows / 0 shreds**.
+.agents/TODO.md	4173	42	LIVE	(`rd` alone is 42 rows over 6 devices x 7 dtypes; the oracle's `k1_load_store` collapses
+.agents/TODO.md	4198	6	LIVE	honest CPython answer for `tmap BASE` cannot be a string at all. 102 cells in 6 rows.
+.agents/TODO.md	4226	1/1	LIVE	ops-python-render  [##########] 1/1
+.agents/TODO.md	4231	59 of 85	LIVE	the oracle's `v!r` was adding the quotes. 59 of 85 port rows shared, 0 disagree.
+.agents/TODO.md	4239	1/1	LIVE	wire-pair-control  [##########] 1/1
+.agents/TODO.md	4251	1/1	LIVE	pin-tree-oracle  [##########] 1/1
+.agents/TODO.md	4255	16 of 31	LIVE	16 of 31 verdicts move, all from AGREE to BROKEN or DISAGREE, port always on the
+.agents/TODO.md	4261	1/1	LIVE	arange-ucache  [##########] 1/1
+.agents/TODO.md	4276	1	DATED	## Session 2026-10-03 — `renderer/amd/elf.bend` (the AMD ELF PACKER: 111 py, 1 def)
+.agents/TODO.md	4279	20/20	LIVE	elf  [####################] 20/20
+.agents/TODO.md	4282	114	LIVE	- [x] **`tinybendygrad/renderer/amd/elf.bend` COMPILES: `ALL PROOFS CHECK`, 114 rows,
+.agents/TODO.md	4386	1 of 8	LIVE	Progress: residual mismatches [...] 1 of 8 fixed (the device tag binding is DECLARED, not derived)
+.agents/TODO.md	4410	228	LIVE	the row-name trap that cost 216 of 228 rows in the pin/HEAD study.
+.agents/TODO.md	4410	216 of 228	LIVE	the row-name trap that cost 216 of 228 rows in the pin/HEAD study.
+.agents/TODO.md	4427	18	LIVE	`cross` (matmul vs `sum(axis=1)`: 18 rows vs 7, DISAGREE) · `--plant srcswap` (the
+.agents/TODO.md	4487	7	LIVE	Progress: graph comparison [##########] DONE (differ, 8 fields, ledger, 7 graphs, 6 plants, 2 sides)
+.agents/TODO.md	4487	6	LIVE	Progress: graph comparison [##########] DONE (differ, 8 fields, ledger, 7 graphs, 6 plants, 2 sides)
+.agents/TODO.md	4488	0 of 5	LIVE	Progress: residual mismatches [##########] DONE (0 of 5 invisible; 1 was a live bug, 3 reported wrong, 1 new finding)
+.agents/TODO.md	4497	52	LIVE	`f"realized{u(pa.buffer)}"` = `"realized"+"i"+str(<Buffer>)` -- MEASURED, 52 chars of
+.agents/TODO.md	4594	8	LIVE	- [x] **THE 8 MISSING `cN=` FIXTURES, CLOSED 7 OF 8 AND THE 8TH MADE VISIBLE.** All eight
+.agents/TODO.md	4620	416	LIVE	a fresh run produces; all 416 names now agree with a fresh run.
+.agents/TODO.md	4640	412	LIVE	- **`oracles/dd-oracle.txt` line 2693's "412 rows" is 416**; line 2699's "66 of 121
+.agents/TODO.md	4640	66 of 121	LIVE	- **`oracles/dd-oracle.txt` line 2693's "412 rows" is 416**; line 2699's "66 of 121
+.agents/TODO.md	4641	99 of 164	LIVE	byte-identical" predates the current `dd-gate.txt`, which scores **99 of 164 agreeing,
+.agents/TODO.md	4665	27	LIVE	`revert-push` 27 rows, `revert-add` 33, `revert-both` 35. Picked witnesses: `lgvsig`
+.agents/TODO.md	4666	0	LIVE	(add-only) and `upsig` (push). **CONTROL `ctl-comment`: 0 rows moved.**
+.agents/TODO.md	4669	27	DATED	at the fixed line it **FIRES on 27 rows**, and its name ("visit src[n] before src[0]")
+.agents/TODO.md	4674	14	LIVE	14 rows flipped disagree->AGREE, 0 flipped the other way.** So the two cone bugs
+.agents/TODO.md	4677	52	LIVE	- [x] **52 rows still disagree and they are NOT the cone.** `l2i`'s CAST/shift arms: tree
+.agents/TODO.md	4681	14 of 66	LIVE	fix does not make it green; it only removes 14 of 66.**
+.agents/TODO.md	4694	172	DATED	- **`codegen/decomp/dtype.bend` moved 164 -> 172 rows mid-session** (a concurrent agent added
+.agents/TODO.md	4780	3	LIVE	mutation now moves 3 rows. The first attempt at that mutation (`is_eq -> is_lt`)
+.agents/TODO.md	4783	72	LIVE	- [x] **THE FIVE-LEVEL GATE: `sh .agents/slop/debug-gate.sh`.** 72 rows, at levels
+.agents/TODO.md	4786	3	LIVE	lane, so 5 levels x 3 lanes and all fifteen agree. It ASSERTS, by name, that every
+.agents/TODO.md	4789	89	DATED	**SUPERSEDED 2026-10-04 by the NINE-LEVEL gate below: 72 -> 89 rows, levels unset/0..7.**
+.agents/TODO.md	4812	7	LIVE	one.** Flipping `memory.py:59` 1->2 moves 7 rows; `allreduce.py:16` 2->1 moves 9;
+.agents/TODO.md	4831	40	LIVE	up to 40 MB, and 483 disagreements over bare integers. Every `mem_mb_*` row is a
+.agents/TODO.md	4866	233	LIVE	measures it: `rows()` returned **233 names for 91 rows**, 84 shared with the oracle.
+.agents/TODO.md	4866	91	LIVE	measures it: `rows()` returned **233 names for 91 rows**, 84 shared with the oracle.
+.agents/TODO.md	4868	7	LIVE	fragments of those same 7 rows — 0 were lost to genuine name divergence.** The PORT
+.agents/TODO.md	4886	882	LIVE	The naive fold destroys 25,882 rows and 19,252 shared ones because **31 of 38 lanes
+.agents/TODO.md	4886	38	LIVE	The naive fold destroys 25,882 rows and 19,252 shared ones because **31 of 38 lanes
+.agents/TODO.md	4886	31 of 38	LIVE	The naive fold destroys 25,882 rows and 19,252 shared ones because **31 of 38 lanes
+.agents/TODO.md	4896	5 of 12	LIVE	escaping — succeeded on 5 of 12 runs**, and 5 of 12 with `String.join`, and 5 of 12
+.agents/TODO.md	4899	25 of 25	LIVE	longer than one emitted line: **25 of 25.**
+.agents/TODO.md	4901	726	LIVE	- [x] **726 rows, 726 agree, 0 differ — corroborated twice.** `ga_gate.py`:
+.agents/TODO.md	4902	726	LIVE	`GATE: 726 rows, 726 agree, 0 differ` / `ORACLE: 778 rows, 726 gated, 52 ungated`.
+.agents/TODO.md	4902	778	LIVE	`GATE: 726 rows, 726 agree, 0 differ` / `ORACLE: 778 rows, 726 gated, 52 ungated`.
+.agents/TODO.md	4907	778	LIVE	- [x] **`ga-oracle.py` emits 778 rows** (was 892): 634 per-line + 8 counts replace 756
+.agents/TODO.md	4909	122	LIVE	(generate.py:273) so `enum rdna3` and `enum cdna` were the same 122 lines under two
+.agents/TODO.md	4916	726	DATED	726 row names, **0 invented by `rows()`**. (3) A PLANTED multi-line value is NAMED by
+.agents/TODO.md	4925	726	LIVE	every `py=` from row 1 onward was row 0's text: **626 of 726 rows red.** Fixed to
+.agents/TODO.md	4925	626 of 726	LIVE	every `py=` from row 1 onward was row 0's text: **626 of 726 rows red.** Fixed to
+.agents/TODO.md	4949	8	LIVE	the intersection every run through the scan tool's own staleness rule, 8 lanes concurrently.
+.agents/TODO.md	4990	668	DATED	write, plus full coverage and no dead rule: 668 proposals, 668 lines, 37 of 37 rules
+.agents/TODO.md	4990	37	DATED	write, plus full coverage and no dead rule: 668 proposals, 668 lines, 37 of 37 rules
+.agents/TODO.md	4990	37 of 37	DATED	write, plus full coverage and no dead rule: 668 proposals, 668 lines, 37 of 37 rules
+.agents/TODO.md	5000	20	LIVE	- [x] **`naming-gate-selftest.py`: 12 ok / 3 FAIL -> ALL 20 CHECKS PASS.** It was RED
+.agents/TODO.md	5006	12	LIVE	12 checks**; the total is now `len(ran)`. NOTE the older entry above saying "15/15
+.agents/TODO.md	5021	3	LIVE	matches inside a triple-quoted block** in the 3 files that have one.
+.agents/TODO.md	5031	15	DATED	`ValueError: too many values to unpack (expected 3)`, rc=1 after 15 checks. Measured
+.agents/TODO.md	5059	11	LIVE	collides with `p_tcn`, which does not move; 11 rows move).
+.agents/TODO.md	5098	426	LIVE	byte for byte, 426 lines, 152 `lg` rows. **And there was a 21st defect the brief did not
+.agents/TODO.md	5105	275	LIVE	`8ab673c7cd38` landed while I was measuring; the file went 273 -> 275 lines and grew a
+.agents/TODO.md	5161	19	LIVE	in both files — stops the walk, 19 rows red.
+.agents/TODO.md	5193	33 of 52	DATED	## Session 2026-10-04 — `codegen/decomp/dtype.bend`: 33 of 52 gate disagreements closed
+.agents/TODO.md	5196	172	LIVE	first, twice: 172 rows / 31 `*sig` / `ALL PROOFS CHECK` / exit 0, `rebase-gate.py`'s own
+.agents/TODO.md	5197	0	DATED	`rows()` 172 with 0 missing, 120 agree / 52 disagree against a fresh `dd-oracle.py`. Nothing
+.agents/TODO.md	5198	0	DATED	newly broken; comment-only control read 0 row diffs and byte-identical output.
+.agents/TODO.md	5251	107 of 172	LIVE	`dtype.bend` to `.agents/slop/dtype-oracle.py`, which shares **107 of 172** row names and
+.agents/TODO.md	5267	1890	LIVE	* The repo root holds **`.bend`**, 1890 lines, first line
+.agents/TODO.md	5293	14	LIVE	## ops.py:501-1928 (the base family, the movers, `split_uop`) -- 14 defs LANDED, 149 remain
+.agents/TODO.md	5296	82	LIVE	`sh .agents/slop/ops-501-gate.sh` -- 82 rows, three lanes (CPython / interpreted /
+.agents/TODO.md	5303	29	LIVE	`split_uop`(:685), `sint_to_uop`(:1893), `gate_kernel_sink`(:1901). 29 Bend defs in
+.agents/TODO.md	5377	110	DATED	`@-`, 60 interpreted runs (rc 0, exactly 110 rows, every one), 40 compiled-binary runs, 12
+.agents/TODO.md	5386	178	DATED	`codegen/decomp/dtype.bend` = **`native` rc=1 while `interpreted` gave 178 rows, and the file
+.agents/TODO.md	5391	736	LIVE	(23,709 vs 128,736 bytes, two oracles, two verdicts); the target list is not doubled.
+.agents/TODO.md	5394	136	LIVE	collide across 136 `.bend` files (`dtype`×3, `__init__`×**14**, `elf`, `op`, `spec`, `memory`,
+.agents/TODO.md	5438	1 of 356	LIVE	| `codegen/decomp/dtype.bend` | `DISAGREE` | DEFECT | **1 of 356** oracle row names, `c7` |
+.agents/TODO.md	5449	321	LIVE	directly, minutes after the sweep ended: `prepare` rc=0 / 321 rows, `tensor` rc=0 / 33,
+.agents/TODO.md	5455	14	DATED	`ZERO-ROWS`: `interpreted` and `native` both exited **1** ("14 defs rely on unsafe or foreign
+.agents/TODO.md	5456	0	LIVE	code") and so did `--check-only`. The 0 rows are a consequence of the lane dying, not a claim
+.agents/TODO.md	5468	0	LIVE	20s backoff) because bend stack-overflows ~1 run in 20 and prints 0 rows with rc=0, so one empty
+.agents/TODO.md	5474	222	LIVE	222 shared / **0** disagreeing, 225/225/222 rows, all four lanes rc=0, md5 `4eb1189ed7c7`
+.agents/TODO.md	5490	131	LIVE	- **THE `.bin` PATH IS NOW `port_key(bend)` + PID.** It was `{bend.stem}.bin`: 131 `.bend` files,
+.agents/TODO.md	5494	131	DATED	Control: `rebase-gate-selftest.py`'s `native_bin_control()` (injective over all 131 files, AND
+.agents/TODO.md	5501	2	LIVE	`2 row(s) disagree with CPython across 3 lane pair(s)`; its own `disagreements` field held
+.agents/TODO.md	5502	1 of 109	LIVE	`c7`-vs-`interpreted` and `c7`-vs-`native`; the selftest said `1 of 109`. **Both true, and
+.agents/TODO.md	5503	1 of 356	DATED	nothing said so.** Now: `1 of 356 shared row NAME(S) disagree … (2 pair-instances)`, and
+.agents/TODO.md	5507	0	LIVE	- **PER-LANE CONTROLS: 38/39 PASS, manifest 0 files changed during the run, load 7.7-12.8.**
+.agents/TODO.md	5512	1 of 109	LIVE	`1 of 109` shared names disagree — `c7`, the declared refusal already open as
+.agents/TODO.md	5521	281 of 281	LIVE	`f10_loads.entry` and came back **AGREE-UNRECORDED, 281 of 281 agreeing**. Same for
+.agents/TODO.md	5526	38	LIVE	`prepare-oracle.py` drifts on 38 rows between runs and `elf_rows.py` on 14 (the
+.agents/TODO.md	5551	1 of 109	LIVE	`RECONCILED: 1 of 109 shared names disagree on BOTH sides, and the sweep names the same row(s)
+.agents/TODO.md	5554	0 of 11	LIVE	7 disagreeing names and the selftest 0 of 11 with BOTH caches fresh: the two read DIFFERENT
+.agents/TODO.md	5560	0 of 109	LIVE	were wrong on its first run — a hard-coded `0 of 109 shared names disagree` printed beside a row
+.agents/TODO.md	5597	20	LIVE	Measured 2 error classes × 2 substrate shapes, 20 lanes: a substrate defect kills **4 of 4**
+.agents/TODO.md	5597	4 of 4	LIVE	Measured 2 error classes × 2 substrate shapes, 20 lanes: a substrate defect kills **4 of 4**
+.agents/TODO.md	5598	4 of 4	LIVE	importers **and a bystander that never calls the defect**, in **4 of 4** cells. What limits it to
+.agents/TODO.md	5599	4 of 24	LIVE	4 of 24 wired importers is the **window**: `main()` walks targets **sequentially**, and in
+.agents/TODO.md	5600	49 of 50	LIVE	`_coord-sweep.json` the four deaths are at **indices 45, 46, 47, 49 of 50** with index 48
+.agents/TODO.md	5601	4 of 50	LIVE	NOT-STARTED. The last 4 of 50. **No verdict records a window, so `BROKEN=4` is not a statement
+.agents/TODO.md	5628	1 of 5	LIVE	NOT IN THE PORT` plus `1 of 5 closure file(s) CHANGED WHILE THIS LANE RAN`. The same reader put
+.agents/TODO.md	5661	29	LIVE	- **29 lanes recorded** from a two-run measurement (`rebase-stability.py`), 7447 bend rows,
+.agents/TODO.md	5661	7447	LIVE	- **29 lanes recorded** from a two-run measurement (`rebase-stability.py`), 7447 bend rows,
+.agents/TODO.md	5664	0	LIVE	(0 rows, `SOME PROOFS FAIL`), `codegen/decomp/dtype` (13 rows differ + 1 shared row red),
+.agents/TODO.md	5664	13	LIVE	(0 rows, `SOME PROOFS FAIL`), `codegen/decomp/dtype` (13 rows differ + 1 shared row red),
+.agents/TODO.md	5676	14	LIVE	**ADDED** to a port are invisible — `uop/ops.bend` gained 14 rows mid-session and the gate
+.agents/TODO.md	5692	17684	LIVE	Census over the wired gates: **17684 rows, 10 ORDER-DEAD, 10374 order-weak,
+.agents/TODO.md	5720	306	LIVE	**The file is being rewritten by another agent RIGHT NOW** (268 -> 306 lines,
+.agents/TODO.md	5724	317	LIVE	SPURIOUS SINK RULE DROPPED. `codegen/__init__.bend` 361 -> 317 lines.**
+.agents/TODO.md	5726	13	LIVE	(`.agents/slop/codegen-init-measure.py`, 13 stages, every expectation
+.agents/TODO.md	5759	18	DATED	dead -- `gr_show.topo.k`/`.k.of`/`.topo` and `gr_show.repl.kv`, 18 lines,
+.agents/TODO.md	5772	361	LIVE	right 361 lines and the WRONG md5, which is why the md5 assertion is the
+.agents/TODO.md	5833	69	LIVE	`codegen/late/linearizer` **0 of 69 rows moved, 0.0%** (the port's ONLY port
+.agents/TODO.md	5833	0 of 69	LIVE	`codegen/late/linearizer` **0 of 69 rows moved, 0.0%** (the port's ONLY port
+.agents/TODO.md	5835	187 of 726	LIVE	`renderer/amd/generate` 187 of 726, 25.8%. **Five ports report NO
+.agents/TODO.md	5854	445	LIVE	(a) My first run printed `ops_cl: 445 rows, 10 sites, 0 rows moved, 0.0%`
+.agents/TODO.md	5854	0	LIVE	(a) My first run printed `ops_cl: 445 rows, 10 sites, 0 rows moved, 0.0%`
+.agents/TODO.md	5858	135	LIVE	`uop/fold.bend` for ~15 minutes; file count 137 -> 135 `.bend`;
+.agents/TODO.md	5898	9 of 9	DATED	stable):** `lin_edg` moves on **9 of 9** mutations — all seven src-swaps plus
+.agents/TODO.md	5899	0 of 7	DATED	two controls — where **0 of 7** moved anything before. `linc_edg` moves on 2
+.agents/TODO.md	5902	20	LIVE	rotation control moves 20 rows including `lin_edg`, which is the binding
+.agents/TODO.md	5905	130	LIVE	Gate: `codegen/late/{linearizer,regalloc,gater}.bend` **128 -> 130 rows**,
+.agents/TODO.md	5938	6 of 6	LIVE	patterns ARE distinguishable: a structural fingerprint gives **6 of 6
+.agents/TODO.md	5972	98 of 98	LIVE	classifies it. **98 of 98 are CALL-derived**: `b - a` and `a` from
+.agents/TODO.md	5991	192 of 224	LIVE	**THE CLASSIFICATION IS A HEURISTIC AND IS LABELLED AS ONE**: **192 of 224**
+.agents/TODO.md	5997	65	LIVE	today, and not recommended in bulk:** `nv-oracle.py` is 65 rows and is the
+.agents/TODO.md	6004	130	LIVE	**130 rows -> 0 rows -> 130 rows** with no edit of mine, and `md5 -q` on
+.agents/TODO.md	6004	0	LIVE	**130 rows -> 0 rows -> 130 rows** with no edit of mine, and `md5 -q` on
+.agents/TODO.md	6033	65	DATED	not test different things; one is the other with 65 rows deleted.
+.agents/TODO.md	6036	19	LIVE	All 19 names are in `port ∩ dd-oracle`, so the port emits every one. 18 of them are
+.agents/TODO.md	6050	1 of 109	LIVE	Same port, same CPython, same interpreter, same parser: **live filter 1 of 109,
+.agents/TODO.md	6051	19 of 174	LIVE	MUTANT 19 of 174.** A filter that suppresses disagreements is indistinguishable
+.agents/TODO.md	6058	0	LIVE	`rne` 16, `unpack32` 3**, rule tables read at 13/10/2 patterns, and **0 hits** for
+.agents/TODO.md	6061	1	LIVE	**But `dd-oracle.py` PROJECT rather than reimplement**: its decision 1 drops **281**
+.agents/TODO.md	6067	242 of 416	LIVE	- [x] **THE BIGGER FINDING THAN THE COUNT: 242 of 416 oracle rows have NO port row, and
+.agents/TODO.md	6087	14	DATED	by another agent 14 s before one run and broke the typecheck
+.agents/TODO.md	6089	0	LIVE	print **0 rows**, which every count-only harness reads as "not started".
+.agents/TODO.md	6102	1 of 109	LIVE	`dtype-oracle.py` to **`dd-oracle.py`** — that moves the lane from `1 of 109` to
+.agents/TODO.md	6103	19 of 174	LIVE	`19 of 174`, which is the truth, and it will be RED. Or wire `dd-truth.py` beside it
+.agents/TODO.md	6117	242	LIVE	- [ ] **OPEN — 242 rows the port does not emit** (five of ten public functions, §above).
+.agents/TODO.md	6122	225	DATED	## Session 2026-10-04 — `renderer/cstyle.bend`: 225 rows, ZERO verification -> **221 of 227 compared to a live CPython call**
+.agents/TODO.md	6122	221 of 227	DATED	## Session 2026-10-04 — `renderer/cstyle.bend`: 225 rows, ZERO verification -> **221 of 227 compared to a live CPython call**
+.agents/TODO.md	6150	227	LIVE	**89 of 227 rows at once** — every one of them a dtype-name cell. See R-6 in
+.agents/TODO.md	6150	89 of 227	LIVE	**89 of 227 rows at once** — every one of them a dtype-name cell. See R-6 in
+.agents/TODO.md	6162	227	LIVE	--write`, which refuses to write unless the rewritten file still emits 227 rows. STALE-LITERAL
+.agents/TODO.md	6178	18	LIVE	- [x] **CONTROLS: 18 rows across 18 families planted, every one BROKEN rc=1 naming the row**
+.agents/TODO.md	6206	222	LIVE	exception channel and answers `""` (cstyle.bend:1074, :1149), so 9 of 222 rows could never
+.agents/TODO.md	6206	9 of 222	LIVE	exception channel and answers `""` (cstyle.bend:1074, :1149), so 9 of 222 rows could never
+.agents/TODO.md	6212	9 of 222	LIVE	the oracle names none of them. **GIVEN UP, PRECISELY: 9 of 222 shared rows are a refusal
+.agents/TODO.md	6239	3 of 4	LIVE	(`.agents/slop/multi-l139.py`): the two readings differ on **3 of 4 unequal-count
+.agents/TODO.md	6257	213	LIVE	still reads 213 of 213 rows.
+.agents/TODO.md	6257	213 of 213	LIVE	still reads 213 of 213 rows.
+.agents/TODO.md	6263	27	LIVE	- [x] **M26 RE-AIMED AND FIRING — 27 rows.** Its anchor quoted the PRE-fix `dd_rs.push`
+.agents/TODO.md	6283	36	LIVE	- [x] **FULL TABLE RE-RUN, 36 mutations, 3 controls SAME.** 28 MOVED · 5 THEOREM · 1 REQUEST ·
+.agents/TODO.md	6283	3	LIVE	- [x] **FULL TABLE RE-RUN, 36 mutations, 3 controls SAME.** 28 MOVED · 5 THEOREM · 1 REQUEST ·
+.agents/TODO.md	6293	8	LIVE	- [x] **M09 CLOSED — MOVED, 8 rows. THE REQUEST WAS A MISDIAGNOSIS.** `l2i_shl.hi` was
+.agents/TODO.md	6303	182	LIVE	DID-NOT-COMPILE · 0 dead anchors, 182 rows.** Re-frozen at `e4618a71`, re-baselined, all
+.agents/TODO.md	6305	184	LIVE	byte-identical; M06 in BOTH directions, 137 of 184 lines). M05 and M36 RE-AIMED at the fixed
+.agents/TODO.md	6305	137 of 184	LIVE	byte-identical; M06 in BOTH directions, 137 of 184 lines). M05 and M36 RE-AIMED at the fixed
+.agents/TODO.md	6306	24	LIVE	text; M30 re-aimed off a non-compiling mutant, now 24 rows; M14 compiles, 2 rows.
+.agents/TODO.md	6306	2	LIVE	text; M30 re-aimed off a non-compiling mutant, now 24 rows; M14 compiles, 2 rows.
+.agents/TODO.md	6309	6	LIVE	controls read MOVED 6 rows and NO table was written).
+.agents/TODO.md	6317	8	LIVE	remainder back — **MOVED 8 rows.**
+.agents/TODO.md	6341	487	LIVE	- [x] **THE DENOMINATOR, WHICH NO TABLE WAS PRINTING.** 487 mutations across 15 tables carry
+.agents/TODO.md	6341	15	LIVE	- [x] **THE DENOMINATOR, WHICH NO TABLE WAS PRINTING.** 487 mutations across 15 tables carry
+.agents/TODO.md	6342	30	LIVE	**30 zeros, of which 25 are unclassified** — their labels are the raw harness output
+.agents/TODO.md	6350	0	LIVE	a dead patch published as `0 rows`. `zero-audit.py` now greps the branch that PRODUCES
+.agents/TODO.md	6354	11 of 23	LIVE	- [x] **`l2i_dt` / `f2f_dt` HAD NO MUTATION AT ALL — 11 of 23 unmoved rows.** M37–M41 added to
+.agents/TODO.md	6355	23	LIVE	`dd-mutate.py`, all five MOVED: **M37 23 rows · M38 47 · M39 6 · M40 2 · M41 1.** The
+.agents/TODO.md	6359	172 of 182	LIVE	moved: **159 → 172 of 182**; `l2idt*`/`f2fdt*` unmoved **11 → 0**.
+.agents/TODO.md	6378	182	LIVE	182 rows); oracle re-run today, byte-identical (`sha1 8f80df08…`); **all five dd proofs
+.agents/TODO.md	6379	14	LIVE	RE-MEASURED on the current snapshot.** **The other 14 tables name NO revision — that is
+.agents/TODO.md	6380	10	LIVE	the finding.** 10 rows disagree with CPython on the pinned snapshot; three of them
+.agents/TODO.md	6396	890	DATED	NEVER EXISTED, AND ROOT `.bend` IS STILL THERE, TRACKED, 1,890 LINES.**
+.agents/TODO.md	6404	590	LIVE	`runtime/ops_python.bend` is 1,590 lines and the direction is unambiguous: root `.bend`'s
+.agents/TODO.md	6415	4	LIVE	- [x] **THE CENSUS HAS A BIGGER HOLE IN THE OTHER DIRECTION: 4 `.bend` FILES ON DISK ARE NOT
+.agents/TODO.md	6422	138	LIVE	**195,016-195,188** across this session; the loose `find` census read 137-138 files /
+.agents/TODO.md	6431	821	DATED	196,610 -> 196,743 -> 196,724 -> 196,821 lines, and the `find` FILE count went
+.agents/TODO.md	6436	774	LIVE	- [ ] **OWNER: COORDINATOR — `rm` + COMMIT `renderer/csprobe.bend` (774 lines).** It is a stale
+.agents/TODO.md	6437	774	LIVE	snapshot: identical to `renderer/cstyle.bend` for **588 of its 774 lines** (ratio 0.76),
+.agents/TODO.md	6439	774	DATED	snapshots deleted in `b6abeb7f5`, and it makes the census count 774 lines of `cstyle.bend`
+.agents/TODO.md	6441	4	LIVE	Also `runtime/_p6.bend` (4 lines, a bare `F32.bits` print) and the two EMPTY files
+.agents/TODO.md	6446	2	LIVE	through. Added `*probe.bend` and `_*[0-9].bend`; verified they match exactly 1 and 2 files in
+.agents/TODO.md	6450	471	DATED	- [x] **`uop/probe-mmcore.bend` (471 lines) MUST NOT BE DELETED, DESPITE THE `probe-` PREFIX.**
+.agents/TODO.md	6459	935	DATED	("delete 7,935 lines of dead fold snapshots"). What remains is 17 tracked `*_work.bend`
+.agents/TODO.md	6506	946	DATED	- [ ] **THE LEDGER'S OWN COUNTS ARE LIVE, WHICH IS THE POINT.** `TODO.md` measured **4,946 lines,
+.agents/TODO.md	6536	0	DATED	- [x] **THE SWEEP FOUND A REQUEST THE TABLE DID NOT HAVE.** Re-aiming M05 read 0 rows, and
+.agents/TODO.md	6539	4	LIVE	node that arm exists to build was in no row. **`lgy` closes it: M05 now MOVES 4 rows.**
+.agents/TODO.md	6543	6	DATED	moved exactly 6 rows and all three controls read MOVED, so no table was written. Fixed at the
+.agents/TODO.md	6560	8	LIVE	Progress: dtype M09 + REQUEST sweep [##########] DONE — 2 fixtures (8 rows, all from CPython),
+.agents/TODO.md	6562	3	LIVE	5 THEOREMs re-measured, 3 controls SAME, .tsv reproducible
+.agents/TODO.md	6592	2	LIVE	tree construct one.** 1 type declaration (`ops.bend:948`), 2 comments, 1 def header,
+.agents/TODO.md	6592	1	LIVE	tree construct one.** 1 type declaration (`ops.bend:948`), 2 comments, 1 def header,
+.agents/TODO.md	6676	94	DATED	**STATE BEFORE: `BROKEN`, 94 rows compared by the CPython lane against 99 by the two
+.agents/TODO.md	6683	72	DATED	`.agents/slop/blob-rows.py af-before` then `af-after`: **72 files in the sweep
+.agents/TODO.md	6691	43	LIVE	`kept` 90 -> 99, 43 bend-only families unchanged. `rebase-gate.py`'s `row_counts`
+.agents/TODO.md	6703	9	LIVE	**So the blob unit's worry was unfounded — the 9 rows are safe, and by the same
+.agents/TODO.md	6719	3	LIVE	- [x] **3 rules appended to `bend2-constraints.md` at the END (position 18633), numbered
+.agents/TODO.md	6721	3	LIVE	by content. **3 rows appended to `.agents/TOOLS.md`** for
+.agents/TODO.md	6724	4	LIVE	Progress: `uop/ops.bend` loose ends [####] DONE — A: premise FALSIFIED, 4 rows + the
+.agents/TODO.md	6725	4	LIVE	comment landed, 4/4 mutants caught, blast radius 1 of 72 files · B: gate RED
+.agents/TODO.md	6725	72	LIVE	comment landed, 4/4 mutants caught, blast radius 1 of 72 files · B: gate RED
+.agents/TODO.md	6725	1 of 72	LIVE	comment landed, 4/4 mutants caught, blast radius 1 of 72 files · B: gate RED
+.agents/TODO.md	6763	4	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6763	72	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6763	1 of 72	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6770	771	LIVE	`md5 c2a4b0ff…`, 771 lines, and `grep -c 'cfun_\|afloat_'` read **0** for a few
+.agents/TODO.md	6782	4	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6782	72	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6782	1 of 72	LIVE	FALSIFIED, 4 rows + comment proven, patch ready, blast radius 1 of 72 files ·
+.agents/TODO.md	6794	29	LIVE	**30 in-scope stale-anchor branches across 29 files; 7 loud aborts kept; 55
+.agents/TODO.md	6805	34	LIVE	- [x] **CONVERTED 34 files**, including a **second live instance of the `0` defect the
+.agents/TODO.md	6832	22	LIVE	- [x] **PER-TABLE REVISION LEDGER.** `.agents/slop/revision-ledger.py`. **22 tables: 2
+.agents/TODO.md	6840	34	LIVE	`patch_not_apply.py` · 34 files converted · A1/A2/A3/A4 hold and the auditor is
+.agents/TODO.md	6842	22	LIVE	22 tables, 2 pinned. Rules appended as `## Z-1..Z-7` in `bend2-constraints.md`
+.agents/TODO.md	6849	9/10	LIVE	Progress: session deliverables [#########] 9/10  (the tenth is the `ops.bend`
+.agents/TODO.md	6859	213	LIVE	| the **reader** | `rows()` matched `name=value`; `multi` prints `name␣␣value`, so 213 rows compared against nothing |
+.agents/TODO.md	6874	0	LIVE	pairs: 0 keys gained or dropped, every `shared` count identical, `disagree`
+.agents/TODO.md	6877	9 of 222	LIVE	precisely: 9 of 222 are a refusal rendered as the marker.
+.agents/TODO.md	6886	8	LIVE	- [x] M09 **MOVED, 8 rows**. `hi42` makes the `|` the row's own text. The REQUEST
+.agents/TODO.md	6898	98 of 98	LIVE	INHERENT — 98 of 98 CALL-derived.
+.agents/TODO.md	6910	6 of 6	LIVE	(6 of 6 fingerprints) but CPython says both root ops are `Ops.WHERE`; the
+.agents/TODO.md	6928	22	LIVE	- [ ] **25 of 30 mutation zeros still unclassified**; **20 of 22 tables name no
+.agents/TODO.md	6928	25 of 30	LIVE	- [ ] **25 of 30 mutation zeros still unclassified**; **20 of 22 tables name no
+.agents/TODO.md	6928	20 of 22	LIVE	- [ ] **25 of 30 mutation zeros still unclassified**; **20 of 22 tables name no
+.agents/TODO.md	6954	361	LIVE	- **Line count is not an identity.** A reconstruction with the right 361 lines
+.agents/TODO.md	6957	355	LIVE	file gave 239 / 246 / 354 / 355 rows while a background job was still writing.
+.agents/TODO.md	6963	3	LIVE	same def `eq_arg.ATuple` uses. **9 `blob_*` rows, 3 lanes identical**
+.agents/TODO.md	6977	4	DATED	before and after every mutation. M1 (length-only, the bug restated) moves 4 rows
+.agents/TODO.md	6979	9	LIVE	(first byte) 3, M3 (never equal) 3, M4 (always equal) 5; the table moves 7 of 9 rows.
+.agents/TODO.md	6979	7 of 9	LIVE	(first byte) 3, M3 (never equal) 3, M4 (always equal) 5; the table moves 7 of 9 rows.
+.agents/TODO.md	6983	72	LIVE	12,489 (+60) and **exactly one of the 72 files changed**: `uop/ops.bend`, 224 -> 284.
+.agents/TODO.md	6985	9	LIVE	count). Historically the fix itself is +9 rows in `ops.bend` and `grep -l 'blob_'`
+.agents/TODO.md	6995	30	LIVE	fixed by the owning unit within ~30 s of my reading it. **Not one edit was made by
+.agents/TODO.md	7008	3	LIVE	classified, four real defects fixed in MY files, 3 controls green, 23/23 mutations. **`uop/ops.bend`
+.agents/TODO.md	7008	23	LIVE	classified, four real defects fixed in MY files, 3 controls green, 23/23 mutations. **`uop/ops.bend`
+.agents/TODO.md	7014	19	LIVE	**19 rows MISSING FROM THE PORT**, not 19 spurious oracle rows and not a naming split.
+.agents/TODO.md	7021	761	LIVE	`# TODO(p3) ops.py:761 def copy_to_device` / `:844 def getaddr` / `:849 def device_range_src`.
+.agents/TODO.md	7021	844	LIVE	`# TODO(p3) ops.py:761 def copy_to_device` / `:844 def getaddr` / `:849 def device_range_src`.
+.agents/TODO.md	7021	849	LIVE	`# TODO(p3) ops.py:761 def copy_to_device` / `:844 def getaddr` / `:849 def device_range_src`.
+.agents/TODO.md	7049	3	LIVE	`gate_kernel_sink` was a hand-written copy of `ops.py:1909` (3 rows) and `split()` was a
+.agents/TODO.md	7050	6	LIVE	hand-written worklist copy of `split_uop` (`ops.py:682`, 6 rows) — the `device.bend`
+.agents/TODO.md	7071	23	DATED	**23/23 mutations move the rows they name**, live `ops.bend` byte-identical before and after.
+.agents/TODO.md	7072	19	DATED	- **THE 19 ROWS HAD NO MUTATION AT ALL.** They were oracle-only for the gate's whole life, so
+.agents/TODO.md	7082	101	LIVE	| clean, live file, **both trees** | rc=**0**, `101 rows, 101 shared row names, 3 lanes identical` |
+.agents/TODO.md	7082	3	LIVE	| clean, live file, **both trees** | rc=**0**, `101 rows, 101 shared row names, 3 lanes identical` |
+.agents/TODO.md	7083	19	LIVE	| **AT REST `@-`**, staged copy, through the REAL gate script | rc=**1**, `py=101 bd=82 shared=82`, **19 row names printed** |
+.agents/TODO.md	7092	101	LIVE	- **STATE OF THE GATE NOW, HONESTLY: `AGREE`, on a file that is still being written.** 101 rows,
+.agents/TODO.md	7113	0	LIVE	- **The CPython lane was observed printing 0 rows once**, in a `| grep '^s5_'` pipeline, rc=1.
+.agents/TODO.md	7114	101	LIVE	**It did not reproduce in 25 consecutive runs** (3/3 rc=0 + 20/20 at 101 rows + 5/5 in the
+.agents/TODO.md	7143	9	LIVE	- [x] **WIDENED 4 -> 9 GRAPHS. All nine `AGREE`, each printed with its denominator:**
+.agents/TODO.md	7146	77	DATED	**TOTAL 63 nodes per side, 378 field-records, 13 of 77 ops.** `AGREE` on 2 and `AGREE`
+.agents/TODO.md	7146	13 of 77	DATED	**TOTAL 63 nodes per side, 378 field-records, 13 of 77 ops.** `AGREE` on 2 and `AGREE`
+.agents/TODO.md	7189	0 of 8	LIVE	- **CPython's own `DEBUG >= 1` memory line (`memory.py:59-60`) fired on 0 of 8 real graphs**
+.agents/TODO.md	7195	0 of 63	LIVE	- **A symbolic dim and a float CONST are both UNTESTED, not measured-safe**: 0 of 63 nodes has
+.agents/TODO.md	7208	3/10	LIVE	Progress: `[###.......] 3/10` · **1100** arena read sites audited · **3 stale/bogus reads
+.agents/TODO.md	7209	2	LIVE	found, 2 files touched** (3 rows moved with a CPython-called expectation, 3 rows moved with
+.agents/TODO.md	7209	3	LIVE	found, 2 files touched** (3 rows moved with a CPython-called expectation, 3 rows moved with
+.agents/TODO.md	7210	0	LIVE	an UNVERIFIABLE direction, 0 rows moved) · **8 detector suspects adjudicated** (0 remaining) ·
+.agents/TODO.md	7226	137	LIVE	(`srcops=Ops.NOOP -> Ops.CALL` / `Ops.BUFFER`), 137 rows, none lost, and
+.agents/TODO.md	7234	0	DATED	Fixed by passing `O.Found.ar(t)`. `dv_shr2` moves 0 rows.
+.agents/TODO.md	7238	13 of 90	LIVE	from `- 256` to `- 1`, i.e. AWAY from CPython (disagree 10 -> 13 of 90 shared).
+.agents/TODO.md	7242	12720	LIVE	- [x] **DETECTOR, `arena-noop-scan.py`,** over the 73 committed gate outputs / 12720 rows.
+.agents/TODO.md	7243	60	LIVE	60 rows mention NOOP; 16 excluded mechanically (index 0 is the bottom), 33 by row name,
+.agents/TODO.md	7254	1 of 4	DATED	diffs**, and which its own control proved catches 1 of 4 injected defect shapes.
+.agents/TODO.md	7291	107	LIVE	DENOMINATOR: **port 107 rows, oracle 280, shared 90, agree 80, disagree 10.**
+.agents/TODO.md	7292	11	LIVE	* `validate-mutate.py` -- 11 mutants, each run through BOTH lanes so a row that moved TOWARD
+.agents/TODO.md	7312	10	DATED	310 printed lines, 280 parsed rows, **30 collapsed onto 10 names**, each of which then held
+.agents/TODO.md	7321	34	LIVE	when reverted**: the arena `dv2` builds the SINK in (M3, 34 rows); `vz_cint` unable to read a
+.agents/TODO.md	7322	68	LIVE	`CBool` CONST, which was the real cause of the missing `True` (M5, 68 rows); `pow2`'s `m > 0`
+.agents/TODO.md	7328	15 of 138	LIVE	**WHAT IS STILL RED -- 15 of 138 shared rows, every one named:**
+.agents/TODO.md	7398	293	LIVE	alone suggests. Gate: **112 shared rows, three lanes byte-identical, exit 0, 293 bend
+.agents/TODO.md	7433	989	LIVE	`xd1/` (4,989 files) and `opstree/` (348) excluded as vendored tinygrad checkouts —
+.agents/TODO.md	7435	298	LIVE	- [x] **THE MEASURED FLOOR.** `rows()` cannot read **3,298 lines** inside the **835** `.txt`
+.agents/TODO.md	7459	329	LIVE	**329 rows it could not see**, and **1 it reported that does not exist** —
+.agents/TODO.md	7488	8 of 38	DATED	from the tool's own header: 8 of 38 wired pairs read 0 shared names, all skipped in
+.agents/TODO.md	7490	131	LIVE	- **S3 a BINARY PATH keyed on `<stem>`**: 131 `.bend` files, **110 distinct stems**,
+.agents/TODO.md	7509	209	LIVE	`codegen/decomp/dtype.bend` is 209 rows / `ALL PROOFS CHECK`; **the 182 pre-existing rows
+.agents/TODO.md	7579	23 of 77	DATED	ops 23 of 77 (was 13)   commutative 7 of 8 (was 1)   symbolic-dim nodes 2 of 104 (was 0)
+.agents/TODO.md	7579	7 of 8	DATED	ops 23 of 77 (was 13)   commutative 7 of 8 (was 1)   symbolic-dim nodes 2 of 104 (was 0)
+.agents/TODO.md	7579	2 of 104	DATED	ops 23 of 77 (was 13)   commutative 7 of 8 (was 1)   symbolic-dim nodes 2 of 104 (was 0)
+.agents/TODO.md	7580	12 of 13	DATED	byte-identical 12 of 13   stability pairs 3 of 3   conflations 4 of 4   selfcheck OK
+.agents/TODO.md	7580	3 of 3	DATED	byte-identical 12 of 13   stability pairs 3 of 3   conflations 4 of 4   selfcheck OK
+.agents/TODO.md	7580	4 of 4	DATED	byte-identical 12 of 13   stability pairs 3 of 3   conflations 4 of 4   selfcheck OK
+.agents/TODO.md	7583	3	LIVE	(3 nodes / 3 graphs corpus-wide) and ADD. Adds a shared node with a real SUBTREE
+.agents/TODO.md	7612	0	DATED	argparse exited 2, both files were 0 bytes, and `cmp -s` on two empty files succeeds.
+.agents/TODO.md	7645	77	LIVE	- **`ENDIF` / `BACKEDGE` / `LOAD` / `STORE` remain unreached** (54 of 77 ops still). They
+.agents/TODO.md	7645	54 of 77	LIVE	- **`ENDIF` / `BACKEDGE` / `LOAD` / `STORE` remain unreached** (54 of 77 ops still). They
+.agents/TODO.md	7661	2 of 76	LIVE	undercounted by 2 of 76, so level 1 read 11 printing sites when it was 13.
+.agents/TODO.md	7723	21	LIVE	- [x] **MUTATIONS: `fires_L*` AND `pin_*` ARE LOAD-BEARING.** 21 mutations over levels
+.agents/TODO.md	7724	89	LIVE	0/1/2/3/4/6/7, baseline 89 rows. `pin_nbytes' div 2 -> div 1` moves **7** rows;
+.agents/TODO.md	7742	889	LIVE	the three existing gates for the ports concerned (`memory_oracle.py` 889 rows,
+.agents/TODO.md	7744	89	LIVE	it. All 89 rows are attributed exactly once: helpers 31, memory 22, amdev 14, allreduce
+.agents/TODO.md	7753	17	LIVE	with denominators on every claim. **The headline: of the 17 rows added by extending
+.agents/TODO.md	7825	12	LIVE	negative width is 4.29e9 iterations. One `bin/bend` run: **3.05 s fixed, 21 min 12 s
+.agents/TODO.md	7826	814	LIVE	transposed**, same file, same 814 rows. On the real driver that is
+.agents/TODO.md	7832	119	LIVE	order-sensitive; 13 are the s > 31 shift wall.** Over CPython's 119 tables / 383
+.agents/TODO.md	7840	11	LIVE	**11 tables, 86 fields, 0 mismatching tables.** The transposition was the only
+.agents/TODO.md	7856	0	DATED	controls. **Before: v2_pte / v2_pde / v2_dpd moved 0 rows; v3_pte / v3_pde / v3_dpd
+.agents/TODO.md	7857	22	DATED	moved 3 each.** Both controls were non-zero (BOOT_42 22 rows; an `s == e` site widened
+.agents/TODO.md	7858	1	LIVE	to `(8,9)`, 1 row), so the zeros were real zeros and not a broken substrate.
+.agents/TODO.md	7871	7	LIVE	- [x] **`nv_mutate.py`: 7 ENTRIES COULD NOT BE MEASURED AS WRITTEN. 5 WERE A `+`, AND 2
+.agents/TODO.md	7878	22 of 28	LIVE	not exist in Bend 2.0.35's `U32`**. Both aborted the table at entry 19 and 22 of 28,
+.agents/TODO.md	7882	2	LIVE	**ALL 28 NOW RUN: 26 moved rows, 2 zeros, and both zeros are THEOREMS.** [7]
+.agents/TODO.md	7887	24	LIVE	- [x] **17 OF 24 TABLES NOW PIN WHAT THEY DESCRIBE — and the 7 that do not say so in
+.agents/TODO.md	7893	19 of 24	LIVE	`nv_ip_mutate.py`). **19 of 24 have no committed baseline**, so their zeros cannot be
+.agents/TODO.md	7899	70	DATED	indistinguishable from "did not compile". 70 mutations had been run and the output was
+.agents/TODO.md	7903	170	LIVE	- [x] **`ops-python-mutate.py` PUBLISHED 170 ROWS THAT DO NOT EXIST.** M17 and M22 each lost
+.agents/TODO.md	7904	85	LIVE	ALL 85 rows to a run that printed none and the table printed `85` for both. RULE B: a
+.agents/TODO.md	7923	2 of 6	LIVE	(another unit's). MEASURED by CALLING both on six shapes: **agree on 2 of 6** — no F3, no F2
+.agents/TODO.md	7935	6 of 6	LIVE	`:1275` `sym_dim.con` → **`:1286-1288`, 6 of 6 runs, 0 stdout lines, rc=1**) with the file `M`
+.agents/TODO.md	7954	8 of 227	LIVE	contains `=`; **8 of 227** names break the "spaces, no `=`" rule and they reshape under the other
+.agents/TODO.md	7964	0 of 234	DATED	## Session 2026-10-04 (load unit) — THE BASELINE LEDGER: 0 of 234 recorded counts carry a load, and 0 of 18 stored reds can be reclassified
+.agents/TODO.md	7964	0 of 18	DATED	## Session 2026-10-04 (load unit) — THE BASELINE LEDGER: 0 of 234 recorded counts carry a load, and 0 of 18 stored reds can be reclassified
+.agents/TODO.md	7966	4/7	LIVE	`load-census [####.....] 4/7` — the ledger, the guard, the retrospective, and the starvation
+.agents/TODO.md	7974	0 of 234	LIVE	- [x] **RECOVERABLE / UNRECOVERABLE: 0 and 234.** A capture records a load in **0 of 234**, an
+.agents/TODO.md	7975	0 of 234	LIVE	elapsed time in **0 of 234**, a **revision in 0 of 234**. So the "source file unchanged"
+.agents/TODO.md	7978	92 of 1	LIVE	the whole record layer: **92 of 1,816** sensitive counts load-qualified (**5.1%**).
+.agents/TODO.md	7982	0 of 18	LIVE	- [x] **THE STARVATION RETROSPECTIVE — 0 of 18, and 0 is the finding.** 18 stored BROKEN verdicts
+.agents/TODO.md	7985	15 of 18	LIVE	so the unclassified count is **15 of 18**, not 18. **Not closable by running anything** —
+.agents/TODO.md	7990	215 of 234	LIVE	printed *"215 of 234 carry a load"* because it computed `total − SUSPECT`, so every
+.agents/TODO.md	8006	0 of 18	LIVE	which a full 787-row count was actually observed", and **0 of 18** row-emitting reps reached
+.agents/TODO.md	8013	787	LIVE	`nv_nvdev_mutrun.py:13` records "**24 min** for 787 rows" for the same count NV7 quotes at
+.agents/TODO.md	8017	7 of 21	LIVE	themselves a baseline, share **7 ports**, and **disagree on 7 of 21** common (port, lane) counts —
+.agents/TODO.md	8021	2	LIVE	the 18** stored BROKEN verdicts read `2 row(s) disagree ... across 3 lane pair(s)` with **no
+.agents/TODO.md	8040	34 of 77	LIVE	Progress: op coverage [########--] 34 of 77 (was 23; the four the limits file named as
+.agents/TODO.md	8042	16	LIVE	Progress: corpus size [########--] 16 graphs / 189 nodes / 1134 field-records (was 13/104/624)
+.agents/TODO.md	8044	154	LIVE	Progress: reproducibility [##########] DONE — 154 of 154 files identical, and the check
+.agents/TODO.md	8044	154 of 154	LIVE	Progress: reproducibility [##########] DONE — 154 of 154 files identical, and the check
+.agents/TODO.md	8055	45 of 46	LIVE	45 of 46 nodes byte-identical.
+.agents/TODO.md	8075	14 of 16	LIVE	- [x] **DOES THE DIFFER STILL AGREE? 14 of 16, and the 2 that do not each have a NAMED
+.agents/TODO.md	8090	5 of 5	LIVE	and the summary read `stable-pairs=5 of 5` on a run where one pair had never produced a
+.agents/TODO.md	8100	32	LIVE	was `sym: 2 runs DIFFER`, `32d31 < rc=0` — one file 32 lines, the other 31, and the
+.agents/TODO.md	8107	5 of 5	LIVE	SUMMARY** (26): with `not-comparable=0`, `stable-pairs=5 of 5`, `plants-disagree=7 of
+.agents/TODO.md	8109	0	LIVE	snapshot was **0 bytes**, because step 02 writes the two canonical files with a BARE
+.agents/TODO.md	8120	16	LIVE	accepts a run only if its summary reads 16 graphs / 14 AGREE / byte-identical 14 /
+.agents/TODO.md	8124	154 of 154	LIVE	and compares sha256 over non-blank lines. **154 of 154 identical.**
+.agents/TODO.md	8133	12	LIVE	`VERDICT: AGREE` at 12 of 12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. Three pinned
+.agents/TODO.md	8133	12 of 12	LIVE	`VERDICT: AGREE` at 12 of 12 with `SYMBOLIC DIMS py=2/12 bend=2/12`. Three pinned
+.agents/TODO.md	8155	1 of 25	LIVE	unit. Both names and the node count (1 of 25) are in `graphcmp-LIMITS.md` §2. **This is now
+.agents/TODO.md	8162	0	LIVE	turned every cold spell into `0 rows after 5 attempts -- a FAILURE, not a verdict` and
+.agents/TODO.md	8173	227	LIVE	PARAMETER's name, so only the separator moved. **NO COLLISION: 227 rows, 227 distinct
+.agents/TODO.md	8196	057	LIVE	39 wired ports, 78 lane texts, 38,057 lines, 23,179 rows read, 22,672 names.
+.agents/TODO.md	8196	179	LIVE	39 wired ports, 78 lane texts, 38,057 lines, 23,179 rows read, 22,672 names.
+.agents/TODO.md	8196	672	LIVE	39 wired ports, 78 lane texts, 38,057 lines, 23,179 rows read, 22,672 names.
+.agents/TODO.md	8197	361	LIVE	**361 names contain `=` = 7.62% of the 4,736 F2 rows THAT CAN CARRY ONE, and only
+.agents/TODO.md	8198	443	LIVE	1.59% of all names** -- because 18,443 rows (79.6%) are F1 lanes whose boundary IS `=`
+.agents/TODO.md	8202	471	LIVE	**AND THE CLASS IS NOT CONFINED TO cstyle: `renderer/llvmir.bend` has 157 of 471 rows
+.agents/TODO.md	8202	157 of 471	LIVE	**AND THE CLASS IS NOT CONFINED TO cstyle: `renderer/llvmir.bend` has 157 of 471 rows
+.agents/TODO.md	8213	227	LIVE	8 concurrent `bend` compiles: `cstyle.bend` alone prints 227 rows, in the pool it printed
+.agents/TODO.md	8274	131	LIVE	- [x] **BOUNDARIES RE-DERIVED BY EXHAUSTION, `vw-boundaries.py` 131 rows, md5 stable twice.**
+.agents/TODO.md	8275	2 of 20	LIVE	`dtypes.weaks` = **2 of 20** dtypes (so 763 has 18 positives, and `dtypes.all` does NOT
+.agents/TODO.md	8279	2 of 4	LIVE	(`'NODISK'`/`'DISKX'`/`'0DISK'` build, `'disk'`/`'DISK:0'` refuse) · the 761 table is 2 of 4
+.agents/TODO.md	8281	6	LIVE	- [x] **6 ROWS THE PORT CANNOT PRINT, REPORTED NOT HIDDEN** (`c2d_oracle_only_n = 5` + the load
+.agents/TODO.md	8310	29	LIVE	29 text readers carry **15 distinct behaviours**. So 156 was right about the shape and wrong
+.agents/TODO.md	8319	262	LIVE	(of 1,440 lane files / 289,262 lines under `.agents/slop`: 44,345 are F2 `py=`-tail lines,
+.agents/TODO.md	8322	6	DATED	The interesting ones: `rows_strict` (6 instances) CANNOT read F3 -- measured 0 rows where
+.agents/TODO.md	8322	0	DATED	The interesting ones: `rows_strict` (6 instances) CANNOT read F3 -- measured 0 rows where
+.agents/TODO.md	8324	4	DATED	`split_py` (4 instances) is the INVERSE FOLD and its input is a value, not a line;
+.agents/TODO.md	8343	227	LIVE	unit**: `cstyle-gate.py`'s `judge()` returns 6 `bad` entries naming 8 of cstyle.bend's 227 row
+.agents/TODO.md	8362	4 of 19	LIVE	for 4 of 19.
+.agents/TODO.md	8370	4 of 7	DATED	the first `--twice` run reported `DETERMINISTIC=False` on 4 of 7 blocks. Written up in
+.agents/TODO.md	8379	19	LIVE	- [x] **STAGE 3 — the table.** `.agents/slop/sched-stage3.md`. **4 of 19 present, 15 absent.** The
+.agents/TODO.md	8379	15	LIVE	- [x] **STAGE 3 — the table.** `.agents/slop/sched-stage3.md`. **4 of 19 present, 15 absent.** The
+.agents/TODO.md	8379	4 of 19	LIVE	- [x] **STAGE 3 — the table.** `.agents/slop/sched-stage3.md`. **4 of 19 present, 15 absent.** The
+.agents/TODO.md	8385	15	LIVE	dispatcher, and it blocks all 15 absent entry points regardless of their `ctx`.
+.agents/TODO.md	8416	71	LIVE	- **`schedule/__init__.bend:153` says "THE GATE. 71 rows" and it PRINTS 81.** Measured by
+.agents/TODO.md	8418	71	LIVE	same 71 lines" about `.agents/slop/notes/sched-truth.py`, and that script is not in the
+.agents/TODO.md	8425	227	DATED	## Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ARE EXECUTION NOW.
+.agents/TODO.md	8425	2 of 227	DATED	## Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ARE EXECUTION NOW.
+.agents/TODO.md	8428	3	LIVE	-> PASS, `diff bytes: 0`, 3/3 controls red.
+.agents/TODO.md	8430	3	LIVE	`zsh .agents/slop/portexec/run-kernel.sh` -> PASS, 4/4 words, 3/3 controls red.
+.agents/TODO.md	8432	0	LIVE	-> PASS, **64/64 u32 words bit-identical to `e2e_mm.py`'s CPython answer**, diff 0 bytes,
+.agents/TODO.md	8433	3	LIVE	3/3 controls red. The kernel is emitted by the port's own `render_kernel` with FOUR buffers
+.agents/TODO.md	8439	216 of 227	LIVE	own file and hands it to `cc`: **216 of 227 (95.2%) are FRAGMENTS, not translation units;
+.agents/TODO.md	8448	227	LIVE	- [x] **FINDING, reported not fixed: two of the 227 rows assert a string no compiler accepts.**
+.agents/TODO.md	8480	6 of 8	LIVE	reading a filter's own prose. Denominator reported: **6 of 8 can be made red.**
+.agents/TODO.md	8481	7	LIVE	- `34/34 ALL PROOFS CHECK` — **CAN-FAIL**, 7 plants / 7 reds (proofs are NAME-MATCHED DEFS,
+.agents/TODO.md	8482	18 of 34	LIVE	not `law` stmts; 18 of 34 `{==}` bodies are reflexive but NOT tautological — `A.neg`→identity
+.agents/TODO.md	8484	77	LIVE	- `34 of 77 ops` — **CAN-FAIL**, 34→23 on dropping `lin`/`loop`/`gate`. But `34` is a UNION and
+.agents/TODO.md	8484	34 of 77	LIVE	- `34 of 77 ops` — **CAN-FAIL**, 34→23 on dropping `lin`/`loop`/`gate`. But `34` is a UNION and
+.agents/TODO.md	8485	43 of 77	LIVE	survives a DEAD bend side; `43 of 77` is py-only; `189 nodes per side` is a py-only count.
+.agents/TODO.md	8491	222	DATED	- `222 rows` cstyle — **NOT-A-COUNT.** Retired; the tool prints 227/224/221.
+.agents/TODO.md	8492	32 of 38	DATED	- `32 of 38 readers drifted` — **CAN-FAIL** (32/38 → 1/3 → 0/0). Denominator is an
+.agents/TODO.md	8500	3	LIVE	labelling a py-only count "per side". **~3 lines, 3 blind spots.**
+.agents/TODO.md	8510	12	LIVE	- [x] **12 rules appended** to `notes/bend2-constraints.md` at the END as **A-1 … A-12** (the `F-`
+.agents/TODO.md	8530	584	LIVE	line: `tinybendygrad/tensor.bend` is 1,584 lines = **211 blank / 1,225 comment
+.agents/TODO.md	8535	57	LIVE	- [x] **STAGE 1 — the mapping table, denominator 57.** 57 `def`s in `class Tensor`
+.agents/TODO.md	8536	18	LIVE	(`ast.parse`, `tensor.py:44-564`): **18 present / 39 absent**. Public-only:
+.agents/TODO.md	8536	39	LIVE	(`ast.parse`, `tensor.py:44-564`): **18 present / 39 absent**. Public-only:
+.agents/TODO.md	8537	9 of 28	LIVE	**9 of 28**. Every counterpart found by READING the file and following its own
+.agents/TODO.md	8542	174	LIVE	- [x] **STAGE 2 — present vs EXERCISED, with denominators.** `tensor.bend`: 174 defs,
+.agents/TODO.md	8548	1 of 2	LIVE	**`backward` is 1 of 2 halves** (the filter is gated, the zip is `TODO(p3)`) and
+.agents/TODO.md	8549	9	LIVE	**`assign` is 1 of 9 arms** (the spine is gated). **Ops enum: 77 upstream /
+.agents/TODO.md	8549	1 of 9	LIVE	**`assign` is 1 of 9 arms** (the spine is gated). **Ops enum: 77 upstream /
+.agents/TODO.md	8550	0	LIVE	77 port / 0 missing** — the "43 of 77 unreached" in `graphcmp-LIMITS.md:422` is
+.agents/TODO.md	8550	43 of 77	LIVE	77 port / 0 missing** — the "43 of 77 unreached" in `graphcmp-LIMITS.md:422` is
+.agents/TODO.md	8555	761	LIVE	`gr_0`..`gr_32` and gated** (`mixin/gradient.bend`, 1,761 lines). The table
+.agents/TODO.md	8564	8	LIVE	so ops are not the gap. 8 missing pieces enumerated with file:line.
+.agents/TODO.md	8572	5 of 5	LIVE	`gr_rewrite`/`gr_12` with a control probe. **5 of 5 signature fields AGREE with
+.agents/TODO.md	8578	30	LIVE	1 is a LOOP of ~30 lines, not a missing file. **It still does NOT give the port
+.agents/TODO.md	8586	88	DATED	argument order. **`--check-only` is `ALL PROOFS CHECK`; 88 rows; the 72 PRE-EXISTING
+.agents/TODO.md	8593	7	LIVE	`4 root=MUL/2`. Plants: `reversed(walk)` removed -> **7 rows move**; `inpath` guard
+.agents/TODO.md	8594	3	LIVE	dropped -> **3 rows move** and `walk_grads_n` **STAYS AT 6**, which is the measured
+.agents/TODO.md	8596	0	DATED	and a local parameter name -> 0 rows move, port-file sha256 CHANGED both times.
+.agents/TODO.md	8599	0	DATED	"0 rows moved" for mutants that had never applied; and asserting `old in back`
+.agents/TODO.md	8615	1/3	LIVE	**STEPS 2 AND 3 ARE NOT DONE.** See the header's `backward-walk [#########] 1/3`.
+.agents/TODO.md	8636	6	LIVE	- [x] **6 rules appended** to `notes/bend2-constraints.md` at the END as **T-1 … T-6**
+.agents/TODO.md	8667	384	LIVE	compiles it (384 bytes of object).
+.agents/TODO.md	8668	0	LIVE	- [x] **STAGE 2 — does it RUN and AGREE?** **YES, diff = 0 bytes.** Two fixtures × two
+.agents/TODO.md	8684	227	LIVE	- [x] **STAGE 4 — the conversion, AS EVIDENCE ONLY.** `convert.py` walks all 227 rows with
+.agents/TODO.md	8690	219 of 227	LIVE	withheld. **219 of 227 are fragments, not translation units**, which is why `is_tu` is
+.agents/TODO.md	8702	8	LIVE	- [x] **8 rules appended** as **C-1 … C-8** at the END of `notes/bend2-constraints.md`
+.agents/TODO.md	8722	19	LIVE	- [x] **`i64_dec` in `helpers.bend`: Python's `str(int)` for an `I64`, gated on 19 rows
+.agents/TODO.md	8724	20 of 20	LIVE	`helpers-i64-mutate` is **20 of 20** with 7 new entries. `print_uops`'s CONST arm
+.agents/TODO.md	8783	4/4	LIVE	unfalsifiable    [##########] 4/4   the four headline numbers, each with plant+disarm
+.agents/TODO.md	8840	227	LIVE	("2 of 227 rows have been executed, 225 are still text-only"); the published "222
+.agents/TODO.md	8840	2 of 227	LIVE	("2 of 227 rows have been executed, 225 are still text-only"); the published "222
+.agents/TODO.md	8861	9	LIVE	`graphcmp.py`; a regex that silently dropped `IF` and reported 9 names for a list of
+.agents/TODO.md	8876	96	LIVE	**exited 0**. `./.agents/slop/e2e.sh` -> `PASS`, 96 s.
+.agents/TODO.md	8886	227	LIVE	counts it every run: **227 rows is the denominator; 216 (95.15%) are text-only
+.agents/TODO.md	8888	226 of 227	DATED	compared against CPython; 226 of 227 (99.56%) are STILL TEXT.** Both lanes are run
+.agents/TODO.md	8905	227	LIVE	four-buffer `mm`, which is **not one of the 227 rows**, so it has no `py=` twin to
+.agents/TODO.md	8911	227	LIVE	**`portexec/README.md:53` says "2 of 227 rows have been executed. 225 are still
+.agents/TODO.md	8911	2 of 227	LIVE	**`portexec/README.md:53` says "2 of 227 rows have been executed. 225 are still
+.agents/TODO.md	8912	1 of 227	LIVE	text-only"** and the true sentence is **1 of 227, 226 of 227 still text, plus one
+.agents/TODO.md	8912	226 of 227	LIVE	text-only"** and the true sentence is **1 of 227, 226 of 227 still text, plus one
+.agents/TODO.md	8919	10	LIVE	- [x] **10 RULES appended** to `notes/bend2-constraints.md` at the END as **X-1 … X-10**,
+.agents/TODO.md	8921	2 of 227	LIVE	times). `X-1` is the generalisation of the `2 of 227` denominator error.
+.agents/TODO.md	8925	9	LIVE	- [x] **`print_uops` (render.py:18) is gated: 9 rows, 3 lanes, byte-identical.** The gate is
+.agents/TODO.md	8925	3	LIVE	- [x] **`print_uops` (render.py:18) is gated: 9 rows, 3 lanes, byte-identical.** The gate is
+.agents/TODO.md	8927	7 of 7	LIVE	`ops-pu-mutate.sh` is **7 of 7**. There is NO divergence list — the partial's wall is
+.agents/TODO.md	8975	028	LIVE	`checks/census.tsv` (1,028 rows) and the frozen tree + sha256 manifest beside it.
+.agents/TODO.md	8987	82	LIVE	markers                          1,028   in 82 files
+.agents/TODO.md	8995	2	LIVE	truncated. Also excluded: `runtime/ops_bend.mut.bend`, 2 markers, a mutation harness's scratch
+.agents/TODO.md	9024	48	DATED	48 markers were deleted in 7h40m with **no def landing and no surviving claim at their upstream
+.agents/TODO.md	9056	21	DATED	that the header omits it — but its 21 markers were **deleted this morning** and the shared wall
+.agents/TODO.md	9074	30	LIVE	- **No `TODO(p2)` and no `TODO(p5)` exist**, though both phases do and P5 owns 30 files.
+.agents/TODO.md	9076	026	LIVE	**An undefined priority scale is why 1,026 markers have no order.** To sort this tree you must
+.agents/TODO.md	9077	617	LIVE	first decide what `p3` means, and the only definition in existence is 617 KB away in a different
+.agents/TODO.md	9093	4	LIVE	### [x] FIX THE INSTRUMENT DISAGREEMENT — 4 rules, 4 counts, one quantity
+.agents/TODO.md	9109	0	LIVE	`all` / `sizes` / `fields` / `version` all exit **0** with **0 bytes** on stderr.
+.agents/TODO.md	9155	91	DATED	## Session 2026-10-04 (mathlib unit) — RANK 1 IS NOT A MISSING LIBRARY. `math.*` IS 91 COMMENTS AND 0 CALL SITES.
+.agents/TODO.md	9190	0 of 20	LIVE	### [x] THE HONEST INTERSECTION — **0 of 20 need a `math` library**
+.agents/TODO.md	9206	11	LIVE	11 rows all True; `mathlib/const_probe.bend` builds the band's constants in the
+.agents/TODO.md	9221	6 of 14	LIVE	**So the other unit's finding gates 6 of 14, not 14.**  And `dtype.bend` is on the
+.agents/TODO.md	9258	48 of 64	LIVE	- **`Nat` is not a safe `U64` (48 of 64 bits) and not remotely a safe `I64`
+.agents/TODO.md	9273	10	LIVE	- **The `math.*` concentration does not exist.** The frozen census has **10 rows /
+.agents/TODO.md	9274	2	LIVE	2 files / 3 functions** (`math.log`, `math.pi`, `math.sqrt`), and those rows
+.agents/TODO.md	9294	32	LIVE	which COMPILED, emitted 32 rows, and had the same 11-op census — **every count in the
+.agents/TODO.md	9295	17 of 32	LIVE	file read it as the same graph.** The `?` row caught it: `?` came out live on 17 of 32
+.agents/TODO.md	9297	35 of 77	LIVE	- [x] **OPS 34 -> 35 of 77, AND ONLY ONE OP IS NEW.** `EXPAND` was in the 43 NOT REACHED and
+.agents/TODO.md	9299	17	LIVE	brief named three and the honest count is one. Corpus: 16 -> 17 graphs, 189 -> 221
+.agents/TODO.md	9339	16	LIVE	- [ ] §5's `34 of 77` / `189` nodes / `1134` field-records / `16 graphs`; `EXPAND` leaves NOT
+.agents/TODO.md	9339	34 of 77	LIVE	- [ ] §5's `34 of 77` / `189` nodes / `1134` field-records / `16 graphs`; `EXPAND` leaves NOT
+.agents/TODO.md	9357	0	DATED	**`tinybendygrad/helpers.bend` was 0 BYTES twice** (17:2x and again later; `jj diff` read
+.agents/TODO.md	9389	42399	LIVE	**42399 defs in the tree / 11213 inside a traced lane's closure / 692 reached by no traced
+.agents/TODO.md	9391	61	LIVE	are deliberately NOT counted). **731 dead-arm findings over 61 entries**, per-entry only — the
+.agents/TODO.md	9397	1396 of 1714	LIVE	broke `__file__`-relative resolution and **crashed 1396 of 1714** — `kn-ops-mutate.py` went
+.agents/TODO.md	9408	1295 of 1721	LIVE	1. **1295 of 1721 instruments could not be censused** (761 `crash` — mostly missing
+.agents/TODO.md	9424	12 of 15	LIVE	- [x] schedule rule bodies (12 of 15 unported): EIGHT ported, FOUR walled with file:line -- `.agents/slop/SCHEDULE-BODIES.md`
+.agents/TODO.md	9463	10	LIVE	removed -> **9/10 rows, rc 1**.  A missing row does not read as a pass.
+.agents/TODO.md	9465	5 of 10	LIVE	**PLANTS AND THE DISARM.** `plant-long-a` (`int a;` -> `long a;`) moves **5 of 10** rows
+.agents/TODO.md	9467	7 of 10	LIVE	**half-plant is CL-9 measured**: source text only -> the oracle prints **7 of 10** and
+.agents/TODO.md	9494	35	LIVE	Record: `.agents/slop/BACKWARD-WALK.md`. 35 rows, 33 pre-existing byte-identical.
+.agents/TODO.md	9507	14	LIVE	- [x] **`print_uops`'s range column is gated: `ops-pu-gate` is 14 rows, 3 lanes, byte-identical.**
+.agents/TODO.md	9507	3	LIVE	- [x] **`print_uops`'s range column is gated: `ops-pu-gate` is 14 rows, 3 lanes, byte-identical.**
+.agents/TODO.md	9566	9 of 10	LIVE	named `P06`. A table that reports `9 of 10` and names the tenth is doing its job; the
+.agents/TODO.md	9576	172	LIVE	`dtype.bend` 14 red -> 8. 172 rows vs CPython, plant 7 rows all on `cmod`,
+.agents/TODO.md	9576	7	LIVE	`dtype.bend` 14 red -> 8. 172 rows vs CPython, plant 7 rows all on `cmod`,
+.agents/TODO.md	9577	0	LIVE	disarm 0 rows. Patch staged in `.agents/slop/w64mile/dtype-i64.patch`.
+.agents/TODO.md	9596	5/5	LIVE	Progress: [#####.....] 5/5
+.agents/TODO.md	9604	136	DATED	136 files @ 2026-10-04 20:03:47: **36,084 refs / 36,071 exact / 0 suffix-only /
+.agents/TODO.md	9605	0	DATED	13 unresolved / 49,134 UNSEEN / 0 missing modules / 37 unused imports.** The
+.agents/TODO.md	9609	313	LIVE	`uop/ops.bend` only**: provider stays `ALL PROOFS CHECK` (8,313 lines, half 1 says
+.agents/TODO.md	9631	0	LIVE	wires it into `e2e.sh` as **stage 7** (additive: 0 lines removed, 45 added; the whole
+.agents/TODO.md	9632	7	LIVE	artifact runs 7 stages, 0 failed, 0 skipped, exit 0).
+.agents/TODO.md	9638	0	LIVE	- [x] **F-2** the 64/64 bar, with `f64` operands: **64 words, diff 0 bytes** against
+.agents/TODO.md	9654	227	LIVE	**`f64` is not one of them** — all 227 rows are silent about `double*`. This
+.agents/TODO.md	9668	227	LIVE	SNAPSHOT ONLY and checks itself twice: it compiles (227 rows) **and** the rows
+.agents/TODO.md	9682	30	LIVE	OPERANDS where they expected the two HALVES of one. **0 of 30 rows agree
+.agents/TODO.md	9682	0 of 30	LIVE	OPERANDS where they expected the two HALVES of one. **0 of 30 rows agree
+.agents/TODO.md	9683	30 of 30	LIVE	with `tinygrad/helpers.py:65-75`; the fixed reader agrees on 30 of 30.**
+.agents/TODO.md	9685	6	LIVE	answered `51413338:51413722` — two allocation addresses. Fix is 6 lines
+.agents/TODO.md	9688	30	LIVE	`gen_seam.py` (30 rows, plant 30/30, disarm 0). **NOT APPLIED** — the live
+.agents/TODO.md	9696	8 of 8	DATED	direction: `pack64`/`io_tup` is correct on 8 of 8 fixtures. Both are now
+.agents/TODO.md	9711	71	LIVE	two declarations. (a) pure `H.I64` in Bend (M-1, 71 lines), (b) two `U32`
+.agents/TODO.md	9715	16 of 324	LIVE	one idea is the defect; the count `16 of 324` is a symptom.
+.agents/TODO.md	9721	4	LIVE	red on the shipped tree; nothing committed; 4 files under test byte-unchanged.
+.agents/TODO.md	9727	30	LIVE	measurement: the lanes differ on 30 of 30 rows.**
+.agents/TODO.md	9727	30 of 30	LIVE	measurement: the lanes differ on 30 of 30 rows.**
+.agents/TODO.md	9728	6	LIVE	- [x] **JSL2-2** 30-row gate on `w64mile/gen_seam.py`'s exact 6 DEFS, 5 FIXTURES
+.agents/TODO.md	9743	6	LIVE	- [x] **JSL2-5** F32 seams, `gen_f32_seam.py`, 6 rows: node 3/6, cc 6/6, lanes
+.agents/TODO.md	9746	2 of 3	LIVE	measured (2 of 3) and NOT localised — reported, not guessed.**
+.agents/TODO.md	9758	2	LIVE	agrees, a seam whose `F32` crosses disagrees" survived 2 rows and died on the third
+.agents/TODO.md	9778	21	DATED	- [x] Denominator before/after reported, and the other 21 graphs proved unmoved by a
+.agents/TODO.md	9794	59 of 77	DATED	## 2026-10-04 — `arith`: the six arithmetic ops. Ops reached 53 -> 59 of 77, BOTH SIDES.
+.agents/TODO.md	9817	0	LIVE	`graphcmp.py:2869` exits 2 and prints 0 bytes when captured. Corrected in both files.**
+.agents/TODO.md	9839	13 of 77	LIVE	- [ ] **NOT MINE, REPORTED:** `graphcmp-LIMITS.md` still carries `13 of 77`, `34 of 77` and
+.agents/TODO.md	9839	34 of 77	LIVE	- [ ] **NOT MINE, REPORTED:** `graphcmp-LIMITS.md` still carries `13 of 77`, `34 of 77` and
+.agents/TODO.md	9840	43 of 77	LIVE	`NOT REACHED (43 of 77)`. It is now **59 reached / 18 NOT REACHED**, and §2/§5's
+.agents/TODO.md	9867	41	LIVE	is canonical: **678 qualified uses / 41 files / 40 defs of arithmetic**. The
+.agents/TODO.md	9867	40	LIVE	is canonical: **678 qualified uses / 41 files / 40 defs of arithmetic**. The
+.agents/TODO.md	9897	5	LIVE	- [x] **Plants and disarms: 5 controls, all PASS, plus 3 controls that MOVED and were
+.agents/TODO.md	9897	3	LIVE	- [x] **Plants and disarms: 5 controls, all PASS, plus 3 controls that MOVED and were
+.agents/TODO.md	9918	21	LIVE	- [x] **REFUTED AND GATED: `.agents/slop/ew-consts-gate.sh`, 21 rows, 3 lanes byte-identical.**
+.agents/TODO.md	9918	3	LIVE	- [x] **REFUTED AND GATED: `.agents/slop/ew-consts-gate.sh`, 21 rows, 3 lanes byte-identical.**
+.agents/TODO.md	9962	21	LIVE	difference, about a different def. My first driver printed the decimal and all 21 rows
+.agents/TODO.md	9998	1	LIVE	claims, 0 stale after correction; `--falsify` provably fires (rc=2, 1 row) so `0`
+.agents/TODO.md	10015	24	LIVE	over 24 graphs, the 189-node float-CONST question, `i64_*` def count, the port's `Ops`
+.agents/TODO.md	10025	8 of 8	LIVE	commutative ops are now 8 of 8.** Every measurement in the paragraph is still true and
+.agents/TODO.md	10040	0	LIVE	**rc 1 / 0 lines emitted → rc 0 / 5,503 lines**, `cl-port-gate.py` rc 0 with
+.agents/TODO.md	10040	503	LIVE	**rc 1 / 0 lines emitted → rc 0 / 5,503 lines**, `cl-port-gate.py` rc 0 with
+.agents/TODO.md	10042	137	DATED	137 `.bend` files **14 COLD before and after (the same 14)**, half 2
+.agents/TODO.md	10046	184	LIVE	not the header**: header +32, **body 184 lines**, and every substantive repair is body
+.agents/TODO.md	10074	313 of 374	LIVE	transposed, a parameter left unused, and (in `nv/nvdev.bend`) **313 of 374 gate rows turned
+.agents/TODO.md	10079	2348	LIVE	a pre-`hcq2` state that the tree falsifies (`hcq2.bend` is 2348 lines, not a 29-line stub).
+.agents/TODO.md	10084	8313	DATED	(`+406/−2413`, 6306 vs 8313 lines); `trip` is 0 bytes.
+.agents/TODO.md	10084	0	DATED	(`+406/−2413`, 6306 vs 8313 lines); `trip` is 0 bytes.
+.agents/TODO.md	10097	18 of 18	LIVE	NOTHING. 18 of 18 constructible, 18 of 18 carried on a real `UOp`, 18 of 18 in
+.agents/TODO.md	10101	18	LIVE	- [x] Per-op verdict with the deciding `file:line` — 18 rows, `DENOMINATOR.md` §2.
+.agents/TODO.md	10102	77 of 77	LIVE	- [x] **The reachable denominator: 77 of 77 reachable as a UOp graph; 73 of 77 emittable by
+.agents/TODO.md	10102	73 of 77	LIVE	- [x] **The reachable denominator: 77 of 77 reachable as a UOp graph; 73 of 77 emittable by
+.agents/TODO.md	10103	59 of 77	LIVE	the differ.** So `59 of 77` was the RIGHT denominator and the shortfall was the CORPUS,
+.agents/TODO.md	10115	0	DATED	(0 lines deleted; the 23 deletions in the working diff are FLIPR's pre-existing work).
+.agents/TODO.md	10118	2 of 9	LIVE	deliberately. Cause located to ONE field on 2 of 9 nodes: **`COPY`'s arg has NO port
+.agents/TODO.md	10137	6 of 6	LIVE	`dtype.js`, `sz.js`, `webgpu_call.js`, `webgpu_call.mjs`) that is **6 of 6
+.agents/TODO.md	10227	1330	LIVE	- [x] **`DTB-4` THE GATES RAN AGAINST A CALLED ORACLE, 1330 rows, present==expected every run.**
+.agents/TODO.md	10238	236	LIVE	it is not this file's).** (1) mine: `& 0xFFu` dropped from the exponent field, 236 rows.
+.agents/TODO.md	10240	43	LIVE	because `absx > denorm` compares the whole magnitude — 43 rows. (3)
+.agents/TODO.md	10246	0 of 30	LIVE	"REFUTED 2" claims `runtime/dtype.c:205-206` reads `f[0], f[1]` and is wrong on 0 of 30
+.agents/TODO.md	10256	14	DATED	- [x] **`DTB-9` NO LAW WAS DELETED.** All 14 names are still declared exactly once each
+.agents/TODO.md	10261	871	LIVE	names half (328 refs, 328 exact, 0 unresolved, 0 dead imports), 871 lines not empty.
+.agents/TODO.md	10266	71	LIVE	- [x] **`.agents/slop/ew-gate.sh` LANDED: 71 rows, 3 lanes byte-identical, 1 documented
+.agents/TODO.md	10266	3	LIVE	- [x] **`.agents/slop/ew-gate.sh` LANDED: 71 rows, 3 lanes byte-identical, 1 documented
+.agents/TODO.md	10329	69	LIVE	69 `.py` files write `DEV`; 14 are VENDORED; **55 is the denominator** (writes `DEV`
+.agents/TODO.md	10338	7	LIVE	are a **FIXPOINT** — I fixed 7 rules against them — so they are not an estimate.
+.agents/TODO.md	10369	0	LIVE	spelling. (b) `DEFERRED` has 0 members today but is a real class; when it is non-empty it
+.agents/TODO.md	10375	72	DATED	- [x] **`sigmoid` LANDED (elementwise.py:693). `ew-gate` is 72 rows, 3 lanes identical**, its
+.agents/TODO.md	10375	3	DATED	- [x] **`sigmoid` LANDED (elementwise.py:693). `ew-gate` is 72 rows, 3 lanes identical**, its
+.agents/TODO.md	10420	10/10	LIVE	[##########] 10/10   DECIDED, PORTED, PLANTED, DISARMED, RE-MEASURED
+.agents/TODO.md	10440	22	DATED	`shared-cores` 7 -> 9, `ONLY-PY`/`ONLY-BEND` 2/2 -> 0/0. Corpus **22 graphs [SUPERSEDED: was 25; see CORPUS.md] ->
+.agents/TODO.md	10442	13 of 14	LIVE	- [x] **THE 13 RE-EXAMINED, AGAINST 13.** `emittable: 13 of 14`, `moved by ADEV-1: 1 of 14`
+.agents/TODO.md	10442	1 of 14	LIVE	- [x] **THE 13 RE-EXAMINED, AGAINST 13.** `emittable: 13 of 14`, `moved by ADEV-1: 1 of 14`
+.agents/TODO.md	10443	0 of 13	LIVE	(only `mselect`). **0 of 13 became emittable — all 13 already were; the decision
+.agents/TODO.md	10465	74	DATED	- [x] **`swish` (elementwise.py:801) and `silu` (:814) LANDED. `ew-gate` is 74 rows, 3 lanes
+.agents/TODO.md	10465	3	DATED	- [x] **`swish` (elementwise.py:801) and `silu` (:814) LANDED. `ew-gate` is 74 rows, 3 lanes
+.agents/TODO.md	10571	320 of 324	LIVE	- [x] **Gate against a real clang index.** **320 of 324 EXECUTED**, **4 ungated** and
+.agents/TODO.md	10573	0	LIVE	disagreements**. Determinism 0 rows moved between two runs of one binary.
+.agents/TODO.md	10592	0	LIVE	libclang 17.0.0 (`nm -gU` → 0 hits each) against `CINDEX_VERSION_MINOR = 64`, so
+.agents/TODO.md	10603	374	LIVE	**374 row call sites, 368 ALIVE, 6 DEAD.** The 313 figure is true of the STRAY
+.agents/TODO.md	10632	2176	LIVE	2176 rows and **0** of the six names, so revived they print ungated; and
+.agents/TODO.md	10634	1	DATED	Needs 3 oracle rows + 1 row deleted alongside the one-line fix.
+.agents/TODO.md	10648	75	DATED	- [x] **`quick_gelu` LANDED (elementwise.py:769). `ew-gate` is 75 rows, 3 lanes identical**,
+.agents/TODO.md	10648	3	DATED	- [x] **`quick_gelu` LANDED (elementwise.py:769). `ew-gate` is 75 rows, 3 lanes identical**,
+.agents/TODO.md	10703	9/10	DATED	## Progress: [#########.] 9/10
+.agents/TODO.md	10718	77	LIVE	- [x] **WHAT EACH WIDENING COSTS, priced per raising SITE over all 77 ops x 2 arities, not
+.agents/TODO.md	10720	21	LIVE	ops.py:444 (21 ops, real), ops.py:438 `unary ops must have 1 src` (8), ops.py:137
+.agents/TODO.md	10723	77 of 77	LIVE	src each it swallows **77 of 77**. ops.py:451 `no shape handling for X` — the third
+.agents/TODO.md	10760	22	DATED	61/77/61, `py-only=[] bend-only=[]`, 22 graphs [SUPERSEDED: was 25; see CORPUS.md].** Ceiling if `patir` could be added:
+.agents/TODO.md	10761	26	DATED	**64/64/64, `py-only=[] bend-only=[]`, 26 graphs, NEITHER 16 -> 13**
+.agents/TODO.md	10772	22	DATED	`4a0d2467b7e70d701afac68091394f40` unchanged, 22 graphs [SUPERSEDED: was 25; see CORPUS.md] / 312 rows, verdict PASS.**
+.agents/TODO.md	10772	312	DATED	`4a0d2467b7e70d701afac68091394f40` unchanged, 22 graphs [SUPERSEDED: was 25; see CORPUS.md] / 312 rows, verdict PASS.**
+.agents/TODO.md	10774	312	DATED	behind it. Blast radius of W1/W1s/W4 on the live corpus: **0 of 312 rows moved, 0
+.agents/TODO.md	10774	0 of 312	DATED	behind it. Blast radius of W1/W1s/W4 on the live corpus: **0 of 312 rows moved, 0
+.agents/TODO.md	10851	2712	LIVE	`tinybendygrad/helpers.bend` **2605 -> 2712 lines** (+107), **116479 -> 121924 bytes**,
+.agents/TODO.md	10851	121924	LIVE	`tinybendygrad/helpers.bend` **2605 -> 2712 lines** (+107), **116479 -> 121924 bytes**,
+.agents/TODO.md	10871	782	LIVE	**782/782 rows agree with upstream wherever `int64.min` is not an operand.**
+.agents/TODO.md	10877	2	LIVE	642/158/396/792). 2 plants move 442/442. One plant moves 0 -- and it is a
+.agents/TODO.md	10881	4 of 221	LIVE	- [x] **IM-6 The `hi == lo` census.** Only 4 of 221 fixtures have BOTH operands
+.agents/TODO.md	10884	538	LIVE	half-swap disarm is caught by 538 rows, not by the sentinels.
+.agents/TODO.md	10915	75	LIVE	`promote` says REMINT.** `tanh` is held on this one cause. `ew-gate` is 75 rows
+.agents/TODO.md	10916	3	LIVE	compared, 3 lanes identical, 2 documented divergences.
+.agents/TODO.md	10990	287	DATED	- [x] **MUT-2** Ledger. 287 files in the two sandboxes; 287/287 shadow a real port file; **2 armed
+.agents/TODO.md	10993	834	LIVE	- [x] **MUT-3** Same shape elsewhere: **1,834 `.bend` files in 13 nested shadow trees**, not 287.
+.agents/TODO.md	10996	144	LIVE	- [x] **MUT-4** Live tree: 31 of 144 files have no upstream `.py`. 8 are probes, 6 are seam/lane
+.agents/TODO.md	10996	31 of 144	LIVE	- [x] **MUT-4** Live tree: 31 of 144 files have no upstream `.py`. 8 are probes, 6 are seam/lane
+.agents/TODO.md	10998	138	LIVE	- [x] **MUT-5** Router denominator measured: 138 `.bend`; `138 - probe_f32lit.bend = 137`, so the
+.agents/TODO.md	11001	144	DATED	the LIVE TREE.** Line 144 drops the `"bool"` clause, so `bool` no longer dispatches to the f32
+.agents/TODO.md	11018	9/10	LIVE	### Progress: [#########.] 9/10
+.agents/TODO.md	11031	287	DATED	`dtype.c`, `sz.c` (3 isolated corners + full 119,097 L + a real 287 KB binary), and
+.agents/TODO.md	11037	15	LIVE	Fix = `libclang-tramp.c`'s own idiom, 15 lines away in the same unit.
+.agents/TODO.md	11146	144	LIVE	committing it. Measured over all 144 files: **zero false positives** — the only 2
+.agents/TODO.md	11176	8	DATED	(deleted), 8 probes, 6 seam/lane halves, 16 port infrastructure. Reproduces
+.agents/TODO.md	11232	137	DATED	Deleted; `tinybendygrad/` is now 137 `.bend` / 143 files, and 137 IS the port count.
+.agents/TODO.md	11232	143	DATED	Deleted; `tinybendygrad/` is now 137 `.bend` / 143 files, and 137 IS the port count.
+.agents/TODO.md	11236	19 of 57	LIVE	- [x] **S2-1** **RE-MEASURED the count instead of inheriting it: 18 -> 19 of 57, missing
+.agents/TODO.md	11282	20	LIVE	`runtime/dtype.js` through `bend -o`, rc 0, **20/20 rows present**, **19/19** vs
+.agents/TODO.md	11283	20	LIVE	CPython (called, never transcribed) — and **only 12 of the 20 rows REACH
+.agents/TODO.md	11285	8	LIVE	those three CIDs are **dead in `dtype.js`** and 8 rows measure `dtype.bend`. The
+.agents/TODO.md	11306	20	LIVE	**On the plant `node` STILL EXITS 0** with 20/20 rows present and 11/19 — so rc,
+.agents/TODO.md	11347	68	LIVE	Unit `NONSHAPE`. **ONE file edited: `tinybendygrad/uop/fold.bend`, +68 lines**
+.agents/TODO.md	11349	6673	LIVE	`fold.bend` 6605 -> 6673 lines. Nothing else. Nothing committed.
+.agents/TODO.md	11367	1	LIVE	premise that item 1 gates three is right and item 2's is not — see below.
+.agents/TODO.md	11371	0 of 624	LIVE	the verdict **5 -> 3** and moves **0 of 624** live rows.
+.agents/TODO.md	11375	2	LIVE	**Reported, not landed** (both files are other units'). MEASURED: item 2 gates ONE
+.agents/TODO.md	11377	624	DATED	- [x] **BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
+.agents/TODO.md	11377	22	DATED	- [x] **BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
+.agents/TODO.md	11377	0 of 624	DATED	- [x] **BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
+.agents/TODO.md	11377	0 of 22	DATED	- [x] **BLAST RADIUS 0 of 624 rows, 0 of 22 graphs [SUPERSEDED: was 25; see CORPUS.md]' row counts**, diffed by WHOLE
+.agents/TODO.md	11398	2230	LIVE	baseline read with `split(",")` shredded 2230 rows into 611 and reported 24 of 25
+.agents/TODO.md	11398	24 of 25	LIVE	baseline read with `split(",")` shredded 2230 rows into 611 and reported 24 of 25
+.agents/TODO.md	11410	14	LIVE	(14 files) and the new `tinybendygrad/base.bend` is WARM and not among them.
+.agents/TODO.md	11425	215288	DATED	disarms of mine MOVED 116984 and 215288 rows** -- both turned "the same test"
+.agents/TODO.md	11428	214016	LIVE	timeout, answering a plausible float for 214016 rows and still compiling. That
+.agents/TODO.md	11464	7	LIVE	by editing their file. `context.h` declares the 7 names the two PURE halves need —
+.agents/TODO.md	11489	228	LIVE	- [x] **`FX-7` WHY 1,228 ROWS NEVER SAW EITHER: `fp8_to_float` WAS NOT IN THE GATE AT
+.agents/TODO.md	11534	208	LIVE	threshold in the file AND both restatements of it (+208 rows), which is why
+.agents/TODO.md	11546	41	LIVE	(`plants.py:BASE_CODE_MD5`); the comment delta is 41 lines, all `//`.
+.agents/TODO.md	11562	76	LIVE	76 rows compared, 3 lanes identical, 1 documented divergence. The promotion was never
+.agents/TODO.md	11562	3	LIVE	76 rows compared, 3 lanes identical, 1 documented divergence. The promotion was never
+.agents/TODO.md	11686	10/10	LIVE	### Progress: [##########] 10/10
+.agents/TODO.md	11690	8	DATED	**`Error: 8 defs rely on unsafe or foreign code`** → **`ALL PROOFS CHECK`, 0**.
+.agents/TODO.md	11694	137	LIVE	Whole-tree census (`sweep.sh`, 137 files): **red files 11 → 2**, and the two are
+.agents/TODO.md	11699	138	LIVE	**138 files, red 2.**
+.agents/TODO.md	11721	65	LIVE	- [x] **`LL-5` THE HELPER-INVERSION PLANT FIRES: 65 rows.** `PINV` inverts `i64_is_neg`
+.agents/TODO.md	11728	442	LIVE	for 442 rows while `cdiv` caught it instantly.
+.agents/TODO.md	11729	3	LIVE	- [x] **`LL-6` 3 DISARMS 0, 3 PLANTS DERIVED-EXACT.** `D1` `i64_trunc` `x`->`x|0` 0;
+.agents/TODO.md	11731	4	LIVE	`P1` ceildiv drops the evenness test → **4 rows, 4 derived** (`1_1`, `8_4`,
+.agents/TODO.md	11733	203	LIVE	`P2` fp8 exponent mask `255`->`8388607` → **203 rows, 0 outside the 384-row
+.agents/TODO.md	11735	33	LIVE	pattern**). `P3` fnuz zero keeps the sign → **33 rows, 33 derived**.
+.agents/TODO.md	11737	0	DATED	- [x] **`LL-7` `P1` MOVED **0 ROWS** ON THE FIRST RUN AND THE REASON WAS A DEFECT IN
+.agents/TODO.md	11755	0	LIVE	- [x] **`LL-9` GUARDS.** `run.py:guard()` **REFUSES** a lane with 0 rows emitted, 0 rows
+.agents/TODO.md	11759	137	LIVE	examined **137 files and printed nothing** with no error, which is a "0 red files"
+.agents/TODO.md	11770	1132	LIVE	**WARM**, 1132 lines, **NAMES CLEAN** (3 modules, 306 refs, 306 exact, 0 suffix,
+.agents/TODO.md	11800	0 of 199	LIVE	is one value — **0 of 199,999 NaN payloads survive**). `ops_python.bend:274-278`
+.agents/TODO.md	11824	121	DATED	205,121 rows, every expectation CALLED from `tinygrad/dtype.py`.
+.agents/TODO.md	11837	0 of 199	LIVE	**LL-13's "0 of 199,999 NaN payloads survive" is likewise false here.**
+.agents/TODO.md	11843	1	LIVE	(`kind >= FP8_E4M3FNUZ` -> `>`) moved 1 row and the mechanism determines it:
+.agents/TODO.md	11899	19	DATED	fails and the compiler **enumerates all 19 survivors**. B: the `carg` arm
+.agents/TODO.md	11900	4 of 24	DATED	removed from the real file -> 2 -> 4 of 24, restored with **md5 == pin**.
+.agents/TODO.md	11913	2 of 24	LIVE	no parens). **Reverting is one line and costs the 24-field verdict 2 of 24.**
+.agents/TODO.md	11920	624	LIVE	`bend-only=[]`, `?=1` (the AND). **0 of 624 rows moved.**
+.agents/TODO.md	11920	0 of 624	LIVE	`bend-only=[]`, `?=1` (the AND). **0 of 624 rows moved.**
+.agents/TODO.md	11925	25	LIVE	- [ ] **`ARGL-11` STALE-CITATION CLASS, REPORTED NOT SWEPT.** ~25 `ops.bend:NNNN`
+.agents/TODO.md	11927	33	LIVE	moved 33 lines under this unit and more under others', so any count ages the
+.agents/TODO.md	11943	18	LIVE	- [x] **`wk_i64_to_f32` is a 24-bit-chunk Horner, gated 18 rows / 3 lanes byte-identical.**
+.agents/TODO.md	11943	3	LIVE	- [x] **`wk_i64_to_f32` is a 24-bit-chunk Horner, gated 18 rows / 3 lanes byte-identical.**
+.agents/TODO.md	11946	77	LIVE	- [x] **`tanh` LANDED (elementwise.py:757).** `ew-gate` is 77 rows compared, 3 lanes
+.agents/TODO.md	11946	3	LIVE	- [x] **`tanh` LANDED (elementwise.py:757).** `ew-gate` is 77 rows compared, 3 lanes
+.agents/TODO.md	11967	18	LIVE	### THE 18 ROWS REFUTE IT IN BOTH DIRECTIONS, and the table has a self-check
+.agents/TODO.md	12052	8	LIVE	`norm/gate.txt`: **8 rows asked for, 8 AGREE, 0 DISAGREE, 0 LANE-LOSS, exit 0**
+.agents/TODO.md	12055	2 of 5	LIVE	is wrong on **2 of 5** lane/oracle rows; `f"{v:g}"` is wrong on **0 of 5** and
+.agents/TODO.md	12055	0 of 5	LIVE	is wrong on **2 of 5** lane/oracle rows; `f"{v:g}"` is wrong on **0 of 5** and
+.agents/TODO.md	12099	227	DATED	## Session 2026-10-05 — CSTYLE2: `renderer/cstyle.bend`'s 227 ROWS IN FOUR COLUMNS
+.agents/TODO.md	12101	216	LIVE	said `216 text · 11 C · cc accepts 6 · 2 executed`; with definitions attached
+.agents/TODO.md	12108	227	LIVE	to the 227 rows `cstyle-gate.py` parses **as a SET per family**, so a swap that
+.agents/TODO.md	12117	37	LIVE	Actionable remainder: **37 rows**.
+.agents/TODO.md	12118	30	LIVE	- [x] **`CS2-D` 30 ROWS CONVERTED FROM TEXT TO RUNNING C, EACH GATED THREE WAYS.**
+.agents/TODO.md	12134	6	LIVE	Plant 1 (one token, `g_kernel()`'s `+`→`-`) moved **exactly 6 rows, and only in
+.agents/TODO.md	12136	0 of 227	LIVE	**0 of 227 records differing** were unchanged. That is the argument for the
+.agents/TODO.md	12137	19	LIVE	fourth column, measured. Plant 2 (`sig_args` joins with `"; "`) moved 19 rows and
+.agents/TODO.md	12143	30	LIVE	30 rows currently prove `render_kernel`'s framing and nothing inside it. That
+.agents/TODO.md	12146	6	LIVE	**coordinator's call, worth exactly 6 rows.**
+.agents/TODO.md	12160	7	DATED	and needed nothing. Net -7 lines. 85/85 own rows and 10/10 E2E case lines
+.agents/TODO.md	12167	0	DATED	- [x] **Retired:** 0 laws, 0 defs, no `IO` added. The cause is `dtype.bend`'s and
+.agents/TODO.md	12171	0 of 85	LIVE	(`U32.to_f32`) compiles clean and takes E2E 6/10 -> 1/10 — and moves **0 of 85**
+.agents/TODO.md	12174	22	DATED	**60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]** (22 graphs [SUPERSEDED: was 25; see CORPUS.md], set UNION; the per-graph sum is 182 and is wrong), not
+.agents/TODO.md	12174	60 of 77	DATED	**60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]** (22 graphs [SUPERSEDED: was 25; see CORPUS.md], set UNION; the per-graph sum is 182 and is wrong), not
+.agents/TODO.md	12175	10 of 77	DATED	61 and not 35. `bw` itself reaches **10/10 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]**, `AGREE`, 0 residuals — 35
+.agents/TODO.md	12185	35 of 77	LIVE	blocks (`oracle-cg.py:116`). `backward-graph/BW-GRAPH.md` still quotes 35 of 77.
+.agents/TODO.md	12189	308	LIVE	- [x] **`graphcmp-run.sh` (308 lines, `#!/bin/sh`) ported** to `checks/differ.py run`.
+.agents/TODO.md	12193	149	LIVE	- [x] **`graphcmp-repro.sh` (149 lines, `#!/bin/sh`) ported** to `checks/differ.py repro`.
+.agents/TODO.md	12294	22	DATED	minutes earlier. The cause: the concurrent agent's working copy has 22 `.bend` files
+.agents/TODO.md	12345	0	DATED	truncated to 0 bytes THREE TIMES, each time by a unit that then ran `--check-only`,
+.agents/TODO.md	12351	305	LIVE	CHECK (6,305 lines)` / `ops_python.bend -> observed : O.ParamArg.no_slot` pair. Half 2
+.agents/TODO.md	12365	0	DATED	## Session 2026-10-05 round 10 — FOUR FILES ARE 0 BYTES IN THE WORKING COPY, and one of them is helpers.bend
+.agents/TODO.md	12373	0	LIVE	| `tinybendygrad/helpers.bend` | **0 bytes** | 125,668 |
+.agents/TODO.md	12374	0	LIVE	| `tinybendygrad/runtime/support/compiler_mesa.bend` | **0 bytes** | 39,514 |
+.agents/TODO.md	12375	0	LIVE	| `.agents/slop/graphcmp.py` | **0 bytes** | 170,623 |
+.agents/TODO.md	12376	0	LIVE	| `.agents/slop/rf2root/helpers.bend` | **0 bytes** | 35 |
+.agents/TODO.md	12385	16	LIVE	- **`differ.py run` COMPLETES AND EVERY COUNT IS ZERO** with the fix above: 16 graphs,
+.agents/TODO.md	12386	5	LIVE	0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+.agents/TODO.md	12386	7	LIVE	0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+.agents/TODO.md	12386	0 of 5	LIVE	0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+.agents/TODO.md	12386	0 of 7	LIVE	0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+.agents/TODO.md	12386	5 of 5	LIVE	0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`. `graphcmp.py` is
+.agents/TODO.md	12388	5	LIVE	AttributeError, the census step dies, and every graph artifact is 5 bytes. **A GATE
+.agents/TODO.md	12391	5	DATED	- **`i64_dec` reads 5 defs on master and 0 in the tree.** Four commits of work are safe;
+.agents/TODO.md	12422	668	LIVE	125,668 bytes, 5 `i64_dec` defs, `ALL PROOFS CHECK`; `compiler_mesa.bend` and
+.agents/TODO.md	12428	3	LIVE	`jj restore` reported "modified 3 files", so I assumed `rf2root/helpers.bend` was
+.agents/TODO.md	12464	16	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12464	5	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12464	7	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12464	0 of 5	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12464	0 of 7	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12464	5 of 5	LIVE	16 graphs, 0 comparable, 0 of 5 controls, 0 of 7 plants, `stable-failed=5 of 5`,
+.agents/TODO.md	12466	5	DATED	as `G`, so `G.load_tinygrad()` was an AttributeError and every artifact was 5 bytes.
+.agents/TODO.md	12479	0 of 20	LIVE	12 of the 20 REACH `dtype.js`". **The measured figure is 0 of 20.** `dtype.bend` now
+.agents/TODO.md	12481	0	LIVE	laws are pure, and 0 `.bend` in the tree imports `runtime/dtype.{c,js}` (the 6 textual
+.agents/TODO.md	12511	8	DATED	**BOTH SIDES OF THE PROSE WERE RECONCILED**: the docstring's stage-8 row is now
+.agents/TODO.md	12519	6	DATED	**PLANT + DISARM: 6 of 6 arms** (`e2estage8/plant.py`, no `bend`/`node`/`cc`): shipped
+.agents/TODO.md	12519	6 of 6	DATED	**PLANT + DISARM: 6 of 6 arms** (`e2estage8/plant.py`, no `bend`/`node`/`cc`): shipped
+.agents/TODO.md	12521	7	DATED	a whitespace-free rewording that must NOT move the verdict, the CONTROL (7 stages,
+.agents/TODO.md	12524	8	DATED	runs**. Porting rule: **8 of 8 plants agree, 0 disagree**, stdout byte-identical on
+.agents/TODO.md	12524	8 of 8	DATED	runs**. Porting rule: **8 of 8 plants agree, 0 disagree**, stdout byte-identical on
+.agents/TODO.md	12525	7 of 8	LIVE	7 of 8 (`plant-no-zsh`'s 97-byte difference is the shell's own `line N:` prefix,
+.agents/TODO.md	12536	19	LIVE	(`WALL/1`..`WALL/7`), `walls.tsv` (19 rows), `walls.truth.tsv` (independently
+.agents/TODO.md	12537	19	LIVE	hand-measured), `wallcheck.py`. **19 rows -> 15 graded -> AGREEMENT 15/15, ERROR RATE
+.agents/TODO.md	12538	4	LIVE	0/15; 4 refused rather than guessed; 4 plants fired, all files restored byte-identical.**
+.agents/TODO.md	12559	61 of 77	DATED	helpers.bend now exports. **U2, `STANDS`.** (3) `opspy/corpus.py:6` says `61 of 77`
+.agents/TODO.md	12560	53 of 77	DATED	while the script prints `53 of 77`; notes OPS-3 says `60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]`. **Three figures,
+.agents/TODO.md	12560	60 of 77	DATED	while the script prints `53 of 77`; notes OPS-3 says `60 of 77 [SUPERSEDED - see CORPUS.md: a union over ZERO graphs that built]`. **Three figures,
+.agents/TODO.md	12570	14 of 137	LIVE	records the tree's cold set going `14 of 137 -> 6 of 137` **mid-measurement**.
+.agents/TODO.md	12570	6 of 137	LIVE	records the tree's cold set going `14 of 137 -> 6 of 137` **mid-measurement**.
+.agents/TODO.md	12635	705	LIVE	- [x] **`live`: oracle and port BYTE-IDENTICAL** — 15,705 bytes, same sha256
+.agents/TODO.md	12638	9	LIVE	- [x] **9 plants, `0 of 9 disagree`**, reaching exit statuses **0, 1, 2 and 3** — including
+.agents/TODO.md	12638	0 of 9	LIVE	- [x] **9 plants, `0 of 9 disagree`**, reaching exit statuses **0, 1, 2 and 3** — including
+.agents/TODO.md	12650	9	LIVE	their newline (9 lines diffed as 1); `read_text(errors="replace")` where `cat`/`grep` are
+.agents/TODO.md	12673	0	LIVE	`./bin/bend -> rc=0 rows=227`. So: **not a retry** (nothing intermittent), **not a fixture
+.agents/TODO.md	12680	0 of 8	LIVE	**FIDELITY HELD: `0 of 8 set(s) disagree`** — stdout IDENTICAL and exit status identical on
+.agents/TODO.md	12713	0	DATED	`checks/e2e.sh` to 0 BYTES, mid-port.** Not deleted: emptied, still executable. **A 0-byte
+.agents/TODO.md	12734	39	DATED	agreement, not corroboration). **80 OF A LARGER SET.** `gates/bc-u32-gate.py`, 39 rows
+.agents/TODO.md	12735	3	DATED	across 6 bands, 3 lanes: **20 disagree before, 2 after.**
+.agents/TODO.md	12757	334	LIVE	pair, so the lane counted 333 for 334 rows.
+.agents/TODO.md	12770	21	LIVE	`.agents/slop/wallcheck/` — 21 rows, hand-measured truth column, `--selftest` for the guards.
+.agents/TODO.md	12776	7	DATED	much" but "matches nothing" — and it invalidated 7 rows. **FOUND BY THE SELFTEST, NOT BY
+.agents/TODO.md	12785	21	DATED	- [x] **21 ROWS -> 16 GRADED, 5 REFUSED, ERROR RATE 0/16, ONE LABELLER.** Refusals: `W3` `W5`
+.agents/TODO.md	12794	109	LIVE	- [x] **REDUNDANCY IS PER LINE NOW.** A per-FILE conjunction counted 109 files for the key `CID`
+.agents/TODO.md	12795	300	LIVE	(a comment on one line, "cannot be" 300 lines later). Per line, `WINDOW=2`:
+.agents/TODO.md	12798	12	LIVE	exactly what WALL/7 predicted.** `KEY-TOO-BROAD` fires above 12 files: past that a count is
+.agents/TODO.md	12815	103	DATED	## Session 2026-10-05 — the 103 `.txt` under `runs/graphcmp/D/`
+.agents/TODO.md	12818	3/3	LIVE	difftxt-contract  [##########] 3/3
+.agents/TODO.md	12823	103	LIVE	`STAB` plus 13 literals: **103 names, 25 families, 103 on disk, 0 orphans, 0 declared-but-
+.agents/TODO.md	12824	103 of 103	LIVE	absent. 103 of 103 are named by TWO OR MORE instruments.** Readers: `differ.py` writes all
+.agents/TODO.md	12828	16	LIVE	reads `D0-run-summary.txt` and returns 1 without it.** Docs: `checks/README.md` 16 names,
+.agents/TODO.md	12845	103	DATED	on the renamed population it now reports **103 `MISSING`** where it reported none. `unhealthy()`
+.agents/TODO.md	12854	147 of 151	LIVE	rename would destroy — `VERDICT.md` reads "147 of 151 artifacts are byte-identical".
+.agents/TODO.md	12872	7 of 7	DATED	**BEFORE**: S1 left **7 of 7** artifacts byte-identical to the previous green run's, and said
+.agents/TODO.md	12874	6 of 7	LIVE	type error. S2 left **6 of 7** stale with `py.txt` fresh.
+.agents/TODO.md	12881	1	LIVE	**16 `return 1`s** and an exception reach. **A `finally` cannot run under SIGKILL** — measured,
+.agents/TODO.md	12883	130	LIVE	killed it at 2,130 MB. The next run's `_clear()` sweeps them (planted and measured).
+.agents/TODO.md	12894	9	DATED	- [x] **`SF-5` NO VERDICT CHANGE, ALL 9 GATES, BOTH SIDES.** `.agents/slop/stalefix/gate-matrix.py`
+.agents/TODO.md	12905	7	LIVE	left 7 files at rc=2. The guarantee is therefore exactly *after `Gate.run()` returns 1 the
+.agents/TODO.md	12911	1	LIVE	all 16 `return 1`s are inside the `try`. What my fix DID move is `clears`: `NONE` →
+.agents/TODO.md	12922	9	LIVE	excuses `differ.declared()` and nothing else. Renaming is a contract change across 9 gates
+.agents/TODO.md	12942	22	LIVE	`Dispatch x2`, 64 `out_u32` words read back. Stage 2's denominator both runs: `22 rows
+.agents/TODO.md	12952	46	DATED	**rc 1, `3 failed of 46 rows read`**. (2) `cdp.mjs`'s `chrome-stable` key renamed: stage 3
+.agents/TODO.md	12967	224 of 280	LIVE	WRONG BY A FACTOR.** Measured `224 of 280` resolve, **56** dangling.
+.agents/TODO.md	12981	0	LIVE	says *"Reported, not fixed -- see DIFFPY.md"*; **`find . -name DIFFPY.md` = 0 files**, and
+.agents/TODO.md	13010	151	DATED	Read the whole message. `i64-shl` (151 rows) and `i64-shr` (301 rows) pass now.
+.agents/TODO.md	13010	301	DATED	Read the whole message. `i64-shl` (151 rows) and `i64-shr` (301 rows) pass now.
+.agents/TODO.md	13015	9 of 9	LIVE	collided. Four reads moved to a `raw` snapshot. Fixed in `116f73fd`; 9 of 9 green.
+.agents/TODO.md	13040	9	LIVE	- [x] all 9 gates, both lanes, with the 7 in-run cells as explicit controls — `MATRIX.rows`
+.agents/TODO.md	13052	9/9	LIVE	`checks/*.sh` [#########] 9/9 · `.agents/slop/shells/`
+.agents/TODO.md	13054	17	LIVE	- [x] **14 of 17 `checks/*.sh` RESOLVED A PATH AGAINST A DIRECTORY THAT IS NOT THE REPO.**
+.agents/TODO.md	13054	14 of 17	LIVE	- [x] **14 of 17 `checks/*.sh` RESOLVED A PATH AGAINST A DIRECTORY THAT IS NOT THE REPO.**
+.agents/TODO.md	13057	8 of 17	LIVE	`/`: **WRONG-ROOT 8 of 17, plus 1 SUSPECT that exited 0 while reading the wrong tree.**
+.agents/TODO.md	13061	17 of 17	DATED	third exception. **17 of 17 assert; 1 of 17 did before.** Same measure in the clean
+.agents/TODO.md	13061	1 of 17	DATED	third exception. **17 of 17 assert; 1 of 17 did before.** Same measure in the clean
+.agents/TODO.md	13064	14 of 14	LIVE	- [x] **THE PLANT MOVES A SCRIPT ONE DIRECTORY DEEPER AND IT GOES RED: 14 of 14 caught, rc=3,
+.agents/TODO.md	13078	1 of 1	LIVE	second observer to move the pin down to: under both plants it reported `1 of 1 disagree`
+.agents/TODO.md	13081	0 of 9	LIVE	eight plants: **0 of 9 disagree**; the real `/bin/sh checks/e2e.sh` from `/` is **rc 4**
+.agents/TODO.md	13121	18	LIVE	same 18 lines and the same sha256 `9f39a6e3ee7a0e30…`** — four names, one emission, and
+.agents/TODO.md	13125	20	LIVE	`D2-cmp-*` pin does not already assert, so writing five more would make 19 of 20 rows bare
+.agents/TODO.md	13125	19 of 20	LIVE	`D2-cmp-*` pin does not already assert, so writing five more would make 19 of 20 rows bare
+.agents/TODO.md	13152	25	LIVE	- [x] **`canon` IS DEAD CODE — 25 lines, ZERO of nine gates pass it.** `pins` 7 users,
+.agents/TODO.md	13172	5	LIVE	gated now (`gates/ops-core-gate.py`, 5 rows, 3 lanes, no new port code — the driver CALLS the
+.agents/TODO.md	13172	3	LIVE	gated now (`gates/ops-core-gate.py`, 5 rows, 3 lanes, no new port code — the driver CALLS the
+.agents/TODO.md	13196	14	DATED	## 2026-10-06 — the arg-type lane, 14 rows, and the FOURTH fixture mismatch
+.agents/TODO.md	13198	14	LIVE	`ops-core-gate` is at 14 rows. The nine new ones intern two nodes differing in nothing but the
+.agents/TODO.md	13232	4	LIVE	**`.agents/slop/speccite/plants.py`** (4 arms, tree never modified). **Nothing committed.**
+.agents/TODO.md	13236	1 of 5	LIVE	`WRONG-FILE`, 26 `NO-FILE`, 5 `STALE-RULE`, 4 `PAST-EOF`. **1,310 of 5,651 (23%) are adjudicable**
+.agents/TODO.md	13260	4	LIVE	`CONTROL` (live bytes) is rc 0, so RED is the plant and not the harness. **4/4 arms as expected.**
+.agents/TODO.md	13295	99 of 139	DATED	`load_tinygrad()`, `differ.py` never passes `--dev`; 99 of 139 artifacts carry `sCPU` (52 by
+.agents/TODO.md	13312	25	LIVE	- [x] **CANONICAL FORM IS INJECTIVE ON THE 25 GRAPHS' ROWS: 88 live dataclass instances → 44
+.agents/TODO.md	13331	523	LIVE	- [x] **IT WAS TRACKED AS TWO GIT EMPTY BLOBS WHILE THE WORKTREE HELD 268,523 BYTES** — and
+.agents/TODO.md	13344	268	LIVE	**`.gitignore` CANNOT UNTRECK UNDER GIT. IT CAN, UNDER JJ.** The 268 KB stay on disk and are
+.agents/TODO.md	13347	51	LIVE	`checks/rows-<name>-<side>.rows` into `checks/` — 51 files, tracked as empty blobs, now ignored.
+.agents/TODO.md	13377	9	DATED	- [x] **9 PLANTS IN `gates-pop.py` (was 8) AND 7 IN `gendirs.py`, ALL GREEN, PLUS AN INERTNESS
+.agents/TODO.md	13379	40	LIVE	re-run of the discovery: two live scans cost 40 s on a tree with six units writing and **compare
+.agents/TODO.md	13387	468	LIVE	executes a gate, deliberately: `bend` peaks at 1,468 MB against a 2,048 MB ceiling with six units
+.agents/TODO.md	13387	048	LIVE	executes a gate, deliberately: `bend` peaks at 1,468 MB against a 2,048 MB ceiling with six units
+.agents/TODO.md	13396	25	DATED	FAIL`, one complaint, `unmapped arg atom letters: C`. MEASURED after (one real run, 25 `bend`
+.agents/TODO.md	13406	25	LIVE	`COPY` prefix). MEASURED over all 25 graphs: **removes exactly `C`, adds nothing, and changes
+.agents/TODO.md	13426	3	LIVE	- [x] **PLANTS: `.agents/slop/selfcheck/plants.py`, 3 plants / 15 beats, all PASS post-fix and all FAIL
+.agents/TODO.md	13439	326	LIVE	10 DECLINED.** Evidence **`.agents/slop/stale269/README.md`**, ledger **`FINAL.tsv`** (326 rows,
+.agents/TODO.md	13440	69	LIVE	one verdict each, the target line PASTED), hand decisions **`resolutions.tsv`** (69 rows, each
+.agents/TODO.md	13442	3	LIVE	**`.agents/slop/stale269/plants.py`** (3 arms, tree never modified). **Nothing committed.**
+.agents/TODO.md	13453	168 of 172	DATED	address is found by **WHOLE-LINE TEXT** -- **168 of 172 exact, and NEAREST-OCCURRENCE IS NOT USED
+.agents/TODO.md	13456	58	LIVE	**`git diff -U0`: 58 files, 181 comment-line pairs, 0 CODE LINES** -- and that check caught TWO
+.agents/TODO.md	13458	12	LIVE	number but not the FILE, leaving 12 rows naming the right line in the wrong file, which is the
+.agents/TODO.md	13462	2	DATED	EDITED.** **THE 10 DECLINED NEED INVENTING** and include 2 `ops-501-oracle.py` citations proven
+.agents/TODO.md	13468	60	LIVE	because fixing them moves 60 rows out of its own findings and that is a decision about the gate.
+.agents/TODO.md	13476	11 of 11	LIVE	where the paragraph is aimed — so it is now closed in **11 of 11**, and the seven gates that needed it
+.agents/TODO.md	13494	14	DATED	- [x] **THE ROSTER IS DISCOVERED, NOT LISTED.** `checks/sweep.py`’s `LIVE_UNITS` (14 names,
+.agents/TODO.md	13495	10	LIVE	invariant under its own edit, 10 names on cold dirs) is replaced by `live_units()`: a unit is
+.agents/TODO.md	13506	154 of 184	LIVE	Category = each level<=2 (`#`/`##`) heading, found by discovery; 154 of 184 sections carry tasks.
+.agents/TODO.md	13529	606	DATED	• Session 2026-10-02 — runtime/ops_nv.bend (606 rows, TWO AGENTS, ONE... — ████████░░ 6/8  75%
+.agents/TODO.md	13537	995	DATED	• green on 570 of 995 rows — ██████████ 9/9 100%
+.agents/TODO.md	13537	570 of 995	DATED	• green on 570 of 995 rows — ██████████ 9/9 100%
+.agents/TODO.md	13563	33 of 52	DATED	• Session 2026-10-04 — codegen/decomp/dtype.bend: 33 of 52 gate disag... — ██████░░░░ 8/14  57%
+.agents/TODO.md	13567	225	DATED	• Session 2026-10-04 — renderer/cstyle.bend: 225 rows, ZERO verificat... — ██████████ 13/13 100%
+.agents/TODO.md	13583	0 of 234	DATED	• Session 2026-10-04 (load unit) — THE BASELINE LEDGER: 0 of 234 record... — ██████░░░░ 5/8  62%
+.agents/TODO.md	13589	227	DATED	• Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ... — ██████████ 8/8 100%
+.agents/TODO.md	13589	2 of 227	DATED	• Session 2026-10-04 (portexec unit) — THE PORT'S C RAN. 2 of 227 ROWS ... — ██████████ 8/8 100%
+.agents/TODO.md	13620	9/10	DATED	• Progress: [#########.] 9/10 — █████████░ 13/14  93%
+.agents/TODO.md	13636	227	DATED	• Session 2026-10-05 — CSTYLE2: renderer/cstyle.bend's 227 ROWS IN FO... — ████████░░ 7/9  78%
+.agents/TODO.md	13642	0	DATED	• Session 2026-10-05 round 10 — FOUR FILES ARE 0 BYTES IN THE WORKING C... — █████░░░░░ 1/2  50%
+.agents/TODO.md	13650	103	DATED	• Session 2026-10-05 — the 103 .txt under runs/graphcmp/D/ — ███████░░░ 4/6  67%
+.agents/TODO.md	13658	14	DATED	• 2026-10-06 — the arg-type lane, 14 rows, and the FOURTH fixture mismatch — █████░░░░░ 2/4  50%
