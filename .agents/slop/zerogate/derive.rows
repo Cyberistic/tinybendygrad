@@ -1,0 +1,171 @@
+path	declared	reached	rc_at_rest	token	starts_bend	cause
+checks/abi4_gate.py	3	1	1	FAIL	0	UNRUN-BY-REFUSAL
+checks/abi_gate.py	3	1	1	AGREE GREEN RED PASS FAIL	0	UNRUN-BY-REFUSAL
+checks/al-verdict.py	0,2	2	2	-	0	
+checks/both-census.py	0,3	1	1	RED FAIL	0	UNRUN-BY-REFUSAL
+checks/bounded-selftest.sh	2,3	1	1	-	0	
+checks/bounded.py	0,1,3,4,5	0	-	-	1	UNRUN-BY-REFUSAL
+checks/census.py	0,3	1	1	FAIL	0	UNRUN-BY-REFUSAL
+checks/citation-gate.py	0,1	0,1	1	RED	0	
+checks/cl-port-gate.py	2	2	2	REFUSED	0	UNRUN-BY-REFUSAL
+checks/classify.sh	0,1,3	1	1	-	0	
+checks/cli.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/compile.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/corpus-figure.py	-	1	1	RED FAIL	0	
+checks/coverage.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/demo.sh	2,3	1	1	-	0	
+checks/devgate.py	0	0	0	RED	0	
+checks/devpin.py	-	0	0	-	0	
+checks/differ.py	0,1,2,3	0	-	-	1	UNRUN-BY-REFUSAL
+checks/disagree-gate.py	2	0	0	-	0	
+checks/disarm.sh	2,3	1	1	-	0	
+checks/dup-census.py	0,3	3	3	REFUSED	0	INPUT-SWEPT
+checks/dup-gate.py	2,3	3	3	REFUSED	0	INPUT-SWEPT
+checks/e2e.py	0,1,2,3,4	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/e2e.sh	0,1,2,4	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/env-precond.py	0,2	0,2	0	-	0	UNRUN-BY-REFUSAL
+checks/fw_live.py	1	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/gate.py	3	3	3	REFUSED	0	INPUT-SWEPT
+checks/gate.sh	1,2,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/gate_dtype.py	0	2	2	-	0	
+checks/gate_norm.py	3	1	1	FAIL	0	UNRUN-BY-REFUSAL
+checks/gen.sh	1,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/git-index-guard.py	-	3	3	-	0	REFUSED
+checks/graphcmp-census-audit.py	0	0	0	-	0	
+checks/hermetic-census.py	0,3	3	3	REFUSED	0	INPUT-SWEPT
+checks/jsfix_gate.py	3	1	1	FAIL	0	UNRUN-BY-REFUSAL
+checks/lint_demo.sh	0,1,3	1	1	-	0	
+checks/lintable-gate.sh	0,1,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/llama.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/marker-audit.py	0	0	0	-	0	
+checks/nl-gate-noguard.py	3	3	3	REFUSED	0	INPUT-SWEPT
+checks/nl-gate.py	1,3	3	3	REFUSED	0	INPUT-SWEPT
+checks/no-shrink.py	0,1	0	0	-	0	
+checks/no-strays.py	1	1	1	-	0	
+checks/no-txt.py	0,1	0,1	1	-	0	
+checks/norm_check.py	3	0	0	FAIL	0	
+checks/nvrows-deadrow-gate.py	2,3	0,1,2	1	DEAD	0	UNRUN-BY-REFUSAL
+checks/oracle-txt-census.py	0,1	0	-	-	1	UNRUN-BY-REFUSAL
+checks/oracle_f64.py	3	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/plant.sh	1,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/process_replay.py	-	1	1	-	0	
+checks/render-gate-oracle.py	-	0	0	-	0	
+checks/repair-dupes.py	1,2	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/repro-paths.py	0,1	1	1	-	0	
+checks/residue.py	0,3	0,3	-	-	0	
+checks/rn-gate.py	1,3	3	3	REFUSED	0	INPUT-SWEPT
+checks/romless.py	1	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/run-all.sh	2,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/run-f64.sh	0,1,2,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/run-port-mm.sh	0,1,2,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/run.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/sb-gate.sh	0,1,3,5,6	(none)	-	-	0	UNRUN-BY-REFUSAL
+checks/serve.py	-	(none)	-	-	0	
+checks/slop-declare.py	0,3	0	0	RED PASS	0	
+checks/substrate-check.sh	2,3	1	1	-	0	
+checks/substrate.py	0,1,2,3,4,5	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/sweep.py	0,3	(none)	-	-	0	
+checks/sz.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+checks/test_rewrite_bottom_up_gate.py	-	0	0	-	0	
+checks/txt-owners.py	0,1,2	0	0	-	0	
+checks/unowned.py	0	0,1	-	-	0	
+checks/vz_gate.py	0	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/walk-mutate.sh	0,1,2,3	(none)	-	-	1	UNRUN-BY-REFUSAL
+checks/wallcheck.py	0,2,3,4,5	0,4	-	-	0	
+checks/wt-sync.sh	2	(none)	-	-	1	UNRUN-BY-REFUSAL
+gates/bc-u32-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/bc-u32-gen.py	-	0	0	-	0	
+gates/bc-u32-oracle.py	-	0	0	-	0	
+gates/bc_u32_table.py	-	0	0	-	0	
+gates/beautiful-mnist-gate.py	0,1,2,3,4,5	(none)	-	-	1	UNRUN-BY-REFUSAL
+gates/ew-consts-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/ew-consts-oracle.py	0	0	0	-	0	
+gates/ew-explog-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/ew-explog-oracle.py	0	0	0	-	0	
+gates/gate-surface.py	2	1	1	REFUSED AGREE BROKEN GREEN RED PASS FAIL DEAD	0	
+gates/gates-pop.py	2	0	0	RED	0	UNRUN-BY-REFUSAL
+gates/gendirs.py	0	0	-	-	1	UNRUN-BY-REFUSAL
+gates/i64-shl-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/i64-shl-oracle.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+gates/i64-shr-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/i64-shr-oracle.py	-	1	1	Traceback	0	CRASH-NOT-REFUSAL
+gates/mixin-op-gate.py	0,1,2,3,4,5	(none)	-	-	1	UNRUN-BY-REFUSAL
+gates/msgdiff-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/ops-core-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/ops-core-oracle.py	-	0	0	-	0	
+gates/oracles/beautiful-mnist-oracle.sh	-	(none)	-	-	1	UNRUN-BY-REFUSAL
+gates/oracles/mixin-op-oracle.sh	-	(none)	-	-	1	UNRUN-BY-REFUSAL
+gates/render_val_s-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/replace-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/retention-check.py	0,1,3,4,5	1	-	-	0	
+gates/tn_bitwise_not-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_contiguous_backward-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_detach-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_dunder_neg-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_logical_not-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_neg-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_sin_log2_exp2_rsqrt-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_sqrt-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_trunc_reciprocal_threefry-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/tn_where-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/uop_cast-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/wk-cd-gate.py	0,1,3,4,5	0	-	-	0	
+gates/wk-cd-oracle.py	0	0	0	-	0	
+gates/wk-eval-gate.py	0,1,3,4,5	(none)	-	-	0	
+gates/wk-eval-oracle.py	-	0	0	-	0	
+gates/wk-f32-gate.py	0,1,3,4,5	0	-	-	0	
+gates/wk-f32-rows.py	-	0	0	-	0	
+
+# entry points DISCOVERED by vocab.scan() (os.walk): 116
+# REAL SURFACE OF ZERO: 8
+#   ZERO checks/dup-census.py  refuse() at :70 (MODULE-SCOPE)
+#   ZERO checks/dup-gate.py  refuse() at :69 (MODULE-SCOPE)
+#   ZERO checks/gate.py  refuse() at :70 (MODULE-SCOPE)
+#   ZERO checks/git-index-guard.py  refuse() at :0 (reachable from argv)
+#   ZERO checks/hermetic-census.py  refuse() at :61 (MODULE-SCOPE)
+#   ZERO checks/nl-gate-noguard.py  refuse() at :61 (MODULE-SCOPE)
+#   ZERO checks/nl-gate.py  refuse() at :81 (MODULE-SCOPE)
+#   ZERO checks/rn-gate.py  refuse() at :90 (MODULE-SCOPE)
+# NEVER TESTED BY ANYONE: 42
+#   UNTESTED checks/e2e.py  [starts bend; unrun by this unit]
+#   UNTESTED checks/e2e.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/gate.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/gen.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/lintable-gate.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/plant.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/repair-dupes.py  [starts bend; unrun by this unit]
+#   UNTESTED checks/run-all.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/run-f64.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/run-port-mm.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/sb-gate.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/serve.py
+#   UNTESTED checks/substrate.py  [starts bend; unrun by this unit]
+#   UNTESTED checks/sweep.py
+#   UNTESTED checks/vz_gate.py  [starts bend; unrun by this unit]
+#   UNTESTED checks/walk-mutate.sh  [starts bend; unrun by this unit]
+#   UNTESTED checks/wt-sync.sh  [starts bend; unrun by this unit]
+#   UNTESTED gates/bc-u32-gate.py
+#   UNTESTED gates/beautiful-mnist-gate.py  [starts bend; unrun by this unit]
+#   UNTESTED gates/ew-consts-gate.py
+#   UNTESTED gates/ew-explog-gate.py
+#   UNTESTED gates/i64-shl-gate.py
+#   UNTESTED gates/i64-shr-gate.py
+#   UNTESTED gates/mixin-op-gate.py  [starts bend; unrun by this unit]
+#   UNTESTED gates/msgdiff-gate.py
+#   UNTESTED gates/ops-core-gate.py
+#   UNTESTED gates/oracles/beautiful-mnist-oracle.sh  [starts bend; unrun by this unit]
+#   UNTESTED gates/oracles/mixin-op-oracle.sh  [starts bend; unrun by this unit]
+#   UNTESTED gates/render_val_s-gate.py
+#   UNTESTED gates/replace-gate.py
+#   UNTESTED gates/tn_bitwise_not-gate.py
+#   UNTESTED gates/tn_contiguous_backward-gate.py
+#   UNTESTED gates/tn_detach-gate.py
+#   UNTESTED gates/tn_dunder_neg-gate.py
+#   UNTESTED gates/tn_logical_not-gate.py
+#   UNTESTED gates/tn_neg-gate.py
+#   UNTESTED gates/tn_sin_log2_exp2_rsqrt-gate.py
+#   UNTESTED gates/tn_sqrt-gate.py
+#   UNTESTED gates/tn_trunc_reciprocal_threefry-gate.py
+#   UNTESTED gates/tn_where-gate.py
+#   UNTESTED gates/uop_cast-gate.py
+#   UNTESTED gates/wk-eval-gate.py

@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=416 MB (ceiling 2048)  4s  :: ./bin/bend .agents/slop/twopass/plant.bend  out=3019B err=42B
+bend 2.0.35 is available: run bend update

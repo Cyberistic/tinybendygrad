@@ -1,0 +1,6 @@
+(a1) dtype=dtypes.f32 shape=(8, 3)
+(a2) dtype=dtypes.f32 shape=(3, 4, 3)
+(b1) dtype=dtypes.f32 shape=(0, 3)
+(b3) dtype=dtypes.f32 shape=(4, 3)
+# census a2 srcs: ['RESHAPE', 'RANGE'] arg is None
+# census b1 srcs: ['RESHAPE', 'RANGE']

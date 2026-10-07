@@ -1,0 +1,4 @@
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/unshardfold/refusal-population.rows members 77
+{'answer': 13, 'cascade-refuse': 49, 'own-wall-refuse': 4, 'late': 11, 'absent': 0}
+OWN-WALL: OpsSTAGE,OpsRESHAPE,OpsEXPAND,OpsUNSHARD
+CASCADE: 49

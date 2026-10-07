@@ -1322,6 +1322,27 @@ def wmma_ds.go(dt: S.Dt, ws: Maybe<&2, Shapes>, last: Maybe<&2, O.Sint>) -> Mayb
 def wmma_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   wmma_ds.go(src_dt(2, ss), all_shapes(List.take(&2, Derived, ss, 3n)), src_last(2, ss))
 
+# STAGE: "STAGE adds the existing shape to the front, opposite of INDEX" -- the dtype
+# passes through `src[0]` (ops.py:147-152 puts STAGE in the pass-through group) and the
+# shape is `tuple([int(r.vmax+1) for r in self.src[1:]]) + self.src[0].shape`
+# (ops.py:378-380). The prepend is EMPTY exactly when STAGE carries no range srcs -- the
+# same-device `bufferize` case -- and then the shape IS `src[0]`'s and the arm is total.
+# A range src needs `int(r.vmax+1)`, the RANGE's end read through `_min_max`, and
+# `dt_shape` is handed no `BTable`, so that case REFUSES rather than guess a width: the
+# whole node then reads `?`, and `int(r.vmax+1)` is the one line a later unit lands.
+# The tail is a PARAMETER and not a scrutinee: a call in scrutinee position is refused,
+# and `src_shape` needs the FULL src list, so both are read by passing `+ss` on.
+def stage_shape.of(tail: List<&2, Derived>, +ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
+  match tail:
+    case Nil{}: src_shape(0, ss)
+    case _ <> _: None{}
+
+def stage_shape(+ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
+  stage_shape.of(List.drop(&2, Derived, ss, 1n), ss)
+
+def stage_ds(+ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
+  dt_of(src_dt(0, ss), stage_shape(ss))
+
 # ===========================================================================
 # `marg` -- ops.py:813, RESHAPE's arm of it, and the reason RESHAPE is the one
 # movement shape this file ports.
@@ -1361,136 +1382,6 @@ def const_i64(a: O.Arg) -> Maybe<&2, H.I64>:
   match a:
     case O.APy{v}: const_i64.go(v)
     case _       : None{}
-
-# ===========================================================================
-# THE RANGE WIDTH -- `int(r.vmax)+1`, THE ONE QUANTITY UNSHARD AND STAGE BOTH READ
-# (ops.py:430 and ops.py:378). This is the block `dt_shape`'s two deferred arms were
-# waiting for, and WHY it is a READER over the arena rather than a table read.
-#
-# WHAT UPSTREAM COMPUTES. ops.py:1147 answers a RANGE/SPECIAL `0, (self.src[0]-1).vmax`,
-# and ops.py:1110's SUB arm answers `s0_vmin-s1_vmax, s0_vmax-s1_vmin`. For `r.src[0]` an
-# integer CONST `c` that is `(c-1, c-1)`, so `.vmax` IS `c-1` and `int(r.vmax)+1` IS `c`
-# -- EXACTLY, with no fold and no interval. The port's own `mm.range` (below, `bnd.sub
-# (Bnd2.hi(mm.s0(srcs)), bnd_one())`) is the same subtraction, so the two lanes agree on
-# the arithmetic and only the QUESTION of where `c` comes from differs.
-#
-# MEASURED, `.agents/slop/twopass/probe.bend` over graphcmp.py's `g_unshard`: it prints
-# `i=7 op=RANGE dt1=weakint vmax1=+0:1` against `UOp.range(2, 0, AxisType.DEVICE)`, so
-# `int(1)+1 = 2 = c`. The `+1` is the off-by-one `mm.range`'s L31 row is about, and it is
-# present here.
-#
-# WHY A READER AND NOT `mm.sweep`, which is the OTHER way to get this number, and which
-# MEASUREMENTS SAY WORKS: the same probe reads a NUMBER in the pass-1 `BTable` for that
-# RANGE, so a two-pass fold would have its input. It is not taken because its cost is not
-# local: handing `dt_shape` a `BTable` means threading it through `derived`, `derived.of`,
-# `dt_shape` and `Kahn.ans`, and `UOp.fold` cannot call `mm.sweep` because `mm.sweep` is
-# written BELOW it (GUIDE.md:113-121 -- only `@unsafe` may call downward, and there is no
-# `@unsafe` in this file), so `UOp.fold` would have to MOVE below the `mm` block and every
-# one of the ~30 `F.folded(ar)` / `F.UOp.fold(ar)` call sites would pay a SECOND Kahn walk
-# per arena and every `ranges`/`min_max` sweep would read a different table than today.
-# THIS READER IS THE NARROW ONE AND SAYS SO: it answers only a range whose `src[0]` is an
-# integer CONST, and it REFUSES every other range -- so a node whose width it cannot read
-# is still `?`, and the node is not answered with a guessed width.
-# ===========================================================================
-
-# THE ORDER OF THESE IS THE ORDER RULE, not an accident: `end` is the MATCH (a match may
-# not scrutinize a call, so the op arrives as a parameter), and it is written ABOVE the
-# walk that calls it. `references/bend/guide/GUIDE.md:113-121` -- only `@unsafe` may call
-# a def written below it, and there is no `@unsafe` in this file.
-#
-# `rng_width.end` CALLS NOBODY, so `begin` calling `end` is NOT mutual recursion: the walk
-# is `of` alone, descending one RANGE/SPECIAL `src[0]` deep, which is the whole descent
-# ops.py:1147 performs. It is not a general interval walk and does not pretend to be.
-def rng_width.end(op: O.Op, +ar: O.Arena, e: U32) -> Maybe<&2, H.I64>:
-  match op:
-    case O.OpsCONST{}: const_i64(O.Arena.arg(ar, e))
-    case _: None{}
-
-def rng_width.at(op: O.Op, +ar: O.Arena, +r: U32) -> Maybe<&2, H.I64>:
-  match op:
-    case O.OpsRANGE{}: rng_width.end(O.Arena.op(ar, O.Arena.src(ar, r, 0)), ar, O.Arena.src(ar, r, 0))
-    case O.OpsSPECIAL{}: rng_width.end(O.Arena.op(ar, O.Arena.src(ar, r, 0)), ar, O.Arena.src(ar, r, 0))
-    case _: None{}
-
-def rng_width.of(+ar: O.Arena, +r: U32) -> Maybe<&2, H.I64>:
-  rng_width.at(O.Arena.op(ar, r), ar, r)
-
-def rng_width(+ar: O.Arena, r: U32) -> Maybe<&2, H.I64>:
-  rng_width.of(ar, r)
-
-# `arg.index(a)`: the index of the FIRST `a`. ONE walk and not two -- the "stop at the
-# first hit" is the ACCUMULATOR, because a second def to return to the first is mutual
-# recursion and Bend refuses that (GUIDE.md, same paragraph).
-def idx_u32.hit(acc: Maybe<&2, U32>, x: U32, y: U32, k: U32) -> Maybe<&2, U32>:
-  match acc:
-    case Some{z}: Some{z}
-    case None{}: Bool.pick(Maybe<&2, U32>, U32.is_eq(x, y), Some{k}, None{})
-
-def idx_u32.go(xs: List<&2, U32>, +y: U32, +k: U32, +acc: Maybe<&2, U32>) -> Maybe<&2, U32>:
-  match xs:
-    case Nil{}: acc
-    case x <> tl: idx_u32.go(tl, y, U32.add(k, 1), idx_u32.hit(acc, x, y, k))
-
-def idx_u32(xs: List<&2, U32>, +y: U32) -> Maybe<&2, U32>:
-  idx_u32.go(xs, y, 0, None{})
-
-# STAGE: "STAGE adds the existing shape to the front, opposite of INDEX" -- the dtype
-# passes through `src[0]` (ops.py:147-152 puts STAGE in the pass-through group) and the
-# shape is `tuple([int(r.vmax+1) for r in self.src[1:]]) + self.src[0].shape`
-# (ops.py:378-380). The prepend is EMPTY exactly when STAGE carries no range srcs -- the
-# same-device `bufferize` case -- and then the shape IS `src[0]`'s and the arm is total.
-# A range src needs `int(r.vmax+1)`, and `rng_width` above is where that number comes from
-# now; a range whose end `rng_width` refuses leaves the WHOLE prepend unanswered, so the
-# node still reads `?` rather than a partial shape.
-# The tail is a PARAMETER and not a scrutinee: a call in scrutinee position is refused,
-# and `src_shape` needs the FULL src list, so both are read by passing `+ss` on.
-def stage_shape.one(c: H.I64, acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match acc:
-    case Some{xs}: Some{List.append(&2, O.Sint, xs, [O.SI{c}])}
-    case None{}: None{}
-
-def stage_shape.put(w: Maybe<&2, H.I64>, acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match w:
-    case Some{c}: stage_shape.one(c, acc)
-    case None{}: None{}
-
-# THE LIST IS THE FIRST ARGUMENT and that is the TERMINATION, not a style choice: bend
-# reads a self-call's arguments left to right and each must pass unchanged until one
-# shrinks, and `k` is recomputed, so it has to come AFTER the shrinking list
-# (GUIDE.md, "Parallelism"/termination -- same paragraph as the order rule).
-def stage_widths.go(tail: List<&2, U32>, +ar: O.Arena, +i: U32, +k: U32,
-    +acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match tail:
-    case Nil{}: acc
-    case _ <> tl: stage_widths.go(tl, ar, i, U32.add(k, 1),
-      stage_shape.put(rng_width(ar, O.Arena.src(ar, i, k)), acc))
-
-def stage_widths(+ar: O.Arena, +i: U32) -> Maybe<&2, List<&2, O.Sint>>:
-  stage_widths.go(O.Arena.src_from(ar, i, 1), ar, i, 1, Some{Nil{}})
-
-# `pre + tail`, and `tail` is the `Maybe<&2, ...>` `src_shape` answers, so a src[0] with no
-# shape refuses the whole thing rather than answering the prepend alone.
-def pre_all.go(tail: List<&2, O.Sint>, +pre: List<&2, O.Sint>) -> List<&2, O.Sint>:
-  match tail:
-    case Nil{}: pre
-    case x <> tl: pre_all.go(tl, List.append(&2, O.Sint, pre, [x]))
-
-def pre_all(pre: List<&2, O.Sint>, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match m:
-    case Some{tail}: Some{pre_all.go(tail, pre)}
-    case None{}: None{}
-
-def stage_shape.of(pre: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
-  match pre:
-    case Some{xs}: pre_all(xs, src_shape(0, ss))
-    case None{}: None{}
-
-def stage_shape(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, List<&2, O.Sint>>:
-  stage_shape.of(stage_widths(ar, i), ss)
-
-def stage_ds(+ar: O.Arena, +i: U32, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  dt_of(src_dt(0, ss), stage_shape(ar, i, ss))
-
 
 # ===========================================================================
 # `sym_dim` -- THE `ssimplify` WALL, CLOSED. `as_shape`'s two arms (ops.py:807-808)
@@ -2421,86 +2312,6 @@ def shift_ds.of(ar: O.Arena, +x: Srcs) -> Maybe<&2, DtShape>:
 def shift_ds(ar: O.Arena, ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   shift_ds.of(ar, srcs(ss))
 
-# UNSHARD: "UNSHARD marker has no shape" was the LAST movement wall, and the wall was
-# `_min_max` alone. ops.py:430 is
-#   `tuple(s*(int(self.src[1:][self.arg.index(a)].vmax)+1) if a in self.arg else s
-#          for a,s in enumerate(ps))`
-# -- `ps` is `src[0].shape`, `a` walks it, `arg` is the axis list, and the width is
-# `rng_width` on `src[1:][arg.index(a)]`. `rng_width` is the block above; what is left
-# here is the walk, the membership test, and the `SU` refusal.
-#
-# `SU` REFUSES, AND IT IS A REFUSAL RATHER THAN A DEFAULT: `s*w` on a symbolic dim is a
-# UOp upstream folds through `simplify`, and this file names no such node, so the dim
-# would have to be either dropped (a wrong shape) or kept unscaled (a wrong shape). The
-# node then reads `?`, which is the same one-directional rule `Kahn.gather` uses.
-# `self.arg` for an UNSHARD is `ATuple{ys}`, ops.bend's spelling of the list `arg.index(a)`
-# searches. A non-tuple arg answers `Nil{}`, so `mem_u32` is False for every axis and the
-# shape is `src[0]`'s unscaled -- upstream's own `arg.index` would RAISE there, so this is
-# the arm refusing rather than answering, and it is unreachable from a real UNSHARD.
-def unshard_axis.of(arg: O.Arg) -> List<&2, U32>:
-  match arg:
-    case O.ATuple{ys}: ys
-    case _: Nil{}
-
-def unshard_scaled(i: H.I64, w: Maybe<&2, H.I64>) -> Maybe<&2, O.Sint>:
-  match w:
-    case Some{x}: Some{O.SI{H.i64_mul(i, x)}}
-    case None{}: None{}
-
-def unshard_dim.mul(w: Maybe<&2, H.I64>, s: O.Sint) -> Maybe<&2, O.Sint>:
-  match s:
-    case O.SI{i}: unshard_scaled(i, w)
-    case O.SU{u}: None{}
-
-# A `match` ON `mem` AND NOT `Bool.pick`, because `Bool.pick` EVALUATES BOTH ARMS and
-# `s` is a linear `Sint` -- the same reason `mm.MM2.get` is a `match` and not a default
-# (fold.bend, the `Maybe` OUT OF THE BINARY BLOCK comment).
-def unshard_dim.put(mem: Bool, w: Maybe<&2, H.I64>, s: O.Sint) -> Maybe<&2, O.Sint>:
-  match mem:
-    case True{}: unshard_dim.mul(w, s)
-    case False{}: Some{s}
-
-def unshard_dim.of(mem: Bool, w: Maybe<&2, H.I64>, s: O.Sint) -> Maybe<&2, O.Sint>:
-  unshard_dim.put(mem, w, s)
-
-# `rng_width` for axis `a`, which is `src[1:][arg.index(a)]` -- `Arena.src` is
-# `(arena, node, POSITION)`, so the node index `i` and the src position `arg.index(a)` are
-# different numbers and the `+ 1` is `src[0]`. `None` when `a` is absent from `arg`, which
-# `unshard_dim.of` has already excluded by the membership test.
-def unshard_w.at(m: Maybe<&2, U32>, +ar: O.Arena, +i: U32) -> Maybe<&2, H.I64>:
-  match m:
-    case Some{p}: rng_width(ar, O.Arena.src(ar, i, U32.add(1, p)))
-    case None{}: None{}
-
-def unshard_w.of(+ar: O.Arena, +i: U32, axis: List<&2, U32>, +a: U32) -> Maybe<&2, H.I64>:
-  unshard_w.at(idx_u32(axis, a), ar, i)
-
-def unshard_one(s: O.Sint, acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match acc:
-    case Some{xs}: Some{List.append(&2, O.Sint, xs, [s])}
-    case None{}: None{}
-
-def unshard_put(d: Maybe<&2, O.Sint>, acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match d:
-    case Some{s}: unshard_one(s, acc)
-    case None{}: None{}
-
-def unshard_ds.go(ps: List<&2, O.Sint>, +ar: O.Arena, +i: U32, +axis: List<&2, U32>, +a: U32,
-    +acc: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, List<&2, O.Sint>>:
-  match ps:
-    case Nil{}: acc
-    case s <> tl: unshard_ds.go(tl, ar, i, axis, U32.add(a, 1),
-      unshard_put(unshard_dim.of(mem_u32(axis, a), unshard_w.of(ar, i, axis, a), s), acc))
-
-def unshard_ds.of(axis: List<&2, U32>, +ar: O.Arena, +i: U32, ps: Maybe<&2, List<&2, O.Sint>>,
-    +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  match ps:
-    case Some{ds}: dt_of(src_dt(0, ss), unshard_ds.go(ds, ar, i, axis, 0, Some{Nil{}}))
-    case None{}: None{}
-
-def unshard_ds(+ar: O.Arena, +i: U32, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  unshard_ds.of(unshard_axis.of(arg), ar, i, src_shape(0, ss), ss)
-
 # ===========================================================================
 # THE LADDER. `dtype_from_uop` (ops.py:124) and `UOp._shape` (ops.py:329), together:
 # here are the dtype production rules, total over all Ops, grouped by the RULE each
@@ -2656,13 +2467,14 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # second walk, not a second oracle, and it now has one: `some_shapes`.
     case O.OpsCUSTOM{}: custom_ds(arg, ss)
     case O.OpsCUSTOMI{}: custom_ds(arg, ss)
-    case O.OpsSTAGE{}: stage_ds(ar, i, ss)
-    # "UNSHARD marker has no shape" was the LAST movement wall. The shape is
+    case O.OpsSTAGE{}: stage_ds(ss)
+    # "UNSHARD marker has no shape" is the LAST movement wall and it is a DIFFERENT one
+    # from the five that landed: the shape is
     # `tuple(s*(int(self.src[1:][self.arg.index(a)].vmax)+1) if a in self.arg else s
-    # for a,s in enumerate(ps))` (ops.py:430), and the `vmax` is `rng_width` above --
-    # which is why this arm is no longer `None{}`. See `unshard_ds` for the walk and for
-    # the `SU` refusal, and for why `mm.sweep` is not the reader.
-    case O.OpsUNSHARD{}: unshard_ds(ar, i, arg, ss)
+    # for a,s in enumerate(ps))`, so it needs `vmax`, which is `_min_max`. `arg.index`
+    # is a search over the arg, which the arena's `ATuple` supports, so the wall is
+    # `_min_max` alone -- four I64 helpers in helpers.bend and dtype.bend's limits.
+    case O.OpsUNSHARD{}: None{}
 
 def ended_of.go(cf: Bool, rest: List<&2, U32>) -> List<&2, U32>:
   match cf:

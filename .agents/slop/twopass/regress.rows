@@ -1,0 +1,38 @@
+# graph              before    after     fm-before  fm-after  state
+matmul             AGREE     AGREE     0          0         same rc=0
+reduce             AGREE     AGREE     0          0         same rc=0
+buffer             AGREE     AGREE     0          0         same rc=0
+sink               AGREE     AGREE     0          0         same rc=0
+range              AGREE     AGREE     0          0         same rc=0
+rangeflat          AGREE     AGREE     0          0         same rc=0
+cast               AGREE     AGREE     0          0         same rc=0
+special            AGREE     AGREE     0          0         same rc=0
+binblob            AGREE     AGREE     0          0         same rc=0
+group              AGREE     AGREE     0          0         same rc=0
+commute            AGREE     AGREE     0          0         same rc=0
+indexed            AGREE     AGREE     0          0         same rc=0
+sym                AGREE     AGREE     0          0         same rc=0
+lin                AGREE     AGREE     0          0         same rc=0
+loop               AGREE     AGREE     0          0         same rc=0
+gate               AGREE     AGREE     0          0         same rc=0
+bw                 AGREE     AGREE     0          0         same rc=0
+alu                AGREE     AGREE     0          0         same rc=0
+bit                AGREE     AGREE     0          0         same rc=0
+where              AGREE     AGREE     0          0         same rc=0
+move               AGREE     AGREE     0          0         same rc=0
+flip               DISAGREE  DISAGREE  0          0         same rc=1
+allred             AGREE     AGREE     0          0         same rc=0
+cdiv               AGREE     AGREE     0          0         same rc=0
+late               AGREE     AGREE     0          0         same rc=0
+threefry           AGREE     AGREE     0          0         same rc=0
+mulacc             AGREE     AGREE     0          0         same rc=0
+getaddr            AGREE     AGREE     0          0         same rc=0
+unshard            DISAGREE  AGREE     2          0         MOVED rc=0
+wmma               AGREE     AGREE     0          0         same rc=0
+custom_function    AGREE     AGREE     0          0         same rc=0
+mselect            AGREE     AGREE     0          0         same rc=0
+mstack             AGREE     AGREE     0          0         same rc=0
+stage              AGREE     AGREE     0          0         same rc=0
+#
+# MOVED 1: ['unshard']
+# graphs-disagree after: 1 ['flip']

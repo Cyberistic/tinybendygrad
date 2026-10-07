@@ -1,0 +1,19 @@
+state	gate	argv	rc	token	note
+at rest (input swept)	checks/nl-gate.py	-	3	REFUSED	GREEN: the two published lanes, unmodified
+at rest (input swept)	checks/nl-gate.py	-	3	REFUSED	RED: one row NAME gains an `=`, values untouched -- the class nl-gate.py:12-49 is about
+at rest (input swept)	checks/nl-gate-noguard.py	-	3	REFUSED	GREEN: the same lanes, through the guard-less CONTROL
+at rest (input swept)	checks/dup-gate.py	-	3	REFUSED	GREEN: the same lanes through the duplicate-name gate
+at rest (input swept)	checks/dup-gate.py	-	3	REFUSED	RED via its OWN selftest: 4 cells, value/name/collide plants
+plant	-	.agents/slop/eq/eq-census2.py	0	PLANTED	24098B from 371cc64c9^; the gate's own named path
+plant	-	.agents/slop/nl/nl-oracle.py	0	PLANTED	24306B from 371cc64c9^; the gate's own named path
+plant	-	.agents/slop/hermetic/isolate.py	0	PLANTED	4181B from 371cc64c9^; the gate's own named path
+planted	checks/nl-gate.py	--port-stdout gates/cstyle-live.rows --oracle-stdout gates/cstyle-live.rows	0	AGREE RED	GREEN: the two published lanes, unmodified
+planted	checks/nl-gate.py	--port-stdout gates/cstyle-live.rows --oracle-stdout gates/cstyle-live.rows --plant-shape tmap CLANG tmap CLANG=x	1	BROKEN RED OK	RED: one row NAME gains an `=`, values untouched -- the class nl-gate.py:12-49 is about
+planted	checks/nl-gate-noguard.py	--port-stdout gates/cstyle-live.rows --oracle-stdout gates/cstyle-live.rows	0	AGREE RED	GREEN: the same lanes, through the guard-less CONTROL
+planted	checks/dup-gate.py	--port gates/cstyle-live.rows --oracle gates/cstyle-live.rows	0	AGREE	GREEN: the same lanes through the duplicate-name gate
+planted	checks/dup-gate.py	--port gates/cstyle-live.rows --oracle gates/cstyle-live.rows --selftest	0	AGREE BROKEN RED SELFTEST OK	RED via its OWN selftest: 4 cells, value/name/collide plants
+after	-	.agents/slop/eq/eq-census2.py	0	ABSENT	sha False -> False
+after	-	.agents/slop/nl/nl-oracle.py	0	ABSENT	sha False -> False
+after	-	.agents/slop/hermetic/isolate.py	0	ABSENT	sha False -> False
+
+# RESIDUE AFTER THE PLANT: 0 path(s) []
