@@ -1473,7 +1473,7 @@ def simplify_copy_kernel.ok(disk: List<&2, U32>, +ar: O.Arena, +dst: U32, +src: 
 #                      if x.op is Ops.PARAM and x.device is not None])
 #     if len(devices) >= 2: raise RuntimeError(...)
 #
-# `UOp.toposort` (ops.bend:2839) is the ungated one, so no `sc_topo` copy is
+# `UOp.toposort` (ops.bend:2894) is the ungated one, so no `sc_topo` copy is
 # needed. `dedup` preserves FIRST-OCCURRENCE order and the arena interns, so two
 # structurally equal UOps are ONE index: the dedup is over INDICES and a
 # `List.contains` over the kept ones is the same set -- the argument `sc_newks`
@@ -1548,7 +1548,7 @@ def assert_all_same_devices.raises(x: Ads) -> Bool:
 # on the RANGES FOLD, and `ops.py:1239 UOp.substitute` waits behind it.
 # `ab_C_LIN` is arm 1, whose recursion target `resolve_linear_call` is NOT in `uop/ops.bend` --
 # an earlier revision of this sentence said it was "already ... as tag 42's table", AND THAT IS
-# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:3989`) and no `def ...resolve_linear_call`
+# FALSE: tag 42 is `_pm_resolve_params` (`uop/ops.bend:4044`) and no `def ...resolve_linear_call`
 # exists anywhere. See the corrected note at `__init__.py:279` for the measurement. Arm 1 is
 # therefore ALSO blocked on it, not on `binds` alone (:107-109), which is `dict[int,UOp]` keyed by a
 # Python int -- the same String-keyed-`Map` bill `Aa` pays above.
@@ -1678,7 +1678,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #         return b.param_like(len(ctx.replacements)-1)
 #     The append is one `List.append` and the `len` is one `List.length`; the
 #     mint is the wall. `UOp.param_like` is `TODO(p3) ops.py:1239` in
-#     `uop/ops.bend:4398` -- named, unported, and named as a TODO, so this is a
+#     `uop/ops.bend:4453` -- named, unported, and named as a TODO, so this is a
 #     recorded deferral and not a gap I found.
 #     TODO(p3) ops.py:1239  `UOp.param_like` -- no port. Blocks this body.
 #
@@ -1714,7 +1714,7 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 #     WALL(p3) __init__.py:276  `pm_schedule` -> `lower_sink_to_linear` (ported
 #       above) but the PASS is a rewriter -- BLOCKED: needs the `pm_schedule` PatternMatcher + its `graph_rewrite` pass; the rule body `lower_sink_to_linear` IS ported (:1362) and `pm_schedule` has no def in the tree.
 #     WALL(p3) __init__.py:279  `pm_resolve_linear_call` -> `resolve_linear_call`
-#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:3989), and `pm_flatten_linear` is absent too.
+#       (in `ops.bend`) + `pm_flatten_linear` from `engine/realize.py` -- BLOCKED: needs `resolve_linear_call`, which has NO DEF anywhere in the tree; the :1549 note that tag 42 holds it is FALSE (tag 42 is `_pm_resolve_params`, ops.bend:4044), and `pm_flatten_linear` is absent too.
 #     WALL(p3) __init__.py:282  `pm_copy_from_store` -> the two bodies above plus
 #       `assert_all_same_devices`, and the PASS is a rewriter -- BLOCKED: needs the `pm_copy_from_store` PatternMatcher + `graph_rewrite` pass. The THREE rule bodies are ALL PORTED (`cks_*` :1407, `simplify_copy_kernel` :1466, `assert_all_same_devices` :1527); only the PASS is absent.
 #     TODO(p3) __init__.py:285  `used_vars` -- `UOp.variables`.

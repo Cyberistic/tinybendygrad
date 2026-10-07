@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=533 MB (ceiling 2048)  3s  :: ./bin/bend tinybendygrad/mixin/movement.bend  out=1815B err=42B
+bend 2.0.35 is available: run bend update

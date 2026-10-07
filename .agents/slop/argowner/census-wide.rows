@@ -1,0 +1,16 @@
+# ARGOWNER census, WIDE scope: os.walk(REPO ROOT) *.bend = 287 files,
+#   of which 116 import tinybendygrad/uop/ops.bend (aliases ['O'])
+#   Arg ctors PARSED from ops.bend: 22
+#   Arg match SITES across those files: 271
+
+file                                line def            kind
+.agents/slop/graphcmp.bend           411 argstr         INCOMPLETE missing=ABoolList
+.agents/slop/linfix/before/drivers/two/gcmp.bend   379 argstr         INCOMPLETE missing=ABoolList,AInt
+runs/margsym/snap/graphcmp.bend      363 argstr         INCOMPLETE missing=AOpLit,ABoolList,AInt
+tinybendygrad/uop/ops.bend          2180 eq_arg.sel     EXHAUSTIVE missing=-
+tinybendygrad/uop/render.bend        718 arg_repr       EXHAUSTIVE missing=-
+tinybendygrad/uop/upat.bend          398 arg_int        INCOMPLETE missing=AOpLit
+
+# CLOSED over the WHOLE repo, scope = every .bend importing ops.bend: 6
+#   inside tinybendygrad/ (the port): 3
+#   OUTSIDE it (harnesses under .agents/slop/): 3

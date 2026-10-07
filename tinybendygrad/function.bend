@@ -1081,7 +1081,7 @@ def fn_name(has: Bool, nm: String, dflt: String) -> String:
 # TODO(p3) ops.py:1272  `UOp.call_with_outputs` -- `uret.call_with_outputs(...)`.
 #   It is the PROGRAM/CallInfo construction and it needs `grad_fxn`, which is a
 #   Python callable; a function value in a record forces `Type`, not `Data`.
-# DONE(p3) ops.py:245   `UOp.replace` -- PORTED at `ops.bend:2794` (gate `gates/replace-gate.py` rc=0 8/8 rows) and
+# DONE(p3) ops.py:245   `UOp.replace` -- PORTED at `ops.bend:2849` (gate `gates/replace-gate.py` rc=0 8/8 rows) and
 #   the four `.go` helpers. The thirteen-field `ParamArg` is no longer a lie:
 #   `replace(arg=ParamArg{...})` is a single-arg call to a def that takes the new
 #   arg as `Maybe<&2, Arg>`, and the identity case (no kwargs) is the row that

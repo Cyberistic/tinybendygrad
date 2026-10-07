@@ -1,0 +1,11 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=277 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/codegen/__init__.bend --check-only  out=0B err=253B  said=SOME PROOFS FAIL | Error: | - expected : cases for ../uop/ops.ABoolList
+SOME PROOFS FAIL
+Error:
+- expected : cases for ../uop/ops.ABoolList
+- observed : \{}
+Location: arg_repr
+704 | def arg_repr(a: O.Arg) -> String:
+705>|   match a:
+    |   ^^^^^^^^
+706 |     case O.ANone{}: "None"
+bend 2.0.35 is available: run bend update

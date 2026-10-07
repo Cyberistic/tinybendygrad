@@ -1,0 +1,16 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=242 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/uop/ops.bend --check-only  out=0B err=417B  said=SOME PROOFS FAIL | Error: | - expected : a defined name
+SOME PROOFS FAIL
+Error:
+- expected : a defined name
+- observed : Bool.is_eq
+Context:
+- y : Bool
+- t : List<&2, Bool>
+- w : Bool
+- u : List<&2, Bool>
+Location: eq_bool_list
+1647 |     case Nil{} Nil{}: True{}
+1648>|     case y <> t w <> u: Bool.and(Bool.is_eq(y, w), eq_bool_list(t, u))
+     |                                  ^^^^^^^^^^
+1649 |     case Nil{} _ <> _: False{}
+bend 2.0.35 is available: run bend update

@@ -2493,14 +2493,14 @@ def bv_w.ofneg() -> U32:
 #               device, getting {...}"`   a FOURTH one, not in the port's comment, and it has a
 #               MESSAGE where 761 has none
 #
-# `ops.bend:6998` says "THE TWO `raise`s ARE NOT PORTED", which UNDER-COUNTS by one `assert`
+# `ops.bend:7053` says "THE TWO `raise`s ARE NOT PORTED", which UNDER-COUNTS by one `assert`
 # and misses the fourth entirely. `vw-boundaries.py` exhausts all four and this lane turns the
 # result into rows; `c2d-refusal-rows.py` is the CPython side and every value there is CALLED.
 #
 # ----------------------------------------------------------------------------
 # WHAT IS GREEN AND WHAT IS RED, WITH THE DENOMINATOR. 12 identity rows and 19 outcome rows
 # are shared with the oracle. Of the 19, CPython REFUSES SEVEN (`c2d_shared_refused_n`), so
-# SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:6989-7012` implements none of the four refusals, so
+# SEVEN ROWS ARE RED ON PURPOSE: `ops.bend:7044-7012` implements none of the four refusals, so
 # every one of them answers `BUILT <sig>`. Seven reds out of nineteen shared outcome rows, and
 # the other twelve are green -- which is the number that says a fix that refuses everything
 # will be caught, because thirteen green outcomes must keep building.
@@ -2534,7 +2534,7 @@ def bv_w.ofneg() -> U32:
 # DISK guard is not decidable in `ops.bend`, and that is REPORTED rather than gated.
 # ===========================================================================
 
-# `ParamArg.of(slot, dtype)` -- ops.bend:6110 -- is `s5.pa`, so the fixtures reuse the port's
+# `ParamArg.of(slot, dtype)` -- ops.bend:6165 -- is `s5.pa`, so the fixtures reuse the port's
 # OWN constructor and cannot drift from `s5.ga.arena()` on any default.
 def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
 
@@ -2552,7 +2552,7 @@ def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
 def c2d_buft(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
   O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{c2d_pat(slot, dt)}, O.TNone{})
 
-# node 4 of `s5.ga.arena()` -- ops.bend:6435 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
+# node 4 of `s5.ga.arena()` -- ops.bend:6490 -- `Node{OpsSHRINK{}, [1], ATuple{Nil{}}}`. Built
 # here over a `c2d_buf` so the arena is this file's own and no index is inherited.
 def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
   O.UOp.new(ar, O.OpsSHRINK{}, [src], O.ATuple{Nil{}}, O.TNone{})
@@ -2562,7 +2562,7 @@ def c2d_shr(+ar: O.Arena, src: U32) -> O.Found:
 # `assert` is a DIFFERENT upstream behaviour from `RuntimeError` from a `raise`, and a row that
 # accepted either would be testing neither.
 #
-# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (ops.bend:7009) answers `Found`,
+# ⚠ AND THIS IS THE `BUILT` ARM ONLY. `UOp.copy_to_device` (ops.bend:7064) answers `Found`,
 # so the port cannot refuse; the `REFUSED` arm arrives with the owner's guard, which changes
 # `copy_to_device`'s return type because a refusal is not a `Found`. When it does, this def is
 # the one line to change and the twenty-four rows are the ones that go green.
@@ -2591,7 +2591,7 @@ def c2d_arg_is_param(a: O.Arg) -> Bool:
     case O.AParam{pa}: True{}
     case _: False{}
 
-# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, ops.bend:6110. `ops-501-oracle.py:164`'s
+# `O.ParamArg.slot` on node 4's src0 -- `s5.pa(1)`, ops.bend:6165. `ops-501-oracle.py:164`'s
 # `multi` is `ParamArg(3, ...)`, so this is one of the four differences `sig()` cannot see.
 def c2d_arg_slot(a: O.Arg) -> U32:
   match a:
@@ -2634,7 +2634,7 @@ def c2d_selrow_src0() -> String:
   c2d_row("c2d_selrow_src0",
           O.Ops.name(O.Arena.op(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0))))
 
-# `isinstance(node.arg, tuple)` -- ops.bend:6435's `ATuple{Nil{}}` against the `AParam` a
+# `isinstance(node.arg, tuple)` -- ops.bend:6490's `ATuple{Nil{}}` against the `AParam` a
 # `ParamArg`-bearing node would carry. This is the row that makes "node 4 is a `ParamArg`" a
 # REFUTABLE claim rather than a comment: it reads False, and so does CPython.
 def c2d_selrow_arg_is_tuple() -> String:
@@ -2657,7 +2657,7 @@ def c2d_selrow_src0_device_is_none() -> String:
           Bool.show(c2d_arg_device_is_none(
             O.Arena.arg(O.s5.ga.arena(), O.Arena.src(O.s5.ga.arena(), 4, 0)))))
 
-# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:6433 -- so a reader sees that
+# node 2 -- `Node{OpsALLOC{}, Nil{}, AParam{s5.pa(2)}}`, ops.bend:6488 -- so a reader sees that
 # the node a BRIEF named (`ParamArg(2, int32)`, device None) EXISTS in this arena and is NOT
 # the node `s5.selrow` calls. Both arenas have an index 4 and only one is the arena received.
 def c2d_node2_op() -> String: c2d_row("c2d_node2_op", O.Ops.name(O.Arena.op(O.s5.ga.arena(), 2)))

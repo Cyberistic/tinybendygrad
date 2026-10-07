@@ -1,0 +1,364 @@
+# ARGOWNER falsification -- target 36 site files (census.py), closed set 4
+# ops.bend md5 BEFORE 30473fffa9a0270dcb42f5b81ef10fb8
+
+## PASS 1  BASELINE (untouched tree)
+  tinybendygrad/codegen/__init__.bend                  token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/decomp/dtype.bend              token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/decomp/op.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/decomp/transcendental.bend     token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/gpudims.bend                   token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/kernel.bend                    token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/late/linearizer.bend           token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/codegen/simplify.bend                  token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/engine/jit.bend                        token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/engine/realize.bend                    token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/engine/worker.bend                     token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/function.bend                          token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/mixin/creation.bend                    token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/mixin/dtype.bend                       token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/mixin/elementwise.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/mixin/movement.bend                    token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/nn/state.bend                          token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/renderer/__init__.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/renderer/cstyle.bend                   token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/renderer/wgsl.bend                     token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/schedule/__init__.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/schedule/indexing.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/schedule/memory.bend                   token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/schedule/multi.bend                    token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/schedule/rangeify.bend                 token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/tensor.bend                            token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/divandmod.bend                     token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/fold.bend                          token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/movement.bend                      token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/ops.bend                           token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/render.bend                        token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/spec.bend                          token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/symbolic.bend                      token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/upat.bend                          token=WITHIN-LIMITS error-lines=9
+  tinybendygrad/uop/validate.bend                      token=WITHIN-LIMITS error-lines=1
+  tinybendygrad/uop/weak.bend                          token=WITHIN-LIMITS error-lines=1
+
+## PASS 2  PROBE (+1 line `ABoolList` in `type Arg is Data:`)
+# ops.bend md5 PROBE  4e62afd4d6ee66eae86d97974e7af679
+  tinybendygrad/codegen/__init__.bend                  token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/decomp/dtype.bend              token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/decomp/op.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/decomp/transcendental.bend     token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/gpudims.bend                   token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/kernel.bend                    token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/late/linearizer.bend           token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/codegen/simplify.bend                  token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/engine/jit.bend                        token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/engine/realize.bend                    token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/engine/worker.bend                     token=WITHIN-LIMITS error-lines=1 NEW=0 GONE=0
+  tinybendygrad/function.bend                          token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/mixin/creation.bend                    token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/mixin/dtype.bend                       token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/mixin/elementwise.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/mixin/movement.bend                    token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/nn/state.bend                          token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/renderer/__init__.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/renderer/cstyle.bend                   token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/renderer/wgsl.bend                     token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/schedule/__init__.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/schedule/indexing.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/schedule/memory.bend                   token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/schedule/multi.bend                    token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/schedule/rangeify.bend                 token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ../uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/tensor.bend                            token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for uop/ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/divandmod.bend                     token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/fold.bend                          token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/movement.bend                      token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/ops.bend                           token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/render.bend                        token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/spec.bend                          token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/symbolic.bend                      token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/upat.bend                          token=WITHIN-LIMITS error-lines=9 NEW=5 GONE=5   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      - - expected : cases for ops.AOpLit
+      - 397 | def arg_int(a: O.Arg) -> Maybe<&2, U32>:
+      - 398>|   match a:
+      - 399 |     case O.ANone{}: None{}
+      - Location: arg_int
+  tinybendygrad/uop/validate.bend                      token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+  tinybendygrad/uop/weak.bend                          token=WITHIN-LIMITS error-lines=9 NEW=8 GONE=0   <-- BREAKS ON A NEW CTOR
+      + - expected : cases for ops.ABoolList
+      + - observed : \{}
+      + 2141 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      + 2142>|   match x:
+      + 2143 |     case ANone{}: eq_arg.ANone(y)
+      + Location: eq_arg.sel
+      + SOME PROOFS FAIL
+      + |   ^^^^^^^^
+
+## REVERT
+# ops.bend md5 AFTER  30473fffa9a0270dcb42f5b81ef10fb8  restored=True

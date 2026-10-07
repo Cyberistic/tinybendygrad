@@ -1,0 +1,35 @@
+1,2c1,2
+< mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=int
+< mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=int
+---
+> mv_exp1 n=3 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.CONST shape=(2,4) dtype=i32
+> mv_exp23 n=5 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,3,4) dtype=i32
+5,8c5,12
+< mv_flip n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=(2,3) dtype=int
+< mv_fliplen n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+< mv_pad1 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=int
+< mv_pad23 n=12 op=Ops.PAD nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(6,5) dtype=int
+---
+> mv_reshsym_nm n=5 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(U(Ops.PARAM:n),U(Ops.PARAM:m)) dtype=i32
+> mv_reshsym_pt n=5 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(3,1) dtype=i32
+> mv_expsym_pos n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK shape=(2,U(Ops.SPECIAL:N),4) dtype=i32
+> mv_reshbare n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(U(Ops.PARAM:n)) dtype=i32
+> mv_reshbare_pt n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(4) dtype=i32
+> mv_reshbare_dis n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM shape=(U(Ops.PARAM:w)) dtype=i32
+> mv_pad1 n=4 op=Ops.PAD nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=i32
+> mv_pad23 n=12 op=Ops.PAD nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(6,5) dtype=i32
+11,15c15,16
+< mv_perm n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=int
+< mv_permlen n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+< mv_permrep n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+< mv_shr1 n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(2) dtype=int
+< mv_shr23 n=10 op=Ops.SHRINK nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(2,1) dtype=int
+---
+> mv_shr1 n=4 op=Ops.SHRINK nsrc=3 srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(2) dtype=i32
+> mv_shr23 n=10 op=Ops.SHRINK nsrc=3 srcops=Ops.RESHAPE|Ops.STACK|Ops.STACK shape=(2,1) dtype=i32
+16a18,22
+> mv_perm n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=i32
+> mv_permrep n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+> mv_permlen n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+> mv_flip n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=(2,3) dtype=i32
+> mv_fliplen n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT

@@ -843,7 +843,7 @@ def gr_32(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 # `fold.bend`'s own Kahn argument, and the pass is `dw_flags` above. The `Bool` lattice
 # ("a node is on the target path iff ANY src is, with DETACH excluded", gradient.py:114)
 # is `dw_any` and `dw_keep_test`. `topovisit`'s Callable is still not ported -- nothing in
-# `ops.py` calls it -- and `O.UOp.topovisit` (ops.bend:2846) still answers the plain
+# `ops.py` calls it -- and `O.UOp.topovisit` (ops.bend:2901) still answers the plain
 # toposort, which is the order this file drives.
 #
 # `compute_gradient` -- gradient.py:116-145 -- LANDED, with THREE named omissions.
@@ -1224,7 +1224,7 @@ def _deepwalk.vis(+ar: O.Arena, targets: List<&2, U32>, root: U32) -> Itp:
   dw_flags(ar, targets, O.UOp.toposort(O.Arena.budget(ar), ar, root), Itp{Nil{}, Nil{}})
 
 # `_deepwalk(root, targets)` -- gradient.py:109-114. `O.UOp.toposort` is `topovisit`
-# without the visitor (ops.bend:2846 records that `topovisit`'s body IS the toposort),
+# without the visitor (ops.bend:2901 records that `topovisit`'s body IS the toposort),
 # and `Arena.budget` is the exact pop bound, so the pass cannot be cut short.
 def _deepwalk(root: U32, targets: List<&2, U32>, +ar: O.Arena) -> Deep:
   Deep.fill(O.Arena.empty(), _deepwalk.vis(ar, targets, root))

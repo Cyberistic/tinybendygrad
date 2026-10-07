@@ -102,7 +102,7 @@ import ./../uop/ops.bend as O
 #   * `load_state_dict` (:128) -- the shape-mismatch arm's `{(), (1,)} ==
 #     {state_dict[k].shape, v.shape}` IS pure and IS the one line of this function
 #     worth having, but it is unreachable without `v.replace` (:159, `UOp.replace`
-#     IS PORTED at `ops.bend:2735`, gate `gates/replace-gate.py` rc=0 8/8 rows) and
+#     IS PORTED at `ops.bend:2849`, gate `gates/replace-gate.py` rc=0 8/8 rows) and
 #     `v.realize` (:162, WALL 4). Porting a predicate nothing can reach
 #     is a tautology, so it is not ported; the line is named at the TODO.
 #   * `get_parameters` (:114) IS `list(get_state_dict(obj).values())`, so it is
@@ -512,7 +512,7 @@ def sd_seek_v(len_: U32, pos: U32, off: U32, whence: U32) -> String:
 #   `data_offsets` accumulation are the only pure lines and they are not worth a
 #   file of their own.
 # TODO(p3) state.py:128 load_state_dict  -- `v.replace` (:159, `UOp.replace` IS PORTED at
-#   `ops.bend:2735`, gate `gates/replace-gate.py` rc=0 8/8 rows), but `v.realize` (:162, WALL 4)
+#   `ops.bend:2849`, gate `gates/replace-gate.py` rc=0 8/8 rows), but `v.realize` (:162, WALL 4)
 #   is still needed before the shape-mismatch predicate at :156 is reachable, and `tqdm`/
 #   `Timing`/`GlobalCounters` are runtime. `sorted(list(state_dict.keys() - model_state_dict.keys()))`
 #   (:149) is ALSO unreachable for the same reason and is not ported on its own.

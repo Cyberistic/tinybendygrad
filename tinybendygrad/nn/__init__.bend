@@ -375,7 +375,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # (tensor.bend:541, same gate), `tn_cmplt` (tensor.bend:559, gated in
 # `tn_binop2_cmp-gate.py`), `tn_rcmplt` (tensor.bend:568, gated in the same
 # file), `tn_where` (tensor.bend:369, gated 5/5 in `tn_where-gate.py`), and
-# `O.UOp.const` (ops.bend:2867, gate rc=0). Gated at
+# `O.UOp.const` (ops.bend:2922, gate rc=0). Gated at
 # `gates/tn_ceil_floor-gate.py` 11/11 rows (op/arg/srcs/purity for each of
 # `tn_ceil` and `tn_floor`, the cond's CMPLT shape for each, and the reachability
 # row). The broadcasting case stays walled on `_broadcasted` (same wall as

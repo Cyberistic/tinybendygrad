@@ -415,7 +415,7 @@ def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
 #   DONE(p3) ptx.py:43  bool EQ -> (x^y)^True -- deps present: `Bool.xor` is a def in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:43 (XOR + True for EQ).
 #   DONE(p3) ptx.py:44  bool LT -> (x^True)&y -- deps present: `Bool.xor` and `Bool.and` are defs in `Base`; no `UOp.replace` call in the body. Body ported from CPython ptx.py:44 (XOR with True + AND for LT).
 #   WALL(p3) ptx.py:46  upcast the half ops that do not support half (body has no fold calls;
-#                       `UOp.cast` IS ported at `ops.bend:2783`, `gates/uop_cast-gate.py` rc=0
+#                       `UOp.cast` IS ported at `ops.bend:2880`, `gates/uop_cast-gate.py` rc=0
 #                       8/8 rows; `doesnt_support_half` is present at :361; `UOp.new` is at
 #                       `ops.bend:2403`. The body reads `x.op`/`x.src`/`x.arg` (arena reads,
 #                       no fold), builds a new node with the same op/srcs cast to float32
@@ -428,7 +428,7 @@ def r_pmx_n() -> String: T.r("ptx_matcher rules", U32.show(pm_n_rules()), "8")
 #                       (fold property) AND `UOp.cast`/`.replace` (both ported). Same shape
 #                       as ptx.py:49; the FOLD is the load-bearing blocker.
 #   WALL(p3) ptx.py:55  SHL with a non-uint shift amount -> cast -- BLOCKED. body uses `y.dtype`
-#                       (fold property) AND `UOp.cast` (ported at `ops.bend:2783`). The
+#                       (fold property) AND `UOp.cast` (ported at `ops.bend:2880`). The
 #                       GUARD `if y.dtype != dtypes.uint else None` is the fold's role; without
 #                       it, the body always builds the new node and the graph bloats by one
 #                       extra CAST when `y` was already uint.

@@ -176,6 +176,19 @@ def u32s.go(+ys: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
 def us(ys: List<&2, U32>) -> String:
   String.concat(["n(", String.join(u32s.go(ys, Nil{}), ","), ")"])
 
+# `movement.py:253` builds the axis arg as `tuple([i in axis_arg for i in range(len(self.shape))])`
+# -- a list of BOOLS -- so the port types it `ABoolList{bs: List<&2, Bool>}` (`ops.bend:1217`) and
+# `us` above cannot print it: `b1` is not `i1`. This is the `us` twin with `bo` in place of `i`,
+# and `bo` is ALREADY this file's `b1`/`b0` renderer, so no spelling is invented here -- only the
+# one arm the FLIP's `arg` was missing.
+def bos.go(+ys: List<&2, Bool>, acc: List<&2, String>) -> List<&2, String>:
+  match ys:
+    case Nil{}: acc
+    case y <> r: bos.go(r, List.append(&2, String, acc, [bo(y)]))
+
+def bus(ys: List<&2, Bool>) -> String:
+  String.concat(["n(", String.join(bos.go(ys, Nil{}), ","), ")"])
+
 # The `n(...)` twin of `mum`: `wmma`'s `tc_upcast_axes` is `None | tuple` (`PIN ops.py:652-654`),
 # so absence is `N` and a PRESENT tuple is `n(...)`. `N` and `n()` are different values.
 def um(m: Maybe<&2, List<&2, U32>>) -> String:
@@ -451,6 +464,7 @@ def argstr(a: O.Arg, depth: U32) -> String:
     case O.AOpLit{op}: opx(op)
     case O.AWmma{wdims, wdt, threads, tc}: String.concat(["wm(", us(wdims), ",", dt(wdt), ",", i(threads), ",", um(tc), ")"])
     case O.ATuple{ys}: us(ys)
+    case O.ABoolList{bs}: bus(bs)
     case O.AStr{s}: bstr(s)
     case O.AInk{ins, idt}: String.concat(["in(", bstr(ins), ",", dt(idt), ")"])
     case O.AAllred{arop, adev}: String.concat(["al(", opx(arop), ",", dev(adev), ")"])
@@ -1337,7 +1351,7 @@ def g_flip() -> O.Found:
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +fl = O.UOp.new(O.Found.ar(r43), O.OpsFLIP{}, [O.Found.i(r43)], O.ATuple{[1, 0]}, O.TNone{})
+  +fl = O.UOp.new(O.Found.ar(r43), O.OpsFLIP{}, [O.Found.i(r43)], O.ABoolList{[True{}, False{}]}, O.TNone{})
   O.UOp.new(O.Found.ar(fl), O.OpsGROUP{}, [O.Found.i(fl)], O.ANone{}, O.TNone{})
 
 # `rows.pick` is a `Bool.pick` chain: `Bool.pick` CHOOSES an arm, it does not SEQUENCE

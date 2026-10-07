@@ -84,12 +84,12 @@
 # 1. THE UOP ARENA -- THE REASON THAT STOOD HERE WAS FALSE. MEASURED
 #    2026-10-06: `graph_rewrite` IS a def (`codegen/__init__.bend:298`;
 #    `uop/spec.bend:2596` `kernel_graph_rewrite`), `UOp.toposort` IS a def
-#    (`uop/ops.bend:3035`), and the port writes rules as `pm_*` defs over
-#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:3835`,
+#    (`uop/ops.bend:3090`), and the port writes rules as `pm_*` defs over
+#    `PMEntrys` returning `Maybe<&2, U32>` / `Verdict` (`uop/ops.bend:3890`,
 #    `:4058`). So "every UPat/PatternMatcher/toposort reads and writes the UOp
 #    graph" is NOT the blocker. The real blocker per rule is the absent symbol
 #    its body calls: the SHAPED `UOp.param` (only the shape-less arm is ported,
-#    `uop/ops.bend:5207`, blocked on the absent `view_as`), `HCQInfo` (`CallInfo`
+#    `uop/ops.bend:5262`, blocked on the absent `view_as`), `HCQInfo` (`CallInfo`
 #    dropped `aux`, `uop/ops.bend:1116`), the realized-buffer/engine family
 #    (`Buffer`/`_resolve`/`lower_and_compile`) and the `HWQueue` device methods.
 #    THE `PORTED` TABLE ABOVE IS NOT A WITNESS FOR THESE: its helper names

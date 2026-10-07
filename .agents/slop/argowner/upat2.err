@@ -1,0 +1,11 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=272 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/uop/upat.bend --check-only  out=0B err=249B  said=SOME PROOFS FAIL | Error: | - expected : cases for ops.AOpLit
+SOME PROOFS FAIL
+Error:
+- expected : cases for ops.AOpLit
+- observed : \{}
+Location: arg_int
+397 | def arg_int(a: O.Arg) -> Maybe<&2, U32>:
+398>|   match a:
+    |   ^^^^^^^^
+399 |     case O.ANone{}: None{}
+bend 2.0.35 is available: run bend update

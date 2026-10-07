@@ -170,7 +170,7 @@ def pm_range_to_special() -> List<&2, O.PMEntry>:
 # that is free.
 #
 # `r.replace(op=..., arg=...)` IS the ported `UOp.replace` (`def UOp.replace`
-# at `ops.bend:2794`, gate `gates/replace-gate.py` rc=0 8/8 rows). The TAG rides
+# at `ops.bend:2849`, gate `gates/replace-gate.py` rc=0 8/8 rows). The TAG rides
 # along: CPython's `replace` preserves it and `rw_tag(ar, r)` is what the caller
 # passes.
 # ===========================================================================

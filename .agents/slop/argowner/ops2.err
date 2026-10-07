@@ -1,0 +1,11 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=29 MB (ceiling 2048)  0s  :: ./bin/bend tinybendygrad/uop/ops.bend --check-only  out=0B err=285B  said=SOME PROOFS FAIL | Error: | - expected : a fresh name (duplicate declaration: eq_bool)
+SOME PROOFS FAIL
+Error:
+- expected : a fresh name (duplicate declaration: eq_bool)
+- observed : 'eq_bool'
+Location:
+1644 | # compare a bit instead of a flag.
+1645>| def eq_bool(y: Bool, w: Bool) -> Bool:
+     |     ^^^^^^^
+1646 |   match y w:
+bend 2.0.35 is available: run bend update

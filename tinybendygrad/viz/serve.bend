@@ -66,12 +66,12 @@
 #     `grep -rn 'TrackedGraphRewrite\|RewriteTrace' tinybendygrad` returns SEVEN
 #     hits and every one is a comment or a `# TODO(p3)`: ops.bend has no def, no
 #     type and no inventory row for either. `trace_num` -- the ENCODING
-#     `_reconstruct` mirrors -- is `ops.bend:3464 # TODO(p3) ops.py:544`. So this
+#     `_reconstruct` mirrors -- is `ops.bend:3519 # TODO(p3) ops.py:544`. So this
 #     file ports the graph logic it CAN and names the four defs that wait on
 #     ops.bend's trace, which is a P3 row, not a wall in this file.
 #
 #   serve.py:108,137 `srender` and `word_wrap`
-#     `srender` is `ops.bend:3400 # TODO(p3) ops.py:76`. `word_wrap` has NO row
+#     `srender` is `ops.bend:3455 # TODO(p3) ops.py:76`. `word_wrap` has NO row
 #     in helpers.bend at all. `shape_to_str` is PORTED over `sint` rendered as
 #     its integer form, which is `srender`'s answer for every `sint` that is an
 #     int -- and the gate's fixtures are exactly those.
@@ -544,7 +544,7 @@ def filter_keys(kvs: List<&2, Kv>) -> List<&2, Kv>:
 # SECTION 6 -- SHAPES. `shape_to_str` is `"(" + ",".join(srender(x) for x in s)
 # + ")"` and `mask_to_str` is the same one level down.
 #
-# `srender` IS NOT CALLED. It is `ops.bend:3400 # TODO(p3) ops.py:76`, and
+# `srender` IS NOT CALLED. It is `ops.bend:3455 # TODO(p3) ops.py:76`, and
 # `uop/render.bend`'s `sint_show` is NOT imported either: render.bend pulls in
 # fold.bend, which is mid-edit by another unit, and a viz gate that dies on a
 # cold fold.bend compile is a gate that reports nothing. So `sint_str` answers

@@ -1,0 +1,49 @@
+# ARGOWNER closure -- 35 site files, SEQUENTIAL, mb=2048
+  tinybendygrad/codegen/__init__.bend                  token=WITHIN-LIMITS RED None
+  tinybendygrad/codegen/decomp/dtype.bend              token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/decomp/op.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/decomp/transcendental.bend     token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/gpudims.bend                   token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/kernel.bend                    token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/late/linearizer.bend           token=WITHIN-LIMITS GREEN
+  tinybendygrad/codegen/simplify.bend                  token=WITHIN-LIMITS GREEN
+  tinybendygrad/engine/jit.bend                        token=WITHIN-LIMITS GREEN
+  tinybendygrad/engine/realize.bend                    token=WITHIN-LIMITS GREEN
+  tinybendygrad/function.bend                          token=WITHIN-LIMITS GREEN
+  tinybendygrad/mixin/creation.bend                    token=WITHIN-LIMITS GREEN
+  tinybendygrad/mixin/dtype.bend                       token=WITHIN-LIMITS GREEN
+  tinybendygrad/mixin/elementwise.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/mixin/movement.bend                    token=WITHIN-LIMITS GREEN
+  tinybendygrad/nn/state.bend                          token=WITHIN-LIMITS GREEN
+  tinybendygrad/renderer/__init__.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/renderer/cstyle.bend                   token=WITHIN-LIMITS GREEN
+  tinybendygrad/renderer/wgsl.bend                     token=WITHIN-LIMITS GREEN
+  tinybendygrad/schedule/__init__.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/schedule/indexing.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/schedule/memory.bend                   token=WITHIN-LIMITS GREEN
+  tinybendygrad/schedule/multi.bend                    token=WITHIN-LIMITS GREEN
+  tinybendygrad/schedule/rangeify.bend                 token=WITHIN-LIMITS GREEN
+  tinybendygrad/tensor.bend                            token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/divandmod.bend                     token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/fold.bend                          token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/movement.bend                      token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/ops.bend                           token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/render.bend                        token=WITHIN-LIMITS RED None
+  tinybendygrad/uop/spec.bend                          token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/symbolic.bend                      token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/upat.bend                          token=WITHIN-LIMITS RED None
+  tinybendygrad/uop/validate.bend                      token=WITHIN-LIMITS GREEN
+  tinybendygrad/uop/weak.bend                          token=WITHIN-LIMITS GREEN
+
+# GREEN (ALL PROOFS CHECK): 32 of 35 site files
+# RED: 3 of 35
+# DISTINCT (Location, message) the compiler named -- each is ONE closed site:
+  None                     - expected : cases for ../uop/ops.ABoolList    hit by 1 files  e.g. tinybendygrad/codegen/__init__.bend
+  None                     - expected : cases for ops.ABoolList           hit by 1 files  e.g. tinybendygrad/uop/render.bend
+  None                     - expected : cases for ops.AOpLit, ops.ABoolList hit by 1 files  e.g. tinybendygrad/uop/upat.bend
+
+# READING THIS AS A CLOSURE: `bend` stops at the FIRST error per file, so
+# each Location is the FIRST still-unfixed site. A site is CLOSED iff adding
+# a constructor breaks it, and each Location above is such a site -- but a
+# file listing ZERO locations in a later round is only evidence of open-ness
+# for the sites the earlier rounds already fixed.

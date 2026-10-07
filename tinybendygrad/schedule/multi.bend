@@ -1078,7 +1078,7 @@ def rd_fires(+r: Rd) -> Bool:
 # the wall (`allreduce.bend`'s, plus two `.cast`s).
 # `S.Dt` is a `Data` record {pri, bits, cls, nm} (spec.bend:75) so equality is
 # NOT structural -- `O.eq_dt` is what `ops.bend` itself uses for a dtype
-# comparison (ops.bend:3707) and it compares the RANK (`pri`), which is
+# comparison (ops.bend:3762) and it compares the RANK (`pri`), which is
 # `dtype.py`'s declaration order and is unique per dtype.
 def rd_low_dt(+dt: S.Dt) -> Bool:
   Bool.or(O.eq_dt(dt, S.bfloat16()), O.eq_dt(dt, S.half()))
@@ -3451,4 +3451,4 @@ def main() -> IO(Unit):
 # THE GRAPH BUILDERS, one line per call site.
 #
 #   `_mop` (ops.py:614..:653) -- every `.arg`-carrying rewrite is a `_mop`.
-#   TODO(p3) ops.py:646 multi.py:12   `_apply_shrink`, SHRINK  -- BLOCKED.-- BLOCKED. needs `UOp._mop` -- which is PORTED as `tn_mop` in `tensor.bend:798`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.
+#   TODO(p3) ops.py:646 multi.py:12   `_apply_shrink`, SHRINK  -- BLOCKED.-- BLOCKED. needs `UOp._mop` -- which is PORTED as `tn_mop` in `tensor.bend:1476`, but `multi.bend` does NOT import `tensor.bend`. MEASURED at 2026-10-06: adding `import ./../tensor.bend` to `multi.bend` is CYCLE-FREE (tensor.bend's closure is six files, nothing under `schedule/`) and Bend accepts it. So this is an IMPORT EDGE, not an absent def.

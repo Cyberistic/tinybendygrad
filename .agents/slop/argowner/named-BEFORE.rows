@@ -1,0 +1,5 @@
+mv_perm n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=(3,2) dtype=i32
+mv_permrep n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_permlen n=6 op=Ops.PERMUTE nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT
+mv_flip n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=(2,3) dtype=i32
+mv_fliplen n=6 op=Ops.FLIP nsrc=1 srcops=Ops.RESHAPE shape=ABSENT dtype=ABSENT

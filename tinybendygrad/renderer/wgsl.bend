@@ -20,7 +20,7 @@
 #
 # `ops.bend` named the sugar in its own NOT PORTED block (`UOp.cast`,
 # `UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`, `UOp.where` were all
-# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2783`, the
+# `TODO(p3) ops.py:<line>`). `UOp.cast` IS NOW PORTED at `ops.bend:2880`, the
 # always-builds-new shape (no identity check), gated at `gates/uop_cast-gate.py`
 # 8/8 rows. The FOLD the identity check needs (`dtype_from_uop`) is the same FOLD
 # the remaining four (`UOp.bitcast`, `UOp.index`, `UOp.load`, `UOp.store`) need:

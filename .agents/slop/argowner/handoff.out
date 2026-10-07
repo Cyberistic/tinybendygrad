@@ -1,0 +1,23 @@
+# SRC  .agents/slop/graphcmp.bend          md5 e48b337f39cd2dea6de630d3807d9db9
+# DST  .agents/slop/argowner/handoff-graphcmp.bend  md5 0b90684363151bf350e38ebff36a79ab
+# SRC md5 UNCHANGED after the build: e48b337f39cd2dea6de630d3807d9db9 (this script only ever opened SRC for reading)
+
+## COMPILE  token=WITHIN-LIMITS rc=0
+  bend 2.0.35 is available: run bend update
+
+## RUN -- the graph name is a POSITIONAL arg (graphcmp.py:1948 `[BEND, probe, graph]`), not `--graph`; the first run of this script passed `--graph flip` and got 0 rows for that reason alone
+  token=WITHIN-LIMITS  cpython rows=6  handoff-bend rows=8  baseline-bend rows=6
+
+# VERDICT: DISAGREE
+  baseline 2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 45:P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  cpython  2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 46:P(i14,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+  baseline 2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  cpython  2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+  baseline 2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  cpython  2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+  baseline 2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  cpython  2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+  baseline 2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  cpython  2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+  baseline 2:i6 4:FLIP 3:f32 11:(l0:4,l0:3) 2:i0 1:N 8:n(i1,i0) 5:n(i5)
+  cpython  2:i6 4:FLIP 3:f32 11:(l0:4,l0:3) 2:i0 1:N 8:n(b1,b0) 5:n(i5)
