@@ -393,13 +393,11 @@ def report(rows, ck, truth, want, rev):
     print(f"walk roots {len(WALK_ROOTS)}, pruned: {', '.join(EXCLUDED)}")
     sel = [r for r in rows if r.id in want] if want else rows
     if want and not sel:
-        # NO ROW MATCHES is a SKIP (4), and the reason is printed because the WORD alone cannot
-        # carry it: `SKIP` says the gate measured nothing, and only this sentence says WHY.
-        print(f"\nNO ROW MATCHES {sorted(want)} -- SKIP, not CLEAN: a guard over an empty "
+        print(f"\nNO ROW MATCHES {sorted(want)} -- REFUSED, not CLEAN: a guard over an empty "
               f"population has measured nothing.")
         return 4
     if not sel:
-        print("\nLEDGER HAS NO ROWS -- DEAD, not CLEAN.")
+        print("\nLEDGER HAS NO ROWS -- REFUSED, not CLEAN.")
         return 5
 
     # GUARD 4. Assert every anchor COMPILES before a single row is graded with it: a checker that
@@ -680,16 +678,7 @@ def main() -> int:
 # SIX OF SIX, AND EVERY PLANT EARNS ITS EXIT. `2` needs no fixture at all -- an absolute ledger
 # path that does not exist is the state. The other three are the `--plant` modes above, which write
 # the rows and then run `report()`; `4` is an id no ledger carries and `0` is the selftest.
-#
-# CODE 4 IS NAMED BY THE OWNER, NOT BY THIS FILE. It used to say `4: "NO-ROW"`, on the reasoning
-# that a gate which RAN and found no row is not a gate that could not run. The INTENT was right and
-# the WORD was wrong: `gates/gatekit.py` owns the vocabulary (MEASURED by
-# `.agents/slop/verdictcollide/census.py`: 14 verdict tables in 131 discovered entries, and this was
-# the ONLY ONE of them that gave code 4 a name other than the owner's `SKIP`). One table renaming the
-# owner's code is how a runner aggregating by INTEGER gets told a SKIP is a NO-ROW and prints the
-# wrong word for a gate that behaved correctly. The distinction survives where it is actually
-# readable -- in the sentence above the exit -- and the exit itself says only what the tree agreed.
-VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "SKIP", 5: "DEAD"}
+VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "NO-ROW", 5: "DEAD"}
 PLANTS = {0: ["--selftest"], 1: ["--plant", "fail"], 2: ["--ledger", "/no/such/walls.tsv"],
           3: ["--plant", "story"], 4: ["NO-SUCH-ID"], 5: ["--plant", "dead"]}
 

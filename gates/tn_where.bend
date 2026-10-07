@@ -49,8 +49,7 @@ def row_where_srcs() -> Bool:
   +x = mk_int(3)
   +y = mk_int(5)
   +r = T.tn_where(c, x, y)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(c), T.Tensor.u(x), T.Tensor.u(y)])
+  T.tn_where_srcs_are(r, c, x, y)
 
 def row_where_pure() -> Bool:
   +c = mk_bool()

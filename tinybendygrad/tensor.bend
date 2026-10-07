@@ -289,6 +289,17 @@ def tn_srcs_are(+r: Tensor, +c: Tensor, +d: Tensor) -> Bool:
   +m = O.Arena.merge(Tensor.ar(c), Tensor.ar(d))
   O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)), [Tensor.u(c), O.Merge.at(m, Tensor.u(d))])
 
+# THE THREE-OPERAND FORM of the same assertion. It replays `tn_where`'s two merges rather
+# than sharing them, because `Arena.merge` returns the node MAP and not the src list, so a
+# driver cannot recover the order the operands were re-minted in without replaying it. This
+# is the ONE place in the tree that replays it, and it is a gate -- so a driver comparing raw
+# indices across arenas cannot.
+def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool:
+  +mx = O.Arena.merge(Tensor.ar(cond), Tensor.ar(x))
+  +my = O.Arena.merge(O.Merge.ar(mx), Tensor.ar(y))
+  O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)),
+    [Tensor.u(cond), O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
+
 # SIBLING ARENAS: WAS A WALL, NOW CLOSED. The 18 reverse-dispatch binops (`tn_mul.go`,
 # `tn_add.go`, `tn_sub.go`, `tn_cmplt.go`, `tn_cmpne.go`, `tn_and.go`, `tn_or.go`,
 # `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`, `tn_shl.go`, `tn_shr.go`,
@@ -383,7 +394,8 @@ def tn_reciprocal(+t: Tensor) -> Tensor:
 # -- the SAME `tn_alu` builder, with `seed`'s uop appended to the src list. CPython's
 # `seed` is `Self` (a Tensor); the port reads `Tensor.u(seed)` to extract the uop.
 def tn_threefry(+t: Tensor, +seed: Tensor) -> Tensor:
-  tn_alu(t, O.OpsTHREEFRY{}, [Tensor.u(seed)])
+  +m = O.Arena.merge(Tensor.ar(t), Tensor.ar(seed))
+  tn_alu.of(O.Merge.ar(m), Tensor.u(t), O.OpsTHREEFRY{}, [O.Merge.at(m, Tensor.u(seed))])
 
 # `sin` -- elementwise.py:494. `return self.alu(Ops.SIN)`. Same shape as `tn_trunc`.
 def tn_sin(+t: Tensor) -> Tensor:
@@ -419,8 +431,17 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
 # this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
 # no-broadcasting case; the broadcasting case stays walled on `_broadcasted`
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
+#
+# THREE OPERANDS, THREE ARENAS, TWO MERGES. `tn_binop` covers the two-operand node and this
+# is the shape it cannot reach: `x` and `y` are re-minted in TURN and the accumulator is
+# read at the end, so both indices are minted in a PREFIX of the arena the WHERE is built in.
+# The one-line version this replaces read `x.u` and `y.u` in `cond.ar`, and was MEASURED
+# answering `Ops.NOOP` -- the bottom -- for `src[2]` whenever `y` was not at index 0.
 def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
-  tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])
+  +mx = O.Arena.merge(Tensor.ar(cond), Tensor.ar(x))
+  +my = O.Arena.merge(O.Merge.ar(mx), Tensor.ar(y))
+  tn_alu.of(O.Merge.ar(my), Tensor.u(cond), O.OpsWHERE{},
+    [O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
 
 # `bitwise_not` -- elementwise.py:145. The Python body is THREE WORDS, and they are
 # three arms: `if self.dtype == dtypes.bool: return self.logical_not(); return
