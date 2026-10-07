@@ -1,0 +1,4 @@
+PASS: HEAD deletes 1 files / 1 lines -- inside the envelope
+PASS: HEAD deletes 6000 files / 6000 lines -- inside the envelope (ack: the scratch tree is disposable)
+PASS: 72f0ae6c5b52 deletes 1 files / 1 lines -- inside the envelope
+--plant: all states OK
