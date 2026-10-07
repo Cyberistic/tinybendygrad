@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denominator/sandbox/checks/dup-census.py", line 91, in <module>
+    RG = load(SLOP / "rebase-gate.py", "rebase_gate")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denominator/sandbox/checks/dup-census.py", line 87, in load
+    spec.loader.exec_module(mod)
+  File "<frozen importlib._bootstrap_external>", line 999, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/denominator/sandbox/.agents/slop/rebase-gate.py", line 164, in <module>
+    import loadwatch
+ModuleNotFoundError: No module named 'loadwatch'
