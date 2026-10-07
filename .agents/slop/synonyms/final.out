@@ -1,0 +1,27 @@
+OWNER gates/gatekit.py BY PATH: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+MARKERS this census reads: ['VERDICTS', 'NAME']
+
+42 declared codes read over 14 sites: 27 SAME, 11 RENAMED, 4 UNMAPPED
+
+SITE                                           LN MARKER    CODE TOKEN      OWNER     KIND
+checks/dup-census.py                          306 VERDICTS     0 OK         PASS      RENAMED
+checks/dup-gate.py                            355 VERDICTS     2 USAGE      -         UNMAPPED
+checks/env-precond.py                         437 VERDICTS     0 OK         PASS      RENAMED
+checks/env-precond.py                         437 VERDICTS     2 REFUSED    -         UNMAPPED
+checks/hermetic-census.py                     187 VERDICTS     0 OK         PASS      RENAMED
+checks/nl-gate-noguard.py                     105 VERDICTS     0 AGREE      PASS      RENAMED
+checks/nl-gate-noguard.py                     105 VERDICTS     1 BROKEN     FAIL      RENAMED
+checks/no-txt.py                              222 VERDICTS     0 CLEAN      PASS      RENAMED
+checks/no-txt.py                              222 VERDICTS     1 RED        FAIL      RENAMED
+checks/oracle_f64.py                          314 VERDICTS     0 OK         PASS      RENAMED
+checks/wallcheck.py                           681 VERDICTS     2 USAGE      -         UNMAPPED
+checks/wallcheck.py                           681 VERDICTS     4 NO-ROW     SKIP      RENAMED
+gates/gate-surface.py                         135 VERDICTS     0 OK         PASS      RENAMED
+gates/gate-surface.py                         135 VERDICTS     1 RED        FAIL      RENAMED
+gates/gate-surface.py                         135 VERDICTS     2 REFUSED    -         UNMAPPED
+
+  RENAMED over GATES (inside HOMES): 11 over 8 gates
+  RENAMED over RUNNERS (outside HOMES): 0 over 0 runner(s)
+  TOTAL RENAMED: 11
+
+  THE TWELFTH, AND WHY NO INSTRUMENT SAW IT:

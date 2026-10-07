@@ -1,0 +1,115 @@
+OWNER gates/gatekit.py: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+  (`bool` is a subclass of `int`, so every key test here is `type(k) is int` -- the
+   first run of a dict-shape scan reported `{PASS: 'GREEN'}` under the UNPACK shape)
+
+DICT-SHAPED VOCABULARIES THAT DISAGREE WITH THE OWNER: 56 entry/entries over 22 site(s)
+
+  gates/gate-surface.py:135  `VERDICTS`  all={0: 'OK', 1: 'RED', 2: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+      RENAMED: exit 1: 'RED' where the owner says 'FAIL'
+
+  test/amd/disasm.py:328  `R4_TH_LOAD`  all={1: 'TH_LOAD_NT', 2: 'TH_LOAD_HT', 3: 'TH_LOAD_LU', 4: 'TH_LOAD_RT_WB', 5: 'TH_LOAD_NT_WB'}
+      RENAMED: exit 1: 'TH_LOAD_NT' where the owner says 'FAIL'
+      RENAMED: exit 3: 'TH_LOAD_LU' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'TH_LOAD_RT_WB' where the owner says 'SKIP'
+      RENAMED: exit 5: 'TH_LOAD_NT_WB' where the owner says 'DEAD'
+
+  test/amd/disasm.py:329  `R4_TH_STORE`  all={1: 'TH_STORE_NT', 2: 'TH_STORE_HT', 3: 'TH_STORE_ST', 4: 'TH_STORE_RT_WB', 5: 'TH_STORE_NT_WB'}
+      RENAMED: exit 1: 'TH_STORE_NT' where the owner says 'FAIL'
+      RENAMED: exit 3: 'TH_STORE_ST' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'TH_STORE_RT_WB' where the owner says 'SKIP'
+      RENAMED: exit 5: 'TH_STORE_NT_WB' where the owner says 'DEAD'
+
+  test/amd/disasm.py:330  `R4_TH_ATOMIC`  all={1: 'TH_ATOMIC_RETURN', 2: 'TH_ATOMIC_NT', 3: 'TH_ATOMIC_RETURN_NT', 4: 'TH_ATOMIC_CASCADE_RT', 5: 'TH_ATOMIC_CASCADE_RETURN', 6: 'TH_ATOMIC_CASCADE_NT', 7: 'TH_ATOMIC_CASCADE_RETURN_NT'}
+      RENAMED: exit 1: 'TH_ATOMIC_RETURN' where the owner says 'FAIL'
+      RENAMED: exit 3: 'TH_ATOMIC_RETURN_NT' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'TH_ATOMIC_CASCADE_RT' where the owner says 'SKIP'
+      RENAMED: exit 5: 'TH_ATOMIC_CASCADE_RETURN' where the owner says 'DEAD'
+
+  test/amd/disasm.py:332  `R4_SCOPE`  all={1: 'SCOPE_SE', 2: 'SCOPE_DEV', 3: 'SCOPE_SYS'}
+      RENAMED: exit 1: 'SCOPE_SE' where the owner says 'FAIL'
+      RENAMED: exit 3: 'SCOPE_SYS' where the owner says 'REFUSED'
+
+  test/amd/disasm.py:820  `_SDWA_SEL`  all={0: 'BYTE_0', 1: 'BYTE_1', 2: 'BYTE_2', 3: 'BYTE_3', 4: 'WORD_0', 5: 'WORD_1', 6: 'DWORD'}
+      RENAMED: exit 0: 'BYTE_0' where the owner says 'PASS'
+      RENAMED: exit 1: 'BYTE_1' where the owner says 'FAIL'
+      RENAMED: exit 3: 'BYTE_3' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'WORD_0' where the owner says 'SKIP'
+      RENAMED: exit 5: 'WORD_1' where the owner says 'DEAD'
+
+  checks/dup-census.py:306  `VERDICTS`  all={0: 'OK', 3: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+
+  checks/env-precond.py:437  `VERDICTS`  all={0: 'OK', 1: 'FAIL', 2: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+
+  checks/fw_live.py:22  `PSP_ERRORS`  all={1: 'generic error', 2: 'out of bounds', 3: 'invalid parameter', 4: 'off-chip boot error', 5: 'address not set', 6: 'parse off-chip error', 7: 'address map error', 8: 'parse on-chip error', 9: 'full update error', 10: 'partition update error', 11: 'map on-chip error', 12: 'write to SPI error', 13: 'signature validation error', 14: 'invalid command', 15: 'signature not found', 16: 'state machine not initialized', 17: 'state machine transfer error', 18: 'initialization error'}
+      RENAMED: exit 1: 'generic error' where the owner says 'FAIL'
+      RENAMED: exit 3: 'invalid parameter' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'off-chip boot error' where the owner says 'SKIP'
+      RENAMED: exit 5: 'address not set' where the owner says 'DEAD'
+
+  checks/hermetic-census.py:187  `VERDICTS`  all={0: 'OK', 3: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+
+  checks/nl-gate-noguard.py:105  `VERDICTS`  all={0: 'AGREE', 1: 'BROKEN', 3: 'REFUSED'}
+      RENAMED: exit 0: 'AGREE' where the owner says 'PASS'
+      RENAMED: exit 1: 'BROKEN' where the owner says 'FAIL'
+
+  checks/no-txt.py:222  `VERDICTS`  all={0: 'CLEAN', 1: 'RED'}
+      RENAMED: exit 0: 'CLEAN' where the owner says 'PASS'
+      RENAMED: exit 1: 'RED' where the owner says 'FAIL'
+
+  checks/oracle_f64.py:314  `VERDICTS`  all={0: 'OK', 1: 'FAIL', 3: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+
+  checks/wallcheck.py:681  `VERDICTS`  all={0: 'PASS', 1: 'FAIL', 2: 'USAGE', 3: 'REFUSED', 4: 'NO-ROW', 5: 'DEAD'}
+      RENAMED: exit 4: 'NO-ROW' where the owner says 'SKIP'
+
+  .agents/slop/nv_ip_oracle3.py:306  `TAGS`  all={0: 'send', 1: 'qwrite', 2: 'qwp', 3: 'barrier', 4: 'doorbell', 5: 'wait', 6: 'raise', 7: 'ememc', 8: 'ememd', 9: 'tail', 10: 'head'}
+      RENAMED: exit 0: 'send' where the owner says 'PASS'
+      RENAMED: exit 1: 'qwrite' where the owner says 'FAIL'
+      RENAMED: exit 3: 'barrier' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'doorbell' where the owner says 'SKIP'
+      RENAMED: exit 5: 'wait' where the owner says 'DEAD'
+
+  .agents/slop/denominator/probe/checks/dup-census.py:298  `VERDICTS`  all={0: 'OK', 3: 'REFUSED'}
+      RENAMED: exit 0: 'OK' where the owner says 'PASS'
+
+  extra/amdflash/fw_live.py:22  `PSP_ERRORS`  all={1: 'generic error', 2: 'out of bounds', 3: 'invalid parameter', 4: 'off-chip boot error', 5: 'address not set', 6: 'parse off-chip error', 7: 'address map error', 8: 'parse on-chip error', 9: 'full update error', 10: 'partition update error', 11: 'map on-chip error', 12: 'write to SPI error', 13: 'signature validation error', 14: 'invalid command', 15: 'signature not found', 16: 'state machine not initialized', 17: 'state machine transfer error', 18: 'initialization error'}
+      RENAMED: exit 1: 'generic error' where the owner says 'FAIL'
+      RENAMED: exit 3: 'invalid parameter' where the owner says 'REFUSED'
+      RENAMED: exit 4: 'off-chip boot error' where the owner says 'SKIP'
+      RENAMED: exit 5: 'address not set' where the owner says 'DEAD'
+
+  extra/qcom_gpu_driver/msm_kgsl.py:134  `kgsl_user_mem_type__enumvalues`  all={0: 'KGSL_USER_MEM_TYPE_PMEM', 1: 'KGSL_USER_MEM_TYPE_ASHMEM', 2: 'KGSL_USER_MEM_TYPE_ADDR', 3: 'KGSL_USER_MEM_TYPE_DMABUF', 7: 'KGSL_USER_MEM_TYPE_MAX'}
+      RENAMED: exit 0: 'KGSL_USER_MEM_TYPE_PMEM' where the owner says 'PASS'
+      RENAMED: exit 1: 'KGSL_USER_MEM_TYPE_ASHMEM' where the owner says 'FAIL'
+      RENAMED: exit 3: 'KGSL_USER_MEM_TYPE_DMABUF' where the owner says 'REFUSED'
+
+  extra/qcom_gpu_driver/msm_kgsl.py:151  `kgsl_ctx_reset_stat__enumvalues`  all={0: 'KGSL_CTX_STAT_NO_ERROR', 1: 'KGSL_CTX_STAT_GUILTY_CONTEXT_RESET_EXT', 2: 'KGSL_CTX_STAT_INNOCENT_CONTEXT_RESET_EXT', 3: 'KGSL_CTX_STAT_UNKNOWN_CONTEXT_RESET_EXT'}
+      RENAMED: exit 0: 'KGSL_CTX_STAT_NO_ERROR' where the owner says 'PASS'
+      RENAMED: exit 1: 'KGSL_CTX_STAT_GUILTY_CONTEXT_RESET_EXT' where the owner says 'FAIL'
+      RENAMED: exit 3: 'KGSL_CTX_STAT_UNKNOWN_CONTEXT_RESET_EXT' where the owner says 'REFUSED'
+
+  extra/qcom_gpu_driver/msm_kgsl.py:164  `kgsl_deviceid__enumvalues`  all={0: 'KGSL_DEVICE_3D0', 1: 'KGSL_DEVICE_MAX'}
+      RENAMED: exit 0: 'KGSL_DEVICE_3D0' where the owner says 'PASS'
+      RENAMED: exit 1: 'KGSL_DEVICE_MAX' where the owner says 'FAIL'
+
+  extra/qcom_gpu_driver/msm_kgsl.py:205  `kgsl_timestamp_type__enumvalues`  all={1: 'KGSL_TIMESTAMP_CONSUMED', 2: 'KGSL_TIMESTAMP_RETIRED', 3: 'KGSL_TIMESTAMP_QUEUED'}
+      RENAMED: exit 1: 'KGSL_TIMESTAMP_CONSUMED' where the owner says 'FAIL'
+      RENAMED: exit 3: 'KGSL_TIMESTAMP_QUEUED' where the owner says 'REFUSED'
+
+  extra/qcom_gpu_driver/msm_kgsl.py:500  `kgsl_cmdwindow_type__enumvalues`  all={0: 'KGSL_CMDWINDOW_2D', 1: 'KGSL_CMDWINDOW_3D', 2: 'KGSL_CMDWINDOW_MMU', 255: 'KGSL_CMDWINDOW_MAX'}
+      RENAMED: exit 0: 'KGSL_CMDWINDOW_2D' where the owner says 'PASS'
+      RENAMED: exit 1: 'KGSL_CMDWINDOW_3D' where the owner says 'FAIL'
+
+THE THREE SHAPES, AND WHO READS EACH:
+
+  UNPACK   gates/gatekit.py:60        read by gates/gate-surface.py:vocabulary()  -- the OWNER
+  VERDICTS checks/*, gates/*         read by gates/gate-surface.py:declaration() -- a GATE about itself
+  NAME     .agents/slop/hooks/run.py:56   read by NOTHING -- a private copy in a RUNNER
+
+  THE THIRD IS OUTSIDE `HOMES=('checks','gates')`, so `gates-pop.discover()` cannot
+  see it, and `declares_surface()` (hooks/run.py:69) filters ON `VERDICTS`, so the
+  runner that HOLDS the copy is also the runner that cannot see it.
