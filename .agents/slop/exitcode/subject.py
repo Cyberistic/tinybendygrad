@@ -112,11 +112,7 @@ def collisions(tree):
         for sub in node.body:                      # SAME branch only, in source order
             if isinstance(sub, ast.Expr) and isinstance(sub.value, ast.Call) \
                     and getattr(sub.value.func, "id", None) == "print":
-                for a in sub.value.args:
-                    if isinstance(a, ast.Constant) and isinstance(a.value, str):
-                        for w in BY_WORD:
-                            if re.search(rf"\b{w}\b", a.value):
-                                printed.append((sub.lineno, w))
+                printed += [(sub.lineno, w) for w, _ in printed_words(sub.value)]
             elif isinstance(sub, ast.Return):
                 # `verdict_of` ALREADY yields the NUMBER. Wrapping it in `gk.VERDICT[...]` here
                 # turned it into a WORD, so `BY_WORD[w] != code` compared a number to a string
