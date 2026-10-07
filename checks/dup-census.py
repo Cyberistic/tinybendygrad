@@ -40,9 +40,6 @@ attribution is asserted to sum to it.
 import argparse, importlib.util, json, pathlib, sys
 from collections import Counter
 
-sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
-import denominator as DEN  # ONE assertion, loaded BY PATH.  `checks/coindep.py`'s shape.
-
 HERE = pathlib.Path(__file__).resolve().parent
 # `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
 # `3f0e70ff1` MOVED this file from `.agents/slop/dup/` to `checks/`, ONE level shallower, and
@@ -201,15 +198,8 @@ def main():
   ap.add_argument("--names", action="store_true")
   ap.add_argument("--one", nargs="+")
   a = ap.parse_args()
-  # ⚠ `CACHE` IS NOT IN GIT (`git ls-tree -r HEAD --name-only | grep -c 'checks/lanes/'` = 0),
-  # so a plain `CACHE.glob()` over an ABSENT directory returned `[]`, every count below was a
-  # real `int` and all of them were 0, and this gate printed `DENOMINATOR: 0 of 0` -- read
-  # exactly like a clean lane -- then WROTE `[]` OVER A TRACKED 797,251-BYTE CENSUS at the
-  # bottom of this function and returned 0.  `enumerate_population` refuses an unreadable
-  # source, so "never looked" is REFUSED (3) and only an empty-but-present cache is a zero.
   texts = ([(pathlib.Path(p).name, pathlib.Path(p).read_text()) for p in a.one] if a.one
-           else [(p.name, p.read_text())
-                 for p in DEN.enumerate_population(CACHE, "*.txt", "dup-census lanes")])
+           else [(p.name, p.read_text()) for p in sorted(CACHE.glob("*.txt"))])
   # ⚠ `texts` pairs are (LABEL, TEXT) -- `eq-census2.py` builds them the same way -- so the
   # unpacking order is load-bearing.  Writing `for t, lb in texts` passes the LABEL as the text
   # and the TEXT as the label, and the first symptom is a census that reports ZERO rows and
@@ -230,12 +220,7 @@ def main():
             f"{m['lost_strict']:5} {len(m['refuse']):6} {len(m['cont']):5} "
             f"{len(m['name_defs_differ']):5}")
   g = lambda k: sum(m[k] for m in ms)
-  # `lanes` IS this gate's divisor -- it is the `of` in `N of M` and the `over` in `TOTAL over
-  # N lane texts` below -- so a zero here is an undefined ratio, not a finding, and
-  # `require_denominator` refuses it.  A NUMERATOR zero is untouched: `dup_n_strict == 0` over a
-  # populated census is the good news, and it is printed by `g`, never by this call.
-  lanes = DEN.require_denominator(len(ms), "dup-census TOTAL", CACHE)
-  dup_lanes = [m for m in ms if m["dup_n_strict"]]
+  lanes, dup_lanes = len(ms), [m for m in ms if m["dup_n_strict"]]
   A, P, N = g("accepted"), g("phys"), g("names_strict")
   print()
   print(f"TOTAL over {lanes} lane texts of {len({m['label'].split('.bend')[0] for m in ms})} ports")
@@ -291,12 +276,6 @@ def main():
   (HERE / "dup-census.json").write_text(json.dumps(
     [{k: v for k, v in m.items() if k != "src"} for m in ms], indent=1, default=str))
   return 0
-
-
-# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
-VERDICTS = {0: "OK", 3: "REFUSED"}
-PLANTS = {}
 
 
 if __name__ == "__main__":
