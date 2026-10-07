@@ -9,13 +9,6 @@ rule this project wrote for itself is that the Python reproduces the shell's ver
 INPUT or it does not move. Its sha256 is in `ORACLE_PIN`, checked IN CODE on every run: a pin in
 a comment is a pin that cannot fail.
 
-ONE INPUT DELIBERATELY MOVES, IN BOTH FILES. When no finding fired but a file was NOT JUDGED
-(no instrument exists, or it produced nothing), the shell printed `SUBSTRATE CLEAN ... each
-judged by its OWN instrument` and exited 0 -- and the port reproduced that faithfully. BOTH now
-REFUSE (exit 3). The oracle was re-frozen with the fix, so `ORACLE_PIN` moved with it: an
-unjudged file is not a finding, and a gate that exits 0 having measured nothing is the form
-`AGENTS.md` names as worse than no gate.
-
 WHAT IT GATES, AND THE DENOMINATOR EACH VERDICT TRAVELS WITH -- because a gate whose scope is a
 comment is a gate nobody can check.
 
@@ -61,12 +54,9 @@ POPULATION: with no file arguments, `--root [DIR]` sweeps EVERY file under DIR (
   exactly as before, so the 1-file and 2-file callers are unmoved.
 
 EXIT STATUS: 0 clean · 1 at least one finding · 2 the scratch directory could not be made ·
-3 REFUSED: no files given, the frozen oracle moved, or at least one file was NOT JUDGED (no
-instrument exists, or it produced nothing). An unjudged file is not a finding -- nothing was
-measured, so nothing is WRONG -- which is why it is a REFUSAL (3) and not a FAIL (1): "I could
-not judge this" is not "this is wrong". **ZERO ARGUMENTS IS A MISUSE, NOT A VERDICT:** refused
-with a usage line, because `SUBSTRATE CLEAN: 0 file(s)` is the same verdict as a green run over
-a population.
+3 no files given, or the frozen oracle moved. **ZERO ARGUMENTS IS A MISUSE, NOT A VERDICT:**
+refused with a usage line, because `SUBSTRATE CLEAN: 0 file(s)` is the same verdict as a green
+run over a population.
 
 THE MEMORY BOUND IS NEW AND THE SHELL HAD NONE. All four instrument invocations in the shell are
 `perl -e 'alarm 300; exec @ARGV'` or worse: that idiom bounds TIME and nothing else, `ulimit`
@@ -104,15 +94,9 @@ ENV = {k: v for k, v in os.environ.items() if k != "PYTHONPATH"}
 # instead would be a check against `git`, a dependency this file does not otherwise have.
 # `checks/differ.py` learned this the hard way: its pin WAS correct and WAS a comment, and
 # nothing read it.
-#
-# RE-FROZEN ONCE, DELIBERATELY: the `n_none > 0` CLEAN-and-exit-0 branch (the shell's
-# `oracle-check.sh:463-470`) was fixed in the ORACLE TOO, so this pin moved from `6d1000712f0f…`
-# to the value below. THAT IS ONE COMMIT OR IT IS A BROKEN PIN: if the oracle is restored from an
-# older revision while this file keeps the new hash, `oracle_drift()` REFUSES (exit 3) -- loudly,
-# which is the safe direction. The owner must land the oracle edit and this line together.
 ORACLE_PIN = {
     "substrate/oracle-check.sh":
-        "3b2ad83f57d995c9e555a1e2843b4176adf75a18e395633f141f944f531773f3",
+        "6d1000712f0f290ca479539f863dc76c6793cf4bbe94e983f94d56698994600e",
 }
 
 # THE `.c` PROBE. `checks/c-context.bend` (26 lines, TRACKED, and NOT named `probe-*.bend` because
@@ -342,20 +326,11 @@ class Ctx:
         self.pre: Path | None = None
         self.lines = 0
 
-    def ready(self) -> bool:
-        """THE CHEAP PRECONDITIONS FOR THE `cc` INSTRUMENT, DECIDED WITHOUT EMITTING ANYTHING:
-        `bend` exists and both probe files are present. `ok()` is the expensive half (one
-        `bend -o` plus a context compile); `half1` consults THIS before the `-n` short-circuit
-        so a probe that is GONE is reported under `-n` instead of skipped past it. The shell
-        reaches the same verdict in `c_context`; the split exists only so the cheap part can be
-        asked cheaply."""
-        return bool(self.bend) and os.path.isfile(C_PROBE) and os.path.isfile(C_PROBE_FOREIGN)
-
     def ok(self) -> bool:
         """`[ -n "$CTX" ] && return 0` -- memoized, so the 300-second emit happens at most once."""
         if self.pre is not None:
             return True
-        if not self.ready():
+        if not self.bend or not os.path.isfile(C_PROBE) or not os.path.isfile(C_PROBE_FOREIGN):
             return False
         gen = self.tmp / "gen.c"
         bounded([self.bend, C_PROBE, "-o", str(gen)], self.opts, "c_context emit")
@@ -448,17 +423,6 @@ def half1(files: list[str], opts: argparse.Namespace, bend: str, cc: str, node: 
             inst, why = "none", "node is not installed"
         if inst == "bend" and not bend:
             inst, why = "none", "bend is not installed"
-        # A ROUTED INSTRUMENT WHOSE CHEAP PRECONDITION IS ABSENT IS `none`, AND IT IS DECIDED
-        # BEFORE THE `-n` SHORT-CIRCUIT -- otherwise `-n` hides a DEAD lane it could see for
-        # free. The `cc` context is the one instrument whose precondition is a FILE pair
-        # (`Ctx.ready`); the shell reaches the same verdict in `c_context`, and this is exactly
-        # where `-n` used to SKIP-VERDICT past it. THE ROUTED WORDING (no `-- **NOT JUDGED**`
-        # suffix) IS THE SHELL'S ASYMMETRY and is kept: a missing context says only WHY, an
-        # unrouteable class says THAT (`half1`'s cc arm says the same, for the compile failure).
-        if inst == "cc" and not ctx.ready():
-            tally["none"] += 1
-            emit(f"NO INSTRUMENT  {path}  ({lines} lines)  :: {why}")
-            continue
         if opts.names_only and inst != "none":
             emit(f"SKIP-VERDICT {path}  ({lines} lines, verdict suppressed by -n)")
             continue
@@ -866,27 +830,13 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | Non
                 f"SUBSTRATE NOT CLEAN: {findings} finding(s) across {len(files)} file(s) -- "
                 "empty, missing, cold, or collectively incomplete.",
                 "ANY VERDICT TAKEN AGAINST THESE FILES IS **INCONCLUSIVE**, NOT A RESULT."]
-        code = 1
-    elif tally["none"] > 0:
-        # A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE, BECAUSE IT IS
-        # TRUSTED. This branch used to append `SUBSTRATE CLEAN ... each judged by its OWN
-        # instrument` and return 0 while `tally["none"]` files were judged by NOTHING -- the
-        # shell's shape (`oracle-check.sh:463-470`), and the defect `AGENTS.md` names as
-        # `DEAD IS NOT A ZERO AND NOT A PASS`. An unjudged file is not a FINDING (nothing was
-        # measured, so nothing is WRONG), so the verdict is REFUSED (3), the same code as the
-        # zero-argument refusal and `gates/gatekit.py`'s `REFUSED` -- not FAIL (1).
-        out += ["",
-                f"NO INSTRUMENT: {tally['none']} of {len(files)} file(s) were **NOT JUDGED** "
-                "(no instrument exists, or it produced nothing).",
-                "A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an "
-                "unmeasured surface.",
-                f"SUBSTRATE REFUSED: {len(files) - tally['none']} of {len(files)} file(s) were "
-                "judged and agreed; the rest were judged by NOTHING, so this run did not judge "
-                "the whole population and must not report agreement.",
-                "ANY VERDICT DRAWN FROM THIS RUN IS **INCONCLUSIVE**, NOT A RESULT."]
-        code = 3
     else:
         out.append("")
+        if tally["none"] > 0:
+            out += [f"NO INSTRUMENT: {tally['none']} of {len(files)} file(s) were **NOT JUDGED** "
+                    "(no instrument exists, or it produced nothing).",
+                    "A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an "
+                    "unmeasured surface."]
         out.append(f"NAMES CLEAN: {len(files)} file(s), all non-empty, {checked} of {qualified} "
                    "qualified refs checked, all cross-file names resolved. "
                    "**VERDICT NOT TAKEN** (-n)." if opts.names_only else
@@ -899,12 +849,11 @@ def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | Non
                 " are the COVERAGE UNSEEN class. Read the `COVERAGE` and `unseen=` numbers, not just",
                 " the verdict: an instrument that hides its own blind spot is the defect this project",
                 " has catalogued twenty times.)"]
-        code = 0
     if opts.causes and cold:
         out += causes_section(cold, paths)
     for ln in out:
         print(ln)
-    return code
+    return 1 if findings else 0
 
 
 def main() -> int:

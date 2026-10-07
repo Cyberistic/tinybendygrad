@@ -253,8 +253,11 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
 # :474, :460, :457), at `tensor.bend:302, 307, 311, 315`, gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
-# `Tensor.where` and `Tensor.square` remain walled: `where` is
-# `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
-# `square` is `self * self` (the `__mul__` method is a separate wall, no arith ops
-# are ported yet).
-# TODO(p3) mixin/elementwise.py:426 x.where, :575 x.square -- BLOCKED: see above.
+# `Tensor.where` (elementwise.py:426) is ported at `tensor.bend:tn_where` for the
+# no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity when x
+# and y are already Tensors of the same shape, and the body is then
+# `tn_alu(cond, O.OpsWHERE{}, [x, y])`), gated at `gates/tn_where-gate.py` 5/5 rows.
+# The broadcasting case stays walled on `_broadcasted`. `Tensor.square` remains
+# walled: it is `self * self`, and the `__mul__` method is a separate wall
+# (no arith ops are ported yet).
+# TODO(p3) mixin/elementwise.py:575 x.square -- BLOCKED: see above.

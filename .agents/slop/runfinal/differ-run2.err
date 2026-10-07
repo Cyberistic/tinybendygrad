@@ -1,1 +1,0 @@
-[bounded] WITHIN-LIMITS  rc=0  peak-RSS=803 MB (ceiling 2048)  178s  :: .venv/bin/python checks/differ.py run  out=22B err=0B

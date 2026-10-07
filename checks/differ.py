@@ -162,15 +162,10 @@ WANT = {
     # THE FOURTEEN THE CORPUS DECLARED AND `WANT` NEVER ANSWERED (`.agents/slop/wantwire/REPORT.md`
     # Phases 1-2). Each row is MEASURED by the run34 graph phase -- the phase that finished at
     # 15:35:04, BEFORE the port went into flux at 15:35:12 -- so each is a real AGREE or DISAGREE
-    # and never a default. `getaddr` was the FIFTEENTH and stayed UNSET because its bend emission
-    # was a single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr`
-    # exits 2 `NOT WELL-POSED`, so there was no verdict to answer with. **IT IS ANSWERED NOW
-    # (2026-10-07, runfinal): `graphcmp.bend:1358` threads the arena `UOp.new` RETURNED, so the
-    # emission is a real 2-row graph. MEASURED by `differ.py run` (223 s, WITHIN-LIMITS, peak
-    # 770 MB): `D1-graph-getaddr.txt` reads `VERDICT: AGREE` and `D2-cmp-getaddr.txt`
-    # `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-selfcheck: OK` and `census-rc=rc=0`.
-    # The row is WRITTEN because the run MEASURED it -- `graphs-unset` moving 1 -> 0 is a function
-    # of THIS TABLE, the AGREE is a function of the PORT.**
+    # and never a default. `getaddr` is deliberately ABSENT and stays UNSET: its bend emission is a
+    # single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr` exits
+    # 2 `NOT WELL-POSED`, so there is no verdict to answer with. That one UNSET keeps the run
+    # `RUN INCOMPLETE`, which is the honest state (wantwire (a)).
     #
     #   Phase 1 -- the armed fixtures whose rows AGREE:
     "alu": "AGREE", "bit": "AGREE", "bw": "AGREE", "move": "AGREE", "where": "AGREE",
@@ -192,8 +187,6 @@ WANT = {
     # DISAGREE: `foldgap` REFUSED it, because the fold needs `int(r.vmax+1)` and `dt_shape` gets no
     # `BTable`, so claiming a shape would be a lie and the node stays an honest `?`.
     "stage": "AGREE", "unshard": "DISAGREE", "wmma": "AGREE",
-    # MEASURED, not predicted -- see the `getaddr` note above: VERDICT=AGREE, byte-identical.
-    "getaddr": "AGREE",
 }
 # THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
 # **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
@@ -245,7 +238,7 @@ PINS = {
     # are not comparable to a warm one. Only the first three are functions of the CORPUS;
     # every other pin here is a function of the PORT and moves when the port's next fix
     # lands. `.agents/slop/want/DECISION.md` records which is which.
-    "graphs": "34", "graphs-unset": "0", "graphs-answered": "34",
+    "graphs": "34", "graphs-unset": "1", "graphs-answered": "33",
     # `expect-moved` is the ONLY pin that asks whether the table's ASSERTIONS HELD, and it is
     # not a function of the corpus: it is a function of the PORT against the TABLE. **It is 0 and
     # it is a ZERO-TOLERANCE INVARIANT, which is why it does not need re-pinning when the corpus
@@ -257,23 +250,23 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "32", "byte-identical": "32", "not-comparable": "0",
+    "graphs-agree": "31", "byte-identical": "31", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
     # attempts` file, so `cmp -s` called the pair BYTE-IDENTICAL and `stable-pairs` read 5 of
     # 5. **Two identical FAILURES compare equal.** So the gate reads the FAILED and DIFFER
     # counts, not the identical one.
-    # ***MOVED TO GREEN BY runfinal (2026-10-07), THE FIRST RUN TAKEN UNDER A SETTLED SUBSTRATE
-    # SINCE run34.*** run34 could not pin these because the port was rewritten at 15:35:12
-    # (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and 15:39:43 (`fold.bend`) -- ~10 s AFTER
-    # its graph phase's `D2-bytediff` landed at 15:35:04 -- so every bend step from `control`
-    # onward wrote a 0-row failure (`emit bend: 0 rows after 5 attempts`), NOT a measurement, and
-    # run34 kept the last healthy values rather than pin a broken reading. runfinal: port quiet
-    # ~4 h 50 m at the start, `differ.py run` returned `WITHIN-LIMITS` in 223 s at 770 MB peak,
-    # and EVERY ONE of these read green -- so they are now the MEASURED values, not the inherited
-    # ones. They are functions of the PORT (a bend step that dies reddens them); the two
-    # `graphs-agree`/`byte-identical` pins above moved 31 -> 32 with `getaddr`.
+    # ***NOT MOVED, AND THEY ARE RED, BECAUSE THE RUN34 PORT WENT INTO FLUX MID-RUN.*** The port
+    # files were rewritten at 15:35:12 (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and
+    # 15:39:43 (`fold.bend`) -- ~10 s AFTER the graph phase's `D2-bytediff` landed at 15:35:04 --
+    # so every bend step from `control` onward wrote a 0-row failure (`emit bend: 0 rows after 5
+    # attempts`, stderr naming `argstr`/`arg_repr`), NOT a measurement. These pins keep the last
+    # HEALTHY run's values ON PURPOSE: pinning the broken readings (`stable-pairs=0 of 5`,
+    # `plants-disagree=0 of 7`, `census-rc=rc=1`, empty `oracle-selfcheck`) would make a health
+    # gate that exits 0 having measured nothing -- the doctrine this file exists for. They return
+    # to green on the next run taken under a settled substrate; the diff-phase pins above
+    # (`graphs`/`graphs-*`/`graphs-agree`/`byte-identical`) are the ones run34 validly moved.
     "stable-pairs": "5 of 5", "stable-failed": "0 of 5", "stable-differ": "0 of 5",
     "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",

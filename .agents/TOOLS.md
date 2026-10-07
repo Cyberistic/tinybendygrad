@@ -9,8 +9,8 @@ shipped code; the port has none.
 The paths this file names are a population declared by THIS FILE, extracted by
 `.agents/slop/toolsledger/extract.py`: every backtick-quoted token containing
 `/`, normalized (markdown emphasis stripped, trailing punctuation stripped,
-`./` prefix stripped, URLs excluded). As of 2026-10-07: **333 distinct paths,
-164 present, 169 absent, 85 of the absent under `.agents/slop/`** (see
+`./` prefix stripped, URLs excluded). As of 2026-10-06: **333 distinct paths,
+160 present, 173 absent, 96 of the absent under `.agents/slop/`** (see
 `.agents/slop/toolsledger/REPORT.md`; re-run `extract.py` to refresh).
 Entries naming ABSENT paths are kept on purpose: a deleted path is evidence.
 A rule whose instrument cell names a file that no longer exists is a rule
