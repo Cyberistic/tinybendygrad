@@ -248,7 +248,7 @@ def declaration(p):
     try:
         tree = ast.parse(p.read_text(errors="replace"))
     except SyntaxError as e:
-        return None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
+        return None, None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
     found = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):
