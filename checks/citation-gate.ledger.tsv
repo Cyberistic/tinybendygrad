@@ -576,9 +576,3 @@ weak.bend
 buf = UOp.alloc(...)	
 UOp.call_with_outputs((self,), *srcs)	
  (ops.py:430), and the 	
- -- elementwise.py:125. 	
- -- elementwise.py:575. 	
- -- elementwise.py:674. 	
- -- elementwise.py:378. 	
- -- elementwise.py:330. 	
- -- elementwise.py:336. 	

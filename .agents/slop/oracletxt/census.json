@@ -10,7 +10,7 @@
   "stale": [],
   "absent": [
    [
-    ".agents/slop/orcdecide/retired/othercopies.py",
+    ".agents/slop/oracles259/othercopies.py",
     "rows-bd.txt"
    ],
    [
