@@ -73,25 +73,25 @@ def pinned_dev() -> str:
     return mod.PINNED_DEV
 
 
-def differ_pins() -> dict[str, str]:
-    """`checks/differ.py`'s `PINS` -- IMPORTED, never re-declared.
+def differ_module():
+    """`checks/differ.py` BY PATH, for BOTH of its pin tables -- IMPORTED, never re-declared.
 
-    A second copy of the pin list is a contract with no generator: it rots without
-    anyone noticing, which is the failure `differ.declared()`'s docstring names for
-    artifact names and this file's own history names for graph names. The pins are the
-    run's verdict; an instrument that prints `OK` over a red run because it consulted
-    3 of the 17 is the defect this loader exists to remove.
+    A second copy of a pin list is a contract with no generator: it rots without anyone noticing,
+    which is the failure `differ.declared()`'s docstring names for artifact names and this file's
+    own history names for graph names. The pins are the run's verdict, and an instrument that
+    prints `OK` over a red run because it consulted 3 of the 17 is the defect this loader exists to
+    remove -- so it now also asks for `REPRO_PINS`, over a SECOND artifact.
 
-    `differ.py` imports only the standard library and runs nothing at module scope --
-    `gates/retention-check.py` already imports it the same way for `unhealthy()` -- so
-    asking it for its own table is side-effect-free.
+    Loading is side-effect-free (`differ.py` imports only the standard library and runs nothing at
+    module scope; `gates/retention-check.py` already imports it the same way for `unhealthy()`),
+    so one load answers both questions and there is no second `spec_from_file_location` to rot.
     """
     spec = importlib.util.spec_from_file_location("differ_pins", ROOT / "checks/differ.py")
     if spec is None or spec.loader is None:                    # `ty`: both are Optional, and
         raise SystemExit("checks/differ.py has no importable spec -- the pins are unreadable")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
-    return mod.PINS
+    return mod
 
 
 def device_precondition() -> str:
@@ -178,12 +178,24 @@ def run_health(declared: int) -> tuple[bool, str]:
     artifact's `graphs=`. The literal in `differ.py` stays for `differ.unhealthy()`; this
     instrument derives. A corpus that grows now makes the artifact RED until it is re-taken,
     and no hand edit re-pins it -- which is the difference between a population and a list.
+
+    MEASURED 2026-10-07, ONE LEVEL UP AGAIN: **ALL SEVENTEEN PINS READ ONE FILE.** Traced by
+    `Path.read_text` under a scratch copy (`.agents/slop/pinindep/layer1.py`): `unhealthy()`
+    opened 175 files and exactly ONE of them carried all 17 pin values. So `17 of 17 green` is
+    one run's seventeen rows and the DENOMINATOR WAS 1 ARTIFACT, not 17 -- 10 independent
+    measurements behind it, all functions of the same run. **A DENOMINATOR OF 1 IS NOT A HEALTH
+    VERDICT ABOUT REPRODUCIBILITY, IT IS A VERDICT ABOUT ONE ATTEMPT.** So this now consults the
+    SECOND WITNESS too: `differ.REPRO_PINS` (IMPORTED, never re-declared) read from
+    `runs/graphcmp/D/D0-repro.txt` by `differ.repro_bad()` -- `cmd_repro`'s two clean runs,
+    sha256 over every artifact, byte-compared. **THE DENOMINATOR IS NOW 2 ARTIFACT READS**, and a
+    reader cannot be told `17 of 17` without being told whether the second measurement exists,
+    because the two verdicts are computed here, side by side, and printed in ONE line.
     """
     summary = Path(__file__).resolve().parents[1] / "runs/graphcmp/D/D0-run-summary.txt"
     if not summary.exists():
         return (False, "RUN HEALTH        : **NO RUN SUMMARY** -- there is no run to corroborate "
                        "anything, so every pin is unknown rather than matched")
-    pins = differ_pins()
+    pins = differ_module().PINS
     got = dict(ln.split("=", 1) for ln in summary.read_text(errors="replace").splitlines() if "=" in ln)
     # `graphs` IS DERIVED, NOT PINNED. Every other pin is a fact about the PORT or the RUN that
     # nobody can compute here; the corpus size is neither -- it is `len(gc.GRAPHS)`, a discovery.
@@ -195,13 +207,26 @@ def run_health(declared: int) -> tuple[bool, str]:
     elif got["graphs"] != str(declared):
         red.append(f"graphs={got['graphs']} but the corpus DECLARES {declared} -- the ARTIFACT "
                    f"and the CORPUS disagree, so the health gate is reading a stale run")
-    total = len(pinned) + 1
-    if red:
-        return (False, f"RUN HEALTH        : **FAILED** -- {total - len(red)} of {total} "
-                       f"pins green. RED: {'; '.join(red)}. THE UNION ABOVE IS NOT A VERDICT.")
-    return (True, f"RUN HEALTH        : OK -- {total} of {total} pins green "
-                  f"(checks/differ.py's PINS, imported, plus `graphs` COMPARED TO THE CORPUS; "
-                  f"`graphs={got['graphs']}` and `not-comparable={got['not-comparable']}` among them)")
+    # THE SECOND WITNESS, CONSULTED HERE AND ONLY HERE, ONCE, OFF ONE IMPORT. `differ.repro_bad()`
+    # is a FUNCTION, not a copy of `REPRO_PINS`, so a pin this file did not know about cannot be
+    # invisible to it -- the same reason the 17 are imported rather than retyped. AND IT IS A
+    # SEPARATE VERDICT, NOT AN 18TH PIN: `differ.unhealthy()` cannot carry it, because
+    # `clean_run()` calls `unhealthy()` from INSIDE `cmd_repro`, one run before `D0-repro.txt`
+    # exists, so a pin that demanded it there could never pass and would be a gate red forever.
+    diff_mod = differ_module()
+    repro = diff_mod.repro_bad()
+    total, witness = len(pinned) + 1, len(diff_mod.REPRO_PINS)
+    if red or repro:
+        return (False, f"RUN HEALTH        : **FAILED** -- {total - len(red)} of {total} pins green "
+                       f"over ONE artifact, plus {witness - len(repro)} of {witness} over "
+                       f"`{diff_mod.REPRO_ARTIFACT}` "
+                       f"({'AGREES' if not repro else 'RED'}). RED: {'; '.join(red + repro)}. "
+                       f"THE UNION ABOVE IS NOT A VERDICT.")
+    return (True, f"RUN HEALTH        : OK -- {total} of {total} pins green AND the SECOND WITNESS "
+                  f"agrees: **2 artifact reads**, `D0-run-summary.txt` ({total} of them, one run) "
+                  f"and `{diff_mod.REPRO_ARTIFACT}` ({witness} of {witness}, TWO clean runs "
+                  f"byte-compared). `graphs` COMPARED TO THE CORPUS, not pinned; all pins "
+                  f"IMPORTED from checks/differ.py")
 
 
 def main() -> int:

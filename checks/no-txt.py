@@ -56,6 +56,8 @@ tell a row dump from a diary entry — WHICH IS THE SAME FAILURE AS `ORACLE_WORD
 import importlib.util
 import os
 import sys
+import tempfile
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Trees that are not this project: the git object store, the upstream clone, the tinygrad checkouts
@@ -165,6 +167,23 @@ def excused_names() -> set[str]:
     return set().union(*(declared for _, declared in carveouts()))
 
 
+def plant() -> int:
+    """`--plant`: write one `.txt` this gate OWNS, measure the tree with it there, delete it.
+
+    THE PLANT HAS TO BE A FILE, and that is the reason this mode exists. `gates/gate-surface.py`
+    runs `PLANTS[rc]` as ARGV and nothing else, so a verdict whose plant is a filesystem mutation
+    cannot be DECLARED at all -- the only honest way to reach `1` here is for the gate to make the
+    mutation. The file lands in a `TemporaryDirectory` under `.agents/slop/`: inside the repo so
+    `os.walk(ROOT)` sees it, outside `SKIP` and outside every `SKIP_PREFIX`, so `owned()` is true and
+    no generator's `declared()` set can excuse it. The context manager removes it on EVERY exit,
+    including a crash, so a plant cannot leave the residue that makes the next run disagree --
+    which is the failure `.agents/slop/zerogate/REPORT.md` §7b records against `dup-census.py`.
+    """
+    with tempfile.TemporaryDirectory(dir=ROOT / ".agents" / "slop") as td:
+        (Path(td) / "planted.txt").write_text("one .txt this gate owns, for the length of a run\n")
+        return main()
+
+
 def main() -> int:
     found = []
     for dirpath, dirnames, filenames in os.walk(ROOT):
@@ -197,5 +216,12 @@ def main() -> int:
     return 1
 
 
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. The RED is a FILE, so `--plant` makes the file and `main()` measures
+# it; the argv alone cannot reach it, which is why this is a mode and not a bare argv.
+VERDICTS = {0: "CLEAN", 1: "RED"}
+PLANTS = {0: [], 1: ["--plant"]}
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(plant() if "--plant" in sys.argv else main())

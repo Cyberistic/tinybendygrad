@@ -1,0 +1,15 @@
+gate	geometry	declared	planted	unplanted	guard	first_module_exit	first_parse_args	unplanted_rcs
+gates/gate-surface.py	GUARDED	3	3	0	685	686:attribute:exit=None	674	
+checks/dup-census.py	REFUSAL-ABOVE-ARGV	2	1	1	309	73:refuse()=None	203	0
+checks/dup-gate.py	REFUSAL-ABOVE-ARGV	4	1	3	358	69:refuse()=None	333	0,1,2
+checks/env-precond.py	GUARDED	3	2	1	441	442:attribute:exit=None	421	1
+checks/gate.py	REFUSAL-ABOVE-ARGV	3	1	2	283	70:refuse()=None	247	0,1
+checks/hermetic-census.py	REFUSAL-ABOVE-ARGV	2	1	1	190	61:refuse()=None	149	0
+checks/nl-gate-noguard.py	REFUSAL-ABOVE-ARGV	3	1	2	109	61:refuse()=None	81	0,1
+checks/nl-gate.py	REFUSAL-ABOVE-ARGV	3	1	2	539	81:refuse()=None	457	0,1
+checks/no-txt.py	GUARDED	2	2	0	226	227:attribute:exit=None	227	
+checks/norm_check.py	REFUSAL-ABOVE-ARGV	3	2	1	150	50:refuse()=None	151	3
+checks/oracle_f64.py	REFUSAL-ABOVE-ARGV	3	1	2	318	84:refuse()=None	281	0,1
+checks/residue.py	GUARDED	2	2	0	620	621:attribute:exit=None	473	
+checks/rn-gate.py	REFUSAL-ABOVE-ARGV	3	1	2	500	90:refuse()=None	438	0,1
+checks/wallcheck.py	GUARDED	6	6	0	686	687:attribute:exit=None	664	

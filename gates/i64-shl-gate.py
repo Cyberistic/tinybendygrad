@@ -32,6 +32,19 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate  # noqa: E402, VERDICT
 
+
+def _coindep():
+    """The single declaration, loaded BY PATH -- see checks/coindep.py."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "coindep", Path(__file__).resolve().parent.parent / "checks" / "coindep.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+COINDEP = _coindep()
+
 # THE FIXTURE, and it is read from the ENVIRONMENT because the driver reads it from the
 # environment too -- `H.getenv_int("I64SHL_SEED", 7)` at shl.bend:137. Both port lanes
 # inherit it, so the seed is one value in the run rather than a constant duplicated in
@@ -47,7 +60,7 @@ ROWS = 1 + 3 * 10 * 5
 # and 151 correct rows have the same length.  The set is also what lets a claim be made
 # per (value, amount) instead of per row.
 EXPECTED = ["seed"]
-for _v in ("neg1", "one", "lowhi"):
+for _v in COINDEP.I64SHL_VALUES:
     for _i in range(10):
         EXPECTED += [f"sh_{_v}_{_i}_{_f}" for _f in ("x", "amt", "lc", "rt_amt", "rt")]
 assert len(EXPECTED) == ROWS

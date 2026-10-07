@@ -1,0 +1,39 @@
+# 256 string-list declarations over 138 files; 5 value(s) spelled in 2+ files
+
+SHARED LITERAL LISTS (candidate independent pairs):
+  [3 names x 6 files] ['bd', 'bn', 'py']
+      gates/bc-u32-gate.py:67
+      gates/bc-u32-gate.py:80
+      gates/gatekit.py:373
+      gates/i64-shl-gate.py:113
+      gates/i64-shl-gate.py:108
+      gates/i64-shr-gate.py:129
+      gates/i64-shr-gate.py:123
+      gates/retention-check.py:89
+      gates/wk-f32-gate.py:57
+      gates/wk-f32-gate.py:66
+  [3 names x 3 files] ['lowhi', 'neg1', 'one']
+      checks/coindep.py:56
+      gates/i64-shl-gate.py:143
+      gates/i64-shl-oracle.py:178
+  [3 names x 2 files] ['-z', 'git', 'ls-files']
+      checks/residue.py:164
+      checks/sweep.py:381
+  [5 names x 2 files] ['amt', 'lc', 'rt', 'rt_amt', 'x']
+      gates/i64-shl-gate.py:65
+      gates/i64-shr-gate.py:45
+  [4 names x 2 files] ['bin_promote', 'commit_weak', 'exp_cast', 'rop_gap']
+      gates/mixin-op-gate.py:89
+      gates/mixin-op-oracle.py:149
+
+DERIVED CONSUMERS (single source, loaded by path -- NOT a pair):
+  checks/corpus-figure.py: ['declared']
+  checks/differ.py: ['declared']
+  checks/no-txt.py: ['declared']
+  checks/repro-paths.py: ['declared']
+  checks/residue.py: ['declared']
+  checks/slop-declare.py: ['declared']
+  checks/sweep.py: ['declared']
+  gates/gates-pop.py: ['coverage', 'declared', 'discovered', 'table']
+  gates/gendirs.py: ['coverage', 'discovered', 'table']
+  gates/retention-check.py: ['coverage', 'declared', 'discovered', 'table']

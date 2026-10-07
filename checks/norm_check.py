@@ -81,17 +81,41 @@ def cases(norm) -> list[tuple[str, bool]]:
   ]
 
 
+def old_norm(s: str) -> str:
+  """What `norm` was BEFORE the fix -- a re-spelling of the defect, run against the same gate,
+  because a fix to a normaliser that nothing can fail is a fix to nothing.
+
+  Module level, not a closure inside `main()`: `main()` and `--plant` must compare ONE definition
+  of the old normaliser. Two copies of it would be two opinions about what the plant IS, which is
+  the pair `.agents/slop/coindependent/REPORT.md` §4 is about."""
+  try:
+    return repr(float(s))
+  except ValueError:
+    return s
+
+
+def plant() -> None:
+  """`--plant`: the SAME `cases()` run against `old_norm`, and this PROCESS exits what it earns.
+
+  `main()` already computed this pair and printed it as `PLANT (...) 4/5`, then threw the answer
+  away and exited on the real normaliser instead. That is the shape `coindependent/REPORT.md` §5
+  names against `gatekit --plant`: a plant that asserts a state without its own process reaching
+  it, so a caller reading `$?` sees ONE state where there are TWO. The exit is the whole fix --
+  nothing here grades differently from `main()`, and nothing here can exit 1 without a case failing.
+  """
+  g = load("jfp_gen_f32_seam", JSL2)
+  planted = cases(old_norm)
+  for (label, _got), (_, p) in zip(cases(g.norm), planted):
+    print(f"  {'ok  ' if p else 'FAIL'}  {label:<52} the old norm")
+  print(f"PLANT ({OLD}) {sum(1 for _, p in planted if p)}/{len(planted)}"
+        "   -- and THIS process exits what that count earns")
+  sys.exit(0 if all(p for _, p in planted) else 1)
+
+
 def main() -> None:
   g = load("jfp_gen_f32_seam", JSL2)
   rows = cases(g.norm)
-
-  def old(s: str) -> str:
-    try:
-      return repr(float(s))
-    except ValueError:
-      return s
-
-  plant = cases(old)
+  old_rows = cases(old_norm)
 
   # `relative_to(REPO)`, not `relative_to(HERE.parents[1])`: `parents[1]` is the repo's PARENT,
   # so it rendered the subject as `2026-09-30-tinybendygrad/jslane2/gen_f32_seam.py` -- the same
@@ -99,19 +123,29 @@ def main() -> None:
   print(f"gate under test: {JSL2.relative_to(REPO)}  norm -> {g.norm.__module__}")
   print(f"                  CANON.canon(s, \"f32\"), not {OLD}\n")
   bad = 0
-  for (label, got), (_, planted) in zip(rows, plant):
+  for (label, got), (_, old_row) in zip(rows, old_rows):
     bad += not got
     print(f"  {'ok  ' if got else 'FAIL'}  {label:<52} the old norm: "
-          f"{'passes' if planted else 'FAILS'}")
+          f"{'passes' if old_row else 'FAILS'}")
   if not all(got for _, got in rows):
     bad += 1
   print(f"\nFIXED {sum(1 for _, g in rows if g)}/{len(rows)} assertions hold"
-        f"   PLANT ({OLD}) {sum(1 for _, p in plant if p)}/{len(plant)}")
-  if not any(not p for _, p in plant):
+        f"   PLANT ({OLD}) {sum(1 for _, p in old_rows if p)}/{len(old_rows)}")
+  if not any(not p for _, p in old_rows):
     print("*** the plant passes every assertion: this gate cannot fail ***")
     bad += 1
   sys.exit(1 if bad else 0)
 
 
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. `3` HAS NO PLANT AND THAT IS CORRECT: the refusal above fires only
+# when `.agents/slop/jslane2/gen_f32_seam.py` is ABSENT, and no argv moves a file. It is reachable
+# only by an input path this gate does not take, so it is declared and left UNPLANTED -- red and
+# named, which is the honest state -- rather than planted with a `.txt`-style mutation of a
+# tracked oracle in `.agents/slop/`.
+VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+PLANTS = {0: [], 1: ["--plant"]}
+
+
 if __name__ == "__main__":
-  main()
+  plant() if "--plant" in sys.argv else main()

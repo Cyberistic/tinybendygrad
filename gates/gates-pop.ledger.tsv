@@ -61,7 +61,9 @@ checks/run-port-mm.sh	sh-selfref	-	1	1
 checks/run.py	py-main	-	0	1
 checks/sb-gate.sh	sh-selfref	-	0	1
 checks/serve.py	py-main	-	0	1
+checks/slop-declare.py	py-main	__file__.parent	0	1
 checks/substrate-check.sh	sh-dispatch	-	1	1
+checks/substrate-id.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	0	1
 checks/substrate.py	py-main	Path(__file__).resolve().parents[1]	0	1
 checks/sweep.py	py-main	-	0	1
 checks/sz.py	py-main	-	0	1
@@ -73,21 +75,45 @@ checks/walk-mutate.sh	sh-selfref	-	1	1
 checks/wallcheck.py	py-main	-	0	1
 checks/wt-sync.sh	sh-selfref	-	1	1
 gates/bc-u32-gate.py	py-main	-	0	1
+gates/bc-u32-gen.py	py-main	__file__.parent	0	1
+gates/bc-u32-oracle.py	py-main	-	0	1
+gates/bc_u32_table.py	py-main	-	0	1
 gates/beautiful-mnist-gate.py	py-main	-	0	1
 gates/ew-consts-gate.py	py-main	-	0	1
 gates/ew-consts-oracle.py	py-main	-	0	1
 gates/ew-explog-gate.py	py-main	-	0	1
 gates/ew-explog-oracle.py	py-main	-	0	1
+gates/gate-surface.py	py-main	__file__.parent	1	1
 gates/gates-pop.py	py-main	__file__.parent	0	1
 gates/gendirs.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/git-massdelete-gate.py	py-main	ROOT = Path(__file__).resolve().parents[3]	0	0
 gates/i64-shl-gate.py	py-main	-	0	1
+gates/i64-shl-oracle.py	py-main	-	0	1
 gates/i64-shr-gate.py	py-main	-	0	1
+gates/i64-shr-oracle.py	py-main	-	0	1
+gates/indexread-gate.py	py-main	-	0	1
 gates/mixin-op-gate.py	py-main	-	0	1
+gates/msgdiff-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/ops-core-gate.py	py-main	-	0	1
 gates/ops-core-oracle.py	py-main	-	0	1
 gates/render_val_s-gate.py	py-main	-	0	1
 gates/replace-gate.py	py-main	-	0	1
 gates/retention-check.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/tn_add_sub-gate.py	py-main	-	0	1
+gates/tn_binop2_cmp-gate.py	py-main	-	0	1
+gates/tn_bitwise_not-gate.py	py-main	-	0	1
+gates/tn_contiguous_backward-gate.py	py-main	-	0	1
+gates/tn_detach-gate.py	py-main	-	0	1
+gates/tn_dunder_neg-gate.py	py-main	-	0	1
+gates/tn_logical_not-gate.py	py-main	-	0	1
+gates/tn_mul-gate.py	py-main	-	0	1
+gates/tn_neg-gate.py	py-main	-	0	1
+gates/tn_pow-gate.py	py-main	-	0	1
+gates/tn_sin_log2_exp2_rsqrt-gate.py	py-main	-	0	1
+gates/tn_sqrt-gate.py	py-main	-	0	1
+gates/tn_trunc_reciprocal_threefry-gate.py	py-main	-	0	1
+gates/tn_where-gate.py	py-main	-	0	1
+gates/uop_cast-gate.py	py-main	-	0	1
 gates/wk-cd-gate.py	py-main	-	0	1
 gates/wk-cd-oracle.py	py-main	-	0	1
 gates/wk-eval-gate.py	py-main	-	0	1

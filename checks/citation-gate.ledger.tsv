@@ -559,3 +559,20 @@ wk_is_virtual
 codegen/opt/postrange.py:239	
  (tinygrad/helpers.py:24) -- 	
 tinygrad/codegen/opt/postrange.py:239	
+ -- elementwise.py:480. 	
+ -- elementwise.py:43. 	
+ -- elementwise.py:474. 	
+ -- elementwise.py:494. 	
+ -- elementwise.py:531. 	
+ -- elementwise.py:543. 	
+ -- elementwise.py:820. 	
+ -- elementwise.py:74. 	
+ -- elementwise.py:261. 	
+ -- mixin/elementwise.py:426, 	
+ -- ops.py:664. 	
+self.param_like(0).store(...).call(self, src)	
+weak.bend	
+ CHAIN: the body binds output ALLOCs through 	
+buf = UOp.alloc(...)	
+UOp.call_with_outputs((self,), *srcs)	
+ (ops.py:430), and the 	

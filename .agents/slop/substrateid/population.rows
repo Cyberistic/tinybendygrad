@@ -1,0 +1,9 @@
+kind	n	note
+port-walk	140	DISCOVERY, snapshot.py:78-79
+hand-list	8	LIST, snapshot.py:63-67, over 10 entries
+unanchored-in-FILES	4	of 10 COPIES entries
+unanchored-anywhere	0	named by no consumer line
+declared-absent	2	.agents/slop/graphcmp-dbg.bend,.agents/slop/graphcmp-empty.bend
+inputs-total	148	build() prints this and exits 0
+digest-ms-warm	15.5	median of 7
+digest-ms-cold	14.6	median of 3 after purge

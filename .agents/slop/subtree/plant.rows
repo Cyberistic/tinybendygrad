@@ -1,0 +1,49 @@
+PLANT	field	value
+PLANT	clone	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/subtree-plant-0l_ut7nf/clone
+PLANT	symlinks_true	yes -- gates/ and checks/ copied with copy2, links kept
+PLANT	BASE_discover_entries	123
+PLANT	BASE_discover_libs	30
+PLANT	BASE_recursive_walk	155
+PLANT	BASE_only_walk	2
+PLANT	BASE_only_discover	0
+PLANT	BASE_only_walk_name	gates/oracles/beautiful-mnist-oracle.sh
+PLANT	BASE_only_walk_name	gates/oracles/mixin-op-oracle.sh
+PLANT	BASE_files_digested	367
+PLANT	BASE_sha256	c1154444937b52b1a9e5be80656dded3ae57d0384503f57009341bd99cbf1266
+PLANT	CTRL_empty_root_entries	0
+PLANT	CTRL_VERDICT_EMPTY	the walk is capable of returning 0, so a later 0 is a MEASUREMENT
+PLANT	TOP_discover_entries	124
+PLANT	TOP_recursive_walk	156
+PLANT	TOP_d_entry	1
+PLANT	TOP_d_walk	1
+PLANT	TOP_appears_in_discover_entries	True
+PLANT	TOP_VERDICT	MOVES +1/+1
+PLANT	DEEP_file_on_disk	True
+PLANT	DEEP_entry_reason	sh-selfref
+PLANT	DEEP_is_an_entry_by_that_reason	True
+PLANT	DEEP_discover_entries	123
+PLANT	DEEP_recursive_walk	156
+PLANT	DEEP_d_entry	0
+PLANT	DEEP_d_walk	1
+PLANT	DEEP_in_discover_set	False
+PLANT	DEEP_in_only_walk	True
+PLANT	DEEP_only_walk_now	3
+PLANT	DEEP_only_discover_now	0
+PLANT	DEEP_VERDICT	MOVES +1 walk / +0 discover -- the split onemodule measured, reproduced
+PLANT	CTRL_txt_discover_entries	123
+PLANT	CTRL_txt_recursive_walk	156
+PLANT	CTRL_d_entry	0
+PLANT	CTRL_d_walk	0
+PLANT	CTRL_VERDICT	VACUITY EXCLUDED: a .txt one level deep moves NEITHER projection
+PLANT	RESTORE_discover_entries	123
+PLANT	RESTORE_recursive_walk	155
+PLANT	RESTORE_sha256	c1154444937b52b1a9e5be80656dded3ae57d0384503f57009341bd99cbf1266
+PLANT	RESTORE_byte_identical	True
+PLANT	RESTORE_counts_match_base	True
+PLANT	LIVE_root	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+PLANT	LIVE_clone_is_outside_root	True
+PLANT	LIVE_plant_paths	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/subtree-plant-0l_ut7nf/clone/checks	/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/subtree-plant-0l_ut7nf/clone/gates/oracles
+PLANT	LIVE_absent_checks/zzz-plant-top.sh	True
+PLANT	LIVE_absent_gates/oracles/zzz-plant-deep.sh	True
+PLANT	FAILURES	none
+PLANT	OVERALL	ALL ASSERTIONS HELD

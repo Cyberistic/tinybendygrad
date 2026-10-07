@@ -1,0 +1,39 @@
+.agents/slop/coindependent/surface.py
+    RAN 0  #   declared-but-not-reached      : 79 | #   gates whose ONLY declared code is REFUSED (cannot go green) : 4 | #     checks/gate.py | #     checks/nl-
+    declared by SOURCE SHAPE; reached read from its OWN probe.rows snapshot
+.agents/slop/coindependent/vocab.py
+    RAN 0  gates/wk-eval-gate.py                        py-main  0,1,3,4,5    - | gates/wk-eval-oracle.py                      py-main  -            - | gates/wk
+    the population + declared column alone
+.agents/slop/onemodule/vocab-check.py
+    RAN 0  outside-the-five checks/dup-gate.py                           [2] | outside-the-five checks/env-precond.py                        [2] | outside-the-fi
+    counts vocabulary COPIES, not verdicts
+checks/gate.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/nl-gate.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/nl-gate-noguard.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/dup-gate.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/dup-census.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/rn-gate.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/hermetic-census.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/git-index-guard.py
+    EXECUTED 3  (none)
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/norm_check.py
+    EXECUTED 0  (green: no verdict to read)
+    no argv: a module-scope refusal cannot reach the port compiler
+checks/oracle_f64.py
+    EXECUTED 3  REFUSED
+    no argv: a module-scope refusal cannot reach the port compiler

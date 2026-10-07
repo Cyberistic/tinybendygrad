@@ -1,0 +1,67 @@
+PART2	field	value
+LINK	link.suffix	.py
+LINK	link.is_file()	True
+LINK	link.exists()	True
+LINK	os.path.isfile(link)	True
+LINK	os.path.islink(link)	True
+LINK	link.resolve()==real	False
+LINK	VERDICT	is_file() FOLLOWS the link -> claim 2 in the docstring is FALSE
+LINK	target_inside_home	False
+DOC	doc_names_os_lstat	True
+DOC	code_calls_os_lstat	True
+DOC	code_calls_is_file	True
+DOC	code_calls_exists	True
+DOC	BODY	def discover(root): """`(entries, libs)`, by walking the two homes. NEVER a literal list of files. `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`, because `Path.exists()` FOLLOWS SYMLINKS: `bin/bend` is a symlink to a worktree and an existence test that follows it would certify a link target as a tree file. """ entries, libs = ([], []) for home in HOMES: h = root / home if not os.path.isdir(h): continue for p in sorted(h.iterdir()): if p.suffix not in SUFFIXES or not p.is_file(): continue (entries if entry_reason(p) in ('py-main', 'sh-dispatch', 'sh-selfref') else libs).append(p) return (entries, libs)
+DOC	module_comment:137	# `HOMES` are read with `iterdir()` and filtered, not `rglob`ed. The trap this avoids is
+DOC	module_comment:327	`iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
+DOC	module_comment:337	for p in sorted(h.iterdir()):
+DOC	os_lstat_anywhere_in_file	True
+CONSUMER	gates/gate-surface.py:76	AND THE POPULATION IS NOT A SECOND LIST. It is `gates/gates-pop.py:discover()`, loaded BY PATH, the
+CONSUMER	gates/gate-surface.py:142	"""`gates/gates-pop.py`, loaded BY PATH -- NEVER by name. `gates/` is not a package, and putting
+CONSUMER	gates/gate-surface.py:146	p = HERE / "gates-pop.py"
+CONSUMER	gates/gate-surface.py:158	"""`(entries, libs)` from `gates-pop.discover()`. The ONLY definition of the population."""
+CONSUMER	gates/gate-surface.py:159	return gates_pop().discover(root)
+CONSUMER	gates/gate-surface.py:552	epilog="DENOMINATOR: every entry point `gates-pop.discover()` finds. A verdict with no "
+CONSUMER	gates/retention-check.py:163	WHOSE POPULATION SOMEBODY ELSE CAN CHOOSE.** `gates/gates-pop.py` loads it the same way, so
+CONSUMER	.agents/slop/declareverdict/runner.py:8	`gates-pop.discover()` and the class came from each gate's own module body. Delete a gate and the
+CONSUMER	.agents/slop/substratepop/measure.py:2	"""Measure the BLIND SPOT of `substrate.discover()`'s suffix filter, on a scratch copy.
+CONSUMER	.agents/slop/substratepop/measure.py:54	return mod.discover(str(root))
+CONSUMER	.agents/slop/subtree/measure.py:1	"""MEASURE THE GAP: `gates/gates-pop.py:discover()` is `iterdir()`-BASED and NON-RECURSIVE.
+CONSUMER	.agents/slop/subtree/measure.py:88	gp_path = ROOT / "gates" / "gates-pop.py"
+CONSUMER	.agents/slop/subtree/measure.py:110	entries, libs = gp.discover(ROOT)
+CONSUMER	.agents/slop/subtree/measure2.py:92	"""Files that CALL `discover(` or import `gates-pop`. Found by a DIRECTORY WALK over the
+CONSUMER	.agents/slop/subtree/measure2.py:109	if "discover(" in line and ("gates-pop" in line or "gpop" in line
+CONSUMER	.agents/slop/subtree/measure2.py:112	or ".discover(" in line):
+CONSUMER	.agents/slop/subtree/measure2.py:114	elif "gates-pop.py" in line and ("load" in line or "path" in line or "HERE" in line):
+CONSUMER	.agents/slop/plantthe46/reach.py:12	NOTHING NEW IS BUILT HERE. The population is `gates/gates-pop.py:discover()` and the declaration is
+CONSUMER	.agents/slop/plantthe46/reach.py:53	return by_path(ROOT / "gates" / "gates-pop.py", "gates_pop")
+CONSUMER	.agents/slop/plantthe46/reach.py:140	entries, libs = gp.discover(ROOT)
+CONSUMER	.agents/slop/plantthe46/reach.py:157	print(f"REACH -- {len(entries)} entry points discovered via `gates/gates-pop.py:discover()`, "
+CONSUMER	.agents/slop/hooks/run.py:8	THE POPULATION IS `gates/gates-pop.py:discover()`, LOADED BY PATH. NEVER A LIST. That is
+CONSUMER	.agents/slop/hooks/run.py:60	"""`gates/gates-pop.py` BY PATH. `gates/` is not a package and putting it on sys.path
+CONSUMER	.agents/slop/hooks/run.py:130	entries, libs = load_gates_pop().discover(ROOT)
+CONSUMER	.agents/slop/hooks/run.py:136	print(f"POPULATION: gates-pop.discover() -> {len(entries)} entries, {len(libs)} modules")
+CONSUMER	.agents/slop/hooks/wire.py:9	installed here is invisible to `git status`, to `gates/gates-pop.py:discover()`, and to every
+CONSUMER	.agents/slop/hooks/cost.py:41	entries, _libs = pop().discover(ROOT)
+CONSUMER	.agents/slop/hooks/_probe_pop.py:7	entries, libs = m.discover(ROOT)
+CONSUMER	.agents/slop/onemodule/plant.py:109	m = load("gates/gates-pop.py", "p")
+CONSUMER	.agents/slop/onemodule/plant.py:110	e, l = m.discover(ROOT)
+CONSUMER	.agents/slop/onemodule/probe.py:36	# ---- 1. gates-pop.discover(): the CANDIDATE shared population -------------------------
+CONSUMER	.agents/slop/onemodule/probe.py:38	m = load(root / "gates" / "gates-pop.py", "om_discover")
+CONSUMER	.agents/slop/onemodule/probe.py:39	entries, libs = m.discover(root)
+CONSUMER	.agents/slop/onemodule/probe.py:121	print(f"{'discover() [gates-pop]':34} {len(d['paths']):>6} {d['entries']:>8}  "
+CONSUMER	count	13
+CEILING	gates/gate-surface.py	os.walk=True pycache_prune=True discover_calls=9
+CEILING	gates/gates-pop.py	os.walk=False pycache_prune=True discover_calls=5
+CEILING	.agents/slop/hooks/run.py	os.walk=True pycache_prune=False discover_calls=3
+CEILING	.agents/slop/onemodule/probe.py	os.walk=True pycache_prune=False discover_calls=10
+CEILING	.agents/slop/plantthe46/reach.py	os.walk=False pycache_prune=False discover_calls=3
+CEILING	.agents/slop/hooks/cost.py	os.walk=False pycache_prune=False discover_calls=1
+GIT	gates/oracles:tracked_total	2
+GIT	gates/oracles:tracked_deeper_py_sh	2
+GIT	gates/oracles:deeper	gates/oracles/beautiful-mnist-oracle.sh
+GIT	gates/oracles:deeper	gates/oracles/mixin-op-oracle.sh
+GIT	checks:tracked_total	99
+GIT	checks:tracked_deeper_py_sh	0
+GIT	gates/oracles:ls-tree-rc	0
+GIT	gates/oracles:names	gates/oracles/beautiful-mnist-oracle.sh gates/oracles/mixin-op-oracle.sh

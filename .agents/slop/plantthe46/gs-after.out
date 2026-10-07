@@ -1,0 +1,83 @@
+I  DISCOVERED 124 entry point(s) under checks/gates/ (+31 module(s) with no entry guard)
+
+I  EXIT VOCABULARY, read from gates/gatekit.py's own module body: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD -- the OWNER, by path.
+
+I  POPULATION CONTROL: `discover()` sees 155 file(s) (124 entries + 31 libs) vs
+   recursive `os.walk` 157 -- reusing the shared function makes the two numbers ONE BY
+   CONSTRUCTION, which is not the same as settling which was right. 2 file(s) the
+   recursive walk sees and `discover()` does not:
+I    WALK-ONLY gates/oracles/beautiful-mnist-oracle.sh
+I    WALK-ONLY gates/oracles/mixin-op-oracle.sh
+
+II DECLARATIONS: 14/124 entries declare VERDICTS -- 110 do not, and each
+   one is a gate whose surface nobody has written down (the backlog, counted not hidden)
+
+   checks/dup-census.py                         declared 0/3              reached 3          red=UNTAKEN
+     RED checks/dup-census.py: UNPLANTED 0 'OK' -- declared, no plant
+   checks/dup-gate.py                           declared 0/1/2/3          reached 3          red=UNTAKEN
+     RED checks/dup-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/dup-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/dup-gate.py: UNPLANTED 2 'USAGE' -- declared, no plant
+     RED checks/dup-gate.py: UNOWNED    2 'USAGE' -- gates/gatekit.py has no name for this exit code, so a caller aggregating it is guessing
+   checks/env-precond.py                        declared 0/1/2            reached 0/2        red=FAILURE
+     RED checks/env-precond.py: UNPLANTED 1 'FAIL' -- declared, no plant
+     RED checks/env-precond.py: UNOWNED    2 'REFUSED' -- gates/gatekit.py has no name for this exit code, so a caller aggregating it is guessing
+   checks/gate.py                               declared 0/1/3            reached 3          red=UNTAKEN
+     RED checks/gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+   checks/hermetic-census.py                    declared 0/3              reached 3          red=UNTAKEN
+     RED checks/hermetic-census.py: UNPLANTED 0 'OK' -- declared, no plant
+   checks/nl-gate-noguard.py                    declared 0/1/3            reached 3          red=UNTAKEN
+     RED checks/nl-gate-noguard.py: UNPLANTED 0 'AGREE' -- declared, no plant
+     RED checks/nl-gate-noguard.py: UNPLANTED 1 'BROKEN' -- declared, no plant
+   checks/nl-gate.py                            declared 0/1/3            reached 3          red=UNTAKEN
+     RED checks/nl-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/nl-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+   checks/no-txt.py                             declared 0/1              reached 0/1        red=FAILURE
+   checks/norm_check.py                         declared 0/1/3            reached 0/1        red=FAILURE
+     RED checks/norm_check.py: UNPLANTED 3 'REFUSED' -- declared, no plant
+   checks/oracle_f64.py                         declared 0/1/3            reached 3          red=UNTAKEN
+     RED checks/oracle_f64.py: UNPLANTED 0 'OK' -- declared, no plant
+     RED checks/oracle_f64.py: UNPLANTED 1 'FAIL' -- declared, no plant
+   checks/residue.py                            declared 0/3              reached 0/3        red=FAILURE
+   checks/rn-gate.py                            declared 0/1/3            reached 3          red=UNTAKEN
+     RED checks/rn-gate.py: UNPLANTED 0 'PASS' -- declared, no plant
+     RED checks/rn-gate.py: UNPLANTED 1 'FAIL' -- declared, no plant
+   checks/wallcheck.py                          declared 0/1/2/3/4/5      reached 0/1/2/3/4/5 red=FAILURE
+     RED checks/wallcheck.py: UNOWNED    2 'USAGE' -- gates/gatekit.py has no name for this exit code, so a caller aggregating it is guessing
+   gates/gate-surface.py                        declared 0/1/2            reached 0/1/2      red=FINDING
+     RED gates/gate-surface.py: UNOWNED    2 'REFUSED' -- gates/gatekit.py has no name for this exit code, so a caller aggregating it is guessing
+
+II SURFACE: 42 verdicts declared, 25 reached by a declared plant,
+   17 not reached, 17 unplanted, 0 misplant, 0 NO-GREEN
+
+V EXIT CODES: 4 declared verdict code(s) that `gates/gatekit.py` has no name for. A gate
+   that declares one is saying `exit [0, 1, 3, 4, 5]` means something here that the tree does
+   not know, and an aggregator either guesses or calls it DEAD. Both are `refusalsweep`'s
+   failure: a gate that crashes where it should have refused cannot say which.
+
+IV VERDICT CLASSES -- what a red of each gate means, DERIVED from that gate's own declaration
+   and this run's plants. No list anywhere: a class is read off the gate that ships it.
+
+IV FINDING (1): gates/gate-surface.py
+IV UNTAKEN (8): checks/dup-census.py, checks/dup-gate.py, checks/gate.py, checks/hermetic-census.py, checks/nl-gate-noguard.py, checks/nl-gate.py, checks/oracle_f64.py, checks/rn-gate.py
+IV FAILURE (5): checks/env-precond.py, checks/no-txt.py, checks/norm_check.py, checks/residue.py, checks/wallcheck.py
+   checks/dup-census.py                         red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/dup-gate.py                           red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/env-precond.py                        red=FAILURE  undeclared and green was demonstrated: a red is charged
+   checks/gate.py                               red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/hermetic-census.py                    red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/nl-gate-noguard.py                    red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/nl-gate.py                            red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/no-txt.py                             red=FAILURE  undeclared and green was demonstrated: a red is charged
+   checks/norm_check.py                         red=FAILURE  undeclared and green was demonstrated: a red is charged
+   checks/oracle_f64.py                         red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/residue.py                            red=FAILURE  undeclared and green was demonstrated: a red is charged
+   checks/rn-gate.py                            red=UNTAKEN  declared nothing but its rc-0 plant never reached 0
+   checks/wallcheck.py                          red=FAILURE  undeclared and green was demonstrated: a red is charged
+   gates/gate-surface.py                        red=FINDING  declared RED_IS=FINDING and demonstrated green in this run
+IV CHARGE: a red blocks unless its class is FINDING. UNTAKEN and FAILURE both block, so
+a gate must DEMONSTRATE green and DECLARE itself to earn the single exception.
+
+
+GATE-SURFACE: RED -- 14 gate(s) declare a surface, 25/42 verdicts reached, 17 unplanted, 0 NO-GREEN, 4 UNOWNED exit code(s)

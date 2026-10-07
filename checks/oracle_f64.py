@@ -263,6 +263,24 @@ def build(mm_rows_path):
 
 
 def main():
+  # A MISSING INPUT IS A REFUSAL, NOT A TRACEBACK. MEASURED 2026-10-07, this file bare: an
+  # `IndexError: list index out of range` at rc 1 with a 12-line traceback. THREE READERS READ THAT
+  # rc DIFFERENTLY -- `canrun` recorded it RED, `zerogate` recorded it as one of the two entry
+  # points it never ran, and `hooks` mapped TRACEBACK -> `DEAD` -- and all three were reading the
+  # same line. **A GATE THAT CRASHES WHERE IT SHOULD REFUSE CANNOT DISTINGUISH "THE INPUT IS ABSENT"
+  # FROM "I AM BROKEN"**, which is this file's own `refuse()` docstring: an assertion downstream of
+  # what it asserts cannot turn an exception into a refusal.
+  #
+  # **IN `main()`, AND NOT WITH THE THREE MODULE-SCOPE GUARDS ABOVE, AND THAT IS MEASURED NOT
+  # STYLED.** `checks/run-f64.sh:147` PLANTS `import oracle_f64` into the harness copy of
+  # `portexec/oracle.py`, so this module is IMPORTED by a script whose `sys.argv` is that script's --
+  # one argument, or none. A guard here rather than at module scope would refuse the f64 lane the
+  # moment the harness's own argv was short, and it would do so with a confident `exit 3` naming the
+  # wrong file. **A GUARD ON `sys.argv` BELONGS TO THE COMMAND, NOT TO THE MODULE: `sys.argv` IS
+  # THE COMMAND'S, AND AN IMPORT BORROWS IT.**
+  if len(sys.argv) < 3:
+    refuse(f"needs <workdir> <mm-rows>; got {len(sys.argv) - 1} argument(s). Without them there is "
+           "no denominator to publish.")
   work, rows_path = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
   res = build(rows_path)
   (work / "oracle.json").write_text(json.dumps(res, indent=1))
@@ -278,6 +296,23 @@ def main():
         f"  (CPython struct.pack: '0x{struct.unpack('<Q', struct.pack('<d', res['f64_out0_value']))[0]:016x}')")
   print(f"  out[0] f32 : 0x{res['f32_out0_words'][0]:08x}         = {res['f32_out0_value']!r}"
         f"  == 1.0 exactly: {res['f32_rounds_to_one']}")
+
+
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. This oracle takes a workdir and a rows file; no plant runs it here.
+#
+# `3` IS PLANTED AND IT IS THE EMPTY PLANT: `PLANTS[3] == []` is argv AFTER the gate path, so
+# `gates/gate-surface.py` runs `python checks/oracle_f64.py` with NO arguments -- which is the exact
+# case that used to be `IndexError` at rc 1. The plant and the defect are the same command, so the
+# plant cannot drift away from the thing it was written to catch.
+#
+# `0` AND `1` STAY UNPLANTED AND THAT IS HONEST. Both need a real `mm-rows` file off a port run,
+# so this file cannot synthesise them, and a plant that faked either would be a change-detector:
+# `gates/gate-surface.py` classifies a red of an UNTAKEN gate as not-yet-a-claim-about-the-tree
+# precisely so that an unearned green cannot be manufactured. MEASURED before this edit: this file
+# declared 0/1/3 and reached NONE of them, three REDs; it now reaches 3 of 3 declared-by-plant.
+VERDICTS = {0: "OK", 1: "FAIL", 3: "REFUSED"}
+PLANTS = {3: []}
 
 
 if __name__ == "__main__":

@@ -1,0 +1,14 @@
+instrument_or_gate	state	value	summary	note
+.agents/slop/coindependent/surface.py	RAN	0	#   declared-but-not-reached      : 79 | #   gates whose ONLY declared code is REFUSED (cannot go green) : 4 | #     checks/gate.py | #     checks/nl-gate-noguard.py | #     checks/norm_check.py | #     checks/oracle_f64.py	declared by SOURCE SHAPE; reached read from its OWN probe.rows snapshot
+.agents/slop/coindependent/vocab.py	RAN	0	gates/wk-eval-gate.py                        py-main  0,1,3,4,5    - | gates/wk-eval-oracle.py                      py-main  -            - | gates/wk-f32-gate.py                         py-main  0,1,3,4,5    FAIL,PASS | gates/wk-f32-rows.py                         py-main  -            - | gates/oracles/beautiful-mnist-oracle.sh      sh       -            FAIL,RED | gates/oracles/mixin-op-oracle.sh             sh       -            -	the population + declared column alone
+.agents/slop/onemodule/vocab-check.py	RAN	0	outside-the-five checks/dup-gate.py                           [2] | outside-the-five checks/env-precond.py                        [2] | outside-the-five checks/wallcheck.py                          [2] | outside-the-five gates/gate-surface.py                        [2] | -> the tree has TWO refusal codes: [0, 1, 3, 4, 5] from the owner, [2] from 4 gate(s). `.agents/slop/hooks/run.py:116` maps any rc outside the five to DEAD, so a gate refusing with 2 is scored DEAD by the tree's own runner. | VERDICT: RED -- 3 file(s) re-spell the vocabulary instead of importing it; 2 spell it PARTIALLY (a silent divergence from the owner); 14 gate(s) declare VERDICTS, which is a self-claim and a SEPARATE subject -- do not read it as a second vocabulary	counts vocabulary COPIES, not verdicts
+checks/gate.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/nl-gate.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/nl-gate-noguard.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/dup-gate.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/dup-census.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/rn-gate.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/hermetic-census.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler
+checks/git-index-guard.py	EXECUTED	3	(none)	no argv: a module-scope refusal cannot reach the port compiler
+checks/norm_check.py	EXECUTED	0	(green: no verdict to read)	no argv: a module-scope refusal cannot reach the port compiler
+checks/oracle_f64.py	EXECUTED	3	REFUSED	no argv: a module-scope refusal cannot reach the port compiler

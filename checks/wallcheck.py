@@ -12,6 +12,7 @@ truth file.
     --pin REV      the second tree. default HEAD
     --no-truth     grade without the hand-measured column
     --selftest     the five guard failures, reproduced on in-memory fixtures
+    --plant WHICH  materialise the LEDGER that makes WHICH real and grade it (fail|story|dead)
 
 Exit 0 all stands | 1 something moved | 2 ledger unreadable | 3 a row is a STORY
       4 selection matched nothing | 5 nothing was graded.
@@ -22,6 +23,7 @@ import argparse
 import re
 import subprocess
 import sys
+import tempfile
 import warnings
 from collections import Counter
 from dataclasses import dataclass
@@ -574,6 +576,79 @@ def selftest() -> int:
     return 1 if bad else 0
 
 
+def verdict_of(lp: Path, tp: Path | None, pin_rev: str, ids: set[str]) -> int:
+    """Every exit the gate can produce, from the LEDGER path onward.
+
+    `main()` and `--plant` BOTH come through here, so a plant grades the same rows the gate grades
+    and there is exactly one place a verdict is produced.  A `--plant` that graded its own fixture
+    would be a second opinion about what a row means, and a second opinion is what
+    `.agents/slop/coindependent/REPORT.md` §4 is about.
+    """
+    if not lp.is_file():
+        print(f"LEDGER UNREADABLE: {lp} does not exist. A missing ledger is exit 2, never CLEAN.")
+        return 2
+    truth = {}
+    if tp is not None and tp.is_file():
+        truth = {f.split("\t")[0]: f.split("\t")[1] for f in tp.read_text().splitlines()
+                 if not f.startswith("#") and "\t" in f}
+    pin = Pin(pin_rev)
+    try:
+        try:
+            rows = load(lp)
+        except ValueError as e:
+            print(f"LEDGER MALFORMED: {e}")
+            return 2
+        return report(rows, Checker(pin), truth, ids, pin_rev)
+    finally:
+        pin.close()
+
+
+def plant(which: str) -> int:
+    """Materialise the LEDGER that makes `which` a REAL outcome, then grade it. No forced exit.
+
+    THE ROW IS COPIED FROM THE SHIPPED LEDGER, not typed here.  `scope` and `reopen` come from
+    `.agents/slop/wallcheck/walls.tsv`, because a row is only GRADED when its scope is readable in
+    BOTH trees (`grade()` refuses otherwise), and a scope a plant names itself stops being
+    readable the day that file moves -- at which point the plant quietly reaches a different
+    verdict.  One field is changed per verdict, and `report()` derives the rest:
+
+        fail   pattern `^` over a MISSING row -- `^` matches every line of any non-empty file, so
+               n > 0 and `grade()` returns LANDED.  Moved, so exit 1.
+        story  the same row with `date` empty -- `Row.missing` names that as "a diary", so `grade()`
+               returns STORY before it reads the scope at all.  Exit 3.
+        dead   a ledger with no rows.  `report()` refuses an empty population, so exit 5.
+
+    The point is that removing the mutation stops the exit: no argv shape reaches 1, 3 or 5 out of
+    the shipped ledger, and this file says so rather than asserting it.
+    """
+    header = ("# PLANTED LEDGER -- written by `checks/wallcheck.py --plant %s`, graded by the same\n"
+              "# `report()` this gate uses at rest, and deleted with the temporary directory.\n"
+              % which)
+    if which == "dead":
+        body = header + "# no rows: the population is empty and an empty population cannot be graded\n"
+    else:
+        src = Path(LEDGER) if Path(LEDGER).is_absolute() else ROOT / LEDGER
+        row = next((l for l in src.read_text().splitlines()
+                    if l.strip() and not l.startswith("#")), None)
+        if row is None:
+            print(f"PLANT REFUSED: the shipped ledger {src} has no data row to copy")
+            return 2
+        f = row.split("\t")
+        f[1] = "MISSING"          # the polarity that turns "nothing there" into "it landed"
+        f[3] = "^"                # matches every line, so n > 0 in both trees
+        f[4] = "-"                # no count is claimed, so the mismatch report stays out of it
+        f[0] = f"PLANT-{which}"
+        f[6] = "-"                # not refuted in place, or `grade()` would answer GONE/ANNOTATED
+        f[7] = "-"                # no key: the redundancy audit is not what is under test
+        f[8] = "" if which == "story" else f[8]   # an absent date is the STORY `Row.missing` names
+        f[9] = f"planted {which}: the shipped row with one field changed"
+        body = header + "\t".join(f[:len(FIELDS)]) + "\n"
+    with tempfile.TemporaryDirectory() as td:
+        lp = Path(td) / "planted.tsv"
+        lp.write_text(body)
+        return verdict_of(lp, None, "HEAD", set())
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -583,29 +658,29 @@ def main() -> int:
     ap.add_argument("--pin", default="HEAD")
     ap.add_argument("--no-truth", action="store_true")
     ap.add_argument("--selftest", action="store_true")
+    ap.add_argument("--plant", choices=["fail", "story", "dead"], default=None,
+                    help="materialise the ledger that makes this verdict real and grade it; the rc "
+                         "comes from `report()`, never from `sys.exit`")
     a = ap.parse_args()
+    if a.plant:
+        return plant(a.plant)
     if a.selftest:
         return selftest()
     lp = Path(a.ledger) if Path(a.ledger).is_absolute() else ROOT / a.ledger
-    if not lp.is_file():
-        print(f"LEDGER UNREADABLE: {lp} does not exist. A missing ledger is exit 2, never CLEAN.")
-        return 2
-    tp = Path(a.truth) if Path(a.truth).is_absolute() else ROOT / a.truth
-    truth = {}
-    if not a.no_truth and tp.is_file():
-        truth = {f.split("\t")[0]: f.split("\t")[1] for f in tp.read_text().splitlines()
-                 if not f.startswith("#") and "\t" in f}
-    pin = Pin(a.pin)
-    try:
-        try:
-            rows = load(lp)
-        except ValueError as e:
-            print(f"LEDGER MALFORMED: {e}")
-            return 2
-        rc = report(rows, Checker(pin), truth, set(a.ids), a.pin)
-    finally:
-        pin.close()
-    return rc
+    tp = None if a.no_truth else (Path(a.truth) if Path(a.truth).is_absolute() else ROOT / a.truth)
+    return verdict_of(lp, tp, a.pin, set(a.ids))
+
+
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate -- and EXECUTES each plant, requiring the observed rc to be the
+# declared one. A declared verdict with no plant is RED, named.
+#
+# SIX OF SIX, AND EVERY PLANT EARNS ITS EXIT. `2` needs no fixture at all -- an absolute ledger
+# path that does not exist is the state. The other three are the `--plant` modes above, which write
+# the rows and then run `report()`; `4` is an id no ledger carries and `0` is the selftest.
+VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "NO-ROW", 5: "DEAD"}
+PLANTS = {0: ["--selftest"], 1: ["--plant", "fail"], 2: ["--ledger", "/no/such/walls.tsv"],
+          3: ["--plant", "story"], 4: ["NO-SUCH-ID"], 5: ["--plant", "dead"]}
 
 
 if __name__ == "__main__":

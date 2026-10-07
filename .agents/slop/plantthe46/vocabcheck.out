@@ -1,0 +1,17 @@
+OWNER   gates/gatekit.py:60  {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'SKIP': 4, 'DEAD': 5}
+POPULATION  138 .py file(s) under checks/gates/ (os.walk, by discovery)
+COPIES OF THE VOCABULARY  3 other file(s) spell it themselves (+1 owner)
+  PARTIAL checks/git-index-guard.py                    {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'DEAD': 5}
+  PARTIAL checks/substrate-id.py                       {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'DEAD': 5}
+  OWNER  gates/gatekit.py                             {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'SKIP': 4, 'DEAD': 5}
+  copy   gates/git-massdelete-gate.py                 {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'SKIP': 4, 'DEAD': 5}
+
+DECLARATIONS (a DIFFERENT subject, not counted above)  14 gate(s) declare their own surface
+SELF-DECLARATIONS THAT USE A CODE OUTSIDE THE FIVE  4
+  outside-the-five checks/dup-gate.py                           [2]
+  outside-the-five checks/env-precond.py                        [2]
+  outside-the-five checks/wallcheck.py                          [2]
+  outside-the-five gates/gate-surface.py                        [2]
+  -> the tree has TWO refusal codes: [0, 1, 3, 4, 5] from the owner, [2] from 4 gate(s). `.agents/slop/hooks/run.py:116` maps any rc outside the five to DEAD, so a gate refusing with 2 is scored DEAD by the tree's own runner.
+
+VERDICT: RED -- 3 file(s) re-spell the vocabulary instead of importing it; 2 spell it PARTIALLY (a silent divergence from the owner); 14 gate(s) declare VERDICTS, which is a self-claim and a SEPARATE subject -- do not read it as a second vocabulary
