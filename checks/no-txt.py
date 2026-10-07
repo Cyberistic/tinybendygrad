@@ -197,5 +197,11 @@ def main() -> int:
     return 1
 
 
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. `--plant` is not a flag here; the RED is reached by a `.txt` on disk.
+VERDICTS = {0: "CLEAN", 1: "RED"}
+PLANTS = {0: []}
+
+
 if __name__ == "__main__":
     sys.exit(main())

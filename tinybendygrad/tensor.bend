@@ -456,6 +456,29 @@ def tn_neg(+t: Tensor) -> Tensor:
 def tn_dunder_neg(+t: Tensor) -> Tensor:
   tn_neg(t)
 
+# `__invert__` -- elementwise.py:264. `return self.bitwise_not()`. `bitwise_not`'s
+# BOOL ARM is ported (`tn_logical_not`, which is `self.cast(bool).ne(True)` at
+# elementwise.py:49 -- gated 4/4 at gates/tn_logical_not-gate.py). The arith
+# arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, elementwise.py:157)
+# stay walled on the dtype fold + arith ops (tensor.bend:385 -- `self.dtype` is a
+# FOLD property and `tn_bitwise_not`'s arith arms are a `None` here). So
+# `__invert__` is ONE-ARM PORTABLE: the BOOL arm returns `tn_logical_not(t)`, the
+# arith arm is `None`. Returns `Maybe<&2, Tensor>` and lets the caller decide; the
+# port convention (`tn_replace`, `tn_as_param`) is the same shape -- a refusal is
+# a `None`, not a `TODO(p3)`.
+def tn_dunder_invert.is_bool.of(m: Maybe<&2, S.Dt>) -> Bool:
+  match m:
+    case Some{dt}: S.Dt.is_bool(dt)
+    case None{}: False{}
+
+def tn_dunder_invert.go(is_bool: Bool, +t: Tensor) -> Maybe<&2, Tensor>:
+  match is_bool:
+    case True{}: Some{tn_logical_not(t)}
+    case False{}: None{}
+
+def tn_dunder_invert(+t: Tensor) -> Maybe<&2, Tensor>:
+  tn_dunder_invert.go(tn_dunder_invert.is_bool.of(tn_dtype(t)), t)
+
 # `__mul__` -- elementwise.py:125. `return self._binop(Ops.MUL, x, reverse)`. The wall
 # text at `nn/__init__.bend:241` said the `__mul__` method is a separate wall. The body
 # is the same `tn_alu` builder with `OpsMUL{}` and the rhs's uop as the second src. For
@@ -480,6 +503,255 @@ def tn_rmul(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # is `__mul__` (not `__rmul__`) because `self` is the LHS.
 def tn_square(+t: Tensor) -> Tensor:
   tn_mul(t, t)
+
+# `__add__` -- elementwise.py:267. `return self.add(x)`. The wall text at
+# `nn/__init__.bend:241` cited the `_broadcasted` step as the blocker. The
+# no-broadcasting case (both `self` and `x` are Tensors of the same shape) is
+# the body reduced to `tn_alu(self, ADD, [x.uop])` if `not reverse`, or
+# `tn_alu(x, ADD, [self.uop])` if `reverse` -- CPython's `add` writes it as
+# `a.alu(Ops.ADD, -b)` (elementwise.py:84, :123) for the dtype-promotion case,
+# but the `-b` is a CONST trap: for a TENSOR `b`, `-b` is `-self` (also walled),
+# so the no-broadcasting pure-TENSOR case collapses to `_binop`'s body
+# (`lhs.alu(MUL, rhs)`, elementwise.py:36) with `MUL` replaced by `ADD`, and
+# `_binop`'s `_broadcasted` is the identity for two same-shape Tensors. The
+# dispatch is a `Bool` flag the same way `tn_mul.go` and `tn_neg.go` are.
+def tn_add.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsADD{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsADD{}, [Tensor.u(rhs)])
+
+def tn_add(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_add.go(False{}, lhs, rhs)
+
+def tn_radd(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_add.go(True{}, lhs, rhs)
+
+# `__sub__` -- elementwise.py:270. `return self.sub(x)`. The wall text at
+# `nn/__init__.bend:241` cited the `_broadcasted` step as the blocker. The
+# no-broadcasting case is portable: `_binop`'s body with `Ops.SUB` instead of
+# `Ops.MUL`, and `_broadcasted` is the identity for two same-shape Tensors.
+# CPython's `sub` (elementwise.py:103) also writes `a.alu(Ops.ADD, -b)` --
+# `-SUB` is `+ADD-NEG`, and the dtype-promotion trap is the same one `add` has.
+# The `reverse` flag flips the order, the same way `tn_mul.go` covers it.
+def tn_sub.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSUB{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSUB{}, [Tensor.u(rhs)])
+
+def tn_sub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_sub.go(False{}, lhs, rhs)
+
+def tn_rsub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_sub.go(True{}, lhs, rhs)
+
+# `__lt__` -- elementwise.py:321. `return self._binop(Ops.CMPLT, x, False)`. The
+# no-broadcasting case (two same-shape Tensors): `_binop`'s `_broadcasted` is the
+# identity, so the body collapses to `tn_alu(self, CMPLT, [Tensor.u(x)])` -- the
+# same `tn_alu` builder with `OpsCMPLT{}` and the rhs's uop as the second src.
+# The `reverse` flag covers `__gt__` (elementwise.py:324, `self._binop(Ops.CMPLT, x,
+# True)`), which swaps the order, the same way `tn_mul.go`/`tn_add.go` do. The
+# broadcasting case stays walled on `_broadcasted` (mixin/movement.py:24).
+def tn_cmplt.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsCMPLT{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsCMPLT{}, [Tensor.u(rhs)])
+
+def tn_cmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_cmplt.go(False{}, lhs, rhs)
+
+def tn_rcmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_cmplt.go(True{}, lhs, rhs)
+
+# `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
+# (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`
+# instead of `Ops.CMPLT`. The `reverse` arm is unused upstream (`ne` has no
+# `__rne__`) but `tn_rne` exists by symmetry with `tn_cmplt`'s `tn_rcmplt`, so the
+# shape of the dispatcher matches. The broadcasting case stays walled on
+# `_broadcasted`.
+def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsCMPNE{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsCMPNE{}, [Tensor.u(rhs)])
+
+def tn_cmpne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_cmpne.go(False{}, lhs, rhs)
+
+def tn_rne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_cmpne.go(True{}, lhs, rhs)
+
+# `__and__` -- elementwise.py:285, via `bitwise_and` at elementwise.py:159
+# (`self._binop(Ops.AND, x, reverse)`). Same shape as `tn_cmplt` with `Ops.AND`.
+# The `reverse` arm is `__rand__` (elementwise.py:309). The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_and.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsAND{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsAND{}, [Tensor.u(rhs)])
+
+def tn_and(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_and.go(False{}, lhs, rhs)
+
+def tn_rand(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_and.go(True{}, lhs, rhs)
+
+# `__or__` -- elementwise.py:288, via `bitwise_or` at elementwise.py:173
+# (`self._binop(Ops.OR, x, reverse)`). Same shape as `tn_and` with `Ops.OR`.
+# The `reverse` arm is `__ror__` (elementwise.py:312). The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_or.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsOR{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsOR{}, [Tensor.u(rhs)])
+
+def tn_or(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_or.go(False{}, lhs, rhs)
+
+def tn_ror(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_or.go(True{}, lhs, rhs)
+
+# `__xor__` -- elementwise.py:291, via `bitwise_xor` at elementwise.py:187
+# (`self._binop(Ops.XOR, x, reverse)`). Same shape as `tn_and` with `Ops.XOR`.
+# The `reverse` arm is `__rxor__` (elementwise.py:315). The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_xor.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsXOR{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsXOR{}, [Tensor.u(rhs)])
+
+def tn_xor(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_xor.go(False{}, lhs, rhs)
+
+def tn_rxor(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_xor.go(True{}, lhs, rhs)
+
+# `maximum` -- elementwise.py:378. `return self._binop(Ops.MAX, x, False)`. The
+# no-broadcasting case is `tn_alu(self, MAX, [Tensor.u(x)])`. `maximum` has no
+# `reverse` arm upstream, so there is no `tn_rmax` and the dispatcher is
+# unnecessary -- `tn_max` IS the body. The broadcasting case stays walled on
+# `_broadcasted`.
+def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_alu(lhs, O.OpsMAX{}, [Tensor.u(rhs)])
+
+# `__lshift__` -- elementwise.py:366, via `lshift` at elementwise.py:344
+# (`self._binop(Ops.SHL, x, reverse)`). Same shape as `tn_and` with `Ops.SHL`.
+# The `reverse` arm is `__rlshift__` (elementwise.py:372). The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_shl.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHL{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHL{}, [Tensor.u(rhs)])
+
+def tn_shl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_shl.go(False{}, lhs, rhs)
+
+def tn_rshl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_shl.go(True{}, lhs, rhs)
+
+# `__rshift__` -- elementwise.py:369, via `rshift` at elementwise.py:355
+# (`self._binop(Ops.SHR, x, reverse)`). Same shape as `tn_shl` with `Ops.SHR`.
+# The `reverse` arm is `__rrshift__` (elementwise.py:375). The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_shr.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHR{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHR{}, [Tensor.u(rhs)])
+
+def tn_shr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_shr.go(False{}, lhs, rhs)
+
+def tn_rshr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_shr.go(True{}, lhs, rhs)
+
+# `__pow__` -- elementwise.py:569, via `pow` at elementwise.py:548 (`base, exponent
+# = self._broadcasted(x, reverse=reverse); ...; return base.alu(Ops.POW, exponent)`).
+# For two Tensors of the same shape (the no-broadcasting case the gate covers),
+# `_broadcasted` is the identity and the body is `tn_alu(self, POW, [Tensor.u(x)])`.
+# CPython's raise on `not dtypes.is_float(...)` (elementwise.py:565) only fires
+# for a `ConstType` rhs that isn't a non-negative int, which is unreachable for
+# two Tensors. The `reverse` arm is `__rpow__` (elementwise.py:572). The
+# broadcasting case stays walled on `_broadcasted`.
+def tn_pow.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsPOW{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsPOW{}, [Tensor.u(rhs)])
+
+def tn_pow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_pow.go(False{}, lhs, rhs)
+
+def tn_rpow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_pow.go(True{}, lhs, rhs)
+
+# `__floordiv__` -- elementwise.py:279. `return self.div(x, rounding_mode="floor")`,
+# and `div` (elementwise.py:229) is `a, b = self._broadcasted(x, reverse); if
+# dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): ... if rounding_mode == "floor":
+# return a.alu(Ops.FLOORDIV, b)`. For two Tensors of the same shape with int dtypes
+# the no-broadcasting case: `_broadcasted` is the identity, and the body collapses
+# to `_binop`'s shape (elementwise.py:36) with `MUL` replaced by `FLOORDIV`:
+# `tn_alu(self, FLOORDIV, [Tensor.u(x)])` for `__floordiv__` (srcs `(self, x)`),
+# `tn_alu(x, FLOORDIV, [Tensor.u(self)])` for `__rfloordiv__` (srcs `(x, self)`).
+# The `__truediv__` arm (`self.div(x)` with `rounding_mode=None`) is NOT ported:
+# its body is `cast(self, default_float).alu(FDIV, b)` past the int-arm guard, and
+# `cast` plus the `default_float` constant need fold reads the port does not carry.
+# `__floordiv__` IS the integer path, and the FLOORDIV op is the one CPython's
+# `div(x, rounding_mode="floor")` builds for int inputs (elementwise.py:252, gated
+# below). The `reverse` flag covers `__rfloordiv__` (the `reverse=True` arm of the
+# same `_binop`). The broadcasting case stays walled on `_broadcasted` (same wall
+# as the rest of the binop defs).
+def tn_fdiv.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsFLOORDIV{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsFLOORDIV{}, [Tensor.u(rhs)])
+
+def tn_fdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_fdiv.go(False{}, lhs, rhs)
+
+def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_fdiv.go(True{}, lhs, rhs)
+
+# `__mod__` -- elementwise.py:282, via `mod` at elementwise.py:202
+# (`self._binop(Ops.FLOORMOD, x, reverse)`). Same shape as `tn_pow.go` with
+# `Ops.FLOORMOD` instead of `Ops.POW`: for two Tensors of the same shape,
+# `_binop`'s `_broadcasted` is the identity and the body is
+# `tn_alu(self, FLOORMOD, [Tensor.u(x)])`. The `mod` body at elementwise.py:213
+# is `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype): return a.alu(Ops.FLOORMOD, b)`
+# -- the same op the port covers. The float arm (`return a - a.div(b,
+# rounding_mode="floor") * b`, elementwise.py:214) stays walled on the dtype fold
+# (the same wall `tn_bitwise_not`'s arith arms name at tensor.bend:385) and on
+# `div`'s float arm. The `reverse` arm is the `__rmod__` shape, mirroring
+# `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on `_broadcasted`.
+def tn_mod.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsFLOORMOD{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsFLOORMOD{}, [Tensor.u(rhs)])
+
+def tn_mod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_mod.go(False{}, lhs, rhs)
+
+def tn_rmod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_mod.go(True{}, lhs, rhs)
+
+# `__ge__` -- elementwise.py:327. `return (self < x).logical_not()`. The result of
+# `<` is a bool Tensor; `logical_not` (elementwise.py:49) IS `self.cast(bool).ne(True)`,
+# which `tn_logical_not` builds (`CAST(bool) -> CMPNE(cast, CONST(True))` -- gated
+# 8/8, gates/tn_logical_not-gate.py). So the composition
+# `tn_logical_not(tn_cmplt(t, x))` is a fully-portable chain. The no-broadcast case
+# is the only one `tn_cmplt`'s row covers; the broadcasting case of `__lt__` stays
+# walled on `_broadcasted`.
+def tn_dunder_ge(+t: Tensor, +x: Tensor) -> Tensor:
+  tn_logical_not(tn_cmplt(t, x))
+
+# `__le__` -- elementwise.py:330. `return (self > x).logical_not()`. The chain
+# `tn_logical_not(tn_rcmplt(t, x))` is the no-broadcast case. `__gt__` is
+# `tn_rcmplt`, the `reverse=True` arm of `tn_cmplt.go`. The broadcasting case
+# stays walled on `_broadcasted`.
+def tn_dunder_le(+t: Tensor, +x: Tensor) -> Tensor:
+  tn_logical_not(tn_rcmplt(t, x))
+
+# `eq` -- elementwise.py:336. `return self.ne(x).logical_not()`. The chain
+# `tn_logical_not(tn_cmpne(t, x))` is the no-broadcast case. The broadcasting
+# case stays walled on `_broadcasted`.
+def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
+  tn_logical_not(tn_cmpne(t, x))
 
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this

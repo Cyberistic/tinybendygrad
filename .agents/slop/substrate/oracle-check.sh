@@ -76,17 +76,16 @@ if   command -v cc >/dev/null 2>&1;   then CC=$(command -v cc)
 elif command -v clang >/dev/null 2>&1; then CC=$(command -v clang)
 fi
 NODE=$(command -v node 2>/dev/null)
-HERE=.agents/slop/guardfix
-# THE ONE BEND PROGRAM THAT MAKES THE C INSTRUMENT POSSIBLE. It reaches a
-# dtype.bend seam so `bend -o` emits bend's whole generated C runtime. See
-# C_CONTEXT below for why that runtime is the only way a `.c` fragment can be read.
-C_PROBE=$HERE/probe-c.bend
+# THE ONE BEND PROGRAM THAT MAKES THE C INSTRUMENT POSSIBLE. It lives in GIT BESIDE THE GATE
+# (`checks/c-context.bend`), NOT at the old `.agents/slop/guardfix/probe-c.bend`: that path
+# matched `.gitignore`'s `probe-*.bend` and was NEVER committed, so the route was dead when it
+# vanished. Re-pointed IN BOTH FILES so the oracle and the port agree on the `.c` lane.
+C_PROBE=checks/c-context.bend
 # AND THE `.c` THAT PROBE PULLS IN, whose FIRST LINE MARKS WHERE THE FOREIGN BLOCK
-# BEGINS IN THE EMIT (`probe-c.bend` imports `tinybendygrad/dtype.bend`, whose seams
-# import `tinybendygrad/runtime/dtype.c`). NAMED, NOT GUESSED -- and C_CONTEXT FAILS
-# LOUD if that exact line is not in the emit, so if bend ever stops pasting the file
-# the instrument reports NO INSTRUMENT rather than a silent pass.
-C_PROBE_FOREIGN=tinybendygrad/runtime/dtype.c
+# BEGINS IN THE EMIT (`c-context.bend` imports `tinybendygrad/runtime/sz.c`; the old probe's
+# `dtype.c` seam was retired). NAMED, NOT GUESSED -- and C_CONTEXT FAILS LOUD if that exact
+# line is not in the emit, so a paste that stops reports NO INSTRUMENT, never a silent pass.
+C_PROBE_FOREIGN=tinybendygrad/runtime/sz.c
 names_only=0
 if [ "$1" = "-n" ]; then names_only=1; shift; fi
 
@@ -163,6 +162,16 @@ c_context() {
   return 0
 }
 
+# THE CHEAP PRECONDITIONS FOR THE `cc` INSTRUMENT, WITHOUT EMITTING ANYTHING. `c_context` is the
+# expensive half (one `bend -o`); this is what `-n` may consult for free, so a probe that is GONE
+# is REPORTED under `-n` instead of skipped past it. Same predicate, no cost.
+c_ready() {
+  [ -n "$BEND" ] || return 1
+  [ -f "$C_PROBE" ] || return 1
+  [ -f "$C_PROBE_FOREIGN" ] || return 1
+  return 0
+}
+
 SCR=$(mktemp -d "${TMPDIR:-/tmp}/substrate.XXXXXX") || exit 2
 trap 'rm -rf "$SCR"' EXIT INT TERM
 CTX=; CTX_LINES=0
@@ -192,6 +201,16 @@ for f in "$@"; do
   [ "$inst" = cc ]   && [ -z "$CC" ]   && { inst=none; why="cc is not installed"; }
   [ "$inst" = node ] && [ -z "$NODE" ] && { inst=none; why="node is not installed"; }
   [ "$inst" = bend ] && [ -z "$BEND" ] && { inst=none; why="bend is not installed"; }
+  # A ROUTED INSTRUMENT WHOSE CHEAP PRECONDITION IS ABSENT IS `none`, DECIDED BEFORE THE `-n`
+  # SHORT-CIRCUIT SO `-n` CANNOT HIDE A DEAD LANE IT CAN SEE FOR FREE. The `cc` context is the
+  # one instrument whose precondition is a FILE pair (`c_ready`), and this is exactly where `-n`
+  # used to SKIP-VERDICT past it. THE ROUTED WORDING (no `-- **NOT JUDGED` suffix) IS KEPT: a
+  # missing context says only WHY; an unrouteable class says THAT.
+  if [ "$inst" = cc ] && ! c_ready; then
+    n_none=$((n_none+1))
+    print -r -- "NO INSTRUMENT  $f  ($lines lines)  :: $why"
+    continue
+  fi
   if [ "$names_only" -eq 1 ] && [ "$inst" != none ]; then
     print -r -- "SKIP-VERDICT $f  ($lines lines, verdict suppressed by -n)"
     continue
@@ -463,6 +482,13 @@ print -r -- ""
 if [ "$n_none" -gt 0 ]; then
   print -r -- "NO INSTRUMENT: $n_none of $# file(s) were **NOT JUDGED** (no instrument exists, or it produced nothing)."
   print -r -- "A FILE WITH NO INSTRUMENT IS NOT A PASS AND NOT A FAILURE. It is an unmeasured surface."
+  # A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN NO GATE, BECAUSE IT IS TRUSTED.
+  # `n_none` files were judged by NOTHING; nothing measured is not "wrong", so this is REFUSED
+  # (3), not FAIL (1), and it must NOT print `SUBSTRATE CLEAN`. (Exit 3 is also the zero-argument
+  # refusal and `gates/gatekit.py`'s REFUSED -- one vocabulary.)
+  print -r -- "SUBSTRATE REFUSED: $(( $# - n_none )) of $# file(s) were judged and agreed; the rest were judged by NOTHING, so this run did not judge the whole population and must not report agreement."
+  print -r -- "ANY VERDICT DRAWN FROM THIS RUN IS **INCONCLUSIVE**, NOT A RESULT."
+  exit 3
 fi
 if [ "$names_only" -eq 1 ]; then
   print -r -- "NAMES CLEAN: $# file(s), all non-empty, all cross-file names resolved. **VERDICT NOT TAKEN** (-n)."

@@ -267,5 +267,12 @@ def main() -> None:
   sys.exit(1 if bad or missing else 0)
 
 
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. `PLANTS` is empty because no plant here reaches these codes without
+# `tinygrad`/`node`; the instrument reports the unplanted surface rather than this file claiming one.
+VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
+PLANTS = {}
+
+
 if __name__ == "__main__":
   main()
