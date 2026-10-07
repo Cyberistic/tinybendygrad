@@ -1,0 +1,31 @@
+path	state	populations	missing	EMPTY
+checks/abi_gate.py	-	NO-LITERAL-POP	-	-
+checks/both-census.py	-	NO-LITERAL-POP	-	-
+checks/bounded.py	-	NO-LITERAL-POP	-	-
+checks/census.py	-	NO-LITERAL-POP	-	-
+checks/corpus-figure.py	-	NO-LITERAL-POP	-	-
+checks/coverage.py	-	NO-LITERAL-POP	-	-
+checks/devgate.py	-	ALL-UNRESOLVED	-	-
+checks/differ.py	REACHABLE	.tmp.*=0; D9-stability-srcswap-*=0; *.txt=0	.tmp.*, D9-stability-srcswap-*	
+checks/disagree-gate.py	REACHABLE	D1-graph-*.txt=0	D1-graph-*.txt	
+checks/dup-census.py	REACHABLE	*.txt=0	*.txt	
+checks/dup-gate.py	-	NO-LITERAL-POP	-	-
+checks/gate.py	-	NO-LITERAL-POP	-	-
+checks/hermetic-census.py	-	NO-LITERAL-POP	-	-
+checks/jsfix_gate.py	-	NO-LITERAL-POP	-	-
+checks/nl-gate.py	-	NO-LITERAL-POP	-	-
+checks/no-strays.py	-	ALL-UNRESOLVED	-	-
+checks/nvrows-deadrow-gate.py	-	NO-LITERAL-POP	-	-
+checks/residue.py	-	ALL-UNRESOLVED	-	-
+checks/rn-gate.py	-	NO-LITERAL-POP	-	-
+checks/slop-declare.py	populated	=239		
+checks/substrate-id.py	-	NO-LITERAL-POP	-	-
+checks/substrate.py	-	ALL-UNRESOLVED	-	-
+checks/sweep.py	-	ALL-UNRESOLVED	-	-
+checks/txt-owners.py	-	ALL-UNRESOLVED	-	-
+checks/wallcheck.py	-	ALL-UNRESOLVED	-	-
+gates/gate-surface.py	-	ALL-UNRESOLVED	-	-
+gates/gates-pop.py	REACHABLE	*.sh=0	*.sh	
+gates/gendirs.py	-	ALL-UNRESOLVED	-	-
+gates/indexread-gate.py	-	ALL-UNRESOLVED	-	-
+gates/retention-check.py	REACHABLE	*=0	*	

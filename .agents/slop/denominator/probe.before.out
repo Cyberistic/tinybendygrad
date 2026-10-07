@@ -1,0 +1,9 @@
+lane                                                            phys   acc   nmS   nmP  dupN  dupR  LOST refuse  cont defs?
+
+TOTAL over 0 lane texts of 0 ports
+  DENOMINATOR: 0 of 0 lane texts carry at least one duplicate name under the WRITER'S OWN boundary
+  rows the writer emitted: 0   lines the shipped reader ACCEPTS: 0   distinct names the producer printed: 0   distinct keys `rows()` produces: 0
+  DUPLICATE NAMES: 0 over 0 rows, costing 0 measurements (one per surplus row)
+  the reader's OWN loss: accepted 0 − keys 0 = 0
+  and the reader's loss attributes to: 0 continuation + 0 `=`-in-a-name + 0 duplicate = 0   RECONCILES
+  NAME-DEFINITION DISAGREEMENT: 0 name(s) are a duplicate under one name definition and not under the other -- a duplicate counted from one definition alone is not yet a duplicate
