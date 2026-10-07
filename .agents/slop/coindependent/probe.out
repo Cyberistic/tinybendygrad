@@ -1,0 +1,44 @@
+gate	state	rc	tokens	cmd	note
+gates/gatekit.py	plant: 3 output-dir states	0	-	gates/gatekit.py --plant	
+gates/wk-f32-gate.py	plant: output-dir	0	NOT A VERDICT,OK,REFUSED	gates/wk-f32-gate.py --plant	
+gates/wk-cd-gate.py	plant: output-dir	0	NOT A VERDICT,OK,REFUSED	gates/wk-cd-gate.py --plant	
+gates/gates-pop.py	at rest	0	OK	gates/gates-pop.py	
+gates/gates-pop.py	plant: nine directions	0	GREEN,PASS,RED,REFUSED	gates/gates-pop.py --plant	
+gates/gendirs.py	at rest	0	-	gates/gendirs.py	
+gates/gendirs.py	plant: seven directions	0	GREEN,PASS	gates/gendirs.py --plant	
+gates/retention-check.py	at rest	1	DEAD,FAIL,OK,PASS,RED,REFUSED,SKIP,UNMEASURABLE	gates/retention-check.py	
+checks/no-txt.py	at rest	0	CLEAN	checks/no-txt.py	
+checks/no-strays.py	at rest	1	CLEAN	checks/no-strays.py	
+checks/repro-paths.py	at rest	1	CLEAN	checks/repro-paths.py	
+checks/txt-owners.py	at rest	0	-	checks/txt-owners.py	
+checks/unowned.py	at rest	0	-	checks/unowned.py	
+checks/citation-gate.py	at rest	1	RED,STALE	checks/citation-gate.py	
+checks/oracle-txt-census.py	at rest	0	STALE	checks/oracle-txt-census.py	
+checks/oracle-txt-census.py	gate mode	0	-	checks/oracle-txt-census.py --gate	
+checks/hermetic-census.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/hermetic-census.py	
+checks/dup-census.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/dup-census.py	
+checks/dup-gate.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/dup-gate.py	
+checks/rn-gate.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/rn-gate.py	
+checks/nl-gate.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/nl-gate.py	
+checks/nl-gate-noguard.py	at rest (input swept?)	3	NOT A VERDICT,REFUSED	checks/nl-gate-noguard.py	
+checks/disagree-gate.py	at rest	0	-	checks/disagree-gate.py	
+checks/disagree-gate.py	lane: plant	0	-	checks/disagree-gate.py --lane plant	
+checks/coverage.py	at rest	1	-	checks/coverage.py	
+checks/corpus-figure.py	at rest (DEV unset)	1	NOT A VERDICT,RED	checks/corpus-figure.py	
+checks/residue.py	plant	0	PASS	checks/residue.py --plant	
+checks/residue.py	disarm DELETE	3	PASS	checks/residue.py --disarm DELETE	
+checks/env-precond.py	declare	0	-	checks/env-precond.py --declare	
+checks/env-precond.py	plant satisfied	0	NOT A VERDICT,OK,REFUSED	checks/env-precond.py --plant satisfied	
+checks/env-precond.py	plant moved	0	NOT A VERDICT,OK,REFUSED	checks/env-precond.py --plant moved	
+checks/env-precond.py	at rest	0	-	checks/env-precond.py	
+checks/wallcheck.py	selftest	0	REFUSED	checks/wallcheck.py --selftest	
+checks/bounded.py	selftest	0	CLEAN,KILLED-ON-MEMORY,PASS,TIMED-OUT,WITHIN-LIMITS	checks/bounded.py --selftest	
+checks/sweep.py	plan	TIMEOUT	-	checks/sweep.py --plan	exceeded 45s (an instrument refusal, not a gate verdict)
+checks/nvrows-deadrow-gate.py	plant STRIP	2	DEAD	checks/nvrows-deadrow-gate.py --plant STRIP	
+checks/nvrows-deadrow-gate.py	plant ORPHAN	1	DEAD	checks/nvrows-deadrow-gate.py --plant ORPHAN	
+checks/nvrows-deadrow-gate.py	plant SELF	1	DEAD	checks/nvrows-deadrow-gate.py --plant SELF	
+checks/nvrows-deadrow-gate.py	plant REVIVE	0	CLEAN,DEAD	checks/nvrows-deadrow-gate.py --plant REVIVE	
+checks/differ.py	snap	0	-	checks/differ.py snap	
+checks/differ.py	plant	0	GREEN,PASS,RED	checks/differ.py plant	
+checks/env-precond.py	plant unknown kind	2	-	checks/env-precond.py --plant nonsense	
+checks/unowned.py	why a missing path	1	-	checks/unowned.py --why /nonexistent/coindependent	

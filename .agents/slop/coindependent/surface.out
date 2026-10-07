@@ -1,0 +1,126 @@
+# 113 entry point(s); 27 presented at least one state without `bend`
+
+path                                         declared   reached    diff
+checks/abi4_gate.py                          3          (needs bend) -
+checks/abi_gate.py                           3          (needs bend) -
+checks/al-verdict.py                         0/2        (none)     2
+checks/both-census.py                        0/3        (needs bend) -
+checks/bounded-selftest.sh                   2/3        (none)     2
+checks/bounded.py                            0/1/2/3/4/5 0          5
+checks/census.py                             0/3        (needs bend) -
+checks/citation-gate.py                      0/1        0/1        0
+checks/cl-port-gate.py                       2          (needs bend) -
+checks/classify.sh                           0/1/3      (none)     3
+checks/cli.py                                -          (none)     0
+checks/compile.py                            -          (none)     0
+checks/corpus-figure.py                      -          1          0
+checks/coverage.py                           -          1          0
+checks/demo.sh                               2/3        (none)     2
+checks/devgate.py                            0          (none)     1
+checks/devpin.py                             -          (none)     0
+checks/differ.py                             0/1/2/3    0          3
+checks/disagree-gate.py                      2          0          1
+checks/disarm.sh                             2/3        (none)     2
+checks/dup-census.py                         0/3        3          1
+checks/dup-gate.py                           2/3        3          1
+checks/e2e.py                                0/1/2/3/4  (needs bend) -
+checks/e2e.sh                                0/1/2/4    (needs bend) -
+checks/env-precond.py                        0/2        0/2        0
+checks/fw_live.py                            1          (none)     1
+checks/gate.py                               3          (none)     1
+checks/gate.sh                               1/2/3      (none)     3
+checks/gate_dtype.py                         0          (none)     1
+checks/gate_norm.py                          3          (needs bend) -
+checks/gen.sh                                1/3        (none)     2
+checks/git-index-guard.py                    -          (none)     0
+checks/graphcmp-census-audit.py              0          (none)     1
+checks/hermetic-census.py                    0/3        3          1
+checks/jsfix_gate.py                         3          (needs bend) -
+checks/lint_demo.sh                          0/1/3      (none)     3
+checks/lintable-gate.sh                      0/1/3      (none)     3
+checks/llama.py                              -          (none)     0
+checks/marker-audit.py                       0          (none)     1
+checks/nl-gate-noguard.py                    3          3          0
+checks/nl-gate.py                            1/3        3          1
+checks/no-shrink.py                          0/1        (none)     2
+checks/no-strays.py                          1          1          0
+checks/no-txt.py                             0/1        0/1        0
+checks/norm_check.py                         3          (none)     1
+checks/nvrows-deadrow-gate.py                2/3        0/1/2      1
+checks/oracle-txt-census.py                  0/1        0          1
+checks/oracle_f64.py                         3          (none)     1
+checks/plant.sh                              1/3        (none)     2
+checks/process_replay.py                     -          (none)     0
+checks/render-gate-oracle.py                 -          (none)     0
+checks/repair-dupes.py                       1/2        (needs bend) -
+checks/repro-paths.py                        0/1        1          1
+checks/residue.py                            0/3        0/3        0
+checks/rn-gate.py                            1/3        3          1
+checks/romless.py                            1          (none)     1
+checks/run-all.sh                            2/3        (needs bend) -
+checks/run-f64.sh                            0/1/2/3    (needs bend) -
+checks/run-port-mm.sh                        0/1/2/3    (needs bend) -
+checks/run.py                                -          (none)     0
+checks/sb-gate.sh                            0/1/3/5/6  (needs bend) -
+checks/serve.py                              -          (none)     0
+checks/substrate-check.sh                    2/3        (needs bend) -
+checks/substrate.py                          0/1/2/3/4/5 (needs bend) -
+checks/sweep.py                              0/3        (none)     2
+checks/sz.py                                 -          (none)     0
+checks/test_rewrite_bottom_up_gate.py        -          (none)     0
+checks/txt-owners.py                         0/1/2      0          2
+checks/unowned.py                            0          0/1        0
+checks/vz_gate.py                            0          (needs bend) -
+checks/walk-mutate.sh                        0/1/2/3    (needs bend) -
+checks/wallcheck.py                          0/2/3/4/5  0/4        3
+checks/wt-sync.sh                            2          (none)     1
+gates/bc-u32-gate.py                         0/1/2/3/4/5 (needs bend) -
+gates/bc-u32-gen.py                          -          (none)     0
+gates/bc-u32-oracle.py                       -          (none)     0
+gates/bc_u32_table.py                        -          (none)     0
+gates/beautiful-mnist-gate.py                0/1/2/3/4/5 (needs bend) -
+gates/ew-consts-gate.py                      0/1/2/3/4/5 (needs bend) -
+gates/ew-consts-oracle.py                    0          (none)     1
+gates/ew-explog-gate.py                      0/1/2/3/4/5 (needs bend) -
+gates/ew-explog-oracle.py                    0          (none)     1
+gates/gates-pop.py                           2          0          1
+gates/gendirs.py                             0          0          0
+gates/i64-shl-gate.py                        0/1/2/3/4/5 (needs bend) -
+gates/i64-shl-oracle.py                      -          (none)     0
+gates/i64-shr-gate.py                        0/1/2/3/4/5 (needs bend) -
+gates/i64-shr-oracle.py                      -          (none)     0
+gates/mixin-op-gate.py                       0/1/2/3/4/5 (needs bend) -
+gates/ops-core-gate.py                       0/1/2/3/4/5 (needs bend) -
+gates/ops-core-oracle.py                     -          (none)     0
+gates/render_val_s-gate.py                   0/1/2/3/4/5 (needs bend) -
+gates/replace-gate.py                        0/1/2/3/4/5 (needs bend) -
+gates/retention-check.py                     0/1/2/3/4/5 1          5
+gates/tn_bitwise_not-gate.py                 0/1/2/3/4/5 (needs bend) -
+gates/tn_contiguous_backward-gate.py         0/1/2/3/4/5 (needs bend) -
+gates/tn_detach-gate.py                      0/1/2/3/4/5 (needs bend) -
+gates/tn_dunder_neg-gate.py                  0/1/2/3/4/5 (needs bend) -
+gates/tn_logical_not-gate.py                 0/1/2/3/4/5 (needs bend) -
+gates/tn_neg-gate.py                         0/1/2/3/4/5 (needs bend) -
+gates/tn_sin_log2_exp2_rsqrt-gate.py         0/1/2/3/4/5 (needs bend) -
+gates/tn_sqrt-gate.py                        0/1/2/3/4/5 (needs bend) -
+gates/tn_trunc_reciprocal_threefry-gate.py   0/1/2/3/4/5 (needs bend) -
+gates/tn_where-gate.py                       0/1/2/3/4/5 (needs bend) -
+gates/uop_cast-gate.py                       0/1/2/3/4/5 (needs bend) -
+gates/wk-cd-gate.py                          0/1/2/3/4/5 0          5
+gates/wk-cd-oracle.py                        0          (none)     1
+gates/wk-eval-gate.py                        0/1/2/3/4/5 (needs bend) -
+gates/wk-eval-oracle.py                      -          (none)     0
+gates/wk-f32-gate.py                         0/1/2/3/4/5 0          5
+gates/wk-f32-rows.py                         -          (none)     0
+gates/oracles/beautiful-mnist-oracle.sh      -          (none)     0
+gates/oracles/mixin-op-oracle.sh             -          (none)     0
+
+# TOTALS over the 73 gates this unit presented (the `needs bend` set excluded):
+#   declared exit-codes           : 107
+#   declared codes REACHED        : 28
+#   declared-but-not-reached      : 79
+#   gates whose ONLY declared code is REFUSED (cannot go green) : 4
+#     checks/gate.py
+#     checks/nl-gate-noguard.py
+#     checks/norm_check.py
+#     checks/oracle_f64.py
