@@ -1,0 +1,60 @@
+CONTROL OK -- rederive(live) == D0-run-summary.txt BYTE FOR BYTE
+
+== A. LAYER 1: THE DENOMINATOR, IN DISTINCT ARTIFACTS THAT CARRY A PIN ==
+
+  `unhealthy()` opens 176 `.txt`; a pin VALUE is parsed out of ['D0-run-summary.txt'] (17 of 17 live there)
+  `repro_bad()` opens   1 `.txt`; a pin VALUE is parsed out of ['D0-repro.txt'] (1 of 1 there)
+
+  BEFORE  17 pins over 1 artifact  -> the denominator was 1 RUN
+  AFTER   17 pins over 1 artifact + 1 pin over 1 artifact = 2 DISTINCT ARTIFACTS THAT CARRY A PIN
+          pins per artifact: [('D0-repro.txt', 1), ('D0-run-summary.txt', 17)]  (MAX was 17, and the second file was read by nobody)
+
+== B. SENSITIVITY: FOUR STATES OF `D0-repro.txt`, ASKED OF THE REAL FUNCTION ==
+
+  PASS  green -- `repro-rc=rc=0`
+  FAIL  RED -- `repro-rc=rc=1`, two runs DIFFERED
+          -> repro-rc=rc=1 (expected rc=0, from D0-repro.txt)
+  FAIL  KEY ABSENT -- the writer's row moved
+          -> repro-rc ABSENT from D0-repro.txt
+  FAIL  FILE ABSENT -- `repro` was never run to completion
+          -> D0-repro.txt ABSENT -- the SECOND MEASUREMENT was never taken, so the denominator for `repro-rc` is 0 runs rather than 2. Run `checks/differ.py repro` to take it. `PINS` above stays green on one run and says nothing about this.
+  FAIL  CONTROL -- the PREVIOUS writer's shape, `repro-rc=0`
+          -> repro-rc=0 (expected rc=0, from D0-repro.txt)
+
+  THE CONTROL IS A PIN THAT FAILS: `repro-rc=0` (what `cmd_repro` wrote until this
+  change) reads RED against the pin `rc=0`, so the pin sees a shape move, not just a
+  value. Every state names its offender; NONE of them prints a count of green.
+
+== C. INDEPENDENCE: CAN THE NEW PIN MOVE ALONE? ==
+
+  edit `D0-repro.txt` only  : unhealthy() green -> green (+0); repro_bad() green -> 1 complaint(s)
+  edit the SUMMARY only     : unhealthy() ['graphs-agree=31 (expected 32)'] (+1); repro_bad() STAYS GREEN
+
+  => the two verdicts move on DISJOINT artifacts. That is the whole claim: 2 witnesses,
+     not 18 rows of one.
+
+== D. REDUNDANCY AMONG THE 17, RE-MEASURED (same arithmetic as pinindep) ==
+
+  graphs-answered == graphs - graphs-unset : True  (34 - 0 = 34) -> 2 free numbers, 3 pins
+  stable-pairs + stable-failed + stable-differ == len(STAB) : True  (5 == 5) -> a PARTITION, 2 free numbers, 3 pins
+
+  => 17 pins, 2 algebraically determined, 15 free. UNCHANGED by this task, because
+     `repro-rc` is a NEW free number in a NEW artifact, not a third view of an old one.
+
+== E. IS `repro-rc` DERIVABLE FROM `D0-run-summary.txt`? (a derived pin cannot fail) ==
+
+  `cmd_run`   writes `repro-rc`  : False
+  `cmd_run`   reads  `D0-repro`  : False
+  `cmd_repro` writes `repro-rc`  : True
+  `cmd_repro` reads  the summary : True via `clean_run()` (health, not the value)
+  the summary carries a repro row: False
+  `D0-repro.txt` on disk now     : ABSENT (never run)
+
+  => NOT DERIVABLE. The summary is written by `cmd_run` from per-graph artifacts;
+     `repro-rc` is written by `cmd_repro` from the sha256 of TWO snapshots of the whole
+     directory. No row of `D0-run-summary.txt` is a function of two runs, so no pin
+     over that row can witness it, and a TAUTOLOGY IS NOT WHAT WAS ADDED.
+
+  order inside `cmd_repro`: clean_run() at offset  169, the artifact is written at offset 1183  -> the health check runs 1014 chars BEFORE the file exists.
+     So folding this pin into `unhealthy()` would make `repro` unable to ever report a
+     healthy run: a gate that can never pass is a gate that gets deleted.
