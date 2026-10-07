@@ -1,0 +1,17 @@
+path	anchor	hits	first_line	verdict	label
+tinybendygrad/dtype.bend	def Dt.i64_trunc	1	1064	IMMUNE	the port's i64 trunc
+tinybendygrad/uop/ops.bend	ATuple{ys: List<&2, U32>}	1	1208	IMMUNE	PERMUTE/FLIP's one arg type
+tinybendygrad/uop/ops.bend	def UOp.mselect	1	4586	IMMUNE	mselect's AInt arm
+tinybendygrad/uop/ops.bend	#   dtype: DType = dtypes.void	1	1060	IMMUNE	CallInfo's dtype field
+tinybendygrad/helpers.bend	getenv_int("DEBUG", 0)	2	306	NEEDS-NUMBER	the DEBUG reader
+tinybendygrad/base.bend	0x7FC00000	1	42	IMMUNE	the JS NaN collapse
+tinybendygrad/renderer/nir_llvmir.bend	String.concat([nm, " = ["	1	125	IMMUNE	the nl row shape
+tinybendygrad/runtime/support/nv/ip.bend	import Base	1	371	IMMUNE	package-relative import
+tinybendygrad/LAWS/spec.bend	import Base	1	48	IMMUNE	package-relative import
+tinybendygrad/runtime/support/nv/nvdev.bend	def emit(xs: List<&2, String>)	1	1770	IMMUNE	the nv emit
+tinybendygrad/uop/render.bend	def py_row(	1	2020	IMMUNE	the row shape
+tinybendygrad/uop/render.bend	def rnd_row(	1	2558	IMMUNE	the rnd rows
+tinybendygrad/uop/render.bend	def pu_line(	1	2752	IMMUNE	the pu line
+tinybendygrad/renderer/cstyle.bend	`Ops.SHRINK` HAS NO DTYPE	1	49	IMMUNE	the SHRINK wall
+tinybendygrad/mixin/elementwise.bend	def ew_add	1	542	IMMUNE	the ew dispatch
+.agents/slop/ag-emit.bend	bend2-constraints.md	1	32	IMMUNE	the quoted path
