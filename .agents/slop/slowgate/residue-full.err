@@ -1,0 +1,1 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=359 MB (ceiling 4096)  524s  :: .venv/bin/python checks/residue.py  out=332B err=0B
