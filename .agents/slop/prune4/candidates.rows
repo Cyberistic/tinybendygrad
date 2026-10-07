@@ -1,0 +1,35 @@
+# kind	size_B	files	untracked	ignored	generator	cold	owner_cold_min	DELETE	rel	refusal
+bin	258048	1	True	True	False	False	0.0	REFUSE	.agents/slop/helpers-tc-gate.bin	LIVE-OWNER
+pycache	225280	2	True	True	True	False	0.0	REFUSE	.agents/slop/__pycache__	LIVE-OWNER
+pycache	192512	1	True	True	False	False	3.2	REFUSE	.agents/slop/midrun/snap/.agents/slop/__pycache__	LIVE-OWNER
+bin	126976	1	True	True	False	True	934.6	REFUSE	.agents/slop/loopfix/insprobe-old.bin	NO-COMMITTED-GENERATOR
+bin	110592	1	True	True	False	True	934.6	REFUSE	.agents/slop/loopfix/insprobe-v2.bin	NO-COMMITTED-GENERATOR
+bin	110592	1	True	True	False	True	934.6	REFUSE	.agents/slop/loopfix/insprobe.bin	NO-COMMITTED-GENERATOR
+pycache	20480	2	True	True	True	False	40.5	REFUSE	.agents/slop/portexec/__pycache__	LIVE-OWNER
+pycache	20480	2	True	True	True	False	15.8	REFUSE	.agents/slop/pinindep/__pycache__	LIVE-OWNER
+pycache	20480	1	True	True	True	False	25.8	REFUSE	.agents/slop/jslane2/__pycache__	LIVE-OWNER
+pycache	20480	1	True	True	True	True	331.7	DELETE	.agents/slop/e2epy/__pycache__	
+pycache	20480	1	True	True	True	False	4.4	REFUSE	.agents/slop/declare/__pycache__	LIVE-OWNER
+pycache	20480	2	True	True	True	False	23.0	REFUSE	.agents/slop/coindependent/__pycache__	LIVE-OWNER
+pycache	16384	1	True	True	True	False	9.2	REFUSE	.agents/slop/quiesce/__pycache__	LIVE-OWNER
+pycache	12288	1	True	True	True	True	333.7	DELETE	.agents/slop/skipexit/__pycache__	
+pycache	12288	1	True	True	True	False	40.5	REFUSE	.agents/slop/oracletxt/__pycache__	LIVE-OWNER
+pycache	12288	1	True	True	True	False	25.8	REFUSE	.agents/slop/norm/__pycache__	LIVE-OWNER
+pycache	12288	2	True	True	False	True	834.8	REFUSE	.agents/slop/gitinput/__pycache__	NO-COMMITTED-GENERATOR
+pycache	12288	1	True	True	True	True	706.8	DELETE	.agents/slop/bitcastrow/__pycache__	
+pycache	8192	1	True	True	True	True	838.2	DELETE	.agents/slop/txtexec/__pycache__	
+pycache	8192	1	True	True	True	True	331.1	DELETE	.agents/slop/orcfix/__pycache__	
+pycache	8192	1	True	True	True	True	838.2	DELETE	.agents/slop/figure2/__pycache__	
+pycache	4096	1	True	True	False	False	0.0	REFUSE	.agents/slop/prune4/__pycache__	LIVE-OWNER
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/wk-f32-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/wk-eval-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/wk-cd-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/ops-core-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/mixin-op-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/i64-shr/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/i64-shl/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/ew-explog-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/ew-consts-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/beautiful-mnist-gate/gate.bin	NO-COMMITTED-GENERATOR
+bin	4096	1	True	True	False	True	1019.5	REFUSE	.agents/slop/gatehealth/gates-syn/bc-u32-gate/gate.bin	NO-COMMITTED-GENERATOR
+pycache	4096	1	True	True	True	True	252.3	DELETE	.agents/slop/bendwire/__pycache__	

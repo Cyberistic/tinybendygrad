@@ -1,0 +1,20 @@
+# path	size_B	sha1	in_any_commit	in_HEAD	copy_at_other	twin
+.agents/slop/orcdecide/retired/basenames.rows	8192	f7ad302176cc	Y	Y	N	
+.agents/slop/orcdecide/retired/basenames2.rows	8192	32861eea32fe	Y	Y	N	
+.agents/slop/orcdecide/retired/bn.rows	8192	32861eea32fe	Y	Y	N	
+.agents/slop/orcdecide/retired/census.out	8192	4c04eddaa588	Y	Y	N	
+.agents/slop/orcdecide/retired/cited.py	4096	ede87ab0553d	Y	Y	N	
+.agents/slop/orcdecide/retired/classified.json	53248	91df21eb423a	Y	Y	N	
+.agents/slop/orcdecide/retired/classify.err	4096	2aa7cc4e3e40	Y	Y	N	
+.agents/slop/orcdecide/retired/classify.py	4096	d040649c6344	Y	Y	N	
+.agents/slop/orcdecide/retired/declared_join.py	4096	4c8544bd1010	Y	Y	N	
+.agents/slop/orcdecide/retired/gate.out	8192	d5b624c060d4	Y	Y	N	
+.agents/slop/orcdecide/retired/manifest-prove.out	4096	05322b87bd0c	Y	Y	N	
+.agents/slop/orcdecide/retired/manifest-write.out	4096	8570ce183e93	Y	Y	N	
+.agents/slop/orcdecide/retired/manifest.py	8192	5abc62f8961c	Y	Y	N	
+.agents/slop/orcdecide/retired/ordering.out	4096	f6029431fec6	Y	Y	N	
+.agents/slop/orcdecide/retired/ordering.py	4096	6baa9740192e	Y	Y	N	
+.agents/slop/orcdecide/retired/othercopies.json	20480	4823a587a2ca	Y	Y	N	
+.agents/slop/orcdecide/retired/othercopies.py	4096	428535f54cb6	Y	Y	N	
+.agents/slop/orcdecide/retired/paths.rows	8192	6d9b36172749	Y	Y	N	
+.agents/slop/orcdecide/retired/plants.py	12288	e6e31707bd5e	Y	Y	N	

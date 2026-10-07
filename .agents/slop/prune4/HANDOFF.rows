@@ -1,0 +1,43 @@
+# bytes	path	operation	authority
+28672	.agents/slop/bendwire/reach-test_linearizer.out	git rm --cached	in HEAD, no tracked reader names it
+28672	.agents/slop/bendwire/reach-old-test_linearizer.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-test_real_world.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-test_function.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-test_attention.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-test_assign.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-old-test_real_world.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-old-test_function.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-old-test_attention.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-old-test_assign.out	git rm --cached	in HEAD, no tracked reader names it
+12288	.agents/slop/bendwire/reach-old-test_allreduce.out	git rm --cached	in HEAD, no tracked reader names it
+8192	.agents/slop/citemass/resolved-now.tsv	git rm --cached	in HEAD, no tracked reader names it
+8192	.agents/slop/citemass/cites-now.tsv	git rm --cached	in HEAD, no tracked reader names it
+8192	.agents/slop/bendwire/reach-test_arange.out	git rm --cached	in HEAD, no tracked reader names it
+8192	.agents/slop/bendwire/reach-old-test_arange.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/nostraysshape/measure2.py	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/citemass/scan-now.err	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/citemass/resolve-now.err	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/censusred/refusal.err	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/ccdead/two-c.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/ccdead/two-c-headed.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-test_winograd.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-test_symbolic_tensor.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-test_schedule.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-test_allreduce.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-old.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-old-test_winograd.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-old-test_symbolic_tensor.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/reach-old-test_schedule.out	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/launch-64/EXE	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/launch-64/ARGV	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/full-fit.rows	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendwire/EXE	git rm --cached	in HEAD, no tracked reader names it
+4096	.agents/slop/bendperf/launch-ones-000/wall	git rm --cached	in HEAD, no tracked reader names it
+0	.agents/slop/substratediag/run-full.out	git rm --cached	in HEAD, no tracked reader names it
+0	.agents/slop/ccdead/two-c.err	git rm --cached	in HEAD, no tracked reader names it
+0	.agents/slop/ccdead/two-c-headed.err	git rm --cached	in HEAD, no tracked reader names it
+385024	.agents/slop/bitcastrow/fold.bend.ORIG	git rm --cached	staged in the INDEX but NOT in HEAD; blob reachable only from a NON-HEAD ref
+258048	.agents/slop/helpers-tc-gate.bin	rm (untracked, gitignored)	prune2 flagged it; no committed helpers-tc-gate.bend -> ABSENCE not proof
+348160	.agents/slop/loopfix/insprobe{,-old,-v2}.bin	rm (untracked, gitignored)	prune3 open question; strengthened, still ABSENCE
+45056	.agents/slop/gatehealth/gates-syn/*/gate.bin  (11 files)	NO -- DO NOT DELETE	2-byte captured stream `x\n`, not a compile product
