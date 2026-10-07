@@ -630,6 +630,33 @@ def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(True{}, lhs, rhs)
 
+# `lshift` -- elementwise.py:347. `self._binop(Ops.SHL, x, False)`. Same shape as
+# `tn_maximum` with `OpsSHL{}` instead of `OpsMAX{}`. The reverse arm is
+# `__rlshift__` (elementwise.py:361). The broadcasting case stays walled on
+# `_broadcasted`.
+def tn_lshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHL{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHL{}, [Tensor.u(rhs)])
+
+def tn_lshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_lshift.go(False{}, lhs, rhs)
+
+def tn_rlshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_lshift.go(True{}, lhs, rhs)
+
+# `rshift` -- elementwise.py:355. Same shape with `OpsSHR{}` instead.
+def tn_rshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHR{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHR{}, [Tensor.u(rhs)])
+
+def tn_rshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_rshift.go(False{}, lhs, rhs)
+
+def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_rshift.go(True{}, lhs, rhs)
+
 # `minimum` is NOT ported: CPython's `Tensor.minimum` (elementwise.py:387) has
 # dtype promotion (the int `^k` trick at elementwise.py:390 and the float arm
 # `-(-t).alu(MAX, -x)`), and `OpsMIN{}` IS NOT IN THE SUBSTRATE (verified:

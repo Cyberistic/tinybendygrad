@@ -51,24 +51,8 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parents[2]
+PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 CAP = int(os.environ.get("HOOKRUN_CAP", "60"))
-
-
-def _owner():
-    """`gates/gatekit.py` BY PATH -- the vocabulary is the OWNER's, and this file used to hold a
-    SECOND COPY of its five numbers. `AGENTS.md`'s `resolve.py:23`: a hand list here inverts the
-    arrow and makes the runner the author of 15 gates' vocabulary. Two copies of a table are blind
-    exactly where they disagree, which is the only place a table is read."""
-    spec = importlib.util.spec_from_file_location("gatekit_under_run",
-                                                  ROOT / "gates" / "gatekit.py")
-    m = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(m)
-    return m
-
-
-_GK = _owner()
-PASS, FAIL, REFUSED, SKIP, DEAD = (_GK.PASS, _GK.FAIL, _GK.REFUSED, _GK.SKIP, _GK.DEAD)
-charge = _GK.charge          # an UNASSIGNED code -> REFUSED. See `invoke`.
 NAME = {PASS: "GREEN", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 
 
@@ -114,16 +98,6 @@ def invoke(path, extra):
     way an aggregating runner can manufacture a confident wrong answer.
 
     SILENCE -> named, not assumed. A gate that exits 0 having printed nothing is not GREEN.
-
-    AN UNASSIGNED CODE -> REFUSED, not DEAD. MEASURED: 13 files in this tree `return 2` on
-      purpose -- `checks/wallcheck.py` DECLARES it as `2: "USAGE"` -- and the old last line
-      charged any code outside the five as DEAD, which reads "it ran and emitted nothing" about a
-      gate that ran perfectly and simply speaks a sixth word. `gatekit.charge()` is the OWNER's own
-      function and it says REFUSED, because an absent DEFINITION is an absent precondition and
-      nothing here has been shown to have run at all. **A CRASH IS NOT AN UNASSIGNED CODE**: the
-      two rules above still read a traceback as DEAD, deliberately and by name, and they are the
-      only place that call is made -- so the refusal cannot swallow a real crash, which is
-      `msgdiff-gate`'s discipline: refuse only what it cannot judge.
     """
     rel = str(path.relative_to(ROOT))
     argv = [sys.executable, str(path), *extra]
@@ -139,22 +113,18 @@ def invoke(path, extra):
         return DEAD, "crashed, not a verdict: " + head, time.monotonic() - t0
     if not out and r.returncode == PASS:
         return DEAD, "<SILENT: exited 0 having said nothing>", time.monotonic() - t0
-    return charge(r.returncode), head, time.monotonic() - t0
+    return (r.returncode if r.returncode in NAME else DEAD), head, time.monotonic() - t0
 
 
 def main(argv):
     do = "--run" in argv
     only = next((a.split("=", 1)[1] for a in argv if a.startswith("--only=")), None)
-    # Once justified by a MEASUREMENT THAT HAS SINCE STOPPED BEING TRUE. This comment said
-    # `gates/gate-surface.py` "ships NO module-level `VERDICTS` (its exits are `0 if not (charge and
-    # red) else 1` at :287 and `2` at :195)", so it was invisible to the surface filter below.
-    # `declareverdict` LANDED `VERDICTS = {0: "OK", 1: "RED", 2: "REFUSED"}` AT `gates/gate-surface.py:135`
-    # (with `PLANTS` at :136 and `RED_IS` at :137), and MEASURED: `declares_surface(gates/gate-surface.py)`
-    # is now True, so this gate IS invokable by the filter below and this `--report-gate=` PATH IS DEAD.
-    # Kept only because a runner that stops charging a gate it cannot invoke is the `DEAD` class without
-    # the token, and dead code that costs one line is cheaper than a removed path someone still passes.
-    # THE REASON IS NOW STALE; THE HARM IS NOT. (:287 and :195 were also cited and are also wrong:
-    # :287 is a docstring, :195 is an `except`.)
+    # Asked for by NAME, on the command line, because there is no declaration of this
+    # population to load. MEASURED: `gates/gate-surface.py` ships NO module-level `VERDICTS`
+    # (its exits are `0 if not (charge and red) else 1` at :287 and `2` at :195), so it is
+    # invisible to the surface filter below -- an auditor of surfaces, declaring none. Naming
+    # it here would be a hand list, which is the fault this project has already paid for
+    # three times, so it is an ARGUMENT and the omission is printed rather than hidden.
     reports = {a.split("=", 1)[1] for a in argv if a.startswith("--report-gate=")}
 
     entries, libs = load_gates_pop().discover(ROOT)
