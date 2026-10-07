@@ -143,13 +143,33 @@ def skipexit_artifacts() -> set[str]:
     return set(load(".agents/slop/skipexit/repro.py", "skipexit_repro").declared())
 
 
+def dup_census_lanes() -> set[str]:
+    """`checks/dup-census.py`'s `CACHE = HERE / "lanes"`, under every MIRRORED copy of that gate.
+
+    DERIVED, NOT LISTED, NOT COPIED. The gate globs that cache at `:212` as
+    `DEN.enumerate_population(CACHE, "*.txt", ...)`, so the extension is MANDATED BY THE READER --
+    renaming the rows to `.rows` would empty the very divisor the gate exists to compute (`:233`
+    calls `lanes` "the `of` in `N of M`"). So this is not sloppiness; it is a reader that requires
+    `.txt`, which is the one case an extension rule has no answer for.
+
+    A SANDBOX that mirrors the root (`.agents/slop/*/probe/`) holds a committed copy of a cache the
+    gate's own comment at `:204` says is NOT in git (`grep -c 'checks/lanes/'` over `ls-tree` = 0).
+    BOTH STATEMENTS ARE TRUE AND THEY ARE ABOUT DIFFERENT TREES -- which is the doubled-path class,
+    not a contradiction. Hence the population is EVERY mirrored root, found by `rglob`, never a list.
+    """
+    cache, ext = load("checks/dup-census.py", "dup_census").CACHE.name, "*.txt"
+    roots = [ROOT] + sorted(p.parents[1] for p in Path(ROOT, ".agents/slop").rglob("checks/dup-census.py"))
+    return {str(p.relative_to(ROOT)) for r in map(Path, roots) for p in r.glob(f"checks/lanes/{ext}")}
+
+
 def carveouts() -> tuple[tuple[str, set[str]], ...]:
     """(label, declared set) per generator. A loader that raises contributes nothing but a report."""
     out = []
     for label, fn in (("`checks/differ.py`'s graphcmp artifacts + `.tmp.` staging", graphcmp_artifacts),
                       ("`.agents/slop/figure2/plant.py`'s forced plant summaries", plant_artifacts),
                       ("`.agents/slop/txtexec/rename.py`'s deliberate 0-byte remnant", empty_remnants),
-                      ("`.agents/slop/skipexit/repro.py`'s PRE-FIX LANE outputs", skipexit_artifacts)):
+                      ("`.agents/slop/skipexit/repro.py`'s PRE-FIX LANE outputs", skipexit_artifacts),
+                       ("`checks/dup-census.py`'s `lanes` CACHE (`.txt` mandated by its own glob)", dup_census_lanes)):
         try:
             out.append((label, fn()))
         except Exception as e:                     # a carve-out that cannot be computed is not one

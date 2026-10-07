@@ -28,8 +28,8 @@ is a RATCHET and not an audit:
     precedent, and it is also the limit: this walk checks that a manifest EXISTS and never
     opens one, because only the unit that wrote it knows what its rows mean.
 
-THE POPULATION IS A WALK, NOT A LIST. Every directory is discovered from `git ls-files` and
-nothing here names a `.agents/slop/*/` directory. An instrument that cannot see its population
+THE POPULATION IS A WALK, NOT A LIST. Every directory is discovered from `git ls-tree -r HEAD`
+and nothing here names a `.agents/slop/*/` directory. An instrument that cannot see its population
 cannot be wrong, because it cannot be anything (`AGENTS.md` doctrine 1) -- and the alternative
 was demonstrated this session: `checks/sweep.py`'s `LIVE_UNITS` was 14 literal names, and the
 six FINISHED units they omitted held 2 353 files, 53% of `.agents/slop`, tracked and unnamed.
@@ -134,8 +134,18 @@ def plant_exclusions() -> frozenset[str]:
 
 
 def tracked(root: Path) -> list[str] | None:
-    """Every tracked path, or None if git did not answer. `-z`, so a space in a name is data."""
-    p = git(root, "ls-files", "-z")
+    """Every path in the TREE, or None if git did not answer. `-z`, so a space in a name is data.
+
+    **`git ls-tree -r HEAD`, NOT `git ls-files`** — and this is the **third** population in this tree read
+    from the INDEX. `declaretwo` MEASURED WHY IT MATTERS HERE: **THE INDEX CARRIED 282 DIRECTORIES AT
+    18:45 AND 460 AT 19:31 — IT MOVED BY 178 IN 46 MINUTES WITH NO COMMIT** — and the SAME INSTRUMENT
+    over three revisions reads **250 -> 262 -> 265**. **`orcdecide`'s 256 AND `declare`'s 262 WERE NOT
+    MISCOUNTS; THEY READ `git ls-files`, WHICH IS AN INDEX THIS TREE HAS RESET SIX TIMES TONIGHT.**
+    ***A POPULATION READ FROM A THING BEING REBUILT UNDER IT IS NOT A POPULATION, IT IS A READING OF
+    THE WEATHER.** The REVISION IS PRINTED ON EVERY RUN (`rev()`), because a count without the commit it
+    was measured at is `pinindep`'s finding with a different subject.
+    """
+    p = git(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
     if p.returncode != 0:
         return None
     return [f for f in p.stdout.split("\0") if f]
