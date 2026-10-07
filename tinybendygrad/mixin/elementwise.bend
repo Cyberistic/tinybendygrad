@@ -829,8 +829,7 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:511  exp  -- 1/math.log(2) is `ew_k.inv_log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:840  log  -- math.log(2) is `ew_k.log2()`, bit-exact. nothing else was named; UNDIAGNOSED
 # TODO(p3) elementwise.py:852  log10  -- math.log10(2) is `ew_k.log10_2()` = 0.30103, bit-exact -- NOT 0.30102999, which is one ulp low
-# TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. the RULE BODY is the remainder; UNDIAGNOSED
-# TODO(p3) elementwise.py:623  isfinite  -- was `isinf + 0.0`; both are now available, so the remainder is the rule body. UNDIAGNOSED
+# TODO(p3) elementwise.py:613  isinf  -- float("inf") is PRODUCIBLE: `F32.div(1.0, 0.0)` is 0x7F800000. `mo_eqmul` is one arm (mixin/op.bend:998); the second arm + add is the remainder, and a `tn_isinf` would still need the same `isinf` body. UNDIAGNOSED
 # TODO(p3) elementwise.py:633  isclose  -- rtol=1e-05 and atol=1e-08 are literals, bit-exact. the rule body is the remainder; UNDIAGNOSED
 # TODO(p3) elementwise.py:654  ceil  -- b+1 is fine and was always fine -- the marker said so. `round` is the remainder; see 890
 # TODO(p3) elementwise.py:709  hardswish  -- (1/6) is `F32.div(1.0, 6.0)`, bit-exact. nothing else was named; UNDIAGNOSED
@@ -864,6 +863,52 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # first src is the sqrt result, not the original input). Gated at
 # `gates/tn_sin_log2_exp2_rsqrt-gate.py` 11/11 rows.
 
+# PORTED. `isnan` is elementwise.py:603, `return self != self`, the single
+# `CMPNE` whose two srcs are the same tensor. NaN is the only float where
+# `x == x` is false, so `cmpne(t, t)` IS the NaN test. The port at
+# `tensor.bend:tn_isnan` is one line: `tn_cmpne(t, t)`. The mo-layer peer is
+# `mo_isnan` (`mixin/op.bend:986`), the same shape. Gated at
+# `gates/tn_isnan-gate.py` 5/5 rows.
+#
+# PORTED with two carve-outs. `isfinite` is elementwise.py:623,
+# `(self.isinf() | self.isnan()).logical_not()`. The `tn_*` layer has no
+# `tn_isinf`, so the `isinf` body is inlined: `eq(inf)*True + eq(-inf)*True` is
+# `self.eq(+inf) + self.eq(-inf)` (the `True` arms are the identity and the
+# default-args case collapses). The chain is then `OR(ADD, isnan) -> cmpne(True)`,
+# built by `tn_isfinite` (`tensor.bend:tn_isfinite`). The mo-layer peer is
+# `mo_isfinite` (`mixin/op.bend:1008`). Gated at `gates/tn_isfinite-gate.py`
+# 6/6 rows.
+#
+# WHAT THE GATE DOES NOT ASSERT, AND WHY:
+#   * `src[0]` of the top is OR in CPython, CAST in the port. The port's
+#     `tn_logical_not` keeps the explicit `cast(bool)` and CPython folds it
+#     out on a bool-typed `or`, so the row `or_or_cast` is an OR-vs-CAST
+#     call. Both graphs are correct; the fold is the only difference.
+#     MEASURED: the port reaches 17 nodes from the top and CPython reaches 15,
+#     and the three missing nodes are the identity bool cast (`eqarm` twice,
+#     `logical_not` once).
+#   * The `tn_isfinite.armul` fix is NOT gated. It builds its MUL in the arena
+#     the CONST grew rather than in `eq`'s, and reverting it leaves all six
+#     rows green -- the row that would see it walks four hops down the graph
+#     and `bend` answers `a declared datatype (unknown: IO)` past about two.
+#     Stated here because a fix nobody can see is not a gate.
+#
+# A DEFECT THAT WAS HERE AND IS NOT ANY MORE. `tn_logical_not` and
+# `tn_bitwise_not` both built their CMPNE as
+# `tn_alu(tn_alu.put(cast), CMPNE, [Found.i(true_c)])`: the const index is minted
+# in `true_c.ar`, which is one node LONGER than the `cast.ar` the CMPNE was built
+# in, so the CMPNE landed on the slot the const index names and became its own
+# `src[1]`. `Arena` is an immutable `Data` value (`ops.bend:1255`), so `Found.ar`
+# SNAPSHOTS, and an index is legal only in an arena DESCENDING FROM the one that
+# minted it. MEASURED with `O.Rng.sig` (`ops.bend:5803`) as the instrument on a
+# `CInt` input: `CMPNE/2 Ops.CAST Ops.CMPNE` against CPython's
+# `CMPNE(CAST(CONST()), CONST())`. The rule and the helper that states it are
+# `tensor.bend:tn_binop`; the two ports are `tn_logical_not.cmpne` and
+# `tn_bitwise_not`. The rows that catch it are `gates/tn_logical_not-gate.py`'s
+# four `int_input_*` ones -- the pre-existing four seeded the arena with
+# `CBool{True{}}` and `O.UOp.const` interns, so the const was already at slot 0
+# and the defect was invisible. A `CBool` input cannot see this bug.
+
 # WALLS THAT ARE NOT CONSTANTS.
 # `usum` / `uprod` -- elementwise.py:40-41 -- are `functools.reduce(op, argfix(*uops),
 # self)` over a VARIADIC, and `argfix` is helpers.py's. The reduce itself is a
@@ -884,13 +929,14 @@ def ew_k.selu_gamma() -> F32: 1.050701
 # TODO(p3) elementwise.py:586  clamp   -- min_/max_ are `DTypeLike|None`
 # TODO(p3) elementwise.py:599  clip    -- clamp's alias
 #
-# `relu` / `relu6` / `hardtanh` / `isnan` / `abs` / `sign` / `sqr` are all
-# `where`/`ne` compositions of methods already here and are NOT deferred: they are
-# three lines each and they gate. `rsqrt` USED TO be deferred on the SQRT fold
+# `relu` / `relu6` / `hardtanh` / `abs` / `sign` / `sqr` are all `where`/`ne`
+# compositions of methods already here and are NOT deferred: they are three
+# lines each and they gate. `rsqrt` USED TO be deferred on the SQRT fold
 # ("SQRT's fold, not a constant"), but `tn_sqrt` is now a `tn_alu` over an empty
 # src list and `tn_reciprocal` is the same shape, so the chain is portable.
 # Closed at `tensor.bend:tn_rsqrt` and gated at `gates/tn_sin_log2_exp2_rsqrt-gate.py`
-# 11/11 rows.
+# 11/11 rows. `isnan` (elementwise.py:603) and `isfinite` (elementwise.py:623)
+# closed the same way and are PORTED -- see the two blocks at line 866.
 #
 # `usum`'s `operator.or_ if self.dtype is dtypes.bool else operator.add` is the
 # only place the unit chooses BETWEEN TWO OPS on a dtype, and it is the reason

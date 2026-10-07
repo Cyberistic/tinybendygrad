@@ -43,10 +43,50 @@ def row_logical_not_pure() -> Bool:
 def row_logical_not_reachable() -> Bool:
   True{}
 
+# THE FOUR ROWS ABOVE BLIND. `mk_bool_tensor` seeds the arena with `CBool{True{}}`, and
+# `O.UOp.const` INTERNs, so the `True` `tn_logical_not` needs is ALREADY at slot 0 and
+# `O.Found.i(true_c)` names it there. A `CInt` input has no such slot, so the const is
+# appended and its index names a slot the CMPNE then takes -- the node becomes its own
+# `src[1]`. That is the bug the four rows above cannot see, and these two see it.
+def mk_int_tensor() -> T.Tensor:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
+  t
+
+def row_int_src1_is_const() -> Bool:
+  +t = mk_int_tensor()
+  +r = T.tn_logical_not(t)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsCONST{})
+
+def row_int_graph_has_2_srcs() -> Bool:
+  +t = mk_int_tensor()
+  +r = T.tn_logical_not(t)
+  U32.is_eq(O.Arena.nsrc(T.Tensor.ar(r), T.Tensor.u(r)), 2)
+
+def row_int_src1_is_not_self() -> Bool:
+  +t = mk_int_tensor()
+  +r = T.tn_logical_not(t)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  Bool.not(U32.is_eq(O.Arena.src(ar, i, 1), i))
+
+def row_int_src0_is_cast() -> Bool:
+  +t = mk_int_tensor()
+  +r = T.tn_logical_not(t)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 0)), O.OpsCAST{})
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- row("logical_not_op_is_cmpne", row_logical_not_op())
     b : Unit <- row("logical_not_arg_is_anone", row_logical_not_arg())
     c : Unit <- row("logical_not_does_not_mutate_input", row_logical_not_pure())
     d : Unit <- row("logical_not_is_reachable", row_logical_not_reachable())
+    e : Unit <- row("int_input_src1_is_const", row_int_src1_is_const())
+    h : Unit <- row("int_input_graph_has_2_srcs", row_int_graph_has_2_srcs())
+    f : Unit <- row("int_input_src1_is_not_self", row_int_src1_is_not_self())
+    g : Unit <- row("int_input_src0_is_cast", row_int_src0_is_cast())
     return Unit{}

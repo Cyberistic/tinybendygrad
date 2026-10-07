@@ -265,6 +265,17 @@ def tn_alu.put(+f: O.Found) -> Tensor:
 def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
 
+# THE ARENA RULE IN ONE SPELLING. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`,
+# `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the arena it was built
+# in and an index is legal only in an arena DESCENDING FROM the one that minted it --
+# append-only, so a prefix's indices still name the same nodes. `tn_alu` builds in
+# `base.ar`, which is why a `tn_*` body may only pass src indices minted there or in an
+# ANCESTOR. Two tensors from SIBLING chains have no common ancestor, so the node that
+# consumes both must be built in the NEWER one's arena: `newer` must descend from `base`,
+# and the caller is the one that grew the chain, so the caller is the one that knows.
+def tn_binop(+base: Tensor, +newer: Tensor, +op: O.Op) -> Tensor:
+  tn_alu.of(Tensor.ar(newer), Tensor.u(base), op, [Tensor.u(newer)])
+
 # THE ARENA IS THE ONE THE BUILD RETURNED, and that is the whole of the second rule
 # this file learns. `UOp.alu` RETURNS a `Found` because the arena grew, and the `Found`
 # carries the grown arena; passing the INCOMING `ar` on to `tn_new` builds a Tensor
@@ -402,7 +413,7 @@ def tn_bitwise_not.cast(+ar: O.Arena, +u: U32) -> O.Found:
 def tn_bitwise_not(+t: Tensor) -> Tensor:
   +cast = tn_bitwise_not.cast(Tensor.ar(t), Tensor.u(t))
   +true_ = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
-  tn_alu(tn_alu.put(cast), O.OpsCMPNE{}, [O.Found.i(true_)])
+  tn_alu.of(O.Found.ar(true_), O.Found.i(cast), O.OpsCMPNE{}, [O.Found.i(true_)])
 
 # `logical_not` -- elementwise.py:49. `return self.cast(dtypes.bool).ne(True)`.
 # The graph is CAST(self, bool) -> CMPNE(cast, CONST(True)), and the three deps are
@@ -413,10 +424,22 @@ def tn_bitwise_not(+t: Tensor) -> Tensor:
 # half is not a fold-around the same graph). One new def, mirroring `tn_bitwise_not`,
 # because `logical_not` and `bitwise_not` are sibling elementwise methods (`:49`, `:145`)
 # and the port holds the two apart.
+# `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`: `type Arena is Data: Arena{nodes,
+# shp}`), so a `Found` SNAPSHOTS the arena at its own construction and every index is
+# only meaningful in the arena value that index was minted in. `true_c.ar` has the
+# CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
+# CMPNE in `cast.ar` therefore APPENDS it at the slot `O.Found.i(true_c)` already names
+# -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
+# `O.Rng.sig` (ops.bend:5803) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
+# IS the top node) where CPython answers `CMPNE(CAST(CONST()), CONST())`
+# (`/tmp/cp_shape.py`, `tinygrad`). So the CMPNE is built in `true_c.ar`, the newest.
+def tn_logical_not.cmpne(+cast: O.Found, +true_c: O.Found) -> Tensor:
+  tn_alu.of(O.Found.ar(true_c), O.Found.i(cast), O.OpsCMPNE{}, [O.Found.i(true_c)])
+
 def tn_logical_not(+t: Tensor) -> Tensor:
   +cast = O.UOp.cast(Tensor.ar(t), Tensor.u(t), S.boolean())
   +true_c = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
-  tn_alu(tn_alu.put(cast), O.OpsCMPNE{}, [O.Found.i(true_c)])
+  tn_logical_not.cmpne(cast, true_c)
 
 # `neg` -- elementwise.py:74. `return self.logical_not() if self.dtype == dtypes.bool
 # else self * (-1)`. TWO ARMS, and BOTH are ported here. The bool arm IS
@@ -928,7 +951,7 @@ def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
 # SAME tensor on both srcs, and a NaN is the only float where `x == x` is false,
 # so CMPNE against self IS the NaN test. The graph is one node (CMPNE), the
 # `mo_isnan` (`mixin/op.bend:986`) calls `mo_neq(t, t)` -- the same shape at the
-# reduction layer. Gated at `gates/tn_isnan-gate.py` 4/4 rows.
+# reduction layer. Gated at `gates/tn_isnan-gate.py` 5/5 rows.
 def tn_isnan(+t: Tensor) -> Tensor:
   tn_cmpne(t, t)
 
@@ -942,31 +965,36 @@ def tn_isnan(+t: Tensor) -> Tensor:
 # throughout: `+` of two bools is `xor` (bool), `or` of two bools is bool,
 # `logical_not` of a bool is `cast(bool).cmpne(True)`. Gated at
 # `gates/tn_isfinite-gate.py` 4/4 rows.
-def tn_isfinite.cinf(+t: Tensor) -> O.Found:
-  O.UOp.const(Tensor.ar(t), O.CFloat{F32.mul(1.0e30, 1.0e30)})
-def tn_isfinite.cneginf(+t: Tensor) -> O.Found:
-  O.UOp.const(Tensor.ar(t), O.CFloat{F32.neg(F32.mul(1.0e30, 1.0e30))})
-def tn_isfinite.ct(+t: Tensor, +c: O.Found) -> Tensor:
-  tn_new(Tensor.ar(t), O.Found.i(c))
-def tn_isfinite.true_c(+t: Tensor) -> O.Found:
-  O.UOp.const(Tensor.ar(t), O.CBool{True{}})
+def tn_isfinite.cinf(+ar: O.Arena) -> O.Found:
+  O.UOp.const(ar, O.CFloat{F32.mul(1.0e30, 1.0e30)})
+def tn_isfinite.cneginf(+ar: O.Arena) -> O.Found:
+  O.UOp.const(ar, O.CFloat{F32.neg(F32.mul(1.0e30, 1.0e30))})
+def tn_isfinite.ct(+c: O.Found) -> Tensor:
+  tn_new(O.Found.ar(c), O.Found.i(c))
+# `self.eq(inf)` -- `tn_eq` is `logical_not(cmpne)`, and `logical_not` builds in the arena
+# its CAST grew, so the CMPNE has to be built in `c`'s arena: `c` DESCENDS from `t`'s.
 def tn_isfinite.eqarm(+t: Tensor, +c: Tensor) -> Tensor:
-  tn_eq(t, c)
-def tn_isfinite.armul(+t: Tensor, +eq: Tensor) -> Tensor:
-  +tc = tn_isfinite.true_c(eq)
-  tn_alu(eq, O.OpsMUL{}, [O.Found.i(tc)])
+  tn_logical_not(tn_binop(t, c, O.OpsCMPNE{}))
+# `eq * detect_positive`, and `detect_positive` is the CONST `True`, which is interned in
+# `eq`'s own arena -- so the MUL is built in `tc.ar` and `eq.u` reads as an ancestor index.
+def tn_isfinite.armul(+eq: Tensor) -> Tensor:
+  +tc = O.UOp.const(Tensor.ar(eq), O.CBool{True{}})
+  tn_alu.of(O.Found.ar(tc), Tensor.u(eq), O.OpsMUL{}, [O.Found.i(tc)])
+# `ep` is the positive arm AND the arena the negative arm grows FROM, so `en` is a strict
+# DESCENDANT of `ep` and `en.u` is legal in `en.ar`. Building the ADD in `ep.ar` instead
+# would name the slot the ADD itself is about to take -- MEASURED, see `tn_binop`.
 def tn_isfinite.isinf_part(+t: Tensor) -> Tensor:
-  +cinf_c = tn_isfinite.cinf(t)
-  +cinf_t = tn_isfinite.ct(t, cinf_c)
-  +ep = tn_isfinite.armul(t, tn_isfinite.eqarm(t, cinf_t))
-  +cninf_c = tn_isfinite.cneginf(t)
-  +cninf_t = tn_isfinite.ct(t, cninf_c)
-  +en = tn_isfinite.armul(t, tn_isfinite.eqarm(t, cninf_t))
-  tn_alu(ep, O.OpsADD{}, [Tensor.u(en)])
+  +ep = tn_isfinite.armul(tn_isfinite.eqarm(t, tn_isfinite.ct(tn_isfinite.cinf(Tensor.ar(t)))))
+  +en = tn_isfinite.armul(tn_isfinite.eqarm(ep, tn_isfinite.ct(tn_isfinite.cneginf(Tensor.ar(ep)))))
+  tn_alu.of(Tensor.ar(en), Tensor.u(ep), O.OpsADD{}, [Tensor.u(en)])
+# `isnan` is a SIBLING of `isinf_part` off `t`, so it is REBUILT on `inf_part`'s arena --
+# `tn_new` over the ORIGINAL const index, which append-only keeps valid -- and the OR is
+# built in `isnan`'s (the newer) arena.
+def tn_isfinite.nan_in(+ar: O.Arena, uop: U32) -> Tensor:
+  tn_isnan(tn_new(ar, uop))
 def tn_isfinite(+t: Tensor) -> Tensor:
   +inf_part = tn_isfinite.isinf_part(t)
-  +or_part = tn_or(inf_part, tn_isnan(t))
-  tn_logical_not(or_part)
+  tn_logical_not(tn_binop(inf_part, tn_isfinite.nan_in(Tensor.ar(inf_part), Tensor.u(t)), O.OpsOR{}))
 
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this

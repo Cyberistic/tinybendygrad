@@ -393,11 +393,11 @@ def report(rows, ck, truth, want, rev):
     print(f"walk roots {len(WALK_ROOTS)}, pruned: {', '.join(EXCLUDED)}")
     sel = [r for r in rows if r.id in want] if want else rows
     if want and not sel:
-        print(f"\nNO ROW MATCHES {sorted(want)} -- NO-ROW, not CLEAN: a guard over an empty "
+        print(f"\nNO ROW MATCHES {sorted(want)} -- REFUSED, not CLEAN: a guard over an empty "
               f"population has measured nothing.")
         return 4
     if not sel:
-        print("\nLEDGER HAS NO ROWS -- DEAD, not CLEAN.")
+        print("\nLEDGER HAS NO ROWS -- REFUSED, not CLEAN.")
         return 5
 
     # GUARD 4. Assert every anchor COMPILES before a single row is graded with it: a checker that

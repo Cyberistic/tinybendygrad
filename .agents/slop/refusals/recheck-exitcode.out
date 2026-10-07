@@ -1,7 +1,0 @@
-interpreter: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python 3.12.10
-argv=[]                 argparse-rc=0  
-argv=['--mm', 'notanint'] argparse-rc=2  usage: t [-h] [--mm MM]
-argv=['--nosuchflag']   argparse-rc=2  usage: t [-h] [--mm MM]
-
-CLAIM UNDER TEST: argparse owns exit 2, so a gate cannot return 2 for REFUSED.
-ARGPARSE-USES-2 = 2 of 3 invocations [['--mm', 'notanint'], ['--nosuchflag']]
