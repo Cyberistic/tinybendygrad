@@ -276,6 +276,41 @@ def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
 def tn_binop(+base: Tensor, +newer: Tensor, +op: O.Op) -> Tensor:
   tn_alu.of(Tensor.ar(newer), Tensor.u(base), op, [Tensor.u(newer)])
 
+# WALL: SIBLING ARENAS, AND IT IS NOT CLOSABLE HERE. `tn_binop` above is correct only when
+# `newer` DESCENDS from `base`. The 18 reverse-dispatch binops (`tn_mul.go`, `tn_add.go`,
+# `tn_sub.go`, `tn_cmplt.go`, `tn_cmpne.go`, `tn_and.go`, `tn_or.go`, `tn_xor.go`,
+# `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`, `tn_shl.go`, `tn_shr.go`, `tn_pow.go`,
+# `tn_fdiv.go`, `tn_mod.go`) are NOT `tn_binop` -- they are
+# `tn_alu(lhs, OP, [Tensor.u(rhs)])`, which builds in `lhs.ar` and reads `rhs.u` THERE.
+#
+# MEASURED, `O.Rng.sig` (`ops.bend:5803`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
+# derived to depth N in its OWN arena:
+#
+#   rhs depth 0 (a bare const)   rhs_idx0_ok=True   sig `2 Ops.ADD/2 Ops.CONST Ops.CONST`
+#   rhs depth 1 (one `tn_neg`)   rhs_idx1_ok=False  sig `1 Ops.ADD/2 Ops.CONST Ops.ADD`
+#   rhs depth 2 (two `tn_neg`)   rhs_idx2_ok=False  sig `3 Ops.ADD/2 Ops.CONST Ops.NOOP`
+#
+# Depth 0 IS RIGHT BY COINCIDENCE: `rhs.u` is 0, and 0 is a legal index in `lhs.ar` that
+# happens to hold `lhs`'s own CONST. Depth 1 is SELF-REFERENTIAL -- `rhs.u` is 1, which is
+# the slot the ADD is about to take. Depth 2 is OUT OF RANGE and reads the `NOOP` bottom.
+# CPython on the depth-1 case answers `add_src1_is_b_uop=True`.
+#
+# WHY NO GATE HAS SEEN IT: every `mk_tensor`-style builder in `gates/*.bend` makes each
+# operand a bare const from `O.Arena.empty()`, so both land at index 0. MEASURED:
+# `grep -ho "T\.tn_[a-z_0-9]*(\w*, \w*)" gates/*.bend | sort | uniq -c` is 30 sites of
+# `(c, d)` / `(a, b)` and 15 of `(t, t)`, and EVERY one of the 30 is a two-bare-const pair.
+# The depth is always 0. The gates are not wrong; they are depth-0-only.
+#
+# WHY IT CANNOT BE FIXED IN THIS FILE: merging two arenas needs a primitive that copies
+# `Arena.nodes` from one arena into another with an index remap, and THERE IS NONE.
+# VERIFIED: `grep -n "def Arena\." tinybendygrad/uop/ops.bend | wc -l` answers 29 (21
+# accessors plus 8 dotted/duplicated names), and not one of them takes a second arena.
+# `grep -nE "def [a-zA-Z_.]*\(.*ar: Arena.*,.*ar2?: Arena" tinybendygrad/uop/ops.bend
+# tinybendygrad/tensor.bend` answers exactly ONE hit, `UOp.group.of` (`ops.bend:2695`),
+# and that is a `GROUP` fold over a fixed source list, not a general merge. So the
+# primitive belongs in `uop/ops.bend` beside `UOp.make.intern`, and until it lands the
+# sibling case is a substrate wall and not a `tensor.bend` bug.
+
 # THE ARENA IS THE ONE THE BUILD RETURNED, and that is the whole of the second rule
 # this file learns. `UOp.alu` RETURNS a `Found` because the arena grew, and the `Found`
 # carries the grown arena; passing the INCOMING `ar` on to `tn_new` builds a Tensor
