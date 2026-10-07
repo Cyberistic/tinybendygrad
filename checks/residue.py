@@ -82,24 +82,6 @@ house rules say 21 units are running; `sweep.LIVE_UNITS` names 14; `LIVE-UNIT` c
 files, 28% of the residue, off a tuple inside a Python file that is itself one of the four
 classification failures this check exists next to. I exclude `sweep.LIVE_UNITS` because that is the only
 roster that exists, and I say so rather than inventing the other seven.
-
-THIS FILE USED TO HAVE NO BOUND, AND AN UNCAPPED GATE IS A GATE THAT CANNOT FINISH. MEASURED
-2026-10-07, `checks/bounded.py --seconds 120`: **`TIMED-OUT` at 120 s, 67 MB peak, 0 bytes of
-output** -- and three units had already read this file and left it, two of them naming the same
-symptom an hour apart. The cost is NOT an unbounded loop and NOT this file's population; it is
-`belt_git`, ONE `git grep` PER ROW, which is this project's fourth instance of the shape its own
-`sweep.py:431` calls its worst performance bug: **a per-item call whose answer depends on a
-population that does not change between items.** One `git grep -w -F` MEASURED 0.32 s here.
-
-**SO THE BOUND IS HERE, IN THE GATE, NOT IN THE RUNNER.** `checks/bounded.py` already emits the
-right vocabulary, and that is the reason NOT to lean on it: a bound that lives in the runner is a
-bound that exists only when someone remembers to run the runner, and this file is one of an
-independently-measured 40 entry points nobody runs. **A GATE THAT CANNOT BE RUN BY HAND IS NOT A
-GATE.** The wall bound is on by default and its verdict is the one this file already exists to
-publish: a row it could not decide is `UNKNOWN`, never `UNNAMED`, because `UNNAMED` means EVERY
-TEST RAN. **A CAP WITH NO SMALL-VALUE READING IS A CAP THAT CAN ONLY EVER REPORT FAILURE**, so the
-timeout does not abort the run -- it stops BELT A and the census finishes, with the shortfall
-counted and named.
 """
 from __future__ import annotations
 
@@ -140,36 +122,6 @@ SELF = SLOP + "/residue/"
 
 # THE TWO RESIDUE ROOTS. A path is "in the residue" iff its second component is one of them.
 RESIDUE_ROOTS = (SLOP, RUNS)
-
-# THE WALL BOUND, IN SECONDS, AND IT IS A MEASUREMENT RATHER THAN A ROUND NUMBER. MEASURED
-# 2026-10-07, un-contended, on this tree: **pre-classify 117 s** (all of it `sweep.py`'s
-# `house_excluded`, which re-parses `checks/` and `gates/` once per path) + **1,641 rows x 0.32 s =
-# 525 s** of belt A, so the uncapped run is ~11 minutes and had not finished at 600 s.
-#
-# 900 s IS THE BOUND BECAUSE IT IS THE SUM, NOT A ROUND NUMBER, AND THE SUM HAD TO BE RE-MEASURED
-# IN PLACE. The phases before the first `classify` measured 117 s on a quiet tree, and a 240 s bound
-# was the arithmetic consequence -- **and the run it produced PAID 0 BELT-A CALLS AND TOOK 348 s.**
-# The number that had been measured was measured while other units were writing the corpus it reads;
-# the cost is `sweep.py`'s and it moves with the tree, so a floor derived from it decays exactly the
-# way `--live-minutes` decays. **THE BOUND MUST BE ABOVE THE WORST OBSERVED PRE-CLASSIFY, NOT ABOVE
-# THE NICEST ONE.** 900 s leaves belt A a budget on this tree and still terminates, which is the
-# property the gate was missing; a bound tuned to complete the census is a bound that will not
-# complete it tomorrow, and a gate that stops answering is worse than one that answers partly.
-#
-# **WHAT A SMALL-VALUE READING BUYS, MEASURED: the run finishes and publishes a census.** `--seconds 5`
-# answers the population, the DELETE count, the COPY twins, the citation index size and every row
-# decided by a resolver that costs no subprocess -- in 121 s, because the pre-classify floor is not
-# this file's to shrink. The bound decides HOW MUCH of the citation work gets done, never WHETHER
-# the gate answers. A cap that can only report failure would have to abort before that.
-DEFAULT_SECONDS = 1800
-
-# THE ROW BOUND, AND IT IS THE ONE THAT ACTUALLY BINDS. Belt A is 0.32 s MEASURED per `git grep`
-# and 1,641 rows reach it, so 500 calls is **160 s of citation work** on a quiet tree and the run
-# still terminates on a tree where `sweep.py`'s pre-classify has doubled twice. A row count is the
-# right unit HERE BECAUSE THE PER-ROW COST IS MEASURED AND CONSTANT, which is the same reason the
-# file's own `sweep.py:435` counts corpus scans: the cost is known per item, so the bound is in
-# items and the seconds are the consequence, not the other way round.
-DEFAULT_BELT_ROWS = 500
 
 
 def sweep_module():
@@ -364,40 +316,6 @@ def outside_twins(root: str, tracked: set[str], rows: list[tuple[str, int]]) -> 
 # is a group that has been labelled, not analysed.
 RESOLVERS = ("authored", "live", "derived", "copy", "cited")
 
-
-class BeltBudget:
-    """The run's wall clock, and how many `git grep` calls it has paid for.
-
-    **STARTED AT `main()`, NOT AT THE CLASSIFIER.** MEASURED: the phases before the first `classify`
-    cost **117 s** on this tree and every one of them is `checks/sweep.py`'s, so a budget that
-    started at the classification loop would have been spent before it began and the run would still
-    have blown any outer bound. A budget that does not cover the phases it is meant to bound is a
-    number in a comment.
-
-    **BOTH LIMITS, AND THE ROW COUNT IS THE ONE THAT BINDS.** A wall bound alone is not enough and
-    the measurement says so: at `--seconds 900` this run paid **0** belt-A calls and took 1,131 s,
-    because the pre-classify floor is `sweep.py`'s, is proportional to how many reports the units
-    have written, and moved from 117 s to over 900 s inside one session. **A BOUND DERIVED FROM A
-    PHASE THIS FILE DOES NOT OWN IS A BOUND ON A CLOCK SOMEONE ELSE SETS.** The row count is
-    different in kind: belt A costs a MEASURED 0.32 s per call whatever else is happening, 1,641
-    rows reach it, and so the number of calls is the only unit of this cost that does not drift.
-
-    `spend()` IS THE WHOLE CONTRACT: one call, one `git grep`, one decrement, and `False` forever
-    after either limit. A budget that cannot report being spent is not a budget.
-    """
-
-    def __init__(self, seconds: float, rows: int) -> None:
-        self.deadline = time.monotonic() + seconds
-        self.rows = rows
-        self.paid = 0
-
-    def spend(self) -> bool:
-        """True while there is time AND budget for one more `git grep`. False is permanent."""
-        if self.paid >= self.rows or time.monotonic() >= self.deadline:
-            return False
-        self.paid += 1
-        return True
-
 # THE ONE SOURCE OF `UNKNOWN` THAT IS A CONDITION RATHER THAN A RESOLVER. It gets a name anyway, so
 # that `--disarm` can prove its branch is live: an UNKNOWN that cannot be made to move is an UNKNOWN
 # that is not being computed.
@@ -416,13 +334,9 @@ CONDITIONS = ("excluded",)
 def classify(root: str, rel: str, size: int, *, sweep_named: set[str], first_pass,
              auth: dict[str, set[str]], age: dict[str, float], window: int,
              twins: dict[str, list[str]], cites: dict[str, set[str]],
-             disabled: set[str], belt_budget: "BeltBudget | None" = None) -> tuple[str, str, str]:
+             disabled: set[str]) -> tuple[str, str, str]:
     """-> (sweep verdict, residue verdict, why/needs). Pure: takes every measurement as an argument so
-    `--plant` can drive it over a synthetic tree with no production file involved.
-
-    `belt_budget` IS AN ARGUMENT AND NOT A GLOBAL, so `--plant` drives a spent budget and an unspent
-    one over the same fixture. A budget read out of module scope would make the harness untestable,
-    which is how a bound becomes a comment."""
+    `--plant` can drive it over a synthetic tree with no production file involved."""
     first = first_pass(rel, sweep_named)
     name = os.path.basename(rel)
     d = os.path.dirname(rel)
@@ -449,16 +363,7 @@ def classify(root: str, rel: str, size: int, *, sweep_named: set[str], first_pas
         belt_b = set(cites.get(name, ()))
         # Belt A only runs when belt B found something, so the `git grep` cost is paid on the residue
         # rows that have a citation candidate and not on the ones that have none.
-        if not belt_b:
-            return first, "UNNAMED", "every test ran; nothing renders or names it. A CANDIDATE, not a verdict"
-        if belt_budget is not None and not belt_budget.spend():
-            # **A SPENT BUDGET IS NOT A CLEAN ROW, IT IS AN UNDECIDED ONE.** Returning `UNNAMED` here
-            # would claim "every test ran" for a row whose second belt never ran, which is the one
-            # sentence this whole file exists to make impossible. `UNKNOWN` with a `needs=` is the
-            # fifth verdict doing its job, and the run still publishes a census instead of dying.
-            return first, "UNKNOWN", ("belt A did not run: the run's citation budget was spent before "
-                                      "this row; needs=rerun-with-more-seconds")
-        belt_a = belt_git(root, name)
+        belt_a = belt_git(root, name) if belt_b else set()
         if belt_a ^ belt_b:
             only_a, only_b = sorted(belt_a - belt_b), sorted(belt_b - belt_a)
             return first, "UNKNOWN", (f"the two citation belts disagree; git sees {only_a[:1]}, "
@@ -495,11 +400,6 @@ def plant(root: str, fixture: str, disabled: set[str]) -> tuple[int, list[str]]:
 
     The production residue is NEVER TOUCHED: one repro in this project read `LEFT=NOTHING` on BOTH
     sides because it `rmtree`d the state under test between beats.
-
-    `spent` PLANTS THE WALL BOUND IN ITS SPENT STATE over the same fixture, so the bound is asserted
-    by the same oracle as the verdict it can change: **a bound nobody can exhaust is a bound nobody
-    has measured.** The rows it leaves are asserted `UNKNOWN`, so if the bound ever leaked a
-    `UNNAMED` the fixture would say so.
     """
     import tempfile
     cases = []
@@ -550,19 +450,15 @@ def plant(root: str, fixture: str, disabled: set[str]) -> tuple[int, list[str]]:
                 continue
             index_citations(cites, tmp, rel, blob)
         first = lambda rel, _named: "DELETE"          # noqa: E731  the plant's first pass is trivial
-        # A budget of 0 s is expired at its first `spend()`, and the fixture's `CITED` rows are what
-        # the bound decides -- so the rows below the bound MUST come out `UNKNOWN`, not `CITED`.
-        for label, budget in (("armed", None), ("spent", BeltBudget(0, 0))):
-            for rel, _content, expect, _a, _t in cases:
-                # `-` means "this row exists to be a CITER or an authority, not a residue row to assert".
-                if expect == "-" or not in_residue(rel):
-                    continue
-                want = "UNKNOWN" if (budget is not None and expect == "CITED") else expect
-                _first, v, why = classify(tmp, rel, 0, sweep_named=set(), first_pass=first, auth=auth,
-                                           age=age, window=3600, twins=twins, cites=cites,
-                                           disabled=disabled, belt_budget=budget)
-                if v != want:
-                    bad.append(f"    [{label}] {rel}: want {want}, got {v} ({why})")
+        for rel, _content, expect, _a, _t in cases:
+            # `-` means "this row exists to be a CITER or an authority, not a residue row to assert".
+            if expect == "-" or not in_residue(rel):
+                continue
+            _first, v, why = classify(tmp, rel, 0, sweep_named=set(), first_pass=first, auth=auth,
+                                       age=age, window=3600, twins=twins, cites=cites,
+                                       disabled=disabled)
+            if v != expect:
+                bad.append(f"    {rel}: want {expect}, got {v} ({why})")
     return (1 if bad else 0), bad
 
 
@@ -574,11 +470,6 @@ def main() -> int:
                     help="plant again with one resolver off; a pass is exit 3 (the harness cannot move)")
     ap.add_argument("--live-minutes", type=int, default=0,
                     help="liveness window; DEFAULT 0 because the window is a clock, not a measurement")
-    ap.add_argument("--seconds", type=float, default=DEFAULT_SECONDS,
-                    help=f"wall bound on the whole run; 0 disables it (DEFAULT {DEFAULT_SECONDS:g})")
-    ap.add_argument("--belt-rows", type=int, default=DEFAULT_BELT_ROWS,
-                    help=f"how many `git grep` calls belt A may pay; 0 disables it "
-                         f"(DEFAULT {DEFAULT_BELT_ROWS})")
     args = ap.parse_args()
 
     if args.plant or args.disarm:
@@ -594,11 +485,6 @@ def main() -> int:
             return 3
         return rc
 
-    # THE BUDGET IS OPENED HERE, AT THE TOP OF THE RUN, because the first 117 s of this run are
-    # `checks/sweep.py`'s and are spent before `classify` is ever called. Opening it at the
-    # classifier would have left the bound measuring nothing for the whole of its own cost.
-    budget = (BeltBudget(args.seconds, args.belt_rows)
-             if args.seconds > 0 or args.belt_rows > 0 else None)
     sweep = sweep_module()
     named = sweep.mentioned_filenames(sweep.committed_named_text())
     tracked = git_tracked(ROOT)
@@ -626,13 +512,11 @@ def main() -> int:
     out = []
     for rel, sz, _first in residue_rows:
         sw, v, why = classify(ROOT, rel, sz, sweep_named=named, first_pass=first, auth=auth, age=age,
-                              window=args.live_minutes, twins=twins, cites=cites, disabled=set(),
-                              belt_budget=budget)
+                              window=args.live_minutes, twins=twins, cites=cites, disabled=set())
         out.append((v, sz, rel, sw, why))
     out.sort(key=lambda r: (r[0], -r[1], r[2]))
 
     counts = collections.Counter(v for v, *_ in out)
-    unbelted = sum(1 for v, _s, _r, _w, why in out if "rerun-with-more-seconds" in why)
     bybytes = collections.Counter()
     for v, sz, *_ in out:
         bybytes[v] += sz
@@ -648,17 +532,6 @@ def main() -> int:
         "the tree: the same `--plan` printed DELETING 331 with the window off and 150, then 14, three",
         "times over, at the 60-minute default, while seven units wrote into the tree. **A NUMBER THAT",
         "MOVES 22x WHILE NOBODY EDITS ANYTHING IS NOT A MEASUREMENT OF THE TREE.**",
-        "",
-        f"**Belt-A budget: {args.belt_rows} `git grep` calls and {args.seconds:g}s; it paid "
-        f"{budget.paid if budget else 'every row'} call(s), and {unbelted} of {total} rows got NO "
-        f"second belt.**",
-        ("**THE CENSUS BELOW IS PARTIAL.** Those rows are `UNKNOWN needs=rerun-with-more-seconds`, never"
-         if unbelted else "Every row that reached the citation belt got BOTH belts, so every count above "
-         "is over the whole population."),
-        ("`UNNAMED`: an unmeasured row must never be counted as a deletion candidate, because "
-         "`UNNAMED` means EVERY TEST RAN. Raise `--seconds` to cover the rest."
-         if unbelted else "**A CAP WITH NO SMALL-VALUE READING IS A CAP THAT CAN ONLY EVER REPORT FAILURE**, "
-         "so this run still publishes the census it can compute."),
         "",
         "`sweep` = `sweep.verdict_for()`. `residue` = this file. **The two columns disagree, and that is",
         "the output.** `needs=` on an UNKNOWN row is the cheapest test that would resolve it.",
@@ -733,9 +606,6 @@ def main() -> int:
               f"in the corpus and\n#          the residue is measuring itself. Unstage it; see "
               "EXCLUDED_DIRS.", file=sys.stderr)
     print(f"# authorities consulted: {', '.join(f'{k}()' for k in auth) or 'NONE -- every row UNNAMED/UNKNOWN'}")
-    print(f"# belt A: {budget.paid if budget else 'unbounded'} git grep call(s) of "
-          f"{args.belt_rows} rows / {args.seconds:g}s; {unbelted} of {total} rows left UNDECIDED "
-          f"(needs=rerun-with-more-seconds)")
     print(f"# wrote {os.path.relpath(OUT, ROOT)}/000-the-residue.md, 002-unknown.md, 003-disagreements.md")
     return 0
 

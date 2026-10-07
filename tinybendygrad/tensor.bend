@@ -615,6 +615,75 @@ def tn_relu6(+t: Tensor) -> Tensor:
   +r = tn_relu(t)
   tn_relu6.go(t, r, tn_relu6.lt6(t, r, c6), c6)
 
+# `ceil` -- elementwise.py:656. `(self > (b := self.trunc())).where(b+1, b)`. The
+# `+1` is a CONST added to the trunc'd tensor `b`, and the wall at
+# `nn/__init__.bend:241` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
+# the blockers. `tn_trunc` is ported (tensor.bend:320), and the arith is
+# `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:523), the CONST 1 is
+# `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2867), and `c1t` is a
+# Tensor wrapping the CONST, the same `tn_new(Tensor.ar(t), O.Found.i(c1))`
+# shape `tn_relu.c0t` (tensor.bend:580) uses. The cond `(self > b)` is
+# `tn_rcmplt(self, b)` (tensor.bend:568, the `reverse=True` arm of `tn_cmplt`),
+# the `where(cond, b+1, b)` is `tn_where` (tensor.bend:369). The body is a
+# 4-step chain built in the same shape `tn_relu` / `tn_relu6` use: `b :=
+# tn_trunc(self)`, `gt := tn_rcmplt(self, b)`, `bp1 := tn_add(b, c1t)`, and
+# the final `tn_where(gt, bp1, b)`. The defs are placed AFTER `tn_rcmplt`,
+# `tn_add` and `tn_where` so the forward references are filled.
+def tn_ceil.b(+t: Tensor) -> Tensor:
+  tn_trunc(t)
+
+def tn_ceil.gt(+t: Tensor, +b: Tensor) -> Tensor:
+  tn_rcmplt(t, b)
+
+def tn_ceil.c1(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
+
+def tn_ceil.c1t(+t: Tensor, +c1: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c1))
+
+def tn_ceil.bp1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
+  tn_add(b, tn_ceil.c1t(t, c1))
+
+def tn_ceil.go(+t: Tensor, +gt: Tensor, +bp1: Tensor, +b: Tensor) -> Tensor:
+  tn_where(gt, bp1, b)
+
+def tn_ceil(+t: Tensor) -> Tensor:
+  +c1 = tn_ceil.c1(t)
+  +b = tn_ceil.b(t)
+  tn_ceil.go(t, tn_ceil.gt(t, b), tn_ceil.bp1(t, b, c1), b)
+
+# `floor` -- elementwise.py:662. `(self < (b := self.trunc())).where(b-1, b)`.
+# Same shape as `tn_ceil` with `b-1` (a CONST SUB via `tn_sub`, tensor.bend:541,
+# instead of `tn_add`) and `tn_cmplt` (the forward CMPLT, tensor.bend:559,
+# instead of the reverse). The `b-1` is `tn_sub(b, c1t)` -- `tn_sub` builds
+# `SUB(b, c1)` (the same shape `tn_ceil.bp1` builds `ADD(b, c1)`, with `OpsSUB`
+# instead of `OpsADD`). The cond is `tn_cmplt(self, b)` (NOT `tn_rcmplt` --
+# the FLOOR inequality is the forward `<`). The defs are placed AFTER `tn_sub`
+# and `tn_cmplt` so the forward references are filled, and they mirror
+# `tn_ceil`'s structure.
+def tn_floor.b(+t: Tensor) -> Tensor:
+  tn_trunc(t)
+
+def tn_floor.lt(+t: Tensor, +b: Tensor) -> Tensor:
+  tn_cmplt(t, b)
+
+def tn_floor.c1(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
+
+def tn_floor.c1t(+t: Tensor, +c1: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c1))
+
+def tn_floor.bm1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
+  tn_sub(b, tn_floor.c1t(t, c1))
+
+def tn_floor.go(+t: Tensor, +lt: Tensor, +bm1: Tensor, +b: Tensor) -> Tensor:
+  tn_where(lt, bm1, b)
+
+def tn_floor(+t: Tensor) -> Tensor:
+  +c1 = tn_floor.c1(t)
+  +b = tn_floor.b(t)
+  tn_floor.go(t, tn_floor.lt(t, b), tn_floor.bm1(t, b, c1), b)
+
 # `maximum` -- elementwise.py:378. `self._binop(Ops.MAX, x, False)`. Same shape as
 # `tn_add` / `tn_mul` with `OpsMAX{}` instead of `OpsMUL{}`. The no-broadcasting
 # case is `self.alu(MAX, x.uop)`, the broadcasting case stays walled on
@@ -629,6 +698,33 @@ def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 
 def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(True{}, lhs, rhs)
+
+# `lshift` -- elementwise.py:347. `self._binop(Ops.SHL, x, False)`. Same shape as
+# `tn_maximum` with `OpsSHL{}` instead of `OpsMAX{}`. The reverse arm is
+# `__rlshift__` (elementwise.py:361). The broadcasting case stays walled on
+# `_broadcasted`.
+def tn_lshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHL{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHL{}, [Tensor.u(rhs)])
+
+def tn_lshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_lshift.go(False{}, lhs, rhs)
+
+def tn_rlshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_lshift.go(True{}, lhs, rhs)
+
+# `rshift` -- elementwise.py:355. Same shape with `OpsSHR{}` instead.
+def tn_rshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
+  match reverse:
+    case True{}: tn_alu(rhs, O.OpsSHR{}, [Tensor.u(lhs)])
+    case False{}: tn_alu(lhs, O.OpsSHR{}, [Tensor.u(rhs)])
+
+def tn_rshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_rshift.go(False{}, lhs, rhs)
+
+def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
+  tn_rshift.go(True{}, lhs, rhs)
 
 # `minimum` is NOT ported: CPython's `Tensor.minimum` (elementwise.py:387) has
 # dtype promotion (the int `^k` trick at elementwise.py:390 and the float arm
@@ -827,6 +923,50 @@ def tn_dunder_le(+t: Tensor, +x: Tensor) -> Tensor:
 # case stays walled on `_broadcasted`.
 def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
   tn_logical_not(tn_cmpne(t, x))
+
+# `isnan` -- elementwise.py:603. `return self != self`. The CMPNE node has the
+# SAME tensor on both srcs, and a NaN is the only float where `x == x` is false,
+# so CMPNE against self IS the NaN test. The graph is one node (CMPNE), the
+# `mo_isnan` (`mixin/op.bend:986`) calls `mo_neq(t, t)` -- the same shape at the
+# reduction layer. Gated at `gates/tn_isnan-gate.py` 4/4 rows.
+def tn_isnan(+t: Tensor) -> Tensor:
+  tn_cmpne(t, t)
+
+# `isfinite` -- elementwise.py:623. `(self.isinf() | self.isnan()).logical_not()`.
+# `isinf` itself is `self.eq(inf) + self.eq(-inf)` with the default `detect_*=True`
+# (the bool arm collapses to a plain `+` of two bool-eq results); inlined here in
+# the same shape as `mo_isfinite` (`mixin/op.bend:1008`) because the `tn_*` layer
+# has no `tn_isinf` to call. The four CONSTs (`+inf`, `-inf`, two `True`s) are
+# built off the NEWEST arena each time -- the same `mo_arena` rule
+# (`mixin/op.bend:460`) `mo_isfinite` was written against. The dtype stays bool
+# throughout: `+` of two bools is `xor` (bool), `or` of two bools is bool,
+# `logical_not` of a bool is `cast(bool).cmpne(True)`. Gated at
+# `gates/tn_isfinite-gate.py` 4/4 rows.
+def tn_isfinite.cinf(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CFloat{F32.mul(1.0e30, 1.0e30)})
+def tn_isfinite.cneginf(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CFloat{F32.neg(F32.mul(1.0e30, 1.0e30))})
+def tn_isfinite.ct(+t: Tensor, +c: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c))
+def tn_isfinite.true_c(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CBool{True{}})
+def tn_isfinite.eqarm(+t: Tensor, +c: Tensor) -> Tensor:
+  tn_eq(t, c)
+def tn_isfinite.armul(+t: Tensor, +eq: Tensor) -> Tensor:
+  +tc = tn_isfinite.true_c(eq)
+  tn_alu(eq, O.OpsMUL{}, [O.Found.i(tc)])
+def tn_isfinite.isinf_part(+t: Tensor) -> Tensor:
+  +cinf_c = tn_isfinite.cinf(t)
+  +cinf_t = tn_isfinite.ct(t, cinf_c)
+  +ep = tn_isfinite.armul(t, tn_isfinite.eqarm(t, cinf_t))
+  +cninf_c = tn_isfinite.cneginf(t)
+  +cninf_t = tn_isfinite.ct(t, cninf_c)
+  +en = tn_isfinite.armul(t, tn_isfinite.eqarm(t, cninf_t))
+  tn_alu(ep, O.OpsADD{}, [Tensor.u(en)])
+def tn_isfinite(+t: Tensor) -> Tensor:
+  +inf_part = tn_isfinite.isinf_part(t)
+  +or_part = tn_or(inf_part, tn_isnan(t))
+  tn_logical_not(or_part)
 
 # `_apply_uop` -- tensor.py:104-113. `new_uop: UOp = fxn(*[t.uop for t in srcs],
 # **kwargs)` is a CALLBACK, and Bend has no function values, so every op in this

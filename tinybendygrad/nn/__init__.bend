@@ -359,3 +359,25 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `__pow__`/`__rpow__`/`__floordiv__`/`__rfloordiv__`/`__mod__`/`__rmod__`/
 # `__ge__`/`__le__`/`eq` stays walled on `_broadcasted`
 # (same wall as `__add__`/`__sub__`/`__mul__`/`__rmul__`/`where`).
+# `Tensor.ceil` (elementwise.py:656, `(self > (b := self.trunc())).where(b+1, b)`)
+# and `Tensor.floor` (elementwise.py:662, `(self < (b := self.trunc())).where(b-1, b)`)
+# are ported at `tensor.bend:632, 650, 664, 682` as `tn_ceil` / `tn_floor` (and their
+# helpers `tn_ceil.b` / `tn_ceil.gt` / `tn_ceil.bp1` / `tn_ceil.go` / `tn_ceil.c1` /
+# `tn_ceil.c1t` and `tn_floor.b` / `tn_floor.lt` / `tn_floor.bm1` / `tn_floor.go` /
+# `tn_floor.c1` / `tn_floor.c1t`) for the no-broadcasting case. The body is a 4-step
+# chain: `b := tn_trunc(self)`, cond := `tn_rcmplt(self, b)` for ceil or
+# `tn_cmplt(self, b)` for floor, `b±1 := tn_add(b, c1t)` for ceil or
+# `tn_sub(b, c1t)` for floor (the `c1t` is a Tensor wrapping a CONST 1, the same
+# `tn_new(Tensor.ar(t), O.Found.i(c1))` shape `tn_relu.c0t` uses), and the final
+# `tn_where(cond, b±1, b)`. The deps cited by the wall text (`b+1` / `tn_trunc`)
+# are all ported: `tn_trunc` (tensor.bend:320, gated 9/9 with `tn_reciprocal` and
+# `tn_threefry`), `tn_add` (tensor.bend:523, gated 17/17 with `tn_sub`), `tn_sub`
+# (tensor.bend:541, same gate), `tn_cmplt` (tensor.bend:559, gated in
+# `tn_binop2_cmp-gate.py`), `tn_rcmplt` (tensor.bend:568, gated in the same
+# file), `tn_where` (tensor.bend:369, gated 5/5 in `tn_where-gate.py`), and
+# `O.UOp.const` (ops.bend:2867, gate rc=0). Gated at
+# `gates/tn_ceil_floor-gate.py` 11/11 rows (op/arg/srcs/purity for each of
+# `tn_ceil` and `tn_floor`, the cond's CMPLT shape for each, and the reachability
+# row). The broadcasting case stays walled on `_broadcasted` (same wall as
+# `where`, `__add__` / `__sub__` / `__mul__` / `__pow__` / the rest of the
+# `_binop`-shaped defs).

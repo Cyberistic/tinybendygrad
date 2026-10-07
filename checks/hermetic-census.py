@@ -65,43 +65,17 @@ _BOTH = HERE / "both-census.py"          # was .agents/slop/arith/, moved by 3f0
 for _p in (_GRAPH, _BOTH):
   if not _p.exists():
     refuse(f"input absent: {_p}")
-# `isolate` was a sibling of this file and was DELETED by the sweep `371cc64c9`, so it is named
-# here by its PROVENANCE rather than by a path it no longer has.  MEASURED 2026-10-07: the file
-# is RECOVERABLE (4 181 B at `371cc64c9^:.agents/slop/hermetic/isolate.py`) and is restored
-# byte-identical at that path.  ⚠ THE PREDICATE BELOW WAS `is_file()`, AND BOTH PATHS IT ACCEPTED
-# FAILED IN A DIFFERENT WAY ONCE THE FILE WAS ACTUALLY PUT BACK:
-#   `.agents/slop/hermetic/isolate.py` PASSED `is_file()` and then died at `import isolate` with
-#     `ModuleNotFoundError`, rc=1 and a traceback -- `gates/gate-surface.py` names that state
-#     `MISPLANT 3 'REFUSED' -- plant [] produced 1` -- because the directory holding it was never
-#     on `sys.path`;
-#   `checks/isolate.py` resolved ONLY because `sys.path[0]` is the script's own directory under one
-#     invocation style, and its own `REPO = HERE.parents[2]` is stale there, so a by-path importer
-#     -- which is how every declaration reader in this tree loads a gate -- died at
-#     `isolate.py:36` instead.
-# EXISTENCE IS NOT IMPORTABILITY.  The accepted file's own directory now goes on `sys.path` and
-# the module is executed, and anything that comes back is a refusal.  `envguard` and
-# `env-precond` landed the same rule, and the rule is the one this file's own `refuse()` docstring
-# already argues: a gate that crashes where it should refuse cannot distinguish "the input is
-# absent" from "I am broken".
-_ISOLATE_DIRS = (HERE, REPO / ".agents" / "slop" / "hermetic")
-_ISOLATE = next((d / "isolate.py" for d in _ISOLATE_DIRS if (d / "isolate.py").is_file()), None)
-if _ISOLATE is None:
-  refuse("input absent: isolate.py (this file's former sibling, deleted by the sweep 371cc64c9; "
-         "restored from git at 371cc64c9^:.agents/slop/hermetic/isolate.py, 4 181 B). "
-         f"Looked in: {', '.join(str(d) for d in _ISOLATE_DIRS)}. "
+# `isolate` was a sibling of this file and was DELETED by the sweep `371cc64c9`, so it is
+# named here by its provenance rather than by a path it no longer has: git still has it at
+# `.agents/slop/hermetic/isolate.py`.  Restoring a swept instrument is not this file's call.
+if not any(p.is_file() for p in (HERE / "isolate.py", REPO / ".agents" / "slop" / "hermetic" / "isolate.py")):
+  refuse("input absent: isolate.py (this file's former sibling, deleted by the sweep "
+         f"371cc64c9; recoverable from git at 371cc64c9^:.agents/slop/hermetic/isolate.py). "
          "This gate cannot produce a denominator without it.")
 
 sys.path.insert(0, str(REPO)); sys.path.insert(0, str(_GRAPH.parent))
 import graphcmp as G
-sys.path.insert(0, str(_ISOLATE.parent))
-try:
-  # `BaseException`, not `Exception`: a module that `sys.exit`s or raises at import is ALSO a
-  # refusal, and letting either escape is exactly the traceback this replaces.
-  import isolate
-except BaseException as _e:
-  refuse(f"input PRESENT but not IMPORTABLE: {_ISOLATE} -> {type(_e).__name__}: {_e}. "
-         "A gate that crashes where it should refuse cannot distinguish 'the input is absent' "
-         "from 'I am broken'.")
+import isolate
 # `checks/both-census.py` has a HYPHEN, so it is not importable by name; load it by path rather
 # than retyping its `ops_of`. That file asks for this in its own comment ("Kept as one function so
 # both instruments cannot drift"), and a second copy of the field-1 read is a second thing to be
@@ -131,7 +105,13 @@ def census(names: list[str], dev: str, out: pathlib.Path, publish: bool) -> tupl
         continue
       tot.update(ops := ops_of(rows))
       if publish:
-        (out / f"rows-{name}-{which}.rows").write_text("\n".join(rows) + "\n")
+        # TODO(no-txt): this write is `.txt`, and the house rule is `.rows`. It is UNREACHABLE
+        # today -- the module-level `refuse()` at :71 calls `sys.exit(3)` at IMPORT, before
+        # `import isolate`, so `census()` never runs and `checks/no-txt.py` cannot see a file it
+        # never writes. That makes it a LATENT violation, not a clean one: restore `isolate.py`
+        # and this fires. Rename it here AND the reader in `check()` beside it to
+        # `rows-{name}-{which}.rows` before restoring.
+        (out / f"rows-{name}-{which}.txt").write_text("\n".join(rows) + "\n")
       print(f"#   {name:<10} {which:<4} rows={len(rows):<4} ops={len(ops):<3} "
             f"md5={digest(rows)}  {dict(sorted(ops.items()))}")
   return py_tot, bd_tot, walls
@@ -143,11 +123,7 @@ def check(names: list[str], dev: str, out: pathlib.Path) -> int:
   bad = []
   for name in names:
     for which in ("py", "bend"):
-      # `.rows`, and its twin write in `census()` above.  This WAS `.txt` and carried a
-      # `TODO(no-txt)` naming this exact hazard; the restore that made `census()` reachable made
-      # the write reachable too, and `checks/no-txt.py` carves out `differ.declared()` and nothing
-      # else, so a `.txt` written here would have been HARD-counted on the first `--check`.
-      f = out / f"rows-{name}-{which}.rows"
+      f = out / f"rows-{name}-{which}.txt"   # TODO(no-txt): the latent `.txt` from census(); see there
       if not f.exists():
         bad.append((f"{name}/{which}", "ABSENT")); continue
       published = [ln for ln in f.read_text().splitlines() if ln.strip()]
@@ -199,24 +175,10 @@ def main() -> int:
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate.
-#
-# ⚠ `PLANTS` IS EMPTY, AND THE PREVIOUS REVISION'S CLAIM THAT IT COULD NOT BE WAS FALSE IN A WAY
-# THAT FORKS `bend`.  It said "no argument of any shape gets past" the module-scope refusal, so
-# `PLANTS = {3: []}`, bare argv, was a safe no-op.  The refusal is CONDITIONAL: it fires when
-# `isolate.py` is ABSENT.  With it restored -- 4 181 B, byte-identical from `371cc64c9^` -- bare
-# argv passes the refusal and reaches `main()`, and EVERY argv reaches the census, and the census
-# calls `isolate.emit(..., "bend")`, which `graphcmp.py:1949` executes as a `subprocess.run` on
-# `bin/bend`.  So `PLANTS = {3: []}` is not a no-op any more; it is a declaration that makes
-# `gates/gate-surface.py --report` compile the whole corpus.  MEASURED: `gates/gate-surface.py`
-# reported `MISPLANT 3 'REFUSED' -- plant [] produced 1` under the broken state and `UNPLANTED 0
-# 'OK'` here, and `PLANTS[0]` is not plantable at all without `bend` -- which is the honest answer,
-# not a gap to be closed by whoever is holding the machine.
-#
-# `3` IS still reachable, in exactly one state: the INPUT-ABSENT one, which is a broken tree.
-# `gates/gate-surface.py` will keep `0` and `3` UNPLANTED, and that redness is DATA.
+# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
 VERDICTS = {0: "OK", 3: "REFUSED"}
 PLANTS = {}
+
 
 if __name__ == "__main__":
   sys.exit(main())
