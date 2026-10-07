@@ -175,10 +175,17 @@ def main() -> int:
 
 
 # THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
+# because import RUNS a gate.
+#
+# `PLANTS[3]` IS THE REFUSAL PLANT, and it is the only state argv can reach: this gate refuses at
+# MODULE SCOPE, above every `argparse` -- the geometry is measured by
+# `.agents/slop/plantthe46/unreach.py`, which imports this tree's own declaration reader by path --
+# so no argument of any shape gets past it. `[]` therefore reaches `3`, and nothing else ever will.
+# It proves the refusal is REACHABLE. It does NOT prove this gate can tell `3` from `0`, because no
+# argv reaches `0`; every other code below stays UNPLANTED and the instrument keeps it red rather
+# than this file claiming a plant it does not have.
 VERDICTS = {0: "OK", 3: "REFUSED"}
-PLANTS = {}
-
+PLANTS = {3: []}
 
 if __name__ == "__main__":
   sys.exit(main())

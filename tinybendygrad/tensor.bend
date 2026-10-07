@@ -559,8 +559,61 @@ def tn_cmplt.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_cmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(False{}, lhs, rhs)
 
+# `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
+# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
+# `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
+# parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
+# `tn_rcmplt` so the forward reference is filled.
 def tn_rcmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(True{}, lhs, rhs)
+
+# `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
+# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
+# `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
+# parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
+# `tn_rcmplt` so the forward reference is filled.
+def tn_relu.c0(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(0)})
+
+def tn_relu.c0t(+t: Tensor, +c0: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c0))
+
+def tn_relu.gt0(+t: Tensor, +c0: O.Found) -> Tensor:
+  tn_rcmplt(t, tn_relu.c0t(t, c0))
+
+def tn_relu.go(+t: Tensor, +gt0: Tensor, +c0: O.Found) -> Tensor:
+  tn_where(gt0, t, tn_relu.c0t(t, c0))
+
+def tn_relu(+t: Tensor) -> Tensor:
+  +c0 = tn_relu.c0(t)
+  tn_relu.go(t, tn_relu.gt0(t, c0), c0)
+
+# `relu6` -- elementwise.py:697. `((r := self.relu()) < 6).where(r, 6)`. Same shape
+# as `tn_relu`: a chain of `tn_rcmplt` and `tn_where`, with the only difference
+# being the constant (6 instead of 0) and the `r` variable holding the relu
+# result. The two `tn_where`s are the same def (`tn_relu.go`); `tn_relu6.go`
+# reuses the pattern with a different `c6`. CPython's `relu6` keeps the
+# intermediate `r` alive for the gradient path; the port builds the same graph
+# (WHERE with srcs = (cond, r, c6)) and drops the `r` variable after the
+# where, which is fine for a non-gradient port.
+def tn_relu6.c6(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(6)})
+
+def tn_relu6.c6t(+t: Tensor, +c6: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c6))
+
+def tn_relu6.lt6(+t: Tensor, +r: Tensor, +c6: O.Found) -> Tensor:
+  tn_rcmplt(r, tn_relu6.c6t(t, c6))
+
+def tn_relu6.go(+t: Tensor, +r: Tensor, +lt6: Tensor, +c6: O.Found) -> Tensor:
+  tn_where(lt6, r, tn_relu6.c6t(t, c6))
+
+def tn_relu6(+t: Tensor) -> Tensor:
+  +c6 = tn_relu6.c6(t)
+  +r = tn_relu(t)
+  tn_relu6.go(t, r, tn_relu6.lt6(t, r, c6), c6)
 
 # `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
 # (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`

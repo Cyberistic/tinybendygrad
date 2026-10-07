@@ -100,15 +100,18 @@ gates/render_val_s-gate.py	py-main	-	0	1
 gates/replace-gate.py	py-main	-	0	1
 gates/retention-check.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/tn_add_sub-gate.py	py-main	-	0	1
+gates/tn_and_or_xor-gate.py	py-main	-	0	1
 gates/tn_binop2_cmp-gate.py	py-main	-	0	1
 gates/tn_bitwise_not-gate.py	py-main	-	0	1
 gates/tn_contiguous_backward-gate.py	py-main	-	0	1
 gates/tn_detach-gate.py	py-main	-	0	1
 gates/tn_dunder_neg-gate.py	py-main	-	0	1
+gates/tn_fdiv_mod-gate.py	py-main	-	0	1
 gates/tn_logical_not-gate.py	py-main	-	0	1
 gates/tn_mul-gate.py	py-main	-	0	1
 gates/tn_neg-gate.py	py-main	-	0	1
 gates/tn_pow-gate.py	py-main	-	0	1
+gates/tn_relu-gate.py	py-main	-	0	1
 gates/tn_sin_log2_exp2_rsqrt-gate.py	py-main	-	0	1
 gates/tn_sqrt-gate.py	py-main	-	0	1
 gates/tn_trunc_reciprocal_threefry-gate.py	py-main	-	0	1
