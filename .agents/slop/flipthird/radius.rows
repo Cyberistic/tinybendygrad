@@ -1,0 +1,17 @@
+# FLIPTHIRD exp3 -- iterative build of `ABoolList`, bend naming each break
+# target: tinybendygrad/tensor.bend   owned: 5 files   forbidden files are NEVER written
+
+[1] +ABoolList in ops.bend            token=WITHIN-LIMITS missing=ABoolList loc=eq_arg.sel line=2142
+      | 2142 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+      | 2144 |     case ANone{}: eq_arg.ANone(y)
+[2] +eq_arg.ABoolList +eq_bool_list +sel arm   token=WITHIN-LIMITS missing=None loc=None line=2058
+      | 2058 |     case y <> t w <> u: Bool.and(Bool.eq(y, w), eq_bool_list(t, u))
+      | 2060 |
+
+# --- the two reports above are the WHOLE measured type-level radius so far. ---
+# green=False
+# tinybendygrad/schedule/prepare.bend: pristine=93e01060ce851e76ceb817ae815e78f5 now=93e01060ce851e76ceb817ae815e78f5 dirty=False
+# tinybendygrad/uop/ops.bend: pristine=006b9cfbc1282f28abd9e199ad86d6f2 now=40ac26068464d3b8b45fe877d86ca57a dirty=True
+# tinybendygrad/uop/fold.bend: pristine=66bda16fa09c9ebec4a4fb14ea9adea3 now=66bda16fa09c9ebec4a4fb14ea9adea3 dirty=False
+# tinybendygrad/tensor.bend: pristine=e7fe9923be78ee56f3c9617699ef32e4 now=e7fe9923be78ee56f3c9617699ef32e4 dirty=False
+# tinybendygrad/mixin/movement.bend: pristine=e9696456a7d04fc87388cc0bbd8d035d now=e9696456a7d04fc87388cc0bbd8d035d dirty=False

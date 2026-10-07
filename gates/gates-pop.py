@@ -70,6 +70,13 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 
+# THE FIVE VERDICTS, IMPORTED BY PATH from the file that OWNS them (`gatekit.py`, same dir), never
+# re-spelled: a second copy of the vocabulary is the same fault as a second copy of a population, and a
+# runner maps any code outside the five to `DEAD`. Measured before this import: this file and
+# `checks/cl-port-gate.py` both refused with **2**, and both were scored `DEAD`.
+sys.path.insert(0, str(HERE))
+from gatekit import REFUSED  # noqa: E402  (after sys.path, deliberately)
+
 # WHAT THIS FILE CANNOT SEE, NAMED, because a meta-gate's blind spots are the ones no other
 # instrument is checking. Four, and none is fixable by being cleverer about the tree:
 #   (1) a gate OUTSIDE `checks/` and `gates/`. The two homes are a list -- see `HOMES` -- so a
@@ -134,14 +141,20 @@ SUFFIXES = (".py", ".sh")
 
 
 def refuse(*why):
-    """exit 2 = REFUSED, and NOT a verdict. `checks/abi_gate.py`'s rule, in this file's idiom.
+    """`REFUSED` from `gatekit`, NOT a verdict.
+
+    This file used to `sys.exit(2)` — `checks/abi_gate.py`'s rule in its own idiom — but
+    `gatekit.py:60` OWNS the vocabulary (`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`) and a
+    tree-owned runner maps ANY code outside those five to `DEAD` (`.agents/slop/hooks/run.py:33`), so a
+    refusal here was scored `DEAD`. The code is IMPORTED, not re-spelled: a second copy of the
+    vocabulary is the same fault as a second copy of a population.
 
     Placed BEFORE any measurement, because an assertion downstream of what it asserts cannot
     turn an exception into a refusal: `checks/census.py`'s own docstring records the tree doing
     exactly that (rc 1 and a traceback, which carries no denominator and so counts nowhere).
     """
     print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    sys.exit(2)
+    sys.exit(REFUSED)
 
 
 # ---- clause I: DISCOVERY ----------------------------------------------------------------

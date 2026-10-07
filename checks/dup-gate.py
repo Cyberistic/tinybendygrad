@@ -342,5 +342,11 @@ def main():
   return 0 if gate(P, O, pathlib.Path(a.port).name, pathlib.Path(a.oracle).name) else 1
 
 
+# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
+# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
+VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED"}
+PLANTS = {}
+
+
 if __name__ == "__main__":
   sys.exit(main())

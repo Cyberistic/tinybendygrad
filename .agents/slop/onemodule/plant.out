@@ -1,0 +1,36 @@
+projection                                   before                              after  moved?
+discover         entries=120, files=146, in_plant=False entries=121, files=147, in_plant=True  YES
+surface          entries=120, files=146, in_plant=False, walk=148 entries=121, files=147, in_plant=True, walk=149  YES
+coindependent    entries=122, files=148, in_plant=False entries=123, files=149, in_plant=True  YES
+zerogate                entries=122, in_plant=False         entries=123, in_plant=True  YES
+pairs                   tracked=143, whole_tree=127          tracked=13, whole_tree=13  YES
+prune4           in_plant_HEAD=False, in_plant_index=False, ls_files_index=95, ls_tree_HEAD=88 in_plant_HEAD=False, in_plant_index=False, ls_files_index=95, ls_tree_HEAD=95  YES
+
+--- DOES EACH PROJECTION SEE THE NEW GATE? ---
+  discover         sees the planted gate: True
+  surface          sees the planted gate: True
+  coindependent    sees the planted gate: True
+  zerogate         sees the planted gate: True
+  pairs            does not count files at all (different question) -- delta {'whole_tree': 127, 'tracked': 143} -> {'whole_tree': 13, 'tracked': 13}
+  prune4           does not count files at all (different question) -- delta {'ls_files_index': 95, 'ls_tree_HEAD': 88, 'in_plant_index': False, 'in_plant_HEAD': False} -> {'ls_files_index': 95, 'ls_tree_HEAD': 95, 'in_plant_index': False, 'in_plant_HEAD': False}
+
+--- prune4's POPULATION, PLANTED TWICE: the same file, `git add`-ed (not committed) in the scratch copy ---
+  on disk, NOT staged : in_plant_HEAD=False, in_plant_index=False, ls_files_index=95, ls_tree_HEAD=95
+  on disk, STAGED     : in_plant_HEAD=False, in_plant_index=True, ls_files_index=96, ls_tree_HEAD=95
+  -> prune4's population is THE INDEX. A gate that exists and is not `git add`-ed is
+     invisible to it, and `git ls-files` on a tree whose index has been reset answers
+     2 where thousands are tracked. That is a correct answer to a different question,
+     and it is the same fault as the other five: a population that is not the TREE.
+
+--- PLANT 2: gates/oracles/zz-plant-deep.sh, one directory DEEP in a gate home ---
+  discover         entries=120, files=146, in_plant=False -> entries=120, files=146, in_plant=False  ** DID NOT MOVE **  saw_it=False
+  surface          entries=120, files=146, in_plant=False, walk=148 -> entries=120, files=146, in_plant=False, walk=149  MOVED  saw_it=False
+  coindependent    entries=122, files=148, in_plant=False -> entries=123, files=149, in_plant=True  MOVED  saw_it=True
+  zerogate                entries=122, in_plant=False ->         entries=123, in_plant=True  MOVED  saw_it=True
+
+--- WHAT EACH PROJECTION ACTUALLY ASKED ---
+  plant 1 sits at gates/ TOP LEVEL: every projection whose population is the tree moves.
+  plant 2 sits at gates/oracles/: only a RECURSIVE walk moves. `discover()`'s
+  `iterdir()` is what makes that true, and 2 files today is the cost, not the finding.
+
+elapsed 20.4s

@@ -1,0 +1,11 @@
+[bounded] WITHIN-LIMITS  rc=1  peak-RSS=216 MB (ceiling 2048)  1s  :: ./bin/bend tinybendygrad/tensor.bend  out=0B err=269B  said=SOME PROOFS FAIL | Error: | - expected : cases for uop/ops.ABoolList
+SOME PROOFS FAIL
+Error:
+- expected : cases for uop/ops.ABoolList
+- observed : \{}
+Location: eq_arg.sel
+2142 | def eq_arg.sel(x: Arg, y: Arg) -> Bool:
+2143>|   match x:
+     |   ^^^^^^^^
+2144 |     case ANone{}: eq_arg.ANone(y)
+bend 2.0.35 is available: run bend update

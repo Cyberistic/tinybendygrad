@@ -55,13 +55,22 @@ LIVE_IMPORT = 'import "../../../.agents/slop/clangshim/libclang-ffi.c"'
 
 
 def refuse(*why: str) -> None:
-    """exit 2 = REFUSED, and NOT a verdict.  `checks/abi_gate.py` rule, in this file's idiom.
+    """`REFUSED` from `gates/gatekit.py`, NOT a verdict.
+
+    This file used to `sys.exit(2)`, which was `checks/abi_gate.py`'s rule in its own idiom — but
+    `gates/gatekit.py:60` OWNS the vocabulary (`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`) and a
+    tree-owned runner maps ANY code outside those five to `DEAD` (`.agents/slop/hooks/run.py:33`). **A gate
+    refusing with 2 was therefore scored `DEAD` by the tree's own runner — the two refusal codes this
+    project has been carrying.** So the code is IMPORTED here, not re-spelled: a second copy of the
+    vocabulary is the same fault as a second copy of a population.
 
     Placed BEFORE `FIXH.read_text()`, because that read is at MODULE level and the stale root made
-    it raise `FileNotFoundError` -- and an assertion DOWNSTREAM of what it asserts cannot turn an
+    it raise `FileNotFoundError` — and an assertion DOWNSTREAM of what it asserts cannot turn an
     exception into a refusal."""
+    sys.path.insert(0, str(REPO / "gates"))
+    from gatekit import REFUSED  # loaded BY PATH; gates/ is not a package
     print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    sys.exit(2)
+    sys.exit(REFUSED)
 
 
 # THREE TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
