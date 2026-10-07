@@ -1,0 +1,12 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
+rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+configfile: pyproject.toml
+collecting ... collected 4 items
+
+test/null/test_winograd.py::TestWinograd::test_backward_counters PASSED  [ 25%]
+test/null/test_winograd.py::TestWinograd::test_counters PASSED           [ 50%]
+test/null/test_winograd.py::TestWinograd::test_dtype PASSED              [ 75%]
+test/null/test_winograd.py::TestWinograd::test_forward_kernels PASSED    [100%]
+
+========================= 4 passed in 70.76s (0:01:10) =========================

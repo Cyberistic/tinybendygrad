@@ -40,34 +40,41 @@ def counts(text: str) -> dict[str, int]:
 
 
 def main() -> None:
-    argv = sys.argv[1:]
-    per = 240.0
-    if argv and argv[0] == "--timeout":
-        per, argv = float(argv[1]), argv[2:]
+    argv, per, old = sys.argv[1:], 240.0, False
+    while argv and argv[0].startswith("--"):
+        if argv[0] == "--timeout":
+            per, argv = float(argv[1]), argv[2:]
+        elif argv[0] == "--old":
+            old, argv = True, argv[1:]
+        else:
+            raise SystemExit(f"unknown flag {argv[0]}")
     files = [f for f in FILES if not argv or f in argv]
     rows = ["file\tverdict\twall_s\tpassed\tfailed\terrored\tskipped"]
     print(rows[0], flush=True)
     for stem in files:
         env = dict(os.environ, DEV="BEND", TEST_TIMEOUT="180")
+        args = ["-v", "-p", "no:cacheprovider", "--continue-on-collection-errors"]
+        if old:
+            env["PYTHONPATH"] = str(OUT)
+            args += ["-p", "oldexec"]
         t = time.perf_counter()
         killed = False
         try:
-            r = subprocess.run([str(ROOT / ".venv/bin/python"), "-m", "pytest", f"test/null/{stem}.py",
-                                "-v", "-p", "no:cacheprovider", "--continue-on-collection-errors"],
+            r = subprocess.run([str(ROOT / ".venv/bin/python"), "-m", "pytest", f"test/null/{stem}.py", *args],
                                cwd=ROOT, env=env, capture_output=True, text=True, timeout=per)
             rc, out = r.returncode, r.stdout + r.stderr
         except subprocess.TimeoutExpired as e:
             killed, rc = True, -1
             out = (e.stdout or b"").decode(errors="replace") if isinstance(e.stdout, bytes) else (e.stdout or "")
         wall = time.perf_counter() - t
-        (OUT / f"reach-{stem}.out").write_text(out)
+        (OUT / f"reach-{'old' if old else 'new'}-{stem}.out").write_text(out)
         c = counts(out)
         v = "KILLED-BY-SWEEP" if killed else ("COMPLETED" if SUMMARY.search(out) else "ABORTED")
         row = "\t".join([stem, v, f"{wall:.1f}", str(c.get("passed", 0)), str(c.get("failed", 0)),
                          str(c.get("errored", 0)), str(c.get("skipped", 0))])
         rows.append(row)
         print(row, flush=True)
-    (OUT / "reach.tsv").write_text("\n".join(rows) + "\n")
+    (OUT / ("reach-old.tsv" if old else "reach.tsv")).write_text("\n".join(rows) + "\n")
 
 
 if __name__ == "__main__":

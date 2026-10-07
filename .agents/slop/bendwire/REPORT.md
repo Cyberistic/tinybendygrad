@@ -17,7 +17,8 @@ is in `tinybendygrad/runtime/ops_python.bend` (the `DEV=BEND` executor, compiled
   quadratic too (`Mem.put`/`List.set`, `Val.put`, `Mem.st`), and it was *always* there. Removing the
   wire leaves the store's `c ≈ 1.0e-8 s/byte²` as the binding term. So `2.8 + c·B² < 180` gives
   **B ≲ 132 kB ≈ 181×181**, not gitinput's extrapolated 1.27 MB. The full-device coefficient fell
-  **3.3e-8 → 1.0e-8** (matches bendperf's full-device `3.2e-8`), i.e. **~3.2×**, and `B` ~1.9×.
+  **3.3e-8 → 1.0e-8** (matches bendperf's full-device `3.2e-8`), i.e. **~3.2×**, and `B` ~1.9×. The whole
+  `ones(64,64)` launch (fixed + wire + store) went **11.76 s (bendperf) → 5.6 s**.
 
 ## 1. Reproduce the 291× (task 1) — token and method
 
@@ -62,8 +63,8 @@ a body indexed by a counter that climbs, so each access walks the cons list from
 
 The cons walk reads the list head-first, so it answers the bytes **reversed**; `Prog.hex.app` prepends
 onto a reversed accumulator and `Prog.bytes` reverses once (and `Arg.hex` does for its one-line read) —
-the same cancellation the old `append`-in-one-line had, now O(bytes) instead of O(B²). Net: **-9 lines**
-of def bodies (3 defs deleted, `hex.go` gains a `Bool` state, `line.go` loses its `at`).
+the same cancellation the old `append`-in-one-line had, now O(bytes) instead of O(B²). Net: **three defs
+deleted** (`hex.at`/`nib`/`byte`), `hex.go` gains a `Bool` state, `line.go` loses its `at` counter.
 
 **`base.bend` at `:70`.** `tinybendygrad/base.bend` is **56 lines** — there is no `:70`, and no `Array`
 in it. `Array` is Bend's **builtin** (`Base`), used elsewhere in this tree (`ops_python.bend:216-224`
@@ -136,18 +137,18 @@ wire (no loop, no store): post-fix it is linear. So the remaining quadratic is t
 fresh processes:
 
 ```
-    n         B         s    us/elem        (early, uncontended run)
-   64     16384     5.249
-   80     25600     8.834
-   96     36864    18.655
-  112     50176    25.646
-  128     65536    46.208
+    n         B         s    us/elem
+   64     16384     5.616    1371
+   80     25600     9.234    1443
+   96     36864    19.879    2157
+  112     50176    28.114    2241
+  128     65536    42.807    2613
 ```
 
-Fit `t = a + c·B²` on n=64/128: `a = 2.52 s`, **`c = 1.02e-8 s/byte²`**. Cross-checks: n=80 predicted
-9.19 (meas 8.83), n=96 predicted 16.3 (meas 18.7), n=112 predicted 28.1 (meas 25.6) — consistent inside
-load. The store coefficient is confirmed: subtracting the fixed cost, `(46.2−2.5)/(5.2−2.5) = 16.1 ≈ 16`
-for a 4× buffer — quadratic.
+Fit `t = a + c·B²` on n=64/128: `a = 3.14 s`, **`c = 9.2e-9 s/byte²`**. Pairwise fits across adjacent
+points give `c` between `7.8e-9` and `1.3e-8` (load); **take `c ≈ 1.0e-8`**. The store coefficient is
+confirmed by shape: subtracting the fixed cost, `(42.8−3.1)/(5.6−3.1) = 15.9 ≈ 16` for a 4× buffer —
+quadratic, not linear.
 
 **Solve `2.8 + 1.0e-8·B² < 180`:**
 ```
@@ -164,21 +165,40 @@ extrapolation (gitinput's `/291`) divided the *whole* quadratic by 291, but only
 
 The corpus jumps from tiny buffers to **256×256 = 262 144 B**, which is **> 133 kB** both before and
 after, so `test_arange::test_tri_complexity` and friends stay out of reach either way. `reach.py`
-re-runs `bendsuite`'s ten zero-measured files (its `sweep-bend.tsv`, verdict FAULTHANDLER-TIMEOUT or
-KILLED-BY-SWEEP with 0 passed) under the post-fix executor, one process per file, `TEST_TIMEOUT=180`:
+re-runs `bendsuite`'s ten zero-measured files (its `sweep-bend.tsv`: verdict FAULTHANDLER-TIMEOUT or
+KILLED-BY-SWEEP with 0 passed) **under BOTH executors at the SAME budget** (`-v`, per-file cap 240 s,
+`TEST_TIMEOUT=180`, one process per file). Matched budgets are the point: an earlier NEW-only run at
+these wider timeouts read "56 pass", but that is the **timeout**, not the fix — the original sweep used
+96/120 s.
 
-<!-- REACH -->
+| file | OLD pass/measured | NEW pass/measured | verdict |
+|---|---|---|---|
+| test_allreduce | 0 / 0 | **5 / 5** | OLD ABORTED → NEW COMPLETED |
+| test_arange | 0 / 1 | 0 / 1 | both ABORTED (256²) |
+| test_assign | 4 / 4 | 4 / 4 | both ABORTED (5th: many launches) |
+| test_attention | 0 / 0 | 0 / 0 | both ABORTED |
+| test_function | 5 / 5 | 5 / 5 | both ABORTED |
+| test_linearizer | 3 / 8 | 3 / 8 | both COMPLETED (4 pre-existing fails) |
+| test_real_world | 0 / 8 | 0 / 8 | both ABORTED (3 pre-existing fails, 5 skip) |
+| test_schedule | 20 / 20 | 20 / 20 | both KILLED at the 240 s cap (of 289) |
+| test_symbolic_tensor | 15 / 15 | 15 / 15 | both COMPLETED |
+| test_winograd | 4 / 4 | 4 / 4 | both COMPLETED |
 
-**Read it with the five-verdict rule.** A file that hits the watchdog is **ABORTED — not zero**: the
-faulthandler `exit=True` kills pytest before the summary, so fast tests inside it still passed (e.g.
-`test_assign` passes 4 of 5 at `TEST_TIMEOUT=30`; its 5th, `test_shared_computation_assign_kernel_count`,
-builds a pending-assign graph whose **many launches** each pay the ~2.7 s fixed per-launch cost — that
-is the fixed cost, not the wire, and the wire fix cannot move it).
+`.agents/slop/bendwire/reach.tsv` (new) and `reach-old.tsv` (old). **The fix flips exactly one file:
+`test_allreduce`, 0 → 5 tests, wall 180+ s → 65 s.** Every other file is unchanged at matched budgets,
+because they are bound by the **store** path (256×256) or by the **fixed per-launch cost** (many tiny
+launches), neither of which is the wire.
 
-**So the answer to "N of M": the fix admits the files bound by the WIRE; it does not admit the files
-bound by the 256×256 store, nor the many-launch fixed cost.** The remaining throughput work is the
-store path (`Mem.put`/`List.set`, `Val.put`, `Mem.st`) — 34 of the 37 sites — and the per-launch fixed
-`0.68 s + 95 ms/uop-line` parse (`bendperf §3b`). A wire-only fix was never going to reach 1431/1431.
+**So "N of M": the wire fix admits `test_allreduce` (5 tests); 344 of the 349 remain out.** Against the
+corpus: measured `1082 → 1087` of 1431, passed `946 → 951`. Read every row with the five-verdict rule —
+**ABORTED is not zero** (the faulthandler `exit=True` kills pytest before the summary, so the counts are
+the tests that finished, e.g. `test_assign` is 4 of 5; its 5th builds a pending-assign graph whose many
+launches each pay ~2.7 s fixed). `test_linearizer`/`test_real_world`'s **failures** are pre-existing
+device gaps, not regressions.
+
+**The remaining throughput work is the store (`Mem.put`/`List.set`, `Val.put`, `Mem.st`) — 34 of the 37
+sites — followed by the per-launch fixed `0.68 s + 95 ms/uop-line` parse (`bendperf §3b`). A wire-only
+fix was never going to reach 1431/1431, and this A/B is the measurement that says so.**
 
 ## 7. Why three sites and not 37
 
@@ -191,8 +211,8 @@ The other 34 are named, with the reason, and left.
 
 ## 8. Limits, recorded not hidden
 
-- Timings are wall on a shared machine; other units ran throughout (the n=64 `ones` read 5.25 s
-  uncontended and 8.48 s under the `reach` sweep). The *shapes* are robust; the constants carry load.
+- Timings are wall on a shared machine; other units ran throughout (the n=64 `ones` read 5.6 s
+  uncontended and 8.5 s under the `reach` sweep). The *shapes* are robust; the constants carry load.
   Every cell is min-of-2 or min-of-3, method stated.
 - `test_assign`/`test_arange`/… hit the 180 s watchdog; their `reach` counts are lower bounds.
 - `git diff` for the file is **empty** — this tree's `jj` server snapshots the working copy into the
@@ -208,5 +228,6 @@ The other 34 are named, with the reason, and left.
 .venv/bin/python .agents/slop/bendwire/bench_bytes.py                        # §3
 .venv/bin/python .agents/slop/bendwire/roundtrip.py .agents/slop/bendperf/launch-ones-000  # §4
 .venv/bin/python .agents/slop/bendwire/fit.py --reps 2 64 96 128             # §6
-.venv/bin/python .agents/slop/bendwire/reach.py                              # §6
+.venv/bin/python .agents/slop/bendwire/reach.py                              # §6, new executor
+.venv/bin/python .agents/slop/bendwire/reach.py --old                        # §6, old executor (A/B)
 ```

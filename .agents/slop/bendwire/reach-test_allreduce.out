@@ -1,2 +1,13 @@
-.....                                                                    [100%]
-5 passed in 64.64s (0:01:04)
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
+rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+configfile: pyproject.toml
+collecting ... collected 5 items
+
+test/null/test_allreduce.py::TestRingAllReduce::test_schedule_naive PASSED [ 20%]
+test/null/test_allreduce.py::TestRingAllReduce::test_schedule_ring PASSED [ 40%]
+test/null/test_allreduce.py::TestAllreduceCast::test_allreduce_cast_bf16 PASSED [ 60%]
+test/null/test_allreduce.py::TestAllreduceCast::test_allreduce_cast_float32_noop PASSED [ 80%]
+test/null/test_allreduce.py::TestAllreduceCast::test_allreduce_cast_half PASSED [100%]
+
+========================= 5 passed in 64.72s (0:01:04) =========================

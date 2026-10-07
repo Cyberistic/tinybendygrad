@@ -1,5 +1,15 @@
-....Timeout (0:03:00)!
-Thread 0x0000000170f2b000 (most recent call first):
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
+rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+configfile: pyproject.toml
+collecting ... collected 5 items
+
+test/null/test_assign.py::TestAssign::test_assign_contiguous PASSED      [ 20%]
+test/null/test_assign.py::TestAssign::test_assign_contiguous_permute PASSED [ 40%]
+test/null/test_assign.py::TestAssign::test_assign_dtype_mismatch PASSED  [ 60%]
+test/null/test_assign.py::TestAssign::test_chained_assign_kernel_count PASSED [ 80%]
+test/null/test_assign.py::TestAssign::test_shared_computation_assign_kernel_count Timeout (0:03:00)!
+Thread 0x00000001713d7000 (most recent call first):
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 395 in _recv
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 430 in _recv_bytes
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 250 in recv
@@ -8,13 +18,13 @@ Thread 0x0000000170f2b000 (most recent call first):
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1032 in _bootstrap
 
-Thread 0x000000016ff1f000 (most recent call first):
+Thread 0x00000001703cb000 (most recent call first):
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 531 in _handle_tasks
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1012 in run
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1032 in _bootstrap
 
-Thread 0x000000016ef13000 (most recent call first):
+Thread 0x000000016f3bf000 (most recent call first):
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/selectors.py", line 415 in select
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 1136 in wait
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 502 in _wait_for_updates

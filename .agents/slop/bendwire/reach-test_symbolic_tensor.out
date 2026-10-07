@@ -1,0 +1,24 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
+rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+configfile: pyproject.toml
+collecting ... collected 15 items
+
+test/null/test_symbolic_tensor.py::TestBroadcastShape::test_symbolic PASSED [  6%]
+test/null/test_symbolic_tensor.py::TestBroadcastShape::test_symbolic_vmin_zero PASSED [ 13%]
+test/null/test_symbolic_tensor.py::TestSymbolic::test_cat_dim0_is_expanded PASSED [ 20%]
+test/null/test_symbolic_tensor.py::TestSymbolic::test_cat_dim1_strides PASSED [ 26%]
+test/null/test_symbolic_tensor.py::TestSymbolicVarVals::test_shrink_unbind PASSED [ 33%]
+test/null/test_symbolic_tensor.py::TestSymbolicReshape::test_reshape PASSED [ 40%]
+test/null/test_symbolic_tensor.py::TestSymbolicReshape::test_reshape_infer_multiple_of 
+test/null/test_symbolic_tensor.py::TestSymbolicReshape::test_reshape_infer_multiple_of PASSED [ 46%]
+test/null/test_symbolic_tensor.py::TestSymbolicReshape::test_two_symbol_reshape PASSED [ 53%]
+test/null/test_symbolic_tensor.py::TestSymbolicExpand::test_expand_into_symbols PASSED [ 60%]
+test/null/test_symbolic_tensor.py::TestSymbolicExpand::test_pad_then_expand_into_symbols PASSED [ 66%]
+test/null/test_symbolic_tensor.py::TestSymbolicExpand::test_plus_expands_constant PASSED [ 73%]
+test/null/test_symbolic_tensor.py::TestSymbolicShrink::test_shrink_symbols PASSED [ 80%]
+test/null/test_symbolic_tensor.py::TestSymbolicShrink::test_shrink_symbols_simple PASSED [ 86%]
+test/null/test_symbolic_tensor.py::TestSymbolicContiguousViewOffset::test_shrink_from_start PASSED [ 93%]
+test/null/test_symbolic_tensor.py::TestSymbolicContiguousViewOffset::test_shrink_with_offset PASSED [100%]
+
+============== 15 passed, 10 subtests passed in 115.41s (0:01:55) ==============

@@ -1,0 +1,11 @@
+file	verdict	wall_s	passed	failed	errored	skipped
+test_allreduce	COMPLETED	65.0	5	0	0	0
+test_arange	ABORTED	180.5	0	1	0	0
+test_assign	ABORTED	234.8	4	0	0	0
+test_attention	ABORTED	180.4	0	0	0	0
+test_function	ABORTED	180.3	5	0	0	0
+test_linearizer	COMPLETED	115.9	3	4	0	1
+test_real_world	ABORTED	181.5	0	3	0	5
+test_schedule	KILLED-BY-SWEEP	240.0	20	0	0	0
+test_symbolic_tensor	COMPLETED	115.8	15	0	0	0
+test_winograd	COMPLETED	68.8	4	0	0	0

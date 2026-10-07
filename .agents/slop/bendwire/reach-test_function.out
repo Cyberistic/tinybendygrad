@@ -2,10 +2,38 @@
 platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
 rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
 configfile: pyproject.toml
-collecting ... collected 2 items
+collecting ... collected 8 items
 
-test/null/test_arange.py::TestArange::test_cat_complexity FAILED         [ 50%]
-test/null/test_arange.py::TestArange::test_tri_complexity Timeout (0:03:00)!
+test/null/test_function.py::TestFunction::test_depth_restored_on_exception PASSED [ 12%]
+test/null/test_function.py::TestFunction::test_method_name PASSED        [ 25%]
+test/null/test_function.py::TestFunction::test_name PASSED               [ 37%]
+test/null/test_function.py::TestFunctionMulti::test_call_axis PASSED     [ 50%]
+test/null/test_function.py::TestFunctionTuple::test_custom_kernel_inplace_output_is_implicit PASSED [ 62%]
+test/null/test_function.py::TestFunctionGrad::test_function_grad_ops Timeout (0:03:00)!
+Thread 0x0000000171317000 (most recent call first):
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 395 in _recv
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 430 in _recv_bytes
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 250 in recv
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 579 in _handle_results
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1012 in run
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x000000017030b000 (most recent call first):
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 531 in _handle_tasks
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1012 in run
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1032 in _bootstrap
+
+Thread 0x000000016f2ff000 (most recent call first):
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/selectors.py", line 415 in select
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/connection.py", line 1136 in wait
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 502 in _wait_for_updates
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/multiprocessing/pool.py", line 522 in _handle_workers
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1012 in run
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1075 in _bootstrap_inner
+  File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/threading.py", line 1032 in _bootstrap
+
 Thread 0x00000001fa09b080 (most recent call first):
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/selectors.py", line 415 in select
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/subprocess.py", line 2115 in _communicate
@@ -15,13 +43,12 @@ Thread 0x00000001fa09b080 (most recent call first):
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/realize.py", line 170 in exec_kernel
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/realize.py", line 266 in <lambda>
   File "<string>", line 3 in compiled_match
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1592 in lazy_compile
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/ops.py", line 1618 in rewrite
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/engine/realize.py", line 286 in run_linear
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/tensor.py", line 224 in realize
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py", line 81 in inner
   File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/tensor.py", line 583 in _wrapper
-  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/test/null/test_arange.py", line 17 in test_tri_complexity
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/test/null/test_function.py", line 70 in test_function_grad_ops
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/unittest/case.py", line 589 in _callTestMethod
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/unittest/case.py", line 634 in run
   File "/Users/cyberistic/.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/unittest/case.py", line 690 in __call__

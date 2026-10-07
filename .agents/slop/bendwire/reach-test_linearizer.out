@@ -1,0 +1,544 @@
+============================= test session starts ==============================
+platform darwin -- Python 3.12.10, pytest-9.1.1, pluggy-1.6.0 -- /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python
+rootdir: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+configfile: pyproject.toml
+collecting ... collected 9 items
+
+test/null/test_linearizer.py::TestLinearizer::test_arg_acc_dtype FAILED  [ 11%]
+test/null/test_linearizer.py::TestLinearizer::test_load_dedup PASSED     [ 22%]
+test/null/test_linearizer.py::TestLinearizer::test_reduce_upcast FAILED  [ 33%]
+test/null/test_linearizer.py::TestLinearizer::test_sum_acc_dtype FAILED  [ 44%]
+test/null/test_linearizer.py::TestLinearizer::test_sum_collapse PASSED   [ 55%]
+test/null/test_linearizer.py::TestLinearizer::test_upcast_cse SKIPPED    [ 66%]
+test/null/test_linearizer.py::TestLinearizer::test_zero_fold FAILED      [ 77%]
+test/null/test_linearizer.py::TestLinearizerRenderers::test_upcast_with_locals PASSED [ 88%]
+test/null/test_linearizer.py::TestLinearizerRenderers::test_upcast_with_locals_cpu XFAIL [100%]
+
+=================================== FAILURES ===================================
+______________________ TestLinearizer.test_arg_acc_dtype _______________________
+
+self = <test.null.test_linearizer.TestLinearizer testMethod=test_arg_acc_dtype>
+
+    def test_arg_acc_dtype(self):
+      def helper_arg_acc_dtype(c: Tensor, expected_dtype:DType):
+        realized_ast = c.schedule_linear().src[-1].src[0]
+        program = to_program(replace_opts(realized_ast, []), renderer=Device[Device.DEFAULT].renderer)
+        local = [uop for uop in tuple(program.src[1].src) if uop.op is Ops.BUFFER and uop.addrspace in (AddrSpace.LOCAL, AddrSpace.REG)]
+        self.assertEqual(local[0].dtype, expected_dtype)
+    
+      tests = (
+        (dtypes.float16, None, dtypes.float),
+        (dtypes.bfloat16, None, dtypes.float),
+        (dtypes.float, None, dtypes.float),
+        (dtypes.float16, dtypes.float16, dtypes.float16),
+        (dtypes.bfloat16, dtypes.bfloat16, dtypes.bfloat16),
+        (dtypes.float, dtypes.float16, dtypes.float16),
+      )
+      for tensor_dtype, acc_dtype, expected_dtype in tests:
+        if tensor_dtype in (dts:=Device[Device.DEFAULT].renderer.supported_dtypes()) and acc_dtype in dts|{None} and expected_dtype in dts:
+          a, b = Tensor.rand(8, 8, dtype=tensor_dtype), Tensor.rand(8, 8, dtype=tensor_dtype)
+>         helper_arg_acc_dtype(a.sum(dtype=acc_dtype), expected_dtype)
+
+test/null/test_linearizer.py:90: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+test/null/test_linearizer.py:75: in helper_arg_acc_dtype
+    program = to_program(replace_opts(realized_ast, []), renderer=Device[Device.DEFAULT].renderer)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/codegen/__init__.py:518: in to_program
+    if (prg:=to_program_cache.get(key:=to_program_key(ast, renderer))) is None: to_program_cache[key] = prg = do_to_program(ast, renderer)
+                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1684: in __wrapper
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+tinygrad/codegen/__init__.py:505: in do_to_program
+    prg = graph_rewrite(prg, pm_to_program, ctx=renderer, name="linearize/render")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1665: in __wrapper
+    if TRACK_MATCH_STATS < 2 and not new_ctx: return func(*args, **kwargs)
+                                                     ^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1890: in graph_rewrite
+    return rewrite_ctx.walk_rewrite(sink) if walk else rewrite_ctx.unified_rewrite(sink)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1860: in unified_rewrite
+    if self.pm is None or (new_src_n:=self.pm_rewrite(new_n)) is None:
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1783: in pm_rewrite
+    def pm_rewrite(self, x:UOp) -> UOp|None: return unwrap(self.pm).rewrite(x, self.ctx)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1618: in rewrite
+    if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+             ^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1592: in lazy_compile
+    return entry[1](uop, ctx)
+           ^^^^^^^^^^^^^^^^^^
+<string>:3: in compiled_match
+    ???
+tinygrad/codegen/__init__.py:458: in do_render
+    src = ctx.render(list(lin.src))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:241: in render
+    def render(self, uops:list[UOp]) -> str: return encode(uops)
+                                                    ^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:144: in encode
+    lines.append(f"{i+1}: {u.op.name} {wire_dtype(u)} {wire_arg(u)} {' '.join(str(idx[s]+1) for s in u.src)}".rstrip())
+                                       ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+u = UOp(Ops.PARAM, arg=ParamArg(0, dtypes.f16, 1, device='BEND'), src=())
+
+    def wire_dtype(u:UOp) -> str:
+      # `to_dtype` is dtype.py's `getattr(dtypes, name.lower())`, so it wants the ATTRIBUTE name.
+      # This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`, and that map is DELETED upstream as of
+      # 793abbb1 ("modernize tinygrad's dtype to match rust"), so `import tinygrad.dtype` raised
+      # ImportError and the whole BEND device was dead. `u.dtype.name` is now correct on its own:
+      # the rename made `DType.name` EQUAL the attribute -- uint32's name went from "unsigned int"
+      # (which needed the inverse map to become "uint") to "u32", which `getattr(dtypes, "u32")`
+      # resolves directly. The old comment below is what the rename invalidated.
+      if u.dtype in LANES or u.dtype in (dtypes.void, dtypes.weakint, dtypes.weakfloat): return u.dtype.name
+>     raise NotImplementedError(f"BEND v1 has no lane for {u.dtype} (on {u.op.name}); it has {sorted(LANES, key=str)}")
+E     NotImplementedError: BEND v1 has no lane for dtypes.f16 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+
+tinygrad/runtime/ops_bend.py:101: NotImplementedError
+______________________ TestLinearizer.test_reduce_upcast _______________________
+
+self = <test.null.test_linearizer.TestLinearizer testMethod=test_reduce_upcast>
+
+    @unittest.skipUnless(Device[Device.DEFAULT].renderer.supports_float4, "test requires float4")
+    def test_reduce_upcast(self):
+      x, w = Tensor.randn((1,1,3)).realize(), Tensor.randn((1,1,2)).realize()
+      r = Tensor.conv2d(x,w,padding=1).relu()
+    
+      uops = tuple(to_program(replace_opts(r.schedule_linear().src[-1].src[0],
+        [Opt(op=OptOps.SPLIT, axis=0, arg=(0, AxisType.UPCAST)),
+>        Opt(op=OptOps.SPLIT, axis=1, arg=(0, AxisType.UNROLL))]), renderer=Device[Device.DEFAULT].renderer).src[1].src)
+                                              ^^^^^^^^^^^^^^^
+E     AttributeError: type object 'AxisType' has no attribute 'UNROLL'
+
+test/null/test_linearizer.py:48: AttributeError
+______________________ TestLinearizer.test_sum_acc_dtype _______________________
+
+self = <test.null.test_linearizer.TestLinearizer testMethod=test_sum_acc_dtype>
+
+    def test_sum_acc_dtype(self):
+      for tensor_dtype, acc_dtype in (
+        (dtypes.bool, dtypes.int), (dtypes.int16, dtypes.int), (dtypes.float16, dtypes.float), (dtypes.bfloat16, dtypes.float)):
+        if tensor_dtype in (dts:=Device[Device.DEFAULT].renderer.supported_dtypes()) and acc_dtype in dts:
+          a = Tensor([1, 2, 3], dtype=tensor_dtype).sum()
+          realized_ast = a.schedule_linear().src[-1].src[0]
+>         program = to_program(replace_opts(realized_ast, []), renderer=Device[Device.DEFAULT].renderer)
+                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_linearizer.py:68: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tinygrad/codegen/__init__.py:518: in to_program
+    if (prg:=to_program_cache.get(key:=to_program_key(ast, renderer))) is None: to_program_cache[key] = prg = do_to_program(ast, renderer)
+                                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1684: in __wrapper
+    ret = func(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^^^
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+tinygrad/codegen/__init__.py:505: in do_to_program
+    prg = graph_rewrite(prg, pm_to_program, ctx=renderer, name="linearize/render")
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1665: in __wrapper
+    if TRACK_MATCH_STATS < 2 and not new_ctx: return func(*args, **kwargs)
+                                                     ^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1890: in graph_rewrite
+    return rewrite_ctx.walk_rewrite(sink) if walk else rewrite_ctx.unified_rewrite(sink)
+                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1860: in unified_rewrite
+    if self.pm is None or (new_src_n:=self.pm_rewrite(new_n)) is None:
+                                      ^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1783: in pm_rewrite
+    def pm_rewrite(self, x:UOp) -> UOp|None: return unwrap(self.pm).rewrite(x, self.ctx)
+                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1618: in rewrite
+    if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+             ^^^^^^^^^^^^^^^
+<string>:3: in compiled_match
+    ???
+tinygrad/codegen/__init__.py:458: in do_render
+    src = ctx.render(list(lin.src))
+          ^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:241: in render
+    def render(self, uops:list[UOp]) -> str: return encode(uops)
+                                                    ^^^^^^^^^^^^
+tinygrad/runtime/ops_bend.py:144: in encode
+    lines.append(f"{i+1}: {u.op.name} {wire_dtype(u)} {wire_arg(u)} {' '.join(str(idx[s]+1) for s in u.src)}".rstrip())
+                                       ^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+u = UOp(Ops.PARAM, arg=ParamArg(1, dtypes.i16, 3, device='BEND'), src=())
+
+    def wire_dtype(u:UOp) -> str:
+      # `to_dtype` is dtype.py's `getattr(dtypes, name.lower())`, so it wants the ATTRIBUTE name.
+      # This used to be `INVERSE_DTYPES_DICT[u.dtype.name]`, and that map is DELETED upstream as of
+      # 793abbb1 ("modernize tinygrad's dtype to match rust"), so `import tinygrad.dtype` raised
+      # ImportError and the whole BEND device was dead. `u.dtype.name` is now correct on its own:
+      # the rename made `DType.name` EQUAL the attribute -- uint32's name went from "unsigned int"
+      # (which needed the inverse map to become "uint") to "u32", which `getattr(dtypes, "u32")`
+      # resolves directly. The old comment below is what the rename invalidated.
+      if u.dtype in LANES or u.dtype in (dtypes.void, dtypes.weakint, dtypes.weakfloat): return u.dtype.name
+>     raise NotImplementedError(f"BEND v1 has no lane for {u.dtype} (on {u.op.name}); it has {sorted(LANES, key=str)}")
+E     NotImplementedError: BEND v1 has no lane for dtypes.i16 (on PARAM); it has [dtypes.bool, dtypes.f32, dtypes.i32, dtypes.u32]
+
+tinygrad/runtime/ops_bend.py:101: NotImplementedError
+________________________ TestLinearizer.test_zero_fold _________________________
+
+self = <test.null.test_linearizer.TestLinearizer testMethod=test_zero_fold>
+
+    def test_zero_fold(self):
+>     a, b = Tensor.randn(1).realize(), Tensor.randn(1).realize()
+             ^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/null/test_linearizer.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tinygrad/tensor.py:583: in _wrapper
+    ret = fn(*args, **kwargs)
+          ^^^^^^^^^^^^^^^^^^^
+../../../.local/share/uv/python/cpython-3.12.10-macos-aarch64-none/lib/python3.12/contextlib.py:81: in inner
+    return func(*args, **kwds)
+           ^^^^^^^^^^^^^^^^^^^
+tinygrad/tensor.py:224: in realize
+    run_linear(linear, var_vals, update_stats=do_update_stats)
+tinygrad/engine/realize.py:286: in run_linear
+    for call in linear.src: track_stats(ctx, call.without_after, perf_counter_us(), pm_exec.rewrite(call.without_after, ctx))
+                                                                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/uop/ops.py:1618: in rewrite
+    if (ret:=match(uop, ctx)) is not None and ret is not uop: return ret
+             ^^^^^^^^^^^^^^^
+<string>:3: in compiled_match
+    ???
+tinygrad/engine/realize.py:266: in <lambda>
+    lambda ctx, call, ast: exec_hcq(ctx, call, ast) if isinstance(call.arg.aux, HCQInfo) else exec_kernel(ctx, call, ast)),
+                                                                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tinygrad/engine/realize.py:170: in exec_kernel
+    ets.append(rt(*[b.get_buf(device) for b in prg_bufs], global_size=global_sz, local_size=local_sz, vals=vals, wait=ctx.wait, timeout=ctx.timeout))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = <tinygrad.runtime.ops_bend.BendProgram object at 0x10c752a20>
+global_size = (1, 1, 1), local_size = (1, 1, 1), vals = (), wait = False
+bufs = (4374446080, 4374167552, 4374183936), kw = {'timeout': None}
+
+    def __call__(self, *bufs, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int,int,int]=(1,1,1),
+                 vals:tuple[int, ...]=(), wait=False, **kw) -> float:
+      exe, st = executor(), time.perf_counter()
+      views = [to_mv(b, nb) for b, nb in zip(bufs, self.in_bufs)]
+      with tempfile.TemporaryDirectory() as td:
+        pkt = pathlib.Path(td)/"PACKET.in"
+        pkt.write_text(self.src + "".join(f"{len(v)} {bytes(v).hex()}\n" for v in views))
+        # v1.1's command line is `PACKET gx gy gz vals...`: local_size is NOT an argument, because the
+        # executor is warp 1 and reads every `lidxK` as 0. See its header, "LOCAL SIZE IS NOT A v1
+        # ARGUMENT". A local_size above 1 would silently change nothing, so say so instead.
+        if local_size != (1, 1, 1): raise NotImplementedError(f"BEND v1 is warp 1, so it cannot launch with local_size={local_size}")
+        r = subprocess.run([str(exe), str(pkt), *map(str, (*global_size, *vals))], capture_output=True, text=True)
+        if r.returncode != 0:
+>         raise RuntimeError(f"the Bend executor exited {r.returncode} on:\n{pkt.read_text()}\n{r.stdout}{r.stderr}")
+E         RuntimeError: the Bend executor exited 1 on:
+E         bendexec1 287 3
+E         1: PARAM f32 k:param:8:g
+E         2: PARAM u32 k:param:8:g
+E         3: PARAM u32 k:param:8:g
+E         4: CONST weakint c:0
+E         5: CAST i32 - 4
+E         6: CONST weakint c:2
+E         7: CAST i32 - 6
+E         8: SHRINK u32 - 2 5 7
+E         9: LOAD u32 k:vec:2 8
+E         10: SHRINK u32 - 3 5 7
+E         11: LOAD u32 k:vec:2 10
+E         12: INDEX u32 k:idx:0 9 5
+E         13: CONST weakint c:1
+E         14: CAST i32 - 13
+E         15: INDEX u32 k:idx:0 9 14
+E         16: INDEX u32 k:idx:0 11 5
+E         17: INDEX u32 k:idx:0 11 14
+E         18: CONST weakfloat f:000080bf
+E         19: CAST f32 - 18
+E         20: CAST u32 - 6
+E         21: CMPLT bool - 12 20
+E         22: CAST u32 - 21
+E         23: CONST weakint c:-2
+E         24: CAST u32 - 23
+E         25: CAST u32 - 13
+E         26: CONST weakint c:1065353216
+E         27: CAST u32 - 26
+E         28: CONST weakint c:131072
+E         29: CAST u32 - 28
+E         30: CONST weakint c:15
+E         31: CAST u32 - 30
+E         32: CONST weakint c:16
+E         33: CAST u32 - 32
+E         34: CONST weakint c:16777216
+E         35: CAST u32 - 34
+E         36: CONST weakint c:17
+E         37: CAST u32 - 36
+E         38: CONST weakint c:19
+E         39: CAST u32 - 38
+E         40: CONST weakint c:26
+E         41: CAST u32 - 40
+E         42: CONST weakint c:3
+E         43: CAST u32 - 42
+E         44: CONST weakint c:32768
+E         45: CAST u32 - 44
+E         46: CONST weakint c:4
+E         47: CAST u32 - 46
+E         48: CONST weakint c:4294967296
+E         49: CAST u32 - 48
+E         50: CONST weakint c:466688986
+E         51: CAST u32 - 50
+E         52: CONST weakint c:536870912
+E         53: CAST u32 - 52
+E         54: CONST weakint c:6
+E         55: CAST u32 - 54
+E         56: CONST weakint c:64
+E         57: CAST u32 - 56
+E         58: CONST weakint c:65536
+E         59: CAST u32 - 58
+E         60: CONST weakint c:67108864
+E         61: CAST u32 - 60
+E         62: CONST weakint c:8
+E         63: CAST u32 - 62
+E         64: CONST weakint c:8192
+E         65: CAST u32 - 64
+E         66: CONST weakint c:9
+E         67: CAST u32 - 66
+E         68: ADD u32 - 12 24
+E         69: ADD u32 - 68 16
+E         70: SUB u32 - 15 22
+E         71: ADD u32 - 70 17
+E         72: ADD u32 - 69 71
+E         73: SHR u32 - 71 39
+E         74: MULACC u32 - 71 65 73
+E         75: XOR u32 - 72 74
+E         76: ADD u32 - 72 75
+E         77: SHR u32 - 75 37
+E         78: MULACC u32 - 75 45 77
+E         79: XOR u32 - 76 78
+E         80: ADD u32 - 76 79
+E         81: SHR u32 - 79 55
+E         82: MULACC u32 - 79 61 81
+E         83: XOR u32 - 80 82
+E         84: ADD u32 - 80 83
+E         85: ADD u32 - 84 17
+E         86: SHR u32 - 83 41
+E         87: XOR u32 - 16 17
+E         88: MULACC u32 - 83 57 86
+E         89: XOR u32 - 84 88
+E         90: XOR u32 - 87 51
+E         91: ADD u32 - 89 90
+E         92: ADD u32 - 91 25
+E         93: ADD u32 - 85 92
+E         94: SHR u32 - 92 31
+E         95: MULACC u32 - 92 29 94
+E         96: XOR u32 - 93 95
+E         97: ADD u32 - 93 96
+E         98: SHR u32 - 96 43
+E         99: MULACC u32 - 96 53 98
+E         100: XOR u32 - 97 99
+E         101: ADD u32 - 97 100
+E         102: SHR u32 - 100 33
+E         103: MULACC u32 - 100 59 102
+E         104: XOR u32 - 101 103
+E         105: ADD u32 - 101 104
+E         106: ADD u32 - 105 90
+E         107: SHR u32 - 104 63
+E         108: MULACC u32 - 104 35 107
+E         109: XOR u32 - 105 108
+E         110: ADD u32 - 109 16
+E         111: ADD u32 - 110 25
+E         112: ADD u32 - 111 25
+E         113: ADD u32 - 106 112
+E         114: SHR u32 - 112 39
+E         115: MULACC u32 - 112 65 114
+E         116: XOR u32 - 113 115
+E         117: ADD u32 - 113 116
+E         118: SHR u32 - 116 37
+E         119: MULACC u32 - 116 45 118
+E         120: XOR u32 - 117 119
+E         121: ADD u32 - 117 120
+E         122: SHR u32 - 120 55
+E         123: MULACC u32 - 120 61 122
+E         124: XOR u32 - 121 123
+E         125: ADD u32 - 121 124
+E         126: ADD u32 - 125 16
+E         127: SHR u32 - 124 41
+E         128: MULACC u32 - 124 57 127
+E         129: XOR u32 - 125 128
+E         130: ADD u32 - 129 17
+E         131: ADD u32 - 130 20
+E         132: ADD u32 - 131 25
+E         133: ADD u32 - 126 132
+E         134: SHR u32 - 132 31
+E         135: MULACC u32 - 132 29 134
+E         136: XOR u32 - 133 135
+E         137: ADD u32 - 133 136
+E         138: SHR u32 - 136 43
+E         139: MULACC u32 - 136 53 138
+E         140: XOR u32 - 137 139
+E         141: ADD u32 - 137 140
+E         142: SHR u32 - 140 33
+E         143: MULACC u32 - 140 59 142
+E         144: XOR u32 - 141 143
+E         145: ADD u32 - 141 144
+E         146: ADD u32 - 145 17
+E         147: SHR u32 - 144 63
+E         148: MULACC u32 - 144 35 147
+E         149: XOR u32 - 145 148
+E         150: ADD u32 - 149 90
+E         151: ADD u32 - 150 43
+E         152: ADD u32 - 151 25
+E         153: ADD u32 - 146 152
+E         154: SHR u32 - 152 39
+E         155: MULACC u32 - 152 65 154
+E         156: XOR u32 - 153 155
+E         157: ADD u32 - 153 156
+E         158: SHR u32 - 156 37
+E         159: MULACC u32 - 156 45 158
+E         160: XOR u32 - 157 159
+E         161: ADD u32 - 157 160
+E         162: SHR u32 - 160 55
+E         163: MULACC u32 - 160 61 162
+E         164: XOR u32 - 161 163
+E         165: ADD u32 - 161 164
+E         166: SHR u32 - 164 41
+E         167: MULACC u32 - 164 57 166
+E         168: XOR u32 - 165 167
+E         169: ADD u32 - 168 16
+E         170: ADD u32 - 169 47
+E         171: ADD u32 - 170 25
+E         172: ADD u32 - 25 171
+E         173: ADD u32 - 165 90
+E         174: ADD u32 - 49 173
+E         175: ADD u32 - 174 172
+E         176: SHR u32 - 172 39
+E         177: MULACC u32 - 172 65 176
+E         178: XOR u32 - 175 177
+E         179: ADD u32 - 175 178
+E         180: SHR u32 - 178 37
+E         181: MULACC u32 - 178 45 180
+E         182: XOR u32 - 179 181
+E         183: ADD u32 - 179 182
+E         184: SHR u32 - 182 55
+E         185: MULACC u32 - 182 61 184
+E         186: XOR u32 - 183 185
+E         187: ADD u32 - 183 186
+E         188: ADD u32 - 187 171
+E         189: SHR u32 - 186 41
+E         190: MULACC u32 - 186 57 189
+E         191: XOR u32 - 187 190
+E         192: XOR u32 - 173 171
+E         193: XOR u32 - 192 51
+E         194: ADD u32 - 191 193
+E         195: ADD u32 - 194 25
+E         196: ADD u32 - 188 195
+E         197: SHR u32 - 195 31
+E         198: MULACC u32 - 195 29 197
+E         199: XOR u32 - 196 198
+E         200: ADD u32 - 196 199
+E         201: SHR u32 - 199 43
+E         202: MULACC u32 - 199 53 201
+E         203: XOR u32 - 200 202
+E         204: ADD u32 - 200 203
+E         205: SHR u32 - 203 33
+E         206: MULACC u32 - 203 59 205
+E         207: XOR u32 - 204 206
+E         208: ADD u32 - 204 207
+E         209: ADD u32 - 208 193
+E         210: SHR u32 - 207 63
+E         211: MULACC u32 - 207 35 210
+E         212: XOR u32 - 208 211
+E         213: ADD u32 - 212 173
+E         214: ADD u32 - 213 25
+E         215: ADD u32 - 214 25
+E         216: ADD u32 - 209 215
+E         217: SHR u32 - 215 39
+E         218: MULACC u32 - 215 65 217
+E         219: XOR u32 - 216 218
+E         220: ADD u32 - 216 219
+E         221: SHR u32 - 219 37
+E         222: MULACC u32 - 219 45 221
+E         223: XOR u32 - 220 222
+E         224: ADD u32 - 220 223
+E         225: SHR u32 - 223 55
+E         226: MULACC u32 - 223 61 225
+E         227: XOR u32 - 224 226
+E         228: ADD u32 - 224 227
+E         229: ADD u32 - 228 173
+E         230: SHR u32 - 227 41
+E         231: MULACC u32 - 227 57 230
+E         232: XOR u32 - 228 231
+E         233: ADD u32 - 232 171
+E         234: ADD u32 - 233 20
+E         235: ADD u32 - 234 25
+E         236: ADD u32 - 229 235
+E         237: SHR u32 - 235 31
+E         238: MULACC u32 - 235 29 237
+E         239: XOR u32 - 236 238
+E         240: ADD u32 - 236 239
+E         241: SHR u32 - 239 43
+E         242: MULACC u32 - 239 53 241
+E         243: XOR u32 - 240 242
+E         244: ADD u32 - 240 243
+E         245: SHR u32 - 243 33
+E         246: MULACC u32 - 243 59 245
+E         247: XOR u32 - 244 246
+E         248: ADD u32 - 244 247
+E         249: ADD u32 - 248 171
+E         250: SHR u32 - 247 63
+E         251: MULACC u32 - 247 35 250
+E         252: XOR u32 - 248 251
+E         253: ADD u32 - 252 193
+E         254: ADD u32 - 253 43
+E         255: ADD u32 - 254 25
+E         256: ADD u32 - 249 255
+E         257: SHR u32 - 255 39
+E         258: MULACC u32 - 255 65 257
+E         259: XOR u32 - 256 258
+E         260: ADD u32 - 256 259
+E         261: SHR u32 - 259 37
+E         262: MULACC u32 - 259 45 261
+E         263: XOR u32 - 260 262
+E         264: ADD u32 - 260 263
+E         265: SHR u32 - 263 55
+E         266: MULACC u32 - 263 61 265
+E         267: XOR u32 - 264 266
+E         268: ADD u32 - 264 267
+E         269: ADD u32 - 268 193
+E         270: SHR u32 - 269 67
+E         271: OR u32 - 270 27
+E         272: BITCAST f32 - 271
+E         273: SHR u32 - 267 41
+E         274: MULACC u32 - 267 57 273
+E         275: XOR u32 - 268 274
+E         276: ADD u32 - 275 173
+E         277: ADD u32 - 276 47
+E         278: ADD u32 - 277 25
+E         279: SHR u32 - 278 67
+E         280: OR u32 - 279 27
+E         281: BITCAST f32 - 280
+E         282: ADD f32 - 272 19
+E         283: ADD f32 - 281 19
+E         284: STACK f32 - 282 283
+E         285: SHRINK f32 - 1 5 7
+E         286: STORE void k:vec:2 285 284
+E         287: SINK void - 286 286
+E         8 0000c07f0000c07f
+E         8 3400000000000000
+E         8 1911b8146b74c56a
+E         
+E         executor: refused the packet -- a dtype, an op, an `<arg>` or a src index that this file does not port
+
+tinygrad/runtime/ops_bend.py:224: RuntimeError
+=========================== short test summary info ============================
+FAILED test/null/test_linearizer.py::TestLinearizer::test_arg_acc_dtype - Not...
+FAILED test/null/test_linearizer.py::TestLinearizer::test_reduce_upcast - Att...
+FAILED test/null/test_linearizer.py::TestLinearizer::test_sum_acc_dtype - Not...
+FAILED test/null/test_linearizer.py::TestLinearizer::test_zero_fold - Runtime...
+======== 4 failed, 3 passed, 1 skipped, 1 xfailed in 115.65s (0:01:55) =========
