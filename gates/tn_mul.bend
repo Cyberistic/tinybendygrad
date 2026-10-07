@@ -55,8 +55,7 @@ def row_mul_srcs() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_mul(c, d)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(c), T.Tensor.u(d)])
+  T.tn_srcs_are(r, c, d)
 
 def row_mul_pure() -> Bool:
   +c = mk_tensor(3)
@@ -82,8 +81,7 @@ def row_rmul_srcs() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_rmul(c, d)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(d), T.Tensor.u(c)])
+  T.tn_srcs_are(r, d, c)
 
 def row_rmul_pure() -> Bool:
   +c = mk_tensor(3)
@@ -107,8 +105,7 @@ def row_square_arg() -> Bool:
 def row_square_srcs() -> Bool:
   +t = mk_tensor(3)
   +r = T.tn_square(t)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(t), T.Tensor.u(t)])
+  T.tn_srcs_are(r, t, t)
 
 def row_square_pure() -> Bool:
   +t = mk_tensor(3)

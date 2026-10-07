@@ -265,16 +265,58 @@ def tn_alu.put(+f: O.Found) -> Tensor:
 def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
 
-# THE ARENA RULE IN ONE SPELLING. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`,
-# `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the arena it was built
-# in and an index is legal only in an arena DESCENDING FROM the one that minted it --
-# append-only, so a prefix's indices still name the same nodes. `tn_alu` builds in
-# `base.ar`, which is why a `tn_*` body may only pass src indices minted there or in an
-# ANCESTOR. Two tensors from SIBLING chains have no common ancestor, so the node that
-# consumes both must be built in the NEWER one's arena: `newer` must descend from `base`,
-# and the caller is the one that grew the chain, so the caller is the one that knows.
-def tn_binop(+base: Tensor, +newer: Tensor, +op: O.Op) -> Tensor:
-  tn_alu.of(Tensor.ar(newer), Tensor.u(base), op, [Tensor.u(newer)])
+# THE ARENA RULE IN ONE SPELLING, AND NOW IT IS TOTAL. `Arena` is an IMMUTABLE `Data` VALUE
+# (`ops.bend:1255`, `type Arena is Data: Arena{nodes, shp}`), so a `Found` SNAPSHOTS the
+# arena it was built in and an index is legal only in an arena DESCENDING FROM the one that
+# minted it -- append-only, so a prefix's indices still name the same nodes. `O.Arena.merge`
+# (`ops.bend`, beside `UOp.new`) is what makes the rule total: it re-interns `other`'s nodes
+# into `base` and returns the map, so two SIBLING arenas get a common descendant and
+# `other`'s index is re-minted in `base.ar` before it is read there.
+#
+# When `other` ALREADY descends from `base` the merge is the identity: every node is found
+# by interning and `map[i]` is `i`, so the merged arena IS `other.ar`. That is why this one
+# def serves both the chain case and the sibling case, and why it costs O(1) on the chain.
+def tn_binop(+base: Tensor, +other: Tensor, +op: O.Op) -> Tensor:
+  +m = O.Arena.merge(Tensor.ar(base), Tensor.ar(other))
+  tn_alu.of(O.Merge.ar(m), Tensor.u(base), op, [O.Merge.at(m, Tensor.u(other))])
+
+# THE GATE-SIDE ASSERTION, and it lives beside the merge because it IS the merge. A binop
+# driver cannot compare `r.srcs` to `[c.u, d.u]` any more: `d.u` is an index in `d`'s OWN
+# arena and the node was built in the MERGED one, so `d` has been RE-MINTED. Comparing the
+# raw indices is exactly the coincidence `gates/tn_binop_arena-gate.py` exists to expose.
+# One def, so the six binop gates do not each re-derive the remap.
+def tn_srcs_are(+r: Tensor, +c: Tensor, +d: Tensor) -> Bool:
+  +m = O.Arena.merge(Tensor.ar(c), Tensor.ar(d))
+  O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)), [Tensor.u(c), O.Merge.at(m, Tensor.u(d))])
+
+# SIBLING ARENAS: WAS A WALL, NOW CLOSED. The 18 reverse-dispatch binops (`tn_mul.go`,
+# `tn_add.go`, `tn_sub.go`, `tn_cmplt.go`, `tn_cmpne.go`, `tn_and.go`, `tn_or.go`,
+# `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`, `tn_shl.go`, `tn_shr.go`,
+# `tn_pow.go`, `tn_fdiv.go`, `tn_mod.go`) and `tn_max` used to build with
+# `tn_alu(lhs, OP, [Tensor.u(rhs)])`, which builds in `lhs.ar` and reads `rhs.u` THERE.
+# MEASURED, `O.Rng.sig` (`ops.bend:5857`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
+# derived to depth N in its OWN arena:
+#
+#   rhs depth 0 (a bare const)   ok=True   sig `2 Ops.ADD/2 Ops.CONST Ops.CONST`
+#   rhs depth 1 (one `tn_neg`)   ok=False  sig `1 Ops.ADD/2 Ops.CONST Ops.ADD`
+#   rhs depth 2 (two `tn_neg`)   ok=False  sig `3 Ops.ADD/2 Ops.CONST Ops.NOOP`
+#
+# Depth 0 WAS RIGHT BY COINCIDENCE: `rhs.u` was a legal index in `lhs.ar` that happened to
+# hold `lhs`'s own CONST. Depth 1 was SELF-REFERENTIAL and depth 2 read the `NOOP` bottom.
+# No gate saw it: every `mk_tensor` in `gates/*.bend` makes each operand a bare const from
+# `O.Arena.empty()`, so the depth was always 0. `gates/tn_binop_arena-gate.py` is the gate
+# that varies the depth, and it now answers 1 at 0, 1 and 2 with ZERO divergences -- the
+# three it used to declare are gone.
+#
+# THE CLOSURE IS `O.Arena.merge` (`ops.bend`, beside `UOp.new`): it re-interns the right
+# operand's nodes into the left one's and returns the map, so the sibling case gets a common
+# descendant and the index is re-minted before it is read. There was no such primitive
+# before -- VERIFIED at the time: `grep -nE "def [a-zA-Z_.]*\(.*ar: Arena.*,.*ar2?: Arena"`
+# over `ops.bend` and `tensor.bend` answered exactly one hit, `UOp.group.of`, a GROUP fold.
+#
+# AND ONE CONSEQUENCE FOR THE GATES. A driver can no longer compare `r.srcs` to
+# `[c.u, d.u]`: `d.u` is an index in `d`'s OWN arena and the node lives in the merged one.
+# That comparison is `tn_srcs_are`, below, and it recomputes the merge rather than guessing.
 
 # THE ARENA IS THE ONE THE BUILD RETURNED, and that is the whole of the second rule
 # this file learns. `UOp.alu` RETURNS a `Found` because the arena grew, and the `Found`
@@ -373,7 +415,7 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
 # `_broadcasted` step the blocker. The no-broadcasting case (both x and y are
 # already Tensors of the same shape) is portable: the body reduces to
 # `tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])`, the same `tn_alu`
-# builder with three src nodes. `O.UOp.where` (ops.bend:2712) is the primitive
+# builder with three src nodes. `O.UOp.where` (ops.bend:2767) is the primitive
 # this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
 # no-broadcasting case; the broadcasting case stays walled on `_broadcasted`
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
@@ -389,7 +431,7 @@ def tn_where(+cond: Tensor, +x: Tensor, +y: Tensor) -> Tensor:
 # `ew_bitwise_not` answers the same body under the fold context `ew_fx` builds.
 # HERE, the bool arm is `self.logical_not()`, which is `self.cast(dtypes.bool).ne(True)`
 # (elementwise.py:49, :333) -- a CAST and a CMPNE, both already deps (`UOp.cast` at
-# ops.bend:2825, gate rc=0; CMPNE built via `UOp.new`). The def builds the two-node
+# ops.bend:2880, gate rc=0; CMPNE built via `UOp.new`). The def builds the two-node
 # graph and returns its Tensor.
 #
 # THE ARITH ARMS (`self ^ self.dtype.max` when UNSIGNED, `self ^ -1` otherwise) stay
@@ -417,7 +459,7 @@ def tn_bitwise_not(+t: Tensor) -> Tensor:
 
 # `logical_not` -- elementwise.py:49. `return self.cast(dtypes.bool).ne(True)`.
 # The graph is CAST(self, bool) -> CMPNE(cast, CONST(True)), and the three deps are
-# PORTED: `O.UOp.cast` (ops.bend:2825, gate rc=0), `OpsCMPNE{}` (the auto-generated
+# PORTED: `O.UOp.cast` (ops.bend:2880, gate rc=0), `OpsCMPNE{}` (the auto-generated
 # constructor used as `OpsSQRT{}` and `OpsDETACH{}` are), and `O.UOp.const`. Same
 # shape as the BOOL ARM of `tn_bitwise_not` above -- the two graphs ARE equal for a
 # bool self, and CPython's `logical_not` always builds them (the `.cast(dtypes.bool)`
@@ -430,7 +472,7 @@ def tn_bitwise_not(+t: Tensor) -> Tensor:
 # CAST AND the CONST (3 slots); `cast.ar` has the CAST only (2 slots). Building the
 # CMPNE in `cast.ar` therefore APPENDS it at the slot `O.Found.i(true_c)` already names
 # -- the node becomes its own `src[1]`. MEASURED, `./bin/bend` on a `CInt` input, with
-# `O.Rng.sig` (ops.bend:5803) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
+# `O.Rng.sig` (ops.bend:5857) as the instrument: `CMPNE/2 Ops.CAST Ops.CMPNE` (src[1]
 # IS the top node) where CPython answers `CMPNE(CAST(CONST()), CONST())`
 # (`/tmp/cp_shape.py`, `tinygrad`). So the CMPNE is built in `true_c.ar`, the newest.
 def tn_logical_not.cmpne(+cast: O.Found, +true_c: O.Found) -> Tensor:
@@ -511,8 +553,8 @@ def tn_dunder_invert(+t: Tensor) -> Maybe<&2, Tensor>:
 # -- and the port covers both arms the same way `tn_neg.go` covers its two arms.
 def tn_mul.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsMUL{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsMUL{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsMUL{})
+    case False{}: tn_binop(lhs, rhs, O.OpsMUL{})
 
 def tn_mul(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_mul.go(False{}, lhs, rhs)
@@ -540,8 +582,8 @@ def tn_square(+t: Tensor) -> Tensor:
 # dispatch is a `Bool` flag the same way `tn_mul.go` and `tn_neg.go` are.
 def tn_add.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsADD{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsADD{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsADD{})
+    case False{}: tn_binop(lhs, rhs, O.OpsADD{})
 
 def tn_add(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_add.go(False{}, lhs, rhs)
@@ -558,8 +600,8 @@ def tn_radd(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # The `reverse` flag flips the order, the same way `tn_mul.go` covers it.
 def tn_sub.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsSUB{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsSUB{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsSUB{})
+    case False{}: tn_binop(lhs, rhs, O.OpsSUB{})
 
 def tn_sub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_sub.go(False{}, lhs, rhs)
@@ -576,8 +618,8 @@ def tn_rsub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # broadcasting case stays walled on `_broadcasted` (mixin/movement.py:24).
 def tn_cmplt.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsCMPLT{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsCMPLT{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsCMPLT{})
+    case False{}: tn_binop(lhs, rhs, O.OpsCMPLT{})
 
 def tn_cmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(False{}, lhs, rhs)
@@ -643,7 +685,7 @@ def tn_relu6(+t: Tensor) -> Tensor:
 # `nn/__init__.bend:241` cited `b+1` (Tensor `+` Tensor arith) and `tn_trunc` as
 # the blockers. `tn_trunc` is ported (tensor.bend:320), and the arith is
 # `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:523), the CONST 1 is
-# `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2867), and `c1t` is a
+# `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2922), and `c1t` is a
 # Tensor wrapping the CONST, the same `tn_new(Tensor.ar(t), O.Found.i(c1))`
 # shape `tn_relu.c0t` (tensor.bend:580) uses. The cond `(self > b)` is
 # `tn_rcmplt(self, b)` (tensor.bend:568, the `reverse=True` arm of `tn_cmplt`),
@@ -713,8 +755,8 @@ def tn_floor(+t: Tensor) -> Tensor:
 # `_broadcasted`.
 def tn_maximum.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsMAX{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsMAX{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsMAX{})
+    case False{}: tn_binop(lhs, rhs, O.OpsMAX{})
 
 def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(False{}, lhs, rhs)
@@ -728,8 +770,8 @@ def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `_broadcasted`.
 def tn_lshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsSHL{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsSHL{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsSHL{})
+    case False{}: tn_binop(lhs, rhs, O.OpsSHL{})
 
 def tn_lshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_lshift.go(False{}, lhs, rhs)
@@ -740,8 +782,8 @@ def tn_rlshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `rshift` -- elementwise.py:355. Same shape with `OpsSHR{}` instead.
 def tn_rshift.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsSHR{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsSHR{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsSHR{})
+    case False{}: tn_binop(lhs, rhs, O.OpsSHR{})
 
 def tn_rshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_rshift.go(False{}, lhs, rhs)
@@ -764,8 +806,8 @@ def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `_broadcasted`.
 def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsCMPNE{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsCMPNE{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsCMPNE{})
+    case False{}: tn_binop(lhs, rhs, O.OpsCMPNE{})
 
 def tn_cmpne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmpne.go(False{}, lhs, rhs)
@@ -779,8 +821,8 @@ def tn_rne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # stays walled on `_broadcasted`.
 def tn_and.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsAND{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsAND{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsAND{})
+    case False{}: tn_binop(lhs, rhs, O.OpsAND{})
 
 def tn_and(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_and.go(False{}, lhs, rhs)
@@ -794,8 +836,8 @@ def tn_rand(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # stays walled on `_broadcasted`.
 def tn_or.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsOR{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsOR{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsOR{})
+    case False{}: tn_binop(lhs, rhs, O.OpsOR{})
 
 def tn_or(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_or.go(False{}, lhs, rhs)
@@ -809,8 +851,8 @@ def tn_ror(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # stays walled on `_broadcasted`.
 def tn_xor.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsXOR{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsXOR{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsXOR{})
+    case False{}: tn_binop(lhs, rhs, O.OpsXOR{})
 
 def tn_xor(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_xor.go(False{}, lhs, rhs)
@@ -819,12 +861,12 @@ def tn_rxor(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_xor.go(True{}, lhs, rhs)
 
 # `maximum` -- elementwise.py:378. `return self._binop(Ops.MAX, x, False)`. The
-# no-broadcasting case is `tn_alu(self, MAX, [Tensor.u(x)])`. `maximum` has no
+# no-broadcasting case is `tn_binop(self, x, MAX)`. `maximum` has no
 # `reverse` arm upstream, so there is no `tn_rmax` and the dispatcher is
 # unnecessary -- `tn_max` IS the body. The broadcasting case stays walled on
 # `_broadcasted`.
 def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_alu(lhs, O.OpsMAX{}, [Tensor.u(rhs)])
+  tn_binop(lhs, rhs, O.OpsMAX{})
 
 # `__lshift__` -- elementwise.py:366, via `lshift` at elementwise.py:344
 # (`self._binop(Ops.SHL, x, reverse)`). Same shape as `tn_and` with `Ops.SHL`.
@@ -832,8 +874,8 @@ def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # stays walled on `_broadcasted`.
 def tn_shl.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsSHL{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsSHL{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsSHL{})
+    case False{}: tn_binop(lhs, rhs, O.OpsSHL{})
 
 def tn_shl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_shl.go(False{}, lhs, rhs)
@@ -847,8 +889,8 @@ def tn_rshl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # stays walled on `_broadcasted`.
 def tn_shr.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsSHR{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsSHR{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsSHR{})
+    case False{}: tn_binop(lhs, rhs, O.OpsSHR{})
 
 def tn_shr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_shr.go(False{}, lhs, rhs)
@@ -866,8 +908,8 @@ def tn_rshr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # broadcasting case stays walled on `_broadcasted`.
 def tn_pow.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsPOW{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsPOW{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsPOW{})
+    case False{}: tn_binop(lhs, rhs, O.OpsPOW{})
 
 def tn_pow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_pow.go(False{}, lhs, rhs)
@@ -893,8 +935,8 @@ def tn_rpow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # as the rest of the binop defs).
 def tn_fdiv.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsFLOORDIV{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsFLOORDIV{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsFLOORDIV{})
+    case False{}: tn_binop(lhs, rhs, O.OpsFLOORDIV{})
 
 def tn_fdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_fdiv.go(False{}, lhs, rhs)
@@ -915,8 +957,8 @@ def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on `_broadcasted`.
 def tn_mod.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_alu(rhs, O.OpsFLOORMOD{}, [Tensor.u(lhs)])
-    case False{}: tn_alu(lhs, O.OpsFLOORMOD{}, [Tensor.u(rhs)])
+    case True{}: tn_binop(rhs, lhs, O.OpsFLOORMOD{})
+    case False{}: tn_binop(lhs, rhs, O.OpsFLOORMOD{})
 
 def tn_mod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_mod.go(False{}, lhs, rhs)

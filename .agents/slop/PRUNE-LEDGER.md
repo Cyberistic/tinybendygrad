@@ -1,22 +1,3 @@
-## PROTECTED: LOAD-BEARING INSTRUMENTS **INSIDE** THE SWEPT TREE
-
-**A path inside a swept tree is deletable while four gate bodies still name it.** Found
-2026-10-07, not by a prune but by asking who cites what:
-
-| path | lines | why it is protected |
-|---|---|---|
-| `.agents/slop/hooks/run.py` | 208 | **THE RUNNER.** `:71` binds `charge = _GK.charge` and `:142` is `return charge(r.returncode), ...` — it assigns every gate's verdict. Cited by name, in prose, from **`checks/cl-port-gate.py:62`, `gates/gate-surface.py:99`, `gates/gatekit.py:86`, `gates/gates-pop.py:149`** — **4 files, 0 of them inside `.agents/slop/`.** |
-
-**Its citations are PROSE, not imports — 0 hard dependencies — so a prune would not break
-the tree, it would make **4 gates' docstrings cite a line that is no longer there.** That is
-`AGENTS.md`'s measured lesson (`a gate's required input belongs beside the gate IN GIT`)
-applied to an **instrument** rather than an input, and it was not on this ledger.
-
-**AND ALL 5 SPOT-CHECKED LINE NUMBERS ARE CORRECT** (`:33`, `:112`, `:138`, `:142`, `:166`
-— verified by reading each line, not by trusting the claim). **So the defect is LOCATION,
-not ACCURACY** — which is the opposite of the usual citation failure, and the reason a
-reader must check *both*.
-
 ## SLOP PRUNE LEDGER (2026-10-06T16:00Z, HEAD `4bb9afa1`)
 
 `.agents/slop` went **133 MB -> 43 MB** this session. Every deletion below named a

@@ -2660,6 +2660,60 @@ def UOp.new.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg
 def UOp.new(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag) -> Found:
   UOp.new.of(ar, UOp.make(ar, op, src, arg, tag), op, src, arg, tag)
 
+# ===========================================================================
+# MERGING TWO ARENAS. `Arena` is an IMMUTABLE `Data` VALUE (`ops.bend:1255`), so a
+# `Found` SNAPSHOTS the arena it was built in and an index is legal only in an arena
+# DESCENDING FROM the one that minted it. Two tensors built from two `Arena.empty()`
+# values are SIBLINGS with no common ancestor, and there was no way to name both in
+# one node until this. The wall is recorded at `tensor.bend`'s SIBLING ARENAS block.
+#
+# THE ALGORITHM IS A FOLD, NOT A COPY, because the arena has no mutable store: `other`'s
+# nodes are re-INTERNED into `base` one at a time (`UOp.new`), so a node `base` already
+# holds is found rather than duplicated and `map` sends it to the index it already had.
+# `map[i]` is therefore "where `other`'s node `i` ended up", which is NOT `i + len(base)`
+# in general -- it is only that when nothing was shared.
+#
+# `Arena.nodes` IS TOPOLOGICALLY SORTED: `UOp.new` is only ever called with srcs already
+# in the arena, so every node's srcs were appended before it and a node's src indices are
+# all BELOW its own position in `map`. That is what lets `remap` read `map` while the fold
+# is still appending to it, and it is an invariant of the builder, not of this fold.
+# ===========================================================================
+
+type Merge is Data:
+  Merge{ar: Arena, map: List<&2, U32>}
+
+def Merge.ar(x: Merge) -> Arena:
+  match x:
+    case Merge{ar, map}: ar
+
+def Merge.map(x: Merge) -> List<&2, U32>:
+  match x:
+    case Merge{ar, map}: map
+
+def Merge.remap.go(+map: List<&2, U32>, src: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+  match src:
+    case Nil{}: acc
+    case h <> t:
+      Merge.remap.go(map, t, List.append(&2, U32, acc,
+        [Maybe.default(&2, U32, List.get(&2, U32, map, U32.to_nat(h)), 0)]))
+
+def Merge.remap(+map: List<&2, U32>, src: List<&2, U32>) -> List<&2, U32>:
+  Merge.remap.go(map, src, Nil{})
+
+def Merge.go(nodes: List<&2, Node>, +ar: Arena, +map: List<&2, U32>) -> Merge:
+  match nodes:
+    case Nil{}: Merge{ar, map}
+    case h <> t:
+      match h:
+        case Node{op, src, arg, tag}:
+          +f = UOp.new(ar, op, Merge.remap(map, src), arg, tag)
+          Merge.go(t, Found.ar(f), List.append(&2, U32, map, [Found.i(f)]))
+
+def Arena.merge(+base: Arena, +other: Arena) -> Merge:
+  Merge.go(Arena.nodes(other), base, Nil{})
+
+def Merge.at(+x: Merge, i: U32) -> U32:
+  Maybe.default(&2, U32, List.get(&2, U32, Merge.map(x), U32.to_nat(i)), 0)
 def UOp.new.shp.of(+ar: Arena, +made: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, depth: U32) -> Found:
   Found{made, UOp.of.shp(made, op, src, arg, tag, depth)}
 
@@ -2953,7 +3007,7 @@ def UOp.range_end(ar: Arena, +end: U32, +ids: List<&2, U32>, at: AxisType) -> Fo
 # honest answer, not a nested list). What is missing is that `t_rng_row`'s four rows
 # are only ever fed DEPTH-0 fixtures -- `rng_twoid` builds with `UOp.range_end`, so
 # `axid_twoid=(0,1)/len=2` gates only the flat case, and no row routes a depth-1
-# arg through here. Adding one means a depth-aware `AxIds` (ops.bend:4881, one def,
+# arg through here. Adding one means a depth-aware `AxIds` (ops.bend:4936, one def,
 # ONE call site) plus a matching row in `.agents/slop/ops-oracle.py`, and that oracle
 # is a BYTE DIFF whose row order is documented as matching EXACTLY -- so a row added
 # here and not there is a diff, not a silent gap. Hence not done blind.
@@ -4185,7 +4239,7 @@ def pm_rewrite_m(+ts: PMEntrys, +ar: Arena, +self: U32, +ctx: List<&2, U32>) -> 
 #     if (self.op, self.src, self.arg, self.tag) == new_args: return self
 #     return UOp(*new_args)
 # so the port is the node rebuilt with all four of ITS OWN fields and `TNone{}` in
-# the tag slot -- which is `ops.bend:6594`'s inline `replace`, already written.
+# the tag slot -- which is `ops.bend:6649`'s inline `replace`, already written.
 #
 # THE MINT IS EAGER, and that is safe rather than lazy. `Bool.pick` CHOOSES an arm
 # and does not SEQUENCE one, so the `UOp.new` runs on both paths. For an
@@ -8399,7 +8453,7 @@ def vd_put(nm: String, x: H.I64, base: VarVals) -> VarVals:
 # accumulates. A fold that compiles and returns nothing is worse than one that does
 # not compile, and this is the second time this session that bit (the first was
 # `rra.filter`).
-# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:5738): collect the
+# THE PRINTER, and it is the `ax_names_str` shape (ops.bend:5793): collect the
 # pieces, `List.reverse`, `String.join`. Three attempts got here and the third is
 # the file's own idiom --
 #   1. a `+acc` String that COMPILED and answered `()` for every input, because a
@@ -8421,7 +8475,7 @@ def vd_text.go(+ys: List<&2, H.I64>, +acc: List<&2, String>) -> List<&2, String>
 # NO `match` HERE, and that is the fourth attempt's only content. A match on
 # `vd_text.go(ys, Nil{})` -- a computed value -- is refused, so the empty case is
 # handled by the JOIN: `String.join` of an empty list is "", and "" wrapped in
-# parentheses is "()". `ax_names_str` at ops.bend:5737 is the same shape and it has
+# parentheses is "()". `ax_names_str` at ops.bend:5792 is the same shape and it has
 # no `match` either.
 def vd_text(ys: List<&2, H.I64>) -> String:
   String.concat(["(", String.join(vd_text.go(ys, Nil{}), ","), ")"])
@@ -8535,7 +8589,7 @@ def set_ar() -> Arena:
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(9)}}, TNone{}},
     Node{OpsCONST{}, Nil{}, APy{CInt{H.i64_of_i32(3)}}, TNone{}}], [0]}
 
-# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:5072) AND NOT A NEW ONE. It folds
+# THE PRINTER IS `Rng.srcops.seeded` (ops.bend:5127) AND NOT A NEW ONE. It folds
 # op names in SOURCE ORDER with no trailing separator, which is the whole of what
 # these rows need: `set` is a composition whose only failure modes are the SHAPE and
 # the ORDER, and a row that printed a top-level op name could not tell `END` from a

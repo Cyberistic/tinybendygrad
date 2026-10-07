@@ -61,8 +61,7 @@ def row_threefry_srcs() -> Bool:
   +t = mk_tensor()
   +s = mk_tensor()
   +r = T.tn_threefry(t, s)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(t), T.Tensor.u(s)])
+  T.tn_srcs_are(r, t, s)
 
 def row_threefry_arg() -> Bool:
   +t = mk_tensor()
