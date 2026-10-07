@@ -55,20 +55,11 @@ SIGN_MAX = (1 << 63) - 1
 # `U32` image, so a decimal fixture would have to be transcribed on one side and
 # derived on the other -- and a transcription is exactly the constant that is wrong and
 # green. `lowhi` is `0x0000_0001_9abc_def0`.
-def _coindep():
-    """The single declaration, loaded BY PATH -- see checks/coindep.py."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        "coindep", Path(__file__).resolve().parent.parent / "checks" / "coindep.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-# The fixture's (hi, lo) words are THIS oracle's own measurement and stay here; the
-# value NAMES come from the one declaration, so the row-name set is spelled once.
-_WORDS = {"neg1": (4294967295, 4294967295), "one": (0, 1), "lowhi": (1, 2596069104)}
-VALUES = [(n, *_WORDS[n]) for n in _coindep().I64SHL_VALUES]
+VALUES = [
+    ("neg1", 4294967295, 4294967295),
+    ("one", 0, 1),
+    ("lowhi", 1, 2596069104),
+]
 
 AMOUNTS = [0, 1, 31, 32, 33, 62, 63, 64, 65, 127]
 

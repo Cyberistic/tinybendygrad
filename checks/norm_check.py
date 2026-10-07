@@ -113,11 +113,5 @@ def main() -> None:
   sys.exit(1 if bad else 0)
 
 
-# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest the normaliser check runs and answers `0`.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
-PLANTS = {0: []}
-
-
 if __name__ == "__main__":
   main()

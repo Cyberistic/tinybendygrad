@@ -523,11 +523,5 @@ def main():
   return 1 if res["bad"] else 0
 
 
-# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on its swept input, so no plant reaches a code.
-VERDICTS = {0: "PASS", 1: "FAIL", 3: "REFUSED"}
-PLANTS = {}
-
-
 if __name__ == "__main__":
   sys.exit(main())

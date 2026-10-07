@@ -61,7 +61,6 @@ import ast
 import io
 import os
 import re
-import stat
 import subprocess
 import sys
 import tempfile
@@ -326,16 +325,9 @@ def discover(root):
     """`(entries, libs)`, by walking the two homes. NEVER a literal list of files.
 
     `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
-    into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`
-    **nor `Path.is_file()`**, because **BOTH OF THOSE FOLLOW SYMLINKS**: `bin/bend` is a symlink to a
-    worktree and a test that follows it would certify a link target as a tree file.
-
-    MEASURED 2026-10-07 (`subtree`): this line called `p.is_file()` while the docstring above it
-    claimed `os.lstat`, **AND `os.lstat` APPEARED NOWHERE IN THE FILE** — so the code did precisely
-    what its own comment said it did not. Planted **both** directions: a symlink whose target is
-    OUTSIDE the home **was certified** (the hazard this comment exists to prevent), and a DANGLING
-    gate symlink **was invisible**. `stat.S_ISREG(os.lstat(p).st_mode)` is true only for a real
-    file: it rejects a symlink outright and cannot be fooled by a broken one.
+    into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`,
+    because `Path.exists()` FOLLOWS SYMLINKS: `bin/bend` is a symlink to a worktree and an
+    existence test that follows it would certify a link target as a tree file.
     """
     entries, libs = [], []
     for home in HOMES:
@@ -343,7 +335,7 @@ def discover(root):
         if not os.path.isdir(h):
             continue
         for p in sorted(h.iterdir()):
-            if p.suffix not in SUFFIXES or not stat.S_ISREG(os.lstat(p).st_mode):
+            if p.suffix not in SUFFIXES or not p.is_file():
                 continue
             (entries if entry_reason(p) in ("py-main", "sh-dispatch", "sh-selfref")
          else libs).append(p)

@@ -39,17 +39,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # copy, and reporting that as unclaimed work is the same category of error as reporting a
 # stranger's commit as yours.
 LIVE = (".agents/slop/rerun/", ".agents/slop/stale71/")
-def _coindep():
-    """The single declaration, loaded BY PATH -- see checks/coindep.py."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(
-        "coindep", os.path.join(ROOT, "checks", "coindep.py"))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-SKIP_DIRS = _coindep().SKIP_DIRS
+SKIP_DIRS = (".git", "references", "node_modules", "__pycache__", ".venv")
 
 # A citation must be a WHOLE token: `X` may not be glued to a path separator or an identifier
 # character on either side. This is what keeps `a/b.py` from counting as a citation of `b.py`.

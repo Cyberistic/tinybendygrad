@@ -4,9 +4,9 @@
 
 ## Progress by category (GENERATED from checkbox counts)
 
-**OVERALL** — ████████░░ 1082/1325 81.7%  (+4 `[~]`)
+**OVERALL** — ████████░░ 1074/1317 81.5%  (+4 `[~]`)
 
-Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sections carry tasks.
+Category = each level<=2 (`#`/`##`) heading, found by discovery; 154 of 184 sections carry tasks.
 
 • TODO — ████████░░ 39/49  80%
 • Phase P0 — toolchain and scaffolding — █████████░ 8/9  89%
@@ -162,4 +162,3 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sect
 • SPECCITE — file:line CITATIONS, AND THE TENTH CLASS WAS NOT THE TEN... — ███████░░░ 7/10  70%
 • devpin — the DEVICE is a declared precondition of the graphcmp compar... — ████████░░ 24/30  80%
 • 2026-10-06 — the ops.bend marker campaign, and the fifth defect close... — ████████░░ 4/5  80%
-• FLIPTHIRD — the cost is NOT in the files: bend measures the Arg t... — ██████████ 8/8 100%

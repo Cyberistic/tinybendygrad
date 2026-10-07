@@ -100,11 +100,5 @@ def main():
   return 1 if disagree else 0
 
 
-# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate. At rest this refuses on the swept oracle: `3` is the one reachable code.
-VERDICTS = {0: "AGREE", 1: "BROKEN", 3: "REFUSED"}
-PLANTS = {3: []}
-
-
 if __name__ == "__main__":
   sys.exit(main())

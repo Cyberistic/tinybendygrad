@@ -454,21 +454,8 @@ def fence(base: dict[str, str], arm: dict[str, str], owned: set[str]) -> list[st
 # another ABI's token.  It is checked for the ABI-4 arms here and for EVERY arm in
 # checks/abi4_gate.py, because the entanglement was never about which
 # convention -- it was about an arm quietly carrying two.
-#
-# ONE DECLARATION, TWO GATES.  This tuple and checks/abi4_gate.py's `OTHER_ABI_TOKENS`
-# were character-identical 9-string hand lists -- the `names.py`/`ARMED` shape, so a
-# tenth other-ABI token was invisible to BOTH.  Both now LOAD the one declaration in
-# `checks/coindep.py`, widened there with the four markers a discovery over the tree's
-# other-ABI bytes found uncovered (`pack64`, `i64_of`, `Number(`, the I64 record tag).
-def _coindep():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("coindep", HERE / "coindep.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-JS_ARM_TOKENS = _coindep().ABI_OTHER_TOKENS
+JS_ARM_TOKENS = ("p.hi", "p.lo", "p.fst", "p.snd", "io_tup", "BigInt",
+                 "asIntN", "<< 32n", ">>> 32n")
 
 
 def arm_leaks(arm: str) -> list[str]:

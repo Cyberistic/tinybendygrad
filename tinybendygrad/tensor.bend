@@ -559,8 +559,36 @@ def tn_cmplt.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_cmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(False{}, lhs, rhs)
 
+# `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
+# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
+# `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
+# parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
+# `tn_rcmplt` so the forward reference is filled.
 def tn_rcmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmplt.go(True{}, lhs, rhs)
+
+# `relu` -- elementwise.py:674. `(self > 0).where(self, 0)`. The wall text at
+# `nn/__init__.bend:241` cited `_broadcasted` as the blocker for `where`, which
+# this composition depends on. The `(self > 0)` is `tn_rcmplt(self, c0)` where
+# `c0` is a CONST 0. The `where(self, 0)` is `tn_where(rcmplt, self, c0)`. Both
+# parts are ported, so `relu` is a chain of two `tn_alu`-ish calls. Placed AFTER
+# `tn_rcmplt` so the forward reference is filled.
+def tn_relu.c0(+t: Tensor) -> O.Found:
+  O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(0)})
+
+def tn_relu.c0t(+t: Tensor, +c0: O.Found) -> Tensor:
+  tn_new(Tensor.ar(t), O.Found.i(c0))
+
+def tn_relu.gt0(+t: Tensor, +c0: O.Found) -> Tensor:
+  tn_rcmplt(t, tn_relu.c0t(t, c0))
+
+def tn_relu.go(+t: Tensor, +gt0: Tensor, +c0: O.Found) -> Tensor:
+  tn_where(gt0, t, tn_relu.c0t(t, c0))
+
+def tn_relu(+t: Tensor) -> Tensor:
+  +c0 = tn_relu.c0(t)
+  tn_relu.go(t, tn_relu.gt0(t, c0), c0)
 
 # `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
 # (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`

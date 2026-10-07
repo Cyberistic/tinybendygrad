@@ -8,19 +8,10 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          `census.py` `rows-*.txt` -> `*.rows`; 2 orphans
                                          deleted. `declared()` MEASURED COMPLETE twice
                                          (103, then 139 after another unit rewrote
-                                         `cmd_run`). 0 unexcused remain (2026-10-07, `checks/no-txt.py` rc=0).
+                                         `cmd_run`). 403 remain, 402 of them other units'.
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.
-msgdiff-gate    [#########] 1/1      a commit MESSAGE vs its own DIFF. `00b101574`'s "Deleted the
-                                        superseded `oracles259/plants.py`" is REFUSED (3) over an
-                                        EMPTY `git diff-tree --diff-filter=D`, the file present at
-                                        blob `e6e31707`. `range --since=2026-10-06T12:00 HEAD` =
-                                        147 commits, 146 PASS, 1 REFUSED; `--plant` 6 states rc=0.
-                                        COUNTS pids, cannot judge them (a pid is a live
-                                        measurement in an immutable message); the PROSE layer is a
-                                        different population. `gates/msgdiff-gate.py`,
-                                        `.agents/slop/msgdiff/REPORT.md`.
 spec-as-laws    [#########] 9/9      python-to-bend  [###.......] 5/96  (0 defs outstanding)
 backward-walk   [#########] 1/3      `compute_gradient` + `_deepwalk` LANDED in
                                         `mixin/gradient.bend`. **15/15 rows AGREE with
@@ -213,10 +204,6 @@ dtype-js-abi4   [##########] 3/3    ABI-4 **REPAIRED IN THE TREE**, 3 lines, no 
                                     `.agents/slop/jstage/`, `.agents/slop/JSTAGE.md`, JS8-1..7.
 mut-REQUEST     [##########] 0      31 MOVED / 5 THEOREM / 0 REQUEST
 false-zeros     [##########] 0      0 unmarked (was 14) across 21 records
-denominator     [#####-----] 5/10   5 reachable of 30 candidates, 1 REALLY broken
-                                       (`dup-census.py`); `checks/denominator.py` landed
-                                       on 1 gate + 1 helper; `corpus-figure.py:275` NEXT.
-                                       `.agents/slop/denominator/REPORT.md`
 row-reader      [##########] 3/3    formats F1/F2/F3, 39 pairs, 0 keys lost
 lane-liveness   [###########] 11/11  census: the 39 wired lanes tabulated
                                        LIVE/RECORDED/TAUTOLOGICAL; repair pass:
@@ -13510,60 +13497,13 @@ each took a two-line edit with none of their own logic moving.
       against `sweep.py` itself: aging one dir across 60m moved verdict_for LIVE-UNIT -> DOC and
       restoring moved it back. 433 -> 242 LIVE-UNIT files at w=60; `--plan` 3m34s -> 3m23s.
 
-## FLIPTHIRD — the cost is NOT in the files: `bend` measures the `Arg` type change at TWO edits (2026-10-07)
-
-Third attempt at `flip`, the last `graphs-disagree`. Report: `.agents/slop/flipthird/REPORT.md`.
-**The first of the three to RUN `bend`** (`flipbool`/`flipport`/`flipblock` were static-only).
-
-- [x] **THE TYPE COST IS 2 EDITS, MEASURED GREEN.** `ABoolList{bs: List<&2, Bool>}` in
-      `type Arg` (`ops.bend:1208`) plus `eq_bool_list`/`eq_arg.ABoolList`/`eq_arg.sel` arm.
-      `bend tinybendygrad/tensor.bend` = **`WITHIN-LIMITS`, rc=0** under
-      `checks/bounded.py --seconds 400 --mb 2048`. `tensor.bend` imports `render`, `upat`,
-      `fold`, `movement`, `prepare` — **both forbidden files were type-checked in that run.**
-      Parked pristine + reproducible from `build.py`.
-- [x] **`upat.bend` IS RED AT REST** — baseline rc=1, `expected : cases for ops.AOpLit`,
-      **zero** probe edits applied. A pre-existing defect, not FLIP's debt, and it blocks
-      any `Arg` work. Both prior reports called `upat.bend` "one line"; it is one line in
-      **a file that does not compile**.
-- [x] **"9 FILES" CONFLATES FIVE LAYERS.** By discovery: type=2 (ops.bend, mine),
-      readers=1 (fold.bend, mine), constructors=**4** (`prepare:277`, `movement:993`,
-      `movement:1533`, `fold:5514` — all mine), compile arms=2 (`render:705`,
-      `upat:398`, NOT mine), harness=1. **One of the 9 was `fold.bend`, a file I own.**
-- [x] **`flip_len` beats an `order_arg` arm** (`flipblock`'s own better shape, confirmed):
-      `order_arg` is typed `List<&2, U32>`, so an `ABoolList` arm there needs a lossy
-      `Bool->U32` converter; `flip_len` returns a LENGTH, identical in both spellings, and
-      has ONE caller (`flip_ds:1998`), so the reader PERMUTE shares is never touched.
-- [x] **THE BLOCKER IS AN UNOWNED SURFACE, NOT A FILE COUNT.** `argseam.py` (walk, no hand
-      list): 44 `Arg` matches, 41 open-ended via `_`/`ABad`, **1 CLOSED** =
-      `render.bend:705 arg_repr`. Every future `Arg` constructor needs those arms. **Give
-      the `Arg` exhaustiveness surface one permanent owner and FLIP is 4 owned edits away.**
-- [x] **NOT LANDED, AND NOT HALF-LANDED.** The 6 owned edits alone leave a tree that does
-      not compile = `DEAD`, not `SKIP`. The rigged fixture (repoint `graphcmp.bend`'s
-      `g_flip` only) was rejected on the brief's own criterion: `pr_flip` (`prepare.bend:277`,
-      live at `:773`) still builds `ATuple{[1,0]}`, so the differ would stop modelling what
-      the port builds. **Tree PROVED pristine: all 6 files byte-identical to HEAD.**
-- [x] **THE `b`-NOT-`y` CORRECTION HOLDS** (3rd confirmation): `graphcmp.py` `ATOMS` maps
-      `bool->"b"`; `y` is `bytes`. On disk: `arg py=n(b1,b0) bend=n(i1,i0)`.
-- [x] **FOUND, NOT ABOUT FLIP:** `tinybendygrad/tinybendygrad/` is an **untracked,
-      byte-identical recursive copy of the port** (134 `.bend`, 0 paths in
-      `git ls-tree -r HEAD`). Every `os.walk` census that does not exclude it **doubles its
-      rows** — and `device.bend:93`'s "a list of `Bool` is not a usable type" is a
-      CONSEQUENCE of that, not a language fact: `bend` compiled `List<&2, Bool>` fine.
-
-**PARITY: still 1 (`flip`), and it is a TYPE not a fixture.** `pin-census.py` (generator's
-own `PIN`, loaded by path) = 2 rows, **1 un-diagnosed (`flip`)**. The port is **one
-vocabulary change short**, now measured at 2 edits + 4 owned readers/constructors.
-
-**No plant is owed: nothing landed, so a `mv_perm*` re-run would be a change-detector
-against an unchanged tree (`AGENTS.md`). The trade print is owed by whoever lands step 4.**
-
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
 
-**OVERALL** — ████████░░ 1082/1325 81.7%  (+4 `[~]`)
+**OVERALL** — ████████░░ 1074/1317 81.5%  (+4 `[~]`)
 
-Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sections carry tasks.
+Category = each level<=2 (`#`/`##`) heading, found by discovery; 154 of 184 sections carry tasks.
 
 • TODO — ████████░░ 39/49  80%
 • Phase P0 — toolchain and scaffolding — █████████░ 8/9  89%
@@ -13719,4 +13659,3 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sect
 • SPECCITE — file:line CITATIONS, AND THE TENTH CLASS WAS NOT THE TEN... — ███████░░░ 7/10  70%
 • devpin — the DEVICE is a declared precondition of the graphcmp compar... — ████████░░ 24/30  80%
 • 2026-10-06 — the ops.bend marker campaign, and the fifth defect close... — ████████░░ 4/5  80%
-• FLIPTHIRD — the cost is NOT in the files: bend measures the Arg t... — ██████████ 8/8 100%

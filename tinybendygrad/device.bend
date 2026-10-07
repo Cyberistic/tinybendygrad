@@ -90,17 +90,13 @@
 # TWO MEASURED BEND CONSTRAINTS THIS FILE IS BUILT AROUND. Both cost a compile
 # cycle each and neither is in bend2-constraints.md yet.
 #
-# A. **A LIST OF `Bool` IS AWKWARD TO READ, NOT UNUSABLE.** `List<&2, Bool>` is
-#    accepted as a parameter annotation and `List.length(&2, Bool, xs)` COMPILES
-#    AND RUNS (MEASURED 2026-10-07: `U32.from_nat(List.length(&2, Bool, xs))`
-#    returns a value; an earlier note here claimed it was "refused by every
-#    reader", which the measurement did NOT reproduce and which `flipthird` had
-#    already contradicted). What IS real: element access is the cost.
-#    `List.get(&2, Bool, xs, 0n)` has type `Maybe<&2, Bool>`, so every read is a
-#    peel, and a cons pattern `case k <> t:` over the list names a consumed
-#    binder. A `Bool` FIELD of a `Data` record is fine (e.g. `CBool{b: Bool}`).
-#    So availability, deprecation and mock-ness are a U32 BITMASK read with
-#    `U32.shrn`/
+# A. **A LIST OF `Bool` IS NOT A USABLE TYPE.** `List<&2, Bool>` is accepted as
+#    a parameter annotation and then refused by every reader of one: the cons
+#    pattern `case k <> t:` reports "a match on a parameter or field (this name
+#    is a def or a consumed binder)", and `List.get` / `List.length` report
+#    "expected a defined name" because `Bool` does not resolve in a `Kind`
+#    position. A `Bool` FIELD of a `Data` record is fine. So availability,
+#    deprecation and mock-ness are a U32 BITMASK read with `U32.shrn`/
 #    `U32.and` against the row's own index -- which also removes the two
 #    parallel lists, and with them a zip fold.
 #

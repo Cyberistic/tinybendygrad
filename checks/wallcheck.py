@@ -608,12 +608,5 @@ def main() -> int:
     return rc
 
 
-# THE VERDICT SURFACE, DECLARED. `gates/gate-surface.py` reads these by AST -- never by import,
-# because import RUNS a gate -- and EXECUTES each plant, requiring the observed rc to be the
-# declared one. A declared verdict with no plant is RED, named.
-VERDICTS = {0: "PASS", 1: "FAIL", 2: "USAGE", 3: "REFUSED", 4: "NO-ROW", 5: "DEAD"}
-PLANTS = {0: ["--selftest"], 4: ["NO-SUCH-ID"]}
-
-
 if __name__ == "__main__":
     sys.exit(main())
