@@ -1,0 +1,20 @@
+H  a pre-commit hook that exits 3 (REFUSED)
+   hook exits REFUSED 3 -> `git commit` returns rc=1
+   hook exits    FAIL 1 -> `git commit` returns rc=1
+   hook exits    DEAD 5 -> `git commit` returns rc=1
+   hook exits    SKIP 4 -> `git commit` returns rc=1
+   hook exits PASS 0     -> `git commit` returns rc=0
+
+X  a runner that maps exit codes without reading a word
+   case                                          rc  first line of output
+   REFUSED, precondition absent (exit 3)          3  REFUSED, NOT A VERDICT: 00b101574 -- the message cla
+   DEAD, git could not answer  (exit 5)           5  DEAD: git could not answer: git log -1 --format=%B 0
+   SKIP, nothing to measure  (exit 4)             0  PASS: HEAD -- 0 deletion claims checked, 0 uncheckab
+   CRASH, traceback          (exit 1)             4  unknown mode 'nonsense-mode'
+   PASS                        (exit 0)           0  PASS: HEAD -- 0 deletion claims checked, 0 uncheckab
+
+   a gate that exits 0 SILENTLY: rc=0, bytes of output=0
+   under `all(rc==0)` that is GREEN. It is the AGENTS.md sentence exactly:
+   'a gate that exits 0 having measured nothing is worse than no gate'.
+
+--probe: FAILED: H: hook exit 3 -> git commit rc 1; H: hook exit 5 -> git commit rc 1; H: hook exit 4 -> git commit rc 1

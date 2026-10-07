@@ -1,0 +1,24 @@
+POPULATION: gates-pop.discover() -> 115 entries, 24 modules
+INVOKABLE : 13 declare VERDICTS; 102 do not (SKIP, no surface to tally)
+ASKED-REPORT: gate-surface.py -> 1 in population, invoked with --report
+  REFUSED     0.0s  checks/dup-census.py                   == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  REFUSED     0.0s  checks/dup-gate.py                     == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  GREEN       0.0s  checks/env-precond.py                  METHOD A -- the source lines that build the child environments, found by anchor:
+  REFUSED     0.0s  checks/gate.py                         == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  REFUSED     0.0s  checks/hermetic-census.py              == REFUSED, NOT A VERDICT: input absent: isolate.py (this file's former sibling,
+  REFUSED     0.0s  checks/nl-gate-noguard.py              == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  REFUSED     0.0s  checks/nl-gate.py                      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  FAIL        0.3s  checks/no-txt.py                       175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` staging (l
+  GREEN       0.1s  checks/norm_check.py                   gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen_f32_seam
+  DEAD        0.2s  checks/oracle_f64.py                   crashed, not a verdict: Traceback (most recent call last):
+  SKIP       45.0s  checks/residue.py                      <OVER-CAP 45s: cost UNKNOWN>
+  REFUSED     0.1s  checks/rn-gate.py                      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-
+  FAIL        4.5s  checks/wallcheck.py                    wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=0e86a3283  truth=.a
+  GREEN       1.7s  gates/gate-surface.py --report
+
+TALLY: GREEN=3  FAIL=2  REFUSED=7  SKIP=1  DEAD=1
+THE DENOMINATOR, WHICH IS NOT THE TALLY: 5 of 14 gates reached a
+verdict about the tree. 7 refused because an input is ABSENT, 1 did not finish, 1 crashed or said nothing.
+"14 gates ran" is 14 subprocesses, not 14 measurements.
+NOTE : this runner's exit describes THE RUN (did every gate emit a verdict?),
+       never the tree. Redness is data. Do not add a sixth verdict.

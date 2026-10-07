@@ -1,0 +1,16 @@
+gate	rc	seconds
+over-cap
+checks/dup-census.py	3	0.0	False
+checks/dup-gate.py	3	0.0	False
+checks/env-precond.py	0	0.0	False
+checks/gate.py	3	0.0	False
+checks/hermetic-census.py	3	0.0	False
+checks/nl-gate-noguard.py	3	0.0	False
+checks/nl-gate.py	3	0.0	False
+checks/no-txt.py	1	0.3	False
+checks/norm_check.py	0	0.1	False
+checks/oracle_f64.py	1	0.2	False
+checks/residue.py	TIMEOUT	45.0	True
+checks/rn-gate.py	3	0.0	False
+checks/wallcheck.py	1	1.8	False
+gates/gate-surface.py	0	1.4	False

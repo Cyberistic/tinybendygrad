@@ -1,0 +1,15 @@
+gate	verdict	first line	seconds
+checks/dup-census.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.0
+checks/dup-gate.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.0
+checks/env-precond.py	GREEN	METHOD A -- the source lines that build the child environments, found by anchor:	0.0
+checks/gate.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.0
+checks/hermetic-census.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: isolate.py (this file's former sibling,	0.0
+checks/nl-gate-noguard.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.0
+checks/nl-gate.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.0
+checks/no-txt.py	FAIL	175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` staging (l	0.3
+checks/norm_check.py	GREEN	gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen_f32_seam	0.1
+checks/oracle_f64.py	DEAD	crashed, not a verdict: Traceback (most recent call last):	0.2
+checks/residue.py	SKIP	<OVER-CAP 45s: cost UNKNOWN>	45.0
+checks/rn-gate.py	REFUSED	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-	0.1
+checks/wallcheck.py	FAIL	wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=0e86a3283  truth=.a	4.5
+gates/gate-surface.py --report	GREEN	I  DISCOVERED 115 entry point(s) under checks/gates/ (+24 module(s) with no entr	1.7

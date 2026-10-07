@@ -1,0 +1,28 @@
+scratch clone: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/wireplant
+
+wire.py --install -> pre-commit: create | pre-push: create | installed into /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/wireplant/.git/hooks; verdicts appended to last-verdict.tsv
+   pre-commit: executable
+   pre-push: executable
+
+1  honest commit through the generated pre-commit
+  ok   1 honest commit passes: rc=0 want=0
+
+2  a 520-file deletion staged, through the same pre-commit
+  ok   2 the mass delete is REFUSED: rc=1 want=1
+   gate said: REFUSED, NOT A VERDICT: the staged index deletes 520 files / 520 lines -- envelope: norm
+   git commit returned 1 -- state 4 explains why that is not 3
+
+3  pre-push, with a bad-message commit already in the local set
+  ok   3 the pushed bad message is REFUSED: rc=1 want=1
+   gate said: range: 2 commits -- 1 PASS, 1 REFUSED
+
+4  the verdict FILE, which is the only place REFUSED survives
+   hook	pre-push	3	1 refspec(s)
+  ok   4 the file records 3 where git returned 1 (REFUSED is not in git's exit code)
+
+5  the bad commit is now ON the remote; a new honest push must go through
+   (it landed by ack: push rc=0)
+  ok   5 the honest push is NOT blocked by the pushed bad commit: rc=0 want=0
+   verdict file after: hook	pre-push	0	1 refspec(s)
+
+--wireplant: all states OK

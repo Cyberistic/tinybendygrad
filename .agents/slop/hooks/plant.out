@@ -1,0 +1,38 @@
+scratch clone: /private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/hookplant
+
+A  honest commit, pre-commit = `massdelete staged` (reads the INDEX)
+  ok   A honest commit passes: rc=0 want=0
+  ok   A the gate named the index: 'the staged index' present
+
+B  the commit that CARRIES the false claim, judged on its own sha
+  ok   B msgdiff refuses it: rc=3 want=3
+  ok   B refused, not crashed: 'REFUSED, NOT A VERDICT' present
+  ok   B names the undeleted path: 'oracles259/plants.py' present
+
+C  THE POINT -- honest commit while the bad commit is HEAD
+  ok   C an honest commit is not blocked by a bad ancestor: rc=0 want=0
+  ok   C ...even though that ancestor still refuses on its own sha: 'REFUSED, NOT A VERDICT' present
+
+D  THE WRONG WIRING -- pre-commit = `msgdiff check HEAD`
+  ok   D it blocks a clean commit: rc=1 want=1
+  ok   D and it blocked it by judging the PREVIOUS commit: 'REFUSED, NOT A VERDICT' present
+  ok   D ...a commit the author is not changing: 'oracles259/plants.py' present
+   the message being written was: 'a clean commit with no claims whatsoever'
+
+E  THE GATE SHAPE -- `msgdiff range <local> --not <remote>`
+  ok   E the already-pushed bad commits are out of scope: rc=0 want=0
+  ok   E ...and nothing is refused: '0 REFUSED' present
+   in scope: 1 commit(s); bad ones in that set: False/False
+
+F  THE POLICY SHAPE -- `msgdiff range <first>..HEAD` (what jjreset ran)
+  ok   F it refuses, permanently: rc=3 want=3
+  ok   F refused for the right reason: 'REFUSED, NOT A VERDICT' present
+     re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view  <- a new honest commit never clears this
+
+G  `msgdiff range <first> HEAD` -- two ENDPOINTS, which `rev-list` unions
+   rc=3;   re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+   `range 45c5d740..HEAD` =   re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+   SAME population -> this tree's `range` is a union either way, and the
+   --not form is the ONLY thing that scoped it in E. Naming that.
+
+--plant: all states OK

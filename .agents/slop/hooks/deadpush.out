@@ -1,0 +1,20 @@
+the pushed commit 1b14d9d15297 judged DIRECTLY (not through a hook):
+   rc=3  REFUSED, NOT A VERDICT: 1b14d9d15297 deletes 520 files / 520 lines -- envelope: normal c
+
+installing jjreset's pre-push verbatim:
+   #!/bin/sh
+   exec "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.venv/bin/python" "/private/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/opencode/deadpush/.agents/slop/jjreset/git-massdelete-gate.py" push "$@"
+
+   `git push` rc=0
+   hook output: <NOTHING AT ALL>
+
+VERDICT: DEAD. The catastrophe was PUSHED, the hook said nothing, and the
+         exit code was 0. A guard that exits 0 having measured nothing is
+         worse than no guard, because it is trusted -- and this one would
+         have been trusted for exactly the event it was written to stop.
+
+for contrast, a NEW 540-file catastrophe with the refspec taken from STDIN
+(the gate's own line 6: `the guard reads the index for one and stdin for the other`):
+   `git push` rc=1
+   REFUSED, NOT A VERDICT: 37555420f596 deletes 540 files / 540 lines -- envelope: normal churn <= 500 file
+     D big2/g0.tsv
