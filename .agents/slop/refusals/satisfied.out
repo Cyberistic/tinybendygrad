@@ -1,0 +1,21 @@
+SCOPE: whole walk of .agents/slop/*/ at this read; 39 refusals, 2 with a
+       readable UNBLOCKING half.
+
+=== UNBLOCKING-SATISFACTION SWEEP ===
+
+unit      : flipblock
+unblocking: one arm in `fold.bend` teaching `flip_ds` an `ABoolList`
+  fold.bend                    ABSENT
+
+unit      : mselectarg
+unblocking: the row, and it is in a file
+subjects  : NONE NAMED AS A PATH -- a description, not a hand-off
+
+SUBJECTS-SATISFIED=0  SUBJECTS-STILL-ABSENT=2  over 2 named refusals
+
+=== CORRELATION: does naming a subject go with LANDING? ===
+LANDED reports (by this tool's own reader) = 1 of 157 reports
+  units: plancarve
+
+CEILING: both numbers are TRANSCRIPTIONS of prose by regex. This script
+re-runs nothing about the world except whether a named path is on disk.
