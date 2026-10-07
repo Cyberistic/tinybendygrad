@@ -26,7 +26,7 @@ and other units cite its hash.
 ## Reproduce
 
 ```
-zsh .agents/slop/clangshim/s1.sh [DANGLING: this instrument was DELETED by the 2026-10-05 prune and is not in git]   # ONE function, four named steps
+zsh .agents/slop/clangshim/s1.sh   # ONE function, four named steps
 zsh .agents/slop/clangshim/s2.sh   # 308 laws; a link loop that names what it drops
 zsh .agents/slop/clangshim/s3.sh   # the falsifiable row, run TWICE
 ```
