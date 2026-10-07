@@ -982,10 +982,18 @@ def cmd_repro(a):
             shots[label] = path
             print(f"# run {label} done: {len(path.read_text().splitlines())} files snapshotted")
         n = len(shots["B"].read_text().splitlines())
+        # `repro` IS the tree's only INDEPENDENT measurement. Every one of `PINS` reads
+        # `D0-run-summary.txt`, so `17/17 green` is ONE RUN'S 17 ROWS AND THE DENOMINATOR IS 1, NOT 17
+        # (`.agents/slop/pinindep/REPORT.md`: 17 of 17 pins read the same file; the true
+        # independent-measurement count is 10). This two-run byte comparison is the cheapest way to make
+        # the denominator 2 -- and it was COMPUTED AND THROWN AWAY: printed, never persisted. So write it,
+        # as `key=value`, where a pin can read it BESIDE the summary it makes non-independent.
         if shots["A"].read_bytes() == shots["B"].read_bytes():
+            write("D0-repro.txt", f"repro-files={n}\nrepro-identical={n}\nrepro-rc=0\n")
             print(f"REPRO: {n} of {n} files identical across two clean runs "
                   "(sha256 over non-blank lines)")
             return 0
+        write("D0-repro.txt", f"repro-files={n}\nrepro-identical=0\nrepro-rc=1\n")
         print(f"REPRO: NOT IDENTICAL -- {n} files:")
         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
         return 1
