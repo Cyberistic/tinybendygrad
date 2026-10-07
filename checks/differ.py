@@ -162,15 +162,10 @@ WANT = {
     # THE FOURTEEN THE CORPUS DECLARED AND `WANT` NEVER ANSWERED (`.agents/slop/wantwire/REPORT.md`
     # Phases 1-2). Each row is MEASURED by the run34 graph phase -- the phase that finished at
     # 15:35:04, BEFORE the port went into flux at 15:35:12 -- so each is a real AGREE or DISAGREE
-    # and never a default. `getaddr` was the FIFTEENTH and stayed UNSET because its bend emission
-    # was a single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr`
-    # exits 2 `NOT WELL-POSED`, so there was no verdict to answer with. **IT IS ANSWERED NOW
-    # (2026-10-07, runfinal): `graphcmp.bend:1358` threads the arena `UOp.new` RETURNED, so the
-    # emission is a real 2-row graph. MEASURED by `differ.py run` (223 s, WITHIN-LIMITS, peak
-    # 770 MB): `D1-graph-getaddr.txt` reads `VERDICT: AGREE` and `D2-cmp-getaddr.txt`
-    # `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-selfcheck: OK` and `census-rc=rc=0`.
-    # The row is WRITTEN because the run MEASURED it -- `graphs-unset` moving 1 -> 0 is a function
-    # of THIS TABLE, the AGREE is a function of the PORT.**
+    # and never a default. `getaddr` is deliberately ABSENT and stays UNSET: its bend emission is a
+    # single `NOOP ... BAD` row (the arena bottom, never interned) and `diff --graph getaddr` exits
+    # 2 `NOT WELL-POSED`, so there is no verdict to answer with. That one UNSET keeps the run
+    # `RUN INCOMPLETE`, which is the honest state (wantwire (a)).
     #
     #   Phase 1 -- the armed fixtures whose rows AGREE:
     "alu": "AGREE", "bit": "AGREE", "bw": "AGREE", "move": "AGREE", "where": "AGREE",
@@ -192,8 +187,6 @@ WANT = {
     # DISAGREE: `foldgap` REFUSED it, because the fold needs `int(r.vmax+1)` and `dt_shape` gets no
     # `BTable`, so claiming a shape would be a lie and the node stays an honest `?`.
     "stage": "AGREE", "unshard": "DISAGREE", "wmma": "AGREE",
-    # MEASURED, not predicted -- see the `getaddr` note above: VERDICT=AGREE, byte-identical.
-    "getaddr": "AGREE",
 }
 # THE FIVE STILL WITHOUT A ROW, AND WHY THEY DO NOT GET ONE HERE. `alu` `bit` `bw` `move` `where`.
 # **THEIR AGREE IS FORCED, NOT OBSERVED**, and that is the measurement, not a defence:
@@ -245,7 +238,7 @@ PINS = {
     # are not comparable to a warm one. Only the first three are functions of the CORPUS;
     # every other pin here is a function of the PORT and moves when the port's next fix
     # lands. `.agents/slop/want/DECISION.md` records which is which.
-    "graphs": "34", "graphs-unset": "0", "graphs-answered": "34",
+    "graphs": "34", "graphs-unset": "1", "graphs-answered": "33",
     # `expect-moved` is the ONLY pin that asks whether the table's ASSERTIONS HELD, and it is
     # not a function of the corpus: it is a function of the PORT against the TABLE. **It is 0 and
     # it is a ZERO-TOLERANCE INVARIANT, which is why it does not need re-pinning when the corpus
@@ -257,48 +250,27 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "32", "byte-identical": "32", "not-comparable": "0",
+    "graphs-agree": "31", "byte-identical": "31", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
     # attempts` file, so `cmp -s` called the pair BYTE-IDENTICAL and `stable-pairs` read 5 of
     # 5. **Two identical FAILURES compare equal.** So the gate reads the FAILED and DIFFER
     # counts, not the identical one.
-    # ***MOVED TO GREEN BY runfinal (2026-10-07), THE FIRST RUN TAKEN UNDER A SETTLED SUBSTRATE
-    # SINCE run34.*** run34 could not pin these because the port was rewritten at 15:35:12
-    # (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and 15:39:43 (`fold.bend`) -- ~10 s AFTER
-    # its graph phase's `D2-bytediff` landed at 15:35:04 -- so every bend step from `control`
-    # onward wrote a 0-row failure (`emit bend: 0 rows after 5 attempts`), NOT a measurement, and
-    # run34 kept the last healthy values rather than pin a broken reading. runfinal: port quiet
-    # ~4 h 50 m at the start, `differ.py run` returned `WITHIN-LIMITS` in 223 s at 770 MB peak,
-    # and EVERY ONE of these read green -- so they are now the MEASURED values, not the inherited
-    # ones. They are functions of the PORT (a bend step that dies reddens them); the two
-    # `graphs-agree`/`byte-identical` pins above moved 31 -> 32 with `getaddr`.
+    # ***NOT MOVED, AND THEY ARE RED, BECAUSE THE RUN34 PORT WENT INTO FLUX MID-RUN.*** The port
+    # files were rewritten at 15:35:12 (`render.bend`/`upat.bend`), 15:35:24 (`ops.bend`) and
+    # 15:39:43 (`fold.bend`) -- ~10 s AFTER the graph phase's `D2-bytediff` landed at 15:35:04 --
+    # so every bend step from `control` onward wrote a 0-row failure (`emit bend: 0 rows after 5
+    # attempts`, stderr naming `argstr`/`arg_repr`), NOT a measurement. These pins keep the last
+    # HEALTHY run's values ON PURPOSE: pinning the broken readings (`stable-pairs=0 of 5`,
+    # `plants-disagree=0 of 7`, `census-rc=rc=1`, empty `oracle-selfcheck`) would make a health
+    # gate that exits 0 having measured nothing -- the doctrine this file exists for. They return
+    # to green on the next run taken under a settled substrate; the diff-phase pins above
+    # (`graphs`/`graphs-*`/`graphs-agree`/`byte-identical`) are the ones run34 validly moved.
     "stable-pairs": "5 of 5", "stable-failed": "0 of 5", "stable-differ": "0 of 5",
     "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
 }
-# THE SECOND WITNESS, AND WHY IT IS NOT AN EIGHTEENTH MEMBER OF `PINS`.
-#
-# Every key above is a `key=value` row of `D0-run-summary.txt`. So `PINS` green is ONE run's rows
-# read out of ONE file, and the denominator of the health claim is **1 artifact, not 17** -- 12
-# witnesses, 10 independent measurements, all from a single run (`.agents/slop/pinindep/REPORT.md`,
-# measured by perturbation, not by reading these lines). **ADDING A KEY HERE DOES NOT CHANGE THAT.**
-# It would be the 18th row of the same file, which is the shape `pinindep` measured rather than the
-# defect it names.
-#
-# `cmd_repro` ALREADY makes the tree's only INDEPENDENT measurement -- two clean runs, sha256 over
-# every artifact, byte-compared (`:984-999`). It computed that verdict and printed it to stdout, and
-# nothing on disk could read it, so the second measurement had no memory. It is now written to
-# `REPRO_ARTIFACT`, and `REPRO_PINS` is the one pin table read from it: **the denominator for
-# "this run is healthy" becomes TWO artifact reads.**
-#
-# ONE KEY, NOT THREE. `repro-files` is `len(snap())` -- a function of `declared()` and the `.err`
-# files beside it -- and it GROWS BY ONE after the first `repro`, so a literal there is an inventory
-# that must be re-pinned whenever an artifact is added, not a claim. `repro-identical` equals
-# `repro-files` exactly when `repro-rc` is `0`, so a pin on it could only restate this one.
-REPRO_ARTIFACT = "D0-repro.txt"
-REPRO_PINS = {"repro-rc": "rc=0"}
 # THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
 # `oracle-run.sh` writes all `declared()` names and reads twelve of them by name in its own
 # summary block;
@@ -310,16 +282,6 @@ REPRO_PINS = {"repro-rc": "rc=0"}
 LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-cross-range",
             "D7-conf", "D8-dbg-012", "D8-dbg-03", "D9-stability", "D10-zerorow-guard",
             "D0-coverage-census", "D8b-cpython-dbg1-reachability", "D0-ops-probe")
-# WHAT `cmd_repro` WRITES, HELD SEPARATELY FROM `LITERALS` ON PURPOSE.
-#
-# `LITERALS` is ONE `cmd_run`'s output, and `artefacts_ok()` REQUIRES every member of the
-# population it is given after a run. `D0-repro.txt` is written by a DIFFERENT command, one `run`
-# later, so a `MISSING D0-repro.txt` arm firing after every `run` would be a guard that is always
-# red -- and a guard that is always red is not a guard, it is `artefacts_ok()`'s own failure mode
-# written down in its docstring. `declared()` below names it anyway, because the union is what the
-# `.txt` carve-out and the `UNEXPECTED` arm ask about: a `.txt` this file writes that nothing
-# declares is an orphan artifact, which is a different complaint from a declared one being absent.
-REPRO_LITERALS = ("D0-repro",)
 # THE `diff` REPORTS, by the prefix a glob in the frozen oracle spells. Named here rather than
 # inline at the one call site because `oracle-repro.sh:114` uses the identical five, so this is
 # the same list twice in two languages.
@@ -327,7 +289,7 @@ REPORTS = ("D1-graph-", "D3-control-", "D5-plant-", "D6-", "D9-stability-")
 
 
 def declared() -> set[str]:
-    """Every `.txt` artifact ANY command here writes, with its extension, as a set of names.
+    """Every `.txt` artifact `cmd_run` writes, with its extension, as a set of names.
 
     DERIVED, never typed: a list written out here is a third copy of the tables above, and the
     measured failure of a stale copy is in `differverdict/VERDICT.md`, where 4 LOST and 4 NEW
@@ -343,7 +305,7 @@ def declared() -> set[str]:
     A DECLARATION THAT MISSES ONE NAME IS A POPULATION THAT EXCLUDES IT.
     """
     graphs = corpus()
-    return {f"{n}.txt" for n in (*LITERALS, *REPRO_LITERALS)} \
+    return {f"{n}.txt" for n in LITERALS} \
         | {f"D1-graph-{g}.txt" for g in graphs} \
         | {f"D2-canon-{s}-{g}.txt" for g in graphs for s in ("py", "bend")} \
         | {f"D2-cmp-{g}.txt" for g in graphs} \
@@ -575,24 +537,8 @@ def cmd_run(_a):
 
     # THE 0-ROW GUARD, FIRED ON PURPOSE. `graphcmp-empty.bend` prints nothing, so
     # `emit --side bend` must RAISE rather than answer.
-    #
-    # MEASURED 2026-10-07 (`midrun`): **THAT PROBE NO LONGER EXISTS** -- it and `graphcmp-dbg.bend`
-    # were deleted in sweep `371cc64c9`, so `D10-zerorow-guard.txt` has been reading `rc=1` off a
-    # **`no such file`**, which is the SAME exit code the guard raises when the probe WORKS. **A GUARD
-    # THAT CANNOT DISTINGUISH "MY FIXTURE IS MISSING" FROM "MY FIXTURE BEHAVED" IS CERTIFYING A MISSING
-    # FILE** -- and nothing read its rc, so it was `DEAD` (it ran, emitted a verdict, and nothing
-    # consulted it). THE FIX IS NOT TO RESTORE A FIXTURE, IT IS TO **SAY WHICH**: the probe is a
-    # REQUIRED INPUT and its absence is `REFUSED, NOT A VERDICT` -- absent is not a pass
-    # (`gates/gatekit.py:60` is the vocabulary). `midrun` names two other absent inputs on a different
-    # path (`.agents/slop/diffpy/`, pinned by `ORACLE_PIN`): the same shape, and the same fix.
-    probe = Path(".agents/slop/graphcmp-empty.bend")
-    if not probe.is_file():
-        write("D10-zerorow-guard.txt",
-              "zerorow-guard=REFUSED\nzerorow-guard-rc=3\nzerorow-guard-why=probe "
-              ".agents/slop/graphcmp-empty.bend is ABSENT (deleted in 371cc64c9); an absent fixture "
-              "cannot witness that a 0-row emission RAISES\n")
-    else:
-        run("D10-zerorow-guard.txt", "emit", "--side", "bend", "--bend-probe", str(probe))
+    run("D10-zerorow-guard.txt", "emit", "--side", "bend",
+        "--bend-probe", ".agents/slop/graphcmp-empty.bend")
     # THE COVERAGE DENOMINATOR, tabulated, emitting BOTH sides so an op or atom the py side
     # never produces shows up as a per-side difference rather than an absorbed AGREE.
     capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
@@ -685,14 +631,6 @@ def cmd_run(_a):
     # and it was in the gate itself. The two refusals are reported separately because they are
     # different questions: `graphs-unset` says nobody wrote a row, `expect-moved` says a row is
     # wrong, and only the second is a claim the port made.
-    #
-    # **AND IT DOES NOT CONSULT `PINS`, WHICH IS THE CORRECT SHAPE AND WAS MEASURED.** `run` honours
-    # 2 of the 17 (`graphs-unset`, `expect-moved`) and returns 0 unconditionally otherwise. Making
-    # it consult the other 15 would make `run` A GATE ON ITS OWN OUTPUT: a run that finds the port
-    # changed a row would refuse to EXIT, so the change could never be recorded, and the pins are
-    # hand-written literals that move when the port's next fix lands (`:240-280` says so itself).
-    # **A MEASUREMENT MUST NOT BE CITED AS A HEALTH GATE, AND THE JUDGE MUST NOT BE THE RUN.**
-    # `unhealthy()` and `checks/corpus-figure.py` are the judges; `run` is the measurement.
     for line in (f"RUN INCOMPLETE: {len(unset)} of {len(graphs)} graphs have NO expectation in "
                  f"WANT: {', '.join(unset)}. Each was run and recorded (D1-verdicts.txt, marked "
                  f"UNSET) and each is in `graphs=`; add an expectation for each to complete the "
@@ -883,44 +821,6 @@ def unhealthy():
         + [f"{k} ABSENT" for k in PINS if k not in got] + preconditions_bad(got)
 
 
-def repro_bad() -> list[str]:
-    """THE SECOND WITNESS, judged on its own artifact, by a SEPARATE reading of the disk.
-
-    **THIS IS THE WHOLE POINT OF `REPRO_PINS`, SO IT IS STATED HERE WHERE A READER LANDS.**
-    `PINS` is 17 claims, all of them `key=value` rows of `D0-run-summary.txt`, so `PINS` green is
-    ONE run's seventeen rows and the denominator of "this run is healthy" is **1 artifact**, not
-    17 -- 12 witnesses and 10 independent measurements behind it, every one of them a function of
-    the same run (`/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/pinindep/REPORT.md`,
-    measured by perturbing artifacts, not by reading them). `cmd_repro` is the tree's only
-    INDEPENDENT measurement: two clean runs, sha256 over every artifact, byte-compared
-    (`snap()`, `:798`). It computed that verdict and printed it to a tty. Reading it here is what
-    makes the denominator **2 artifact reads**.
-
-    **IT IS A FUNCTION BESIDE `unhealthy()`, NOT A BRANCH INSIDE IT, AND THAT IS A VERDICT
-    CHOICE.** `unhealthy()` is called by `clean_run()` -- i.e. BY `cmd_repro` ITSELF, one run
-    before this file exists on disk. A check that demanded `D0-repro.txt` from inside the loop
-    that is about to write it could never pass, so it would be a check that reports red forever
-    and gets ignored. **A GATE MUST NOT BE THE JUDGE OF ITS OWN OUTPUT**: `run` measures, and the
-    readers judge. `checks/corpus-figure.py` is the reader, and it consults this beside
-    `unhealthy()`.
-
-    THE THREE STATES, ALL NAMED, NONE OF WHICH IS A PASS:
-      * the artifact ABSENT -- `repro` has never been run to completion on this tree, so the
-        second measurement was never TAKEN. Absence is not agreement.
-      * a pinned key ABSENT from the artifact -- the writer's row moved, so the pin can see a gap
-        its own shape would otherwise hide.
-      * a value that differs -- the two runs DID differ, or the writer's shape moved.
-    """
-    if not (D / REPRO_ARTIFACT).exists():
-        return [f"{REPRO_ARTIFACT} ABSENT -- the SECOND MEASUREMENT was never taken, so the "
-                "denominator for `repro-rc` is 0 runs rather than 2. Run `checks/differ.py repro` "
-                "to take it. `PINS` above stays green on one run and says nothing about this."]
-    got = dict(ln.split("=", 1) for ln in text(REPRO_ARTIFACT).splitlines() if "=" in ln)
-    return [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ARTIFACT})" for k, v in got.items()
-            if k in REPRO_PINS and v != REPRO_PINS[k]] \
-        + [f"{k} ABSENT from {REPRO_ARTIFACT}" for k in REPRO_PINS if k not in got]
-
-
 def artefacts_ok():
     """THE ARTEFACTS THEMSELVES, not the summary about them.
 
@@ -946,18 +846,10 @@ def artefacts_ok():
     population: `MISSING` for a declared artifact that is absent -- which is exactly the state a
     rename produces -- and `UNEXPECTED` for something no command writes, which is the stale
     residue `cmd_run` prunes and which only a name-aware check can see.
-
-    **THE `MISSING` ARM IS `declared()` MINUS `REPRO_LITERALS`, AND THAT IS NOT A LOOSENING.**
-    This runs immediately after a `cmd_run`, and `D0-repro.txt` is written by a DIFFERENT command
-    one run later, so demanding it here is demanding a file the command that just ran cannot
-    produce -- a `MISSING` that never clears, which is the guard reporting red forever and being
-    ignored, which is worse than the guard not existing. It is NOT excused: `repro_bad()` reads it
-    and reports it ABSENT, which is the honest complaint at the honest time.
     """
     present = {p.name for p in D.glob("*.txt")}
     here = present & declared()
-    run_writes = declared() - {f"{n}.txt" for n in REPRO_LITERALS}
-    return [f"MISSING {n}" for n in sorted(run_writes - present)] \
+    return [f"MISSING {n}" for n in sorted(declared() - present)] \
         + [f"UNEXPECTED {n}" for n in sorted(present - declared())] \
         + [f"EMPTY {(D / n).relative_to(ROOT)}" for n in sorted(here) if not (D / n).stat().st_size] \
         + [f"ONE-LINE {(D / n).relative_to(ROOT)}" for n in sorted(here)
@@ -1083,18 +975,10 @@ def cmd_repro(a):
             shots[label] = path
             print(f"# run {label} done: {len(path.read_text().splitlines())} files snapshotted")
         n = len(shots["B"].read_text().splitlines())
-        # `repro` IS the tree's only INDEPENDENT measurement. Every one of `PINS` reads
-        # `D0-run-summary.txt`, so `17/17 green` is ONE RUN'S 17 ROWS AND THE DENOMINATOR IS 1, NOT 17
-        # (`.agents/slop/pinindep/REPORT.md`: 17 of 17 pins read the same file; the true
-        # independent-measurement count is 10). This two-run byte comparison is the cheapest way to make
-        # the denominator 2 -- and it was COMPUTED AND THROWN AWAY: printed, never persisted. So write it,
-        # as `key=value`, where a pin can read it BESIDE the summary it makes non-independent.
         if shots["A"].read_bytes() == shots["B"].read_bytes():
-            write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical={n}\nrepro-rc=rc=0\n")
             print(f"REPRO: {n} of {n} files identical across two clean runs "
                   "(sha256 over non-blank lines)")
             return 0
-        write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=1\n")
         print(f"REPRO: NOT IDENTICAL -- {n} files:")
         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
         return 1

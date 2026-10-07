@@ -1,6 +1,0 @@
-population : 142 paths (walk of tinybendygrad/ + 4 anchored harness files)
-window     : 05:35:43..05:45:43 (600s)
-writes     : 1 in 1 file(s); last 05:35:48
-longest gap: 595s  (run needs 294s)
-      1 write(s)  tinybendygrad/nn/__init__.bend
-PASS: a quiet window of 595s >= 294s was MEASURED

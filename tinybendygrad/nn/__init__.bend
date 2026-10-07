@@ -253,8 +253,18 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
 # :474, :460, :457), at `tensor.bend:302, 307, 311, 315`, gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
-# `Tensor.where` and `Tensor.square` remain walled: `where` is
-# `self.alu(Ops.WHERE, x, y)` with a `_broadcasted` up-stream step, and
-# `square` is `self * self` (the `__mul__` method is a separate wall, no arith ops
-# are ported yet).
-# TODO(p3) mixin/elementwise.py:426 x.where, :575 x.square -- BLOCKED: see above.
+# `Tensor.where` (elementwise.py:426) is ported at `tensor.bend:369` as `tn_where`
+# for the no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity
+# when x and y are already Tensors of the same shape, and the body is then
+# `tn_alu(cond, O.OpsWHERE{}, [x, y])`), gated at `gates/tn_where-gate.py` 5/5 rows.
+# The broadcasting case stays walled on `_broadcasted`. `Tensor.__mul__`
+# (elementwise.py:125) and its `__rmul__` arm (elementwise.py:300) are ported at
+# `tensor.bend:466, 471, 474` as `tn_mul.go` / `tn_mul` / `tn_rmul` for the
+# no-broadcasting case (`_binop`'s `_broadcasted` is the identity for two same-shape
+# Tensors, so the body is `tn_alu(self, MUL, [Tensor.u(rhs)])` for `__mul__` and
+# `tn_alu(rhs, MUL, [Tensor.u(self)])` for `__rmul__`), gated at
+# `gates/tn_mul-gate.py` 13/13 rows. With `__mul__` ported, `Tensor.square`
+# (elementwise.py:575, `return self * self`) is a one-liner: `tn_square` at
+# `tensor.bend:481` is `tn_mul(t, t)`, gated by the same 13/13 gate. The
+# broadcasting case for `__mul__`/`__rmul__` stays walled on `_broadcasted` (same
+# wall as `where`).

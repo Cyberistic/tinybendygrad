@@ -1,8 +1,0 @@
-duration=300s samples=21 period=15s
-distinct_files_changed=2
-changed tinybendygrad/nn/__init__.bend
-changed tinybendygrad/tensor.bend
-writes=3
-last_write_at=05:37:12
-quiet_for=whole window
-now=2026-10-07T05:37:12+0300

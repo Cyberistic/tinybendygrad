@@ -124,18 +124,7 @@ SCRATCH_SHAPE = re.compile(
     r"|(?:_|\.)(mutant|scratch|sweep|diag)(?:\.|_|$)"                # _mutant / _scratch_sweep
     r"|^_[^_]"                                                       # _p6, a lone leading underscore
 )
-def _coindep():
-    """The single declaration, loaded BY PATH -- see checks/coindep.py."""
-    import importlib.util
-    from pathlib import Path as _P
-    spec = importlib.util.spec_from_file_location(
-        "coindep", _P(__file__).resolve().parent / "coindep.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-SKIP_DIRS = set(_coindep().SKIP_DIRS)
+SKIP_DIRS = {".git", ".venv", "__pycache__", "node_modules", "references"}
 SOURCE_TREES = ("tinybendygrad",)
 
 

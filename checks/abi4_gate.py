@@ -186,21 +186,8 @@ DISARMS = {"A": (JS_FP8DEC_SHIPPED, JS_DISARM_A), "B": (JS_FP16_SHIPPED, JS_DISA
 # the CONTENT fence, and it is what `moved` rows cannot do: the historical
 # `js-repair-abi4` arm moved five `abi123_*` rows and was blamed on ABI-4 until it
 # was found to be carrying ABI-2's bytes.
-#
-# ONE DECLARATION, TWO GATES.  This tuple and checks/abi_gate.py's `JS_ARM_TOKENS`
-# were character-identical 9-string hand lists -- the `names.py`/`ARMED` shape, so a
-# tenth other-ABI token was invisible to BOTH.  Both now LOAD the one declaration in
-# `checks/coindep.py`, widened there with the four markers a discovery over the tree's
-# other-ABI bytes found uncovered (`pack64`, `i64_of`, `Number(`, the I64 record tag).
-def _coindep():
-    import importlib.util
-    spec = importlib.util.spec_from_file_location("coindep", HERE / "coindep.py")
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
-
-OTHER_ABI_TOKENS = _coindep().ABI_OTHER_TOKENS
+OTHER_ABI_TOKENS = ("p.hi", "p.lo", "p.fst", "p.snd", "io_tup", "BigInt",
+                    "asIntN", "<< 32n", ">>> 32n")
 
 # THE ALTERNATIVE SPELLING.  ABI-4 says the seam must answer a VALUE; it does not
 # say whether the conversion happens inside `fp8_decode` or at the seam.  Both are
