@@ -253,11 +253,51 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
 # :474, :460, :457), gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
+# ===========================================================================
+# WHAT `_broadcasted` IS, AND WHAT THE "BROADCASTING CASE" IS ACTUALLY WALLED ON.
+# Every mention of `_broadcasted` in this tree used to say the broadcasting case was "walled on
+# `_broadcasted`". THAT NAMES THE WRONG THING, and it did so in 110 places. MEASURED:
+#
+#   .venv/bin/python -c "a=Tensor([[1],[2]]); b=Tensor([[1,2,3]]); x,y=a._broadcasted(b);
+#                        print(a.shape, b.shape, '->', x.shape, y.shape, x.dtype, y.dtype)"
+#   ->  (2, 1) (1, 3) -> (2, 1) (1, 3)  f32 f32
+#
+# THE SHAPES COME BACK UNCHANGED. `_broadcasted` is DTYPE PROMOTION -- `ufix`, then
+# `least_upper_dtype`, then `cast(out_dtype)` with a weak-CONST carve-out -- and the name is the
+# only thing about it that says "broadcast". `UOp.alu` (`uop/ops.py:627`) does not broadcast
+# either: it is `UOp(op, src=(self, *src))`. And the broadcast IS REAL:
+#
+#   a+b ->  op ADD, nsrc 2, src shapes [(2, 1), (1, 3)], uop.shape (2, 3)
+#
+# SO THE BROADCAST IS A DERIVED PROPERTY OF THE NODE AND NOT AN OPERATION. It is computed when
+# the node's `_shape` is set at construction, from `_broadcast_shape` -- which is why it appears
+# in neither the op nor the argument list.
+#
+# TWO DISTINCT WALLS GOT CONFLATED UNDER ONE NAME, and they are not equally hard:
+#
+#   WALL A, THE SHAPE FOLD. `_broadcast_shape` (`uop/ops.py:78`) IS ABSENT FROM THE PORT --
+#     `grep -rhc "def _broadcast_shape" tinybendygrad/` -> 0. This is the wall the phrase was
+#     reaching for. Its siblings are PRESENT: `_align_left` -> 2, `broadcast_axes` -> 1.
+#
+#   WALL B, THE DTYPE-PROMOTION FOLD. Everything `_broadcasted`'s body calls is PRESENT:
+#     `ufix` -> 1, `least_upper_dtypes` (`dtype.bend:218`, the list form of CPython's variadic
+#     `least_upper_dtype`) -> 3, `weak_dtype` (`dtype.bend:251`) -> 2, `ew_remint`
+#     (`mixin/elementwise.bend:358`) -> 1, `is_invalid` -> 81, `dtypes.weaks` -> 63, and
+#     `UOp.cast` is ported and gated. What is left is the FOLD READS (`t._uop.base.is_invalid`,
+#     `t.dtype`, `t._uop.base.op is Ops.CONST`), which `mixin/elementwise.bend`'s `ew_fx` fold
+#     context already supplies.
+#
+# SO THE REASON EVERY ONE OF THESE PORTS GIVES IS WRONG IN A SPECIFIC WAY: the no-broadcasting
+# case is not "the easy half" of a broadcasting wall, it is the half that needs no shape
+# inference, and the dtype promotion it ALSO skips is a separate, largely-unblocked fold.
+# A UNIT THAT TAKES THIS WALL SHOULD START WITH WALL B.
+# ===========================================================================
+
 # `Tensor.where` (elementwise.py:426) is ported as `tn_where`
 # for the no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity
 # when x and y are already Tensors of the same shape, and the body is then
 # `tn_alu(cond, O.OpsWHERE{}, [x, y])`), gated at `gates/tn_where-gate.py` 5/5 rows.
-# The broadcasting case stays walled on `_broadcasted`. `Tensor.__mul__`
+# The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it). `Tensor.__mul__`
 # (elementwise.py:125) and its `__rmul__` arm (elementwise.py:300) are ported
 # as `tn_mul.go` / `tn_mul` / `tn_rmul` for the
 # no-broadcasting case (`_binop`'s `_broadcasted` is the identity for two same-shape
@@ -266,7 +306,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `gates/tn_mul-gate.py` 13/13 rows. With `__mul__` ported, `Tensor.square`
 # (elementwise.py:575, `return self * self`) is a one-liner: `tn_square`
 # is `tn_mul(t, t)`, gated by the same 13/13 gate. The
-# broadcasting case for `__mul__`/`__rmul__` stays walled on `_broadcasted` (same
+# broadcasting case for `__mul__`/`__rmul__` stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same
 # wall as `where`). `Tensor.__add__` (elementwise.py:267) and its `__radd__` arm
 # (elementwise.py:295) are ported as
 # `tn_add.go` / `tn_add` / `tn_radd` for the no-broadcasting case (CPython's
@@ -280,7 +320,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # no-broadcasting case (CPython's `sub` is the same `-b` shape at
 # elementwise.py:103, :123, so the port is `_binop`'s shape with `SUB`: same
 # gate). The broadcasting case for `__add__`/`__radd__`/`__sub__`/`__rsub__`
-# stays walled on `_broadcasted` (same wall as `where` and `__mul__`).
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall as `where` and `__mul__`).
 # `Tensor.__lt__`/`__gt__` (elementwise.py:321, :324, via `_binop(Ops.CMPLT, ...)`),
 # `Tensor.__ne__`/`ne` (:339, :333, via `_binop(Ops.CMPNE, ...)`),
 # `Tensor.__and__`/`__rand__` (:285, :309, via `bitwise_and`'s `_binop(Ops.AND, ...)`),
@@ -303,12 +343,12 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # Tensors. `Tensor.__pow__`/`__rpow__` is gated at `gates/tn_pow-gate.py`
 # (9/9 rows: op/arg/srcs/purity for the forward arm, op/arg/srcs/purity for the
 # `reverse=True` arm, and the reachability row that names the wall). The
-# broadcasting case for `__pow__`/`__rpow__` stays walled on `_broadcasted`.
+# broadcasting case for `__pow__`/`__rpow__` stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 # `Tensor.__and__`/`__rand__`/`__or__`/`__ror__`/`__xor__`/`__rxor__` are
 # gated at `gates/tn_and_or_xor-gate.py` (25/25 rows: op/arg/srcs/purity for
 # the forward arm of each pair, op/arg/srcs/purity for the `reverse=True`
 # arm, and the reachability row that names the wall). The broadcasting case
-# for all six stays walled on `_broadcasted` (same wall as `__add__`/
+# for all six stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall as `__add__`/
 # `__sub__`/`__mul__`/`__pow__`).
 # `Tensor.__floordiv__` (elementwise.py:279, `self.div(x, rounding_mode="floor")`)
 # and its `__rfloordiv__` arm are ported as
@@ -335,7 +375,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # at `gates/tn_fdiv_mod-gate.py` (17/17 rows: op/arg/srcs/purity for each of
 # the four defs, plus the reachability row that names the wall). The
 # broadcasting case for `__floordiv__`/
-# `__rfloordiv__`/`__mod__`/`__rmod__` stays walled on `_broadcasted` (same wall
+# `__rfloordiv__`/`__mod__`/`__rmod__` stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall
 # as the other `_binop`-shaped defs).
 # `Tensor.__ge__` (:327, `(self < x).logical_not()`)
 # and `Tensor.__le__` (:330, `(self > x).logical_not()`) are ported at
@@ -355,7 +395,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `__lt__`/`__gt__`/`__ne__`/`__and__`/`__rand__`/`__or__`/`__ror__`/`__xor__`/
 # `__rxor__`/`maximum`/`__lshift__`/`__rlshift__`/`__rshift__`/`__rrshift__`/
 # `__pow__`/`__rpow__`/`__floordiv__`/`__rfloordiv__`/`__mod__`/`__rmod__`/
-# `__ge__`/`__le__`/`eq` stays walled on `_broadcasted`
+# `__ge__`/`__le__`/`eq` stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it)
 # (same wall as `__add__`/`__sub__`/`__mul__`/`__rmul__`/`where`).
 # `Tensor.ceil` (elementwise.py:656, `(self > (b := self.trunc())).where(b+1, b)`)
 # and `Tensor.floor` (elementwise.py:662, `(self < (b := self.trunc())).where(b-1, b)`)
@@ -376,6 +416,6 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `O.UOp.const` (gate rc=0). Gated at
 # `gates/tn_ceil_floor-gate.py` 16/16 rows (op/arg/srcs/purity for each of
 # `tn_ceil` and `tn_floor`, the cond's CMPLT shape for each, and the reachability
-# row). The broadcasting case stays walled on `_broadcasted` (same wall as
+# row). The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall as
 # `where`, `__add__` / `__sub__` / `__mul__` / `__pow__` / the rest of the
 # `_binop`-shaped defs).

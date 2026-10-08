@@ -440,7 +440,7 @@ def tn_rsqrt(+t: Tensor) -> Tensor:
 # `tn_alu(cond, O.OpsWHERE{}, [Tensor.u(x), Tensor.u(y)])`, the same `tn_alu`
 # builder with three src nodes. `O.UOp.where` (ops.bend:2767) is the primitive
 # this delegates to. `tn_where` is what CPython's `Tensor.where` does in the
-# no-broadcasting case; the broadcasting case stays walled on `_broadcasted`
+# no-broadcasting case; the broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it)
 # (mixin/movement.py:24, fold reads and a `least_upper_dtype` helper).
 #
 # THREE OPERANDS, THREE ARENAS, TWO MERGES. `tn_binop` covers the two-operand node and this
@@ -670,7 +670,7 @@ def tn_rsub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # same `tn_alu` builder with `OpsCMPLT{}` and the rhs's uop as the second src.
 # The `reverse` flag covers `__gt__` (elementwise.py:324, `self._binop(Ops.CMPLT, x,
 # True)`), which swaps the order, the same way `tn_mul.go`/`tn_add.go` do. The
-# broadcasting case stays walled on `_broadcasted` (mixin/movement.py:24).
+# broadcasting case stays walled on the SHAPE FOLD (measured in `nn/__init__.bend`; the helper is `mixin/movement.py:24`).
 def tn_cmplt.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsCMPLT{})
@@ -861,7 +861,7 @@ def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # instead of `Ops.CMPLT`. THE `False` IS HARDCODED UPSTREAM AND THERE IS NO `__rne__`, so
 # the dispatcher's `True{}` arm is never taken by any CPython method; it stays because
 # `tn_binop`'s two-operand shape is what the other fifteen share. The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsCMPNE{})
@@ -873,7 +873,7 @@ def tn_cmpne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__and__` -- elementwise.py:285, via `bitwise_and` at elementwise.py:159
 # (`self._binop(Ops.AND, x, reverse)`). Same shape as `tn_cmplt` with `Ops.AND`.
 # The `reverse` arm is `__rand__` (elementwise.py:309). The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_and.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsAND{})
@@ -888,7 +888,7 @@ def tn_rand(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__or__` -- elementwise.py:288, via `bitwise_or` at elementwise.py:173
 # (`self._binop(Ops.OR, x, reverse)`). Same shape as `tn_and` with `Ops.OR`.
 # The `reverse` arm is `__ror__` (elementwise.py:312). The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_or.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsOR{})
@@ -903,7 +903,7 @@ def tn_ror(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__xor__` -- elementwise.py:291, via `bitwise_xor` at elementwise.py:187
 # (`self._binop(Ops.XOR, x, reverse)`). Same shape as `tn_and` with `Ops.XOR`.
 # The `reverse` arm is `__rxor__` (elementwise.py:315). The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_xor.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsXOR{})
@@ -926,11 +926,11 @@ def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__lshift__` -- elementwise.py:366, via `lshift` at elementwise.py:344
 # (`self._binop(Ops.SHL, x, reverse)`). Same shape as `tn_and` with `Ops.SHL`.
 # The `reverse` arm is `__rlshift__` (elementwise.py:372). The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 # `__rshift__` -- elementwise.py:369, via `rshift` at elementwise.py:355
 # (`self._binop(Ops.SHR, x, reverse)`). Same shape as `tn_lshift` with `Ops.SHR`.
 # The `reverse` arm is `__rrshift__` (elementwise.py:375). The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 # `__pow__` -- elementwise.py:569, via `pow` at elementwise.py:548 (`base, exponent
 # = self._broadcasted(x, reverse=reverse); ...; return base.alu(Ops.POW, exponent)`).
 # For two Tensors of the same shape (the no-broadcasting case the gate covers),
@@ -938,7 +938,7 @@ def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # CPython's raise on `not dtypes.is_float(...)` (elementwise.py:565) only fires
 # for a `ConstType` rhs that isn't a non-negative int, which is unreachable for
 # two Tensors. The `reverse` arm is `__rpow__` (elementwise.py:572). The
-# broadcasting case stays walled on `_broadcasted`.
+# broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_pow.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsPOW{})
@@ -964,7 +964,7 @@ def tn_rpow(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # `__floordiv__` IS the integer path, and the FLOORDIV op is the one CPython's
 # `div(x, rounding_mode="floor")` builds for int inputs (elementwise.py:252, gated
 # below). The `reverse` flag covers `__rfloordiv__` (the `reverse=True` arm of the
-# same `_binop`). The broadcasting case stays walled on `_broadcasted` (same wall
+# same `_binop`). The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it) (same wall
 # as the rest of the binop defs).
 def tn_fdiv.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
@@ -987,7 +987,7 @@ def tn_rfdiv(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # rounding_mode="floor") * b`, elementwise.py:214) stays walled on the dtype fold
 # (the same wall `tn_bitwise_not`'s arith arms name at tensor.bend:385) and on
 # `div`'s float arm. The `reverse` arm is the `__rmod__` shape, mirroring
-# `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on `_broadcasted`.
+# `tn_pow.go`'s `reverse` arm. The broadcasting case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_mod.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsFLOORMOD{})
@@ -1005,20 +1005,20 @@ def tn_rmod(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # 8/8, gates/tn_logical_not-gate.py). So the composition
 # `tn_logical_not(tn_cmplt(t, x))` is a fully-portable chain. The no-broadcast case
 # is the only one `tn_cmplt`'s row covers; the broadcasting case of `__lt__` stays
-# walled on `_broadcasted`.
+# walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_dunder_ge(+t: Tensor, +x: Tensor) -> Tensor:
   tn_logical_not(tn_cmplt(t, x))
 
 # `__le__` -- elementwise.py:330. `return (self > x).logical_not()`. The chain
 # `tn_logical_not(tn_rcmplt(t, x))` is the no-broadcast case. `__gt__` is
 # `tn_rcmplt`, the `reverse=True` arm of `tn_cmplt.go`. The broadcasting case
-# stays walled on `_broadcasted`.
+# stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_dunder_le(+t: Tensor, +x: Tensor) -> Tensor:
   tn_logical_not(tn_rcmplt(t, x))
 
 # `eq` -- elementwise.py:336. `return self.ne(x).logical_not()`. The chain
 # `tn_logical_not(tn_cmpne(t, x))` is the no-broadcast case. The broadcasting
-# case stays walled on `_broadcasted`.
+# case stays walled on the SHAPE FOLD (`nn/__init__.bend` measures it).
 def tn_eq(+t: Tensor, +x: Tensor) -> Tensor:
   tn_logical_not(tn_cmpne(t, x))
 
