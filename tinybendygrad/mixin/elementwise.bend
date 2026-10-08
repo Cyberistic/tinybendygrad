@@ -623,11 +623,20 @@ type Rm is Data:
 # `b-1` is a TENSOR minus a weak CONST and not the constant `-1`, so it goes back
 # through `_binop` and through the promotion, exactly as in Python -- which is why
 # this row's node count is larger than a reader expects.
+# THE THEN-VALUE IS `b - 1`, NOT A BARE `-1`. This built `ECon{CInt{-1}}` where CPython
+# (elementwise.py:672) builds `b - 1`, so `floor` answered `where(self < b, -1, b)` -- a
+# CONSTANT in place of an expression that DEPENDS ON `b`. MEASURED by
+# `gates/ew_graph_census-gate.py`: CPython `8 Ops.WHERE/3 Ops.CMPLT Ops.ADD Ops.TRUNC` against
+# the port's `5 Ops.WHERE/3 Ops.CMPLT Ops.CONST Ops.TRUNC`. `ew_sub` IS CPython's `sub`
+# (`ADD(a, -b)`), so the operand is `+1` and not `-1`: passing `-1` would build `b - (-1)`,
+# which is CEIL's value. The `b` is rebased into `l`'s arena first, which is what the old
+# line did and what the rest of this file's one-arena-per-method rule requires.
 def ew_floor(+t: T.Tensor) -> T.Tensor:
   +b = ew_trunc(t)
   +l = ew_binop(O.OpsCMPLT{}, t, ETen{b}, False{})
   +bb = ew_rebase(T.Tensor.ar(l), b)
-  ew_where.of(l, ECon{O.CInt{H.i64_of_i32(4294967295)}}, ETen{bb})
+  +bm1 = ew_sub(bb, ECon{O.CInt{H.i64_of_i32(1)}}, False{})
+  ew_where.of(l, ETen{bm1}, ETen{bb})
 
 # `if dtypes.is_int(a.dtype) or a.dtype == dtypes.bool: a = a.cast(dtypes.default_float)`.
 # `S.single()` is float32, which is `DEFAULT_FLOAT`'s default and which no caller of
