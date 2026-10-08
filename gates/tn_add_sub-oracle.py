@@ -1,50 +1,57 @@
-#!/usr/bin/env python3
-"""tn_add_sub-oracle.py -- CPython's answers to `gates/tn_add_sub.bend`'s 17 rows.
+"""tn_add_sub-oracle.py -- CPython's answers to `gates/tn_add_sub.bend`'s 19 rows.
 
-The two lanes share no code: the Bend lane calls `tn_add`, `tn_radd`, `tn_sub`,
-`tn_rsub` from the port, this lane builds the same graphs out of real tinygrad
-Tensors and asks the same questions. A row agrees only if two implementations of
-the property say so.
+The two lanes share no code: the Bend lane calls `tn_add`, `tn_radd`, `tn_sub`, `tn_rsub`
+from the port, this lane builds the same graphs out of real tinygrad Tensors and asks the same
+questions. A row agrees only if two implementations of the property say so.
 
 Run with the repo's venv so the import is the working tree's tinygrad:
 
     .venv/bin/python gates/tn_add_sub-oracle.py
 
-SEVENTEEN ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
-    add_op_is_add                    c.alu(ADD, d) sets op to ADD.
+NINETEEN ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
+    add_op_is_add                    `c + d` sets op to ADD.
     add_arg_is_anone                 the ADD's arg is None.
     add_srcs_are_self_and_x          srcs are (self, x).
     add_does_not_mutate_input        the input still has its original op.
-    radd_op_is_add                   d.alu(ADD, c) sets op to ADD.
+    radd_op_is_add                   the `reverse` arm sets op to ADD.
     radd_arg_is_anone                arg is None.
     radd_srcs_are_x_and_self         the `reverse` arm swaps src order.
     radd_does_not_mutate_input       the input still has its original op.
-    sub_op_is_sub                    c.alu(SUB, d) sets op to SUB.
-    sub_arg_is_anone                 the SUB's arg is None.
+    sub_op_is_add                    `c - d` sets op to ADD.
+    sub_arg_is_anone                 the ADD's arg is None.
     sub_src0_is_self                 src[0] is self.
     sub_src1_is_neg_x                src[1] is MUL(x, -1) -- `sub` is ADD, never SUB.
     sub_does_not_mutate_input        the input still has its original op.
-    rsub_op_is_sub                   d.alu(SUB, c) sets op to SUB.
+    rsub_op_is_add                   the `reverse` arm sets op to ADD.
     rsub_arg_is_anone                arg is None.
     rsub_src0_is_x                   the `reverse` arm swaps which operand is src[0].
     rsub_src1_is_neg_self            src[1] is MUL(self, -1).
     rsub_does_not_mutate_input       the input still has its original op.
     add_sub_is_reachable             the four defs are callable.
 
-WHY THIS ORACLE USES `Tensor.alu(Ops.X, y)` AND NOT `c + d` / `c - d`. CPython's
-`Tensor.__add__` (elementwise.py:267) calls `Tensor.add(x)` (elementwise.py:84),
-which is `a, b = self._broadcasted(x, reverse); return a.alu(Ops.ADD, -b)`. The
-`-b` is a CONST trap (and unary minus on a Tensor is also walled), so for a
-CONST rhs `-b` is just a negated CONST and the resulting op is `Ops.ADD`. For a
-TENSOR rhs `-b` is `NEG(b.uop)`, so `c - d` builds `ADD(c.uop, NEG(d.uop))` --
-two nodes, NOT `SUB(c.uop, d.uop)`. The port's no-broadcasting case for
-`__sub__` is `_binop`'s body (elementwise.py:36, `lhs.alu(op, rhs)`) with
-`Ops.SUB`, which is what `Tensor.alu(Ops.SUB, rhs)` builds: `SUB(lhs, rhs)`
-directly. The oracle calls `Tensor.alu` to mirror what the port mirrors --
-`_binop`'s body, not CPython's `-b` trick. The `c + d` case still works
-because `c.alu(Ops.ADD, d)` is the same graph `c + d` would build in the
-no-broadcasting case (the `-b` collapses when `b` is a CONST because `+x` is
-`-(-x)`, but the result is `ADD(c.uop, d.uop)` directly via `Tensor.alu`).
+CPYTHON'S `sub` IS NOT A SUB, AND THAT IS THE POINT OF THIS LANE. `Tensor.sub`
+(elementwise.py:103) is, with the docstring stripped:
+
+    a, b = self._broadcasted(x, reverse)
+    return a.alu(Ops.ADD, -b)
+
+so `-` builds `ADD(a, MUL(b, -1))` and `Ops.SUB` IS NEVER BUILT BY IT. VERIFIED that the name
+is not merely unused here: `grep -rn "Ops[.]SUB" tinygrad/ | grep "[.]py:"` answers 24, and 23
+of them are `X86Ops.SUB`, a different enum; the one graph-level hit is an x86 rewrite pattern at
+`renderer/isa/x86.py:119`, not a Tensor method.
+
+THIS ORACLE USED TO CALL `c.alu(Ops.SUB, d)` -- a path CPython's `sub` never takes -- and the
+port used to build `SUB` to match it. So `sub_srcs_are_self_and_x` agreed with the port while
+BOTH WERE WRONG, which is worse than a missing row: it reads as coverage. The sub rows now call
+the DUNDER (`c - d`, `d.__rsub__(c)`) and name the two srcs separately, because `tn_srcs_are`
+cannot express a src that is a computed MUL.
+
+THE `add` ROWS STILL CALL `Tensor.alu(Ops.ADD, ...)`, AND THAT IS CORRECT: CPython's
+`Tensor.add` (elementwise.py:84) is `a.alu(Ops.ADD, -b)`, and for a CONST rhs the `-b`
+collapses to the CONST itself, so `alu(ADD, d)` and `c + d` are the same graph. The reverse
+arms cannot use the operators -- Python's `d + c` calls `d.__add__(c)`, never `__radd__`,
+because `Tensor.__add__` always returns a Tensor and `NotImplemented` is unreachable -- which
+is why `radd` calls `d.alu(Ops.ADD, c)` and `rsub` calls `d.__rsub__(c)` instead.
 """
 
 from tinygrad.uop.ops import Ops, UOp

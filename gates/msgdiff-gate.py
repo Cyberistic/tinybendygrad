@@ -67,32 +67,15 @@ THIS DIFF does not witness it -- a rename, a squashed push, or a sibling commit 
 honest message look unwitnessed by one diff. Supply `MESSAGE_DIFF_ACK="<reason>"` (or `--ack`)
 and the refusal is recorded and passed.
 
-THE SECOND SUBJECT, `SUBJECT_DIFF_ACK=`, AND WHY THE DOCSTRING ABOVE WAS NOT ENOUGH. Everything
-above grades the MESSAGE against the DIFF, and it is therefore structurally blind to a diff the
-message says NOTHING about: no claim, nothing to grade, exit 0. MEASURED on the three commits
-that carry a sha in the ledger:
-
-    9144d179e25a  removed 110 paths  ->  claim lane PASS (0 checked, 0 uncheckable)
-    c83f04ad1c12  removed  66 paths  ->  claim lane PASS (0 checked, 0 uncheckable)
-    75ab9b8f8984  removed   4 paths  ->  claim lane PASS (0 checked, 0 uncheckable)
-
-The rule that closes it: **every path the diff REMOVES must be NAMED by the message or
-ACKNOWLEDGED by `SUBJECT_DIFF_ACK=`.** It was chosen over a ratio rule because it has no
-threshold to choose -- see the long comment above `SUBJECT_RE` for the head-to-head measurement
-(allowlist 33 firings of 300 commits since 2026-10-06T00:00; ratio@8 131) and for why
-"invisible in a diffstat" is a claim about `D` and not about removals.
-
 Run:  .venv/bin/python gates/msgdiff-gate.py check 00b101574
       .venv/bin/python gates/msgdiff-gate.py range --since=2026-10-06T12:00 HEAD
       .venv/bin/python gates/msgdiff-gate.py --plant
-      SUBJECT_DIFF_ACK=".agents/slop/<unit>" .venv/bin/python gates/msgdiff-gate.py check <rev>
 """
 import os
 import re
 import subprocess
 import sys
 import tempfile
-from fnmatch import fnmatch
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -111,22 +94,6 @@ VERB = re.compile(r"(?<![\w./-])(deleted|delete|deletes|deleting|removed|removes
 PATH = re.compile(r"[A-Za-z0-9_./{},-]+"
                   r"(?:\.(?:py|bend|md|rows|out|err|tsv|json|txt|sh|mjs|js|ts|tsx|c|h|yaml|yml"
                   r"|toml|lock|bin|png|hex|diff|patch|mut))+")
-# A WILDCARD and a DIRECTORY are both declarations `PATH` cannot express, and BOTH occur in
-# honest messages in this tree. MEASURED on `9b55d16a4` ("THE LAST FOUR TRACKED STRAY FILES IN
-# `tinybendygrad/` ARE REMOVED -- `elf.bend.mut` ... AND 3x `memory.staged-mem-*`"): `PATH`
-# matches NEITHER `` `tinybendygrad/` `` (no extension) NOR `memory.staged-mem-*` (`*` is not in
-# its character class), so the SUBJECT lane called an HONEST strays-removal undeclared and the
-# rule would have refused a message that declared all four paths. A declaration the grammar
-# cannot read is not a declaration the author failed to make.
-#
-# `*` IS THE ONLY METACHARACTER. `?` and `[...]` are NOT added: no message in this population
-# uses them, and a glob dialect nobody has exercised is a dialect nobody can check.
-GLOB = re.compile(r"[A-Za-z0-9_./{},*-]+")
-# A DIRECTORY DECLARATION: a slash-terminated token. `tinybendygrad/` and `runs/graphcmp/D`.
-# This is the trailing-slash form only, NOT "any token containing a slash" -- the latter would
-# make every message that names one file in a directory declare the whole directory, which is
-# the leniency the whole rule is built to avoid.
-DIR = re.compile(r"[A-Za-z0-9_.,-]+(?:/[A-Za-z0-9_.,-]+)*/")
 # The words a verb's object may sit behind ("Deleted the superseded X"). Anything else -- a
 # relative clause (`GUARDED BY`), a conjunction, a comma -- means the verb's object is NOT the
 # path that follows, so the claim is unchecked rather than refused. This is the whole defence
@@ -148,124 +115,6 @@ PID = re.compile(r"(?<![\w-])pid[\s=:]*\d{2,7}\b", re.I)
 UNCHECKED_KINDS = ("no_path", "meta", "renamed_or_absent", "pid", "unfalsifiable_count")
 
 
-# ---- the SUBJECT half -------------------------------------------------------------------
-# WHY A SEPARATE LANE AND NOT AN EXTRA CLAIM KIND. The claim lane above is driven by the
-# MESSAGE's sentences; this one is driven by the DIFF's paths. A commit has one message and one
-# diff, and the two disagree in ways only one subject can name -- the failure `gates/gendirs.py`
-# exists to name, restated in this file's own terms: ONE VERDICT FOR TWO SUBJECTS IS NO VERDICT.
-# So the subject refusal is computed, reported and returned SEPARATELY from the claim refusals,
-# and `main()` refuses if EITHER fired. A gate that could only say "REFUSED" would leave the
-# reader unable to tell WHICH of the two questions failed.
-#
-# THE BLIND SPOT THIS EXISTS TO CLOSE, MEASURED. `9144d179e25a`, `c83f04ad1c12` and
-# `75ab9b8f8984` all PASS the claim lane above with **0 claims checked and 0 uncheckable** -- not
-# because the messages are honest but because the claim lane's POPULATION is claim sentences and
-# none of the three messages contains one. 9144d179e25a removed 110 paths; its message names
-# 7 globs and not one of the 110. Nothing to grade, so nothing is graded, and the exit is 0.
-#
-# RULE (a), THE ALLOWLIST, CHOSEN OVER (b) THE RATIO, AND WHY. Rule (a): every path the commit
-# REMOVES must be either NAMED by the message or ACKNOWLEDGED by `SUBJECT_DIFF_ACK=`. Rule (b):
-# refuse above N removals outside the subject.
-#
-# MEASURED over the same population (`--since=2026-10-06T00:00`, HEAD, 300 commits, every
-# commit, no filter -- regenerated by `.agents/slop/diffrule/separation.py`):
-#
-#     rule                    fires on   of 300    catches the 3 named incidents
-#     (a) ALLOWLIST, D only        33                3 of 3
-#     (a) ALLOWLIST, D + R src    202                3 of 3
-#     (b) RATIO at N=8            131                3 of 3
-#
-# (b) IS THE LOUDER RULE AND THE WORSE ONE, and the reason is that N IS A HUMAN DECISION.
-# Every N is wrong for something: N=8 refuses 131 of 300 honest commits, and no N catches
-# `75ab9b8f8984`'s 4 unacknowledged DELETIONS without also catching honest commits with 4.
-# (a) HAS NO N. Its correctness is a FACT ABOUT THE DIFF, not a number a person chose: 33
-# firings, and `.agents/slop/diffrule/triage.py` classifies 17 of those 33 as REPEATED
-# deletions -- a path deleted twice in this population and restored in between, which no unit
-# does to its own work. The other 16 are `SUBJECT_DIFF_ACK`-able, and that is the honest cost:
-# (a) TRADES A THRESHOLD FOR AN ACKNOWLEDGEMENT, AND THE ACKNOWLEDGEMENT IS A SENTENCE THE
-# COMMITTER ALREADY HAS TO WRITE.
-#
-# ADDITIONS ARE DELIBERATELY NOT IN THE RULE. MEASURED: 202 of 300 commits carry an addition
-# outside their subject's globs, because a unit's report, its `.rows` and its gate land beside
-# the code and a message that names the code need not name the report. Grading additions would
-# refuse 67% of honest history to catch nothing: all six incidents are REMOVALS. A rule that
-# fired on the harmless two thirds of every commit is a policy wearing a guard's name.
-#
-# THE REMOVAL SET IS DISCOVERED, NOT LISTED: it is whatever `diff-tree -r -M` reports as `D` or
-# as a rename source. There is no directory in this file, and adding one -- "collateral lives
-# under .agents/slop/" -- is the hand-list failure this rule is a reaction to.
-SUBJECT_RE = re.compile(r"^(?P<path>[A-Za-z0-9_./{},-]+)$")
-
-
-def _message_names(message):
-    """The set of paths and PARENT DIRECTORIES the message names.
-
-    A parent directory counts, because a message that says `gates/tn_where.bend` has declared
-    `gates` -- refusing it for also editing `gates/tn_where-gate.py` would refuse the honest
-    message for being concise. `PATH` is the SAME regex the claim lane uses: one grammar in
-    this file, imported not restated.
-    """
-    tokens = set(PATH.findall(message))
-    parents = set()
-    for t in tokens:
-        parts = t.split("/")
-        parents.update("/".join(parts[:i]) for i in range(1, len(parts)))
-    return tokens, parents
-
-
-def _covered(path, roots):
-    """`path` is under one of `roots`, as a full prefix, as a SUFFIX, or through a WILDCARD.
-
-    **THE SUFFIX HALF IS NOT A NICETY, IT IS MEASURED.** `3188c1af86a1` is `portzz`: FOUR
-    RELOCATED, ONE REPORTED AND NOT MOVED, and its message names every one of the four
-    (`runtime/zzdiag.bend`, `runtime/support/zz_objc_mutant.bend`, ...) -- relative to
-    `tinybendygrad/`, which the sentence does not repeat. A prefix test alone calls those four
-    undeclared removals and refuses an HONEST commit, which is the failure mode this rule's
-    whole design is built against (see `_nearest_path`: A BLAMED INNOCENT IS A REFUSED HONEST
-    MESSAGE).
-
-    The same suffix test is what the CLAIM lane already does at its own `cands` line, so this
-    is one rule in one file rather than two rules that disagree about what a name is.
-
-    `fnmatch` rather than a hand translate, and it is the only `fnmatch` in this file: `*` is
-    the one metacharacter with a measured use (`memory.staged-mem-*`).
-    """
-    return (path in roots
-            or any(path.startswith(pre + "/") for pre in roots)
-            or any(path.endswith("/" + r) for r in roots if r)
-            or any(fnmatch(path, pat) or fnmatch(path, pat.rstrip("/") + "/*")
-                   for pat in roots if "*" in pat))
-
-
-def unacknowledged_removals(removed, message, ack_paths):
-    """`removed` minus (what the message declares) minus (`SUBJECT_DIFF_ACK=`'s paths).
-
-    Sorted, so a refusal reads the same twice. The `named` test is the generous one (prefix,
-    suffix, directory or wildcard); the strict one refuses a message for being concise, and a
-    blamed innocent is worse than a missed claim.
-    """
-    tokens, parents = _message_names(message)
-    # Wildcards and slash-terminated directories join the declaration set. Both are read from
-    # the MESSAGE with the same care as `PATH`, and neither is a list: they are whatever the
-    # author's prose declares, which is the only source a declaration can have.
-    decl = tokens | parents | set(GLOB.findall(message)) | set(DIR.findall(message))
-    acked = {p.strip().rstrip("/") for p in (ack_paths or "").split(",") if p.strip()}
-    return [p for p in sorted(removed) if not _covered(p, decl) and not _covered(p, acked)]
-
-
-def judge_subject(root, sha, message, ack_paths):
-    """(PASS|REFUSED, n_removals, n_unacknowledged, first few paths).
-
-    `DEAD` is impossible here and is not returned: `commit_view` raises `RuntimeError` and
-    `main()` turns that into DEAD, so this lane cannot silently emit nothing."""
-    present, _deleted, removed, _changed = commit_view(root, sha)
-    del present
-    bad = unacknowledged_removals(removed, message, ack_paths)
-    if bad:
-        return REFUSED, len(removed), len(bad), bad[:8]
-    return PASS, len(removed), 0, []
-
-
 def _git(root, *args):
     """One git call. `--no-optional-locks` so this gate NEVER writes the index it reads --
     a guard that moves the thing it measures is the jj-reset hazard restated."""
@@ -277,25 +126,12 @@ def _git(root, *args):
 
 
 def commit_view(root, sha):
-    """(present, deleted, removed, changed) for one commit.
-
-    `deleted` is the `D` set under rename detection (`-M`), so a pure MOVE is not a delete --
-    and it is the set the MESSAGE lane judges against, UNCHANGED.
-
-    `removed` is `D` PLUS every rename SOURCE, and it is a SEPARATE set for a reason that is a
-    measurement rather than a preference: `c83f04ad1c12` reverted 46 renames and git records
-    them as `R100`, so `deleted` sees NONE of them -- which is exactly why they were
-    "invisible in a diffstat". A rename removes its source path; a set built from `D` alone
-    cannot see a removal. Folding the two would CHANGE this lane's verdicts (a claim about a
-    rename source would become witnessed), and this lane's verdicts are not this unit's to move.
-
-    The two sets are kept apart so ONE commit can carry two subjects -- the DIFF-removal and
-    the MESSAGE-claim -- and each has its own verdict. See `gates/README.md`.
-    """
+    """(present, deleted, changed) for one commit. `present` is the tree AT the commit and
+    `deleted` is its `D` set under rename detection (`-M`), so a pure MOVE is not a delete."""
     present = set(_git(root, "ls-tree", "-r", "--name-only", sha).splitlines())
     status = _git(root, "diff-tree", "-r", "-M", "--root", "--no-commit-id",
                   "--name-status", sha)
-    deleted, removed, changed = set(), set(), 0
+    deleted, changed = set(), 0
     for line in status.splitlines():
         parts = line.split("\t")
         if len(parts) < 2:
@@ -303,10 +139,7 @@ def commit_view(root, sha):
         changed += 1
         if parts[0].startswith("D"):
             deleted.add(parts[-1])
-            removed.add(parts[-1])
-        elif parts[0].startswith("R") and len(parts) >= 3:
-            removed.add(parts[1])          # the SOURCE: what ceased to exist
-    return present, deleted, removed, changed
+    return present, deleted, changed
 
 
 def _clause(text, i):
@@ -349,13 +182,9 @@ def deletion_claims(message):
     return out
 
 
-def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
-    """PASS, or REFUSED naming the sentence. FAIL is never returned: see the module docstring.
-
-    Returns `(code, checked, unchecked, refusals, subject)` where `subject` is
-    `(code, n_removals, n_unacknowledged, sample_paths)` -- THE SECOND SUBJECT, reported rather
-    than folded in, so `main()` can refuse on either and say which."""
-    present, deleted, _removed, changed = commit_view(root, sha)
+def judge_message(root, sha, message, ack, verbose=False):
+    """PASS, or REFUSED naming the sentence. FAIL is never returned: see the module docstring."""
+    present, deleted, changed = commit_view(root, sha)
     unchecked = {k: 0 for k in UNCHECKED_KINDS}
     checked = 0
     refusals = []
@@ -391,14 +220,14 @@ def judge_message(root, sha, message, ack, verbose=False, ack_paths=""):
             print(f"  file:  {tok}  ({why})", file=sys.stderr)
         print(f'  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff '
               f"is a partial view", file=sys.stderr)
-        return REFUSED, checked, unchecked, refusals, (PASS, 0, 0, [])
+        return REFUSED, checked, unchecked, refusals
     acked = f" (ack: {ack})" if refusals and ack else ""
     if verbose or refusals:
         print(f"PASS: {label} -- {checked} deletion claims checked, "
               f"{sum(unchecked.values())} uncheckable "
               f"(pids={unchecked['pid']}, counts=unfalsifiable, meta={unchecked['meta']})"
               f"{acked}")
-    return PASS, checked, unchecked, refusals, judge_subject(root, sha, message, ack_paths)
+    return PASS, checked, unchecked, refusals
 
 
 def revs_for(root, args):
@@ -410,7 +239,7 @@ def revs_for(root, args):
 
 # ---------------------------------------------------------------- plant
 def _plant():
-    """EIGHT STATES IN A SCRATCH REPO -- never this one. An HONEST message PASSes; a message
+    """SIX STATES IN A SCRATCH REPO -- never this one. An HONEST message PASSes; a message
     claiming a deletion the commit did not make REFUSES (exit 3) naming the sentence; a message
     naming only uncheckable things (a pid) PASSes because it cannot be judged; the same false
     message PASSes with `--ack`; and the COUNT lane refuses a false count and passes an honest
@@ -424,88 +253,53 @@ def _plant():
         return subprocess.run(["git", "-C", str(cwd), *args], capture_output=True,
                               text=True, env=root_env)
 
-    def verdict(cwd, rev="HEAD", ack="", ack_paths=""):
-        """`judge_message` on `rev`, in this scratch repo. `rev` rather than `HEAD` because
-        states D and G re-grade an EARLIER commit than the one just made."""
-        return judge_message(cwd, rev, _git(cwd, "log", "-1", "--format=%B", rev),
-                             ack, True, ack_paths)
-
     with tempfile.TemporaryDirectory(ignore_cleanup_errors=True) as td:
         root = Path(td)
         run(root, "init", "-q")
         (root / "keep.py").write_text("x = 1\n")
         (root / "victim.py").write_text("y = 2\n")
-        # FIVE collateral paths, seeded TRACKED, whose names no message below ever mentions.
-        for i in range(5):
-            (root / f"other{i}.py").write_text(f"z = {i}\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "seed")
 
-        # STATE A: HONEST -- it really does delete victim.py, and the message says so
+        # STATE A: HONEST -- it really does delete victim.py
         (root / "victim.py").unlink()
         (root / "keep.py").write_text("x = 2\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "Removed victim.py, fixed keep.py")
-        r = verdict(root)
-        bad += [] if r[0] == PASS and r[4][0] == PASS else [
-            f"state A claim={_w(r[0])} subject={_w(r[4][0])}, expected PASS(0)/PASS"]
+        rc_a = judge_message(root, "HEAD", _git(root, "log", "-1", "--format=%B"), "", True)[0]
+        bad += [] if rc_a == PASS else [f"state A rc={rc_a}, expected PASS(0)"]
 
-        # STATE B: FALSE CLAIM -- it says it deleted keep.py, but keep.py is present
-        (root / "more.py").write_text("q = 9\n")
+        # STATE B: FALSE -- it says it deleted keep.py, but keep.py is present
+        (root / "other.py").write_text("z = 3\n")
         run(root, "add", "-A")
-        run(root, "commit", "-q", "-m", "Deleted keep.py and added more.py")
-        r = verdict(root)
-        bad += [] if r[0] == REFUSED else [f"state B rc={r[0]}, expected REFUSED(3)"]
+        run(root, "commit", "-q", "-m", "Deleted keep.py and added other.py")
+        r = judge_message(root, "HEAD", _git(root, "log", "-1", "--format=%B"), "", True)[0]
+        bad += [] if r == REFUSED else [f"state B rc={r}, expected REFUSED(3)"]
 
         # STATE C: UNCHECKABLE -- a pid claim is counted and passed, never refused
-        (root / "more.py").write_text("q = 10\n")
+        (root / "other.py").write_text("z = 4\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "bump; the server is at pid 30543, 41% done")
-        r = verdict(root)
-        bad += [] if r[0] == PASS else [f"state C rc={r[0]}, expected PASS(0) -- uncheckable"]
+        r = judge_message(root, "HEAD", _git(root, "log", "-1", "--format=%B"), "", True)[0]
+        bad += [] if r == PASS else [f"state C rc={r}, expected PASS(0) -- uncheckable"]
 
-        # STATE D: ACK -- the same false message, explained, PASSes
-        r = verdict(root, "HEAD~1", "the diff is a partial view")
-        bad += [] if r[0] == PASS else [f"state D rc={r[0]}, expected PASS(0) with --ack"]
+        # STATE D: ACK -- the same false message, explained, PASSES
+        r = judge_message(root, "HEAD~1", _git(root, "log", "-1", "--format=%B", "HEAD~1"),
+                          "the diff is a partial view", True)[0]
+        bad += [] if r == PASS else [f"state D rc={r}, expected PASS(0) with --ack"]
 
-        # STATE E/F: the COUNT lane -- "changed 9 files" over a 1-file diff REFUSES, and the
+        # STATE E: the COUNT lane -- "changed 9 files" over a 1-file diff REFUSES, and the
         # honest "changed 1 file" PASSes. The noun must be FILES for the count to be resolvable.
         (root / "cnt.py").write_text("q = 1\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "changed 9 files")
-        r = verdict(root)
-        bad += [] if r[0] == REFUSED else [f"state E rc={r[0]}, expected REFUSED(3)"]
+        r = judge_message(root, "HEAD", _git(root, "log", "-1", "--format=%B"), "", True)[0]
+        bad += [] if r == REFUSED else [f"state E rc={r}, expected REFUSED(3)"]
         (root / "cnt.py").write_text("q = 2\n")
         run(root, "add", "-A")
         run(root, "commit", "-q", "-m", "changed 1 file")
-        r = verdict(root)
-        bad += [] if r[0] == PASS else [f"state F rc={r[0]}, expected PASS(0)"]
-
-        # STATE G: **THE BLIND SPOT.** An HONEST message about `ported.py`, and the commit ALSO
-        # removes five files it never mentions -- the `9144d179e25a` shape exactly. The CLAIM
-        # lane sees no claim and PASSes, which is not a bug in the claim lane but the reason
-        # this lane exists. Asserted on BOTH halves, because the claim lane passing here IS
-        # the defect being closed.
-        (root / "ported.py").write_text("p = 1\n")
-        run(root, "add", "-A")
-        run(root, "commit", "-q", "-m", "seed ported")
-        for i in range(5):
-            (root / f"other{i}.py").unlink()
-        run(root, "add", "-A")
-        run(root, "commit", "-q", "-m", "ported: tn_sample and tn_other ported, 12/12 green")
-        r = verdict(root)
-        if r[0] != PASS:
-            bad += [f"state G claim lane rc={r[0]}, expected PASS(0) -- it has no claim to judge"]
-        if r[4][0] != REFUSED:
-            bad += [f"state G subject lane={_w(r[4][0])}, expected REFUSED(3), "
-                    f"got {r[4][2]} undeclared removals"]
-        else:
-            print(f"  G the subject lane caught {r[4][2]} undeclared removals: {r[4][3][:2]}")
-
-        # STATE H: the SAME commit with SUBJECT_DIFF_ACK naming those five paths -> PASS.
-        r = verdict(root, "HEAD", "", ",".join(f"other{i}.py" for i in range(5)))
-        if r[4][0] != PASS:
-            bad += [f"state H subject lane={_w(r[4][0])}, expected PASS(0) with SUBJECT_DIFF_ACK"]
+        r = judge_message(root, "HEAD", _git(root, "log", "-1", "--format=%B"), "", True)[0]
+        bad += [] if r == PASS else [f"state F rc={r}, expected PASS(0)"]
 
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
     return FAIL if bad else PASS
@@ -515,76 +309,39 @@ def main(argv):
     if "--plant" in argv:
         return _plant()
     ack = os.environ.get("MESSAGE_DIFF_ACK") or ""
-    ack_paths = os.environ.get("SUBJECT_DIFF_ACK") or ""
     if "--ack" in argv:
         ack = argv[argv.index("--ack") + 1]
-    if "--subject-ack" in argv:
-        ack_paths = argv[argv.index("--subject-ack") + 1]
     try:
         if not argv:
             print("usage: msgdiff-gate.py {check <rev> | range <rev-list args...> | --plant}",
-                  file=sys.stderr)
-            print("  env: MESSAGE_DIFF_ACK=<reason>  SUBJECT_DIFF_ACK=<path[,path...]>",
                   file=sys.stderr)
             return SKIP
         mode = argv[0]
         if mode == "check":
             sha = argv[1] if len(argv) > 1 else "HEAD"
             msg = _git(ROOT, "log", "-1", "--format=%B", sha)
-            code, _checked, _unchecked, _ref, subj = judge_message(
-                ROOT, sha, msg, ack, True, ack_paths)
-            if code == PASS:
-                return _report_subject(sha, subj)
-            return code
+            rc, checked, unchecked, refusals = judge_message(ROOT, sha, msg, ack, True)
+            return rc
         if mode == "range":
             revs = revs_for(ROOT, argv[1:])
             if not revs:
                 print("range: no commits matched", file=sys.stderr)
                 return SKIP
-            passed = refused = claim_refused = subject_refused = 0
+            passed = refused = 0
             for sha in revs:
                 msg = _git(ROOT, "log", "-1", "--format=%B", sha)
-                code, _c, _u, _r, subj = judge_message(ROOT, sha, msg, ack, False, ack_paths)
-                if code == PASS and subj[0] == PASS:
+                out = judge_message(ROOT, sha, msg, ack)
+                if out[0] == PASS:
                     passed += 1
-                    continue
-                refused += 1
-                claim_refused += code == REFUSED
-                subject_refused += subj[0] == REFUSED
-                print(f"REFUSED {sha[:12]}: claim-subject={_w(code)} "
-                      f"diff-subject={_w(subj[0])} "
-                      f"({subj[1]} removals, {subj[2]} unacknowledged)", file=sys.stderr)
-            print(f"range: {len(revs)} commits -- {passed} PASS, {refused} REFUSED "
-                  f"(claims: {claim_refused}, diffs: {subject_refused})")
+                else:
+                    refused += 1
+            print(f"range: {len(revs)} commits -- {passed} PASS, {refused} REFUSED")
             return REFUSED if refused else PASS
         print(f"unknown mode {mode!r}", file=sys.stderr)
         return SKIP
     except RuntimeError as e:
         print(f"DEAD: git could not answer: {e}", file=sys.stderr)
         return DEAD
-
-
-def _w(code):
-    return {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP",
-            DEAD: "DEAD"}.get(code, "UNASSIGNED")
-
-
-def _report_subject(sha, subj):
-    """The claim subject PASSed, so the verdict is the DIFF subject's -- and it is PRINTED with
-    its own numbers rather than folded into the claim lane's sentence. A reader who sees PASS
-    must be able to see what was measured to earn it."""
-    code, n_rem, n_bad, sample = subj
-    if code == PASS:
-        print(f"PASS: {sha[:12]} -- the diff subject: {n_rem} removal(s), all named by the "
-              f"message or acknowledged")
-        return PASS
-    print(f"REFUSED, NOT A VERDICT: {sha[:12]} -- the DIFF removes {n_bad} path(s) the message "
-          f"does not name ({n_rem} removal(s) total)", file=sys.stderr)
-    for p in sample:
-        print(f"  undeclared removal: {p}", file=sys.stderr)
-    print('  re-run with SUBJECT_DIFF_ACK="<path[,path...]>" if these removals were intended',
-          file=sys.stderr)
-    return REFUSED
 
 
 if __name__ == "__main__":

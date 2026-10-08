@@ -140,6 +140,32 @@ def row_floor_cond_is_cmplt() -> Bool:
 def row_ceil_floor_reachable() -> Bool:
   True{}
 
+# THE `b+1` / `b-1` ROWS. Both of those are src[1] of the WHERE, and NEITHER LANE LOOKED AT
+# THEM: the eleven rows above all read the top node, its arg, its src COUNT, purity, or
+# src[0]. So the `b-1` step was ungated, and `floor`'s is the interesting one -- CPython's
+# `Tensor.sub` is `a.alu(Ops.ADD, -b)`, so `b - 1` is `ADD(b, MUL(-1, 1))` and NOT a SUB.
+def row_ceil_src1_is_add() -> Bool:
+  +c = mk_tensor()
+  +r = T.tn_ceil(c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsADD{})
+
+def row_floor_src1_is_add() -> Bool:
+  +c = mk_tensor()
+  +r = T.tn_floor(c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsADD{})
+
+# `floor`'s `b-1` IS AN `ADD` WHOSE src[1] IS A MUL BY -1, and this row is what names it.
+def row_floor_src1_is_mul_by_neg1() -> Bool:
+  +c = mk_tensor()
+  +r = T.tn_floor(c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, O.Arena.src(ar, i, 1), 1)), O.OpsMUL{})
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a   : Unit <- row("ceil_op_is_where", row_ceil_op())
@@ -153,4 +179,7 @@ def main() -> IO(Unit):
     i   : Unit <- row("floor_does_not_mutate_input", row_floor_pure())
     j   : Unit <- row("floor_cond_is_cmplt", row_floor_cond_is_cmplt())
     k   : Unit <- row("ceil_floor_is_reachable", row_ceil_floor_reachable())
+    l   : Unit <- row("ceil_src1_is_add", row_ceil_src1_is_add())
+    m   : Unit <- row("floor_src1_is_add", row_floor_src1_is_add())
+    n   : Unit <- row("floor_src1_is_mul_by_neg1", row_floor_src1_is_mul_by_neg1())
     return Unit{}

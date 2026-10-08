@@ -21,15 +21,18 @@ ELEVEN ROWS:
 WHY THIS ORACLE USES `Tensor.ceil()` / `Tensor.floor()` AND NOT A MIMIC. CPython's
 `Tensor.ceil` (elementwise.py:656) is `(self > (b := self.trunc())).where(b+1, b)`,
 and `Tensor.floor` (elementwise.py:662) is `(self < (b := self.trunc())).where(b-1, b)`.
-The `b+1` / `b-1` is `_binop`'s body (elementwise.py:36) with `Ops.ADD` / `Ops.SUB`,
-which builds a SINGLE ADD or SUB node (not a chain of `+1` / `-1` -- the `-1` on a
-CONST rhs is a CONST trap because `Tensor.__sub__`'s body is `a, b = self._broadcasted(x);
-return a.alu(Ops.SUB, b)`, and for a CONST rhs the `-b` collapse to `a.alu(Ops.SUB, b)`).
-The port follows the same shape: `tn_add(b, c1t)` builds `ADD(b, c1)`, the
-`tn_where(gt, bp1, b)` builds `WHERE(gt, bp1, b)`, and the final node is a single
-WHERE whose srcs are `(self>b, b+1, b)`. The oracle therefore calls `t.ceil()` /
-`t.floor()` directly and asserts the GRAPH SHAPE -- op, arg, nsrcs, cond's op --
-which is the same shape the port's row functions check.
+The `b+1` is `_binop(Ops.ADD)` and the `b-1` is `Tensor.sub`, WHICH IS NOT A SUB. This
+paragraph USED TO say `b-1` "builds a SINGLE ADD or SUB node" and that `Tensor.__sub__`'s body
+is `return a.alu(Ops.SUB, b)`. BOTH ARE FALSE. `elementwise.py:103` reads, docstring stripped,
+`a, b = self._broadcasted(x, reverse)` then `return a.alu(Ops.ADD, -b)`, so `-` builds
+`ADD(a, MUL(b, -1))` and `Ops.SUB` is never built by it. MEASURED on CPython for
+`Tensor.floor`: `WHERE(CMPLT(BUFFER(), TRUNC(BUFFER())), ADD(TRUNC(BUFFER()), MUL(CONST(),
+CONST())), TRUNC(BUFFER()))`.
+
+THE THREE `*_src1_*` ROWS ARE NEW AND THEY ARE THE ONES THAT MATTER. All eleven rows that
+existed before read the TOP node, its arg, its src COUNT, purity, or src[0] -- so `src[1]`,
+which IS the `b+1` / `b-1` step, was never looked at by either lane. That is the same shape
+of hole `tn_add_sub` had.
 """
 
 from tinygrad.uop.ops import Ops, UOp
@@ -62,3 +65,8 @@ print(f"floor_cond_is_cmplt={int(r_floor.uop.src[0].op is Ops.CMPLT)}")
 
 # Both defs are reachable (the wall was 0 defs).
 print(f"ceil_floor_is_reachable={int(1)}")
+# The `b+1` / `b-1` rows: src[1] of the WHERE. Both are ADD, and `floor`'s ADD has a MUL for
+# src[1] because `-1` is a MUL and not a SUB.
+print(f"ceil_src1_is_add={int(r_ceil.uop.src[1].op is Ops.ADD)}")
+print(f"floor_src1_is_add={int(r_floor.uop.src[1].op is Ops.ADD)}")
+print(f"floor_src1_is_mul_by_neg1={int(r_floor.uop.src[1].src[1].op is Ops.MUL)}")
