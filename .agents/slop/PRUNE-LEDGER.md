@@ -1,3 +1,32 @@
+## THE CLEANUP SET I MEASURED WAS **459**, AND THE TRUE NUMBER IS **0**
+
+**MEASURED 2026-10-08, `git ls-files --others --exclude-standard` vs **my** `os.walk`:**
+
+| question | wrong way | right way | count |
+|---|---|---|---|
+| what is **untracked** | `os.walk` — counts **IGNORED** files | `--others --exclude-standard` | **28,227** ignored vs **1** not |
+| what is **owned** | `git ls-tree -r HEAD` | `jj file list -r @` | **80.3%** jj-owned |
+| what is **a path** | counting **directories** | files only | **1,085 -> 449** |
+
+*** **THE ANSWER IS **0** FILES THAT GIT NEITHER TRACKS NOR IGNORES AND \`jj\` DOES NOT OWN** — **AND **THE **ONE** FILE \`--exclude-standard\` REPORTS **IS
+A **RUNNING **UNIT's**, **ALREADY \`jj\`-OWNED**.** ***
+
+**SO "459 untracked paths, 9.0 MB" WAS WRONG **THREE** TIMES: it counted **28,227** files that `.gitignore` **already** excuses (**50** entries),
+then counted **\`.pyc\`** that `.gitignore:13` covers, then treated a **jj pending commit** as **no owner** — **each error making the number
+**bigger**, which is the direction a cleanup brief wants and therefore the direction nobody checks.**
+
+**AND `\`.gitignore\` HAS **50** ENTRIES, \`__pycache__/\` AMONG THEM, AND **0** \`.pyc\` ARE TRACKED IN HEAD** — SO **THE **IGNORED **SET **IS
+**~200x** THE **UNTRACKED **SET** IN **THIS **TREE**, **AND \`AGENTS.md\`'s WARNING IS ABOUT **THE **WRONG **ONE**: IT WARNS THAT \`git ls-files\` READS
+**THE **INDEX**, **WHICH **IS **TRUE **AND **COST **THE **NINTH **STALE-INDEX **INCIDENT** — **BUT **A **FILESYSTEM **WALK **HAS **THE **MIRROR
+DEFECT, **AND **A **WALK **IS **WHAT \`I\` AND **TWO **UNITS **USED**.**
+
+**THE COMMANDS THAT ASK **THE **RIGHT **QUESTIONS**, ONCE EACH:**
+- **what is in the tree**   -> `git ls-tree -r HEAD`
+- **what git owns**         -> `git ls-files` *(and it is the INDEX — trust it for THIS and nothing else)*
+- **what git ignores**      -> `git ls-files --others --ignored --exclude-standard`
+- **what nothing owns**     -> `git ls-files --others --exclude-standard` **minus** `jj file list -r @`
+- **what a suffix set saw** -> `os.walk` **minus** all of the above
+
 ## ARMED: **400 EMPTY BLOBS IN THE DEFAULT INDEX — 7.4 MB A BARE `git commit` WOULD HAVE DESTROYED**
 
 **THE EIGHTH STALE-INDEX FAILURE AND **THE ONLY ONE THAT PRODUCES A **VALID** COMMIT FROM AN **INVALID** STAGE** — so
