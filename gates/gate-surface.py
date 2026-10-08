@@ -283,10 +283,23 @@ def population(root):
 def walk_control(root, homes):
     """A LABELLED CONTROL, not the population: the recursive `os.walk` count `coindependent` used.
 
-    It exists to answer one question -- does reusing `discover()` make the 113-vs-111 disagreement
-    disappear -- and the answer is printed beside `discover()`'s count. It is never used to decide
-    what is a gate; two instruments holding two lists have no authority over each other, and this is
-    the SECOND one deliberately, so the difference is visible.
+    It exists to answer one question -- does reusing `discover()` make the disagreement disappear --
+    and the answer is printed beside `discover()`'s count. It is never used to decide what is a gate;
+    two instruments holding two lists have no authority over each other, and this is the SECOND one
+    deliberately, so the difference is visible.
+
+    IT USED `fn.endswith((".py", ".sh"))`, AND THAT MADE IT **UNFALSIFIABLE**: `checks/nan_census.mjs`
+    and `checks/bend` -- a TRACKED, EXTENSIONLESS `#!/bin/sh` shim whose NAME IS THE PROGRAM -- can
+    never enter a suffix set, so the control's residual could never reach 0 and a control that cannot
+    be falsified is DECORATION. **A CONTROL WHOSE ANSWER IS FIXED IN ADVANCE IS NOT A CONTROL.**
+    IT USES `interpreter()` -- whose docstring already says it is NEVER a suffix test -- **UNIONED** with
+    the `.py`/`.sh` set, and the union is the whole fix. **`interpreter()` ALONE IS **NOT** ENOUGH AND WAS
+    MEASURED **NOT** ENOUGH: it answers *"does this file SHIP AN INTERPRETER"*, and **12** GATES SHIP **NO
+    `#!`** (`checks/run.py`, `gates/gatekit.py`, …) **AND ARE STILL ENTRY POINTS**. SWAPPING THE SUFFIX SET
+    FOR `interpreter()` ALONE **GAINED \`checks/bend\`** — **THE \`HARDEST\` MEMBER \`IN\` \`THE\` TREE**, **AN
+    EXTENSIONLESS \`#!/bin/sh\` SHIM** — **AND \`LOST\` **12** REAL GATES.** *** **THE \`CONTROL\` \`CAN\` NOW \`REACH\`
+    \`AGREEMENT\` \`BECAUSE\` \`IT\` \`IS\` \`A\` \`SUPERSET\` \`OF\` \`BOTH\` \`QUESTIONS\`, NOT \`BECAUSE\` \`ONE\` \`QUESTION\` IS \`BETTER\`** —
+    **AND \`A\` \`CONTROL\` THAT \`CAN\` \`NOT\` \`BE\` \`FALSIFIED\` IS DECORATION, SO \`WHAT\` \`MATTERS\` IS THE \`UNION\`, NOT THE \`VICTOR\`.***
     """
     out = set()
     for home in homes:
@@ -296,8 +309,9 @@ def walk_control(root, homes):
         for dirpath, dirnames, filenames in os.walk(h):
             dirnames[:] = [d for d in dirnames if d != "__pycache__"]
             for fn in filenames:
-                if fn.endswith((".py", ".sh")):
-                    out.add(str((Path(dirpath) / fn).relative_to(root)))
+                p = Path(dirpath) / fn
+                if fn.endswith((".py", ".sh")) or interpreter(p)[1] != "NONE":
+                    out.add(str(p.relative_to(root)))
     return out
 
 
