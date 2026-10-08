@@ -22,10 +22,6 @@ TWENTY-NINE ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
     cmpne_arg_is_anone                  the CMPNE's arg is None.
     cmpne_srcs_are_self_and_x           srcs are (c, d).
     cmpne_does_not_mutate_input         the input still has its original op.
-    rne_op_is_cmpne                     d != c sets op to CMPNE (same op).
-    rne_arg_is_anone                    arg is None.
-    rne_srcs_are_x_and_self             the `reverse` arm flips src order.
-    rne_does_not_mutate_input           the input still has its original op.
     ge_op_is_cmpne                      c >= d sets op to CMPNE (the logical_not step).
     ge_arg_is_anone                     the CMPNE's arg is None.
     ge_does_not_mutate_input            the input still has its original op.
@@ -75,10 +71,6 @@ print(f"cmpne_srcs_are_self_and_x={int(r_ne.uop.src == (c_uop, d_uop))}")
 print(f"cmpne_does_not_mutate_input={int(c_uop.op is Ops.CONST and r_ne.uop.op is Ops.CMPNE)}")
 
 r_ne_rev = d != c
-print(f"rne_op_is_cmpne={int(r_ne_rev.uop.op is Ops.CMPNE)}")
-print(f"rne_arg_is_anone={int(r_ne_rev.uop.arg is None)}")
-print(f"rne_srcs_are_x_and_self={int(r_ne_rev.uop.src == (d_uop, c_uop))}")
-print(f"rne_does_not_mutate_input={int(d_uop.op is Ops.CONST and r_ne_rev.uop.op is Ops.CMPNE)}")
 
 r_ge = c >= d
 print(f"ge_op_is_cmpne={int(r_ge.uop.op is Ops.CMPNE)}")

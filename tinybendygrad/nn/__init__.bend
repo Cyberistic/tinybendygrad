@@ -291,13 +291,11 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.__pow__`/`__rpow__` (:569, :572, via `pow`'s `_broadcasted + alu(Ops.POW, ...)`)
 # are all ported at `tensor.bend:554-704` as
 # `tn_cmplt.go`/`tn_cmplt`/`tn_rcmplt`,
-# `tn_cmpne.go`/`tn_cmpne`/`tn_rne`,
+# `tn_cmpne.go`/`tn_cmpne`,
 # `tn_and.go`/`tn_and`/`tn_rand`,
 # `tn_or.go`/`tn_or`/`tn_ror`,
 # `tn_xor.go`/`tn_xor`/`tn_rxor`,
 # `tn_max`,
-# `tn_shl.go`/`tn_shl`/`tn_rshl`,
-# `tn_shr.go`/`tn_shr`/`tn_rshr`,
 # `tn_pow.go`/`tn_pow`/`tn_rpow`
 # for the no-broadcasting case (each is `_binop`'s body with `MUL` replaced by
 # `Ops.<OP>`, mirroring `tn_add.go`/`tn_mul.go`). The shape with `Pow` is the

@@ -311,9 +311,9 @@ def tn_where_srcs_are(+r: Tensor, +cond: Tensor, +x: Tensor, +y: Tensor) -> Bool
   O.eq_u32(O.Arena.srcs(Tensor.ar(r), Tensor.u(r)),
     [Tensor.u(cond), O.Merge.at(mx, Tensor.u(x)), O.Merge.at(my, Tensor.u(y))])
 
-# SIBLING ARENAS: WAS A WALL, NOW CLOSED. The 18 reverse-dispatch binops (`tn_mul.go`,
+# SIBLING ARENAS: WAS A WALL, NOW CLOSED. The reverse-dispatch binops (`tn_mul.go`,
 # `tn_add.go`, `tn_sub.go`, `tn_cmplt.go`, `tn_cmpne.go`, `tn_and.go`, `tn_or.go`,
-# `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`, `tn_shl.go`, `tn_shr.go`,
+# `tn_xor.go`, `tn_maximum.go`, `tn_lshift.go`, `tn_rshift.go`,
 # `tn_pow.go`, `tn_fdiv.go`, `tn_mod.go`) and `tn_max` used to build with
 # `tn_alu(lhs, OP, [Tensor.u(rhs)])`, which builds in `lhs.ar` and reads `rhs.u` THERE.
 # MEASURED, `O.Rng.sig` (`ops.bend:5857`) on `tn_add` with `lhs` a bare `CInt{3}` and `rhs`
@@ -816,36 +816,6 @@ def tn_maximum.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(False{}, lhs, rhs)
 
-# TODO(p3) SIX DEFS HERE HAVE NO CPYTHON COUNTERPART -- they are not ports, and the gates that
-# cover two of them assert against a path CPython's API does not expose. MEASURED, and the
-# instrument is the source:
-#
-#   `tn_rne`       CPython's `ne` (elementwise.py:333) is `self._binop(Ops.CMPNE, x, False)` --
-#                  the `False` is HARDCODED and there is no `__rne__`.
-#   `tn_rmaximum`  `maximum` (elementwise.py:378) is `self._binop(Ops.MAX, x, False)` -- same
-#                  hardcoded `False`, and there is no `__rmax__`.
-#   `tn_shl` / `tn_rshl` / `tn_shr` / `tn_rshr`
-#                  CPython has NO `shl` or `shr` METHOD. `grep -rn "def shl\|def shr"
-#                  tinygrad/mixin/elementwise.py` answers nothing; the methods are `lshift`
-#                  (elementwise.py:344) and `rshift` (:355), which the port already has as
-#                  `tn_lshift` / `tn_rlshift` and `tn_rshift` / `tn_rrshift`. So these four
-#                  DUPLICATE them, body for body.
-#
-# ALL SIX have ZERO callers outside their own def. VERIFIED: `grep -rn "<name>(" tinybendygrad/`
-# minus the `def` line answers 0 for each. `tn_rcmplt` LOOKS like a seventh and is NOT: it has
-# 11 callers (`tn_relu`, `tn_relu6`, `tn_ceil`, `tn_floor`) and is the `c0 < t` spelling of
-# CPython's `self > 0`, which is what the GT-to-LT rewrite leaves.
-#
-# THEY ARE NOT DELETED YET because two of them carry gate rows -- `tn_rne` in
-# `gates/tn_binop2_cmp.bend`, `tn_rmaximum` in `gates/tn_maximum.bend` -- and `tn_shl` / `tn_shr`
-# are two of the seventeen rows in `gates/tn_binop_sweep.bend`. Removing the defs means removing
-# those rows in the same commit, and a row removed to make a gate pass is exactly what this
-# tree has been burned by. The removal is the next unit's, with the row lists edited first.
-
-
-def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_maximum.go(True{}, lhs, rhs)
-
 # `lshift` -- elementwise.py:347. `self._binop(Ops.SHL, x, False)`. Same shape as
 # `tn_maximum` with `OpsSHL{}` instead of `OpsMAX{}`. The reverse arm is
 # `__rlshift__` (elementwise.py:361). The broadcasting case stays walled on
@@ -882,10 +852,10 @@ def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 
 # `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
 # (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`
-# instead of `Ops.CMPLT`. The `reverse` arm is unused upstream (`ne` has no
-# `__rne__`) but `tn_rne` exists by symmetry with `tn_cmplt`'s `tn_rcmplt`, so the
-# shape of the dispatcher matches. The broadcasting case stays walled on
-# `_broadcasted`.
+# instead of `Ops.CMPLT`. THE `False` IS HARDCODED UPSTREAM AND THERE IS NO `__rne__`, so
+# the dispatcher's `True{}` arm is never taken by any CPython method; it stays because
+# `tn_binop`'s two-operand shape is what the other fifteen share. The broadcasting case
+# stays walled on `_broadcasted`.
 def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
     case True{}: tn_binop(rhs, lhs, O.OpsCMPNE{})
@@ -893,9 +863,6 @@ def tn_cmpne.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
 
 def tn_cmpne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_cmpne.go(False{}, lhs, rhs)
-
-def tn_rne(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_cmpne.go(True{}, lhs, rhs)
 
 # `__and__` -- elementwise.py:285, via `bitwise_and` at elementwise.py:159
 # (`self._binop(Ops.AND, x, reverse)`). Same shape as `tn_cmplt` with `Ops.AND`.
@@ -954,32 +921,10 @@ def tn_max(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # (`self._binop(Ops.SHL, x, reverse)`). Same shape as `tn_and` with `Ops.SHL`.
 # The `reverse` arm is `__rlshift__` (elementwise.py:372). The broadcasting case
 # stays walled on `_broadcasted`.
-def tn_shl.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
-  match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsSHL{})
-    case False{}: tn_binop(lhs, rhs, O.OpsSHL{})
-
-def tn_shl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_shl.go(False{}, lhs, rhs)
-
-def tn_rshl(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_shl.go(True{}, lhs, rhs)
-
 # `__rshift__` -- elementwise.py:369, via `rshift` at elementwise.py:355
-# (`self._binop(Ops.SHR, x, reverse)`). Same shape as `tn_shl` with `Ops.SHR`.
+# (`self._binop(Ops.SHR, x, reverse)`). Same shape as `tn_lshift` with `Ops.SHR`.
 # The `reverse` arm is `__rrshift__` (elementwise.py:375). The broadcasting case
 # stays walled on `_broadcasted`.
-def tn_shr.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
-  match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsSHR{})
-    case False{}: tn_binop(lhs, rhs, O.OpsSHR{})
-
-def tn_shr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_shr.go(False{}, lhs, rhs)
-
-def tn_rshr(+lhs: Tensor, +rhs: Tensor) -> Tensor:
-  tn_shr.go(True{}, lhs, rhs)
-
 # `__pow__` -- elementwise.py:569, via `pow` at elementwise.py:548 (`base, exponent
 # = self._broadcasted(x, reverse=reverse); ...; return base.alu(Ops.POW, exponent)`).
 # For two Tensors of the same shape (the no-broadcasting case the gate covers),

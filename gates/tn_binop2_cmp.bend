@@ -12,7 +12,6 @@
 #   tn_cmplt   -- elementwise.py:321   `self < x`   -- CMPLT
 #   tn_rcmplt  -- elementwise.py:324   `self > x`   -- CMPLT, srcs flipped
 #   tn_cmpne   -- elementwise.py:339   `self != x`  -- CMPNE
-#   tn_rne     -- symmetry with tn_cmplt (CPython has no __rne__)
 #   tn_dunder_ge -- elementwise.py:327 `(self < x).logical_not()` -- CMPNE chain
 #   tn_dunder_le -- elementwise.py:330 `(self > x).logical_not()` -- CMPNE chain
 #   tn_eq      -- elementwise.py:336   `self.ne(x).logical_not()` -- CMPNE chain
@@ -118,32 +117,6 @@ def row_cmpne_pure() -> Bool:
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
     O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{}))
 
-# ROW 13-16: tn_rne (symmetric reverse, CPython has no __rne__).
-def row_rne_op() -> Bool:
-  +c = mk_tensor(3)
-  +d = mk_tensor(5)
-  +r = T.tn_rne(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
-
-def row_rne_arg() -> Bool:
-  +c = mk_tensor(3)
-  +d = mk_tensor(5)
-  +r = T.tn_rne(c, d)
-  O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
-
-def row_rne_srcs() -> Bool:
-  +c = mk_tensor(3)
-  +d = mk_tensor(5)
-  +r = T.tn_rne(c, d)
-  T.tn_srcs_are(r, d, c)
-
-def row_rne_pure() -> Bool:
-  +c = mk_tensor(3)
-  +d = mk_tensor(5)
-  +r = T.tn_rne(c, d)
-  Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{}))
-
 # ROW 17-20: tn_dunder_ge (elementwise.py:327). The chain
 # `tn_logical_not(tn_cmplt(t, x))` produces a CMPNE on top of the CMPLT, so the
 # outermost op is CMPNE and the arg is ANone, just like `tn_logical_not` itself.
@@ -228,10 +201,6 @@ def main() -> IO(Unit):
     j   : Unit <- row("cmpne_arg_is_anone", row_cmpne_arg())
     k   : Unit <- row("cmpne_srcs_are_self_and_x", row_cmpne_srcs())
     l   : Unit <- row("cmpne_does_not_mutate_input", row_cmpne_pure())
-    m   : Unit <- row("rne_op_is_cmpne", row_rne_op())
-    n   : Unit <- row("rne_arg_is_anone", row_rne_arg())
-    o   : Unit <- row("rne_srcs_are_x_and_self", row_rne_srcs())
-    p   : Unit <- row("rne_does_not_mutate_input", row_rne_pure())
     q   : Unit <- row("ge_op_is_cmpne", row_ge_op())
     r   : Unit <- row("ge_arg_is_anone", row_ge_arg())
     s   : Unit <- row("ge_does_not_mutate_input", row_ge_pure())

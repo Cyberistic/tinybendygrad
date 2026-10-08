@@ -68,8 +68,6 @@ ROWS = (
     "tn_or",
     "tn_pow",
     "tn_rshift",
-    "tn_shl",
-    "tn_shr",
     "tn_sub",
     "tn_xor",
     "tn_eq",
@@ -105,7 +103,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_graph_census-gate: 50 rows, 3 lanes, 3 DECLARED divergences -- "
-                        "every ported tn_* has NO NOOP BOTTOM and 47 op sequences match CPython's "
+    sys.exit(main(GATE, "tn_graph_census-gate: 48 rows, 3 lanes, 3 DECLARED divergences -- "
+                        "every ported tn_* has NO NOOP BOTTOM and 45 op sequences match CPython's "
                         "byte-for-byte; the three that differ carry the identity bool CAST the "
                         "port keeps and CPython folds"))

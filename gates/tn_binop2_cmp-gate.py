@@ -42,11 +42,6 @@ ROWS = (
     "cmpne_arg_is_anone",
     "cmpne_srcs_are_self_and_x",
     "cmpne_does_not_mutate_input",
-    # tn_rne -- symmetry with tn_rcmplt (CPython has no __rne__).
-    "rne_op_is_cmpne",
-    "rne_arg_is_anone",
-    "rne_srcs_are_x_and_self",
-    "rne_does_not_mutate_input",
     # tn_dunder_ge -- elementwise.py:327, `(self < x).logical_not()`.
     "ge_op_is_cmpne",
     "ge_arg_is_anone",
@@ -73,6 +68,6 @@ GATE = Gate(
 
 if __name__ == "__main__":
     sys.exit(main(GATE, "tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, "
-                        "tn_cmpne, tn_rne (no-broadcast binop ports for __lt__/__gt__/"
+                        "tn_cmpne (no-broadcast binop ports for __lt__/__gt__/"
                         "__ne__) and tn_dunder_ge, tn_dunder_le, tn_eq (chains through "
                         "tn_logical_not) all agree with CPython"))

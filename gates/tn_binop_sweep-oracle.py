@@ -44,8 +44,6 @@ print(f"tn_mul_src1_is_the_callers_operand={sweep(lhs() * rhs())}")
 print(f"tn_or_src1_is_the_callers_operand={sweep(lhs() | rhs())}")
 print(f"tn_pow_src1_is_the_callers_operand={sweep(lhs() ** rhs())}")
 print(f"tn_rshift_src1_is_the_callers_operand={sweep(lhs() >> rhs())}")
-print(f"tn_shl_src1_is_the_callers_operand={sweep(lhs() << rhs())}")
-print(f"tn_shr_src1_is_the_callers_operand={sweep(lhs() >> rhs())}")
 # `Tensor.sub` is `a.alu(Ops.ADD, -b)`, so `src[1]` is MUL(x, -1) and not x. See
 # elementwise.py:103. Same arena question, different expected op.
 print(f"tn_sub_src1_is_the_callers_operand={sweep(lhs() - rhs(), Ops.MUL)}")

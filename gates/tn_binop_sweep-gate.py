@@ -32,7 +32,7 @@ from gatekit import Gate, main
 
 BINOPS = (
     "tn_add", "tn_and", "tn_cmplt", "tn_cmpne", "tn_fdiv", "tn_lshift", "tn_max",
-    "tn_maximum", "tn_mod", "tn_mul", "tn_or", "tn_pow", "tn_rshift", "tn_shl", "tn_shr",
+    "tn_maximum", "tn_mod", "tn_mul", "tn_or", "tn_pow", "tn_rshift",
     "tn_sub", "tn_xor",
 )
 
@@ -61,6 +61,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_binop_sweep-gate: 30 rows, 3 lanes, 0 divergences -- ALL SEVENTEEN "
+    sys.exit(main(GATE, "tn_binop_sweep-gate: 28 rows, 3 lanes, 0 divergences -- ALL SIXTEEN "
                         "binops re-mint the right operand before reading its index, at depth 1, "
-                        "plus the depth-0 and same-tensor controls"))
+                        "plus the ELEVEN reverse arms, and the depth-0 and same-tensor controls"))

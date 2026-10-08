@@ -99,12 +99,8 @@ def tn_rshift.sweep() -> Bool:
   sweep(T.tn_rshift(lhs(), rhs()), O.OpsADD{})
 
 
-def tn_shl.sweep() -> Bool:
-  sweep(T.tn_shl(lhs(), rhs()), O.OpsADD{})
 
 
-def tn_shr.sweep() -> Bool:
-  sweep(T.tn_shr(lhs(), rhs()), O.OpsADD{})
 
 
 # `tn_sub` IS THE ONE ROW WITH A DIFFERENT SHAPE, and the reason is CPython's: `Tensor.sub`
@@ -187,8 +183,6 @@ def main() -> IO(Unit):
     k : Unit <- row("tn_or_src1_is_the_callers_operand", tn_or.sweep())
     l : Unit <- row("tn_pow_src1_is_the_callers_operand", tn_pow.sweep())
     m : Unit <- row("tn_rshift_src1_is_the_callers_operand", tn_rshift.sweep())
-    n : Unit <- row("tn_shl_src1_is_the_callers_operand", tn_shl.sweep())
-    o : Unit <- row("tn_shr_src1_is_the_callers_operand", tn_shr.sweep())
     p : Unit <- row("tn_sub_src1_is_the_callers_operand", tn_sub.sweep())
     q : Unit <- row("tn_xor_src1_is_the_callers_operand", tn_xor.sweep())
     w : Unit <- row("tn_radd_src0_is_the_callers_operand", tn_radd.sweep())

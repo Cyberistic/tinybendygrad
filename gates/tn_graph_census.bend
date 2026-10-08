@@ -167,13 +167,7 @@ def sig_tn_rshift() -> String:
   +r = T.tn_rshift(t4(), t4())
   O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
-def sig_tn_shl() -> String:
-  +r = T.tn_shl(t4(), t4())
-  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
-def sig_tn_shr() -> String:
-  +r = T.tn_shr(t4(), t4())
-  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
 def sig_tn_sub() -> String:
   +r = T.tn_sub(t4(), t4())
@@ -284,8 +278,6 @@ def main() -> IO(Unit):
     ae : Unit <- srow("tn_or", sig_tn_or())
     af : Unit <- srow("tn_pow", sig_tn_pow())
     ag : Unit <- srow("tn_rshift", sig_tn_rshift())
-    ah : Unit <- srow("tn_shl", sig_tn_shl())
-    ai : Unit <- srow("tn_shr", sig_tn_shr())
     aj : Unit <- srow("tn_sub", sig_tn_sub())
     ak : Unit <- srow("tn_xor", sig_tn_xor())
     al : Unit <- srow("tn_eq", sig_tn_eq())
