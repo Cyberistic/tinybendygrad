@@ -1,0 +1,55 @@
+I  POPULATION, BY SHEBANG OVER `gates-pop.discover()`: 17 entry point(s) of 133 declare a SHELL interpreter in their own `#!` line.
+I  OWNER `gates/gatekit.py` VERDICT: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD, and 127=127 = COMMAND-NOT-FOUND(127) -- a FOURTH kind `charge()` folds into REFUSED.
+
+GATE                      SHEBANG                  SHEBANG-ARM              BASH-ARM          PY-ARM  FLIP
+----------------------------------------------------------------------------------------------------
+bounded-selftest.sh       sh                       PASS (rc 0)           PASS (rc 0)     FAIL (rc 1)  YES
+                                      shebang-arm said: [   PASS] SPLIT: stdout is the child's stdout, byte for byte
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/bounded-
+classify.sh               zsh                      FAIL (rc 1)           FAIL (rc 1)     FAIL (rc 1)  no
+demo.sh                   zsh                      PASS (rc 0)           PASS (rc 0)     FAIL (rc 1)  YES
+                                      shebang-arm said: ### A. AS IT STANDS -- the live tree, every .bend it holds
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/demo.sh"
+disarm.sh                 zsh                      PASS (rc 0)COMMAND-NOT-FOUND(127) (rc 127)     FAIL (rc 1)  YES
+                                      shebang-arm said: ### INDEX STATE BEFORE (recorded so it can be PROVEN restored)
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disarm.s
+e2e.sh                    sh                SKIP (rc OVER-CAP)    SKIP (rc OVER-CAP)     FAIL (rc 1)  YES
+                                      shebang-arm said: over 90.0s: cost UNKNOWN, and an unrun plant is not a verdict
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/e2e.sh",
+gate.sh                   zsh             UNASSIGNED(2) (rc 2)  UNASSIGNED(2) (rc 2)     FAIL (rc 1)  YES
+                                      shebang-arm said: /opt/homebrew/Cellar/python@3.14/3.14.6/Frameworks/Python.framework/Versio
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gate.sh"
+gen.sh                    sh                       PASS (rc 0)           PASS (rc 0)     FAIL (rc 1)  YES
+                                      shebang-arm said: SURVIVED k=0  W-2 k=0 v=281474976645120
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gen.sh",
+lint_demo.sh              zsh                      FAIL (rc 1)  UNASSIGNED(2) (rc 2)     FAIL (rc 1)  no
+lintable-gate.sh          sh                       FAIL (rc 1)           FAIL (rc 1)     FAIL (rc 1)  no
+plant.sh                  zsh                      FAIL (rc 1)           FAIL (rc 1)     FAIL (rc 1)  no
+run-all.sh                zsh             UNASSIGNED(2) (rc 2)  UNASSIGNED(2) (rc 2)     FAIL (rc 1)  YES
+                                      shebang-arm said: === repo /Users/cyberistic/src/tries/2026-09-30-tinybendygrad
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-all.
+run-f64.sh                zsh                   REFUSED (rc 3)  UNASSIGNED(2) (rc 2)     FAIL (rc 1)  YES
+                                      shebang-arm said: --------------------------------------------------------------------------
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-f64.
+run-port-mm.sh            zsh               SKIP (rc OVER-CAP)  UNASSIGNED(2) (rc 2)     FAIL (rc 1)  YES
+                                      shebang-arm said: over 90.0s: cost UNKNOWN, and an unrun plant is not a verdict
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-port
+sb-gate.sh                sh                    REFUSED (rc 3)        REFUSED (rc 3)     FAIL (rc 1)  YES
+                                      shebang-arm said: == REFUSED, NOT A VERDICT: the CPython oracle is absent: .agents/slop/sche
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/sb-gate.
+substrate-check.sh        sh                    REFUSED (rc 3)        REFUSED (rc 3)     FAIL (rc 1)  YES
+                                      shebang-arm said: REFUSED: no files given. A guard invoked with an empty population must not
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/substrat
+                                      INVOCATION: refused its OWN usage at argv=[] -- this row is about the invocation, not the gate's surface
+walk-mutate.sh            sh                       PASS (rc 0)           PASS (rc 0)     FAIL (rc 1)  YES
+                                      shebang-arm said: === arm=base  live tree NOT touched; working copy sha256=4bd7015adf7b285e5
+                                      py-arm       said: File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/walk-mut
+wt-sync.sh                sh                       FAIL (rc 1)           FAIL (rc 1)     FAIL (rc 1)  no
+----------------------------------------------------------------------------------------------------
+I  DENOMINATOR 17 shell entry point(s): 12 FLIP between the shebang arm and the python arm, 5 AGREE.
+
+I  OF THE 15 THAT RAN UNDER BOTH (SKIP excluded, and SKIP is not a pass): 5 PASS under the declared shell and FAIL under python (checks/bounded-selftest.sh, checks/demo.sh, checks/disarm.sh, checks/gen.sh, checks/walk-mutate.sh)
+I  REFUSED-3 VISIBLE ONLY IN THE SHELL ARM: 3 of 3 (checks/run-f64.sh, checks/sb-gate.sh, checks/substrate-check.sh)
+I  BASH-CONTROL DISAGREES WITH THE SHEBANG ON: 3 of 15 -- and 8 of 17 declare `#!/bin/zsh`, so `bash` was never the interpreter any of them asked for.
+
+== 17 row(s) written to .agents/slop/shellgates/divergence.rows

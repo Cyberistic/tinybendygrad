@@ -1,0 +1,2 @@
+gate	shebang	shebang_arm	shebang_rc	bash_arm	bash_rc	py_arm	py_rc	flip	shebang_secs	head
+checks/e2e.sh	/bin/sh	FAIL	1	FAIL	1	FAIL	1	no	196.5	== 1/4 oracle (CPython tinygrad, DEV=CPU)

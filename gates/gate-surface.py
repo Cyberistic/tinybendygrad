@@ -119,6 +119,7 @@ import contextlib
 import io
 import importlib.util
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -137,6 +138,76 @@ PLANTS = {0: ["--plant", "green"], 1: ["--plant", "red"], 2: ["--root", "/dev/nu
 RED_IS = "FINDING"
 
 FINDING, UNTAKEN, FAILURE = "FINDING", "UNTAKEN", "FAILURE"
+
+# ---- the INTERPRETER, READ FROM THE SHEBANG. THIS REPLACES A SUFFIX SET, WITH A DECLARATION ---
+# WHAT WAS WRONG, MEASURED, AND IT IS THE FIFTH OF THE SHELL-GATE SHAPES `gates/README.md` records.
+# `reach()` built every plant's command as `[str(PY), str(gate), *argv]` -- PYTHON, unconditionally
+# -- while `gates/gates-pop.py:141` puts `.py` AND `.sh` into ONE population (`SUFFIXES =
+# (".py", ".sh")`, 17 of the 133 discovered entry points shipping a shell `#!`). So a `.sh` gate's
+# verdict, as measured by this instrument, was the verdict of a Python parser meeting a shebang:
+# a `SyntaxError` prints a `File "...", line N` traceback and exits **1**, and 1 is `FAIL` -- the
+# one code a shell gate and a Python parser can both produce, so the error is INDISTINGUISHABLE
+# from agreement. `checks/sb-gate.sh`'s `refuse()` is `exit 3`, and 3 is invisible to a Python
+# parser entirely: **a shell gate that refuses to measure anything can only say so in a shell.**
+# `.agents/slop/shellgates/` took the measurement; 17 of 17 are named there.
+#
+# BUT THE SENTENCE ABOVE IS NOT WHY THE LINE BELOW IS RIGHT. It is right because THE FILE SAYS SO.
+# `#!` is a declaration a file ships about itself, and it is the kernel's own rule for what to
+# exec; `AGENTS.md`'s doctrine 1 names the alternatives it replaces -- *"A BASENAME SHAPE, A SUFFIX
+# SET, AND A HAND LIST ARE NOT POPULATIONS."* The line this replaced WAS a suffix set:
+# `if p.suffix != ".py": continue`, which is why the census was silent rather than wrong. **A
+# suffix filter does not merely mis-measure the shell half, it makes the shell half INVISIBLE, and
+# an instrument that cannot see a population cannot be anything.**
+#
+# MEASURED AND IT IS NOT FREE: 8 of the 115 `.py` entry points ship NO `#!` AT ALL (`checks/run.py`,
+# `gates/i64-shl-gate.py`, and 6 more). Refusing them would have been a second regression -- 8
+# gates that reach rc 0 today would have read `UNREACHED`, and a census that reds because a file
+# omitted a comment is not a census. So the resolution order is SHEBANG FIRST and only then the
+# kind this file can otherwise establish, and **every plant records which of the two it used**, so
+# the fallback is a counted number on every run rather than a silent default.
+SHELLS = frozenset({"sh", "bash", "zsh", "dash", "ksh", "mksh", "ash"})
+_SHEBANG = re.compile(r"^#!\s*(\S.*)$")
+_ENV_SKIP = frozenset({"-S", "--split-string", "-i", "--ignore-environment"})
+
+
+def interpreter(p):
+    """`(argv0, kind, declared, why)` for entry point `p` -- the interpreter it SHIPS, by its `#!`.
+
+    `kind` is one of `PYTHON`/`SHELL`/`NODE`/`NONE`, and `NONE` means the file ships no
+    interpreter at all. It is NEVER a suffix test, and never an exception: a file that cannot be
+    read is `NONE` with a reason, because "this instrument could not read it" and "this file
+    declared nothing" are different findings.
+
+    `env` IS RESOLVED rather than taken at its face value: Linux `#!` puts ONE token after the
+    interpreter path and the kernel does not run `env` at all, so reading the first token would
+    classify every `#!/usr/bin/env X` file as `env` and discriminate nothing.
+    """
+    try:
+        with p.open("rb") as fh:
+            first = fh.readline(4096).decode("utf-8", "replace")
+    except OSError as e:
+        return None, "NONE", "", f"{type(e).__name__}: {e}"
+    m = _SHEBANG.match(first.rstrip("\n"))
+    if not m:
+        return None, "NONE", "", "no `#!` on the first line"
+    toks = m.group(1).split()
+    if toks and "=" in toks[0] and not toks[0].startswith("="):
+        toks.pop(0)                                            # `env FOO=bar python3`
+    if toks and toks[0].rsplit("/", 1)[-1] == "env":
+        toks.pop(0)
+        while toks and (toks[0] in _ENV_SKIP or ("=" in toks[0] and not toks[0].startswith("="))):
+            toks.pop(0)
+    if not toks:
+        return None, "NONE", "", "`#!` present but names no interpreter"
+    named = toks[0]
+    base = named.rsplit("/", 1)[-1]
+    if base.startswith("python"):
+        return str(PY), "PYTHON", named, "shebang"
+    if base in SHELLS:
+        return named, "SHELL", named, "shebang"
+    if base in {"node", "nodejs"}:
+        return "node", "NODE", named, "shebang"
+    return named, "OTHER", named, "shebang"
 
 
 def refuse(*why):
@@ -248,7 +319,7 @@ def declaration(p):
     try:
         tree = ast.parse(p.read_text(errors="replace"))
     except SyntaxError as e:
-        return None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
+        return None, None, None, f"UNPARSEABLE ({e.msg} line {e.lineno})"
     found = {}
     for node in tree.body:
         if isinstance(node, ast.Assign):
@@ -305,17 +376,30 @@ def classify(red_is, reached, verdicts):
 
 
 def reach(gate, argv):
-    """`(rc, output)` for one declared plant. A TIMEOUT/EXC is NOT a verdict -- it is this
-    instrument refusing to call an unrun plant a dead one, which is `coindependent`'s own rule:
-    "an instrument that has not tried cannot call a verdict dead." """
-    cmd = [str(PY), str(gate), *[str(a) for a in argv]]
+    """`(rc, output, how)` for one declared plant, run with the interpreter the GATE SHIPS.
+
+    `how` is `f"{kind} {argv0} ({why})"` and the census prints it, so the interpreter a plant ran
+    under is on every row rather than inferred by a reader from this file's source. **A plant that
+    runs under the wrong interpreter cannot be distinguished from a FAIL** -- `python checks/x.sh`
+    is a `SyntaxError`, prints a traceback naming the file, and exits 1, and 1 is `FAIL`. The
+    only defence is for the arm to be visible where the verdict is read.
+
+    A TIMEOUT/EXC is NOT a verdict -- it is this instrument refusing to call an unrun plant a
+    dead one, which is `coindependent`'s own rule: "an instrument that has not tried cannot call a
+    verdict dead."
+    """
+    argv0, kind, _declared, why = interpreter(gate)
+    if argv0 is None:                          # no `#!`: fall back, and SAY SO on the row
+        argv0, kind, why = str(PY), "PYTHON", "NO SHEBANG, defaulted (no `#!` on the first line)"
+    cmd = [argv0, str(gate), *[str(a) for a in argv]]
+    how = f"{kind} {argv0} [{why}]"
     try:
         r = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=TIMEOUT)
-        return r.returncode, (r.stdout or "") + (r.stderr or "")
+        return r.returncode, (r.stdout or "") + (r.stderr or ""), how
     except subprocess.TimeoutExpired:
-        return "TIMEOUT", ""
+        return "TIMEOUT", "", how
     except Exception as e:                        # a crashed command is still a measurement
-        return "EXC", f"{type(e).__name__}: {e}"
+        return "EXC", f"{type(e).__name__}: {e}", how
 
 
 # ---- the report --------------------------------------------------------------------
@@ -349,13 +433,31 @@ def report(root, charge=True):
 
     declared_total = reached_total = 0
     unplanted = misplant = nogreen = malformed = 0
-    unowned = 0
+    unowned = renamed = 0
     declaring = 0
     rows = []
     classes = {}
+    # THE POPULATION SPLIT, BY SHEBANG AND NOT BY SUFFIX. The line this replaces was
+    # `if p.suffix != ".py": continue`, which is why the 17 shell entry points were neither
+    # measured nor counted: a suffix set does not exclude a population, it loses one. `shell` and
+    # `noshebang` are DISCOVERED by reading each file's `#!`, and both are PRINTED, because a
+    # population a reader cannot see the size of is the defect this file exists to end.
+    shell, noshebang, arms = [], [], {}
     for p in entries:
-        if p.suffix != ".py":
+        kind = interpreter(p)[1]
+        # ONLY `SHELL` LEAVES THE PYTHON CENSUS, and the reason is that `declaration()` reads a
+        # PYTHON module body: a shell script has no `VERDICTS` literal for `ast.literal_eval` to
+        # read, so sending it there would report `UNPARSEABLE` on 17 files -- a finding about this
+        # reader wearing the costume of a finding about the tree. **A file that ships NO `#!` is
+        # NOT a shell file**: it went through `continue` in the first version of this line, and
+        # that silently dropped the 8 no-shebang `.py` gates AND every synthetic plant, which is
+        # how `--plant green` stopped reaching its own rc 0 and `RED_IS="FINDING"` went UNEARNED.
+        # The split is SHELL-AGAINST-EVERYTHING-ELSE, and no-shebang is COUNTED, not routed.
+        if kind == "SHELL":
+            shell.append(p)
             continue
+        if kind != "PYTHON":
+            noshebang.append(p)
         verdicts, plants, red_is, note = declaration(p)
         if note:
             malformed += 1
@@ -374,7 +476,8 @@ def report(root, charge=True):
                 unplanted += 1
                 issues.append(f"UNPLANTED {rc} {verdicts[rc]!r} -- declared, no plant")
                 continue
-            got, _out = reach(p, plants[rc])
+            got, _out, how = reach(p, plants[rc])
+            arms[how] = arms.get(how, 0) + 1
             if got == rc:
                 reached[rc] = got
                 reached_total += 1
@@ -391,6 +494,20 @@ def report(root, charge=True):
                 unowned += 1
                 issues.append(f"UNOWNED    {rc} {verdicts[rc]!r} -- gates/gatekit.py has no name "
                               f"for this exit code, so a caller aggregating it is guessing")
+            elif verdicts[rc] != vocab[rc]:
+                # THE HALF THAT WAS MISSING, MEASURED. Checking only `rc not in vocab` is blind to
+                # a table that names a code the owner DOES have a name for, differently: it is not
+                # UNOWNED, so nothing above fired, and `checks/wallcheck.py` sat at `4: "NO-ROW"`
+                # while the owner said `4: "SKIP"` -- and a runner that charges by INTEGER printed
+                # the owner's word for a gate that had not said it. That is 1 of 14 verdict tables
+                # in 131 discovered entries (`.agents/slop/verdictcollide/`), and the count of
+                # UNOWNED codes here was 4, which is why the census was worth writing separately:
+                # UNOWNED counted the codes nobody claimed and was blind to the one code two owners
+                # claimed in two words. The NAME is compared here, by the owner's own word.
+                renamed += 1
+                issues.append(f"RENAMED    {rc} {verdicts[rc]!r} -- gates/gatekit.py calls this code "
+                              f"{vocab[rc]!r}, so a caller charging by integer prints a word this "
+                              f"gate never used")
         klass, why = classify(red_is, reached, verdicts)
         classes[str(p.relative_to(root))] = (klass, why)
         rows.append((p, verdicts, reached, issues, (klass, why)))
@@ -398,6 +515,24 @@ def report(root, charge=True):
     print(f"II DECLARATIONS: {declaring}/{len(entries)} entries declare VERDICTS -- "
           f"{len(entries) - declaring} do not, and each\n   one is a gate whose surface nobody has "
           f"written down (the backlog, counted not hidden)\n")
+    # THE ARM, ON EVERY RUN. Every plant this census just executed ran under one of these, and the
+    # split is what `gates/gate-surface.py:311` could not see: `[str(PY), str(gate), *argv]` sent a
+    # shell gate to python, where a `SyntaxError` prints a traceback and exits 1, and 1 is FAIL.
+    for how, n in sorted(arms.items()):
+        print(f"II PLANT ARM ({n} plant(s)): {how}")
+    if shell:
+        print(f"II SHELL HALF: {len(shell)} entry point(s) ship a SHELL `#!` and are therefore NOT "
+              f"this census's\n   population -- a `VERDICTS` literal is a PYTHON declaration and "
+              f"`ast.literal_eval` cannot\n   read a shell one. They are COUNTED here rather than "
+              f"excluded, because the line\n   this replaced (`if p.suffix != \".py\": continue`) "
+              f"made them invisible and an instrument\n   that cannot see a population cannot be "
+              f"anything. `.agents/slop/shellgates/` measures their real verdicts:\n     "
+              + ", ".join(sorted(str(p.relative_to(root)) for p in shell)))
+    if noshebang:
+        print(f"II NO SHEBANG: {len(noshebang)} entry point(s) ship no `#!`, so their interpreter is "
+              f"NOT a\n   declaration and this file falls back to `.venv/bin/python` for them -- "
+              f"stated, not assumed:\n     "
+              + ", ".join(sorted(str(p.relative_to(root)) for p in noshebang)))
     if malformed:
         print(f"II MALFORMED DECLARATION: {malformed}\n")
 
@@ -424,10 +559,13 @@ def report(root, charge=True):
     # owner has no name for is CHARGED, because two witnesses disagree about what the number means
     # and a disagreement is not a pass.
     print(f"V EXIT CODES: {unowned} declared verdict code(s) that `gates/gatekit.py` has no name "
-          f"for. A gate\n   that declares one is saying `exit {sorted({rc for rc in vocab})}` "
-          f"means something here that the tree does\n   not know, and an aggregator either guesses "
-          f"or calls it DEAD. Both are `refusalsweep`'s\n   failure: a gate that crashes where it "
-          f"should have refused cannot say which.\n")
+          f"for, and {renamed}\n   declared code(s) the owner HAS a name for, under a different one. "
+          f"A gate declaring an unowned one is saying `exit {sorted({rc for rc in vocab})}`\n   means "
+          f"something here that the tree does not know, and an aggregator either guesses or calls it "
+          f"DEAD;\n   a gate declaring a RENAMED one is worse in the way that matters least and most: "
+          f"the code is\n   known, so a runner charging by integer silently prints the OWNER'S word "
+          f"for a gate that never used it.\n   Both are `refusalsweep`'s failure: a gate that crashes "
+          f"where it should have refused cannot say which.\n")
 
     # CLAUSE IV: THE CLASSES. A RUNNER READS THIS AND NEEDS NO GATE NAME. The three counts are
     # printed before the individual rows because a reader asking "can a runner exist?" wants the
@@ -455,7 +593,7 @@ def report(root, charge=True):
     print()
     print(f"GATE-SURFACE: {'RED' if red else 'OK'} -- {declaring} gate(s) declare a surface, "
           f"{reached_total}/{declared_total} verdicts reached, {unplanted} unplanted, "
-          f"{nogreen} NO-GREEN, {unowned} UNOWNED exit code(s)")
+          f"{nogreen} NO-GREEN, {unowned} UNOWNED exit code(s), {renamed} RENAMED exit code(s)")
     return 1 if (charge and red) else 0
 
 
@@ -496,6 +634,17 @@ UNOWNED_GATE = ("import sys\nVERDICTS = {0: 'PASS', 1: 'FAIL', 2: 'USAGE'}\n"
                 "if __name__ == '__main__':\n"
                 "    sys.exit(int(sys.argv[1]))\n")
 OWNED_GATE = UNOWNED_GATE.replace("2: 'USAGE'", "3: 'REFUSED'").replace("2: ['2']", "3: ['3']")
+# PLANT 6: THE SHELL HALF, PLANTED. `interpreter()` replaces `[str(PY), str(gate), ...]`, and a
+# fix to the interpreter a gate runs under is UNFALSIFIABLE unless a gate that ships a shell `#!`
+# is in the population of a run. This one is: `#!/bin/sh`, `$0` on a line, so `gates-pop.py`'s
+# own `SH_SELFREF` token classifies it `sh-selfref` and it is an ENTRY -- discovered, not listed.
+# It carries `VERDICTS = {0: 'PASS'}` on purpose, because that line is what a Python reader is
+# FORBIDDEN to score: in `sh` a spaced `=` is a command named `VERDICTS`, not an assignment, so a
+# shell gate has no Python declaration and the census must SAY SO rather than report UNPARSEABLE.
+SHELL_GATE = ("#!/bin/sh\n"
+              "# a synthetic shell entry point, $0 self-referencing so discover() sees an entrance\n"
+              "VERDICTS = {0: 'PASS'}\n"
+              'echo "$0 ran under a shell"\nexit 0\n')
 
 
 def _tree(root):
@@ -648,6 +797,55 @@ def plants(red=False):
     checks.append(("5c: ZERO or TWO module-level unpacks in the vocabulary's owner is exit 2 "
                    "REFUSED, never a default -- an ambiguous owner is the one thing clause V exists "
                    "for", one == 2 and two == 2, f"rc={one}/{two}"))
+
+    # PLANT 6 -- THE ARM, IN BOTH DIRECTIONS. Three assertions, because the fix has three parts
+    # and any one of them can rot silently: read a SHELL shebang; resolve `env` instead of taking
+    # its name; and put a shell gate in a real population and assert the census COUNTS it rather
+    # than reporting it malformed. The third is the one that matters: without it, 6a and 6b would
+    # pass while `report()` still filtered shell gates out and the census still read 0 of them.
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "shellgate.sh").write_text(SHELL_GATE)
+        argv0, kind, declared, _why = interpreter(r / "checks" / "shellgate.sh")
+        arm_ok = kind == "SHELL" and argv0 == "/bin/sh"
+        got, said = _run_report(r)
+        counted = "II SHELL HALF: 1 entry point(s) ship a SHELL" in said
+        # A shell gate in the population must NOT become a MALFORMED red: `rc` is whatever the
+        # Python half earned, and a run whose only shell gate reads MALFORMED has regressed to
+        # `ast.parse` on a shell script.
+        not_red = "shellgate.sh: MALFORMED" not in said
+        checks.append(("6a: a `#!/bin/sh` entry point is run with a SHELL and is COUNTED in the "
+                       "census's SHELL HALF, not parsed as python and not called malformed",
+                       arm_ok and counted and not_red,
+                       f"argv0={argv0!r} kind={kind!r} declared={declared!r} "
+                       f"counted={counted} not_malformed={not_red} rc={got}"))
+
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "envgate.py").write_text("#!/usr/bin/env python3\n" + MAIN)
+        argv0, kind, declared, _why = interpreter(r / "checks" / "envgate.py")
+        # `env` must be RESOLVED: reading the first token makes every `#!/usr/bin/env X` classify
+        # as `env`, which discriminates nothing and is how a reader could believe 0 gates were fixed.
+        ok = kind == "PYTHON" and declared == "python3" and argv0 == str(PY)
+        checks.append(("6b: `#!/usr/bin/env python3` is RESOLVED to the PYTHON arm -- the token "
+                       "after `env` is the declaration, and the arm is `.venv/bin/python` because "
+                       "PATH's 3.14 has no `.pth`", ok,
+                       f"argv0={argv0!r} kind={kind!r} declared={declared!r}"))
+
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        _tree(r)
+        (r / "checks" / "bare.py").write_text(MAIN)          # NO shebang at all
+        argv0, kind, declared, why = interpreter(r / "checks" / "bare.py")
+        # A no-shebang file must be a NAMED state, not a silent default: 8 of the tree's own `.py`
+        # entry points ship none, and `arm()` falls back for them on purpose -- so the fallback has
+        # to be visible on the row, which is what `reach()`'s `how` is for.
+        checks.append(("6c: a file shipping NO `#!` reports kind NONE with a reason rather than "
+                       "guessing an interpreter from its suffix -- 8 of the tree's `.py` entry "
+                       "points are exactly this shape", kind == "NONE" and argv0 is None and why,
+                       f"argv0={argv0!r} kind={kind!r} why={why!r}"))
 
     print("PLANTS -- three directions, the blind spot, and the classes, because an instrument that "
           "hides\nits own blind spot is the defect this project has catalogued twenty times")
