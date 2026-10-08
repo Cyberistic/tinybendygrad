@@ -1,3 +1,28 @@
+## ARMED: **400 EMPTY BLOBS IN THE DEFAULT INDEX — 7.4 MB A BARE `git commit` WOULD HAVE DESTROYED**
+
+**THE EIGHTH STALE-INDEX FAILURE AND **THE ONLY ONE THAT PRODUCES A **VALID** COMMIT FROM AN **INVALID** STAGE** — so
+unlike the seven before it, **nothing about the result looks wrong**: the commit succeeds, the message is honest,
+`git push` reports `OK`, and **400 files are emptied in the tree.**
+
+`git add --intent-to-add` writes the **empty blob** `e69de29b…` into the index while leaving the worktree file
+intact. Measured at 2026-10-08: **400 armed entries**, all with content on disk —
+`boolexit/REPORT.md` (21 025 B), `boolexit/census.out` (119 961 B), `boolexit/census.py` (18 957 B),
+`bitcastrow/fold.bend.ORIG` (384 814 B) — **7.4 MB total.**
+
+**539 empty files ARE legitimate** (`__init__.py`, `.agents/slop/substrate/fixtures/empty.bend`, captured
+streams that were empty), **so \`size == 0\` IS NOT THE TEST.** ***The test is the PAIR*: **empty in the INDEX
+and NOT empty in HEAD** — and that needs `git ls-tree -r HEAD`, **not** `git ls-files`, because **the index is
+the thing that is wrong.**
+
+**DISARMED with `git read-tree HEAD`**, verified **0** armed and **0** staged. **IT RE-ARMS**, so this is a
+standing hazard while agents are running, not a one-time event.
+
+**THE SEVEN BEFORE IT, FOR THE DENOMINATOR: \`9144d179e25a\` deleted **110**; \`c83f04ad1c12\` deleted **20** and reverted
+**46** as \`R100\`; \`75ab9b8f8984\` re-added **46**; one **66 D + 4 M / 13,389 lines**; one **58** entries; one
+\`--intent-to-add\` on \`gates/gate-surface.py\` — **which would have committed a **DELETION of a gate body** instead
+of a repair.** **ALL EIGHT** ARE **ONE** MECHANISM: **a commit taken against \`HEAD\` with an index that does not
+contain \`HEAD\`.**
+
 ## PROTECTED: LOAD-BEARING INSTRUMENTS **INSIDE** THE SWEPT TREE
 
 **A path inside a swept tree is deletable while four gate bodies still name it.** Found
