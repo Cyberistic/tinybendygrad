@@ -21,11 +21,13 @@ SEVENTEEN ROWS, AND WHY EACH ONE IS NOT A CHANGE-DETECTOR:
     radd_does_not_mutate_input       the input still has its original op.
     sub_op_is_sub                    c.alu(SUB, d) sets op to SUB.
     sub_arg_is_anone                 the SUB's arg is None.
-    sub_srcs_are_self_and_x          srcs are (self, x).
+    sub_src0_is_self                 src[0] is self.
+    sub_src1_is_neg_x                src[1] is MUL(x, -1) -- `sub` is ADD, never SUB.
     sub_does_not_mutate_input        the input still has its original op.
     rsub_op_is_sub                   d.alu(SUB, c) sets op to SUB.
     rsub_arg_is_anone                arg is None.
-    rsub_srcs_are_x_and_self         the `reverse` arm swaps src order.
+    rsub_src0_is_x                   the `reverse` arm swaps which operand is src[0].
+    rsub_src1_is_neg_self            src[1] is MUL(self, -1).
     rsub_does_not_mutate_input       the input still has its original op.
     add_sub_is_reachable             the four defs are callable.
 
@@ -75,17 +77,24 @@ print(f"radd_arg_is_anone={int(r_radd.uop.arg is None)}")
 print(f"radd_srcs_are_x_and_self={int(r_radd.uop.src == (d_uop, c_uop))}")
 print(f"radd_does_not_mutate_input={int(d_uop.op is Ops.CONST and r_radd.uop.op is Ops.ADD)}")
 
-r_sub = c.alu(Ops.SUB, d)
-print(f"sub_op_is_sub={int(r_sub.uop.op is Ops.SUB)}")
+# THE DUNDER, NOT `alu(Ops.SUB)`. This oracle USED to call `c.alu(Ops.SUB, d)` -- a path
+# CPython's `Tensor.sub` never takes -- so `sub_srcs_are_self_and_x` agreed with a port that
+# built `Ops.SUB` while CPython builds `ADD(a, MUL(b, -1))`. elementwise.py:103 is
+# `return a.alu(Ops.ADD, -b)`. Both lanes were wrong and they agreed, which is the failure
+# mode this file exists to prevent. `__rsub__` is `self.sub(x, True)` = elementwise.py:297.
+r_sub = c - d
+print(f"sub_op_is_add={int(r_sub.uop.op is Ops.ADD)}")
 print(f"sub_arg_is_anone={int(r_sub.uop.arg is None)}")
-print(f"sub_srcs_are_self_and_x={int(r_sub.uop.src == (c_uop, d_uop))}")
-print(f"sub_does_not_mutate_input={int(c_uop.op is Ops.CONST and r_sub.uop.op is Ops.SUB)}")
+print(f"sub_src0_is_self={int(r_sub.uop.src[0] is c_uop)}")
+print(f"sub_src1_is_neg_x={int(r_sub.uop.src[1].op is Ops.MUL and r_sub.uop.src[1].src[0] is d_uop)}")
+print(f"sub_does_not_mutate_input={int(c_uop.op is Ops.CONST and r_sub.uop.op is Ops.ADD)}")
 
-r_rsub = d.alu(Ops.SUB, c)
-print(f"rsub_op_is_sub={int(r_rsub.uop.op is Ops.SUB)}")
+r_rsub = d.__rsub__(c)
+print(f"rsub_op_is_add={int(r_rsub.uop.op is Ops.ADD)}")
 print(f"rsub_arg_is_anone={int(r_rsub.uop.arg is None)}")
-print(f"rsub_srcs_are_x_and_self={int(r_rsub.uop.src == (d_uop, c_uop))}")
-print(f"rsub_does_not_mutate_input={int(d_uop.op is Ops.CONST and r_rsub.uop.op is Ops.SUB)}")
+print(f"rsub_src0_is_x={int(r_rsub.uop.src[0] is c_uop)}")
+print(f"rsub_src1_is_neg_self={int(r_rsub.uop.src[1].op is Ops.MUL and r_rsub.uop.src[1].src[0] is d_uop)}")
+print(f"rsub_does_not_mutate_input={int(d_uop.op is Ops.CONST and r_rsub.uop.op is Ops.ADD)}")
 
 # The four defs are reachable (the wall was 0 defs).
 print(f"add_sub_is_reachable={int(1)}")

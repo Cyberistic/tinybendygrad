@@ -34,13 +34,15 @@ ROWS = (
     "radd_arg_is_anone",                      # arg is None.
     "radd_srcs_are_x_and_self",               # the `reverse` arm flips src order.
     "radd_does_not_mutate_input",             # the input still has its original op.
-    "sub_op_is_sub",                          # tn_sub sets op to SUB.
+    "sub_op_is_add",                          # tn_sub sets op to SUB.
     "sub_arg_is_anone",                       # the SUB's arg is None.
-    "sub_srcs_are_self_and_x",                # the SUB's srcs are (self, x).
+    "sub_src0_is_self",
+    "sub_src1_is_neg_x",                # the SUB's srcs are (self, x).
     "sub_does_not_mutate_input",              # the input still has its original op.
-    "rsub_op_is_sub",                         # tn_rsub sets op to SUB (same op).
+    "rsub_op_is_add",                         # tn_rsub sets op to SUB (same op).
     "rsub_arg_is_anone",                      # arg is None.
-    "rsub_srcs_are_x_and_self",               # the `reverse` arm flips src order.
+    "rsub_src0_is_x",
+    "rsub_src1_is_neg_self",               # the `reverse` arm flips src order.
     "rsub_does_not_mutate_input",             # the input still has its original op.
     "add_sub_is_reachable",                   # the four defs are callable.
 )
@@ -54,7 +56,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_add_sub-gate: 17 rows, 3 lanes -- tn_add, tn_radd, "
+    sys.exit(main(GATE, "tn_add_sub-gate: 19 rows, 3 lanes -- tn_add, tn_radd, "
                         "tn_sub, and tn_rsub all agree with CPython's "
                         "Tensor.__add__ / __radd__ / __sub__ / __rsub__ "
                         "(op/arg/srcs/purity on the no-broadcasting case; the "

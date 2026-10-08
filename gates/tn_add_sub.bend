@@ -93,12 +93,15 @@ def row_radd_pure() -> Bool:
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
     O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsADD{}))
 
-# ROW 9-12: tn_sub -- same shape as tn_add, with OpsSUB instead of OpsADD.
+# ROW 9-12: tn_sub. NOT THE SAME SHAPE AS tn_add, and this block used to claim it was.
+# CPython's `Tensor.sub` (elementwise.py:103) is `a.alu(Ops.ADD, -b)`, so `-` builds
+# `ADD(self, MUL(x, -1))` and `Ops.SUB` IS NEVER BUILT BY IT. The rows now name the two
+# srcs separately, because `tn_srcs_are` cannot express a src that is a computed MUL.
 def row_sub_op() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_sub(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsSUB{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsADD{})
 
 def row_sub_arg() -> Bool:
   +c = mk_tensor(3)
@@ -106,25 +109,35 @@ def row_sub_arg() -> Bool:
   +r = T.tn_sub(c, d)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-def row_sub_srcs() -> Bool:
+def row_sub_src0_is_self() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_sub(c, d)
-  T.tn_srcs_are(r, c, d)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  U32.is_eq(O.Arena.src(ar, i, 0), T.Tensor.u(c))
+
+def row_sub_src1_is_neg_x() -> Bool:
+  +c = mk_tensor(3)
+  +d = mk_tensor(5)
+  +r = T.tn_sub(c, d)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsMUL{})
 
 def row_sub_pure() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_sub(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsSUB{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsADD{}))
 
 # ROW 13-16: tn_rsub -- the `reverse=True` arm of `tn_sub.go`.
 def row_rsub_op() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_rsub(c, d)
-  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsSUB{})
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsADD{})
 
 def row_rsub_arg() -> Bool:
   +c = mk_tensor(3)
@@ -132,18 +145,28 @@ def row_rsub_arg() -> Bool:
   +r = T.tn_rsub(c, d)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
-def row_rsub_srcs() -> Bool:
+def row_rsub_src0_is_x() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_rsub(c, d)
-  T.tn_srcs_are(r, d, c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  U32.is_eq(O.Arena.src(ar, i, 0), T.Tensor.u(c))
+
+def row_rsub_src1_is_neg_self() -> Bool:
+  +c = mk_tensor(3)
+  +d = mk_tensor(5)
+  +r = T.tn_rsub(c, d)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsMUL{})
 
 def row_rsub_pure() -> Bool:
   +c = mk_tensor(3)
   +d = mk_tensor(5)
   +r = T.tn_rsub(c, d)
   Bool.and(O.eq_op(O.Arena.op(T.Tensor.ar(c), T.Tensor.u(c)), O.OpsCONST{}),
-    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsSUB{}))
+    O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsADD{}))
 
 # ROW 17: the four defs are REACHABLE -- the audit's wall text said `__add__`
 # and `__sub__` were unwritten.
@@ -160,13 +183,15 @@ def main() -> IO(Unit):
     f   : Unit <- row("radd_arg_is_anone", row_radd_arg())
     g   : Unit <- row("radd_srcs_are_x_and_self", row_radd_srcs())
     h   : Unit <- row("radd_does_not_mutate_input", row_radd_pure())
-    i   : Unit <- row("sub_op_is_sub", row_sub_op())
+    i   : Unit <- row("sub_op_is_add", row_sub_op())
     j   : Unit <- row("sub_arg_is_anone", row_sub_arg())
-    k   : Unit <- row("sub_srcs_are_self_and_x", row_sub_srcs())
+    k   : Unit <- row("sub_src0_is_self", row_sub_src0_is_self())
+    k2  : Unit <- row("sub_src1_is_neg_x", row_sub_src1_is_neg_x())
     l   : Unit <- row("sub_does_not_mutate_input", row_sub_pure())
-    m   : Unit <- row("rsub_op_is_sub", row_rsub_op())
+    m   : Unit <- row("rsub_op_is_add", row_rsub_op())
     n   : Unit <- row("rsub_arg_is_anone", row_rsub_arg())
-    o   : Unit <- row("rsub_srcs_are_x_and_self", row_rsub_srcs())
+    o   : Unit <- row("rsub_src0_is_x", row_rsub_src0_is_x())
+    o2  : Unit <- row("rsub_src1_is_neg_self", row_rsub_src1_is_neg_self())
     p   : Unit <- row("rsub_does_not_mutate_input", row_rsub_pure())
     q   : Unit <- row("add_sub_is_reachable", row_add_sub_reachable())
     return Unit{}

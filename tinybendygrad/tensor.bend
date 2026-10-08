@@ -619,10 +619,33 @@ def tn_radd(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 # CPython's `sub` (elementwise.py:103) also writes `a.alu(Ops.ADD, -b)` --
 # `-SUB` is `+ADD-NEG`, and the dtype-promotion trap is the same one `add` has.
 # The `reverse` flag flips the order, the same way `tn_mul.go` covers it.
+# THE `-1` LITERAL, interned in the operand's own arena and wrapped as a Tensor so `tn_binop`
+# can merge it. `H.i64_of_i32(4294967295)` is two's complement -1 and `i64_of_i32`
+# sign-EXTENDS, the same literal `tn_neg.arith` uses.
+def tn_sub.m1(+b: Tensor) -> Tensor:
+  +c = O.UOp.const(Tensor.ar(b), O.CInt{H.i64_of_i32(4294967295)})
+  tn_new(O.Found.ar(c), O.Found.i(c))
+
+def tn_sub.neg(+b: Tensor) -> Tensor:
+  +c = tn_sub.m1(b)
+  tn_binop(b, c, O.OpsMUL{})
+
+# CPython'S `sub` IS NOT `alu(SUB)`. `elementwise.py:103` reads, with the docstring stripped,
+# `a, b = self._broadcasted(x, reverse)` then `return a.alu(Ops.ADD, -b)` -- so `-` builds
+# `ADD(a, MUL(b, -1))` and `Ops.SUB` IS NEVER BUILT BY IT. MEASURED on CPython for
+# `Tensor(3) - Tensor(7)`: `ADD(CONST(), MUL(CONST(), CONST()))`. VERIFIED that the name is
+# not merely unused here: `grep -rn "Ops\.SUB" tinygrad/ | grep "\.py:"` answers 24 and 23
+# of them are `X86Ops.SUB`, a different enum; the one graph-level hit is an x86 rewrite
+# pattern at `renderer/isa/x86.py:119`, not a Tensor method.
+#
+# SO THIS BODY WAS WRONG AND THE GATE THAT SHOULD HAVE CAUGHT IT WAS COMPARING THE WRONG
+# THING. `gates/tn_add_sub-oracle.py` called `c.alu(Ops.SUB, d)` -- a path CPython's `sub`
+# never takes -- so `sub_srcs_are_self_and_x` agreed with the port while both were wrong.
+# The oracle now calls the DUNDER.
 def tn_sub.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
   match reverse:
-    case True{}: tn_binop(rhs, lhs, O.OpsSUB{})
-    case False{}: tn_binop(lhs, rhs, O.OpsSUB{})
+    case True{}: tn_binop(rhs, tn_sub.neg(lhs), O.OpsADD{})
+    case False{}: tn_binop(lhs, tn_sub.neg(rhs), O.OpsADD{})
 
 def tn_sub(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_sub.go(False{}, lhs, rhs)
