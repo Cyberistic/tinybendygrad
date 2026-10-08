@@ -843,12 +843,18 @@ def tn_rshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_rrshift(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_rshift.go(True{}, lhs, rhs)
 
-# `minimum` is NOT ported: CPython's `Tensor.minimum` (elementwise.py:387) has
-# dtype promotion (the int `^k` trick at elementwise.py:390 and the float arm
-# `-(-t).alu(MAX, -x)`), and `OpsMIN{}` IS NOT IN THE SUBSTRATE (verified:
-# `grep -c OpsMIN tinybendygrad/uop/ops.bend` -> 0). The no-broadcasting case
-# would need `OpsMIN{}` to build `self.alu(MIN, x.uop)`, and the port has no
-# such constructor. Stays walled on the MIN-op + the dtype-promotion seam.
+# `minimum` is NOT ported, and NOT for a missing MIN op: CPython's
+# `Tensor.minimum` (mixin/elementwise.py:393) has NO MIN -- it is
+# `self._broadcasted(x)` then a dtype branch, the float arm
+# `-(-t).alu(Ops.MAX, -x)` and the int arm
+# `(t ^ (k:=dt.const(dt.min+dt.max))).alu(Ops.MAX, x ^ k) ^ k`, BOTH built from
+# `Ops.MAX`. `MIN` is not a member of CPython's `Ops` (verified:
+# `.venv/bin/python -c "from tinygrad.uop.ops import Ops; print('MIN' in Ops.__members__)"`
+# -> False), and the port's `Ops` and CPython's `Ops` are the SAME 77 members
+# (`grep -c '^  Ops[A-Z_0-9]*{}'` -> 77 each, empty set difference both ways),
+# so no constructor is missing. Stays walled on the dtype-promotion seam: even
+# the no-broadcasting case branches on `least_upper_dtype(t.dtype, x.dtype)` and
+# builds `dt.const(dt.min+dt.max)`, and `tn_binop` does not promote.
 
 # `__ne__` -- elementwise.py:339, via `ne` at elementwise.py:333
 # (`self._binop(Ops.CMPNE, x, False)`). Same shape as `tn_cmplt` with `Ops.CMPNE`
