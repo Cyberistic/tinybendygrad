@@ -88,9 +88,6 @@ ENTRY = {"substrate-check.sh", "e2e.sh", "graphcmp-run.sh", "graphcmp-repro.sh",
 # A verdict token is a WORD that says a decision was made. `\b`-anchored on BOTH sides: an
 # unbounded `FAIL` matches `FAILSAFE`, and `MATCH` matches inside `MISMATCH` and inside paths --
 # which is how an unanchored list mints PASSes out of prose.
-# A verdict token is a WORD that says a decision was made. `\b`-anchored on BOTH sides: an
-# unbounded `FAIL` matches `FAILSAFE`, and `MATCH` matches inside `MISMATCH` and inside paths --
-# which is how an unanchored list mints PASSes out of prose.
 #
 # WIDENED AFTER A MEASURED FALSE NEGATIVE, NOT ON THEORY. `arena-census.py` prints
 #   `SAFE 172  LATENT 1061  DEFECT 0`

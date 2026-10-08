@@ -123,9 +123,6 @@ def compare(tag: str, env: dict[str, str], show: int) -> list[str]:
                      f"{'' if a == b else '   *** DIFFERS ***'}")
     # A STAGE BLOCK IS A HEADER AND EVERYTHING UP TO THE NEXT ONE. Present on one side and absent on
     # the other is its own outcome: a gate that lost a stage has lost reproducibility without saying
-    # so, and a byte diff alone would bury that.
-    # A STAGE BLOCK IS A HEADER AND EVERYTHING UP TO THE NEXT ONE. Present on one side and absent on
-    # the other is its own outcome: a gate that lost a stage has lost reproducibility without saying
     # so, and a byte diff alone would bury that. Matched blocks are compared IN ORDER, because the
     # order is the order the claims come in.
     # CANON IS APPLIED HERE TOO, not only to the byte comparison below. The stage blocks are split

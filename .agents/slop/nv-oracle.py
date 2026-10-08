@@ -828,9 +828,7 @@ _c, h2 = _put(_c, (200, ("NV:0",)))
 row("nv_pc_hit_1", 1 if h2 else 0)
 # `UOp.unique_num` is a GLOBAL counter and its absolute start is arbitrary, so
 # the port numbers from 0 and the oracle does too; what is claimed is the COUNT of
-# advances, and a MISS advances it while a HIT does not.
-# `UOp.unique_num` is a GLOBAL counter and its absolute start is arbitrary, so
-# the port numbers from 0 and the oracle does too.  THE CLAIM WITH TEETH: a HIT
+# advances, and a MISS advances it while a HIT does not.  THE CLAIM WITH TEETH: a HIT
 # neither appends an id nor advances the counter.
 _uid = [0]
 

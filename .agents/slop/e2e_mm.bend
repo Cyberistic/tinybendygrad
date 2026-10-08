@@ -10,7 +10,7 @@
 # `webgpu_call.bend` def called unmodified, and no step order, buffer size, usage
 # mask or binding index is written here. The fixture is the literals the generator
 # got by CALLING CPython -- tinygrad's own WGSL, the input words, the geometry.
-# The gate's expectations live in runs/e2e/e2e-mm-oracle.json, beside the call
+# The gate's expectations live in checks/e2e-mm-oracle.json, beside the call
 # that made them, and the gate refuses any row whose name is not there.
 #
 # WHY TWO LAUNCHES. The second launch's first input is the FIRST launch's output,
