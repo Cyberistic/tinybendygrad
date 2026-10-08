@@ -240,6 +240,28 @@ def sig_tn_rrshift() -> String:
   +r = T.tn_rrshift(t4(), t4())
   O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
+# THE THREE `Maybe`-RETURNING DUNDERS, which had NO GATE AT ALL before this. `__ge__` and
+# `__le__` are chains through `tn_logical_not`; `__invert__` returns a `Maybe` because its
+# dtype dispatch is a fold read, so the `Some` arm is taken by name here.
+def sig_tn_dunder_ge() -> String:
+  +r = T.tn_dunder_ge(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_dunder_le() -> String:
+  +r = T.tn_dunder_le(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_dunder_invert.at(+t: T.Tensor) -> String:
+  O.Rng.sig(T.Tensor.ar(t), T.Tensor.u(t))
+
+def sig_tn_dunder_invert.go(m: Maybe<&2, T.Tensor>) -> String:
+  match m:
+    case Some{t}: sig_tn_dunder_invert.at(t)
+    case None{}: "NONE"
+
+def sig_tn_dunder_invert() -> String:
+  sig_tn_dunder_invert.go(T.tn_dunder_invert(tb()))
+
 def no_noop(s: String) -> Bool:
   Bool.not(String.contains("Ops.NOOP", s))
 
@@ -293,4 +315,7 @@ def main() -> IO(Unit):
     v : Unit <- srow("tn_rpow", sig_tn_rpow())
     w : Unit <- srow("tn_rlshift", sig_tn_rlshift())
     x : Unit <- srow("tn_rrshift", sig_tn_rrshift())
+    ai : Unit <- srow("tn_dunder_ge", sig_tn_dunder_ge())
+    aj : Unit <- srow("tn_dunder_le", sig_tn_dunder_le())
+    ak : Unit <- srow("tn_dunder_invert", sig_tn_dunder_invert())
     return Unit{}

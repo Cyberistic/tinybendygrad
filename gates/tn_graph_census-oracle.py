@@ -90,3 +90,11 @@ print(f"tn_rxor={sig(t4().__rxor__(t4()))}")
 print(f"tn_rpow={sig(t4().__rpow__(t4()))}")
 print(f"tn_rlshift={sig(t4().__rlshift__(t4()))}")
 print(f"tn_rrshift={sig(t4().__rrshift__(t4()))}")
+
+# THE THREE MAYBE-RETURNING DUNDERS, added with the port rows. `__invert__` is
+# `self.bitwise_not()` (elementwise.py:264) and takes the BOOL arm here, which is the arm the
+# port implements -- on an INT input CPython would take the arith arm and the row would compare
+# two different methods.
+print(f"tn_dunder_ge={sig(t4() >= t4())}")
+print(f"tn_dunder_le={sig(t4() <= t4())}")
+print(f"tn_dunder_invert={sig(~Tensor(UOp(Ops.CONST, src=(), arg=True), device='PYTHON'))}")

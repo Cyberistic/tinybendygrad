@@ -5,9 +5,10 @@
 
 39 ROWS, THREE LANES, THREE DECLARED DIVERGENCES. `gates/tn_binop_sweep.bend` covers the
 seventeen binops; `gates/tn_nary_arena.bend` covers the three-operand node. This covers the REST
-of the ported surface in one artifact -- the unary ops, the compositions, and THE ELEVEN
-REVERSE ARMS THAT HAVE A CPYTHON COUNTERPART, which are half the binop surface and were
-previously tested only at depth 0.
+of the ported surface in one artifact -- the unary ops, the compositions, THE ELEVEN REVERSE
+ARMS THAT HAVE A CPYTHON COUNTERPART, and THE THREE `Maybe`-RETURNING DUNDERS (`__ge__`,
+`__le__`, `__invert__`), which had NO GATE AT ALL before this and were the last ported defs
+outside any artifact.
 
 WHAT IT ASSERTS THAT NEEDS NO CPYTHON. `NOOP` IS THE BOTTOM -- `Arena.bottom()`, what
 `Arena.node` answers for an index the arena does not hold. A `NOOP` anywhere in a graph is an
@@ -17,9 +18,12 @@ sequence and a reader can see the bottom without a second lane. Four ports were 
 are all clean now.
 
 WHAT IT ASSERTS THAT NEEDS ONE. The op sequence itself, against CPython's graph for the method
-each port mirrors. THE DIVERGENCES ARE THE IDENTITY BOOL CAST: the port keeps
-`tn_logical_not`'s explicit `cast(bool)` and CPython folds it away, so `tn_bitwise_not`,
-`tn_eq` and `tn_isfinite` carry one extra node and one extra `CAST` and the other 36 rows are
+each port mirrors. THE DIVERGENCES ARE ALL ONE THING: the identity bool CAST. The port keeps
+`tn_logical_not`'s explicit `cast(bool)` -- which IS its CPython body, `self.cast(dtypes.bool)
+.ne(True)` -- and CPython's rewriter folds that cast away on an already-bool value, so the port
+carries one extra node and one extra `CAST` on `tn_bitwise_not`, `tn_eq`, `tn_isfinite`,
+`tn_dunder_ge`, `tn_dunder_le` and `tn_dunder_invert`. The port stops at the SOURCE EXPRESSION
+because it has no rewriter; that is the carve-out and not a wrong graph. and the other 36 rows are
 byte-identical. That is a fold carve-out and not a wrong graph -- it is the same carve-out
 `mixin/elementwise.bend` records for `isfinite`.
 
@@ -83,6 +87,9 @@ ROWS = (
     "tn_rpow",
     "tn_rlshift",
     "tn_rrshift",
+    "tn_dunder_ge",
+    "tn_dunder_le",
+    "tn_dunder_invert",
 )
 
 # (CPython's line, the port's line), pinned on both sides.
@@ -90,6 +97,9 @@ DIVERGES = {
     "tn_bitwise_not": ("tn_bitwise_not=3 Ops.XOR/2 Ops.CONST Ops.CONST", "tn_bitwise_not=4 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
     "tn_isfinite": ("tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST", "tn_isfinite=17 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
     "tn_eq": ("tn_eq=4 Ops.CMPNE/2 Ops.CMPNE Ops.CONST", "tn_eq=5 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
+    "tn_dunder_ge": ("tn_dunder_ge=4 Ops.CMPNE/2 Ops.CMPLT Ops.CONST", "tn_dunder_ge=5 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
+    "tn_dunder_le": ("tn_dunder_le=4 Ops.CMPNE/2 Ops.CMPLT Ops.CONST", "tn_dunder_le=5 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
+    "tn_dunder_invert": ("tn_dunder_invert=2 Ops.CMPNE/2 Ops.CONST Ops.CONST", "tn_dunder_invert=3 Ops.CMPNE/2 Ops.CAST Ops.CONST"),
 }
 
 GATE = Gate(
@@ -103,7 +113,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_graph_census-gate: 48 rows, 3 lanes, 3 DECLARED divergences -- "
+    sys.exit(main(GATE, "tn_graph_census-gate: 51 rows, 3 lanes, 6 DECLARED divergences -- "
                         "every ported tn_* has NO NOOP BOTTOM and 45 op sequences match CPython's "
                         "byte-for-byte; the three that differ carry the identity bool CAST the "
                         "port keeps and CPython folds"))
