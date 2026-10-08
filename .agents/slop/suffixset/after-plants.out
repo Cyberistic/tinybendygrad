@@ -1,0 +1,27 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+PLANTS -- ten directions plus an inertness assertion, because a meta-gate's blind spot is the one nobody
+else checks
+  PASS  0: a shell gate found by SELF-DISPATCH, not by `__main__`
+          observed: found 1 entry point(s)
+  PASS  6: the two shell tokenizers DISAGREE, and their UNION is the population (the narrow one alone saw 2 of 17)
+          observed: narrow=2 selfref=17 union=17 of 17 -- 15 gates only the SECOND token can see
+  PASS  1: an off-repo root is RED in BOTH directions (n too deep, n too shallow), and parents[0]+refuse is GREEN
+          observed: bad[2]=True/True good[2]=True/True shallow[1]=True
+  PASS  2: a gate this instrument does NOT notice is EXCLUDED and COUNTED
+          observed: excluded=['checks/driver.py', 'gates/gatekit.py'] live gates/gatekit.py is a lib=True
+  PASS  3: an EMPTY population is REFUSED (2), never green
+          observed: rc=2
+  PASS  4: a NEW GATE nobody declared makes the ledger MOVE and the run RED
+          observed: rc=1 said_added=True
+  PASS  5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, and the fixed form is clean
+          observed: caught=3/3 fixed_form_clean=True
+  PASS  7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a finding (this file found itself)
+          observed: py_and_sh_both_reported_on_root=True
+  PASS  8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot measure itself cleanly is the one measurement nobody else makes
+          observed: gates/gates-pop.py -> ('__file__.parent', False, True)
+  PASS  9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS `sh` gate are ADMITTED, a `.bend` driver is NOT read as JavaScript, and a `.rows` fixture is OPAQUE
+          observed: mjs=True extless_sh=True bend_not_js=True rows_opaque=True live_rows_opaque=True (140/140 real `.rows`) -- entries=['checks/nan.mjs', 'checks/shim']
+PLANTS: GREEN (10/10)
+  PASS  inertness: --plant left the live ledger BYTE-IDENTICAL (sha unchanged)
+          observed: unchanged

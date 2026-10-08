@@ -66,6 +66,7 @@ import subprocess
 import sys
 import tempfile
 import tokenize
+from collections import Counter
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -133,12 +134,72 @@ def gendirs():
 # which is to say, a gate nobody runs and nobody writes. That is the only hole left and it is
 # stated rather than papered over.
 
-# THE ROW-EXCLUSION PATTERN, AND WHY IT IS NOT THE POPULATION. A file is a POPULATION MEMBER
-# if it is a `.py` or `.sh` under a gate home; `__pycache__` is not scanned because
-# `HOMES` are read with `iterdir()` and filtered, not `rglob`ed. The trap this avoids is
-# `repro-paths.py`'s: a REF regex that cannot see a file that exists. So the scan ENUMERATES
-# and the regexes are only ever used to CLASSIFY what was already enumerated.
-SUFFIXES = (".py", ".sh")
+# NO SUFFIX SET. THE POPULATION IS THE DIRECTORY AND THE LANGUAGE IS READ OUT OF THE FILE.
+#
+# THIS USED TO BE `SUFFIXES = (".py", ".sh")`, and the prose above this line said "the scan
+# ENUMERATES and the regexes are only ever used to CLASSIFY what was already enumerated" --
+# which the very next line contradicted, because the tuple was applied to the ENUMERATION and
+# not to the classification. **A COMMENT THAT DENIES A DEFECT IS NOT A FIX FOR IT, AND THIS WAS
+# THE FILE THAT DEFINES THE CLASS.** MEASURED on the live tree by a directory walk against this
+# function's own `iterdir()`: 374 regular files across `checks/`+`gates/`, of which the tuple
+# admitted 174 and **200 were dropped before a byte of them was read**. Two of the dropped are
+# true members, and both were named by content rather than by name:
+#   `checks/nan_census.mjs` -- a tracked ES-module census driver, `node nan_census.mjs <workdir>`,
+#     and the file `checks/gate.py:200` and `checks/e2e.py:428` reach for a `.mjs` driver.
+#   `checks/bend` -- a tracked EXTENSIONLESS executable `#!/bin/sh` shim, which `entry_reason()`
+#     reads, when called directly, as a correct `sh-dispatch`. It was not wrong; it was
+#     unreachable.
+# And the tuple was not even consistent with ITSELF: clause IV of this file loads
+# `gates/gendirs.py` BY PATH, and `gates/gendirs.py:70 SOURCE_SUFFIXES` is
+# `(".py", ".sh", ".mjs", ".js")` -- so clause I and clause IV of ONE instrument disagreed about
+# what a source file is, in one file, and this file's own clause IV says two instruments holding
+# two lists "have no authority over each other". **THE CLASS WAS INSIDE THE CENSUS OF THE CLASS.**
+#
+# WHAT REPLACES IT. `discover()` walks every REGULAR file in a home and `entry_reason()` asks
+# each one what language it is IN. A FILE THAT IS NOT A PROGRAM IN A LANGUAGE THIS INSTRUMENT CAN
+# READ IS NOT SILENTLY BUCKETED: it is counted as OPAQUE and printed with its own denominator, so
+# a tree that grows a language MOVES A NUMBER instead of quietly losing a subject.
+SH_SHEBANG = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:\S*/)?(?:ba|da|k|z)?sh\b")
+NODE_SHEBANG = re.compile(r"^#!\s*(?:/usr/bin/env\s+)?(?:\S*/)?node\b")
+# AN ES MODULE, NOT THE WORD "import". **MEASURED TWICE, and both failures were a shape that
+# also matched ANOTHER LANGUAGE.** First `import\s+[\w{*]` put 39 `gates/*.bend` drivers into the
+# population as `js-main`, because BEND HAS ITS OWN `import` KEYWORD and this tree ships 38
+# tracked `.bend` files in the gate homes (`import Base` matches `import\s+\w`). Then allowing
+# BEND'S OWN C-IMPORT SHAPE, `import "../runtime/sz.c"`, read `checks/c-context.bend` as
+# JavaScript too. So the test is ESM SYNTAX AND NOTHING LOOSER -- an `import` with a
+# `from "..."` clause, or an `export` declaration -- which every `.mjs` in this tree spells that
+# way and which `import os` in prose does not.
+JS_MODULE = re.compile(
+    r"^[ \t]*(?:import\s+[\w{*][^;\n]*\s+from\s+['\"]"
+    r"|export\s+(?:default|const|let|var|function|class|async))", re.M)
+JS_EXPORT = re.compile(r"^[ \t]*export\s", re.M)
+
+
+def is_literal_data(src):
+    """Is this file a MODULE OR A CONSTANT? **MEASURED, and this is the second false answer the
+    walk introduced before it was right.** `ast.parse` succeeds on JSON, because `{"a": 1}` is a
+    valid Python dict display -- so on this tree `checks/census.json` (1.2 MB) and
+    `checks/dup-census.json` (797 KB) both answered `py-lib`, and the parse alone cost 893 ms and
+    550 ms. **"IT PARSES" IS NOT "IT IS A PROGRAM", AND A PARSE IS A PROOF OF SYNTAX ONLY.**
+    The discriminator is content too: a module whose ENTIRE top level is `Expr` nodes and not one
+    of them a CALL is a literal -- `print("x")` is `Expr(Call)` and is a program, `{"a": 1}` is
+    `Expr(Dict)` and is data, and `import os` is neither shape at all."""
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return False
+    return bool(tree.body) and all(
+        isinstance(s, ast.Expr) and not isinstance(s.value, ast.Call) for s in tree.body)
+
+
+def suffix_of(p):
+    """`p`'s suffix for the OPAQUE DENOMINATOR only, and **hand-written rather than
+    `Path.suffix`**. MEASURED: `Path('.err').suffix` is `''` -- a LEADING DOT STARTS NO SUFFIX --
+    so `Path.suffix` buckets `checks/.err`, `checks/.out` and `checks/bend` in one row, and the
+    third of those is an extensionless executable shell shim. It never decides MEMBERSHIP (`None`
+    does), so a wrong answer here mislabels a count and cannot lose a gate."""
+    i = p.name.rfind(".")
+    return p.name[i:] if i > 0 else "(none)"
 
 
 def refuse(*why):
@@ -270,10 +331,20 @@ def is_python_entry(src):
 #
 # THE FIX IS TWO TOKENIZERS THAT DO NOT SHARE A REGEX, and the population is their UNION, with
 # the disagreement REPORTED rather than resolved silently. `SH_ENTRANCE` (line-anchored) and
-# `SH_SELFREF` (any `$0` at all) agree on 2 files and disagree on 15; a run that prints only
-# their union cannot tell you which token found what, so the report says so.
+# `SH_SELFREF` (a `$0` the shell would substitute) agree on 2 files and disagree on 15; a run
+# that prints only their union cannot tell you which token found what, so the report says so.
+#
+# `SH_SELFREF` WAS `\$\{?0\b` -- "any `$0` at all" -- AND IT IS NOW `\$\{0|["']\$0["']`, because
+# **MEASURED: `$0` IS NOT A SHELL TOKEN, IT IS A NAME, AND BEND EMITS IT AS A CPS VARIABLE IN
+# JAVASCRIPT.** `tinybendygrad/runtime/webgpu_call.mjs:315` is `const _cs_0 = $0;` and `:312` is
+# `function ...($0, $1) {`, so the old token read two tracked `.mjs` files as `sh-dispatch` on a
+# variable name a shell would have replaced. The shell substitutes `$0` only inside `"$0"`, `'${0'`
+# or `${0`; a BARE `$0` is an identifier. MEASURED as a tightening rather than a guess: it matches
+# 17 of 17 `checks/*.sh` (denominator 17, same count, ZERO files lost), keeps `checks/bend`, and
+# drops both emitted-JavaScript false positives. **A TOKEN THAT MATCHES A FOREIGN LANGUAGE'S
+# LOCAL VARIABLE IS NOT A NARROWER POPULATION, IT IS A WIDER ONE.**
 SH_ENTRANCE = re.compile(r"^\s*(?:exec\b|\$\{?0)", re.M)
-SH_SELFREF = re.compile(r"\$\{?0\b")
+SH_SELFREF = re.compile(r"\$\{0|[\"']\$0[\"']")
 SH_COMMENT = re.compile(r"^\s*#.*$", re.M)
 
 
@@ -310,20 +381,71 @@ def shell_tokens(src):
 def entry_reason(p):
     """Why this file is in the population, as a word the report prints. `sh-selfref` is named
     separately from `sh-dispatch` because it is the token that the narrow line-anchored regex
-    could not see -- and 15 of 17 shell gates are in that class."""
-    src = p.read_text(errors="replace")
-    if p.suffix == ".py":
-        return "py-main" if is_python_entry(src) is True else "py-lib"
+    could not see -- and 15 of 17 shell gates are in that class. `js-main`/`js-lib` exist because
+    JavaScript has no `__main__` guard: a module that EXPORTS is a library, and a module that
+    only imports -- or has no module syntax at all -- RUNS ITS TOP LEVEL when `node` loads it.
+
+    **`p.suffix` APPEARS NOWHERE IN THIS FUNCTION, and that is the entire fix.** The previous
+    version asked `p.suffix == ".py"` and sent EVERY OTHER SUFFIX to the shell tokenizer, so
+    deleting the suffix tuple alone would have been a fix that moved the count and left the
+    instrument wrong: `nan_census.mjs` would have been admitted and relabelled `sh-lib`, which
+    is a census of JavaScript by a shell grammar. **ADMITTING A FILE IS NOT THE SAME AS
+    UNDERSTANDING IT, AND THE SECOND HALF OF THAT SENTENCE WAS ALSO A SUFFIX SET.**
+
+    `None` means THIS FILE IS NOT A PROGRAM IN A LANGUAGE THIS INSTRUMENT CAN READ, and `None` is
+    a value with a denominator rather than a silent bucket -- see `discover()`.
+    """
+    try:
+        src = p.read_text(errors="replace")
+    except OSError:
+        return None
+    # JAVASCRIPT BEFORE PYTHON, and the order is measured rather than preferred: `JS_MODULE` is
+    # CONCLUSIVE. Neither Python nor shell can spell `import {a} from "b"` or `export function`,
+    # so a file that matches it is JavaScript with nothing left to decide. The reverse is NOT
+    # true -- `console.log("REPRO stub: stage 3 gpu");` is a valid PYTHON expression statement --
+    # so testing Python first silently reclassifies short JavaScript stubs. **THE RESIDUAL IS
+    # NAMED RATHER THAN PATCHED**: a JavaScript file with no ESM syntax whose whole body is also a
+    # valid Python program is read by the Python grammar, and there is no test for it here that is
+    # not a list of JavaScript spellings -- which is the defect this file exists for. It counts 3
+    # of the 19 `.mjs` in this tree, all three of them 40-byte stubs under `.agents/slop/`, and a
+    # file it mislabels as `py-lib` is COUNTED as a module, never dropped.
+    if NODE_SHEBANG.match(src) or JS_MODULE.search(src):
+        return "js-lib" if JS_EXPORT.search(src) else "js-main"
+    # `is_python_entry` returns `True`, `False`, OR THE STRING `"UNPARSEABLE (...)"`, and all
+    # three are tested EXPLICITLY. **MEASURED, and the first version of this fix wrote
+    # `if py is not False`**, which is true of that string too -- so `ast.parse` failing on a
+    # `checks/*.rows` fixture made 137 expected-value files answer `py-lib`, and the OPAQUE bucket
+    # this change exists to create stayed at ZERO while the module count went to 190. **A TEST
+    # THAT CANNOT FAIL LOOKS EXACTLY LIKE A TEST THAT PASSES**, and `is not False` cannot fail.
+    # An unparseable file is not Python, is not shell, and is not a module: it is OPAQUE, which
+    # is a count rather than a bucket -- and that is the honest answer for a file that cannot be
+    # read, because the alternative is to name it after a guess.
+    py = is_python_entry(src)
+    if py is True or (py is False and not is_literal_data(src)):
+        return "py-main" if py else "py-lib"
+    # JAVASCRIPT BEFORE SHELL, and the ORDER is measured rather than preferred. **MEASURED:
+    # `SH_SELFREF` was `\$\{?0\b`, and `$0` is BEND'S CPS STATE VARIABLE IN EMITTED JAVASCRIPT**
+    # -- `.agents/slop/e2e/webgpu_call.mjs:315` is `const _cs_0 = $0;` and `:312` is a closure
+    # `function ...($0, $1)`. So the shell self-reference token is NOT shell-specific, and a
+    # shell-first order classified two tracked `.mjs` files as `sh-dispatch` on the strength of a
+    # variable name bend emits. Reordering is safe in the other direction BECAUSE IT IS ALSO
+    # MEASURED: 17 of 17 shell files in the two homes carry a `sh` shebang and 0 of them contain
+    # ESM syntax, so no shell file can reach the JavaScript branch.
     ent, self_ = shell_tokens(src)
-    if ent and self_:
-        return "sh-dispatch"
-    if self_:
-        return "sh-selfref"
-    return "sh-lib"
+    # A SHEBANG is the shell test; a `$0` self-reference is the fallback for a shell file that
+    # has none, kept because plant 6 measures 17 of 17 `checks/*.sh` BY SELF-REFERENCE and this
+    # file must not lose any of them for want of a shebang.
+    if SH_SHEBANG.match(src) or self_:
+        if ent and self_:
+            return "sh-dispatch"
+        return "sh-selfref" if self_ else "sh-lib"
+    return None
 
 
-def discover(root):
-    """`(entries, libs)`, by walking the two homes. NEVER a literal list of files.
+def _buckets(root):
+    """`(entries, libs, opaque)`, by walking every REGULAR file in the two homes. NEVER a
+    literal list of files and NEVER a suffix set: the population is the DIRECTORY, and which
+    language a file is written in is `entry_reason()`'s answer, read out of the file itself.
 
     `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
     into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`
@@ -336,18 +458,47 @@ def discover(root):
     OUTSIDE the home **was certified** (the hazard this comment exists to prevent), and a DANGLING
     gate symlink **was invisible**. `stat.S_ISREG(os.lstat(p).st_mode)` is true only for a real
     file: it rejects a symlink outright and cannot be fooled by a broken one.
+
+    THE THIRD BUCKET IS THE POINT. A file the walk holds that `entry_reason()` reads as `None` is
+    neither an entry nor a module: it is OPAQUE, and it is returned as its own list with its own
+    denominator rather than folded into `libs`. Folding it in is how `nan_census.mjs` would have
+    stayed invisible for another day — a JavaScript file counted as a shell module is a wrong
+    answer that still ADDS UP, which is the only kind of wrong answer that survives every count.
     """
-    entries, libs = [], []
+    entries, libs, opaque = [], [], []
     for home in HOMES:
         h = root / home
         if not os.path.isdir(h):
             continue
         for p in sorted(h.iterdir()):
-            if p.suffix not in SUFFIXES or not stat.S_ISREG(os.lstat(p).st_mode):
+            if not stat.S_ISREG(os.lstat(p).st_mode):
                 continue
-            (entries if entry_reason(p) in ("py-main", "sh-dispatch", "sh-selfref")
-         else libs).append(p)
+            r = entry_reason(p)
+            if r is None:
+                opaque.append(p)
+            elif r in ("py-main", "sh-dispatch", "sh-selfref", "js-main"):
+                entries.append(p)
+            else:
+                libs.append(p)
+    return entries, libs, opaque
+
+
+def discover(root):
+    """`(entries, libs)` -- **A TWO-VALUE TUPLE IS A CONTRACT, and this one is MEASURED, not
+    assumed.** `gates/gate-surface.py:280` returns this call's result straight into a two-value
+    unpack, so the first version of this change returned three and the regression was
+    `ValueError: too many values to unpack (expected 2)` at `gate-surface.py:422` -- rc 1 in a
+    gate this unit was told not to edit. **A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A
+    TRADE, AND THE TRADE HAS TO BE PAID SOMEWHERE ELSE.** So the third bucket leaves through
+    `opaque()` instead of through this signature, and the walk itself happens once.
+    """
+    entries, libs, _ = _buckets(root)
     return entries, libs
+
+
+def opaque(root):
+    """The third bucket alone, so `discover()`'s arity can stay a contract somebody else owns."""
+    return _buckets(root)[2]
 
 
 # ---- clause II: what each gate POPS FOR, and whether it can fail -----------------------
@@ -575,7 +726,7 @@ def report(root, ledger_mode, ledger_path=None):
     synthetic answer back over it.
     """
     lpath = ledger_path or LEDGER_PATH
-    entries, libs = discover(root)
+    entries, libs, opaque = _buckets(root)
     if not entries:
         print(f"I  EMPTY POPULATION: no entry point under {'/'.join(HOMES)}/ -- and an empty "
               f"population cannot\n   fail, which is the defect this file exists for. REFUSED.")
@@ -583,7 +734,14 @@ def report(root, ledger_mode, ledger_path=None):
 
     rows, named, unasserted, offroot = [], 0, 0, 0
     print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(HOMES)}/ "
-          f"(+{len(libs)} module(s) with no entry guard)\n")
+          f"(+{len(libs)} module(s) with no entry guard, {len(opaque)} file(s) OPAQUE -- readable\n"
+          f"   by no grammar in this instrument, which is a DENOMINATOR and not a verdict: it is")
+    # THE OPAQUE DENOMINATOR, BY EXTENSION, because a single total cannot say WHICH language the
+    # instrument cannot read and a reader who is not told that cannot tell whether 148 is right.
+    # It moves when the tree gains a language, which is the entire reason it is printed.
+    for suf, n in sorted(Counter(suffix_of(p) for p in opaque).items(), key=lambda kv: -kv[1]):
+        print(f"     opaque {suf:8} {n:4} file(s)")
+    print()
     for p in entries:
         const, asserts, onroot = root_facts(p, root)
         rows.append((str(p.relative_to(root)), entry_reason(p), const, asserts, onroot))
@@ -813,7 +971,7 @@ def _plants():
             '#!/bin/sh\n_d=${0%/*}; case $_d in "$0") _d=.;; esac\n'
             'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
         (r / "checks" / "mod.py").write_text("X = 1\n")
-        e, libs = discover(r)
+        e, libs, _opaque = _buckets(r)
         ok0 = len(e) == 1 and "checks/substrate-check.sh" in {str(p.relative_to(r)) for p in e}
         checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`", ok0,
                        f"found {len(e)} entry point(s)"))
@@ -826,15 +984,26 @@ def _plants():
     # answers. The token is the same shape as the belt that ate a full stop: both read a
     # separator the subject did not use at that position. Asserting only "the union works"
     # would let the narrow tokenizer back in silently, so the DISAGREEMENT is itself the claim.
-    live_sh = sorted((HERE.parent / "checks").glob("*.sh"))
+    # PLANT 6's DENOMINATOR WAS ITSELF A SUFFIX SET, in the file that just had one removed.
+    # `live_sh = sorted((HERE.parent / "checks").glob("*.sh"))` named ONE home BY HAND and ONE
+    # SUFFIX, so `union == len(live_sh)` was `17 == 17` over a population it had chosen -- **the
+    # assertion agreed with itself by construction**, which is the defect this file's own header
+    # calls `artefacts_ok()`'s shape. MEASURED: `checks/bend` is a tracked `#!/bin/sh` shim with
+    # NO dot in its name, so it is a shell entry the suffix never held, and the true shell-entry
+    # count across BOTH homes is 18 where this line said 17. The denominator is now the WALK and
+    # the same shell test, over both homes, so the number is measured rather than chosen.
+    live_sh = [p for home in HOMES for p in sorted((HERE.parent / home).iterdir())
+               if p.is_file() and (SH_SHEBANG.match(p.read_text(errors="replace"))
+                                   or shell_tokens(p.read_text(errors="replace"))[1])]
     ent = sum(1 for p in live_sh if shell_tokens(p.read_text(errors="replace"))[0])
     self_ = sum(1 for p in live_sh if shell_tokens(p.read_text(errors="replace"))[1])
     union = sum(1 for p in live_sh if is_shell_entry(p.read_text(errors="replace")))
     ok6 = ent < union and self_ > ent and union == len(live_sh)
     checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
-                   "(the narrow one alone saw 2 of 17)", ok6,
-                   f"narrow={ent} selfref={self_} union={union} of {len(live_sh)} -- "
-                   f"{union - ent} gates only the SECOND token can see"))
+                   "(the narrow one alone saw 2, over BOTH homes walked and not globbed)",
+                   ok6,
+                   f"narrow={ent} selfref={self_} union={union} of {len(live_sh)} walked "
+                   f"shell entries -- {union - ent} gates only the SECOND token can see"))
 
     with tempfile.TemporaryDirectory() as td:
         r = Path(td); _tree(r)
@@ -866,7 +1035,7 @@ def _plants():
         # the exclusion is visible rather than silent. `checks/bounded.py` is the live instance.
         (r / "checks" / "driver.py").write_text("def drive(): pass\n")
         (r / "gates" / "gatekit.py").write_text("class Gate: pass\n")
-        e, libs = discover(r)
+        e, libs, _opaque = _buckets(r)
         libs_named = sorted(str(p.relative_to(r)) for p in libs)
         out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
                   and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
@@ -973,7 +1142,57 @@ def _plants():
                    "measure itself cleanly is the one measurement nobody else makes",
                    self_facts[2], f"gates/gates-pop.py -> {self_facts}"))
 
-    print("PLANTS -- nine directions plus an inertness assertion, because a meta-gate's blind "
+    # PLANT 9 -- **THE POPULATION IS A DIRECTORY, NOT A SUFFIX SET.** Four claims, four
+    # directions, because the two halves fail apart and a plant that asserts only the half that
+    # passes is a change-detector. `SUFFIXES = (".py", ".sh")` was the defect this plant exists
+    # for, and its two halves were independent: the tuple dropped the file before a byte was
+    # read, AND `entry_reason()` routed every non-`.py` suffix to the SHELL tokenizer. So:
+    #   (a) a `.mjs` gate is ADMITTED -- the direction that was broken, on `checks/nan_census.mjs`;
+    #   (b) an EXTENSIONLESS `#!/bin/sh` gate is ADMITTED -- `checks/bend`, tracked, and the tuple
+    #       could not see it because it has no dot in it at all;
+    #   (c) a `.bend` DRIVER IS NOT ADMITTED AS JAVASCRIPT -- the collision this plant's author
+    #       walked into and fixed twice: bend has its own `import`, and bend's C-import is
+    #       `import "../runtime/sz.c"`, so a loose `/^import\s+[\w{*]/` read 39 gate drivers as
+    #       `js-main`. A language test that also matches another language is not a narrow
+    #       population, it is a wider one;
+    #   (d) a `.rows` FIXTURE IS NOT ADMITTED -- the direction that keeps (a) and (b) from turning
+    #       the fix into a bag of every file in the home. It lands in the OPAQUE bucket, which is
+    #       a COUNT, so 140 expected-value files in `checks/` are visible rather than absent.
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td); _tree(r)
+        (r / "checks" / "nan.mjs").write_text(
+            'import {argv} from "node:process";\nargv.slice(2).forEach((a) => console.log(a));\n')
+        (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+        (r / "gates" / "probe.bend").write_text(
+            'import Base\ndef f(x):\n  import "../tinybendygrad/runtime/sz.c"\n')
+        (r / "checks" / "expected.rows").write_text(
+            "2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 3:n()\n2:i4 5:STACK 7:weakint 3:n(i2,i3)\n")
+        pe, pl, po = _buckets(r)
+        got = sorted(str(p.relative_to(r)) for p in pe)
+        mjs_ok = "checks/nan.mjs" in got
+        shim_ok = "checks/shim" in got
+        bend_ok = not any(str(p.relative_to(r)).endswith(".bend") for p in pe + pl)
+        rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+        # AND THE LIVE WITNESS, because the fixture above is a shape I typed and a typed fixture
+        # agrees with the instrument by construction. MEASURED on this tree: **0 of the 140 real
+        # `checks/*.rows` files parse as Python**, so the real ones are OPAQUE too -- and the first
+        # version of this fixture was `k=v\nk2=v2`, which IS a valid Python `Assign`, so the plant
+        # was RED for a shape no file in the tree has. **A FIXTURE RETYPED BY HAND IS NOT A
+        # WITNESS; THE TREE IS.** Asserted live so a moved or re-spelled fixture is a FAIL.
+        live_rows = [p for h in HOMES for p in sorted((HERE.parent / h).iterdir())
+                     if p.is_file() and p.name.endswith(".rows")]
+        _, _, live_opaque = _buckets(HERE.parent)
+        live_rows_opaque = all(p in live_opaque for p in live_rows)
+        ok9 = mjs_ok and shim_ok and bend_ok and rows_ok and live_rows_opaque
+        checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+                       "`sh` gate are ADMITTED, a `.bend` driver is NOT read as JavaScript, and a "
+                       "`.rows` fixture is OPAQUE", ok9,
+                       f"mjs={mjs_ok} extless_sh={shim_ok} bend_not_js={bend_ok} "
+                       f"rows_opaque={rows_ok} live_rows_opaque={live_rows_opaque} "
+                       f"({sum(p in live_opaque for p in live_rows)}/{len(live_rows)} real `.rows`) "
+                       f"-- entries={got}"))
+
+    print("PLANTS -- ten directions plus an inertness assertion, because a meta-gate's blind "
           "spot is the one nobody\nelse checks")
     for name, ok, got in checks:
         print(f"  {'PASS' if ok else 'FAIL'}  {name}\n          observed: {got}")

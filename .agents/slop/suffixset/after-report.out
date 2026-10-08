@@ -1,0 +1,189 @@
+<unknown>:1: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\('
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\Q'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\$'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\]'
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+<unknown>:1: SyntaxWarning: invalid escape sequence '\['
+I  DISCOVERED 136 entry point(s) under checks/gates/ (+42 module(s) with no entry guard, 196 file(s) OPAQUE -- readable
+   by no grammar in this instrument, which is a DENOMINATOR and not a verdict: it is
+     opaque .rows     140 file(s)
+     opaque .bend      42 file(s)
+     opaque .json       4 file(s)
+     opaque .tsv        4 file(s)
+     opaque .md         2 file(s)
+     opaque (none)      1 file(s)
+     opaque .bin        1 file(s)
+     opaque .err        1 file(s)
+     opaque .dylib      1 file(s)
+
+   checks/abi4_gate.py                py-main      root=OK    asserts=NO  HERE = pathlib.Path(__file__).resolve().parent
+   checks/abi_gate.py                 py-main      root=OK    asserts=NO  HERE = pathlib.Path(__file__).resolve().parent
+   checks/al-verdict.py               py-main      root=OK    asserts=NO  -
+   checks/bend                        sh-dispatch  root=OK    asserts=NO  -
+   checks/both-census.py              py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/bounded-selftest.sh         sh-dispatch  root=OK    asserts=YES  -
+   checks/bounded.py                  py-main      root=OK    asserts=NO  __file__.parent
+   checks/census.py                   py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/citation-gate.py            py-main      root=OK    asserts=NO  -
+   checks/cl-port-gate.py             py-main      root=OK    asserts=YES  REPO = Path(__file__).resolve().parents[1]
+   checks/classify.sh                 sh-selfref   root=OK    asserts=YES  -
+   checks/cli.py                      py-main      root=OK    asserts=NO  -
+   checks/compile.py                  py-main      root=OK    asserts=NO  -
+   checks/corpus-figure.py            py-main      root=OK    asserts=NO  ROOT = pathlib.Path(__file__).resolve().parent
+   checks/coverage.py                 py-main      root=OK    asserts=NO  __file__.parent
+   checks/demo.sh                     sh-selfref   root=OK    asserts=YES  -
+   checks/devgate.py                  py-main      root=OK    asserts=NO  -
+   checks/devpin.py                   py-main      root=OK    asserts=NO  -
+   checks/differ.py                   py-main      root=OK    asserts=NO  ROOT = Path(__file__).resolve().parents[1]
+   checks/disagree-gate.py            py-main      root=OK    asserts=NO  HERE = Path(__file__).resolve() ROOT = HERE.pa
+   checks/disarm.sh                   sh-selfref   root=OK    asserts=YES  -
+   checks/dup-census.py               py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/dup-gate.py                 py-main      root=OK    asserts=YES  REPO = HERE.parents[0]
+   checks/e2e.py                      py-main      root=OK    asserts=YES  ROOT = Path(os.environ["E2E_ROOT"] if os.envir
+   checks/e2e.sh                      sh-selfref   root=OK    asserts=YES  -
+   checks/env-precond.py              py-main      root=OK    asserts=NO  ROOT = pathlib.Path(__file__).resolve().parent
+   checks/fw_live.py                  py-main      root=OK    asserts=NO  -
+   checks/gate.py                     py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/gate.sh                     sh-selfref   root=OK    asserts=YES  -
+   checks/gate_dtype.py               py-main      root=OK    asserts=NO  __file__.parent
+   checks/gate_norm.py                py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/gen.sh                      sh-selfref   root=OK    asserts=YES  -
+   checks/git-index-guard.py          py-main      root=OK    asserts=NO  -
+   checks/graphcmp-census-audit.py    py-main      root=OK    asserts=NO  -
+   checks/hermetic-census.py          py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/jsfix_gate.py               py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/lint_demo.sh                sh-selfref   root=OK    asserts=YES  __file__.parent
+   checks/lintable-gate.sh            sh-selfref   root=OK    asserts=YES  -
+   checks/llama.py                    py-main      root=OK    asserts=NO  Path(__file__).parents[1]
+   checks/marker-audit.py             py-main      root=OK    asserts=NO  -
+   checks/nan_census.mjs              js-main      root=OK    asserts=NO  -
+   checks/nl-gate-noguard.py          py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/nl-gate.py                  py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/no-shrink.py                py-main      root=OK    asserts=NO  -
+   checks/no-strays.py                py-main      root=OK    asserts=NO  ROOT = Path(__file__).resolve().parents[1]
+   checks/no-txt.py                   py-main      root=OK    asserts=NO  -
+   checks/norm_check.py               py-main      root=OK    asserts=YES  REPO = HERE.parents[0]
+   checks/nvrows-deadrow-gate.py      py-main      root=OK    asserts=YES  REPO = pathlib.Path(__file__).resolve().parent
+   checks/oracle-txt-census.py        py-main      root=OK    asserts=NO  -
+   checks/oracle_f64.py               py-main      root=OK    asserts=YES  ROOT = pathlib.Path(__file__).resolve().parent
+   checks/plant.sh                    sh-selfref   root=OK    asserts=NO  __file__.parent
+   checks/process_replay.py           py-main      root=OK    asserts=NO  -
+   checks/render-gate-oracle.py       py-main      root=OK    asserts=NO  -
+   checks/repair-dupes.py             py-main      root=OK    asserts=NO  Path(__file__).resolve().parents[1]
+   checks/repro-paths.py              py-main      root=OK    asserts=NO  -
+   checks/residue.py                  py-main      root=OK    asserts=NO  __file__.parent
+   checks/rn-gate.py                  py-main      root=OK    asserts=YES  HERE = pathlib.Path(__file__).resolve().parent
+   checks/romless.py                  py-main      root=OK    asserts=NO  -
+   checks/run-all.sh                  sh-selfref   root=OK    asserts=YES  __file__.parent
+   checks/run-f64.sh                  sh-selfref   root=OK    asserts=YES  Path(__file__).resolve().parents[1]
+   checks/run-port-mm.sh              sh-selfref   root=OK    asserts=YES  -
+   checks/run.py                      py-main      root=OK    asserts=NO  -
+   checks/sb-gate.sh                  sh-selfref   root=OK    asserts=NO  -
+   checks/serve.py                    py-main      root=OK    asserts=NO  -
+   checks/slop-declare.py             py-main      root=OK    asserts=NO  __file__.parent
+   checks/substrate-check.sh          sh-dispatch  root=OK    asserts=YES  -
+   checks/substrate-id.py             py-main      root=OK    asserts=NO  ROOT = pathlib.Path(__file__).resolve().parent
+   checks/substrate-snapshot.py       py-main      root=OK    asserts=NO  ROOT = pathlib.Path(__file__).resolve().parent
+   checks/substrate.py                py-main      root=OK    asserts=NO  Path(__file__).resolve().parents[1]
+   checks/sweep.py                    py-main      root=OK    asserts=NO  -
+   checks/sz.py                       py-main      root=OK    asserts=NO  -
+   checks/test_rewrite_bottom_up_gate.py py-main      root=OK    asserts=NO  -
+   checks/txt-owners.py               py-main      root=OK    asserts=NO  -
+   checks/unowned.py                  py-main      root=OK    asserts=NO  -
+   checks/vz_gate.py                  py-main      root=OK    asserts=NO  __file__.parent
+   checks/walk-mutate.sh              sh-selfref   root=OK    asserts=YES  -
+   checks/wallcheck.py                py-main      root=OK    asserts=NO  -
+   checks/wt-sync.sh                  sh-selfref   root=OK    asserts=YES  -
+   gates/bc-u32-gate.py               py-main      root=OK    asserts=NO  -
+   gates/bc-u32-gen.py                py-main      root=OK    asserts=NO  __file__.parent
+   gates/bc-u32-oracle.py             py-main      root=OK    asserts=NO  -
+   gates/bc_u32_table.py              py-main      root=OK    asserts=NO  -
+   gates/beautiful-mnist-gate.py      py-main      root=OK    asserts=NO  -
+   gates/ew-consts-gate.py            py-main      root=OK    asserts=NO  -<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+
+   gates/ew-consts-oracle.py          py-main      root=OK    asserts=NO  -
+   gates/ew-explog-gate.py            py-main      root=OK    asserts=NO  -
+   gates/ew-explog-oracle.py          py-main      root=OK    asserts=NO  -
+   gates/gate-surface.py              py-main      root=OK    asserts=YES  __file__.parent
+   gates/gates-pop.py                 py-main      root=OK    asserts=NO  __file__.parent
+   gates/gendirs.py                   py-main      root=OK    asserts=NO  ROOT = Path(__file__).resolve().parents[1]
+   gates/git-massdelete-gate.py       py-main      root=OFF-REPO  asserts=NO  ROOT = Path(__file__).resolve().parents[3]
+   gates/i64-shl-gate.py              py-main      root=OK    asserts=NO  -
+   gates/i64-shl-oracle.py            py-main      root=OK    asserts=NO  -
+   gates/i64-shr-gate.py              py-main      root=OK    asserts=NO  -
+   gates/i64-shr-oracle.py            py-main      root=OK    asserts=NO  -
+   gates/indexread-gate.py            py-main      root=OK    asserts=NO  -
+   gates/mixin-op-gate.py             py-main      root=OK    asserts=NO  -
+   gates/msgdiff-gate.py              py-main      root=OK    asserts=NO  ROOT = Path(__file__).resolve().parents[1]
+   gates/ops-core-gate.py             py-main      root=OK    asserts=NO  -
+   gates/ops-core-oracle.py           py-main      root=OK    asserts=NO  -
+   gates/render_val_s-gate.py         py-main      root=OK    asserts=NO  -
+   gates/replace-gate.py              py-main      root=OK    asserts=NO  -
+   gates/retention-check.py           py-main      root=OK    asserts=NO  ROOT = Path(__file__).resolve().parents[1]
+   gates/tn_add_sub-gate.py           py-main      root=OK    asserts=NO  -
+   gates/tn_and_or_xor-gate.py        py-main      root=OK    asserts=NO  -
+   gates/tn_binop2_cmp-gate.py        py-main      root=OK    asserts=NO  -
+   gates/tn_binop_arena-gate.py       py-main      root=OK    asserts=NO  -
+   gates/tn_binop_sweep-gate.py       py-main      root=OK    asserts=NO  -
+   gates/tn_bitwise_not-gate.py       py-main      root=OK    asserts=NO  -
+   gates/tn_ceil_floor-gate.py        py-main      root=OK    asserts=NO  -
+   gates/tn_contiguous_backward-gate.py py-main      root=OK    asserts=NO  -
+   gates/tn_detach-gate.py            py-main      root=OK    asserts=NO  -
+   gates/tn_dunder_neg-gate.py        py-main      root=OK    asserts=NO  -
+   gates/tn_fdiv_mod-gate.py          py-main      root=OK    asserts=NO  -
+   gates/tn_isfinite-gate.py          py-main      root=OK    asserts=NO  -
+   gates/tn_isnan-gate.py             py-main      root=OK    asserts=NO  -
+   gates/tn_logical_not-gate.py       py-main      root=OK    asserts=NO  -
+   gates/tn_lshift_rshift-gate.py     py-main      root=OK    asserts=NO  -
+   gates/tn_maximum-gate.py           py-main      root=OK    asserts=NO  -
+   gates/tn_mul-gate.py               py-main      root=OK    asserts=NO  -
+   gates/tn_nary_arena-gate.py        py-main      root=OK    asserts=NO  -
+   gates/tn_neg-gate.py               py-main      root=OK    asserts=NO  -
+   gates/tn_pow-gate.py               py-main      root=OK    asserts=NO  -
+   gates/tn_relu-gate.py              py-main      root=OK    asserts=NO  -
+   gates/tn_relu6-gate.py             py-main      root=OK    asserts=NO  -
+   gates/tn_sin_log2_exp2_rsqrt-gate.py py-main      root=OK    asserts=NO  -
+   gates/tn_sqrt-gate.py              py-main      root=OK    asserts=NO  -
+   gates/tn_trunc_reciprocal_threefry-gate.py py-main      root=OK    asserts=NO  -
+   gates/tn_where-gate.py             py-main      root=OK    asserts=NO  -
+   gates/uop_cast-gate.py             py-main      root=OK    asserts=NO  -
+   gates/wk-cd-gate.py                py-main      root=OK    asserts=NO  -
+   gates/wk-cd-oracle.py              py-main      root=OK    asserts=NO  -
+   gates/wk-eval-gate.py              py-main      root=OK    asserts=NO  -
+   gates/wk-eval-oracle.py            py-main      root=OK    asserts=NO  -
+   gates/wk-f32-gate.py               py-main      root=OK    asserts=NO  -
+   gates/wk-f32-rows.py               py-main      root=OK    asserts=NO  -
+
+II POPULATION NOT EMPTY: 136/136 entry points -- a gate over 0 files is not a gate
+
+II ROOT ASSERTED: 20/45 files that name a root also REFUSE on a wrong one
+
+III FALSE      1 file(s) compute a root that RESOLVES OUTSIDE the repo, so each reports on
+               a tree that is not this one. `checks/census.py`'s docstring records the measured consequence:
+               a `sys.path.insert` of a directory holding no importable module.
+III            gates/git-massdelete-gate.py: ROOT = Path(__file__).resolve().parents[3]
+
+III LEDGER DIFF: 4 added, 0 gone, 0 changed (132 -> 136)
+III   NEW  checks/bend: sh-dispatch root_ok=True asserts=NO
+III   NEW  checks/nan_census.mjs: js-main root_ok=True asserts=NO
+III   NEW  checks/substrate-snapshot.py: py-main root_ok=True asserts=NO
+III   NEW  gates/tn_binop_sweep-gate.py: py-main root_ok=True asserts=NO
+
+III LEDGER WRITTEN gates-pop.ledger.tsv: 136 row(s)
+
+IV  SHARED POPULATION with gates/retention-check.py: 281 generated directories in 2120/3066 source files (the SAME
+    number clause V prints -- one module, two consumers, so a drift between them is a BUG and
+    not a difference of opinion). 0 of them are in the index
+    AND `.gitignore`d
+
+GATES-POP: RED -- 136 entry points, 45 name a root, 20 assert it, 1 resolve outside the repo; 281 generated directories discovered (shared with retention-check)

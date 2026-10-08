@@ -1,0 +1,11 @@
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/gate-surface.py", line 884, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/gate-surface.py", line 879, in main
+    return plants() if a.plant else report(ROOT, charge=not a.report)
+                                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/gate-surface.py", line 411, in report
+    entries, libs = population(root)
+    ^^^^^^^^^^^^^
+ValueError: too many values to unpack (expected 2)

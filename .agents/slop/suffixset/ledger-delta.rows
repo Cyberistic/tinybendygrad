@@ -1,0 +1,4 @@
+III   NEW  checks/bend: sh-dispatch root_ok=True asserts=NO
+III   NEW  checks/nan_census.mjs: js-main root_ok=True asserts=NO
+III   NEW  checks/substrate-snapshot.py: py-main root_ok=True asserts=NO
+III   NEW  gates/tn_binop_sweep-gate.py: py-main root_ok=True asserts=NO

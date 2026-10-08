@@ -1,0 +1,15 @@
+REFUSED, NOT A VERDICT: 00b1015749d3 -- the message claims a change the diff does not witness (1 checked, 0 uncheckable)
+  claim: Deleted the superseded oracles259/plants.py after proving oracletxt/plant.py covers it and the census output is byte-identical across the deletion.
+  file:  oracles259/plants.py  (present in this commit's tree, not deleted by it)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+REFUSED, NOT A VERDICT: 881f3ed7cba0 -- the message claims a change the diff does not witness (2 checked, 7 uncheckable)
+  claim: SAME COMMIT THAT DELETED \`s1.sh\`** — **BOTH TRUE, AND THE ANNOTATION MAKES THE DELETION LOOK LIKE A PRE-EXISTING FACT RATHER THAN SOMETHING
+  file:  s1.sh  (present in this commit's tree, not deleted by it)
+  claim: \`git read-tree HEAD\` DROPPED \`nl/nl-oracle.py\`'s **INDEX ENTRY** WHILE LEAVING **THE WORKTREE FILE PERFECTLY IN PLACE.** *
+  file:  nl/nl-oracle.py  (present in this commit's tree, not deleted by it)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+REFUSED, NOT A VERDICT: 7f4fcbf2a7ac -- the message claims a change the diff does not witness (1 checked, 3 uncheckable)
+  claim: THE **SEVENTH** \`read-tree\` **TRAP** **THIS **SESSION**, **THE **FOURTH** BEING **ONE THAT **DROPPED \`nl/nl-oracle.py\`'s **INDEX ENTRY** \`\`\`**
+  file:  nl/nl-oracle.py  (present in this commit's tree, not deleted by it)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view
+range: 215 commits -- 212 PASS, 3 REFUSED
