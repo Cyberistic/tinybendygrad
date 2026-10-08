@@ -52,6 +52,21 @@ def row_neg_bool_arg() -> Bool:
   +r = T.tn_neg(t)
   O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
 
+# ROW 4, REWRITTEN. It USED TO compare `r.srcs` against
+# `[T.Tensor.u(t), O.Arena.src(ar, u, 1)]` -- that is, against src[1] ITSELF. The row
+# asserted nothing about src[1] and answered 1 over the corrupt graph, while the oracle's
+# `r_int.uop.src == (c_int, c_m1)` asserted the truth and also answered 1, so the two lanes
+# "agreed" without testing the same property. A tautological row is worse than no row: it
+# looks like coverage. This one asks what its NAME claims -- src[0] is `self` and src[1] is
+# the `-1` CONST.
+def row_neg_int_srcs() -> Bool:
+  +t = mk_int_tensor()
+  +r = T.tn_neg(t)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  Bool.and(U32.is_eq(O.Arena.src(ar, i, 0), T.Tensor.u(t)),
+    O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 1)), O.OpsCONST{}))
+
 # ROW 3: on an int input, `tn_neg` builds a MUL (the `tn_neg.arith` arm).
 def row_neg_int_op() -> Bool:
   +t = mk_int_tensor()
@@ -61,11 +76,17 @@ def row_neg_int_op() -> Bool:
 # ROW 4: the MUL's srcs are [self, -1_const]. m1's index is read from the arena as
 # src[1] of the MUL (the same value the eq_u32 below compares against), and the
 # whole srcs list must equal [self.u, m1.u].
-def row_neg_int_srcs() -> Bool:
+# ROW 4b: NO SRC IS THE BOTTOM, and NO SRC IS THE MUL ITSELF. `Ops.NOOP` is what an
+# out-of-range read answers, so a src that reads NOOP is an index minted in an arena that is
+# LONGER than the one the node was built in -- which is exactly the defect this row was
+# written for. Before the fix `tn_neg.arith` built its MUL in `Tensor.ar(t)` and read
+# `O.Found.i(m1)` there, so src[1] WAS the MUL: `1 Ops.MUL/2 Ops.CONST Ops.MUL`.
+def row_neg_int_src1_is_not_self() -> Bool:
   +t = mk_int_tensor()
   +r = T.tn_neg(t)
-  O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-    [T.Tensor.u(t), O.Arena.src(T.Tensor.ar(r), T.Tensor.u(r), 1)])
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  Bool.not(U32.is_eq(O.Arena.src(ar, i, 1), i))
 
 # ROW 5: the result is a NEW node, not the input's index.
 def row_neg_int_new() -> Bool:
@@ -89,6 +110,7 @@ def main() -> IO(Unit):
     b : Unit <- row("neg_bool_arg_is_anone", row_neg_bool_arg())
     c : Unit <- row("neg_int_op_is_mul", row_neg_int_op())
     d : Unit <- row("neg_int_srcs_are_self_and_m1", row_neg_int_srcs())
+    h : Unit <- row("neg_int_src1_is_not_self", row_neg_int_src1_is_not_self())
     e : Unit <- row("neg_int_is_new_node", row_neg_int_new())
     f : Unit <- row("neg_int_does_not_mutate_input", row_neg_int_pure())
     g : Unit <- row("neg_is_reachable", row_neg_reachable())

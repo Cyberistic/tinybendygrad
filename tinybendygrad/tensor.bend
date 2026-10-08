@@ -518,7 +518,7 @@ def tn_logical_not(+t: Tensor) -> Tensor:
 # arms are split into helper defs because a `match` arm body is a single expression.
 def tn_neg.arith(+t: Tensor) -> Tensor:
   +m1 = O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(4294967295)})
-  tn_alu(t, O.OpsMUL{}, [O.Found.i(m1)])
+  tn_alu.of(O.Found.ar(m1), Tensor.u(t), O.OpsMUL{}, [O.Found.i(m1)])
 
 def tn_neg.go(is_bool: Bool, +t: Tensor) -> Tensor:
   match is_bool:

@@ -24,6 +24,7 @@ ROWS = (
     "neg_bool_arg_is_anone",          # the CMPNE's arg is None.
     "neg_int_op_is_mul",              # int input: result op is MUL.
     "neg_int_srcs_are_self_and_m1",   # the MUL's srcs are (self, -1 const).
+    "neg_int_src1_is_not_self",       # the MUL is not its own src[1] -- the self-reference.
     "neg_int_is_new_node",            # the result is a new node, not the input's uop.
     "neg_int_does_not_mutate_input",  # the input still has its original op.
     "neg_is_reachable",               # the def is callable (the wall was 0 defs).
@@ -38,7 +39,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_neg-gate: 7 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) "
+    sys.exit(main(GATE, "tn_neg-gate: 8 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) "
                         "and arith arm (MUL/srcs/self-no-mutation) all agree with "
                         "CPython's Tensor.neg (the two-arm dispatch closes the wall "
                         "that lived on the elementwise.py:74 boundary)"))
