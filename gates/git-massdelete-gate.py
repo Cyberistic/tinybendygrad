@@ -49,7 +49,15 @@ PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 REFUSE_FILES = 500
 REFUSE_LINES = 900000
 
-ROOT = Path(__file__).resolve().parents[3]
+# `parents[1]`, NOT `parents[3]`. The walk starts at the FILE, so `parents[0]` is `gates/` and
+# `parents[1]` IS the repo root. MEASURED: `parents[3]` answered `/Users/cyberistic/src`, which is
+# not this repo, so EVERY `_git` call in this file failed -- `mode_staged` and `mode_check` have
+# never run here, and `staged` answered DEAD with `git diff --cached ... rc=129: unknown option
+# \`cached\`` because git fell back to `--no-index` outside a repository. `gates/gates-pop.py`
+# exists to catch exactly this class and its own comments name `parents[3]` as the depth-baked
+# spelling it retired; this one survived it. `gates/msgdiff-gate.py:ROOT` is the sibling that was
+# already right.
+ROOT = Path(__file__).resolve().parents[1]
 ZERO = "0" * 40
 
 
@@ -225,10 +233,14 @@ def main(argv):
     if "--ack" in argv:
         ack = argv[argv.index("--ack") + 1]
     try:
+        # NO ARGUMENT IS `staged`, AND THAT IS A MEASUREMENT AND NOT A BYPASS. The guard's
+        # subject is "the commit you are about to make", so the pre-commit position is the one
+        # a bare run should take; `staged` inspects the index against HEAD and returns PASS or
+        # REFUSED on what it finds. The old bare run printed usage and returned SKIP, which is
+        # honest ("I could not measure") but leaves a bare `for x in gates/*-gate.py` sweep
+        # unable to say anything about this gate at all.
         if not argv:
-            print("usage: git-massdelete-gate.py {check <rev> | staged | push | --plant}",
-                  file=sys.stderr)
-            return SKIP
+            return mode_staged(ROOT, ack)
         mode = argv[0]
         if mode == "check":
             return mode_check(ROOT, argv[1] if len(argv) > 1 else "HEAD", ack)

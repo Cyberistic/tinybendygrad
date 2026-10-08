@@ -21,6 +21,7 @@
 .agents/slop/hooks/_plant.py	add
 .agents/slop/hooks/_probe_hooks.py	add
 .agents/slop/hooks/_wireplant.py	--cached,add
+.agents/slop/indextree/census.py	--porcelain,add,ls-files,read-tree
 .agents/slop/inst13/recount.py	ls-files
 .agents/slop/jjhazard/mechanism_demo.py	--cached,add
 .agents/slop/jjhazard/primitive_tests.py	--cached,add,read-tree
@@ -29,6 +30,8 @@
 .agents/slop/jjreset/git-massdelete-gate.py	--cached,add
 .agents/slop/lostinst/crosscheck.py	ls-files
 .agents/slop/needsaudit/plant.py	--cached,add
+.agents/slop/onemodule/plant.py	add
+.agents/slop/onemodule/probe.py	ls-files
 .agents/slop/orcfix/discover.py	ls-files
 .agents/slop/orcfix/identity.py	ls-files
 .agents/slop/orcfix/lanes.py	ls-files
@@ -45,12 +48,15 @@
 .agents/slop/slopfinal/needs.move.py	--cached,add
 .agents/slop/sloptxt/plan.py	ls-files
 .agents/slop/sloptxt/readers.py	ls-files
+.agents/slop/substrateid2/census.py	ls-files
+.agents/slop/suffixset/suffix-census.py	ls-files
 .agents/slop/toolsledger/extract.py	ls-files
 .agents/slop/toolsledger/probe.py	ls-files
 .agents/slop/txt259/discover.py	ls-files
 .agents/slop/unknowns/plant-unknown.py	--cached,add
 .agents/slop/unknowns/residue-vs-sweep.py	ls-files
 .agents/slop/unknowns/what-delete-catches.py	--porcelain
+.agents/slop/untrack/prune.py	ls-files
 .agents/slop/upstream-delta.py	ls-files
 checks/git-index-guard.py	--cached
 checks/oracle-txt-census.py	ls-files
@@ -61,5 +67,6 @@ checks/sweep.py	--porcelain,ls-files
 checks/txt-owners.py	ls-files
 checks/wallcheck.py	--porcelain
 gates/git-massdelete-gate.py	--cached,add
+gates/msgdiff-gate.py	add
 gates/retention-check.py	ls-files
-# TOTAL 61
+# TOTAL 68
