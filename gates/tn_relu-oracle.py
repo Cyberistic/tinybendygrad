@@ -25,3 +25,5 @@ print(f"relu_arg_is_anone={int(r.uop.arg is None)}")
 print(f"relu_does_not_mutate_input={int(c.op is Ops.CONST and r.uop.op is Ops.WHERE)}")
 print(f"relu_has_three_srcs={int(len(r.uop.src) == 3)}")
 print(f"relu_is_reachable={int(1)}")
+# src[2] is the CONST 0, by VALUE. `(self > 0).where(self, 0)` -- the third src is the literal.
+print(f"relu_src2_is_const0={int(r.uop.src[2].arg == 0)}")

@@ -261,6 +261,17 @@ def tn_new(+ar: O.Arena, uop: U32) -> Tensor:
 def tn_alu.put(+f: O.Found) -> Tensor:
   tn_new(O.Found.ar(f), O.Found.i(f))
 
+# WRAP A `Found` AS A `Tensor`: `tn_alu.put` AND NOTHING ELSE. `Found.ar` is the arena the
+# build RETURNED, so `O.Found.i(f)` is only meaningful in it. Writing this out by hand as
+# `tn_new(Tensor.ar(t), O.Found.i(c))` -- the arena the CALLER had before `c` was interned --
+# is the single most repeated mistake in this file: it has been found and fixed FIVE times
+# (`tn_logical_not.cmpne`, `tn_bitwise_not`, `tn_neg.arith`, `tn_isfinite.ct`, and the four
+# `*t` const-wrappers `tn_relu.c0t` / `tn_relu6.c6t` / `tn_ceil.c1t` / `tn_floor.c1t`).
+# The failure is quiet in three different ways -- a node that is its own src, a `NOOP` bottom
+# read out of range, or a LEGAL but WRONG index (`ceil` computed `b + 4` for a `CInt{4}` input,
+# with no NOOP anywhere) -- which is why no gate caught it and why this comment exists.
+# USE `tn_alu.put`. It cannot be written wrong.
+
 # ===========================================================================
 def tn_alu.of(+ar: O.Arena, uop: U32, +op: O.Op, srcs: List<&2, U32>) -> Tensor:
   tn_alu.put(O.UOp.alu(ar, op, List.append(&2, U32, [uop], srcs)))
@@ -686,14 +697,14 @@ def tn_rcmplt(+lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_relu.c0(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(0)})
 
-def tn_relu.c0t(+t: Tensor, +c0: O.Found) -> Tensor:
-  tn_new(Tensor.ar(t), O.Found.i(c0))
+def tn_relu.c0t(+c0: O.Found) -> Tensor:
+  tn_new(O.Found.ar(c0), O.Found.i(c0))
 
 def tn_relu.gt0(+t: Tensor, +c0: O.Found) -> Tensor:
-  tn_rcmplt(t, tn_relu.c0t(t, c0))
+  tn_rcmplt(t, tn_relu.c0t(c0))
 
 def tn_relu.go(+t: Tensor, +gt0: Tensor, +c0: O.Found) -> Tensor:
-  tn_where(gt0, t, tn_relu.c0t(t, c0))
+  tn_where(gt0, t, tn_relu.c0t(c0))
 
 def tn_relu(+t: Tensor) -> Tensor:
   +c0 = tn_relu.c0(t)
@@ -710,14 +721,14 @@ def tn_relu(+t: Tensor) -> Tensor:
 def tn_relu6.c6(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(6)})
 
-def tn_relu6.c6t(+t: Tensor, +c6: O.Found) -> Tensor:
-  tn_new(Tensor.ar(t), O.Found.i(c6))
+def tn_relu6.c6t(+c6: O.Found) -> Tensor:
+  tn_new(O.Found.ar(c6), O.Found.i(c6))
 
 def tn_relu6.lt6(+t: Tensor, +r: Tensor, +c6: O.Found) -> Tensor:
-  tn_rcmplt(r, tn_relu6.c6t(t, c6))
+  tn_rcmplt(r, tn_relu6.c6t(c6))
 
 def tn_relu6.go(+t: Tensor, +r: Tensor, +lt6: Tensor, +c6: O.Found) -> Tensor:
-  tn_where(lt6, r, tn_relu6.c6t(t, c6))
+  tn_where(lt6, r, tn_relu6.c6t(c6))
 
 def tn_relu6(+t: Tensor) -> Tensor:
   +c6 = tn_relu6.c6(t)
@@ -730,8 +741,8 @@ def tn_relu6(+t: Tensor) -> Tensor:
 # the blockers. `tn_trunc` is ported (tensor.bend:320), and the arith is
 # `tn_add(b, c1t)` -- `tn_add` is ported (tensor.bend:523), the CONST 1 is
 # `tn_ceil.c1` (a `O.UOp.const`, ported at ops.bend:2922), and `c1t` is a
-# Tensor wrapping the CONST, the same `tn_new(Tensor.ar(t), O.Found.i(c1))`
-# shape `tn_relu.c0t` (tensor.bend:580) uses. The cond `(self > b)` is
+# Tensor wrapping the CONST -- `tn_alu.put` over the `Found`, the one spelling
+# that cannot name the wrong arena (see the note above `tn_alu.put`). The cond `(self > b)` is
 # `tn_rcmplt(self, b)` (tensor.bend:568, the `reverse=True` arm of `tn_cmplt`),
 # the `where(cond, b+1, b)` is `tn_where` (tensor.bend:369). The body is a
 # 4-step chain built in the same shape `tn_relu` / `tn_relu6` use: `b :=
@@ -747,11 +758,11 @@ def tn_ceil.gt(+t: Tensor, +b: Tensor) -> Tensor:
 def tn_ceil.c1(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
 
-def tn_ceil.c1t(+t: Tensor, +c1: O.Found) -> Tensor:
-  tn_new(Tensor.ar(t), O.Found.i(c1))
+def tn_ceil.c1t(+c1: O.Found) -> Tensor:
+  tn_new(O.Found.ar(c1), O.Found.i(c1))
 
 def tn_ceil.bp1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
-  tn_add(b, tn_ceil.c1t(t, c1))
+  tn_add(b, tn_ceil.c1t(c1))
 
 def tn_ceil.go(+t: Tensor, +gt: Tensor, +bp1: Tensor, +b: Tensor) -> Tensor:
   tn_where(gt, bp1, b)
@@ -779,11 +790,11 @@ def tn_floor.lt(+t: Tensor, +b: Tensor) -> Tensor:
 def tn_floor.c1(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
 
-def tn_floor.c1t(+t: Tensor, +c1: O.Found) -> Tensor:
-  tn_new(Tensor.ar(t), O.Found.i(c1))
+def tn_floor.c1t(+c1: O.Found) -> Tensor:
+  tn_new(O.Found.ar(c1), O.Found.i(c1))
 
 def tn_floor.bm1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
-  tn_sub(b, tn_floor.c1t(t, c1))
+  tn_sub(b, tn_floor.c1t(c1))
 
 def tn_floor.go(+t: Tensor, +lt: Tensor, +bm1: Tensor, +b: Tensor) -> Tensor:
   tn_where(lt, bm1, b)
@@ -1323,11 +1334,15 @@ def tn_replace.same.of(+a: Maybe<&2, List<&2, O.Sint>>, b: Maybe<&2, List<&2, O.
 def tn_replace.same(+t: Tensor, +x: Tensor) -> Bool:
   tn_replace.same.of(tn_dims(t), tn_dims(x))
 
+# `Tensor.ar(t)` AND `Tensor.u(x)` FROM TWO TENSORS, so this is the arena rule again and it
+# is only correct when `x`'s index is legal in `t.ar` -- same arena, or a descendant. That
+# holds for the two callers (the self-test region, one shared arena) and for no other. It has
+# no production caller, so it is NOT merged; a caller that has two independent tensors must
+# `O.Arena.merge` first. Recorded because a reader who copies this line copies the bug.
 def tn_replace.of(same: Bool, +t: Tensor, +x: Tensor) -> Maybe<&2, Tensor>:
   match same:
     case True{}: Some{tn_new(Tensor.ar(t), Tensor.u(x))}
     case _: None{}
-
 def tn_replace(+t: Tensor, +x: Tensor) -> Maybe<&2, Tensor>:
   tn_replace.of(tn_replace.same(t, x), t, x)
 

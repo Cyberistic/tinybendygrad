@@ -23,6 +23,15 @@ def mk_tensor() -> T.Tensor:
 # CPython's relu6 is `((r := self.relu()) < 6).where(r, 6)`. The relu and the
 # `6` are both ported (`tn_relu` builds a WHERE; `O.UOp.const` builds the 6).
 
+# src[2] IS THE CONST 6, BY VALUE. Same hole as `tn_relu`'s -- `tn_relu6.c6t` wrapped the
+# const in the pre-const arena and src[2] came out the NOOP bottom.
+def relu6_src2_is_const6() -> Bool:
+  +t = mk_tensor()
+  +r = T.tn_relu6(t)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_arg(O.Arena.arg(ar, O.Arena.src(ar, i, 2)), O.APy{O.CInt{H.i64_of_i32(6)}})
+
 def row_relu6_op() -> Bool:
   +t = mk_tensor()
   +r = T.tn_relu6(t)
@@ -54,4 +63,5 @@ def main() -> IO(Unit):
     c : Unit <- row("relu6_does_not_mutate_input", row_relu6_pure())
     d : Unit <- row("relu6_has_three_srcs", row_relu6_three_srcs())
     e : Unit <- row("relu6_is_reachable", row_relu6_reachable())
+    f : Unit <- row("relu6_src2_is_const6", relu6_src2_is_const6())
     return Unit{}

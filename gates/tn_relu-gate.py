@@ -22,6 +22,7 @@ ROWS = (
     "relu_does_not_mutate_input",
     "relu_has_three_srcs",
     "relu_is_reachable",
+    "relu_src2_is_const0",
 )
 
 GATE = Gate(
@@ -33,7 +34,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_relu-gate: 5 rows, 3 lanes -- tn_relu's op/arg/srcs/purity "
+    sys.exit(main(GATE, "tn_relu-gate: 6 rows, 3 lanes -- tn_relu's op/arg/srcs/purity "
                         "and reachability all agree with CPython's Tensor.relu "
                         "(the WHERE-chain composition; _broadcasted seam still "
                         "walls the broadcasting case)"))

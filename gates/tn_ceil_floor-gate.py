@@ -37,6 +37,8 @@ ROWS = (
     "ceil_src1_is_add",
     "floor_src1_is_add",
     "floor_src1_is_mul_by_neg1",
+    "ceil_c1_is_const1",
+    "floor_c1_is_const1",
 )
 
 GATE = Gate(
@@ -48,7 +50,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_ceil_floor-gate: 14 rows, 3 lanes -- tn_ceil and tn_floor "
+    sys.exit(main(GATE, "tn_ceil_floor-gate: 16 rows, 3 lanes -- tn_ceil and tn_floor "
                         "both agree with CPython's Tensor.ceil / Tensor.floor "
                         "(the WHERE-chain composition of trunc + cmplt + add/sub + "
                         "where; _broadcasted seam still walls the broadcasting case)"))

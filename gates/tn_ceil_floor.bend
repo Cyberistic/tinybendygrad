@@ -166,6 +166,28 @@ def row_floor_src1_is_mul_by_neg1() -> Bool:
   +i = T.Tensor.u(r)
   O.eq_op(O.Arena.op(ar, O.Arena.src(ar, O.Arena.src(ar, i, 1), 1)), O.OpsMUL{})
 
+# THE CONST VALUES, WHICH THE `*_src1_*` ROWS ABOVE STILL DO NOT CHECK. Those say src[1] is an
+# ADD; these say the ADD's second operand is the CONST 1 and not whatever index 0 happened to
+# hold. `tn_ceil.c1t` / `tn_floor.c1t` wrapped the const in `Tensor.ar(t)`, the arena as it
+# stood BEFORE the const was interned, so `tn_add(b, c1t)` merged an arena whose index 1 was
+# out of range and read the default 0 -- the INPUT const. NO NOOP APPEARED, so the corruption
+# was silent: `ceil` computed `b + 4` for a `CInt{4}` input.
+def row_ceil_c1_is_const1() -> Bool:
+  +c = mk_tensor()
+  +r = T.tn_ceil(c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_arg(O.Arena.arg(ar, O.Arena.src(ar, O.Arena.src(ar, i, 1), 1)),
+    O.APy{O.CInt{H.i64_of_i32(1)}})
+
+def row_floor_c1_is_const1() -> Bool:
+  +c = mk_tensor()
+  +r = T.tn_floor(c)
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  O.eq_arg(O.Arena.arg(ar, O.Arena.src(ar, O.Arena.src(ar, O.Arena.src(ar, i, 1), 1), 0)),
+    O.APy{O.CInt{H.i64_of_i32(1)}})
+
 def main() -> IO(Unit):
   do IO<Unit>:
     a   : Unit <- row("ceil_op_is_where", row_ceil_op())
@@ -182,4 +204,6 @@ def main() -> IO(Unit):
     l   : Unit <- row("ceil_src1_is_add", row_ceil_src1_is_add())
     m   : Unit <- row("floor_src1_is_add", row_floor_src1_is_add())
     n   : Unit <- row("floor_src1_is_mul_by_neg1", row_floor_src1_is_mul_by_neg1())
+    o   : Unit <- row("ceil_c1_is_const1", row_ceil_c1_is_const1())
+    p   : Unit <- row("floor_c1_is_const1", row_floor_c1_is_const1())
     return Unit{}

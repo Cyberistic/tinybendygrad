@@ -24,6 +24,7 @@ ROWS = (
     "relu6_does_not_mutate_input",
     "relu6_has_three_srcs",
     "relu6_is_reachable",
+    "relu6_src2_is_const6",
 )
 
 GATE = Gate(
@@ -35,6 +36,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_relu6-gate: 5 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity "
+    sys.exit(main(GATE, "tn_relu6-gate: 6 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity "
                         "and reachability all agree with CPython's Tensor.relu6 "
                         "(the nested WHERE-chain composition)"))

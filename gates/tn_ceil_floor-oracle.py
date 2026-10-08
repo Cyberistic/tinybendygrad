@@ -70,3 +70,7 @@ print(f"ceil_floor_is_reachable={int(1)}")
 print(f"ceil_src1_is_add={int(r_ceil.uop.src[1].op is Ops.ADD)}")
 print(f"floor_src1_is_add={int(r_floor.uop.src[1].op is Ops.ADD)}")
 print(f"floor_src1_is_mul_by_neg1={int(r_floor.uop.src[1].src[1].op is Ops.MUL)}")
+# THE CONST VALUES. `ceil`'s `b+1` is `ADD(TRUNC, CONST(1))`; `floor`'s `b-1` is
+# `ADD(TRUNC, MUL(CONST(-1), CONST(1)))`, so the 1 is at `.src[1].src[1].src[0]`.
+print(f"ceil_c1_is_const1={int(r_ceil.uop.src[1].src[1].arg == 1)}")
+print(f"floor_c1_is_const1={int(r_floor.uop.src[1].src[1].src[0].arg == 1)}")
