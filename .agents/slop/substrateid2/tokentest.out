@@ -1,0 +1,15 @@
+=== AFTER the fix ===
+  token(0     ) = PASS
+  token(1     ) = FAIL
+  token(3     ) = REFUSED
+  token(5     ) = DEAD
+  token(True  ) = NOT-A-VERDICT(bool)
+  token(False ) = NOT-A-VERDICT(bool)
+  token(4     ) = NOT-A-VERDICT(4)
+  token(99    ) = NOT-A-VERDICT(99)
+  token(IntEnum REFUSED) = REFUSED   <-- the strict form would REFUSE this
+
+=== BEFORE the fix, reproduced ===
+  NAMES[True] -> 'FAIL'   NAMES.get(True,True) -> 'FAIL'  (SILENT)
+  NAMES[False] -> 'PASS'   NAMES.get(False,False) -> 'PASS'  (SILENT)
+  NAMES[4] -> 4   (SKIP is not in this file's vocabulary; the old line printed the bare number)

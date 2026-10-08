@@ -1,0 +1,40 @@
+PLANT stable     start=9ee49405548b end=9ee49405548b step-rcs=[0, 0, 0] -> PASS (this tree IS the substrate that produced the...)
+  OK  : want 0, got 0   [stable: PASS]
+  OK  : want True, got True   [stable: digest did not move]
+PLANT between    end=9ee49405548b now=a258fa092cc8 -> the RUN says PASS, the READER says REFUSED
+  OK  : want 0, got 0   [between: the run itself PASSES]
+  OK  : want 3, got 3   [between: the reader is REFUSED]
+  OK  : want True, got True   [between: rows are EQUAL so the run is not implicated]
+PLANT midrun     start=9ee49405548b end=6674ddbe93cb step-rcs=[0, 0, 1] -> REFUSED
+  OK  : want True, got True   [midrun: a COLD input alone moves the digest]
+  OK  : want True, got True   [midrun: the rows DIFFER]
+  OK  : want 3, got 3   [midrun: REFUSED, never FAILed]
+  OK  : want True, got True   [midrun: the HOT break also shows in the ARTIFACTS]
+PLANT midrun-cold-only step-rcs=[0, 0] -> REFUSED  (every artifact rc=0 and the digest still moved)
+  OK  : want True, got True   [midrun-cold-only: no artifact noticed]
+  OK  : want 3, got 3   [midrun-cold-only: the ROWS noticed]
+PLANT delete-walk before=9ee49405548b after=1b51610d4478 named=NOTHING
+  OK  : want True, got True   [delete-walk: the digest MOVES]
+  OK  : want [], got []   [delete-walk: NOT named -- a walk cannot see its own deletion]
+PLANT delete-cop  before=9ee49405548b after=7e294bb54a64 named=['.agents/slop/graphcmp-empty.bend']
+  OK  : want True, got True   [delete-cop: the digest MOVES]
+  OK  : want ['.agents/slop/graphcmp-empty.bend'], got ['.agents/slop/graphcmp-empty.bend']   [delete-cop: NAMED, not counted]
+  OK  : want 0, got 0   [delete-cop: a run over the SAME population still PASSES]
+  OK  : want 3, got 3   [delete-cop: the run that spanned the deletion is REFUSED]
+  OK  : want True, got True   [delete-cop: and it is NAMED, not just refused]
+PLANT one-line   before=9ee49405548b after=a258fa092cc8 -> REFUSED
+  OK  : want True, got True   [one-line change is DETECTED]
+  OK  : want 12, got 12   [one-line change moves NO row count]
+  OK  : want 3, got 3   [one-line change is REFUSED against a reader holding it]
+  OK  : want True, got True   [CONTROL: digest is stable over an unchanged tree]
+DEAD, NOT A VERDICT: empty-summary.txt holds no key=value row -- it ran and emitted nothing checkable
+PLANT dead       empty summary -> DEAD
+  OK  : want 5, got 5   [dead: an empty summary is DEAD, not PASS]
+DEAD, NOT A VERDICT: /var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/tmph3d816lc/does-not-exist.txt is absent -- there is no run to be a measurement of anything
+PLANT dead       absent summary -> DEAD
+  OK  : want 5, got 5   [dead: an absent summary is DEAD]
+REFUSED, NOT A VERDICT: records no substrate-start= -- a run that does not say which bytes produced it is a measurement with no subject. Re-run `checks/differ.py run`
+PLANT absent     3 rows, no substrate-* -> REFUSED  (an ABSENT row is a complaint, not a pass)
+  OK  : want 3, got 3   [absent rows are REFUSED, not DEAD and not PASS]
+
+PLANT: OK

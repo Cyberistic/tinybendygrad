@@ -1,0 +1,11 @@
+population   : 152 tracked .py under checks+gates/ (git ls-tree -r HEAD)
+index        : 154 .py (git ls-files) -- delta +2
+verdict names: ['PLANTS', 'RED_IS', 'VERDICTS']  (DECL loaded by path from gates/gate-surface.py:237)
+reader scope: 6537 tracked blobs; 353 .py parsed (a reader mentioning neither 'checks/' nor 'gates/' cannot name one); 6184 .py skipped by the prefilter
+
+population 152 = 66 in checks/ + 86 in gates/, by directory walk of git ls-tree -r HEAD
+(a) NAMED by tracked code, INVOKED by none : 88 of 152
+(b) NO verdict declaration (module body)   : 138 of 152
+(c) BOTH                                 : 81 of 152
+    named by NOTHING at all               : 0 of 152
+    shadow copies EXCLUDED from namers    : 15 tracked paths carry a repo copy under .agents/slop/ (gatecensus classify.py defect 1)

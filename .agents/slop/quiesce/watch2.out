@@ -1,0 +1,6 @@
+population : 148 paths (the run's inputs, from snapshot.py)
+window     : 05:46:35..05:56:35 (600s)
+writes     : 1 in 1 file(s); last 05:55:47
+longest gap: 552s  (run needs 294s)
+      1 write(s)  tinybendygrad/uop/fold.bend
+PASS: a quiet window of 552s >= 294s was MEASURED

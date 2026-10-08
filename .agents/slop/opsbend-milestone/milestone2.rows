@@ -1,0 +1,63 @@
+bend_alloc_bump0=0
+bend_alloc_bump1=4
+bend_alloc_bump2=8
+bend_alloc_nbytes=16
+bend_alloc_len1=4
+bend_alloc_len3=8
+bend_alloc_advances=True
+bend_free_is_noop=True
+bend_hexbyte_ef=ef
+bend_hexbyte_00=00
+bend_hexbyte_ff=ff
+bend_hexbyte_3f=3f
+bend_hexbyte_40=40
+bend_hexdig_0=0
+bend_hexdig_9=9
+bend_hexdig_a=a
+bend_hexdig_f=f
+bend_hex_ok_digit=True
+bend_hex_ok_lower=True
+bend_hex_ok_upper=True
+bend_hex_ok_g=False
+bend_hex_odd_drops=True
+bend_hexval_f=15
+bend_hexval_A=10
+ms_store_top=12
+ms_store_len=12
+ms_b0_base=0
+ms_b1_base=4
+ms_b2_base=8
+ms_b0_nbytes=4
+ms_b0_hex_in=efbeadde
+ms_b1_hex_in=0000803f
+ms_b2_hex_in=00000040
+ms_b0_line_in=4 efbeadde
+
+ms_free_noop=4 efbeadde
+
+ms_exit=0
+ms_b0_got=4 00004040
+ms_b0_want=4 00004040
+ms_b0=True
+ms_b1_got=4 0000803f
+ms_b1_want=4 0000803f
+ms_b1=True
+ms_b2_got=4 00000040
+ms_b2_want=4 00000040
+ms_b2=True
+ms_line_count=True
+ms_store_top=12
+ms_store_len=12
+ms_b0_base=0
+ms_b1_base=4
+ms_b2_base=8
+ms_b0_nbytes=4
+ms_b0_hex_in=efbeadde
+ms_b1_hex_in=0000803f
+ms_b2_hex_in=00000040
+ms_b0_line_in=4 efbeadde
+
+ms_free_noop=4 efbeadde
+
+
+bend 2.0.36 is available: run bend update

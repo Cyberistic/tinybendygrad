@@ -39,13 +39,20 @@ the load-bearing part, so it is argued where it is made (`digest()`):
     whole contract is `key=value`.
   * IT NAMES WHICH SUBSTRATE, NOT WHICH FILE. That is deliberate and it is the honest division of
     labour: this row answers "same thing or not", and the file that changed is the DIAGNOSIS
-    (`quiesce/quiesce.py`'s per-path mtime log, `quiesce/snapshot.py --verify`'s named row). A
+    (`quiesce/quiesce.py`'s per-path mtime log, `substrate-snapshot.py --verify`'s named row). A
     digest that named the file would have to be 148 rows, which is the row count above.
 
-THE POPULATION IS DISCOVERED, NOT LISTED. `quiesce/snapshot.py` is LOADED BY PATH and its
+THE POPULATION IS DISCOVERED, NOT LISTED. `checks/substrate-snapshot.py` is LOADED BY PATH and its
 `inputs()` is asked, so this file has no second list of what a run reads -- which is the defect
 `snapshot.py:74-77` is written against, and the defect `coindependent`'s 42 and `gates-pop.py`'s
-`HOMES` are both instances of.
+`HOMES` are both instances.
+
+AND THE DECLARATION IS IN GIT, BESIDE THIS FILE, WHICH IS NOT THE SAME SENTENCE. Measured
+2026-10-08: `git ls-tree -r HEAD -- .agents/slop/quiesce/` answered **0 paths** over 9 files on
+disk, so the one instrument that DEFINES this gate's population was itself outside the tree, and
+a `git archive HEAD` tree carried a gate whose entire population was invisible to it. The
+population's MEMBERS were never the problem -- 137 of 137 `tinybendygrad/` blobs, `differ.py`,
+`devpin.py` and all five `graphcmp*` files are in HEAD -- so `DECLARER` is what moved.
 
 VERDICTS, FIVE, AND WHICH OF THEM CAN HAPPEN HERE. `PASS` (0) the two digests agree, so the
 artifacts are all measurements of one substrate. `REFUSED` (3) the PRECONDITION was absent -- a
@@ -54,6 +61,15 @@ NOT reachable and that is the point: nothing here compares two ANSWERS, it compa
 MEASUREMENTS OF ONE SUBJECT, and a disagreement there is a missing precondition rather than a
 wrong result. `DEAD` (5) the population is empty -- nothing was measured at all. `SKIP` (4) is
 not defined because this file always measures or refuses.
+
+**`DEAD` HAD NO BRANCH. IT IS DECIDED IN `verdict_for()` BY `measured()` NOW, FIRST, BEFORE ANY
+OTHER QUESTION** -- because an empty population makes every other question unaskable. The clause
+above was true of the CONSTANTS and false of the CODE: `judge()` reached `DEAD` only when the
+SUMMARY was absent or keyless, so `--hash` and `--rows` returned `PASS` over 0 inputs on a
+`git archive HEAD` tree, and `verdict_for()` returned `PASS` over 0 inputs to any summary that
+had recorded the empty string's sha256. `judge()` was `DEAD` on that tree BY ACCIDENT -- `runs/`
+is gitignored OUTPUT, so the summary was absent for a reason that has nothing to do with the
+population. A gate whose DEAD is reached by the wrong cause is still a gate that cannot say why.
 """
 from __future__ import annotations
 
@@ -71,9 +87,41 @@ import time
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 SUMMARY = ROOT / "runs/graphcmp/D/D0-run-summary.txt"
 
+#: THE DECLARATION, IN GIT, BESIDE THE GATE THAT ASKS IT. This is the only path this file looks
+#: the population up from, so it is a population by (a) of `AGENTS.md` doctrine 1 -- a generator's
+#: own declaration, loaded by path -- and NOT a hand list, a basename shape or a suffix set.
+DECLARER = "checks/substrate-snapshot.py"
+
 PASS, FAIL, REFUSED, DEAD = 0, 1, 3, 5
 #: gatekit's vocabulary, `gates/gatekit.py:59`: PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5.
 NAMES = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", DEAD: "DEAD"}
+
+
+def token(rc: int) -> str:
+    """The verdict CODE as a WORD, and THE ONLY PLACE THAT HAPPENS.
+
+    `NAMES[...]` appeared **9** times and `NAMES.get(rc, rc)` once in this file's plant -- ten
+    index sites, not the eleven `boolexit` reported (it counted the `:76` DEFINITION as an eleventh
+    use; the uses are ten, verified by `ast` over `ast.Subscript`/`ast.Attribute` on the name
+    `NAMES`). Every one of the ten indexed a dict keyed by `int` with a value whose type nothing
+    declared, and `bool` SUBCLASSES `int`, so a future `return ok` would silently key `NAMES[True]`
+    to `"FAIL"` and `NAMES[False]` to `"PASS"` -- ten sites that print a WRONG VERDICT rather than
+    raising. `NAMES.get(rc, rc)` at the old `:247` is the worst of the ten: its fallback makes it
+    SILENT, so `True` printed `FAIL` with no exception anywhere.
+
+    **THE STRICTER FORM WAS MEASURED AND REJECTED, AND THE COST IS THE POINT.** `type(rc) is int`
+    refuses `bool` -- and also refuses an `IntEnum` verdict vocabulary, which `isinstance` accepts,
+    which hashes equal to its `int` value, and which indexes `NAMES` correctly. So the strict form
+    buys bool-safety by breaking a legitimate encoding of the SAME five verdicts. A stricter fix is
+    not strictly better. This one rejects exactly the type that is wrong (`bool`, named, because
+    `bool` is the only subclass of `int` that is not an int-valued verdict) and keeps `IntEnum`.
+
+    An UNASSIGNED code is a REFUSAL rather than an exception or a bare number, which is
+    `gates/gatekit.py`'s `verdict_of()` rule and not an invention here: a reader that prints `7`
+    has learned nothing, and a reader that raises has lost the summary it was reading."""
+    if isinstance(rc, bool):
+        return f"NOT-A-VERDICT({type(rc).__name__})"
+    return NAMES.get(rc, f"NOT-A-VERDICT({rc})")
 
 #: THE TWO ROWS. `differ.py`'s `ROW_VALUES` shape is a dict literal of key -> value; these are
 #: not constants (they are measurements), so they are joined into the summary the one way the
@@ -81,12 +129,17 @@ NAMES = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", DEAD: "DEAD"}
 ROW_START, ROW_END = "substrate-start", "substrate-end"
 
 
-def _snapshot_mod():
-    """`quiesce/snapshot.py` LOADED BY PATH. Never `import snapshot`: `checks/` and
-    `.agents/slop/quiesce/` are both off `sys.path` for a caller that is not `differ.py`, and an
-    instrument whose population is chosen by a bindable name is an instrument whose population
-    anybody can choose (`gates/gates-pop.py:99-101`)."""
-    p = ROOT / ".agents/slop/quiesce/snapshot.py"
+def _snapshot_mod(root: pathlib.Path | None = None):
+    """`DECLARER` LOADED BY PATH, OUT OF THE ROOT BEING MEASURED. Never `import snapshot`:
+    `checks/` is off `sys.path` for a caller that is not `differ.py`, and an instrument whose
+    population is chosen by a bindable name is an instrument whose population anybody can choose
+    (`gates/gates-pop.py:99-101`).
+
+    `root` IS A PARAMETER AND NOT THE MODULE GLOBAL, AND THAT IS NOT TIDINESS. `DEAD` here means
+    "the declaration is not where it is declared to be", which is a fact ABOUT A ROOT, so the
+    only way the plant can exercise `DEAD` at all is by pointing this loader at a tree that has
+    no declarer -- which is exactly the tree that produced the false green."""
+    p = (root or ROOT) / DECLARER
     if not p.is_file():
         return None
     spec = importlib.util.spec_from_file_location("substrate_id_snapshot", p)
@@ -102,7 +155,7 @@ def population(root: pathlib.Path) -> list[pathlib.Path]:
     declared input that has been deleted is invisible to it -- which is the half `midrun` §1a
     measured and `--declare` (`:151-173`) exists to catch. Asking for both here is what lets
     `digest()` report an ABSENT input instead of a hash over a population that quietly shrank."""
-    mod = _snapshot_mod()
+    mod = _snapshot_mod(root)
     if mod is None:
         return []
     mod.ROOT = root
@@ -119,7 +172,10 @@ def digest(root: pathlib.Path) -> dict:
     A declared-but-absent input contributes its PATH and the token `\\0ABSENT` rather than
     being dropped, so "the input is gone" is a DIFFERENT digest from "the input was never
     declared" -- and a hash that cannot see a deletion is a hash that certifies a tree nobody ran
-    against."""
+    against.
+
+    `declarer` IS A FACT ABOUT THIS MEASUREMENT, recorded beside it rather than inferred by the
+    caller: it is what lets `empty_population()` name a CAUSE instead of only a symptom."""
     h, n, absent, total = hashlib.sha256(), 0, [], 0
     for p in population(root):
         rel = p.relative_to(root).as_posix()
@@ -135,15 +191,45 @@ def digest(root: pathlib.Path) -> dict:
         n += 1
         total += len(body)
     return {"digest": h.hexdigest(), "inputs": n, "declared": n + len(absent),
-            "absent": absent, "bytes": total}
+            "absent": absent, "bytes": total, "declarer": (root / DECLARER).is_file()}
 
 
-def rows(root: pathlib.Path) -> list[str]:
+def measured(here: dict) -> int:
+    """`PASS` over a NON-EMPTY population, `DEAD` over an empty one. **THE ONLY
+    EMPTY-POPULATION CHECK IN THIS FILE**, so the three surfaces that can report a digest --
+    `verdict_for()`, `--hash` and `--rows` -- cannot disagree about it.
+
+    THE DENOMINATOR IS `declared`, NOT `inputs`. A declared-but-absent member is still a member
+    (`snapshot.inputs()`'s `else`), so `inputs == 0` over `declared == 10` is a measurement of ten
+    paths -- three of them absent on purpose -- and only `declared == 0` means nothing was
+    measured at all. Counting `inputs` would have made the two absent probes (`graphcmp-dbg.bend`,
+    `graphcmp-empty.bend`) indistinguishable from a missing population."""
+    return PASS if here["declared"] else DEAD
+
+
+def empty_population(here: dict) -> str:
+    """WHY an empty population is `DEAD`, with the cause named and not just the symptom.
+
+    MEASURED, both halves, on 2026-10-08: a real tree declared 150 inputs and hashed 148; the same
+    gate on a `git archive HEAD` tree declared 0 and hashed 0, and printed `PASS` over the sha256
+    of the empty string. The one-word difference between those two runs is whether `DECLARER` is
+    in git, so the message says that."""
+    cause = ("is ABSENT from this tree, so `population()` is empty and nothing was declared"
+             if not here["declarer"] else
+             "IS PRESENT AND DECLARES NOTHING -- its walk and its copies both came back empty")
+    return (f"the population is EMPTY -- 0 declared inputs, so nothing was measured, and the "
+            f"digest is the sha256 of no bytes at all, which is a value every empty run also has. "
+            f"The declaration, {DECLARER}, {cause}. A gate that reports PASS over 0 inputs is "
+            f"worse than no gate, because it is trusted")
+
+
+def rows(here: dict) -> list[str]:
     """The two lines, in summary order. `substrate-start` is the value the caller took BEFORE
     the run; this helper takes both at one instant so `--rows` is inspectable, and `differ.py`
-    calls `digest()` twice around its own work instead."""
-    d = digest(root)
-    return [f"{ROW_START}={d['digest']}", f"{ROW_END}={d['digest']}"]
+    calls `digest()` twice around its own work instead. It takes the MEASUREMENT rather than the
+    root because `--rows` needs the same dict for `measured()` and re-hashing for it would be a
+    second reading of a population that is only supposed to be read once per row pair."""
+    return [f"{ROW_START}={here['digest']}", f"{ROW_END}={here['digest']}"]
 
 
 def declared_values(text: str) -> dict[str, str]:
@@ -165,11 +251,18 @@ def verdict_for(start: str | None, end: str | None, here: dict) -> tuple[int, st
 
     FIVE verdicts, three of them refusals for three DIFFERENT reasons, each named:
 
+      DEAD(5)     the population is EMPTY. **FIRST, BEFORE EVERY OTHER QUESTION, AND THAT IS THE
+                  ORDER AND NOT THE FORMALITY**: with 0 declared inputs there is no measurement to
+                  compare a row against, so "the rows disagree", "the rows are absent" and "the
+                  run is a measurement of bytes that are not here" are all questions about
+                  nothing, and answering any of them prints a cause that is not the cause. This is
+                  the clause `:55` declared while no code path emitted it.
       REFUSED(3)  a row is ABSENT -- a run that does not say which bytes produced it is a
                   measurement with no subject, and an ABSENT row is a complaint, not a pass.
                   **This is the state every run in this tree is in today**, because no row of
                   `D0-run-summary.txt` names bytes. `DEAD` is reserved for "there is no run at
-                  all" and is decided by `judge()`, which can see the file this cannot.
+                  all" and for "there was no population to be a run of", and is decided by
+                  `measured()` here and by `judge()` where the FILE is the subject.
       REFUSED(3)  the two rows DISAGREE -- the substrate moved DURING the run, so the artifact
                   set is not a set of measurements of one thing.
       REFUSED(3)  a declared input is ABSENT -- `midrun` §1a: `D10-zerorow-guard.txt` currently
@@ -182,6 +275,8 @@ def verdict_for(start: str | None, end: str | None, here: dict) -> tuple[int, st
     NOT `FAIL`, and the reason is the whole design: nothing here compared two ANSWERS. A
     disagreement between two digests says the SUBJECT was not held still, which is an absent
     precondition -- the same reading `quiesce.py:24-25` gives a moving tree."""
+    if measured(here) == DEAD:
+        return DEAD, empty_population(here)
     for key, val in ((ROW_START, start), (ROW_END, end)):
         if val is None:
             return REFUSED, (f"records no {key}= -- a run that does not say which bytes produced "
@@ -189,7 +284,7 @@ def verdict_for(start: str | None, end: str | None, here: dict) -> tuple[int, st
     if start != end:
         return REFUSED, (f"the substrate MOVED DURING THE RUN ({start[:12]} -> {end[:12]}). "
                          "The artifacts are not all measurements of one substrate. DO NOT WAIT "
-                         "-- SNAPSHOT (.agents/slop/quiesce/snapshot.py)")
+                         f"-- SNAPSHOT ({DECLARER})")
     # **AN ABSENT DECLARED INPUT IS A NOTE, NOT A VERDICT, AND THAT IS THE WHOLE ARGUMENT.**
     # The digest is computed over `path` + `bytes` OR `path` + `ABSENT`, so a reader whose
     # digest EQUALS the run's already proves both populations have the same paths and the same
@@ -225,12 +320,20 @@ def judge(summary: pathlib.Path, root: pathlib.Path | None = None) -> int:
     the rows a MEASUREMENT rather than a LABEL, and it is a FUNCTION a caller can import rather
     than a `PINS` literal that has to be re-pinned whenever the port's next fix lands.
 
-    `DEAD` IS DECIDED HERE AND ONLY HERE, because it is the one verdict that is about the FILE
-    rather than about its contents: a summary that does not exist, or exists and holds no
-    `key=value` row at all, is `DEAD` -- it ran and emitted nothing checkable. A summary with
-    twenty-two rows and no `substrate-*` is `REFUSED`, because it emitted plenty and one
-    precondition is absent, and collapsing those two is exactly the `SKIP IS NOT PASS` /
-    `DEAD IS NOT A ZERO` defect `AGENTS.md` doctrine 2 records."""
+    `DEAD` HAS TWO SUBJECTS AND IS DECIDED ON BOTH. **THE POPULATION** is decided by
+    `verdict_for()`, which cannot see this file, so it is checked there and the row comparisons
+    that follow it are comparisons about something. **THE SUMMARY** is decided here, because it
+    is the one verdict that is about the FILE rather than about its contents: a summary that does
+    not exist, or exists and holds no `key=value` row at all, is `DEAD` -- it ran and emitted
+    nothing checkable. A summary with twenty-two rows and no `substrate-*` is `REFUSED`, because it
+    emitted plenty and one precondition is absent, and collapsing those two is exactly the
+    `SKIP IS NOT PASS` / `DEAD IS NOT A ZERO` defect `AGENTS.md` doctrine 2 records.
+
+    The population is checked by `verdict_for()` and NOT re-checked here, so the two `DEAD`s
+    cannot both fire with two different messages. `runs/` is gitignored OUTPUT, so on a
+    `git archive HEAD` tree this summary is absent and this function returned `DEAD` FOR THE WRONG
+    REASON while `--hash` on the same tree returned `PASS`; the population is the earlier
+    question and now the earlier branch."""
     if not summary.exists():
         print(f"DEAD, NOT A VERDICT: {summary} is absent -- there is no run to be a measurement "
               "of anything")
@@ -244,7 +347,7 @@ def judge(summary: pathlib.Path, root: pathlib.Path | None = None) -> int:
     here = digest(root or ROOT)
     rc, why = verdict_for(got.get(ROW_START), got.get(ROW_END), here)
     tail = ", NOT A VERDICT" if rc == REFUSED else ""
-    print(f"{NAMES.get(rc, rc)}{tail}: {why}")
+    print(f"{token(rc)}{tail}: {why}")
     print(note_absent(here), end="")
     return rc
 
@@ -260,13 +363,21 @@ def _seed(root: pathlib.Path) -> None:
     (`graphcmp-dbg.bend`, `graphcmp-empty.bend`), because `verdict_for` refuses an absent
     declared input -- a plant whose tree is permanently REFUSED for a reason the plant did not
     cause measures nothing. `snapshot.COPIES` is ASKED, not copied, so this stays correct when a
-    fourth entry is added."""
+    fourth entry is added.
+
+    **THE DECLARATION IS SEEDED TOO, AND OMITTING IT WOULD HAVE BROKEN EVERY CASE ABOVE.** The
+    loader asks the tree being measured for its declaration (`_snapshot_mod(root)`), because a
+    tree whose declarer is missing is exactly the tree that must be DEAD and a seed that quietly
+    borrowed the real one would make `DEAD` unreachable in the plant while remaining trivially
+    reachable in production. So the scratch tree carries its own copy of `DECLARER` -- one file,
+    byte-identical to the gate's, and asked the same way."""
     mod = _snapshot_mod()
     (root / "tinybendygrad/uop").mkdir(parents=True)
     (root / "tinybendygrad/uop/ops.bend").write_text("def op: 0\n" * 40)
     (root / "tinybendygrad/PROOF.bend").write_text("theorem t: True\n" * 20)
     (root / "checks").mkdir(parents=True)
     (root / "bin").mkdir()
+    shutil.copyfile(ROOT / DECLARER, root / DECLARER)
     for c in mod.COPIES:
         p = root / c
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -326,7 +437,7 @@ def plant() -> int:
         end = digest(tree)
         rc, why = verdict(tree, start["digest"], end["digest"])
         print(f"PLANT stable     start={start['digest'][:12]} end={end['digest'][:12]} "
-              f"step-rcs={rcs} -> {NAMES[rc]} ({why[:44]}...)")
+              f"step-rcs={rcs} -> {token(rc)} ({why[:44]}...)")
         bad += _expect("stable: PASS", rc, PASS)
         bad += _expect("stable: digest did not move", start["digest"] == end["digest"], True)
 
@@ -344,7 +455,7 @@ def plant() -> int:
         rc_run, _ = verdict_for(start["digest"], end["digest"], end)
         rc_read, why = verdict_for(start["digest"], end["digest"], now)
         print(f"PLANT between    end={end['digest'][:12]} now={now['digest'][:12]} -> "
-              f"the RUN says {NAMES[rc_run]}, the READER says {NAMES[rc_read]}")
+              f"the RUN says {token(rc_run)}, the READER says {token(rc_read)}")
         bad += _expect("between: the run itself PASSES", rc_run, PASS)
         bad += _expect("between: the reader is REFUSED", rc_read, REFUSED)
         bad += _expect("between: rows are EQUAL so the run is not implicated",
@@ -364,7 +475,7 @@ def plant() -> int:
         end = digest(tree)
         rc, why = verdict_for(start["digest"], end["digest"], end)
         print(f"PLANT midrun     start={start['digest'][:12]} end={end['digest'][:12]} "
-              f"step-rcs={rcs} -> {NAMES[rc]}")
+              f"step-rcs={rcs} -> {token(rc)}")
         bad += _expect("midrun: a COLD input alone moves the digest", cold_moved, True)
         bad += _expect("midrun: the rows DIFFER", start["digest"] != end["digest"], True)
         bad += _expect("midrun: REFUSED, never FAILed", rc, REFUSED)
@@ -379,7 +490,7 @@ def plant() -> int:
         rcs.append(_steps(tree, out, 1))
         end = digest(tree)
         rc, _ = verdict_for(start["digest"], end["digest"], end)
-        print(f"PLANT midrun-cold-only step-rcs={rcs} -> {NAMES[rc]}  "
+        print(f"PLANT midrun-cold-only step-rcs={rcs} -> {token(rc)}  "
               f"(every artifact rc=0 and the digest still moved)")
         bad += _expect("midrun-cold-only: no artifact noticed", not any(rcs), True)
         bad += _expect("midrun-cold-only: the ROWS noticed", rc, REFUSED)
@@ -433,7 +544,7 @@ def plant() -> int:
         again = digest(tree)
         rc, _ = verdict_for(before["digest"], before["digest"], after)
         print(f"PLANT one-line   before={before['digest'][:12]} after={after['digest'][:12]} "
-              f"-> {NAMES[rc]}")
+              f"-> {token(rc)}")
         bad += _expect("one-line change is DETECTED", before["digest"] != after["digest"], True)
         bad += _expect("one-line change moves NO row count", after["inputs"], before["inputs"])
         bad += _expect("one-line change is REFUSED against a reader holding it", rc, REFUSED)
@@ -445,18 +556,49 @@ def plant() -> int:
         empty = tdp / "empty-summary.txt"
         empty.write_text("")
         rc_empty = judge(empty, tree)
-        print(f"PLANT dead       empty summary -> {NAMES[rc_empty]}")
+        print(f"PLANT dead       empty summary -> {token(rc_empty)}")
         bad += _expect("dead: an empty summary is DEAD, not PASS", rc_empty, DEAD)
         rc_gone = judge(tdp / "does-not-exist.txt", tree)
-        print(f"PLANT dead       absent summary -> {NAMES[rc_gone]}")
+        print(f"PLANT dead       absent summary -> {token(rc_gone)}")
         bad += _expect("dead: an absent summary is DEAD", rc_gone, DEAD)
         # AND THE STATE EVERY RUN IN THIS TREE IS IN: 22 rows, none of which names bytes.
         no_sub = tdp / "no-substrate-rows.txt"
         no_sub.write_text("graphs=34\ngraphs-unset=0\ndev=CPU\n")
         rc_nosub = judge(no_sub, tree)
-        print(f"PLANT absent     3 rows, no substrate-* -> {NAMES[rc_nosub]}  "
+        print(f"PLANT absent     3 rows, no substrate-* -> {token(rc_nosub)}  "
               f"(an ABSENT row is a complaint, not a pass)")
         bad += _expect("absent rows are REFUSED, not DEAD and not PASS", rc_nosub, REFUSED)
+
+        # CASE 7 -- THE EMPTY POPULATION, WHICH IS WHAT A `git archive HEAD` TREE WAS. This is the
+        # case that had NO BRANCH: `git ls-tree -r HEAD -- .agents/slop/quiesce/` answered 0 paths
+        # over 9 files on disk, so on a tree that HAS the declarer this gate hashed 0 inputs and
+        # returned PASS over the sha256 of the empty string. Reproduced here on a tree that has no
+        # declarer at all, which is the same state reached the honest way.
+        #
+        # `no-declarer` is an EMPTY directory. `_seed()` is NOT called on it, deliberately: a tree
+        # seeded from the declaration has a population by construction, so it can only ever reach
+        # PASS or REFUSED, and a plant that cannot build the failing state cannot prove the fix.
+        bare = tdp / "no-declarer"
+        bare.mkdir()
+        d_bare = digest(bare)
+        rc_bare, why_bare = verdict_for(d_bare["digest"], d_bare["digest"], d_bare)
+        print(f"PLANT empty      declared={d_bare['declared']} inputs={d_bare['inputs']} "
+              f"digest={d_bare['digest'][:12]} -> {token(rc_bare)}")
+        print(f"  cause: {why_bare[:96]}...")
+        bad += _expect("empty: the population really is 0 declared", d_bare["declared"], 0)
+        bad += _expect("empty: the digest IS the sha256 of the empty string",
+                       d_bare["digest"],
+                       "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855")
+        bad += _expect("empty: DEAD, and never PASS", rc_bare, DEAD)
+        bad += _expect("empty: the CAUSE is named, not only the symptom",
+                       DECLARER in why_bare and "ABSENT" in why_bare, True)
+        bad += _expect("empty: measured() and verdict_for() cannot disagree",
+                       measured(d_bare), rc_bare)
+        # AND THE CONTROL THAT PROVES THE GUARD IS NOT MERELY A CONSTANT THAT NEVER FIRES: the
+        # SAME function on a tree whose declarer is present must not be DEAD.
+        d_seeded = digest(tdp / "s5")
+        bad += _expect("CONTROL: a seeded tree with the declarer present is not DEAD",
+                       measured(d_seeded), PASS)
 
     print(f"\nPLANT: {'OK' if not bad else f'{bad} MISMATCH(ES)'}")
     return 0 if not bad else 1
@@ -518,11 +660,17 @@ def main() -> int:
     if a.cost:
         return cost(a.sweeps)
     if a.hash:
-        print(json.dumps(digest(ROOT), sort_keys=True))
-        return PASS
+        d = digest(ROOT)
+        print(json.dumps(d, sort_keys=True))
+        if measured(d) == DEAD:
+            print(empty_population(d), file=sys.stderr)
+        return measured(d)
     if a.rows:
-        print("\n".join(rows(ROOT)))
-        return PASS
+        d = digest(ROOT)
+        print("\n".join(rows(d)))
+        if measured(d) == DEAD:
+            print(empty_population(d), file=sys.stderr)
+        return measured(d)
     if a.judge:
         return judge(pathlib.Path(a.judge))
     ap.print_help()

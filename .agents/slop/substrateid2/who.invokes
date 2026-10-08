@@ -1,0 +1,15 @@
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+reader scope: 6537 tracked blobs; 353 .py parsed (a reader mentioning neither 'checks/' nor 'gates/' cannot name one); 6184 .py skipped by the prefilter
+checks/substrate-id.py
+    .agents/slop/denominator/reach.tsv
+    .agents/slop/denominator/sites.tsv
+    .agents/slop/onemodule/probe.rows
+    .agents/slop/onemodule/vocab.rows
+    .agents/slop/plantthe46/vocab-now.out
+    .agents/slop/plantthe46/vocabcheck.out
+    .agents/slop/residue/000-the-residue.md
+    .agents/slop/residue/003-disagreements.md
+    .agents/slop/substrateid/blockers.out
+    .agents/slop/substrateid/impact.py
+    .agents/slop/subtree/census6.rows
+    gates/gates-pop.ledger.tsv
