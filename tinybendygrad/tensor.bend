@@ -698,7 +698,7 @@ def tn_relu.c0(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(0)})
 
 def tn_relu.c0t(+c0: O.Found) -> Tensor:
-  tn_new(O.Found.ar(c0), O.Found.i(c0))
+  tn_alu.put(c0)
 
 def tn_relu.gt0(+t: Tensor, +c0: O.Found) -> Tensor:
   tn_rcmplt(t, tn_relu.c0t(c0))
@@ -722,7 +722,7 @@ def tn_relu6.c6(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(6)})
 
 def tn_relu6.c6t(+c6: O.Found) -> Tensor:
-  tn_new(O.Found.ar(c6), O.Found.i(c6))
+  tn_alu.put(c6)
 
 def tn_relu6.lt6(+t: Tensor, +r: Tensor, +c6: O.Found) -> Tensor:
   tn_rcmplt(r, tn_relu6.c6t(c6))
@@ -759,7 +759,7 @@ def tn_ceil.c1(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
 
 def tn_ceil.c1t(+c1: O.Found) -> Tensor:
-  tn_new(O.Found.ar(c1), O.Found.i(c1))
+  tn_alu.put(c1)
 
 def tn_ceil.bp1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
   tn_add(b, tn_ceil.c1t(c1))
@@ -791,7 +791,7 @@ def tn_floor.c1(+t: Tensor) -> O.Found:
   O.UOp.const(Tensor.ar(t), O.CInt{H.i64_of_i32(1)})
 
 def tn_floor.c1t(+c1: O.Found) -> Tensor:
-  tn_new(O.Found.ar(c1), O.Found.i(c1))
+  tn_alu.put(c1)
 
 def tn_floor.bm1(+t: Tensor, +b: Tensor, +c1: O.Found) -> Tensor:
   tn_sub(b, tn_floor.c1t(c1))
