@@ -144,8 +144,8 @@ def nn_i64_app(xs: List<&2, H.I64>, v: H.I64) -> List<&2, H.I64>:
 
 # ---------------------------------------------------------------------------
 # `make_tuple` -- tinygrad/helpers.py:51, `(x,)*cnt` when x is an int and
-# `tuple(x)` otherwise. `H.make_tuple_rep` (helpers.bend:828) and
-# `H.to_tuple_seq` (helpers.bend:839) are that pair already, so
+# `tuple(x)` otherwise. `H.make_tuple_rep` and
+# `H.to_tuple_seq` are that pair already, so
 # they are CALLED and not re-spelled; the two arms are the two call sites
 # `Conv2d.__init__` (:98, :102) needs, because `kernel_size` is `int|tuple`.
 def nn_mt(x: U32, cnt: U32) -> List<&2, U32>: H.make_tuple_rep(x, cnt)
@@ -238,45 +238,45 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 #   mixin/op.bend (they are the reduce.py:73/:20/:47 hoists) and are callable. They
 #   are not inlined here because every `__call__` in this file is a mixin METHOD and
 #   naming the call IS the port; inlining a callee would be a second port.
-# PARTIALLY PORTED. `Tensor.sqrt` is ported at `tensor.bend:294` as `tn_sqrt` and
-# gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.detach` is ported at
-# `tensor.bend:296` as `tn_detach` and gated at `gates/tn_detach-gate.py` 5/5 rows.
+# PARTIALLY PORTED. `Tensor.sqrt` is ported as `tn_sqrt` and
+# gated at `gates/tn_sqrt-gate.py` 5/5 rows. `Tensor.detach` is ported
+# as `tn_detach` and gated at `gates/tn_detach-gate.py` 5/5 rows.
 # The wall text said `detach` was `self.replace(arg=KernelInfo())` -- and that
 # description is the FULL version CPython uses, but the one-liner
 # `return self.alu(Ops.DETACH)` is what `Tensor.detach` does in `elementwise.py:43`,
-# and THAT is what the port covers. `Tensor.bitwise_not` BOOL arm is ported at
-# `tensor.bend:338` as `tn_bitwise_not`, gated at `gates/tn_bitwise_not-gate.py` 8/8
-# rows; `Tensor.logical_not` is ported at `tensor.bend:352` as `tn_logical_not`,
-# gated at `gates/tn_logical_not-gate.py` 4/4 rows. The arith arms of `bitwise_not`
-# stay walled on the dtype fold + arith ops, named at `tensor.bend:308`.
+# and THAT is what the port covers. `Tensor.bitwise_not` BOOL arm is ported
+# as `tn_bitwise_not`, gated at `gates/tn_bitwise_not-gate.py` 8/8
+# rows; `Tensor.logical_not` is ported as `tn_logical_not`,
+# gated at `gates/tn_logical_not-gate.py` 8/8 rows. The arith arms of `bitwise_not`
+# stay walled on the dtype fold + arith ops, named below.
 # `Tensor.contiguous_backward`, `Tensor.trunc`, `Tensor.reciprocal`, and
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
-# :474, :460, :457), at `tensor.bend:302, 307, 311, 315`, gated at
+# :474, :460, :457), gated at
 # `gates/tn_contiguous_backward-gate.py` and `gates/tn_trunc_reciprocal_threefry-gate.py`.
-# `Tensor.where` (elementwise.py:426) is ported at `tensor.bend:369` as `tn_where`
+# `Tensor.where` (elementwise.py:426) is ported as `tn_where`
 # for the no-broadcasting case (`self.ufix(x)._broadcasted(y)` collapses to identity
 # when x and y are already Tensors of the same shape, and the body is then
 # `tn_alu(cond, O.OpsWHERE{}, [x, y])`), gated at `gates/tn_where-gate.py` 5/5 rows.
 # The broadcasting case stays walled on `_broadcasted`. `Tensor.__mul__`
-# (elementwise.py:125) and its `__rmul__` arm (elementwise.py:300) are ported at
-# `tensor.bend:466, 471, 474` as `tn_mul.go` / `tn_mul` / `tn_rmul` for the
+# (elementwise.py:125) and its `__rmul__` arm (elementwise.py:300) are ported
+# as `tn_mul.go` / `tn_mul` / `tn_rmul` for the
 # no-broadcasting case (`_binop`'s `_broadcasted` is the identity for two same-shape
 # Tensors, so the body is `tn_alu(self, MUL, [Tensor.u(rhs)])` for `__mul__` and
 # `tn_alu(rhs, MUL, [Tensor.u(self)])` for `__rmul__`), gated at
 # `gates/tn_mul-gate.py` 13/13 rows. With `__mul__` ported, `Tensor.square`
-# (elementwise.py:575, `return self * self`) is a one-liner: `tn_square` at
-# `tensor.bend:481` is `tn_mul(t, t)`, gated by the same 13/13 gate. The
+# (elementwise.py:575, `return self * self`) is a one-liner: `tn_square`
+# is `tn_mul(t, t)`, gated by the same 13/13 gate. The
 # broadcasting case for `__mul__`/`__rmul__` stays walled on `_broadcasted` (same
 # wall as `where`). `Tensor.__add__` (elementwise.py:267) and its `__radd__` arm
-# (elementwise.py:295) are ported at `tensor.bend:518, 523, 526` as
+# (elementwise.py:295) are ported as
 # `tn_add.go` / `tn_add` / `tn_radd` for the no-broadcasting case (CPython's
 # `add` writes `a.alu(Ops.ADD, -b)` at elementwise.py:84, :123 -- the `-b` is a
 # CONST trap and a unary minus on a Tensor is also walled, so for two same-shape
 # Tensors the body collapses to `_binop`'s shape with `MUL` replaced by `ADD`:
 # `tn_alu(self, ADD, [Tensor.u(x)])` for `__add__` and `tn_alu(x, ADD, [Tensor.u(self)])`
-# for `__radd__`), gated at `gates/tn_add_sub-gate.py` 17/17 rows. `Tensor.__sub__`
-# (elementwise.py:270) and its `__rsub__` arm (elementwise.py:297) are ported at
-# `tensor.bend:536, 541, 544` as `tn_sub.go` / `tn_sub` / `tn_rsub` for the
+# for `__radd__`), gated at `gates/tn_add_sub-gate.py` 19/19 rows. `Tensor.__sub__`
+# (elementwise.py:270) and its `__rsub__` arm (elementwise.py:297) are ported
+# as `tn_sub.go` / `tn_sub` / `tn_rsub` for the
 # no-broadcasting case (CPython's `sub` is the same `-b` shape at
 # elementwise.py:103, :123, so the port is `_binop`'s shape with `SUB`: same
 # gate). The broadcasting case for `__add__`/`__radd__`/`__sub__`/`__rsub__`
@@ -289,7 +289,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `Tensor.__lshift__`/`__rlshift__` (:366, :372, via `lshift`'s `_binop(Ops.SHL, ...)`),
 # `Tensor.__rshift__`/`__rrshift__` (:369, :375),
 # `Tensor.__pow__`/`__rpow__` (:569, :572, via `pow`'s `_broadcasted + alu(Ops.POW, ...)`)
-# are all ported at `tensor.bend:554-704` as
+# are all ported as
 # `tn_cmplt.go`/`tn_cmplt`/`tn_rcmplt`,
 # `tn_cmpne.go`/`tn_cmpne`,
 # `tn_and.go`/`tn_and`/`tn_rand`,
@@ -311,7 +311,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # for all six stays walled on `_broadcasted` (same wall as `__add__`/
 # `__sub__`/`__mul__`/`__pow__`).
 # `Tensor.__floordiv__` (elementwise.py:279, `self.div(x, rounding_mode="floor")`)
-# and its `__rfloordiv__` arm are ported at `tensor.bend:700, 705, 708` as
+# and its `__rfloordiv__` arm are ported as
 # `tn_fdiv.go` / `tn_fdiv` / `tn_rfdiv` for the no-broadcasting INT case
 # (elementwise.py:252, `if rounding_mode == "floor": return a.alu(Ops.FLOORDIV, b)`,
 # which is the int-typed path of `div`). For two same-shape Tensors `_broadcasted`
@@ -319,7 +319,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # is `self.alu(FLOORDIV, x)` -- srcs `(self, x)` -- and `__rfloordiv__` (the
 # `reverse=True` arm of `_binop`) is `x.alu(FLOORDIV, self)` -- srcs `(x, self)`.
 # `Tensor.__mod__` (elementwise.py:282, `self.mod(x)`) and its `__rmod__` arm
-# (the `reverse=True` arm of `mod`) are ported at `tensor.bend:722, 727, 730` as
+# (the `reverse=True` arm of `mod`) are ported as
 # `tn_mod.go` / `tn_mod` / `tn_rmod` for the no-broadcasting INT case
 # (elementwise.py:213, `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype):
 # return a.alu(Ops.FLOORMOD, b)`). The shape is `_binop`'s with `Ops.FLOORMOD`:
@@ -328,7 +328,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # elementwise.py:214) and the float arm of `div` (the `cast(default_float)` +
 # FDIV path past the int-typed guard, elementwise.py:253-254) stay walled on
 # the dtype fold and on the FDIV op, the same fold the other dtype-gated
-# arithmetic arms name (tensor.bend:385). The `__truediv__` arm
+# arithmetic arms name. The `__truediv__` arm
 # (`self.div(x)` with `rounding_mode=None`, elementwise.py:276) is SKIPPED for the
 # same reason -- its float body needs the dtype fold -- and because porting it
 # would need an extra `rounding_mode` parameter the port does not track. Gated
@@ -339,15 +339,15 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # as the other `_binop`-shaped defs).
 # `Tensor.__ge__` (:327, `(self < x).logical_not()`)
 # and `Tensor.__le__` (:330, `(self > x).logical_not()`) are ported at
-# `tensor.bend:691`/`698` as `tn_dunder_ge`/`tn_dunder_le` -- the chain
+# as `tn_dunder_ge`/`tn_dunder_le` -- the chain
 # `tn_logical_not(tn_cmplt(...))` / `tn_logical_not(tn_rcmplt(...))` -- and
-# `Tensor.eq` (:336, `self.ne(x).logical_not()`) is `tn_eq` at `tensor.bend:704`,
+# `Tensor.eq` (:336, `self.ne(x).logical_not()`) is `tn_eq`,
 # the chain `tn_logical_not(tn_cmpne(...))`. All three gates are at
 # `gates/tn_binop2_cmp-gate.py`. `Tensor.__invert__` (:264, `self.bitwise_not()`)
-# is ported as `tn_dunder_invert` at `tensor.bend:479`, one of the ONE-ARM
+# is ported as `tn_dunder_invert`, one of the ONE-ARM
 # ports: `bitwise_not`'s BOOL arm IS `tn_logical_not` (gated 4/4); the arith
 # arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, :157) stay
-# walled on the dtype fold + arith ops (tensor.bend:385 -- `self.dtype` is a
+# walled on the dtype fold + arith ops (the dtype fold -- `self.dtype` is a
 # FOLD property and `tn_bitwise_not`'s arith arms are `None`). Returns
 # `Maybe<&2, Tensor>` and lets the caller decide; the port convention
 # (`tn_replace`, `tn_as_param`) is the same shape. Gated at
@@ -359,7 +359,7 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # (same wall as `__add__`/`__sub__`/`__mul__`/`__rmul__`/`where`).
 # `Tensor.ceil` (elementwise.py:656, `(self > (b := self.trunc())).where(b+1, b)`)
 # and `Tensor.floor` (elementwise.py:662, `(self < (b := self.trunc())).where(b-1, b)`)
-# are ported at `tensor.bend:632, 650, 664, 682` as `tn_ceil` / `tn_floor` (and their
+# are ported as `tn_ceil` / `tn_floor` (and their
 # helpers `tn_ceil.b` / `tn_ceil.gt` / `tn_ceil.bp1` / `tn_ceil.go` / `tn_ceil.c1` /
 # `tn_ceil.c1t` and `tn_floor.b` / `tn_floor.lt` / `tn_floor.bm1` / `tn_floor.go` /
 # `tn_floor.c1` / `tn_floor.c1t`) for the no-broadcasting case. The body is a 4-step
@@ -368,13 +368,13 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # `tn_sub(b, c1t)` for floor (the `c1t` is a Tensor wrapping a CONST 1, the same
 # `tn_new(Tensor.ar(t), O.Found.i(c1))` shape `tn_relu.c0t` uses), and the final
 # `tn_where(cond, b±1, b)`. The deps cited by the wall text (`b+1` / `tn_trunc`)
-# are all ported: `tn_trunc` (tensor.bend:320, gated 9/9 with `tn_reciprocal` and
-# `tn_threefry`), `tn_add` (tensor.bend:523, gated 17/17 with `tn_sub`), `tn_sub`
-# (tensor.bend:541, same gate), `tn_cmplt` (tensor.bend:559, gated in
-# `tn_binop2_cmp-gate.py`), `tn_rcmplt` (tensor.bend:568, gated in the same
-# file), `tn_where` (tensor.bend:369, gated 5/5 in `tn_where-gate.py`), and
-# `O.UOp.const` (ops.bend:2922, gate rc=0). Gated at
-# `gates/tn_ceil_floor-gate.py` 11/11 rows (op/arg/srcs/purity for each of
+# are all ported: `tn_trunc` (gated 9/9 with `tn_reciprocal` and
+# `tn_threefry`), `tn_add` (gated 19/19 with `tn_sub`), `tn_sub`
+# (same gate), `tn_cmplt` (gated in
+# `tn_binop2_cmp-gate.py`), `tn_rcmplt` (gated in the same
+# file), `tn_where` (gated 5/5 in `tn_where-gate.py`), and
+# `O.UOp.const` (gate rc=0). Gated at
+# `gates/tn_ceil_floor-gate.py` 16/16 rows (op/arg/srcs/purity for each of
 # `tn_ceil` and `tn_floor`, the cond's CMPLT shape for each, and the reachability
 # row). The broadcasting case stays walled on `_broadcasted` (same wall as
 # `where`, `__add__` / `__sub__` / `__mul__` / `__pow__` / the rest of the
