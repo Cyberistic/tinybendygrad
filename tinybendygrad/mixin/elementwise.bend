@@ -228,6 +228,11 @@ def ew_ten(e: Ew) -> T.Tensor:
 def ew_rebase(ar: O.Arena, +t: T.Tensor) -> T.Tensor:
   T.tn_new(ar, T.Tensor.u(t))
 
+# THE REBASED INDEX NEEDS A SPELLING OF ITS OWN once the arena is a MERGE: after
+# `O.Arena.merge`, the right operand's index is no longer `Tensor.u(y)` but `O.Merge.at(m, ...)`.
+def ew_rebase.at(ar: O.Arena, u: U32) -> T.Tensor:
+  T.tn_new(ar, u)
+
 def ew_newer(longer: Bool, +a: O.Arena, +b: O.Arena) -> O.Arena:
   match longer:
     case True{}: a
@@ -262,8 +267,9 @@ def Tw.b(x: Tw) -> T.Tensor:
     case Tw{a, b}: b
 
 def ew_join(+x: T.Tensor, +y: T.Tensor) -> Tw:
-  +ar = ew_newer.of(T.Tensor.ar(x), T.Tensor.ar(y))
-  Tw{ew_rebase(ar, x), ew_rebase(ar, y)}
+  +m = O.Arena.merge(T.Tensor.ar(x), T.Tensor.ar(y))
+  Tw{ew_rebase.at(O.Merge.ar(m), T.Tensor.u(x)),
+     ew_rebase.at(O.Merge.ar(m), O.Merge.at(m, T.Tensor.u(y)))}
 
 def ew_alu2(op: O.Op, +x: T.Tensor, +y: T.Tensor) -> T.Tensor:
   +j = ew_join(x, y)
@@ -272,9 +278,12 @@ def ew_alu2(op: O.Op, +x: T.Tensor, +y: T.Tensor) -> T.Tensor:
 # `self.alu(Ops.WHERE, x, y)` -- the ternary, and the condition is `self`, which is a
 # THIRD arena.
 def ew_alu3(op: O.Op, +c: T.Tensor, +x: T.Tensor, +y: T.Tensor) -> T.Tensor:
-  +ar = ew_newer.of(ew_newer.of(T.Tensor.ar(c), T.Tensor.ar(x)), T.Tensor.ar(y))
-  +cr = ew_rebase(ar, c)
-  T.tn_alu(cr, op, [T.Tensor.u(ew_rebase(ar, x)), T.Tensor.u(ew_rebase(ar, y))])
+  +m1 = O.Arena.merge(T.Tensor.ar(c), T.Tensor.ar(x))
+  +m2 = O.Arena.merge(O.Merge.ar(m1), T.Tensor.ar(y))
+  +cr = ew_rebase.at(O.Merge.ar(m2), T.Tensor.u(c))
+  T.tn_alu(cr, op,
+    [T.Tensor.u(ew_rebase.at(O.Merge.ar(m2), O.Merge.at(m1, T.Tensor.u(x)))),
+     T.Tensor.u(ew_rebase.at(O.Merge.ar(m2), O.Merge.at(m2, T.Tensor.u(y))))])
 
 def ew_ufix.at(ist: Bool, +t: T.Tensor, +e: Ew) -> T.Tensor:
   match ist:

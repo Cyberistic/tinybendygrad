@@ -125,3 +125,8 @@ def tf25():
 
 print(f"ew_mod_mixed={sig(t7i() % tf25())}")
 print(f"ew_fmod_mixed={sig(t7i().fmod(tf25()))}")
+
+# THE SIBLING ROW. CPython has no arena to lose: `t4().add(t7())` keeps BOTH operands, so its
+# node count is 3. The port is 3 only because `ew_join` now re-mints through `O.Arena.merge`;
+# under the old length rule it was 2, with both srcs naming the SAME node.
+print(f"ew_add_siblings={sig(t4().add(t7()))}")

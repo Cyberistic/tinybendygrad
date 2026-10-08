@@ -83,6 +83,27 @@ def wmix() -> Cw:
      T.Tensor{O.Found.ar(n1), O.Found.i(n1), True{}, 0},
      T.Tensor{O.Found.ar(n1), O.Found.i(n0), True{}, 0}}
 
+# THE SIBLING ROW, AND IT IS THE ONE `world()` STRUCTURALLY CANNOT BUILD. `world()` puts every
+# fixture node in ONE arena, which is the "prefix pair" the file's arena comment ASSUMES. Here
+# the two operands come from TWO `O.Arena.empty()` chains -- distinct, EQUAL-LENGTH siblings --
+# and that is the case a LENGTH-based merge loses:
+#
+#   e_src0_ok_in_OWN_arena     = True     (the node is right in its own arena)
+#   e_src0_ok_in_LENGTH_merge  = False    (`ew_newer.of` reads the LOSER's index in the winner)
+#   e_src0_ok_in_CONTENT_merge = True     (`O.Arena.merge` re-mints it)
+#
+# MEASURED, and note the ROOT OP IS `OR` IN ALL THREE -- the shape looks right and the VALUE is
+# wrong, the same silent failure `tn_ceil`'s `b + 4` had. `ew_join` used the length rule until
+# this row existed; it uses `O.Arena.merge` now. A COLLAPSE SHOWS AS A NODE COUNT, so this row
+# is 2 before the fix and 3 after, and CPython's `t4().add(t7())` is 3.
+def sib_const(v: U32) -> T.Tensor:
+  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)})
+  T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
+
+def sig_ew_add_siblings() -> String:
+  +r = E.ew_add(sib_const(4), E.ETen{sib_const(7)}, False{})
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
 # --- unary ---------------------------------------------------------------
 def sig_ew_bitwise_not() -> String:
   +w = world()
@@ -365,6 +386,7 @@ def main() -> IO(Unit):
     aq : Unit <- srow("ew_where", sig_ew_where())
     y : Unit <- srow("ew_mod_mixed", sig_ew_mod_mixed())
     z : Unit <- srow("ew_fmod_mixed", sig_ew_fmod_mixed())
+    s1 : Unit <- srow("ew_add_siblings", sig_ew_add_siblings())
     return Unit{}
 
 # ===========================================================================
