@@ -66,6 +66,23 @@ def world() -> Cw:
      T.Tensor{ar, O.Found.i(n1), True{}, 0},
      T.Tensor{ar, O.Found.i(n2), True{}, 0}}
 
+# A MIXED-DTYPE FIXTURE, AND IT IS THE ONLY ONE THAT CAN SEE THE `mod` DISPATCH. `world()`
+# holds three INT/BOOL consts, so `is_int(a) and is_int(b)` is True for every pair it can
+# hand out and the float arm is unreachable. Here an INT and a FLOAT sit in ONE arena, which
+# is the port's own contract (a prefix pair), and PROMOTION CHANGES THE ANSWER:
+#
+#   dtypes.is_int(int32)                      -> True     (the UNPROMOTED read)
+#   is_int(f32) and is_int(f32) after promote -> False    (what CPython tests)
+#
+# so `int % float` must take the FLOAT arm. MEASURED in the oracle lane, where CPython is
+# asked the same question.
+def wmix() -> Cw:
+  +n0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
+  +n1 = O.UOp.const(O.Found.ar(n0), O.CFloat{2.5})
+  Cw{T.Tensor{O.Found.ar(n1), O.Found.i(n0), True{}, 0},
+     T.Tensor{O.Found.ar(n1), O.Found.i(n1), True{}, 0},
+     T.Tensor{O.Found.ar(n1), O.Found.i(n0), True{}, 0}}
+
 # --- unary ---------------------------------------------------------------
 def sig_ew_bitwise_not() -> String:
   +w = world()
@@ -233,6 +250,16 @@ def sig_ew_maximum() -> String:
   +r = E.ew_maximum(Cw.a(w), E.ETen{Cw.b(w)}, False{})
   O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
+def sig_ew_mod_mixed() -> String:
+  +w = wmix()
+  +r = E.ew_mod(Cw.a(w), E.ETen{Cw.b(w)}, False{})
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_ew_fmod_mixed() -> String:
+  +w = wmix()
+  +r = E.ew_fmod(Cw.a(w), E.ETen{Cw.b(w)}, False{})
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
 def sig_ew_mod() -> String:
   +w = world()
   +r = E.ew_mod(Cw.a(w), E.ETen{Cw.b(w)}, False{})
@@ -336,6 +363,8 @@ def main() -> IO(Unit):
     ao : Unit <- srow("ew_trunc", sig_ew_trunc())
     ap : Unit <- srow("ew_ufix", sig_ew_ufix())
     aq : Unit <- srow("ew_where", sig_ew_where())
+    y : Unit <- srow("ew_mod_mixed", sig_ew_mod_mixed())
+    z : Unit <- srow("ew_fmod_mixed", sig_ew_fmod_mixed())
     return Unit{}
 
 # ===========================================================================

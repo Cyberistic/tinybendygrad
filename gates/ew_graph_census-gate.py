@@ -71,6 +71,8 @@ ROWS = (
     "ew_exp2",
     "ew_floor",
     "ew_fmod",
+    "ew_mod_mixed",
+    "ew_fmod_mixed",
     "ew_ge",
     "ew_gt",
     "ew_log",
@@ -133,8 +135,8 @@ def no_noop_bottom() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "ew_graph_census-gate: 43 rows, 3 lanes, 2 DECLARED divergences -- "
-                       "every ported public ew_* has NO NOOP BOTTOM and 41 op sequences match "
+    sys.exit(gate(GATE, "ew_graph_census-gate: 45 rows, 3 lanes, 2 DECLARED divergences -- "
+                       "every ported public ew_* has NO NOOP BOTTOM and 43 op sequences match "
                        "CPython's byte-for-byte; ew_ufix differs only in the empty-src rendering, "
                        "ew_exp is the DTYPE divergence the pin LOCKS, and ew_floor was FIXED in this commit so its pin is GONE",
                  checks=no_noop_bottom))

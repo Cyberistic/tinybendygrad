@@ -111,3 +111,17 @@ print(f"ew_threefry={sig(t4().threefry(t7()))}")
 print(f"ew_trunc={sig(t4().trunc())}")
 print(f"ew_ufix={sig(t4().ufix(7))}")
 print(f"ew_where={sig(tb().where(t4(), t7()))}")
+
+# THE MIXED-DTYPE ROWS, and they are the ones that see the `mod` dispatch. CPython promotes
+# BEFORE testing the dtypes, so `int % float` takes the FLOAT arm. The same-dtype rows above
+# cannot see this: with both operands int the two answers coincide.
+def t7i():
+    return Tensor(UOp(Ops.CONST, src=(), arg=7), device="PYTHON")
+
+
+def tf25():
+    return Tensor(UOp(Ops.CONST, src=(), arg=2.5), device="PYTHON")
+
+
+print(f"ew_mod_mixed={sig(t7i() % tf25())}")
+print(f"ew_fmod_mixed={sig(t7i().fmod(tf25()))}")

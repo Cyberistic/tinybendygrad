@@ -695,50 +695,66 @@ def ew_div(+t: T.Tensor, +e: Ew, rev: Bool, rm: Rm) -> T.Tensor:
   +p = ew_broadcasted(t, e, rev)
   ew_div.p(rm, ew_br_l(p), ew_br_r(p))
 
-# `mod` -- elementwise.py:212-214. `is_int(a) and is_int(b)` is tested on BOTH
-# promoted operands and not on `a` alone, so it is a two-scrutinee match over two
-# Bool PARAMETERS; the float arm is `a - a.div(b, "floor") * b`.
-def ew_mod_int(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +p = ew_broadcasted(t, e, rev)
-  ew_alu2(O.OpsFLOORMOD{}, ew_br_l(p), ew_br_r(p))
+# `mod` -- elementwise.py:212-214. `a, b = self._broadcasted(x, reverse)` and THEN
+# `if dtypes.is_int(a.dtype) and dtypes.is_int(b.dtype)`. The dtype test is on the PROMOTED
+# pair, and THAT ORDER IS THE WHOLE OF THIS DEF. It used to read `is_int` from the UNPROMOTED
+# `t` in the caller and pass `True{}` as the second scrutinee, and the two answers DIFFER:
+#
+#   .venv/bin/python -c "from tinygrad.tensor import Tensor; from tinygrad.dtype import dtypes
+#     a=Tensor([7],dtype=dtypes.int32); b=Tensor([3],dtype=dtypes.float32)
+#     x,y=a._broadcasted(b)
+#     print(dtypes.is_int(a.dtype), dtypes.is_int(x.dtype) and dtypes.is_int(y.dtype))"
+#   ->  True False
+#
+# So `int % float` took the INT arm (`FLOORMOD`) where CPython takes the float arm
+# (`a - a.div(b, "floor") * b`). THE DISPATCH IS INSIDE NOW, not a pair of Bools at the caller,
+# because THREE call sites shared the wrong pattern and a caller can no longer pass a
+# pre-promotion dtype -- it has none to pass.
+# `rounding_mode="floor"` AND NOT `None`. CPython's float arm is
+# `a - a.div(b, rounding_mode="floor") * b` -- the FLOOR is what makes it Python's `%` and
+# not `a - (a/b)*b`. The port passed `RNone`, and the MIXED-DTYPE row is what exposed it:
+# `ew_mod_mixed` read 8 nodes against CPython's 14, because `RNone` skips `d.floor()`.
+# `ew_fmod`'s arm is `RTrunc` and was already right, which is why its mixed row MATCHED.
+def ew_mod.float(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  +d = ew_div.p(RFloor{}, a, b)
+  +m = ew_mul2(d, b, False{})
+  ew_sub.of(a, ETen{m}, False{})
 
-def ew_mod_float(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +p = ew_broadcasted(t, e, rev)
-  +d = ew_div.p(RNone{}, ew_br_l(p), ew_br_r(p))
-  +m = ew_mul2(d, ew_br_r(p), False{})
-  ew_sub.of(ew_br_l(p), ETen{m}, False{})
+def ew_mod.go(isint: Bool, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  match isint:
+    case True{}: ew_alu2(O.OpsFLOORMOD{}, a, b)
+    case _: ew_mod.float(a, b)
 
-def ew_mod.of(ai: Bool, bi: Bool, +t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  match ai bi:
-    case True{} True{}  : ew_mod_int(t, e, rev)
-    case _ _            : ew_mod_float(t, e, rev)
+def ew_mod.p(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  +fx = ew_fx(a)
+  +da = W.wk_dt(fx, T.Tensor.u(a))
+  ew_mod.go(S.Dt.is_int(da), a, b)
 
 def ew_mod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +fx = ew_fx(t)
-  dt = W.wk_dt(fx, T.Tensor.u(t))
-  ew_mod.of(S.Dt.is_int(dt), True{}, t, e, rev)
+  +p = ew_broadcasted(t, e, rev)
+  ew_mod.p(ew_br_l(p), ew_br_r(p))
 
 # `fmod` -- elementwise.py:225-227. The same shape with `Ops.CMOD` and a TRUNCATING
-# division, so it is a separate def and not a rounding_mode parameter of `mod`.
-def ew_fmod_int(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +p = ew_broadcasted(t, e, rev)
-  ew_alu2(O.OpsCMOD{}, ew_br_l(p), ew_br_r(p))
+# division, so it is a separate def and not a rounding_mode parameter of `mod`. SAME FIX,
+# SAME REASON: the dtype test belongs on the PROMOTED pair.
+def ew_fmod.float(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  +d = ew_div.p(RTrunc{}, a, b)
+  +m = ew_mul2(d, b, False{})
+  ew_sub.of(a, ETen{m}, False{})
 
-def ew_fmod_float(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +p = ew_broadcasted(t, e, rev)
-  +d = ew_div.p(RTrunc{}, ew_br_l(p), ew_br_r(p))
-  +m = ew_mul2(d, ew_br_r(p), False{})
-  ew_sub.of(ew_br_l(p), ETen{m}, False{})
+def ew_fmod.go(isint: Bool, +a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  match isint:
+    case True{}: ew_alu2(O.OpsCMOD{}, a, b)
+    case _: ew_fmod.float(a, b)
 
-def ew_fmod.of(ai: Bool, bi: Bool, +t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  match ai bi:
-    case True{} True{}  : ew_fmod_int(t, e, rev)
-    case _ _            : ew_fmod_float(t, e, rev)
+def ew_fmod.p(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  +fx = ew_fx(a)
+  +da = W.wk_dt(fx, T.Tensor.u(a))
+  ew_fmod.go(S.Dt.is_int(da), a, b)
 
 def ew_fmod(+t: T.Tensor, +e: Ew, rev: Bool) -> T.Tensor:
-  +fx = ew_fx(t)
-  dt = W.wk_dt(fx, T.Tensor.u(t))
-  ew_fmod.of(S.Dt.is_int(dt), True{}, t, e, rev)
+  +p = ew_broadcasted(t, e, rev)
+  ew_fmod.p(ew_br_l(p), ew_br_r(p))
 
 # THE WALLS. Each is a Python line and the thing that is missing, in the file's own
 # terms. `p3` is the phase that owns the method surface.
@@ -1397,7 +1413,7 @@ def g_mod() -> T.Tensor:
   +c = ew_ci(O.Found.ar(b), 3)
   t = ew_ct(b)
   fx = F.folded(O.Found.ar(c))
-  ew_mod.of(S.Dt.is_int(W.wk_dt(fx, O.Found.i(b))), True{}, t, ETen{ew_ct(c)}, False{})
+  ew_mod(t, ETen{ew_ct(c)}, False{})
 
 def t_mod() -> IO(Unit): ew_sig("ew_mod", g_mod())
 
@@ -1406,7 +1422,7 @@ def g_fmod() -> T.Tensor:
   +c = ew_ci(O.Found.ar(b), 3)
   t = ew_ct(b)
   fx = F.folded(O.Found.ar(c))
-  ew_fmod.of(S.Dt.is_int(W.wk_dt(fx, O.Found.i(b))), True{}, t, ETen{ew_ct(c)}, False{})
+  ew_fmod(t, ETen{ew_ct(c)}, False{})
 
 def t_fmod() -> IO(Unit): ew_sig("ew_fmod", g_fmod())
 
