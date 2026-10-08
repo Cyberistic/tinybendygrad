@@ -51,6 +51,24 @@ print(f"tn_shr_src1_is_the_callers_operand={sweep(lhs() >> rhs())}")
 print(f"tn_sub_src1_is_the_callers_operand={sweep(lhs() - rhs(), Ops.MUL)}")
 print(f"tn_xor_src1_is_the_callers_operand={sweep(lhs() ^ rhs())}")
 
+# THE REVERSE ARMS: `src[0]` is the caller's right operand, and it is the ADD `rhs()` built.
+# `src[1]` is the caller's LEFT one, which is why the forward rows' helper cannot express these.
+def sweep_rev(r):
+    return int(r.uop.src[0].op is Ops.ADD and r.uop.src[0] is not r.uop)
+
+
+print(f"tn_radd_src0_is_the_callers_operand={sweep_rev(lhs().__radd__(rhs()))}")
+print(f"tn_rsub_src0_is_the_callers_operand={sweep_rev(lhs().__rsub__(rhs()))}")
+print(f"tn_rmul_src0_is_the_callers_operand={sweep_rev(lhs().__rmul__(rhs()))}")
+print(f"tn_rfdiv_src0_is_the_callers_operand={sweep_rev(lhs().__rfloordiv__(rhs()))}")
+print(f"tn_rmod_src0_is_the_callers_operand={sweep_rev(lhs().__rmod__(rhs()))}")
+print(f"tn_rand_src0_is_the_callers_operand={sweep_rev(lhs().__rand__(rhs()))}")
+print(f"tn_ror_src0_is_the_callers_operand={sweep_rev(lhs().__ror__(rhs()))}")
+print(f"tn_rxor_src0_is_the_callers_operand={sweep_rev(lhs().__rxor__(rhs()))}")
+print(f"tn_rpow_src0_is_the_callers_operand={sweep_rev(lhs().__rpow__(rhs()))}")
+print(f"tn_rlshift_src0_is_the_callers_operand={sweep_rev(lhs().__rlshift__(rhs()))}")
+print(f"tn_rrshift_src0_is_the_callers_operand={sweep_rev(lhs().__rrshift__(rhs()))}")
+
 # THE CONTROLS ask the same question about a BARE CONST, so `want` is Ops.CONST on both sides.
 print(f"control_depth0={int((lhs() + lhs()).uop.src[1].op is Ops.CONST and (lhs() + lhs()).uop.src[1] is not (lhs() + lhs()).uop)}")
 print(f"control_same_tensor={int((lhs() * lhs()).uop.src[1].op is Ops.CONST and (lhs() * lhs()).uop.src[1] is not (lhs() * lhs()).uop)}")

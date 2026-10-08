@@ -119,6 +119,51 @@ def tn_xor.sweep() -> Bool:
   sweep(T.tn_xor(lhs(), rhs()), O.OpsADD{})
 
 
+# THE REVERSE ARMS ARE THE OTHER HALF AND `src[1]` IS NOT WHERE THEY PUT THE OPERAND. A reverse
+# arm is `OP(rhs, lhs)`, so the caller's right operand is `src[0]` and `src[1]` is the caller's
+# LEFT one. MEASURED why this needs its own helper: `gates/tn_graph_census` compares top-op and
+# src-OPS, which is blind to order -- `SHL(a, b)` and `SHL(b, a)` both print
+# `2 Ops.SHL/2 Ops.CONST Ops.CONST` -- so flipping `tn_rlshift` to the FORWARD arm leaves that
+# gate GREEN. This is the row that sees it.
+def sweep_rev(+r: T.Tensor, want: O.Op) -> Bool:
+  +ar = T.Tensor.ar(r)
+  +i = T.Tensor.u(r)
+  Bool.and(O.eq_op(O.Arena.op(ar, O.Arena.src(ar, i, 0)), want),
+    Bool.not(U32.is_eq(O.Arena.src(ar, i, 0), i)))
+
+def tn_radd.sweep() -> Bool:
+  sweep_rev(T.tn_radd(lhs(), rhs()), O.OpsADD{})
+
+def tn_rsub.sweep() -> Bool:
+  sweep_rev(T.tn_rsub(lhs(), rhs()), O.OpsADD{})
+
+def tn_rmul.sweep() -> Bool:
+  sweep_rev(T.tn_rmul(lhs(), rhs()), O.OpsADD{})
+
+def tn_rfdiv.sweep() -> Bool:
+  sweep_rev(T.tn_rfdiv(lhs(), rhs()), O.OpsADD{})
+
+def tn_rmod.sweep() -> Bool:
+  sweep_rev(T.tn_rmod(lhs(), rhs()), O.OpsADD{})
+
+def tn_rand.sweep() -> Bool:
+  sweep_rev(T.tn_rand(lhs(), rhs()), O.OpsADD{})
+
+def tn_ror.sweep() -> Bool:
+  sweep_rev(T.tn_ror(lhs(), rhs()), O.OpsADD{})
+
+def tn_rxor.sweep() -> Bool:
+  sweep_rev(T.tn_rxor(lhs(), rhs()), O.OpsADD{})
+
+def tn_rpow.sweep() -> Bool:
+  sweep_rev(T.tn_rpow(lhs(), rhs()), O.OpsADD{})
+
+def tn_rlshift.sweep() -> Bool:
+  sweep_rev(T.tn_rlshift(lhs(), rhs()), O.OpsADD{})
+
+def tn_rrshift.sweep() -> Bool:
+  sweep_rev(T.tn_rrshift(lhs(), rhs()), O.OpsADD{})
+
 # THE CONTROLS. Depth 0 is what every other binop gate in this directory builds, and it is
 # what made all seventeen look correct.
 def control_depth0() -> Bool:
@@ -146,6 +191,17 @@ def main() -> IO(Unit):
     o : Unit <- row("tn_shr_src1_is_the_callers_operand", tn_shr.sweep())
     p : Unit <- row("tn_sub_src1_is_the_callers_operand", tn_sub.sweep())
     q : Unit <- row("tn_xor_src1_is_the_callers_operand", tn_xor.sweep())
+    w : Unit <- row("tn_radd_src0_is_the_callers_operand", tn_radd.sweep())
+    x : Unit <- row("tn_rsub_src0_is_the_callers_operand", tn_rsub.sweep())
+    y : Unit <- row("tn_rmul_src0_is_the_callers_operand", tn_rmul.sweep())
+    z : Unit <- row("tn_rfdiv_src0_is_the_callers_operand", tn_rfdiv.sweep())
+    z1 : Unit <- row("tn_rmod_src0_is_the_callers_operand", tn_rmod.sweep())
+    z2 : Unit <- row("tn_rand_src0_is_the_callers_operand", tn_rand.sweep())
+    z3 : Unit <- row("tn_ror_src0_is_the_callers_operand", tn_ror.sweep())
+    z4 : Unit <- row("tn_rxor_src0_is_the_callers_operand", tn_rxor.sweep())
+    z5 : Unit <- row("tn_rpow_src0_is_the_callers_operand", tn_rpow.sweep())
+    z6 : Unit <- row("tn_rlshift_src0_is_the_callers_operand", tn_rlshift.sweep())
+    z7 : Unit <- row("tn_rrshift_src0_is_the_callers_operand", tn_rrshift.sweep())
     r : Unit <- row("control_depth0", control_depth0())
     s : Unit <- row("control_same_tensor", control_same_tensor())
     return Unit{}

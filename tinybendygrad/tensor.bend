@@ -816,6 +816,33 @@ def tn_maximum.go(reverse: Bool, +lhs: Tensor, +rhs: Tensor) -> Tensor:
 def tn_maximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(False{}, lhs, rhs)
 
+# TODO(p3) SIX DEFS HERE HAVE NO CPYTHON COUNTERPART -- they are not ports, and the gates that
+# cover two of them assert against a path CPython's API does not expose. MEASURED, and the
+# instrument is the source:
+#
+#   `tn_rne`       CPython's `ne` (elementwise.py:333) is `self._binop(Ops.CMPNE, x, False)` --
+#                  the `False` is HARDCODED and there is no `__rne__`.
+#   `tn_rmaximum`  `maximum` (elementwise.py:378) is `self._binop(Ops.MAX, x, False)` -- same
+#                  hardcoded `False`, and there is no `__rmax__`.
+#   `tn_shl` / `tn_rshl` / `tn_shr` / `tn_rshr`
+#                  CPython has NO `shl` or `shr` METHOD. `grep -rn "def shl\|def shr"
+#                  tinygrad/mixin/elementwise.py` answers nothing; the methods are `lshift`
+#                  (elementwise.py:344) and `rshift` (:355), which the port already has as
+#                  `tn_lshift` / `tn_rlshift` and `tn_rshift` / `tn_rrshift`. So these four
+#                  DUPLICATE them, body for body.
+#
+# ALL SIX have ZERO callers outside their own def. VERIFIED: `grep -rn "<name>(" tinybendygrad/`
+# minus the `def` line answers 0 for each. `tn_rcmplt` LOOKS like a seventh and is NOT: it has
+# 11 callers (`tn_relu`, `tn_relu6`, `tn_ceil`, `tn_floor`) and is the `c0 < t` spelling of
+# CPython's `self > 0`, which is what the GT-to-LT rewrite leaves.
+#
+# THEY ARE NOT DELETED YET because two of them carry gate rows -- `tn_rne` in
+# `gates/tn_binop2_cmp.bend`, `tn_rmaximum` in `gates/tn_maximum.bend` -- and `tn_shl` / `tn_shr`
+# are two of the seventeen rows in `gates/tn_binop_sweep.bend`. Removing the defs means removing
+# those rows in the same commit, and a row removed to make a gate pass is exactly what this
+# tree has been burned by. The removal is the next unit's, with the row lists edited first.
+
+
 def tn_rmaximum(+lhs: Tensor, +rhs: Tensor) -> Tensor:
   tn_maximum.go(True{}, lhs, rhs)
 

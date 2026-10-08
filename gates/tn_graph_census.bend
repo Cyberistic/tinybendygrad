@@ -195,6 +195,57 @@ def sig_tn_threefry() -> String:
 # named, and `Rng.sig` prints it, so the row reads the STRING. That is deliberate: the
 # signature is what a reader checks against CPython, so asserting on it asserts on the
 # evidence rather than on a second derivation that could drift from it.
+
+# THE REVERSE ARMS. Half the binop surface is the `reverse=True` arm and the census above
+# covered only the forward half, so a sibling regression in any of these was invisible. The
+# counterpart is the `__r*__` dunder and NOT a lower-level call, for the reason `tn_sub` taught:
+# an oracle that calls a path the dunder does not take agrees with a port that mirrors the wrong
+# thing. SIX of the port's reverse arms have NO counterpart at all and are NOT in this list --
+# see the wall note in `tinybendygrad/tensor.bend` for the measurement.
+def sig_tn_radd() -> String:
+  +r = T.tn_radd(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rsub() -> String:
+  +r = T.tn_rsub(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rmul() -> String:
+  +r = T.tn_rmul(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rfdiv() -> String:
+  +r = T.tn_rfdiv(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rmod() -> String:
+  +r = T.tn_rmod(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rand() -> String:
+  +r = T.tn_rand(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_ror() -> String:
+  +r = T.tn_ror(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rxor() -> String:
+  +r = T.tn_rxor(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rpow() -> String:
+  +r = T.tn_rpow(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rlshift() -> String:
+  +r = T.tn_rlshift(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
+def sig_tn_rrshift() -> String:
+  +r = T.tn_rrshift(t4(), t4())
+  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+
 def no_noop(s: String) -> Bool:
   Bool.not(String.contains("Ops.NOOP", s))
 
@@ -239,4 +290,15 @@ def main() -> IO(Unit):
     ak : Unit <- srow("tn_xor", sig_tn_xor())
     al : Unit <- srow("tn_eq", sig_tn_eq())
     am : Unit <- srow("tn_threefry", sig_tn_threefry())
+    n : Unit <- srow("tn_radd", sig_tn_radd())
+    o : Unit <- srow("tn_rsub", sig_tn_rsub())
+    p : Unit <- srow("tn_rmul", sig_tn_rmul())
+    q : Unit <- srow("tn_rfdiv", sig_tn_rfdiv())
+    r : Unit <- srow("tn_rmod", sig_tn_rmod())
+    s : Unit <- srow("tn_rand", sig_tn_rand())
+    t : Unit <- srow("tn_ror", sig_tn_ror())
+    u : Unit <- srow("tn_rxor", sig_tn_rxor())
+    v : Unit <- srow("tn_rpow", sig_tn_rpow())
+    w : Unit <- srow("tn_rlshift", sig_tn_rlshift())
+    x : Unit <- srow("tn_rrshift", sig_tn_rrshift())
     return Unit{}

@@ -37,6 +37,17 @@ BINOPS = (
 )
 
 ROWS = tuple(f"{b}_src1_is_the_callers_operand" for b in BINOPS) + (
+    "tn_radd_src0_is_the_callers_operand",
+    "tn_rsub_src0_is_the_callers_operand",
+    "tn_rmul_src0_is_the_callers_operand",
+    "tn_rfdiv_src0_is_the_callers_operand",
+    "tn_rmod_src0_is_the_callers_operand",
+    "tn_rand_src0_is_the_callers_operand",
+    "tn_ror_src0_is_the_callers_operand",
+    "tn_rxor_src0_is_the_callers_operand",
+    "tn_rpow_src0_is_the_callers_operand",
+    "tn_rlshift_src0_is_the_callers_operand",
+    "tn_rrshift_src0_is_the_callers_operand",
     "control_depth0",
     "control_same_tensor",
 )
@@ -50,6 +61,6 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_binop_sweep-gate: 19 rows, 3 lanes, 0 divergences -- ALL SEVENTEEN "
+    sys.exit(main(GATE, "tn_binop_sweep-gate: 30 rows, 3 lanes, 0 divergences -- ALL SEVENTEEN "
                         "binops re-mint the right operand before reading its index, at depth 1, "
                         "plus the depth-0 and same-tensor controls"))
