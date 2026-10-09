@@ -29,7 +29,7 @@ type_maps, six prefix sets), the DTYPE (eighteen names, four UNMAPPED on some de
 ADDRSPACE/SIZE, and the OP/ARG.
 
 THE NINETEEN DIVERGENCES, ALL PINNED -- eighteen are the vendored-`tinygrad`/table carve-outs and
-ONE is a REAL DEFECT the census found (it is a FINDING until it has a reason, and the `ri_add_*`
+THE ONE REAL DEFECT IT FOUND (`ri_add_*`) IS FIXED AND ITS PIN IS DROPPED; the other
 one has a reason and an owner):
 
   `rdx_*` (6) -- THE VENDORED `tinygrad/` HAS DRIFTED PAST THE PIN. HEAD `_render_dtype` uses
@@ -48,15 +48,17 @@ one has a reason and an owner):
   `cfw_{0,1}_{g,l}` (4) -- the base and Clang `code_for_workitem` dicts are EMPTY, so CPython is a
     `KeyError` and the port is `""` (`cstyle.bend:1174-1177` records it: unreachable for a real
     kernel, because every GPU renderer defines both entries).
-  `ri_add_{0,1,4}` (3) -- THE FINDING, A DEFECT, NOT A CARVE-OUT. `render_index`'s non-ALU branch
-    is `f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"`. CPython
-    tests the WHOLE arg, and `UOp.reduce(arg=Ops.ADD)` sets `arg=(Ops.ADD, 0)` (`ops.py:671-674`,
-    same at the pin), so `idx.arg == Ops.ADD` is FALSE and CPython NEVER strips: it emits
-    `(buf1+(a+b))`. The port's `idx_arg_is_add` matches `AReduce{ADD, 0}` -- the port's OWN
-    spelling of `(Ops.ADD, 0)` -- so it strips: `(buf1+a+b)`. The two strings differ by the inner
-    parens. MEASURED in the oracle: `UOp(Ops.REDUCE, src=..., arg=(Ops.ADD, 0))` renders
-    `(buf1+(a+b))`; `arg=Ops.ADD` (which `UOp.reduce` NEVER builds) renders `(buf1+a+b)`. The
-    port models a check CPython's `arg` representation cannot satisfy.
+  `ri_add_{0,1,4}` (3) -- WAS THE ONE FINDING, AND IT IS FIXED. `render_index`'s non-ALU branch is
+    `f"({self[buf]}+{strip_parens(self[idx]) if idx.arg == Ops.ADD else self[idx]})"`, and the
+    port's `idx_arg_is_add` matched `AReduce{ADD, 0}` -- its OWN spelling of `(Ops.ADD, 0)`, the
+    shape `UOp.reduce` builds -- so it STRIPPED where CPython did not: `(buf1+a+b)` against
+    CPython's `(buf1+(a+b))`.
+    THE FIRST READING OF THIS SAID "CPython NEVER STRIPS", AND THAT IS TOO STRONG. MEASURED:
+    `UOp(Ops.REDUCE, arg=(Ops.ADD, 0)).arg == Ops.ADD` is FALSE (a TUPLE never equals an enum)
+    BUT `UOp(Ops.REDUCE, arg=Ops.ADD).arg is Ops.ADD` is TRUE -- so the test IS live, it fires
+    when the arg IS the enum, which `UOp.reduce` does not build and a caller CAN. The arena's
+    closed `Arg` spells "the arg IS an op" as `AOpLit`, so `idx_arg_is_add` now matches THAT arm
+    and the two lanes agree on all three rows. `cstyle.bend` records both measurements.
 
 THE CHECKS THE DIFF CANNOT EXPRESS. Both lanes could agree on an EMPTY string and the diff would
 pass, so `port_artifact_claims()` reads the PORT'S OWN `bd.out` and asserts the structural facts
@@ -92,11 +94,6 @@ DIVERGES = {
     "cfw_0_l": ("cfw_0_l=KeyError", "cfw_0_l="),
     "cfw_1_g": ("cfw_1_g=KeyError", "cfw_1_g="),
     "cfw_1_l": ("cfw_1_l=KeyError", "cfw_1_l="),
-    # THE ONE DEFECT THIS CENSUS FOUND: the port's `idx_arg_is_add` fires where CPython's
-    # `idx.arg == Ops.ADD` does NOT -- see the docstring and the driver's FINDING block.
-    "ri_add_0": ("ri_add_0=(buf1+(a+b))", "ri_add_0=(buf1+a+b)"),
-    "ri_add_1": ("ri_add_1=(buf1+(a+b))", "ri_add_1=(buf1+a+b)"),
-    "ri_add_4": ("ri_add_4=(buf1+(a+b))", "ri_add_4=(buf1+a+b)"),
 }
 
 # A representative row per group, pinned in EVERY lane. The byte diff already compares the other
@@ -118,7 +115,7 @@ GATE = Gate(
     diverges=DIVERGES,
     pins=[(lane, r) for lane in ("py", "bd", "bn") for r in PINS],
 )
-assert GATE.compared == 339 and len(DIVERGES) == 19
+assert GATE.compared == 342 and len(DIVERGES) == 16
 
 
 def port_artifact_claims() -> bool:
@@ -153,10 +150,10 @@ def port_artifact_claims() -> bool:
 
 if __name__ == "__main__":
     sys.exit(gate(GATE, "cstyle_render_census-gate: 358 rows, 3 lanes byte-identical over the "
-                       "wide surface, 19 DECLARED divergences -- 6 unmapped-dtype KeyErrors from "
+                       "wide surface, 16 DECLARED divergences -- 6 unmapped-dtype KeyErrors from "
                        "the tinygrad drift, base float4 None, 5 dropped ALU ops, 4 empty "
-                       "workitem dicts, and the ONE DEFECT this census found: render_index's "
-                       "non-ALU branch strips parens where CPython's `arg == Ops.ADD` cannot fire "
-                       "(ri_add_*); the port's own strings carry the sz>1 suffix, the image arms, "
+                       "workitem dicts; the ONE DEFECT it found (render_index's non-ALU branch "
+                       "stripping parens on an AReduce where CPython strips only on a literal-op "
+                       "arg) IS FIXED; the port's own strings carry the sz>1 suffix, the image arms, "
                        "the device prefixes and the ASCII workitem",
                   checks=port_artifact_claims))

@@ -925,13 +925,23 @@ def is_add(op: O.Op) -> Bool:
     case O.OpsADD{}: True{}
     case _: False{}
 
-# `idx.arg == Ops.ADD` -- and the arena's `Arg` is CLOSED, so this is a two-arm
-# match. A RANGE's arg is `ARange` and is therefore the `_`; the `AReduce` arm is
-# the REDUCE node whose reduce op is ADD with zero axes, which is the shape
-# `UOp.reduce` sugar builds and the only way an index node's arg is an op.
+# `idx.arg == Ops.ADD` IS A TEST AGAINST A LITERAL OP AND NOT AGAINST A REDUCE. MEASURED:
+#
+#   UOp(Ops.REDUCE, arg=Ops.ADD).arg is Ops.ADD            -> True   (the arg IS the enum)
+#   UOp(Ops.REDUCE, arg=(Ops.ADD, 0)).arg == Ops.ADD       -> False  (a TUPLE never equals it)
+#
+# and `UOp.reduce`'s sugar sets the TUPLE, so a real REDUCE never strips. THE PORT MATCHED THE
+# TUPLE FORM (`AReduce{ADD,0}`) AND SO STRIPPED ON EVERY REAL REDUCE:
+#
+#   ri_add_0   CPython (buf1+(a+b))   port (buf1+a+b)
+#
+# A TUPLE CANNOT EQUAL AN OP, so "the arg is `AReduce`" is not the test -- and the arena's
+# CLOSED `Arg` spells "the arg IS an op" as `AOpLit`, which is the arm that can match. The old
+# comment claimed the `AReduce` arm was "the only way an index node's arg is an op"; the
+# measurement above is what says otherwise.
 def idx_arg_is_add(+a: O.Arg) -> Bool:
   match a:
-    case O.AReduce{rop, num_axes}: Bool.and(is_add(rop), U32.is_zero(num_axes))
+    case O.AOpLit{op}: is_add(op)
     case _: False{}
 
 # THE ALU BRANCH. `lane` is the "not a CONST index" test, threaded in because it
