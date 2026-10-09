@@ -4,12 +4,13 @@
 
     .venv/bin/python gates/op_graph_census-gate.py
 
-28 ROWS, THREE LANES, EIGHTEEN DECLARED DIVERGENCES -- AND ALL EIGHTEEN ARE DEFECTS, NONE A
-CARVE-OUT. This is the `optim.bend` peer of `gates/tn_graph_census-gate.py` / `mo_*` / `ew_*` /
-`mx_*` / `cr_*` / `gr_*`: the whole graph-building surface of the layer in one artifact. The
-layer's own `main` prints eleven rows under `unverified_*` names and its own comment says "the
-ARENA PLUMBING is not finished"; THIS drives each builder directly and pins the exact trees, so
-a fix turns the gate RED and forces the pin to move.
+28 ROWS, THREE LANES, TWO DECLARED DIVERGENCES. This is the `optim.bend` peer of
+`gates/tn_graph_census-gate.py` / `mo_*` / `ew_*` / `mx_*` / `cr_*` / `gr_*`: the whole
+graph-building surface of the layer in one artifact. The layer's own `main` prints eleven rows
+under `unverified_*` names and its own comment said "the ARENA PLUMBING is not finished"; THIS
+drives each builder directly and pins the exact trees, so a fix turns the gate RED and forces
+the pin to move. SIXTEEN of the eighteen original divergences are FIXED and deleted; the two
+that remain are a FLOAT-PRECISION divergence and NOT a graph one (see below).
 
 THE POPULATION IS DISCOVERED, AND THE RULE IS STATED HERE. The file has 176 defs:
 
@@ -34,54 +35,60 @@ The layer's own guards compare against `CONST 1.0` where optim.py:115 says `0` (
 optim.bend:801-802), and the two graphs are the SAME op sequence (`CONST/0 CMPLT/2`), so NO
 op-level printer can see it. Every node therefore prints `<op>/<nsrc>:<arg>`.
 
-THE EIGHTEEN DIVERGENCES, CLASSIFIED. There are NO carve-outs: every one is a defect. They fall
-into FOUR root causes, and the pin text is the measurement.
+THE TWO DIVERGENCES THAT REMAIN, AND WHY THEY ARE NOT A GRAPH DEFECT. Both are `op_1mb`
+(`(1.0 - self.b1)` / `(1.0 - self.b2)`, optim.py:167-168), and both are a DOUBLE-vs-F32
+arithmetic difference that Bend cannot close because it has no `f64`:
+
+  `mstep` -- CPython's `1.0 - 0.9` is a DOUBLE subtraction, `0.09999999999999998`, whose f32
+    image is `0x3DCCCCCD` (`f1036831949`). The port's `op_1mb` subtracts in f32:
+    `1.0 - 0.9f = 0.100000024`, `0x3DCCCCD0` (`f1036831952`). The two graphs are otherwise
+    IDENTICAL -- every op, every nsrc, every src order -- and only that CONST's bits differ.
+  `vstep` -- the same with `0.999`: CPython `1.0 - 0.999` -> `f981668463` (`0x3A83126F`); the
+    port `1.0 - 0.999f` -> `f981668352` (`0x3A831200`).
+
+MEASURED 2026-10-09: no f32 `v` within +/-200000 ULP of the f32 literal gives the CPython bits
+under `1.0 - v`, so this is not a rounding-mode choice -- the port's `b1` is f32 where CPython's
+is a double. The `:arg` suffix is the instrument that shows it; `O.Rng.sig`'s op-level printer
+cannot.
+
+THE SIXTEEN THAT WERE FIXED, AND THE MECHANISM. All were measured, all are gone, and each was a
+defect and not a carve-out:
 
   OP CHOICE, 2 rows (`apply`, `neg`):
     `apply` -- `_apply_update` is `t.detach() - up.to(t.device)` (optim.py:60). CPython's `sub`
-      is `a.alu(Ops.ADD, -b)` (mixin/elementwise.py:121-123), i.e. `ADD(detach, MUL(g, CONST(-1)))`.
-      The port's `op_sub` (optim.bend:424-425) builds a bare `SUB`. THIS IS THE EXACT TRAP THE
-      BRIEF NAMES: an oracle that reached for `alu(Ops.SUB)` would have agreed with the port while
-      BOTH were wrong. The oracle calls the operator.
-    `neg` -- `-t` is `MUL(t, CONST(-1))` (`__neg__`), 3 nodes. `op_neg` (optim.bend:708-712)
-      builds `NEG`, 2 nodes.
+      is `a.alu(Ops.ADD, -b)` (elementwise.py:103), i.e. `ADD(detach, MUL(up, CONST(-1)))`. The
+      old `op_sub` built a bare `SUB`. THIS IS THE EXACT TRAP: an oracle that reached for
+      `alu(Ops.SUB)` would have agreed with the port while BOTH were wrong. The oracle calls the
+      operator.
+    `neg` -- `-t` is `MUL(t, CONST(-1))` (`__neg__`, elementwise.py:261), 3 nodes. The old
+      `op_neg` built `NEG`, 2 nodes.
 
   TENSOR.BEND'S EMPTY ARENA, 1 row (`cast`):
-    `g.cast(t.dtype)` (optim.py:128) is a real node. `op_cast` (optim.bend:720-721) delegates to
-    `tn_cast.of`, whose `tn_cast.put.of`/`tn_cast.node` build into `O.Arena.empty()`
-    (tensor.bend:1260, :1265), so the returned Tensor's index is out of range in its own arena.
-    The identity arm answers `1 NOOP/0` where CPython answers the src `1 BUFFER/0`.
+    `g.cast(t.dtype)` (optim.py:128) is a real node. `op_cast` delegated to `tn_cast.of`, whose
+    `tn_cast.put.of`/`tn_cast.node` built into `O.Arena.empty()` (tensor.bend), so an identity
+    cast answered `1 NOOP/0` where CPython answers the src `1 BUFFER/0`. `tn_cast` now takes the
+    arena as a parameter and `tn_alu.put` wraps its `Found`.
 
-  STALE-ARENA THREADING, 14 rows -- ONE MECHANISM, MEASURED, not 14 stories:
-    A helper interns a CONST into `op_ar(x)` (GROWING that arena to a new value) and then builds
-    the consuming node into the SAME PRE-GROWTH arena, at the index the const took. The const is
-    orphaned and the consuming node's src[0] is ITS OWN INDEX -- a SELF-LOOP, which makes
-    `toposort` exhaust its fuel with an empty cache and answer `0`. The rows:
-      `normsq` -- `op_normsq` (optim.bend:762-763) passes `op_ar(a)` (pre-square) to `op_sum`.
-      `where`  -- `op_where` (optim.bend:663-665) interns `1.0` then builds the WHERE in the
-                  pre-growth arena.
-      `guard`  -- `op_cmplt1` (optim.bend:801-802), the same, AND its constant is `1.0` where
-                  optim.py:115 is `0`. THE CONSTANT IS A SECOND DEFECT THAT THE PRINTER CANNOT
-                  SEE while the arena bug stands (the const never reaches the graph); the `:arg`
-                  suffix is the instrument that will catch it the moment the arena is fixed.
-      `mulf`   -- `op_mulf` (optim.bend:780-781) interns `v` into `op_ar(a)` then calls
-                  `op_mul_l(const, a)`, which builds into `op_ar(a)` -- the pre-growth value.
-      `prewd`, `postwd`, `mstep`, `vstep`, `mhat`, `vhat`, `trust` -- all reach `op_mulf` or
-                  `op_where`, so they inherit it.
-      `lars0`  -- `op_lars0` (optim.bend:1248-1249) passes `st_ar(s)` to `op_lr_mul` while the
-                  `r` CONST was interned into a newer arena.
-      `mom`, `nesterov` -- reach `op_mulf`.
-      `lamb_up` -- reaches `op_mul_l` with an operand whose arena is newer than the target.
+  STALE-ARENA THREADING, 13 rows -- ONE MECHANISM, MEASURED, not 13 stories:
+    A helper interned a CONST into `op_ar(x)` (GROWING that arena to a new value) and then built
+    the consuming node into the SAME PRE-GROWTH arena, at the index the const took. The const was
+    orphaned and the consuming node's `src[0]` was ITS OWN INDEX -- a SELF-LOOP, which made
+    `toposort` answer `0`. THE FIX IS ONE SPELLING: every two-operand node MERGES its operands'
+    arenas (`tn_binop`, which is `Arena.merge` -- CONTENT, not length) and every three-operand
+    node is `tn_where`. The rows: `normsq where guard mulf prewd trust lars0 mom nesterov postwd
+    mhat vhat lamb_up`. (`mstep`/`vstep` inherited the same self-loop and their GRAPH is fixed;
+    only their `op_1mb` CONST is the float divergence above.)
 
-  THE FILE'S OWN COMMENT SAYS "the ARENA PLUMBING is not finished" AND THIS IS THAT, MEASURED:
-  the precise mechanism is a SELF-LOOP from a pre-growth arena, not a "missing CONST" -- the
-  CONST is built and then orphaned. A reviewer reading the file's comment would fix the wrong
-  thing.
+  AND THE `1.0`-vs-`0` GUARD, which the op-level printer CANNOT see: `op_cmplt1` built
+    `CMPLT(CONST 1.0, x)` where optim.py:115 says `0`, and the two graphs are the SAME op sequence
+    (`CONST/0 CMPLT/2`). It is now `0.0`; `guard` and `where` are the rows and the `:arg` suffix
+    reads `f0` on both sides.
 
 WHAT IT ASSERTS THAT NEEDS NO CPYTHON. `NOOP` IS THE BOTTOM (`Arena.bottom()`), so a `NOOP`
-anywhere is an index read out of range and ALWAYS a defect. Four rows print one (`cast`,
-`mstep`, `vstep`, `lamb_up`) and the `no_noop_unpinned` check asserts every NOOP row is in the
-declared-divergence list -- so a NOOP cannot appear without being declared.
+anywhere is an index read out of range and ALWAYS a defect. MEASURED 2026-10-09: ZERO rows print
+one -- the four that used to (`cast`, `mstep`, `vstep`, `lamb_up`) are fixed -- and the
+`no_noop_unpinned` check still asserts every NOOP row is a declared divergence, so a NOOP cannot
+appear without being declared.
 
 EXIT STATUS: 0 all three lanes identical after the pins · 1 a lane took the wrong row count, the
 oracle failed, the compile failed, or the lanes disagree · 3 a precondition was absent · 5 `bend`
@@ -102,52 +109,21 @@ ROWS = (
     "mstep", "vstep", "mhat", "vhat", "lamb_up",
 )
 
-# (CPython's line, the port's line), pinned on both sides. EVERY entry is a DEFECT -- there is no
-# carve-out in this gate -- and the pins LOCK the current wrong answer so a fix makes the gate RED.
+# (CPython's line, the port's line), pinned on both sides. THE SIXTEEN THAT WERE DEFECTS ARE
+# GONE; these TWO are a float-precision divergence (a double `1.0 - b` against an f32 `1.0 - b`)
+# and the pins LOCK both sides so the graphs cannot drift apart unnoticed.
 DIVERGES = {
-    "apply": ("apply=6 BUFFER/0:- DETACH/1:- BUFFER/0:- CONST/0:f3212836864 MUL/2:- ADD/2:- ",
-              "apply=4 BUFFER/0:- DETACH/1:- BUFFER/0:- SUB/2:- "),
-    "neg": ("neg=3 BUFFER/0:- CONST/0:f3212836864 MUL/2:- ",
-            "neg=2 BUFFER/0:- NEG/1:- "),
-    "normsq": ("normsq=4 BUFFER/0:- MUL/2:- REDUCE/1:- SQRT/1:- ",
-               "normsq=0 "),
-    "cast": ("cast=1 BUFFER/0:- ",
-             "cast=1 NOOP/0:- "),
-    "where": ("where=6 CONST/0:f0 BUFFER/0:- CMPLT/2:- BUFFER/0:- CONST/0:f1065353216 WHERE/3:- ",
-              "where=0 "),
-    "guard": ("guard=3 CONST/0:f0 BUFFER/0:- CMPLT/2:- ",
-              "guard=0 "),
-    "mulf": ("mulf=3 CONST/0:f1036831949 BUFFER/0:- MUL/2:- ",
-             "mulf=0 "),
-    "prewd": ("prewd=6 BUFFER/0:- CONST/0:f1036831949 BUFFER/0:- DETACH/1:- MUL/2:- ADD/2:- ",
-              "prewd=1 BUFFER/0:- "),
-    "trust": ("trust=21 CONST/0:f0 BUFFER/0:- DETACH/1:- MUL/2:- REDUCE/1:- SQRT/1:- CMPLT/2:- "
-              "BUFFER/0:- MUL/2:- REDUCE/1:- SQRT/1:- CMPLT/2:- CONST/0:f981668463 MUL/2:- "
-              "MUL/2:- ADD/2:- RECIPROCAL/1:- MUL/2:- CONST/0:f1065353216 WHERE/3:- WHERE/3:- ",
-              "trust=0 "),
-    "lars0": ("lars0=5 BUFFER/0:- CONST/0:f1065353216 MUL/2:- BUFFER/0:- MUL/2:- ",
-              "lars0=1 BUFFER/0:- "),
-    "mom": ("mom=7 BUFFER/0:- CONST/0:f1063675494 MUL/2:- BUFFER/0:- ADD/2:- STORE/2:- AFTER/2:- ",
-            "mom=1 BUFFER/0:- "),
-    "nesterov": ("nesterov=5 BUFFER/0:- CONST/0:f1063675494 BUFFER/0:- MUL/2:- ADD/2:- ",
-                 "nesterov=1 BUFFER/0:- "),
-    "postwd": ("postwd=8 BUFFER/0:- CONST/0:f1036831949 BUFFER/0:- MUL/2:- BUFFER/0:- "
-               "DETACH/1:- MUL/2:- ADD/2:- ",
-               "postwd=1 BUFFER/0:- "),
+    # `(1.0 - self.b1)` -- optim.py:167. CPython subtracts in DOUBLE; the port in f32. The two
+    # graphs are IDENTICAL except this one CONST's bits. See the module docstring.
     "mstep": ("mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CONST/0:f1036831949 BUFFER/0:- "
               "MUL/2:- ADD/2:- ",
-              "mstep=1 NOOP/0:- "),
+              "mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CONST/0:f1036831952 BUFFER/0:- "
+              "MUL/2:- ADD/2:- "),
+    # `(1.0 - self.b2)` -- optim.py:168, the same divergence with 0.999.
     "vstep": ("vstep=8 CONST/0:f1065336439 BUFFER/0:- MUL/2:- CONST/0:f981668463 BUFFER/0:- "
               "MUL/2:- MUL/2:- ADD/2:- ",
-              "vstep=1 NOOP/0:- "),
-    "mhat": ("mhat=8 BUFFER/0:- CONST/0:f1065353216 BUFFER/0:- CONST/0:f3212836864 MUL/2:- "
-             "ADD/2:- RECIPROCAL/1:- MUL/2:- ",
-             "mhat=1 BUFFER/0:- "),
-    "vhat": ("vhat=8 BUFFER/0:- CONST/0:f1065353216 BUFFER/0:- CONST/0:f3212836864 MUL/2:- "
-             "ADD/2:- RECIPROCAL/1:- MUL/2:- ",
-             "vhat=1 BUFFER/0:- "),
-    "lamb_up": ("lamb_up=5 BUFFER/0:- CONST/0:f1065353216 MUL/2:- BUFFER/0:- MUL/2:- ",
-                "lamb_up=1 NOOP/0:- "),
+              "vstep=8 CONST/0:f1065336439 BUFFER/0:- MUL/2:- CONST/0:f981668352 BUFFER/0:- "
+              "MUL/2:- MUL/2:- ADD/2:- "),
 }
 
 GATE = Gate(
@@ -176,10 +152,9 @@ def no_noop_unpinned() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "op_graph_census-gate: 28 rows, 3 lanes, 18 DECLARED divergences -- the "
-                       "four value rows and 6 of 24 graph rows (detach, square, div, sqrt, recip, "
-                       "sum) match CPython byte-for-byte; the other 18 are DEFECTS with no "
-                       "carve-out: `apply`/`neg` reach for the wrong op, `cast` builds in an empty "
-                       "arena, and 15 rows inherit ONE stale-arena self-loop (`op_mulf`/`op_where`/"
-                       "`op_cmplt1` intern a CONST and then build in the PRE-growth arena)",
+    sys.exit(gate(GATE, "op_graph_census-gate: 28 rows, 3 lanes, 2 DECLARED divergences. The four "
+                       "value rows and all 24 graph rows match CPython byte-for-byte EXCEPT the "
+                       "`(1.0 - b)` CONST of `mstep`/`vstep`, a DOUBLE-vs-F32 difference Bend "
+                       "cannot close (no f64). The 16 fixed rows were `apply`/`neg` (wrong op), "
+                       "`cast` (empty arena) and 13 stale-arena self-loops",
                  checks=no_noop_unpinned))

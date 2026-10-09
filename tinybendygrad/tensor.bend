@@ -1250,32 +1250,35 @@ def tn_cast.dt_is.of(m: Maybe<&2, S.Dt>, +d: S.Dt) -> Bool:
     case Some{got}: O.eq_dt(got, d)
     case None{}: False{}
 
-def tn_cast.dt_is(+i: U32, +d: S.Dt) -> Bool:
-  tn_cast.dt_is.of(tn_dtype(tn_wrap_uop(O.Arena.empty(), i)), d)
+# THE ARENA IS A PARAMETER, and that is the whole of this fix. `Arena` is an immutable
+# `Data` VALUE (`ops.bend:1264`), so an index is meaningful only in an arena DESCENDING
+# from the one that minted it: reading `i` in `O.Arena.empty()` answers the `NOOP` bottom.
+# MEASURED before: the identity arm of `op_cast` printed `1 NOOP/0` where CPython answers
+# the src unchanged, because the wrap threw the caller's arena away.
+def tn_cast.dt_is(+ar: O.Arena, +i: U32, +d: S.Dt) -> Bool:
+  tn_cast.dt_is.of(tn_dtype(tn_wrap_uop(ar, i)), d)
 
-# the CAST node, on the arena the value came from.
-def tn_cast.node2(+ar: O.Arena, +i: U32, +d: S.Dt) -> Tensor:
-  tn_new(ar, O.Found.i(O.UOp.new(ar, O.OpsCAST{}, [i], O.ADt{d}, O.TNone{})))
+# the CAST node, on the arena the value came from. `tn_alu.put` is the one spelling that
+# cannot name the wrong arena (see the note above it).
+def tn_cast.node(+ar: O.Arena, +i: U32, +d: S.Dt) -> Tensor:
+  tn_alu.put(O.UOp.new(ar, O.OpsCAST{}, [i], O.ADt{d}, O.TNone{}))
 
-def tn_cast.node(+i: U32, +d: S.Dt) -> Tensor:
-  tn_cast.node2(O.Arena.empty(), i, d)
-
-def tn_cast.put.of(same: Bool, +i: U32, +d: S.Dt) -> Maybe<&2, Tensor>:
+def tn_cast.put.of(same: Bool, +ar: O.Arena, +i: U32, +d: S.Dt) -> Maybe<&2, Tensor>:
   match same:
-    case True{}: Some{tn_wrap_uop(O.Arena.empty(), i)}
-    case _: Some{tn_cast.node(i, d)}
+    case True{}: Some{tn_wrap_uop(ar, i)}
+    case _: Some{tn_cast.node(ar, i, d)}
 
-def tn_cast.put(+i: U32, +d: S.Dt) -> Maybe<&2, Tensor>:
-  tn_cast.put.of(tn_cast.dt_is(i, d), i, d)
+def tn_cast.put(+ar: O.Arena, +i: U32, +d: S.Dt) -> Maybe<&2, Tensor>:
+  tn_cast.put.of(tn_cast.dt_is(ar, i, d), ar, i, d)
 
-def tn_cast.go(i: U32, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
+def tn_cast.go(ar: O.Arena, i: U32, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
   match dt:
-    case Some{d}: tn_cast.put(i, d)
-    case _: Some{tn_wrap_uop(O.Arena.empty(), i)}
+    case Some{d}: tn_cast.put(ar, i, d)
+    case _: Some{tn_wrap_uop(ar, i)}
 
-def tn_cast.of(m: Maybe<&2, U32>, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
+def tn_cast.of(ar: O.Arena, m: Maybe<&2, U32>, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
   match m:
-    case Some{i}: tn_cast.go(i, dt)
+    case Some{i}: tn_cast.go(ar, i, dt)
     case None{}: None{}
 
 # `self.uop = data if data.device is None or data.device == _device else
@@ -1285,7 +1288,7 @@ def tn_cast.of(m: Maybe<&2, U32>, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
 # that is a graph fact.
 def tn_init.of(m: Maybe<&2, O.Found>, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:
   match m:
-    case Some{i}: tn_cast.of(tn_init.keep(i), dt)
+    case Some{+i}: tn_cast.of(O.Found.ar(i), tn_init.keep(i), dt)
     case None{}: None{}
 
 def tn_init(d: Data1, dt: Maybe<&2, S.Dt>) -> Maybe<&2, Tensor>:

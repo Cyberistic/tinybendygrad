@@ -416,19 +416,11 @@ def op_ar(+t: T.Tensor) -> O.Arena:
   match t:
     case T.Tensor{ar, uop, is_param, grad}: ar
 
-# `d` IS A `Tensor` AND NOT A `U32` BECAUSE `t.detach()` GREW THE ARENA. Passing the
-# incoming `ar` here built the SUB in an arena that does not contain the DETACH, and
-# the sink indexed into the wrong store: measured, `op_apply` printed `0`, meaning the
-# toposort found no sink at all. `op_ar(d)` is the arena the DETACH left behind, and it
-# is the arena the SUB belongs in. This is rule 5 and it is the third time in this file.
-def op_sub.node(ar: O.Arena, d: U32, up: U32) -> T.Tensor:
-  T.tn_alu.of(ar, d, O.OpsSUB{}, [up])
-
-def op_sub(+d: T.Tensor, up: U32) -> T.Tensor:
-  op_sub.node(op_ar(d), T.Tensor.u(d), up)
-
-def op_apply(t: T.Tensor, up: U32) -> T.Tensor:
-  op_sub(t, up)
+# `t.detach() - up.to(t.device)` IS `ADD(detach, MUL(up, -1))` AND NOT A `SUB`, and
+# `op_apply` therefore lives with the binop helpers below (`op_add`, `op_neg`) so the two
+# operands' arenas are MERGED before either index is read. The old `op_sub` built a bare
+# `SUB` here; CPython's `sub` (elementwise.py:103) is `a.alu(Ops.ADD, -b)` and `Ops.SUB` is
+# never built by a Tensor method.
 
 # ===========================================================================
 # `Optimizer.__init__` -- optim.py:11-22, the constructor.
@@ -622,16 +614,13 @@ def op_f32(ar: O.Arena, v: F32) -> T.Tensor:
 # arena that went in.
 # ===========================================================================
 
-# `lhs + rhs` WHERE `rhs` IS A COMPUTED TENSOR. The arena is `rhs`'s, not the incoming
-# one: `g + self.wd * t.detach()` builds its right-hand side first and that step grew
-# the arena, so the ADD belongs where the MUL left it. Passing a stale arena here is
-# MEASURED to print a one-node graph -- the third instance of tensor.bend's rule 5 in
-# this file, and the reason the rule is stated at the head rather than discovered.
-def op_add_u.node(ar: O.Arena, a: U32, b: U32) -> T.Tensor:
-  T.tn_alu.of(ar, a, O.OpsADD{}, [b])
-
-def op_add_u(a: U32, +b: T.Tensor) -> T.Tensor:
-  op_add_u.node(op_ar(b), a, T.Tensor.u(b))
+# `lhs + rhs` -- elementwise.py:267 `__add__`. BOTH OPERANDS ARE `Tensor`s AND THE BUILD
+# MERGES THEIR ARENAS. `Arena` is an immutable `Data` value, so `b`'s index is meaningful
+# only in `b`'s own arena; `tn_binop` re-mints it into a common descendant (`Arena.merge`,
+# CONTENT and not length), which is the one spelling correct whether the operands are a
+# chain or siblings. Passing a stale arena here is MEASURED to print a one-node graph.
+def op_add(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  T.tn_binop(a, b, O.OpsADD{})
 
 def op_mul.node(ar: O.Arena, a: U32, b: U32) -> T.Tensor:
   T.tn_alu.of(ar, a, O.OpsMUL{}, [b])
@@ -640,29 +629,20 @@ def op_mul.node(ar: O.Arena, a: U32, b: U32) -> T.Tensor:
 def op_square(ar: O.Arena, +a: U32) -> T.Tensor:
   op_mul.node(ar, a, a)
 
-# `lhs * rhs` where `rhs` is a computed TENSOR: the arena is `rhs`'s.
-def op_mulr(+a: U32, +b: T.Tensor) -> T.Tensor:
-  op_mul.node(op_ar(b), a, T.Tensor.u(b))
-
-# `rhs * lhs`, the other order -- elementwise.py:24's `_broadcasted` puts the CONST
-# first for a Python float on the left and the TENSOR first for a Tensor on the left,
-# and the two differ ONLY in src order, which no count row can see.
+# `lhs * rhs` -- elementwise.py:125 `__mul__`, the same merge rule as `op_add`. The ORDER
+# of the two srcs IS load-bearing: `_broadcasted` (elementwise.py:24) puts the CONST first
+# for a Python float on the left and the TENSOR first for a Tensor on the left, and the two
+# differ ONLY in src order, which no count row can see.
 def op_mul_l(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
-  op_mul.node(op_ar(b), T.Tensor.u(a), T.Tensor.u(b))
+  T.tn_binop(a, b, O.OpsMUL{})
 
-# `where(q, x, y)` -- elementwise.py:426, the TERNARY alu: src = (q, x, y) in that
-# order, which is the one place in this file where src ORDER is load-bearing.
-# THE ELSE IS AN `F32` AND NOT A `Tensor` because BOTH elses in optim.py:115 are the
-# LITERAL `1.0`, so the CONST is interned here rather than at each call site. THE SRC
-# ORDER IS `(q, x, y)` and it is load-bearing: `OpsWHERE` is a ternary and a port that
-# swapped the two arms typechecks, prints `WHERE/3` identically, and computes the
-# complement of the trust ratio. `op_trust` is the row that sees it.
-def op_where.node(ar: O.Arena, q: U32, x: U32, y: U32) -> T.Tensor:
-  T.tn_alu.of(ar, q, O.OpsWHERE{}, List.append(&2, U32, [x], [y]))
-
+# `where(q, x, y)` -- elementwise.py:426, the TERNARY alu: src = (q, x, y) in that order,
+# which is the one place in this file where src ORDER is load-bearing. `tn_where` merges
+# all three arenas, so the else-CONST is interned in `x`'s and the ORDER `(q, x, y)` is
+# kept. A port that swapped the two arms typechecks, prints `WHERE/3` identically, and
+# computes the complement of the trust ratio; `op_trust` is the row that sees it.
 def op_where(+q: T.Tensor, +x: T.Tensor, y: F32) -> T.Tensor:
-  op_where.node(op_ar(x), T.Tensor.u(q), T.Tensor.u(x),
-    T.Tensor.u(T.tn_const(op_ar(x), O.CFloat{y})))
+  T.tn_where(q, x, T.tn_const(op_ar(x), O.CFloat{y}))
 
 # EVERY UNARY HELPER TAKES A `Tensor` AND NOT A `U32`, and the reason is the FOURTH
 # measured instance of tensor.bend's rule 5: these four each built into a FRESH
@@ -687,38 +667,51 @@ def op_recip.node(ar: O.Arena, a: U32) -> T.Tensor:
 def op_recip(+a: T.Tensor) -> T.Tensor:
   op_recip.node(op_ar(a), T.Tensor.u(a))
 
-# `div` -- elementwise.py:250, `d = a.alu(Ops.MUL, b.reciprocal())`. THERE IS NO
-# DIVISION ALU OP: `Ops` has `CDIV`/`FLOORDIV` for the INTEGER cases
-# (elementwise.py:247-248) and true float division is a MUL by a RECIPROCAL. The
-# comment above it is load-bearing and is kept: "alu, not *: _broadcasted already
-# promoted these, and a second promote would cast 1/b (only a weak CONST is kept weak)".
-# So `tcoef * r1 / (...)` is TWO nodes and not one, and `op_trust` is wrong by a node if
-# this is a DIV. `b` is a `Tensor` so the RECIPROCAL lands in `b`'s arena.
+# `a / b` -- elementwise.py:250, `a.alu(Ops.MUL, b.reciprocal())`. THERE IS NO DIVISION ALU
+# OP: `Ops` has `CDIV`/`FLOORDIV` for the INTEGER cases (elementwise.py:247-248) and true
+# float division is a MUL by a RECIPROCAL. The comment above it is load-bearing and is
+# kept: "alu, not *: _broadcasted already promoted these, and a second promote would cast
+# 1/b (only a weak CONST is kept weak)". So `tcoef * r1 / (...)` is TWO nodes and not one,
+# and `op_trust` is wrong by a node if this is a DIV. THE NUMERATOR IS A `Tensor` SO ITS
+# ARENA TRAVELS WITH IT and `op_mul_l` merges the two.
+def op_div_t(+a: T.Tensor, +b: T.Tensor) -> T.Tensor:
+  op_mul_l(a, op_recip(b))
+
+# THE `(U32, Tensor)` FORM, for a numerator that is a bare index already valid in `b`'s
+# arena -- which is the shape `gates/op_graph_census.bend` drives. A computed numerator
+# MUST go through `op_div_t`, or its index is read in the wrong arena.
 def op_div(a: U32, +b: T.Tensor) -> T.Tensor:
-  op_mul_l(T.tn_wrap_uop(op_ar(b), a), op_recip(b))
+  op_div_t(T.tn_wrap_uop(op_ar(b), a), b)
 
-# `x > 0` -- elementwise.py:324, `self._binop(Ops.CMPLT, x, True)`. The COMPARISON is
-# `CMPLT` and the swap is `_broadcasted`'s `reverse`, which is why `op_cmplt(one, x)`
-# reads the way it does rather than `op_cmplt(x, one)`.
-def op_cmplt(a: U32, b: U32) -> T.Tensor:
-  T.tn_alu.of(O.Arena.empty(), a, O.OpsCMPLT{}, [b])
+# `x > 0` -- elementwise.py:324, `self._binop(Ops.CMPLT, x, True)`. `_broadcasted`'s
+# `reverse` puts the Python literal FIRST, so the graph is `CMPLT(CONST(0.0), x)`.
+# THE CONSTANT IS `0.0` AND NOT `1.0` (optim.py:115, :175), which no op-level printer can
+# see -- the census's `:arg` suffix is the instrument. The build merges the two arenas.
+def op_cmplt1(ar: O.Arena, +x: T.Tensor) -> T.Tensor:
+  T.tn_binop(T.tn_const(ar, O.CFloat{0.0}), x, O.OpsCMPLT{})
 
-# `Ops.NEG` has no dedicated Tensor method -- `-x` is `__neg__`, and a unary minus is not
-# a term in Bend (it parses as the start of a binder), so `op_neg` exists.
-def op_neg.node(ar: O.Arena, a: U32) -> T.Tensor:
-  T.tn_alu.of(ar, a, O.OpsNEG{}, Nil{})
-
+# `-x` -- elementwise.py:261 `__neg__`, `self * -1`. A `MUL` and NOT a `NEG`: `Ops.NEG` is
+# never built by a Tensor method. The `-1` is a FLOAT const because CPython promotes the
+# Python int to the operand's dtype (the oracle prints `f3212836864`).
 def op_neg(+a: T.Tensor) -> T.Tensor:
-  op_neg.node(op_ar(a), T.Tensor.u(a))
+  op_mul_l(a, T.tn_const(op_ar(a), O.CFloat{F32.neg(1.0)}))
+
+# `_apply_update` -- optim.py:60. `ADD(detach, MUL(up, -1))`: `op_neg` is the `-1`
+# multiply and `op_add` merges the DETACH's arena with the MUL's, so `up` is re-minted
+# before it is read. `up.to(t.device)` is a device wall and is dropped (the header says so).
+def op_apply(+t: T.Tensor, up: U32) -> T.Tensor:
+  op_add(t, op_neg(T.tn_wrap_uop(op_ar(t), up)))
 
 # `cast` -- mixin/dtype.py, and `tn_cast` is tensor.bend's. It returns a `Maybe` because
 # Python's `.cast` on a MATCHING dtype is the identity and there is no node; the default
-# is the input UNCHANGED, which is what Python does and not a shortcut.
+# is the input UNCHANGED, which is what Python does and not a shortcut. THE ARENA IS THE
+# SRC's: `tn_cast` used to build into `O.Arena.empty()`, so an identity cast answered
+# `1 NOOP/0` where CPython answers the src.
 def op_cast.id(m: Maybe<&2, T.Tensor>, d: T.Tensor) -> T.Tensor:
   Maybe.default(&2, T.Tensor, m, d)
 
 def op_cast(+t: T.Tensor, dt: S.Dt) -> T.Tensor:
-  op_cast.id(T.tn_cast.of(Some{T.Tensor.u(t)}, Some{dt}), t)
+  op_cast.id(T.tn_cast.of(op_ar(t), Some{T.Tensor.u(t)}, Some{dt}), t)
 
 # ===========================================================================
 # `LARS._step` -- optim.py:109-129, in SOURCE ORDER. Eight `if`s in Python and each
@@ -758,9 +751,13 @@ def op_sum(+ar: O.Arena, +a: U32) -> T.Tensor:
   T.tn_alu.put(T.tn_rop(ar, a, O.OpsADD{}, op_axes(op_sum.axes(ar, a))))
 
 # `r1 = t.detach().square().sum().sqrt()` -- optim.py:113. `square` is elementwise.py:575,
-# `self * self`, so the SAME index is both srcs, and that is why `a` is `+`.
+# `self * self`, so the SAME index is both srcs, and that is why `a` is `+`. THE SUM IS
+# BUILT ON THE SQUARE'S ARENA (`T.Tensor.ar(s)`), not on `a`'s: the square grew it, and the
+# old spelling handed `op_sum` the pre-growth arena, so the REDUCE's src[0] was its own
+# index and `toposort` answered `0`.
 def op_normsq(+a: T.Tensor) -> T.Tensor:
-  op_sqrt(op_sum(op_ar(a), T.Tensor.u(op_square(op_ar(a), T.Tensor.u(a)))))
+  +s = op_square(op_ar(a), T.Tensor.u(a))
+  op_sqrt(op_sum(T.Tensor.ar(s), T.Tensor.u(s)))
 
 def op_normsq_u(+ar: O.Arena, +a: U32) -> T.Tensor:
   op_normsq(T.tn_wrap_uop(ar, a))
@@ -770,15 +767,13 @@ def op_normsq_u(+ar: O.Arena, +a: U32) -> T.Tensor:
 # (elementwise.py:24) returns `(self, y) if not reverse else (y, self)` -- `__mul__`
 # passes `reverse=False`, so the CONST IS src[0]. Getting this backwards typechecks and
 # prints `MUL/2` identically, so `op_prewd` and `op_trust` are the rows that see it.
-# THE CONST IS INTERNED IN `a`'s ARENA AND NOT IN THE INCOMING ONE. `T.tn_const`
-# APPENDS, so a CONST interned into a newer arena than the MUL that consumes it leaves
-# the MUL in an arena that does not contain its own src[0] -- which is exactly the
-# stale-arena bug, in a new disguise. `op_ar(a)` is the arena `op_mul_l` will use, so
-# both nodes land together. `op_prewd` is the row: without this it printed
-# `5 BUFFER BUFFER DETACH MUL ADD` against CPython's `10 ... CONST MUL ...`, the missing
-# CONST being the whole difference.
+# THE CONST IS INTERNED INTO `ar` AND `op_mul_l` MERGES IT WITH `a`'s ARENA. The old
+# spelling built the CONST into `op_ar(a)` and then the MUL into that SAME pre-growth
+# arena, at the index the CONST had just taken: the CONST was orphaned and the MUL's
+# src[0] was its own index, a SELF-LOOP that made `toposort` answer `0`. `op_mul_l`'s
+# `Arena.merge` is the fix; `op_prewd` and `op_mulf` are the rows.
 def op_mulf(ar: O.Arena, v: F32, +a: T.Tensor) -> T.Tensor:
-  op_mul_l(T.tn_const(op_ar(a), O.CFloat{v}), a)
+  op_mul_l(T.tn_const(ar, O.CFloat{v}), a)
 
 # THE TRUST RATIO, optim.py:115, and it is the only place in this file where the
 # NESTING of two WHEREs is itself the claim:
@@ -786,26 +781,16 @@ def op_mulf(ar: O.Arena, v: F32, +a: T.Tensor) -> T.Tensor:
 # The two `op_where` calls nest the way the source reads, OUTERMOST LAST. A port that
 # folded the nesting builds the same two ternaries in the opposite nesting, and a
 # signature is the only thing that can see it.
-# THE `1.0` OF THE TRUST RATIO, interned into `ar` -- the SAME arena the WHEREs it
-# feeds are built in. Both elses of optim.py:115 are this literal, so it is built twice
-# and hash-consing interns both at ONE index; `op_trust`'s count is Python's.
-def op_one(ar: O.Arena) -> U32:
-  T.Tensor.u(T.tn_const(ar, O.CFloat{1.0}))
-
-# `1.0 > x` READ AS `x < 1.0` IS WHAT `_broadcasted`'s `reverse=True` PRODUCES, and the
-# node belongs in `x`'s arena, which is why the CONST is interned THERE rather than in
-# whatever arena the caller happened to be holding.
-def op_cmplt.node(ar: O.Arena, a: U32, b: U32) -> T.Tensor:
-  T.tn_alu.of(ar, a, O.OpsCMPLT{}, [b])
-
-def op_cmplt1(ar: O.Arena, +x: T.Tensor) -> T.Tensor:
-  op_cmplt.node(op_ar(x), T.Tensor.u(T.tn_const(op_ar(x), O.CFloat{1.0})), T.Tensor.u(x))
+# THE `1.0` OF THE TRUST RATIO: both elses of optim.py:115 are this literal, so it is
+# passed twice to `op_where` and hash-consing interns both at ONE index; `op_trust`'s
+# count is Python's. (The old `op_one` helper returned the bare index and is gone; the
+# `1.0` travels as `op_where`'s `F32`.)
 
 def op_trust.den(+ar: O.Arena, +r1: T.Tensor, +r2: T.Tensor, wd: F32) -> T.Tensor:
-  op_add_u(T.Tensor.u(r2), op_mulf(ar, wd, r1))
+  op_add(r2, op_mulf(ar, wd, r1))
 
 def op_trust.ratio(+ar: O.Arena, +r1: T.Tensor, +r2: T.Tensor, wd: F32, tcoef: F32) -> T.Tensor:
-  op_div(T.Tensor.u(op_mulf(ar, tcoef, r1)), op_trust.den(ar, r1, r2, wd))
+  op_div_t(op_mulf(ar, tcoef, r1), op_trust.den(ar, r1, r2, wd))
 
 def op_trust.inner(+ar: O.Arena, +q: T.Tensor, +r1: T.Tensor, +r2: T.Tensor, wd: F32, tcoef: F32) -> T.Tensor:
   op_where(q, op_trust.ratio(ar, r1, r2, wd, tcoef), 1.0)
@@ -838,12 +823,14 @@ def op_trust(+ar: O.Arena, +t: U32, g: U32, wd: F32, tcoef: F32) -> T.Tensor:
 
 # `if self.pre_wd and self.wd > 0: g = g + self.wd * t.detach()` -- optim.py:117
 def op_prewd(+ar: O.Arena, g: U32, t: U32, wd: F32) -> T.Tensor:
-  op_add_u(g, op_mulf(ar, wd, op_detach(ar, t)))
+  op_add(T.tn_wrap_uop(ar, g), op_mulf(ar, wd, op_detach(ar, t)))
 
 # `if self.classic: g = g * r * self.lr` -- optim.py:119, and :125 is the same two MULs
-# for the NOT-classic path.
+# for the NOT-classic path. CPython's `g * r * lr` is LEFT-associated: `MUL(MUL(g, r), lr)`.
+# The old spelling built `MUL(g, MUL(r, lr))`, the opposite tree, which prints the same
+# node count and is a different graph. `op_lars0` is the row.
 def op_lr_mul(+ar: O.Arena, g: U32, +r: T.Tensor, lr: U32) -> T.Tensor:
-  op_mul_l(T.tn_wrap_uop(ar, g), op_mul_l(r, T.tn_wrap_uop(ar, lr)))
+  op_mul_l(op_mul_l(T.tn_wrap_uop(ar, g), r), T.tn_wrap_uop(ar, lr))
 
 # `self.b[i].assign(self.momentum * self.b[i] + g)` -- optim.py:121. The ASSIGN SPINE is
 # `T.tn_assign_store`, tensor.bend's own, and the `STORE/2 AFTER/2` pair it produces is
@@ -852,10 +839,13 @@ def op_lr_mul(+ar: O.Arena, g: U32, +r: T.Tensor, lr: U32) -> T.Tensor:
 # `self.b[i]` IS READ TWICE -- as the store's target AND as the momentum term's src --
 # so `b` is `+`, and `ar` is `+` because the ASSIGN SPINE grows it after the ADD.
 def op_mom.mix(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
-  op_add_u(T.Tensor.u(op_mulf(ar, momentum, T.tn_wrap_uop(ar, b))), T.tn_wrap_uop(ar, g))
+  op_add(op_mulf(ar, momentum, T.tn_wrap_uop(ar, b)), T.tn_wrap_uop(ar, g))
 
+# THE ASSIGN SPINE IS BUILT ON THE MIX'S ARENA (`T.Tensor.ar(m)`): the ADD grew it, so the
+# old `ar` did not contain the mix's index and the STORE's src[1] was wrong.
 def op_mom(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
-  T.tn_alu.put(T.tn_assign_store(ar, b, T.Tensor.u(op_mom.mix(ar, b, g, momentum))))
+  +m = op_mom.mix(ar, b, g, momentum)
+  T.tn_alu.put(T.tn_assign_store(T.Tensor.ar(m), b, T.Tensor.u(m)))
 
 # `g = (g + self.momentum * self.b[i]) if self.nesterov else self.b[i]` -- optim.py:122
 #
@@ -868,12 +858,16 @@ def op_mom(+ar: O.Arena, +b: U32, g: U32, momentum: F32) -> T.Tensor:
 # is `+`, and `Bool.pick` being strict is why both reads happen at all.
 def op_nesterov(+ar: O.Arena, g: U32, +b: U32, momentum: F32, nesterov: Bool) -> T.Tensor:
   Bool.pick(T.Tensor, nesterov,
-    op_add_u(g, op_mulf(ar, momentum, T.tn_wrap_uop(ar, b))), T.tn_wrap_uop(ar, b))
+    op_add(T.tn_wrap_uop(ar, g), op_mulf(ar, momentum, T.tn_wrap_uop(ar, b))),
+    T.tn_wrap_uop(ar, b))
 
 # `if not self.pre_wd and self.wd > 0: g = g + self.wd * self.lr * t.detach()`
 # -- optim.py:127. NOTE the comment at :126: "muon does post momentum weight decay".
+# CPython's `wd * lr * detach` is LEFT-associated: `MUL(MUL(wd, lr), detach)`. The old
+# spelling built `MUL(wd, MUL(lr, detach))`, the opposite tree; `op_postwd` is the row.
 def op_postwd(+ar: O.Arena, g: U32, t: U32, lr: U32, wd: F32) -> T.Tensor:
-  op_add_u(g, op_mulf(ar, wd, op_mul_l(T.tn_wrap_uop(ar, lr), op_detach(ar, t))))
+  op_add(T.tn_wrap_uop(ar, g),
+    op_mul_l(op_mulf(ar, wd, T.tn_wrap_uop(ar, lr)), op_detach(ar, t)))
 
 # ===========================================================================
 # `LAMB._step` -- optim.py:161-179. The structure is LARS's with a different numerator,
@@ -902,32 +896,30 @@ def op_lamb_up(+up: T.Tensor, r: T.Tensor, lr: T.Tensor) -> T.Tensor:
 
 # `(self.b1 * self.m[i] + (1.0 - self.b1) * g).cast(self.m[i].dtype)` -- optim.py:167
 def op_mstep(+ar: O.Arena, m: U32, g: U32, +b1: F32) -> T.Tensor:
-  op_cast(op_add_u(T.Tensor.u(op_mulf(ar, b1, T.tn_wrap_uop(ar, m))),
+  op_cast(op_add(op_mulf(ar, b1, T.tn_wrap_uop(ar, m)),
     op_mulf(ar, op_1mb(b1), T.tn_wrap_uop(ar, g))), S.single())
 
 # `(self.b2 * self.v[i] + (1.0 - self.b2) * (g * g)).cast(...)` -- optim.py:168
 def op_vstep(+ar: O.Arena, v: U32, +g: U32, +b2: F32) -> T.Tensor:
-  op_cast(op_add_u(T.Tensor.u(op_mulf(ar, b2, T.tn_wrap_uop(ar, v))),
+  op_cast(op_add(op_mulf(ar, b2, T.tn_wrap_uop(ar, v)),
     op_mulf(ar, op_1mb(b2), op_square(ar, g))), S.single())
 
 # `m_hat = self.m[i] / (1.0 - self.b1_t)` -- optim.py:169. `b1_t` is a TENSOR, so the
 # subtraction IS a node here -- the opposite of `(1.0 - self.b1)` above, and the two
-# rows are what keep them apart.
-def op_mulf_u(+ar: O.Arena, v: F32, a: U32) -> T.Tensor:
-  op_mulf(ar, v, T.tn_wrap_uop(ar, a))
-# `1.0 - b1_t`: the CONST is interned into `bt`'s arena so the NEG and the ADD and the
-# CONST are all in one place.
+# rows are what keep them apart. THE DENOMINATOR IS `1.0 - b1_t` AND NOT `1.0 - 1.0*b1_t`:
+# the old `op_hat.num` multiplied by `1.0` first, an extra MUL that CPython does not build.
+# `op_hat.den` is `1.0 - t`, the CONST interned into `ar` and merged by `op_add`.
 def op_hat.den(+ar: O.Arena, +t: T.Tensor) -> T.Tensor:
-  op_add_u(T.Tensor.u(T.tn_const(op_ar(t), O.CFloat{1.0})), op_neg(t))
+  op_add(T.tn_const(ar, O.CFloat{1.0}), op_neg(t))
 
 def op_hat.num(+ar: O.Arena, bt: U32) -> T.Tensor:
-  op_hat.den(ar, op_mulf_u(ar, 1.0, bt))
+  op_hat.den(ar, T.tn_wrap_uop(ar, bt))
 
 def op_mhat(+ar: O.Arena, m: U32, b1_t: U32) -> T.Tensor:
-  op_div(m, op_hat.num(ar, b1_t))
+  op_div_t(T.tn_wrap_uop(ar, m), op_hat.num(ar, b1_t))
 
 def op_vhat(+ar: O.Arena, v: U32, b2_t: U32) -> T.Tensor:
-  op_div(v, op_hat.num(ar, b2_t))
+  op_div_t(T.tn_wrap_uop(ar, v), op_hat.num(ar, b2_t))
 
 # ===========================================================================
 # THE GATE.
@@ -1322,10 +1314,10 @@ def t_nesterov() -> IO(Unit):
 # float-times-detach) rather than LAMB's full moment bookkeeping. `op_lamb_extra`
 # below is the COUNT row for the bookkeeping this row does not model.
 def op_lamb_of.eps(+ar: O.Arena, +m: T.Tensor) -> T.Tensor:
-  op_add_u(T.Tensor.u(op_sqrt(m)), T.tn_const(op_ar(m), O.CFloat{0.00000001}))
+  op_add(op_sqrt(m), T.tn_const(ar, O.CFloat{0.00000001}))
 
 def op_lamb_of(+m: T.Tensor, +s: St) -> T.Tensor:
-  op_add_u(T.Tensor.u(op_div(T.Tensor.u(m), op_lamb_of.eps(op_ar(m), m))),
+  op_add(op_div_t(m, op_lamb_of.eps(op_ar(m), m)),
     op_mulf(st_ar(s), 0.01, op_detach(st_ar(s), st_t(s))))
 
 def op_lamb.of(m: T.Tensor, +s: St) -> T.Tensor:
@@ -1347,41 +1339,32 @@ def t_lamb() -> IO(Unit):
   t_lamb.of(g_step())
 
 # ===========================================================================
-# THE GATE'S HONEST STATE. FOUR ROWS ARE GREEN AND SEVEN ARE NOT, AND THE SEVEN ARE
-# NAMED SO THAT NOBODY CAN READ THEM AS CLAIMS.
+# THE FILE'S OWN `main`, AND ITS HONEST STATE. FOUR VALUE ROWS AND SEVEN GRAPH ROWS.
 #
-# GREEN -- these four match the CPython oracle exactly and are claims:
-#   op_params  the `is_param` filter and the dedup  (optim.py:13)
-#   op_bufs    the `not is_param` filter             (optim.py:15)
-#   op_acc     `itertools.accumulate(..., initial=0)`: `0,2,5` for sizes `[2,3]`
-#   op_nop     `_new_optim_param`'s three arms, which arm fired and with what size
+# THE ARENA PLUMBING IS FINISHED. `gates/op_graph_census-gate.py` drives each builder directly
+# and diffs the deep toposort (with each node's arg) against CPython's own graph; as of
+# 2026-10-09 all 24 graph rows and the four value rows match, and the seven rows below that
+# used to print `1 NOOP/0` (or a one-node graph) now print CPython's exact trees. The
+# `unverified_*` NAMES ARE HISTORICAL, kept only so this file's own output is stable.
 #
-# NOT GREEN -- these seven print a signature and it does NOT match CPython, so they are
-# printed under `unverified_*` names and they are NOT claims:
-#   unverified_apply     4 nodes   against CPython's  6
-#   unverified_prewd     1 node    against CPython's 10
-#   unverified_lars0     1 node    against CPython's  5
-#   unverified_trust     0 nodes   against CPython's 24
-#   unverified_mom       1 node    against CPython's 11
-#   unverified_nesterov  1 node    against CPython's 13
-#   unverified_lamb      1 node    against CPython's 49
+# THE ONE DIVERGENCE THAT IS NOT A GRAPH DEFECT: `op_1mb`'s `(1.0 - self.b1)` is a DOUBLE
+# subtraction in CPython and an f32 one here, so the `mstep`/`vstep` CONSTs differ by one ULP.
+# MEASURED: CPython double-then-cast answers 0x3dcccccd, the port's f32 answers 0x3dccccd0, and
+# NO f32 operand within +-200000 ULP of the f32 literal reproduces CPython's bits under `1 - v`.
 #
-# THE CAUSE IS KNOWN AND IT IS NOT A WRONG-OP BUG. EVERY ONE OF THE SEVEN is missing
-# CONST nodes: CPython's `tcoef * r1` interns a `CONST` for the Python float and so
-# does this port's `op_mulf`, but a CONST interned into a DIFFERENT arena than the node
-# that consumes it is invisible to the toposort. That is tensor.bend's rule 5 -- "the
-# arena a build returns is not the arena that went in" -- and it was hit FIVE separate
-# times while writing this file (bare-`U32` helpers, a stale `ar` on `op_sub`, a fresh
-# `Arena.empty()` in `Bool.pick`'s re-wrap, the unary helpers, and `op_mulf`'s own
-# CONST). `op_mulf` interns into `op_ar(a)` for exactly this reason and the comment at
-# that def records it.
+# "BEND HAS NO f64, SO IT CANNOT BE CLOSED" IS TOO STRONG, and the correction matters because it
+# says who can close it. `self.b1` is a CONSTRUCTOR PARAMETER (default 0.9) and `F32.from_bits`
+# EXISTS (`base.bend:54`), so a CALLER that knows the double -- the default, or any literal --
+# can close it by building the CONST with the double-computed-then-cast bits. What cannot be
+# closed is the GENERAL case: `op_1mb` receives an f32 `b1` and cannot recover the double that
+# produced it. So the pin is honest for the general case and a literal-defaults caller could
+# drop it; the gate declares it either way.
 #
-# WHAT A REVIEWER SHOULD TAKE FROM THIS: the ARITHMETIC is believed right and the
-# ARENA PLUMBING is not finished. The strongest evidence for the first is `op_acc` --
-# `0,2,5` is the exclusive prefix sum with `initial=0` at the head, and a wrong
-# accumulate (a missing head, a reversed list, a per-element off-by-one) would all print
-# something else. The weakest thing here is that SEVEN rows are red, and the honest
-# reading is that this file's `_step` graph construction is NOT YET GATED.
+# THE MECHANISM THAT WAS WRONG, for the record: a helper interned a CONST into an arena that
+# GREW it and then built the consuming node in the PRE-GROWTH arena, at the index the const
+# took -- the const was orphaned and the consumer's `src[0]` was its own index, a self-loop
+# that made `toposort` answer `0`. The fix is one spelling: every two-operand node merges its
+# operands' arenas (`tn_binop`) and every three-operand node is `tn_where`.
 # ===========================================================================
 
 # THE SEVEN ROWS ABOVE, PRINTED UNDER NAMES THAT SAY WHAT THEY ARE.
@@ -1424,30 +1407,20 @@ def main() -> IO(Unit):
 # | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | **NOTHING** | A NEGATIVE, and the gate's honest limit. `op_nop`'s fixture uses a `S.D1` device, so the `Dn` arm NEVER FIRES and swapping it for the `S.D1` arm's body changes nothing. `_new_optim_param`'s multi-device branch (optim.py:26, `isinstance(self.device, tuple)`) is therefore UNGATED. The fixture that closes it needs an `S.Dn` optimizer, which needs a multi-device param, which needs `Device.tag` to intern two names -- that is P6 runtime, not this file. |
 # | M4 | a no-op edit | **NOTHING** | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
 #
-# THE SEVEN `unverified_*` ROWS WERE NOT MUTATED, because a mutation's only meaning is
-# the set of rows it moves and seven of those rows are already red: moving a red row
-# measures nothing. They are reported as red instead, which is the honest form of the
-# same information.
+# THE SEVEN `unverified_*` ROWS ARE NOW CLAIMS TOO: the census gate drives each builder and
+# diffs the deep toposort against CPython, and all seven match. They are not mutated HERE --
+# the census gate's pins ARE their mutation -- so this table stays the four VALUE rows' table.
 #
 # BOTH LANES AGREE. `./bin/bend tinybendygrad/nn/optim.bend` and
-# `./bin/bend tinybendygrad/nn/optim.bend -o <bin>` are byte identical on all eleven
-# rows, measured.
+# `./bin/bend tinybendygrad/nn/optim.bend -o <bin>` are byte identical on all eleven rows,
+# measured.
 
-# THE GATE, AS A COMMAND, and the diff is EXPECTED TO BE NON-EMPTY on the seven
-# `unverified_*` rows until the arena plumbing is finished:
+# THE GATE, AS A COMMAND. The graph rows are gated by `gates/op_graph_census-gate.py`, which
+# drives each builder directly and diffs the deep toposort WITH each node's arg -- the arg is
+# what sees the `CONST 1.0`-vs-`0` guard and the `op_1mb` float divergence:
 #
-#     .venv/bin/python .agents/slop/nn-gate.py > /tmp/py.txt
-#     ./bin/bendygrad/nn/optim.bend                       > /tmp/bd.txt
-#     ./bin/bendygrad/nn/optim.bend -o /tmp/nat && /tmp/nat > /tmp/nat.txt
-#     diff /tmp/bd.txt /tmp/nat.txt        # MEASURED: byte identical, all 11 rows
-#     diff /tmp/py.txt /tmp/bd.txt         # 4 rows agree, 7 do not, BY DESIGN
+#     .venv/bin/python gates/op_graph_census-gate.py
 #
-# THE FOUR THAT AGREE, checked by eye and not by a filter, because a filtered diff
-# hides its own exclusions:
-#   py  op_params=2,3        bd  op_params=True
-#   py  op_bufs=1            bd  op_bufs=True
-#   py  op_acc=0,2,5         bd  op_acc=True
-#   py  op_nop=Nzs:2,Nzs:3   bd  op_nop=True
-# The `True` on the Bend side is the COMPARISON against the literal, which is why the
-# oracle prints the value and the port prints the verdict; the four literals are in the
-# row defs and are visible there.
+# This file's own `main` prints the eleven rows below. The four value rows print the value
+# (`op_params=2,3`) while the port prints the VERDICT (`op_params=True`), because the row defs
+# compare against the literal; the seven `unverified_*` rows now print CPython's exact trees.
