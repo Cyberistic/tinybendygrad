@@ -3,8 +3,8 @@
 
     .venv/bin/python gates/gr_graph_census-gate.py
 
-18 RULE ROWS + 14 WALK ROWS = 32 ROWS, THREE LANES, TWO DECLARED DIVERGENCES -- ONE A
-CARVE-OUT, ONE A DEFECT. This is the `gradient.bend` peer of `gates/tn_graph_census-gate.py` /
+18 RULE ROWS + 14 WALK ROWS = 32 ROWS, THREE LANES, NO DECLARED DIVERGENCES -- ALL 32
+ROWS MATCH CPYTHON. This is the `gradient.bend` peer of `gates/tn_graph_census-gate.py` /
 `ew_*` / `mo_*` / `mx_*` / `cr_*`: the whole graph-building surface of the layer in one
 artifact. The layer's own `main` prints self-derived node COUNTS (a `size1` measure with no
 CPython lane and no harness); THIS drives each rule through the REAL matcher and diffs the
@@ -38,44 +38,34 @@ WHAT IT ASSERTS THAT NEEDS NO CPYTHON. `NOOP` IS THE BOTTOM (`Arena.bottom()`), 
 anywhere in a graph is an index read out of range and always a defect. `no_noop` reads the
 LANE'S OWN `bd.out`; it finds none, which is a measurement and not an absence.
 
-THE TWO DIVERGENCES, CLASSIFIED:
+THE TWO DEFECTS THIS GATE FOUND, BOTH NOW CLOSED -- `DIVERGES` IS EMPTY. Neither was a
+carve-out: the port answers CPython's tree on all 32 rows.
 
-  `gr_0` -- A CARVE-OUT, INSTRUMENT ONLY. The rule is `ctx.cast(ret.src[0].dtype)`
-    (gradient.py:67). CPython's `UOp.cast` FOLDS an identity cast
-    (`tinygrad/mixin/dtype.py:19` `return self if self.dtype == dt else ...`), so with the
-    fixture's `CAST(CONST 1.0, int32)` -- whose src dtype IS ctx's f32 -- CPython answers the
-    src itself (`2 CONST/0 CAST/1`). The port's `gcast` (`gradient.bend:163`) is a plain node
-    builder with NO fold, so it answers `CAST(src)` (`3 CONST/0 CAST/1 CAST/1`). Same value,
-    one extra node. It is the identity-CAST fold the task names as legitimate. **REPORTED,
-    NOT SMOOTHED: the port ALREADY HAS a folding cast -- `mixin/dtype.bend`'s `cast_at`
-    (`cast_at.of`: `case True{}: Found{md_ar(fx), self}`) -- and `gradient.bend:161` claims
-    `gcast` is "what `cast_at` already established". It is not, and `gr_0` is where that
-    shows. `gr_0_r` is the control: a REAL cast, and both lanes build it.** A fix moves the
-    port's `gr_0` line to CPython's and this pin must move with it.
+  `gr_0` -- THE IDENTITY-CAST FOLD. `gradient.py:67` is `ctx.cast(ret.src[0].dtype)` and
+    `tinygrad/mixin/dtype.py:19` is `return self if self.dtype == dt else ...`, so an
+    identity cast builds NO node. `gcast` (`gradient.bend:163`) minted UNCONDITIONALLY, so
+    with the fixture's `CAST(CONST 1.0, int32)` -- whose src dtype IS ctx's f32 -- the port
+    answered `CAST(src)` (`3 CONST/0 CAST/1 CAST/1`) where CPython answers the src itself
+    (`2 CONST/0 CAST/1`). `gcast` now reads the SOURCE dtype from `F.folded` and folds on
+    `O.eq_dt`, the same fold `mixin/dtype.bend`'s `cast_at` spells. `gr_0_r` is the
+    control: a REAL cast, and both lanes still build it.
 
-  `gr_10` -- A DEFECT, NOT A CARVE-OUT. The rule is `gradient.py:76-77`. TWO things are wrong,
-    both visible in the deep tree:
-      * slot 0 (`dx`, `ctx * e.eq(0).where(e, e*b.pow(e-1))`): the port answers
-        `ctx * (e==0).where(e, b^(e-1))` -- it is MISSING the `e *` factor (`WHERE`'s else is
-        `b^d`, not `e*b^d`), and `gr_10.zero` (`gradient.bend:467`) builds `CAST(CONST 0.0)`
-        where CPython builds a BARE `CONST 0.0`. The two errors CANCEL in the node COUNT
-        (`15` both sides, which is why `Rng.sig` is blind) but the deep tree differs:
-        port `... POW/2 WHERE/3 MUL/2`, CPython `... POW/2 MUL/2 WHERE/3 MUL/2`.
-      * slot 1 (`de`, `ctx * b.eq(0).where((e<0).where(ret.const_like(-inf), 0),
-        ret*b.log2()*math.log(2.0))`): the port builds `rb = MUL(ret, b)` and then NEVER USES
-        IT (it calls `glog2(ar(rb), b)`, i.e. `LOG2(b)`), so the answer is `log2(b)*log2`
-        where CPython has `ret*log2(b)*log2` -- the `ret` (`x^e`) factor is DROPPED and a DEAD
-        `MUL(ret, b)` node is minted. The count says so: port 20, CPython 21, missing `POW`.
-    A rule that drops `x^e` from `d/de x^e` is numerically wrong for every nonzero base.
-    **AND ONE MORE, INVISIBLE TO ANY OP-LEVEL PRINTER (this deep one included): `gr_10.dx`
-    spells `e-1` as `gsub(o, e)` (`gradient.bend:490`), and `gsub(x,y)` is `x-y`, so it
-    computes `1-e`, not `e-1`. The operand swap changes the SRCs and not the op sequence --
-    `ADD(o, MUL(e,-1.0))` and `ADD(e, MUL(o,-1.0))` have the SAME op multiset -- so neither
-    `Rng.sig` nor this deep printer can see it; it is REPORTED here and measured by reading
-    `gradient.bend:218-220` against `gradient.py:77`.** It is UNGATED elsewhere: the layer's
-    own `pow_n0`/`pow_n1` rows read `23`/`25` where the file's own comment says `24`/`29`.
+  `gr_10` -- THE POW GRADIENT. `gradient.py:76-77`. The port's `dx` was MISSING the `e *`
+    factor (`WHERE`'s else was `b^(e-1)`, not `e*b^(e-1)`), and its `de` built a DEAD
+    `MUL(ret, b)` then read `LOG2(b)` off `b`, DROPPING the `x^e` factor. Three constants
+    were wrong too: `e.eq(0)`, `e<0` and `where`'s `0` are all ONE bare `CONST 0` (the port
+    minted `CAST(CONST 0.0)`), and the `1` in `e-1` is a BARE `CONST 1.0` (the port minted
+    `CAST(CONST 1.0)`). A rule that drops `x^e` from `d/de x^e` is numerically wrong for
+    every nonzero base. The layer's own `pow_n0`/`pow_n1` rows now read `24`/`29`, the
+    numbers the file's comment always claimed.
 
-EXIT STATUS: 0 all three lanes identical after the pins, `NOOP`-free · 1 a lane took the wrong
+    AND THE EARLIER REVISION'S THIRD CLAIM WAS WRONG, so it is recorded rather than
+    repeated: it said `gr_10.dx` spelled `e-1` as `gsub(o, e)` and computed `1-e`.
+    MEASURED, `gsub(+ar, x, y)` is `x-y` and the call was `gsub(ar, e, o)`, i.e. `e-1` --
+    the exponent was ALWAYS right; only the `e*` factor and the constants were wrong. An
+    op-level printer cannot see an operand swap anyway, which is why the claim survived.
+
+EXIT STATUS: 0 all three lanes identical, `NOOP`-free · 1 a lane took the wrong
 row count, the oracle failed, the compile failed, or the lanes disagree · 3 a precondition was
 absent · 5 `bend` ran and emitted no rows. `SKIP` (4) is not produced.
 """
@@ -123,15 +113,10 @@ ROWS = (
     "walk_n_inpath",
 )
 
-# (CPython's line, the port's line), pinned on both sides. `gr_0` is the identity-CAST fold
-# carve-out; `gr_10` LOCKS the current wrong POW answer so a fix makes the gate RED and forces
-# this entry to move.
-DIVERGES = {
-    "gr_0": ("gr_0=2 CONST/0 CAST/1 ",
-             "gr_0=3 CONST/0 CAST/1 CAST/1 "),
-    "gr_10": ("gr_10=17 CONST/0 CAST/1 CONST/0 CAST/1 CONST/0 CMPNE/2 CONST/0 CMPNE/2 CONST/0 CAST/1 CONST/0 MUL/2 ADD/2 POW/2 MUL/2 WHERE/3 MUL/2  | 21 CONST/0 CAST/1 CONST/0 CAST/1 CONST/0 CMPNE/2 CONST/0 CMPNE/2 CONST/0 CAST/1 CMPLT/2 CONST/0 CAST/1 WHERE/3 POW/2 LOG2/1 MUL/2 CONST/0 MUL/2 WHERE/3 MUL/2 ",
-              "gr_10=17 CONST/0 CAST/1 CONST/0 CAST/1 CONST/0 CAST/1 CMPNE/2 CONST/0 CMPNE/2 CONST/0 CAST/1 CONST/0 MUL/2 ADD/2 POW/2 WHERE/3 MUL/2  | 20 CONST/0 CAST/1 CONST/0 CAST/1 CONST/0 CAST/1 CMPNE/2 CONST/0 CMPNE/2 CONST/0 CAST/1 CMPLT/2 CONST/0 CAST/1 WHERE/3 LOG2/1 CONST/0 MUL/2 WHERE/3 MUL/2 "),
-}
+# EMPTY: both defects this gate found are closed, so there is nothing to exclude and the
+# diff compares all 32 rows. It was `gr_0` (the identity-CAST fold) and `gr_10` (the POW
+# gradient); `gradient.bend`'s `gcast` now folds and its `gr_10` now builds CPython's tree.
+DIVERGES = {}
 
 GATE = Gate(
     "gr_graph_census-gate",
@@ -155,9 +140,8 @@ def no_noop() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "gr_graph_census-gate: 32 rows, 3 lanes, 2 DECLARED divergences -- "
-                       "every ported graph-producing pm_gradient rule is NOOP-free, 16 of 18 "
-                       "deep trees and all 14 walk rows match CPython byte-for-byte; gr_0 is the "
-                       "identity-CAST fold carve-out (the port's gcast does not fold) and gr_10 "
-                       "LOCKS the POW defect (missing `e*`/`ret*` factors and a swapped `e-1`)",
+    sys.exit(gate(GATE, "gr_graph_census-gate: 32 rows, 3 lanes, NO divergences -- every "
+                       "ported graph-producing pm_gradient rule is NOOP-free and ALL 18 deep "
+                       "trees and all 14 walk rows match CPython byte-for-byte (gr_0's "
+                       "identity-CAST fold and gr_10's POW gradient are both fixed)",
                  checks=no_noop))

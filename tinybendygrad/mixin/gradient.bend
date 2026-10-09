@@ -157,10 +157,29 @@ def k_ione() -> O.Const: O.CInt{H.i64_of_i32(1)}
 def gnew(+ar: O.Arena, +op: O.Op, +srcs: List<&2, U32>, +arg: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, arg, O.TNone{})
 
-# `ctx.cast(dt)` -- `dtype.py:36`. `UOp.alu` takes no arg in ops.bend, so the CAST is
-# spelled `gnew` with the `ADt` arg, which is what `mixin/dtype.bend`'s `cast_at`
-# already established.
-def gcast(+ar: O.Arena, x: U32, dt: S.Dt) -> O.Found: gnew(ar, O.OpsCAST{}, [x], O.ADt{dt})
+# `ctx.cast(dt)` -- `dtype.py:36`,
+#   return self if self.dtype == (dt:=to_dtype(dtype)) else self._uop.alu(Ops.CAST, arg=dt)
+# THE IDENTITY ARM BUILDS NOTHING, and that is the arm `mixin/dtype.bend`'s `cast_at`
+# already folds. This is the same fold, reading the SOURCE dtype from `F.folded` and the
+# target from `dt`: an equal pair answers `x` itself, so `gr_0`'s `ctx.cast(ret.src[0].
+# dtype)` emits no node when the dtypes agree. `UOp.alu` takes no arg in ops.bend, so the
+# MINT is `gnew` with the `ADt` arg.
+def gcast.same(m: Maybe<&2, S.Dt>, dt: S.Dt) -> Bool:
+  match m:
+    case Some{s}: O.eq_dt(s, dt)
+    case None{}: False{}
+
+def gcast.of(same: Bool, +ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
+  match same:
+    case True{}: O.Found{ar, x}
+    case False{}: gnew(ar, O.OpsCAST{}, [x], O.ADt{dt})
+
+def gcast.dt(+fx: F.Folded, x: U32) -> Maybe<&2, S.Dt>:
+  F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), x)
+
+def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
+  +fx = F.folded(ar)
+  gcast.of(gcast.same(gcast.dt(fx, x), dt), ar, x, dt)
 
 # `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63).
 def gbool(+ar: O.Arena, x: U32) -> O.Found: gcast(ar, x, S.boolean())
@@ -448,40 +467,28 @@ def gr_9(ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired([ctx, ctx], ar)
 # `b.eq(0)` branch to answer `-inf` when `e<0` and `0` otherwise. The `0` there is
 # `k_fzero` and the `-inf` is `k_neginf`.
 #
-# The node count is 2 + 5 + 8 and `pow_n0`/`pow_n1` pin them, because a rule that
-# dropped the `e.eq(0)` guard would still answer a VALUE (wrongly) and only the count
-# would move.
-# ONE CONSTANT, THEN THE COMPARISON. Python folds the literal `0` at graph-build time
-# and `e.eq(0)` interns the CONST once, so the arena here grows by exactly one CONST
-# before the CMPEQ. Writing the two halves as separate defs keeps each arena thread
-# readable: a `let` is affine, so `+` bindings are mandatory and each `Found.ar` carries
-# the grown arena forward exactly once.
-# TWO ZEROS, AND THEY ARE NOT THE SAME NODE. MEASURED, and this is the kind of detail a
-# port gets wrong silently because both are "the constant 0":
-#   `e.eq(0)`      -> CMPNE, CMPNE, CAST, CONST, CONST   -- the `0` is BARE (weakfloat)
-#   `e < 0`        -> CMPLT, CAST, CONST, CONST          -- the `0` is BARE
-#   `where(<0,x,0)` -> WHERE, CMPLT, ..., CAST, CONST   -- the `0` is CAST to float32
-# The reason is `const_like` vs a bare literal: `where`'s third argument goes through
-# `Tensor.__rsub__`-style promotion against a float32 operand, while `eq`'s does not.
-# `pow_n0` (24) and `pow_n1` (29) are the rows that would catch getting this wrong.
-def gr_10.zero(+ar: O.Arena) -> O.Found: gconst(ar, k_fzero())
-
-# `where`'s promoted 0 -- `CAST(CONST 0.0)`, i.e. what `const_like(0)` builds.
-def gr_10.zcast(+ar: O.Arena) -> O.Found: gconst(ar, k_fzero())
-
-# and `e < 0` uses the BARE one: CMPLT, CAST, CONST, CONST is 4 nodes.
-def gr_10.zbare(+ar: O.Arena) -> O.Found: gconst_raw(ar, k_fzero())
-# `e - 1` IN `POW`'s `e*b.pow(e-1)` (gradient.py:77) IS `ADD(e, MUL(CAST(1.0), CONST(-1.0)))`
-# and the `1` is a FLOAT CONST WITH A CAST -- because the literal is a Python `int` and
-# `ufix(1)` gives `UOp.const(1)` -> weakint, which then gets promoted at the MUL. Measured:
-# `(c - 1)` is `ADD(CAST(CONST), MUL(CAST(CONST 1.0), CONST(-1.0)))`, whereas `c.neg()`
-# is `MUL(CAST(CONST), CONST(-1.0))` with a BARE `-1.0`. So `1` casts and `-1.0` does
-# not, and `k_one`/`k_fone` are different constants for that reason alone.
-def gr_10.one(+ar: O.Arena) -> O.Found: gconst(ar, k_fone())
+# `pow_n0`/`pow_n1` pin the tree SIZE -- 24 for `dx` and 29 for `de`, CPython's own
+# numbers -- because a rule that dropped a factor or a guard would still answer a VALUE
+# (wrongly) and only the count would move.
+# THE ZEROS ARE ALL ONE BARE NODE. `e.eq(0)`, `e < 0` and `where`'s untaken `0` all
+# take the WEAK literal that `UOp.const(0)` derives (ops.py:632), so all three are the
+# SAME interned `CONST/0` at `weakfloat` -- NOT a `CAST(CONST)`. MEASURED against
+# CPython's own `pm_gradient` tree. An earlier revision split them into `zero` (cast),
+# `zcast` (cast) and `zbare` (bare); Python makes no such distinction, and `pow_n0`/
+# `pow_n1` are the rows that said so.
+def gr_10.zero(+ar: O.Arena) -> O.Found: gconst_raw(ar, k_fzero())
+# `e - 1` IS `ADD(e, MUL(CONST 1.0, CONST(-1.0)))` -- the `1` is a BARE weakfloat
+# `CONST 1.0`, not a `CAST`, and `-1.0` is the bare literal `neg` builds. MEASURED on
+# CPython's tree: the `MUL`'s two srcs are BOTH `CONST/0` at `weakfloat`. `c.neg()` is
+# `MUL(CAST(CONST), CONST(-1.0))` with the same bare `-1.0`, so only the `1` was in
+# question and it does NOT cast.
+def gr_10.one(+ar: O.Arena) -> O.Found: gconst_raw(ar, k_fone())
 def gr_10.neginf(+ar: O.Arena) -> O.Found: gconst(ar, k_neginf())
 
 # d/dx x^e = e * x^(e-1), with the e==0 case handing back `e` (which IS 0).
-# `e.eq(0).where(e, e*b.pow(e-1))` -- gradient.py:77, read left to right.
+# `e.eq(0).where(e, e*b.pow(e-1))` -- gradient.py:77, read left to right. The `e *` is
+# the factor an earlier revision dropped: `MUL(e, POW)` sits between the POW and the
+# WHERE, exactly as CPython's tree does.
 def gr_10.dx(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32) -> O.Found:
   +z = gr_10.zero(ar)
   +n = gcmpne(O.Found.ar(z), e, O.Found.i(z))
@@ -489,24 +496,26 @@ def gr_10.dx(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32) -> O.Found:
   +o = gr_10.one(O.Found.ar(q))
   +d = gsub(O.Found.ar(o), e, O.Found.i(o))
   +p = gpow(O.Found.ar(d), b, O.Found.i(d))
-  +w = gwhere(O.Found.ar(p), O.Found.i(q), e, O.Found.i(p))
+  +m = gmul(O.Found.ar(p), e, O.Found.i(p))
+  +w = gwhere(O.Found.ar(m), O.Found.i(q), e, O.Found.i(m))
   gmul(O.Found.ar(w), ctx, O.Found.i(w))
 
 # d/de x^e = x^e * ln(x), with x==0 handing back -inf when e<0 and 0 otherwise.
 # `b.eq(0).where((e<0).where(ret.const_like(-math.inf), 0), ret*b.log2()*math.log(2.0))`
+# The `ret*` is the factor an earlier revision dropped: it built a DEAD `MUL(ret, b)` and
+# then read `LOG2(b)` off `b`, so the answer was `log2(b)*ln2` with no `x^e`. CPython is
+# `MUL(MUL(ret, LOG2(b)), ln2)`.
 def gr_10.de(+ar: O.Arena, +ctx: U32, +b: U32, +e: U32, +ret: U32) -> O.Found:
   +z = gr_10.zero(ar)
   +n = gcmpne(O.Found.ar(z), b, O.Found.i(z))
   +q = gnot(O.Found.ar(n), O.Found.i(n))
-  +zb = gr_10.zbare(O.Found.ar(q))
-  +lt = gcmplt(O.Found.ar(zb), e, O.Found.i(zb))
+  +lt = gcmplt(O.Found.ar(q), e, O.Found.i(z))
   +ni = gr_10.neginf(O.Found.ar(lt))
-  +zc = gr_10.zcast(O.Found.ar(ni))
-  +n = gwhere(O.Found.ar(zc), O.Found.i(lt), O.Found.i(ni), O.Found.i(zc))
-  +rb = gmul(O.Found.ar(n), ret, b)
-  +lg = glog2(O.Found.ar(rb), b)
-  +t = gconst_raw(O.Found.ar(lg), k_ln2())
-  +m = gmul(O.Found.ar(t), O.Found.i(lg), O.Found.i(t))
+  +n = gwhere(O.Found.ar(ni), O.Found.i(lt), O.Found.i(ni), O.Found.i(z))
+  +lg = glog2(O.Found.ar(n), b)
+  +rb = gmul(O.Found.ar(lg), ret, O.Found.i(lg))
+  +t = gconst_raw(O.Found.ar(rb), k_ln2())
+  +m = gmul(O.Found.ar(t), O.Found.i(rb), O.Found.i(t))
   +r = gwhere(O.Found.ar(m), O.Found.i(q), O.Found.i(n), O.Found.i(m))
   gmul(O.Found.ar(r), ctx, O.Found.i(r))
 
@@ -1546,7 +1555,7 @@ def fix.put(fx: F.Folded, t1: U32, t4: U32, t5: U32, t6: U32, t7: U32, t8: U32, 
 #  17 EXPAND(1)       tag 18
 #  18 RESHAPE(1,3)    tag 17 -- TWO srcs, so its 2-slot answer is EXACT here
 #  19 SINK(1,.5)      tag 26 -- ctx.src is the answer
-#  20 CAST(1,float)   tag 0
+#  20 CAST(1,int)     tag 0 -- INT, not float: an identity cast FOLDS in `gcast`
 #  21 BITCAST(3,float) tag 32 -- ONE hole for a ONE-src node
 #  22 STORE(1,.5)     tag 31
 #  23 BUFFER slot 0   no rule claims a BUFFER
@@ -1576,7 +1585,7 @@ def fix() -> Fix:
   +n17 = gnew(O.Found.ar(n16), O.OpsEXPAND{}, [O.Found.i(n1)], O.ANone{})
   +n18 = gnew(O.Found.ar(n17), O.OpsRESHAPE{}, [O.Found.i(n1), O.Found.i(n3)], O.ANone{})
   +n19 = O.UOp.sink(O.Found.ar(n18), [O.Found.i(n1), O.Found.i(n2)])
-  +n20 = gcast(O.Found.ar(n19), O.Found.i(n1), S.single())
+  +n20 = gcast(O.Found.ar(n19), O.Found.i(n1), S.int32())
   +n21 = gnew(O.Found.ar(n20), O.OpsBITCAST{}, [O.Found.i(n3)], O.ADt{S.single()})
   +n22 = gnew(O.Found.ar(n21), O.OpsSTORE{}, [O.Found.i(n1), O.Found.i(n2)], O.ANone{})
   +bA = fx_buf(O.Found.ar(n22), 0)
