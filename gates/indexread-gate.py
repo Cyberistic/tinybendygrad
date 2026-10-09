@@ -54,11 +54,40 @@ ROOT = Path(__file__).resolve().parent.parent
 GATE = Path(__file__).resolve()
 BASELINE = Path(__file__).resolve().parent / "indexread-baseline.rows"
 
-# THE ROOTS OF THE WALK -- a directory list, and `os.walk` finds everything under each. A census
-# from a hand list of FILES is the fault this project removes every night (AGENTS.md doctrine 1);
-# a census from a hand list of DIRECTORIES is the same fault one level down, so these are the
-# three roots that DEFINE the population and the walk, not any enumeration, does the rest.
-ROOTS = ("checks", "gates", ".agents/slop")
+# THE ROOTS OF THE WALK -- and they are DERIVED, not transcribed. This used to be
+# `ROOTS = ("checks", "gates", ".agents/slop")`, a hand list of DIRECTORIES, which is the same
+# fault one level below the hand list of FILES this file's own header rails against: a census from
+# a hand list cannot notice a fourth directory, and a census from a suffix set cannot notice an
+# EXTENSIONLESS `#!/bin/sh` (`checks/bend`).
+#
+# **AND IT IS NOT `gates-pop.py`'s ROOT SET, AND THE REASON IS THE SUBJECT OF THE WHOLE CENSUS.**
+# `gates/gates-pop.py:HOMES` answers WHERE THE GATES ARE -- MEASURED, 2 of the commit tree's 14
+# top-level directories, by `gate_homes()`. This file answers WHERE THE SHIPPED INSTRUMENTS ARE,
+# and a shipped instrument need not be a gate: `.agents/slop/**` holds most of the offenders and
+# ZERO certified gate homes. Two questions, two named populations, ONE module, both loaded BY
+# PATH so neither can drift from its derivation. **A second copy of a list is a contract with no
+# generator; a second copy of a DERIVATION under a different name is a DIFFERENT QUESTION
+# PRETENDING TO BE THE SAME ONE** -- which is what `.agents/slop/UNIVERSE-CENSUS.md` measured and
+# could not name, and naming it is the whole of this line.
+def gates_pop():
+  """`gates/gates-pop.py` BY PATH, never by name -- `gates/` is not a package, and putting it on
+  `sys.path` would make `gates_pop` a name any file in the tree could shadow."""
+  import importlib.util
+  p = Path(__file__).resolve().parent / "gates-pop.py"
+  if not p.is_file():
+    return None, f"{p} is gone -- it OWNS both derived root sets, by path"
+  spec = importlib.util.spec_from_file_location("gates_pop", p)
+  mod = importlib.util.module_from_spec(spec)
+  spec.loader.exec_module(mod)
+  return mod, ""
+
+
+_gpop, _gerr = gates_pop()
+if _gpop is None:
+  print(f"INDEXREAD {VERDICT[REFUSED]}: {_gerr}")
+  sys.exit(REFUSED)
+# `scan_roots`, NOT `gate_homes` -- see the note above, and the denominator printed with it.
+ROOTS = _gpop.scan_roots(ROOT)
 PRUNE = {".git", ".jj", "__pycache__", ".venv", "node_modules", "references"}
 
 # THE INDEX-READING SUBFORMS. A BARE STRING, matched against AST string CONSTANTS, because AST
@@ -208,6 +237,12 @@ def main(argv):
   # THE TREE, NOT THE INDEX -- and the index is reported as a DIAGNOSTIC ONLY, never as the
   # population. Printing the divergence is the single most useful number this gate emits: it is
   # how `prune4` noticed "2 where there are 24".
+  print(f"INDEXREAD ROOTS DERIVED: {len(ROOTS)} top-level directory(ies) of the COMMIT TREE hold "
+        f"a tracked .py -- {' '.join(ROOTS)}\n"
+        f"   (gates/gates-pop.py:scan_roots, by path. This is the SHIPPED-INSTRUMENT question; its "
+        f"GATE-HOME question is\n    gates/gates-pop.py:HOMES = {list(_gpop.HOMES)} over the same 14 "
+        f"candidates. Two questions, two named\n    populations, one module -- not two copies of "
+        f"one list.)")
   rc, idx = git("ls-files")
   idxn = len(idx.splitlines()) if rc == 0 else -1
   print(f"INDEXREAD TREE-COMMITTED {len(committed)}  INDEX {idxn}  "

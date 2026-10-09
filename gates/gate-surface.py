@@ -430,6 +430,14 @@ def report(root, charge=True):
 
     print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(gpop.HOMES)}/ "
           f"(+{len(libs)} module(s) with no entry guard)\n")
+    # WHERE THE HOMES CAME FROM, IN THE CENSUS THAT CONSUMES THEM. `walk_control` below takes
+    # `gpop.HOMES` as a PARAMETER, so before `gate_homes()` existed the two lists it compared were
+    # the SAME list and the comparison was unfalsifiable -- **A CONTROL FED THE LIST IT IS ABOUT TO
+    # CHECK CANNOT DISAGREE.** Printing the derivation next to the population is what makes the
+    # difference between "the root set" and "the control's idea of the root set" visible at all,
+    # and it is two lines rather than a new population: `report_roots` is `gates-pop`'s, loaded
+    # BY PATH, so there is no second copy of anything.
+    gpop.report_roots(gpop._derivation(root), indent="   ")
     print(f"I  EXIT VOCABULARY, read from gates/gatekit.py's own module body: "
           f"{', '.join(f'{k}={v}' for k, v in sorted(vocab.items()))} -- the OWNER, by path.\n")
     control = walk_control(root, gpop.HOMES)
@@ -662,10 +670,23 @@ SHELL_GATE = ("#!/bin/sh\n"
 
 
 def _tree(root):
+    """A synthetic tree, and the homes it EARNS rather than declares.
+
+    **A PLANT THAT WROTE ITS OWN ROOT LIST WOULD BE PLANTING THE DEFECT.** The population is
+    `gates-pop.discover()`, whose homes are DERIVED from the commit tree by `gate_homes()`, so a
+    synthetic tree gets a home the only way a real one does: it holds a gate that names a root,
+    refuses on a wrong one and resolves on-repo. MEASURED: without this line `--plant green` fell
+    from 8/14 to **3/14**, every new failure reporting `rc=2` -- the EMPTY-POPULATION refusal --
+    because `_buckets` enumerated two empty directories. **AN INSTRUMENT THAT REFUSES BECAUSE ITS
+    OWN FIXTURE IS EMPTY IS NOT FAILING SAFELY, IT IS FAILING LOUDLY AT THE WRONG SUBJECT.** The
+    witness is `gates-pop.GOOD_ROOT`, read BY PATH from the module that owns it, so there is one
+    copy; it declares no `VERDICTS`, so it does not join the census's declaring-gate counts.
+    """
     (root / "pyproject.toml").write_text("[project]\nname='x'\n")
     (root / "tinybendygrad").mkdir()
-    (root / "checks").mkdir()
-    (root / "gates").mkdir()
+    for home in ("checks", "gates"):
+        (root / home).mkdir()
+        (root / home / "home-witness.py").write_text(gates_pop().GOOD_ROOT)
 
 
 def _run_report(root, charge=True):

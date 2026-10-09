@@ -33,10 +33,17 @@ the tree's own structure, and it CHECKS the declaration rather than believing it
 THE THREE CLAUSES, EACH WITH ITS OWN DENOMINATOR, AND NONE OF THEM ABLE TO PASS ON AN EMPTY
 POPULATION:
 
-  I   DISCOVERED, not listed. Every entry point in the two gate homes, by AST (`__main__`)
-      for Python and by SELF-DISPATCH for shell. The population is a MEASUREMENT.
+  I   DISCOVERED, not listed. Every entry point in the DERIVED gate homes, by AST (`__main__`)
+      for Python and by SELF-DISPATCH for shell. The population is a MEASUREMENT. **WHERE THE
+      HOMES COME FROM IS A SEPARATE MEASUREMENT AND IS PRINTED SEPARATELY** -- `gate_homes()`
+      derives them from the commit tree and `report_roots()` prints every candidate it rejected
+      with its own denominator, so the one hand list this file used to carry is gone and a reader
+      sees the root set move without reading code.
   II  A POPULATION IS NOT EMPTY and not vacuously green. Reported per clause, always.
-  III THE SET MOVED OR THE LEDGER SAYS WHY. `--ledger` diffs the previous run.
+  III THE SET MOVED OR THE LEDGER SAYS WHY. `--ledger` diffs the previous run. **A LEDGER READ AND
+      THEN REWRITTEN BY ITS OWN READER IS NOT A LEDGER** -- `gates-pop.ledger.tsv` used to be
+      written at `:646` and read at `:617` in the SAME process under the DEFAULT mode -- so it is
+      a DIARY, and the ROOT SET is derived rather than snapshotted for exactly this reason.
   IV  THE GENERATED-DIRECTORY POPULATION, SHARED WITH `gates/retention-check.py`. Both
       instruments import `gates/gendirs.py` and report the SAME `discovered()` count, because
       **two instruments holding two lists have no authority over each other and their
@@ -81,9 +88,15 @@ from gatekit import REFUSED  # noqa: E402  (after sys.path, deliberately)
 
 # WHAT THIS FILE CANNOT SEE, NAMED, because a meta-gate's blind spots are the ones no other
 # instrument is checking. Four, and none is fixable by being cleverer about the tree:
-#   (1) a gate OUTSIDE `checks/` and `gates/`. The two homes are a list -- see `HOMES` -- so a
-#       third home means editing this file, and that edit is visible only because the ledger
-#       diffs. This is the one place the instrument is itself a literal list, and it says so.
+#   (1) a gate OUTSIDE the derived homes. `gate_homes()` MEASURES which top-level directories hold
+#       a gate that NAMES A ROOT, REFUSES ON A WRONG ONE and RESOLVES ON-REPO, and it prints every
+#       candidate it rejected with its own denominator -- so this hole is a NUMBER, not a list.
+#       MEASURED, and it answers the question `.agents/slop/UNIVERSE-CENSUS.md` left open: **2 of
+#       14** top-level directories of the commit tree qualify. `.agents` is rejected at **0 of 6**
+#       certified gates, and the three `.agents/slop/` files that pass every ROOT clause carry no
+#       `__main__` guard -- they are harnesses, not gates. So `HOMES`'s `("checks", "gates")` was
+#       RIGHT and `indexread-gate`'s `(".agents/slop", "checks", "gates")` was ALSO RIGHT, because
+#       they answer DIFFERENT QUESTIONS, and the whole defect was that nothing recorded which.
 #   (2) a gate invoked as a SUBPROCESS from a wrapper rather than run directly. This is why
 #       `checks/sb-gate.sh`'s three-lane list is invisible here: the instrument can see that its
 #       root is right, and cannot see WHAT IT DECIDES TO CHECK.
@@ -96,12 +109,20 @@ from gatekit import REFUSED  # noqa: E402  (after sys.path, deliberately)
 # GATE IS ITSELF A POPULATION GATE.** That asymmetry is the honest shape of the result, and a
 # reader who takes only one thing from this file should take it.
 
-# THE TWO GATE HOMES. A LIST, AND IT IS ADMITTED: this is the one universe this file names by
-# hand, and clause I says so out loud rather than pretending discovery reaches the whole repo.
-# `checks/` is the top-of-tree gate home named by `checks/README.md`; `gates/` is the per-def
-# home named by `gates/README.md`. Adding a third home means editing THIS LINE, and the ledger
-# is what makes that edit visible -- which is the whole reason the ledger exists.
-HOMES = ("checks", "gates")
+# THE ROOT SET IS NOT HERE. IT WAS `HOMES = ("checks", "gates")` ON THIS LINE, AND IT IS NOW
+# `gate_homes(ROOT)`, MEASURED -- see "THE ROOT SET, DERIVED" below, and the criterion paragraph
+# there that a reader can apply to a file they have never seen. The value is bound at the BOTTOM
+# of this module, next to `FIXTURES`, for the reason `_init_fixtures` records: the derivation
+# reads `root_facts`, and binding it here raised `NameError` at import.
+#
+# **`HOMES` IS THE MEASURED ROOT SET AND NOT A HAND LIST, AND THE LEDGER IS NOT WHAT PROVES IT.**
+# The old comment said a third home "is visible only because the ledger diffs", and
+# `gate-surface.py:walk_control` was handed this very list as the parameter it compares against,
+# so the two lists it was about to compare were the SAME list. **A LIST COMPARED WITH ITSELF
+# CANNOT DISAGREE, AND THAT IS WHY A META-GATE NEVER SETTLED THE QUESTION IT WAS BUILT TO SETTLE.**
+# `gate_roots.md()` -- `gate_homes` for the GATE-HOME question, `scan_roots` for the
+# COMMITTED-PYTHON question -- is the whole replacement, and it prints every candidate it
+# rejected WITH ITS OWN DENOMINATOR.
 LEDGER = HERE / "gates-pop.ledger.tsv"
 
 # THE GENERATED-DIRECTORY POPULATION IS NOT A SECOND LIST. It is `gates/gendirs.py`, loaded BY
@@ -126,13 +147,13 @@ def gendirs():
     return mod
 
 
-# WHAT THIS FILE STILL CANNOT SEE AFTER CLAUSE IV, AND IT IS NOT THE GENERATED DIRECTORIES. `HOMES`
-# is a list, and a third gate home means editing this line -- but the edit is VISIBLE, because the
-# ledger diffs every entry point and a home nobody scans contributes nothing to clause I. The
-# asymmetry that remains is this: clause I enumerates GATES, clause IV enumerates OUTPUT, and
-# nothing enumerates a gate that is BOTH absent from `HOMES` and absent from every write site --
-# which is to say, a gate nobody runs and nobody writes. That is the only hole left and it is
-# stated rather than papered over.
+# WHAT THIS FILE STILL CANNOT SEE AFTER CLAUSE IV, AND IT IS NOT THE GENERATED DIRECTORIES. A gate
+# that is BOTH outside `gate_homes()` AND named by no write site is invisible to every clause
+# here -- which is to say, a gate nobody runs and nobody writes. That is the only hole left and it
+# is stated rather than papered over. **WHAT CHANGED IS THAT THE HOLE HAS A SHAPE NOW:** it is the
+# set of top-level directories `gate_homes()` REJECTED, and `report()` prints each with its own
+# numerator and denominator, so the hole is 12 named directories rather than an unexamined
+# assumption about two.
 
 # NO SUFFIX SET. THE POPULATION IS THE DIRECTORY AND THE LANGUAGE IS READ OUT OF THE FILE.
 #
@@ -443,9 +464,10 @@ def entry_reason(p):
 
 
 def _buckets(root):
-    """`(entries, libs, opaque)`, by walking every REGULAR file in the two homes. NEVER a
-    literal list of files and NEVER a suffix set: the population is the DIRECTORY, and which
-    language a file is written in is `entry_reason()`'s answer, read out of the file itself.
+    """`(entries, libs, opaque)`, by walking every REGULAR file in the DERIVED homes. NEVER a
+    literal list of files, NEVER a suffix set, and NEVER a literal list of homes: the homes come
+    from `gate_homes(root)` -- which is why a plant has to DECLARE its homes by planting a gate
+    that certifies one, and why `_tree` below does exactly that.
 
     `iterdir()` and not `rglob()`, so a `__pycache__` directory under a home is not descended
     into and a cached `.pyc` cannot be counted as a gate. `os.lstat` and not `Path.exists()`
@@ -466,7 +488,7 @@ def _buckets(root):
     answer that still ADDS UP, which is the only kind of wrong answer that survives every count.
     """
     entries, libs, opaque = [], [], []
-    for home in HOMES:
+    for home in _homes(root):
         h = root / home
         if not os.path.isdir(h):
             continue
@@ -662,6 +684,234 @@ def root_facts(p, root):
     return ("__file__.parent" if re.search(r"^\s*HERE\s*=", code, re.M) else "-"), asserts, True
 
 
+# ---- THE ROOT SET, DERIVED, AND THE CRITERION THAT DERIVES IT ---------------------------
+#
+# WHAT A GATE IS, IN ONE PARAGRAPH, FOR SOMEONE WHO HAS NEVER SEEN A FILE IN THIS TREE. **A file
+# is a GATE of this repository iff the COMMIT TREE carries it (`git ls-tree -r HEAD` -- never the
+# index, which a reset empties, and never the working copy, which `chmod -R` and a stray write both
+# move), AND running that file AS A PROGRAM performs its measurement -- an `if __name__ ==
+# "__main__"` guard in Python, a shell file dispatching on `$0` or `exec`, an ES module that RUNS
+# its top level under `node` rather than exporting it -- AND it reports a verdict, meaning one of
+# the five statuses `gates/gatekit.py` names, carrying a denominator.** The four named cases:
+#
+#   `checks/nan_census.mjs`      IN.  Tracked; JavaScript has no `__main__`, so the entry-point
+#                                      test is "the module RUNS rather than EXPORTS"; and its rows
+#                                      ARE the denominator it prints. A suffix set can never admit
+#                                      it and a shebang test can never see it.
+#   `checks/bend`                IN.  Tracked; `#!/bin/sh` plus `exec`; a two-line launcher is a
+#                                      gate whose subject happens to be a compiler. **A BASENAME IS
+#                                      NOT A PATH** -- `gate.txt` is four files -- **AND A BASENAME
+#                                      CAN BE A PROGRAM**, which is why `suffix_of` is hand-written
+#                                      and why no suffix test may decide membership.
+#   `.agents/slop/capstream/refsplit.py`   OUT.  It is tracked AND it HAS `__main__` -- MEASURED,
+#                                      `entry_reason` returns `py-main` for it -- so the first two
+#                                      clauses CANNOT reject it. **Only the root clause can, and
+#                                      that is the whole reason the root clause exists.** No gate in
+#                                      `.agents/`'s own row resolves a root (`1` prefilter survivor
+#                                      of `5` immediate files, rejected), so `.agents` is not a home;
+#                                      the file is three levels below a directory this tree puts a
+#                                      gate in, nothing in the repository executes it, and it answers
+#                                      one unit's question about one basename.
+#   `tinybendygrad/uop/fold.bend`  OUT.  Tracked, and `entry_reason` returns `None` for it: no entry
+#                                      guard, `import`ed by the `.bend` files that use it. It is the
+#                                      port's own source, and the port is what is being MEASURED --
+#                                      running it would be the subject auditing itself.
+#
+# THE ROOT CLAUSE, WHICH IS THE ONLY PART NOBODY HAD WRITTEN DOWN. **A gate home is a top-level
+# directory of the commit tree holding, IN ITS OWN IMMEDIATE FILES, at least one tracked file that
+# is an ENTRY POINT and that NAMES A ROOT, REFUSES ON A WRONG ONE, and RESOLVES ON-REPO.** Every
+# one of those four is already measured in this file -- `entry_reason`, `ROOT_CONST`/`ROOT_INLINE`,
+# `REFUSE`, `MARKER`, `resolve_root` -- so the declaration is read off the gates themselves rather
+# than transcribed. **THE SUBJECTS DECLARE THE UNIVERSE THEY LIVE IN, WHICH IS THE ONLY SHAPE OF
+# POPULATION THAT CANNOT ROT WITHOUT SOMETHING ELSE ROTING WITH IT.** "IMMEDIATE FILES" is not a
+# depth number but the coherence condition `_buckets` imposes; see `gate_homes`.
+#
+# MEASURED, live tree, and this is the answer `.agents/slop/UNIVERSE-CENSUS.md` refused to give
+# because no criterion existed to give it with: **2 of 14** top-level directories of the commit
+# tree qualify, over **869 immediate files read**, **18 prefilter survivors** and **17 certified
+# witnesses** (`checks` 16, `gates` 1). The twelve rejects each carry their own denominator, and
+# the load-bearing one is `.agents` at **1 survivor of 5** -- `.agents/TODO.md`, which survives the
+# prefilter because it quotes `__main__` and `refuse(` in prose and is then REJECTED because it
+# does not resolve a root. **THE PREFILTER OVER-ADMITS AND THE CLAUSE DECIDES, WHICH IS THE ONLY
+# ORDER IN WHICH THOSE TWO CAN COEXIST.**
+#
+# WHAT IT DOES NOT SETTLE, AND IT IS NOT SETTLED ANYWHERE ELSE EITHER. A home may be a directory
+# holding gates that never run (the hole named above), and a vendored upstream directory may hold
+# entry points (`test/` holds `4` immediate files and **307** across its 390 tracked ones) that are
+# emphatically not gates. The root clause is what separates them -- an upstream pytest file names
+# no root and refuses on no root -- and it is a REAL PROPERTY, not a name, which is why this
+# derivation agrees with a hand list about `checks/` and disagrees with one about `test/`.
+#
+# THE PREFILTER, AND WHY IT CANNOT LOSE A WITNESS. Three literals, and `code_of` only ever REMOVES
+# text, so anything `code` holds `src` holds: `MARKER` is the literal `pyproject.toml`; `asserts`
+# needs one of `REFUSE`'s four alternatives; and `entry_reason` calls a file an entry only when
+# `ast` finds `__main__`, or a `sh` shebang, or ESM syntax. **A SKIP-IF-ABSENT MAY ADMIT A
+# CANDIDATE AND MUST NOT DROP ONE** -- the argument `gates/indexread-gate.py:offenders_of` makes,
+# and the only direction that is sound. Measured cost of asking the question the cheap way, over
+# the whole derivation: **869 immediate files read in 0.37 s user**, against 14.4 s for the same 14
+# candidates run through `entry_reason` recursively on all 7549 of their files.
+#
+# **`MARKER.pattern` IS THE REGEX `pyproject\.toml` AND THE PREFILTER NEEDS A LITERAL.** MEASURED,
+# and this line is the bug's own post-mortem: the first version put `MARKER.pattern` in the tuple,
+# `"pyproject\.toml" in src` was a test no file can pass, `checks` answered **0 survivors of 311
+# files**, and the derivation reported a clean-looking **0 of 14** -- a census over a population
+# the prefilter had emptied, which is `artefacts_ok()`'s shape wearing a denominator.
+# `pattern.replace("\\", "")` is the literal every match of an escaped-literal pattern contains,
+# derived rather than retyped so the two cannot drift. **`_CERTIFY` is ANDED AND `_CERTIFY_OR` IS
+# ORRED**, because `REFUSE` is an alternation: the first version conjoined all four of its
+# alternatives and no file in the tree carries two of them, so every candidate was rejected.
+_CERTIFY = (MARKER.pattern.replace("\\", ""), "__main__")
+_CERTIFY_OR = ("refuse(", "exit 3", "not at the repo root", "REFUSED, NOT A VERDICT")
+_SKIP = (".git", ".jj", "__pycache__")
+
+
+def _tree_paths(root):
+    """`(sorted tracked paths, source)` -- `git ls-tree -r --name-only HEAD`, or the working copy.
+
+    **THE COMMIT TREE IS THE PRUNE, WHICH IS WHY THERE IS NO PRUNE LIST.** `references/`,
+    `.venv/`, `node_modules/`, `.agents/slop/opstree/`, `/runs/`, `/bin/bend` are every one of them
+    `.gitignore`d, so a candidate set read off the TREE excludes them by construction --
+    `checks/gendirs.py` cannot do this and carries a `SKIP_TOP` tuple for it. The fallback exists
+    for `--plant`, whose synthetic trees are not repositories, and it SAYS WHICH it used: a
+    derivation whose provenance is unprinted is a claim, and `gate-surface.py`'s `walk_control` is
+    the second instance of this exact shape.
+    """
+    r = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "--name-only", "HEAD"],
+                       capture_output=True, text=True)
+    if r.returncode == 0 and r.stdout.strip():
+        return sorted(r.stdout.splitlines()), "COMMIT TREE (git ls-tree -r HEAD)"
+    # `find -type f` DOES NOT DESCEND A SYMLINKED DIRECTORY (196 under `e2epy/` here), so
+    # `rglob` can report fewer files than `os.walk` would and the denominator would understate
+    # itself. `os.walk` with `followlinks=False` is the honest walk, and it is the same one
+    # `gate_homes` uses a few lines below.
+    out = []
+    for dirpath, dirnames, filenames in os.walk(root):
+        dirnames[:] = [d for d in dirnames if d not in _SKIP]
+        out += [str((Path(dirpath) / f).relative_to(root)) for f in filenames]
+    return sorted(out), "WORKING COPY (git absent)"
+
+
+def gate_homes(root):
+    """`(homes, derivation)` -- the GATE HOMES, measured, with the rows that measured them.
+
+    ONE module, TWO consumers, and the second consumer is `gates/gate-surface.py`. The derivation
+    is returned beside its answer rather than folded into it, so a caller that prints only the
+    answer is still one `dict` away from the denominator -- **a population a reader cannot see the
+    size of is the defect this file exists to end.**
+
+    `root` is RESOLVED on both sides of every comparison, for the reason `gendirs.discovered`
+    records: `tempfile.TemporaryDirectory()` hands back `/var/...` on macOS and `resolve()` hands
+    back `/private/var/...`, and a `resolve_root` on one side and a `root` on the other makes EVERY
+    witness resolve outside the repo -- 0 of 15 on a synthetic tree, which reads as "no homes" and
+    is really "every home is somewhere else".
+    """
+    root = Path(root).resolve()
+    paths, source = _tree_paths(root)
+    homes, witnesses, rejected, read_total = [], {}, [], 0
+    for top in sorted({p.split("/")[0] for p in paths if "/" in p}):
+        base = root / top
+        # `iterdir()`, NOT `os.walk`, AND THAT IS THE COHERENCE CONDITION RATHER THAN A SHALLOWNESS
+        # ONE. `_buckets` enumerates a home's IMMEDIATE files and skips `__pycache__`, so a witness
+        # three levels down would certify a home whose gates the population walk CANNOT REACH --
+        # **a home that certifies itself and then contributes nothing, which is `artefacts_ok()`
+        # one level up.** MEASURED, and the case is real: the recursive rule admits `.agents` on
+        # THREE gates that live three levels down -- `.agents/slop/{runsgate,e2esh}/plant.py` and
+        # `.agents/slop/censroot/repro.py`, MEASURED at 3 of 3 -- while its FIVE immediate files
+        # certify nothing, so `checks` is admitted on **16** and `gates` on **1** and `.agents` on
+        # **0**. Under the recursive rule the population then holds `.agents/TODO.md`, a markdown
+        # file that `ast.parse`s -- `is_literal_data`'s own caveat, one level up.
+        survivors, read = [], 0
+        if base.is_dir():
+            for p in sorted(base.iterdir()):
+                try:
+                    if not stat.S_ISREG(os.lstat(p).st_mode):
+                        continue
+                    text = p.read_text(errors="replace")
+                except OSError:
+                    continue
+                read += 1
+                if (all(n in text for n in _CERTIFY)
+                        and any(n in text for n in _CERTIFY_OR)):
+                    survivors.append(p)
+        read_total += read
+        good = [p for p in survivors
+                if (lambda t: t[0] != "-" and t[1] and t[2])(root_facts(p, root))]
+        if good:
+            homes.append(top)
+            witnesses[top] = [str(p.relative_to(root)) for p in good]
+        else:
+            rejected.append(f"{top} {len(survivors)}/{read}")
+    return tuple(homes), {"source": source, "read": read_total,
+                          "candidates": len(witnesses) + len(rejected),
+                          "witnesses": witnesses, "rejected": rejected}
+
+
+_MEASURED = {}
+
+
+def _measure(root):
+    """`gate_homes(root)`, ONCE per tree per PROCESS.
+
+    A within-process memo, not a cache: nothing is written to disk, so the next run re-measures
+    the tree from scratch. `discover()`, `opaque()` and `report()` each call `_buckets`, and the
+    derivation reads every candidate's immediate files -- **a memo is a measurement made once and
+    read twice, and a file on disk is a diary** (`UNIVERSE-CENSUS.md`'s own finding about
+    `gates-pop.ledger.tsv`, which `:646` writes and `:617` reads in the SAME PROCESS under the
+    DEFAULT mode).
+    """
+    key = str(Path(root).resolve())
+    if key not in _MEASURED:
+        _MEASURED[key] = gate_homes(root)
+    return _MEASURED[key]
+
+
+def _homes(root):
+    """`gate_homes(root)[0]` -- the answer, for a caller that only has to enumerate."""
+    return _measure(root)[0]
+
+
+def _derivation(root):
+    """`gate_homes(root)[1]` -- the rows that measured it, for a caller that has to print them."""
+    return _measure(root)[1]
+
+
+def scan_roots(root):
+    """The COMMITTED-PYTHON question, not the GATE-HOME question -- and the difference is the whole
+    subject of `.agents/slop/UNIVERSE-CENSUS.md`.
+
+    `gates/indexread-gate.py` asks "does any file this repo SHIPS enumerate its population through
+    the INDEX", and a shipped instrument is not required to be a gate: `.agents/slop/**` holds 68 of
+    the offenders and 0 certified gate homes. So it does NOT read `gate_homes()` -- and the reason
+    is written here rather than discovered again: **two questions, two named populations, one
+    module. A second copy of a list is a contract with no generator; a second copy of a DERIVATION
+    with a different predicate is a different question pretending to be the same one.**
+    """
+    paths, _ = _tree_paths(Path(root).resolve())
+    return tuple(sorted({p.split("/")[0] for p in paths if "/" in p and p.endswith(".py")}))
+
+
+def report_roots(derivation, indent="   "):
+    """The derivation, printed, with EVERY candidate that was rejected and its own denominator.
+
+    **A ROOT SET THAT CHANGES SILENTLY IS A DIARY.** This prints the kept homes with their
+    witnesses, the rejected candidates with `survivors/files-read`, and where the candidates came
+    from -- so a reader sees `2 of 14` move to `3 of 14` without reading a line of code.
+    """
+    kept = sorted(derivation["witnesses"])
+    print(f"{indent}ROOT SET, DERIVED FROM THE COMMIT TREE: {len(kept)} of "
+          f"{derivation['candidates']} top-level director"
+          f"{'y' if derivation['candidates'] == 1 else 'ies'} qualify "
+          f"[candidates from the {derivation['source']}]")
+    for top in kept:
+        print(f"{indent}  KEEP    {top:16} {len(derivation['witnesses'][top])} witness(es): "
+              f"{derivation['witnesses'][top][0]}")
+    for row in derivation["rejected"]:
+        print(f"{indent}  reject  {row:24} -- no gate there names a root, refuses on a wrong one, "
+              f"and resolves on-repo")
+    print(f"{indent}          (rejected rows read `survivors/files-read`; {derivation['read']} "
+          f"tracked file(s) read in total)")
+
+
 # ---- clause III: THE LEDGER, AND WHY A SNAPSHOT IS THE ONLY THING THAT CATCHES A NEW GATE --
 # WHERE THE LEDGER IS, resolved ONCE at import. A MODULE GLOBAL rather than `HERE` re-read at
 # call time, and that is not tidiness -- it is the fix for a MEASURED defect. The first version
@@ -726,14 +976,20 @@ def report(root, ledger_mode, ledger_path=None):
     synthetic answer back over it.
     """
     lpath = ledger_path or LEDGER_PATH
+    homes, derivation = _measure(root)
     entries, libs, opaque = _buckets(root)
+    report_roots(derivation)
+    print(f"     {derivation['read']} tracked file(s) read to answer that question; a rejected "
+          f"candidate is a DIRECTORY, and every one of the\n     twelve below was asked the same "
+          f"question and answered no -- the root set MOVES when one of them\n     starts "
+          f"answering yes, and this line is where a reader sees it.\n")
     if not entries:
-        print(f"I  EMPTY POPULATION: no entry point under {'/'.join(HOMES)}/ -- and an empty "
+        print(f"I  EMPTY POPULATION: no entry point under {'/'.join(homes)}/ -- and an empty "
               f"population cannot\n   fail, which is the defect this file exists for. REFUSED.")
         return 2
 
     rows, named, unasserted, offroot = [], 0, 0, 0
-    print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(HOMES)}/ "
+    print(f"I  DISCOVERED {len(entries)} entry point(s) under {'/'.join(homes)}/ "
           f"(+{len(libs)} module(s) with no entry guard, {len(opaque)} file(s) OPAQUE -- readable\n"
           f"   by no grammar in this instrument, which is a DENOMINATOR and not a verdict: it is")
     # THE OPAQUE DENOMINATOR, BY EXTENSION, because a single total cannot say WHICH language the
@@ -831,11 +1087,22 @@ def report(root, ledger_mode, ledger_path=None):
 
 
 # ---- plants: three, and the third is a gate THIS INSTRUMENT DOES NOT NOTICE -------------
-def _tree(root):
+def _tree(root, *homes):
+    """A synthetic tree, and the homes it DECLARES BY PLANTING A GATE THAT CERTIFIES ONE.
+
+    **A PLANT THAT WROTE ITS OWN ROOT LIST WOULD BE PLANTING THE DEFECT.** `gate_homes` derives the
+    homes from the gates, so a synthetic tree earns a home the only way a real one does: it holds a
+    file that names a root, refuses on a wrong one and resolves on-repo. `GOOD_ROOT` is exactly
+    that, so the witness IS the fixed-form fixture plant 5 already asserts is clean -- one fixture,
+    two jobs. Plant 3 calls `_tree(r)` with NO homes, which is how an EMPTY population stays
+    possible: `artefacts_ok()` reported zero on a directory holding nothing, and a plant that
+    cannot produce an empty tree cannot assert that emptiness is refused rather than green.
+    """
     (root / "pyproject.toml").write_text("[project]\nname='x'\n")
     (root / "tinybendygrad").mkdir()
-    for home in HOMES:
-        (root / home).mkdir()
+    for home in homes:
+        (root / home).mkdir(parents=True, exist_ok=True)
+        (root / home / "home-witness.py").write_text(GOOD_ROOT)
 
 
 MAIN = "if __name__ == '__main__':\n    raise SystemExit(0)\n"
@@ -964,7 +1231,7 @@ def _plants():
     checks = []
 
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks")
         # `checks/substrate-check.sh`'s REAL preamble, verbatim in shape: `_d=${0%/*}` is the
         # self-reference, and it is the token that made this file an entry point at all.
         (r / "checks" / "substrate-check.sh").write_text(
@@ -972,9 +1239,15 @@ def _plants():
             'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
         (r / "checks" / "mod.py").write_text("X = 1\n")
         e, libs, _opaque = _buckets(r)
-        ok0 = len(e) == 1 and "checks/substrate-check.sh" in {str(p.relative_to(r)) for p in e}
-        checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`", ok0,
-                       f"found {len(e)} entry point(s)"))
+        got = {str(p.relative_to(r)) for p in e}
+        # `len(e) == 2`, and the SECOND is the home witness `_tree` planted: the synthetic tree
+        # earns `checks/` by holding a gate that certifies it, exactly as the live tree does.
+        # MEASURED: with the witness counted out, `len(e) == 1` fails on a population of 2, which
+        # is the plant asserting a number the DERIVATION now owns.
+        ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+        checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+                       "DERIVATION admitted", ok0,
+                       f"found {len(e)} entry point(s): {sorted(got)}"))
 
     # PLANT 6 -- **THE BELT THAT DISAGREED WITH THE INSTRUMENT.** Two tokenizers that share no
     # regex, and the assertion is that they DISAGREE on the live tree AND that the union is
@@ -1006,7 +1279,7 @@ def _plants():
                    f"shell entries -- {union - ent} gates only the SECOND token can see"))
 
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks")
         (r / "checks" / "bad.py").write_text(BAD_ROOT)
         (r / "checks" / "good.py").write_text(GOOD_ROOT)
         (r / "checks" / "wrong-shallow.py").write_text(
@@ -1028,7 +1301,7 @@ def _plants():
                        f"shallow[1]={not shallow[4]}"))
 
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks", "gates")
         # A GATE THE INSTRUMENT DOES NOT NOTICE: no `__main__`, no self-dispatch -- so clause I
         # files it under `sh-lib`/`py-lib` and it is NOT in the population. Asserted two ways:
         # (a) it really is out of the population, and (b) the report SAYS SO with a number, so
@@ -1063,13 +1336,18 @@ def _plants():
     # about a count, because a count is what `artefacts_ok()` reported over a directory holding
     # nothing.
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks")
         (r / "checks" / "first.py").write_text(GOOD_ROOT)
         # The synthetic ledger lives INSIDE the temp tree. It did not, on the first run: the
         # path was hard-wired, and `--plant` wrote `checks/undeclared.py` over the live
         # 66-row ledger while still printing 5/5 GREEN.
         syn = r / LEDGER.name
-        write_ledger([("checks/first.py", "py-main", "x", True, True)], syn)
+        # THE WITNESS IS IN THE LEDGER TOO. `_tree` planted `checks/home-witness.py`, so a ledger
+        # holding one row makes the diff report TWO additions and the assertion `"1 added" in said`
+        # fails -- which is the right kind of failure: a plant that has to be re-read when the
+        # DERIVATION changes is a plant that is measuring the derivation and not the defect.
+        write_ledger([("checks/first.py", "py-main", "x", True, True),
+                      ("checks/home-witness.py", "py-main", "x", True, True)], syn)
         (r / "checks" / "undeclared.py").write_text(BAD_ROOT)   # a gate NOBODY wrote down
         import io, contextlib
         buf = io.StringIO()
@@ -1095,7 +1373,7 @@ def _plants():
     # them turns this plant RED.
     pre = _prefix_fixtures()
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks")
         for rel, src in pre.items():
             (r / rel).write_text(src)
         got = {rel: verdict_of(root_facts(r / rel, r)) for rel in pre}
@@ -1120,7 +1398,7 @@ def _plants():
     # by this file, must be ON-REPO.** A meta-instrument that cannot measure ITSELF cleanly is the
     # one measurement nobody else makes.
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks")
         (r / "checks" / "documented.py").write_text(LIT_PY)
         (r / "checks" / "documented.sh").write_text(LIT_SH)
         ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
@@ -1159,7 +1437,7 @@ def _plants():
     #       the fix into a bag of every file in the home. It lands in the OPAQUE bucket, which is
     #       a COUNT, so 140 expected-value files in `checks/` are visible rather than absent.
     with tempfile.TemporaryDirectory() as td:
-        r = Path(td); _tree(r)
+        r = Path(td); _tree(r, "checks", "gates")
         (r / "checks" / "nan.mjs").write_text(
             'import {argv} from "node:process";\nargv.slice(2).forEach((a) => console.log(a));\n')
         (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
@@ -1210,8 +1488,12 @@ def report_quiet(root):
 
 
 # `FIXTURES` LAST, because it is derived from names this module defines above it. MEASURED: bound
-# near the regexes it raised `NameError` at import -- see `_init_fixtures`.
+# near the regexes it raised `NameError` at import -- see `_init_fixtures`. `HOMES` HERE FOR THE
+# SAME REASON: it is `gate_homes(ROOT)`, which reads `root_facts`, and bound near `LEDGER` it
+# raised `NameError` at import -- a crash inside a gate rather than a verdict.
 _init_fixtures()
+HOMES = _homes(ROOT)
+HOME_DERIVATION = _derivation(ROOT)
 
 
 def main():
