@@ -18,9 +18,9 @@
 # neither of which is the port.
 #
 # ---------------------------------------------------------------------------------
-# 3 rows, 3 LANES, ALL IDENTICAL. Nothing here is a known divergence, and the reason that
-# is worth two hundred words is that this gate was RED for three DIFFERENT reasons and the
-# PORT WAS RIGHT IN ALL THREE.
+# 3 rows, 3 LANES, ALL IDENTICAL. Nothing here is a known divergence. This gate was RED for
+# three DIFFERENT reasons; the FIRST TWO were the port being wrong, and the third was the
+# ORACLE being wrong and has since been reversed when the PORT was fixed.
 #
 #     1. A STALE ARENA, in `log` and `log10` -- a real defect, FIXED. The constant was
 #        minted in `t`'s arena, which is stale the moment `ew_log2(t)` has run, so it landed
@@ -38,17 +38,19 @@
 #        at exactly bool/weakint/weakfloat, and this file implements that faithfully. I was
 #        one measurement away from "fixing" a shared helper that is correct.
 #
-#     3. THE ORACLE WAS ASKING A DIFFERENT QUESTION -- and this is the one worth keeping.
-#        `Tensor.exp()` prints SEVEN nodes; the SOURCE EXPRESSION prints FIVE, and they
-#        differ by two CASTs that live in CPython's method WRAPPER. The port implements the
-#        expression, so the oracle now builds the expression.
+#     3. THE ORACLE MEASURED THE SOURCE, and that WAS a fixture mismatch -- but the fix went
+#        the other way. `Tensor.exp()` (elementwise.py:511-522) prints SEVEN nodes; the SOURCE
+#        EXPRESSION prints FIVE, differing by cast 1 (`least_upper_float`) and cast 3 (the
+#        cast-back). `ew_exp` originally built only the middle cast, so the oracle was pointed
+#        at the source to match it. **THE PORT WAS THE ONE THAT WAS WRONG**: `ew_exp` ports the
+#        METHOD, and it now has all three casts, so the oracle calls `t.exp()._uop` again and
+#        both sides print `7 CONST/0 CAST/1 CAST/1 CONST/0=1069066811 MUL/2 EXP2/1 CAST/1 `.
 #
-#        THAT IS THE THIRD FIXTURE MISMATCH THIS GATE HAS HAD, and all three are the same
-#        mistake -- comparing the two sides on different QUESTIONS:
+#        THE THREE FIXTURE MISMATCHES THIS GATE'S HISTORY NAMES, kept because the third is the
+#        one this commit resolves -- comparing the two sides on different QUESTIONS:
 #          int32 fixture      vs CPython's weakint    (and `wk-cd-gate` got seven rows of i32)
 #          a weakfloat CONST  vs CPython's strong f32
-#          the method wrapper vs the source expression
-#        In every case the PORT WAS RIGHT and the ORACLE WAS WRONG.
+#          the method wrapper vs the source expression    -- the PORT was wrong here, and is fixed
 #
 # THE GENERAL RULE, and it is the rule this whole gate file was written to end: A GATE THAT
 # CANNOT SAY WHAT QUESTION ITS FIXTURE ASKS CANNOT TELL A DEFECT FROM A DISAGREEMENT. Every

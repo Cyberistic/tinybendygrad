@@ -3,10 +3,9 @@
 
     .venv/bin/python gates/mx_graph_census-gate.py
 
-17 ROWS, THREE LANES, ONE DECLARED DIVERGENCE -- AND IT IS A DEFECT, NOT A CARVE-OUT.
-`tinybendygrad/mixin/movement.bend` had NO gate over it at all; this drives every
-graph-building public def once per fixture and prints its toposort OP SEQUENCE next to
-CPython's for the method it mirrors.
+17 ROWS, THREE LANES, NO DECLARED DIVERGENCE. `tinybendygrad/mixin/movement.bend` had NO gate
+over it at all; this drives every graph-building public def once per fixture and prints its
+toposort OP SEQUENCE next to CPython's for the method it mirrors.
 
 THE POPULATION IS DISCOVERED, NOT LISTED, and the discovery is two filters:
 
@@ -39,21 +38,23 @@ VERDICT: a PAD whose two shape STACKs are swapped keeps the root op, the src cou
 toposort length and moves only the no-op rows; the src OP SEQUENCE is the only field that
 sees it.
 
-THE ONE DECLARED DIVERGENCE IS A DEFECT AND IS PINNED SO IT CANNOT BE FORGOTTEN:
+THE ONE DECLARED DIVERGENCE WAS A DEFECT AND IT IS NOW FIXED:
 
     reshape_256   CPython 8 Ops.RESHAPE/2 Ops.RESHAPE Ops.CONST
-                  port    9 Ops.RESHAPE/2 Ops.RESHAPE Ops.STACK
+                  port    8 Ops.RESHAPE/2 Ops.RESHAPE Ops.CONST     (was 9 ... Ops.STACK)
 
 `shape_to_shape_arg` (ops.py:106-110) is `src[0] if len(src) == 1 else UOp(Ops.STACK,
-src=src)`, so CPython folds a ONE-ELEMENT shape arg to a BARE `CONST`. `mxw_stk`
-(movement.bend:1254) is `G.mstack` UNCONDITIONALLY, so the port builds a `STACK` and carries
-one extra node. It is the port's own `mxm_reshape1` case (movement.bend:922-927 names it: the
-bare-CONST arg is a different node, and `mxm_as_shape` reads a bare CONST as the EMPTY list),
-and `mixin/rand.bend` R3 records the same fact -- "fixed for PAD and SHRINK, NOT for RESHAPE"
--- and routes around it with a local `op_mop`. `mixin/rand.bend` calls `MX.mxw_reshape(t, [])`
-and `MX.mxw_reshape(t, [1, ...])` on the `_pool` path, so the row is a LIVE path and not a
-curiosity. It is pinned here rather than dropped, so that a fix makes this gate RED and forces
-the pin to move. It is REPORTED, not smoothed.
+src=src)`, so CPython folds a ONE-ELEMENT shape arg to a BARE `CONST`. `mxw_stk` was
+`G.mstack` UNCONDITIONALLY, so the port built a `STACK` and carried one extra node. The walk's
+base arm is now `mxw_stk.done`, which folds a one-dim `acc` to its bare `O.Found{ar, v}` and
+leaves a `STACK` for every other length -- the fold is the ONE shape-arg builder, so `mxw_pad`
+and `mxw_shrink` fold with `reshape` through the same arm. The defect was the port's own
+`mxm_reshape1` case (movement.bend:922-927 names it: the bare-CONST arg is a different node,
+and `mxm_as_shape` reads a bare CONST as the EMPTY list), and `mixin/rand.bend` R3 records the
+same fact -- "fixed for PAD and SHRINK, NOT for RESHAPE" -- and routed around it with a local
+`op_mop`. `mixin/rand.bend` calls `MX.mxw_reshape(t, [])` and `MX.mxw_reshape(t, [1, ...])` on
+the `_pool` path, so the row is a LIVE path and not a curiosity. The pin was REPORTED, not
+smoothed, and the fix moved it: the pin is now GONE and all 17 rows match CPython byte-for-byte.
 
 EXIT STATUS: 0 all three lanes identical after the pin · 1 a lane took the wrong row count, the
 oracle failed, the native compile failed, or the lanes disagree · 3 a precondition was absent
@@ -86,12 +87,12 @@ ROWS = (
     "flip_noop",
 )
 
-# (CPython's line, the port's line), pinned on both sides. ONE ENTRY, AND IT IS A DEFECT AND
-# NOT A CARVE-OUT -- the `mxw_stk` one-element shape arg, measured and classified below.
-DIVERGES = {
-    "reshape_256": ("reshape_256=8 Ops.RESHAPE/2 Ops.RESHAPE Ops.CONST",
-                    "reshape_256=9 Ops.RESHAPE/2 Ops.RESHAPE Ops.STACK"),
-}
+# (CPython's line, the port's line), pinned on both sides. EMPTY: the `mxw_stk` one-element
+# shape arg WAS the one divergence and it is FIXED -- `mxw_stk.done` folds a one-dim shape to
+# its bare CONST (`shape_to_shape_arg`, ops.py:106-110), so `reshape_256` is now
+# `8 Ops.RESHAPE/2 Ops.RESHAPE Ops.CONST` on BOTH sides. The pin is gone because the
+# divergence is; leaving it would pin a value the port no longer produces.
+DIVERGES = {}
 
 GATE = Gate(
     "mx_graph_census-gate",
@@ -115,8 +116,9 @@ def no_noop_bottom() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "mx_graph_census-gate: 17 rows, 3 lanes, 1 DECLARED divergence -- "
-                       "every ported public movement wrapper has NO NOOP BOTTOM and 16 op "
-                       "sequences match CPython's byte-for-byte; reshape_256 is the one-element "
-                       "shape-arg defect (bare CONST vs STACK) the pin LOCKS",
+    sys.exit(gate(GATE, "mx_graph_census-gate: 17 rows, 3 lanes, NO declared divergence -- "
+                       "every ported public movement wrapper has NO NOOP BOTTOM and all 17 op "
+                       "sequences match CPython's byte-for-byte; reshape_256's one-element "
+                       "shape-arg defect (bare CONST vs STACK) was FIXED by `mxw_stk.done`, so "
+                       "its pin is GONE",
                  checks=no_noop_bottom))

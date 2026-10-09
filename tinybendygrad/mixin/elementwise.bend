@@ -160,6 +160,12 @@ def ew_of(+f: O.Found) -> T.Tensor:
 def ew_fx(+t: T.Tensor) -> F.Folded:
   F.folded(T.Tensor.ar(t))
 
+# `t.dtype` -- the fold read of the tensor's OWN arena. `ew_promote`, `ew_needs_float` and
+# `exp` each need it and none of them may hand a fold down a call chain (see `ew_fx`), so it
+# is ONE def taken at the point of use rather than three copies of the same two reads.
+def ew_dt(+t: T.Tensor) -> S.Dt:
+  W.wk_dt(ew_fx(t), T.Tensor.u(t))
+
 # `t.cast(dt)` -- mixin/dtype.py:19, `self if self.dtype == dt else
 # self._wrap_uop(self._uop.alu(Ops.CAST, arg=dt))`. `uop/weak.bend` has it as
 # `wk_cast_at` and this is the call; nothing here reimplements it.
@@ -652,8 +658,7 @@ def ew_floor(+t: T.Tensor) -> T.Tensor:
 # this path overrides. The cast is LAZY -- `Bool.pick` would mint the CAST on the arm
 # that does not fire, and every count row would see it.
 def ew_needs_float(+t: T.Tensor) -> Bool:
-  +fx = ew_fx(t)
-  +dt = W.wk_dt(fx, T.Tensor.u(t))
+  +dt = ew_dt(t)
   Bool.or(S.Dt.is_int(dt), S.Dt.is_bool(dt))
 
 def ew_cast_if_int.at(need: Bool, +t: T.Tensor) -> T.Tensor:
@@ -1298,7 +1303,10 @@ def ew_log(+t: T.Tensor) -> T.Tensor:
 def ew_log10(+t: T.Tensor) -> T.Tensor:
   ew_log.mul(ew_log2(t), ew_k.log10_2())
 
-# `exp` is `self.cast(least_upper_dtype(self.dtype, float32)).mul(1/log(2)).exp2()`, and
+# `exp` -- elementwise.py:511-522, and it is THREE casts, not one:
+#     self = self.cast(least_upper_float(self.dtype))                     # cast 1
+#     return self.cast(least_upper_dtype(self.dtype, float32)).mul(1/log(2)).exp2().cast(self.dtype)
+#                                                                    # cast 2, mul, exp2, cast 3
 # THE `float32` IS THE WHOLE POINT. MEASURED: `least_upper_dtype(weakint, float32)` is
 # `dtypes.f32` -- STRONG -- while `least_upper_dtype(weakint, weakfloat)` is `weakfloat`.
 # A strong target is not one of the dtypes a CONST derives, so CPython's cast is the PAIR
@@ -1310,13 +1318,24 @@ def ew_log10(+t: T.Tensor) -> T.Tensor:
 # folds at exactly bool/weakint/weakfloat and this file implements that faithfully. The
 # defect was the promotion DTYPE, chosen by a constant instead of written down.
 #
+# **AND THAT VERSION DROPPED BOTH OUTER CASTS.** `self.dtype` is REBOUND by the first line,
+# so cast 2's target is `least_upper_dtype(least_upper_float(d0), float32)` and cast 3 casts
+# back to `least_upper_float(d0)` -- NOT to `d0`. MEASURED against CPython's own `t4().exp()`:
+# `7 Ops.CAST/1 Ops.EXP2` with root CAST dtype `weakfloat`, where the one-cast version
+# printed `5 Ops.EXP2/1 Ops.MUL`. `mixin/op.bend`'s `mo_exp` has all three casts and this is
+# the same body at the `ew_*` layer. Cast 1 and cast 3 share a target, so `d1` is bound once
+# and read twice.
+#
 # AND THE CONSTANT GOES IN THE CAST RESULT'S ARENA, for the same reason as `ew_log.mul`:
 # `t`'s arena is stale the moment the cast has run.
 def ew_exp.mul(+t: T.Tensor, +c: F32) -> T.Tensor:
   ew_mul2(t, ew_ct(ew_cf(T.Tensor.ar(t), c)), False{})
 
 def ew_exp(+t: T.Tensor) -> T.Tensor:
-  ew_exp2(ew_exp.mul(ew_cast(t, S.single()), ew_k.inv_log2()))
+  +d1 = F.least_upper_float(ew_dt(t))
+  +a = ew_cast(t, d1)
+  +b = ew_cast(a, F.least_upper.of(ew_dt(a), S.single()))
+  ew_cast(ew_exp2(ew_exp.mul(b, ew_k.inv_log2())), d1)
 
 def g_i32() -> T.Tensor: ew_ct(ew_ci(O.Arena.empty(), 5))
 

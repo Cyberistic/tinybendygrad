@@ -23,21 +23,24 @@ CPython's `8 ... CONST/0 SHL/2 CAST/1 OR/2`. The fix merges the two operands' ar
 (`O.Arena.merge`, the same total spelling `tensor.bend`'s `tn_binop` uses), so `p64` and `x`
 now match CPython byte-for-byte in all three lanes.
 
-THE TWO DECLARED DIVERGENCES ARE A DIFFERENT, UNFIXED DEFECT AND THE PINS LOCK IT:
+THE TWO DECLARED DIVERGENCES ARE A DIFFERENT, STILL-UNFIXED DEFECT AND THE PINS LOCK IT. ONE
+HALF OF THAT DEFECT IS NOW FIXED AND THE PINS MOVED WITH IT:
 
     three  CPython 20 ... ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 ...
-           port    27 ... STACK/1 CONST/0 STACK/2 SHRINK/3 STACK/1 RESHAPE/2 ...
+           port    20 ... CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 ...
     tfb    CPython 26
-           port    31
+           port    23
 
 `rd_tfb.three` takes `key[1]` and `key[0]` through `rd_take.scalar` (rand.bend:402), and that
 path is 5 nodes per take against CPython's 2: `rd_tail` (rand.bend:391) rebuilds its input
-rather than returning its TAIL, so `rd_take.sz`/`rd_take.of` build a malformed SHRINK; and
-`mxw_shrink` (movement.bend:1522) builds a one-element STACK where CPython's
-`shape_to_shape_arg` (ops.py:106) builds a bare CONST. BOTH ARE OUTSIDE THIS GATE'S SUBJECT --
-the OR ARENA RULE -- and the OR in `three` is the SAME `rd_p64` the `p64` row already confirms.
-They are PINNED so a fix makes this gate RED and forces the pin to move, exactly as
-`mo_graph_census` pinned its `permute0` NOOP.
+rather than returning its TAIL, so `rd_take.sz`/`rd_take.of` build a malformed SHRINK. THAT
+REMAINS. The SECOND half was `mxw_shrink` (movement.bend) building a one-element STACK where
+CPython's `shape_to_shape_arg` (ops.py:106) builds a bare CONST -- and that is FIXED: `mxw_stk`'s
+base arm is now `mxw_stk.done`, which folds a one-dim shape arg to its bare CONST. So the port's
+node counts dropped from 27/31 to 20/23 and the pins were UPDATED, not deleted: the `rd_take`
+malformed-SHRINK divergence is still there, and both rows still differ from CPython. Both halves
+are OUTSIDE THIS GATE'S SUBJECT -- the OR ARENA RULE -- and the OR in `three` is the SAME `rd_p64`
+the `p64` row already confirms.
 
 EXIT STATUS: 0 all three lanes identical after the pins · 1 a lane took the wrong row count,
 the oracle failed, the native compile failed, the lanes disagree, or a NOOP bottom appeared ·
@@ -55,12 +58,16 @@ ROWS = ("p64", "x", "three", "tfb")
 # LINE: the port's `mo_sig` appends a separator after every op, so `want not in raw[lane]` in
 # `gatekit` is an exact-string test and a pin without it would never match.
 DIVERGES = {
-    # A DIFFERENT DEFECT, not the OR one -- `rd_take.scalar`/`rd_tail` and `mxw_shrink`'s
-    # one-element STACK. See the module docstring. The OR inside `three` is confirmed by `p64`.
+    # A DIFFERENT DEFECT, not the OR one -- `rd_take.scalar`/`rd_tail` builds a malformed SHRINK
+    # (5 nodes per take against CPython's 2). See the module docstring. The OR inside `three` is
+    # confirmed by `p64`. **THE `mxw_shrink` ONE-ELEMENT STACK HALF IS FIXED** (`mxw_stk.done`
+    # now folds a one-dim shape arg to its bare CONST), so these lines MOVED -- the node counts
+    # dropped to 20 and 23 -- and the pin is UPDATED, not deleted, because the `rd_take`/`rd_tail`
+    # divergence REMAINS and the two lanes still differ.
     "three": ("three=20 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 CAST/1 SHL/2 CONST/0 SHRINK/3 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 ",
-              "three=27 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 STACK/1 CONST/0 STACK/2 SHRINK/3 STACK/1 RESHAPE/2 STACK/0 RESHAPE/2 CAST/1 CAST/1 SHL/2 SHRINK/3 RESHAPE/2 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 "),
+              "three=20 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 SHL/2 SHRINK/3 CAST/1 OR/2 THREEFRY/2 "),
     "tfb": ("tfb=26 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 CAST/1 SHL/2 CONST/0 SHRINK/3 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 CAST/1 SHR/2 CAST/1 STACK/2 CONST/0 RESHAPE/2 ",
-            "tfb=31 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 STACK/1 CONST/0 STACK/2 SHRINK/3 STACK/1 RESHAPE/2 STACK/0 RESHAPE/2 CAST/1 CAST/1 SHL/2 SHRINK/3 RESHAPE/2 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 SHR/2 CAST/1 STACK/2 RESHAPE/2 "),
+            "tfb=23 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 SHL/2 SHRINK/3 CAST/1 OR/2 THREEFRY/2 SHR/2 CAST/1 STACK/2 "),
 }
 
 GATE = Gate(

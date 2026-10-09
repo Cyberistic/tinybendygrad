@@ -5,7 +5,9 @@
 
     ew_log     = self.log2() * math.log(2)                    (elementwise.py:840)
     ew_log10   = self.log2() * math.log10(2)                  (elementwise.py:852)
-    ew_exp     = self.cast(least_upper_dtype(self.dtype, float32)).mul(1/math.log(2)).exp2()
+    ew_exp     = elementwise.py:511-522, THREE casts:
+                 self.cast(least_upper_float(self.dtype)) then
+                 self.cast(least_upper_dtype(self.dtype, float32)).mul(1/math.log(2)).exp2().cast(self.dtype)
 
 THESE ARE THE FIRST THREE METHODS THE CONSTANT WALL UNBLOCKED, and the wall is the one
 `ew-consts-gate.py` refuted: the constants are available and bit-exact. Each of these is TWO
@@ -25,9 +27,7 @@ implementation that got the right number out of the wrong ops.
 import struct
 import sys
 
-import math
-
-from tinygrad import Tensor, dtypes
+from tinygrad import Tensor
 
 
 def sig(u, nm):
@@ -51,24 +51,24 @@ def main():
     t = Tensor(5)
     sig(t.uop.log(), "ew_log")
     sig(t.uop.log10(), "ew_log10")
-    # `exp` IS BUILT FROM ITS SOURCE EXPRESSION AND NOT BY CALLING THE METHOD, and that
-    # is the whole difference between 5 nodes and 7.
+    # `exp` IS THE METHOD, elementwise.py:511-522, and the port now implements ALL THREE of
+    # its casts -- `ew_exp` used to build only the middle one, which is why this gate used to
+    # measure the SOURCE expression instead.
     #
     #     Tensor.exp()  ->  7  CONST CAST CAST CONST MUL EXP2 CAST
     #     the SOURCE    ->  5  CONST CAST     CONST MUL EXP2
     #
-    # The port implements the SOURCE, so the oracle has to measure the source. The two extra
-    # nodes are in CPython's `Tensor.exp()` WRAPPER, which this port does not have and is
-    # not asked to have. MEASURED, both ways, in the same process.
+    # The two extra nodes are cast 1 (`least_upper_float`) and cast 3 (the cast-back), both
+    # outside the source expression. `ew_exp` now has them, so the oracle calls the METHOD and
+    # the two sides are asked the SAME question again. MEASURED, both:
+    # `7 CONST/0 CAST/1 CAST/1 CONST/0=1069066811 MUL/2 EXP2/1 CAST/1 `.
     #
-    # THAT IS THE THIRD TIME A FIXTURE MISMATCH HAS BITTEN THIS GATE, and the three are
-    # worth listing because they are all the same mistake -- comparing the two sides on
-    # different QUESTIONS:
-    #   int32 fixture vs CPython's weakint  (wk-cd-gate: seven rows of i32, proving nothing)
-    #   a weakfloat CONST choosing the lattice vs CPython's strong float32  (ew_exp: 4 vs 7)
-    #   the METHOD WRAPPER vs the SOURCE EXPRESSION                            (ew_exp: 7 vs 5)
-    # In every case the port was right and the ORACLE was asking a different question.
-    sig((t.cast(dtypes.float32) * (1 / math.log(2))).exp2()._uop, "ew_exp")
+    # THE THREE FIXTURE MISMATCHES THIS GATE'S HISTORY NAMES, kept because the third is what
+    # this fix resolves -- comparing the two sides on different QUESTIONS:
+    #   int32 fixture      vs CPython's weakint    (wk-cd-gate: seven rows of i32, proving nothing)
+    #   a weakfloat CONST  vs CPython's strong f32
+    #   the method wrapper vs the source expression    -- FIXED IN THE PORT, so now the METHOD
+    sig(t.exp()._uop, "ew_exp")
     print(f"# fixture dtype = {t.dtype}", file=sys.stderr)
     return 0
 

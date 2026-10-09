@@ -3,9 +3,10 @@
 
     .venv/bin/python gates/ew_graph_census-gate.py
 
-43 ROWS, THREE LANES, THREE DECLARED DIVERGENCES. `gates/ew-consts.bend` gates the F32 constants
-and `gates/ew-explog.bend` gates `log`/`log10`/`exp` by VALUE; this gates the SHAPE of the whole
-public surface in one artifact. It is the `ew_*` peer of `gates/tn_graph_census-gate.py`.
+46 ROWS, THREE LANES, ONE DECLARED DIVERGENCE (an instrument carve-out). `gates/ew-consts.bend`
+gates the F32 constants and `gates/ew-explog.bend` gates `log`/`log10`/`exp` by VALUE; this
+gates the SHAPE of the whole public surface in one artifact. It is the `ew_*` peer of
+`gates/tn_graph_census-gate.py`.
 
 THE POPULATION IS DISCOVERED. `ew_<n>` is a row iff CPython's `tinygrad/mixin/elementwise.py`
 defines a METHOD `<n>(self` or `__<n>__(self` -- 43 of the file's 142 `ew_*` defs. `promote` and
@@ -18,37 +19,32 @@ anywhere in a graph is an index read out of range and always a defect. It is ass
 predicate and never calls it, so this census asserts a claim that one only named. It finds NONE,
 which is a measurement and not an absence.
 
-THE THREE DIVERGENCES, CLASSIFIED -- and two of the three are NOT carve-outs:
+THE ONE REMAINING DIVERGENCE IS AN INSTRUMENT CARVE-OUT, and the two that were DEFECTS are FIXED:
 
   `ew_ufix` -- CARVE-OUT, INSTRUMENT ONLY. The graphs AGREE: one `CONST` node. The port's
     `O.Rng.sig` prints `-` for a node with NO srcs (`Rng.srcops.seeded`'s `Nil` arm) where
     CPython's signature joins an empty list to the empty string. No sibling row ever hit it
     because every root there had at least one src. The two lines differ by that ONE character.
 
-  `ew_floor` -- A DEFECT, NOT A CARVE-OUT. elementwise.py:672 is
-    `(self < (b := self.trunc())).where(b-1, b)`; the port at `elementwise.bend:626-630` builds
-    `where(self < trunc(self), -1, trunc(self))`. MEASURED: CPython's then-value is
-    `ADD(TRUNC, MUL(CONST 1, CONST -1))` -- it DEPENDS on `b` -- and the port's is a bare `CONST`
-    (`8 Ops.WHERE/3 Ops.CMPLT Ops.ADD Ops.TRUNC` against `5 Ops.WHERE/3 Ops.CMPLT Ops.CONST
-    Ops.TRUNC`). A then-value that cannot depend on `b` cannot be `b-1`: every negative
-    non-integer `t` gets the same answer instead of `trunc(t)-1`. The constant's identity is
-    source, not measurement: `ECon{O.CInt{H.i64_of_i32(4294967295)}}`, and `4294967295` is `-1`
-    (the value `ew_neg`'s own passing rows already pin). It is UNGATED by the file's own gate
-    (`main` has no `t_floor` row; `grep -n t_floor` is empty) and `gates/ew-explog.bend` does not
-    reach it.
+  `ew_floor` -- WAS A DEFECT, FIXED. elementwise.py:672 is
+    `(self < (b := self.trunc())).where(b-1, b)`; the port built
+    `where(self < trunc(self), -1, trunc(self))`, whose then-value cannot depend on `b`, so every
+    negative non-integer `t` got the same answer instead of `trunc(t)-1`. It now builds `b - 1`
+    (`elementwise.bend`'s `ew_floor`), so its line is CPython's `8 Ops.WHERE/3 Ops.CMPLT Ops.ADD
+    Ops.TRUNC` and its pin is GONE.
 
-  `ew_exp` -- A DIVERGENCE, NOT A CARVE-OUT. elementwise.py:511-522 casts THREE times:
+  `ew_exp` -- WAS A DIVERGENCE, FIXED. elementwise.py:511-522 casts THREE times:
     `self.cast(least_upper_float(self.dtype))` (weakint -> weakfloat), then
     `self.cast(least_upper_dtype(self.dtype, float32))` (-> float32), then the final
-    `.cast(self.dtype)` (-> weakfloat). MEASURED, the CPython root is a `CAST` of dtype
-    weakfloat over 7 nodes. `elementwise.bend:1284-1285` builds only the middle cast and drops
-    both ends: 5 nodes, root `EXP2`, dtype float32. `mixin/op.bend`'s `mo_exp` (its own port of
-    the SAME method) HAS all three casts, so the tree knows the full body; `ew_exp` is a
-    reduced duplicate.
+    `.cast(self.dtype)` (-> weakfloat). MEASURED, the CPython root is a `CAST` of dtype weakfloat
+    over 7 nodes, where the one-cast version printed 5 with root `EXP2`. `ew_exp` now has all
+    three casts -- cast 1 and cast 3 share the `least_upper_float(d0)` target -- so its line is
+    `ew_exp=7 Ops.CAST/1 Ops.EXP2` on BOTH sides and its pin is GONE. `mixin/op.bend`'s `mo_exp`
+    (its own port of the SAME method) is where the body came from.
 
 A GRAPH CAN BE WRONG WITHOUT A NOOP, WHICH IS WHY THE SEQUENCES ARE PRINTED AND NOT JUST THE
-VERDICT: `ew_floor`'s `-1` sits at a LEGAL arena index and shows no bottom anywhere. That is the
-same lesson the sibling census learned from `tn_ceil`, one layer over.
+VERDICT: `ew_floor`'s old `-1` sat at a LEGAL arena index and showed no bottom anywhere. That is
+the same lesson the sibling census learned from `tn_ceil`, one layer over.
 """
 
 import sys
@@ -106,11 +102,11 @@ ROWS = (
     "ew_where",
 )
 
-# (CPython's line, the port's line), pinned on both sides. `ew_ufix` is the instrument carve-out;
-# `ew_floor` and `ew_exp` are DEFECTS and the pin is a LOCK on the current wrong value -- a fix
-# moves the port's line and this entry must move with it, which is the point of pinning.
+# (CPython's line, the port's line), pinned on both sides. `ew_ufix` is the instrument
+# carve-out. `ew_exp` WAS a defect and is FIXED -- `ew_exp` now casts three times
+# (`elementwise.py:511-522`), so its line is `ew_exp=7 Ops.CAST/1 Ops.EXP2` on BOTH sides and
+# its pin is GONE. `ew_floor` was fixed in an earlier commit and its pin is gone too.
 DIVERGES = {
-    "ew_exp": ("ew_exp=7 Ops.CAST/1 Ops.EXP2", "ew_exp=5 Ops.EXP2/1 Ops.MUL"),
     "ew_ufix": ("ew_ufix=1 Ops.CONST/0 ", "ew_ufix=1 Ops.CONST/0 -"),
 }
 
@@ -136,8 +132,9 @@ def no_noop_bottom() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "ew_graph_census-gate: 46 rows, 3 lanes, 2 DECLARED divergences -- "
-                       "every ported public ew_* has NO NOOP BOTTOM and 44 op sequences match "
+    sys.exit(gate(GATE, "ew_graph_census-gate: 46 rows, 3 lanes, 1 DECLARED divergence -- "
+                       "every ported public ew_* has NO NOOP BOTTOM and 45 op sequences match "
                        "CPython's byte-for-byte; ew_ufix differs only in the empty-src rendering, "
-                       "ew_exp is the DTYPE divergence the pin LOCKS, and ew_floor was FIXED in this commit so its pin is GONE",
+                       "and both DEFECTS are FIXED so their pins are GONE: ew_floor builds b-1 and "
+                       "ew_exp has all three casts (7 Ops.CAST/1 Ops.EXP2)",
                  checks=no_noop_bottom))

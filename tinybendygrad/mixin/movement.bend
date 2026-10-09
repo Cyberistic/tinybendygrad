@@ -1251,9 +1251,21 @@ def mxw_buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
 # `mx_shows.go`, and M11 measures it at 22 of 42 rows. The lesson generalises past this file:
 # **an accumulator fold over a list of DIMENSIONS must say which end it adds to, in a
 # comment, because the mistake is invisible in the type and in the count.**
+# **THE ONE-ELEMENT FOLD, AND IT IS `shape_to_shape_arg` (ops.py:104-110): `return src[0]
+# if len(src) == 1 else UOp(Ops.STACK, src=src)`, so a ONE-dim shape arg is the bare CONST
+# and NOT a STACK of one. The fold belongs at the base arm of the walk, and it is a def
+# rather than a `match` on `acc` inside that arm because a match may not scrutinise a
+# computed value. It is the ONE shape-arg builder, so `mxw_pad` and `mxw_shrink` fold with
+# it: MEASURED, `reshape_256` printed `9 Ops.RESHAPE/2 Ops.RESHAPE Ops.STACK` against
+# CPython's `8 ... Ops.CONST` while the base arm was `G.mstack` unconditionally.
+def mxw_stk.done(+ar: O.Arena, +acc: List<&2, U32>) -> O.Found:
+  match acc:
+    case v <> Nil{}: O.Found{ar, v}
+    case _: G.mstack(ar, acc)
+
 def mxw_stk(+vs: List<&2, U32>, +ar: O.Arena, +acc: List<&2, U32>) -> O.Found:
   match vs:
-    case Nil{}: G.mstack(ar, acc)
+    case Nil{}: mxw_stk.done(ar, acc)
     case v <> t: mxw_stk(t, O.Found.ar(G.c1(ar, v)), List.append(&2, U32, acc, [O.Found.i(G.c1(ar, v))]))
 
 # IS A MOVEMENT OP -- the three marg shapes plus the FLIP sibling, which is
