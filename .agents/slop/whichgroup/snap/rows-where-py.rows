@@ -1,0 +1,8 @@
+2:i1 5:ALLOC 3:f32 7:(l0:12) 2:i0 1:N 46:P(i27,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N) 3:n()
+2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
+2:i3 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:3 3:n()
+2:i4 5:STACK 7:weakint 6:(l0:2) 2:i0 1:N 1:N 8:n(i2,i3)
+2:i5 7:RESHAPE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i1,i4)
+2:i6 5:CMPLT 4:bool 11:(l0:4,l0:3) 2:i0 1:N 1:N 8:n(i5,i5)
+2:i7 5:WHERE 3:f32 11:(l0:4,l0:3) 2:i0 1:N 1:N 11:n(i6,i5,i5)
+2:i8 5:GROUP 4:void 1:R 2:i0 1:N 1:N 8:n(i7,i6)

@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=675 MB (ceiling 2048)  2s  :: .venv/bin/python .agents/slop/graphcmp.py emit  out=415B err=56B  said=# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
+# bend attempt 1: 7 rows, # root=7 nodes=8 settled=True
