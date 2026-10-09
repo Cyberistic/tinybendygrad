@@ -502,8 +502,19 @@ def mxm_as_shape.go(k: Nat, +ar: O.Arena, +srcs: List<&2, U32>, +bad: Bool, acc:
 def mxm_as_shape.of(+ar: O.Arena, +srcs: List<&2, U32>) -> List<&2, U32>:
   mxm_as_shape.go(List.length(&2, U32, srcs), ar, srcs, False{}, Nil{}, 0)
 
-def mxm_as_shape(+ar: O.Arena, i: U32) -> List<&2, U32>:
-  mxm_as_shape.of(ar, O.Arena.srcs(ar, i))
+# THE CONST ARM, and it is the OTHER HALF of `mxw_stk.done`'s one-element fold: `shape_to_shape_arg`
+# (ops.py:108) answers the BARE node for a length-1 shape, and CPython's `as_shape` (ops.py:806)
+# opens with `if self.op is Ops.CONST: return (self.val,)`. Without it a folded shape arg read as
+# `[]` -- so a SHRINK's `marg` was `[]`, its shape was `[]`, and the `mxw_reshape` that follows
+# FOLDED as the identity where CPython builds the RESHAPE. MEASURED on `rd_take.scalar(key,1)`:
+# `3 ALLOC CONST SHRINK/3` against CPython's `5 ALLOC CONST SHRINK/3 STACK/0 RESHAPE/2`.
+def mxm_as_shape.sel(isconst: Bool, +ar: O.Arena, i: U32) -> List<&2, U32>:
+  match isconst:
+    case True{}: [mxm_const_val(ar, i)]
+    case _: mxm_as_shape.of(ar, O.Arena.srcs(ar, i))
+
+def mxm_as_shape(+ar: O.Arena, +i: U32) -> List<&2, U32>:
+  mxm_as_shape.sel(mxm_is_const(ar, i), ar, i)
 
 # ===========================================================================
 # SECTION D -- `marg` (ops.py:814-819) and `_shape`'s movement arms (ops.py:409-431).
@@ -922,9 +933,9 @@ def G.ci(v: U32) -> O.Const: O.CInt{H.i64_of_i32(v)}
 # THE BARE-CONST CASE IS A DIFFERENT NODE and that is the row `mxm_reshape1`:
 # `fold.bend`'s `reshape_ds` answers a STACK shape arg and not a bare CONST one, so a
 # one-dimensional RESHAPE is un-answered for a SECOND and independent reason
-# (`mixin/op.bend`'s `mo_sints` comment names it). `mxm_as_shape` handles both because
-# it reads `Arena.srcs` and a bare CONST has none -- the row `mxm_reshape1` pins that
-# it answers the empty list rather than the value, which is a NAMED divergence.
+# (`mixin/op.bend`'s `mo_sints` comment names it). `mxm_as_shape` NOW handles both: its
+# `sel` arm opens with `if self.op is Ops.CONST: return (self.val,)` (CPython's
+# `as_shape`, ops.py:806), so the bare CONST reads as `[v]` instead of the empty list.
 def G.mstack(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.OpsSTACK{}, ys, O.ANone{}, O.TNone{})
 

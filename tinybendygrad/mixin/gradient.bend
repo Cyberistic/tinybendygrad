@@ -181,8 +181,9 @@ def gcast(+ar: O.Arena, +x: U32, +dt: S.Dt) -> O.Found:
   +fx = F.folded(ar)
   gcast.of(gcast.same(gcast.dt(fx, x), dt), ar, x, dt)
 
-# `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63).
-def gbool(+ar: O.Arena, x: U32) -> O.Found: gcast(ar, x, S.boolean())
+# `mask.cast(dtypes.bool)` from `partial_store_gradient` (gradient.py:63) is NOT reached by any
+# caller in this file. A `gbool` def once sat here and NOTHING called it (`grep -rn gbool` = this
+# file only), so a def claiming a CPython expression with no caller is a claim of unknown value.
 
 # `UOp.const(v)` -- ops.py:632. THE CAST IS NOT OPTIONAL, and this is MEASURED rather
 # than read off:

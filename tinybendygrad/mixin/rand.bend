@@ -383,12 +383,15 @@ def rd_zeros.go(n: Nat, +acc: List<&2, U32>) -> List<&2, U32>:
 
 def rd_zeros(n: Nat) -> List<&2, U32>: rd_zeros.go(n, Nil{})
 
-def rd_tail.go(+ds: List<&2, U32>, +acc: List<&2, U32>) -> List<&2, U32>:
+# `tail(ds)` -- `ds[1:]`, the tail CPython's INT arm writes, and NOT a rebuild of `ds`. The
+# old `go`/`acc` fold appended every element and handed back the list it was GIVEN, so
+# `rd_take.sz`/`rd_take.of` shrank with a 2-element size arg and reshaped to `[0]` instead of
+# to `[]` -- the malformed SHRINK `gates/rd_graph_census-gate.py`'s `three`/`tfb` rows named.
+# A tail is the ONE line `viz/serve.bend`'s `vs.tail` already is.
+def rd_tail(+ds: List<&2, U32>) -> List<&2, U32>:
   match ds:
-    case Nil{}: acc
-    case d <> t: rd_tail.go(t, List.append(&2, U32, acc, [d]))
-
-def rd_tail(+ds: List<&2, U32>) -> List<&2, U32>: rd_tail.go(ds, Nil{})
+    case Nil{}: Nil{}
+    case _ <> t: t
 
 def rd_nd(+t: T.Tensor) -> U32: MX.mxm_len_u32(MX.mxw_dims_of(T.Tensor.ar(t), T.Tensor.u(t)))
 def rd_take.lead(k: U32, n: U32) -> List<&2, U32>: List.append(&2, U32, [k], rd_zeros(U32.to_nat(U32.sub(n, 1))))
@@ -426,7 +429,15 @@ def rd_p64(+hi: T.Tensor, +lo: T.Tensor) -> T.Tensor: MO.mo_bin(rd_shl32(rd_c64(
 def rd_tfb.x(+c0: T.Tensor, +c1: T.Tensor) -> T.Tensor: rd_p64(c1, c0)
 def rd_tfb.three(+x: T.Tensor, +key: T.Tensor) -> T.Tensor:
   E.ew_threefry(x, E.ETen{rd_p64(rd_take.scalar(key, 1), rd_take.scalar(key, 0))})
-def rd_tfb.cat(+x: T.Tensor) -> T.Tensor: op_cat1(rd_c32(x), rd_c32(rd_shr32(x)))
+# `x.cast(uint32).cat((x >> 32).cast(uint32))` (rand.py:15). THE CAST IS BUILT FIRST AND THE
+# SHIFT IS RE-WRAPPED INTO ITS ARENA, because `x` is read TWICE and `rd_c32(x)` GROWS `x`'s
+# arena: `rd_shr32(x)` on the ORIGINAL `x` would build the SHR at the index the CAST just took,
+# and `op_cat1`'s STACK -- built in the newer arena -- would name the SHR as `src[0]`. MEASURED:
+# the CAST was LOST and the row read `tfb=25 ... THREEFRY/2 SHR/2 CAST/1 STACK/2` against
+# CPython's `26 ... THREEFRY/2 CAST/1 SHR/2 CAST/1 STACK/2`.
+def rd_tfb.cat(+x: T.Tensor) -> T.Tensor:
+  +cx = rd_c32(x)
+  op_cat1(cx, rd_c32(rd_shr32(MO.mo_arena(T.Tensor.ar(cx), x))))
 def rd_tfb(+ar: O.Arena, +key: T.Tensor, +c0: T.Tensor, +c1: T.Tensor) -> T.Tensor:
   rd_tfb.cat(rd_tfb.three(rd_tfb.x(c0, c1), key))
 

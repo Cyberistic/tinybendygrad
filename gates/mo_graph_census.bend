@@ -74,6 +74,15 @@ def c_exp0() -> IO(Unit):
   +x = M.mo_fx1d()
   M.mo_sig_t("exp0", M.mo_exp(x))
 
+# A STRONG int32 SOURCE, and it is the fixture that separates the three casts: for a float32
+# source all three fold and `exp0` prints `4 BUFFER/0 CONST/0 MUL/2 EXP2/1` on BOTH sides, so
+# the wrong cast-back target was INVISIBLE. CPython's `Tensor([1,2,3,4]).exp()` is
+# `5 BUFFER/0 CAST/1 CONST/0 MUL/2 EXP2/1`; the defect made the port print 6, the extra node
+# being the CAST back to `int32` instead of to `least_upper_float(int32) = f32`.
+def c_exp_i32() -> IO(Unit):
+  +x = M.mo_i1d()
+  M.mo_sig_t("exp_i32", M.mo_exp(x))
+
 def c_log0() -> IO(Unit):
   +x = M.mo_fx1d()
   M.mo_sig_t("log0", M.mo_log(x))
@@ -201,6 +210,7 @@ def main() -> IO(Unit):
     i : Unit <- c_isfinite0()
     j : Unit <- c_isnan0()
     k : Unit <- c_exp0()
+    k2 : Unit <- c_exp_i32()
     l : Unit <- c_log0()
     m : Unit <- c_recip0()
     n : Unit <- c_inverse0()

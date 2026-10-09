@@ -3,7 +3,7 @@
 
     .venv/bin/python gates/rd_graph_census-gate.py
 
-4 ROWS, THREE LANES, TWO DECLARED DIVERGENCES -- AND THOSE TWO ARE A DIFFERENT DEFECT.
+4 ROWS, THREE LANES, NO DECLARED DIVERGENCE.
 
 THE POPULATION IS THE METHOD, SPLIT AS THE PORT SPLITS IT. `tinygrad/mixin/rand.py:12-15` is
 ONE method; the port splits it into `rd_p64` (rand.py:13), `rd_tfb.three` (:14), `rd_tfb.cat`
@@ -23,24 +23,27 @@ CPython's `8 ... CONST/0 SHL/2 CAST/1 OR/2`. The fix merges the two operands' ar
 (`O.Arena.merge`, the same total spelling `tensor.bend`'s `tn_binop` uses), so `p64` and `x`
 now match CPython byte-for-byte in all three lanes.
 
-THE TWO DECLARED DIVERGENCES ARE A DIFFERENT, STILL-UNFIXED DEFECT AND THE PINS LOCK IT. ONE
-HALF OF THAT DEFECT IS NOW FIXED AND THE PINS MOVED WITH IT:
+THE TWO DECLARED DIVERGENCES ARE FIXED AND THE PINS ARE GONE. `three` and `tfb` each carried a
+malformed SHRINK on the `key[i]` path, and both rows now match CPython byte-for-byte:
 
-    three  CPython 20 ... ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 ...
-           port    20 ... CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 ...
-    tfb    CPython 26
-           port    23
+    three  20 ... ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 CAST/1 SHL/2 CONST/0 SHRINK/3 RESHAPE/2 ...
+    tfb    26 ... THREEFRY/2 CAST/1 SHR/2 CAST/1 STACK/2 CONST/0 RESHAPE/2
 
-`rd_tfb.three` takes `key[1]` and `key[0]` through `rd_take.scalar` (rand.bend:402), and that
-path is 5 nodes per take against CPython's 2: `rd_tail` (rand.bend:391) rebuilds its input
-rather than returning its TAIL, so `rd_take.sz`/`rd_take.of` build a malformed SHRINK. THAT
-REMAINS. The SECOND half was `mxw_shrink` (movement.bend) building a one-element STACK where
-CPython's `shape_to_shape_arg` (ops.py:106) builds a bare CONST -- and that is FIXED: `mxw_stk`'s
-base arm is now `mxw_stk.done`, which folds a one-dim shape arg to its bare CONST. So the port's
-node counts dropped from 27/31 to 20/23 and the pins were UPDATED, not deleted: the `rd_take`
-malformed-SHRINK divergence is still there, and both rows still differ from CPython. Both halves
-are OUTSIDE THIS GATE'S SUBJECT -- the OR ARENA RULE -- and the OR in `three` is the SAME `rd_p64`
-the `p64` row already confirms.
+THREE DEFECTS WERE FIXED, all on the `_threefry_random_bits` path:
+  * `rd_tail` (rand.bend:391) REBUILT its input -- the `go`/`acc` fold appended every element
+    and handed back the list it was given -- instead of returning its TAIL, so `rd_take.sz`
+    shrank with a two-element size arg and `rd_take.of` reshaped to `[0]` instead of `[]`. It is
+    now the one-line `ds[1:]` (`viz/serve.bend`'s `vs.tail` shape).
+  * `mxm_as_shape` (movement.bend) read a bare CONST shape arg as the EMPTY list, so the
+    `mxw_stk.done` one-element fold's CONST could not be read back and the `mxw_reshape` after
+    `rd_take`'s SHRINK folded as the identity. CPython's `as_shape` (ops.py:806) opens with
+    `if self.op is Ops.CONST: return (self.val,)`, which is the arm the port was missing.
+  * `rd_tfb.cat` (rand.bend:432) read `x` twice while `rd_c32(x)` grew `x`'s arena, so
+    `rd_shr32(x)` built its SHR in the stale arena and `op_cat1`'s STACK named the SHR as
+    `src[0]` -- the `x.cast(uint32)` was LOST. The shift is now re-wrapped into the cast's arena.
+
+All three are OUTSIDE THIS GATE'S SUBJECT -- the OR ARENA RULE -- and the OR in `three` is the
+SAME `rd_p64` the `p64` row already confirms.
 
 EXIT STATUS: 0 all three lanes identical after the pins · 1 a lane took the wrong row count,
 the oracle failed, the native compile failed, the lanes disagree, or a NOOP bottom appeared ·
@@ -57,18 +60,9 @@ ROWS = ("p64", "x", "three", "tfb")
 # (CPython's line, the port's line), pinned on both sides. THE TRAILING SPACE IS PART OF THE
 # LINE: the port's `mo_sig` appends a separator after every op, so `want not in raw[lane]` in
 # `gatekit` is an exact-string test and a pin without it would never match.
-DIVERGES = {
-    # A DIFFERENT DEFECT, not the OR one -- `rd_take.scalar`/`rd_tail` builds a malformed SHRINK
-    # (5 nodes per take against CPython's 2). See the module docstring. The OR inside `three` is
-    # confirmed by `p64`. **THE `mxw_shrink` ONE-ELEMENT STACK HALF IS FIXED** (`mxw_stk.done`
-    # now folds a one-dim shape arg to its bare CONST), so these lines MOVED -- the node counts
-    # dropped to 20 and 23 -- and the pin is UPDATED, not deleted, because the `rd_take`/`rd_tail`
-    # divergence REMAINS and the two lanes still differ.
-    "three": ("three=20 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 CAST/1 SHL/2 CONST/0 SHRINK/3 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 ",
-              "three=20 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 SHL/2 SHRINK/3 CAST/1 OR/2 THREEFRY/2 "),
-    "tfb": ("tfb=26 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 ALLOC/0 SHRINK/3 STACK/0 RESHAPE/2 CAST/1 SHL/2 CONST/0 SHRINK/3 RESHAPE/2 CAST/1 OR/2 THREEFRY/2 CAST/1 SHR/2 CAST/1 STACK/2 CONST/0 RESHAPE/2 ",
-            "tfb=23 ALLOC/0 CONST/0 ADD/2 CAST/1 CONST/0 SHL/2 CAST/1 OR/2 CAST/1 ALLOC/0 CONST/0 STACK/2 SHRINK/3 CAST/1 CAST/1 SHL/2 SHRINK/3 CAST/1 OR/2 THREEFRY/2 SHR/2 CAST/1 STACK/2 "),
-}
+# NO DECLARED DIVERGENCE: the `rd_take`/`rd_tail`, `mxm_as_shape` and `rd_tfb.cat` defects are
+# fixed (see the module docstring), so every row is COMPARED.
+DIVERGES = {}
 
 GATE = Gate(
     "rd_graph_census-gate",
@@ -92,7 +86,7 @@ def no_noop_bottom() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "rd_graph_census-gate: 4 rows, 3 lanes, 2 compared op sequences "
-                        "(p64, x) match CPython byte-for-byte after the mo_bin arena-merge fix "
-                        "and NO row has a NOOP bottom; 2 (three, tfb) are the PINNED "
-                        "rd_take.scalar/rd_tail defect", checks=no_noop_bottom))
+    sys.exit(gate(GATE, "rd_graph_census-gate: 4 rows, 3 lanes, all 4 op sequences match "
+                        "CPython byte-for-byte and NO row has a NOOP bottom (the `rd_take`/"
+                        "`rd_tail`, `mxm_as_shape` and `rd_tfb.cat` defects are fixed, so the "
+                        "two pins are dropped)", checks=no_noop_bottom))

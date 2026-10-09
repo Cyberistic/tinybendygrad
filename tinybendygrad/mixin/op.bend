@@ -976,14 +976,19 @@ def mo_norm0(+axis: List<&2, U32>, +t: T.Tensor) -> T.Tensor:
 # `TODO(p3) ... exp  -- 1/math.log(2)` and rule 5 MEASURED that an F32 literal is live.
 #     self = self.cast(least_upper_float(self.dtype))
 #     return self.cast(least_upper_dtype(self.dtype, float32)).mul(1/log(2)).exp2().cast(self.dtype)
-# All three casts are the IDENTITY for a float32 source, which is why `t_softmax0`
-# prints no CAST at all -- and that is a claim, so `t_exp_cast` is the row that pins
-# it against a source that is NOT already float32.
+# THE FIRST LINE REBINDS `self`, SO CAST 3 CASTS BACK TO `least_upper_float(d0)` AND NOT TO
+# `d0` -- the easy misreading, and the one this def had. MEASURED on a STRONG int32 source
+# (`mo_i1d`): the port emitted 6 nodes with the final CAST back to `int32` where CPython's
+# `Tensor([1,2,3,4]).exp()` is `5 BUFFER/0 CAST/1 CONST/0 MUL/2 EXP2/1`. `mixin/elementwise.bend`'s
+# `ew_exp` is the same body at the `ew_*` layer and was fixed to `d1` first; this mirrors it.
+# All three casts are the IDENTITY for a float32 source, which is why the f32 row `exp0` prints
+# no CAST at all -- and that is why the weak fixture could not see the defect.
 # ===========================================================================
 def mo_exp(+t: T.Tensor) -> T.Tensor:
-  +a = mo_cast_t(t, F.least_upper_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t))))
+  +d1 = F.least_upper_float(W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+  +a = mo_cast_t(t, d1)
   +b = mo_cast_t(a, F.least_upper.of(W.wk_dt(F.folded(T.Tensor.ar(a)), T.Tensor.u(a)), S.single()))
-  mo_cast_t(E.ew_exp2(mo_mul(b, mo_const_t(b, O.CFloat{mo_log2e()}))), W.wk_dt(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))
+  mo_cast_t(E.ew_exp2(mo_mul(b, mo_const_t(b, O.CFloat{mo_log2e()}))), d1)
 
 # `log` -- elementwise.py:830. `return self.log2()*math.log(2)`.
 def mo_log(+t: T.Tensor) -> T.Tensor:

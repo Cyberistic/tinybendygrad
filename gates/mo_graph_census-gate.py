@@ -3,7 +3,7 @@
 
     .venv/bin/python gates/mo_graph_census-gate.py
 
-30 PUBLIC DEFS, 37 ROWS, THREE LANES, NO DECLARED DIVERGENCE.
+30 PUBLIC DEFS, 38 ROWS, THREE LANES, NO DECLARED DIVERGENCE.
 
 THE POPULATION IS DISCOVERED, NOT REMEMBERED. Every `mo_*` name in the file is enumerated by
 
@@ -49,6 +49,15 @@ shape the sibling `mo_reshape` (`op.bend:658`) already had. `mo_permute` has NO 
 tree (the movement wrapper is `mixin/movement.bend`'s `mxw_permute`), so the defect was LATENT;
 it is fixed and `permute0` is now a COMPARED row.
 
+THE `exp_i32` ROW IS A STRONG-int32 FIXTURE AND IT IS THE ONLY ROW THAT SEES `mo_exp`'s THIRD
+CAST. `elementwise.py:521-522` REBINDS `self` on its first line, so the three casts are
+`least_upper_float(d0)`, then `least_upper_dtype(d1, float32)`, then `.cast(d1)` -- NOT `.cast(d0)`.
+For a float32 source all three are the identity and `exp0` prints `4 BUFFER/0 CONST/0 MUL/2 EXP2/1`
+on BOTH sides, so the wrong cast-back target was invisible. For `mo_i1d` (int32) the port emitted 6
+nodes with a final CAST back to `int32` where CPython's `Tensor([1,2,3,4]).exp()` is
+`5 BUFFER/0 CAST/1 CONST/0 MUL/2 EXP2/1`. Fixed by binding `d1` once and casting back to it, the
+same shape `mixin/elementwise.bend`'s `ew_exp` already has.
+
 EXIT STATUS: 0 all three lanes identical · 1 a lane took the wrong row count, the oracle failed,
 the native compile failed, or the lanes disagree · 3 a precondition was absent (the output
 directory, the substrate, or the oracle). `DEAD`/`SKIP` are `gatekit`'s 5/4 and this gate does
@@ -74,6 +83,7 @@ ROWS = (
     "isfinite0",
     "isnan0",
     "exp0",
+    "exp_i32",
     "log0",
     "recip0",
     "inverse0",
@@ -120,6 +130,7 @@ GATE = Gate(
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "mo_graph_census-gate: 37 rows, 3 lanes, 30 public mo_* defs -- "
-                        "all 37 op sequences match CPython byte-for-byte (the callerless "
-                        "mo_permute NOOP defect is fixed and its pin dropped)"))
+    sys.exit(main(GATE, "mo_graph_census-gate: 38 rows, 3 lanes, 30 public mo_* defs -- "
+                        "all 38 op sequences match CPython byte-for-byte (the callerless "
+                        "mo_permute NOOP defect is fixed and its pin dropped; `exp_i32` is the "
+                        "strong-int32 row that separates `mo_exp`'s three casts)"))
