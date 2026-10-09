@@ -35,8 +35,8 @@ INSTRUMENT ONLY.
 
 THE OTHER TWO ARE A DEFECT AND THE PIN LOCKS IT:
 
-    zeros_like_vbool  CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE
-    ones_like_vbool   CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE
+    zeros_like_vbool  CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE   [FIXED]
+    ones_like_vbool   CPython 6 AFTER/2 ALLOC STORE      port 7 AFTER/2 ALLOC STORE   [FIXED]
 
 `cr_zeros_like` (creation.bend:427) hardcodes `MO.mo_ki(0)` and `cr_ones_like` (:435)
 `MO.mo_ki(1)` -- INT consts -- while CPython's `full_like(0)` resolves `dt = self.dtype` and
@@ -87,10 +87,10 @@ ROWS = (
     "full_like_vnobuf",
     "empty_like_vhalf",
     "zeros_like_vi",
-    "empty_like_vi",
-    "const_like_v0d",
     "zeros_like_vbool",
     "ones_like_vbool",
+    "empty_like_vi",
+    "const_like_v0d",
 )
 
 # (CPython's line, the port's line), pinned on both sides. THE TRAILING SPACE IS PART OF THE
@@ -99,17 +99,14 @@ ROWS = (
 #
 # FOUR CARVE-OUTS AND TWO DEFECTS. The four zero-src-root rows are the ONE instrument
 # carve-out (the `-`/empty-src rendering, identical to `ew_ufix`). `zeros_like_vbool` and
-# `ones_like_vbool` are a DEFECT and the pin LOCKS the current wrong value: a fix moves the
+# `ones_like_vbool` WERE a defect and are FIXED -- the pin that locked them is GONE, which is
+# what a pin is for. The old note said a fix moves the
 # port's line and this entry must move with it.
 DIVERGES = {
     "empty_v4":         ("empty_v4=1 Ops.ALLOC/0 ",        "empty_v4=1 Ops.ALLOC/0 -"),
     "full_v0nobuf":     ("full_v0nobuf=1 Ops.CONST/0 ",    "full_v0nobuf=1 Ops.CONST/0 -"),
     "empty_like_vi":    ("empty_like_vi=1 Ops.ALLOC/0 ",   "empty_like_vi=1 Ops.ALLOC/0 -"),
     "const_like_v0d":   ("const_like_v0d=1 Ops.CONST/0 ",  "const_like_v0d=1 Ops.CONST/0 -"),
-    "zeros_like_vbool": ("zeros_like_vbool=6 Ops.AFTER/2 Ops.ALLOC Ops.STORE",
-                         "zeros_like_vbool=7 Ops.AFTER/2 Ops.ALLOC Ops.STORE"),
-    "ones_like_vbool":  ("ones_like_vbool=6 Ops.AFTER/2 Ops.ALLOC Ops.STORE",
-                         "ones_like_vbool=7 Ops.AFTER/2 Ops.ALLOC Ops.STORE"),
 }
 
 GATE = Gate(
@@ -134,8 +131,8 @@ def no_noop_bottom() -> bool:
 
 
 if __name__ == "__main__":
-    sys.exit(gate(GATE, "cr_graph_census-gate: 28 rows, 3 lanes, 6 DECLARED divergences -- "
-                        "every ported public cr_* has NO NOOP BOTTOM and all 22 compared op "
+    sys.exit(gate(GATE, "cr_graph_census-gate: 28 rows, 3 lanes, 4 DECLARED divergences -- "
+                        "every ported public cr_* has NO NOOP BOTTOM and 22 compared op "
                         "sequences match CPython byte-for-byte; 4 divergences are the ONE "
                         "empty-src-root rendering carve-out (identical to ew_ufix) and 2 are "
                         "the PINNED zeros_like/ones_like bool-receiver defect (7 nodes vs 6)",

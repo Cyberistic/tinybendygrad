@@ -424,8 +424,37 @@ def cr_zeros(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev
 # a CONST int CAST to float32 -- `row_zeros_like2d_g` is 9 nodes with that CAST, and
 # `row_zeros23_g` is 9 nodes with a float CONST, so the two look alike in COUNT and are
 # not alike in the source sequence. That is why both are rows.
+# `DType.const(val)` -- dtype.py:79-84 -- IS THREE ARMS, and this pair is them:
+# `ConstFloat(...)` for a FLOAT dtype, `bool(val)` for a BOOL dtype, `int(val)` otherwise.
+# `cr_zeros_like` / `cr_ones_like` hardcoded `MO.mo_ki`, an INT, so a BOOL receiver got
+# `CONST(int 0)` PLUS a real CAST where CPython's CONST IS the bool and `.cast(bool)` folds --
+# one extra node, MEASURED and pinned in `gates/cr_graph_census-gate.py` (`zeros_like_vbool`,
+# `ones_like_vbool`). THE FLOAT ARM IS THE SILENT ONE: there both consts cast, so the COUNT
+# agrees and only the CONST's ARG differs -- which `Rng.sig` did not print before this session.
+def cr_cval0.f(isfloat: Bool) -> O.Const:
+  match isfloat:
+    case True{}: O.CFloat{0.0}
+    case _: MO.mo_ki(0)
+
+def cr_cval0(isbool: Bool, isfloat: Bool) -> O.Const:
+  match isbool:
+    case True{}: O.CBool{False{}}
+    case _: cr_cval0.f(isfloat)
+
+def cr_cval1.f(isfloat: Bool) -> O.Const:
+  match isfloat:
+    case True{}: O.CFloat{1.0}
+    case _: MO.mo_ki(1)
+
+def cr_cval1(isbool: Bool, isfloat: Bool) -> O.Const:
+  match isbool:
+    case True{}: O.CBool{True{}}
+    case _: cr_cval1.f(isfloat)
+
 def cr_zeros_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
-  cr_full_like(ar, MO.mo_ki(0), self_dt, True{}, ds, dev)
+  +ib = S.Dt.is_bool(self_dt)
+  +if_ = S.Dt.is_float(self_dt)
+  cr_full_like(ar, cr_cval0(ib, if_), self_dt, True{}, ds, dev)
 
 # `cls.full(argfix(*shape), 1.0, **kwargs)` -- creation.py:152.
 def cr_ones(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
@@ -433,7 +462,9 @@ def cr_ones(+ar: O.Arena, v: O.Const, +dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev)
 
 # `self.full_like(1, **kwargs)` -- creation.py:165.
 def cr_ones_like(+ar: O.Arena, +self_dt: S.Dt, +ds: List<&2, U32>, dev: S.Dev) -> T.Tensor:
-  cr_full_like(ar, MO.mo_ki(1), self_dt, True{}, ds, dev)
+  +ib = S.Dt.is_bool(self_dt)
+  +if_ = S.Dt.is_float(self_dt)
+  cr_full_like(ar, cr_cval1(ib, if_), self_dt, True{}, ds, dev)
 
 # ===========================================================================
 # THE GATE PRINTERS.
