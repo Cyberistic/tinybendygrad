@@ -3,8 +3,7 @@
 
     .venv/bin/python gates/mo_graph_census-gate.py
 
-30 PUBLIC DEFS, 37 ROWS, THREE LANES, ONE DECLARED DIVERGENCE -- AND THAT DIVERGENCE IS A
-DEFECT, NOT A CARVE-OUT.
+30 PUBLIC DEFS, 37 ROWS, THREE LANES, NO DECLARED DIVERGENCE.
 
 THE POPULATION IS DISCOVERED, NOT REMEMBERED. Every `mo_*` name in the file is enumerated by
 
@@ -39,24 +38,21 @@ mirrors. The printer is the port's OWN `M.mo_sig_t` (`op.bend:1146`) -- the deep
 sequence, bare op names -- and the oracle is the deep `sig()` the sibling `mixin-op-gate`
 already uses, so a wrong node ANYWHERE in the graph moves a row and not only the root.
 
-THE ONE DECLARED DIVERGENCE IS A DEFECT AND IS PINNED SO IT CANNOT BE FORGOTTEN:
+THE `permute0` DEFECT IS FIXED AND THE PIN IS GONE. The census used to pin `mo_permute.pick`
+(`op.bend:667`) reading the arena BEFORE the build that grows it --
+`T.tn_new(T.Tensor.ar(t), O.Found.i(T.tn_mop(...)))`, whose FIRST argument is read before the
+PERMUTE is interned, so the returned Tensor named an index its own arena did not hold (the
+`NOOP` bottom) and printed `permute0=1 NOOP/0` against CPython's
+`5 BUFFER/0 CONST/0 STACK/2 RESHAPE/2 PERMUTE/1`. The fix binds the `Found` from `tn_mop` and
+wraps it with `T.tn_alu.put` -- the one spelling that cannot name the wrong arena, and the same
+shape the sibling `mo_reshape` (`op.bend:658`) already had. `mo_permute` has NO caller in the
+tree (the movement wrapper is `mixin/movement.bend`'s `mxw_permute`), so the defect was LATENT;
+it is fixed and `permute0` is now a COMPARED row.
 
-    permute0   CPython 5 BUFFER/0 CONST/0 STACK/2 RESHAPE/2 PERMUTE/1
-               port    1 NOOP/0
-
-`mo_permute.pick` (`op.bend:667-670`) interns the PERMUTE with `T.tn_new(T.Tensor.ar(t), ...)`
--- the arena read BEFORE `T.tn_mop` grows it -- so the returned Tensor names an index its own
-arena does not hold, i.e. the `NOOP` bottom. It is the exact arena bug the file's own header
-warns about ("THE ARENA A BUILD RETURNED IS NOT THE ARENA THAT WENT IN"), and `mo_reshape`
-(:658) does it correctly by binding the `Found` first. `mo_permute` has NO caller in the tree
-(the movement wrapper is `mixin/movement.bend`'s `mxw_permute`), so the defect is LATENT.
-It is pinned here rather than dropped, so that a fix makes this gate RED and forces the pin
-to move. It is REPORTED, not smoothed.
-
-EXIT STATUS: 0 all three lanes identical after the pin · 1 a lane took the wrong row count, the
-oracle failed, the native compile failed, or the lanes disagree · 3 a precondition was absent
-(the output directory, the substrate, or the oracle). `DEAD`/`SKIP` are `gatekit`'s 5/4 and
-this gate does not produce them.
+EXIT STATUS: 0 all three lanes identical · 1 a lane took the wrong row count, the oracle failed,
+the native compile failed, or the lanes disagree · 3 a precondition was absent (the output
+directory, the substrate, or the oracle). `DEAD`/`SKIP` are `gatekit`'s 5/4 and this gate does
+not produce them.
 """
 import sys
 from pathlib import Path
@@ -109,15 +105,9 @@ ROWS = (
     "softmax3_ss",
 )
 
-# (CPython's line, the port's line), pinned on both sides. THE TRAILING SPACE IS PART OF THE
-# LINE: the port's `mo_sig` appends a separator after every op, so `want not in raw[lane]` in
-# `gatekit` is an exact-string test and a pin without it would never match.
-DIVERGES = {
-    # A DEFECT, not a carve-out -- see the module docstring. CPython builds the PERMUTE; the
-    # port's `mo_permute.pick` interns it into the PRE-BUILD arena and answers the NOOP bottom.
-    "permute0": ("permute0=5 BUFFER/0 CONST/0 STACK/2 RESHAPE/2 PERMUTE/1 ",
-                 "permute0=1 NOOP/0 "),
-}
+# No declared divergence: the `permute0` NOOP defect was fixed (see the module docstring), so
+# every row is COMPARED.
+DIVERGES = {}
 
 GATE = Gate(
     "mo_graph_census-gate",
@@ -131,5 +121,5 @@ GATE = Gate(
 
 if __name__ == "__main__":
     sys.exit(main(GATE, "mo_graph_census-gate: 37 rows, 3 lanes, 30 public mo_* defs -- "
-                        "36 op sequences match CPython byte-for-byte and 1 (permute0) is the "
-                        "pinned NOOP defect in the callerless mo_permute"))
+                        "all 37 op sequences match CPython byte-for-byte (the callerless "
+                        "mo_permute NOOP defect is fixed and its pin dropped)"))

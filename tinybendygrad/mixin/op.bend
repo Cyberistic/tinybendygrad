@@ -522,15 +522,19 @@ def mo_alu3(+ar: O.Arena, c: U32, op: O.Op, x: U32, y: U32) -> T.Tensor:
 def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
   F.least_upper.of(W.wk_dt(fx, T.Tensor.u(t)), W.wk_dt(fx, T.Tensor.u(y)))
 
-# THE FOLD IS TAKEN FROM `y`, NOT FROM A CALLER-SUPPLIED `F.Folded`, and that is the
-# whole of the arena rule made unfalsifiable: Python's `_broadcasted` runs INSIDE
-# `_binop`, so whatever built the operands has already grown the arena by the time the
-# promotion reads a dtype. `+y` is the right-hand operand and is therefore the
-# NEWEST node, so its arena is the one a dtype read must come from. The re-fold
-# between the two promotions is `elementwise.bend`'s `ew_promo2` restated where W9
-# forces a re-implementation.
-
-
+# THE FOLD IS TAKEN FROM THE OPERANDS' COMMON DESCENDANT ARENA, and that is the whole of
+# the arena rule made unfalsifiable. The first spelling folded `y`'s arena and ASSUMED `y`
+# was the NEWEST node -- true for `mo_bin_c` (whose CONST is interned in `t`'s arena) but
+# FALSE for a caller whose operands come from two DIFFERENT tensors: `rd_p64` builds
+# `t = rd_shl32(rd_c64(hi))` from the NEWER `hi` and `y = rd_c64(lo)` from the OLDER `lo`,
+# so `y`'s arena does not descend from `t`'s, `T.Tensor.u(t)` is out of range in the fold,
+# and the OR came back with `src[0]` = the NOOP bottom. `O.Arena.merge` is the total
+# spelling -- `tensor.bend`'s `tn_binop` uses it for exactly this -- and it re-interns `y`
+# into `t`'s arena and returns the map, so both operands are named in ONE arena whatever
+# their order. On the chain it is the IDENTITY (`map[i] = i` and the merged arena IS the
+# newer one), so no caller that already satisfied the old rule moves. The re-fold between
+# the two promotions is `elementwise.bend`'s `ew_promo2` restated where W9 forces a
+# re-implementation.
 
 # `lhs.alu(op, rhs)` is `UOp(op, src=(self, *src))` (tensor.py:116, ops.py:627), so
 # `lhs` is `src[0]` -- and `T.tn_alu` puts its FIRST argument there. `t_min0` printed
@@ -538,10 +542,12 @@ def mo_bin_out(+fx: F.Folded, +t: T.Tensor, +y: T.Tensor) -> S.Dt:
 # backwards, which is the same class of bug as tensor.bend's M15 and is why the gate
 # prints the ORDER of the signature and not a set of op names.
 def mo_bin(+t: T.Tensor, op: O.Op, +y: T.Tensor) -> T.Tensor:
-  +fx = F.folded(T.Tensor.ar(y))
-  +od = mo_bin_out(fx, t, y)
+  +m = O.Arena.merge(T.Tensor.ar(t), T.Tensor.ar(y))
+  +y2 = T.tn_new(O.Merge.ar(m), O.Merge.at(m, T.Tensor.u(y)))
+  +fx = F.folded(O.Merge.ar(m))
+  +od = mo_bin_out(fx, t, y2)
   +l = mo_promote(fx, t, od)
-  +r = mo_promote(F.folded(T.Tensor.ar(l)), y, od)
+  +r = mo_promote(F.folded(T.Tensor.ar(l)), y2, od)
   mo_alu2(T.Tensor.ar(r), T.Tensor.u(l), op, T.Tensor.u(r))
 
 # THE CONST-OPERAND HALF OF `_binop`, and it exists for W9. MEASURED: `E.ew_binop`
@@ -565,8 +571,8 @@ def mo_neg(+t: T.Tensor) -> T.Tensor: mo_bin_c(t, O.OpsMUL{}, mo_ki(4294967295))
 # at the end of `ew_binop` then interns the node into an arena one node short of the
 # right-hand side's and OVERWRITES it. MEASURED: `t_lse0` printed `2 BUFFER/0 REDUCE/1`
 # where CPython prints 33 nodes, and the graph had a node whose src was itself. `mo_bin`
-# re-wraps the left operand in the right operand's arena (`mo_arena`) and builds with an
-# explicit `mo_alu2`, so both orders are right by construction. A float CONST is the
+# MERGES the two operands' arenas (`O.Arena.merge`) and builds with an explicit `mo_alu2`,
+# so both orders are right by construction. A float CONST is the
 # other case where nothing is minted at all, so those two families are `mo_bin_c`.
 def mo_neq(+t: T.Tensor, +y: T.Tensor) -> T.Tensor: mo_bin(t, O.OpsCMPNE{}, y)
 def mo_neqc(+t: T.Tensor, v: O.Const) -> T.Tensor: mo_bin_c(t, O.OpsCMPNE{}, v)
@@ -667,7 +673,9 @@ def mo_reshape(+t: T.Tensor, +ds: List<&2, O.Const>) -> T.Tensor:
 def mo_permute.pick(isid: Bool, +t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
   match isid:
     case True{}: t
-    case _: T.tn_new(T.Tensor.ar(t), O.Found.i(T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsPERMUTE{}, T.AOrder{ys})))
+    case _:
+      +n = T.tn_mop(T.Tensor.ar(t), T.Tensor.u(t), O.OpsPERMUTE{}, T.AOrder{ys})
+      T.tn_alu.put(n)
 
 def mo_permute(+t: T.Tensor, +ys: List<&2, U32>) -> T.Tensor:
   mo_permute.pick(O.eq_u32(ys, mo_range(mo_ndim(F.folded(T.Tensor.ar(t)), T.Tensor.u(t)))), t, ys)
