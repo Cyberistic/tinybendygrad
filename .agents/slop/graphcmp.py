@@ -1354,33 +1354,33 @@ def g_move():
 
 def g_flip():
   """`UOp.group(a.flip(0))` -- MEASURED at 6 nodes, census
-  `ALLOC=1 CONST=2 FLIP=1 GROUP=1 RESHAPE=1 STACK=1`. **EXPECTED TO DISAGREE, ON `arg`.**
+  `ALLOC=1 CONST=2 FLIP=1 RESHAPE=1 STACK=1`. **THE TWO LANES AGREE, BYTE-FOR-BYTE.**
 
-  MEASURED, calling CPython, and it is a PORT SPELLING rather than an arithmetic one:
-
+  THERE IS NO `GROUP` HERE. `UOp.group` of ONE src RETURNS THE src and builds no node --
+  `tinygrad/uop/ops.py:559` reads `if len(srcs) == 1 and isinstance(srcs[0], UOp): return
+  srcs[0]`. The phantom op this docstring counted was INHERITED FROM `move`, whose group has
+  FOUR srcs and does build a node; this graph was split out of `move` and took its wrapper
+  with it. MEASURED today: `UOp.group(flip) is flip`, and `emit --graph flip --side py` and
+  `--side bend` answer 6 rows each, BYTE-IDENTICAL. `graphcmp.bend:1349` reached the same
+  answer from its own side, `checks/disagree-gate.py:124` PINS both halves by line, and
+  `checks/hermetic-census.py --check` answers rc=3 with `# STALE flip/bend: published rows=7
+  fresh rows=6` -- the phantom survives in exactly one place, the published row set. THE ROWS
+  WIN OVER THE DOCSTRING: `graphcmp.bend:1388` states that rule, and here it was applied to
+  one half of this pair and not the other. WHAT THE GRAPH IS FOR IS STILL TRUE -- it isolates
+  a PORT SPELLING on `arg`:
       a.flip(0).uop.arg            ->  (True, False)
       a.flip(0, 1).uop.arg          ->  (True, True)
       UOp(Ops.FLIP, (a,), (0,)).shape -> ValueError: bad flip on (4, 3), (0,)
-
-  So upstream's FLIP arg is a `tuple[bool, ...]` and upstream REFUSES an int tuple --
+  Upstream's FLIP arg is a `tuple[bool, ...]` and upstream REFUSES an int tuple --
   `tinygrad/uop/ops.py:428` reads `if len(ps) != len(self.marg) or not
-  all(isinstance(x, bool) for x in self.marg): raise ValueError(...)`, and
-  `tinygrad/mixin/movement.py:254` is the only construction site.
-  `tinygrad/uop/spec.py:166` then asserts `isinstance(mv.arg, tuple)` for PERMUTE **and**
-  FLIP together: ONE upstream constructor over TWO arg types, `tuple[int, ...]` for PERMUTE
-  and `tuple[bool, ...]` for FLIP.
-
-  The port has ONE spelling for both and it is the PERMUTE one -- `tinybendygrad/uop/
-  ops.bend:1066` types the tuple `ATuple{ys: List<&2, U32>}` and its own table at :1031
-  says "PERMUTE/FLIP arg" -- so a bool has no representation and graphcmp.bend's
-  `case O.ATuple{ys}: us(ys)` reads `n(i1,i0)` where this side reads `n(b1,b0)`.
-
-  **IT IS ITS OWN GRAPH BECAUSE THE DISAGREEMENT CASCADES.** `arg` is in the `core`, so
-  the FLIP goes one-sided and so does every consumer. MEASURED on the first attempt, which
-  had FLIP as a fifth member of `move`: `shared-cores=21 ONLY-PY=1 ONLY-BEND=1` plus a
-  rung-2 GROUP pair, and the cause was visible only in the rung-3.5 cross-reference three
-  lines further down. One graph, one cause -- which is the rule the limits file states and
-  the reason this is not folded into `move`."""
+  all(isinstance(x, bool) for x in self.marg): raise ValueError(...)`. The port has ONE
+  spelling for both and it is the PERMUTE one -- `tinybendygrad/uop/ops.bend:1066` types the
+  tuple `ATuple{ys: List<&2, U32>}` -- so a bool had no representation and graphcmp.bend's
+  `case O.ATuple{ys}: us(ys)` read `n(i1,i0)` where this side reads `n(b1,b0)`. `arg` is in
+  the `core`, so the FLIP went one-sided and so did every consumer. MEASURED on the first
+  attempt, which had FLIP as a fifth member of `move`: `shared-cores=21 ONLY-PY=1 ONLY-BEND=1`
+  plus a rung-2 GROUP pair, and the cause was visible only in the rung-3.5 cross-reference.
+  One graph, one cause -- the rule the limits file states, and why this is not in `move`."""
   from tinygrad import Tensor
   a = Tensor.empty(4, 3, dtype=dtypes.float)
   return UOp.group(a.flip(0).uop)
@@ -1493,8 +1493,9 @@ def g_threefry():
 
 def g_mulacc():
   """`UOp(Ops.MULACC, src=(a.uop, b.uop, c.uop))` over THREE `Tensor.empty(4,3)` --
-  reaches `Ops.MULACC`. MEASURED census: `ALLOC=3 CONST=3 GROUP=1 MULACC=1 RESHAPE=3
-  STACK=3`."""
+  reaches `Ops.MULACC`. MEASURED, 10 rows: `ALLOC=3 CONST=2 MULACC=1 RESHAPE=3 STACK=1`.
+  NO `GROUP`: this body never calls `UOp.group`, and `graphcmp.bend:1424` says the same of
+  the rows. The rows win over the docstring."""
   from tinygrad import Tensor
   a = Tensor.empty(4, 3, dtype=dtypes.float).uop  # noqa
   b = Tensor.empty(4, 3, dtype=dtypes.float).uop
@@ -1503,8 +1504,9 @@ def g_mulacc():
 
 
 def g_getaddr():
-  """`UOp(Ops.GETADDR, src=(alloc,), arg="CPU")` over a hand-written ALLOC -- 2 nodes.
-  Reaches `Ops.GETADDR`. MEASURED: `ALLOC=1 GROUP=1 GETADDR=1`."""
+  """`UOp(Ops.GETADDR, src=(alloc,), arg="CPU")` over a hand-written ALLOC -- 2 nodes,
+  MEASURED as 2. Reaches `Ops.GETADDR`. MEASURED: `ALLOC=1 GETADDR=1`. NO `GROUP`: two rows
+  cannot carry three ops."""
   from tinygrad.dtype import AddrSpace
   from tinygrad.uop.ops import ParamArg
   alloc = UOp(Ops.ALLOC, src=(), arg=ParamArg(0, dtypes.float, 12, device="CPU",
@@ -1514,8 +1516,10 @@ def g_getaddr():
 
 def g_unshard():
   """`UOp(Ops.UNSHARD, src=(a.uop, r), arg=(0,))` over a `Tensor.empty(4,3)` and a
-  `UOp.range(2, 0, AxisType.DEVICE)` -- 4 nodes. Reaches `Ops.UNSHARD`, the sharding
-  marker. MEASURED: `ALLOC=1 CONST=2 GROUP=1 RANGE=1 RESHAPE=1 STACK=1 UNSHARD=1`."""
+  `UOp.range(2, 0, AxisType.DEVICE)` -- 8 rows, MEASURED, not the 4 this docstring used to
+  claim. Reaches `Ops.UNSHARD`, the sharding marker. MEASURED: `ALLOC=1 CONST=3 RANGE=1
+  RESHAPE=1 STACK=1 UNSHARD=1`. NO phantom op -- `graphcmp.bend:1388` disputes the phantom
+  this docstring used to count, and the rows side with it."""
   from tinygrad import Tensor
   a = Tensor.empty(4, 3, dtype=dtypes.float).uop
   r = UOp.range(2, 0, AxisType.DEVICE)
