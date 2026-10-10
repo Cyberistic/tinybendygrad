@@ -1,22 +1,38 @@
-# tn_bitwise_not.bend -- a small driver for `tn_bitwise_not` in `tinybendygrad/tensor.bend`.
+# tn_bitwise_not.bend -- a driver for `tn_bitwise_not` in `tinybendygrad/tensor.bend`.
 #
 #   .venv/bin/python gates/tn_bitwise_not-gate.py
 #
-# EIGHT ROWS, NAMED ONCE. The row NAME is the claim being asked. The bend lane calls
+# SEVEN ROWS, NAMED ONCE. The row NAME is the claim being asked. The bend lane calls
 # `tn_bitwise_not` from the port and asks the shape/op/arg of every node in the
 # returned graph; the oracle calls CPython's `Tensor.bitwise_not` on a bool input
 # and asks the same. A row agrees only if the two implementations say so.
 #
-# WHAT THIS GRAPH IS. `tn_bitwise_not` ports the BOOL ARM of elementwise.py:145,
-# which is `self.logical_not()` = `self.cast(dtypes.bool).ne(True)`. The graph is
-# three nodes: a CONST{CInt{4}} input, a CAST to bool, a CONST{CBool{True}}, and a
-# CMPNE with the cast as src[0] and the True const as src[1]. The arena order is
-# INPUT -> CAST -> CONST(True) -> CMPNE; `Tensor.uop` is the CMPNE. Indices in the
-# arena: input=1, cast=2, true=3, cmpne=4. The cmpne's srcs are indices 2 and 3.
+# THE FIRST VERSION OF THIS DRIVER NEVER CALLED `tn_bitwise_not`. `mk_bitnot` built the
+# graph INLINE -- `tn_bitwise_not.cast` then `tn_alu` -- so seven of the eight rows were
+# a gate on a raw CAST helper and the ALU builder, and only row 8 reached the def its
+# name claims. Its fixture was `CInt{4}`, a SIGNED const, while the rows asserted the
+# BOOL arm's shape. So the population was not the subject: the instrument's name and its
+# rows disagreed, which is the failure this tree's first doctrine is about.
 #
-# The driver builds this graph INLINE so the indices in `cast` and `true_` are the
-# ones in the cmpne's src list. ROW 8 alone calls the port directly, to pin the
-# def's reachability.
+# AND THE ORACLE WAS HAND-BUILT TO MATCH, so both lanes were wrong together and compared
+# `1 == 1`. Switching the oracle to the real `Tensor.bitwise_not` is what exposed it:
+# on a bool input CPython's `cast(dtypes.bool)` FOLDS (`mixin/dtype.py:36` returns
+# `self` when the dtype matches), so CPython's bool arm is `CMPNE(CONST, CONST)` with
+# NO CAST -- and the port already agrees, because its bool arm is `tn_logical_not`,
+# which goes through the folding `D.cast_at`.
+#
+# WHAT THIS GRAPH IS. `elementwise.py:156-157` is a THREE-arm dispatch on dtype:
+#
+#   if self.dtype == dtypes.bool: return self.logical_not()
+#   return (self ^ self.dtype.max) if dtypes.is_unsigned(self.dtype) else (self ^ -1)
+#
+# Rows 1-6 take the FIRST arm on a BOOL fixture. Row 7 is the only one positioned to see
+# the third, because every other row is bool-fixture.
+#
+# THE GRAPH ON A BOOL INPUT IS TWO NODES. Input CONST{CBool{True}}, a second
+# CONST{CBool{True}}, and the CMPNE with the two as srcs -- the `cast` folds away, so
+# `src[0]` IS the input. Row 4 is that fold, and it is the row that would have caught a
+# regression to the raw cast.
 
 import Base
 import ./../tinybendygrad/LAWS/spec.bend as S
@@ -29,106 +45,127 @@ def row(nm: String, v: Bool) -> IO(Unit):
     case True{}: IO.print(String.concat([nm, "=1"]))
     case _: IO.print(String.concat([nm, "=0"]))
 
-# Build the bitwise_not graph inline. Returns BOTH the result tensor AND the
-# intermediate cast and true_const indices, which the rows need to inspect.
+# A bool CONST input, and `tn_bitwise_not` applied to it. `Bitnot.reached` is the `Maybe`
+# the three-arm dispatch returns: `None` means the fold could not answer the dtype or
+# `Dt.max` refused an unsigned, and every row below then reads False.
+#
+# THERE WAS AN EIGHTH ROW, `bitnot_bool_arm_is_reached`, AND IT WAS DROPPED RATHER THAN PINNED.
+# It asked whether the dispatch returns `Some`, which is a fact about the PORT's `Maybe`
+# return type and has NO CPython counterpart -- so the oracle side of it could only be a
+# constant, and a row whose oracle is a constant is the same defect one row down. `None` is
+# still a FAIL in every remaining row, which is what that row was for.
 type Bitnot is Data:
-  Bitnot{r: T.Tensor, t: T.Tensor, cast: O.Found, true_: O.Found}
+  Bitnot{reached: Maybe<&2, T.Tensor>, t: T.Tensor}
 
 def mk_bitnot() -> Bitnot:
-  +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
+  +c = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   +t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
-  +cast = T.tn_bitwise_not.cast(T.Tensor.ar(t), T.Tensor.u(t))
-  +true_ = O.UOp.const(O.Found.ar(cast), O.CBool{True{}})
-  +r = T.tn_alu(T.tn_alu.put(cast), O.OpsCMPNE{}, [O.Found.i(true_)])
-  Bitnot{r, t, cast, true_}
+  Bitnot{T.tn_bitwise_not(t), t}
+
+def bnot(+r: T.Tensor) -> Bool:
+  O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
 
 # ROW 1: the outer op is CMPNE.
-def row_bitnot_op(+b: Bitnot) -> Bool:
+def row_op(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_op(O.Arena.op(T.Tensor.ar(r), T.Tensor.u(r)), O.OpsCMPNE{})
+    case Bitnot{m, t}:
+      match m:
+        case Some{+r}: bnot(r)
+        case None{}: False{}
 
-# ROW 2: the outer arg is ANone{}.
-def row_bitnot_arg(+b: Bitnot) -> Bool:
+# ROW 2: the outer arg is ANone{}, because `ne` passes no arg.
+def row_arg(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
+    case Bitnot{m, t}:
+      match m:
+        case Some{+r}: O.eq_arg(O.Arena.arg(T.Tensor.ar(r), T.Tensor.u(r)), O.ANone{})
+        case None{}: False{}
 
-# ROW 3: the outer srcs are (cast_index, true_index), in that order.
-def row_bitnot_srcs(+b: Bitnot) -> Bool:
+def src1_is_true_const(+r: T.Tensor) -> Bool:
+  +ar = T.Tensor.ar(r)
+  O.eq_arg(O.Arena.arg(ar, O.Arena.src(ar, T.Tensor.u(r), 1)), O.APy{O.CBool{True{}}})
+
+# ROW 3: the srcs are the INPUT and the True CONST.
+def row_srcs(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_u32(O.Arena.srcs(T.Tensor.ar(r), T.Tensor.u(r)),
-        [O.Found.i(cast), O.Found.i(true_)])
+    case Bitnot{m, t}:
+      match m:
+        case Some{+r}: src1_is_true_const(r)
+        case None{}: False{}
 
-# ROW 4: the CMPNE's src[0] is the CAST's index.
-def row_bitnot_cast_in(+b: Bitnot) -> Bool:
+# ROW 4: THE IDENTITY CAST FOLDED. `src[0]` IS the input uop, so `cast(dtypes.bool)`
+# minted nothing -- the port reaches the folding `D.cast_at` (`mixin/dtype.bend:342`),
+# which is the fix this row exists to keep.
+def row_cast_folded(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      U32.is_eq(O.Arena.src0(T.Tensor.ar(r), T.Tensor.u(r)), O.Found.i(cast))
+    case Bitnot{m, t}:
+      match m:
+        case Some{+r}: U32.is_eq(O.Arena.src0(T.Tensor.ar(r), T.Tensor.u(r)), T.Tensor.u(t))
+        case None{}: False{}
 
-# ROW 5: the CAST's arg is ADt{boolean()}.
-def row_bitnot_cast_arg(+b: Bitnot) -> Bool:
+def row_input_is_bool.go(dt: Maybe<&2, S.Dt>) -> Bool:
+  match dt:
+    case Some{+d}: S.Dt.is_bool(d)
+    case None{}: False{}
+
+# ROW 5: the fold's PRECONDITION -- the input really is bool. Without this, row 5 would
+# pass for the wrong reason (a non-bool input folds to nothing only by coincidence).
+# `.go` exists because `match` cannot scrutinise a computed value.
+def row_input_is_bool(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_arg(O.Arena.arg(O.Found.ar(cast), O.Found.i(cast)), O.ADt{S.boolean()})
+    case Bitnot{m, t}: row_input_is_bool.go(T.tn_dtype(t))
 
-# ROW 6: the True CONST's arg is APy{CBool{True{}}}.
-def row_bitnot_true_arg(+b: Bitnot) -> Bool:
+# ROW 6: the input is NOT mutated -- it still has op CONST.
+def row_pure(+b: Bitnot) -> Bool:
   match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_arg(O.Arena.arg(O.Found.ar(true_), O.Found.i(true_)),
-        O.APy{O.CBool{True{}}})
+    case Bitnot{m, t}: O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{})
 
-# ROW 7: the input is NOT mutated -- the original uop still has op CONST.
-def row_bitnot_pure(+b: Bitnot) -> Bool:
-  match b:
-    case Bitnot{r, t, cast, true_}:
-      O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsCONST{})
+# ROW 7: THE THIRD ARM. `CInt{4}` is weakint and SIGNED, so CPython takes `self ^ -1`
+# (`elementwise.py:157`) and the top op must be XOR, not CMPNE. This is the only row on a
+# non-bool fixture; `None` is `Dt.max`'s refusal and is a FAIL, not a skip.
+def row_signed_xor.go(m: Maybe<&2, T.Tensor>) -> Bool:
+  match m:
+    case Some{+t}: O.eq_op(O.Arena.op(T.Tensor.ar(t), T.Tensor.u(t)), O.OpsXOR{})
+    case None{}: False{}
 
-# ROW 8: the def is REACHABLE -- the audit's wall text said it was 0 defs.
-def row_bitnot_present() -> Bool:
+def row_signed_xor() -> Bool:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(4)})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}
-  +r = T.tn_bitwise_not(t)
-  True{}
+  row_signed_xor.go(T.tn_bitwise_not(t))
 
-def row_bitnot_op.go() -> IO(Unit):
+# EACH ROW BUILDS ITS OWN FIXTURE. `bend`'s `let` is AFFINE, so a `Bitnot` consumed by one
+# row cannot be handed to a second; the six bool rows each call `mk_bitnot()`.
+def row_op.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_op_is_cmpne", row_bitnot_op(b))
+  row("bitnot_op_is_cmpne", row_op(b))
 
-def row_bitnot_arg.go() -> IO(Unit):
+def row_arg.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_arg_is_anone", row_bitnot_arg(b))
+  row("bitnot_arg_is_anone", row_arg(b))
 
-def row_bitnot_srcs.go() -> IO(Unit):
+def row_srcs.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_src_is_cast_and_true", row_bitnot_srcs(b))
+  row("bitnot_srcs_are_input_and_true", row_srcs(b))
 
-def row_bitnot_cast_in.go() -> IO(Unit):
+def row_cast_folded.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_cast_in_to_bool_cast", row_bitnot_cast_in(b))
+  row("bitnot_identity_cast_folded", row_cast_folded(b))
 
-def row_bitnot_cast_arg.go() -> IO(Unit):
+def row_is_bool.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_cast_arg_is_adt_bool", row_bitnot_cast_arg(b))
+  row("bitnot_input_is_bool", row_input_is_bool(b))
 
-def row_bitnot_true_arg.go() -> IO(Unit):
+def row_pure.go() -> IO(Unit):
   b : Bitnot = mk_bitnot()
-  row("bitnot_true_const_arg_is_cbool_true", row_bitnot_true_arg(b))
-
-def row_bitnot_pure.go() -> IO(Unit):
-  b : Bitnot = mk_bitnot()
-  row("bitnot_does_not_mutate_input", row_bitnot_pure(b))
+  row("bitnot_does_not_mutate_input", row_pure(b))
 
 def main() -> IO(Unit):
   do IO<Unit>:
-    a : Unit <- row_bitnot_op.go()
-    b : Unit <- row_bitnot_arg.go()
-    c : Unit <- row_bitnot_srcs.go()
-    d : Unit <- row_bitnot_cast_in.go()
-    e : Unit <- row_bitnot_cast_arg.go()
-    f : Unit <- row_bitnot_true_arg.go()
-    g2 : Unit <- row_bitnot_pure.go()
-    h : Unit <- row("bitnot_is_reachable", row_bitnot_present())
+    a1 : Unit <- row_op.go()
+    a2 : Unit <- row_arg.go()
+    a3 : Unit <- row_srcs.go()
+    a4 : Unit <- row_cast_folded.go()
+    a5 : Unit <- row_is_bool.go()
+    a6 : Unit <- row_pure.go()
+    a7 : Unit <- row("bitnot_signed_takes_xor_arm", row_signed_xor())
     return Unit{}
