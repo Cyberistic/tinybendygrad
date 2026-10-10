@@ -75,9 +75,19 @@ def sig_tn_logical_not() -> String:
   +r = T.tn_logical_not(t4())
   O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
 
+def sig_tn_bitwise_not.at(+t: T.Tensor) -> String:
+  O.Rng.sig(T.Tensor.ar(t), T.Tensor.u(t))
+
+# `tn_bitwise_not` returns a `Maybe` because CPython's `bitwise_not` has a dtype dispatch
+# with three arms and `S.Dt.max` refuses an unsigned dtype wider than `u32`. `CInt{4}` is
+# signed, so the `Some` arm is the one taken here and `NONE` would be the row failing.
+def sig_tn_bitwise_not.go(m: Maybe<&2, T.Tensor>) -> String:
+  match m:
+    case Some{t}: sig_tn_bitwise_not.at(t)
+    case None{}: "NONE"
+
 def sig_tn_bitwise_not() -> String:
-  +r = T.tn_bitwise_not(t4())
-  O.Rng.sig(T.Tensor.ar(r), T.Tensor.u(r))
+  sig_tn_bitwise_not.go(T.tn_bitwise_not(t4()))
 
 def sig_tn_neg() -> String:
   +r = T.tn_neg(t4())
