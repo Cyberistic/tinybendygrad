@@ -40,11 +40,35 @@ THE TWO DIVERGENCES, BOTH DOCUMENTED IN `fold.bend`, PINNED ON BOTH SIDES:
   convention is documented ("a rule it cannot run is not a rule that passed"), and the
   two are the exact two `fold.bend` names in its own header.
 
-WHAT A VALUE CENSUS CANNOT SEE, and it is named rather than hidden: the identity-CAST
-deviation (`tinygrad/mixin/dtype.py:19` folds `x.cast(x.dtype)` to `x`; the port's
-`cast_at` "always builds a new node") is a GRAPH difference, not a fold-property
-difference -- both lanes read the same property off the SAME node. It belongs to the
-`md_graph_census`/`gr_graph_census` op-sequence lanes, not here.
+WHAT A VALUE CENSUS CANNOT SEE, and it is named rather than hidden. An IDENTITY CAST is a graph
+difference, not a fold-property difference -- both lanes read the same property off the SAME node --
+so this census is structurally blind to it. But THE FIRST VERSION OF THIS PARAGRAPH NAMED THE WRONG
+SUBJECT AND SAID "IT BELONGS TO THE `md_graph_census` LANE", AND BOTH WERE WRONG.
+
+  * CPython folds it: `tinygrad/mixin/dtype.py:36` is
+    `return self if self.dtype == (dt:=to_dtype(dtype)) else self._wrap_uop(...)` (body of the
+    `cast` def at `:19`).
+  * THE PORT FOLDS IT TOO. `tinybendygrad/mixin/dtype.bend:342` `cast_at.of` is the two-arm match and
+    its `True` arm answers `O.Found{md_ar(fx), self}` -- the src, un-minted. `cast_at` was NEVER the
+    offender. THE OFFENDER IS `UOp.cast` at `tinybendygrad/uop/ops.bend:2919`, whose body is
+    `UOp.new(ar, OpsCAST{}, [self], ADt{dt}, TNone{})` -- it always mints, and its own comment says
+    the full check "would need a FOLD CONTEXT, which is what `cast_at` ... IS".
+  * SO IT DOES NOT BELONG TO `md_graph_census`: that gate's `cast_same_weakint` pin is
+    `1 Ops.CONST/0` on BOTH sides, i.e. evidence that the port DOES fold an identity cast.
+  * THE REAL BLAST RADIUS IS ONE FILE, AND IT IS NARROWER THAN "THREE SITES". `grep -rn "UOp\.cast("`
+    outside `uop/ops.bend` answers EXACTLY ONE LINE -- `tensor.bend:514` -- and
+    `grep -c "wk_cast_at\|cast_at" tinybendygrad/tensor.bend` answers **0**, so `tensor.bend` is the
+    ONLY layer that never reaches the folding spelling; every other one goes through
+    `W.wk_cast_at(F.folded(ar), ...)`. THAT ALONE IS WHY `ew_graph_census` carries one pin and
+    `tn_graph_census` carries six. `tensor.bend` also hand-mints the CAST TWICE more, at `:485` and
+    `:1264`, with `O.UOp.new(..., OpsCAST{}, ...)` rather than through the helper -- those are the
+    sites to check next, and they are hand-written rather than reached by a broken helper.
+    (A tree-wide `OpsCAST{}` grep is NOT the census: most of its ~100 hits are PATTERN-MATCHER
+    arms and rewrites whose dtype genuinely differs, where an identity fold would be WRONG. The
+    census is of the ones whose target dtype may already be the source's.)
+
+A BLIND SPOT THAT IS NOT BLIND AFTER ALL, which is worth saying: the instrument cannot see it, but a
+SIBLING INSTRUMENT CAN, so "this census cannot see X" is not a reason for no gate to see X.
 """
 
 import sys
