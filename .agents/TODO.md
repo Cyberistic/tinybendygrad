@@ -13557,6 +13557,36 @@ vocabulary change short**, now measured at 2 edits + 4 owned readers/constructor
 **No plant is owed: nothing landed, so a `mv_perm*` re-run would be a change-detector
 against an unchanged tree (`AGENTS.md`). The trade print is owed by whoever lands step 4.**
 
+## MSGDIFFQ — `msgdiff-gate.py` REFUSES A MESSAGE THAT FAITHFULLY QUOTES A PRIOR COMMIT (2026-10-10)
+
+`gates/msgdiff-gate.py` is mid-edit by another unit (`git status` reads ` M`), so this is tracked
+here and NOT fixed there.
+
+- [ ] **THE REPO IS RED AT REST AND IT IS THE GATE'S BLIND SPOT, NOT A BAD MESSAGE.** A bare
+      `.venv/bin/python gates/msgdiff-gate.py` answers `REFUSED` on HEAD `8ec4631fa`, whose diff is
+      **3 files**, because the message body quotes `c7ad2ac4d`'s `git show --stat` output
+      (`11 files changed, 212 insertions(+), 1009 deletions(-)`) and the ACK text quoting it.
+      MEASURED: `REFUSED ... the message claims a change the diff does not witness (2 checked,
+      2 uncheckable)`.
+- [ ] **THREE COMMITS IN A ROW, WHICH IS WHAT MAKES IT A CLASS AND NOT AN INCIDENT:**
+      `c7ad2ac4d` (6 undeclared REMOVALS -- a real accident: a bare `git commit -F` took another
+      unit's staged index; reverted in `ee517b819`); `ee517b819` (a quoted `11 files` stat);
+      `8ec4631fa` (the same figure quoted again). **THE FIRST IS A GATE EARNING ITS KEEP AND THE
+      OTHER TWO ARE THE GATE EARNING ITS DISAGREEMENT WITH PROSE.**
+- [ ] **THE INSTRUMENT CANNOT TELL A QUOTATION FROM A SELF-DESCRIPTION.** `MESSAGE_DIFF_ACK` is
+      the sanctioned escape and it is ENVIRONMENTAL ONLY, so a faithful report of another unit's
+      measurement makes the repo red for whoever runs next. **THE FIX IS A DURABLE PER-COMMIT LEDGER
+      READ BY THE GATE** -- the same shape as `gates/cstyle-live.rows` and
+      `indexread-baseline.rows`: a gate's required input belongs BESIDE THE GATE IN GIT, not in the
+      environment of whoever ran it last.
+- [ ] **THE CHEAP ALTERNATIVE IS A MESSAGE CONVENTION:** do not put raw `N files changed` syntax
+      in a message body, because the gate's regex cannot scope it to the enclosing commit. This
+      costs the reader the exact figure, which is the thing the message is for, so the ledger is
+      the better answer.
+
+**WHILE UNFIXED, A BARE SWEEP READS 55/56.** The green number is `55/56` with `MESSAGE_DIFF_ACK`
+set on HEAD; the other 55 are unaffected.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
