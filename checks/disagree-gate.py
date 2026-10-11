@@ -40,6 +40,7 @@ Exit 0 iff every lane passes.  `--help` before you trust it.
 from __future__ import annotations
 
 import argparse
+import ast
 import re
 import shutil
 import subprocess
@@ -112,32 +113,67 @@ PIN = {
 # non-empty one is a fresh substitution.
 
 # Every claim above rests on a line.  Read it, or the pin is a rumour.
+#
+# *** A LINE NUMBER IS NOT STORED HERE, AND THAT IS THE WHOLE FIX. ***  This table used to
+# be `(path, line, must-contain, why)` and two of its fourteen rows were already FAILing
+# (measured): `graphcmp.bend:1571` and `graphcmp.bend:777`, both by DRIFT -- the text was
+# still there at :1595 and :791.  A position is not a fact about a file, it is an accident
+# of how many lines happen to sit above it, and `.agents/slop/graphcmp.bend` grew by 24
+# lines in two commits without changing one word of either claim.  This is `AGENTS.md`'s
+# hand list with the subject swapped: a set of assertions about CONTENT AT A POSITION.
+#
+# SO THE POSITION IS DERIVED, EVERY RUN, BY AST.  The locator says HOW to find the line:
+#
+#   DEF:<path>:<name>   the top-level def (or class) named <name>; the assertion is that
+#                       its BODY carries the text.  Nine of the fourteen are this form,
+#                       and they CANNOT DRIFT -- the name is resolved by the parser on
+#                       every run and the line falls out of the node, never out of a list.
+#   AT:<path>           the text is searched for as a UNIQUE substring of the whole file.
+#                       Five of the fourteen, all of them `.bend`: a `.py` file gets its
+#                       `DEF` form and a `.bend` file has no AST to ask.
+#
+# FOUR of the original needles were AMBIGUOUS and were therefore never pins at all --
+# `OpsGROUP` matched 12 lines, `dtype: S.Dt` matched 5, `self.dtype is not dtypes.void`
+# matched 2, `return src[0].dtype` matched 5.  An anchor that matches many lines is a
+# claim that cannot fail, so the two `DEF` rows are now scoped to their def (which is
+# what made those 2 and 5 into 1) and the two `.bend` rows were widened to the statement
+# each one actually means.
+#
+# AN ABSENT ANCHOR IS `REFUSED` (exit 3), NEVER A SILENT PASS AND NEVER A `FAIL`: the gate
+# cannot distinguish "the code moved" from "the citation was wrong about the code", and
+# guessing is the thing this table is being removed for.
 CITES = (
-  # (path, line, must-contain, why this line is load-bearing)
-  (".agents/slop/graphcmp.bend", 1571, "def rows.pick3",
+  # (locator, must-contain, why this line is load-bearing)
+  ("AT:.agents/slop/graphcmp.bend", "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
-  (".agents/slop/graphcmp.py", 1394, "def g_allred", "the py fixture that has no bend twin"),
-  (".agents/slop/graphcmp.py", 1413, "def g_cdiv", "ditto"),
-  (".agents/slop/graphcmp.py", 1458, "def g_late", "ditto"),
-  ("tinygrad/uop/ops.py", 559, "if len(srcs) == 1",
+  ("DEF:.agents/slop/graphcmp.py:g_allred", "g_allred",
+   "the py fixture that has no bend twin"),
+  ("DEF:.agents/slop/graphcmp.py:g_cdiv", "g_cdiv", "ditto"),
+  ("DEF:.agents/slop/graphcmp.py:g_late", "g_late", "ditto"),
+  ("DEF:tinygrad/uop/ops.py:UOp", "if len(srcs) == 1",
    "`UOp.group` of ONE src is the src, so `g_flip` builds NO GROUP node"),
-  (".agents/slop/graphcmp.py", 1386, "UOp.group(a.flip(0).uop)",
+  ("DEF:.agents/slop/graphcmp.py:g_flip", "UOp.group(a.flip(0).uop)",
    "a ONE-element group -- the whole of the bend-only GROUP#7"),
-  (".agents/slop/graphcmp.bend", 777, "OpsGROUP",
+  ("AT:.agents/slop/graphcmp.bend",
+   "O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(mul)], "
+   "O.ANone{}, O.TNone{})",
    "the bend fixture builds that GROUP by hand, bypassing `UOp.group`"),
-  ("tinybendygrad/uop/ops.bend", 1117, "dtype: S.Dt",
+  ("AT:tinybendygrad/uop/ops.bend",
+   "CallInfo{name: Maybe<&2, String>, precompile: Bool, precompile_backward: Bool, "
+   "dtype: S.Dt}",
    "the port's CallInfo carries `dtype`, and SO DOES THE PIN -- `ops.py:1398`"),
-  ("ad117c928^:tinygrad/uop/ops.py", 1398, "dtype: DType = dtypes.void",
+  ("DEF:ad117c928^:tinygrad/uop/ops.py:CallInfo", "dtype: DType = dtypes.void",
    "the PIN's LAST CallInfo field IS `dtype`, so 'upstream has no dtype' is false"),
-  ("ad117c928^:tinygrad/uop/ops.py", 1404, "self.dtype is not dtypes.void",
+  ("DEF:ad117c928^:tinygrad/uop/ops.py:CallInfo",
+   'f", dtype={self.dtype})" if self.dtype is not dtypes.void',
    "the PIN's `__repr__` SUPPRESSES the dtype slot for void -- the spelling `loop` broke"),
-  ("tinygrad/uop/ops.py", 1405, "aux: Any = None",
+  ("DEF:tinygrad/uop/ops.py:CallInfo", "aux: Any = None",
    "THE WORKTREE says `aux` is last; the PIN says `dtype` is. Cite the PIN for upstream."),
-  ("tinygrad/uop/ops.py", 132, "return src[0].dtype",
+  ("DEF:tinygrad/uop/ops.py:dtype_from_uop", "return src[0].dtype",
    "upstream reads the CALL dtype off the BODY, never off CallInfo"),
-  ("tinybendygrad/uop/fold.bend", 1154, "CallInfo.dtype",
+  ("AT:tinybendygrad/uop/fold.bend", "CallInfo.dtype",
    "the port reads it off the field the PIN HAS -- a spelling, not a shape"),
-  ("tinybendygrad/uop/ops.bend", 999, "applied_opts: List<&2, OPT>",
+  ("AT:tinybendygrad/uop/ops.bend", "applied_opts: List<&2, OPT>",
    "`lin`'s cause, and THE CAUSE IS FIXED: the port typed these `U32` and this is now `OPT` — "
    "the pin's own three-field `Opt` — which is why `lin` LEAVES `PIN`"),
 )
@@ -190,6 +226,64 @@ def cited(line: str, needle: str) -> bool:
   return re.search(re.escape(needle) + r"(?![\w])", line) is not None
 
 
+def defs(text: str, name: str) -> list[str]:
+  """The source segment of every top-level def or class called `name`, parsed fresh.
+
+  THIS IS WHAT MAKES A CITATION UNDRIFTABLE.  The name is resolved by the PARSER, so
+  inserting a paragraph above the def, deleting a comment below it, or reordering the
+  file cannot move the thing the assertion is about -- only renaming the def can, and
+  that is the edit a reader of the gate would notice anyway.  Every element past the
+  name is a LINE NUMBER WITH A MEANING: none of them is stored in `CITES`."""
+  try:
+    tree = ast.parse(text)
+  except SyntaxError:
+    return []
+  return [ast.get_source_segment(text, n) or ""
+          for n in tree.body
+          if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+          and n.name == name]
+
+
+def locate(loc: str, needle: str) -> tuple[str, str]:
+  """Resolve one locator to `(verdict, detail)`.  `verdict` is PASS, FAIL or REFUSED and
+  REFUSED is NOT a pass: it means this lane measured nothing about this claim.
+
+  REFUSED IS DELIBERATE FOR THE UNREADABLE AND THE AMBIGUOUS.  An anchor that matches
+  zero lines and an anchor that matches twelve are the same kind of event -- the gate
+  cannot tell "the code moved" from "this citation never described the code" -- and
+  answering either one by guessing is precisely the fault this table was removed for.
+  It is not a FAIL, because a FAIL says the tree is wrong and the tree may be right."""
+  kind, _, rest = loc.partition(":")
+  if kind == "DEF":
+    path, _, name = rest.rpartition(":")
+    text = source(path)
+    if text is None:
+      return "REFUSED", f"{path}: unreadable or absent; wanted def {name} carrying {needle!r}"
+    found = defs(text, name)
+    if len(found) > 1:
+      return "FAIL", f"{path}: {name} is defined {len(found)} times, expected once"
+    if not found:
+      return "REFUSED", f"{path}: no def named {name} carrying {needle!r}"
+    if not any(cited(seg, needle) for seg in found):
+      return "FAIL", (f"{path}: def {name} no longer carries {needle!r} "
+                      f"(it reads {found[0].splitlines()[0].strip()!r}...)")
+    return "PASS", ""
+  if kind == "AT":
+    path = rest
+    text = source(path)
+    if text is None:
+      return "REFUSED", f"{path}: unreadable or absent; wanted {needle!r}"
+    hit = [i for i, l in enumerate(text.splitlines(), 1) if cited(l, needle)]
+    if not hit:
+      return "REFUSED", f"{path}: no line carries {needle[:56]!r}"
+    if len(hit) > 1:
+      return "REFUSED", (f"{path}: {len(hit)} lines carry {needle[:40]!r} (lines "
+                         f"{hit[:6]}), and an anchor that matches many lines is a claim "
+                         f"that cannot fail -- widen it or give the row a DEF locator")
+    return "PASS", ""
+  return "REFUSED", f"{loc}: unknown locator kind {kind!r}"
+
+
 def source(rel: str) -> str | None:
   """A `rev:path` row names a BLOB, not a file.  It has to: `ad117c928` re-vendored 16
   `tinygrad/` files, so `tinygrad/uop/ops.py` in the worktree puts `dtype` at :1397 and
@@ -208,16 +302,10 @@ def source(rel: str) -> str | None:
 
 def lane_citations() -> list[str]:
   fails = []
-  for rel, n, needle, why in CITES:
-    text = source(rel)
-    if text is None:
-      fails.append(f"{rel}:{n} -- gone; {why}")
-      continue
-    lines = text.splitlines()
-    if not (1 <= n <= len(lines)):
-      fails.append(f"{rel}:{n} -- past end of file ({len(lines)} lines); {why}")
-    elif not cited(lines[n - 1], needle):
-      fails.append(f"{rel}:{n} -- reads {lines[n-1].strip()!r}, expected {needle!r}; {why}")
+  for loc, needle, why in CITES:
+    verdict, detail = locate(loc, needle)
+    if verdict != "PASS":
+      fails.append(f"[{verdict}] {detail}; {why}")
   # THE POSITIVE CLAIM.  This used to assert the OPPOSITE -- that `rows.pick3` had NO arm
   # for allred/cdiv/late -- and it went RED the moment the arms landed: a gate failing
   # because the defect it recorded was FIXED.  A negative claim about a dispatch table rots
@@ -250,7 +338,7 @@ def lane_plant(tree: Path) -> list[str]:
   reads the other belt both pass a self-consistent check."""
   import json
 
-  def answer(d: Path) -> tuple[object, ...]:
+  def answer(d: Path) -> tuple[object, ...] | None:
     r = subprocess.run([sys.executable, str(NAMES), "--json", "--tree", str(d)],
                        capture_output=True, text=True)
     assert r.returncode == 0, r.stdout + r.stderr
@@ -259,12 +347,20 @@ def lane_plant(tree: Path) -> list[str]:
     # AGREEING `next(...)` RAISED `StopIteration` AND TOOK THE WHOLE PLANT LANE DOWN --
     # a plant that names one graph is a plant that breaks when the tree gets better.
     if not j["disagree"]:
-      raise SystemExit("the plant needs one disagreement to move; this run has none")
+      return None
     g = sorted(j["disagree"], key=lambda x: x["graph"])[0]
     return g["graph"], g["first_row_from_cmp"], g["first_row_recomputed"], g["fields"]
 
   fails = []
   before = answer(tree)
+  # `None` IS A REFUSAL, NOT AN EXCEPTION.  This used to `raise SystemExit`, which took
+  # THE WHOLE PROCESS down before `main` could reach its own exit code -- so on a run with
+  # no disagreements (the tree's state now: `graphs-disagree=0`) this lane silently became
+  # the gate's verdict, and it reported it as `FAIL`.  A missing precondition is REFUSED
+  # (exit 3): the plant measured nothing, and the tree getting BETTER is not a defect.
+  # It is also what lets a REFUSED from ANOTHER LANE still reach the exit code.
+  if before is None:
+    return ["[REFUSED] the plant needs one disagreement to move; this run has none"]
   graph = before[0]
   with tempfile.TemporaryDirectory() as td:
     work = Path(td) / "D"
@@ -290,7 +386,7 @@ def lane_plant(tree: Path) -> list[str]:
     py = canon_py.read_text().splitlines()
     bend = canon_bend.read_text().splitlines()
     if not (isinstance(row, int) and 1 <= row <= len(bend) and row <= len(py)):
-      raise SystemExit(f"the plant needs an integer row in range; {graph} reports {row!r}")
+      return [f"[REFUSED] the plant needs an integer row in range; {graph} reports {row!r}"]
     bend[row - 1] = py[row - 1]
     canon_bend.write_text("\n".join(bend) + "\n")
     a = answer(work)
@@ -384,9 +480,11 @@ def main() -> int:
            "coverage": ("COVERAGE ARTEFACTS", lambda: lane_coverage(tree)),
            "plant": ("PLANT + DISARM", lambda: lane_plant(tree))}
   bad = 0
+  refused = False
   for key in (lanes if a.lane == "all" else (a.lane,)):
     title, fn = lanes[key]
     fails = fn()
+    refused = refused or any("[REFUSED]" in f for f in fails)
     print(f"{'FAIL' if fails else 'ok  '}  {title}")
     for f in fails:
       print(f"        {f}")
@@ -399,7 +497,18 @@ def main() -> int:
       p = PIN[g]
       print(f"  {g:7s} row {p['row']:>2}  fields {','.join(p['fields']):<17} "
             f"{p['shape']:<11} {p['fault']}")
-  return 1 if bad else 0
+
+  # `REFUSED` IS EXIT 3 AND IT OUTRANKS `FAIL`.  The tree owns five verdicts -- PASS 0,
+  # FAIL 1, REFUSED 3, SKIP 4, DEAD 5 -- and collapsing a refusal into a failure would be
+  # the one lie this gate exists to catch: a REFUSED row means this lane MEASURED NOTHING
+  # about that claim, and a caller reading `$?` as `1` would read "the tree is wrong" when
+  # the truth is "this gate cannot see it".  `AGENTS.md`: a gate that exits 0 having
+  # measured nothing is worse than no gate, BECAUSE IT IS TRUSTED -- and a gate that exits
+  # 1 for a refusal is trusted in exactly the same way, one level down.  THE FLAG IS SET
+  # ONCE, INSIDE THE LOOP: calling `lane_citations()` again here would re-run the lane,
+  # and a lane called twice is a second measurement of the same thing, which is how a
+  # module-level counter makes a stale answer look fresh.
+  return 3 if refused else (1 if bad else 0)
 
 
 if __name__ == "__main__":
