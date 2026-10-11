@@ -1,0 +1,15 @@
+REPRO root=/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/whyarms-zfdj3fa8
+CONFIG auto-update-stale=true
+A0 before                            nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684011 []
+A1 after 'jj status' (idle)          nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684011 []
+B0 before                            nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684012 []
+B1 after 'jj status' (1 new file)    nidx=  2 ntree=  1 stagedD= 0 empty= 0 mtime=1791684012 []
+C0 before                            nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684012 []
+C1 after 'jj status' (file deleted)  nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684012 []
+D1 jj believes a.rows deleted        nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684013 []
+D2 restored on disk, NO jj run       nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684013 []
+D3 a.rows on disk right now?         True
+D3 a.rows in HEAD right now?         True
+E1 after BARE git commit             nidx=  1 ntree=  1 stagedD= 0 empty= 0 mtime=1791684013 []
+E2 a.rows survives in HEAD?          True   tree=['a.rows']
+VERDICT bare-git-commit-on-a-jj-written-index: SURVIVED (chain not reproduced)

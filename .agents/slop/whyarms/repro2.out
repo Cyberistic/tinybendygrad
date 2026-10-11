@@ -1,0 +1,14 @@
+R1-0 seed                                    sig=b0b7734ac5/209/613485080 nidx=  2 D=[] M=[] A=[] empty=0
+R1-1 jj status after delete                  sig=1015cb4f68/241/613485196 nidx=  2 D=[] M=[] A=[] empty=0
+R2-1 git rm --cached a.rows                  sig=9cc79324e3/118/613485383 nidx=  1 D=['a.rows'] M=[] A=[] empty=0
+R2-2 a.rows still on disk?                   True
+R3-1 DISARMED by read-tree HEAD              sig=073fee4344/209/613485541 nidx=  2 D=[] M=[] A=[] empty=0
+R3-2 after jj status                         sig=073fee4344/209/613485541 nidx=  2 D=[] M=[] A=[] empty=0
+R4-1 DISARMED, now idling                    sig=073fee4344/209/613485700 nidx=  2 D=[] M=[] A=[] empty=0
+R4-2 after 6 s idle, nothing invoked         sig=073fee4344/209/613485700 nidx=  2 D=[] M=[] A=[] empty=0
+R5-1 git commit, then jj status              sig=dff729aaa6/176/613485964 nidx=  2 D=[] M=[] A=[] empty=0
+R6-1 git add -A during a transient absence   sig=4b0b574122/118/613486139 nidx=  1 D=['b.rows'] M=[] A=[] empty=0
+R6-2 b.rows survives a bare commit?          False  tree=['a.rows']
+
+ARMED-BY   (2): ['R2 git-rm--cached', 'R6 transient-absence-add-A']
+NOT-ARMED  (5): ['R1 jj-exports-delete', 'R3 read-tree', 'R3 jj-RE-ARMS-after-read-tree', 'R4 unattended-re-arm', 'R5 commit-then-jj']

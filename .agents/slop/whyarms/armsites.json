@@ -1,0 +1,938 @@
+[
+ {
+  "path": ".agents/TODO.md",
+  "sites": [
+   "text:add",
+   "text:apply",
+   "text:commit",
+   "text:rm",
+   "text:update-index"
+  ]
+ },
+ {
+  "path": ".agents/UPSTREAM-PIN.md",
+  "sites": [
+   "text:checkout"
+  ]
+ },
+ {
+  "path": ".agents/slop/MUT-LEDGER.md",
+  "sites": [
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/PROBES.md",
+  "sites": [
+   "text:add",
+   "text:update-index"
+  ]
+ },
+ {
+  "path": ".agents/slop/PRUNE-LEDGER.md",
+  "sites": [
+   "text:add",
+   "text:commit",
+   "text:read-tree"
+  ]
+ },
+ {
+  "path": ".agents/slop/adevfix/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/agend2/REPORT.md",
+  "sites": [
+   "text:checkout"
+  ]
+ },
+ {
+  "path": ".agents/slop/armfour/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/awmma/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/bendperf/bench_tensor.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/bendperf/probe.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/bendpin/pin_check.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/censusfix/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/checkshells/census.py",
+  "sites": [
+   "ast:update-index"
+  ]
+ },
+ {
+  "path": ".agents/slop/chkcites/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/cites2/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/citetruth/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/clauseVfix/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/clauseVfix/plant.py",
+  "sites": [
+   "ast:add",
+   "ast:reset"
+  ]
+ },
+ {
+  "path": ".agents/slop/deadarm/deadarm.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/deadclause/deadclause.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/declareverdict/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/denominator/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/differverdict/plant.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/e2efix/report.md",
+  "sites": [
+   "text:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/e2epy/diff.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/e2esh/history.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/emptyblob/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/emptyevid/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/foldgap/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/gatedelete/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/gendirs/TABLE.md",
+  "sites": [
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/gitignore/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/hooks/REPORT.md",
+  "sites": [
+   "text:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/hooks/_deadpush.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/hooks/_plant.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/hooks/_probe_hooks.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/hooks/_wireplant.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:reset",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/indextree/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/indextree/census.py",
+  "sites": [
+   "ast:add",
+   "ast:read-tree"
+  ]
+ },
+ {
+  "path": ".agents/slop/instrepair/restore.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/mechanism_demo.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/primitive_tests.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:read-tree"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/repro_index_reset.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/repro_mechanism.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjhazard/watch_index.py",
+  "sites": [
+   "ast:checkout"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjreset/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjreset/churn.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjreset/git-massdelete-gate.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/jjreset/run.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/lostinst/build_tsv.py",
+  "sites": [
+   "ast:commit",
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/lostinst/census.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/lostinst/verify.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/mixin-op-mutate.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/mm-lift-gate.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/mselectarg/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/nameless/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/nameshandlist/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/needsaudit/plant.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/notes/bend2-constraints.md",
+  "sites": [
+   "text:add",
+   "text:checkout"
+  ]
+ },
+ {
+  "path": ".agents/slop/notes/kn-truth.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/nv_ip_oracle3.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": ".agents/slop/onemodule/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/onemodule/plant.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/opshapes/opshapes.py",
+  "sites": [
+   "ast:apply"
+  ]
+ },
+ {
+  "path": ".agents/slop/oraclerestore/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/oraclerestore/build.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/oraclerestore/prove.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/plans/REPORT.md",
+  "sites": [
+   "text:reset",
+   "text:stash"
+  ]
+ },
+ {
+  "path": ".agents/slop/plantthe46/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/portunknown/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/portzz/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/prune2/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/prune3/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/prune4/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/quiescefix/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/refusalsweep/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/rerun2/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/residue/004-verdicts.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/run34/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/runfinal/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/runsgate/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/runsgate/pop.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/shellgates/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:commit",
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/slopfinal/g8.count.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": ".agents/slop/slopfinal/needs.move.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:restore",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/stale71/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/strayblobs/REPORT.md",
+  "sites": [
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/substrate/REPORT.md",
+  "sites": [
+   "text:checkout"
+  ]
+ },
+ {
+  "path": ".agents/slop/substrate/oracle-check.sh",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/subtree/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/sweepport/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/todo2/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/txtexec/restore_paths.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": ".agents/slop/txtgen/REPORT.md",
+  "sites": [
+   "text:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/unknowns/plant-unknown.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/untrack/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:commit",
+   "text:read-tree"
+  ]
+ },
+ {
+  "path": ".agents/slop/usb-constsweep.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/whatisagate/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/whichgroup/REPORT.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": ".agents/slop/x86/x86-oracle.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/x86/x86_oracle.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": ".agents/slop/zerogate/REPORT.md",
+  "sites": [
+   "text:add",
+   "text:checkout"
+  ]
+ },
+ {
+  "path": "checks/README.md",
+  "sites": [
+   "text:add"
+  ]
+ },
+ {
+  "path": "checks/disarm.sh",
+  "sites": [
+   "text:add",
+   "text:update-index"
+  ]
+ },
+ {
+  "path": "checks/residue.py",
+  "sites": [
+   "ast:add",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "checks/stage1-census.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "checks/sweep.py",
+  "sites": [
+   "ast:restore"
+  ]
+ },
+ {
+  "path": "extra/bench_log.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": "extra/hcq/hcq_smi.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "extra/setup_mock_nv_osx.sh",
+  "sites": [
+   "text:checkout"
+  ]
+ },
+ {
+  "path": "extra/torch_backend/backend2.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "gates/cstyle_render_census-oracle.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "gates/git-massdelete-gate.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "gates/indexread-gate.py",
+  "sites": [
+   "ast:add",
+   "ast:commit",
+   "ast:read-tree",
+   "ast:update-index"
+  ]
+ },
+ {
+  "path": "gates/msgdiff-gate.py",
+  "sites": [
+   "ast:add",
+   "ast:commit"
+  ]
+ },
+ {
+  "path": "gates/op_graph_census-gate.py",
+  "sites": [
+   "ast:apply"
+  ]
+ },
+ {
+  "path": "gates/op_graph_census-oracle.py",
+  "sites": [
+   "ast:apply"
+  ]
+ },
+ {
+  "path": "test/amd/test_integration.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/device/amd/test_llm.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "test/external/process_replay/local.sh",
+  "sites": [
+   "text:checkout"
+  ]
+ },
+ {
+  "path": "test/null/test_ops.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/null/test_tensor_uop_mixin.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/null/test_uops.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/runtime/test_custom_kernel.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/runtime/test_ops.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/speed/external_test_speed_v_torch.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "test/testextra/test_tk.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/codegen/__init__.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/mixin/op.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/nn/onnx.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/nn/torch.py",
+  "sites": [
+   "ast:checkout"
+  ]
+ },
+ {
+  "path": "tinygrad/renderer/llvmir.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/renderer/ptx.py",
+  "sites": [
+   "ast:add"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/am/regs.py",
+  "sites": [
+   "ast:reset",
+   "ast:restore"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/metal.py",
+  "sites": [
+   "ast:commit",
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv_570.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv_580.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv_610.py",
+  "sites": [
+   "ast:rm"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv_regs/dev_gsp.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/autogen/nv_regs/dev_sec_pri.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/ops_metal.py",
+  "sites": [
+   "ast:commit"
+  ]
+ },
+ {
+  "path": "tinygrad/runtime/support/am/ip.py",
+  "sites": [
+   "ast:reset"
+  ]
+ },
+ {
+  "path": "tinygrad/schedule/indexing.py",
+  "sites": [
+   "ast:add",
+   "ast:apply"
+  ]
+ }
+]

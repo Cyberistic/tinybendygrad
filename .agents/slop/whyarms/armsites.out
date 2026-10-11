@@ -1,0 +1,56 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:10: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+ARMSITES population(committed files walked)=2550  offenders=146
+ARMSITES wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/whyarms/armsites.json
+  ast:add              44 files   -- stages whatever the index already holds, plus the worktree
+  ast:apply             4 files   -- --index / --cached apply against the index
+  ast:checkout          2 files   -- can rewrite the index from another tree
+  ast:commit           25 files   -- THE CONSUMER: diffs index vs HEAD
+  ast:read-tree         3 files   -- the DISARM, and it discards staged deletions
+  ast:reset            10 files   -- moves HEAD without touching the worktree
+  ast:restore          10 files   -- writes the index from the worktree or a source
+  ast:rm               19 files   -- --cached makes a deletion while LEAVING the file on disk
+  ast:update-index      2 files   -- writes index entries directly
+  text:add             52 files   -- stages whatever the index already holds, plus the worktree
+  text:apply            1 files   -- --index / --cached apply against the index
+  text:checkout         7 files   -- can rewrite the index from another tree
+  text:commit           9 files   -- THE CONSUMER: diffs index vs HEAD
+  text:read-tree        2 files   -- the DISARM, and it discards staged deletions
+  text:reset            1 files   -- moves HEAD without touching the worktree
+  text:rm              11 files   -- --cached makes a deletion while LEAVING the file on disk
+  text:stash            1 files   -- stores and restores the index
+  text:update-index     3 files   -- writes index entries directly
+
+  RM-CAPABLE .agents/TODO.md  ['text:add', 'text:apply', 'text:commit', 'text:rm', 'text:update-index']
+  RM-CAPABLE .agents/slop/MUT-LEDGER.md  ['text:rm']
+  RM-CAPABLE .agents/slop/deadclause/deadclause.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE .agents/slop/differverdict/plant.py  ['ast:rm']
+  RM-CAPABLE .agents/slop/e2epy/diff.py  ['ast:rm']
+  RM-CAPABLE .agents/slop/gendirs/TABLE.md  ['text:rm']
+  RM-CAPABLE .agents/slop/hooks/_deadpush.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE .agents/slop/hooks/_wireplant.py  ['ast:add', 'ast:commit', 'ast:reset', 'ast:rm']
+  RM-CAPABLE .agents/slop/jjreset/git-massdelete-gate.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE .agents/slop/needsaudit/plant.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE .agents/slop/notes/kn-truth.py  ['ast:rm']
+  RM-CAPABLE .agents/slop/portunknown/REPORT.md  ['text:add', 'text:rm']
+  RM-CAPABLE .agents/slop/portzz/REPORT.md  ['text:add', 'text:rm']
+  RM-CAPABLE .agents/slop/prune2/REPORT.md  ['text:add', 'text:rm']
+  RM-CAPABLE .agents/slop/prune3/REPORT.md  ['text:add', 'text:rm']
+  RM-CAPABLE .agents/slop/prune4/REPORT.md  ['text:add', 'text:rm']
+  RM-CAPABLE .agents/slop/runsgate/pop.py  ['ast:rm']
+  RM-CAPABLE .agents/slop/shellgates/REPORT.md  ['text:add', 'text:commit', 'text:rm']
+  RM-CAPABLE .agents/slop/slopfinal/needs.move.py  ['ast:add', 'ast:commit', 'ast:restore', 'ast:rm']
+  RM-CAPABLE .agents/slop/strayblobs/REPORT.md  ['text:rm']
+  RM-CAPABLE .agents/slop/txtgen/REPORT.md  ['text:rm']
+  RM-CAPABLE .agents/slop/unknowns/plant-unknown.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE .agents/slop/x86/x86-oracle.py  ['ast:rm']
+  RM-CAPABLE .agents/slop/x86/x86_oracle.py  ['ast:rm']
+  RM-CAPABLE checks/residue.py  ['ast:add', 'ast:rm']
+  RM-CAPABLE gates/git-massdelete-gate.py  ['ast:add', 'ast:commit', 'ast:rm']
+  RM-CAPABLE tinygrad/runtime/autogen/nv.py  ['ast:rm']
+  RM-CAPABLE tinygrad/runtime/autogen/nv_570.py  ['ast:rm']
+  RM-CAPABLE tinygrad/runtime/autogen/nv_580.py  ['ast:rm']
+  RM-CAPABLE tinygrad/runtime/autogen/nv_610.py  ['ast:rm']
