@@ -1,0 +1,31 @@
+limits: MAX_AGE_S=86400  (a THRESHOLD, named so raising it is a visible edit)
+
+BRANCH 1-4: the helper's four states, on four real directories
+  OK   absent                             exit=3 want=3  ARTIFACTS-ABSENT
+  OK   empty                              exit=5 want=5  ARTIFACTS-EMPTY
+  OK   stale                              exit=3 want=3  ARTIFACTS-STALE
+  OK   fresh                              exit=0 want=0  ARTIFACTS-FRESH
+
+  OK   distinct tokens: 4/4 ['ARTIFACTS-ABSENT', 'ARTIFACTS-EMPTY', 'ARTIFACTS-FRESH', 'ARTIFACTS-STALE']
+  OK   stale read as absent
+  OK   absent read as empty
+  OK   stale read as empty
+
+BRANCH 5: max_age_s=None DISABLES staleness and nothing else
+  OK   stale, no limit                    exit=0 want=0  ARTIFACTS-FRESH
+        (runs/graphcmp/D: 1 files, newest 240.0 h old)
+
+BRANCH 6: THE LIVE TREE. `runs/graphcmp/D` is PRESENT and STALE, so the honest answer
+is STALE, NOT ABSENT and NOT EMPTY -- the three-way distinction the brief asks for.
+  OK   live runs/graphcmp/D               exit=3 want=3  ARTIFACTS-STALE
+        (runs/graphcmp/D: newest artefact is 112.4 h old, over the 24.0 h limit, and it is read as current)
+
+BRANCH 7: sweep.py's NEW `GENERATED` BUCKET, on real paths, no filesystem writes
+        derived 3 unrecoverable read dirs: ['bin', 'runs', 'runs/graphcmp']
+  OK   verdict_for(runs/graphcmp/D/D0-run-summary.txt      ) -> GENERATED
+  OK   verdict_for(runs/graphcmp/D/D1-cases/x.rows         ) -> GENERATED
+  OK   verdict_for(runs/other/x.rows                       ) -> GENERATED
+  OK   verdict_for(.agents/slop/spine/art-a/f.txt          ) -> UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/fold-lift-README.md)
+  OK   verdict_for(.agents/slop/REPORT.md                  ) -> DOC
+
+--control: all branches OK

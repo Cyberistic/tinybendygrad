@@ -1,0 +1,13 @@
+scanned .py in checks/ + gates/ : 187
+  of which under .agents/slop  : 813
+total .py with the substring    : 1000
+
+MENTION (substring anywhere)     :  16  ['checks/corpus-figure.py', 'checks/devpin.py', 'checks/diary-census.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/env-precond.py', 'checks/no-txt.py', 'checks/repro-paths.py', 'checks/residue.py', 'checks/substrate-id.py', 'checks/substrate-snapshot.py', 'checks/sweep.py', 'checks/txt-owners.py', 'gates/gendirs.py', 'gates/msgdiff-gate.py', 'gates/retention-check.py']
+
+CODE    (string in a code pos)   :  12  ['checks/corpus-figure.py', 'checks/devpin.py', 'checks/diary-census.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/env-precond.py', 'checks/no-txt.py', 'checks/substrate-id.py', 'checks/substrate-snapshot.py', 'checks/txt-owners.py', 'gates/gendirs.py', 'gates/retention-check.py']
+
+RESOLVED (a binding resolves to it):  12  ['checks/corpus-figure.py', 'checks/devpin.py', 'checks/diary-census.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/env-precond.py', 'checks/no-txt.py', 'checks/substrate-id.py', 'checks/substrate-snapshot.py', 'checks/txt-owners.py', 'gates/gendirs.py', 'gates/retention-check.py']
+
+mention but NOT code  (prose)    : 4  ['checks/repro-paths.py', 'checks/residue.py', 'checks/sweep.py', 'gates/msgdiff-gate.py']
+code but NOT resolved (spelled out in code, not via a binding): 0  []
+resolved but NOT code (reached only through a binding): 0  []

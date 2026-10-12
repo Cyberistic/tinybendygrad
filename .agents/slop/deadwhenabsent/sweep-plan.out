@@ -1,0 +1,60 @@
+# sweep: 5151 files, 50 MB, live-window 60m, 9662 filenames mentioned in 9208765 chars
+# corpus: 601 committed files (410 of them .agents/slop reports at ANY depth),
+#   6 DIRTY in the worktree: 1171 KB read at HEAD instead of from disk -- an uncommitted report cites nothing
+# out of census: .agents/slop/residue + .agents/slop/slopfinal (write-targets, discovered) + 906 byte-copies + residue.EXCLUDED_DIRS
+#   (a MENTION is not an output; a DEPTH is not a shadow tree; a COPY is excluded by a proof)
+# own output excluded from the corpus: .agents/slop/residue + .agents/slop/slopfinal  (write-targets, discovered; a MENTION is not an output)
+#   DOC             477 files      7.0 MB   14.1%
+#   GATE             21 files      0.6 MB    1.3%
+#   ORACLE           60 files      0.5 MB    1.1%
+#   AUTHORED        357 files      0.2 MB    0.3%
+#   DELETE         2408 files      6.6 MB   13.2%
+#   UNKNOWN        1172 files     23.6 MB   47.5%
+#   LIVE-UNIT         8 files      0.1 MB    0.3%
+#   PROTECTED        32 files      2.3 MB    4.7%
+#     needs=residue-internal-citer                    930 rows
+#     needs=belts-disagree                            160 rows
+#     needs=commit-or-drop                             52 rows
+#     needs=commit-the-report-that-explains-it         30 rows
+
+# THE RESIDUE AT 3 WINDOWS, ONE FROZEN POPULATION OF 5151 ROWS
+# bucket                                    w=0m    w=60m  w=1440m  nature
+# DOC                                        477      477      471  MOVES   -- a function of the clock
+# GATE                                        22       21       21  MOVES   -- a function of the clock
+# ORACLE                                      60       60       60  CONSTANT -- a property of the tree
+# AUTHORED                                   357      357      357  CONSTANT -- a property of the tree
+# KEEP-CITED                                 616      616      616  CONSTANT -- a property of the tree
+# DELETE                                    2408     2408     2408  CONSTANT -- a property of the tree
+# UNKNOWN                                   1179     1172     1172  MOVES   -- a function of the clock
+# LIVE-UNIT                                    0        8       14  MOVES   -- a function of the clock
+# PROTECTED                                   32       32       32  CONSTANT -- a property of the tree
+# TOTAL                                     5151     5151     5151  CONSTANT -- the walk happened once
+# of which needs=:                          1179     1172     1172  (the classes below)
+#   needs=belts-disagree                       161      160      160  MOVES
+#   needs=commit-or-drop                        56       52       52  MOVES
+#   needs=commit-the-report-that-explains-it      30       30       30  CONSTANT
+#   needs=residue-internal-citer               932      930      930  MOVES
+
+# THE SHIPPED PORT, REPORT-ONLY (never a bucket `--apply` can reach): 140 files under tinybendygrad/
+#   ORACLE           1 files
+#   KEEP-CITED     120 files
+#   UNKNOWN         19 files
+#     needs=residue-internal-citer                     15 rows
+#     needs=belts-disagree                              4 rows
+
+# KEEPING 915 of 5151: 477 doc + 21 gate + 60 oracle + 357 authored
+# REPORTING AND NOT ACTING ON 1172 rows: a test could not be run for them
+# DELETING 2408 files, 7 MB
+# largest DELETEs:
+#         564.0 KB  .agents/slop/opsbend-milestone/bend-executor
+#         345.0 KB  .agents/slop/gitignore/after-lsfiles.rows
+#         176.5 KB  .agents/slop/livenum/nums.tsv
+#         142.5 KB  .agents/slop/livenum/cites-after.tsv
+#         142.5 KB  .agents/slop/livenum/cites-before.tsv
+#         104.3 KB  .agents/slop/argowner/movement.AFTER.bend
+#          94.5 KB  .agents/slop/prune4/dups.rows
+#          85.8 KB  .agents/slop/stale269/adjudicated-STALE-LINE.tsv
+#          85.5 KB  .agents/slop/sloptxt/eyeball.rows
+#          67.4 KB  .agents/slop/dd-gate.rows
+#          67.4 KB  .agents/slop/dd-gate-base-182.rows
+#          61.8 KB  .agents/slop/gitignore/added.rows

@@ -1,0 +1,6 @@
+  absent  ARTIFACTS-ABSENT  exit=3  OK  runs/graphcmp/D: no such directory
+  empty   ARTIFACTS-EMPTY   exit=5  OK  runs/graphcmp/D: the directory is there and holds 0 files
+  stale   ARTIFACTS-STALE   exit=3  OK  runs/graphcmp/D: newest artefact is 240.0 h old, over the 24.0 h limit, and it is read as current
+  fresh   ARTIFACTS-FRESH   exit=0  OK  runs/graphcmp/D: 1 files, newest 0.0 h old
+  distinct tokens across the four states: 4  OK
+--plant: all four states OK

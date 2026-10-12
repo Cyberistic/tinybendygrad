@@ -1,0 +1,37 @@
+import sweep.py: 0.0s
+generated_read_dirs ->
+  bin/  readers=10
+      checks/abi4_gate.py
+      checks/abi_gate.py
+      checks/bounded.py
+      checks/cl-port-gate.py
+      checks/gate_norm.py
+      checks/jsfix_gate.py
+      checks/nvrows-deadrow-gate.py
+      checks/substrate.py
+      gates/gatekit.py
+      gates/gendirs.py
+  runs/  readers=11
+      checks/corpus-figure.py
+      checks/devpin.py
+      checks/diary-census.py
+      checks/differ.py
+      checks/disagree-gate.py
+      checks/env-precond.py
+      checks/no-txt.py
+      checks/runs-artifacts.py
+      checks/sweep.py
+      checks/txt-owners.py
+      gates/retention-check.py
+  runs/graphcmp/  readers=10
+      checks/corpus-figure.py
+      checks/devpin.py
+      checks/diary-census.py
+      checks/differ.py
+      checks/disagree-gate.py
+      checks/env-precond.py
+      checks/no-txt.py
+      checks/runs-artifacts.py
+      checks/txt-owners.py
+      gates/retention-check.py
+took 3.8s

@@ -1,0 +1,134 @@
+tracked `.agents/slop/*/` directories: 256
+loose tracked files directly under `.agents/slop/`: 277
+  with a report (REPORT.md/README.md/FINDINGS.md): 146
+  NO report and NO manifest: 110
+  NO report, NO manifest, NO full-path external reference (UNDECIDED): 17
+    - backlog  (1 files)
+    - bf16fix  (1 files)
+    - censusmarker  (2 files)
+    - citemass  (5 files)
+    - citeresolve  (3 files)
+    - coindependent  (3 files)
+    - devgate  (2 files)
+    - fp8dec  (1 files)
+    - gatespop  (2 files)
+    - helpers-mut  (1 files)
+    - i64div  (1 files)
+    - jjreset  (2 files)
+    - jsbf16  (2 files)
+    - jslane  (1 files)
+    - prefixtxt  (3 files)
+    - readback  (1 files)
+    - run34b  (2 files)
+
+no-report dirs (report absence only):
+    - _cite  [referenced]  2 files
+    - adev  [referenced]  1 files
+    - arith  [referenced]  2 files
+    - audit  [referenced]  13 files
+    - backlog  [UNDECIDED]  1 files
+    - backward  [referenced]  3 files
+    - backward-graph  [referenced]  1 files
+    - bendpin  [referenced]  10 files
+    - bf16  [referenced]  8 files
+    - bf16fix  [UNDECIDED]  1 files
+    - boundedfix  [referenced]  6 files
+    - ccdead  [referenced]  4 files
+    - censroot  [referenced]  14 files
+    - censusmarker  [UNDECIDED]  2 files
+    - cidsweep  [referenced]  2 files
+    - citemass  [UNDECIDED]  5 files
+    - citeresolve  [UNDECIDED]  3 files
+    - clangfill  [referenced]  3 files
+    - clangshim  [referenced]  7 files
+    - coindependent  [UNDECIDED]  3 files
+    - coldness  [referenced]  2 files
+    - cshape  [referenced]  5 files
+    - cstyle-live  [referenced]  1 files
+    - deadarm  [referenced]  5 files
+    - denom  [referenced]  1 files
+    - devgate  [UNDECIDED]  2 files
+    - differverdict  [referenced]  59 files
+    - diffpy  [referenced]  2 files
+    - difftxt  [referenced]  8 files
+    - disagree  [referenced]  2 files
+    - dtypeb  [referenced]  4 files
+    - e2e  [referenced]  5 files
+    - e2e_port  [referenced]  3 files
+    - eq  [referenced]  1 files
+    - f64  [referenced]  4 files
+    - ffi-experiment  [referenced]  1 files
+    - fixures  [referenced]  18 files
+    - flip  [referenced]  2 files
+    - flipbool  [referenced]  2 files
+    - fp8dec  [UNDECIDED]  1 files
+    - fp8fix  [referenced]  3 files
+    - frombits  [referenced]  3 files
+    - gatespop  [UNDECIDED]  2 files
+    - graphrestore  [referenced]  4 files
+    - guardfix  [referenced]  2 files
+    - helpers-mut  [UNDECIDED]  1 files
+    - hermetic  [referenced]  2 files
+    - i64div  [UNDECIDED]  1 files
+    - i64mul  [referenced]  3 files
+    - jjreset  [UNDECIDED]  2 files
+    - jsbf16  [UNDECIDED]  2 files
+    - jsfp8  [referenced]  2 files
+    - jslane  [UNDECIDED]  1 files
+    - jslane2  [referenced]  2 files
+    - jstage  [referenced]  1 files
+    - lastlaw  [referenced]  3 files
+    - liveness  [referenced]  1 files
+    - loopq  [referenced]  38 files
+    - lost  [referenced]  1 files
+    - mathlib  [referenced]  1 files
+    - mmfold  [referenced]  2 files
+    - nested  [referenced]  1 files
+    - nir  [referenced]  1 files
+    - norm  [referenced]  5 files
+    - notes  [referenced]  7 files
+    - notes-sweep  [referenced]  3 files
+    - nvdup  [referenced]  9 files
+    - nvrows  [referenced]  2 files
+    - offrepo  [referenced]  7 files
+    - opsbend-milestone  [referenced]  7 files
+    - opshapes  [referenced]  8 files
+    - opspy  [referenced]  3 files
+    - peakrss  [referenced]  1 files
+    - plans  [referenced]  1 files
+    - prefixtxt  [UNDECIDED]  3 files
+    - proof-close  [referenced]  2 files
+    - reach  [referenced]  1 files
+    - readback  [UNDECIDED]  1 files
+    - rebase  [referenced]  1 files
+    - residue  [referenced]  5 files
+    - revive  [referenced]  1 files
+    - rf2root  [referenced]  7 files
+    - run34b  [UNDECIDED]  2 files
+    - sbgate  [referenced]  3 files
+    - schedule-bodies  [referenced]  1 files
+    - selfcheck  [referenced]  1 files
+    - shlscope  [referenced]  1 files
+    - slopfinal  [referenced]  8 files
+    - spelling  [referenced]  2 files
+    - spine  [referenced]  46 files
+    - staleruns  [referenced]  1 files
+    - strays-root  [referenced]  5 files
+    - substrate  [referenced]  15 files
+    - surface2  [referenced]  5 files
+    - szlane  [referenced]  1 files
+    - tensor-surface  [referenced]  3 files
+    - tools  [referenced]  4 files
+    - triage  [referenced]  1 files
+    - trigger  [referenced]  1 files
+    - unfalsifiable  [referenced]  4 files
+    - unknowns  [referenced]  5 files
+    - unsetexp  [referenced]  79 files
+    - unshardfold  [referenced]  2 files
+    - w64  [referenced]  2 files
+    - w64mile  [referenced]  1 files
+    - wallrule  [referenced]  2 files
+    - want  [referenced]  3 files
+    - wip  [referenced]  1 files
+    - x86  [referenced]  2 files
+    - xd2  [referenced]  4 files

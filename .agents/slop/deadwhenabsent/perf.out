@@ -1,0 +1,4 @@
+unrecoverable_dirs took 1.1s
+  bin writers ['checks/diary-census.py']
+  runs writers ['checks/differ.py']
+  runs/graphcmp writers ['checks/differ.py']

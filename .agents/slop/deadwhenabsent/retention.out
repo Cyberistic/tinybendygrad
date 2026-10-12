@@ -1,0 +1,72 @@
+I   declared set only: 54/54 dirs clean, 0 with residue, 8 declared file(s) ABSENT (reported, not failed -- that is II/IV)
+
+II UNMEASURED checks/differ.py: no class-scoped `run` in its AST, so the exit
+               denominator is EMPTY -- an empty denominator is NOT A PASS, it is a REFUSAL.
+II  LEFTOVER   runs/graphcmp/D: 2 runs' worth of files, 1 from the earliest, e.g. ['D10-zerorow-guard.txt.err']
+II OK         gates/gatekit.py: 0/14 exits NOT covered by a cleanup `finally`, clears=['glob', 'iterdir', 'unlink']
+II  clears its own output: 1/1 MEASURED, 1 UNMEASURED, 0 MISSING
+
+III not in the index: 54/54 dirs, 0 tracked entries total
+
+
+V  DISCOVERED 282 directories something in this tree WRITES
+   INTO, from 2165 of 3111 source files. A LOWER BOUND: a SUBPROCESS write is invisible
+   to a scanner that does not execute it -- `checks/gen/` is reached through `bend -o`.
+V  IGNORED-BUT-INDEXED: 0/282 dirs -- none
+V  CENSUS      127/282 discovered dirs are in the index (1922 entries), of which 127 are
+               not `.gitignore`d. 'Something writes here' is a LOWER bound on 'generated' -- the vendored
+               `tinygrad/` tree is written into by its own build and is source -- so this row is
+               COUNTED, NOT FAILED, and the names are below.
+V    INDEXED   .agents: 5 entries
+V    INDEXED   .agents/slop: 288 entries, 1 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/abi4check: 22 entries, 2 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/agend2: 6 entries
+V    INDEXED   .agents/slop/audit: 13 entries
+V    INDEXED   .agents/slop/bendsuite/bend: 83 entries
+V    INDEXED   .agents/slop/boundedfix: 7 entries
+V    INDEXED   .agents/slop/canrun: 33 entries, 11 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/clangfill: 4 entries
+V    INDEXED   .agents/slop/clangshim: 23 entries
+V    INDEXED   .agents/slop/clauseII: 11 entries
+V    INDEXED   .agents/slop/clearfix/gk2: 1 entry
+V    INDEXED   .agents/slop/cstyle-live: 1 entry
+V    INDEXED   .agents/slop/denominator: 23 entries, 6 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/denominator/probe/.agents/slop: 3 entries
+V    INDEXED   .agents/slop/difftxt: 9 entries
+V    INDEXED   .agents/slop/dup: 8 entries
+V    INDEXED   .agents/slop/e2e_port: 3 entries
+V    INDEXED   .agents/slop/e2epy: 3 entries
+V    INDEXED   .agents/slop/e2epy/artifacts: 44 entries, 6 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/emptyblob: 15 entries
+V    INDEXED   .agents/slop/f64: 4 entries
+V    INDEXED   .agents/slop/figure2: 8 entries, 2 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/figure2/plant/broken/runs/graphcmp/D: 1 entry
+V    INDEXED   .agents/slop/figure2/plant/real/runs/graphcmp/D: 1 entry
+V    INDEXED   .agents/slop/figurefix/plant: 1 entry
+V    INDEXED   .agents/slop/flagtable: 11 entries
+V    INDEXED   .agents/slop/flipthird: 31 entries
+V    INDEXED   .agents/slop/fp8fix: 3 entries
+V    INDEXED   .agents/slop/frombits: 4 entries
+V    INDEXED   .agents/slop/gatecensus: 5 entries
+V    INDEXED   .agents/slop/gatehealth: 25 entries, 1 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/gatehealth/gates-syn/wk-f32-gate: 6 entries
+V    INDEXED   .agents/slop/gatesrun: 72 entries, 27 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/gitignore: 28 entries, 2 at git's EMPTY BLOB
+V    INDEXED   .agents/slop/guardfix: 3 entries
+V    INDEXED   .agents/slop/hermetic: 3 entries
+V    INDEXED   .agents/slop/i64div: 1 entry
+V    INDEXED   .agents/slop/ishr: 6 entries
+V    INDEXED   .agents/slop/jjhazard: 17 entries
+V              ... and 87 more
+
+IV FIRES     runs/graphcmp/D/: the directory exists and its last run was NOT healthy: 102 complaint(s)
+IV              expect-moved=34 (expected 0)
+IV              graphs-agree=0 (expected 32)
+IV              byte-identical=0 (expected 32)
+IV              not-comparable=34 (expected 0)
+IV              stable-pairs=0 of 5 (expected 5 of 5)
+IV              stable-failed=5 of 5 (expected 0 of 5)
+IV              ... and 96 more
+IV UNMEASURABLE gates/artifacts/: 0/53 dirs can report health -- declared = THIS FILE (gatekit publishes no declared()); health = NONE: it prints its verdict -- the five exits PASS/FAIL/REFUSED/SKIP/DEAD -- and never writes it, so NO gate dir can say whether its run was healthy. UNMEASURABLE is reported and is NOT a failure: rc comes from clauses I/II/III/V, never from this line
+
+RETENTION: RED

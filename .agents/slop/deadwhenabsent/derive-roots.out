@@ -1,0 +1,12 @@
+top-level dirs an instrument WRITES into (from AST write sites in checks/ + gates/):
+  .agents                  tracked=Y  ignored=n  writers=1
+  runs                     tracked=n  ignored=Y  writers=1
+
+A  write sites, top-level          :  2  ['.agents', 'runs']
+B  A minus git-tracked             :  1  ['runs']
+C  B minus gitignored              :  0  []   <- DROPS runs/, by construction
+
+the HAND LIST at sweep.py:72       :  2  ['.agents/slop', 'runs']
+  A == hand list ? False   extra=['.agents']  missing=['.agents/slop']
+  B == hand list ? False   extra=[]  missing=['.agents/slop']
+  C == hand list ? False   extra=[]  missing=['.agents/slop', 'runs']

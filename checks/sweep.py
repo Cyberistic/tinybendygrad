@@ -69,7 +69,47 @@ SLOP = os.path.join(ROOT, ".agents/slop")
 RUNS = os.path.join(ROOT, "runs")
 CHECKS = os.path.join(ROOT, "checks")
 ORACLES = os.path.join(ROOT, "oracles")
+# `RESIDUE_ROOTS` IS NOT DERIVED, AND IT SHOULD NOT BE. MEASURED 2026-10-12, the obvious
+# derivation -- "every directory an instrument writes into that git cannot restore" -- is exactly
+# what `checks/runs-artifacts.py:unrecoverable_dirs()` computes, and it answers `{runs/, runs/graphcmp/,
+# bin/}`. IT DOES NOT ANSWER `.agents/slop`, WHICH IS CORRECT AND FATAL: `.agents/slop` holds **4,491**
+# tracked files, so a rule keyed on "untracked" drops it, and dropping it stops the sweep cleaning
+# the one tree the sweep exists for. **THE ROOTS ANSWER "WHERE IS THERE RESIDUE"; THE DERIVATION
+# ANSWERS "WHERE IS A DELETION IRREVERSIBLE". THEY ARE DIFFERENT QUESTIONS AND ONLY THE SECOND ONE
+# IS DERIVABLE, SO THE SECOND ONE IS THE ONE `verdict_for` ASKS, AT `GENERATED_READ_DIRS` BELOW.**
 RESIDUE_ROOTS = (".agents/slop", "runs")
+
+_GENERATED_CACHE: dict | None = None
+
+
+def generated_read_dirs(root: str = ROOT) -> dict[str, set[str]]:
+    """Directory -> the instruments that READ it, for directories git cannot restore. **LOADED BY
+    PATH FROM THE ONE IMPLEMENTATION** (`checks/runs-artifacts.py`), the same shape as
+    `house_excluded`'s `residue.EXCLUDED_DIRS` at :222 and for the same reason: a second copy of a
+    derived set is a contract with no generator, which is how `LIVE_UNITS` held 53% of `.slop`.
+
+    MEASURED 2026-10-12 16:04 on the live tree: `runs/graphcmp/D` has **8 readers of the 188
+    instruments** in `checks/` + `gates/`, **0 of its 241 files are in git**, and `checks/sweep.py:72`
+    puts `runs` in `RESIDUE_ROOTS` -- so a sweep is entitled to destroy all 241 of them and
+    `git ls-tree -r HEAD` can restore none. `AGENTS.md` records the same shape for a gate's inputs
+    kept under `gates/artifacts/`, which is `.gitignore`d: one `rm -rf` deletes anything kept there
+    and git cannot bring it back.
+    """
+    global _GENERATED_CACHE
+    if _GENERATED_CACHE is None:
+        try:
+            spec = importlib.util.spec_from_file_location(
+                "runs_artifacts", os.path.join(root, "checks/runs-artifacts.py"))
+            m = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(m)
+            _GENERATED_CACHE = {d: set(v["readers"]) for d, v in m.census_unrecoverable(root)[1].items()
+                                if v["readers"]}
+        except Exception:
+            # A SWEEP THAT CANNOT ASK MUST NOT GUESS, AND MUST NOT REFUSE TO RUN: the classifier's
+            # own rule is that an unanswerable question is `UNKNOWN`, and the guard below degrades
+            # to the hand list rather than to "delete everything".
+            _GENERATED_CACHE = {RUNS: set()}
+    return _GENERATED_CACHE
 
 # `UNKNOWN` IS TAGGED, AND THE TAG IS THE POINT. `needs=` travels with the verdict instead of
 # travelling with a sentence in a report nobody reads, and the tag is why no `--apply` argument can
@@ -725,6 +765,15 @@ def verdict_for(rel: str, mentioned: set[str], f: Facts | None = None,
         return "LIVE-UNIT"
     if top in PROTECTED_DIRS:
         return "PROTECTED"
+    # A DIRECTORY GIT CANNOT RESTORE, THAT SOMETHING READS, IS NOT JUNK. This is the bucket the
+    # residue could never reach: `verdict_for` asks whether a name is AUTHORED, CITED or NAMED, and
+    # `runs/graphcmp/D`'s 241 files are named by a GENERATOR (`checks/differ.py:42`) that no
+    # committed text mentions, so they fell through to the `return "DELETE"` at the bottom. The
+    # predicate is DERIVED -- see `generated_read_dirs` -- so adding a thirteenth reader changes
+    # this verdict with no edit here.
+    for d in generated_read_dirs(f.root):
+        if rel.startswith(d + "/"):
+            return "GENERATED"
     if name.endswith(".md"):
         return "DOC"
     if name in DIFFER:
