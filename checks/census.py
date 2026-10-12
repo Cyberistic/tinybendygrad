@@ -105,16 +105,20 @@ def digest(path):
 
 
 def read_keys():
-  """{(graph, side): sha256}, as recorded when THAT SLOT was written. AN ABSENT FILE IS NOT AN
-  ERROR and is not `{}` either: it means every slot on disk was written by a generator nobody
-  named, and that is `STALE`, which is the answer rather than a fallback."""
+  """{(graph, side): (GENERATOR sha, CACHE sha)}, as recorded when THAT SLOT was written.
+
+  TWO DIGESTS, NOT ONE, and the second is the one MEASURED missing: with only the generator's
+  digest, editing a single cached row left this gate at `rc=0` -- the key said "these bytes were
+  written by that program" and nothing ever re-asked whether they still ARE those bytes. A KEY ON
+  THE PRODUCER **IS NOT A KEY ON THE PRODUCT.** The producer being unchanged is evidence about the
+  producer. Content resemblance is not authority, and neither is producer identity."""
   if not KEYS.is_file():
     return {}
   out = {}
   for ln in KEYS.read_text().splitlines():
     f = ln.split("\t")
-    if len(f) == 3 and f[1] in GENERATOR:
-      out[(f[0], f[1])] = f[2]
+    if len(f) == 4 and f[1] in GENERATOR:
+      out[(f[0], f[1])] = (f[2], f[3])
   return out
 
 
@@ -128,8 +132,8 @@ def write_key(name, which):
   exited 0. A KEY WHOSE SCOPE IS WIDER THAN THE RUN THAT WROTE IT IS THE CLASS ONE LEVEL
   DOWN, and a scope column that says `ALL rows-*-py.rows` is the lie that let it through."""
   keys = read_keys()
-  keys[(name, which)] = digest(GENERATOR[which])
-  KEYS.write_text("".join(f"{g}\t{s}\t{d}\n" for (g, s), d in sorted(keys.items())))
+  keys[(name, which)] = (digest(GENERATOR[which]), digest(HERE / "rows" / f"rows-{name}-{which}.rows"))
+  KEYS.write_text("".join(f"{g}\t{s}\t{d[0]}\t{d[1]}\n" for (g, s), d in sorted(keys.items())))
 
 
 def side(name, which, dev, fresh, keys):
@@ -141,15 +145,21 @@ def side(name, which, dev, fresh, keys):
   # and this gate checked a set nothing in the tree owned. The two sets differed only by `/`,
   # which is a SUFFIX: the `suffixset` class, wearing a directory's clothes.
   cache = HERE / "rows" / f"rows-{name}-{which}.rows"
-  # UNKEYED IS NOT STALE, IT IS UNCLAIMED, and conflating them is what made this self-sealing.
-  # It was `if cache.exists() and not fresh:` THEN the key test, so a slot nobody had keyed
-  # returned STALE at the next line and NEVER REACHED `write_key` below -- the refusal denied
-  # the one path that could heal it, forever. A KEYED slot whose digest disagrees is stale and
-  # MUST refuse; an UNKEYED slot has no writer to disagree with, so it regenerates and keys.
+  # BOTH an unkeyed slot AND a keyed slot that disagrees REFUSE, and that is deliberate.
+  # I made the unkeyed case fall through to regenerate and it was WRONG, MEASURED: the py lane's
+  # `P(i..)` slot comes from a module-level `itertools.count` reaching the rows via
+  # `ParamArg(next(...))`, so a run that regenerates 34 graphs in ONE PROCESS writes 34 rows that
+  # depend on how many graphs preceded them -- 37 distinct `P(i..)` values across 68 files where
+  # a per-graph run gives one. So "heal it here" CORRUPTED it, and it corrupted it SILENTLY, which
+  # is worse than the self-sealing refusal it replaced: the refusal was wrong about being able to
+  # say so, and this lies about having said so. Regenerate OUT OF PROCESS, one graph per process,
+  # which is the only way the counter is the same counter the comparison used.
   k = keys.get((name, which))
-  if cache.exists() and not fresh and k is not None:
-    if k != digest(GENERATOR[which]):
-      return ("STALE", 0, None, set())   # KEYED and DISAGREES: served NOTHING, and `0` is "not counted"
+  if cache.exists() and not fresh:
+    # BOTH digests must hold: the generator unchanged says the ROWS WOULD be the same, and the
+    # cache unchanged says THEY STILL ARE. Either alone is a clean number from a missing question.
+    if k is None or k != (digest(GENERATOR[which]), digest(cache)):
+      return ("STALE", 0, None, set())   # served NOTHING, and `0` here is "not counted"
     rows = [ln for ln in cache.read_text().splitlines() if ln.strip()]
     return ("CACHE", len(rows), ops_of(rows), set())
   try:
