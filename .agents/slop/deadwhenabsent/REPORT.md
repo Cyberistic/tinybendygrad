@@ -289,6 +289,18 @@ BRANCH 7: sweep.py's new GENERATED bucket (facts() took 397s)
 Three labels read backwards. An assertion suite that cannot be misread is worth less than one whose
 words cannot lie; I rewrote the labels rather than the logic.
 
+**And the sharpest one: the "control" I was asked to prove was not a control.** I reached for the
+one directory the brief had just assured me was safe — `TemporaryDirectory` — and called that a
+guarantee. It is not: it guarantees the *state* is discarded, not that the *gate* saw it. Three
+things followed that I had to fix rather than explain: the four-state plant was passing because
+`os.walk` on a temp tree trivially has the shape I planted, not because `state()` distinguishes
+anything; `control.py` never imported the gate under test, so its "OK" lines were its own
+comparisons re-printed; and `BRANCH 7` was behind `--slow` **because `facts()` costs 397 s**, so the
+one branch that exercised `sweep.py`'s real classifier was the one a reader running the fast path
+would never see. That last one is the actual defect and it is the same class as the rest:
+**a control that is expensive to run is a control that gets skipped, and I had made skipping it the
+default.**
+
 ---
 
 ## 6. VERIFICATION AFTER MY EDITS
@@ -306,12 +318,49 @@ Every gate re-run after editing `checks/sweep.py` and adding `checks/runs-artifa
 | `.git/index` sha256 | **unchanged** | `f4c541cf…d0c61` before and after: **`INDEX UNCHANGED BY MY RUN: YES`** |
 | `flip` both lanes | — | 6 rows each, `cmp` → **IDENTICAL** |
 
-**Two of the seven gates failed on my shell quoting, not on their merits.** I ran
-`.venv/bin/python -W ignore $g` with `$g` holding `"gates/gate-surface.py --report"`, so Python
-received one filename and answered `can't open file '…/gates/gate-surface.py --report'`, rc=2.
-**An rc=2 from "file not found" is not a red gate; it is a shell that ate an argument.** Re-run
-individually, both are **0**. Recording it because a transcript that hid this would have shown two
-reds that were my own typo.
+### THE INDEX CLAIM NEEDS ITS SCOPE, AND I HAVE TO CORRECT IT TWICE
+
+At **16:26**, bracketing the seven gate runs in one command, the reading was exact:
+
+```
+index sha256 BEFORE: f4c541cf33de9949bee30948192e19171722ef3f3dc46ce8c80d1c0ef03d0c61
+index sha256 AFTER : f4c541cf33de9949bee30948192e19171722ef3f3dc46ce8c80d1c0ef03d0c61
+INDEX UNCHANGED BY MY RUN: YES
+```
+
+At **17:00**, the same measurement is a **DIFFERENT HASH**: `ae761412ddf58f…`. **So the 16:26 claim is
+true of 16:26 and false of 17:00, and I am reporting both rather than the one that flatters the run.**
+Attribution, measured rather than assumed:
+
+- `.git/index` mtime is **`Oct 12 17:00:09`**, 49 s before the 17:00:58 check.
+- **`ps` shows another unit working in this repo**: pid 31305, 22:09 elapsed, running
+  `git status --short tinybendygrad/codegen/decomp/` and then a `gates/*-gate.py` loop.
+- **No gate I ran contains an index-writing git command.** `grep -nE 'git (add|commit|write-tree|
+  update-index|rm|checkout|stash)'` over `no-txt.py`, `nl-gate.py`, `census.py`, `sweep.py` and
+  `index-arm-gate.py` matches only **docstrings and comments** — `index-arm-gate.py:7,14,25,37,40-43,
+  66,124,176` are prose *about* the hazard. The only git I invoked is `git ls-tree`, read-only.
+
+**CONCLUSION: `runs/` of this repo are a SHARED, LIVE `.git/index`, and "the index was unchanged" is
+a claim with a TIMESTAMP and a SCOPE, not a durable property of the tree.** This is the same failure
+`AGENTS.md` records for the `ruff` count — *18781 at 12:59:48, 18797 at 13:00:36 … same command, no
+edit by the unit that took them* — and the fix is the one `AGENTS.md` already prescribes:
+**"QUOTE THIS NUMBER WITH A TIMESTAMP OR NOT AT ALL."** The bracket at 16:26 remains the evidence
+that the seven gates do not write the index; it is not evidence about 17:00.
+
+### A THIRD MEASUREMENT OF MINE WAS WRONG, AND IT WAS MY OWN SHELL
+
+Two of the seven gates reported `rc=2` on the first pass:
+
+```
+.venv/bin/python: can't open file '.../gates/gate-surface.py --report': [Errno 2] No such file or directory
+.venv/bin/python: can't open file '.../checks/disagree-gate.py --lane citations': [Errno 2] ...
+```
+
+**Cause: my loop put `"gates/gate-surface.py --report"` into one shell variable and passed it as
+`$g` unquoted to a single argument slot, so Python received the flags as part of the FILENAME.**
+Re-run individually, both are **rc=0** (`SHELL HALF: 18 entry point(s)`, `ok  CITATIONS`).
+**An `rc=2` from "file not found" is not a red gate; it is a shell that ate an argument**, and a
+transcript that hid this would have shown two reds that were my own typo.
 
 ### The census control in the brief does not reproduce, and I will not claim it does
 
