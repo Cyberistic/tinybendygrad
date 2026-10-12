@@ -567,28 +567,16 @@ def rf_early(ar: O.Arena, self: U32, rej: List<&2, O.Op>) -> Bool:
 def rf_claimed(+ar: O.Arena, +self: U32, ops: List<&2, O.Op>, rej: List<&2, O.Op>) -> Bool:
   Bool.and(O.pm_claimed(ops, ar, self), rf_early(ar, self, rej))
 
-# `ret is not uop` -- tinygrad/uop/ops.py:1618. IT IS NOT `M.hop_self`, and the reason is a MEASURED BUG
-# in `movement.bend`, reported here and not fixed there. `movement.bend:67`'s
-# `hop_self.of` has its arms swapped: `b` is "the answer is `self`, or the answer is
-# none", `True` KEEPS the answer and `False` -- a genuinely NEW node -- DROPS it, which is
-# the inverse of `ret is not uop` and of the docstring above it.
+# `ret is not uop` -- tinygrad/uop/ops.py:1618 -- IS `M.hop_self`, applied ONCE PER TABLE in
+# the `True{}` arm of each `*_try.of`, which is where CPython applies it: inside `rewrite`,
+# around `match`. A rule body therefore cannot forget it, and `M.hop_next`/`M.hop_first` sit
+# beside it in the same file.
 #
-# The proof is `movement.bend`'s OWN gate, failing on exactly the rows that need a new
-# node: `shrink1_ns=0` where it must be 3, and `reshape_pick`, `permute_merge`,
-# `stack_idx`, `const_idx2`, `idx_idx`, `idx_pick`, `idx_shaped` all 0 where each must be
-# non-zero. `t_ret_new` (movement.bend:920) asks `is_none(hop_self(Hop{ar, 3}, 2))` and
-# prints 1, i.e. it ASSERTS the inverted behaviour.
-#
-# So this file implements `ret is not uop` itself, uses `M.hop_next`/`M.hop_first` (which
-# ARE correct -- `hop_first` takes `r` exactly when the accumulator is none), and not
-# `M.hop_self`. REPORTED, NOT FIXED: `movement.bend` is not this file's.
-def rf_self.of(same: Bool, +r: M.Hop) -> M.Hop:
-  match same:
-    case True{} : M.Hop{M.hop_ar(r), 0}
-    case False{}: r
-
-def rf_self(+r: M.Hop, self: U32) -> M.Hop:
-  rf_self.of(U32.is_eq(M.hop_ix(r), self), r)
+# IT USED NOT TO BE `M.hop_self`. `hop_self.of` had its arms SWAPPED, this file wrote its own
+# copy and recorded why, and this note is the reason the copy is GONE rather than the reason it
+# is kept. `movement.bend:69-75` now carries the fix and names its own inversion. MEASURED by
+# running `movement.bend`'s own two rows for the def: `ret_new` reads 0, and that is the row
+# which read 1 while the bug was in place; `ret_self` reads 1.
 
 # TABLE 1: `pm_remove_bufferize` -- rangeify.py:131-138. THREE RULES, all three bodies
 # PORTED except `remove_bufferize` itself, which is the biggest wall in the file and is
@@ -652,7 +640,7 @@ def rb_dispatch(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
 # THE TRY: the claim test, then the dispatch, then `ret is not uop`.
 def rb_try.of(ok: Bool, tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : rf_self(rb_dispatch(tag, ar, self), self)
+    case True{} : M.hop_self(rb_dispatch(tag, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def rb_try(+ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -686,15 +674,15 @@ def rb_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
 # invariant this whole rule exists to establish.
 def nic_dispatch.go(tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match tag:
-    case 0: rf_self(no_indexing_calls(ar, self), self)
+    case 0: no_indexing_calls(ar, self)
     case _: M.Hop{ar, 0}
 
 def nic_dispatch(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
   nic_dispatch.go(tag, ar, self)
 
-def nic_try.of(ok: Bool, tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
+def nic_try.of(ok: Bool, tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : nic_dispatch(tag, ar, self)
+    case True{} : M.hop_self(nic_dispatch(tag, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def nic_try(+ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -757,9 +745,9 @@ def nv_dispatch.go(tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
 def nv_dispatch(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
   nv_dispatch.go(tag, ar, self)
 
-def nv_try.of(ok: Bool, tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
+def nv_try.of(ok: Bool, tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : nv_dispatch(tag, ar, self)
+    case True{} : M.hop_self(nv_dispatch(tag, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def nv_try(+ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -784,7 +772,7 @@ def nv_rewrite(+ar: O.Arena, self: U32) -> M.Hop:
 # ALREADY carries a `()` tag is still left alone, so the rule is not "retag everything".
 def aprt_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop:
   match tag:
-    case 0: rf_self(rf_param_rtag(fx, ar, self), self)
+    case 0: rf_param_rtag(fx, ar, self)
     case _: M.Hop{ar, 0}
 
 def aprt_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
@@ -792,7 +780,7 @@ def aprt_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def aprt_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : aprt_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(aprt_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def aprt_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -830,9 +818,9 @@ def sk_dispatch.go(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
 def sk_dispatch(tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
   sk_dispatch.go(tag, ar, self)
 
-def sk_try.of(ok: Bool, tag: U32, +ar: O.Arena, self: U32) -> M.Hop:
+def sk_try.of(ok: Bool, tag: U32, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : sk_dispatch(tag, ar, self)
+    case True{} : M.hop_self(sk_dispatch(tag, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def sk_try(+ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -961,26 +949,35 @@ def rf_mops_en(ar: O.Arena) -> M.Hop: rf_foreign("prepare.py:82", ar, 0)
 # THE PATTERN IS THE CLAIM, and giving the body an ELSE arm makes the rule a catch-all.
 # MEASURED: with an else arm the answer's src op sequence was ".58.58" (the MSTACK) and
 # `ct8d_srcops` was 0; with the claim in place it is ".58" and `ct8d_srcops` is 1.
-def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
-  match alt:
-    case True{} : M.Hop{ar, M.mp_src0(ar, self)}
-    case False{}: M.Hop{ar, 0}
-
-def ct_6(+ar: O.Arena, +self: U32) -> M.Hop:
-  ct_6.of(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}), ar, self)
-
 # `UPat.cvar().or_casted()` -- the op is CONST for the bare arm and CAST for the
 # wrapped one, and the CAST arm requires EXACTLY one src.
 def ct_6_casted(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(M.mp_is(ar, self, O.OpsCAST{}), M.mp_nsrc_is(ar, self, 1))
 
+# `strict_length` -- `UPat(Ops.INDEX, src=(...one...))` is a TUPLE `src` with no
+# `allow_any_len`, so `UPat.__init__` (ops.py:1478-1481) sets `required_len = 1`
+# and a TWO-src INDEX CANNOT MATCH. MEASURED: `INDEX(CONST 4, R0)` answers None and
+# `INDEX(CONST 4,)` answers the CONST. This read `mp_nsrc_ge(_, _, 1)`, AT LEAST ONE,
+# against its own name, and `ct_6` did not call it at all.
 def rf_ix_1src(+ar: O.Arena, +self: U32) -> Bool:
-  Bool.and(M.mp_is(ar, self, O.OpsINDEX{}), M.mp_nsrc_ge(ar, self, 1))
+  Bool.and(M.mp_is(ar, self, O.OpsINDEX{}), M.mp_nsrc_is(ar, self, 1))
 
 def ct_6_pat(+ar: O.Arena, +self: U32) -> Bool:
   Bool.and(rf_ix_1src(ar, self),
            Bool.or(M.mp_is(ar, M.mp_src0(ar, self), O.OpsCONST{}),
                    ct_6_casted(ar, M.mp_src0(ar, self))))
+
+def ct_6.of(alt: Bool, +ar: O.Arena, +self: U32) -> M.Hop:
+  match alt:
+    case True{} : M.Hop{ar, M.mp_src0(ar, self)}
+    case False{}: M.Hop{ar, 0}
+
+# THE CLAIM IS THE CLAIM, AND THE BODY USES IT: this reads the op of `src[0]` alone, so
+# a TWO-src INDEX over a CONST answered `CONST 4` and THREW THE RANGE AWAY -- a two-src
+# INDEX over a CONST is exactly what `_mop_index` (prepare.py:67) builds, so the node is
+# reachable in a real pass. MEASURED, `ct_20`: `1 Ops.CONST/0 - arg=cint` -> `none`.
+def ct_6(+ar: O.Arena, +self: U32) -> M.Hop:
+  ct_6.of(ct_6_pat(ar, self), ar, self)
 
 # ct_4: `remove_noop_bufferize` -- rangeify.py:104-106. The CLAIM is ported and CORRECTED;
 # the ANSWER is the wall. `UPat(Ops.INDEX, name="idx").f(Ops.STAGE, ...)` REBUILDS the
@@ -1145,7 +1142,7 @@ def ct_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def ct_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : ct_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(ct_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def ct_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -1231,7 +1228,7 @@ def fb_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def fb_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : fb_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(fb_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def fb_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -1365,7 +1362,7 @@ def dg_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def dg_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : dg_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(dg_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def dg_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -1452,7 +1449,7 @@ def lb_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def lb_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : lb_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(lb_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def lb_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -1588,7 +1585,7 @@ def ab_6(+fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 
 # ab_9: `remove_noop_afters` -- rangeify.py:269, ported above as a def. The
 # table entry is the ONLY thing new here.
-def ab_9(+fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop: rf_self(remove_noop_afters(ar, self), self)
+def ab_9(+fx: F.Folded, ar: O.Arena, +self: U32) -> M.Hop: remove_noop_afters(ar, self)
 
 def ab_dispatch.go(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
   match tag:
@@ -1609,7 +1606,7 @@ def ab_dispatch(tag: U32, +fx: F.Folded, ar: O.Arena, self: U32) -> M.Hop:
 
 def ab_try.of(ok: Bool, tag: U32, +fx: F.Folded, +ar: O.Arena, +self: U32) -> M.Hop:
   match ok:
-    case True{} : ab_dispatch(tag, fx, ar, self)
+    case True{} : M.hop_self(ab_dispatch(tag, fx, ar, self), self)
     case False{}: M.Hop{ar, 0}
 
 def ab_try(+fx: F.Folded, +ar: O.Arena, +self: U32, +e: O.PMEntry) -> M.Hop:
@@ -2700,22 +2697,16 @@ def t_ranges_miss() -> U32: b2u(rf_ranges_miss())
 #  which is why that row passes while the two representations are not interchangeable --
 #  REPORTED, and the row's comment says so rather than the row pretending they agree.
 # ===========================================================================
-# `movement.bend`'s OWN GATE IS FAILING, and `hop_self` is one of the reasons.
-# `movement.bend:67-73` has its two arms swapped: `b` is "the answer IS self, OR the
-# answer IS none", `True` answers `r`, and Python's condition to DROP is `ret is uop`
-# (ops.py:1610) -- so `True` must answer `Hop{ar, 0}`. It keeps `self` and drops a
-# genuinely new node, the inverse of ops.py:1610 and of its own docstring.
+# `movement.bend`'s `hop_self` WAS INVERTED, AND IS NOT ANY MORE. It is kept here
+# because the note above `M.hop_self`'s use is only worth reading if the thing it
+# records is real. `hop_self.of` used to answer `r` on `True` (the answer IS self, or
+# the answer IS none) and `Hop{ar, 0}` on `False`, keeping `self` and dropping a
+# genuinely new node -- the inverse of ops.py:1610 and of its own docstring.
 #
-# MEASURED, by swapping the arms on a scratch copy and re-running `movement.bend`'s gate:
-# `const_idx2` 0->40, `const_idx3` 0->3, `rej_pair` 0->40, and `ret_new` 1->0. `t_ret_new`
-# (movement.bend:920) therefore ASSERTS THE BUG -- it feeds `hop_self` a new index
-# against a different self and asks for index 0, which is the inverted answer.
-#
-# REPORTED, NOT WORKED AROUND. `rf_self` above implements `ret is not uop` locally
-# rather than calling `M.hop_self`, and M1 mutates the LOCAL copy, so M1 is a measurement
-# rather than a re-measurement of this bug. `M.hop_first` and `M.hop_next` are correct and
-# are reused. The other zeros in that gate (`shrink1_ns`, `reshape_pick`, `idx_*`) read 0
-# under BOTH readings and are a second, separate defect this unit does not own.
+# MEASURED, running `movement.bend`'s own rows today: `ret_new=0` (the row that read
+# 1 while the bug was in place) and `ret_self=1`. `movement.bend:69-75` now carries the
+# fix and names its own inversion, so this file CALLS `M.hop_self` rather than keeping
+# a second copy -- see the note at the top of the `*_try` block.
 # ===========================================================================
 def main() -> IO(Unit):
   do IO<Unit>:

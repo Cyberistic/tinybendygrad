@@ -8,7 +8,7 @@
 # A ROW is a (TABLE, NODE) pair. TABLE ranges over this file's eleven `*_table` defs --
 # `rb nic nv aprt sk gs ct fb dg lb ab`, ELEVEN, discovered by `grep -c '^def [a-z]*_table'`
 # (MEASURED 11) -- and NODE ranges over `R.g()`'s `G.ix`, whose length is 66 (MEASURED, and it
-# is `rangeify.bend`'s own `lay` row, `t_lay` at :1987, which this lane CALLS rather than
+# is `rangeify.bend`'s own `lay` row, `t_lay` at :1984, which this lane CALLS rather than
 # restates). 11 x 66 = 726 PAIRS. A pair is a ROW ON A LANE iff that lane's rewrite ANSWERS a
 # node, so the two lanes DISCOVER THE ROW SET INDEPENDENTLY and the diff is over what they
 # FOUND, not over a list somebody typed. THAT IS THE POINT: a rule that fires where CPython does
@@ -36,20 +36,20 @@
 # ops.py:1835 and reads as "no rewrite" -- which is exactly the port's `gs_0` answering
 # `M.Hop{ar, 0}`; and `_limit_bufs` returns `None` at its second line whenever
 # `MAX_KERNEL_BUFFERS` is unset (rangeify.py:177), while the port's `lb_0` is unported behind the
-# mutable-`ctx` wall (rangeify.bend:2671). TWO TABLES OF ELEVEN CONTRIBUTING ZERO ROWS is a shape
+# mutable-`ctx` wall (rangeify.bend:2668). TWO TABLES OF ELEVEN CONTRIBUTING ZERO ROWS is a shape
 # a reader should be told about rather than left to infer, and `gs_len=1` / `lb_len=1` in the
 # port's OWN `main` say the TABLES are not empty -- the BODIES are what answer nothing. `gs` is
 # also the one table with NO `gs_rewrite`: the rule raises rather than returning, so there is no
 # `Hop` to write, and `gs_0` IS the rule.
 #
-# THE FIXTURE IS THE PORT'S OWN `g()` (rangeify.bend:1710-1865) -- ONE arena, 66 nodes, an affine
+# THE FIXTURE IS THE PORT'S OWN `g()` (rangeify.bend:1707-1862) -- ONE arena, 66 nodes, an affine
 # chain, every intermediate bound -- and the oracle MIRRORS it index for index, so `R.G.n(g, n)`
 # and CPython's `world()[n]` are the SAME node. That is the `ew_graph_census` `world()` shape. A
 # fixture of one CONST would exercise nothing, so this one varies op (21 distinct), dtype (int32
 # / half / bool / Invalid / weakint), src arity (0..4) and arg (`AParam` with and without a
 # device, `ANone`, `ARange`, `AKernel`) across its 66 nodes. IT CARRIES SYMBOLIC DIMS, which
 # rangeify cannot be asked about without: `RGD` is a RANGE at `AXIS_DEVICE` and `RGT` its
-# `rtag(())` (rangeify.bend:1848-1849), and those two are what stop `renumber_range`'s "rebuild
+# `rtag(())` (rangeify.bend:1845-1846), and those two are what stop `renumber_range`'s "rebuild
 # the AxisType" and "read the AxisType" from being the SAME FUNCTION over the rest of the fixture
 # -- which is why mutation M12 of that file's own table moved nothing until they were added.
 #
@@ -67,8 +67,8 @@
 # `AttributeError: 'NoneType' object has no attribute 'removable'`. Every STAGE in a real
 # rangeified graph carries `BufferizeOpts` (`indexing.py:57-60`), so the oracle gives them one.
 # THE PORT CANNOT: `ops.bend`'s `Arg` has no `BufferizeOpts` arm, which is the wall
-# `rangeify.bend:2686` records. `UOp` does NOT type-check `arg` against `op` (MEASURED, at
-# rangeify.bend:1796), which is why the port's fixture builds `ANone` STAGEs without complaint.
+# `rangeify.bend:2683` records. `UOp` does NOT type-check `arg` against `op` (MEASURED, at
+# rangeify.bend:1793), which is why the port's fixture builds `ANone` STAGEs without complaint.
 # The asymmetry is a WALL and is DECLARED in the gate, not smoothed.
 #
 # THE SIGNATURE IS `Rng.sig` PLUS AN ARG AND A TAG, because `Rng.sig` (ops.bend:5897) prints
@@ -99,11 +99,11 @@
 # `M.Hop`'s ZERO IS `None` AND `UOp.is_none` IS `IS_ZERO`, so THE ARMS BELOW ARE NOT
 # INTERCHANGEABLE. `hsig.of` answers the SIGNATURE on `False{}` and `"none"` on `True{}`,
 # because `hsig` passes `UOp.is_none(hop_ix(h))` -- `True` means NO ANSWER. The first draft of
-# this file had them the other way round and printed 42 rows reading `none`, which is the
-# inverted `M.hop_self` `movement.bend:67-73` records as a bug in that file and this file's own
-# header calls the inverse of ops.py:1610. A CENSUS THAT PRINTS `none` WHERE IT MEANS A GRAPH
-# IS NOT A CARVE-OUT, IT IS A LANE THAT MEASURED NOTHING, and it was caught only because the
-# rows were READ rather than trusted to be non-empty.
+# this file had them the other way round and printed 42 rows reading `none`, which is what the
+# INVERTED `M.hop_self` did -- a bug `movement.bend:69-75` now names as its own history and has
+# fixed, so this file uses the def rather than a local copy. A CENSUS THAT PRINTS `none` WHERE IT
+# MEANS A GRAPH IS NOT A CARVE-OUT, IT IS A LANE THAT MEASURED NOTHING, and it was caught only
+# because the rows were READ rather than trusted to be non-empty.
 
 import Base
 import ./../tinybendygrad/uop/ops.bend as O
@@ -204,7 +204,7 @@ def sk_go(fuel: Nat, +n: Nat, acc: List<&2, String>) -> List<&2, String>:
 # --- gs ---------------------------------------------------------------------------------
 # `gs` HAS NO `gs_rewrite`, and that is the POINT of the row rather than a gap in it:
 # `gate_substitute` RAISES `BottomUpGate` (rangeify.py:44) instead of returning, and a raise is
-# not a value, so there is no `Hop` to write (rangeify.bend:852-866). `gs_0` IS the whole rule
+# not a value, so there is no `Hop` to write (rangeify.bend:854). `gs_0` IS the whole rule
 # and it IS what the engine's `except BottomUpGate` (ops.py:1835) means, so driving `gs_0` is
 # not reaching past a public entry point -- it is the entry point, one layer below a Hop that
 # does not exist. It answers `M.Hop{ar, 0}` on every node, so it contributes zero rows.
@@ -248,7 +248,7 @@ def dg_go(fuel: Nat, +n: Nat, acc: List<&2, String>) -> List<&2, String>:
     case 1n+f: dg_go(f, Nat.add(n, 1n), List.append(&2, String, acc, dg_row(n)))
 
 # --- lb ---------------------------------------------------------------------------------
-# `lb` is `pm_limit_bufs` and `_limit_bufs` is UNPORTED (rangeify.bend:2671): its `visitor` is a
+# `lb` is `pm_limit_bufs` and `_limit_bufs` is UNPORTED (rangeify.bend:2668): its `visitor` is a
 # closure that both reads and writes `ctx.buf_cache`, and `MAX_KERNEL_BUFFERS` is an env flag.
 # `lb_0` answers `M.Hop{ar, 0}`, and CPython answers `None` on all 66 nodes too, so the two agree
 # -- but they agree by REFUZAL, and that is worth saying rather than letting 66 `none`s read as

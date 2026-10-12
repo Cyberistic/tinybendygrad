@@ -25,7 +25,7 @@ answer on every node is "no rewrite" -- which is exactly the port's `gs_0` retur
 it; that is the engine's own control flow, not a reimplementation of the rule.
 
 THE FIXTURE IS THE PORT'S, MIRRORED, WITH ONE LEGALITY REPAIR. `rangeify.bend`'s `g()` builds
-66 nodes in ONE arena (rangeify.bend:1710-1865) and :1868-1949 names each index; this lane
+66 nodes in ONE arena (rangeify.bend:1707-1862) and :1865-1944 names each index; this lane
 rebuilds the same 66 nodes with the same ops, srcs, tags and index order, so index `n` is the
 same node on both sides. STAGE nodes are the ONE repair and it is a CPython invariant, not a
 convenience: `remove_bufferize` reads `buf.arg.removable` (rangeify.py:54) and
@@ -33,7 +33,7 @@ convenience: `remove_bufferize` reads `buf.arg.removable` (rangeify.py:54) and
 real matcher -- MEASURED, `AttributeError: 'NoneType' object has no attribute 'removable'`.
 Every STAGE in a real rangeified graph carries `BufferizeOpts` (`indexing.py:57-60`), so this
 lane gives them `BufferizeOpts(device=None)`. The PORT cannot: `ops.bend`'s `Arg` has no
-`BufferizeOpts` arm, which is the wall `rangeify.bend:2686` records. That asymmetry is why
+`BufferizeOpts` arm, which is the wall `rangeify.bend:2683` records. That asymmetry is why
 `rb` and `ct` answer here and refuse there, and it is DECLARED, not smoothed.
 
 THE SIGNATURE IS `Rng.sig` PLUS AN ARG AND A TAG. `Rng.sig` (ops.bend:5897) prints
@@ -102,7 +102,7 @@ def ps(slot, n, addr=AddrSpace.GLOBAL, dev=None):
     """`ParamArg(slot, dtype, size, ...)` with `size` a SCALAR `prod(shape)` (ops.py:1200)
     -- `UOp._shape` returns `(self.arg.size,)` (ops.py:369-371), so a TUPLE size would give
     `((n,),)` and a STAGE over it a shape of `(n, (n,))`, which is not a shape CPython can
-    reshape through. The port's `g_psize` (`rangeify.bend:1688`) holds `Some{n}` -- the scalar.
+    reshape through. The port's `g_psize` (`rangeify.bend:1685`) holds `Some{n}` -- the scalar.
     """
     return ParamArg(slot, dtypes.int32, n, addrspace=addr, device=dev)
 
@@ -113,7 +113,7 @@ def stage(*src):
 
 
 def world():
-    """THE PORT'S FIXTURE, node for node -- rangeify.bend:1710-1865, index for index."""
+    """THE PORT'S FIXTURE, node for node -- rangeify.bend:1707-1862, index for index."""
     c0, c1, c2, c4 = (UOp.const(v) for v in (0, 1, 2, 4))
     sp = UOp.special(4, "0")
     b4 = UOp(Ops.BUFFER, src=(sp,), arg=ps(0, 4))
