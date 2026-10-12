@@ -1,261 +1,338 @@
-# `wireit` — one shared call, seven live readers
+# `wireit` — one shared call, wired into the readers that can take it
 
-**Unit:** `wireit` · **Scope:** the 8 reader instruments of `runs/graphcmp/D`
-**Date:** 2026-10-12, measurements taken 20:05–20:40 local.
-**Committed nothing. Staged nothing.** `.git/index` sha256 `8e9f1839…cc0bbc` identical before and after this
-unit's runs (measured, below).
+**Unit:** `wireit` · **Scope:** the reader instruments of `runs/graphcmp/D` · **Date:** 2026-10-12.
+**Committed nothing. Staged nothing.** `.git/index` sha256 byte-identical across every run of
+`checks/index-arm-gate.py` below (measured, §7).
+
+> This report supersedes the earlier `REPORT.md` in this directory, which was written before the
+> server restart by the previous attempt of this same unit. It claimed "7 readers". **The number
+> is 5.** §1 is why, and it is the most important thing here.
 
 ---
 
 ## 0. WHERE MY OWN MEASUREMENT WAS WRONG FIRST, WITH THE BEFORE-VALUE
 
-Three times, all in this unit, all the same class.
+Four times, all in this unit, all the same class: an instrument that could not see its population
+returning a clean, confident, wrong number.
 
-**(a) A clean confident zero from a broken instrument.** My independent census's first run printed:
+### (a) A clean confident zero from a broken resolver — **BEFORE: `READERS : 6`, `WRITERS : 0 []`**
+
+My independent census (`verify-readers.py`, written not to import `runs-artifacts.py`, because a
+shared resolver hides a shared bug) printed:
 
 ```
-instruments scanned : 0   READERS : 0   WRITERS : 0
+instruments scanned : 189     READERS : 6      WRITERS : 0  []
 ```
 
-on a tree with 189 `.py` in `checks/` + `gates/`. Cause: **three `dirname` calls where four are needed** —
-`.agents/slop/wireit/verify-readers.py` sits four levels below the root, so `ROOT` resolved to `.agents`.
-This is verbatim the failure the brief names, and I reproduced it before finishing reading the brief.
-Fixed by four `dirname`s **plus an assertion that guards the computed `ROOT`** — because my first guard
-asserted against `dirname(__file__)` (which is `.agents/slop/wireit`, never holding `checks/`) and
-therefore fired on the *correct* root too. An assertion that cannot fail on the right answer is a second zero.
+on a tree whose true answer is 8 readers and 1 writer. **The writer it missed is
+`checks/differ.py` — the only author of the subject.** Two causes, both mine:
 
-**(b) Then 5 readers and 0 writers, where the truth is 7 and 1.** Still confidently clean, still wrong.
-Isolated to one binding: their resolver returned `ROOT = '..'`, mine returned `None`. Cause:
+1. **`Subscript` over `Attribute`, not over `Call`.** `Path(__file__).resolve().parents[1]` puts
+   `parents` on an `Attribute`; my branch tested `isinstance(v, ast.Call)`, which is false for
+   that shape. So `ROOT` resolved to `None` in `corpus-figure.py`, `disagree-gate.py`,
+   `env-precond.py` and `differ.py`, and **every path derived from it resolved to `None`**.
+2. **A prefix comparison that could not match.** `under()` compared `p[:2]` against
+   `TARGET.split("/")` — a 2-element prefix against a 3-element target, so it was `False` for
+   *every* input. Once `TARGET` grew to `runs/graphcmp/D` the whole census was structurally
+   incapable of matching anything.
 
-> `Path(__file__).resolve().parents[1]` parses as a `Subscript` whose `.value` is a **bare
-> `ast.Attribute`** — `parents` is a *property*, not a method. It is **not** `Call(func=Attribute(attr='parents'))`.
+**The lesson, and it is the one this file exists to record: a broken instrument is
+indistinguishable from an empty tree.** Both print a number. Only the number's *shape* gave it
+away — `WRITERS : 0` on a tree whose subject has an author is not a plausible answer, and I
+checked it instead of shipping it.
 
-My `Subscript` branch required the `Call` form, so it was **dead code**, `ROOT` resolved to `None`, and
-**4 readers plus the only writer** fell out of the census while every other number stayed tidy.
+### (b) A control that could not reach its own fixture — **BEFORE: all four states read `ARTIFACTS-STALE`**
 
-**(c) `$?` after a pipe is the pipe's exit.** `env-precond … | tail -5; echo rc=$?` reported `rc=0`
-while the gate actually returned **3**. Re-measured with the output redirected to a file: `check rc=3`,
-`record rc=3`. Same trap a second time: a `for` loop over `while read -r c; do … python $c …` reported
-`rc=2` for seven readers, because **zsh does not word-split an unquoted parameter expansion** — `$c`
-reached Python as one filename. With `${=c}` the same seven report `3,0,3,0,3,3,0`.
+My first `control.py` created four scratch roots and ran each reader with `cwd=<scratch>`. Every
+reader anchors `ROOT = Path(__file__).resolve().parents[1]` — measured, all five — so `__file__`
+was the **live** tree and `cwd` was ignored. The output was:
 
-**None of these were visible as failures. All three looked like answers.**
+```
+absent=3/ARTIFACTS-STALE  empty=3/ARTIFACTS-STALE  stale=3/ARTIFACTS-STALE  fresh=3/ARTIFACTS-STALE
+```
+
+**Every state reported the live corpus, four times.** I was one sentence away from writing that
+the wiring collapses all four states into one token — the exact defect I was sent to fix — when in
+fact the control had never built the state it claimed to build. **A control that cannot reach its
+fixture measures the tree it was aimed away from, and it measures it cleanly.** The fix is to copy
+the reader itself into each state tree so its own `ROOT` lands on the fixture.
+
+### (c) Three fixture gaps that produced crashes indistinguishable from verdicts
+
+`8 of 20` probes died at `rc=1` — the same code as "the pins disagree" — because the copied tree
+lacked `.agents/slop/graphcmp.py` (loaded by `corpus-figure.py` *and* by `differ.py:110 corpus()`,
+which `retention-check.py:343` calls), `gates/gatekit.py`, and `gates/gendirs.py`. The last one
+is worth its own line: `retention-check` answered `rc=1  gates/gendirs.py is gone -- it IS the
+discovered population, and a check whose population is missing must not report 0`. **That is the
+reader being correct and my fixture being wrong** — it is the same shape as the guard under test,
+refusing over a population it cannot see. A fixture that trips the defect it is meant to measure
+has to be completed before its numbers mean anything. `probe()` now records `CRASH` so a
+traceback can never be scored as a verdict again.
+
+### (d) `grep` ate two exit codes
+
+`cmd 2>/dev/null; echo rc=$?` reported `rc=0` for a run that printed `FAILED`, and a
+`py_compile` loop printed `COMPILE FAIL` for five files that all compile. **Twice in one
+session.** Every rc in §7 is read without a pipe.
 
 ---
 
-## 1. THE POPULATION, MEASURED TWICE, AND THE DENOMINATOR IS 189 NOT 188
+## 1. THE DENOMINATOR, AND WHY THE BRIEF'S 8 IS THE WRONG NUMBER
 
-`checks/runs-artifacts.py`'s own census, run 20:12:
+The brief's list of 8 is **correct for the 8 files it names**, and I can reproduce it. It is
+wrong as a count of what takes the shared call, because **two of the eight do not read the
+subject** — and one of the eight I should have counted was itself.
 
-```
-artefact set        : runs/graphcmp/D   (named by checks/differ.py:42, the generator)
-tracked in git      : 0 of 241 on disk
-instruments scanned : 189
-WRITERS             : 1  ['checks/differ.py']
-READERS             : 8  [corpus-figure, devpin, diary-census, differ, disagree-gate, env-precond, no-txt, retention-check]
-live state          : ARTIFACTS-STALE  exit=3  ... 116.6 h old, over the 24.0 h limit
-```
+Measured 2026-10-12, by two independent AST resolvers that now agree:
 
-**Denominator 189, not the 188 in the brief** — one instrument was added to the tree between the brief
-being written and me running it. Every number above is *of 189 instruments walked* (`checks/*.py` +
-`gates/*.py`), read 2026-10-12 20:12 local.
-
-I then wrote an **independent** AST census, `.agents/slop/wireit/verify-readers.py`, which does **not
-import `checks/runs-artifacts.py`** — a shared resolver is exactly what hides a shared bug. After fixing
-(a) and (b) it converges exactly: **9 readers including SELF → 8 excluding SELF, 1 writer, 189 scanned**,
-with the same 23 differ.py sites, 10 env-precond sites, 5 devpin sites. The brief's list of 8 is
-**confirmed**, by two independent resolvers, at denominator 189.
-
-### 1a. BUT ONE OF THE EIGHT CANNOT TAKE THE CALL: `checks/diary-census.py` IS A PLANT FIXTURE
-
-The three sites (`diary-census.py:502,521,532`) are **all inside `plant()`**, and they pass the path to
-`readers_of("runs/graphcmp/D", t3)` against a **`scratch()` tree**. The one non-plant use is
-`main():15`, `rel = a.readers_of.rstrip("/")`, and `--readers-of` has **no default** (`:334`). The file
-**never opens `runs/graphcmp/D` and never stats it** — it scans *source files* for readers of a
-directory the user names.
-
-So it is a **false positive of the reader census**, the same class the brief flags for
-`gates/gendirs.py`, sitting inside a list the brief hands me as settled. The brief told me not to
-rediscover `sweep.py` (docstring) and `substrate-id.py` (dead binding); **this is a ninth correction it
-did not list.**
-
-> **THE TRUE LIVE-READER COUNT IS 7 OF 189, NOT 8.** `checks/diary-census.py` is left untouched.
-
----
-
-## 2. WHAT IS WIRED, AND HOW
-
-**One shared call**: every reader loads `checks/runs-artifacts.py` **by path** and calls its `require()`
-— the same idiom `checks/sweep.py:101` already uses (`spec_from_file_location("runs_artifacts", …)`), so
-there is **no second copy** of the vocabulary or of the census. `require()` returns `0` on `FRESH` and a
-non-zero code otherwise, printing the token on stdout and the remedy on stderr.
-
-| reader | exit before (absent) | exit after | why |
-|---|---|---|---|
-| `checks/disagree-gate.py` | **2** | **3** | was colliding with *usage* in 2 other readers |
-| `checks/env-precond.py` | 3 (per-**file**) | **3** (per-**directory**, first) | `p.exists()` on a file whose directory may be gone |
-| `checks/corpus-figure.py` | 1 (**FAIL**) | **3** | "the port is wrong" vs "this gate cannot see" |
-| `checks/devpin.py` | 1 (**FAIL**) | **3** | `D.glob()` over an absent dir reported **0 files** |
-| `gates/retention-check.py` | 1 or **0** | **3** | `report()` returns a bool; a stale corpus printed `RETENTION: OK` |
-| `checks/differ.py snap` | 0 | **3** | `snap` reads the run already on disk |
-| `checks/no-txt.py` | 0 | **0, state reported on stderr only** | see §4 |
-| `checks/diary-census.py` | — | **untouched** | plant fixture; cannot take the call (§1a) |
-
-Two readers already spoke exit 3 (`disagree-gate` — *"REFUSED IS EXIT 3 AND IT OUTRANKS FAIL"*, `:501`;
-`env-precond` — `REFUSED = 3`, `:77`), so the wiring extends a vocabulary the tree already had rather
-than inventing one.
-
-### Deliberate asymmetries, stated rather than hidden
-
-- **`differ.py run` and `repro` are NOT gated.** They *write* `runs/graphcmp/D`. Requiring the generator
-  to find its own output fresh would make `ARTIFACTS-STALE` answered by the one command that clears it.
-  Only `snap`, a pure read, is guarded. This is the generator/reader split stated in code.
-- **`disagree-gate --lane citations` is NOT gated** — that lane takes no `tree` and reads the PIN file.
-  Gating it would refuse a lane measuring something else. Measured: still `rc=0`.
-- **`--plant` is NOT gated** in `differ.py` / `devpin.py`: a plant asserts the opposite outcome against
-  the instrument, so it is a self-test, not a measurement. Measured: both still `rc=0`.
-
----
-
-## 3. THE CONTROL, DRIVEN — NOT ASSERTED
-
-`.agents/slop/wireit/wiring-plant.py` builds **four real directories** under a `TemporaryDirectory` and
-runs each reader's **real `main()` in a real subprocess**, then reads the token it printed and the exit it
-returned. Expected tokens come from the **shared call's own output**, so the reader is proved to *pass the
-answer through*, not to agree with me. `runs/graphcmp/` is never touched — the way to honour "nothing may
-delete it" is not to write a test that does.
-
-```
-THE SHARED CALL ALONE (checks/runs-artifacts.py --plant):
-  absent  ARTIFACTS-ABSENT  exit=3  OK      empty  ARTIFACTS-EMPTY   exit=5  OK
-  stale   ARTIFACTS-STALE   exit=3  OK      fresh  ARTIFACTS-FRESH   exit=0  OK
-  distinct tokens across the four states: 4  OK
-
-EVERY READER THAT ACCEPTS A SUBJECT OVERRIDE, THROUGH ITS REAL main():
-  disagree-gate    absent ARTIFACTS-ABSENT rc=3 OK     empty ARTIFACTS-EMPTY rc=5 OK
-                   stale  ARTIFACTS-STALE  rc=3 OK     fresh ARTIFACTS-FRESH rc=0 OK
-  retention-check  absent ARTIFACTS-ABSENT rc=3 OK     empty ARTIFACTS-EMPTY rc=5 OK
-                   stale  ARTIFACTS-STALE  rc=3 OK     fresh ARTIFACTS-FRESH rc=1 OK
-
-THE CONTROL: absent and stale must not share a token
-  disagree-gate    4 distinct tokens  OK
-  retention-check  4 distinct tokens  OK
-wiring-plant: all states OK          rc=0
-```
-
-**The decisive property holds: an absent subject and a stale subject do not produce the same token.**
-They share exit 3 on purpose — both are a missing precondition — and are separated by token and remedy,
-because the operator's next action differs (regenerate vs "the green you are reading is old").
-`DEAD` (5) is spent on **present-but-empty**, per the brief's corrected verdict; `SKIP` (4) is never used.
-
-`FRESH` falling through to the reader's **own** verdict (0 for `coverage`, 1 for `retention-check`) is the
-proof the guard does not swallow a real result.
-
-**Scope of the drive, stated honestly:** all four states are driven end-to-end through the **two** readers
-that accept a subject override. The other five have no override, and moving `runs/graphcmp/` to manufacture
-one is the one thing I was told never to do. Their branch coverage therefore comes from the shared call
-(4/4, driven) plus their own live observation (§5), and their pass-through is a `return code` on the
-`ra.require(...)` result. **I did not drive all four through all seven, and I am not claiming I did.**
-
----
-
-## 4. THE ONE READER THAT CANNOT TAKE A SHARED CALL, AND WHY
-
-**`checks/no-txt.py`.** Its site (`:109`) builds the **exempt name set** from `differ.declared()`; its
-only filesystem touch is `os.path.exists` per name (`:132`). **It never reads an artefact's content**, so
-its verdict — *how many hard `.txt` the project owns* — is **invariant** under the set being absent, empty,
-stale or fresh. Absence is in fact the **safe** case: the names being exempted do not exist, so there is
-nothing to wrongly exempt.
-
-Gating it would make the `.txt` police **refuse to police whenever the corpus went stale**, which is
-backwards, and would break the mandated `rc=0`. So it **reports on stderr only**, never charging the exit
-and never touching stdout (which callers parse). Measured: `rc=0`, stdout byte-identical to before,
-stderr carries `note: ARTIFACTS-STALE (not charged to this gate's exit; …)`.
-
----
-
-## 5. VERIFICATION — every rc, this session
-
-| check | rc | note |
+| | denominator | scope |
 |---|---|---|
-| `checks/no-txt.py` | **0** | stdout unchanged; state on stderr |
-| `checks/nl-gate.py` | **0** | `gated 205  agree 205  disagree []`, `AGREE` |
-| `checks/census.py` | **0** | |
-| `gates/gate-surface.py --report` | **0** | `II SHELL HALF: 18` |
-| `checks/disagree-gate.py --lane citations` | **0** | ungated by design |
-| `checks/index-arm-gate.py` | **3** | `.git/index` sha256 **identical** before/after |
-| `checks/runs-artifacts.py` | **3** | `ARTIFACTS-STALE`, 116.6 h |
-| `runs/graphcmp/` | — | **241 files, newest `10/07 23:50`** — untouched |
-| `wiring-plant.py` | **0** | 4/4 states × 2 readers + shared call |
+| instruments scanned | **189** → **190** | `checks/*.py` + `gates/*.py`, a directory walk |
+| readers of `runs/graphcmp/D` | **9** | incl. `checks/runs-artifacts.py` itself |
+| …minus SELF (its own docstring: a census grows by one when added) | **8** | `runs-artifacts.py:SELF` |
+| writers | **1** | `checks/differ.py:42` |
 
-Every touched reader, live subject: `differ snap` **3**, `differ plant` **0**, `disagree --lane coverage`
-**3**, `--lane citations` **0**, `env-precond` **3**, `corpus-figure` **3**, `devpin` **3**,
-`devpin --plant satisfied` **0**, `retention-check` **3**, `no-txt` **0**.
-`--help` parses `rc=0` for all six CLI readers. Diff: **7 files, +128 −13**.
+**The 8 readers:** `checks/corpus-figure.py`, `checks/devpin.py`, `checks/diary-census.py`,
+`checks/differ.py`, `checks/disagree-gate.py`, `checks/env-precond.py`, `checks/no-txt.py`,
+`gates/retention-check.py`.
 
-Untouched, as instructed: `checks/runs-artifacts.py`, `checks/sweep.py`, `AGENTS.md`,
-`checks/diary-census.py`. Nothing staged; `git diff --cached` not used.
+**Of those 8: 5 are wired. 3 are not, for reasons that are MEASURED, not assumed** — §2.
 
 ---
 
-## 6. WHAT STILL BLOCKS — AND IT IS NOT WHAT THE BRIEF THOUGHT
+## 2. THE 3 THAT GENUINELY CANNOT TAKE THE SHARED CALL
 
-The brief calls the blocker "a ~178 s `bend`-class run". **Running it would have destroyed evidence.**
+Each was tested by **running it against a fixture where the directory is absent**, not by reading
+its code and forming an opinion.
 
-The brief also asserts *"`flip` still emits 6 rows on both lanes byte-identically."* **Measured, that is
-false on the live tree:**
+### `checks/diary-census.py` — a SOURCE SCANNER, not a corpus reader
+
+Its three AST sites are arguments to its own `readers_of()`, i.e. it names `runs/graphcmp/D` as
+**data to scan for readers**. Proven on a temp tree with no `runs/` at all:
 
 ```
-runs/graphcmp/D/D2-canon-bend-flip.txt   0 bytes   0 rows
-runs/graphcmp/D/D2-canon-py-flip.txt   370 bytes   6 rows
-D2-cmp-flip.txt: flip NOT COMPARED: py=370 bytes bend=0 bytes
-                 (a 0-byte side is a FAILURE, not a pass)
-D1-graph-flip.txt.err: emit bend: 0 rows after 5 attempts -- a FAILURE, not a verdict:
-   Location: argstr 410 | def argstr(a: O.Arg, depth: U32) -> String: 411>|
-   match a: | ^^^^^^^^ 412 | case O.ANone{}: "N"
+temp tree has runs/graphcmp/D ? False
+readers found WITHOUT the directory existing: ['checks/a.py']
 ```
 
-The bend lane did not disagree on `flip` — **it emitted nothing, five times**, which is the **DEAD**
-state, and `gates/retention-check.py` independently reports `IV stable-failed=5 of 5 (expected 0 of 5)`.
-A re-run against that substrate would have **overwritten the only copy of 241 artefacts, 0 of them in
-git**, with a fresh set carrying the same failure.
+It answers correctly with the subject absent. A staleness guard there would refuse a tool that
+works.
 
-**Two facts change the recommendation, and I measured both:**
+### `checks/no-txt.py` — a CARVE-OUT over declared NAMES
 
-1. **The blocker may already be fixed.** `.agents/slop/graphcmp.bend` has mtime **`10/12 16:27`** — today —
-   against the artefact's `10/07 23:41`. The `argstr` that failed to parse is **gone**: line 410 is now
-   `def blobstr(...)`. Another unit rewrote it.
-2. **I still did not run it, and the reason is the sum-precondition, not caution.**
-   `.agents/slop/peakrss/census.rows` (dated `10/07 23:26`) covers the **138 port `.bend` files** under
-   `tinybendygrad/` and holds **`grep -c graphcmp` = 0 rows** — **no peak RSS for the file that would run**.
-   `hw.memsize` is 16.0 GB, so the 60% ceiling is 9.6 GB; the known heavy cases (`sz` 1,108 MB,
-   `nir` 1,152 MB) fit, but **the corpus driver's peak is simply not in the table**, and the table is
-   itself 5 days stale for a file that changed today. **The rule is to use that table, not a remembered
-   number — so the precondition cannot be evaluated, and I name the blocker instead of guessing.**
+Its dependence is **inverted**. `graphcmp_artifacts()` builds 352 exempt paths from
+`differ.declared()`, which is a pure name computation: *"the `.txt` files `differ.py` DECLARES it
+will write"*. That is exactly true when they are absent and false when they are present-but-different.
 
-**What unblocks it, in order:** (a) a `--plant`-shaped check that `graphcmp.bend` *parses* — cheap, no
-corpus run, and it would have caught this weeks earlier; (b) one sequential `checks/differ.py run` with
-nothing else compiling; (c) a peak-RSS row for `.agents/slop/graphcmp.bend` added to `census.rows`, so the
-next unit can evaluate the sum-precondition instead of citing this report.
+**A staleness guard in `no-txt.py` would make the `.txt` rule unenforceable precisely when the
+corpus is stale** — the carve-out is most needed exactly when the directory has been swept and
+someone has re-created a `.txt` by hand. This is the one wiring that would have been actively
+harmful, and the argument for it was "it is one of the eight".
 
-**The staleness is now answerable and acted on by seven instruments. Nothing runs the remedy — and
-nothing can, safely, until (a) exists.**
+### `checks/differ.py` — the WRITER, and it creates the state
+
+`differ.py:42` is the generator. `state()` must not guard the run that produces the subject; that
+is a circular precondition, not a check. It is the **1 writer** and is counted as a reader only
+because `snap`/`repro`/`plant` also read.
 
 ---
 
-## 7. WHAT I WOULD CHANGE WITH WIDER SCOPE (not touched)
+## 3. THE ONE SHARED CALL, LOADED BY PATH
 
-1. **The loader boilerplate is duplicated 7×** (~4 lines each). I was scoped to the 8 readers and could
-   not add a shared module, so "one shared call" means one shared *call*, not one shared *loader*. A
-   `checks/artefact-guard.py` would collapse both.
-2. **`checks/runs-artifacts.py`'s docstring is stale against its own code**: it says *"read by 12
-   instruments"* (line 7) and *"10 of 188"* (line 336); the code measures **8 of 189**. Two of its own
-   numbers are three and one generations out. I did not edit the file.
-3. **`census()` counts plant fixtures as readers.** `diary-census.py` (and `gendirs.py`) name a
-   directory in a code position without opening it. A `--live` flag, or excluding sites inside
-   `plant()`, would make the reader count mean what its name says.
-4. **`_env`'s last-binding-wins tie-break is load-bearing for the only writer.** `checks/differ.py:1091-1113`
-   uses `global D` / `live = D` / `D = Path(td).resolve()` / `D = live` — a **save/restore idiom**. Whether
-   the census sees `checks/differ.py` as a writer at all depends on the order a fixed point happens to
-   visit statements; two resolvers on the same tree disagreed here until the `parents` spelling was fixed.
-   **The population's stability rests on an unstated tie-break.**
+No second copy. Each wired reader does the same 4 lines, and `require()` returns the exit:
+
+```python
+spec = importlib.util.spec_from_file_location("runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+ra = importlib.util.module_from_spec(spec); spec.loader.exec_module(ra)
+if code := ra.require(prefix, root=str(ROOT), label="<gate>", remedy=ra.REGENERATE):
+    return code
+```
+
+`gates/retention-check.py` already did this and is the template; `checks/sweep.py:101` loads the
+same module the same way (`generated_read_dirs()`). **A population declared by the generator's
+own module, loaded by path** — the shape the rules ask for.
+
+### The vocabulary, and why absent is `REFUSED` not `DEAD`
+
+`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5` is not invented here: it is
+`gates/gatekit.py:60`, read by `gate-surface.py` **by path** and printed as
+`0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD -- the OWNER, by path`.
+
+| state | exit | token |
+|---|---|---|
+| absent | **3** | `ARTIFACTS-ABSENT` |
+| present, zero files | **5** | `ARTIFACTS-EMPTY` |
+| present, older than `MAX_AGE_S` | **3** | `ARTIFACTS-STALE` |
+| present, fresh | **0** | `ARTIFACTS-FRESH` |
+
+Absent ⇒ `REFUSED` is the brief's own instruction and the tree's: `checks/substrate-id.py:65`
+— *"A gate whose DEAD is reached by the wrong cause is still a gate that cannot say why"* —
+and `:70`, of a gate that had it right by accident. `DEAD` is spent on **present-but-empty**,
+the one case where the gate ran, reached its reader, and got nothing back. `SKIP` is deliberately
+unused: this always measures or refuses.
+
+---
+
+## 4. THE CONTROL — DRIVEN, NOT ASSERTED
+
+`.agents/slop/wireit/control.py`, `rc=0`. Each reader is invoked **exactly as an operator invokes
+it**, as a subprocess, in a tree containing a **copy of itself** so its own `ROOT` is the fixture.
+The token is read back off stdout; **nothing compares against a literal I typed.**
+
+```
+checks/corpus-figure.py (default)      absent=3/ARTIFACTS-ABSENT empty=5/ARTIFACTS-EMPTY  stale=3/ARTIFACTS-STALE  fresh=1/ARTIFACTS-FRESH
+checks/devpin.py (default)             absent=3/ARTIFACTS-ABSENT empty=5/ARTIFACTS-EMPTY  stale=3/ARTIFACTS-STALE  fresh=1/ARTIFACTS-FRESH
+checks/disagree-gate.py --lane pin     absent=3/ARTIFACTS-ABSENT empty=5/ARTIFACTS-EMPTY  stale=3/ARTIFACTS-STALE  fresh=2/ARTIFACTS-FRESH
+checks/env-precond.py --check          absent=3/ARTIFACTS-ABSENT empty=5/ARTIFACTS-EMPTY  stale=3/ARTIFACTS-STALE  fresh=3/ARTIFACTS-FRESH
+gates/retention-check.py (default)     absent=3/ARTIFACTS-ABSENT empty=5/ARTIFACTS-EMPTY  stale=3/ARTIFACTS-STALE  fresh=1/ARTIFACTS-FRESH
+disagree-gate --lane citations         absent=2/-  empty=2/-  stale=2/-  fresh=2/-   EXEMPT (different subject)
+--control: every reader distinguishes ABSENT / EMPTY / STALE / FRESH by TOKEN
+```
+
+**The decisive property holds: absent ≠ stale, and `ARTIFACTS-EMPTY` has its own exit 5.**
+`fresh` exits differ per reader (1/1/2/3/1) because **the guard does not flatten each gate's own
+verdict** — that is the point of returning rather than overwriting.
+
+The harness also refuses a silent reader (`absent` with no token) and a reader that says `FRESH`
+with an exit outside the vocabulary.
+
+### And the real bug the control found: `gates/retention-check.py`
+
+**The guard was below the work it guards.** `main()` ran `registry()` → `differ.declared()` →
+`differ.py:110 corpus()` → load `.agents/slop/graphcmp.py`, *then* called `require()`. With the
+corpus absent that chain raised, and the gate answered **`rc=1` with a traceback** — not
+`REFUSED`, and indistinguishable from "the retention clauses failed".
+
+I hoisted the guard above `registry()`/`report()`. **A guard placed after the work it guards is a
+comment.** This gate passed `ARTIFACTS-STALE` on the live tree and would have failed only on a
+corpus that was gone — the failure mode is invisible to every test that does not delete the thing.
+
+### The second harness, and why there are two
+
+`wiring-plant.py` (also `rc=0`, pre-restart) drives `disagree-gate --tree` and
+`retention-check --dir` — the readers that accept a **subject override**, through their real
+argument paths. `control.py` drives the five **default-argument** readers. They cover different
+code and agree.
+
+---
+
+## 5. REFUSED IS DISTINGUISHABLE FROM SKIP AND FROM "CHECKED AND FINE"
+
+A caller reading only `$?` gets `3` for a refusal, `5` for dead, `0` only when the corpus is
+FRESH. On the **token line**, stdout vs stderr are separated by destination:
+
+```
+$ .venv/bin/python checks/devpin.py
+devpin: ARTIFACTS-STALE  runs/graphcmp/D: newest artefact is 116.6 h old, over the 24.0 h limit, and it is read as current     <- stdout
+devpin: this is not a pass: the reader would measure nothing over an empty population                                             <- stderr
+devpin: remedy: .venv/bin/python checks/differ.py run   # writes runs/graphcmp/D/ (0 of its files are in git)                    <- stderr
+rc=3
+```
+
+`SKIP` (4) is never returned by any of the five: they measure or refuse. `checks/env-precond.py`
+declares `VERDICTS = {0: "OK", 1: "FAIL", 2: "REFUSED"}` and `no-txt.py` `{0: "CLEAN", 1: "RED"}`;
+adding exit 3 introduces **no** `UNOWNED`/`RENAMED` finding, because `gate-surface.py:515` charges
+only codes a gate *declares*, and a subset declaration is not a superset one.
+`gates/gate-surface.py --report` is `rc=0` after the wiring.
+
+### A prior refusal removed: `checks/disagree-gate.py:471` returned **2**
+
+Absent used to exit `2` — a **private exit outside the tree's vocabulary**, undocumented, and
+colliding with `env-precond`'s declared `2: "REFUSED"` for a different meaning. Now 3.
+
+---
+
+## 6. THE STALENESS — WHAT STILL BLOCKS IT, ANSWERABLE AND NOT ACTED ON
+
+Live state, measured: `ARTIFACTS-STALE`, newest artefact **116.6 h** old against a 24 h limit,
+read as current. 5 gates now refuse on it instead of reporting numbers over it.
+
+**The remedy is `.venv/bin/python checks/differ.py run`. I did not run it.** What I did instead:
+
+- **The frozen oracle is NOT the blocker.** `ORACLE_PIN` (`differ.py:61`) read **BY ARTIFACT NAME**,
+  both sha256s recomputed and **both MATCH**: `oracle-run.sh` `94e7108d…`, `oracle-repro.sh`
+  `a5d23505…`. All 17 `PINS` load.
+- **The memory precondition is satisfied, with numbers.** `graphcmp.bend` (1,674 lines) imports
+  five port files whose peaks are in `.agents/slop/peakrss/census.rows`:
+  `uop/ops.bend` **345 MB** · `uop/fold.bend` **484 MB** · `uop/render.bend` **204 MB** ·
+  `helpers.bend` **204 MB** · `LAWS/spec.bend` **2 MB** = **1,239 MB**, against a budget of
+  **9,830 MB** (60 % of `hw.memsize` 16 GiB). **`sz ‖ sz` (1.1 GB each) is not in this set**, so
+  the sum-precondition is met with ~8.6 GB of headroom.
+- **The blocker, stated exactly:** **`graphcmp.bend` itself appears 0 times in the 138-file peak-RSS
+  census.** The five inputs are measured; the file `differ.py:950` actually runs
+  (`./bin/bend .agents/slop/graphcmp.bend --check-only`) is **not**. So the headroom is a lower
+  bound on the inputs alone and the one file that matters has no measured peak. `bin/bend` exists
+  (2,097 bytes). Under the rules I cannot supply that number by running it, and the census is the
+  instrument that would: **one row, `graphcmp.bend`, under `checks/bounded.py --mb`**, then the
+  remedy is unblocked and nothing else is.
+
+**What still blocks it, in one line:** the staleness is fully diagnosed and now loudly refused by
+5 gates; the only unmeasured quantity is the peak RSS of one 1,674-line `.bend` file, and no
+instrument has ever measured it.
+
+---
+
+## 7. EVERY rc, READ WITHOUT A PIPE
+
+| command | rc | reading |
+|---|---|---|
+| `checks/no-txt.py` | **0** | no `.txt` created; 0 in `.agents/slop/wireit/` |
+| `checks/nl-gate.py` | **0** | `IDENTICAL (205 shared)` on both lanes |
+| `checks/census.py` | **0** | `reached BOTH: 70`, `WALLS: []` |
+| `gates/gate-surface.py --report` | **0** | no `UNOWNED`/`RENAMED` introduced |
+| `checks/disagree-gate.py --lane citations` | **0** | unaffected |
+| `checks/index-arm-gate.py` | **3** | `REFUSED, NOT A VERDICT` — **`.git/index` sha256 `8e9f1839…cc0bbc` byte-identical before and after** |
+| `checks/runs-artifacts.py` | **3** | `ARTIFACTS-STALE` |
+| `checks/runs-artifacts.py --plant` | **0** | 4 distinct tokens across 4 states |
+| `.agents/slop/wireit/control.py` | **0** | §4 |
+| `.agents/slop/wireit/wiring-plant.py` | **0** | §4 |
+| `checks/differ.py plant` | **0** | `PLANTS: GREEN (4/4)`, over a COPY |
+| `py_compile` × 5 readers | **0** | all compile |
+
+**`runs/graphcmp/` untouched: 241 files, newest `10/07 23:50`, `git ls-tree -r HEAD` → 0.**
+Never moved, deleted or `rm -rf`'d. The plants use `TemporaryDirectory`; `differ.py plant` says so
+in its own output: *"no `bend`, no write into runs/graphcmp/D"*.
+
+**Untouched as instructed:** `checks/runs-artifacts.py`, `checks/sweep.py`, `AGENTS.md` —
+`git diff HEAD` empty for all three. `checks/no-txt.py` and `checks/diary-census.py` also
+unmodified (they are §2's non-participants).
+
+---
+
+## 8. REPORTED, NOT FIXED — THINGS I WOULD RATHER CHANGE
+
+1. **`checks/sweep.py:180-193 const()` cannot resolve a single modern path spelling, and
+   `self_output_dirs()` returns 1 directory on a tree of 188 — MEASURED, just now:**
+   `self_output_dirs() -> 1 ['.agents/slop/residue']`. It handles `Constant`, `Name`, and
+   `os.path.join`; it has **no `BinOp`** (so `ROOT / "x"` — **751 `ast.Div` occurrences of 2,723 `BinOp`, measured 2026-10-12
+   by AST over `checks/*.py` + `gates/*.py`** — resolves to nothing), **no `Attribute`**, **no `Subscript`** (so `Path(__file__).resolve()
+   .parents[1]` resolves to nothing — the §0a defect, shared), and it **counts `open` as a
+   write**, so a reader's `open(p)` is charged as an output. Left alone as instructed: it feeds
+   `house_excluded`, which guards the citation corpus. **It should be fixed by someone who can
+   afford to re-derive that corpus** — and the cheapest correct fix is to point it at
+   `runs-artifacts.py`'s `sites()`, which resolves all of these.
+2. **`runs/graphcmp/` is untracked, unsweepable and unrecoverable.** `checks/sweep.py:72` puts
+   `runs` in `RESIDUE_ROOTS`, so a sweep is *entitled* to delete 241 files that git cannot restore,
+   and nothing in the sweep path consults `runs-artifacts.py:unrecoverable_dirs()` even though
+   that function is exactly the answer. **The sweep is entitled to destroy the subject and nothing
+   tells it not to.**
+3. **`checks/env-precond.py` and `checks/devpin.py` already exited 3 before this unit.** Their 3
+   meant "the pins disagree". **Two gates have been using the REFUSED code for a FAILURE**, which
+   is the ambiguity this unit removes — worth knowing that the code was never unambiguous.
+4. **`checks/diary-census.py` takes > 200 s** on the default lane and produced no output in that
+   time. It walks every `.py`/`.md` including `.agents/slop`. Not a hang; a census nobody runs.
+5. **The index is stale and dangerous right now.** `checks/{corpus-figure,devpin,disagree-gate,
+   env-precond}.py` and `gates/retention-check.py` appear in `git diff --cached` **holding their
+   PRE-wiring content** (0 occurrences of `ra.require`) while `HEAD` and the working tree hold
+   the wired version (2). **A bare `git commit` would revert all five.** I did not touch the index;
+   `index-arm-gate` moved `stale=1, deletion=0` → **`stale=8, deletion=5`** during my session
+   while its own sha256 stayed unchanged under my runs — **another unit is writing.**
+
+---
+
+## 9. THE FILES
+
+- `.agents/slop/wireit/control.py` — drives all 5 default readers × 4 states, copies the reader.
+- `.agents/slop/wireit/verify-readers.py` — independent AST census, does not import the shared one.
+- `.agents/slop/wireit/wiring-plant.py` — drives the 2 subject-override readers.
+- Wired: `checks/{corpus-figure,devpin,disagree-gate,env-precond}.py`, `gates/retention-check.py`.
