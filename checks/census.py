@@ -90,7 +90,13 @@ def ops_of(rows):
 # going missing, it is a path staying exactly where it was while the thing that fills it moved
 # underneath. A column can make drift visible to a READER. It cannot stop `side()` serving,
 # and serving is the whole failure.
-KEYS = HERE / "rows-key.rows"       # already gitignored: `.gitignore:167` is `checks/rows-*.rows`
+# BESIDE the rows it keys, not beside the module. It was `checks/rows-key.rows`, which
+# `.gitignore:167` (`checks/rows-*.rows`) ignores, so a cache that could not say it was
+# current could never learn to -- the refusal was SELF-SEALING. A pattern containing a slash
+# is anchored, so `checks/rows/` is tracked while its sibling `checks/rows-*.rows` is not;
+# MEASURED `git check-ignore`: YES for the latter, NO for both former and this key.
+# A published set that is in the tree must be the set that can be checked.
+KEYS = HERE / "rows" / "keys.rows"
 GENERATOR = {"py": _GRAPH, "bend": G.BEND_PROBE}   # `G.BEND_PROBE` IS `.agents/slop/graphcmp.bend`
 
 
@@ -130,10 +136,20 @@ def side(name, which, dev, fresh, keys):
   # `.rows`, and it was `.txt` until 2026-10-06: these ARE expected values -- one lane's rows,
   # cached so a re-run does not re-pay for it -- which is the thing `.rows` names in this project.
   # Read and written here and nowhere else, so the extension is this file's own business.
-  cache = HERE / f"rows-{name}-{which}.rows"
-  if cache.exists() and not fresh:
-    if keys.get((name, which)) != digest(GENERATOR[which]):
-      return ("STALE", 0, None, set())   # served NOTHING, and `0` here is "not counted"
+  # It was `HERE / f"rows-{name}-{which}.rows"` -- a SIBLING of the published set, one trailing
+  # slash away, and gitignored, so `git ls-files --others --exclude-standard` could not see it
+  # and this gate checked a set nothing in the tree owned. The two sets differed only by `/`,
+  # which is a SUFFIX: the `suffixset` class, wearing a directory's clothes.
+  cache = HERE / "rows" / f"rows-{name}-{which}.rows"
+  # UNKEYED IS NOT STALE, IT IS UNCLAIMED, and conflating them is what made this self-sealing.
+  # It was `if cache.exists() and not fresh:` THEN the key test, so a slot nobody had keyed
+  # returned STALE at the next line and NEVER REACHED `write_key` below -- the refusal denied
+  # the one path that could heal it, forever. A KEYED slot whose digest disagrees is stale and
+  # MUST refuse; an UNKEYED slot has no writer to disagree with, so it regenerates and keys.
+  k = keys.get((name, which))
+  if cache.exists() and not fresh and k is not None:
+    if k != digest(GENERATOR[which]):
+      return ("STALE", 0, None, set())   # KEYED and DISAGREES: served NOTHING, and `0` is "not counted"
     rows = [ln for ln in cache.read_text().splitlines() if ln.strip()]
     return ("CACHE", len(rows), ops_of(rows), set())
   try:
