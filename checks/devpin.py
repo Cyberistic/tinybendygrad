@@ -34,6 +34,7 @@ refusal you cannot test.
 """
 from __future__ import annotations
 import argparse
+import importlib.util
 import os
 import pathlib
 import re
@@ -140,6 +141,20 @@ def main() -> int:
     args = ap.parse_args()
 
     if args.plant is None:
+        # THE SUBJECT IS GUARDED BEFORE IT IS READ. `observed()` globs `D` and `reproduce()`
+        # reads a file inside it, and an absent directory makes both report "0 devices, 0 files"
+        # -- which is a CLEAN NUMBER OVER AN EMPTY POPULATION, the failure this gate exists to
+        # catch. `checks/runs-artifacts.py` LOADED BY PATH (`checks/sweep.py:101` does the same)
+        # answers ABSENT / EMPTY / STALE / FRESH in one vocabulary; 3 is REFUSED in this tree.
+        # `--plant` IS NOT GATED: it asserts the OPPOSITE outcome against this same instrument, so
+        # it is a self-test and not a measurement of the corpus.
+        spec = importlib.util.spec_from_file_location(
+            "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+        ra = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ra)
+        if code := ra.require(ra.GRAPH_D, root=str(ROOT), label="devpin",
+                              remedy=ra.REGENERATE):
+            return code
         ok, lines = verdict(args.pin)
         print("\n".join(lines))            # PRINT BEFORE EXIT -- see the module docstring
         return 0 if ok else 1

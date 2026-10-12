@@ -590,8 +590,31 @@ def main():
     unknown = set(over) - {"graphcmp", "gates"}
     if unknown:
         ap.error(f"unknown --dir key(s) {sorted(unknown)}; expected graphcmp or gates")
+    # THE SUBJECT IS GUARDED **BEFORE ANY WORK**, AND THAT IS THE WHOLE FIX. `checks/runs-artifacts.py`
+    # LOADED BY PATH (`checks/sweep.py:101` loads it the same way) answers ABSENT / EMPTY / STALE /
+    # FRESH in one vocabulary; 3 is REFUSED in this tree (`gates/gatekit.py:60`) and IT OUTRANKS
+    # FAIL.
+    #
+    # **MEASURED: THE GUARD WAS BELOW `registry()` AND `report()`, AND ON AN ABSENT CORPUS IT NEVER
+    # RAN.** `registry()` calls `differ.declared()`, which reaches `differ.py:110 corpus()` and
+    # loads `.agents/slop/graphcmp.py`; with the corpus absent the whole chain raised and the gate
+    # answered `rc=1` with a traceback, not `REFUSED`. **A GUARD PLACED AFTER THE WORK IT GUARDS IS
+    # A COMMENT.** Driving it (`control.py`) is what found this -- the reader passed `ARTIFACTS-STALE`
+    # on the live tree and would have failed only on a corpus that was gone.
+    spec = importlib.util.spec_from_file_location(
+        "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+    ra = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ra)
+    try:
+        prefix = str(Path(over.get("graphcmp") or "runs/graphcmp/D").resolve().relative_to(ROOT))
+    except ValueError:
+        prefix = over.get("graphcmp") or "runs/graphcmp/D"
+    if code := ra.require(prefix, root=str(ROOT), label="retention-check",
+                          remedy=ra.REGENERATE):
+        return code
     res = registry(over.get("graphcmp"), over.get("gates"))
-    return report(res)
+    red = report(res)
+    return red
 
 
 if __name__ == "__main__":

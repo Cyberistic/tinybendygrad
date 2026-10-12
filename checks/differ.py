@@ -30,6 +30,7 @@ nobody can check:
 """
 import argparse
 import hashlib
+import importlib.util
 import os
 import re
 import subprocess
@@ -1231,7 +1232,22 @@ def main():
               "Restore it from the commit that froze it, or re-freeze it deliberately and "
               "update ORACLE_PIN here -- do not delete the pin.", file=sys.stderr)
         return 3
-    return {"run": cmd_run, "repro": cmd_repro, "snap": lambda _: (snap(), 0)[1]}[a.cmd](a)
+    if a.cmd == "snap":
+        # `snap` READS the run that is already on disk, so it is guarded. `run` and `repro` are NOT:
+        # they WRITE that directory, so requiring them to find it fresh would be the remedy refusing
+        # to be the remedy -- `ARTIFACTS-STALE` would be answered by the one command that clears it.
+        # `checks/runs-artifacts.py` LOADED BY PATH (`checks/sweep.py:101` does the same) so there
+        # is one vocabulary for ABSENT / EMPTY / STALE / FRESH and no second copy of it.
+        spec = importlib.util.spec_from_file_location(
+            "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+        ra = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ra)
+        if code := ra.require(ra.GRAPH_D, root=str(ROOT), label="differ snap",
+                              remedy=ra.REGENERATE):
+            return code
+        snap()
+        return 0
+    return {"run": cmd_run, "repro": cmd_repro}[a.cmd](a)
 
 
 if __name__ == "__main__":

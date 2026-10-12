@@ -59,6 +59,7 @@ fabricated run whose three values MATCH the declaration and must exit 0, and
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import pathlib
 import re
@@ -89,7 +90,21 @@ def refuse(*why: str) -> int:
 
 def require(*paths: pathlib.Path) -> int:
     """0 if every input exists, else REFUSED naming each absent one. CALLED BEFORE THE READ, so the
-    read can never be the thing that discovers the absence -- which is the crash this closes."""
+    read can never be the thing that discovers the absence -- which is the crash this closes.
+
+    THE DIRECTORY IS GUARDED BEFORE THE FILES INSIDE IT, and the guard is
+    `checks/runs-artifacts.py` LOADED BY PATH (`checks/sweep.py:101` loads it the same way), so
+    ABSENT, PRESENT-BUT-EMPTY, STALE and FRESH are one vocabulary in one implementation instead of
+    four copies. Without it this function asks `p.exists()` about a FILE inside a directory that
+    may itself be gone, and reports `input absent: runs/graphcmp/D/D0-coverage-census.txt` -- a
+    true sentence about the wrong subject, and one that cannot tell absent from stale."""
+    spec = importlib.util.spec_from_file_location(
+        "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+    ra = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ra)
+    if code := ra.require(ra.GRAPH_D, root=str(ROOT), label="env-precond",
+                          remedy=ra.REGENERATE):
+        return code
     missing = [str(p) for p in paths if not p.exists()]
     return refuse(*(f"input absent: {m}" for m in missing)) if missing else 0
 

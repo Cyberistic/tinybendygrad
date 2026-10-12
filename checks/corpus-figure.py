@@ -192,9 +192,14 @@ def run_health(declared: int) -> tuple[bool, str]:
     because the two verdicts are computed here, side by side, and printed in ONE line.
     """
     summary = Path(__file__).resolve().parents[1] / "runs/graphcmp/D/D0-run-summary.txt"
+    # `main()` guards the SUBJECT before calling this, so by here the corpus is FRESH. The guard
+    # lives there and not here because `run_health` returns a BOOL: it has no channel on which to
+    # report "I could not look", and a refusal smuggled through a `False` is the defect the guard
+    # removes. The branch below is therefore reachable only for a corpus that vanished BETWEEN the
+    # two statements, and it says so in those words rather than blaming the pins.
     if not summary.exists():
-        return (False, "RUN HEALTH        : **NO RUN SUMMARY** -- there is no run to corroborate "
-                       "anything, so every pin is unknown rather than matched")
+        return (False, "RUN HEALTH        : **NO RUN SUMMARY** -- the corpus was FRESH at the guard "
+                       "in main() and is gone now, so every pin is unknown rather than matched")
     pins = differ_module().PINS
     got = dict(ln.split("=", 1) for ln in summary.read_text(errors="replace").splitlines() if "=" in ln)
     # `graphs` IS DERIVED, NOT PINNED. Every other pin is a fact about the PORT or the RUN that
@@ -278,6 +283,20 @@ def main() -> int:
     print("     IT IS **NOT** A MEASUREMENT OF THE PORT. `gc.build(gc.emit_py(g, None), \"py\")`")
     print("     BUILDS THE CPYTHON SIDE ONLY -- THE PORT IS NEVER INVOKED, SO A RUN IN WHICH")
     print("     `graphs-agree=0` CANNOT AND DOES NOT MOVE THIS NUMBER.")
+    # THE SUBJECT IS GUARDED BEFORE IT IS READ. `run_health` below already distinguishes a missing
+    # summary from a wrong one IN ITS TEXT, but it folded that into `health_ok=False`, and `main()`
+    # exited 1 -- so a caller reading `$?` was told THE PORT IS WRONG when the truth was THIS GATE
+    # CANNOT SEE. `checks/runs-artifacts.py` LOADED BY PATH (`checks/sweep.py:101` loads it the same
+    # way) answers ABSENT / EMPTY / STALE / FRESH in one vocabulary, and 3 is REFUSED everywhere in
+    # this tree (`gates/gatekit.py:60`). FRESH falls through to the real verdict.
+    spec = importlib.util.spec_from_file_location(
+        "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+    ra = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ra)
+    if code := ra.require(ra.GRAPH_D, root=str(ROOT), label="corpus-figure",
+                          remedy=ra.REGENERATE):
+        return code
+
     health_ok, health = run_health(len(gc.GRAPHS))
     print(health)
     print(f"per-graph SUM        : {per_graph_sum}   <- NOT the figure; it counts an op once "

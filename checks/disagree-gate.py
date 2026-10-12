@@ -41,6 +41,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import importlib.util
 import re
 import shutil
 import subprocess
@@ -468,20 +469,36 @@ def main() -> int:
   a = ap.parse_args()
   tree = a.tree if a.tree.is_absolute() else ROOT / a.tree
 
-  if not tree.is_dir():
-    print(f"FATAL: no run at {tree}.  `python checks/differ.py run` writes one.", file=sys.stderr)
-    return 2
-  if not NAMES.exists():
-    print(f"FATAL: {NAMES} is missing; the pin has no reader.", file=sys.stderr)
-    return 2
-
   lanes = {"pin": ("PIN", lambda: lane_pin(tree)),
            "citations": ("CITATIONS", lane_citations),
            "coverage": ("COVERAGE ARTEFACTS", lambda: lane_coverage(tree)),
            "plant": ("PLANT + DISARM", lambda: lane_plant(tree))}
+  selected = (list(lanes) if a.lane == "all" else [a.lane])
+
+  # THE SUBJECT IS GUARDED, AND ONLY FOR THE LANES THAT READ IT. `citations` takes no `tree` --
+  # it reads the PIN file -- so it is not gated on the run directory, and gating it would refuse a
+  # lane that measures something else. THIS REPLACED `if not tree.is_dir(): return 2`, and 2 IS
+  # NOT NEUTRAL HERE: exit 2 is USAGE in `checks/env-precond.py` and `checks/differ.py`, so a
+  # caller reading `$?` could not tell "you passed a bad --tree" from "the corpus was never run".
+  # ABSENT AND STALE ARE BOTH REFUSED (3) AND ARE DISTINGUISHED BY TOKEN, NOT BY EXIT.
+  if any(k != "citations" for k in selected):
+    spec = importlib.util.spec_from_file_location(
+      "runs_artifacts", str(ROOT / "checks/runs-artifacts.py"))
+    ra = importlib.util.module_from_spec(spec); spec.loader.exec_module(ra)
+    try:
+      prefix = str(tree.relative_to(ROOT))
+    except ValueError:
+      prefix = str(tree)
+    if code := ra.require(prefix, root=str(ROOT), label="disagree-gate",
+                          remedy=ra.REGENERATE):
+      return code
+
+  if not NAMES.exists():
+    print(f"FATAL: {NAMES} is missing; the pin has no reader.", file=sys.stderr)
+    return 2
   bad = 0
   refused = False
-  for key in (lanes if a.lane == "all" else (a.lane,)):
+  for key in selected:
     title, fn = lanes[key]
     fails = fn()
     refused = refused or any("[REFUSED]" in f for f in fails)

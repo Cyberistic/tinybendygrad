@@ -205,6 +205,20 @@ def plant() -> int:
 
 
 def main() -> int:
+    # THIS READER IS **NOT** GUARDED, AND THE REASON IS ITS SUBJECT. `declared_artifacts()` below
+    # names `runs/graphcmp/D` to build the EXEMPT name set from `differ.declared()`, and
+    # `live(...)` only `os.path.exists` each name; neither reads an artefact's CONTENT, so this
+    # file's verdict -- how many HARD `.txt` the project owns -- is INVARIANT under the set being
+    # absent, empty, stale or fresh. Absent is in fact the SAFE case: the names being exempted do
+    # not exist, so there is nothing to wrongly exempt. Gating it would make the `.txt` police
+    # refuse to police whenever the corpus went stale, which is backwards. So the state is
+    # REPORTED, on STDERR ONLY (stdout is what callers parse) and never charged to the exit.
+    spec = importlib.util.spec_from_file_location(
+        "runs_artifacts", os.path.join(str(ROOT), "checks/runs-artifacts.py"))
+    ra = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ra)
+    print(f"note: {ra.state(ra.GRAPH_D, root=str(ROOT))[1]}  (not charged to this gate's exit; "
+          f"see the module docstring)", file=sys.stderr)
     found = []
     for dirpath, dirnames, filenames in os.walk(ROOT):
         dirnames[:] = [d for d in dirnames if d not in SKIP]
