@@ -24,9 +24,19 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # CMPNE (`logical_not`'s CMPNE), with src[0] the OR and src[1] the CONST{True} the NOT tests
 # against.
 #
-# `src[0]` IS NOT A SHARED ROW. It is CAST here -- the port keeps `tn_logical_not`'s explicit
-# `cast(bool)` -- and OR in CPython, which folds the identity bool cast out. That difference
-# is recorded at `mixin/elementwise.bend`'s `isfinite` block, not asserted away here.
+# `src[0]` IS A SHARED ROW NOW, AND IT WAS NOT BEFORE. This block used to say "`src[0]` IS NOT A
+# SHARED ROW. It is CAST here -- the port keeps `tn_logical_not`'s explicit `cast(bool)` -- and OR
+# in CPython". BOTH HALVES WERE TRUE AND BOTH ARE NOW FALSE, because `tn_logical_not` reached the
+# FOLDING `D.cast_at` (`mixin/dtype.bend:342`) and the cast folds away on a bool input:
+#
+#   port    tn_isfinite=14 Ops.CMPNE/2 Ops.OR Ops.CONST
+#   cpython tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST
+#
+# `src[0]` is `OR` ON BOTH SIDES. The remaining 14-vs-15 is ONE MISSING CONST LEAF, not a cast: CPython's
+# graph holds BOTH `weakint 4` (kept by `self != self`) and `weakfloat 4.0` (reminted by
+# `_broadcasted`'s promote half in `self.eq(inf)`, `elementwise.py:29-31`), and the two hash-cons
+# apart. That is the `_broadcasted`/`remint` wall and it is NOT fixed here -- see
+# `gates/tn_graph_census-gate.py`'s one remaining pin, which records the reason.
 def mk_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}

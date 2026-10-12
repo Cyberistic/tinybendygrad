@@ -17,8 +17,13 @@ def row(nm: String, v: Bool) -> IO(Unit):
     case True{}: IO.print(String.concat([nm, "=1"]))
     case _: IO.print(String.concat([nm, "=0"]))
 
-# Build a CONST{CBool{True}} tensor and apply logical_not. The graph is
-# CAST(boolean) + CONST(True) + CMPNE, same shape as `tn_bitwise_not`.
+# Build a CONST{CBool{True}} tensor and apply logical_not. THE GRAPH IS CONST(True) + CMPNE, and
+# it USED TO BE DESCRIBED AS "CAST(boolean) + CONST(True) + CMPNE". The cast is GONE because
+# `tn_logical_not` reaches the FOLDING `D.cast_at` (`mixin/dtype.bend:342`) and CPython folds too:
+# `mixin/dtype.py:36` is `return self if self.dtype == (dt:=to_dtype(dtype)) else ...`, and
+# `logical_not` is `self.cast(dtypes.bool).ne(True)` (`elementwise.py:49`) -- so on a bool input the
+# CAST IS AN IDENTITY AND NEITHER LANE MINTS ONE. `gates/tn_bitwise_not.bend` is the row that
+# witnesses it (`bitnot_identity_cast_folded`).
 def mk_bool_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CBool{True{}})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}

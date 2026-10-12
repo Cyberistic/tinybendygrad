@@ -11,7 +11,9 @@
 # and `self * (-1)` (= `MUL(self, -1)`) on an arith input. The port splits the dispatch
 # on the fold of `tn_dtype` into `tn_neg.go`, which routes to `tn_logical_not` or
 # `tn_neg.arith`. Both arms are ported, and the bool arm is the SAME graph `tn_logical_not`
-# already gates (`CAST(bool) + CONST(True) + CMPNE`); the arith arm is `MUL(self, -1)`
+# already gates -- WHICH IS `CONST(True) + CMPNE`, NOT `CAST(bool) + CONST(True) + CMPNE`: the
+# identity bool cast FOLDS on both sides now that `tn_logical_not` reaches `D.cast_at`
+# (`mixin/dtype.bend:342`). The arith arm is `MUL(self, -1)`
 # with the `-1` literal as a `CInt{4294967295}` (the u32 two's-complement pair of `-1`).
 # The driver builds the two inputs and calls `tn_neg` on each; the rows inspect the result.
 

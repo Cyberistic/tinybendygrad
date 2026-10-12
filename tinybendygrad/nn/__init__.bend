@@ -247,8 +247,10 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # and THAT is what the port covers. `Tensor.bitwise_not` BOOL arm is ported
 # as `tn_bitwise_not`, gated at `gates/tn_bitwise_not-gate.py` 8/8
 # rows; `Tensor.logical_not` is ported as `tn_logical_not`,
-# gated at `gates/tn_logical_not-gate.py` 8/8 rows. The arith arms of `bitwise_not`
-# stay walled on the dtype fold + arith ops, named below.
+# gated at `gates/tn_logical_not-gate.py` 8/8 rows. THE ARITH ARMS OF `bitwise_not` ARE NOT
+# WALLED ANY MORE -- they are ported and gated, at `gates/tn_bitwise_not-gate.py` 7/7 rows.
+# `tn_bitwise_not` returns `Maybe<&2, Tensor>` and dispatches on `tn_dtype`; the row that
+# witnesses the SIGNED arm (`self ^ -1`, :157) is `bitnot_signed_takes_xor_arm`.
 # `Tensor.contiguous_backward`, `Tensor.trunc`, `Tensor.reciprocal`, and
 # `Tensor.threefry` are also ported (all one-liners in elementwise.py at :68,
 # :474, :460, :457), gated at
@@ -385,13 +387,20 @@ def nn_glorot(fan_in: F32, fan_out: F32) -> F32: F32.sqrt(F32.div(6.0, F32.add(f
 # the chain `tn_logical_not(tn_cmpne(...))`. All three gates are at
 # `gates/tn_binop2_cmp-gate.py`. `Tensor.__invert__` (:264, `self.bitwise_not()`)
 # is ported as `tn_dunder_invert`, one of the ONE-ARM
-# ports: `bitwise_not`'s BOOL arm IS `tn_logical_not` (gated 4/4); the arith
-# arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, :157) stay
-# walled on the dtype fold + arith ops (the dtype fold -- `self.dtype` is a
-# FOLD property and `tn_bitwise_not`'s arith arms are `None`). Returns
-# `Maybe<&2, Tensor>` and lets the caller decide; the port convention
-# (`tn_replace`, `tn_as_param`) is the same shape. Gated at
-# `gates/tn_dunder_invert-gate.py`. The broadcasting case for all
+# ports: `bitwise_not`'s BOOL arm IS `tn_logical_not`; the arith
+# arms (`self ^ dtype.max` for unsigned, `self ^ -1` for signed, :157) are
+# PORTED AND GATED, not walled. It returns `Maybe<&2, Tensor>` and lets the caller
+# decide; the port convention (`tn_replace`, `tn_as_param`) is the same shape.
+#
+# THIS PARAGRAPH WAS WRICE ON THREE COUNTS AND ALL THREE ARE CORRECTED HERE:
+# (1) "the arith arms ... stay walled" -- they are ported. (2) "gated 4/4" -- the gate
+# is `gates/tn_bitwise_not-gate.py` and it is 7 rows (it was 8, and one was `True{}`,
+# which asserted nothing; that row was REPLACED with one that can fail).
+# (3) IT CITED `gates/tn_dunder_invert-gate.py`, WHICH DOES NOT EXIST -- MEASURED:
+# `ls gates/tn_dunder_invert-gate.py` answers "No such file or directory". There is no
+# `__invert__` gate; `~t` is gated by `tn_bitwise_not`'s signed row and `tn_graph_census`'s
+# `tn_dunder_invert`. A CITATION TO A FILE THAT IS NOT THERE IS WORSE THAN NO CITATION,
+# because the next reader trusts it. The broadcasting case for all
 # `__lt__`/`__gt__`/`__ne__`/`__and__`/`__rand__`/`__or__`/`__ror__`/`__xor__`/
 # `__rxor__`/`maximum`/`__lshift__`/`__rlshift__`/`__rshift__`/`__rrshift__`/
 # `__pow__`/`__rpow__`/`__floordiv__`/`__rfloordiv__`/`__mod__`/`__rmod__`/
