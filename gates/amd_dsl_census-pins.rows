@@ -6,7 +6,7 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 114 DIVERGENCES of 1175 ROWS. Each block is a CLASS, and each
+# 96 DIVERGENCES of 1175 ROWS. Each block is a CLASS, and each
 # class says WHY the two sides differ. A pin without a reason is a
 # weakened instrument; a divergence without a pin is a silent one.
 #
@@ -14,25 +14,17 @@
 # `pin_drift_hold()` re-measures all three on every run.
 # HEAD blob of tinygrad/renderer/amd/dsl.py when these rows were taken: 6526706b
 
-# ALIGN_SHIFT -- 18 rows. SRsrcField._align is 4 and dsl.py:210/:211 shift by _align.bit_length()-1 = 2; dsl.bend's al_shift_of is align-1 = 3.
-afenc_sr_4	1	0
-afenc_sr_8	2	1
-afenc_sr_100	25	12
-afdec_sr_1	4,1	8,1
-afdec_sr_2	8,1	16,1
-afdec_sr_15	60,1	120,1
-afdec_sr_31	124,1	248,1
-afdec_sr_32	128,1	256,1
-afdec_sr_63	252,1	504,1
-afenc_sr2_4	1	0
-afenc_sr2_8	2	1
-afenc_sr2_100	25	12
-afdec_sr2_1	4,1	8,1
-afdec_sr2_2	8,1	16,1
-afdec_sr2_15	60,1	120,1
-afdec_sr2_31	124,1	248,1
-afdec_sr2_32	128,1	256,1
-afdec_sr2_63	252,1	504,1
+# ALIGN_SHIFT -- 0 ROWS. IT WAS 18 AND EVERY ONE IS DROPPED, NOT MOVED: `al_shift_of` read
+# `U32.sub(Fld.align(f), 1)`, so for `_align = 4` (`dsl.py:219 SRsrcField`) it answered 3 where
+# dsl.py:210/:211 shift by `_align.bit_length() - 1 = 2`, and every `afdec_sr_*` came out DOUBLE
+# (`afdec_sr_32` was 256,1 against CPython's 128,1). THE FILE ALREADY SAID SO -- the note at
+# dsl.bend:834 reads "whose shift is `_align.bit_length() - 1` ... NOT the alignment itself", and
+# `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4` at :252-253 ARE THE CORRECT CONSTANTS. THEY WERE DEAD:
+# `grep -c` answered 2, their own two definitions and no call site. THE THIRD INSTANCE OF THIS
+# FILE'S OWN RECORDED CLASS -- "a def nothing calls is invisible to every other check", the same
+# fault its mask defs had. IT IS A MASK-VERSUS-SHIFT CONFLATION AND `al_aligned` SHOWS WHY THE TWO
+# LOOK ALIKE: `U32.and(off, align - 1)` IS a mask and IS correct, and the same expression read as a
+# SHIFT is wrong. THE CONSTANTS ARE NOW CALLED AND THE 18 ROWS ARE EXACT.
 
 # MSG_TEXT -- 26 rows. both sides refuse; dsl.py:207/:209/:211 name the CLASS and format type(val).__name__, dsl.bend names the FIELD and the Ov kind.
 fixed_op7	REFUSE:FixedBitField does not accept values, got 4294967295	REFUSE:field 'op': value 4294967295 doesn't fit in 8 bits

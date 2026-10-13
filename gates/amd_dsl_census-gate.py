@@ -5,8 +5,8 @@ the port of `tinygrad/renderer/amd/dsl.py`.
     .venv/bin/python gates/amd_dsl_census-gate.py
     .venv/bin/python gates/amd_dsl_census-gate.py --refresh   # rewrites the pins file
 
-1175 ROWS (1174 census rows + `dsl-done=1`), THREE LANES, 1061 EXACT MATCHES AND
-114 DECLARED DIVERGENCES -- 11 CLASSES, AND 6 FINDINGS.
+1175 ROWS (1174 census rows + `dsl-done=1`), THREE LANES, 1079 EXACT MATCHES AND
+96 DECLARED DIVERGENCES -- 11 CLASSES, AND 6 FINDINGS.
 
 WHICH INSTRUMENT, AND WHY THIS LAYER NEEDS A DIFFERENT ONE.
 
@@ -58,22 +58,23 @@ structural rather than lucky: `dsl.py` builds no `UOp` at all, so there is no
 dtype on any value in the file and nothing that could cast. The class is named
 here so the 0 is a measurement rather than an absence.
 
-THE 114 DIVERGENCES, ELEVEN CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
+THE 96 DIVERGENCES, TEN CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
 
-  26 `MSG_TEXT` · 19 `MODMASK` · 18 `ALIGN_SHIFT` · 12 `HI_BIT` · 10
+  26 `MSG_TEXT` · 16 `MODMASK` · 12 `HI_BIT` · 10
   `ABSENT_OPERAND` · 10 `MOD_MERGE` · 9 `VDSTY_MSG` · 8 `SRC_WIDTH` · 3 `TO_BYTES`
   · 1 `SLICE_UNSIGNED` · 1 `WALK_IS_VALUES` = 117.
 
-  18 `ALIGN_SHIFT` -- `afenc_sr_*`, `afenc_sr2_*`, `afdec_sr_*`, `afdec_sr2_*`,
-      `afenc_ab_127`, `afdec_sb_31/32/63`. `SRsrcField._align = 4` (dsl.py:219)
-      and `AlignedSGPRField.encode`/`decode` shift by
-      `_align.bit_length() - 1` (dsl.py:210, :211) -- which is **2** for align 4.
-      `dsl.bend`'s `al_shift_of` is `Fld.align(f) - 1`, which is **3**.
-      MEASURED: `afenc_sr_4` CPython `1`, port `0`; `afenc_sr_100` CPython `25`,
-      port `12`; `afdec_sr_1` CPython `4,1`, port `8,1`. A `rsrc` register is
-      encoded at a QUARTER of its index. FINDING. `ab`/`sb` (`_align = 2`) agree,
-      because `2.bit_length() - 1 == 2 - 1`, which is why the two families sit
-      in one class and only the `_align = 4` half moves.
+  ~~18 `ALIGN_SHIFT`~~ **RETIRED: ALL 18 ROWS ARE NOW EXACT, AND THE CLASS IS REMOVED FROM
+      `CLASSES` RATHER THAN LEFT WITH ZERO ROWS.** `al_shift_of` read `Fld.align(f) - 1`, so for
+      `SRsrcField._align = 4` (dsl.py:219) it answered 3 where `AlignedSGPRField.encode`/`decode`
+      shift by `_align.bit_length() - 1 = 2` (dsl.py:210, :211), and every `afdec_sr_*` came out
+      DOUBLE. WAS: `afenc_sr_4` CPython `1` port `0`; `afenc_sr_100` CPython `25` port `12`;
+      `afdec_sr_1` CPython `4,1` port `8,1`. A `rsrc` register encoded at a QUARTER of its index.
+      `ab`/`sb` (`_align = 2`) agreed all along, because `2.bit_length() - 1 == 2 - 1`, which is
+      why one class held two families and only the `_align = 4` half moved. THE FIX CALLS
+      `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4`, WHICH WERE DEAD (`grep -c` answered 2 -- their own two
+      definitions) -- the third instance of this file's own recorded class, and the file's note at
+      `dsl.bend:834` had already stated the correct rule.
 
   26 `MSG_TEXT` -- `afenc_{ab,sb,sr,sr2}_{nonreg,hi,odd}`, `afenc_{sr,sr2}_{2,126,127}`,
       `afenc_{ab,sb}_{127}`, `vgencneg_*`, `vdstyencneg_128/255/0`, `fixed_op7`,
@@ -490,11 +491,11 @@ def divergences_hold() -> bool:
         return report("divergences_hold", [WHY])
     want, _ = oracle_rows()
     bad = []
-    if len(DIVERGES) != 113:
-        bad.append(f"{len(DIVERGES)} pinned divergences by NAME, expected 113 "
-                   f"(114 lines -- `modmerge_0_0_1` is printed twice; see FINDING A)")
-    if pin_lines() != 114:
-        bad.append(f"{pin_lines()} pins lines, the header says 114")
+    if len(DIVERGES) != 95:
+        bad.append(f"{len(DIVERGES)} pinned divergences by NAME, expected 95 "
+                   f"(96 lines -- `modmerge_0_0_1` is printed twice; see FINDING A)")
+    if pin_lines() != 96:
+        bad.append(f"{pin_lines()} pins lines, the header says 96")
     for row in DIVERGES:
         if want is not None and not any(l.split("=", 1)[0] == row for l in want):
             bad.append(f"pinned row {row!r} is not in the oracle's population")
@@ -553,7 +554,6 @@ CLASSES = [
     # `afenc_{sr,sr2}_(2|126|127)` are REFUSALS on this axis -- the value is not
     # an alignment shift at all -- so they belong to MSG_TEXT, and only the
     # encode/decode rows here are the shift itself.
-    ("ALIGN_SHIFT", r"^(afenc_(sr|sr2)_(0|4|8|100)$|afdec_(sr|sr2)_\d+$)"),
     ("MSG_TEXT", r"^(afenc_(ab|sb|sr|sr2)_(nonreg|hi|odd|127)$|afenc_(sr|sr2)_(2|126|127)$"
                  r"|vgencneg_|fixed_(op7|enc33|enc17)$)"),
     # `vdstyencneg_*` is `Res.msg(vdsty_encode(...))` -- the SAME call as the
@@ -578,8 +578,6 @@ CLASSES = [
     ("TO_BYTES", r"^to_bytes_"),
 ]
 CLASS_WHY = {
-    "ALIGN_SHIFT": "SRsrcField._align is 4 and dsl.py:210/:211 shift by "
-                   "_align.bit_length()-1 = 2; dsl.bend's al_shift_of is align-1 = 3.",
     "VDSTY_MSG": "vdstyencneg_* is `Res.msg(vdsty_encode(...))` -- the SAME call "
                  "as vdstyenc_* read through the refusal slot, which is the empty "
                  "string on every arm CPython encodes. Six rows are answers "

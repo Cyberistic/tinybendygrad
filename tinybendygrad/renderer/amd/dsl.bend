@@ -860,7 +860,28 @@ def vgpr_hbit(v: Ov, f: Fld) -> Bool: Bool.and(Ov.hi(v), U32.is_eq(bf_bits(f), V
 
 def vgpr_encode(+v: Ov, +f: Fld) -> Res: vgpr_encode.hi(vgpr_hbit(v, f), v, f)
 
-def al_shift_of(f: Fld) -> U32: U32.sub(Fld.align(f), 1)
+# THE SHIFT IS `_align.bit_length() - 1`, WHICH IS **NOT** THE ALIGNMENT AND NOT `align - 1`.
+# This def read `U32.sub(Fld.align(f), 1)`, so for `_align = 4` (`dsl.py:219 SRsrcField`) it
+# answered 3 where CPython answers `4.bit_length() - 1 = 2`. **THE FILE ALREADY SAID SO**:
+# the note at `:834` reads "whose shift is `_align.bit_length() - 1`, i.e. 1 for align 2 and
+# 2 for align 4 -- NOT the alignment itself", and `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4` at `:252-253`
+# ARE THE TWO CORRECT CONSTANTS. THEY WERE DEAD: `grep -c` answered 2, which is their own two
+# definitions and no call site. So the third instance of this file's own recorded class -- "a
+# def nothing calls is invisible to every other check", the same fault its mask defs had.
+#
+# IT IS A MASK-VERSUS-SHIFT CONFLATION, and `al_aligned` below shows why the two look alike:
+# `U32.and(off, align - 1)` IS a mask and IS correct. The same expression read as a SHIFT is
+# wrong, and one def used it for both. THE CONSTANTS ARE NOW CALLED.
+# `Bool.pick` IS THIS FILE'S OWN IDIOM FOR A COMPUTED CONDITION (`src_bit`, `mod_mask`), and
+# `match` refuses a call as well as an arithmetic result -- so the arm is a `pick`, not a match.
+def al_shift_of.two() -> U32: ALIGN_SHIFT_2()
+def al_shift_of.four() -> U32: ALIGN_SHIFT_4()
+def al_shift_of.is2(a: U32) -> Bool: U32.is_eq(a, 2)
+
+def al_shift_of.go(a: U32) -> U32:
+  Bool.pick(U32, al_shift_of.is2(a), al_shift_of.two(), al_shift_of.four())
+
+def al_shift_of(f: Fld) -> U32: al_shift_of.go(Fld.align(f))
 
 def al_encode.why(notsgpr: Bool, +v: Ov, +f: Fld) -> Res:
   match notsgpr:
