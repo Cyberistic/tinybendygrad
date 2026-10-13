@@ -2,6 +2,7 @@ path	reason	root_const	asserts_root	on_root
 checks/abi4_gate.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	0	1
 checks/abi_gate.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	0	1
 checks/al-verdict.py	py-main	-	0	1
+checks/bend	sh-dispatch	-	0	1
 checks/both-census.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/bounded-selftest.sh	sh-dispatch	-	1	1
 checks/bounded.py	py-main	__file__.parent	0	1
@@ -16,6 +17,7 @@ checks/coverage.py	py-main	__file__.parent	0	1
 checks/demo.sh	sh-selfref	-	1	1
 checks/devgate.py	py-main	-	0	1
 checks/devpin.py	py-main	-	0	1
+checks/diary-census.py	py-main	ROOT = Path(__file__).resolve().parents[1]	1	1
 checks/differ.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 checks/disagree-gate.py	py-main	HERE = Path(__file__).resolve() ROOT = HERE.parents[1]	0	1
 checks/disarm.sh	sh-selfref	-	1	1
@@ -33,11 +35,13 @@ checks/gen.sh	sh-selfref	-	1	1
 checks/git-index-guard.py	py-main	-	0	1
 checks/graphcmp-census-audit.py	py-main	-	0	1
 checks/hermetic-census.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
+checks/index-arm-gate.py	py-main	Path sys.path.insert(0, str(Path(__file__).resolve().parents[1]	0	1
 checks/jsfix_gate.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/lint_demo.sh	sh-selfref	__file__.parent	1	1
 checks/lintable-gate.sh	sh-selfref	-	1	1
 checks/llama.py	py-main	Path(__file__).parents[1]	0	1
 checks/marker-audit.py	py-main	-	0	1
+checks/nan_census.mjs	js-main	-	0	1
 checks/nl-gate-noguard.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/nl-gate.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/no-shrink.py	py-main	-	0	1
@@ -59,11 +63,13 @@ checks/run-all.sh	sh-selfref	__file__.parent	1	1
 checks/run-f64.sh	sh-selfref	Path(__file__).resolve().parents[1]	1	1
 checks/run-port-mm.sh	sh-selfref	-	1	1
 checks/run.py	py-main	-	0	1
+checks/runs-artifacts.py	py-main	-	0	1
 checks/sb-gate.sh	sh-selfref	-	0	1
 checks/serve.py	py-main	-	0	1
 checks/slop-declare.py	py-main	__file__.parent	0	1
 checks/substrate-check.sh	sh-dispatch	-	1	1
 checks/substrate-id.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	0	1
+checks/substrate-snapshot.py	py-main	ROOT = pathlib.Path(__file__).resolve().parents[1]	0	1
 checks/substrate.py	py-main	Path(__file__).resolve().parents[1]	0	1
 checks/sweep.py	py-main	-	0	1
 checks/sz.py	py-main	-	0	1
@@ -79,41 +85,61 @@ gates/bc-u32-gen.py	py-main	__file__.parent	0	1
 gates/bc-u32-oracle.py	py-main	-	0	1
 gates/bc_u32_table.py	py-main	-	0	1
 gates/beautiful-mnist-gate.py	py-main	-	0	1
+gates/cr_graph_census-gate.py	py-main	-	0	1
+gates/cstyle_render_census-gate.py	py-main	-	0	1
+gates/cstyle_render_census-oracle.py	py-main	-	0	1
+gates/decomp_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/ew-consts-gate.py	py-main	-	0	1
 gates/ew-consts-oracle.py	py-main	-	0	1
 gates/ew-explog-gate.py	py-main	-	0	1
 gates/ew-explog-oracle.py	py-main	-	0	1
+gates/ew_graph_census-gate.py	py-main	-	0	1
+gates/fold_graph_census-gate.py	py-main	-	0	1
+gates/fold_graph_census-oracle.py	py-main	-	0	1
 gates/gate-surface.py	py-main	__file__.parent	1	1
 gates/gates-pop.py	py-main	__file__.parent	0	1
 gates/gendirs.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
-gates/git-massdelete-gate.py	py-main	ROOT = Path(__file__).resolve().parents[3]	0	0
+gates/git-massdelete-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/gr_graph_census-gate.py	py-main	-	0	1
 gates/i64-shl-gate.py	py-main	-	0	1
 gates/i64-shl-oracle.py	py-main	-	0	1
 gates/i64-shr-gate.py	py-main	-	0	1
 gates/i64-shr-oracle.py	py-main	-	0	1
 gates/indexread-gate.py	py-main	-	0	1
+gates/md_graph_census-gate.py	py-main	-	0	1
 gates/mixin-op-gate.py	py-main	-	0	1
+gates/mo_graph_census-gate.py	py-main	-	0	1
 gates/msgdiff-gate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/mx_graph_census-gate.py	py-main	-	0	1
+gates/op_graph_census-gate.py	py-main	-	0	1
 gates/ops-core-gate.py	py-main	-	0	1
 gates/ops-core-oracle.py	py-main	-	0	1
+gates/rd_graph_census-gate.py	py-main	-	0	1
+gates/realize_graph_census-gate.py	py-main	__file__.parent	0	1
+gates/realize_graph_census-oracle.py	py-main	-	0	1
 gates/render_val_s-gate.py	py-main	-	0	1
 gates/replace-gate.py	py-main	-	0	1
 gates/retention-check.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
+gates/rng_graph_census-gate.py	py-main	-	0	1
+gates/rng_graph_census-oracle.py	py-main	-	0	1
 gates/tn_add_sub-gate.py	py-main	-	0	1
 gates/tn_and_or_xor-gate.py	py-main	-	0	1
 gates/tn_binop2_cmp-gate.py	py-main	-	0	1
 gates/tn_binop_arena-gate.py	py-main	-	0	1
+gates/tn_binop_sweep-gate.py	py-main	-	0	1
 gates/tn_bitwise_not-gate.py	py-main	-	0	1
 gates/tn_ceil_floor-gate.py	py-main	-	0	1
 gates/tn_contiguous_backward-gate.py	py-main	-	0	1
 gates/tn_detach-gate.py	py-main	-	0	1
 gates/tn_dunder_neg-gate.py	py-main	-	0	1
 gates/tn_fdiv_mod-gate.py	py-main	-	0	1
+gates/tn_graph_census-gate.py	py-main	-	0	1
 gates/tn_isfinite-gate.py	py-main	-	0	1
 gates/tn_isnan-gate.py	py-main	-	0	1
 gates/tn_logical_not-gate.py	py-main	-	0	1
 gates/tn_lshift_rshift-gate.py	py-main	-	0	1
 gates/tn_maximum-gate.py	py-main	-	0	1
+gates/tn_minimum-gate.py	py-main	__file__.parent	0	1
 gates/tn_mul-gate.py	py-main	-	0	1
 gates/tn_nary_arena-gate.py	py-main	-	0	1
 gates/tn_neg-gate.py	py-main	-	0	1
