@@ -976,7 +976,30 @@ type Vf is Data:
 # DEAD, and the M29 mutations measured exactly that -- three edits to constants
 # nothing called moved nothing, which is `schedule/indexing.bend`'s "a def
 # nothing calls is invisible to every other check" reproduced.
-def src_bit.vdst(rest: U32) -> U32: Bool.pick(U32, String.eq("vdst", "vdst"), MOD_VDST_BIT(), rest)
+# `.vdst` IS THE FOURTH AND LAST ARM OF dsl.py:313-321:
+#     for name, bit in [('src0', 0), ('src1', 1), ('src2', 2)]:
+#       if name in vals and isinstance(vals[name], Reg): ...
+#     if 'vdst' in vals and isinstance(vals['vdst'], Reg) and vals['vdst'].hi:
+#       opsel_bits |= (1 << 3)
+#
+# ONE NAME, BIT 3. IT IS NOT `_canonical_name` (dsl.py:266), WHICH IS A DIFFERENT FUNCTION
+# AND MENTIONS `('vdst', 'sdst', 'sdata')` -- an earlier reading of this reached for THAT one
+# and answered 8 for `sdst` where CPython answers 0, and the census caught the over-correction
+# immediately. THE FIX IS THE SINGLE-NAME TEST.
+#
+# IT READ `String.eq("vdst", "vdst")` -- A LITERAL COMPARED WITH ITSELF, WHICH IS ALWAYS TRUE.
+# `src_bit(name)` is a CHAIN of `Bool.pick`s accumulating OR'd mask bits and `.vdst` is the
+# INNERMOST, so EVERY name took this arm: `sdst`, `op` and `nosuch` all answered 8 where
+# CPython answers 0. MEASURED on the census, and the three pins are those three names.
+#
+# THE DEF WAS BORN WITH IT (`git log -S` finds the tautology in the FIRST commit introducing
+# this def), so it is not a regression. The note above explains the MISSING PARAMETER: the
+# three mask defs were DEAD -- "three edits to constants nothing called moved nothing" -- and
+# `vdst` took no `name` because its own caller never had one to pass. THE PARAM THAT WOULD HAVE
+# MADE THE TEST MEANINGFUL IS THE PARAM THAT WENT AWAY, AND A TEST THAT DOES NOT READ ITS
+# INPUT IS NOT A TEST. `.s0/.s1/.s2` kept theirs, which is why only this arm is a tautology.
+def src_bit.vdst(name: String, rest: U32) -> U32:
+  Bool.pick(U32, String.eq(name, "vdst"), MOD_VDST_BIT(), rest)
 
 def src_bit.s2(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "src2"), MOD_SRC2_BIT(), rest)
 
@@ -987,7 +1010,7 @@ def src_bit.s1(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "
 def src_bit.s0(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "src0"), MOD_SRC0_BIT(), rest)
 
 def src_bit(+name: String) -> U32:
-  src_bit.s2(name, src_bit.s1(name, src_bit.s0(name, src_bit.vdst(0))))
+  src_bit.s2(name, src_bit.s1(name, src_bit.s0(name, src_bit.vdst(name, 0))))
 
 def mod_mask.pick.go(hit: Bool, +bit: U32, +acc: U32) -> U32:
   match hit:
