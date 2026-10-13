@@ -300,78 +300,30 @@ def ew_ufix(+t: T.Tensor, +e: Ew) -> T.Tensor:
   ew_ufix.at(ew_is_t(e), t, e)
 
 # ===========================================================================
-# `remint` -- elementwise.py:12.
-#     return u.ccast(dt) if u.op is Ops.CONST else u.replace(src=(remint(u.src[0], dt),)+u.src[1:])
-# It recurses on `u.src[0]` and it GROWS the arena, so it is one self-recursive def
-# with the FUEL FIRST and it threads `+O.Arena`. `ew_remint.put` is a leaf, so the
-# self-call can be an ARGUMENT of a `case` arm and there is no mutual recursion --
-# which is the only way Bend can express `a.alu(op, f(b))` at all.
+# `remint` -- elementwise.py:12. IT MOVED DOWN TO `uop/weak.bend` AS `W.wk_remint`,
+# and this is the ONE-LINE FORWARDER left behind. The move was forced and it is
+# MEASURED: `tensor.bend`'s `tn_isfinite` needs `remint` -- CPython's
+# `self.eq(inf)` runs `_broadcasted`'s `promote` (elementwise.py:29-31) whose
+# weak-CONST arm IS `remint`, so the eq halves remint `self` to weakfloat while
+# `self != self` keeps it weakint, the two hash-cons APART, and the graph holds
+# `CONST weakfloat 4.0` AND `CONST weakint 4` (15 nodes, five CONST leaves, in
+# CPython) where one reused const is 14. THIS FILE IMPORTS `tensor.bend`, so a
+# `remint` here was unreachable FROM `tensor.bend`. `uop/weak.bend` is the lowest
+# module that can hold it: `wk_dt_const`, `wk_const_of` and `replace_in` are all
+# there, and `helpers.bend` / `LAWS/spec.bend` / `uop/ops.bend` / `uop/fold.bend`
+# are all below `weak.bend`, which imports every one of them.
+#
+# THE NAME STAYS BECAUSE `mixin/op.bend:468` CALLS `E.ew_remint`, and that file
+# is not this move's to rename. It is the ONLY external call site:
+# `grep -rn 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'`
+# over `tinybendygrad/` and `gates/` names nothing else outside this block --
+# the `ew_src0_rev`/`ew_src0_fwd` strings below are ROW LABELS of `ew_opname_src`
+# (an unrelated src-order probe) and `gates/ew-explog-gate.py:37`'s
+# `ew_const_bare` is prose.
 # ===========================================================================
 
-def ew_const_val(arg: O.Arg) -> O.Const:
-  match arg:
-    case O.APy{v}: v
-    case _: O.CInvalid{}
-
-# ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
-# (bool/weakint/weakfloat): bare there, the pair everywhere else". So a CONST
-# rebuilt at a weak dtype or at bool is ONE node, and everywhere else it is a CAST
-# over a CONST. That is the whole difference between `UOp.const(v, dt)` here and in
-# CPython, and it is why `ew_promo_remint` prints three nodes and not four.
-def ew_const_bare(dt: S.Dt) -> Bool:
-  match dt:
-    case S.Dt{pri, bits, S.CWeakInt{}, nm}: True{}
-    case S.Dt{pri, bits, S.CWeakFloat{}, nm}: True{}
-    case S.Dt{pri, bits, S.CBool{}, nm}: True{}
-    case _: False{}
-
-def ew_ccast.go(bare: Bool, +dt: S.Dt, +made: O.Found) -> O.Found:
-  match bare:
-    case True{}: made
-    case False{}: O.UOp.new(O.Found.ar(made), O.OpsCAST{}, [O.Found.i(made)], O.ADt{dt}, O.TNone{})
-
-# `UOp.const(val, dt)` -- ops.py:629-635. `uop/weak.bend`'s `wk_const_at` is these
-# same two nodes, but it builds in `F.Folded.ar(fx)`, and this walk has GROWN the
-# arena, so the CAST would name an index the caller's arena does not have. The
-# value truncation is `W.wk_dt_const` and `wk_const_of` is weak.bend's own dead
-# default; only the two `UOp.new` calls are spelled here, for the arena's sake.
-def ew_ccast_at(+ar: O.Arena, u: U32, +dt: S.Dt) -> O.Found:
-  v = W.wk_const_of(W.wk_dt_const(dt, ew_const_val(O.Arena.arg(ar, u))))
-  ew_ccast.go(ew_const_bare(dt), dt, O.UOp.new(ar, O.OpsCONST{}, Nil{}, O.APy{v}, O.TNone{}))
-
-def ew_src0(+ar: O.Arena, +u: U32) -> U32:
-  O.Arena.src0(ar, u)
-
-def ew_is_c0(+ar: O.Arena, u: U32) -> Bool:
-  O.eq_op(O.Arena.op(ar, u), O.OpsCONST{})
-
-# `u.replace(src=(...)+u.src[1:])`. `uop/weak.bend`'s `replace_in` IS `UOp.replace` --
-# it is the hash-consing constructor read straight off the arena. The tail is
-# `O.Arena.src_from(ar, u, 1)`, NOT `src_to`: `src_to` keeps the first `k` and
-# `src_from` drops the first `k`, so `src_to(_, 1)` is the WHOLE list for a one-src
-# node and the replacement silently gains a src. Measured -- `DETACH` came out with
-# arity 2 and two CONSTs where CPython has arity 1 and one. The head goes back IN
-# FRONT, which is `List.append(&2, U32, [head], tail)`; the other order compiles and
-# silently relocates it to the end.
-#
-# AND THE STORE IS `child`'s, NOT `ar`'s. The recursive call that produced `child`
-# may have minted a CONST one step deeper, so `child`'s index is valid only in the
-# arena IT grew; handing `replace_in` the pre-recursion `ar` names an index one past
-# its end. Measured on `ew_remint_recurse`, which printed `1 BUFFER/0` -- a one-node
-# graph, with the arity still right. Same rule as `ew_of`: the arena comes from
-# whatever LAST built.
-def ew_remint.put(+child: O.Found, +ar: O.Arena, +u: U32) -> O.Found:
-  +cr = O.Found.ar(child)
-  W.replace_in(cr, u, List.append(&2, U32, [O.Found.i(child)], O.Arena.src_from(ar, u, 1)))
-
-def ew_remint.go(fuel: Nat, isc: Bool, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
-  match fuel isc:
-    case 0n _        : O.Found{ar, u}
-    case 1n+p True{} : ew_ccast_at(ar, u, dt)
-    case 1n+p False{}: ew_remint.put(ew_remint.go(p, ew_is_c0(ar, ew_src0(ar, u)), ar, ew_src0(ar, u), dt), ar, u)
-
 def ew_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
-  ew_remint.go(fuel, ew_is_c0(ar, u), ar, u, dt)
+  W.wk_remint(fuel, ar, u, dt)
 
 # ===========================================================================
 # `promote` -- elementwise.py:29-33, the inner closure of `_broadcasted`.

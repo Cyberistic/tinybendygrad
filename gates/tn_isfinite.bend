@@ -29,14 +29,21 @@ def row(nm: String, v: Bool) -> IO(Unit):
 # in CPython". BOTH HALVES WERE TRUE AND BOTH ARE NOW FALSE, because `tn_logical_not` reached the
 # FOLDING `D.cast_at` (`mixin/dtype.bend:342`) and the cast folds away on a bool input:
 #
-#   port    tn_isfinite=14 Ops.CMPNE/2 Ops.OR Ops.CONST
+#   port    tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST
 #   cpython tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST
 #
-# `src[0]` is `OR` ON BOTH SIDES. The remaining 14-vs-15 is ONE MISSING CONST LEAF, not a cast: CPython's
-# graph holds BOTH `weakint 4` (kept by `self != self`) and `weakfloat 4.0` (reminted by
-# `_broadcasted`'s promote half in `self.eq(inf)`, `elementwise.py:29-31`), and the two hash-cons
-# apart. That is the `_broadcasted`/`remint` wall and it is NOT fixed here -- see
-# `gates/tn_graph_census-gate.py`'s one remaining pin, which records the reason.
+# `src[0]` is `OR` ON BOTH SIDES AND THE COUNTS AGREE. The 14-vs-15 this block used to record was
+# ONE MISSING CONST LEAF, not a cast: CPython's graph holds BOTH `weakint 4` (kept by
+# `self != self`) and `weakfloat 4.0` (reminted by `_broadcasted`'s promote half in
+# `self.eq(inf)`, `elementwise.py:29-31`), and the two hash-cons apart. That was the
+# `_broadcasted`/`remint` import cycle -- `remint` was `ew_remint` in `mixin/elementwise.bend`,
+# which IMPORTS `tensor.bend` -- and it is CLOSED: `remint` is `wk_remint` in `uop/weak.bend`
+# and `tensor.bend`'s `tn_isfinite.promote` is `_broadcasted`'s promote. Note WHAT THESE SIX
+# ROWS DO NOT SEE, since the fix touched a node they never read: the full 15-node dump is
+# `.agents/slop/tnisf/dump2.bend`, and it is the only thing that caught the SECOND defect this
+# move also closed (`isinf_part` compared the positive arm's bool MUL against `-inf`, which is
+# `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)` -- one node, wrong srcs, right
+# count, invisible to every row here).
 def mk_tensor() -> T.Tensor:
   +c = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
   t : T.Tensor = T.Tensor{O.Found.ar(c), O.Found.i(c), True{}, 0}

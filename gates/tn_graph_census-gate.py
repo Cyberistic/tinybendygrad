@@ -3,7 +3,7 @@
 
     .venv/bin/python gates/tn_graph_census-gate.py
 
-51 ROWS, THREE LANES, ONE DECLARED DIVERGENCE. `gates/tn_binop_sweep.bend` covers the
+51 ROWS, THREE LANES, ZERO DECLARED DIVERGENCES. `gates/tn_binop_sweep.bend` covers the
 seventeen binops; `gates/tn_nary_arena.bend` covers the three-operand node. This covers the REST
 of the ported surface in one artifact -- the unary ops, the compositions, THE ELEVEN REVERSE
 ARMS THAT HAVE A CPYTHON COUNTERPART, and THE THREE `Maybe`-RETURNING DUNDERS (`__ge__`,
@@ -20,9 +20,10 @@ are all clean now.
 WHAT IT ASSERTS THAT NEEDS ONE. The op sequence itself, against CPython's graph for the method
 each port mirrors. **FIFTY OF THE FIFTY-ONE ROWS ARE BYTE-IDENTICAL TO CPYTHON.** One is not.
 
-`tn_isfinite` USED TO be five of six rows wrong for the bool `CAST` and is now ONE node SHORT,
-which is a DIFFERENT divergence and not a smaller one. Those five were the identity bool
-`CAST`: `logical_not` is
+`tn_isfinite` USED TO BE WRONG TWICE, AND BOTH TIMES A PIN HID A DIFFERENT DEFECT. First it
+was five of six rows wrong for the bool `CAST`; that is fixed. Then it was ONE node SHORT,
+which is a DIFFERENT divergence and not a smaller one, and it stood until the `remint` move
+below. The `CAST` half: `logical_not` is
 `self.cast(dtypes.bool).ne(True)` (elementwise.py:49), `cast` is `self if self.dtype ==
 (dt:=to_dtype(dtype)) else ...alu(Ops.CAST, arg=dt)` (mixin/dtype.py:38) -- IT FOLDS on an
 identity cast -- and the port built it with `O.UOp.cast`, which mints a node UNCONDITIONALLY
@@ -34,18 +35,24 @@ non-bool input it is `self ^ -1`, so the port's bool-only shape was wrong on top
 Both are fixed in `tinybendygrad/tensor.bend`: `tn_logical_not` now folds its cast through
 `D.cast_at`, and `tn_bitwise_not` dispatches on `tn_dtype`.
 
-THE ONE ROW STILL DIVERGING, AND IT IS NOT THE CAST. `tn_isfinite` is 14 where CPython is
-15, and the missing node is a **CONST leaf**, not a CAST: CPython's `self` is TWO distinct
-uops in one graph. `_broadcasted`'s promote half is `return t if t.dtype ==
-weak_dtype(out_dtype) else t._wrap_uop(remint(t._uop, dt))` (elementwise.py:29-31) -- "keep
-weak CONST weak, might lift weakint -> weakfloat" -- so `self.eq(inf)` REMINTS the weakint
-`CONST(4)` to a weakfloat `ConstFloat(4.0)` and `self != self` keeps the weakint one, and the
-two hash-cons to different nodes. MEASURED, `.venv/bin/python` on `Tensor(UOp(Ops.CONST,
-arg=4)).isfinite()`: the graph holds `CONST weakfloat 4.0` AND `CONST weakint 4`. The port's
-`tn_isfinite` has ONE `CInt{4}` and reuses it for both halves. `remint` IS PORTED, as
-`ew_remint` (`mixin/elementwise.bend:373`) -- and `mixin/elementwise.bend` IMPORTS
-`tensor.bend`, so `tensor.bend` cannot call it without an import cycle. That is the wall, it
-is named, and closing it means moving `remint` down to a module both can see.
+THE CONST-LEAF HALF IS NOW CLOSED, AND IT WAS AN IMPORT CYCLE RATHER THAN A DECISION.
+CPython's `self` is TWO distinct uops in one graph. `_broadcasted`'s promote half is
+`return t if t.dtype == weak_dtype(out_dtype) else t._wrap_uop(remint(t._uop, dt))`
+(elementwise.py:29-31) -- "keep weak CONST weak, might lift weakint -> weakfloat" -- so
+`self.eq(inf)` REMINTS the weakint `CONST(4)` to a weakfloat `ConstFloat(4.0)` and
+`self != self` keeps the weakint one, and the two hash-cons to different nodes. MEASURED,
+`.venv/bin/python` on `Tensor(UOp(Ops.CONST, src=(), arg=4)).isfinite()`: 15 nodes and FIVE
+distinct CONST leaves, `weakint 4 | bool True | weakfloat 4.0 | inf | -inf`. The port had
+ONE `CInt{4}` reused for both halves and was 14. `remint` WAS PORTED, as `ew_remint` in
+`mixin/elementwise.bend` -- and that file IMPORTS `tensor.bend`, so `tensor.bend` could not
+call it. It is now `wk_remint` in `tinybendygrad/uop/weak.bend`, which is the lowest module
+that can hold it (`wk_dt_const`, `wk_const_of` and `replace_in` are all there, and
+`helpers.bend` / `LAWS/spec.bend` / `uop/ops.bend` / `uop/fold.bend` are all below `weak.bend`,
+which imports every one of them). `mixin/elementwise.bend` keeps a one-line forwarder because
+`mixin/op.bend:468` calls `E.ew_remint`. `tn_isfinite.promote` is `_broadcasted`'s promote for
+`self` ALONE against the weakfloat `inf`, and `tn_isfinite.isinf_part` now compares BOTH eq
+halves against the promoted `self` -- the old spelling compared the positive arm's bool MUL
+against `-inf`, which was `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)`.
 
 A GRAPH CAN BE WRONG WITHOUT A NOOP, WHICH IS WHY THE SEQUENCES ARE PRINTED AND NOT JUST THE
 VERDICT -- AND `tn_isfinite` IS THE ROW THAT PROVED IT. `Rng.sig` prints the toposort COUNT,
@@ -53,7 +60,12 @@ the TOP op and the TOP's srcs, so `17 Ops.CMPNE/2 Ops.CAST Ops.CONST` read as "o
 CAST" was a claim about three slots and was wrong by TWO nodes net: three extra CASTs and one
 MISSING CONST, which cancelled to +2 and hid each other for however long the pin stood. The
 missing CONST was in the port all along and nothing could see it behind a CAST that was also
-missing. THE COUNT IS THE HONEST COLUMN; THE PREFIX IS NOT.
+missing. THE COUNT IS THE HONEST COLUMN; THE PREFIX IS NOT. **AND THE COUNT IS NOT THE WHOLE
+TRUTH EITHER**: a node four levels down can be wrong at the same count, which is what the
+`isinf_part` `CMPNE(MUL, CONST)` arm was -- one node, wrong srcs, invisible to every row here
+because every row reads the TOP node or the TOP's srcs. The full dump is at
+`.agents/slop/tnisf/dump2.bend`, and its 15 rows now read in CPython's order with CPython's
+five CONST leaves.
 
 `tn_ceil` computed `b + 4` for a `CInt{4}` input through a LEGAL index and showed no
 bottom at all; only the value rows in `gates/tn_ceil_floor.bend` caught it.
@@ -120,29 +132,28 @@ ROWS = (
 )
 
 # (CPython's line, the port's line), pinned on both sides.
-# ONE DIVERGENCE, and it is NOT the bool CAST that six rows used to carry: those six are
-# fixed and their pins are gone. `tn_isfinite` is the port missing ONE `CONST` leaf, because
-# `_broadcasted`'s promote half REMINTS the weakint `self` to a weakfloat for the `eq(+/-inf)`
-# halves while `self != self` keeps the weakint one, and CPython therefore holds two nodes
-# where the port holds one. See the module docstring; `remint` is ported but it is in
-# `mixin/elementwise.bend`, which imports `tensor.bend`.
-DIVERGES = {
-    "tn_isfinite": ("tn_isfinite=15 Ops.CMPNE/2 Ops.OR Ops.CONST", "tn_isfinite=14 Ops.CMPNE/2 Ops.OR Ops.CONST"),
-}
+# NO DIVERGENCES. The last one -- `tn_isfinite`, the port missing ONE `CONST` leaf -- is
+# GONE, and the gate says so by having nothing to exclude. MEASURED, both directions: with
+# this pair STILL HERE and the port already fixed the gate answers
+#   rc=1  tn_graph_census-gate: FAIL
+#   bd's tn_isfinite is not 'tn_isfinite=14 Ops.CMPNE/2 Ops.OR Ops.CONST' -- if the
+#   divergence is fixed, drop it from DIVERGES; if it moved, update the pin
+# and with it dropped, rc=0 on all 51 rows in all three lanes. The port's row is now
+# byte-identical to CPython's `15 Ops.CMPNE/2 Ops.OR Ops.CONST`.
+DIVERGES = {}
 
 GATE = Gate(
     "tn_graph_census-gate",
     bend="tn_graph_census.bend",
     oracle="tn_graph_census-oracle.py",
     rows=len(ROWS),
-    compared=len(ROWS) - len(DIVERGES),
     diverges=DIVERGES,
     pins=[(lane, r) for lane in ("py", "bd", "bn") for r in ROWS],
 )
 
 if __name__ == "__main__":
-    sys.exit(main(GATE, "tn_graph_census-gate: 51 rows, 3 lanes, 1 DECLARED divergence -- "
-                        "every ported tn_* has NO NOOP BOTTOM and 50 op sequences match CPython's "
-                        "byte-for-byte; tn_isfinite carries the ONE missing CONST leaf, which is "
-                        "the weakint->weakfloat remint of `self` that `_broadcasted` does and "
-                        "tensor.bend cannot call"))
+    sys.exit(main(GATE, "tn_graph_census-gate: 51 rows, 3 lanes, ZERO declared divergences -- "
+                        "every ported tn_* has NO NOOP BOTTOM and ALL 51 op sequences match "
+                        "CPython's byte-for-byte, tn_isfinite included: its weakint `self` is now "
+                        "REHASHED to weakfloat by `_broadcasted`'s promote half, which `remint` "
+                        "does and which lives in uop/weak.bend so tensor.bend can call it"))

@@ -637,6 +637,107 @@ def wk_ccast.of(isconst: Bool, +fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
 def wk_ccast(+fx: F.Folded, +self: U32, +dt: S.Dt) -> O.Found:
   wk_ccast.of(O.eq_op(O.Arena.op(F.Folded.ar(fx), self), O.OpsCONST{}), fx, self, dt)
 
+# ===========================================================================
+# `remint` -- elementwise.py:12.
+#     return u.ccast(dt) if u.op is Ops.CONST else u.replace(src=(remint(u.src[0], dt),)+u.src[1:])
+#
+# WHY IT LIVES HERE AND NOT IN `mixin/elementwise.bend`. `tensor.bend` NEEDS it, and that is
+# not a preference. CPython's `self.eq(inf)` runs `_broadcasted`'s `promote`
+# (elementwise.py:29-31), whose weak-CONST arm IS `remint` -- "keep weak CONST weak, might
+# lift weakint -> weakfloat". So `self.eq(+inf)` REMINTS `self` and `self != self` does not,
+# the two hash-cons APART, and the graph holds `CONST weakfloat 4.0` AND `CONST weakint 4`.
+# MEASURED, `.venv/bin/python` on `Tensor(UOp(Ops.CONST, arg=4)).isfinite()`: 15 nodes, five
+# CONST leaves. A port that reuses one `CInt{4}` for both halves is 14. `mixin/elementwise.bend`
+# IMPORTS `tensor.bend`, so a `remint` there was unreachable FROM `tensor.bend` -- an import
+# cycle, not a decision.
+#
+# AND THIS IS THE LOWEST MODULE THAT CAN HOLD IT, which is a measurement and not a taste:
+# `wk_dt_const`, `wk_const_of` and `replace_in` are the three things it needs and all three
+# are here; `helpers.bend`, `LAWS/spec.bend`, `uop/ops.bend` and `uop/fold.bend` are all
+# BELOW `weak.bend` in the import order (`weak.bend` imports every one of them), so none of
+# them can see `wk_dt_const` without re-introducing the cycle this move removes. The graph
+# `wk_remint -> {wk_dt_const, wk_const_of, replace_in} -> {uop/ops, LAWS/spec}` has no other
+# sink.
+#
+# `W.wk_remint` IS CALLED BY `mixin/elementwise.bend` (`ew_promote.b`) AND BY `tensor.bend`
+# (`tn_isfinite.promote`), and `mixin/op.bend:468` reaches it as `E.ew_remint` -- the ONE-LINE
+# FORWARDER left at the old name is deliberate: it is the only external call site of the six
+# defs below, and renaming it would have meant editing a file this move does not otherwise
+# touch. MEASURED with `grep -rn 'ew_remint|ew_ccast|ew_const_bare|ew_const_val|ew_src0|ew_is_c0'`
+# over `tinybendygrad/` and `gates/`: `ew_remint` at `mixin/op.bend:468` and at
+# `mixin/elementwise.bend`'s own `ew_promote.b`, and NOTHING for the other five. The
+# `ew_src0_rev`/`ew_src0_fwd` names in `mixin/elementwise.bend` are ROW LABELS of an unrelated
+# `ew_opname_src` probe, `gates/ew_graph_census.bend` names `ew_remint` only in prose, and
+# `gates/ew-explog-gate.py:37`'s `ew_const_bare` is prose.
+# ===========================================================================
+
+# ops.py:637 says it: ".cast folds away at exactly the dtypes a CONST derives
+# (bool/weakint/weakfloat): bare there, the pair everywhere else". So a CONST rebuilt at a
+# weak dtype or at bool is ONE node, and everywhere else it is a CAST over a CONST. That is
+# the whole difference between `UOp.const(v, dt)` here and in CPython, and it is why a remint
+# prints one node and not two. IT IS NOT `wk_cast_at`'s fold: that one compares the node's
+# own DERIVED dtype against `dt`, so it would mint a CAST for `remint(CONST weakfloat 4.0,
+# weakint)` where Python builds a bare `CONST weakint 4`. Measured difference, so the
+# predicate is spelled here rather than borrowed.
+def wk_remint.folds(dt: S.Dt) -> Bool:
+  match dt:
+    case S.Dt{pri, bits, S.CWeakInt{}, nm}: True{}
+    case S.Dt{pri, bits, S.CWeakFloat{}, nm}: True{}
+    case S.Dt{pri, bits, S.CBool{}, nm}: True{}
+    case _: False{}
+
+def wk_remint.mkconst(bare: Bool, +dt: S.Dt, +made: O.Found) -> O.Found:
+  match bare:
+    case True{}: made
+    case False{}: O.UOp.new(O.Found.ar(made), O.OpsCAST{}, [O.Found.i(made)], O.ADt{dt}, O.TNone{})
+
+# `UOp.const(val, dt)` -- ops.py:629-635. `wk_bare_const` is the same value truncation and
+# the same two nodes, but it builds in the arena the CALLER'S `Folded` names rather than the
+# one this walk has grown, so it is the wrong store here; the truncation itself is
+# `wk_dt_const`, and `wk_ccast.val` IS the `ew_const_val` this used to carry --
+# `wk_const_of(cconst_val(Arena.arg(ar, self)))` is that function under another name, so
+# nothing was duplicated by naming it.
+def wk_remint.cast(+ar: O.Arena, u: U32, +dt: S.Dt) -> O.Found:
+  v = wk_const_of(wk_dt_const(dt, wk_ccast.val(F.folded(ar), u)))
+  wk_remint.mkconst(wk_remint.folds(dt), dt, O.UOp.new(ar, O.OpsCONST{}, Nil{}, O.APy{v}, O.TNone{}))
+
+# `u.op is Ops.CONST` -- the leaf test, and THE TOP-LEVEL ONE ONLY. The recursive arm tests
+# `u.src[0]`'s op and that is a DIFFERENT question: merging the two into one predicate is
+# what put a four-deep `replace` chain in `tn_isfinite`'s graph (MEASURED: 18 nodes, four
+# `CONST/1` nodes chained above the const, where CPython has one leaf CONST). The two were
+# `ew_is_c0` and `ew_src0` and they stay two.
+def wk_remint.isc(+ar: O.Arena, u: U32) -> Bool:
+  O.eq_op(O.Arena.op(ar, u), O.OpsCONST{})
+
+# `u.replace(src=(...)+u.src[1:])`. `replace_in` IS `UOp.replace` -- the hash-consing
+# constructor read straight off the arena. The tail is `O.Arena.src_from(ar, u, 1)`, NOT
+# `src_to`: `src_to` keeps the first `k` and `src_from` drops the first `k`, so `src_to(_, 1)`
+# is the WHOLE list for a one-src node and the replacement silently gains a src. Measured --
+# `DETACH` came out with arity 2 and two CONSTs where CPython has arity 1 and one. The head
+# goes back IN FRONT, which is `List.append(&2, U32, [head], tail)`; the other order compiles
+# and silently relocates it to the end.
+#
+# AND THE STORE IS `child`'s, NOT `ar`'s. The recursive call that produced `child` may have
+# minted a CONST one step deeper, so `child`'s index is valid only in the arena IT grew;
+# handing `replace_in` the pre-recursion `ar` names an index one past its end. Measured on
+# `ew_remint_recurse`, which printed `1 BUFFER/0` -- a one-node graph, with the arity still
+# right. Same rule as `replace_walk`: the arena comes from whatever LAST built.
+def wk_remint.put(+child: O.Found, +ar: O.Arena, +u: U32) -> O.Found:
+  replace_in(O.Found.ar(child), u, List.append(&2, U32, [O.Found.i(child)], O.Arena.src_from(ar, u, 1)))
+
+# It recurses on `u.src[0]` and it GROWS the arena, so it is one self-recursive def with the
+# FUEL FIRST and it threads `+O.Arena`. `wk_remint.put` is a leaf, so the self-call can be an
+# ARGUMENT of a `case` arm and there is no mutual recursion -- which is the only way Bend can
+# express `a.alu(op, f(b))` at all.
+def wk_remint.go(fuel: Nat, isc: Bool, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
+  match fuel isc:
+    case 0n _        : O.Found{ar, u}
+    case 1n+p True{} : wk_remint.cast(ar, u, dt)
+    case 1n+p False{}: wk_remint.put(wk_remint.go(p, wk_remint.isc(ar, O.Arena.src0(ar, u)), ar, O.Arena.src0(ar, u), dt), ar, u)
+
+def wk_remint(fuel: Nat, +ar: O.Arena, +u: U32, +dt: S.Dt) -> O.Found:
+  wk_remint.go(fuel, wk_remint.isc(ar, u), ar, u, dt)
+
 # THE PYTHON, in weak.py's order. Every rule body here is `(Folded, U32) ->
 # Maybe<&2, Found>`: Python's `UOp -> UOp|None` arrives whole, as the arena the rewrite
 # built AND the index it named. A rule GROWS the arena, so the fold the caller holds is

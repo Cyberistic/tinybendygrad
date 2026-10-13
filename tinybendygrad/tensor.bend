@@ -3,6 +3,7 @@ import ./helpers.bend as H
 import ./LAWS/spec.bend as S
 import ./uop/ops.bend as O
 import ./uop/fold.bend as F
+import ./uop/weak.bend as W
 import ./mixin/gradient.bend as G
 import ./mixin/dtype.bend as D
 # tensor.bend -- tinygrad/tensor.py. The user-facing Tensor: lazy op
@@ -1119,16 +1120,69 @@ def tn_isfinite.eqarm(+t: Tensor, +c: Tensor) -> Tensor:
 def tn_isfinite.armul(+eq: Tensor) -> Tensor:
   +tc = O.UOp.const(Tensor.ar(eq), O.CBool{True{}})
   tn_alu.of(O.Found.ar(tc), Tensor.u(eq), O.OpsMUL{}, [O.Found.i(tc)])
-# `ep` is the positive arm AND the arena the negative arm grows FROM, so `en` is a strict
-# DESCENDANT of `ep` and `en.u` is legal in `en.ar`. Building the ADD in `ep.ar` instead
-# would name the slot the ADD itself is about to take -- MEASURED, see `tn_binop`.
+
+# `promote` -- elementwise.py:29-33, `_broadcasted`'s inner closure, for `self` ALONE
+# against the weakfloat `inf` const. `out_dtype` is therefore
+# `least_upper_dtype(self.dtype, weakfloat)` and the arm that decides everything is
+# `weak_dtype(out_dtype)`: weakfloat for a strong float, weakint for a concrete int,
+# and for a WEAK self `weak_dtype(weakint) = weakint` and
+# `weak_dtype(weakfloat) = weakfloat`, which is what makes a weakint `self` REMINT to
+# `CONST weakfloat 4.0` while `self != self` -- whose `out_dtype` is `weakint` and whose
+# weak arm is therefore the identity -- keeps `CONST weakint 4`. MEASURED in CPython,
+# `.venv/bin/python` on `Tensor(UOp(Ops.CONST, arg=4)).isfinite()`: FIVE distinct CONST
+# leaves, `weakint 4 | bool True | weakfloat 4.0 | inf | -inf`, 15 nodes.
+#
+# THE FOUR ARMS ARE `_broadcasted`'s FOUR, and each conjunct is borrowed rather than
+# re-derived: `O.UOp.is_invalid` is ops.py:267, `W.wk_is_weak_const` is
+# `op is CONST AND dtype in dtypes.weaks` (weak.bend's own, and `dtypes.weaks` is
+# `(weakint, weakfloat)` -- bool is NOT in it), `F.least_upper.of` is the hoisted lattice,
+# `W.weak_dtype` is dtype.py:175, and `W.wk_remint` is `remint` -- WHICH LIVES IN
+# `uop/weak.bend` BECAUSE OF THIS CALL. It was `ew_remint` in `mixin/elementwise.bend`,
+# and that file imports THIS one.
+#
+# `W.wk_remint(4n, ...)` -- four units of fuel, the same budget `ew_promote.b` uses, and
+# it matters here for the same reason it matters there: an over-provisioned bound costs
+# nothing and an under-provisioned one answers `None` for everything.
+def tn_isfinite.promote.arm(same: Bool, isc: Bool, +fx: F.Folded, +t: Tensor, +od: S.Dt, +wd: S.Dt) -> Tensor:
+  match same isc:
+    case True{}  _       : t
+    case False{} True{}  : tn_alu.put(W.wk_remint(4n, D.md_ar(fx), Tensor.u(t), wd))
+    case False{} False{} : tn_alu.put(D.cast_at(fx, Tensor.u(t), od))
+
+def tn_isfinite.promote.at(inv: Bool, wc: Bool, same: Bool, +fx: F.Folded, +t: Tensor, +od: S.Dt, +wd: S.Dt) -> Tensor:
+  match inv wc:
+    case True{}  _        : t
+    case False{} True{}   : tn_isfinite.promote.arm(same, True{}, fx, t, od, wd)
+    case False{} False{}  : tn_alu.put(D.cast_at(fx, Tensor.u(t), od))
+
+def tn_isfinite.promote(+t: Tensor) -> Tensor:
+  +fx = F.folded(Tensor.ar(t))
+  +od = F.least_upper.of(D.md_dt(fx, Tensor.u(t)), S.weakfloat())
+  +wd = W.weak_dtype(od)
+  tn_isfinite.promote.at(O.UOp.is_invalid(D.md_ar(fx), Tensor.u(t)),
+    W.wk_is_weak_const(fx, Tensor.u(t)), D.md_dt_eq(D.md_dt(fx, Tensor.u(t)), wd), fx, t, od, wd)
+
+# `p` IS THE PROMOTED `self`, AND BOTH `eq` HALVES READ IT -- not `t` and not `ep`.
+# CPython's body is `self.eq(+inf)*True + self.eq(-inf)*True` with `self` on BOTH
+# sides, and each `_broadcasted` remints it to the SAME hash-consed node; the old
+# spelling compared `ep` (the positive arm's bool MUL) against `-inf`, which was
+# `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)`. Same node COUNT, wrong
+# graph -- and NO row saw it, because every row in this file's two gates reads the TOP
+# node or its SRC ops, and that CMPNE is a src of a src. `en` is built in `ep`'s arena,
+# so `en` is a strict DESCENDANT of `ep` and `en.u` is legal there -- building the ADD
+# in `ep.ar` instead would name the slot the ADD itself is about to take. MEASURED, see
+# `tn_binop`.
 def tn_isfinite.isinf_part(+t: Tensor) -> Tensor:
-  +ep = tn_isfinite.armul(tn_isfinite.eqarm(t, tn_isfinite.ct(tn_isfinite.cinf(Tensor.ar(t)))))
-  +en = tn_isfinite.armul(tn_isfinite.eqarm(ep, tn_isfinite.ct(tn_isfinite.cneginf(Tensor.ar(ep)))))
+  +p = tn_isfinite.promote(t)
+  +ep = tn_isfinite.armul(tn_isfinite.eqarm(p, tn_isfinite.ct(tn_isfinite.cinf(Tensor.ar(p)))))
+  +en = tn_isfinite.armul(tn_isfinite.eqarm(p, tn_isfinite.ct(tn_isfinite.cneginf(Tensor.ar(ep)))))
   tn_alu.of(Tensor.ar(en), Tensor.u(ep), O.OpsADD{}, [Tensor.u(en)])
 # `isnan` is a SIBLING of `isinf_part` off `t`, so it is REBUILT on `inf_part`'s arena --
-# `tn_new` over the ORIGINAL const index, which append-only keeps valid -- and the OR is
-# built in `isnan`'s (the newer) arena.
+# `tn_new` over the ORIGINAL const index, which append-only keeps valid, and which is
+# WHY THE weakint `self` SURVIVES HERE AT ALL: `promote` appended a weakfloat copy
+# rather than rewriting it, so `Tensor.u(t)` still names `CONST weakint 4` and
+# `CMPNE(4, 4)` is `self != self` with the weak dtype CPython keeps. The OR is built
+# in `isnan`'s (the newer) arena.
 def tn_isfinite.nan_in(+ar: O.Arena, uop: U32) -> Tensor:
   tn_isnan(tn_new(ar, uop))
 def tn_isfinite(+t: Tensor) -> Tensor:
