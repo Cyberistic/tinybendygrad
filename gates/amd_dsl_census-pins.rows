@@ -6,7 +6,7 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 96 DIVERGENCES of 1175 ROWS. Each block is a CLASS, and each
+# 47 DIVERGENCES of 1175 ROWS. Each block is a CLASS, and each
 # class says WHY the two sides differ. A pin without a reason is a
 # weakened instrument; a divergence without a pin is a silent one.
 #
@@ -14,11 +14,79 @@
 # `pin_drift_hold()` re-measures all three on every run.
 # HEAD blob of tinygrad/renderer/amd/dsl.py when these rows were taken: 6526706b
 
+# SIX CLASSES ARE RETIRED AND GONE, AND EVERY ONE OF THEIR ROWS IS EXACT NOW. THEY ARE NOT
+# IN `CLASSES` ANY MORE: A CLASS WITH NO ROWS IS A CLAIM THAT HAS STOPPED BEING TRUE, AND
+# `classes_hold()` FAILS A CLASS THAT HAS NONE. EACH STORY IS BELOW, WITH THE READING.
+
+# HI_BIT -- 0 ROWS. IT WAS 12, AND **HALF OF THE CLASS WAS TWO DEFECTS**. (i) `vgpr_encode.hi`
+# read `fit(set, or(set, X, f), v, f)` -- it OR'd bit 7 in and THEN tested `encoded >= 128`, and
+# since ORing 0x80 into an eight-bit value always leaves it >= 128, EVERY `.h` in an eight-bit
+# field took dsl.py:196's refusal arm. dsl.py:194-197 tests `encoded` BEFORE the OR. The six
+# `_256`/`_300` rows were CPython `128`/`172` against the port's `0`. (ii) THE ROWS READ THE
+# WRONG SLOT: `urow(..., Res.v(vgpr_encode(...)))` prints `Res.v`, which IS `0` for a `Bad`, so
+# the six `_384`/`_511` rows CPython REFUSES were ALSO `0` -- a RIGHT ANSWER FOR A WRONG REASON
+# that read as agreement. `srow(..., enc_text(...))` reads the whole answer, the same slot the
+# oracle's `enc` and the neighbouring `vgenc_*`/`afenc_ab_*` rows read. Reading the value slot
+# is the SAME SHAPE as `VDSTY_MSG` below, one line over: `Res.v` drops a refusal and `Res.msg`
+# drops a value, and neither is the answer `encode` gives.
+
+# ABSENT_OPERAND -- 0 ROWS. IT WAS 10, AND IT WAS A DEFECT NOBODY COULD SEE BECAUSE IT WAS
+# ZERO. `BitField.set` (:114) opens `if val is None: val = self.default`, so an omitted operand
+# is written at its DEFAULT; `fld_encode` NEVER READ `Vf.has`. It did not have to, because every
+# fixture that omits an operand spells the omission `Ov.none()` and `Ov.none().off` is 0 -- and
+# every default in this file ENCODES to 0 (`s[0]`/`v[0]` sit at their range's low end so :171's
+# subtraction is 0; the aligned classes' default is the bare int 0, which :207 accepts). So a
+# missing field and a zero field were the same number. MEASURED: `raw_vop2_neg` CPython
+# `|0x14060a00`, port `|0x00000000`, and the port's `al_encode` REFUSED `sdst` outright because
+# `Ov.none()` is not a `Reg` -- so the walk stopped and every earlier field was thrown away. The
+# three fixtures with NO omitted operand (`_all`, `_big`, `_big2`) agreed all along, which is why
+# ten rows moved and 1174 rows did not. `VDSTY` is the ONE class whose default does not encode
+# (:224 wants a Reg), so it keeps a refusal -- and no fixture omits a vd sty, so nothing here
+# measures that arm.
+
+# VDSTY_MSG -- 0 ROWS. IT WAS 9, AND IT WAS NOT A DIFFERENT DEFECT FROM HI_BIT, IT WAS THE SAME
+# ONE. `vdstyencneg_*` read `Res.msg(vdsty_encode(...))` -- the refusal slot -- while the oracle
+# read `enc`, the WHOLE answer. Six rows were answers CPython gives that the port dropped (CPython
+# `0`, `0`, `1`, `1`, `127`, `127` against the port's empty string, because `Res.msg` is `""` for
+# a `Res`), and three were refusals whose TEXT is already right. `enc_text` is the port's `enc`.
+# BOTH CLASSES WERE "THE ROW DID NOT READ WHAT THE CALL RETURNS", and both were one word.
+
+# MOD_MERGE -- 0 ROWS. IT WAS 10, AND **THE CAUSE IS NOW ESTABLISHED; IT WAS NOT INSIDE
+# `Bool.pick`**. `base.bend:504` is `match c: case False{}: b / case True{}: a`, which is exactly
+# how the call read. `mod_merge` put an OUTER `Bool.pick` around the answer with the LITERAL `0`
+# as its else arm and `Bool.and(has, U32.is_zero(bits))` as its condition, so it answered 0 for
+# every case where `has` is false OR `bits` is nonzero -- i.e. every case worth encoding. CPython's
+# `(vals.get(k) or 0) | bits` is `has ? (given | bits) : bits`, because the `or 0` is inert once
+# the left side is a U32 (`0 | bits` IS `bits`), which is also the reading that makes
+# `mod_merge(2, True{}, 1)` CPython `3` and `mod_merge(0, False{}, 1)` CPython `1`.
+# AND A SECOND, INDEPENDENT DEFECT WAS IN THE ROWS, NOT THE DEF: `modmerge_{given}_0_{bits}` --
+# THE MIDDLE DIGIT IS `has`, and it is `0` in every one of these rows on BOTH sides, because
+# `vals` is a dict (dsl.py:300-307/:334-335) and a value is looked up BY NAME, so "the caller
+# supplied it" is not expressible as a value's position. Three port rows passed `True{}` where
+# their own NAME says `0`. Both halves are fixed; the second is why `modmerge_2_0_0` was CPython
+# `0` against the port's `2` while `modmerge_0_0_*` agreed.
+
+# WALK_IS_VALUES -- 0 ROWS. IT WAS 1, AND **THE ORACLE WAS THE SIDE THAT WAS WRONG**. The port's
+# `Vf` list carries each value's own field, so the port's list order IS `dsl.py:334-335`'s
+# `_fields` order; `raw_ord_swap` walks a TRANSPOSED FIELD LIST. The oracle walked `ORD_FIELDS`
+# (unswapped) with the values' ORDER swapped -- and CPython cannot observe a value order at all,
+# so the two were not the same fixture. MEASURED on two real `dsl.Inst` subclasses, `first` and
+# `second` both at [7:0]:
+#     class A(_fields = [first, second]) -> A(first=11, second=22)._raw == 0x16
+#     class B(_fields = [second, first]) -> B(first=11, second=22)._raw == 0x0b
+#     A(second=22, first=11)._raw == 0x16      # kwargs order is invisible
+# The oracle now walks `ORD_FIELDS_SWAP`, which it already declared and never used.
+
+# SLICE_UNSIGNED -- 0 ROWS. IT WAS 1. `reg_slice.go` printed `U32.show(start)` where dsl.py:26
+# formats the SIGNED `key.start`; `key_text` -- the def that spells a U32's two's complement back,
+# and which the INDEX arm beside it already used -- now spells both bounds. `get_slice_neg_start`
+# CPython `slice [-1:5] out of bounds for size 512`, port was `slice [4294967295:5] ...`.
+
 # ALIGN_SHIFT -- 0 ROWS. IT WAS 18 AND EVERY ONE IS DROPPED, NOT MOVED: `al_shift_of` read
 # `U32.sub(Fld.align(f), 1)`, so for `_align = 4` (`dsl.py:219 SRsrcField`) it answered 3 where
 # dsl.py:210/:211 shift by `_align.bit_length() - 1 = 2`, and every `afdec_sr_*` came out DOUBLE
 # (`afdec_sr_32` was 256,1 against CPython's 128,1). THE FILE ALREADY SAID SO -- the note at
-# dsl.bend:834 reads "whose shift is `_align.bit_length() - 1` ... NOT the alignment itself", and
+# dsl.bend:870 reads "whose shift is `_align.bit_length() - 1` ... NOT the alignment itself", and
 # `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4` at :252-253 ARE THE CORRECT CONSTANTS. THEY WERE DEAD:
 # `grep -c` answered 2, their own two definitions and no call site. THE THIRD INSTANCE OF THIS
 # FILE'S OWN RECORDED CLASS -- "a def nothing calls is invisible to every other check", the same
@@ -54,46 +122,6 @@ afenc_sr2_nonreg	REFUSE:SRsrcField requires Reg, got int	rsrc requires Reg, got 
 afenc_sr2_hi	REFUSE:SRsrcField requires SGPR, got offset 128	rsrc requires SGPR, got offset 128
 afenc_sr2_odd	REFUSE:SRsrcField requires 4-aligned SGPR, got s[3]	rsrc requires 4-aligned SGPR, got s[3]
 
-# VDSTY_MSG -- 9 rows. vdstyencneg_* is `Res.msg(vdsty_encode(...))` -- the SAME call as vdstyenc_* read through the refusal slot, which is the empty string on every arm CPython encodes. Six rows are answers CPython gives and the port drops; three are refusals CPython raises (dsl.py:225) and the port re-words.
-vdstyencneg_256	0	
-vdstyencneg_257	0	
-vdstyencneg_258	1	
-vdstyencneg_259	1	
-vdstyencneg_510	127	
-vdstyencneg_511	127	
-vdstyencneg_128	REFUSE:VDSTYField requires VGPR, got offset 128	VDSTYField requires VGPR, got offset 128
-vdstyencneg_255	REFUSE:VDSTYField requires VGPR, got offset 255	VDSTYField requires VGPR, got offset 255
-vdstyencneg_0	REFUSE:VDSTYField requires VGPR, got offset 0	VDSTYField requires VGPR, got offset 0
-
-# HI_BIT -- 12 rows. dsl.py:194-197 sets bit 7 for a .h in an 8-bit field and refuses .h at index >= 128; dsl.bend answers 0, which is v[0].
-vgenchi_7_0_256	128	0
-vgenchi_7_0_300	172	0
-vgenchi_7_0_384	REFUSE:VGPRField: v[128].h not encodable in 8-bit field (v[0:127] only for .h)	0
-vgenchi_7_0_511	REFUSE:VGPRField: v[255].h not encodable in 8-bit field (v[0:127] only for .h)	0
-vgenchi_15_8_256	128	0
-vgenchi_15_8_300	172	0
-vgenchi_15_8_384	REFUSE:VGPRField: v[128].h not encodable in 8-bit field (v[0:127] only for .h)	0
-vgenchi_15_8_511	REFUSE:VGPRField: v[255].h not encodable in 8-bit field (v[0:127] only for .h)	0
-vgenchi_8_1_256	128	0
-vgenchi_8_1_300	172	0
-vgenchi_8_1_384	REFUSE:VGPRField: v[128].h not encodable in 8-bit field (v[0:127] only for .h)	0
-vgenchi_8_1_511	REFUSE:VGPRField: v[255].h not encodable in 8-bit field (v[0:127] only for .h)	0
-
-# ABSENT_OPERAND -- 10 rows. dsl.py:305/:114 map an unsupplied field to its default and still write it; dsl.bend's raw_walk answers 0.
-raw_vop2_neg	|0x14060a00	|0x00000000
-raw_vop2_hi	|0x00068a00	|0x00000000
-raw_vop2_int	|0x41800000	|0x00000000
-raw_vop2_fconst	|0xdde00000	|0x00000000
-raw_vop2_fnolit	|0x01fe0000	|0x00000000
-raw_vop2_int65	|0x01fe0000	|0x00000000
-raw_vop2_intn17	|0x01fe0000	|0x00000000
-raw_vop2_lit	|0x01fe0000	|0x00000000
-raw_vop2_sdwa	|0xe4060000	|0x00000000
-raw_vop2_dpp	|0xe8060000	|0x00000000
-
-# WALK_IS_VALUES -- 1 rows. dsl.py:334-335 walks `_fields` and looks the value up BY NAME, so the FIELD list's order and spelling are the encoding. dsl.bend's raw_walk walks the VALUE list (its `Vf` carries the field), so the value list's order and spelling are. `raw_ord_swap` transposes the ORDER: two fields at the same bits with different names, so the LAST write wins and the field order decides the word.
-raw_ord_swap	|0x00000016	|0x0000000b
-
 # MODMASK -- 16 rows. THE TAUTOLOGY IS FIXED: `src_bit.vdst` was `String.eq("vdst","vdst")` -- a
 # literal compared with itself, so it took bit 8 for EVERY name and `sdst`/`op`/`nosuch` all answered
 # 8 where CPython answers 0. It now reads `String.eq(name, "vdst")`, the single-name arm of
@@ -117,32 +145,38 @@ modmask_vdst_vop2	0	8
 modmask_vdst_neg	0	8
 modmask_vdst_hi	0	8
 
-# MOD_MERGE -- 10 rows. dsl.py:322-324 is (vals.get(k) or 0) | bits; dsl.bend returns `given` when bits is 0 and 0 otherwise. The cause inside Bool.pick is NOT established and is not claimed.
-modmerge_0_0_1	1	0
-modmerge_0_0_1	1	0
-modmerge_2_0_0	0	2
-modmerge_2_0_1	1	0
-modmerge_6_0_1	1	0
-mod_src0_neg	1	0
-mod_src0_ab	1	0
-mod_src0_hi	1	0
-mod_merge_or	3	0
-mod_merge_nogiven	1	0
+# SRC_WIDTH -- 4 ROWS, DOWN FROM 8, AND THE SPLIT IS THE POINT. dsl.py:154-157 compares
+# `actual_size = 1 << (hi-lo+1)` against `expected_size = _valid_range[1]-_valid_range[0]+1`. For a
+# SRC field that is `512` against `512` -- CPython ACCEPTS. The port compared `bf_bits(f)` (a COUNT,
+# 9) with `valid_n(f)` (512) and so REFUSED A FIELD CPYTHON ACCEPTS, on every SRC field.
+#   FIXED, 4 ROWS DROPPED: `sf_width_{8_0,17_9,25_17,9_1}` were `cp=True port=False` and are now
+#   `True` on both sides. `1 << bits` IS `bf_mask(f) + 1`, so no new arithmetic.
+#   STILL PINNED, 4 ROWS UPDATED NOT DELETED: the `sf_widthmsg_*` rows MOVE from `(511)` to `(512)`,
+#   because CPython:158 prints `actual_size` and the port printed the MASK. CPython's column is
+#   EMPTY because CPython never raises here, so these rows still differ and a moved row keeps its
+#   pin. A MESSAGE THAT IS NEVER PRINTED HIDES WHICH BRANCH THE PORT TOOK, WHICH IS WHY HALF THIS
+#   CLASS LOOKED LIKE A WORDING SLIP.
+sf_widthmsg_8_0		s0: field size 9 bits (512) doesn't match range (0, 511) (512)
+sf_widthmsg_17_9		s0: field size 9 bits (512) doesn't match range (0, 511) (512)
+sf_widthmsg_25_17		s0: field size 9 bits (512) doesn't match range (0, 511) (512)
+sf_widthmsg_9_1		s0: field size 9 bits (512) doesn't match range (0, 511) (512)
 
-# SRC_WIDTH -- 8 rows. dsl.py:155-157 compares 1 << bits (512) against the range count (512) and accepts; dsl.bend compares bits (9) against 512, and prints the mask (511) where CPython prints actual_size (512).
-sf_width_8_0	True	False
-sf_widthmsg_8_0		s0: field size 9 bits (511) doesn't match range (0, 511) (512)
-sf_width_17_9	True	False
-sf_widthmsg_17_9		s0: field size 9 bits (511) doesn't match range (0, 511) (512)
-sf_width_25_17	True	False
-sf_widthmsg_25_17		s0: field size 9 bits (511) doesn't match range (0, 511) (512)
-sf_width_9_1	True	False
-sf_widthmsg_9_1		s0: field size 9 bits (511) doesn't match range (0, 511) (512)
-
-# SLICE_UNSIGNED -- 1 rows. dsl.py:26 formats the SIGNED start; dsl.bend's reg_slice prints U32.show(start). Its own comment at dsl.bend:557 notes the INDEX arm spells it back and the slice arm does not.
-get_slice_neg_start	REFUSE:slice [-1:5] out of bounds for size 512	REFUSE:slice [4294967295:5] out of bounds for size 512
-
-# TO_BYTES -- 3 rows. dsl.py:416 is _raw.to_bytes(base_size, 'little'); dsl.bend's bytes_of truncates a 0x%08x from the left, so it is big-endian, keeps the 0x, and cannot widen past four bytes.
-to_bytes_vop2	000a06144800	
-to_bytes_f32i	053412	00123405
-to_bytes_f16i	05347856	0x56783405
+# TO_BYTES -- 1 row, DOWN FROM 3, AND THE ONE THAT REMAINS IS A DIFFERENT AND LARGER DEFECT.
+# `to_bytes_f32i` and `to_bytes_f16i` ARE EXACT: `bytes_of` was truncating `8 - sz*2` characters
+# from the LEFT of a ten-character `0x%08x`, which is big-endian, keeps the `0x`, and cannot widen
+# past four bytes, and it is now one hex PAIR PER BYTE, LOW BYTE FIRST. But `to_bytes_vop2` MOVED
+# rather than cleared -- port `` -> `000a06140000` -- and the reason is NOT the byte order any
+# more, it is THE WIDTH OF THE WORD ITSELF.
+#   CPython: `raw = 0x4814060a00`, `bit_length() == 39`, `_base_size == 6`,
+#            `raw.to_bytes(6, "little").hex() == "000a06144800"`. The `48` in CPython's answer is
+#            `sdst` at bits [41:36] (`Reg(8) >> 1 << 36`) and the `8` is `op_sel` at [35:34].
+#   THE PORT: `Res` IS `Res{v: U32, s: String}` and `bf_set.placed` shifts with `U32.shln`, so
+#            EVERY BIT AT INDEX >= 32 IS DISCARDED. A VOP2 word is 42 bits wide.
+# SO THIS ROW IS THE ONLY ONE LEFT IN THE CLASS AND IT IS NOT A TEXT PROBLEM: an instruction wider
+# than 32 bits encodes with its HIGH FIELDS MISSING, and that is every VOP3 and every MFMA.
+# WIDENING `raw` IS NOT DONE HERE -- it is a change to `Res`, `bf_mask`, `bf_set`, `hex8` and
+# `rws`, and it would move every `raw_*` and `bfs` row, because `hex8` MASKS TO 32 BITS ON BOTH
+# SIDES (the oracle's `hex8` is `f"{v & U32:#010x}"`, and CPython's own `f"{x:#010x}"` is NOT a
+# mask). That shared truncation is itself an unrecorded carve-out and it is why `raw_vop2_all`
+# reads `|0x14060a00` on both sides where CPython's word is `0x4814060a00`.
+to_bytes_vop2	000a06144800	000a06140000

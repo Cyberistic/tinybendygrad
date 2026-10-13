@@ -507,10 +507,15 @@ def reg_at.go(bad: Bool, +r: Rg, +key: U32, +neg: Bool) -> Res:
 #
 # `key.start or 0` (:25) and `key.stop or (self.sz - 1)`: a slice with an
 # absent bound reads it as absent, which is what `has_start` / `has_stop` say.
-def reg_slice.go(bad: Bool, +start: U32, +stop: U32, +r: Rg) -> Res:
+# `f"slice [{key.start}:{key.stop}]"` (:26) PRINTS BOTH BOUNDS SIGNED, exactly as
+# `reg_at` above prints its key signed -- and `key_text` is the def that spells a U32's
+# two's complement back. This arm read `U32.show(start)`, so `src[-1:5]` refused with
+# `slice [4294967295:5]` where CPython refuses with `slice [-1:5]`. The refusal text is
+# the thing the census compares, so this is a real mismatch and not a formatting quibble.
+def reg_slice.go(bad: Bool, start_neg: Bool, stop_neg: Bool, +start: U32, +stop: U32, +r: Rg) -> Res:
   match bad:
     case True{}:
-      Bad{String.concat(["slice [", U32.show(start), ":", U32.show(stop), "] out of bounds for size ", U32.show(Rg.sz(r))])}
+      Bad{String.concat(["slice [", key_text(start, start_neg), ":", key_text(stop, stop_neg), "] out of bounds for size ", u32_text(Rg.sz(r))])}
     case False{}: Res{0, ""}
 
 # ===========================================================================
@@ -537,10 +542,12 @@ def reg_at(+key: U32, +key_neg: Bool, +r: Rg) -> Res:
 # `f"index {key} out of bounds"` (:28) prints the SIGNED key, and Bend has no
 # I32 -- so a negative key arrives as its two's complement and has to be spelled
 # back. The refusal text is the thing the gate compares, so a `4294967295` where
-# CPython writes `-1` is a real mismatch and not a formatting quibble.
-def reg_slice(+start: U32, start_neg: Bool, has_start: Bool, +stop: U32, stop_neg: Bool,
+# CPython writes `-1` is a real mismatch and not a formatting quibble. `key_text`
+# above is that spelling, and the SLICE arm below reads it too.
+def reg_slice(+start: U32, +start_neg: Bool, has_start: Bool, +stop: U32, +stop_neg: Bool,
               has_stop: Bool, +r: Rg) -> Res:
-  reg_slice.go(Bool.or(Bool.or(start_neg, stop_neg), U32.is_ge(stop, Rg.sz(r))), start, stop, r)
+  reg_slice.go(Bool.or(Bool.or(start_neg, stop_neg), U32.is_ge(stop, Rg.sz(r))),
+               start_neg, stop_neg, start, stop, r)
 def reg_slice_start(r: Rg, start: U32, stop: U32) -> Res: reg_slice(start, False{}, True{}, stop, False{}, True{}, r)
 def fmt_unknown_msg(o: U32, sz: U32) -> String:
   String.concat(["unknown register: offset=", U32.show(o), ", sz=", U32.show(sz)])
@@ -679,6 +686,15 @@ def bf_set_msg(+f: Fld, enc: U32) -> String:
 def bf_set.masked(+f: Fld, +raw: U32) -> U32:
   U32.and(raw, U32.not(U32.shln(bf_mask(f), U32.to_nat(Fld.lo(f)))))
 
+# THE WORD IS A `U32` AND THAT IS A REAL CEILING, NOT A REPRESENTATION DETAIL.
+# `bf_set.masked` and `bf_set.placed` shift with `U32.shln`, so a field placed above
+# bit 31 IS SILENTLY DISCARDED, while `dsl.py`'s `_raw` is a Python int and keeps every bit.
+# MEASURED: CPython's `VOP2_ALL` word is `0x4814060a00` (`bit_length() == 39`), and `48` is
+# `sdst` at [41:36] plus `op_sel` at [35:34]; the port's word is `0x0014060a00` and both are
+# GONE. `VOP2_FIELDS` is 42 bits wide and `F64_FIELDS` is 64, so EVERY instruction wider than
+# 32 bits -- every VOP3, every MFMA -- encodes with its high fields missing. `gates/
+# amd_dsl_census-gate.py` carries it as the one surviving `TO_BYTES` row (`to_bytes_vop2`,
+# CPython `000a06144800` against the port's `000a06140000`); widening `raw` is not done.
 def bf_set.placed(f: Fld, enc: U32) -> U32: U32.shln(enc, U32.to_nat(Fld.lo(f)))
 
 def bor(a: U32, b: U32) -> U32: U32.or(a, b)
@@ -810,9 +826,29 @@ def src_decode(raw: U32, f: Fld) -> Rg: Rg{U32.add(raw, Fld.rlo(f)), 1, False{},
 # 9 bits and a `VGPRField` always 8.
 def Fld.valid_n(+f: Fld) -> U32: U32.add(U32.sub(Fld.rhi(f), Fld.rlo(f)), 1)
 
-def src_width_ok(+f: Fld) -> Bool: U32.is_eq(bf_bits(f), Fld.valid_n(f))
+# dsl.py:154-157 COMPARES A **SIZE** WITH A **RANGE COUNT**, NOT A BIT COUNT WITH A RANGE COUNT:
+#     expected_size = self._valid_range[1] - self._valid_range[0] + 1
+#     actual_size   = 1 << (hi - lo + 1)
+#     if actual_size != expected_size: raise RuntimeError(...)
+#
+# For `Fld.src("s0", 8, 0)` that is `expected_size = 512` (the register's valid range 0..511)
+# against `actual_size = 1 << 9 = 512` -- EQUAL, so CPython ACCEPTS. THIS DEF READ
+# `U32.is_eq(bf_bits(f), Fld.valid_n(f))`, i.e. `9 == 512`, which is FALSE, so **the port REFUSED
+# A FIELD CPYTHON ACCEPTS** on every SRC field. `1 << bits` IS `bf_mask(f) + 1`, and `bf_mask` IS
+# `(1 << bits) - 1` (`:663`), so the size is the mask plus one and nothing new is computed.
+#
+# NOT THE SAME SHAPE AS `bf_width_ok` ABOVE, WHICH REALLY IS A BIT COUNT against 32 -- and reading
+# one as the other is the mask-versus-count confusion `al_shift_of` just had.
+def src_width_ok(+f: Fld) -> Bool: U32.is_eq(U32.add(bf_mask(f), 1), Fld.valid_n(f))
+# THE PARENTHESISED NUMBER IS dsl.py:158's `actual_size`, WHICH IS `1 << bits` -- 512 -- AND NOT
+# THE MASK, 511. THE PORT PRINTED THE MASK. CPython never prints this string for an SRC field,
+# because it never raises on one, so the MESSAGE ROWS STAY A CARVE-OUT WHILE THE DECISION ROWS
+# BECOME EXACT: THE PORT WAS DECIDING "REFUSE" WHERE CPYTHON DECIDES "ACCEPT", AND A STRING
+# THAT IS NEVER PRINTED HIDES WHICH ONE IT TOOK.
 def src_width_msg(+f: Fld) -> String:
-  String.concat([Fld.name(f), ": field size ", U32.show(bf_bits(f)), " bits (", U32.show(bf_mask(f)), ") doesn't match range (", U32.show(Fld.rlo(f)), ", ", U32.show(Fld.rhi(f)), ") (", U32.show(Fld.valid_n(f)), ")"])
+  String.concat([Fld.name(f), ": field size ", U32.show(bf_bits(f)), " bits (",
+                 U32.show(U32.add(bf_mask(f), 1)), ") doesn't match range (", U32.show(Fld.rlo(f)),
+                 ", ", U32.show(Fld.rhi(f)), ") (", U32.show(Fld.valid_n(f)), ")"])
 
 # ===========================================================================
 # THE REMAINING FIELD CLASSES. `SrcField` is done; these three are the rest.
@@ -854,7 +890,18 @@ def vgpr_or(set: Bool, res: Res, f: Fld) -> Res:
     case Bad{msg}: Bad{msg}
     case Res{+enc, s}: Res{Bool.pick(U32, set, U32.or(enc, VGPR_HI_MASK()), enc), s}
 
-def vgpr_encode.hi(+set: Bool, +v: Ov, +f: Fld) -> Res: vgpr_encode.fit(set, vgpr_or(set, src_encode(v, f), f), v, f)
+# THE ORDER OF :194-197 IS THE WHOLE OF THIS CLASS, AND IT IS TWO STEPS IN ONE ORDER:
+#     encoded = super().encode(val)
+#     if val.hi and (self.hi - self.lo + 1) == 8:
+#       if encoded >= 128: raise ValueError(...)
+#       encoded |= 0x80
+# SO THE `>= 128` TEST IS ON `encoded` **BEFORE** THE BIT IS SET. This def read
+# `vgpr_encode.fit(set, vgpr_or(set, X, f), v, f)` -- the OR FIRST, then the test -- and
+# since ORing 0x80 into an eight-bit value ALWAYS leaves it >= 128, **EVERY** `.h` in an
+# eight-bit field took the refusal arm. MEASURED on the census: `vgenchi_7_0_256` CPython
+# `128`, port `0`; and the `_384`/`_511` rows CPython REFUSES agreed with the port only
+# because `Res.v(Bad{..})` IS `0`, so a right answer for a wrong reason read as agreement.
+def vgpr_encode.hi(+set: Bool, +v: Ov, +f: Fld) -> Res: vgpr_or(set, vgpr_encode.fit(set, src_encode(v, f), v, f), f)
 
 def vgpr_hbit(v: Ov, f: Fld) -> Bool: Bool.and(Ov.hi(v), U32.is_eq(bf_bits(f), VGPR_HI_BITS()))
 
@@ -863,7 +910,7 @@ def vgpr_encode(+v: Ov, +f: Fld) -> Res: vgpr_encode.hi(vgpr_hbit(v, f), v, f)
 # THE SHIFT IS `_align.bit_length() - 1`, WHICH IS **NOT** THE ALIGNMENT AND NOT `align - 1`.
 # This def read `U32.sub(Fld.align(f), 1)`, so for `_align = 4` (`dsl.py:219 SRsrcField`) it
 # answered 3 where CPython answers `4.bit_length() - 1 = 2`. **THE FILE ALREADY SAID SO**:
-# the note at `:834` reads "whose shift is `_align.bit_length() - 1`, i.e. 1 for align 2 and
+# the note at `:870` reads "whose shift is `_align.bit_length() - 1`, i.e. 1 for align 2 and
 # 2 for align 4 -- NOT the alignment itself", and `ALIGN_SHIFT_2`/`ALIGN_SHIFT_4` at `:252-253`
 # ARE THE TWO CORRECT CONSTANTS. THEY WERE DEAD: `grep -c` answered 2, which is their own two
 # definitions and no call site. So the third instance of this file's own recorded class -- "a
@@ -927,10 +974,18 @@ def al_decode(raw: U32, f: Fld) -> Rg: Rg{U32.shln(raw, U32.to_nat(al_shift_of(f
 # must be a VGPR. `decode` does not exist as a method; `__get__` (:227-232)
 # rebuilds `256 + ((raw << 1) | ((vdstx.offset - 256 & 1) ^ 1))`, so the LOW BIT
 # comes from `vdstx`, not from `vdsty`. Both halves are gated.
+# `VDSTYField` IS THE ONE FIELD CLASS WHOSE DEFAULT DOES NOT ENCODE. Every other
+# class's default round-trips to the field's own `dflt` (`s[0]`/`v[0]` sit at their
+# range's low end, so the `- _valid_range[0]` at :171 is 0; the aligned classes'
+# default is the bare int 0, which :207 accepts), but :224 wants a `Reg` and the
+# default is an int -- so an ABSENT vd sty operand is a REFUSAL, spelled once here
+# and read from two places (`vdsty_encode.why` and `fld_encode.dflt`).
+def vdsty_not_reg() -> String: "VDSTYField requires Reg, got int"
+
 def vdsty_encode.why(isreg: Bool, +v: Ov) -> Res:
   match isreg:
     case True{}: Bad{String.concat(["VDSTYField requires VGPR, got offset ", U32.show(Ov.off(v))])}
-    case False{}: Bad{"VDSTYField requires Reg, got int"}
+    case False{}: Bad{vdsty_not_reg()}
 
 # `__get__` (:227-232): raw -> vgpr_idx = (raw << 1) | ((vdstx.offset - 256 & 1) ^ 1)
 
@@ -1060,8 +1115,20 @@ def mod_hi(+v: Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U32.
 # `vals['neg'] = (vals.get('neg') or 0) | neg_bits` (:322) and the same for
 # `abs` and `opsel`. TWO facts and both matter: the `or 0` swallows a zero, and
 # the `|` MERGES with a value the caller already gave.
+#
+# WHICH IS `(vals.get(k) or 0) | bits` IN ITS WHOLE, AND `has` IS `vals.get(k) IS
+# NOT None`. The `or 0` is INERT once the left side is a U32 (0 | bits IS bits), so the
+# whole expression is `has ? (given | bits) : bits`.
+#
+# THIS DEF WAS AN OUTER `Bool.pick` OVER THAT ANSWER, WITH THE LITERAL `0` AS ITS ELSE
+# ARM AND `Bool.and(has, U32.is_zero(bits))` AS ITS CONDITION -- so it returned 0 for
+# every case where `has` is false OR `bits` is nonzero, i.e. for every case that was
+# worth encoding. `Bool.pick` ITSELF IS CORRECT: `base.bend:504` is
+# `match c: case False{}: b / case True{}: a`, and `Bool.pick(U32, Bool.and(has,
+# U32.is_zero(bits)), ..., 0)` reads exactly as written. The cause was here and not
+# there, and `mod_merge(2, True{}, 1)` was CPython `3` against port `0`.
 def mod_merge(given: U32, +has: Bool, +bits: U32) -> U32:
-  Bool.pick(U32, Bool.and(has, U32.is_zero(bits)), Bool.pick(U32, has, U32.or(given, bits), bits), 0)
+  Bool.pick(U32, has, U32.or(given, bits), bits)
 
 # `__init__`'s positional walk (:304-307): `_fields` in order, a FixedBitField
 # consuming NOTHING, then kwargs, then the next positional. `skip` is the
@@ -1097,6 +1164,7 @@ def raw_step.go(+enc: Res, +vf: Vf, +raw: U32) -> Res:
   raw_step.set(enc_ok(enc), vf, raw, enc)
 
 def Vf.v(vf: Vf) -> Ov: match vf: case Vf{f, v, has}: v
+def Vf.has(vf: Vf) -> Bool: match vf: case Vf{f, v, has}: has
 
 def typed_encode(k: Nat, +vf: Vf) -> Res:
   match k:
@@ -1121,11 +1189,37 @@ def fld_encode.k(k: Nat, +vf: Vf) -> Res:
     case 2n: Res{Ov.off(Vf.v(vf)), ""}
     case _: typed_encode(U32.to_nat(Fld.kind(Vf.f(vf))), vf)
 
-def fld_encode(+vf: Vf) -> Res: fld_encode.k(U32.to_nat(Fld.kind(Vf.f(vf))), vf)
+# `if val is None: val = self.default` (dsl.py:114), which is the FIRST LINE of `set`
+# and the whole of the ABSENT_OPERAND class. `Inst.__init__` gives a field the caller
+# never mentioned the value `None` (:305/:307), and `set` swaps in the DEFAULT and
+# still writes the field -- so an instruction with an omitted operand is NOT the zero
+# word, it is every other field at its default.
+#
+# `fld_encode.k` NEVER READ `Vf.has`. It did not need to, because every fixture that
+# omits an operand spells the omission `Ov.none()` and `Ov.none().off` is 0 -- which is
+# the same number as every default in this file, SO THE OMISSION LOOKED LIKE A ZERO.
+# MEASURED: `raw_vop2_neg` CPython `|0x14060a00`, port `|0x00000000`, and the three
+# fixtures with NO omitted operand (`_all`, `_big`, `_big2`) agreed, so the defect was
+# invisible everywhere except the ten fixtures that omit something.
+#
+# `encode(default)` IS `dflt` for every class here -- `s[0]`/`v[0]` sit at their range's
+# low end so the `- _valid_range[0]` at :171 is 0, and the aligned classes' default is
+# the bare int 0 which :207 accepts -- and `VDSTY` is the one that refuses (:224 wants
+# a Reg). So the default arm needs no arithmetic and no new constant.
+def fld_encode.dflt(k: Nat, +f: Fld) -> Res:
+  match k:
+    case 10n: Bad{vdsty_not_reg()}
+    case _: Res{Fld.dflt(f), ""}
+
+def fld_encode.go(has: Bool, +vf: Vf) -> Res:
+  match has:
+    case True{}: fld_encode.k(U32.to_nat(Fld.kind(Vf.f(vf))), vf)
+    case False{}: fld_encode.dflt(U32.to_nat(Fld.kind(Vf.f(vf))), Vf.f(vf))
+
+def fld_encode(+vf: Vf) -> Res: fld_encode.go(Vf.has(vf), vf)
 
 def raw_step(+vf: Vf, raw: U32) -> Res: raw_step.go(fld_encode(vf), vf, raw)
 
-def Vf.has(vf: Vf) -> Bool: match vf: case Vf{f, v, has}: has
 def Vf.of(f: Fld, v: Ov, has: Bool) -> Vf: Vf{f, v, has}
 
 # `fld_encode` -- the DISPATCH over the five classes. A default BitField passes
@@ -1505,11 +1599,25 @@ def is_some(m: Maybe<&2, String>) -> Bool: is_some.go(m, False{})
 def from_bytes(w: U32) -> U32: w
 
 # `to_bytes` (:416) is `self._raw.to_bytes(self._base_size, 'little')`, so the
-# hex is LITTLE-ENDIAN and exactly `base_size` bytes: the low byte first, which
-# is the byte order a naive `hex8(v)` gets backwards. Truncating from the LEFT
-# of `hex8` keeps the low bytes, which is the whole of little-endian here.
-def bytes_of(v: U32, sz: U32) -> String:
-  String.drop(hex8(v), U32.to_nat(U32.sub(8, U32.mul(sz, 2))))
+# hex is LITTLE-ENDIAN and exactly `base_size` bytes: the LOW byte first, two
+# digits per byte, no `0x`.
+#
+# THE OLD DEF DROPPED `8 - sz*2` CHARACTERS FROM THE LEFT OF A TEN-CHARACTER `0x%08x`,
+# WHICH IS THREE WRONG THINGS AT ONCE AND ALL THREE ARE THE SAME ERROR. It is
+# BIG-endian (dropping the high characters keeps the HIGH bytes), it keeps the `0x`,
+# and `8 - 12` is not a number, so a SIX-byte instruction -- every VOP3, every MFMA --
+# dropped more characters than the string had and answered the EMPTY string.
+# MEASURED: `to_bytes_vop2` CPython `000a06144800`, port ``; `to_bytes_f32i` CPython
+# `053412`, port `00123405`.
+def hexnib(v: U32, n: Nat) -> String: hex1(U32.shrn(v, Nat.mul(n, 4n)))
+def hexbyte(+v: U32, +i: Nat) -> String: String.concat([hexnib(v, Nat.add(i, 1n)), hexnib(v, i)])
+
+def bytes_of.go(n: Nat, +b: Nat, +v: U32, acc: String) -> String:
+  match n:
+    case 0n: acc
+    case 1n+m: bytes_of.go(m, Nat.add(b, 1n), v, String.concat([acc, hexbyte(v, Nat.mul(b, 2n))]))
+
+def bytes_of(v: U32, sz: U32) -> String: bytes_of.go(U32.to_nat(sz), 0n, v, "")
 
 # `raw_walk` -- the `__init__` write walk (:334-335): `for name, field in
 # self._fields: self._raw = field.set(self._raw, vals[name])`.
@@ -2546,10 +2654,10 @@ def g_enc() -> IO(Unit):
     urow("vgenc_7_0_383", Res.v(vgpr_encode(Ov.reg(383, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 7, 0))))
     urow("vgenc_7_0_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 7, 0))))
     urow("vgenc_7_0_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 7, 0))))
-    urow("vgenchi_7_0_256", Res.v(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
-    urow("vgenchi_7_0_300", Res.v(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
-    urow("vgenchi_7_0_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
-    urow("vgenchi_7_0_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
+    srow("vgenchi_7_0_256", enc_text(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
+    srow("vgenchi_7_0_300", enc_text(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
+    srow("vgenchi_7_0_384", enc_text(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
+    srow("vgenchi_7_0_511", enc_text(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 7, 0))))
     srow("vgencneg_7_0", Res.msg(vgpr_encode(Ov.reg(0, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 7, 0))))
     urow("vgpr_mask_15_8", bf_mask(Fld.vgpr("vdst", 15, 8)))
     urow("vgenc_15_8_256", Res.v(vgpr_encode(Ov.reg(256, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 15, 8))))
@@ -2557,10 +2665,10 @@ def g_enc() -> IO(Unit):
     urow("vgenc_15_8_383", Res.v(vgpr_encode(Ov.reg(383, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 15, 8))))
     urow("vgenc_15_8_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 15, 8))))
     urow("vgenc_15_8_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 15, 8))))
-    urow("vgenchi_15_8_256", Res.v(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
-    urow("vgenchi_15_8_300", Res.v(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
-    urow("vgenchi_15_8_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
-    urow("vgenchi_15_8_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
+    srow("vgenchi_15_8_256", enc_text(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
+    srow("vgenchi_15_8_300", enc_text(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
+    srow("vgenchi_15_8_384", enc_text(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
+    srow("vgenchi_15_8_511", enc_text(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 15, 8))))
     srow("vgencneg_15_8", Res.msg(vgpr_encode(Ov.reg(0, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 15, 8))))
     urow("vgpr_mask_8_1", bf_mask(Fld.vgpr("vdst", 8, 1)))
     urow("vgenc_8_1_256", Res.v(vgpr_encode(Ov.reg(256, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 8, 1))))
@@ -2568,10 +2676,10 @@ def g_enc() -> IO(Unit):
     urow("vgenc_8_1_383", Res.v(vgpr_encode(Ov.reg(383, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 8, 1))))
     urow("vgenc_8_1_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 8, 1))))
     urow("vgenc_8_1_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 8, 1))))
-    urow("vgenchi_8_1_256", Res.v(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
-    urow("vgenchi_8_1_300", Res.v(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
-    urow("vgenchi_8_1_384", Res.v(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
-    urow("vgenchi_8_1_511", Res.v(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
+    srow("vgenchi_8_1_256", enc_text(vgpr_encode(Ov.reg(256, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
+    srow("vgenchi_8_1_300", enc_text(vgpr_encode(Ov.reg(300, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
+    srow("vgenchi_8_1_384", enc_text(vgpr_encode(Ov.reg(384, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
+    srow("vgenchi_8_1_511", enc_text(vgpr_encode(Ov.reg(511, 1, False{}, False{}, True{}), Fld.vgpr("vdst", 8, 1))))
     srow("vgencneg_8_1", Res.msg(vgpr_encode(Ov.reg(0, 1, False{}, False{}, False{}), Fld.vgpr("vdst", 8, 1))))
     srow("afmask_ab", u32_text(bf_mask(Fld.align2("s", 7, 0, 2))))
     urow("afenc_ab_0", Res.v(al_encode(Ov.reg(0, 1, False{}, False{}, False{}), Fld.align2("s", 7, 0, 2))))
@@ -2650,23 +2758,23 @@ def g_enc() -> IO(Unit):
     srow("afdec_sr2_32", rg2(U32.shln(32, U32.to_nat(al_shift_of(Fld.srsc("rsrc", 5, 0)))), 1))
     srow("afdec_sr2_63", rg2(U32.shln(63, U32.to_nat(al_shift_of(Fld.srsc("rsrc", 5, 0)))), 1))
     srow("vdstyenc_256", enc_text(vdsty_encode(Ov.reg(256, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_256", Res.msg(vdsty_encode(Ov.reg(256, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_256", enc_text(vdsty_encode(Ov.reg(256, 1, False{}, False{}, False{}))))
     srow("vdstyenc_257", enc_text(vdsty_encode(Ov.reg(257, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_257", Res.msg(vdsty_encode(Ov.reg(257, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_257", enc_text(vdsty_encode(Ov.reg(257, 1, False{}, False{}, False{}))))
     srow("vdstyenc_258", enc_text(vdsty_encode(Ov.reg(258, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_258", Res.msg(vdsty_encode(Ov.reg(258, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_258", enc_text(vdsty_encode(Ov.reg(258, 1, False{}, False{}, False{}))))
     srow("vdstyenc_259", enc_text(vdsty_encode(Ov.reg(259, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_259", Res.msg(vdsty_encode(Ov.reg(259, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_259", enc_text(vdsty_encode(Ov.reg(259, 1, False{}, False{}, False{}))))
     srow("vdstyenc_510", enc_text(vdsty_encode(Ov.reg(510, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_510", Res.msg(vdsty_encode(Ov.reg(510, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_510", enc_text(vdsty_encode(Ov.reg(510, 1, False{}, False{}, False{}))))
     srow("vdstyenc_511", enc_text(vdsty_encode(Ov.reg(511, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_511", Res.msg(vdsty_encode(Ov.reg(511, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_511", enc_text(vdsty_encode(Ov.reg(511, 1, False{}, False{}, False{}))))
     srow("vdstyenc_128", enc_text(vdsty_encode(Ov.reg(128, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_128", Res.msg(vdsty_encode(Ov.reg(128, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_128", enc_text(vdsty_encode(Ov.reg(128, 1, False{}, False{}, False{}))))
     srow("vdstyenc_255", enc_text(vdsty_encode(Ov.reg(255, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_255", Res.msg(vdsty_encode(Ov.reg(255, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_255", enc_text(vdsty_encode(Ov.reg(255, 1, False{}, False{}, False{}))))
     srow("vdstyenc_0", enc_text(vdsty_encode(Ov.reg(0, 1, False{}, False{}, False{}))))
-    srow("vdstyencneg_0", Res.msg(vdsty_encode(Ov.reg(0, 1, False{}, False{}, False{}))))
+    srow("vdstyencneg_0", enc_text(vdsty_encode(Ov.reg(0, 1, False{}, False{}, False{}))))
     srow("vdstyget_0_256", u32_text(vdsty_get(0, 256)))
     srow("vdstyget_0_257", u32_text(vdsty_get(0, 257)))
     srow("vdstyget_0_258", u32_text(vdsty_get(0, 258)))
@@ -2781,13 +2889,18 @@ def g_inst() -> IO(Unit):
     row("exemptw_255", exempt_width(255))
     row("noresize_256", no_resize(256))
     row("exemptw_256", exempt_width(256))
+    # `modmerge_{given}_0_{bits}` -- THE MIDDLE DIGIT IS `has`, and it is 0 in EVERY one
+    # of these rows, because `vals` is a DICT in CPython (dsl.py:334-335 looks a value
+    # up BY NAME) and a caller that supplied nothing and a caller that supplied a value
+    # are only told apart by the KEY. Three of these rows read `True{}` where their own
+    # NAME says `0`, and the census caught it as CPython `0` against port `2`.
     urow("modmerge_0_0_0", mod_merge(0, False{}, 0))
-    urow("modmerge_0_0_0", mod_merge(0, True{}, 0))
+    urow("modmerge_0_0_0", mod_merge(0, False{}, 0))
     urow("modmerge_0_0_1", mod_merge(0, False{}, 1))
-    urow("modmerge_0_0_1", mod_merge(0, True{}, 1))
-    urow("modmerge_2_0_0", mod_merge(2, True{}, 0))
-    urow("modmerge_2_0_1", mod_merge(2, True{}, 1))
-    urow("modmerge_6_0_1", mod_merge(6, True{}, 1))
+    urow("modmerge_0_0_1", mod_merge(0, False{}, 1))
+    urow("modmerge_2_0_0", mod_merge(2, False{}, 0))
+    urow("modmerge_2_0_1", mod_merge(2, False{}, 1))
+    urow("modmerge_6_0_1", mod_merge(6, False{}, 1))
     urow("srcbit_src0", src_bit("src0"))
     urow("srcbit_src1", src_bit("src1"))
     urow("srcbit_src2", src_bit("src2"))

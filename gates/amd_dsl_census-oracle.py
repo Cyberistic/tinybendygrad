@@ -703,7 +703,17 @@ def g_inst():
     srow("ord_fields", fields_of(ORD_FIELDS))
     srow("ord_fields_swap", fields_of(ORD_FIELDS_SWAP))
     srow("raw_ord", _rws(_walk(ORD_FIELDS, ORD_VALS)))
-    srow("raw_ord_swap", _rws(_walk(ORD_FIELDS, ORD_VALS_SWAP)))
+    # THE FIXTURE NAMED `_swap` IS THE PORT'S `ORD_VALS_SWAP`, AND THE PORT'S `Vf` LIST
+    # ORDER IS ITS `_fields` ORDER (dsl.py:334-335 walks `self._fields`, and every `Vf`
+    # carries its own field). So the row that models it walks `ORD_FIELDS_SWAP`, not
+    # `ORD_FIELDS`. It used to walk `ORD_FIELDS`, which transposes the VALUE LIST -- and
+    # CPython cannot observe that at all, `vals` is a dict (dsl.py:300-307) and every
+    # value is looked up BY NAME, so two "swap" rows were the same row.
+    # MEASURED on two real `dsl.Inst` subclasses, `first`/`second` at [7:0]:
+    #   class A(_fields = [first, second]) -> A(first=11, second=22)._raw == 0x16
+    #   class B(_fields = [second, first]) -> B(first=11, second=22)._raw == 0x0b
+    #   A(second=22, first=11)._raw == 0x16   # kwargs order is invisible
+    srow("raw_ord_swap", _rws(_walk(ORD_FIELDS_SWAP, ORD_VALS_SWAP)))
     srow("fields_F16", fields_of(F16_FIELDS))
     row("base_size_F16", _base_size(F16_FIELDS))
     srow("fields_F64", fields_of(F64_FIELDS))
