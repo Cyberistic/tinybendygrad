@@ -145,14 +145,19 @@ WANT = {
     # one located field on 45 and 24 matched cores. These four read `field-mismatches=0`: no two
     # nodes pair, so nothing is compared and nothing differs. The disagreement is the NODE SET.
     #
-    # `flip` DISAGREES ON `arg`, and the fixture PREDICTS IT: `g_flip`'s own docstring reads
-    # "**EXPECTED TO DISAGREE, ON `arg`**" with the CPython call behind it (`a.flip(0).uop.arg` ->
-    # `(True, False)`; `ops.py:428` refuses an int tuple) and the port side at `ops.bend:1066`,
-    # which types one `ATuple{ys: List<&2, U32>}` for PERMUTE and FLIP together so a bool has no
-    # spelling. MEASURED: `arg py=n(b1,b0) bend=n(i1,i0)`, and the port adds one `GROUP` node.
-    # **This is the only row in the table whose expectation predates the measurement**, and it is
-    # why a DISAGREE is the strong kind: it is the one that was already claimed.
-    "flip": "DISAGREE",
+    # `flip` AGREES (moved 2026-10-13, run with 34 of 34 graphs byte-identical). It was the LAST
+    # row whose expectation predated the measurement, and BOTH of the things the prediction named
+    # are now false. It read: `arg py=n(b1,b0) bend=n(i1,i0)`, "and the port adds one `GROUP`
+    # node". Neither holds. The `ABoolList` fix landed, so BOTH lanes read `n(b1,b0)`. And the
+    # `GROUP` node was never a port defect at all: `tinygrad/uop/ops.py:559` reads
+    # `if len(srcs) == 1 and isinstance(srcs[0], UOp): return srcs[0]`, so a ONE-src `UOp.group`
+    # builds NO NODE -- and of 12 hand-built `OpsGROUP` statements, `g_flip` was the only one
+    # carrying a single src (it was split out of `move` and took its four-src wrapper with it). So
+    # the fixture was modelling a call its own oracle collapses, and the py lane was right all
+    # along: `emit_py('flip')` answers 6 rows carrying no `GROUP` at all.
+    # **A PREDICTION IS NOT A PIN.** It moves when the measurement moves, and it moves with the
+    # evidence written down next to it.
+    "flip": "AGREE",
     # `allred`, `cdiv` and `late` MOVED TO AGREE (2026-10-06, run34). They were DISAGREE for one
     # reason -- the bend side emitted `matmul`'s GRAPH because `rows.pick3` had no arm for them
     # (`.agents/slop/unsetexp/`). `adevfix` (device-tuple normal form) and `armfour` (`c3b4da262`,
@@ -189,10 +194,12 @@ WANT = {
     "mselect": "AGREE",
     # `stage` and `wmma` JOINED THEM (2026-10-06, the CLEAN re-run): `mselectarg`'s `AInt` variant
     # closed `mselect`, and `foldgap`'s WMMA-shape fix + STAGE arm closed those two -- both landed
-    # AFTER the first run, which is why the first run pinned all three DISAGREE. `unshard` STAYS
-    # DISAGREE: `foldgap` REFUSED it, because the fold needs `int(r.vmax+1)` and `dt_shape` gets no
-    # `BTable`, so claiming a shape would be a lie and the node stays an honest `?`.
-    "stage": "AGREE", "unshard": "DISAGREE", "wmma": "AGREE",
+    # AFTER the first run, which is why the first run pinned all three DISAGREE. `unshard` JOINED
+    # THEM (2026-10-13): `whosecache` corrected the same stale `GROUP` census here that it
+    # corrected in `mulacc`/`getaddr` -- all four were disputed by `graphcmp.bend`'s own comments,
+    # and the port had already agreed. `foldgap`'s refusal was about a shape it declined to claim;
+    # nothing in the graph needed one, so the honest `?` became an honest answer rather than a gap.
+    "stage": "AGREE", "unshard": "AGREE", "wmma": "AGREE",
     # MEASURED, not predicted -- see the `getaddr` note above: VERDICT=AGREE, byte-identical.
     "getaddr": "AGREE",
 }
@@ -436,6 +443,12 @@ def grep_line(out, needle):
 
 
 def conjoin(xs):
+    # The EMPTY case is the good one and it used to crash. It is reached the moment the corpus is
+    # whole -- 34 of 34 graphs byte-identical, `bad` empty -- and every earlier run had at least
+    # one disagreement to name, so no branch covered it. A gate that cannot render its own
+    # success state cannot report it: `IndexError` on the run that found nothing wrong.
+    if not xs:
+        return "none"
     return xs[0] if len(xs) == 1 else " and ".join(xs) if len(xs) == 2 \
         else ", ".join(xs[:-1]) + " and " + xs[-1]
 

@@ -159,3 +159,4 @@
 # TIMED OUT: 0 of 138
 # peak over all files: 1152 MB
 # wrote runs/peakrss.json
+       748 MB     2s  rc=0    -       .agents/slop/graphcmp.bend   [NOT-A-PORT-FILE/1]
