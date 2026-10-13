@@ -13704,13 +13704,79 @@ would move every `raw_*`/`bfs` row, so it needs its own unit.
       "`1 << 32` SATURATES TO 0 in a U32 (measured, bend2-constraints)". So the port CANNOT express a
       64-bit word today, and the wall is the WORD WIDTH, not the DSL.
 
+## Session 2026-10-13 — `opsfind`: findings A, B, C and F of `gates/ops_python_census-gate.py`
+Full report, every reading and every plant: `.agents/slop/opsfind/REPORT.md`.
+FINAL: `ops_python_census-gate.py` **rc=0, 85 rows x 3 lanes, 85 exact, 0 pinned, 10/10
+checks OK.** The 85 row NAMES are unchanged; `names_hold()` still derives both
+populations independently.
+- [x] **A — EIGHT ROWS PRINTED A CONSTANT. CLOSED.** `literal_rows()` answered 8,
+      answers `[]`, and `literal_rows_hold()` now pins the EMPTY SET. Each row reads
+      an input the port ALREADY HAD: `METAL_CORE(din)` is the one declaration of
+      `tc.metal[0]` and the four `core_find` fixtures now build from it;
+      `DEV_ARGS()` is the one declaration of ops_python.py:186's argument ORDER and
+      the rows SEARCH it (`DEV_POS.go`) — the tags moved `0/1/2` -> `10/11/12/13`
+      because they were DEFINED to equal the positions, which is why they were
+      constants wearing a row's clothes. **Mutations** (`.agents/slop/opsfind/mutate.py`):
+      BEFORE, widening the metal fragment 8->16 on the core the LOOKUP uses moved
+      **0/1**; AFTER it moves `pywma_metal_dims0: 8 -> 16`. Same for threads, 0/1 ->
+      1/1. Reorder the ctor AFTER: 2/2; drop an argument AFTER: **4/4 from one edit**;
+      a second renderer AFTER: 1/1; rename `b64decode` AFTER: 2/2. A3/A4/A5 have NO
+      before reading because a row that IS its own literal has no input — which is
+      the finding, not a gap in the harness.
+- [x] **B — THE HEADER DENIED TWO ROWS THAT EXISTED. CLOSED.** :2374 said there are
+      NO `pyc_*` rows, 285 lines above the two that disclaimed. It now says there are
+      two, says which is which, and says the port's is the weaker identity.
+      `pyc_rows_hold` requires the disclaimer GONE. Plant: **RED**.
+- [x] **C — TWO DEAD DEFS. CLOSED BY DELETION, NOT WIRING.** `B64_EQ` (residue of
+      the abandoned base64 decoder — no reader to wire it to) and `prog.init`
+      (returned `Nil{}`, built NEITHER map its comment described). Plants: **RED**
+      for each.
+- [x] **F — CHECKED, NOT ASSUMED: THE ARM IS SOUND AND THE DEAD DEF WAS NOT ITS
+      EVIDENCE.** `ops_bend.encode` builds `idx = {u: i for i, u in enumerate(uops)}`
+      (ops_bend.py:135) — the SAME comprehension as ops_python.py:49 — and writes
+      `str(idx[s]+1)` (:142), so the wire's `<src>` field IS `uop_to_index[src]+1`,
+      which `Uop.of.sr` subtracts ONE FROM for EVERY src. MEASURED on a real
+      `encode` output: equal for every src of every uop, and on the END line the
+      port's pc (2-1) equals `uop_to_index[END.src[1]]` (1). Deleting `prog.init`
+      REMOVED a false witness; the claim now lives beside the code that resolves it.
+- [x] **E — REPORTED, NOT FIXED, AND NOT WEAKENED.** A parse-time refusal of the
+      whole program (`op_of` has no BINARY/CALL/WMMA/CUSTOM_FUNCTION arm, `Uop.refused`
+      is `kind >= 14`, `Prog.one.no` clears `ok`) BEATS CPython's per-dispatch
+      `assert u in values`. `interpreter_hold()` now re-measures all FOUR links; it
+      measured two. Plants: `BINARY` arm **RED**; threshold 13 **RED**.
+- [ ] **D — THE COVERAGE GAP IS STILL OPEN.** `PythonProgram.__call__` (106 of 186
+      lines) has no rows, and the blocker is a missing trusted INSTRUMENT rather than
+      a missing fixture list: the CPython lane would have to turn a v1 packet into
+      real `UOp`s, and the only reader of that wire (`ops_bend.parse`) stops where
+      the uops begin. Writing a wire -> `UOp` decoder inside the oracle is the
+      reimplementation the oracle exists to avoid. Closing it needs a second census
+      whose fixture population is a GENERATOR THAT RUNS. Not started.
+
+## TNISFDUMP -- the ONLY instrument that caught the second `tn_isfinite` defect is a THROWAWAY PROBE (2026-10-13)
+
+The `remint` move closed `tn_graph_census`'s last divergence, and the unit found a SECOND defect on
+the way that NO GATE COULD SEE. Both are recorded here because the instrument is not wired to anything.
+
+- [ ] **`gates/tn_isfinite.bend`'s 6 ROWS STILL CANNOT SEE A WRONG NODE FOUR LEVELS DOWN.** The old
+      `isinf_part` spelled `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)` -- **the same
+      count, the wrong srcs** -- and every row in BOTH gates read it as agreement. The commit that
+      fixed it (`.agents/slop/tnisf/dump2.bend`, 49 lines, now committed) is the ONLY instrument that
+      ever saw it.
+- [ ] **SO: WIRE IT, OR SAY WHY NOT.** A committed probe that catches a class no gate catches is
+      either a gate that was never written or a finding that will be rediscovered. `gatekit` makes
+      this cheap: a row per node of the dump, compared against CPython's. **A THROWAWAY PROBE THAT IS
+      THE ONLY WITNESS IS A WALL WITH NO GATE ON IT.**
+- [ ] `TODO.md:1711` (`remint`'s `+u.src[1:]` ORDER still ungated) is a DIFFERENT gap from this one
+      and stays open; the def it names MOVED to `uop/weak.bend` as `wk_remint`, so the citation's path
+      is stale and needs re-pointing.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
 
-**OVERALL** — ████████░░ 1082/1325 81.7%  (+4 `[~]`)
+**OVERALL** — ████████░░ 1093/1350 81.0%  (+4 `[~]`)
 
-Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sections carry tasks.
+Category = each level<=2 (`#`/`##`) heading, found by discovery; 160 of 190 sections carry tasks.
 
 • TODO — ████████░░ 39/49  80%
 • Phase P0 — toolchain and scaffolding — █████████░ 8/9  89%
@@ -13867,3 +13933,8 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sect
 • devpin — the DEVICE is a declared precondition of the graphcmp compar... — ████████░░ 24/30  80%
 • 2026-10-06 — the ops.bend marker campaign, and the fifth defect close... — ████████░░ 4/5  80%
 • FLIPTHIRD — the cost is NOT in the files: bend measures the Arg t... — ██████████ 8/8 100%
+• MSGDIFFQ — msgdiff-gate.py REFUSES A MESSAGE THAT FAITHFULLY QUOTES... — ░░░░░░░░░░ 0/4   0%
+• DECOMPCENSUS — codegen/decomp/ gets its FIRST gate, and its ORACLE ... — ███████░░░ 6/9  67%
+• REALIZEGAPS — three gaps in realize_graph_census's OWN instrument (... — ░░░░░░░░░░ 0/3   0%
+• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ░░░░░░░░░░ 0/3   0%
+• Session 2026-10-13 — opsfind: findings A, B, C and F of gates/ops_... — ████████░░ 5/6  83%
