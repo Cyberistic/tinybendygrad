@@ -156,6 +156,12 @@ import ./../helpers.bend as H
 import ./../LAWS/spec.bend as S
 import ./../uop/ops.bend as O
 import ./../uop/fold.bend as F
+# `M` IS ONE IMPORT LINE AND IT IS THE ONLY REASON `rz_fire` IS NOT THE SITE of
+# ops.py:1618's `ret is not uop`: `movement.bend`'s `hop_self` is that clause, it was
+# INVERTED once and is fixed now (MEASURED today: `ret_self=1`, `ret_new=0`), and
+# `rangeify.bend:2700-2708` is the post-mortem for the local copy that was deleted
+# rather than kept. `uop/` does not import `engine/`, so this edge points one way.
+import ./../uop/movement.bend as M
 def has_cst(m: Maybe<&2, O.Const>) -> Bool:
   match m:
     case Some{_}: True{}
@@ -1225,10 +1231,45 @@ def bm_new.call(+sink: O.Found, +call: U32, ctx: U32) -> O.Found:
              List.append(&2, U32, [O.Found.i(rz_beam_sink(O.Found.ar(sink), call, ctx))],
                         O.Arena.src_from(O.Found.ar(sink), call, 1)))
 
+# `ret is not uop` -- ops.py:1618 -- IS `M.hop_self`, APPLIED TO THE ANSWER, and this
+# is the site rather than `rz_fire` for TWO reasons both measured. First, the OTHER half
+# of the clause (`ret is not None`) IS ALREADY `rz_fire`'s `claim`: a false claim answers
+# `VSkip`, and `beam_0`'s `pm_when` answers `VSkip` when `bm_zero` is false, so "absent"
+# is dropped today. Second, `rz_fire` HOLDS A `Verdict` AND NO INDEX, and the clause is an
+# INDEX COMPARISON -- so it cannot be given to `rz_fire` at all, and the three other tables
+# whose bodies are judge-only (`fl_0`, `va_0`, `va_1`, all of which answer `VTrue`/`VFalse`)
+# have no answer to compare. `rangeify.bend` says the same thing about where the clause
+# belongs -- inside `rewrite`, around `match`, applied ONCE PER TABLE so a body cannot
+# forget it -- and `movement.bend`'s `hop_self` is the ONE copy, after its own inversion
+# was fixed (MEASURED today: `./bin/bend tinybendygrad/uop/movement.bend` answers
+# `ret_self=1` and `ret_new=0`, and `ret_new` is the row that read 1 while the bug was in
+# place). `rangeify.bend:2700-2708` is the post-mortem for the local copy that is GONE.
+#
+# `Hop{ar, ix}` and `O.Found{ar, ix}` ARE THE SAME PAIR under two names, so the clause is
+# the shared one with two conversions either side rather than a second `is_eq`.
+def bm_hop.of(+f: O.Found) -> M.Hop:
+  M.Hop{O.Found.ar(f), O.Found.i(f)}
+
+def bm_hop.back(+h: M.Hop) -> O.Found:
+  O.Found{M.hop_ar(h), M.hop_ix(h)}
+
+def bm_hop_self(+f: O.Found, self: U32) -> O.Found:
+  bm_hop.back(M.hop_self(bm_hop.of(f), self))
+
 # `call` and `ctx` are each read twice -- once to find the sink and once to
 # rebuild the node -- and a parameter Bend allows to be read twice is a `+`.
+#
+# AND THE CLAUSE IS INSIDE `bm_new` RATHER THAN AROUND IT, because in realize.bend
+# `beam_rewrite` is a JUDGE (realize.bend:1657) and `bm_new` is the BODY, so `bm_new` is
+# the `rewrite` this table's driver would otherwise be. THE DEFECT THIS FIXES IS
+# MEASURED: `pm_beam`'s body is `call.replace(src=(sink.replace(arg=replace(sink.arg,
+# beam=ctx)), *call.src[1:]))`, and at `ctx == 0` over a SINK whose `beam` is already 0
+# EVERY replacement is the identity, `UOp.new` HASH-CONSES, and the answer IS the input
+# node -- which `ops.py:1618` drops and this file did not. `gates/realize_graph_census`
+# drove `pm_beam` at ctx 0 AND ctx 7 precisely so the clause has a row; before the fix
+# CPython answered `0` and the port answered `1:<the input's own cone>`.
 def bm_new(+ar: O.Arena, +call: U32, +ctx: U32) -> O.Found:
-  bm_new.call(rz_beam_sink(ar, call, ctx), call, ctx)
+  bm_hop_self(bm_new.call(rz_beam_sink(ar, call, ctx), call, ctx), call)
 
 # `# ctx is beam value` -- realize.py:215 -- and the CLAIM. The body additionally
 # fires only when `sink.arg.beam == 0`; `bm_zero` is that test and `bm_new` is the
