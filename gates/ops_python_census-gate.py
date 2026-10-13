@@ -6,8 +6,9 @@ the port of `tinygrad/runtime/ops_python.py`.
     .venv/bin/python gates/ops_python_census-gate.py --refresh   # rewrites the pins
 
 85 ROWS (84 census rows + `py-done=1`), THREE LANES, **0 DECLARED DIVERGENCES**,
-AND SIX FINDINGS. Every row is ANSWERED BY CPYTHON'S OWN PATH -- measured, and the
-oracle is built so that it cannot be anything else.
+AND SIX FINDINGS OF WHICH **A, B, C AND F ARE CLOSED** AND D AND E ARE OPEN AND
+REPORTED. Every row is ANSWERED BY CPYTHON'S OWN PATH -- measured, and the oracle
+is built so that it cannot be anything else.
 
 WHY NO EXISTING INSTRUMENT APPLIES, and why this one is (4) + (3).
 
@@ -32,8 +33,14 @@ tinybendygrad/runtime/ops_python.bend` with an empty argv, which `main.at`
 answered NOTHING: 0 of the tree's gates named this layer, and 84 rows the port
 computes were compared to nothing.
 
-THE PORT STAYS BYTE-IDENTICAL. Not one line of `tinybendygrad/runtime/ops_python.bend`
-is edited by this unit; the census reads the lane the port already declares.
+THE PORT IS ITS OWN DRIVER, and it is now EDITED by this unit too. The first
+version of this census read the lane the port already declares and changed no
+line of it; findings A, B and C were all properties of that lane, and closing
+them MEANT editing `tinybendygrad/runtime/ops_python.bend` -- eight rows that
+read nothing, a header that denied two of them existed, and two defs nothing
+called. The 85 row NAMES are unchanged, and `names_hold()` still derives both
+populations independently, so an edit that added or renamed a row would be a red
+run rather than a quietly different census.
 
 THE PRINTED FORM, AND WHY EACH FIELD IS THE THING THE LAYER RETURNS.
 
@@ -96,68 +103,104 @@ and is also un-drifted at `9ba914d2`.
 
 THE SIX FINDINGS. None of them is a disagreement between the two lanes; each is a
 property of the PORT, re-measured on every run by a check below, so a later fix
-turns the gate red and says the finding closed.
+turns the gate red and says the finding closed. **A, B, C AND F ARE NOW CLOSED**
+and their checks pin the CLOSED state; D and E are open and are reported, not
+fixed. Every number in what follows was measured on 2026-10-13.
 
-  A. **EIGHT ROWS PRINT A CONSTANT.** `literal_rows()` re-derives them by parsing
-     each row call's value expression: a bare `Nat`/`U32`, or a zero-argument call
-     to a def whose body is itself a literal. The eight are `pywma_metal_dims0`,
-     `pywma_metal_threads`, `pyc_is_b64decode`, `pyc_refused`, `pyd_ctor_len`,
-     `pyd_ctor_allocator`, `pyd_ctor_renderers`, `pyd_ctor_runtime` and
-     `pyd_nrenderers` minus the one derived by negation -- MEASURED by the check,
-     not asserted in prose. All eight are RIGHT today (`tc.metal[0].dims[0]` is 8,
-     its threads is 32, `compile` IS `base64.b64decode`, the ctor arity is 4 and
-     the ctor tags are 0/1/2), and every one of them would still be right after tc.py
-     changed a fragment width or ops_python.py reordered the ctor. This is class
-     (d) -- `amd_dsl_census`'s `String.eq("vdst","vdst")` -- and the port's own
-     comment concedes half of it: ops_python.bend:2705 says "all four things it
-     passes are constants, so a row that read the fields would be reading the port's
-     own tag numbering". The CONSTANTS are the finding; the census cannot see them
-     move, and only a mutation can.
+  A. **EIGHT ROWS PRINTED A CONSTANT. CLOSED.** `literal_rows()` re-derives the
+     population by parsing each row call's value expression: a bare `Nat`/`U32`, or
+     a zero-argument call to a def whose body is itself a literal. It answered EIGHT
+     -- `pywma_metal_dims0`, `pywma_metal_threads`, `pyc_is_b64decode`,
+     `pyd_ctor_len`, `pyd_ctor_allocator`, `pyd_ctor_renderers`, `pyd_ctor_runtime`,
+     `pyd_nrenderers` -- and all eight were RIGHT while being unreadable: they would
+     still be right after tc.py changed a fragment width or ops_python.py reordered
+     the ctor. Class (d), `amd_dsl_census`'s `String.eq("vdst","vdst")`, and the port's
+     own comment conceded half of it ("all four things it passes are constants, so a
+     row that read the fields would be reading the port's own tag numbering"). Each
+     now READS its input, and the input is declared ONCE and shared:
+       * `Core.d0(METAL_CORE(0))` and `Core.threads(METAL_CORE(0))` -- one
+         `METAL_CORE(din)` carries `tc.metal[0]`, so the two rows and the four
+         `core_find` fixtures can no longer disagree about the same fragment.
+       * `DEV_POS(DEV_ALLOCATOR())` and `List.length(..., DEV_ARGS())` -- one
+         `DEV_ARGS()` list is ops_python.py:186's argument order, and the rows
+         SEARCH it. The tags moved to 10/11/12/13 so that a tag can never be a
+         position by accident, which is what let the old 0/1/2 pass for readings.
+       * `compile.is_b64decode(compile.transform())` -- the two names are declared
+         separately and compared. THIS IS THE WEAKEST OF THE EIGHT and the header in
+         the port says so: the oracle CALLS `compile` on eight fixtures and compares
+         bytes, the port compares declared transform names, because the quartet fold
+         is WALL 5 and the port cannot run it. The port's row is the weaker fact and
+         the gate says which one it is rather than letting green read as verified.
+     `literal_rows()` answers `[]`, and that is what `literal_rows_hold()` now pins.
 
-  B. **THE HEADER SAYS THERE ARE NO `pyc_*` ROWS, AND THERE ARE TWO.** Class (g),
-     and the sharpest one in this layer: ops_python.bend:2374 reads "A row that
-     disagrees with CPython is a row that encodes a bug, so there are NO `pyc_*`
-     rows here at all", and :2660/:2661 print `pyc_is_b64decode` and `pyc_refused`.
-     `pyc_rows_hold()` re-measures the two on every run. The sentence is the dead
-     premise; the rows it disclaims are live and both agree with CPython.
+  B. **THE HEADER SAID THERE ARE NO `pyc_*` ROWS, AND THERE WERE TWO. CLOSED.**
+     ops_python.bend:2374 read "A row that disagrees with CPython is a row that
+     encodes a bug, so there are NO `pyc_*` rows here at all" while :2660/:2661
+     printed `pyc_is_b64decode` and `pyc_refused` -- same file, 285 lines apart.
+     The header now says there are two, says what each one is, and says which of the
+     two sides of the identity it can establish. `pyc_rows_hold()` re-measures both
+     halves: the disclaimer must stay GONE and the two rows must stay the two.
 
-  C. **`B64_EQ` IS DEAD.** ops_python.bend:2381 defines it and `grep -n B64_EQ` on
-     that file answers exactly ONE line -- the definition. It is the `=` of a base64
-     alphabet with no decoder left, WALL 5 having been abandoned mid-file. Same for
-     `prog.init` (:2572), one line, no caller.
+  C. **TWO DEAD DEFS. CLOSED, BY DELETION.** `B64_EQ` (ops_python.bend:2381) was the
+     `=` of a base64 alphabet whose decoder was abandoned mid-file -- WALL 5 -- and
+     `prog.init` (:2572) returned `Nil{}`: it built neither of the two maps its own
+     comment described, and nothing called it. Each had EXACTLY ONE mention on the
+     file, its own definition. Neither was wired: the decoder is not coming back
+     inside this unit, and `prog.init` had no reader because the lookup it claimed to
+     describe is resolved in the PARSER, not in a table. Both deleted, and the one
+     place the loss of `prog.init` actually mattered is FINDING F.
 
-  D. **THE INTERPRETER HALF HAS NO ROWS IN THE POPULATION.** This is the honest
-     limit and it is the report's "what this census cannot see". `ops_python.py`'s
-     `PythonProgram.__call__` is :52-157 -- 106 of 186 lines, 57% of the upstream
-     file -- and every dispatch arm of it (`Prog.dispatch`, ops_python.bend:2019) is
-     reachable through `main()` only with a PACKET on the command line, which is the
-     EXECUTOR lane and not a value lane. MEASURED: the population this gate compares
-     is 85 rows and `grep -c -E '(srow|urow|row)\\(' tinybendygrad/runtime/ops_python.bend`
-     over the five `t_*` bodies is 84, none of which is a `Prog.dispatch` row. The
-     `t_*` groups cover `PythonRenderer.__init__`, `supported_dtypes`,
-     `PythonCompiler.compile`, `wmma`'s lookup and two assertions, and
-     `PythonDevice.__init__` -- the renderer/compiler/device half. Censusing the
-     evaluator half needs fixtures the PORT must declare (the port may not be edited
-     here), or a driver that hand-lists them, and a hand list is what
-     `AGENTS.md`'s doctrine 1 forbids.
+  D. **THE INTERPRETER HALF HAS NO ROWS IN THE POPULATION. STILL OPEN, AND THIS IS
+     THE HONEST LIMIT.** `ops_python.py`'s `PythonProgram.__call__` is :52-157 --
+     106 of 186 lines, 57% of the upstream file -- and every dispatch arm of it
+     (`Prog.dispatch`, ops_python.bend:2019) is reachable through `main()` only with
+     a PACKET on the command line, which is the EXECUTOR lane and not a value lane.
+     MEASURED: the population this gate compares is 85 rows and 84 of them come from
+     the five `t_*` bodies, none of which is a `Prog.dispatch` row. The `t_*` groups
+     cover `PythonRenderer.__init__`, `supported_dtypes`, `PythonCompiler.compile`,
+     `wmma`'s lookup and two assertions, and `PythonDevice.__init__` -- the
+     renderer/compiler/device half. NOT CLOSED, and the reason is a missing trusted
+     INSTRUMENT rather than a missing fixture list: the CPython lane would have to
+     turn a v1 packet into real `UOp` objects, and the only reader of that wire in
+     the tree stops where the uops begin -- `ops_bend.parse` (ops_bend.py:169)
+     "only recovers the shape BendProgram needs to marshal buffers, which is why it
+     stops at op names and index lists". Writing a wire -> `UOp` decoder inside this
+     oracle is the reimplementation this oracle exists to avoid, and a hand-listed
+     fixture set is what `AGENTS.md`'s doctrine 1 forbids. Closing it needs a second
+     census whose fixture population is a GENERATOR that runs (`ops_bend.encode` over
+     a rendered uop list), not a list anyone typed.
 
-  E. **`Prog.dispatch` HAS NO `assert`-FOR AN UNREACHED ARM.** Class (f): CPython's
-     :155 is `assert u in values, u`. The port's catch-all is `case _: Prog.alu(p, u)`
-     (ops_python.bend:2042) with no guard, which would be a silent wrong answer --
-     EXCEPT that `op_of` (:481) has no `BINARY`, `CALL`, `WMMA` or
-     `CUSTOM_FUNCTION` arm, so those uops parse to `None`, `Uop.of.op2` marks them
-     `kind >= 14`, `Uop.refused` (:1087) is true and `Prog.one.no` (:1149) sets
-     `ok = False` before the arena is ever walked. MEASURED: `grep -c 'case "BINARY"\|case "CALL"\|case "WMMA"\|case "CUSTOM_FUNCTION"'`
-     on the port answers 0. The refusal is STRUCTURAL and early rather than
-     per-dispatch, which is stronger -- but it is checked by the parse and not by
-     this census.
+  E. **`Prog.dispatch` HAS NO `assert`-FOR AN UNREACHED ARM. REPORTED, NOT FIXED,
+     AND IT IS A STRONGER CLAIM THAN CPYTHON'S.** CPython's :155 is
+     `assert u in values, u` -- a PER-DISPATCH check. The port's catch-all is
+     `case _: Prog.alu(p, u)` (ops_python.bend:2042) with no guard, which would be a
+     silent wrong answer -- except that `op_of` (:481) has no `BINARY`, `CALL`,
+     `WMMA` or `CUSTOM_FUNCTION` arm, so those uops parse to `None`, `Uop.of.op2`
+     leaves the op unparsed, `Uop.refused` (:1087) is `kind >= 14` and
+     `Prog.one.no` (:1149) sets `ok = False`, all before the arena is ever walked.
+     MEASURED: `grep -c 'case "BINARY"\|case "CALL"\|case "WMMA"\|case "CUSTOM_FUNCTION"'`
+     on the port answers 0. A PARSE-TIME refusal of the whole program beats a
+     per-dispatch assertion, so this is deliberately NOT "fixed" into a weaker
+     shape; `interpreter_hold()` now re-measures all FOUR links of it (the four
+     missing arms, the unguarded catch-all, the `kind >= 14` threshold, and
+     `Prog.one.no`'s `ok = False`) so the claim cannot rot silently. It is still
+     checked by the parse and by no row here.
 
-  F. **`Prog.dispatch`'s `OpsEND` ARM DOES NOT DECODE ops_python.py:70's `i =`.**
-     :2025 is `case O.OpsEND{}: Prog.at(p, Uop.src1(u))` while CPython is
-     `i = self.uop_to_index[u.src[1]]`, i.e. an INDEX LOOKUP. On a toposorted arena
-     the two agree only because `prog.init` (:2572) documents the identity -- and
-     `prog.init` is the def FINDING C says has no caller. So the arm's correctness
-     rests on a comment, not on a live invariant. NOT REACHED by any row here.
+  F. **`Prog.dispatch`'s `OpsEND` ARM: CHECKED, AND IT IS SOUND. THE DEAD DEF WAS
+     NOT ITS EVIDENCE.** :2025 is `case O.OpsEND{}: Prog.at(p, Uop.src1(u))` while
+     CPython's :70 is `i = self.uop_to_index[u.src[1]]` -- an INDEX LOOKUP. The
+     finding was that the two agree only because `prog.init`, a def nothing called,
+     said so. Deleting `prog.init` did NOT invalidate the arm; it removed a comment
+     that was citing a stub. The real evidence is live code on BOTH sides:
+     `ops_bend.encode` builds `idx = {u: i for i, u in enumerate(uops)}`
+     (ops_bend.py:135) -- the SAME comprehension as ops_python:49 -- and writes
+     `str(idx[s]+1)` (ops_bend.py:142), so the wire's `<src>` field IS
+     `uop_to_index[src] + 1`, which `Uop.of.sr` subtracts ONE FROM, ONCE, FOR EVERY
+     SRC. MEASURED on a real `encode` output: the wire field equals
+     `uop_to_index[src]+1` for every src of every uop, and on the END line the
+     port's pc (2 - 1) equals `uop_to_index[END.src[1]]` (1). So the port resolves
+     the lookup at PARSE, for every arm, and the END arm is not a special case.
+     Still NOT REACHED by any row in this census.
 
 EXIT STATUS: 0 all three lanes identical after the pins and every check holds · 1 a
 lane took the wrong row count, the oracle failed, the native compile failed, the
@@ -431,52 +474,72 @@ def literal_rows():
 
 
 def literal_rows_hold() -> bool:
-    """FINDING A. MEASURED, not asserted in prose, and pinned as an EXACT SET so a
-    fix turns this red and says the finding closed."""
+    """FINDING A, CLOSED. The same derivation, re-run on every run, now pinned as
+    the EMPTY SET: not one row's value is a bare literal or a zero-argument call
+    to a literal, so every row reads a declared input. What each of the eight now
+    reads is recorded where it is declared -- `Core.d0(METAL_CORE(0))` /
+    `Core.threads(METAL_CORE(0))` for tc.py's `tc.metal[0]` fragment,
+    `DEV_POS(...)` and `List.length(..., DEV_ARGS())` for ops_python.py:186's ctor
+    argument order, and `compile.is_b64decode(compile.transform())` for the
+    transform `compile` applies. The set is re-derived, never listed here, so a
+    NINTH constant row is a red run and so is a re-regression of any of the eight.
+    """
     got = literal_rows()
-    want = ["pyc_is_b64decode", "pyd_ctor_allocator", "pyd_ctor_len", "pyd_ctor_renderers",
-            "pyd_ctor_runtime", "pyd_nrenderers", "pywma_metal_dims0", "pywma_metal_threads"]
     return report("literal_rows_hold",
-                  [] if got == want else [f"the constant rows are {got}, expected {want}"])
+                  [] if got == [] else [f"{len(got)} row(s) print a constant again: {got}"])
 
 
 def pyc_rows_hold() -> bool:
-    """FINDING B, class (g): ops_python.bend:2374 says there are NO `pyc_*` rows and
-    there are two. Re-measured here so the header's dead premise is a red run when
-    it stops being dead, and so a reader does not have to grep for it."""
+    """FINDING B, class (g), CLOSED. ops_python.bend's header used to say there
+    were NO `pyc_*` rows while :2660/:2661 printed two; it now says there are two
+    and what each one is. Both halves are re-measured here: the disclaimer must be
+    GONE (its return is a stale finding, not a new one) and the two rows must still
+    be the two that are printed."""
     src = PORT.read_text()
-    header = src[:src.index("def B64_EQ")]
-    claims_none = "`pyc_*` rows here at all" in header
     got = sorted(set(re.findall(r'row\("(pyc_[a-z0-9_]+)"', src)))
     bad = []
-    if not claims_none:
-        bad.append("the header no longer disclaims the pyc_* rows -- finding B is stale")
+    if "`pyc_*` rows here at all" in src:
+        bad.append("the header disclaims the pyc_* rows AGAIN -- finding B is back")
     if got != ["pyc_is_b64decode", "pyc_refused"]:
         bad.append(f"the pyc_* rows are {got}, expected ['pyc_is_b64decode', 'pyc_refused']")
     return report("pyc_rows_hold", bad)
 
 
 def dead_defs_hold() -> bool:
-    """FINDING C: `B64_EQ` and `prog.init` are each defined once and called zero
-    times. `prog.init` is load-bearing in prose -- ops_python.bend:2568 says
-    `uop_to_index` is the identity and that is WHY `Uop.at` may index by position --
-    and nothing calls it."""
+    """FINDING C, CLOSED, and the check is the SHAPE rather than a pair of names:
+    every `def` in the port that nothing else in the file mentions would show up
+    as exactly one mention of its own identifier. `B64_EQ` (residue of the
+    abandoned base64 decoder) and `prog.init` (a stub returning `Nil{}`, load-bearing
+    in PROSE for `Prog.dispatch`'s END arm and called by nothing) each had one, and
+    each was DELETED rather than wired: neither had a reader, and the END arm's
+    evidence now lives in `Uop.of.sr`, where the lookup is actually resolved and
+    beside the ENCODER's own `idx = {u: i for i, u in enumerate(uops)}`.
+    Six other single-mention defs predate this gate and are NOT touched by it --
+    `is_hspace`, `word_at`, `str_of`, `hex_str2`, `elemname`, `Uop.src0` -- so the
+    check stays pinned on the two this finding named, at ZERO, and a re-add is red.
+    """
     src = PORT.read_text()
     bad = []
     for nm in ("B64_EQ", "prog.init"):
         hits = len(re.findall(rf"\b{re.escape(nm)}\b", src))
-        if hits != 1:
-            bad.append(f"{nm} has {hits} mentions, expected exactly 1 (its definition)")
+        if hits != 0:
+            bad.append(f"{nm} has {hits} mentions, expected 0 -- finding C is back")
     return report("dead_defs_hold", bad)
 
 
 def interpreter_hold() -> bool:
-    """FINDING E, class (f), checked structurally: `op_of` has NO arm for the ops
-    CPython dispatches and this port does not (`BINARY`, `CALL`, `WMMA`,
-    `CUSTOM_FUNCTION`), so those uops are refused at PARSE time and
-    `Prog.dispatch`'s unguarded `case _: Prog.alu` cannot answer for them. This is
-    what makes the catch-all safe; if an arm is ever added the check goes red and
-    the dispatch has to learn to refuse."""
+    """FINDING E, class (f), checked structurally, and STRONGER than CPython's.
+    CPython's :155 is `assert u in values, u` -- a PER-DISPATCH check. The port's
+    catch-all `case _: Prog.alu(p, u)` (ops_python.bend:2042) is unguarded, which
+    would be a silent wrong answer, EXCEPT that the refusal happens earlier and
+    everywhere at once: `op_of` has no `BINARY`, `CALL`, `WMMA` or `CUSTOM_FUNCTION`
+    arm, so those uops parse to `None`; `Uop.of.op2` leaves the op unparsed;
+    `Uop.refused` is `kind >= 14`; and `Prog.one.no` clears `ok` -- all before the
+    arena is ever walked. A parse-time refusal of the whole program beats a
+    per-dispatch assertion, so this is not a weakening and must not be "fixed" into
+    one. All FOUR links are re-measured here: if an arm is ever added to `op_of`, or
+    the threshold moves, or `Prog.one.no` stops clearing `ok`, the dispatch has to
+    learn to refuse and this goes red."""
     src = PORT.read_text()
     body = re.search(r"^def op_of\(nm: String\).*?(?=^def |\Z)", src, re.M | re.S).group(0)
     bad = []
@@ -485,6 +548,15 @@ def interpreter_hold() -> bool:
             bad.append(f'op_of now has a "{op}" arm, and Prog.dispatch has no case for it')
     if 'case _: Prog.alu(p, u)' not in src:
         bad.append("Prog.dispatch's catch-all is gone -- FINDING E is stale")
+    if "def Uop.refused(+u: Uop) -> Bool: U32.is_ge(Uop.kind(u), 14)" not in src:
+        bad.append("Uop.refused is no longer `kind >= 14` -- the parse-time refusal "
+                   "the catch-all's safety rests on has moved or is gone")
+    # and the refusal must LAND: `Prog.one.no` is the arm an unparsed line takes,
+    # and its whole body is `ok = False`.
+    if not re.search(r"^def Prog\.one\.no\(\+b: Build\) -> Build:\n"
+                     r"  Build\{[^\n]*False\{\}\}\s*$", src, re.M):
+        bad.append("Prog.one.no no longer ends the Build with ok=False -- an unparsed "
+                   "uop would no longer refuse the program")
     return report("interpreter_hold", bad)
 
 

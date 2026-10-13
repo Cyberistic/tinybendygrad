@@ -1383,6 +1383,21 @@ def Uop.of.arg(+u: Uop, h: String) -> Uop: Uop.of.arg2(u, Arg.of(h))
 # a src index: 1-based on the wire, 0-based here, refused when `U32.read` refuses
 # the spelling. The bounds check is `Uop.at`'s: an index past the packet answers
 # the bottom, and the bottom of an INDEX is the zero this walk then reads.
+#
+# THE `+1`/`-1` IS THE WHOLE OF `uop_to_index`, and it is the only reason
+# `Prog.dispatch`'s END arm (:2025) may read `Uop.src1(u)` where ops_python.py:70
+# reads `i = self.uop_to_index[u.src[1]]` -- an INDEX LOOKUP CPython performs at
+# dispatch time. The port performs it HERE, once, for every src, because the
+# wire's `<src>` field IS that index: `ops_bend.encode` (ops_bend.py:135) builds
+# `idx = {u: i for i, u in enumerate(uops)}` -- the SAME comprehension ops_python
+# :49 builds -- and writes `str(idx[s]+1)` (ops_bend.py:142). MEASURED today, on
+# a real `encode` output: the wire field equals `uop_to_index[src]+1` for every
+# src of every uop, and on the END line the port's pc (2 - 1) equals
+# `uop_to_index[END.src[1]]` (1). So `Uop.src1(u)` IS that lookup, and it is not
+# an END special case: `Prog.src` and `Prog.slot` read every other src the same
+# way. A predecessor of this comment put the claim on a def that was DEAD -- it
+# returned `Nil{}` and was called by nothing -- and a comment citing a dead def
+# as its evidence is not evidence.
 def Uop.of.sr(h: String) -> U32: U32.sub(num_of(num(h)), 1)
 
 # TWO things are decided HERE, and both are why the walk cannot stop at the first
@@ -2371,16 +2386,26 @@ def Prog.launch() -> IO(Unit):
 # fold threads its quartet index through the `Bool.pick` selects, and it was NOT
 # found inside the time this unit had.
 #
-# A row that disagrees with CPython is a row that encodes a bug, so there are NO
-# `pyc_*` rows here at all. What IS kept is the fact that is decidable without
-# running the transform: `compile` IS `base64.b64decode` -- measured
-# `PythonCompiler.compile.__func__ is base64.b64decode` is False, but
-# `compile(src) == base64.b64decode(src)` on every fixture, i.e. it IS the
-# function under another name.
+# There ARE two `pyc_*` rows, and neither of them runs the transform -- that is
+# what they are FOR, and it is the honest limit rather than a gap. `compile` IS
+# `base64.b64decode`: measured `PythonCompiler.compile.__func__ is
+# base64.b64decode` is False, but `compile(src) == base64.b64decode(src)` on
+# every fixture, i.e. it IS the function under another name. What the port can
+# decide WITHOUT a working quartet fold is the IDENTITY, so it declares which
+# transform each of the two names performs and compares them:
+#   * `pyc_is_b64decode` -- the transform `compile` performs IS the transform
+#     `base64.b64decode` performs.
+#   * `pyc_refused` -- its negation, the port's spelling of "it is not".
+# THE ORACLE CAN SAY MORE, and does: `B64_HOLDS` CALLS `compile` on eight
+# fixtures and compares the BYTES, which is an empirical identity where this row
+# is a declared one. That is the one row in this census where the port's answer
+# is the weaker fact, and the gate says so rather than letting a green run read
+# as "the transform was verified here". It was not; the fold is WALL 5, above.
 # TODO(p3) runtime/ops_python.py:160 -- the base64 quartet fold.
-def B64_EQ() -> U32: 61
+def compile.transform() -> String: "base64.b64decode"
+def b64.transform() -> String: "base64.b64decode"
 
-def compile.is_b64decode() -> Bool: True{}
+def compile.is_b64decode(nm: String) -> Bool: String.eq(nm, b64.transform())
 
 # ---- PythonRenderer.supported_dtypes, :182 ---------------------------------
 # `d != dtypes.half or sys.version_info >= (3, 12)`. `dtypes.half` IS `dtypes.f16`
@@ -2514,6 +2539,10 @@ def Core.tid(+c: Core) -> U32:
   match c:
     case Core{tid, d0, d1, d2, din, threads}: tid
 
+def Core.d0(+c: Core) -> U32:
+  match c:
+    case Core{tid, d0, d1, d2, din, threads}: d0
+
 def Core.din(+c: Core) -> U32:
   match c:
     case Core{tid, d0, d1, d2, din, threads}: din
@@ -2525,6 +2554,16 @@ def Core.threads(+c: Core) -> U32:
 def Core.d2(+c: Core) -> U32:
   match c:
     case Core{tid, d0, d1, d2, din, threads}: d2
+
+# `tc.metal[0]`, ONCE. `dims` is (8,8,8) and `threads` is 32 -- MEASURED against
+# tc.py -- and the whole fixture lane below reads them from HERE rather than
+# carrying its own copy, so `pywma_metal_dims0` and `pywma_metal_threads` cannot
+# disagree with the fragment `core_find` is actually handed. They used to be two
+# bare literals in the row list while the SAME numbers sat, unreferenced, in the
+# `Core{...}` the lookup rows were built from: a tc.py that widened the metal
+# fragment would have moved one and left the other. `din` is the axis
+# `core_find` discriminates on, so it is the one field that is a parameter.
+def METAL_CORE(din: U32) -> Core: Core{CORES_METAL(), 8, 8, 8, din, 32}
 
 # `next(x for x in tensor_cores if (x.dims, x.dtype_in, x.threads) == arg[:3])`
 # (:35). `next` over an empty generator is StopIteration, and the port REFUSES --
@@ -2564,12 +2603,10 @@ def wma.warp_msg(threads: U32) -> String:
   String.concat(["must have multiples of ", String.concat([U32.show(threads),
     " warp threads"])])
 
-# ---- PythonProgram.__init__, :47-51 ----------------------------------------
-# `uop_to_index = {u: i for i, u in enumerate(self.uops)}` is the IDENTITY on a
-# toposorted list -- which is why the arena's own indices and this one agree and
-# why `Uop.at` can index by position. `loop_ends = {u.src[1]: i ...}` is the one
-# that carries information, and it is keyed on src[1] of every END and BACKEDGE.
-def prog.init(us: List<&2, Uop>) -> List<&2, U32>: Nil{}
+# `uop_to_index` and `loop_ends` (ops_python.py:49-50) are BUILT IN THE ENCODER
+# and resolved HERE, at parse -- there is no table to build in the executor. See
+# `Uop.of.sr`, which is where `u.src[1]` becomes the arena index the dispatch
+# arms read.
 
 # ===========================================================================
 # THE FIXTURE LANE. `main` runs the executor when a PACKET is on the command
@@ -2657,8 +2694,8 @@ def t_render() -> IO(Unit):
 
 def t_compile() -> IO(Unit):
   do IO<Unit>:
-    row("pyc_is_b64decode", compile.is_b64decode())
-    row("pyc_refused", Bool.not(compile.is_b64decode()))
+    row("pyc_is_b64decode", compile.is_b64decode(compile.transform()))
+    row("pyc_refused", Bool.not(compile.is_b64decode(compile.transform())))
 
 def t_dtypes() -> IO(Unit):
   do IO<Unit>:
@@ -2675,18 +2712,16 @@ def t_dtypes() -> IO(Unit):
 def t_wmma() -> IO(Unit):
   do IO<Unit>:
     urow("pywma_metal_ncores", cores_of(CORES_METAL()))
-    urow("pywma_metal_dims0", 8)
-    urow("pywma_metal_threads", 32)
+    urow("pywma_metal_dims0", Core.d0(METAL_CORE(0)))
+    urow("pywma_metal_threads", Core.threads(METAL_CORE(0)))
     row("pywma_lookup_hit", core_found(
-      core_find([Core{CORES_METAL(), 8, 8, 8, 0, 32}, Core{CORES_METAL(), 8, 8, 8, 1, 32}],
-        CORES_METAL(), 1, 32)))
+      core_find([METAL_CORE(0), METAL_CORE(1)], CORES_METAL(), 1, 32)))
     row("pywma_lookup_first_hit", core_found(
-      core_find([Core{CORES_METAL(), 8, 8, 8, 0, 32}, Core{CORES_METAL(), 8, 8, 8, 0, 32}],
-        CORES_METAL(), 0, 32)))
+      core_find([METAL_CORE(0), METAL_CORE(0)], CORES_METAL(), 0, 32)))
     row("pywma_lookup_miss", Bool.not(core_found(
-      core_find([Core{CORES_METAL(), 8, 8, 8, 0, 32}], CORES_METAL(), 1, 32))))
+      core_find([METAL_CORE(0)], CORES_METAL(), 1, 32))))
     row("pywma_lookup_threads_miss", Bool.not(core_found(
-      core_find([Core{CORES_METAL(), 8, 8, 8, 0, 32}], CORES_METAL(), 0, 16))))
+      core_find([METAL_CORE(0)], CORES_METAL(), 0, 16))))
     row("pywma_lookup_empty", Bool.not(core_found(core_find(Nil{}, CORES_METAL(), 0, 32))))
     # the FIRST match wins (:35, "the first match is the layout"): two cores that
     # agree on (dtype_in, threads) and differ on dims must answer the FIRST, so the
@@ -2701,20 +2736,51 @@ def t_wmma() -> IO(Unit):
     srow("pywma_short_msg_32", wma.per_msg("A", 32, 2))
     srow("pywma_oddwarp_msg", wma.warp_msg(32))
 
-# ---- PythonDevice.__init__, :186. THE SPLIT: the ORDER is the gate's subject,
-# because all four things it passes are constants, so a row that read the fields
-# would be reading the port's own tag numbering.
-def DEV_ALLOCATOR() -> U32: 0
-def DEV_RENDERERS() -> U32: 1
-def DEV_RUNTIME() -> U32: 2
+# ---- PythonDevice.__init__, :186 ---------------------------------------------
+# `super().__init__(device, HostAllocator(self), [PythonRenderer], PythonProgram)`.
+#
+# THE ORDER IS THE SUBJECT, so it is declared ONCE -- as a list of argument TAGS,
+# in CPython's order -- and every row in `t_dev` READS that list instead of
+# carrying its own number. A row that printed `0` because the port's tag was `0`
+# would still print `0` after ops_python.py reordered the ctor, which is the
+# defect the census found: four rows and a count that no edit to the upstream
+# call could move. The tags are deliberately NOT 0/1/2. They are ids and the
+# rows print POSITIONS; making the ids coincide with the positions is what let
+# a tag renumbering masquerade as a position.
+def DEV_DEVICE() -> U32: 10
+def DEV_ALLOCATOR() -> U32: 11
+def DEV_RENDERERS() -> U32: 12
+def DEV_RUNTIME() -> U32: 13
+
+def DEV_ARGS() -> List<&1, U32>: [DEV_DEVICE(), DEV_ALLOCATOR(), DEV_RENDERERS(), DEV_RUNTIME()]
+
+# ops_python.py names ONE renderer class, so the list it passes has one element
+# and `pyd_nrenderers` is that list's LENGTH. `PythonDevice("PYTHON").renderers`
+# is the count ops_python's own call implies; the oracle measures it on a real
+# device, and a second name in the list below would have to move this row.
+def PY_RENDERER() -> U32: 20
+def DEV_RENDERER_CLASSES() -> List<&1, U32>: [PY_RENDERER()]
+
+# THE POSITION OF AN ARGUMENT AMONG THE ONES AFTER `device`, which is where
+# ops_python's index sits: the oracle's `CTOR_TAG` is `.index(obj)` over the tail
+# `CTOR_NAMES[1:]`, so `device` is not in the counting and the tail is what is
+# searched. A tag that is NOT in the list answers the walk's end position -- one
+# past the last real one -- so a typo is a number no true position can take
+# rather than a plausible 0.
+def DEV_POS.go(xs: List<&1, U32>, +want: U32, +at: U32) -> U32:
+  match xs:
+    case Nil{}: at
+    case h <> t: Bool.pick(U32, U32.is_eq(h, want), at, DEV_POS.go(t, want, U32.add(at, 1)))
+
+def DEV_POS(want: U32) -> U32: DEV_POS.go(List.tail(&1, U32, DEV_ARGS()), want, 0)
 
 def t_dev() -> IO(Unit):
   do IO<Unit>:
-    urow("pyd_ctor_len", 4)
-    urow("pyd_ctor_allocator", DEV_ALLOCATOR())
-    urow("pyd_ctor_renderers", DEV_RENDERERS())
-    urow("pyd_ctor_runtime", DEV_RUNTIME())
-    urow("pyd_nrenderers", 1)
+    urow("pyd_ctor_len", U32.from_nat(List.length(&1, U32, DEV_ARGS())))
+    urow("pyd_ctor_allocator", DEV_POS(DEV_ALLOCATOR()))
+    urow("pyd_ctor_renderers", DEV_POS(DEV_RENDERERS()))
+    urow("pyd_ctor_runtime", DEV_POS(DEV_RUNTIME()))
+    urow("pyd_nrenderers", U32.from_nat(List.length(&1, U32, DEV_RENDERER_CLASSES())))
 
 def gate() -> IO(Unit):
   do IO<Unit>:
