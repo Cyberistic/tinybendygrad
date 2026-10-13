@@ -13679,6 +13679,31 @@ rather than left in a dead session.
       compares. `gates/tn_graph_census`'s footer answers a related question well ("the PIN is the
       MUTATION") and this census should answer its own in the same place.
 
+## AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVERY MFMA ENCODES WITH ITS HIGH FIELDS MISSING (2026-10-13)
+
+Found by `gates/amd_dsl_census` and NOT FIXED: it touches `Res`/`bf_mask`/`bf_set`/`hex8`/`rws` and
+would move every `raw_*`/`bfs` row, so it needs its own unit.
+
+- [ ] **`Res{v: U32}` IS THE CEILING.** `dsl.bend:81-84` is `Res{v: U32, s: String}`, and
+      `bf_set.placed`'s `U32.shln` therefore SILENTLY DISCARDS EVERY BIT AT OR ABOVE 32. **THIS IS THE
+      ONLY SURVIVING `TO_BYTES` ROW AND IT IS NOT A WORDING SLIP.**
+      **MEASURED, INDEPENDENTLY, FROM CPYTHON'S OWN FIELD TABLE:**
+          CPython VOP2_ALL raw = 0x4814060a00   bit_length = 39
+          as U32                = 0x0014060a00
+          LOST high bits        = 0x48            (7 bits: `sdst`[41:36] and `op_sel`[35:34])
+      A `VOP2` IS THE NARROW CASE. **EVERY INSTRUCTION WIDER THAN 32 BITS -- EVERY VOP3, EVERY MFMA --
+      ENCODES WITH ITS HIGH FIELDS MISSING**, and it fails SILENTLY: a U32 shift is not an error, it is
+      a smaller number.
+- [ ] **THE COMPANION CARVE-OUT IS UNRECORDED ANYWHERE ELSE.** `hex8` MASKS TO 32 BITS ON **BOTH**
+      SIDES -- the oracle's is `f"{v & U32:#010x}"` and CPython's own `f"{x:#010x}"` is NOT a mask --
+      so `raw_vop2_all` reads `|0x14060a00` ON BOTH SIDES while CPython's word is `0x4814060a00`.
+      **THE LANES AGREE AND ARE BOTH WRONG**, which is the one failure a byte-diff census cannot see.
+      It is entangled with the U32 fix above and must not be done alone.
+- [ ] **THE DECISION IS `U32` vs A WIDER WORD**, and it is a real design question rather than a typo:
+      `uop/ops.bend`'s `U32.shln` is used everywhere, and `dsl.bend:655-657` already records that
+      "`1 << 32` SATURATES TO 0 in a U32 (measured, bend2-constraints)". So the port CANNOT express a
+      64-bit word today, and the wall is the WORD WIDTH, not the DSL.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
