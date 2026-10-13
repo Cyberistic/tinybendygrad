@@ -13587,6 +13587,98 @@ here and NOT fixed there.
 **WHILE UNFIXED, A BARE SWEEP READS 55/56.** The green number is `55/56` with `MESSAGE_DIFF_ACK`
 set on HEAD; the other 55 are unaffected.
 
+## DECOMPCENSUS — `codegen/decomp/` gets its FIRST gate, and its ORACLE was the thing that was wrong (2026-10-12)
+
+`gates/decomp_graph_census{,-gate,-oracle}.bend/py` + `gates/decomp_graph_census-pins.rows`.
+`tinybendygrad/codegen/decomp/*.bend` is LEFT BYTE-IDENTICAL.
+
+- [x] **THE ARRIVED GATE COULD NOT BE REPAIRED, BECAUSE ITS OWN DECLARATIONS LIVED WHERE A
+      RED RUN DELETES THEM.** `_pins()` read `DIVERGES` out of
+      `gates/artifacts/decomp_graph_census-gate/{bd.out,py.rows}`; `gatekit` EMPTIES that
+      directory before it runs and UNLINKS what it staged when the run was not green, so the
+      first red run destroyed the gate's divergence list and every later run demanded all 38
+      rows agree with nothing left to edit. MEASURED on arrival: `_pins()` returned an EMPTY
+      DICT, and `gatekit`'s `bad = [...] [:2]` printed only the FIRST TWO disagreements --
+      `lg1` and `lg5`, which is how two rows came to look like the whole of the damage.
+      **THERE WERE SEVENTEEN.** The pins are now `decomp_graph_census-pins.rows`, LOADED BY
+      PATH, beside the gate, in git, with `--refresh` as its only writer.
+- [x] **`lg1` AND `lg5` ARE NOT NEW AND NEITHER IS A DEFECT: BOTH ARE DIVERGENCE A.**
+      `lg1` is CPython's 17-entry cone minus 4 `CAST/1` at indices [2,5,11,14]; `lg5` is its
+      15-entry cone minus 1 `CAST/1` at index [8]. `deleted()` REBUILDS the surviving list
+      and compares it, so this is a deletion and not a resemblance, and the claim is over
+      the WHOLE cone -- `lgq`'s is 2500 entries. **THE PRINTER DOES NOT TRUNCATE**, and the
+      proof is structural rather than a guess: `dd_fuel` is `32 * next(ar) + 64`, every
+      arena node is popped at most once per incoming edge, MEASURED max `nsrc` over all 38
+      rows is 3, so pops are bounded by `3 * to + 2 < 32 * to + 64` for every `to`.
+      CPython's side is walked without fuel and `lgq` was re-counted ITERATIVELY as well as
+      recursively: 2500 both ways, so the round number is a fact and not a cap.
+- [x] **THE ORACLE'S `f2f` FIXTURE WAS AT THE WRONG DTYPE, AND IT HAD BEEN DECLARED A PORT
+      DEFECT.** The lane handed `f2f` a `float32` PARAM for every row -- neither `fr` nor
+      `f2f_dt[fr]` -- so dtype.py:116's `v.bitcast(fr)` FOLDED on the oracle side and not on
+      the port's. MEASURED over all three fixtures and all seven rows: `float32` 3 agree,
+      `fr` the same three (it IS float32 for four of them), `f2f_dt[fr]` **4**. With the
+      right fixture `q1` is byte-identical and `q5` stops being an extra `BITCAST/1` and
+      becomes a PROMOTION row. **THE BITCAST THAT WAS CALLED "FINDING 1, 2" WAS THE
+      ORACLE'S.** dtype.py:142 and :197 both pass `f2f_dt[...]` and `f2f.one` (:3043-3047)
+      says so in its own warning; 17 divergences became 16.
+- [x] **CLASS (b) TRIAGE AT THE THREE `OpsCAST{}` SITES.** `op.bend:209` NOT foldable (its
+      four call sites are `threefry2x32`'s and every one casts between two concrete
+      widths). `dtype.bend:362` NOT foldable (`dd_cf` is only ever asked for a concrete
+      float). `dtype.bend:333` **IS A REAL CLASS-(b) FINDING** -- `UOp.const(0, bool)` is a
+      bare CONST where the port mints an identity CAST, and `lg4`'s fixture reaches it --
+      **AND THIS CENSUS CANNOT SEE IT**, because dtype.py:31 RETURNS before the expression
+      that mints it and the port computes that branch unconditionally, so every node it
+      builds is DEAD and `lg4` matches byte-for-byte. Reported, not fixed.
+- [x] **`tinygrad/codegen/decomp/` HAS NOT DRIFTED SINCE `ad117c928^`.** `git diff --stat`
+      is EMPTY and the three working-tree blobs hash to both commits' blobs at
+      `36907bf9`/`e1d9579c`/`62c31917`, so HEAD IS the oracle here -- unlike
+      `tinygrad/renderer/cstyle.py`, which drifted 29+/26- over the same pin.
+- [x] **THE MUTATION READING, THREE PLANTS AND TWO REFUSALS.** `decomp_graph_census.bend`
+      sha256 `ba8f59e7f17a8bb30008bdf4da4e569dad2766d62c7696d8b753710643b69e4c` before and
+      after every plant. A renamed row RED on the compared-row count (rc 1); a forced
+      matching row RED on the diff (rc 1); a moved pin RED on the pin (rc 1); a wrong class
+      count RED on `classes_hold` (rc 1); the pins file absent and the classes disagreeing
+      both REFUSE (rc 3). **A GATE THAT WAS NEVER SEEN FAIL IS NOT A GATE.**
+- [ ] **`q2` AND `q3` ARE THE FINDING THAT IS LEFT.** `f2f`'s narrowing arm onto fp8e4m3 and
+      fp8e5m2 is NOT a deletion of CPython's cone: CPython carries `CAST/1` x2,
+      `CONST/0` x1 and `OR/2` x2 the port does not (57/58 against 52/53), the port carries
+      nothing CPython lacks, and the residue is reordered. It lives in dtype.py:118-124's
+      `sign`/`nan`/`underflow`. **THE EXACT SITE IS NOT LOCATED** and naming one would be a
+      guess.
+- [ ] **WHAT THIS CENSUS CANNOT SEE, NAMED.** A CONST's VALUE and DTYPE are in no node
+      shape, so `sig` prints `CONST/0` for every constant. MEASURED on `q1`, whose row is
+      byte-identical while its constants are not: CPython's cone carries `CONST(True)` at
+      index 17 where the port reads `C(1)`, and a weakfloat `127.0` at 14 AND a weakint
+      `127` at 21 where the port holds ONE `C(127)`. `dtype.bend`'s own gate prints those as
+      a `k=` row and this lane does not; adding it is the next thing that would catch it.
+- [ ] **NEXT: `op.bend:319`, AND IT IS A PORT DEFECT.** `dc_tf_half`'s `hi=True` arm reads
+      `dc_cast(O.Found.ar(dc_shr(ar, x, 32)), x, S.uint32())` -- it grows the arena with
+      `x >> 32` and then casts `x`. CPython op.py:40 is `(x >> 32).cast(dtypes.uint32)`, so
+      the port's `x1` IS `x0` and the `x >> 32` is orphaned. `op.bend`'s own mutation table
+      says "`x.cast(u32)` is the LOW word and `x >> 32` the HIGH one", which is the claim
+      this contradicts. NOT FIXED HERE (`op.bend` is not this unit's) and NOT MEASURED
+      against CPython's `threefry2x32` yet -- run `./bin/bend tinybendygrad/codegen/decomp/
+      op.bend` and read the `tf_split` row.
+
+## REALIZEGAPS — three gaps in `realize_graph_census`'s OWN instrument (2026-10-13)
+
+Its author was killed by a rate limit AFTER the gate went green and the defect fix landed, and
+BEFORE answering these. They are gaps in the INSTRUMENT, not in the port, and they are recorded here
+rather than left in a dead session.
+
+- [ ] **`kern` COMPARES A COUNT WHERE THE THINGS ARE NAMES.** The port returns device *table indices*
+      and CPython returns device *names*. **A WRONG INDEX WITH THE RIGHT COUNT IS INVISIBLE**, so a
+      row that claims to test `kern` cannot fail on the thing most likely to be wrong. MEASURED and
+      NOT FIXED. Needs the driver to print the resolved NAME, not `len`.
+- [ ] **`Arg` PAYLOADS DO NOT PRINT**, so a `ParamArg` slot and an `Estimates` are indistinguishable
+      in every row. The op-sequence lanes already fixed this with an ` arg=` suffix (the `md_*` census
+      did it first); this census did not inherit it.
+- [ ] **369 OF ITS 974 ROWS ARE `notacall`** -- 38% of the census carries no comparison. They are
+      almost certainly load-bearing (they are why every lane's row count agrees), so CUTTING them is
+      wrong and the real question is whether the census is honest about what fraction of itself it
+      compares. `gates/tn_graph_census`'s footer answers a related question well ("the PIN is the
+      MUTATION") and this census should answer its own in the same place.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
