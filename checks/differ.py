@@ -265,7 +265,7 @@ PINS = {
     # another moves to DISAGREE. MEASURED 3/3 stable per graph, warm substrate, and 0 moved over
     # all 20 rows (`.agents/slop/unsetexp/trials.tsv`).
     "expect-moved": "0",
-    "graphs-agree": "32", "byte-identical": "32", "not-comparable": "0",
+    "graphs-agree": "34", "byte-identical": "34", "not-comparable": "0",
     "selfcheck": "# SELFCHECK: OK", "census-rc": "rc=0",
     # THE THREE COUNTS THAT KEEP A SILENT STEP FROM LOOKING HEALTHY. With the substrate
     # cold, BOTH members of a stability pair wrote the same one-line `0 rows after 5
@@ -281,7 +281,13 @@ PINS = {
     # ~4 h 50 m at the start, `differ.py run` returned `WITHIN-LIMITS` in 223 s at 770 MB peak,
     # and EVERY ONE of these read green -- so they are now the MEASURED values, not the inherited
     # ones. They are functions of the PORT (a bend step that dies reddens them); the two
-    # `graphs-agree`/`byte-identical` pins above moved 31 -> 32 with `getaddr`.
+    # `graphs-agree`/`byte-identical` pins above moved 32 -> 34 (2026-10-13). They are MEASURED, not
+    # predicted: the run wrote `graphs=34 ... graphs-agree=34 byte-identical=34 not-comparable=0
+    # expect-moved=0`, with every control green, so a pin of 32 was stale by exactly the graphs
+    # that had joined the corpus. THEY ARE THE TWO RED PINS OF `RUN HEALTH: 15 of 17` — AND A PIN
+    # THAT IS LOWER THAN ITS SUBJECT IS NOT A STRICTER GATE, IT IS A STALE ONE. `31 -> 32` with
+    # `getaddr` above is the same move, and the rule is unchanged: a verdict pin MOVES with the
+    # measurement, and the evidence is written next to it.
     "stable-pairs": "5 of 5", "stable-failed": "0 of 5", "stable-differ": "0 of 5",
     "plants-disagree": "7 of 7", "cross": "1 of 1", "controls": "5 of 5",
     "conflations": "4 of 4", "oracle-selfcheck": "# ORACLE SELFCHECK: OK",
