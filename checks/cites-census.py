@@ -168,13 +168,64 @@ def token_kind(tok: str) -> tuple[str, str] | None:
   return ("file" if slashed else "basename"), base
 
 
+_TRACKED: list[str] | None = None
+_SUFFIX: dict[str, list[str]] | None = None
+
+
+def suffix_index() -> dict[str, list[str]]:
+    """Every tracked path under every `/`-aligned suffix of itself, so `uop/ops.bend` finds
+    `tinybendygrad/uop/ops.bend`.  The population is `git ls-tree -r HEAD`, the extractor that
+    already declared it -- NOT a hand list of roots.  MEASURED 2026-10-15: the tree has 14 tracked
+    top-level directories and `ROOT` is the repo root, so `ROOT/"uop/ops.py"` names nothing while
+    the claim's own spelling names `tinygrad/uop/ops.py`.  That mismatch was 1,047 of the 1,262
+    `unreadable or absent` rows, and **0 of those 324 subjects resolved at ROOT.**
+    A value may hold several paths: `.agents/slop/strays/{origin,working}/` keep full copies, so
+    suffix matching is genuinely ambiguous and `read` refuses it rather than picking one."""
+    global _SUFFIX, _TRACKED
+    if _SUFFIX is None:
+        r = subprocess.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], cwd=ROOT,
+                           capture_output=True, text=True)
+        if r.returncode != 0:
+            print(f"{REFUSED}: git ls-tree rc={r.returncode}: {r.stderr.strip()}")
+            sys.exit(EXITS[REFUSED])
+        _TRACKED, idx = r.stdout.splitlines(), {}
+        for path in _TRACKED:
+            i = path.find("/")
+            while i != -1:
+                idx.setdefault(path[i:], []).append(path)
+                i = path.find("/", i + 1)
+        _SUFFIX = idx
+    return _SUFFIX
+
+
+def absent(c: dict) -> dict:
+    """ONE refusal for FOUR lanes, and the reason is load-bearing: MEASURED 2026-10-15 over the
+    31,337-row census, the 1,262 `unreadable or absent` rows are 1,047 wrong-ROOT, 63 present but
+    gitignored (gitignore is NOT absence), 126 a real path on no disk -- and 26 NOT PATHS AT ALL,
+    lifted out of prose: `MUT`, `a`, `c`, `port DIES`, `clean tree, port agrees`.  A rule that
+    turned absence into FAIL would have emitted 26 FALSE FAILs on words."""
+    n = len(suffix_index().get("/" + c["subject"], ()))
+    why = (f"ambiguous subject: {n} tracked paths end in /{c['subject']}" if n > 1
+           else f"unreadable or absent: {c['subject']}")
+    return {**c, "verdict": REFUSED, "evidence": why}
+
+
 def read(rel: str) -> str | None:
-  """`rev:path` names a BLOB, not a file, and is read with `git show`."""
+  """`rev:path` names a BLOB, not a file, and is read with `git show`.  Otherwise the subject is
+  a path spelled relative to SOME directory of a 14-directory tree, so: ROOT first (exact), then a
+  suffix index -- and ONLY when exactly one tracked path matches.  Prefer refuse to repair: a
+  second match means two real files, and reading the first is how a gate checks a stray."""
   if REV.match(rel):
     r = subprocess.run(["git", "show", rel], cwd=ROOT, capture_output=True, text=True)
     return r.stdout if r.returncode == 0 else None
   p = ROOT / rel
-  return p.read_text(errors="replace") if p.is_file() else None
+  if p.is_file():
+    return p.read_text(errors="replace")
+  hit = suffix_index().get("/" + rel)
+  if hit is None or len(hit) != 1:
+    return None
+  q = ROOT / hit[0]
+  return q.read_text(errors="replace") if q.is_file() else None
 
 
 def cited(line: str, needle: str) -> bool:
@@ -385,7 +436,7 @@ def judge(c: dict) -> dict:
   if c["lane"] == "A":
     text = read(c["subject"])
     if text is None:
-      return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
+      return absent(c)
     lines = text.splitlines()
     n = c["line"]
     if n > len(lines):
@@ -400,7 +451,7 @@ def judge(c: dict) -> dict:
   if c["lane"] == "B":
     text = read(c["subject"])
     if text is None:
-      return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
+      return absent(c)
     n = len(text.splitlines())
     if c["line"] > n:
       return {**c, "verdict": FAIL, "evidence": f"{c['subject']} has {n} lines, cited at "
@@ -415,7 +466,7 @@ def judge(c: dict) -> dict:
                           f"{c['needle'][:40]!r} is not a claim about this file's text"}
     text = read(c["subject"])
     if text is None:
-      return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
+      return absent(c)
     if c["needle"] in text:
       return {**c, "verdict": PASS, "evidence": f"{c['needle'][:48]!r} occurs"}
     near = [i for i, l in enumerate(text.splitlines(), 1) if cited(l, c["needle"])]
@@ -439,7 +490,7 @@ def judge(c: dict) -> dict:
                             f"{lc[:10]}: the anchor has expired, so the claim is STALE, not FALSE"}
     text = read(c["subject"])
     if text is None:
-      return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
+      return absent(c)
     n = len(text.splitlines())
     ok = n == c["num"]
     return {**c, "verdict": PASS if ok else FAIL,
