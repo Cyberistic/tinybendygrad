@@ -14880,6 +14880,55 @@ DEFECT IT AUDITS.**
       rewrites, `WMMA`/`IF`/`ENDIF`/`BACKEDGE`/the loop trio, `.maxntid`/`.param` (`Wk` carries no
       `vmax` and no slot), and the emitters (`tc_ptx.bend`'s subject, with its own gate).
 
+## SYMBOLIC-PROBE -- 577 DEFS, AND THE BRIEF'S PREMISE ("WHICH OF `rng`'s 38 WALLS DOES THIS UNBLOCK")
+WAS REFUTED BY MEASUREMENT (2026-10-15)
+
+`a1e0b5f61`, two files, 683 insertions. `gates/sym_graph_census.bend` + `gates/symcases.rows`.
+**THE ANSWER IS NONE. CLOSING THIS CENSUS CHANGES 0 OF THE 38 WALLS, AND THE PREMISE WAS MY OWN
+MISREADING.**
+
+- [x] **EVERY HELPER `rng`'s WALL TABLE NAMES LIVES OUTSIDE `symbolic.py`.** MEASURED:
+      `UOp._ranges`/`UOp.ranges`/`UOp.substitute`/`UOp.base`/`UOp.const_like`/`to_max_shape` are
+      `tinygrad/uop/ops.py:481/:495/:530/:782/:600/:1894`; `arg.removable` is `ops.py`; and
+      `apply_movement_op`, `commit_dtype`, `UOp.shrink` are `schedule/indexing.py:171`,
+      `mixin/dtype.py:16`, `mixin/movement.py:192`. **THE WALLS POINT AT `ops.py`'s *PROPERTIES*,
+      WHICH ARE `fold.bend`'s SUBJECT -- NOT AT "SYMBOLIC" ONES. WHAT WOULD MOVE `rng` IS `fold.bend`
+      (`_min_max`, the set algebra), AND `fold_graph_census` ALREADY NAMES `const_like`.**
+- [ ] **NO GATE, AND THAT IS DELIBERATE: PINNING A TRAVERSAL-ORDER DISAGREEMENT LAUNDERS IT.** Three of
+      five `sym=` divergences are UNRESOLVED because **this walk's PRE-ORDER DISAGREES WITH CPYTHON'S on
+      every three-src ROOT** (`in=` agrees on `t_add`/`t_group`, disagrees on the rest). **A DIFF TODAY
+      WOULD BE A DIFF OF TWO *TRAVERSALS*, SO NONE IS PINNED AND NONE IS CLAIMED AS A DEFECT.**
+      MEASURED ON BOTH LANES:
+          t_add    sym=0:c7      cpython=0:c7                 agree
+          t_xor    sym=norewrite cpython=0:x       (:123)     unresolved
+          t_sink   sym=0:NOOP    cpython=SINK(x,c2) (:445)    unresolved, AND WORSE: A RULE FIRED AND
+                                                                            BUILT A DIFFERENT GRAPH
+- [ ] **F1 -- `symbolic.bend`'s OWN FUZZ DRIVER IS DEAD, AND THAT IS WHY 577 DEFS CARRIED NO GATE.**
+      On `(add c7 c0)` `fz_toks` emits **`L:dd L:7 L:0 L: ) x~4096`**, for two reasons: `fz_tok.tok`
+      (`:3316-3319`, VERIFIED HERE) mints `THead` ONLY for `wm == 2`, and `md` reaches 2 only from 1 or
+      2 -- **NEVER FROM THE BOUNDARY CASE 0, WHICH IS WHERE A `(`-LED NODE STARTS**, so every op name
+      arrives as a `LEAF` and `add` became `dd`; and the `k == 0` arm drops one character of an
+      ALREADY EMPTY string, emitting a `TClose` per unit of fuel, every close on an empty stack
+      RESETTING THE ROOT. **MEASURED CONSEQUENCE: `fz_run` answers
+      `root=1 n=2 op=Ops.CONST selfadd=0 sym=norewrite` -- A CONST WHERE THE S-EXPR SAYS ADD.**
+- [ ] **F2 -- `fz_var` MAKES THE REBIND RULES UNCORPUS-ABLE.** It hardcodes `Some{"v"}` and mints into
+      `O.Arena.empty()`, so **A CASE FILE CANNOT SAY `x` AND `y`**. `symbolic.py:123/:124/:464` have
+      an IDENTITY CHECK AS THEIR WHOLE GUARD; a corpus that cannot name two variables cannot state a
+      positive AND a negative. **THAT IS WHY CLASS (i) HAD NO WITNESS.**
+- [ ] **F3 -- THREE `bend`-LEVEL BEHAVIOURS, EACH OF WHICH COST A WRONG DIAGNOSIS:** a separator
+      returned BY A DEF splits a healthy line into ONE field (the same call with the separator as a
+      PARAMETER answers two); `List.append(&2, U32, [1,2], [3])` answers the **EMPTY LIST**, so a list
+      LITERAL in the borrowed accumulator position silently yields nothing; and a self-call must
+      DECREASE via `case 1n+p:`, since `Bool.pick(Nat, ..., 0n, p)` on fuel is not a shrink bend
+      recognises. **ALSO PINNED: `List.append` PREPENDS at `symbolic.bend`'s OWN `fz_deliver.at`** --
+      the one place the arena's src list is built -- and `rootctl` answers `1 2` for `(add c7 c0)`, so
+      **`ops.bend` IS EXONERATED AND THE BUG WAS IN THE WALK.**
+- [ ] **THE TWO BIGGEST THINGS LEFT ON THE TABLE, NAMED:** class (h), a correct constant sitting unread
+      (**NOT CHECKED, AND 577 DEFS IS THE LARGEST SUCH HUNTING GROUND IN THE PORT**), and class (b),
+      `grep -c OpsCAST` in this file's scope, **never run**. The corpus is also 5 rows against ~90
+      wanted: one positive AND one negative per `sym_table` tag, the `Sw` permutation arms, and the
+      `DTS_*` arms.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
