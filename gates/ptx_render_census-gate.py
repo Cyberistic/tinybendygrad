@@ -405,13 +405,26 @@ def refresh_pins():
             print(f"--refresh needs a run first: {d / name} is missing", file=sys.stderr)
             return 3
     body = _lines(PINS.read_text())[1:] if PINS.exists() else []
-    rows = [(t, r, v) for t, r, v in (l.split("\t") for l in body)]
+    # THE FILE IS REBUILT, NEVER APPENDED TO. MEASURED: the first `--refresh` KEPT the old
+    # body and added the three lanes to it, so a second run produced every pin TWICE --
+    # 3216 rows for 1071 distinct ones. `pins_hold()` still passed, because a duplicate is
+    # a duplicate OF THE SAME VALUE, which is exactly the kind of noise a check that
+    # iterates rather than compares will not notice. Deduped on `(lane, row)`, last wins.
+    rows = {(t, r): v for t, r, v in (l.split("\t") for l in body)}
     for lane, name in (("py", "py.rows"), ("bd", "bd.out"), ("bn", "bn.out")):
         got, _ = rows_of(d / name)
-        rows += [(lane, k, v) for k, v in got.items()]
-    rows.sort(key=lambda x: (x[1], x[0]))
-    PINS.write_text("\n".join(["lane\trow\tvalue"] + ["\t".join(r) for r in rows]) + "\n")
-    print(f"--refresh: wrote {len(rows)} pin rows to {PINS}")
+        rows.update({(lane, k): v for k, v in got.items()})
+    # SORT BY (row, lane) AND WRITE lane, row, value -- MEASURED, the first version sorted
+    # `(row, lane, value)` and then joined the tuple as it stood, so the file came out
+    # `row<TAB>lane<TAB>value` while the header said `lane<TAB>row<TAB>value`. `pins_hold()`
+    # asserted the HEADER and then read every line as if the header were true, so it failed
+    # with a KeyError rather than a shape complaint, and the next `--refresh` re-read the
+    # transposed columns and doubled the file. Writing the columns EXPLICITLY is the fix
+    # and is also why `pins_hold()` asserts the header BEFORE it parses a single line.
+    out = sorted(((r, l, v) for (l, r), v in rows.items()))
+    PINS.write_text("\n".join(["lane\trow\tvalue"]
+                              + [f"{l}\t{r}\t{v}" for r, l, v in out]) + "\n")
+    print(f"--refresh: wrote {len(out)} pin rows to {PINS}")
     return 0
 
 
