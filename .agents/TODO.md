@@ -14723,6 +14723,29 @@ incomplete: `POPULATION 1775  OFFENDERS 75  BASELINE 68  NEW 7`.
       RULE" WILL BE RED FOREVER ON A TREE THAT CONTAINS ITSELF**, and being red on the rest of the
       suite is what makes it get filed rather than read.
 
+## SIXTEEN-SWEEP -- which of the sixteen instrument defects are STILL LIVE (2026-10-15)
+
+Run as a shape-sweep, not a read, because **none of the sixteen was ever found by reading its
+instrument.** MEASURED, and two of three probed shapes are CLEAN, which is the useful part:
+
+- [x] **SHAPE #4 (a gate loop that invokes a MISSING BINARY) IS CLEAN.** `grep -rln "timeout "
+      gates/*.py` answers **NOTHING**. **AND THE OCCASION IS RECORDED IN `NOTIMEOUT`: THE PHANTOM WAS MINE
+      AND IT LAY IN A `/tmp` SCRIPT, NOT IN ANY COMMITTED GATE**, which is the better outcome and still
+      leaves the tree unharmed.
+- [x] **SHAPE #8 (A GUARD GATED BEHIND ITS OWN EXIT CODE) IS CLEAN, AND IT WAS A FALSE ALARM FROM MY
+      OWN GREP.** `grep -rn "code == 0 and not checks_hold" gates/*.py` matches **TWO** files --
+      `amd_dsl_census-gate.py:1143` and `ops_python_census-gate.py:866` -- and **BOTH ARE CORRECT**:
+      `if code == 0 and not checks_hold(): code = 1` only guards the SUCCESS path, and
+      `checks_hold` accumulates `ok = fn() and ok` over **TEN** checks so it never short-circuits and
+      one failure sticks. **THE PATTERN `code == 0 and not checks_hold` IS CORRECT IDIOM AND THE REAL
+      DEFECT (in `wgsl`, which its own author fixed) WAS `if code == 0 and not checks_hold()` PLUS
+      CHECKS THAT WERE NOT REACHED WHEN THE POPULATION DISAGREED.** **A GREP THAT FINDS THE IDIOM HAS
+      FOUND THE FIXED FORM, NOT THE DEFECT** -- and the distinction is only visible by reading what
+      `checks_hold` DOES, which is the whole lesson of this session in one probe.
+- [ ] **SHAPE #6 (`FIXTUREOWN`) IS STILL LIVE:** `gates-pop.py --ledger check` still prints
+      `RESOLVES OUTSIDE` once, on `checks/cites-census.py:596`'s PLANT FIXTURE needle. Recorded; the
+      ownership question is unanswered and the file is another unit's.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
