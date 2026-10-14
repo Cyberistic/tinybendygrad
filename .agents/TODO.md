@@ -14321,6 +14321,25 @@ refutation of its SENTENCES, not its counts.
       says "PORTED, as `UOp.base` over the table" -- a stale marker counted among marker-audit's 564
       "walls". `uop/*` is not this unit's to edit.
 
+## MARKERFORM -- `checks/marker-audit.py` CANNOT SEE THE 30 `WALL(p3)` MARKERS, SO "564 WALLS" EXCLUDES THEM (2026-10-14)
+
+Found while auditing `rangeify`'s markers (`WALLAUDIT` above). **THE HEADLINE FIGURE THIS TREE QUOTES
+IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
+
+- [ ] **`marker-audit.py:49` GATES ON `if 'TODO(p3)' not in l`, AND `schedule/rangeify.bend` USES
+      `# WALL(p3)`.** MEASURED: `grep -c rangeify` over the audit's own output answers **0** --
+      **THE FILE DOES NOT APPEAR IN THE TABLE AT ALL.** `TOTAL 564 / 40 / 0` therefore EXCLUDES ALL 30
+      OF ITS MARKERS. **DELETING OR FALSIFYING THOSE 30 MOVES THAT INSTRUMENT BY ZERO.**
+- [ ] **SO THE CORRECT SENTENCE IS "564 WALLS, PLUS 30 `WALL(p3)` MARKERS THE AUDIT DOES NOT SEE"** --
+      and every report of the bare 564 this session has been UNDERSTATING BY UP TO 30.
+- [ ] **TWO MARKER FORMS FOR ONE CONCEPT IS A DOCTRINE-1 FAILURE IN THE INSTRUMENT** (an instrument
+      declaring its population by a SPELLING rather than by a rule). The fix is to accept BOTH forms,
+      or to have the port use ONE form -- **and WHICH IS THE CALLER'S, NOT THE AUDITOR'S.**
+- [ ] **`rangeify.bend:2639` CLAIMS EVERY WALL IS A `# TODO(p3)` LINE AND THE FILE CONTRADICTS
+      ITSELF**: it has **3** `TODO(p3)` (all prose) and **30** `WALL(p3)`. **THE FILE MIS-NAMES ITS
+      OWN MARKER FORM.** `uop/fold.bend:6625` is the same shape: a `TODO(p3)` marker whose own text
+      says "PORTED, as `UOp.base` over the table" -- **A STALE WALL INSIDE THE 564.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
