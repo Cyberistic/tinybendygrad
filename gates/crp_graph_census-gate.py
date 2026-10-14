@@ -5,8 +5,10 @@ and the first gate that layer's DTYPE PROMOTION has ever had.
     .venv/bin/python gates/crp_graph_census-gate.py
     .venv/bin/python gates/crp_graph_census-gate.py --refresh
 
-207 ROWS, THREE LANES, 187 EXACT MATCHES AND 20 DECLARED DIVERGENCES -- 19 OF THEM ONE
-DEFECT AND 1 ITS CONSEQUENCE. **THE SIBLING `cr_graph_census` ALREADY EXISTS AND IS GREEN**
+207 ROWS, THREE LANES, 206 EXACT MATCHES AND 1 DECLARED DIVERGENCE -- W3's MISSING
+`vmin`/`vmax`, WHICH IS A CONSEQUENCE RATHER THAN A DEFECT. **THE NINETEEN `iv_` ROWS THIS
+GATE FOUND ARE FIXED AND GONE**; see THE 19 PINS THAT ARE NOT HERE, below. **THE SIBLING
+`cr_graph_census` ALREADY EXISTS AND IS GREEN**
 (MEASURED rc=0, 28 rows), which is not what this unit's brief said. What the sibling prints
 is `O.Rng.sig`: the node COUNT, the ROOT op, the ROOT's src COUNT and the ROOT's src op
 SEQUENCE. `realize_graph_census-oracle.py:38-44` names that instrument's own failure -- "a
@@ -90,13 +92,20 @@ wrong tree. THEY WERE NOT, AND THE MEASUREMENT IS IN `drift_hold()` AND IS ABOUT
     identical. `drift_hold()` re-extracts and re-compares on every run, so the claim stays
     re-decidable instead of being a sentence somebody wrote once.
 
-THE 20 DIVERGENCES, CLASSIFIED BY A MEASUREMENT AND PINNED ON BOTH SIDES.
+THE 19 PINS THAT ARE NOT HERE, AND THE ONE THAT IS. `creation.bend` IS CHANGED BY THIS
+REVISION, and the change is the finding.
 
-  19 PROMOTION FOLD -- `iv_void iv_weakint iv_i8 iv_u8 iv_i16 iv_u16 iv_i32 iv_u32 iv_i64
+  0 PROMOTION FOLD -- `iv_void iv_weakint iv_i8 iv_u8 iv_i16 iv_u16 iv_i32 iv_u32 iv_i64
   iv_u64 iv_weakfloat iv_fp8e4m3 iv_fp8e4m3fnuz iv_fp8e5m2 iv_fp8e5m2fnuz iv_f16 iv_bf16
-  iv_f32 iv_f64`. Every one is CPython's row with EXACTLY ONE `CAST/1` deleted, and the
-  deleted token is in the same place in all nineteen -- verified by rebuilding, not by a
-  subsequence test. `iv_bool` is the twentieth dtype and it AGREES.
+  iv_f32 iv_f64` were CPython's row with EXACTLY ONE `CAST/1` INSERTED -- verified by
+  rebuilding, not by a subsequence test -- while `iv_bool`, the twentieth dtype, AGREED.
+  `cr_const_of` folded on `from_py(v) == dt`, and `ops.py:630` has ALREADY REPLACED `dt`
+  with `from_py(b)` whenever `b is Invalid`, so the test was `bool == dt`: true at `bool`
+  and false at the other nineteen. It now folds on `de = cr_cast_dt(is_cinvalid(v), dt)`,
+  which is `ops.py:630`'s `dtype` AFTER that replacement, and all twenty `iv_` rows match
+  CPython byte for byte. THE MUTATION READING, BOTH WAYS: WITH THESE NINETEEN PINS STILL IN
+  PLACE AND THE FIX IN, THE GATE IS RED -- `bd's iv_void is not 'iv_void=...CAST/1...' --
+  if the divergence is fixed, drop it from DIVERGES`; WITH THEM DROPPED IT IS GREEN.
 
   1 W3 BOUNDS -- `el_weakint`. The port's ALLOC is `i64` and CPython's is `i32`, a buffer
   twice the width. Its PAIR `eb_weakint` -- the same call with `vmin`/`vmax` handed in --
@@ -512,11 +521,17 @@ def opscast_hold() -> bool:
         elif not re.search(r"case True\{\}: t", body.group(0)):
             bad.append("`cr_cast` has no fold arm -- it ALWAYS MINTS, which is class (b) "
                        "unfolds and every `iv_` row would be a finding of a new kind")
-    # AND THE FOLD TEST IS `from_py(v) == dt`, which is the ONE place the answer can be
-    # checked against ops.py's own words without reading the port's intent.
-    if "cr_cast(D.md_dt_eq(c0, dt)" not in src:
-        bad.append("`cr_const_of` no longer folds on `md_dt_eq(from_py(v), dt)` -- the "
-                   "predicate the 19 PROMOTION FOLD rows are about has moved")
+    # AND THE FOLD TEST IS `from_py(v) == de` WHERE `de` IS ops.py:630's `dtype` AFTER ITS
+    # `b is Invalid` REPLACEMENT. BOTH HALVES ARE CHECKED and the reason is this file's own
+    # history: the nineteen rows it reported were a fold on `from_py(v) == dt` -- on the
+    # dtype ops.py:630 had already thrown away -- so a check that looked for the `md_dt_eq`
+    # alone would have passed on the broken predicate and on the fixed one alike.
+    for want, why in (("+de = cr_cast_dt(F.is_cinvalid.val(v), dt)",
+                       "ops.py:630's `b is Invalid` dtype REPLACEMENT"),
+                      ("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
+                       "the fold test on the dtype the CONST HAS")):
+        if want not in src:
+            bad.append(f"`cr_const_of` no longer reads {want!r} -- {why} has moved")
     return report("opscast_hold", bad)
 
 
@@ -606,7 +621,12 @@ def classes_hold() -> bool:
     the terms the class is defined by, so a divergence that keeps its text cannot silently
     change what it IS. A gate that only pins differences has forgotten what it is pinning.
     `el_weakint` gets the stronger half: its `eb_` PAIR must now AGREE, because the pair is
-    what names the missing bounds as the cause rather than leaving it a guess."""
+    what names the missing bounds as the cause rather than leaving it a guess.
+
+    THE `PROMOTION-FOLD` BRANCH IS KEPT AFTER THE CLASS WAS CLEARED, and `--refresh` can no
+    longer produce that name. A pins row that still carries it -- hand-edited, or restored
+    from an older revision -- is then checked as ITS class and REDS rather than passing
+    unexamined, which is the whole reason this loop re-derives instead of reading the column."""
     cpy, port = lane_rows("py.rows"), lane_rows("bd.out")
     if cpy is None or port is None:
         return report("classes_hold", ["the promoted lanes are not there"])
@@ -708,13 +728,6 @@ CLASSES = [
      "NO CLASS. A row that differs and matches none of these is a real divergence with no "
      "reason attached; `--refresh` refuses to pin it rather than record a difference nobody "
      "has looked at."),
-    ("PROMOTION-FOLD", r"^iv_",
-     "THE NEVER-FOLDING CAST, class (b), at `cr_cast` (creation.bend:214-224). `cr_const_of` "
-     "folds on `md_dt_eq(from_py(v), dt)` -- the CALLER's dtype -- while `UOp.const` "
-     "(ops.py:630) REPLACES `dtype` with `dtypes.from_py(b)` when `b is Invalid` and only "
-     "then calls `.cast(dtype)`. So for `Invalid` the fold test is `from_py(b) == "
-     "from_py(b)`, true at every dtype, and the port mints a `CAST/1` at nineteen of the "
-     "twenty. `iv_bool` is the twentieth and agrees, because `from_py(Invalid)` is `bool`."),
     ("W3-BOUNDS", r"^el_weakint$",
      "creation.bend's W3, with a consequence rather than a refusal. `commit_dtype` "
      "(dtype.py:16) reads `self._uop.vmin`/`vmax`, which Python can compute and this port "
@@ -723,6 +736,14 @@ CLASSES = [
      "returns for the receiver's `0` -- it lands on i32 and AGREES. The `eb_` family is the "
      "second half of the pair and `classes_hold` refuses the pin without it."),
 ]
+# `PROMOTION-FOLD` WAS HERE AND ITS NINETEEN ROWS ARE GONE. `cr_const_of` folded on
+# `from_py(v) == dt` -- the CALLER's dtype, the one `ops.py:630` has already REPLACED with
+# `from_py(b)` when `b is Invalid` -- so for `Invalid` the test was `bool == dt`, true at one
+# dtype of twenty, and the port minted a `CAST/1` at the other nineteen. `cr_const_of` now
+# folds on the dtype the CONST HAS (see `opscast_hold`, which checks both halves of the new
+# predicate) and all twenty `iv_` rows agree with CPython. THE CLASS IS NOT RE-DECLARED HERE:
+# a `iv_` row that diverges again lands in no class, and `--refresh` REFUSES to pin it, which
+# is the reading that a cleared defect coming back is a NEW finding rather than a stale pin.
 
 
 def _header(n_div, n_same, rows):
@@ -739,10 +760,21 @@ def _header(n_div, n_same, rows):
         "# then nothing left to edit.",
         "#",
         "# THE CLASS COLUMN IS NOT DECORATION. `classes_hold()` re-derives each row's class",
-        "# from the lanes on every run -- a PROMOTION-FOLD row must be CPython's row with",
-        "# exactly one `CAST/1` DELETED and REBUILT, and a W3-BOUNDS row must be CPython's",
-        "# with the ALLOC's width changed AND its `eb_` pair still agreeing -- so a pinned",
-        "# row that stops being its class is a red run rather than a stale sentence.",
+        "# from the lanes on every run -- a W3-BOUNDS row must be CPython's with the ALLOC's",
+        "# width changed AND its `eb_` pair still agreeing -- so a pinned row that stops being",
+        "# its class is a red run rather than a stale sentence.",
+        "#",
+        "# THE CLASS THAT IS NOT HERE IS `PROMOTION-FOLD`, AND ITS NINETEEN `iv_` ROWS ARE",
+        "# GONE. `cr_const_of` folded on `from_py(v) == dt` -- the CALLER's dtype, the one",
+        "# `ops.py:630` has already REPLACED with `from_py(b)` when `b is Invalid` -- so for",
+        "# `Invalid` the test was `bool == dt`: true at ONE dtype of twenty (`iv_bool`, which",
+        "# agreed and made the disagreement look narrow) and a minted `CAST/1` at the other",
+        "# nineteen. `cr_const_of` now folds on the dtype the CONST HAS, `iv_bool` no longer",
+        "# agrees by accident, and all twenty `iv_` rows match CPython byte for byte. THE",
+        "# CLASS IS NOT RE-DECLARED: an `iv_` row that diverges again lands in no class and",
+        "# `--refresh` REFUSES to pin it, because a cleared defect that COMES BACK is a new",
+        "# finding and not a stale pin. `opscast_hold()` checks both halves of the new",
+        "# predicate on every run, so the fix cannot silently un-fix itself either.",
         "#",
         "# A ZERO-LENGTH FILE IS NOT A MISSING ONE. `_pins()` answers REFUSED for a missing",
         "# file and an empty dict for an empty one, and only the second is a verdict.",
@@ -819,6 +851,11 @@ GATE = Gate(
 CHECKS = (names_hold, methods_hold, dtypes_hold, receiver_hold, frompy_hold, opscast_hold,
           drift_hold, classes_hold, fold_axis_hold, no_noop_bottom)
 
+# THE `iv_` FAMILY, DISCOVERED from the row population and NOT TYPED. `cr_cast_dt` cleared
+# every one of these twenty rows, and the verdict below counts them from here so the number
+# it quotes and the number of rows the driver prints cannot come to disagree.
+CLEARED = [r for r in expected_rows() if r.startswith("iv_")]
+
 
 def checks_hold() -> bool:
     ok = True
@@ -831,11 +868,11 @@ if __name__ == "__main__":
     sys.exit(gate(GATE, f"crp_graph_census-gate: {ROWS} rows ({FAMS} dtype families x 20 "
                         f"dtypes + {SHFAMS} shape families x {SHAPES} shapes + {TAIL}), 3 "
                         f"lanes, {ROWS - len(DIVERGES)} deep cones match CPython byte for "
-                        f"byte and {len(DIVERGES)} are DECLARED -- {sum(1 for c, _ in DIVERGES.values() if c == 'PROMOTION-FOLD')} "
-                        f"are the class-(b) NEVER-FOLDING CAST at cr_cast (CPython's row "
-                        f"plus exactly one CAST/1, verified by inserting and rebuilding) and "
+                        f"byte and {len(DIVERGES)} are DECLARED -- "
                         f"{sum(1 for c, _ in DIVERGES.values() if c == 'W3-BOUNDS')} is W3's "
-                        f"missing vmin/vmax; the ten census METHODS are the intersection of "
+                        f"missing vmin/vmax and NOTHING is the class-(b) NEVER-FOLDING CAST, "
+                        f"whose {len(CLEARED)} `iv_` rows `cr_const_dt` cleared; the ten census "
+                        f"METHODS are the intersection of "
                         f"creation.bend's cr_* names and creation.py's (self|cls names; the "
                         f"fold set is measured at bool/weakint/weakfloat; no lane reads the "
                         f"NOOP bottom",
@@ -849,9 +886,18 @@ if __name__ == "__main__":
 #
 #   BASELINE  sha256 f545039d70509e87b0d455b48068be76e884452a274fa16cb17c6408a4b2c5df
 #             git hash-object 2610114301c7e78ed87b3d4773e8adf82f3b03cb
+#   ... WHICH IS THE PRE-FIX `creation.bend`, AND EVERY RESTORE BELOW WAS BYTE-IDENTICAL TO
+#   IT. The file has MOVED since: `cr_cast_dt` + `cr_const_of` are the fix (see FINDING 1)
+#   and the three mutations below were measured against the pre-fix bytes. `opscast_hold`
+#   re-reads the source on every run, so the moving baseline is checked rather than trusted.
 #
-#   M1  `cr_const_of` folds ALWAYS -- `cr_cast(D.md_dt_eq(c0, dt), ...)` becomes
-#       `cr_cast(True{}, ...)` (creation.bend:224). The fold predicate INVERTED: every
+#   M0  THE FINDING ITSELF, INVERTED -- `cr_cast_dt`'s `case True{}` answers `dt` where
+#       `ops.py:630` replaces it, which is the pre-fix predicate written out loud.
+#       RED rc=1 with the nineteen `iv_` pins IN PLACE, naming `iv_void`; GREEN once they
+#       are dropped. That pair IS the mutation: the pins were the mutation.
+#
+#   M1  `cr_const_of` folds ALWAYS -- `cr_cast(D.md_dt_eq(c0, de), ...)` becomes
+#       `cr_cast(True{}, ...)` (creation.bend). The fold predicate INVERTED: every
 #       concrete dtype now answers a BARE CONST where CPython builds the CAST.
 #       RED rc=1. `DISAGREE (bd)` names `zl_void` and `zl_i8`, and the census moves from
 #       187 to ... the gate stops at the FIRST two disagreements (`gatekit`'s `bad[:2]`),
@@ -875,14 +921,17 @@ if __name__ == "__main__":
 #       either way and the honest reading of it is "the experiment did not run".)
 #
 #   M3  `cr_from_py`'s `CInvalid` arm answers `S.weakint()` instead of `S.boolean()`
-#       (creation.bend:191) -- one arm, one word. This is the mutation that says the whole
-#       nineteen-row finding hangs on ONE arm: `iv_bool` is the ONE `iv_` dtype that agrees,
-#       and M3 moves it, because `from_py(Invalid)` is what both the fold predicate AND the
+#       (creation.bend:191) -- one arm, one word. This was the mutation that said the whole
+#       nineteen-row finding hung on ONE arm: `iv_bool` was the ONE `iv_` dtype that agreed,
+#       and M3 moved it, because `from_py(Invalid)` is what both the fold predicate AND the
 #       printed derived dtype read.
 #       RED rc=1, `DISAGREE (bd)` names `iv_bool` and shows both halves at once --
 #       `CONST/0[Invalid:bool],EXPAND/2` on CPython's side and
 #       `CONST/0[Invalid:weakint],CAST/1,EXPAND/2` on the port's. One mutation, the dtype
-#       AND the fold, which is the same pair the nineteen pins carry.
+#       AND the fold, which is the same pair the nineteen pins carried. AFTER THE FIX M3 IS
+#       STILL RED AND NOW NAMES THE DERIVED DTYPE ALONE -- `cr_cast_dt`'s `True{}` arm is
+#       `cr_from_py(O.CInvalid{})`, so breaking that arm breaks the dtype, the fold and
+#       nothing else, and the two halves of the finding are no longer the same edit.
 #
 # EVERY RESTORE WAS BYTE-IDENTICAL: `shasum -a 256` is
 # `f545039d70509e87b0d455b48068be76e884452a274fa16cb17c6408a4b2c5df` and `git hash-object` is
@@ -890,11 +939,13 @@ if __name__ == "__main__":
 # and `git diff HEAD -- tinybendygrad/mixin/creation.bend` is EMPTY.
 # ===========================================================================
 # ===========================================================================
-# THE FINDINGS, AND WHAT WAS DONE ABOUT THEM. `tinybendygrad/mixin/creation.bend` AND
-# `tinygrad/` ARE LEFT BYTE-IDENTICAL. `creation.bend`'s blob is `2610114301c7e78ed87b3d4773e8adf82f3b03cb`.
+# THE FINDINGS, AND WHAT WAS DONE ABOUT THEM. `tinygrad/` IS LEFT BYTE-IDENTICAL.
+# `tinybendygrad/mixin/creation.bend` IS NOT: finding 1 is FIXED in it and it is the ONLY
+# file this revision touches on the port side.
 #
-# FINDING 1 -- `cr_cast`'s FOLD PREDICATE IS THE CALLER'S DTYPE, AND FOR `Invalid` CPYTHON'S
-# IS NOT. `UOp.const` (ops.py:629-637, BYTE-IDENTICAL between `ad117c928^` and HEAD) is
+# FINDING 1 -- FIXED. `cr_cast`'s FOLD PREDICATE WAS THE CALLER'S DTYPE, AND FOR `Invalid`
+# CPYTHON'S IS NOT. `UOp.const` (ops.py:629-637, BYTE-IDENTICAL between `ad117c928^` and
+# HEAD) is
 #
 #     if dtype is None or b is Invalid: dtype = dtypes.from_py(b)     # ops.py:630
 #     ...
@@ -904,26 +955,52 @@ if __name__ == "__main__":
 # comment). `DType.const` returns `val` UNCHANGED for `InvalidType` (dtype.py:80), so
 # `dt.const(Invalid) is Invalid` at EVERY dt, whose derived dtype is `bool` (ops.py:185) --
 # and `dtype` has just been REPLACED by `from_py(Invalid) = bool`. So the fold test is
-# `bool == bool`: TRUE at every dtype. `cr_const_of` (creation.bend:222-224) instead folds on
+# `bool == bool`: TRUE at every dtype. `cr_const_of` folded instead on
 #
 #     cr_cast(D.md_dt_eq(c0, dt), T.tn_const(ar, v), dt)     with c0 = cr_from_py(v)
 #
 # i.e. `from_py(v) == dt`, comparing the CALLER'S `dt` -- the one ops.py:630 replaced.
-# MEASURED, over this census's own twenty dtypes:
+# MEASURED BEFORE, over this census's own twenty dtypes:
 #
 #     iv_bool      py  ...CONST/0[Invalid:bool],EXPAND/2,      bd ...CONST/0[Invalid:bool],EXPAND/2,          AGREE
 #     iv_i32       py  ...CONST/0[Invalid:bool],EXPAND/2,      bd ...CONST/0[Invalid:bool],CAST/1,EXPAND/2,    +1 CAST
 #     iv_weakfloat py  ...CONST/0[Invalid:bool],EXPAND/2,      bd ...CONST/0[Invalid:bool],CAST/1,EXPAND/2,    +1 CAST
 #     ... 19 of 20 differ, every one by EXACTLY one `CAST/1`, verified by `deleted()`.
 #
-# `iv_bool` is the cell where `from_py(v) == dt` HAPPENS to be true, and it is what makes the
-# disagreement look narrow. THE FIX IS NOT IN `creation.bend`: `cr_const_of` cannot see that
-# `dt` was replaced, because the replacement happens in the CALLER. The folding spelling is
-# `W.wk_cast_at(F.folded(ar), ...)` (`mixin/dtype.bend:342`), which needs a fold context, and
-# it is worth nothing here until the port can also answer what `dtype` ops.py:630 WOULD have
-# made it -- which is `cr_from_py(v)` UNCONDITIONALLY, i.e. a fold on `from_py(v)` alone for
-# `Invalid` and on `from_py(v) == dt` otherwise. That is a caller's fix, so it is REPORTED.
-# CLASS (b), THE NEVER-FOLDING CAST, in the layer the brief called highest-risk for it.
+# `iv_bool` was the cell where `from_py(v) == dt` HAPPENED to be true, and it is what made
+# the disagreement look narrow. THE FIRST DRAFT OF THIS REPORT SAID "THE FIX IS NOT IN
+# `creation.bend`", on the grounds that the replacement happens in the CALLER. THAT WAS
+# WRONG, AND IT WAS WRONG IN THE DIRECTION THAT KEEPS A DEFECT: `cr_const_of` is not a
+# callee of `UOp.const`, it IS `UOp.const` (creation.bend's own header says so), so there is
+# no caller between it and the line it has to fold on. What the port cannot see is not
+# THAT `dt` was replaced -- it is only ever handed one `dt` and has to answer ops.py:630's
+# `dtype` ITSELF. So the fix is ops.py:630, transcribed:
+#
+#     def cr_cast_dt.of(isinv: Bool, dt: S.Dt) -> S.Dt:
+#       match isinv:
+#         case True{}: cr_from_py(O.CInvalid{})     # ops.py:630 REPLACES dt
+#         case _:       dt
+#
+#     +de = cr_cast_dt(F.is_cinvalid.val(v), dt)
+#     cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)
+#
+# `is_cinvalid.val` is `uop/fold.bend`'s EXISTING `O.Const` test (fold.bend:2385), not a new
+# one, and `F` was already imported. `de` is what `.cast` is handed, so the fold test and
+# the CAST's `ADt` arg can no longer disagree with each other -- which is the same shape as
+# `wk_cast_at`/`cast_at`, where the source dtype is read off a FOLD. MEASURED AFTER, over the
+# same twenty dtypes: 20 of 20 `iv_` rows AGREE, `el_weakint` is the only divergence left in
+# 207, and no other row moved -- `f_`, `z_`, `zl_`, `ol_`, `cl_`, `eb_`, `ne_`, `fs_`, `nb_`
+# and the seven tail rows are byte-identical to what they were, because for a NON-`Invalid`
+# value `de` IS `dt` and the predicate is the old one. The fix moves the `Invalid` arm and
+# nothing else.
+#
+# WHAT MADE THIS THE THIRD OF ITS CLASS, and the two before it are the reason the
+# instruction "fold on the dtype the CONST ACTUALLY HAS" was the right shape to reach for:
+# `renderer/amd/dsl.bend`'s `src_bit.vdst` compared `"vdst"` WITH ITSELF and so took its arm
+# for every input, and `tensor.bend`'s `tn_logical_not` used the raw `O.UOp.cast`, which
+# always mints, where `D.cast_at` folds. A literal compared with itself and a predicate read
+# off the wrong value are the same mistake: the comparison is TRUE for a reason nobody
+# chose, and it is true at exactly the wrong places.
 #
 # FINDING 2 -- `el_weakint`'s ALLOC IS `i64` WHERE CPYTHON'S IS `i32`, AND ITS PAIR IS WHAT
 # NAMES THE CAUSE. `cr_empty_like` is handed `m`/`m2` as `Maybe<&1, H.I64>` because
@@ -938,7 +1015,7 @@ if __name__ == "__main__":
 # so `D.commit_dtype` is CLEARED and the two missing bounds are the cause. That is a buffer
 # TWICE THE WIDTH, so it is a wrong graph and not a refusal. The fix is that `cr_empty_like`
 # should derive the bounds the way `cr_full` does -- from the value it is handed -- and the
-# reason it cannot is W3, not `commit_dtype`. REPORTED; the port is BYTE-IDENTICAL.
+# reason it cannot is W3, not `commit_dtype`. REPORTED; `creation.bend` is unchanged HERE.
 #
 # WHAT WAS RULED OUT, BY MEASUREMENT RATHER THAN BY ARGUMENT:
 #   * NOT THE ORACLE'S RECEIVER. `Tensor.zeros(shape, dtype=dt)` is not a `dt` tensor --
@@ -951,6 +1028,18 @@ if __name__ == "__main__":
 #     oracle's own reading of dtype.py -- so the VALUE comes from `dt.const(1)`, the real
 #     method, on one side and `cr_cval1`, the port's own arms, on the other. The one place
 #     this DID bite is recorded below.
+#   * NOT A FIXTURE THAT FEEDS CPYTHON'S RAW `1` TO THE PORT. `cv1(dt)` is
+#     `cr_cval1(is_bool(dt), is_float(dt))` and `dt.const(1)` is `DType.const`'s three arms,
+#     so the two CAN differ and comparing them is the measurement that tells a real defect
+#     from a fixture artefact. MEASURED, TWICE AND FROM BOTH SIDES, over all twenty dtypes:
+#     the `f_<dtype>` FILL CONST is byte-identical on both lanes at every one of them --
+#     `CONST/0[1:weakint]` at the eighteen int/void dtypes, `CONST/0[True:bool]` at `bool`,
+#     and `CONST/0[bits=1065353216:weakfloat]` at the nine float dtypes -- and
+#     `.venv/bin/python` on `dtypes.<n>.const(1)` prints the same twenty values. So `cv1`
+#     IS `dt.const(1)` here, `creation.bend`'s post-truncation contract (`fill_value`
+#     arrives AFTER `dtype.const`) makes the predicates identical, and the nineteen `iv_`
+#     rows were never a fixture artefact. This is measured BEFORE any change was made,
+#     because the census author nearly published twenty-one PHANTOM findings by assuming it.
 #   * NOT THE PRINTER. Thirty rows moved on `H.f32_show(0.0)` being `"0"` where `repr(0.0)`
 #     is `"0.0"`. Printing the IEEE-754 pattern instead (`F32.bits` is a law, base.bend:31)
 #     took the rows to 187/207 with no formatter in the comparison, and `0.0`, `-0.0` and a
@@ -974,6 +1063,9 @@ if __name__ == "__main__":
 #     every `full`/`zeros`/`ones` row is handed an already-truncated value and this census
 #     CANNOT catch a port that mis-truncates -- it can only catch a FIXTURE that does, which
 #     is what it just did once. `creation.bend`'s own `main` has a `TODO(p3)` row for it.
+#     THE `iv_` FAMILY IS NOT BEHIND THAT WALL. `DType.const` returns `Invalid` UNCHANGED
+#     (dtype.py:80), so nothing is truncated on the nineteen rows finding 1 was about, and
+#     `opscast_hold` checks the predicate's spelling rather than trusting a row.
 #   * `_multi_like` (creation.py:16) is W2 and has NO def, so `full_like`'s multi-device arm
 #     (creation.py:102-104) is not censused. `cpy_only_methods()` NAMES it on every run
 #     rather than letting its absence read as agreement.

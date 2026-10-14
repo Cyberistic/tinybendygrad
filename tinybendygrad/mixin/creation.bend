@@ -217,11 +217,32 @@ def cr_cast(same: Bool, +t: T.Tensor, +dt: S.Dt) -> T.Tensor:
     case _: +f = O.UOp.new(T.Tensor.ar(t), O.OpsCAST{}, [T.Tensor.u(t)], O.ADt{dt}, O.TNone{})
              T.tn_new(O.Found.ar(f), O.Found.i(f))
 
+# ops.py:630 `if dtype is None or b is Invalid: dtype = dtypes.from_py(b)`. `dt` here is an
+# `S.Dt` and never `None`, so only the `b is Invalid` arm is reachable -- and it REPLACES the
+# dtype rather than narrowing it: `from_py(Invalid)` is bool (dtype.py:102) and
+# `bool.const(Invalid)` is `Invalid` UNCHANGED (dtype.py:80) whose derived dtype is bool
+# (ops.py:185), so `.cast`'s own test is `bool == bool`, TRUE at EVERY dtype. `.cast` is a
+# SEPARATE method in Python, so this REPLACEMENT is not visible to a fold that holds only the
+# caller's `dt`; `cr_const_of` below IS `UOp.const` (this file's header), so it has to answer
+# `dtype` for itself, which is this def. MEASURED on `.venv/bin/python`, `UOp.const(Invalid,
+# dt)` is a bare `Ops.CONST` with no srcs at void, bool, weakint, u8, i8, u32, i32, f16, bf16,
+# f32, f64 and weakfloat, and `Tensor.invalids(shape, dtype=dt)` is a bare CONST at all twenty.
+def cr_cast_dt.of(isinv: Bool, dt: S.Dt) -> S.Dt:
+  match isinv:
+    case True{}: cr_from_py(O.CInvalid{})
+    case _:       dt
+
+def cr_cast_dt(isinv: Bool, dt: S.Dt) -> S.Dt: cr_cast_dt.of(isinv, dt)
+
 # `UOp.const` -- ops.py:632-638, `UOp(Ops.CONST, arg=dtype.const(b), src=()).cast(dtype)`.
 # `dtype.const`'s truncation is P3 (fact 3 of the header), so `v` is the value AFTER it.
+# `c0` is the CONST's DERIVED dtype (ops.py:185) and `de` is `dtype` AFTER ops.py:630, so the
+# fold test is `CONST.dtype == de` -- the `same` of `cr_cast` above, read off the dtype the
+# CONST HAS rather than the one the caller asked for.
 def cr_const_of(+ar: O.Arena, +v: O.Const, +dt: S.Dt) -> T.Tensor:
   +c0 = cr_from_py(v)
-  cr_cast(D.md_dt_eq(c0, dt), T.tn_const(ar, v), dt)
+  +de = cr_cast_dt(F.is_cinvalid.val(v), dt)
+  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)
 
 # `shape_to_shape_arg`'s `UOp.const(x)` per dim (tinygrad/uop/ops.py:105). `T.tn_mop`'s `ADims{ds}`
 # takes the CONSTS rather than the ints, and `tn_mop.dims` interns them in the arena it

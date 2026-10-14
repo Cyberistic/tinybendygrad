@@ -13770,6 +13770,33 @@ the way that NO GATE COULD SEE. Both are recorded here because the instrument is
       and stays open; the def it names MOVED to `uop/weak.bend` as `wk_remint`, so the citation's path
       is stale and needs re-pointing.
 
+## CRPCONST -- `cr_const_of`'s FOLD READ THE CALLER'S DTYPE, AND `ops.py:630` HAD ALREADY REPLACED IT (2026-10-14)
+
+`gates/crp_graph_census-gate.py` reported 20 divergences, 19 of them a minted `CAST/1` on the
+`iv_` family. Nineteen of twenty FIXED in `tinybendygrad/mixin/creation.bend`; `el_weakint` stands.
+
+- [x] **THE CAUSE, VERIFIED BEFORE THE FIX AND NOT ASSUMED.** `cv1(dt)` against `dt.const(1)` on
+      all twenty dtypes, from BOTH lanes' own printer and from `.venv/bin/python`: identical, so the
+      nineteen rows were not a fixture artefact. Then `UOp.const(Invalid, dt)` on twelve dtypes:
+      a bare `Ops.CONST` with NO srcs at every one, which is what the port was failing to produce.
+- [x] **`cr_const_of` FOLDED ON `from_py(v) == dt` -- THE CALLER'S DTYPE.** `ops.py:630` replaces
+      `dtype` with `from_py(b)` when `b is Invalid`, and `DType.const` returns `Invalid` UNCHANGED
+      (dtype.py:80) whose derived dtype is bool (ops.py:185), so CPython's test is `bool == bool`.
+      The port's was `bool == dt`: true at `iv_bool` and false at the other nineteen.
+- [x] **THE FIX IS `cr_cast_dt`, ops.py:630 TRANSCRIBED** -- `F.is_cinvalid.val(v)` (fold.bend's
+      EXISTING test, fold.bend:2385) selects between `cr_from_py(O.CInvalid{})` and `dt`, and the
+      fold and the CAST's `ADt` arg are the SAME `de`. **THE CENSUS REPORT SAID "THE FIX IS NOT IN
+      `creation.bend`"; IT WAS WRONG, AND WRONG IN THE DIRECTION THAT KEEPS A DEFECT.**
+      `cr_const_of` IS `UOp.const`, so there is no caller between it and ops.py:630.
+- [x] **`opscast_hold` NOW CHECKS BOTH HALVES OF THE NEW PREDICATE** and was seen to FAIL on each
+      one separately. The old check was the literal `cr_cast(D.md_dt_eq(c0, dt)`, which would have
+      passed on the broken predicate and on the fixed one alike.
+- [ ] **`el_weakint` IS STILL A DIVERGENCE AND IT IS NOT THIS CLASS.** `cr_empty_like` takes
+      `vmin`/`vmax` as `Maybe`s because `commit_dtype` (dtype.py:16) reads `UOp._min_max`, which
+      this port does not have (creation.bend's W3). Its PAIR `eb_weakint` AGREES, which names the
+      two missing bounds as the cause and clears `D.commit_dtype`. `cr_empty_like` should derive
+      them the way `cr_full` does -- from the value it is handed -- and the reason it cannot is W3.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
