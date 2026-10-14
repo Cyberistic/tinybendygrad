@@ -14634,6 +14634,41 @@ NINTH DERIVATIVE OF THE SAME CLASS.**
       and filled a **926 GiB VOLUME TO 100%**. Fixed: 51 MB steady. **A HARNESS BUG THAT LOOKS LIKE A
       LEAK IS A HARNESS BUG UNTIL IT IS MEASURED.**
 
+## SLOP-SWEEP -- a commit SUBJECT reads "land 405 PATHS" and DELETED 2207 LINES AND TWO GATES, AND msgdiff PASSED IT (2026-10-15)
+
+`7df97a304`, an ancestor of HEAD. **THE MOST IMPORTANT FINDING OF THE SESSION, AND IT IS ABOUT A GATE
+THAT WAS DESIGNED FOR EXACTLY THIS.**
+
+- [ ] **MEASURED:** `git show --numstat --format="" 7df97a304 | awk '{a+=$1;d+=$2}'` answers
+      **added 30, deleted 2207**, and `--diff-filter=D` names **2 gate files**:
+      `gates/decomp_value-gate.py` (954 lines) and `gates/decomp_value-pins.rows` (214) --
+      **BOTH COMMITTED BY ANOTHER UNIT MINUTES EARLIER IN `9a26ca540`.**
+- [ ] **THE SUBJECT IS ABOUT ADDING:** "land-slop: **`405` PATHS, **`9` MB, **`47` UNIT DIRECTORIES**,
+      **`34` REPORT-SHAPED -- **AND **NOT **ONE **OF **THEM **WAS **IN **GIT**".** A COMMIT WHOSE SUBJECT
+      IS 405 ADDED PATHS REMOVED 2,207 LINES.
+- [ ] **`msgdiff-gate.py` PASSED IT. BOTH LANES.** `PASS: ... 0 deletion claims checked` and
+      `PASS: ... 5 removal(s), all named by the message or acknowledged`.
+- [ ] **WHY: THE MESSAGE ASSERTED THE COUNT INSTEAD OF LETTING THE GATE MEASURE ONE.** Its body reads
+      **"untracked paths in .agents/slop/ : 403   staged here : 405   deletions : 0"**. **THE GATE WAS
+      TOLD THE DELETIONS WERE ZERO AND BELIEVED THE NUMBER** -- and a human reading the same line would
+      take it too. **THIS IS THE TWELFTH INSTANCE AND THE MOST GENERAL: AN INSTRUMENT THAT REPORTS A
+      NUMBER SOMEONE SUPPLIED IS NOT MEASURING.**
+- [ ] **THE REPAIR ITSELF IS CURRENTLY BLOCKED, AND THAT IS THE POINT.** Both files must go back into
+      GIT, but **`.git/index` IS STILL ARMED WITH `7df97a304`'s 416 STAGED PATHS** (measured:
+      `git diff --cached --name-only | wc -l` = **416**). **MEASURED FAILURES OF THE OBVIOUS REPAIRS,
+      IN ORDER:** `git add <path>` then `git commit --only -- <path>` answers `pathspec ... did not
+      match any file(s) known to git` (the armed index has DELETED them, so git refuses them); and
+      `git add -A -- <path>` **IGNORES THE PATHSPEC AND SWEEPS IN 416 PATHS**, which is the exact
+      mistake `AGENTS.md` forbids. Both were undone and nothing was committed.
+      **SO THE TWO FILES ARE RESTORABLE ONLY AFTER THE INDEX IS DISARMED, AND DISARMING IT IS NOT THIS
+      COMMIT'S CALL** -- the index holds another unit's staged work. **A COMMIT THAT ARMED 416 PATHS
+      BLOCKS THE REPAIR OF ITS OWN COLLATERAL DAMAGE, AND NOTHING IN THE TREE SAYS SO.**
+- [ ] **NOTHING IS LOST -- BOTH FILES ARE ON DISK AND IDENTICAL TO WHAT `9a26ca540` COMMITTED**
+      (`gates/decomp_value-gate.py` worktree `6f9cc4efb687`), which is why they now read as UNTRACKED:
+      the sweep deleted them from GIT while the WORKTREE kept them. **THE HAZARD `AGENTS.md` NAMES --
+      "THE HAZARD IS SILENT REVERSION, NOT AN EMPTY BLOB" -- REALISED, AND IT SURVIVED BOTH THE MASS-
+      DELETE GATE AND THE MESSAGE GATE.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
