@@ -202,7 +202,28 @@ Two things worth knowing before writing the next one:
   dir makes every mutation report `-- DID NOT COMPILE / RUN --`, which reads like a
   broken table and is a broken harness.
 
-## late — the oracle/gate/mutate set (2026-10-02, regalloc)
+## late — the census that replaced `late-oracle.py` (2026-10-14, linearizer + regalloc)
+
+**EVERY PATH IN THE SECTION BELOW THIS ONE IS GONE — MEASURED 2026-10-14**, all five:
+`late-oracle.py`, `oracles/late-oracle.txt`, `ra-mutate.py`, `ra-mutate2.py`, and the
+`tinybendygrad/codegen/late.bend` its acceptance test names (a DIRECTORY since the 1:1
+split). So `linearizer.bend`'s own header —
+
+    diff <(python3 /tmp/opencode/late-oracle.py) <(./bin/bend tinybendygrad/codegen/late.bend)
+
+— had three dead parts and the 71 rows it describes had never been compared to CPython by
+anything. Its "the base is 128 rows" is also stale: measured today 71 (`linearizer.bend`) + 48
+(`regalloc.bend`) = 119, and 130 with `gater.bend`'s 11.
+
+| script | what it answers | how |
+| --- | --- | --- |
+| `gates/linearizer_census-oracle.py` | what does CPython say about `linearize`? | the SAME 71 rows, in the port's order and spelling, calling `linearize`, `CFGContext`, `pm_add_control_flow`, `do_split_ends`, `pm_split_ends`, `UOp.toposort`, `UOp.ranges` and `helpers.prod` over the same 22 constructions `lt_fix` names. `Context(TUPLE_ORDER=0)` on both sides, because `helpers.TUPLE_ORDER` is a ContextVar defaulting to 1 and the port names the `=1` lane a wall. **The one TRANSCRIPTION is the priority ladder** (it lives inside `linearize`'s body and CPython exports no `priority_of`), so `ladder_check()` predicts the order `linearize` returns over two fixtures of independent leaves and EXITS 2 on a mismatch — a mistyped constant is a REFUSED gate, never a green row. |
+| `gates/linearizer_census-gate.py` | is it still true? | gatekit, 3 lanes, 71 rows / 69 compared. `--refresh` writes `linearizer_census-pins.rows` from the ORACLE and REFUSES to pin a row in no declared class. `rows_hold()` re-checks the two lanes' row NAMES IN ORDER, so a reordered `main()` is red before a value is compared. |
+| `gates/regalloc_census-oracle.py` | …and about the register allocator? | the same 48 rows. It supplies the three hooks tinygrad's own base class leaves `NotImplementedError` (`assign_spill_slot`, `fill`, `spill`) plus `is_two_address`, and `ra0`/`ra1` are the SAME uop list with that hook False and True. **`RaUop.ss` is a list of NODE indices, not register indices** — `ra_rdef` is a node's `ds` head, so `("INS",(0,),(6,))` means "src is NODE 0, and I DEFINE register 6"; read as registers it gives rax a live range and five spill slots, which the port's `ra0_lr` (v0..v4 only) refutes. |
+| `gates/regalloc_census-gate.py` | is it still true? | gatekit, 3 lanes, 48 rows, **0 divergences** — and the pins file is empty BECAUSE the comparison ran, which `--refresh` refuses to write otherwise. |
+| `gates/mutkit.py` | what does the gate NOT see? | the shared mechanism both `-mutate.py` drivers call. The copy lives BESIDE the original (a `.bend`'s imports are relative to its own path, so a copy elsewhere answers "the substrate did not warm" — a REFUSED exit for the wrong reason); the tree's own `.bend` is NEVER written; every pattern is asserted to occur exactly once; and the mutated rows are read BEFORE the gate runs, because the run deletes the copy and reading afterwards compares the base against itself. |
+
+## late — the oracle/gate/mutate set (2026-10-02, regalloc) — **SUPERSEDED, EVERY PATH GONE**
 
 | script | what it answers | how |
 | --- | --- | --- |
