@@ -12,6 +12,14 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.
+amd-dsl-census  [#########] 9/9      9 census CLASSES retired, 3 left: `MSG_TEXT` 26 ·
+                                         `SRC_WIDTH` 4 · `WORD_64` 1 = 31 pins of 1178 rows.
+                                         MODMASK retired 2026-10-14 (TWO defects: `mod_mask`
+                                         read no flag, and the ROWS passed `1` for all three
+                                         masks -- a correct def with the old bits still moves
+                                         `modmask_hi_hi`). **TWO OF dsl.py's THREE FLAGS ARE
+                                         UNGATED**: deleting `mod_hit.ab` or `mod_hit.opsel`
+                                         moves ZERO rows.
 msgdiff-gate    [#########] 1/1      a commit MESSAGE vs its own DIFF. `00b101574`'s "Deleted the
                                         superseded `oracles259/plants.py`" is REFUSED (3) over an
                                         EMPTY `git diff-tree --diff-filter=D`, the file present at
@@ -13762,6 +13770,52 @@ MEASURED, `helpers.bend`'s own algebra vs CPython, all four exact: `1<<63 = 2147
       `0x48`, so `to_bytes_*` never read a nonzero high byte above byte 0. `to_bytes_f64i`
       (`F64_FIELDS` is 64 bits, `_base_size` is 8, `lit` is `0x12345678`) is added and the same
       mutation now moves it `0500000078563412 -> 0500000078000000`.
+
+## MODMASK -- the port sets a MODIFIER BIT CPython does not set (2026-10-14)
+
+**FIXED 2026-10-14.** `gates/amd_dsl_census-gate.py` **rc=0, 1178 rows x 3 lanes,
+1147 exact, 31 pinned (31 names), 8/8 checks OK**. The 16 `MODMASK` pins are **GONE,
+NOT MOVED**: `--refresh` rewrote the file and the data-line diff is **16 deletions,
+0 insertions, 0 modified** -- every surviving pin still carries CPython's recorded value.
+
+**THE 16 ROWS ARE 16 DISTINCT ROWS.** MEASURED two ways: 16 pin lines under 16 distinct
+names, and the 21 `modmask_*` census rows under 21 distinct names, none of them among
+this census's 14 known duplicates (`dup_rows_hold()` lists them). There was never a
+duplicated `modmask_*` row.
+
+- [x] **THE CLASS NAMED ONE DEFECT AND THERE WERE TWO.** (i) Its own diagnosis --
+      "`mod_mask` never tests WHICH modifier is set" -- is RIGHT, and CONFIRMED against
+      dsl.py's OWN LOOP rather than the oracle's helper: dsl.py:313-321 **executed
+      verbatim** over the three fixtures answers `neg=0 abs=0 opsel=0` (`VOP2_ALL`),
+      `neg=1 abs=0 opsel=0` (`VOP2_NEG`), `neg=0 abs=0 opsel=9` (`VOP2_HI`) -- three
+      accumulators that are **not equal** -- and `mod_mask.one` asked only
+      `is the value a Reg`. (ii) **THE ROWS WERE WRONG TOO AND NOTHING NAMED IT**: all
+      three mask families passed `1`, so `ab` and `hi` were `src0` under two more names
+      where the convention is abs -> `src1` (bit 2), opsel -> `src2` (bit 4).
+- [x] **A CORRECT `mod_mask` WITH THE OLD BITS STILL DISAGREES ON ONE ROW -- MEASURED.**
+      Restoring the old row bits over the new def moves exactly `modmask_hi_hi`
+      (`VOP2_HI`'s `src0.hi` IS set) and leaves 32 divergences. So the row fix is not
+      decoration, and the "one defect" reading would have shipped a red gate.
+- [x] **IT WAS NEVER AN ABSENCE BUG.** `Vf.has` IS `vals[name] is not None` and
+      `mod_merge` already took it -- the retired `MOD_MERGE` class. The port CAN and
+      DOES tell absent from `0` here; a field that cannot be absent is not what broke.
+- [x] **THE FIX.** `mod_hit`, a chain of `Bool.pick`s in `src_bit`'s own shape, selecting
+      `Ov.neg`/`Ov.ab`/`Ov.hi` by the mask being accumulated; `mod_mask(m, bit, vfs)`.
+      `mod_neg`/`mod_ab`/`mod_hi` already read those three predicates and NOTHING CALLED
+      THEM HERE. `MOD_NONE` is not a fourth CPython mask: it is `vals['src0'] = ...`
+      NOT BEING A LINE, which is what `modmask_{src0,src1,src2,vdst}_*` ask.
+- [x] **MUTATIONS, ONE ARM AT A TIME, ALL 1178 ROWS EACH.** delete `mod_hit.neg` ->
+      **1** row (`modmask_neg_neg`); delete `mod_hit.ab` -> **0**; delete
+      `mod_hit.opsel` -> **0**; let the chain fall through to `True` (the original
+      "is a Reg") -> **8**, all of them the `MOD_NONE` families.
+- [ ] **A COVERAGE GAP, MEASURED, NOT FIXED -- TWO OF dsl.py's THREE FLAGS ARE UNGATED.**
+      Deleting `mod_hit.ab` and deleting `mod_hit.opsel` each move **ZERO** of 1178 rows:
+      **no fixture in this census sets `Reg.abs_`**, and the opsel family asks about
+      `src2`, which `VOP2_FIELDS` has no field for. `mod_src0_ab`/`mod_src0_hi` do
+      exercise the flags, through `mod_ab`/`mod_hi`. Closing this needs a fixture that
+      sets `abs_` and a three-source field list, which is a NEW ROW, and `ROWS = 1178`
+      is asserted in six places -- deliberately NOT done here, because adding a row is a
+      census-shape decision and not this fix's business.
 
 ## Session 2026-10-13 — `opsfind`: findings A, B, C and F of `gates/ops_python_census-gate.py`
 Full report, every reading and every plant: `.agents/slop/opsfind/REPORT.md`.

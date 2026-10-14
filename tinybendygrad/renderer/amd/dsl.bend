@@ -1187,25 +1187,61 @@ def src_bit.s0(name: String, rest: U32) -> U32: Bool.pick(U32, String.eq(name, "
 def src_bit(+name: String) -> U32:
   src_bit.s2(name, src_bit.s1(name, src_bit.s0(name, src_bit.vdst(name, 0))))
 
+# WHICH OF THE THREE MASKS IS BEING ACCUMULATED. dsl.py:313-319 keeps THREE
+# SEPARATE accumulators and reads ONE `Reg` flag into each, so a mask is not
+# identified by its own bit: `mod_mask(bit, ...)` cannot tell `neg_bits` from
+# `abs_bits` when both are asked for the same register, and the census's `ab` and
+# `hi` families were passing a mask that had no `Reg` flag to read at all.
+# `MOD_NONE` IS NOT A FOURTH CPYTHON MASK -- it is `vals['src0'] = ...` NOT BEING
+# A LINE in dsl.py, which is why the four register-named census families answer 0.
+def MOD_NEG() -> U32: 0     # neg_bits   (dsl.py:317)
+def MOD_ABS() -> U32: 1     # abs_bits   (dsl.py:318)  `Reg.abs_`; the census spells it `ab`
+def MOD_OPSEL() -> U32: 2   # opsel_bits (dsl.py:319)
+def MOD_NONE() -> U32: 3
+
 def mod_mask.pick.go(hit: Bool, +bit: U32, +acc: U32) -> U32:
   match hit:
     case True{}: U32.or(acc, bit)
     case False{}: acc
 
-# the `Reg` flag that selects the bit: neg -> neg_bits, abs_ -> abs_bits,
-# hi -> opsel_bits (:317-319). Kept separate so the three masks are three defs.
+# `if reg.neg` / `if reg.abs_` / `if reg.hi` (:317-319) -- the three tests the loop
+# makes, SELECTED BY THE MASK BEING ACCUMULATED. A CHAIN OF `Bool.pick`s in the
+# shape `src_bit` above uses, and `MOD_NONE` falls off the end of it.
+#
+# THIS IS THE `Reg` FLAG THAT SELECTS THE BIT, WHICH THE COMMENT BELOW USED TO
+# CLAIM AND THE DEF DID NOT: `mod_mask.one` asked only `is the value a Reg`, so
+# every register that was one contributed to all three masks and the three census
+# families were ONE MEASUREMENT UNDER THREE NAMES. `mod_neg`/`mod_ab`/`mod_hi`
+# below DO read the flag -- one register, one flag, the bit is 1 -- so the three
+# predicates already existed and nothing called them here.
+#
+# MEASURED, ONE ARM AT A TIME, OVER ALL 1178 ROWS (each arm deleted, gate lane
+# re-run, reverted): deleting `mod_hit.neg` moves 1 row (`modmask_neg_neg`);
+# deleting `mod_hit.ab` moves 0; deleting `mod_hit.opsel` moves 0; and letting the
+# chain fall through to `True` -- the original "is a Reg" answer -- moves 8, all
+# of them the `MOD_NONE` register-named families. SO TWO OF dsl.py's THREE FLAGS
+# ARE UNMEASURED BY THIS CENSUS, and it is not the def's fault: NO FIXTURE HERE
+# SETS `Reg.abs_`, AND THE OPSEL FAMILY ASKS ABOUT `src2`, WHICH `VOP2_FIELDS` HAS
+# NO FIELD FOR. `mod_src0_ab`/`mod_src0_hi` DO exercise the flags, through
+# `mod_ab`/`mod_hi` -- the same three predicates, a different row.
+def mod_hit.opsel(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_OPSEL()), Ov.hi(v), rest)
+def mod_hit.ab(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_ABS()), Ov.ab(v), rest)
+def mod_hit.neg(m: U32, +v: Ov, rest: Bool) -> Bool: Bool.pick(Bool, U32.is_eq(m, MOD_NEG()), Ov.neg(v), rest)
+def mod_hit(+m: U32, +v: Ov) -> Bool: mod_hit.neg(m, v, mod_hit.ab(m, v, mod_hit.opsel(m, v, False{})))
 
 def mod_mask.pick(named: Bool, isreg: Bool, +bit: U32, +acc: U32) -> U32: mod_mask.pick.go(Bool.and(named, isreg), bit, acc)
 
-def mod_mask.one(nm: String, v: Ov, +has: Bool, +bit: U32, +acc: U32) -> U32:
-  mod_mask.pick(U32.is_eq(src_bit(nm), bit), Bool.and(has, U32.is_eq(Ov.k(v), OV_REG())), bit, acc)
+# dsl.py:316-319 -- `if reg.neg: neg_bits |= (1 << bit)`. ALL THREE CLAUSES AT ONCE,
+# which is what a mask is: `m` says which flag, `bit` says which register.
+def mod_mask.one(m: U32, nm: String, +v: Ov, +has: Bool, +bit: U32, +acc: U32) -> U32:
+  mod_mask.pick(U32.is_eq(src_bit(nm), bit), Bool.and(has, Bool.and(U32.is_eq(Ov.k(v), OV_REG()), mod_hit(m, v))), bit, acc)
 
-def mod_mask.go(vfs: List<&2, Vf>, +acc: U32, +bit: U32) -> U32:
+def mod_mask.go(+m: U32, vfs: List<&2, Vf>, +acc: U32, +bit: U32) -> U32:
   match vfs:
     case Nil{}: acc
-    case Vf{f, v, has} <> t: mod_mask.go(t, mod_mask.one(Fld.name(f), v, has, bit, acc), bit)
+    case Vf{f, v, has} <> t: mod_mask.go(m, t, mod_mask.one(m, Fld.name(f), v, has, bit, acc), bit)
 
-def mod_mask(bit: U32, vfs: List<&2, Vf>) -> U32: mod_mask.go(vfs, 0, bit)
+def mod_mask(m: U32, bit: U32, vfs: List<&2, Vf>) -> U32: mod_mask.go(m, vfs, 0, bit)
 
 def mod_neg(+v: Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U32.is_eq(Ov.k(v), OV_REG()), Ov.neg(v))), 1, 0)
 def mod_ab(+v: Ov, has: Bool) -> U32: Bool.pick(U32, Bool.and(has, Bool.and(U32.is_eq(Ov.k(v), OV_REG()), Ov.ab(v))), 1, 0)
@@ -3084,27 +3120,39 @@ def g_inst() -> IO(Unit):
     urow("srcbit_sdst", src_bit("sdst"))
     urow("srcbit_op", src_bit("op"))
     urow("srcbit_nosuch", src_bit("nosuch"))
-    urow("modmask_neg_vop2", mod_mask(1, VOP2_ALL()))
-    urow("modmask_neg_neg", mod_mask(1, VOP2_NEG()))
-    urow("modmask_neg_hi", mod_mask(1, VOP2_HI()))
-    urow("modmask_ab_vop2", mod_mask(1, VOP2_ALL()))
-    urow("modmask_ab_neg", mod_mask(1, VOP2_NEG()))
-    urow("modmask_ab_hi", mod_mask(1, VOP2_HI()))
-    urow("modmask_hi_vop2", mod_mask(1, VOP2_ALL()))
-    urow("modmask_hi_neg", mod_mask(1, VOP2_NEG()))
-    urow("modmask_hi_hi", mod_mask(1, VOP2_HI()))
-    urow("modmask_src0_vop2", mod_mask(1, VOP2_ALL()))
-    urow("modmask_src0_neg", mod_mask(1, VOP2_NEG()))
-    urow("modmask_src0_hi", mod_mask(1, VOP2_HI()))
-    urow("modmask_src1_vop2", mod_mask(2, VOP2_ALL()))
-    urow("modmask_src1_neg", mod_mask(2, VOP2_NEG()))
-    urow("modmask_src1_hi", mod_mask(2, VOP2_HI()))
-    urow("modmask_src2_vop2", mod_mask(4, VOP2_ALL()))
-    urow("modmask_src2_neg", mod_mask(4, VOP2_NEG()))
-    urow("modmask_src2_hi", mod_mask(4, VOP2_HI()))
-    urow("modmask_vdst_vop2", mod_mask(8, VOP2_ALL()))
-    urow("modmask_vdst_neg", mod_mask(8, VOP2_NEG()))
-    urow("modmask_vdst_hi", mod_mask(8, VOP2_HI()))
+    # THE THREE MASKS (dsl.py:313-319), each over the REGISTER its own bit names:
+    # the census convention is neg -> src0, abs -> src1, opsel -> src2, so
+    # MOD_SRC0_BIT / MOD_SRC1_BIT / MOD_SRC2_BIT and NOT a shift of the index.
+    # AND THE FOUR FAMILIES NAMED FOR A REGISTER rather than a mask: dsl.py has no
+    # line that ORs a register's NAME into a mask, so MOD_NONE and the answer is 0.
+    #
+    # THESE ROWS PASSED `1` FOR ALL THREE MASKS. `mod_mask` could not tell them
+    # apart -- it asked only `is a Reg` -- AND NEITHER COULD THE ROWS, so `ab` and
+    # `hi` were src0 UNDER TWO MORE NAMES. THAT IS A SECOND, INDEPENDENT DEFECT,
+    # and it is the one the pin class did not name: it lives in the fixture, not in
+    # the def, and a correct `mod_mask` with the old bits still disagrees on
+    # `modmask_hi_hi` (src0.hi is set in VOP2_HI; the row asked about src2).
+    urow("modmask_neg_vop2", mod_mask(MOD_NEG(), MOD_SRC0_BIT(), VOP2_ALL()))
+    urow("modmask_neg_neg", mod_mask(MOD_NEG(), MOD_SRC0_BIT(), VOP2_NEG()))
+    urow("modmask_neg_hi", mod_mask(MOD_NEG(), MOD_SRC0_BIT(), VOP2_HI()))
+    urow("modmask_ab_vop2", mod_mask(MOD_ABS(), MOD_SRC1_BIT(), VOP2_ALL()))
+    urow("modmask_ab_neg", mod_mask(MOD_ABS(), MOD_SRC1_BIT(), VOP2_NEG()))
+    urow("modmask_ab_hi", mod_mask(MOD_ABS(), MOD_SRC1_BIT(), VOP2_HI()))
+    urow("modmask_hi_vop2", mod_mask(MOD_OPSEL(), MOD_SRC2_BIT(), VOP2_ALL()))
+    urow("modmask_hi_neg", mod_mask(MOD_OPSEL(), MOD_SRC2_BIT(), VOP2_NEG()))
+    urow("modmask_hi_hi", mod_mask(MOD_OPSEL(), MOD_SRC2_BIT(), VOP2_HI()))
+    urow("modmask_src0_vop2", mod_mask(MOD_NONE(), MOD_SRC0_BIT(), VOP2_ALL()))
+    urow("modmask_src0_neg", mod_mask(MOD_NONE(), MOD_SRC0_BIT(), VOP2_NEG()))
+    urow("modmask_src0_hi", mod_mask(MOD_NONE(), MOD_SRC0_BIT(), VOP2_HI()))
+    urow("modmask_src1_vop2", mod_mask(MOD_NONE(), MOD_SRC1_BIT(), VOP2_ALL()))
+    urow("modmask_src1_neg", mod_mask(MOD_NONE(), MOD_SRC1_BIT(), VOP2_NEG()))
+    urow("modmask_src1_hi", mod_mask(MOD_NONE(), MOD_SRC1_BIT(), VOP2_HI()))
+    urow("modmask_src2_vop2", mod_mask(MOD_NONE(), MOD_SRC2_BIT(), VOP2_ALL()))
+    urow("modmask_src2_neg", mod_mask(MOD_NONE(), MOD_SRC2_BIT(), VOP2_NEG()))
+    urow("modmask_src2_hi", mod_mask(MOD_NONE(), MOD_SRC2_BIT(), VOP2_HI()))
+    urow("modmask_vdst_vop2", mod_mask(MOD_NONE(), MOD_VDST_BIT(), VOP2_ALL()))
+    urow("modmask_vdst_neg", mod_mask(MOD_NONE(), MOD_VDST_BIT(), VOP2_NEG()))
+    urow("modmask_vdst_hi", mod_mask(MOD_NONE(), MOD_VDST_BIT(), VOP2_HI()))
     urow("mod_src0_neg", mod_merge(0, False{}, mod_neg(Ov.reg(3, 1, True{}, False{}, False{}), True{})))
     urow("mod_src0_ab", mod_merge(0, False{}, mod_ab(Ov.reg(3, 1, False{}, True{}, False{}), True{})))
     urow("mod_src0_hi", mod_merge(0, False{}, mod_hi(Ov.reg(3, 1, False{}, False{}, True{}), True{})))

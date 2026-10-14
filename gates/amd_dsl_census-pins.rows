@@ -6,7 +6,7 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 47 DIVERGENCES of 1178 ROWS. Each block is a CLASS, and each
+# 31 DIVERGENCES of 1178 ROWS. Each block is a CLASS, and each
 # class says WHY the two sides differ. A pin without a reason is a
 # weakened instrument; a divergence without a pin is a silent one.
 #
@@ -14,10 +14,41 @@
 # `pin_drift_hold()` re-measures all three on every run.
 # HEAD blob of tinygrad/renderer/amd/dsl.py when these rows were taken: 6526706b
 
-# 8 CLASSES ARE RETIRED AND GONE, AND EVERY ONE OF THEIR ROWS IS EXACT NOW.
+# 9 CLASSES ARE RETIRED AND GONE, AND EVERY ONE OF THEIR ROWS IS EXACT NOW.
 # THEY ARE NOT IN `CLASSES` ANY MORE: A CLASS WITH NO ROWS IS A CLAIM THAT HAS
 # STOPPED BEING TRUE, AND `classes_hold()` FAILS A CLASS THAT HAS NONE. EACH
 # STORY IS BELOW, WITH THE READING.
+
+# MODMASK -- 0 ROWS. IT WAS 16. **TWO DEFECTS, AND THE CLASS NAMED ONLY THE FIRST.** (i) Its own diagnosis --
+#     "`mod_mask` never tests WHICH modifier is set" -- is RIGHT, confirmed against dsl.py's OWN
+#     LOOP rather than against the oracle's helper: dsl.py:313-321 EXECUTED VERBATIM over the
+#     three fixtures answers `neg=0 abs=0 opsel=0` (VOP2_ALL), `neg=1 abs=0 opsel=0`
+#     (VOP2_NEG), `neg=0 abs=0 opsel=9` (VOP2_HI) -- three accumulators that are NOT equal --
+#     and `mod_mask.one` asked only `is the value a Reg`. (ii) **THE SECOND DEFECT WAS IN THE
+#     ROWS AND NOTHING NAMED IT:** all three mask families passed `1`, so `ab` and `hi` were
+#     `src0` under two more names, where the census's convention is abs -> `src1` (bit 2) and
+#     opsel -> `src2` (bit 4). **A CORRECT `mod_mask` WITH THE OLD BITS STILL DISAGREES ON ONE
+#     ROW**: `modmask_hi_hi` reads 1 because VOP2_HI's `src0.hi` IS set. MEASURED by restoring
+#     the old bits over the new def -- 1 row moves, 32 divergences.
+#     THE FIX is `mod_hit`, a chain of `Bool.pick`s in `src_bit`'s own shape, selecting
+#     `Ov.neg`/`Ov.ab`/`Ov.hi` by the mask being accumulated. `mod_neg`/`mod_ab`/`mod_hi` below
+#     it ALREADY read those three predicates and nothing called them here. `MOD_NONE` is NOT a
+#     fourth CPython mask: it is `vals['src0'] = ...` NOT BEING A LINE, which is what the four
+#     register-named families (`modmask_{src0,src1,src2,vdst}_*`) ask, and why they answer 0.
+#     **IT WAS NEVER AN ABSENCE BUG.** `Vf.has` IS `vals[name] is not None` and `mod_merge`
+#     already took it -- see the retired `MOD_MERGE` below -- so the port can and does tell
+#     "absent" from "0"; `(vals.get(k) or 0) | bits` was a DIFFERENT def's problem entirely.
+#     **THE OTHER HALF OF THIS CLASS WAS FIXED EARLIER** -- `src_bit.vdst`'s
+#     `String.eq("vdst","vdst")` tautology, whose three pins (`srcbit_sdst|op|nosuch`) were
+#     DROPPED rather than moved.
+#     16 ROWS, ALL 16 DISTINCT -- measured: 16 pin lines under 16 distinct names, and the 21
+#     `modmask_*` census rows under 21 distinct names, none of them among this census's 14
+#     known duplicates. The class was NEVER "16 rows and some of them are the same row".
+#     **TWO OF dsl.py's THREE FLAGS ARE STILL UNMEASURED**, and this is measured rather than
+#     asserted: deleting `mod_hit.ab` and deleting `mod_hit.opsel` each move ZERO of 1178 rows,
+#     because no fixture here sets `Reg.abs_` and the opsel family asks about `src2`, which
+#     `VOP2_FIELDS` has no field for. `mod_src0_ab` / `mod_src0_hi` exercise the flags through
+#     `mod_ab`/`mod_hi` -- the same three predicates, a different row.
 
 # TO_BYTES -- 0 ROWS. IT WAS 1. `to_bytes_vop2` CLEARED, and it is the LAST row AMDWORD32 owned.
 #     `to_bytes_f32i` and `to_bytes_f16i` were already EXACT -- `bytes_of` used to drop
@@ -113,24 +144,6 @@ afenc_sr2_127	REFUSE:SRsrcField requires 4-aligned SGPR, got s[127]	0
 afenc_sr2_nonreg	REFUSE:SRsrcField requires Reg, got int	rsrc requires Reg, got 2
 afenc_sr2_hi	REFUSE:SRsrcField requires SGPR, got offset 128	rsrc requires SGPR, got offset 128
 afenc_sr2_odd	REFUSE:SRsrcField requires 4-aligned SGPR, got s[3]	rsrc requires 4-aligned SGPR, got s[3]
-
-# MODMASK -- 16 rows. `src_bit.vdst`'s tautology is FIXED (String.eq(name, "vdst"), so the sdst/op/nosuch pins are dropped rather than moved); what remains is that mod_mask never tests WHICH modifier is set, so neg/abs/opsel come out equal.
-modmask_neg_vop2	0	1
-modmask_neg_hi	0	1
-modmask_ab_vop2	0	1
-modmask_ab_neg	0	1
-modmask_ab_hi	0	1
-modmask_hi_vop2	0	1
-modmask_hi_neg	0	1
-modmask_hi_hi	0	1
-modmask_src0_vop2	0	1
-modmask_src0_neg	0	1
-modmask_src0_hi	0	1
-modmask_src1_vop2	0	2
-modmask_src1_neg	0	2
-modmask_vdst_vop2	0	8
-modmask_vdst_neg	0	8
-modmask_vdst_hi	0	8
 
 # SRC_WIDTH -- 4 rows. dsl.py:155-157 compares 1 << bits (512) against the range count (512) and accepts; dsl.bend compares bits (9) against 512, and prints the mask (511) where CPython prints actual_size (512).
 sf_widthmsg_8_0		s0: field size 9 bits (512) doesn't match range (0, 511) (512)

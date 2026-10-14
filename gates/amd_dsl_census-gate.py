@@ -5,8 +5,8 @@ the port of `tinygrad/renderer/amd/dsl.py`.
     .venv/bin/python gates/amd_dsl_census-gate.py
     .venv/bin/python gates/amd_dsl_census-gate.py --refresh   # rewrites the pins file
 
-1178 ROWS (1177 census rows + `dsl-done=1`), THREE LANES, 1131 EXACT MATCHES AND
-47 DECLARED DIVERGENCES -- 4 CLASSES, AND 6 FINDINGS.
+1178 ROWS (1177 census rows + `dsl-done=1`), THREE LANES, 1147 EXACT MATCHES AND
+31 DECLARED DIVERGENCES -- 3 CLASSES, AND 6 FINDINGS.
 
 WHICH INSTRUMENT, AND WHY THIS LAYER NEEDS A DIFFERENT ONE.
 
@@ -58,14 +58,15 @@ structural rather than lucky: `dsl.py` builds no `UOp` at all, so there is no
 dtype on any value in the file and nothing that could cast. The class is named
 here so the 0 is a measurement rather than an absence.
 
-THE 47 DIVERGENCES, FOUR CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
+THE 31 DIVERGENCES, THREE CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
 
-  26 `MSG_TEXT` · 16 `MODMASK` · 4 `SRC_WIDTH` · 1 `WORD_64` = 47.
+  26 `MSG_TEXT` · 4 `SRC_WIDTH` · 1 `WORD_64` = 31.
 
   18 `ALIGN_SHIFT` · 12 `HI_BIT` · 10 `ABSENT_OPERAND` · 10 `MOD_MERGE` · 9 `VDSTY_MSG`
-  · 1 `SLICE_UNSIGNED` · 1 `WALK_IS_VALUES` are **RETIRED: EVERY ROW IS NOW EXACT AND THE CLASS
-  IS REMOVED FROM `CLASSES` RATHER THAN LEFT WITH ZERO ROWS.** `classes_hold()` fails a class
-  with no rows, so a retired class is a class whose claim has stopped being true.
+  · **16 `MODMASK`** · 1 `SLICE_UNSIGNED` · 1 `WALK_IS_VALUES` are **RETIRED: EVERY ROW IS NOW
+  EXACT AND THE CLASS IS REMOVED FROM `CLASSES` RATHER THAN LEFT WITH ZERO ROWS.**
+  `classes_hold()` fails a class with no rows, so a retired class is a class whose claim has
+  stopped being true.
 
   ~~18 `ALIGN_SHIFT`~~ `al_shift_of` read `Fld.align(f) - 1`, so for
       `SRsrcField._align = 4` (dsl.py:219) it answered 3 where `AlignedSGPRField.encode`/`decode`
@@ -143,14 +144,27 @@ THE 47 DIVERGENCES, FOUR CLASSES, PINNED ON BOTH SIDES, EVERY CLASS MEASURED.
       MEASURED: `afenc_ab_odd` CPython `AlignedSGPRField requires 2-aligned SGPR,
       got s[3]`, port `s requires 2-aligned SGPR, got s[3]`.
 
-  16 `MODMASK` -- `modmask_{neg,ab,hi}_{vop2,neg,hi}` and
-      `modmask_{src0,src1,vdst}_*`. ONE defect, and it is the half that was never touched:
-      `mod_mask` never tests WHICH modifier is set -- `mod_mask.one` requires only that the
-      value is a `Reg` -- so `neg_bits`, `abs_bits` and `opsel_bits` (dsl.py:317-319) come out
-      EQUAL, and the three `modmask_*` families are the same measurement under three names.
-      MEASURED: `modmask_vdst_vop2` CPython `0`, port `8`. The OTHER half of this class --
-      `src_bit.vdst`'s `String.eq("vdst","vdst")` tautology -- is FIXED, and those three pins
-      were DROPPED rather than moved; the reasoning is in the pins file, which is where it
+  ~~16 `MODMASK`~~ **TWO DEFECTS, AND THE CLASS NAMED ONLY THE FIRST.** Its own diagnosis --
+      "`mod_mask` never tests WHICH modifier is set" -- is RIGHT, and it is confirmed against
+      dsl.py's OWN LOOP rather than against the oracle's helper: executing dsl.py:313-321
+      VERBATIM over the three fixtures answers `neg=0 abs=0 opsel=0` (`VOP2_ALL`),
+      `neg=1 abs=0 opsel=0` (`VOP2_NEG`) and `neg=0 abs=0 opsel=9` (`VOP2_HI`) -- three
+      accumulators that are NOT equal -- and `mod_mask.one` asked only `is the value a Reg`.
+      (ii) **THE SECOND DEFECT WAS IN THE ROWS AND NOTHING NAMED IT:** all three mask families
+      passed `1`, so `ab` and `hi` were `src0` under two more names where the census's
+      convention is abs -> `src1` (bit 2) and opsel -> `src2` (bit 4). A CORRECT `mod_mask`
+      WITH THE OLD BITS STILL DISAGREES ON ONE ROW -- `modmask_hi_hi` reads 1 because
+      `VOP2_HI`'s `src0.hi` IS set -- MEASURED by restoring the old bits over the new def.
+      `mod_hit` now selects the flag (`Ov.neg`/`Ov.ab`/`Ov.hi`, which `mod_neg`/`mod_ab`/
+      `mod_hi` already used and nothing called here) and `MOD_NONE` is not a fourth CPython
+      mask: it is `vals['src0'] = ...` NOT BEING A LINE, which is what the four register-named
+      families ask. **IT WAS NEVER AN ABSENCE BUG**: `Vf.has` IS `vals[name] is not None` and
+      `mod_merge` already took it (the retired `MOD_MERGE` below). Two of dsl.py's three flags
+      are still UNMEASURED -- deleting `mod_hit.ab` and deleting `mod_hit.opsel` each move ZERO
+      of 1178 rows, because no fixture here sets `Reg.abs_` and the opsel family asks about
+      `src2`, which `VOP2_FIELDS` has no field for. The earlier half of this class --
+      `src_bit.vdst`'s `String.eq("vdst","vdst")` tautology -- was fixed before this and its
+      three pins DROPPED rather than moved. Full story in the pins file, which is where it
       survives a `--refresh`.
 
     4 `SRC_WIDTH` -- `sf_widthmsg_*`. `SrcField.__init__` compares
@@ -661,8 +675,8 @@ def pin_lines():
     prints `modmerge_0_0_0` and `modmerge_0_0_1` TWICE each, so a pins file that
     pins either of them carries two LINES under one NAME, and `gatekit`'s
     exclusion is a dict keyed by name. `compared` is therefore computed from the
-    LINE count. It was 118 lines under 117 names when this was written; it is 47
-    lines under 47 names now, because the duplicated `modmerge_*` rows became
+    LINE count. It was 118 lines under 117 names when this was written; it is 31
+    lines under 31 names now, because the duplicated `modmerge_*` rows became
     EXACT and no pin needs the occurrence count any more -- and
     `divergences_hold()` asserts BOTH numbers so they cannot drift apart again.
     """
@@ -680,10 +694,10 @@ def divergences_hold() -> bool:
         return report("divergences_hold", [WHY])
     want, _ = oracle_rows()
     bad = []
-    if len(DIVERGES) != 47:
-        bad.append(f"{len(DIVERGES)} pinned divergences by NAME, expected 47")
-    if pin_lines() != 47:
-        bad.append(f"{pin_lines()} pins lines, the header says 47")
+    if len(DIVERGES) != 31:
+        bad.append(f"{len(DIVERGES)} pinned divergences by NAME, expected 31")
+    if pin_lines() != 31:
+        bad.append(f"{pin_lines()} pins lines, the header says 31")
     for row in DIVERGES:
         if want is not None and not any(l.split("=", 1)[0] == row for l in want):
             bad.append(f"pinned row {row!r} is not in the oracle's population")
@@ -744,12 +758,11 @@ CLASSES = [
     # encode/decode rows here are the shift itself.
     ("MSG_TEXT", r"^(afenc_(ab|sb|sr|sr2)_(nonreg|hi|odd|127)$|afenc_(sr|sr2)_(2|126|127)$"
                  r"|vgencneg_|fixed_(op7|enc33|enc17)$)"),
-    # `modmask_*` and `srcbit_*` are ONE PLACE with TWO defects and the tautology half of it is
-    # already fixed (see the pins file). What is left is the half nobody has touched: `mod_mask`
-    # requires only that the value be a `Reg`, never that the RIGHT modifier is the one set, so
-    # `neg_bits`/`abs_bits`/`opsel_bits` (dsl.py:317-319) come out equal and the three families are
-    # the same measurement under three names.
-    ("MODMASK", r"^(modmask_|srcbit_(sdst|op|nosuch)$)"),
+    # `modmask_*` and `srcbit_*` are BOTH GONE: `src_bit.vdst`'s tautology was fixed
+    # before this (its three pins dropped, story in the pins file), and `mod_mask`'s
+    # "which modifier" defect plus the ROWS' wrong mask bit were fixed here. Both halves
+    # cleared, so the class has no rows and `classes_hold()` fails a class with none --
+    # RETIRED below, with the reading.
     ("SRC_WIDTH", r"^sf_width(msg)?_"),
     # `to_bytes_f32i` and `to_bytes_f16i` are exact AND `to_bytes_vop2` is: the word is
     # `H.I64` and `bytes_of` reaches the high limb. The class is retired rather than
@@ -760,9 +773,6 @@ CLASSES = [
 CLASS_WHY = {
     "MSG_TEXT": "both sides refuse; dsl.py:207/:209/:211 name the CLASS and format "
                 "type(val).__name__, dsl.bend names the FIELD and the Ov kind.",
-    "MODMASK": "`src_bit.vdst`'s tautology is FIXED (String.eq(name, \"vdst\"), so the "
-               "sdst/op/nosuch pins are dropped rather than moved); what remains is that "
-               "mod_mask never tests WHICH modifier is set, so neg/abs/opsel come out equal.",
     "SRC_WIDTH": "dsl.py:155-157 compares 1 << bits (512) against the range count "
                   "(512) and accepts; dsl.bend compares bits (9) against 512, and "
                   "prints the mask (511) where CPython prints actual_size (512).",
@@ -843,6 +853,36 @@ def _header_ok() -> bool:
 # twice and would DROP it, which is why this block is a GENERATOR CONSTANT the
 # header emits rather than prose pasted into the file by hand.
 RETIRED = [
+    ("MODMASK", "16", """**TWO DEFECTS, AND THE CLASS NAMED ONLY THE FIRST.** (i) Its own diagnosis --
+    "`mod_mask` never tests WHICH modifier is set" -- is RIGHT, confirmed against dsl.py's OWN
+    LOOP rather than against the oracle's helper: dsl.py:313-321 EXECUTED VERBATIM over the
+    three fixtures answers `neg=0 abs=0 opsel=0` (VOP2_ALL), `neg=1 abs=0 opsel=0`
+    (VOP2_NEG), `neg=0 abs=0 opsel=9` (VOP2_HI) -- three accumulators that are NOT equal --
+    and `mod_mask.one` asked only `is the value a Reg`. (ii) **THE SECOND DEFECT WAS IN THE
+    ROWS AND NOTHING NAMED IT:** all three mask families passed `1`, so `ab` and `hi` were
+    `src0` under two more names, where the census's convention is abs -> `src1` (bit 2) and
+    opsel -> `src2` (bit 4). **A CORRECT `mod_mask` WITH THE OLD BITS STILL DISAGREES ON ONE
+    ROW**: `modmask_hi_hi` reads 1 because VOP2_HI's `src0.hi` IS set. MEASURED by restoring
+    the old bits over the new def -- 1 row moves, 32 divergences.
+    THE FIX is `mod_hit`, a chain of `Bool.pick`s in `src_bit`'s own shape, selecting
+    `Ov.neg`/`Ov.ab`/`Ov.hi` by the mask being accumulated. `mod_neg`/`mod_ab`/`mod_hi` below
+    it ALREADY read those three predicates and nothing called them here. `MOD_NONE` is NOT a
+    fourth CPython mask: it is `vals['src0'] = ...` NOT BEING A LINE, which is what the four
+    register-named families (`modmask_{src0,src1,src2,vdst}_*`) ask, and why they answer 0.
+    **IT WAS NEVER AN ABSENCE BUG.** `Vf.has` IS `vals[name] is not None` and `mod_merge`
+    already took it -- see the retired `MOD_MERGE` below -- so the port can and does tell
+    "absent" from "0"; `(vals.get(k) or 0) | bits` was a DIFFERENT def's problem entirely.
+    **THE OTHER HALF OF THIS CLASS WAS FIXED EARLIER** -- `src_bit.vdst`'s
+    `String.eq("vdst","vdst")` tautology, whose three pins (`srcbit_sdst|op|nosuch`) were
+    DROPPED rather than moved.
+    16 ROWS, ALL 16 DISTINCT -- measured: 16 pin lines under 16 distinct names, and the 21
+    `modmask_*` census rows under 21 distinct names, none of them among this census's 14
+    known duplicates. The class was NEVER "16 rows and some of them are the same row".
+    **TWO OF dsl.py's THREE FLAGS ARE STILL UNMEASURED**, and this is measured rather than
+    asserted: deleting `mod_hit.ab` and deleting `mod_hit.opsel` each move ZERO of 1178 rows,
+    because no fixture here sets `Reg.abs_` and the opsel family asks about `src2`, which
+    `VOP2_FIELDS` has no field for. `mod_src0_ab` / `mod_src0_hi` exercise the flags through
+    `mod_ab`/`mod_hi` -- the same three predicates, a different row."""),
     ("TO_BYTES", "1", """`to_bytes_vop2` CLEARED, and it is the LAST row AMDWORD32 owned.
     `to_bytes_f32i` and `to_bytes_f16i` were already EXACT -- `bytes_of` used to drop
     `8 - sz*2` CHARACTERS FROM THE LEFT of a ten-character `0x%08x`, which is
@@ -967,7 +1007,7 @@ if not PINS.is_file():
 #   py has 1057 COMPARED rows, expected 1058
 #
 # **THE DUPLICATED NAME IS NO LONGER PINNED** -- both `modmerge_*` pairs became EXACT -- so the
-# two numbers are 47 and 47 today and gatekit's staleness check would pass BY COINCIDENCE.
+# two numbers are 31 and 31 today and gatekit's staleness check would pass BY COINCIDENCE.
 # The rows are STILL printed twice (`dup_rows_hold()` measures the 14 duplicates on every run),
 # and a future divergence on either name would reopen exactly this failure, so the gate keeps
 # running its own three lanes and keeps pinning by OCCURRENCE rather than betting on a
