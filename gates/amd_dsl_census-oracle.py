@@ -92,8 +92,19 @@ def bfg(f):
 
 
 def hex8(v):
-    """CPython's `f"{x:#010x}"` -- the port's `hex8`."""
-    return f"{v & U32:#010x}"
+    """CPython's `f"{x:#010x}"` -- the port's `hexw`.
+
+    **THIS USED TO MASK TO 32 BITS, AND THAT MASK IS THE COMPANION HALF OF
+    AMDWORD32.** `f"{x:#010x}"` pads to a WIDTH; a word wider than 32 bits is
+    already past the width, so CPython prints all of its digits -- `0x4814060a00`
+    for a VOP2, not `0x14060a00`. The `& U32` here reproduced the PORT's own
+    `U32.shln` truncation on the ORACLE side, so `raw_vop2_all` read
+    `|0x14060a00` on BOTH lanes and the census compared two wrong answers and
+    called it agreement. The mask is gone, which is why a word wider than 32 bits
+    now shows up as a lane DISAGREEMENT rather than as two copies of the port's
+    defect.
+    """
+    return f"{v:#010x}"
 
 
 def fields_of(fs):
@@ -264,6 +275,14 @@ BF_SET_AXIS = [(3, 0), (7, 4), (23, 8)]
 BF_RAWS = [0, 0xDEADBEEF]
 BF_VALS = [0, 1, 7, 8, 255, U32]
 
+# THE WORD'S LAST ADDRESSABLE BIT AND A FIELD THAT STARTS PAST IT, each 32 bits
+# WIDE -- a field is at most 32 bits, so `enc` is always below 2**32 and the thing
+# that had to widen is the WORD, not the value -- and each carrying a U32-namable
+# value. `bfset_word63` is the control: [63:32] with 2**31 reaches bit 63 and both
+# lanes answer `0x8000000000000000`. `bfset_word64` is the guard: [95:64] starts at
+# bit 64, CPython's word is `0x10000000000000000`, and the port REFUSES.
+WORD_EDGE_AXIS = [("word63", 63, 32, 1 << 31), ("word64", 95, 64, 1)]
+
 # `FixedBitField` -- three widths, and the `assert val is None` (dsl.py:127).
 FIXED_AXIS = [("op7", 7, 0, 0), ("enc33", 6, 0, 33), ("enc17", 16, 8, 0)]
 
@@ -390,7 +409,15 @@ ORD_VALS = [("first", 11), ("second", 22)]
 ORD_VALS_SWAP = [("second", 22), ("first", 11)]
 F32_VALS = [("op", None), ("A", 4660)]
 F16_VALS = [("op", None), ("A", 4660), ("B", 22136)]
-F64_VALS = [("op", None), ("lit", 4660)]
+# `lit` is 0x12345678, NOT 0x1234. `fixtures_holds()` compares the `*_VALS` NAMES
+# and not their values, so the two sides can and did disagree here -- and they
+# DID: this lane said 4660 while `dsl.bend` said 305419896, and the census could
+# not see it because `hex8` masked to 32 bits on BOTH sides and `lit` sits at
+# [63:32], so the whole difference was truncated away on both lanes. AMDWORD32
+# hid a second defect. The port's value is the deliberate one -- it is the only
+# fixture that puts a DISTINCT nibble in all eight high-word positions, which is
+# what a row about the word's width is for -- so this lane was the stale copy.
+F64_VALS = [("op", None), ("lit", 305419896)]
 F40_VALS = [("op", None), ("A", 1193046)]
 F8_VALS = [("op", None)]
 
@@ -582,6 +609,10 @@ def g_bf():
              bfs(f, U32, U32))
         row(f"fixed_def_{nm}", f.default)
         row(f"fixed_cls_{nm}", refuse(f.set, U32, 1) is not None)
+    for nm, hi, lo, val in WORD_EDGE_AXIS:
+        f = dsl.BitField(hi, lo)
+        f.name = "lit"
+        srow(f"bfset_{nm}", bfs(f, 0, val))
 
 
 # ===========================================================================
@@ -768,6 +799,14 @@ def g_inst():
                                          _base_size(F32_FIELDS)))
     srow("to_bytes_f16i", _to_bytes_hex(_walk(F16_FIELDS, F16_VALS)[0],
                                          _base_size(F16_FIELDS)))
+    # THE ONLY `to_bytes_*` ROW WITH A NONZERO HIGH BYTE ABOVE BYTE 0. Added
+    # because a mutation proved it missing: masking the port's `wbyte` high limb
+    # to eight bits moved ZERO rows and left the gate GREEN, because every other
+    # word in this census has a high limb of `0x00` or `0x48`. `F64_FIELDS` is 64
+    # bits wide, `_base_size` is 8, and `F64_VALS`' `lit` is `0x12345678`, so all
+    # four high bytes are nonzero.
+    srow("to_bytes_f64i", _to_bytes_hex(_walk(F64_FIELDS, F64_VALS)[0],
+                                         _base_size(F64_FIELDS)))
     row("from_bytes_ff", dsl.Reg(U32).offset)          # placeholder, fixed below
     ROWS[-1] = ("from_bytes_ff", str(U32))
     row("from_bytes_dead", str(0xDEADBEEF))

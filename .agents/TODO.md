@@ -13681,28 +13681,55 @@ rather than left in a dead session.
 
 ## AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVERY MFMA ENCODES WITH ITS HIGH FIELDS MISSING (2026-10-13)
 
-Found by `gates/amd_dsl_census` and NOT FIXED: it touches `Res`/`bf_mask`/`bf_set`/`hex8`/`rws` and
-would move every `raw_*`/`bfs` row, so it needs its own unit.
+**FIXED 2026-10-14.** The word is `H.I64`. `gates/amd_dsl_census-gate.py` **rc=0, 1178 rows x 3 lanes,
+1131 exact, 47 pinned (47 names), 8/8 checks OK**; the three required mutations all move rows at bits
+>= 32 and all three turn the gate RED.
 
-- [ ] **`Res{v: U32}` IS THE CEILING.** `dsl.bend:81-84` is `Res{v: U32, s: String}`, and
-      `bf_set.placed`'s `U32.shln` therefore SILENTLY DISCARDS EVERY BIT AT OR ABOVE 32. **THIS IS THE
-      ONLY SURVIVING `TO_BYTES` ROW AND IT IS NOT A WORDING SLIP.**
-      **MEASURED, INDEPENDENTLY, FROM CPYTHON'S OWN FIELD TABLE:**
-          CPython VOP2_ALL raw = 0x4814060a00   bit_length = 39
-          as U32                = 0x0014060a00
-          LOST high bits        = 0x48            (7 bits: `sdst`[41:36] and `op_sel`[35:34])
-      A `VOP2` IS THE NARROW CASE. **EVERY INSTRUCTION WIDER THAN 32 BITS -- EVERY VOP3, EVERY MFMA --
-      ENCODES WITH ITS HIGH FIELDS MISSING**, and it fails SILENTLY: a U32 shift is not an error, it is
-      a smaller number.
-- [ ] **THE COMPANION CARVE-OUT IS UNRECORDED ANYWHERE ELSE.** `hex8` MASKS TO 32 BITS ON **BOTH**
-      SIDES -- the oracle's is `f"{v & U32:#010x}"` and CPython's own `f"{x:#010x}"` is NOT a mask --
-      so `raw_vop2_all` reads `|0x14060a00` ON BOTH SIDES while CPython's word is `0x4814060a00`.
-      **THE LANES AGREE AND ARE BOTH WRONG**, which is the one failure a byte-diff census cannot see.
-      It is entangled with the U32 fix above and must not be done alone.
-- [ ] **THE DECISION IS `U32` vs A WIDER WORD**, and it is a real design question rather than a typo:
-      `uop/ops.bend`'s `U32.shln` is used everywhere, and `dsl.bend:655-657` already records that
-      "`1 << 32` SATURATES TO 0 in a U32 (measured, bend2-constraints)". So the port CANNOT express a
-      64-bit word today, and the wall is the WORD WIDTH, not the DSL.
+The SHAPE, and why: `Res{v: U32, s: String}` STAYS A U32 and a SECOND answer type
+`Wrd{w: H.I64, s: String}` carries the word. `Res` holds an encoded FIELD value in 20 of its 22
+constructors -- `src_encode`'s offset, `al_encode`'s shifted register -- and widening those would
+mean `H.lo32` at each of ~110 rows, saying "half a word" where a scalar is meant. `bend` HAS NO
+64-BIT PRIMITIVE (helpers.bend:1634) and `H.I64{hi: U32, lo: U32}` is this tree's own two-limb
+answer, already carried by `dtype.bend` and `uop/fold.bend`. **THE WALL WAS NEVER THE DSL.**
+MEASURED, `helpers.bend`'s own algebra vs CPython, all four exact: `1<<63 = 2147483648:0`,
+`1<<41 = 512:0`, `1<<32 = 1:0`, `1<<31 = 0:2147483648`.
+
+- [x] **`Res{v: U32}` IS THE CEILING. CLOSED BY WIDENING THE WORD, NOT THE ANSWER TYPE.**
+      `bf_set.placed`/`bf_set.masked` shift through `wplaced`, ONE def, `H.i64_shl(H.i64_of_i32(enc),
+      U32.to_nat(lo))`; `raw_step`/`raw_walk`/`rws`/`bfs`/`bytes_of`/`from_bytes`/`bf_raw_get` are
+      `Wrd`/`H.I64`. **MEASURED, all 21 `raw_*`/`to_bytes_*` rows driven through `dsl.py` DIRECTLY
+      (not through the gate's renderers): 21 of 21 exact.** `raw_vop2_all` was `|0x14060a00` and is
+      `|0x4814060a00` -- CPython's word, to the bit. `raw_f64i` is `|0x1234567800000005`, all 64
+      bits exercised, which a `U32` word could not PRINT AT ALL.
+- [x] **THE COMPANION CARVE-OUT. CLOSED ON THE ORACLE SIDE TOO, AND IT WAS THE LARGER HALF.**
+      The oracle's `hex8` was `f"{v & U32:#010x}"` -- CPython's own `#010x` with the port's
+      truncation pasted back onto it. It is now `f"{v:#010x}"`, and the port's `hexw` renders
+      `0x` + the high word's minimal digits + the low word's eight. **BOTH LANES HAD TO MOVE**, and
+      the proof that the PORT moved is that they DIFFERED first: with the port widened and the
+      oracle still masked, `raw_vop2_all` read `|0x4814060a00` against `|0x14060a00`.
+- [x] **THE DECISION IS `U32` vs A WIDER WORD -- ANSWERED, AND THE ANSWER IS A WORD, NOT A REFUSAL.**
+      Widening is available and is strictly better than refusing. **BUT A 64-BIT WORD STILL NEEDS A
+      BOUND**, because `H.i64_shl` saturates past 63 exactly as `U32.shln` saturated past 31 --
+      MEASURED, `1 << 64` is `0:0`. So `bf_in_word(f) = hi <= 63` REFUSES a field above the word,
+      loudly, in `bf_word_msg`. `dsl.py`'s `_raw` is a Python int and CANNOT overflow, so this is
+      the ONE row in the census where the oracle is not the authority: `bfset_word64` is a pinned
+      divergence. ITS CONTROL IS `bfset_word63` ([63:32] holding 2^31), which both lanes answer
+      `0x8000000000000000` -- so the guard is MEASURED at 63 and fires at 64.
+- [x] **THE WIDENING UNMASKED A THIRD DEFECT, WHICH THE MASK HAD BEEN HIDEING.** `F64_VALS`' `lit`
+      was `4660` in the oracle and `305419896` in the port -- different FIXTURES. `lit` is at
+      [63:32], so the shared 32-bit mask truncated the whole difference away on both sides and the
+      byte diff could not see it. `fixtures_holds()` compares the `*_VALS` NAMES and not their
+      values, so a fixture can drift and no row notices. The oracle now uses `305419896`.
+- [x] **A SECOND DEAD PREDICATE, FOUND BY ROUTING `bfs` THROUGH `bf_set`.** `bf_set`'s width test
+      was `(enc & mask) > mask`, which is NOT TRUE and cannot fire (`enc & mask <= mask`); the
+      width refusal was being produced by `bfs`, which re-derived it correctly. CPython's own test
+      (:118) is `encoded < 0 or encoded > self.mask`. Twelve `bfset_*` rows refused before and
+      refuse again.
+- [x] **A COVERAGE GAP, FOUND BY THE MUTATION.** Masking `wbyte`'s high limb to eight bits moved
+      **ZERO** rows and left the gate GREEN: every word in the census had a high limb of `0x00` or
+      `0x48`, so `to_bytes_*` never read a nonzero high byte above byte 0. `to_bytes_f64i`
+      (`F64_FIELDS` is 64 bits, `_base_size` is 8, `lit` is `0x12345678`) is added and the same
+      mutation now moves it `0500000078563412 -> 0500000078000000`.
 
 ## Session 2026-10-13 — `opsfind`: findings A, B, C and F of `gates/ops_python_census-gate.py`
 Full report, every reading and every plant: `.agents/slop/opsfind/REPORT.md`.
@@ -13986,5 +14013,5 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 160 of 190 sect
 • MSGDIFFQ — msgdiff-gate.py REFUSES A MESSAGE THAT FAITHFULLY QUOTES... — ░░░░░░░░░░ 0/4   0%
 • DECOMPCENSUS — codegen/decomp/ gets its FIRST gate, and its ORACLE ... — ███████░░░ 6/9  67%
 • REALIZEGAPS — three gaps in realize_graph_census's OWN instrument (... — ░░░░░░░░░░ 0/3   0%
-• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ░░░░░░░░░░ 0/3   0%
+• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ██████████ 6/6  100%
 • Session 2026-10-13 — opsfind: findings A, B, C and F of gates/ops_... — ████████░░ 5/6  83%

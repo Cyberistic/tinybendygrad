@@ -82,6 +82,26 @@ type Res is Data:
   Res{v: U32, s: String}
   Bad{msg: String}
 
+# THE SAME ANSWER AT THE WORD'S WIDTH, and a SECOND type because a scalar is not
+# half of a word. `Res` carries an encoded FIELD value in twenty of its
+# twenty-two constructors -- `src_encode`'s offset, `al_encode`'s shifted
+# register, a formatted offset -- and widening those to 64 bits would mean
+# `H.lo32` at each of the ~110 rows that read `Res.v`, saying "half a word" where
+# a scalar is meant. `Wrd` is what `bf_set` and `raw_walk` answer with, and
+# nothing else.
+#
+# `H.I64` IS THE WORD. `bend` has no 64-bit primitive (helpers.bend:1634) and
+# `H.I64{hi: U32, lo: U32}` is this tree's own two-limb answer, already carried
+# by `dtype.bend` and `uop/fold.bend`. MEASURED on `helpers.bend`'s own algebra
+# against CPython's, all four exact:
+#     1 << 63    ->  2147483648:0     1 << 41  ->  512:0
+#     1 << 32    ->  1:0              1 << 31  ->  0:2147483648
+# and assembling `VOP2_ALL`'s six fields answers `72:335940096`, which is
+# `0x4814060a00` -- CPython's word for the same instruction, to the bit.
+type Wrd is Data:
+  Wrd{w: H.I64, s: String}
+  WBad{msg: String}
+
 # the FIVE field classes (:100 BitField, :125 FixedBitField, :130
 # EnumBitField, :149 SrcField, :202 AlignedSGPRField, :221 VDSTYField) as ONE
 # tagged record, because the algebra dispatches on the class and nothing else.
@@ -264,6 +284,21 @@ def BASE_SIZE_DIV() -> U32: 8
 def LIT_MARKER() -> U32: 255
 def LIT32_MASK() -> U32: 4294967295
 
+# THE WORD, AND THE THREE WIDTHS THAT BOUND IT. `H.I64` is 64 bits and
+# `H.i64_shl` SATURATES PAST 63 -- MEASURED, `put 1 at 64` answers `0:0` where
+# Python answers `1:18446744073709551616` -- so `WORD_HI` is where a field stops
+# being placeable, and `bf_set` says so OUT LOUD rather than writing a zero.
+# `WORD_BYTE` is the byte index at which the word's second limb starts and
+# `WORD_BYTE_SHIFT` is that boundary in BITS, which `Nat.sub` truncates to 0 for
+# every byte below it -- the eagerly-evaluated other arm of a `Bool.pick`, and
+# harmless for exactly that reason.
+def WORD_HI() -> U32: 63
+def WORD_BITS() -> U32: 32
+def WORD_BYTE() -> U32: 4
+def WORD_BYTE_SHIFT() -> Nat: 32n
+def HEX_NIBBLES() -> Nat: 8n
+def HEX_BYTE() -> Nat: 8n
+
 # THE MODIFIER BITS, :313-321. src0/src1/src2 take bit 0/1/2 and vdst.hi takes
 # bit 3 -- four DIFFERENT bits for four different registers.
 def MOD_SRC0_BIT() -> U32: 1
@@ -426,6 +461,16 @@ def Res.msg.go(+r: Res, dflt: String) -> String:
 
 def Res.msg(r: Res) -> String:
   Res.msg.go(r, "")
+
+def Wrd.w(r: Wrd) -> H.I64:
+  match r:
+    case Wrd{w, s}: w
+    case WBad{msg}: H.i64_zero()
+
+def Wrd.s(r: Wrd) -> String:
+  match r:
+    case Wrd{w, s}: s
+    case WBad{msg}: msg
 
 def Rg.off(r: Rg) -> U32: match r: case Rg{o, s, n, a, h}: o
 def Rg.sz(r: Rg) -> U32: match r: case Rg{o, s, n, a, h}: s
@@ -651,17 +696,21 @@ def reg_repr(+r: Rg) -> Res: reg_fmt(r, 0, True{}, True{})
 #   out of range -> REFUSE             (:118)
 #   else  -> (raw & ~(mask << lo)) | (encoded << lo)          (:119)
 #
-# `~` is U32.not and `<<` is U32.shln on a Nat -- see bend2-constraints: `U32.shl`
-# is a ONE-BIT shift, so every shift AMOUNT here is a Nat literal or a
-# U32.to_nat of a bound. The `lo` of a real field is a runtime value, so
-# `U32.shln` is right and `U32.shl` would be wrong for every field.
+# THE FIELD's OWN FOUR NUMBERS are U32s and always will be: `mask = (1 << (hi -
+# lo + 1)) - 1` and a field is at most 32 bits wide (`bf_width_ok`), so `enc` is
+# always below 2^32 and `U32.shln` is the right shift for the MASK. WHAT IS NOT a
+# U32 is the WORD the mask is shifted INTO -- see `wplaced`. `~` is `U32.not`
+# for a mask and `H.i64_not` for a word, and `<<` is `U32.shln` on a Nat for the
+# former (`U32.shl` is a ONE-BIT shift, so every shift AMOUNT is a Nat literal or
+# a `U32.to_nat` of a bound) and `H.i64_shl` for the latter.
 # ===========================================================================
 
 def bf_bits(+f: Fld) -> U32: U32.add(U32.sub(Fld.hi(f), Fld.lo(f)), 1)
 
 # `1 << 32` SATURATES TO 0 in a U32 (measured, bend2-constraints), so a 32-bit
-# field takes its mask from the constant instead of the shift. Every field
-# dsl.py can build is <= 32 bits; the wider ones are THE 64-BIT WORD WALL.
+# field takes its mask from the constant instead of the shift. THE MASK IS A `U32`
+# AND THAT IS CORRECT: a field is at most 32 bits wide, so `enc` is too, and
+# `bf_width_ok` says so. What is NOT a U32 is the word the mask goes into.
 def bf_mask.w(wide: Bool, +f: Fld) -> U32:
   match wide:
     case True{}: LIT32_MASK()
@@ -671,45 +720,95 @@ def bf_mask(+f: Fld) -> U32: bf_mask.w(U32.is_eq(bf_bits(f), 32), f)
 
 def bf_width_ok(f: Fld) -> Bool: U32.is_le(bf_bits(f), 32)
 
-# `__get__` (:120-122): `(obj._raw >> self.lo) & self.mask`. The shift is a Nat.
-def bf_raw_get(raw: U32, lo: U32, mask: U32) -> U32:
-  U32.and(U32.shrn(raw, U32.to_nat(lo)), mask)
+# A FIELD THAT DOES NOT FIT THE WORD IS REFUSED, NOT TRUNCATED, and this is the
+# guard that makes "no instruction word ever comes back short" TRUE rather than
+# merely intended. `bf_width_ok` above is a WIDTH test against 32; this one is a
+# POSITION test against `WORD_HI`, and they are not the same test: `F64_FIELDS`'s
+# `lit` is 32 bits wide at [63:32] and `bf_width_ok` refuses it, while a 2-bit
+# field at [71:70] is comfortably narrow and `bf_in_word` refuses that one.
+#
+# `dsl.py`'s `_raw` is a Python int, so CPython has no such refusal and cannot
+# have one -- which is why `bfset_word64` is a PINNED divergence rather than a
+# match. The port is right to be louder than the oracle here: `H.i64_shl`
+# saturates silently, and a clean zero written where `blgp` belongs is a wrong
+# kernel with no error anywhere.
+def bf_in_word(+f: Fld) -> Bool: U32.is_le(Fld.hi(f), WORD_HI())
+
+# THE ONE SHIFT, AND IT IS A WORD-WIDE ONE. This def is the whole of AMDWORD32:
+# `U32.shln` SATURATES past 31, so every `enc << lo` with `lo >= 32` used to come
+# back as a SMALLER NUMBER rather than an error -- `sdst` [41:36] and `op_sel`
+# [35:34] of a VOP2, `src1` [33:26] of every instruction that has one, `lit`
+# [63:32] of an F64 -- and a census that compares rendered BYTES could not see it
+# because `hex8` masked to 32 bits ON BOTH SIDES, so the two lanes agreed and
+# were both wrong. MEASURED, both lanes: `raw_vop2_all` read `|0x14060a00` where
+# CPython's word is `0x4814060a00`.
+def wplaced(enc: U32, lo: U32) -> H.I64: H.i64_shl(H.i64_of_i32(enc), U32.to_nat(lo))
+
+# A 32-BIT FIXTURE LIFTED INTO THE WORD, and ZERO-EXTENDED rather than
+# sign-extended: an instruction word is a BIT PATTERN and `H.i64_of_i32` is
+# `match_hi(i32_is_neg(x))`, so it turns `BF_RAWS`' `0xDEADBEEF` into
+# `0xFFFFFFFFDEADBEEF` and every `bfset_*_3735928559_*` row gains a high word
+# CPython does not have. `H.i64_of_hi_lo(0, v)` says what it means.
+def w32(v: U32) -> H.I64: H.i64_of_hi_lo(0, v)
+
+# `__get__` (:120-122): `(obj._raw >> self.lo) & self.mask`. The word arrives at
+# its own width and only the MASKED FIELD leaves, so a field at bit 40 reads the
+# bit that is actually there -- and this used to take a `U32` word, which is the
+# same defect as the write side read backwards.
+def bf_raw_get(+raw: H.I64, +lo: U32, mask: U32) -> U32:
+  +m = H.i64_and(raw, wplaced(mask, lo))
+  Bool.pick(U32, U32.is_lt(lo, WORD_BITS()), H.lo32(m), H.hi32(m))
 
 # `set`, and its TWO refusals. `enc` is ALREADY encoded -- the caller has run the
 # field's own `encode`, which is what makes this one def for all five classes.
 def bf_set_msg(+f: Fld, enc: U32) -> String:
   String.concat(["field '", Fld.name(f), "': value ", U32.show(enc), " doesn't fit in ", U32.show(bf_bits(f)), " bits"])
 
+# THE SECOND REFUSAL, AND IT IS THE PORT'S OWN. dsl.py:118 names the FIELD's
+# value and its width; this one names the field's POSITION and the word it would
+# not fit, because `H.i64_shl` cannot report the failure itself.
+def bf_word_msg(+f: Fld) -> String:
+  String.concat(["field '", Fld.name(f), "': bits ", U32.show(Fld.hi(f)), "..",
+                 U32.show(Fld.lo(f)), " do not fit a ", U32.show(WORD_HI()),
+                 "-bit instruction word"])
+
 # (raw & ~(mask << lo)) | (encoded << lo), split so the `~(mask << lo)` term is
 # named: at four levels of nesting a missing paren is a compile error that reads
 # like a missing function.
-def bf_set.masked(+f: Fld, +raw: U32) -> U32:
-  U32.and(raw, U32.not(U32.shln(bf_mask(f), U32.to_nat(Fld.lo(f)))))
+def bf_set.masked(+f: Fld, +raw: H.I64) -> H.I64:
+  H.i64_and(raw, H.i64_not(wplaced(bf_mask(f), Fld.lo(f))))
 
-# THE WORD IS A `U32` AND THAT IS A REAL CEILING, NOT A REPRESENTATION DETAIL.
-# `bf_set.masked` and `bf_set.placed` shift with `U32.shln`, so a field placed above
-# bit 31 IS SILENTLY DISCARDED, while `dsl.py`'s `_raw` is a Python int and keeps every bit.
-# MEASURED: CPython's `VOP2_ALL` word is `0x4814060a00` (`bit_length() == 39`), and `48` is
-# `sdst` at [41:36] plus `op_sel` at [35:34]; the port's word is `0x0014060a00` and both are
-# GONE. `VOP2_FIELDS` is 42 bits wide and `F64_FIELDS` is 64, so EVERY instruction wider than
-# 32 bits -- every VOP3, every MFMA -- encodes with its high fields missing. `gates/
-# amd_dsl_census-gate.py` carries it as the one surviving `TO_BYTES` row (`to_bytes_vop2`,
-# CPython `000a06144800` against the port's `000a06140000`); widening `raw` is not done.
-def bf_set.placed(f: Fld, enc: U32) -> U32: U32.shln(enc, U32.to_nat(Fld.lo(f)))
+def bf_set.placed(f: Fld, enc: U32) -> H.I64: wplaced(enc, Fld.lo(f))
 
-def bor(a: U32, b: U32) -> U32: U32.or(a, b)
+def bf_set.over(over: Bool, +f: Fld, raw: H.I64, enc: U32) -> Wrd:
+  match over:
+    case True{}: WBad{bf_set_msg(f, enc)}
+    case False{}: Wrd{H.i64_or(bf_set.masked(f, raw), bf_set.placed(f, enc)), ""}
 
-def bf_set.go(bad: Bool, +f: Fld, raw: U32, enc: U32) -> Res:
-  match bad:
-    case True{}: Bad{bf_set_msg(f, enc)}
-    case False{}: Res{bor(bf_set.masked(f, raw), bf_set.placed(f, enc)), ""}
+def bf_set.go(fits: Bool, over: Bool, +f: Fld, raw: H.I64, enc: U32) -> Wrd:
+  match fits:
+    case True{}: bf_set.over(over, f, raw, enc)
+    case False{}: WBad{bf_word_msg(f)}
+
+# `encoded < 0 or encoded > self.mask` (:118), held as U32. `enc_neg` IS the
+# first arm and is always False here because :117 `& mask`es a negative before
+# it gets here -- so the live half is `enc > mask`, and it is written that way.
+#
+# IT WAS `(enc & mask) > mask`, WHICH IS NOT TRUE AND NOT MEASURABLE AS A
+# PREDICATE: `enc & mask` IS AT MOST `mask`, so the arm could never fire and the
+# width refusal was being produced by `bfs`, which re-derived the test
+# correctly and printed `bf_set_msg` itself. Routing `bfs` through `bf_set` --
+# which is what let it see the WORD refusal at all -- exposed the dead half, and
+# the fix is CPython's own test rather than a second copy of it. `bfset_*` over
+# `(3,0)`, `(7,4)`, `(23,8)` x `[0, 0xDEADBEEF]` x `[0, 1, 7, 8, 255, 2^32-1]`
+# is what pins it: twelve rows refused before this and refuse again.
+def bf_set(+f: Fld, raw: H.I64, +enc: U32, enc_neg: Bool) -> Wrd:
+  bf_set.go(bf_in_word(f), Bool.or(enc_neg, U32.is_gt(enc, bf_mask(f))), f, raw, enc)
 
 # `field '{self.name}': value {encoded} doesn't fit in {hi - lo + 1} bits`
 # (:118). The NAME is in the message, so a transposed `_fields` order shows up
-# in the text and not only in the value.
-
-def bf_set(+f: Fld, raw: U32, +enc: U32, enc_neg: Bool) -> Res:
-  bf_set.go(Bool.or(enc_neg, U32.is_gt(U32.and(enc, bf_mask(f)), bf_mask(f))), f, raw, enc)
+# in the text and not only in the value -- and it is the reason `bf_set_msg` and
+# `bf_word_msg` are two defs rather than one def with a mode flag.
 
 def base_size(hi_max: U32) -> U32: U32.div(U32.add(hi_max, BASE_SIZE_ROUND()), BASE_SIZE_DIV())
 
@@ -1145,10 +1244,10 @@ def Vf.f(vf: Vf) -> Fld: match vf: case Vf{f, v, has}: f
 
 def enc_big(+enc: Res, +f: Fld) -> Bool: Bool.not(U32.is_le(Res.v(enc), bf_mask(f)))
 
-def raw_step.set(ok: Bool, +vf: Vf, +raw: U32, +enc: Res) -> Res:
+def raw_step.set(ok: Bool, +vf: Vf, +raw: H.I64, +enc: Res) -> Wrd:
   match ok:
     case True{}: bf_set(Vf.f(vf), raw, Res.v(enc), enc_big(enc, Vf.f(vf)))
-    case False{}: Bad{Res.msg(enc)}
+    case False{}: WBad{Res.msg(enc)}
 
 def enc_ok(e: Res) -> Bool:
   match e:
@@ -1160,7 +1259,7 @@ def enc_ok(e: Res) -> Bool:
 # "bigger than the mask"; `bf_set` re-derives the same predicate, and sharing
 # `bf_mask` here is what makes a wrong mask move BOTH rows.
 
-def raw_step.go(+enc: Res, +vf: Vf, +raw: U32) -> Res:
+def raw_step.go(+enc: Res, +vf: Vf, +raw: H.I64) -> Wrd:
   raw_step.set(enc_ok(enc), vf, raw, enc)
 
 def Vf.v(vf: Vf) -> Ov: match vf: case Vf{f, v, has}: v
@@ -1218,7 +1317,7 @@ def fld_encode.go(has: Bool, +vf: Vf) -> Res:
 
 def fld_encode(+vf: Vf) -> Res: fld_encode.go(Vf.has(vf), vf)
 
-def raw_step(+vf: Vf, raw: U32) -> Res: raw_step.go(fld_encode(vf), vf, raw)
+def raw_step(+vf: Vf, raw: H.I64) -> Wrd: raw_step.go(fld_encode(vf), vf, raw)
 
 def Vf.of(f: Fld, v: Ov, has: Bool) -> Vf: Vf{f, v, has}
 
@@ -1574,17 +1673,52 @@ def hex4(+v: U32) -> String:
   String.concat([hex1(U32.shrn(v, 12n)), hex1(U32.shrn(v, 8n)),
                  hex1(U32.shrn(v, 4n)), hex1(U32.and(v, 15))])
 
+# EIGHT HEX DIGITS, ZERO-PADDED, AND NO `0x`. The prefix belongs to `hexw` and
+# only to `hexw` -- a word is rendered in ONE place, so a word cannot come back
+# with two prefixes or with one and a half.
 def hex8(+v: U32) -> String:
-  String.concat(["0x", hex4(U32.shrn(v, 16n)), hex4(U32.and(v, 65535))])
+  String.concat([hex4(U32.shrn(v, 16n)), hex4(U32.and(v, 65535))])
 
-def bfs.go(over: Bool, raw: U32, val: U32, +f: Fld) -> String:
-  match over:
-    case True{}: String.concat(["REFUSE:", bf_set_msg(f, val)])
-    case False{}: hex8(Res.v(bf_set(f, raw, val, False{})))
+# CPython's `f"{x:#010x}"` -- OF A WORD. `#010x` pads to a WIDTH, and a word
+# wider than 32 bits is already past the width, so eight digits is a FLOOR and
+# not a ceiling: `hex8` renders the low word and `hexw` renders all of it. This
+# is the renderer that used to MASK both lanes to 32 bits and hide AMDWORD32
+# from a byte-diff census -- `raw_vop2_all` read `|0x14060a00` on the port AND
+# on the oracle where CPython's word is `0x4814060a00`.
+#
+# `hexhi` reads the high word's nibbles LOWEST first and PREPENDS, and it stops
+# at a zero limb, so the top digit is never a leading zero: `0x48` and not
+# `0x00000048`. The fuel is `HEX_NIBBLES` because a U32 is eight nibbles wide.
+def hexhi.go(k: Nat, zero: Bool, +hi: U32, acc: String) -> String:
+  match k:
+    case 0n: acc
+    case 1n+j:
+      match zero:
+        case True{}: hexhi.go(j, U32.is_zero(U32.shrn(hi, 4n)), U32.shrn(hi, 4n), acc)
+        case False{}: hexhi.go(j, U32.is_zero(U32.shrn(hi, 4n)), U32.shrn(hi, 4n),
+                               String.concat([hex1(U32.and(hi, 15)), acc]))
 
-# Bend's `Maybe` has no `is_some` here, and `vs_off` answers one.
+def hexhi(+hi: U32) -> String: hexhi.go(HEX_NIBBLES(), U32.is_zero(hi), hi, "")
 
-def bfs(+f: Fld, raw: U32, +val: U32) -> String: bfs.go(Bool.not(U32.is_le(val, bf_mask(f))), raw, val, f)
+# THE HIGH WORD IS OMITTED RATHER THAN ZERO-PRINTED, and that is the whole
+# difference between `0x14060a00` -- a 32-bit word, and the value every lane
+# agreed on while both of them were wrong -- and `0x4814060a00`. Every word that
+# FITS a U32 renders exactly as `hex8` rendered it, so the widening is invisible
+# until a word is actually wide, which is what keeps 1129 rows from moving.
+def hexw(+w: H.I64) -> String:
+  +hi = H.hi32(w)
+  +lo = hex8(H.lo32(w))
+  String.concat(["0x", Bool.pick(String, U32.is_zero(hi), lo, String.concat([hexhi(hi), lo]))])
+
+# `bfs` READS WHAT `bf_set` ANSWERS rather than re-deriving "does the value fit"
+# to choose a message of its own. That duplicated predicate is why a `WBad` about
+# the WORD would have been unreachable here: the old arm knew only `bf_set_msg`.
+def bfs.go(r: Wrd) -> String:
+  match r:
+    case Wrd{w, s}: hexw(w)
+    case WBad{msg}: String.concat(["REFUSE:", msg])
+
+def bfs(+f: Fld, raw: H.I64, +val: U32) -> String: bfs.go(bf_set(f, raw, val, False{}))
 
 def is_some.go(m: Maybe<&2, String>, dflt: Bool) -> Bool:
   match m:
@@ -1593,10 +1727,14 @@ def is_some.go(m: Maybe<&2, String>, dflt: Bool) -> Bool:
 
 # `int.from_bytes(data[:base_size], 'little')` (:442) -- the DECODE half of
 # `from_bytes`, with the `base_size` truncation already applied by the caller.
+# THE ANSWER IS A WORD, because for `_base_size > 4` CPython's answer is wider
+# than a U32 and a `U32` here would be AMDWORD32 read backwards. The two rows
+# that read it drive 32-bit fixtures, so they read the low word -- and they say
+# so at the row rather than leaving a `U32` seam in the middle.
 
 def is_some(m: Maybe<&2, String>) -> Bool: is_some.go(m, False{})
 
-def from_bytes(w: U32) -> U32: w
+def from_bytes(w: H.I64) -> H.I64: w
 
 # `to_bytes` (:416) is `self._raw.to_bytes(self._base_size, 'little')`, so the
 # hex is LITTLE-ENDIAN and exactly `base_size` bytes: the LOW byte first, two
@@ -1610,45 +1748,54 @@ def from_bytes(w: U32) -> U32: w
 # MEASURED: `to_bytes_vop2` CPython `000a06144800`, port ``; `to_bytes_f32i` CPython
 # `053412`, port `00123405`.
 def hexnib(v: U32, n: Nat) -> String: hex1(U32.shrn(v, Nat.mul(n, 4n)))
-def hexbyte(+v: U32, +i: Nat) -> String: String.concat([hexnib(v, Nat.add(i, 1n)), hexnib(v, i)])
+def hex2(+v: U32) -> String: String.concat([hexnib(v, 1n), hexnib(v, 0n)])
 
-def bytes_of.go(n: Nat, +b: Nat, +v: U32, acc: String) -> String:
+# BYTE `b` OF THE WORD, LOW BYTE FIRST. The limb is chosen by `b / 4` and the
+# shift is `8 * b` WITHIN it, because `U32.shrn` SATURATES past 31 -- shifting
+# the low limb by its own 32 bits answers 0, which is how every byte above the
+# third used to read as zero.
+def wbyte(+w: H.I64, +b: Nat) -> U32:
+  +i = Nat.mul(b, HEX_BYTE())
+  Bool.pick(U32, U32.is_lt(U32.from_nat(b), WORD_BYTE()),
+    U32.shrn(H.lo32(w), i), U32.shrn(H.hi32(w), Nat.sub(i, WORD_BYTE_SHIFT())))
+
+def bytes_of.go(n: Nat, +b: Nat, +w: H.I64, acc: String) -> String:
   match n:
     case 0n: acc
-    case 1n+m: bytes_of.go(m, Nat.add(b, 1n), v, String.concat([acc, hexbyte(v, Nat.mul(b, 2n))]))
+    case 1n+m: bytes_of.go(m, Nat.add(b, 1n), w, String.concat([acc, hex2(wbyte(w, b))]))
 
-def bytes_of(v: U32, sz: U32) -> String: bytes_of.go(U32.to_nat(sz), 0n, v, "")
+def bytes_of(w: H.I64, sz: U32) -> String: bytes_of.go(U32.to_nat(sz), 0n, w, "")
 
 # `raw_walk` -- the `__init__` write walk (:334-335): `for name, field in
 # self._fields: self._raw = field.set(self._raw, vals[name])`.
 #
 # ONE SELF-RECURSIVE DEF, and that is not style. A walk needs a leaf helper to
-# lift the `Res` out of `raw_step`, and a leaf that recurses back into the walk
+# lift the `Wrd` out of `raw_step`, and a leaf that recurses back into the walk
 # is MUTUAL RECURSION, which cannot be ordered -- Bend wants every def before its
-# first use and a two-def cycle has no such order. So the incoming `Res` IS the
-# state: it carries `_raw` in `v` and a pending refusal in `msg`, the walk stops
+# first use and a two-def cycle has no such order. So the incoming `Wrd` IS the
+# state: it carries `_raw` in `w` and a pending refusal in `s`, the walk stops
 # the moment a refusal appears, and there is no second def to place.
 #
 # THE FUEL IS THE LISTS THEMSELVES, not a counter, and that is forced too: inside
 # a `case 1n+m:` arm Bend will not let you match an outer parameter, so a Nat
 # fuel and a list walk cannot live in the same arm. `ShapeRes.dims` walks the
 # same way.
-def raw_walk.go(vfs: List<&2, Vf>, prior: Res) -> Res:
+def raw_walk.go(vfs: List<&2, Vf>, prior: Wrd) -> Wrd:
   match vfs:
     case Nil{}: prior
     case Vf{f, v, has} <> t:
       match prior:
-        case Bad{msg}: Bad{msg}
-        case Res{praw, pacc}: raw_walk.go(t, raw_step(Vf.of(f, v, has), praw))
+        case WBad{msg}: WBad{msg}
+        case Wrd{praw, pacc}: raw_walk.go(t, raw_step(Vf.of(f, v, has), praw))
 
-def raw_walk(vfs: List<&2, Vf>) -> Res: raw_walk.go(vfs, Res{0, ""})
+def raw_walk(vfs: List<&2, Vf>) -> Wrd: raw_walk.go(vfs, Wrd{H.i64_zero(), ""})
 
 # ONE LIST, not two. In Python `_fields` and `vals` are separate and zipped by
 # iteration order; here each `Vf` CARRIES its own `Fld`, so there is no zip and
 # no second list to get out of step -- and `_fields` ORDER is then visible in
 # the `Vf` list's order, which is what `fields_of` prints.
 
-def rws(+res: Res) -> String: String.concat([Res.s(res), "|", hex8(Res.v(res))])
+def rws(+res: Wrd) -> String: String.concat([Wrd.s(res), "|", hexw(Wrd.w(res))])
 
 # THE ORDER FIXTURE. Two fields at the SAME bits with different names: `set` is
 # a masked overwrite, so the LAST write wins and the field ORDER decides the
@@ -2475,51 +2622,64 @@ def g_bf() -> IO(Unit):
     urow("bf_mask_47_32", bf_mask(Fld.plain("f", 47, 32)))
     srow("bf_23_16", bfg(Fld.plain("f", 23, 16)))
     urow("bf_mask_23_16", bf_mask(Fld.plain("f", 23, 16)))
-    srow("bfset_3_0_0_0", bfs(Fld.plain("f", 3, 0), 0, 0))
-    srow("bfset_3_0_0_1", bfs(Fld.plain("f", 3, 0), 0, 1))
-    srow("bfset_3_0_0_7", bfs(Fld.plain("f", 3, 0), 0, 7))
-    srow("bfset_3_0_0_8", bfs(Fld.plain("f", 3, 0), 0, 8))
-    srow("bfset_3_0_0_255", bfs(Fld.plain("f", 3, 0), 0, 255))
-    srow("bfset_3_0_0_4294967295", bfs(Fld.plain("f", 3, 0), 0, 4294967295))
-    srow("bfset_3_0_3735928559_0", bfs(Fld.plain("f", 3, 0), 3735928559, 0))
-    srow("bfset_3_0_3735928559_1", bfs(Fld.plain("f", 3, 0), 3735928559, 1))
-    srow("bfset_3_0_3735928559_7", bfs(Fld.plain("f", 3, 0), 3735928559, 7))
-    srow("bfset_3_0_3735928559_8", bfs(Fld.plain("f", 3, 0), 3735928559, 8))
-    srow("bfset_3_0_3735928559_255", bfs(Fld.plain("f", 3, 0), 3735928559, 255))
-    srow("bfset_3_0_3735928559_4294967295", bfs(Fld.plain("f", 3, 0), 3735928559, 4294967295))
-    srow("bfset_7_4_0_0", bfs(Fld.plain("f", 7, 4), 0, 0))
-    srow("bfset_7_4_0_1", bfs(Fld.plain("f", 7, 4), 0, 1))
-    srow("bfset_7_4_0_7", bfs(Fld.plain("f", 7, 4), 0, 7))
-    srow("bfset_7_4_0_8", bfs(Fld.plain("f", 7, 4), 0, 8))
-    srow("bfset_7_4_0_255", bfs(Fld.plain("f", 7, 4), 0, 255))
-    srow("bfset_7_4_0_4294967295", bfs(Fld.plain("f", 7, 4), 0, 4294967295))
-    srow("bfset_7_4_3735928559_0", bfs(Fld.plain("f", 7, 4), 3735928559, 0))
-    srow("bfset_7_4_3735928559_1", bfs(Fld.plain("f", 7, 4), 3735928559, 1))
-    srow("bfset_7_4_3735928559_7", bfs(Fld.plain("f", 7, 4), 3735928559, 7))
-    srow("bfset_7_4_3735928559_8", bfs(Fld.plain("f", 7, 4), 3735928559, 8))
-    srow("bfset_7_4_3735928559_255", bfs(Fld.plain("f", 7, 4), 3735928559, 255))
-    srow("bfset_7_4_3735928559_4294967295", bfs(Fld.plain("f", 7, 4), 3735928559, 4294967295))
-    srow("bfset_23_8_0_0", bfs(Fld.plain("f", 23, 8), 0, 0))
-    srow("bfset_23_8_0_1", bfs(Fld.plain("f", 23, 8), 0, 1))
-    srow("bfset_23_8_0_7", bfs(Fld.plain("f", 23, 8), 0, 7))
-    srow("bfset_23_8_0_8", bfs(Fld.plain("f", 23, 8), 0, 8))
-    srow("bfset_23_8_0_255", bfs(Fld.plain("f", 23, 8), 0, 255))
-    srow("bfset_23_8_0_4294967295", bfs(Fld.plain("f", 23, 8), 0, 4294967295))
-    srow("bfset_23_8_3735928559_0", bfs(Fld.plain("f", 23, 8), 3735928559, 0))
-    srow("bfset_23_8_3735928559_1", bfs(Fld.plain("f", 23, 8), 3735928559, 1))
-    srow("bfset_23_8_3735928559_7", bfs(Fld.plain("f", 23, 8), 3735928559, 7))
-    srow("bfset_23_8_3735928559_8", bfs(Fld.plain("f", 23, 8), 3735928559, 8))
-    srow("bfset_23_8_3735928559_255", bfs(Fld.plain("f", 23, 8), 3735928559, 255))
-    srow("bfset_23_8_3735928559_4294967295", bfs(Fld.plain("f", 23, 8), 3735928559, 4294967295))
-    srow("fixed_op7", bfs(Fld.fixed("op", 7, 0, 0), 4294967295, 4294967295))
+    srow("bfset_3_0_0_0", bfs(Fld.plain("f", 3, 0), w32(0), 0))
+    srow("bfset_3_0_0_1", bfs(Fld.plain("f", 3, 0), w32(0), 1))
+    srow("bfset_3_0_0_7", bfs(Fld.plain("f", 3, 0), w32(0), 7))
+    srow("bfset_3_0_0_8", bfs(Fld.plain("f", 3, 0), w32(0), 8))
+    srow("bfset_3_0_0_255", bfs(Fld.plain("f", 3, 0), w32(0), 255))
+    srow("bfset_3_0_0_4294967295", bfs(Fld.plain("f", 3, 0), w32(0), 4294967295))
+    srow("bfset_3_0_3735928559_0", bfs(Fld.plain("f", 3, 0), w32(3735928559), 0))
+    srow("bfset_3_0_3735928559_1", bfs(Fld.plain("f", 3, 0), w32(3735928559), 1))
+    srow("bfset_3_0_3735928559_7", bfs(Fld.plain("f", 3, 0), w32(3735928559), 7))
+    srow("bfset_3_0_3735928559_8", bfs(Fld.plain("f", 3, 0), w32(3735928559), 8))
+    srow("bfset_3_0_3735928559_255", bfs(Fld.plain("f", 3, 0), w32(3735928559), 255))
+    srow("bfset_3_0_3735928559_4294967295", bfs(Fld.plain("f", 3, 0), w32(3735928559), 4294967295))
+    srow("bfset_7_4_0_0", bfs(Fld.plain("f", 7, 4), w32(0), 0))
+    srow("bfset_7_4_0_1", bfs(Fld.plain("f", 7, 4), w32(0), 1))
+    srow("bfset_7_4_0_7", bfs(Fld.plain("f", 7, 4), w32(0), 7))
+    srow("bfset_7_4_0_8", bfs(Fld.plain("f", 7, 4), w32(0), 8))
+    srow("bfset_7_4_0_255", bfs(Fld.plain("f", 7, 4), w32(0), 255))
+    srow("bfset_7_4_0_4294967295", bfs(Fld.plain("f", 7, 4), w32(0), 4294967295))
+    srow("bfset_7_4_3735928559_0", bfs(Fld.plain("f", 7, 4), w32(3735928559), 0))
+    srow("bfset_7_4_3735928559_1", bfs(Fld.plain("f", 7, 4), w32(3735928559), 1))
+    srow("bfset_7_4_3735928559_7", bfs(Fld.plain("f", 7, 4), w32(3735928559), 7))
+    srow("bfset_7_4_3735928559_8", bfs(Fld.plain("f", 7, 4), w32(3735928559), 8))
+    srow("bfset_7_4_3735928559_255", bfs(Fld.plain("f", 7, 4), w32(3735928559), 255))
+    srow("bfset_7_4_3735928559_4294967295", bfs(Fld.plain("f", 7, 4), w32(3735928559), 4294967295))
+    srow("bfset_23_8_0_0", bfs(Fld.plain("f", 23, 8), w32(0), 0))
+    srow("bfset_23_8_0_1", bfs(Fld.plain("f", 23, 8), w32(0), 1))
+    srow("bfset_23_8_0_7", bfs(Fld.plain("f", 23, 8), w32(0), 7))
+    srow("bfset_23_8_0_8", bfs(Fld.plain("f", 23, 8), w32(0), 8))
+    srow("bfset_23_8_0_255", bfs(Fld.plain("f", 23, 8), w32(0), 255))
+    srow("bfset_23_8_0_4294967295", bfs(Fld.plain("f", 23, 8), w32(0), 4294967295))
+    srow("bfset_23_8_3735928559_0", bfs(Fld.plain("f", 23, 8), w32(3735928559), 0))
+    srow("bfset_23_8_3735928559_1", bfs(Fld.plain("f", 23, 8), w32(3735928559), 1))
+    srow("bfset_23_8_3735928559_7", bfs(Fld.plain("f", 23, 8), w32(3735928559), 7))
+    srow("bfset_23_8_3735928559_8", bfs(Fld.plain("f", 23, 8), w32(3735928559), 8))
+    srow("bfset_23_8_3735928559_255", bfs(Fld.plain("f", 23, 8), w32(3735928559), 255))
+    srow("bfset_23_8_3735928559_4294967295", bfs(Fld.plain("f", 23, 8), w32(3735928559), 4294967295))
+    srow("fixed_op7", bfs(Fld.fixed("op", 7, 0, 0), w32(4294967295), 4294967295))
     srow("fixed_def_op7", u32_text(Fld.dflt(Fld.fixed("op", 7, 0, 0))))
     row("fixed_cls_op7", fixed_set(1, 0))
-    srow("fixed_enc33", bfs(Fld.fixed("op", 6, 0, 33), 4294967295, 4294967295))
+    srow("fixed_enc33", bfs(Fld.fixed("op", 6, 0, 33), w32(4294967295), 4294967295))
     srow("fixed_def_enc33", u32_text(Fld.dflt(Fld.fixed("op", 6, 0, 33))))
     row("fixed_cls_enc33", fixed_set(1, 0))
-    srow("fixed_enc17", bfs(Fld.fixed("op", 16, 8, 0), 4294967295, 4294967295))
+    srow("fixed_enc17", bfs(Fld.fixed("op", 16, 8, 0), w32(4294967295), 4294967295))
     srow("fixed_def_enc17", u32_text(Fld.dflt(Fld.fixed("op", 16, 8, 0))))
     row("fixed_cls_enc17", fixed_set(1, 0))
+    # THE WORD'S LAST ADDRESSABLE BIT AND A FIELD THAT STARTS PAST IT, both 32 bits
+# wide and both carrying a U32-NAMABLE value, because a field is at most 32 bits
+# so `enc` is always below 2^32 and the thing that had to widen is the WORD, not
+# the value -- `4294967296` is not even a legal literal here, which is the same
+# fact from the other side.
+#   `bfset_word63` is the CONTROL: [63:32] with 2^31 reaches bit 63, the port
+#   places it, and both lanes answer `0x8000000000000000`.
+#   `bfset_word64` is the guard: [95:64] starts at bit 64, CPython's word is
+#   `0x10000000000000000` -- past the end of any 64-bit word -- and the port
+#   REFUSES, loudly, because `H.i64_shl` would have written a zero and said
+#   nothing.
+    srow("bfset_word63", bfs(Fld.plain("lit", 63, 32), w32(0), 2147483648))
+    srow("bfset_word64", bfs(Fld.plain("lit", 95, 64), w32(0), 1))
 
 # --- E  the five field classes' encode -- one negative per positive ----
 def g_enc() -> IO(Unit):
@@ -2935,11 +3095,17 @@ def g_inst() -> IO(Unit):
     urow("mod_merge_or", mod_merge(2, True{}, 1))
     urow("mod_merge_zero", mod_merge(0, True{}, 0))
     urow("mod_merge_nogiven", mod_merge(0, False{}, 1))
-    srow("to_bytes_vop2", bytes_of(Res.v(raw_walk(VOP2_ALL())), base_size(hi_max(VOP2_FIELDS()))))
-    srow("to_bytes_f32i", bytes_of(Res.v(raw_walk(F32_VALS())), base_size(hi_max(F32_FIELDS()))))
-    srow("to_bytes_f16i", bytes_of(Res.v(raw_walk(F16_VALS())), base_size(hi_max(F16_FIELDS()))))
-    urow("from_bytes_ff", from_bytes(4294967295))
-    urow("from_bytes_dead", from_bytes(3735928559))
+    srow("to_bytes_vop2", bytes_of(Wrd.w(raw_walk(VOP2_ALL())), base_size(hi_max(VOP2_FIELDS()))))
+    srow("to_bytes_f32i", bytes_of(Wrd.w(raw_walk(F32_VALS())), base_size(hi_max(F32_FIELDS()))))
+    srow("to_bytes_f16i", bytes_of(Wrd.w(raw_walk(F16_VALS())), base_size(hi_max(F16_FIELDS()))))
+    # THE ONLY `to_bytes_*` ROW WITH A NONZERO HIGH BYTE ABOVE BYTE 0, and it is
+    # here because a MUTATION PROVED IT MISSING: masking `wbyte`'s high limb to
+    # eight bits moved ZERO rows and left the gate GREEN, because every other
+    # word in this census has a high limb of `0x00` or `0x48`. `F64_FIELDS` is
+    # 64 bits wide, so `base_size` is 8 and all four high bytes are `78 56 34 12`.
+    srow("to_bytes_f64i", bytes_of(Wrd.w(raw_walk(F64_VALS())), base_size(hi_max(F64_FIELDS()))))
+    urow("from_bytes_ff", H.lo32(from_bytes(H.i64_of_i32(4294967295))))
+    urow("from_bytes_dead", H.lo32(from_bytes(H.i64_of_i32(3735928559))))
 
 # --- O  op_bits / op_regs / canonical_* / num_srcs ---------------------
 def g_ops() -> IO(Unit):
