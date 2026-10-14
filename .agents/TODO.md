@@ -14247,6 +14247,80 @@ OF THE REMAINING 63 AFTER.**
       rows and **19** nodes where the gate says **974** and **22**. NOT FIXED -- neither file was the
       unit's to edit.
 
+## WALLAUDIT -- 30 `# WALL(p3)` markers in `schedule/rangeify.bend`, audited; 3 CLOSABLE, 4 MIS-CLASSIFIED (2026-10-14)
+
+HEAD `cb67d2a4`. **MODE: AUDIT-ONLY** (`rangeify.bend` and the gate were NOT edited; this file is the
+only one written). `gates/rng_graph_census-gate.py` re-run here: **rc=0, 726 rows, 44 divergences,
+38 WALLS, 6 carve-outs, 0 FINDINGS** -- so the gate's arithmetic is unchanged and what follows is a
+refutation of its SENTENCES, not its counts.
+
+- [x] **THE DELIVERABLE IS A TABLE OF 30.  3 CLOSABLE / 4 MIS-CLASSIFIED / 4 NOT-A-WALL / 19 BLOCKED.**
+      `CLOSABLE` = the named helper exists, is already imported (`F` = `uop/fold.bend`, `:58`) and is
+      ALREADY BEING READ by a sibling def in the same file, so the marker is documentation rot and
+      closing it needs no code: **:2673 `ended_ranges`** (`F.UOp.ended_ranges` at `uop/fold.bend:4603`,
+      read by `rf_ended` at `rangeify.bend:139`), **:2678 `UOp.base`** (`UOp.base` at `fold.bend:4610`,
+      read by `rf_base` at `rangeify.bend:135`; `fold.bend:6625` says "PORTED" IN ITS OWN WORDS),
+      **:2679 `UOp.device`** (`F.fold.device`, read by `rf_dev` at `rangeify.bend:128`).
+- [x] **:2679 AND :2658 MAKE CONTRADICTORY CLAIMS ABOUT THE SAME `def`.** `:2658` reads "the UOp.device
+      wall is `rf_dev` and it reads ... **needs nothing new** for the DEVICE half", and `:2679` reads
+      "BLOCKED: a memoised `recursive_property`". Both cannot be true, and `rf_dev` is at `:128`.
+      **THREE MARKERS IN ONE FILE, AND THE FILE'S OWN HEADER IS THE FOURTH: `:2639` says "every one is a
+      `# TODO(p3)` line, so `rg 'TODO\(p3\)'` is the whole outstanding list" -- MEASURED,
+      `grep -c TODO(p3) rangeify.bend` = **3** and all three are PROSE, `grep -c WALL(p3)` = **30**.**
+      THE FILE MIS-NAMES ITS OWN MARKER FORM.
+- [x] **THE TREE'S OWN MARKER CENSUS CANNOT SEE ANY OF THE 30.**
+      `checks/marker-audit.py:35` is `MARKER = re.compile(r'^\s*#\s*TODO\(p3\)')` and `entries()` (`:49`)
+      gates on `'TODO(p3)' in l`, so a `# WALL(p3)` line is not a marker. MEASURED: running it,
+      `tinybendygrad/schedule/rangeify.bend` **DOES NOT APPEAR IN ITS TABLE AT ALL**; TOTAL is 564 walls
+      / 40 shared / 0 BACKLOG. Deleting or falsifying any of these 30 moves that instrument by ZERO.
+- [x] **4 MIS-CLASSIFIED -- the MARKER MUST STAY, ITS REASON MUST CHANGE** (the port still refuses):
+      **:2659** names `commit_dtype` and "a `ParamArg` the `Arg` sum cannot build" -- `commit_dtype` is
+      at `mixin/dtype.bend:326` and `Arg`'s 4th arm is `AParam{pa: ParamArg}` (`uop/ops.bend:1194`), so
+      that HALF OF THE REASON IS FALSE; `sorted(ranges)` and `next(ctx)` are what is still missing.
+      **:2661** "needs `UOp.base`" is FALSE (see :2678); `apply_movement_op` is the live half.
+      **:2665** "needs `graph_rewrite`" -- the def EXISTS TWICE (`codegen/__init__.bend:298`,
+      `codegen/decomp/dtype.bend:2069`) and IS CALLED (5 sites); what is missing is CALLING IT FROM A RULE
+      BODY, which is what the sentence already says after the `--`. **:2686** "`pm_mops`, which
+      `schedule/prepare.bend` names in its header and **declares no def for**" is FALSE:
+      `pr_mop_table()` is at `prepare.bend:320` with tags 0-2 and is consumed at `:492-493`, and the
+      `walk_mop` body is the 20-def `pr_wm*` family (`:546-732`). The OUTCOME is still a wall --
+      `rf_mops_fb/af/en` still answer `rf_foreign` (`:925-927`).
+- [x] **4 MARKERS CLAIM NO GAP AT ALL** and are verified true: **:2658** (deviceless MSTACK -- `ct_8`
+      really does build, `:1090`, gated on `devless`), **:2667**, **:2668**, **:2669** (all say
+      "NOT A GAP" in their own text). **A MARKER THAT RECORDS NO MISSING DEPENDENCY IS NOT A WALL AND
+      `grep -c` TREATS IT AS ONE.**
+- [x] **THE OTHER DIRECTION, AS BRIEFED: 5 CORRECTLY-BLOCKED MARKERS NAME A HELPER THAT NOW EXISTS
+      SOMEWHERE UNREACHABLE, so a `grep` says yes and the wall is still true.** `buf_uop` = `sc_buf_uop`
+      at `schedule/__init__.bend:355` -- MEASURED `grep -c "sc_" rangeify.bend` = **0** and the file's
+      6 imports (`:54-59`) do not include it. `BzOpts.removable` at `indexing.bend:931` and
+      `BzOpts{dev,aspc,removable}` at `:920`, but `Arg`'s 22 arms (`uop/ops.bend:1190-1222`) have NO
+      `BzOpts`, so `u.arg.removable` is still unreadable -- **:2683's claim survives, and the same
+      sentence in :2654 ("cannot be read at all") is now only true OF THE ARG PATH.**
+      `reshape`/`expand` builders = `pr_reshape`/`pr_expand` at `prepare.bend:264,268`, unreachable.
+      `_min_max` = `UOp.min_max`/`vmin`/`vmax` at `fold.bend:5036/5042/5045` -- EXIST, but over a SECOND
+      table (`BTable` from `MMed`) and with NO symbolic-bound -> U32 resolver found.
+      `substitute` = `uop/upat.bend:363` -- EXISTS, **but over `upat`'s own clause type `C`, not `UOp`**,
+      and its own comment says "ops.py:532 is NOT PORTED as a UOp method"; `extra_pm` is 4 comment hits
+      and **0 defs**. **A READER WHO GREPS `substitute` FINDS 93 HITS AND NO UOP ONE.**
+- [x] **THE GATE'S OWN SENTENCE IS FALSE FOR 3 OF ITS 38 ROWS, AND THE COUNT OF 38 DOES NOT MOVE.**
+      `rng_graph_census-gate.py:36-37` reads "Each is a rule body `rangeify.bend` records as `# WALL(p3)`".
+      **35 rows trace to a marker; 3 do not**: `ct_49` (`remove_noop_bufferize`, wall `UOp.shrink`) is
+      recorded as PROSE at `rangeify.bend:994` ("`ct4a_ans` is therefore the WALL row") and `fb_18`,
+      `ab_18` (`flatten_bufferize`, wall `apply_movement_op`) as PROSE at `:1179`. **`# WALL(p3)` in this
+      file is 30 MARKERS; THE CENSUS'S 38 ROWS COME FROM 9 WALL SITES, ONLY 7 OF WHICH ARE MARKERS.
+      "30" AND "38" AND "9" ARE THREE POPULATIONS AND NOBODY HAS SAID WHICH IS WHICH.**
+- [x] **THE `ab_30` ATTRIBUTION IS HALF-STALE**: the gate (`:52`) reads "wall `UOp.base` +
+      `apply_movement_op` (:2661)" and `UOp.base` is no longer a wall. **THE ROW STANDS** (the
+      `apply_movement_op` half is live) **SO 38 IS STILL 38** -- but the reason it is pinned is half a
+      marker this audit refutes.
+- [ ] **NOT DONE, BECAUSE AUDIT-ONLY:** the 3 CLOSABLE markers' TEXT was not replaced, and the 4
+      MIS-CLASSIFIED reasons were not corrected. **BOTH ARE ONE-COMMIT EDITS TO
+      `tinybendygrad/schedule/rangeify.bend` AND NEED A `bend --check-only` RE-RUN** (`rangeify.bend`
+      peak RSS is in `.agents/slop/peakrss/census.rows`; read the verdict TOKEN, never the exit code).
+- [ ] **FOUND, OUT OF SCOPE, NOT DONE:** `uop/fold.bend:6625` is a `# TODO(p3)` marker whose OWN TEXT
+      says "PORTED, as `UOp.base` over the table" -- a stale marker counted among marker-audit's 564
+      "walls". `uop/*` is not this unit's to edit.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
