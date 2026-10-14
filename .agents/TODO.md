@@ -14653,7 +14653,14 @@ THAT WAS DESIGNED FOR EXACTLY THIS.**
       TOLD THE DELETIONS WERE ZERO AND BELIEVED THE NUMBER** -- and a human reading the same line would
       take it too. **THIS IS THE TWELFTH INSTANCE AND THE MOST GENERAL: AN INSTRUMENT THAT REPORTS A
       NUMBER SOMEONE SUPPLIED IS NOT MEASURING.**
-- [ ] **THE REPAIR ITSELF IS CURRENTLY BLOCKED, AND THAT IS THE POINT.** Both files must go back into
+- [x] **THE REPAIR IS DONE: `a438e47e2`, 2 FILES, 1168 INSERTIONS, CONTENT VERIFIED IDENTICAL TO
+      `9a26ca540` BEFORE COMMITTING, AND `gates/decomp_value-gate.py` ANSWERS rc=0.** **THE FORM THAT
+      WORKS IS `git commit --only -- <paths>` ON THE *DEFAULT* INDEX -- NOT `GIT_INDEX_FILE`, WHICH IS
+      THE WRONG TOOL FOR RESTORING A PATH THE INDEX REMOVED** (it has no entry for it, so `--only`
+      refuses the pathspec). **THE INSTRUMENT THAT ESTABLISHED IT WAS `git commit --dry-run --only -n`,
+      WHICH STAGED EXACTLY THOSE TWO NEW FILES AND NOTHING ELSE.** THAT PREVIEW IS THE SAFEST THING IN
+      THE TOOLCHAIN AND THIS SESSION HAD NOT USED IT ONCE UNTIL A COMMIT NEEDED IT.
+- [ ] **THE REPAIR WAS BLOCKED THREE TIMES FIRST, AND THAT IS THE POINT.** Both files must go back into
       GIT, but **`.git/index` IS STILL ARMED WITH `7df97a304`'s 416 STAGED PATHS** (measured:
       `git diff --cached --name-only | wc -l` = **416**). **MEASURED FAILURES OF THE OBVIOUS REPAIRS,
       IN ORDER:** `git add <path>` then `git commit --only -- <path>` answers `pathspec ... did not
