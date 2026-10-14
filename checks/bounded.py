@@ -170,6 +170,37 @@ def group_rss(pgid: int) -> tuple[float, list[int]]:
     return sum(rss_mb(p) for p in pids), pids
 
 
+def _swap():
+    """(free, total, why) from `vm.swapusage`, which is ONE LINE of `key = value` pairs on macOS --
+    field 8 is the `=` and `free` is field 9. MEASURED: sampling field 8 printed `free==M (0.00 GiB)`
+    six times and agreed with what the caller already believed."""
+    try:
+        raw = subprocess.run(["sysctl", "-n", "vm.swapusage"], capture_output=True, text=True,
+                             timeout=5).stdout.strip()
+        fields = [f.strip() for f in raw.split()]
+        kv = {}
+        i = 0
+        while i + 1 < len(fields):
+            if fields[i + 1].startswith("="):
+                # `fields[i+1]` IS THE `=` ITSELF. Taking it yielded an EMPTY value and a downstream
+                # AttributeError -- MEASURED, and it is the SAME off-by-one as sampling field 8 of
+                # `vm.swapusage` instead of field 9, written two paragraphs above. A handler that
+                # swallows the cause and prints `type(e).__name__` is how an off-by-one survives.
+                kv[fields[i]] = fields[i + 2].lstrip("= ")
+                i += 2
+            else:
+                i += 1
+        # THE VALUES CARRY DECIMALS AND A SUFFIX: `free = 1102.44M`. `int()` on that raises, and a
+        # precondition that raises is a precondition that says nothing.
+        def num(k: str) -> int:
+            m = re.match(r"\s*([0-9.]+)\s*([BKMG]?)", kv[k])
+            return int(float(m.group(1)) * {"": 2**20, "B": 1, "K": 2**10, "M": 2**20,
+                                             "G": 2**30}[m.group(2) or "M"])
+        return num("free"), num("total"), None
+    except Exception as e:            # NO SWAP ON THIS HOST IS NOT A VIOLATION, IT IS ABSENCE
+        return None, 0, type(e).__name__
+
+
 def machine() -> str:
     """THE MACHINE IS A DECLARED PRECONDITION OF A TIME BOUND, AND THIS IS WHERE IT IS ENFORCED.
 
@@ -189,9 +220,27 @@ def machine() -> str:
         cores = os.cpu_count() or 1
     except (OSError, AttributeError):
         return "MACHINE: UNKNOWN (getloadavg unavailable)"
-    ok = la <= cores
-    return (f"MACHINE: {'OK' if ok else '**VIOLATED**'} -- loadavg {la:.1f} on {cores} cores"
-            + ("" if ok else "; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD"))
+    # SWAP IS THE OTHER HALF, AND IT WAS MISSING. MEASURED 2026-10-15: a unit DECLINED a run on the
+    # strength of this line's precondition while this function reported OK -- because it read loadavg
+    # and cores and NOTHING ELSE, and a host can be load-IDLE and swap-STARVED at the same time. Load
+    # oscillates; swap free does not, which is exactly why it was the decisive clause. A precondition
+    # that checks half of what it is named for is a precondition that passes when it should refuse.
+    # `vm.swapusage` puts `free` at field 9; field 8 is the `=`. MEASURED, sampling field 8 printed
+    # `free==M (0.00 GiB)` six times and AGREED WITH WHAT THE UNIT ALREADY BELIEVED, which is the
+    # cheapest place there is to stop checking.
+    swap_free, swap_tot, why = _swap()
+    bad = []
+    if la > cores:
+        bad.append(f"loadavg {la:.1f} > {cores} cores")
+    if swap_free is not None and swap_tot and swap_free < 0.25 * swap_tot:
+        bad.append(f"swap free {swap_free/2**30:.2f} of {swap_tot/2**30:.2f} GiB")
+    seen = f"loadavg {la:.1f} on {cores} cores"
+    if swap_free is not None:
+        seen += f", swap free {swap_free/2**30:.2f} of {swap_tot/2**30:.2f} GiB"
+    return (f"MACHINE: {'OK' if not bad else '**VIOLATED**'} -- {seen}"
+            + ("" if not bad else "; " + " and ".join(bad)
+               + "; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD")
+            + (f" [{why}]" if why else ""))
 
 
 def record(verdict: str, rc: int, peak: float, ceiling: float, elapsed: float, cmd: list[str],
@@ -203,8 +252,14 @@ def record(verdict: str, rc: int, peak: float, ceiling: float, elapsed: float, c
           + (f"  said={said}" if said else ""), file=sys.stderr)
     if why := WHY.get(verdict):
         print(f"  {why}", file=sys.stderr)
-    if verdict != WITHIN:   # a WITHIN-LIMITS run is not attributable to the host, so say nothing
-        print(f"  {machine()}", file=sys.stderr)
+    # IT PRINTS ON **EVERY** RUN, INCLUDING A CLEAN ONE. It used to print only when a bound fired,
+    # on the reasoning that "a clean run is not the host's fault" -- which is true and is not the
+    # question. MEASURED 2026-10-15: a caller asking whether the HOST could have produced this run
+    # gets no answer at all on the run that passed, so "it passed" and "it would have passed anyway"
+    # are indistinguishable from outside. `machine()` already carries its own VIOLATED marker, so
+    # printing it always does not blame a clean run -- it describes the machine and lets the reader
+    # decide. A precondition you can only read when it has already refused is half an instrument.
+    print(f"  {machine()}", file=sys.stderr)
 
 
 def main() -> int:
@@ -348,7 +403,15 @@ def selftest() -> int:
     # PASS produced by a bomb that never exploded. A test that cannot fail has told me nothing
     # about the thing it names.
     r = guard("--seconds", "120", "--mb", "300", "--", sys.executable, "-c",
-              "import subprocess,sys; subprocess.Popen([sys.executable, sys.argv[1]])", grand)
+              # THE LAUNCHER MUST WAIT. It was a bare `Popen`, which returns at once, so the bomb was
+              # orphaned to init the moment the launcher exited and the guard's POLL decided the race:
+              # MEASURED 1 FAIL in 5, always this case, and `clocked.rows` caught the tell -- the runs
+              # that passed show `pgrep=[]` while `ps` names two live pids. The watchdog at :166 is
+              # NOT the defect; it is sound (`pgrep -g <pgid>`, by GROUP, on purpose). A bare `Popen`
+              # made the FIXTURE non-deterministic, which is the :346 defect wearing a new hat: a case
+              # that cannot fail deterministically is not a control. `wait()` keeps the grandchild in
+              # the group, so the poll has something to sample every time.
+              "import subprocess,sys; subprocess.run([sys.executable, sys.argv[1]])", grand)
     results.append(("GRANDCHILD: the watchdog sees a SPAWNED child", r.returncode == 3
                     and tok(r.stderr) == MEMORY, f"exit {r.returncode}, token {tok(r.stderr)}"))
 
@@ -400,8 +463,21 @@ def selftest() -> int:
     # 11. The grandchild that outlives its parent -- the pre-fix guard called this WITHIN-LIMITS
     # at 3 MB with the bomb past 1 GB.
     r = guard("--seconds", "60", "--mb", "300", "--", sys.executable, "-c",
-              "import os,subprocess,sys; pid=os.fork()\n"
+              # THE PARENT MUST WAIT FOR THE BOMB TO CROSS THE CEILING BEFORE IT EXITS. Same race as
+              # GRANDCHILD, and here the orphaning is the POINT, so `wait()` is not available: the
+              # guard stops measuring when its DIRECT child exits, so a bomb orphaned before it has
+              # allocated leaves the guard measuring a 3 MB launcher -- and `WITHIN-LIMITS` is then the
+              # CORRECT answer to the question it was asked. MEASURED 2 FAIL in 20, always this case.
+              # So the precondition is made EXPLICIT rather than hoped for: poll the grandchild's RSS
+              # and exit only once it is past the ceiling. `ps -o rss=` because this is macOS.
+              "import os,subprocess,sys,time\n"
+              "pid=os.fork()\n"
               "if pid == 0: os.execv(sys.executable, [sys.executable, sys.argv[1]])\n"
+              "while True:\n"
+              "    q=subprocess.run(['ps','-o','rss=','-p',str(pid)],capture_output=True,text=True)\n"
+              "    if q.returncode or not q.stdout.strip(): break\n"
+              "    if int(q.stdout.strip()) > 320_000: break\n"
+              "    time.sleep(0.05)\n"
               "sys.exit(0)", grand)
     results.append(("ORPHAN: a grandchild is still watched after its parent exits",
                     r.returncode == 3 and tok(r.stderr) == MEMORY,
