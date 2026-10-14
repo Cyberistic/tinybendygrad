@@ -1952,6 +1952,46 @@ diffed.
       with rows that agree with the bug — including one WALL: the oracle prints `r[1]`
       and not `r[0]`, so `regalloc_rewrite`'s whole `nsrc` half is invisible to every
       row (W5c). Mutation drivers `.agents/slop/ra-mutate.py`, `ra-mutate2.py`.
+- [x] **`codegen/late/{linearizer,regalloc}.bend` — 488 defs, 0 gates, 71+48 rows that had
+      NEVER been compared to CPython.** Measured: `grep -rl linearizer gates/*-gate.py` and
+      `grep -rl regalloc gates/*-gate.py` both answer 0 files, and the port's own header named
+      `diff <(python3 /tmp/opencode/late-oracle.py) <(./bin/bend tinybendygrad/codegen/late.bend)`
+      as its acceptance test with ALL THREE parts dead: the oracle does not exist,
+      `codegen/late.bend` has been a DIRECTORY since the 1:1 split, and `/tmp` is not a place
+      a gate's input may live. Now `gates/linearizer_census-{gate,oracle,mutate}.py` +
+      `-pins.rows` (71 rows, 69 compared, **2 divergences**) and
+      `gates/regalloc_census-{gate,oracle,mutate}.py` + `-pins.rows` (48 rows, **0
+      divergences**), both rc=0, both with the machinery in `gates/mutkit.py`.
+      **69 of 71 linearizer rows and 48 of 48 regalloc rows agree with CPython byte for
+      byte, calling the real paths** (`linearize`, `CFGContext`, `pm_add_control_flow`,
+      `do_split_ends`, `pm_split_ends`, `LinearScanRegallocContext`, `regalloc_rewrite`).
+      THE TWO DIVERGENCES ARE ONE DEFECT: `lt_fix` opens `+c1a = O.UOp.const(empty, 1)` and
+      then `+c1 = lt_i32(1, ar(c1a))`, and `lt_i32` mints its OWN const from the arena it is
+      HANDED -- so arena index 0 is ORPHANED (`ix_len` 22 against CPython's 21). Measured
+      from the port's own rows: `lt_lst ∪ lt_lst_call = {1..21} \ {0}`.
+      **FIVE DEAD DEFS, none reachable from `main` and none of which any row can see:**
+      `lt_is_const` (:1066), `lt_is_cast` (:1069) — one occurrence each in the file, their own
+      definitions and no call site — and `u32s` (:349) with its sole caller `range_tuple`
+      (:344), which `LT.u32s` confirms nothing imports. Five fixes this session were exactly
+      this shape.
+      **THE COVERAGE GAP, MEASURED, NOT GUESSED.** `src_without_body` has THREE call sites
+      in `linearizer.bend` and the harness breaks each one. Replacing it with `Arena.srcs`
+      at `lt_hp.ss` (:777, the heap's release) and at `lt_deg.go` (:560, `out_degree`) moves
+      **0 of 71 rows at rc=0** — the fixture's toposort holds no node with a body, so
+      `enter_calls=False` makes the two identical and NO row can see either. The SAME
+      replacement at `lt_epos` (:1048, the edge-row printer) moves `linc_edg`. So **two of
+      the three sites are ungated**, and the port's header claim that `linc` is "the ONLY test
+      of `Arena.src_without_body` in the gate" is refuted: the one test is the ROW PRINTER,
+      not `linearize`'s heap.
+      **TWO MORE PREMISES THAT HAVE DIED, MEASURED.** `regalloc.bend`'s header says
+      "`tinybendygrad/renderer/isa/` is EMPTY" and infers from it that a port must intern
+      registers — the directory holds `x86.bend` (178 569 B) and that file declares
+      `type Reg is Data` with `Reg.of(nm, ix, sz, a, b, c)` and `Reg.name/index/size/s4/s2/s1`,
+      so the premise is FALSE even though the conclusion may stand on the OTHER clause (`Reg`
+      carries no `cons`, and `O.Tag`'s tuple arm holds UOP INDICES). And `linearizer.bend`'s
+      "the base is 128 rows" is stale: measured 71 + 48 = 119, or 130 with `gater.bend`'s 11.
+      `bend --help` still answers **2.0.34**, so W4's "bend 2.0.34 mis-parses
+      `Maybe<&2, S.Dt>`" names the right version and HOLDS.
 - [x] `examples/beautiful_mnist.ts` — 611 lines, mirrors the 48-line .py section by
       section, decorators carrying the tinygrad NAMES (`@TinyJit`, `@Context({TRAINING:
       1})`, `@function_` because `function` is a TS reserved word — verified, TS1146).
@@ -14058,6 +14098,30 @@ bare `git commit`.**
       staged deletion -- **the pathspec form does not isolate**; (3) `git commit --only -- <paths>`
       NEEDS `git add` FIRST, because `--only` commits the INDEX and an untracked file is not in it; (4)
       `--only` with a pathspec that FORGOT the port file described a fix it did not contain.
+
+## AMD-DONE -- the AMD DSL census is DONE, and its 31 remaining pins are NOT defects (2026-10-14)
+
+`gates/amd_dsl_census-gate.py`: **1178 rows, 1147 exact, 31 pinned in 3 classes, 8/8 checks, rc=0.**
+Nine classes RETIRED (every row now exact, each removed from `CLASSES` because a class with no rows
+fails `classes_hold`). **THE REMAINING 31, AND WHAT EACH IS:**
+
+- `MSG_TEXT` (26) -- BOTH SIDES REFUSE. CPython names the CLASS and `type(val).__name__`; the port
+  names the FIELD and the `Ov` kind. **THE SAME INFORMATION IN A DIFFERENT VOCABULARY** -- the
+  divergence is the wording, not the decision. Aligning it would be chasing wording, and the refusal
+  is the correct behaviour on both sides. MEASURED: `fixed_op7` is CPython
+  `REFUSE:FixedBitField does not accept values, got 4294967295` against the port's
+  `REFUSE:field 'op': value 4294967295`.
+- `SRC_WIDTH` (4) -- **THE DECISION ROWS ARE EXACT**; these four are `sf_widthmsg_*` whose CPython
+  column is **EMPTY**, because CPython ACCEPTS and never produces a message. The port builds a string
+  it will never use. A DEAD STRING, not a wrong answer. `src_width_ok` was fixed and its four
+  decision rows became exact.
+- `WORD_64` (1) -- CPython's `_raw` is a Python int, so `BitField.set` CANNOT overflow and cannot
+  refuse; the port's `H.I64` saturates at 63 and DOES refuse, loudly. **A GENUINE WORD-WIDTH WALL**
+  and the loudness is the correct behaviour.
+
+**SO THIS LAYER IS FINISHED AND ITS RESIDUAL PIN COUNT IS A MISLEADING NUMBER.** 30 of 31 are
+refusal-vocabulary or a dead string; 1 is the word-width wall fixed earlier as `AMDWORD32`. **A
+PIN COUNT IS NOT A DEFECT COUNT, AND SAYING OTHERWISE IS THE ERROR THIS ENTRY EXISTS TO PREVENT.**
 
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
