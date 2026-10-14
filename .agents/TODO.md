@@ -14420,10 +14420,13 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
       the promotion. **THE FIX IS NOT THE `creation.bend` SHAPE** -- that fix was ONE VALUE USED TWICE for
       TWO SPELLINGS of one dtype inside `UOp.const`; here there is NO second spelling, there is a
       MISSING STEP.
-- [ ] **NOT FIXED DELIBERATELY, AND THE REASON IS THE POINT: THIS CENSUS CARRIES NO VALUES.** It
+- [x] **NOT FIXED DELIBERATELY, AND THE REASON WAS THE POINT: THIS CENSUS CARRIES NO VALUES.** It
       compares op SEQUENCES, so it cannot say whether a differing intermediate width is a DEFECT.
-      **A SEMANTIC CHANGE TO THE DECOMPILER'S INTERMEDIATE WIDTHS WITHOUT A NUMERIC ORACLE IS A GUESS.**
-      A numeric oracle (evaluate both lanes' cones and compare the VALUES) is what would settle it.
+      **THE NUMERIC ORACLE IT ASKED FOR NOW EXISTS** -- `gates/decomp_value-gate.py`, rc=0, 198
+      comparisons, **0 `DIFFER`** (see `DECOMP-PROMO` above and `DEFECTROW-DV` below). **SO THE
+      ANSWER IS: THE NARROWING IS VALUE-INERT AT THESE OPERANDS, AND `lg1` IS NOT EVEN A VALID
+      tinygrad UOP GRAPH.** `codegen/decomp/` IS STILL BYTE-IDENTICAL; NOT ONE LINE OF THE PORT WAS
+      TOUCHED.
 - [ ] **NEW MEASUREMENT, NOT IN THE FILE BEFORE:** rebuilding each cone with the deleted CASTs replaced
       by identity, the port computes intermediates **NARROWER** -- `lg1` 3 of 13 kept nodes differ in
       derived dtype (ALL `MUL/2`: CPython `i64` vs port `u32`/`weakint`), `lg5` 1 of 14, `lgd` 1 of 12.
@@ -14434,6 +14437,62 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
       survivor is the second. Single-swap search: **`lg1 lgq lgr` EACH ADMIT 1 ALTERNATIVE**, the other
       8 are unique. **A CAST'S TARGET DTYPE IS IN NO NODE SHAPE** -- the same blind spot the file names
       for CONST values.
+- [x] **THE NUMERIC ORACLE EXISTS: `gates/decomp_value-gate.py` + `decomp_value-pins.rows`, rc=0.**
+      **11 PROMOTION ROWS x 18 OPERAND FAMILIES = 198 VALUE COMPARISONS, 0 `DIFFER`.**
+      - **THE ANSWER: THE NARROWER INTERMEDIATE DOES NOT CHANGE THE VALUE.** **9 of 11 rows
+        (`lga lgc lgd lge lgq lgr lgs lgt q5`) read `same` at every evaluable operand**; `lg5` is
+        `same` on 13 of 18 and the other 5 are an OPERAND neither lane accepts (`DType.const` does
+        `int(nan)`/`int(inf)`, dtype.py:84, so `l2i(CAST, i64, f32)` cannot be FED a NaN).
+      - **`lg1` IS NOT EVALUABLE AT ALL, AND THAT IS THE STRONGER FINDING: 18 of 18
+        `PORT-REFUSES:AssertionError`.** The spliced (i.e. the port's) cone's `BITCAST` fails
+        `dtype.bitcast`'s `in_dtype.itemsize == out_dtype.itemsize` (dtype.py:302), because the
+        missing promotion left a `bool` where a `u32` had to be. **THE PORT BUILDS A GRAPH THAT IS NOT
+        A VALID tinygrad UOP GRAPH.** THE SAME MISSING PROMOTION MAKES **`10 of 11` ROWS UNEXECUTABLE
+        BY `PythonProgram` ITSELF** (`ops_python.py:153`'s `all_same([u.dtype] + src_dtypes)`), against
+        **0 of 11 for CPython's own cones** -- so the invariant is CPython's, not the oracle's.
+      - **THE PORT'S CONE IS THE CENSUS'S CONE WITH THE DECLARED `CAST/1`s SPLICED OUT, AND THAT IS
+        RE-PROVED ON EVERY RUN**: the spliced cone's `sig` equals the pinned PORT row token for token,
+        over the whole cone (2 431 tokens for `lgq`), at the declared count. **WITNESSES ENUMERATED,
+        NOT ASSUMED**: `lg1 lgq lgr` admit 2 each and every one gives the same executability answer.
+      - **THE ORACLE IS CHECKED AGAINST ITSELF, TWICE, ON EVERY RUN.** (a) `walk` == `PythonProgram`
+        on **198/198** CPython evaluations; (b) CPython's cone == the CLOSED FORM for `lg1` (two's
+        complement negation) **18/18**, `lgq`/`lgs` (unsigned `//`) **17/17**, `lgr`/`lgt` (`%`)
+        **17/17**. **(b) IS WHAT CAUGHT THE ORACLE'S OWN BUG** -- see `DEFECTROW-DV` below.
+      - **THE FIXTURE SET IS PROVEN LIVE, NOT ASSUMED.** `lg1` moves **18 of 18** families on a
+        one-cast mutant and `lg5` **5 of 18**; the other 9 rows are `NOT TRIGGERED` (one more or one
+        fewer CAST moves nothing at these operands) and `lgc`/`lgd` have **NO MUTANT AT ALL** -- their
+        cone's only `CAST/1` IS the promotion, so their coverage rests on the population. **A GATE
+        WITH NO LIVE ROW IS REFUSED, NOT PASSED.**
+- [ ] **`q2`/`q3`'s SITE IS STILL UNLOCATED** and the original author was right to claim no root cause.
+- [ ] **WHAT THE ORACLE DOES NOT SETTLE, AND IT IS NAMED IN THE GATE'S OWN HEADER: (a) src ORDER** --
+        the census's token is `op/nsrc` with `src[0]` read first, so it cannot pin order, and `lgq`/`lgr`
+        each have 68-69 deleted nodes at an order-sensitive `src[0]`. **(b) anything about a port
+        defect of a DIFFERENT class** that produced the same token sequence. **(c) the value of a word
+        read under a different signedness** -- both lanes are compared on bit patterns.
+
+## DEFECTROW-DV -- THE ORACLE'S OWN BUG, CAUGHT BY ITS OWN CLOSED FORM (2026-10-14)
+
+Found while building `gates/decomp_value-gate.py`. **THIS IS THE `tn_bitwise_not` LESSON APPLIED TO A
+BRAND-NEW INSTRUMENT, AND IT IS THE TENTH.**
+
+- [x] **COMMITTING A WEAK CONST AT `u.dtype` CORRUPTS CPython's OWN CONE.** `Ops.CMPLT`'s dtype is
+      `bool`, and `DType.bool.const(32)` is `bool(32)` = `True` (dtype.py:84) -- so
+      `commit_weak_consts(u, u.dtype)` turned `CONST(32, weakint)` into `CONST(True, bool)`, and
+      `l2i(Ops.SHR, ...)`'s `b0 >= 32` then read `1 < True`. **MEASURED DOWNSTREAM:
+      `l2i(CDIV, uint32, 7, 2)` ANSWERED 0 INSTEAD OF 3 AND `CMOD(100, 7)` ANSWERED 0 INSTEAD OF 2**,
+      and the gate's own `//`/`%` closed forms caught it on 16 families of one row. **THE FIXTURE
+      SET WAS LIVE ON `lg1` THE WHOLE TIME AND REPORTED 198 GREEN ROWS ON A CORRUPTED GRAPH.**
+      **THE RIGHT DTYPE IS `least_upper_dtype` OF THE OTHER SRCS** (what `commit_weak_srcs` computes),
+      **NEVER `u.dtype`.**
+- [x] **AND `PythonProgram` AGREED WITH THE CORRUPTION** -- it is `exec_alu` in both, so the two
+      evaluators could not disagree. **TWO LANES THAT SHARE A SEMANTIC CANNOT CHECK EACH OTHER; THE
+      CLOSED FORM IS A THIRD WITNESS AND IT IS NOT tinygrad's.** *A harness cross-check against an
+      instrument built from the same functions is a self-consistency check, not a correctness check.*
+- [x] **ALSO MEASURED, ALL IN THIS GATE'S OWN HEADER:** the census gate is **NOT IMPORT-SAFE** --
+      `decomp_graph_census-gate.py:386` reads `sys.argv` at MODULE SCOPE, so importing it from a
+      process given `--refresh` runs the census's refresh and EXITS THE PROCESS. **rc=0, no output, no
+      pins file.** And two `UOp` PARAMs with equal args INTERN TO ONE NODE, so two roots sharing an
+      out-PARAM shared one buffer and `lg1` read `[-2,-2]` where the truth is `[-1,-2]`.
 
 ## DEFECTROW -- A ROW NAMED AFTER A DEFECT STOPS PROVING IT THE MOMENT THE DEFECT IS FIXED (2026-10-14)
 

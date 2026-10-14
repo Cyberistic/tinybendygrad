@@ -1575,3 +1575,29 @@ ceiling with six units live).
 | `gates/msgdiff-gate.py` | **the guard `git-massdelete-gate.py` names as its residual: a wrong commit message is invisible to every diff-only gate.** Resolves a deletion ASSERTION (`Deleted X`) against the commit's `D` set and its tree, and an explicit `N files changed\|deleted\|...` against the diff's file count. `REFUSED` (3), not `FAIL`: it does not know the message is wrong, only that THIS DIFF does not witness it (`MESSAGE_DIFF_ACK=` records the explanation). MEASURED: `range --since=2026-10-06T12:00 HEAD` = **147 commits, 146 PASS, 1 REFUSED**, the one real defect `00b101574`; `--plant` = six states, rc 0. **COUNTS pids, never judges them** (a pid is a live measurement in an immutable message). Separate file, not an extension of the mass-delete gate: that gate's subject is the DIFF, this one's is the MESSAGE, and one commit with two subjects cannot say which failed. |
 | `.agents/slop/msgdiff/run.py` | Regenerates the evidence by REPLAYING the real commits, not synthetic ones. Writes `verdicts.rows`, `plant.out/err`, `range.out/err`. |
 | `.agents/slop/msgdiff/REPORT.md` | The claim grammar: which shapes are checkable (deletion, file count), which are unfalsifiable (units/sites/arms), which are counted and passed (pids), and the seam to the PROSE layer (`citeresolve`, 2 448 prose claims) which is a different population and a different instrument. |
+
+### `decomp_value` (2026-10-14) — a NUMERIC oracle for a graph-shape census
+
+| tool | why |
+| --- | --- |
+| `gates/decomp_value-gate.py` | **The instrument the `decomp_graph_census` PROMOTION class asked for and did not have.** `tinygrad.runtime.ops_python.PythonProgram.__call__` evaluates a cone of real `UOp`s; this drives it on BOTH lanes and compares VALUES, so "the port computes intermediates narrower" becomes a question with an answer. MEASURED: **11 PROMOTION rows x 18 operand families = 198 comparisons, 0 `DIFFER`**; 9 rows `same` everywhere, `lg1` `PORT-REFUSES` on 18 of 18, `lg5` `same` on 13 of 18. rc=0, `--refresh` rewrites the pins. |
+| `gates/decomp_value-pins.rows` | One TAB-separated `<row>/<fam>\t<same\|DIFFER\|PORT-REFUSES:*\|BOTH-RAISE:*>\t<cpython value>` per cell, in GIT, beside the gate — `gates/artifacts/` is `.gitignore`d and `gatekit` empties it. |
+| `gates/decomp_graph_census-gate.py` | **The graph-shape lane this one reads.** NOT IMPORT-SAFE: `:386` reads `sys.argv` at module scope, so importing it from a process given `--refresh` runs the census's refresh and exits. MEASURED rc=0, no output, no pins file. Load it with `sys.argv` scrubbed. |
+
+**THE THREE THINGS THIS COST, ALL MEASURED AND ALL IN THE GATE'S HEADER.**
+
+1. **A UOP GRAPH MUST BE COMMITTED BEFORE `exec_alu` CAN RUN IT.** `ops_python.py:153` asserts
+   `all_same([u.dtype] + src_dtypes)`, and `l2i`'s OWN output violates it (three
+   `MUL(i64, [i64, CONST(-1)@weakint])` on `lg1`). `pm_commit_weak` does **not** fix it: four
+   `graph_rewrite` passes over `lg1` change **0** nodes, because `commit_srcs_at` rebuilds a committed
+   const as `UOp.const(dt.const(-1))`, which IS the bare `weakint` it started from.
+   `commit_weak_consts(u, least_upper_dtype(*srcs))` (weak.py:10) does.
+2. **THE COMMIT DTYPE MUST NEVER BE `u.dtype`.** On a `Ops.CMPLT` (`u.dtype is bool`) it turns
+   `CONST(32, weakint)` into `CONST(True, bool)` — `DType.bool.const(32)` is `bool(32)` (dtype.py:84) —
+   and `l2i`'s `b0 >= 32` then reads `1 < True`. MEASURED: `l2i(CDIV, uint32, 7, 2)` answered **0**
+   instead of 3 and `CMOD(100, 7)` answered **0** instead of 2. **The fixture set was live the whole
+   time and would have reported 198 green rows on a corrupted graph**; only the `//`/`%` closed form
+   caught it. **Two evaluators that both call `exec_alu` cannot check each other.**
+3. **TWO `UOp`s WITH EQUAL `ParamArg`s INTERN TO ONE NODE.** Two roots sharing an out-PARAM share one
+   buffer, and `_store`'s bounds check bounds the VIEW not the mapping: `lg1` read `[-2,-2]` where the
+   truth is `[-1,-2]`. Distinct `slot`s, one call, all the buffers.
