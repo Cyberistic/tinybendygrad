@@ -14123,6 +14123,41 @@ fails `classes_hold`). **THE REMAINING 31, AND WHAT EACH IS:**
 refusal-vocabulary or a dead string; 1 is the word-width wall fixed earlier as `AMDWORD32`. **A
 PIN COUNT IS NOT A DEFECT COUNT, AND SAYING OTHERWISE IS THE ERROR THIS ENTRY EXISTS TO PREVENT.**
 
+## LATE-GAPS -- `codegen/late` is now censused (119 rows) and its gaps are enumerated (2026-10-14)
+
+`gates/linearizer_census-gate.py` (71 rows, 2 divergences) and `gates/regalloc_census-gate.py` (48 rows,
+**0 divergences**) at `9c7dbd9d`. **488 defs that NO GATE NAMED are now compared.** Both layers
+return DIFFERENT SHAPES and the instruments follow: `linearizer` returns an ORDERED LIST so the row is
+one per node by position; `regalloc` returns a MAP keyed by program point so the row is the ASSIGNMENT,
+`ra<t>_a<i>=v>k->r>j`. THE MAP FORM IS NECESSARY, MEASURED: `ra0_a7` is `v4>10->rcx>1` and `ra1_a7`
+is `v4>10->rdx>2` -- same pair count, same keys, one number moved, on two fixtures differing only in
+`is_two_address`. A count-based row would have called those EQUAL.
+
+- [ ] **THREE MUTATIONS MOVED ZERO ROWS AT rc=0, AND ALL THREE ARE COVERAGE GAPS, NOT DEAD DEFS:**
+      `src_without_body`->`srcs` at `lt_hp.ss` (:777, the heap's RELEASE); the same at `lt_deg.go`
+      (:560, `out_degree`) -- **the fixture's toposort holds no node with a body**, so
+      `enter_calls=False` makes them identical; and `u32_in(us, r)` in `ra_tw.go`, the two-address
+      **DE-DUP** at `regalloc.py:74` -- **only the *prepend* half of `:72-74` has a row, so the header's
+      "a register reused from TWO srcs is not offered twice" IS UNGATED.** The same replacement at
+      `lt_epos` (:1048) DOES move `linc_edg`, which is what separates gap from dead def.
+- [ ] **FIVE DEAD DEFS IN `linearizer.bend`, NONE REACHABLE AND NONE VISIBLE TO ANY OF THE 71 ROWS:**
+      `lt_is_const` (:1066) and `lt_is_cast` (:1069) -- **ONE OCCURRENCE EACH, THEIR OWN DEFINITIONS
+      AND NO CALL SITE** -- plus `u32s` (:349) and its sole caller `range_tuple` (:344). The eighth
+      instrument-bug pattern this session: a def nothing calls is invisible to every other check.
+- [ ] **A HEADER CLAIM REFUTED BY A ROW: "`linc` is the ONLY test of `Arena.src_without_body`" IS
+      FALSE** -- the one test that fires is the ROW PRINTER, not `linearize`'s heap.
+- [ ] **`regalloc.bend`'s "`tinybendygrad/renderer/isa/` is EMPTY" IS FALSE** -- it holds `x86.bend`
+      (178 569 B) declaring `type Reg is Data` with `Reg.of/name/index/size/...`. The conclusion
+      (intern the registers) may stand on the OTHER clause -- `Reg` carries no `cons` -- but the
+      PREMISE IS A DOCUMENTED FACT THAT IS NOT TRUE.
+- [ ] **THE ACCEPTANCE TEST NAMED AT `linearizer.bend:150` HAD THREE DEAD PARTS**: the oracle path is
+      absent, `tinybendygrad/codegen/late.bend` is a DIRECTORY not a file, and `/tmp` is a swept tree.
+      **71 ROWS HAD NEVER BEEN COMPARED TO ANYTHING.** Same for four `regalloc` probes.
+- [ ] **NOT CENSUSED:** `regalloc_rewrite`'s `nsrc` half (:105-107, the oracle prints `r[1]` and the
+      rewritten srcs live in `r[0]`); `W3` `backward_slice_with_self` (unported); `TUPLE_ORDER=1`
+      (**47 of 171 pairs decide on it**); `u.ranges`/`vmax` as computed (`lt_rc` is gated but its
+      PRODUCER is not). **ONE FIXTURE PER FILE** -- every gap above the findings is fixture-shaped.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
