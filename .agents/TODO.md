@@ -13757,18 +13757,41 @@ populations independently.
 The `remint` move closed `tn_graph_census`'s last divergence, and the unit found a SECOND defect on
 the way that NO GATE COULD SEE. Both are recorded here because the instrument is not wired to anything.
 
-- [ ] **`gates/tn_isfinite.bend`'s 6 ROWS STILL CANNOT SEE A WRONG NODE FOUR LEVELS DOWN.** The old
+- [x] **`gates/tn_isfinite.bend`'s 6 ROWS STILL CANNOT SEE A WRONG NODE FOUR LEVELS DOWN.** The old
       `isinf_part` spelled `CMPNE(MUL, CONST)` where CPython has `CMPNE(CONST, CONST)` -- **the same
       count, the wrong srcs** -- and every row in BOTH gates read it as agreement. The commit that
       fixed it (`.agents/slop/tnisf/dump2.bend`, 49 lines, now committed) is the ONLY instrument that
-      ever saw it.
-- [ ] **SO: WIRE IT, OR SAY WHY NOT.** A committed probe that catches a class no gate catches is
-      either a gate that was never written or a finding that will be rediscovered. `gatekit` makes
-      this cheap: a row per node of the dump, compared against CPython's. **A THROWAWAY PROBE THAT IS
-      THE ONLY WITNESS IS A WALL WITH NO GATE ON IT.**
+      ever saw it. **STILL TRUE OF BOTH GATES, AND MEASURED AGAIN 2026-10-14:** under that exact
+      plant `tn_isfinite-gate.py` is **rc=0** and `tn_graph_census-gate.py` is **rc=0** over all 51
+      rows. Neither file was changed; the gap is covered elsewhere, not closed in place.
+- [x] **SO: WIRE IT, OR SAY WHY NOT.** WIRED, as `gates/tn_nodes.bend` + `gates/tn_nodes-oracle.py` +
+      `gates/tn_nodes-gate.py`: **15 rows, 3 lanes, ZERO declared divergences, rc=0**, one row per node
+      of `tn_isfinite(CInt{4})` in toposort order, `n<k>=<op>/<nsrc> srcs=<POSITIONS> arg=<const> dt=<dtype>`.
+      **A DRIVER WAS NEEDED**, and the reason is `ops_python_census`'s: no port file here is its own
+      driver (only `ops_python.bend` has a `main()` lane), so the driver calls `T.tn_isfinite` itself.
+      Its three inputs live in `gates/`, NOT under `.agents/slop/`.
+      **TWO PLANTS, BOTH MEASURED 2026-10-14, BOTH REVERTED CLEAN (sha256 equal before/after):**
+      (A) `tensor.bend:1178`'s `eqarm(p, ..)` back to `eqarm(ep, ..)` -- the historical
+      `CMPNE(MUL, CONST)` -- gives `tn_nodes-gate` **rc=1** with **`n7` alone** red
+      (`srcs=5|6` where CPython has `srcs=0|6`) and **the other 14 rows byte-identical**: same count,
+      same ops, same order. (B) swapping the `+inf`/`-inf` VALUES moves `n1`/`n6`'s `arg=` and nothing
+      else, which is what `arg=` is for.
+      **WHY THESE ROWS CANNOT REPEAT THE OLD PIN'S BLIND SPOT:** `srcs=` names each src by its
+      toposort POSITION, not by its op, and `gatekit` diffs two ORDERED lists -- no sort, no dedup, no
+      multiset anywhere on this path. There is no total for a defect to cancel inside; the old pin
+      blamed an extra CAST because three extra casts and one missing const cancelled to +2.
 - [ ] `TODO.md:1711` (`remint`'s `+u.src[1:]` ORDER still ungated) is a DIFFERENT gap from this one
-      and stays open; the def it names MOVED to `uop/weak.bend` as `wk_remint`, so the citation's path
-      is stale and needs re-pointing.
+      and **STAYS OPEN**: `tn_nodes`' graph is `CONST/CMPNE/MUL/ADD/OR` only -- MEASURED, no `CAST`,
+      no `RESHAPE`, no Movement node -- so `wk_remint`'s `+u.src[1:]` arm never fires in it.
+      `tn_isfinite.promote` DOES call `wk_remint` and the `weakfloat 4.0` leaf at `n0` IS its output,
+      so the CALL is covered and the ORDER is not. **CITATION RE-POINTED (measured):** the def is
+      `wk_remint` in `tinybendygrad/uop/weak.bend` and the `+u.src[1:]` line is `wk_remint.put` at
+      `uop/weak.bend:725`.
+- [ ] **THE ROW FORM IS GENERAL AND ONLY ONE CENSUS HAS ADOPTED IT.** A per-node row whose `srcs=` names
+      toposort POSITIONS catches a same-count wrong-src anywhere; `gr_graph_census.bend` already escapes
+      `Rng.sig`'s prefix blindness with a DEEP OP SEQUENCE but prints op NAMES, so a swap of two
+      same-op srcs still hides there. Adopting `srcs=<positions>` is the remaining step, and
+      `md_graph_census.bend` already needed the ` arg=` half of this row for its own `md_*` fix.
 
 ## CRPCONST -- `cr_const_of`'s FOLD READ THE CALLER'S DTYPE, AND `ops.py:630` HAD ALREADY REPLACED IT (2026-10-14)
 
