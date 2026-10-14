@@ -14527,6 +14527,47 @@ NINTH distinct instrument bug of the session and the most general one.
 - [ ] **THE GENERAL RULE, AND IT IS THE ONE TO CARRY: A DEFECT ROW MUST BE RE-DERIVED AFTER THE FIX,
       BECAUSE THE FIX AND THE BUG BOTH MAKE IT GREEN.** Green is not evidence that a row still tests
       what its name says. **A GREEN GATE CANNOT DISTINGUISH "NOT TRIGGERED" FROM "NO SUCH THING".**
+
+## CRP-MUTATE -- THE 19 CLEARED `iv_` ROWS' FIX IS **NOT** COUPLED, AND 0 OF 207 ROWS CAN SEE IT (2026-10-15)
+
+Found by `gates/crp_graph_census-mutate.py` (mutations **C1/C4/C5**). **36 mutations, 11/11 guards red.**
+`crp_graph_census-gate.py:888-895` states the fix's rationale: *"`de` is what `.cast` is handed, so the
+fold test and the CAST's `ADt` arg can no longer disagree with each other."* **THE MUTATION THAT SHOULD
+PROVE THAT COUPPLING CANNOT MOVE A ROW, AND THE REASON IS NOT THE ONE THE COMMIT IMPLIES.**
+
+- [ ] **BREAKING *ONE* OF THE TWO USES OF `de` MOVES **ZERO** OF 207 ROWS.** `C1` rewrites
+      `cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)` to `cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), dt)`,
+      so the CAST's `ADt` reads the CALLER's dtype and the fold test still reads `de`. `C2` breaks the
+      OTHER half alone (`md_dt_eq(c0, dt)`) and moves **19**. `C3` breaks both and moves **19**. **SO THE
+      COUPLING IS ONE-SIDED AND IT IS THE SIDE THAT MATTERS: THE FOLD TEST IS LOAD-BEARING AND THE
+      `ADt` ARGUMENT IS NOT.**
+- [ ] **C4 IS THE READING THAT MATTERS: C1's RED CAME FROM `opscast_hold`'s SOURCE-TEXT ASSERTION, NOT
+      FROM A ROW.** With `opscast_hold` (gate:529-532) told to expect the C1 spelling, C1 is **GREEN at
+      rc=0, 207 rows, 206 compared, 1 declared.** `C5` -- hardcoding **every** minted CAST's `ADt` to
+      `boolean`, so 118 arguments are wrong -- is RED with **0 rows moved**, again only through
+      `opscast_hold`. **THE 207 DEEP CONES SAY NOTHING AT ALL ABOUT THE `ADt` ARGUMENT.**
+- [ ] **TWO INDEPENDENT CAUSES, BOTH MEASURED OFF THE LANE, AND THEY COMPOUND.**
+      **(i) THE PRINTER DROPS IT.** `crp_graph_census.bend:155-159`'s `tok.arg` matches `O.APy` and
+      `O.AParam` and answers **everything else** with `tok.of(a, u, False{}, "")`; `crp_graph_census-oracle.py:167-172`
+      does the same with `f"{u.op.name}/{len(u.src)}"`. **MEASURED ON THE BASE LANES: 118 `CAST/1`
+      OCCURRENCES AND 0 OF THEM CARRY AN ARGUMENT, ON BOTH SIDES** (`grep -c 'CAST/1\['` = 0). **THE
+      `ADt` IS NOT UNREACHED, IT IS UNPRINTED.**
+      **(ii) WHERE IT *IS* MINTED, `de` AND `dt` ARE THE SAME VALUE.** The `iv_` rows are the only ones
+      where `de != dt`, and there `c0 = de = boolean()` so the fold FIRES and no CAST is minted:
+      **all 20 `iv_` rows carry 0 `CAST/1`, and all 118 are in `cl f fl fs nb o ol z zl`.**
+- [ ] **SO THE COMMIT'S CLAIM IS *TRUE AS CODE* AND *UNVERIFIABLE BY THIS CENSUS*.** `de != dt` implies
+      `is_cinvalid` implies `md_dt_eq(c0, de)` is TRUE implies `cr_cast` returns `t` implies the `ADt` is
+      never read. **THE COUPLING IS VACUOUS ON THE ROWS IT WAS ARGUED FROM, NOT MERELY SATISFIED.**
+      **`opscast_hold` IS THE ONLY INSTRUMENT COVERING IT, AND IT IS A SPELLING ASSERTION** -- the exact
+      hazard its own docstring records against `decomp_graph_census`'s `deleted()`.
+- [ ] **THE REPAIR, AND IT IS NOT THE GATE'S TO MAKE: PRINT THE `ADt`.** `tok.arg` needs a third arm for
+      `O.ADt{d}` (and `crp_graph_census-oracle.py:tok` the matching `isinstance(u.arg, DType)`), which
+      turns C1 and C5 from 0 rows into non-zero and makes the claim checkable by a row instead of by a
+      literal. **FILE IT; DO NOT SMOOTH IT.**
+- [ ] **`X3` IS THE `cstyle` M8 LESSON CONFIRMED ON A FIXED TREE:** moving `spec.bend`'s `int32` priority
+      from 5 to 15 moves **0 of 207 rows** -- every row still matches -- and is caught **only** by
+      `dtypes_hold`. **A FIXTURE AXIS CAN DRIFT WITH EVERY ROW STILL MATCHING**, and here the guard that
+      sees it is the dtype table's, not the diff's.
 - [ ] **TWO MORE FROM THE SAME PASS:** `cfw_{0,1}_{g,l}` were byte-identical because the old `case _:`
       NEVER READ `k`, so a row's key argument could not move it -- fixed by naming the key, M6 moves 2.
       And `opt_float4_0` was MISCLASSIFIED in the brief as a KeyError: CPython's base `float4` is
@@ -14792,6 +14833,52 @@ DEFECT IT AUDITS.**
       instance 4 reproduced, now named and charged.
 - [ ] **`gates-pop.py:496` HAS A TOCTOU** -- `iterdir()` then `lstat()` crashes on a live tree, and it
       CRASHED `gate-surface.py:919`. Not fixed; the new gate guards around it and reports it.
+
+## PTX-SILENT -- an EMPTY TYPE FIELD IS A KERNEL `ptxas` REJECTS, AND IT IS `AMDWORD32` IN A TEXT RENDERER (2026-10-15)
+
+`50807d60f` + `7d80ec160`. `gates/ptx_render_census-gate.py` -- **557 rows, 3 lanes
+(CPython / bend interpreted / bend compiled) BYTE-IDENTICAL, 62 declared, rc=0**, pins
+`gates/ptx_render_census-pins.rows` (1671 rows, `--refresh` its only writer, measured idempotent).
+`ptx.bend` is UNTOUCHED by both commits. **NO VENDORED DRIFT**: `HEAD` == `ad117c928` ==
+`ad117c928^` == `ba7c821c`.
+
+- [ ] **AN INSTRUCTION FIELD CAN BE SILENTLY TRUNCATED, TWICE OVER, AND IT IS THE `AMDWORD32` CLASS IN
+      A *TEXT* RENDERER.** `tc_ptx.bend`'s `types_pri` dispatches on `S.Dt.pri` with `case _ -> ""`.
+      CPython's `types` is a DICT and raises `KeyError` (`ptx.py:181`). MEASURED, AND REACHABLE:
+          UOp.range(4,0).dtype              == weakint   -> ptx.py RAISES, port emits `%ridx_pred_0`
+          UOp.const(3.0)+UOp.const(4.0)     -> weakfloat -> ptx.py RAISES, port emits `%alu__0`
+      **THE PORT ALSO EMITS `.reg\t\t. %alu__<1>;` -- AN EMPTY TYPE FIELD.** `bf16` and 4x fp8 answer
+      `""` too. **"A U32 SHIFT IS NOT AN ERROR, IT IS A SMALLER NUMBER"; AN EMPTY TYPE FIELD IS NOT AN
+      ERROR EITHER -- IT IS A KERNEL `ptxas` REJECTS.** AND THE WITNESS IS THE REGISTER ROW:
+          py  f31_weakint.mod  REFUSE:KeyError
+          bd  f31_weakint.mod  PORT-ANSWERED      <- a module CPython refuses to
+          bd  f31_weakint.r0   NONE               <- and registers NOTHING, so there is no string to diff
+      **A ROW THAT SAYS `NONE` IS A CLAIM, NOT A GAP** -- one row per STEP, chosen for exactly this.
+- [ ] **THE ALIAS DEFECT, AND WHY A GREEN GATE NEVER SAW IT.** `ptx.bend:502` is
+      `case 2: Wal.rput(w, rg_at(w, 0))` and `rg_at` reads **`Wal.r[0]`, STEP ZERO**, where
+      `ptx.py:189`/`:204` read **`r[u.src[0]]`**. **EVERY ONE OF `ptx.bend`'s OWN 25 FIXTURES PUTS THE
+      ALIASED NODE AT INDEX 0** -- so a fixture set and a defect agreed, and 11 rows are wrong. Port
+      answers `NONE` where CPython emits `%g0`/`%g1`/`%g2`/`{%g0,%g1,%g2}`/`%alu_f32_0` plus five weak-
+      dtype registers. **APPLYING THE FIX MOVED 6 ROWS AND TURNED THE GATE RED ON 6 PINS; THE PORT WAS
+      RESTORED BYTE-IDENTICAL AND IS IN NEITHER COMMIT.** **A FIXTURE SET THAT AGREES WITH A DEFECT IS
+      THE SAME CLASS AS A GUARD THAT AGREES WITH ITS SUBJECT.**
+- [ ] **`ptx.bend`'s OWN 224-ROW GATE HAS NO ORACLE** -- `.agents/slop/ptx-s3-{oracle,gen,mutate}.py`
+      are ALL DELETED. **THIS CENSUS SUPPLIES ONE.**
+- [ ] **`ptx.py` ITSELF REFUSES FOUR SHAPES A REAL KERNEL HAS**, none a port defect: `KeyError` on
+      `types[weakint|weakfloat|bf16]`; `KeyError` on `ctx.r[CONST]` (`:187` skips a CONST without
+      setting `r[u]`, `:92` reads `r[v]` for every src); `:224` on an un-indexed PARAM load; `:203`.
+- [x] **FOUR MUTATIONS MOVED ZERO ROWS AND THE CAUSES DIFFER**, which is why the cause is named each
+      time: `M1` a REAL BLIND (every LOAD scalar); `M2` ptx.bend's own predicted theorem; **`M9` A BLIND
+      *CAUSED BY A DEFECT* -- it moves nothing BECAUSE finding 2 already returns the wrong register**;
+      and `M8`'s first draft was **A VACUOUS EDIT** (`List.append(a,b)` IS `a++b`) reporting zero like a
+      blind. **A MUTATION THAT MOVES NOTHING HAS AT LEAST FIVE DISTINCT CAUSES AND NAMING THE WRONG ONE
+      IS THE `NOTIMEOUT` SHAPE.**
+- [x] **`claims_hold()` EARNED ITS KEEP LIVE:** it caught that the first `fmt` axis had NO SPACES, so
+      `ptx.py:164`'s seven-character rule **never fired** on 21 agreeing rows. **A GUARD THAT PROVES ITS
+      OWN SUBJECT IS WORTH BUILDING EVEN WHEN THE SUBJECT IS FINE.**
+- [ ] **CANNOT SEE:** `string_rewrite`'s 23 rules (33 rows pinned as a carve-out), `ptx_matcher`'s 8 graph
+      rewrites, `WMMA`/`IF`/`ENDIF`/`BACKEDGE`/the loop trio, `.maxntid`/`.param` (`Wk` carries no
+      `vmax` and no slot), and the emitters (`tc_ptx.bend`'s subject, with its own gate).
 
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
