@@ -8,7 +8,7 @@ checks/bounded-selftest.sh	sh-dispatch	-	1	1
 checks/bounded.py	py-main	__file__.parent	0	1
 checks/census.py	py-main	HERE = pathlib.Path(__file__).resolve().parent REPO = HERE.parents[0]	1	1
 checks/citation-gate.py	py-main	-	0	1
-checks/cites-census.py	py-main	-	0	1
+checks/cites-census.py	py-main	Path(__file__).resolve().parents[3]	0	0
 checks/cl-port-gate.py	py-main	REPO = Path(__file__).resolve().parents[1]	1	1
 checks/classify.sh	sh-selfref	-	1	1
 checks/cli.py	py-main	-	0	1
@@ -92,8 +92,10 @@ gates/cr_graph_census-gate.py	py-main	-	0	1
 gates/crp_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/crp_graph_census-oracle.py	py-main	-	0	1
 gates/cstyle_render_census-gate.py	py-main	-	0	1
+gates/cstyle_render_census-mutate.py	py-main	ROOT = Path(__file__).resolve().parents[1]	0	1
 gates/cstyle_render_census-oracle.py	py-main	-	0	1
 gates/decomp_graph_census-gate.py	py-main	__file__.parent	0	1
+gates/decomp_value-gate.py	py-main	__file__.parent	0	1
 gates/ew-consts-gate.py	py-main	-	0	1
 gates/ew-consts-oracle.py	py-main	-	0	1
 gates/ew-explog-gate.py	py-main	-	0	1
@@ -123,6 +125,8 @@ gates/ops-core-gate.py	py-main	-	0	1
 gates/ops-core-oracle.py	py-main	-	0	1
 gates/ops_python_census-gate.py	py-main	__file__.parent	0	1
 gates/ops_python_census-oracle.py	py-main	-	0	1
+gates/ops_python_exec-gate.py	py-main	__file__.parent	0	1
+gates/ops_python_exec-gen.py	py-main	__file__.parent	0	1
 gates/rd_graph_census-gate.py	py-main	-	0	1
 gates/realize_graph_census-gate.py	py-main	__file__.parent	0	1
 gates/realize_graph_census-oracle.py	py-main	-	0	1
