@@ -1327,6 +1327,45 @@ def r_rds() -> String:
 # ===========================================================================
 def r_sr(+nm: String, got: String, py: String) -> String: r("sr " ++ nm, got, py)
 
+def r_srneg(i: U32, +nm: String, got: String, py: String) -> String:
+  r("srneg " ++ U32.show(i) ++ " " ++ nm, got, py)
+
+# THE SEVENTEEN REFUSALS. Each `srneg` row drives the SAME body as the `sr` row
+# above it, on a node CPython's `UPat` REJECTS -- the oracle asserts that
+# rejection with `UPat.match`, so the row's `py=[NOMATCH]` half is a refusal by
+# construction rather than a transcription. THESE FIFTEEN ANSWER ANYWAY, and that
+# is not a defect in a BODY: `wgsl.bend` carries wgsl.py:65-93's seventeen rule
+# BODIES and NONE OF THEIR PATTERNS, so there is nothing on this side that can
+# decline a node. A rule body that fires where CPython's pattern cannot is a
+# reachability claim this port has not made and cannot make, and the two rows
+# below make it VISIBLE rather than leaving it to be inferred from seventeen
+# agreements.
+#
+# THE ARGUMENTS ARE THE POSITIVE ROW'S OWN, so a `srneg` row changes the NODE and
+# nothing else: the two rows for a rule differ only in whether the pattern would
+# have accepted what the body was handed. `packed_rmw`'s `AND` is rows 14 and 3's
+# subject -- a packed store of an ordinary CONST is not a read-modify-write, and
+# `sr_rmw` emits `atomicAnd(&B[1],W);` and DROPS the value -- and the gated store
+# is row 15's, where `sr_store` answers `B = V;` and DROPS the gate.
+def r_srneg_0() -> String:
+  String.concat([r_srneg(0, "cast i32", sr_idx(True{}, "B[1]"), "NOMATCH"),
+    r_srneg(1, "neg f32", sr_neg("S"), "NOMATCH"),
+    r_srneg(2, "cast i32", sr_cbool(True{}), "NOMATCH"),
+    r_srneg(3, "cast i32", sr_cuint(H.i64_of_hi_lo(0, 3)), "NOMATCH"),
+    r_srneg(4, "cast u32", sr_ci32(H.i64_of_hi_lo(0, 3)), "NOMATCH"),
+    r_srneg(5, "const", sr_buffer("data0_16", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
+    r_srneg(6, "bitcast u32", sr_bhalf("S"), "NOMATCH"),
+    r_srneg(7, "bitcast half", sr_buchar("S"), "NOMATCH"),
+    r_srneg(8, "bitcast uchar", sr_bchar("S"), "NOMATCH"),
+    r_srneg(9, "bitcast half", sr_bushort(False{}, "S"), "NOMATCH"),
+    r_srneg(10, "bitcast half", sr_bshort(False{}, "S"), "NOMATCH"),
+    r_srneg(11, "const", sr_bany(S.single(), "S"), "NOMATCH"),
+    r_srneg(12, "load 2", sr_lgate("B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"), "NOMATCH"),
+    r_srneg(13, "load 3", render_load("B[1]", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
+    r_srneg(14, "store u8", one_line(sr_rmw(True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
+    r_srneg(15, "store 3", sr_store("B", "V"), "NOMATCH"),
+    r_srneg(16, "const", sr_index(True{}, "B", "(I0+I1)"), "NOMATCH")])
+
 # rules 0-2: the packed INDEX, the unsigned negation, the bool CONST
 def r_sr_0() -> String:
   String.concat([r_sr("idx packed", sr_idx(True{}, "B[1]"), "B[1]"),
@@ -1408,7 +1447,7 @@ def rows() -> String:
   +fx = fx_mixed()
   String.concat([r_tms(), r_tm_miss(), r_rcs(), r_consts(), r_pfs(), r_wms(), r_nans(), r_nan_uint(),
     r_cfos(), r_wis(), r_wi_miss(), r_sds(), r_rds(), r_pk_all(), r_ps_all(), r_rk_sz_pad(), r_rk_sz(fx), r_rk_half(fx),
-    r_rk_half_no(O.Arena.empty()), r_bd(), r_pt(), r_rk_alu(), r_rk_mixed(fx), r_rk_empty(), r_srs()])
+    r_rk_half_no(O.Arena.empty()), r_bd(), r_pt(), r_rk_alu(), r_rk_mixed(fx), r_rk_empty(), r_srs(), r_srneg_0()])
 
 def main() -> IO(Unit):
   do IO<Unit>:

@@ -427,8 +427,106 @@ KIND = {"plain": "BitField", "fixed": "FixedBitField", "enum": "EnumBitField",
         "srsc": "SRsrcField", "vdsty": "VDSTYField"}
 
 
+# ===========================================================================
+# THE FIXTURE VALUES, NORMALIZED ON BOTH SIDES.  `fixtures_hold` compared the
+# `*_VALS` NAMES and DISCARDED THE VALUE, and that is not a weaker check -- it is
+# a different one, because the value is what the fixture IS.
+#
+# WHAT THAT COST, MEASURED.  `F64_VALS`' `lit` was `0x1234` (4660) on the oracle
+# lane and `0x12345678` on the port, two different FIXTURES, and no row noticed.
+# `hex8` used to mask to 32 bits on BOTH lanes and `lit` sits at [63:32], so the
+# difference was truncated away on both of them.  The value IS the deliberate one:
+# `gates/amd_dsl_census-oracle.py:802-807` gives `to_bytes_f64i` its reason for
+# existing -- "the ONLY `to_bytes_*` ROW WITH A NONZERO HIGH BYTE ABOVE BYTE 0 ...
+# all four high bytes are nonzero" -- and MEASURED, `0x12345678` puts 4 of the 4
+# bytes above byte 0 at a nonzero value and `0x1234` puts 2 of 4.  So the row's
+# stated property is true of one value and not the other, which is the
+# measurement that decided it.
+#
+# AND THE COMPARISON, ONCE MADE, FOUND A SECOND ONE IMMEDIATELY -- `op`.  All
+# twenty `*_VALS` lists spelled `op` `Ov.int(0)` on the port and `None` in
+# CPython, and `FixedBitField.set` (dsl.py:120-123) opens `assert val is None`.
+# MEASURED, CPython's own `_walk` on `VOP2_ALL` with `op=0` REFUSES:
+# `FixedBitField does not accept values, got 0`, word `0`.  So the port was
+# feeding a field a value CPython would reject.  Nothing could see it: the guard
+# dropped the value, `fld_encode.k`'s K_FIXED arm (`dsl.bend:1287`) does not READ
+# the value, and the packed word is the same either way.  That is the same
+# one-line blind spot twice -- the guard, and then the fixture.
+#
+# THE NORMALIZATION IS CLOSED, WHICH IS THE WHOLE OF IT.  Each arm below either
+# recognizes a spelling and returns a canonical token or it RAISES.  A
+# normalizer that returned `None` for what it did not recognize would drop the
+# value in exactly the way the guard did, one level down, and no row would say so.
+# ===========================================================================
+_U32_DEFS = {m.group(1): int(m.group(2)) for m in re.finditer(
+    r"^def (\w+)\(\) -> U32: (\d+)$", PORT.read_text(), re.M)}
+_UF32 = 0xFFFFFFFF
+
+
+def _port_u32(tok):
+    """`dsl.bend` spells a U32 literal either as digits or as a `def X() -> U32`
+    call. An unknown name RAISES: an unresolvable constant is a fixture nobody
+    can compare, and saying so is better than comparing it as zero."""
+    tok = tok.strip().removesuffix("()")
+    return int(tok) if tok.isdigit() else _U32_DEFS[tok]
+
+
+def _port_val(tok):
+    """One `Ov`/`src_ov_float` spelling -> its canonical token. CLOSED: every
+    return is a recognized spelling, and anything else raises."""
+    t = " ".join(tok.split())
+    if t == "Ov.none()":
+        return "none"
+    if (m := re.fullmatch(r"Ov\.int\((.+)\)", t)):
+        return f"int:{_port_u32(m[1]) & _UF32}"
+    if (m := re.fullmatch(r"Ov\.reg\((\S+), (\S+), (\w+\{\}), (\w+\{\}), (\w+\{\})\)", t)):
+        bit = {"True{}": "1", "False{}": "0"}
+        return "reg:{},{},{},{},{}".format(
+            _port_u32(m[1]) & _UF32, _port_u32(m[2]) & _UF32,
+            *(bit[b] for b in m.groups()[2:]))
+    if (m := re.fullmatch(r"src_ov_float\((.+), (\w+\{\})\)", t)):
+        # dsl.py:164 `self._FLOAT_ENC.get(val, 255)`, which the PORT has already
+        # applied: `src_ov_float(off, known)` is `off` if `known` and the `.get`
+        # miss otherwise. CPython keeps the float and lets `encode` do the `.get`,
+        # so `VOP2_FNOLIT`'s 3.5 is what pins the two spellings of a MISS to one
+        # number: if `FLOAT_ENC_DEFAULT()` were not 255 this row is red.
+        off = _port_u32(m[1]) if m[2] == "True{}" else _port_u32("FLOAT_ENC_DEFAULT")
+        return f"float:{off & _UF32}"
+    raise ValueError(f"UNCLOSED port value spelling {tok!r} -- add an arm here "
+                     f"or this comparison is not a comparison")
+
+
+def _oracle_val(v, dsl):
+    """One CPython fixture value -> the same canonical token. CLOSED."""
+    if v is None:
+        return "none"
+    if isinstance(v, dsl.Reg):
+        return "reg:{},{},{},{},{}".format(
+            v.offset & _UF32, v.sz & _UF32, int(bool(v.neg)),
+            int(bool(v.abs_)), int(bool(v.hi)))
+    if isinstance(v, float):
+        # `SrcField.encode`'s OWN lookup (dsl.py:164), asked rather than
+        # transcribed, so the port's pre-applied offset is compared to
+        # CPython's answer and not to a copy of it.
+        return "float:{}".format(dsl.SrcField._FLOAT_ENC.get(v, 255))
+    if isinstance(v, int) and not isinstance(v, bool):
+        return f"int:{v & _UF32}"
+    raise ValueError(f"UNCLOSED oracle value {v!r} of {type(v).__name__}")
+
+
+# THE ADMITTED FIXTURE-VALUE DIFFERENCES, AND THERE ARE NONE.  This tuple is
+# EMPTY and the gate fails twice over on it: once for a difference that is not in
+# it, and once for an entry in it that is not a real difference -- so an empty
+# list is not a list nobody checks.  It was NOT empty when this comparison was
+# written: it held every `(list, "op")` pair, all twenty of them, the defect
+# recorded above.  `dsl.bend` now spells those twenty the way CPython does --
+# `Ov.none(), False{}`, the absence spelling it already used for every other
+# omitted operand -- so there is nothing left to admit.
+VAL_DIFF_ADMITTED = ()
+
+
 def fixtures_hold() -> bool:
-    """THE SHARED FIXTURE, compared as TEXT, in two halves.
+    """THE SHARED FIXTURE, compared as TEXT, in three halves.
 
     (a) the FIELD declarations -- `dsl.bend`'s `Fld.X("name", hi, lo[, dflt])`
         against the oracle's, which are the same `dsl.BitField` subclasses built
@@ -440,6 +538,14 @@ def fixtures_hold() -> bool:
         differs is a different fixture and not a re-spelling of the same one.
         (The port's `Vf` carries its own field, so its list order is its
         `_fields` order -- which is what the retired `WALK_IS_VALUES` row was.)
+    (c) THE VALUE, which (b) dropped: `has` and the value itself, normalized on
+        both sides by the two closed functions above. `has` is part of the
+        fixture because CPython's `None` and a value are different arguments to
+        `set` (:114) and the port's `has` flag IS that difference. A census row
+        cannot stand in for this: the packed word reads the same for an absent
+        operand and a zero one (the ABSENT_OPERAND class, ten rows), and CPython
+        REFUSES a value on a `FixedBitField` while the port's K_FIXED arm reads
+        none.
     """
     def bend_fields():
         src = PORT.read_text()
@@ -451,12 +557,29 @@ def fixtures_hold() -> bool:
                                   r'Fld\.(\w+)\("(\w+)", (\d+), (\d+)(?:, (\d+))?\)',
                                   m.group(2))]
         return out
+
+    def bend_vals():
+        """`(name, has, canonical value)` per `Vf`, in the list's own order."""
+        src = PORT.read_text()
+        vf = re.compile(
+            r'Vf\.of\(Fld\.\w+\("(\w+)", \d+, \d+(?:, \d+)?\),\s*'
+            r'((?:src_ov_float\((?:\w+\(\)|\d+), \w+\{\}\)|Ov\.[a-z]+\([^()]*\))),'
+            r'\s*(\w+\{\})\)')
+        out = {}
+        for m in re.finditer(r"^def ([A-Z0-9_]+)\(\) -> List<&2, Vf>:(.*?)(?=^def |\Z)",
+                             src, re.M | re.S):
+            out[m.group(1)] = [(v.group(1), "has0" if v.group(3) == "False{}"
+                                else "has1", _port_val(v.group(2)))
+                               for v in vf.finditer(m.group(2))]
+        return out
     try:
         import importlib.util
         sys.path.insert(0, str(HERE))
         spec = importlib.util.spec_from_file_location("_amd_oracle", str(ORACLE))
         m = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(m)
+        sys.path.insert(0, str(ROOT))
+        import tinygrad.renderer.amd.dsl as dsl
     except Exception as e:                                   # noqa: BLE001
         return report("fixtures_hold", [f"the oracle would not import: {e}"])
     bad = []
@@ -471,15 +594,39 @@ def fixtures_hold() -> bool:
             bad.append(f"{nm} is not declared in dsl.bend")
         elif [(k, n, hi, lo) for k, n, hi, lo, _ in bf[nm]] != got:
             bad.append(f"{nm}: port {bf[nm]} != oracle {got}")
+    # (c) THE VALUES. `VALS` is the population by NAME and it is the same
+    # twenty lists the old name-only comparison walked, so this is that check
+    # with the discarded element put back rather than a second population.
+    bv, seen = bend_vals(), set()
     for nm in ("VOP2_ALL", "VOP2_NEG", "VOP2_HI", "VOP2_INT", "VOP2_INT65",
                "VOP2_INTN17", "VOP2_FCONST", "VOP2_FNOLIT", "VOP2_LIT",
                "VOP2_SDWA", "VOP2_DPP", "VOP2_BIG", "VOP2_BIG2", "ORD_VALS",
                "ORD_VALS_SWAP", "F32_VALS", "F16_VALS", "F64_VALS", "F40_VALS",
                "F8_VALS"):
-        want = [n for n, _ in getattr(m, nm)]
-        got = [n for _, n, _, _, _ in bf.get(nm, [])]
-        if got != want:
-            bad.append(f"{nm}: port spells {got}, oracle {want}")
+        want = [(n, "has0" if v is None else "has1", _oracle_val(v, dsl))
+                for n, v in getattr(m, nm)]
+        try:
+            got = bv[nm]
+        except KeyError:
+            bad.append(f"{nm} is not declared in dsl.bend")
+            continue
+        if [g[0] for g in got] != [w[0] for w in want]:
+            bad.append(f"{nm}: port spells {[g[0] for g in got]}, "
+                       f"oracle {[w[0] for w in want]}")
+            continue
+        for (n, gh, g), (_wn, wh, w) in zip(got, want):
+            if (gh, g) == (wh, w):
+                continue
+            seen.add((nm, n))
+            if (nm, n) in VAL_DIFF_ADMITTED:
+                continue
+            bad.append(f"{nm}.{n}: VALUE port {gh}:{g!r}, oracle {wh}:{w!r} -- a "
+                       f"fixture either side can change with no row noticing")
+    for nm, n in VAL_DIFF_ADMITTED:
+        if (nm, n) not in seen:
+            bad.append(f"{nm}.{n} is ADMITTED as a fixture-value difference and "
+                       f"the two sides now agree -- the admission is stale and "
+                       f"belongs in the comment, not in the list")
     return report("fixtures_hold", bad)
 
 

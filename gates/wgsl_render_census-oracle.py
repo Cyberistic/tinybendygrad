@@ -661,6 +661,87 @@ def _sr_rewrite(i, u, ctx):
     return "NOMATCH" if v is None else one_line(v)
 
 
+def _sr_rejects(i, u):
+    """THE PORT'S SIDE CANNOT CALL THIS. CPython's matcher says whether a rule's
+    `UPat` accepts a node, so the NEGATIVE half of every rule is ASKED here and
+    the answer is the row. The port has no `UPat` -- `wgsl.bend` carries the
+    rule BODIES -- so a `srneg` row cannot be a refusal on that side, and
+    `SRNEG_BODY` is what the port prints instead."""
+    return len(SR_RULES[i][0].match(u, {})) == 0
+
+
+def g_srneg():
+    """SEVENTEEN REFUSALS, ONE PER RULE. The thirty-five `sr *` rows above are
+    SPELLINGS ON CHOSEN FIXTURES: the two sides print the same string, which says
+    the two BODIES agree and says nothing about whether either rule FIRES. These
+    rows ask the other half -- a node each `UPat` REJECTS -- so a rule's body
+    firing where CPython's pattern cannot is a reading rather than an absence.
+
+    Every one of the seventeen is a REFUSAL BY CONSTRUCTION: `sr_` asserts the
+    rejection with CPython's own `UPat.match`, so if a re-vendor widens a pattern
+    the ASSERTION fails at the source and the row never silently becomes a
+    positive one. The assertion is here rather than in the gate because the gate
+    cannot reach `UPat` and a row whose meaning depends on an unasserted premise
+    is a spelling again."""
+    from tinygrad import dtypes
+    from tinygrad.uop.ops import Ops, UOp
+    cu3 = UOp.const(3, dtypes.uint32)
+    ci = UOp.const(1, dtypes.int32)
+    idx_pk = UOp(Ops.INDEX, src=(buf_of("uint8", "AGlobal", 16), _wc(1)))
+    r = [
+        # 0 `CAST` to `uint32` -- the same shape the positive row uses, at
+        # `int32`. One dtype away, and the rule does not fire.
+        (0, "cast i32", UOp(Ops.CAST, src=(idx_pk,), arg=dtypes.int32), {}),
+        # 1 `NEG` of an UNSIGNED -- a float constant instead. `dtypes.uints` is
+        # the rule's only dtype condition and there is nothing else to reject on.
+        (1, "neg f32", UOp(Ops.NEG, src=(UOp.const(1, dtypes.float),)), {}),
+        # 2 `cvar.cast(bool)` -- `bool` is the whole of the condition.
+        (2, "cast i32", UOp.cconst(1, dtypes.int32), {}),
+        # 3 and 4 are the SAME node at two dtypes, and they are each the other's
+        # rejection: `cast(uchar|ushort|uint32)` and `cast(int32)` are disjoint.
+        (3, "cast i32", UOp(Ops.CAST, src=(cu3,), arg=dtypes.int32), {}),
+        (4, "cast u32", UOp(Ops.CAST, src=(cu3,), arg=dtypes.uint32), {}),
+        # 5 `BUFFER` -- a bare CONST is not one.
+        (5, "const", cu3, {}),
+        # 6..10 the six `bitcast<>` rules, each at a dtype another one holds.
+        (6, "bitcast u32", UOp(Ops.BITCAST, src=(cu3,), arg=dtypes.uint32), {}),
+        (7, "bitcast half", UOp(Ops.BITCAST, src=(cu3,), arg=dtypes.half), {}),
+        (8, "bitcast uchar", UOp(Ops.BITCAST, src=(cu3,), arg=dtypes.uchar), {}),
+        (9, "bitcast half", UOp(Ops.BITCAST, src=(cu3,), arg=dtypes.half), {}),
+        (10, "bitcast half", UOp(Ops.BITCAST, src=(cu3,), arg=dtypes.half), {}),
+        # 11 `UPat(Ops.BITCAST, name="x")` carries NO dtype, so it matches every
+        # BITCAST in the file and the rejected node has to be a different OP.
+        # That is the rule's reach and it is why this row's node is a CONST.
+        (11, "const", cu3, {}),
+        # 12 `UPat.load(b, v, gate)` wants THREE srcs; a two-src LOAD is rule
+        # 13's shape and is the node the two rules divide on.
+        (12, "load 2", UOp(Ops.LOAD, src=(idx_pk,)), {idx_pk: "B[1]"}),
+        # 13 `UPat.load(b)` -- the mirror: does a GATED load fall into it?
+        (13, "load 3", UOp(Ops.LOAD, src=(idx_pk, cu3, UOp.const(1, dtypes.bool))),
+         {idx_pk: "B[1]", cu3: "V"}),
+        # 14 `UPat.any(packed_rmw, packed_rmw|nv)` -- a packed store whose value
+        # is an ordinary CONST is not a read-modify-write, and this is the
+        # `packed_rmw` gap the port's own header names.
+        (14, "store u8", UOp.store(idx_pk, UOp.const(5, dtypes.uint8)),
+         {idx_pk: "B[1]"}),
+        # 15 `UPat.store(b, v)` wants TWO srcs; a GATED store is three.
+        (15, "store 3", UOp.store(idx_pk, cu3, UOp.const(1, dtypes.bool)),
+         {idx_pk: "B", cu3: "V"}),
+        # 16 `UPat(Ops.INDEX, src=(var, var))` matches every INDEX of arity 2, so
+        # the rejected node is a different OP here too.
+        (16, "const", cu3, {}),
+    ]
+    for i, nm, u, ctx in r:
+        assert _sr_rejects(i, u), (
+            f"srneg rule {i} fixture {nm!r}: CPython's pattern now ACCEPTS it, so "
+            f"the row is no longer a refusal -- pick another node or retire it")
+        # THE RULE INDEX IS IN THE ROW NAME because several of these fixtures are
+        # the same node at different rules' dtypes -- `cast i32` is rules 0, 2 and
+        # 3 -- and a pins file keyed by row NAME would collapse three refusals
+        # into one. A negative row that cannot be named individually is not a row.
+        row(f"srneg {i} {nm}", _sr_rewrite(i, u, ctx))
+
+
 # `r_cu1(...)` / `r_ci1(...)` -- rules 3 and 4's axis, as `(name, hi, lo)`. These
 # are the I64 the PORT is handed: `hi` and `lo` are the two `U32` words of a
 # weakint CONST's value, and the axis is declared in those words because that is
@@ -813,7 +894,7 @@ def main():
     for g in (g_type_map, g_render_cast, g_consts, g_packed_field, g_wmask,
               g_is_nan, g_is_nan_uint_only, g_code_for_op, g_workitem,
               g_supported, g_render_dtype, g_packed, g_packed_size,
-              g_render_kernel, g_string_rewrite):
+              g_render_kernel, g_string_rewrite, g_srneg):
         g()
     for ln in ROWS:
         print(ln)

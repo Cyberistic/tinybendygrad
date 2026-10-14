@@ -1797,13 +1797,29 @@ def raw_walk(vfs: List<&2, Vf>) -> Wrd: raw_walk.go(vfs, Wrd{H.i64_zero(), ""})
 
 def rws(+res: Wrd) -> String: String.concat([Wrd.s(res), "|", hexw(Wrd.w(res))])
 
+# A `fixed` FIELD'S FIXTURE VALUE IS AN ABSENCE, AND THAT IS NOT A SPELLING
+# CHOICE -- IT IS WHAT CPython REFUSES ANYTHING ELSE ON. `FixedBitField.set`
+# (dsl.py:120-123) opens `assert val is None`, so every `*_VALS` list below
+# spells `op` `Ov.none(), False{}` and NOT `Ov.int(0), True{}`, which is what
+# these eighteen lists used to say.
+#
+# MEASURED, CPython's own `_walk` on `VOP2_ALL` with `op=0`:
+# `FixedBitField does not accept values, got 0`, word `0`. Nothing here could
+# see it. `fld_encode.k`'s K_FIXED arm does not READ the value, `fld_encode.dflt`
+# and `fld_encode.k` answer the same `Fld.dflt(f)` for either spelling of `has`,
+# and the packed word is identical -- so the change moves ZERO rows and is
+# proven by `fixtures_hold`, which compared the fixture VALUES and not the
+# fixture NAMES. That guard dropped the second element of `(n, v)` for its whole
+# life, which is why `F64_VALS`' `lit` could be `0x1234` on one lane and
+# `0x12345678` on the other for as long as the file existed.
+
 # THE ORDER FIXTURE. Two fields at the SAME bits with different names: `set` is
 # a masked overwrite, so the LAST write wins and the field ORDER decides the
 # word. Swap the two and every value-identical gate row on this file still
 # passes, which is exactly why this fixture exists -- a transposed pair in
 # `_fields` is otherwise invisible.
 def VOP2_ALL() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.reg(266, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(5, 1, False{}, False{}, False{}), True{}),
@@ -1811,7 +1827,7 @@ def VOP2_ALL() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.reg(8, 1, False{}, False{}, False{}), True{})]
 
 def VOP2_NEG() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.reg(266, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, True{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(5, 1, False{}, False{}, False{}), True{}),
@@ -1819,7 +1835,7 @@ def VOP2_NEG() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_HI() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.reg(266, 1, False{}, False{}, True{}), True{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, True{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1830,7 +1846,7 @@ def VOP2_HI() -> List<&2, Vf>:
 # negative (:166) -- one row either side of each, because the boundary is where
 # an off-by-one in the range test shows and nowhere else.
 def VOP2_INT() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.int(64), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.int(4294967280), True{}),
@@ -1838,7 +1854,7 @@ def VOP2_INT() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_INT65() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.int(65), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1846,7 +1862,7 @@ def VOP2_INT65() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_INTN17() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.int(4294967279), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1857,7 +1873,7 @@ def VOP2_INTN17() -> List<&2, Vf>:
 # supplies a KNOWN float's offset and the second supplies the 255 a float absent
 # from `_FLOAT_ENC` gets -- the negative half of the same `.get`.
 def VOP2_FCONST() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), src_ov_float(F0_5_OFF(), True{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), src_ov_float(247, True{}), True{}),
@@ -1865,7 +1881,7 @@ def VOP2_FCONST() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_FNOLIT() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), src_ov_float(FLOAT_ENC_DEFAULT(), False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1873,7 +1889,7 @@ def VOP2_FNOLIT() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_LIT() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(255, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1881,7 +1897,7 @@ def VOP2_LIT() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_SDWA() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(249, 1, False{}, False{}, False{}), True{}),
@@ -1889,7 +1905,7 @@ def VOP2_SDWA() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.none(), False{})]
 
 def VOP2_DPP() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.none(), False{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.reg(250, 1, False{}, False{}, False{}), True{}),
@@ -1901,7 +1917,7 @@ def VOP2_DPP() -> List<&2, Vf>:
 # (:339's `106 <= offset <= 127`), `src0` at 8 wide with offset 250 is exempt
 # (`:339`'s `249 <= offset <= 255`), and `vdst` at 2 wide is NOT.
 def VOP2_BIG() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.reg(266, 2, False{}, False{}, False{}), True{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(3, 1, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1909,7 +1925,7 @@ def VOP2_BIG() -> List<&2, Vf>:
    Vf.of(Fld.sbase("sdst", 41, 36), Ov.reg(124, 4, False{}, False{}, False{}), True{})]
 
 def VOP2_BIG2() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.int(0), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 0), Ov.none(), False{}),
    Vf.of(Fld.vgpr("vdst", 15, 8), Ov.reg(266, 2, False{}, False{}, False{}), True{}),
    Vf.of(Fld.src("src0", 25, 17), Ov.reg(250, 8, False{}, False{}, False{}), True{}),
    Vf.of(Fld.ssrc("src1", 33, 26), Ov.none(), False{}),
@@ -1934,24 +1950,24 @@ def ORD_VALS_SWAP() -> List<&2, Vf>:
 # F64I's 32-bit-wide `lit` at [63:32] is the widest legal field there is.
 def F32_FIELDS() -> List<&2, Fld>: [Fld.fixed("op", 7, 0, 5), Fld.plain("A", 23, 8)]
 def F32_VALS() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.int(0), True{}), Vf.of(Fld.plain("A", 23, 8), Ov.int(4660), True{})]
+  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.none(), False{}), Vf.of(Fld.plain("A", 23, 8), Ov.int(4660), True{})]
 
 def F16_FIELDS() -> List<&2, Fld>:
   [Fld.fixed("op", 7, 0, 5), Fld.plain("A", 23, 8), Fld.plain("B", 31, 16)]
 def F16_VALS() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.int(0), True{}), Vf.of(Fld.plain("A", 23, 8), Ov.int(4660), True{}),
+  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.none(), False{}), Vf.of(Fld.plain("A", 23, 8), Ov.int(4660), True{}),
    Vf.of(Fld.plain("B", 31, 16), Ov.int(22136), True{})]
 
 def F8_FIELDS() -> List<&2, Fld>: [Fld.fixed("op", 7, 0, 5)]
-def F8_VALS() -> List<&2, Vf>: [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.int(0), True{})]
+def F8_VALS() -> List<&2, Vf>: [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.none(), False{})]
 
 def F40_FIELDS() -> List<&2, Fld>: [Fld.fixed("op", 7, 0, 5), Fld.plain("A", 39, 8)]
 def F40_VALS() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.int(0), True{}), Vf.of(Fld.plain("A", 39, 8), Ov.int(1193046), True{})]
+  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.none(), False{}), Vf.of(Fld.plain("A", 39, 8), Ov.int(1193046), True{})]
 
 def F64_FIELDS() -> List<&2, Fld>: [Fld.fixed("op", 7, 0, 5), Fld.plain("lit", 63, 32)]
 def F64_VALS() -> List<&2, Vf>:
-  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.int(0), True{}), Vf.of(Fld.plain("lit", 63, 32), Ov.int(305419896), True{})]
+  [Vf.of(Fld.fixed("op", 7, 0, 5), Ov.none(), False{}), Vf.of(Fld.plain("lit", 63, 32), Ov.int(305419896), True{})]
 # ===========================================================================
 # THE RENDERERS THE GENERATED ROWS NEED. Injected with the fixtures for the
 # same reason: the generator replaces everything from its marker down, so a def

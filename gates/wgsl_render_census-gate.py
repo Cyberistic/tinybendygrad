@@ -247,7 +247,7 @@ ART = HERE / "artifacts" / "wgsl_render_census-gate"
 PORT = ROOT / "tinybendygrad" / "renderer" / "wgsl.bend"
 ORACLE = HERE / "wgsl_render_census-oracle.py"
 
-ROWS = 207
+ROWS = 224
 PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
 
 # `string_rewrite`'s SEVENTEEN rules, by their INDEX in
@@ -602,6 +602,17 @@ def rules_hold():
                    f"twice")
     if set(groups) != {0, 3, 5, 6, 12, 14, 16}:
         bad.append(f"the row groups are {sorted(groups)} -- a rule lost its rows")
+    # (e) THE NEGATIVE COVERAGE. Every rule needs a `srneg` row too, and the rule
+    # index is IN the row name precisely so this can be read off the port's own
+    # text: `srneg N ...` for each N in SR_RULES, exactly one apiece. The
+    # seventeen `sr` rows above say the two BODIES agree on seventeen fixtures;
+    # these say what CPython's PATTERN does on a node it rejects, which is the
+    # half the bodies cannot supply.
+    negs = re.findall(r'r_srneg\((\d+),', s)
+    if sorted(int(x) for x in negs) != sorted(SR_RULES):
+        bad.append(f"the srneg rows cover rules {sorted(int(x) for x in negs)}, "
+                   f"the rules are {list(SR_RULES)} -- a rule has no refusal row, "
+                   f"or one is declared twice")
     return report("rules_hold", bad)
 
 
@@ -913,6 +924,7 @@ CLASSES = [
     ("U32_WIDTH", r"^nan_(mask|thr) double$"),
     ("INDEXERROR_TOTALIZED", r"^workitem l3$"),
     ("TYPE_MAP_KEYERROR", r"^type_map double$"),
+    ("PATTERN_UNPORTED", r"^srneg \d+ "),
     ("SELFCHECK", r"^(nan_uint (float|half|double)|supported_dtypes )"),
 ]
 CLASS_WHY = {
@@ -949,6 +961,32 @@ CLASS_WHY = {
                          "supported_dtypes keeps it unreachable from a real "
                          "kernel. The name is `dt_name`'s, which is "
                          "`DType.name`, which is why it reads `f64`.",
+    "PATTERN_UNPORTED": "THE SEVENTEEN `srneg` ROWS, AND THE FINDING IS THAT "
+                        "EVERY ONE OF THEM IS A DIVERGENCE IN THIS CLASS. "
+                        "`wgsl.bend` carries wgsl.py:65-93's seventeen rule "
+                        "BODIES and none of their `UPat`s, so the port has no "
+                        "predicate that could decline a node: each `srneg` row "
+                        "drives a body on a node CPython's own `UPat.match` "
+                        "REJECTS (the oracle ASSERTS the rejection at the "
+                        "source, so the row is a refusal by construction) and "
+                        "the port answers anyway. CARVE-OUT, and the right one: "
+                        "this is not a wrong ANSWER, it is an absent REACHABILITY "
+                        "CHECK, and pinning it is what stops the seventeen "
+                        "`sr` rows from being read as seventeen branch proofs. "
+                        "TWO OF THE SEVENTEEN ARE DANGEROUS RATHER THAN COSMETIC "
+                        "and they are the ones to read first. `srneg 14 store u8` "
+                        "-- a PACKED store of an ordinary CONST -- is not a "
+                        "read-modify-write, `packed_rmw`'s `AND` is the whole of "
+                        "rule 14's pattern, and `sr_rmw` answers "
+                        "`atomicAnd(&B[1],W);` and DROPS THE STORED VALUE. "
+                        "`srneg 15 store 3` -- a GATED store, three srcs -- falls "
+                        "to rule 15 and `sr_store` answers `B = V;` and DROPS THE "
+                        "GATE. Both are unreachable from `render_kernel` as "
+                        "`wgsl.bend` currently drives it, and both would be a "
+                        "silently wrong shader if the dispatcher ever handed them "
+                        "these nodes. The other fifteen answer a string where "
+                        "CPython declines, which is unreachable in the same way "
+                        "and is the same absence.",
     # `RULE_TOTALIZED` IS NOT A CLASS AND THAT IS A FINDING, not an omission.
     # `string_rewrite` rules 0 and 14 both END in `else None` upstream, and
     # `None` is a CONTROL-FLOW state rather than a value: `PatternMatcher.rewrite`
