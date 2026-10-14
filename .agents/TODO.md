@@ -14217,6 +14217,36 @@ is `v4>10->rdx>2` -- same pair count, same keys, one number moved, on two fixtur
       (**47 of 171 pairs decide on it**); `u.ranges`/`vmax` as computed (`lt_rc` is gated but its
       PRODUCER is not). **ONE FIXTURE PER FILE** -- every gap above the findings is fixture-shaped.
 
+## REALIZE-NEG -- two of realize's 65 and TWO OF ITS THREE "DEPENDENCIES" WERE NOT WHAT THEY LOOKED (2026-10-14)
+
+`89c592e80`. **974 rows, 911 match, 63 declared, rc=0** (was 65). **THE RESULT IS MOSTLY NEGATIVE AND
+THE NEGATIVE IS THE DELIVERABLE: THE UNIT BELIEVED 2 OF 65 WERE DEFECTS BEFORE STARTING AND BELIEVES 0
+OF THE REMAINING 63 AFTER.**
+
+- [x] **`ProgramInfo` IS NOT A DEPENDENCY -- IT IS ALREADY PORTED** at `uop/ops.bend:1012`. **THE TEN
+      `var` ROWS WHERE CPython ANSWERS A REAL VALUE ALL AGREE** (nodes 17,18,19,20,25,31,35,40,57,60,
+      including `CONST(4)` and `PARAM/0@3`), so `ProgramInfo` is exercised END TO END. The 12
+      `VARS_BODY` rows are the **non**-`ProgramInfo` bodies where CPython RAISES.
+- [x] **`sym_infer` IS A REAL WALL THAT GATES NOTHING HERE.** `TODO(p3)` in **THREE** places
+      (`uop/ops.bend:4929`, `:5332`, `uop/fold.bend:6554`), forbid-read, declared. **`NAME_ARM`'s
+      remaining row does not need it** -- the arm's int branch never calls it.
+- [x] **`pm_validate`'s BODY IS 4 LINES AND IS BLOCKED ON TWO OTHER DECLARED WALLS**: `UOp.new_buffer`
+      is P6 and `store_call` is `TODO(p3)` with `param_like` absent (`ops.bend:5170-5171`). **IT WAS
+      NOT WORTH PORTING**, and the class reduced because the DRIVER MIS-SPECIFIED tag 0's claim alone --
+      tag 1 IS `pm_flatten_linear`.
+- [ ] **`kern` IS NOT CLOSABLE AND `kern_blind_holds()` PROVES IT**: `Device.tag` is NAMED IN 4
+      `.bend` FILES AND **DEFINED IN NONE** (its own docstring says five -- four is the measurement), so
+      `rs_d_kern` cannot print a NAME. Closing it needs a SECOND DEVICE IN BOTH FIXTURES, which moves
+      `arena_n` and every index after it.
+- [ ] **`va_0` AND `va_1` ARE DEAD DEFS.** A mutation setting `va_1` to `VSkip` moved **0 OF 974 ROWS**,
+      which is the same "a def nothing calls is invisible to every other check" shape found NINE times
+      elsewhere. **AND IT CAUGHT THE UNIT'S OWN PROSE** claiming the fix "calls `va_1`" -- it does not;
+      it reaches `fl_0` via `rs_d_flat`, and THREE PROSE SITES were corrected to the measurement.
+- [ ] **TWO STALE PROSE CLAIMS LEFT, BOTH NOW MEASURED AS FALSE:** `realize.bend` header (~:81, :1123)
+      still says `va_0`/`va_1` were made live; `gates/realize_graph_census.bend`'s header says **927**
+      rows and **19** nodes where the gate says **974** and **22**. NOT FIXED -- neither file was the
+      unit's to edit.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
