@@ -14593,6 +14593,47 @@ NINTH DERIVATIVE OF THE SAME CLASS.**
 - [ ] **AND `checks/cites-census.py` IS NOT IN FLIGHT** -- `git ls-tree` says it is in HEAD and
       `git status` is clean -- so this is not a transient of another unit's work.
 
+## EXEC-CLOSE -- the 57% coverage gap is CLOSED, and it found WRONG ANSWERS, not just refusals (2026-10-14)
+
+`0c322107f`. `gates/ops_python_exec-{gen,gate}.py` + `-fixtures.rows` + `-pins.rows`.
+**153 fixtures, 365 rows x 2 lanes, 314 unpinned identical, 52 pinned, rc=0.** `PythonProgram.__call__`
+(`ops_python.py:52-157`, 106 of 186 lines) IS NOW CENSUSED.
+
+- [x] **FINDING D'S PREMISE HAD THE ARROW BACKWARDS.** `PythonProgram.__call__` takes **INTEGER
+      ADDRESSES** (`pbufs.pop(0)` goes straight into `to_mv` = `from_address`, helpers.py:574), so the
+      CPython side NEVER NEEDED a wire->`UOp` DECODER. **THE TREE ALREADY OWNS `UOp`s->wire**
+      (`ops_bend.encode`, ops_bend.py:133). **THE FIXTURE RECORD BODY *IS* A `PACKET.in` VERBATIM**, so
+      the gate COPIES LINES AND PARSES NO WIRE. MEASURED: a real `UOp` list drives CPython's `__call__`
+      directly and `encode(uops)` is byte-identical to the packet the device built, **128/128 launches,
+      `PAIR_BAD` empty**; and on `f32.add.0` CPython's `__call__` and the compiled executor produce
+      BYTE-IDENTICAL buffers.
+- [ ] **A REAL KERNEL WHERE CPYTHON RUNS IT AND THE PORT REFUSES TO PARSE IT:** `f32.cumsum.0`.
+      **MEASURED HERE: `DEV=PYTHON cumsum -> [1. 3. 6.]`.** A concrete instance of finding E's refusal
+      being STRONGER THAN AN ASSERTION -- and it HIDES A REAL KERNEL.
+- [ ] **AND THE 52 DIVERGENCES ARE NOT REFUSALS -- THEY ARE WRONG ANSWERS IN EMITTED OUTPUT.** The
+      vector-store family: CPython's `f32.sqrt.0` output buffer 0 is
+      `[1.0, 1.4142135, 1.7320508, 2.0, <untouched>]` and **THE PORT'S IS `[0,0,0,0, <untouched>]`** --
+      **THE PORT ZEROES THE LANES IT SHOULD COMPUTE.** The pins file checks the oracle by hand first
+      ("the first four are sqrt(1..4) to the bit and the last four are untouched, which is what a 4-wide
+      vector STORE over an 8-element buffer leaves"), **so the divergence is the PORT'S LANE 0..3 and
+      not a fixture, a buffer order or an oracle.** The other family is loop-carried LOCAL reduction
+      (`f32.localsum.0.b0` is 717.0 where CPython's is 10.0).
+- [x] **THE UNGUARDED `case _: Prog.alu` NOW HAS ROWS: 128 of 153 FIXTURES REACH IT.** The
+      per-dispatch `assert u in values` is backed by rows saying the port's unguarded answer is wrong,
+      **instead of a parse-time refusal and no measurement.**
+- [ ] **A THIRD PORT LANE IS IMPOSSIBLE, MEASURED:** `bend PORT PACKET 1 1 1` exits 1 in 6.76 s with
+      `bend: memory fault (machine stack overflow?)` and writes no `PACKET.out`. **TWO LANES, NOT AN
+      INVENTED THREE.**
+- [ ] **COVERAGE IS MEASURED, NOT ASSUMED:** 45/47 `op_of` names and 19/21 `Prog.dispatch` arms, with
+      the unreachable ones PINNED so a shrinking population is red (`NOOP` is minted only by ISA
+      renderers; `BACKEDGE` is **0 in the whole harvest** against 17 `END` uops). **THE PORT CANNOT
+      GENERATE THE FIXTURES AT ALL: `grep -c "UOp.new" ops_python.bend` = 0.**
+- [ ] **ONE DAY OF RED CAME FROM THE UNIT'S OWN HARNESS BUG**, logged as `DEFECTROW-OXB`:
+      `[bytes(m) for m in bufs]` evaluated `bytes(4390684688)` -- **A 4.3 GB ZERO-FILLED OBJECT PER
+      LAUNCH.** It presented as a tinygrad cache leak, then `ENOSPC` on an 8.5 GB pickle, then SIGKILLs,
+      and filled a **926 GiB VOLUME TO 100%**. Fixed: 51 MB steady. **A HARNESS BUG THAT LOOKS LIKE A
+      LEAK IS A HARNESS BUG UNTIL IT IS MEASURED.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
