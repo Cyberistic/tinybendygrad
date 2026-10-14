@@ -15002,3 +15002,51 @@ the opencode temp dir that filled a 926 GiB volume to 100%. Fixing the hook drop
 process from SIGKILL-at-two-fixtures to 51 MB steady across six spines, and the "leak"
 was never there. **A harness that allocates in proportion to an ADDRESS is not slow, it is
 a different program.**
+
+## PINS-SHAPE -- the column shape of every `gates/*.rows`, per gate (`f97eb6cd2`, 2026-10-15)
+
+`gates/gate-surface.py` owns the VERDICT surface; `grep -c pins gates/gate-surface.py` answers
+**0**, so the one thing a pins file IS -- a table with a COLUMN SHAPE -- was read by its owners
+and by no instrument that checks them. `gates/pins-shape-gate.py` is that clause and NOTHING ELSE:
+it re-tallies no verdict, so it cannot become a thirteenth meta-census with the defect it audits.
+
+**gatekit needs NO sixth verdict.** Its five are five of SIX codes the tree produces and the sixth
+is not missing, it is DISPUTED: `gate-surface.py --report` measures **4 UNOWNED + 10 RENAMED**
+exit codes and already charges them. The defect is ambiguous OWNERSHIP, not a missing code.
+
+MEASURED over the 14 tracked `gates/*.rows` at `f97eb6cd2`: **4 TRIPLE, 3 QUAD, 1 two-tab, 6
+whitespace, 2 with ZERO data rows.** Column 2 is THREE vocabularies -- `same|DIFFER|PORT-REFUSES:*`
+(`decomp_value`), a divergence CLASS (`regalloc`), a RENDERED LINE (`decomp_graph`) -- so
+`awk -F'\t' 'NF==3'` cannot tell them apart, which is instance 5 one line of awk away.
+
+RED on 3 findings, each grep-verified:
+
+- `gates/ops_python_exec-pins.rows` -- **52 rows, ONE field**: it pins NAMES and no value. That is
+  instance 13 (`fixtures_hold` compared names, discarded the values) with the values PHYSICALLY
+  ABSENT, and its header does not say so. **A census reading "52 declared divergences" from it is
+  reading an exclusion list.**
+- `gates/cstyle-live.rows` -- `grep -c '^#'` = **0**. No provenance header at all. This is the
+  e2e stage-7 fixture `AGENTS.md` records as deleted, restored, and deleted again.
+- `gates/wk-f32-table.rows` -- `grep -c '^#'` = **0**. No provenance header at all.
+
+**Twelve mutations, all planted, all moving** (`--plant`, rc 0, no `bend`): mixed arity, a header
+that lies about its arity, no header at all, a vanished writer, a table named by nothing, zero rows
+with no zero-claim, a values-less `-pins.rows`, **plus two wrong-reason GUARDS** -- a whitespace
+PACKET whose rows carry different field counts must NOT be red, and `by hand` must NOT excuse a
+values-less pins file -- **plus all three REFUSED paths to exit 3**, because a verdict a gate
+cannot reach cannot be tested.
+
+**SIX OF ITS OWN FIRST-DRAFT FINDINGS WERE WRONG** and were caught by running it, not by reading
+it: a regex that could not match a bare `QUAD`; a writer path joined onto the table's directory
+when the header spells it repo-relative (`gates/ops_python_exec-gen.py`); owners read from
+`entries` when the writer of a table is a LIB (`wk-f32-rows.py` has no `__main__`); and an owner
+map keyed on the repo-relative literal, so `wk-f32-table.rows` -- which `wk-f32-rows.py:69` names
+-- reported "named by nothing". **The same shape as the sixteen, inside the instrument built
+against them. That is the argument for running it before believing it, and it is why the wrong
+reasons are recorded here rather than quietly deleted.**
+
+THE DENOMINATOR IS LIVE and the gate says so on every run: measured 179 -> 183 entry points,
+`-mutate.py` 4 -> 5 -> 6, and table count 14 -> 15 -> 14, all within one session, by other units.
+`gates-pop.py:496` raised `FileNotFoundError` at `gate-surface.py:919` on a file deleted between
+its own `iterdir` and its `lstat` -- a THIRD exit code for that event, which this gate answers
+with `3`.
