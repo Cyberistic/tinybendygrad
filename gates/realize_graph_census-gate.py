@@ -6,11 +6,11 @@
     .venv/bin/python gates/realize_graph_census-gate.py --refresh   # rewrites the pins file
 
 974 ROWS (15 DRIVERS x 63 NODES + 15 BOTTOM + 12 ARM-COVERAGE + 2 HEADER), THREE LANES,
-909 EXACT MATCHES AND 65 DECLARED DIVERGENCES -- 9 CLASSES, AND 1 FINDING STANDING.
+911 EXACT MATCHES AND 63 DECLARED DIVERGENCES -- 9 CLASSES, AND 1 FINDING STANDING.
 OF THE 974 ROWS ONLY 590 CARRY A COMPARISON: 369 are `notacall` (nine CALL-only drivers
 x 41 non-CALL nodes) and 15 are the `Arena.bottom()` slot CPython has no node for. BOTH
-KINDS ARE INSIDE THE 909, because both lanes answer them identically, and a verdict line
-that printed 909 as a comparison count would be claiming 909 things this gate did not do.
+KINDS ARE INSIDE THE 911, because both lanes answer them identically, and a verdict line
+that printed 911 as a comparison count would be claiming 911 things this gate did not do.
 `compares_holds()` measures the refusal population off the lanes on every run and
 `ret_is_uop_fixed_holds()` is the same discipline for the eight rows `ret is not uop`
 repaired.
@@ -121,23 +121,36 @@ THE 65 DIVERGENCES, CLASSIFIED, PINNED ON BOTH SIDES, AND EVERY CLASS MEASURED.
       so there is nothing to compare and the row says `bottom`. `no_bottom_value` says the
       port never answers a VALUE there, which is the shape a stale-arena self-loop takes.
 
-  14 `NAME_ARM` -- `get_call_name` (realize.py:43). The port implements the PROGRAM arm
-      alone; the STORE and `encdec` arms need `sym_infer` (GENERATED SOURCE, ops.py:1177)
-      and the fallthrough is a `raise`, which the port spells `none`. Twelve rows are the
-      `NotImplementedError`, one is `encdec`'s ANSI-coloured string (`realize.py:50`, the
-      escape codes are part of the pin and nothing is stripped) and one is `name_57`, whose
-      PROGRAM's `src[0]` is a SINK with `arg=None` and CPython raises `AttributeError`.
+  13 `NAME_ARM` -- `get_call_name` (realize.py:43). The port implements the PROGRAM and
+      `encdec` arms; the STORE arm needs a device NAME (`Device.tag` is P6,
+      `uop/spec.bend:1488`) and the fallthrough is a `raise`, which the port spells `none`.
+      Eleven rows are the `NotImplementedError`, one is `name_18`, whose STORE arm reaches
+      `bufs[0]` on the census's `bufs=[]` and raises `IndexError`, and one is `name_57`,
+      whose PROGRAM's `src[0]` is a SINK with `arg=None` and CPython raises
+      `AttributeError`. `encdec`'s ANSI-coloured string is FIXED and was the ONE row here
+      that was NOT a wall -- see the block at the foot of this file.
 
   12 `VARS_BODY` -- `get_call_var_uops` (realize.py:16) reads `prg.arg.vars`, which is a
       `ProgramInfo` field; over a SINK or a `CustomFunction` body CPython raises
       `AttributeError` and the port's `rz_pvars.go` (realize.bend:487) answers `Nil{}`.
 
-  11 `VAL_BODY` -- `pm_validate`'s BODY is not ported. `validate_table()` is read by
-      `t_va_len` alone (realize.bend:1175) and `_validate`'s `UOp.new_buffer` and
-      `store_call` are `TODO(p3)`, so the port has a CLAIM and no graph and this lane
-      compares a claim against a cone. Nine rows are that, `val_50`/`val_53` are CPython
-      raising inside `_validate`, and `val_27` is `pm_validate` tag 1 -- `pm_flatten_linear`
-      carried in by `PatternMatcher.__add__` -- firing where the port has no second scan.
+  10 `VAL_BODY` -- `pm_validate`'s BODY is not ported. `validate_table()` is read by
+       `t_va_len` and by the census driver's tag-0 arm alone, and `_validate`'s
+       `UOp.new_buffer` is a P6 device call while its `store_call` is `TODO(p3)` with
+       `param_like` absent (ops.bend:5170-5171), so the port has a CLAIM and no graph and
+       this lane compares a claim against a cone. Eight rows are that, `val_50`/`val_53`
+       are CPython raising inside `_validate`. THE ELEVENTH WAS A DEAD DEF AND IS NOW
+       FIXED: `val_27` is `pm_validate`'s TAG 1, which is `pm_flatten_linear` carried in
+       by `PatternMatcher.__add__` -- `PatternMatcher(self.patterns+more.patterns)`
+       (ops.py:1611) -- so `pm_validate.rewrite` tries it on the same node whenever tag 0
+       does not claim. The census driver asked tag 0's claim ALONE and answered `0` where
+       CPython answered the flatten cone; MEASURED, CPython's `val_27` and `flat_27` are
+       BYTE-IDENTICAL, so the two lanes already agreed on that cone at the `flat` driver.
+       The body was already in the port: the driver reaches `fl_0` through `rs_d_flat`,
+       because a `Verdict` cannot print a cone. It does NOT go through `va_1`, and THAT IS
+       A SEPARATE FINDING -- `va_1` and `va_0` are dead defs called by nothing (MEASURED:
+       replacing `va_1`'s body with `VSkip` moves ZERO of the 974 rows). The fix is a
+       DISPATCH in the driver, not a new body.
 
   8 `ARG_SLOT` -- a CALL whose `src[1]` is NOT a PARAM or a BUFFER. `gcc_53` is a SINK
       (`c.device` is `None`, so `c.device[0]` raises `TypeError`), `gcc_50`/`gcc_60` are
@@ -261,11 +274,11 @@ SRC_BODY_FIXED = (
     "res_59", "res_62",
 )
 SRC_BODY: tuple = ()
-NAME_ARM = ("name_18", "name_21", "name_22", "name_23", "name_24", "name_49", "name_50",
+NAME_ARM = ("name_18", "name_21", "name_23", "name_24", "name_49", "name_50",
             "name_51", "name_52", "name_53", "name_55", "name_57", "name_61", "name_63")
 VARS_BODY = ("var_21", "var_22", "var_23", "var_24", "var_49", "var_50", "var_51",
              "var_52", "var_53", "var_55", "var_61", "var_63")
-VAL_BODY = ("val_23", "val_24", "val_27", "val_49", "val_50", "val_51", "val_52",
+VAL_BODY = ("val_23", "val_24", "val_49", "val_50", "val_51", "val_52",
             "val_53", "val_55", "val_61", "val_63")
 ARG_SLOT = ("nb_53", "kern_53", "est_57", "gcc_50", "gcc_53", "gcc_60",
             "beam_55", "bea0_55")
@@ -359,6 +372,34 @@ def _header(n_div, n_same):
 #     fix is `O.Arena.src_from(ar, call, 1)` in `get_call_arg_uops` AND in `rz_bound_map`
 #     (realize.py:18 is the same slice). `SRC_BODY_FIXED` names the fifty-two and
 #     `classes_hold` asserts `cpy[r] == port[r]` on each.
+#
+#   `VAL_BODY`'s ELEVENTH ROW, `val_27` -- NOW AGREE, and it was NOT A BODY AT ALL.
+#     `pm_validate` is `PatternMatcher([...]) + pm_flatten_linear` (realize.py:214) and
+#     `PatternMatcher.__add__` is `PatternMatcher(self.patterns+more.patterns)` (ops.py:1611),
+#     so tag 1 is the flatten rule and `rewrite` tries it on the same node whenever tag 0
+#     does not claim. The census driver asked tag 0's CLAIM alone and answered `0`, while
+#     CPython answered the flatten cone. MEASURED: CPython's `val_27` and `flat_27` are
+#     BYTE-IDENTICAL, so both lanes already agreed on that cone at the `flat` driver --
+#     the body was already in the port -- the driver reaches `fl_0` through `rs_d_flat`,
+#     because a `Verdict` cannot print a cone. The fix is a two-arm `match` in
+#     `rs_d_val`, NOT a new body. IT DOES NOT REVIVE `va_1`: `va_1` and `va_0` are dead
+#     defs called by nothing, and that is its own zero-row finding (MEASURED -- replacing
+#     `va_1`'s body with `VSkip` moves ZERO of the 974 rows and the gate stays GREEN).
+#
+#   `NAME_ARM`'s ONE ROW WITH A VALUE, `name_22` -- NOW AGREE, AND THE RECORDED REASON
+#     FOR LEAVING IT WAS WRONG. The pin said the `encdec` arm "needs `sym_infer`, which is
+#     `exec` of GENERATED SOURCE (ops.py:1177 -- `_sym_fxn`)". It does not: `sym_infer` is
+#     `uop.sym_infer(vv) if isinstance(uop, UOp) else uop` (ops.py:93), and
+#     `prod(shape) * dtype.itemsize` is an INT for a concrete shape, so the `else` branch
+#     runs and no symbolic machinery is reached. MEASURED on this very node: shape `(16,)`,
+#     dtype `i32`, product `64`, `sym_infer(64, {{}}) == 64`. What the arm needed was
+#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1143`, `:1083`), plus
+#     `rz_nbytes`, which was in `realize.bend` and already answers `None` for a SYMBOLIC
+#     dim -- and CPython's `sym_infer` on a symbolic node with `var_vals or {{}}` = `{{}}`
+#     raises `NameError`, so that `None` is the faithful absence. EIGHTH instance in this
+#     tree of a correct def that was present and unread, and the WRONG REASON is the
+#     finding: it had been quoted forward from `realize.bend`'s own header, which is how a
+#     wall becomes a fact without anyone measuring it.
 """
 
 
@@ -605,8 +646,14 @@ def drivers_hold() -> bool:
         print(f"  drivers_hold: {len(arms)} ladders own a `case O.Ops*` arm, "
               f"the file declares 9: {sorted(arms)}")
         ok = False
-    if cases != 15:
-        print(f"  drivers_hold: `case O.Ops*` is {cases} arms, the file declares 15")
+    # FIFTEEN UNTIL `get_call_name` GREW ITS `encdec` ARM, AND THEN IT IS SIXTEEN. `gn_prog`
+    # became `gn_body` -- so the LADDER count above is still 9 and `gn_body` is not a new
+    # driver -- and it went from two arms to three, because `realize.py:50` dispatches
+    # `encdec` on its own and folding it into the `_` arm would be a computed-value match,
+    # which Bend refuses. This is the port's dispatch surface growing by one and the gate
+    # following it, NOT a threshold relaxed to let a change through.
+    if cases != 16:
+        print(f"  drivers_hold: `case O.Ops*` is {cases} arms, the file declares 16")
         ok = False
     # (a)'s EIGHT names and (c)'s THREE table drivers are named in the file under the
     # census's OWN short spelling, so the check is membership, and (b)'s THREE and `bea0`
@@ -892,7 +939,7 @@ if __name__ == "__main__":
         f"(both lanes answer `notacall`, so they count as matches) and {_compared()[2]} "
         f"are `Arena.bottom()`, where CPython has no node. "
         f"{len(BOTTOM)} divergences are that bottom, "
-        f"{len(NAME_ARM)} are `get_call_name`'s unported STORE/`encdec` arms, "
+        f"{len(NAME_ARM)} are `get_call_name`'s STORE arm and its fallthrough, "
         f"{len(VARS_BODY)} are `prg.arg.vars` over a non-`ProgramInfo` body, "
         f"{len(VAL_BODY)} are `pm_validate`'s UNPORTED BODY (claim against cone), "
         f"{len(ARG_SLOT)} are a CALL whose `src[1]` is not a PARAM or a BUFFER, "

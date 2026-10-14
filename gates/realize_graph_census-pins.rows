@@ -5,7 +5,7 @@
 # check is `want not in raw[lane]` -- a LIST-MEMBERSHIP test, so a bare value would never be
 # found. MEASURED: with the values alone the first run answered `py's arg_10 is not 'none'`.
 #
-# 65 DIVERGENCES, 909 OF THE 974 ROWS AGREE EXACTLY. It is git-resident and
+# 63 DIVERGENCES, 911 OF THE 974 ROWS AGREE EXACTLY. It is git-resident and
 # beside the gate because `AGENTS.md`'s own rule is that a gate's required inputs live in
 # git and not in `gates/artifacts/`: `gatekit` EMPTIES that directory before it runs and
 # UNLINKS what it staged when the run was not green, so a divergence list read from there
@@ -84,8 +84,6 @@ kern_53	kern_53=1	kern_53=0
 name_18	name_18=raise=IndexError	name_18=none
 # name_21       NAME_ARM                                 cpy     33 B f7bee84e8e24 | port     12 B 4771e0f2db0a
 name_21	name_21=raise=NotImplementedError	name_21=none
-# name_22       NAME_ARM                                 cpy     29 B 6842976d423a | port     12 B 9468bbc7b8b6
-name_22	name_22=[33menc/dec 64 B[0m	name_22=none
 # name_23       NAME_ARM                                 cpy     33 B 64ef2579ae0c | port     12 B 4bf27d2898ee
 name_23	name_23=raise=NotImplementedError	name_23=none
 # name_24       NAME_ARM                                 cpy     33 B 3c13776e4bb9 | port     12 B b9260396558b
@@ -122,8 +120,6 @@ res_63	res_63=BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)	res_63=BUFFER/1@0+GETADD
 val_23	val_23=1:LINEAR/3,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@0,PARAM/0@0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_23=1
 # val_24        VAL_BODY                                 cpy    112 B d34a5a215f0e | port      8 B 64771c012034
 val_24	val_24=1:LINEAR/3,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@1,PARAM/0@0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_24=1
-# val_27        VAL_BODY                                 cpy     76 B f717e1d63eae | port      8 B 923dffbdfaf6
-val_27	val_27=1:LINEAR/2,CALL/3,PROGRAM/1,SINK/0,PARAM/0@0,PARAM/0@1,CALL/3,STORE/2	val_27=0
 # val_49        VAL_BODY                                 cpy    205 B a4bccab248c4 | port      8 B 2589eb1b95c3
 val_49	val_49=1:LINEAR/4,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@2,PARAM/0@1,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@3,SHRINK/3,BUFFER/1@0,CONST(3),CONST(0),CONST(2),CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_49=1
 # val_50        VAL_BODY                                 cpy     27 B ca901e289822 | port      8 B 8bda50029d04

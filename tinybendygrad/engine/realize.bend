@@ -679,11 +679,8 @@ def gk_body(op: O.Op, a: O.Arg, src1: U32, +ar: O.Arena) -> List<&2, U32>:
 def get_call_kernels(+ar: O.Arena, +call: U32) -> List<&2, U32>:
   gk_body(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)), O.Arena.src(ar, call, 1), ar)
 
-# realize.py:48 -- `if ast.op is Ops.PROGRAM: return ast.src[0].arg.name`, the one
-# arm of `get_call_name` that reads no Buffer and no symbolic size. The STORE and
-# `encdec` arms need `sym_infer`, which is `exec` of GENERATED SOURCE (ops.py:1177
-# -- `_sym_fxn`), so they are out; and the fallthrough is a `raise`, which here is
-# `None`. `KernelInfo.name` IS ported (ops.bend:1114).
+# realize.py:48 -- `if ast.op is Ops.PROGRAM: return ast.src[0].arg.name`. `KernelInfo.name`
+# IS ported (ops.bend:1114).
 def gn_kernel.go(a: O.Arg) -> Maybe<&2, String>:
   match a:
     case O.AKernel{ki}: Some{O.KernelInfo.name(ki)}
@@ -692,16 +689,6 @@ def gn_kernel.go(a: O.Arg) -> Maybe<&2, String>:
 def gn_kernel(+ar: O.Arena, +prog: U32) -> Maybe<&2, String>:
   gn_kernel.go(O.Arena.arg(ar, O.Arena.src(ar, prog, 0)))
 
-# realize.py:48's guard IS this `match`: only a PROGRAM has a kernel to name, so
-# the tag is the arm and there is no flag. A STORE or an `encdec` body answers
-# `None`, which is where the port's `raise` becomes an absence.
-def gn_prog(op: O.Op, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  match op:
-    case O.OpsPROGRAM{}: gn_kernel(ar, rz_body(ar, call))
-    case _: None{}
-
-def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
-  gn_prog(O.Arena.op(ar, rz_body(ar, call)), ar, call)
 
 # ===========================================================================
 # **************** Stat ****************
@@ -839,6 +826,68 @@ def rz_nbytes_or0(m: Maybe<&1, U32>) -> U32:
 
 def rz_nbytes_of(+ar: O.Arena, +call: U32) -> U32:
   rz_nbytes_or0(rz_nbytes(F.folded(ar), O.Arena.src(ar, call, 1)))
+
+# realize.py:50 -- `if ast.op is Ops.CUSTOM_FUNCTION and ast.arg.name == "encdec":
+# return colored(f"enc/dec {_uop_sz_to_str(arg_uops[0])}", "yellow")`.
+#
+# `sym_infer` IS NOT THE DEPENDENCY HERE, AND THE REASON THIS FILE GAVE FOR LEAVING
+# THE ARM OUT WAS WRONG. `sym_infer(u, vv)` is `u.sym_infer(vv) if isinstance(u, UOp)
+# else u` (ops.py:93), and `prod(uop.shape) * uop.dtype.itemsize` is an INT for a
+# concrete shape, so the symbolic half NEVER RUNS. MEASURED on the census's own
+# `encdec` node: shape `(16,)`, dtype `i32`, product `64`, an `int` -- so
+# `sym_infer(64, {})` is the `else` branch and `_sym_fxn`'s `exec` (ops.py:1168-1179)
+# is never reached. What the arm needs is `size_to_str` and `colored`, and BOTH ARE
+# PORTED (`helpers.bend:1143` and `helpers.bend:1083`).
+#
+# `rz_nbytes` IS ALREADY THE `sym_infer` ANSWER AND WAS ALREADY IN THIS FILE: `rz_prod.dim`
+# answers `None` for a SYMBOLIC dim, and CPython's `sym_infer` on a symbolic node with
+# `var_vals or {}` = `{}` raises `NameError`, so `None` IS the faithful absence and this
+# arm needs NO failure channel. That is the whole `sym_infer` story for `get_call_name`.
+#
+# `arg_uops[0]` IS THE HEAD OF THE FILTERED LIST and NOT `call.src[1]`: `get_call_arg_uops`
+# drops bound vars, and MEASURED, the census's `encdec` call carries one, so `src[1]` and
+# `arg_uops[0]` are DIFFERENT nodes there. Reading `src[1]` would be a plausible wrong
+# size, which is why this goes through `get_call_arg_uops`.
+def gn_sz(m: Maybe<&1, U32>) -> Maybe<&2, String>:
+  match m:
+    case Some{n}: Some{H.colored(H.Flags.defaults(), String.concat(["enc/dec ", H.size_to_str(n)]),
+                                H.color_of("yellow"), False{})}
+    case _: None{}
+
+# `args[0]`, and an EMPTY list is CPython's `IndexError` -- a shape `None` already is.
+def gn_arg0(args: List<&2, U32>) -> Maybe<&2, U32>:
+  match args:
+    case Nil{}: None{}
+    case a <> t: Some{a}
+
+def gn_encdec.sz(m: Maybe<&2, U32>, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  match m:
+    case Some{a}: gn_sz(rz_nbytes(F.folded(ar), a))
+    case _: None{}
+
+def gn_encdec(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  gn_encdec.sz(gn_arg0(get_call_arg_uops(ar, call)), ar, call)
+
+def gn_cf.is_e(is_e: Bool, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  match is_e:
+    case True{}: gn_encdec(ar, call)
+    case False{}: None{}
+
+def gn_cf(a: O.Arg, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  gn_cf.is_e(arg_is_encdec(a), ar, call)
+
+# realize.py:48/49/50 in Python's order, and the fallthrough is its `raise`, which here
+# is `None` -- a STORE answers `None` because `_dev_str` reads a device NAME and
+# `Device.tag` is P6 (`uop/spec.bend:1488`), and with the census's `bufs=[]` CPython
+# raises `IndexError` at `bufs[0]` before any name is read.
+def gn_body(op: O.Op, a: O.Arg, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  match op:
+    case O.OpsPROGRAM{}: gn_kernel(ar, rz_body(ar, call))
+    case O.OpsCUSTOM_FUNCTION{}: gn_cf(a, ar, call)
+    case _: None{}
+
+def get_call_name(+ar: O.Arena, +call: U32) -> Maybe<&2, String>:
+  gn_body(O.Arena.op(ar, rz_body(ar, call)), O.Arena.arg(ar, rz_body(ar, call)), ar, call)
 
 # ===========================================================================
 # **************** runtime cache ****************

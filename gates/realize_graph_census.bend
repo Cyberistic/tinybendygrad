@@ -482,8 +482,38 @@ def rs_d_flat(ar: O.Arena, +n: U32) -> String:
   +v = RZ.flatten_rewrite(a, n)
   rs_d_flat.go(RZ.rz_lin_new(a, n), Bool.not(rs_vskip(v)))
 
-def rs_d_val(ar: O.Arena, n: U32) -> String:
-  rs_bl(RZ.va_claim(ar, n))
+# `pm_validate` is `PatternMatcher([...]) + pm_flatten_linear` (realize.py:214) and
+# `PatternMatcher.__add__` is `PatternMatcher(self.patterns+more.patterns)` (ops.py:1611),
+# so `pm_validate.rewrite` tries tag 0 and THEN TAG 1 ON THE SAME NODE. This driver asked
+# tag 0's claim ALONE, which is why it answered `0` at `val_27` where CPython answered the
+# flatten cone: node 27 is a LINEAR, tag 0 does not claim it, and tag 1 is the rewrite that
+# DOES fire. The body was already in the port: this arm reaches it through `rs_d_flat` ->
+# `flatten_rewrite` -> `fl_0`, because a `Verdict` alone cannot print a cone.
+#
+# IT DOES **NOT** GO THROUGH `va_1`, WHICH IS TAG 1'S OWN ENTRY, AND THAT IS A SEPARATE
+# FINDING: `va_1` and `va_0` are DEAD DEFS called by NOTHING. MEASURED -- replacing
+# `va_1`'s body with `VSkip` leaves the gate GREEN and moves ZERO of the 974 rows. This
+# fix does not revive them and does not pretend to: it needed the rewrite's NODE, and
+# `va_1` answers a `Verdict`.
+#
+# THE TAG-0 BRANCH STILL ANSWERS THE CLAIM BIT, because `_validate`'s `UOp.new_buffer` is a
+# P6 device call and its `store_call` is `TODO(p3)` (`param_like` absent), so there is no
+# graph to print. THE CLAIM IS A `.go` PARAMETER, NOT A `Bool.pick`: `match` refuses a
+# computed scrutinee (MEASURED, "a match cannot scrutinize a computed value: give it its
+# own def"). THE TWO ARMS ARE NOT INTERCHANGEABLE EITHER. MEASURED, dispatching tag 1
+# unconditionally moves exactly these ten rows and NOTHING else: it answers `0` on all of
+# them, where tag 0 DID claim and DID fire and built a graph the port cannot build, so the
+# eager form turns the claim bit into "no rewrite" about a rule that rewrote. It moves
+# nothing else because `rz_find.mint` hash-conses and the `flat` driver has already minted
+# those nodes for all 63 -- the arena does NOT shift, so `@<slot>` is NOT the reason.
+def rs_d_val.go(c: Bool, +ar: O.Arena, +n: U32) -> String:
+  match c:
+    case True{}: "1"
+    case False{}: rs_d_flat(ar, n)
+
+def rs_d_val(ar: O.Arena, +n: U32) -> String:
+  +a = ar
+  rs_d_val.go(RZ.va_claim(a, n), a, n)
 
 # THE VERDICT IS THE JUDGE **AND** THE ANSWER'S INDEX, and the second half is new since
 # the `ret is not uop` fix. `RZ.beam_rewrite` is `realize.bend`'s JUDGE (it answers a

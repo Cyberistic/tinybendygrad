@@ -1461,12 +1461,64 @@ row, and the mutation table is what says the row is load-bearing.
          with the tag printed. `kern_blind_holds()` now asserts that one-device
          precondition off BOTH fixture files and goes RED when either gains a second —
          which is the signal to print the tag.
-      5. **NOT FIXED, REPORTED:** `ARG_SLOT` 8, `NAME_ARM` 14, `VARS_BODY` 12,
-         `VAL_BODY` 11, `SLOT_MISS` 2, `MSELECT_WALL` 1, `MSTACK_WALL` 1,
-         `GETADDR_DRIFT` 1. `ARG_SLOT`/`SLOT_MISS` are cases where CPython is PARTIAL and
-         the port is TOTAL, not wrong answers: `rz_kernel_beam` defaults a `KernelInfo`-less
-         SINK to 0 and `rz_res.at` defaults a slot miss to the node itself, and there is
-         no `raise` in the port to match an `IndexError` with.
+      5. **NOT FIXED, REPORTED:** `ARG_SLOT` 8, `SLOT_MISS` 2, `MSELECT_WALL` 1,
+         `MSTACK_WALL` 1, `GETADDR_DRIFT` 1. `ARG_SLOT`/`SLOT_MISS` are cases where
+         CPython is PARTIAL and the port is TOTAL, not wrong answers: `rz_kernel_beam`
+         defaults a `KernelInfo`-less SINK to 0 and `rz_res.at` defaults a slot miss to the
+         node itself, and there is no `raise` in the port to match an `IndexError` with.
+      6. **2026-10-14 — TWO MORE ROWS, AND TWO OF THE THREE "DEPENDENCIES" WERE NOT
+         DEPENDENCIES.** 65 -> 63 DIVERGENCES, 909 -> 911 MATCHES, **exactly TWO rows
+         moved on BOTH port lanes and `py.rows` is byte-identical.**
+         (a) **`val_27` FIXED — a dead def and a mis-specified driver, no new body.**
+         `pm_validate` is `PatternMatcher([...]) + pm_flatten_linear` (realize.py:214) and
+         `__add__` is `PatternMatcher(self.patterns+more.patterns)` (ops.py:1611), so tag 1
+         IS `pm_flatten_linear` and `rewrite` tries it whenever tag 0 does not claim. The
+         census driver asked tag 0's CLAIM alone. MEASURED: CPython's `val_27` and
+         `flat_27` are BYTE-IDENTICAL, so both lanes already agreed on that cone at the
+         `flat` driver. Fix is a two-arm `match` in `rs_d_val`; the tag-1 arm calls
+         `rs_d_flat` because a `Verdict` cannot print a cone.
+         **MUTATION: tag 1 made unreachable -> rc=1, RED, naming `val_27` as an UNPINNED
+         divergence. A second mutation making the dispatch EAGER moves exactly the ten
+         walled `VAL_BODY` rows and NOTHING else -- it answers `0` where tag 0 DID claim
+         and DID fire -- and does NOT move the arena, because `rz_find.mint` hash-conses.**
+         (b) **`name_22` FIXED — and the recorded reason for leaving it was WRONG.** The
+         pin said the `encdec` arm "needs `sym_infer`, which is `exec` of GENERATED
+         SOURCE". It does not: `sym_infer` is `u.sym_infer(vv) if isinstance(u, UOp) else
+         u` (ops.py:93) and `prod(shape)*itemsize` is an INT for a concrete shape.
+         MEASURED on this node: shape `(16,)`, dtype `i32`, product `64`,
+         `sym_infer(64, {}) == 64`. The arm needed `size_to_str` and `colored`, BOTH
+         ALREADY PORTED (`helpers.bend:1143`, `:1083`), plus `rz_nbytes`, already in
+         `realize.bend` and already answering `None` for a SYMBOLIC dim -- which is the
+         faithful absence, since CPython's `sym_infer` on a symbolic node with
+         `var_vals or {}` raises `NameError`. `arg_uops[0]` goes through
+         `get_call_arg_uops` and NOT `src[1]`: MEASURED, the census's `encdec` call
+         carries a bound var, so they are different nodes there.
+         **MUTATION: "yellow" -> "red" -> rc=1, RED, diff shows `\x1b[33m` vs
+         `\x1b[31m`, so the row compares the ANSI CONTENT and not just the dispatch.**
+         `drivers_hold`'s `case O.Ops*` count moved 15 -> 16 because `gn_prog` became
+         `gn_body` and gained the `encdec` arm; the LADDER count is still 9.
+         (c) **`ProgramInfo` WAS NEVER A DEPENDENCY.** It is ported
+         (`O.ProgramInfo`, `ops.bend:1012`) and the `var` driver has **10** rows where
+         CPython answers a real value -- nodes 17,18,19,20,25,31,35,40,57,60 -- and ALL
+         TEN AGREE, `CONST(4)` and `PARAM/0@3` included. The 12 `VARS_BODY` rows are the
+         NON-`ProgramInfo` bodies where CPython raises `AttributeError`.
+         (d) **ZERO-ROW MUTATION, the deliverable: `va_0` AND `va_1` ARE DEAD DEFS.**
+         `grep` shows neither has a caller; MEASURED, replacing `va_1`'s body with
+         `VSkip` leaves the gate GREEN and moves **0 of 974** rows. `validate_table()` is
+         read only by `t_va_len`. The `val_27` fix does NOT revive them and does not
+         pretend to.
+         (e) **`sym_infer` IS a real wall and IS `TODO(p3)` in THREE places**
+         (`ops.bend:4929`, `ops.bend:5332`, `fold.bend:6554`) and `_sym_fxn` needs
+         `simplify` + `renderer_infer` + `exec` (`ops.py:1168-1179`) -- but it gates
+         **nothing** left in this gate. `pm_validate`'s BODY is blocked on TWO other
+         declared walls: `UOp.new_buffer` is a P6 device call and `store_call` is
+         `TODO(p3)` with `param_like` absent (`ops.bend:5170-5171`). `storage_base` is the
+         third (`ops.py:798`). **DO NOT PORT ANY OF THESE TO UNPIN A ROW.**
+         (f) **The `kern` closure is NOT AVAILABLE and `kern_blind_holds()` VERIFIES IT.**
+         `Device.tag` is named in FOUR `.bend` files and DEFINED IN NONE (the docstring
+         says five; four is the measurement), so `rs_d_kern` cannot print a NAME. A third
+         closure claim would have to be a SECOND DEVICE IN BOTH FIXTURES, which moves
+         `arena_n` and every index after it.
 
       **30 of the 50 rows are CPython-VERIFIED**, and the expectations are the
       interpreter rather than a transcription: `.agents/slop/notes/rz-oracle.py` is
