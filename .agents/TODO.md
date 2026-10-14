@@ -13847,13 +13847,96 @@ the way that NO GATE COULD SEE. Both are recorded here because the instrument is
       two missing bounds as the cause and clears `D.commit_dtype`. `cr_empty_like` should derive
       them the way `cr_full` does -- from the value it is handed -- and the reason it cannot is W3.
 
+## SRPORT -- `string_rewrite` IS THE RENDERER'S LARGEST SURFACE AND IT HAD NO ROWS AT ALL (2026-10-14)
+
+`gates/wgsl_render_census-gate.py` was 172 rows, 158 exact, 14 pinned in 6 classes, rc=0, and
+`tinybendygrad/renderer/wgsl.bend` had **NO DEFS** for `string_rewrite` -- wgsl.py:65-93, the
+renderer's largest surface. It is now **207 rows, 193 exact, rc=0**, and the seventeen rules are
+ported. "The census found no defects" was a statement about 172 rows, and 30 lines of renderer were
+never in them.
+
+- [x] **ALL SEVENTEEN, IN PYTHON'S ORDER, AND THE WALL WAS NOT BIG.** `ctx[x]` is `self.r[x]`
+      (cstyle.py:207) -- the naming pass's dict -- so `ctx[x]` is the CHILD'S TEXT and a parameter
+      here, exactly as `render_cast(u, "V")`'s `val` is. Every `bitcast<>` spelling, the gated
+      load's `select`, the `atomicAnd`/`atomicAdd` read-modify-write, and the INDEX
+      `strip_parens` arm: 35 rows, all exact. MEASURED, `patterns[:17]` are these and
+      `patterns[17:]` is `base_rewrite`'s 33.
+- [x] **THE ORACLE CALLS CPython'S OWN DISPATCHER, NOT A REIMPLEMENTATION.**
+      `PatternMatcher([WGSLRenderer.string_rewrite.patterns[i]]).rewrite(u, ctx=r)` -- CPython's
+      pattern, CPython's lambda, one rule at a time. The `atomicAnd`/`atomicAdd` fixture is
+      `packed_store()`'s OWN returned node, so the rmw shape is the one the graph half emits.
+- [x] **A CONST CARRY IS A WEAKINT CONST, NOT A CONST OF THE TARGET DTYPE.** `UOp.const` folds the
+      cast away at exactly bool/weakint/weakfloat (ops.py:632), so `CAST(u32, CONST(u32))` is
+      UNREACHABLE through the constructor and rules 3 and 4 must be probed with `UOp(Ops.CAST, ..)`
+      around a BARE CONST. MEASURED BOTH WAYS: the first probe returned `None` for all of them.
+- [x] **`None` IS A CONTROL-FLOW STATE AND `""` WOULD HAVE BEEN UNCOMPARABLE.** Rules 0 and 14 end
+      in `else None`. The oracle maps Python's `None` to the SAME `NOMATCH` token the port spells,
+      so `sr idx plain` and `sr rmw plain` are EXACT MATCHES and there was nothing to pin. Naming it
+      rather than printing `""` is FINDING 2's own argument: `""` is a SPELLING a shader can hold.
+- [x] **FINDING 1 FIXED, AND THE FIX IS MUTATION-VISIBLE.** `ssimp` walks the CAST CHAIN with a
+      fuel of 4; `fx_mixed` builds `sint_to_uop`'s shape instead of the unbuildable
+      `CAST(weakint, CONST)`. `rk_sz mixed` was `8,2` and is `8,2` -- and on the NEW fixture the OLD
+      `ssimp` answers `0,2`, so the fixture change turned an untestable row into a test (M53).
+- [x] **FINDING 2 FIXED.** `type_map`'s catch-all answered `""` for a `KeyError`, one of the two
+      spellings of one refusal, and the silent one. It answers `UNHANDLED(dtypes.f64)` now, and the
+      `type_map double` pin's PORT column is a REFUSAL rather than a rendering.
+- [x] **FINDING 3 SHRANK 7 -> 5.** `render_load` is CALLED (4 rows) and `wi_axis`+`wi_axis.of2` are
+      DELETED -- the second was the def the header named as the totalizer and it called nothing.
+      `prw_of` stays, and MEASUREMENT says why: `packed_rmw`'s shape is `AND(LOAD(CAST(b, u32)),
+      wmask)`, so `& UPat.var(..)` is Ops.AND and NOT a bind, and the header's claim is wrong.
+- [x] **FINDING 4 FIXED AT THE SOURCE, PINS DROPPED.** The five stale `py=` halves were CORRECTED,
+      so `--refresh` wrote `0 stale self-checks` and those rows became exact matches. A pin that
+      moved because the defect is GONE is deleted, and `selfcheck_hold()` still requires zero.
+- [x] **`rules_hold()` IS THE NEW POPULATION GUARD.** It re-derives the seventeen, that the tail IS
+      `base_rewrite`'s own patterns, each rule's OP against a table, one `sr_*` def per rule, and
+      that every rule has a ROW GROUP. Its own first draft asserted the op's NAME appeared in
+      `wgsl.bend` and printed six reds on a green port -- six of the seventeen are BITCAST and the
+      port spells none of them `BITCAST`. A check that reimplements the port on the side that is
+      being checked, three crashes and one type mismatch later.
+- [x] **`gates/wgsl_render_census-mutate.py` -- 22 MUTATIONS, AND A MUTATION FOUND WHAT READING
+      MISSED.** M51 (`sr_cuint`'s `& 0xFFFFFFFF` replaced by the identity) was **GREEN** on a
+      three-row axis whose `hi` was 0 every time. The `4294967296` row is the fix. Nine of the 22
+      are POPULATION mutations and the sharpest is P9: the port DUPLICATES a row name, the count
+      still matches 207, and the gate is red BY NAME.
+- [x] **THE BOUNDARY, STATED.** The census compares each rule's ANSWER on a chosen fixture. It does
+      not compare WHICH NODES a rule MATCHES -- that is `UPat.match` over a pattern table, and the
+      seventeen defs are the rules' BODIES. So `packed_rmw`'s `AND` is still unported (Finding 3's
+      `prw_of`) and seventeen spellings are not seventeen branch proofs.
+
+## WGSL-PATTERNS -- all SEVENTEEN `string_rewrite` RULES FIRE WHERE CPython's OWN `UPat` SAYS NOMATCH (2026-10-14)
+
+Found by the negative-row exercise in commit `c4412aced` and **NOT FIXED**: porting the 17 `UPat`s is a
+much larger change than "the rules' bodies".
+
+- [ ] **EVERY ONE OF THE SEVENTEEN REFUSES IN CPYTHON AND NONE IN THE PORT.** Each `srneg` row drives
+      a rule on a node CPython's own `UPat.match` answers `NOMATCH` to, and `_sr_rejects` asserts that
+      with CPython's matcher, so a row whose premise stops holding is red AT THE SOURCE. VERIFIED IN
+      `gates/wgsl_render_census-pins.rows` under `PATTERN_UNPORTED`:
+
+          srneg 0  cast i32   CPython NOMATCH   port B[1]                  (DROPS THE CAST)
+          srneg 1  neg f32    CPython NOMATCH   port (0-S)
+          srneg 12 load 2     CPython NOMATCH   port select(V, atomicLoad(&B[1]), G)
+          srneg 13 load 3     CPython NOMATCH   port atomicLoad(&B[1])
+
+- [ ] **TWO OF THEM ARE SILENTLY WRONG ANSWERS, NOT MERE OVER-FIRING.** `srneg 14 store u8` answers
+      `atomicAnd(&B[1],W);` -- **DROPPING THE STORED VALUE** -- and `srneg 15 store 3` answers
+      `B = V;` -- **DROPPING THE GATE**. An over-firing rewrite is visible in a diff; one that drops an
+      operand's effect is not.
+- [ ] **ALL SEVENTEEN ARE UNREACHABLE FROM `render_kernel` AS DRIVEN TODAY.** That is the absence of a
+      REACHABILITY CHECK, not a wrong answer, and the class records exactly that. **PORTING THE
+      PATTERNS IS WHAT MAKES IT TRUE RATHER THAN PROBABLE** -- and until then a rule body that is wrong
+      on every fixture the gate does not drive stays green.
+- [ ] **THE `34/35` MEASUREMENT IS A PROBE, NOT A GATE CHECK.** All 34 positive `sr` rows are on nodes
+      CPython's pattern MATCHES; one is not (`sr rmw plain`). It needs `SR_FIXTURES` hoisted out of
+      `g_string_rewrite` so the gate loads ONE declaration rather than a second copy.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
 
-**OVERALL** — ████████░░ 1093/1350 81.0%  (+4 `[~]`)
+**OVERALL** — ████████░░ 1116/1373 81.3%  (+4 `[~]`)
 
-Category = each level<=2 (`#`/`##`) heading, found by discovery; 160 of 190 sections carry tasks.
+Category = each level<=2 (`#`/`##`) heading, found by discovery; 163 of 193 sections carry tasks.
 
 • TODO — ████████░░ 39/49  80%
 • Phase P0 — toolchain and scaffolding — █████████░ 8/9  89%
@@ -14013,5 +14096,8 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 160 of 190 sect
 • MSGDIFFQ — msgdiff-gate.py REFUSES A MESSAGE THAT FAITHFULLY QUOTES... — ░░░░░░░░░░ 0/4   0%
 • DECOMPCENSUS — codegen/decomp/ gets its FIRST gate, and its ORACLE ... — ███████░░░ 6/9  67%
 • REALIZEGAPS — three gaps in realize_graph_census's OWN instrument (... — ░░░░░░░░░░ 0/3   0%
-• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ██████████ 6/6  100%
+• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ██████████ 6/6 100%
 • Session 2026-10-13 — opsfind: findings A, B, C and F of gates/ops_... — ████████░░ 5/6  83%
+• TNISFDUMP -- the ONLY instrument that caught the second tn_isfinite... — █████░░░░░ 2/4  50%
+• CRPCONST -- cr_const_of's FOLD READ THE CALLER'S DTYPE, AND ops.py... — ████████░░ 4/5  80%
+• SRPORT -- string_rewrite IS THE RENDERER'S LARGEST SURFACE AND IT H... — ██████████ 11/11 100%
