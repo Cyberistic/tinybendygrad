@@ -1,0 +1,52 @@
+# symcases.rows -- THE CORPUS `gates/sym_graph_census.bend` reads. `<name>|<s-expr>`, `#` and
+# blank lines skipped, `|` because MEASURED `String.split(s, Char.from_u32(9))` on "a\tb c\td"
+# answers 3 -- a tab separator splits on ANY whitespace and the s-expr's spaces come with it.
+#
+# FIVE CASES, and that is the honest population today: the driver's src ORDER inside one node is
+# unresolved (see `ss.go`), so this is a probe corpus and not a gated one. What each case is for:
+t_add|(add c7 c0)
+t_xor|(xor (xor x c5) c5)
+t_xor0|(xor (xor x c5) y)
+t_group|(group x)
+t_sink|(sink (group x) c2)
+#
+# THE LEAF VOCABULARY: `c<N>` and `n<N>` are weakint CONSTs, `bt`/`bf`/`bad` are the three other
+# CONSTs, and EVERY other name is a VARIABLE at the dtype its LAST character states -- `x` weakint,
+# `xb` bool, `xf` weakfloat, `xi` int32. So `x` and `y` are two nodes at ONE dtype, which is what
+# makes the rebind rules' identity guard stateable: `t_xor` and `t_xor0` are the positive and the
+# negative of the same shape, and only the pair sees the check go.
+#
+# WHAT THE FIVE ROWS ALREADY SHOW, MEASURED on 2026-10-15 at HEAD, and they are the first
+# numbers anybody has for this layer:
+#   t_add    sym answers CONST(7) -- CPython's `x + 0 -> x` at symbolic.py:117, and the port
+#            firing it is what `selfadd` counts in its own gate;
+#   t_group  sym answers the variable -- `GROUP(x) -> x` at symbolic.py:444;
+#   t_sink   sym answers a NOOP -- the SINK flatten at symbolic.py:445;
+#   t_xor    sym answers NOTHING where CPython answers the variable: `(x^c5)^c5 -> x` is
+#            symbolic.py:123, and the port's `sym_8` is `p_rebind2(x, OpsXOR, u)`. THIS IS THE
+#            ROW TO READ FIRST and it is NOT yet a finding: the port's gate answers `sym` on ITS
+#            OWN `fx_samediv` fixture, which is `(x // x)`, and this corpus line is an XOR whose
+#            two captured names are the same node for a DIFFERENT reason -- the port's header says
+#            `p_rebind2` is "`op` over `op` over two srcs whose src[1] is the SAME node both
+#            times", which `(xor (xor x c5) c5)` does NOT have (it has src[0] the same both
+#            times, because the inner XOR's src[0] is `x` and the outer's src[1] is `c5`). So the
+#            disagreement is EXPECTED for a rule that only tests one side, and the oracle is what
+#            settles it. It is the first row the next run must pin.
+#   t_xor0   sym answers NOTHING, and its fixture differs from `t_xor` in ONE node: the sibling
+#            is `y` instead of `c5`. A rebind rule needs the PAIR to be worth anything, and here
+#            both members of the pair answer `norewrite`, which is the shape `symbolic.bend`'s own
+#            `rebind`/`rebind0` rows are built on -- and those are on FLOORDIV, not XOR.
+#
+# TWO MORE BEND MEASUREMENTS, both found by this corpus and both INVISIBLE to `grep`:
+#   * `String.split(ln, SEP())` -- the separator a DEF returns, passed inline -- splits a healthy
+#     corpus line into ONE field, and every row comes back `malformed=no-expr`. The same call with
+#     the separator as a PARAMETER answers two. So `fields.at(ln, c)` and not `String.split(ln, SEP())`,
+#     and that is what the driver is gated on.
+#   * `List.append(&2, U32, [1,2], [3])` answers the EMPTY LIST, and so does
+#     `List.append(&2, U32, [1], [3])`: a list LITERAL in the borrowed accumulator position
+#     silently yields nothing. Every `List.append` in the driver therefore has to be handed a
+#     NAME, and a fold that starts from a literal is a fold that starts empty.
+# Both are the same shape as the walk-order disagreement the header names, and all three are
+# `bend`-version behaviours rather than port behaviour. They are here because the tree's rule is
+# "a wrong reason is worse than no reason": a reader who assumes `ops.bend` or `symbolic.bend`
+# is at fault will go and change the wrong file.
