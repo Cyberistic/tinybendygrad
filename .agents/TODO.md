@@ -14560,6 +14560,29 @@ at least where it is observable.
 - [ ] **`lg5`'s 5 `BOTH-RAISE` FAMILIES ARE AN UPSTREAM LIMITATION** (`int(nan)` in `DType.const`,
       dtype.py:84), not a port finding.
 
+## FIXTUREOWN -- `gates-pop` reads ANOTHER FILE'S PLANT FIXTURE as an EXECUTED ROOT (2026-10-14)
+
+Found while accepting a ledger snapshot. `gates/gates-pop.py --ledger check` printed
+`III FALSE  1 file(s) compute a root that RESOLVES OUTSIDE the repo` naming
+`checks/cites-census.py: Path(__file__).resolve().parents[3]`. **THAT IS A FALSE POSITIVE AND IT IS THE
+NINTH DERIVATIVE OF THE SAME CLASS.**
+
+- [ ] **THE LINE IS A PLANT FIXTURE, NOT CODE.** `checks/cites-census.py:595-600` is
+      `for kind, needle, gap, src in (("code", "declared_values()", "", ""), ("code",
+      "pathlib.Path(__file__).resolve().parents[3]", "", ""), ...)` -- a list of **known false-fails**
+      the instrument itself produced, each by hand matched. The scanner reads the NEEDLE STRING as
+      executed source. MEASURED: `itemsize` of the claim is a literal; the census runs and reports
+      (`VERDICT: FAIL (exit 1)`), so nothing is actually broken in `cites-census.py`.
+- [ ] **THE RULE ALREADY EXISTS AND THIS FILE IS NOT COVERED BY IT.** `gates-pop.py:647-662` says
+      "**PROSE IS NOT CODE, AND A FIXTURE IS NOT EITHER: A STRING THAT HOLDS SOURCE IS DATA TO THIS
+      INSTRUMENT WHOSE SOURCE IT IS NOT**", and `code_of` blanks such strings via `FIXTURES` --
+      **BUT SCOPED BY `p.resolve() == Path(__file__).resolve()`, i.e. ONLY FOR THE FILE THAT OWNS THEM**,
+      and correctly so ("applying it unconditionally broke plants 1 and 5"). **THE GAP IS THAT A FIXTURE
+      IS DATA TO THE FILE THAT OWNS IT, AND THE OWNERSHIP TEST IS `p == gates-pop.py`, WHICH CANNOT
+      KNOW ABOUT `cites-census.py`'s OWN fixture table.**
+- [ ] **AND `checks/cites-census.py` IS NOT IN FLIGHT** -- `git ls-tree` says it is in HEAD and
+      `git status` is clean -- so this is not a transient of another unit's work.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
