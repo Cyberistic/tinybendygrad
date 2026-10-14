@@ -14523,6 +14523,43 @@ NINTH distinct instrument bug of the session and the most general one.
       **`None`, an absent value**, the oracle's `str()` printed `"None"`, and per `dsl.bend:2066-2069`
       (`""` is not the same answer, print `None`) THE PORT WAS RIGHT. **THE ROW NOW AGREES.**
 
+## DECOMP-VALUE -- a NUMERIC ORACLE ANSWERED "0 DIFFER", AND THE STRONGER FINDING IS AN INVALID GRAPH (2026-10-14)
+
+`9a26ca540`. `gates/decomp_value-gate.py` + `-pins.rows`, **rc=0, 198 VALUE comparisons
+(11 PROMOTION rows x 18 operand families), 0 `DIFFER`**. **THE PORT'S NARROWER INTERMEDIATES DO NOT CHANGE
+ANY VALUE** across 18 families -- so the 11 pinned rows are a REAL DIVERGENCE THAT IS NOT A WRONG ANSWER,
+at least where it is observable.
+
+- [x] **THE ORACLE IS LEGITIMATE BECAUSE THE PORT'S CONE IS NOT TRANSCRIBED.** It is CPython's own `UOp`
+      graph with the census's declared `CAST/1` nodes SPLICED OUT, **and the splice is RE-PROVED EVERY
+      RUN** -- the spliced cone's `sig` equals the pinned PORT row TOKEN-FOR-TOKEN over the whole cone
+      (2431 tokens for `lgq`, at the declared count). Witnesses are enumerated, not assumed: `lg1 lgq
+      lgr` admit two each and both give the same answer.
+- [ ] **THE STRONGER FINDING, AND IT IS WORSE THAN THE 11 ROWS: `lg1`'s SPLICED (PORT'S) CONE FAILS
+      `dtype.bitcast`'s OWN INVARIANT.** `dtype.py:302` asserts `in_dtype.itemsize == out_dtype.itemsize`.
+      **MEASURED HERE: `itemsize(weakint) = 100` against `itemsize(i64) = 8`, NOT EQUAL.** **THE PORT
+      BUILDS A GRAPH THAT IS NOT A VALID TINYGRAD UOP GRAPH** -- and the same missing promotion makes
+      **10 of 11 ROWS UNEXECUTABLE BY `PythonProgram` ITSELF** (`ops_python.py:153`) against **0 of 11**
+      for CPython's own cones. **THE INVARIANT IS CPYTHON'S, NOT THE ORACLE'S**, which is what makes it
+      evidence rather than an opinion.
+- [ ] **`lg1` IS THE ROW THAT MOST NEEDS A DECISION AND NONE WAS MADE.** Its graph is invalid, so "does
+      the value change" is UNDEFINED there. **THAT IS A PORT DEFECT TO FILE, NOT TO FIX.**
+- [ ] **NO BEND LANE, AND THE REASON IS A TRAP, NOT AN OMISSION.** The port's arena carries **NO DTYPE AT
+      ALL** (`O.UOp.alu` -> `UOp.new(..., ANone{})`), so a Bend dump would need a port of
+      `dtype_from_uop` -- a reimplementation, and **exactly the trap two evaluators cannot check each
+      other for.** The node-for-node signature proof substitutes and is re-checked every run.
+- [ ] **WHAT THE FIXTURES CANNOT DISTINGUISH, NAMED NOT PAPERED:** operands above 2**32 AT THE INPUTS
+      (the words are 32-bit by construction -- the promoted INTERMEDIATES do exceed 2**32 and that IS
+      exercised); a defect needing a shift count that is neither small nor saturated; NaN payload
+      identity; **`src` ORDER** (the census token is `op/nsrc` with `src[0]` read first, and `lgq`/`lgr`
+      each have 68-69 deleted nodes at an order-sensitive `src[0]`); any port defect of a DIFFERENT
+      CLASS with the same token sequence; a word read under a different signedness.
+- [ ] **`lgc` AND `lgd` HAVE NO MUTANT AT ALL** -- their cone's only `CAST/1` IS the promotion, so their
+      coverage rests on the population. `lg1` moves 18/18 families on a one-cast mutant, `lg5` 5/18.
+      **A GATE WITH NO LIVE ROW IS REFUSED, NOT PASSED.**
+- [ ] **`lg5`'s 5 `BOTH-RAISE` FAMILIES ARE AN UPSTREAM LIMITATION** (`int(nan)` in `DType.const`,
+      dtype.py:84), not a port finding.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
