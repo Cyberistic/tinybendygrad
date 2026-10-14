@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""wgsl_render_census-oracle.py -- CPython's ANSWERS for the 172 rows
+"""wgsl_render_census-oracle.py -- CPython's ANSWERS for the 207 rows
 `tinybendygrad/renderer/wgsl.bend` prints from its own `main()`.
 
     .venv/bin/python gates/wgsl_render_census-oracle.py
@@ -31,7 +31,8 @@ return surface of the 122-line file is heterogeneous:
     `code_for_workitem`             `dict[str, str]`
     `code_for_op`                   `dict[Op, str]`
     `type_map`                      `dict[DType, str]`
-    `string_rewrite`                sixteen rules, each a `str`
+    `string_rewrite`                SEVENTEEN rules, each a `str` (and each a
+                                    `None` when it does not apply)
     `render_cast` / `_render_dtype` / `render_dtype` / `render_load` / `buf_map`
     `render_kernel`                 the WHOLE WGSL MODULE, ~700 characters
     `supported_dtypes`              `set[DType]`
@@ -91,6 +92,12 @@ this file's two predecessors. So:
     `CMPLT(CONST(thr), AND(BITCAST(a, uint{bs}), CONST(mask)))`; `nan_e` /
     `nan_m` come from `dtypes.finfo`, which is the table `is_nan` itself calls.
   * `wmask` is read off `packed_store(s)`'s own `CAST(u32, XOR(SHL(...), ...))`.
+  * the 35 `string_rewrite` rows go through
+    `PatternMatcher([WGSLRenderer.string_rewrite.patterns[i]]).rewrite(u, ctx=r)`
+    -- CPython's own dispatcher over CPython's own `UPat` with CPython's own
+    lambda, one rule at a time. The FIXTURE (which node, and what `ctx` holds
+    for its children) is the only thing chosen here, and the `atomicAnd`/
+    `atomicAdd` rows are `packed_store`'s OWN returned node.
 
 THE POPULATION IS DECLARED HERE AND THE GATE CHECKS THE TWO SIDES AGREE.
 `wgsl_render_census-gate.py`'s `names_hold()` runs THIS file and runs
@@ -98,8 +105,15 @@ THE POPULATION IS DECLARED HERE AND THE GATE CHECKS THE TWO SIDES AGREE.
 so a row present on one side only is red BEFORE any value is compared.
 `fixtures_hold()` goes further: it re-reads the port's own fixture AXES out of
 `wgsl.bend`'s source text (`r_pk8("uchar", S.uint8(), ...)`, `r_wm(255, 0, ...)`,
-`r_cfo1(O.OpsSQRT{})`, ...) and compares them to the axes below, name for name
-and in order -- so the axes cannot drift on one side only.
+`r_cfo1(O.OpsSQRT{})`, `r_cu1("-1", 4294967295, 4294967295, ...)`,
+`r_sb1("global", "data0_16", S.uint8(), S.AGlobal{}, 16, ...)`, ...) and
+compares them to the axes below, name for name and in order -- so the axes
+cannot drift on one side only. MEASURED, and that is not theoretical:
+`gates/wgsl_render_census-mutate.py`'s P8 drifts `SR_CI` on THIS side alone and
+moves ZERO rows; only the axis check catches it.
+`rules_hold()` goes further still: it re-derives `string_rewrite`'s length,
+that its tail IS `base_rewrite`'s own patterns, and each rule's op, from
+CPython, on every run.
 
 WHERE AN AXIS COULD NOT BE DISCOVERED, IT IS ADMITTED, and every admitted axis
 says so:
@@ -121,6 +135,21 @@ says so:
                 reasons stated in the pins file.
     ARCHES      the two `r_sd1` arch strings. ADMITTED: `Target(arch=...)` is a
                 choice about what to ask `supported_dtypes`.
+    SR_CU/SR_CI `(name, hi, lo)` triples for `string_rewrite`'s two CONST rules.
+                ADMITTED: a weakint CONST's value is an ARBITRAGE-PRECISION
+                Python int, so "which values" is a choice; and the `hi:lo` pair
+                is how `fixtures_hold` reads that choice out of `wgsl.bend`'s
+                text without running anything.
+    SR_BUF      `(name, buffer text, dtype, addrspace, numel)` for rule 5. The
+                buffer NAMES are the port's own fixture (`data0_16`, `t0`) and
+                the third is beside them; ADMITTED for the same reason
+                `PK_DTS` is.
+    THE `ctx` LETTERS ("S", "I", "B", "V", "G", "W", "NV", "X"). ADMITTED, and
+                the admission is the whole comparison's weakest joint: `ctx[x]`
+                is `self.r[key]`, the naming pass's dict, so a census cannot
+                invent a kernel's variable names. What IS compared is each
+                rule's SPELLING around a child, and the letters are the same on
+                both sides because the port's parameter IS the letter.
 
 `CFO_ARMS`, `PF_DTS`, `PK_DTS`, `WMASK_AXIS`, `PS_AXIS` and `ARCHES` are spelled
 with the PORT'S OWN SPELLINGS (the `S.uint8()` constructor and the `"uchar"`
@@ -150,9 +179,10 @@ sys.path.insert(0, __file__.rsplit("/gates/", 1)[0])
 
 from tinygrad.dtype import AddrSpace, dtypes
 from tinygrad.helpers import Target
+from tinygrad.renderer.cstyle import base_rewrite
 from tinygrad.renderer.wgsl import (WGSLRenderer, is_packed, packed_field,
                                     packed_store, is_nan, _packed_size)
-from tinygrad.uop.ops import Ops, ParamArg, UOp
+from tinygrad.uop.ops import Ops, ParamArg, PatternMatcher, UOp
 
 # ===========================================================================
 # THE ROW PRINTERS. Each is the PORT's own renderer, written out, so a byte
@@ -479,6 +509,182 @@ def g_render_dtype():
 
 
 # ===========================================================================
+# GROUP S -- `string_rewrite`, THE SEVENTEEN RULES. Every row is ONE RULE
+# APPLIED TO ONE REAL `UOp`, through `PatternMatcher.rewrite` and CPython's own
+# `UPat` -- the rule table is NOT reimplemented here.
+#
+# HOW A SINGLE RULE IS REACHED, and why that is not a reimplementation. The
+# table is `WGSLRenderer.string_rewrite.patterns`, `patterns[:17]` being wgsl's
+# seventeen and `patterns[17:]` being `base_rewrite`'s 33, and each row below is
+# `PatternMatcher([patterns[i]]).rewrite(u, ctx=r)` -- CPython's own dispatcher
+# over CPython's own pattern with CPython's own lambda. The FIXTURE (which node,
+# and what `ctx` holds for its children) is the only thing chosen here, exactly
+# as `CFO_ARMS` chooses an op and `RC_DTS` chooses a dtype.
+#
+# `ctx[x]` IS `self.r[key]` (cstyle.py:207), the naming pass's dict, so `r.r` is
+# FILLED with the same one-letter text the port passes as its `String` parameter
+# and the two lanes render the same substitution. Those letters are ADMITTED: a
+# census cannot invent a kernel's variable names, and what is being compared is
+# the rule's SPELLING around a child, not the child's own text.
+#
+# `None` IS SPELLED `NOMATCH` on BOTH SIDES. CPython's rule returns `None` for
+# "this rule does not apply" and `PatternMatcher.rewrite` treats it as "try the
+# next rule"; it is a control-flow state, not a value. `wgsl.bend` spells its own
+# no-answer `NOMATCH`, and the point of naming it rather than printing `""` is
+# that the empty string is the shape `type_map`'s arm used to have (FINDING 2).
+# ===========================================================================
+SR_RULES = WGSLRenderer.string_rewrite.patterns[:17]
+SR_BASE = len(base_rewrite.patterns)
+
+# The `ctx` letters. `S` is a bitcast/const source, `I` a rendered INDEX, `B` a
+# rendered store target, `V` the alternative value, `G` the gate, `W` the wmask,
+# `NV` the new value, `I0`/`I1`/`X` a plain source.
+def _sr_ctx(pairs=()):
+    """A `WGSLRenderer` whose `r` -- the naming pass's `self.r` dict, which is
+    what `ctx[x]` reads (cstyle.py:207) -- holds `pairs`."""
+    r = R()
+    r.r.update(pairs)
+    return r
+
+
+def _wc(v):
+    """A BARE CONST: `UOp.const(v)` with no dtype, and `UOp.const` folds a cast
+    away at exactly bool/weakint/weakfloat (ops.py:632), so a bare CONST is
+    ALWAYS weakint. That is why `c.val` in `string_rewrite`'s rules 3 and 4 is a
+    weakint integer and not the target dtype's -- and why a CONST of u32 or i32
+    is UNREACHABLE through `UOp.const`, which is why the rules are probed with
+    `UOp(Ops.CAST, ...)` around a bare CONST (MEASURED both ways)."""
+    return UOp(Ops.CONST, arg=v, src=())
+
+
+def _cvar(v):
+    return UOp(Ops.CAST, src=(_wc(v),), arg=dtypes.uint32)
+
+
+def _cint(v):
+    return UOp(Ops.CAST, src=(_wc(v),), arg=dtypes.int32)
+
+
+def _i64(hi, lo):
+    """The SIGNED value of the `hi:lo` pair `SR_CU`/`SR_CI` carry, which is the
+    weakint CONST `c.val` the two rules read. It is derived rather than spelled
+    so the axis and the fixture cannot drift apart: an axis entry is the two
+    `U32` words and the node is built from those same words."""
+    v = (hi << 32) | lo
+    return v - (1 << 64) if hi & 0x80000000 else v
+
+
+def g_string_rewrite():
+    ci = UOp.const(1, dtypes.int32)
+    ch = UOp.const(1, dtypes.half)
+    cu = UOp.const(1, dtypes.uint32)
+    alt = UOp.const(7, dtypes.uint32)
+    gate = UOp.const(1, dtypes.bool)
+    vf = UOp.const(5, dtypes.float)
+    idx_pk = UOp(Ops.INDEX, src=(buf_of("uint8", "AGlobal", 16), _wc(1)))
+    idx_pl = UOp(Ops.INDEX, src=(buf_of("single", "AGlobal", 16), _wc(1)))
+    cu3 = UOp.const(3, dtypes.uint32)
+    # 14 -- THE READ-MODIFY-WRITE IS CPython's OWN `packed_store` OUTPUT, so the
+    # `atomicAnd`/`atomicAdd` rows are that function's answer and not a
+    # hand-built approximation of it. `packed_rmw`'s `b` binder and the store's
+    # `b` binder MUST BE ONE UOp: `UPat.match`'s `setdefault(self.name, uop) is
+    # not uop` check rejects the store otherwise (MEASURED -- and that is why the
+    # `rmw bare` row is `UOp.store(ix_n, and_n)` and not `UOp.store(idx_pk, ...)`:
+    # `packed_store` rebuilds the INDEX through `bidx.src[0].index(...)`).
+    rmw = packed_store(UOp.store(idx_pk, UOp.const(5, dtypes.uint8)))
+    and_n = rmw.src[1].src[0]
+    ix_n = and_n.src[0].src[0].src[0]
+    wmask, newv = and_n.src[1], rmw.src[1].src[1]
+    add = UOp(Ops.ADD, src=(_wc(1), _wc(2)), arg=Ops.ADD)
+    # `(I0)+(I1)` is NOT A DIFFERENT NODE from `(I0+I1)` -- same op, same srcs,
+    # same arg, and `UOp`'s interning makes them one object. So the unbalanced row
+    # rides on the `ctx` SPELLING of that one node and not on a second node, and
+    # `strip_parens` reads the spelling anyway (it is a `str` predicate over the
+    # text, not a graph test). `index const` is a CONST index, whose `arg` is `1`
+    # and so is not `Ops.ADD`, which is the rule's other branch.
+    iconst = _wc(1)
+
+    # `ctx` IS PER ROW, not one shared dict: the letters are what the row's own
+    # rule reads, and sharing one dict would let a row for `INDEX` see a `B` that
+    # a row for a CAST put there. Each row's bindings are exactly the nodes that
+    # row's rule dereferences, which is also what makes the port's `String`
+    # parameter list checkable by eye against this one.
+    def r_(i, name, u, pairs=()):
+        row(f"sr {name}", _sr_rewrite(i, u, _sr_ctx(pairs)))
+
+    r_(0, "idx packed", UOp(Ops.CAST, src=(idx_pk,), arg=dtypes.uint32), {idx_pk: "B[1]"})
+    r_(0, "idx plain", UOp(Ops.CAST, src=(idx_pl,), arg=dtypes.uint32), {idx_pl: "B[1]"})
+    r_(1, "neg", UOp(Ops.NEG, src=(cu3,)), {cu3: "X"})
+    r_(2, "cbool 1", UOp.cconst(1, dtypes.bool))
+    r_(2, "cbool 0", UOp.cconst(0, dtypes.bool))
+    for nm, hi, lo in SR_CU:
+        r_(3, f"cuchar {nm}", _cvar(_i64(hi, lo)))
+    for nm, hi, lo in SR_CI:
+        r_(4, f"ci32 {nm}", _cint(_i64(hi, lo)))
+    # ONE node per axis entry, bound under the SAME object the rule is given --
+    # `self.r[key]` is a dict keyed by the UOp, so building the buffer twice would
+    # answer `REFUSE:KeyError` for a rule that is fine.
+    for nm, bn, ctor, a, k in SR_BUF:
+        u = buf_of(ctor, a, k)
+        row(f"sr buffer {nm}", _sr_rewrite(5, u, _sr_ctx({u: bn})))
+    r_(6, "bhalf", UOp(Ops.BITCAST, src=(cu,), arg=dtypes.half), {cu: "S"})
+    r_(7, "buchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint8), {ci: "S"})
+    r_(8, "bchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.char), {ci: "S"})
+    r_(9, "bushort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint16), {ci: "S"})
+    r_(9, "bushort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.uint16), {ch: "S"})
+    r_(10, "bshort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.short), {ci: "S"})
+    r_(10, "bshort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.short), {ch: "S"})
+    r_(11, "bany", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.float), {ch: "S"})
+    r_(12, "lgate packed", UOp(Ops.LOAD, src=(idx_pk, alt, gate)),
+       {idx_pk: "B[1]", alt: "V", gate: "G"})
+    r_(12, "lgate plain", UOp(Ops.LOAD, src=(idx_pl, alt, gate)),
+       {idx_pl: "B[1]", alt: "V", gate: "G"})
+    r_(13, "load packed", UOp(Ops.LOAD, src=(idx_pk,)), {idx_pk: "B[1]"})
+    r_(13, "load plain", UOp(Ops.LOAD, src=(idx_pl,)), {idx_pl: "B[1]"})
+    # 14 -- THREE arms, because the rule has three: with `new_v`, without it
+    # (`new_v` is gone when it is 0, per wgsl.py:87), and with `is_packed` False,
+    # where the rule answers `None` and the STORE falls to rule 15 instead.
+    r_(14, "rmw nv", rmw, {ix_n: "B[1]", wmask: "W", newv: "NV"})
+    r_(14, "rmw bare", UOp.store(ix_n, and_n), {ix_n: "B[1]", wmask: "W"})
+    r_(14, "rmw plain", UOp.store(idx_pl, vf), {idx_pl: "B", vf: "V"})
+    r_(15, "store", UOp.store(idx_pl, vf), {idx_pl: "B", vf: "V"})
+    r_(16, "index add", UOp(Ops.INDEX, src=(idx_pl, add)), {idx_pl: "B", add: "(I0+I1)"})
+    r_(16, "index const", UOp(Ops.INDEX, src=(idx_pl, iconst)), {idx_pl: "B", iconst: "I0"})
+    r_(16, "index unbalanced", UOp(Ops.INDEX, src=(idx_pl, add)),
+       {idx_pl: "B", add: "(I0)+(I1)"})
+
+
+def _sr_rewrite(i, u, ctx):
+    """`WGSLRenderer.string_rewrite`'s rule `i` applied to `u`, through CPython's
+    own `PatternMatcher.rewrite`, with `None` spelled `NOMATCH`."""
+    v = PatternMatcher([SR_RULES[i]]).rewrite(u, ctx=ctx)
+    return "NOMATCH" if v is None else one_line(v)
+
+
+# `r_cu1(...)` / `r_ci1(...)` -- rules 3 and 4's axis, as `(name, hi, lo)`. These
+# are the I64 the PORT is handed: `hi` and `lo` are the two `U32` words of a
+# weakint CONST's value, and the axis is declared in those words because that is
+# how `fixtures_hold` can read it out of `wgsl.bend` without running anything.
+SR_CU = [("255", 0, 255), ("-1", 4294967295, 4294967295), ("4294967295", 0, 4294967295),
+         ("4294967296", 1, 0)]
+SR_CI = [("7", 0, 7), ("-3", 4294967295, 4294967293), ("4294967295", 0, 4294967295),
+         ("4294967296", 1, 0)]
+# `4294967296` IS THE CASE THAT EARLIER MISSED, and it was found by a MUTATION
+# rather than by reading: `sr_cuint.masked` -- the `& 0xFFFFFFFF` -- is only
+# observable on a weakint CONST whose HIGH WORD is set and whose LOW WORD reads
+# as non-negative. All three rows above have `hi == 0`, so dropping the mask
+# entirely (`masked(v) = v`) left every one of them unchanged and the gate was
+# GREEN on a mutation. `wgsl_render_census-mutate.py`'s M51 is that mutation and
+# it is why this fourth row exists. `2**32 & 0xFFFFFFFF` is `0u` and
+# `truncate[int32](2**32)` is `0`, so both new rows read `0`.
+# `r_sb1("global", "data0_16", S.uint8(), S.AGlobal{}, 16, ...)` -- rule 5's
+# `(name, buffer text, dtype, addrspace, numel)`. `data0_16` and `t0` are the
+# port's own fixture buffer names and `r0` is beside them.
+SR_BUF = [("global", "data0_16", "uint8", "AGlobal", 16), ("local", "t0", "single", "ALocal", 1),
+          ("reg", "r0", "single", "AReg", 1)]
+
+
+# ===========================================================================
 # GROUP P2 -- `is_packed` / `buf_map` / `_packed_size`, on REAL buffer UOps.
 # ===========================================================================
 def g_packed():
@@ -607,7 +813,7 @@ def main():
     for g in (g_type_map, g_render_cast, g_consts, g_packed_field, g_wmask,
               g_is_nan, g_is_nan_uint_only, g_code_for_op, g_workitem,
               g_supported, g_render_dtype, g_packed, g_packed_size,
-              g_render_kernel):
+              g_render_kernel, g_string_rewrite):
         g()
     for ln in ROWS:
         print(ln)

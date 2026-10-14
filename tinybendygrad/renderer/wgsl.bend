@@ -46,7 +46,14 @@
 #                       packed store's string rule, which IS ported
 #   :41  wgsl_matcher   the seven GUARDS ported, the seven rewrites walled
 #   :53  WGSLRenderer   every attribute and every method below
-#   :65  string_rewrite the sixteen WGSL rules, in Python's order
+#   :65  string_rewrite ALL SEVENTEEN RULES' STRINGS, in Python's order. This was
+#                       the largest wall in the file and it was not a big one:
+#                       `ctx[x]` is `self.r[x]`, a dict the naming pass has
+#                       already filled, so `ctx[x]` is the CHILD'S TEXT and a
+#                       parameter here. MEASURED: `patterns[:17]` are these and
+#                       `patterns[17:]` is `base_rewrite`'s 33, and the gate's
+#                       `rules_hold()` re-derives both numbers and each rule's op
+#                       and dtypes from CPython on every run.
 #
 # `code_for_op`'s TWENTY-INHERITED entries are cstyle.py:142-150, not wgsl.py:
 # wgsl.py:60 only overrides WHERE. They are spelled out here anyway, because the
@@ -78,14 +85,18 @@
 # THE GATE. `main` prints one row per claim and every row is a STRING, never a
 # boolean about a string: `String.concat` hides a dropped literal, so a row that
 # said "the prologue is right" would survive losing a semicolon. The `py=` half
-# of each row is CPython's value, measured 2026-10-01 on this `tinygrad/` by
-# `.agents/slop/wgsl-oracle.py`, and the two lanes print the SAME LINE, so the
+# of each row is CPython's value, and the two lanes print the SAME LINE, so the
 # diff of the two lanes is empty iff every claim holds.
 #
-#   ./bin/bend tinybendygrad/renderer/wgsl.bend
-#   python3 .agents/slop/wgsl-oracle.py rows > /tmp/py.txt
-#   ./bin/bend tinybendygrad/renderer/wgsl.bend > /tmp/bd.txt
-#   diff /tmp/bd.txt /tmp/py.txt
+#   .venv/bin/python gates/wgsl_render_census-gate.py
+#
+# THE `py=` COLUMN'S GENERATOR IS THE ORACLE, and it always was in substance --
+# `.agents/slop/wgsl-oracle.py` was a helper, not the contract. FIVE of the
+# halves it wrote were STALE, because this `tinygrad/`'s `DType.name` moved to
+# the rust spellings after they were measured; the port's own values were right
+# on all five and the NOTES were wrong. `gates/wgsl_render_census-oracle.py` is
+# the generator now, it is IN GIT, and `selfcheck_hold()` re-derives the stale
+# set on every run so a sixth cannot rot unnoticed.
 #
 # THE MUTATION TABLE is at the foot of the file, measured the same way.
 
@@ -376,13 +387,13 @@ def wi_axis.of(x: U32) -> Maybe<&1, String>:
 # the name as `f"{prefix}{i}"` for `i` in `enumerate(limited)`, so `x` is 0..2 by
 # construction and the None arm is unreachable. Recorded rather than dressed up as
 # a name: `i32(lindex.)` would be plausible wrong WGSL.
-def wi_axis.of2(m: Maybe<&1, String>) -> String:
-  match m:
-    case Some{s}: s
-    case None{}  : ""
-
-def wi_axis(x: U32) -> String: wi_axis.of2(wi_axis.of(x))
-
+#
+# THE `None` ARM LIVES IN `code_for_workitem.ret` AND NOT IN A `wi_axis` OF ITS
+# OWN. It used to be `wi_axis.of2`, and `wi_axis` -- the one the header named as
+# the totalizer -- called nothing: `code_for_workitem` went to `wi_axis.of`
+# directly and `code_for_workitem.ret`'s `None` arm is what actually answers "".
+# A def that describes a decision no def makes, next to the def that makes it,
+# is the shape `dead_defs_hold` was built to name. Two defs deleted, not moved.
 def code_for_workitem.ret(isg: Bool, m: Maybe<&1, String>) -> String:
   match m:
     case Some{s}: String.concat(["i32(", Bool.pick(String, isg, "gindex", "lindex"), ".", s, ")"])
@@ -394,6 +405,15 @@ def code_for_workitem(isg: Bool, x: U32) -> String: code_for_workitem.ret(isg, w
 # arm is that KeyError: `supported_dtypes` below is the gate that keeps it
 # unreachable, and a WGSLRenderer asked for a double must fail rather than
 # silently emit a name the shader cannot parse.
+#
+# AND IT FAILS LOUDLY, IN `code_for_op`'s SPELLING. This arm answered `""` until
+# FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows -- so the
+# file held two spellings of one KeyError, `UNHANDLED(Ops.X)` here's sibling
+# `code_for_op` and `""` here, and the silent one was the dangerous one. Bend is
+# total and cannot raise, so the refusal is an operand that CANNOT COMPILE and
+# that NAMES ITS CAUSE, exactly as `code_for_op` does below.
+def type_map.miss(+dt: S.Dt) -> String: String.concat(["UNHANDLED(dtypes.", dt_name(dt), ")"])
+
 def type_map(+dt: S.Dt) -> String:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
@@ -407,7 +427,7 @@ def type_map(+dt: S.Dt) -> String:
         case 6 : "u32"     # dtypes.u32
         case 0 : "bool"    # dtypes.bool
         case 12: "f16"     # dtypes.f16
-        case _ : ""
+        case _ : type_map.miss(dt)
 
 # :60 `code_for_op = {**CStyleLanguage.code_for_op, Ops.WHERE: lambda
 # a,b,c,dtype: f"select({c},{b},{a})"}`. The WHERE arm takes FOUR arguments and
@@ -553,11 +573,18 @@ def sp_name(+ar: O.Arena, +u: U32) -> String: sp_name.of(O.Arena.arg(ar, u))
 
 def sp_is_local(+nm: String) -> Bool: String.eq(String.take(nm, 1n), "l")
 
-# `u.src[0].ssimplify()` -- ops.py:1384, a symbolic fold. A local bound in a
-# compiled kernel is `CAST(int, CONST(n))` or a bare CONST, and symbolic
-# folding the first is a CONST, so those two arms are the port. Anything else
-# is the wall: `graph_rewrite(u, symbolic)` is a rewrite ENGINE call, and
-# codegen/symbolic.bend does not export one a renderer can call.
+# `u.src[0].ssimplify()` -- ops.py:1384, a symbolic fold. It folds a CAST OF A
+# CONST to that CONST, and it does so through AS MANY CASTs as there are:
+# CPython builds `sint_to_uop(UOp.const(8, dtypes.int32))` as
+# `CAST(weakint, CAST(i32, CONST(8)))` and `ssimplify` answers 8 (MEASURED, and
+# `never_folding_cast_hold` re-measures both halves on every run). So the arm is
+# a CAST-CHAIN WALK and not a single step, and the FUEL is what makes it
+# terminate -- the chain is two deep there, and `symbolic` has no bound at all
+# because a graph rewrite that cannot loop does not need one.
+#
+# A float bound is the wall: `ssimplify(CAST(weakint, CAST(f32, CONST(8.0))))`
+# answers the NODE and not a number (MEASURED, for f16/f32/f64 alike), so a `U32`
+# cannot be its answer and the `0` here is that wall rather than a value.
 def ss_is(+ar: O.Arena, +x: U32) -> Bool: O.eq_op(O.Arena.op(ar, x), O.OpsCONST{})
 
 def ss_val.of(a: O.Arg) -> U32:
@@ -570,10 +597,13 @@ def ss_val(ar: O.Arena, +x: U32) -> U32: ss_val.of(O.Arena.arg(ar, x))
 def ss_of(ar: O.Arena, +x: U32) -> U32: ss_val(ar, x)
 
 # the `CAST(int, CONST(n))` arm, and the `nope` default of the CONST arm above.
-def ssimp(+ar: O.Arena, +x: U32) -> U32:
-  Bool.pick(U32, ss_is(ar, x), ss_of(ar, x),
-    Bool.pick(U32, O.eq_op(O.Arena.op(ar, x), O.OpsCAST{}) && ss_is(ar, O.Arena.src0(ar, x)),
-      ss_of(ar, O.Arena.src0(ar, x)), 0))
+def ss_go.go(f: Nat, +ar: O.Arena, +x: U32) -> U32:
+  match f:
+    case 0n: 0
+    case 1n+g: Bool.pick(U32, ss_is(ar, x), ss_of(ar, x),
+      Bool.pick(U32, O.eq_op(O.Arena.op(ar, x), O.OpsCAST{}), ss_go.go(g, ar, O.Arena.src0(ar, x)), 0))
+
+def ssimp(+ar: O.Arena, +x: U32) -> U32: ss_go.go(4n, ar, x)
 
 # one entry of the sort: the name the sort key reads, and the bound.
 type Ls is Data:
@@ -803,6 +833,130 @@ def dt_sort(xs: List<&2, String>) -> List<&2, String>:
 def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, Nil{})), ",")
 
 # ===========================================================================
+# :65 `string_rewrite` -- THE SEVENTEEN RULES, in Python's order. This block
+# used to be the renderer's largest WALL, and it was the largest because
+# `ctx[x]` looked like a graph call: `CStyleLanguage.__getitem__` is
+# `self.r[key]`, a dict the NAMING pass fills in before it calls
+# `string_rewrite.rewrite` (cstyle.py:245-250). So `ctx[x]` is not a fold and not
+# a rewrite engine -- it is the CHILD'S TEXT, and the text is a parameter here
+# exactly as `render_cast(u, "V")`'s `val` is. What is left is STRING
+# CONSTRUCTION, and that is what the seventeen rules below are.
+#
+# MEASURED, and this is the census's population statement for the block:
+# `len(WGSLRenderer.string_rewrite.patterns)` is 50 and
+# `patterns[:17]` are these seventeen while `patterns[17:]` is `base_rewrite`'s
+# 33 -- `cstyle.py:153`'s table, which is `renderer/cstyle.bend`'s and not this
+# file's. The gate's `rules_hold()` re-measures both numbers and re-derives each
+# rule's op and dtype from CPython, so the seventeen are DISCOVERED and not this
+# comment's list.
+#
+# `NOMATCH` IS THIS PORT'S SPELLING OF PYTHON'S `None`, and the gate's oracle
+# spells it the same way. A rule that does not apply answers `None` upstream --
+# `if is_packed(x) else None` and `else None` -- and `PatternMatcher.rewrite`
+# treats `None` as "this rule did not fire", which is a CONTROL-FLOW state and
+# not a value. Both sides name it once so that a rule which stops firing and a
+# rule which starts rendering the empty string cannot print the same row, and
+# the empty string is the shape `type_map`'s arm used to have (FINDING 2).
+# ===========================================================================
+
+# 0 `ctx[x] if is_packed(x) else None` -- a packed INDEX is rendered by its own
+# rule, so the CAST around it only carries the width.
+def sr_idx(pk: Bool, x: String) -> String: Bool.pick(String, pk, x, "NOMATCH")
+
+# 1 `f"(0-{ctx[x]})"` -- WGSL has no unsigned negation.
+def sr_neg(x: String) -> String: String.concat(["(0-", x, ")"])
+
+# 2 `"true" if c.val else "false"` -- and `c.val` is a bare CONST's value, and
+# a bare CONST is ALWAYS weakint (ops.py:632: `.cast` folds away at exactly
+# bool/weakint/weakfloat), so this is a Python truth test on an integer.
+def sr_cbool(v: Bool) -> String: Bool.pick(String, v, "true", "false")
+
+# 3 `f"bitcast<u32>({c.val})" if c.val<0 else f"{c.val&0xFFFFFFFF}u"` and
+# 4 `f"i32({v})" if (v:=truncate[x.dtype](c.val))<0 else f"{v}"`. BOTH TAKE THE
+# CONST'S OWN weakint VALUE, and the value is an `I64` and NOT a `U32` here
+# because a U32 cannot tell a weakint CONST of -1 from one of 4294967295 and
+# CPython can: the two spellings are `bitcast<u32>(-1)` and `4294967295u`.
+# `truncate[x.dtype]` with `x.dtype == int32` is `ctypes.c_int32`, so rule 4's
+# mask is the 32-bit one and NOT a 64-bit one.
+def sr_cuint.masked(+v: H.I64) -> H.I64: H.i64_of_hi_lo(0, H.lo32(v))
+
+def sr_cuint(+v: H.I64) -> String:
+  Bool.pick(String, H.i64_is_neg(v), String.concat(["bitcast<u32>(", H.i64_dec(v), ")"]),
+    String.concat([H.i64_dec(sr_cuint.masked(v)), "u"]))
+
+def sr_ci32.trunc(+v: H.I64) -> H.I64: H.i64_of_i32(H.lo32(v))
+
+def sr_ci32(+v: H.I64) -> String:
+  Bool.pick(String, H.i64_is_neg(sr_ci32.trunc(v)),
+    String.concat(["i32(", H.i64_dec(sr_ci32.trunc(v)), ")"]), H.i64_dec(sr_ci32.trunc(v)))
+
+# 5 `f"var{'<workgroup>' if x.addrspace == AddrSpace.LOCAL else ''} {ctx[x]}:
+# array<{buf_map(x)},{_packed_size(x)}>;"`. NOTE THE SPACE AFTER THE COLON: it
+# is in the f-string and a WGSL parser is handed it. `buf_map` and
+# `packed_size` are the two ported defs this rule is the only caller of that
+# were written for, and the `array<atomic<u32>,4>` they produce together is the
+# `var<workgroup>` line `render_kernel` hoists.
+def sr_buffer.local(a: S.Addr) -> Bool:
+  match a:
+    case S.ALocal{}: True{}
+    case _           : False{}
+
+def sr_buffer(+nm: String, +n: U32, +d: S.Dt, +a: S.Addr) -> String:
+  String.concat([Bool.pick(String, sr_buffer.local(a), "var<workgroup>", "var"), " ", nm, ": array<",
+    buf_map(n, d, a), ",", U32.show(packed_size(n, d, a)), ">;"])
+
+# 6..11 the SIX `bitcast<>` SPELLINGS, and they are six rules rather than one
+# because they are six different WGSL constructions. 9 and 10 each have TWO
+# arms: a half source goes through `vec2<f16>` and anything else is a mask.
+def sr_bhalf(s: String) -> String: String.concat(["bitcast<vec2<f16>>(", s, ")[0]"])
+
+def sr_buchar(s: String) -> String: String.concat(["bitcast<u32>(", s, "&0xFF)"])
+
+def sr_bchar(s: String) -> String: String.concat(["((i32(", s, "&0xFF)<<24)>>24)"])
+
+def sr_bushort(half: Bool, +s: String) -> String:
+  Bool.pick(String, half, String.concat(["bitcast<u32>(vec2<f16>(", s, ",0))"]),
+    String.concat(["bitcast<u32>(", s, "&0xFFFF)"]))
+
+def sr_bshort(half: Bool, +s: String) -> String:
+  Bool.pick(String, half, String.concat(["bitcast<i32>(vec2<f16>(", s, ",0))"]),
+    String.concat(["((i32(", s, "&0xFFFF)<<16)>>16)"]))
+
+def sr_bany(+d: S.Dt, s: String) -> String: String.concat(["bitcast<", type_map(d), ">(", s, ")"])
+
+# 12 `f"select({ctx[v]}, {ctx.render_load(ctx[b], b.src[0])}, {ctx[gate]})"` and
+# 13 `ctx.render_load(ctx[b], b)`. Rule 13 IS `render_load` -- it adds nothing,
+# so there is no `sr_load` def and the row calls `render_load` itself, which is
+# what `dead_defs_hold` had to be told about: `render_load` was ported, ungated,
+# and called by nothing until this row. `b.src[0]` is the INDEX under the CAST,
+# and `is_packed` reads that node's buffer -- which is why the rows hand in its
+# `(n, dt, addr)` and not the LOAD's.
+def sr_lgate(+b: String, +i0: String, +n0: U32, +d0: S.Dt, a0: S.Addr, +v: String, +g: String) -> String:
+  String.concat(["select(", v, ", ", render_load(i0, n0, d0, a0), ", ", g, ")"])
+
+# 14 the READ-MODIFY-WRITE: `atomicAnd` clears the field, `atomicAdd` sets it,
+# and `new_v` is gone when it is 0 so the second line is OPTIONAL. The `\n  ` is
+# a real newline in Python and is SPELLED by the row's `one_line`; the two
+# spaces after it are in the f-string.
+def sr_rmw.add(hasnv: Bool, +b: String, +nv: String) -> String:
+  Bool.pick(String, hasnv, String.concat(["\n  atomicAdd(&", b, ",", nv, ");"]), "")
+
+def sr_rmw(pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
+  Bool.pick(String, pk,
+    String.concat(["atomicAnd(&", b, ",", w, ");", sr_rmw.add(hasnv, b, nv)]), "NOMATCH")
+
+# 15 `f"{ctx[b]} = {ctx[v]};"`
+def sr_store(+b: String, +v: String) -> String: String.concat([b, " = ", v, ";"])
+
+# 16 `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`
+# -- and `strip_parens` (helpers.bend:1455) is ALREADY PORTED, `is_balanced` and
+# all, which is why this rule is four lines and not a walk. The `Ops.ADD` test
+# is the rule's own `isadd` parameter; a source that is not balanced keeps its
+# parens, and `(I0)+(I1)` is that case.
+def sr_index(isadd: Bool, +b: String, +i: String) -> String:
+  String.concat([b, "[", Bool.pick(String, isadd, H.strip_parens(i), i), "]"])
+
+# ===========================================================================
 # THE render_kernel FIXTURES AND ROWS.
 #
 # `render_kernel` is a String -> String function and this is the row that says so
@@ -839,9 +993,18 @@ def f_cast_dt(+c: O.Found, d: S.Dt) -> O.Found:
 
 # THE MIXED ARENA: l0, l1 and one half-dtype node in ONE arena, because
 # `rk_scan` folds a table over the whole arena and a node in a different arena
-# would not be in it. `l0`'s bound is `CAST(weakint, CONST(8))` -- NOT a bare
-# CONST -- so `ssimp`'s CAST-of-CONST arm is what reads it, exactly as
-# `codegen/gpudims.py:37` and `ops.py:1382` leave it.
+# would not be in it.
+#
+# `l0`'s bound is `CAST(weakint, CAST(i32, CONST(8)))` -- NOT a bare CONST, and
+# NOT the single CAST this used to build. It is the shape
+# `sint_to_uop(UOp.const(8, dtypes.int32))` builds, which is the shape a real
+# kernel's bound has whenever the bound was written with a dtype, and
+# `ssimplify` answers 8 on it (MEASURED). This fixture used to build
+# `CAST(weakint, CONST(8))`, which is UNBUILDABLE: `UOp.cast` FOLDS when the
+# dtypes agree (`mixin/dtype.py:36`), the only CONST is weakint, and
+# `UOp.const(8).cast(weakint) is UOp.const(8)` -- so that node exists nowhere in
+# CPython and only `ssimp`'s ONE-step CAST arm could read it. `never_folding_cast_hold`
+# re-measures the fold, CPython's shape and CPython's answer on every run.
 type Fx is Data:
   Fx{ar: O.Arena, l0: U32, l1: U32, h: U32}
 
@@ -864,10 +1027,11 @@ def Fx.h(f: Fx) -> U32:
 def fx_mixed() -> Fx:
   +a = O.Arena.empty()
   +c8 = f_const(a, 8)
-  +k8 = f_cast_dt(c8, S.weakint())
+  +i8 = f_cast_dt(c8, S.int32())
+  +k8 = f_cast_dt(i8, S.weakint())
   +s0 = O.UOp.special(O.Found.ar(k8), O.Found.i(k8), "l0")
   +c2 = f_const(O.Found.ar(s0), 2)
-  +k2 = f_cast_dt(c2, S.weakint())
+  +k2 = f_cast_dt(f_cast_dt(c2, S.int32()), S.weakint())
   +s1 = O.UOp.special(O.Found.ar(k2), O.Found.i(k2), "l1")
   +c0 = f_const(O.Found.ar(s1), 0)
   +ch = f_cast_dt(c0, S.half())
@@ -1040,9 +1204,11 @@ def r_tms() -> String:
     r_tm1("uint32", S.uint32(), "u32"), r_tm1("bool", S.boolean(), "bool"),
     r_tm1("half", S.half(), "f16")])
 
-# the KeyError arm. `supported_dtypes` is what keeps it unreachable from a real
-# kernel, and THIS row is the arm that would emit a name no WGSL parser knows.
-def r_tm_miss() -> String: r_tm1("double", S.double(), "")
+# THE KeyError ARM, and it is LOUD: the port answers `UNHANDLED(dtypes.f64)` --
+# a call to a dtype WGSL has no name for, which cannot compile. It answered `""`
+# until FINDING 2 was fixed, and `""` is a SPELLING no WGSL parser knows. The
+# name is `dt_name`'s, which is `DType.name`.
+def r_tm_miss() -> String: r_tm1("double", S.double(), "REFUSE:KeyError")
 
 # -- render_cast --------------------------------------------------------------
 def r_rc1(+nm: String, +d: S.Dt, py: String) -> String: r("render_cast " ++ nm, render_cast(d, "V"), py)
@@ -1099,10 +1265,14 @@ def r_nans() -> String:
     r_nan5("double", S.double(), "64", "11", "52", "9223372036854775807", "9218868437227405312")])
 
 # `getattr(dtypes, f"uint{bs}")` -- the bitcast TARGET of the whole rule.
+# THE `py=` HALVES HERE WERE THE C SPELLINGS (`unsigned int`, `unsigned short`,
+# `unsigned long`) AND THIS `tinygrad/` ANSWERS THE RUST ONES. Measured against
+# `gates/wgsl_render_census-oracle.py`, which reads `DType.name` off the class:
+# `u32`, `u16`, `u64`. `selfcheck_hold()` re-derives the stale set on every run.
 def r_nan_uint() -> String:
-  String.concat([r("nan_uint float", dt_name(nan_uint(S.single())), "unsigned int"),
-    r("nan_uint half", dt_name(nan_uint(S.half())), "unsigned short"),
-    r("nan_uint double", dt_name(nan_uint(S.double())), "unsigned long")])
+  String.concat([r("nan_uint float", dt_name(nan_uint(S.single())), "u32"),
+    r("nan_uint half", dt_name(nan_uint(S.half())), "u16"),
+    r("nan_uint double", dt_name(nan_uint(S.double())), "u64")])
 
 # -- code_for_op --------------------------------------------------------------
 def r_cfo1(+op: O.Op, py: String) -> String:
@@ -1138,19 +1308,107 @@ def r_wi_miss() -> String: r_wi1("l3", False{}, 3, "")
 def r_sd1(+arch: String, py: String) -> String: r("supported_dtypes " ++ arch, sorted_names(supported_dtypes(arch)), py)
 
 def r_sds() -> String:
-  String.concat([r_sd1("", "bool,float,int,short,signed char,unsigned char,unsigned int,unsigned short"),
-    r_sd1("shader-f16", "bool,float,half,int,short,signed char,unsigned char,unsigned int,unsigned short")])
+  String.concat([r_sd1("", "bool,f32,i16,i32,i8,u16,u32,u8"),
+    r_sd1("shader-f16", "bool,f16,f32,i16,i32,i8,u16,u32,u8")])
 
 # -- the two dtype renderers --------------------------------------------------
 def r_rds() -> String:
   String.concat([r("render_dtype float", render_dtype(S.single(), True{}), "var"),
     r("_render_dtype uchar global", _render_dtype(S.uint8(), 1, S.AGlobal{}, True{}, True{}, Nil{}), "var")])
 
+# ===========================================================================
+# THE `string_rewrite` ROWS -- 33 of them, one per rule ARM.
+#
+# `r_sr` is `r` with the `sr ` prefix, and the RENDERED SOURCE TEXT is spelled
+# out in each call rather than held in a def: it stands in for the naming pass's
+# `self.r[key]` dict (cstyle.py:207), and the oracle puts THE SAME LITERAL in
+# that dict, so `bitcast<u32>(S&0xFF)` is what CPython said and not what this
+# file believes CPython said.
+# ===========================================================================
+def r_sr(+nm: String, got: String, py: String) -> String: r("sr " ++ nm, got, py)
+
+# rules 0-2: the packed INDEX, the unsigned negation, the bool CONST
+def r_sr_0() -> String:
+  String.concat([r_sr("idx packed", sr_idx(True{}, "B[1]"), "B[1]"),
+    r_sr("idx plain", sr_idx(False{}, "B[1]"), "NOMATCH"), r_sr("neg", sr_neg("X"), "(0-X)"),
+    r_sr("cbool 1", sr_cbool(True{}), "true"), r_sr("cbool 0", sr_cbool(False{}), "false")])
+
+# rules 3-4: the two CONST casts. THE FIXTURE IS THE WEAKINT CONST'S OWN VALUE AS
+# AN I64, SPELLED `hi:lo`, because that is the one representation that tells -1
+# from 4294967295 -- the two spellings are `bitcast<u32>(-1)` and
+# `4294967295u` and a `U32` word is both of them at once. `fixtures_hold` reads
+# these three axes off this file's text, so an axis cannot drift on one side.
+def r_cu1(+nm: String, hi: U32, lo: U32, py: String) -> String:
+  r("sr cuchar " ++ nm, sr_cuint(H.i64_of_hi_lo(hi, lo)), py)
+
+def r_ci1(+nm: String, hi: U32, lo: U32, py: String) -> String:
+  r("sr ci32 " ++ nm, sr_ci32(H.i64_of_hi_lo(hi, lo)), py)
+
+def r_sr_3() -> String:
+  String.concat([r_cu1("255", 0, 255, "255u"), r_cu1("-1", 4294967295, 4294967295, "bitcast<u32>(-1)"),
+    r_cu1("4294967295", 0, 4294967295, "4294967295u"), r_cu1("4294967296", 1, 0, "0u"),
+    r_ci1("7", 0, 7, "7"),
+    r_ci1("-3", 4294967295, 4294967293, "i32(-3)"), r_ci1("4294967295", 0, 4294967295, "i32(-1)"),
+    r_ci1("4294967296", 1, 0, "0")])
+
+# rule 5: the BUFFER prologue. `data0_16` is the packed GLOBAL uchar of the
+# render_kernel fixture and `t0` is the LOCAL f32 beside it, so this axis is the
+# same buffer set the module rows use.
+def r_sb1(+nm: String, +bn: String, +d: S.Dt, a: S.Addr, n: U32, py: String) -> String:
+  r("sr buffer " ++ nm, sr_buffer(bn, n, d, a), py)
+
+def r_sr_5() -> String:
+  String.concat([r_sb1("global", "data0_16", S.uint8(), S.AGlobal{}, 16, "var data0_16: array<atomic<u32>,4>;"),
+    r_sb1("local", "t0", S.single(), S.ALocal{}, 1, "var<workgroup> t0: array<f32,1>;"),
+    r_sb1("reg", "r0", S.single(), S.AReg{}, 1, "var r0: array<f32,1>;")])
+
+# rules 6-11: the six bitcast spellings, and the two rules with two arms
+def r_sr_6() -> String:
+  String.concat([r_sr("bhalf", sr_bhalf("S"), "bitcast<vec2<f16>>(S)[0]"),
+    r_sr("buchar", sr_buchar("S"), "bitcast<u32>(S&0xFF)"),
+    r_sr("bchar", sr_bchar("S"), "((i32(S&0xFF)<<24)>>24)"),
+    r_sr("bushort", sr_bushort(False{}, "S"), "bitcast<u32>(S&0xFFFF)"),
+    r_sr("bushort half", sr_bushort(True{}, "S"), "bitcast<u32>(vec2<f16>(S,0))"),
+    r_sr("bshort", sr_bshort(False{}, "S"), "((i32(S&0xFFFF)<<16)>>16)"),
+    r_sr("bshort half", sr_bshort(True{}, "S"), "bitcast<i32>(vec2<f16>(S,0))"),
+    r_sr("bany", sr_bany(S.single(), "S"), "bitcast<f32>(S)")])
+
+# rules 12-13: the gated load's `select`, and the plain load -- which IS
+# `render_load`, called here directly rather than through a one-line `sr_load`.
+def r_sr_12() -> String:
+  String.concat([r_sr("lgate packed", sr_lgate("B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"),
+      "select(V, atomicLoad(&B[1]), G)"),
+    r_sr("lgate plain", sr_lgate("B[1]", "B[1]", 16, S.single(), S.AGlobal{}, "V", "G"), "select(V, B[1], G)"),
+    r_sr("load packed", render_load("B[1]", 16, S.uint8(), S.AGlobal{}), "atomicLoad(&B[1])"),
+    r_sr("load plain", render_load("B[1]", 16, S.single(), S.AGlobal{}), "B[1]")])
+
+# rules 14-15: the read-modify-write and the plain store. THE NEWLINE IS SPELLED
+# by `one_line` on the port side and by the oracle's `one_line` on CPython's,
+# because a row is one line and the two spaces after the newline are IN the
+# f-string.
+def r_sr_14() -> String:
+  String.concat([r_sr("rmw nv", one_line(sr_rmw(True{}, True{}, "B[1]", "W", "NV")),
+      "atomicAnd(&B[1],W);\\n  atomicAdd(&B[1],NV);"),
+    r_sr("rmw bare", one_line(sr_rmw(True{}, False{}, "B[1]", "W", "NV")), "atomicAnd(&B[1],W);"),
+    r_sr("rmw plain", sr_rmw(False{}, False{}, "B", "W", "NV"), "NOMATCH"),
+    r_sr("store", sr_store("B", "V"), "B = V;")])
+
+# rule 16: the INDEX, and `strip_parens` on the `Ops.ADD` source. `(I0)+(I1)` is
+# the BALANCE case: it opens and does not close, so the parens stay and the
+# brackets land inside them.
+def r_sr_16() -> String:
+  String.concat([r_sr("index add", sr_index(True{}, "B", "(I0+I1)"), "B[I0+I1]"),
+    r_sr("index const", sr_index(False{}, "B", "I0"), "B[I0]"),
+    r_sr("index unbalanced", sr_index(True{}, "B", "(I0)+(I1)"), "B[(I0)+(I1)]")])
+
+def r_srs() -> String:
+  String.concat([r_sr_0(), r_sr_3(), r_sr_5(), r_sr_6(), r_sr_12(), r_sr_14(), r_sr_16()])
+
 def rows() -> String:
   +fx = fx_mixed()
   String.concat([r_tms(), r_tm_miss(), r_rcs(), r_consts(), r_pfs(), r_wms(), r_nans(), r_nan_uint(),
     r_cfos(), r_wis(), r_wi_miss(), r_sds(), r_rds(), r_pk_all(), r_ps_all(), r_rk_sz_pad(), r_rk_sz(fx), r_rk_half(fx),
-    r_rk_half_no(O.Arena.empty()), r_bd(), r_pt(), r_rk_alu(), r_rk_mixed(fx), r_rk_empty()])
+    r_rk_half_no(O.Arena.empty()), r_bd(), r_pt(), r_rk_alu(), r_rk_mixed(fx), r_rk_empty(), r_srs()])
 
 def main() -> IO(Unit):
   do IO<Unit>:
@@ -1194,10 +1452,56 @@ def main() -> IO(Unit):
 #   M30 type_map sends uchar to i32                           3
 #   M31 (the workitem axis letter)                            -  pattern not found
 #   M32 supported_dtypes always includes half                 1
-#   M33 _render_dtype spells f32, not the storage class       2
-#   M34 ssimp's CAST-of-CONST arm is dropped                  2
-#   M35 the f16 test compares against float                  2
-#   M36 a global buffer takes the var<uniform> arm            3
+#   M33 _render_dtype spells f32, not the storage class 2
+#   M34 ssimp's CAST-of-CONST arm is dropped             2
+#   M35 the f16 test compares against float             2
+#   M36 a global buffer takes the var<uniform> arm       3
+#
+# M37-M54 AND P1-P9 ARE `string_rewrite`, MEASURED 2026-10-14 BY
+# `gates/wgsl_render_census-mutate.py`, which mutates a COPY of this file beside
+# the original (a copy anywhere else cannot even warm: the imports are relative
+# to the file's own path) and runs the whole gate per mutation. That harness is
+# the second half of the gate: a mutation that moves nothing is a claim nothing
+# checks. The numbers below are the ROWS THAT MOVED, one per mutation.
+#
+#   M37 sr_buchar's mask is 0xFF00                1  sr buchar
+#   M38 sr_bchar's shift is <<8                   1  sr bchar
+#   M39 sr_bshort stops sign-extending            1  sr bshort
+#   M40 sr_bany drops the type argument           1  sr bany
+#   M41 sr_bushort's half arm loses its vec2      1  sr bushort half
+#   M42 sr_rmw's atomicAdd loses its newline      1  sr rmw nv
+#   M43 sr_lgate's select is a ternary            2  sr lgate packed sr lgate plain
+#   M44 sr_index never strips parens              1  sr index add
+#   M49 sr_idx's guard is dropped                 1  sr idx plain
+#   M50 sr_ci32 truncates to 64 bits             2  sr ci32 4294967295 sr ci32 4294967296
+#   M51 sr_cuint forgets the u32 mask             1  sr cuchar 4294967296
+#   M52 sr_buffer drops the space after the colon 3  sr buffer global/local/reg
+#   M53 ssimp walks ONE cast, not the chain       2  rk_sz mixed rk mixed
+#   M54 type_map's KeyError arm answers nothing   1  type_map double, via the PIN check
+#   P1 the port drops rule 16's whole row group   DEAD  5, "207 rows" expected
+#   P2 the port drops ONE row from a group        DEAD  5, "207 rows" expected
+#   P3 the ORACLE drops one rule's rows          REFUSED 3, "207 rows" expected
+#   P4 the port RENAMES a row (same count)        1  sr bushort half
+#   P5 the pins lose a pinned divergence          1  code_for_op LOAD
+#   P6 a pin's PORT VALUE is edited               1  type_map double, "appears 0 times"
+#   P7 the port's fixture axis drifts              1  sr cuchar -1
+#   P8 the oracle's fixture axis drifts            0  fixtures_hold: SR_CI
+#   P9 the port DUPLICATES a row name              1  sr bany
+#
+# P1-P9 ARE THE POPULATION MUTATIONS, and they are the ones this file could not
+# have found by reading. P7 and P8 drift the `r_cu1`/`r_ci1` AXIS -- the `(name,
+# hi, lo)` triples `fixtures_hold` reads out of this text -- and P7 moves a row
+# while P8 moves NOTHING and is caught only by the axis check, which is the
+# answer to "an oracle that covers whatever the port happens to do is not an
+# oracle". P9 keeps the row COUNT at 207 and still goes red, by NAME.
+#
+# M51 IS THE ONE A READING MISSED AND A MUTATION CAUGHT. `sr_cuint`'s
+# `& 0xFFFFFFFF` is only observable on a weakint CONST whose HIGH WORD is set
+# and whose low word reads as non-negative; the original three axis rows all had
+# `hi == 0`, so replacing `masked(v)` with `v` left every one of them unchanged
+# and the gate was GREEN on a mutation. The `4294967296` row is the fix and it
+# was added because the mutation table said so, not because the code looked
+# wrong.
 #
 # WHAT THE TABLE SAYS, and the three things it caught that the rows did not.
 #
@@ -1217,19 +1521,23 @@ def main() -> IO(Unit):
 # and so must APPEND; `u32_show` and `ls_sz` are WALKED and so must PREPEND. Each
 # wrong choice reverses a WHOLE SHADER and is invisible in a boolean.
 #
-# FOUR BLIND SPOTS, and they are the honest content of this table.
+# THREE BLIND SPOTS LEFT, and they are the honest content of this table.
 #
-#   M11 and M12 move NOTHING because `render_load` and `barrier` have no row that
-#   a mutation of their BODY can move: `barrier()` has a row, but M12's edit did
-#   not reach it, and `render_load` has NO ROW AT ALL -- it is ported, called by
-#   nothing in this file (the string rule that calls it is `string_rewrite`, the
-#   wall), and ungated. `render_load` is the next row to add.
+#   M11's BLIND SPOT IS GONE. It moved nothing because `render_load` had NO ROW
+#   AT ALL -- it was ported, called by nothing in this file (the string rule that
+#   calls it is `string_rewrite`, which was the wall), and ungated. `render_load`
+#   now has FOUR rows, `sr lgate packed`, `sr lgate plain`, `sr load packed` and
+#   `sr load plain`, and M43 moves two of them by mutating its one caller.
+#   M12 still moves nothing: `barrier()` has a row, but M12's edit did not reach
+#   it, and that is a property of the EDIT and not of the row.
 #   M20 moves nothing because `ls_ins`'s no-compare arm appends, and the fixture's
 #   WALK order (l0, l1) already agrees with its SORT order. The fixture needs a
 #   case whose walk order DIFFERS from its sort order -- a `uops` list holding l1
 #   before l0 -- and then M20 says `2,8`. That is the brief's two-rules-claim-one-
 #   node trap in its purest form, and this table is the evidence that the trap is
-#   still open here.
+#   still open here. THE ORACLE HAS THE CASE and asserts it (`UOPS_MIXED_SWAPPED`
+#   in `gates/wgsl_render_census-oracle.py`, whose `assert` names "the sort is not
+#   load-bearing"), so the gap is on the PORT's side only.
 #   M7 is the control: an edit that changes nothing must move nothing.
 #
 # TWO MUTATIONS FAIL TO COMPILE rather than moving rows, and that is information
@@ -1237,4 +1545,17 @@ def main() -> IO(Unit):
 # both be `String` (M16), so those two constants are pinned by the type system as
 # well as by the text. Two more (M17, M31) did not find their pattern and are
 # recorded as untested rather than as passing.
+#
+# WHAT IS STILL NOT GATED, stated as a boundary and not as an omission. The
+# census compares each RULE'S ANSWER on a chosen fixture. It does not compare
+# WHICH NODES a rule MATCHES, because that is `UPat.match` over a pattern table
+# and the port's seventeen defs are the rules' BODIES, not their patterns. Two
+# consequences, both real: `packed_rmw`'s full shape -- `AND(LOAD(CAST(b, u32)),
+# wmask)`, where `& UPat.var("wmask")` is an Ops.AND and not a bind, which is why
+# `prw_of` is a def nothing calls -- is not ported; and the seventeen rows are
+# seventeen SPELLINGS on fixtures the oracle chose, not seventeen proofs that a
+# seventeenth node takes a given branch. `rules_hold()` checks the population
+# (the seventeen exist, their ops are these, each has a def and rows) and the
+# census can now SEE `string_rewrite`, which it could not before. Seeing it is
+# not the same as covering it, and the difference is this paragraph.
 # ===========================================================================

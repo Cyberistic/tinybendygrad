@@ -5,10 +5,10 @@
     .venv/bin/python gates/wgsl_render_census-gate.py
     .venv/bin/python gates/wgsl_render_census-gate.py --refresh   # rewrites the pins
 
-172 ROWS (the port's own `main()`), THREE LANES, 158 EXACT MATCHES AND
-14 DECLARED DIVERGENCES IN 6 CLASSES -- PLUS 5 ROWS WHOSE OWN RECORDED
-`py=` HALF IS STALE, WHICH IS A DIFFERENT KIND OF FINDING AND A DIFFERENT KIND
-OF PIN.
+207 ROWS (the port's own `main()`), THREE LANES, 193 EXACT MATCHES AND
+14 DECLARED DIVERGENCES IN 6 CLASSES. `string_rewrite` -- the renderer's
+LARGEST surface, seventeen rules at wgsl.py:65-93 -- had NO ROWS AT ALL until
+2026-10-14 and has 35 now; `rules_hold()` below is what says so on every run.
 
 WHICH INSTRUMENT, AND WHY THIS LAYER NEEDS ITS OWN.
 
@@ -103,36 +103,39 @@ them is a formatting slip.
     the port answers "" for the whole call (`wgsl.bend:375-378` records that the
     None arm is unreachable because `codegen/gpudims.py:37` builds `x` as 0..2).
 
-THE FIVE `SELFCHECK_STALE` ROWS ARE A DIFFERENT KIND OF FINDING, and pinning
-them is the reason this gate reads the port's `py=` half at all. `wgsl.bend`
-prints each row as `nm = [got]   py=[want]` where `want` was "CPython's value,
-measured 2026-10-01 on this `tinygrad/`". That `py=` column is the port's own
-SELF-CHECK, and it is STALE on exactly the rows that route through `dt_name`:
+THE FIVE `SELFCHECK_STALE` ROWS WERE FIXED AT THE SOURCE, so the class is now
+EMPTY, and that is a finding rather than an omission. `wgsl.bend` printed each
+row as `nm = [got]   py=[want]` where `want` was "CPython's value, measured
+2026-10-01 on this `tinygrad/` by `.agents/slop/wgsl-oracle.py`" -- a file that
+is GONE, so nothing regenerated the column. Five rows routed through `dt_name`
+and recorded the C spellings where this `tinygrad/` answers the rust ones:
 
-    nan_uint float    port says [u32]  the port's OWN py= says [unsigned int]
-    nan_uint half     port says [u16]  the port's OWN py= says [unsigned short]
-    nan_uint double   port says [u64]  the port's OWN py= says [unsigned long]
-    supported_dtypes          [bool,f32,i16,i32,i8,u16,u32,u8]  py= [bool,float,int,short,signed char,...]
-    supported_dtypes shader-f16 [bool,f16,f32,i16,i32,i8,u16,u32,u8]  py= [bool,float,half,int,short,...]
+    nan_uint float    port says [u32]  the port's OWN py= said [unsigned int]
+    nan_uint half     port says [u16]  the port's OWN py= said [unsigned short]
+    nan_uint double   port says [u64]  the port's OWN py= said [unsigned long]
+    supported_dtypes          [bool,f32,i16,i32,i8,u16,u32,u8]
+    supported_dtypes shader-f16 [bool,f16,f32,i16,i32,i8,u16,u32,u8]
 
 MEASURED cause: `dtypes.uint32.name` is `'u32'` on this `tinygrad/`, not
-`'unsigned int'` -- `DType.name` moved to the rust spellings. The PORT'S OWN
-VALUE IS RIGHT and its recorded note is wrong, which is the opposite of a
-defect and is why these are not `FAIL`s: the lane comparison already holds them
-(they are exact matches). They are pinned anyway, in their own class, because a
-stale self-check that nothing reads is a second copy of the answer with no
-generator -- exactly what `AGENTS.md` calls a list.
+`'unsigned int'`. THE PORT'S OWN VALUES WERE RIGHT ON ALL FIVE and its notes
+were wrong, which is the opposite of a defect. So they were CORRECTED, not
+pinned: `--refresh` on 2026-10-14 wrote `0 stale self-checks`, those five rows
+became exact matches, and `selfcheck_hold()` now requires the stale set to be
+EMPTY -- so a sixth stale note cannot enter unnoticed. The class stays declared
+because it is a CATEGORY of pin, not a promise that a row is stale, and
+`classes_hold()` explains the empty one at the place that would otherwise read
+as a missing class.
 
-THE FOUR FINDINGS. Each is measured; each is a NUMBER a later reader can
-re-run; and each one is ALSO a check in `checks_hold()`, so it keeps saying so
-after its author is gone. THE PORT IS LEFT BYTE-IDENTICAL FOR ALL FOUR --
-`shasum -a 256 tinybendygrad/renderer/wgsl.bend` =
-`cd735bfe64aba350a0e924ffee52c1a53c24e8679598eba2350a2e5a4d999c02`,
-`git hash-object` = `0395f83a409131776dc35086fae3489a49a7191b`, before and
-after three mutations.
+THE FOUR FINDINGS, each FIXED OR LEFT ON PURPOSE, each measured, and each one
+ALSO a check in `checks_hold()` so it keeps saying so after its author is gone.
+THE PORT WAS BYTE-IDENTICAL FOR ALL FOUR until 2026-10-14 -- `git hash-object
+tinybendygrad/renderer/wgsl.bend` was `0395f83a409131776dc35086fae3489a49a7191b`
+-- and it is NOT any more, because three of the four are now defects that are
+GONE rather than findings that are parked. That is the honest reason the file
+changed, and it sits in the same sentence as the reason it did not before.
 
-FINDING 1 -- `wgsl.bend:838`'s `f_cast_dt` MINTS A CAST CPYTHON CANNOT BUILD, and
-`ssimp` reads it. MEASURED, three facts:
+FINDING 1 -- FIXED 2026-10-14. `f_cast_dt` MINTS A CAST CPYTHON CANNOT BUILD,
+and `ssimp` read it. MEASURED, three facts:
 
   (a) `mixin/dtype.py:36` is `return self if self.dtype == to_dtype(dtype) else
       ...`, so `UOp.cast` FOLDS when the dtypes agree, and
@@ -157,53 +160,69 @@ FINDING 1 -- `wgsl.bend:838`'s `f_cast_dt` MINTS A CAST CPYTHON CANNOT BUILD, an
       `get_grouped_dims`' return statement and constructs no SPECIAL, and
       `ops.py:1382` is `u.src[0].ssimplify()` reading that CONST.
 
-AND THE ARM IS ALSO WRONG ON THE CAST CPYTHON DOES BUILD, which is why it is
-worth saying both halves: `sint_to_uop(UOp.const(8, dtypes.int32))` is
-`CAST(CAST(CONST, i32), weakint)` -- its `src[0]` is a CAST, so `ss_is(src0)`
-is False and `ssimp` takes its `_ => 0` default and answers 0, where CPython's
-`ssimplify` answers 8. Unreachable today (see (b)), so this is a LATENT defect
-and not a live one, and it is pinned rather than reported as a wrong shader --
-the same reasoning `amd_dsl_census`'s `SRC_WIDTH` notes give. The fix belongs
-to the caller; `never_folding_cast_hold()` re-measures all three facts.
+AND THE ARM WAS ALSO WRONG ON THE CAST CPYTHON DOES BUILD, which is why both
+halves were worth saying: `sint_to_uop(UOp.const(8, dtypes.int32))` is
+`CAST(weakint, CAST(i32, CONST(8)))` -- a CHAIN of two -- its `src[0]` is a
+CAST, so `ss_is(src0)` was False and `ssimp` took its `_ => 0` default and
+answered 0, where CPython's `ssimplify` answers 8.
 
-FINDING 2 -- ONE EXCEPTION, TWO TOTALIZATIONS. `WGSLRenderer.code_for_op` is
-`{**CStyleLanguage.code_for_op, Ops.WHERE: ...}`, so an op with no arm is a
-`KeyError`, and the port answers TWO DIFFERENT THINGS for it: `UNHANDLED(Ops.X)`
-for LOAD/MAX/POW (a call to nothing, which cannot compile -- correct) and
-`(A/B)` for FDIV (a rendered shader). `wgsl.bend:441-447` records the FDIV case
-as a FIXED fallthrough that used to answer `""` and calls `UNHANDLED` "the
-equivalent of KeyError"; `type_map`'s `case _:` arm at `:410` answers `""` for
-its `KeyError` and was NOT fixed the same way. So the file holds two spellings
-of one refusal and one spelling of it is the silent-wrong-answer shape the file
-itself says is the dangerous one. Both are pinned, in `UNHANDLED_ARM`,
-`MISSING_ARM` and `TYPE_MAP_KEYERROR`.
+THE FIX, TWO EDITS. `ssimp` walks the CAST CHAIN with a fuel of 4 rather than
+one step, because `ssimplify` folds through as many CASTs as there are; and
+`fx_mixed` builds the shape `sint_to_uop` builds instead of the unbuildable one.
+THE ROWS DO NOT CHANGE -- `rk_sz mixed` was `8,2` and is `8,2` -- AND THAT IS
+THE POINT: on the NEW fixture the OLD `ssimp` would have answered `0,2`, so the
+fixture change turned an untestable row into a test. MEASURED:
+`gates/wgsl_render_census-mutate.py`'s M53 (`ss_go.go(2n, ...)`) moves
+`rk_sz mixed` to `0,0` and `rk mixed`. `never_folding_cast_hold()` re-measures
+the fold, CPython's three-node shape and CPython's answer every run, and it
+reads the port's own `fx_mixed` TEXT so a revert is red rather than silent.
 
-FINDING 3 -- SIX of `wgsl.bend`'s 170 defs HAVE NO CALL SITE, and five of them
-are defs the header claims are PORTED: `is_packed_of` ("the UOp reader is
-`is_packed_of` below", `wgsl.bend:134`), `prw_of` (":39 `packed_rmw` PORTED as
-a predicate", `wgsl.bend:45`), `render_load` ("is ported, called by nothing in
-this file, and ungated", `wgsl.bend:1224-1226`), `se_shift` (":7 `sign_extend`
-the shift only (se_shift)", `wgsl.bend:37`), and `w_numel` ("`w_numel` below is
-the reader" for `max_numel`, `wgsl.bend:185`). The seventh is `main`, the entry
-point. The sixth, `wi_axis`, is the totalizer `wgsl.bend:375-378` describes as
-producing the empty string for an out-of-range axis; the empty string actually
-comes from `code_for_workitem.ret`'s `None` arm, so the comment describes a
-def that does not run. This is the fault class `amd_dsl_census` records three
-times ("a def nothing calls is invisible to every other check"), measured
-rather than inherited. `dead_defs_hold()` names the exact set, so a def that
-gains a caller turns this red rather than silently becoming checked.
+FINDING 2 -- FIXED 2026-10-14. ONE EXCEPTION, TWO TOTALIZATIONS.
+`WGSLRenderer.code_for_op` is `{**CStyleLanguage.code_for_op, Ops.WHERE: ...}`,
+so an op with no arm is a `KeyError`, and the port answered TWO DIFFERENT
+THINGS for it: `UNHANDLED(Ops.X)` for LOAD/MAX/POW (a call to nothing, which
+cannot compile -- correct) and `(A/B)` for FDIV (a rendered shader), while
+`type_map`'s `case _:` arm answered `""` for ITS `KeyError` -- a SPELLING no
+WGSL parser knows, which is the silent-wrong-answer shape the file itself calls
+the dangerous one. THE FDIV ARM STAYS: it is a real rendering that upstream's
+merge lost, and `axes_hold()` re-derives the set difference. THE `type_map` ARM
+NOW ANSWERS `UNHANDLED(dtypes.f64)` -- the same shape as its sibling, naming its
+cause, and impossible to compile. `type_map double` is still a pinned LANE
+divergence, because CPython says `REFUSE:KeyError` and a Bend total function
+cannot raise; what changed is that the pin's PORT column is now a REFUSAL rather
+than a rendering. MEASURED: M54 (`type_map.miss` back to `""`) is red through
+the pin check's "appears 0 times -- a pin moved".
 
-FINDING 4 -- FIVE OF THE PORT'S OWN RECORDED `py=` HALVES ARE STALE, and the
-generator that wrote them is GONE. `wgsl.bend:82-87` says the `py=` half of
-each row is "CPython's value, measured 2026-10-01 on this `tinygrad/` by
-`.agents/slop/wgsl-oracle.py`"; MEASURED, that file is absent. The five rows
-that route through `dt_name` record the C spellings of `DType.name`
-(`unsigned int`, `unsigned char`, `signed char`, `int`, `short`, `float`) where
-this `tinygrad/` answers the rust spellings (`u32`, `u8`, `i8`, `i32`, `i16`,
-`f32`). The PORT'S OWN VALUES ARE RIGHT ON ALL FIVE -- they are exact matches in
-the lane comparison -- and the NOTES are wrong. They are pinned as `SELFCHECK`
-rather than left to rot, and `selfcheck_hold()` requires the stale set to be
-exactly the pinned one, so the count cannot quietly change in either direction.
+FINDING 3 -- THE SET SHRANK FROM SEVEN TO FIVE. `wgsl.bend` had seven defs with
+no call site, six of them defs the header claimed were PORTED. This is the
+fault class `amd_dsl_census` records three times ("a def nothing calls is
+invisible to every other check"), measured rather than inherited.
+`dead_defs_hold()` names the exact set, so a def that gains a caller turns it
+red rather than silently becoming checked.
+
+  GONE -- `wi_axis`, and `wi_axis.of2` with it. It was the def the header named
+    as the totalizer for `'xyz'[3]`, it called NOTHING, and the `None` arm of
+    `code_for_workitem.ret` is what actually answers `""`. A def that describes
+    a decision no def makes, next to the def that makes it.
+  GONE -- `render_load`. It was "ported, called by nothing in this file, and
+    ungated", and the string rule that calls it is `string_rewrite`, which WAS
+    the wall. It has FOUR rows now: `sr lgate packed`, `sr lgate plain`,
+    `sr load packed`, `sr load plain`.
+  LEFT ON PURPOSE -- `is_packed_of`, `se_shift`, `w_numel`, `prw_of`. The first
+    three are UOp READERS whose callers are the graph rules (`packed_load`,
+    `packed_store`), which are the wall this file names; porting a reader with
+    no caller is the same defect under a new name. `prw_of` is the interesting
+    one and it is left BECAUSE THE MEASUREMENT SAYS THE HEADER IS WRONG:
+    `packed_rmw`'s shape is `AND(LOAD(CAST(b, u32)), wmask)` -- `& UPat.var(...)`
+    is `Ops.AND`, a BINARY pattern, NOT a bind -- so `prw_of`, which tests only
+    the LOAD half, is a def nothing calls AND the full predicate is not ported.
+    Fixing it is porting the `AND`, which is a different piece of work.
+
+FINDING 4 -- FIXED AT THE SOURCE 2026-10-14, AND THE PINS DROPPED BECAUSE THE
+DEFECT IS GONE. See the `SELFCHECK_STALE` paragraph above. A pin that moved
+because the DEFECT was fixed is a pin whose defect no longer exists, and
+deleting it is the finding rather than a weakening -- `selfcheck_hold()` still
+runs and still requires the stale set to be EMPTY.
 
 EXIT STATUS: 0 all three lanes identical after the pins and every class check
 holds · 1 a lane took the wrong row count, a compile failed, the lanes
@@ -228,8 +247,22 @@ ART = HERE / "artifacts" / "wgsl_render_census-gate"
 PORT = ROOT / "tinybendygrad" / "renderer" / "wgsl.bend"
 ORACLE = HERE / "wgsl_render_census-oracle.py"
 
-ROWS = 172
+ROWS = 207
 PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
+
+# `string_rewrite`'s SEVENTEEN rules, by their INDEX in
+# `WGSLRenderer.string_rewrite.patterns`. `rules_hold()` re-derives the length and
+# each index's op and dtypes from CPython on every run, so this tuple is a claim
+# the instrument checks and not a list the instrument trusts.
+SR_RULES = (0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16)
+# rule index -> the OPS that rule's `UPat` carries, in wgsl.py:65-93's order.
+# Read off `WGSLRenderer.string_rewrite.patterns` and compared back to it on
+# every run, so a rule inserted or removed upstream moves these and the gate
+# says WHICH, instead of the seventeen silently sliding by one.
+SR_OPS = {0: "CAST", 1: "NEG", 2: "CAST", 3: "CAST", 4: "CAST", 5: "BUFFER",
+          6: "BITCAST", 7: "BITCAST", 8: "BITCAST", 9: "BITCAST", 10: "BITCAST",
+          11: "BITCAST", 12: "LOAD", 13: "LOAD", 14: "STORE", 15: "STORE",
+          16: "INDEX"}
 
 # `wgsl.bend`'s OWN ROW FORMAT: `nm = [got]   py=[want]\n`, or `nm = [got]\n`
 # for the three `rk_row` module rows which carry no `py=` half. This is the
@@ -440,7 +473,13 @@ def fixtures_hold():
         # when they do not.
         def t(x):
             return tuple(x) if isinstance(x, tuple) else (x,)
-        g, w = [t(x) for x in got], [t(x) for x in want]
+        # EVERY ELEMENT IS A STRING ON BOTH SIDES. `re.findall` yields strings
+        # and the oracle's axes hold ints, so comparing them raw said the axes
+        # differed when they do not -- MEASURED, `SR_CU` printed
+        # `('255', '0', '255')` against `('255', 0, 255)`. That is the third
+        # shape of this mistake in this one check and it is the same mistake:
+        # a side that is NORMALISED and a side that is not.
+        g, w = [tuple(map(str, t(x))) for x in got], [tuple(map(str, t(x))) for x in want]
         if g != w:
             bad.append(f"{label}: port {g} oracle {w}")
 
@@ -470,7 +509,100 @@ def fixtures_hold():
     # inline rather than through an `r_*1` helper, so it needs its own pattern.
     check("NANU_DTS", [(n, c) for n, c in m.NANU_DTS],
           r'r\("nan_uint (\w+)", dt_name\(nan_uint\(S\.(\w+)\(\)\)\)')
+    # `r_cu1("255", 0, 255, ...)` / `r_ci1(...)` -- `string_rewrite`'s two CONST
+    # rules, whose fixture is a weakint CONST's value as an `I64`. The `hi`/`lo`
+    # ARE THE AXIS and not a rendering: the port cannot tell -1 from 4294967295
+    # as a `U32`, so the pair is what makes them two cases.
+    check("SR_CU", [(n, h, l) for n, h, l in m.SR_CU],
+          r'r_cu1\("(-?\d+)", (\d+), (\d+),')
+    check("SR_CI", [(n, h, l) for n, h, l in m.SR_CI],
+          r'r_ci1\("(-?\d+)", (\d+), (\d+),')
+    # `r_sb1("global", "data0_16", S.uint8(), S.AGlobal{}, 16, ...)`.
+    check("SR_BUF", [(n, bn, c, a, str(k)) for n, bn, c, a, k in m.SR_BUF],
+          r'r_sb1\("([^"]+)", "([^"]+)", S\.(\w+)\(\), S\.(A\w+)\{\}, (\d+),')
     return report("fixtures_hold", bad)
+
+
+def rules_hold():
+    """`string_rewrite`'s POPULATION, re-derived from CPython, and the PORT's
+    seventeen `sr_*` defs measured against it.
+
+    `WGSLRenderer.string_rewrite` is `PatternMatcher([...17...]) + base_rewrite`,
+    so `patterns[:17]` are wgsl's and `patterns[17:]` is `base_rewrite`'s. THIS
+    CHECK SAYS SO on every run rather than leaving the seventeen to a comment,
+    and it checks four things:
+
+      (a) the seventeen exist and `base_rewrite` follows them, with both lengths
+          measured;
+      (b) each index's op and dtype set -- the port's rules claim to BE these
+          patterns, and a rule that stops matching a dtype it used to match is a
+          port defect this census cannot see through a string;
+      (c) the port really has one `sr_*` def per rule, by NAME, so a rule that
+          loses its def is red rather than silent;
+      (d) each of the seventeen has AT LEAST ONE ROW, which is the difference
+          between "the census could look" and "the census found no defect", and
+          is what the `sr_*` block was added for.
+    """
+    sys.path.insert(0, str(ROOT))
+    import tinygrad.renderer.wgsl as w
+    from tinygrad.renderer.cstyle import base_rewrite
+    # `patterns` is a list of `(UPat, fn)` PAIRS, so the pattern is `[0]`.
+    # MEASURED: reading `pats[i].op` raised `AttributeError: 'tuple' object has
+    # no attribute 'op'` -- the same shape of mistake twice in one check, and a
+    # check that CRASHES reports nothing, so both are named here.
+    pats = [p for p, _fxn in w.WGSLRenderer.string_rewrite.patterns]
+    bad = []
+    base = [p for p, _fxn in base_rewrite.patterns]
+    if len(pats) - len(base) != len(SR_RULES):
+        bad.append(f"string_rewrite has {len(pats) - len(base)} of its own rules, "
+                   f"the table says {len(SR_RULES)}")
+    # BOTH SIDES ARE UNWRAPPED. `patterns` holds `(UPat, fn)` PAIRS, and this
+    # check unwraps both -- MEASURED: comparing the unwrapped wgsl patterns
+    # against `base_rewrite.patterns` unwrapped on neither side printed "the tail
+    # is NOT base_rewrite's" on a port with a byte-identical tail.
+    if pats[len(SR_RULES):] != base:
+        bad.append("string_rewrite's tail is NOT base_rewrite's own patterns")
+    # (b) EACH RULE'S OP, against a table declared HERE and compared to CPython.
+    # The first draft of this check asserted the op's NAME appeared in
+    # `wgsl.bend`'s text, which is the oracle-that-reimplements-the-port failure
+    # wearing a hat: six of the seventeen are BITCAST and the port spells NONE of
+    # them `BITCAST` -- it spells `bitcast<u32>(`, which is the RENDERED form.
+    # MEASURED: that version printed six reds for rules 6-11 on a green port.
+    # What a rule's op IS is a fact about CPython, so it is compared to CPython.
+    for i, want in SR_OPS.items():
+        if i >= len(pats):
+            bad.append(f"rule {i} does not exist")
+            continue
+        ops = ",".join(sorted(o.name for o in pats[i].op))
+        if ops != want:
+            bad.append(f"rule {i} is {ops}, the table says {want} -- a rule was "
+                       f"inserted, removed or reordered above this one")
+    s = src()
+    # (c) one `sr_*` def per rule, and (d) at least one row per rule.
+    defs = set(re.findall(r"^def ((?:sr_|\w+\.)?sr\w*)\s*[(<]", s, re.M))
+    for need in ("sr_idx", "sr_neg", "sr_cbool", "sr_cuint", "sr_ci32", "sr_buffer",
+                 "sr_bhalf", "sr_buchar", "sr_bchar", "sr_bushort", "sr_bshort",
+                 "sr_bany", "sr_lgate", "sr_rmw", "sr_store", "sr_index"):
+        if need not in defs:
+            bad.append(f"wgsl.bend has no {need} def -- a string_rewrite rule "
+                       f"lost its port")
+    # (d) ROW COVERAGE. `r_sr_N` is a row GROUP and `N` is the FIRST rule index it
+    # covers -- `r_sr_0` holds rules 0, 1 and 2 -- so the groups are read as
+    # COVERING not as equalling: the first draft asserted `groups == SR_RULES`,
+    # which is red for a port that groups rows and green for one that leaves a
+    # rule's rows out of any group. MEASURED: it printed all seventeen red on a
+    # port with 33 `sr` rows covering all seventeen. What is asserted is the two
+    # things that actually matter: every group names a REAL rule, and every rule
+    # is inside some group -- which is read off the row NAMES, and the row names
+    # are compared end to end by `names_hold()` on both lanes.
+    groups = [int(n) for n in re.findall(r"^def r_sr_(\d+)\(\)", s, re.M)]
+    if sorted(groups) != sorted(set(groups)) or not set(groups) <= set(SR_RULES):
+        bad.append(f"the row groups are {groups}, the rules are "
+                   f"{list(SR_RULES)} -- a group names no rule, or is declared "
+                   f"twice")
+    if set(groups) != {0, 3, 5, 6, 12, 14, 16}:
+        bad.append(f"the row groups are {sorted(groups)} -- a rule lost its rows")
+    return report("rules_hold", bad)
 
 
 def axes_hold():
@@ -547,21 +679,31 @@ def pin_drift_hold():
 
 
 def never_folding_cast_hold():
-    """FINDING 1, kept saying so after its author is gone.
+    """FINDING 1, FIXED, and the fix is re-measured on every run.
 
     `mixin/dtype.py:36` is `return self if self.dtype == to_dtype(dtype) else
     self._wrap_uop(...)`, so `UOp.cast` FOLDS when the dtypes agree and a
     `CAST(weakint, CONST)` is UNBUILDABLE: the only CONST is weakint, and
-    casting a weakint CONST to weakint returns the CONST. `wgsl.bend:838` builds
-    exactly that node. Three facts are re-measured here on every run:
+    casting a weakint CONST to weakint returns the CONST. `wgsl.bend`'s
+    `fx_mixed` USED TO build exactly that node, so its `ssimp` CAST arm was
+    reachable only from a fixture CPython cannot produce.
 
-      1. the fold still holds (so the conclusion still follows);
+    Three facts are re-measured here on every run:
+
+      1. the fold still holds -- so the conclusion about the OLD fixture still
+         follows, and if it ever stops holding the old fixture becomes legal and
+         this check must be re-derived rather than trusted;
       2. `UOp.special(8, "l0").src[0]` is a bare CONST -- so a real `l0`'s bound
-         is a CONST and `ssimp`'s CAST arm is unreachable from a real kernel,
-         and the port's `fx_mixed` fixture is the ONLY thing that reaches it;
-      3. `ssimp` answers 0 on the shape CPython DOES build
-         (`CAST(weakint, CAST(CONST, i32))`, which `sint_to_uop` produces for a
-         non-weakint `end`) where CPython's `ssimplify` answers 8.
+         is a CONST and `ssimp`'s CAST chain is unreachable from a real kernel,
+         and the port's `fx_mixed` fixture is still the ONLY thing that reaches
+         it. THE FIX DID NOT CHANGE THAT: it changed WHICH shape the fixture
+         reaches it with, from one CPython cannot build to the one it does;
+      3. the shape CPython builds for a non-weakint bound is
+         `CAST(weakint, CAST(i32, CONST(8)))` and `ssimplify` answers 8 on it.
+         THE PORT NOW ANSWERS 8 ON IT TOO -- `ssimp` walks the CAST CHAIN with a
+         fuel of 4 rather than one step, and `fx_mixed` builds `sint_to_uop`'s
+         shape. That is the fix, and this check says so by asserting the shape
+         and the answer.
 
     And `grep -c OpsCAST tinybendygrad/renderer/wgsl.bend` is re-measured as 3,
     with each of the three lines named: two are pattern TESTS and one MINTS.
@@ -579,10 +721,31 @@ def never_folding_cast_hold():
         bad.append(f"a real l0's bound is {real.op.name}, not CONST -- "
                    f"re-measure ssimp's reachability")
     cast = sint_to_uop(UOp.const(8, dtypes.int32))
-    if not (cast.op is Ops.CAST and cast.src[0].op is not Ops.CONST
-            and ssimplify(cast) == 8):
-        bad.append(f"sint_to_uop's shape moved: {cast.op.name} -> "
-                   f"{cast.src[0].op.name}, ssimplify {ssimplify(cast)}")
+    # THE SHAPE, stated as the CHAIN it is: `sint_to_uop` of a non-weakint CONST
+    # is a CAST of a CAST, and the old check only asserted that `src[0]` is not
+    # a CONST -- which is true of the WRONG fixture's CAST too, so it could not
+    # tell the two nodes apart.
+    chain = [cast]
+    while chain[-1].op is Ops.CAST and chain[-1].src:
+        chain.append(chain[-1].src[0])
+    # THE SHAPE IS THREE NODES: `CAST(weakint, CAST(i32, CONST(8)))`. The first
+    # draft walked only while the NEXT node was a CAST, so it stopped one short
+    # and asserted `chain[-1]` was the CONST when the walk had already landed on
+    # the inner CAST -- MEASURED: it printed `CAST -> CAST` on an unmoved tree.
+    # The walk follows src[0] for as long as the CURRENT node is a CAST, so the
+    # CONST is `chain[-1]` and the two CASTs are `chain[:2]`.
+    if len(chain) != 3 or [p.op.name for p in chain] != ["CAST", "CAST", "CONST"] \
+            or [p.dtype.name for p in chain] != ["weakint", "i32", "weakint"] \
+            or ssimplify(cast) != 8:
+        bad.append(f"sint_to_uop's shape moved: "
+                   f"{' -> '.join(p.op.name for p in chain)} "
+                   f"[{' -> '.join(p.dtype.name for p in chain)}], "
+                   f"ssimplify {ssimplify(cast)}")
+    # AND THE PORT'S FIXTURE IS THAT SHAPE, read off the PORT'S OWN TEXT -- so a
+    # fixture that goes back to one CAST is red here rather than silent.
+    if "f_cast_dt(f_cast_dt(" not in src() and "f_cast_dt(c2, S.int32())" not in src():
+        bad.append("wgsl.bend's fx_mixed no longer builds the DOUBLE CAST "
+                   "sint_to_uop builds -- FINDING 1's fix was reverted")
     n = len(re.findall(r"OpsCAST\{\}", src()))
     if n != 3:
         bad.append(f"wgsl.bend has {n} OpsCAST{{}} sites, expected 3")
@@ -611,8 +774,27 @@ def dead_defs_hold():
             pats.append(r"(?<![.\w])" + re.escape(n) + r"\s*[(<]")
         if sum(len(re.findall(p, stripped)) for p in pats) == 0:
             dead.add(n)
-    want = {"main", "is_packed_of", "prw_of", "render_load", "se_shift",
-            "w_numel", "wi_axis"}
+    # MEASURED 2026-10-14, and IT SHRANK, which is the point of the check. It was
+    # SEVEN: `main` plus six defs the header claimed were PORTED. Two are gone
+    # because a `string_rewrite` rule now calls them and two because the port
+    # stopped claiming them:
+    #   `wi_axis`      DELETED, with `wi_axis.of2`. It was the def the header
+    #                  named as the totalizer for `'xyz'[3]`, it called NOTHING,
+    #                  and `code_for_workitem.ret`'s `None` arm is what actually
+    #                  answers "". A def that describes a decision no def makes.
+    #   `render_load`  IS CALLED NOW, by rules 12 and 13 of `string_rewrite`,
+    #                  which are `ctx.render_load(ctx[b], ...)` upstream -- so the
+    #                  header's "ported, called by nothing, and ungated" was
+    #                  TRUE of a wall that was not a wall.
+    #   `prw_of`       STILL DEAD and STILL CLAIMED PORTED: `packed_rmw`'s shape
+    #                  is `AND(LOAD(CAST(b, u32)), wmask)` -- `& UPat.var("wmask")`
+    #                  is Ops.AND, a BINARY pattern, not a bind (wgsl.bend's own
+    #                  comment on :39 says "the table's BIND, not a guard", and
+    #                  that is WRONG). So `prw_of`, which tests only the LOAD half,
+    #                  is a def nothing calls and the FULL predicate is not ported.
+    #                  LEFT ALONE and left on the list, and the comment above is
+    #                  the reason: fixing it is porting the `AND`.
+    want = {"main", "is_packed_of", "prw_of", "se_shift", "w_numel"}
     if dead != want:
         bad = []
         if want - dead:
@@ -759,12 +941,26 @@ CLASS_WHY = {
     "TYPE_MAP_KEYERROR": "wgsl.py:62's type_map has NINE entries and "
                          "render_cast/buf_map index it with brackets, so "
                          "type_map[dtypes.double] RAISES. The port's catch-all "
-                         "arm answers the empty string, which is a SPELLING no "
-                         "WGSL parser knows -- the same silent-wrong-answer "
-                         "shape FDIV's fallthrough used to have, which "
-                         "wgsl.bend:441-447 records as FIXED there and not "
-                         "here. supported_dtypes keeps it unreachable from a "
-                         "real kernel.",
+                         "arm answers UNHANDLED(dtypes.f64) -- a call to a dtype "
+                         "WGSL has no name for, which cannot compile. That is "
+                         "FINDING 2 FIXED: the arm used to answer the EMPTY "
+                         "STRING, a SPELLING no WGSL parser knows and the same "
+                         "silent-wrong-answer shape FDIV's fallthrough had. "
+                         "supported_dtypes keeps it unreachable from a real "
+                         "kernel. The name is `dt_name`'s, which is "
+                         "`DType.name`, which is why it reads `f64`.",
+    # `RULE_TOTALIZED` IS NOT A CLASS AND THAT IS A FINDING, not an omission.
+    # `string_rewrite` rules 0 and 14 both END in `else None` upstream, and
+    # `None` is a CONTROL-FLOW state rather than a value: `PatternMatcher.rewrite`
+    # reads it as "this rule does not apply" and tries the next one. A port that
+    # answered `""` there would be UNCOMPARABLE rather than divergent -- the
+    # oracle answers `None` and cannot answer `""` -- so the two rows would have
+    # had no verdict at all, which is the quieter of the two failures. Naming the
+    # state `NOMATCH` ON BOTH SIDES (`_sr_rewrite` maps Python's `None` to the
+    # token the port spells) makes them comparable, and they then AGREE: `sr idx
+    # plain` and `sr rmw plain` are EXACT MATCHES, so there is nothing to pin and
+    # no class to declare. The token is chosen over `""` precisely because `""` is
+    # a SPELLING a shader can hold -- FINDING 2.
     "SELFCHECK": "the port's OWN recorded py= half, which wgsl.bend:82-87 says "
                  "was measured 2026-10-01 by .agents/slop/wgsl-oracle.py. That "
                  "file is GONE, and this tinygrad/'s DType.name has moved to "
@@ -801,9 +997,25 @@ def classes_hold():
             bad.append(f"{row!r} matches {hits}")
         else:
             got[hits[0]] = got.get(hits[0], 0) + 1
-    declared = {c for c, _ in CLASSES}
-    if set(got) != declared:
-        bad.append(f"classes with no rows: {sorted(declared - set(got))}")
+    # A CLASS WITH NO ROWS IS NOT A DEFECT, and the one class that is allowed to
+    # be empty is `SELFCHECK`: it is a CATEGORY of pin, not a promise that some
+    # row is stale. It had five rows on 2026-10-13 and ZERO on 2026-10-14, when
+    # the five stale `py=` halves were CORRECTED at the source rather than
+    # pinned -- the port's notes now read CPython's own spellings, so those rows
+    # became exact matches and there is nothing left for the class to hold.
+    # MEASURED: `--refresh` wrote `0 stale self-checks`, and the rows it dropped
+    # are the five `nan_uint`/`supported_dtypes` notes. A pin that MOVED because
+    # the DEFECT was fixed is a pin whose defect is gone, and deleting the pin is
+    # the finding, not a weakening: `selfcheck_hold()` re-derives the stale set on
+    # every run and a sixth stale note cannot enter unnoticed.
+    # The other six are LANE classes and each must HAVE rows -- an empty one would
+    # be a reason nobody needs.
+    for c, _ in CLASSES:
+        if c == "SELFCHECK":
+            continue
+        if c not in got:
+            bad.append(f"the LANE class {c} has no rows -- a declared divergence "
+                       f"class with nothing in it is a reason nobody needs")
     for c, _ in CLASSES:
         if c not in CLASS_WHY:
             bad.append(f"class {c} has no reason")
@@ -812,9 +1024,9 @@ def classes_hold():
 
 def checks_hold():
     ok = True
-    for fn in (names_hold, norm_hold, fixtures_hold, axes_hold, pin_drift_hold,
-               never_folding_cast_hold, dead_defs_hold, selfcheck_hold,
-               divergences_hold, classes_hold):
+    for fn in (names_hold, norm_hold, rules_hold, fixtures_hold, axes_hold,
+               pin_drift_hold, never_folding_cast_hold, dead_defs_hold,
+               selfcheck_hold, divergences_hold, classes_hold):
         ok = fn() and ok
     return ok
 

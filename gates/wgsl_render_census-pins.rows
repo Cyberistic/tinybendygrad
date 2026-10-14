@@ -8,8 +8,8 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 14 LANE DIVERGENCES and 5 STALE SELF-CHECKS of 172 ROWS.
-# 158 EXACT MATCHES.
+# 14 LANE DIVERGENCES and 0 STALE SELF-CHECKS of 207 ROWS.
+# 193 EXACT MATCHES.
 # Each block is a CLASS, and each class says WHY the two sides differ.
 # A pin without a reason is a weakened instrument; a divergence without
 # a pin is a silent one.
@@ -41,12 +41,5 @@ nan_thr double	9218868437227405312	0	LANE
 # INDEXERROR_TOTALIZED -- 1 rows. 'xyz'[int(x)] is an INDEX and 3 is past the end of a 3-character string. The port answers "" for the whole call; x is 0..2 by construction (codegen/gpudims.py).
 workitem l3	REFUSE:IndexError		LANE
 
-# TYPE_MAP_KEYERROR -- 1 rows. wgsl.py:62's type_map has NINE entries and render_cast/buf_map index it with brackets, so type_map[dtypes.double] RAISES. The port's catch-all arm answers the empty string, which is a SPELLING no WGSL parser knows -- the same silent-wrong-answer shape FDIV's fallthrough used to have, which wgsl.bend:441-447 records as FIXED there and not here. supported_dtypes keeps it unreachable from a real kernel.
-type_map double	REFUSE:KeyError		LANE
-
-# SELFCHECK -- 5 rows. the port's OWN recorded py= half, which wgsl.bend:82-87 says was measured 2026-10-01 by .agents/slop/wgsl-oracle.py. That file is GONE, and this tinygrad/'s DType.name has moved to the rust spellings since, so the recorded note is stale. The PORT'S VALUE IS RIGHT on all five -- these are exact matches in the lane comparison -- and the NOTE is wrong.
-nan_uint double	u64	unsigned long	SELFCHECK
-nan_uint float	u32	unsigned int	SELFCHECK
-nan_uint half	u16	unsigned short	SELFCHECK
-supported_dtypes 	bool,f32,i16,i32,i8,u16,u32,u8	bool,float,int,short,signed char,unsigned char,unsigned int,unsigned short	SELFCHECK
-supported_dtypes shader-f16	bool,f16,f32,i16,i32,i8,u16,u32,u8	bool,float,half,int,short,signed char,unsigned char,unsigned int,unsigned short	SELFCHECK
+# TYPE_MAP_KEYERROR -- 1 rows. wgsl.py:62's type_map has NINE entries and render_cast/buf_map index it with brackets, so type_map[dtypes.double] RAISES. The port's catch-all arm answers UNHANDLED(dtypes.f64) -- a call to a dtype WGSL has no name for, which cannot compile. That is FINDING 2 FIXED: the arm used to answer the EMPTY STRING, a SPELLING no WGSL parser knows and the same silent-wrong-answer shape FDIV's fallthrough had. supported_dtypes keeps it unreachable from a real kernel. The name is `dt_name`'s, which is `DType.name`, which is why it reads `f64`.
+type_map double	REFUSE:KeyError	UNHANDLED(dtypes.f64)	LANE
