@@ -14676,6 +14676,26 @@ THAT WAS DESIGNED FOR EXACTLY THIS.**
       "THE HAZARD IS SILENT REVERSION, NOT AN EMPTY BLOB" -- REALISED, AND IT SURVIVED BOTH THE MASS-
       DELETE GATE AND THE MESSAGE GATE.**
 
+## NOTIMEOUT -- A SWEEP THAT REPORTED **0 OF 67** GATES GREEN BECAUSE `timeout` DOES NOT EXIST ON THIS MACHINE (2026-10-15)
+
+**THE FIFTEENTH INSTANCE, AND IT IS THE ONE I CAUSED MYSELF, WHICH IS WHY IT IS HERE.**
+
+- [ ] **MEASURED:** `command -v timeout` answers **NOTHING** and `which gtimeout` answers nothing --
+      **THERE IS NO `timeout` BINARY ON THIS MACHINE.** A sweep written as
+      `if timeout 600 .venv/bin/python "$x"; then ok++ else failed++ fi` therefore **FAILED EVERY
+      GATE INSTANTLY** with "command not found" and the tally read **`0/67`**. TWO GATES CHECKED BY
+      HAND IMMEDIATELY AFTER ANSWERED **rc=0**, so the 0/67 was **MEASUREMENT OF NOTHING RUNNING.**
+- [ ] **THE SHAPE IS THE SESSION'S, AND IT IS THE FIFTEENTH INSTANCE: AN INSTRUMENT THAT REPORTS A
+      RESULT FOR SOMETHING IT NEVER RAN.** `msgdiff` was told `deletions : 0` by a message; `gates-pop`
+      read a fixture needle as code; and here a shell loop counted a **COMMAND-NOT-FOUND** as a FAILING
+      GATE. **NONE OF THE THREE DISTINGUISHED "THE SUBJECT FAILED" FROM "THE SUBJECT NEVER RAN"**, and
+      only this one was mine.
+- [ ] **THE CHECK THAT WOULD HAVE CAUGHT IT IS THE SAME ONE THAT CAUGHT M8** (`DEFECTROW`): **A
+      MUTATION OR A RUN THAT MOVES NOTHING IS A DELIVERABLE.** A full sweep answering 0 is the largest
+      possible "moved nothing" and it looked like a catastrophic result rather than a missing binary.
+      **`zsh` prints `command not found` to STDERR and `>/dev/null 2>&1` SWALLOWS IT**, so the loop had no
+      way to notice it had run nothing at all.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
