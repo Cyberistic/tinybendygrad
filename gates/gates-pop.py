@@ -880,8 +880,17 @@ def scan_roots(root):
     subject of `.agents/slop/UNIVERSE-CENSUS.md`.
 
     `gates/indexread-gate.py` asks "does any file this repo SHIPS enumerate its population through
-    the INDEX", and a shipped instrument is not required to be a gate: `.agents/slop/**` holds 68 of
-    the offenders and 0 certified gate homes. So it does NOT read `gate_homes()` -- and the reason
+    the INDEX", and a shipped instrument is not required to be a gate: `.agents/slop/**` holds 63 of
+    the offenders and 0 certified gate homes. MEASURED 2026-10-14: `indexread-gate.py` answers
+    `POPULATION 1755  OFFENDERS 75  BASELINE 68  NEW 7`, and 63 of the 75 offenders are under
+    `.agents/slop/`. **THE PREVIOUS TEXT SAID 68, WHICH IS THE BASELINE, NOT THE OFFENDER COUNT** --
+    the two are different quantities and the conflation is what made the sentence rot. A raw
+    `grep -lE 'ls-files|read-tree|--cached'` over the directory answers 147 and is NOT that number
+    either: it counts every extension (67 `.py` of 711, plus `.md`, `.out`, `.rows`, `.tsv`) and
+    it matches `.agents/slop/whyarms/armsites.py:31`, which is the string "the DISARM, and it
+    discards staged deletions" inside a dict VALUE. The AST classifier is what counts OFFENDERS;
+    the grep counts WORDS. QUOTE THE GATE'S OWN LINE, WITH A REVISION -- `jj` auto-snapshots and
+    `HEAD` moved mid-session, so the population read 1755 and 1756 in different minutes. So it does NOT read `gate_homes()` -- and the reason
     is written here rather than discovered again: **two questions, two named populations, one
     module. A second copy of a list is a contract with no generator; a second copy of a DERIVATION
     with a different predicate is a different question pretending to be the same one.**
