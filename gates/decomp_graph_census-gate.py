@@ -58,11 +58,34 @@ THE 16 DIVERGENCES, CLASSIFIED BY A MEASUREMENT AND PINNED ON BOTH SIDES.
   1, 6, 69, 70, 63, 64 and 1 `CAST/1` entries. Each is VERIFIED to be a DELETION AND NOT A
   RESEMBLANCE: `deleted()` walks CPython's cone against the port's and REBUILDS the list, so
   the claim is that deleting exactly those N `CAST/1` entries reproduces the port's row
-  token for token over the WHOLE cone -- 2500 entries for `lgq`, not a 3-op prefix. This is
-  documented divergence A: `UOp.__init__`'s `dtype_from_uop` and `_broadcasted`'s bool->int
-  insert promotion CASTs that `ops.bend`'s `UOp.new` does not run, so the trees here are the
-  ones Python prints with those CASTs deleted. The census does NOT erase anything to
-  manufacture the agreement: the oracle prints CPython AS BUILT and the difference is pinned.
+  token for token over the WHOLE cone -- 2500 entries for `lgq`, not a 3-op prefix. The census
+  does NOT erase anything to manufacture the agreement: the oracle prints CPython AS BUILT and
+  the difference is pinned.
+
+  THE MECHANISM, MEASURED, AND IT IS NOT THE ONE THIS FILE USED TO NAME. The previous
+  revision attributed these CASTs to "`UOp.__init__`'s `dtype_from_uop` and `_broadcasted`'s
+  bool->int ... that `ops.bend`'s `UOp.new` does not run". **All three names are wrong, and a
+  wrong reason is worse than none.** MEASURED on this checkout: `UOp` has NO `__init__` -- it is
+  built by `UOpMetaClass.__call__` (`ops.py:197`), and the only `__init__` inside `class UOp`'s
+  own source is the word in a comment at `ops.py:245`. `dtype_from_uop` (`ops.py:122`) RETURNS a
+  `DType` and mints no node, so it cannot insert one. `_broadcasted` is not on `UOp` at all: the
+  only `_broadcasted` on a UOp-shaped object is `UPat._broadcasted` (`ops.py:1534`), a pure
+  reorder. The one that inserts is **`ElementwiseMixin._broadcasted`, `mixin/elementwise.py:24`**,
+  and its inner `promote` returns `t.cast(out_dtype)` at `:32` and `remint(t._uop, dt)` at `:30`,
+  with `out_dtype = least_upper_dtype(x.dtype, y.dtype)` at `:26`. So it is a general
+  `least_upper_dtype` PROMOTION, not a "bool->int" special case, and the node it inserts sits on
+  the Tensor-level binop -- which `codegen/decomp` never takes (see below).
+
+  THE PORT HAS THE MECHANISM AND DOES NOT CALL IT, AND THAT IS THE MEASURED CAUSE.
+  `mixin/elementwise.bend`'s `ew_promote` IS `promote`, `mixin/op.bend`'s `mo_bin` calls it
+  through `mo_promote`, and both read the lattice out of `uop/fold.bend`'s hoisted
+  `F.least_upper.of`. MEASURED: every ALU in `codegen/decomp` is built by `dd_add`/`dd_mul`/
+  `dd_lt1`/... (`dtype.bend:410-440`), which are one-liners onto `T.tx_alu2`/`T.tx_alu3`, and
+  `transcendental.bend:199,202` are `O.UOp.alu(ar, op, [x, y])` -- a raw ALU with pre-typed
+  operands and no promotion anywhere. `grep -c OpsCAST tinybendygrad/codegen/decomp/*.bend` is
+  20 in `dtype.bend` and 1 in `op.bend`, so the AMD unit's "0 here" does NOT hold for decomp;
+  the 20 are casts decomp mints DELIBERATELY (`dd_cast_fold`, `dd_cf`, `dd_cast_bool`), which is
+  a different thing from the casts it omits. The absence is STRUCTURAL, not a missing helper.
 
   2 REFUSALS -- `lgn` and `q6`. CPython raises `NotImplementedError` (dtype.py:81 for
   FLOORDIV, dtype.py:125 for `f2f`'s `else`) and the port declines. Both are answers and
@@ -245,6 +268,53 @@ def deleted(cpy, port):
     return dele if j == len(pt) and out == pt else None
 
 
+# THE SEARCH IS ONLY EXACT FOR A ROW SHORT ENOUGH TO RUN EVERY RUN. `witnesses` costs one
+# O(len) rebuild per candidate. MEASURED per row: the seven rows under the cap cost 0.000 s IN
+# TOTAL and the four over it cost 56.2 s between them (`lgq` 24.5, `lgs` 14.8, `lgr` 9.9,
+# `lgt` 7.0) -- so the cap is not a share of the cost, it is ALL of it, and a gate must not pay
+# 56 s for a printed observation. The cap is 200 TOKENS: `_lane()` hands back a STRING and
+# `len()` of that is characters, so the row is split on `,` first -- MEASURED, reading it as
+# tokens made the count 6 where it is 4, and a message that names the wrong unit is a lie.
+# The cap covers `lg1 lg5 lga lgc lgd lge q5` and skips `lgq lgr lgs lgt`.
+# THAT SKIP IS A LIMITATION OF THIS INSTRUMENT AND NOT A CLEAN BILL: nothing ON EVERY RUN says
+# the four skipped rows' witness is unique. It IS measured OFF the gate, and `lgr` and `lgq` each
+# admit one alternative while `lgs` and `lgt` admit none -- so the rows the class is a COUNT for
+# are `lg1 lgq lgr`, and the gate prints the one it re-measures every run.
+SHORT_CONE = 200
+
+
+def witnesses(cpy, port, n):
+    """HOW MANY SIZE-`n` `CAST/1` DELETIONS REPRODUCE `port`; `-1` when it is not a deletion.
+
+    `deleted()` PROVES THE PORT IS A DELETION. It does not prove WHICH entries were deleted, and
+    `CAST/1` is ONE TOKEN, so two ADJACENT casts are interchangeable to a left-greedy walk and
+    it keeps the EARLIER one. MEASURED over the seven rows under `SHORT_CONE`: `lg1` admits
+    exactly ONE alternative witness and the other six are unique. On `lg1` the greedy witness
+    demonstrably keeps the WRONG node -- CPython's cone carries `CAST(i32->i64)` at index 1 AND
+    `CAST(weakint->i32)` at index 2, both `CAST/1`, and the port's surviving node is the SECOND
+    (its own `cr_const_of`, mixin/creation.bend:242) because the first is the promotion
+    `codegen/decomp` omits. Printed, NOT FATAL: the class still holds on every witness that
+    exists, and this says which rows it is a COUNT for rather than an identity.
+    """
+    ct, pt = cpy.split(","), port.split(",")
+    d, i, j = [], 0, 0
+    while i < len(ct):
+        if j < len(pt) and ct[i] == pt[j]:
+            j += 1
+        else:
+            d.append(i)
+        i += 1
+    if j != len(pt) or len(d) != n:
+        return -1
+    s, alt = set(d), 0
+    for p in (k for k, t in enumerate(ct) if t == "CAST/1" and k not in s):
+        for g in d:
+            if [t for k, t in enumerate(ct) if k not in (s - {g}) | {p}] == pt:
+                alt += 1
+                break
+    return alt
+
+
 def classes_hold() -> bool:
     """EVERY CLASS'S MEASURED CLAIM, CHECKED ON THE LANES THIS RUN JUST PROMOTED.
 
@@ -264,6 +334,15 @@ def classes_hold() -> bool:
             print(f"  {r} is not CPython minus exactly {n} CAST/1 entries "
                   f"({'not a deletion' if dele is None else len(dele)})")
             ok = False
+        elif len(cpy[r].split(",")) <= SHORT_CONE:
+            alt = witnesses(cpy[r], port[r], n)
+            if alt > 0:
+                print(f"  {r}: {alt} alternative deletion witnesses -- the class is a COUNT for "
+                      f"this row, not an identity (see witnesses())")
+    skipped = sum(len(cpy[r].split(",")) > SHORT_CONE for r in PROMOTION_CASTS)
+    if skipped:
+        print(f"  witnesses(): {skipped} of {len(PROMOTION_CASTS)} PROMOTION cones are over "
+              f"{SHORT_CONE} tokens and were NOT searched -- their witness is unproven unique")
     for r in WALL:
         if (cpy[r], port[r]) != ("raise=NotImplementedError", "refused:unported"):
             print(f"  {r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared refusal pair")
@@ -326,12 +405,14 @@ if __name__ == "__main__":
     sys.exit(gate(GATE, f"decomp_graph_census-gate: 38 rows (30 l2i arms + unpack32 + 7 f2f "
                         f"pairs), 3 lanes, {len(ROWS) - len(DIVERGES)} deep cones match "
                         f"CPython byte-for-byte and {len(DIVERGING)} are DECLARED "
-                        f"divergences -- {len(PROMOTION)} are the PROMOTION CASTS `ops.bend`'s "
-                        f"`UOp.new` does not run (divergence A: {n_cast} `CAST/1` entries, each "
-                        f"verified by DELETING them from CPython's cone and rebuilding the "
-                        f"port's), {len(WALL)} are refusals, {len(UNBUILT)} is the unbuilt "
-                        f"float-target CAST arm, and q2/q3 ARE FINDINGS: f2f's narrowing arm "
-                        f"is not a deletion of CPython's cone; no lane answers the NOOP bottom",
+                        f"divergences -- {len(PROMOTION)} are the PROMOTION CASTS "
+                        f"`ElementwiseMixin._broadcasted`'s `promote` mints "
+                        f"(mixin/elementwise.py:24-32) and decomp's raw `O.UOp.alu` never does "
+                        f"({n_cast} `CAST/1` entries, each verified by DELETING them from "
+                        f"CPython's cone and rebuilding the port's), {len(WALL)} are refusals, "
+                        f"{len(UNBUILT)} is the unbuilt float-target CAST arm, and q2/q3 ARE "
+                        f"FINDINGS: f2f's narrowing arm is not a deletion of CPython's cone; no "
+                        f"lane answers the NOOP bottom",
                   checks=lambda: classes_hold() and no_noop_bottom()))
 
 # ===========================================================================
@@ -423,4 +504,45 @@ if __name__ == "__main__":
 # `C(127)` serving both roles. `dtype.bend`'s own gate prints those constants as a `k=`
 # row; this lane does not, and adding it is the next thing that would make a wrong constant
 # visible here.
+# ===========================================================================# ===========================================================================
+# THE PROMOTION CLASS, GIVEN A MEASUREMENT INSTEAD OF A NAME. `classes_hold()` asserts
+# "CPython minus exactly N `CAST/1`", and A CAST'S TARGET DTYPE IS IN NO NODE SHAPE -- `sig`
+# prints `CAST/1` for every cast -- so the class could not tell a `bool->u32` promotion from a
+# `f32->i32` narrowing, which is the SAME blind spot the block above names for a CONST's value
+# and was never named for a CAST's target. So here is the reading, recomputed from the pins.
+#
+# 282 ENTRIES IN SIX src->target PAIRS, and they are NOT all the same mechanism:
+#   263  bool    -> u32   (262 over CMPLT/2, 1 over CMPNE/2)   `_broadcasted`'s promote
+#     9  u32     -> i64   (6 over PARAM/0, 2 over MUL/2, 1 over SHR/2)
+#     3  i32     -> i64   (2 over BITCAST/1, 1 over ADD/2)
+#     2  bool    -> i64   (over CMPLT/2)
+#     2  bool    -> i32   (1 over AND/2, 1 over CMPLT/2)
+#     3  weakint -> i32   (over CONST/0)  ** NOT `_broadcasted` **
+# The last three are `UOp.const`'s OWN `.cast(dtype)` at ops.py:640 -- a bare CONST derives
+# `weakint`/`weakfloat` from its value (ops.py:185) and is cast to the declared dtype on the
+# way out. That is precisely `mixin/creation.bend`'s `cr_const_of`/`cr_cast_dt` (:242,:230), and
+# the port HAS it; `witnesses()` shows `lg1`'s greedy walk attributing one of them to the
+# promotion when it is the port's own node, which is what the ambiguity below is.
+#
+# WHY `mixin/creation.bend`'s `cr_cast_dt` SHAPE DOES NOT TRANSFER HERE, which is the question
+# `crp_graph_census` answered for its own rows. `cr_cast_dt` fixes a disagreement BETWEEN TWO
+# SPELLINGS of one dtype -- the fold test's right-hand side and the CAST's `ADt` argument --
+# inside `UOp.const`, where the trigger is `b is Invalid` (ops.py:635) REPLACING the dtype so
+# `.cast`'s own test is `bool == bool`. These 11 rows are not that: they are a `least_upper_dtype`
+# promotion of NON-constant operands (`u32` beside `int32`, a `CMPLT`'s `bool` beside a word) on
+# a code path decomp reaches by `O.UOp.alu`, which runs no promotion at all. ONE VALUE USED
+# TWICE is the right fix for two spellings of one value; here there is no second spelling, there
+# is a MISSING STEP.
+#
+# AND THE MISSING STEP IS NOT FREE TO ADD, WHICH IS WHY NONE OF THE ELEVEN IS "FIXED". The
+# cast is not a no-op on the DERIVED dtype: rebuild each cone with its deleted CASTs replaced by
+# identity and compare node by node, and `lg1` keeps 3 of 13 nodes at a DIFFERENT dtype (`MUL/2`
+# at CPython's `i64` against the port's `u32`, one at `weakint`), `lg5` 1 of 14 (`MUL/2`, `i32`
+# against `weakint`) and `lgd` 1 of 12 (`MUL/2`, `u32` against `weakint`); `lga lgc lge q5` are
+# dtype-identical on every kept node. So the port computes those intermediates NARROWER than
+# CPython does, in exactly the MUL/CDIV/CMOD decompositions where intermediate width is
+# load-bearing (dtype.py:55 sums three 32-bit products into the high word). WHETHER THAT IS A
+# DEFECT IS NOT ANSWERABLE HERE, and saying so is the finding: this census compares SHAPES and
+# carries no VALUES, which is the same limit the block above records for CONSTs. A numeric
+# oracle would settle it; this gate has none.
 # ===========================================================================

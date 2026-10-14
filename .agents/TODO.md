@@ -12,6 +12,15 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.
+decomp-census   [#####] 3/5          38 rows, 22 exact, 16 declared (11 PROMOTION · 2 WALL ·
+                                         1 UNBUILT · 2 FINDING), rc=0. THE 11's STATED CAUSE WAS
+                                         FALSE (`UOp.__init__`/`_broadcasted` are not the
+                                         inserter; `ElementwiseMixin._broadcasted`,
+                                         mixin/elementwise.py:24-32 is) -- corrected in 3 files.
+                                         282 entries in SIX src->target pairs, not one class.
+                                         `deleted()` is a COUNT on `lg1` and keeps the WRONG of
+                                         two adjacent CASTs. Mutation moved 27/38; 6 of the 11
+                                         and all 5 other classes are a COVERAGE GAP. See below.
 amd-dsl-census  [#########] 9/9      9 census CLASSES retired, 3 left: `MSG_TEXT` 26 ·
                                          `SRC_WIDTH` 4 · `WORD_64` 1 = 31 pins of 1178 rows.
                                          MODMASK retired 2026-10-14 (TWO defects: `mod_mask`
@@ -1427,6 +1436,41 @@ row, and the mutation table is what says the row is load-bearing.
       `bl_t.go` are TWO-ARMED `match`es on `True{}`/`False{}` (realize.bend:203, :211),
       so no Bool selector in the file is a constant. What was true is that the census
       could not see it, because nothing compared a reader to `realize.py` itself.
+
+- [x] decomp_graph_census: THE STATED MECHANISM WAS FALSE, now measured  [#####] 3/5
+      1. **The pins header's cause named three things that do not exist.**
+         "`UOp.__init__`'s `dtype_from_uop` and `_broadcasted`'s bool->int" is wrong three
+         ways: `UOp` has NO `__init__` (it is built by `UOpMetaClass.__call__`, ops.py:197),
+         `dtype_from_uop` (ops.py:122) RETURNS a DType and mints no node, and `UOp` has no
+         `_broadcasted` -- the one that inserts is `ElementwiseMixin._broadcasted`,
+         `mixin/elementwise.py:24`, `promote` at :28-32 (`t.cast(out_dtype)` :32), a general
+         `least_upper_dtype` promotion and not a bool->int case. Corrected in the gate's
+         docstring, its printed summary and the oracle's.
+      2. **`cr_cast_dt` DOES NOT TRANSFER.** It fixes two SPELLINGS of one dtype inside
+         `UOp.const` (`b is Invalid`, ops.py:635); these 11 rows are a promotion of
+         NON-constant operands reached by `O.UOp.alu`, which runs none. ONE VALUE USED
+         TWICE fixes two spellings; here there is no second spelling, there is a MISSING STEP.
+      3. **The class is a NAME where a measurement was available.** 282 entries in SIX
+         src->target pairs -- 263 `bool->u32`, 9 `u32->i64`, 3 `i32->i64`, 2 `bool->i64`,
+         2 `bool->i32`, 3 `weakint->i32` -- and the last three are `UOp.const`'s own `.cast`
+         (ops.py:640), which the port HAS. A CAST's target dtype is in no node shape, the
+         same blind spot the file names for a CONST's value.
+      4. **`deleted()` is a COUNT on `lg1`, and demonstrably keeps the WRONG node.**
+         `CAST/1` is one token, so two adjacent casts are interchangeable to a left-greedy
+         walk. `lg1`'s cone carries `CAST(i32->i64)` at index 1 AND `CAST(weakint->i32)` at
+         index 2; the port's survivor is the SECOND. MEASURED single-swap over the seven
+         cones under 200 tokens: `lg1` 1 alternative, six unique; the four ~2300-token rows
+         are NOT searched and the gate says so on every run. `witnesses()` added.
+      5. **NOT the port's bug, and not provable here either way.** Rebuilding each cone with
+         its deleted CASTs replaced by identity: `lg1` 3 of 13 kept nodes at a DIFFERENT
+         derived dtype, `lg5` 1 of 14, `lgd` 1 of 12, all `MUL/2`; `lga lgc lge q5`
+         dtype-identical. The port computes those intermediates NARROWER, in exactly the
+         MUL/CDIV/CMOD arms where width is load-bearing (dtype.py:55). **This census carries
+         no VALUES, so it cannot say whether that is a defect** -- a numeric oracle would.
+      **MUTATION: breaking `dd_cast_fold`'s identity fold MOVED 27 of 38 rows** (all 22
+      compared, 5 of the 11 PROMOTION) and `classes_hold` caught those 5 as "NOT A
+      DELETION". **The other 6 PROMOTION rows and all 5 non-PROMOTION classes did not
+      move -- a measured coverage gap, not a green light.**
 
 - [x] realize_graph_census: `SRC_BODY` FIXED, 117 -> 65 DIVERGENCES  [#########] 3/3
       1. **`SRC_BODY` (52 rows) — FIXED, and it was the one-liner.** `realize.py:15` is

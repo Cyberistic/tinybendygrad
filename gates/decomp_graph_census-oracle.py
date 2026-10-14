@@ -29,11 +29,16 @@ PARAMs. `size=None` is `ParamArg`'s own "None for scalars" (`ops.py:28`), which 
 the port's `size=Some{0}` denotes; a finite size makes `const_like` mint an EXPAND and
 every cone grows a node the port's has no name for.
 
-DOCUMENTED DIVERGENCE, PINNED NOT SMOOTHED: CPython inserts PROMOTION CASTs
-(`UOp.__init__`'s `dtype_from_uop`, and `_broadcasted`'s bool->int) that `ops.bend`'s
-`UOp.new` does not run -- `op.bend`'s header calls this divergence A. This lane therefore
-prints CPython's cone AS BUILT, promotion casts included. Where that makes the row differ
-the gate says so and says why; it does not erase nodes to manufacture agreement.
+DOCUMENTED DIVERGENCE, PINNED NOT SMOOTHED: CPython inserts PROMOTION CASTs that the port does
+not build -- `ElementwiseMixin._broadcasted`'s inner `promote` (mixin/elementwise.py:24-32),
+`out_dtype = least_upper_dtype(x.dtype, y.dtype)` at :26 and `return promote(x), promote(y)`
+over `t.cast(out_dtype)` at :32. MEASURED, this file used to attribute them to "`UOp.__init__`'s
+`dtype_from_uop` and `_broadcasted`'s bool->int": `UOp` has no `__init__` (it is built by
+`UOpMetaClass.__call__`, ops.py:197), `dtype_from_uop` (ops.py:122) returns a DType and mints no
+node, and `UOp` has no `_broadcasted` -- the only one is `UPat._broadcasted` (ops.py:1534), a
+pure reorder. This lane therefore prints CPython's cone AS BUILT, promotion casts included. Where
+that makes the row differ the gate says so and says why; it does not erase nodes to manufacture
+agreement.
 
 WHAT THE CONE CANNOT SEE, NAMED BECAUSE IT IS THE THING THAT BIT THIS LANE. A CONST's
 VALUE and DTYPE are in no node shape: `sig` prints `CONST/0` for every constant whatever it
