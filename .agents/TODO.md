@@ -14077,9 +14077,16 @@ divergences in 6 classes, rc=0**.
 
 ## GITINDEX -- FOUR COMMIT VARIANTS THIS SESSION, AND THE ARMED-INDEX ROOT CAUSE (2026-10-14)
 
-`AGENTS.md` now records the cause (jj's git colocation arms git's index by design). **This entry is the
-session's own tally, because four DIFFERENT forms of one mistake happened and only one of them was a
-bare `git commit`.**
+`AGENTS.md` now records the MECHANISM, and it is NOT "`jj status`". **THE FIRST VERSION OF THIS ENTRY
+NAMED ONE COMMAND AS IF IT WERE THE CAUSE, WHICH IS A CITATION OF AN INCIDENT AND NOT OF A CAUSE** --
+`jj status` is only the command that happened to be observed clearing a unit's staged work at
+`01:55:39Z`. A SECOND UNIT PROVED IT IS `jj` GENERALLY: its last op is literally
+`snapshot working copy, args: jj op log`. **THE MECHANISM IS THAT `jj` COLOCATED STAGES INTO GIT's INDEX
+ON WORKING-COPY SNAPSHOT, AND EVERY `jj` SUBCOMMAND THAT SNAPSHOTS DOES IT.** So the rule is not "avoid
+`jj status`"; it is the index, and the rule is `GIT_INDEX_FILE`.
+
+**This entry is the session's own tally, because four DIFFERENT forms of one mistake happened and only
+one of them was a bare `git commit`.**
 
 - [x] **VERIFIED HERE: ALL SIX OF THIS SESSION'S CALLER COMMITS NAMED EVERY PATH THEY TOUCHED.** `for c
       in $(git log --format=%h -6); do git show --name-only --format="" $c; done` -- every file in
