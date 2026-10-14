@@ -711,10 +711,18 @@ def main() -> int:
                     Counter(c["lane"] for c in judged if c.get("verdict") == FAIL)))
   print(f"SCOPE     : {len(disk)} on-disk .md/.py; {len(only_disk)} are NOT in HEAD "
         f"(ignored or intent-to-add) and are NOT censused")
+    # `needle_kind` GOES IN THE ROW, and this is ONE COLUMN and it closes a class. The summary's
+    # `REFUSALS BY KIND` is a count over `c['needle_kind']` IN MEMORY, and the row file did not carry
+    # it -- so the summary and its own rows could not be compared, and MEASURED they disagreed: the
+    # summary said `cell-label=2274`, and re-deriving it from the rows with this file's OWN
+    # `needle_kind()` said `0`. The POPULATION matched exactly (3,267 both sides); only the BREAKDOWN
+    # did not, so a reader tuning the classifier had nothing written down to tune against. A SECOND
+    # COPY OF A DERIVED SET IS A CONTRACT WITH NO GENERATOR -- publishing the value the summary USES is
+    # what makes the summary a `Counter` over its own rows instead of a second opinion.
   if args.rows:
     Path(args.rows).write_text("".join(
       f"{c.get('lane')}\t{c.get('kind')}\t{c.get('verdict','-')}\t{c.get('file')}:{c.get('at','')}\t"
-      f"{c.get('subject','')}\t{c.get('evidence','')}\n" for c in judged))
+      f"{c.get('subject','')}\t{c.get('needle_kind','')}\t{c.get('evidence','')}\n" for c in judged))
     print(f"ROWS      : {len(judged)} rows -> {args.rows}")
   real = [c for c in judged if c.get("verdict") in (PASS, FAIL, REFUSED)]
   worst = FAIL if any(c["verdict"] == FAIL for c in real) else (
