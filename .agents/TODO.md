@@ -14945,6 +14945,44 @@ MISREADING.**
       wanted: one positive AND one negative per `sym_table` tag, the `Sw` permutation arms, and the
       `DTS_*` arms.
 
+## CHECKSHORT -- `gate()` CHAINS ITS CHECKS WITH `and`, SO A CRASH HIDES EVERY LATER CHECK AND
+## AN EXCEPTION EXITS 1 -- THE SAME NUMBER AS AN HONEST `FAIL` (2026-10-15)
+
+Found by `gates/realize_graph_census-mutate.py` (`9651ecc59`, **55 mutations, 17 moving rows,
+30 GUARD mutations all red, gate and its four inputs byte-identical**).
+
+- [ ] **`realize_graph_census-gate.py:958` IS `checks=lambda: (classes_hold() and no_bottom_value() and
+      drivers_hold() and ...)`, EIGHT CHECKS CHAINED WITH `and`.** TWO CONSEQUENCES, BOTH MEASURED:
+      (a) **`and` SHORT-CIRCUITS**, SO THE FIRST `False` STOPS EVALUATION AND EVERY LATER CHECK NEVER
+      RUNS; (b) **`classes_hold` AND `ret_is_uop_fixed_holds` SUBSCRIPT THE LANE** (`port[r]`, `cpy[r]`,
+      `rows[r]`) for class-named rows, so A MISSING ROW RAISES `KeyError` **8 TIMES ACROSS P1/P2/P4/P8**
+      (`b_bea0`, `bea0_23`, `oi_63`, `name_63`, `res_63`, `bea0_63`, `res_9`).
+- [ ] **AN EXCEPTION PROPAGATES PAST `checks=` AND EXITS 1 -- THE SAME NUMBER AS AN HONEST `FAIL`.**
+      **SO A CRASHED GATE IS INDISTINGUISHABLE FROM A FAILING ONE BY EXIT STATUS ALONE, AND THE CRASH
+      ALSO HIDES EVERY CHECK AFTER IT.** `no_bottom_value`/`compares_holds` USE `.get`, so **FOUR CHECKS
+      DISAGREE ABOUT A MISSING ROW** -- the ones that subscript crash and the ones that default do not.
+      **THIS IS INSTANCE 4 AGAIN -- "CANNOT DISTINGUISH THE SUBJECT FAILED FROM THE SUBJECT NEVER RAN" --
+      IN `gatekit`'s OWN CALLING CONVENTION, AND IT AFFECTS EVERY GATE THAT USES `checks=`.**
+- [ ] **V2, A COVERAGE GAP THAT CONTRADICTS A CLASS'S STATED MECHANISM.** `rz_kernel_beam`'s
+      no-`KernelInfo` default 0->1 moves 0 of 974 at rc=0: `rz_beam_sink.go`'s `_` arm leaves the SINK
+      alone, so `bm_new` hash-conses and `M.hop_self` answers index 0, the rule does not fire, and the
+      row is **ALSO `"0"`**. **THE ASSERTED VALUE MEANS "NO REWRITE FIRED", WHICH BEAMS 0 AND 1 SHARE.**
+      Reached (`bm_zero` is its only live caller), so it is a gap and not a dead def -- and the port's
+      own assertion is `opscast_hold` in a new dress.
+- [ ] **Z2, THE HEADER OVERCLAIMS.** Reverting SRC_BODY's **SECOND** fix site (`rz_bound_map`) moves **0**
+      rows; reverting the **FIRST** moves exactly **52** -- which is `SRC_BODY_FIXED`'s own count, so the
+      mutation CONFIRMS the number and REFUTES the header. **THE PORT'S COMMENT ADMITS IT; THE GATE'S
+      HEADER DOES NOT.**
+- [ ] **THE DRIVER AXIS IS HAND-WRITTEN IN 8 PLACES AND THE GATE READS NONE OF THEM BACK** --
+      `grep -c 'drv ==\|rs_drv_name'` in the gate is **0**, and `drivers_hold`'s membership half is
+      `set(DRV)` against a LITERAL. **ONLY THE ORACLE'S `CALL_ONLY` IS LOADED BY PATH.** A population
+      declared once in the driver and never read by the gate is a population only the driver can see.
+- [x] **THE HARNESS DOCUMENTED ITS OWN FIVE WIRING BUGS, EACH BEING THE CLASS:** `Gate.__init__`
+      EMPTIES ITS OUTPUT DIR **AT MODULE IMPORT** (it made a check silently red on 30/30 until phase 2
+      asserted a green baseline); `m.ART` is the gate-named dir; `_pins()` closes over a module constant
+      `PINS`; a `finally` that cleans up before the last reader reads is a teardown; **AND A GUARD THAT
+      RAISES IS A VERDICT, NOT AN ABSENCE.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
