@@ -153,6 +153,21 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   DELETES ANYTHING KEPT THERE AND GIT CANNOT RESTORE IT. MEASURED: `e2efix` RESTORED STAGE 7's DELETED FIXTURE
   THERE AND IT WAS **GONE** ON THE NEXT READ; IT NOW LIVES AT THE TRACKED `gates/cstyle-live.rows`.** **A PATH INSIDE
   A SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES IT, AND SO IS A PATH INSIDE A GITIGNORED OUTPUT DIRECTORY.**
+**AND `jj git colocation` ARMS GIT's INDEX BY DESIGN, MEASURED IN ISOLATION WITH NO OTHER PROCESS PRESENT:** create an
+  untracked file, run `jj status`, and `git ls-files -s -- <it>` answers `e69de29b` — git's EMPTY blob — with
+  `git status --porcelain=v2` reading `1 .A N...` and **`git diff --cached` NAMING NOTHING**. `jj util snapshot` does the
+  same, and that is the command the VisualJJ branching server issues on its own. **MEASURED ON THIS TREE: `882` such
+  placeholders, `7.9 MB` across `149` owner directories, and `git diff --cached` STILL NAMES `0`.** **A BARE `git commit`
+  OVER AN INTENT-TO-ADD IS NOT A DESTRUCTION, IT IS WORSE — IT COMMITS THE PREVIOUS CONTENT** (isolated: bare → `28` B
+  of base, `git commit -a` → `31` B of live); **THE HAZARD IS SILENT REVERSION, NOT AN EMPTY BLOB.** **`jj status` IS NOT
+  READ-ONLY HERE — IT CLEARED ANOTHER UNIT'S STAGED WORK AT `01:55:39Z`** (`jj op log`: `import git head` + `snapshot
+  working copy`, both `args: jj status`). **COMMIT THROUGH `GIT_INDEX_FILE=.git/agent-index`, NEVER `git add -A`** — **AND
+  `GIT_INDEX_FILE` DOES **NOT** SURVIVE BETWEEN SHELL CALLS, WHICH IS HOW ONE COMMIT SILENTLY NO-OP'D.** **`checks/
+  index-arm-gate.py` ANSWERS "IS THE DEFAULT INDEX ARMED?" FROM `git ls-tree -r HEAD` VERSUS `git ls-files`, IS `PASS 0`
+  DISARMED / `REFUSED 3` ARMED (AN ARMED INDEX IS NOT A WRONG TREE, IT IS A WRONG TOOL), AND DOES **NOT** MODIFY
+  `.git/index`.** **AND IGNORED IS NOT UNTRACKED: MEASURED `28,554` IGNORED AGAINST `27` UNTRACKED-NON-IGNORED IS
+  ~`1057`:1, SO `git ls-files --others --exclude-standard` — THE ONLY CORRECT "WHAT DOES NOTHING OWN" QUESTION — ANSWERS
+  ALMOST NOTHING, AND ANY SWEEP THAT TRUSTS IT REPORTS A CLEAN TREE.**
   The shared plumbing is `gates/gatekit.py` and it holds nothing but the three lanes, the row counts
   and the diff — the rows, the divergences and the pins are the gate's own. `gates/README.md` records
   why the shell form is retired, with the four ways a shell gate failed here (`&&` masking a diff
