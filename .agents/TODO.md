@@ -14435,6 +14435,35 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
       8 are unique. **A CAST'S TARGET DTYPE IS IN NO NODE SHAPE** -- the same blind spot the file names
       for CONST values.
 
+## DEFECTROW -- A ROW NAMED AFTER A DEFECT STOPS PROVING IT THE MOMENT THE DEFECT IS FIXED (2026-10-14)
+
+Found by `gates/cstyle_render_census-mutate.py` (mutation **M8**, 0 of 358 rows, rc=0). This is the
+NINTH distinct instrument bug of the session and the most general one.
+
+- [ ] **THE MUTATION WAS `render_index` NEVER STRIPS PARENS, AND IT MOVED ZERO ROWS.** The census drove
+      ONE shape of the index arg, `(Ops.ADD, 0)`, where CPython's `idx.arg == Ops.ADD` is FALSE (a
+      TUPLE never equals an enum) **and** the port's `idx_arg_is_add` is FALSE (`AReduce` is not
+      `AOpLit`). **BOTH LANES DECLINED TO STRIP, AGREED, AND `H.strip_parens` HAD NO ROW ANYWHERE** --
+      ON THE BRANCH THE `ri_add_*` FINDING WAS ABOUT.
+- [ ] **THE FIX THAT CLOSED THE DEFECT MADE THE BRANCH *UNREACHED*, WHICH A GREEN GATE CANNOT
+      DISTINGUISH FROM *UNREACHABLE*.** `ri_add_*` was `(buf1+(a+b))` on BOTH lanes because BOTH sides
+      declined -- so the row that carried the whole finding was carrying it for the WRONG REASON. **IT
+      IS THE `String.eq("vdst","vdst")` CLASS WEARING A ROW NAMED AFTER THE DEFECT IT USED TO PROVE.**
+- [ ] **FIXED BY ADDING THE SHAPE THAT DOES STRIP**: `ri_lit_*` (3 rows) drives `AOpLit{OpsADD{}}`,
+      which is what `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])` BUILDS. NOW:
+          ri_add_0 = (buf1+(a+b))    <- CPython does NOT strip
+          ri_lit_0 = (buf1+a+b)      <- the port DOES strip
+      **THE TWO ROWS DIFFER BY EXACTLY THE STRIP**, which is the property the finding claimed and no
+      row had been proving. M8 now moves 3.
+- [ ] **THE GENERAL RULE, AND IT IS THE ONE TO CARRY: A DEFECT ROW MUST BE RE-DERIVED AFTER THE FIX,
+      BECAUSE THE FIX AND THE BUG BOTH MAKE IT GREEN.** Green is not evidence that a row still tests
+      what its name says. **A GREEN GATE CANNOT DISTINGUISH "NOT TRIGGERED" FROM "NO SUCH THING".**
+- [ ] **TWO MORE FROM THE SAME PASS:** `cfw_{0,1}_{g,l}` were byte-identical because the old `case _:`
+      NEVER READ `k`, so a row's key argument could not move it -- fixed by naming the key, M6 moves 2.
+      And `opt_float4_0` was MISCLASSIFIED in the brief as a KeyError: CPython's base `float4` is
+      **`None`, an absent value**, the oracle's `str()` printed `"None"`, and per `dsl.bend:2066-2069`
+      (`""` is not the same answer, print `None`) THE PORT WAS RIGHT. **THE ROW NOW AGREES.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
