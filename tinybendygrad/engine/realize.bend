@@ -257,8 +257,22 @@ def rz_bound_var.go(ar: O.Arena, self: U32, +p: PArg) -> Bool:
 def rz_bound_var(+ar: O.Arena, +self: U32) -> Bool:
   rz_bound_var.go(ar, self, PArg.of(O.Arena.arg(ar, self)))
 
-# `tuple(s for s in call.src[1:] if not s.is_bound_var)` -- realize.py:15. The
-# `src[1:]` is `Arena.src_without_body`, which ops.bend already has.
+# `tuple(s for s in call.src[1:] if not s.is_bound_var)` -- realize.py:15. THE SLICE IS
+# UNCONDITIONAL, and it was `Arena.src_without_body`, which is `src[1:]` FOR A CALL AND
+# `src` FOR EVERYTHING ELSE. So the port answered one EXTRA entry -- `src[0]` itself, at the
+# HEAD -- over every non-CALL. MEASURED on the census fixture: 52 rows of the 974, on 26
+# of the 41 non-CALL nodes, and `get_call_arg_uops` is the ONLY thing that moved them.
+#
+# `Arena.src_from` IS THE SLICE (`ops.bend:1392`), and it is not a new computation: the
+# `rz_res` view rebuild at :980 and the `pm_beam` rebuild at :1232 already call it for the
+# same `src[1:]` off a CALL. Every caller in this file passes a CALL -- `rz_oi_*`,
+# `rz_wbuf`, `resolve_params`, and the file's own `arg_len`/`arg_len_b` rows -- so the two
+# spellings agreed everywhere the port is ever RUN, which is why 30 of the 82 candidate
+# rows agreed anyway and the other 52 were invisible until a driver asked.
+#
+# `src_without_body` IS STILL RIGHT for `UOp.src_without_body`'s own readers (the fold in
+# `ops.bend`), and it STAYS in `ops.bend` for its six other users. It was simply the wrong
+# helper for a function whose body is a slice and not a fold.
 def rz_keep.arg(bound: Bool, +s: U32, +acc: List<&2, U32>) -> List<&2, U32>:
   bl_t(bound, acc, List.append(&2, U32, acc, [s]))
 
@@ -268,7 +282,7 @@ def rz_arg_uops.go(+ar: O.Arena, todo: List<&2, U32>, acc: List<&2, U32>) -> Lis
     case +s <> t: rz_arg_uops.go(ar, t, rz_keep.arg(rz_bound_var(ar, s), s, acc))
 
 def get_call_arg_uops(+ar: O.Arena, call: U32) -> List<&2, U32>:
-  rz_arg_uops.go(ar, O.Arena.src_without_body(ar, call), Nil{})
+  rz_arg_uops.go(ar, O.Arena.src_from(ar, call, 1), Nil{})
 
 def rz_body(ar: O.Arena, call: U32) -> U32:
   O.Arena.src(ar, call, 0)
@@ -498,8 +512,11 @@ def rz_pvars.go(a: O.Arg) -> List<&2, U32>:
 def rz_pvars(ar: O.Arena, prg: U32) -> List<&2, U32>:
   rz_pvars.go(O.Arena.arg(ar, prg))
 
+# realize.py:18 is the SAME UNCONDITIONAL `call.src[1:]` as :15, so it is the same slice
+# for the same reason. There is no census row here -- `var` is a CALL-only driver -- which
+# is the reason this line is worth naming rather than leaving as a copy of :271's mistake.
 def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:
-  rz_bound.walk(ar, O.Arena.src_without_body(ar, call), Nil{})
+  rz_bound.walk(ar, O.Arena.src_from(ar, call, 1), Nil{})
 
 def get_call_var_uops(+ar: O.Arena, call: U32, prg: U32) -> RList:
   rz_var_uops.go(rz_pvars(ar, prg), RList{ar, Nil{}}, rz_bound_map(ar, call))

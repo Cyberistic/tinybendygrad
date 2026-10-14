@@ -5,7 +5,7 @@
 # check is `want not in raw[lane]` -- a LIST-MEMBERSHIP test, so a bare value would never be
 # found. MEASURED: with the values alone the first run answered `py's arg_10 is not 'none'`.
 #
-# 117 DIVERGENCES, 857 OF THE 974 ROWS AGREE EXACTLY. It is git-resident and
+# 65 DIVERGENCES, 909 OF THE 974 ROWS AGREE EXACTLY. It is git-resident and
 # beside the gate because `AGENTS.md`'s own rule is that a gate's required inputs live in
 # git and not in `gates/artifacts/`: `gatekit` EMPTIES that directory before it runs and
 # UNLINKS what it staged when the run was not green, so a divergence list read from there
@@ -15,59 +15,27 @@
 # without reading a long line. A pin somebody TYPED wrong makes the gate RED; a pin read
 # back out of the last run's own output cannot be wrong, which is the only argument for
 # reading it from there and the reason for not doing so.
+#
+# THIS HEADER IS THE ONLY PLACE A RETIRED CLASS'S STORY SURVIVES `--refresh`. `--refresh`
+# rewrites every `#` line it emits from the LIVE lanes, so a class that empties leaves
+# behind a pins file that never mentions it and a `--refresh` is the ONLY writer. THAT
+# HAS DESTROYED PROSE IN THIS TREE TWICE. SO THE TWO STORIES ARE HERE, IN THE FUNCTION
+# THAT WRITES THE HEADER, AND THEIR ROW NAMES ARE IN THE GATE.
+#
+#   `RET_IS_UOP` -- EIGHT ROWS, NOW AGREE. `pm_beam` had no `ret is not uop`
+#     (`ops.py:1618`), so at `ctx == 0` over a SINK that already carries `beam = 0` every
+#     replacement in realize.py:218 is the identity, `UOp.new` hash-conses, and the answer
+#     IS the input node. The fix is `M.hop_self` inside `bm_new`, at the BODY rather than
+#     around the table. `RET_IS_UOP_FIXED` names the eight and `classes_hold` asserts both
+#     lanes still answer `0` at ctx 0 while the ctx-7 rows still carry `b=7`.
+#
+#   `SRC_BODY` -- FIFTY-TWO ROWS, NOW AGREE. `realize.py:15`'s `call.src[1:]` is
+#     UNCONDITIONAL and the port used `O.Arena.src_without_body`, which is `src[1:]` FOR A
+#     CALL AND `src` FOR EVERYTHING ELSE, so a non-CALL gained `src[0]` at the HEAD. The
+#     fix is `O.Arena.src_from(ar, call, 1)` in `get_call_arg_uops` AND in `rz_bound_map`
+#     (realize.py:18 is the same slice). `SRC_BODY_FIXED` names the fifty-two and
+#     `classes_hold` asserts `cpy[r] == port[r]` on each.
 
-# arg_10        SRC_BODY                                 cpy     11 B 96e105f8c9de | port     15 B 2444210017ac
-arg_10	arg_10=none	arg_10=CONST(3)
-# arg_11        SRC_BODY                                 cpy     11 B e74c55dd5739 | port     13 B fdbf16fa6bdd
-arg_11	arg_11=none	arg_11=SINK/0
-# arg_12        SRC_BODY                                 cpy     11 B 749d24bb85b0 | port     13 B bf5e544960ac
-arg_12	arg_12=none	arg_12=SINK/0
-# arg_13        SRC_BODY                                 cpy     11 B 56bf9c35af82 | port     13 B 4e044c5a3e0b
-arg_13	arg_13=none	arg_13=SINK/0
-# arg_14        SRC_BODY                                 cpy     14 B 7b8bc4f8db65 | port     22 B 743f863890c4
-arg_14	arg_14=PARAM/0	arg_14=PARAM/0+PARAM/0
-# arg_15        SRC_BODY                                 cpy     11 B d274ffe37823 | port     13 B 7d4b5396bfd7
-arg_15	arg_15=none	arg_15=SINK/0
-# arg_16        SRC_BODY                                 cpy     11 B 0bf582737005 | port     13 B 5c079452a427
-arg_16	arg_16=none	arg_16=SINK/0
-# arg_26        SRC_BODY                                 cpy     11 B 82b2f1e2492c | port     13 B c6ef1790e738
-arg_26	arg_26=none	arg_26=CALL/3
-# arg_27        SRC_BODY                                 cpy     13 B 1703776acf91 | port     22 B 77ad1edc0b75
-arg_27	arg_27=CALL/3	arg_27=LINEAR/1+CALL/3
-# arg_28        SRC_BODY                                 cpy     11 B e3e038552acd | port     15 B dee7a9ac0319
-arg_28	arg_28=none	arg_28=CONST(3)
-# arg_29        SRC_BODY                                 cpy     11 B b1141dd282ef | port     14 B 277d3a43ddbe
-arg_29	arg_29=none	arg_29=RANGE/1
-# arg_30        SRC_BODY                                 cpy     11 B 1c819bc6cce0 | port     13 B 641fc049c0d1
-arg_30	arg_30=none	arg_30=SINK/1
-# arg_33        SRC_BODY                                 cpy     11 B 7cc4590bc61f | port     14 B 3f5593670602
-arg_33	arg_33=none	arg_33=PARAM/0
-# arg_34        SRC_BODY                                 cpy     11 B e7a6545546f3 | port     13 B c2ec9e4a7739
-arg_34	arg_34=none	arg_34=SINK/1
-# arg_36        SRC_BODY                                 cpy     11 B 7b3e0f19b5c0 | port     13 B efee6e681ad2
-arg_36	arg_36=none	arg_36=SINK/0
-# arg_39        SRC_BODY                                 cpy     33 B 63fc3e94e785 | port     40 B ad673feeca00
-arg_39	arg_39=LINEAR/1+SOURCE/0+BINARY/0	arg_39=SINK/0+LINEAR/1+SOURCE/0+BINARY/0
-# arg_41        SRC_BODY                                 cpy     11 B 1c017ab77b89 | port     14 B 8ba69bd511d1
-arg_41	arg_41=none	arg_41=PARAM/0
-# arg_45        SRC_BODY                                 cpy     24 B 1d79110a0fb7 | port     33 B 02e95ef5db5f
-arg_45	arg_45=CONST(0)+CONST(2)	arg_45=BUFFER/1+CONST(0)+CONST(2)
-# arg_46        SRC_BODY                                 cpy     11 B e8bfc1517259 | port     15 B 860d634525cf
-arg_46	arg_46=none	arg_46=BUFFER/1
-# arg_47        SRC_BODY                                 cpy     11 B 40c61b6a536c | port     15 B 8fded3ebcb3a
-arg_47	arg_47=none	arg_47=BUFFER/1
-# arg_48        SRC_BODY                                 cpy     14 B fa80a10bda36 | port     22 B 2d51fbaf2a30
-arg_48	arg_48=PARAM/0	arg_48=PARAM/0+PARAM/0
-# arg_56        SRC_BODY                                 cpy     11 B 7ff51d715781 | port     13 B 06d5cbaa6318
-arg_56	arg_56=none	arg_56=SINK/0
-# arg_58        SRC_BODY                                 cpy     13 B f8a4ddb872e9 | port     20 B 345be78def7b
-arg_58	arg_58=CALL/3	arg_58=CALL/3+CALL/3
-# arg_59        SRC_BODY                                 cpy     11 B 5d9faf366416 | port     13 B 6dc67ad152ab
-arg_59	arg_59=none	arg_59=SINK/0
-# arg_62        SRC_BODY                                 cpy     11 B 5078d90b96bc | port     14 B 3e8efb0a8ba7
-arg_62	arg_62=none	arg_62=PARAM/0
-# arg_9         SRC_BODY                                 cpy     10 B 534e50ec2e8e | port     14 B 9fb542e1c0b4
-arg_9	arg_9=none	arg_9=CONST(3)
 # b_arg         BOTTOM                                   cpy     12 B 96814c40b8d9 | port     10 B eff9cf9b9d91
 b_arg	b_arg=bottom	b_arg=none
 # b_bea0        BOTTOM                                   cpy     13 B 1fa991fcc5a4 | port      8 B bcea2dd68b5d
@@ -142,86 +110,34 @@ name_61	name_61=raise=NotImplementedError	name_61=none
 name_63	name_63=raise=NotImplementedError	name_63=none
 # nb_53         ARG_SLOT                                 cpy     24 B d50c4f7db6fd | port      7 B 5db513c3a47a
 nb_53	nb_53=raise=RuntimeError	nb_53=0
-# res_10        SRC_BODY                                 cpy     11 B 07b14f9bc405 | port     15 B ed72b5c1f5fd
-res_10	res_10=none	res_10=CONST(3)
-# res_11        SRC_BODY                                 cpy     11 B 61b175515862 | port     13 B 980dbf7e3ee0
-res_11	res_11=none	res_11=SINK/0
-# res_12        SRC_BODY                                 cpy     11 B 5584beba2270 | port     13 B 81f95c710173
-res_12	res_12=none	res_12=SINK/0
-# res_13        SRC_BODY                                 cpy     11 B ff2a27d2b11c | port     13 B 5e34389a2ac4
-res_13	res_13=none	res_13=SINK/0
-# res_14        SRC_BODY                                 cpy     15 B 8cae4c383278 | port     24 B 6cb3148a68cf
-res_14	res_14=BUFFER/1	res_14=BUFFER/1+BUFFER/1
-# res_15        SRC_BODY                                 cpy     11 B e6c636aa53af | port     13 B c80fb6218bef
-res_15	res_15=none	res_15=SINK/0
-# res_16        SRC_BODY                                 cpy     11 B 5addd09c0ddc | port     13 B d686490c6bff
-res_16	res_16=none	res_16=SINK/0
-# res_20        SLOT_MISS                                cpy     23 B 94f45b274cfa | port     23 B d7f703e6e1fe
-res_20	res_20=raise=IndexError	res_20=BUFFER/1+PARAM/0
-# res_22        SLOT_MISS                                cpy     23 B 9c97015ac14a | port     32 B cbd224963f46
-res_22	res_22=raise=IndexError	res_22=BUFFER/1+BUFFER/1+PARAM/0
-# res_26        SRC_BODY                                 cpy     11 B f1da369938c0 | port     13 B e9ca47f11b79
-res_26	res_26=none	res_26=CALL/3
-# res_27        SRC_BODY                                 cpy     13 B ed61739ccd69 | port     22 B 9397a38debdf
-res_27	res_27=CALL/3	res_27=LINEAR/1+CALL/3
-# res_28        SRC_BODY                                 cpy     11 B 7db99922f792 | port     15 B b07a3e01ec9a
-res_28	res_28=none	res_28=CONST(3)
-# res_29        SRC_BODY                                 cpy     11 B e04e73367771 | port     14 B 99c2cb0d1a3e
-res_29	res_29=none	res_29=RANGE/1
-# res_30        SRC_BODY                                 cpy     11 B cca4cdb254a7 | port     13 B 1073f1c9263b
-res_30	res_30=none	res_30=SINK/1
-# res_33        SRC_BODY                                 cpy     11 B 02e30b508acd | port     14 B e54eaf41651f
-res_33	res_33=none	res_33=PARAM/0
-# res_34        SRC_BODY                                 cpy     11 B 3ca2e82c8b2c | port     13 B 36d296a9c2bb
-res_34	res_34=none	res_34=SINK/1
-# res_36        SRC_BODY                                 cpy     11 B a9a4ce84f05c | port     13 B 33980c09abcf
-res_36	res_36=none	res_36=SINK/0
-# res_39        SRC_BODY                                 cpy     33 B 00b75262dee8 | port     40 B f38bf8ddc914
-res_39	res_39=LINEAR/1+SOURCE/0+BINARY/0	res_39=SINK/0+LINEAR/1+SOURCE/0+BINARY/0
-# res_41        SRC_BODY                                 cpy     11 B aaebdb97a7ea | port     15 B 2cf95ad47d7c
-res_41	res_41=none	res_41=BUFFER/1
-# res_45        SRC_BODY                                 cpy     24 B 3223bec7d197 | port     33 B cb06d0a1ac2d
-res_45	res_45=CONST(0)+CONST(2)	res_45=BUFFER/1+CONST(0)+CONST(2)
-# res_46        SRC_BODY                                 cpy     11 B 1fa75fcf4e82 | port     15 B 54fcad3b94fd
-res_46	res_46=none	res_46=BUFFER/1
-# res_47        SRC_BODY                                 cpy     11 B bb7123b12ff3 | port     15 B 74ec4d366980
-res_47	res_47=none	res_47=BUFFER/1
-# res_48        SRC_BODY                                 cpy     15 B 68f7a2cce1c7 | port     24 B b330129b096b
-res_48	res_48=BUFFER/1	res_48=BUFFER/1+BUFFER/1
-# res_52        MSTACK_WALL                              cpy     34 B c6da44f2215c | port     33 B 585e816b8ac6
-res_52	res_52=BUFFER/1+MSTACK/2<-BUFFER/1	res_52=BUFFER/1+MSTACK/2<-PARAM/0
-# res_56        SRC_BODY                                 cpy     11 B 47f35ba09624 | port     13 B 3b08cb2e54a5
-res_56	res_56=none	res_56=SINK/0
-# res_58        SRC_BODY                                 cpy     13 B 320df75c686c | port     20 B 020a8685296e
-res_58	res_58=CALL/3	res_58=CALL/3+CALL/3
-# res_59        SRC_BODY                                 cpy     11 B 0dbc2463a916 | port     13 B fb1374190d5e
-res_59	res_59=none	res_59=SINK/0
-# res_62        SRC_BODY                                 cpy     11 B d0284e760783 | port     15 B f68e52744611
-res_62	res_62=none	res_62=BUFFER/1
-# res_63        GETADDR_DRIFT                            cpy     44 B c6d30f079b95 | port     43 B 5a7833128a41
-res_63	res_63=BUFFER/1+GETADDR/1<-BUFFER/1+CONST(1)	res_63=BUFFER/1+GETADDR/1<-PARAM/0+CONST(1)
-# res_9         SRC_BODY                                 cpy     10 B 613f00fa11a5 | port     14 B 79f289499d00
-res_9	res_9=none	res_9=CONST(3)
-# val_23        VAL_BODY                                 cpy    104 B 94cf6256d706 | port      8 B 0aeeee859a8a
-val_23	val_23=1:LINEAR/3,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_23=1
-# val_24        VAL_BODY                                 cpy    104 B 4dcc2438ff08 | port      8 B 64771c012034
-val_24	val_24=1:LINEAR/3,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_24=1
-# val_27        VAL_BODY                                 cpy     72 B 976e5fdde55d | port      8 B 923dffbdfaf6
-val_27	val_27=1:LINEAR/2,CALL/3,PROGRAM/1,SINK/0,PARAM/0,PARAM/0,CALL/3,STORE/2	val_27=0
-# val_49        VAL_BODY                                 cpy    189 B 370a3156b0af | port      8 B 2589eb1b95c3
-val_49	val_49=1:LINEAR/4,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,SHRINK/3,BUFFER/1,CONST(3),CONST(0),CONST(2),CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_49=1
+# res_20        SLOT_MISS                                cpy     23 B 94f45b274cfa | port     27 B 69b7af8ed757
+res_20	res_20=raise=IndexError	res_20=BUFFER/1@1+PARAM/0@3
+# res_22        SLOT_MISS                                cpy     23 B 9c97015ac14a | port     38 B 7de7b0a63ff0
+res_22	res_22=raise=IndexError	res_22=BUFFER/1@1+BUFFER/1@0+PARAM/0@2
+# res_52        MSTACK_WALL                              cpy     38 B 56ddacc1e77f | port     37 B 9a5e866a0a23
+res_52	res_52=BUFFER/1@0+MSTACK/2<-BUFFER/1@1	res_52=BUFFER/1@0+MSTACK/2<-PARAM/0@0
+# res_63        GETADDR_DRIFT                            cpy     48 B 2ee49f96f8ad | port     47 B 6961311b5496
+res_63	res_63=BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)	res_63=BUFFER/1@0+GETADDR/1<-PARAM/0@0+CONST(1)
+# val_23        VAL_BODY                                 cpy    112 B 80d405981b0e | port      8 B 0aeeee859a8a
+val_23	val_23=1:LINEAR/3,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@0,PARAM/0@0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_23=1
+# val_24        VAL_BODY                                 cpy    112 B d34a5a215f0e | port      8 B 64771c012034
+val_24	val_24=1:LINEAR/3,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@1,PARAM/0@0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_24=1
+# val_27        VAL_BODY                                 cpy     76 B f717e1d63eae | port      8 B 923dffbdfaf6
+val_27	val_27=1:LINEAR/2,CALL/3,PROGRAM/1,SINK/0,PARAM/0@0,PARAM/0@1,CALL/3,STORE/2	val_27=0
+# val_49        VAL_BODY                                 cpy    205 B a4bccab248c4 | port      8 B 2589eb1b95c3
+val_49	val_49=1:LINEAR/4,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@2,PARAM/0@1,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@3,SHRINK/3,BUFFER/1@0,CONST(3),CONST(0),CONST(2),CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_49=1
 # val_50        VAL_BODY                                 cpy     27 B ca901e289822 | port      8 B 8bda50029d04
 val_50	val_50=raise=AssertionError	val_50=1
-# val_51        VAL_BODY                                 cpy    172 B 6b27ddff8f1b | port      8 B 3499c94ca464
-val_51	val_51=1:LINEAR/4,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,GETADDR/1,BUFFER/1,CONST(3),CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_51=1
-# val_52        VAL_BODY                                 cpy    178 B 96093ab66e9c | port      8 B fd3dc3448111
-val_52	val_52=1:LINEAR/4,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/1,RANGE/1,CONST(2),MSTACK/2,PARAM/0,CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_52=1
+# val_51        VAL_BODY                                 cpy    188 B 31cf7a9e1560 | port      8 B 3499c94ca464
+val_51	val_51=1:LINEAR/4,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@5,PARAM/0@1,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@6,GETADDR/1,BUFFER/1@0,CONST(3),CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_51=1
+# val_52        VAL_BODY                                 cpy    194 B d0ad95b60cc1 | port      8 B fd3dc3448111
+val_52	val_52=1:LINEAR/4,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@7,PARAM/0@1,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/1@8,RANGE/1,CONST(2),MSTACK/2,PARAM/0@0,CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_52=1
 # val_53        VAL_BODY                                 cpy     25 B 528addeb151b | port      8 B a9281814ae38
 val_53	val_53=raise=RuntimeError	val_53=1
-# val_55        VAL_BODY                                 cpy    104 B e073ef81cc93 | port      8 B 445eae475a8e
-val_55	val_55=1:LINEAR/3,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_55=1
-# val_61        VAL_BODY                                 cpy    138 B b5fe446ff387 | port      8 B 26f431517628
-val_61	val_61=1:LINEAR/4,CALL/3,STORE/2,PARAM/0,PARAM/0,BUFFER/0,PARAM/0,CALL/3,BUFFER/0,BITCAST/1,PARAM/0,CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_61=1
+# val_55        VAL_BODY                                 cpy    112 B 01c21df7dc7d | port      8 B 445eae475a8e
+val_55	val_55=1:LINEAR/3,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@9,PARAM/0@0,CALL/2,SINK/0,CALL/3,CUSTOM_FUNCTION/1	val_55=1
+# val_61        VAL_BODY                                 cpy    152 B 686387085b9f | port      8 B 26f431517628
+val_61	val_61=1:LINEAR/4,CALL/3,STORE/2,PARAM/0@0,PARAM/0@1,BUFFER/0@10,PARAM/0@0,CALL/3,BUFFER/0@11,BITCAST/1,PARAM/0@1,CALL/3,SINK/0,CALL/5,CUSTOM_FUNCTION/1	val_61=1
 # val_63        VAL_BODY                                 cpy     25 B c3a35acf68cb | port      8 B 4e925b102d0e
 val_63	val_63=raise=RuntimeError	val_63=1
 # var_21        VARS_BODY                                cpy     27 B 69ed81b77eb4 | port     11 B 4bed6169dfde
@@ -248,5 +164,5 @@ var_55	var_55=raise=AttributeError	var_55=none
 var_61	var_61=raise=AttributeError	var_61=none
 # var_63        VARS_BODY                                cpy     27 B ea0d21ed4032 | port     11 B cec7d51e0ddd
 var_63	var_63=raise=AttributeError	var_63=none
-# wbuf_60       MSELECT_WALL                             cpy     16 B 78193dea7047 | port     12 B 287071527627
-wbuf_60	wbuf_60=BUFFER/1	wbuf_60=none
+# wbuf_60       MSELECT_WALL                             cpy     18 B d5a9d776f26c | port     12 B 287071527627
+wbuf_60	wbuf_60=BUFFER/1@0	wbuf_60=none

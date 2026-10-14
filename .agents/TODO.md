@@ -1413,20 +1413,52 @@ row, and the mutation table is what says the row is load-bearing.
 
 ### P4 — `schedule/`
 
-- [~] `engine/realize.bend` — `tinygrad/engine/realize.py`, 296 lines. Both lanes
-      green and IDENTICAL, `--check-only` is `ALL PROOFS CHECK`, 50 printed gate
-      rows plus a `gate_count` COUNT row, 2036 lines, no `@unsafe`.
-      **THE ONE DEFECT IS `bl_u`, AND IT IS WORTH READING.** A `match` with ONE
-      `case _:` arm returns that arm for BOTH values of the scrutinee, and
-      `bl_u.go` / `bl_t.go` are written that way — so every Bool selector built on
-      them is a CONSTANT. 20 of the 50 rows therefore read `0`/`9` where CPython
-      answers otherwise. It is a one-line fix and it is LEFT UNFIXED because about
-      a dozen entry points were written against the broken `bl_u` and each needs an
-      entry-point `match` at the same time; fixing `bl_u` alone makes the gate
-      memory-fault partway through `main`. **The two entry points already converted
-      are the pattern** (`oi_cf`, `get_call_name`) and their rows moved to CPython's
-      answers — `oi_in_e` 0→2, `name_p` `None`→`k1`. Converting the rest is
-      mechanical and is the highest-value next step in the file.
+- [x] `engine/realize.bend` — `tinygrad/engine/realize.py`, 297 lines. `--check-only` is
+      `ALL PROOFS CHECK`, 50 self rows, 2084 lines, no `@unsafe`. **`bl_u` IS FIXED** —
+      the entry below called it the file's one defect and it is not: `bl_u.go` and
+      `bl_t.go` are TWO-ARMED `match`es on `True{}`/`False{}` (realize.bend:203, :211),
+      so no Bool selector in the file is a constant. What was true is that the census
+      could not see it, because nothing compared a reader to `realize.py` itself.
+
+- [x] realize_graph_census: `SRC_BODY` FIXED, 117 -> 65 DIVERGENCES  [#########] 3/3
+      1. **`SRC_BODY` (52 rows) — FIXED, and it was the one-liner.** `realize.py:15` is
+         an UNCONDITIONAL `call.src[1:]`; the port's `get_call_arg_uops` was
+         `O.Arena.src_without_body`, which is `src[1:]` FOR A CALL AND `src` FOR
+         EVERYTHING ELSE, so a non-CALL gained `src[0]` at the head. Fixed with
+         `O.Arena.src_from(ar, call, 1)` in `get_call_arg_uops` AND in `rz_bound_map`
+         (`realize.py:18` is the same slice and had the same copy of the mistake, with no
+         census row over it). 52 rows dropped, 0 added, every surviving pin byte-identical
+         modulo nothing. `SRC_BODY_FIXED` now holds the 52 NAMES and `classes_hold`
+         asserts `cpy[r] == port[r]` on each, and the story is in `_header()` because
+         `--refresh` rewrites every comment it emits. **MUTATION: reverting the one call
+         takes the gate RED at `arg_9`/`arg_10`, rc=1.**
+      2. **`Arg` payloads were not printed — `@<slot>` added to `s1`/`rs_s1`.**
+         `realize.py:131` is `inputs[b.arg.slot]`, and the slot was in NO node shape:
+         `PARAM/0`/`PARAM/1` printed alike and this lane's `inputs` are `(b1, b0)`, two
+         BUFFERs that printed alike too. MEASURED: a port reading `slot`, `slot+1` or a
+         literal `0` answered `BUFFER/1` on all 63 `res` rows and agreed with CPython on
+         every one. 64 rows now carry `@<slot>`; verified that all 974 CPython values and
+         all 65 pinned PORT values changed by the suffix AND NOTHING ELSE.
+      3. **The census never said what fraction of itself it compares.** 974 rows, **590
+         carry a comparison**: 369 are `notacall` (9 CALL-only drivers x 41 non-CALLs) and
+         15 are the `Arena.bottom()` slot. All 384 are inside the "909 exact matches".
+         `compares_holds()` measures the refusal population off the promoted lanes and
+         cross-checks it against the number the verdict line DERIVES from the oracle's
+         own `CALL_ONLY`.
+      4. **`kern` compares a COUNT and the device is invisible — NOT CLOSED, and the
+         reason is P6, not effort.** The port's device is `S.D1{tag}` and the interning
+         table is `Device.tag`, which `uop/spec.bend:1488` records as NOT PORTED, so
+         `rs_d_kern` cannot print a NAME; and both fixtures mint exactly ONE device
+         (`S.D1{0}` / `"CPU"`), so a wrong index with the right count is invisible even
+         with the tag printed. `kern_blind_holds()` now asserts that one-device
+         precondition off BOTH fixture files and goes RED when either gains a second —
+         which is the signal to print the tag.
+      5. **NOT FIXED, REPORTED:** `ARG_SLOT` 8, `NAME_ARM` 14, `VARS_BODY` 12,
+         `VAL_BODY` 11, `SLOT_MISS` 2, `MSELECT_WALL` 1, `MSTACK_WALL` 1,
+         `GETADDR_DRIFT` 1. `ARG_SLOT`/`SLOT_MISS` are cases where CPython is PARTIAL and
+         the port is TOTAL, not wrong answers: `rz_kernel_beam` defaults a `KernelInfo`-less
+         SINK to 0 and `rz_res.at` defaults a slot miss to the node itself, and there is
+         no `raise` in the port to match an `IndexError` with.
 
       **30 of the 50 rows are CPython-VERIFIED**, and the expectations are the
       interpreter rather than a transcription: `.agents/slop/notes/rz-oracle.py` is

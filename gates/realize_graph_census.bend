@@ -141,9 +141,34 @@ def rs_s1.go(+ar: O.Arena, +u: U32, is_const: Bool) -> String:
             String.concat(["CONST(", String.concat([rs_cval(O.Arena.arg(ar, u)), ")"])]),
             String.concat([O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u))]))
 
+# THE `@<slot>` SUFFIX, THE PARAM/BUFFER SLOT, AND IT IS THE `arg=` REPAIR ON THIS
+# DRIVER'S OWN SUBJECT. `realize.py:131` is `inputs[b.arg.slot]`, so the SLOT is the
+# mechanism every `res` row exercises -- and it is in NO node shape: `PARAM/0` and
+# `PARAM/1` printed alike, and this lane's `inputs` are `(b1, b0)`, two BUFFERs of slot 1
+# and slot 0, which printed alike too. MEASURED: a port reading `slot`, `slot+1` or a
+# literal `0` answers `BUFFER/1` on every `res` row and agrees with CPython on all 63.
+# `md_graph_census` closed the same shape of hole with an ` arg=` suffix; this is that
+# suffix and it is the ONE `ParamArg` field `res`, `arg` and `wbuf` can all read.
+#
+# THE OP GUARD IS THE POINT, exactly as it is for CONST: the arg of a non-PARAM/BUFFER is
+# an `AProgram`, an `AKernel`, an `AInt` (MSELECT), an `ADev` (GETADDR) -- none of which
+# is a `ParamArg`, so reading `.slot` off them would print a slot for a node that has
+# none. CPython guards with `isinstance(u.arg, ParamArg)` and so does the oracle's `s1`.
+def rs_s1.slot(op: O.Op, sl: U32, s: String) -> String:
+  match op:
+    case O.OpsPARAM{}: String.concat([s, "@", U32.show(sl)])
+    case O.OpsBUFFER{}: String.concat([s, "@", U32.show(sl)])
+    case _: s
+
+def rs_pslot.go(a: O.Arg) -> U32:
+  match a:
+    case O.AParam{pa}: O.ParamArg.slot(pa)
+    case _: 0
+
 def rs_s1(ar: O.Arena, +u: U32) -> String:
   +a = ar
-  rs_s1.go(a, u, O.op_is(a, u, O.OpsCONST{}))
+  rs_s1.slot(O.Arena.op(a, u), rs_pslot.go(O.Arena.arg(a, u)),
+             rs_s1.go(a, u, O.op_is(a, u, O.OpsCONST{})))
 
 # THE FIVE `_resolve` VIEW OPS -- realize.py:129-131 plus HEAD's `Ops.GETADDR`.
 def rs_is_view(+op: O.Op) -> Bool:

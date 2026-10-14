@@ -225,11 +225,21 @@ CALL_ONLY = ("oi", "wbuf", "kern", "name", "est", "var", "gcc", "dnum", "nb")
 
 
 # ============================================================ THE SIGNATURES
+# THE PARAM/BUFFER SLOT IS THE `arg=` SUFFIX, AND IT IS NOT COSMETIC. `realize.py:131`
+# is `inputs[b.arg.slot]`, so the SLOT is the mechanism every `res` row exercises and it
+# is in NO node shape: `PARAM/0` and `PARAM/1` print alike, and this fixture's `inputs`
+# are `(b1, b0)` -- two BUFFERs, slot 1 and slot 0 -- which print ALIKE too. MEASURED on
+# the lane this replaces: a port reading `slot`, `slot+1` or a literal `0` would answer
+# `BUFFER/1` on every `res` row and agree with CPython on all 63 of them. `md_graph_census`
+# answered the same shape of hole with an ` arg=` suffix; this is that suffix, on the
+# field the driver's own subject is. `@<slot>` and nothing else: the NAME, the DTYPE and
+# the DEVICE are other `ParamArg` fields and `kern`/`nb`/`name` are the rows for those.
 def s1(u) -> str:
-    """`OP/arity`, and `CONST(value)` where the VALUE is the driver's subject."""
+    """`OP/arity` + `@<slot>` for a PARAM or a BUFFER, and `CONST(value)`."""
     if u.op is Ops.CONST:
         return "CONST(%d)" % u.arg
-    return "%s/%d" % (u.op.name, len(u.src))
+    base = "%s/%d" % (u.op.name, len(u.src))
+    return base + ("@%d" % u.arg.slot if isinstance(u.arg, ParamArg) else "")
 
 
 # THE FIVE `_resolve` VIEW OPS (realize.py:129-131 plus HEAD's `Ops.GETADDR`). A view
