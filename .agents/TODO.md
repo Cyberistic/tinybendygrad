@@ -297,6 +297,16 @@ dup-rows        [#########.] 8/10   10 = census, usb, ops_nv-oracle, ops_nv-port
                                        bend2-constraints.md end as DUP-2, DUP-3.
 arena-aliasing   [##........] 2/10   1100 read sites audited, 1 DEFECT fixed (+2 rows),
                                        8 suspects adjudicated, 4 detectors w/ controls
+ops-python-exec  [#########] 9/9     the EXECUTOR census, 153 fixtures x 2 lanes, rc=0.
+                                       Finding D of `ops_python_census-gate.py` is CLOSED and
+                                       its stated BLOCKER IS WRONG: the census does not need a
+                                       wire->`UOp` decoder, because `ops_bend.encode` already
+                                       owns `UOp`s->wire. 365 rows, 314 identical, 52 pinned
+                                       divergences in TWO named families (VECTOR-STORE LANES,
+                                       loop-carried LOCAL reduction), oracle hand-verified on
+                                       `f32.sqrt.0`. 45 of 47 `op_of` names and 19 of 21
+                                       `Prog.dispatch` arms now have rows; `case _: Prog.alu`
+                                       is entered by 128 of 153 fixtures. See below.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
@@ -14754,3 +14764,88 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 163 of 193 sect
 • TNISFDUMP -- the ONLY instrument that caught the second tn_isfinite... — █████░░░░░ 2/4  50%
 • CRPCONST -- cr_const_of's FOLD READ THE CALLER'S DTYPE, AND ops.py... — ████████░░ 4/5  80%
 • SRPORT -- string_rewrite IS THE RENDERER'S LARGEST SURFACE AND IT H... — ██████████ 11/11 100%
+
+## DEFECTROW-OX -- FINDING D's BLOCKER WAS AN ARROW POINTING THE WRONG WAY (2026-10-14)
+
+`gates/ops_python_census-gate.py`'s finding D says `PythonProgram.__call__` is
+ops_python.py:52-157, 106 of 186 lines, with no rows, and that the blocker is "a missing
+trusted INSTRUMENT, not a fixture list": the CPython lane needs real `UOp`s from the v1
+wire and `ops_bend.parse` "stops where the uops begin", so writing that decoder inside
+the oracle would be the reimplementation the oracle exists to prevent.
+
+**MEASURED, AND THE ARROW IS BACKWARDS.** The census does not run wire -> `UOp`. The tree
+already owns `UOp`s -> wire: `ops_bend.encode(uops)` (ops_bend.py:133) is the encoder for
+exactly the packets the port's `Prog.parse` reads. So a launch captured at
+`PythonRenderer.render` / `PythonProgram.__call__` yields a REAL `UOp` list for the oracle
+AND its `encode` output for the port, with no decoder anywhere. MEASURED end to end on
+`f32.add.0`: CPython's `__call__` and the compiled executor on the same `encode` output
+produce byte-identical buffers. And the port cannot generate the fixtures even in
+principle: `grep -c "UOp.new" tinybendygrad/runtime/ops_python.bend` answers **0**.
+
+THE INSTRUMENT IS NOW `gates/ops_python_exec-gate.py` + `gates/ops_python_exec-gen.py`
++ the tracked `gates/ops_python_exec-fixtures.rows`, which the generator writes and the
+gate reads. **365 rows over 153 fixtures, 314 unpinned identical, 52 pinned, rc=0.**
+
+WHAT THE POPULATION IS AND IS NOT. Axis 1 is REAL LAUNCHES off a `DEV=PYTHON` pass, each
+paired and verified by `encode(uops) == the packet the program was built from`. Axis 2 is
+the ALU spine: one fixture per `python_alu` member (ops.py's own table, which IS
+`PythonRenderer.code_for_op`), with arity from `GroupOp`'s own Unary/Binary/Ternary sets.
+`SEEDS` is the generator's INPUT and the only typed list; the population is what the tree
+emits from it. Neither the fixture names nor the arms are typed in the gate: `op_of`'s 47
+names and `Prog.dispatch`'s 21 arms are read out of the PORT by regex, and what CPython's
+own dispatch loop was observed to execute comes from a `list` subclass overriding
+`__getitem__` -- ops_python.py:63 is the only place `self.uops` is read, so the trace is
+CPython's own walk with no edit to ops_python.py.
+
+**WHAT EACH AXIS CANNOT DISTINGUISH, and the gate PINS the unreached set so a shrinking
+population is red rather than a smaller green:**
+  * `Ops.NOOP` -- unreached, and unreachable through `PythonRenderer`: `Ops.NOOP` is minted
+    only by the ISA renderers (renderer/isa/x86.py:164,:250,:256,:273) and `PythonRenderer`
+    renders with `python_alu` (ops_python.py:163). No rendered stream contains one.
+  * `Ops.BACKEDGE` -- unreached. MEASURED: the harvest holds 17 `Ops.END` and **0**
+    `Ops.BACKEDGE`; every loop the seeds reach lowers to `END` alone.
+  * FOUR WALLS, not gaps: `Ops.BINARY`, `Ops.CALL`, `Ops.WMMA`, `Ops.CUSTOM_FUNCTION` have
+    no `op_of` arm, so `Uop.refused` refuses the whole packet before the arena is walked.
+    `f32.cumsum.0` is the live demonstration that this can BITE: CPython runs the packet
+    and the port answers `REFUSED-1`, which is one of the 52 pinned rows.
+  * WIDTHS: one storage word per lane (i32/u32/f32/bool), so `_load`/`_store`'s multi-word
+    bitcast arm (ops_python.py:19,:31) is dead here, and the port refuses the other ten C
+    widths of `truncate`.
+
+FINDING F, RE-VERIFIED, AND IT IS NOW ROW-BACKED. `encode` writes `str(idx[s]+1)`
+(ops_bend.py:144) and the port's `Uop.of.sr` subtracts one from every src, so the port's
+program counter equals `uop_to_index[src]`. **MEASURED over the whole harvest: 8194 srcs
+checked, 0 mismatches.** The `OpsEND` arm is not a special case.
+
+FINDING E, THE UNGUARDED CATCH-ALL, NOW HAS ROWS. `Prog.dispatch`'s last arm is
+`case _: Prog.alu(p, u)` and the census reaches it: **128 of 153 fixtures** dispatch an op
+that is in `GroupOp.ALU` and has none of the 21 named arms -- all 28 of ADD, AND, CDIV,
+CMOD, CMPEQ, CMPLT, CMPNE, EXP2, FDIV, FLOORDIV, FLOORMOD, LOG2, MAX, MUL, MULACC, NEG,
+OR, POW, RECIPROCAL, SHL, SHR, SIN, SQRT, SUB, THREEFRY, TRUNC, WHERE, XOR. So the
+per-dispatch `assert u in values` CPython carries is now backed by 52 rows that say the
+port's unguarded answer is wrong on two named families, rather than by a parse-time
+refusal and no measurement at all.
+
+THE ORACLE WAS CHECKED BEFORE A DISAGREEMENT WAS BELIEVED, and it was clean. `f32.sqrt.0`
+run standalone through CPython's own `__call__` with the packet's own buffer lines: input
+buffer 1 is [1..8], output buffer 0 is
+[1.0, 1.4142135, 1.7320508, 2.0, <buffer 0's pre-launch contents>]. The first four are
+sqrt(1..4) to the bit and the last four are UNTOUCHED -- which is what a 4-wide vector
+STORE over an 8-element buffer leaves. The port answers [0,0,0,0, <untouched>]. So the
+divergence is the PORT's lanes 0..3 and not a fixture, a buffer order or the oracle.
+
+## DEFECTROW-OXB -- `bytes(addr)` IS NOT `bytes(memoryview)` (2026-10-14)
+
+The executor census cost a day of red runs before this was found, and every symptom
+pointed somewhere else. `PythonProgram.__call__` takes INTEGER ADDRESSES -- its
+`pbufs.pop(0)` goes straight into `to_mv`, which is `from_address` (helpers.py:574) -- so
+a harvest hook written as `[bytes(m) for m in bufs]` evaluates `bytes(4390684688)`, a
+4.3 GB zero-filled object, once per launch. MEASURED symptoms, in the order they
+appeared: `ru_maxrss` climbing ~350 MB per fixture (which read as a tinygrad
+rewrite-cache leak, because `recursive_property` memoises over the whole toposort and
+looked plausible); then `OSError: [Errno 28] No space left on device` on an **8.5 GB**
+pickle of a 26-uop graph; then rc=137 SIGKILLs; then a `bytes(addr)` allocation left in
+the opencode temp dir that filled a 926 GiB volume to 100%. Fixing the hook dropped the
+process from SIGKILL-at-two-fixtures to 51 MB steady across six spines, and the "leak"
+was never there. **A harness that allocates in proportion to an ADDRESS is not slow, it is
+a different program.**
