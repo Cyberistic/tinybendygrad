@@ -13949,6 +13949,30 @@ divergences in 6 classes, rc=0**.
       `srneg 6`'s target dtype from that node and compare it to the `S.uint32()` in `wgsl.bend`. Both
       sides refusing IS checked; both sides refusing about the SAME node is not.
 
+## GITINDEX -- FOUR COMMIT VARIANTS THIS SESSION, AND THE ARMED-INDEX ROOT CAUSE (2026-10-14)
+
+`AGENTS.md` now records the cause (jj's git colocation arms git's index by design). **This entry is the
+session's own tally, because four DIFFERENT forms of one mistake happened and only one of them was a
+bare `git commit`.**
+
+- [x] **VERIFIED HERE: ALL SIX OF THIS SESSION'S CALLER COMMITS NAMED EVERY PATH THEY TOUCHED.** `for c
+      in $(git log --format=%h -6); do git show --name-only --format="" $c; done` -- every file in
+      every commit is one that was explicitly listed. `--only` did its job even with the index ARMED.
+- [x] **VERIFIED HERE: `GIT_INDEX_FILE=.git/agent-index` IS A REAL SEPARATE INDEX, NOT A NO-OP.**
+      `GIT_INDEX_FILE=.git/agent-index git add <one path>` then
+      `GIT_INDEX_FILE=.git/agent-index git diff --cached --name-only` listed a DIFFERENT set (3 paths)
+      from the default index (another unit's 7, including `.agents/slop/opsfind/`), and the default
+      index was unchanged afterwards. Probe cleaned: `agent-index` removed, default index restored,
+      7 staged paths intact.
+- [ ] **THEREFORE: EVERY FUTURE COMMIT SETS IT, IN THE SAME COMMAND, BECAUSE IT DOES NOT SURVIVE
+      BETWEEN SHELL CALLS.** `AGENTS.md`: "`GIT_INDEX_FILE` DOES **NOT** SURVIVE BETWEEN SHELL CALLS,
+      WHICH IS HOW ONE COMMIT SILENTLY NO-OP'D." **A FLAG SET IN A PRIOR TOOL CALL IS NOT SET.**
+- [ ] **THE FOUR VARIANTS, BECAUSE "USE `--only`" IS NOT THE WHOLE LESSON:** (1) a BARE
+      `git commit -F` took another unit's staged files; (2) `git commit -- <paths>` ALSO leaked one
+      staged deletion -- **the pathspec form does not isolate**; (3) `git commit --only -- <paths>`
+      NEEDS `git add` FIRST, because `--only` commits the INDEX and an untracked file is not in it; (4)
+      `--only` with a pathspec that FORGOT the port file described a fix it did not contain.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
