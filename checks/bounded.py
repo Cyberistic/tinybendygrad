@@ -170,6 +170,30 @@ def group_rss(pgid: int) -> tuple[float, list[int]]:
     return sum(rss_mb(p) for p in pids), pids
 
 
+def machine() -> str:
+    """THE MACHINE IS A DECLARED PRECONDITION OF A TIME BOUND, AND THIS IS WHERE IT IS ENFORCED.
+
+    The shape is `checks/corpus-figure.py:37`'s -- "THE DEVICE IS A DECLARED PRECONDITION OF THIS
+    FIGURE" -- applied to the one thing a `--seconds` bound silently assumes: that the host had
+    capacity to spend. MEASURED 2026-10-14: `differ.py repro` ran 184 s on 2026-10-13 and was killed
+    at 900 s on 2026-10-14 with `out=0B err=0B`, on a host at loadavg `10.8/14.4/20.5` over 12
+    cores with `22.7 GB of 23.5 GB` of swap in use. `TIMED-OUT` says the child was killed; it does
+    NOT say whether the work grew or the host shrank, and those need opposite responses.
+
+    This is the defect the project has named all session, one level down: a measurement that cannot
+    distinguish "the subject changed" from "the instrument's context changed". A time bound that
+    cannot tell those apart is a coin flip with a number on it.
+    """
+    try:
+        la = os.getloadavg()[0]
+        cores = os.cpu_count() or 1
+    except (OSError, AttributeError):
+        return "MACHINE: UNKNOWN (getloadavg unavailable)"
+    ok = la <= cores
+    return (f"MACHINE: {'OK' if ok else '**VIOLATED**'} -- loadavg {la:.1f} on {cores} cores"
+            + ("" if ok else "; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD"))
+
+
 def record(verdict: str, rc: int, peak: float, ceiling: float, elapsed: float, cmd: list[str],
            out: str, err: str) -> None:
     """The ONE line a caller has to read, on stderr, with the child's own output left alone."""
@@ -179,6 +203,8 @@ def record(verdict: str, rc: int, peak: float, ceiling: float, elapsed: float, c
           + (f"  said={said}" if said else ""), file=sys.stderr)
     if why := WHY.get(verdict):
         print(f"  {why}", file=sys.stderr)
+    if verdict != WITHIN:   # a WITHIN-LIMITS run is not attributable to the host, so say nothing
+        print(f"  {machine()}", file=sys.stderr)
 
 
 def main() -> int:
