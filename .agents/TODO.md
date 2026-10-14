@@ -14530,7 +14530,9 @@ NINTH distinct instrument bug of the session and the most general one.
 
 ## CRP-MUTATE -- THE 19 CLEARED `iv_` ROWS' FIX IS **NOT** COUPLED, AND 0 OF 207 ROWS CAN SEE IT (2026-10-15)
 
-Found by `gates/crp_graph_census-mutate.py` (mutations **C1/C4/C5**). **36 mutations, 11/11 guards red.**
+Found by `gates/crp_graph_census-mutate.py` (mutations **C1/C4/C5**). **36 mutations:
+13 VALUE / 9 POPULATION / 3 AXIS / 11 GUARD; 17 of 25 input mutations moved rows; 10 of 11 guards
+red** (the 11th, `G7b`, is a DELIBERATE WEAKENING and is green by design).
 `crp_graph_census-gate.py:888-895` states the fix's rationale: *"`de` is what `.cast` is handed, so the
 fold test and the CAST's `ADt` arg can no longer disagree with each other."* **THE MUTATION THAT SHOULD
 PROVE THAT COUPPLING CANNOT MOVE A ROW, AND THE REASON IS NOT THE ONE THE COMMIT IMPLIES.**
@@ -14568,6 +14570,20 @@ PROVE THAT COUPPLING CANNOT MOVE A ROW, AND THE REASON IS NOT THE ONE THE COMMIT
       from 5 to 15 moves **0 of 207 rows** -- every row still matches -- and is caught **only** by
       `dtypes_hold`. **A FIXTURE AXIS CAN DRIFT WITH EVERY ROW STILL MATCHING**, and here the guard that
       sees it is the dtype table's, not the diff's.
+- [ ] **TWO HARNESS-LEVEL FINDINGS WORTH KEEPING, BOTH ABOUT THE GATE AND NEITHER ABOUT THE PORT.**
+      **(i) IMPORTING `crp_graph_census-gate.py` EMPTIES `gates/artifacts/crp_graph_census-gate/`.**
+      `gatekit.Gate.__init__` calls `_clear()` and gate:842 builds `GATE = Gate(...)` at MODULE SCOPE, so
+      the destruction is an IMPORT side effect -- before any check runs and whether or not the gate is
+      run at all. **MEASURED: 11 of 11 guard mutations reported `names_hold: bd printed 0 rows`** until the
+      harness snapshotted the directory around `exec_module`; every guard was red and ten were red for a
+      reason unrelated to the mutation. `amd_dsl_census-gate.py` does NOT have this shape (its `run()`
+      owns the clearing), which is why its guards report their own reasons.
+      **(ii) `drift_hold`'s TWO BODY COMPARISONS CANNOT FAIL ON A HEALTHY TREE, BY CONSTRUCTION.**
+      MEASURED: `UOp.const` is 505 bytes and `UOp.toposort` 702 bytes and **byte-identical** between
+      `ad117c928^` and HEAD. **THE MUTATION THAT FALSIFIES `drift_hold` MUST THEREFORE NAME A DEF THAT
+      MOVED** -- `UOp.param_like`, 735 bytes at the pin and 777 at HEAD -- not one of the two the gate
+      trusts. **A BODY COMPARISON OVER TWO EXTRACTIONS THAT ARE SUPPOSED TO BE EQUAL IS A TAUTOLOGY, AND
+      IT IS THE RIGHT ONE; A MUTATION THAT CANNOT DISTINGUISH IT FROM A COMPARISON IS NOT A MUTATION.**
 - [ ] **TWO MORE FROM THE SAME PASS:** `cfw_{0,1}_{g,l}` were byte-identical because the old `case _:`
       NEVER READ `k`, so a row's key argument could not move it -- fixed by naming the key, M6 moves 2.
       And `opt_float4_0` was MISCLASSIFIED in the brief as a KeyError: CPython's base `float4` is
@@ -15095,6 +15111,7 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 163 of 193 sect
 • MSGDIFFQ — msgdiff-gate.py REFUSES A MESSAGE THAT FAITHFULLY QUOTES... — ░░░░░░░░░░ 0/4   0%
 • DECOMPCENSUS — codegen/decomp/ gets its FIRST gate, and its ORACLE ... — ███████░░░ 6/9  67%
 • REALIZEGAPS — three gaps in realize_graph_census's OWN instrument (... — ░░░░░░░░░░ 0/3   0%
+• REALIZEMUT — realize_graph_census HAD NO -mutate.py; 55 mutations... — ██████████ 11/11 100%
 • AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ██████████ 6/6 100%
 • Session 2026-10-13 — opsfind: findings A, B, C and F of gates/ops_... — ████████░░ 5/6  83%
 • TNISFDUMP -- the ONLY instrument that caught the second tn_isfinite... — █████░░░░░ 2/4  50%
@@ -15233,3 +15250,112 @@ THE DENOMINATOR IS LIVE and the gate says so on every run: measured 179 -> 183 e
 `gates-pop.py:496` raised `FileNotFoundError` at `gate-surface.py:919` on a file deleted between
 its own `iterdir` and its `lstat` -- a THIRD exit code for that event, which this gate answers
 with `3`.
+
+## REALIZEMUT — `realize_graph_census` HAD NO `-mutate.py`; 55 MUTATIONS, AND FIVE FOUND NOTHING (2026-10-15)
+
+`gates/realize_graph_census-mutate.py` (new). `974 rows, 911 match, 63 declared divergences,
+rc=0`, so this is a green gate with no way to ask whether its own claims speak.
+`.venv/bin/python gates/realize_graph_census-mutate.py [--phase 1|2] [--only LABEL]`.
+**MEASURED: 398 s wall, 55 mutations, harness RSS 32.8 MiB, largest child 1.57 GiB (one `bend`
+at a time), 20 of 25 lane mutations CAUGHT, 17 of 25 moved a ROW, 5 moved nothing, 30 of 30
+guard mutations red, and 8 guard answers were EXCEPTIONS rather than verdicts.**
+
+THE TWO TEMPLATES THE BRIEF NAMED ARE NOT BOTH THERE. `gates/amd_dsl_census-mutate.py` was
+written at **02:01:52 TODAY**, three minutes before this harness checked for it and AFTER the
+brief was issued; `gates/decomp_graph_census-mutate.py` DOES NOT EXIST. The harness therefore
+copied `cstyle_render_census-mutate.py`'s staging discipline and `wgsl_render_census-mutate.py`'s
+kind names, and the `-mutate.py` count went **4 -> 7 during this session** (measured
+`ls -1 gates/*-mutate.py`, `ls -laT`). A BRIEF THAT CITES A TEMPLATE BY NAME IS A CITATION OF A
+SNAPSHOT.
+
+**FIVE MUTATIONS MOVED NOTHING AND ARE THE DELIVERABLE.** Each is classified, not guessed:
+
+- [x] **`V2` -- COVERAGE GAP, AND IT CONTRADICTS A CLASS'S OWN STATED MECHANISM. `SINK_NO_KI`'s
+      `classes_hold` comment says "`rz_kernel_beam` DEFAULTS its beam to 0 -- so the rule fires
+      on a node CPython cannot run at all", and the assertion is `port[r] == "0"`. Changing
+      that default to `1` moves **0 of 974 rows at rc=0**. MEASURED WHY: `rz_beam_sink.go`'s
+      `_` arm returns the SINK unchanged, so `bm_new` hash-conses and `M.hop_self` answers index
+      0 -- and a beam of `1` means `bm_zero` is false, so the rule does not fire and the row is
+      ALSO `0`. **`"0"` MEANS "NO REWRITE FIRED", WHICH A BEAM OF 0 AND A BEAM OF 1 SHARE.**
+      This is `amd_dsl`'s `opscast_hold` in a new dress: a guard on a value two worlds hold
+      alike. The arm is reached (`bm_zero` is its only live caller; `rz_beam`'s other call site
+      `t_beam_new.of` is on node 23, which HAS a `KernelInfo`), so it is a COVERAGE GAP and not
+      a dead def. **NOT FIXED HERE -- editing the gate is out of scope for this unit.**
+- [x] **`Z2` -- COVERAGE GAP, AND THE HEADER OVERCLAIMS. `SRC_BODY`'s fix is TWO call sites**
+      (`get_call_arg_uops` AND `rz_bound_map`) **and the header says so, and `classes_hold`'s
+      `SRC_BODY_FIXED` block names the 52 rows -- but reverting the SECOND site to
+      `O.Arena.src_without_body` moves 0 of 974 at rc=0.** `V1` reverting the FIRST moves
+      **exactly 52**, which is the declared count, so the block measures one site and names two.
+      The PORT is honest about it (`realize.bend`'s own `rz_bound_map` comment says "There is no
+      census row here"); the GATE's header is not.
+- [x] **`Z1` -- DEAD DEF, CONFIRMED, NOT NEW.** `va_1`'s body replaced by `VSkip`: 0 of 974,
+      rc=0. The gate's own header already records this ("`va_1` and `va_0` are DEAD DEFS called
+      by NOTHING. MEASURED -- replacing `va_1`'s body with `VSkip` leaves the gate GREEN").
+      Re-measured because the claim is now in the gate's header rather than in a harness's
+      output, which is the shape a claim rots in.
+- [x] **`Z3` -- DEAD ARM in the port lane's printer.** `rs_cval`'s non-`CInt` case (a float
+      CONST) replaced: 0 of 974, rc=0. The fixture has no float CONST.
+- [x] **`X5` -- COVERAGE GAP, AND IT IS BENIGN.** `k2`'s SINK beam `2 -> 5` on BOTH fixtures:
+      0 of 974, **rc=0**. The claim `pm_beam` documents is "fires only when that SINK's `beam` is
+      0", i.e. ZERO vs NON-ZERO, and every non-zero beam produces the identical row. Named so it
+      is not rediscovered as a defect.
+
+**A GATE BUG, UN-SMOOTHED: TWO CHECKS SUBSCRIPT THE LANE.** `classes_hold` reads `port[r]` /
+`cpy[r]` and `ret_is_uop_fixed_holds` reads `rows[r]` for rows a CLASS names, so a lane that is
+missing one raises `KeyError` instead of answering -- **8 such exceptions across `P1`/`P2`/`P4`/
+`P8`** (`KeyError: 'b_bea0'`, `'bea0_23'`, `'oi_63'`, `'name_63'`, `'res_63'`, `'bea0_63'`,
+`'res_9'`). `gatekit.gate()` chains all eight checks with `and`, so **each crash hides every
+check after it**, and the exception exits 1 -- the same number as an honest FAIL. `no_bottom_value`
+uses `.get(r, "bottom")` and `compares_holds` uses `cpy.get(...)`, so **the four checks in ONE
+FILE DISAGREE about how to read a missing row**, and the two that raise are the two that name a
+class. REPORTED, NOT FIXED: this unit may not edit the gate.
+
+**THE GUARDS, ALL EIGHT PLUS THE PIN-COUNT, ALL THIRTY MUTATIONS RED, EACH NAMING ITSELF.** The
+gate file is never edited: each check is driven with a world it must reject -- a SOURCE it
+re-derives its population from, or the LANE ROWS it reads. `classes_hold` 10 (one per class,
+including `SRC_BODY_FIXED`, `BOTTOM`, `NAME_ARM`, `VAL_BODY`, `kern_53`, `SINK_NO_KI`,
+`SLOT_MISS`, `wbuf_60`, `res_63`, `RET_IS_UOP_FIXED`); `no_bottom_value` 3; `ret_is_uop_fixed_holds`
+3 (both halves -- no ctx-7 row fired, a ctx-7 row lost `b=7`, a ctx-0 row left `0`);
+`calls_hold` 2; `compares_holds` 3 (subset refusal, one-lane refusal, a bottom row off `bottom`);
+`pin_drift_holds` 2 (`res_63` off the pin, the pin ALSO answering `res_52`) **WITHOUT ITS OWN
+CODE BEING TOUCHED, which is stronger evidence than breaking it**; `kern_blind_holds` 2;
+`drivers_hold` 4 (`*_table` 3->2, `+ar: O.Arena` 8->7, 16->17 `case O.Ops*`, 9->10 ladders);
+`pins_hold` 1.
+
+**TWO OF THE GUARDS NAMED IN THE BRIEF ARE NOT IN THE FILE.** `grep -c 'def rows_hold'` and
+`grep -c 'def pin_lines()'` are **0 each**, and `arms_all_reached` is **0** as a def while
+appearing BY NAME in `no_bottom_value`'s docstring and in the header. The row count is
+`gatekit.Gate._lane`'s; the pin count is `_pins()`'s. The harness asserts both under the names
+the claims deserve and says so in its own header.
+
+**FINDING 1's AXIS IS GUARDED, AND THAT IS A POSITIVE READING.** `X2` sets BOTH lanes' `inputs`
+to the two PARAMs -- the axis the driver's own prose predicts would make `res_63` AGREE -- and
+the gate goes **rc=1 with 20 rows moved, `classes_hold` AND `pin_drift_holds` both red**. The
+two checks that carry FINDING 1 both speak on exactly the axis the prose names.
+`X4` (both fixtures' `CONST(3)` -> `CONST(4)`) moves **3 rows** (`beam_49/50/51`, the only fired
+beams whose cone reaches the BUFFER) and is rc=1; `X3` (`beam` at ctx 3 not 7) moves 8 and is
+caught by `ret_is_uop_fixed_holds` alone.
+
+**THE DRIVER AXIS IS HAND-WRITTEN IN EIGHT PLACES AND THE GATE READS NONE OF THEM BACK.**
+MEASURED: the 15 driver names appear in the gate's `DRV` and in `drivers_hold`'s `want` (a
+literal compared with a literal, `got = set(DRV)`), in the driver's `rs_drv_name`, `rs_d.go` and
+`rs_call_only`, and in the oracle's `drive()` chain plus its two `__main__` loops. `grep -c 'drv
+==\|rs_drv_name' gates/realize_graph_census-gate.py` is **0**. The ONE axis re-derived from a
+live source is the oracle's `CALL_ONLY`, loaded by path in `_compared()` -- 9 names, and the
+conclusion `369` refusals is DERIVED from it rather than written down, which is the shape
+doctrine 1 asks for. `P8` shows what the gap costs: renaming `res` to `resolve` in
+`rs_drv_name` moves 64 rows out and 64 in, the COUNT still matches, and only the lane diff sees
+it. **NOT FIXED HERE.**
+
+**THE HARNESS'S OWN FIVE WIRING BUGS, KEPT BECAUSE EACH ONE IS THE CLASS.** (1) `Gate.__init__`
+empties the output directory at MODULE IMPORT, so a harness that stages lanes before importing
+the gate loses them and `no_bottom_value` -- which asks `.is_file()` rather than calling
+`_lane` -- answers False **SILENTLY**; it was red on **30 of 30** mutations and nothing said so,
+so phase 2 now ASSERTS all nine checks GREEN on the unmutated lanes before reading anything.
+(2) `m.ART` is the gate-NAMED directory, not the artifacts root -- two constants, one meaning.
+(3) `_pins()` closes over the MODULE constant `PINS`, so repointing `HERE` does NOT redirect it.
+(4) A `finally` that cleans up before the last reader has read is a teardown, not a guard.
+(5) A guard that RAISES is a verdict and not an absence: `EXC <Type>: <msg>` is recorded as RED,
+because a harness that dies on a crashing guard has learned nothing. Plus two TAMPER-DIRECTION
+errors of my own: `calls_hold` and `compares_holds` walk only the NON-CALL indices, so tampers
+aimed at node 23 (a CALL) read silent and look exactly like a guard that never speaks.
