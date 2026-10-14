@@ -1,5 +1,0 @@
-# run rc token load names
-run=1 rc=0 token=PASS load=13.86 names=
-run=2 rc=0 token=PASS load=14.35 names=
-run=3 rc=0 token=PASS load=12.98 names=
-run=4 rc=1 token=FAIL load=12.18 names=GRANDCHILD: the watchdog sees a SPAWNED child; ORPHAN: a grandchild is still watched after its parent exits

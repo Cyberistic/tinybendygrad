@@ -1,9 +1,0 @@
-  groups_hold: OK
-  names_hold: OK
-  dup_rows_hold: OK
-  axes_hold: OK
-  pin_drift_hold: OK
-  fixtures_hold: OK
-  divergences_hold: OK
-  classes_hold: OK
-amd_dsl_census: PASS -- 1178 rows x 3 lanes, 1131 exact, 47 pinned (47 names)

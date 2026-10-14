@@ -1,9 +1,0 @@
-sha	expected_rc	rc	token	what
-00b101574	3	3	REFUSED	the real defect: message says it deleted oracles259/plants.py; the diff does not
-169ee6ac8	0	0	PASS	honest meta-report: says the predecessor's deletion claim is FALSE
-601e7929c	0	0	PASS	uncheckable: a dead pid 2368 and config keys in no file
-2b4cc9e48	0	0	PASS	uncheckable: pid 2368 / 30543, the mass-delete guard's own message
-3c4ceeea3	0	0	PASS	honest: moved oracles259 residue, and says 'MOVED, NOT DELETED'
-9b55d16a4	0	0	PASS	honest: removed the strays, including elf.bend.mut
-plant	0	0	PASS	6 states: honest, false, uncheckable, ack, count-false, count-honest
-range	3	3	REFUSED	range: 147 commits -- 146 PASS, 1 REFUSED

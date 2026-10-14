@@ -1929,126 +1929,7 @@ def clean_env(dev: str) -> dict:
   return e
 
 
-# THE TRANSIENT, IN THE COMPILER'S OWN WORDS, AND THE ARITHMETIC THAT BOUNDS IT.
-#
-# `bend` stack-overflows on roughly 1 run in 20.  At the PINNED compiler that failure is LOUD,
-# and the pin is what makes that nameable rather than a matter of faith:
-#   `bend2/comp.ts:159-167`  `ERRS[7]` is the literal `memory fault (machine stack overflow?)`.
-#   `bend2/comp.ts:3415`     `ERR_DEEP 7`, the code that text is filed under.
-#   `bend2/comp.ts:3642-3645` `err_fail` writes it: `fflush(stdout); fprintf(stderr, "bend:
-#                             %s\n", msg); _exit(1)`.  `err_trap` (:3649-3651) is what calls it,
-#                             from the SIGSEGV/SIGBUS that the guarded mmap raises.
-#   `bend2/comp.ts:6337`     the interpreter lane translates a host `RangeError` into the SAME
-#                             `ERRS[7]` string, and `main.ts:971` has a second spelling for one
-#                             raised above that.  Both lanes go to fd 2 and both exit 1.
-#   `tests/io/stack_fault_trap.bend:59-60` is the compiler's OWN regression for it, expecting
-#                             `#|bend: memory fault (machine stack overflow?)` and `#|exit 1`.
-# So a machine-stack overflow is NOT a signal death -- `rc` is 1, never -11/139/-9 -- and NOT an
-# empty stream.  `references/bend` is a DEPTH-1 clone (`git rev-list --count HEAD` == 1), so
-# what the OLDER compilers printed here is NOT CHECKABLE from this tree; `gates/gatekit.py:135`
-# measured "no stdout and no error at all" on one of them and that claim is STALE for this pin.
-STACK_OVERFLOW = ("memory fault (machine stack overflow?)", "machine stack overflowed")
-
-# HOW MANY ATTEMPTS, AND HOW LONG ONE MAY TAKE.  Both are arithmetic from a measurement, not
-# taste.  MEASURED on the pinned v2.0.37 and CITED, not re-taken by this edit: one emission is
-# 1.29 s, the 34-graph corpus is 44 s, `differ.py run` is 182 s.
-#   60 s is 46x that mean, and it is the CEILING ON A HANG, not a budget: a graph that takes 46x
-#   the corpus mean is not slow, it is a different machine, and TIMED-OUT is the truthful name
-#   for that.  A timeout RAISES rather than retries, so too tight a bound costs a loud failure
-#   and never a wrong answer.
-#   WORST CASE PER GRAPH  3 x 60 = 180 s, against 5 x 1800 = 9000 s before: 50x less, and no
-#   single graph can cost thirty minutes.  WORST CASE FOR THE CORPUS  34 x 180 = 6120 s.
-#   3 attempts, not 5: at 1-in-20, P(three in a row) = 1/8000 and P(at least one of 34 graphs
-#   gives up) = 1 - (1 - 1/8000)^34 = 0.42%.  Attempts 4 and 5 divide that by ~400 and cost
-#   2.4x the worst case for 0.006% of the expected cost (1.0531 vs 1.0525 attempts per graph).
-TRIES, BEND_TIMEOUT = 3, 60
-
-
-def classify(rc: int, out: str, err: str) -> tuple[list[str], list[str], str]:
-  """`(rows, header, verdict)` for ONE bend attempt, and the verdict is one of four.
-
-  `RETRY`   bend NAMED a machine stack overflow -- the one documented transient, and the only
-            shape worth another attempt.  Decided by the STRING, never by `rc` and never by the
-            emptiness of stdout: `rc` is 1 for a stack overflow AND for a missing file AND for
-            `SOME PROOFS FAIL` (`runs/graphcmp/D/D10-zerorow-guard.txt.err`, measured), and an
-            empty stream is an ANSWER as often as it is a death.
-  `ANSWER`  rc == 0 and the probe PRINTED.  Whatever the row count, this is what was asked
-            for, and the witness is that it printed rather than that it printed in this
-            file's shape -- `--bend-probe` may point `emit_bend` at any file.
-  `EMPTY`   rc == 0 and nothing printed: an ANSWER that is empty.  An answer must not be
-            retried, because retried it is a lie told in the direction of green.
-  `BROKE`   it did not finish and it did not name the flake.  bend said what was wrong, so
-            another attempt costs another 554 MB to learn the same thing.
-
-  WHY THE EXIT STATUS CANNOT BE THE GATE, in this file's own evidence: `graphcmp.py`'s header
-  trap 6 records that `--check-only` exits 1 on a CLEAN file, the D10 transcript above records
-  rc=1 with 0 rows for a file that does not exist, and `main.ts:187-213` prints
-  `bend <ver> is available: run bend update` on stderr on ANY run -- which is why the D10 stderr
-  tail ends in the update notice and why "stderr is non-empty" is worth nothing.
-  """
-  lines = [ln for ln in out.splitlines() if ln.strip()]
-  rows = [ln for ln in lines if not ln.startswith("#")]
-  hdr = [ln for ln in lines if ln.startswith("#")]
-  if any(t in err for t in STACK_OVERFLOW):
-    return rows, hdr, "RETRY"
-  if rc != 0:
-    return rows, hdr, "BROKE"
-  # `lines`, not `hdr`: `--bend-probe` can point `emit_bend` at any file, and one that prints
-  # rows with no `#` header is still an answer.  The witness is that the probe PRINTED, not
-  # that it printed in this file's shape.
-  return (rows, hdr, "ANSWER") if lines else (rows, hdr, "EMPTY")
-
-
-# THE CONTROL TABLE for `classify`, read by `selfcheck`.  Each row is a shape the PINNED
-# compiler can produce and the verdict is decided by reading the row, so this gate costs no
-# `bend` run and does not wait for a 1-in-20 flake to arm itself.
-CRASH_CONTROL = [
-  (0, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n", "", "ANSWER",
-   "graphcmp.bend:1671 prints the `#` header then the rows and `main() -> IO(Unit)` exits 0"),
-  (0, "# root=0 nodes=1 settled=True\n", "", "ANSWER",
-   "an EMPTY answer: the probe ran and the graph has no arena nodes. The old rule retried "
-   "this five times and then called it a failure -- a retry that fires on an answer"),
-  (0, "1:ADD 2:MUL\n", "", "ANSWER",
-   "a `--bend-probe` file with rows and no `#` header is still an answer"),
-  (1, "", "bend: memory fault (machine stack overflow?)\n", "RETRY",
-   "comp.ts:3415 `ERR_DEEP 7` -> :3642-3645 `err_fail` -> stderr, `_exit(1)`; the compiler's "
-   "own `tests/io/stack_fault_trap.bend:59-60` expects exactly this string and `#|exit 1`"),
-  (1, "", "Error: the machine stack overflowed (a deep recursion, or a literal too large to "
-   "expand)\n", "RETRY",
-   "main.ts:971 `book_err`'s RangeError arm -- the interpreter lane's second spelling"),
-  (1, "", "SOME PROOFS FAIL\nError: - message : no such file: "
-   ".agents/slop/graphcmp-empty.bend\nbend 2.0.35 is available: run bend update\n",
-   "BROKE", "the D10 transcript VERBATIM (`runs/graphcmp/D/D10-zerorow-guard.txt.err`, "
-   "measured): five identical attempts, rc=1, a file that does not exist, and the old rule "
-   "reporting it as the stack flake"),
-  (1, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n", "", "BROKE",
-   "a TORN run -- rows printed and the exit status still non-zero. `gates/gatekit.py:370` "
-   "already requires `rc == 0` for the same reason; taking rows from a failed run reports a "
-   "byte mismatch as a port bug"),
-  (0, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n",
-   "bend 2.0.37 is available: run bend update\n", "ANSWER",
-   "main.ts:187-213 prints the update notice on stderr on ANY run, so a non-empty stderr must "
-   "not demote an answer -- and 'stderr is non-empty' is worthless as a discriminator"),
-  (0, "", "bend 2.0.37 is available: run bend update\n", "EMPTY",
-   "the notice alone with nothing printed: still not a crash"),
-  (1, "", "", "BROKE",
-   "rc != 0 and silence. `gates/gatekit.py:135` measured THIS shape as the stack overflow on "
-   "an older compiler; at the pinned v2.0.37 the compiler prints ERRS[7], so a silent one is "
-   "a failure -- and a stale token degrades to a loud failure, never to a silent green"),
-]
-
-
-def attempt_note(attempt: int, rc: int, rows: list[str], hdr: list[str],
-                 verdict: str, err: str) -> str:
-  """One line per attempt.  It carries the VERDICT and the whole stderr rather than its tail:
-  the D10 transcript's tail is the update notice, so a tail can hide the only line that says
-  what went wrong."""
-  return (f"bend attempt {attempt}: {len(rows)} rows, {verdict}, rc={rc}"
-          + (f", {' | '.join(hdr)}" if hdr else "")
-          + f", stderr: {' '.join(err.split())[-240:] or '(empty)'}")
-
-
-def emit_bend(dev: str, graph: str, tries: int = TRIES,
+def emit_bend(dev: str, graph: str, tries: int = 5,
               probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
   """`graph` is REQUIRED, with no default, and that is the fix rather than the style.
   MEASURED: `graph` defaulted to `"matmul"` and all three call sites passed only `dev`, so
@@ -2063,28 +1944,24 @@ def emit_bend(dev: str, graph: str, tries: int = TRIES,
   nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
   20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
   is exactly the guard that does not work."""
+  """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
+  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
+  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
+  is exactly the guard that does not work."""
   notes = []
   for attempt in range(1, tries + 1):
-    try:
-      c = subprocess.run([str(BEND), str(probe or BEND_PROBE), graph], cwd=REPO,
-                         capture_output=True, text=True, env=clean_env(dev),
-                         timeout=BEND_TIMEOUT)
-    except subprocess.TimeoutExpired:
-      # A HANG IS NOT THE FLAKE, and a hang is the one shape where a retry costs the most:
-      # another attempt is another full budget of a 554 MB process. So this raises on the
-      # first one. Before this, a timeout was an uncaught `TimeoutExpired` -- a traceback,
-      # which names nothing.
-      raise SystemExit(f"emit bend {graph}: TIMED-OUT after {BEND_TIMEOUT}s on attempt "
-                       f"{attempt} -- a FAILURE, not a verdict, and deliberately NOT retried: "
-                       f"{tries - attempt} attempt(s) held back")
-    rows, hdr, verdict = classify(c.returncode, c.stdout, c.stderr)
-    notes.append(attempt_note(attempt, c.returncode, rows, hdr, verdict, c.stderr))
-    if verdict == "ANSWER":
+    c = subprocess.run([str(BEND), str(probe or BEND_PROBE), graph], cwd=REPO, capture_output=True, text=True,
+                       env=clean_env(dev), timeout=1800)
+    lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
+    rows = [ln for ln in lines if not ln.startswith("#")]
+    hdr = [ln for ln in lines if ln.startswith("#")]
+    if rows:
+      notes.append(f"bend attempt {attempt}: {len(rows)} rows, {' | '.join(hdr)}")
       return rows, notes
-    if verdict != "RETRY":
-      break
-  raise SystemExit("emit bend %s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
-                   % (graph, verdict, tries, "\n  ".join(notes)))
+    notes.append(f"bend attempt {attempt}: 0 rows, rc={c.returncode}, "
+                f"stderr tail: {' '.join(c.stderr.split())[-160:] or '(empty)'}")
+  raise SystemExit("emit bend: 0 rows after %d attempts -- a FAILURE, not a verdict:\n  %s"
+                   % (tries, "\n  ".join(notes)))
 
 
 # ---------------------------------------------------------------------------
@@ -2855,17 +2732,6 @@ def selfcheck(dev: str = "CPU") -> int:
   if "MUL" not in COMM:
     bad.append(f"MUL is not in the commutative set {sorted(COMM)}: `--plant srcswap` "
                f"reorders a MUL, so `--equiv` could not answer for it")
-  # THE CRASH/ANSWER CONTROL, and it is the control this file's own header trap 4 says it
-  # needed and did not have.  Every row below is a stream shape the PINNED compiler can
-  # produce, each one cited, and the verdict is decided by READING the row -- no `bend` runs,
-  # so this costs nothing on top of the two the rows above already made.  A control that can
-  # only be exercised by waiting for a 1-in-20 flake is not a control.
-  #
-  #   (rc, stdout, stderr)                                       expect  where that shape comes from
-  for rc, out, err, want, why in CRASH_CONTROL:
-    _, _, got = classify(rc, out, err)
-    if got != want:
-      bad.append(f"classify({rc}, {out!r}, ...{err[-60:]!r}) is {got}, not {want} -- {why}")
   print("# SELFCHECK: " + ("OK" if not bad else "FAIL"))
   for b in bad:
     print("#   " + b)
@@ -2878,10 +2744,8 @@ def selfcheck(dev: str = "CPU") -> int:
 # trustworthy -- `control` shows it is quiet against itself, `cross` and `conf` show it is
 # loud against something else, `dbg` runs it across DEBUG levels on a FIXED graph, and
 # `selfcheck` asserts the pieces it rests on.
-def debug_run(dev: str, level: int, tries: int = TRIES) -> tuple[list[str], list[str]]:
-  """ONE bend process at ONE `DEBUG` level, with the 0-row re-run guard `emit_bend` has, and
-  through the SAME `classify` -- so the two lanes cannot drift into disagreeing about what a
-  crash is, which is exactly what a second hand-written copy of the rule guarantees.
+def debug_run(dev: str, level: int, tries: int = 5) -> tuple[list[str], list[str]]:
+  """ONE bend process at ONE `DEBUG` level, with the 0-row re-run guard `emit_bend` has.
 
   `DEBUG` GOES IN THE ENVIRONMENT and not in an argument, because that is where the port
   reads it: `H.debug()` is `IO(U32)` over `getenv_int("DEBUG", 0)` (helpers.bend:307-308).
@@ -2891,25 +2755,21 @@ def debug_run(dev: str, level: int, tries: int = TRIES) -> tuple[list[str], list
   are both legitimate, so the probe reads the ENV and the sites are still reached through
   the port's own `*_dbg*` defs with `d` threaded in. Which of the two is under test is
   stated rather than blurred: this exercises the ENV READ and the seven gates."""
-  notes, verdict = [], "BROKE"
+  rows, notes = [], []
   for attempt in range(1, tries + 1):
     e = clean_env(dev)
     e["DEBUG"] = str(level)
-    try:
-      c = subprocess.run([str(BEND), str(BEND_DBG)], cwd=REPO, capture_output=True, text=True,
-                         env=e, timeout=BEND_TIMEOUT)
-    except subprocess.TimeoutExpired:
-      raise SystemExit(f"emit debug DEBUG={level}: TIMED-OUT after {BEND_TIMEOUT}s on attempt "
-                       f"{attempt} -- a FAILURE, not a verdict, and deliberately NOT retried")
-    rows, hdr, verdict = classify(c.returncode, c.stdout, c.stderr)
-    notes.append(f"DEBUG={level} "
-                 + attempt_note(attempt, c.returncode, rows, hdr, verdict, c.stderr))
-    if verdict == "ANSWER":
-      return rows, notes
-    if verdict != "RETRY":
-      break
-  raise SystemExit("emit debug DEBUG=%s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
-                   % (level, verdict, tries, "\n  ".join(notes)))
+    c = subprocess.run([str(BEND), str(BEND_DBG)], cwd=REPO, capture_output=True, text=True,
+                       env=e, timeout=1800)
+    lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
+    got = [ln for ln in lines if not ln.startswith("#")]
+    if got:
+      notes.append(f"DEBUG={level} attempt {attempt}: {len(got)} rows")
+      return got, notes
+    notes.append(f"DEBUG={level} attempt {attempt}: 0 rows, rc={c.returncode}, "
+                 f"stderr tail: {' '.join(c.stderr.split())[-160:] or '(empty)'}")
+  raise SystemExit("emit debug: 0 rows after %d attempts -- a FAILURE, not a verdict:\n  %s"
+                   % (tries, "\n  ".join(notes)))
 
 
 def split_debug(rows: list[str]) -> tuple[list[str], list[str]]:

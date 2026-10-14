@@ -14,10 +14,6 @@
     "rows-bd.txt"
    ],
    [
-    ".agents/slop/orcdecide/retired/othercopies.py",
-    "rows-bd.txt"
-   ],
-   [
     ".agents/slop/txtexec/rename.py",
     ".agents/slop/txtexec/rows-bd.txt"
    ],

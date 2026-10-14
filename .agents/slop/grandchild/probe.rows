@@ -1,4 +1,0 @@
-# run rc token load names
-run=1 rc=0 token=PASS load=471.45 names=
-run=2 rc=1 token=FAIL load=400.86 names=GRANDCHILD: the watchdog sees a SPAWNED child
-run=3 rc=0 token=PASS load=339.23 names=

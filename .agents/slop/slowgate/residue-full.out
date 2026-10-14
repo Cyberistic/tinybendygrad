@@ -1,7 +1,0 @@
-# residue: 1745 DELETE rows from sweep (5.3 MB), liveness window 0m
-#   CITED         4 rows    0.02 MB
-#   COPY        444 rows    0.12 MB
-#   UNNAMED       1 rows    0.00 MB
-#   UNKNOWN    1296 rows    5.11 MB
-# authorities consulted: differ()
-# wrote .agents/slop/residue/000-the-residue.md, 002-unknown.md, 003-disagreements.md

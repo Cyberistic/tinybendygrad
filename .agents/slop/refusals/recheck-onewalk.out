@@ -1,8 +1,0 @@
-ledger data rows=128  gatekit.py rows=0
-discover(Path('.')) -> entries=127 libs=34
-gatekit.py in ENTRIES: False
-gatekit.py in LIBS   : True
-
-CLAIM 1 (ledger=entries only; gatekit.py would vanish): CONFIRMED
-CLAIM 3 (substitute shrinks population) delta entries-ledger = -1
-claim-2 suffix set: ledger contains .sh rows = 17

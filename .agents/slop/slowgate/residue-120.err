@@ -1,2 +1,0 @@
-[bounded] TIMED-OUT  rc=-9  peak-RSS=203 MB (ceiling 4096)  120s  :: .venv/bin/python checks/residue.py  out=0B err=0B
-  THIS RUN PROVES NOTHING: it was killed, it did not fail. rc=142 would be SIGALRM; here the watchdog sent SIGKILL, and the peak says whether it was also hungry on the way out.
