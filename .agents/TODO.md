@@ -14746,6 +14746,53 @@ instrument.** MEASURED, and two of three probed shapes are CLEAN, which is the u
       `RESOLVES OUTSIDE` once, on `checks/cites-census.py:596`'s PLANT FIXTURE needle. Recorded; the
       ownership question is unanswered and the file is another unit's.
 
+## PINSSHAPE -- a gate that RE-TALLIES NO VERDICT, and it found a pins file whose VALUES ARE PHYSICALLY ABSENT (2026-10-15)
+
+`gates/pins-shape-gate.py` (`f97eb6cd2` + race fix `b942abc2f`), 438 lines, **rc=1 with 5 REAL
+FINDINGS**. **IT DELIBERATELY RE-TALLIES NO VERDICT, BECAUSE A THIRTEENTH META-CENSUS WOULD CARRY THE
+DEFECT IT AUDITS.**
+
+- [x] **THE ANSWER TO "DOES `gatekit` NEED A SIXTH VERDICT" IS NO, AND IT IS MEASURED.**
+      `gates/gate-surface.py` ALREADY OWNS THE VERDICT SURFACE (clause V), reads the exit vocabulary BY
+      PATH from `gatekit.py:60`, and **DECLARES ITS OWN BLIND SPOT IN ITS OWN HEADER**: "a plant that
+      exits 0 having read nothing is indistinguishable, from the exit status alone, from a plant that
+      agreed". EXIT `2` IS **NOT A NAMELESS SIXTH VERDICT -- IT IS A DISPUTED EXISTING ONE.** MEASURED
+      ACROSS THE TREE: `REFUSED` x32, `USAGE` x6, `DEAD` x4 for the SAME codes, in
+      `checks/dup-gate.py`, `checks/wallcheck.py`, `checks/env-precond.py`. **THREE MEANINGS, ONE NUMBER,
+      ALREADY NAMED AND ALREADY CHARGED -- AND ADDING A SIXTH VERDICT WOULD GIVE THE DISPUTE A SIXTH
+      OPINION.**
+- [ ] **`ops_python_exec-pins.rows` -- 52 ROWS, ONE FIELD, PINS NAMES AND NO VALUE.** MEASURED HERE:
+      `awk -F'	' '!/^#/{print NF}' | sort -u` answers **`1`** for every data line. The header claims
+      "every line below is a row where the two lanes DISAGREE" -- **A CLAIM THE FILE CANNOT SUBSTANTIATE,
+      BECAUSE IT RECORDS NO DISAGREEMENT.** **THIS IS INSTANCE 13 (`fixtures_hold` COMPARED NAMES AND
+      DISCARDED VALUES) WITH THE VALUES PHYSICALLY ABSENT: A CENSUS READING "52 DECLARED DIVERGENCES"
+      FROM IT IS READING AN EXCLUSION LIST.**
+- [ ] **TWO MORE TABLES HAVE NO PROVENANCE HEADER AT ALL** (`grep -c '^#'` = 0):
+      `cstyle-live.rows` and `wk-f32-table.rows`. **A GENERATOR'S OUTPUT THAT DOES NOT SAY WHO GENERATES
+      IT IS A DIARY** -- which is the fourth population this tree has now found (declaration, walk,
+      regex, cache, **and now a bare table**).
+- [ ] **THE DENOMINATOR IS LIVE AND IT SAYS SO.** MEASURED THIS SESSION: entry points **179->183**,
+      `-mutate.py` **4->5->6**, tables **14->15->14->15**, and `crp-mut-pins.rows`/`symcases.rows`
+      arrived UNTRACKED MID-RUN. The gate prints a `LIVE:` line naming untracked tables EVERY RUN.
+      **ANY COUNT WITHOUT A TIMESTAMP HERE IS A COUNT ABOUT NOTHING** -- and that is why this session's
+      headline numbers keep needing re-measuring.
+- [x] **WHAT IT CAN SEE:** instances 4, 5, 12, 13, 7 (a table that cannot be READ is now named rather
+      than answering `FAIL`; the column-2 vocabulary is per-gate; `same` cannot be counted as a
+      divergence; a zero-row file that CLAIMS zero rows is charged).
+      **WHAT IT STRUCTURALLY CANNOT SEE: 1, 2, 3, 6, 8, 9, 10, 11, 14, 15, 16** -- those are about WHICH
+      THING IS MEASURED and a shape gate measures shapes. **IT ALSO DECLINES TO CHARGE AN UNWIRED
+      `-mutate.py`**, because "coverage gap or dead def" is undecidable WITHOUT RUNNING THE MUTATION.
+- [ ] **SIX OF ITS OWN FIRST-DRAFT FINDINGS WERE WRONG, ALL CAUGHT BY RUNNING IT, NOT READING IT** --
+      a regex that could not match a bare QUAD; a writer path joined onto the table's directory when the
+      header spells it repo-relative; owners read from `entries` when a table's writer is a **LIB**
+      (`wk-f32-rows.py` has no `__main__`); an owner map keyed on the repo-relative literal so a table
+      that IS named reported "named by nothing". **THE SAME SHAPE AS THE SIXTEEN, INSIDE THE INSTRUMENT
+      BUILT AGAINST THEM.** And a SEVENTH, live: an unreadable table raised `FileNotFoundError` ->
+      traceback -> **rc 1 = FAIL**, i.e. **ANOTHER UNIT'S REWRITE READ AS THE TREE DISAGREEING** --
+      instance 4 reproduced, now named and charged.
+- [ ] **`gates-pop.py:496` HAS A TOCTOU** -- `iterdir()` then `lstat()` crashes on a live tree, and it
+      CRASHED `gate-surface.py:919`. Not fixed; the new gate guards around it and reports it.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
