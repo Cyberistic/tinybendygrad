@@ -14384,6 +14384,39 @@ IS NARROWER THAN IT LOOKS, AND THE NARROWNESS IS A MARKER-FORM SPELLING.**
       OWN MARKER FORM.** `uop/fold.bend:6625` is the same shape: a `TODO(p3)` marker whose own text
       says "PORTED, as `UOp.base` over the table" -- **A STALE WALL INSIDE THE 564.**
 
+## DECOMP-PROMO -- the 11 PROMOTION rows have a FALSE cause, and fixing them needs a NUMERIC oracle (2026-10-14)
+
+`5ef8883bb`, `gates/decomp_graph_census-gate.py` -- 38 rows, 22 exact, **16 declared (11 PROMOTION,
+2 REFUSALS, 1 UNBUILT ARM, 2 FINDINGS)**, rc=0, `codegen/decomp/` BYTE-IDENTICAL, pins UNMOVED.
+
+- [ ] **THE STATED CAUSE WAS FALSE AND THE CORRECTION IS THE POINT.** The class was filed as
+      "`ops.py:630`'s promote half inserts CASTs `UOp.new` does not run". **THREE OF THOSE CLAUSES ARE
+      WRONG**: `UOp` HAS NO `__init__` (built by `UOpMetaClass.__call__`, ops.py:197); `dtype_from_uop`
+      (ops.py:122) **RETURNS A DTYPE AND MINTS NO NODE**; and `UOp` HAS NO `_broadcasted` -- the only
+      one is `UPat._broadcasted` (ops.py:1534), A PURE REORDER. **THE INSERTER IS
+      `ElementwiseMixin._broadcasted` (`mixin/elementwise.py:24`), `promote` at :28-32, `t.cast(out_dtype)`
+      at :32 -- A GENERAL `least_upper_dtype` PROMOTION, NOT A "bool->int" SPECIAL CASE.**
+- [ ] **AND THE PORT HAS THE MACHINERY AND STRUCTURALLY NEVER CALLS IT**: `ew_promote`
+      (`elementwise.bend:363`), `mo_bin`->`mo_promote` (`op.bend:544`), `F.least_upper.of`. Every decomp
+      ALU is `dd_add`/`dd_mul`/... -> `tx_alu2` -> `O.UOp.alu` (`transcendental.bend:199`), which BYPASSES
+      the promotion. **THE FIX IS NOT THE `creation.bend` SHAPE** -- that fix was ONE VALUE USED TWICE for
+      TWO SPELLINGS of one dtype inside `UOp.const`; here there is NO second spelling, there is a
+      MISSING STEP.
+- [ ] **NOT FIXED DELIBERATELY, AND THE REASON IS THE POINT: THIS CENSUS CARRIES NO VALUES.** It
+      compares op SEQUENCES, so it cannot say whether a differing intermediate width is a DEFECT.
+      **A SEMANTIC CHANGE TO THE DECOMPILER'S INTERMEDIATE WIDTHS WITHOUT A NUMERIC ORACLE IS A GUESS.**
+      A numeric oracle (evaluate both lanes' cones and compare the VALUES) is what would settle it.
+- [ ] **NEW MEASUREMENT, NOT IN THE FILE BEFORE:** rebuilding each cone with the deleted CASTs replaced
+      by identity, the port computes intermediates **NARROWER** -- `lg1` 3 of 13 kept nodes differ in
+      derived dtype (ALL `MUL/2`: CPython `i64` vs port `u32`/`weakint`), `lg5` 1 of 14, `lgd` 1 of 12.
+      That lands in the MUL/CDIV/CMOD arms where `dtype.py:55` makes width LOAD-BEARING.
+- [ ] **`q2`/`q3`'s SITE IS STILL UNLOCATED** and the original author was right to claim no root cause.
+- [ ] **A TOOL DEFECT FOUND WHILE CHECKING: `deleted()` IS A COUNT, AND ON `lg1` IT KEEPS THE WRONG
+      NODE.** `CAST(i32->i64)` at index 1 and `CAST(weakint->i32)` at index 2 are BOTH `CAST/1` and the
+      survivor is the second. Single-swap search: **`lg1 lgq lgr` EACH ADMIT 1 ALTERNATIVE**, the other
+      8 are unique. **A CAST'S TARGET DTYPE IS IN NO NODE SHAPE** -- the same blind spot the file names
+      for CONST values.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
