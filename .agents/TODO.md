@@ -14696,6 +14696,33 @@ THAT WAS DESIGNED FOR EXACTLY THIS.**
       **`zsh` prints `command not found` to STDERR and `>/dev/null 2>&1` SWALLOWS IT**, so the loop had no
       way to notice it had run nothing at all.
 
+## INDEXREADQ -- `indexread` is RED about **2 REAL OFFENDERS AND 5 FILES THAT ARE GUILTY BY CONSTRUCTION** (2026-10-15)
+
+`gates/indexread-gate.py` is the ONE red gate in a **66/67** sweep, and its claim is correct and
+incomplete: `POPULATION 1775  OFFENDERS 75  BASELINE 68  NEW 7`.
+
+- [ ] **TWO ARE GENUINE, AND BOTH ARE POPULATION READS**, not a mutation:
+          .agents/slop/orcdecide/sweep.py:29     tracked = git("ls-files").split()
+          .agents/slop/orcdecide/verdicts.py:37  files = [f for f in git("ls-files").split() ...]
+- [ ] **FIVE ARE CUSTODIANS, AND EACH SAYS SO IN ITS OWN DOCSTRING:**
+          .agents/slop/whyarms/armsites.py  "census of the tree's OWN index-arming WRI..."
+          .agents/slop/whyarms/repro.py     "the causal chain, isolated, one fresh coloc..."
+          .agents/slop/whyarms/repro2.py    "which ROUTE actually arms git's index, isol..."
+          .agents/slop/whyarms/watch2.py    "attribute .git/index writes to a writer, b..."
+          checks/index-arm-gate.py           "IS THE DEFAULT INDEX ARMED?"
+      **THESE FILES EXIST PRECISELY TO STUDY AND REPORT ON INDEX ARMING. THEY CANNOT TOUCH THE INDEX
+      AND STILL DO THEIR JOB, AND A GATE THAT FLAGS THEM FOR IT IS CORRECT ABOUT THE COMMAND AND WRONG
+      ABOUT THE PURPOSE.**
+- [ ] **THE INSTRUMENT LOOKS FOR THE COMMAND, NOT THE PURPOSE.** `WALLAUDIT` measured this with AST
+      PARENT CONTEXT and reached the same conclusion by hand -- `armsites.py:31` is the string
+      "the DISARM, and it discards staged deletions" inside a **dict VALUE**, which a raw grep counts
+      and an AST walk does not. **THE CLASSIFICATION IS ALREADY DONE BY HAND; WHAT IS MISSING IS THE
+      MECHANISM THAT MAKES IT MACHINE-READABLE**, e.g. an ADMITTED-CUSTODIAN list beside the gate, the
+      way `amd_dsl_census`'s `VAL_DIFF_ADMITTED` admits a difference and FAILS BOTH WAYS WHEN STALE.
+- [ ] **A GATE THAT CANNOT DISTINGUISH "THIS FILE BREAKS THE RULE" FROM "THIS FILE EXISTS TO CHECK THE
+      RULE" WILL BE RED FOREVER ON A TREE THAT CONTAINS ITSELF**, and being red on the rest of the
+      suite is what makes it get filed rather than read.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
