@@ -22,7 +22,7 @@ and this file's is kept rather than deleted for one measured reason: deleting it
 `bend` process per slot on every run.  WHAT IT MAY NOT DO ANY MORE IS SERVE A CACHE THAT
 CANNOT SAY WHETHER IT IS CURRENT -- see `GENERATOR` below.
 """
-import sys, pathlib, collections, argparse, hashlib
+import sys, pathlib, collections, argparse, hashlib, ast
 
 HERE = pathlib.Path(__file__).resolve().parent
 # `parents[0]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
@@ -97,11 +97,109 @@ def ops_of(rows):
 # MEASURED `git check-ignore`: YES for the latter, NO for both former and this key.
 # A published set that is in the tree must be the set that can be checked.
 KEYS = HERE / "rows" / "keys.rows"
-GENERATOR = {"py": _GRAPH, "bend": G.BEND_PROBE}   # `G.BEND_PROBE` IS `.agents/slop/graphcmp.bend`
+GENERATOR = {"py": _GRAPH, "bend": G.BEND_PROBE}   # the DIRECT file each lane starts FROM
+PKG = REPO / "tinybendygrad"                        # `import Base` resolves against THIS
+ORACLE = REPO / "tinygrad"                          # the py lane's CPython subject
+
+
+def _import_closure():
+  """`checks/nvrows-deadrow-gate.py:89` LOADED BY PATH, NOT reimplemented.  It is the tree's
+  only transitive `.bend` resolver and it understands BOTH spellings this tree uses --
+  `import ./x.bend as Y` relative to the FILE and `import Base` relative to the PACKAGE ROOT
+  -- and MEASURED 120 of 135 port files need the second form.  A second copy would be the
+  `suffixset` class one level down, free to rot with nobody noticing."""
+  import importlib.util
+  sp = importlib.util.spec_from_file_location("nvrows", HERE / "nvrows-deadrow-gate.py")
+  m = importlib.util.module_from_spec(sp)
+  sp.loader.exec_module(m)                          # module level is defs + 3 constants
+  return m.import_closure
+
+
+def population(which):
+  """The files the lane's rows are a FUNCTION OF.  Not a path, not a hand list, not a basename.
+
+  bend -- the EXACT import closure, 7 files MEASURED 2026-10-14 from `.agents/slop/graphcmp.bend`.
+    Bend's imports are static and total (`bend --check-only` checks "the file and its imports"),
+    so the closure is a fact about the file and the honest key is that fact.  The other 127
+    `.bend` files in the port are OUT of it, and an edit to any of them must leave this key
+    still -- that half of the control is what makes the first half mean anything.
+
+  py -- a DIRECTORY WALK of the CPython oracle, 214 files MEASURED, and it is a SUPERSET and
+    says so.  The exact Python closure is NOT derivable, MEASURED both ways today:
+      * an AST walk finds 87 path STRINGS, of which 39 are eager-loaded at runtime and 48 are
+        edges no import takes -- `tinygrad/Tensor.py:8` reads
+        `from tinygrad.helpers import cpu_profile, suppress_finalizing, disable_gc, VIZ`, where
+        `VIZ` is the ContextVar DEFINED at `tinygrad/helpers.py:271`, not the `tinygrad/VIZ/`
+        PACKAGE that happens to sit on disk under that name; and on this case-insensitive
+        filesystem `tinygrad/DType.py` and `tinygrad/dtype.py` are ONE inode (6 such pairs
+        MEASURED), so a spelling-keyed set counts files twice.
+      * `sys.modules` UNDER-counts instead, because the imports are LAZY and PER-GRAPH --
+        `graphcmp.py:1155` reaches `line_rewrite` inside one graph builder only, so the closure
+        of the py lane is a function of WHICH GRAPH, and there are 34 of them.
+    A LOWER BOUND IS NOT A KEY.  An under-count serves stale rows silently, which is the one
+    outcome this file exists to prevent, so this side takes the superset and pays for it in
+    FALSE staleness, named and counted in the report line below."""
+  if which == "bend":
+    return sorted(_import_closure()(PKG, GENERATOR["bend"]))
+  return [GENERATOR["py"], *sorted(ORACLE.rglob("*.py"))]
 
 
 def digest(path):
   return hashlib.sha256(path.read_bytes()).hexdigest() if path.is_file() else "ABSENT"
+
+
+LANE_DEF = {"py": "emit_py", "bend": None}   # bend's subject is the whole closure, not one def
+
+
+def part_digest(path, which):
+  """THE LANE's OWN BYTES, NOT THE FILE's.
+
+  `graphcmp.py` holds `emit_py` AND `emit_bend`; they share a file and nothing else, so keying on
+  the FILE claims a dependency that does not exist in EITHER direction. MEASURED 2026-10-15:
+  `a13db09bd98a` changed `emit_bend` only -- 0 lines of `emit_py` -- and this gate refused **34 of
+  34 healthy py slots**, all of them measured BYTE-IDENTICAL to the cache. So the unit is the
+  SOURCE SEGMENT of the lane's own def, and the OFFSET goes in the digest too: a function that
+  MOVES is an edit like any other, and without the line number two different defs could hash alike.
+  """
+  raw = path.read_bytes()
+  want = LANE_DEF.get(which)
+  if not want:
+    return hashlib.sha256(raw).hexdigest()
+  try:
+    text = path.read_text(errors="replace")
+    for node in ast.parse(text).body:
+      if isinstance(node, ast.FunctionDef) and node.name == want:
+        seg = ast.get_source_segment(text, node) or ""
+        return hashlib.sha256(f"{want}@{node.lineno}\n{seg}".encode()).hexdigest()
+  except (SyntaxError, ValueError):
+    pass   # NO DEF FOUND IS NOT "UNCHANGED": fall through to the whole file, which is the safe side
+  return hashlib.sha256(raw).hexdigest()
+
+
+def gen_digest(which, _memo={}):
+  """ONE sha256 over `relpath<TAB>sha256` for the WHOLE population, sorted by path.
+
+  NOT a digest LIST in the row: 215 py files times two columns is a table nobody reads, and the
+  only question a 4-column key row answers is `is this the same set as the set I wrote`.  The
+  MEMBERSHIP stays derivable -- `population()` is a function, not a stored list -- so any reader
+  can print WHICH file moved without this file carrying a second copy of the answer."""
+  if which not in _memo:
+    body = "".join(f"{p.relative_to(REPO).as_posix()}\t{part_digest(p, which)}\n"
+                   for p in sorted(set(population(which))))
+    _memo[which] = (hashlib.sha256(body.encode()).hexdigest(), body.count("\n"))
+  return _memo[which][0]
+
+
+def blind_spots(which):
+  """HOW MANY IMPORT SPELLINGS THE RESOLVER CANNOT READ, so that a low count is never read as
+  `there is nothing there`.  MEASURED 2026-10-14: `import_closure`'s `IMPORT` is `^import\\s+(\\S+)`,
+  which KEEPS THE QUOTES, and this tree spells 325 lines
+  `import "../../../.agents/slop/clangshim/libclang-tramp.c"`.  Those resolve to a path that
+  contains a `"` and is therefore never a file, so they are dropped SILENTLY.  For this closure
+  the drop MEASURED 0 and this prints 0; it is printed because a resolver that cannot see its
+  own blind spot is the defect this project has catalogued twenty times."""
+  return sum(1 for p in population(which) for ln in p.read_text(errors="replace").splitlines()
+             if ln.strip().startswith("import ") and '"' in ln) if which == "bend" else 0
 
 
 def read_keys():
@@ -132,7 +230,7 @@ def write_key(name, which):
   exited 0. A KEY WHOSE SCOPE IS WIDER THAN THE RUN THAT WROTE IT IS THE CLASS ONE LEVEL
   DOWN, and a scope column that says `ALL rows-*-py.rows` is the lie that let it through."""
   keys = read_keys()
-  keys[(name, which)] = (digest(GENERATOR[which]), digest(HERE / "rows" / f"rows-{name}-{which}.rows"))
+  keys[(name, which)] = (gen_digest(which), digest(HERE / "rows" / f"rows-{name}-{which}.rows"))
   KEYS.write_text("".join(f"{g}\t{s}\t{d[0]}\t{d[1]}\n" for (g, s), d in sorted(keys.items())))
 
 
@@ -147,10 +245,18 @@ def side(name, which, dev, fresh, keys):
   cache = HERE / "rows" / f"rows-{name}-{which}.rows"
   # BOTH an unkeyed slot AND a keyed slot that disagrees REFUSE, and that is deliberate.
   # I made the unkeyed case fall through to regenerate and it was WRONG, MEASURED: the py lane's
-  # `P(i..)` slot comes from a module-level `itertools.count` reaching the rows via
-  # `ParamArg(next(...))`, so a run that regenerates 34 graphs in ONE PROCESS writes 34 rows that
-  # depend on how many graphs preceded them -- 37 distinct `P(i..)` values across 68 files where
-  # a per-graph run gives one. So "heal it here" CORRUPTED it, and it corrupted it SILENTLY, which
+  # `P(i..)` slot is offset by a monotonic counter that reaches the rows via `ParamArg(next(...))`,
+  # so a run that regenerates 34 graphs in ONE PROCESS writes 34 rows that depend on how many
+  # graphs preceded them -- 37 distinct `P(i..)` values across 68 files where a per-graph run gives
+  # one. RE-VERIFIED 2026-10-14 on this tree, and the NUMBERS hold exactly: 37 against 4, 25 of 34
+  # slots differing, `alu` -> `P(i1,` and `binblob` -> `P(i2,`. THE MECHANISM WAS WRONG, though,
+  # and it is worth the correction because the comment's whole job is to stop a maintainer
+  # repeating the mistake: there is NO `itertools.count` here (`grep -n itertools
+  # .agents/slop/graphcmp.py` answers nothing). The counter is TINYGRAD's `UOp.unique_num`,
+  # cited at `graphcmp.py:864` as `ops.py:1208  if slot is None: slot = next(UOp.unique_num)`.
+  # So the rule is right, the reason given names a file that does not contain it, and a reader who
+  # audits the reason finds nothing and concludes there is nothing there.
+  # So "heal it here" CORRUPTED it, and it corrupted it SILENTLY, which
   # is worse than the self-sealing refusal it replaced: the refusal was wrong about being able to
   # say so, and this lies about having said so. Regenerate OUT OF PROCESS, one graph per process,
   # which is the only way the counter is the same counter the comparison used.
@@ -158,7 +264,7 @@ def side(name, which, dev, fresh, keys):
   if cache.exists() and not fresh:
     # BOTH digests must hold: the generator unchanged says the ROWS WOULD be the same, and the
     # cache unchanged says THEY STILL ARE. Either alone is a clean number from a missing question.
-    if k is None or k != (digest(GENERATOR[which]), digest(cache)):
+    if k is None or k != (gen_digest(which), digest(cache)):
       return ("STALE", 0, None, set())   # served NOTHING, and `0` here is "not counted"
     rows = [ln for ln in cache.read_text().splitlines() if ln.strip()]
     return ("CACHE", len(rows), ops_of(rows), set())
@@ -180,6 +286,22 @@ def main():
   ap.add_argument("--fresh", action="store_true")
   a = ap.parse_args()
   G.os.environ["DEV"] = a.dev
+  # THE ENVIRONMENT IS THE FOURTH THING A KEY CANNOT SEE, AND MEASURED HERE, NOT ASSUMED.
+  # Regenerating all 68 slots out of process on 2026-10-14 reproduced **67 of 68 rows
+  # byte-for-byte**; the one that did not is `lin`/py, and it differed in ONE field -- the
+  # `<bytecount>:` prefix, `66:` against `120:` -- with the content after the colon identical.
+  # The cause is tinygrad's colourised kernel name: `tinygrad`'s `rgb()` wraps the `4` and the
+  # `3` of `sr_4_5_3` in ANSI SGR when `NO_COLOR` is unset, and each escape is a byte the
+  # `String.length`-vs-byte-length rule `graphcmp.bend` documents counts wrongly.  So the py
+  # lane's ROWS depend on an environment variable that the key did not cover, the tool did not
+  # set, and the cache did not record -- and the failure is SILENT, because a differently
+  # configured shell rewrites one slot's bytes and `census.py` reports it as a fresh emission.
+  # `emit_bend`'s `clean_env` pins `LC_ALL`/`DEV`/`PYTHONPATH` for the BEND side; this is the
+  # same move for the PY side, and it is placed beside `DEV` because that is the other
+  # production condition this file decides.  ONE environment, decided HERE, is what makes a
+  # closure digest sufficient -- and the list may still be incomplete, which is why this line
+  # names the one that was MEASURED rather than claiming the set is closed.
+  G.os.environ["NO_COLOR"] = "1"
   G.load_tinygrad()
   G.COMM = G.commutative()
   names = sorted(G.GRAPHS) if a.only is None else a.only.split(",")
@@ -197,6 +319,14 @@ def main():
   denom = len(list(G.Ops))
   print()
   print(f"graphs      : {len(names)}")
+  # THE KEY'S OWN SCOPE, IN THE GATE'S OWN OUTPUT, because a key whose scope is invisible is a
+  # key nobody can audit -- and this file's `write_key` docstring records that a revision keyed
+  # per SIDE was MEASURED wrong precisely because its scope was wider than it looked.
+  for _w in ("py", "bend"):
+    _n = len(set(population(_w)))
+    print(f"key {_w:<4}     : sha256 over {_n} files"
+          + (f", blind spots {blind_spots(_w)}" if _w == "bend" else " (oracle walk, a SUPERSET)")
+          + f"   digest {gen_digest(_w)[:16]}")
   print(f"denominator : {denom}   (measured len(list(Ops)))")
   print(f"reached PY  : {len(py)}")
   print(f"reached BEND: {len(bn)}")

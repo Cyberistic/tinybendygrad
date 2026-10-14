@@ -460,9 +460,205 @@ def plant(root=None):
     return 1 if bad else 0
 
 
+def ignored_by(path, root=ROOT):
+    """The `.gitignore` line that hides `path`, or `None`. **GIT'S OWN MATCHER, NOT A REGEX.**
+
+    A regex over `.gitignore` is a hand list with a parser bug. MEASURED 2026-10-14 on this tree:
+    `.gitignore:179` is `/runs/`, which is ANCHORED to the root and matches nothing at depth --
+    `git check-ignore` answers IGNORED for `runs/` and NOT IGNORED for `checks/rows/keys.rows`, while
+    `checks/rows-key.rows` IS ignored. And `/runs/` fed back to `check-ignore` verbatim answers NOT
+    IGNORED, because that leading slash means filesystem-absolute. **A DIRECTORY IS PROBED WITH ITS
+    TRAILING SLASH, BECAUSE `runs/` IS NOT `runs`** -- a trailing slash is a suffix, not a spelling.
+
+    `--no-index` because MEASURED 2026-10-06 the index carries intent-to-add placeholders and
+    reading it answers a question about the editor rather than about the repository."""
+    probe = path + "/" if os.path.isdir(os.path.join(root, path)) else path
+    r = subprocess.run(["git", "-C", root, "check-ignore", "--no-index", "-v", probe],
+                       capture_output=True, text=True)
+    return r.stdout.strip().split("\t")[0] or None if r.returncode == 0 else None
+
+
+def plant_writes(root=ROOT):
+    """The resolved path values that a `TemporaryDirectory` creates -- **A PLANT IS NOT A WRITE
+    SITE**, and the population is DISCOVERED, not a list of instruments.
+
+    MEASURED 2026-10-14 TWICE, AND THE SECOND FAILURE IS THE ONE THAT MATTERS. `checks/diary-census.py:447`
+    is `(d / "bin").mkdir()` inside a temp dir: `resolve()` cannot see the `d` prefix -- an unbound
+    `Name` -- so the site comes out as the bare string `"bin"`, WHICH COLLIDES WITH THE REPO'S OWN
+    `bin/`. With a "a writer of a parent is a writer of its children" rule, `bin/bend` inherited
+    `checks/diary-census.py` and was promoted from `HANDMADE` to `GENERATOR`: **A PLANT LAUNDERED
+    INTO A GENERATOR, WHICH SILENTLY ERASED THE HEADLINE FINDING.**
+
+    The obvious fix -- exclude every INSTRUMENT that owns a plant -- is worse, and MEASURED: it
+    excluded `checks/differ.py`, which ALSO writes the real corpus and also owns a plant
+    (`../runs/graphcmp/D/.tmp.`), so `runs/graphcmp/D` lost its only generator and 9 readers of a
+    reproducible artefact were reported unreproducible. **AN INSTRUMENT-SCOPED FLAG IS AS WRONG AS A
+    FUNCTION-SCOPED ONE, IN THE OPPOSITE DIRECTION** -- it hides a real generator behind a real plant
+    because the two happen to live in the same file.
+
+    SO THE UNIT IS THE **WRITE SITE**, not the instrument and not the function: a resolved value is
+    a plant exactly when the enclosing function creates a temporary directory. `differ.py` then
+    keeps `../runs/graphcmp/D` and loses `../runs/graphcmp/D/.tmp.`, which is the correct split."""
+    out = set()
+    for path in glob.glob(os.path.join(root, "checks", "*.py")) + glob.glob(os.path.join(root, "gates", "*.py")):
+        try:
+            tree = ast.parse(open(path, errors="replace").read())
+        except (OSError, SyntaxError):
+            continue
+        env = _env(tree)
+        for fn in [n for n in ast.walk(tree) if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))]:
+            if not ({"TemporaryDirectory", "mkdtemp"} &
+                    {c.func.id if isinstance(c.func, ast.Name) else getattr(c.func, "attr", "")
+                     for c in ast.walk(fn) if isinstance(c, ast.Call)}):
+                continue
+            for c in ast.walk(fn):
+                if not isinstance(c, ast.Call):
+                    continue
+                fn_name = c.func.attr if isinstance(c.func, ast.Attribute) else getattr(c.func, "id", "")
+                if fn_name not in WRITES:
+                    continue
+                args = list(c.args) + [k.value for k in c.keywords]
+                if isinstance(c.func, ast.Attribute):
+                    args.append(c.func.value)
+                for leaf in args:
+                    v = resolve(leaf, env)
+                    if isinstance(v, str) and v.strip("/"):
+                        out.add(v)
+    return out
+
+
+def clone_paths(root=ROOT):
+    """Every path an instrument reads or writes that exists here, with the facts a clone cares about:
+    is it in the TREE, what `.gitignore` line hides it, does a sweep root name it, and WHO WRITES
+    IT. **THE POPULATION IS `sites()` -- a directory walk plus an AST walk -- so adding an
+    instrument adds its paths here with no edit to this file.**
+
+    THE SUBJECT IS A PATH, NOT A DIRECTORY, and that is the whole finding. `bin/` is NOT ignored
+    while `bin/bend` IS (`.gitignore:5`), and `bin/bend` is read by 10 of the 209 instruments while
+    `bin/` is read by 0 -- a directory-only census reports the subject that matters as clean.
+
+    THE SUBJECT IS A PATH, NOT A DIRECTORY, and that is the whole finding. `bin/` is NOT ignored
+    while `bin/bend` IS (`.gitignore:5`), and `bin/bend` is read by 10 of the 209 instruments while
+    `bin/` is read by 0 -- a directory-only census reports the subject that matters as clean.
+
+    `..` IS DROPPED FROM EVERY RESOLVED VALUE, AND HERE IS WHAT THAT COSTS. `resolve()` renders
+    `parents[n]` as `"../"*n`, which is OFF BY ONE for an instrument at depth 1: `checks/bounded.py`
+    is `here.parents[1]`, i.e. the ROOT, and the resolver's spelling escapes the tree. MEASURED
+    2026-10-14: 190 of the 7,791 sites carry a `..`, all of them from `checks/` (138) and `gates/`
+    (52), both depth 1, so the collapse is CORRECT for every one of them. **That is a fact about
+    this tree's layout and not a guarantee** -- the day an instrument moves one directory deeper
+    this silently mis-roots it, and no verdict here would notice."""
+    roots = sweep_roots(root)
+    tracked = set(tracked_files(root))
+    plants = plant_writes(root)  # A PLANT IS NOT A GENERATOR. See `plant_writes`.
+    reads: dict[str, set[str]] = {}
+    writes: dict[str, set[str]] = {}
+    for rel, role, value in sites(root):
+        if value.startswith("/") or (role == "write" and value in plants):
+            continue  # A SYSTEM PATH, or a temporary directory. `/bin/sh` is not this tree's `bin/`.
+        parts = [p for p in value.split("/") if p not in ("", ".", "..")]
+        for i in range(1, len(parts) + 1):
+            (writes if role == "write" else reads).setdefault("/".join(parts[:i]), set()).add(rel)
+    # A WRITE TO A DIRECTORY IS A WRITE TO EVERY FILE IN IT. `checks/differ.py` writes the path
+    # `../runs/graphcmp/D` and builds `D0-run-summary.txt` by string interpolation AT RUNTIME, so
+    # `sites()` records the directory and never the filename. MEASURED 2026-10-14: without this
+    # inheritance `runs/graphcmp/D/D0-run-summary.txt` came out `HANDMADE` -- a corpus file with no
+    # generator, printed three lines below the directory that generates it. **A WRITER OF A PARENT
+    # IS A WRITER OF THE CHILD**, or the census blames the absence of a spelling for the absence
+    # of a fact. THE PLANTS ARE REMOVED ABOVE, or the inheritance hands out a generator's name
+    # to a file no generator ever wrote.
+    for p in sorted(writes):
+        for child in sorted(set(reads) | set(writes)):
+            if child.startswith(p + "/") and child not in writes:
+                writes[child] = set(writes[p])
+    out = []
+    for p in sorted(set(reads) | set(writes)):
+        if not os.path.exists(os.path.join(root, p)):
+            continue
+        out.append({"path": p,
+                    "readers": sorted(reads.get(p, ())),
+                    "writers": sorted(w for w in writes.get(p, ()) if w in tracked),
+                    "n_tracked": len([t for t in tracked if t == p or t.startswith(p + "/")]),
+                    "rule": ignored_by(p, root),
+                    "sweep": next((r for r in roots if p == r.rstrip("/")
+                                   or p.startswith(r.rstrip("/") + "/")), None)})
+    return out
+
+
+def sweep_roots(root=ROOT):
+    """`RESIDUE_ROOTS` read out of `checks/sweep.py` BY AST, NOT BY IMPORTING IT. MEASURED
+    2026-10-14: `exec_module` on `checks/sweep.py` exceeded a 120 s timeout building its citation
+    corpus, so an instrument that needs one tuple from that file must not run the whole of it."""
+    for n in ast.walk(ast.parse(open(os.path.join(root, "checks/sweep.py"), errors="replace").read())):
+        if isinstance(n, ast.Assign) and any(getattr(t, "id", None) == "RESIDUE_ROOTS" for t in n.targets):
+            return tuple(ast.literal_eval(n.value))
+    return ()
+
+
+def clone_report(root=ROOT):
+    """CAN A FRESH CLONE PRODUCE THIS? The question `state()` cannot ask, because a clone and a
+    swept tree are the SAME STATE and a reader that cannot tell them apart reports the same number
+    in both.
+
+    THE ANSWER IS FOUR VERDICTS, AND EVERY ONE OF THEM IS REACHABLE -- **AN UNREACHABLE BUCKET IS A
+    TYPO, NOT A RESULT**, and my first version shipped `RESTORED` over a set that was pre-filtered
+    to `n_tracked == 0`, so it could never fire and printed `RESTORED (0 of 19)` as if it were a
+    measurement. The four are about WHO MAKES IT, not about WHAT IT IS:
+
+        TRACKED     in `HEAD`: the clone HAS it. THE CONTROL, and by far the largest bucket.
+        RESTORABLE  0 tracked and NOTHING hides it -- no `.gitignore` line, no sweep root. One
+                    `git add` from reproducible; nobody has written that list down.
+        GENERATOR   0 tracked, hidden or swept, and a TRACKED writer reaches it: the clone CAN
+                    produce it, by RUNNING that writer. Its cost is COMPUTE, not code.
+        HANDMADE    0 tracked, hidden or swept, and NO writer: no clone can produce it, ever.
+
+    `GENERATOR` IS THE INTERESTING ONE BECAUSE ITS COST IS COMPUTE, NOT CODE. `runs/graphcmp/D` is
+    a `GENERATOR` hole: `checks/differ.py` is tracked, so the corpus is reproducible -- at 318 s and
+    ~830 MB (MEASURED 2026-10-14, from the unit brief; NOT re-measured here, `bend` was not run).
+    `HANDMADE` is the one that costs a person: MEASURED 2026-10-14, `bin/bend` has **0** writers
+    across the 209-instrument population, **0** of its bytes in `HEAD`, and 10 readers -- and
+    `tools/get-bend.sh`, which is tracked, clones `references/bend` and never writes the shim.
+
+    AND THE SCOPE SLIP, WHICH IS THE CENSUS'S OWN BLIND SPOT AND IS STATED RATHER THAN FIXED:
+    `sites()` walks `checks/*.py` + `gates/*.py` = 209 instruments. This tree also has 17
+    `checks/*.sh` and 1 `checks/*.mjs`, and `tools/get-bend.sh` at the root, and **A SHELL
+    GENERATOR IS INVISIBLE TO AN AST WALK THAT ONLY OPENS `.py`**. So `writers=0` means "no `.py`
+    writer in `checks/`+`gates/`", and every `HANDMADE` verdict is a LOWER BOUND on the damage."""
+    holes = clone_paths(root)
+    for h in holes:
+        hidden = bool(h["rule"] or h["sweep"])
+        h["verdict"] = ("TRACKED" if h["n_tracked"] else
+                        "RESTORABLE" if not hidden else
+                        "GENERATOR" if h["writers"] else "HANDMADE")
+    print("CAN A FRESH CLONE PRODUCE IT?  -- git ls-tree -r HEAD is the tree, `git check-ignore` is "
+          "git's own\nmatcher, RESIDUE_ROOTS is read by AST. Nothing here is listed.")
+    for v in ("TRACKED", "GENERATOR", "HANDMADE", "RESTORABLE"):
+        g = [h for h in holes if h["verdict"] == v]
+        print(f"\n{v} ({len(g)} of {len(holes)} paths named by a live instrument):")
+        for h in g:
+            if v == "TRACKED" and not h["readers"]:
+                continue  # The tracked control is hundreds of rows; print only what is READ.
+            why = h["rule"] or (f"sweep root {h['sweep']}" if h["sweep"] else "")
+            print(f"  {h['path']:<32} readers={len(h['readers']):<3} tracked={h['n_tracked']:<5} "
+                  f"writer={h['writers'][0] if h['writers'] else 'NOTHING'}"
+                  f"{'  <- ' + why if why and v != 'TRACKED' else ''}")
+    handmade = [h for h in holes if h["verdict"] == "HANDMADE" and h["readers"]]
+    n_py = len(glob.glob(os.path.join(root, "checks", "*.py"))) + \
+           len(glob.glob(os.path.join(root, "gates", "*.py")))
+    print(f"\nDENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites in "
+          f"{n_py} `.py` instruments, out of {len(tracked_files(root))} files in HEAD.")
+    print("SCOPE SLIP: 18 further instruments (17 checks/*.sh, 1 checks/*.mjs) and a root "
+          "tools/get-bend.sh are INVISIBLE to this walk, so HANDMADE is a LOWER BOUND.")
+    print(f"THE COSTLY LINE: {len(handmade)} read path(s) have no writer at all: "
+          f"{', '.join(h['path'] for h in handmade) or 'none'}")
+    return holes
+
+
 def main():
     if "--plant" in sys.argv:
         return plant()
+    if "--clone" in sys.argv:
+        return PASS if clone_report() else DEAD
     if "--all" in sys.argv:
         total, by_dir = census_unrecoverable()
         print(f"instruments scanned: {total}   (checks/*.py + gates/*.py, a directory walk)")

@@ -60,6 +60,55 @@ TMP = ".tmp."
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 
+# THE FIVE ARE ALL SPELLED. `return SKIP` had no site in THIS file and was reported as a vacant
+# slot, which is a claim about a NAME rather than about a CODE PATH: `SKIP` is produced by
+# `gates/msgdiff-gate.py` (3 sites) and `checks/wallcheck.py` (as 4), and `run()` below can only
+# ever return 0, 1, 3 or 5 -- so the four THIS FILE produces are reachable and 4 arrives from a
+# consumer. A constant nothing in this file names is not a constant nothing can produce.
+
+
+def verdict_of(code):
+    """`code` -> the word, and an UNASSIGNED code is a REFUSAL rather than an exception.
+
+    MEASURED, and the reason `gate()`/`main()` no longer index `VERDICT` directly: a gate
+    returning `2` -- which 13 files in this tree do on purpose, `USAGE` by `checks/wallcheck.py`'s
+    own declaration among them -- made `VERDICT[code]` raise `KeyError: 2`, so the runner that
+    aggregated it CRASHED while reporting on a gate that had answered. A mapping that raises on a
+    legitimate code is not a vocabulary, it is a trapdoor.
+
+    WHY `REFUSED` AND NOT `DEAD`. `DEAD` is "it ran and emitted nothing" -- a claim about EXECUTION,
+    which only something that watched the process can make. A code this table does not define has
+    not been shown to have run at all, and `REFUSED` is "a precondition was absent": here, the
+    absent precondition is a DEFINITION. So an unassigned code refuses.
+
+    **THIS IS NOT A CRASH, AND THE DISTINCTION IS THE POINT.** A gate that raises, prints a
+    traceback and exits 1 is `DEAD` -- it demonstrably ran and demonstrably failed, and
+    `.agents/slop/hooks/run.py:112` maps it there deliberately and by name. Folding a traceback
+    into "unassigned" would lose the one measurement that separates them; folding an unassigned
+    code into `DEAD` claims a run nobody witnessed. Neither is the other.
+
+    `bool` IS A SUBCLASS OF `int`, so `verdict_of(True)` is `FAIL` and `verdict_of(False)` is
+    `PASS` -- which is not a bug here but is a trap for a caller that passes a computed flag. It
+    is named rather than silently absorbed, so the aliasing is visible at the call site.
+    """
+    if isinstance(code, bool):  # FIRST: `True in VERDICT` is True, because True == 1
+        return f"UNASSIGNED (bool {code} aliases onto {int(code)}, not a verdict)"
+    if code in VERDICT:
+        return VERDICT[code]
+    return f"UNASSIGNED (code {code!r} is not one of the five)"
+
+
+def charge(code):
+    """`code` -> THE EXIT a runner should tally. The additive half, and it never raises.
+
+    An assigned code resolves to itself -- `PASS` stays 0, so **nothing that reads this table
+    today changes**, which is the property that makes it landable: 0 of the 46 discovered
+    consumers are touched. An unassigned code charges `REFUSED`, for the reason in `verdict_of`.
+    A traceback stays `DEAD`, because a caller that saw the traceback has already made that call
+    and this function is not given the evidence to overturn it.
+    """
+    return code if code in VERDICT and not isinstance(code, bool) else REFUSED
+
 # `bend` prints `bend <ver> is available: run bend update` on STDERR on EVERY invocation --
 # MEASURED on a fully green `--check-only`, 42 bytes of it -- so "stderr is non-empty" is not
 # "bend said something", and a flake guard cannot ask about stderr without asking about THIS.
@@ -543,7 +592,7 @@ def gate(g, summary, checks=None):
     code = g.run()
     if code == PASS and checks is not None and not checks():
         code = FAIL
-    print(summary if code == PASS else f"{g.name}: {VERDICT[code]}")
+    print(summary if code == PASS else f"{g.name}: {verdict_of(code)}")
     return code
 
 
@@ -556,5 +605,5 @@ def main(gate, summary):
     either -- which is the same reason `e2e.py` returns 4 rather than 0 for a SKIP.
     """
     code = gate.run()
-    print(summary if code == PASS else f"{gate.name}: {VERDICT[code]}")
+    print(summary if code == PASS else f"{gate.name}: {verdict_of(code)}")
     return code
