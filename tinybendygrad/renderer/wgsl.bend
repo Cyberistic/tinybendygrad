@@ -46,14 +46,22 @@
 #                       packed store's string rule, which IS ported
 #   :41  wgsl_matcher   the seven GUARDS ported, the seven rewrites walled
 #   :53  WGSLRenderer   every attribute and every method below
-#   :65  string_rewrite ALL SEVENTEEN RULES' STRINGS, in Python's order. This was
-#                       the largest wall in the file and it was not a big one:
-#                       `ctx[x]` is `self.r[x]`, a dict the naming pass has
-#                       already filled, so `ctx[x]` is the CHILD'S TEXT and a
-#                       parameter here. MEASURED: `patterns[:17]` are these and
-#                       `patterns[17:]` is `base_rewrite`'s 33, and the gate's
-#                       `rules_hold()` re-derives both numbers and each rule's op
-#                       and dtypes from CPython on every run.
+#   :65  string_rewrite ALL SEVENTEEN RULES' STRINGS AND THEIR SEVENTEEN `UPat`s,
+#                       in Python's order. This was the largest wall in the file
+#                       and it was not a big one: `ctx[x]` is `self.r[x]`, a dict
+#                       the naming pass has already filled, so `ctx[x]` is the
+#                       CHILD'S TEXT and a parameter here. The PATTERNS were the
+#                       second wall and they were SMALLER: a `UPat` reads an op, a
+#                       dtype, a src count and src[0]'s op and dtype off a node,
+#                       so each rule took the two or three of those its own
+#                       pattern constrains and answers `NOMATCH` otherwise.
+#                       MEASURED: `patterns[:17]` are these and `patterns[17:]`
+#                       is `base_rewrite`'s 33, and the gate's `rules_hold()`
+#                       re-derives both numbers and each rule's op and dtypes
+#                       from CPython on every run. `sr_pick_bitcast`,
+#                       `sr_pick_load` and `sr_pick_store` are the TABLE's order,
+#                       which is a fact about no single rule's body, and they are
+#                       what the three `sr pick` rows print.
 #
 # `code_for_op`'s TWENTY-INHERITED entries are cstyle.py:142-150, not wgsl.py:
 # wgsl.py:60 only overrides WHERE. They are spelled out here anyway, because the
@@ -859,17 +867,120 @@ def sorted_names(go: List<&2, S.Dt>) -> String: String.join(dt_sort(dt_show(go, 
 # the empty string is the shape `type_map`'s arm used to have (FINDING 2).
 # ===========================================================================
 
-# 0 `ctx[x] if is_packed(x) else None` -- a packed INDEX is rendered by its own
-# rule, so the CAST around it only carries the width.
-def sr_idx(pk: Bool, x: String) -> String: Bool.pick(String, pk, x, "NOMATCH")
+# ===========================================================================
+# THE SEVENTEEN `UPat`s, PORTED AS PREDICATES. wgsl.py:65-93's rule BODIES were
+# here first and their PATTERNS were not, and the consequence was measurable: a
+# rule body fired on every node it was handed, including the seventeen the
+# `srneg` rows below drive, and CPython's own `UPat.match` REJECTS all seventeen.
+# Two of those were not over-firing but WRONG ANSWERS -- a packed store of a plain
+# CONST answered `atomicAnd(&B[1],W);` with the stored value dropped, and a GATED
+# store answered `B = V;` with the gate dropped.
+#
+# A `UPat` reads five things off a node: its op, its dtype, its src COUNT, and
+# src[0]'s op and dtype. Each rule below is handed the ones ITS OWN PATTERN
+# constrains and no more. The op is a parameter for exactly THREE rules -- 5, 11
+# and 16, whose rejecting fixture is a CONST -- and is absent from the other
+# fourteen, where the rule's own row already fixes the op and a parameter would
+# be a second spelling of it. `NOMATCH` is the token above, so a rule that
+# declines prints the same word CPython's `None` is spelled and the row is
+# comparable.
+#
+# A dtype that is a SET in CPython gets one named predicate and the `O.eq_dt` of
+# a SINGLE dtype is spelled at the use site, so there is exactly one `uint32` test
+# per rule and no table to drift. MEASURED: `tinygrad/dtype.py:157` is
+# `uints = (uint8, uint16, uint32, uint64)`.
+# ===========================================================================
+def p_uints(+dt: S.Dt) -> Bool:
+  Bool.or(Bool.or(O.eq_dt(dt, S.uint8()), O.eq_dt(dt, S.uint16())),
+    Bool.or(O.eq_dt(dt, S.uint32()), O.eq_dt(dt, S.uint64())))
 
-# 1 `f"(0-{ctx[x]})"` -- WGSL has no unsigned negation.
-def sr_neg(x: String) -> String: String.concat(["(0-", x, ")"])
+# rule 3's `(dtypes.uchar, dtypes.ushort, dtypes.uint32)`, and DISJOINT from
+# rule 4's `dtypes.int32` -- which is why `srneg 3` and `srneg 4` are the SAME
+# node at two dtypes and each is the other's refusal.
+def p_cuint(+dt: S.Dt) -> Bool:
+  Bool.or(Bool.or(O.eq_dt(dt, S.uint8()), O.eq_dt(dt, S.uint16())), O.eq_dt(dt, S.uint32()))
 
-# 2 `"true" if c.val else "false"` -- and `c.val` is a bare CONST's value, and
-# a bare CONST is ALWAYS weakint (ops.py:632: `.cast` folds away at exactly
-# bool/weakint/weakfloat), so this is a Python truth test on an integer.
-def sr_cbool(v: Bool) -> String: Bool.pick(String, v, "true", "false")
+# rule 6's `src=(UPat(dtype=(dtypes.short, dtypes.ushort, dtypes.uint32),),)` --
+# the ONE rule of the six bitcast rules that constrains its SOURCE, and the
+# reason `sr bhalf` needs a source dtype at all.
+def p_bsrc(+dt: S.Dt) -> Bool:
+  Bool.or(Bool.or(O.eq_dt(dt, S.int16()), O.eq_dt(dt, S.uint16())), O.eq_dt(dt, S.uint32()))
+
+# ===========================================================================
+# THE ORDER. `PatternMatcher.rewrite` walks `patterns` TOP TO BOTTOM and takes
+# the first hit, so the order is the semantics in EXACTLY TWO places in
+# wgsl.py:65-93, and `sr_pick_*` is the port of that walk for those two. The
+# `sr pick` rows print the indices, so the order is a MEASURED fact here and not
+# a comment.
+#
+# THE BITCAST CATCH-ALL. Rules 6..10 own five dtypes and rule 11 is
+# `UPat(Ops.BITCAST, name="x")` -- NO dtype, so it matches EVERY BITCAST. It is
+# LAST, and that is the whole of its safety: hoisted above rule 6, a `half`
+# BITCAST answers `bitcast<f16>(S)` where CPython answers
+# `bitcast<vec2<f16>>(S)[0]`. That is a shader which COMPILES and computes the
+# wrong thing, which is why the catch-all is a ROW and not a default arm: the
+# seventh element of `sr pick bitcast` is `half` from `half`, and M56 is the
+# mutation that takes it from 11 to 6.
+#
+# THE STORE PAIR. Rule 14's `UPat.any(packed_rmw, packed_rmw | UPat.var("nv"))` is
+# a SUBSET of rule 15's `UPat.store(b, v)`, so 14 before 15 IS the fall-through
+# and a packed store of an ordinary CONST is not a read-modify-write: it lands on
+# `sr_store` and answers `B = V;`. That is the `sr rmw plain` row, and `sr pick
+# store` is the same fact with the index instead of the string. `Ops.AND` is
+# `packed_rmw`'s OUTER op -- the `&` in `packed_rmw & UPat.var("wmask")` is
+# `Ops.AND` and not a bind, so the shape under it is still `prw_of`'s wall.
+#
+# The other two multi-rule ops need no walk and get none: rules 12 and 13 are
+# disjoint on the src COUNT and rules 0, 2, 3, 4 are disjoint on the dtype and on
+# src[0]'s op, so first-match and any-match agree on them. MEASURED on CPython's
+# OWN matcher by the gate's `sr_dispatch_hold()`, which re-asks it for all 35
+# positive fixtures and finds exactly one that falls through.
+# ===========================================================================
+def sr_none() -> U32: 17
+
+# Rules 7..10 and the catch-all. `"f16"` is ABSENT from this table ON PURPOSE:
+# rule 6 owns it, and the `Bool.pick` below routes to 11 when rule 6's `src=`
+# clause refuses -- so a `f16` that reaches `_` here is rule 11 and not a rule 6
+# that failed to be asked.
+def sr_pick_bitcast.of(nm: String) -> U32:
+  match nm:
+    case "u8" : 7
+    case "i8" : 8
+    case "u16": 9
+    case "i16": 10
+    case _    : 11
+
+# Rule 6 is the only one of the six that constrains its SOURCE, so it is the only
+# one that reads `s0` -- and `half` FROM `half` is therefore rule 11 and not
+# rule 6, which the seventh element of `sr pick bitcast` is there to say.
+def sr_pick_bitcast(+dt: S.Dt, +s0: S.Dt) -> U32:
+  Bool.pick(U32, Bool.and(O.eq_dt(dt, S.half()), p_bsrc(s0)), 6, sr_pick_bitcast.of(dt_name(dt)))
+
+def sr_pick_load(+ns: U32) -> U32:
+  Bool.pick(U32, U32.is_eq(ns, 3), 12, Bool.pick(U32, U32.is_eq(ns, 1), 13, sr_none()))
+
+def sr_pick_store(+ns: U32, +vop: O.Op) -> U32:
+  Bool.pick(U32, Bool.and(U32.is_eq(ns, 2), O.eq_op(vop, O.OpsAND{})), 14,
+    Bool.pick(U32, U32.is_eq(ns, 2), 15, sr_none()))
+
+# 0 `UPat(Ops.CAST, dtype=dtypes.uint32, src=(UPat(Ops.INDEX, name="x"),))`, then
+# `ctx[x] if is_packed(x) else None` -- a packed INDEX is rendered by its own rule,
+# so the CAST around it only carries the width. `pk` is the BODY's clause and the
+# dtype and src[0]'s op are the PATTERN's, and both answer NOMATCH.
+def sr_idx(+dt: S.Dt, +s0: O.Op, pk: Bool, +x: String) -> String:
+  Bool.pick(String, Bool.and(Bool.and(O.eq_dt(dt, S.uint32()), O.eq_op(s0, O.OpsINDEX{})), pk), x, "NOMATCH")
+
+# 1 `UPat(Ops.NEG, dtypes.uints, src=(UPat.var('x'),))` -- `f"(0-{ctx[x]})"`, and
+# WGSL has no unsigned negation.
+def sr_neg(+dt: S.Dt, +x: String) -> String:
+  Bool.pick(String, p_uints(dt), String.concat(["(0-", x, ")"]), "NOMATCH")
+
+# 2 `UPat.cvar("c").cast(dtypes.bool)` -- `"true" if c.val else "false"`, and
+# `c.val` is a bare CONST's value, and a bare CONST is ALWAYS weakint
+# (ops.py:632: `.cast` folds away at exactly bool/weakint/weakfloat), so this is
+# a Python truth test on an integer.
+def sr_cbool(+dt: S.Dt, v: Bool) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.boolean()), Bool.pick(String, v, "true", "false"), "NOMATCH")
 
 # 3 `f"bitcast<u32>({c.val})" if c.val<0 else f"{c.val&0xFFFFFFFF}u"` and
 # 4 `f"i32({v})" if (v:=truncate[x.dtype](c.val))<0 else f"{v}"`. BOTH TAKE THE
@@ -880,81 +991,118 @@ def sr_cbool(v: Bool) -> String: Bool.pick(String, v, "true", "false")
 # mask is the 32-bit one and NOT a 64-bit one.
 def sr_cuint.masked(+v: H.I64) -> H.I64: H.i64_of_hi_lo(0, H.lo32(v))
 
-def sr_cuint(+v: H.I64) -> String:
-  Bool.pick(String, H.i64_is_neg(v), String.concat(["bitcast<u32>(", H.i64_dec(v), ")"]),
-    String.concat([H.i64_dec(sr_cuint.masked(v)), "u"]))
+def sr_cuint(+dt: S.Dt, +v: H.I64) -> String:
+  Bool.pick(String, p_cuint(dt),
+    Bool.pick(String, H.i64_is_neg(v), String.concat(["bitcast<u32>(", H.i64_dec(v), ")"]),
+      String.concat([H.i64_dec(sr_cuint.masked(v)), "u"])), "NOMATCH")
 
 def sr_ci32.trunc(+v: H.I64) -> H.I64: H.i64_of_i32(H.lo32(v))
 
-def sr_ci32(+v: H.I64) -> String:
-  Bool.pick(String, H.i64_is_neg(sr_ci32.trunc(v)),
-    String.concat(["i32(", H.i64_dec(sr_ci32.trunc(v)), ")"]), H.i64_dec(sr_ci32.trunc(v)))
+def sr_ci32(+dt: S.Dt, +v: H.I64) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.int32()),
+    Bool.pick(String, H.i64_is_neg(sr_ci32.trunc(v)),
+      String.concat(["i32(", H.i64_dec(sr_ci32.trunc(v)), ")"]), H.i64_dec(sr_ci32.trunc(v))), "NOMATCH")
 
-# 5 `f"var{'<workgroup>' if x.addrspace == AddrSpace.LOCAL else ''} {ctx[x]}:
-# array<{buf_map(x)},{_packed_size(x)}>;"`. NOTE THE SPACE AFTER THE COLON: it
-# is in the f-string and a WGSL parser is handed it. `buf_map` and
-# `packed_size` are the two ported defs this rule is the only caller of that
-# were written for, and the `array<atomic<u32>,4>` they produce together is the
-# `var<workgroup>` line `render_kernel` hoists.
+# 5 `UPat(Ops.BUFFER, name="x")` -- and it is the ONE rule whose op is a
+# parameter, because `srneg 5` hands it a CONST. `f"var{'<workgroup>' if
+# x.addrspace == AddrSpace.LOCAL else ''} {ctx[x]}: array<{buf_map(x)},
+# {_packed_size(x)}>;"`. NOTE THE SPACE AFTER THE COLON: it is in the f-string and
+# a WGSL parser is handed it. `buf_map` and `packed_size` are the two ported defs
+# this rule is the only caller of that were written for, and the
+# `array<atomic<u32>,4>` they produce together is the `var<workgroup>` line
+# `render_kernel` hoists.
 def sr_buffer.local(a: S.Addr) -> Bool:
   match a:
     case S.ALocal{}: True{}
     case _           : False{}
 
-def sr_buffer(+nm: String, +n: U32, +d: S.Dt, +a: S.Addr) -> String:
-  String.concat([Bool.pick(String, sr_buffer.local(a), "var<workgroup>", "var"), " ", nm, ": array<",
-    buf_map(n, d, a), ",", U32.show(packed_size(n, d, a)), ">;"])
+def sr_buffer(+op: O.Op, +nm: String, +n: U32, +d: S.Dt, +a: S.Addr) -> String:
+  Bool.pick(String, O.eq_op(op, O.OpsBUFFER{}),
+    String.concat([Bool.pick(String, sr_buffer.local(a), "var<workgroup>", "var"), " ", nm, ": array<",
+      buf_map(n, d, a), ",", U32.show(packed_size(n, d, a)), ">;"]), "NOMATCH")
 
 # 6..11 the SIX `bitcast<>` SPELLINGS, and they are six rules rather than one
 # because they are six different WGSL constructions. 9 and 10 each have TWO
-# arms: a half source goes through `vec2<f16>` and anything else is a mask.
-def sr_bhalf(s: String) -> String: String.concat(["bitcast<vec2<f16>>(", s, ")[0]"])
+# arms: a half source goes through `vec2<f16>` and anything else is a mask --
+# and that source dtype is the arm, so it is a `S.Dt` here and not a Bool handed
+# in, or the two spellings would be one spelling with a flag.
+#
+# RULE 11 IS THE CATCH-ALL AND ITS PATTERN IS `UPat(Ops.BITCAST, name="x")` WITH
+# NO dtype, so its op is the whole of it and `srneg 11` hands it a CONST. THE
+# CATCH-ALL'S REAL WORK IS `sr_pick_bitcast` above: nothing here can keep a
+# `half` off rule 11, because CPython's rule 11 genuinely ACCEPTS a half BITCAST
+# -- what keeps it off is that rules 6..10 are consulted first.
+def sr_bhalf(+dt: S.Dt, +s0: S.Dt, +s: String) -> String:
+  Bool.pick(String, Bool.and(O.eq_dt(dt, S.half()), p_bsrc(s0)),
+    String.concat(["bitcast<vec2<f16>>(", s, ")[0]"]), "NOMATCH")
 
-def sr_buchar(s: String) -> String: String.concat(["bitcast<u32>(", s, "&0xFF)"])
+def sr_buchar(+dt: S.Dt, +s: String) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.uint8()), String.concat(["bitcast<u32>(", s, "&0xFF)"]), "NOMATCH")
 
-def sr_bchar(s: String) -> String: String.concat(["((i32(", s, "&0xFF)<<24)>>24)"])
+def sr_bchar(+dt: S.Dt, +s: String) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.int8()), String.concat(["((i32(", s, "&0xFF)<<24)>>24)"]), "NOMATCH")
 
-def sr_bushort(half: Bool, +s: String) -> String:
-  Bool.pick(String, half, String.concat(["bitcast<u32>(vec2<f16>(", s, ",0))"]),
-    String.concat(["bitcast<u32>(", s, "&0xFFFF)"]))
+def sr_bushort(+dt: S.Dt, +s0: S.Dt, +s: String) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.uint16()),
+    Bool.pick(String, O.eq_dt(s0, S.half()), String.concat(["bitcast<u32>(vec2<f16>(", s, ",0))"]),
+      String.concat(["bitcast<u32>(", s, "&0xFFFF)"])), "NOMATCH")
 
-def sr_bshort(half: Bool, +s: String) -> String:
-  Bool.pick(String, half, String.concat(["bitcast<i32>(vec2<f16>(", s, ",0))"]),
-    String.concat(["((i32(", s, "&0xFFFF)<<16)>>16)"]))
+def sr_bshort(+dt: S.Dt, +s0: S.Dt, +s: String) -> String:
+  Bool.pick(String, O.eq_dt(dt, S.int16()),
+    Bool.pick(String, O.eq_dt(s0, S.half()), String.concat(["bitcast<i32>(vec2<f16>(", s, ",0))"]),
+      String.concat(["((i32(", s, "&0xFFFF)<<16)>>16)"])), "NOMATCH")
 
-def sr_bany(+d: S.Dt, s: String) -> String: String.concat(["bitcast<", type_map(d), ">(", s, ")"])
+def sr_bany(+op: O.Op, +d: S.Dt, s: String) -> String:
+  Bool.pick(String, O.eq_op(op, O.OpsBITCAST{}), String.concat(["bitcast<", type_map(d), ">(", s, ")"]), "NOMATCH")
 
-# 12 `f"select({ctx[v]}, {ctx.render_load(ctx[b], b.src[0])}, {ctx[gate]})"` and
-# 13 `ctx.render_load(ctx[b], b)`. Rule 13 IS `render_load` -- it adds nothing,
-# so there is no `sr_load` def and the row calls `render_load` itself, which is
-# what `dead_defs_hold` had to be told about: `render_load` was ported, ungated,
-# and called by nothing until this row. `b.src[0]` is the INDEX under the CAST,
-# and `is_packed` reads that node's buffer -- which is why the rows hand in its
-# `(n, dt, addr)` and not the LOAD's.
-def sr_lgate(+b: String, +i0: String, +n0: U32, +d0: S.Dt, a0: S.Addr, +v: String, +g: String) -> String:
-  String.concat(["select(", v, ", ", render_load(i0, n0, d0, a0), ", ", g, ")"])
+# 12 `UPat.load(UPat.var("b"), UPat.var("v"), UPat.var("gate"))` --
+# `f"select({ctx[v]}, {ctx.render_load(ctx[b], b.src[0])}, {ctx[gate]})"`, and 13
+# `UPat.load(UPat.var("b"))` -- `ctx.render_load(ctx[b], b)`. THE TWO DIVIDE ON
+# THE SRC COUNT and the count is the whole of both patterns, so `ns` is what makes
+# a two-src LOAD rule 13's and a three-src one rule 12's -- and what made
+# `srneg 12` and `srneg 13` refusals rather than answers.
+#
+# RULE 13 HAS NO BODY OF ITS OWN: it IS `render_load`, so it gets a def that is
+# the PATTERN plus the call, and the row still calls `render_load` through it.
+# `b.src[0]` is the INDEX under the CAST, and `is_packed` reads that node's buffer
+# -- which is why the rows hand in its `(n, dt, addr)` and not the LOAD's.
+def sr_lgate(ns: U32, +b: String, +i0: String, +n0: U32, +d0: S.Dt, a0: S.Addr, +v: String, +g: String) -> String:
+  Bool.pick(String, U32.is_eq(ns, 3),
+    String.concat(["select(", v, ", ", render_load(i0, n0, d0, a0), ", ", g, ")"]), "NOMATCH")
 
-# 14 the READ-MODIFY-WRITE: `atomicAnd` clears the field, `atomicAdd` sets it,
-# and `new_v` is gone when it is 0 so the second line is OPTIONAL. The `\n  ` is
-# a real newline in Python and is SPELLED by the row's `one_line`; the two
-# spaces after it are in the f-string.
+def sr_load(ns: U32, +x: String, +n: U32, +dt: S.Dt, a: S.Addr) -> String:
+  Bool.pick(String, U32.is_eq(ns, 1), render_load(x, n, dt, a), "NOMATCH")
+
+# 14 `UPat.store(UPat.var("b"), UPat.any(packed_rmw, packed_rmw | UPat.var("nv")))`
+# -- the READ-MODIFY-WRITE: `atomicAnd` clears the field, `atomicAdd` sets it, and
+# `new_v` is gone when it is 0 so the second line is OPTIONAL. `vop` is
+# `packed_rmw`'s OUTER op and it is the pattern's whole discriminator here: a
+# store of an ordinary CONST is not a read-modify-write, and without this test
+# `srneg 14` answered `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE. The
+# `\n  ` is a real newline in Python and is SPELLED by the row's `one_line`; the
+# two spaces after it are in the f-string.
 def sr_rmw.add(hasnv: Bool, +b: String, +nv: String) -> String:
   Bool.pick(String, hasnv, String.concat(["\n  atomicAdd(&", b, ",", nv, ");"]), "")
 
-def sr_rmw(pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
-  Bool.pick(String, pk,
+def sr_rmw(+vop: O.Op, pk: Bool, hasnv: Bool, +b: String, +w: String, +nv: String) -> String:
+  Bool.pick(String, Bool.and(O.eq_op(vop, O.OpsAND{}), pk),
     String.concat(["atomicAnd(&", b, ",", w, ");", sr_rmw.add(hasnv, b, nv)]), "NOMATCH")
 
-# 15 `f"{ctx[b]} = {ctx[v]};"`
-def sr_store(+b: String, +v: String) -> String: String.concat([b, " = ", v, ";"])
+# 15 `UPat.store(UPat.var("b"), UPat.var("v"))` -- `f"{ctx[b]} = {ctx[v]};"` --
+# and it is the SUBSET-fall-through of rule 14, so it takes the same src COUNT.
+def sr_store(ns: U32, +b: String, +v: String) -> String:
+  Bool.pick(String, U32.is_eq(ns, 2), String.concat([b, " = ", v, ";"]), "NOMATCH")
 
-# 16 `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`
-# -- and `strip_parens` (helpers.bend:1455) is ALREADY PORTED, `is_balanced` and
-# all, which is why this rule is four lines and not a walk. The `Ops.ADD` test
-# is the rule's own `isadd` parameter; a source that is not balanced keeps its
-# parens, and `(I0)+(I1)` is that case.
-def sr_index(isadd: Bool, +b: String, +i: String) -> String:
-  String.concat([b, "[", Bool.pick(String, isadd, H.strip_parens(i), i), "]"])
+# 16 `UPat(Ops.INDEX, src=(UPat.var("b"), UPat.var("idx")))` --
+# `f"{ctx[b]}[{strip_parens(ctx[idx]) if idx.arg is Ops.ADD else ctx[idx]}]"`, and
+# `strip_parens` (helpers.bend:1455) is ALREADY PORTED, `is_balanced` and all,
+# which is why this rule is four lines and not a walk. The `Ops.ADD` test is the
+# rule's own `isadd` parameter; a source that is not balanced keeps its parens,
+# and `(I0)+(I1)` is that case. `op` is the pattern's, because `srneg 16` is a
+# CONST and an INDEX is the only thing this rule renders.
+def sr_index(+op: O.Op, isadd: Bool, +b: String, +i: String) -> String:
+  Bool.pick(String, O.eq_op(op, O.OpsINDEX{}),
+    String.concat([b, "[", Bool.pick(String, isadd, H.strip_parens(i), i), "]"]), "NOMATCH")
 
 # ===========================================================================
 # THE render_kernel FIXTURES AND ROWS.
@@ -1331,46 +1479,46 @@ def r_srneg(i: U32, +nm: String, got: String, py: String) -> String:
   r("srneg " ++ U32.show(i) ++ " " ++ nm, got, py)
 
 # THE SEVENTEEN REFUSALS. Each `srneg` row drives the SAME body as the `sr` row
-# above it, on a node CPython's `UPat` REJECTS -- the oracle asserts that
+# for the same rule, on a node CPython's `UPat` REJECTS -- the oracle asserts that
 # rejection with `UPat.match`, so the row's `py=[NOMATCH]` half is a refusal by
-# construction rather than a transcription. THESE FIFTEEN ANSWER ANYWAY, and that
-# is not a defect in a BODY: `wgsl.bend` carries wgsl.py:65-93's seventeen rule
-# BODIES and NONE OF THEIR PATTERNS, so there is nothing on this side that can
-# decline a node. A rule body that fires where CPython's pattern cannot is a
-# reachability claim this port has not made and cannot make, and the two rows
-# below make it VISIBLE rather than leaving it to be inferred from seventeen
-# agreements.
+# construction rather than a transcription. UNTIL THE PATTERNS LANDED THESE ROWS
+# ANSWERED ANYWAY, and two of them answered WRONG: `srneg 14` is a PACKED store of
+# an ordinary CONST, `packed_rmw`'s `AND` is the whole of rule 14's pattern, and
+# `sr_rmw` emitted `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE; `srneg 15`
+# is a GATED store, three srcs, and `sr_store` emitted `B = V;` and DROPPED THE
+# GATE. Each row now hands the body the NODE it is refusing -- the dtype for the
+# eleven rules whose pattern names one, the op for the three whose rejecting node
+# is a CONST, the src count for the four that divide on arity -- and the body
+# answers `NOMATCH`, which is the word CPython's `None` is spelled.
 #
 # THE ARGUMENTS ARE THE POSITIVE ROW'S OWN, so a `srneg` row changes the NODE and
 # nothing else: the two rows for a rule differ only in whether the pattern would
-# have accepted what the body was handed. `packed_rmw`'s `AND` is rows 14 and 3's
-# subject -- a packed store of an ordinary CONST is not a read-modify-write, and
-# `sr_rmw` emits `atomicAnd(&B[1],W);` and DROPS the value -- and the gated store
-# is row 15's, where `sr_store` answers `B = V;` and DROPS the gate.
+# have accepted what the body was handed.
 def r_srneg_0() -> String:
-  String.concat([r_srneg(0, "cast i32", sr_idx(True{}, "B[1]"), "NOMATCH"),
-    r_srneg(1, "neg f32", sr_neg("S"), "NOMATCH"),
-    r_srneg(2, "cast i32", sr_cbool(True{}), "NOMATCH"),
-    r_srneg(3, "cast i32", sr_cuint(H.i64_of_hi_lo(0, 3)), "NOMATCH"),
-    r_srneg(4, "cast u32", sr_ci32(H.i64_of_hi_lo(0, 3)), "NOMATCH"),
-    r_srneg(5, "const", sr_buffer("data0_16", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
-    r_srneg(6, "bitcast u32", sr_bhalf("S"), "NOMATCH"),
-    r_srneg(7, "bitcast half", sr_buchar("S"), "NOMATCH"),
-    r_srneg(8, "bitcast uchar", sr_bchar("S"), "NOMATCH"),
-    r_srneg(9, "bitcast half", sr_bushort(False{}, "S"), "NOMATCH"),
-    r_srneg(10, "bitcast half", sr_bshort(False{}, "S"), "NOMATCH"),
-    r_srneg(11, "const", sr_bany(S.single(), "S"), "NOMATCH"),
-    r_srneg(12, "load 2", sr_lgate("B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"), "NOMATCH"),
-    r_srneg(13, "load 3", render_load("B[1]", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
-    r_srneg(14, "store u8", one_line(sr_rmw(True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
-    r_srneg(15, "store 3", sr_store("B", "V"), "NOMATCH"),
-    r_srneg(16, "const", sr_index(True{}, "B", "(I0+I1)"), "NOMATCH")])
+  String.concat([r_srneg(0, "cast i32", sr_idx(S.int32(), O.OpsINDEX{}, True{}, "B[1]"), "NOMATCH"),
+    r_srneg(1, "neg f32", sr_neg(S.single(), "S"), "NOMATCH"),
+    r_srneg(2, "cast i32", sr_cbool(S.int32(), True{}), "NOMATCH"),
+    r_srneg(3, "cast i32", sr_cuint(S.int32(), H.i64_of_hi_lo(0, 3)), "NOMATCH"),
+    r_srneg(4, "cast u32", sr_ci32(S.uint32(), H.i64_of_hi_lo(0, 3)), "NOMATCH"),
+    r_srneg(5, "const", sr_buffer(O.OpsCONST{}, "data0_16", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
+    r_srneg(6, "bitcast u32", sr_bhalf(S.uint32(), S.uint32(), "S"), "NOMATCH"),
+    r_srneg(7, "bitcast half", sr_buchar(S.half(), "S"), "NOMATCH"),
+    r_srneg(8, "bitcast uchar", sr_bchar(S.uint8(), "S"), "NOMATCH"),
+    r_srneg(9, "bitcast half", sr_bushort(S.half(), S.uint32(), "S"), "NOMATCH"),
+    r_srneg(10, "bitcast half", sr_bshort(S.half(), S.uint32(), "S"), "NOMATCH"),
+    r_srneg(11, "const", sr_bany(O.OpsCONST{}, S.single(), "S"), "NOMATCH"),
+    r_srneg(12, "load 2", sr_lgate(1, "B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"), "NOMATCH"),
+    r_srneg(13, "load 3", sr_load(3, "B[1]", 16, S.uint8(), S.AGlobal{}), "NOMATCH"),
+    r_srneg(14, "store u8", one_line(sr_rmw(O.OpsCONST{}, True{}, False{}, "B[1]", "W", "NV")), "NOMATCH"),
+    r_srneg(15, "store 3", sr_store(3, "B", "V"), "NOMATCH"),
+    r_srneg(16, "const", sr_index(O.OpsCONST{}, True{}, "B", "(I0+I1)"), "NOMATCH")])
 
 # rules 0-2: the packed INDEX, the unsigned negation, the bool CONST
 def r_sr_0() -> String:
-  String.concat([r_sr("idx packed", sr_idx(True{}, "B[1]"), "B[1]"),
-    r_sr("idx plain", sr_idx(False{}, "B[1]"), "NOMATCH"), r_sr("neg", sr_neg("X"), "(0-X)"),
-    r_sr("cbool 1", sr_cbool(True{}), "true"), r_sr("cbool 0", sr_cbool(False{}), "false")])
+  String.concat([r_sr("idx packed", sr_idx(S.uint32(), O.OpsINDEX{}, True{}, "B[1]"), "B[1]"),
+    r_sr("idx plain", sr_idx(S.uint32(), O.OpsINDEX{}, False{}, "B[1]"), "NOMATCH"),
+    r_sr("neg", sr_neg(S.uint32(), "X"), "(0-X)"),
+    r_sr("cbool 1", sr_cbool(S.boolean(), True{}), "true"), r_sr("cbool 0", sr_cbool(S.boolean(), False{}), "false")])
 
 # rules 3-4: the two CONST casts. THE FIXTURE IS THE WEAKINT CONST'S OWN VALUE AS
 # AN I64, SPELLED `hi:lo`, because that is the one representation that tells -1
@@ -1378,10 +1526,10 @@ def r_sr_0() -> String:
 # `4294967295u` and a `U32` word is both of them at once. `fixtures_hold` reads
 # these three axes off this file's text, so an axis cannot drift on one side.
 def r_cu1(+nm: String, hi: U32, lo: U32, py: String) -> String:
-  r("sr cuchar " ++ nm, sr_cuint(H.i64_of_hi_lo(hi, lo)), py)
+  r("sr cuchar " ++ nm, sr_cuint(S.uint32(), H.i64_of_hi_lo(hi, lo)), py)
 
 def r_ci1(+nm: String, hi: U32, lo: U32, py: String) -> String:
-  r("sr ci32 " ++ nm, sr_ci32(H.i64_of_hi_lo(hi, lo)), py)
+  r("sr ci32 " ++ nm, sr_ci32(S.int32(), H.i64_of_hi_lo(hi, lo)), py)
 
 def r_sr_3() -> String:
   String.concat([r_cu1("255", 0, 255, "255u"), r_cu1("-1", 4294967295, 4294967295, "bitcast<u32>(-1)"),
@@ -1394,54 +1542,82 @@ def r_sr_3() -> String:
 # render_kernel fixture and `t0` is the LOCAL f32 beside it, so this axis is the
 # same buffer set the module rows use.
 def r_sb1(+nm: String, +bn: String, +d: S.Dt, a: S.Addr, n: U32, py: String) -> String:
-  r("sr buffer " ++ nm, sr_buffer(bn, n, d, a), py)
+  r("sr buffer " ++ nm, sr_buffer(O.OpsBUFFER{}, bn, n, d, a), py)
 
 def r_sr_5() -> String:
   String.concat([r_sb1("global", "data0_16", S.uint8(), S.AGlobal{}, 16, "var data0_16: array<atomic<u32>,4>;"),
     r_sb1("local", "t0", S.single(), S.ALocal{}, 1, "var<workgroup> t0: array<f32,1>;"),
     r_sb1("reg", "r0", S.single(), S.AReg{}, 1, "var r0: array<f32,1>;")])
 
-# rules 6-11: the six bitcast spellings, and the two rules with two arms
+# rules 6-11: the six bitcast spellings, and the two rules with two arms.
+# `sr bhalf`'s source is the `u32` of CPython's `UOp.const(1, dtypes.uint32)`,
+# which is inside rule 6's `src=` clause, and `bushort half`'s is `f16` -- both
+# are the SOURCE, which is why they are a second dtype and not a Bool.
 def r_sr_6() -> String:
-  String.concat([r_sr("bhalf", sr_bhalf("S"), "bitcast<vec2<f16>>(S)[0]"),
-    r_sr("buchar", sr_buchar("S"), "bitcast<u32>(S&0xFF)"),
-    r_sr("bchar", sr_bchar("S"), "((i32(S&0xFF)<<24)>>24)"),
-    r_sr("bushort", sr_bushort(False{}, "S"), "bitcast<u32>(S&0xFFFF)"),
-    r_sr("bushort half", sr_bushort(True{}, "S"), "bitcast<u32>(vec2<f16>(S,0))"),
-    r_sr("bshort", sr_bshort(False{}, "S"), "((i32(S&0xFFFF)<<16)>>16)"),
-    r_sr("bshort half", sr_bshort(True{}, "S"), "bitcast<i32>(vec2<f16>(S,0))"),
-    r_sr("bany", sr_bany(S.single(), "S"), "bitcast<f32>(S)")])
+  String.concat([r_sr("bhalf", sr_bhalf(S.half(), S.uint32(), "S"), "bitcast<vec2<f16>>(S)[0]"),
+    r_sr("buchar", sr_buchar(S.uint8(), "S"), "bitcast<u32>(S&0xFF)"),
+    r_sr("bchar", sr_bchar(S.int8(), "S"), "((i32(S&0xFF)<<24)>>24)"),
+    r_sr("bushort", sr_bushort(S.uint16(), S.int32(), "S"), "bitcast<u32>(S&0xFFFF)"),
+    r_sr("bushort half", sr_bushort(S.uint16(), S.half(), "S"), "bitcast<u32>(vec2<f16>(S,0))"),
+    r_sr("bshort", sr_bshort(S.int16(), S.int32(), "S"), "((i32(S&0xFFFF)<<16)>>16)"),
+    r_sr("bshort half", sr_bshort(S.int16(), S.half(), "S"), "bitcast<i32>(vec2<f16>(S,0))"),
+    r_sr("bany", sr_bany(O.OpsBITCAST{}, S.single(), "S"), "bitcast<f32>(S)")])
 
 # rules 12-13: the gated load's `select`, and the plain load -- which IS
-# `render_load`, called here directly rather than through a one-line `sr_load`.
+# `render_load`, called here through rule 13's own def because that is the rule's
+# body plus its pattern. `3` is `UPat.load(b, v, gate)`'s src count and `1` is
+# `UPat.load(b)`'s, and the two rules are the same node divided on it.
 def r_sr_12() -> String:
-  String.concat([r_sr("lgate packed", sr_lgate("B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"),
+  String.concat([r_sr("lgate packed", sr_lgate(3, "B[1]", "B[1]", 16, S.uint8(), S.AGlobal{}, "V", "G"),
       "select(V, atomicLoad(&B[1]), G)"),
-    r_sr("lgate plain", sr_lgate("B[1]", "B[1]", 16, S.single(), S.AGlobal{}, "V", "G"), "select(V, B[1], G)"),
-    r_sr("load packed", render_load("B[1]", 16, S.uint8(), S.AGlobal{}), "atomicLoad(&B[1])"),
-    r_sr("load plain", render_load("B[1]", 16, S.single(), S.AGlobal{}), "B[1]")])
+    r_sr("lgate plain", sr_lgate(3, "B[1]", "B[1]", 16, S.single(), S.AGlobal{}, "V", "G"), "select(V, B[1], G)"),
+    r_sr("load packed", sr_load(1, "B[1]", 16, S.uint8(), S.AGlobal{}), "atomicLoad(&B[1])"),
+    r_sr("load plain", sr_load(1, "B[1]", 16, S.single(), S.AGlobal{}), "B[1]")])
 
 # rules 14-15: the read-modify-write and the plain store. THE NEWLINE IS SPELLED
 # by `one_line` on the port side and by the oracle's `one_line` on CPython's,
 # because a row is one line and the two spaces after the newline are IN the
-# f-string.
+# f-string. `O.OpsAND{}` is `packed_rmw`'s outer op and `O.OpsCONST{}` is the
+# `rmw plain` node's stored value, which is why that row is a refusal and not a
+# second rendering.
 def r_sr_14() -> String:
-  String.concat([r_sr("rmw nv", one_line(sr_rmw(True{}, True{}, "B[1]", "W", "NV")),
+  String.concat([r_sr("rmw nv", one_line(sr_rmw(O.OpsAND{}, True{}, True{}, "B[1]", "W", "NV")),
       "atomicAnd(&B[1],W);\\n  atomicAdd(&B[1],NV);"),
-    r_sr("rmw bare", one_line(sr_rmw(True{}, False{}, "B[1]", "W", "NV")), "atomicAnd(&B[1],W);"),
-    r_sr("rmw plain", sr_rmw(False{}, False{}, "B", "W", "NV"), "NOMATCH"),
-    r_sr("store", sr_store("B", "V"), "B = V;")])
+    r_sr("rmw bare", one_line(sr_rmw(O.OpsAND{}, True{}, False{}, "B[1]", "W", "NV")), "atomicAnd(&B[1],W);"),
+    r_sr("rmw plain", sr_rmw(O.OpsCONST{}, False{}, False{}, "B", "W", "NV"), "NOMATCH"),
+    r_sr("store", sr_store(2, "B", "V"), "B = V;")])
 
 # rule 16: the INDEX, and `strip_parens` on the `Ops.ADD` source. `(I0)+(I1)` is
 # the BALANCE case: it opens and does not close, so the parens stay and the
 # brackets land inside them.
 def r_sr_16() -> String:
-  String.concat([r_sr("index add", sr_index(True{}, "B", "(I0+I1)"), "B[I0+I1]"),
-    r_sr("index const", sr_index(False{}, "B", "I0"), "B[I0]"),
-    r_sr("index unbalanced", sr_index(True{}, "B", "(I0)+(I1)"), "B[(I0)+(I1)]")])
+  String.concat([r_sr("index add", sr_index(O.OpsINDEX{}, True{}, "B", "(I0+I1)"), "B[I0+I1]"),
+    r_sr("index const", sr_index(O.OpsINDEX{}, False{}, "B", "I0"), "B[I0]"),
+    r_sr("index unbalanced", sr_index(O.OpsINDEX{}, True{}, "B", "(I0)+(I1)"), "B[(I0)+(I1)]")])
+
+# THE ORDER, AS THREE ROWS, and they are the only rows here that are not a
+# rendered string. CPython's `PatternMatcher.rewrite` answers the FIRST pattern
+# that matches, so "which rule" is a fact about the table and not about a body --
+# and the two places it is not obvious are the bitcast catch-all (rule 11 has NO
+# dtype, so it is safe only because rules 6..10 come first) and the store pair
+# (rule 14's pattern is a SUBSET of rule 15's, so a plain packed store FALLS
+# THROUGH to 15). The comma-joined text is the file's own idiom for a tuple of
+# ints (`rk_sz mixed` is `8,2`), and the whole index list is one cell so a single
+# moved element moves the row. THE SEVENTH BITCAST IS `half` FROM `half`, which
+# is rule 6's `src=` clause doing its work, and the store row's SECOND element is
+# the `rmw plain` node -- the fall-through, as an index.
+def r_sr_pick() -> String:
+  String.concat([r_sr("pick bitcast", String.join(u32_show([sr_pick_bitcast(S.half(), S.uint32()),
+    sr_pick_bitcast(S.uint8(), S.uint32()), sr_pick_bitcast(S.int8(), S.uint32()),
+    sr_pick_bitcast(S.uint16(), S.uint32()), sr_pick_bitcast(S.int16(), S.uint32()),
+    sr_pick_bitcast(S.single(), S.half()), sr_pick_bitcast(S.half(), S.half())]), ","),
+    "6,7,8,9,10,11,11"),
+    r_sr("pick load", String.join(u32_show([sr_pick_load(3), sr_pick_load(1)]), ","), "12,13"),
+    r_sr("pick store", String.join(u32_show([sr_pick_store(2, O.OpsAND{}),
+      sr_pick_store(2, O.OpsCONST{})]), ","), "14,15")])
 
 def r_srs() -> String:
-  String.concat([r_sr_0(), r_sr_3(), r_sr_5(), r_sr_6(), r_sr_12(), r_sr_14(), r_sr_16()])
+  String.concat([r_sr_0(), r_sr_3(), r_sr_5(), r_sr_6(), r_sr_12(), r_sr_14(), r_sr_16(), r_sr_pick()])
 
 def rows() -> String:
   +fx = fx_mixed()
@@ -1517,6 +1693,27 @@ def main() -> IO(Unit):
 #   M52 sr_buffer drops the space after the colon 3  sr buffer global/local/reg
 #   M53 ssimp walks ONE cast, not the chain       2  rk_sz mixed rk mixed
 #   M54 type_map's KeyError arm answers nothing   1  type_map double, via the PIN check
+#
+# M55-M63 ARE THE SEVENTEEN PATTERNS, one edit per DISCRIMINATING FIELD, and each
+# moves EXACTLY ONE `srneg` row -- the row for the rule it breaks. MEASURED
+# 2026-10-14 on this tree, one row each, and they are what makes the seventeen
+# `NOMATCH`s load-bearing rather than seventeen tokens nobody could tell apart.
+#
+#   M55 sr_bhalf ANDs half with src=, so it ORs   1  srneg 6
+#   M56 sr_pick_bitcast drops rule 6's src=       1  sr pick bitcast (11 -> 6)
+#   M57 sr_pick_store forgets packed_rmw's AND    1  sr pick store (15 -> 14)
+#   M58 sr_rmw forgets packed_rmw's AND           1  srneg 14, DROPS THE VALUE AGAIN
+#   M59 sr_store accepts a 3-src GATED store      1  srneg 15, DROPS THE GATE AGAIN
+#   M60 sr_buffer forgets the BUFFER op           1  srneg 5
+#   M61 sr_load accepts any src count             1  srneg 13
+#   M62 sr_idx forgets the CAST dtype             1  srneg 0
+#   M63 sr_neg accepts float32 as an unsigned     1  srneg 1
+#
+# M58 AND M59 ARE THE TWO DANGEROUS ONES, and they are worth reading together:
+# each reinstates a SILENT WRONG ANSWER rather than an over-firing -- a packed
+# store whose stored value is dropped, and a gated store whose gate is dropped.
+# Neither shows in a diff of the two lanes' row NAMES, and both were live in this
+# file until the patterns landed.
 #   P1 the port drops rule 16's whole row group   DEAD  5, "207 rows" expected
 #   P2 the port drops ONE row from a group        DEAD  5, "207 rows" expected
 #   P3 the ORACLE drops one rule's rows          REFUSED 3, "207 rows" expected
@@ -1586,15 +1783,26 @@ def main() -> IO(Unit):
 # recorded as untested rather than as passing.
 #
 # WHAT IS STILL NOT GATED, stated as a boundary and not as an omission. The
-# census compares each RULE'S ANSWER on a chosen fixture. It does not compare
-# WHICH NODES a rule MATCHES, because that is `UPat.match` over a pattern table
-# and the port's seventeen defs are the rules' BODIES, not their patterns. Two
-# consequences, both real: `packed_rmw`'s full shape -- `AND(LOAD(CAST(b, u32)),
-# wmask)`, where `& UPat.var("wmask")` is an Ops.AND and not a bind, which is why
-# `prw_of` is a def nothing calls -- is not ported; and the seventeen rows are
-# seventeen SPELLINGS on fixtures the oracle chose, not seventeen proofs that a
-# seventeenth node takes a given branch. `rules_hold()` checks the population
-# (the seventeen exist, their ops are these, each has a def and rows) and the
-# census can now SEE `string_rewrite`, which it could not before. Seeing it is
-# not the same as covering it, and the difference is this paragraph.
+# census compares each RULE'S ANSWER on a chosen fixture AND, since the patterns
+# landed, whether the rule DECLINES a node CPython's own `UPat` declines -- the
+# seventeen `srneg` rows, one per rule, each an EXACT MATCH rather than a pin
+# because both sides print `NOMATCH`. Three things are still outside it.
+#
+# 1. `packed_rmw`'s INNER shape. `sr_pick_store` and `sr_rmw` test `Ops.AND`,
+#    which is `packed_rmw`'s outer op and the whole of what distinguishes a
+#    read-modify-write from a plain store; `AND(LOAD(CAST(b, u32)), wmask)` --
+#    the `& UPat.var("wmask")` is an Ops.AND and not a bind -- is still
+#    unported, and `prw_of` is still the def that names it and calls nothing.
+#    A CONST spliced onto an `AND` of the wrong shape would still pass.
+# 2. RULES 0, 2, 3 AND 4 SHARE AN OP and their dtypes are NOT all disjoint --
+#    rule 0 is `uint32` and rule 3 is `uint32 | uint16 | uint8` -- so they divide
+#    on src[0]'s op as well, and the ORDER between them is untested because they
+#    cannot both match one node. Same for rules 12 and 13 (`sr pick load` prints
+#    the indices anyway, because the fact is worth having).
+# 3. THE SPELLING OF EACH `srneg` NODE is the port's own. The oracle ASSERTS, on
+#    CPython's real node, that each `UPat` rejects it -- so the refusal is real on
+#    that side -- but the gate does not re-derive `srneg 6`'s target dtype from
+#    the node and compare it to `S.uint32()` in this file. Both sides refusing is
+#    checked; both sides refusing about the SAME node is not.
+#
 # ===========================================================================

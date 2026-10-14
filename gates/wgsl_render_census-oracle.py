@@ -574,7 +574,17 @@ def _i64(hi, lo):
     return v - (1 << 64) if hi & 0x80000000 else v
 
 
-def g_string_rewrite():
+def sr_fixtures():
+    """THE THIRTY-FIVE POSITIVE `sr` ROWS, as `(rule, name, u, ctx_pairs)`.
+
+    HOISTED OUT OF `g_string_rewrite` so the gate can ask a question of the SAME
+    nodes this function prints rows from: `PatternMatcher.rewrite` takes the FIRST
+    pattern that matches, so "which rule is this row on" is a claim about the
+    table and not about a body, and only CPython's matcher can settle it. The
+    gate's `sr_dispatch_hold()` walks this list with `sr_first` and compares -- the
+    34/35 measurement that used to live in a `.agents/slop` probe and is now a
+    check. A second copy of these fixtures would be a second population, so there
+    is ONE declaration and `g_string_rewrite` iterates it."""
     ci = UOp.const(1, dtypes.int32)
     ch = UOp.const(1, dtypes.half)
     cu = UOp.const(1, dtypes.uint32)
@@ -588,9 +598,9 @@ def g_string_rewrite():
     # `atomicAnd`/`atomicAdd` rows are that function's answer and not a
     # hand-built approximation of it. `packed_rmw`'s `b` binder and the store's
     # `b` binder MUST BE ONE UOp: `UPat.match`'s `setdefault(self.name, uop) is
-    # not uop` check rejects the store otherwise (MEASURED -- and that is why the
-    # `rmw bare` row is `UOp.store(ix_n, and_n)` and not `UOp.store(idx_pk, ...)`:
-    # `packed_store` rebuilds the INDEX through `bidx.src[0].index(...)`).
+    # not uop` check rejects the store otherwise (MEASURED -- and that is why
+    # the `rmw bare` row is `UOp.store(ix_n, and_n)` and not `UOp.store(idx_pk,
+    # ...)`: `packed_store` rebuilds the INDEX through `bidx.src[0].index(...)`).
     rmw = packed_store(UOp.store(idx_pk, UOp.const(5, dtypes.uint8)))
     and_n = rmw.src[1].src[0]
     ix_n = and_n.src[0].src[0].src[0]
@@ -603,55 +613,99 @@ def g_string_rewrite():
     # text, not a graph test). `index const` is a CONST index, whose `arg` is `1`
     # and so is not `Ops.ADD`, which is the rule's other branch.
     iconst = _wc(1)
+    out = [
+        (0, "idx packed", UOp(Ops.CAST, src=(idx_pk,), arg=dtypes.uint32), ((idx_pk, "B[1]"),)),
+        (0, "idx plain", UOp(Ops.CAST, src=(idx_pl,), arg=dtypes.uint32), ((idx_pl, "B[1]"),)),
+        (1, "neg", UOp(Ops.NEG, src=(cu3,)), ((cu3, "X"),)),
+        (2, "cbool 1", UOp.cconst(1, dtypes.bool), ()),
+        (2, "cbool 0", UOp.cconst(0, dtypes.bool), ()),
+    ]
+    out += [(3, f"cuchar {nm}", _cvar(_i64(hi, lo)), ()) for nm, hi, lo in SR_CU]
+    out += [(4, f"ci32 {nm}", _cint(_i64(hi, lo)), ()) for nm, hi, lo in SR_CI]
+    # ONE node per axis entry, bound under the SAME object the rule is given --
+    # `self.r[key]` is a dict keyed by the UOp, so building the buffer twice would
+    # answer `REFUSE:KeyError` for a rule that is fine.
+    bufs = []
+    for nm, bn, ctor, a, k in SR_BUF:
+        u = buf_of(ctor, a, k)
+        bufs.append((5, f"buffer {nm}", u, ((u, bn),)))
+    out += bufs
+    out += [
+        (6, "bhalf", UOp(Ops.BITCAST, src=(cu,), arg=dtypes.half), ((cu, "S"),)),
+        (7, "buchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint8), ((ci, "S"),)),
+        (8, "bchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.char), ((ci, "S"),)),
+        (9, "bushort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint16), ((ci, "S"),)),
+        (9, "bushort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.uint16), ((ch, "S"),)),
+        (10, "bshort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.short), ((ci, "S"),)),
+        (10, "bshort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.short), ((ch, "S"),)),
+        (11, "bany", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.float), ((ch, "S"),)),
+        (12, "lgate packed", UOp(Ops.LOAD, src=(idx_pk, alt, gate)),
+         ((idx_pk, "B[1]"), (alt, "V"), (gate, "G"))),
+        (12, "lgate plain", UOp(Ops.LOAD, src=(idx_pl, alt, gate)),
+         ((idx_pl, "B[1]"), (alt, "V"), (gate, "G"))),
+        (13, "load packed", UOp(Ops.LOAD, src=(idx_pk,)), ((idx_pk, "B[1]"),)),
+        (13, "load plain", UOp(Ops.LOAD, src=(idx_pl,)), ((idx_pl, "B[1]"),)),
+    ]
+    # 14 -- THREE arms, because the rule has three: with `new_v`, without it
+    # (`new_v` is gone when it is 0, per wgsl.py:87), and with `is_packed` False,
+    # where the rule answers `None` and the STORE falls to rule 15 instead.
+    out += [
+        (14, "rmw nv", rmw, ((ix_n, "B[1]"), (wmask, "W"), (newv, "NV"))),
+        (14, "rmw bare", UOp.store(ix_n, and_n), ((ix_n, "B[1]"), (wmask, "W"))),
+        (14, "rmw plain", UOp.store(idx_pl, vf), ((idx_pl, "B"), (vf, "V"))),
+        (15, "store", UOp.store(idx_pl, vf), ((idx_pl, "B"), (vf, "V"))),
+        (16, "index add", UOp(Ops.INDEX, src=(idx_pl, add)), ((idx_pl, "B"), (add, "(I0+I1)"))),
+        (16, "index const", UOp(Ops.INDEX, src=(idx_pl, iconst)), ((idx_pl, "B"), (iconst, "I0"))),
+        (16, "index unbalanced", UOp(Ops.INDEX, src=(idx_pl, add)),
+         ((idx_pl, "B"), (add, "(I0)+(I1)"))),
+    ]
+    return out
 
+
+def g_string_rewrite():
     # `ctx` IS PER ROW, not one shared dict: the letters are what the row's own
     # rule reads, and sharing one dict would let a row for `INDEX` see a `B` that
     # a row for a CAST put there. Each row's bindings are exactly the nodes that
     # row's rule dereferences, which is also what makes the port's `String`
     # parameter list checkable by eye against this one.
-    def r_(i, name, u, pairs=()):
+    for i, name, u, pairs in sr_fixtures():
         row(f"sr {name}", _sr_rewrite(i, u, _sr_ctx(pairs)))
 
-    r_(0, "idx packed", UOp(Ops.CAST, src=(idx_pk,), arg=dtypes.uint32), {idx_pk: "B[1]"})
-    r_(0, "idx plain", UOp(Ops.CAST, src=(idx_pl,), arg=dtypes.uint32), {idx_pl: "B[1]"})
-    r_(1, "neg", UOp(Ops.NEG, src=(cu3,)), {cu3: "X"})
-    r_(2, "cbool 1", UOp.cconst(1, dtypes.bool))
-    r_(2, "cbool 0", UOp.cconst(0, dtypes.bool))
-    for nm, hi, lo in SR_CU:
-        r_(3, f"cuchar {nm}", _cvar(_i64(hi, lo)))
-    for nm, hi, lo in SR_CI:
-        r_(4, f"ci32 {nm}", _cint(_i64(hi, lo)))
-    # ONE node per axis entry, bound under the SAME object the rule is given --
-    # `self.r[key]` is a dict keyed by the UOp, so building the buffer twice would
-    # answer `REFUSE:KeyError` for a rule that is fine.
-    for nm, bn, ctor, a, k in SR_BUF:
-        u = buf_of(ctor, a, k)
-        row(f"sr buffer {nm}", _sr_rewrite(5, u, _sr_ctx({u: bn})))
-    r_(6, "bhalf", UOp(Ops.BITCAST, src=(cu,), arg=dtypes.half), {cu: "S"})
-    r_(7, "buchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint8), {ci: "S"})
-    r_(8, "bchar", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.char), {ci: "S"})
-    r_(9, "bushort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.uint16), {ci: "S"})
-    r_(9, "bushort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.uint16), {ch: "S"})
-    r_(10, "bshort", UOp(Ops.BITCAST, src=(ci,), arg=dtypes.short), {ci: "S"})
-    r_(10, "bshort half", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.short), {ch: "S"})
-    r_(11, "bany", UOp(Ops.BITCAST, src=(ch,), arg=dtypes.float), {ch: "S"})
-    r_(12, "lgate packed", UOp(Ops.LOAD, src=(idx_pk, alt, gate)),
-       {idx_pk: "B[1]", alt: "V", gate: "G"})
-    r_(12, "lgate plain", UOp(Ops.LOAD, src=(idx_pl, alt, gate)),
-       {idx_pl: "B[1]", alt: "V", gate: "G"})
-    r_(13, "load packed", UOp(Ops.LOAD, src=(idx_pk,)), {idx_pk: "B[1]"})
-    r_(13, "load plain", UOp(Ops.LOAD, src=(idx_pl,)), {idx_pl: "B[1]"})
-    # 14 -- THREE arms, because the rule has three: with `new_v`, without it
-    # (`new_v` is gone when it is 0, per wgsl.py:87), and with `is_packed` False,
-    # where the rule answers `None` and the STORE falls to rule 15 instead.
-    r_(14, "rmw nv", rmw, {ix_n: "B[1]", wmask: "W", newv: "NV"})
-    r_(14, "rmw bare", UOp.store(ix_n, and_n), {ix_n: "B[1]", wmask: "W"})
-    r_(14, "rmw plain", UOp.store(idx_pl, vf), {idx_pl: "B", vf: "V"})
-    r_(15, "store", UOp.store(idx_pl, vf), {idx_pl: "B", vf: "V"})
-    r_(16, "index add", UOp(Ops.INDEX, src=(idx_pl, add)), {idx_pl: "B", add: "(I0+I1)"})
-    r_(16, "index const", UOp(Ops.INDEX, src=(idx_pl, iconst)), {idx_pl: "B", iconst: "I0"})
-    r_(16, "index unbalanced", UOp(Ops.INDEX, src=(idx_pl, add)),
-       {idx_pl: "B", add: "(I0)+(I1)"})
+
+def sr_first(u):
+    """THE RULE `PatternMatcher.rewrite` WOULD PICK for `u` -- the first index in
+    `patterns[:17]` whose `UPat` accepts it, or `None` when none does. CPython's
+    own matcher, asked one question, and the question the port's `sr_pick_*`
+    answers for the two order-sensitive groups."""
+    for i in range(len(SR_RULES)):
+        if not _sr_rejects(i, u):
+            return i
+    return None
+
+
+def g_sr_pick():
+    """THE ORDER, on CPython's side: for each dtype a BITCAST could carry, which
+    of `patterns[6..11]` the matcher reaches, and the same for the two STORE
+    shapes and the two LOAD shapes. `PatternMatcher.rewrite` takes the FIRST hit,
+    so this is a fact about the TABLE and not about a body -- and rule 11 carries
+    no dtype at all, so `11` appearing anywhere but LAST is the
+    silently-wrong-answer the port's `sr_pick_bitcast` exists to make impossible.
+
+    THE SIX BITCAST NODES SHARE ONE SOURCE (`u32`, which is inside rule 6's
+    `src=` clause) and the SEVENTH IS `half` FROM `half`, which is the row that
+    proves that clause: `half -> half` is rule 11, not rule 6. The STORE pair is
+    the hoisted `rmw nv` node and the hoisted `store` node, and the second one IS
+    the `rmw plain` row's node -- rule 14's pattern refuses it and the matcher
+    falls THROUGH to 15, which is the 34th-of-35 fact stated as an index."""
+    cu, ch = UOp.const(1, dtypes.uint32), UOp.const(1, dtypes.half)
+    by = {(i, nm): u for i, nm, u, _p in sr_fixtures()}
+    bitcasts = [UOp(Ops.BITCAST, src=(ch if last else cu,), arg=d)
+                for last, d in enumerate((dtypes.half, dtypes.uchar, dtypes.char,
+                                          dtypes.ushort, dtypes.short, dtypes.float,
+                                          dtypes.half))]
+    row("sr pick bitcast", ",".join(str(sr_first(u)) for u in bitcasts))
+    row("sr pick load", ",".join(str(sr_first(by[k])) for k in ((12, "lgate plain"), (13, "load plain"))))
+    row("sr pick store", ",".join(str(sr_first(by[k])) for k in ((14, "rmw nv"), (15, "store"))))
 
 
 def _sr_rewrite(i, u, ctx):
@@ -686,7 +740,6 @@ def g_srneg():
     from tinygrad import dtypes
     from tinygrad.uop.ops import Ops, UOp
     cu3 = UOp.const(3, dtypes.uint32)
-    ci = UOp.const(1, dtypes.int32)
     idx_pk = UOp(Ops.INDEX, src=(buf_of("uint8", "AGlobal", 16), _wc(1)))
     r = [
         # 0 `CAST` to `uint32` -- the same shape the positive row uses, at
@@ -894,7 +947,7 @@ def main():
     for g in (g_type_map, g_render_cast, g_consts, g_packed_field, g_wmask,
               g_is_nan, g_is_nan_uint_only, g_code_for_op, g_workitem,
               g_supported, g_render_dtype, g_packed, g_packed_size,
-              g_render_kernel, g_string_rewrite, g_srneg):
+              g_render_kernel, g_string_rewrite, g_sr_pick, g_srneg):
         g()
     for ln in ROWS:
         print(ln)

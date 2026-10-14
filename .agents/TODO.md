@@ -13905,30 +13905,49 @@ never in them.
 
 ## WGSL-PATTERNS -- all SEVENTEEN `string_rewrite` RULES FIRE WHERE CPython's OWN `UPat` SAYS NOMATCH (2026-10-14)
 
-Found by the negative-row exercise in commit `c4412aced` and **NOT FIXED**: porting the 17 `UPat`s is a
-much larger change than "the rules' bodies".
+Found by the negative-row exercise in commit `c4412aced`. **DONE 2026-10-14** -- the seventeen `UPat`s
+are ported as predicates, the seventeen `srneg` rows are EXACT MATCHES rather than pins, and the
+class is gone. `gates/wgsl_render_census-gate.py`: **227 rows x 3 lanes, 213 exact, 14 pinned lane
+divergences in 6 classes, rc=0**.
 
-- [ ] **EVERY ONE OF THE SEVENTEEN REFUSES IN CPYTHON AND NONE IN THE PORT.** Each `srneg` row drives
+- [x] **EVERY ONE OF THE SEVENTEEN REFUSES IN CPYTHON AND NONE IN THE PORT.** Each `srneg` row drives
       a rule on a node CPython's own `UPat.match` answers `NOMATCH` to, and `_sr_rejects` asserts that
-      with CPython's matcher, so a row whose premise stops holding is red AT THE SOURCE. VERIFIED IN
-      `gates/wgsl_render_census-pins.rows` under `PATTERN_UNPORTED`:
+      with CPython's matcher, so a row whose premise stops holding is red AT THE SOURCE. IT WAS
+      VERIFIED IN `gates/wgsl_render_census-pins.rows` under `PATTERN_UNPORTED`:
 
           srneg 0  cast i32   CPython NOMATCH   port B[1]                  (DROPS THE CAST)
           srneg 1  neg f32    CPython NOMATCH   port (0-S)
           srneg 12 load 2     CPython NOMATCH   port select(V, atomicLoad(&B[1]), G)
           srneg 13 load 3     CPython NOMATCH   port atomicLoad(&B[1])
 
-- [ ] **TWO OF THEM ARE SILENTLY WRONG ANSWERS, NOT MERE OVER-FIRING.** `srneg 14 store u8` answers
-      `atomicAnd(&B[1],W);` -- **DROPPING THE STORED VALUE** -- and `srneg 15 store 3` answers
+      **AND ALL SEVENTEEN NOW PRINT `NOMATCH`.** Each rule takes the fields its OWN `UPat` constrains:
+      the dtype for the eleven that name one, the OP for the three whose rejecting node is a CONST
+      (`srneg 5`, `11`, `16`), the SRC COUNT for the four that divide on arity (`srneg 12`, `13`, `15`
+      and `14`), and rule 6's `src=` clause. Rule 13 ALSO GAINED A DEF -- `sr_load` -- because its
+      body IS `render_load` and a pattern is not a body.
+- [x] **TWO OF THEM ARE SILENTLY WRONG ANSWERS, NOT MERE OVER-FIRING.** `srneg 14 store u8` answered
+      `atomicAnd(&B[1],W);` -- **DROPPING THE STORED VALUE** -- and `srneg 15 store 3` answered
       `B = V;` -- **DROPPING THE GATE**. An over-firing rewrite is visible in a diff; one that drops an
-      operand's effect is not.
-- [ ] **ALL SEVENTEEN ARE UNREACHABLE FROM `render_kernel` AS DRIVEN TODAY.** That is the absence of a
-      REACHABILITY CHECK, not a wrong answer, and the class records exactly that. **PORTING THE
-      PATTERNS IS WHAT MAKES IT TRUE RATHER THAN PROBABLE** -- and until then a rule body that is wrong
-      on every fixture the gate does not drive stays green.
-- [ ] **THE `34/35` MEASUREMENT IS A PROBE, NOT A GATE CHECK.** All 34 positive `sr` rows are on nodes
-      CPython's pattern MATCHES; one is not (`sr rmw plain`). It needs `SR_FIXTURES` hoisted out of
-      `g_string_rewrite` so the gate loads ONE declaration rather than a second copy.
+      operand's effect is not. **BOTH NOW REFUSE, AND M58/M59 REINSTATE EACH ONE ON PURPOSE:** each is
+      a single-token edit that moves exactly one row.
+- [x] **RULE 6's CATCH-ALL ORDER IS NOW MEASURED, NOT ASSUMED.** `sr_pick_bitcast`/`_load`/`_store` are
+      the table's first-match-wins walk for the two places the order IS the semantics -- rule 11 has no
+      dtype, and rule 14's `packed_rmw` is a SUBSET of rule 15's -- and the three `sr pick` rows print
+      the indices. `6,7,8,9,10,11,11`: the SEVENTH is `half` from `half`, which is rule 6's `src=`
+      clause doing its work, and M56 (`11` -> `6`) is the silent-wrong-answer mutation.
+- [x] **THE `34/35` MEASUREMENT IS A GATE CHECK, NOT A PROBE.** `SR_FIXTURES` is hoisted -- the
+      oracle's `sr_fixtures()` is ONE declaration that `g_string_rewrite` iterates AND the gate's new
+      `sr_dispatch_hold()` re-asks CPython's own matcher with (`sr_first`). It asserts 34 of the 35
+      positive rows sit on the rule the table would reach, and that EXACTLY ONE falls through:
+      `rmw plain`, where rule 14's pattern refuses a packed store of an ordinary CONST and the matcher
+      lands on rule 15. A second fall-through is red.
+- [ ] **STILL NOT PORTED: `packed_rmw`'s INNER SHAPE.** `AND(LOAD(CAST(b, u32)), wmask)` -- the
+      `& UPat.var("wmask")` is an Ops.AND and not a bind -- is untested; both rules test only the outer
+      `Ops.AND`. `prw_of` is still the def that names it and calls nothing (Finding 3).
+- [ ] **STILL NOT CHECKED: the SPELLING of each `srneg` node.** The oracle asserts on CPython's real
+      node that each `UPat` rejects it, so the refusal is real there; the gate does not re-derive
+      `srneg 6`'s target dtype from that node and compare it to the `S.uint32()` in `wgsl.bend`. Both
+      sides refusing IS checked; both sides refusing about the SAME node is not.
 
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 

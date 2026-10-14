@@ -5,10 +5,14 @@
     .venv/bin/python gates/wgsl_render_census-gate.py
     .venv/bin/python gates/wgsl_render_census-gate.py --refresh   # rewrites the pins
 
-207 ROWS (the port's own `main()`), THREE LANES, 193 EXACT MATCHES AND
+227 ROWS (the port's own `main()`), THREE LANES, 213 EXACT MATCHES AND
 14 DECLARED DIVERGENCES IN 6 CLASSES. `string_rewrite` -- the renderer's
 LARGEST surface, seventeen rules at wgsl.py:65-93 -- had NO ROWS AT ALL until
-2026-10-14 and has 35 now; `rules_hold()` below is what says so on every run.
+2026-10-14 and has 38 now; `rules_hold()` below is what says so on every run.
+THE SEVENTEEN PATTERNS LANDED, SO THE SEVENTEEN `srneg` ROWS ARE EXACT MATCHES
+AND NOT PINS: see the `RETIRED` constant, which is emitted into the pins header
+because `--refresh` rewrites that header and had already eaten eight stories
+written into it by hand.
 
 WHICH INSTRUMENT, AND WHY THIS LAYER NEEDS ITS OWN.
 
@@ -247,7 +251,7 @@ ART = HERE / "artifacts" / "wgsl_render_census-gate"
 PORT = ROOT / "tinybendygrad" / "renderer" / "wgsl.bend"
 ORACLE = HERE / "wgsl_render_census-oracle.py"
 
-ROWS = 224
+ROWS = 227
 PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
 
 # `string_rewrite`'s SEVENTEEN rules, by their INDEX in
@@ -578,11 +582,15 @@ def rules_hold():
             bad.append(f"rule {i} is {ops}, the table says {want} -- a rule was "
                        f"inserted, removed or reordered above this one")
     s = src()
-    # (c) one `sr_*` def per rule, and (d) at least one row per rule.
+    # (c) one `sr_*` def per rule, and (d) at least one row per rule. `sr_load` is
+    # in this list because rule 13 GOT A DEF when its `UPat.load(b)` pattern was
+    # ported: it had none before, because rule 13's body IS `render_load` and a
+    # pattern is not a body. MEASURED: rule 13's `srneg` row was the one that made
+    # the absence a defect rather than an economy.
     defs = set(re.findall(r"^def ((?:sr_|\w+\.)?sr\w*)\s*[(<]", s, re.M))
     for need in ("sr_idx", "sr_neg", "sr_cbool", "sr_cuint", "sr_ci32", "sr_buffer",
                  "sr_bhalf", "sr_buchar", "sr_bchar", "sr_bushort", "sr_bshort",
-                 "sr_bany", "sr_lgate", "sr_rmw", "sr_store", "sr_index"):
+                 "sr_bany", "sr_lgate", "sr_load", "sr_rmw", "sr_store", "sr_index"):
         if need not in defs:
             bad.append(f"wgsl.bend has no {need} def -- a string_rewrite rule "
                        f"lost its port")
@@ -924,7 +932,6 @@ CLASSES = [
     ("U32_WIDTH", r"^nan_(mask|thr) double$"),
     ("INDEXERROR_TOTALIZED", r"^workitem l3$"),
     ("TYPE_MAP_KEYERROR", r"^type_map double$"),
-    ("PATTERN_UNPORTED", r"^srneg \d+ "),
     ("SELFCHECK", r"^(nan_uint (float|half|double)|supported_dtypes )"),
 ]
 CLASS_WHY = {
@@ -961,32 +968,6 @@ CLASS_WHY = {
                          "supported_dtypes keeps it unreachable from a real "
                          "kernel. The name is `dt_name`'s, which is "
                          "`DType.name`, which is why it reads `f64`.",
-    "PATTERN_UNPORTED": "THE SEVENTEEN `srneg` ROWS, AND THE FINDING IS THAT "
-                        "EVERY ONE OF THEM IS A DIVERGENCE IN THIS CLASS. "
-                        "`wgsl.bend` carries wgsl.py:65-93's seventeen rule "
-                        "BODIES and none of their `UPat`s, so the port has no "
-                        "predicate that could decline a node: each `srneg` row "
-                        "drives a body on a node CPython's own `UPat.match` "
-                        "REJECTS (the oracle ASSERTS the rejection at the "
-                        "source, so the row is a refusal by construction) and "
-                        "the port answers anyway. CARVE-OUT, and the right one: "
-                        "this is not a wrong ANSWER, it is an absent REACHABILITY "
-                        "CHECK, and pinning it is what stops the seventeen "
-                        "`sr` rows from being read as seventeen branch proofs. "
-                        "TWO OF THE SEVENTEEN ARE DANGEROUS RATHER THAN COSMETIC "
-                        "and they are the ones to read first. `srneg 14 store u8` "
-                        "-- a PACKED store of an ordinary CONST -- is not a "
-                        "read-modify-write, `packed_rmw`'s `AND` is the whole of "
-                        "rule 14's pattern, and `sr_rmw` answers "
-                        "`atomicAnd(&B[1],W);` and DROPS THE STORED VALUE. "
-                        "`srneg 15 store 3` -- a GATED store, three srcs -- falls "
-                        "to rule 15 and `sr_store` answers `B = V;` and DROPS THE "
-                        "GATE. Both are unreachable from `render_kernel` as "
-                        "`wgsl.bend` currently drives it, and both would be a "
-                        "silently wrong shader if the dispatcher ever handed them "
-                        "these nodes. The other fifteen answer a string where "
-                        "CPython declines, which is unreachable in the same way "
-                        "and is the same absence.",
     # `RULE_TOTALIZED` IS NOT A CLASS AND THAT IS A FINDING, not an omission.
     # `string_rewrite` rules 0 and 14 both END in `else None` upstream, and
     # `None` is a CONTROL-FLOW state rather than a value: `PatternMatcher.rewrite`
@@ -1008,6 +989,45 @@ CLASS_WHY = {
 }
 
 REPORTED = []
+
+
+def sr_dispatch_hold():
+    """THE THIRTY-FIVE POSITIVE `sr` ROWS, RE-ASKED WHICH RULE CPython'S OWN
+    MATCHER WOULD PICK. This is the 34/35 measurement, and it was a `.agents/slop`
+    PROBE rather than a check until the fixtures were hoisted out of
+    `g_string_rewrite` into the oracle's `sr_fixtures()` -- one declaration, read
+    by the row printer AND by this.
+
+    `PatternMatcher.rewrite` takes the FIRST pattern that matches, so "the rule
+    this row is on" is a claim about the TABLE and not about a body, and a body
+    agreeing with a body says nothing about it. So for every positive fixture the
+    gate asks CPython `sr_first(u)` and compares with the row's rule index:
+
+      * 34 of the 35 are the row's own rule -- the row is on the rule the table
+        would reach, which is what makes the thirty-five rows thirty-five branch
+        proofs rather than thirty-five spellings;
+      * ONE IS NOT, and it is `rmw plain`: `UOp.store(idx_pl, vf)` is a packed
+        store whose value is an ordinary CONST, so rule 14's `packed_rmw` pattern
+        REFUSES it and the matcher FALLS THROUGH to rule 15. Asking rule 14 alone
+        answers `None` and that is what the row says on both sides; dispatching
+        answers `B = V;`. The fall-through is the finding, so it is ASSERTED
+        rather than tolerated: a second fixture that falls through is red here.
+    """
+    m = _oracle_mod()
+    fell = []
+    for i, name, u, _p in m.sr_fixtures():
+        first = m.sr_first(u)
+        if first != i:
+            fell.append(f"{name} ({i} -> {first})")
+    if len(fell) == 1 and fell[0].startswith("rmw plain"):
+        return report("sr_dispatch_hold", [])
+    bad = [f"the fixtures CPython's matcher routes to a DIFFERENT rule are {fell}, "
+           f"the table says exactly one: rmw plain. A row on a rule the table "
+           f"would not reach is a SPELLING and not a proof."]
+    if not fell:
+        bad.append("rmw plain NO LONGER falls through -- re-measure the store-pair "
+                   "order before believing the rest of this check")
+    return report("sr_dispatch_hold", bad)
 
 
 def report(name, bad):
@@ -1064,7 +1084,7 @@ def checks_hold():
     ok = True
     for fn in (names_hold, norm_hold, rules_hold, fixtures_hold, axes_hold,
                pin_drift_hold, never_folding_cast_hold, dead_defs_hold,
-               selfcheck_hold, divergences_hold, classes_hold):
+               selfcheck_hold, divergences_hold, classes_hold, sr_dispatch_hold):
         ok = fn() and ok
     return ok
 
@@ -1168,6 +1188,44 @@ def refresh():
     return 0
 
 
+# THE CLASSES THAT HAVE BEEN RETIRED, AND WHY. `_header()` emits this, because
+# `--refresh` REWRITES the header and a story written into the pins by hand is
+# deleted by the next refresh -- MEASURED, and it happened: eight retired-class
+# stories went that way before this was a constant. A divergence class whose rows
+# all became EXACT MATCHES is not a weaker reason for being here, it is the
+# strongest: the class existed to record that the two sides disagreed, and they
+# stopped.
+RETIRED = [
+    ("PATTERN_UNPORTED (17 rows, retired 2026-10-14)",
+     "`wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their "
+     "`UPat`s, so the port had no predicate that could decline a node: each of the "
+     "seventeen `srneg` rows drove a body on a node CPython's own `UPat.match` "
+     "REJECTS -- the oracle asserted the rejection at the source, so the row was a "
+     "refusal BY CONSTRUCTION -- and the port answered anyway. CARVE-OUT, and the "
+     "right one at the time: not a wrong ANSWER but an absent REACHABILITY CHECK, "
+     "and pinning it is what stopped the thirty-five `sr` rows from being read as "
+     "thirty-five branch proofs. TWO OF THE SEVENTEEN WERE DANGEROUS RATHER THAN "
+     "COSMETIC. `srneg 14 store u8` -- a PACKED store of an ordinary CONST -- is "
+     "not a read-modify-write, `packed_rmw`'s `AND` was the whole of rule 14's "
+     "pattern, and `sr_rmw` answered `atomicAnd(&B[1],W);` and DROPPED THE STORED "
+     "VALUE. `srneg 15 store 3` -- a GATED store, three srcs -- fell to rule 15 "
+     "and `sr_store` answered `B = V;` and DROPPED THE GATE. Both were "
+     "unreachable from `render_kernel` as `wgsl.bend` drove it, and both would "
+     "have been a silently wrong shader the moment a dispatcher handed them these "
+     "nodes. THE PATTERNS LANDED: each rule now takes the fields its own `UPat` "
+     "constrains -- the dtype for the eleven that name one, the op for the three "
+     "whose rejecting node is a CONST, the src count for the four that divide on "
+     "arity, and rule 6's `src=` clause -- and answers `NOMATCH`, the token "
+     "CPython's `None` is spelled, so all seventeen rows are EXACT MATCHES rather "
+     "than pins. Rule 13 ALSO GAINED A DEF (`sr_load`): its body was and is "
+     "`render_load`, and a pattern is not a body. The rows stayed; the pins went. "
+     "`sr pick bitcast`/`load`/`store` are the new rows that make the TABLE's "
+     "order measurable, and `sr_dispatch_hold()` is the 34/35 check."),
+    ("SELFCHECK_STALE (0 rows)", "see the SELFCHECK reason below -- kept declared "
+     "because it is a CATEGORY of pin rather than a promise that a row is stale."),
+]
+
+
 def _header(n_lane, n_self):
     return "\n".join([
         "# wgsl_render_census-pins.rows -- GENERATED by",
@@ -1189,7 +1247,10 @@ def _header(n_lane, n_self):
         f"# `{PIN}`: `pin_drift_hold()` re-measures all three on every run.",
         f"# HEAD blob of tinygrad/renderer/wgsl.py when these rows were taken: "
         f"{pins_blob()}",
-    ])
+        "#\n# RETIRED CLASSES -- emitted from the gate's `RETIRED` constant, because",
+        "# `--refresh` rewrites this header and MEASURED, eight stories written here",
+        "# by hand were deleted by the next refresh.",
+    ] + [f"#\n# {name}\n#   {why}" for name, why in RETIRED])
 
 
 def pins_blob():
@@ -1216,20 +1277,36 @@ def _staged(n):
 def lane(argv, name, rows=ROWS):
     """One lane, retried while it emits the wrong ROW COUNT -- `bend`'s machine
     stack overflows on roughly 1 run in 20 and prints nothing at all, which is
-    indistinguishable from 'did not start'. A named failure says which STEP."""
+    indistinguishable from 'did not start'. A named failure says which STEP.
+
+    AND THE FLAKE IS NOT BLAMED FOR A DETERMINISTIC COUNT. The first draft ended
+    every one of the 25 failures with `in 25 tries (the flake)` whenever the
+    producer had said nothing on stderr -- and a mutation that DROPS A ROW does
+    exactly that: `bend` succeeds, prints 226 lines and no stderr. MEASURED 2026-10-14
+    on the `P1`/`P2` population mutations, whose whole subject is a wrong row count:
+    the gate called that the flake, and a reader who believed it would file the two
+    most important mutations of the file as transient noise. So the last exit status
+    and the last count are both kept and the message says WHICH: a producer that
+    RAN is deterministic, and only a producer that produced nothing or died is the
+    flake.
+    """
     out = _staged(name)
-    said = ""
+    said, last = "", None
     for _ in range(25):
         r = subprocess.run(argv, capture_output=True, text=True, cwd=str(ROOT))
-        if r.returncode == 0 and len(_lines(r.stdout)) == rows:
+        got = len(_lines(r.stdout))
+        last = (r.returncode, got)
+        if r.returncode == 0 and got == rows:
             out.write_text(r.stdout)
             return True
         said = " | ".join(l.strip() for l in (r.stderr or "").splitlines()
                           if l.strip() and not NOTICE.match(l.strip()))
         if said:
             break
-    print(f"  lane {name} did not produce {rows} rows"
-          + (f" -- {said}" if said else " in 25 tries (the flake)"),
+    why = ("the flake: it produced nothing" if last is None or last[1] == 0
+           else f"DETERMINISTIC: it RAN and printed {last[1]} rows")
+    print(f"  lane {name} emitted {last[1] if last else 0} rows, expected {rows}"
+          + f" -- {why}" + (f" -- {said}" if said else " -- and said nothing on stderr"),
           file=sys.stderr)
     return False
 

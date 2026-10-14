@@ -8,8 +8,8 @@
 # (`.gitignore`d, and where one `rm -rf` takes them) and not in the
 # environment of whoever ran it last.
 #
-# 31 LANE DIVERGENCES and 0 STALE SELF-CHECKS of 224 ROWS.
-# 193 EXACT MATCHES.
+# 14 LANE DIVERGENCES and 0 STALE SELF-CHECKS of 227 ROWS.
+# 213 EXACT MATCHES.
 # Each block is a CLASS, and each class says WHY the two sides differ.
 # A pin without a reason is a weakened instrument; a divergence without
 # a pin is a silent one.
@@ -17,6 +17,16 @@
 # wgsl.py blob at HEAD, at `ad117c928` and at the pin
 # `ad117c928^`: `pin_drift_hold()` re-measures all three on every run.
 # HEAD blob of tinygrad/renderer/wgsl.py when these rows were taken: 02d7fdea
+#
+# RETIRED CLASSES -- emitted from the gate's `RETIRED` constant, because
+# `--refresh` rewrites this header and MEASURED, eight stories written here
+# by hand were deleted by the next refresh.
+#
+# PATTERN_UNPORTED (17 rows, retired 2026-10-14)
+#   `wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their `UPat`s, so the port had no predicate that could decline a node: each of the seventeen `srneg` rows drove a body on a node CPython's own `UPat.match` REJECTS -- the oracle asserted the rejection at the source, so the row was a refusal BY CONSTRUCTION -- and the port answered anyway. CARVE-OUT, and the right one at the time: not a wrong ANSWER but an absent REACHABILITY CHECK, and pinning it is what stopped the thirty-five `sr` rows from being read as thirty-five branch proofs. TWO OF THE SEVENTEEN WERE DANGEROUS RATHER THAN COSMETIC. `srneg 14 store u8` -- a PACKED store of an ordinary CONST -- is not a read-modify-write, `packed_rmw`'s `AND` was the whole of rule 14's pattern, and `sr_rmw` answered `atomicAnd(&B[1],W);` and DROPPED THE STORED VALUE. `srneg 15 store 3` -- a GATED store, three srcs -- fell to rule 15 and `sr_store` answered `B = V;` and DROPPED THE GATE. Both were unreachable from `render_kernel` as `wgsl.bend` drove it, and both would have been a silently wrong shader the moment a dispatcher handed them these nodes. THE PATTERNS LANDED: each rule now takes the fields its own `UPat` constrains -- the dtype for the eleven that name one, the op for the three whose rejecting node is a CONST, the src count for the four that divide on arity, and rule 6's `src=` clause -- and answers `NOMATCH`, the token CPython's `None` is spelled, so all seventeen rows are EXACT MATCHES rather than pins. Rule 13 ALSO GAINED A DEF (`sr_load`): its body was and is `render_load`, and a pattern is not a body. The rows stayed; the pins went. `sr pick bitcast`/`load`/`store` are the new rows that make the TABLE's order measurable, and `sr_dispatch_hold()` is the 34/35 check.
+#
+# SELFCHECK_STALE (0 rows)
+#   see the SELFCHECK reason below -- kept declared because it is a CATEGORY of pin rather than a promise that a row is stale.
 
 # UNHANDLED_ARM -- 3 rows. WGSLRenderer.code_for_op is {**CStyleLanguage.code_for_op, Ops.WHERE: ...}, so an op with no arm is a KeyError. The port answers UNHANDLED(Ops.X) -- a call to nothing, which cannot compile. The right totalization; see FINDING 2 for why the SAME exception is answered differently by FDIV.
 code_for_op LOAD	REFUSE:KeyError	UNHANDLED(Ops.LOAD)	LANE
@@ -43,22 +53,3 @@ workitem l3	REFUSE:IndexError		LANE
 
 # TYPE_MAP_KEYERROR -- 1 rows. wgsl.py:62's type_map has NINE entries and render_cast/buf_map index it with brackets, so type_map[dtypes.double] RAISES. The port's catch-all arm answers UNHANDLED(dtypes.f64) -- a call to a dtype WGSL has no name for, which cannot compile. That is FINDING 2 FIXED: the arm used to answer the EMPTY STRING, a SPELLING no WGSL parser knows and the same silent-wrong-answer shape FDIV's fallthrough had. supported_dtypes keeps it unreachable from a real kernel. The name is `dt_name`'s, which is `DType.name`, which is why it reads `f64`.
 type_map double	REFUSE:KeyError	UNHANDLED(dtypes.f64)	LANE
-
-# PATTERN_UNPORTED -- 17 rows. THE SEVENTEEN `srneg` ROWS, AND THE FINDING IS THAT EVERY ONE OF THEM IS A DIVERGENCE IN THIS CLASS. `wgsl.bend` carries wgsl.py:65-93's seventeen rule BODIES and none of their `UPat`s, so the port has no predicate that could decline a node: each `srneg` row drives a body on a node CPython's own `UPat.match` REJECTS (the oracle ASSERTS the rejection at the source, so the row is a refusal by construction) and the port answers anyway. CARVE-OUT, and the right one: this is not a wrong ANSWER, it is an absent REACHABILITY CHECK, and pinning it is what stops the seventeen `sr` rows from being read as seventeen branch proofs. TWO OF THE SEVENTEEN ARE DANGEROUS RATHER THAN COSMETIC and they are the ones to read first. `srneg 14 store u8` -- a PACKED store of an ordinary CONST -- is not a read-modify-write, `packed_rmw`'s `AND` is the whole of rule 14's pattern, and `sr_rmw` answers `atomicAnd(&B[1],W);` and DROPS THE STORED VALUE. `srneg 15 store 3` -- a GATED store, three srcs -- falls to rule 15 and `sr_store` answers `B = V;` and DROPS THE GATE. Both are unreachable from `render_kernel` as `wgsl.bend` currently drives it, and both would be a silently wrong shader if the dispatcher ever handed them these nodes. The other fifteen answer a string where CPython declines, which is unreachable in the same way and is the same absence.
-srneg 0 cast i32	NOMATCH	B[1]	LANE
-srneg 1 neg f32	NOMATCH	(0-S)	LANE
-srneg 10 bitcast half	NOMATCH	((i32(S&0xFFFF)<<16)>>16)	LANE
-srneg 11 const	NOMATCH	bitcast<f32>(S)	LANE
-srneg 12 load 2	NOMATCH	select(V, atomicLoad(&B[1]), G)	LANE
-srneg 13 load 3	NOMATCH	atomicLoad(&B[1])	LANE
-srneg 14 store u8	NOMATCH	atomicAnd(&B[1],W);	LANE
-srneg 15 store 3	NOMATCH	B = V;	LANE
-srneg 16 const	NOMATCH	B[I0+I1]	LANE
-srneg 2 cast i32	NOMATCH	true	LANE
-srneg 3 cast i32	NOMATCH	3u	LANE
-srneg 4 cast u32	NOMATCH	3	LANE
-srneg 5 const	NOMATCH	var data0_16: array<atomic<u32>,4>;	LANE
-srneg 6 bitcast u32	NOMATCH	bitcast<vec2<f16>>(S)[0]	LANE
-srneg 7 bitcast half	NOMATCH	bitcast<u32>(S&0xFF)	LANE
-srneg 8 bitcast uchar	NOMATCH	((i32(S&0xFF)<<24)>>24)	LANE
-srneg 9 bitcast half	NOMATCH	bitcast<u32>(S&0xFFFF)	LANE
