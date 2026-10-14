@@ -1,0 +1,35 @@
+SCOPE: top-level checks/*.py + gates/*.py, iterdir(). 144 files walked.
+
+DISCOVERY (AST over each gate's own add_argument write sites, read-checked): 7 gate(s) ship a comparison-input flag
+
+  checks/dup-gate.py                 --oracle
+  checks/nl-gate-noguard.py          --oracle-stdout --port-stdout
+  checks/nl-gate.py                  --oracle-stdout --port-stdout
+  checks/residue.py                  --belt-rows
+  checks/rn-gate.py                  --oracle-stdout --port-stdout
+  checks/slop-declare.py             --baseline
+  checks/substrate-id.py             --rows
+
+EXECUTION: each flag driven with an EMPTY file
+  checks/dup-gate.py                 --oracle         rc=2          denoms=-  rc=2
+      give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+  checks/nl-gate-noguard.py          --oracle-stdout  rc=3          denoms=-  rc=3
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-3
+  checks/nl-gate-noguard.py          --port-stdout    rc=3          denoms=-  rc=3
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-3
+  checks/nl-gate.py                  --oracle-stdout  rc=3          denoms=-  rc=3
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-3
+  checks/nl-gate.py                  --port-stdout    rc=3          denoms=-  rc=3
+      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-3
+  checks/residue.py                  --belt-rows      rc=2          denoms=-  rc=2
+      usage: residue.py [-h] [--plant] [--disarm RESOLVER]
+  checks/rn-gate.py                  --oracle-stdout  rc=1          denoms=[('rows: 2', 2), ('rows: 0', 0), ('gated 0', 0)]  rc=1
+      !! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence a
+  checks/rn-gate.py                  --port-stdout    rc=1          denoms=-  rc=1
+      !! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence a
+  checks/slop-declare.py             --baseline       rc=2          denoms=-  rc=2
+      usage: slop-declare.py [-h] [--quiet] [--baseline] [--root ROOT]
+  checks/substrate-id.py             --rows           rc=2          denoms=-  rc=2
+      usage: substrate-id.py [-h] [--rows] [--hash] [--judge FILE] [--plant]
+
+VACUOUS GREEN REACHABLE THROUGH A FLAG THE GATE SHIPS ITSELF: 0

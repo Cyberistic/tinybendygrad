@@ -1,0 +1,9 @@
+populations        : orcdecide 261 (self-excluded by a TYPED name, `sweep.py:57`), here 262 (includes `orcdecide` itself)
+DECLARATION census : AGREE 261 of 261 -- the two instruments call the SAME 261 directories declared
+READER test        : AGREE 183, DISAGREE 78  (29% of the tree)
+  of the disagreements, UNDECLARED here and 'referenced' by orcdecide : 34  <-- this is the whole 14 -> 48 delta
+  of the disagreements, DECLARED either way (count unaffected)          : 44  <-- same fault, invisible in any count
+UNDECIDED          : orcdecide 14, here 48
+  orcdecide's set is a SUBSET of mine: True
+  lost by the stricter test          : []
+rows -> .agents/slop/declare/COMPARE.tsv

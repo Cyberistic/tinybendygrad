@@ -1,0 +1,24 @@
+OWNER gates/gatekit.py BY PATH: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+
+.agents/slop/hooks/run.py module-level int constants, by AST: {'PASS': 0, 'FAIL': 1, 'REFUSED': 3, 'SKIP': 4, 'DEAD': 5}
+
+`NAME` after RESOLVING its keys through those constants -- line 56:
+    {0: 'GREEN', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+
+name<-code unpack at :54: {0: 'PASS', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+  the OWNER spells:  {0: 'PASS', 1: 'FAIL', 3: 'REFUSED', 4: 'SKIP', 5: 'DEAD'}
+  IDENTICAL: True
+  `hooks/run.py:54` RE-SPELLS what `gatekit.py:60` owns. It is the same defect commit
+  91645e23d settled for two other sites, at a fourth site.
+
+THE RENAMED ENTRY, AND THE TOTAL:
+
+  exit 0: 'GREEN' where gates/gatekit.py says 'PASS'
+
+  RENAMED over .agents/slop/hooks/run.py alone: 1
+  RENAMED over the 8 gates inside HOMES:        11
+  TOTAL RENAMED:                                12
+
+  The brief says 12 across 8 gates. The 12 is 11 + THIS, and the 8 excludes this one:
+  it is a RUNNER, it lives outside HOMES=('checks','gates'), and its table's keys are
+  NAMES, so `ast.literal_eval` cannot read it. **Every existing reader is blind to it.**

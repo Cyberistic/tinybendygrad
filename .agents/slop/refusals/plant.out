@@ -1,0 +1,7 @@
+PLANT 1   got=READABLE  want=READABLE  OK
+PLANT 2   got=none      want=none      OK
+PLANT 3   got=READABLE  want=READABLE  OK
+PLANT 4   satisfaction detectable=no  (no SATISFIED column exists -- REPORTED AS A GAP)
+PLANTS-RAN=4 PLANTS-FAILED=1
+TEMP-SLOP=/var/folders/yd/qy2_4vk13kq_b0dsnv_71wvr0000gn/T/refusal-read-plant-klnn3wd3/slop
+LEAKED-INTO-REAL-SLOP=0 []

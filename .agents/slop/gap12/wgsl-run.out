@@ -1,0 +1,12 @@
+  names_hold: OK
+  norm_hold: OK
+  rules_hold: OK
+  fixtures_hold: OK
+  axes_hold: OK
+  pin_drift_hold: OK
+  never_folding_cast_hold: OK
+  dead_defs_hold: OK
+  selfcheck_hold: OK
+  divergences_hold: OK
+  classes_hold: OK
+wgsl_render_census: PASS -- 224 rows x 3 lanes, 193 exact, 31 pinned lane divergences in 7 classes, 0 stale self-checks

@@ -1,0 +1,68 @@
+two guards that could not see the thing they claimed to cover, and both of them found a real defect
+
+GAP 1 -- `fixtures_hold` COMPARED FIXTURE NAMES AND DISCARDED THE VALUES.
+
+`want = [n for n, _ in getattr(m, nm)]` threw away the second element of every
+`(name, value)` pair. Fixed: `_port_val` / `_oracle_val` normalize each side's
+own spelling to one token and BOTH RAISE on a spelling they do not recognize,
+because a normalizer that returns None for the unknown is the same drop one
+level down. `has` is compared too -- it is CPython's `None`-versus-value
+distinction and it is the half a packed word cannot see (ABSENT_OPERAND: an
+absent operand and a zero one are the same number).
+
+MEASURED 82 values across the twenty `*_VALS` lists. 81 agree. The eighty-second
+is a live defect, and it is the one the dropped `_` was hiding:
+
+  ALL EIGHTEEN `op` FIXTURES spelled `Ov.int(0)` on the port and `None` in
+  CPython. `FixedBitField.set` (dsl.py:120-123) opens `assert val is None`.
+  MEASURED, CPython's own `_walk` on `VOP2_ALL` with `op=0` REFUSES:
+  `FixedBitField does not accept values, got 0`, word `0`. Nothing could see
+  it: the guard dropped the value, `fld_encode.k`'s K_FIXED arm (dsl.bend:1287)
+  does not READ it, and the word is the same either way. `dsl.bend` now spells
+  those eighteen `Ov.none(), False{}` -- the absence spelling it already used
+  for every other omitted operand -- and zero rows move, because `fld_encode.k`
+  and `fld_encode.dflt` answer the same `Fld.dflt(f)` for either `has`.
+
+  `VAL_DIFF_ADMITTED` is EMPTY and fails both ways: an unadmitted difference is
+  red, and an admission that is no longer a difference is red. It was twenty
+  entries an hour ago.
+
+GAP 2 -- SEVENTEEN `srneg` ROWS, AND THE PORT REFUSES ON NONE OF THEM.
+
+`wgsl.bend` carries wgsl.py:65-93's seventeen rule BODIES and none of their
+`UPat`s, so there is nothing on that side that can decline a node. Each new row
+drives a body on a node CPython's own `UPat.match` REJECTS -- the oracle
+ASSERTS the rejection with `_sr_rejects`, so a row whose premise stops holding
+is red at the source and never silently becomes a positive one.
+
+MEASURED, all seventeen: CPython `NOMATCH`, the port answers anyway.
+`srneg 14 store u8` (a packed store of an ordinary CONST) answers
+`atomicAnd(&B[1],W);` and DROPS THE STORED VALUE; `srneg 15 store 3` (a gated
+store) answers `B = V;` and DROPS THE GATE. Both unreachable from
+`render_kernel` as the port drives it today, and both silently wrong if the
+dispatcher ever hands them those nodes. Class `PATTERN_UNPORTED`, 17 rows.
+
+THE OTHER HALF, MEASURED AND NOT ASKED FOR: of the thirty-five `sr` rows, 34
+are driven on nodes CPython's pattern MATCHES -- those are branch proofs. One
+is not: `sr rmw plain`, whose node the PATTERN refuses before the `is_packed(b)`
+arm the oracle's comment names gets to answer. Both reasons hold; the comment
+attributes the refusal to the later one.
+
+ROWS AND VERDICTS. amd_dsl_census 1178 rows, rc=0, 1131 exact, 47 pinned.
+wgsl_render_census 207 -> 224 rows, rc=0, 193 exact, 31 pinned in 7 classes.
+
+MUTATIONS, both of which break the ADDED check rather than an ordinary value.
+
+  amd: `F64_VALS`' `lit` 0x12345678 -> 0x1234 on the PORT -- the exact 4660-vs-
+  305419896 difference the guard could not see -- `fixtures_hold` RED. The same
+  swap on the ORACLE -- RED. `has` alone, value text unchanged -- RED. A stale
+  `VAL_DIFF_ADMITTED` entry -- RED.
+  wgsl: rule 1's negative node changed to one CPython's pattern ACCEPTS --
+  oracle rc=1 on the assertion, gate rc=3 REFUSED. `srneg 15` driven with the
+  gate instead of the value -- gate rc=1 FAIL, "a pin moved".
+
+THE DECIDING MEASUREMENT FOR 4660-vs-0x12345678, since the oracle's own comment
+asserts it and one witness is one witness: `to_bytes_f64i` exists FOR the claim
+that its four high bytes are nonzero (oracle:802-807), and counting them
+answers it. 0x12345678 -> 4 of 4. 0x1234 -> 2 of 4. The port's value is the
+deliberate one; the lane was the stale copy, which is what the oracle now says.

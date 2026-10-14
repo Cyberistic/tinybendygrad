@@ -1,0 +1,41 @@
+REFUSED (3) WITH NO ARGV, over checks/gates/*.py at the top level of each home
+
+   gate                             class                              fired at  in main? parse_args
+----------------------------------------------------------------------------------------------------
+  checks/oracle_f64.py             ARGV-REACHABLE                   282:refuse      main       None
+  checks/e2e.py                    ARMS-BUT-CANNOT-IMPORT                   --    module       None
+  checks/git-index-guard.py        ARMS-BUT-CANNOT-IMPORT                   --    module       None
+  checks/cl-port-gate.py           FIRING-AT-MODULE-SCOPE            84:refuse    module        344
+  checks/dup-census.py             FIRING-AT-MODULE-SCOPE            78:refuse    module        203
+  checks/dup-gate.py               FIRING-AT-MODULE-SCOPE            75:refuse    module        333
+  checks/gate.py                   FIRING-AT-MODULE-SCOPE            74:refuse    module        247
+  checks/hermetic-census.py        FIRING-AT-MODULE-SCOPE            67:refuse    module        149
+  checks/nl-gate-noguard.py        FIRING-AT-MODULE-SCOPE            68:refuse    module         81
+  checks/nl-gate.py                FIRING-AT-MODULE-SCOPE            88:refuse    module        457
+  checks/rn-gate.py                FIRING-AT-MODULE-SCOPE            96:refuse    module        438
+  checks/substrate.py              REFUSED-NO-WITNESS                UNMATCHED    module        270
+
+ARGV-REACHABLE               1
+ARMS-BUT-CANNOT-IMPORT       2
+FIRING-AT-MODULE-SCOPE       8
+REFUSED-NO-WITNESS           1
+
+THE SET (green unreachable BY CONSTRUCTION): 8, over the 12 gate(s) that refuse with no argv.
+   checks/cl-port-gate.py
+   checks/dup-census.py
+   checks/dup-gate.py
+   checks/gate.py
+   checks/hermetic-census.py
+   checks/nl-gate-noguard.py
+   checks/nl-gate.py
+   checks/rn-gate.py
+
+THE REFUSAL TEXT, because 'which guard fired' is only a claim until it is read:
+  checks/cl-port-gate.py         == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a
+  checks/dup-census.py           == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a
+  checks/dup-gate.py             == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a
+  checks/gate.py                 == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/ch
+  checks/hermetic-census.py      == REFUSED, NOT A VERDICT: input absent: isolate.py (this file's former sibling, deleted by the 
+  checks/nl-gate-noguard.py      == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a
+  checks/nl-gate.py              == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a
+  checks/rn-gate.py              == REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.a

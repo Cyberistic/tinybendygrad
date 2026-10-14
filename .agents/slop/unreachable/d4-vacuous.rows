@@ -1,0 +1,11 @@
+path	option	rc_empty_input	denominators	vacuous_green
+checks/dup-gate.py	--oracle	2		no
+checks/nl-gate-noguard.py	--oracle-stdout	3		no
+checks/nl-gate-noguard.py	--port-stdout	3		no
+checks/nl-gate.py	--oracle-stdout	3		no
+checks/nl-gate.py	--port-stdout	3		no
+checks/residue.py	--belt-rows	2		no
+checks/rn-gate.py	--oracle-stdout	1	rows: 2;rows: 0;gated 0	no
+checks/rn-gate.py	--port-stdout	1		no
+checks/slop-declare.py	--baseline	2		no
+checks/substrate-id.py	--rows	2		no

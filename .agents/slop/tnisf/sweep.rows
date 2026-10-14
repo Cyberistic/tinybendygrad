@@ -1,0 +1,62 @@
+tn_graph_census-gate.py	0	
+amd_dsl_census-gate.py	1	Traceback (most recent call last):|  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/amd_dsl_census-gate.py", line 860, in <module>|    sys.exit(main())|             ^^^^^^|  File "/U
+bc-u32-gate.py	0	
+beautiful-mnist-gate.py	0	
+cr_graph_census-gate.py	0	
+cstyle_render_census-gate.py	0	
+decomp_graph_census-gate.py	0	
+ew_graph_census-gate.py	0	
+ew-consts-gate.py	0	
+ew-explog-gate.py	0	
+fold_graph_census-gate.py	0	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/fold_graph_census-gate.py:58: SyntaxWarning: invalid escape sequence '\.'|  * THE REAL BLAST RADIUS IS ONE FILE, AND IT IS NARROWER THAN "THR
+git-massdelete-gate.py	0	
+gr_graph_census-gate.py	0	
+i64-shl-gate.py	0	
+i64-shr-gate.py	0	
+indexread-gate.py	1	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'|
+md_graph_census-gate.py	0	
+mixin-op-gate.py	0	
+mo_graph_census-gate.py	0	
+msgdiff-gate.py	0	
+mx_graph_census-gate.py	0	
+op_graph_census-gate.py	0	
+ops_python_census-gate.py	1	Traceback (most recent call last):|  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/ops_python_census-gate.py", line 873, in <module>|    sys.exit(main())|             ^^^^^^|  File 
+ops-core-gate.py	0	
+rd_graph_census-gate.py	0	
+realize_graph_census-gate.py	0	
+render_val_s-gate.py	0	
+replace-gate.py	0	
+rng_graph_census-gate.py	0	
+tn_add_sub-gate.py	0	
+tn_and_or_xor-gate.py	0	
+tn_binop_arena-gate.py	0	
+tn_binop_sweep-gate.py	0	
+tn_binop2_cmp-gate.py	0	
+tn_bitwise_not-gate.py	0	
+tn_ceil_floor-gate.py	0	
+tn_contiguous_backward-gate.py	0	
+tn_detach-gate.py	0	
+tn_dunder_neg-gate.py	0	
+tn_fdiv_mod-gate.py	0	
+tn_isfinite-gate.py	0	
+tn_isnan-gate.py	0	
+tn_logical_not-gate.py	0	
+tn_lshift_rshift-gate.py	0	
+tn_maximum-gate.py	0	
+tn_minimum-gate.py	0	
+tn_mul-gate.py	0	
+tn_nary_arena-gate.py	0	
+tn_neg-gate.py	0	
+tn_pow-gate.py	0	
+tn_relu-gate.py	0	
+tn_relu6-gate.py	0	
+tn_sin_log2_exp2_rsqrt-gate.py	0	
+tn_sqrt-gate.py	0	
+tn_trunc_reciprocal_threefry-gate.py	0	
+tn_where-gate.py	0	
+uop_cast-gate.py	0	
+wgsl_render_census-gate.py	1	  DISAGREE (bd.out): [('pf_elems ushort=2', 'pf_elems char=4'), ('pf_width ushort=16', 'pf_width char=8')]|
+wk-cd-gate.py	0	
+wk-eval-gate.py	0	
+wk-f32-gate.py	0	
+SWEEP-DONE

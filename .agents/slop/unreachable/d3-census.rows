@@ -1,0 +1,145 @@
+path	rc_none_r1	rc_none_r2	rc_none_r3	options	choices
+checks/abi4_gate.py	1	1	1		
+checks/abi_gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+checks/al-verdict.py	2	2	2		pre-arm
+checks/both-census.py	0	0	0	--dev|--fresh|--only	
+checks/bounded.py	5	5	5	--mb|--seconds|--selftest	command
+checks/census.py	0	0	0	--dev|--fresh|--only	
+checks/citation-gate.py	1	1	1		
+checks/cl-port-gate.py	3	3	3	--plants	"
+checks/cli.py	1	1	1	--interval|--json|--list|--profile-path|--rewrites-path|-s|-t	st
+checks/coindep.py	0	0	0		
+checks/compile.py	1	1	1		
+checks/corpus-figure.py	1	1	1	--write	
+checks/coverage.py	1	1	1		
+checks/denominator.py	0	0	0		
+checks/devgate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--check|--crosscheck|--heldout|--plants|--replay|--verbose|--why	|.|roots|tinygrad
+checks/devpin.py	0	0	0	--pin|--plant	moved|satisfied
+checks/differ.py	2	2	2		plant|repro|run|snap|wait
+checks/disagree-gate.py	0	0	0	--lane|--tree	all|citations|coverage|pin|plant
+checks/dup-census.py	3	3	3	--all|--names|--one	
+checks/dup-gate.py	2	2	2	--compare|--oracle|--port|--selftest	clean|collide|name
+checks/e2e.py	3	3	3		--help|-h
+checks/env-precond.py	0	0	0	--check|--declare|--plant|--record	moved|satisfied
+checks/fw_live.py	1	1	1	--device|--transport|--yes	auto|dump|ifwi|ifwi-all|ifwi-step|image|item_type|live-flash|output|pci|probe|stream|transfer_type|usb
+checks/gate.py	3	3	3	--quick|--tree	
+checks/gate_dtype.py	2	2	2	--bend|--binary|--lane|--ranges	c|js
+checks/gate_norm.py	1	1	1		
+checks/gen_gate.py	1	1	1		
+checks/git-index-guard.py	3	3	3		check|snap
+checks/graphcmp-census-audit.py	0	0	0		--all|op
+checks/hermetic-census.py	1	1	1	--check|--dev|--no-publish|--only|--out	
+checks/jsfix_gate.py	1	1	1		
+checks/llama.py	1	1	1	--count|--gen|--model|--personality|--profile|--prompt|--quantize|--shard|--size|--temperature|--timing	
+checks/marker-audit.py	0	0	0		
+checks/nl-gate-noguard.py	3	3	3	--oracle-stdout|--port-stdout	
+checks/nl-gate.py	3	3	3	--compare|--names|--oracle-stdout|--plant|--plant-shape|--port-stdout|--selftest|--unrename	
+checks/no-shrink.py	0	0	0	--tolerance	-
+checks/no-strays.py	1	1	1		
+checks/no-txt.py	0	0	0		
+checks/norm_check.py	0	0	0		
+checks/nvrows-deadrow-gate.py	1	1	1	--file|--plant	ORPHAN|REVIVE|SELF|STRIP
+checks/oracle-txt-census.py	0	0	0	--gate	
+checks/oracle_f64.py	3	3	3		
+checks/plant.py	1	1	1		
+checks/process_replay.py	1	1	1		
+checks/render-gate-oracle.py	0	0	0		
+checks/reorder-gate.py	1	1	1		
+checks/repair-dupes.py	1	1	1		
+checks/repro-paths.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--mark	
+checks/reset.py	0	0	0		
+checks/residue.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--disarm|--live-minutes|--plant|--seconds	AUTHORED|CITED|COPY|DELETE|DERIVED|LIVE|UNKNOWN
+checks/rn-gate.py	1	1	1	--names|--oracle-stdout|--plant|--plant-shape|--port-stdout|--selftest	
+checks/romless.py	1	1	1	--clear-cmp|--device|--prescale|--sector-count|--start-sector|--yes|-o	address|dump|flash|image|info|output|read|size|verify
+checks/run.py	1	1	1		PADDING_0
+checks/rw-gate-oracle.py	0	0	0		rd1
+checks/serve.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--profile-path|--rewrites-path	
+checks/slop-declare.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--baseline|--quiet|--root	
+checks/stage1-census.py	0	0	0		'
+checks/substrate-id.py	2	2	2	--cost|--hash|--judge|--plant|--rows|--sweeps	
+checks/substrate.py	3	3	3	--causes|--mb|--root|--seconds|-n	
+checks/sweep.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--apply|--live-minutes|--plan|--windows|--yes	DELETE
+checks/sz.py	1	1	1		
+checks/test_rewrite_bottom_up_gate.py	0	0	0		
+checks/txt-owners.py	0	0	0		--gate
+checks/unowned.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--from|--tsv|--why	:|HEAD
+checks/vz_gate.py	1	1	1		
+checks/wallcheck.py	1	1	1	--ledger|--no-truth|--pin|--plant|--selftest|--truth	dead|fail|ids|story
+gates/bc-u32-gate.py	TIMED-OUT	TIMED-OUT	0		
+gates/bc-u32-gen.py	0	0	0		
+gates/bc-u32-oracle.py	0	0	0		
+gates/bc_u32_table.py	0	0	0		agree|unbuildable
+gates/beautiful-mnist-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/beautiful-mnist-oracle.py	0	0	0		batchnorm|conv2d
+gates/ew-consts-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/ew-consts-oracle.py	0	0	0		
+gates/ew-explog-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/ew-explog-oracle.py	0	0	0		
+gates/gate-surface.py	TIMED-OUT	1	TIMED-OUT	--plant|--report|--root	green|red
+gates/gatekit.py	0	0	0		
+gates/gates-pop.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--ledger|--plant|--root	1|check|write
+gates/gendirs.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--dirs-only|--json|--plant	
+gates/git-massdelete-gate.py	4	4	4		
+gates/i64-shl-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/i64-shl-oracle.py	1	1	1		
+gates/i64-shr-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/i64-shr-oracle.py	1	1	1		
+gates/indexread-gate.py	1	1	1		
+gates/mixin-op-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/mixin-op-oracle.py	0	0	0		
+gates/msgdiff-gate.py	4	4	4		
+gates/ops-core-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/ops-core-oracle.py	0	0	0		
+gates/render_val_s-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/render_val_s-oracle.py	0	0	0		
+gates/replace-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/replace-oracle.py	0	0	0		
+gates/retention-check.py	TIMED-OUT	TIMED-OUT	TIMED-OUT	--apply|--dir	
+gates/tn_add_sub-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_add_sub-oracle.py	0	0	0		
+gates/tn_and_or_xor-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_and_or_xor-oracle.py	0	0	0		
+gates/tn_binop2_cmp-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_binop2_cmp-oracle.py	0	0	0		
+gates/tn_bitwise_not-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_bitwise_not-oracle.py	0	0	0		
+gates/tn_contiguous_backward-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_contiguous_backward-oracle.py	0	0	0		
+gates/tn_detach-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_detach-oracle.py	0	0	0		
+gates/tn_dunder_neg-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_dunder_neg-oracle.py	0	0	0		
+gates/tn_fdiv_mod-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_fdiv_mod-oracle.py	0	0	0		
+gates/tn_logical_not-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_logical_not-oracle.py	0	0	0		
+gates/tn_lshift_rshift-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_lshift_rshift-oracle.py	0	0	0		
+gates/tn_maximum-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_maximum-oracle.py	0	0	0		
+gates/tn_mul-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_mul-oracle.py	0	0	0		
+gates/tn_neg-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_neg-oracle.py	0	0	0		
+gates/tn_pow-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_pow-oracle.py	0	0	0		
+gates/tn_relu-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_relu-oracle.py	0	0	0		
+gates/tn_relu6-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_relu6-oracle.py	0	0	0		
+gates/tn_sin_log2_exp2_rsqrt-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_sin_log2_exp2_rsqrt-oracle.py	0	0	0		
+gates/tn_sqrt-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_sqrt-oracle.py	0	0	0		
+gates/tn_trunc_reciprocal_threefry-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_trunc_reciprocal_threefry-oracle.py	0	0	0		
+gates/tn_where-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/tn_where-oracle.py	0	0	0		
+gates/uop_cast-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/uop_cast-oracle.py	0	0	0		
+gates/wk-cd-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/wk-cd-oracle.py	0	0	0		
+gates/wk-eval-gate.py	TIMED-OUT	TIMED-OUT	TIMED-OUT		
+gates/wk-eval-oracle.py	0	0	0		
+gates/wk-f32-gate.py	TIMED-OUT	0	0		py
+gates/wk-f32-rows.py	0	0	0		

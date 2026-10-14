@@ -1,0 +1,5 @@
+gate	case	rc	denominator	verdict
+checks/nl-gate.py	honest: real port, real oracle	1	205	BROKEN
+checks/nl-gate-noguard.py	honest: real port, real oracle	0	205	AGREE
+checks/nl-gate.py	PLANT:  real port, ONE oracle value changed	1	205	BROKEN
+checks/nl-gate-noguard.py	PLANT:  real port, ONE oracle value changed	1	205	BROKEN

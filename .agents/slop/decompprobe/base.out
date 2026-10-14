@@ -1,0 +1,2 @@
+decomp_graph_census-gate: 38 rows (30 l2i arms + unpack32 + 7 f2f pairs), 3 lanes, 22 deep cones match CPython byte-for-byte and 16 are DECLARED divergences -- 11 are the PROMOTION CASTS `ops.bend`'s `UOp.new` does not run (divergence A: 282 `CAST/1` entries, each verified by DELETING them from CPython's cone and rebuilding the port's), 2 are refusals, 1 is the unbuilt float-target CAST arm, and q2/q3 ARE FINDINGS: f2f's narrowing arm is not a deletion of CPython's cone; no lane answers the NOOP bottom
+rc=0

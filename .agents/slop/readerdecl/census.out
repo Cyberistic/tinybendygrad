@@ -1,0 +1,73 @@
+THE READER/DECLARATION CROSS-TAB at commit 7ad97ccbcbfd
+
+scope of every number below: tracked directories under `.agents/slop/` AT COMMIT 7ad97ccbcbfd, from `git ls-tree -r`, top-level rows only unless a line says NESTED.
+  population, top-level directories at that commit : 269
+  population, NESTED directories (their own rows, never inherited) : 232
+
+THE 2x2 -- AUTHORSHIP on one axis, AUDITABILITY on the other. Both axes over ONE population.
+  declared  (162) | code reader opens it :  12   | nothing RUNS opens it : 130   (ORPHAN 102, UNVERIFIABLE 28)
+  undeclared     | code reader opens it :   6   | nothing RUNS opens it :  92   (CITED 35, INERT 57)
+
+WHAT EACH QUESTION ALONE MISSES, MEASURED ON THIS SAME POPULATION:
+  (a) 'is a declaration PRESENT?' alone PASSES 162 (every declared row) and MISSES 130 of them -- a declaration nothing opens.
+  (b) 'is there a READER?' alone PASSES  18 (a CODE reader outside the subtree) and MISSES   6 -- a directory a gate genuinely opens that holds
+      no declaration at all. The first version of this line printed 12 for (a): that is the
+      (a)AND(b) cell, so the sentence called a passing-row count a question-alone count.
+  THE OFF-DIAGONALS ARE 130 AND 6 ROWS OF 269: NEAR-DISJOINT. Neither question half-sees the tree.
+
+THE THIRD SENSE -- IS A READER A WITNESS OR A SYMPTOM? A reader is something that RUNS.
+  rows whose ONLY code readers are ENTRY POINTS CARRYING NO TIME BOUND : 28
+  `slowgate` measured 105 of 129 gate entry points carry no bound and 1 hangs forever, so a
+  reader that cannot be shown to complete is NOT counted as opening anything: it has its own
+  cell, and it is NOT counted in either column of the 2x2 above. That is the third sense in
+  which 'declared' cannot be the property -- and it is the one nobody has named.
+
+AND THE FOURTH, WHICH IS THE BIGGER ONE -- WHERE THE READER LIVES. A reader inside
+  `.agents/slop/` is a PEER: another agent's scratch script, in the tree this file sweeps, on
+  the same clock, uncommitted by anyone. It is not a witness. Reader INSTANCES by home:
+      4190 (94%)  in-slop peer
+       127 ( 2%)  elsewhere
+        81 ( 1%)  checks/
+        39 ( 0%)  gates/
+  MEASURED over 4437 reader instances in this same population. So the 'opened' axis is
+  almost entirely PEERS CITING PEERS, and a census that reports '140 directories are opened'
+  as AUDITABILITY is reporting that agents mentioned each other.
+  top-level directories cited ONLY by in-slop peers and by NOTHING outside : 139
+  THE FIRST VERSION OF THIS LINE PRINTED 0 while the rows said 139: it tested the FIRST
+  reader PATH (`not r['prose']`, and `'-'` is truthy) instead of the COUNT. A zero that
+  disagrees with its own rows file is a `residue.py`, so the line is kept with both.
+
+THE NESTING ROW -- a declaration is about a DIRECTORY, not about its subtree:
+  NESTED directories holding a declaration of their OWN : 0 of 232
+  NESTED directories that are undeclared while their PARENT is declared : 56
+  A walk that INHERITED would green those by inheriting a fact about a different directory.
+  This file does not inherit: depth is the directory's own, and every nested directory is a
+  row of its own.
+
+THE MANIFEST SHAPES -- discovered by a basename shape, each with its ROW COUNT, because
+  `strays/MANIFEST.tsv` and `oracles259/MANIFEST.tsv` are the same NAME and different THINGS:
+    260 rows  MANIFEST.tsv         .agents/slop/oracles259/MANIFEST.tsv
+    142 rows  manifest.py          .agents/slop/oracles259/manifest.py
+    130 rows  MANIFEST.md          .agents/slop/slopcopies/MANIFEST.md
+    111 rows  MANIFEST.tsv         .agents/slop/slopcopies/MANIFEST.tsv
+     54 rows  MANIFEST.tsv         .agents/slop/strays/MANIFEST.tsv
+     20 rows  MANIFEST.tsv         .agents/slop/land71/MANIFEST.tsv
+     19 rows  manifest-fix.out     .agents/slop/txtexec/manifest-fix.out
+      6 rows  manifest-write.out   .agents/slop/oracles259/manifest-write.out
+      2 rows  manifest-prove.out   .agents/slop/oracles259/manifest-prove.out
+
+WHAT THIS FILE CANNOT SEE, STATED FIRST AND IN FULL:
+  1 A reader that BUILDS A PATH AT RUNTIME (`slop / name / 'x.rows'`) names nothing this
+    grep can see. Every such reader is counted as absent, so every count above is a LOWER
+    BOUND on readership. The bound is not small and it is not symmetric with authorship:
+    a declaration cannot be built at runtime, so axis (a) has no such blind spot and axis
+    (b) does. That asymmetry is a reason to distrust a cross-tab built this way, stated here
+    rather than discovered by a reader.
+  2 'Carries no bound' is STATIC. `slowgate`: a static property is not a hang. UNVERIFIABLE
+    means NO BOUND IS PROVEN ABSENT, never that the reader was observed hanging.
+  3 Prose that names a path is a CITATION, not an opening. PROSE and DATA are reported so the
+    citation count is visible, and they open nothing -- `orcdecide` measured 3 citations, 0
+    opens. If a citation IS the intended use of a report, then PROSE should count and this
+    file is wrong about half the tree. That is a decision, not a fact, and it is named here.
+  4 The worktree is NOT read except through `git cat-file` at `rev`, so an untracked file
+    that opens a directory is invisible. That is the point of pinning a commit.

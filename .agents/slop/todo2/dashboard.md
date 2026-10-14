@@ -4,9 +4,9 @@
 
 ## Progress by category (GENERATED from checkbox counts)
 
-**OVERALL** — ████████░░ 1082/1325 81.7%  (+4 `[~]`)
+**OVERALL** — ████████░░ 1116/1373 81.3%  (+4 `[~]`)
 
-Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sections carry tasks.
+Category = each level<=2 (`#`/`##`) heading, found by discovery; 163 of 193 sections carry tasks.
 
 • TODO — ████████░░ 39/49  80%
 • Phase P0 — toolchain and scaffolding — █████████░ 8/9  89%
@@ -163,3 +163,11 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 155 of 185 sect
 • devpin — the DEVICE is a declared precondition of the graphcmp compar... — ████████░░ 24/30  80%
 • 2026-10-06 — the ops.bend marker campaign, and the fifth defect close... — ████████░░ 4/5  80%
 • FLIPTHIRD — the cost is NOT in the files: bend measures the Arg t... — ██████████ 8/8 100%
+• MSGDIFFQ — msgdiff-gate.py REFUSES A MESSAGE THAT FAITHFULLY QUOTES... — ░░░░░░░░░░ 0/4   0%
+• DECOMPCENSUS — codegen/decomp/ gets its FIRST gate, and its ORACLE ... — ███████░░░ 6/9  67%
+• REALIZEGAPS — three gaps in realize_graph_census's OWN instrument (... — ░░░░░░░░░░ 0/3   0%
+• AMDWORD32 -- the AMD instruction word is a U32, so EVERY VOP3 AND EVE... — ██████████ 6/6 100%
+• Session 2026-10-13 — opsfind: findings A, B, C and F of gates/ops_... — ████████░░ 5/6  83%
+• TNISFDUMP -- the ONLY instrument that caught the second tn_isfinite... — █████░░░░░ 2/4  50%
+• CRPCONST -- cr_const_of's FOLD READ THE CALLER'S DTYPE, AND ops.py... — ████████░░ 4/5  80%
+• SRPORT -- string_rewrite IS THE RENDERER'S LARGEST SURFACE AND IT H... — ██████████ 11/11 100%

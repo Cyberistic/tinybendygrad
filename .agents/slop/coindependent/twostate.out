@@ -1,0 +1,19 @@
+gate               state                                                rc   tokens
+no-txt             at rest (no .txt)                                       0 CLEAN
+no-txt             planted .agents/slop/coindependent/plant-should-be-named.txt    1 -
+no-txt             plant removed (restored)                                0 CLEAN
+wallcheck          --selftest                                              0 REFUSED
+wallcheck          ids [NO-SUCH-WALL-ID]                                   4 CLEAN,REFUSED
+residue            --plant                                                 0 PASS
+residue            --disarm DELETE                                         3 PASS
+env-precond        --declare                                               0 -
+env-precond        --plant satisfied                                       0 NOT A VERDICT,OK,REFUSED
+env-precond        --plant moved                                           0 NOT A VERDICT,OK,REFUSED
+env-precond        --plant nonsense (bad arg)                              2 -
+unowned            at rest                                                 0 -
+unowned            --why /nonexistent/coindependent                        1 rc=128
+nvrows-deadrow-gate --plant REVIVE                                          0 CLEAN,DEAD
+nvrows-deadrow-gate --plant ORPHAN                                          1 DEAD
+nvrows-deadrow-gate --plant SELF                                            1 DEAD
+nvrows-deadrow-gate --plant STRIP                                           2 DEAD
+gatekit            --plant (3 output-dir states)                           0 -

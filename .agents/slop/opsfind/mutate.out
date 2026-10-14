@@ -1,0 +1,28 @@
+BEFORE unplanted lane: 85 rows
+AFTER  unplanted lane: 85 rows
+
+== A1  tc.py widened the metal FRAGMENT, 8 -> 16 on the core the LOOKUP uses
+   BEFORE  moved 0/1  NOTHING
+   AFTER   moved 1/1  pywma_metal_dims0: 8 -> 16
+
+== A2  tc.py gave the metal fragment 64 THREADS instead of 32
+   BEFORE  moved 0/1  NOTHING
+   AFTER   moved 1/1  pywma_metal_threads: 32 -> 64
+
+== A3  ops_python.py reordered the ctor: renderers before allocator
+   BEFORE  no input to move -- no such input: the BEFORE file declares no ctor ORDER -- the three positions ARE the tag values, so an upstream reorder has nothing to move and can only be expressed by editing the answers
+   AFTER   moved 2/2  pyd_ctor_allocator: 0 -> 1; pyd_ctor_renderers: 1 -> 0
+
+== A4  ops_python.py dropped an argument from the ctor call
+   BEFORE  no input to move -- no such input: `pyd_ctor_len` was the literal 4 with nothing declared behind it, so 3 is exactly as writable as 4
+   AFTER   moved 4/4  pyd_ctor_len: 4 -> 3; pyd_ctor_allocator: 0 -> 2; pyd_ctor_renderers: 1 -> 0; pyd_ctor_runtime: 2 -> 1
+
+== A5  ops_python.py named a SECOND renderer in the list it passes
+   BEFORE  no input to move -- no such input: `pyd_nrenderers` was the literal 1 with nothing declared behind it, so 2 is exactly as writable as 1
+   AFTER   moved 1/1  pyd_nrenderers: 1 -> 2
+
+== A6  `base64.b64decode` was renamed -- the decoder's DECLARATION moved
+   BEFORE  no input to move -- no such input: there was one literal (`True{}`) and nothing to COMPARE it against, so a rename of `base64.b64decode` itself had no representation in the file
+   AFTER   moved 2/2  pyc_is_b64decode: True -> False; pyc_refused: False -> True
+
+the port is restored; a plant never survives this script

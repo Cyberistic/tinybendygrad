@@ -1,0 +1,8 @@
+# surfaces (line,kind counts):
+#   AGENTS.md: LIVE=25 DATED=34 total=59
+#   .agents/TOOLS.md: LIVE=113 DATED=70 total=183
+#   .agents/TODO.md: LIVE=990 DATED=220 total=1210
+# TOTAL live=1128 dated=324 claims=1452
+# mtime AGENTS.md = 1791289383
+# mtime .agents/TOOLS.md = 1791340914
+# mtime .agents/TODO.md = 1791289475

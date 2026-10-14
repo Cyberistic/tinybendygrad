@@ -1,0 +1,4 @@
+  lg1: 1 alternative deletion witnesses -- the class is a COUNT for this row, not an identity (see witnesses())
+  witnesses(): 4 of 11 PROMOTION cones are over 200 tokens and were NOT searched -- their witness is unproven unique
+decomp_graph_census-gate: 38 rows (30 l2i arms + unpack32 + 7 f2f pairs), 3 lanes, 22 deep cones match CPython byte-for-byte and 16 are DECLARED divergences -- 11 are the PROMOTION CASTS `ElementwiseMixin._broadcasted`'s `promote` mints (mixin/elementwise.py:24-32) and decomp's raw `O.UOp.alu` never does (282 `CAST/1` entries, each verified by DELETING them from CPython's cone and rebuilding the port's), 2 are refusals, 1 is the unbuilt float-target CAST arm, and q2/q3 ARE FINDINGS: f2f's narrowing arm is not a deletion of CPython's cone; no lane answers the NOOP bottom
+rc=0

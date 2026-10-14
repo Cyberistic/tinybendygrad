@@ -1,0 +1,35 @@
+gate                           subject it names                             recoverable
+checks/dup-census.py           .agents/slop/eq/eq-census2.py                    24064 B
+checks/dup-gate.py             .agents/slop/eq/eq-census2.py                    24064 B
+checks/gate.py                 checks/drive.mjs                                 NO BLOB
+checks/nl-gate-noguard.py      .agents/slop/nl/nl-oracle.py                     24306 B
+checks/nl-gate.py              .agents/slop/nl/nl-oracle.py                     24306 B
+checks/rn-gate.py              .agents/slop/eq/eq-census2.py                    24064 B
+
+NOW RUN EACH GATE WITH EVERY SUBJECT IT NAMES RESTORED -- in place, and restored BACK afterwards.
+
+  *** THE SUBJECTS ARE GIT-TRACKED AND THE INDEX IS UNSTABLE, SO NOTHING IS `git add`ED. Each
+      file is written, the gate runs, and the file is REMOVED again; the run below asserts the
+      tree is byte-identical afterwards. ***
+
+checks/dup-census.py           restored 1 subject(s) -> rc=3  **rc=3**
+                                   STDERR:          nothing was enumerated, so a count over it is not an answer
+
+checks/dup-gate.py             restored 1 subject(s) -> rc=2  **rc=2**
+                                   give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+
+checks/gate.py                 NOTHING RESTORABLE -- refused for a subject no ref holds
+checks/hermetic-census.py      NOTHING RESTORABLE -- refused for a subject no ref holds
+checks/nl-gate-noguard.py      restored 1 subject(s) -> rc=0  **AGREES**
+                                   gated 205   agree 205   disagree []
+                                   AGREE
+
+checks/nl-gate.py              restored 1 subject(s) -> rc=0  **AGREES**
+                                   STALE-LITERAL 0 `py=` literal(s) disagree with the other lane's answer: []
+                                   AGREE
+
+checks/rn-gate.py              restored 1 subject(s) -> rc=1  **RED**
+                                   lane failure: bend bend 2.0.35 is available: run bend update | oracle open file '/Users/cyberist
+                                      ⚠ `tinybendygrad/uop/ops.bend` and `uop/fold.bend` are in this port's 5-file import closure a
+
+TREE CLEAN: OK -- every restored subject removed again

@@ -1,0 +1,259 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+WHOLE TREE (os.walk, SKIP=['.git', '.venv', '__pycache__', 'node_modules', 'references', 'test', 'tinygrad']): 111 shared string-lists
+TRACKED (.py in git ls-files): 109 shared string-lists
+  of those, ALL sites under .agents/slop/ (scratch copies/plants): 44
+  TRACKED, >=1 site OUTSIDE .agents/slop/ (live instruments):     65
+
+THE BRIEF'S 5, at HEAD, are in the live set: abi fence, mixin port_only, i64-shl
+values, disagree ARMED/WANT, SKIP_DIRS.  coindependent scoped to checks/+gates/
+only, which is why it saw 5 and this sees more; both are correct for their scope.
+
+LIVE SET (>=1 tracked site outside .agents/slop/), with its sites:
+  [3] ['bd', 'bn', 'py']
+      .agents/slop/clearfix/gk/gatekit.py
+      .agents/slop/clearfix/gk2/gatekit.py
+      gates/bc-u32-gate.py
+      gates/gatekit.py
+      gates/i64-shl-gate.py
+      gates/i64-shr-gate.py
+      gates/retention-check.py
+      gates/wk-f32-gate.py
+  [9] ['AddrSpace', 'AxisType', 'Context', 'DType', 'GroupOp'] ...
+      .agents/slop/corpuswire/tree/checks/corpus-figure.py
+      .agents/slop/devpin/injectivity.py
+      .agents/slop/figure2/plant/broken/checks/corpus-figure.py
+      .agents/slop/figure2/plant/real/checks/corpus-figure.py
+      .agents/slop/opspy/corpus.py
+      checks/corpus-figure.py
+  [13] ['D0-coverage-census', 'D0-ops-probe', 'D0-run-summary', 'D0-selfcheck', 'D1-verdicts'] ...
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/difftxt/inventory.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [3] ['.venv', 'node_modules', 'tinygrad']
+      .agents/slop/capstream/discover.py
+      .agents/slop/declared472/derive.py
+      .agents/slop/sloptxt/features.py
+      .agents/slop/sloptxt/readers.py
+      checks/no-txt.py
+  [5] ['binblob', 'gate', 'group', 'loop', 'matmul']
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [5] ['D1-graph-', 'D3-control-', 'D5-plant-', 'D6-', 'D9-stability-']
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [3] ['--check-only', './bin/bend', '.agents/slop/graphcmp.bend']
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [6] ['bytes', 'dtype', 'opt', 'pyuop', 'shape'] ...
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [4] ['gate', 'group', 'loop', 'sym']
+      .agents/slop/corpuswire/tree/checks/differ.py
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py
+      .agents/slop/figure2/plant/broken/checks/differ.py
+      .agents/slop/figure2/plant/real/checks/differ.py
+      checks/differ.py
+  [4] ['bin_promote', 'commit_weak', 'exp_cast', 'rop_gap']
+      .agents/slop/clearfix/frozen-prefix/mixin-op-gate.py
+      .agents/slop/mixin-op-gate.py
+      gates/mixin-op-gate.py
+      gates/mixin-op-oracle.py
+  [4] ['.js', '.mjs', '.py', '.sh']
+      .agents/slop/formblind-census.py
+      .agents/slop/gendirs/writetargets.py
+      .agents/slop/lostinst/livecite.py
+      gates/gendirs.py
+  [3] ['-z', 'git', 'ls-files']
+      .agents/slop/gitignore/matchlib.py
+      .agents/slop/gitignore/perdir.py
+      checks/residue.py
+      checks/sweep.py
+  [3] ['allred', 'cdiv', 'late']
+      .agents/slop/graphrestore/portside.py
+      .agents/slop/graphrestore/union.py
+      .agents/slop/threegraphs/static-check.py
+      checks/disagree-gate.py
+  [10] ['<|begin_of_text|>', '<|end_header_id|>', '<|end_of_text|>', '<|eot_id|>', '<|reserved_special_token_0|>'] ...
+      checks/llama.py
+      examples/llama.py
+      examples/llama3.py
+      test/null/test_llm_tokenizer.py
+  [3] ['mean', 'none', 'sum']
+      examples/mlperf/losses.py
+      test/external/external_test_losses.py
+      test/runtime/test_ops.py
+      tinygrad/mixin/op.py
+  [4] ['fp8e4m3', 'fp8e4m3fnuz', 'fp8e5m2', 'fp8e5m2fnuz']
+      .agents/slop/abi4check/abi4_gate.135bf0204.py
+      .agents/slop/fp8fix/gate.py
+      checks/abi4_gate.py
+  [3] ['bd.out', 'bn.out', 'gate.bin']
+      .agents/slop/clearfix/gk/gatekit.py
+      .agents/slop/clearfix/gk2/gatekit.py
+      gates/gatekit.py
+  [6] ['cdiv', 'ceildiv', 'cmod', 'floor_div', 'floor_mod'] ...
+      .agents/slop/fp8fix/gate.py
+      .agents/slop/jslane2/gen_js_seam.py
+      checks/jsfix_gate.py
+  [3] ['lowhi', 'neg1', 'one']
+      .agents/slop/i64shl/shl-oracle.py
+      gates/i64-shl-gate.py
+      gates/i64-shl-oracle.py
+  [4] ['doorbell', 'gpput', 'put_value', 'ring']
+      .agents/slop/nv-oracle.py
+      .agents/slop/nvdup/nv-oracle-PREFIX.py
+      tinygrad/runtime/ops_nv.py
+  [3] ['0', '0', '0']
+      .agents/slop/x86/x86-oracle.py
+      .agents/slop/x86/x86_oracle.py
+      tinygrad/uop/ops.py
+  [3] ['auto', 'pci', 'usb']
+      checks/fw_live.py
+      extra/amdflash/common.py
+      extra/amdflash/fw_live.py
+  [3] ['CPU', 'NPY', 'PYTHON']
+      tinygrad/runtime/ops_amd.py
+      tinygrad/runtime/ops_nv.py
+      tinygrad/runtime/support/system.py
+  [8] ['', 'A', 'AB', 'ABC', 'AC'] ...
+      .agents/slop/abi4check/abi4_gate.135bf0204.py
+      checks/abi4_gate.py
+  [4] ['', '  do IO<Unit>:', 'def main() -> IO(Unit):', 'import ./tinybendygrad/dtype.bend as D']
+      .agents/slop/abi4check/abi4_gate.135bf0204.py
+      checks/abi4_gate.py
+  [6] ['row_round_2.30', 'row_round_2.3456', 'unverified_adam', 'unverified_arange_dims', 'unverified_lin2'] ...
+      .agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py
+      gates/beautiful-mnist-gate.py
+  [6] ['.git', '.venv', '__pycache__', 'bin', 'node_modules'] ...
+      .agents/slop/gendirs/writetargets.py
+      gates/gendirs.py
+  [4] ['copy', 'copy2', 'copyfile', 'copytree']
+      .agents/slop/gendirs/writetargets.py
+      gates/gendirs.py
+  [5] ['absolute', 'expanduser', 'join', 'normpath', 'resolve']
+      .agents/slop/gendirs/writetargets.py
+      gates/gendirs.py
+  [4] ['abspath', 'fspath', 'realpath', 'str']
+      .agents/slop/gendirs/writetargets.py
+      gates/gendirs.py
+  [4] ['--out', '--output', '-O', '-o']
+      .agents/slop/gendirs/writetargets.py
+      gates/gendirs.py
+  [3] ['max', 'one', 'zero']
+      .agents/slop/ishr/shr-oracle.py
+      gates/i64-shr-oracle.py
+  [4] ['max', 'one', 'signmin', 'spill']
+      .agents/slop/ishr/shr-oracle.py
+      gates/i64-shr-oracle.py
+  [3] ['max', 'signmin', 'spill']
+      .agents/slop/ishr/shr-oracle.py
+      gates/i64-shr-oracle.py
+  [5] ['', '  do IO<Unit>:', 'def main() -> IO(Unit):', 'import ./tinybendygrad/dtype.bend as D', 'import ./tinybendygrad/helpers.bend as H']
+      .agents/slop/jslane2/gen_js_seam.py
+      checks/jsfix_gate.py
+  [3] ['1.0000001', '1.0000002', '1.0000003']
+      .agents/slop/norm/canon.selftest.py
+      checks/gate_norm.py
+  [5] ['INIT', 'INTR', 'KRNL', 'MNOC', 'RM']
+      .agents/slop/nv_ip_oracle.py
+      tinygrad/runtime/support/nv/ip.py
+  [4] ['NOTSET', 'SAME_LOWER', 'SAME_UPPER', 'VALID']
+      .agents/slop/onnx-gate.py
+      tinygrad/nn/onnx.py
+  [3] ['--batch', 'cat-file', 'git']
+      .agents/slop/prune3/verify_strays.py
+      checks/wallcheck.py
+  [3] ['examples', 'extra', 'tinygrad']
+      .agents/slop/stale269/gate-baseline.py
+      checks/citation-gate.py
+  [7] ['HOLDS', 'NO-FILE', 'PAST-EOF', 'PROSE', 'STALE-LINE'] ...
+      .agents/slop/stale269/gate-baseline.py
+      checks/citation-gate.py
+  [4] ['.bend', '.c', '.js', '.mjs']
+      .agents/slop/substratepop/measure.py
+      checks/substrate.py
+  [9] ['AUTHORED', 'DELETE', 'DOC', 'GATE', 'LIVE'] ...
+      .agents/slop/unknowns/what-delete-catches.py
+      checks/sweep.py
+  [3] ['B/s lds', 'B/s mem', 'FLOPS']
+      checks/cli.py
+      tinygrad/viz/cli.py
+  [3] ['read', 'write', 'write+read']
+      checks/cli.py
+      tinygrad/viz/cli.py
+  [4] ['--target=hexagon', '-fuse-ld=lld', '-mcpu=hexagonv65', '-nostdlib']
+      checks/compile.py
+      extra/dsp/compile.py
+  [3] ['1', '7B', 'int8']
+      checks/llama.py
+      examples/llama.py
+  [3] ['1', '7B', 'nf4']
+      checks/llama.py
+      examples/llama.py
+  [4] ['INST', 'SA', 'SE', 'XCC']
+      checks/serve.py
+      tinygrad/viz/serve.py
+  [3] ['data', 'vdata', 'vdst']
+      checks/serve.py
+      tinygrad/viz/serve.py
+  [3] ['V_MFMA_F', 'V_MFMA_I', 'V_MFMA_SCALE_']
+      checks/serve.py
+      tinygrad/viz/serve.py
+  [3] ['op', 'opx', 'opy']
+      checks/serve.py
+      tinygrad/viz/serve.py
+  [4] ['LDS', 'SALU', 'TFU', 'VMEM']
+      checks/serve.py
+      tinygrad/viz/serve.py
+  [5] ['tinygrad/llm', 'tinygrad/nn', 'tinygrad/renderer', 'tinygrad/runtime', 'tinygrad/viz']
+      checks/sz.py
+      sz.py
+  [5] ['Diff', 'Diff', 'Lines', 'Name', 'Tokens/Line']
+      checks/sz.py
+      sz.py
+  [3] ['Lines', 'Name', 'Tokens/Line']
+      checks/sz.py
+      sz.py
+  [4] ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
+      examples/gpt2.py
+      examples/llm.c/train_gpt2.py
+  [5] ['[CLS]', '[MASK]', '[PAD]', '[SEP]', '[UNK]']
+      examples/mlperf/helpers.py
+      extra/datasets/wikipedia.py
+  [3] ['major', 'minor', 'revision']
+      extra/hcq1/ops_amd_old.py
+      tinygrad/runtime/ops_amd.py
+  [5] ['amt', 'lc', 'rt', 'rt_amt', 'x']
+      gates/i64-shl-gate.py
+      gates/i64-shr-gate.py
+  [3] ['AMD', 'CUDA', 'NV']
+      test/runtime/test_dtype_alu.py
+      test/runtime/test_subbuffer.py
+  [5] ['amax', 'amin', 'mean', 'prod', 'sum']
+      test/runtime/test_ops.py
+      tinygrad/mixin/op.py
+  [3] ['DISK', 'NPY', 'PYTHON']
+      tinygrad/device.py
+      tinygrad/uop/ops.py
+  [6] ['_DPP16', '_DPP8', '_LIT', '_MFMA', '_SDWA'] ...
+      tinygrad/renderer/amd/dsl.py
+      tinygrad/renderer/amd/generate.py
+  [3] ['-I/opt/rocm/include', '-x', 'c++']
+      tinygrad/runtime/autogen/__init__.py
+      tinygrad/runtime/autogen/am/__init__.py

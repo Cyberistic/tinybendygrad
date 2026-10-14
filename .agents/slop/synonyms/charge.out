@@ -1,0 +1,42 @@
+OWNER gates/gatekit.py: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+RUNNER .agents/slop/hooks/run.py:54,56: 0=GREEN, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+
+THE CHARGE, PER CODE -- AND THE TOKEN IS NOT AN ARGUMENT ANYWHERE:
+
+   rc  owner token runner charges  AGREE?
+    0  PASS        GREEN           NO
+    1  FAIL        FAIL            yes
+    3  REFUSED     REFUSED         yes
+    4  SKIP        SKIP            yes
+    5  DEAD        DEAD            yes
+
+THE COLLISION, AND WHY IT IS INVISIBLE TO EVERY RUNNER IN THE TREE:
+
+  checks/wallcheck.py:681 declares  `4: "NO-ROW"`. gates/gatekit.py:60 names 4 `SKIP`.
+  .agents/slop/hooks/run.py:116 charges by INTEGER, not by token:
+      wallcheck exits 4  ->  the runner scores it 'SKIP'
+  SO THE COLLISION COSTS NOTHING TODAY, and that is the dangerous half: **a gate whose
+  token means something different from the owner's is scored under the OWNER'S WORD.**
+  `NO-ROW` is 'a guard over an empty population has measured nothing'; `SKIP` is 'it
+  could not run, so it measured nothing'. A runner reading `$?` cannot tell which it
+  has, and NOTHING in the tree will ever tell it, because the token is not an argument.
+
+PLANTED AT THE CHARGE -- BOTH DIRECTIONS:
+
+  PASS  A  wallcheck's 4 (NO-ROW: the gate RAN, the SELECTION was empty) is charged as SKIP -- 'it could not run'. The two are NOT the same claim, and the charge cannot see that
+          charged 'SKIP'
+  PASS  B  wallcheck's 2 (USAGE: the LEDGER PATH is absent) is charged as DEAD -- 'crashed, not a verdict'. A caller that mistyped a path is scored as a crash
+          charged 'DEAD'
+  PASS  C  a hypothetical sixth exit code is ALSO charged DEAD, with nothing in the map -- so a RUNNER'S OWN NEW VERDICT IS INDISTINGUISHABLE FROM A CRASH
+          6 and 2 both charge 'DEAD'
+
+PLANTS: GREEN (3/3)
+
+AND THE DIRECTION OF THE SAFEST FIX, WHICH IS NOT A TABLE:
+
+  A CHARGE THAT READS A TOKEN cannot be built, because the token is not an argument --
+  a subprocess returns an int. The only way a token reaches a runner is if the gate
+  PRINTS it, and the runner PARSES stdout, which is how `hooks/run.py:111` already
+  gets its `head`. So the additive change is: a gate whose exit MEANS something the
+  owner does not name PRINTS the owner's word too, and the vocabulary stays in the
+  gate. That is a string a runner can read and a table a runner cannot.

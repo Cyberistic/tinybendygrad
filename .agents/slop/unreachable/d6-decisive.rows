@@ -1,0 +1,41 @@
+path	argv	rc	first_line
+checks/cl-port-gate.py	(none)	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/cl-port-gate.py	--help	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/cl-port-gate.py	--plants	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/cl-port-gate.py	--plants --help	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/dup-census.py	(none)	3	== REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /Us
+checks/dup-census.py	--help	0	usage: dup-census.py [-h] [--all] [--names] [--one ONE [ONE ...]]
+checks/dup-census.py	--all	3	== REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /Us
+checks/dup-census.py	--one	2	usage: dup-census.py [-h] [--all] [--names] [--one ONE [ONE ...]]
+checks/dup-census.py	--names	3	== REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /Us
+checks/e2e.py	(none)	3	ORACLE DRIFT: checks/e2e.sh: fcf647cdadeaaf88 != aaea6adddba6e553 -- the live shell bo
+checks/e2e.py	--help	0	THE SEVEN-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
+checks/e2e.py	-h	0	THE SEVEN-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
+checks/gate.py	(none)	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/gate.py	--help	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/gate.py	--quick	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/gate.py	--predict	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/gate.py	--tree .	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/git-index-guard.py	(none)	3	usage: git-index-guard.py (snap | check --expect <token>)
+checks/git-index-guard.py	--help	3	usage: git-index-guard.py (snap | check --expect <token>)
+checks/git-index-guard.py	snap	0	INDEX-BASELINE 2892d23dafa27464d407a28445eff7a450acb8127fe9cf50c7073258fba6d662 HEAD 5
+checks/git-index-guard.py	check	3	INDEX-REFUSED: no --expect <token>; run `snap` immediately after staging
+checks/git-index-guard.py	check --expect x	1	INDEX-DRIFT x -> 2892d23dafa27464d407a28445eff7a450acb8127fe9cf50c7073258fba6d662 HEAD
+checks/nl-gate-noguard.py	(none)	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate-noguard.py	--help	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate-noguard.py	--port-stdout @empty	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate-noguard.py	--oracle-stdout @empty	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate-noguard.py	--port-stdout @empty --oracle-stdout @empty	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate.py	(none)	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate.py	--help	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate.py	--selftest	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate.py	--compare	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/nl-gate.py	--port-stdout @empty --oracle-stdout @empty	3	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybe
+checks/oracle_f64.py	(none)	3	== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s). Without them 
+checks/oracle_f64.py	--help	3	== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 1 argument(s). Without them 
+checks/oracle_f64.py	@tmpdir @rows	1	Traceback (most recent call last):
+checks/oracle_f64.py	@rows @rows	1	Traceback (most recent call last):
+checks/substrate.py	(none)	3	REFUSED: no files given. A guard invoked with an empty population must not
+checks/substrate.py	--help	0	usage: checks/substrate.py [-h] [-n] [--causes] [--mb MB] [--seconds SECONDS]
+checks/substrate.py	@bendfile	1	COLD        /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinybendygrad/PROOF.b
+checks/substrate.py	none	1	MISSING     none

@@ -1,0 +1,4 @@
+REFUSED, NOT A VERDICT: 00b1015749d3 -- the message claims a change the diff does not witness (1 checked, 0 uncheckable)
+  claim: Deleted the superseded oracles259/plants.py after proving oracletxt/plant.py covers it and the census output is byte-identical across the deletion.
+  file:  oracles259/plants.py  (present in this commit's tree, not deleted by it)
+  re-run with MESSAGE_DIFF_ACK="<reason>" if the message is right and the diff is a partial view

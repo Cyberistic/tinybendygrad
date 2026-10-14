@@ -1,0 +1,10 @@
+run=1 rc=0 a0=7 a1=120 b=317 dead=True pgrep=[] ps=['9178', '9180'] rss=0
+run=2 rc=3 a0=7 a1=121 b=912 dead=True pgrep=[9187] ps=['9187', '9189'] rss=0
+run=2 rc=3 a0=1167 a1=1730 b=-1000 dead=None pgrep=[9189] ps=['9189'] rss=410
+run=3 rc=3 a0=27 a1=510 b=-1000 dead=None pgrep=[9346] ps=['9337', '9346'] rss=306
+run=4 rc=3 a0=5 a1=225 b=774 dead=True pgrep=[9382] ps=['9376', '9382'] rss=275
+run=4 rc=3 a0=1031 a1=1582 b=-1000 dead=None pgrep=[9382] ps=['9382'] rss=400
+run=5 rc=0 a0=3 a1=54 b=141 dead=True pgrep=[] ps=['9430', '9434'] rss=0
+run=6 rc=0 a0=4 a1=192 b=1085 dead=True pgrep=[] ps=['9447', '9476'] rss=0
+run=7 rc=0 a0=39 a1=600 b=1427 dead=True pgrep=[] ps=['9493', '9502'] rss=0
+run=8 rc=0 a0=3 a1=1529 b=2528 dead=True pgrep=[] ps=['9589', '9598'] rss=0

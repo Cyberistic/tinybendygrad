@@ -1,0 +1,751 @@
+# THE BOOL/INT MEMBERSHIP CENSUS -- AST, scope-resolved containers, 150 files discovered by os.walk under checks+gates/
+## files discovered (population) : 150
+## files UNPARSEABLE              : 0
+## `x in C` sites on dict/list/set/tuple : 192
+## `C[k]` sites on a dict                : 532
+## sites a bool REACHES                   : 14
+## sites a bool CANNOT reach (str members): 132
+## sites DYNAMIC (an accumulator; counted as a hole) : 299
+## sites UNKNOWN (a name/spread in the literal)      : 279
+## the four grades partition all 724 sites: 14 REACHES + 132 MEMBER-IS-STR + 299 DYNAMIC + 279 UNKNOWN = 724
+
+file                                  ln kind container                  keys                         reach        source
+--------------------------------------------------------------------------------------------------------------------
+checks/abi4_gate.py                  305 SUB  dict SITES                 ['A', 'B', 'C']              MEMBER-IS-STR text = swap(text, *SITES[s])
+checks/abi4_gate.py                  354 SUB  dict oracle                []                           DYNAMIC      oracle[r.name] = norm(str(v)) if isf[r.name] else str(int(v)
+checks/abi4_gate.py                  354 SUB  dict isf                   None                         UNKNOWN      oracle[r.name] = norm(str(v)) if isf[r.name] else str(int(v)
+checks/abi4_gate.py                  359 SUB  dict arms                  ['shipped']                  MEMBER-IS-STR arms[f"break-{sub}"] = breaks(pristine, sub)
+checks/abi4_gate.py                  361 SUB  dict arms                  ['shipped']                  MEMBER-IS-STR arms[f"disarm-{s}"] = swap(pristine, *DISARMS[s])
+checks/abi4_gate.py                  361 SUB  dict DISARMS               ['A', 'B', 'C']              MEMBER-IS-STR arms[f"disarm-{s}"] = swap(pristine, *DISARMS[s])
+checks/abi4_gate.py                  363 SUB  dict arms                  ['shipped']                  MEMBER-IS-STR arms[f"plant-{s}"] = swap(pristine, *PLANTS[s])
+checks/abi4_gate.py                  363 SUB  dict PLANTS                ['A', 'B', 'C']              MEMBER-IS-STR arms[f"plant-{s}"] = swap(pristine, *PLANTS[s])
+checks/abi4_gate.py                  365 SUB  dict arms                  ['shipped']                  MEMBER-IS-STR arms["ALT"] = swap(swap(pristine, *SITES["C"]), JS_FP8DEC_SH
+checks/abi4_gate.py                  365 SUB  dict SITES                 ['A', 'B', 'C']              MEMBER-IS-STR arms["ALT"] = swap(swap(pristine, *SITES["C"]), JS_FP8DEC_SH
+checks/abi4_gate.py                  375 SUB  dict res                   []                           DYNAMIC      res[a] = run(work, cs, a)
+checks/abi4_gate.py                  381 SUB  dict res                   []                           DYNAMIC      return [n for n in names if (norm(res[a][n]) if isf[n] else 
+checks/abi4_gate.py                  381 SUB  dict isf                   None                         UNKNOWN      return [n for n in names if (norm(res[a][n]) if isf[n] else 
+checks/abi4_gate.py                  381 SUB  dict res                   []                           DYNAMIC      return [n for n in names if (norm(res[a][n]) if isf[n] else 
+checks/abi4_gate.py                  381 SUB  dict oracle                []                           DYNAMIC      return [n for n in names if (norm(res[a][n]) if isf[n] else 
+checks/abi4_gate.py                  388 SUB  dict others                None                         UNKNOWN      fixes = {s: sorted(green(f"break-{others[s]}") - green("brea
+checks/abi4_gate.py                  389 SUB  dict needs                 None                         UNKNOWN      ov = {f"{a}^{b}": sorted(set(needs[a]) & set(needs[b]))
+checks/abi4_gate.py                  389 SUB  dict needs                 None                         UNKNOWN      ov = {f"{a}^{b}": sorted(set(needs[a]) & set(needs[b]))
+checks/abi4_gate.py                  391 SUB  dict needs                 None                         UNKNOWN      b_alone = not (set(needs["B"]) & (set(needs["A"]) | set(need
+checks/abi4_gate.py                  391 SUB  dict needs                 None                         UNKNOWN      b_alone = not (set(needs["B"]) & (set(needs["A"]) | set(need
+checks/abi4_gate.py                  391 SUB  dict needs                 None                         UNKNOWN      b_alone = not (set(needs["B"]) & (set(needs["A"]) | set(need
+checks/abi4_gate.py                  392 SUB  dict needs                 None                         UNKNOWN      a_in_c = set(needs["A"]) <= set(needs["C"])
+checks/abi4_gate.py                  392 SUB  dict needs                 None                         UNKNOWN      a_in_c = set(needs["A"]) <= set(needs["C"])
+checks/abi4_gate.py                  393 SUB  dict fixes                 None                         UNKNOWN      c_own = set(fixes["C"]) - set(fixes["A"]) - set(fixes["B"])
+checks/abi4_gate.py                  393 SUB  dict fixes                 None                         UNKNOWN      c_own = set(fixes["C"]) - set(fixes["A"]) - set(fixes["B"])
+checks/abi4_gate.py                  393 SUB  dict fixes                 None                         UNKNOWN      c_own = set(fixes["C"]) - set(fixes["A"]) - set(fixes["B"])
+checks/abi4_gate.py                  399 SUB  dict res                   []                           DYNAMIC      print(f"  {a:<10} present {len(res[a]):>3}/{len(names)}")
+checks/abi4_gate.py                  412 SUB  dict res                   []                           DYNAMIC      mv = [n for n in names if res["shipped"][n] != res[f"disarm-
+checks/abi4_gate.py                  412 SUB  dict res                   []                           DYNAMIC      mv = [n for n in names if res["shipped"][n] != res[f"disarm-
+checks/abi4_gate.py                  424 SUB  dict res                   []                           DYNAMIC      mv = [n for n in names if res["shipped"][n] != res[f"plant-{
+checks/abi4_gate.py                  424 SUB  dict res                   []                           DYNAMIC      mv = [n for n in names if res["shipped"][n] != res[f"plant-{
+checks/abi4_gate.py                  436 SUB  dict needs                 None                         UNKNOWN      print(f"\n  site {s}   NEEDS {len(needs[s]):>3}   FIXES {len
+checks/abi4_gate.py                  436 SUB  dict fixes                 None                         UNKNOWN      print(f"\n  site {s}   NEEDS {len(needs[s]):>3}   FIXES {len
+checks/abi4_gate.py                  437 SUB  dict needs                 None                         UNKNOWN      print(f"    NEEDS: {needs[s][:4]}{' ...' if len(needs[s]) > 
+checks/abi4_gate.py                  437 SUB  dict needs                 None                         UNKNOWN      print(f"    NEEDS: {needs[s][:4]}{' ...' if len(needs[s]) > 
+checks/abi4_gate.py                  438 SUB  dict fixes                 None                         UNKNOWN      print(f"    FIXES: {fixes[s][:4]}{' ...' if len(fixes[s]) > 
+checks/abi4_gate.py                  438 SUB  dict fixes                 None                         UNKNOWN      print(f"    FIXES: {fixes[s][:4]}{' ...' if len(fixes[s]) > 
+checks/abi4_gate.py                  444 SUB  dict needs                 None                         UNKNOWN      print(f"    B  NEEDS {len(needs['B'])}, FIXES {len(fixes['B'
+checks/abi4_gate.py                  444 SUB  dict fixes                 None                         UNKNOWN      print(f"    B  NEEDS {len(needs['B'])}, FIXES {len(fixes['B'
+checks/abi4_gate.py                  446 SUB  dict fixes                 None                         UNKNOWN      print(f"    C  FIXES {len(fixes['C'])} of which {len(c_own)}
+checks/abi4_gate.py                  449 SUB  dict fixes                 None                         UNKNOWN      print(f"    A  FIXES {len(fixes['A'])}, and NEEDS(A) is a SU
+checks/abi4_gate.py                  449 SUB  dict ov                    None                         UNKNOWN      print(f"    A  FIXES {len(fixes['A'])}, and NEEDS(A) is a SU
+checks/abi4_gate.py                  457 SUB  dict needs                 None                         UNKNOWN      print(f"  INTERNAL to the lane.  {'All three are load-bearin
+checks/abi4_gate.py                  461 SUB  dict fixes                 None                         UNKNOWN      for n in fixes["B"][:3]:
+checks/abi4_gate.py                  462 SUB  dict oracle                []                           DYNAMIC      print(f"    {n:<30} CPython {oracle[n]:<10} shipped {res['sh
+checks/abi4_gate.py                  462 SUB  dict res                   []                           DYNAMIC      print(f"    {n:<30} CPython {oracle[n]:<10} shipped {res['sh
+checks/abi4_gate.py                  463 SUB  dict res                   []                           DYNAMIC      f" with B broken {res['break-B'][n]}")
+checks/abi4_gate.py                  471 SUB  dict fixes                 None                         UNKNOWN      print(f"  {len(alt_red)} rows, and that set IS FIXES(C): {so
+checks/abi4_gate.py                  481 SUB  dict res                   []                           DYNAMIC      mv_full = [n for n in names if res["break-ABC"][n] != res["s
+checks/abi4_gate.py                  481 SUB  dict res                   []                           DYNAMIC      mv_full = [n for n in names if res["break-ABC"][n] != res["s
+checks/abi4_gate.py                  504 SUB  dict arm_leak              []                           DYNAMIC      arm_leak[a] = hit
+checks/abi4_gate.py                  507 SUB  dict res                   []                           DYNAMIC      same = [n for n in names if res["shipped"][n] != res["ALT"][
+checks/abi4_gate.py                  507 SUB  dict res                   []                           DYNAMIC      same = [n for n in names if res["shipped"][n] != res["ALT"][
+checks/abi4_gate.py                  508 SUB  dict res                   []                           DYNAMIC      print(f"  by THE TREE: `shipped` prints {len(res['shipped'])
+checks/abi4_gate.py                  527 SUB  dict res                   []                           DYNAMIC      all(len(res[a]) == len(names) for a in arms)),
+checks/abi4_gate.py                  534 SUB  dict needs                 None                         UNKNOWN      all(needs[s] for s in "ABC")),
+checks/abi4_gate.py                  540 SUB  dict fixes                 None                         UNKNOWN      not fixes["A"]),
+checks/abi4_gate.py                  546 SUB  dict fixes                 None                         UNKNOWN      sorted(alt_red) == sorted(fixes["C"]) and bool(fixes["C"])),
+checks/abi4_gate.py                  546 SUB  dict fixes                 None                         UNKNOWN      sorted(alt_red) == sorted(fixes["C"]) and bool(fixes["C"])),
+checks/abi4_gate.py                  565 SUB  dict res                   []                           DYNAMIC      "rows": {a: res[a] for a in arms}}, indent=1))
+checks/abi_gate.py                   353 GET  dict table                 []                           DYNAMIC      for old, new, expect in table.get(lane, []):
+checks/abi_gate.py                   412 SUB  dict ORACLE                ['abi123_trunc_A', 'abi123_t MEMBER-IS-STR got, want = rows.get(r), ORACLE[r]
+checks/abi_gate.py                   436 SUB  dict ORACLE                ['abi123_trunc_A', 'abi123_t MEMBER-IS-STR bad = [r for r in ORACLE if r in rows and norm(rows[r]) != n
+checks/abi_gate.py                   483 SUB  dict ARMS                  ['shipped', 'plant-abi2-in-j MEMBER-IS-STR for lane, edits in ARMS[arm]:
+checks/abi_gate.py                   561 IN   tuple <Tuple>              None                         UNKNOWN      if after not in ("(", "{", "="):
+checks/abi_gate.py                   668 SUB  dict res                   []                           DYNAMIC      res[arm] = {}
+checks/abi_gate.py                   670 SUB  dict res                   []                           DYNAMIC      res[arm][tgt] = drive(work, tgt)
+checks/abi_gate.py                   672 SUB  dict res                   []                           DYNAMIC      ship, shipjs = res["shipped"]["c"], res["shipped"]["js"]
+checks/abi_gate.py                   672 SUB  dict res                   []                           DYNAMIC      ship, shipjs = res["shipped"]["c"], res["shipped"]["js"]
+checks/abi_gate.py                   679 SUB  dict res                   []                           DYNAMIC      _, miss = vs(res[arm][tgt])
+checks/abi_gate.py                   689 SUB  dict ORACLE                ['abi123_trunc_A', 'abi123_t MEMBER-IS-STR print(f"  {r:<20} {ORACLE[r]:<22} {ship.get(r,'<absent>'):<2
+checks/abi_gate.py                   728 SUB  dict res                   []                           DYNAMIC      b, a = res[base][tgt], res[arm][tgt]
+checks/abi_gate.py                   728 SUB  dict res                   []                           DYNAMIC      b, a = res[base][tgt], res[arm][tgt]
+checks/abi_gate.py                   742 SUB  dict res                   []                           DYNAMIC      bad, _ = vs(res[arm]["js"])
+checks/abi_gate.py                   747 SUB  dict res                   []                           DYNAMIC      ain = set(moved(shipjs, res["plant-abi2-in-js"]["js"]))
+checks/abi_gate.py                   748 SUB  dict res                   []                           DYNAMIC      aout = set(moved(shipjs, res["plant-abi2-out-js"]["js"]))
+checks/abi_gate.py                   775 SUB  dict res                   []                           DYNAMIC      rows = res[arm]["c"]
+checks/abi_gate.py                   789 SUB  dict WORDS                 ['abi123_trunc_A', 'abi123_t MEMBER-IS-STR all(WORDS[r][0] != WORDS[r][1] for r in WORDS)),
+checks/abi_gate.py                   789 SUB  dict WORDS                 ['abi123_trunc_A', 'abi123_t MEMBER-IS-STR all(WORDS[r][0] != WORDS[r][1] for r in WORDS)),
+checks/abi_gate.py                   796 SUB  dict res                   []                           DYNAMIC      len(moved(shipjs, res["plant-abi4-js"]["js"])) > 0),
+checks/abi_gate.py                   800 SUB  dict res                   []                           DYNAMIC      any("ABI-2 VIOLATED" in w for _, w in attribute(res["plant-a
+checks/abi_gate.py                   802 SUB  dict res                   []                           DYNAMIC      any("ABI-2 VIOLATED" in w for _, w in attribute(res["plant-a
+checks/abi_gate.py                   804 SUB  dict res                   []                           DYNAMIC      not fence(shipjs, res["plant-abi2-in-js"]["js"], "abi123")),
+checks/abi_gate.py                   806 SUB  dict res                   []                           DYNAMIC      not fence(shipjs, res["plant-abi2-out-js"]["js"], "abi123"))
+checks/abi_gate.py                   817 SUB  dict res                   []                           DYNAMIC      ("ABI-2's inbound disarm moved 0", moved(shipjs, res["disarm
+checks/abi_gate.py                   818 SUB  dict res                   []                           DYNAMIC      ("ABI-2's outbound disarm moved 0", moved(shipjs, res["disar
+checks/abi_gate.py                   821 SUB  dict res                   []                           DYNAMIC      len(moved(ship, res["plant-abi1-c"]["c"])) > 0),
+checks/abi_gate.py                   823 SUB  dict res                   []                           DYNAMIC      not fence(ship, res["plant-abi1-c"]["c"], "abi123")),
+checks/abi_gate.py                   824 SUB  dict res                   []                           DYNAMIC      ("ABI-1 disarm moved 0", moved(ship, res["disarm-abi1-c"]["c
+checks/abi_gate.py                   825 SUB  dict res                   []                           DYNAMIC      ("ABI-3 plant fired", len(moved(ship, res["plant-abi3-c"]["c
+checks/abi_gate.py                   827 SUB  dict res                   []                           DYNAMIC      not fence(ship, res["plant-abi3-c"]["c"], "abi123")),
+checks/abi_gate.py                   828 SUB  dict res                   []                           DYNAMIC      ("ABI-3 disarm moved 0", moved(ship, res["disarm-abi3-c"]["c
+checks/abi_gate.py                   832 SUB  dict res                   []                           DYNAMIC      len(moved(shipjs, res["plant-abi4-js"]["js"])) > 0),
+checks/abi_gate.py                   834 SUB  dict res                   []                           DYNAMIC      not fence(shipjs, res["plant-abi4-js"]["js"], "abi4")),
+checks/abi_gate.py                   836 SUB  dict res                   []                           DYNAMIC      moved(shipjs, res["disarm-abi4-js"]["js"]) == []),
+checks/al-verdict.py                 115 IN   tuple armed                None                         UNKNOWN      if op in armed:
+checks/al-verdict.py                 123 IN   tuple <Tuple>              None                         UNKNOWN      if len(sys.argv) not in (3, 4):
+checks/bounded.py                    180 GET  dict WHY                   ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR if why := WHY.get(verdict):
+checks/bounded.py                    200 SUB  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR return STATUS[UNSTARTED]
+checks/bounded.py                    216 SUB  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR record(UNSTARTED, STATUS[UNSTARTED], 0.0, ceiling, 0.0, cmd,
+checks/bounded.py                    217 SUB  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR return STATUS[UNSTARTED]
+checks/bounded.py                    264 GET  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR return STATUS.get(verdict) or (rc or 0)
+checks/bounded.py                    343 SUB  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR results.append((f"COLLISION: a PRINTING refusal and a kill a
+checks/bounded.py                    345 SUB  dict STATUS                ['KILLED-ON-MEMORY', 'TIMED- MEMBER-IS-STR refuse.returncode == kill.returncode == STATUS[MEMORY]
+checks/citation-gate.py               96 IN   dict bodies                []                           DYNAMIC      if path not in bodies:
+checks/citation-gate.py               97 SUB  dict bodies                []                           DYNAMIC      bodies[path] = open(path, encoding="utf-8", errors="replace"
+checks/citation-gate.py               98 SUB  dict bodies                []                           DYNAMIC      return bodies[path]
+checks/citation-gate.py              137 SUB  dict hist                  []                           DYNAMIC      hist[q] = c
+checks/citation-gate.py              168 SUB  dict found                 None                         UNKNOWN      found["NO-FILE"].append(f"{rel}:{srcline}  {name}:{line}  `{
+checks/citation-gate.py              172 SUB  dict found                 None                         UNKNOWN      found["PAST-EOF"].append(f"{rel}:{srcline}  {name}:{line} of
+checks/citation-gate.py              184 SUB  dict found                 None                         UNKNOWN      found["HOLDS" if near == line else "STALE-LINE"].append(
+checks/citation-gate.py              190 SUB  dict found                 None                         UNKNOWN      found["WRONG-FILE"].append(f"{rel}:{srcline}  {name}:{line} 
+checks/citation-gate.py              193 IN   dict hist                  []                           DYNAMIC      if key not in hist:
+checks/citation-gate.py              195 SUB  dict hist                  []                           DYNAMIC      hist[key] = ",".join(cs)
+checks/citation-gate.py              197 SUB  dict hist                  []                           DYNAMIC      cs = [c for c in hist[key].split(",") if c]
+checks/citation-gate.py              199 SUB  dict found                 None                         UNKNOWN      found["PROSE"].append(f"{rel}:{srcline}  {name}:{line}  neve
+checks/citation-gate.py              212 IN   set set()                  None                         UNKNOWN      if len(t) > 3 and t not in set(TOKENS.findall(read(tgt)))]
+checks/citation-gate.py              213 SUB  dict found                 None                         UNKNOWN      found["STALE-RULE"].append(
+checks/citation-gate.py              222 SUB  dict found                 None                         UNKNOWN      judged = sum(len(found[c]) for c in CLASSES)
+checks/citation-gate.py              226 SUB  dict found                 None                         UNKNOWN      if found[c]:
+checks/citation-gate.py              228 SUB  dict found                 None                         UNKNOWN      print(f"  {len(found[c]):5d} {c:12} ({tag})")
+checks/citation-gate.py              230 SUB  dict found                 None                         UNKNOWN      for row in found[c][:shown]:
+checks/citation-gate.py              232 SUB  dict found                 None                         UNKNOWN      if len(found[c]) > shown:
+checks/citation-gate.py              233 SUB  dict found                 None                         UNKNOWN      print(f"        ... and {len(found[c]) - shown} more")
+checks/citation-gate.py              234 SUB  dict found                 None                         UNKNOWN      if not found["STALE-RULE"]:
+checks/cli.py                         31 SUB  dict layout                []                           DYNAMIC      layout[k] = v = {"event_type":event_type, "events":[]}
+checks/cli.py                         35 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR v["events"].append({"name":strings[name], "ref":option(ref),
+checks/cli.py                         37 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR v["linear"] = u("<B")[0]
+checks/cli.py                         38 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR v["peak"] = u("<Q")[0]
+checks/cli.py                         40 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR if v["linear"]:
+checks/cli.py                         42 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR v["events"].append({"event":"freq", "ts":ts, "value":value})
+checks/cli.py                         45 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR if alloc: v["events"].append({"event":"alloc", "ts":ts, "key
+checks/cli.py                         46 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR else: v["events"].append({"event":"free", "ts":ts, "key":key
+checks/cli.py                         73 IN   set <Set>                  None                         UNKNOWN      if k["device"] in {"MARKER", "SOURCE"}: return f"--- {k['dev
+checks/cli.py                         90 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR print(f"[{k}] {' '.join((lines:=v['label'].splitlines())[:5]
+checks/cli.py                         90 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR print(f"[{k}] {' '.join((lines:=v['label'].splitlines())[:5]
+checks/cli.py                         90 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR print(f"[{k}] {' '.join((lines:=v['label'].splitlines())[:5]
+checks/cli.py                         91 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR if v["src"]:
+checks/cli.py                         92 SUB  dict v                     ['event_type', 'events']     MEMBER-IS-STR print("  src: "+", ".join([f"{i}->[{x}]" for i,x in v["src"]
+checks/cli.py                        125 IN   tuple op_name              None                         UNKNOWN      color = next((v for k,v in viz.wave_colors.items() if k in o
+checks/cli.py                        131 SUB  dict dispatch_to_inst      []                           DYNAMIC      dispatch_to_inst[f"{e.device}-{idx}"] = (inst, int(e.st))
+checks/cli.py                        134 SUB  dict dispatch_to_inst      []                           DYNAMIC      inst, dispatch_st = dispatch_to_inst[link]
+checks/cli.py                        139 SUB  dict row                   ['clk', 'cycle', 'unit', 'op MEMBER-IS-STR print(emit(row, lambda _: f"{row['clk']:<12} {unit:<20} {op_
+checks/cli.py                        139 SUB  dict row                   ['clk', 'cycle', 'unit', 'op MEMBER-IS-STR print(emit(row, lambda _: f"{row['clk']:<12} {unit:<20} {op_
+checks/cli.py                        139 SUB  dict row                   ['clk', 'cycle', 'unit', 'op MEMBER-IS-STR print(emit(row, lambda _: f"{row['clk']:<12} {unit:<20} {op_
+checks/cli.py                        171 GET  dict agg                   []                           DYNAMIC      t, c, ref, est = agg.get((dev,e["name"]), (0.0, 0, None, {})
+checks/cli.py                        173 SUB  dict agg                   []                           DYNAMIC      agg[(dev,e["name"])] = (t+et, c+1, e["ref"], est)
+checks/cli.py                        210 IN   set seen_refs              None                         UNKNOWN      if k["ref"] is not None and k["ref"] not in seen_refs:
+checks/corpus-figure.py              203 SUB  dict got                   []                           DYNAMIC      red = [f"{k}={got[k]} (expected {pins[k]})" for k in pinned 
+checks/corpus-figure.py              203 IN   dict got                   []                           DYNAMIC      red = [f"{k}={got[k]} (expected {pins[k]})" for k in pinned 
+checks/corpus-figure.py              203 SUB  dict got                   []                           DYNAMIC      red = [f"{k}={got[k]} (expected {pins[k]})" for k in pinned 
+checks/corpus-figure.py              204 IN   dict got                   []                           DYNAMIC      red += [f"{k} ABSENT" for k in pinned if k not in got]
+checks/corpus-figure.py              205 IN   dict got                   []                           DYNAMIC      if "graphs" not in got:
+checks/corpus-figure.py              207 SUB  dict got                   []                           DYNAMIC      elif got["graphs"] != str(declared):
+checks/corpus-figure.py              208 SUB  dict got                   []                           DYNAMIC      red.append(f"graphs={got['graphs']} but the corpus DECLARES 
+checks/corpus-figure.py              267 SUB  dict union                 []                           DYNAMIC      union[op] = union.get(op, 0) + k
+checks/corpus-figure.py              267 GET  dict union                 []                           DYNAMIC      union[op] = union.get(op, 0) + k
+checks/corpus-figure.py              269 IN   dict union                 []                           DYNAMIC      missing = [n for n in names if n not in union]
+checks/coverage.py                    74 IN   dict canon                 None                         UNKNOWN      if name in canon:
+checks/coverage.py                    76 SUB  dict canon                 None                         UNKNOWN      claims.append((canon[name], claim, "one of the 227", n))
+checks/devgate.py                     62 IN   set ENV_OBJ                None                         UNKNOWN      if isinstance(obj, ast.Attribute) and obj.attr in ENV_OBJ:
+checks/devgate.py                     64 IN   set ENV_OBJ                None                         UNKNOWN      if isinstance(obj, ast.Name) and obj.id in ENV_OBJ and not s
+checks/devgate.py                    166 IN   set reaches                None                         UNKNOWN      if node.name in reaches: continue
+checks/devgate.py                    168 IN   set reaches                None                         UNKNOWN      _callee(c) in reaches for c in ast.walk(node) if isinstance(
+checks/devgate.py                    225 IN   tuple SKIP_DIR             None                         UNKNOWN      dn[:] = [d for d in dn if d not in SKIP_DIR]
+checks/devgate.py                    264 IN   dict _LOADER_CACHE         []                           DYNAMIC      if path not in _LOADER_CACHE:
+checks/devgate.py                    268 SUB  dict _LOADER_CACHE         []                           DYNAMIC      _LOADER_CACHE[path] = frozenset(loader_functions(ast.parse(s
+checks/devgate.py                    270 SUB  dict _LOADER_CACHE         []                           DYNAMIC      _LOADER_CACHE[path] = frozenset()
+checks/devgate.py                    271 SUB  dict _LOADER_CACHE         []                           DYNAMIC      if f.attr in _LOADER_CACHE[path]: out.add(f.attr)
+checks/devgate.py                    288 IN   set OS_WRITE_NAMES         None                         UNKNOWN      return "WRITE" if fnid.id in OS_WRITE_NAMES else None
+checks/devgate.py                    290 IN   set OS_WRITE_NAMES         None                         UNKNOWN      if fnid.attr in OS_WRITE_NAMES: return "WRITE"
+checks/devgate.py                    291 IN   set ENV_WRITE_ATTRS        None                         UNKNOWN      if fnid.attr in ENV_WRITE_ATTRS and _is_env_obj(fnid.value):
+checks/devgate.py                    292 IN   set ENV_READ_ATTRS         None                         UNKNOWN      if fnid.attr in ENV_READ_ATTRS and _is_env_obj(fnid.value): 
+checks/devgate.py                    302 IN   set ENV_OBJ                None                         UNKNOWN      if isinstance(node, ast.Attribute): return node.attr in ENV_
+checks/devgate.py                    303 IN   set ENV_OBJ                None                         UNKNOWN      if isinstance(node, ast.Name): return node.id in ENV_OBJ
+checks/devgate.py                    343 IN   set ENV_OBJ                None                         UNKNOWN      any(isinstance(t, ast.Name) and t.id in ENV_OBJ for t in n.t
+checks/devgate.py                    379 IN   tuple seen                 None                         UNKNOWN      if e.line not in seen: seen.add(e.line); uniq.append(e)
+checks/devgate.py                    403 IN   tuple SKIP_DIR             None                         UNKNOWN      dn[:] = [d for d in dn if d not in SKIP_DIR]
+checks/devgate.py                    418 IN   tuple <Tuple>              None                         UNKNOWN      denom = [v for v in vs if v.klass in ("EARLY", "LATE", "BOTH
+checks/devgate.py                    425 IN   dict counts                []                           DYNAMIC      if k in counts: print(f"  {k:11s} {len(counts[k]):4d}")
+checks/devgate.py                    425 SUB  dict counts                []                           DYNAMIC      if k in counts: print(f"  {k:11s} {len(counts[k]):4d}")
+checks/devgate.py                    612 IN   tuple <Tuple>              None                         UNKNOWN      if v.klass not in ("EARLY", "LATE", "BOTH"): continue   # no
+checks/devgate.py                    619 IN   tuple <Tuple>              None                         UNKNOWN      ok = landed if v.klass in ("EARLY", "BOTH") else not landed
+checks/devgate.py                    701 IN   tuple SKIP_DIR             None                         UNKNOWN      dn[:] = [d for d in dn if d not in SKIP_DIR]
+checks/devgate.py                    754 IN   tuple <Tuple>              None                         UNKNOWN      if v.klass not in ("EARLY", "LATE", "BOTH", "VENDORED", "IMP
+checks/devgate.py                    757 IN   tuple <Tuple>              None                         UNKNOWN      want = "NULL" if v.klass in ("EARLY", "VENDORED", "IMPORTLES
+checks/devgate.py                    763 IN   tuple <Tuple>              None                         UNKNOWN      late = [v for v in vs if v.klass in ("LATE", "BOTH")]
+checks/devpin.py                      70 IN   tuple <Tuple>              None                         UNKNOWN      if tok.strip().strip("'\"") not in ("", ABSENCE)}
+checks/differ.py                     484 IN   dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR unset = [g for g in graphs if g not in WANT]
+checks/differ.py                     487 SUB  dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR moved = [f"{g}: VERDICT={verdict(f'D1-graph-{g}.txt')} EXPEC
+checks/differ.py                     488 IN   dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR if g in WANT and verdict(f"D1-graph-{g}.txt") != WANT[g]]
+checks/differ.py                     488 SUB  dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR if g in WANT and verdict(f"D1-graph-{g}.txt") != WANT[g]]
+checks/differ.py                     489 SUB  dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR na = sum(WANT[g] == "AGREE" for g in graphs if g in WANT)
+checks/differ.py                     489 IN   dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR na = sum(WANT[g] == "AGREE" for g in graphs if g in WANT)
+checks/differ.py                     490 GET  dict WANT                  ['matmul', 'reduce', 'buffer MEMBER-IS-STR bad = [g for g in graphs if WANT.get(g) == "DISAGREE"]
+checks/differ.py                     531 SUB  dict sides                 []                           DYNAMIC      sides[side] = (D / f"D2-canon-{side}-{g}.txt").read_bytes()
+checks/differ.py                     532 SUB  dict sides                 []                           DYNAMIC      py, bend = sides["py"], sides["bend"]
+checks/differ.py                     532 SUB  dict sides                 []                           DYNAMIC      py, bend = sides["py"], sides["bend"]
+checks/differ.py                     752 GET  dict ENV                   ['LC_ALL', 'DEV', 'PYTHONHAS MEMBER-IS-STR got = ENV.get(key.upper())
+checks/differ.py                     809 SUB  dict ROW_VALUES            ['lc_all', 'noopt', 'pythonh MEMBER-IS-STR bad += [f"{k}={got[k]} but ENV pins {ROW_VALUES[k]}" for k i
+checks/differ.py                     810 SUB  dict ROW_VALUES            ['lc_all', 'noopt', 'pythonh MEMBER-IS-STR if k in got and got[k] != ROW_VALUES[k]]
+checks/differ.py                     986 SUB  dict PINS                  ['graphs', 'graphs-unset', ' MEMBER-IS-STR return [f"{k}={v} (expected {PINS[k]})" for k, v in got.item
+checks/differ.py                     986 IN   dict PINS                  ['graphs', 'graphs-unset', ' MEMBER-IS-STR return [f"{k}={v} (expected {PINS[k]})" for k, v in got.item
+checks/differ.py                     986 SUB  dict PINS                  ['graphs', 'graphs-unset', ' MEMBER-IS-STR return [f"{k}={v} (expected {PINS[k]})" for k, v in got.item
+checks/differ.py                    1024 SUB  dict REPRO_PINS            ['repro-rc']                 MEMBER-IS-STR return [f"{k}={v} (expected {REPRO_PINS[k]}, from {REPRO_ART
+checks/differ.py                    1025 IN   dict REPRO_PINS            ['repro-rc']                 MEMBER-IS-STR if k in REPRO_PINS and v != REPRO_PINS[k]] \
+checks/differ.py                    1025 SUB  dict REPRO_PINS            ['repro-rc']                 MEMBER-IS-STR if k in REPRO_PINS and v != REPRO_PINS[k]] \
+checks/differ.py                    1127 IN   tuple ROW_KEYS             None                         UNKNOWN      absent = {k: v for k, v in kv.items() if k not in ROW_KEYS}
+checks/differ.py                    1188 SUB  dict shots                 []                           DYNAMIC      shots[label] = path
+checks/differ.py                    1190 SUB  dict shots                 []                           DYNAMIC      n = len(shots["B"].read_text().splitlines())
+checks/differ.py                    1197 SUB  dict shots                 []                           DYNAMIC      if shots["A"].read_bytes() == shots["B"].read_bytes():
+checks/differ.py                    1197 SUB  dict shots                 []                           DYNAMIC      if shots["A"].read_bytes() == shots["B"].read_bytes():
+checks/differ.py                    1204 SUB  dict shots                 []                           DYNAMIC      sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
+checks/differ.py                    1204 SUB  dict shots                 []                           DYNAMIC      sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
+checks/differ.py                    1234 SUB  dict <Dict>                ['run', 'repro', 'snap']     MEMBER-IS-STR return {"run": cmd_run, "repro": cmd_repro, "snap": lambda _
+checks/disagree-gate.py              158 GET  dict PIN                   ['flip', 'unshard']          MEMBER-IS-STR p = PIN.get(g["graph"])
+checks/disagree-gate.py              388 SUB  dict lanes                 ['pin', 'citations', 'covera MEMBER-IS-STR title, fn = lanes[key]
+checks/disagree-gate.py              399 SUB  dict PIN                   ['flip', 'unshard']          MEMBER-IS-STR p = PIN[g]
+checks/dup-census.py                 110 IN   tuple <Tuple>              None                         UNKNOWN      return [(i, nm, src[i - 1]) for i, k, nm, _ in sc if k in ("
+checks/dup-census.py                 162 SUB  dict dupes                 []                           DYNAMIC      dupes[nm] = {"n": n, "vals": vs, "distinct_vals": len(set(vs
+checks/dup-gate.py                   118 IN   tuple <Tuple>              None                         UNKNOWN      if k in ("F1", "F2")) if ROW(ln) is None]
+checks/dup-gate.py                   246 IN   list diff                  None                         UNKNOWN      f"{donor in diff} (a collision between EQUAL values and one 
+checks/dup-gate.py                   264 SUB  dict out                   []                           DYNAMIC      out[nm] = (verdict, len(gp["dup"]), len(go["dup"]), gp["sha"
+checks/dup-gate.py                   266 SUB  dict out                   []                           DYNAMIC      f"{out['clean']}")
+checks/dup-gate.py                   267 SUB  dict out                   []                           DYNAMIC      print(f"[selftest assert] value must BREAK byte-identity: {n
+checks/dup-gate.py                   268 SUB  dict out                   []                           DYNAMIC      f"(base byteIdent={out['clean'][3]})")
+checks/dup-gate.py                   270 SUB  dict out                   []                           DYNAMIC      f"byte-identical: {out['name'][1] > out['clean'][1] and out[
+checks/dup-gate.py                   270 SUB  dict out                   []                           DYNAMIC      f"byte-identical: {out['name'][1] > out['clean'][1] and out[
+checks/dup-gate.py                   270 SUB  dict out                   []                           DYNAMIC      f"byte-identical: {out['name'][1] > out['clean'][1] and out[
+checks/dup-gate.py                   270 SUB  dict out                   []                           DYNAMIC      f"byte-identical: {out['name'][1] > out['clean'][1] and out[
+checks/dup-gate.py                   270 SUB  dict out                   []                           DYNAMIC      f"byte-identical: {out['name'][1] > out['clean'][1] and out[
+checks/dup-gate.py                   271 SUB  dict out                   []                           DYNAMIC      f"-- raised port {out['clean'][1]}->{out['name'][1]}, oracle
+checks/dup-gate.py                   271 SUB  dict out                   []                           DYNAMIC      f"-- raised port {out['clean'][1]}->{out['name'][1]}, oracle
+checks/dup-gate.py                   271 SUB  dict out                   []                           DYNAMIC      f"-- raised port {out['clean'][1]}->{out['name'][1]}, oracle
+checks/dup-gate.py                   271 SUB  dict out                   []                           DYNAMIC      f"-- raised port {out['clean'][1]}->{out['name'][1]}, oracle
+checks/dup-gate.py                   272 SUB  dict out                   []                           DYNAMIC      f"byteIdent {out['name'][3]}, disagree {out['name'][4]}")
+checks/dup-gate.py                   272 SUB  dict out                   []                           DYNAMIC      f"byteIdent {out['name'][3]}, disagree {out['name'][4]}")
+checks/dup-gate.py                   273 SUB  dict out                   []                           DYNAMIC      print(f"[selftest assert] collide must raise dup: {out['coll
+checks/dup-gate.py                   273 SUB  dict out                   []                           DYNAMIC      print(f"[selftest assert] collide must raise dup: {out['coll
+checks/dup-gate.py                   274 SUB  dict out                   []                           DYNAMIC      ok = (not out["value"][3]) and out["name"][3] and out["name"
+checks/dup-gate.py                   274 SUB  dict out                   []                           DYNAMIC      ok = (not out["value"][3]) and out["name"][3] and out["name"
+checks/dup-gate.py                   274 SUB  dict out                   []                           DYNAMIC      ok = (not out["value"][3]) and out["name"][3] and out["name"
+checks/dup-gate.py                   274 SUB  dict out                   []                           DYNAMIC      ok = (not out["value"][3]) and out["name"][3] and out["name"
+checks/dup-gate.py                   275 SUB  dict out                   []                           DYNAMIC      and out["name"][2] > out["clean"][2] and out["collide"][1] >
+checks/dup-gate.py                   275 SUB  dict out                   []                           DYNAMIC      and out["name"][2] > out["clean"][2] and out["collide"][1] >
+checks/dup-gate.py                   275 SUB  dict out                   []                           DYNAMIC      and out["name"][2] > out["clean"][2] and out["collide"][1] >
+checks/dup-gate.py                   275 SUB  dict out                   []                           DYNAMIC      and out["name"][2] > out["clean"][2] and out["collide"][1] >
+checks/dup-gate.py                   277 SUB  dict out                   []                           DYNAMIC      + ("" if out["clean"][3] else
+checks/dup-gate.py                   305 IN   tuple vb                   None                         UNKNOWN      f"only in BEFORE {[x for x in va if x not in vb][:4]}   only
+checks/dup-gate.py                   306 IN   tuple va                   None                         UNKNOWN      f"{[x for x in vb if x not in va][:4]}")
+checks/e2e.py                        404 IN   tuple <Tuple>              None                         UNKNOWN      if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+checks/e2e.py                        559 GET  dict ENV                   []                           DYNAMIC      for d in ENV.get("PATH", "").split(os.pathsep):
+checks/env-precond.py                197 IN   set late_ops               None                         UNKNOWN      f"{'FDIV' if 'FDIV' in late_ops else 'RECIPROCAL'} -- DEV=NU
+checks/env-precond.py                219 SUB  dict out                   []                           DYNAMIC      out[m.group(1).lower()] = m.group(2)
+checks/env-precond.py                253 GET  dict sources               None                         UNKNOWN      line = next((ln for ln in sources.get(path, []) if anchor in
+checks/env-precond.py                272 SUB  dict kv                    []                           DYNAMIC      kv[k.strip().lower()] = v.strip()
+checks/env-precond.py                274 IN   dict kv                    []                           DYNAMIC      if key not in kv:
+checks/env-precond.py                279 GET  dict BY_NAME               None                         UNKNOWN      want = BY_NAME.get(key.upper(), "")
+checks/env-precond.py                280 SUB  dict kv                    []                           DYNAMIC      if kv[key] != want:
+checks/env-precond.py                281 SUB  dict kv                    []                           DYNAMIC      bad.append(f"{key}={kv[key]} but the declaration says {want}
+checks/env-precond.py                282 SUB  dict kv                    []                           DYNAMIC      print(f"    {'ok  ' if kv[key] == want else 'MOVED'}      "
+checks/env-precond.py                283 SUB  dict kv                    []                           DYNAMIC      f"{key}={kv[key]} (declared {want or 'recorded-only'})")
+checks/env-precond.py                334 IN   tuple <Tuple>              None                         UNKNOWN      if kind not in ("satisfied", "moved"):
+checks/env-precond.py                384 SUB  dict vals                  ['dev', 'pythonhashseed', 'n MEMBER-IS-STR vals["noopt"] = "1"
+checks/fw_live.py                     51 GET  dict PSP_ERRORS            [1, 2, 3, 4, 5, 6, 7, 8, 9,  REACHES      detail = PSP_ERRORS.get(error, "unknown error")
+checks/fw_live.py                     59 SUB  dict result                []                           DYNAMIC      result[name] = self.command(command)
+checks/fw_live.py                     95 IN   tuple <Tuple>              None                         UNKNOWN      elif item_type in (0x02, 0x03):
+checks/fw_live.py                    158 SUB  dict result                []                           DYNAMIC      if result['transfer_type'][0] == 0xA: print("update commands
+checks/gate.py                       149 SUB  dict KID                   None                         UNKNOWN      rows.append(["D", c, KID[k], f"D[{NAME[KID[k]]}][c{c:02x}]"]
+checks/gate.py                       149 SUB  dict KID                   None                         UNKNOWN      rows.append(["D", c, KID[k], f"D[{NAME[KID[k]]}][c{c:02x}]"]
+checks/gate.py                       152 IN   tuple seen                 None                         UNKNOWN      if (p, kid) in seen:
+checks/gate.py                       164 SUB  dict KID                   None                         UNKNOWN      e((t + d) & 0xFFFFFFFF, KID[k], "T")
+checks/gate.py                       165 SUB  dict KID                   None                         UNKNOWN      e((t + d) & 0xFFFFFFFF | 0x80000000, KID[k], "T")
+checks/gate.py                       171 SUB  dict KID                   None                         UNKNOWN      e((c + d) & 0xFFFFFFFF, KID[k], "R")
+checks/gate.py                       176 SUB  dict KID                   None                         UNKNOWN      e(p, KID[k], "W")
+checks/gate.py                       238 SUB  dict per                   None                         UNKNOWN      lines.append(f"    {f}  {len(per[f]):>7} rows   MISMATCH"
+checks/gate_dtype.py                 123 GET  dict got                   []                           DYNAMIC      if got.get(k) != str(exp[k]):
+checks/gate_dtype.py                 124 GET  dict got                   []                           DYNAMIC      moved.append(f"{name} {k} got={got.get(k)} want={exp[k]}")
+checks/gate_norm.py                  136 SUB  dict rows                  []                           DYNAMIC      rows[m[1]] = (m[2], int(m[3]))
+checks/gate_norm.py                  169 SUB  dict lanes                 None                         UNKNOWN      lane = lanes["js"].get(name)
+checks/gate_norm.py                  210 SUB  dict lanes                 None                         UNKNOWN      got = lanes[lane].get(name)
+checks/gate_norm.py                  218 SUB  dict notes                 []                           DYNAMIC      notes[name] = (f"  | `{name}`: `F32.show` said `nan`, which 
+checks/gate_norm.py                  239 GET  dict tally                 []                           DYNAMIC      log.append(f"  {k:<11} {len(tally.get(k, []))} {tally.get(k,
+checks/gate_norm.py                  239 GET  dict tally                 []                           DYNAMIC      log.append(f"  {k:<11} {len(tally.get(k, []))} {tally.get(k,
+checks/gate_norm.py                  240 SUB  dict notes                 []                           DYNAMIC      log += [notes[k] for k in sorted(notes)]
+checks/gate_norm.py                  247 SUB  dict lanes                 None                         UNKNOWN      f"{lanes['js'].get('nan_p1', ('?', 0))[1]} and cc as "
+checks/gate_norm.py                  248 SUB  dict lanes                 None                         UNKNOWN      f"{lanes['c'].get('nan_p1', ('?', 0))[1]}, and 0x7FC00001 IS
+checks/gate_norm.py                  263 IN   dict tally                 []                           DYNAMIC      return 1 if any(k in tally for k in ("DISAGREE", "LANE-LOSS"
+checks/git-index-guard.py             67 IN   tuple <Tuple>              None                         UNKNOWN      if not argv or argv[0] not in ("snap", "check"):
+checks/graphcmp-census-audit.py      133 SUB  dict st                    ['done']                     MEMBER-IS-STR if not st["done"]:
+checks/graphcmp-census-audit.py      138 SUB  dict st                    ['done']                     MEMBER-IS-STR st["op"] = min(op for op, c in gof.items() if c == 1)
+checks/graphcmp-census-audit.py      139 SUB  dict st                    ['done']                     MEMBER-IS-STR st["graph"] = next(g for g in sorted(G.GRAPHS)
+checks/graphcmp-census-audit.py      140 SUB  dict st                    ['done']                     MEMBER-IS-STR if any(G.unchunks(ln)[1] == st["op"] for ln in orig(g, None)
+checks/graphcmp-census-audit.py      141 SUB  dict st                    ['done']                     MEMBER-IS-STR st["done"] = True
+checks/graphcmp-census-audit.py      142 SUB  dict st                    ['done']                     MEMBER-IS-STR print(f"# PLANT drop-sole-op: removing `{st['op']}` from `{s
+checks/graphcmp-census-audit.py      142 SUB  dict st                    ['done']                     MEMBER-IS-STR print(f"# PLANT drop-sole-op: removing `{st['op']}` from `{s
+checks/graphcmp-census-audit.py      144 SUB  dict st                    ['done']                     MEMBER-IS-STR return [r for r in rows if G.unchunks(r)[1] != st["op"]] if 
+checks/graphcmp-census-audit.py      144 SUB  dict st                    ['done']                     MEMBER-IS-STR return [r for r in rows if G.unchunks(r)[1] != st["op"]] if 
+checks/jsfix_gate.py                 175 SUB  dict <Dict>                ['trunc', 'floor_div', 'floo MEMBER-IS-STR return {"trunc": lambda: a, "floor_div": lambda: floordiv(a,
+checks/jsfix_gate.py                 253 IN   tuple <Tuple>              None                         UNKNOWN      return a if name in ("floor_mod", "cmod") else 0
+checks/jsfix_gate.py                 254 IN   tuple <Tuple>              None                         UNKNOWN      if name in ("floor_div", "floor_mod"):
+checks/jsfix_gate.py                 266 SUB  dict MODEL                 ['shipped', 'plant-abi2-in-j MEMBER-IS-STR cin, cout = MODEL[arm]
+checks/jsfix_gate.py                 269 SUB  dict CIN                   ['identity', 'fst', 'swap',  MEMBER-IS-STR v = lane(name, signed(CIN[cin](a & MASK64)), signed(CIN[cin]
+checks/jsfix_gate.py                 269 SUB  dict CIN                   ['identity', 'fst', 'swap',  MEMBER-IS-STR v = lane(name, signed(CIN[cin](a & MASK64)), signed(CIN[cin]
+checks/jsfix_gate.py                 270 SUB  dict COUT                  ['identity', 'swap']         MEMBER-IS-STR return COUT[cout](pattern(v))
+checks/jsfix_gate.py                 369 SUB  dict ARMS                  ['shipped', 'plant-abi2-in-j MEMBER-IS-STR patch(JS_LANE.read_text(), ARMS[arm]))
+checks/jsfix_gate.py                 393 SUB  dict rows                  []                           DYNAMIC      rows[f"{m[1]}|{a}|{b}"] = m[3]
+checks/jsfix_gate.py                 444 SUB  dict cpy                   None                         UNKNOWN      return [k for k in keys if r.get(k) != cpy[k]]
+checks/jsfix_gate.py                 487 SUB  dict MODEL                 ['shipped', 'plant-abi2-in-j MEMBER-IS-STR cin, cout = MODEL[arm]
+checks/jsfix_gate.py                 511 SUB  dict <Dict>                ['disarm-abi2-in-js', 'disar MEMBER-IS-STR why = {
+checks/jsfix_gate.py                 524 SUB  dict cpy                   None                         UNKNOWN      print(f"      {k:<34} CPython {cpy[k]:<22} this arm {res[arm
+checks/jsfix_gate.py                 603 SUB  dict cpy                   None                         UNKNOWN      all(cpy[k] == "0:0" for k in keys if k not in a)),
+checks/llama.py                      186 SUB  dict parts                 None                         UNKNOWN      return {k: parts[n][k] for k, n in weight_map.items()}
+checks/llama.py                      195 SUB  dict MODEL_PARAMS          ['1', '2', '3', 'code', 'tin MEMBER-IS-STR params = MODEL_PARAMS[model_gen][model_size]
+checks/llama.py                      196 SUB  dict MODEL_PARAMS          ['1', '2', '3', 'code', 'tin MEMBER-IS-STR tokenizer = MODEL_PARAMS[model_gen]['tokenizer'](model_file=
+checks/llama.py                      349 IN   dict MODEL_PARAMS          ['1', '2', '3', 'code', 'tin MEMBER-IS-STR if args.gen not in MODEL_PARAMS: raise ValueError("Invalid m
+checks/llama.py                      350 SUB  dict MODEL_PARAMS          ['1', '2', '3', 'code', 'tin MEMBER-IS-STR if args.size is None: args.size = list(MODEL_PARAMS[args.gen
+checks/llama.py                      442 SUB  dict <Dict>                ['1', '2', '3', 'code', 'tin MEMBER-IS-STR LLAMA_SUFFIX = {"1": "", "2": "-2", "3": "-3", "code": "-cod
+checks/llama.py                      516 SUB  dict expected              [('1', '7B', None), ('1', '7 UNKNOWN      assert text == expected[key], f"invalid output: `{colored(te
+checks/llama.py                      516 SUB  dict expected              [('1', '7B', None), ('1', '7 UNKNOWN      assert text == expected[key], f"invalid output: `{colored(te
+checks/nl-gate.py                    153 IN   tuple rows                 None                         UNKNOWN      if name in rows:
+checks/nl-gate.py                    215 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR if m["gate_only"]:
+checks/nl-gate.py                    216 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR bad.append(f"{lane}: {len(m['gate_only'])}/{physical} row(s)
+checks/nl-gate.py                    217 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"ALL -- it is looking at a different row shape: {m['gate_on
+checks/nl-gate.py                    218 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR if m["eq"]:
+checks/nl-gate.py                    219 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR bad.append(f"{lane}: {len(m['eq'])}/{physical} row NAME(S) C
+checks/nl-gate.py                    220 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"the name there and the two readers name {len(m['eq'])} row
+checks/nl-gate.py                    221 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{m['eq'][:6]}")
+checks/nl-gate.py                    233 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR if m["only_shared"] or m["only_strict"]:
+checks/nl-gate.py                    233 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR if m["only_shared"] or m["only_strict"]:
+checks/nl-gate.py                    234 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR bad.append(f"{lane}: the two readers disagree about the NAME
+checks/nl-gate.py                    235 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{physical} physical names the shipped reader RESHAPES ({m[
+checks/nl-gate.py                    236 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{len(m['only_shared'])}/{physical} names the shipped reade
+checks/nl-gate.py                    237 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"reshape, which NO producer printed ({m['only_shared'][:6]}
+checks/nl-gate.py                    243 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR m["bad"] = bad
+checks/nl-gate.py                    253 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR same = "IDENTICAL" if not (m["shared"] ^ m["strict"]) else "
+checks/nl-gate.py                    253 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR same = "IDENTICAL" if not (m["shared"] ^ m["strict"]) else "
+checks/nl-gate.py                    254 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):1
+checks/nl-gate.py                    254 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):1
+checks/nl-gate.py                    254 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):1
+checks/nl-gate.py                    254 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR print(f"{m['lane']:<7} {m['physical']:9} {len(m['strict']):1
+checks/nl-gate.py                    255 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{len(m['eq']):4} {m['lost']:13} {len(m['gate_only']):11} {
+checks/nl-gate.py                    255 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{len(m['eq']):4} {m['lost']:13} {len(m['gate_only']):11} {
+checks/nl-gate.py                    255 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{len(m['eq']):4} {m['lost']:13} {len(m['gate_only']):11} {
+checks/nl-gate.py                    255 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"{len(m['eq']):4} {m['lost']:13} {len(m['gate_only']):11} {
+checks/nl-gate.py                    256 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"({len(m['strict'] & m['shared'])} shared)")
+checks/nl-gate.py                    256 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR f"({len(m['strict'] & m['shared'])} shared)")
+checks/nl-gate.py                    258 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR for b in m["bad"]:
+checks/nl-gate.py                    331 IN   tuple only_a               None                         UNKNOWN      pairs = {n for n in only_b if REVERSE_NAME.sub(r"\1=", n) in
+checks/nl-gate.py                    362 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR bad.extend(m["bad"])
+checks/nl-gate.py                    510 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR for tag, s in (("GATE", m["strict"]), ("SHIP-RESIDUE", m["sh
+checks/nl-gate.py                    510 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR for tag, s in (("GATE", m["strict"]), ("SHIP-RESIDUE", m["sh
+checks/nl-gate.py                    511 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR print(f"  {m['lane']} name set, {tag} ({len(s)}):")
+checks/nl-gate.py                    514 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR manu = [n for n in sorted(m["shared"]) if n not in m["strict
+checks/nl-gate.py                    514 SUB  dict m                     ['lane', 'physical', 'strict MEMBER-IS-STR manu = [n for n in sorted(m["shared"]) if n not in m["strict
+checks/no-strays.py                   86 IN   set ROOT_ENTRIES           None                         UNKNOWN      return sorted(p for p in ROOT.iterdir() if p.is_file() and p
+checks/no-strays.py                  152 IN   set SKIP_DIRS              None                         UNKNOWN      dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS]
+checks/no-strays.py                  174 IN   tuple <Tuple>              None                         UNKNOWN      return [ln for ln in r.stdout.split() if ln] if r.returncode
+checks/no-txt.py                     190 IN   set SKIP                   None                         UNKNOWN      dirnames[:] = [d for d in dirnames if d not in SKIP]
+checks/nvrows-deadrow-gate.py        128 IN   dict seen                  []                           DYNAMIC      if tgt.is_file() and tgt not in seen:
+checks/nvrows-deadrow-gate.py        261 SUB  dict seen                  []                           DYNAMIC      seen[m.group(1)] = seen.get(m.group(1), 0) + 1
+checks/nvrows-deadrow-gate.py        261 GET  dict seen                  []                           DYNAMIC      seen[m.group(1)] = seen.get(m.group(1), 0) + 1
+checks/nvrows-deadrow-gate.py        262 IN   dict seen                  []                           DYNAMIC      dead = [(t, i) for i, t in sites if t[:-1] not in seen]  # s
+checks/oracle-txt-census.py          199 GET  dict binds                 None                         UNKNOWN      new = VAR.sub(lambda m: binds.get(m.group(1), m.group(0)), t
+checks/oracle-txt-census.py          240 IN   tuple GATE_CODE            None                         UNKNOWN      if pathlib.Path(r).suffix in GATE_CODE
+checks/oracle-txt-census.py          337 IN   dict digests               []                           DYNAMIC      if k not in digests:
+checks/oracle-txt-census.py          338 SUB  dict digests               []                           DYNAMIC      digests[k] = sha(p)
+checks/oracle-txt-census.py          339 SUB  dict digests               []                           DYNAMIC      return digests[k]
+checks/oracle-txt-census.py          430 GET  dict RIGHT                 ['rowdump', 'crash-dump-in-t MEMBER-IS-STR ext, gen = RIGHT.get(g, ("?", "?"))
+checks/process_replay.py              62 SUB  dict replayers             []                           DYNAMIC      replayers["do_to_program"] = replay_to_program
+checks/process_replay.py              81 IN   tuple <Tuple>              None                         UNKNOWN      ctx_vars = {k:v.value for k,v in ctx_vals.items() if k not i
+checks/render-gate-oracle.py          53 SUB  dict kw                    []                           DYNAMIC      kw["addrspace"] = addrspace
+checks/render-gate-oracle.py          55 SUB  dict kw                    []                           DYNAMIC      kw["image"] = image
+checks/render-gate-oracle.py          57 SUB  dict kw                    []                           DYNAMIC      kw["buffer"] = buffer
+checks/render-gate-oracle.py         272 IN   set _SPLIT                 None                         UNKNOWN      if name in _SPLIT:
+checks/render-gate-oracle.py         274 IN   set _IO1                   None                         UNKNOWN      elif name in _IO1:
+checks/render-gate-oracle.py         276 IN   set _IO5                   None                         UNKNOWN      elif name in _IO5:
+checks/reorder-gate.py                52 SUB  dict defs                  []                           DYNAMIC      defs[nm] = None
+checks/reorder-gate.py                73 SUB  dict spans                 []                           DYNAMIC      spans[m.group(1)] = (idx, j)
+checks/reorder-gate.py                80 SUB  dict call_re               None                         UNKNOWN      call_re[nm].add(other)
+checks/reorder-gate.py                85 IN   tuple seen                 None                         UNKNOWN      if n in seen: return
+checks/reorder-gate.py                87 SUB  dict call_re               None                         UNKNOWN      for c in sorted(call_re[n]):
+checks/reorder-gate.py                96 SUB  dict spans                 []                           DYNAMIC      a, b = spans[n]
+checks/repro-paths.py                110 SUB  dict named                 []                           DYNAMIC      print(f"        named by: {', '.join(sorted(named[p]))}")
+checks/repro-paths.py                117 SUB  dict named                 []                           DYNAMIC      for rel in sorted(named[p]):
+checks/residue.py                    281 IN   tuple EXCLUDED_DIRS        None                         UNKNOWN      return any(part in EXCLUDED_DIRS for part in rel.split(os.se
+checks/residue.py                    286 IN   tuple RESIDUE_ROOTS        None                         UNKNOWN      return len(parts) > 1 and f"{parts[0]}/{parts[1]}" in RESIDU
+checks/residue.py                    436 IN   set names                  None                         UNKNOWN      if name in names:
+checks/residue.py                    443 GET  dict twins                 None                         UNKNOWN      for t in twins.get(rel, ()):
+checks/residue.py                    680 SUB  dict meaning               ['AUTHORED', 'LIVE', 'DERIVE MEMBER-IS-STR head.append(f"| `{v}` | {counts[v]} | {bybytes[v] / 1048576:
+checks/residue.py                    697 IN   tuple <Tuple>              None                         UNKNOWN      dis = [r for r in out if r[0] in ("AUTHORED", "LIVE", "DERIV
+checks/rn-gate.py                    150 GET  dict DEPTH                 ['[', ']']                   MEMBER-IS-STR depth += DEPTH.get(c, 0)
+checks/rn-gate.py                    206 IN   tuple rows                 None                         UNKNOWN      if name in rows:
+checks/rw-gate-oracle.py              93 IN   tuple par                  None                         UNKNOWN      row("ru_part_p", lambda: sum(1 for x in srcs if x in par))
+checks/rw-gate-oracle.py              94 IN   tuple par                  None                         UNKNOWN      row("ru_part_n", lambda: sum(1 for x in srcs if x not in par
+checks/rw-gate-oracle.py             127 IN   tuple <Tuple>              None                         UNKNOWN      return int(r.axis_type in (AxisType.GLOBAL, AxisType.LOCAL))
+checks/serve.py                      128 IN   set <Set>                  None                         UNKNOWN      if u.op in {Ops.RESHAPE, Ops.EXPAND} and len(u.src) >= 1 and
+checks/serve.py                      128 IN   set excluded               None                         UNKNOWN      if u.op in {Ops.RESHAPE, Ops.EXPAND} and len(u.src) >= 1 and
+checks/serve.py                      129 IN   set <Set>                  None                         UNKNOWN      if u.op in {*GroupOp.Movement, Ops.PARAM}: excluded.update(s
+checks/serve.py                      133 IN   set <Set>                  None                         UNKNOWN      if u.op in GroupOp.Movement and u.marg: argst = (mask_to_str
+checks/serve.py                      139 IN   set <Set>                  None                         UNKNOWN      for idx,x in enumerate(u.src[:1] if u.op in {Ops.STAGE, Ops.
+checks/serve.py                      140 IN   set excluded               None                         UNKNOWN      if x in excluded:
+checks/serve.py                      143 IN   set excluded               None                         UNKNOWN      while cx.op in GroupOp.Movement and len(cx.src) >= 1 and cx.
+checks/serve.py                      153 IN   set <Set>                  None                         UNKNOWN      if u.op in {Ops.INDEX, Ops.STAGE}:
+checks/serve.py                      156 IN   set <Set>                  None                         UNKNOWN      for us in u.src[1:]: ranges += [s for s in us.toposort() if 
+checks/serve.py                      158 IN   set <Set>                  None                         UNKNOWN      if u.op in {Ops.END, Ops.REDUCE, Ops.BACKEDGE} and len(trngs
+checks/serve.py                      167 GET  dict addrspace_colors      [None, None, None, None]     UNKNOWN      with soft_err(): addrspace_color = addrspace_colors.get(u.ad
+checks/serve.py                      168 GET  dict uops_colors           [None, None, None, None, Non UNKNOWN      color = uops_colors.get(u.op, "#ffffff")
+checks/serve.py                      169 SUB  dict graph                 []                           DYNAMIC      graph[id(u)] = {"label":label, "src":[(i,id(x)) for i,x in e
+checks/serve.py                      169 IN   set excluded               None                         UNKNOWN      graph[id(u)] = {"label":label, "src":[(i,id(x)) for i,x in e
+checks/serve.py                      190 SUB  dict replaces              []                           DYNAMIC      replaces[u0:=_reconstruct(data, u0_num, depth=depth)] = u1 =
+checks/serve.py                      221 GET  dict device_ts_diffs       []                           DYNAMIC      def cpu_ts_diff(device_ts_diffs:dict[str, Decimal], device:s
+checks/serve.py                      284 SUB  dict temp                  []                           DYNAMIC      temp[e.key] = nbytes = safe_sz*e.arg["dtype"].itemsize
+checks/serve.py                      332 SUB  dict stats                 []                           DYNAMIC      stats[s.name] = (row[1], max_val, cnt)
+checks/serve.py                      347 IN   set <Set>                  None                         UNKNOWN      if type(e).__name__ in {"ProfilePMCEvent", "ProfileSQTTEvent
+checks/serve.py                      351 SUB  dict prg_events            []                           DYNAMIC      if isinstance(e, ProfileProgramEvent) and e.device.startswit
+checks/serve.py                      358 SUB  dict prg_events            []                           DYNAMIC      name = data.ctxs[r]["ki"].name if (r:=data.ref_map.get(unwra
+checks/serve.py                      358 SUB  dict prg_events            []                           DYNAMIC      name = data.ctxs[r]["ki"].name if (r:=data.ref_map.get(unwra
+checks/serve.py                      359 SUB  dict run_number            []                           DYNAMIC      run_number[k] += 1
+checks/serve.py                      363 SUB  dict run_number            []                           DYNAMIC      all_counters[(name, run_number[k], unwrap(prg_events[k].prof
+checks/serve.py                      363 SUB  dict prg_events            []                           DYNAMIC      all_counters[(name, run_number[k], unwrap(prg_events[k].prof
+checks/serve.py                      367 SUB  dict prg_events            []                           DYNAMIC      if e.itrace: steps.append(create_step(f"SE:{e.se} PKTS", (f"
+checks/serve.py                      368 SUB  dict run_number            []                           DYNAMIC      data.ctxs.append({"name":f"SQTT {name}"+(f" n{run_number[k]}
+checks/serve.py                      368 SUB  dict run_number            []                           DYNAMIC      data.ctxs.append({"name":f"SQTT {name}"+(f" n{run_number[k]}
+checks/serve.py                      395 SUB  dict exec_pending          []                           DYNAMIC      dispatch_id, op_type = exec_pending[name].pop(0)
+checks/serve.py                      409 GET  dict dispatch_to_exec      ['WMMA', 'VALU', 'VALU1', 'V MEMBER-IS-STR if isinstance(p, (VALUINST, INST, INST_RDNA4)) and (exec_typ
+checks/serve.py                      416 IN   dict row_ends              []                           DYNAMIC      if row not in row_ends: yield ProfilePointEvent(row, "JSON",
+checks/serve.py                      418 SUB  dict row_ends              []                           DYNAMIC      row_ends[row] = unwrap(e.en)
+checks/serve.py                      431 IN   set <Set>                  None                         UNKNOWN      if name in {"BARRIER", "BARRIER_SIGNAL"}: curr_barrier[(simd
+checks/serve.py                      431 SUB  dict curr_barrier          []                           DYNAMIC      if name in {"BARRIER", "BARRIER_SIGNAL"}: curr_barrier[(simd
+checks/serve.py                      454 IN   dict curr_barrier          []                           DYNAMIC      if (0, wave) in curr_barrier: yield from add("WAVERDY", p, w
+checks/serve.py                      468 GET  dict special               ['GC', 'USER', 'TINY', 'ALLD MEMBER-IS-STR return (is_memory, special.get(p[0], special['ALLDEVS']), de
+checks/serve.py                      468 SUB  dict special               ['GC', 'USER', 'TINY', 'ALLD MEMBER-IS-STR return (is_memory, special.get(p[0], special['ALLDEVS']), de
+checks/serve.py                      476 SUB  dict device_ts_diffs       []                           DYNAMIC      device_ts_diffs[ev.device] = ev.tdiff
+checks/serve.py                      477 SUB  dict device_decoders       []                           DYNAMIC      if (d:=ev.device.split(":")[0]) == "AMD": device_decoders[d]
+checks/serve.py                      478 SUB  dict device_decoders       []                           DYNAMIC      if d == "NV": device_decoders[d] = load_nv_counters
+checks/serve.py                      488 SUB  dict ext_data              []                           DYNAMIC      if isinstance(e, ProfilePointEvent) and e.name == "JSON": ex
+checks/serve.py                      503 SUB  dict layout                []                           DYNAMIC      layout[k] = timeline_layout(data, v, start_ts, scache)
+checks/serve.py                      506 SUB  dict layout                []                           DYNAMIC      ret = [b"".join([struct.pack("<B", len(k)), k.encode(), unwr
+checks/serve.py                      520 SUB  dict run_number            []                           DYNAMIC      run_number[profile_key] = run_num = run_number.get(profile_k
+checks/serve.py                      520 GET  dict run_number            []                           DYNAMIC      run_number[profile_key] = run_num = run_number.get(profile_k
+checks/serve.py                      522 SUB  dict sm_version            None                         UNKNOWN      data=(e.blob, sm_version[e.device])))
+checks/serve.py                      535 SUB  dict tpc_count             []                           DYNAMIC      tpc_count[tpc_id] = (n:=tpc_count.get(tpc_id,0)) + 1
+checks/serve.py                      535 GET  dict tpc_count             []                           DYNAMIC      tpc_count[tpc_id] = (n:=tpc_count.get(tpc_id,0)) + 1
+checks/serve.py                      566 SUB  dict addr_table            []                           DYNAMIC      addr_table[off+offset] = decoded
+checks/serve.py                      578 IN   set <Set>                  None                         UNKNOWN      if (opr:=inst.operands.get(name)) and opr[2] in {OpType.OPR_
+checks/serve.py                      581 IN   tuple <Tuple>              None                         UNKNOWN      if name in ('src0', 'src1'): return bool(inst.acc & (1 << in
+checks/serve.py                      583 IN   tuple <Tuple>              None                         UNKNOWN      return bool(inst.acc) and name in ('vdst', 'vdata', 'data')
+checks/serve.py                      596 IN   set leaders                None                         UNKNOWN      if pc in leaders:
+checks/serve.py                      597 SUB  dict paths                 []                           DYNAMIC      paths[curr:=pc] = {}
+checks/serve.py                      598 SUB  dict blocks                []                           DYNAMIC      blocks[pc] = []
+checks/serve.py                      600 SUB  dict blocks                []                           DYNAMIC      blocks[curr].append(pc)
+checks/serve.py                      604 SUB  dict paths                 []                           DYNAMIC      if inst.op_name == "S_BRANCH": paths[curr][nx+offset] = UNCO
+checks/serve.py                      605 SUB  dict paths                 []                           DYNAMIC      else: paths[curr].update([(nx+offset, COND_TAKEN), (nx, COND
+checks/serve.py                      606 IN   set leaders                None                         UNKNOWN      elif nx in leaders: paths[curr][nx] = UNCOND
+checks/serve.py                      606 SUB  dict paths                 []                           DYNAMIC      elif nx in leaders: paths[curr][nx] = UNCOND
+checks/serve.py                      609 SUB  dict pc_tokens             []                           DYNAMIC      pc_tokens[pc] = tokens = []
+checks/serve.py                      615 IN   set <Set>                  None                         UNKNOWN      elif name in {"op","opx","opy"}: tokens.append({"st":(op_nam
+checks/serve.py                      622 SUB  dict disasm                None                         UNKNOWN      for pc in pcs: lines.append(f"{disasm[pc]:<{asm_width}}  # {
+checks/slop-declare.py               236 IN   tuple DECLARATIONS         None                         UNKNOWN      if f.rsplit("/", 1)[-1].lower() in DECLARATIONS)
+checks/stage1-census.py               92 SUB  dict MAP                   []                           DYNAMIC      def M(n, c, e): MAP[n] = (c, e)
+checks/stage1-census.py              156 SUB  dict MAP                   []                           DYNAMIC      present = [m for m in meths if MAP[m.name][0]]
+checks/stage1-census.py              157 SUB  dict MAP                   []                           DYNAMIC      absent = [m for m in meths if not MAP[m.name][0]]
+checks/stage1-census.py              160 SUB  dict MAP                   []                           DYNAMIC      c, e = MAP[m.name]
+checks/stage1-census.py              171 SUB  dict MAP                   []                           DYNAMIC      pubp = [m for m in pub if MAP[m.name][0]]
+checks/stage1-census.py              173 SUB  dict MAP                   []                           DYNAMIC      print(f"   absent public: {sorted(m.name for m in pub if not
+checks/substrate-id.py               247 GET  dict NAMES                 [0, 1, 3, 5]                 REACHES      print(f"{NAMES.get(rc, rc)}{tail}: {why}")
+checks/substrate-id.py               273 IN   tuple <Tuple>              None                         UNKNOWN      if c in ("bin",) or p.is_dir():
+checks/substrate-id.py               329 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      f"step-rcs={rcs} -> {NAMES[rc]} ({why[:44]}...)")
+checks/substrate-id.py               347 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      f"the RUN says {NAMES[rc_run]}, the READER says {NAMES[rc_re
+checks/substrate-id.py               347 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      f"the RUN says {NAMES[rc_run]}, the READER says {NAMES[rc_re
+checks/substrate-id.py               367 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      f"step-rcs={rcs} -> {NAMES[rc]}")
+checks/substrate-id.py               382 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      print(f"PLANT midrun-cold-only step-rcs={rcs} -> {NAMES[rc]}
+checks/substrate-id.py               436 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      f"-> {NAMES[rc]}")
+checks/substrate-id.py               448 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      print(f"PLANT dead       empty summary -> {NAMES[rc_empty]}"
+checks/substrate-id.py               451 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      print(f"PLANT dead       absent summary -> {NAMES[rc_gone]}"
+checks/substrate-id.py               457 SUB  dict NAMES                 [0, 1, 3, 5]                 REACHES      print(f"PLANT absent     3 rows, no substrate-* -> {NAMES[rc
+checks/substrate.py                  236 IN   dict FLAGS                 ['-n', '--causes', '-h', '-- MEMBER-IS-STR elif a in FLAGS:
+checks/substrate.py                  239 IN   dict VALUED                ['--mb', '--seconds']        MEMBER-IS-STR elif a in VALUED:
+checks/substrate.py                  240 SUB  dict VALUED                ['--mb', '--seconds']        MEMBER-IS-STR head += argv[i:i + 1 + VALUED[a]]
+checks/substrate.py                  241 SUB  dict VALUED                ['--mb', '--seconds']        MEMBER-IS-STR i += 1 + VALUED[a]
+checks/substrate.py                  320 IN   tuple <Tuple>              None                         UNKNOWN      if p.returncode in (3, 4, 5, 6):
+checks/substrate.py                  624 IN   dict _DECLS                []                           DYNAMIC      if path in _DECLS:
+checks/substrate.py                  625 SUB  dict _DECLS                []                           DYNAMIC      return _DECLS[path]
+checks/substrate.py                  635 IN   tuple <Tuple>              None                         UNKNOWN      if ln[:1] in (" ", "\t"):
+checks/substrate.py                  645 SUB  dict _DECLS                []                           DYNAMIC      _DECLS[path] = out
+checks/substrate.py                  678 IN   dict problems              []                           DYNAMIC      if key not in problems:
+checks/substrate.py                  679 SUB  dict problems              []                           DYNAMIC      problems[key] = why
+checks/substrate.py                  691 SUB  dict alias                 []                           DYNAMIC      alias[m.group(2)] = os.path.normpath(
+checks/substrate.py                  696 SUB  dict t                     []                           DYNAMIC      t["nomod"] += 0 if os.path.isfile(t_) else 1
+checks/substrate.py                  700 SUB  dict t                     []                           DYNAMIC      unseen0 = t["unseen"]
+checks/substrate.py                  706 IN   dict alias                 []                           DYNAMIC      if al not in alias:
+checks/substrate.py                  708 SUB  dict t                     []                           DYNAMIC      t["unseen"] += 1
+checks/substrate.py                  710 SUB  dict used                  []                           DYNAMIC      used[al] += 1
+checks/substrate.py                  711 SUB  dict t                     []                           DYNAMIC      t["total"] += 1
+checks/substrate.py                  716 SUB  dict t                     []                           DYNAMIC      t["exact"] += 1
+checks/substrate.py                  719 SUB  dict t                     []                           DYNAMIC      t["suffix"] += 1
+checks/substrate.py                  723 SUB  dict t                     []                           DYNAMIC      t["unres"] += 1
+checks/substrate.py                  724 SUB  dict alias                 []                           DYNAMIC      note((path, n, al + "." + dotted), "NOT DECLARED IN " + alia
+checks/substrate.py                  725 SUB  dict used                  []                           DYNAMIC      dead = sum(1 for a in alias if not used[a])
+checks/substrate.py                  726 SUB  dict t                     []                           DYNAMIC      t["deadimport"] += dead
+checks/substrate.py                  728 SUB  dict t                     []                           DYNAMIC      f"{k} suffix-only, {u} unresolved, {t['unseen'] - unseen0} u
+checks/substrate.py                  732 SUB  dict t                     []                           DYNAMIC      lines.append(f"TOTALS refs={t['total']} exact={t['exact']} s
+checks/substrate.py                  732 SUB  dict t                     []                           DYNAMIC      lines.append(f"TOTALS refs={t['total']} exact={t['exact']} s
+checks/substrate.py                  732 SUB  dict t                     []                           DYNAMIC      lines.append(f"TOTALS refs={t['total']} exact={t['exact']} s
+checks/substrate.py                  733 SUB  dict t                     []                           DYNAMIC      f"unresolved={t['unres']} unseen={t['unseen']} missing_modul
+checks/substrate.py                  733 SUB  dict t                     []                           DYNAMIC      f"unresolved={t['unres']} unseen={t['unseen']} missing_modul
+checks/substrate.py                  733 SUB  dict t                     []                           DYNAMIC      f"unresolved={t['unres']} unseen={t['unseen']} missing_modul
+checks/substrate.py                  734 SUB  dict t                     []                           DYNAMIC      f"dead_import={t['deadimport']}")
+checks/substrate.py                  735 SUB  dict t                     []                           DYNAMIC      qualified = t["total"] + t["unseen"]
+checks/substrate.py                  735 SUB  dict t                     []                           DYNAMIC      qualified = t["total"] + t["unseen"]
+checks/substrate.py                  736 SUB  dict t                     []                           DYNAMIC      pct = (100.0 * t["unseen"] / qualified) if qualified else 0.
+checks/substrate.py                  741 SUB  dict t                     []                           DYNAMIC      lines.append(f"COVERAGE qualified={qualified} checked={t['to
+checks/substrate.py                  742 SUB  dict t                     []                           DYNAMIC      f"UNSEEN={t['unseen']} ({pct:.1f}%)  <- unseen refs are OUTS
+checks/sweep.py                      145 GET  dict env                   []                           DYNAMIC      return env.get(node.id)
+checks/sweep.py                      167 SUB  dict env                   []                           DYNAMIC      env[st.targets[0].id] = v
+checks/sweep.py                      172 IN   set writes                 None                         UNKNOWN      if fn not in writes:
+checks/sweep.py                      347 IN   tuple seen                 None                         UNKNOWN      if nm in seen:
+checks/sweep.py                      473 IN   tuple RESIDUE_ROOTS        None                         UNKNOWN      return len(parts) > 1 and f"{parts[0]}/{parts[1]}" in RESIDU
+checks/sweep.py                      665 IN   dict _LIVE_UNIT_CACHE      []                           DYNAMIC      if key in _LIVE_UNIT_CACHE:
+checks/sweep.py                      666 SUB  dict _LIVE_UNIT_CACHE      []                           DYNAMIC      return _LIVE_UNIT_CACHE[key]
+checks/sweep.py                      675 SUB  dict newest                []                           DYNAMIC      newest[top] = max(newest.get(top, 0.0), os.path.getmtime(p))
+checks/sweep.py                      675 GET  dict newest                []                           DYNAMIC      newest[top] = max(newest.get(top, 0.0), os.path.getmtime(p))
+checks/sweep.py                      679 SUB  dict _LIVE_UNIT_CACHE      []                           DYNAMIC      _LIVE_UNIT_CACHE[key] = live
+checks/sweep.py                      695 IN   tuple <Tuple>              None                         UNKNOWN      if rel in live and v not in ("PROTECTED", "LIVE-UNIT"):
+checks/sweep.py                      716 IN   dict ROLE_DIRS             ['oracles', 'gates', 'checks MEMBER-IS-STR if part in ROLE_DIRS:
+checks/sweep.py                      717 SUB  dict ROLE_DIRS             ['oracles', 'gates', 'checks MEMBER-IS-STR return ROLE_DIRS[part]
+checks/sweep.py                      726 IN   tuple PROTECTED_DIRS       None                         UNKNOWN      if top in PROTECTED_DIRS:
+checks/sweep.py                      730 IN   set DIFFER                 None                         UNKNOWN      if name in DIFFER:
+checks/sweep.py                      800 IN   tuple TOOL_EXT             None                         UNKNOWN      if os.path.splitext(name)[1] in TOOL_EXT and not witness_com
+checks/sweep.py                      840 SUB  dict tables                None                         UNKNOWN      rows = [(v, sz, rel, rel not in live_set(0, f.root)) for v, 
+checks/sweep.py                      878 SUB  dict tables                None                         UNKNOWN      per = {w: collections.Counter(bucket(v) for v, _s, _r in tab
+checks/sweep.py                      879 SUB  dict tables                None                         UNKNOWN      needsp = {w: collections.Counter(v.partition(":")[2].split("
+checks/sweep.py                      885 SUB  dict per                   None                         UNKNOWN      if not any(per[w][b] for w in windows):
+checks/sweep.py                      887 SUB  dict per                   None                         UNKNOWN      vals = [per[w][b] for w in windows]
+checks/sweep.py                      891 SUB  dict tables                None                         UNKNOWN      print(f"# {'TOTAL':38s}" + " ".join(f"{len(tables[w]):8d}" f
+checks/sweep.py                      893 SUB  dict needsp                None                         UNKNOWN      print(f"# {'of which needs=:':38s}" + " ".join(f"{sum(needsp
+checks/sweep.py                      895 SUB  dict needsp                None                         UNKNOWN      for k in sorted({k for w in windows for k in needsp[w]}):
+checks/sweep.py                      896 SUB  dict needsp                None                         UNKNOWN      vals = [needsp[w][k] for w in windows]
+checks/sweep.py                      955 IN   tuple <Tuple>              None                         UNKNOWN      elif v in ("GATE", "ORACLE"):
+checks/sz.py                          30 IN   list TOKEN_WHITELIST       None                         UNKNOWN      tokens = [t for t in tokenize.generate_tokens(file_.readline
+checks/sz.py                          86 SUB  dict dir_sizes             []                           DYNAMIC      dir_sizes[dir_name] = sum([x[1] for x in group])
+checks/sz.py                          87 SUB  dict dir_sizes             []                           DYNAMIC      print(f"{dir_name:30s} : {dir_sizes[dir_name]:6d} in {len(gr
+checks/sz.py                          91 IN   set NONCORE_DIRS           None                         UNKNOWN      print(f" core lines: {sum([v for k,v in dir_sizes.items() if
+checks/txt-owners.py                 101 GET  dict binds                 None                         UNKNOWN      sub = VAR.sub(lambda m: binds.get(m.group(1), m.group(0)), o
+checks/unowned.py                    211 SUB  dict owner                 None                         UNKNOWN      print(f"{p}\t{owner[p]}\t{int(p in head)}\t{len(cit)}\t{len(
+checks/unowned.py                    211 IN   set head                   None                         UNKNOWN      print(f"{p}\t{owner[p]}\t{int(p in head)}\t{len(cit)}\t{len(
+checks/unowned.py                    212 IN   set head                   None                         UNKNOWN      f"{verdict(cit, exe, wrt, p in head, gen, holds)}" if a.tsv 
+checks/unowned.py                    213 SUB  dict owner                 None                         UNKNOWN      f"{p:<50} {owner[p]:<10} {str(p in head):<5} {len(cit):>4} {
+checks/unowned.py                    213 IN   set head                   None                         UNKNOWN      f"{p:<50} {owner[p]:<10} {str(p in head):<5} {len(cit):>4} {
+checks/unowned.py                    214 IN   set head                   None                         UNKNOWN      f"{verdict(cit, exe, wrt, p in head, gen, holds)}")
+checks/vz_gate.py                     95 IN   set KNOWN                  None                         UNKNOWN      named = [n for n in bad if n in KNOWN]
+checks/vz_gate.py                     96 IN   set KNOWN                  None                         UNKNOWN      other = [n for n in bad if n not in KNOWN]
+checks/wallcheck.py                  149 IN   set SUFFIXES               None                         UNKNOWN      if p.suffix in SUFFIXES and p.stat().st_size <= MAX_BYTES:
+checks/wallcheck.py                  154 IN   tuple EXCLUDED             None                         UNKNOWN      if name in EXCLUDED or f"{rel}/{name}" in EXCLUDED:
+checks/wallcheck.py                  154 IN   tuple EXCLUDED             None                         UNKNOWN      if name in EXCLUDED or f"{rel}/{name}" in EXCLUDED:
+checks/wallcheck.py                  252 IN   tuple <Tuple>              None                         UNKNOWN      if getattr(self, name) in ("", "-"):
+checks/wallcheck.py                  311 IN   tuple <Tuple>              None                         UNKNOWN      if r.refuted not in ("", "-") and re.search(posix2re(r.refut
+checks/wallcheck.py                  345 IN   tuple <Tuple>              None                         UNKNOWN      if r.home in ("", "-"):
+checks/wallcheck.py                  367 IN   tuple <Tuple>              None                         UNKNOWN      if r.key in ("", "-"):
+checks/wallcheck.py                  370 IN   tuple <Tuple>              None                         UNKNOWN      ref = re.compile(posix2re(r.refuted)) if r.refuted not in ("
+checks/wallcheck.py                  376 SUB  dict dict()                []                           DYNAMIC      if ref and ref.search("\n".join(dict(corpus())[rel]))}
+checks/wallcheck.py                  377 IN   set corrected              None                         UNKNOWN      return len(places), [p for p in places if p not in corrected
+checks/wallcheck.py                  428 IN   tuple <Tuple>              None                         UNKNOWN      if r.expect not in ("", "-") and n != int(r.expect) and not 
+checks/wallcheck.py                  448 IN   tuple <Tuple>              None                         UNKNOWN      if r.key in ("", "-"):
+checks/wallcheck.py                  481 GET  dict truth                 None                         UNKNOWN      t = truth.get(r.id)
+checks/wallcheck.py                  490 IN   dict got                   None                         UNKNOWN      if rid in got or rid == "id":
+checks/wallcheck.py                  492 IN   set said                   None                         UNKNOWN      why = "REFUSED, and a refusal is not agreement" if rid in sa
+gates/bc-u32-gate.py                  81 SUB  dict lane                  None                         UNKNOWN      refuses = sum(1 for n, v in lane["bd"].items() if v == "rais
+gates/bc-u32-gate.py                  82 SUB  dict lane                  None                         UNKNOWN      shapes = sum(1 for n, v in lane["bd"].items() if v != "raise
+gates/bc-u32-gate.py                  91 SUB  dict lane                  None                         UNKNOWN      if lane["bd"].get(r) != "[1,2147483648]":
+gates/bc-u32-gate.py                  92 SUB  dict lane                  None                         UNKNOWN      print(f"bc-u32-gate: {r} is {lane['bd'].get(r)!r}, not [1,21
+gates/gate-surface.py                203 SUB  dict found                 []                           DYNAMIC      return found[0]
+gates/gate-surface.py                261 IN   tuple DECL                 None                         UNKNOWN      if t.id in DECL:
+gates/gate-surface.py                263 SUB  dict found                 []                           DYNAMIC      found[t.id] = ast.literal_eval(node.value)
+gates/gate-surface.py                265 SUB  dict found                 []                           DYNAMIC      found[t.id] = f"NOT A LITERAL"
+gates/gate-surface.py                270 IN   dict found                 []                           DYNAMIC      if "VERDICTS" not in found:
+gates/gate-surface.py                272 SUB  dict found                 []                           DYNAMIC      if not isinstance(found["VERDICTS"], dict):
+gates/gate-surface.py                274 IN   dict found                 []                           DYNAMIC      if "PLANTS" in found and not isinstance(found["PLANTS"], dic
+gates/gate-surface.py                274 SUB  dict found                 []                           DYNAMIC      if "PLANTS" in found and not isinstance(found["PLANTS"], dic
+gates/gate-surface.py                276 IN   dict found                 []                           DYNAMIC      if "RED_IS" in found and found["RED_IS"] not in (FINDING, FA
+gates/gate-surface.py                276 IN   tuple <Tuple>              None                         UNKNOWN      if "RED_IS" in found and found["RED_IS"] not in (FINDING, FA
+gates/gate-surface.py                276 SUB  dict found                 []                           DYNAMIC      if "RED_IS" in found and found["RED_IS"] not in (FINDING, FA
+gates/gate-surface.py                277 SUB  dict found                 []                           DYNAMIC      return None, None, None, f"RED_IS is {found['RED_IS']!r}, no
+gates/gate-surface.py                278 SUB  dict found                 []                           DYNAMIC      return found["VERDICTS"], found.get("PLANTS"), found.get("RE
+gates/gate-surface.py                278 GET  dict found                 []                           DYNAMIC      return found["VERDICTS"], found.get("PLANTS"), found.get("RE
+gates/gate-surface.py                278 GET  dict found                 []                           DYNAMIC      return found["VERDICTS"], found.get("PLANTS"), found.get("RE
+gates/gate-surface.py                297 IN   dict reached               []                           DYNAMIC      green = 0 in reached or 0 not in verdicts
+gates/gate-surface.py                297 IN   dict verdicts              []                           DYNAMIC      green = 0 in reached or 0 not in verdicts
+gates/gate-surface.py                373 IN   dict plants                []                           DYNAMIC      if rc not in plants:
+gates/gate-surface.py                375 SUB  dict verdicts              []                           DYNAMIC      issues.append(f"UNPLANTED {rc} {verdicts[rc]!r} -- declared,
+gates/gate-surface.py                377 SUB  dict plants                []                           DYNAMIC      got, _out = reach(p, plants[rc])
+gates/gate-surface.py                379 SUB  dict reached               []                           DYNAMIC      reached[rc] = got
+gates/gate-surface.py                381 IN   tuple <Tuple>              None                         UNKNOWN      elif got in ("TIMEOUT", "EXC"):
+gates/gate-surface.py                382 SUB  dict verdicts              []                           DYNAMIC      issues.append(f"UNREACHED {rc} {verdicts[rc]!r} -- plant {go
+gates/gate-surface.py                385 SUB  dict verdicts              []                           DYNAMIC      issues.append(f"MISPLANT  {rc} {verdicts[rc]!r} -- plant {pl
+gates/gate-surface.py                385 SUB  dict plants                []                           DYNAMIC      issues.append(f"MISPLANT  {rc} {verdicts[rc]!r} -- plant {pl
+gates/gate-surface.py                386 IN   dict verdicts              []                           DYNAMIC      if 0 not in verdicts:
+gates/gate-surface.py                392 SUB  dict verdicts              []                           DYNAMIC      issues.append(f"UNOWNED    {rc} {verdicts[rc]!r} -- gates/ga
+gates/gate-surface.py                395 SUB  dict classes               []                           DYNAMIC      classes[str(p.relative_to(root))] = (klass, why)
+gates/gate-surface.py                443 SUB  dict classes               []                           DYNAMIC      print(f"   {n:44} red={classes[n][0]:8} {classes[n][1]}")
+gates/gate-surface.py                443 SUB  dict classes               []                           DYNAMIC      print(f"   {n:44} red={classes[n][0]:8} {classes[n][1]}")
+gates/gatekit.py                      96 IN   dict VERDICT               [0, 1, 3, 4, 5]              REACHES      if code in VERDICT:
+gates/gatekit.py                      97 SUB  dict VERDICT               [0, 1, 3, 4, 5]              REACHES      return VERDICT[code]
+gates/gatekit.py                     110 IN   dict VERDICT               [0, 1, 3, 4, 5]              REACHES      return code if code in VERDICT and not isinstance(code, bool
+gates/gatekit.py                     477 SUB  dict subs                  []                           DYNAMIC      subs[tag] = s
+gates/gatekit.py                     479 SUB  dict subs                  []                           DYNAMIC      base = _lines(subs["py"])
+gates/gatekit.py                     481 SUB  dict subs                  []                           DYNAMIC      other = _lines(subs[tag])
+gates/gatekit.py                     493 SUB  dict raw                   None                         UNKNOWN      if not any(l.startswith(row + "=") for l in raw[lane]):
+gates/gatekit.py                     498 SUB  dict raw                   None                         UNKNOWN      if want not in raw[lane]:
+gates/gatekit.py                     507 SUB  dict raw                   None                         UNKNOWN      if not any(l.startswith(row + "=") for l in raw[lane]):
+gates/gates-pop.py                   217 IN   set docs                   None                         UNKNOWN      t.start[0] in docs
+gates/gates-pop.py                   346 IN   tuple SUFFIXES             None                         UNKNOWN      if p.suffix not in SUFFIXES or not stat.S_ISREG(os.lstat(p).
+gates/gates-pop.py                   348 IN   tuple <Tuple>              None                         UNKNOWN      (entries if entry_reason(p) in ("py-main", "sh-dispatch", "s
+gates/gates-pop.py                   628 SUB  dict new                   None                         UNKNOWN      moved = sorted(k for k in set(new) & set(old) if new[k] != o
+gates/gates-pop.py                   628 SUB  dict old                   None                         UNKNOWN      moved = sorted(k for k in set(new) & set(old) if new[k] != o
+gates/gates-pop.py                   632 SUB  dict new                   None                         UNKNOWN      print(f"III   NEW  {k}: {new[k][0]} root_ok={new[k][3]} "
+gates/gates-pop.py                   632 SUB  dict new                   None                         UNKNOWN      print(f"III   NEW  {k}: {new[k][0]} root_ok={new[k][3]} "
+gates/gates-pop.py                   633 SUB  dict new                   None                         UNKNOWN      f"asserts={'YES' if new[k][2] else 'NO'}")
+gates/gates-pop.py                   637 SUB  dict old                   None                         UNKNOWN      print(f"III   CHANGED {k}: {old[k][0]} -> {new[k][0]}")
+gates/gates-pop.py                   637 SUB  dict new                   None                         UNKNOWN      print(f"III   CHANGED {k}: {old[k][0]} -> {new[k][0]}")
+gates/gates-pop.py                   717 SUB  dict out                   []                           DYNAMIC      out[rel] = r.stdout if r.returncode == 0 else FALLBACK_PRE_F
+gates/gates-pop.py                   717 SUB  dict FALLBACK_PRE_FIX      ['checks/census.py', 'checks MEMBER-IS-STR out[rel] = r.stdout if r.returncode == 0 else FALLBACK_PRE_F
+gates/gates-pop.py                   720 SUB  dict out                   []                           DYNAMIC      out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+gates/gates-pop.py                   817 IN   set <SetComp>              None                         UNKNOWN      ok0 = len(e) == 1 and "checks/substrate-check.sh" in {str(p.
+gates/gates-pop.py                   848 SUB  dict rows                  None                         UNKNOWN      bad, good, shallow = (rows["checks/bad.py"], rows["checks/go
+gates/gates-pop.py                   848 SUB  dict rows                  None                         UNKNOWN      bad, good, shallow = (rows["checks/bad.py"], rows["checks/go
+gates/gates-pop.py                   849 SUB  dict rows                  None                         UNKNOWN      rows["checks/wrong-shallow.py"])
+gates/gates-pop.py                   871 IN   set <SetComp>              None                         UNKNOWN      out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p
+gates/gates-pop.py                   872 IN   set <SetComp>              None                         UNKNOWN      and "checks/driver.py" not in {str(p.relative_to(r)) for p i
+gates/gates-pop.py                   934 GET  dict got                   None                         UNKNOWN      fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") =
+gates/gendirs.py                      98 IN   tuple SKIP_TOP             None                         UNKNOWN      dirnames[:] = sorted(d for d in dirnames if d not in SKIP_TO
+gates/gendirs.py                      99 IN   tuple SKIP_TOP             None                         UNKNOWN      if rel.split(os.sep)[0] in SKIP_TOP:
+gates/gendirs.py                     103 IN   tuple SOURCE_SUFFIXES      None                         UNKNOWN      if Path(f).suffix in SOURCE_SUFFIXES]
+gates/gendirs.py                     154 GET  dict env                   ['__file__']                 MEMBER-IS-STR return env.get(node.id)
+gates/gendirs.py                     178 IN   tuple <Tuple>              None                         UNKNOWN      if isinstance(node.value, ast.Name) and node.value.id in ("s
+gates/gendirs.py                     179 GET  dict env                   ['__file__']                 MEMBER-IS-STR return env.get(f"{node.value.id}.{node.attr}")
+gates/gendirs.py                     193 IN   tuple <Tuple>              None                         UNKNOWN      if nm in ("join", "normpath", "resolve", "absolute", "expand
+gates/gendirs.py                     220 GET  dict env                   ['__file__']                 MEMBER-IS-STR return env.get(node.id)
+gates/gendirs.py                     240 IN   tuple <Tuple>              None                         UNKNOWN      if isinstance(node.value, ast.Name) and node.value.id in ("s
+gates/gendirs.py                     241 GET  dict env                   ['__file__']                 MEMBER-IS-STR return env.get(f"{node.value.id}.{node.attr}")
+gates/gendirs.py                     255 IN   tuple <Tuple>              None                         UNKNOWN      if nm in ("resolve", "absolute", "normpath", "expanduser") a
+gates/gendirs.py                     283 SUB  dict env                   ['__file__']                 MEMBER-IS-STR env[t.id] = val
+gates/gendirs.py                     285 IN   tuple <Tuple>              None                         UNKNOWN      and t.value.id in ("self", "cls"):
+gates/gendirs.py                     289 SUB  dict env                   ['__file__']                 MEMBER-IS-STR env[f"{t.value.id}.{t.attr}"] = val
+gates/gendirs.py                     367 IN   list vals                  None                         UNKNOWN      if flag not in vals:
+gates/gendirs.py                     443 IN   tuple SOURCE_SUFFIXES      None                         UNKNOWN      all_files = [p for p in _walk_all(root) if p.suffix in SOURC
+gates/gendirs.py                     490 SUB  dict out                   []                           DYNAMIC      out[d] = out.get(d, 0) + 1
+gates/gendirs.py                     490 GET  dict out                   []                           DYNAMIC      out[d] = out.get(d, 0) + 1
+gates/gendirs.py                     517 SUB  dict out                   []                           DYNAMIC      out[d] = r.returncode == 0
+gates/gendirs.py                     706 IN   set live                   None                         UNKNOWN      unwritten = sorted(d for d in live_tracked if d not in live)
+gates/i64-shl-gate.py                 85 SUB  dict out                   []                           DYNAMIC      out[k] = v
+gates/i64-shl-gate.py                114 SUB  dict lanes                 None                         UNKNOWN      if lanes[t].get("seed") != str(SEED):
+gates/i64-shl-gate.py                115 SUB  dict lanes                 None                         UNKNOWN      print(f"i64-shl-gate: {t} read seed {lanes[t].get('seed')!r}
+gates/i64-shl-gate.py                146 SUB  dict lanes                 None                         UNKNOWN      lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][
+gates/i64-shl-gate.py                146 SUB  dict lanes                 None                         UNKNOWN      lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][
+gates/i64-shl-gate.py                147 SUB  dict lanes                 None                         UNKNOWN      rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"
+gates/i64-shl-gate.py                147 SUB  dict lanes                 None                         UNKNOWN      rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"
+gates/i64-shl-gate.py                154 IN   tuple rt                   None                         UNKNOWN      if key not in rt:
+gates/i64-shl-gate.py                169 IN   tuple <Tuple>              None                         UNKNOWN      if neg1_63 in (None, "0:0"):
+gates/i64-shl-oracle.py               71 SUB  dict _WORDS                ['neg1', 'one', 'lowhi']     MEMBER-IS-STR VALUES = [(n, *_WORDS[n]) for n in _coindep().I64SHL_VALUES]
+gates/i64-shl-oracle.py              123 IN   dict by_amount             []                           DYNAMIC      if key in by_amount:
+gates/i64-shl-oracle.py              124 SUB  dict by_amount             []                           DYNAMIC      assert by_amount[key] == got, f"{name}@{amt}: the two routes
+gates/i64-shl-oracle.py              125 SUB  dict by_amount             []                           DYNAMIC      by_amount[key] = got
+gates/i64-shl-oracle.py              159 IN   tuple out_signed           None                         UNKNOWN      assert f"{name}:{amt}" in out_signed, f"{name}@{amt} must be
+gates/i64-shl-oracle.py              163 IN   tuple out_signed           None                         UNKNOWN      assert "lowhi:31" in out_signed, f"lowhi@31 must be out of s
+gates/i64-shl-oracle.py              166 IN   tuple in_signed            None                         UNKNOWN      assert "neg1:63" in in_signed, f"neg1@63 must fit signed, go
+gates/i64-shl-oracle.py              167 IN   tuple out_signed           None                         UNKNOWN      assert "one:63" in out_signed, f"one@63 must NOT fit signed,
+gates/i64-shl-oracle.py              180 IN   set z                      None                         UNKNOWN      assert f"{name}:{amt}" in z, f"{name}@{amt} must answer 0:0"
+gates/i64-shl-oracle.py              181 IN   set z                      None                         UNKNOWN      assert "lowhi:62" in z, f"lowhi@62 must answer 0:0, got {sor
+gates/i64-shl-oracle.py              182 IN   set z                      None                         UNKNOWN      assert "neg1:63" not in z, f"neg1@63 is the int64 sign bit a
+gates/i64-shr-gate.py                 88 SUB  dict out                   []                           DYNAMIC      out[k] = v
+gates/i64-shr-gate.py                130 SUB  dict lanes                 None                         UNKNOWN      if lanes[t].get("seed") != str(SEED):
+gates/i64-shr-gate.py                131 SUB  dict lanes                 None                         UNKNOWN      print(f"i64-shr-gate: {t} read seed {lanes[t].get('seed')!r}
+gates/i64-shr-gate.py                160 SUB  dict lanes                 None                         UNKNOWN      lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][
+gates/i64-shr-gate.py                160 SUB  dict lanes                 None                         UNKNOWN      lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][
+gates/i64-shr-gate.py                161 SUB  dict lanes                 None                         UNKNOWN      rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"
+gates/i64-shr-gate.py                161 SUB  dict lanes                 None                         UNKNOWN      rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"
+gates/i64-shr-gate.py                168 IN   tuple rt                   None                         UNKNOWN      if key not in rt:
+gates/i64-shr-gate.py                186 SUB  dict x_of                  []                           DYNAMIC      x_of[name] = unpair(lanes["bd"][f"sr_{name}_0_x"])
+gates/i64-shr-gate.py                186 SUB  dict lanes                 None                         UNKNOWN      x_of[name] = unpair(lanes["bd"][f"sr_{name}_0_x"])
+gates/i64-shr-gate.py                189 SUB  dict x_of                  []                           DYNAMIC      x, k = x_of[name], int(amt)
+gates/i64-shr-gate.py                218 SUB  dict x_of                  []                           DYNAMIC      and (x_of[k[0]] >> (int(k[1]) % 64)) != (x_of[k[0]] >> int(k
+gates/i64-shr-gate.py                218 SUB  dict x_of                  []                           DYNAMIC      and (x_of[k[0]] >> (int(k[1]) % 64)) != (x_of[k[0]] >> int(k
+gates/i64-shr-oracle.py              151 IN   dict by_amount             []                           DYNAMIC      if key in by_amount:
+gates/i64-shr-oracle.py              152 SUB  dict by_amount             []                           DYNAMIC      assert by_amount[key] == got, f"{name}@{amt}: the two routes
+gates/i64-shr-oracle.py              153 SUB  dict by_amount             []                           DYNAMIC      by_amount[key] = got
+gates/i64-shr-oracle.py              192 SUB  dict x_of                  None                         UNKNOWN      x = x_of[name]
+gates/i64-shr-oracle.py              196 SUB  dict by_amount             []                           DYNAMIC      got = unpair_u(by_amount[(name, amt)])
+gates/i64-shr-oracle.py              201 SUB  dict by_amount             []                           DYNAMIC      assert unpair(by_amount[("neg1", 63)]) == -1, by_amount[("ne
+gates/i64-shr-oracle.py              201 SUB  dict by_amount             []                           DYNAMIC      assert unpair(by_amount[("neg1", 63)]) == -1, by_amount[("ne
+gates/i64-shr-oracle.py              202 SUB  dict by_amount             []                           DYNAMIC      assert unpair_u(by_amount[("neg1", 63)]) == M64, "the pair m
+gates/i64-shr-oracle.py              203 SUB  dict x_of                  None                         UNKNOWN      assert ((x_of["neg1"] & M64) >> 63) == 1, "a logical neg1@63
+gates/i64-shr-oracle.py              211 SUB  dict by_amount             []                           DYNAMIC      assert by_amount[(name, amt)] == "0:0", (
+gates/i64-shr-oracle.py              212 SUB  dict by_amount             []                           DYNAMIC      f"{name}@{amt} is {by_amount[(name, amt)]}, expected 0:0 -- 
+gates/i64-shr-oracle.py              231 SUB  dict x_of                  None                         UNKNOWN      if ((x_of[n] >> (a % 64)) != (x_of[n] >> a))}
+gates/i64-shr-oracle.py              231 SUB  dict x_of                  None                         UNKNOWN      if ((x_of[n] >> (a % 64)) != (x_of[n] >> a))}
+gates/i64-shr-oracle.py              236 IN   set sees_wrap              None                         UNKNOWN      if (name, amt) not in sees_wrap:
+gates/i64-shr-oracle.py              237 SUB  dict x_of                  None                         UNKNOWN      assert (x_of[name] >> (amt % 64)) == (x_of[name] >> amt), (
+gates/i64-shr-oracle.py              237 SUB  dict x_of                  None                         UNKNOWN      assert (x_of[name] >> (amt % 64)) == (x_of[name] >> amt), (
+gates/i64-shr-oracle.py              246 SUB  dict by_amount             []                           DYNAMIC      assert by_amount[(name, 32)] == f"{fill >> 32}:{hi}", (
+gates/i64-shr-oracle.py              247 SUB  dict by_amount             []                           DYNAMIC      f"{name}@32 is {by_amount[(name, 32)]}, expected {fill >> 32
+gates/i64-shr-oracle.py              262 SUB  dict by_amount             []                           DYNAMIC      got_hi, got_lo = (int(w) for w in by_amount[("spill", 1)].sp
+gates/i64-shr-oracle.py              277 SUB  dict x_of                  None                         UNKNOWN      x = x_of[name]
+gates/i64-shr-oracle.py              284 SUB  dict by_amount             []                           DYNAMIC      assert unpair_u(by_amount[("neg1", 32)]) == M64, "neg1@32 is
+gates/indexread-gate.py              108 IN   set PRUNE                  None                         UNKNOWN      dirnames[:] = [d for d in dirnames if d not in PRUNE]
+gates/indexread-gate.py              138 IN   set docs                   None                         UNKNOWN      if isinstance(n, ast.Constant) and isinstance(n.value, str) 
+gates/indexread-gate.py              160 IN   tuple <Tuple>              None                         UNKNOWN      if s in ("ls-files", "--cached", "read-tree", "--porcelain")
+gates/indexread-gate.py              198 SUB  dict found0                None                         UNKNOWN      fh.write(f"{rel}\t{','.join(found0[rel])}\n")
+gates/indexread-gate.py              224 SUB  dict found                 None                         UNKNOWN      print(f"  {mark} {rel}: {','.join(found[rel])}")
+gates/indexread-gate.py              228 SUB  dict found                 None                         UNKNOWN      bad = found if strict else {r: found[r] for r in new}
+gates/msgdiff-gate.py                249 SUB  dict root_env              []                           DYNAMIC      root_env[k] = "p"
+gates/retention-check.py             216 IN   set remover                None                         UNKNOWN      if fn in remover:
+gates/retention-check.py             320 IN   set claimed                None                         UNKNOWN      if not p.is_dir() or p.resolve() in claimed or any(q.resolve
+gates/retention-check.py             320 IN   set claimed                None                         UNKNOWN      if not p.is_dir() or p.resolve() in claimed or any(q.resolve
+gates/retention-check.py             593 GET  dict over                  []                           DYNAMIC      res = registry(over.get("graphcmp"), over.get("gates"))
+gates/retention-check.py             593 GET  dict over                  []                           DYNAMIC      res = registry(over.get("graphcmp"), over.get("gates"))
+gates/wk-f32-gate.py                  61 SUB  dict vals                  []                           DYNAMIC      vals[lane] = (rows["neg1"], rows["neg2"])
+gates/wk-f32-gate.py                  61 SUB  dict rows                  []                           DYNAMIC      vals[lane] = (rows["neg1"], rows["neg2"])
+gates/wk-f32-gate.py                  61 SUB  dict rows                  []                           DYNAMIC      vals[lane] = (rows["neg1"], rows["neg2"])
+gates/wk-f32-gate.py                  62 SUB  dict vals                  []                           DYNAMIC      if vals["py"][0] == vals["py"][1]:
+gates/wk-f32-gate.py                  62 SUB  dict vals                  []                           DYNAMIC      if vals["py"][0] == vals["py"][1]:
+gates/wk-f32-gate.py                  67 SUB  dict vals                  []                           DYNAMIC      if vals[lane][0] == vals[lane][1]:
+gates/wk-f32-gate.py                  67 SUB  dict vals                  []                           DYNAMIC      if vals[lane][0] == vals[lane][1]:
+
+## reasons, one line per distinct reason
+##   MEMBER-IS-STR: every dict member is a str; `False in ('a','b')` is False, so a bool cannot hit
+##   DYNAMIC: empty dict literal -- an accumulator whose members arrive at run time; a bool's reach is undecidable without running it
+##   UNKNOWN: dict container, contents not literal
+##   UNKNOWN: tuple container, contents not literal
+##   UNKNOWN: set container, contents not literal
+##   UNKNOWN: list container, contents not literal
+##   REACHES: dict members [1, 2, 3, 4, 5, 6, 7, 8] include {1}; True == 1 and hash(True) == hash(1)
+##   UNKNOWN: dict members of type {'tuple'}
+##   UNKNOWN: dict with a non-literal member: [None, None, None, None]
+##   UNKNOWN: dict with a non-literal member: [None, None, None, None, None, None, None, None, None, None, None, None, None, '<**spread>', '<**spread>', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]
+##   REACHES: dict members [0, 1, 3, 5] include {0, 1}; True == 1 and hash(True) == hash(1)
+##   REACHES: dict members [0, 1, 3, 4, 5] include {0, 1}; True == 1 and hash(True) == hash(1)

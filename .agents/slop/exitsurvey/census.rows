@@ -1,0 +1,154 @@
+gate	how	argv	rc	secs	verdict	charge	declared	argparse	sig	first
+checks/abi4_gate.py	bare		1	1.8	FAIL	1		no	error:	no backend for arm shipped: rc=1
+checks/abi_gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/al-verdict.py	bare		2	0.1	UNASSIGNED (code 2 is not one of the five)	3		no		al-verdict.py -- THE TWO-SIDED VERDICT ON THE PATTERN-COMPILER IR, WITH THE
+checks/both-census.py	bare		0	0.1	PASS	0		yes		#   allred     py   CACHE rows=9    ops=7   {'ALLOC': 1, 'ALLREDUCE': 1, 'CONST': 3, 'COPY
+checks/bounded-selftest.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/bounded-selftest.sh", li
+checks/bounded.py	bare		5	0.0	DEAD	5		yes	usage:	usage: checks/bounded.py [--seconds N] [--mb N] -- <command> [args ...]
+checks/census.py	bare		0	0.2	PASS	0		yes		# allred     py=CACHE 9     bend=CACHE 18
+checks/citation-gate.py	bare		1	9.3	FAIL	1		no		5509 `file:line` citations into a Python tree, from tinybendygrad/**
+checks/cl-port-gate.py	bare		3	0.0	REFUSED	3		yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/classify.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/classify.sh", line 16
+checks/cli.py	bare		1	0.4	FAIL	1		yes	error:|Traceback	Traceback (most recent call last):
+checks/compile.py	bare		1	0.0	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+checks/corpus-figure.py	bare		1	0.8	FAIL	1		yes		DEVICE PRECONDITION : **VIOLATED** -- DEV=None and the declared pin is 'CPU'. THIS FIGURE 
+checks/coverage.py	bare		1	0.0	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+checks/demo.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/demo.sh", line 17
+checks/devgate.py	bare		0	38.6	PASS	0		yes		denominator (assigns DEV and reaches tinygrad): 36
+checks/devpin.py	bare		0	0.6	PASS	0		yes		pin (declared)     : --dev CPU   (checks/devpin.py's PINNED_DEV='CPU')
+checks/differ.py	bare		2	0.0	UNASSIGNED (code 2 is not one of the five)	3		yes	usage:|error:	usage: checks/differ.py [-h] {run,repro,snap,plant} ...
+checks/disagree-gate.py	bare		0	0.7	PASS	0		yes		ok    PIN
+checks/disarm.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/disarm.sh", line 16
+checks/dup-census.py	bare		3	0.4	REFUSED	3	0|3	yes		== REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /Users/
+checks/dup-census.py	argv3		3	0.4	REFUSED	3	0|3	yes		== REFUSED, NOT A VERDICT: dup-census lanes: population source is not a directory: /Users/
+checks/dup-gate.py	bare		2	0.3	UNASSIGNED (code 2 is not one of the five)	3	0|1|2|3	yes		give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+checks/dup-gate.py	argv0	--compare gates/cstyle-live.rows gates/cstyle-live.rows	0	0.3	PASS	0	0|1|2|3	yes		ROWS       227 -> 227 lines; 227 -> 227 read; 227 -> 227 distinct names -- EQUAL distinct 
+checks/dup-gate.py	argv1	--compare gates/cstyle-live.rows oracles/usb-oracle-BEFORE.rows	1	0.4	FAIL	1	0|1|2|3	yes		ROWS       227 -> 1014 lines; 227 -> 1014 read; 227 -> 939 distinct names -- EQUAL distinc
+checks/dup-gate.py	argv2		2	0.3	UNASSIGNED (code 2 is not one of the five)	3	0|1|2|3	yes		give --port and --oracle, or --compare BEFORE AFTER, or --selftest with both
+checks/e2e.py	bare		3	0.0	REFUSED	3		no		ORACLE DRIFT: checks/e2e.sh: fcf647cdadeaaf88 != aaea6adddba6e553 -- the live shell body n
+checks/e2e.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/e2e.sh", line 39
+checks/env-precond.py	bare		0	0.1	PASS	0	0|1|2	yes		METHOD A -- the source lines that build the child environments, found by anchor:
+checks/env-precond.py	argv0	--plant satisfied	0	0.1	PASS	0	0|1|2	yes		PLANT satisfied -- MUST exit 0
+checks/env-precond.py	argv2	--plant nonsense	2	0.0	UNASSIGNED (code 2 is not one of the five)	3	0|1|2	yes	usage:|error:	usage: env-precond.py [-h] [--check] [--declare] [--record]
+checks/fw_live.py	bare		1	0.0	FAIL	1		yes	error:|Traceback	Traceback (most recent call last):
+checks/gate.py	bare		3	0.0	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/gate.py	argv3		3	0.1	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/gate.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gate.sh", line 19
+checks/gate_dtype.py	bare		2	0.1	UNASSIGNED (code 2 is not one of the five)	3		yes	usage:|error:	usage: gate_dtype.py [-h] --lane {js,c} [--bend BEND] [--binary BINARY]
+checks/gate_norm.py	bare		1	0.2	FAIL	1		no	error:	bend -o emitted no JS:
+checks/gen.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/gen.sh", line 38
+checks/git-index-guard.py	bare		3	0.1	REFUSED	3		no	usage:	usage: git-index-guard.py (snap | check --expect <token>)
+checks/graphcmp-census-audit.py	bare		0	0.4	PASS	0		no		==============================================================================
+checks/hermetic-census.py	bare		TIMEOUT	45.0	SKIP	SKIP	0|3	yes		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/jsfix_gate.py	bare		1	7.1	FAIL	1		no	error:	--- arm shipped ---
+checks/lint_demo.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lint_demo.sh", line 26
+checks/lintable-gate.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/lintable-gate.sh", line 
+checks/llama.py	bare		1	0.1	FAIL	1		yes	error:|Traceback	Traceback (most recent call last):
+checks/marker-audit.py	bare		0	0.5	PASS	0		no		file                                          walls  shared  BACKLOG
+checks/nl-gate-noguard.py	bare		3	0.1	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/nl-gate-noguard.py	argv3		3	0.1	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/nl-gate.py	bare		3	0.1	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/nl-gate.py	argv3		3	0.2	REFUSED	3	0|1|3	yes		== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendyg
+checks/no-shrink.py	bare		0	0.2	PASS	0		yes		no-shrink: 2 port files differ from HEAD uncommitted -- 2 GREW, 0 SHRANK, tolerance 40 lin
+checks/no-strays.py	bare		1	0.1	FAIL	1		no		STRAY-SHAPE  tinybendygrad/runtime/_p6.bend                         204 B   scratch name i
+checks/no-txt.py	bare		0	0.6	PASS	0	0|1	no		175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` staging (loaded by p
+checks/no-txt.py	argv0		0	0.2	PASS	0	0|1	no		175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp artifacts + `.tmp.` staging (loaded by p
+checks/no-txt.py	argv1	--plant	1	0.1	FAIL	1	0|1	no	error:|Traceback	Traceback (most recent call last):
+checks/norm_check.py	bare		0	0.4	PASS	0	0|1|3	no		gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen_f32_seam
+checks/norm_check.py	argv0		0	0.4	PASS	0	0|1|3	no		gate under test: .agents/slop/jslane2/gen_f32_seam.py  norm -> jfp_gen_f32_seam
+checks/norm_check.py	argv1	--plant	1	0.2	FAIL	1	0|1|3	no		FAIL  one f32, two spellings agree        (the defect's pair) the old norm
+checks/nvrows-deadrow-gate.py	bare		1	6.9	FAIL	1		yes		==============================================================================
+checks/oracle-txt-census.py	bare		0	4.0	PASS	0		yes		1 `.txt` under oracles/, grouped by WHAT IS INSIDE. m2 threshold (worst in-corpus NN dista
+checks/oracle_f64.py	bare		3	0.4	REFUSED	3	0|1|3	no		== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s). Without them ther
+checks/oracle_f64.py	argv3		3	0.3	REFUSED	3	0|1|3	no		== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 0 argument(s). Without them ther
+checks/plant.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/plant.sh", line 67
+checks/process_replay.py	bare		1	0.3	FAIL	1		no		running process replay with ASSERT_DIFF=1
+checks/render-gate-oracle.py	bare		0	0.7	PASS	0		no		pyrender const=ast = UOp.const(3)
+checks/repair-dupes.py	bare		1	0.1	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+checks/repro-paths.py	bare		1	39.5	FAIL	1		yes		repro-paths: 519 committed reports name 482 distinct paths (+2 written as patterns)
+checks/residue.py	bare		TIMEOUT	45.0	SKIP	SKIP	0|3	yes		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/residue.py	argv0	--plant	0	0.7	PASS	0	0|3	yes		# plant: armed; PASS
+checks/residue.py	argv3	--disarm DELETE	3	0.7	REFUSED	3	0|3	yes		# plant: disarmed DELETE; PASS
+checks/rn-gate.py	bare		1	20.6	FAIL	1	0|1|3	yes		live port rc=0 md5=f697a083   live oracle rc=2 md5=d41d8cd9
+checks/rn-gate.py	argv3		1	21.6	FAIL	1	0|1|3	yes		live port rc=0 md5=f697a083   live oracle rc=2 md5=d41d8cd9
+checks/romless.py	bare		1	0.1	FAIL	1		yes	error:|Traceback	Traceback (most recent call last):
+checks/run-all.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-all.sh", line 16
+checks/run-f64.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-f64.sh", line 68
+checks/run-port-mm.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/run-port-mm.sh", line 42
+checks/run.py	bare		1	0.3	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+checks/sb-gate.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/sb-gate.sh", line 46
+checks/serve.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/slop-declare.py	bare		0	26.0	PASS	0		yes		tracked `.agents/slop/*/` directories : 269
+checks/substrate-check.sh	bare		1	0.0	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/substrate-check.sh", lin
+checks/substrate-id.py	bare		2	0.0	UNASSIGNED (code 2 is not one of the five)	3		yes	usage:	usage: substrate-id.py [-h] [--rows] [--hash] [--judge FILE] [--plant]
+checks/substrate.py	bare		3	0.1	REFUSED	3		yes	usage:	REFUSED: no files given. A guard invoked with an empty population must not
+checks/sweep.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/sz.py	bare		1	0.1	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+checks/test_rewrite_bottom_up_gate.py	bare		0	0.5	PASS	0		no		..
+checks/txt-owners.py	bare		0	7.6	PASS	0		no		0 `.txt` reported by checks/no-txt.py, attributed to OWNING GENERATORS
+checks/unowned.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+checks/vz_gate.py	bare		1	0.4	FAIL	1		no		ORACLE EXITED 512 -- its output is not evidence
+checks/walk-mutate.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/walk-mutate.sh", line 33
+checks/wallcheck.py	bare		1	18.4	FAIL	1	0|1|2|3|4|5	yes		wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc  truth=.agents/slop
+checks/wallcheck.py	argv0	--selftest	0	0.2	PASS	0	0|1|2|3|4|5	yes		G1 tree anchor: {len(hit)}/3 patterns match the wall's own sentence -> PRESENT for every w
+checks/wallcheck.py	argv1	--plant fail	1	0.6	FAIL	1	0|1|2|3|4|5	yes		wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc  no hand-measured c
+checks/wallcheck.py	argv2	--ledger /no/such/walls.tsv	2	0.2	UNASSIGNED (code 2 is not one of the five)	3	0|1|2|3|4|5	yes		LEDGER UNREADABLE: /no/such/walls.tsv does not exist. A missing ledger is exit 2, never CL
+checks/wallcheck.py	argv3	--plant story	3	0.5	REFUSED	3	0|1|2|3|4|5	yes		wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc  no hand-measured c
+checks/wallcheck.py	argv4	NO-SUCH-ID	4	0.6	SKIP	4	0|1|2|3|4|5	yes		wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc  truth=.agents/slop
+checks/wallcheck.py	argv5	--plant dead	5	0.8	DEAD	5	0|1|2|3|4|5	yes		wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  pin=HEAD=7ad97ccbc  no hand-measured c
+checks/wt-sync.sh	bare		1	0.1	FAIL	1		no	error:	File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/wt-sync.sh", line 17
+gates/bc-u32-gate.py	bare		0	43.6	PASS	0		no		bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 window edge
+gates/bc-u32-gen.py	bare		0	0.1	PASS	0		no		wrote bc-u32.bend (39 rows) and bc-u32-oracle.py (39 rows)
+gates/bc-u32-oracle.py	bare		0	1.4	PASS	0		no		A_a_one=[1,2]
+gates/bc_u32_table.py	bare		0	1.1	PASS	0		no		row                              dim in out  mode     cpython                  unfixed    
+gates/beautiful-mnist-gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/ew-consts-gate.py	bare		0	20.0	PASS	0		no		ew-consts-gate: 21 rows, 3 lanes byte-identical
+gates/ew-consts-oracle.py	bare		0	0.0	PASS	0		no		k_log2=1060205080
+gates/ew-explog-gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/ew-explog-oracle.py	bare		0	0.8	PASS	0		no		ew_log=4 CONST/0 LOG2/1 CONST/0=1060205080 MUL/2
+gates/gate-surface.py	bare		1	15.0	FAIL	1	0|1|2	yes		I  DISCOVERED 129 entry point(s) under checks/gates/ (+36 module(s) with no entry guard)
+gates/gate-surface.py	argv0	--plant green	0	0.9	PASS	0	0|1|2	yes		PLANTS -- three directions, the blind spot, and the classes, because an instrument that hi
+gates/gate-surface.py	argv1	--plant red	1	0.2	FAIL	1	0|1|2	yes		<SILENT>
+gates/gate-surface.py	argv2	--root /dev/null	2	0.1	UNASSIGNED (code 2 is not one of the five)	3	0|1|2	yes		I  EMPTY POPULATION: no entry point under checks/gates/ -- and an empty population
+gates/gates-pop.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/gendirs.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/git-massdelete-gate.py	bare		4	0.1	SKIP	4		no	usage:	usage: git-massdelete-gate.py {check <rev> | staged | push | --plant}
+gates/i64-shl-gate.py	bare		0	10.7	PASS	0		no		i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all
+gates/i64-shl-oracle.py	bare		1	0.1	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+gates/i64-shr-gate.py	bare		0	10.2	PASS	0		no		i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pai
+gates/i64-shr-oracle.py	bare		1	0.1	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+gates/indexread-gate.py	bare		1	1.1	FAIL	1		no		INDEXREAD TREE-COMMITTED 6510  INDEX 6669  DIVERGENCE -159
+gates/mixin-op-gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/msgdiff-gate.py	bare		4	0.1	SKIP	4		no	usage:	usage: msgdiff-gate.py {check <rev> | range <rev-list args...> | --plant}
+gates/ops-core-gate.py	bare		0	16.0	PASS	0		no		ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymmetry, pop_const's two
+gates/ops-core-oracle.py	bare		0	0.2	PASS	0		no		hashcons_same_index=1
+gates/render_val_s-gate.py	bare		0	14.1	PASS	0		no		render_val_s-gate: 8 rows, 3 lanes -- render_val_s's signed 32-bit decimal printer agrees 
+gates/replace-gate.py	bare		0	14.2	PASS	0		no		replace-gate: 8 rows, 3 lanes -- UOp.replace's identity, single-field swap, two-field swap
+gates/retention-check.py	bare		TIMEOUT	45.0	SKIP	SKIP		yes		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/tn_add_sub-gate.py	bare		0	17.4	PASS	0		no		tn_add_sub-gate: 17 rows, 3 lanes -- tn_add, tn_radd, tn_sub, and tn_rsub all agree with C
+gates/tn_and_or_xor-gate.py	bare		0	18.7	PASS	0		no		tn_and_or_xor-gate: 25 rows, 3 lanes -- tn_and, tn_rand, tn_or, tn_ror, tn_xor, and tn_rxo
+gates/tn_binop2_cmp-gate.py	bare		0	23.9	PASS	0		no		tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, tn_cmpne, tn_rne (no-broadcas
+gates/tn_bitwise_not-gate.py	bare		0	19.5	PASS	0		no		tn_bitwise_not-gate: 8 rows, 3 lanes -- tn_bitwise_not's bool-arm CMPNE/CAST/CONST graph (
+gates/tn_contiguous_backward-gate.py	bare		0	18.0	PASS	0		no		tn_contiguous_backward-gate: 5 rows, 3 lanes -- tn_contiguous_backward's op/src/arg set, i
+gates/tn_detach-gate.py	bare		1	19.3	FAIL	1		no	error:|Traceback	Traceback (most recent call last):
+gates/tn_dunder_neg-gate.py	bare		0	42.6	PASS	0		no		tn_dunder_neg-gate: 5 rows, 3 lanes -- tn_dunder_neg (the __neg__ dunder wrapper) agrees w
+gates/tn_fdiv_mod-gate.py	bare		0	21.4	PASS	0		no		tn_fdiv_mod-gate: 17 rows, 3 lanes -- tn_fdiv, tn_rfdiv, tn_mod, and tn_rmod all agree wit
+gates/tn_logical_not-gate.py	bare		0	19.4	PASS	0		no		tn_logical_not-gate: 4 rows, 3 lanes -- tn_logical_not's CMPNE/CAST/CONST graph (op/arg/pu
+gates/tn_lshift_rshift-gate.py	bare		0	15.8	PASS	0		no		tn_lshift_rshift-gate: 9 rows, 3 lanes -- tn_lshift / tn_rlshift / tn_rshift all agree wit
+gates/tn_maximum-gate.py	bare		0	17.0	PASS	0		no		tn_maximum-gate: 7 rows, 3 lanes -- tn_maximum / tn_rmaximum both agree with CPython's Ten
+gates/tn_mul-gate.py	bare		0	18.8	PASS	0		no		tn_mul-gate: 13 rows, 3 lanes -- tn_mul, tn_rmul, and tn_square all agree with CPython's T
+gates/tn_neg-gate.py	bare		0	32.0	PASS	0		no		tn_neg-gate: 7 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) and arith arm (MUL/srcs/se
+gates/tn_pow-gate.py	bare		0	11.6	PASS	0		no		tn_pow-gate: 9 rows, 3 lanes -- tn_pow and tn_rpow both agree with CPython's Tensor.__pow_
+gates/tn_relu-gate.py	bare		0	10.4	PASS	0		no		tn_relu-gate: 5 rows, 3 lanes -- tn_relu's op/arg/srcs/purity and reachability all agree w
+gates/tn_relu6-gate.py	bare		0	12.7	PASS	0		no		tn_relu6-gate: 5 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity and reachability all agree
+gates/tn_sin_log2_exp2_rsqrt-gate.py	bare		0	17.4	PASS	0		no		tn_sin_log2_exp2_rsqrt-gate: 11 rows, 3 lanes -- tn_sin, tn_log2, tn_exp2 (pure one-liners
+gates/tn_sqrt-gate.py	bare		0	12.2	PASS	0		no		tn_sqrt-gate: 5 rows, 3 lanes -- tn_sqrt's op/src/arg set, input purity and reachability a
+gates/tn_trunc_reciprocal_threefry-gate.py	bare		0	12.4	PASS	0		no		tn_trunc_reciprocal_threefry-gate: 9 rows, 3 lanes -- tn_trunc, tn_reciprocal, tn_threefry
+gates/tn_where-gate.py	bare		0	11.1	PASS	0		no		tn_where-gate: 5 rows, 3 lanes -- tn_where's op/arg/srcs set, input purity, and reachabili
+gates/uop_cast-gate.py	bare		0	6.7	PASS	0		no		uop_cast-gate: 8 rows, 3 lanes -- UOp.cast's op/src/arg set, new-node build, ALU reachabil
+gates/wk-cd-gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/wk-cd-oracle.py	bare		0	1.7	PASS	0		no		cd_big_2p40=i64
+gates/wk-eval-gate.py	bare		TIMEOUT	45.0	SKIP	SKIP		no		<OVER-CAP 45.0s: cost UNKNOWN>
+gates/wk-eval-oracle.py	bare		0	0.5	PASS	0		no		int_weakint_val=0:7
+gates/wk-f32-gate.py	bare		0	14.8	PASS	0		no		wk-f32-gate: 18 rows, 3 lanes byte-identical
+gates/wk-f32-rows.py	bare		0	0.1	PASS	0		no		z=0

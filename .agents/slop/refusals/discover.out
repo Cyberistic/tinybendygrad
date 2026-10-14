@@ -1,0 +1,191 @@
+unit=ind verdict=none unblocking=no bytes=5776 span_s=0 report=ind/REPORT.md
+unit=elf verdict=none unblocking=no bytes=23961 span_s=0 report=elf/REPORT.md
+unit=dup verdict=none unblocking=no bytes=11458 span_s=120540 report=dup/REPORT.md
+unit=e2epy verdict=SKIP unblocking=no bytes=24847 span_s=119462 report=e2epy/report.md
+unit=deadreg verdict=DEAD unblocking=no bytes=15665 span_s=0 report=deadreg/REPORT.md
+unit=gatecensus verdict=SKIP unblocking=no bytes=10426 span_s=11291 report=gatecensus/REPORT.md
+unit=corpus24 verdict=none unblocking=no bytes=10326 span_s=475 report=corpus24/REPORT.md
+unit=shadowtrees verdict=mention:LANDED unblocking=no bytes=21357 span_s=0 report=shadowtrees/REPORT.md
+unit=i64shl verdict=DEAD unblocking=no bytes=13440 span_s=76886 report=i64shl/REPORT.md
+unit=e2estage8 verdict=mention:LANDED,SKIP unblocking=no bytes=10411 span_s=1240 report=e2estage8/report.md
+unit=stalefix verdict=none unblocking=no bytes=4282 span_s=2236 report=stalefix/REPORT.md
+unit=ishr verdict=none unblocking=no bytes=16940 span_s=62524 report=ishr/REPORT.md
+unit=txtgen verdict=mention:DEAD unblocking=no bytes=12604 span_s=630 report=txtgen/REPORT.md
+unit=rerun verdict=none unblocking=no bytes=4042 span_s=38729 report=rerun/REPORT.md
+unit=clearfix verdict=none unblocking=no bytes=9072 span_s=3277 report=clearfix/REPORT.md
+unit=deadgens verdict=mention:DEAD unblocking=no bytes=11948 span_s=0 report=deadgens/REPORT.md
+unit=stale71 verdict=none unblocking=no bytes=13226 span_s=1284 report=stale71/REPORT.md
+unit=txt398 verdict=mention:REFUSED unblocking=no bytes=10811 span_s=125 report=txt398/REPORT.md
+unit=figure2 verdict=none unblocking=no bytes=5212 span_s=31125 report=figure2/REPORT.md
+unit=orcdecide verdict=mention:DEAD unblocking=no bytes=10767 span_s=81406 report=orcdecide/REPORT.md
+unit=rosterwire verdict=none unblocking=no bytes=3530 span_s=11070 report=rosterwire/REPORT.md
+unit=canrun verdict=REFUSED unblocking=no bytes=17903 span_s=2014 report=canrun/REPORT.md
+unit=agend verdict=SKIP unblocking=no bytes=26110 span_s=938 report=agend/REPORT.md
+unit=roster2 verdict=none unblocking=no bytes=4947 span_s=37 report=roster2/REPORT.md
+unit=flagtable verdict=mention:SKIP unblocking=no bytes=5877 span_s=1039 report=flagtable/REPORT.md
+unit=toolsledger verdict=none unblocking=no bytes=3795 span_s=6691 report=toolsledger/REPORT.md
+unit=land71 verdict=none unblocking=no bytes=2942 span_s=96 report=land71/REPORT.md
+unit=census7 verdict=none unblocking=no bytes=5960 span_s=144 report=census7/REPORT.md
+unit=e2efix verdict=SKIP unblocking=no bytes=4991 span_s=0 report=e2efix/report.md
+unit=figurefix verdict=none unblocking=no bytes=6267 span_s=680 report=figurefix/REPORT.md
+unit=clause2fix verdict=none unblocking=no bytes=2169 span_s=0 report=clause2fix/REPORT.md
+unit=needsaudit verdict=mention:DEAD unblocking=no bytes=9470 span_s=474 report=needsaudit/REPORT.md
+unit=linfix verdict=mention:DEAD unblocking=no bytes=11090 span_s=1172 report=linfix/REPORT.md
+unit=txt259 verdict=none unblocking=no bytes=11321 span_s=175 report=txt259/REPORT.md
+unit=lostinst verdict=none unblocking=no bytes=11448 span_s=549 report=lostinst/REPORT.md
+unit=bullets verdict=none unblocking=no bytes=10229 span_s=214 report=bullets/REPORT.md
+unit=deadclause verdict=none unblocking=no bytes=9543 span_s=1338 report=deadclause/REPORT.md
+unit=reprofix verdict=none unblocking=no bytes=9817 span_s=269 report=reprofix/REPORT.md
+unit=gatesrun verdict=DEAD unblocking=no bytes=10648 span_s=883 report=gatesrun/REPORT.md
+unit=emptyblob verdict=DEAD unblocking=no bytes=11004 span_s=984 report=emptyblob/REPORT.md
+unit=txtexec verdict=none unblocking=no bytes=12122 span_s=12997 report=txtexec/REPORT.md
+unit=notxt139 verdict=none unblocking=no bytes=6492 span_s=142 report=notxt139/REPORT.md
+unit=checkshells verdict=REFUSED unblocking=no bytes=11915 span_s=324 report=checkshells/REPORT.md
+unit=oraclerestore verdict=none unblocking=no bytes=7978 span_s=413 report=oraclerestore/REPORT.md
+unit=sloptxt verdict=mention:SKIP unblocking=no bytes=7473 span_s=769 report=sloptxt/REPORT.md
+unit=emptyevid verdict=mention:DEAD,SKIP unblocking=no bytes=10510 span_s=736 report=emptyevid/REPORT.md
+unit=substrate2 verdict=REFUSED unblocking=no bytes=11287 span_s=582 report=substrate2/REPORT.md
+unit=inst13 verdict=mention:DEAD unblocking=no bytes=11765 span_s=538 report=inst13/REPORT.md
+unit=rerun2 verdict=none unblocking=no bytes=9262 span_s=915 report=rerun2/REPORT.md
+unit=delbullets verdict=none unblocking=no bytes=8269 span_s=21 report=delbullets/REPORT.md
+unit=clauseVfix verdict=none unblocking=no bytes=12887 span_s=356 report=clauseVfix/REPORT.md
+unit=oracles259 verdict=none unblocking=no bytes=2918 span_s=61335 report=oracles259/REPORT.md
+unit=agend2 verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=12655 span_s=283 report=agend2/REPORT.md
+unit=portmarkers verdict=none unblocking=no bytes=6925 span_s=370 report=portmarkers/REPORT.md
+unit=declared473 verdict=none unblocking=no bytes=6638 span_s=269 report=declared473/REPORT.md
+unit=capstream verdict=none unblocking=no bytes=9184 span_s=407 report=capstream/REPORT.md
+unit=substrate3 verdict=mention:REFUSED unblocking=no bytes=9006 span_s=238 report=substrate3/REPORT.md
+unit=instrepair verdict=mention:REFUSED,SKIP unblocking=no bytes=8704 span_s=161 report=instrepair/REPORT.md
+unit=envprecond verdict=mention:REFUSED unblocking=no bytes=10416 span_s=56 report=envprecond/REPORT.md
+unit=clauseII verdict=none unblocking=no bytes=5874 span_s=261 report=clauseII/REPORT.md
+unit=todo2 verdict=DEAD unblocking=no bytes=9479 span_s=64447 report=todo2/REPORT.md
+unit=laws17 verdict=REFUSED unblocking=no bytes=5863 span_s=135 report=laws17/REPORT.md
+unit=declared472 verdict=mention:SKIP unblocking=no bytes=9690 span_s=482 report=declared472/REPORT.md
+unit=gatehealth verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=8785 span_s=658 report=gatehealth/REPORT.md
+unit=emptyact verdict=REFUSED unblocking=no bytes=5839 span_s=221 report=emptyact/REPORT.md
+unit=oracletxt verdict=none unblocking=no bytes=7225 span_s=41496 report=oracletxt/REPORT.md
+unit=unverified9 verdict=DEAD unblocking=no bytes=10435 span_s=173 report=unverified9/REPORT.md
+unit=bendsuite verdict=DEAD unblocking=no bytes=12454 span_s=3780 report=bendsuite/REPORT.md
+unit=bendcover verdict=none unblocking=no bytes=4808 span_s=24 report=bendcover/REPORT.md
+unit=corpusproto verdict=none unblocking=no bytes=10083 span_s=48 report=corpusproto/REPORT.md
+unit=strayblobs verdict=none unblocking=no bytes=10488 span_s=188 report=strayblobs/REPORT.md
+unit=portpop verdict=none unblocking=no bytes=8452 span_s=0 report=portpop/REPORT.md
+unit=opdenom verdict=none unblocking=no bytes=8985 span_s=79 report=opdenom/REPORT.md
+unit=last79 verdict=none unblocking=no bytes=7255 span_s=39 report=last79/REPORT.md
+unit=newgraphs verdict=none unblocking=no bytes=7874 span_s=123 report=newgraphs/REPORT.md
+unit=sweepport verdict=mention:SKIP unblocking=no bytes=9188 span_s=1133 report=sweepport/REPORT.md
+unit=gitignore verdict=none unblocking=no bytes=13407 span_s=6366 report=gitignore/REPORT.md
+unit=agendop verdict=none unblocking=no bytes=5831 span_s=88 report=agendop/REPORT.md
+unit=buffergraphs verdict=none unblocking=no bytes=7168 span_s=468 report=buffergraphs/REPORT.md
+unit=substratepop verdict=mention:REFUSED unblocking=no bytes=8619 span_s=545 report=substratepop/REPORT.md
+unit=corpuswire verdict=none unblocking=no bytes=13429 span_s=177 report=corpuswire/REPORT.md
+unit=bendarms verdict=DEAD unblocking=no bytes=11093 span_s=166 report=bendarms/REPORT.md
+unit=agendop2 verdict=none unblocking=no bytes=5736 span_s=59 report=agendop2/REPORT.md
+unit=jjhazard verdict=REFUSED unblocking=no bytes=9072 span_s=614 report=jjhazard/REPORT.md
+unit=corpuswire2 verdict=none unblocking=no bytes=8280 span_s=271 report=corpuswire2/REPORT.md
+unit=prune2 verdict=mention:SKIP unblocking=no bytes=9771 span_s=439 report=prune2/REPORT.md
+unit=wmmafix verdict=none unblocking=no bytes=11339 span_s=138 report=wmmafix/REPORT.md
+unit=portunknown verdict=DEAD unblocking=no bytes=18199 span_s=211 report=portunknown/REPORT.md
+unit=remembered103 verdict=none unblocking=no bytes=8448 span_s=216 report=remembered103/REPORT.md
+unit=threegraphs verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=10030 span_s=144 report=threegraphs/REPORT.md
+unit=nostraysshape verdict=none unblocking=no bytes=9416 span_s=418 report=nostraysshape/REPORT.md
+unit=bendperf verdict=none unblocking=no bytes=9703 span_s=1463 report=bendperf/REPORT.md
+unit=wantwire verdict=none unblocking=no bytes=13728 span_s=59 report=wantwire/REPORT.md
+unit=prune3 verdict=none unblocking=no bytes=10034 span_s=499 report=prune3/REPORT.md
+unit=gatedelete verdict=SKIP unblocking=no bytes=9731 span_s=125 report=gatedelete/REPORT.md
+unit=runsgate verdict=REFUSED unblocking=no bytes=10788 span_s=151 report=runsgate/REPORT.md
+unit=portzz verdict=none unblocking=no bytes=10844 span_s=35 report=portzz/REPORT.md
+unit=adevfix verdict=SKIP unblocking=no bytes=12402 span_s=266 report=adevfix/REPORT.md
+unit=censusfix verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=6699 span_s=191 report=censusfix/REPORT.md
+unit=substratediag verdict=DEAD unblocking=no bytes=7914 span_s=297 report=substratediag/REPORT.md
+unit=envguard verdict=REFUSED unblocking=no bytes=6514 span_s=202 report=envguard/REPORT.md
+unit=citetruth verdict=none unblocking=no bytes=8878 span_s=327 report=citetruth/REPORT.md
+unit=nameshandlist verdict=SKIP unblocking=no bytes=7598 span_s=42 report=nameshandlist/REPORT.md
+unit=armfour verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=10831 span_s=0 report=armfour/REPORT.md
+unit=plancarve verdict=SKIP unblocking=no bytes=11547 span_s=0 report=plancarve/REPORT.md
+unit=awmma verdict=mention:DEAD,REFUSED,SKIP unblocking=no bytes=8973 span_s=0 report=awmma/REPORT.md
+unit=foldgap verdict=mention:LANDED,REFUSED unblocking=no bytes=10963 span_s=458 report=foldgap/REPORT.md
+unit=chkcites verdict=none unblocking=no bytes=12110 span_s=403 report=chkcites/REPORT.md
+unit=mselectarg verdict=mention:DEAD,REFUSED,SKIP unblocking=yes bytes=13144 span_s=0 report=mselectarg/REPORT.md
+unit=txtresidual verdict=none unblocking=no bytes=10146 span_s=77 report=txtresidual/REPORT.md
+unit=run34 verdict=none unblocking=no bytes=12846 span_s=235 report=run34/REPORT.md
+unit=refusalsweep verdict=REFUSED unblocking=no bytes=9337 span_s=94 report=refusalsweep/REPORT.md
+unit=shadowcopies verdict=SKIP unblocking=no bytes=12808 span_s=437 report=shadowcopies/REPORT.md
+unit=cites2 verdict=LANDED unblocking=no bytes=13027 span_s=1378 report=cites2/REPORT.md
+unit=flipport verdict=REFUSED unblocking=yes bytes=13673 span_s=0 report=flipport/REPORT.md
+unit=unshardtable verdict=none unblocking=yes bytes=11186 span_s=480 report=unshardtable/REPORT.md
+unit=orcfix verdict=LANDED unblocking=no bytes=16352 span_s=1590 report=orcfix/REPORT.md
+unit=censusred verdict=none unblocking=no bytes=12762 span_s=919 report=censusred/REPORT.md
+unit=bendwire verdict=none unblocking=no bytes=13100 span_s=6085 report=bendwire/REPORT.md
+unit=ccdead2 verdict=DEAD unblocking=no bytes=9174 span_s=319 report=ccdead2/REPORT.md
+unit=getaddrwire verdict=SKIP unblocking=no bytes=13330 span_s=0 report=getaddrwire/REPORT.md
+unit=jjreset verdict=REFUSED unblocking=no bytes=9872 span_s=259 report=jjreset/REPORT.md
+unit=runfinal verdict=none unblocking=yes bytes=6365 span_s=763 report=runfinal/REPORT.md
+unit=coindependent verdict=REFUSED unblocking=no bytes=14852 span_s=783 report=coindependent/REPORT.md
+unit=exitzero verdict=REFUSED unblocking=no bytes=12133 span_s=292 report=exitzero/REPORT.md
+unit=citeresolve verdict=DEAD unblocking=no bytes=14658 span_s=507 report=citeresolve/REPORT.md
+unit=flipblock verdict=REFUSED unblocking=yes bytes=11807 span_s=39 report=flipblock/REPORT.md
+unit=quiesce verdict=REFUSED unblocking=no bytes=12117 span_s=41984 report=quiesce/REPORT.md
+unit=livenum verdict=mention:REFUSED,SKIP unblocking=no bytes=13158 span_s=258 report=livenum/REPORT.md
+unit=twopass verdict=DEAD unblocking=no bytes=16241 span_s=2034 report=twopass/REPORT.md
+unit=pinindep verdict=REFUSED unblocking=no bytes=20048 span_s=438 report=pinindep/REPORT.md
+unit=surface verdict=REFUSED unblocking=no bytes=11210 span_s=19 report=surface/REPORT.md
+unit=msgdiff verdict=REFUSED unblocking=no bytes=10671 span_s=226 report=msgdiff/REPORT.md
+unit=declare verdict=DEAD unblocking=no bytes=20604 span_s=47471 report=declare/REPORT.md
+unit=pairs verdict=mention:LANDED,SKIP unblocking=no bytes=16410 span_s=68 report=pairs/REPORT.md
+unit=prune4 verdict=DEAD unblocking=no bytes=22133 span_s=1979 report=prune4/REPORT.md
+unit=hooks verdict=REFUSED unblocking=no bytes=20966 span_s=45740 report=hooks/REPORT.md
+unit=midrun verdict=REFUSED unblocking=no bytes=19632 span_s=687 report=midrun/REPORT.md
+unit=zerogate verdict=REFUSED unblocking=yes bytes=24089 span_s=981 report=zerogate/REPORT.md
+unit=repropin verdict=none unblocking=no bytes=13240 span_s=259 report=repropin/REPORT.md
+unit=slowgate verdict=DEAD unblocking=no bytes=13865 span_s=44876 report=slowgate/REPORT.md
+unit=denominator verdict=REFUSED unblocking=no bytes=17225 span_s=792 report=denominator/REPORT.md
+unit=flipthird verdict=REFUSED unblocking=no bytes=12364 span_s=759 report=flipthird/REPORT.md
+unit=plantthe46 verdict=REFUSED unblocking=yes bytes=29929 span_s=36452 report=plantthe46/REPORT.md
+unit=modulerefuse verdict=REFUSED unblocking=no bytes=23505 span_s=37516 report=modulerefuse/REPORT.md
+unit=substrateid verdict=LANDED unblocking=no bytes=20112 span_s=35619 report=substrateid/REPORT.md
+unit=indextree verdict=REFUSED unblocking=no bytes=16931 span_s=56 report=indextree/REPORT.md
+unit=onemodule verdict=DEAD unblocking=no bytes=29346 span_s=454 report=onemodule/REPORT.md
+unit=subtree verdict=none unblocking=no bytes=18798 span_s=1056 report=subtree/REPORT.md
+unit=declareverdict verdict=REFUSED unblocking=no bytes=21285 span_s=13 report=declareverdict/REPORT.md
+unit=synonyms verdict=SKIP unblocking=no bytes=15390 span_s=588 report=synonyms/REPORT.md
+unit=droppedinput verdict=REFUSED unblocking=no bytes=23103 span_s=3194 report=droppedinput/REPORT.md
+unit=exitcode verdict=DEAD unblocking=no bytes=15228 span_s=771 report=exitcode/REPORT.md
+unit=unreachable verdict=REFUSED unblocking=no bytes=24156 span_s=1965 report=unreachable/REPORT.md
+unit=onewalk verdict=REFUSED unblocking=no bytes=7023 span_s=0 report=onewalk/REPORT.md
+unit=declaretwo verdict=DEAD unblocking=no bytes=25856 span_s=753 report=declaretwo/REPORT.md
+unit=restoredinput verdict=REFUSED unblocking=no bytes=27259 span_s=292 report=restoredinput/REPORT.md
+TOTAL-REPORTS=157
+REFUSED-VERB-REPORTS=31
+REFUSED-UNIT=canrun
+REFUSED-UNIT=checkshells
+REFUSED-UNIT=substrate2
+REFUSED-UNIT=laws17
+REFUSED-UNIT=emptyact
+REFUSED-UNIT=jjhazard
+REFUSED-UNIT=runsgate
+REFUSED-UNIT=envguard
+REFUSED-UNIT=refusalsweep
+REFUSED-UNIT=flipport
+REFUSED-UNIT=jjreset
+REFUSED-UNIT=coindependent
+REFUSED-UNIT=exitzero
+REFUSED-UNIT=flipblock
+REFUSED-UNIT=quiesce
+REFUSED-UNIT=pinindep
+REFUSED-UNIT=surface
+REFUSED-UNIT=msgdiff
+REFUSED-UNIT=hooks
+REFUSED-UNIT=midrun
+REFUSED-UNIT=zerogate
+REFUSED-UNIT=denominator
+REFUSED-UNIT=flipthird
+REFUSED-UNIT=plantthe46
+REFUSED-UNIT=modulerefuse
+REFUSED-UNIT=indextree
+REFUSED-UNIT=declareverdict
+REFUSED-UNIT=droppedinput
+REFUSED-UNIT=unreachable
+REFUSED-UNIT=onewalk
+REFUSED-UNIT=restoredinput
+NONE-VERDICT=64

@@ -1,0 +1,36 @@
+# THE REACH HALF -- 14 sites where an INT-KEYED table is probed, over 150 files discovered by os.walk under checks/ + gates/
+## LIVE    : a bool EXPRESSION indexes the table, no guard at all            : 0
+## LATENT  : a non-bool expression indexes it, no guard -- LIVE the moment a caller passes a comparison : 11
+## GUARDED : an isinstance(x, bool) protecting the site, earlier-line OR same-expression : 3
+
+## --- LIVE (0) ---
+## --- GUARDED (3) ---
+gates/gatekit.py                :96    IN   VERDICT    keys=[0, 1, 3, 4, 5]    index=code                         bool=False guard=EARLIER-isinstance-bool-on:code
+                                                      | if code in VERDICT:
+gates/gatekit.py                :97    SUB  VERDICT    keys=[0, 1, 3, 4, 5]    index=code                         bool=False guard=EARLIER-isinstance-bool-on:code
+                                                      | return VERDICT[code]
+gates/gatekit.py                :110   IN   VERDICT    keys=[0, 1, 3, 4, 5]    index=code                         bool=False guard=SAME-EXPR-and-isinstance-bool (sho
+                                                      | return code if code in VERDICT and not isinstance(code, bool) else REFUSED
+## --- LATENT (11) ---
+checks/fw_live.py               :51    GET  PSP_ERRORS keys=[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18] index=error                        bool=False guard=NONE
+                                                      | detail = PSP_ERRORS.get(error, "unknown error")
+checks/substrate-id.py          :247   GET  NAMES      keys=[0, 1, 3, 5]       index=rc                           bool=False guard=NONE
+                                                      | print(f"{NAMES.get(rc, rc)}{tail}: {why}")
+checks/substrate-id.py          :329   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc                           bool=False guard=NONE
+                                                      | f"step-rcs={rcs} -> {NAMES[rc]} ({why[:44]}...)")
+checks/substrate-id.py          :347   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc_run                       bool=False guard=NONE
+                                                      | f"the RUN says {NAMES[rc_run]}, the READER says {NAMES[rc_read]}")
+checks/substrate-id.py          :347   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc_read                      bool=False guard=NONE
+                                                      | f"the RUN says {NAMES[rc_run]}, the READER says {NAMES[rc_read]}")
+checks/substrate-id.py          :367   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc                           bool=False guard=NONE
+                                                      | f"step-rcs={rcs} -> {NAMES[rc]}")
+checks/substrate-id.py          :382   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc                           bool=False guard=NONE
+                                                      | print(f"PLANT midrun-cold-only step-rcs={rcs} -> {NAMES[rc]}  "
+checks/substrate-id.py          :436   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc                           bool=False guard=NONE
+                                                      | f"-> {NAMES[rc]}")
+checks/substrate-id.py          :448   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc_empty                     bool=False guard=NONE
+                                                      | print(f"PLANT dead       empty summary -> {NAMES[rc_empty]}")
+checks/substrate-id.py          :451   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc_gone                      bool=False guard=NONE
+                                                      | print(f"PLANT dead       absent summary -> {NAMES[rc_gone]}")
+checks/substrate-id.py          :457   SUB  NAMES      keys=[0, 1, 3, 5]       index=rc_nosub                     bool=False guard=NONE
+                                                      | print(f"PLANT absent     3 rows, no substrate-* -> {NAMES[rc_nosub]}  "

@@ -1,0 +1,2 @@
+tn_graph_census-gate: 51 rows, 3 lanes, 1 DECLARED divergence -- every ported tn_* has NO NOOP BOTTOM and 50 op sequences match CPython's byte-for-byte; tn_isfinite carries the ONE missing CONST leaf, which is the weakint->weakfloat remint of `self` that `_broadcasted` does and tensor.bend cannot call
+rc=0

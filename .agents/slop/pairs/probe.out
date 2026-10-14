@@ -1,0 +1,349 @@
+==============================================================================
+PAIR 1 -- THE CONTENT FENCE: TWO GATES, ONE 9-TOKEN HAND LIST
+==============================================================================
+  AT HEAD -- abi_gate.py:457   JS_ARM_TOKENS    = ['p.hi', 'p.lo', 'p.fst', 'p.snd', 'io_tup', 'BigInt', 'asIntN', '<< 32n', '>>> 32n']
+  AT HEAD -- abi4_gate.py:189  OTHER_ABI_TOKENS = ['p.hi', 'p.lo', 'p.fst', 'p.snd', 'io_tup', 'BigInt', 'asIntN', '<< 32n', '>>> 32n']
+  IDENTICAL: True   (9 strings each)  <- the two hand lists, the fault
+  NOW -- checks/coindep.py ABI_OTHER_TOKENS = ['p.hi', 'p.lo', 'p.fst', 'p.snd', 'io_tup', 'BigInt', 'asIntN', '<< 32n', '>>> 32n', 'pack64', 'i64_of', 'Number(', '$: "tinybendygrad/helpers.I64"']
+  the 9 literals still spelled in abi_gate.py? 8 ; in abi4_gate.py? 0
+
+  ABI-2/3 JS vocabulary, discovered (dtype.js + abi_gate constants):
+    covered by the fence : ['<< 32n', '>> 32n', 'BigInt', 'io_tup', 'p.fst', 'p.hi', 'p.lo', 'p.snd']
+    NOT covered          : ['BigInt.asIntN', 'BigInt.asUintN', 'Number']
+
+  the fence spells `>>> 32n`; occurrences outside the two fence lists:
+    ['.agents/slop/abi4check/abi4_gate.135bf0204.py:153', '.agents/slop/pairs/probe.py:120', '.agents/slop/pairs/probe.py:121', '.agents/slop/pairs/probe.py:122', 'checks/coindep.py:29', 'checks/coindep.py:41', 'checks/coindep.py:49']
+  `>> 32n` (abi.json ABI-3 js site, dtype.js:180, abi_gate.js constants): in the fence? True
+  `asUintN` (dtype.js:179 shipped): in the fence? False
+
+==============================================================================
+PAIR 5 -- THE POPULATION, BY os.walk (never the brief's five)
+==============================================================================
+  1003 .py source files read (SKIP=['.git', '.venv', '__pycache__', 'node_modules', 'references', 'test', 'tinygrad']); 1389 string-list declarations; 110 spelled in 2+ files
+  A PAIR IS A CANDIDATE when >=1 site uses the shared list as an EXPECTATION:
+
+  110 shared literal lists; the brief named 5. FULL LIST:
+
+  [8] ['.bash', '.bend', '.cjs', '.js', '.mjs', '.py'] ...
+      .agents/slop/capstream/discover.py:28  <-- EXPECTATION
+      .agents/slop/capstream/refsplit.py:23  <-- EXPECTATION
+      .agents/slop/declared472/census.py:25  <-- EXPECTATION
+      .agents/slop/declared472/plan.py:26  <-- EXPECTATION
+      .agents/slop/declared473/reader_census.py:14  <-- EXPECTATION
+      .agents/slop/sloptxt/readers.py:19  <-- EXPECTATION
+
+  [9] ['AddrSpace', 'AxisType', 'Context', 'DType', 'GroupOp', 'Ops'] ...
+      .agents/slop/corpuswire/tree/checks/corpus-figure.py:137  <-- EXPECTATION
+      .agents/slop/devpin/injectivity.py:37  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/corpus-figure.py:137  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/corpus-figure.py:137  <-- EXPECTATION
+      .agents/slop/opspy/corpus.py:41  <-- EXPECTATION
+      checks/corpus-figure.py:137  <-- EXPECTATION
+
+  [13] ['D0-coverage-census', 'D0-ops-probe', 'D0-run-summary', 'D0-selfcheck', 'D1-verdicts', 'D10-zerorow-guard'] ...
+      .agents/slop/corpuswire/tree/checks/differ.py:251  <-- EXPECTATION
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py:252  <-- EXPECTATION
+      .agents/slop/difftxt/inventory.py:24  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/differ.py:251  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/differ.py:251  <-- EXPECTATION
+      checks/differ.py:289  <-- EXPECTATION
+
+  [4] ['tinybendygrad/graphcmp.bend', 'tinybendygrad/helpers.bend', 'tinybendygrad/uop/fold.bend', 'tinybendygrad/uop/ops.bend']
+      .agents/slop/stale269/account.py:29  <-- EXPECTATION
+      .agents/slop/stale269/ledger.py:37  <-- EXPECTATION
+      .agents/slop/stale269/menu.py:24  <-- EXPECTATION
+      .agents/slop/stale269/plan.py:35  <-- EXPECTATION
+      .agents/slop/stale269/readjudicate.py:45  <-- EXPECTATION
+      .agents/slop/stale269/restore.py:45  <-- EXPECTATION
+
+  [4] ['NO-FILE', 'PAST-EOF', 'STALE-LINE', 'WRONG-FILE']
+      .agents/slop/stale269/account.py:41  <-- EXPECTATION
+      .agents/slop/stale269/audit.py:47  <-- EXPECTATION
+      .agents/slop/stale269/ledger.py:76  <-- EXPECTATION
+      .agents/slop/stale269/picks.py:38  <-- EXPECTATION
+      .agents/slop/stale269/plan.py:91  <-- EXPECTATION
+      .agents/slop/stale269/write.py:54  <-- EXPECTATION
+
+  [5] ['binblob', 'gate', 'group', 'loop', 'matmul']
+      .agents/slop/corpuswire/tree/checks/differ.py:202  <-- EXPECTATION
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py:203  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/differ.py:202  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/differ.py:202  <-- EXPECTATION
+      checks/differ.py:229  <-- EXPECTATION
+
+  [5] ['D1-graph-', 'D3-control-', 'D5-plant-', 'D6-', 'D9-stability-']
+      .agents/slop/corpuswire/tree/checks/differ.py:257  <-- EXPECTATION
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py:258  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/differ.py:257  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/differ.py:257  <-- EXPECTATION
+      checks/differ.py:295  <-- EXPECTATION
+
+  [6] ['bytes', 'dtype', 'opt', 'pyuop', 'shape', 'srcswap']
+      .agents/slop/corpuswire/tree/checks/differ.py:195  <-- EXPECTATION
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py:196  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/differ.py:195  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/differ.py:195  <-- EXPECTATION
+      checks/differ.py:222  <-- EXPECTATION
+
+  [4] ['gate', 'group', 'loop', 'sym']
+      .agents/slop/corpuswire/tree/checks/differ.py:206  <-- EXPECTATION
+      .agents/slop/corpuswire/tree/checks/differ_wantdummy.py:207  <-- EXPECTATION
+      .agents/slop/figure2/plant/broken/checks/differ.py:206  <-- EXPECTATION
+      .agents/slop/figure2/plant/real/checks/differ.py:206  <-- EXPECTATION
+      checks/differ.py:233  <-- EXPECTATION
+
+  [4] ['.js', '.mjs', '.py', '.sh']
+      .agents/slop/formblind-census.py:75  <-- EXPECTATION
+      .agents/slop/gendirs/writetargets.py:43  <-- EXPECTATION
+      .agents/slop/lostinst/livecite.py:14  <-- EXPECTATION
+      gates/gendirs.py:70  <-- EXPECTATION
+
+  [4] ['bin_promote', 'commit_weak', 'exp_cast', 'rop_gap']
+      .agents/slop/mixin-op-gate.py:149
+      .agents/slop/clearfix/frozen-prefix/mixin-op-gate.py:82  <-- EXPECTATION
+      gates/mixin-op-gate.py:89  <-- EXPECTATION
+      gates/mixin-op-oracle.py:149
+
+  [4] ['doorbell', 'gpput', 'put_value', 'ring']
+      .agents/slop/nv-oracle.py:393  <-- EXPECTATION
+      .agents/slop/nv-oracle.py:987  <-- EXPECTATION
+      .agents/slop/nvdup/nv-oracle-PREFIX.py:393  <-- EXPECTATION
+      .agents/slop/nvdup/nv-oracle-PREFIX.py:1003  <-- EXPECTATION
+
+  [4] ['.git', '__pycache__', 'node_modules', 'references']
+      .agents/slop/capstream/discover.py:26  <-- EXPECTATION
+      .agents/slop/declared472/derive.py:18  <-- EXPECTATION
+      .agents/slop/sloptxt/features.py:13  <-- EXPECTATION
+      .agents/slop/sloptxt/readers.py:17  <-- EXPECTATION
+
+  [5] ['alu', 'bit', 'bw', 'move', 'where']
+      .agents/slop/corpusproto/proof.py:14  <-- EXPECTATION
+      .agents/slop/unsetexp/selftest.py:162  <-- EXPECTATION
+      .agents/slop/unsetexp/selftest.py:83  <-- EXPECTATION
+      .agents/slop/unsetexp/selftest.py:134  <-- EXPECTATION
+
+  [5] ['.bend', '.js', '.mjs', '.py', '.sh']
+      .agents/slop/inst13/recount.py:76  <-- EXPECTATION
+      .agents/slop/inst13/restore.py:13  <-- EXPECTATION
+      .agents/slop/instrepair/restore.py:60
+      .agents/slop/lostinst/census.py:63  <-- EXPECTATION
+
+  [4] ['fp8e4m3', 'fp8e4m3fnuz', 'fp8e5m2', 'fp8e5m2fnuz']
+      .agents/slop/abi4check/abi4_gate.135bf0204.py:168  <-- EXPECTATION
+      .agents/slop/fp8fix/gate.py:37  <-- EXPECTATION
+      checks/abi4_gate.py:218  <-- EXPECTATION
+
+  [6] ['cdiv', 'ceildiv', 'cmod', 'floor_div', 'floor_mod', 'trunc']
+      .agents/slop/fp8fix/gate.py:134  <-- EXPECTATION
+      .agents/slop/jslane2/gen_js_seam.py:58  <-- EXPECTATION
+      checks/jsfix_gate.py:78  <-- EXPECTATION
+
+  [5] ['.git', '.jj', '.ruff_cache', '.venv', 'references']
+      .agents/slop/gitignore/enumerate.py:20  <-- EXPECTATION
+      .agents/slop/gitignore/matchlib.py:17  <-- EXPECTATION
+      .agents/slop/gitignore/matchlib.py:144  <-- EXPECTATION
+
+  [5] ['', '  do IO<Unit>:', 'def main() -> IO(Unit):', 'import ./tinybendygrad/dtype.bend as D', 'import ./tinybendygrad/helpers.bend as H']
+      .agents/slop/jslane2/gen_js_seam.py:140  <-- EXPECTATION
+      checks/jsfix_gate.py:300  <-- EXPECTATION
+      checks/jsfix_gate.py:323  <-- EXPECTATION
+
+  [5] ['.git', '.venv', '__pycache__', 'node_modules', 'references']
+      .agents/slop/orcdecide/retired/othercopies.py:20  <-- EXPECTATION
+      .agents/slop/pairs/plant.py:120  <-- EXPECTATION
+      checks/coindep.py:61
+
+  [4] ['36145', '64022', '66397', '97648']
+      .agents/slop/strayblobs/analyze.py:14  <-- EXPECTATION
+      .agents/slop/strayblobs/delete.py:18  <-- EXPECTATION
+      .agents/slop/strayblobs/match_history.py:15
+
+  [10] ['<|begin_of_text|>', '<|end_header_id|>', '<|end_of_text|>', '<|eot_id|>', '<|reserved_special_token_0|>', '<|reserved_special_token_1|>'] ...
+      checks/llama.py:28  <-- EXPECTATION
+      examples/llama.py:28  <-- EXPECTATION
+      examples/llama3.py:18  <-- EXPECTATION
+
+  [5] ['[CLS]', '[MASK]', '[PAD]', '[SEP]', '[UNK]']
+      examples/mlperf/helpers.py:86  <-- EXPECTATION
+      examples/mlperf/helpers.py:129  <-- EXPECTATION
+      extra/datasets/wikipedia.py:56  <-- EXPECTATION
+
+  [5] ['tinygrad/llm', 'tinygrad/nn', 'tinygrad/renderer', 'tinygrad/runtime', 'tinygrad/viz']
+      sz.py:59  <-- EXPECTATION
+      checks/sz.py:59  <-- EXPECTATION
+
+  [5] ['Diff', 'Diff', 'Lines', 'Name', 'Tokens/Line']
+      sz.py:63  <-- EXPECTATION
+      checks/sz.py:63  <-- EXPECTATION
+
+  [4] ['tinybendygrad/codegen/decomp/dtype.bend', 'tinybendygrad/device.bend', 'tinybendygrad/dtype.bend', 'tinybendygrad/renderer/cstyle.bend']
+      .agents/slop/gate-reconcile.py:57  <-- EXPECTATION
+      .agents/slop/gate-roster-arith.py:85  <-- EXPECTATION
+
+  [5] ['max_warps_per_sm', 'num_gpcs', 'num_sm_per_tpc', 'num_tpc_per_gpc', 'sm_version']
+      .agents/slop/nv-oracle.py:1056  <-- EXPECTATION
+      .agents/slop/nvdup/nv-oracle-PREFIX.py:1072  <-- EXPECTATION
+
+  [4] ['submit_nv_compute', 'submit_nv_copy', 'submit_nv_encdec', 'submit_nv_raw']
+      .agents/slop/nv-oracle.py:130  <-- EXPECTATION
+      .agents/slop/nvdup/nv-oracle-PREFIX.py:130  <-- EXPECTATION
+
+  [9] ['.git', '.jj', '.mutwork', '.venv', '__pycache__', 'node_modules'] ...
+      .agents/slop/reader-fork-census.py:71  <-- EXPECTATION
+      .agents/slop/reader-guard.py:58  <-- EXPECTATION
+
+  [7] ['--no-graph', '-T', '-r', '@', 'commit_id.short()', 'jj'] ...
+      .agents/slop/revision-ledger.py:93  <-- EXPECTATION
+      .agents/slop/table-pin.py:154  <-- EXPECTATION
+
+  [8] ['', 'A', 'AB', 'ABC', 'AC', 'B'] ...
+      .agents/slop/abi4check/abi4_gate.135bf0204.py:112  <-- EXPECTATION
+      checks/abi4_gate.py:149  <-- EXPECTATION
+
+  [4] ['', '  do IO<Unit>:', 'def main() -> IO(Unit):', 'import ./tinybendygrad/dtype.bend as D']
+      .agents/slop/abi4check/abi4_gate.135bf0204.py:227  <-- EXPECTATION
+      checks/abi4_gate.py:277  <-- EXPECTATION
+
+  [7] ['bits32', 'dtype.c', 'dtype.js', 'fp8_decode', 'i64_of', 'of32'] ...
+      .agents/slop/abi4check/plant-measure.py:108  <-- EXPECTATION
+      .agents/slop/abi4check/probe-measure.py:68  <-- EXPECTATION
+
+  [4] ['custom_function', 'mselect', 'mstack', 'stage']
+      .agents/slop/buffergraphs/coverage-pyonly.py:25  <-- EXPECTATION
+      .agents/slop/buffergraphs/oracle-before.py:22
+
+  [6] ['class ', 'def ', 'fn ', 'impl ', 'pub ', 'struct ']
+      .agents/slop/capstream/discover.py:94  <-- EXPECTATION
+      .agents/slop/sloptxt/classify.py:96  <-- EXPECTATION
+
+  [5] ['.git', '.jj', '.venv', '__pycache__', 'node_modules']
+      .agents/slop/citeresolve/scan.py:49  <-- EXPECTATION
+      .agents/slop/livenum/resolve.py:21  <-- EXPECTATION
+
+  [6] ['row_round_2.30', 'row_round_2.3456', 'unverified_adam', 'unverified_arange_dims', 'unverified_lin2', 'unverified_step']
+      .agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py:78  <-- EXPECTATION
+      gates/beautiful-mnist-gate.py:78  <-- EXPECTATION
+
+  [4] ['ORPHAN', 'REVIVE', 'SELF', 'STRIP']
+      .agents/slop/coindependent/twostate.py:85  <-- EXPECTATION
+      checks/nvrows-deadrow-gate.py:270  <-- EXPECTATION
+
+  [6] ['.bend', '.md', '.mjs', '.py', '.sh', '.ts']
+      .agents/slop/declare/compare.py:50  <-- EXPECTATION
+      .agents/slop/orcdecide/sweep.py:42  <-- EXPECTATION
+
+  [4] ['CPU', 'METAL', 'NULL', 'PYTHON']
+      .agents/slop/devpin/envsweep.py:156  <-- EXPECTATION
+      .agents/slop/devpin/lin-decision.py:25  <-- EXPECTATION
+
+  [6] ['.git', '.venv', '__pycache__', 'bin', 'node_modules', 'references']
+      .agents/slop/gendirs/writetargets.py:25  <-- EXPECTATION
+      gates/gendirs.py:69  <-- EXPECTATION
+
+  [4] ['copy', 'copy2', 'copyfile', 'copytree']
+      .agents/slop/gendirs/writetargets.py:29  <-- EXPECTATION
+      gates/gendirs.py:77  <-- EXPECTATION
+
+  [5] ['absolute', 'expanduser', 'join', 'normpath', 'resolve']
+      .agents/slop/gendirs/writetargets.py:113  <-- EXPECTATION
+      gates/gendirs.py:193  <-- EXPECTATION
+
+  [4] ['abspath', 'fspath', 'realpath', 'str']
+      .agents/slop/gendirs/writetargets.py:122  <-- EXPECTATION
+      gates/gendirs.py:84  <-- EXPECTATION
+
+  [4] ['--out', '--output', '-O', '-o']
+      .agents/slop/gendirs/writetargets.py:191  <-- EXPECTATION
+      gates/gendirs.py:81  <-- EXPECTATION
+
+  [4] ['max', 'one', 'signmin', 'spill']
+      .agents/slop/ishr/shr-oracle.py:232  <-- EXPECTATION
+      gates/i64-shr-oracle.py:232  <-- EXPECTATION
+
+  [6] ['.bend', '.js', '.mjs', '.py', '.sh', '.ts']
+      .agents/slop/needsaudit/plant.py:42  <-- EXPECTATION
+      .agents/slop/orcdecide/verdicts.py:16  <-- EXPECTATION
+
+  [5] ['runtime/support/am/ip_scratch_sweep.bend', 'runtime/support/zz_objc_mutant.bend', 'runtime/zzdiag.bend', 'runtime/zzread.bend', 'runtime/zzsplit.bend']
+      .agents/slop/nostraysshape/measure.py:15  <-- EXPECTATION
+      .agents/slop/nostraysshape/measure2.py:17  <-- EXPECTATION
+
+  [7] ['HOLDS', 'NO-FILE', 'PAST-EOF', 'PROSE', 'STALE-LINE', 'STALE-RULE'] ...
+      .agents/slop/stale269/gate-baseline.py:53  <-- EXPECTATION
+      checks/citation-gate.py:53  <-- EXPECTATION
+
+  [4] ['examples', 'extra', 'test', 'tinygrad']
+      .agents/slop/stale269/plan.py:40  <-- EXPECTATION
+      .agents/slop/stale269/where.py:33  <-- EXPECTATION
+
+  [4] ['.bend', '.c', '.js', '.mjs']
+      .agents/slop/substratepop/measure.py:25  <-- EXPECTATION
+      checks/substrate.py:142  <-- EXPECTATION
+
+  [5] ['_deepwalk', 'call_gradient', 'compute_gradient', 'partial_store_gradient', 'reduce_gradient']
+      .agents/slop/tensor-surface/stage2-exercised.py:156  <-- EXPECTATION
+      .agents/slop/tensor-surface/stage3-path.py:96  <-- EXPECTATION
+
+  [4] ['--short', 'HEAD', 'git', 'rev-parse']
+      .agents/slop/unknowns/residue-vs-sweep.py:67  <-- EXPECTATION
+      .agents/slop/unknowns/what-delete-catches.py:88  <-- EXPECTATION
+
+  [9] ['AUTHORED', 'DELETE', 'DOC', 'GATE', 'LIVE', 'LIVE-UNIT'] ...
+      .agents/slop/unknowns/what-delete-catches.py:138  <-- EXPECTATION
+      checks/sweep.py:860  <-- EXPECTATION
+
+  [14] ['AMD_SDMA_BIND', 'APL_REMOTE_SOCK', 'ASYNC_COPY_WORKERS', 'BROWSER', 'FIX_METAL_ICB', 'GRAPH_ONE_KERNEL'] ...
+      .agents/slop/unverified9/classify.py:10  <-- EXPECTATION
+      .agents/slop/unverified9/gather.py:9  <-- EXPECTATION
+
+  [4] ['bool', 'int32', 'int8', 'uint8']
+      .agents/slop/x86/x86-oracle.py:430  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:430  <-- EXPECTATION
+
+  [5] ['opc', 'pp', 'reg', 'sel', 'we']
+      .agents/slop/x86/x86-oracle.py:454  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:454  <-- EXPECTATION
+
+  [7] ['JB', 'JE', 'JGE', 'JL', 'JMP', 'JNE'] ...
+      .agents/slop/x86/x86-oracle.py:516  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:516  <-- EXPECTATION
+
+  [5] ['idx', 'reg', 'reg_sz', 'rm', 'rm_sz']
+      .agents/slop/x86/x86-oracle.py:91  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:91  <-- EXPECTATION
+
+  [5] ['DEFINE', 'FRAME_INDEX', 'LABEL', 'LOOP_CMP', 'RET']
+      .agents/slop/x86/x86-oracle.py:195  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:195  <-- EXPECTATION
+
+  [6] ['JB', 'JE', 'JGE', 'JL', 'JMP', 'JNE']
+      .agents/slop/x86/x86-oracle.py:197  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:197  <-- EXPECTATION
+
+  [11] ['MOVi', 'MOVm', 'SETB', 'SETE', 'SETL', 'SETNE'] ...
+      .agents/slop/x86/x86-oracle.py:199  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:199  <-- EXPECTATION
+
+  [16] ['LEA', 'MOV', 'MOVSX', 'MOVSXD', 'MOVZX', 'VCVTPH2PS'] ...
+      .agents/slop/x86/x86-oracle.py:204  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:204  <-- EXPECTATION
+
+  [9] ['ADDi', 'ANDi', 'IMULi', 'ORi', 'SARi', 'SHLi'] ...
+      .agents/slop/x86/x86-oracle.py:209  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:209  <-- EXPECTATION
+
+  [5] ['nope', 'r12', 'rax', 'rsp', 'xmm0']
+      .agents/slop/x86/x86-oracle.py:373  <-- EXPECTATION
+      .agents/slop/x86/x86_oracle.py:373  <-- EXPECTATION
+
+  [4] ['--target=hexagon', '-fuse-ld=lld', '-mcpu=hexagonv65', '-nostdlib']
+      checks/compile.py:41  <-- EXPECTATION
+      extra/dsp/compile.py:41  <-- EXPECTATION
+
+  [4] ['attn.c_attn.weight', 'attn.c_proj.weight', 'mlp.c_fc.weight', 'mlp.c_proj.weight']
+      examples/gpt2.py:126  <-- EXPECTATION
+      examples/llm.c/train_gpt2.py:81  <-- EXPECTATION
+
+  [5] ['amt', 'lc', 'rt', 'rt_amt', 'x']
+      gates/i64-shl-gate.py:65  <-- EXPECTATION
+      gates/i64-shr-gate.py:45  <-- EXPECTATION

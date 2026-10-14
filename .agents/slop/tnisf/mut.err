@@ -1,0 +1,1 @@
+tn_graph_census-gate: bd's tn_isfinite is not 'tn_isfinite=14 Ops.CMPNE/2 Ops.OR Ops.CONST' -- if the divergence is fixed, drop it from DIVERGES; if it moved, update the pin

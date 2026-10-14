@@ -1,0 +1,13 @@
+PLANTS -- three directions plus the blind spot, because an instrument that hides its own blind
+spot is the defect this project has catalogued twenty times
+  PASS  1: an UNPLANTED verdict is RED and the verdict is NAMED
+          observed: rc=1 named 'UNPLANTED 1'/'UNPLANTED 3'/FAIL/REFUSED=True
+  PASS  2: every verdict planted is GREEN
+          observed: rc=0 said_ok=True
+  PASS  3a: a gate that declares NO GREEN is RED (real surface ZERO)
+          observed: rc=1 named_NO-GREEN=True
+  PASS  3b: THE BLIND SPOT, ASSERTED -- a plant that exits 0 having read NOTHING is PASSED. This file cannot tell green-correct from green-vacuous without a per-gate input assertion.
+          observed: rc=0 -- the honest limit, not a hidden one
+  PASS  3c: ZERO declaring gates is RED, never a vacuous green
+          observed: rc=1
+PLANTS: GREEN (5/5)

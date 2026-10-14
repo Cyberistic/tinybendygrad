@@ -1,0 +1,25 @@
+# residue.py PHASE ATTRIBUTION -- every row MEASURED, never the exit code.
+# One un-contended pass, 2026-10-07. The instrument is .agents/slop/slowgate/attribute.py (prior unit)
+# and this unit's own phase probe; BOTH were re-measured because the first pass was CONTENDED and
+# printed 187 s for a phase that costs 103 s. A contended number is not a measurement.
+phase	file:line	seconds	shape
+sweep_module	-	0.003	import cost
+mentioned_filenames	sweep.py:446	0.15	ONE regex pass over the corpus; the fix that already landed
+git_tracked	residue.py:161	0.04	git ls-files + 4609 lexists
+walk	residue.py:241	1.60	4612 files, os.lstat per file
+dir_ages	residue.py:261	0.90	newest mtime per DIRECTORY
+authorities	residue.py:135	0.30	differ.declared()
+verdict_for_xN	sweep.py	0.80	2111 DELETE rows of 4612
+outside_twins	residue.py:289	1.20	479 COPY twins, 3378 tracked files hashed
+index_citations	residue.py:501	8.20	127742 citation keys
+house_excluded_x438	sweep.py:219	104.04	THE COST: re-imports residue.py AND re-AST-parses checks/+gates/ ONCE PER PATH, NO MEMO
+committed_named_text	sweep.py:351	96.86	551 x git show, one subprocess per corpus member
+belt_A_1641rows	residue.py:366	525.00	ONE git grep PER ROW at 0.32 s MEASURED
+# --- the per-item costs, which are the numbers that do NOT move with the machine ---
+per_call_git_grep_s	0.32	MEASURED directly: git grep -l -w -F -e <token> -- :(exclude)...
+per_call_house_excluded_s	0.2138	MEASURED over 50 calls after warm-up
+per_call_self_output_dirs_s	0.2050	cold 0.256 s, warm 0.205 s, IDENTICAL -> NO MEMO
+house_excluded_call_sites	438	one per tracked .md under .agents/slop/
+belt_A_rows_reaching_it	1641	of 2111 DELETE rows of 4612 walked
+walk_population	4612	files
+delete_rows	2111	rows

@@ -1,0 +1,29 @@
+UNPLANTED, once per distinct check
+  pyc_rows_hold: OK
+   pyc_rows_hold: OK
+  dead_defs_hold: OK
+   dead_defs_hold: OK
+  literal_rows_hold: OK
+   literal_rows_hold: OK
+  interpreter_hold: OK
+   interpreter_hold: OK
+
+== B  the header disclaims the pyc_* rows AGAIN
+   pyc_rows_hold: RED -- pyc_rows_hold: the header disclaims the pyc_* rows AGAIN -- finding B is back
+
+== C1 `B64_EQ` is back
+   dead_defs_hold: RED -- dead_defs_hold: B64_EQ has 1 mentions, expected 0 -- finding C is back
+
+== C2 `prog.init` is back
+   dead_defs_hold: RED -- dead_defs_hold: prog.init has 1 mentions, expected 0 -- finding C is back
+
+== A  a NINTH constant row: `pyd_ctor_len` is a bare 4 again
+   literal_rows_hold: RED -- literal_rows_hold: 1 row(s) print a constant again: ['pyd_ctor_len']
+
+== E  `op_of` learns a BINARY arm, and dispatch has no case for it
+   interpreter_hold: RED -- interpreter_hold: op_of now has a "BINARY" arm, and Prog.dispatch has no case for it
+
+== E2 `Uop.refused` stops refusing at kind 14
+   interpreter_hold: RED -- interpreter_hold: Uop.refused is no longer `kind >= 14` -- the parse-time refusal the catch-all's safety rests on has moved or is gone
+
+the port is restored; a plant never survives this script

@@ -1,0 +1,75 @@
+WALK, import sites only, tree minus ['.git', '.venv', '__pycache__', 'node_modules', 'references']  (owner excluded from its own count)
+
+  CONSUMERS of gates/gatekit.py: 45  (39 under HOMES, 6 outside)
+  the brief says ~8. MEASURED: 45.  **The ~8 IS WRONG BY 37.**
+
+  --- outside HOMES (invisible to gates-pop.discover()) ---
+    .agents/slop/stalefix/plant-disarm.py
+    .agents/slop/boundedfix/repro.py
+    .agents/slop/modulerefuse/x1-derive.py
+    .agents/slop/modulerefuse/x3-class.py
+    .agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py
+    .agents/slop/clearfix/frozen-prefix/mixin-op-gate.py
+
+  --- under HOMES ---
+    gates/bc-u32-gate.py
+    gates/beautiful-mnist-gate.py
+    gates/ew-consts-gate.py
+    gates/ew-explog-gate.py
+    gates/gates-pop.py
+    gates/i64-shl-gate.py
+    gates/i64-shr-gate.py
+    gates/indexread-gate.py
+    gates/mixin-op-gate.py
+    gates/msgdiff-gate.py
+    gates/ops-core-gate.py
+    gates/render_val_s-gate.py
+    gates/replace-gate.py
+    gates/retention-check.py
+    gates/tn_add_sub-gate.py
+    gates/tn_and_or_xor-gate.py
+    gates/tn_binop2_cmp-gate.py
+    gates/tn_bitwise_not-gate.py
+    gates/tn_contiguous_backward-gate.py
+    gates/tn_detach-gate.py
+    gates/tn_dunder_neg-gate.py
+    gates/tn_fdiv_mod-gate.py
+    gates/tn_logical_not-gate.py
+    gates/tn_mul-gate.py
+    gates/tn_neg-gate.py
+    gates/tn_pow-gate.py
+    gates/tn_relu-gate.py
+    gates/tn_relu6-gate.py
+    gates/tn_sin_log2_exp2_rsqrt-gate.py
+    gates/tn_sqrt-gate.py
+    gates/tn_trunc_reciprocal_threefry-gate.py
+    gates/tn_where-gate.py
+    gates/uop_cast-gate.py
+    gates/wk-cd-gate.py
+    gates/wk-eval-gate.py
+    gates/wk-f32-gate.py
+    checks/bounded.py
+    checks/cl-port-gate.py
+    checks/substrate.py
+
+WHAT EACH ANSWER COSTS:
+
+  ADDITIVE  (a NEW token: `gatekit` gains a name, every number stays put)
+            touches 0 of 45 consumers. Every consumer reads the
+            owner's UNPACK; an extra entry costs a reader nothing, and a gate that
+            already names it keeps working. THIS IS THE CHEAP DIRECTION.
+  BREAKING  (a RENUMBER: 4 and 5 swap, or 4 moves to 6)
+            touches every consumer that compares against the literal, and every gate
+            whose PLANTS argv encodes the code. Measured: the 11 RENAMED codes above
+            would ALL have to change, and `checks/e2e.py:519 return 4` is a LITERAL.
+            consumers holding the LITERAL 4 or 5 anywhere in their AST: 6 -> ['.agents/slop/modulerefuse/x1-derive.py', '.agents/slop/modulerefuse/x3-class.py', 'checks/bounded.py', 'checks/substrate.py', 'gates/gates-pop.py', 'gates/i64-shl-gate.py']
+
+AND THE DIRECTION OF THE RELATIONSHIP, WHICH IS THE SAME QUESTION:
+
+  gates -> gatekit   the vocabulary can only travel owner -> gate, because the gates
+                     IMPORT it. So a table in the owner is a hand list of 8 gates'
+                     vocabularies, and `gendirs.py` is right that two such holders
+                     have no authority over each other.
+  gatekit -> gates   IMPOSSIBLE without inverting every import, which is a rewrite of
+                     40 files to move a table, and buys nothing the gate's own
+                     `VERDICTS` does not already say.

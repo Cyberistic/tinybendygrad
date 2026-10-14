@@ -1,0 +1,50 @@
+SCOPE: top-level checks/*.py + gates/*.py, iterdir().  144 files.
+
+ARM A  rc=3 with NO argv (from d1-derive.rows): 12
+    checks/cl-port-gate.py
+    checks/dup-census.py
+    checks/dup-gate.py
+    checks/e2e.py
+    checks/gate.py
+    checks/git-index-guard.py
+    checks/hermetic-census.py
+    checks/nl-gate-noguard.py
+    checks/nl-gate.py
+    checks/oracle_f64.py
+    checks/rn-gate.py
+    checks/substrate.py
+
+ARM C  a module-scope refusal names a path that DOES NOT EXIST: 0
+
+ARM B  can any argv this gate DECLARES reach an exit other than 3?
+  checks/cl-port-gate.py           pos=- opt=['--plants'] choice=['"', 'orc_rc', 'rc', 'spell'] sys.argv[idx]=[1, 'orc_rc', 'rc', 'spell']
+      NO ARGV REACHES A VERDICT; exits other than 3: --
+  checks/dup-census.py             pos=- opt=['--all', '--names', '--one'] choice=['lost_cont', 'lost_reshape', 'lost_shipped', 'lost_strict'] sys.argv[idx]=['lost_shipped']
+      ARGV-REACHABLE; exits other than 3: --help, lost_cont, lost_cont --help, lost_reshape
+  checks/dup-gate.py               pos=- opt=['--port', '--oracle', '--compare', '--selftest'] choice=['clean', 'collide', 'name', 'sha'] sys.argv[idx]=[1, 2, 'sha']
+      ARGV-REACHABLE; exits other than 3: (none), --help, clean, clean --help
+  checks/e2e.py                    pos=- opt=- choice=['--help', '-h'] sys.argv[idx]=[1]
+      ARGV-REACHABLE; exits other than 3: --help, --help --help, -h, -h --help
+  checks/gate.py                   pos=- opt=['--tree', '--quick'] choice=- sys.argv[idx]=[0]
+      NO ARGV REACHES A VERDICT; exits other than 3: --
+  checks/git-index-guard.py        pos=- opt=- choice=['check', 'snap'] sys.argv[idx]=[0]
+      ARGV-REACHABLE; exits other than 3: snap, snap --help
+  checks/hermetic-census.py        pos=- opt=['--dev', '--only', '--out', '--check', '--no-publish'] choice=- sys.argv[idx]=-
+      ARGV-REACHABLE; exits other than 3: (none), --help, --dev, --dev --help
+  checks/nl-gate-noguard.py        pos=- opt=['--port-stdout', '--oracle-stdout'] choice=- sys.argv[idx]=-
+      NO ARGV REACHES A VERDICT; exits other than 3: --
+  checks/nl-gate.py                pos=- opt=['--selftest', '--plant', '--plant-shape', '--unrename', '--compare', '--names', '--port-stdout', '--oracle-stdout'] choice=- sys.argv[idx]=[0]
+      NO ARGV REACHES A VERDICT; exits other than 3: --
+  checks/oracle_f64.py             pos=- opt=- choice=- sys.argv[idx]=[1, 2]
+      NO ARGV REACHES A VERDICT; exits other than 3: --
+  checks/rn-gate.py                pos=- opt=['--selftest', '--plant', '--plant-shape', '--names', '--port-stdout', '--oracle-stdout'] choice=['lost', 'lost_cont', 'lost_dupe', 'lost_reshape'] sys.argv[idx]=['lost']
+      ARGV-REACHABLE; exits other than 3: (none), --help, lost, lost --help
+  checks/substrate.py              pos=- opt=['-n', '--causes', '--mb', '--seconds', '--root'] choice=['none'] sys.argv[idx]=[0, 'none']
+      ARGV-REACHABLE; exits other than 3: --help, none, none --help, -n --help
+
+THE SET (arm A AND arm B): 5
+  checks/cl-port-gate.py
+  checks/gate.py
+  checks/nl-gate-noguard.py
+  checks/nl-gate.py
+  checks/oracle_f64.py

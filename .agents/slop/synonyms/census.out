@@ -1,0 +1,147 @@
+OWNER  gates/gatekit.py, read by gates/gate-surface.py:vocabulary() BY PATH: 0=PASS, 1=FAIL, 3=REFUSED, 4=SKIP, 5=DEAD
+POP    gates-pop.discover(): 125 entry points, 32 modules
+
+DECLARED CODES: 42 over 14 declaring gates
+  SAME-TOKEN    27
+  RENAMED       11   <-- the population of the collision question
+  UNMAPPED      4  (the owner has no name for the code at all)
+
+RENAMED, BY TOKEN -- SYNONYM OR COLLISION IS A QUESTION OF MEANING, NOT SPELLING:
+
+  exit 0: 'AGREE' vs the owner's 'PASS'  -- 1 declaration(s)
+      checks/nl-gate-noguard.py
+  exit 0: 'CLEAN' vs the owner's 'PASS'  -- 1 declaration(s)
+      checks/no-txt.py
+  exit 0: 'OK' vs the owner's 'PASS'  -- 5 declaration(s)
+      checks/dup-census.py
+      checks/env-precond.py
+      checks/hermetic-census.py
+      checks/oracle_f64.py
+      gates/gate-surface.py
+  exit 1: 'BROKEN' vs the owner's 'FAIL'  -- 1 declaration(s)
+      checks/nl-gate-noguard.py
+  exit 1: 'RED' vs the owner's 'FAIL'  -- 2 declaration(s)
+      checks/no-txt.py
+      gates/gate-surface.py
+  exit 4: 'NO-ROW' vs the owner's 'SKIP'  -- 1 declaration(s)
+      checks/wallcheck.py
+
+UNMAPPED -- the owner has no name for these numbers:
+
+  exit 2: 'USAGE'   checks/dup-gate.py
+  exit 2: 'REFUSED'   checks/env-precond.py
+  exit 2: 'USAGE'   checks/wallcheck.py
+  exit 2: 'REFUSED'   gates/gate-surface.py
+
+NOT DECLARED AT ALL (no `VERDICTS` in the module body): 111 of 125 entry points
+  checks/abi4_gate.py                              no VERDICTS in the module body
+  checks/abi_gate.py                               no VERDICTS in the module body
+  checks/al-verdict.py                             no VERDICTS in the module body
+  checks/both-census.py                            no VERDICTS in the module body
+  checks/bounded-selftest.sh                       UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 18)
+  checks/bounded.py                                no VERDICTS in the module body
+  checks/census.py                                 no VERDICTS in the module body
+  checks/citation-gate.py                          no VERDICTS in the module body
+  checks/cl-port-gate.py                           no VERDICTS in the module body
+  checks/classify.sh                               UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 16)
+  checks/cli.py                                    no VERDICTS in the module body
+  checks/compile.py                                no VERDICTS in the module body
+  checks/corpus-figure.py                          no VERDICTS in the module body
+  checks/coverage.py                               no VERDICTS in the module body
+  checks/demo.sh                                   UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 17)
+  checks/devgate.py                                no VERDICTS in the module body
+  checks/devpin.py                                 no VERDICTS in the module body
+  checks/differ.py                                 no VERDICTS in the module body
+  checks/disagree-gate.py                          no VERDICTS in the module body
+  checks/disarm.sh                                 UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 16)
+  checks/e2e.py                                    no VERDICTS in the module body
+  checks/e2e.sh                                    UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 39)
+  checks/fw_live.py                                no VERDICTS in the module body
+  checks/gate.sh                                   UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 19)
+  checks/gate_dtype.py                             no VERDICTS in the module body
+  checks/gate_norm.py                              no VERDICTS in the module body
+  checks/gen.sh                                    UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 38)
+  checks/git-index-guard.py                        no VERDICTS in the module body
+  checks/graphcmp-census-audit.py                  no VERDICTS in the module body
+  checks/jsfix_gate.py                             no VERDICTS in the module body
+  checks/lint_demo.sh                              UNPARSEABLE -> 3-tuple: UNPARSEABLE (invalid syntax. Perhaps you forgot a comma? line 26)
+  checks/lintable-gate.sh                          UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 29)
+  checks/llama.py                                  no VERDICTS in the module body
+  checks/marker-audit.py                           no VERDICTS in the module body
+  checks/no-shrink.py                              no VERDICTS in the module body
+  checks/no-strays.py                              no VERDICTS in the module body
+  checks/nvrows-deadrow-gate.py                    no VERDICTS in the module body
+  checks/oracle-txt-census.py                      no VERDICTS in the module body
+  checks/plant.sh                                  UNPARSEABLE -> 3-tuple: UNPARSEABLE (invalid decimal literal line 67)
+  checks/process_replay.py                         no VERDICTS in the module body
+  checks/render-gate-oracle.py                     no VERDICTS in the module body
+  checks/repair-dupes.py                           no VERDICTS in the module body
+  checks/repro-paths.py                            no VERDICTS in the module body
+  checks/romless.py                                no VERDICTS in the module body
+  checks/run-all.sh                                UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 16)
+  checks/run-f64.sh                                UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 68)
+  checks/run-port-mm.sh                            UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 42)
+  checks/run.py                                    no VERDICTS in the module body
+  checks/sb-gate.sh                                UNPARSEABLE -> 3-tuple: UNPARSEABLE (invalid syntax line 46)
+  checks/serve.py                                  no VERDICTS in the module body
+  checks/slop-declare.py                           no VERDICTS in the module body
+  checks/substrate-check.sh                        UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 38)
+  checks/substrate-id.py                           no VERDICTS in the module body
+  checks/substrate.py                              no VERDICTS in the module body
+  checks/sweep.py                                  no VERDICTS in the module body
+  checks/sz.py                                     no VERDICTS in the module body
+  checks/test_rewrite_bottom_up_gate.py            no VERDICTS in the module body
+  checks/txt-owners.py                             no VERDICTS in the module body
+  checks/unowned.py                                no VERDICTS in the module body
+  checks/vz_gate.py                                no VERDICTS in the module body
+  checks/walk-mutate.sh                            UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 33)
+  checks/wt-sync.sh                                UNPARSEABLE -> 3-tuple: UNPARSEABLE (unmatched ')' line 17)
+  gates/bc-u32-gate.py                             no VERDICTS in the module body
+  gates/bc-u32-gen.py                              no VERDICTS in the module body
+  gates/bc-u32-oracle.py                           no VERDICTS in the module body
+  gates/bc_u32_table.py                            no VERDICTS in the module body
+  gates/beautiful-mnist-gate.py                    no VERDICTS in the module body
+  gates/ew-consts-gate.py                          no VERDICTS in the module body
+  gates/ew-consts-oracle.py                        no VERDICTS in the module body
+  gates/ew-explog-gate.py                          no VERDICTS in the module body
+  gates/ew-explog-oracle.py                        no VERDICTS in the module body
+  gates/gates-pop.py                               no VERDICTS in the module body
+  gates/gendirs.py                                 no VERDICTS in the module body
+  gates/git-massdelete-gate.py                     no VERDICTS in the module body
+  gates/i64-shl-gate.py                            no VERDICTS in the module body
+  gates/i64-shl-oracle.py                          no VERDICTS in the module body
+  gates/i64-shr-gate.py                            no VERDICTS in the module body
+  gates/i64-shr-oracle.py                          no VERDICTS in the module body
+  gates/indexread-gate.py                          no VERDICTS in the module body
+  gates/mixin-op-gate.py                           no VERDICTS in the module body
+  gates/msgdiff-gate.py                            no VERDICTS in the module body
+  gates/ops-core-gate.py                           no VERDICTS in the module body
+  gates/ops-core-oracle.py                         no VERDICTS in the module body
+  gates/render_val_s-gate.py                       no VERDICTS in the module body
+  gates/replace-gate.py                            no VERDICTS in the module body
+  gates/retention-check.py                         no VERDICTS in the module body
+  gates/tn_add_sub-gate.py                         no VERDICTS in the module body
+  gates/tn_and_or_xor-gate.py                      no VERDICTS in the module body
+  gates/tn_binop2_cmp-gate.py                      no VERDICTS in the module body
+  gates/tn_bitwise_not-gate.py                     no VERDICTS in the module body
+  gates/tn_contiguous_backward-gate.py             no VERDICTS in the module body
+  gates/tn_detach-gate.py                          no VERDICTS in the module body
+  gates/tn_dunder_neg-gate.py                      no VERDICTS in the module body
+  gates/tn_fdiv_mod-gate.py                        no VERDICTS in the module body
+  gates/tn_logical_not-gate.py                     no VERDICTS in the module body
+  gates/tn_mul-gate.py                             no VERDICTS in the module body
+  gates/tn_neg-gate.py                             no VERDICTS in the module body
+  gates/tn_pow-gate.py                             no VERDICTS in the module body
+  gates/tn_relu-gate.py                            no VERDICTS in the module body
+  gates/tn_relu6-gate.py                           no VERDICTS in the module body
+  gates/tn_sin_log2_exp2_rsqrt-gate.py             no VERDICTS in the module body
+  gates/tn_sqrt-gate.py                            no VERDICTS in the module body
+  gates/tn_trunc_reciprocal_threefry-gate.py       no VERDICTS in the module body
+  gates/tn_where-gate.py                           no VERDICTS in the module body
+  gates/uop_cast-gate.py                           no VERDICTS in the module body
+  gates/wk-cd-gate.py                              no VERDICTS in the module body
+  gates/wk-cd-oracle.py                            no VERDICTS in the module body
+  gates/wk-eval-gate.py                            no VERDICTS in the module body
+  gates/wk-eval-oracle.py                          no VERDICTS in the module body
+  gates/wk-f32-gate.py                             no VERDICTS in the module body
+  gates/wk-f32-rows.py                             no VERDICTS in the module body

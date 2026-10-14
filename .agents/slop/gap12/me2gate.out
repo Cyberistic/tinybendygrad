@@ -1,0 +1,14 @@
+  bd.out: 'srneg 15 store 3=B = V;' appears 0 times, the pins say 1 -- a pin moved
+  names_hold: the port lane file has 0 rows, expected 224. A FAILED run deletes its staged lanes in `run()`'s `finally`, so on a red run this is 'the lane did not survive', not 'the port stopped printing rows' -- the DISAGREE line above is the real verdict
+  norm_hold: the bend lane printed 0 non-blank lines, expected 224
+  selfcheck_hold: 0 stale notes = 0 lane rows whose note records the port's own totalization + 0 stale; and 31 lane rows whose note IS CPython's value and whose port value knowingly is not
+  rules_hold: OK
+  fixtures_hold: OK
+  axes_hold: OK
+  pin_drift_hold: OK
+  never_folding_cast_hold: OK
+  dead_defs_hold: OK
+  selfcheck_hold: OK
+  divergences_hold: OK
+  classes_hold: OK
+wgsl_render_census-gate: FAIL
