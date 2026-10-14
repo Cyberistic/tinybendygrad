@@ -84,7 +84,14 @@ SPAN = re.compile(r"[A-Za-z0-9_.@^~][A-Za-z0-9_.@^~:+*/-]*")
 FILENAME = re.compile(r"^[A-Za-z0-9_.^~+-]+\.[A-Za-z0-9]+$")
 LINENO = re.compile(r"^\d+(-\d+)?$")
 REV = re.compile(r"^[0-9a-f]{7,40}\^?:")
-UNIT = re.compile(r"\b([+-]?\d+)\s+(lines?|rows?|files?|bytes?)\b")
+# A THOUSANDS SEPARATOR IS NOT A VALUE.  `\d+` alone matches the `1` of `1,590`, `\s+`
+# then fails against the `,` and the scan restarts at `590`.  The sign stays OUTSIDE the
+# alternation: inside it, `ctx-7 rows` stops matching `-7`, because `\b` cannot sit before
+# a hyphen but can sit before the `7`.  MEASURED 2026-10-15: 14 lines make a numeric claim
+# with a grouped number and 0 verdicts move (`ops_python.bend` is 2,807 lines and the prose
+# says 1,590, so that FAIL was honest and stays).  What this fixes is the EVIDENCE, which
+# reported "claim says 590" for prose that says 1,590.
+UNIT = re.compile(r"\b([+-]?(?:\d{1,3}(?:,\d{3})+|\d+))\s+(lines?|rows?|files?|bytes?)\b")
 # *** A BARE EXTENSION IS NOT A FILENAME. ***  Measured 2026-10-14: `FILENAME.match(".txt")`
 # is None, because the class demands one character before the dot -- so `token_kind(".txt")`
 # returns None and lane C asked `.agents/slop/TENSOR-SURFACE.md` whether a file
@@ -342,7 +349,7 @@ def lane_bcd(rel: str, lines: list[tuple[int, str]]) -> tuple[list[dict], Counte
         window = line[max(m.end(), u.start() - 2):u.end() + 16]
         mch = MEASURED.search(line) or ISO.search(line)
         claims.append({"lane": "D", "kind": "numeric-prose", "file": rel,
-                       "subject": subject, "num": int(u.group(1)),
+                       "subject": subject, "num": int(u.group(1).replace(",", "")),
                        "unit": u.group(2).rstrip("s"), "at": lineno,
                        "delta": bool(DELTA.search(window) or re.match(r"[*`_(\s]*[+-]", window)),
                        "anchor": mch[1] if mch else None})
@@ -411,7 +418,11 @@ def needle_kind(needle: str, gap: str = "", line: str = "") -> str:
   # the very leading space that proves the delimiters did not pair.
   if EXTENSION.match(t):
     return "reference"
-  if needle != needle.strip() or needle[:1] in "),;:]}" or needle[-1:] in "([{.,;:":
+  # A NEEDLE SPANNING A NEWLINE IS A PROSE SCRAP, NOT A LITERAL FROM ONE LINE.  It exists
+  # only because `quoted_spans` is fed a whole `.py` DOCSTRING, and paired delimiters
+  # inside one cannot bracket a string from two lines.  MEASURED 2026-10-15 over lane C's
+  # 3,277 claims at HEAD effd160da52f: 14 FAIL rows retired, 0 PASS rows lost.
+  if needle != needle.strip() or "\n" in needle or needle[:1] in "),;:]}" or needle[-1:] in "([{.,;:":
     return "fragment"                # a well-formed literal does not begin with `)`
   if len(t.strip()) < 4:
     return "short"                   # restores the `{4,}` floor of the DEAD QUOTED regex
@@ -648,6 +659,7 @@ def selftest(tree: Path) -> int:
             ("reference", ".txt", "", ""),
             ("reference", "env-precond.py:134,151", "", ""),
             ("fragment", " (the commit that staged ", "", ""),
+            ("fragment", "s SEAM SIGNATURE for each CID, and the measurement\nof what crosses", "", ""),
             ("fragment", "), which introduced the ", "", ""),
             ("short", "-n", "", ""),
             ("output", "RUN HEALTH : OK -- every one of 25 graphs was COMPARED", " -> ",
@@ -659,6 +671,13 @@ def selftest(tree: Path) -> int:
       got, kindgot = judge(c)["verdict"], judge(c).get("needle_kind")
       cases.append((f"FALSE FAIL -> {kind}: {needle[:44]!r} is not a claim about the text",
                     (got, kindgot), (REFUSED, kind)))
+    # THE THOUSANDS SEPARATOR IS AN EXTRACTOR MATTER, SO A PLANT HAS TO DRIVE THE
+    # EXTRACTOR.  `judge` never sees the string the regex produced, so a `judge` plant
+    # cannot fail when `UNIT` loses the comma grouping -- which is exactly how a fix like
+    # this one gets silently reverted.
+    cases.append(("THOUSANDS: `1,590 lines` extracts 1590, not the trailing 590",
+                  lane_bcd("s.md", [(1, f"`a/{subj.name}` is 1,590 lines wide")])[0][0]["num"],
+                  1590))
     cases.append(("TRUE FAIL SURVIVES: absent text that IS a text claim is still FAIL",
                   judge({"lane": "C", "kind": "content-prose", "file": "s.py",
                          "subject": str(subj), "needle": "epsilon"})["verdict"], FAIL))
