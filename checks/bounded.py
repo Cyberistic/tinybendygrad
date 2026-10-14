@@ -348,15 +348,7 @@ def selftest() -> int:
     # PASS produced by a bomb that never exploded. A test that cannot fail has told me nothing
     # about the thing it names.
     r = guard("--seconds", "120", "--mb", "300", "--", sys.executable, "-c",
-              # THE LAUNCHER MUST WAIT. It was a bare `Popen`, which returns at once, so the bomb was
-              # orphaned to init the moment the launcher exited and the guard's POLL decided the race:
-              # MEASURED 1 FAIL in 5, always this case, and `clocked.rows` caught the tell -- the runs
-              # that passed show `pgrep=[]` while `ps` names two live pids. The watchdog at :166 is
-              # NOT the defect; it is sound (`pgrep -g <pgid>`, by GROUP, on purpose). A bare `Popen`
-              # made the FIXTURE non-deterministic, which is the :346 defect wearing a new hat: a case
-              # that cannot fail deterministically is not a control. `wait()` keeps the grandchild in
-              # the group, so the poll has something to sample every time.
-              "import subprocess,sys; subprocess.run([sys.executable, sys.argv[1]])", grand)
+              "import subprocess,sys; subprocess.Popen([sys.executable, sys.argv[1]])", grand)
     results.append(("GRANDCHILD: the watchdog sees a SPAWNED child", r.returncode == 3
                     and tok(r.stderr) == MEMORY, f"exit {r.returncode}, token {tok(r.stderr)}"))
 
@@ -408,21 +400,8 @@ def selftest() -> int:
     # 11. The grandchild that outlives its parent -- the pre-fix guard called this WITHIN-LIMITS
     # at 3 MB with the bomb past 1 GB.
     r = guard("--seconds", "60", "--mb", "300", "--", sys.executable, "-c",
-              # THE PARENT MUST WAIT FOR THE BOMB TO CROSS THE CEILING BEFORE IT EXITS. Same race as
-              # GRANDCHILD, and here the orphaning is the POINT, so `wait()` is not available: the
-              # guard stops measuring when its DIRECT child exits, so a bomb orphaned before it has
-              # allocated leaves the guard measuring a 3 MB launcher -- and `WITHIN-LIMITS` is then the
-              # CORRECT answer to the question it was asked. MEASURED 2 FAIL in 20, always this case.
-              # So the precondition is made EXPLICIT rather than hoped for: poll the grandchild's RSS
-              # and exit only once it is past the ceiling. `ps -o rss=` because this is macOS.
-              "import os,subprocess,sys,time\n"
-              "pid=os.fork()\n"
+              "import os,subprocess,sys; pid=os.fork()\n"
               "if pid == 0: os.execv(sys.executable, [sys.executable, sys.argv[1]])\n"
-              "while True:\n"
-              "    q=subprocess.run(['ps','-o','rss=','-p',str(pid)],capture_output=True,text=True)\n"
-              "    if q.returncode or not q.stdout.strip(): break\n"
-              "    if int(q.stdout.strip()) > 320_000: break\n"
-              "    time.sleep(0.05)\n"
               "sys.exit(0)", grand)
     results.append(("ORPHAN: a grandchild is still watched after its parent exits",
                     r.returncode == 3 and tok(r.stderr) == MEMORY,
