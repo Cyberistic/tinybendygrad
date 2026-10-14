@@ -84,8 +84,24 @@ SPAN = re.compile(r"[A-Za-z0-9_.@^~][A-Za-z0-9_.@^~:+*/-]*")
 FILENAME = re.compile(r"^[A-Za-z0-9_.^~+-]+\.[A-Za-z0-9]+$")
 LINENO = re.compile(r"^\d+(-\d+)?$")
 REV = re.compile(r"^[0-9a-f]{7,40}\^?:")
-UNIT = re.compile(r"\b(\d+)\s+(lines?|rows?|files?|bytes?)\b")
-QUOTED = re.compile(r"`([^`]{4,})`|\"([^\"]{4,})\"|'([^']{4,})'")
+UNIT = re.compile(r"\b([+-]?\d+)\s+(lines?|rows?|files?|bytes?)\b")
+# *** A BARE EXTENSION IS NOT A FILENAME. ***  Measured 2026-10-14: `FILENAME.match(".txt")`
+# is None, because the class demands one character before the dot -- so `token_kind(".txt")`
+# returns None and lane C asked `.agents/slop/TENSOR-SURFACE.md` whether a file
+# "contains .txt".  That is an EXTENSION MENTION, not a content claim, and the shape is
+# invisible to the FILENAME test that is supposed to catch it.
+EXTENSION = re.compile(r"^\.[A-Za-z0-9]+$")
+# A NEEDLE THAT LOOKS LIKE A LOCATOR.  Measured 2026-10-14:
+# `token_kind("env-precond.py:134,151")` is None too -- `LINENO` rejects `134,151` and
+# `FILENAME` cannot span the `:` -- so the comma-list locator read as CONTENT.  Asking a
+# file whether it "contains a path:line locator" is a question about a different object.
+LOCATORISH = re.compile(r"[:=]\s*\d|\.(?:md|py|rows|out|err|tsv|txt|bend|c|h|js|mjs|json)\b")
+# DELTA VERBS.  A MAGNITUDE ("the file HAS N lines") is checkable against the file.  A
+# DELTA ("20 lines deleted") is a claim about a DIFF, and this census cannot see diffs.
+DELTA = re.compile(r"\b(add|added|adding|delet|remov|replac|chang|insert|net|grew|shrink)\w*\b", re.I)
+# THE PROSE ANCHOR.  A CLAIM WITH A DATE GOES STALE HONESTLY; ONE WITHOUT LIES INDEFINITELY.
+MEASURED = re.compile(r"MEASURED[ :]+(20\d\d-\d\d-\d\d)")
+ISO = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 # A DIGEST, A REV, AN EXIT STATUS AND A COMMAND ARE NOT FILE CONTENT.  Asking whether a
 # file "contains" `46c52f30d` or `rc=0` or `git rev-parse HEAD` is a question about a
 # DIFFERENT KIND of claim, and answering it FAIL is a lie about what was asked.  These
@@ -254,21 +270,31 @@ def lane_bcd(rel: str, lines: list[tuple[int, str]]) -> tuple[list[dict], Counte
       # *** A PREDICATE MUST BE ADJACENT TO ITS PATH OR IT IS NOT THIS PATH'S PREDICATE. ***
       # Taken from the quoted spans that START after the path, nearest first, and kept
       # only when nothing but a connector (`carries`, `has`, `:`, `->`) lies between.
-      cands = [(a, c) for a, _, c in quoted_spans(line) if a >= m.end()
+      # THE GAP IS KEPT: whether `->` or `rc=` separates the path from the needle is the
+      # difference between a claim about a FILE and a claim about a RUN, and discarding
+      # the gap is how 3 of 19 lane-C rows in the 2026-10-14 sample became FAILs.
+      cands = [(rest[:a - m.end()], c) for a, _, c in quoted_spans(line) if a >= m.end()
                and _is_connector(rest[:a - m.end()])]
-      needle = next((c for _, c in cands
-                     if c.strip("*:_ ") and "/" not in c
-                     and token_kind(c) is None), None)
-      if needle:
+      hit = next(((g, c) for g, c in cands
+                  if c.strip("*:_ ") and "/" not in c and token_kind(c) is None), None)
+      if hit:
+        gap, needle = hit
         claims.append({"lane": "C", "kind": "content-prose", "file": rel,
-                       "subject": subject, "needle": needle, "at": lineno,
-                       "unit": needle_unit(needle), "subjectless": needle.startswith(":")})
+                       "subject": subject, "needle": needle, "at": lineno, "gap": gap,
+                       "line_text": line})
         continue
       u = UNIT.search(line, m.end())
       if u and _is_connector(line[m.end():u.start()]):
+        # THE DELTA TEST AND THE ANCHOR ARE TAKEN HERE, WHERE THE LINE IS IN HAND, AND
+        # STORED AS A BOOLEAN AND A STRING.  `int()` eats a leading `+`, and a date found
+        # at judge time would be a SECOND parse of a line already in memory.
+        window = line[max(m.end(), u.start() - 2):u.end() + 16]
+        mch = MEASURED.search(line) or ISO.search(line)
         claims.append({"lane": "D", "kind": "numeric-prose", "file": rel,
                        "subject": subject, "num": int(u.group(1)),
-                       "unit": u.group(2).rstrip("s"), "at": lineno})
+                       "unit": u.group(2).rstrip("s"), "at": lineno,
+                       "delta": bool(DELTA.search(window) or re.match(r"[*`_(\s]*[+-]", window)),
+                       "anchor": mch[1] if mch else None})
       else:
         claims.append({"lane": "E", "kind": "mention", "file": rel, "subject": subject,
                        "at": lineno})
@@ -308,12 +334,51 @@ def quoted_spans(s: str) -> list[tuple[int, int, str]]:
 
 # ---------------------------------------------------------------- verdicts
 
-def needle_unit(n: str) -> str:
-  """Which KIND of claim is this needle?  Only `text` is a question about file content."""
-  t = n.strip("*… ")
-  return ("digest" if DIGEST.match(t) else
-          "exit-status" if EXITSTATUS.match(t) else
-          "command" if COMMAND.match(t) else "text")
+OUTPUT = re.compile(r"->|\brc\s*=|\bexit\s*=")
+
+
+def needle_kind(needle: str, gap: str = "", line: str = "") -> str:
+  """WHAT KIND OF THING IS BEING CLAIMED ABOUT THE FILE.  Exactly one of
+  `text`, `code`, `reference`, `fragment`, `short`, `output`, `cell-label`, `digest`,
+  `exit-status`, `command`.
+
+  *** A FAIL IS ONLY A FINDING IF THE CLAIM IS UNAMBIGUOUSLY ABOUT THE FILE'S TEXT. ***
+  This function is the whole of lane C's precision work, and every branch is one of the
+  faults measured in a 30-row hand-labelled sample of lane C on 2026-10-14 (19 rows, of
+  which 18 were the matcher's fault, by these six rules):
+    `code`        6 rows  a parenthesised EXPRESSION is the API surface, not the text
+    `reference`   3 rows  the needle is itself a path, an extension or a locator
+    `fragment`    2 rows  the delimiters did not pair; the span is a prose scrap
+    `output`      3 rows  `->` / `rc=` after a path claims a RUN, not a file
+    `cell-label`  1 row  a bare word in a table cell is a LABEL; a record has no predicate
+    `short`       1 row  `-n` is 2 characters; the length floor lived in a DEAD regex
+  `text` is what is LEFT, and it is the only branch that can emit a FAIL."""
+  t = needle.strip("*… ")
+  # ORDER IS LOAD-BEARING AND THE PLANTS PROVED IT.  `.txt` begins with `.`, which the
+  # fragment rule reads as a closing punctuation mark, so the EXTENSION test must come
+  # first; and the fragment test must read the RAW needle, because `strip("*… ")` removes
+  # the very leading space that proves the delimiters did not pair.
+  if EXTENSION.match(t):
+    return "reference"
+  if needle != needle.strip() or needle[:1] in "),;:]}" or needle[-1:] in "([{.,;:":
+    return "fragment"                # a well-formed literal does not begin with `)`
+  if len(t.strip()) < 4:
+    return "short"                   # restores the `{4,}` floor of the DEAD QUOTED regex
+  if "(" in t and ")" in t:
+    return "code"
+  if DIGEST.match(t):
+    return "digest"
+  if EXITSTATUS.match(t):
+    return "exit-status"
+  if COMMAND.match(t):
+    return "command"
+  if LOCATORISH.search(t) or token_kind(t) is not None:
+    return "reference"
+  if OUTPUT.search(gap):
+    return "output"
+  if line.lstrip().startswith("|") and WORD3.fullmatch(t) and not any(c.isdigit() for c in t):
+    return "cell-label"
+  return "text"
 
 
 def judge(c: dict) -> dict:
@@ -343,13 +408,11 @@ def judge(c: dict) -> dict:
     return {**c, "verdict": PASS, "strength": "LOWER-BOUND-ONLY",
             "evidence": f":{c['line']} EXISTS in a {n}-line file; NOTHING checks what it says"}
   if c["lane"] == "C":
-    if c.get("unit", "text") != "text":
-      return {**c, "verdict": REFUSED,
-              "evidence": f"the needle is {c['unit']}, a different KIND of claim: "
-                          f"'{c['needle'][:40]}' is not file content"}
-    if c.get("subjectless"):
-      return {**c, "verdict": REFUSED,
-              "evidence": f"the needle {c['needle']!r} is a POSITION, not content"}
+    kind = needle_kind(c["needle"], c.get("gap", ""), c.get("line_text", ""))
+    if kind != "text":
+      return {**c, "verdict": REFUSED, "needle_kind": kind,
+              "evidence": f"the needle is {kind!r}, a different KIND of claim: "
+                          f"{c['needle'][:40]!r} is not a claim about this file's text"}
     text = read(c["subject"])
     if text is None:
       return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
@@ -363,6 +426,17 @@ def judge(c: dict) -> dict:
     if c["unit"] != "line":
       return {**c, "verdict": REFUSED,
               "evidence": f"unit {c['unit']!r} has no unambiguous meaning for a file"}
+    if c.get("delta"):
+      return {**c, "verdict": REFUSED, "needle_kind": "delta",
+              "evidence": "the number is a DELTA (added/deleted/replaced/signed), a claim "
+                          "about a DIFF. This census reads files, not diffs."}
+    anchor = c.get("anchor")
+    if anchor:
+      lc = last_change(c["subject"])
+      if lc and lc > anchor:
+        return {**c, "verdict": REFUSED, "needle_kind": "expired-anchor", "anchor": anchor,
+                "evidence": f"the claim is MEASURED {anchor} and {c['subject']} last changed "
+                            f"{lc[:10]}: the anchor has expired, so the claim is STALE, not FALSE"}
     text = read(c["subject"])
     if text is None:
       return {**c, "verdict": REFUSED, "evidence": f"unreadable or absent: {c['subject']}"}
@@ -371,6 +445,21 @@ def judge(c: dict) -> dict:
     return {**c, "verdict": PASS if ok else FAIL,
             "evidence": f"{c['subject']} has {n} lines, claim says {c['num']}"}
   return {**c, "verdict": SKIP, "evidence": "a mention is not a claim"}
+
+
+_CHANGED: dict[str, str] = {}
+
+
+def last_change(rel: str) -> str | None:
+  """When did git last see this tracked file change?  Git's own measurement, used only to
+  decide whether a DATED claim's anchor has expired.  A date is an ANCHOR: without one a
+  prose claim asserts present tense forever, and a tree being written live makes it false
+  without anyone lying."""
+  if rel not in _CHANGED:
+    r = subprocess.run(["git", "log", "-1", "--format=%cI", "--", rel], cwd=ROOT,
+                       capture_output=True, text=True)
+    _CHANGED[rel] = r.stdout.strip() if r.returncode == 0 else ""
+  return _CHANGED[rel] or None
 
 
 def census(paths: list[str], tree: Path = ROOT) -> tuple[list[dict], Counter]:
@@ -407,12 +496,61 @@ def summarise(claims: list[dict], unclass: Counter, paths: list[str]) -> str:
   for lane in "ABCD":
     parts = [f"{v}={V[(lane, v)]}" for v in (PASS, FAIL, REFUSED) if V[(lane, v)]]
     o.append(f"VERDICT {lane}   : {' '.join(parts) or 'NOTHING TO JUDGE'}")
+  kinds = Counter(c.get("needle_kind") for c in claims
+                  if c.get("verdict") == REFUSED and c.get("needle_kind"))
+  if kinds:
+    o.append("REFUSALS BY KIND (the kinds a FAIL would have been): " +
+             ", ".join(f"{k}={v}" for k, v in sorted(kinds.items(), key=lambda kv: -kv[1])))
+  anch = sum(1 for c in claims if c["lane"] == "D" and c.get("anchor"))
   o += [f"TOTAL       : PASS={sum(V[(l, PASS)] for l in 'ABCD')} "
         f"FAIL={sum(V[(l, FAIL)] for l in 'ABCD')} "
         f"REFUSED={sum(V[(l, REFUSED)] for l in 'ABCD')}",
         f"LOWER-BOUND : {sum(1 for c in judged if c.get('strength'))} claims PASS on "
         f"EXISTENCE and check nothing else -- they CANNOT FAIL",
+        f"ANCHORS     : {anch} of {L['D']} numeric claims carry a date; the other "
+        f"{L['D'] - anch} assert present tense with nothing to expire them",
         f"VERDICT: {worst} (exit {EXITS[worst]})"]
+  return "\n".join(o)
+
+
+LABELS = ("TRUE", "CLASSIFIER", "AMBIGUOUS")
+
+
+def precision(rows: Path, fails: Counter) -> str:
+  """PERF-LANE PRECISION, AND A POPULATION-WEIGHTED ONE.
+
+  *** A POOLED PRECISION OVER SAMPLES THAT ARE NOT PROPORTIONAL DESCRIBES NO LANE. ***
+  Measured 2026-10-14 on the 30 rows of `.agents/slop/dangle/sample2.rows`: lane C holds
+  2,160 of 2,239 FAILs (96.5%) and took 19 of 30 rows (63%), lane D holds 61 (2.7%) and
+  took 10 of 30 (33%) -- over-represented 12x.  A pooled 15/30 = 50.0% over that
+  allocation is the precision of an INVENTED population.  So: one number per lane, each
+  with its own n, and a weighted figure that names the share of the FAIL population it
+  actually covers.  A lane with no labelled rows is NOT REPORTED, not counted as zero."""
+  got: dict[str, Counter] = {}
+  for line in rows.read_text().splitlines():
+    f = line.split("\t")
+    if len(f) < 2 or f[0] == "#":
+      continue
+    lane, label = f[1], (f[-1].strip().upper() if len(f) > 6 else "")
+    if label in LABELS:
+      got.setdefault(lane, Counter())[label] += 1
+  o, num, den, cov = [], 0.0, 0, 0
+  for lane in sorted(got):
+    c, n = got[lane], sum(got[lane].values())
+    if not c[TRUE]:
+      o.append(f"LANE {lane}     : 0 TRUE of {n} labelled -- NO PRECISION TO REPORT")
+      continue
+    p = c[TRUE] / n
+    o.append(f"LANE {lane}     : {c[TRUE]}/{n} TRUE = {p * 100:.1f}% precision "
+             f"(CLASSIFIER={c['CLASSIFIER']}, AMBIGUOUS={c['AMBIGUOUS']}), "
+             f"{fails[lane]} FAIL rows in the population")
+    num += p * fails[lane]
+    den += fails[lane]
+    cov += fails[lane]
+  o.append("POOLED    : NOT REPORTED as a single percentage. Per-lane above; "
+           f"population-weighted over the {cov} FAIL rows those lanes hold "
+           f"({cov / max(1, sum(fails.values())) * 100:.1f}% of all FAILs): "
+           + (f"{num / den * 100:.1f}%" if den else "n/a"))
   return "\n".join(o)
 
 
@@ -449,6 +587,52 @@ def selftest(tree: Path) -> int:
                   judge({**base[1], "line": 99})["verdict"], FAIL))
     cases.append(("NUMERIC: the count moved, and the numeric lane knows",
                   judge(base[3])["verdict"], FAIL))
+    # *** SIX FALSE FAILS AND TWO TRUE FAILS, AND EVERY NEEDLE IS ONE THE 2026-10-14
+    # SAMPLE ACTUALLY PRODUCED. ***  Each of these scored FAIL before the split and each
+    # was, by hand, the MATCHER'S FAULT.  The subject file below contains NONE of them, so
+    # every one of these six was a FAIL the instrument could not defend.
+    for kind, needle, gap, src in (
+            ("code", "declared_values()", "", ""),
+            ("code", "pathlib.Path(__file__).resolve().parents[3]", "", ""),
+            ("reference", ".txt", "", ""),
+            ("reference", "env-precond.py:134,151", "", ""),
+            ("fragment", " (the commit that staged ", "", ""),
+            ("fragment", "), which introduced the ", "", ""),
+            ("short", "-n", "", ""),
+            ("output", "RUN HEALTH : OK -- every one of 25 graphs was COMPARED", " -> ",
+             "checks/corpus-figure.py -> \"x\"   exit 0"),
+            ("cell-label", "DELETE", " | ",
+             "| `CITED` | 3.0 | `a/b.py` | `DELETE` | a token in .gitignore |")):
+      c = {"lane": "C", "kind": "content-prose", "file": "s.py", "subject": str(subj),
+           "needle": needle, "gap": gap, "line_text": src}
+      got, kindgot = judge(c)["verdict"], judge(c).get("needle_kind")
+      cases.append((f"FALSE FAIL -> {kind}: {needle[:44]!r} is not a claim about the text",
+                    (got, kindgot), (REFUSED, kind)))
+    cases.append(("TRUE FAIL SURVIVES: absent text that IS a text claim is still FAIL",
+                  judge({"lane": "C", "kind": "content-prose", "file": "s.py",
+                         "subject": str(subj), "needle": "epsilon"})["verdict"], FAIL))
+    # AN EXTENSION IS NOT A CLAIM KIND.  A first cut of `output` also refused every claim
+    # whose SUBJECT ended `.out|.rows|.err`, which silenced 2,073 rows of a real table on
+    # the wrong grounds.  A `.out` file's content is still content; this plant holds.
+    cases.append(("ARTEFACT SUBJECT: a `.out` subject is still a content claim, so it FAILS",
+                  judge({"lane": "C", "kind": "content-prose", "file": "s.py",
+                         "subject": str(subj), "needle": "epsilon",
+                         "gap": " | "})["verdict"], FAIL))
+    cases.append(("DELTA: `20 lines deleted` is a claim about a DIFF, so REFUSED",
+                  (judge({**base[3], "num": 20, "delta": True})["verdict"],
+                   judge({**base[3], "num": 20, "delta": True}).get("needle_kind")),
+                  (REFUSED, "delta")))
+    # THE ANCHOR.  `last_change` is a git call, so the plant replaces it with a datum --
+    # a harness that shells out to git to test itself is a harness that measures the repo.
+    saved = globals()["last_change"]
+    globals()["last_change"] = lambda rel: "2026-10-06T13:00:00+00:00"
+    cases.append(("ANCHOR: MEASURED 2026-10-05 and the file moved after it -> STALE, not FALSE",
+                  judge({**base[3], "num": 99, "delta": False,
+                         "anchor": "2026-10-05"})["verdict"], REFUSED))
+    cases.append(("ANCHOR FRESH: MEASURED 2026-10-07, after the file's last change -> judged",
+                  judge({**base[3], "num": 99, "delta": False,
+                         "anchor": "2026-10-07"})["verdict"], FAIL))
+    globals()["last_change"] = saved
     subj.unlink()
     cases.append(("ABSENT: an unreadable subject is REFUSED, never a silent pass",
                   judge(base[0])["verdict"], REFUSED))
@@ -467,9 +651,14 @@ def main() -> int:
   ap.add_argument("--selftest", action="store_true")
   ap.add_argument("--rows", default=None, help="write one row per claim here (.rows)")
   ap.add_argument("--sample-fail", type=int, metavar="N", default=0,
-                  help="write N evenly-spaced FAIL rows for HAND LABELING. The census "
+                  help="write N evenly-spread FAIL rows for HAND LABELING. The census "
                        "cannot state its own precision; a human has to, and guessing is "
                        "the fault this file exists to catch.")
+  ap.add_argument("--lanes", default="", help="restrict --sample-fail to these lanes, "
+                   "e.g. --lanes C. A sample MIXED over lanes with different precision "
+                   "cannot be reduced to one number.")
+  ap.add_argument("--precision", default=None, help="re-read a labelled sample (.rows) "
+                   "and report PER-LANE precision with each lane's own n")
   args = ap.parse_args()
   if args.selftest:
     return selftest(ROOT)
@@ -488,6 +677,9 @@ def main() -> int:
     # effective population was two files.  STRATIFY BY CLAIMING FILE: one row per file,
     # files taken round-robin, so a single noisy `.md` cannot stand in for 2,000 claims.
     fails = [c for c in judged if c.get("verdict") == FAIL]
+    lanes = set(args.lanes)
+    if lanes:
+      fails = [c for c in fails if c["lane"] in lanes]
     byfile: dict[str, list[dict]] = {}
     for c in fails:
       byfile.setdefault(c["file"], []).append(c)
@@ -499,15 +691,24 @@ def main() -> int:
         picked.append(byfile[f].pop(0))
       i += 1
     out = args.rows or ".agents/slop/dangle/sample.rows"
+    # A LABEL COLUMN, EMPTY.  The predecessor's sample carried its 15 TRUE labels in the
+    # REPORT PROSE and nowhere else, so no one -- including its author -- could check them
+    # or re-derive the precision.  An unlabelled sample with a verdict in prose beside it
+    # is a number with no witness.
     Path(out).write_text("".join(
       f"{i}\t{c['lane']}\t{c['file']}:{c.get('at','')}\t{c.get('subject','')}\t"
-      f"{c.get('needle') or c.get('num','')}\t{c.get('evidence','')}\n"
+      f"{c.get('needle') or c.get('num','')}\t{c.get('evidence','')}\t\n"
       for i, c in enumerate(picked, 1)))
     print(f"SAMPLE    : {len(picked)} rows from {len(picked)} of {len(byfile)} FAILING "
-          f"FILES ({len(fails)} FAIL rows total) -> {out}")
-    print("LABEL THESE: TRUE (the claim is false) or CLASSIFIER (the matcher is wrong).")
+          f"FILES ({len(fails)} FAIL rows total{', lanes ' + ''.join(sorted(lanes)) if lanes else ''}) -> {out}")
+    print("LABEL EACH ROW'S LAST COLUMN WITH EXACTLY ONE OF: "
+          "TRUE (the claim is false) / CLASSIFIER (the matcher is wrong) / AMBIGUOUS.")
+    print("THEN: checks/cites-census.py --precision <file>  -> per-lane precision with n.")
     return EXITS[PASS]
   print(summarise(judged, unclass, paths))
+  if args.precision:
+    print(precision(Path(args.precision),
+                    Counter(c["lane"] for c in judged if c.get("verdict") == FAIL)))
   print(f"SCOPE     : {len(disk)} on-disk .md/.py; {len(only_disk)} are NOT in HEAD "
         f"(ignored or intent-to-add) and are NOT censused")
   if args.rows:
