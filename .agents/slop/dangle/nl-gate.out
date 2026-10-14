@@ -1,8 +1,0 @@
-live port rc=0 md5=4f221ed7   live oracle rc=0 md5=4f221ed7
-port rows (rows_strict): 205   oracle rows (rows_strict): 205   the two lanes are BYTE-IDENTICAL: True   <- the value comparison below is therefore a TAUTOLOGICAL ZERO and the BYTE DIFF is this lane's gate
-lane    rows read  names (gate)  names (shipped)  `=` unaddressable  unreadable  dup names   name sets
-port          205           205              205    0             0           0          0   IDENTICAL (205 shared)
-oracle        205           205              205    0             0           0          0   IDENTICAL (205 shared)
-gated 205   agree 205   disagree []
-STALE-LITERAL 0 `py=` literal(s) disagree with the other lane's answer: []
-AGREE

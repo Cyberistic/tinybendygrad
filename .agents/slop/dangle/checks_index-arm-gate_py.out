@@ -1,6 +1,0 @@
-INDEX-ARM HEAD 2f3b329439be  TREE 7044  INDEX 7417
-INDEX-ARM SHAPES deletion=0 stale=4 foreign-add=0 intent-to-add=373
-INDEX-ARM INTENT detail: 373 paths, 7746505 bytes with content on disk; 2.50.1 (Apple Git-155), measured 2026-10-11 -- on this version a bare `git commit` REFUSES intent-to-add entries
-INDEX-ARM STALE (4): .agents/TODO.md, gates/amd_dsl_census-gate.py, gates/amd_dsl_census-pins.rows, tinybendygrad/renderer/amd/dsl.bend
-INDEX-ARM INTENT (373): .agents/slop/bitcastrow/fold.bend.ORIG, .agents/slop/boolexit/REPORT.md, .agents/slop/boolexit/census.out, .agents/slop/boolexit/census.py, .agents/slop/boolexit/class.out, .agents/slop/boolexit/class.py, .agents/slop/boolexit/livehunt.out, .agents/slop/boolexit/livehunt.py, .agents/slop/boolexit/plant.out, .agents/slop/boolexit/plant.py, ... and 363 more
-INDEX-ARM REFUSED, NOT A VERDICT: 4 path(s) a bare `git commit` acts on RIGHT NOW (0 deletion, 4 stale, 0 foreign addition). The tree is fine; the TOOL is pointed wrong.

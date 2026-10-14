@@ -1,9 +1,0 @@
-<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
-<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-artefact set        : runs/graphcmp/D   (named by checks/differ.py:42, the generator)
-tracked in git      : 0 of 242 on disk   -- git ls-tree -r HEAD, not the index
-instruments scanned : 208   (checks/*.py + gates/*.py, a directory walk)
-WRITERS             : 1  ['checks/differ.py']
-READERS             : 8  ['checks/corpus-figure.py', 'checks/devpin.py', 'checks/diary-census.py', 'checks/differ.py', 'checks/disagree-gate.py', 'checks/env-precond.py', 'checks/no-txt.py', 'gates/retention-check.py']
-live state          : ARTIFACTS-FRESH  exit=0  runs/graphcmp/D: 242 files, newest 4.8 h old
-remedy              : .venv/bin/python checks/differ.py run   # writes runs/graphcmp/D/ (0 of its files are in git)

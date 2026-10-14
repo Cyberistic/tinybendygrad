@@ -159,9 +159,13 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   same, and that is the command the VisualJJ branching server issues on its own. **MEASURED ON THIS TREE: `882` such
   placeholders, `7.9 MB` across `149` owner directories, and `git diff --cached` STILL NAMES `0`.** **A BARE `git commit`
   OVER AN INTENT-TO-ADD IS NOT A DESTRUCTION, IT IS WORSE — IT COMMITS THE PREVIOUS CONTENT** (isolated: bare → `28` B
-  of base, `git commit -a` → `31` B of live); **THE HAZARD IS SILENT REVERSION, NOT AN EMPTY BLOB.** **`jj status` IS NOT
-  READ-ONLY HERE — IT CLEARED ANOTHER UNIT'S STAGED WORK AT `01:55:39Z`** (`jj op log`: `import git head` + `snapshot
-  working copy`, both `args: jj status`). **COMMIT THROUGH `GIT_INDEX_FILE=.git/agent-index`, NEVER `git add -A`** — **AND
+  of base, `git commit -a` → `31` B of live); **THE HAZARD IS SILENT REVERSION, NOT AN EMPTY BLOB.** **`jj` **IS **NOT
+  READ-ONLY **HERE, **AND **`jj status` **IS **ONLY **THE **COMMAND **I **HAPPENED **TO **NAME**: **IT **CLEARED **ANOTHER **UNIT'S **STAGED
+  **WORK **AT **`01:55:39Z`** (`jj op log`: `import git head` + `snapshot working copy`, both `args: jj status`), **AND **A **SECOND **UNIT
+  **PROVED **THE **HAZARD **IS **`jj` **GENERALLY **— **ITS **LAST **OP **IS **LITERALLY **`snapshot working copy, args: jj op log`**,
+  **SO **A **DOCUMENT **THAT **NAMES **ONE **COMMAND **WHILE **MISSING **THE **MECHANISM **IS **A **CITATION **OF **AN
+  **INCIDENT, **NOT **OF **A **CAUSE** — **THE **MECHANISM **IS **THAT **`jj` **COLOCATED **STAGES **INTO **GIT's **INDEX
+  **ON **WORKING-COPY **SNAPSHOT, **AND **EVERY **`jj` **SUBCOMMAND **THAT **SNAPSSHOTS **DOES **IT**.** **COMMIT THROUGH `GIT_INDEX_FILE=.git/agent-index`, NEVER `git add -A`** — **AND
   `GIT_INDEX_FILE` DOES **NOT** SURVIVE BETWEEN SHELL CALLS, WHICH IS HOW ONE COMMIT SILENTLY NO-OP'D.** **`checks/
   index-arm-gate.py` ANSWERS "IS THE DEFAULT INDEX ARMED?" FROM `git ls-tree -r HEAD` VERSUS `git ls-files`, IS `PASS 0`
   DISARMED / `REFUSED 3` ARMED (AN ARMED INDEX IS NOT A WRONG TREE, IT IS A WRONG TOOL), AND DOES **NOT** MODIFY

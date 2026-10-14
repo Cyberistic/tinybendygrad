@@ -1,7 +1,0 @@
-2:i1 5:PARAM 3:f32 6:(l0:8) 2:i0 1:N 46:P(i0,Df32,i8,N,N,sp0,SGLOBAL,sCPU,b0,N,N,b0,N) 3:n()
-2:i2 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:0 3:n()
-2:i3 5:INDEX 3:f32 2:() 2:i0 1:N 1:N 8:n(i1,i2)
-2:i4 5:CONST 7:weakint 2:() 2:i0 1:N 4:l0:4 3:n()
-2:i5 5:RANGE 7:weakint 2:() 2:i0 1:N 18:rg(i0,XLOOP,n(i0)) 5:n(i4)
-2:i6 7:BARRIER 4:void 1:R 2:i0 1:N 1:N 8:n(i3,i5)
-2:i7 4:SINK 4:void 1:R 2:i0 1:N 18:kI(stest,n(),N,i0) 5:n(i6)
