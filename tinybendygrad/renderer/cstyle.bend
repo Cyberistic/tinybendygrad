@@ -425,12 +425,19 @@ def barrier.of(+dev: U32) -> String:
     case _: ""
 
 # `float4` -- cstyle.py:136, :276, :329, :369, :429, :538. THE BASE IS `None`,
-# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:56) does
+# AND `""` IS NOT `None`: the `Ops.STACK` rule (cstyle.py:55-56) does
 # `self.float4.replace('float4', render_type(x))`, so `None` there is an
 # `AttributeError` and `""` would emit a bare `float4{...}` with no constructor.
-# `float4` answers `""` for the base AND THE STACK ARM IS NOT PORTED, which is
-# the whole cost of that answer -- so it is written down here rather than papered
-# over with a `has_float4` Bool that nothing reads.
+# THE ANSWER IS THE STRING `"None"`, and that is `dsl.bend`'s standing rule for an
+# ABSENT value rather than a refusal -- `_variant_suffix` answers a suffix or `None`,
+# and `dsl.bend:2066-2069` records that "an empty string is NOT the same answer, so the
+# port prints `None`". CPython prints `None` too (`str(None)`), so this row now AGREES
+# instead of being a declared divergence.
+#
+# WHAT IT STILL DOES NOT BUY: the STACK arm is not ported, so nothing reads it yet, and
+# `"None"` is still a string rather than an absence -- `.replace` on it is a no-op where
+# CPython raises `AttributeError`. That gap is named rather than papered over with a
+# `has_float4` Bool that nothing reads.
 #   TODO(p3) cstyle.py:55-56  `base_rewrite`'s `Ops.STACK` arm. It needs
 #   `float4` to be `None`-distinguishable, which is the one place a `Data` cannot
 #   carry the answer and a device TAG cannot either: the base is the only `None`
@@ -442,7 +449,7 @@ def float4.of(+dev: U32) -> String:
     case 3: "float4"
     case 4: "make_float4"
     case 5: "make_float4"
-    case _: ""
+    case _: "None"
 
 # `float4_style` -- tinygrad/renderer/cstyle.py:134, :277. Clang's is the ONLY pair that is not
 # `('(', ')')`, and it is what makes a Clang STACK render `(float4){(a),(b)}`
@@ -939,6 +946,15 @@ def is_add(op: O.Op) -> Bool:
 # CLOSED `Arg` spells "the arg IS an op" as `AOpLit`, which is the arm that can match. The old
 # comment claimed the `AReduce` arm was "the only way an index node's arg is an op"; the
 # measurement above is what says otherwise.
+#
+# AND THIS BRANCH HAD NO ROW UNTIL A MUTATION SAID SO. Fixing the defect changed what this
+# matches from `AReduce` to `AOpLit`, and the census drove ONE fixture -- `arg=(Ops.ADD, 0)` --
+# on which BOTH tests are false, so both lanes took the do-not-strip arm, agreed, and the strip
+# had no row anywhere. `gates/cstyle_render_census-mutate.py`'s M8 ("render_index never strips
+# parens") moved 0 of 358 rows, which is how the gap was found; `ri_lit_*` now drives
+# `AOpLit{OpsADD{}}` -- the shape `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])` builds --
+# and M8 moves 3. A fix that makes a branch UNREACHED is indistinguishable from a fix that
+# makes it unreachable, and only a mutation tells them apart.
 def idx_arg_is_add(+a: O.Arg) -> Bool:
   match a:
     case O.AOpLit{op}: is_add(op)
@@ -1036,6 +1052,18 @@ def cfo_bin(+a: String, sym: String, b: String) -> String: String.concat(["(", a
 
 def cfo_tern(+a: String, b: String, c: String) -> String: String.concat(["(", a, "?", b, ":", c, ")"])
 
+# A DROPPED ARM IS CPython's `code_for_op[x.op]` AND THAT RAISES. Bend is total and cannot
+# raise, so the answer has to be a STRING, and `""` is the one string that is BOTH a silent
+# wrong answer and a spelling no C compiler accepts silently: `base_rewrite`'s ALU arm wraps
+# the answer in `f"..."` at the operator's own precedence, so an empty one deletes the
+# operand and leaves a kernel that is wrong rather than broken -- the exact shape this file's
+# own header names as the dangerous one. So the refusal NAMES ITS CAUSE, and it is
+# `wgsl.bend`'s spelling and not a new one: `wgsl.bend:489` answers `UNHANDLED(Ops.X)` for
+# the same `KeyError` on the same twenty inherited arms, and `wgsl.bend:71-72` says those arms
+# MOVE HERE when cstyle lands. Two spellings of one refusal is FINDING 2 in `wgsl_render_census-gate.py`,
+# which is why this reuses the sibling's token instead of inventing a third.
+def cfo_unhandled(op: O.Op) -> String: String.concat(["UNHANDLED(Ops.", O.Ops.name.of(op), ")"])
+
 # `xs` is the src-name list, `xs0`/`xs1`/`xs2` its three positional reads. `nd` is
 # the number of srcs, which is the arity test: WHERE has three and everything
 # else has two or one, and `head`/`nth` on an empty list is the BOTTOM of the
@@ -1056,8 +1084,8 @@ def cfo_xs3(xs: List<&2, String>) -> String: xs_at(xs, 2n)
 # cstyle.py:142-150 is a dict literal of TWENTY-ONE keys and `FDIV` is not one of
 # them -- Clang ADDS it (cstyle.py:291) and no other device has it. A reader that
 # gave the base an `FDIV` arm would answer `(X/Y)` where CPython raises
-# `KeyError`, and the `_` arm answers `""` here. MEASURED BY THE GATE: with an
-# `FDIV` arm in the base, the mutation "delete Clang's explicit FDIV arm" moved NO
+# `KeyError`, and the `_` arm is that raise, totalised by `cfo_unhandled`. MEASURED BY THE
+# GATE: with an `FDIV` arm in the base, the mutation "delete Clang's explicit FDIV arm" moved NO
 # ROW, because Clang then fell through to a base arm that should not have been
 # there. Removing it makes the Clang arm load-bearing, which is what it is.
 def code_for_base.of(op: O.Op, +xs: List<&2, String>) -> String:
@@ -1083,7 +1111,7 @@ def code_for_base.of(op: O.Op, +xs: List<&2, String>) -> String:
     case O.OpsCMPLT{}: cfo_bin(cfo_xs1(xs), "<", cfo_xs2(xs))
     case O.OpsWHERE{}: cfo_tern(cfo_xs1(xs), cfo_xs2(xs), cfo_xs3(xs))
     case O.OpsCMPEQ{}: cfo_bin(cfo_xs1(xs), "==", cfo_xs2(xs))
-    case _: ""
+    case _: cfo_unhandled(op)
 
 # ===========================================================================
 # THE PER-DEVICE ALU OVERRIDES. Six ops on CUDA, five on HIP, one on Metal, two
@@ -1108,8 +1136,11 @@ def is_f64(+d: S.Dt) -> Bool: O.eq_dt(d, S.double())
 # comprehension is `{k:v for k,v in base.items() if k not in [EXP2, SIN, LOG2,
 # TRUNC, RECIPROCAL]}` and then TRUNC and FDIV and SQRT are re-set, so TRUNC
 # SURVIVES and the other three do not. The deletion is the load-bearing half and
-# `""` is its answer -- a `KeyError` in Python, an empty string here, and the
-# difference is a visible gate row rather than a crash.
+# `cfo_unhandled` is its answer -- a `KeyError` in Python, and here a token that names
+# the op and cannot compile. THOSE FOUR ARMS STAY EXPLICIT even though all four now
+# answer the same thing, because they are the only thing standing between Clang and the
+# base's `exp2`/`sin`/`log2`/`(1/x)` arms; deleting them renders four ALU ops upstream
+# refuses to render. MEASURED: the mutation that deletes all four moves 4 rows.
 #
 # THE SUFFIX IS `f` UNLESS THE DTYPE IS f64, and there is no separate f32 case:
 # Clang emits `__builtin_sqrtf(X)` for float AND for half and
@@ -1122,10 +1153,10 @@ def code_for_clang.of(op: O.Op, +xs: List<&2, String>, +d: S.Dt) -> String:
     case O.OpsSQRT{}: cfo_unary(ocml_or("__builtin_sqrt", "f", is_f64(d)), cfo_xs1(xs))
     case O.OpsTRUNC{}: cfo_unary(ocml_or("__builtin_trunc", "f", is_f64(d)), cfo_xs1(xs))
     case O.OpsFDIV{}: cfo_bin(cfo_xs1(xs), "/", cfo_xs2(xs))
-    case O.OpsEXP2{}: ""
-    case O.OpsSIN{}: ""
-    case O.OpsLOG2{}: ""
-    case O.OpsRECIPROCAL{}: ""
+    case O.OpsEXP2{}: cfo_unhandled(op)
+    case O.OpsSIN{}: cfo_unhandled(op)
+    case O.OpsLOG2{}: cfo_unhandled(op)
+    case O.OpsRECIPROCAL{}: cfo_unhandled(op)
     case _: code_for_base.of(op, xs)
 
 # METAL: `SIN` is the ONLY override and it is `precise::sin` for every dtype
@@ -1182,9 +1213,17 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, String>, +d: S.Dt) -> Strin
 
 # ===========================================================================
 # `code_for_workitem` -- tinygrad/renderer/cstyle.py:131, :330, :370, :431, :531. Five devices
-# spell the workitem id and the BASE has an EMPTY dict, so a SPECIAL on the base
-# CStyleLanguage is a `KeyError` in Python. `""` is the port's marker and it is
-# NOT reachable for a real kernel: every GPU renderer defines both entries.
+# spell the workitem id and the BASE and Clang have an EMPTY dict, so a SPECIAL on
+# either is a `KeyError` in Python -- MEASURED, `CStyleLanguage.code_for_workitem` and
+# `ClangRenderer.code_for_workitem` are both `{}`, and `code_for_workitem["g"]` raises
+# `KeyError('g')` on both. The refusal NAMES THE MISSING KEY, which is what CPython's
+# `KeyError` argument is, and it is not reachable for a real kernel: every GPU renderer
+# defines both entries.
+#
+# `""` was the port's marker until this arm was made loud, and it was the worst of the
+# three: `base_rewrite`'s SPECIAL arm is `f"{...}; /* ... */"`, so `""` emits a bare `;`
+# -- a statement that computes NOTHING and compiles. `cfw_0_g` and `cfw_0_l` were also
+# byte-identical to each other, which is a row whose `k` argument could not move it.
 #
 # THE THREE SPELLINGS, and the third is the interesting one: Metal and CUDA
 # INDEX A MEMBER BY ASCII -- `chr(120 + int(x))` on a STRING argument, so `x` is
@@ -1197,13 +1236,15 @@ def code_for_op.of(+dev: U32, op: O.Op, xs: List<&2, String>, +d: S.Dt) -> Strin
 
 def witem_xyz(n: U32) -> String: String.from_list([Char.from_u32(U32.add(120, n))])
 
+def witem_miss(+k: String) -> String: String.concat(["UNHANDLED(code_for_workitem[", k, "])"])
+
 def code_for_workitem.g(+dev: U32, +k: String, n: U32) -> String:
   match dev:
     case 2: String.concat([Bool.pick(String, String.eq(k, "g"), "get_group_id(", "get_local_id("), U32.show(n), ")"])
     case 3: String.concat([Bool.pick(String, String.eq(k, "g"), "gid.", "lid."), witem_xyz(n)])
     case 4: String.concat([Bool.pick(String, String.eq(k, "g"), "blockIdx.", "threadIdx."), witem_xyz(n)])
     case 5: String.concat([Bool.pick(String, String.eq(k, "g"), "__ockl_get_group_id(", "__ockl_get_local_id("), U32.show(n), ")"])
-    case _: ""
+    case _: witem_miss(k)
 
 # ===========================================================================
 # `_wmma_name` -- cstyle.py:113-117, and the one place a NAME is built from a

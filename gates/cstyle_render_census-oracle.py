@@ -35,16 +35,26 @@ all four): the DEVICE (six type_maps, six prefix sets), the DTYPE (eighteen name
 UNMAPPED on some devices), the ADDRSPACE/SIZE (the `*`, the local/global prefix, the `sz>1`
 suffix), and the OP/ARG (the ALU dispatch and the index arms).
 
-THE VENDORED `tinygrad/` HAS DRIFTED PAST THE PIN THE PORT TARGETS (`ad117c928^`). Two measured
-consequences, and they are the census's whole reason to exist:
+THE VENDORED `tinygrad/` HAS DRIFTED PAST THE PIN THE PORT TARGETS (`ad117c928^`), AND ON THE SIX
+`rdx_` ROWS THE PORT IS RIGHT AND HEAD IS WRONG. One measured consequence, and it is the reason
+those six are declared rather than fixed:
 
-  * HEAD `_render_dtype` uses `self.type_map[dtype]` and RAISES KeyError for an unmapped dtype;
-    the port prints the dtype's own name (`tm_get`'s default), which is the PIN's
-    `.get(dtype, dtype.name)`. So every `rdx_` row is a declared divergence: `KeyError` here,
-    the name there. `gates/cstyle_render_census-gate.py` pins each one.
-  * HEAD `_wmma_name` no longer `.replace(" ", "_")`; the port still does. It is a NO-OP at
-    HEAD because `DType.name` moved to the rust spellings (`i8`, not `signed char`), which the
+  * HEAD `_render_dtype` uses `self.type_map[dtype]` (measured, `tinygrad/renderer/cstyle.py:190-191`)
+    and RAISES KeyError for an unmapped dtype; the port prints the dtype's own name (`tm_get`'s
+    default), which is the PIN's `.get(dtype, dtype.name)` (measured,
+    `git show 'ad117c928^:tinygrad/renderer/cstyle.py'` lines 189-190). `AGENTS.md`:
+    `ad117c928^` IS the pin and `ad117c928` is THIS PROJECT's own re-vendor, so a difference here
+    is the port matching its target and the working tree moving off it. Every `rdx_` row is a
+    declared divergence and `gates/cstyle_render_census-gate.py` pins each one. NOT A DEFECT.
+  * `_wmma_name` no longer `.replace(" ", "_")` at HEAD either; the port still does. It is a NO-OP
+    at HEAD because `DType.name` moved to the rust spellings (`i8`, not `signed char`), which the
     `wn_` rows confirm rather than assume.
+
+THE NINE OTHER REFUSALS ARE THE PORT'S, NOT THE TREE'S: `code_for_op[op]` and
+`code_for_workitem[k]` are dictionary misses on the classes BELOW, measured to be exactly that --
+`cfo_0_fdiv` args `(Ops.FDIV,)`, `cfo_1_{exp2,sin,log2,reciprocal}` args `(Ops.EXP2,)` and
+friends, `cfw_{0,1}_{g,l}` args `('g',)` / `('l',)` on a dict that is `{}` for both the base and
+Clang. The port answers `UNHANDLED(...)` for all nine, because Bend is total.
 
 AND ONE DEFECT THE CENSUS FOUND, `ri_add_*`. `render_index`'s non-ALU branch tests
 `idx.arg == Ops.ADD`, and `UOp.reduce(arg=Ops.ADD)` sets `arg=(Ops.ADD, 0)` (`ops.py:671-674`, at
@@ -81,12 +91,23 @@ for x in R: x.r = {}
 
 
 def safe(fn):
-    """`fn()`, or the EXCEPTION CLASS NAME. An unmapped dtype is a KeyError in HEAD's renderer,
-    and a KeyError is a MEASUREMENT (the port answers the name instead), not a crash."""
+    """`fn()`, or `REFUSE:<ExceptionClassName>`. A REFUSAL IS AN ANSWER.
+
+    `safe` was returning the bare class name (`KeyError`), which is a value column
+    reading as a value: nothing in the column said that CPython produced no string at
+    all. `wgsl_render_census-oracle.py:222` spells it `REFUSE:` and `amd_dsl_census-oracle.py`
+    does the same, so this lane adopts the tree's marker rather than a fourth spelling of
+    one fact.
+
+    The class NAME is still the content and it is CPython's own: measured, the nine
+    refusals are `code_for_op[x.op]` and `code_for_workitem[k]` dictionary misses and
+    nothing else -- `cfo_0_fdiv` args `(Ops.FDIV,)`, `cfo_1_*` args `(Ops.EXP2,)` and
+    friends, `cfw_{0,1}_{g,l}` args `('g',)` / `('l',)`.
+    """
     try:
         return fn()
     except Exception as e:
-        return type(e).__name__
+        return f"REFUSE:{type(e).__name__}"
 
 
 # `_render_dtype(dtype, sz, addrspace, mutable, override_ptr, shape)`. The port's seventh
@@ -171,13 +192,19 @@ def build():
     laneidx = UOp(Ops.CONST, arg=7)
     castc = UOp(Ops.CAST, src=(UOp(Ops.CONST, arg=0),), arg=dtypes.int32)
     redadd = UOp(Ops.REDUCE, src=(UOp(Ops.CONST, arg=1),), arg=(Ops.ADD, 0))
+    # The BARE-op arg, which is the shape CPython actually strips on: `UOp(Ops.PYLITERAL,
+    # arg=Ops.ADD)` at `upat.py:26` passes the enum, and `(Ops.ADD, 0) == Ops.ADD` is False
+    # for the paired form above. MEASURED: this node's `.arg == Ops.ADD` is True and the
+    # paired one's is False, so the two fixtures take OPPOSITE arms of `render_index`.
+    litadd = UOp(Ops.REDUCE, src=(UOp(Ops.CONST, arg=1),), arg=Ops.ADD)
     fx["lane"] = (UOp(Ops.INDEX, src=(ab4, laneidx)), ab4, laneidx, "bidx1")
     fx["array"] = (UOp(Ops.INDEX, src=(ab8, castc)), ab8, castc, "bidx2")
     fx["swizzle"] = (UOp(Ops.INDEX, src=(ab4, castc)), ab4, castc, "bidx3")
     fx["add"] = (UOp(Ops.INDEX, src=(gb, redadd)), gb, redadd, "bidx4")
     fx["plain"] = (UOp(Ops.INDEX, src=(gb, laneidx)), gb, laneidx, "bidx5")
+    fx["lit"] = (UOp(Ops.INDEX, src=(gb, litadd)), gb, litadd, "bidx6")
     fx["_r"] = {ab4: "alu1", ab8: "alu2", gb: "buf1", laneidx: "alu3", castc: "cast1",
-                redadd: "(a+b)"}
+                redadd: "(a+b)", litadd: "(a+b)"}
     return fx
 
 
@@ -258,7 +285,7 @@ def main():
     # render_index arms
     for dev in (0, 1, 4):
         R[dev].r = FX["_r"]
-        for tag in ("lane", "array", "swizzle", "add", "plain"):
+        for tag in ("lane", "array", "swizzle", "add", "plain", "lit"):
             x, buf, idx, xn = FX[tag]
             row(f"ri_{tag}_{dev}", safe(lambda: R[dev].render_index(x, buf, idx)))
     # wmma_name

@@ -29,7 +29,25 @@ amd-dsl-census  [#########] 9/9      9 census CLASSES retired, 3 left: `MSG_TEXT
                                          `modmask_hi_hi`). **TWO OF dsl.py's THREE FLAGS ARE
                                          UNGATED**: deleting `mod_hit.ab` or `mod_hit.opsel`
                                          moves ZERO rows.
-msgdiff-gate    [#########] 1/1      a commit MESSAGE vs its own DIFF. `00b101574`'s "Deleted the
+cstyle-census   [#########] 9/9      361 rows, 3 lanes, rc=0. **WAS 358 rows / 16 pins and NEVER
+                                        WORKED ONCE.** The 6 `rdx_*` are PIN-VS-HEAD and THE PORT
+                                        IS RIGHT (`cstyle.py:190-191` reads `type_map[dtype]`,
+                                        `ad117c928^` reads `.get(dtype, dtype.name)`) -- left
+                                        alone. The other 10 were `""` where CPython raises;
+                                        9 of them are now `UNHANDLED(...)` (wgsl's spelling, the
+                                        same KeyError on the same 20 arms) and the 10th
+                                        (`opt_float4_0`, an ABSENT value not a raise) ANSWERS
+                                        `None` per `dsl.bend:2066-2069` and its PIN IS DROPPED.
+                                        16 -> 15 pins, 343 -> 346 compared. **`strip_parens` is
+                                        NOT duplicated** -- `cstyle.bend:963` calls `H.strip_parens`
+                                        and no local copy exists. All 9 refusals MEASURED as real
+                                        dict misses (`args=(Ops.FDIV,)`, `('g',)`). **THE GATE HAD
+                                        NO MUTATION HARNESS**; `cstyle_render_census-mutate.py`
+                                        now has 11, and **M8 MOVED ZERO ROWS** -- `ri_add_*`
+                                        drives `arg=(Ops.ADD,0)`, where BOTH lanes decline to
+                                        strip, so the branch the `ri_add` finding was ABOUT had
+                                        no row at all. `ri_lit_*` (3 rows) drives `AOpLit`, and
+                                        M8 now moves 3. 10 of 11 mutations move rows.
                                         superseded `oracles259/plants.py`" is REFUSED (3) over an
                                         EMPTY `git diff-tree --diff-filter=D`, the file present at
                                         blob `e6e31707`. `range --since=2026-10-06T12:00 HEAD` =

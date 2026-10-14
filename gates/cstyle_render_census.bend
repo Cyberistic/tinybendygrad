@@ -45,14 +45,18 @@
 # `gates/ew_graph_census.bend` trap cannot fire here and there is no rule to pick: `ri_world()`
 # is the `world()` shape, one `Arena.empty()` chain handing out every index a row needs.
 #
-# THE NINETEEN DECLARED DIVERGENCES, measured. Eighteen are carve-outs and one is a DEFECT:
+# THE FIFTEEN DECLARED DIVERGENCES, measured. Six are the vendored drift where THE PORT IS
+# RIGHT, nine are refusals Bend cannot raise, and the one real defect this census found is fixed:
 #   * `rdx_*` -- HEAD `_render_dtype` uses `self.type_map[dtype]` and RAISES KeyError for an
 #     unmapped dtype; the port prints the dtype's own name (`tm_get`'s default), which is the
-#     PIN's `.get(dtype, dtype.name)`. `gates/cstyle_render_census-gate.py` pins each one.
-#   * `opt_float4_0` -- CPython's `float4` is `None` on the base and the port answers `""`
-#     (the STACK arm is not ported, `cstyle.bend:427-437`).
-#   * `cfo_*`/`cfw_*` KeyError rows -- a dropped ALU op and the base's empty workitem dict are
-#     `KeyError` in CPython and `""` in the port, which `cstyle.bend:1045-1052` records.
+#     PIN's `.get(dtype, dtype.name)`. MEASURED BOTH WAYS: `tinygrad/renderer/cstyle.py:190-191`
+#     reads `[dtype]`, `git show 'ad117c928^:tinygrad/renderer/cstyle.py'` reads `.get`. Left
+#     ALONE, and `gates/cstyle_render_census-gate.py` pins each one.
+#   * `cfo_0_fdiv` + `cfo_1_{exp2,sin,log2,reciprocal}` -- a dropped ALU op, and
+#     `cfw_{0,1}_{g,l}` -- an EMPTY `code_for_workitem` dict. Nine rows where CPython raises
+#     `KeyError` and the port answers `UNHANDLED(...)`, `cstyle.bend`'s own totalisation.
+#   * `opt_float4_0` WAS HERE. CPython's base `float4` is `None` -- an absent VALUE, not a
+#     refusal -- so `float4.of` answers `"None"` and the row now AGREES. Its pin is dropped.
 #   * `ri_add_*` -- THE DEFECT. See the FINDING block at the foot.
 
 import Base
@@ -289,13 +293,15 @@ def for_rb(+devs: List<&2, U32>, +addrs: List<&2, U32>) -> IO(Unit):
         for_rb(dt, addrs)
 
 # ---- the render_index fixture: ONE arena -----------------------------------
-# bottom(0), CONST 7(1), CONST 0(2), CAST(CONST 0)(3), REDUCE ADD(CONST 0)(4).
+# bottom(0), CONST 7(1), CONST 0(2), CAST(CONST 0)(3), REDUCE ADD(C)(4),
+# REDUCE WITH A BARE-OP ARG(5) -- the fifth is the one `ri_lit` reads and its own
+# comment explains; it did not exist before mutation M8 said so.
 def ri_world() -> O.Arena:
   +a0 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
   +a1 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(0)})
   +a2 = O.UOp.new(O.Found.ar(a1), O.OpsCAST{}, [O.Found.i(a1)], O.ADt{S.int32()}, O.TNone{})
   +a3 = O.UOp.new(O.Found.ar(a2), O.OpsREDUCE{}, [O.Found.i(a1)], O.AReduce{O.OpsADD{}, 0}, O.TNone{})
-  O.Found.ar(a3)
+  O.Found.ar(O.UOp.new(O.Found.ar(a3), O.OpsREDUCE{}, [O.Found.i(a1)], O.AOpLit{O.OpsADD{}}, O.TNone{}))
 
 def ri_lane(+dev: U32) -> IO(Unit):
   +ar = ri_world()
@@ -317,6 +323,21 @@ def ri_plain(+dev: U32) -> IO(Unit):
   +ar = ri_world()
   go(String.concat(["ri_plain_", U32.show(dev)]), C.render_index(ar, dev, 1, S.AGlobal{}, "buf1", "alu3", 4, True{}))
 
+# THE ROW THE `ri_add_*` FIXTURE COULD NOT SEE. `ri_add` drives `arg=(Ops.ADD, 0)`, and on
+# that node CPython's `idx.arg == Ops.ADD` is FALSE and the port's `idx_arg_is_add` is ALSO
+# false -- `(Ops.ADD, 0) == Ops.ADD` compares a tuple to an enum, and `AReduce{ADD,0}` is
+# not `AOpLit`. So BOTH lanes took the "do not strip" arm, the two lanes agreed, and the
+# census had ZERO rows on the `strip_parens` branch -- the branch the whole FINDING block
+# below exists for. MEASURED: mutation M8 (`render_index` never strips parens) moved 0 rows
+# before this node and moves this row now.
+#
+# `AOpLit{OpsADD{}}` IS THE SHAPE WHERE CPython STRIPS, and it is a real one: the arena's
+# `AOpLit` was added for `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])`, which passes
+# the BARE op -- MEASURED, `UOp(Ops.REDUCE, src=(...), arg=Ops.ADD).arg == Ops.ADD` is TRUE.
+def ri_lit(+dev: U32) -> IO(Unit):
+  +ar = ri_world()
+  go(String.concat(["ri_lit_", U32.show(dev)]), C.render_index(ar, dev, 5, S.AGlobal{}, "buf1", "(a+b)", 4, True{}))
+
 def for_ri(+devs: List<&2, U32>) -> IO(Unit):
   match devs:
     case Nil{}: nil()
@@ -327,6 +348,7 @@ def for_ri(+devs: List<&2, U32>) -> IO(Unit):
         c : Unit <- ri_swizzle(d)
         e : Unit <- ri_add(d)
         f : Unit <- ri_plain(d)
+        g : Unit <- ri_lit(d)
         for_ri(dt)
 
 # ---- the ALU dispatch rows -------------------------------------------------
@@ -454,8 +476,23 @@ def main() -> IO(Unit):
 # FALSE for, and the two strings differ by the inner parens: the port emits `(buf1+a+b)` where
 # CPython emits `(buf1+(a+b))`.
 #
-# THIS IS A DEFECT AND NOT A CARVE-OUT: the branch is reachable, the difference is visible in a
-# kernel's bytes, and it is NOT one of the tree's documented deviations. To match CPython the port
-# would have to test for the bare `Op` (its `AOpLit{OpsADD{}}`), which is the shape `Ops.PYLITERAL`
-# carries. The fix belongs to the caller; this unit REPORTS and leaves `cstyle.bend` byte-identical.
+# ===========================================================================
+# AND THEN: THE FIX LEFT THIS CENSUS WITH NO ROW ON THE BRANCH IT WAS BUILT FOR.
+#
+# `idx_arg_is_add` now matches `AOpLit{OpsADD{}}` -- the arena's closed `Arg` spelling of "the
+# arg IS an op" -- so the defect is gone. But the ONLY fixture that exercised this branch was
+# `arg=(Ops.ADD, 0)`, and on THAT node CPython's test is False AND the port's is False: a tuple
+# never equals an enum, and `AReduce{ADD,0}` is not `AOpLit`. Both lanes took the "do not strip"
+# arm, agreed, and `H.strip_parens` had ZERO rows. MEASURED, not inferred: mutation M8 in
+# `gates/cstyle_render_census-mutate.py` -- "render_index never strips parens" -- moved 0 rows
+# of 358.
+#
+# THAT IS THE CLASS `amd_dsl_census` FOUND AS `String.eq("vdst","vdst")`, wearing a row named
+# after the defect it used to prove: `ri_add_*` LOOKS like it tests paren-stripping (the fixture
+# is an ADD, the value is `(a+b)`) and tests nothing of the kind. The fix is the third arena
+# node and the `ri_lit_*` rows above, which drive `AOpLit{OpsADD{}}` -- the shape
+# `upat.py:26`'s `UOp(Ops.PYLITERAL, arg=self.op[0])` actually builds, and the only one on which
+# CPython strips. `ri_add_*` `(buf1+(a+b))` and `ri_lit_*` `(buf1+a+b)` now sit side by side and
+# differ by exactly the strip. M8 moves 3 rows.
+# ===========================================================================
 # ===========================================================================
