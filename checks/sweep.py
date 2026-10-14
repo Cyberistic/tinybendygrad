@@ -54,6 +54,7 @@ MEASURED, same tree, nothing edited, `DELETING 366 / 44 / 0` at 0, 60 and 1440 m
 from __future__ import annotations
 
 import argparse
+import ast
 import collections
 import functools
 import importlib.util
@@ -155,8 +156,404 @@ NAMED_BY = [":(glob).agents/slop/*.md", "AGENTS.md", ":(glob)checks/*.md",
 SELF = ".agents/slop/slopfinal"
 
 
+# ---- THE PATH RESOLVER. DISCOVERED BY WALK, NEVER BY A LIST OF DIRECTORIES. --------------------
+#
+# **EVERY SPELLING A PATH IS ACTUALLY WRITTEN IN, AND EACH ONE IS MEASURED.** The previous
+# resolver handled `Constant`, `Name` and `Call(join)` and MEASURED 2026-10-14 on 209
+# instruments it named **1** directory. Each addition below is here because a count of the tree
+# said it was load-bearing, not because it sounds right:
+#
+#   `BinOp(Div)`    MEASURED 2026-10-14: **854** `Div` sites in `checks/` + `gates/`, of which
+#                   **612** have a string literal or a string-bound name as an operand and so
+#                   are provably PATH divisions; 1 is arithmetic and 241 are over computed
+#                   values. `Path.__truediv__` is the dominant path spelling in this tree --
+#                   **93 of 154 `write_text` receivers are a `BinOp`** -- and `Div` was not
+#                   implemented at all.
+#   `BinOp(Add)`    40 `Add` sites; `SLOP + "/sub"` is the other spelling.
+#   the RECEIVER    MEASURED: `write_text` has 154 call sites and is a METHOD at every one of
+#                   them, so the path is the RECEIVER and the argument is the CONTENT. The old
+#                   resolver read `node.args`, so on 154 write sites it was reading file
+#                   contents for a path. MEASURED: **0** of those 154 content arguments carries
+#                   a `.agents/slop` literal, so nothing was found -- and nothing found looks
+#                   exactly like nothing there.
+#   LOCAL SCOPES    MEASURED: **120 of 209** instruments bind a name inside a function that is
+#                   not bound at module level, and a module-level-only environment cannot see
+#                   the tree's write sites.
+#   SOURCE ORDER    `checks/slop-declare.py:90-92` is `ROOT = ...`, `SLOP = ".agents/slop"`,
+#                   `HERE = ROOT / SLOP / "declare"`. Resolving each binding against an EMPTY
+#                   environment lost `SLOP`, so `HERE` became `UNKNOWN/UNKNOWN/declare`, held no
+#                   `.agents/slop/` prefix, and **`.agents/slop/declare` disappeared from the
+#                   census while the census reported "0 invisible sites".** A resolver that
+#                   resolves in the wrong order CANNOT SEE, and a resolver that cannot see
+#                   reports `0` instead of `I do not know`.
+#
+# **THE FAIL-SAFE IS FIXED AND IT IS NOT SYMMETRIC.** Everything here feeds `house_excluded`,
+# which removes a tree from the citation corpus; removing evidence makes rows uncited and an
+# uncited row is one `DELETE` away. So an unresolvable part becomes the marker `UNKNOWN_MARK`,
+# a byte that cannot occur in a path, and `slop_dir()` REFUSES any directory whose first
+# component carries it:
+#
+#     os.path.join(ROOT, ".agents/slop/residue")  ->  ?/.agents/slop/residue   -> `residue`
+#     os.path.join(ROOT, SLOP, "sub")             ->  ?/.agents/slop/sub      -> `sub`
+#     os.path.join(ROOT, SLOP, name)              ->  ?/.agents/slop/?        -> REFUSED
+#
+# **THE PREFIX IS REAL AND THE FIRST COMPONENT IS NOT, AND REFUSING IS THE ONLY HONEST ANSWER.**
+# A resolver that dropped the unknown argument and took the next component would name a
+# directory nobody writes to -- and a directory the sweep stops reading is a directory the
+# sweep may destroy.
+UNKNOWN_MARK = "\x00"
+MODULE_MARK = "\x01"          # "this name is an IMPORTED MODULE": not a path, and an alias
+                              # is not the module (`importlib.util` vs `util`). MEASURED
+                              # 2026-10-14: omitting this hid `.agents/slop/oracletxt` from the
+                              # READ census twice, for two different reasons.
+# THE FILESYSTEM VOCABULARY. **THIS IS A VOCABULARY OF THE LANGUAGE, NOT A POPULATION OF THIS
+# REPOSITORY** -- the directories are found by walking the ASTs, and nothing below names one.
+# It is keyed by `(module, function)` rather than by BARE CALLEE NAME for a measured reason:
+# **62 of the tree's 62 `replace` call sites are `str.replace`**, and
+# `checks/cl-port-gate.py:245`'s first argument is the literal
+# `'import "../../../.agents/slop/clangshim/libclang-ffi.c"'` -- so a bare-name table excludes
+# `.agents/slop/clangshim`, which `checks/cl-port-gate.py:51` reads as `SHIM / "libclang-ffi.c"`
+# and `:89` ASSERTS the shipped port still imports. **A STRING METHOD SHARES A NAME WITH A
+# FILESYSTEM ONE, AND THAT IS THE FALSE POSITIVE THAT MATTERS MOST.**
+FS_WRITES = {("os", "makedirs"): (0,), ("os", "mkdir"): (0,), ("os", "open"): (0,),
+             ("os", "link"): (0,), ("os", "symlink"): (0,),
+             ("os", "rename"): (0, 1), ("os", "replace"): (0, 1),
+             ("shutil", "copy"): (1,), ("shutil", "copy2"): (1,),
+             ("shutil", "copyfile"): (1,), ("shutil", "copytree"): (1,), ("shutil", "move"): (1,),
+             ("shutil", "copymode"): (1,), ("shutil", "copystat"): (1,),
+             ("json", "dump"): (1,), ("pickle", "dump"): (1,)}
+# `open` IS A BUILTIN AND LIVES IN NO MODULE. **IT IS HERE ONLY BECAUSE A MODE DECIDES IT.**
+BARE_WRITES = {"open": (0,)}
+# METHODS ON A `Path`. "R" the RECEIVER only -- the argument is CONTENT. "RA" receiver and
+# arguments: `rename`/`replace`/`symlink_to` create entries on both sides.
+FS_METHOD_WRITES = {"write_text": "R", "write_bytes": "R", "touch": "R", "mkdir": "R",
+                    "open": "R", "symlink_to": "RA", "rename": "RA", "replace": "RA"}
+# **DESTRUCTIVE CALLS ARE NEVER EXCLUDED.** `unlink`/`rmdir`/`remove`/`rmtree` name a path an
+# instrument wants GONE, and excluding a directory some instrument deletes would PROTECT from
+# the sweep a directory that is already doomed -- the one error here that is silent in the
+# OTHER direction and that no count of newly-DELETE rows would reveal. MEASURED: 11 sites.
+FS_DELETES = {("os", "remove"): (0,), ("os", "rmdir"): (0,), ("os", "unlink"): (0,),
+              ("shutil", "rmtree"): (0,)}
+# THE READ SIDE, WHICH IS WHAT MAKES `self_output_dirs` REFUSE A COLLISION. **A PATH HANDED TO
+# AN IMPORT MACHINE IS A READ**, and no `open` and no `read_text` sees it: MEASURED,
+# `checks/oracle-txt-census.py:215` is `importlib.util.spec_from_file_location("plant", ROOT /
+# ".agents/slop/oracletxt/plant.py")`, and it is the whole reason `.agents/slop/oracletxt` is
+# not excluded.
+FS_READS = {("os", "readlink"): (0,), ("os", "stat"): (0,), ("os", "lstat"): (0,),
+            ("importlib", "spec_from_file_location"): (1,), ("runpy", "run_path"): (0,)}
+FS_READ_METHODS = frozenset({"read_text", "read_bytes", "readlink", "iterdir", "glob",
+                             "exists", "is_file", "is_dir", "stat", "lstat", "resolve"})
+PATH_CTORS = frozenset({"Path", "PurePosixPath", "PosixPath", "join", "joinpath",
+                        "resolve", "absolute", "expanduser", "parent"})
+PATH_ANNOTATIONS = frozenset({"Path", "PurePosixPath", "PosixPath", "PurePath"})
+PATH_KEYWORDS = frozenset({"file", "fp", "src", "dst", "target", "dirpath"})
+WRITE_MODES = frozenset("wax+")
+SLOP_PREFIX = ".agents/slop"
+
+
+def _table_lookup(table: dict, mod: str | None, fn: str):
+    """`table[(mod, fn)]`, then the FIRST component, then the LAST -- all three, in that order.
+
+    MEASURED 2026-10-14, ONE FALLBACK WAS NOT ENOUGH TWICE. `import importlib.util` yields the
+    dotted name `importlib.util`; the table is keyed `importlib`; falling back to the last
+    component yields `util`, which is a DIFFERENT module, so the lookup declines."""
+    if mod is None:
+        return None
+    parts = mod.split(".")
+    for key in (mod, parts[0], parts[-1]):
+        if (key, fn) in table:
+            return table[(key, fn)]
+    return None
+
+
+def _resolve(node, env) -> str:
+    """The path a node contributes, with `UNKNOWN_MARK` where a part cannot be named.
+
+    EVERY SHAPE THAT IS NOT A PATH EXPRESSION RETURNS THE MARKER AND NOT `None`, because the
+    marker is what lets `slop_dir()` SEE that an opaque part sits AFTER a real `.agents/slop/`
+    prefix -- which is the case that must be refused. **A RESOLVER THAT RETURNS `None` FOR ONE
+    PART AND A STRING FOR ANOTHER CANNOT DISTINGUISH `os.path.join(ROOT, SLOP, "sub")` FROM
+    `os.path.join(ROOT, SLOP, name)`, AND THE SECOND ONE MUST NOT BECOME A DIRECTORY.**"""
+    if isinstance(node, ast.Constant):
+        return node.value if isinstance(node.value, str) else UNKNOWN_MARK
+    if isinstance(node, ast.Name):
+        v = env.get(node.id)
+        if v is None or v[0].startswith(MODULE_MARK):
+            return UNKNOWN_MARK
+        return v[0]
+    if isinstance(node, ast.BinOp):
+        left, right = _resolve(node.left, env), _resolve(node.right, env)
+        if isinstance(node.op, ast.Div):
+            return left + right if left.endswith("/") else left + "/" + right
+        if isinstance(node.op, ast.Add):
+            return left + right
+        return UNKNOWN_MARK
+    if isinstance(node, ast.Call):
+        fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        if fn in ("join", "joinpath"):
+            # `"".join([SLOP, "a"])` passes ONE argument that is a LIST. **This is the ONE
+            # spelling the previous resolver claimed to support**, and a form of it that does
+            # not resolve is a defect its own docstring cannot survive.
+            args = list(node.args)
+            if len(args) == 1 and isinstance(args[0], (ast.List, ast.Tuple)):
+                args = list(args[0].elts)
+            return "/".join(_resolve(a, env).strip("/") or UNKNOWN_MARK for a in args) or UNKNOWN_MARK
+        if fn in ("resolve", "absolute", "expanduser"):
+            return _resolve(node.func.value, env) if isinstance(node.func, ast.Attribute) else UNKNOWN_MARK
+        if fn == "parent":
+            base = _resolve(node.func.value, env) if isinstance(node.func, ast.Attribute) else UNKNOWN_MARK
+            return base.rpartition("/")[0] or UNKNOWN_MARK
+        if fn in ("Path", "PurePosixPath", "PosixPath"):
+            return _resolve(node.args[0], env).rstrip("/") if node.args else UNKNOWN_MARK
+        return UNKNOWN_MARK
+    # `Path(__file__).resolve().parents[1]` LANDS HERE, AND IT IS THE SPELLING THE THIRD REPORT
+    # NAMED. MEASURED 2026-10-14: `parents` is a PROPERTY, so the node is a `Subscript` whose
+    # `.value` is a bare `ast.Attribute` and NOT an `ast.Call` -- which is why a branch requiring
+    # the `Call` form could never reach it, and why it was DEAD CODE rather than a working one.
+    # **SEEING THE SHAPE IS NOT ANSWERING IT.** `parents[1]` names a directory this resolver
+    # cannot name without executing the module, and guessing the repo root would exclude ALL of
+    # `.agents/slop` from the citation corpus on the strength of a subscript.
+    return UNKNOWN_MARK
+
+
+def _is_path_expr(node, env) -> bool:
+    """Is this node a PATH? A `str` is not, and a `str` has every method a `Path` has.
+
+    **A BINDING TO A STRING IS NOT A BINDING TO A PATH**, which is the residual half of the
+    `str.replace` defect: `text = "..."` then `text.replace(...)` made `text` a bound name, and
+    treating that as a `Path` read the receiver's ARGUMENT as a path. Every binding therefore
+    carries an `is_path` flag taken from the value's own SHAPE: a `BinOp` over `/` or `+`, or a
+    `PATH_CTORS` call, or a name that is itself a path. A bare string literal is NOT a path --
+    which is correct, because the one place a bare literal is certainly a path
+    (`os.makedirs(".agents/slop/x")`) is a MODULE FUNCTION, where this is never consulted."""
+    if isinstance(node, ast.Name):
+        v = env.get(node.id)
+        return v is not None and v[1] and not v[0].startswith(MODULE_MARK)
+    if isinstance(node, ast.BinOp):
+        return isinstance(node.op, (ast.Div, ast.Add))
+    if isinstance(node, ast.Call):
+        fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
+        return fn in PATH_CTORS
+    return False
+
+
+def _module_of(node, env) -> str | None:
+    """The module a call is qualified by, or `None`. **A DOTTED CHAIN IS ONE NAME**:
+    `importlib.util.spec_from_file_location` is qualified by `importlib.util`, which is an
+    `ast.Attribute`, and a name-keyed test declines it -- twice, for two different reasons."""
+    if not isinstance(node.func, ast.Attribute):
+        return None
+    parts, cur = [], node.func.value
+    while isinstance(cur, ast.Attribute):
+        parts.append(cur.attr)
+        cur = cur.value
+    if not isinstance(cur, ast.Name):
+        return None
+    dotted = ".".join(reversed(parts + [cur.id]))
+    v = env.get(dotted) or env.get(cur.id)
+    if v is not None and v[0].startswith(MODULE_MARK):
+        return v[0][len(MODULE_MARK):] or None
+    return dotted.rsplit(".", 1)[-1] if cur.id in sys.stdlib_module_names else None
+
+
+def _bind(stmts, env):
+    """Thread a binding environment through a statement list **IN SOURCE ORDER**."""
+    for st in stmts:
+        if isinstance(st, ast.Import):
+            for a in st.names:
+                env[a.asname or a.name.split(".")[0]] = (MODULE_MARK + a.name, False)
+            continue
+        if isinstance(st, ast.ImportFrom):
+            for a in st.names:
+                if a.name != "*":
+                    env[a.asname or a.name] = (MODULE_MARK + (st.module or ""), False)
+            continue
+        targets, value = [], None
+        if isinstance(st, ast.Assign):
+            targets = [t for t in st.targets if isinstance(t, ast.Name)]
+            value = st.value
+        elif isinstance(st, ast.AnnAssign) and isinstance(st.target, ast.Name) and st.value:
+            targets, value = [st.target], st.value
+        if len(targets) == 1 and value is not None:
+            env[targets[0].id] = (_resolve(value, env), _is_path_expr(value, env))
+        for field in ("body", "orelse", "finalbody"):
+            sub = getattr(st, field, None)
+            if isinstance(sub, list) and sub and isinstance(sub[0], ast.stmt):
+                _bind(sub, env)
+        for h in getattr(st, "handlers", None) or []:
+            _bind(h.body, env)
+    return env
+
+
+def _scopes(tree):
+    """`(statements, environment)` per scope. A FUNCTION IS ONE SCOPE AND THE MODULE SCOPE IS
+    THE TOP-LEVEL STATEMENTS WITH THE FUNCTION BODIES REMOVED -- an earlier version walked
+    `tree.body` and descended into every function, so every function-level write was counted
+    TWICE (MEASURED: 552 sites where the true figure was 274). The directory SET was unaffected
+    because it is a set, so the headline never showed it. **A COUNT THAT DOUBLE-COUNTS AND A
+    COUNT THAT READS CLEAN ARE THE SAME FAILURE, AND ONLY THE FIRST ONE GETS NOTICED.**"""
+    menv = _bind(list(tree.body), {})
+    out = [([s for s in tree.body
+             if not isinstance(s, (ast.FunctionDef, ast.AsyncFunctionDef))], dict(menv))]
+    for fn in ast.walk(tree):
+        if isinstance(fn, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            args = fn.args
+            positional = list(getattr(args, "posonlyargs", [])) + list(args.args)
+            fenv = dict(menv)
+            for a in positional + list(args.kwonlyargs):
+                if a.arg not in ("self", "cls"):
+                    fenv.setdefault(a.arg, (UNKNOWN_MARK, _annotated_path(a)))
+            for p, d in zip(positional[len(positional) - len(args.defaults):], args.defaults):
+                fenv[p.arg] = (_resolve(d, fenv), _is_path_expr(d, fenv) or _annotated_path(p))
+            out.append((fn.body, _bind(list(fn.body), fenv)))
+    return out
+
+
+def _annotated_path(a) -> bool:
+    """Is this parameter ANNOTATED as a Path? Decidable from the AST, and it needs no list.
+    A parameter with no such annotation could be a Path and could be a string, so it is not
+    treated as one: the cost is a missed write, never an invented ownership claim."""
+    return isinstance(a.annotation, ast.Name) and a.annotation.id in PATH_ANNOTATIONS
+
+
+def _path_slots(node, env, read: bool) -> list | None:
+    """The AST nodes at this call site that hold a PATH, or `None` if the site is not one.
+
+    `None` IS A VERDICT. On the write side it is reached for a callee outside the vocabulary,
+    for a method whose qualifier is not a path expression, and -- the one that matters --
+    **for `open` whose mode is a read or does not resolve. AN UNRESOLVED MODE IS NOT A WRITE.**
+    MEASURED 2026-10-14: the tree's `open` sites are 57 bare `open(...)`, 9 `Path.open(...)`
+    and 4 with a `BinOp` receiver, and the previous mode test read `node.args[1]` ONLY -- so
+    `Path.open`, which takes `mode=` as a KEYWORD, and any `open(p, mode="w")`, read as no mode
+    at all, defaulted to `"r"`, and a genuine write was skipped."""
+    if isinstance(node.func, ast.Name):
+        spec, recv = BARE_WRITES.get(node.func.id), None
+        if spec is None:
+            return None
+    elif isinstance(node.func, ast.Attribute):
+        mod = _module_of(node, env)
+        fn = node.func.attr
+        if mod is not None:
+            spec = _table_lookup(FS_WRITES if not read else FS_READS, mod, fn)
+            recv = None
+        elif _is_path_expr(node.func.value, env):
+            spec = FS_METHOD_WRITES.get(fn) if not read else (
+                "R" if fn in FS_READ_METHODS else None)
+            recv = node.func.value
+        else:
+            return None
+        if spec is None:
+            return None
+    else:
+        return None
+    slots: list = []
+    if isinstance(spec, str):
+        if recv is not None:
+            slots.append(recv)
+        if spec == "RA":
+            slots += list(node.args)
+    else:
+        slots += [node.args[i] for i in spec if i < len(node.args)]
+    slots += [k.value for k in node.keywords if k.arg in PATH_KEYWORDS]
+    callee = node.func.id if isinstance(node.func, ast.Name) else node.func.attr
+    if callee == "open":
+        mode = _resolve(node.args[1], env) if len(node.args) > 1 else None
+        if mode is None:
+            mode = next((_resolve(k.value, env) for k in node.keywords if k.arg == "mode"), None)
+        if read:
+            if mode is not None and any(ch in mode for ch in WRITE_MODES):
+                return None                     # a write, not a read
+        elif mode is None or not any(ch in mode for ch in WRITE_MODES):
+            return None                         # a read, or an unknown mode: not a write
+    return slots
+
+
+def slop_dir(value: str) -> str | None:
+    """The `.agents/slop/<dir>` a path names, or `None`.
+
+    **FOUR RULES, AND THE FOURTH IS THE ONE THAT MAKES THE OTHER THREE SAFE.** One component, no
+    dot -- a FILE an instrument writes is not an output DIRECTORY. A trailing slash is not a
+    suffix -- the tail is stripped. An empty tail is not a directory. And a first component
+    carrying `UNKNOWN_MARK` NAMES NO DIRECTORY AT ALL: the `.agents/slop/` prefix can be real
+    while the directory inside it is a loop variable. **AN EXCLUSION MUST BE COARSER THAN THE
+    NAME IT EXCLUDES, AND IT MUST ALSO BE ACTUAL.**"""
+    if SLOP_PREFIX + "/" not in value:
+        return None
+    head = value.split(SLOP_PREFIX + "/", 1)[1].strip("/").split("/")[0]
+    if not head or "." in head or UNKNOWN_MARK in head:
+        return None
+    return SLOP_PREFIX + "/" + head
+
+
+def _instrument_files(root: str) -> list[str]:
+    """Every `.py` under `checks/` and `gates/`, by DIRECTORY WALK.
+
+    **A WALK, NOT A GLOB, AND ON THIS TREE THE DIFFERENCE IS ZERO.** MEASURED 2026-10-14 14:20:
+    `os.walk` finds **209** and `glob('checks/*.py') + glob('gates/*.py')` finds **209**, with an
+    empty symmetric difference -- so the glob is not the blind spot here. The walk is used
+    because a walk cannot be defeated by a new subdirectory. **AND THE DENOMINATOR MOVED WHILE
+    I COUNTED IT**: the same walk read **208** at 14:18 and **209** at 14:20, the delta being
+    `gates/.mut-run.py` written by another unit mid-census. **A COUNT WITHOUT A TIMESTAMP IS A
+    CLAIM ABOUT A TREE THAT STOPPED EXISTING.**"""
+    out = []
+    for base in ("checks", "gates"):
+        for dirpath, dirnames, filenames in os.walk(os.path.join(root, base)):
+            dirnames[:] = sorted(d for d in dirnames if d != "__pycache__")
+            out += [os.path.join(dirpath, f) for f in sorted(filenames) if f.endswith(".py")]
+    return sorted(out)
+
+
+_TARGETS_CACHE: dict[str, tuple[set[str], set[str]]] = {}
+
+
+def _slop_targets(root: str) -> tuple[set[str], set[str]]:
+    """`(written, read)` -- every `.agents/slop/<dir>` a live instrument touches, by AST.
+
+    **ONE PASS, ONE PARSE PER FILE, ONE RESULT PER ROOT.** `house_excluded` asks this question
+    once per CORPUS FILE, and MEASURED 2026-10-14 13:14Z a full `--plan` exceeded 15 minutes
+    with the resolver recomputed per row. **THIS IS THE PROJECT'S THIRD PERFORMANCE BUG AND IT
+    IS A PER-ITEM SCAN OF A SHARED MEASUREMENT**: the answer does not change between two rows in
+    the same directory, so recomputing it is not an optimisation to avoid, it is the only wrong
+    shape. `generated_read_dirs` at the top of this file already carries a cache for exactly
+    this reason and the same comment.
+
+    **A CACHE IS NOT A POPULATION, AND THE DIFFERENCE IS WHERE THE POPULATION IS BUILT.** The
+    set is derived here, by walking the instrument ASTs, on the first call; the cache only stops
+    the SAME derivation being redone 600 times in the same process. Nothing here names a
+    directory.
+    """
+    if root not in _TARGETS_CACHE:
+        writes: set[str] = set()
+        reads: set[str] = set()
+        for path in _instrument_files(root):
+            try:
+                tree = ast.parse(open(path, errors="replace").read())
+            except (OSError, SyntaxError):
+                continue
+            for body, env in _scopes(tree):
+                for node in ast.walk(ast.Module(body=list(body), type_ignores=[])):
+                    if not isinstance(node, ast.Call):
+                        continue
+                    for read, out in ((False, writes), (True, reads)):
+                        for slot in _path_slots(node, env, read) or []:
+                            d = slop_dir(_resolve(slot, env))
+                            if d:
+                                out.add(d)
+        _TARGETS_CACHE[root] = (writes, reads)
+    return _TARGETS_CACHE[root]
+
+
+def _slop_write_targets(root: str) -> set[str]:
+    return _slop_targets(root)[0]
+
+
+def _slop_read_targets(root: str) -> set[str]:
+    return _slop_targets(root)[1]
+
+
 def self_output_dirs(root: str = ROOT) -> tuple[str, ...]:
-    """Every directory under `.agents/slop` that an instrument in `checks/` or `gates/` WRITES TO.
+    """Every directory under `.agents/slop` that an instrument in `checks/` or `gates/` WRITES TO
+    **AND THAT NO INSTRUMENT READS**.
 
     THE THIRD OCCURRENCE OF ONE SHAPE HAS A FIX THAT IS NOT A LIST. `.agents/slop/residue/
     000-the-residue.md` names every residue row by path; the moment it was staged the next run found
@@ -169,72 +566,34 @@ def self_output_dirs(root: str = ROOT) -> tuple[str, ...]:
     gate's REQUIRED INPUTS: excluding them re-breaks the one artifact in this repository, and it
     would do it *silently*, by making stage 1's driver invisible to the census that exists to keep
     it alive. **A MENTION IS NOT AN OWNERSHIP CLAIM; A WRITE IS.** So a directory is excluded only
-    when a module-level binding resolves to it AND a write call names it.
+    when a binding resolves to it AND a write call names it.
 
-    DISCOVERED BY AST, NEVER EXECUTED. Executing 61 modules to read a constant would run 61
+    **AND A WRITE IS NOT ENOUGH, WHICH IS WHAT THE 2026-10-14 REWRITE COST.** A directory an
+    instrument BOTH writes and READS is a gate's required input that happens to sit beside its
+    output, and excluding it re-breaks the gate by the route the paragraph above warns about.
+    MEASURED 2026-10-14 13:20Z on 209 instruments: the write census names **3** directories and the
+    read census names **7**, and the intersection is **2** -- `.agents/slop/declare`
+    (`checks/slop-declare.py:250` writes `declare.tsv`, `:128`/`:216` read the directory) and
+    `.agents/slop/oracletxt` (`checks/oracle-txt-census.py:473` writes `census.json`, **`:215`
+    LOADS `.agents/slop/oracletxt/plant.py` BY PATH AS ITS PLANT GENERATOR**). So this function
+    returns **1**, and `self_output_conflicts()` reports the 2 it refuses. **A RESOLVER THAT IS
+    MORE CORRECT ABOUT WRITES IS NOT, BY ITSELF, A SAFER EXCLUSION**, and the difference between
+    those two sentences is the whole reason this function was deferred three times.
+
+    DISCOVERED BY AST, NEVER EXECUTED. Executing 209 modules to read a constant would run 209
     instruments' import side effects to answer a question about text.
     """
-    import ast
-    import glob
+    writes, reads = _slop_write_targets(root), _slop_read_targets(root)
+    return tuple(sorted(writes - reads))
 
-    def const(node, env):
-        """The string a node contributes, following module-level bindings and `os.path.join`."""
-        if isinstance(node, ast.Constant) and isinstance(node.value, str):
-            return node.value
-        if isinstance(node, ast.Name):
-            return env.get(node.id)
-        if isinstance(node, ast.Call):
-            fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
-            if fn == "join":
-                # The UNRESOLVED argument is the repository root, an opaque prefix. Concatenating
-                # only the resolved literals is what leaves a residue-RELATIVE path behind.
-                lits = [v for v in (const(a, env) for a in node.args) if isinstance(v, str)]
-                return "".join(lits) if lits else None
-        return None
 
-    writes = {"makedirs", "mkdir", "write_text", "open"}
-    out: set[str] = set()
-    for path in sorted(glob.glob(os.path.join(root, "checks", "*.py"))
-                       + glob.glob(os.path.join(root, "gates", "*.py"))):
-        try:
-            tree = ast.parse(open(path, errors="replace").read())
-        except (OSError, SyntaxError):
-            continue
-        env = {}
-        for st in tree.body:
-            if isinstance(st, ast.Assign) and len(st.targets) == 1 and isinstance(st.targets[0], ast.Name):
-                if (v := const(st.value, {})) is not None:
-                    env[st.targets[0].id] = v
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            fn = node.func.attr if isinstance(node.func, ast.Attribute) else getattr(node.func, "id", "")
-            if fn not in writes:
-                continue
-            if fn == "open":
-                # An `open` with NO mode is a READ. Excluding on the strength of a read is how the
-                # first attempt came to treat `e2e_mm.py` as an output.
-                mode = "r"
-                if len(node.args) > 1 and isinstance(node.args[1], ast.Constant):
-                    mode = node.args[1].value
-                if not any(ch in str(mode) for ch in "wax+"):
-                    continue
-            for arg in list(node.args) + [k.value for k in node.keywords]:
-                v = const(arg, env)
-                if v and ".agents/slop/" in v:
-                    tail = v.split(".agents/slop/", 1)[1].strip("/")
-                    if not tail:
-                        continue
-                    # A FILE the instrument writes is not an output DIRECTORY, and excluding it
-                    # would delete from the corpus the very witness that vouches for the file:
-                    # `residue.py` writes `000-the-residue.md`, so a file-shaped exclusion removes
-                    # the report while leaving the rows it names -- the exclusion without the thing
-                    # it exists to hide. **AN EXCLUSION MUST BE COarser THAN THE NAME IT EXCLUDES.**
-                    head = tail.split("/")[0]
-                    # One component, no dot: a DIRECTORY is the only path part with neither.
-                    if "." not in head:
-                        out.add(".agents/slop/" + head)
-    return tuple(sorted(out))
+def self_output_conflicts(root: str = ROOT) -> tuple[str, ...]:
+    """Directories that are BOTH written and read, and are therefore NOT excluded.
+
+    **A REFUSAL IS A VERDICT AND IT IS REPORTED, BECAUSE A SILENT REFUSAL IS THE SAME OBJECT AS
+    A MISS.** `main()` prints this beside the exclusion list; without that line this function
+    would be an unmeasurable improvement indistinguishable from the bug it replaced."""
+    return tuple(sorted(_slop_write_targets(root) & _slop_read_targets(root)))
 
 
 def self_excludes(root: str = ROOT) -> list[str]:
@@ -901,11 +1260,21 @@ def main() -> int:
     print(f"# corpus: {len(f.corpus_names)} committed files ({n_slop} of them .agents/slop reports at "
           f"ANY depth),\n#   {n_dirty} DIRTY in the worktree: {n_dirty_b/1024:.0f} KB read at HEAD "
           f"instead of from disk -- an uncommitted report cites nothing")
+    conflicts = self_output_conflicts(ROOT)
     print(f"# out of census: {', '.join(self_output_dirs(ROOT)) or 'NONE FOUND'} + {SELF} "
           f"(write-targets, discovered) + {len(f.copies)} byte-copies + residue.EXCLUDED_DIRS\n"
           f"#   (a MENTION is not an output; a DEPTH is not a shadow tree; a COPY is excluded by a proof)")
     print(f"# own output excluded from the corpus: {', '.join(self_output_dirs(ROOT)) or 'NONE FOUND'}"
           f" + {SELF}  (write-targets, discovered; a MENTION is not an output)")
+    # **A REFUSAL, PRINTED, BECAUSE A SILENT REFUSAL IS INDISTINGUISHABLE FROM A MISS.** These
+    # directories ARE written by a live instrument and are NOT excluded, because a live
+    # instrument also READS them -- `.agents/slop/oracletxt` holds the plant generator
+    # `checks/oracle-txt-census.py:215` loads BY PATH, and excluding it would re-break that gate
+    # by the route `self_output_dirs`'s own docstring warns about. MEASURED 2026-10-14 13:20Z:
+    # 2 of the 3 write targets are in this list.
+    print(f"# REFUSED as out-of-census, written AND read by a live instrument: "
+          f"{', '.join(conflicts) or 'NONE'}"
+          f"  (an exclusion must be an OUTPUT and not also an INPUT)")
     for v in ("DOC", "GATE", "ORACLE", "AUTHORED", "DELETE", "UNKNOWN",
               "LIVE", "LIVE-UNIT", "PROTECTED"):
         if counts[v]:
