@@ -1,0 +1,19 @@
+STAMP 2026-10-15T19:15:56Z
+DENOMINATOR distinct tokens 367  spans 1637  lines 1631
+RESOLUTION exact 193  suffix-only 42  absent 132
+ABSENT under .agents/slop/ 86  elsewhere 46
+ABSENT py-cited INSTRUMENT 1  sh-only 1  neither 130
+ABSENT extract.py regex: INSTRUMENT 5  ORACLE 19  EVIDENCE 108
+CLASSIFIER disagreement on absent 6
+METHOD PROOF: 8 of 11 TOOLS.md revs before 2026-10-09 extract to EXACTLY 333 under this rule
+  at cb2e5ad4f (2026-10-07T16:55:24+03:00): denominator 333 | ROOT-lane (extract.py's) present 165 absent 168 | SUFFIX-lane present 203 absent 130
+  at HEAD  (2026-10-15):    denominator 367 | ROOT-lane present 193 absent 174 | SUFFIX-lane present 235 absent 132
+  the 333/164/169 the ledger records is a figure about cb2e5ad4f; today's tree is not that tree
+live sources read: 226 py + 17 sh; string tokens keyed 34559
+--- ABSENT, py-cited (INSTRUMENT) ---
+  .agents/slop/xd1/render-gate-oracle.py  <- checks/rn-gate.py
+--- ABSENT, sh-named (self/other) ---
+  .agents/slop/xd1/wt-sync.sh  <- checks/wt-sync.sh
+--- ABSENT, basename COLLISION only (demoted to prose) ---
+  .agents/slop/trigger/bc-oracle.py  collides_with=gates/bc-u32-gate.py
+  checks/graphcmp.py  collides_with=checks/both-census.py,checks/census.py,checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/env-precond.py,checks/hermetic-census.py,checks/substrate-snapshot.py,checks/sweep.py

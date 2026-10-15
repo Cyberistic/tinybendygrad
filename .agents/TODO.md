@@ -348,6 +348,102 @@ false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-
                                        (51 -> 49). The immovable pair: `WITHIN-LIMITS` (absent
                                        from the file -> false FAIL) and `ARTIFACTS-FRESH` (present
                                        -> true PASS) have IDENTICAL SHAPE and OPPOSITE verdicts.
+repro-anchor [##........] 1/3      THE FIX I LANDED 2026-10-15 WAS READING **ONE FIFTH** OF ITS OWN
+                                       POPULATION, and a dispatched unit found the proof. Removing the
+                                       SUFFIX SET was right and stands; the **ANCHOR** was never
+                                       right. `REF`'s `(?:^|\s)` requires the path to start a line or
+                                       follow whitespace, and **MARKDOWN WRITES A PATH IN BACKTICKS** --
+                                       so the character before it is a backtick, not a space. Same
+                                       for `"..."` in Python: `checks/rn-gate.py:74` spells
+                                       `ORACLE = [".agents/slop/xd1/render-gate-oracle.py", "--gate"]`
+                                       and that oracle is **ABSENT from disk, ABSENT from HEAD, and
+                                       its whole `.agents/slop/xd1/` DIRECTORY IS GONE**. **A LIVE
+                                       GATE NAMES AN ORACLE THAT DOES NOT EXIST**, invisible to the
+                                       instrument whose whole subject is that paths must exist.
+                                       MEASURED over the same 543 reports: named **716 -> 3473**
+                                       (**4.9x**), dangling **108 -> 434**, **LOST: NONE** (a strict
+                                       superset). **EVERY NUMBER `repro-paths.py` HAS PRINTED CARRIES
+                                       THAT FACTOR**, including the `108` in `DANGLING-TRIAGE.md`.
+                                       **NOT LANDED:** widening alone takes `DANGLING` from 108 to 434
+                                       and `DANGLING-TRIAGE.md` MEASURED that essentially NONE of the
+                                       108 were a live instrument missing an input -- they are
+                                       finished units naming their own pruned tools. The 326 new rows
+                                       are overwhelmingly the same shape, so landing it buys 5x the same
+                                       noise and no new signal. **THE POPULATION AND THE CLAIM HAVE TO
+                                       MOVE TOGETHER**, and moving the claim is the redesign already
+                                       refused in `repro-dangling`. 1/3 = the measurement; the other 2
+                                       are that coupled redesign, refused, not owed.
+                                       **SECOND TIME THIS SESSION A MEASUREMENT I PROUDGED WAS WRONG**
+                                       (the first: calling 7 of 15 rows "dangerous" when they were
+                                       the gate citing its own docstring). Both errors were mine, both
+                                       corrections made the instrument look WORSE, and both times the
+                                       honest report was worth more than the tidy one.
+                                       `.agents/slop/reprorefs/ANCHOR-HOLE.md`.
+ledgerdrift [#####.....] 1/3      DISPATCHED UNIT 2026-10-15. `.agents/TOOLS.md` names **367** paths
+                                       (denominator: 1,637 backtick spans in the committed file, byte-equal
+                                       to the worktree); **235 present, 132 absent**, **1 of the 132 is an
+                                       INSTRUMENT**: `.agents/slop/xd1/render-gate-oracle.py`, invoked by
+                                       literal at `checks/rn-gate.py:74`, absent from disk and HEAD --
+                                       **the same defect `repro-anchor` found independently.** The other
+                                       131 are prose. **THREE CONTRADICTIONS FOR ONE DENOMINATOR, all
+                                       stated plainly:** `TOOLS.md`'s header says 164/169/85; its own
+                                       generator's `toolsledger/paths.tsv` says 160/173/96; `AGENTS.md`
+                                       says 153/180. **AND THE GENERATOR ITSELF IS A WRONG INSTRUMENT**:
+                                       `extract.py:29-32` resolves every token against ONE base (the repo
+                                       root), but the ledger does not write paths from the root
+                                       (`uop/ops.bend` means `tinybendygrad/uop/ops.bend`), so re-running
+                                       it as written keeps reporting drift that IS NOT DRIFT. The unit
+                                       resolved by DISCOVERY instead and **REFUSED to reproduce
+                                       164/169** (`extract.py:18` read the git INDEX and no 2026-10-07
+                                       index exists), reporting 165/168 from `git ls-tree` instead.
+                                       Three "instruments" (`bc-oracle.py`, `graphcmp.py`, `wt-sync.sh`)
+                                       were **DEMOTED to stale locations** -- basename collisions, the
+                                       same defect as `…-gate.py.bak` read as `…-gate.py`, a file that
+                                       EXISTS. `xd1/mutate.py`: **GONE**, confirmed 4 ways.
+                                       `.agents/slop/ledgerdrift/`.
+shapecensus [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 instruments / 244 rows**,
+                                       enumerated by `rglob("*.py")` over `checks/` (72) + `gates/`
+                                       (154) -- no document's list contributes a row. Classified:
+                                       **acceptable 41, neutral 110, NOT ACCEPTABLE 93 of 244.**
+                                       Confirmed FIXED: `LIVE_UNITS` (`:768` is the tombstone),
+                                       `gates-pop.py HOMES` (an AST measurement at `:1504`),
+                                       `verdicts.py PROSE` (my 2026-10-15 fix, confirmed present).
+                                       **STILL PRESENT: `artefacts_ok()`'s `present` arm is
+                                       `D.glob("*.txt")` at `differ.py:1117`** even though
+                                       `MISSING`/`UNEXPECTED` now run off `declared()` -- **the same
+                                       population, two mechanisms, in one function.** The unit also
+                                       caught `gates/rng_graph_census-gate.py:104-106` **commenting
+                                       "THE TWO DISCOVERY RULES ... Eleven is `grep -c` (MEASURED) ...
+                                       Neither is typed from a table of rows" while typing
+                                       `TABLES = ("rb","nic",...)` -- **a comment that contradicts its
+                                       own code** -- and `checks/runs-artifacts.py:96`'s `READS`, a
+                                       hand-set of 11 FS-call names in the file whose subject is
+                                       "which FS calls does this repo make". REFUSED, not guessed: 17
+                                       `checks/*.sh` not opened; `.agents/slop/**` (63 of the offenders
+                                       live there); **29 of 244 rows rest on a file it did not read** and
+                                       say so in column 5.
+                                       `.agents/slop/shapecensus/`.
+exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** under `checks/` +
+                                       `gates/`, discovered by `os.walk`; `VERDICT` loaded BY PATH from
+                                       `gates/gatekit.py`, never retyped; nothing executed. **8 distinct
+                                       exit codes** across the 86 instruments that can produce a literal
+                                       one -- `0 1 2 3 4 5 126 127` -- and `VERDICT` names FIVE.
+                                       **UNOWNED: 20 rows / 18 instruments.** Code `2` on 18 is the
+                                       argparse/USAGE class, REPORTED not called a bug (`dup-gate.py:362`
+                                       records the decision and its plant is LIVE); **9 import argparse,
+                                       9 do NOT** -- the other 9 choose `2` themselves, two of them at
+                                       MODULE SCOPE as a REFUSED shape. `126`/`127` are UNOWNED in
+                                       `checks/e2e.py` alone. **UNDECLARED: 140 rows / 73 instruments,
+                                       and 64 of the 140 are code `0`** -- `PASS` is the one code nobody
+                                       documents, because documenting it implies it can fail.
+                                       **THE FINDING NOBODY ASKED FOR: 24 instruments hand a NON-INT to
+                                       the exit, 57 sites** -- `sys.exit(f"...")` PRINTS the string and
+                                       exits **1**, so to `$?` all 57 read as an honest `FAIL` and the
+                                       only witness is a sentence invented at the call site. It also
+                                       CORRECTED MY OWN CITATION: the unassigned branch of
+                                       `verdict_of()` is **`gatekit.py:98`**, not `:97` as I wrote it
+                                       this session. `.agents/slop/exitcodes/`.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

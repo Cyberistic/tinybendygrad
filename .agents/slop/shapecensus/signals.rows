@@ -1,0 +1,1338 @@
+checks/abi4_gate.py	strlit	OTHER_GATES = ('checks/abi_gate.py', 'checks/jsfix_gate.py')	93	
+checks/abi4_gate.py	strlit	JS_FP8DEC_SHIPPED = '  const v = exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);\n  return bits32(sgn ?	125	
+checks/abi4_gate.py	strlit	JS_FP8DEC_BROKEN = '  const v = of32(exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));\n  return bits32	129	
+checks/abi4_gate.py	strlit	JS_FP16_SHIPPED = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(x)));\n}'	133	
+checks/abi4_gate.py	strlit	JS_FP16_BROKEN = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(of32(x))));\n}'	136	
+checks/abi4_gate.py	strlit	JS_FP8TO_SHIPPED = 'function dtype_fp8_to(x, kind) {\n  return of32(fp8_decode(x >>> 0, kind & 0xff));\n}'	139	
+checks/abi4_gate.py	strlit	JS_FP8TO_BROKEN = 'function dtype_fp8_to(x, kind) {\n  return fp8_decode(x >>> 0, kind & 0xff);\n}'	142	
+checks/abi4_gate.py	strlit	SITES = {'A': (JS_FP8DEC_SHIPPED, JS_FP8DEC_BROKEN), 'B': (JS_FP16_SHIPPED, JS_FP16_BROKEN), 'C': (JS_FP8TO_SHIPPED, JS_FP8TO_BROKEN)}	146	
+checks/abi4_gate.py	strlit	BREAKS = ['', 'A', 'B', 'C', 'AB', 'AC', 'BC', 'ABC']	149	
+checks/abi4_gate.py	strlit	JS_PLANT_A = '  const v = exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);\n  return bits32(sgn ?	155	
+checks/abi4_gate.py	strlit	JS_PLANT_B = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(bits32(x))));\n}'	159	
+checks/abi4_gate.py	strlit	JS_PLANT_C = 'function dtype_fp8_to(x, kind) {\n  return of32(of32(fp8_decode(x >>> 0, kind & 0xff)));\n}'	162	
+checks/abi4_gate.py	strlit	JS_DISARM_A = '  const v = (exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias)) * 1;\n  return bits32	170	
+checks/abi4_gate.py	strlit	JS_DISARM_B = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(x * 1)));\n}'	174	
+checks/abi4_gate.py	strlit	JS_DISARM_C = 'function dtype_fp8_to(x, kind) {\n  return of32(fp8_decode(x >>> 0, kind & 0xff) >>> 0);\n}'	177	
+checks/abi4_gate.py	strlit	PLANTS = {'A': (JS_FP8DEC_SHIPPED, JS_PLANT_A), 'B': (JS_FP16_SHIPPED, JS_PLANT_B), 'C': (JS_FP8TO_SHIPPED, JS_PLANT_C)}	180	
+checks/abi4_gate.py	strlit	DISARMS = {'A': (JS_FP8DEC_SHIPPED, JS_DISARM_A), 'B': (JS_FP16_SHIPPED, JS_DISARM_B), 'C': (JS_FP8TO_SHIPPED, JS_DISARM_C)}	182	
+checks/abi4_gate.py	strlit	JS_FP8DEC_ALT = '  const v = exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);\n  return sgn ? -v : v	208	
+checks/abi4_gate.py	strlit	KINDS = ['fp8e4m3', 'fp8e5m2', 'fp8e4m3fnuz', 'fp8e5m2fnuz']	218	
+checks/abi4_gate.py	startswith	'abi4_'	482	
+checks/abi4_gate.py	startswith	'abi4_'	529	
+checks/abi4_gate.py	re.compile	'^F32ROW (\\w+) = (.*)$'	94	
+checks/abi4_gate.py	re.findall	'^\\s+shipped\\s+(\\d+)/(\\d+)$'	515	
+checks/abi_gate.py	strlit	PROBE = 'import ./tinybendygrad/dtype.bend as D\nimport ./tinybendygrad/helpers.bend as H\n\ndef main() -> IO(Unit):\n  do IO<Unit>:\n    t1 : H.I64 = D.Dt.i64_trunc(H.	102	
+checks/abi_gate.py	strlit	ORACLE = {'abi123_trunc_A': '15:240', 'abi123_trunc_B': '3735928559:305419896', 'abi123_fdiv_b3': pair(floordiv(7, 3)), 'abi123_fdiv_b5': pair(floordiv(7, 5)), 'abi123_f	146	
+checks/abi_gate.py	strlit	WORDS = {'abi123_trunc_A': (15, 240), 'abi123_trunc_B': (3735928559, 305419896)}	161	
+checks/abi_gate.py	strlit	C_I64_OF_OLD = 'static s64 i64_of(Env e, Term t) {\n  Term o[2];\n  ctr_take(e, t, 2, o);\n  return (s64)((((u64)(u32)o[0]) << 32) | (u32)o[1]);\n}'	185	
+checks/abi_gate.py	strlit	C_I64_OF_OVERREAD = 'static s64 i64_of(Term* f) {\n  return (s64)(((u64)(u32)f[0] << 32) | (u32)f[1]);\n}'	191	
+checks/abi_gate.py	strlit	JS_I64_OF_SHIPPED = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p.hi >>> 0) << 32n) | BigInt(p.lo >>> 0));\n}'	198	
+checks/abi_gate.py	strlit	JS_PACK_SHIPPED = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return {$: "tinybendygrad/helpers.I64", hi: Number((u >> 32n) & 0xffffffffn),\n          lo: Number	201	
+checks/abi_gate.py	strlit	JS_I64_OF_FST = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0));\n}'	207	
+checks/abi_gate.py	strlit	JS_PACK_IOTUP = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return io_tup(Number((u >> 32n) & 0xffffffffn), Number(u & 0xffffffffn));\n}'	212	
+checks/abi_gate.py	strlit	JS_DISARM_IN = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p["hi"] >>> 0) << 32n) | BigInt(p["lo"] >>> 0));\n}'	218	
+checks/abi_gate.py	strlit	JS_DISARM_OUT = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return {$: "tinybendygrad/helpers.I64", lo: Number(u & 0xffffffffn) * 1,\n          hi: Number(((u 	221	
+checks/abi_gate.py	strlit	JS_FP16_OLD = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(of32(x))));\n}'	226	
+checks/abi_gate.py	strlit	C_FP8TO_OLD = 'static Term fp8_to_run(Env e, Term* f, IoWork* w) {\n  return (Term)(intptr_t)fp8_decode((u32)f[0] & 0xFFu, (u32)f[1] & 0xFFu);\n}'	229	
+checks/abi_gate.py	strlit	C_FP16_OLD = 'static Term fp16_run(Env e, Term* f, IoWork* w) {\n  return (Term)(intptr_t)fp16_f32(fp16_encode((u32)f[0]));\n}'	232	
+checks/abi_gate.py	strlit	C_PACK_OLD = 'static Term pack64(Env e, s64 v) {\n  return io_tup(e, (Term)(intptr_t)(u32)((u64)v >> 32), (Term)(intptr_t)(u32)(u64)v);\n}'	235	
+checks/abi_gate.py	strlit	C_JOIN_OLD = '  v = (f32)(exp == 0 ? (mant / (f32)(mant_max + 1)) * (1.0f / (1u << bias))\n                     : (1.0f + mant / (f32)(mant_max + 1)) *\n                    	238	
+checks/abi_gate.py	strlit	JS_FP16_FIXED = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(x)));\n}'	250	
+checks/abi_gate.py	strlit	JS_FP8TO_OLD = 'function dtype_fp8_to(x, kind) {\n  return fp8_decode(x >>> 0, kind & 0xff);\n}'	253	
+checks/abi_gate.py	strlit	JS_FP8TO_FIXED = 'function dtype_fp8_to(x, kind) {\n  return of32(fp8_decode(x >>> 0, kind & 0xff));\n}'	256	
+checks/abi_gate.py	strlit	JS_FP8DEC_OLD = '  const v = of32(exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias));\n  return bits32	265	
+checks/abi_gate.py	strlit	JS_FP8DEC_FIXED = '  const v = exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias);\n  return bits32(sgn ?	269	
+checks/abi_gate.py	strlit	JS_FP8DEC_DISARM = '  const v = (exp === 0\n    ? (mant / (mantMax + 1)) * Math.pow(2, 1 - bias)\n    : (1 + mant / (mantMax + 1)) * Math.pow(2, exp - bias)) * 1;\n  return bits32	275	
+checks/abi_gate.py	strlit	JS_FP16_DISARM = 'function dtype_fp16(x) {\n  return of32(half_to_f32(f16_bits(x * 1)));\n}'	279	
+checks/abi_gate.py	strlit	JS_FP8TO_DISARM = 'function dtype_fp8_to(x, kind) {\n  return of32(fp8_decode(x >>> 0, kind & 0xff) >>> 0);\n}'	282	
+checks/abi_gate.py	strlit	ARMS = {'shipped': [('c', []), ('js', [])], 'plant-abi2-in-js': [('js', [(JS_I64_OF_SHIPPED, JS_I64_OF_FST, 1)])], 'plant-abi2-out-js': [('js', [(JS_PACK_SHIPPED, JS_P	291	
+checks/abi_gate.py	startswith	'plant-abi2'	480	
+checks/abi_gate.py	startswith	'disarm-abi2'	480	
+checks/abi_gate.py	startswith	'plant'	731	
+checks/abi_gate.py	startswith	'gen/'	524	
+checks/abi_gate.py	startswith	'disarm'	732	
+checks/abi_gate.py	startswith	'gen/'	637	
+checks/abi_gate.py	startswith	'abi4'	830	
+checks/abi_gate.py	startswith	'abi123'	841	
+checks/abi_gate.py	re.compile	'^(abi\\d+) (\\w+) = (.*)$'	133	
+checks/abi_gate.py	re.compile	'(?<![\\w/])((?:tinybendygrad|tinygrad|bin)/[\\w./-]+?\\.(?:py|js|c|bend|json)|gen/\\w+\\.\\w+):(\\d+)'	492	
+checks/abi_gate.py	re.match	line	385	
+checks/abi_gate.py	re.findall	prose	516	
+checks/abi_gate.py	re.finditer	re.escape(name)	558	
+checks/al-verdict.py	strlit	REPO = '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'	29	
+checks/al-verdict.py	startswith	'None input shape not supported for '	55	
+checks/al-verdict.py	startswith	'#'	72	
+checks/both-census.py	NO-SIGNAL	none	0	
+checks/bounded.py	startswith	'='	184	
+checks/bounded.py	startswith	('[bounded]', '  ')	384	
+checks/bounded.py	re.compile	'^\\[bounded\\] ([A-Z-]+)  rc='	123	
+checks/bounded.py	re.search	blob	367	
+checks/bounded.py	re.match	'\\s*([0-9.]+)\\s*([BKMG]?)'	196	
+checks/census.py	walk	ORACLE.rglob('*.py')	144	
+checks/census.py	strlit	GENERATOR = {'py': _GRAPH, 'bend': G.BEND_PROBE}	100	
+checks/census.py	strlit	LANE_DEF = {'py': 'emit_py', 'bend': None}	151	
+checks/census.py	startswith	'import '	202	
+checks/citation-gate.py	walk	os.walk(os.path.join(ROOT, 'tinygrad'))	64	
+checks/citation-gate.py	walk	os.walk(os.path.join(ROOT, base))	128	
+checks/citation-gate.py	walk	os.walk(port)	143	
+checks/citation-gate.py	strlit	PYROOTS = ('tinygrad', 'examples', 'extra')	43	
+checks/citation-gate.py	strlit	bodies = {}	44	
+checks/citation-gate.py	strlit	CLASSES = ('HOLDS', 'STALE-LINE', 'WRONG-FILE', 'NO-FILE', 'STALE-RULE', 'PROSE', 'PAST-EOF')	53	
+checks/citation-gate.py	startswith	'tinybendygrad'	84	
+checks/citation-gate.py	endswith	'.py'	67	
+checks/citation-gate.py	endswith	'.py'	131	
+checks/citation-gate.py	endswith	'.bend'	146	
+checks/citation-gate.py	endswith	'.py'	161	
+checks/citation-gate.py	endswith	'.py'	153	
+checks/citation-gate.py	endswith	'.py'	162	
+checks/citation-gate.py	re.compile	'(?<![\\w./-])((?:[\\w.-]+/)*[\\w.-]+\\.py):(\\d+)(?:-(\\d+))?'	49	
+checks/citation-gate.py	re.compile	'`([^`\\n]{8,400})`'	50	
+checks/citation-gate.py	re.compile	'[A-Za-z_][A-Za-z0-9_]*'	52	
+checks/citation-gate.py	re.finditer	c	152	
+checks/citation-gate.py	re.findall	c	155	
+checks/citation-gate.py	re.finditer	re.escape(quote)	182	
+checks/citation-gate.py	re.findall	quote	211	
+checks/citation-gate.py	re.findall	read(tgt)	212	
+checks/cites-census.py	walk	os.walk(ROOT)	73	
+checks/cites-census.py	walk	ast.walk(tree)	255	
+checks/cites-census.py	walk	ast.walk(tree)	287	
+checks/cites-census.py	strlit	EXTS = ('.md', '.py')	50	
+checks/cites-census.py	strlit	_CHANGED = {}	518	
+checks/cites-census.py	strlit	LABELS = ('TRUE', 'CLASSIFIER', 'AMBIGUOUS')	584	
+checks/cites-census.py	startswith	('DEF:', 'AT:')	149	
+checks/cites-census.py	endswith	'/'	166	
+checks/cites-census.py	endswith	'.md'	274	
+checks/cites-census.py	startswith	'|'	447	
+checks/cites-census.py	endswith	'.py'	542	
+checks/cites-census.py	re.compile	'[A-Za-z0-9_.@^~][A-Za-z0-9_.@^~:+*/-]*'	83	
+checks/cites-census.py	re.compile	'^[A-Za-z0-9_.^~+-]+\\.[A-Za-z0-9]+$'	84	
+checks/cites-census.py	re.compile	'^\\d+(-\\d+)?$'	85	
+checks/cites-census.py	re.compile	'^[0-9a-f]{7,40}\\^?:'	86	
+checks/cites-census.py	re.compile	'\\b([+-]?(?:\\d{1,3}(?:,\\d{3})+|\\d+))\\s+(lines?|rows?|files?|bytes?)\\b'	94	
+checks/cites-census.py	re.compile	'^\\.[A-Za-z0-9]+$'	100	
+checks/cites-census.py	re.compile	'[:=]\\s*\\d|\\.(?:md|py|rows|out|err|tsv|txt|bend|c|h|js|mjs|json)\\b'	105	
+checks/cites-census.py	re.compile	'\\b(add|added|adding|delet|remov|replac|chang|insert|net|grew|shrink)\\w*\\b'	108	
+checks/cites-census.py	re.compile	'MEASURED[ :]+(20\\d\\d-\\d\\d-\\d\\d)'	110	
+checks/cites-census.py	re.compile	'\\b(20\\d\\d-\\d\\d-\\d\\d)\\b'	111	
+checks/cites-census.py	re.compile	'^[0-9a-f]{7,64}$'	116	
+checks/cites-census.py	re.compile	'^(rc=|exit\\s)\\d*\\b'	117	
+checks/cites-census.py	re.compile	'^(git|cc|wc|grep|find|diff|clang|bend|pytest|ruff|python|node)\\b'	118	
+checks/cites-census.py	re.compile	'^[0-9a-f]{7,40}\\^?$'	131	
+checks/cites-census.py	re.compile	'^[A-Za-z_][A-Za-z0-9_]*$'	132	
+checks/cites-census.py	re.compile	'[A-Za-z]{3,}'	362	
+checks/cites-census.py	re.compile	'->|\\brc\\s*=|\\bexit\\s*='	401	
+checks/cites-census.py	re.match	parts[0]	154	
+checks/cites-census.py	re.match	rel	225	
+checks/cites-census.py	re.finditer	'\\"([^\\"]{4,})\\"|(?<![\\w`])\'([^\']{4,})\''	394	
+checks/cites-census.py	re.match	t	425	
+checks/cites-census.py	re.match	t	437	
+checks/cites-census.py	re.match	t	439	
+checks/cites-census.py	re.match	t	441	
+checks/cites-census.py	re.search	gap	445	
+checks/cites-census.py	re.match	parts[-1]	157	
+checks/cites-census.py	re.match	base.rsplit('/', 1)[-1]	169	
+checks/cites-census.py	re.search	re.escape(needle) + '(?![\\w])'	242	
+checks/cites-census.py	re.finditer	line	298	
+checks/cites-census.py	re.search	t	443	
+checks/cites-census.py	re.fullmatch	t	447	
+checks/cites-census.py	re.match	parts[-1]	159	
+checks/cites-census.py	re.search	line	344	
+checks/cites-census.py	re.search	gap	367	
+checks/cites-census.py	re.match	loc	322	
+checks/cites-census.py	re.search	line	350	
+checks/cites-census.py	re.search	line	350	
+checks/cites-census.py	re.search	window	354	
+checks/cites-census.py	re.match	'[*`_(\\s]*[+-]'	354	
+checks/cl-port-gate.py	strlit	CLIB = '/Library/Developer/CommandLineTools/usr/lib'	53	
+checks/cl-port-gate.py	strlit	LIVE_IMPORT = 'import "../../../.agents/slop/clangshim/libclang-ffi.c"'	54	
+checks/cl-port-gate.py	strlit	ORACLE_ONLY_TOKENS = {'opaque=_mem_'}	97	
+checks/cl-port-gate.py	strlit	PLANTS = {'plant-long-a': {'src': (b'int a;', b'long a;'), 'struct': ('int a;', 'long a;'), 'spell': '{ "long", "char", "double", "struct Pair" }', 'fields': '[("a", 0, 	110	
+checks/cl-port-gate.py	startswith	'struct Pair'	193	
+checks/cl-port-gate.py	startswith	'disarm'	388	
+checks/cl-port-gate.py	endswith	'";'	209	
+checks/cl-port-gate.py	startswith	'PORT '	287	
+checks/cl-port-gate.py	startswith	'FIELD '	327	
+checks/cl-port-gate.py	startswith	'FIELD '	412	
+checks/cl-port-gate.py	startswith	'PORT '	286	
+checks/cl-port-gate.py	startswith	'disarm'	316	
+checks/cl-port-gate.py	startswith	'FIELD '	336	
+checks/cl-port-gate.py	startswith	'PORT '	409	
+checks/cl-port-gate.py	re.compile	'[ \\t]+'	99	
+checks/cl-port-gate.py	re.search	f'(?:^|\\s){re.escape(key)}=(\\S+)'	139	
+checks/cl-port-gate.py	re.search	'CL_FIXTURE_SRC\\[\\] =((?:\\s*"(?:[^"\\\\]|\\\\.)*")+);'	145	
+checks/cl-port-gate.py	re.findall	'"((?:[^"\\\\]|\\\\.)*)"'	148	
+checks/cl-port-gate.py	re.search	'SRC = b"""(.*?)"""'	153	
+checks/cl-port-gate.py	re.search	'#define CL_FIELD_SPELL\\s+(.*)'	88	
+checks/cli.py	startswith	'B/s'	52	
+checks/cli.py	startswith	'WAVE'	129	
+checks/cli.py	startswith	'SQTT'	105	
+checks/cli.py	endswith	('PMC', 'PKTS')	105	
+checks/cli.py	endswith	'PKTS'	104	
+checks/cli.py	startswith	'-'	98	
+checks/cli.py	startswith	'+'	98	
+checks/cli.py	startswith	'<'	202	
+checks/cli.py	startswith	'<'	202	
+checks/coindep.py	strlit	ABI_OTHER_TOKENS = ('p.hi', 'p.lo', 'p.fst', 'p.snd', 'io_tup', 'BigInt', 'asIntN', '<< 32n', '>>> 32n', 'pack64', 'i64_of', 'Number(', '$: "tinybendygrad/helpers.I64"')	47	
+checks/coindep.py	strlit	I64SHL_VALUES = ('neg1', 'one', 'lowhi')	56	
+checks/coindep.py	strlit	SKIP_DIRS = ('.git', '.venv', '__pycache__', 'node_modules', 'references')	61	
+checks/compile.py	re.compile	'\n    typedef unsigned long long remote_handle64;\n    typedef struct { void *pv; unsigned int len; } remote_buf;\n    typedef struct { int fd; unsigned int of	43	
+checks/corpus-figure.py	NO-SIGNAL	none	0	
+checks/coverage.py	re.compile	'^\\s*PORT ROW\\s*:\\s*(.+?)\\s*$'	43	
+checks/coverage.py	re.compile	'^PASS \\[(\\d+)\\] (\\d+) u32 words bit-identical'	44	
+checks/coverage.py	re.compile	'diff bytes: (\\d+)'	45	
+checks/coverage.py	re.search	t	68	
+checks/coverage.py	re.search	t	68	
+checks/coverage.py	re.search	t	68	
+checks/denominator.py	glob	source.glob(pattern)	66	
+checks/devgate.py	walk	ast.walk(fn)	184	
+checks/devgate.py	walk	os.walk(root)	224	
+checks/devgate.py	walk	ast.walk(tree)	235	
+checks/devgate.py	walk	ast.walk(tree)	255	
+checks/devgate.py	walk	ast.walk(tree)	310	
+checks/devgate.py	walk	ast.walk(tree)	346	
+checks/devgate.py	walk	ast.walk(tree)	164	
+checks/devgate.py	walk	os.walk(root)	402	
+checks/devgate.py	walk	os.walk(root)	700	
+checks/devgate.py	walk	ast.walk(node)	312	
+checks/devgate.py	walk	ast.walk(node)	298	
+checks/devgate.py	walk	ast.walk(tree)	344	
+checks/devgate.py	walk	ast.walk(node)	168	
+checks/devgate.py	strlit	ENV_OBJ = {'environ', 'environb'}	46	
+checks/devgate.py	strlit	VENDOR_PREFIX = ('tinygrad/', 'references/', 'xd1/', 'opstree/')	210	
+checks/devgate.py	strlit	ENV_WRITE_ATTRS = {'setdefault', 'update'}	215	
+checks/devgate.py	strlit	ENV_READ_ATTRS = {'get', 'getenv'}	216	
+checks/devgate.py	strlit	OS_WRITE_NAMES = {'putenv', 'unsetenv'}	217	
+checks/devgate.py	strlit	_LOADER_CACHE = {}	244	
+checks/devgate.py	strlit	SKIP_DIR = ('__pycache__', '.git', 'node_modules', '.venv', 'venv')	385	
+checks/devgate.py	strlit	PLANTS = [('early-module', 'EARLY', "import os\nos.environ['DEV']='NULL'\nfrom tinygrad import Device\n"), ('late-module', 'LATE', "from tinygrad import Device\nimport o	439	
+checks/devgate.py	strlit	HELDOUT = [('ho-module-late', 'LATE', "from tinygrad import Device\nimport os\nos.environ['DEV']='NULL'\n"), ('ho-module-early', 'EARLY', "import os\nos.environ['DEV']='N	529	
+checks/devgate.py	endswith	'.py'	227	
+checks/devgate.py	endswith	'.py'	703	
+checks/devgate.py	startswith	'.'	227	
+checks/devgate.py	endswith	'.py'	405	
+checks/devgate.py	re.compile	'(?:^|[^\\w.])os\\.environ\\[["\']DEV["\']\\]\\s*=(?!=)      # os.environ[\'DEV\'] = ...\n      | (?:^|[^\\w.])environ\\[["\']DEV["\']\\]\\s*=(?!=)\n      | os\	651	
+checks/devgate.py	re.compile	'^\\s*(?:import\\s+tinygrad\\b|from\\s+tinygrad\\b|\\w+\\.import_module\\(\\s*[\'\\"]tinygrad)'	657	
+checks/devgate.py	re.search	ln	663	
+checks/devgate.py	re.search	ln	664	
+checks/devpin.py	glob	D.glob('D*.txt')	80	
+checks/devpin.py	glob	D.glob('D1-graph-*.txt')	88	
+checks/devpin.py	strlit	PINNED_DEV = 'CPU'	52	
+checks/devpin.py	strlit	ABSENCE = 'N'	65	
+checks/devpin.py	re.compile	'^# devices py=(\\[.*?\\])\\s'	57	
+checks/devpin.py	re.compile	'SGLOBAL,s([A-Za-z0-9_]+)\\b'	61	
+checks/devpin.py	re.findall	t	82	
+checks/devpin.py	re.findall	t	82	
+checks/devpin.py	re.search	p.read_text(errors='replace')	89	
+checks/diary-census.py	walk	ast.walk(tree)	204	
+checks/diary-census.py	walk	ast.walk(node)	107	
+checks/diary-census.py	walk	ast.walk(tree)	199	
+checks/diary-census.py	strlit	GENDIRS = 'gates/gendirs.py'	59	
+checks/diary-census.py	strlit	MAIN = 'if __name__ == "__main__":\n    raise SystemExit(0)\n'	423	
+checks/diary-census.py	startswith	'/'	190	
+checks/diary-census.py	startswith	'CITATION'	354	
+checks/differ.py	glob	D.glob('.tmp.*')	490	
+checks/differ.py	glob	D.glob('D9-stability-srcswap-*')	659	
+checks/differ.py	walk	(ROOT / 'tinybendygrad').rglob('*')	917	
+checks/differ.py	glob	D.glob('*.txt')	1117	
+checks/differ.py	glob	D.glob(pattern)	458	
+checks/differ.py	walk	D.rglob('*')	976	
+checks/differ.py	glob	live.glob('*.txt')	1153	
+checks/differ.py	glob	D.glob('D2-cmp-*.txt')	580	
+checks/differ.py	strlit	ORACLE_PIN = {'diffpy/oracle-run.sh': '94e7108d428bae3fb211db5cce000819b63e2bfbfd51dad4c512e42626d15905', 'diffpy/oracle-repro.sh': 'a5d23505b3e93816370e67df130993e812abd2db	62	
+checks/differ.py	strlit	WANT = {'matmul': 'AGREE', 'reduce': 'AGREE', 'buffer': 'AGREE', 'sink': 'AGREE', 'range': 'AGREE', 'rangeflat': 'AGREE', 'cast': 'AGREE', 'special': 'AGREE', 'binblob	125	
+checks/differ.py	strlit	CONTROLS = ('matmul', 'binblob', 'group', 'gate', 'loop')	237	
+checks/differ.py	strlit	PINS = {'graphs': '34', 'graphs-unset': '0', 'graphs-answered': '34', 'expect-moved': '0', 'graphs-agree': '34', 'byte-identical': '34', 'not-comparable': '0', 'selfch	248	
+checks/differ.py	strlit	REPRO_ARTIFACT = 'D0-repro.txt'	314	
+checks/differ.py	strlit	D10 = 'D10-zerorow-guard'	327	
+checks/differ.py	strlit	REPRO_PINS = {'repro-rc': 'rc=0', 'd10-transcript': '9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84'}	328	
+checks/differ.py	strlit	REPRO_LITERALS = ('D0-repro',)	350	
+checks/differ.py	strlit	REPORTS = ('D1-graph-', 'D3-control-', 'D5-plant-', 'D6-', 'D9-stability-')	354	
+checks/differ.py	strlit	ROW_VALUES = {'lc_all': 'C', 'noopt': '0', 'pythonhashseed': '0'}	782	
+checks/differ.py	strlit	SUBSTRATE_ROWS = ('substrate-start', 'substrate-end')	873	
+checks/differ.py	strlit	SUBSTRATE_INPUTS = ('checks/differ.py', 'checks/devpin.py', 'bin/bend', '.agents/slop/graphcmp.py', '.agents/slop/graphcmp.bend', '.agents/slop/graphcmp-oracle.py', '.agents/slop/	884	
+checks/differ.py	startswith	'.'	978	
+checks/differ.py	re.findall	'VERDICT: [A-Z]*'	953	
+checks/differ.py	re.search	regex	451	
+checks/disagree-gate.py	glob	tree.glob('D1-graph-*.txt')	442	
+checks/disagree-gate.py	strlit	ARMED = ('allred', 'cdiv', 'late')	60	
+checks/disagree-gate.py	strlit	PIN = {'flip': dict(row=6, fields=('arg',), shape='BOTH', fault='HARNESS+PORT'), 'unshard': dict(row=8, fields=('dtype', 'shape'), shape='WRONG SHAPE', fault='PORT')}	72	
+checks/disagree-gate.py	strlit	CITES = (('AT:.agents/slop/graphcmp.bend', 'def rows.pick3', 'the fixture dispatcher; its DEFAULT arm is what substituted the matmul'), ('DEF:.agents/slop/graphcmp.py:g	146	
+checks/disagree-gate.py	strlit	SUBSTITUTION_ARTEFACTS = {}	432	
+checks/disagree-gate.py	startswith	'#   '	446	
+checks/disagree-gate.py	re.compile	'([A-Z_]+) (\\d+)/(\\d+)'	433	
+checks/disagree-gate.py	re.search	re.escape(needle) + '(?![\\w])'	227	
+checks/disagree-gate.py	re.findall	line	448	
+checks/dup-census.py	strlit	SEPS = '-_ .:/|'	102	
+checks/dup-gate.py	strlit	PLANTS = {'value': ('\n', '\n', 'value')}	173	
+checks/e2e.py	strlit	ORACLE_SHA = '05d7cfea0aea9c8523649ad1e277cb03890214cb9c7996807c1b0295207f8696'	217	
+checks/e2e.py	strlit	BODY_SHA = 'aaea6adddba6e553f7c51d8d53d3bcb7b9ccde7a8d54d96012c78d2b0aafd5f8'	218	
+checks/e2e.py	strlit	ORACLE_EDIT = ('ROOT=${E2E_ROOT:-$(cd "$(dirname "$0")/../.." && pwd)}\n', '# ROOT IS ASSERTED, NOT COMPUTED. `../..` is `dirname "$0"` up two, which was correct while this\n	229	
+checks/e2e.py	re.compile	b'STAGE 7 (PASS|FAILED)|64/64 MET|IDENTICAL|port now says|REFUSED\\[|RED   \\[|GREEN \\[|THEOREM \\[|F64-[0-9]'	244	
+checks/e2e.py	re.search	ln	336	
+checks/env-precond.py	strlit	PRECONDS = (('LC_ALL', 'C', "already pinned by `differ.py`'s ENV and `graphcmp.py`'s clean_env (both named in PINS below). Listed because a precondition table that names o	116	
+checks/env-precond.py	strlit	RECORD_KEYS = ('dev', 'pythonhashseed', 'noopt', 'lc_all')	167	
+checks/env-precond.py	startswith	'  late'	197	
+checks/env-precond.py	re.finditer	'^(\\S+)=(\\S*)$'	233	
+checks/env-precond.py	re.search	'^  late\\s+13/'	200	
+checks/fw_live.py	NO-SIGNAL	none	0	
+checks/gate.py	strlit	NAME = ['e4m3', 'e5m2', 'e4m3fnuz', 'e5m2fnuz']	87	
+checks/gate.py	re.compile	'^JROW (\\S+) = ([0-9a-f]{2}|[0-9a-f]{8})$'	88	
+checks/gate.py	re.match	line	219	
+checks/gate.py	re.search	'^APPEND (".*")$'	206	
+checks/gate.py	re.search	'^SRC_MD5 (\\w+)$'	211	
+checks/gate.py	re.search	'^REGISTERED (.*)$'	215	
+checks/gate_dtype.py	NO-SIGNAL	none	0	
+checks/gate_norm.py	strlit	F32 = 'f32'	85	
+checks/gate_norm.py	endswith	'?nan'	217	
+checks/gate_norm.py	re.compile	'^(\\S+)\\s+show=(\\S+)\\s+bits=(\\d+)$'	83	
+checks/gate_norm.py	re.match	tok.strip()	134	
+checks/gatesweep.py	walk	os.walk(root / 'gates', followlinks=False)	107	
+checks/gatesweep.py	walk	art.iterdir()	201	
+checks/gatesweep.py	walk	d.iterdir()	202	
+checks/gatesweep.py	walk	os.listdir(d)	204	
+checks/gatesweep.py	walk	d.iterdir()	203	
+checks/gatesweep.py	strlit	TRACEBACK = 'Traceback (most recent call last)'	54	
+checks/gatesweep.py	strlit	HEADER = 'gate\tverdict\ttoken\trc\tseconds'	59	
+checks/gatesweep.py	strlit	PROVE_COST = 'checks/gatesweep-cost.out'	67	
+checks/gatesweep.py	strlit	PROVE_TRUTH = 'checks/gatesweep-run.tsv'	68	
+checks/gatesweep.py	strlit	PLANTS = (('dead-gate.py', 'DEAD', ''), ('fail-gate.py', 'FAIL', "import sys; sys.stderr.write('no\\n'); sys.exit(1)"), ('pass-gate.py', 'PASS', "print('ok')"), ('refuse	287	
+checks/gatesweep.py	endswith	'-gate.py'	111	
+checks/gatesweep.py	startswith	('[bounded]', '  ')	148	
+checks/gatesweep.py	startswith	'.tmp.'	205	
+checks/gatesweep.py	re.compile	'\\[bounded\\] (\\S+)  rc=(-?\\d+)'	58	
+checks/gatesweep.py	re.search	r.stderr	145	
+checks/gatesweep.py	re.search	'peak-RSS=(\\d+)'	150	
+checks/gatesweep.py	re.compile	'^\\s*(\\d+|OVER-CAP)\\s+([\\d.]+)s\\s+(\\S+)\\s+(.*)$'	169	
+checks/gatesweep.py	re.match	line	172	
+checks/gen_gate.py	walk	os.listdir(HERE)	179	
+checks/gen_gate.py	strlit	REPO = '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'	21	
+checks/gen_gate.py	strlit	ACC = '\ndef drow(nm: String, ah: U32, al: U32, bh: U32, bl: U32) -> IO(Unit):\n  do IO<Unit>:\n    IO.print(String.concat(["d_", nm, "=",\n      H.i64_text(H.i64_div	140	
+checks/gen_gate.py	startswith	'gate'	180	
+checks/gen_gate.py	endswith	'.bend'	180	
+checks/git-index-guard.py	NO-SIGNAL	none	0	
+checks/graphcmp-census-audit.py	strlit	FIELDS = ('graphs', 'nodes', 'distinct', 'not_reached', 'by_construction', 'unexercised', 'program', 'selfcheck', 'rc', 'names')	59	
+checks/graphcmp-census-audit.py	startswith	'  '	53	
+checks/graphcmp-census-audit.py	re.search	pat	78	
+checks/hermetic-census.py	strlit	PLANTS = {}	219	
+checks/index-arm-gate.py	strlit	EMPTY_BLOB = 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'	65	
+checks/index-arm-gate.py	strlit	GIT_VERSION = '2.50.1 (Apple Git-155), measured 2026-10-11 -- on this version a bare `git commit` REFUSES intent-to-add entries'	66	
+checks/index-arm-gate.py	strlit	REDIRECTS = ('GIT_INDEX_FILE', 'GIT_DIR', 'GIT_WORK_TREE', 'GIT_OBJECT_DIRECTORY', 'GIT_ALTERNATE_OBJECT_DIRECTORIES', 'GIT_COMMON_DIR', 'GIT_NAMESPACE')	74	
+checks/jsfix_gate.py	strlit	DEFS = ['trunc', 'floor_div', 'floor_mod', 'cdiv', 'cmod', 'ceildiv']	78	
+checks/jsfix_gate.py	strlit	JS_I64_OF_SHIPPED = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p.hi >>> 0) << 32n) | BigInt(p.lo >>> 0));\n}'	88	
+checks/jsfix_gate.py	strlit	JS_PACK_SHIPPED = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return {$: "tinybendygrad/helpers.I64", hi: Number((u >> 32n) & 0xffffffffn),\n          lo: Number	91	
+checks/jsfix_gate.py	strlit	JS_I64_OF_FST = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p.fst >>> 0) << 32n) | BigInt(p.snd >>> 0));\n}'	98	
+checks/jsfix_gate.py	strlit	JS_PACK_IOTUP = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return io_tup(Number((u >> 32n) & 0xffffffffn), Number(u & 0xffffffffn));\n}'	103	
+checks/jsfix_gate.py	strlit	JS_I64_OF_SWAPPED = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p.lo >>> 0) << 32n) | BigInt(p.hi >>> 0));\n}'	110	
+checks/jsfix_gate.py	strlit	JS_PACK_SWAPPED = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return {$: "tinybendygrad/helpers.I64", hi: Number(u & 0xffffffffn),\n          lo: Number((u >> 32	115	
+checks/jsfix_gate.py	strlit	JS_I64_OF_NUMPROD = 'function i64_of(p) {\n  return BigInt.asIntN(64, BigInt((p.hi >>> 0) * 4294967296 + (p.lo >>> 0)));\n}'	123	
+checks/jsfix_gate.py	strlit	JS_DISARM_IN = 'function i64_of(p) {\n  return BigInt.asIntN(64, (BigInt(p["hi"] >>> 0) << 32n) | BigInt(p["lo"] >>> 0));\n}'	134	
+checks/jsfix_gate.py	strlit	JS_DISARM_OUT = 'function pack64(v) {\n  const u = BigInt.asUintN(64, v);\n  return {$: "tinybendygrad/helpers.I64", lo: Number(u & 0xffffffffn) * 1,\n          hi: Number(((u 	137	
+checks/jsfix_gate.py	strlit	ARMS = {'shipped': [], 'plant-abi2-in-js': [(JS_I64_OF_SHIPPED, JS_I64_OF_FST, 1)], 'plant-abi2-out-js': [(JS_PACK_SHIPPED, JS_PACK_IOTUP, 1)], 'plant-abi2-both-js': [	145	
+checks/jsfix_gate.py	strlit	CIN = {'identity': lambda u: u, 'fst': lambda u: 0, 'swap': swap_words, 'numprod': numprod}	229	
+checks/jsfix_gate.py	strlit	COUT = {'identity': lambda s: s, 'swap': lambda s: f"{s.split(':')[1]}:{s.split(':')[0]}"}	276	
+checks/jsfix_gate.py	strlit	MODEL = {'shipped': ('identity', 'identity'), 'plant-abi2-in-js': ('fst', 'identity'), 'plant-abi2-out-js': ('identity', 'io_tup'), 'plant-abi2-both-js': ('fst', 'io_tu	282	
+checks/jsfix_gate.py	startswith	'disarm'	509	
+checks/jsfix_gate.py	startswith	'disarm'	506	
+checks/jsfix_gate.py	startswith	'plant'	507	
+checks/jsfix_gate.py	re.compile	'^SEAM (\\w+) #(\\d+) = (.*)$'	168	
+checks/jsfix_gate.py	re.compile	'^\\d+:\\d+$'	296	
+checks/jsfix_gate.py	re.compile	'^DIV6 (\\w+) = (.*)$'	337	
+checks/jsfix_gate.py	re.match	line	404	
+checks/jsfix_gate.py	re.match	line	391	
+checks/jsfix_gate.py	re.match	got	460	
+checks/jsfix_gate.py	re.match	res['plant-abi2-out-js'][k]	607	
+checks/llama.py	strlit	MODEL_PARAMS = {'1': {'7B': {'args': {'dim': 4096, 'n_heads': 32, 'n_layers': 32, 'norm_eps': 1e-06, 'vocab_size': 32000, 'hidden_dim': 11008}, 'files': 1}, '13B': {'args': {'	65	
+checks/llama.py	endswith	'.index.json'	183	
+checks/llama.py	endswith	'.safetensors'	187	
+checks/llama.py	startswith	'tok_embeddings.'	177	
+checks/llama.py	endswith	'.attention.wo.weight'	177	
+checks/llama.py	endswith	'.feed_forward.w2.weight'	177	
+checks/marker-audit.py	walk	pathlib.Path(r).rglob('*.bend')	84	
+checks/marker-audit.py	startswith	'__'	71	
+checks/marker-audit.py	startswith	'#'	75	
+checks/marker-audit.py	startswith	'#'	53	
+checks/marker-audit.py	startswith	'-'	83	
+checks/marker-audit.py	re.compile	'refused:unported|not ported|NOT PORTED|unported|\\bwall\\b|\\bdeferred\\b|\\bblocked\\b|\\bBLOCKED\\b|\\bdepends on\\b|\\bneeds (?:a|an|the|`|it)\\b|\\bis (?:P	21	
+checks/marker-audit.py	re.compile	'--\\s*\\S'	33	
+checks/marker-audit.py	re.compile	'^\\s*#\\s*TODO\\(p3\\)'	35	
+checks/marker-audit.py	re.search	'`\\b' + re.escape(base) + '\\b'	77	
+checks/marker-audit.py	re.search	t	96	
+checks/marker-audit.py	re.search	'\\bdef\\s+([\\w.]+)'	98	
+checks/marker-audit.py	re.match	nxt	53	
+checks/marker-audit.py	re.match	t.split('\n')[0]	90	
+checks/marker-audit.py	re.search	t	93	
+checks/nl-gate-noguard.py	strlit	PORT = 'tinybendygrad/renderer/nir_llvmir.bend'	43	
+checks/nl-gate-noguard.py	strlit	ORACLE = ['.agents/slop/nl/nl-oracle.py', 'rows']	44	
+checks/nl-gate-noguard.py	strlit	_SWEEP = "  (swept by 371cc64c9; recoverable from git at 371cc64c9^:%s.  Restoring a swept instrument is not this file's call.)"	63	
+checks/nl-gate.py	strlit	PORT = 'tinybendygrad/renderer/nir_llvmir.bend'	61	
+checks/nl-gate.py	strlit	ORACLE = ['.agents/slop/nl/nl-oracle.py', 'rows']	62	
+checks/nl-gate.py	strlit	_SWEEP = "  (swept by 371cc64c9; recoverable from git at 371cc64c9^:%s.  Restoring a swept instrument is not this file's call.)"	83	
+checks/nl-gate.py	strlit	SEP = ']   py=['	91	
+checks/nl-gate.py	strlit	ROW_OPEN = ' = ['	92	
+checks/nl-gate.py	endswith	']'	133	
+checks/nl-gate.py	endswith	'\n'	304	
+checks/nl-gate.py	re.compile	'^(sd cpullvm \\w+ osx) '	99	
+checks/nl-gate.py	re.compile	'^(sd cpullvm \\w+ osx) (?=[A-Za-z])'	98	
+checks/no-shrink.py	strlit	PORT = 'tinybendygrad'	39	
+checks/no-shrink.py	startswith	'#'	49	
+checks/no-shrink.py	startswith	'-'	92	
+checks/no-shrink.py	startswith	'---'	92	
+checks/no-strays.py	walk	os.walk(base)	151	
+checks/no-strays.py	walk	ROOT.iterdir()	86	
+checks/no-strays.py	walk	ROOT.iterdir()	185	
+checks/no-strays.py	strlit	SOURCE_TREES = ('tinybendygrad',)	139	
+checks/no-strays.py	re.compile	'(^\\.|\\.(err|out|tmp|bak|orig|rej|swp)$|~$|\\.staged-(mem|blob)-|^\\.|^_)|^(before|after|baseline|closure)\\.[a-z]+$|(^|[-_.])(tmp|temp|scratch|workdir|probe|	73	
+checks/no-strays.py	re.compile	'(/var/folders/|/private/var/folders/|/tmp/[A-Za-z0-9_.-]+/)'	81	
+checks/no-strays.py	re.compile	'\\.staged-(mem|blob)-\\d+$|\\.mut$|~\\d*$|\\.(bak|orig|rej|swp)$|^zz|(?:_|\\.)(mutant|scratch|sweep|diag)(?:\\.|_|$)|^_[^_]'	121	
+checks/no-strays.py	re.search	p.name	196	
+checks/no-strays.py	re.search	ln	161	
+checks/no-strays.py	re.search	f	153	
+checks/no-txt.py	walk	os.walk(ROOT)	223	
+checks/no-txt.py	glob	r.glob(f'checks/lanes/{ext}')	162	
+checks/no-txt.py	walk	Path(ROOT, '.agents/slop').rglob('checks/dup-census.py')	161	
+checks/no-txt.py	strlit	SKIP = {'.git', 'references', 'node_modules', '__pycache__', 'test'}	74	
+checks/no-txt.py	strlit	SKIP_PREFIX = ('tinygrad', '.venv', 'node_modules')	75	
+checks/no-txt.py	strlit	GRAPH_D = 'runs/graphcmp/D'	76	
+checks/no-txt.py	strlit	PLANT = '.agents/slop/figure2/plant.py'	77	
+checks/no-txt.py	strlit	RENAMER = '.agents/slop/txtexec/rename.py'	78	
+checks/no-txt.py	endswith	'.txt'	226	
+checks/norm_check.py	strlit	OLD = 'repr(float(s)) with no round trip'	61	
+checks/nvrows-deadrow-gate.py	startswith	'.'	115	
+checks/nvrows-deadrow-gate.py	re.compile	'IP\\.(?:u|s)?row\\('	84	
+checks/nvrows-deadrow-gate.py	re.compile	'^import\\s+(\\S+)'	85	
+checks/nvrows-deadrow-gate.py	re.compile	'^(S\\d{3}):'	86	
+checks/nvrows-deadrow-gate.py	re.match	line	259	
+checks/nvrows-deadrow-gate.py	re.match	line.strip()	111	
+checks/nvrows-deadrow-gate.py	re.search	line	158	
+checks/nvrows-deadrow-gate.py	re.finditer	line	162	
+checks/oracle-txt-census.py	walk	ORACLES.rglob('*.txt')	342	
+checks/oracle-txt-census.py	walk	ORACLES.rglob('*.rows')	318	
+checks/oracle-txt-census.py	strlit	GATE_CODE = ('.sh', '.py')	76	
+checks/oracle-txt-census.py	strlit	TRUTHFUL = {'.rows': 'expected values', '.out': 'captured stdout', '.err': 'captured stderr', '.tsv': 'tabular', '.md': 'prose', '.json': 'a json value', '.names': 'a name	79	
+checks/oracle-txt-census.py	strlit	TRACEBACK = 'Traceback (most recent call last)'	122	
+checks/oracle-txt-census.py	startswith	'#!'	165	
+checks/oracle-txt-census.py	re.compile	'^[A-Za-z_][A-Za-z0-9_.]*='	84	
+checks/oracle-txt-census.py	re.compile	'^(?:def |class |import |from \\S+ import |@\\w|M\\d+\\s|BL\\d+\\s)'	130	
+checks/oracle-txt-census.py	re.compile	'(?:->|\\)\\s*:\\s*|\\]\\s*:\\s*)\\s*$'	131	
+checks/oracle-txt-census.py	re.compile	'^\\s*(?:export\\s+|declare\\s+-\\w+\\s+|let\\s+|const\\s+)?([A-Za-z_][A-Za-z0-9_]*)=[\\"\']?([^\\"\'\\n]*)[\\"\']?\\s*$'	185	
+checks/oracle-txt-census.py	re.compile	'[`()\\"\'$]'	187	
+checks/oracle-txt-census.py	re.compile	'\\$\\{?([A-Za-z_][A-Za-z0-9_]*)\\}?'	188	
+checks/oracle-txt-census.py	re.compile	'^\\$?\\{?[A-Za-z_][A-Za-z0-9_]*\\}?/'	189	
+checks/oracle-txt-census.py	re.compile	'[A-Za-z0-9_./${}-]*\\.txt\\b'	192	
+checks/oracle-txt-census.py	re.finditer	body	264	
+checks/oracle-txt-census.py	re.match	resolved	269	
+checks/oracle-txt-census.py	re.finditer	body	262	
+checks/oracle-txt-census.py	re.search	m.group(2)	263	
+checks/oracle-txt-census.py	re.match	ln	90	
+checks/oracle-txt-census.py	re.match	ln	161	
+checks/oracle-txt-census.py	re.search	ln	161	
+checks/oracle_f64.py	strlit	DELTA_TEXT = '9.094947017729282e-13'	98	
+checks/oracle_f64.py	re.compile	src	190	
+checks/plant.py	NO-SIGNAL	none	0	
+checks/process_replay.py	strlit	replayers = {}	61	
+checks/process_replay.py	startswith	'PYTHON'	55	
+checks/process_replay.py	startswith	'-'	91	
+checks/process_replay.py	startswith	'+'	91	
+checks/render-gate-oracle.py	strlit	_PY_ROW = ('pyrender ', 'pyr_')	251	
+checks/render-gate-oracle.py	strlit	_IO1 = {'sint_show 2**31-1', 'sint_show -3', 'sint_show -2**31'}	252	
+checks/render-gate-oracle.py	strlit	_IO5 = {'f32_repr 3.0', 'f32_repr 1e30', 'f32_repr 0.1'}	253	
+checks/render-gate-oracle.py	strlit	_SPLIT = {'arg_repr AKern', 'arg_repr AProgr', 'arg_repr AParam1', 'arg_repr AParam2', 'arg_repr AParam3'}	254	
+checks/reorder-gate.py	strlit	defs = {}	48	
+checks/reorder-gate.py	strlit	spans = {}	66	
+checks/reorder-gate.py	startswith	'def '	37	
+checks/reorder-gate.py	startswith	'#'	99	
+checks/reorder-gate.py	startswith	'def '	71	
+checks/reorder-gate.py	startswith	'type '	71	
+checks/reorder-gate.py	startswith	'# ====='	71	
+checks/reorder-gate.py	re.compile	'\\b%s\\s*\\(' % re.escape(nm)	57	
+checks/reorder-gate.py	re.match	'def (t_\\w+)\\('	68	
+checks/reorder-gate.py	re.finditer	'^(def |type |import |# =====)'	17	
+checks/reorder-gate.py	re.search	'\\b%s\\s*\\(' % re.escape(other)	79	
+checks/reorder-gate.py	re.match	'def ([\\w.]+)\\('	38	
+checks/repair-dupes.py	startswith	'def '	87	
+checks/repro-paths.py	strlit	REPORTS = '.md'	68	
+checks/repro-paths.py	re.compile	'(?:^|\\s)((?:\\.agents/slop/|checks/|gates/)[\\w./-]*\\.[A-Za-z0-9]+)'	64	
+checks/repro-paths.py	re.compile	'\\.\\.\\.|//'	66	
+checks/repro-paths.py	re.finditer	report_text(rel)	101	
+checks/repro-paths.py	re.search	p	103	
+checks/reset.py	NO-SIGNAL	none	0	
+checks/residue.py	walk	walk(ROOT)	605	
+checks/residue.py	walk	os.walk(top)	299	
+checks/residue.py	walk	walk(tmp)	535	
+checks/residue.py	strlit	EXCLUDED_DIRS = ('dd-cone-wt', 'xd1', 'strays', 'strays-root', 'rf2root', 'diffpy', 'lost', 'e2e', 'e2e_port', 'f64', 'portexec', 'oracles', 'artifacts', 'residue')	122	
+checks/residue.py	strlit	_WORD = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-./'	221	
+checks/residue.py	strlit	RESOLVERS = ('authored', 'live', 'derived', 'copy', 'cited')	365	
+checks/residue.py	strlit	CONDITIONS = ('excluded',)	413	
+checks/residue.py	endswith	'.pyc'	440	
+checks/residue.py	startswith	'#'	512	
+checks/rn-gate.py	strlit	PORT = 'tinybendygrad/uop/render.bend'	73	
+checks/rn-gate.py	strlit	ORACLE = ['.agents/slop/xd1/render-gate-oracle.py', '--gate']	74	
+checks/rn-gate.py	strlit	_SWEEP = '  (swept by 371cc64c9; recoverable from git at 371cc64c9^:.agents/slop/eq/%s.py)'	92	
+checks/rn-gate.py	strlit	SEP = ']   py=['	98	
+checks/rn-gate.py	strlit	ROW_OPEN = ' = ['	99	
+checks/rn-gate.py	strlit	DEPTH = {'[': 1, ']': -1}	100	
+checks/rn-gate.py	startswith	'py='	142	
+checks/rn-gate.py	startswith	'['	185	
+checks/rn-gate.py	re.compile	'^' + re.escape(name) + '\\s*='	288	
+checks/rn-gate.py	re.match	line	290	
+checks/rn-gate.py	re.compile	'^' + re.escape(old) + ' +(?==)'	307	
+checks/rn-gate.py	re.match	line	310	
+checks/romless.py	NO-SIGNAL	none	0	
+checks/run.py	NO-SIGNAL	none	0	
+checks/runs-artifacts.py	walk	ast.walk(ast.parse(open(os.path.join(root, 'checks/sweep.py'), errors='replace').read()))	592	
+checks/runs-artifacts.py	walk	ast.walk(tree)	193	
+checks/runs-artifacts.py	walk	ast.walk(tree)	232	
+checks/runs-artifacts.py	walk	ast.walk(tree)	239	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'checks', '*.py'))	503	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'gates', '*.py'))	503	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'checks', '*.py'))	219	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'gates', '*.py'))	220	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'checks', '*.py'))	349	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'gates', '*.py'))	349	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'checks', '*.py'))	356	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'gates', '*.py'))	356	
+checks/runs-artifacts.py	walk	os.walk(d)	382	
+checks/runs-artifacts.py	walk	ast.walk(fn)	514	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'checks', '*.py'))	646	
+checks/runs-artifacts.py	glob	glob.glob(os.path.join(root, 'gates', '*.py'))	647	
+checks/runs-artifacts.py	walk	ast.walk(tree)	509	
+checks/runs-artifacts.py	walk	os.walk(os.path.join(ROOT, GRAPH_D))	675	
+checks/runs-artifacts.py	walk	ast.walk(fn)	512	
+checks/runs-artifacts.py	strlit	GRAPH_D = 'runs/graphcmp/D'	78	
+checks/runs-artifacts.py	strlit	SELF = 'checks/runs-artifacts.py'	82	
+checks/runs-artifacts.py	strlit	WRITES = {'makedirs', 'mkdir', 'write_text', 'write_bytes', 'open', 'touch', 'mkstemp', 'NamedTemporaryFile', 'symlink_to', 'hardlink_to'}	92	
+checks/runs-artifacts.py	strlit	READS = {'read_text', 'read_bytes', 'iterdir', 'glob', 'rglob', 'is_dir', 'is_file', 'exists', 'stat', 'scandir', 'listdir', 'readlink'}	96	
+checks/runs-artifacts.py	startswith	'/'	557	
+checks/runs-artifacts.py	startswith	'runs/'	676	
+checks/rw-gate-oracle.py	NO-SIGNAL	none	0	
+checks/serve.py	strlit	metrics = {'VALU utilization': lambda s: f"{100 * (s['SQ_INSTS_VALU'][0] / s['SQ_INSTS_VALU'][2]) / (s['GRBM_GUI_ACTIVE'][1] * 4):.1f}%", 'SALU utilization': lambda s: f"	309	
+checks/serve.py	startswith	'LINE:'	270	
+checks/serve.py	endswith	' Memory'	465	
+checks/serve.py	startswith	'sqtt'	665	
+checks/serve.py	startswith	'gfx11'	554	
+checks/serve.py	startswith	'rdna'	558	
+checks/serve.py	startswith	'gfx'	644	
+checks/serve.py	startswith	'AMD'	349	
+checks/serve.py	startswith	'AMD'	351	
+checks/serve.py	startswith	'AMD'	352	
+checks/serve.py	startswith	'WMMA'	397	
+checks/serve.py	startswith	'VALUT'	401	
+checks/serve.py	startswith	'OTHER_'	410	
+checks/serve.py	startswith	'V_MFMA_'	419	
+checks/serve.py	startswith	'gfx12'	554	
+checks/serve.py	startswith	'V_WMMA'	412	
+checks/serve.py	startswith	('V_MFMA_F', 'V_MFMA_I', 'V_MFMA_SCALE_')	446	
+checks/serve.py	startswith	'_'	685	
+checks/serve.py	startswith	('/assets/', '/js/')	693	
+checks/serve.py	startswith	'gfx9'	390	
+checks/serve.py	startswith	'WMMA_VALU'	399	
+checks/serve.py	endswith	'.js'	696	
+checks/serve.py	endswith	'.css'	697	
+checks/serve.py	endswith	'B'	424	
+checks/serve.py	startswith	'JSON'	253	
+checks/serve.py	re.match	'.*_(\\d+)$'	403	
+checks/slop-declare.py	walk	os.walk(root / SLOP / name)	201	
+checks/slop-declare.py	walk	walk(paths)	227	
+checks/slop-declare.py	strlit	SLOP = '.agents/slop'	91	
+checks/slop-declare.py	strlit	DECLARATIONS = ('report.md', 'readme.md', 'findings.md', 'manifest.tsv', 'manifest.rows')	96	
+checks/slop-declare.py	strlit	CODE = ('.py', '.sh', '.bend', '.mjs', '.ts', '.js', '.rs')	101	
+checks/slop-declare.py	strlit	PROSE = ('.md', '.rows', '.tsv', '.json', '.out', '.err')	102	
+checks/slop-declare.py	strlit	COLUMNS = ('dir', 'files', 'declared', 'code_readers', 'prose_mentions', 'age_h', 'commit_age_h')	116	
+checks/slop-declare.py	startswith	'dir\t'	219	
+checks/slop-declare.py	re.compile	re.escape(SLOP) + '/([\\w.+-]+)/'	115	
+checks/slop-declare.py	re.findall	text	179	
+checks/stage1-census.py	glob	glob.glob(f'{ROOT}/tinybendygrad/**/*.bend', recursive=True)	192	
+checks/stage1-census.py	strlit	ROOT = '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad'	20	
+checks/stage1-census.py	strlit	MAP = {}	91	
+checks/stage1-census.py	strlit	MIX = {'mixin/op.py': OpMixin, 'mixin/elementwise.py': ElementwiseMixin}	180	
+checks/stage1-census.py	startswith	'__'	63	
+checks/stage1-census.py	endswith	'__'	63	
+checks/stage1-census.py	startswith	'_'	65	
+checks/stage1-census.py	startswith	'__'	36	
+checks/stage1-census.py	endswith	'__'	36	
+checks/stage1-census.py	re.match	'\\s*def\\s+([A-Za-z_][A-Za-z0-9_.]*)'	43	
+checks/stage1-census.py	re.match	'TODO\\(p3\\)\\s+(?:tensor\\.py:(\\d+)\\s+)?([A-Za-z_][A-Za-z0-9_]*)'	52	
+checks/stage1-census.py	re.match	"(?:[A-Za-z_0-9.`'\\[\\]]+\\s+)?tensor\\.py:(\\d+)\\s+`?([A-Za-z_][A-Za-z0-9_]*)"	56	
+checks/stage1-census.py	re.match	'\\s*def\\s+([A-Za-z_][A-Za-z0-9_.]*)'	194	
+checks/substrate-id.py	strlit	DECLARER = 'checks/substrate-snapshot.py'	93	
+checks/substrate-id.py	endswith	'graphcmp-empty.bend'	523	
+checks/substrate-snapshot.py	walk	(ROOT / 'tinybendygrad').rglob('*')	101	
+checks/substrate-snapshot.py	walk	p.rglob('*')	106	
+checks/substrate-snapshot.py	walk	(ROOT / 'tinybendygrad').rglob('*')	214	
+checks/substrate-snapshot.py	strlit	FILES = (('differ.py:43', 'checks/differ.py', 'PY, GCMP = '), ('differ.py:541', 'checks/differ.py', '"--bend-probe"'), ('differ.py:721', 'checks/differ.py', 'checks/dev	63	
+checks/substrate-snapshot.py	strlit	TOOLING = ('.venv', 'references', 'tinygrad')	75	
+checks/substrate-snapshot.py	strlit	COPIES = ('bin', 'checks/differ.py', 'checks/devpin.py', '.agents/slop/graphcmp.py', '.agents/slop/graphcmp.bend', '.agents/slop/graphcmp-dbg.bend', '.agents/slop/graphc	76	
+checks/substrate.py	walk	os.walk(root)	158	
+checks/substrate.py	strlit	ORACLE_PIN = {'substrate/oracle-check.sh': '3b2ad83f57d995c9e555a1e2843b4176adf75a18e395633f141f944f531773f3'}	113	
+checks/substrate.py	strlit	C_PROBE = 'checks/c-context.bend'	123	
+checks/substrate.py	strlit	C_PROBE_FOREIGN = 'tinybendygrad/runtime/sz.c'	126	
+checks/substrate.py	strlit	CC_WHY = 'cc and a compiling bend C context are both required, and one is absent'	127	
+checks/substrate.py	strlit	POP_ROOT = 'tinybendygrad'	141	
+checks/substrate.py	strlit	POP_SUFFIXES = ('.bend', '.c', '.js', '.mjs')	142	
+checks/substrate.py	strlit	FLAGS = {'-n': 0, '--causes': 0, '-h': 0, '--help': 0}	208	
+checks/substrate.py	strlit	VALUED = {'--mb': 1, '--seconds': 1}	209	
+checks/substrate.py	strlit	_DECLS = {}	615	
+checks/substrate.py	endswith	'.bend'	406	
+checks/substrate.py	endswith	'.c'	408	
+checks/substrate.py	endswith	'.js'	410	
+checks/substrate.py	endswith	'.mjs'	410	
+checks/substrate.py	startswith	'tinybendygrad/'	557	
+checks/substrate.py	endswith	'.bend'	563	
+checks/substrate.py	endswith	'.bend'	569	
+checks/substrate.py	startswith	'--root='	229	
+checks/substrate.py	startswith	'[bounded] '	301	
+checks/substrate.py	startswith	'  '	301	
+checks/substrate.py	endswith	'.bend'	562	
+checks/substrate.py	startswith	'BAD '	858	
+checks/substrate.py	startswith	'-'	232	
+checks/substrate.py	startswith	('[bounded]', '  ')	312	
+checks/substrate.py	startswith	'#'	633	
+checks/substrate.py	re.compile	b'^\\s*#\\s*(?:if|ifdef|ifndef)'	171	
+checks/substrate.py	re.compile	b'^\\s*#\\s*endif'	172	
+checks/substrate.py	re.compile	'frag\\.c:(\\d+):'	173	
+checks/substrate.py	re.compile	'^.*frag\\.c:\\d+:\\d+:\\s*'	174	
+checks/substrate.py	re.compile	'^[A-Za-z]*Error'	175	
+checks/substrate.py	re.compile	'^.*:(\\d+)$'	176	
+checks/substrate.py	re.compile	'^import\\s+(?:\\./)?([A-Za-z0-9_./-]*\\.bend)\\s+as\\s+([A-Za-z_]\\w*)\\s*$'	596	
+checks/substrate.py	re.compile	'^def\\s+([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)'	597	
+checks/substrate.py	re.compile	'^type\\s+([A-Za-z_]\\w*)'	598	
+checks/substrate.py	re.compile	'^law\\s+([A-Za-z_]\\w*)'	599	
+checks/substrate.py	re.compile	'^[ \\t]+([A-Za-z_]\\w*)\\s*[{(:=]'	600	
+checks/substrate.py	re.compile	'\\b([A-Za-z_]\\w*)\\.([A-Za-z_]\\w*(?:\\.[A-Za-z_]\\w*)*)'	601	
+checks/substrate.py	re.compile	'\\"(?:[^\\"\\\\\\\\]|\\\\\\\\.)*\\"'	614	
+checks/substrate.py	re.search	msg	519	
+checks/substrate.py	re.compile	'^Error: (\\d+) TODOs? found\\.'	754	
+checks/substrate.py	re.compile	'^Error: (\\d+) defs rely on unsafe or foreign code:'	755	
+checks/substrate.py	re.compile	'^- expected : a defined name / observed : (\\S+)'	756	
+checks/substrate.py	re.compile	'^- expected : a fresh name \\(duplicate declaration: (\\S+?)\\)'	757	
+checks/substrate.py	re.compile	'^- message : a declared constructor \\(unknown: (\\S+?)\\)'	758	
+checks/substrate.py	re.compile	"^- expected : ('def','type' or 'law') / observed : (\\S+)"	759	
+checks/substrate.py	re.compile	'^- expected : (\\S+) / observed : (\\S+)'	760	
+checks/substrate.py	re.search	output	766	
+checks/substrate.py	re.match	top	496	
+checks/substrate.py	re.match	ln	689	
+checks/substrate.py	re.finditer	code_only(raw)	704	
+checks/substrate.py	re.match	ln.strip()	312	
+checks/substrate.py	re.match	ln	374	
+checks/substrate.py	re.match	ln	375	
+checks/substrate.py	re.match	ln	641	
+checks/substrate.py	re.match	ln	641	
+checks/substrate.py	re.match	ln	641	
+checks/substrate.py	re.match	ln	636	
+checks/substrate.py	re.match	ln	644	
+checks/substrate.py	re.match	ln	494	
+checks/sweep.py	walk	ast.walk(tree)	448	
+checks/sweep.py	walk	os.walk(base or os.path.join(root, 'tinybendygrad'))	1073	
+checks/sweep.py	walk	os.walk(slop)	1155	
+checks/sweep.py	walk	os.walk(os.path.join(root, base))	550	
+checks/sweep.py	walk	os.listdir(os.path.join(root, d))	968	
+checks/sweep.py	walk	os.walk(os.path.join(root, base))	1050	
+checks/sweep.py	walk	os.walk(os.path.join(root, base))	1114	
+checks/sweep.py	walk	os.walk(base, topdown=False)	1476	
+checks/sweep.py	walk	ast.walk(ast.Module(body=list(body), type_ignores=[]))	608	
+checks/sweep.py	strlit	RESIDUE_ROOTS = ('.agents/slop', 'runs')	81	
+checks/sweep.py	strlit	_GENERATED_CACHE = {}	109	
+checks/sweep.py	strlit	UNKNOWN = 'UNKNOWN'	158	
+checks/sweep.py	strlit	TOOL_EXT = ('.py', '.sh', '.mjs', '.c', '.js', '.ts', '.bend')	164	
+checks/sweep.py	strlit	NAMED_BY = [':(glob).agents/slop/*.md', 'AGENTS.md', ':(glob)checks/*.md', ':(glob)gates/*.md', ':(glob).agents/*.md', ':(glob)checks/*.py', ':(glob)gates/*.py']	188	
+checks/sweep.py	strlit	SELF = '.agents/slop/slopfinal'	195	
+checks/sweep.py	strlit	UNKNOWN_MARK = '\x00'	243	
+checks/sweep.py	strlit	MODULE_MARK = '\x01'	244	
+checks/sweep.py	strlit	BARE_WRITES = {'open': (0,)}	265	
+checks/sweep.py	strlit	FS_METHOD_WRITES = {'write_text': 'R', 'write_bytes': 'R', 'touch': 'R', 'mkdir': 'R', 'open': 'R', 'symlink_to': 'RA', 'rename': 'RA', 'replace': 'RA'}	268	
+checks/sweep.py	strlit	SLOP_PREFIX = '.agents/slop'	301	
+checks/sweep.py	strlit	_TARGETS_CACHE = {}	556	
+checks/sweep.py	strlit	DIFFER = {'graphcmp.py', 'graphcmp.bend', 'graphcmp-oracle.py', 'graphcmp-run.sh', 'graphcmp-repro.sh', 'graphcmp-dbg-oracle.py'}	750	
+checks/sweep.py	strlit	ROLE_DIRS = {'oracles': 'ORACLE', 'gates': 'GATE', 'checks': 'GATE'}	766	
+checks/sweep.py	strlit	PROTECTED_DIRS = ('dd-cone-wt',)	779	
+checks/sweep.py	strlit	_WORD = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_-./'	930	
+checks/sweep.py	strlit	_LIVE_UNIT_CACHE = {}	1125	
+checks/sweep.py	endswith	'.md'	1222	
+checks/sweep.py	endswith	('.sh', '.py')	1276	
+checks/sweep.py	endswith	'/'	337	
+checks/sweep.py	endswith	'.md'	821	
+checks/sweep.py	startswith	'.agents/slop/'	821	
+checks/sweep.py	endswith	'.md'	971	
+checks/sweep.py	startswith	'.agents/slop/'	1345	
+checks/sweep.py	endswith	'.py'	552	
+checks/sweep.py	re.compile	'(^|[-_.])(oracle|rows|expect|pins|baseline)([-_.]|$)'	716	
+checks/sweep.py	re.compile	'(RECOVERY-0BYTE\\.md$)|(^\\.agents/slop/(e2e|e2e_port|f64|portexec)/)|(^\\.agents/slop/e2e(_mm(\\.py|\\.bend|_run\\.mjs))?\\.sh$)|(^\\.agents/slop/(opsbend-mil	740	
+checks/sweep.py	re.search	rel	1203	
+checks/sweep.py	re.findall	'[A-Za-z0-9_][A-Za-z0-9_.-]*\\.[A-Za-z0-9]+'	921	
+checks/sweep.py	re.search	name	1276	
+checks/sz.py	walk	os.walk(os.path.join(base_path, 'tinygrad'))	19	
+checks/sz.py	strlit	NONCORE_DIRS = {'tinygrad/llm', 'tinygrad/nn', 'tinygrad/renderer', 'tinygrad/runtime', 'tinygrad/viz'}	59	
+checks/sz.py	startswith	'"""'	13	
+checks/sz.py	startswith	'"""'	13	
+checks/sz.py	startswith	'//'	15	
+checks/sz.py	endswith	'.js'	25	
+checks/sz.py	endswith	'.py'	21	
+checks/sz.py	endswith	'.js'	21	
+checks/test_rewrite_bottom_up_gate.py	NO-SIGNAL	none	0	
+checks/txt-owners.py	walk	os.walk(ROOT)	78	
+checks/txt-owners.py	strlit	CODE = ('.py', '.sh', '.bend', '.mjs', '.ts', '.js', '.json', '.tsv')	54	
+checks/txt-owners.py	endswith	'.txt'	105	
+checks/txt-owners.py	endswith	'.txt'	81	
+checks/txt-owners.py	startswith	('references/', 'tinygrad/', 'runs/graphcmp/')	143	
+checks/txt-owners.py	re.compile	'^\\s*(?:export\\s+|declare\\s+-\\w+\\s+|let\\s+|const\\s+)?([A-Z_][A-Z0-9_]*)=[\\"\']?([^\\"\'\\n]*)[\\"\']?\\s*$'	60	
+checks/txt-owners.py	re.compile	'[`()\\"\']'	62	
+checks/txt-owners.py	re.compile	'\\$\\{?([A-Za-z_][A-Za-z0-9_]*)\\}?'	63	
+checks/txt-owners.py	re.compile	'^\\$?\\{?[A-Za-z_][A-Za-z0-9_]*\\}?/'	64	
+checks/txt-owners.py	re.compile	'\\d?>>?\\s*(?:"([^"]+)"|\'([^\']+)\'|([^\\s;|&>]+))'	65	
+checks/txt-owners.py	re.compile	'open\\(\\s*([^,)]+?)\\s*,\\s*[\'"][wax]|(?:write_text|write_bytes)\\(\\s*([^,)]+?)\\s*[,)]'	68	
+checks/txt-owners.py	re.compile	'[\\"\'][^\\"\']*\\.txt[\\"\']'	69	
+checks/txt-owners.py	re.match	out	107	
+checks/txt-owners.py	re.finditer	line	131	
+checks/txt-owners.py	re.finditer	body	124	
+checks/txt-owners.py	re.findall	m.group(1) or m.group(2) or ''	132	
+checks/txt-owners.py	re.search	m.group(2)	125	
+checks/txt-owners.py	re.finditer	line	130	
+checks/unowned.py	strlit	LIVE = ('.agents/slop/rerun/', '.agents/slop/stale71/')	41	
+checks/unowned.py	strlit	BOUND = '[A-Za-z0-9_.\\-/]'	56	
+checks/unowned.py	strlit	PROSE = ('.md', '.out', '.rows', '.tsv', '.json', '.txt', '.err')	74	
+checks/unowned.py	strlit	HASH_COMMENT = ('.py', '.sh', '.bend', '.yml', '.yaml', '.toml', '.cfg', '.js', '.mjs', '.ts')	78	
+checks/unowned.py	strlit	GENERATORS = {'checks/rows-': ('checks/census.py', 'rows-{name}-{which}.rows'), 'checks/gen/': ('checks/abi_gate.py', 'gendir = HERE / "gen"'), '.agents/slop/helpers-tc-gate	111	
+checks/unowned.py	re.compile	'write_text|write_bytes|writeFile|writeFileSync|copyFile|copyfile|shutil\\.copy|\\.rename\\(|to_csv|json\\.dump|\\bemit\\(|savefig'	63	
+checks/unowned.py	re.compile	'[\'"][wax]b?[\'"]'	65	
+checks/unowned.py	re.compile	'\\{[^}]*\\}|\\$\\(|%s|\\.format\\(|f[\\"\']'	67	
+checks/unowned.py	re.compile	'(?<!%s)(%s)(?!%s)' % (BOUND, '|'.join(map(re.escape, part)), BOUND)	161	
+checks/unowned.py	re.search	line	101	
+checks/unowned.py	re.findall	f[3]	169	
+checks/unowned.py	re.search	'open\\(|>'	101	
+checks/unowned.py	re.search	line	101	
+checks/unowned.py	re.findall	'[\'"`][^\'"`]*[\'"`]'	105	
+checks/vz_gate.py	strlit	BIN = '/bin/sh'	30	
+checks/vz_gate.py	strlit	MUTATIONS = [("M1  uops_color.grp: ALU's colour before Movement's (dict-literal order)", '    case _p: uops_color.tail(mv, al)', '    case _p: uops_color.tail(al, mv)'), ('	114	
+checks/vz_gate.py	startswith	'---'	94	
+checks/vz_gate.py	startswith	'-'	232	
+checks/vz_gate.py	startswith	'---'	232	
+checks/wallcheck.py	walk	os.walk(base)	144	
+checks/wallcheck.py	walk	(ROOT / 'tinybendygrad').iterdir()	112	
+checks/wallcheck.py	walk	path.iterdir()	124	
+checks/wallcheck.py	walk	walk(ROOT)	171	
+checks/wallcheck.py	strlit	LEDGER = '.agents/slop/wallcheck/walls.tsv'	34	
+checks/wallcheck.py	strlit	TRUTH = '.agents/slop/wallcheck/walls.truth.tsv'	35	
+checks/wallcheck.py	strlit	EXCLUDED = ('.git', 'references', 'runs', 'oracles', 'tinygrad', 'test', 'examples', '.agents/slop/differverdict', '.agents/slop/xd1', '.agents/slop/wallcheck', '.venv', '	41	
+checks/wallcheck.py	strlit	WALK_ROOTS = ('tinybendygrad', '.agents/slop', 'docs', 'checks', 'gates', 'AGENTS.md', 'README.md')	47	
+checks/wallcheck.py	strlit	SUFFIXES = {'.bend', '.py', '.sh', '.md', '.tsv', '.txt', '.c', '.h', '.js', '.mjs', '.rs', '.toml'}	48	
+checks/wallcheck.py	strlit	POSIX_CLASS = {'alpha': 'a-zA-Z', 'digit': '0-9', 'alnum': 'a-zA-Z0-9', 'upper': 'A-Z', 'lower': 'a-z', 'space': ' \\t\\r\\n\\f\\v', 'blank': ' \\t', 'punct': '!-/:-@\\[-`{-~	54	
+checks/wallcheck.py	strlit	ABSENCE_WORDS = 'NOWHERE|absent|is missing|are missing|does not exist|no such|not implemented|cannot be|is blocked|is not implemented'	60	
+checks/wallcheck.py	startswith	('LANDED', 'GONE')	343	
+checks/wallcheck.py	startswith	'#'	260	
+checks/wallcheck.py	endswith	' emit'	270	
+checks/wallcheck.py	startswith	('LANDED', 'GONE')	465	
+checks/wallcheck.py	startswith	('LANDED', 'GONE', 'SPLIT')	502	
+checks/wallcheck.py	startswith	('LANDED', 'GONE')	466	
+checks/wallcheck.py	startswith	'REFUSED'	436	
+checks/wallcheck.py	startswith	'REFUSED'	430	
+checks/wallcheck.py	startswith	'#'	595	
+checks/wallcheck.py	startswith	'#'	634	
+checks/wallcheck.py	re.compile	posix2re(pat)	74	
+checks/wallcheck.py	re.search	'work=(\\d+)'	101	
+checks/wallcheck.py	re.search	' '	546	
+checks/wallcheck.py	re.search	posix2re(r.refuted)	311	
+checks/wallcheck.py	re.compile	posix2re(r.key)	369	
+checks/wallcheck.py	re.compile	ABSENCE_WORDS	369	
+checks/wallcheck.py	re.compile	posix2re(r.refuted)	370	
+checks/wallcheck.py	re.compile	'[[:space:]]'	544	
+checks/wallcheck.py	re.search	' '	548	
+checks/wallcheck.py	re.findall	spaced	550	
+checks/wallcheck.py	re.compile	'(unclosed'	553	
+checks/wallcheck.py	re.findall	code_only(text) if r.pol == 'DEFECT/code' else text	286	
+checks/wallcheck.py	re.search	'^\\s*#?\\s*REOPEN\\b'	335	
+checks/wallcheck.py	re.search	p	519	
+checks/wallcheck.py	re.search	'i64_mul'	527	
+checks/wallcheck.py	re.search	'i64_mul'	527	
+checks/wallcheck.py	re.findall	four	566	
+checks/wallcheck.py	re.search	ln	360	
+checks/wallcheck.py	re.search	'\n'.join(dict(corpus())[rel])	376	
+checks/wallcheck.py	re.findall	spaced	559	
+checks/wallcheck.py	re.findall	four	568	
+checks/wallcheck.py	re.findall	four	568	
+checks/wallcheck.py	re.compile	posix2re(r.pattern.replace(r.pattern, a))	327	
+checks/wallcheck.py	re.search	l	360	
+gates/amd_dsl_census-gate.py	walk	ART.iterdir()	1071	
+gates/amd_dsl_census-gate.py	glob	ART.glob(f'{TMP}*')	1128	
+gates/amd_dsl_census-gate.py	strlit	PIN = 'ad117c928^'	282	
+gates/amd_dsl_census-gate.py	strlit	GROUPS = ('tables', 'const', 'get', 'fmt', 'mod', 'bf', 'enc', 'lit', 'inst', 'ops', 'vs')	286	
+gates/amd_dsl_census-gate.py	strlit	KIND = {'plain': 'BitField', 'fixed': 'FixedBitField', 'enum': 'EnumBitField', 'src': 'SrcField', 'vgpr': 'VGPRField', 'sgpr': 'SGPRField', 'ssrc': 'SSrcField', 'align	438	
+gates/amd_dsl_census-gate.py	strlit	CLASSES = [('MSG_TEXT', '^(afenc_(ab|sb|sr|sr2)_(nonreg|hi|odd|127)$|afenc_(sr|sr2)_(2|126|127)$|vgencneg_|fixed_(op7|enc33|enc17)$)'), ('SRC_WIDTH', '^sf_width(msg)?_'),	755	
+gates/amd_dsl_census-gate.py	strlit	CLASS_WHY = {'MSG_TEXT': 'both sides refuse; dsl.py:207/:209/:211 name the CLASS and format type(val).__name__, dsl.bend names the FIELD and the Ov kind.', 'SRC_WIDTH': 'ds	773	
+gates/amd_dsl_census-gate.py	strlit	RETIRED = [('MODMASK', '16', '**TWO DEFECTS, AND THE CLASS NAMED ONLY THE FIRST.** (i) Its own diagnosis --\n    "`mod_mask` never tests WHICH modifier is set" -- is RIGH	855	
+gates/amd_dsl_census-gate.py	startswith	'#'	661	
+gates/amd_dsl_census-gate.py	startswith	'#'	714	
+gates/amd_dsl_census-gate.py	startswith	'#'	1099	
+gates/amd_dsl_census-gate.py	startswith	'#'	684	
+gates/amd_dsl_census-gate.py	re.findall	'^\\s+(?:srow|urow|row)\\("([^"]+)"'	297	
+gates/amd_dsl_census-gate.py	re.findall	'<-\\s+g_([a-z0-9]+)\\(\\)'	321	
+gates/amd_dsl_census-gate.py	re.findall	'^def g_([a-z0-9]+)\\(\\) -> IO\\(Unit\\):'	319	
+gates/amd_dsl_census-gate.py	re.search	f'^def g_{g}\\(\\) -> IO\\(Unit\\):\\n(.*?)(?=^def |\\Z)'	330	
+gates/amd_dsl_census-gate.py	re.finditer	'^def (\\w+)\\(\\) -> U32: (\\d+)$'	475	
+gates/amd_dsl_census-gate.py	re.fullmatch	'Ov\\.int\\((.+)\\)'	494	
+gates/amd_dsl_census-gate.py	re.fullmatch	'Ov\\.reg\\((\\S+), (\\S+), (\\w+\\{\\}), (\\w+\\{\\}), (\\w+\\{\\})\\)'	496	
+gates/amd_dsl_census-gate.py	re.fullmatch	'src_ov_float\\((.+), (\\w+\\{\\})\\)'	501	
+gates/amd_dsl_census-gate.py	re.finditer	'^def ([A-Z0-9_]+)\\(\\) -> List<&2, (?:Vf|Fld)>:(.*?)(?=^def |\\Z)'	567	
+gates/amd_dsl_census-gate.py	re.compile	'Vf\\.of\\(Fld\\.\\w+\\("(\\w+)", \\d+, \\d+(?:, \\d+)?\\),\\s*((?:src_ov_float\\((?:\\w+\\(\\)|\\d+), \\w+\\{\\}\\)|Ov\\.[a-z]+\\([^()]*\\))),\\s*(\\w+\\{\\})\	578	
+gates/amd_dsl_census-gate.py	re.finditer	'^def ([A-Z0-9_]+)\\(\\) -> List<&2, Vf>:(.*?)(?=^def |\\Z)'	583	
+gates/amd_dsl_census-gate.py	re.findall	'\\("(?:fmt)_(\\d+)_(\\d+)"'	391	
+gates/amd_dsl_census-gate.py	re.findall	'"fmtmodu?_(\\d+)_(\\d+)_\\d{3}"'	393	
+gates/amd_dsl_census-gate.py	re.search	pat	717	
+gates/amd_dsl_census-gate.py	re.findall	'Fld\\.(\\w+)\\("(\\w+)", (\\d+), (\\d+)(?:, (\\d+))?\\)'	570	
+gates/amd_dsl_census-gate.py	re.finditer	m.group(2)	587	
+gates/amd_dsl_census-gate.py	re.search	pat	815	
+gates/amd_dsl_census-gate.py	re.match	l.strip()	1039	
+gates/amd_dsl_census-mutate.py	strlit	VERDICT_TOKENS = {'same', 'DIFFER', 'DIFF', 'AGREE', 'MATCH', 'EXACT'}	87	
+gates/amd_dsl_census-mutate.py	strlit	MUTATIONS = [('A1 wplaced drops the shift -- the AMDWORD32 word', 'VALUE', 'port', 'def wplaced(enc: U32, lo: U32) -> H.I64: H.i64_shl(H.i64_of_i32(enc), U32.to_nat(lo))', 	231	
+gates/amd_dsl_census-mutate.py	strlit	SOURCES = {'port': PORT, 'oracle': ORACLE, 'pins': PINS, 'gate': GATE}	362	
+gates/amd_dsl_census-mutate.py	startswith	'#'	114	
+gates/amd_dsl_census-mutate.py	startswith	('UNMUTATED', 'amd pins', 'amd_dsl_census: PASS')	458	
+gates/amd_dsl_census-oracle.py	strlit	FLOAT_SPELLINGS = {'0.5', '-0.5', '1.0', '-1.0', '2.0', '-2.0', '4.0', '-4.0'}	192	
+gates/amd_dsl_census-oracle.py	strlit	CANON_IN = ['src0', 'vsrc0', 'ssrc0', 'src1', 'vsrc1', 'ssrc1', 'src2', 'vdst', 'sdst', 'sdata', 'data', 'vdata', 'data0', 'vsrc', 'op', 'off', 'abs', 'neg', 'opsel', 'src	199	
+gates/amd_dsl_census-oracle.py	strlit	CANON_OUT = ['s0', 's1', 's2', 'd', 'data']	203	
+gates/amd_dsl_census-oracle.py	strlit	CANON_DOM = [('src0', 's0'), ('vsrc0', 'vs0'), ('ssrc0', 'ss0'), ('src1', 's1'), ('vsrc1', 'vs1'), ('ssrc1', 'ss1'), ('src2', 's2'), ('vdst', 'd'), ('sdst', 'sdst'), ('sdat	211	
+gates/amd_dsl_census-oracle.py	strlit	NAMED_REGS = ['VCC_LO', 'VCC_HI', 'NULL', 'OFF', 'M0', 'EXEC_LO', 'EXEC_HI', 'INV_2PI', 'SDWA', 'DPP', 'DPP16', 'VCCZ', 'EXECZ', 'SCC', 'SRC_LDS_DIRECT', 'LIT']	495	
+gates/amd_dsl_census-oracle.py	strlit	OPS = (('cndmask', 'v_cndmask_b32_e64'), ('cmp', 'ds_cmpst_rtn_b32'), ('co_ci', 'v_add_co_ci_u32'), ('other', 'v_add_f32_e32'), ('f8f6f4', 'v_mfma_f32_16x16x128_f8f6f	959	
+gates/amd_dsl_census-oracle.py	startswith	'op'	608	
+gates/bc-u32-gate.py	strlit	DIVERGES = {'G_g_i8_at': ('G_g_i8_at=[1,2305843009213693952]', 'G_g_i8_at=[1,-2305843009213693952]'), 'G_g_i4_at': ('G_g_i4_at=[1,1152921504606846976]', 'G_g_i4_at=[1,-115	52	
+gates/bc-u32-gen.py	strlit	HEADER = '# GENERATED by bc-u32-gen.py from bc_u32_table.py -- DO NOT HAND-EDIT. The fixture list\n# lives in `bc_u32_table.py` once and is emitted into BOTH lanes, so a	36	
+gates/bc-u32-gen.py	strlit	ORACLE = '#!/usr/bin/env python3\n"""GENERATED by bc-u32-gen.py -- DO NOT HAND-EDIT. The CPython lane of the\n`bitcast_dims` gate. Every expectation is CALLED, never typ	104	
+gates/bc-u32-gen.py	startswith	'row("'	129	
+gates/bc-u32-oracle.py	NO-SIGNAL	none	0	
+gates/bc_u32_table.py	strlit	BANDS = {'A': [('a_one', 1, 2, 1), ('a_b4', 4, 1, 4), ('a_halve', 8, 1, 2), ('a_up', 6, 4, 2), ('a_down', 6, 2, 4), ('a_300', 300, 8, 2), ('a_65k', 65534, 4, 8), ('a_re	30	
+gates/beautiful-mnist-gate.py	strlit	ORACLE_PIN = {'gates/oracles/beautiful-mnist-oracle.sh': 'd4243578cca6053fb2b9af56631475439db3dd4c81886880be39808425d06ada'}	66	
+gates/beautiful-mnist-gate.py	endswith	'\n'	94	
+gates/beautiful-mnist-oracle.py	walk	walk()	178	
+gates/beautiful-mnist-oracle.py	walk	walk(LAYERS[:-1])	193	
+gates/cr_graph_census-gate.py	strlit	ROWS = ('const_like', 'empty', 'empty_like', 'invalids', 'full', 'full_like', 'zeros', 'zeros_like', 'ones', 'ones_like', 'empty_v4', 'empty_v0', 'full_v4', 'full_vnob	63	
+gates/cr_graph_census-gate.py	strlit	DIVERGES = {'empty_v4': ('empty_v4=1 Ops.ALLOC/0 ', 'empty_v4=1 Ops.ALLOC/0 -'), 'full_v0nobuf': ('full_v0nobuf=1 Ops.CONST/0 ', 'full_v0nobuf=1 Ops.CONST/0 -'), 'empty_li	105	
+gates/cr_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/crp_graph_census-gate.py	strlit	PIN = 'ad117c928^'	152	
+gates/crp_graph_census-gate.py	strlit	VENDORED = ('tinygrad/mixin/creation.py', 'tinygrad/uop/ops.py', 'tinygrad/dtype.py', 'tinygrad/helpers.py', 'tinygrad/mixin/dtype.py', 'tinygrad/mixin/movement.py', 'tiny	156	
+gates/crp_graph_census-gate.py	strlit	DRIFTED = {'tinygrad/uop/ops.py': [('^  def const\\(b:ConstLike.*?(?=^  # cast, except for CONST)', 'UOp.const'), ('^  def toposort\\(self, gate.*?(?=^  def topovisit)', 	162	
+gates/crp_graph_census-gate.py	strlit	ALIAS = {'void': 'void', 'weakint': 'weakint', 'boolean': 'bool', 'int8': 'i8', 'uint8': 'u8', 'int16': 'i16', 'uint16': 'u16', 'int32': 'i32', 'uint32': 'u32', 'int64'	199	
+gates/crp_graph_census-gate.py	strlit	METHOD_ROWS = {'const_like': 'cl', 'empty': 'ne', 'empty_like': 'el', 'full': 'f', 'full_like': 'fl', 'invalids': 'iv', 'ones': 'o', 'ones_like': 'ol', 'zeros': 'z', 'zeros_l	371	
+gates/crp_graph_census-gate.py	strlit	MISSING = {'_multi_like': 'W2, the multi-device arm (creation.py:16-20); `cr_full_like` is single-device and the tuple arm is a TODO(p3) at creation.bend:414', 'const': '	418	
+gates/crp_graph_census-gate.py	strlit	PRI_OFF = {'void'}	479	
+gates/crp_graph_census-gate.py	strlit	CLASSES = [('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs and matches none of these is a real divergence with no reason attached; `--refresh` refuses to pin it rat	981	
+gates/crp_graph_census-gate.py	startswith	'iv_'	1112	
+gates/crp_graph_census-gate.py	startswith	'cr_'	225	
+gates/crp_graph_census-gate.py	startswith	'cr_'	234	
+gates/crp_graph_census-gate.py	startswith	('rc=', '')	635	
+gates/crp_graph_census-gate.py	startswith	'#'	967	
+gates/crp_graph_census-gate.py	re.compile	'^def ([a-z_0-9]+)\\(\\) -> Dt: Dt\\{([0-9]+), ([0-9]+),'	198	
+gates/crp_graph_census-gate.py	re.compile	'^ *def ([a-z_0-9]+)\\((?:self|cls)[,)]'	204	
+gates/crp_graph_census-gate.py	re.compile	'^def ([a-z_0-9]+)\\('	205	
+gates/crp_graph_census-gate.py	re.compile	'^def [a-z_0-9]+\\(\\) -> Dt: Dt\\{[0-9]+, [0-9]+, \\w+\\{\\}, "([^"]+)"\\}'	213	
+gates/crp_graph_census-gate.py	re.search	f'^def {head}\\.of\\(.*?\\n(.*?)(?=^def )'	244	
+gates/crp_graph_census-gate.py	re.findall	'case _:\\s+"(\\w+)"'	248	
+gates/crp_graph_census-gate.py	re.search	'^def shp\\(\\) -> List<&2, List<&2, U32>>: (\\[.*\\])'	280	
+gates/crp_graph_census-gate.py	re.findall	SPEC.read_text()	467	
+gates/crp_graph_census-gate.py	re.findall	'^  (C\\w+)\\{'	542	
+gates/crp_graph_census-gate.py	re.search	'CONST/0\\[[^]]*\\](?:,CAST/1\\[[a-z0-9_]+\\])?,EXPAND/2'	803	
+gates/crp_graph_census-gate.py	re.findall	CPY.read_text()	226	
+gates/crp_graph_census-gate.py	re.findall	'IO\\.print\\(String\\.concat\\(\\["(in_\\w+)="'	308	
+gates/crp_graph_census-gate.py	re.search	'^def cr_cast\\(.*?(?=^def )'	577	
+gates/crp_graph_census-gate.py	re.search	pat	617	
+gates/crp_graph_census-gate.py	re.findall	SPEC.read_text()	218	
+gates/crp_graph_census-gate.py	re.findall	PORT.read_text()	225	
+gates/crp_graph_census-gate.py	re.findall	PORT.read_text()	234	
+gates/crp_graph_census-gate.py	re.findall	'case (\\d+)n: "(\\w+)"'	247	
+gates/crp_graph_census-gate.py	re.findall	'sh\\.one\\(\\d+n, "ctl", (\\d+)n'	309	
+gates/crp_graph_census-gate.py	re.findall	'CAST/1\\[([a-z0-9_]+)\\]'	860	
+gates/crp_graph_census-gate.py	re.findall	CPY.read_text()	235	
+gates/crp_graph_census-gate.py	re.search	'^type Const is Data:\\n(.*?)(?=^type )'	542	
+gates/crp_graph_census-gate.py	re.search	'case True\\{\\}: t'	580	
+gates/crp_graph_census-gate.py	re.findall	'CAST/1(?!\\[)'	864	
+gates/crp_graph_census-gate.py	re.findall	'CONST/0\\[[^]]*\\]'	901	
+gates/crp_graph_census-gate.py	re.findall	'CONST/0\\[[^]]*\\]'	886	
+gates/crp_graph_census-gate.py	re.search	pat	1065	
+gates/crp_graph_census-mutate.py	strlit	DRIVER_IMPORT = 'import ./../tinybendygrad/mixin/creation.bend as C'	86	
+gates/crp_graph_census-mutate.py	strlit	VERDICT_TOKENS = {'same', 'DIFFER', 'DIFF', 'AGREE', 'MATCH', 'EXACT'}	89	
+gates/crp_graph_census-mutate.py	strlit	MUTATIONS = [("V1 cr_cast_dt's True arm answers dt -- the PRE-FIX predicate", 'VALUE', 'port', '    case True{}: cr_from_py(O.CInvalid{})', '    case True{}: dt'), ("V2 cr_	278	
+gates/crp_graph_census-mutate.py	strlit	SOURCES = {'port': PORT, 'driver': DRIVER, 'oracle': ORACLE, 'pins': PINS, 'spec': SPEC, 'gate': GATE}	524	
+gates/crp_graph_census-mutate.py	startswith	'#'	103	
+gates/crp_graph_census-mutate.py	startswith	('UNMUTATED', 'crp_graph_census-mutate', 'crp pins')	626	
+gates/crp_graph_census-oracle.py	strlit	DEV = 'PYTHON'	61	
+gates/crp_graph_census-oracle.py	strlit	PRI_OFF = {'void'}	81	
+gates/crp_graph_census-oracle.py	strlit	ALIAS = {'void': 'void', 'weakint': 'weakint', 'boolean': 'bool', 'int8': 'i8', 'uint8': 'u8', 'int16': 'i16', 'uint16': 'u16', 'int32': 'i32', 'uint32': 'u32', 'int64'	89	
+gates/crp_graph_census-oracle.py	strlit	FAMS = ('zl', 'ol', 'fl', 'el', 'cl', 'f', 'iv', 'z', 'eb')	216	
+gates/crp_graph_census-oracle.py	strlit	SHFAMS = ('ne', 'fs', 'nb', 'z', 'o')	279	
+gates/crp_graph_census-oracle.py	re.compile	'^def ([a-z_0-9]+)\\(\\) -> Dt: Dt\\{([0-9]+), ([0-9]+),'	77	
+gates/crp_graph_census-oracle.py	re.findall	SPEC.read_text()	108	
+gates/cstyle_render_census-gate.py	strlit	DIVERGES = {'rdx_0_14': ('rdx_0_14=REFUSE:KeyError', 'rdx_0_14=fp8e4m3'), 'rdx_0_15': ('rdx_0_15=REFUSE:KeyError', 'rdx_0_15=fp8e5m2'), 'rdx_0_16': ('rdx_0_16=REFUSE:KeyEr	115	
+gates/cstyle_render_census-gate.py	strlit	PINS = ('opt_ktypedef_4', 'opt_float4_1', 'opt_smempre_5', 'rd_0_2', 'rdv_0_2', 'rdl_2', 'rdg_3', 'rdo_5', 'rdir_0', 'rdiw_0', 'rdl2_2_2', 'rb_5_local', 'rt_idx_reg', 	137	
+gates/cstyle_render_census-mutate.py	strlit	DRIVER_IMPORT = 'import ./../tinybendygrad/renderer/cstyle.bend as C'	67	
+gates/cstyle_render_census-mutate.py	strlit	DRIVER_MUT_IMPORT = 'import ./../tinybendygrad/renderer/cstyle-mut.bend as C'	68	
+gates/cstyle_render_census-mutate.py	strlit	MUTATIONS = [("M1 base's dropped-arm answer is nothing again", 'REFUSAL', 'port', '    case _: cfo_unhandled(op)', '    case _: ""'), ('M2 Clang keeps the four it DELETED (	138	
+gates/cstyle_render_census-mutate.py	startswith	'bd:'	226	
+gates/cstyle_render_census-oracle.py	strlit	OPT_KEYS = ('ktypedef', 'bufpre', 'bufsuf', 'smempre', 'smemalign', 'varpre', 'varsuf', 'barrier', 'float4', 'f4open', 'f4close', 'gep', 'inf', 'nan', 'smemcast')	123	
+gates/cstyle_render_census-oracle.py	strlit	XS = ['a', 'b', 'c']	157	
+gates/decomp_graph_census-gate.py	strlit	ROWS = ('lg1', 'lg2', 'lg3', 'lg4', 'lg5', 'lg6', 'lg7', 'lg8', 'lg9', 'lga', 'lgb', 'lgc', 'lgd', 'lge', 'lgf', 'lgg', 'lgh', 'lgi', 'lgj', 'lgk', 'lgl', 'lgm', 'lgn'	151	
+gates/decomp_graph_census-gate.py	strlit	PROMOTION_CASTS = {'lg1': 4, 'lg5': 1, 'lga': 2, 'lgc': 1, 'lgd': 1, 'lge': 6, 'lgq': 69, 'lgr': 70, 'lgs': 63, 'lgt': 64, 'q5': 1}	167	
+gates/decomp_graph_census-gate.py	strlit	PROMOTION_TARGETS = {'lg1': {'i64': 4}, 'lg5': {'i32': 1}, 'lga': {'i64': 2}, 'lgc': {'u32': 1}, 'lgd': {'u32': 1}, 'lge': {'i64': 5, 'i32': 1}, 'lgq': {'i64': 3, 'u32': 66}, 'lgr'	182	
+gates/decomp_graph_census-gate.py	strlit	WALL = ('lgn', 'q6')	193	
+gates/decomp_graph_census-gate.py	strlit	UNBUILT = ('lgu',)	194	
+gates/decomp_graph_census-gate.py	strlit	FINDING = ('q2', 'q3')	195	
+gates/decomp_graph_census-gate.py	startswith	'#'	217	
+gates/decomp_graph_census-mutate.py	startswith	'-'	211	
+gates/decomp_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/decomp_value-gate.py	walk	walk(gr, v)	688	
+gates/decomp_value-gate.py	walk	walk(b['cpy_rts'], v)	751	
+gates/decomp_value-gate.py	walk	walk(b['port_rts'], v)	765	
+gates/decomp_value-gate.py	strlit	WORD = {'z': (0, 0, 0, 0), 'o': (1, 1, 1, 1), 'M': (4294967295, 4294967295, 4294967295, 4294967295), 'H': (2147483648, 2147483648, 2147483648, 2147483648), 'L': (1, 1,	493	
+gates/decomp_value-gate.py	strlit	FLOAT_OF = {'z': 0, 'o': 1065353216, 'M': 4294967295, 'H': 2147483648, 'L': 1, 'Asym': 2139095040, 'Near': 1069547520, 'Dvd': 1266679808, 'Shift': 2143289344, 'Rnd': 32128	508	
+gates/decomp_value-gate.py	strlit	BITPAT = {'bp_norm': 1065353216, 'bp_nan': 2143289344, 'bp_inf': 2139095040, 'bp_max': 2139095039, 'bp_tiny': 1, 'bp_2p24': 1266679808, 'bp_tie': 1266679809, 'bp_ntie': 	519	
+gates/decomp_value-gate.py	strlit	WORD_NAMES = ('w9', 'w10', 'w11', 'w12')	524	
+gates/decomp_value-gate.py	strlit	TRUTH = {'lg1': 'neg', 'lgq': 'div', 'lgs': 'div', 'lgr': 'mod', 'lgt': 'mod'}	633	
+gates/decomp_value-gate.py	strlit	HEADER = '# decomp_value-pins.rows -- GENERATED by `decomp_value-gate.py --refresh`, its ONLY writer.\n# One TAB-separated triple per (PROMOTION row, operand family):\n#	781	
+gates/decomp_value-gate.py	startswith	'#'	815	
+gates/decomp_value-gate.py	startswith	'PORT-REFUSES'	933	
+gates/decomp_value-gate.py	startswith	'BOTH-RAISE'	934	
+gates/ew-consts-gate.py	NO-SIGNAL	none	0	
+gates/ew-consts-oracle.py	NO-SIGNAL	none	0	
+gates/ew-explog-gate.py	NO-SIGNAL	none	0	
+gates/ew-explog-oracle.py	NO-SIGNAL	none	0	
+gates/ew_graph_census-gate.py	strlit	ROWS = ('ew_add', 'ew_bitwise_and', 'ew_bitwise_not', 'ew_bitwise_or', 'ew_bitwise_xor', 'ew_contiguous_backward', 'ew_detach', 'ew_div', 'ew_eq', 'ew_exp', 'ew_exp2',	56	
+gates/ew_graph_census-gate.py	strlit	DIVERGES = {'ew_ufix': ('ew_ufix=1 Ops.CONST/0 ', 'ew_ufix=1 Ops.CONST/0 -')}	109	
+gates/ew_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/fold_graph_census-gate.py	strlit	ROWS = ('fold_c_int3', 'fold_c_int4', 'fold_c_float', 'fold_c_bool_t', 'fold_c_bool_f', 'fold_c_invalid', 'fold_buf_i32', 'fold_buf_i64', 'fold_add_ii', 'fold_sub_ii',	80	
+gates/fold_graph_census-gate.py	strlit	DIVERGES = {'fold_expand_sym': ('fold_expand_sym=n=6 op=Ops.EXPAND nsrc=2 srcops=Ops.BUFFER|Ops.STACK dtype=i32 shape=(2,U(Ops.SPECIAL:N),4) base=Ops.BUFFER self=0 invalid	113	
+gates/fold_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/gate-surface.py	walk	os.walk(h)	309	
+gates/gate-surface.py	strlit	RED_IS = 'FINDING'	138	
+gates/gate-surface.py	strlit	DECL = ('VERDICTS', 'PLANTS', 'RED_IS')	322	
+gates/gate-surface.py	strlit	MAIN = "if __name__ == '__main__':\n    raise SystemExit(0)\n"	623	
+gates/gate-surface.py	strlit	DRIVER = "import sys\nVERDICTS = {0: 'PASS', 1: 'FAIL', 3: 'REFUSED'}\nPLANTS = {0: [], 1: ['1'], 3: ['3']}\nif __name__ == '__main__':\n    sys.exit(int(sys.argv[1]) if	625	
+gates/gate-surface.py	strlit	UNPLANTED = "import sys\nVERDICTS = {0: 'PASS', 1: 'FAIL', 3: 'REFUSED'}\nPLANTS = {0: []}\nif __name__ == '__main__':\n    sys.exit(int(sys.argv[1]) if len(sys.argv) > 1 e	629	
+gates/gate-surface.py	strlit	NOGREEN = "import sys\nVERDICTS = {3: 'REFUSED'}\nPLANTS = {3: ['3']}\nif __name__ == '__main__':\n    sys.exit(int(sys.argv[1]) if len(sys.argv) > 1 else 0)\n"	633	
+gates/gate-surface.py	strlit	VACUOUS = "import sys\nVERDICTS = {0: 'PASS'}\nPLANTS = {0: []}\nif __name__ == '__main__':\n    sys.exit(0)\n"	637	
+gates/gate-surface.py	strlit	CLAIM = "import sys\nVERDICTS = {0: 'PASS', 1: 'RED'}\nPLANTS = {0: [], 1: ['--red']}\nif __name__ == '__main__':\n    sys.exit(1 if '--red' in sys.argv else 0)\n"	642	
+gates/gate-surface.py	strlit	UNEARNED = "import sys\nRED_IS = 'FINDING'\nVERDICTS = {0: 'PASS', 1: 'RED'}\nPLANTS = {1: ['--red']}\nif __name__ == '__main__':\n    sys.exit(1 if '--red' in sys.argv el	647	
+gates/gate-surface.py	strlit	UNOWNED_GATE = "import sys\nVERDICTS = {0: 'PASS', 1: 'FAIL', 2: 'USAGE'}\nPLANTS = {0: ['0'], 1: ['1'], 2: ['2']}\nif __name__ == '__main__':\n    sys.exit(int(sys.argv[1]))\	654	
+gates/gate-surface.py	strlit	SHELL_GATE = '#!/bin/sh\n# a synthetic shell entry point, $0 self-referencing so discover() sees an entrance\nVERDICTS = {0: \'PASS\'}\necho "$0 ran under a shell"\nexit 0\n	666	
+gates/gate-surface.py	startswith	'python'	204	
+gates/gate-surface.py	startswith	'='	194	
+gates/gate-surface.py	endswith	('.py', '.sh')	313	
+gates/gate-surface.py	startswith	'='	198	
+gates/gate-surface.py	re.compile	'^#!\\s*(\\S.*)$'	169	
+gates/gate-surface.py	re.match	first.rstrip('\n')	190	
+gates/gatekit.py	walk	self.dir.iterdir()	559	
+gates/gatekit.py	glob	self.dir.glob(f'{TMP}*')	571	
+gates/gatekit.py	strlit	WARM = 'ALL PROOFS CHECK'	46	
+gates/gatekit.py	strlit	TMP = '.tmp.'	52	
+gates/gatekit.py	strlit	LANE_ROWS = '.rows'	118	
+gates/gatekit.py	strlit	LANE_OUT = '.out'	119	
+gates/gatekit.py	strlit	LANE_CMP = '.cmp'	120	
+gates/gatekit.py	re.compile	'^bend \\S+ is available: run bend update$'	115	
+gates/gatekit.py	re.compile	'^(' + '|'.join((re.escape(k) for k in skip)) + ')='	454	
+gates/gatekit.py	re.match	l.strip()	141	
+gates/gatekit.py	re.match	l	467	
+gates/gatekit.py	re.match	l	457	
+gates/gates-pop.py	walk	os.walk(root)	788	
+gates/gates-pop.py	walk	ast.walk(ast.parse(src))	274	
+gates/gates-pop.py	walk	h.iterdir()	495	
+gates/gates-pop.py	walk	ast.walk(tree)	341	
+gates/gates-pop.py	walk	base.iterdir()	825	
+gates/gates-pop.py	walk	(HERE.parent / home).iterdir()	1277	
+gates/gates-pop.py	walk	(HERE.parent / h).iterdir()	1469	
+gates/gates-pop.py	strlit	_CERTIFY_OR = ('refuse(', 'exit 3', 'not at the repo root', 'REFUSED, NOT A VERDICT')	764	
+gates/gates-pop.py	strlit	_SKIP = ('.git', '.jj', '__pycache__')	765	
+gates/gates-pop.py	strlit	_MEASURED = {}	849	
+gates/gates-pop.py	strlit	MAIN = "if __name__ == '__main__':\n    raise SystemExit(0)\n"	1117	
+gates/gates-pop.py	strlit	FALLBACK_PRE_FIX = {'checks/census.py': 'sys.path.insert(0, str(HERE.parents[2]))            # the tinygrad tree\n' + MAIN, 'checks/hermetic-census.py': 'HERE = pathlib.Path(__fil	1158	
+gates/gates-pop.py	strlit	LIT_SH = '#!/bin/sh\n# used to cd "$(dirname "$0")/../../.."\n_d=${0%/*}\ncd "$_d/.."\n'	1180	
+gates/gates-pop.py	endswith	('.parent', '.parent)')	631	
+gates/gates-pop.py	endswith	'.bend'	1461	
+gates/gates-pop.py	endswith	'.rows'	1470	
+gates/gates-pop.py	endswith	'.py'	899	
+gates/gates-pop.py	re.compile	'^#!\\s*(?:/usr/bin/env\\s+)?(?:\\S*/)?(?:ba|da|k|z)?sh\\b'	183	
+gates/gates-pop.py	re.compile	'^#!\\s*(?:/usr/bin/env\\s+)?(?:\\S*/)?node\\b'	184	
+gates/gates-pop.py	re.compile	'^[ \\t]*(?:import\\s+[\\w{*][^;\\n]*\\s+from\\s+[\'\\"]|export\\s+(?:default|const|let|var|function|class|async))'	193	
+gates/gates-pop.py	re.compile	'^[ \\t]*export\\s'	196	
+gates/gates-pop.py	re.compile	'^\\s*(?:exec\\b|\\$\\{?0)'	367	
+gates/gates-pop.py	re.compile	'\\$\\{0|[\\"\']\\$0[\\"\']'	368	
+gates/gates-pop.py	re.compile	'^\\s*#.*$'	369	
+gates/gates-pop.py	re.compile	'^\\s*(?:HERE\\s*=\\s*.*\\n)?\\s*(?:REPO|ROOT)\\s*=\\s*.*?(?:__file__|HERE)\\)?(?:\\.resolve\\(\\))?\\.parents\\[(\\d)\\]'	541	
+gates/gates-pop.py	re.compile	'(?:sys\\.path\\.insert|open|read_text|read_bytes|Path)\\s*\\(?.*?(?:__file__|HERE)\\)?(?:\\.resolve\\(\\))?\\.parents\\[(\\d)\\]'	554	
+gates/gates-pop.py	re.compile	'\\brefuse\\(|\\bexit 3\\b|not at the repo root|REFUSED, NOT A VERDICT'	561	
+gates/gates-pop.py	re.compile	'pyproject\\.toml'	562	
+gates/gates-pop.py	re.compile	'pyproject\\.toml'	590	
+gates/gates-pop.py	re.match	src	433	
+gates/gates-pop.py	re.search	src	433	
+gates/gates-pop.py	re.match	src	459	
+gates/gates-pop.py	re.search	code	677	
+gates/gates-pop.py	re.search	code	677	
+gates/gates-pop.py	re.search	src	393	
+gates/gates-pop.py	re.search	src	393	
+gates/gates-pop.py	re.search	src	399	
+gates/gates-pop.py	re.search	src	399	
+gates/gates-pop.py	re.search	src	434	
+gates/gates-pop.py	re.search	code	672	
+gates/gates-pop.py	re.search	code	672	
+gates/gates-pop.py	re.search	'^\\s*HERE\\s*='	684	
+gates/gates-pop.py	re.match	'\\s*HERE\\s*='	630	
+gates/gates-pop.py	re.match	p.read_text(errors='replace')	1278	
+gates/gendirs.py	walk	os.walk(root)	95	
+gates/gendirs.py	walk	ast.walk(scope)	271	
+gates/gendirs.py	walk	ast.walk(tree)	334	
+gates/gendirs.py	walk	os.walk(root)	449	
+gates/gendirs.py	walk	ast.walk(tree)	327	
+gates/gendirs.py	strlit	GIT_EMPTY_BLOB = 'e69de29bb2d1d6434b8b29ae775ad8c2e48c5391'	63	
+gates/gendirs.py	strlit	SKIP_TOP = ('.git', 'references', 'node_modules', '.venv', '__pycache__', 'bin')	69	
+gates/gendirs.py	strlit	SOURCE_SUFFIXES = ('.py', '.sh', '.mjs', '.js')	70	
+gates/gendirs.py	strlit	MAIN = 'if __name__ == "__main__":\n    raise SystemExit(0)\n'	547	
+gates/gendirs.py	startswith	'.agents/slop'	770	
+gates/gendirs.py	endswith	'/'	409	
+gates/gendirs.py	startswith	'..'	416	
+gates/gendirs.py	startswith	('/dev', '/proc', '/sys', '/tmp')	416	
+gates/gendirs.py	endswith	'/*'	425	
+gates/gendirs.py	re.compile	'\\b(cp|mv|tee|install|rsync)\\b[^\\n|;&]*?\\s([\\w./{}$-]+)'	296	
+gates/gendirs.py	re.match	'^\\s*#'	298	
+gates/gendirs.py	re.search	line	300	
+gates/gendirs.py	re.finditer	'(?:>|>>)\\s*[\\"\']?([\\w./{}$-]+)'	303	
+gates/git-massdelete-gate.py	startswith	'D\t'	94	
+gates/git-massdelete-gate.py	startswith	'D\t'	103	
+gates/gr_graph_census-gate.py	strlit	ROWS = ('gr_0', 'gr_0_r', 'gr_1', 'gr_2', 'gr_3', 'gr_4', 'gr_5', 'gr_6', 'gr_9', 'gr_10', 'gr_11', 'gr_12', 'gr_13', 'gr_16', 'gr_18', 'gr_26', 'gr_29', 'gr_31', 'wal	78	
+gates/gr_graph_census-gate.py	strlit	DIVERGES = {}	119	
+gates/gr_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/i64-shl-gate.py	strlit	EXPECTED = ['seed']	62	
+gates/i64-shl-oracle.py	strlit	_WORDS = {'neg1': (4294967295, 4294967295), 'one': (0, 1), 'lowhi': (1, 2596069104)}	70	
+gates/i64-shr-gate.py	glob	GATE.dir.glob(f'.tmp*/{lane}*.out')	76	
+gates/i64-shr-gate.py	glob	GATE.dir.glob(f'{lane}.txt.*')	76	
+gates/i64-shr-gate.py	strlit	VALUES = ('neg1', 'zero', 'one', 'signmin', 'max', 'spill')	43	
+gates/i64-shr-gate.py	strlit	FIELDS = ('x', 'amt', 'lc', 'rt_amt', 'rt')	45	
+gates/i64-shr-oracle.py	NO-SIGNAL	none	0	
+gates/indexread-gate.py	walk	ast.walk(tree)	160	
+gates/indexread-gate.py	walk	__import__('os').walk(base)	136	
+gates/indexread-gate.py	walk	ast.walk(tree)	166	
+gates/indexread-gate.py	strlit	PRUNE = {'.git', '.jj', '__pycache__', '.venv', 'node_modules', 'references'}	91	
+gates/indexread-gate.py	strlit	FORMS = {'ls-files': 'lists the INDEX: the staging area, which a reset empties', '--cached': 'diff --cached is index-vs-HEAD; a reset index makes it EMPTY', 'read-tree'	99	
+gates/indexread-gate.py	strlit	GIT_WORDS = {'git', '-C', 'commit', 'commit-tree', 'hash-object', 'update-index'}	108	
+gates/indexread-gate.py	strlit	ADD_QUOTED = ('"add"', "'add'", 'add -A', 'add -C')	111	
+gates/indexread-gate.py	endswith	'.py'	139	
+gates/indexread-gate.py	startswith	'#'	200	
+gates/linearizer_census-gate.py	strlit	CLASSES = [('ORPHAN-CONST', '^(ix|ix_len)$', "A FIXTURE DEFECT, NOT AN INSTRUMENT CARVE-OUT. `lt_fix` (linearizer.bend:867-904) opens with `+c1a = O.UOp.const(O.Arena.emp	104	
+gates/linearizer_census-gate.py	startswith	'#'	91	
+gates/linearizer_census-gate.py	re.search	pat	192	
+gates/linearizer_census-gate.py	re.search	pat	225	
+gates/linearizer_census-mutate.py	strlit	MUTATIONS = [('heap: the sorted heap is flipped', 'linearizer.py:39-45', '  U32.is_ge(LtKey.k(x), LtKey.k(y))\n', '  U32.is_le(LtKey.k(x), LtKey.k(y))\n'), ("the heap loop'	19	
+gates/linearizer_census-oracle.py	NO-SIGNAL	none	0	
+gates/md_graph_census-gate.py	strlit	ROWS = ('cast_weak_to_f32', 'cast_same_weakint', 'cast_weakfloat_to_i32', 'cast_wf_same', 'cast_bool_to_i32', 'cast_concrete_to_f32', 'cast_concrete_same', 'cast_weak_	66	
+gates/md_graph_census-gate.py	strlit	DIVERGES = {'cast_same_weakint': ('cast_same_weakint=1 Ops.CONST/0  arg=-', 'cast_same_weakint=1 Ops.CONST/0 - arg=-'), 'cast_wf_same': ('cast_wf_same=1 Ops.CONST/0  arg=-	99	
+gates/md_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/mixin-op-gate.py	strlit	ORACLE_PIN = {'gates/oracles/mixin-op-oracle.sh': 'e8792d0ff1ad9d1a0a6e11aae6b4d52b135ea6c5664dd05510cae868b834e0c6'}	68	
+gates/mixin-op-gate.py	endswith	'\n'	105	
+gates/mixin-op-oracle.py	strlit	BEND_ONLY = ('rop_gap', 'exp_cast', 'commit_weak', 'bin_promote')	149	
+gates/mo_graph_census-gate.py	strlit	ROWS = ('max0', 'max0kd', 'sum0', 'sum0kd', 'prod0', 'neg0', 'notb0', 'eqc0', 'isfinite0', 'isnan0', 'exp0', 'exp_i32', 'log0', 'recip0', 'inverse0', 'sub00', 'div00',	72	
+gates/mo_graph_census-gate.py	strlit	DIVERGES = {}	120	
+gates/mo_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/msgdiff-gate.py	strlit	UNCHECKED_KINDS = ('no_path', 'meta', 'renamed_or_absent', 'pid', 'unfalsifiable_count')	148	
+gates/msgdiff-gate.py	startswith	'D'	304	
+gates/msgdiff-gate.py	startswith	'R'	307	
+gates/msgdiff-gate.py	re.compile	'(?<![\\w./-])(deleted|delete|deletes|deleting|removed|removes|removing|git\\s+rm|dropped|drops|dropping)\\b(?!\\.[A-Za-z0-9])'	106	
+gates/msgdiff-gate.py	re.compile	'[A-Za-z0-9_./{},-]+(?:\\.(?:py|bend|md|rows|out|err|tsv|json|txt|sh|mjs|js|ts|tsx|c|h|yaml|yml|toml|lock|bin|png|hex|diff|patch|mut))+'	111	
+gates/msgdiff-gate.py	re.compile	'[A-Za-z0-9_./{},*-]+'	124	
+gates/msgdiff-gate.py	re.compile	'[A-Za-z0-9_.,-]+(?:/[A-Za-z0-9_.,-]+)*/'	129	
+gates/msgdiff-gate.py	re.compile	'(?<![\\w-])(by|from|and|or|to|is|was|are|were|that|which|not|no|guarded|reads?|named|per|via|using)\\b|[,;()]'	134	
+gates/msgdiff-gate.py	re.compile	"(?<![\\w-])(not|no|never|nothing|nobody|none|isn't|wasn't|weren't|aren't|cannot|can't)\\b"	136	
+gates/msgdiff-gate.py	re.compile	'(?<![\\w-])(claim|claims|claimed|message|messages|said|says|false|falsely|wrong|wrongly|believed|asserted|relayed|reported|predecessor|orchestrator)\\b'	140	
+gates/msgdiff-gate.py	re.compile	'(?:(?P<a>\\d+)\\s+(?:files?|paths?)\\s+(?:changed|deleted|added|removed|touched)\\b)|(?:(?:changed|deleted|added|removed|touched)\\s+(?P<b>\\d+)\\s+(?:files?|p	143	
+gates/msgdiff-gate.py	re.compile	'(?<![\\w-])pid[\\s=:]*\\d{2,7}\\b'	146	
+gates/msgdiff-gate.py	re.compile	'^(?P<path>[A-Za-z0-9_./{},-]+)$'	197	
+gates/msgdiff-gate.py	re.search	text	333	
+gates/msgdiff-gate.py	re.finditer	message	343	
+gates/msgdiff-gate.py	re.finditer	message	375	
+gates/msgdiff-gate.py	re.findall	message	208	
+gates/msgdiff-gate.py	re.search	text[i:m.start()]	336	
+gates/msgdiff-gate.py	re.findall	message	382	
+gates/msgdiff-gate.py	re.findall	message	251	
+gates/msgdiff-gate.py	re.search	message[max(0, verb_at - 48):verb_at]	346	
+gates/msgdiff-gate.py	re.search	clause	346	
+gates/msgdiff-gate.py	re.findall	message	251	
+gates/mutkit.py	NO-SIGNAL	none	0	
+gates/mx_graph_census-gate.py	strlit	ROWS = ('base', 'reshape_1_2_8_16', 'reshape_1_4_64', 'reshape_noop', 'reshape_256', 'permute_1_0_2_3', 'permute_3_1_2_0', 'permute_noop', 'pad_1_1', 'pad_asy', 'pad_n	70	
+gates/mx_graph_census-gate.py	strlit	DIVERGES = {}	95	
+gates/mx_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/op_graph_census-gate.py	strlit	ROWS = ('params', 'bufs', 'acc', 'nop', 'detach', 'apply', 'square', 'div', 'sqrt', 'recip', 'neg', 'sum', 'normsq', 'cast', 'where', 'guard', 'mulf', 'prewd', 'trust'	103	
+gates/op_graph_census-gate.py	strlit	DIVERGES = {'mstep': ('mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CONST/0:f1036831949 BUFFER/0:- MUL/2:- ADD/2:- ', 'mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CON	115	
+gates/op_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/ops-core-gate.py	strlit	ROWS = ('hashcons_same_index', 'zeros_differ', 'nan_interns', 'bool_vs_int_key', 'backedge_srcs', 'tag_bool_vs_int_interns', 'tag_true_vs_false_splits', 'tag_none_vs_z	53	
+gates/ops-core-oracle.py	NO-SIGNAL	none	0	
+gates/ops_python_census-gate.py	walk	ART.iterdir()	796	
+gates/ops_python_census-gate.py	glob	ART.glob(f'{TMP}*')	851	
+gates/ops_python_census-gate.py	strlit	PIN = 'ad117c928^'	228	
+gates/ops_python_census-gate.py	strlit	VENDORED = ('tinygrad/runtime/ops_python.py', 'tinygrad/renderer/tc.py')	235	
+gates/ops_python_census-gate.py	strlit	GROUP_DEF = '^def (t_[a-z0-9]+)\\(\\) -> IO\\(Unit\\):'	239	
+gates/ops_python_census-gate.py	strlit	CLASSES = [('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs here and does not match a declared pattern is a real divergence with no reason attached; `--refresh` refu	630	
+gates/ops_python_census-gate.py	endswith	('_ncores', '_tid')	410	
+gates/ops_python_census-gate.py	startswith	'pywma_'	411	
+gates/ops_python_census-gate.py	startswith	'#'	576	
+gates/ops_python_census-gate.py	startswith	'#'	591	
+gates/ops_python_census-gate.py	startswith	'#'	822	
+gates/ops_python_census-gate.py	re.compile	'^\\s+(?:srow|urow|row)\\("([^"]+)",\\s*(.+?)\\)\\s*$'	447	
+gates/ops_python_census-gate.py	re.compile	'^(?:[\\w]+\\.)?([A-Za-z_]\\w*)\\(\\)$'	448	
+gates/ops_python_census-gate.py	re.compile	'^[\\s:]*(\\d+n?|True\\{\\}|False\\{\\}|[A-Z][A-Z_0-9]*\\(\\))$'	449	
+gates/ops_python_census-gate.py	re.findall	'^\\s+(?:srow|urow|row)\\("([^"]+)"'	268	
+gates/ops_python_census-gate.py	re.findall	'^\\s+(?:srow|urow|row)\\("([^"]+)"'	409	
+gates/ops_python_census-gate.py	re.findall	src	462	
+gates/ops_python_census-gate.py	re.findall	'<-\\s+(t_[a-z0-9]+)\\(\\)'	262	
+gates/ops_python_census-gate.py	re.findall	GROUP_DEF	293	
+gates/ops_python_census-gate.py	re.search	f'^def {g}\\(\\) -> IO\\(Unit\\):\\n(.*?)(?=^def |\\Z)'	302	
+gates/ops_python_census-gate.py	re.fullmatch	'\\d+n?'	463	
+gates/ops_python_census-gate.py	re.match	expr.strip()	466	
+gates/ops_python_census-gate.py	re.search	f'^def (?:[\\w]+\\.)?{re.escape(m.group(1))}\\([^)]*\\)[^:]*:\\s*(.+)$'	469	
+gates/ops_python_census-gate.py	re.search	'^def Prog\\.one\\.no\\(\\+b: Build\\) -> Build:\\n  Build\\{[^\\n]*False\\{\\}\\}\\s*$'	556	
+gates/ops_python_census-gate.py	re.findall	'^def CORES_(\\w+)\\(\\) -> U32: (\\d+)$'	380	
+gates/ops_python_census-gate.py	re.match	body.group(1)	471	
+gates/ops_python_census-gate.py	re.findall	'row\\("(pyc_[a-z0-9_]+)"'	499	
+gates/ops_python_census-gate.py	re.findall	f'\\b{re.escape(nm)}\\b'	524	
+gates/ops_python_census-gate.py	re.search	'^def op_of\\(nm: String\\).*?(?=^def |\\Z)'	544	
+gates/ops_python_census-gate.py	re.search	pat	662	
+gates/ops_python_census-gate.py	re.match	l.strip()	762	
+gates/ops_python_census-oracle.py	strlit	TC_TABLES = {'metal': 1, 'amd_rdna3': 2, 'amd_cdna3': 3, 'amd_cdna4': 4, 'amd_rdna4': 5, 'cuda_sm75': 6, 'cuda_sm80': 7, 'cuda_sm89': 8}	62	
+gates/ops_python_census-oracle.py	strlit	B64_FIXTURES = ('', 'AA==', 'AP8=', 'AP9/', 'AP9/AQ==', 'QUJDRA==', 'AAECAwQFBgc=', 'dGhlIHF1aG5pcyBvZiBEaXRoIQ==')	142	
+gates/ops_python_census-oracle.py	strlit	CTOR_OBJECTS = {'allocator': 'HostAllocator', 'renderers': 'PythonRenderer', 'runtime': 'PythonProgram'}	192	
+gates/ops_python_census-oracle.py	re.compile	s	144	
+gates/ops_python_exec-gate.py	startswith	'@ '	91	
+gates/ops_python_exec-gate.py	startswith	'bendexec1 '	114	
+gates/ops_python_exec-gate.py	startswith	'#'	111	
+gates/ops_python_exec-gate.py	endswith	'=x'	199	
+gates/ops_python_exec-gate.py	startswith	'#'	275	
+gates/ops_python_exec-gate.py	re.findall	'case "(\\w+)": Some\\{O\\.Ops'	212	
+gates/ops_python_exec-gate.py	re.findall	'case O\\.Ops(\\w+)\\{\\}'	214	
+gates/ops_python_exec-gate.py	re.findall	'case _:\\s*Prog\\.(\\w+)\\('	215	
+gates/ops_python_exec-gate.py	re.findall	'^(\\w+): \\d+ declared, (\\d+) unreached \\['	234	
+gates/ops_python_exec-gen.py	walk	walk(s)	255	
+gates/ops_python_exec-gen.py	walk	walk(uops[-1])	259	
+gates/ops_python_exec-gen.py	strlit	HEADER = '# ops_python_exec fixtures -- GENERATED by gates/ops_python_exec-gen.py --write.\n# THE ONLY WRITER. The gate reads this and reconstructs each PACKET.in from i	519	
+gates/ops_python_exec-gen.py	startswith	'@ '	415	
+gates/ops_python_exec-gen.py	re.findall	'case "(\\w+)": Some\\{O\\.Ops'	432	
+gates/ops_python_exec-gen.py	re.findall	'case O\\.Ops(\\w+)\\{\\}'	434	
+gates/ops_python_exec-gen.py	re.findall	'case _:\\s*Prog\\.(\\w+)\\('	435	
+gates/pins-shape-gate.py	walk	ast.walk(tree)	154	
+gates/pins-shape-gate.py	walk	HERE.iterdir()	239	
+gates/pins-shape-gate.py	walk	HERE.iterdir()	292	
+gates/pins-shape-gate.py	walk	HERE.iterdir()	294	
+gates/pins-shape-gate.py	strlit	PLANTS = {'mixed-arity': ('a\tb\tc\nd\te\n', '# GENERATED by `x-gate.py --refresh`. one TRIPLE\n', 'a line of a different arity is red'), 'header-lies': ('a\tb\tc\td\ne\	332	
+gates/pins-shape-gate.py	endswith	'-pins.rows'	214	
+gates/pins-shape-gate.py	endswith	'.py'	198	
+gates/pins-shape-gate.py	startswith	'QUA'	203	
+gates/pins-shape-gate.py	startswith	'#'	115	
+gates/pins-shape-gate.py	endswith	'.rows'	156	
+gates/pins-shape-gate.py	startswith	'#'	111	
+gates/pins-shape-gate.py	endswith	'-mutate.py'	240	
+gates/pins-shape-gate.py	startswith	'.'	295	
+gates/pins-shape-gate.py	re.compile	'\\b(QUARTET|QUAD|TRI)PLE?\\b'	68	
+gates/pins-shape-gate.py	re.compile	'GENERATED\\s+by\\s+(?:#\\s*)?`?([\\w./-]+(?:\\.py)?|hand|[-]\\w[\\w-]*)'	71	
+gates/pins-shape-gate.py	re.compile	'^\\..*\\.rows$'	79	
+gates/pins-shape-gate.py	re.search	head	195	
+gates/pins-shape-gate.py	re.search	head	185	
+gates/pins-shape-gate.py	re.findall	head	203	
+gates/pins-shape-gate.py	re.search	'(row NAMES?\\b|exclusion|no values?|names? only)'	214	
+gates/pins-shape-gate.py	re.search	'\\bZERO\\b|\\b0 DECLARED\\b|\\bno quads\\b'	222	
+gates/pins-shape-gate.py	re.match	p.name	293	
+gates/ptx_render_census-gate.py	strlit	DTYPES_ABSENT = {'void': ('', '', ''), 'bf16': ('', '', ''), 'fp8e4m3': ('', '', ''), 'fp8e5m2': ('', '', ''), 'fp8e4m3fnuz': ('', '', ''), 'fp8e5m2fnuz': ('', '', '')}	129	
+gates/ptx_render_census-gate.py	strlit	WEAKINT = ('', '', '')	132	
+gates/ptx_render_census-gate.py	strlit	FIXTURES = ['f01_alu', 'f02_counter', 'f03_cast5', 'f04_end', 'f05_regbuf4', 'f06_regbuf1', 'f07_reuse', 'f08_refuse', 'f09_special', 'f09b_launch', 'f10_loads', 'f11_stac	153	
+gates/ptx_render_census-gate.py	strlit	REFUSALS = {'f08_refuse': 'PORT-REFUSED:INDEX', 'f31_weakint': 'PORT-ANSWERED', 'f32_weakfloat': 'PORT-ANSWERED', 'f33_bf16cast': 'PORT-ANSWERED', 'f34_boolalu': 'PORT-ANS	160	
+gates/ptx_render_census-gate.py	strlit	WEAK = {'f31_weakint.r1': '%ridx_s32_0', 'f32_weakfloat.r2': '%alu_f32_0', 'f33_bf16cast.r1': '%cast__0', 'f34_boolalu.r3': '%alu_pred_1', 'f34_boolalu.r4': '{%alu_pre	188	
+gates/ptx_render_census-gate.py	startswith	'#'	216	
+gates/ptx_render_census-gate.py	endswith	'.mod'	346	
+gates/ptx_render_census-gate.py	startswith	'REFUSE:'	346	
+gates/ptx_render_census-gate.py	re.findall	'one_at\\("([a-z0-9_]+)",\\s*(True\\{\\}|False\\{\\})'	328	
+gates/ptx_render_census-gate.py	re.search	'^# FIXTURES (.+)$'	331	
+gates/ptx_render_census-gate.py	re.search	'^# REFUSES (.+)$'	332	
+gates/ptx_render_census-gate.py	re.findall	'one_at\\("[a-z0-9_]+",\\s*(?:True\\{\\}|False\\{\\}),\\s*(\\d+)'	329	
+gates/ptx_render_census-gen.py	strlit	G = {'__name__': 'gen'}	31	
+gates/ptx_render_census-gen.py	strlit	DT = {'void': 'void', 'bool': 'boolean', 'i8': 'int8', 'u8': 'uint8', 'i16': 'int16', 'u16': 'uint16', 'i32': 'int32', 'u32': 'uint32', 'i64': 'int64', 'u64': 'uint6	42	
+gates/ptx_render_census-gen.py	re.compile	src	32	
+gates/ptx_render_census-mutate.py	glob	HERE.glob('ptx_render_census*')	277	
+gates/ptx_render_census-mutate.py	strlit	PORT_MUTATIONS = [('M1', "pf.of -- a LOAD's list flag: `max_numel > 1` becomes always false, so a vector LOAD answers a bare string. ptx.py:208.", 'Bool.pick(Pf, is_op(op, O.Ops	68	
+gates/ptx_render_census-mutate.py	strlit	PORT_ANCHOR = 'import ./../uop/ops.bend as O\n'	204	
+gates/ptx_render_census-mutate.py	strlit	PORT_PRELUDE = ''	205	
+gates/ptx_render_census-oracle.py	startswith	'REFUSE:'	462	
+gates/ptx_render_census-oracle.py	startswith	'.reg'	493	
+gates/ptx_render_census-oracle.py	startswith	'.visible .entry'	497	
+gates/rd_graph_census-gate.py	strlit	ROWS = ('p64', 'x', 'three', 'tfb')	58	
+gates/rd_graph_census-gate.py	strlit	DIVERGES = {}	65	
+gates/rd_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/realize_graph_census-gate.py	strlit	DRV = ('arg', 'nb', 'res', 'flat', 'val', 'beam', 'bea0', 'oi', 'wbuf', 'kern', 'name', 'est', 'var', 'gcc', 'dnum')	223	
+gates/realize_graph_census-gate.py	strlit	SRC_BODY_FIXED = ('arg_9', 'arg_10', 'arg_11', 'arg_12', 'arg_13', 'arg_14', 'arg_15', 'arg_16', 'arg_26', 'arg_27', 'arg_28', 'arg_29', 'arg_30', 'arg_33', 'arg_34', 'arg_36', 	266	
+gates/realize_graph_census-gate.py	strlit	NAME_ARM = ('name_18', 'name_21', 'name_23', 'name_24', 'name_49', 'name_50', 'name_51', 'name_52', 'name_53', 'name_55', 'name_57', 'name_61', 'name_63')	277	
+gates/realize_graph_census-gate.py	strlit	VARS_BODY = ('var_21', 'var_22', 'var_23', 'var_24', 'var_49', 'var_50', 'var_51', 'var_52', 'var_53', 'var_55', 'var_61', 'var_63')	279	
+gates/realize_graph_census-gate.py	strlit	VAL_BODY = ('val_23', 'val_24', 'val_49', 'val_50', 'val_51', 'val_52', 'val_53', 'val_55', 'val_61', 'val_63')	281	
+gates/realize_graph_census-gate.py	strlit	ARG_SLOT = ('nb_53', 'kern_53', 'est_57', 'gcc_50', 'gcc_53', 'gcc_60', 'beam_55', 'bea0_55')	283	
+gates/realize_graph_census-gate.py	strlit	SINK_NO_KI = ('beam_55', 'bea0_55')	288	
+gates/realize_graph_census-gate.py	strlit	SLOT_MISS = ('res_20', 'res_22')	289	
+gates/realize_graph_census-gate.py	strlit	MSELECT_WALL = ('wbuf_60',)	290	
+gates/realize_graph_census-gate.py	strlit	MSTACK_WALL = ('res_52',)	291	
+gates/realize_graph_census-gate.py	strlit	GETADDR_DRIFT = ('res_63',)	292	
+gates/realize_graph_census-gate.py	strlit	RET_IS_UOP_FIXED = ('bea0_23', 'bea0_49', 'bea0_50', 'bea0_51', 'bea0_52', 'bea0_53', 'bea0_61', 'bea0_63')	302	
+gates/realize_graph_census-gate.py	startswith	'#'	323	
+gates/realize_graph_census-gate.py	startswith	'raise='	504	
+gates/realize_graph_census-gate.py	endswith	':b=7'	573	
+gates/realize_graph_census-gate.py	startswith	'arm_'	600	
+gates/realize_graph_census-gate.py	startswith	'def '	635	
+gates/realize_graph_census-gate.py	startswith	'beam_'	566	
+gates/realize_graph_census-gate.py	startswith	'__'	624	
+gates/realize_graph_census-gate.py	startswith	'raise='	567	
+gates/realize_graph_census-gate.py	re.findall	'^def ([a-z_0-9]+)\\((?:fuel: Nat, )?\\+ar: O\\.Arena'	623	
+gates/realize_graph_census-gate.py	re.findall	'^def ([a-z_0-9]+)_table\\('	625	
+gates/realize_graph_census-gate.py	re.match	'\\s*case O\\.Ops[A-Z]'	632	
+gates/realize_graph_census-gate.py	re.findall	'device="([^"]*)"'	896	
+gates/realize_graph_census-gate.py	re.findall	'S\\.D1\\{(\\d+)\\}'	889	
+gates/realize_graph_census-gate.py	re.search	'S\\.Dn\\{\\s*[\\[\\d]'	890	
+gates/realize_graph_census-mutate.py	strlit	DRIVER_IMPORT = 'import ./../tinybendygrad/engine/realize.bend as RZ'	103	
+gates/realize_graph_census-mutate.py	strlit	DRIVER_MUT_IMPORT = 'import ./../tinybendygrad/engine/realize-mut.bend as RZ'	104	
+gates/realize_graph_census-mutate.py	strlit	CHECKS = ('classes_hold', 'no_bottom_value', 'drivers_hold', 'calls_hold', 'pin_drift_holds', 'compares_holds', 'kern_blind_holds', 'ret_is_uop_fixed_holds')	113	
+gates/realize_graph_census-mutate.py	strlit	PREAMBLE = 'import contextlib, importlib.util, io, json, sys\nfrom pathlib import Path\nGATES, MUT_ART = Path({gates!r}), Path({art!r})\nsys.path.insert(0, str(GATES))\nim	119	
+gates/realize_graph_census-mutate.py	strlit	RUN_TAIL = '\nchecks = (lambda: (m.classes_hold() and m.no_bottom_value() and m.drivers_hold()\n                   and m.calls_hold() and m.pin_drift_holds() and m.compare	166	
+gates/realize_graph_census-mutate.py	strlit	PHASE1 = [("V1 `get_call_arg_uops` reverts to the op-CONDITIONAL slice (realize.py:15's UNCONDITIONAL `src[1:]` undone in the FIRST of its two sites)", 'VALUE', [('port'	330	
+gates/realize_graph_census-mutate.py	startswith	'GUARDS '	306	
+gates/realize_graph_census-mutate.py	startswith	'#'	711	
+gates/realize_graph_census-mutate.py	startswith	'EXC '	621	
+gates/realize_graph_census-mutate.py	startswith	'EXC '	643	
+gates/realize_graph_census-mutate.py	startswith	'EXC '	641	
+gates/realize_graph_census-oracle.py	strlit	ARMS = ('PROGRAM', 'STORE', 'CUSTOM_FUNCTION', 'RANGE', 'PARAM', 'SINK', 'LINEAR', 'MSELECT', 'SHRINK', 'BITCAST', 'MSTACK', 'GETADDR')	217	
+gates/realize_graph_census-oracle.py	strlit	CALL_ONLY = ('oi', 'wbuf', 'kern', 'name', 'est', 'var', 'gcc', 'dnum', 'nb')	224	
+gates/regalloc_census-gate.py	strlit	CLASSES = [('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs and matches none of these is a real divergence with no reason attached; `--refresh` refuses to pin it rat	86	
+gates/regalloc_census-gate.py	startswith	'#'	72	
+gates/regalloc_census-gate.py	re.search	pat	147	
+gates/regalloc_census-mutate.py	strlit	MUTATIONS = [('two-address: the reused src is not moved first', 'regalloc.py:73-74', '    case +r <> +t  : ra_tw.go(us, t, Bool.pick(List<&2, U32>, u32_in(us, r), pre,\n   	24	
+gates/regalloc_census-oracle.py	NO-SIGNAL	none	0	
+gates/render_val_s-gate.py	strlit	ROWS = ('s_zero', 's_one', 's_seven', 's_neg_one', 's_neg_two', 's_int_min', 's_int_max', 's_hundred')	31	
+gates/render_val_s-oracle.py	NO-SIGNAL	none	0	
+gates/replace-gate.py	strlit	ROWS = ('identity_returns_self', 'replace_op_sets_op', 'replace_src_sets_srcs', 'replace_arg_sets_arg', 'replace_tag_sets_tag', 'replace_src_two_elements', 'replace_op	39	
+gates/replace-oracle.py	NO-SIGNAL	none	0	
+gates/retention-check.py	walk	ast.walk(tree)	213	
+gates/retention-check.py	walk	root.rglob('*')	318	
+gates/retention-check.py	walk	directory.iterdir()	181	
+gates/retention-check.py	walk	directory.iterdir()	284	
+gates/retention-check.py	walk	root.iterdir()	124	
+gates/retention-check.py	strlit	STDERR = '*.err'	95	
+gates/rng_graph_census-gate.py	strlit	TABLES = ('rb', 'nic', 'nv', 'aprt', 'sk', 'gs', 'ct', 'fb', 'dg', 'lb', 'ab')	106	
+gates/rng_graph_census-gate.py	strlit	DIVERGES = {'rb_11': ('rb_11=1 Ops.NOOP/0  arg=none t=none', 'rb_11=1 Ops.NOOP/0 - arg=none t=none'), 'rb_19': ('rb_19=3 Ops.BUFFER/1 Ops.SPECIAL arg=other t=none', 'rb_19	116	
+gates/rng_graph_census-gate.py	startswith	('gs_', 'lb_')	187	
+gates/rng_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/tc_ptx_types-gate.py	strlit	TABLES = ('types', 'mem_types', 'cast_types')	46	
+gates/tc_ptx_types-mutate.py	strlit	MUTATIONS = [('M1', "types_of loses the class dispatch and goes back to the bare pri lookup, so `void` and `weakint` take `bool`'s `pred` again and `weakfloat` is empty.", 	39	
+gates/tc_ptx_types-mutate.py	startswith	'CONTROL'	109	
+gates/tc_ptx_types-oracle.py	NO-SIGNAL	none	0	
+gates/tn_add_sub-gate.py	strlit	ROWS = ('add_op_is_add', 'add_arg_is_anone', 'add_srcs_are_self_and_x', 'add_does_not_mutate_input', 'radd_op_is_add', 'radd_arg_is_anone', 'radd_srcs_are_x_and_self',	28	
+gates/tn_add_sub-oracle.py	NO-SIGNAL	none	0	
+gates/tn_and_or_xor-gate.py	strlit	ROWS = ('and_op_is_and', 'and_arg_is_anone', 'and_srcs_are_self_and_x', 'and_does_not_mutate_input', 'rand_op_is_and', 'rand_arg_is_anone', 'rand_srcs_are_x_and_self',	28	
+gates/tn_and_or_xor-oracle.py	NO-SIGNAL	none	0	
+gates/tn_binop2_cmp-gate.py	strlit	ROWS = ('cmplt_op_is_cmplt', 'cmplt_arg_is_anone', 'cmplt_srcs_are_self_and_x', 'cmplt_does_not_mutate_input', 'rcmplt_op_is_cmplt', 'rcmplt_arg_is_anone', 'rcmplt_src	29	
+gates/tn_binop2_cmp-oracle.py	NO-SIGNAL	none	0	
+gates/tn_binop_arena-gate.py	strlit	ROWS = ('src1_is_caller_operand_at0', 'src1_is_caller_operand_at1', 'src1_is_caller_operand_at2', 'src1_op_is_const_at0', 'src1_op_is_noop_at2', 'src0_is_caller_lhs_at	37	
+gates/tn_binop_arena-oracle.py	NO-SIGNAL	none	0	
+gates/tn_binop_sweep-gate.py	strlit	BINOPS = ('tn_add', 'tn_and', 'tn_cmplt', 'tn_cmpne', 'tn_fdiv', 'tn_lshift', 'tn_max', 'tn_maximum', 'tn_mod', 'tn_mul', 'tn_or', 'tn_pow', 'tn_rshift', 'tn_sub', 'tn_x	33	
+gates/tn_binop_sweep-oracle.py	NO-SIGNAL	none	0	
+gates/tn_bitwise_not-gate.py	strlit	ROWS = ('bitnot_op_is_cmpne', 'bitnot_arg_is_anone', 'bitnot_srcs_are_input_and_true', 'bitnot_identity_cast_folded', 'bitnot_input_is_bool', 'bitnot_does_not_mutate_i	33	
+gates/tn_bitwise_not-oracle.py	NO-SIGNAL	none	0	
+gates/tn_ceil_floor-gate.py	strlit	ROWS = ('ceil_op_is_where', 'ceil_arg_is_anone', 'ceil_has_three_srcs', 'ceil_does_not_mutate_input', 'ceil_cond_is_cmplt', 'floor_op_is_where', 'floor_arg_is_anone', 	25	
+gates/tn_ceil_floor-oracle.py	NO-SIGNAL	none	0	
+gates/tn_contiguous_backward-gate.py	strlit	ROWS = ('contiguous_backward_op', 'contiguous_backward_src_is_input', 'contiguous_backward_arg_is_anone', 'contiguous_backward_does_not_mutate_input', 'contiguous_back	17	
+gates/tn_contiguous_backward-oracle.py	NO-SIGNAL	none	0	
+gates/tn_detach-gate.py	strlit	ROWS = ('detach_op_is_detach', 'detach_src_is_input', 'detach_arg_is_anone', 'detach_does_not_mutate_input', 'detach_is_reachable')	26	
+gates/tn_detach-oracle.py	NO-SIGNAL	none	0	
+gates/tn_dunder_neg-gate.py	strlit	ROWS = ('dunder_neg_bool_op_is_cmpne', 'dunder_neg_int_op_is_mul', 'dunder_neg_int_srcs_are_self_and_m1', 'dunder_neg_int_does_not_mutate_input', 'dunder_neg_is_reacha	23	
+gates/tn_dunder_neg-oracle.py	NO-SIGNAL	none	0	
+gates/tn_fdiv_mod-gate.py	strlit	ROWS = ('fdiv_op_is_floordiv', 'fdiv_arg_is_anone', 'fdiv_srcs_are_self_and_x', 'fdiv_does_not_mutate_input', 'rfdiv_op_is_floordiv', 'rfdiv_arg_is_anone', 'rfdiv_srcs	33	
+gates/tn_fdiv_mod-oracle.py	NO-SIGNAL	none	0	
+gates/tn_graph_census-gate.py	strlit	ROWS = ('tn_sqrt', 'tn_detach', 'tn_contiguous_backward', 'tn_trunc', 'tn_reciprocal', 'tn_sin', 'tn_log2', 'tn_exp2', 'tn_rsqrt', 'tn_logical_not', 'tn_bitwise_not', 	80	
+gates/tn_graph_census-gate.py	strlit	DIVERGES = {}	143	
+gates/tn_graph_census-oracle.py	NO-SIGNAL	none	0	
+gates/tn_isfinite-gate.py	strlit	ROWS = ('isfinite_op_is_cmpne', 'isfinite_arg_is_anone', 'isfinite_has_two_top_srcs', 'isfinite_is_reachable', 'isfinite_src1_is_const', 'isfinite_src1_is_not_self')	28	
+gates/tn_isfinite-oracle.py	NO-SIGNAL	none	0	
+gates/tn_isnan-gate.py	strlit	ROWS = ('isnan_op_is_cmpne', 'isnan_arg_is_anone', 'isnan_has_self_src', 'isnan_does_not_mutate_input', 'isnan_is_reachable')	20	
+gates/tn_isnan-oracle.py	NO-SIGNAL	none	0	
+gates/tn_logical_not-gate.py	strlit	ROWS = ('logical_not_op_is_cmpne', 'logical_not_arg_is_anone', 'logical_not_does_not_mutate_input', 'logical_not_is_reachable', 'int_input_src1_is_const', 'int_input_g	26	
+gates/tn_logical_not-oracle.py	NO-SIGNAL	none	0	
+gates/tn_lshift_rshift-gate.py	strlit	ROWS = ('lshift_op_is_shl', 'lshift_arg_is_anone', 'lshift_does_not_mutate_input', 'rlshift_op_is_shl', 'rlshift_arg_is_anone', 'rlshift_does_not_mutate_input', 'rshif	19	
+gates/tn_lshift_rshift-oracle.py	NO-SIGNAL	none	0	
+gates/tn_maximum-gate.py	strlit	ROWS = ('max_op_is_max', 'max_arg_is_anone', 'max_does_not_mutate_input', 'maximum_is_reachable')	21	
+gates/tn_maximum-oracle.py	NO-SIGNAL	none	0	
+gates/tn_minimum-gate.py	re.compile	'^  Ops([A-Z_0-9]+)\\{\\}'	41	
+gates/tn_minimum-gate.py	re.findall	OPS.read_text()	56	
+gates/tn_minimum-oracle.py	NO-SIGNAL	none	0	
+gates/tn_mul-gate.py	strlit	ROWS = ('mul_op_is_mul', 'mul_arg_is_anone', 'mul_srcs_are_self_and_x', 'mul_does_not_mutate_input', 'rmul_op_is_mul', 'rmul_arg_is_anone', 'rmul_srcs_are_x_and_self',	26	
+gates/tn_mul-oracle.py	NO-SIGNAL	none	0	
+gates/tn_nary_arena-gate.py	strlit	ROWS = ('where_src0_is_caller_at_d1', 'where_src1_is_caller_at_d1', 'where_src2_is_caller_at_d1', 'where_src0_is_caller_at_d0', 'where_src1_is_caller_at_d0', 'where_sr	27	
+gates/tn_nary_arena-oracle.py	NO-SIGNAL	none	0	
+gates/tn_neg-gate.py	strlit	ROWS = ('neg_bool_op_is_cmpne', 'neg_bool_arg_is_anone', 'neg_int_op_is_mul', 'neg_int_srcs_are_self_and_m1', 'neg_int_src1_is_not_self', 'neg_int_is_new_node', 'neg_i	22	
+gates/tn_neg-oracle.py	NO-SIGNAL	none	0	
+gates/tn_nodes-gate.py	NO-SIGNAL	none	0	
+gates/tn_nodes-oracle.py	NO-SIGNAL	none	0	
+gates/tn_pow-gate.py	strlit	ROWS = ('pow_op_is_pow', 'pow_arg_is_anone', 'pow_srcs_are_self_and_x', 'pow_does_not_mutate_input', 'rpow_op_is_pow', 'rpow_arg_is_anone', 'rpow_srcs_are_x_and_self',	32	
+gates/tn_pow-oracle.py	NO-SIGNAL	none	0	
+gates/tn_relu-gate.py	strlit	ROWS = ('relu_op_is_where', 'relu_arg_is_anone', 'relu_does_not_mutate_input', 'relu_has_three_srcs', 'relu_is_reachable', 'relu_src2_is_const0')	19	
+gates/tn_relu-oracle.py	NO-SIGNAL	none	0	
+gates/tn_relu6-gate.py	strlit	ROWS = ('relu6_op_is_where', 'relu6_arg_is_anone', 'relu6_does_not_mutate_input', 'relu6_has_three_srcs', 'relu6_is_reachable', 'relu6_src2_is_const6')	21	
+gates/tn_relu6-oracle.py	NO-SIGNAL	none	0	
+gates/tn_sin_log2_exp2_rsqrt-gate.py	strlit	ROWS = ('sin_op_is_sin', 'log2_op_is_log2', 'exp2_op_is_exp2', 'rsqrt_op_is_reciprocal', 'rsqrt_arg_is_anone', 'rsqrt_has_one_src', 'sin_does_not_mutate_input', 'sin_i	25	
+gates/tn_sin_log2_exp2_rsqrt-oracle.py	NO-SIGNAL	none	0	
+gates/tn_sqrt-gate.py	strlit	ROWS = ('sqrt_op_is_sqrt', 'sqrt_src_is_input', 'sqrt_arg_is_anone', 'sqrt_does_not_mutate_input', 'sqrt_is_reachable')	25	
+gates/tn_sqrt-oracle.py	NO-SIGNAL	none	0	
+gates/tn_trunc_reciprocal_threefry-gate.py	strlit	ROWS = ('trunc_op_is_trunc', 'trunc_does_not_mutate_input', 'reciprocal_op_is_reciprocal', 'reciprocal_does_not_mutate_input', 'threefry_op_is_threefry', 'threefry_src	19	
+gates/tn_trunc_reciprocal_threefry-oracle.py	NO-SIGNAL	none	0	
+gates/tn_where-gate.py	strlit	ROWS = ('where_op_is_where', 'where_arg_is_anone', 'where_srcs_are_cond_x_y', 'where_does_not_mutate_input', 'where_is_reachable')	21	
+gates/tn_where-oracle.py	NO-SIGNAL	none	0	
+gates/uop_cast-gate.py	strlit	ROWS = ('cast_op_is_cast', 'cast_src_is_input', 'cast_arg_is_adt', 'cast_builds_new_node', 'cast_works_on_alu', 'cast_is_reachable', 'cast_does_not_mutate_input', 'cas	37	
+gates/uop_cast-oracle.py	NO-SIGNAL	none	0	
+gates/wgsl_render_census-gate.py	walk	ART.iterdir()	1350	
+gates/wgsl_render_census-gate.py	glob	ART.glob(f'{TMP}*')	1429	
+gates/wgsl_render_census-gate.py	strlit	PIN = 'ad117c928^'	255	
+gates/wgsl_render_census-gate.py	strlit	SEP = ' = ['	277	
+gates/wgsl_render_census-gate.py	strlit	CLASSES = [('UNHANDLED_ARM', '^code_for_op (LOAD|MAX|POW)$'), ('MISSING_ARM', '^code_for_op FDIV$'), ('WMASK_IS_GRAPH', '^wmask '), ('U32_WIDTH', '^nan_(mask|thr) double$	928	
+gates/wgsl_render_census-gate.py	strlit	CLASS_WHY = {'UNHANDLED_ARM': 'WGSLRenderer.code_for_op is {**CStyleLanguage.code_for_op, Ops.WHERE: ...}, so an op with no arm is a KeyError. The port answers UNHANDLED(Op	937	
+gates/wgsl_render_census-gate.py	strlit	RETIRED = [('PATTERN_UNPORTED (17 rows, retired 2026-10-14)', "`wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their `UPat`s, so the port had no pre	1198	
+gates/wgsl_render_census-gate.py	endswith	']'	298	
+gates/wgsl_render_census-gate.py	startswith	'rmw plain'	1022	
+gates/wgsl_render_census-gate.py	startswith	'#'	884	
+gates/wgsl_render_census-gate.py	endswith	']'	1339	
+gates/wgsl_render_census-gate.py	startswith	'#'	897	
+gates/wgsl_render_census-gate.py	re.compile	'\\]\\s{3}py=\\[.*\\]$'	278	
+gates/wgsl_render_census-gate.py	re.search	rest	296	
+gates/wgsl_render_census-gate.py	re.findall	'r_srneg\\((\\d+),'	619	
+gates/wgsl_render_census-gate.py	re.search	line	306	
+gates/wgsl_render_census-gate.py	re.findall	pat	471	
+gates/wgsl_render_census-gate.py	re.findall	'^def ((?:sr_|\\w+\\.)?sr\\w*)\\s*[(<]'	590	
+gates/wgsl_render_census-gate.py	re.findall	'OpsCAST\\{\\}'	768	
+gates/wgsl_render_census-gate.py	re.findall	'^def ([A-Za-z_0-9.]+)\\s*[(<]'	786	
+gates/wgsl_render_census-gate.py	re.search	rest	1337	
+gates/wgsl_render_census-gate.py	re.findall	'^def r_sr_(\\d+)\\(\\)'	606	
+gates/wgsl_render_census-gate.py	re.search	pat	1051	
+gates/wgsl_render_census-gate.py	re.findall	p	794	
+gates/wgsl_render_census-gate.py	re.search	pat	1130	
+gates/wgsl_render_census-gate.py	re.search	pat	1157	
+gates/wgsl_render_census-gate.py	re.match	l.strip()	1303	
+gates/wgsl_render_census-mutate.py	strlit	MUTATIONS = [("M37 sr_buchar's mask is 0xFF00", 'VALUE', 'port', 'String.concat(["bitcast<u32>(", s, "&0xFF)"])', 'String.concat(["bitcast<u32>(", s, "&0xFF00)"])'), ("M38 	75	
+gates/wgsl_render_census-mutate.py	startswith	('DISAGREE', 'names_hold:', 'norm_hold:', 'rules_hold:', 'fixtures_hold:', 'divergences_hold:', 'classes_hold:', 'selfcheck_hold:', 'axes_hold:', 'dead_defs_hol	209	
+gates/wgsl_render_census-oracle.py	strlit	DT = {'void': dtypes.void, 'boolean': dtypes.bool, 'int8': dtypes.char, 'uint8': dtypes.uchar, 'int16': dtypes.short, 'uint16': dtypes.ushort, 'int32': dtypes.int32,	252	
+gates/wgsl_render_census-oracle.py	strlit	ADDRS = {'AGlobal': AddrSpace.GLOBAL, 'ALocal': AddrSpace.LOCAL, 'AReg': AddrSpace.REG, 'ALU': AddrSpace.ALU, 'GLOBAL': AddrSpace.GLOBAL, 'LOCAL': AddrSpace.LOCAL, 'REG	260	
+gates/wgsl_render_census-oracle.py	strlit	PF_DTS = [('uchar', 'uint8'), ('char', 'int8'), ('ushort', 'uint16'), ('short', 'int16'), ('half', 'half'), ('int32', 'int32')]	266	
+gates/wgsl_render_census-oracle.py	strlit	PK_DTS = [('uchar', 'uint8'), ('char', 'int8'), ('ushort', 'uint16'), ('short', 'int16'), ('bool', 'boolean'), ('half', 'half'), ('float', 'single'), ('int32', 'int32')]	269	
+gates/wgsl_render_census-oracle.py	strlit	CFO_ARMS = ['SQRT', 'RECIPROCAL', 'NEG', 'EXP2', 'LOG2', 'SIN', 'TRUNC', 'AND', 'XOR', 'OR', 'ADD', 'SUB', 'MUL', 'CMOD', 'CDIV', 'FDIV', 'CMPNE', 'SHR', 'SHL', 'CMPLT', '	283	
+gates/wgsl_render_census-oracle.py	strlit	CFO_PROBES = ('LOAD', 'MAX', 'POW')	290	
+gates/wgsl_render_census-oracle.py	strlit	ARCHES = ['', 'shader-f16']	292	
+gates/wgsl_render_census-oracle.py	strlit	NAN_DTS = [('float', 'single'), ('half', 'half'), ('bfloat16', 'bfloat16'), ('double', 'double')]	294	
+gates/wgsl_render_census-oracle.py	strlit	NANU_DTS = [('float', 'single'), ('half', 'half'), ('double', 'double')]	296	
+gates/wgsl_render_census-oracle.py	strlit	RC_DTS = [('uchar', 'uint8'), ('ushort', 'uint16'), ('char', 'int8'), ('short', 'int16'), ('int32', 'int32'), ('uint32', 'uint32'), ('float', 'single'), ('half', 'half')	298	
+gates/wgsl_render_census-oracle.py	strlit	KERN_ALU = ['  var val0 = data1_4[0];', '  var val1 = data1_4[1];', '  var val2 = data1_4[2];', '  var val3 = data1_4[3];', '  var val4 = data2_4[0];', '  var val5 = data2	846	
+gates/wgsl_render_census-oracle.py	strlit	KERN_MIXED = ['  var val0 = atomicLoad(&data0_16[0]);', '  var<workgroup> buf0:array<atomic<u32>,4>;', '  data0_16[0] = (val0+1);']	852	
+gates/wgsl_render_census-oracle.py	strlit	RAW = {}	875	
+gates/wgsl_render_census-oracle.py	startswith	'@compute @workgroup_size('	895	
+gates/wgsl_render_census-oracle.py	startswith	'@group(0) @binding(1)'	889	
+gates/wgsl_render_census-oracle.py	startswith	'@group(0) @binding(2)'	890	
+gates/wgsl_render_census-oracle.py	startswith	'@group(0) @binding(3)'	891	
+gates/wgsl_render_census-oracle.py	startswith	'@compute @workgroup_size('	903	
+gates/wgsl_render_census-oracle.py	endswith	') {'	903	
+gates/wgsl_render_census-oracle.py	re.search	'@workgroup_size\\(([^)]*)\\)'	919	
+gates/wgsl_render_census-oracle.py	re.match	u	724	
+gates/wk-cd-gate.py	NO-SIGNAL	none	0	
+gates/wk-cd-oracle.py	strlit	DIVERGES = ''	61	
+gates/wk-eval-gate.py	strlit	ROWS = ('int_weakint_val', 'float_weakfloat_val', 'bool_true_val', 'bool_false_val', 'int_i32_val', 'int_on_range_val', 'bool_on_i32_val', 'float_on_i32_val', 'int_wea	49	
+gates/wk-eval-oracle.py	NO-SIGNAL	none	0	
+gates/wk-f32-gate.py	NO-SIGNAL	none	0	
+gates/wk-f32-rows.py	NO-SIGNAL	none	0	

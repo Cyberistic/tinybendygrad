@@ -1,0 +1,368 @@
+path	status	class	cited_by_or_blank
+../../../tinybendygrad	absent	prose	
+../helpers.bend	present	instrument	checks/nvrows-deadrow-gate.py
+../uop/ops.bend	present	instrument	gates/ptx_render_census-mutate.py
+.agents/slop	present	prose	
+.agents/slop/	present	prose	
+.agents/slop/BACKWARD-WALK.md	present	prose	
+.agents/slop/CSHAPE.md	present	prose	
+.agents/slop/FORM-BLIND-SPOTS.md	present	prose	
+.agents/slop/JSTAGE.md	present	prose	
+.agents/slop/MMFOLD.md	present	prose	checks/gate.sh
+.agents/slop/NORM.md	present	prose	
+.agents/slop/afloat-patch.py	absent	prose	
+.agents/slop/afloat-probe.py	absent	prose	
+.agents/slop/ag-libclang.tramp	present	prose	
+.agents/slop/anchor-audit.py	present	prose	
+.agents/slop/arange-ucache/	absent	prose	
+.agents/slop/backward/walk-row.txt	absent	prose	
+.agents/slop/bendpin/compare.py	present	prose	
+.agents/slop/bendpin/pin_check.py	present	prose	
+.agents/slop/bendpin/regressions.py	present	prose	
+.agents/slop/bendpin/resolve.py	present	prose	
+.agents/slop/bendpin/twoarg-probe.bend	present	prose	
+.agents/slop/bitcastrow/bc-diff.py	present	prose	
+.agents/slop/bitcastrow/bc-gen.py	present	prose	
+.agents/slop/bitcastrow/table.py	present	prose	
+.agents/slop/boot42_inversion.md	present	prose	
+.agents/slop/clangshim/	present	prose	
+.agents/slop/coldness/COLDNESS.md	present	prose	checks/substrate-check.sh
+.agents/slop/commute-detect.py	absent	prose	
+.agents/slop/const-audit.py	absent	prose	
+.agents/slop/cshape/	present	prose	
+.agents/slop/cstyle-reader-parity.py	absent	prose	
+.agents/slop/cstyle-shapes-selftest.py	present	prose	
+.agents/slop/dd-audit.py	absent	prose	
+.agents/slop/dd-coverage.py	absent	prose	
+.agents/slop/dd-gate-base-172.txt	absent	prose	
+.agents/slop/dd-mut-classify.py	absent	prose	
+.agents/slop/dd-mut-deepen.py	absent	prose	
+.agents/slop/dd-mut-proof.py	absent	prose	
+.agents/slop/dd-mut-reach.py	absent	prose	
+.agents/slop/dd-mut-tether.py	absent	prose	
+.agents/slop/dd-mutate.py	present	prose	
+.agents/slop/dd-mutations-report.md	present	prose	
+.agents/slop/dd-mutations.frozen.bend	absent	prose	
+.agents/slop/dd-probe.py	absent	prose	
+.agents/slop/dd-truth.py	present	prose	
+.agents/slop/devpin/envsweep.py	present	prose	
+.agents/slop/devpin/hashall.py	present	prose	
+.agents/slop/devpin/injectivity.py	present	prose	
+.agents/slop/devpin/lin-decision.py	present	prose	
+.agents/slop/difftxt/DECISION.md	absent	prose	
+.agents/slop/dm-oracle.py	absent	prose	
+.agents/slop/dtype-oracle-MUTANT.py	absent	prose	
+.agents/slop/dtype-oracle-truth.md	present	prose	
+.agents/slop/e2e	present	prose	
+.agents/slop/e2e.sh	present	prose	checks/run-f64.sh,checks/run-port-mm.sh,checks/e2e.sh,checks/substrate-check.sh
+.agents/slop/e2e/	present	prose	
+.agents/slop/e2e/cc-no-fma.sh	present	prose	
+.agents/slop/e2e/index.html	present	prose	
+.agents/slop/e2e_gpu_probe.mjs	present	prose	
+.agents/slop/e2e_mm.bend	present	instrument	checks/e2e.py
+.agents/slop/e2e_mm.py	present	instrument	checks/e2e.py
+.agents/slop/e2e_mm_gate.py	present	instrument	checks/e2e.py
+.agents/slop/e2e_mm_run.mjs	present	instrument	checks/e2e.py
+.agents/slop/e2e_negctl.sh	present	prose	checks/run-port-mm.sh
+.agents/slop/env-coercion-table.py	present	prose	
+.agents/slop/env-flag-divergence.md	present	prose	
+.agents/slop/flag-consume.py	absent	prose	
+.agents/slop/flag-def-scan.py	absent	prose	
+.agents/slop/flag-literal-scan.py	absent	prose	
+.agents/slop/fold-lift-mutate.py	present	prose	
+.agents/slop/fold-rng-mutate.py	present	prose	
+.agents/slop/formblind-audit.py	absent	prose	
+.agents/slop/formblind-census.py	present	prose	
+.agents/slop/ga-oracle.py	absent	prose	
+.agents/slop/ga_fix.py	absent	prose	
+.agents/slop/ga_gate.py	present	prose	
+.agents/slop/ga_mutate.py	present	prose	
+.agents/slop/ga_probe.sh	absent	prose	
+.agents/slop/gatesweep/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/gendirs/TABLE.md	present	prose	
+.agents/slop/gendirs/properties.md	present	prose	
+.agents/slop/gendirs/writetargets.py	present	prose	
+.agents/slop/graphcmp-LIMITS.md	present	prose	
+.agents/slop/graphcmp-oracle.py	present	instrument	checks/differ.py,checks/env-precond.py,checks/substrate-snapshot.py
+.agents/slop/graphcmp-p13-ops.py	present	instrument	checks/differ.py,checks/substrate-snapshot.py
+.agents/slop/graphcmp-repro.sh	present	prose	
+.agents/slop/graphcmp-run.sh	present	prose	
+.agents/slop/graphcmp.bend	present	instrument	checks/differ.py,checks/substrate-snapshot.py
+.agents/slop/graphcmp.py	present	instrument	checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/env-precond.py,checks/substrate-snapshot.py
+.agents/slop/gwself/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/hygiene-2026-10-04.md	present	prose	
+.agents/slop/lane-load-measurements.tsv	absent	prose	
+.agents/slop/lanedeath-census.md	present	prose	
+.agents/slop/lanedeath-census.py	present	prose	
+.agents/slop/lanedeath-provenance.py	absent	prose	
+.agents/slop/load-census.py	present	prose	
+.agents/slop/loadwatch.py	present	prose	
+.agents/slop/memory-diff.py	present	prose	
+.agents/slop/memory-mutate.py	present	prose	
+.agents/slop/memory-report.md	present	prose	
+.agents/slop/memory_oracle.py	absent	prose	
+.agents/slop/mixin-op-gate.py	present	instrument	gates/mixin-op-gate.py,gates/mixin-op-oracle.py
+.agents/slop/mixin-op-mutate.py	present	prose	
+.agents/slop/msgdiff/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/msgdiff/run.py	present	prose	checks/e2e.sh
+.agents/slop/mutanchor.py	absent	prose	
+.agents/slop/name-census.py	present	prose	
+.agents/slop/nn-init-gate.py	present	prose	
+.agents/slop/nn-init-mutate.py	present	prose	
+.agents/slop/nocolor-diff.py	present	prose	
+.agents/slop/nocolor-oracle.py	present	prose	
+.agents/slop/nocolor-probe.bend	absent	prose	
+.agents/slop/norm/canon.py	present	prose	
+.agents/slop/norm/lint_norm.py	present	prose	checks/lint_demo.sh,checks/lint_demo.sh
+.agents/slop/notes/bend2-constraints.md	present	prose	checks/run-port-mm.sh
+.agents/slop/notes/sz-lexer-proto.py	absent	prose	
+.agents/slop/notes/sz-mktrees.py	absent	prose	
+.agents/slop/notes/sz-snips.py	absent	prose	
+.agents/slop/nv_mmustrans.py	absent	prose	
+.agents/slop/nv_one_mutation.py	absent	prose	
+.agents/slop/nv_order_census.py	present	prose	
+.agents/slop/ops-501-mutate.py	present	prose	
+.agents/slop/ops-501-oracle.py	absent	prose	
+.agents/slop/ops_cl-const-audit.txt	absent	prose	
+.agents/slop/ops_cl_constmap.py	absent	prose	
+.agents/slop/ops_webgpu-const-audit.txt	absent	prose	
+.agents/slop/ops_webgpu_constmap.py	absent	prose	
+.agents/slop/opstree	absent	prose	
+.agents/slop/oracle_py.py	present	prose	
+.agents/slop/phantom-run.py	absent	prose	
+.agents/slop/pin-tables.py	present	prose	
+.agents/slop/pin-tree-oracle-report.md	present	prose	
+.agents/slop/pin-tree-oracle.py	absent	prose	
+.agents/slop/pinindep/derive.py	present	prose	checks/run-all.sh,checks/plant.sh
+.agents/slop/probe/real.sh	absent	prose	
+.agents/slop/probe/serve.py	absent	prose	
+.agents/slop/rebase-break.py	absent	prose	
+.agents/slop/rebase-gate-selftest.py	present	prose	
+.agents/slop/rebase-oracle-ops.py	absent	prose	
+.agents/slop/rebase-oracle-search.py	absent	prose	
+.agents/slop/rebase-oracle-spec.py	absent	prose	
+.agents/slop/rebase-shadow.py	absent	prose	
+.agents/slop/rebase-survey.py	absent	prose	
+.agents/slop/repropin/measure.py	present	prose	checks/plant.sh,checks/run-all.sh
+.agents/slop/reprorefs/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/reprorefs/probe.py	present	prose	
+.agents/slop/rf-ct-oracle.py	absent	prose	
+.agents/slop/rf2-mutate.py	present	prose	
+.agents/slop/rf2-mutations.txt	absent	prose	
+.agents/slop/rf2_work.bend	absent	prose	
+.agents/slop/rf2root/	present	prose	
+.agents/slop/rowform.py	absent	prose	
+.agents/slop/rows-blast.py	absent	prose	
+.agents/slop/runs/elf-checkonly-2026-10-04.txt	absent	prose	
+.agents/slop/runs/elf-run-353rows-2026-10-04.txt	absent	prose	
+.agents/slop/selfcheck/plants.py	present	prose	
+.agents/slop/stale-snapshot-detect.py	absent	prose	
+.agents/slop/state-gate.py	present	prose	
+.agents/slop/state-mutate.py	present	prose	
+.agents/slop/substrate-audit.py	present	prose	
+.agents/slop/substrate/SUBSTRATE.md	absent	prose	
+.agents/slop/substrate/oracle-check.sh	present	instrument	checks/substrate.py
+.agents/slop/table-pin.py	present	prose	
+.agents/slop/tcptx-mutate.py	present	prose	
+.agents/slop/tcptx-oracle.py	absent	prose	
+.agents/slop/tools/mutate-dm.py	present	prose	
+.agents/slop/tools/mutate-sz.py	present	prose	
+.agents/slop/tools/mv.py	absent	prose	
+.agents/slop/tools/tx-mut.py	absent	prose	
+.agents/slop/toolsledger/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/toolsledger/extract.py	present	prose	
+.agents/slop/toolsledger/paths.tsv	present	prose	
+.agents/slop/tree-verdict.md	present	prose	
+.agents/slop/trigger/bc-oracle.py	absent	prose	
+.agents/slop/tx-arena.py	present	prose	
+.agents/slop/tx-arena.txt	absent	prose	
+.agents/slop/txtgen/REPORT.md	present	prose	checks/e2e.sh
+.agents/slop/unobservable-census.py	present	prose	
+.agents/slop/unobservable-gr-move.py	absent	prose	
+.agents/slop/unobservable-gr-oracle.py	absent	prose	
+.agents/slop/unobservable-gr-probe.bend	absent	prose	
+.agents/slop/usb-build.py	present	prose	
+.agents/slop/usb-constsweep.py	present	prose	
+.agents/slop/usb-dead.py	present	prose	
+.agents/slop/usb-diff.py	present	prose	
+.agents/slop/usb-gen-strings.py	present	prose	
+.agents/slop/usb-gen-tables.py	absent	prose	
+.agents/slop/usb-gen.py	present	prose	
+.agents/slop/usb-handmap.py	absent	prose	
+.agents/slop/usb-sblock.bend.txt	absent	prose	
+.agents/slop/usb-seam.py	absent	prose	
+.agents/slop/usb-symmap.py	present	prose	
+.agents/slop/xd1/	absent	prose	
+.agents/slop/xd1/head	absent	prose	
+.agents/slop/xd1/mkrows.py	absent	prose	
+.agents/slop/xd1/mutate.py	absent	prose	
+.agents/slop/xd1/render-gate-oracle.py	absent	instrument	checks/rn-gate.py
+.agents/slop/xd1/rewrite-main.py	absent	prose	
+.agents/slop/xd1/rowdiff.py	absent	prose	
+.agents/slop/xd1/stem-bug.py	absent	prose	
+.agents/slop/xd1/verify.py	absent	prose	
+.agents/slop/xd1/wt-sync.sh	absent	prose	checks/wt-sync.sh
+.agents/slop/xd1/wt/	absent	prose	
+.agents/slop/zero-audit.py	present	prose	
+.agents/slop/zero-classify.py	absent	prose	
+.agents/slop/zero-selftest.py	present	prose	
+.git/agent-index	present	prose	
+.git/index	present	prose	
+.venv/bin/python	present	prose	
+/	present	prose	
+/Users/cyberistic/src/tries/.../bend2/main.ts	absent	prose	
+/dev/null	present	prose	
+/opt/homebrew/lib/python3.14/site-packages/z3	present	prose	
+/tmp	present	prose	
+/tmp/dm-base.txt	absent	prose	
+DIR/tinybendygrad	absent	prose	
+DSPAllocator._alloc/_free/_offset	absent	prose	
+LAWS/spec.bend	present	instrument	checks/nvrows-deadrow-gate.py,gates/ptx_render_census-gen.py
+autogen/am/am.py	present	prose	
+autogen/nv.py	present	prose	
+bend2/base.bend	present	prose	
+bin/	present	prose	
+bin/bend	present	prose	
+blobrows/af-after	absent	prose	
+checks/bounded.py	present	instrument	checks/bounded.py,checks/residue.py,checks/substrate.py
+checks/census.py	present	instrument	checks/unowned.py,gates/gates-pop.py
+checks/corpus-figure.py	present	instrument	checks/cites-census.py,checks/corpus-figure.py
+checks/devpin.py	present	instrument	checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/substrate-snapshot.py
+checks/differ.py	present	instrument	checks/corpus-figure.py,checks/diary-census.py,checks/differ.py,checks/env-precond.py,checks/no-txt.py,checks/runs-artifacts.py,checks/substrate-id.py,checks/substrate-snapshot.py,gates/retention-check.py
+checks/e2e.py	present	instrument	checks/e2e.py
+checks/gatesweep-cost.out	present	instrument	checks/gatesweep.py
+checks/gatesweep-run.tsv	present	instrument	checks/gatesweep.py
+checks/gen/	present	prose	
+checks/graphcmp.py	absent	prose	
+checks/index-arm-gate.py	present	instrument	checks/index-arm-gate.py
+checks/repro-paths.py	present	prose	
+checks/substrate.py	present	instrument	checks/substrate.py,gates/gates-pop.py
+codegen/decomp/dtype.bend	present	instrument	gates/decomp_graph_census-mutate.py
+codegen/late/linearizer.bend	present	instrument	gates/linearizer_census-mutate.py
+codegen/opt/	absent	prose	
+codegen/opt/search.bend	present	prose	
+codegen/transcendental.bend	absent	prose	
+gates/	present	prose	
+gates/README.md	present	prose	checks/lintable-gate.sh,checks/classify.sh,checks/e2e.sh,checks/disarm.sh,checks/run-port-mm.sh,checks/lint_demo.sh,checks/run-f64.sh,checks/sb-gate.sh,checks/gen.sh,checks/plant.sh,checks/bounded-selftest.sh,checks/gate.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/demo.sh,checks/run-all.sh
+gates/artifacts/	present	prose	
+gates/bc-u32-gate.py	present	instrument	gates/bc-u32-gate.py
+gates/decomp_graph_census-gate.py	present	instrument	gates/decomp_graph_census-gate.py
+gates/decomp_value-gate.py	present	instrument	gates/decomp_value-gate.py
+gates/decomp_value-pins.rows	present	prose	
+gates/gatekit.py	present	instrument	gates/gate-surface.py,gates/gates-pop.py,gates/retention-check.py
+gates/gendirs.py	present	instrument	checks/diary-census.py,gates/gates-pop.py,gates/gendirs.py,gates/retention-check.py
+gates/indexread-gate.py	present	instrument	gates/indexread-gate.py
+gates/linearizer_census-gate.py	present	instrument	gates/linearizer_census-gate.py
+gates/linearizer_census-oracle.py	present	instrument	gates/linearizer_census-oracle.py
+gates/msgdiff-gate.py	present	instrument	gates/msgdiff-gate.py
+gates/mutkit.py	present	prose	
+gates/pins-shape-gate.py	present	instrument	gates/pins-shape-gate.py
+gates/regalloc_census-gate.py	present	instrument	gates/regalloc_census-gate.py
+gates/regalloc_census-oracle.py	present	instrument	gates/regalloc_census-oracle.py
+gates/tn_graph_census-gate.py.bak	absent	prose	
+gk/	absent	prose	
+gk2/	absent	prose	
+guide/EFFECTS.md	present	prose	
+guide/GUIDE.md	present	prose	
+guide/SHADERS.md	present	prose	
+langs/	present	prose	
+langs/NOTES.md	present	prose	
+langs/wasm/WALL.md	present	prose	
+late/linearizer	absent	prose	
+mixin/gradient.bend	present	instrument	gates/gr_graph_census-gate.py
+mixin/op.bend	present	instrument	gates/mixin-op-gate.py,gates/mixin-op-oracle.py,gates/mo_graph_census-gate.py
+nn/	absent	prose	
+nn/__init__.bend	present	prose	checks/sb-gate.sh,checks/sb-gate.sh
+nn/state.bend	present	prose	
+notes/	absent	prose	
+notes/bend2-constraints.md	present	prose	checks/run-port-mm.sh
+nv/ip	absent	prose	
+nv/ip.py	present	prose	
+oracle/	absent	prose	
+oracle/dtype_tables.py	absent	prose	
+oracle_pmul0/1	absent	prose	
+oracles/	present	prose	
+oracles/baseline-ledger.txt	absent	prose	
+oracles/boot42_baseline_port.txt	absent	prose	
+oracles/fold-mut.py	present	prose	
+oracles/fold-rng-oracle.py	present	prose	
+oracles/ga-oracle.txt	absent	prose	
+oracles/gateport/oracles/mixin-op-gate.sh	present	prose	
+oracles/late-oracle.txt	absent	prose	
+oracles/memory_oracle.txt	absent	prose	
+oracles/rf-ct-oracle.txt	absent	prose	
+oracles/usb-arith-rows.bend.txt	absent	prose	
+phantom-repro/	absent	prose	
+phantom-repro/planted/	absent	prose	
+plant.out/err	absent	prose	
+range.out/err	absent	prose	
+rebase/postrecord-2026-10-03.json	absent	prose	
+references/	present	prose	
+references/bend	present	prose	
+references/bend/.git/worktrees/	present	prose	
+references/tinyquery	present	prose	
+renderer/amd/generate.bend	present	instrument	checks/no-shrink.py
+renderer/csprobe.bend	absent	prose	
+renderer/llvmir.bend	present	prose	
+renderer/nir.bend	present	prose	
+renderer/tc_ptx.bend	present	instrument	gates/tc_ptx_types-mutate.py
+renderer/wgsl.bend	present	prose	
+runs/e2e/README.md	present	prose	checks/lintable-gate.sh,checks/classify.sh,checks/e2e.sh,checks/disarm.sh,checks/run-port-mm.sh,checks/lint_demo.sh,checks/run-f64.sh,checks/sb-gate.sh,checks/gen.sh,checks/plant.sh,checks/bounded-selftest.sh,checks/gate.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/demo.sh,checks/run-all.sh
+runs/e2e/e2e-mm-oracle.json	present	prose	checks/run-port-mm.sh,checks/run-port-mm.sh,checks/run-port-mm.sh,checks/run-port-mm.sh,checks/e2e.sh
+runs/graphcmp/D	present	prose	
+runs/graphcmp/D/	present	prose	
+runs/graphcmp/D/README-D.txt	absent	prose	
+runs/pin-tree-oracle/	absent	prose	
+runtime/	present	prose	
+runtime/_p6.bend	absent	prose	
+runtime/dtype.js	present	instrument	checks/abi_gate.py,checks/gate.py
+runtime/support/memory.py	present	prose	
+runtime/support/usb.py	present	prose	
+runtime/webgpu_call	absent	prose	
+schedule/__init__.bend	present	prose	checks/sb-gate.sh,checks/sb-gate.sh
+schedule/rangeify.bend	present	prose	
+schedule/rf2_work.bend	present	prose	
+slop/notes/sz-odin-precedent.md	present	prose	
+spec/sz.md	present	prose	
+spec/tinyspec.tex	present	prose	
+test/dtype_oracle.bend	present	prose	
+tests/	absent	prose	
+tinybendygrad/	present	prose	
+tinybendygrad/LAWS.bend	present	prose	
+tinybendygrad/codegen/late.bend	absent	prose	
+tinybendygrad/helpers.bend	present	instrument	checks/abi_gate.py,checks/jsfix_gate.py,gates/bc-u32-gen.py,gates/wk-f32-rows.py
+tinybendygrad/nn/	present	prose	
+tinybendygrad/runtime/ops_metal.bend	present	prose	
+tinybendygrad/runtime/support/am/ip.bend	present	prose	
+tinybendygrad/runtime/support/elf.bend	present	prose	
+tinybendygrad/runtime/support/nv/ip.bend	present	prose	
+tinybendygrad/runtime/support/nv/nvdev.bend	present	instrument	checks/nvrows-deadrow-gate.py
+tinybendygrad/runtime/support/usb.bend	present	prose	
+tinybendygrad/sz.bend	present	prose	
+tinygrad/	present	prose	
+tinygrad/codegen/opt/search.py	present	prose	
+tinygrad/renderer/amd/generate.py	present	prose	
+tinygrad/runtime/autogen/libclang.py	present	prose	
+tinygrad/runtime/autogen/opencl.py	present	prose	
+tinygrad/runtime/autogen/webgpu.py	present	prose	
+tinygrad/runtime/support/am/ip.py	present	prose	
+tools/	present	prose	
+tools/get-bend.sh	present	instrument	checks/runs-artifacts.py
+try/finally	absent	prose	
+uop/divandmod.bend	present	prose	
+uop/fold.bend	present	instrument	checks/disagree-gate.py,gates/bc-u32-gen.py
+uop/ops.bend	present	instrument	checks/disagree-gate.py,checks/no-shrink.py,checks/substrate-id.py,gates/bc-u32-gen.py,gates/ptx_render_census-gen.py,gates/ptx_render_census-mutate.py
+uop/probe-bl.bend	absent	prose	
+uop/probe-mmcore.bend	absent	prose	
+uop/spec.bend	present	prose	checks/lintable-gate.sh
+uop/symbolic.bend	present	prose	
+uop/validate.bend	present	prose	
+vendor/bend/tests/	absent	prose	
+wt/	absent	prose	
+xd1/	absent	prose	
+xd1/head	absent	prose	
+xd1/pin	absent	prose	
+xd2/cdp.mjs	present	prose	
+xd2/serve.mjs	present	prose	
+xd2/sh.mjs	present	prose	
+xd2/trace_forward.py	present	prose	

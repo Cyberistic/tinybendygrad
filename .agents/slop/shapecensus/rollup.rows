@@ -1,0 +1,226 @@
+checks/abi4_gate.py	4	re.compile:1 re.findall:1 startswith:2 strlit:19	OTHER_GATES@bind:93
+checks/abi_gate.py	6	re.compile:2 re.findall:1 re.finditer:1 re.match:1 startswith:8 strlit:25	ARMS@bind:291,ORACLE@bind:146,WORDS@bind:161
+checks/al-verdict.py	2	startswith:2 strlit:1	
+checks/both-census.py	1	NO-SIGNAL:1	
+checks/bounded.py	4	re.compile:1 re.match:1 re.search:1 startswith:2	
+checks/census.py	3	startswith:1 strlit:2 walk:1	
+checks/citation-gate.py	7	endswith:6 re.compile:3 re.findall:3 re.finditer:2 startswith:1 strlit:3 walk:3	CLASSES@bind:53,PYROOTS@bind:43
+checks/cites-census.py	9	endswith:3 re.compile:17 re.finditer:2 re.fullmatch:1 re.match:11 re.search:8 startswith:2 strlit:3 walk:3	
+checks/cl-port-gate.py	6	endswith:1 re.compile:1 re.findall:1 re.search:4 startswith:9 strlit:4	
+checks/cli.py	2	endswith:2 startswith:7	
+checks/coindep.py	1	strlit:3	
+checks/compile.py	1	re.compile:1	
+checks/corpus-figure.py	1	NO-SIGNAL:1	
+checks/coverage.py	2	re.compile:3 re.search:3	
+checks/denominator.py	1	glob:1	
+checks/devgate.py	6	endswith:3 re.compile:2 re.search:2 startswith:1 strlit:9 walk:13	VENDOR_PREFIX@bind:210
+checks/devpin.py	5	glob:2 re.compile:2 re.findall:2 re.search:1 strlit:2	
+checks/diary-census.py	3	startswith:2 strlit:2 walk:3	
+checks/differ.py	6	glob:6 re.findall:1 re.search:1 startswith:1 strlit:12 walk:2	CONTROLS@bind:237,PINS@bind:248,REPRO_LITERALS@bind:350,REPRO_PINS@bind:328,ROW_VALUES@bind:782,SUBSTRATE_INPUTS@bind:884,SUBSTRATE_ROWS@bind:873
+checks/disagree-gate.py	6	glob:1 re.compile:1 re.findall:1 re.search:1 startswith:1 strlit:4	ARMED@bind:60,CITES@bind:146
+checks/dup-census.py	1	strlit:1	
+checks/dup-gate.py	1	strlit:1	
+checks/e2e.py	3	re.compile:1 re.search:1 strlit:3	
+checks/env-precond.py	4	re.finditer:1 re.search:1 startswith:1 strlit:2	PRECONDS@bind:116,RECORD_KEYS@bind:167
+checks/fw_live.py	1	NO-SIGNAL:1	
+checks/gate.py	4	re.compile:1 re.match:1 re.search:3 strlit:1	
+checks/gate_dtype.py	1	NO-SIGNAL:1	
+checks/gate_norm.py	4	endswith:1 re.compile:1 re.match:1 strlit:1	
+checks/gatesweep.py	7	endswith:1 re.compile:2 re.match:1 re.search:2 startswith:2 strlit:5 walk:5	PLANTS@bind:287
+checks/gen_gate.py	4	endswith:1 startswith:1 strlit:2 walk:1	
+checks/git-index-guard.py	1	NO-SIGNAL:1	
+checks/graphcmp-census-audit.py	3	re.search:1 startswith:1 strlit:1	
+checks/hermetic-census.py	1	strlit:1	
+checks/index-arm-gate.py	1	strlit:3	
+checks/jsfix_gate.py	4	re.compile:3 re.match:4 startswith:3 strlit:14	ARMS@bind:145,DEFS@bind:78
+checks/llama.py	3	endswith:4 startswith:1 strlit:1	
+checks/marker-audit.py	5	re.compile:3 re.match:2 re.search:4 startswith:4 walk:1	
+checks/nl-gate-noguard.py	1	strlit:3	
+checks/nl-gate.py	3	endswith:2 re.compile:2 strlit:5	
+checks/no-shrink.py	2	startswith:3 strlit:1	
+checks/no-strays.py	4	re.compile:3 re.search:3 strlit:1 walk:3	SOURCE_TREES@bind:139
+checks/no-txt.py	4	endswith:1 glob:1 strlit:5 walk:2	
+checks/norm_check.py	1	strlit:1	
+checks/nvrows-deadrow-gate.py	5	re.compile:3 re.finditer:1 re.match:2 re.search:1 startswith:1	
+checks/oracle-txt-census.py	7	re.compile:8 re.finditer:2 re.match:3 re.search:2 startswith:1 strlit:3 walk:2	
+checks/oracle_f64.py	2	re.compile:1 strlit:1	
+checks/plant.py	1	NO-SIGNAL:1	
+checks/process_replay.py	2	startswith:3 strlit:1	
+checks/render-gate-oracle.py	1	strlit:4	
+checks/reorder-gate.py	6	re.compile:1 re.finditer:1 re.match:2 re.search:1 startswith:5 strlit:2	defs@bind:48,spans@bind:66
+checks/repair-dupes.py	1	startswith:1	
+checks/repro-paths.py	4	re.compile:2 re.finditer:1 re.search:1 strlit:1	
+checks/reset.py	1	NO-SIGNAL:1	
+checks/residue.py	4	endswith:1 startswith:1 strlit:4 walk:3	
+checks/rn-gate.py	4	re.compile:2 re.match:2 startswith:2 strlit:6	
+checks/romless.py	1	NO-SIGNAL:1	
+checks/run.py	1	NO-SIGNAL:1	
+checks/runs-artifacts.py	4	glob:10 startswith:2 strlit:4 walk:9	
+checks/rw-gate-oracle.py	1	NO-SIGNAL:1	
+checks/serve.py	4	endswith:4 re.match:1 startswith:20 strlit:1	
+checks/slop-declare.py	5	re.compile:1 re.findall:1 startswith:1 strlit:5 walk:2	COLUMNS@bind:116
+checks/stage1-census.py	5	endswith:2 glob:1 re.match:4 startswith:3 strlit:3	
+checks/substrate-id.py	2	endswith:1 strlit:1	
+checks/substrate-snapshot.py	2	strlit:3 walk:3	COPIES@bind:76,FILES@bind:63,TOOLING@bind:75
+checks/substrate.py	8	endswith:7 re.compile:20 re.finditer:1 re.match:11 re.search:2 startswith:8 strlit:9 walk:1	VALUED@bind:209
+checks/sweep.py	7	endswith:6 re.compile:2 re.findall:1 re.search:2 startswith:2 strlit:17 walk:9	RESIDUE_ROOTS@bind:81
+checks/sz.py	4	endswith:3 startswith:3 strlit:1 walk:1	
+checks/test_rewrite_bottom_up_gate.py	1	NO-SIGNAL:1	
+checks/txt-owners.py	9	endswith:2 re.compile:7 re.findall:1 re.finditer:3 re.match:1 re.search:1 startswith:1 strlit:1 walk:1	
+checks/unowned.py	4	re.compile:4 re.findall:2 re.search:3 strlit:5	
+checks/vz_gate.py	2	startswith:3 strlit:2	MUTATIONS@bind:114
+checks/wallcheck.py	7	endswith:1 re.compile:7 re.findall:6 re.search:11 startswith:9 strlit:7 walk:4	WALK_ROOTS@bind:47
+gates/amd_dsl_census-gate.py	10	glob:1 re.compile:1 re.findall:6 re.finditer:4 re.fullmatch:3 re.match:1 re.search:3 startswith:4 strlit:6 walk:1	CLASSES@bind:755,GROUPS@bind:286,RETIRED@bind:855
+gates/amd_dsl_census-mutate.py	2	startswith:2 strlit:3	MUTATIONS@bind:231
+gates/amd_dsl_census-oracle.py	2	startswith:1 strlit:6	CANON_DOM@bind:211,CANON_IN@bind:199,CANON_OUT@bind:203,NAMED_REGS@bind:495,OPS@bind:959
+gates/bc-u32-gate.py	1	strlit:1	
+gates/bc-u32-gen.py	2	startswith:1 strlit:2	
+gates/bc-u32-oracle.py	1	NO-SIGNAL:1	
+gates/bc_u32_table.py	1	strlit:1	BANDS@bind:30
+gates/beautiful-mnist-gate.py	2	endswith:1 strlit:1	
+gates/beautiful-mnist-oracle.py	1	walk:2	
+gates/cr_graph_census-gate.py	1	strlit:2	ROWS@bind:63
+gates/cr_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/crp_graph_census-gate.py	5	re.compile:4 re.findall:15 re.search:8 startswith:5 strlit:8	CLASSES@bind:981,VENDORED@bind:156
+gates/crp_graph_census-mutate.py	2	startswith:2 strlit:4	MUTATIONS@bind:278
+gates/crp_graph_census-oracle.py	3	re.compile:1 re.findall:1 strlit:5	
+gates/cstyle_render_census-gate.py	1	strlit:2	PINS@bind:137
+gates/cstyle_render_census-mutate.py	2	startswith:1 strlit:3	MUTATIONS@bind:138
+gates/cstyle_render_census-oracle.py	1	strlit:2	OPT_KEYS@bind:123
+gates/decomp_graph_census-gate.py	2	startswith:1 strlit:6	FINDING@bind:195,PROMOTION_CASTS@bind:167,ROWS@bind:151,UNBUILT@bind:194,WALL@bind:193
+gates/decomp_graph_census-mutate.py	1	startswith:1	
+gates/decomp_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/decomp_value-gate.py	3	startswith:3 strlit:6 walk:3	
+gates/ew-consts-gate.py	1	NO-SIGNAL:1	
+gates/ew-consts-oracle.py	1	NO-SIGNAL:1	
+gates/ew-explog-gate.py	1	NO-SIGNAL:1	
+gates/ew-explog-oracle.py	1	NO-SIGNAL:1	
+gates/ew_graph_census-gate.py	1	strlit:2	ROWS@bind:56
+gates/ew_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/fold_graph_census-gate.py	1	strlit:2	ROWS@bind:80
+gates/fold_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/gate-surface.py	6	endswith:1 re.compile:1 re.match:1 startswith:3 strlit:11 walk:1	
+gates/gatekit.py	5	glob:1 re.compile:2 re.match:3 strlit:5 walk:1	
+gates/gates-pop.py	6	endswith:4 re.compile:12 re.match:4 re.search:11 strlit:6 walk:7	_CERTIFY_OR@bind:764
+gates/gendirs.py	8	endswith:2 re.compile:1 re.finditer:1 re.match:1 re.search:1 startswith:3 strlit:4 walk:5	
+gates/git-massdelete-gate.py	1	startswith:2	
+gates/gr_graph_census-gate.py	1	strlit:2	ROWS@bind:78
+gates/gr_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/i64-shl-gate.py	1	strlit:1	EXPECTED@bind:62
+gates/i64-shl-oracle.py	1	strlit:1	
+gates/i64-shr-gate.py	2	glob:2 strlit:2	FIELDS@bind:45,VALUES@bind:43
+gates/i64-shr-oracle.py	1	NO-SIGNAL:1	
+gates/indexread-gate.py	4	endswith:1 startswith:1 strlit:4 walk:3	ADD_QUOTED@bind:111,FORMS@bind:99,GIT_WORDS@bind:108
+gates/linearizer_census-gate.py	3	re.search:2 startswith:1 strlit:1	CLASSES@bind:104
+gates/linearizer_census-mutate.py	1	strlit:1	
+gates/linearizer_census-oracle.py	1	NO-SIGNAL:1	
+gates/md_graph_census-gate.py	1	strlit:2	ROWS@bind:66
+gates/md_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/mixin-op-gate.py	2	endswith:1 strlit:1	
+gates/mixin-op-oracle.py	1	strlit:1	
+gates/mo_graph_census-gate.py	1	strlit:2	ROWS@bind:72
+gates/mo_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/msgdiff-gate.py	6	re.compile:10 re.findall:4 re.finditer:2 re.search:4 startswith:2 strlit:1	UNCHECKED_KINDS@bind:148
+gates/mutkit.py	1	NO-SIGNAL:1	
+gates/mx_graph_census-gate.py	1	strlit:2	ROWS@bind:70
+gates/mx_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/op_graph_census-gate.py	1	strlit:2	ROWS@bind:103
+gates/op_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/ops-core-gate.py	1	strlit:1	ROWS@bind:53
+gates/ops-core-oracle.py	1	NO-SIGNAL:1	
+gates/ops_python_census-gate.py	10	endswith:1 glob:1 re.compile:3 re.findall:8 re.fullmatch:1 re.match:3 re.search:5 startswith:4 strlit:4 walk:1	CLASSES@bind:630,VENDORED@bind:235
+gates/ops_python_census-oracle.py	2	re.compile:1 strlit:3	B64_FIXTURES@bind:142,TC_TABLES@bind:62
+gates/ops_python_exec-gate.py	3	endswith:1 re.findall:4 startswith:4	
+gates/ops_python_exec-gen.py	4	re.findall:3 startswith:1 strlit:1 walk:2	
+gates/pins-shape-gate.py	8	endswith:4 re.compile:3 re.findall:1 re.match:1 re.search:4 startswith:4 strlit:1 walk:4	
+gates/ptx_render_census-gate.py	5	endswith:1 re.findall:2 re.search:2 startswith:2 strlit:5	FIXTURES@bind:153
+gates/ptx_render_census-gen.py	2	re.compile:1 strlit:2	
+gates/ptx_render_census-mutate.py	2	glob:1 strlit:3	PORT_MUTATIONS@bind:68
+gates/ptx_render_census-oracle.py	1	startswith:3	
+gates/rd_graph_census-gate.py	1	strlit:2	ROWS@bind:58
+gates/rd_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/realize_graph_census-gate.py	6	endswith:1 re.findall:4 re.match:1 re.search:1 startswith:7 strlit:12	ARG_SLOT@bind:283,DRV@bind:223,RET_IS_UOP_FIXED@bind:302,SINK_NO_KI@bind:288,SLOT_MISS@bind:289,SRC_BODY_FIXED@bind:266,VAL_BODY@bind:281
+gates/realize_graph_census-mutate.py	2	startswith:5 strlit:6	PHASE1@bind:330
+gates/realize_graph_census-oracle.py	1	strlit:2	ARMS@bind:217
+gates/regalloc_census-gate.py	3	re.search:1 startswith:1 strlit:1	CLASSES@bind:86
+gates/regalloc_census-mutate.py	1	strlit:1	
+gates/regalloc_census-oracle.py	1	NO-SIGNAL:1	
+gates/render_val_s-gate.py	1	strlit:1	ROWS@bind:31
+gates/render_val_s-oracle.py	1	NO-SIGNAL:1	
+gates/replace-gate.py	1	strlit:1	ROWS@bind:39
+gates/replace-oracle.py	1	NO-SIGNAL:1	
+gates/retention-check.py	2	strlit:1 walk:5	
+gates/rng_graph_census-gate.py	2	startswith:1 strlit:2	TABLES@bind:106
+gates/rng_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/tc_ptx_types-gate.py	1	strlit:1	TABLES@bind:46
+gates/tc_ptx_types-mutate.py	2	startswith:1 strlit:1	MUTATIONS@bind:39
+gates/tc_ptx_types-oracle.py	1	NO-SIGNAL:1	
+gates/tn_add_sub-gate.py	1	strlit:1	ROWS@bind:28
+gates/tn_add_sub-oracle.py	1	NO-SIGNAL:1	
+gates/tn_and_or_xor-gate.py	1	strlit:1	ROWS@bind:28
+gates/tn_and_or_xor-oracle.py	1	NO-SIGNAL:1	
+gates/tn_binop2_cmp-gate.py	1	strlit:1	ROWS@bind:29
+gates/tn_binop2_cmp-oracle.py	1	NO-SIGNAL:1	
+gates/tn_binop_arena-gate.py	1	strlit:1	ROWS@bind:37
+gates/tn_binop_arena-oracle.py	1	NO-SIGNAL:1	
+gates/tn_binop_sweep-gate.py	1	strlit:1	BINOPS@bind:33
+gates/tn_binop_sweep-oracle.py	1	NO-SIGNAL:1	
+gates/tn_bitwise_not-gate.py	1	strlit:1	ROWS@bind:33
+gates/tn_bitwise_not-oracle.py	1	NO-SIGNAL:1	
+gates/tn_ceil_floor-gate.py	1	strlit:1	ROWS@bind:25
+gates/tn_ceil_floor-oracle.py	1	NO-SIGNAL:1	
+gates/tn_contiguous_backward-gate.py	1	strlit:1	ROWS@bind:17
+gates/tn_contiguous_backward-oracle.py	1	NO-SIGNAL:1	
+gates/tn_detach-gate.py	1	strlit:1	ROWS@bind:26
+gates/tn_detach-oracle.py	1	NO-SIGNAL:1	
+gates/tn_dunder_neg-gate.py	1	strlit:1	ROWS@bind:23
+gates/tn_dunder_neg-oracle.py	1	NO-SIGNAL:1	
+gates/tn_fdiv_mod-gate.py	1	strlit:1	ROWS@bind:33
+gates/tn_fdiv_mod-oracle.py	1	NO-SIGNAL:1	
+gates/tn_graph_census-gate.py	1	strlit:2	ROWS@bind:80
+gates/tn_graph_census-oracle.py	1	NO-SIGNAL:1	
+gates/tn_isfinite-gate.py	1	strlit:1	ROWS@bind:28
+gates/tn_isfinite-oracle.py	1	NO-SIGNAL:1	
+gates/tn_isnan-gate.py	1	strlit:1	ROWS@bind:20
+gates/tn_isnan-oracle.py	1	NO-SIGNAL:1	
+gates/tn_logical_not-gate.py	1	strlit:1	ROWS@bind:26
+gates/tn_logical_not-oracle.py	1	NO-SIGNAL:1	
+gates/tn_lshift_rshift-gate.py	1	strlit:1	ROWS@bind:19
+gates/tn_lshift_rshift-oracle.py	1	NO-SIGNAL:1	
+gates/tn_maximum-gate.py	1	strlit:1	ROWS@bind:21
+gates/tn_maximum-oracle.py	1	NO-SIGNAL:1	
+gates/tn_minimum-gate.py	2	re.compile:1 re.findall:1	
+gates/tn_minimum-oracle.py	1	NO-SIGNAL:1	
+gates/tn_mul-gate.py	1	strlit:1	ROWS@bind:26
+gates/tn_mul-oracle.py	1	NO-SIGNAL:1	
+gates/tn_nary_arena-gate.py	1	strlit:1	ROWS@bind:27
+gates/tn_nary_arena-oracle.py	1	NO-SIGNAL:1	
+gates/tn_neg-gate.py	1	strlit:1	ROWS@bind:22
+gates/tn_neg-oracle.py	1	NO-SIGNAL:1	
+gates/tn_nodes-gate.py	1	NO-SIGNAL:1	
+gates/tn_nodes-oracle.py	1	NO-SIGNAL:1	
+gates/tn_pow-gate.py	1	strlit:1	ROWS@bind:32
+gates/tn_pow-oracle.py	1	NO-SIGNAL:1	
+gates/tn_relu-gate.py	1	strlit:1	ROWS@bind:19
+gates/tn_relu-oracle.py	1	NO-SIGNAL:1	
+gates/tn_relu6-gate.py	1	strlit:1	ROWS@bind:21
+gates/tn_relu6-oracle.py	1	NO-SIGNAL:1	
+gates/tn_sin_log2_exp2_rsqrt-gate.py	1	strlit:1	ROWS@bind:25
+gates/tn_sin_log2_exp2_rsqrt-oracle.py	1	NO-SIGNAL:1	
+gates/tn_sqrt-gate.py	1	strlit:1	ROWS@bind:25
+gates/tn_sqrt-oracle.py	1	NO-SIGNAL:1	
+gates/tn_trunc_reciprocal_threefry-gate.py	1	strlit:1	ROWS@bind:19
+gates/tn_trunc_reciprocal_threefry-oracle.py	1	NO-SIGNAL:1	
+gates/tn_where-gate.py	1	strlit:1	ROWS@bind:21
+gates/tn_where-oracle.py	1	NO-SIGNAL:1	
+gates/uop_cast-gate.py	1	strlit:1	ROWS@bind:37
+gates/uop_cast-oracle.py	1	NO-SIGNAL:1	
+gates/wgsl_render_census-gate.py	9	endswith:2 glob:1 re.compile:1 re.findall:7 re.match:1 re.search:6 startswith:3 strlit:5 walk:1	CLASSES@bind:928,RETIRED@bind:1198
+gates/wgsl_render_census-mutate.py	2	startswith:1 strlit:1	MUTATIONS@bind:75
+gates/wgsl_render_census-oracle.py	5	endswith:1 re.match:1 re.search:1 startswith:5 strlit:13	ARCHES@bind:292,CFO_ARMS@bind:283,NANU_DTS@bind:296,NAN_DTS@bind:294,PF_DTS@bind:266,PK_DTS@bind:269,RC_DTS@bind:298
+gates/wk-cd-gate.py	1	NO-SIGNAL:1	
+gates/wk-cd-oracle.py	1	strlit:1	
+gates/wk-eval-gate.py	1	strlit:1	ROWS@bind:49
+gates/wk-eval-oracle.py	1	NO-SIGNAL:1	
+gates/wk-f32-gate.py	1	NO-SIGNAL:1	
+gates/wk-f32-rows.py	1	NO-SIGNAL:1	

@@ -1,0 +1,132 @@
+checks/abi4_gate.py	STR-LIST	OTHER_GATES	bind:93	iter:0,0	('checks/abi_gate.py', 'checks/jsfix_gate.py')
+checks/abi_gate.py	STR-LIST	ARMS	bind:291	iter:677,0	{'shipped': [('c', []), ('js', [])], 'plant-abi2-in-js': [('js', [(JS_I64_OF_SHIPPED, JS_I64_OF_FST, 1)])], 'plant-abi2-out-js': [
+checks/abi_gate.py	STR-LIST	ORACLE	bind:146	iter:688,0,0,0,0,0	{'abi123_trunc_A': '15:240', 'abi123_trunc_B': '3735928559:305419896', 'abi123_fdiv_b3': pair(floordiv(7, 3)), 'abi123_fdiv_b5': p
+checks/abi_gate.py	STR-LIST	WORDS	bind:161	iter:0	{'abi123_trunc_A': (15, 240), 'abi123_trunc_B': (3735928559, 305419896)}
+checks/citation-gate.py	STR-LIST	CLASSES	bind:53	iter:225,0,0	('HOLDS', 'STALE-LINE', 'WRONG-FILE', 'NO-FILE', 'STALE-RULE', 'PROSE', 'PAST-EOF')
+checks/citation-gate.py	STR-LIST	PYROOTS	bind:43	iter:127	('tinygrad', 'examples', 'extra')
+checks/devgate.py	STR-LIST	VENDOR_PREFIX	bind:210	iter:0	('tinygrad/', 'references/', 'xd1/', 'opstree/')
+checks/differ.py	STR-LIST	CONTROLS	bind:237	iter:582,0	('matmul', 'binblob', 'group', 'gate', 'loop')
+checks/differ.py	STR-LIST	PINS	bind:248	iter:0	{'graphs': '34', 'graphs-unset': '0', 'graphs-answered': '34', 'expect-moved': '0', 'graphs-agree': '34', 'byte-identical': '34', 
+checks/differ.py	STR-LIST	REPRO_LITERALS	bind:350	iter:0	('D0-repro',)
+checks/differ.py	STR-LIST	REPRO_PINS	bind:328	iter:0	{'repro-rc': 'rc=0', 'd10-transcript': '9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84'}
+checks/differ.py	STR-LIST	ROW_VALUES	bind:782	iter:0,0	{'lc_all': 'C', 'noopt': '0', 'pythonhashseed': '0'}
+checks/differ.py	STR-LIST	SUBSTRATE_INPUTS	bind:884	iter:919	('checks/differ.py', 'checks/devpin.py', 'bin/bend', '.agents/slop/graphcmp.py', '.agents/slop/graphcmp.bend', '.agents/slop/graph
+checks/differ.py	STR-LIST	SUBSTRATE_ROWS	bind:873	iter:0,0	('substrate-start', 'substrate-end')
+checks/disagree-gate.py	STR-LIST	ARMED	bind:60	iter:327	('allred', 'cdiv', 'late')
+checks/disagree-gate.py	STR-LIST	CITES	bind:146	iter:306	(('AT:.agents/slop/graphcmp.bend', 'def rows.pick3', 'the fixture dispatcher; its DEFAULT arm is what substituted the matmul'), ('
+checks/env-precond.py	STR-LIST	PRECONDS	bind:116	iter:0,441	(('LC_ALL', 'C', "already pinned by `differ.py`'s ENV and `graphcmp.py`'s clean_env (both named in PINS below). Listed because a p
+checks/env-precond.py	STR-LIST	RECORD_KEYS	bind:167	iter:288,0	('dev', 'pythonhashseed', 'noopt', 'lc_all')
+checks/gatesweep.py	STR-LIST	PLANTS	bind:287	iter:312,0	(('dead-gate.py', 'DEAD', ''), ('fail-gate.py', 'FAIL', "import sys; sys.stderr.write('no\\n'); sys.exit(1)"), ('pass-gate.py', 'P
+checks/jsfix_gate.py	STR-LIST	ARMS	bind:145	iter:469,477,486,500,435,0,0,0,0	{'shipped': [], 'plant-abi2-in-js': [(JS_I64_OF_SHIPPED, JS_I64_OF_FST, 1)], 'plant-abi2-out-js': [(JS_PACK_SHIPPED, JS_PACK_IOTUP
+checks/jsfix_gate.py	STR-LIST	DEFS	bind:78	iter:303,326,565,0,0,0	['trunc', 'floor_div', 'floor_mod', 'cdiv', 'cmod', 'ceildiv']
+checks/no-strays.py	STR-LIST	SOURCE_TREES	bind:139	iter:147	('tinybendygrad',)
+checks/reorder-gate.py	STR-LIST	defs	bind:48	iter:56,58,0	{}
+checks/reorder-gate.py	STR-LIST	spans	bind:66	iter:77	{}
+checks/slop-declare.py	STR-LIST	COLUMNS	bind:116	iter:0	('dir', 'files', 'declared', 'code_readers', 'prose_mentions', 'age_h', 'commit_age_h')
+checks/substrate-snapshot.py	STR-LIST	COPIES	bind:76	iter:103,206	('bin', 'checks/differ.py', 'checks/devpin.py', '.agents/slop/graphcmp.py', '.agents/slop/graphcmp.bend', '.agents/slop/graphcmp-d
+checks/substrate-snapshot.py	STR-LIST	FILES	bind:63	iter:200	(('differ.py:43', 'checks/differ.py', 'PY, GCMP = '), ('differ.py:541', 'checks/differ.py', '"--bend-probe"'), ('differ.py:721', '
+checks/substrate-snapshot.py	STR-LIST	TOOLING	bind:75	iter:141,0	('.venv', 'references', 'tinygrad')
+checks/substrate.py	STR-LIST	VALUED	bind:209	iter:0	{'--mb': 1, '--seconds': 1}
+checks/sweep.py	STR-LIST	RESIDUE_ROOTS	bind:81	iter:1049	('.agents/slop', 'runs')
+checks/vz_gate.py	STR-LIST	MUTATIONS	bind:114	iter:216	[("M1  uops_color.grp: ALU's colour before Movement's (dict-literal order)", '    case _p: uops_color.tail(mv, al)', '    case _p:
+checks/wallcheck.py	STR-LIST	WALK_ROOTS	bind:47	iter:139	('tinybendygrad', '.agents/slop', 'docs', 'checks', 'gates', 'AGENTS.md', 'README.md')
+gates/amd_dsl_census-gate.py	STR-LIST	CLASSES	bind:755	iter:727,0,0,0	[('MSG_TEXT', '^(afenc_(ab|sb|sr|sr2)_(nonreg|hi|odd|127)$|afenc_(sr|sr2)_(2|126|127)$|vgencneg_|fixed_(op7|enc33|enc17)$)'), ('SR
+gates/amd_dsl_census-gate.py	STR-LIST	GROUPS	bind:286	iter:329	('tables', 'const', 'get', 'fmt', 'mod', 'bf', 'enc', 'lit', 'inst', 'ops', 'vs')
+gates/amd_dsl_census-gate.py	STR-LIST	RETIRED	bind:855	iter:970	[('MODMASK', '16', '**TWO DEFECTS, AND THE CLASS NAMED ONLY THE FIRST.** (i) Its own diagnosis --\n    "`mod_mask` never tests WHI
+gates/amd_dsl_census-mutate.py	STR-LIST	MUTATIONS	bind:231	iter:0	[('A1 wplaced drops the shift -- the AMDWORD32 word', 'VALUE', 'port', 'def wplaced(enc: U32, lo: U32) -> H.I64: H.i64_shl(H.i64_o
+gates/amd_dsl_census-oracle.py	STR-LIST	CANON_DOM	bind:211	iter:1006	[('src0', 's0'), ('vsrc0', 'vs0'), ('ssrc0', 'ss0'), ('src1', 's1'), ('vsrc1', 'vs1'), ('ssrc1', 'ss1'), ('src2', 's2'), ('vdst', 
+gates/amd_dsl_census-oracle.py	STR-LIST	CANON_IN	bind:199	iter:450	['src0', 'vsrc0', 'ssrc0', 'src1', 'vsrc1', 'ssrc1', 'src2', 'vdst', 'sdst', 'sdata', 'data', 'vdata', 'data0', 'vsrc', 'op', 'off
+gates/amd_dsl_census-oracle.py	STR-LIST	CANON_OUT	bind:203	iter:452	['s0', 's1', 's2', 'd', 'data']
+gates/amd_dsl_census-oracle.py	STR-LIST	NAMED_REGS	bind:495	iter:501	['VCC_LO', 'VCC_HI', 'NULL', 'OFF', 'M0', 'EXEC_LO', 'EXEC_HI', 'INV_2PI', 'SDWA', 'DPP', 'DPP16', 'VCCZ', 'EXECZ', 'SCC', 'SRC_LD
+gates/amd_dsl_census-oracle.py	STR-LIST	OPS	bind:959	iter:974	(('cndmask', 'v_cndmask_b32_e64'), ('cmp', 'ds_cmpst_rtn_b32'), ('co_ci', 'v_add_co_ci_u32'), ('other', 'v_add_f32_e32'), ('f8f6f4
+gates/bc_u32_table.py	STR-LIST	BANDS	bind:30	iter:238	{'A': [('a_one', 1, 2, 1), ('a_b4', 4, 1, 4), ('a_halve', 8, 1, 2), ('a_up', 6, 4, 2), ('a_down', 6, 2, 4), ('a_300', 300, 8, 2), 
+gates/cr_graph_census-gate.py	STR-LIST	ROWS	bind:63	iter:0	('const_like', 'empty', 'empty_like', 'invalids', 'full', 'full_like', 'zeros', 'zeros_like', 'ones', 'ones_like', 'empty_v4', 'em
+gates/crp_graph_census-gate.py	STR-LIST	CLASSES	bind:981	iter:0,0	[('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs and matches none of these is a real divergence with no reason attached; `--
+gates/crp_graph_census-gate.py	STR-LIST	VENDORED	bind:156	iter:633,0	('tinygrad/mixin/creation.py', 'tinygrad/uop/ops.py', 'tinygrad/dtype.py', 'tinygrad/helpers.py', 'tinygrad/mixin/dtype.py', 'tiny
+gates/crp_graph_census-mutate.py	STR-LIST	MUTATIONS	bind:278	iter:0	[("V1 cr_cast_dt's True arm answers dt -- the PRE-FIX predicate", 'VALUE', 'port', '    case True{}: cr_from_py(O.CInvalid{})', ' 
+gates/cstyle_render_census-gate.py	STR-LIST	PINS	bind:137	iter:0	('opt_ktypedef_4', 'opt_float4_1', 'opt_smempre_5', 'rd_0_2', 'rdv_0_2', 'rdl_2', 'rdg_3', 'rdo_5', 'rdir_0', 'rdiw_0', 'rdl2_2_2'
+gates/cstyle_render_census-mutate.py	STR-LIST	MUTATIONS	bind:138	iter:206	[("M1 base's dropped-arm answer is nothing again", 'REFUSAL', 'port', '    case _: cfo_unhandled(op)', '    case _: ""'), ('M2 Cla
+gates/cstyle_render_census-oracle.py	STR-LIST	OPT_KEYS	bind:123	iter:228	('ktypedef', 'bufpre', 'bufsuf', 'smempre', 'smemalign', 'varpre', 'varsuf', 'barrier', 'float4', 'f4open', 'f4close', 'gep', 'inf
+gates/decomp_graph_census-gate.py	STR-LIST	FINDING	bind:195	iter:428	('q2', 'q3')
+gates/decomp_graph_census-gate.py	STR-LIST	PROMOTION_CASTS	bind:167	iter:0	{'lg1': 4, 'lg5': 1, 'lga': 2, 'lgc': 1, 'lgd': 1, 'lge': 6, 'lgq': 69, 'lgr': 70, 'lgs': 63, 'lgt': 64, 'q5': 1}
+gates/decomp_graph_census-gate.py	STR-LIST	ROWS	bind:151	iter:0,0	('lg1', 'lg2', 'lg3', 'lg4', 'lg5', 'lg6', 'lg7', 'lg8', 'lg9', 'lga', 'lgb', 'lgc', 'lgd', 'lge', 'lgf', 'lgg', 'lgh', 'lgi', 'lg
+gates/decomp_graph_census-gate.py	STR-LIST	UNBUILT	bind:194	iter:424	('lgu',)
+gates/decomp_graph_census-gate.py	STR-LIST	WALL	bind:193	iter:420	('lgn', 'q6')
+gates/ew_graph_census-gate.py	STR-LIST	ROWS	bind:56	iter:0	('ew_add', 'ew_bitwise_and', 'ew_bitwise_not', 'ew_bitwise_or', 'ew_bitwise_xor', 'ew_contiguous_backward', 'ew_detach', 'ew_div',
+gates/fold_graph_census-gate.py	STR-LIST	ROWS	bind:80	iter:0	('fold_c_int3', 'fold_c_int4', 'fold_c_float', 'fold_c_bool_t', 'fold_c_bool_f', 'fold_c_invalid', 'fold_buf_i32', 'fold_buf_i64',
+gates/gates-pop.py	STR-LIST	_CERTIFY_OR	bind:764	iter:0	('refuse(', 'exit 3', 'not at the repo root', 'REFUSED, NOT A VERDICT')
+gates/gr_graph_census-gate.py	STR-LIST	ROWS	bind:78	iter:0	('gr_0', 'gr_0_r', 'gr_1', 'gr_2', 'gr_3', 'gr_4', 'gr_5', 'gr_6', 'gr_9', 'gr_10', 'gr_11', 'gr_12', 'gr_13', 'gr_16', 'gr_18', '
+gates/i64-shl-gate.py	STR-LIST	EXPECTED	bind:62	iter:0	['seed']
+gates/i64-shr-gate.py	STR-LIST	FIELDS	bind:45	iter:0	('x', 'amt', 'lc', 'rt_amt', 'rt')
+gates/i64-shr-gate.py	STR-LIST	VALUES	bind:43	iter:157,185,0	('neg1', 'zero', 'one', 'signmin', 'max', 'spill')
+gates/indexread-gate.py	STR-LIST	ADD_QUOTED	bind:111	iter:0	('"add"', "'add'", 'add -A', 'add -C')
+gates/indexread-gate.py	STR-LIST	FORMS	bind:99	iter:0	{'ls-files': 'lists the INDEX: the staging area, which a reset empties', '--cached': 'diff --cached is index-vs-HEAD; a reset inde
+gates/indexread-gate.py	STR-LIST	GIT_WORDS	bind:108	iter:0	{'git', '-C', 'commit', 'commit-tree', 'hash-object', 'update-index'}
+gates/linearizer_census-gate.py	STR-LIST	CLASSES	bind:104	iter:0,0,0	[('ORPHAN-CONST', '^(ix|ix_len)$', "A FIXTURE DEFECT, NOT AN INSTRUMENT CARVE-OUT. `lt_fix` (linearizer.bend:867-904) opens with `
+gates/md_graph_census-gate.py	STR-LIST	ROWS	bind:66	iter:0	('cast_weak_to_f32', 'cast_same_weakint', 'cast_weakfloat_to_i32', 'cast_wf_same', 'cast_bool_to_i32', 'cast_concrete_to_f32', 'ca
+gates/mo_graph_census-gate.py	STR-LIST	ROWS	bind:72	iter:0	('max0', 'max0kd', 'sum0', 'sum0kd', 'prod0', 'neg0', 'notb0', 'eqc0', 'isfinite0', 'isnan0', 'exp0', 'exp_i32', 'log0', 'recip0',
+gates/msgdiff-gate.py	STR-LIST	UNCHECKED_KINDS	bind:148	iter:0	('no_path', 'meta', 'renamed_or_absent', 'pid', 'unfalsifiable_count')
+gates/mx_graph_census-gate.py	STR-LIST	ROWS	bind:70	iter:0	('base', 'reshape_1_2_8_16', 'reshape_1_4_64', 'reshape_noop', 'reshape_256', 'permute_1_0_2_3', 'permute_3_1_2_0', 'permute_noop'
+gates/op_graph_census-gate.py	STR-LIST	ROWS	bind:103	iter:0	('params', 'bufs', 'acc', 'nop', 'detach', 'apply', 'square', 'div', 'sqrt', 'recip', 'neg', 'sum', 'normsq', 'cast', 'where', 'gu
+gates/ops-core-gate.py	STR-LIST	ROWS	bind:53	iter:0	('hashcons_same_index', 'zeros_differ', 'nan_interns', 'bool_vs_int_key', 'backedge_srcs', 'tag_bool_vs_int_interns', 'tag_true_vs
+gates/ops_python_census-gate.py	STR-LIST	CLASSES	bind:630	iter:0,0	[('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs here and does not match a declared pattern is a real divergence with no rea
+gates/ops_python_census-gate.py	STR-LIST	VENDORED	bind:235	iter:340	('tinygrad/runtime/ops_python.py', 'tinygrad/renderer/tc.py')
+gates/ops_python_census-oracle.py	STR-LIST	B64_FIXTURES	bind:142	iter:0	('', 'AA==', 'AP8=', 'AP9/', 'AP9/AQ==', 'QUJDRA==', 'AAECAwQFBgc=', 'dGhlIHF1aG5pcyBvZiBEaXRoIQ==')
+gates/ops_python_census-oracle.py	STR-LIST	TC_TABLES	bind:62	iter:0	{'metal': 1, 'amd_rdna3': 2, 'amd_cdna3': 3, 'amd_cdna4': 4, 'amd_rdna4': 5, 'cuda_sm75': 6, 'cuda_sm80': 7, 'cuda_sm89': 8}
+gates/ptx_render_census-gate.py	STR-LIST	FIXTURES	bind:153	iter:195,0	['f01_alu', 'f02_counter', 'f03_cast5', 'f04_end', 'f05_regbuf4', 'f06_regbuf1', 'f07_reuse', 'f08_refuse', 'f09_special', 'f09b_l
+gates/ptx_render_census-mutate.py	STR-LIST	PORT_MUTATIONS	bind:68	iter:302	[('M1', "pf.of -- a LOAD's list flag: `max_numel > 1` becomes always false, so a vector LOAD answers a bare string. ptx.py:208.", 
+gates/rd_graph_census-gate.py	STR-LIST	ROWS	bind:58	iter:0	('p64', 'x', 'three', 'tfb')
+gates/realize_graph_census-gate.py	STR-LIST	ARG_SLOT	bind:283	iter:503	('nb_53', 'kern_53', 'est_57', 'gcc_50', 'gcc_53', 'gcc_60', 'beam_55', 'bea0_55')
+gates/realize_graph_census-gate.py	STR-LIST	DRV	bind:223	iter:807,0	('arg', 'nb', 'res', 'flat', 'val', 'beam', 'bea0', 'oi', 'wbuf', 'kern', 'name', 'est', 'var', 'gcc', 'dnum')
+gates/realize_graph_census-gate.py	STR-LIST	RET_IS_UOP_FIXED	bind:302	iter:538,561	('bea0_23', 'bea0_49', 'bea0_50', 'bea0_51', 'bea0_52', 'bea0_53', 'bea0_61', 'bea0_63')
+gates/realize_graph_census-gate.py	STR-LIST	SINK_NO_KI	bind:288	iter:516	('beam_55', 'bea0_55')
+gates/realize_graph_census-gate.py	STR-LIST	SLOT_MISS	bind:289	iter:521	('res_20', 'res_22')
+gates/realize_graph_census-gate.py	STR-LIST	SRC_BODY_FIXED	bind:266	iter:485	('arg_9', 'arg_10', 'arg_11', 'arg_12', 'arg_13', 'arg_14', 'arg_15', 'arg_16', 'arg_26', 'arg_27', 'arg_28', 'arg_29', 'arg_30', 
+gates/realize_graph_census-gate.py	STR-LIST	VAL_BODY	bind:281	iter:498	('val_23', 'val_24', 'val_49', 'val_50', 'val_51', 'val_52', 'val_53', 'val_55', 'val_61', 'val_63')
+gates/realize_graph_census-mutate.py	STR-LIST	PHASE1	bind:330	iter:599,0	[("V1 `get_call_arg_uops` reverts to the op-CONDITIONAL slice (realize.py:15's UNCONDITIONAL `src[1:]` undone in the FIRST of its 
+gates/realize_graph_census-oracle.py	STR-LIST	ARMS	bind:217	iter:408	('PROGRAM', 'STORE', 'CUSTOM_FUNCTION', 'RANGE', 'PARAM', 'SINK', 'LINEAR', 'MSELECT', 'SHRINK', 'BITCAST', 'MSTACK', 'GETADDR')
+gates/regalloc_census-gate.py	STR-LIST	CLASSES	bind:86	iter:0,0	[('UNEXPLAINED', '^.*$', 'NO CLASS. A row that differs and matches none of these is a real divergence with no reason attached; `--
+gates/render_val_s-gate.py	STR-LIST	ROWS	bind:31	iter:0	('s_zero', 's_one', 's_seven', 's_neg_one', 's_neg_two', 's_int_min', 's_int_max', 's_hundred')
+gates/replace-gate.py	STR-LIST	ROWS	bind:39	iter:0	('identity_returns_self', 'replace_op_sets_op', 'replace_src_sets_srcs', 'replace_arg_sets_arg', 'replace_tag_sets_tag', 'replace_
+gates/rng_graph_census-gate.py	STR-LIST	TABLES	bind:106	iter:0	('rb', 'nic', 'nv', 'aprt', 'sk', 'gs', 'ct', 'fb', 'dg', 'lb', 'ab')
+gates/tc_ptx_types-gate.py	STR-LIST	TABLES	bind:46	iter:0	('types', 'mem_types', 'cast_types')
+gates/tc_ptx_types-mutate.py	STR-LIST	MUTATIONS	bind:39	iter:101	[('M1', "types_of loses the class dispatch and goes back to the bare pri lookup, so `void` and `weakint` take `bool`'s `pred` agai
+gates/tn_add_sub-gate.py	STR-LIST	ROWS	bind:28	iter:0	('add_op_is_add', 'add_arg_is_anone', 'add_srcs_are_self_and_x', 'add_does_not_mutate_input', 'radd_op_is_add', 'radd_arg_is_anone
+gates/tn_and_or_xor-gate.py	STR-LIST	ROWS	bind:28	iter:0	('and_op_is_and', 'and_arg_is_anone', 'and_srcs_are_self_and_x', 'and_does_not_mutate_input', 'rand_op_is_and', 'rand_arg_is_anone
+gates/tn_binop2_cmp-gate.py	STR-LIST	ROWS	bind:29	iter:0	('cmplt_op_is_cmplt', 'cmplt_arg_is_anone', 'cmplt_srcs_are_self_and_x', 'cmplt_does_not_mutate_input', 'rcmplt_op_is_cmplt', 'rcm
+gates/tn_binop_arena-gate.py	STR-LIST	ROWS	bind:37	iter:0	('src1_is_caller_operand_at0', 'src1_is_caller_operand_at1', 'src1_is_caller_operand_at2', 'src1_op_is_const_at0', 'src1_op_is_noo
+gates/tn_binop_sweep-gate.py	STR-LIST	BINOPS	bind:33	iter:0	('tn_add', 'tn_and', 'tn_cmplt', 'tn_cmpne', 'tn_fdiv', 'tn_lshift', 'tn_max', 'tn_maximum', 'tn_mod', 'tn_mul', 'tn_or', 'tn_pow'
+gates/tn_bitwise_not-gate.py	STR-LIST	ROWS	bind:33	iter:0	('bitnot_op_is_cmpne', 'bitnot_arg_is_anone', 'bitnot_srcs_are_input_and_true', 'bitnot_identity_cast_folded', 'bitnot_input_is_bo
+gates/tn_ceil_floor-gate.py	STR-LIST	ROWS	bind:25	iter:0	('ceil_op_is_where', 'ceil_arg_is_anone', 'ceil_has_three_srcs', 'ceil_does_not_mutate_input', 'ceil_cond_is_cmplt', 'floor_op_is_
+gates/tn_contiguous_backward-gate.py	STR-LIST	ROWS	bind:17	iter:0	('contiguous_backward_op', 'contiguous_backward_src_is_input', 'contiguous_backward_arg_is_anone', 'contiguous_backward_does_not_m
+gates/tn_detach-gate.py	STR-LIST	ROWS	bind:26	iter:0	('detach_op_is_detach', 'detach_src_is_input', 'detach_arg_is_anone', 'detach_does_not_mutate_input', 'detach_is_reachable')
+gates/tn_dunder_neg-gate.py	STR-LIST	ROWS	bind:23	iter:0	('dunder_neg_bool_op_is_cmpne', 'dunder_neg_int_op_is_mul', 'dunder_neg_int_srcs_are_self_and_m1', 'dunder_neg_int_does_not_mutate
+gates/tn_fdiv_mod-gate.py	STR-LIST	ROWS	bind:33	iter:0	('fdiv_op_is_floordiv', 'fdiv_arg_is_anone', 'fdiv_srcs_are_self_and_x', 'fdiv_does_not_mutate_input', 'rfdiv_op_is_floordiv', 'rf
+gates/tn_graph_census-gate.py	STR-LIST	ROWS	bind:80	iter:0	('tn_sqrt', 'tn_detach', 'tn_contiguous_backward', 'tn_trunc', 'tn_reciprocal', 'tn_sin', 'tn_log2', 'tn_exp2', 'tn_rsqrt', 'tn_lo
+gates/tn_isfinite-gate.py	STR-LIST	ROWS	bind:28	iter:0	('isfinite_op_is_cmpne', 'isfinite_arg_is_anone', 'isfinite_has_two_top_srcs', 'isfinite_is_reachable', 'isfinite_src1_is_const', 
+gates/tn_isnan-gate.py	STR-LIST	ROWS	bind:20	iter:0	('isnan_op_is_cmpne', 'isnan_arg_is_anone', 'isnan_has_self_src', 'isnan_does_not_mutate_input', 'isnan_is_reachable')
+gates/tn_logical_not-gate.py	STR-LIST	ROWS	bind:26	iter:0	('logical_not_op_is_cmpne', 'logical_not_arg_is_anone', 'logical_not_does_not_mutate_input', 'logical_not_is_reachable', 'int_inpu
+gates/tn_lshift_rshift-gate.py	STR-LIST	ROWS	bind:19	iter:0	('lshift_op_is_shl', 'lshift_arg_is_anone', 'lshift_does_not_mutate_input', 'rlshift_op_is_shl', 'rlshift_arg_is_anone', 'rlshift_
+gates/tn_maximum-gate.py	STR-LIST	ROWS	bind:21	iter:0	('max_op_is_max', 'max_arg_is_anone', 'max_does_not_mutate_input', 'maximum_is_reachable')
+gates/tn_mul-gate.py	STR-LIST	ROWS	bind:26	iter:0	('mul_op_is_mul', 'mul_arg_is_anone', 'mul_srcs_are_self_and_x', 'mul_does_not_mutate_input', 'rmul_op_is_mul', 'rmul_arg_is_anone
+gates/tn_nary_arena-gate.py	STR-LIST	ROWS	bind:27	iter:0	('where_src0_is_caller_at_d1', 'where_src1_is_caller_at_d1', 'where_src2_is_caller_at_d1', 'where_src0_is_caller_at_d0', 'where_sr
+gates/tn_neg-gate.py	STR-LIST	ROWS	bind:22	iter:0	('neg_bool_op_is_cmpne', 'neg_bool_arg_is_anone', 'neg_int_op_is_mul', 'neg_int_srcs_are_self_and_m1', 'neg_int_src1_is_not_self',
+gates/tn_pow-gate.py	STR-LIST	ROWS	bind:32	iter:0	('pow_op_is_pow', 'pow_arg_is_anone', 'pow_srcs_are_self_and_x', 'pow_does_not_mutate_input', 'rpow_op_is_pow', 'rpow_arg_is_anone
+gates/tn_relu-gate.py	STR-LIST	ROWS	bind:19	iter:0	('relu_op_is_where', 'relu_arg_is_anone', 'relu_does_not_mutate_input', 'relu_has_three_srcs', 'relu_is_reachable', 'relu_src2_is_
+gates/tn_relu6-gate.py	STR-LIST	ROWS	bind:21	iter:0	('relu6_op_is_where', 'relu6_arg_is_anone', 'relu6_does_not_mutate_input', 'relu6_has_three_srcs', 'relu6_is_reachable', 'relu6_sr
+gates/tn_sin_log2_exp2_rsqrt-gate.py	STR-LIST	ROWS	bind:25	iter:0	('sin_op_is_sin', 'log2_op_is_log2', 'exp2_op_is_exp2', 'rsqrt_op_is_reciprocal', 'rsqrt_arg_is_anone', 'rsqrt_has_one_src', 'sin_
+gates/tn_sqrt-gate.py	STR-LIST	ROWS	bind:25	iter:0	('sqrt_op_is_sqrt', 'sqrt_src_is_input', 'sqrt_arg_is_anone', 'sqrt_does_not_mutate_input', 'sqrt_is_reachable')
+gates/tn_trunc_reciprocal_threefry-gate.py	STR-LIST	ROWS	bind:19	iter:0	('trunc_op_is_trunc', 'trunc_does_not_mutate_input', 'reciprocal_op_is_reciprocal', 'reciprocal_does_not_mutate_input', 'threefry_
+gates/tn_where-gate.py	STR-LIST	ROWS	bind:21	iter:0	('where_op_is_where', 'where_arg_is_anone', 'where_srcs_are_cond_x_y', 'where_does_not_mutate_input', 'where_is_reachable')
+gates/uop_cast-gate.py	STR-LIST	ROWS	bind:37	iter:0	('cast_op_is_cast', 'cast_src_is_input', 'cast_arg_is_adt', 'cast_builds_new_node', 'cast_works_on_alu', 'cast_is_reachable', 'cas
+gates/wgsl_render_census-gate.py	STR-LIST	CLASSES	bind:928	iter:1071,1077,0,0,0,0	[('UNHANDLED_ARM', '^code_for_op (LOAD|MAX|POW)$'), ('MISSING_ARM', '^code_for_op FDIV$'), ('WMASK_IS_GRAPH', '^wmask '), ('U32_WI
+gates/wgsl_render_census-gate.py	STR-LIST	RETIRED	bind:1198	iter:0	[('PATTERN_UNPORTED (17 rows, retired 2026-10-14)', "`wgsl.bend` carried wgsl.py:65-93's seventeen rule BODIES and none of their `
+gates/wgsl_render_census-mutate.py	STR-LIST	MUTATIONS	bind:75	iter:185,0	[("M37 sr_buchar's mask is 0xFF00", 'VALUE', 'port', 'String.concat(["bitcast<u32>(", s, "&0xFF)"])', 'String.concat(["bitcast<u32
+gates/wgsl_render_census-oracle.py	STR-LIST	ARCHES	bind:292	iter:499	['', 'shader-f16']
+gates/wgsl_render_census-oracle.py	STR-LIST	CFO_ARMS	bind:283	iter:478	['SQRT', 'RECIPROCAL', 'NEG', 'EXP2', 'LOG2', 'SIN', 'TRUNC', 'AND', 'XOR', 'OR', 'ADD', 'SUB', 'MUL', 'CMOD', 'CDIV', 'FDIV', 'CM
+gates/wgsl_render_census-oracle.py	STR-LIST	NANU_DTS	bind:296	iter:469	[('float', 'single'), ('half', 'half'), ('double', 'double')]
+gates/wgsl_render_census-oracle.py	STR-LIST	NAN_DTS	bind:294	iter:455	[('float', 'single'), ('half', 'half'), ('bfloat16', 'bfloat16'), ('double', 'double')]
+gates/wgsl_render_census-oracle.py	STR-LIST	PF_DTS	bind:266	iter:392	[('uchar', 'uint8'), ('char', 'int8'), ('ushort', 'uint16'), ('short', 'int16'), ('half', 'half'), ('int32', 'int32')]
+gates/wgsl_render_census-oracle.py	STR-LIST	PK_DTS	bind:269	iter:825	[('uchar', 'uint8'), ('char', 'int8'), ('ushort', 'uint16'), ('short', 'int16'), ('bool', 'boolean'), ('half', 'half'), ('float', 
+gates/wgsl_render_census-oracle.py	STR-LIST	RC_DTS	bind:298	iter:338	[('uchar', 'uint8'), ('ushort', 'uint16'), ('char', 'int8'), ('short', 'int16'), ('int32', 'int32'), ('uint32', 'uint32'), ('float
+gates/wk-eval-gate.py	STR-LIST	ROWS	bind:49	iter:0	('int_weakint_val', 'float_weakfloat_val', 'bool_true_val', 'bool_false_val', 'int_i32_val', 'int_on_range_val', 'bool_on_i32_val'

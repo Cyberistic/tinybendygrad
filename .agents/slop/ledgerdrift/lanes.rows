@@ -1,0 +1,368 @@
+path	resolution	resolved_as	py_cited	sh_cited	basename_collision	orig_kind
+../../../tinybendygrad	absent					EVIDENCE
+../helpers.bend	suffix	tinybendygrad/helpers.bend	checks/nvrows-deadrow-gate.py	checks/wt-sync.sh,checks/lintable-gate.sh,checks/sb-gate.sh,checks/sb-gate.sh,checks/run-port-mm.sh,checks/wt-sync.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/wt-sync.sh	checks/abi_gate.py,checks/jsfix_gate.py,checks/wallcheck.py,gates/bc-u32-gen.py,gates/wk-f32-rows.py	EVIDENCE
+../uop/ops.bend	suffix	tinybendygrad/uop/ops.bend	gates/ptx_render_census-mutate.py	checks/lintable-gate.sh,checks/lintable-gate.sh,checks/lintable-gate.sh,checks/sb-gate.sh,checks/wt-sync.sh,checks/sb-gate.sh,checks/lintable-gate.sh,checks/lintable-gate.sh	checks/disagree-gate.py,checks/no-shrink.py,checks/substrate-id.py,gates/bc-u32-gen.py,gates/crp_graph_census-gate.py,gates/ptx_render_census-gen.py,gates/tn_minimum-gate.py	EVIDENCE
+.agents/slop	exact	.agents/slop				EVIDENCE
+.agents/slop/	exact	.agents/slop/				EVIDENCE
+.agents/slop/BACKWARD-WALK.md	exact	.agents/slop/BACKWARD-WALK.md				EVIDENCE
+.agents/slop/CSHAPE.md	exact	.agents/slop/CSHAPE.md				EVIDENCE
+.agents/slop/FORM-BLIND-SPOTS.md	exact	.agents/slop/FORM-BLIND-SPOTS.md				EVIDENCE
+.agents/slop/JSTAGE.md	exact	.agents/slop/JSTAGE.md				EVIDENCE
+.agents/slop/MMFOLD.md	exact	.agents/slop/MMFOLD.md		checks/gate.sh		EVIDENCE
+.agents/slop/NORM.md	exact	.agents/slop/NORM.md				EVIDENCE
+.agents/slop/afloat-patch.py	absent					EVIDENCE
+.agents/slop/afloat-probe.py	absent					EVIDENCE
+.agents/slop/ag-libclang.tramp	exact	.agents/slop/ag-libclang.tramp				EVIDENCE
+.agents/slop/anchor-audit.py	exact	.agents/slop/anchor-audit.py				EVIDENCE
+.agents/slop/arange-ucache/	absent					EVIDENCE
+.agents/slop/backward/walk-row.txt	absent					EVIDENCE
+.agents/slop/bendpin/compare.py	exact	.agents/slop/bendpin/compare.py				EVIDENCE
+.agents/slop/bendpin/pin_check.py	exact	.agents/slop/bendpin/pin_check.py				INSTRUMENT
+.agents/slop/bendpin/regressions.py	exact	.agents/slop/bendpin/regressions.py				EVIDENCE
+.agents/slop/bendpin/resolve.py	exact	.agents/slop/bendpin/resolve.py				EVIDENCE
+.agents/slop/bendpin/twoarg-probe.bend	exact	.agents/slop/bendpin/twoarg-probe.bend				EVIDENCE
+.agents/slop/bitcastrow/bc-diff.py	exact	.agents/slop/bitcastrow/bc-diff.py				EVIDENCE
+.agents/slop/bitcastrow/bc-gen.py	exact	.agents/slop/bitcastrow/bc-gen.py				EVIDENCE
+.agents/slop/bitcastrow/table.py	exact	.agents/slop/bitcastrow/table.py				EVIDENCE
+.agents/slop/boot42_inversion.md	exact	.agents/slop/boot42_inversion.md				EVIDENCE
+.agents/slop/clangshim/	exact	.agents/slop/clangshim/				EVIDENCE
+.agents/slop/coldness/COLDNESS.md	exact	.agents/slop/coldness/COLDNESS.md		checks/substrate-check.sh		EVIDENCE
+.agents/slop/commute-detect.py	absent					EVIDENCE
+.agents/slop/const-audit.py	absent					EVIDENCE
+.agents/slop/cshape/	exact	.agents/slop/cshape/				EVIDENCE
+.agents/slop/cstyle-reader-parity.py	absent					EVIDENCE
+.agents/slop/cstyle-shapes-selftest.py	exact	.agents/slop/cstyle-shapes-selftest.py				INSTRUMENT
+.agents/slop/dd-audit.py	absent					EVIDENCE
+.agents/slop/dd-coverage.py	absent					EVIDENCE
+.agents/slop/dd-gate-base-172.txt	absent					INSTRUMENT
+.agents/slop/dd-mut-classify.py	absent					EVIDENCE
+.agents/slop/dd-mut-deepen.py	absent					EVIDENCE
+.agents/slop/dd-mut-proof.py	absent					EVIDENCE
+.agents/slop/dd-mut-reach.py	absent					EVIDENCE
+.agents/slop/dd-mut-tether.py	absent					EVIDENCE
+.agents/slop/dd-mutate.py	exact	.agents/slop/dd-mutate.py				INSTRUMENT
+.agents/slop/dd-mutations-report.md	exact	.agents/slop/dd-mutations-report.md				EVIDENCE
+.agents/slop/dd-mutations.frozen.bend	absent					EVIDENCE
+.agents/slop/dd-probe.py	absent					EVIDENCE
+.agents/slop/dd-truth.py	exact	.agents/slop/dd-truth.py				EVIDENCE
+.agents/slop/devpin/envsweep.py	exact	.agents/slop/devpin/envsweep.py				INSTRUMENT
+.agents/slop/devpin/hashall.py	exact	.agents/slop/devpin/hashall.py				EVIDENCE
+.agents/slop/devpin/injectivity.py	exact	.agents/slop/devpin/injectivity.py				EVIDENCE
+.agents/slop/devpin/lin-decision.py	exact	.agents/slop/devpin/lin-decision.py				EVIDENCE
+.agents/slop/difftxt/DECISION.md	absent					EVIDENCE
+.agents/slop/dm-oracle.py	absent					ORACLE
+.agents/slop/dtype-oracle-MUTANT.py	absent					ORACLE
+.agents/slop/dtype-oracle-truth.md	exact	.agents/slop/dtype-oracle-truth.md				ORACLE
+.agents/slop/e2e	exact	.agents/slop/e2e				INSTRUMENT
+.agents/slop/e2e.sh	exact	.agents/slop/e2e.sh		checks/run-f64.sh,checks/run-port-mm.sh,checks/e2e.sh,checks/substrate-check.sh	checks/e2e.py	INSTRUMENT
+.agents/slop/e2e/	exact	.agents/slop/e2e/				EVIDENCE
+.agents/slop/e2e/cc-no-fma.sh	exact	.agents/slop/e2e/cc-no-fma.sh				EVIDENCE
+.agents/slop/e2e/index.html	exact	.agents/slop/e2e/index.html			checks/serve.py	EVIDENCE
+.agents/slop/e2e_gpu_probe.mjs	exact	.agents/slop/e2e_gpu_probe.mjs				INSTRUMENT
+.agents/slop/e2e_mm.bend	exact	.agents/slop/e2e_mm.bend	checks/e2e.py	checks/e2e.sh		INSTRUMENT
+.agents/slop/e2e_mm.py	exact	.agents/slop/e2e_mm.py	checks/e2e.py	checks/e2e.sh,checks/run-port-mm.sh,checks/run-port-mm.sh		INSTRUMENT
+.agents/slop/e2e_mm_gate.py	exact	.agents/slop/e2e_mm_gate.py	checks/e2e.py	checks/e2e.sh		INSTRUMENT
+.agents/slop/e2e_mm_run.mjs	exact	.agents/slop/e2e_mm_run.mjs	checks/e2e.py	checks/e2e.sh		INSTRUMENT
+.agents/slop/e2e_negctl.sh	exact	.agents/slop/e2e_negctl.sh		checks/run-port-mm.sh		INSTRUMENT
+.agents/slop/env-coercion-table.py	exact	.agents/slop/env-coercion-table.py				EVIDENCE
+.agents/slop/env-flag-divergence.md	exact	.agents/slop/env-flag-divergence.md				EVIDENCE
+.agents/slop/flag-consume.py	absent					EVIDENCE
+.agents/slop/flag-def-scan.py	absent					EVIDENCE
+.agents/slop/flag-literal-scan.py	absent					EVIDENCE
+.agents/slop/fold-lift-mutate.py	exact	.agents/slop/fold-lift-mutate.py				INSTRUMENT
+.agents/slop/fold-rng-mutate.py	exact	.agents/slop/fold-rng-mutate.py				INSTRUMENT
+.agents/slop/formblind-audit.py	absent					EVIDENCE
+.agents/slop/formblind-census.py	exact	.agents/slop/formblind-census.py				INSTRUMENT
+.agents/slop/ga-oracle.py	absent					ORACLE
+.agents/slop/ga_fix.py	absent					EVIDENCE
+.agents/slop/ga_gate.py	exact	.agents/slop/ga_gate.py				INSTRUMENT
+.agents/slop/ga_mutate.py	exact	.agents/slop/ga_mutate.py				INSTRUMENT
+.agents/slop/ga_probe.sh	absent					EVIDENCE
+.agents/slop/gatesweep/REPORT.md	exact	.agents/slop/gatesweep/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/gendirs/TABLE.md	exact	.agents/slop/gendirs/TABLE.md				EVIDENCE
+.agents/slop/gendirs/properties.md	exact	.agents/slop/gendirs/properties.md				EVIDENCE
+.agents/slop/gendirs/writetargets.py	exact	.agents/slop/gendirs/writetargets.py				EVIDENCE
+.agents/slop/graphcmp-LIMITS.md	exact	.agents/slop/graphcmp-LIMITS.md				EVIDENCE
+.agents/slop/graphcmp-oracle.py	exact	.agents/slop/graphcmp-oracle.py	checks/differ.py,checks/env-precond.py,checks/substrate-snapshot.py		checks/graphcmp-census-audit.py,checks/substrate-snapshot.py,checks/sweep.py	ORACLE
+.agents/slop/graphcmp-p13-ops.py	exact	.agents/slop/graphcmp-p13-ops.py	checks/differ.py,checks/substrate-snapshot.py		checks/substrate-snapshot.py	EVIDENCE
+.agents/slop/graphcmp-repro.sh	exact	.agents/slop/graphcmp-repro.sh			checks/sweep.py	INSTRUMENT
+.agents/slop/graphcmp-run.sh	exact	.agents/slop/graphcmp-run.sh			checks/sweep.py	EVIDENCE
+.agents/slop/graphcmp.bend	exact	.agents/slop/graphcmp.bend	checks/differ.py,checks/substrate-snapshot.py		checks/disagree-gate.py,checks/sweep.py	EVIDENCE
+.agents/slop/graphcmp.py	exact	.agents/slop/graphcmp.py	checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/env-precond.py,checks/substrate-snapshot.py		checks/both-census.py,checks/census.py,checks/hermetic-census.py,checks/sweep.py	EVIDENCE
+.agents/slop/gwself/REPORT.md	exact	.agents/slop/gwself/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/hygiene-2026-10-04.md	exact	.agents/slop/hygiene-2026-10-04.md				EVIDENCE
+.agents/slop/lane-load-measurements.tsv	absent					EVIDENCE
+.agents/slop/lanedeath-census.md	exact	.agents/slop/lanedeath-census.md				INSTRUMENT
+.agents/slop/lanedeath-census.py	exact	.agents/slop/lanedeath-census.py				INSTRUMENT
+.agents/slop/lanedeath-provenance.py	absent					EVIDENCE
+.agents/slop/load-census.py	exact	.agents/slop/load-census.py				INSTRUMENT
+.agents/slop/loadwatch.py	exact	.agents/slop/loadwatch.py				EVIDENCE
+.agents/slop/memory-diff.py	exact	.agents/slop/memory-diff.py				EVIDENCE
+.agents/slop/memory-mutate.py	exact	.agents/slop/memory-mutate.py				INSTRUMENT
+.agents/slop/memory-report.md	exact	.agents/slop/memory-report.md				EVIDENCE
+.agents/slop/memory_oracle.py	absent					ORACLE
+.agents/slop/mixin-op-gate.py	exact	.agents/slop/mixin-op-gate.py	gates/mixin-op-gate.py,gates/mixin-op-oracle.py		gates/mixin-op-gate.py,gates/mixin-op-oracle.py	INSTRUMENT
+.agents/slop/mixin-op-mutate.py	exact	.agents/slop/mixin-op-mutate.py				INSTRUMENT
+.agents/slop/msgdiff/REPORT.md	exact	.agents/slop/msgdiff/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/msgdiff/run.py	exact	.agents/slop/msgdiff/run.py		checks/e2e.sh		EVIDENCE
+.agents/slop/mutanchor.py	absent					EVIDENCE
+.agents/slop/name-census.py	exact	.agents/slop/name-census.py				INSTRUMENT
+.agents/slop/nn-init-gate.py	exact	.agents/slop/nn-init-gate.py				INSTRUMENT
+.agents/slop/nn-init-mutate.py	exact	.agents/slop/nn-init-mutate.py				INSTRUMENT
+.agents/slop/nocolor-diff.py	exact	.agents/slop/nocolor-diff.py				EVIDENCE
+.agents/slop/nocolor-oracle.py	exact	.agents/slop/nocolor-oracle.py				ORACLE
+.agents/slop/nocolor-probe.bend	absent					EVIDENCE
+.agents/slop/norm/canon.py	exact	.agents/slop/norm/canon.py			checks/gate_norm.py	EVIDENCE
+.agents/slop/norm/lint_norm.py	exact	.agents/slop/norm/lint_norm.py		checks/lint_demo.sh,checks/lint_demo.sh		EVIDENCE
+.agents/slop/notes/bend2-constraints.md	exact	.agents/slop/notes/bend2-constraints.md		checks/run-port-mm.sh		EVIDENCE
+.agents/slop/notes/sz-lexer-proto.py	absent					EVIDENCE
+.agents/slop/notes/sz-mktrees.py	absent					EVIDENCE
+.agents/slop/notes/sz-snips.py	absent					EVIDENCE
+.agents/slop/nv_mmustrans.py	absent					EVIDENCE
+.agents/slop/nv_one_mutation.py	absent					EVIDENCE
+.agents/slop/nv_order_census.py	exact	.agents/slop/nv_order_census.py				INSTRUMENT
+.agents/slop/ops-501-mutate.py	exact	.agents/slop/ops-501-mutate.py				INSTRUMENT
+.agents/slop/ops-501-oracle.py	absent					ORACLE
+.agents/slop/ops_cl-const-audit.txt	absent					EVIDENCE
+.agents/slop/ops_cl_constmap.py	absent					EVIDENCE
+.agents/slop/ops_webgpu-const-audit.txt	absent					EVIDENCE
+.agents/slop/ops_webgpu_constmap.py	absent					EVIDENCE
+.agents/slop/opstree	absent					EVIDENCE
+.agents/slop/oracle_py.py	exact	.agents/slop/oracle_py.py				ORACLE
+.agents/slop/phantom-run.py	absent					EVIDENCE
+.agents/slop/pin-tables.py	exact	.agents/slop/pin-tables.py				INSTRUMENT
+.agents/slop/pin-tree-oracle-report.md	exact	.agents/slop/pin-tree-oracle-report.md				ORACLE
+.agents/slop/pin-tree-oracle.py	absent					ORACLE
+.agents/slop/pinindep/derive.py	exact	.agents/slop/pinindep/derive.py		checks/run-all.sh,checks/plant.sh		EVIDENCE
+.agents/slop/probe/real.sh	absent					EVIDENCE
+.agents/slop/probe/serve.py	absent					EVIDENCE
+.agents/slop/rebase-break.py	absent					EVIDENCE
+.agents/slop/rebase-gate-selftest.py	exact	.agents/slop/rebase-gate-selftest.py				INSTRUMENT
+.agents/slop/rebase-oracle-ops.py	absent					ORACLE
+.agents/slop/rebase-oracle-search.py	absent					ORACLE
+.agents/slop/rebase-oracle-spec.py	absent					ORACLE
+.agents/slop/rebase-shadow.py	absent					EVIDENCE
+.agents/slop/rebase-survey.py	absent					EVIDENCE
+.agents/slop/repropin/measure.py	exact	.agents/slop/repropin/measure.py		checks/plant.sh,checks/run-all.sh		EVIDENCE
+.agents/slop/reprorefs/REPORT.md	exact	.agents/slop/reprorefs/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/reprorefs/probe.py	exact	.agents/slop/reprorefs/probe.py				EVIDENCE
+.agents/slop/rf-ct-oracle.py	absent					ORACLE
+.agents/slop/rf2-mutate.py	exact	.agents/slop/rf2-mutate.py				INSTRUMENT
+.agents/slop/rf2-mutations.txt	absent					EVIDENCE
+.agents/slop/rf2_work.bend	absent					EVIDENCE
+.agents/slop/rf2root/	exact	.agents/slop/rf2root/				EVIDENCE
+.agents/slop/rowform.py	absent					EVIDENCE
+.agents/slop/rows-blast.py	absent					EVIDENCE
+.agents/slop/runs/elf-checkonly-2026-10-04.txt	absent					INSTRUMENT
+.agents/slop/runs/elf-run-353rows-2026-10-04.txt	absent					EVIDENCE
+.agents/slop/selfcheck/plants.py	exact	.agents/slop/selfcheck/plants.py			gates/msgdiff-gate.py	EVIDENCE
+.agents/slop/stale-snapshot-detect.py	absent					EVIDENCE
+.agents/slop/state-gate.py	exact	.agents/slop/state-gate.py				INSTRUMENT
+.agents/slop/state-mutate.py	exact	.agents/slop/state-mutate.py				INSTRUMENT
+.agents/slop/substrate-audit.py	exact	.agents/slop/substrate-audit.py				INSTRUMENT
+.agents/slop/substrate/SUBSTRATE.md	absent					EVIDENCE
+.agents/slop/substrate/oracle-check.sh	exact	.agents/slop/substrate/oracle-check.sh	checks/substrate.py	checks/substrate-check.sh		ORACLE
+.agents/slop/table-pin.py	exact	.agents/slop/table-pin.py				INSTRUMENT
+.agents/slop/tcptx-mutate.py	exact	.agents/slop/tcptx-mutate.py				INSTRUMENT
+.agents/slop/tcptx-oracle.py	absent					ORACLE
+.agents/slop/tools/mutate-dm.py	exact	.agents/slop/tools/mutate-dm.py				INSTRUMENT
+.agents/slop/tools/mutate-sz.py	exact	.agents/slop/tools/mutate-sz.py				INSTRUMENT
+.agents/slop/tools/mv.py	absent					EVIDENCE
+.agents/slop/tools/tx-mut.py	absent					EVIDENCE
+.agents/slop/toolsledger/REPORT.md	exact	.agents/slop/toolsledger/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/toolsledger/extract.py	exact	.agents/slop/toolsledger/extract.py				EVIDENCE
+.agents/slop/toolsledger/paths.tsv	exact	.agents/slop/toolsledger/paths.tsv				EVIDENCE
+.agents/slop/tree-verdict.md	exact	.agents/slop/tree-verdict.md				EVIDENCE
+.agents/slop/trigger/bc-oracle.py	absent				gates/bc-u32-gate.py	ORACLE
+.agents/slop/tx-arena.py	exact	.agents/slop/tx-arena.py				ORACLE
+.agents/slop/tx-arena.txt	absent					ORACLE
+.agents/slop/txtgen/REPORT.md	exact	.agents/slop/txtgen/REPORT.md		checks/e2e.sh		EVIDENCE
+.agents/slop/unobservable-census.py	exact	.agents/slop/unobservable-census.py				INSTRUMENT
+.agents/slop/unobservable-gr-move.py	absent					EVIDENCE
+.agents/slop/unobservable-gr-oracle.py	absent					ORACLE
+.agents/slop/unobservable-gr-probe.bend	absent					EVIDENCE
+.agents/slop/usb-build.py	exact	.agents/slop/usb-build.py				EVIDENCE
+.agents/slop/usb-constsweep.py	exact	.agents/slop/usb-constsweep.py				INSTRUMENT
+.agents/slop/usb-dead.py	exact	.agents/slop/usb-dead.py				EVIDENCE
+.agents/slop/usb-diff.py	exact	.agents/slop/usb-diff.py				EVIDENCE
+.agents/slop/usb-gen-strings.py	exact	.agents/slop/usb-gen-strings.py				EVIDENCE
+.agents/slop/usb-gen-tables.py	absent					EVIDENCE
+.agents/slop/usb-gen.py	exact	.agents/slop/usb-gen.py				EVIDENCE
+.agents/slop/usb-handmap.py	absent					EVIDENCE
+.agents/slop/usb-sblock.bend.txt	absent					EVIDENCE
+.agents/slop/usb-seam.py	absent					EVIDENCE
+.agents/slop/usb-symmap.py	exact	.agents/slop/usb-symmap.py				EVIDENCE
+.agents/slop/xd1/	absent					EVIDENCE
+.agents/slop/xd1/head	absent					EVIDENCE
+.agents/slop/xd1/mkrows.py	absent					EVIDENCE
+.agents/slop/xd1/mutate.py	absent					INSTRUMENT
+.agents/slop/xd1/render-gate-oracle.py	absent		checks/rn-gate.py		checks/render-gate-oracle.py	ORACLE
+.agents/slop/xd1/rewrite-main.py	absent					EVIDENCE
+.agents/slop/xd1/rowdiff.py	absent					EVIDENCE
+.agents/slop/xd1/stem-bug.py	absent					EVIDENCE
+.agents/slop/xd1/verify.py	absent					EVIDENCE
+.agents/slop/xd1/wt-sync.sh	absent			checks/wt-sync.sh		EVIDENCE
+.agents/slop/xd1/wt/	absent					EVIDENCE
+.agents/slop/zero-audit.py	exact	.agents/slop/zero-audit.py				EVIDENCE
+.agents/slop/zero-classify.py	absent					EVIDENCE
+.agents/slop/zero-selftest.py	exact	.agents/slop/zero-selftest.py				INSTRUMENT
+.git/agent-index	exact	.git/agent-index				EVIDENCE
+.git/index	exact	.git/index				EVIDENCE
+.venv/bin/python	exact	.venv/bin/python				EVIDENCE
+/	exact	/				EVIDENCE
+/Users/cyberistic/src/tries/.../bend2/main.ts	absent					EVIDENCE
+/dev/null	exact	/dev/null				EVIDENCE
+/opt/homebrew/lib/python3.14/site-packages/z3	exact	/opt/homebrew/lib/python3.14/site-packages/z3				EVIDENCE
+/tmp	exact	/tmp				EVIDENCE
+/tmp/dm-base.txt	absent					EVIDENCE
+DIR/tinybendygrad	absent					EVIDENCE
+DSPAllocator._alloc/_free/_offset	absent					EVIDENCE
+LAWS/spec.bend	suffix	tinybendygrad/LAWS/spec.bend	checks/nvrows-deadrow-gate.py,gates/ptx_render_census-gen.py	checks/lintable-gate.sh	gates/crp_graph_census-gate.py,gates/crp_graph_census-mutate.py,gates/crp_graph_census-oracle.py,gates/wk-cd-gate.py	EVIDENCE
+autogen/am/am.py	suffix	tinygrad/runtime/autogen/am/am.py				EVIDENCE
+autogen/nv.py	suffix	tinygrad/runtime/autogen/nv.py				EVIDENCE
+bend2/base.bend	suffix	references/bend/bend2/base.bend			checks/gate_norm.py,gates/ew-consts-oracle.py	EVIDENCE
+bin/	exact	bin/				EVIDENCE
+bin/bend	exact	bin/bend				EVIDENCE
+blobrows/af-after	absent					EVIDENCE
+checks/bounded.py	exact	checks/bounded.py	checks/bounded.py,checks/residue.py,checks/substrate.py	checks/e2e.sh,checks/sb-gate.sh,checks/bounded-selftest.sh,checks/sb-gate.sh	checks/gatesweep.py,checks/substrate.py	EVIDENCE
+checks/census.py	exact	checks/census.py	checks/unowned.py,gates/gates-pop.py			INSTRUMENT
+checks/corpus-figure.py	exact	checks/corpus-figure.py	checks/cites-census.py,checks/corpus-figure.py			INSTRUMENT
+checks/devpin.py	exact	checks/devpin.py	checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/substrate-snapshot.py			INSTRUMENT
+checks/differ.py	exact	checks/differ.py	checks/corpus-figure.py,checks/diary-census.py,checks/differ.py,checks/env-precond.py,checks/no-txt.py,checks/runs-artifacts.py,checks/substrate-id.py,checks/substrate-snapshot.py,gates/retention-check.py	checks/substrate-check.sh	checks/sweep.py	INSTRUMENT
+checks/e2e.py	exact	checks/e2e.py	checks/e2e.py	checks/run-port-mm.sh		INSTRUMENT
+checks/gatesweep-cost.out	exact	checks/gatesweep-cost.out	checks/gatesweep.py			INSTRUMENT
+checks/gatesweep-run.tsv	exact	checks/gatesweep-run.tsv	checks/gatesweep.py			INSTRUMENT
+checks/gen/	exact	checks/gen/				EVIDENCE
+checks/graphcmp.py	absent				checks/both-census.py,checks/census.py,checks/corpus-figure.py,checks/devpin.py,checks/differ.py,checks/env-precond.py,checks/hermetic-census.py,checks/substrate-snapshot.py,checks/sweep.py	EVIDENCE
+checks/index-arm-gate.py	exact	checks/index-arm-gate.py	checks/index-arm-gate.py		checks/index-arm-gate.py	INSTRUMENT
+checks/repro-paths.py	exact	checks/repro-paths.py				INSTRUMENT
+checks/substrate.py	exact	checks/substrate.py	checks/substrate.py,gates/gates-pop.py	checks/substrate-check.sh		INSTRUMENT
+codegen/decomp/dtype.bend	suffix	tinybendygrad/codegen/decomp/dtype.bend	gates/decomp_graph_census-mutate.py	checks/lintable-gate.sh,checks/e2e.sh	checks/abi4_gate.py,checks/abi_gate.py,checks/gate_dtype.py,checks/jsfix_gate.py,checks/wallcheck.py,gates/decomp_graph_census-mutate.py	EVIDENCE
+codegen/late/linearizer.bend	suffix	tinybendygrad/codegen/late/linearizer.bend	gates/linearizer_census-mutate.py		gates/linearizer_census-gate.py	EVIDENCE
+codegen/opt/	absent					EVIDENCE
+codegen/opt/search.bend	suffix	tinybendygrad/codegen/opt/search.bend				EVIDENCE
+codegen/transcendental.bend	absent					EVIDENCE
+gates/	exact	gates/				EVIDENCE
+gates/README.md	exact	gates/README.md		checks/lintable-gate.sh,checks/classify.sh,checks/e2e.sh,checks/disarm.sh,checks/run-port-mm.sh,checks/lint_demo.sh,checks/run-f64.sh,checks/sb-gate.sh,checks/gen.sh,checks/plant.sh,checks/bounded-selftest.sh,checks/gate.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/demo.sh,checks/run-all.sh	checks/no-strays.py,checks/wallcheck.py	EVIDENCE
+gates/artifacts/	exact	gates/artifacts/				EVIDENCE
+gates/bc-u32-gate.py	exact	gates/bc-u32-gate.py	gates/bc-u32-gate.py		gates/bc-u32-gate.py	INSTRUMENT
+gates/decomp_graph_census-gate.py	exact	gates/decomp_graph_census-gate.py	gates/decomp_graph_census-gate.py		gates/decomp_graph_census-gate.py,gates/decomp_graph_census-mutate.py,gates/decomp_value-gate.py	INSTRUMENT
+gates/decomp_value-gate.py	exact	gates/decomp_value-gate.py	gates/decomp_value-gate.py		gates/decomp_value-gate.py	INSTRUMENT
+gates/decomp_value-pins.rows	exact	gates/decomp_value-pins.rows			gates/decomp_value-gate.py	INSTRUMENT
+gates/gatekit.py	exact	gates/gatekit.py	gates/gate-surface.py,gates/gates-pop.py,gates/retention-check.py		checks/gatesweep.py,gates/gate-surface.py,gates/gates-pop.py,gates/gendirs.py,gates/ptx_render_census-mutate.py	INSTRUMENT
+gates/gendirs.py	exact	gates/gendirs.py	checks/diary-census.py,gates/gates-pop.py,gates/gendirs.py,gates/retention-check.py		gates/gates-pop.py,gates/retention-check.py	EVIDENCE
+gates/indexread-gate.py	exact	gates/indexread-gate.py	gates/indexread-gate.py		gates/indexread-gate.py	INSTRUMENT
+gates/linearizer_census-gate.py	exact	gates/linearizer_census-gate.py	gates/linearizer_census-gate.py		gates/linearizer_census-gate.py,gates/linearizer_census-mutate.py	INSTRUMENT
+gates/linearizer_census-oracle.py	exact	gates/linearizer_census-oracle.py	gates/linearizer_census-oracle.py		gates/linearizer_census-gate.py,gates/linearizer_census-oracle.py	ORACLE
+gates/msgdiff-gate.py	exact	gates/msgdiff-gate.py	gates/msgdiff-gate.py			INSTRUMENT
+gates/mutkit.py	exact	gates/mutkit.py			gates/mutkit.py	EVIDENCE
+gates/pins-shape-gate.py	exact	gates/pins-shape-gate.py	gates/pins-shape-gate.py		gates/pins-shape-gate.py	INSTRUMENT
+gates/regalloc_census-gate.py	exact	gates/regalloc_census-gate.py	gates/regalloc_census-gate.py		gates/regalloc_census-gate.py,gates/regalloc_census-mutate.py	INSTRUMENT
+gates/regalloc_census-oracle.py	exact	gates/regalloc_census-oracle.py	gates/regalloc_census-oracle.py		gates/regalloc_census-gate.py,gates/regalloc_census-oracle.py	ORACLE
+gates/tn_graph_census-gate.py.bak	absent					INSTRUMENT
+gk/	absent					EVIDENCE
+gk2/	absent					EVIDENCE
+guide/EFFECTS.md	suffix	references/bend/guide/EFFECTS.md				EVIDENCE
+guide/GUIDE.md	suffix	references/bend/guide/GUIDE.md				EVIDENCE
+guide/SHADERS.md	suffix	references/bend/guide/SHADERS.md				EVIDENCE
+langs/	exact	langs/				EVIDENCE
+langs/NOTES.md	exact	langs/NOTES.md				EVIDENCE
+langs/wasm/WALL.md	exact	langs/wasm/WALL.md				EVIDENCE
+late/linearizer	absent					EVIDENCE
+mixin/gradient.bend	suffix	tinybendygrad/mixin/gradient.bend	gates/gr_graph_census-gate.py	checks/walk-mutate.sh		EVIDENCE
+mixin/op.bend	suffix	tinybendygrad/mixin/op.bend	gates/mixin-op-gate.py,gates/mixin-op-oracle.py,gates/mo_graph_census-gate.py		gates/decomp_graph_census-mutate.py	EVIDENCE
+nn/	absent					EVIDENCE
+nn/__init__.bend	suffix	tinybendygrad/nn/__init__.bend		checks/sb-gate.sh,checks/sb-gate.sh	checks/bounded.py	EVIDENCE
+nn/state.bend	suffix	tinybendygrad/nn/state.bend				EVIDENCE
+notes/	absent					EVIDENCE
+notes/bend2-constraints.md	suffix	.agents/slop/notes/bend2-constraints.md		checks/run-port-mm.sh		EVIDENCE
+nv/ip	absent					EVIDENCE
+nv/ip.py	suffix	tinygrad/runtime/support/nv/ip.py				EVIDENCE
+oracle/	absent					EVIDENCE
+oracle/dtype_tables.py	absent					EVIDENCE
+oracle_pmul0/1	absent					EVIDENCE
+oracles/	exact	oracles/				EVIDENCE
+oracles/baseline-ledger.txt	absent					EVIDENCE
+oracles/boot42_baseline_port.txt	absent					EVIDENCE
+oracles/fold-mut.py	exact	oracles/fold-mut.py				EVIDENCE
+oracles/fold-rng-oracle.py	exact	oracles/fold-rng-oracle.py				ORACLE
+oracles/ga-oracle.txt	absent					ORACLE
+oracles/gateport/oracles/mixin-op-gate.sh	exact	oracles/gateport/oracles/mixin-op-gate.sh				INSTRUMENT
+oracles/late-oracle.txt	absent					ORACLE
+oracles/memory_oracle.txt	absent					ORACLE
+oracles/rf-ct-oracle.txt	absent					ORACLE
+oracles/usb-arith-rows.bend.txt	absent					EVIDENCE
+phantom-repro/	absent					EVIDENCE
+phantom-repro/planted/	absent					EVIDENCE
+plant.out/err	absent					EVIDENCE
+range.out/err	absent					EVIDENCE
+rebase/postrecord-2026-10-03.json	absent					EVIDENCE
+references/	exact	references/				EVIDENCE
+references/bend	exact	references/bend				EVIDENCE
+references/bend/.git/worktrees/	exact	references/bend/.git/worktrees/				EVIDENCE
+references/tinyquery	exact	references/tinyquery				EVIDENCE
+renderer/amd/generate.bend	suffix	tinybendygrad/renderer/amd/generate.bend	checks/no-shrink.py			EVIDENCE
+renderer/csprobe.bend	absent					EVIDENCE
+renderer/llvmir.bend	suffix	tinybendygrad/renderer/llvmir.bend				EVIDENCE
+renderer/nir.bend	suffix	tinybendygrad/renderer/nir.bend				EVIDENCE
+renderer/tc_ptx.bend	suffix	tinybendygrad/renderer/tc_ptx.bend	gates/tc_ptx_types-mutate.py		gates/tc_ptx_types-mutate.py	EVIDENCE
+renderer/wgsl.bend	suffix	tinybendygrad/renderer/wgsl.bend			gates/wgsl_render_census-gate.py,gates/wgsl_render_census-mutate.py	EVIDENCE
+runs/e2e/README.md	exact	runs/e2e/README.md		checks/lintable-gate.sh,checks/classify.sh,checks/e2e.sh,checks/disarm.sh,checks/run-port-mm.sh,checks/lint_demo.sh,checks/run-f64.sh,checks/sb-gate.sh,checks/gen.sh,checks/plant.sh,checks/bounded-selftest.sh,checks/gate.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/demo.sh,checks/run-all.sh	checks/no-strays.py,checks/wallcheck.py	EVIDENCE
+runs/e2e/e2e-mm-oracle.json	exact	runs/e2e/e2e-mm-oracle.json		checks/run-port-mm.sh,checks/run-port-mm.sh,checks/run-port-mm.sh,checks/run-port-mm.sh,checks/e2e.sh		ORACLE
+runs/graphcmp/D	exact	runs/graphcmp/D				EVIDENCE
+runs/graphcmp/D/	exact	runs/graphcmp/D/				EVIDENCE
+runs/graphcmp/D/README-D.txt	absent					EVIDENCE
+runs/pin-tree-oracle/	absent					EVIDENCE
+runtime/	suffix	.agents/slop/rf2root/runtime				EVIDENCE
+runtime/_p6.bend	absent					EVIDENCE
+runtime/dtype.js	suffix	tinybendygrad/runtime/dtype.js	checks/abi_gate.py,checks/gate.py	checks/e2e.sh,checks/e2e.sh	checks/abi4_gate.py,checks/abi_gate.py,checks/gate.py,checks/jsfix_gate.py	EVIDENCE
+runtime/support/memory.py	suffix	tinygrad/runtime/support/memory.py				EVIDENCE
+runtime/support/usb.py	suffix	tinygrad/runtime/support/usb.py				EVIDENCE
+runtime/webgpu_call	absent					EVIDENCE
+schedule/__init__.bend	suffix	tinybendygrad/schedule/__init__.bend		checks/sb-gate.sh,checks/sb-gate.sh	checks/bounded.py	EVIDENCE
+schedule/rangeify.bend	suffix	tinybendygrad/schedule/rangeify.bend				EVIDENCE
+schedule/rf2_work.bend	suffix	.agents/slop/rf2root/schedule/rf2_work.bend				EVIDENCE
+slop/notes/sz-odin-precedent.md	suffix	.agents/slop/notes/sz-odin-precedent.md				EVIDENCE
+spec/sz.md	exact	spec/sz.md				EVIDENCE
+spec/tinyspec.tex	exact	spec/tinyspec.tex				EVIDENCE
+test/dtype_oracle.bend	suffix	tinybendygrad/test/dtype_oracle.bend				ORACLE
+tests/	absent					EVIDENCE
+tinybendygrad/	exact	tinybendygrad/				EVIDENCE
+tinybendygrad/LAWS.bend	exact	tinybendygrad/LAWS.bend				EVIDENCE
+tinybendygrad/codegen/late.bend	absent					EVIDENCE
+tinybendygrad/helpers.bend	exact	tinybendygrad/helpers.bend	checks/abi_gate.py,checks/jsfix_gate.py,gates/bc-u32-gen.py,gates/wk-f32-rows.py	checks/wt-sync.sh,checks/lintable-gate.sh,checks/sb-gate.sh,checks/sb-gate.sh,checks/run-port-mm.sh,checks/wt-sync.sh,checks/wt-sync.sh,checks/walk-mutate.sh,checks/wt-sync.sh	checks/nvrows-deadrow-gate.py,checks/wallcheck.py	EVIDENCE
+tinybendygrad/nn/	exact	tinybendygrad/nn/				EVIDENCE
+tinybendygrad/runtime/ops_metal.bend	exact	tinybendygrad/runtime/ops_metal.bend				EVIDENCE
+tinybendygrad/runtime/support/am/ip.bend	exact	tinybendygrad/runtime/support/am/ip.bend			checks/nvrows-deadrow-gate.py	EVIDENCE
+tinybendygrad/runtime/support/elf.bend	exact	tinybendygrad/runtime/support/elf.bend				EVIDENCE
+tinybendygrad/runtime/support/nv/ip.bend	exact	tinybendygrad/runtime/support/nv/ip.bend			checks/nvrows-deadrow-gate.py	EVIDENCE
+tinybendygrad/runtime/support/nv/nvdev.bend	exact	tinybendygrad/runtime/support/nv/nvdev.bend	checks/nvrows-deadrow-gate.py		checks/nvrows-deadrow-gate.py	EVIDENCE
+tinybendygrad/runtime/support/usb.bend	exact	tinybendygrad/runtime/support/usb.bend				EVIDENCE
+tinybendygrad/sz.bend	exact	tinybendygrad/sz.bend				EVIDENCE
+tinygrad/	exact	tinygrad/				EVIDENCE
+tinygrad/codegen/opt/search.py	exact	tinygrad/codegen/opt/search.py				EVIDENCE
+tinygrad/renderer/amd/generate.py	exact	tinygrad/renderer/amd/generate.py				EVIDENCE
+tinygrad/runtime/autogen/libclang.py	exact	tinygrad/runtime/autogen/libclang.py				EVIDENCE
+tinygrad/runtime/autogen/opencl.py	exact	tinygrad/runtime/autogen/opencl.py				EVIDENCE
+tinygrad/runtime/autogen/webgpu.py	exact	tinygrad/runtime/autogen/webgpu.py				EVIDENCE
+tinygrad/runtime/support/am/ip.py	exact	tinygrad/runtime/support/am/ip.py				EVIDENCE
+tools/	exact	tools/				EVIDENCE
+tools/get-bend.sh	exact	tools/get-bend.sh	checks/runs-artifacts.py			EVIDENCE
+try/finally	absent					EVIDENCE
+uop/divandmod.bend	suffix	tinybendygrad/uop/divandmod.bend				EVIDENCE
+uop/fold.bend	suffix	tinybendygrad/uop/fold.bend	checks/disagree-gate.py,gates/bc-u32-gen.py	checks/run-port-mm.sh	gates/wk-cd-gate.py	EVIDENCE
+uop/ops.bend	suffix	tinybendygrad/uop/ops.bend	checks/disagree-gate.py,checks/no-shrink.py,checks/substrate-id.py,gates/bc-u32-gen.py,gates/ptx_render_census-gen.py,gates/ptx_render_census-mutate.py	checks/lintable-gate.sh,checks/lintable-gate.sh,checks/lintable-gate.sh,checks/sb-gate.sh,checks/wt-sync.sh,checks/sb-gate.sh,checks/lintable-gate.sh,checks/lintable-gate.sh	gates/crp_graph_census-gate.py,gates/tn_minimum-gate.py	EVIDENCE
+uop/probe-bl.bend	absent					EVIDENCE
+uop/probe-mmcore.bend	absent					EVIDENCE
+uop/spec.bend	suffix	tinybendygrad/uop/spec.bend		checks/lintable-gate.sh	checks/nvrows-deadrow-gate.py,gates/crp_graph_census-gate.py,gates/crp_graph_census-mutate.py,gates/crp_graph_census-oracle.py,gates/ptx_render_census-gen.py,gates/wk-cd-gate.py	EVIDENCE
+uop/symbolic.bend	suffix	tinybendygrad/uop/symbolic.bend				EVIDENCE
+uop/validate.bend	suffix	tinybendygrad/uop/validate.bend				EVIDENCE
+vendor/bend/tests/	absent					EVIDENCE
+wt/	absent					EVIDENCE
+xd1/	absent					EVIDENCE
+xd1/head	absent					EVIDENCE
+xd1/pin	absent					INSTRUMENT
+xd2/cdp.mjs	suffix	.agents/slop/xd2/cdp.mjs				EVIDENCE
+xd2/serve.mjs	suffix	.agents/slop/xd2/serve.mjs				EVIDENCE
+xd2/sh.mjs	suffix	.agents/slop/xd2/sh.mjs				EVIDENCE
+xd2/trace_forward.py	suffix	.agents/slop/xd2/trace_forward.py				EVIDENCE
