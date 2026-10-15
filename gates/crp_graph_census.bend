@@ -286,6 +286,89 @@ def fam.go(+fam: Nat, +pfx: String, dts: List<&2, S.Dt>) -> IO(Unit):
         return Unit{}
 
 # ===========================================================================
+# THE VALUE-REACH AXIS: `O.Const`'s FOUR CONSTRUCTORS TIMES TWENTY `Dt`s -- `cr_const_of`'s
+# WHOLE INPUT SPACE, every cell a ROW rather than a count, and the family that exists because
+# the other 207 rows could not see `de`.
+#
+# WHY IT HAD TO BE BUILT, AND IT IS NOT "MORE ROWS". Every other dtype family in this file
+# takes its value from `cv1(dt)`/`cv0(dt)` -- `DType.const`'s three arms over the literal 1 --
+# so the value axis was a FUNCTION of the dtype axis: `CBool` at `bool`, `CFloat` at the nine
+# float dtypes, `CInt` at the other ten. `CInvalid` appeared at twenty dtypes and NOWHERE
+# else, so the "eighty cells" the gate's footer quotes were never eighty CELLS -- they were
+# eighty CONSTRUCTOR/DTYPE PAIRS of which the fixture could reach 41. THIS FAMILY PLACES ALL
+# FOUR CONSTRUCTORS AT EVERY DTYPE.
+#
+# THE RAW VALUE AXIS LIVES ON THE ORACLE AND ONLY THERE, because `DType.const` is
+# CPython's. The oracle hands `UOp.const` the RAW (`Invalid`, `True`, `7`, `2.5`) and lets
+# dtype.py:79-84 do the narrowing; the port is handed the ALREADY-NARROWED value, because
+# `cr_full`'s `fill_value` arrives after `dtype.const` (creation.bend's fact 3, its
+# `TODO(p3)`). SO THE FIXTURE BELOW SPELLS dtype.py's THREE ARMS AND NO TRUNCATION -- and the
+# no-truncation half is MEASURED rather than hoped for: on `.venv/bin/python`, `dt.const(x)`
+# at all twenty dtypes returns `True`, `1`, `7` and `2` and the float spellings of `1`, `7`
+# and `2.5` EXACTLY, so these four raws meet no `truncate` and a fourth arm cannot exist at
+# them. `cr_cval1` IS the raw-`True` column -- `DType.const`'s arms over the literal 1 IS
+# `dt.const(True)` -- and it is CALLED rather than re-spelled.
+#
+# THE PAYLOADS ARE CHOSEN AGAINST `cv1`, NOT AGAINST EACH OTHER: `1` is `cv1(dt)`'s, so `7`
+# and `2.5` are the two this axis adds, and at `bool` all three raws COLLAPSE to `True`
+# (`bool(1)`, `bool(7)`, `bool(2.5)` are all `True`) -- the one dtype where the payload axis
+# is degenerate, and the reason this family is EIGHTY rows and not two hundred and forty.
+# A fourth payload would add rows that cannot move the claim, because `cr_cast_dt` and
+# `cr_from_py` both read the CONSTRUCTOR and neither reads the payload: MEASURED on
+# CPython's side, the `(derived, minted, cast-target, de!=dt)` tuple is identical for three
+# payloads at 60 of 60 cells.
+# ===========================================================================
+# THE VALUE-REACH AXIS, `vr_`, AND WHY IT IS EIGHTY ROWS RATHER THAN A FLOOR. See its own
+# section below; the short form is that the other 207 rows take their value from `cv1(dt)`, so
+# their value axis IS their dtype axis, and `cr_const_of`'s whole input space -- `O.Const`'s
+# four constructors times `spec.bend`'s twenty `Dt`s -- is what the claim about `de` is about.
+# `cr_const_dt`'s own `iv_` rows are the twenty `CInvalid` cells of that grid and the ONLY
+# cells at which `de != dt`, and they mint nothing.
+def vr.of(k: Nat) -> String:
+  match k:
+    case 0n: "CInvalid"
+    case 1n: "CBool"
+    case 2n: "CInt"
+    case _:  "CFloat"
+
+# `dt.const(v)` FOR A RAW THAT IS NOT THE LITERAL 1: `bool(v)` for a bool dtype,
+# `ConstFloat(v)` for a float one and `int(v)` otherwise (dtype.py:79-84). THE BOOL ARM
+# FIRST, because `bool` is an `int` subclass and dtype.py tests `isinstance(val, bool)`
+# before `isinstance(val, int)` for exactly that reason. TWO LEAVES, because `O.CFloat` and
+# `O.CInt` hold different types and a `match` may not scrutinise a computed value.
+def vp.of2(if_: Bool, f: F32, n: H.I64) -> O.Const:
+  match if_:
+    case True{}: O.CFloat{f}
+    case _:      O.CInt{n}
+
+def vp.of(ib: Bool, if_: Bool, f: F32, n: H.I64) -> O.Const:
+  match ib:
+    case True{}: O.CBool{True{}}
+    case _:      vp.of2(if_, f, n)
+
+# THE VALUE THE PORT IS HANDED. `k` IS THE RAW'S CONSTRUCTOR AND THE ROW PREFIX, so the row
+# NAME and the value cannot drift apart -- `fam.of`/`fam.one`'s argument, one level out.
+def vv(k: Nat, +d: S.Dt) -> O.Const:
+  match k:
+    case 0n: O.CInvalid{}                                              # dtype.py:80, unchanged
+    case 1n: C.cr_cval1(S.Dt.is_bool(d), S.Dt.is_float(d))              # `dt.const(True)`
+    case 2n: vp.of(S.Dt.is_bool(d), S.Dt.is_float(d), 7.0, H.i64_of_i32(7))
+    case _:  vp.of(S.Dt.is_bool(d), S.Dt.is_float(d), 2.5, H.i64_of_i32(2))
+
+def vr.one(+k: Nat, +d: S.Dt) -> IO(Unit):
+  put(String.concat(["vr_", vr.of(k), "_", T.dt_name(d)]),
+      C.cr_const_of(O.Arena.empty(), vv(k, d), d))
+
+def vr.go(+k: Nat, dts: List<&2, S.Dt>) -> IO(Unit):
+  match dts:
+    case Nil{}: IO.print("")
+    case d <> t:
+      do IO<Unit>:
+        a : Unit <- vr.one(k, d)
+        b : Unit <- vr.go(k, t)
+        return Unit{}
+
+# ===========================================================================
 # THE FIVE SHAPE FAMILIES, over `shp()`. `dt` is `single()` (f32) because `empty` REFUSES a
 # weak dtype (creation.py:37) and `weakint`/`weakfloat` would make every `ne` row a raise
 # rather than a graph.
@@ -401,6 +484,10 @@ def main() -> IO(Unit):
     g : Unit <- fam.go(6n, "iv", dts())
     h : Unit <- fam.go(7n, "z", dts())
     h2 : Unit <- fam.go(8n, "eb", dts())
+    v0 : Unit <- vr.go(0n, dts())
+    v1 : Unit <- vr.go(1n, dts())
+    v2 : Unit <- vr.go(2n, dts())
+    v3 : Unit <- vr.go(3n, dts())
     i : Unit <- sh.go(0n, "ne", shp(), 0n)
     j : Unit <- sh.go(1n, "fs", shp(), 0n)
     k : Unit <- sh.go(2n, "nb", shp(), 0n)

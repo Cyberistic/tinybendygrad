@@ -5,9 +5,12 @@ and the first gate that layer's DTYPE PROMOTION has ever had.
     .venv/bin/python gates/crp_graph_census-gate.py
     .venv/bin/python gates/crp_graph_census-gate.py --refresh
 
-207 ROWS, THREE LANES, 206 EXACT MATCHES AND 1 DECLARED DIVERGENCE -- W3's MISSING
+287 ROWS, THREE LANES, 286 EXACT MATCHES AND 1 DECLARED DIVERGENCE -- W3's MISSING
 `vmin`/`vmax`, WHICH IS A CONSEQUENCE RATHER THAN A DEFECT. **THE NINETEEN `iv_` ROWS THIS
-GATE FOUND ARE FIXED AND GONE**; see THE 19 PINS THAT ARE NOT HERE, below. **THE SIBLING
+GATE FOUND ARE FIXED AND GONE**; see THE 19 PINS THAT ARE NOT HERE, below. **EIGHTY OF THE
+287 ARE THE VALUE-REACH AXIS** -- `O.Const`'s four constructors times `spec.bend`'s twenty
+`Dt`s, which IS `cr_const_of`'s whole input space, and which is the population the claim
+`CRPADT` names was measured over before and could not be re-measured over. **THE SIBLING
 `cr_graph_census` ALREADY EXISTS AND IS GREEN**
 (MEASURED rc=0, 28 rows), which is not what this unit's brief said. What the sibling prints
 is `O.Rng.sig`: the node COUNT, the ROOT op, the ROOT's src COUNT and the ROOT's src op
@@ -27,7 +30,7 @@ divergences below were INVISIBLE TO THE SIBLING'S SIGNATURE ENTIRELY -- `Rng.sig
 `CONST/0` for a constant whatever it holds and prints no `ParamArg` at all -- so neither
 could ever have been reported by a prefix.
 
-THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND NINE CHECKS COMPARE THEM EVERY RUN.
+THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND ELEVEN CHECKS COMPARE THEM EVERY RUN.
     methods_hold    the TEN `cr_*` defs that mirror a `creation.py` METHOD. Discovered by
                     intersecting `creation.bend`'s `def cr_*` names with `creation.py`'s
                     `def <n>(self|cls`, both by `re` -- NEITHER LIST TYPED -- and the
@@ -62,6 +65,15 @@ THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND NINE CHECKS COMPARE THEM EVER
     fold_axis_hold  the fold SET is MEASURED, not assumed: over the `f_` family exactly
                     three of twenty dtypes carry no `CAST/1` and they are `bool`, `weakint`
                     and `weakfloat` -- `ops.py:634`'s own comment, read back off a lane.
+    value_axis_hold THE CLAIM `CRPADT` NAMES, PER ROW AND NOT COUNTED IN A COMMENT: over all
+                    eighty cells of `cr_const_of`'s input space, every MINTED `CAST/1` carries
+                    the dtype its own row NAME asks for (`de == dt`, so the `de != dt`-and-
+                    minted cell is empty), the twenty `CInvalid` cells mint nothing at all and
+                    differ from their requested dtype at NINETEEN, and the eighty cells sort
+                    into CONSTRUCTOR / PAYLOAD / DERIVED against `cv1(dt)`'s own value --
+                    MEASURED 19 / 39 / 22, with `vr_CBool_<dt>` asserted to BE `cv1(dt)` so
+                    the other three columns are measured against the value the other 207 rows
+                    carried and not against themselves.
     no_noop_bottom   `NOOP` is `Arena.bottom()`, so a `NOOP` in any cone is an out-of-range
                     index read. Read off the port lanes' own output.
 
@@ -121,6 +133,7 @@ directory, the substrate, or the oracle) · 5 a lane ran and emitted nothing.
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -161,6 +174,7 @@ DRIFTED = {
 # CPython's own module, and `names_hold()` compares it with what BOTH lanes printed. This
 # constant exists only so `gatekit` knows how many rows to demand before it has read any.
 FAMS = 9                     # the `fam.of` arms in the driver, re-derived by `names_hold`
+VR = 4                       # the `vr.of` arms -- `O.Const`'s four constructors
 SHFAMS = 5                   # the `sh.of` arms
 SHAPES = 4                   # the `shp()` list elements, re-derived from the driver file
 TAIL = 7                     # the six `in_*` rows and `ctl_2`
@@ -221,6 +235,20 @@ def cpy_only_methods():
     return sorted(set(CPY_METHOD.findall(CPY.read_text())) - port)
 
 
+def _arms(head):
+    r"""ONE `.of` TABLE OUT OF THE DRIVER, in the driver's own order. `case _` is PART OF
+    the table and not a gap in it (see `driver_fams`), so the id of the `_` arm is the COUNT
+    of the numbered ones -- which is also what the `one` dispatcher switches on, and the two
+    are the same number."""
+    src = DRIVER.read_text()
+    body = re.search(rf"^def {head}\.of\(.*?\n(.*?)(?=^def )", src, re.M | re.S)
+    if not body:
+        return []
+    got = [(int(i), p) for i, p in re.findall(r'case (\d+)n: "(\w+)"', body.group(1))]
+    tail = re.findall(r'case _:\s+"(\w+)"', body.group(1))
+    return got + [(len(got), p) for p in tail]
+
+
 def driver_fams():
     r"""THE DRIVER'S OWN FAMILY TABLE, in its own order: `fam.of`'s and `sh.of`'s arms,
     parsed out of `crp_graph_census.bend`. A family the gate cannot find there is a family
@@ -232,17 +260,17 @@ def driver_fams():
     207. The `_` arm's id is therefore the COUNT of the numbered ones, which is also what
     `fam.one` dispatches on -- the two are the same number and the gate must not invent a
     second one."""
-    src = DRIVER.read_text()
+    return _arms("fam"), _arms("sh")
 
-    def arms(head):
-        body = re.search(rf"^def {head}\.of\(.*?\n(.*?)(?=^def )", src, re.M | re.S)
-        if not body:
-            return []
-        got = [(int(i), p) for i, p in re.findall(r'case (\d+)n: "(\w+)"', body.group(1))]
-        tail = re.findall(r'case _:\s+"(\w+)"', body.group(1))
-        return got + [(len(got), p) for p in tail]
 
-    return arms("fam"), arms("sh")
+def driver_vr():
+    r"""THE VALUE-REACH AXIS'S OWN TABLE, `vr.of`'s arms, read out of the driver the same
+    way. IT IS DISCOVERED AND NOT TYPED BECAUSE THE ROW NAME AND THE VALUE ARE ONE `Nat`:
+    `vr.of(k)` names the row and `vv(k, d)` supplies it, so a table typed here would be a
+    SECOND copy of a mapping that already cannot disagree with itself. An `vr.of` the gate
+    cannot find is an axis it would not notice losing, which is the same failure
+    `driver_fams` exists for."""
+    return _arms("vr")
 
 
 def driver_shapes():
@@ -264,11 +292,17 @@ def driver_shapes():
 
 def expected_rows():
     """THE ROW NAME LIST, BUILT FROM DISCOVERY, IN ORDER. Family prefixes from the driver,
-    dtypes from `spec.bend`, shapes from `shp()`, and the tail from the driver's own prints.
-    `names_hold()` compares this with BOTH lanes."""
+    dtypes from `spec.bend`, shapes from `shp()`, the value axis from `vr.of`, and the tail
+    from the driver's own prints. `names_hold()` compares this with BOTH lanes.
+
+    THE `vr_` BLOCK SITS BETWEEN THE DTYPE FAMILIES AND THE SHAPE FAMILIES BECAUSE THAT IS
+    WHERE THE DRIVER WALKS IT, and the position is part of the contract rather than a
+    choice: `gatekit` diffs the lanes LINE BY LINE, so an ordering the gate and the driver
+    disagree about is a red run that says nothing about `creation.bend`."""
     fams, shfams = driver_fams()
     dts = [ALIAS.get(n, n) for n, _, _ in spec_dtypes()]
     out = [f"{p}_{d}" for _, p in fams for d in dts]
+    out += [f"vr_{p}_{d}" for _, p in driver_vr() for d in dts]
     out += [f"{p}_{i}" for _, p in shfams for i in range(driver_shapes())]
     src = DRIVER.read_text()
     out += sorted(re.findall(r'IO\.print\(String\.concat\(\["(in_\w+)="', src))
@@ -303,9 +337,13 @@ def names_hold() -> bool:
         bad.append(f"the driver's `fam.of` has {len(fams)} arms, the header says {FAMS}")
     if len(shfams) != SHFAMS:
         bad.append(f"the driver's `sh.of` has {len(shfams)} arms, the header says {SHFAMS}")
+    vrs = driver_vr()
+    if len(vrs) != VR:
+        bad.append(f"the driver's `vr.of` has {len(vrs)} arms, the header says {VR}")
     if driver_shapes() != SHAPES:
         bad.append(f"`shp()` lists {driver_shapes()} shapes, the header says {SHAPES}")
-    tail = len(want) - len(fams) * len(spec_dtypes()) - len(shfams) * driver_shapes()
+    tail = (len(want) - len(fams) * len(spec_dtypes()) - len(shfams) * driver_shapes()
+            - len(vrs) * len(spec_dtypes()))
     if tail != TAIL:
         bad.append(f"the discovered tail is {tail} rows, the header says {TAIL}")
     for lane, f in (("bd", "bd.out"), ("bn", "bn.out"), ("py", "py.rows")):
@@ -751,6 +789,150 @@ def fold_axis_hold() -> bool:
     return report("fold_axis_hold", bad)
 
 
+def _fill_const(cone):
+    r"""`full`'s FILL CONST, found by what it feeds rather than by where it sits. The EXPAND
+    (creation.py:83, `cls.const(fill_value, dt).expand(new_shape)`) has the fill CONST as its
+    `src[0]`, so the CONST followed by `,EXPAND/2` -- optionally through a `CAST/1[dt]` --
+    IS the fill, and the shape's two `CONST/0[<dim>:weakint]` before it are not.
+
+    MEASURED WHY THE POSITIONAL VERSION IS WRONG: `f_i32` reads
+    `ALLOC/0[i32 ...],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2,`
+    `CONST/0[1:weakint],CAST/1[i32],EXPAND/2,...`, and the first CONST is the SHAPE's `2`.
+    Taking the first put `2:weakint` in the `cv1` slot at every integer dtype and answered
+    CONSTRUCTOR for 50 of the 80 cells -- a census of its own shape dimensions."""
+    m = re.search(r"CONST/0\[[^]]*\](?:,CAST/1\[[a-z0-9_]+\])?,EXPAND/2", cone)
+    return m.group(0).split(",EXPAND")[0].split(",CAST")[0] if m else None
+
+
+def value_axis_hold() -> bool:
+    r"""THE CLAIM `CRPADT` NAMES, RE-RUN AT THE SIZE OF THE WHOLE INPUT SPACE AND ASSERTED
+    PER ROW RATHER THAN COUNTED IN A COMMENT. THREE THINGS, and the first is the one the
+    eighty rows exist for.
+
+    1. `de == dt` AT EVERY MINTED CAST, OVER ALL EIGHTY CELLS. Each `vr_` row that carries
+       a `CAST/1` must carry `CAST/1[<the dtype its own NAME asks for>]`. That is the
+       `de != dt`-and-minted cell being empty, said as eighty per-row assertions instead of
+       the "0 of 80" a deleted throwaway driver used to print. It is also what makes C1
+       (`de` -> `dt` in the `ADt`) INVISIBLE A SECOND TIME and C6 (`de` -> `c0`) visible
+       over the 57 minted cells, so the axis is a witness rather than a decoration.
+    2. THE INDEPENDENCE CENSUS, IN THE ROW FORM AND CHECKABLE RATHER THAN TRUSTED. A
+       `vr_<ctor>_<dt>` row is INDEPENDENT of the dtype axis iff the value it carries is not
+       `cv1(dt)`'s -- and `cv1(dt)`'s is IN THIS LANE'S OWN OUTPUT already, in `f_<dt>`'s
+       fill CONST. So each of the eighty rows is compared against the `f_` row beside it and
+       sorted into three classes, which is why the independence criterion needs no prose:
+       `CONSTRUCTOR` (a different derived dtype), `PAYLOAD` (the same derived dtype, a
+       different value) and `DERIVED` (byte-identical to `cv1(dt)`). MEASURED: 20 CONSTRUCTOR,
+       38 PAYLOAD, 22 DERIVED, and THE DERIVED 22 ARE THE CONTROL -- they are `DType.const`'s
+       three arms over the literal `True` (`cr_cval1` IS `dt.const(True)`) and the `bool`
+       cell of each of the other two columns, where `bool(1)`, `bool(7)` and `bool(2.5)` are
+       all `True`. A reader who does not believe the axis is independent can read the three
+       classes off the lanes.
+    3. THE PAYLOAD AXIS CANNOT REACH `de`, AND THE `bool` CELL IS WHERE IT COLLAPSES. Asserted
+       as two facts about the lanes, because both are things a later edit could quietly
+       break: the `bool` rows of all three non-`Invalid` columns are the same value, and the
+       `weakint`/`weakfloat`/`bool` rows carry no `CAST/1` -- `ops.py:634`'s own three-dtype
+       list, read off a THIRD family now and not only off `f_`.
+
+    AND WHAT IT STILL CANNOT SEE, BECAUSE A CHECK THAT CLAIMS MORE THAN IT CAN IS THE
+    FAILURE MODE THIS FILE IS ABOUT: the eighty cells are `O.Const`'s four constructors
+    times `spec.bend`'s twenty `Dt`s and that IS `cr_const_of`'s whole input space -- but
+    `UOp.const`'s is SMALLER. `DType.const` rewrites every non-`Invalid` value onto the
+    dtype's own class, so CPython can only ever hand `cr_const_of` one of the four
+    constructors at each dtype plus `Invalid`, and the value axis at a dtype is free only in
+    its PAYLOAD. `cr_const_of` ACCEPTS MORE THAN CPython CAN DELIVER: the twenty cells whose
+    CONSTRUCTOR no dtype under test derives are the `CInvalid` ones. So the twenty-three
+    folded cells here are not an accident of the fixture -- they are `de`'s own arithmetic.
+    """
+    py, port = lane_rows("py.rows"), lane_rows("bd.out")
+    if py is None or port is None:
+        return report("value_axis_hold", ["the lanes are not there"])
+    dts = [ALIAS.get(n, n) for n, _, _ in spec_dtypes()]
+    vrs = [p for _, p in driver_vr()]
+    bad, minted, folds, cls_count = [], 0, 0, Counter()
+    for p in vrs:
+        for d in dts:
+            r = f"vr_{p}_{d}"
+            v = py.get(r)
+            if v is None or port.get(r) != v:
+                bad.append(f"{r} is missing or the two lanes differ on it -- the VALUE-REACH "
+                           f"census is the one whose rows must agree byte for byte")
+                continue
+            casts = re.findall(r"CAST/1\[([a-z0-9_]+)\]", v)
+            # `CAST/1` NOT FOLLOWED BY `[` -- the printer's PRE-REPAIR token, which is the
+            # instrument C5 was measured against. The look-AHEAD is on `[` and not on `]`:
+            # the bracket is what FOLLOWS the token.
+            bare = len(re.findall(r"CAST/1(?!\[)", v))
+            if bare:
+                bad.append(f"{r} carries a bare CAST/1 -- the target must be in the token for "
+                           f"claim 1 to be decidable at all")
+            if len(casts) > 1 or bare > 1:
+                bad.append(f"{r} carries {len(casts)} argument-bearing and {bare} bare "
+                           f"CAST/1; `cr_const_of` mints at most one")
+            if casts:
+                minted += 1
+                if casts != [d]:
+                    bad.append(f"{r} minted CAST/1[{casts[0]}] and asked for {d} -- THIS IS "
+                               f"THE CLAIM: `de != dt` at a minted CAST, which is the cell "
+                               f"every previous row could not reach")
+            else:
+                folds += 1
+            # THE INDEPENDENCE CENSUS: `cv1(dt)`'s own value, read off `f_<dt>`'s FILL CONST.
+            # NOT ITS FIRST CONST: `full`'s cone carries the shape's two `CONST/0[<dim>:
+            # weakint]` before the fill, and a reader that took the first compared every
+            # integer cell against the SHAPE and answered CONSTRUCTOR for 50 of 80. The fill
+            # is found STRUCTURALLY -- it is the CONST the EXPAND expands -- and not by
+            # position, which is the `tk_bitwise_not` mistake wearing a regex.
+            cv1 = _fill_const(py.get(f"f_{d}", ""))
+            mine = next((t for t in re.findall(r"CONST/0\[[^]]*\]", v)), None)
+            if cv1 is None or mine is None:
+                bad.append(f"{r} has no CONST/0[...] token to compare against f_{d}'s fill")
+            elif mine == cv1:
+                cls_count["DERIVED"] += 1
+            elif mine.split(":", 1)[1] != cv1.split(":", 1)[1]:
+                cls_count["CONSTRUCTOR"] += 1
+            else:
+                cls_count["PAYLOAD"] += 1
+    # 2b: THE CONTROL COLUMN. `vr_CBool_<dt>` IS `cv1(dt)` -- the driver spells that column
+    # `cr_cval1(is_bool, is_float)`, which is what every other dtype family passed -- so
+    # asserting it against `f_<dt>`'s fill CONST is what makes the three classes above mean
+    # "independent of the value the other 207 rows carried" rather than "independent of
+    # something". Without it the census would be comparing the axis against itself.
+    for d in dts:
+        ctl = next(iter(re.findall(r"CONST/0\[[^]]*\]", py.get(f"vr_CBool_{d}", ""))), None)
+        cv1 = _fill_const(py.get(f"f_{d}", ""))
+        if ctl is None or ctl != cv1:
+            bad.append(f"vr_CBool_{d} is {ctl} and f_{d}'s fill is {cv1} -- the CONTROL column "
+                       f"is `cv1(dt)` and if it drifts the independence classes mean nothing")
+    # 3: THE `bool` CELL IS WHERE THE PAYLOAD AXIS COLLAPSES, ON THE PORT LANE. THE ONE
+    # COLUMN THAT IS EXCLUDED IS DISCOVERED AND NOT TYPED: it is the column which mints NO
+    # CAST at any of the twenty dtypes, which is `DType.const` returning `Invalid` unchanged
+    # (dtype.py:80) -- and there being exactly ONE of them is asserted, because a second
+    # would mean the discovery had stopped meaning what this sentence says it means.
+    quiet = [p for p in vrs
+             if not any("CAST/1" in (port.get(f"vr_{p}_{d}") or "") for d in dts)]
+    if len(quiet) != 1:
+        bad.append(f"{len(quiet)} of the value columns mint no CAST at any dtype {quiet}; "
+                   f"expected exactly one -- `DType.const` returns Invalid UNCHANGED")
+    for p in vrs:
+        if p in quiet:
+            continue
+        vals = {port.get(f"vr_{p}_{d}") for d in dts if d == "bool"}
+        if len(vals) != 1 or next(iter(vals)) != "CONST/0[True:bool]":
+            bad.append(f"vr_{p}_bool is {sorted(vals)} and not CONST/0[True:bool] -- "
+                       f"bool(1), bool(7) and bool(2.5) are all True, and that is the one "
+                       f"dtype at which the payload axis cannot add a cell")
+    for d in ("bool", "weakint", "weakfloat"):
+        for p in vrs:
+            if p not in quiet and "CAST/1" in (port.get(f"vr_{p}_{d}") or ""):
+                bad.append(f"vr_{p}_{d} carries a CAST/1 -- ops.py:634 folds at exactly these "
+                           f"three dtypes")
+    print(f"  value_axis_hold: {minted} minted, {folds} folded of {len(vrs) * len(dts)} "
+          f"cells; independence {dict(sorted(cls_count.items()))}", file=sys.stderr)
+    if len(vrs) * len(dts) != len(driver_vr()) * len(spec_dtypes()):
+        bad.append("the value axis is not `vr.of` x `spec.bend`")
+    return report("value_axis_hold", bad)
+
+
 def no_noop_bottom() -> bool:
     """`NOOP` IS `Arena.bottom()` -- what `Arena.node` answers for an index the arena does
     not hold -- so a `NOOP` in any cone is an out-of-range index read and always a defect.
@@ -922,7 +1104,7 @@ GATE = Gate(
 )
 
 CHECKS = (names_hold, methods_hold, dtypes_hold, receiver_hold, frompy_hold, opscast_hold,
-          drift_hold, classes_hold, fold_axis_hold, no_noop_bottom)
+          drift_hold, classes_hold, fold_axis_hold, value_axis_hold, no_noop_bottom)
 
 # THE `iv_` FAMILY, DISCOVERED from the row population and NOT TYPED. `cr_cast_dt` cleared
 # every one of these twenty rows, and the verdict below counts them from here so the number
@@ -939,7 +1121,8 @@ def checks_hold() -> bool:
 
 if __name__ == "__main__":
     sys.exit(gate(GATE, f"crp_graph_census-gate: {ROWS} rows ({FAMS} dtype families x 20 "
-                        f"dtypes + {SHFAMS} shape families x {SHAPES} shapes + {TAIL}), 3 "
+                        f"dtypes + {VR} value constructors x 20 dtypes + {SHFAMS} shape "
+                        f"families x {SHAPES} shapes + {TAIL}), 3 "
                         f"lanes, {ROWS - len(DIVERGES)} deep cones match CPython byte for "
                         f"byte and {len(DIVERGES)} are DECLARED -- "
                         f"{sum(1 for c, _ in DIVERGES.values() if c == 'W3-BOUNDS')} is W3's "
@@ -1073,49 +1256,97 @@ if __name__ == "__main__":
 #
 # `tok.arg` (driver:155-179) now matches `O.ADt{d}` and prints `OP/NSRC[TARGET]` where it
 # used to fall through to `tok.of(a, u, False{}, "")`, and the oracle's `tok` prints
-# `u.arg.name` under `isinstance(u.arg, DType)`. MEASURED ON THE BASE LANES: 118 `CAST/1`
-# occurrences and NOT ONE carried an argument, on BOTH sides; MEASURED AFTER: 118
-# argument-bearing casts on each lane -- 22 at `f32` and 6 at each of the other sixteen
-# dtypes, 0 bare. `dtypes_hold` now also asserts `spec.bend`'s OWN `nm` field against
-# `dir(dtypes)`, because that field is what `T.dt_name` prints and NOTHING CHECKED IT: the
-# population was keyed on priority and bits and the field the printer depends on was not in
-# the key.
+# `u.arg.name` under `isinstance(u.arg, DType)`. MEASURED ON THE 207-ROW BASE LANES: 118
+# `CAST/1` occurrences and NOT ONE carried an argument, on BOTH sides; MEASURED AFTER, AT 207:
+# 118 argument-bearing casts on each lane -- 22 at `f32` and 6 at each of the other sixteen
+# dtypes, 0 bare. **MEASURED AGAIN AT 287, WHICH IS THE READING THAT COUNTS NOW: 169
+# ARGUMENT-BEARING CASTS AND 0 BARE ON EACH LANE, AND 169 - 118 = 51 IS EXACTLY THE NUMBER OF
+# MINTED `vr_` CELLS** -- so the eighty new rows added fifty-one argument-bearing casts and not
+# one of them carries a name the gate has to guess at. `dtypes_hold` also asserts `spec.bend`'s
+# OWN `nm` field against `dir(dtypes)`, because that field is what `T.dt_name` prints and
+# NOTHING CHECKED IT: the population was keyed on priority and bits and the field the printer
+# depends on was not in the key.
 #
 # SO THE ACCEPTANCE TEST, STATED EXACTLY. `gates/crp_graph_census-mutate.py` C1 breaks ONLY
 # the CAST's `ADt` argument -- `de` to `dt`, ONE use broken -- and:
 #
-#     C1  the ADt half only                  ->   0 of 207 rows   MOVED-BARE  0
-#     C2  the fold test only                 ->  19 of 207 rows   MOVED-BARE 19
-#     C3  both, i.e. the pre-fix line        ->  19 of 207 rows   MOVED-BARE 19
-#     C4  C1 with `opscast_hold` silenced     ->   0 of 207 rows, rc=0 GREEN
-#     C5  every `ADt` hardcoded `boolean`     -> 118 rows           MOVED-BARE  0
-#     C6  the `ADt` reads `c0`, the fold test's OTHER operand -> 118 rows MOVED-BARE 0
+#     C1  the ADt half only                  ->   0 of 287 rows   MOVED-BARE  0
+#     C2  the fold test only                 ->  38 of 287 rows   MOVED-BARE 38
+#     C3  both, i.e. the pre-fix line        ->  38 of 287 rows   MOVED-BARE 38
+#     C4  C1 with `opscast_hold` silenced     ->   0 of 287 rows, rc=0 GREEN
+#     C5  every `ADt` hardcoded `boolean`     -> 169 rows           MOVED-BARE  0
+#     C6  the `ADt` reads `c0`, the fold test's OTHER operand -> 169 rows MOVED-BARE 0
+#     V1  `cr_cast_dt`'s True arm answers `dt` -- THE THIRD ARM -- -> 38 rows  (20 over 207)
 #
-# C3 MOVES EXACTLY WHAT C2 MOVES, so C3's extra half -- the `ADt` -- contributes nothing the
-# lane can see; and C6 MOVES 118 ROWS WITH `MOVED-BARE == 0`, so the `ADt` IS in the token
-# and C1's invisibility is about `dt == de` and not about an unread argument. `MOVED-BARE`
-# is the SAME COMPARISON WITH EVERY `[...]` STRIPPED -- the pre-repair printer -- and it is
-# what makes "the repair did it" a measurement rather than a claim.
+# EVERY NUMBER IN THAT TABLE IS THE 287-ROW READING AND EVERY `+N` IS A DELTA THIS SESSION
+# MEASURED, not an expectation. C1 `0 of 287` IS THE CLAIM RE-RUN AT THE NEW SIZE AND IT DID
+# NOT MOVE: `dt == de` at every minted CAST over the whole input space, which is the sentence
+# this whole footer is standing on. C5/C6/D1/D2 WENT FROM 118 TO 169, AND 169 - 118 = 51 IS
+# EXACTLY THE NUMBER OF MINTED `vr_` CELLS -- so all eighty new rows are live witnesses that a
+# WRONG `ADt` moves the answer, and C2/C3 went 19 -> 38 for the same reason on the other side
+# of the predicate. C3 STILL MOVES EXACTLY WHAT C2 MOVES, so C3's extra half -- the `ADt` --
+# still contributes nothing the lane can see; and C6 STILL MOVES WITH `MOVED-BARE == 0`, so
+# the `ADt` IS in the token and C1's invisibility is about `dt == de` and not about an unread
+# argument. `MOVED-BARE` is the SAME COMPARISON WITH EVERY `[...]` STRIPPED -- the pre-repair
+# printer -- and it is what makes "the repair did it" a measurement rather than a claim.
 #
-# WHY `dt == de` AT EVERY MINTED CAST, MEASURED OVER THE WHOLE REACHABLE INPUT SPACE AND NOT
-# OVER THESE 207 ROWS. `cr_const_of`'s whole input space is `O.Const`'s FOUR constructors
-# times `spec.bend`'s twenty `Dt`s -- eighty cells, every cell `creation.bend` can be asked
-# for -- and a throwaway driver called `C.cr_const_of(ar, v, d)` on all eighty and printed
-# them with THIS FILE'S OWN TOKEN:
+# WHY `dt == de` AT EVERY MINTED CAST, AND THE SWEEP THAT MEASURED IT A SECOND TIME AT THE
+# SIZE OF THE WHOLE INPUT SPACE. `cr_const_of`'s input space is `O.Const`'s FOUR constructors
+# times `spec.bend`'s twenty `Dt`s -- eighty cells -- and those eighty cells are the `vr_`
+# family, so the answer is now EIGHTY ROWS that run on every invocation and not a number a
+# deleted throwaway driver printed once:
 #
 #     de != dt              19 of 80 cells -- every `CInvalid` cell except `bool`
-#     fold (no CAST)        23 of 80 -- all 20 `CInvalid`, plus `bool`/`weakint`/`weakfloat` once each
-#     CAST minted           57 of 80 -- and 0 of the 57 carry an `ADt` that is not their own `dt`
+#     fold (no CAST)        29 of 80 -- all 20 `CInvalid`, plus bool/weakint/weakfloat THREE
+#                            times each, once per non-`Invalid` column
+#     CAST minted           51 of 80 -- and 0 of the 51 carry an `ADt` that is not their own `dt`
 #     de != dt AND minted    0 of 80
 #
-# THE SAME EIGHTY CELLS ON CPYTHON'S SIDE: `de != dt` at 19, folded at 29, minted at 51, and
-# `de != dt` at a minted CAST at 0 of 80. THE TWO SIDES AGREE THE CELL IS EMPTY, WHICH IS
-# WHAT MAKES IT CPYTHON'S SHAPE AND NOT A PORT DEFECT. `cr_cast_dt` answers `boolean` on its
-# `True{}` arm and `dt` otherwise, so `de != dt` REQUIRES a `CInvalid` value; and
-# `cr_from_py(CInvalid)` IS `boolean`, which is `c0`, which is `de` -- so `md_dt_eq(c0, de)`
-# is `bool == bool`, the fold FIRES, and NO CAST IS MINTED. That is ops.py:630
-# (`if dtype is None or b is Invalid: dtype = dtypes.from_py(b)`) and then ops.py:637's
-# `.cast(dtype)` on a value whose own derived dtype IS that `from_py`.
+# CPYTHON'S OWN EIGHTY CELLS, through the real `UOp.const`, read 19 / 29 / 51 / 0. **THE TWO
+# LANES AGREE CELL BY CELL, WHICH IS WHAT MAKES THE EMPTY CELL CPYTHON'S SHAPE AND NOT A
+# PORT DEFECT**, and `value_axis_hold` asserts the minted `ADt` per row rather than counting
+# it. `cr_cast_dt` answers `boolean` on its `True{}` arm and `dt` otherwise, so `de != dt`
+# REQUIRES a `CInvalid` value; and `cr_from_py(CInvalid)` IS `boolean`, which is `c0`, which
+# is `de` -- so `md_dt_eq(c0, de)` is `bool == bool`, the fold FIRES, and NO CAST IS MINTED.
+# That is ops.py:630 (`if dtype is None or b is Invalid: dtype = dtypes.from_py(b)`) and then
+# ops.py:637's `.cast(dtype)` on a value whose own derived dtype IS that `from_py`.
+#
+# THE PREVIOUS 80-CELL SWEEP WAS NOT WRONG, IT WAS THE SAME EIGHTY CELLS WITH ONE VALUE AXIS,
+# AND THAT IS THE WHOLE FINDING. Its port-side readings were 19 / 23 / 57 / 0 -- 23 folds and
+# 57 mints rather than 29 and 51 -- and 23 is EXACTLY what `cv1(dt)` gives: twenty `CInvalid`
+# cells plus `bool`/`weakint`/`weakfloat` ONCE each. So the earlier driver passed `cv1(dt)` as
+# `v` in all eighty cells: the value axis was a FUNCTION of the dtype axis, forty-one of the
+# eighty cells were reachable in value as well as in dtype, and "the whole input space" was a
+# statement about the dtype axis alone. THE SIX EXTRA FOLDS ARE EXACTLY THE SIX CELLS WHERE A
+# SECOND AND A THIRD NON-DERIVED VALUE ALSO LANDS ON A FOLD DTYPE, and the eighty `vr_` rows
+# now say so per cell.
+#
+# WHAT THE VALUE AXIS ACTUALLY NEEDED TO BE, MEASURED, AND IT IS NOT THE CONSTRUCTOR. The
+# independence criterion is IN THE ROW FORM and needs no prose: a `vr_<ctor>_<dt>` cell is
+# independent of `cv1(dt)` when the value it carries is not `cv1(dt)`'s, and `cv1(dt)`'s is
+# already in the lane in `f_<dt>`'s fill CONST. `value_axis_hold` reads that off both lanes
+# and sorts all eighty cells into three classes:
+#
+#     CONSTRUCTOR  19   `Invalid` at every dtype except `bool` -- a different derived dtype
+#     PAYLOAD      39   the same derived dtype, a different value: `7` and `2` against `cv1`'s
+#                        `1`, at the nineteen non-`bool` dtypes of each of the two columns, plus
+#                        `Invalid` at `bool`
+#     DERIVED      22   the CONTROL: `vr_CBool_<dt>` at all twenty (that column IS `cr_cval1`,
+#                        which IS `dt.const(True)`) and `bool` itself, where `bool(1)`,
+#                        `bool(7)` and `bool(2.5)` are all `True`
+#
+# **SO THE CONSTRUCTOR AXIS CANNOT BE MADE INDEPENDENT AT ALL, AND THE MEASUREMENT IS WHY:
+# `DType.const` (dtype.py:79-84) REWRITES every non-`Invalid` value onto the dtype's own
+# class.** `7` at `f32` is `ConstFloat(7.0)`, `2.5` at `i32` is `int(2.5)` = `2`, `True` at
+# `void` is `1`. At every one of the sixty non-`Invalid` cells the value that lands in the
+# arena carries the CONSTRUCTOR `cv1(dt)` would have chosen -- so `cr_const_of` cannot be
+# reached with a class it would not have derived, and the only class that IS reachable at an
+# un-derived dtype is `Invalid`'s, which is the `iv_` family's twenty rows and is exactly the
+# half that NEVER MINTS. What IS free is the PAYLOAD, and it cannot reach `de` either:
+# MEASURED on CPython, the `(derived, minted, cast-target, de != dt)` tuple is IDENTICAL for
+# three payloads at 60 of 60 cells, because `cr_cast_dt` and `cr_from_py` both read the
+# CONSTRUCTOR and neither reads the payload. **THE AXIS IS EIGHTY ROWS AND NOT TWO HUNDRED
+# AND FORTY BECAUSE THAT IS ALL OF IT, MEASURED, NOT BECAUSE EIGHTY WAS THE FLOOR.**
 #
 # THE SHAPE THAT WOULD BE NEEDED, since none is reachable. A row can read `de` in the `ADt`
 # position only if the fold does NOT fire, and the fold cannot fail in the one place where
@@ -1125,11 +1356,19 @@ if __name__ == "__main__":
 # `dt` with a dtype CHOSEN FROM `v` AND `dt` JOINTLY (a promotion ladder -- `creation.py`'s
 # `dtype or self.dtype` taken one step further) at a `v` for which `from_py(v) !=` that
 # answer. CPYTHON HAS NO SUCH SHAPE: `dtype` is either `None` or the caller's, and `None`
-# means `from_py(b)`. SO THIS IS A FINDING ABOUT CPYTHON, AND THE HONEST INSTRUMENT FOR IT IS
-# A SPELLING ASSERTION ON THE SOURCE TEXT, which is what `opscast_hold` is. `fold_axis_hold`
-# now reads the `iv_` half off the LANE as well -- the row-visible half of the same claim:
-# zero `CAST/1` and `CONST/0[Invalid:bool]` at all twenty, with the REQUESTED dtype differing
-# from the DERIVED one at NINETEEN.
+# means `from_py(b)`.
+#
+# **AND NOW IT HAS A CANARY, WHICH IS WHAT THE EIGHTY ROWS ARE FOR.** The mutation that IS
+# that third arm -- `cr_cast_dt`'s `True{}` arm answering `dt`, which is V1 in
+# `gates/crp_graph_census-mutate.py` -- is measured at **38 rows** over the 287 and was 20
+# over the 207: the nineteen `iv_` rows and the nineteen `vr_CInvalid_*` rows. Before the
+# `vr_` family `opscast_hold`'s SPELLING ASSERTION was the only instrument that could catch
+# V1 at all, because V1's rows do not disagree with CPython -- they disagree WITH THE CLAIM.
+# Now they do disagree with CPython, so the lane diff catches it too, and `value_axis_hold`'s
+# claim 1 (`casts == [d]`) goes red on the same run. C6, the other direction, moved 118 rows
+# over 207 and moves 169 over 287: +51, which is exactly the number of minted `vr_` cells. So
+# the eighty rows are not a second copy of the `iv_` family -- they are the FIRST rows on
+# which `de`'s second use is witnessed by a `CAST` whose target `c0` would have got wrong.
 #
 # WHAT MADE THIS THE THIRD OF ITS CLASS, and the two before it are the reason the
 # instruction "fold on the dtype the CONST ACTUALLY HAS" was the right shape to reach for:
@@ -1203,6 +1442,20 @@ if __name__ == "__main__":
 #     THE `iv_` FAMILY IS NOT BEHIND THAT WALL. `DType.const` returns `Invalid` UNCHANGED
 #     (dtype.py:80), so nothing is truncated on the nineteen rows finding 1 was about, and
 #     `opscast_hold` checks the predicate's spelling rather than trusting a row.
+#     **THE `vr_` FAMILY IS NOT BEHIND THAT WALL EITHER, AND THAT IS MEASURED, NOT HOPED FOR**:
+#     its four raws are `Invalid`, `True`, `7` and `2.5`, and on `.venv/bin/python` `dt.const`
+#     returns every one of `True`, `1`, `7`, `2` and the float spellings of `1`, `7` and `2.5`
+#     EXACTLY at all twenty dtypes -- so no `truncate` fires at any of the eighty cells and
+#     the port's three fixture arms are the whole of `DType.const` there.
+#   * `UOp.const`'s `dtype=None` ARM IS NOT A ROW AND CANNOT BE ONE. `Tensor.const(b)` with
+#     no dtype makes `de = from_py(b)` (ops.py:630) and so ALWAYS folds, which is the same
+#     answer the `CInvalid` twenty cells give -- but `cr_const_of`'s `dt` is a `S.Dt` and has
+#     no `None`, so the shape is not expressible on the port side at all. Named here because
+#     "there is no row for it" should read as "there is no row for it" and not as agreement.
+#   * `UOp.const`'s `UOp` AND `tuple` ARMS ARE NOT ROWS. `isinstance(b, UOp)` returns
+#     `b.cast(dtype)` and a tuple becomes a `STACK` (ops.py:634-636); neither is an
+#     `O.Const`, so neither reaches `cr_const_of`. Two shapes CPython has and this port's
+#     signature cannot be asked about.
 #   * `_multi_like` (creation.py:16) is W2 and has NO def, so `full_like`'s multi-device arm
 #     (creation.py:102-104) is not censused. `cpy_only_methods()` NAMES it on every run
 #     rather than letting its absence read as agreement.
@@ -1210,13 +1463,25 @@ if __name__ == "__main__":
 #     (creation.bend's fact 6) and so has no row.
 #   * `ParamArg.slot` is NOT printed. It is `next(UOp.unique_num)` and is covered by
 #     `in_full`/`in_empty`/`in_diff` instead -- a count, which is what can see it.
-#   * THE `ADt` OF `cr_const_of`'s THIRD ARGUMENT CANNOT DISTINGUISH `de` FROM `dt`, AND NO
-#     FIXTURE IN THIS CENSUS -- OR ANY OTHER -- CAN MAKE IT. The token is there now (FINDING
-#     1b) and 118 rows read it, so this is NOT "the printer is too coarse"; it is that
-#     `de == dt` at every minted CAST, measured over all eighty cells of `cr_const_of`'s
-#     input space and on CPython's side of the same eighty. The twenty `iv_` rows ARE the
-#     axis where a requested dtype differs from the value's own (`de != dt` at nineteen of
-#     them) and they mint NO CAST AT ALL, which is ops.py:630's answer rather than a gap in
-#     this file. `opscast_hold`'s SPELLING ASSERTION is therefore load-bearing and is the
-#     ONLY instrument that catches C1 -- C4, C1 with that assertion silenced, is rc=0.
+#   * THE `ADt` OF `cr_const_of`'s THIRD ARGUMENT STILL CANNOT DISTINGUISH `de` FROM `dt`, AND
+#     THE `vr_` FAMILY IS WHY THAT IS A RESULT AND NOT A GAP. The token is there (FINDING 1b)
+#     and 169 rows read it, so this is NOT "the printer is too coarse"; it is that
+#     `de == dt` at every minted CAST, asserted PER ROW over all eighty cells of
+#     `cr_const_of`'s input space and agreed cell by cell with CPython's own eighty. The
+#     twenty `CInvalid` cells per column ARE the axis where a requested dtype differs from the
+#     value's own (`de != dt` at nineteen of twenty, twice over) and they mint NO CAST AT ALL,
+#     which is ops.py:630's answer rather than a gap in this file. `opscast_hold`'s SPELLING
+#     ASSERTION is therefore STILL load-bearing and is STILL the only instrument that catches
+#     C1 -- C4, C1 with that assertion silenced, is rc=0 and moves 0 of 287 rows. WHAT CHANGED
+#     IS THAT V1, THE MUTATION THAT MAKES `de != dt` REACHABLE AT A MINTED CAST, NOW MOVES 38
+#     ROWS INSTEAD OF 20, so the third arm this file says would be needed can no longer be
+#     added without a red run.
+#   * AND THE LIMIT THAT NO VALUE AXIS CAN MOVE: `cr_const_of` ACCEPTS MORE THAN CPYTHON CAN
+#     DELIVER. `DType.const` rewrites every non-`Invalid` value onto the dtype's own class, so
+#     at each dtype CPython hands `cr_const_of` ONE of the four constructors (the dtype's own)
+#     plus `Invalid`, and the port accepts all four. Nineteen of the twenty cells CPython
+#     cannot reach with a class it did not derive are the `Invalid` ones, and those are the
+#     half that never mints. So "no fixture can make `de` visible in the `ADt`" is a statement
+#     about `DType.const`, not about the width of a sweep -- and the eighty rows are the
+#     measurement of that statement rather than a hope that a wider one would change it.
 # ===========================================================================

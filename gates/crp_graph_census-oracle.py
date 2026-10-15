@@ -45,7 +45,7 @@ this session." Three facts are only in the deep form: the FOLD (`CONST/0` versus
 and the CONST's own VALUE (`ConstFloat(truncate[dt](v))` / `bool(v)` / `int(v)`).
 
 NOTHING IS EXECUTED AND NO REAL GRAPH IS NEEDED: every row is the SIGNATURE of the lazy
-graph, which is why a 207-row census runs with no device work.
+graph, which is why a 287-row census runs with no device work.
 """
 
 import re
@@ -244,6 +244,34 @@ def fam(f: int, dt: DType):
     return rx(dt).empty_like()
 
 
+# ============================================================ THE VALUE-REACH AXIS
+# `O.Const`'s FOUR CONSTRUCTORS TIMES TWENTY `Dt`s: `cr_const_of`'s whole input space, and
+# every cell a row rather than a count.
+#
+# THIS LANE OWNS THE RAW VALUE AXIS, AND IT IS THE ONLY PLACE THAT CAN. `DType.const`
+# (dtype.py:79-84) is CPython's, so `UOp.const` is handed the RAW and does the narrowing
+# itself; the port is handed the already-narrowed value, because `cr_full`'s `fill_value`
+# arrives after `dtype.const` (`creation.bend`'s fact 3). So the two lanes disagree about
+# WHICH SPELLING is the fixture and agree about what the graph is -- which is the
+# `tn_bitwise_not` post-mortem avoided: neither side transcribes the other's reading.
+#
+# THE PAYLOADS ARE CHOSEN AGAINST `cv1(dt)`'s, which is `dt.const(1)`: `1` is what the other
+# 207 rows carried, and `7` and `2.5` are the two values no dtype under test derives.
+# MEASURED here, not assumed: `dt.const` returns all three EXACTLY at all twenty dtypes, so
+# these raws meet no `truncate` and the port's fixture arms are the whole of `DType.const` at
+# them. And at `bool` all three collapse to `True`, which is why this axis is eighty cells and
+# not two hundred and forty -- a fourth payload cannot move the claim, because `cr_cast_dt`
+# and `cr_from_py` both read the CONSTRUCTOR and neither reads the payload.
+VRAWS = (("CInvalid", Invalid), ("CBool", True), ("CInt", 7), ("CFloat", 2.5))
+
+
+def vr(ctor, raw, dt):
+    """`Tensor.const(raw, dt)` -- `tensor.py:122`, which IS `UOp.const` wrapped, and NOT
+    `Tensor.full`: `full` resolves `dt` from the value when none is given, then EXPANDs,
+    STACKs and ALLOCs, so it would bury the one node the claim is about under four."""
+    return row(f"vr_{ctor}_{dt.name}", lambda: Tensor.const(raw, dt))
+
+
 # =============================================================== THE FIVE SHAPE FAMILIES
 # `dtype` is `float32` because `empty` REFUSES a weak dtype (creation.py:37) and a weak axis
 # would make every `ne` row a raise rather than a graph -- and the port's `sh.one` passes
@@ -290,6 +318,12 @@ if __name__ == "__main__":
     for f, pfx in enumerate(FAMS):
         for dt in dtypes_():
             print(row(f"{pfx}_{dt.name}", lambda f=f, dt=dt: fam(f, dt)))
+    # AFTER THE NINE DTYPE FAMILIES AND BEFORE THE SHAPE FAMILIES, because that is where the
+    # driver walks `vr` -- and the ORDER IS PART OF THE CONTRACT (`expected_rows()` builds the
+    # same list and `gatekit` diffs line by line).
+    for ctor, raw in VRAWS:
+        for dt in dtypes_():
+            print(vr(ctor, raw, dt))
     for f, pfx in enumerate(SHFAMS):
         for i, s in enumerate(SHAPES):
             print(row(f"{pfx}_{i}", lambda f=f, s=s: shf(f, s)))

@@ -339,7 +339,7 @@ MUTATIONS = [
     # `BARE == 0` and `MOVED == 118` is the printer's own doing. THE PREDICTION IS KEPT AS
     # A `BARE` READING BECAUSE `MOVED-BARE` IS THE PRE-REPAIR INSTRUMENT: a reader who
     # believes this comment can check it by running the same mutation under `bare()`.
-    ("C5 every minted CAST's ADt is hardcoded boolean -- 118 wrong arguments", "VALUE", "port",
+    ("C5 every minted CAST's ADt is hardcoded boolean -- 169 wrong arguments", "VALUE", "port",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), S.boolean())"),
     # C6 IS C1 WITH THE WRONG REPLACEMENT, AND THE PAIR IS THE MEASUREMENT. C1 answers `dt`,
@@ -358,11 +358,11 @@ MUTATIONS = [
     # the port's arm, the two lanes would DISAGREE on all 118 casts and the gate would be
     # RED for a printer difference rather than for a port difference, which is the
     # `tn_bitwise_not` failure wearing a census's clothes.
-    ("D1 the DRIVER's printer loses its ADt arm -- 118 bare tokens on the port lane",
+    ("D1 the DRIVER's printer loses its ADt arm -- 169 bare tokens on the port lane",
      "VALUE", "driver",
      '    case O.ADt{d}:    tok.of(a, u, True{}, String.concat([tok.plain(a, u), '
      '"[", T.dt_name(d), "]"]))\n', ""),
-    ("D2 the ORACLE's printer loses its DType arm -- 118 bare tokens on CPython's lane",
+    ("D2 the ORACLE's printer loses its DType arm -- 169 bare tokens on CPython's lane",
      "VALUE", "oracle",
      '    if isinstance(u.arg, DType):\n        return f"{u.op.name}/{len(u.src)}'
      '[{u.arg.name}]"\n', ""),
@@ -486,6 +486,39 @@ MUTATIONS = [
     ("G13 fold_axis_hold: the casting rows' TARGET is not checked", "GUARD", "gate",
      'elif f"CAST/1[{d}]" not in py[f"f_{d}"]:',
      'elif f"CAST/1[zzz]" not in py[f"f_{d}"]:'),
+
+    # ------------------------------------------- THE VALUE-REACH AXIS, `vr_`
+    # W1 AND W2 ARE THE AXIS AND POPULATION HALVES OF AN AXIO THAT DID NOT EXIST BEFORE
+    # THIS SESSION. W1 drops a whole column and W2 makes two of them collide -- same row
+    # COUNT, different NAMES -- because a gate that only counts rows cannot tell the second
+    # from a healthy run.
+    ("W1 the driver walks NO dtypes for the `vr_CInt` column", "AXIS", "driver",
+     "    v2 : Unit <- vr.go(2n, dts())", "    v2 : Unit <- vr.go(2n, Nil{})"),
+    ("W2 `vr.of`'s CFloat column is RENAMED to CInt -- two columns, one name", "POPULATION",
+     "driver", '    case _:  "CFloat"', '    case _:  "CInt"'),
+    # W3 AND W4 ARE THE PAYLOAD AXIS, AND THEY ARE A PAIR: W3 collapses the PORT's `7` into
+    # `cv1`'s `1` and W4 collapses the ORACLE's raw `7` into `1`. EITHER ALONE MUST MOVE
+    # TWENTY ROWS -- if the port's fixture and the oracle's raw agreed BY CONSTRUCTION
+    # rather than by measurement, one of the two would be GREEN, and that is the reading
+    # that says the fixture is load-bearing.
+    ("W3 the port's CInt payload is `1`, so the payload axis IS `cv1`", "VALUE", "driver",
+     "    case 2n: vp.of(S.Dt.is_bool(d), S.Dt.is_float(d), 7.0, H.i64_of_i32(7))",
+     "    case 2n: vp.of(S.Dt.is_bool(d), S.Dt.is_float(d), 1.0, H.i64_of_i32(1))"),
+    ("W4 the ORACLE's CInt raw is `1`, so both sides collapse together", "VALUE", "oracle",
+     '("CInt", 7), ("CFloat", 2.5)', '("CInt", 1), ("CFloat", 1)'),
+    # G14 IS A GUARD FOR THE CHECK THAT EXISTS BECAUSE OF THE EIGHTY ROWS. It points the
+    # `bool`-collapse assertion at a value no lane carries, so it must be a red run: a
+    # `value_axis_hold` that has never been seen to fail is not a check.
+    ("G14 value_axis_hold: the bool collapse is asserted against False, not True", "GUARD",
+     "gate", '!= "CONST/0[True:bool]":', '!= "CONST/0[False:bool]":'),
+    # G15 REMOVES CLAIM 1 -- `de == dt` at every minted CAST, which is the claim the eighty
+    # rows exist for. IT IS EXPECTED GREEN, and that is the reading: claim 1 RESTATES the
+    # lane diff over these eighty rows, because `value_axis_hold` refuses any `vr_` row the
+    # two lanes DISAGREE on before it ever reaches the cast target. So the eighty rows'
+    # standing value is the DIFF and the assertion is a second witness rather than the only
+    # one -- which is worth knowing and is not worth hiding.
+    ("G15 value_axis_hold: claim 1 is REMOVED (a WEAKENING, expected GREEN)", "GUARD", "gate",
+     "                if casts != [d]:", "                if False:"),
 ]
 
 SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "spec": SPEC,

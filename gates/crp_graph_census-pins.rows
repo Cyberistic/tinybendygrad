@@ -2,7 +2,7 @@
 # which is its ONLY writer. One TAB-separated QUAD per declared divergence:
 # `<row>\t<class>\t<CPython's value>\t<the port's value>`.
 #
-# 1 DIVERGENCES of 207 ROWS, 206 OF WHICH AGREE EXACTLY. Git-resident
+# 1 DIVERGENCES of 287 ROWS, 286 OF WHICH AGREE EXACTLY. Git-resident
 # and beside the gate because `AGENTS.md`'s rule is that a gate's required inputs
 # live in git and not in `gates/artifacts/`: `gatekit` EMPTIES that directory
 # before it runs and UNLINKS what it staged when the run was not green, so a
