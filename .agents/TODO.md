@@ -434,6 +434,30 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
 
+e2e-prose-pop [#########] 3/3      FIXED 2026-10-15. `.agents/slop/e2estage8/verdicts.py` was RED
+                                       with `e2e.py: PROSE names [0] the CODE does not emit`, and the
+                                       claim it made was FALSE: **stage `0` does not exist and never
+                                       did.** Its `PROSE` was the SHAPE `^  (\d)  \S+` scanned over the
+                                       WHOLE docstring, and `checks/e2e.py`'s docstring carries TWO
+                                       tables of `  <digit>  <word>` rows -- the STAGE table
+                                       (`:18`-`:63`) and the EXIT STATUS table (`:125`-`:132`) -- so
+                                       the exit codes `0`..`4` joined the stage set. **A SHAPE THAT
+                                       CANNOT SEE ITS OWN SECTION BOUNDARY READS THE NEXT TABLE AS IF
+                                       IT WERE ITS OWN** -- doctrine 1, one level below the clause
+                                       this file exists to enforce. FIXED by cutting the scan at the
+                                       `EXIT STATUS` header, which is the DECLARATION of where the
+                                       stage table ends, and NOT at a line number, which the next edit
+                                       would move. MEASURED on the same text: the bare shape reads
+                                       `[0, 1, 2, 4, 8]`, of which `0` and `4` are EXIT CODES;
+                                       `prose_rows()` reads `[(1, False), (2, False), (8, True)]`.
+                                       VERDICT ON THE REAL TREE: **rc=0**, and
+                                       `PROSE 7 live: 1 2 3 4 5 6 7 | 1 RETIRED: 8` now EQUALS `CODE`
+                                       and `TRANSCRIPT`. **SENSITIVITY, four synthetic fixtures
+                                       through the real `agree()`: prose==code==transcript GREEN,
+                                       prose-names-3 RED, code-emits-3 RED, exit-table-present
+                                       GREEN** -- all as expected, so the fix removed a FICTION
+                                       rather than loosening a check, and stage 8's retirement is
+                                       still counted apart as its own comment requires.
 pins-shape-hdr [######...] 2/5      `gates/pins-shape-gate.py` asked every `gates/*.rows` to DECLARE
                                        WHO WRITES IT and found 5 offenders. **3 FIXED 2026-10-15,
                                        2 REFUSED WITH THE MEASUREMENT.** The gate's `WRITER` regex

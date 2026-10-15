@@ -36,8 +36,25 @@ VERDICT = re.compile(r"^  (stage \d+ [^:]*): (PASS|FAIL \(rc=-?\d+\)|SKIP -- .*)
 #
 # A PROSE ROW THAT SAYS `RETIRED` IS THE RECORD OF A RETIREMENT, NOT A STAGE, and it is counted apart
 # from the live rows -- otherwise naming the retirement is the same defect as keeping the stage.
-PROSE = re.compile(r"^  (\d)  \S+.*$", re.M)
+# **AND THE SHAPE ALONE IS NOT A POPULATION.** MEASURED 2026-10-15: `checks/e2e.py`'s docstring has
+# TWO tables of `  <digit>  <word>` rows -- the STAGE table (`:18`-`:63`) and the EXIT STATUS table
+# (`:125`-`:132`) -- and the first version of this regex scanned the WHOLE docstring, so the exit
+# codes `0`..`4` joined the stage set and the gate reported the fiction
+# `PROSE names [0] the CODE does not emit`. **Stage `0` does not exist and never did; a shape that
+# cannot see its own section boundary reads the NEXT table as if it were its own.** So the scan is
+# cut at the `EXIT STATUS` header, which is the DECLARATION of where the stage table ends -- not at
+# a line number, which the next edit would move.
+PROSE_TABLE = re.compile(r"^  (\d)  \S+.*$", re.M)
+PROSE_END = re.compile(r"^EXIT STATUS\b", re.M)
 CODE = re.compile(r'say\("== (\d+)/')
+
+
+def prose_rows(src: str) -> list[tuple[int, bool]]:
+    """`(stage, retired)` for the STAGE table only: the docstring from its start up to the
+    `EXIT STATUS` header, which is where that table stops being about stages."""
+    cut = PROSE_END.search(src)
+    table = src[:cut.start()] if cut else src
+    return [(int(m.group(1)), "RETIRED" in m.group(0)) for m in PROSE_TABLE.finditer(table)]
 
 # ONE RULE PER STAGE, AND EVERY COUNT BELOW IS READ OUT OF THE TRANSCRIPT, NOT ASSERTED. Stages 1, 3
 # and 4 are the three whose claim IS a status rather than a row count, and their denominator is the
@@ -84,7 +101,7 @@ def agree(gate: Path, emitted: set[int], bad: list[str]) -> None:
     """PROSE, CODE and TRANSCRIPT must name the same stages. Reported as a diff between the sets, so
     the answer says WHICH stage a reader would be misled about."""
     src = gate.read_text()
-    rows = [(int(m.group(1)), "RETIRED" in m.group(0)) for m in PROSE.finditer(src)]
+    rows = prose_rows(src)
     prose = {n for n, gone in rows if not gone}
     retired = {n for n, gone in rows if gone}
     code = {int(n) for n in CODE.findall(src)}
