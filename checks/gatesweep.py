@@ -218,19 +218,24 @@ def main(argv: list[str]) -> int:
         return prove(hooks / "cost.out", hooks / "run.tsv")
 
     tally = dict.fromkeys(set(gatekit.VERDICT.values()), 0)
-    rows = []
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    # FLUSHED PER GATE: a sweep that dies at gate 69 must leave 68 rows, not zero
+    sink = args.out.open("w")
+    sink.write("gate\tverdict\ttoken\trc\tseconds\n")
+    rows = 0
     for g in gates:
         verdict, token, rc, took, peak = run_one(g, args.seconds, args.mb)
         tally[verdict] = tally.get(verdict, 0) + 1
         rel = str(g.relative_to(ROOT))
         print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
-        rows.append(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}")
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    args.out.write_text("gate\tverdict\ttoken\trc\tseconds\n" + "\n".join(rows) + "\n")
+        sink.write(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}\n")
+        sink.flush()
+        rows += 1
+    sink.close()
     print("TALLY: " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items())))
     # the denominator, which is not the tally: only PASS/FAIL are verdicts about the TREE
     about = tally.get("PASS", 0) + tally.get("FAIL", 0)
-    print(f"THE DENOMINATOR: {about} of {len(rows)} gates reached a verdict about the tree; "
+    print(f"THE DENOMINATOR: {about} of {rows} gates reached a verdict about the tree; "
           f"{tally.get('REFUSED', 0)} refused, {tally.get('SKIP', 0)} did not finish, "
           f"{tally.get('DEAD', 0)} crashed or said nothing.")
     print(f"rows -> {args.out.relative_to(ROOT)}")
