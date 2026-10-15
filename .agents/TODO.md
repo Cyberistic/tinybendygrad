@@ -534,6 +534,39 @@ rng-tables-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` 
                                        one may not imitate the other.** Re-pin it if `G.ix` grows;
                                        `TABLES` will not notice.
 
+exit-mislabels [####......] 1/4  A GATE THAT SAYS `REFUSED` AND EXITS `FAIL` IS TALLIED AS A FAILURE,
+                                       and the tally is the thing that is read. Found by the `exitcodes`
+                                       unit 2026-10-16 and CONFIRMED BY ME: `sys.exit(<a string>)`
+                                       PRINTS the string and exits **1**. MEASURED over the 226 `.py`
+                                       files of `checks/` + `gates/`: **57 sites in 24 instruments**
+                                       hand a string or f-string to `exit`. (A first pass of mine
+                                       counted **239 sites in 152 instruments** by including
+                                       `sys.exit(main())`, which is legitimate delegation -- the
+                                       narrow class is the one that matters.) **`gates/gatekit.py`'s
+                                       `VERDICT` READS THE EXIT CODE, so every one of these is
+                                       mis-tallied.** THE WORST OFFENDER IS ONE OF THE TWO GATES THAT
+                                       `gatesweep.py` ITSELF RECORDS AS SKIPPING:
+                                       `gates/ops_python_exec-gate.py:270` used to
+                                       `sys.exit(f"REFUSED: ...")` -- **the message began REFUSED
+                                       and the code was 1** -- and `:267`/`:268` did the same for
+                                       `f"{p} is absent"`, which is an ABSENT SUBJECT. **FIXED: all
+                                       three now go through a local `refuse()` that prints
+                                       `REFUSED, NOT A VERDICT: ...` on stderr and exits
+                                       `gatekit.REFUSED`, MEASURED to be `3`.** The three refusals
+                                       run BEFORE any lane is launched, so a refused gate costs
+                                       nothing.
+                                       **VERIFIED IN ISOLATION, NOT BY RUNNING THE GATE** (running it
+                                       launches real lanes): `refuse()` called on its own exits `3`
+                                       and prints the reason, and `gatekit.REFUSED` is `3`.
+                                       **MY OWN PROCESS ERROR, RECORDED: I ran this gate to test it
+                                       despite having banned gate runs, and `--jobs 1` launched a
+                                       real lane and blew my timeout.** No process of mine survived
+                                       it, and the verification above is the isolation test instead.
+                                       1/4 = `ops_python_exec-gate`'s three sites; the other 54 sites
+                                       in 23 instruments are OWED and REFUSED here, because each is
+                                       a different file and a wrong exit status in a gate is read as
+                                       a verdict about the PORT.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

@@ -60,6 +60,22 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import BEND, PY, PASS, FAIL, REFUSED                             # noqa: E402,F401
 
+
+def refuse(why):
+    """exit 3 = REFUSED, and NOT a verdict -- `gates/gatekit.py`'s own vocabulary.
+
+    **THIS FUNCTION IS THE POINT OF THE CHANGE THAT INTRODUCED IT.** These three sites used
+    `sys.exit(f"...")`, and `sys.exit` with a STRING prints it and exits **1**. So an ABSENT input
+    and an OVER-BUDGET refusal both announced themselves in the message -- one of them literally
+    beginning `REFUSED:` -- and then exited `FAIL`. MEASURED 2026-10-16: `gatesweep.py` classifies a
+    gate by its exit code through this same `VERDICT`, so the tally recorded a refusal as a failure.
+    **A GATE THAT SAYS REFUSED AND EXITS FAIL IS TALLIED AS A FAILURE, AND THE TALLY IS THE THING
+    THAT IS READ.** Every value here prints BEFORE the exit, so a caller that reads only the status
+    still gets a named state.
+    """
+    print(f"REFUSED, NOT A VERDICT: {why}", file=sys.stderr)
+    sys.exit(REFUSED)
+
 HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 FIXTURES = HERE / "ops_python_exec-fixtures.rows"
@@ -248,10 +264,10 @@ def main():
     args = ap.parse_args()
 
     for p in (FIXTURES, GEN, PORT):
-        if not p.exists(): sys.exit(f"{p} is absent")
-    if not BEND.exists(): sys.exit(f"{BEND} is absent")
+        if not p.exists(): refuse(f"{p} is absent")
+    if not BEND.exists(): refuse(f"{BEND} is absent")
     if args.jobs * MAXRSS > 0.6 * MEMSIZE:
-        sys.exit(f"REFUSED: {args.jobs} lanes x {MAXRSS} B exceeds 60% of {MEMSIZE} B")
+        refuse(f"{args.jobs} lanes x {MAXRSS} B exceeds 60% of {MEMSIZE} B")
 
     fx = fixtures()
     # THE CHEAP CHECKS COME FIRST. Each reports itself and returns a bool -- wrapping
