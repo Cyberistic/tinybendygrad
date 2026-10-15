@@ -15721,6 +15721,48 @@ IMMUTABLE ONE ANSWERS. IT PRODUCED A GATE THAT REPORTED PASS WHILE ARMED, A `git
 RESTORED THE BUG, A LEDGER DIFF OF 150->173 THAT DEPENDED ON WHETHER `jj` LAST SNAPSHOTTED, AND A
 DENOMINATOR THAT MOVED WITH THE INDEX RATHER THAN WITH THE TREE.
 
+## TCPTXTYPES -- `pri` IS NOT A UNIQUE KEY, AND THE REPORT NAMED **ONE OF THE THREE** WRONG ANSWERS (2026-10-15)
+
+`2d4ef11ae`. `gates/tc_ptx_types-gate.py` -- **60 ROWS x 3 LANES, 24 PINNED DIVERGENCES, rc=0.**
+**POPULATION DISCOVERED** (`dtypes.all` + the weaks + `void` = 20 x 3 tables) AND **ALL 24 PINS DERIVED
+FROM CPYTHON** as `types[strong_dtype(d)]` OR `EMPTY` -- **ZERO HAND-WRITTEN STRINGS.**
+
+- [x] **I REPORTED THE EMPTY TYPE FIELD AND IT WAS ONE OF THREE WRONG ANSWERS FOR `weakint`.** MEASURED
+      OVER ALL THREE TABLES, BEFORE THE FIX:
+          void       = [pred] [u8] [pred]     <- CONCRETE, COMPILABLE, WRONG
+          weakint    = [pred] [u8] [pred]     <- CONCRETE, COMPILABLE, WRONG
+          weakfloat  = []     []     []        <- the empty field that WAS reported
+      **A `.reg .pred` FOR A 32-BIT INDEX COMPILES AND COMPUTES WRONGLY.** `mem_types` REACHED
+      `weakint` DOWN ITS **OWN** `case 0: "u8"` -- **SO ONE CALL SITE HAD THREE DIFFERENT WRONG ANSWERS
+      IN THREE TABLES.** **THAT IS `AMDWORD32` EXACTLY: A WRONG VALUE IS *SMALLER*, NOT ABSENT, AND AN
+      EMPTY FIELD IS THE LOUD VERSION OF THE SAME FAULT.** CPython's `types` HAS 12 KEYS AND
+      `dtypes.all` IS 17 AND DOES NOT CONTAIN THE WEAKS (`dtype.py:119,129` BUILD THEM OUTSIDE `all`),
+      SO **8 NAMES RAISE `KeyError`**: `void`, `weakint`, `weakfloat`, 4x fp8, `bf16`.
+- [x] **OPTION (C) -- "KEEP `""` AND LET THE CONSUMER REFUSE" -- IS MEASURED IMPOSSIBLE.**
+      `ptx.bend:300`'s `pf.ty_of` **BACK-FILLS `""` BY ASKING `types_of` AGAIN**, SO A
+      REFUSE-ON-EMPTY CONSUMER IS **BLIND TO 2/3 OF THE BUG** (`pred` AND `u8` ARE NOT EMPTY).
+      **AN EMPTY FIELD IS THE LOUD VERSION OF THE FAULT; A WRONG FIELD IS THE QUIET ONE, AND A GUARD
+      ON THE QUIET ONE SEES NONE OF IT.**
+- [x] **CHOSEN: MAP THE WEAK DTYPES TO THE TYPE THEY MEAN**, WHICH IS **CPYTHON'S OWN FUNCTION** --
+      `dtype.py:169-170`'s `strong_dtype` gives `weakint -> default_int` and
+      `weakfloat -> default_float`, MEASURED `i32`/`f32`; **PTX ADMITS NO INTEGER REGISTER NARROWER
+      THAN 32 BITS, SO `s32` IS THE ONLY LEGAL `.reg`.** THE VALUES ARE READ OUT OF `types_pri`, SO MAP
+      AND DICT CANNOT DRIFT. `void`/fp8/`bf16` KEEP THE REFUSAL (LOUD).
+- [x] **AFTER: `types_weakint=s32`, `types_weakfloat=f32`, `types_void=EMPTY`, AND THE 334 PRE-EXISTING
+      ROWS DID NOT MOVE -- WHICH IS THE INVISIBILITY, MEASURED RATHER THAN ARGUED.**
+- [x] **THE ROW THAT CAN FAIL, AND ITS CONTROL: `M6` IS A COMMENT-ONLY MUTATION AND MOVES 0 ROWS, AS IT
+      MUST.** `M4` (`w_int()` reading `uint32` not `int32`) MOVES 3, `M5` (DROP ONLY THE `CVoid` ARM)
+      MOVES 1, `M1`/`M2`/`M3` (EACH TABLE BACK TO `types_pri(pri)`) MOVE 3 EACH. END-TO-END: REVERTED ->
+      **rc=1** (`bd's types_void is not 'types_void=EMPTY'`); RESTORED -> **rc=0**.
+- [ ] **`gates/ptx_render_census-pins.rows` PINNED THE DEFECT AS EXPECTED, AND FRESH `bin/bend` MEASURES
+      5 OF ITS 579 ROWS MOVING, ALL 5 THE DEFECT** -- `tyo_0` `pred`->`""`, `mto_0` `u8`->`""`,
+      `cto_0` `pred`->`""`, `f31_weakint.r1` `%ridx_pred_0`->`%ridx_s32_0`,
+      `f32_weakfloat.r2` `%alu__0`->`%alu_f32_0`. **`f33_bf16cast.r1` DOES NOT MOVE. THAT IS THE CENSUS
+      OWNER'S EDIT AND IT IS NOT THIS UNIT'S.** IT IS ALSO THE FIFTH STALE PIN, AND EVERY ONE OF THEM
+      WAS STALE BECAUSE IT PINNED A BUG AS THE EXPECTED VALUE.
+- [ ] **`LAWS/spec.bend:719`: PORT `void` IS `pri` 0 AND CPYTHON'S IS -1 (MEASURED), SO PORT `pri` 0 IS
+      `void|bool|weakint`.** OUT OF GRANT, AND **THE FIX ROUTES ON `cls`, WHICH IS RIGHT IN BOTH.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
