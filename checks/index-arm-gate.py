@@ -66,9 +66,19 @@ EMPTY_BLOB = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
 GIT_VERSION = "2.50.1 (Apple Git-155), measured 2026-10-11 -- on this version a bare `git commit` REFUSES intent-to-add entries"
 
 
+# THE SUBJECT IS `root`'s REPOSITORY, SO THE ENVIRONMENT MUST NOT POINT ELSEWHERE. The prescribed
+# commit one-liner EXPORTS `GIT_INDEX_FILE`, and git INHERITS it: MEASURED 2026-10-15, with it
+# pointing at `.git/agent-index` this gate printed `PASS: the index agrees with HEAD on all 7231
+# paths` while the DEFAULT index held 38 stale paths -- a PASS about a DIFFERENT FILE, which is
+# the one verdict that hides the hazard this gate exists for. Scrub, never inherit.
+REDIRECTS = ("GIT_INDEX_FILE", "GIT_DIR", "GIT_WORK_TREE", "GIT_OBJECT_DIRECTORY",
+             "GIT_ALTERNATE_OBJECT_DIRECTORIES", "GIT_COMMON_DIR", "GIT_NAMESPACE")
+ENV = {k: v for k, v in os.environ.items() if k not in REDIRECTS}
+
+
 def git(root: Path, *args: str) -> tuple[int, str, str]:
     p = subprocess.run(["git", "--no-optional-locks", *args], cwd=root,
-                       capture_output=True, text=True, check=False)
+                       capture_output=True, text=True, check=False, env=ENV)
     return p.returncode, p.stdout, p.stderr
 
 
@@ -200,20 +210,20 @@ def plant(root: Path) -> int:
         for argv in (["git", "init", "-q", "-b", "master"],
                      ["git", "config", "user.email", "t@t"],
                      ["git", "config", "user.name", "t"]):
-            subprocess.run(argv, cwd=a, capture_output=True, check=False)
+            subprocess.run(argv, cwd=a, capture_output=True, check=False, env=ENV)
         (a / "keep.rows").write_text("x\n")
-        subprocess.run(["git", "add", "-A"], cwd=a, capture_output=True, check=False)
-        subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=a, capture_output=True, check=False)
+        subprocess.run(["git", "add", "-A"], cwd=a, capture_output=True, check=False, env=ENV)
+        subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=a, capture_output=True, check=False, env=ENV)
 
         b = d / "B"
         shutil.copytree(a, b)
         # ARM IT THE WAY jj DOES, with no jj present: an intent-to-add placeholder.
         (b / "fresh.rows").write_text("y" * 400)
         subprocess.run(["git", "add", "--intent-to-add", "--", "fresh.rows"],
-                       cwd=b, capture_output=True, check=False)
+                       cwd=b, capture_output=True, check=False, env=ENV)
         # ... and a staged deletion, the shape that actually destroys.
         subprocess.run(["git", "rm", "--cached", "-q", "--", "keep.rows"],
-                       cwd=b, capture_output=True, check=False)
+                       cwd=b, capture_output=True, check=False, env=ENV)
 
         ra, _ = report(a, None)
         rb, _ = report(b, None)
