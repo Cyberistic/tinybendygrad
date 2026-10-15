@@ -430,36 +430,37 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
 
-pinindep-control [.......] 0/3      FOUND 2026-10-15 while landing `d10-guard`, and PRE-EXISTING --
-                                       it is not caused by that change (verified: the diff to
-                                       `checks/differ.py` touches only the D10 pin and helper).
+pinindep-control [#########] 2/3      FIXED 2026-10-15, see below.
                                        `.agents/slop/pinindep/derive.py`'s CONTROL,
-                                       `selfcheck()`, is the instrument that RE-DERIVES
-                                       `D0-run-summary.txt` from the artifacts and REFUSES unless
-                                       it matches BYTE FOR BYTE. It is RED on this tree, and it
-                                       reports **`CONTROL FAILED -- 0 line(s) differ: []`** --
+                                       `selfcheck()`, was RED and reported **`CONTROL FAILED -- 0 line(s) differ: []`** --
                                        a FAILURE whose message reads as a SUCCESS, which is the
                                        five-state doctrine's `DEAD`/`FAIL` confusion at the level of a
-                                       message. TWO defects, both pre-existing:
-                                       (a) `derive.rederive()` yields **22** rows against the live
-                                       summary's **24** -- it never modelled `substrate-start` /
-                                       `substrate-end`, which `checks/differ.py:718` has written
-                                       since `f7979b462` added `substrate_rows()`;
-                                       (b) `selfcheck()`'s `diff` is `[... for g, l in zip(got_d,
-                                       live_d) ...]`, and `zip()` TRUNCATES AT THE SHORTER LIST, so
-                                       a 22-vs-24 shortfall pairs 22 EQUAL lines and reports
-                                       **ZERO differences**. The length check is the missing arm:
-                                       `len(got_d) != len(live_d)` is a difference `zip` cannot see.
-                                       CONSEQUENCE: every conclusion `.agents/slop/repropin/` and
-                                       `.agents/slop/pinindep/` rests on is currently taken against a
-                                       CONTROL THAT IS FAILING FOR A REASON UNRELATED TO WHAT IT
-                                       MEASURES -- so it REFUSES to report (as designed), and the
-                                       `d10-transcript` sensitivity I measured was verified against
-                                       the REAL `differ.repro_bad()` directly instead, NOT through
-                                       this control. OWED: make `rederive()` reproduce the two
-                                       `substrate` rows and add the length arm, THEN re-run
-                                       `repropin/measure.py`. Do NOT "fix" it by loosening the
-                                       control.
+                                       **THE FIX.** `selfcheck()` now judges the 22 re-derivable
+                                       rows BYTE FOR BYTE, KEYED so a missing key cannot hide, and
+                                       asserts the two bracket rows by the EXACT property
+                                       `differ.substrate_bad()` itself uses -- present, and
+                                       `start == end`. The bracket is deliberately NOT
+                                       re-derived: `substrate_digest()` (`:890`) reads the CURRENT
+                                       tree, and MEASURED the live pair is `89b6db91...` against
+                                       today's `98fd9128...`, so re-deriving it would compare a
+                                       recorded bracket with today's tree and call the difference a
+                                       transcription error. `rederive()`'s docstring records this, so
+                                       the next reader does not re-derive the false bug.
+                                       **SENSITIVITY, six perturbed states of the real logic:
+                                       1 GREEN, 5 RED** -- value changed, row removed, extra row,
+                                       bracket moved, bracket absent. The row-removed state is the
+                                       one `zip` was blind to.
+                                       **RESULT.** `.agents/slop/repropin/measure.py` now runs to
+                                       completion (rc=0) for the FIRST time and reports `2 of 2`
+                                       pins over `D0-repro.txt`; §B correctly shows even its nominal
+                                       green state RED on the not-yet-re-taken `d10-transcript`.
+                                       **REMAINING (1/3): the COMMIT** -- these 11 files of
+                                       `pinindep/` + `repropin/` were in NO commit on this branch's
+                                       history (only the diverged `61a3241584` carries them), so the
+                                       fix lands WITH its whole unit rather than as one orphan file.
+                                       **UNRELATED CONSEQUENCE, reported not fixed: `RUN HEALTH` is
+                                       RED until `checks/differ.py repro` re-runs
+                                       (`d10-transcript ABSENT`) -- the sanctioned state.**
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
