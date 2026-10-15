@@ -1,0 +1,33 @@
+tc_ptx_types-mutate.py: BASE is 60 rows
+
+  M1: 6 rows moved
+      types_of loses the class dispatch and goes back to the bare pri lookup, so `void` and `weakint` take `bool`'s `pred` again and `weakfloat` is empty.
+      types_void=EMPTY
+      types_void=pred
+      types_weakfloat=EMPTY
+      types_weakfloat=f32
+  M2: 6 rows moved
+      mem_types_of loses the class dispatch. This arm is SEPARATE from M1 because `mem_types`' own `case 0: "u8"` reached `weakint` down a different road, so fixing only `types_of` would have left `mem_types_weakint` wrong.
+      mem_types_void=EMPTY
+      mem_types_void=u8
+      mem_types_weakfloat=EMPTY
+      mem_types_weakfloat=f32
+  M3: 6 rows moved
+      cast_types_of loses the class dispatch.
+      cast_types_void=EMPTY
+      cast_types_void=pred
+      cast_types_weakfloat=EMPTY
+      cast_types_weakfloat=f32
+  M4: 6 rows moved
+      `w_int()` reads `uint32`'s entry instead of `int32`'s, so `weakint` answers `u32` -- A REAL PTX TYPE, a legal `.reg`, and a kernel that compiles and is wrong. NOT a revert: the dispatch is intact and only the answer is a lie, which is the whole shape of the class this gate exists for.
+      cast_types_weakint=s32
+      cast_types_weakint=u32
+      mem_types_weakint=s32
+      mem_types_weakint=u32
+  M5: 2 rows moved
+      `types_of` drops ONLY the `CVoid` arm. `void` is unreachable through `ptx.py:219` (a void RANGE has its prefix cleared) and this is the reading that says so: one row, one dtype, and no other row moves.
+      types_void=EMPTY
+      types_void=pred
+  M6: 0 rows moved
+      CONTROL: a comment-only edit, which must move NOTHING.
+      NOTHING, as a control must -- an edit outside the tables cannot move a row, which is what makes the other five numbers mean something.

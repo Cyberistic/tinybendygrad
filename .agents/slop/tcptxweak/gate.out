@@ -1,0 +1,1 @@
+tc_ptx_types-gate: 60 rows, 3 lanes, 24 pinned divergences -- every dtype CPython's `types` refuses resolves to `strong_dtype`'s PTX type or to EMPTY, never to a concrete wrong one

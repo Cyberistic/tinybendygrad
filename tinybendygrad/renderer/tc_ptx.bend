@@ -117,12 +117,32 @@ def ptx_of(+ver: U32) -> Px: Px{px_suffix(), px_prefix(), px_barrier(), px_gmax(
 #   cast_types: {**types, int8: s8, uint8: u8}
 #
 # The two derived tables are `types` with FOUR and TWO keys replaced, so they are
-# `types` with an override and not a second twelve-arm ladder. DISPATCH IS ON
-# `pri`, which is a unique key over the twelve keys -- the eight fp8/weak
-# priorities are NOT keys and take the KeyError arm (a row of its own). `pri` is
-# not unique over ALL of `dtypes` (fp8e4m3 and fp8e4m3fnuz share pri 10), which
-# is why dtype EQUALITY anywhere in this file is `O.eq_dt` and never `pri`.
-# ===========================================================================
+# `types` with an override and not a second twelve-arm ladder. `pri` is a unique
+# key over the twelve KEYS, which is all CPython's dict has, so `types_pri` below
+# is that dict and `case _:` is its `KeyError`.
+#
+# **`pri` IS NOT UNIQUE OVER THE DTYPES A KERNEL CAN CARRY, AND THAT WAS A BUG.**
+# MEASURED, `dtypes.all` plus the two weaks plus void: pri 0 is `bool`, `void`
+# AND `weakint`; pri 9 is `weakfloat` alone; pri 10/11/13 are the four fp8 and
+# bf16. The twelve-arm table therefore answered `pred` for `void` and `weakint`
+# and `""` for `weakfloat`, where CPython raises `KeyError` on all three -- so a
+# `weakint` RANGE (`UOp.range`'s DEFAULT dtype, MEASURED) got `.reg .pred` and a
+# `weakint` LOAD got `.reg .u8`: a CONCRETE, COMPILABLE, SILENTLY WRONG type,
+# which is worse on both counts than the `""` the class reported. `mem_types`'s
+# `case 0: "u8"` reaches `weakint` the same way. The old header here claimed the
+# collision was harmless because "dtype EQUALITY anywhere in this file is
+# `O.eq_dt`" -- true, and beside the point: the collision was in the LOOKUP.
+#
+# THE MAP IS CPYTHON'S OWN. `dtype.py:169-170`:
+#     def strong_dtype(dtype): return {weakint: default_int, weakfloat: default_float}.get(dtype, dtype)
+# MEASURED at the default settings that is `i32` and `f32`. A weak dtype's whole
+# meaning is "an int/float whose width is not decided yet", and `render` runs
+# after `spec` decided it, so the concrete type is the honest spelling -- and for
+# an integer PTX admits no narrower register than 32 bits anyway, so `s32` is the
+# only legal `.reg` and not a guess. CAVEAT, and it is the only divergence from
+# `strong_dtype`: CPython reads `DEFAULT_INT`/`DEFAULT_FLOAT` and the port's
+# `S.int32()`/`S.single()` are the defaults. The values are READ OUT OF THIS
+# TABLE (`types_pri(pri(int32))`) so the map and the dict cannot drift apart.
 def types_pri(pri: U32) -> String:
   match pri:
     case 0:  "pred"
@@ -139,27 +159,61 @@ def types_pri(pri: U32) -> String:
     case 15: "f64"
     case _:   ""
 
+def w_int() -> String: types_pri(S.Dt.pri(S.int32()))
+def w_float() -> String: types_pri(S.Dt.pri(S.single()))
+
+# The three tables read the SAME three arms first, because the three dtypes `pri`
+# cannot tell apart are exactly the three that need it. `CVoid` answers `""` --
+# LOUD, where `pred` was quiet -- and is the one of the three with no upstream
+# guard: `ptx.py:219` clears a `void` RANGE's prefix, so today no path asks, and
+# the row that says so is `types void`.
+#
+# THE pri ARMS LIVE IN THEIR OWN DEFS because Bend refuses a `match` over a
+# binder an enclosing `match` already took: MEASURED, `'pri' can't be matched in
+# this position` and then `'cls' can't be matched in this position` for the
+# `+p = pri` workaround. A table def may READ `pri` and hand it to a helper; the
+# helper matches it. No table VALUE is duplicated -- only the three-arm dispatch,
+# and `types_pri` is still the one dict all three quote.
 def types_of(+dt: S.Dt) -> String:
   match dt:
-    case S.Dt{pri, bits, cls, nm}: types_pri(pri)
+    case S.Dt{pri, bits, cls, nm}:
+      match cls:
+        case S.CWeakInt{}:   w_int()
+        case S.CWeakFloat{}: w_float()
+        case S.CVoid{}:      ""
+        case _:              types_pri(pri)
+
+def mem_types_pri(pri: U32) -> String:
+  match pri:
+    case 1:  "s8"
+    case 2:  "u8"
+    case 0:  "u8"
+    case 12: "b16"
+    case _:   types_pri(pri)
 
 def mem_types_of(+dt: S.Dt) -> String:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
-      match pri:
-        case 1:  "s8"
-        case 2:  "u8"
-        case 0:  "u8"
-        case 12: "b16"
-        case _:   types_pri(pri)
+      match cls:
+        case S.CWeakInt{}:   w_int()
+        case S.CWeakFloat{}: w_float()
+        case S.CVoid{}:      ""
+        case _:              mem_types_pri(pri)
+
+def cast_types_pri(pri: U32) -> String:
+  match pri:
+    case 1: "s8"
+    case 2: "u8"
+    case _:  types_pri(pri)
 
 def cast_types_of(+dt: S.Dt) -> String:
   match dt:
     case S.Dt{pri, bits, cls, nm}:
-      match pri:
-        case 1: "s8"
-        case 2: "u8"
-        case _:  types_pri(pri)
+      match cls:
+        case S.CWeakInt{}:   w_int()
+        case S.CWeakFloat{}: w_float()
+        case S.CVoid{}:      ""
+        case _:              cast_types_pri(pri)
 
 # ===========================================================================
 # `mem_type(x)` -- ptx.py:59: `'shared' if x.addrspace == AddrSpace.LOCAL else
@@ -331,6 +385,16 @@ def op_asm(op: O.Op, +d: String, +a: String, +b: String, +c: String, +name: Stri
       [String.concat(["@", a, " mov.", name, " ", d, ", ", b, ";"]), String.concat(["@!", a, " mov.", name, " ", d, ", ", c, ";"])],
       [String.concat(["selp.", Bool.pick(String, String.eq(name, "f16"), "b16", name), " ", d, ", ", b, ", ", c, ", ", a, ";"])])
     case _: []
+
+# `case _: []` IS THE SAME CLASS AS `types_pri`'s, AND IT IS UNREACHABLE -- MEASURED:
+# twenty-one arms for `asm_keys()`'s twenty-one members (one for one), and all FIVE call
+# sites of `op_asm` pass a member of `asm_keys()` or a literal `OpsWHERE`. So no emitted
+# line is affected today and the arm is left alone rather than given a refusal the
+# `List<&2, String>` return type has no room for. NAMED because the day a twenty-second op
+# reaches it the port will emit NOTHING where CPython's dict raises `KeyError`, and an empty
+# list of assembly lines is the quietest possible wrong answer. That is the same trade the
+# `void`/`weakint` arms above refused to make, and it was refused there because `pri` put
+# three dtypes on one entry; here the twenty-one put none.
 
 # ===========================================================================
 # :38-39 `supports_half` / `doesnt_support_half`. The first is a SEVEN-TUPLE
@@ -515,6 +579,29 @@ def ifmiss(+s: String) -> String: Bool.pick(String, String.is_empty(s), "KeyErro
 
 def r_tabs_miss() -> String:
   String.concat([T.r("types float8_e4m3", ifmiss(types_of(S.fp8e4m3())), "KeyError"), T.r("types __bf16", ifmiss(types_of(S.bfloat16())), "KeyError")])
+
+# THE THREE DTYPES `pri` CANNOT TELL APART -- and these nine rows are the ones that
+# go red when the fix is reverted, because the twelve `types` rows above and the two
+# `ifmiss` rows above cannot see any of it.
+#
+# `bool`, `void` and `weakint` all carry pri 0 and `weakfloat` carries pri 9, so a
+# pri-keyed dict has exactly ONE entry to answer four dtypes with. CPython raises
+# on three of them; the port answered `pred`/`u8`/`pred` for two and `""` for the
+# third, and `pred` is a CONCRETE, COMPILABLE, SILENTLY WRONG type -- the shape
+# `renderer/amd/dsl.bend`'s `U32.shln` had, where a wrong value is smaller rather
+# than absent. Hence `void`/`weakint` are the rows and the answer is per TABLE:
+# `mem_types`' `case 0: "u8"` reached `weakint` on its own.
+#
+# THE ROWS ARE THE PORT'S ANSWER, NOT CPYTHON'S: CPython has no answer, which is
+# why `ifmiss` spells the refusal `KeyError` and these spell it `s32`/`f32`. The
+# claim each one makes is the DEVIATION's, and it is pinned by name, so a revert
+# moves six of the nine and a fourth type moving in moves nine.
+def r_tabs_weak() -> String:
+  String.concat([T.r("types void", ifmiss(types_of(S.void())), "KeyError"), T.r("types weakint", ifmiss(types_of(S.weakint())), "s32"),
+    T.r("types weakfloat", ifmiss(types_of(S.weakfloat())), "f32"), T.r("mem_types void", ifmiss(mem_types_of(S.void())), "KeyError"),
+    T.r("mem_types weakint", ifmiss(mem_types_of(S.weakint())), "s32"), T.r("mem_types weakfloat", ifmiss(mem_types_of(S.weakfloat())), "f32"),
+    T.r("cast_types void", ifmiss(cast_types_of(S.void())), "KeyError"), T.r("cast_types weakint", ifmiss(cast_types_of(S.weakint())), "s32"),
+    T.r("cast_types weakfloat", ifmiss(cast_types_of(S.weakfloat())), "f32")])
 
 
 # `CUDARenderer.global_max/local_max/shared_max`, `suffix`, `barrier` (with its TAB
@@ -940,7 +1027,7 @@ def r_rks() -> String:
 
 def r_stage2() -> String:
   String.concat([r_pmx_n(), r_asms(), r_where(), r_asm2s(), r_sh(), r_mods(), r_rvs(), r_tabs(),
-    r_tabs_miss(), r_mc_tabs(), r_consts(), r_ptx_sds(), r_ptx_tcs(), r_wms(), r_dtms(), r_rks(), r_fmts()])
+    r_tabs_miss(), r_tabs_weak(), r_mc_tabs(), r_consts(), r_ptx_sds(), r_ptx_tcs(), r_wms(), r_dtms(), r_rks(), r_fmts()])
 
 # ONE print for the WHOLE table, so `IO.print`'s own newline is the only frame and
 # the oracle's single trailing `"\n"` is its match. There is deliberately no

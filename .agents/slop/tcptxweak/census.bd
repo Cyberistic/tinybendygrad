@@ -1,0 +1,652 @@
+tfn_0=test
+tfn_1=my20kernel
+tfn_2=MyKernel
+tfn_3=a2Db
+tfn_4=x24y2Ez
+tfn_5=2020lead
+tfn_6=trail2020
+tfn_7=a20b20c
+tfn_8=a7Eb
+tfn_9=a2Fb
+tfn_10=a3Ab
+tfn_11=a0b
+tfn_12=a_b
+tfn_13=7E
+tfn_14=2F
+tfn_15=Z
+tfn_16=_
+tfn_17=20
+tfn_18=0
+tfn_19=60
+
+tyo_0=
+mto_0=
+cto_0=
+tyo_1=pred
+mto_1=u8
+cto_1=pred
+tyo_2=s16
+mto_2=s8
+cto_2=s8
+tyo_3=u16
+mto_3=u8
+cto_3=u8
+tyo_4=s16
+mto_4=s16
+cto_4=s16
+tyo_5=u16
+mto_5=u16
+cto_5=u16
+tyo_6=s32
+mto_6=s32
+cto_6=s32
+tyo_7=u32
+mto_7=u32
+cto_7=u32
+tyo_8=s64
+mto_8=s64
+cto_8=s64
+tyo_9=u64
+mto_9=u64
+cto_9=u64
+tyo_10=f16
+mto_10=b16
+cto_10=f16
+tyo_11=
+mto_11=
+cto_11=
+tyo_12=f32
+mto_12=f32
+cto_12=f32
+tyo_13=f64
+mto_13=f64
+cto_13=f64
+tyo_14=
+mto_14=
+cto_14=
+tyo_15=
+mto_15=
+cto_15=
+tyo_16=
+mto_16=
+cto_16=
+tyo_17=
+mto_17=
+cto_17=
+
+fmt_0=\tmov.b32\t\t%d, %a;
+fmt_1=\tselp.f32\t%d, %b, %c, %a;
+fmt_2=\tadd.f32\t\t%d, %a, %b;
+fmt_3=\tand.pred\t%d, %a, %b;
+fmt_4=\tor.pred\t\t%d, %a, %b;
+fmt_5=\txor.pred\t%d, %a, %b;
+fmt_6=\tmad.lo.s64\t%d, %a, %b, %c;
+fmt_7=\tmul.lo.s16\t%d, %a, %b;
+fmt_8=\tdiv.s32\t\t%d, %a, %b;
+fmt_9=\trem.u32\t\t%d, %a, %b;
+fmt_10=\tsetp.eq.s32\t%d, %a, %b;
+fmt_11=\tsetp.neu.f32\t%d, %a, %b;
+fmt_12=\tmax.s32\t\t%d, %a, %b;
+fmt_13=\tcvt.rzi.s32.s32\t%d, %a;
+fmt_14=\trcp.approx.f32\t%d, %a;
+fmt_15=\tshl.b32\t\t%d, %a, %b;
+fmt_16=\tshr.u32\t\t%d, %a, %b;
+fmt_17=\tbar.sync\t0;
+fmt_18=$RAW
+fmt_19=\tfma.rn.f32\t%d, %a, %b, %c;
+fmt_20=\tmma.sync.aligned.m8n8k4.row.col.f32.tf32.tf32.f32\t{{{d0}, {d1}}}, {{{a0}, {a1}}}, {{{b0}, {b1}}}, {{{c0}, {c1}}};
+
+kpf_0=.version VERSION
+kpf_1=.target TARGET
+kpf_2=.address_size 64
+kpf_3=.visible .entry
+gmax=2147483647,65535,65535
+lmax=1024,1024,64
+smax=49152
+suffix=PTX
+barrier=bar.sync\t0;
+f01_alu.r0=NONE
+f01_alu.r1=%cast_f32_0
+f01_alu.r2=NONE
+f01_alu.r3=%cast_f32_1
+f01_alu.r4=%alu_f32_0
+f01_alu.r5=NONE
+
+f01_alu.regn=2
+f01_alu.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f01_alu.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f01_alu.entry=.visible .entry test (
+f01_alu.mod=ABSENT:string_rewrite(23) not ported
+f02_counter.r0=NONE
+f02_counter.r1=%cast_f32_0
+f02_counter.r2=NONE
+f02_counter.r3=%cast_f32_1
+f02_counter.r4=%alu_f32_0
+f02_counter.r5=NONE
+f02_counter.r6=%cast_f32_2
+f02_counter.r7=%alu_f32_1
+f02_counter.r8=NONE
+f02_counter.r9=%cast_f32_3
+f02_counter.r10=%alu_f32_2
+f02_counter.r11=NONE
+f02_counter.r12=%cast_f32_4
+f02_counter.r13=%alu_f32_3
+f02_counter.r14=NONE
+f02_counter.r15=%cast_f32_5
+f02_counter.r16=%alu_f32_4
+f02_counter.r17=NONE
+
+f02_counter.regn=2
+f02_counter.reg0=\t.reg\t\t.f32 %cast_f32_<6>;
+f02_counter.reg1=\t.reg\t\t.f32 %alu_f32_<5>;
+
+f02_counter.entry=.visible .entry test (
+f02_counter.mod=ABSENT:string_rewrite(23) not ported
+f03_cast5.r0=NONE
+f03_cast5.r1=%cast_s32_0
+f03_cast5.r2=%cast_f32_0
+f03_cast5.r3=NONE
+f03_cast5.r4=%cast_u32_0
+f03_cast5.r5=%cast_f32_1
+f03_cast5.r6=NONE
+f03_cast5.r7=%cast_s64_0
+f03_cast5.r8=%cast_f32_2
+f03_cast5.r9=NONE
+f03_cast5.r10=%cast_f16_0
+f03_cast5.r11=%cast_f32_3
+f03_cast5.r12=NONE
+f03_cast5.r13=%cast_f32_4
+f03_cast5.r14={%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3, %cast_f32_4}
+f03_cast5.r15=NONE
+
+f03_cast5.regn=5
+f03_cast5.reg0=\t.reg\t\t.s32 %cast_s32_<1>;
+f03_cast5.reg1=\t.reg\t\t.f32 %cast_f32_<5>;
+f03_cast5.reg2=\t.reg\t\t.u32 %cast_u32_<1>;
+f03_cast5.reg3=\t.reg\t\t.s64 %cast_s64_<1>;
+f03_cast5.reg4=\t.reg\t\t.f16 %cast_f16_<1>;
+
+f03_cast5.entry=.visible .entry test (
+f03_cast5.mod=ABSENT:string_rewrite(23) not ported
+f04_end.r0=NONE
+f04_end.r1=%cast_f32_0
+f04_end.r2=NONE
+f04_end.r3=%cast_f32_1
+f04_end.r4=%alu_f32_0
+f04_end.r5=NONE
+f04_end.r6=%cast_s32_0
+f04_end.r7=%ridx_s32_0
+f04_end.r8=%pred_pred_0
+f04_end.r9=NONE
+
+f04_end.regn=5
+f04_end.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f04_end.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+f04_end.reg2=\t.reg\t\t.s32 %cast_s32_<1>;
+f04_end.reg3=\t.reg\t\t.s32 %ridx_s32_<1>;
+f04_end.reg4=\t.reg\t\t.pred %pred_pred_<1>;
+
+f04_end.entry=.visible .entry test (
+f04_end.mod=ABSENT:string_rewrite(23) not ported
+f05_regbuf4.r0={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f05_regbuf4.r1=NONE
+f05_regbuf4.r2=%cast_s32_0
+f05_regbuf4.r3=%reg_f32_2
+f05_regbuf4.r4=NONE
+
+f05_regbuf4.regn=2
+f05_regbuf4.reg0=\t.reg\t\t.f32 %reg_f32_<4>;
+f05_regbuf4.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+
+f05_regbuf4.entry=.visible .entry test (
+f05_regbuf4.mod=ABSENT:string_rewrite(23) not ported
+f06_regbuf1.r0={%reg_f32_0}
+f06_regbuf1.r1=NONE
+f06_regbuf1.r2=%cast_s32_0
+f06_regbuf1.r3=%reg_f32_0
+f06_regbuf1.r4=NONE
+
+f06_regbuf1.regn=2
+f06_regbuf1.reg0=\t.reg\t\t.f32 %reg_f32_<1>;
+f06_regbuf1.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+
+f06_regbuf1.entry=.visible .entry test (
+f06_regbuf1.mod=ABSENT:string_rewrite(23) not ported
+f07_reuse.r0=NONE
+f07_reuse.r1=%cast_s32_0
+f07_reuse.r2=%ridx_s32_0
+f07_reuse.r3=%g0
+f07_reuse.r4=%g0
+f07_reuse.r5=NONE
+
+f07_reuse.regn=3
+f07_reuse.reg0=\t.reg\t\t.s32 %cast_s32_<1>;
+f07_reuse.reg1=\t.reg\t\t.s32 %ridx_s32_<1>;
+f07_reuse.reg2=\t.reg\t\t.u32 %g0;
+
+f07_reuse.entry=.visible .entry test (
+f07_reuse.mod=ABSENT:string_rewrite(23) not ported
+f08_refuse.r0={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f08_refuse.r1=NONE
+f08_refuse.r2=%cast_s32_0
+f08_refuse.r3=NONE
+f08_refuse.r4=%cast_s32_1
+f08_refuse.r5=%alu_s32_0
+f08_refuse.r6=NONE
+f08_refuse.r7=NONE
+
+
+f08_refuse.mod=PORT-REFUSED:INDEX
+f09_special.r0=NONE
+f09_special.r1=%cast_f32_0
+f09_special.r2=NONE
+f09_special.r3=%cast_s32_0
+f09_special.r4=%ridx_s32_0
+f09_special.r5=%g0
+f09_special.r6=%alu_f32_0
+f09_special.r7=NONE
+
+f09_special.regn=5
+f09_special.reg0=\t.reg\t\t.f32 %cast_f32_<1>;
+f09_special.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f09_special.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f09_special.reg3=\t.reg\t\t.f32 %alu_f32_<1>;
+f09_special.reg4=\t.reg\t\t.u32 %g0;
+
+f09_special.entry=.visible .entry test (
+f09_special.mod=ABSENT:string_rewrite(23) not ported
+f09b_launch.r0=NONE
+f09b_launch.r1=%cast_s32_0
+f09b_launch.r2=%ridx_s32_0
+f09b_launch.r3=%l0
+f09b_launch.r4=NONE
+f09b_launch.r5=%cast_s32_1
+f09b_launch.r6=%ridx_s32_1
+f09b_launch.r7=%l1
+f09b_launch.r8=%alu_s32_0
+f09b_launch.r9=NONE
+
+f09b_launch.regn=5
+f09b_launch.reg0=\t.reg\t\t.s32 %cast_s32_<2>;
+f09b_launch.reg1=\t.reg\t\t.s32 %ridx_s32_<2>;
+f09b_launch.reg2=\t.reg\t\t.s32 %alu_s32_<1>;
+f09b_launch.reg3=\t.reg\t\t.u32 %l1;
+f09b_launch.reg4=\t.reg\t\t.u32 %l0;
+
+f09b_launch.entry=.visible .entry test (
+f09b_launch.mod=ABSENT:string_rewrite(23) not ported
+f10_loads.r0=NONE
+f10_loads.r1=%cast_s32_0
+f10_loads.r2=%ridx_s32_0
+f10_loads.r3=%g0
+f10_loads.r4=%g0
+f10_loads.r5=%g1
+f10_loads.r6=%g1
+f10_loads.r7=%g2
+f10_loads.r8=%g2
+f10_loads.r9={%g0, %g1, %g2}
+f10_loads.r10=NONE
+
+f10_loads.regn=5
+f10_loads.reg0=\t.reg\t\t.s32 %cast_s32_<1>;
+f10_loads.reg1=\t.reg\t\t.s32 %ridx_s32_<1>;
+f10_loads.reg2=\t.reg\t\t.u32 %g2;
+f10_loads.reg3=\t.reg\t\t.u32 %g1;
+f10_loads.reg4=\t.reg\t\t.u32 %g0;
+
+f10_loads.entry=.visible .entry test (
+f10_loads.mod=ABSENT:string_rewrite(23) not ported
+f11_stack.r0=NONE
+f11_stack.r1=%cast_f32_0
+f11_stack.r2=NONE
+f11_stack.r3=%cast_f32_1
+f11_stack.r4=NONE
+f11_stack.r5=%cast_f32_2
+f11_stack.r6=%alu_f32_0
+f11_stack.r7={%cast_f32_0, %alu_f32_0}
+f11_stack.r8=NONE
+
+f11_stack.regn=2
+f11_stack.reg0=\t.reg\t\t.f32 %cast_f32_<3>;
+f11_stack.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f11_stack.entry=.visible .entry test (
+f11_stack.mod=ABSENT:string_rewrite(23) not ported
+f12_after.r0=NONE
+f12_after.r1=%cast_f32_0
+f12_after.r2=NONE
+f12_after.r3=%cast_f32_1
+f12_after.r4=%alu_f32_0
+f12_after.r5=%alu_f32_0
+f12_after.r6=NONE
+
+f12_after.regn=2
+f12_after.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f12_after.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f12_after.entry=.visible .entry test (
+f12_after.mod=ABSENT:string_rewrite(23) not ported
+f13_param.r0=%dat_u64_0
+f13_param.r1=%local_u64_0
+f13_param.r2={%dat_u64_0, %local_u64_0}
+f13_param.r3=NONE
+
+f13_param.regn=2
+f13_param.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f13_param.reg1=\t.reg\t\t.u64 %local_u64_<1>;
+
+f13_param.entry=.visible .entry test (
+f13_param.mod=ABSENT:string_rewrite(23) not ported
+f14_skips.r0=NONE
+f14_skips.r1=NONE
+f14_skips.r2=NONE
+f14_skips.r3=NONE
+f14_skips.r4=%cast_f32_0
+f14_skips.r5=NONE
+f14_skips.r6=%cast_f32_1
+f14_skips.r7=%alu_f32_0
+f14_skips.r8=NONE
+
+f14_skips.regn=2
+f14_skips.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f14_skips.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f14_skips.entry=.visible .entry test (
+f14_skips.mod=ABSENT:string_rewrite(23) not ported
+f15_bidx.r0=%dat_u64_0
+f15_bidx.r1=NONE
+f15_bidx.r2=%cast_s32_0
+f15_bidx.r3=%ridx_s32_0
+f15_bidx.r4=%g0
+f15_bidx.r5=%bidx_u64_0
+f15_bidx.r6=NONE
+
+f15_bidx.regn=5
+f15_bidx.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f15_bidx.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f15_bidx.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f15_bidx.reg3=\t.reg\t\t.u64 %bidx_u64_<1>;
+f15_bidx.reg4=\t.reg\t\t.u32 %g0;
+
+f15_bidx.entry=.visible .entry test (
+f15_bidx.mod=ABSENT:string_rewrite(23) not ported
+f16_bitcast.r0=NONE
+f16_bitcast.r1=%cast_f32_0
+f16_bitcast.r2=%cast_f32_1
+f16_bitcast.r3=NONE
+
+f16_bitcast.regn=1
+f16_bitcast.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+
+f16_bitcast.entry=.visible .entry test (
+f16_bitcast.mod=ABSENT:string_rewrite(23) not ported
+f17_u64.r0=%dat_u64_0
+f17_u64.r1=NONE
+f17_u64.r2=%cast_s32_0
+f17_u64.r3=%ridx_s32_0
+f17_u64.r4=%g0
+f17_u64.r5=%bidx_u64_0
+f17_u64.r6=%g1
+f17_u64.r7=%bidx_u64_1
+f17_u64.r8=%alu_f32_0
+f17_u64.r9=NONE
+f17_u64.r10=%cast_s32_1
+f17_u64.r11=%ridx_s32_1
+f17_u64.r12=%pred_pred_0
+f17_u64.r13=NONE
+
+f17_u64.regn=8
+f17_u64.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f17_u64.reg1=\t.reg\t\t.s32 %cast_s32_<2>;
+f17_u64.reg2=\t.reg\t\t.s32 %ridx_s32_<2>;
+f17_u64.reg3=\t.reg\t\t.u64 %bidx_u64_<2>;
+f17_u64.reg4=\t.reg\t\t.f32 %alu_f32_<1>;
+f17_u64.reg5=\t.reg\t\t.pred %pred_pred_<1>;
+f17_u64.reg6=\t.reg\t\t.u32 %g1;
+f17_u64.reg7=\t.reg\t\t.u32 %g0;
+
+f17_u64.entry=.visible .entry test (
+f17_u64.mod=ABSENT:string_rewrite(23) not ported
+f19_mixed.r0=%dat_u64_0
+f19_mixed.r1=NONE
+f19_mixed.r2=%cast_s32_0
+f19_mixed.r3=%ridx_s32_0
+f19_mixed.r4=%g0
+f19_mixed.r5=%bidx_u64_0
+f19_mixed.r6=%val_f32_0
+f19_mixed.r7=%cast_s32_1
+f19_mixed.r8=%cast_f32_0
+f19_mixed.r9=%dat_u64_1
+f19_mixed.r10=%g2
+f19_mixed.r11=%bidx_u64_1
+f19_mixed.r12=%val_f16_0
+f19_mixed.r13=%cast_f32_1
+f19_mixed.r14={%cast_f32_0, %cast_f32_1}
+f19_mixed.r15=NONE
+
+f19_mixed.regn=9
+f19_mixed.reg0=\t.reg\t\t.u64 %dat_u64_<2>;
+f19_mixed.reg1=\t.reg\t\t.s32 %cast_s32_<2>;
+f19_mixed.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f19_mixed.reg3=\t.reg\t\t.u64 %bidx_u64_<2>;
+f19_mixed.reg4=\t.reg\t\t.f32 %val_f32_<1>;
+f19_mixed.reg5=\t.reg\t\t.f32 %cast_f32_<2>;
+f19_mixed.reg6=\t.reg\t\t.f16 %val_f16_<1>;
+f19_mixed.reg7=\t.reg\t\t.u32 %g2;
+f19_mixed.reg8=\t.reg\t\t.u32 %g0;
+
+f19_mixed.entry=.visible .entry test (
+f19_mixed.mod=ABSENT:string_rewrite(23) not ported
+f23_load1.r0=%dat_u64_0
+f23_load1.r1=NONE
+f23_load1.r2=%cast_s32_0
+f23_load1.r3=%ridx_s32_0
+f23_load1.r4=%g0
+f23_load1.r5=%bidx_u64_0
+f23_load1.r6=%val_f32_0
+f23_load1.r7=NONE
+
+f23_load1.regn=6
+f23_load1.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f23_load1.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f23_load1.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f23_load1.reg3=\t.reg\t\t.u64 %bidx_u64_<1>;
+f23_load1.reg4=\t.reg\t\t.f32 %val_f32_<1>;
+f23_load1.reg5=\t.reg\t\t.u32 %g0;
+
+f23_load1.entry=.visible .entry test (
+f23_load1.mod=ABSENT:string_rewrite(23) not ported
+f24_range.r0=NONE
+f24_range.r1=%cast_s32_0
+f24_range.r2=%ridx_s32_0
+f24_range.r3=%cast_f32_0
+f24_range.r4=NONE
+f24_range.r5=%cast_f32_1
+f24_range.r6=NONE
+f24_range.r7=%cast_f32_2
+f24_range.r8=%alu_f32_0
+f24_range.r9={%cast_f32_0, %alu_f32_0}
+f24_range.r10=NONE
+
+f24_range.regn=4
+f24_range.reg0=\t.reg\t\t.s32 %cast_s32_<1>;
+f24_range.reg1=\t.reg\t\t.s32 %ridx_s32_<1>;
+f24_range.reg2=\t.reg\t\t.f32 %cast_f32_<3>;
+f24_range.reg3=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f24_range.entry=.visible .entry test (
+f24_range.mod=ABSENT:string_rewrite(23) not ported
+f25_rangevoid.r0=NONE
+f25_rangevoid.r1=NONE
+f25_rangevoid.r2=NONE
+f25_rangevoid.r3=%cast_s32_0
+f25_rangevoid.r4=%ridx_s32_0
+f25_rangevoid.r5=NONE
+
+f25_rangevoid.regn=2
+f25_rangevoid.reg0=\t.reg\t\t.s32 %cast_s32_<1>;
+f25_rangevoid.reg1=\t.reg\t\t.s32 %ridx_s32_<1>;
+
+f25_rangevoid.entry=.visible .entry test (
+f25_rangevoid.mod=ABSENT:string_rewrite(23) not ported
+f26_store.r0=%dat_u64_0
+f26_store.r1=NONE
+f26_store.r2=%cast_s32_0
+f26_store.r3=%ridx_s32_0
+f26_store.r4=%g0
+f26_store.r5=%bidx_u64_0
+f26_store.r6=NONE
+f26_store.r7=%cast_f32_0
+f26_store.r8=NONE
+f26_store.r9=%cast_f32_1
+f26_store.r10=NONE
+f26_store.r11=%cast_f32_2
+f26_store.r12=NONE
+f26_store.r13=%cast_f32_3
+f26_store.r14={%cast_f32_0, %cast_f32_1, %cast_f32_2, %cast_f32_3}
+f26_store.r15=NONE
+f26_store.r16=NONE
+
+f26_store.regn=6
+f26_store.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f26_store.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f26_store.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f26_store.reg3=\t.reg\t\t.u64 %bidx_u64_<1>;
+f26_store.reg4=\t.reg\t\t.f32 %cast_f32_<4>;
+f26_store.reg5=\t.reg\t\t.u32 %g0;
+
+f26_store.entry=.visible .entry test (
+f26_store.mod=ABSENT:string_rewrite(23) not ported
+f27_loadbool.r0=%dat_u64_0
+f27_loadbool.r1=NONE
+f27_loadbool.r2=%cast_s32_0
+f27_loadbool.r3=%ridx_s32_0
+f27_loadbool.r4=%g0
+f27_loadbool.r5=%bidx_u64_0
+f27_loadbool.r6=%val_pred_0
+f27_loadbool.r7=NONE
+
+f27_loadbool.regn=6
+f27_loadbool.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f27_loadbool.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f27_loadbool.reg2=\t.reg\t\t.s32 %ridx_s32_<1>;
+f27_loadbool.reg3=\t.reg\t\t.u64 %bidx_u64_<1>;
+f27_loadbool.reg4=\t.reg\t\t.pred %val_pred_<1>;
+f27_loadbool.reg5=\t.reg\t\t.u32 %g0;
+
+f27_loadbool.entry=.visible .entry test (
+f27_loadbool.mod=ABSENT:string_rewrite(23) not ported
+f28_name.r0=NONE
+f28_name.r1=%cast_f32_0
+f28_name.r2=NONE
+f28_name.r3=%cast_f32_1
+f28_name.r4=%alu_f32_0
+f28_name.r5=NONE
+
+f28_name.regn=2
+f28_name.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f28_name.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f28_name.entry=.visible .entry my20kernel (
+f28_name.mod=ABSENT:string_rewrite(23) not ported
+f29_name2.r0=NONE
+f29_name2.r1=%cast_f32_0
+f29_name2.r2=NONE
+f29_name2.r3=%cast_f32_1
+f29_name2.r4=%alu_f32_0
+f29_name2.r5=NONE
+
+f29_name2.regn=2
+f29_name2.reg0=\t.reg\t\t.f32 %cast_f32_<2>;
+f29_name2.reg1=\t.reg\t\t.f32 %alu_f32_<1>;
+
+f29_name2.entry=.visible .entry MyKernel (
+f29_name2.mod=ABSENT:string_rewrite(23) not ported
+f30_noparam.r0=%dat_u64_0
+f30_noparam.r1=%local_u64_0
+f30_noparam.r2={%dat_u64_0, %local_u64_0}
+f30_noparam.r3=NONE
+
+f30_noparam.regn=2
+f30_noparam.reg0=\t.reg\t\t.u64 %dat_u64_<1>;
+f30_noparam.reg1=\t.reg\t\t.u64 %local_u64_<1>;
+
+f30_noparam.entry=.visible .entry a2Db_c2Ed (
+f30_noparam.mod=ABSENT:string_rewrite(23) not ported
+f31_weakint.r0=NONE
+f31_weakint.r1=%ridx_s32_0
+f31_weakint.r2=NONE
+
+
+f31_weakint.mod=PORT-ANSWERED
+f32_weakfloat.r0=NONE
+f32_weakfloat.r1=NONE
+f32_weakfloat.r2=%alu_f32_0
+f32_weakfloat.r3=NONE
+
+
+f32_weakfloat.mod=PORT-ANSWERED
+f33_bf16cast.r0=NONE
+f33_bf16cast.r1=%cast__0
+f33_bf16cast.r2=NONE
+
+
+f33_bf16cast.mod=PORT-ANSWERED
+f34_boolalu.r0=NONE
+f34_boolalu.r1=NONE
+f34_boolalu.r2=%alu_pred_0
+f34_boolalu.r3=%alu_pred_1
+f34_boolalu.r4={%alu_pred_0, %alu_pred_1}
+f34_boolalu.r5=NONE
+
+
+f34_boolalu.mod=PORT-ANSWERED
+f35_loadvec.r0=%dat_u64_0
+f35_loadvec.r1={%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}
+f35_loadvec.r2=NONE
+
+
+f35_loadvec.mod=PORT-ANSWERED
+f36_regstore.r0={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f36_regstore.r1=NONE
+f36_regstore.r2=%cast_s32_0
+f36_regstore.r3=%reg_f32_1
+f36_regstore.r4=NONE
+f36_regstore.r5=%cast_f32_0
+f36_regstore.r6=NONE
+f36_regstore.r7=NONE
+
+f36_regstore.regn=3
+f36_regstore.reg0=\t.reg\t\t.f32 %reg_f32_<4>;
+f36_regstore.reg1=\t.reg\t\t.s32 %cast_s32_<1>;
+f36_regstore.reg2=\t.reg\t\t.f32 %cast_f32_<1>;
+
+f36_regstore.entry=.visible .entry test (
+f36_regstore.mod=ABSENT:string_rewrite(23) not ported
+f37_twobufs.r0={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f37_twobufs.r1=NONE
+f37_twobufs.r2=%cast_s32_0
+f37_twobufs.r3=%reg_f32_2
+f37_twobufs.r4={%reg_f32_4, %reg_f32_5, %reg_f32_6, %reg_f32_7}
+f37_twobufs.r5=NONE
+f37_twobufs.r6=%cast_s32_1
+f37_twobufs.r7=%reg_f32_5
+f37_twobufs.r8={%reg_f32_2, %reg_f32_5}
+f37_twobufs.r9=NONE
+
+f37_twobufs.regn=2
+f37_twobufs.reg0=\t.reg\t\t.f32 %reg_f32_<8>;
+f37_twobufs.reg1=\t.reg\t\t.s32 %cast_s32_<2>;
+
+f37_twobufs.entry=.visible .entry test (
+f37_twobufs.mod=ABSENT:string_rewrite(23) not ported
+f38_regload.r0={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f38_regload.r1={%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}
+f38_regload.r2=NONE
+
+f38_regload.regn=1
+f38_regload.reg0=\t.reg\t\t.f32 %reg_f32_<4>;
+
+f38_regload.entry=.visible .entry test (
+f38_regload.mod=ABSENT:string_rewrite(23) not ported

@@ -1,0 +1,70 @@
+tc_ptx: `pri` is not a unique key, and `case _: ""` was hiding two WRONG types
+
+`types_pri` dispatched on `S.Dt.pri`, which is unique over CPython's twelve KEYS and is
+NOT unique over the dtypes a kernel can carry. MEASURED by grouping every dtype by
+priority: pri 0 is `bool`, `void` AND `weakint`, and pri 9 is `weakfloat`. So the pri-keyed
+arms answered for two dtypes CPython refuses, and `case _:` answered for six.
+
+The report on this class said `weakint` emitted an EMPTY TYPE FIELD. It does not, and the
+correction is the finding. MEASURED over all three tables, before the fix:
+
+    void       = [pred] [u8] [pred]     <- concrete, compilable, WRONG
+    weakint    = [pred] [u8] [pred]     <- concrete, compilable, WRONG
+    weakfloat  = []     []     []        <- the empty field that WAS reported
+
+`mem_types` reached `weakint` down its own `case 0: "u8"`, so `weakint` had three
+different wrong answers in three tables. A `.reg .pred` for a 32-bit index is a kernel
+`ptxas` accepts and computes wrongly -- the `renderer/amd/dsl.bend` `U32.shln` shape, where
+a wrong value is SMALLER rather than ABSENT and a diff cannot see smaller. The empty field
+was the loud half of one bug and the wrong types were the quiet half, and only the loud half
+got filed.
+
+ANSWER B of the three, because the other two are not merely worse. (C) keep `""` and let
+the consumer refuse is MEASURED impossible: `renderer/ptx.bend:300 pf.ty_of` BACK-FILLS a
+`""` by asking `types_of` again, and a refuse-on-empty consumer is blind to two thirds of
+the bug because `weakint`'s answers are `pred`/`u8`, none of them empty. (A) `Res{v, msg}`
+changes `types_of`'s return type and breaks three consumers outside this grant. (B) is
+CPython's OWN function: `dtype.py:169-170 strong_dtype` maps `weakint -> default_int` and
+`weakfloat -> default_float`, measured `i32`/`f32`, and PTX admits no integer register
+narrower than 32 bits, so `s32` is the only legal `.reg` and not a guess. The port's values
+are read out of `types_pri` so the map and the dict cannot drift. `void`, the fp8s and bf16
+have no such map and keep the refusal, which is loud.
+
+    types/mem_types/cast_types weakint : pred / u8 / pred  ->  s32 / s32 / s32
+    types/mem_types/cast_types weakfloat: ""  / ""  / ""   ->  f32 / f32 / f32
+    types/mem_types/cast_types void     : pred / u8 / pred ->  ""  / ""  / ""  (refusal)
+
+All twelve keys and both fp8/bf16 rows are byte-identical; the 334 rows `tc_ptx.bend`
+already printed did not move, which is exactly why this survived.
+
+NINE ROWS ADDED to `tc_ptx.bend`'s own table (`r_tabs_weak`) -- they go red when the fix is
+reverted and the twelve `types` rows cannot see any of it -- and `gates/tc_ptx_types-gate.py`,
+60 rows x 3 lanes, rc=0. The population is DISCOVERED (`dtypes.all` + weaks + void = 20, x 3
+tables) and all 24 pinned divergences are DERIVED FROM CPYTHON in the gate file as
+`PTXRenderer.types[strong_dtype(d)]` or `EMPTY`, so not one pinned string is written by
+hand. `gates/tc_ptx_types-mutate.py`: six mutations, M1/M2/M3 move 3 rows each (one per
+table), M4 moves 3 and is the one that matters -- `w_int()` reads `uint32`'s entry instead
+of `int32`'s, so `weakint` gets `u32`, a real type and a legal `.reg`, which is how a gate
+that refuses empties is told apart from one that refuses concrete wrong types -- M5 moves 1
+(the `CVoid` arm alone, which is the reading that says `void` is unreachable through
+ptx.py:219), and M6 is a control that moves 0 as it must. End to end: reverting the three
+tables gives the gate rc=1, restoring gives rc=0.
+
+SIBLING `case _:` ARMS: nine hits, and the only one of the class is `op_asm`'s `case _: []`,
+which is UNREACHABLE -- 21 arms for `asm_keys()`'s 21 members and all five call sites pass
+a member. Named rather than changed; a `List<&2, String>` has no room for a refusal.
+
+CONSEQUENCE FOR `gates/ptx_render_census`, WHICH THIS UNIT MUST NOT TOUCH. Its pins file
+records the DEFECT as the expected answer. MEASURED against a fresh `bin/bend
+gates/ptx_render_census.bend`: 5 of 579 pinned `bd` rows move and all five are the defect.
+`tyo_0` pred->"", `mto_0` u8->"", `cto_0` pred->"", `f31_weakint.r1` %ridx_pred_0 ->
+%ridx_s32_0, `f32_weakfloat.r2` %alu__0 -> %alu_f32_0. `f33_bf16cast.r1=%cast__0` does NOT
+move, because bf16 still refuses. Those five pin values are the census owner's edit.
+
+ALSO FOUND, NOT FIXED, OUT OF GRANT. `LAWS/spec.bend:719` gives `void` pri 0 where CPython's
+`dtypes.void.priority` is -1 (MEASURED), so in the port `void`, `bool` and `weakint` are
+all pri 0; the fix routes on `cls`, which is right in both.
+
+MEASURED: tc_ptx 334 -> 343 rows, rc=0, 0.61-0.99 s, 474-512 MB peak. The gate 60 rows x 3
+lanes rc=0, 4.49 s, 453 MB. The mutation harness 5.38 s, 439 MB. One `bend` at a time.
+Full report and every reading: `.agents/slop/tcptxweak/REPORT.md`.
