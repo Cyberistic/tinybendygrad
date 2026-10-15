@@ -503,6 +503,37 @@ artefacts-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` u
                                        polices the corpus was the last one still answering with a
                                        suffix set.
 
+rng-tables-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` unit.
+                                       `gates/rng_graph_census-gate.py:104-106` carried the comment
+                                       **"THE TWO DISCOVERY RULES ... Eleven is `grep -c '^def
+                                       [a-z]*_table' tinybendygrad/schedule/rangeify.bend`
+                                       (MEASURED) ... Neither is typed from a table of rows"** --
+                                       and then typed the eleven names out. **A COMMENT THAT ASSERTS
+                                       A MEASUREMENT ITS OWN CODE DOES NOT PERFORM IS WORSE THAN NO
+                                       COMMENT, BECAUSE A READER CHECKS THE CLAIM AND NOT THE
+                                       CODE.** `TABLES` is now DISCOVERED by the command that comment
+                                       quoted, so a twelfth `def <name>_table` joins the census
+                                       instead of being invisible. MEASURED: `findall` over
+                                       `rangeify.bend` returns **the same eleven names IN THE SAME
+                                       ORDER** as the tuple it replaced, and `ROWS` is still **726**,
+                                       so this is a change of MECHANISM and not of population.
+                                       **AND A DISCOVERY THAT FINDS NOTHING MUST NOT BE A GREEN
+                                       CENSUS** -- if the pattern stops matching, `ROWS` is empty and
+                                       a census over zero rows agrees with everything, the
+                                       "0 disagreements over 0 comparisons" shape. So the empty case
+                                       **REFUSES (3)**.
+                                       **THE GUARD PAID FOR ITSELF IMMEDIATELY: on its first live
+                                       run it REFUSED, because my own pattern lacked `re.M` and `^`
+                                       matched only the start of the string.** A discovery that found
+                                       nothing said so instead of reporting a green census, which is
+                                       the entire reason the guard was worth writing.
+                                       **`NODES = 66` IS STILL TYPED, AND THE COMMENT NOW SAYS WHY:**
+                                       it is `rangeify.bend`'s `G.ix` length with no `def` to
+                                       discover, so an integer constant in the SUBJECT has to be a
+                                       PIN -- **a pin and a discovery are different instruments and
+                                       one may not imitate the other.** Re-pin it if `G.ix` grows;
+                                       `TABLES` will not notice.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

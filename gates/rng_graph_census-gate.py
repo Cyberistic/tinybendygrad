@@ -94,16 +94,41 @@ oracle failed, the native compile failed, the lanes disagree, or a pinned row mo
 precondition was absent (the output directory, the substrate, or the oracle).
 """
 
+import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import Gate, gate
 
-# THE TWO DISCOVERY RULES, and the ROWS THEY GENERATE. Eleven is
-# `grep -c '^def [a-z]*_table' tinybendygrad/schedule/rangeify.bend` (MEASURED) and 66 is that
-# file's `G.ix`, the same number its own `lay` row prints. Neither is typed from a table of rows.
-TABLES = ("rb", "nic", "nv", "aprt", "sk", "gs", "ct", "fb", "dg", "lb", "ab")
+ROOT = Path(__file__).resolve().parents[1]
+RANGEIFY = ROOT / "tinybendygrad/schedule/rangeify.bend"
+
+# **THE COMMENT ABOVE THIS LINE USED TO CLAIM BOTH NUMBERS WERE DISCOVERED AND NEITHER WAS.**
+# It read "THE TWO DISCOVERY RULES ... Eleven is `grep -c '^def [a-z]*_table' ...` (MEASURED) ...
+# Neither is typed from a table of rows", and then typed the eleven names out. Found by the
+# `shapecensus` unit 2026-10-15: **a comment that asserts a measurement its own code does not
+# perform is worse than no comment**, because a reader checks the claim and not the code.
+#
+# The first of the two is now actually discovered, by the command the comment quoted. MEASURED
+# 2026-10-15: `re.findall` over `rangeify.bend` returns the same eleven names IN THE SAME ORDER as
+# the tuple it replaced, so this is a change of MECHANISM and not of population -- and a twelfth
+# `def <name>_table` now joins the census instead of being invisible.
+#
+# **AND A DISCOVERY THAT FINDS NOTHING MUST NOT BE A GREEN CENSUS.** If the pattern ever stops
+# matching -- the file is renamed, the `def` shape changes, the path moves -- `TABLES` is empty,
+# `ROWS` is empty, and a census over zero rows agrees with everything. That is the
+# "0 disagreements over 0 comparisons" shape, so the empty case REFUSES instead.
+TABLES = tuple(re.findall(r"^def ([a-z]+)_table", RANGEIFY.read_text(), re.M))
+if not TABLES:
+    print(f"rng_graph_census-gate: REFUSED -- no `def <name>_table` in {RANGEIFY}, so there are no "
+          f"tables to census. A census over zero rows agrees with everything, and that is not a "
+          f"verdict.", file=sys.stderr)
+    raise SystemExit(3)
+# 66 IS STILL TYPED. It is `rangeify.bend`'s own `G.ix` length, read off that file's `lay` row, and
+# unlike the table names there is no `def` to discover -- an integer constant in the subject has to
+# be PINS, not a walk. **A PIN AND A DISCOVERY ARE DIFFERENT INSTRUMENTS AND ONE MAY NOT
+# IMITATE THE OTHER.** Re-pin it if `G.ix` grows; `TABLES` will not notice.
 NODES = 66
 ROWS = tuple(f"{t}_{n}" for t in TABLES for n in range(NODES))
 
