@@ -1,5 +1,5 @@
-repro-paths: 584 committed reports name 713 distinct paths (+2 written as patterns)
-  resolve   : 605 of 713
+repro-paths: 541 committed reports name 714 distinct paths (+2 written as patterns)
+  resolve   : 606 of 714
   DANGLING  : 108
     .agents/slop/abi/abi.json
         named by: .agents/slop/abifix/README.md

@@ -35,6 +35,7 @@ from __future__ import annotations
 import argparse
 import os
 import re
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -64,25 +65,23 @@ REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-
 # `...` is an ellipsis and `//` is a doubled separator: a family, not a file.
 PATTERN = re.compile(r"\.\.\.|//")
 
-REPORTS = ("*.md",)
-REPORT_DIRS = (".agents/slop", ".agents", "checks", "gates", "")
+REPORTS = ".md"
 
 
 def committed_reports() -> list[str]:
-    out: list[str] = []
-    for d in REPORT_DIRS:
-        pat = os.path.join(d, "*.md") if d else "*.md"
-        try:
-            r = __import__("subprocess").run(["git", "ls-files", "--", pat],
-                                             cwd=ROOT, capture_output=True, text=True)
-            out += [x for x in r.stdout.split() if x.endswith(".md")]
-        except Exception:
-            pass
-    return sorted(set(out))
+    """EVERY `REPORTS` FILE AT HEAD, ASKED OF HEAD.  This asked `git ls-files`, which reads the INDEX,
+    while the TEXT below comes from `git show HEAD:` -- so the DENOMINATOR moved with the index's
+    arming STATE and the SAME TREE answered twice: MEASURED 2026-10-15, 584 reports while the default
+    index was armed and 541 once it agreed with HEAD.  It also inherited `GIT_INDEX_FILE`, so an agent
+    that commits the prescribed way ran a different population than one that did not -- the same defect
+    and the same shape as `checks/index-arm-gate.py`'s false `PASS`.  HEAD is not a shell variable, so
+    nothing has to be scrubbed now."""
+    r = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD"],
+                       cwd=ROOT, capture_output=True, text=True)
+    return sorted(p for p in r.stdout.split() if p.endswith(REPORTS))
 
 
 def report_text(rel: str) -> str:
-    import subprocess
     r = subprocess.run(["git", "show", f"HEAD:{rel}"], cwd=ROOT,
                        capture_output=True, text=True, errors="replace")
     return r.stdout if r.returncode == 0 else ""

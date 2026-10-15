@@ -356,9 +356,9 @@ repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SU
                                        extraction intersected with the FILESYSTEM (`os.path.exists`
                                        just below it): the population is now "tokens that name a
                                        path", not "tokens whose suffix is on a list". MEASURED over
-                                       the SAME 584 committed reports, before -> after: named
-                                       559 -> 713, resolve 482 -> 605, DANGLING 77 -> 108, and 124
-                                       of the 164 added RESOLVE. **AND THE SET WROTE FALSE ROWS IN
+                                       the SAME 541 reports at HEAD `db24cf3d0`, before -> after:
+                                       named 560 -> 714, resolve 483 -> 606, DANGLING 77 -> 108,
+                                       with ADDED 164 (125 resolving) and LOST 10 (2 resolving). **AND THE SET WROTE FALSE ROWS IN
                                        BOTH DIRECTIONS, which is why "it only missed things" was
                                        the wrong worry: it stops at a REMEMBERED extension, so
                                        `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as
@@ -372,6 +372,20 @@ repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SU
                                        reports pointing at REAL paths that are GONE
                                        (`cstyle-live/port.txt`, `coldness/population.txt`).
                                        `.agents/slop/reprorefs/REPORT.md` + its `probe.py`.
+                                       A SECOND DEFECT IN THE SAME FILE, FOUND BY THE FIRST:
+                                       `committed_reports()` ran `git ls-files` -- the INDEX -- while
+                                       the TEXT came from `git show HEAD:`, so the DENOMINATOR moved
+                                       with the index's arming state (584 armed, 541 disarmed) under
+                                       the printed word *committed*, AND it INHERITED
+                                       `GIT_INDEX_FILE`, so an agent's shell measured a different
+                                       population than a bare one -- the SAME defect and the same
+                                       shape as `checks/index-arm-gate.py`'s false `PASS`. FIXED to
+                                       `git ls-tree -r --name-only HEAD`: 541 under the default
+                                       index, under `.git/agent-index`, AND under a bogus path that
+                                       exists nowhere. The 43 phantom entries contributed NO text,
+                                       so the differential was right while the denominator was
+                                       wrong -- which is why the fix's own commit message quotes
+                                       584.
                                        NOT LANDED, FLAGGED: `AGENTS.md`'s doctrine-1 row and
                                        `agend2/REPLACEMENTS.md:294` both record this line as
                                        **fixed** BY the suffix set, which is the claim this

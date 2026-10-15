@@ -1,6 +1,6 @@
-reports scanned        : 584
-named, OLD suffix set  : 559
-named, permissive      : 713
+reports scanned        : 541
+named, OLD suffix set  : 560
+named, permissive      : 714
 ADDED by permissive    : 164   (125 resolve, 39 would be DANGLING)
 LOST by permissive     : 10
   extensions of the 164 added: .rows=40, .out=33, .txt=25, .md=19, .tsv=15, .err=5, .bin=4, .said=3, .pyc=3, <none>=2, .patch=1, .tramp=1, .in=1, .FIXED=1
