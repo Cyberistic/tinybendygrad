@@ -2,6 +2,15 @@
 # 2026-10-14, every line below is a row where the two lanes DISAGREE and the
 # ORACLE HAS BEEN CHECKED. One block per family.
 #
+# **THESE LINES CARRY A NAME AND NOTHING ELSE -- THERE IS NO VALUE COLUMN, AND THAT IS THE POINT.**
+# `ops_python_exec-gate.py:275` reads this file as `{l.split()[0] ...}`, a NAME SET, so it is an
+# EXCLUSION LIST: which rows diverge, not how they diverge. The values live in the gate's artifacts
+# and are re-derived every run; pinning them here would pin a number this gate does not own.
+# **`gates/pins-shape-gate.py` CHARGED THE ABSENCE OF A HEADER SAYING SO, AND IT WAS RIGHT** -- a
+# reader landing here could otherwise read "the lanes disagree" as a claim this file substantiates,
+# and it does not. Same distinction as `ptx_render_census-pins.rows`, which is
+# `lane<TAB>row<TAB>value` and says so on line 1: TWO SHAPES, BOTH DELIBERATE, BOTH NOW DECLARED.
+#
 # THE ORACLE CHECK, because a disagreement is only evidence once the thing that
 # reported it has been checked: `f32.sqrt.0` was run standalone through
 # CPython's own `PythonProgram.__call__` with the packet's own buffer lines.
