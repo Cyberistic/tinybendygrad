@@ -598,8 +598,13 @@ def cmd_run(_a):
             report.append(f"{g}: 2 runs DIFFER\n" + byte_diff(D / a, D / b, 20))
     write("D9-stability.txt", "\n".join(report) + "\n")
 
-    # THE 0-ROW GUARD, FIRED ON PURPOSE. `graphcmp-empty.bend` prints nothing, so
-    # `emit --side bend` must RAISE rather than answer.
+    # THE 0-ROW GUARD, FIRED ON PURPOSE, and the guard is that this is NOT retried:
+    # `graphcmp-empty.bend` prints a `#` header and no rows, and `classify` (`graphcmp.py:1999`)
+    # calls that an ANSWER -- `lines`, not `rows`, is the witness. MEASURED 2026-10-15:
+    # `D10-zerorow-guard.txt.err` reads `bend attempt 1: 0 rows, ANSWER, rc=0, ...`, so an earlier
+    # revision of THIS comment, claiming the probe "must RAISE rather than answer", was wrong about
+    # the code it sits above. `CRASH_CONTROL`'s second row already names the opposite rule as a
+    # defect: "a retry that fires on an answer".
     #
     # MEASURED 2026-10-07 (`midrun`): **THAT PROBE NO LONGER EXISTS** -- it and `graphcmp-dbg.bend`
     # were deleted in sweep `371cc64c9`, so `D10-zerorow-guard.txt` has been reading `rc=1` off a

@@ -339,6 +339,18 @@ sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/resid
                                        and a 48-dir belt 86; the file-granular arm deletes 0.
                                        `checks/sweep.py` NOT EDITED -- prefer refuse. §3 of
                                        `.agents/slop/sweepdirs/REPORT.md`.
+d10-guard       [#########] 9/10     D10 is NO LONGER REFUSED: the fixture is present, so the
+                                       probe RUNS, and `D10-zerorow-guard.txt.err` reads `bend
+                                       attempt 1: 0 rows, ANSWER, rc=0`. `classify`
+                                       (`graphcmp.py:1999`) calls a `#`-header-only emission an
+                                       ANSWER -- `lines`, not `rows`, is the witness -- and its own
+                                       control row (`:2008`) names the opposite rule as the defect
+                                       ("a retry that fires on an answer"). The `rc=0` in the file
+                                       is `emit`'s HARDCODED return (`graphcmp.py:3185`), NOT a
+                                       verdict. OWED: nothing reads the CONTENT -- `LITERALS`
+                                       (`differ.py:324`) only makes `artefacts_ok()` require the
+                                       file to EXIST -- so a wrong D10 verdict still cannot fail
+                                       the run.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
