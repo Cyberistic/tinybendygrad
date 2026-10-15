@@ -24,7 +24,8 @@ somebody tries to reproduce a claim.**
 they cannot check — and it costs the reader the discovery that they cannot check it.
 
 WHAT IS CHECKED, AND WHAT IS NOT.  A path-shaped token under `.agents/slop/`, `checks/` or `gates/`
-with a `.sh`/`.py`/`.bend` suffix, appearing in a committed report, is a reproduction reference.
+appearing in a committed report is a reproduction reference, WHATEVER ITS EXTENSION: whether it
+resolves is asked of the FILESYSTEM, never of a suffix list.
 Tokens containing `...` or `//` are **patterns**, not paths, and are counted separately rather than
 reported as failures — because a report that writes `strays/origin/.../nvdev.bend` is describing a
 family, and calling that a broken reference would be this file's own version of a false citation.
@@ -38,23 +39,28 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# A path-shaped token under a directory this project owns, with an extension that means
-# "something a report tells a reader to run".
+# A path-shaped token under a directory this project owns. WHAT MAKES IT A REFERENCE IS THAT IT
+# NAMES A PATH, and the FILESYSTEM is what decides that -- `os.path.exists` below -- so there is no
+# suffix list here to go stale.
 #
-# **THE SUFFIX SET WAS `sh|py|bend` AND THAT MADE THE INSTRUMENT BLIND TO ITS OWN POPULATION.**
-# MEASURED 2026-10-05: `checks/e2e.py`'s stage inputs carry `.sh` 6, `.py` 6, **`.mjs` 2**, `.bend` 2 —
-# **AND THE `.mjs` FILES WERE INVISIBLE TO THIS FILE.** Of 15 stage inputs, **9 were counted and 6 were
-# not**, and all four fixtures the `fixures` unit had to reconcile by hand were among the six.
-# **RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO.**
+# **THERE WAS ONE, AND IT FAILED THE SAME WAY THREE TIMES.** The set was `sh|py|bend`; `.mjs` was
+# ADDED when `checks/e2e.py`'s two `.mjs` stage inputs proved invisible (9 of 15 counted) and
+# **RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO**; and on 2026-10-15 the five-item set
+# was still blind to 164 of the 713 paths 584 committed reports name. A SUFFIX FILTER IS A
+# POPULATION DEFINED BY A LIST, AND A LIST IS NOT A POPULATION.
 #
-# **THIS IS THE SAME FAILURE AS `LIVE_UNITS` NAMING FINISHED UNITS, AS `ORACLE` BEING A WORD SHAPE, AND AS
-# `sb-gate.sh` CHECKING ITS OWN THREE LITERAL LANES: A RULE THAT CANNOT SEE THE POPULATION CANNOT BE WRONG,
-# BECAUSE IT CANNOT BE ANYTHING.** A SUFFIX FILTER IS A POPULATION DEFINED BY A THREE-ITEM LIST.
+# **AND A TRUNCATED TOKEN IS NOT A HARMLESS ONE: IT WROTE FALSE ROWS IN BOTH DIRECTIONS.**
+# MEASURED 2026-10-15: `untrack/REPORT.md:142` names `...blastradius.cpython-312.pyc`, which the
+# suffix set read as `...312.py` -- a DANGLING row for a name that never existed -- while
+# `whosecache/REPORT.md:73` names `gates/tn_graph_census-gate.py.bak`, which it read as
+# `gates/tn_graph_census-gate.py`, A FILE THAT EXISTS, so a broken reference counted as RESOLVED.
+# The permissive pattern fixes both, because it stops at the REAL extension instead of at a
+# remembered one.
 #
-# `.txt` IS HERE **EXCEPT** FOR `runs/graphcmp/D/`, WHICH IS A CONTRACT READ BY NAME BY A SHA-PINNED ORACLE —
-# see `checks/differ.py`'s `declared()`. A `.txt` THERE IS EXCUSED RATHER THAN COUNTED, BECAUSE A RENAME WOULD
-# MAKE `artefacts_ok()` MATCH 0 OF 22 FILES WITHOUT ERRORING.
-REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]+\.(?:sh|py|bend|mjs|json))")
+# `runs/graphcmp/D/` IS NOT SPECIAL-CASED ANY MORE, AND THAT IS THE POINT: `checks/differ.py`'s
+# `declared()` makes those `.txt` names a CONTRACT, so a report naming one names a REAL path -- and
+# a real path that exists is not this file's business. A report naming one that is GONE is.
+REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
 # `...` is an ellipsis and `//` is a doubled separator: a family, not a file.
 PATTERN = re.compile(r"\.\.\.|//")
 

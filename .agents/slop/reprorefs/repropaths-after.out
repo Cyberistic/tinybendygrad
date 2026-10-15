@@ -1,0 +1,222 @@
+repro-paths: 584 committed reports name 713 distinct paths (+2 written as patterns)
+  resolve   : 605 of 713
+  DANGLING  : 108
+    .agents/slop/abi/abi.json
+        named by: .agents/slop/abifix/README.md
+    .agents/slop/adev/CLAIM.md
+        named by: .agents/slop/adevfix/REPORT.md
+    .agents/slop/afloat-ops-bend.patch
+        named by: .agents/TODO.md
+    .agents/slop/ag-emit.bin
+        named by: .agents/slop/CLANGFILL.md
+    .agents/slop/ansi_probe.bend
+        named by: .agents/slop/LANE-LIVENESS.md
+    .agents/slop/arghalf/tree/drivers/one/gcmp.bend
+        named by: .agents/slop/declared473/REPORT.md
+    .agents/slop/argowner/fold.MINE.bend
+        named by: .agents/slop/concise/AFTER.md, .agents/slop/concise/BASELINE.md
+    .agents/slop/argowner/mine/fold.bend
+        named by: .agents/slop/concise/AFTER.md, .agents/slop/concise/BASELINE.md
+    .agents/slop/argowner/mine/ops.bend
+        named by: .agents/slop/concise/AFTER.md, .agents/slop/concise/BASELINE.md
+    .agents/slop/blob-intern-gate.sh
+        named by: .agents/TODO.md
+    .agents/slop/blob-intern-mutate.py
+        named by: .agents/slop/strayblobs/REPORT.md
+    .agents/slop/canon.py
+        named by: .agents/slop/deadgens/REPORT.md
+    .agents/slop/canrun/PLANT.intent-to-add.rows
+        named by: .agents/slop/clauseVfix/REPORT.md
+    .agents/slop/coldness/coldness.py
+        named by: .agents/TOOLS.md, .agents/slop/coldness/COLDNESS.md
+    .agents/slop/coldness/population.txt
+        named by: .agents/slop/coldness/COLDNESS.md
+    .agents/slop/coldness/sweep.sh
+        named by: .agents/TOOLS.md, .agents/slop/coldness/COLDNESS.md
+    .agents/slop/cstyle-live/port.txt
+        named by: .agents/slop/e2efix/report.md, .agents/slop/skipexit/FINDINGS.md
+    .agents/slop/deadarm/bendarm-run.txt
+        named by: .agents/slop/DEADARM.md
+    .agents/slop/deadarm/bendarm.tsv.gz
+        named by: .agents/slop/DEADARM.md
+    .agents/slop/deadreg/build4.py
+        named by: .agents/slop/deadreg/REPORT.md
+    .agents/slop/deadreg/plant.py
+        named by: .agents/slop/deadreg/REPORT.md
+    .agents/slop/device-oracle.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/differverdict/cmpwarm.py
+        named by: .agents/slop/differverdict/REPORT.md
+    .agents/slop/differverdict/mkroot.sh
+        named by: .agents/slop/shadowtrees/REPORT.md
+    .agents/slop/differverdict/mkwarm.sh
+        named by: .agents/slop/differverdict/REPORT.md
+    .agents/slop/differverdict/root/.agents
+        named by: .agents/slop/shadowtrees/REPORT.md
+    .agents/slop/differverdict/warmboth.sh
+        named by: .agents/slop/differverdict/REPORT.md
+    .agents/slop/drift-record-probe.json
+        named by: .agents/UPSTREAM-PIN.md
+    .agents/slop/dsl_oracle.py
+        named by: .agents/slop/liveness/REPORT.md
+    .agents/slop/dt-bend.txt
+        named by: .agents/slop/liveness/REPORT.md
+    .agents/slop/dt-py.txt
+        named by: .agents/slop/liveness/REPORT.md
+    .agents/slop/dtypeb/gate.txt
+        named by: .agents/slop/capstream/REPORT.md
+    .agents/slop/dup/dup-fix-usb.py
+        named by: .agents/slop/dup/REPORT.md
+    .agents/slop/dup/lanes/tinybendygrad_renderer_nir_llvmir.bend
+        named by: .agents/slop/dup/stage5-plants.md
+    .agents/slop/dup/lanes/tinybendygrad_runtime_ops_nv.bend
+        named by: .agents/slop/nvdup/stage1-the-negative-case.md
+    .agents/slop/dup/lanes/tinybendygrad_runtime_support_usb.bend
+        named by: .agents/slop/dup/stage3-multiset.md
+    .agents/slop/dup/lanes/tinybendygrad_uop_fold.bend
+        named by: .agents/slop/dup/stage4-fold.md
+    .agents/slop/dup/usb-oracle-BEFORE.txt
+        named by: .agents/slop/dup/stage3-multiset.md
+    .agents/slop/e2e-vacuity.py
+        named by: .agents/slop/audit/07-e2e-64of64.md
+    .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt
+        named by: .agents/slop/shadowcopies/REPORT.md
+    .agents/slop/env-coercion-table.txt
+        named by: .agents/slop/env-flag-divergence.md
+    .agents/slop/eq/nl-control.sh
+        named by: .agents/slop/eq/REPORT.md
+    .agents/slop/eq/nl-port-post.txt
+        named by: .agents/slop/eq/REPORT.md
+    .agents/slop/eq/nl-pre-port.txt
+        named by: .agents/slop/eq/REPORT.md
+    .agents/slop/eq/nl-rename.py
+        named by: .agents/slop/eq/REPORT.md
+    .agents/slop/ffi-experiment/run-all.sh
+        named by: .agents/slop/ffi-experiment/REPORT.md
+    .agents/slop/ffi-port-cost.py
+        named by: .agents/slop/audit/04-libclang-307of324.md
+    .agents/slop/figurefix/plant/D-live/D0-coverage-census.txt
+        named by: .agents/slop/reprofix/REPORT.md
+    .agents/slop/figurefix/plant/scratch/.agents
+        named by: .agents/slop/clauseVfix/REPORT.md
+    .agents/slop/fp8fix/gate.txt
+        named by: .agents/slop/capstream/REPORT.md
+    .agents/slop/ga-oracle.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/gatecensus/enum.py
+        named by: .agents/slop/gatecensus/README.md
+    .agents/slop/gatecensus/group.py
+        named by: .agents/slop/gatecensus/README.md
+    .agents/slop/gitinput/__pycache__/blastradius.cpython-312.pyc
+        named by: .agents/slop/untrack/REPORT.md
+    .agents/slop/gitinput/__pycache__/plant.cpython-312.pyc
+        named by: .agents/slop/untrack/REPORT.md
+    .agents/slop/graphcmp-dbg.bend
+        named by: .agents/slop/substrateid2/REPORT.md
+    .agents/slop/grw-census.txt
+        named by: .agents/slop/grw-stage1.md
+    .agents/slop/grw-ctxclaim.txt
+        named by: .agents/slop/grw-stage1.md
+    .agents/slop/guardfix/probe-c.bend
+        named by: .agents/TODO.md, .agents/slop/FP8FIX.md, .agents/slop/ccdead2/REPORT.md
+    .agents/slop/helpers-oracle.py.missing
+        named by: .agents/slop/canrun/REPORT.md
+    .agents/slop/jsfix/jsfix_e2e.py
+        named by: .agents/slop/jsfix/README.md
+    .agents/slop/li/li-control.sh
+        named by: .agents/slop/llvmir-nameshape-control.md
+    .agents/slop/li/post-port.txt
+        named by: .agents/slop/llvmir-nameshape-control.md
+    .agents/slop/li/pre-port.txt
+        named by: .agents/slop/llvmir-nameshape-control.md
+    .agents/slop/lintable/lintable-probe.bend
+        named by: .agents/slop/lintable/03-PROBE.md
+    .agents/slop/llvmir-oracle.py
+        named by: .agents/slop/liveness/REPORT.md, .agents/slop/nvdup/stage3-what-remains.md
+    .agents/slop/loopfix/rss-ledger/fold.bin
+        named by: .agents/slop/prune3/REPORT.md
+    .agents/slop/loopfix/tree/tinybendygrad/uop/fold-new.bend
+        named by: .agents/slop/loopfix/FINDINGS.md
+    .agents/slop/loopfix/tree/tinybendygrad/uop/fold.bend
+        named by: .agents/slop/prune3/REPORT.md
+    .agents/slop/mask-probe.bend
+        named by: .agents/TOOLS.md
+    .agents/slop/mathlib/const_probe.bend
+        named by: .agents/slop/MATHLIB.md
+    .agents/slop/multi-rows.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/nocolor-bend.txt
+        named by: .agents/slop/env-flag-divergence.md
+    .agents/slop/nocolor-probe.bend
+        named by: .agents/slop/env-flag-divergence.md
+    .agents/slop/notes/sched-multi-truth.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/nv-constaudit.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/nv-mutate.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/nvdup/nv-oracle-BEFORE.txt
+        named by: .agents/slop/nvdup/stage2-the-fix.md
+    .agents/slop/ops-gate.sh
+        named by: .agents/TODO.md, .agents/TOOLS.md
+    .agents/slop/ops-python-render-oracle.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/proof-close/MUTANT/tinybendygrad/helpers.bend
+        named by: .agents/slop/proof-close/MUTANT-TREE.md
+    .agents/slop/quiesce/__pycache__/snapshot.cpython-312.pyc
+        named by: .agents/slop/untrack/REPORT.md
+    .agents/slop/quiesce/snapshot.py
+        named by: .agents/slop/quiesce/REPORT.md, .agents/slop/substrateid2/REPORT.md
+    .agents/slop/rebase-oracle-ops.py
+        named by: .agents/slop/revive/REPORT.md
+    .agents/slop/rebase-plan.py
+        named by: .agents/UPSTREAM-PIN.md, .agents/slop/rebase/REPORT.md
+    .agents/slop/rebase-try.sh
+        named by: .agents/UPSTREAM-PIN.md
+    .agents/slop/rerun/D-before/D0-coverage-census.txt
+        named by: .agents/slop/reprofix/REPORT.md
+    .agents/slop/schedule-bodies/BEFORE-rows.txt
+        named by: .agents/slop/checkshells/REPORT.md
+    .agents/slop/shlscope/gate.sh
+        named by: .agents/slop/shellgates/REPORT.md
+    .agents/slop/spelling/jslane-probe.js
+        named by: .agents/slop/SPELLING.md, .agents/slop/spelling/REPORT.md
+    .agents/slop/staged_mut.py
+        named by: .agents/slop/strayblobs/REPORT.md
+    .agents/slop/substrate/SUBSTRATE.md
+        named by: .agents/slop/txtresidual/REPORT.md
+    .agents/slop/tcptx-oracle.py
+        named by: .agents/slop/nvdup/stage3-what-remains.md
+    .agents/slop/triage/allfiles.txt
+        named by: .agents/slop/triage/REPORT.md
+    .agents/slop/unvendored.py
+        named by: .agents/UPSTREAM-PIN.md
+    .agents/slop/w64/gen.sh
+        named by: .agents/slop/slopcopies/MANIFEST.md
+    .agents/slop/wallmap/rank.json
+        named by: .agents/slop/MATHLIB.md
+    .agents/slop/wallrule/wallcheck.py
+        named by: .agents/slop/notes/bend2-constraints.md, .agents/slop/wallrule/RULE.md, .agents/slop/wallrule/SWEEP.md
+    .agents/slop/wallrule/wallcheck.sh
+        named by: .agents/slop/WALLRULE.md
+    .agents/slop/wip/optprobe/diff.py
+        named by: .agents/slop/devgate/DEV-GATE.md
+    .agents/slop/wire-pair.py
+        named by: .agents/slop/notes/bend2-constraints.md
+    .agents/slop/xd2/e2e.mjs
+        named by: examples/webgpu/mnist/README.md
+    checks/abi_gate.py.fixed
+        named by: .agents/slop/nameless/REPORT.md
+    checks/drive.mjs
+        named by: .agents/slop/emptyact/REPORT.md
+    checks/nl-port-post.txt
+        named by: .agents/slop/nameless/REPORT.md, .agents/slop/zerogate/REPORT.md
+    gates/.ab-a.py
+        named by: .agents/slop/onemodule/REPORT.md
+    gates/populate.py
+        named by: .agents/slop/readback/REPORT.md
+    gates/tn_graph_census-gate.py.bak
+        named by: .agents/slop/whosecache/REPORT.md
+  NOT CLEAN. A report that names an instrument which no longer exists is asking a reader
+  to trust a claim they cannot check -- and the discovery that they cannot check it costs more
+  than the claim was worth. Re-run with --mark to record the loss where a reader meets it.

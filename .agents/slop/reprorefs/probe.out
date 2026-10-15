@@ -1,0 +1,67 @@
+reports scanned        : 584
+named, OLD suffix set  : 559
+named, permissive      : 713
+ADDED by permissive    : 164   (125 resolve, 39 would be DANGLING)
+LOST by permissive     : 10
+  extensions of the 164 added: .rows=40, .out=33, .txt=25, .md=19, .tsv=15, .err=5, .bin=4, .said=3, .pyc=3, <none>=2, .patch=1, .tramp=1, .in=1, .FIXED=1
+  -- the 39 would-be DANGLING, i.e. the false-positive risk --
+     .agents/slop/adev/CLAIM.md
+        named by: .agents/slop/adevfix/REPORT.md
+     .agents/slop/afloat-ops-bend.patch
+        named by: .agents/TODO.md
+     .agents/slop/ag-emit.bin
+        named by: .agents/slop/CLANGFILL.md
+     .agents/slop/canrun/PLANT.intent-to-add.rows
+        named by: .agents/slop/clauseVfix/REPORT.md
+     .agents/slop/coldness/population.txt
+        named by: .agents/slop/coldness/COLDNESS.md
+     .agents/slop/cstyle-live/port.txt
+        named by: .agents/slop/e2efix/report.md, .agents/slop/skipexit/FINDINGS.md
+     .agents/slop/deadarm/bendarm-run.txt
+        named by: .agents/slop/DEADARM.md
+     .agents/slop/deadarm/bendarm.tsv.gz
+        named by: .agents/slop/DEADARM.md
+     .agents/slop/differverdict/root/.agents
+        named by: .agents/slop/shadowtrees/REPORT.md
+     .agents/slop/dt-bend.txt
+        named by: .agents/slop/liveness/REPORT.md
+     .agents/slop/dt-py.txt
+        named by: .agents/slop/liveness/REPORT.md
+     .agents/slop/dtypeb/gate.txt
+        named by: .agents/slop/capstream/REPORT.md
+     .agents/slop/dup/usb-oracle-BEFORE.txt
+        named by: .agents/slop/dup/stage3-multiset.md
+     .agents/slop/e2epy/fixtures/repro-green/runs/e2e/e2e-f64.txt
+        named by: .agents/slop/shadowcopies/REPORT.md
+     .agents/slop/env-coercion-table.txt
+        named by: .agents/slop/env-flag-divergence.md
+     .agents/slop/eq/nl-port-post.txt
+        named by: .agents/slop/eq/REPORT.md
+     .agents/slop/eq/nl-pre-port.txt
+        named by: .agents/slop/eq/REPORT.md
+     .agents/slop/figurefix/plant/D-live/D0-coverage-census.txt
+        named by: .agents/slop/reprofix/REPORT.md
+     .agents/slop/figurefix/plant/scratch/.agents
+        named by: .agents/slop/clauseVfix/REPORT.md
+     .agents/slop/fp8fix/gate.txt
+        named by: .agents/slop/capstream/REPORT.md
+     .agents/slop/gitinput/__pycache__/blastradius.cpython-312.pyc
+        named by: .agents/slop/untrack/REPORT.md
+     .agents/slop/gitinput/__pycache__/plant.cpython-312.pyc
+        named by: .agents/slop/untrack/REPORT.md
+     .agents/slop/grw-census.txt
+        named by: .agents/slop/grw-stage1.md
+     .agents/slop/grw-ctxclaim.txt
+        named by: .agents/slop/grw-stage1.md
+     .agents/slop/helpers-oracle.py.missing
+        named by: .agents/slop/canrun/REPORT.md
+     .agents/slop/li/post-port.txt
+        named by: .agents/slop/llvmir-nameshape-control.md
+     .agents/slop/li/pre-port.txt
+        named by: .agents/slop/llvmir-nameshape-control.md
+     .agents/slop/loopfix/rss-ledger/fold.bin
+        named by: .agents/slop/prune3/REPORT.md
+     .agents/slop/nocolor-bend.txt
+        named by: .agents/slop/env-flag-divergence.md
+     .agents/slop/nvdup/nv-oracle-BEFORE.txt
+        named by: .agents/slop/nvdup/stage2-the-fix.md
