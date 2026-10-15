@@ -1575,3 +1575,37 @@ ceiling with six units live).
 | `gates/msgdiff-gate.py` | **the guard `git-massdelete-gate.py` names as its residual: a wrong commit message is invisible to every diff-only gate.** Resolves a deletion ASSERTION (`Deleted X`) against the commit's `D` set and its tree, and an explicit `N files changed\|deleted\|...` against the diff's file count. `REFUSED` (3), not `FAIL`: it does not know the message is wrong, only that THIS DIFF does not witness it (`MESSAGE_DIFF_ACK=` records the explanation). MEASURED: `range --since=2026-10-06T12:00 HEAD` = **147 commits, 146 PASS, 1 REFUSED**, the one real defect `00b101574`; `--plant` = six states, rc 0. **COUNTS pids, never judges them** (a pid is a live measurement in an immutable message). Separate file, not an extension of the mass-delete gate: that gate's subject is the DIFF, this one's is the MESSAGE, and one commit with two subjects cannot say which failed. |
 | `.agents/slop/msgdiff/run.py` | Regenerates the evidence by REPLAYING the real commits, not synthetic ones. Writes `verdicts.rows`, `plant.out/err`, `range.out/err`. |
 | `.agents/slop/msgdiff/REPORT.md` | The claim grammar: which shapes are checkable (deletion, file count), which are unfalsifiable (units/sites/arms), which are counted and passed (pids), and the seam to the PROSE layer (`citeresolve`, 2 448 prose claims) which is a different population and a different instrument. |
+
+### `decomp_value` (2026-10-14) — a NUMERIC oracle for a graph-shape census
+
+| tool | why |
+| --- | --- |
+| `gates/decomp_value-gate.py` | **The instrument the `decomp_graph_census` PROMOTION class asked for and did not have.** `tinygrad.runtime.ops_python.PythonProgram.__call__` evaluates a cone of real `UOp`s; this drives it on BOTH lanes and compares VALUES, so "the port computes intermediates narrower" becomes a question with an answer. MEASURED: **11 PROMOTION rows x 18 operand families = 198 comparisons, 0 `DIFFER`**; 9 rows `same` everywhere, `lg1` `PORT-REFUSES` on 18 of 18, `lg5` `same` on 13 of 18. rc=0, `--refresh` rewrites the pins. |
+| `gates/decomp_value-pins.rows` | One TAB-separated `<row>/<fam>\t<same\|DIFFER\|PORT-REFUSES:*\|BOTH-RAISE:*>\t<cpython value>` per cell, in GIT, beside the gate — `gates/artifacts/` is `.gitignore`d and `gatekit` empties it. |
+| `gates/decomp_graph_census-gate.py` | **The graph-shape lane this one reads.** NOT IMPORT-SAFE: `:386` reads `sys.argv` at module scope, so importing it from a process given `--refresh` runs the census's refresh and exits. MEASURED rc=0, no output, no pins file. Load it with `sys.argv` scrubbed. |
+
+**THE THREE THINGS THIS COST, ALL MEASURED AND ALL IN THE GATE'S HEADER.**
+
+1. **A UOP GRAPH MUST BE COMMITTED BEFORE `exec_alu` CAN RUN IT.** `ops_python.py:153` asserts
+   `all_same([u.dtype] + src_dtypes)`, and `l2i`'s OWN output violates it (three
+   `MUL(i64, [i64, CONST(-1)@weakint])` on `lg1`). `pm_commit_weak` does **not** fix it: four
+   `graph_rewrite` passes over `lg1` change **0** nodes, because `commit_srcs_at` rebuilds a committed
+   const as `UOp.const(dt.const(-1))`, which IS the bare `weakint` it started from.
+   `commit_weak_consts(u, least_upper_dtype(*srcs))` (weak.py:10) does.
+2. **THE COMMIT DTYPE MUST NEVER BE `u.dtype`.** On a `Ops.CMPLT` (`u.dtype is bool`) it turns
+   `CONST(32, weakint)` into `CONST(True, bool)` — `DType.bool.const(32)` is `bool(32)` (dtype.py:84) —
+   and `l2i`'s `b0 >= 32` then reads `1 < True`. MEASURED: `l2i(CDIV, uint32, 7, 2)` answered **0**
+   instead of 3 and `CMOD(100, 7)` answered **0** instead of 2. **The fixture set was live the whole
+   time and would have reported 198 green rows on a corrupted graph**; only the `//`/`%` closed form
+   caught it. **Two evaluators that both call `exec_alu` cannot check each other.**
+3. **TWO `UOp`s WITH EQUAL `ParamArg`s INTERN TO ONE NODE.** Two roots sharing an out-PARAM share one
+   buffer, and `_store`'s bounds check bounds the VIEW not the mapping: `lg1` read `[-2,-2]` where the
+   truth is `[-1,-2]`. Distinct `slot`s, one call, all the buffers.
+
+### `gatesweep` (2026-10-15) — the gate POPULATION, run under `bounded.py`, tallied by VERDICT
+
+| tool | why |
+| --- | --- |
+| `.venv/bin/python checks/gatesweep.py` | **THE GATE SWEEP, IN PYTHON.** Replaces a FOREIGN zsh script under `/tmp` that looped `gates/*-gate.py`, kept only `$?`, and sent each gate's stdout to `/dev/null` — so a gate that ran and printed nothing (**DEAD, 5**) was indistinguishable from one that agreed (**PASS, 0**), and a `REFUSED` (3) read as a failure. Four faults, each answered: the POPULATION is a DIRECTORY WALK (`os.walk` + `-gate.py`, `lstat`-regular, `__pycache__` not descended) and never a list — **70 at 2026-10-15**, printed beside a CONTROL from `gates/gates-pop.py:discover()` (**188 entries + 60 modules**, deliberately a DIFFERENT question); the WATCHDOG is `checks/bounded.py`, and its `[bounded] <TOKEN>  rc=<child>` record ON STDERR is parsed rather than the exit status; OUTPUT is captured, so DEAD-by-silence is a state the tool can see; the five VERDICTS are `gates/gatekit.py`'s `VERDICT`, LOADED BY PATH. Rows are written and `flush()`ed PER GATE, so a sweep that dies at gate 69 keeps its 68. **MEASURED COST (not this tool's own run): 60 gate dirs written 11:53:55→12:11:57 = 1081 s, mean 18.3 s, max 435 s, so 70 gates ≈ 21 min.** **The sweep over the real 70 has NOT been run; the instrument is DEAD (5).** |
+| `.venv/bin/python checks/gatesweep.py --plan` · `--prove` | `--plan` prints the population and the control and runs nothing. `--prove` classifies REAL captured outcomes from `.agents/slop/hooks/{cost.out,run.tsv}` and requires the recorded verdict: **14/14 reproduced** from `(rc, first line)` alone — the classifier is proven on data no gate ran for. Both green, rc=0. |
+| `.agents/slop/gatesweep/REPORT.md` | the unit report. **CAVEAT, MEASURED: `gates/artifacts/*/` is NOT a verdict input.** Its 64 dirs (63 populated, 1 empty) hold LANE files (`py.rows`/`bd.out`/`*.cmp`/`gate.bin`), never a gate's stdout; a populated dir means the gate reached `gatekit`'s diff — a captured outcome, but not a token a parser can read. |
