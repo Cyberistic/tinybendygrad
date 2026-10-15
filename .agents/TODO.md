@@ -15023,6 +15023,31 @@ NO -- THE COUPLING IS VACUOUS ON THE ROWS IT WAS ARGUED FROM.**
       interpolates the *ACTUAL* list into BOTH slots, so `G4` prints `...are [125, 127], expected
       [125, 127] -- the fmt axis grew`.
 
+## DRYRUNQ -- I RECOMMENDED `git commit --dry-run --only -n` AND IT **OVER-REPORTS**, SO IT IS NOT A COUNT OF WHAT A COMMIT WILL CARRY (2026-10-15)
+
+MEASURED ON THE VERY COMMIT I RECOMMENDED IT FOR (`b23f4a885`), AND CORRECTING MYSELF HERE BECAUSE
+TWO ENTRIES (`NOTIMEOUT`, `SLOP-SWEEP`) BOTH LEAN ON THAT ADVICE.
+
+    git commit --dry-run --only -n   ->  10 files listed
+    git commit --only -- <paths>     ->   1 file carried
+
+**THE PREVIEW LISTS MORE THAN THE COMMIT CARRIES, AND THE ERROR IS IN THE TOLERABLE DIRECTION -- IT
+OVER-REPORTS**, so a reader who sees ten files investigates rather than commits blind. **AND THAT IS
+WHY IT CANNOT BE READ AS "WHAT THIS COMMIT WILL CARRY."** It remains the right tool, being the only
+one that shows what a commit *MIGHT* touch. **CLOSEST IS NOT SAME**, and the reason is the same as
+everything else recorded today: **the index is shared, `jj` arms it on every snapshot, and every one of
+these is a proxy for a question only a commit can answer.**
+
+**THE THREE TOOLCHAIN FACTS, IN ONE PLACE:**
+  * `--only` IS **NECESSARY AND NOT SUFFICIENT** -- a bare `git commit -F` took another unit's staged
+    files; `git commit -- <paths>` **also** leaked one staged deletion. `--only` isolates FROM THE
+    INDEX.
+  * `--only` **NEEDS `git add` FIRST** for a new file, AND **IT REFUSES A PATH THE ARMED INDEX
+    DELETED** (`pathspec did not match any file(s) known to git`) -- which is why restoring
+    `decomp_value-*` had to use the DEFAULT index.
+  * **`GIT_INDEX_FILE` IS CORRECT FOR *NOT TAKING* ANOTHER UNIT'S STAGED WORK AND THE WRONG TOOL FOR
+    *RESTORING* A PATH THE INDEX REMOVED. THOSE ARE DIFFERENT PROBLEMS AND `AGENTS.md` NAMES ONLY ONE.**
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
