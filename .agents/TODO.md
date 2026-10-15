@@ -331,11 +331,28 @@ gates-sweep     [##########] 10/10    `/tmp/sweep.sh` is FOREIGN and NON-COMPLIA
                                        offender, `ls-files`); the 2 SKIPs are
                                        `ops_python_census`/`_exec`, KILLED-ON-MEMORY at the
                                        2048 MB ceiling (peaks 2127/2168 MB).
-false-fails     [.........] 0/2      ~29 false FAILs survive guard 1 (a needle containing a
-                                       newline: 14 FAIL retired, 0 PASS silenced). 3 are
-                                       genuinely FALSE claims to fix; 19 are stale-once-true.
-                                       The bar is PASS rows silenced; M>N is REFUTED
-                                       (precedent: 28 FAIL / 102 PASS, reverted).
+false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-census.py:394`,
+                                       `(?<![\w`])'([^']{4,})'`) and PASSED the bar: on one frozen
+                                       snapshot it retired 16 FAIL rows and silenced 0 PASS rows
+                                       (M=0 < N=16), so it is not REFUTED. Every REFUSED guard
+                                       keeps its measured N/M in
+                                       `.agents/slop/residual/REPORT.md`. Of the 51 NEW FAILs,
+                                       30 are FALSE (23 FALSE-SHAPE, 7 FALSE-SUBJECT), 19 are
+                                       TRUE-STALE and 2 are TRUE -- both of those corrected
+                                       (51 -> 49). The immovable pair: `WITHIN-LIMITS` (absent
+                                       from the file -> false FAIL) and `ARTIFACTS-FRESH` (present
+                                       -> true PASS) have IDENTICAL SHAPE and OPPOSITE verdicts.
+repro-paths-ref [.........] 0/1      `checks/repro-paths.py:57`'s `REF` is a SUFFIX SET,
+                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in
+                                       prose with any other extension is INVISIBLE to it -- the
+                                       doctrine-1 shape, patched one extension at a time
+                                       (`2 .mjs` were once invisible). MEASURED 2026-10-15: the
+                                       two `--prove` inputs moved into `checks/` this session,
+                                       `checks/gatesweep-cost.out` and `-run.tsv`, are `.out`/`.tsv`
+                                       and it cannot see them. OWED: replace extraction with
+                                       "extract permissively, intersect with a WALK", and MEASURE
+                                       its noise before landing -- a permissive pattern may pull
+                                       version strings in as paths.
 sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/residue'] and that
                                        entry is INERT: removing it leaves the corpus at 692
                                        (`INERT=True removed_by_the_entry=0`, 2026-10-15T09:25:03Z,
