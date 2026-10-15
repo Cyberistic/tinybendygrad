@@ -12,15 +12,21 @@ no-txt          [#########] 3/3      generators, NOT files: `helpers-tc-gate.sh`
                                          ALL THREE GENERATORS ARE DEAD -- the sweep
                                          (`371cc64c9`) deleted their inputs. See
                                          `.agents/slop/txtgen/REPORT.md`.
-decomp-census   [#####] 3/5          38 rows, 22 exact, 16 declared (11 PROMOTION · 2 WALL ·
+decomp-census   [#####] 3/5          39 rows, 23 exact, 16 declared (11 PROMOTION · 2 WALL ·
                                          1 UNBUILT · 2 FINDING), rc=0. THE 11's STATED CAUSE WAS
                                          FALSE (`UOp.__init__`/`_broadcasted` are not the
                                          inserter; `ElementwiseMixin._broadcasted`,
                                          mixin/elementwise.py:24-32 is) -- corrected in 3 files.
-                                         282 entries in SIX src->target pairs, not one class.
-                                         `deleted()` is a COUNT on `lg1` and keeps the WRONG of
-                                         two adjacent CASTs. Mutation moved 27/38; 6 of the 11
-                                         and all 5 other classes are a COVERAGE GAP. See below.
+                                         282 entries, ONE measured TARGET multiset
+                                         (`u32 263, i64 17, i32 2`), asserted every run; the
+                                         hand-written SIX-pair table it replaced read
+                                         `u32 263, i64 14, i32 5` and COULD NOT BE CHECKED.
+                                         `deleted()` is no longer a COUNT on `lg1`:
+                                         `witnesses()` MEASURES ZERO alternative witnesses.
+                                         **A CAST'S `ADt` IS IN THE TOKEN (`OP/NSRC[TARGET]`)
+                                         AND 12 OF 13 MUTATIONS THAT BREAK ONLY IT MOVE A ROW.**
+                                         Mutation moved 27/38; 6 of the 11 and all 5 other
+                                         classes are a COVERAGE GAP. See below.
 amd-dsl-census  [#########] 9/9      9 census CLASSES retired, 3 left: `MSG_TEXT` 26 ·
                                          `SRC_WIDTH` 4 · `WORD_64` 1 = 31 pins of 1178 rows.
                                          MODMASK retired 2026-10-14 (TWO defects: `mod_mask`
@@ -342,17 +348,34 @@ false-fails     [#########] 9/10     The apostrophe guard LANDED (`checks/cites-
                                        (51 -> 49). The immovable pair: `WITHIN-LIMITS` (absent
                                        from the file -> false FAIL) and `ARTIFACTS-FRESH` (present
                                        -> true PASS) have IDENTICAL SHAPE and OPPOSITE verdicts.
-repro-paths-ref [.........] 0/1      `checks/repro-paths.py:57`'s `REF` is a SUFFIX SET,
-                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in
-                                       prose with any other extension is INVISIBLE to it -- the
-                                       doctrine-1 shape, patched one extension at a time
-                                       (`2 .mjs` were once invisible). MEASURED 2026-10-15: the
-                                       two `--prove` inputs moved into `checks/` this session,
-                                       `checks/gatesweep-cost.out` and `-run.tsv`, are `.out`/`.tsv`
-                                       and it cannot see them. OWED: replace extraction with
-                                       "extract permissively, intersect with a WALK", and MEASURE
-                                       its noise before landing -- a permissive pattern may pull
-                                       version strings in as paths.
+repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
+                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
+                                       with any other extension was INVISIBLE to it -- the
+                                       doctrine-1 shape, patched one extension at a time (`2 .mjs`
+                                       were once invisible). REPLACED 2026-10-15 with a permissive
+                                       extraction intersected with the FILESYSTEM (`os.path.exists`
+                                       just below it): the population is now "tokens that name a
+                                       path", not "tokens whose suffix is on a list". MEASURED over
+                                       the SAME 584 committed reports, before -> after: named
+                                       559 -> 713, resolve 482 -> 605, DANGLING 77 -> 108, and 124
+                                       of the 164 added RESOLVE. **AND THE SET WROTE FALSE ROWS IN
+                                       BOTH DIRECTIONS, which is why "it only missed things" was
+                                       the wrong worry: it stops at a REMEMBERED extension, so
+                                       `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as
+                                       `...312.py` (a DANGLING row for a name that never existed)
+                                       and `whosecache/REPORT.md:73`'s
+                                       `gates/tn_graph_census-gate.py.bak` was read as
+                                       `gates/tn_graph_census-gate.py`, A FILE THAT EXISTS -- a
+                                       broken reference counted as RESOLVED.** The gate was
+                                       ALREADY red (77 dangling), so this adds truth to a failing
+                                       census rather than creating a failure, and the 108 are REAL
+                                       reports pointing at REAL paths that are GONE
+                                       (`cstyle-live/port.txt`, `coldness/population.txt`).
+                                       `.agents/slop/reprorefs/REPORT.md` + its `probe.py`.
+                                       NOT LANDED, FLAGGED: `AGENTS.md`'s doctrine-1 row and
+                                       `agend2/REPLACEMENTS.md:294` both record this line as
+                                       **fixed** BY the suffix set, which is the claim this
+                                       measurement refutes.
 sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/residue'] and that
                                        entry is INERT: removing it leaves the corpus at 692
                                        (`INERT=True removed_by_the_entry=0`, 2026-10-15T09:25:03Z,
@@ -15067,6 +15090,88 @@ Found by `gates/realize_graph_census-mutate.py` (`9651ecc59`, **55 mutations, 17
       `PINS`; a `finally` that cleans up before the last reader reads is a teardown; **AND A GUARD THAT
       RAISES IS A VERDICT, NOT AN ABSENCE.**
 
+## ADTROW-DG -- `decomp_graph_census` ROWS CARRY A CAST's `ADt`, AND THE COUPLING IS NOW ROW-VISIBLE (2026-10-15)
+
+**39 ROWS, 23 EXACT, 16 DECLARED, rc=0** (was 38/22/16). `gates/decomp_graph_census.bend`,
+`-oracle.py`, `-gate.py`, `-pins.rows` and a NEW `gates/decomp_graph_census-mutate.py`.
+**NO PORT FILE AND NEITHER OTHER GATE TOUCHED** -- MEASURED, `git hash-object` ==
+`git rev-parse HEAD:<path>` for all eight `crp_graph_census*` and `amd_dsl_census*` files,
+for `crp_graph_census.bend`, for `tinybendygrad/codegen/decomp/dtype.bend`,
+`decomp/op.bend`, `mixin/creation.bend`, `uop/ops.bend` and `renderer/amd/dsl.bend`.
+
+- [x] **THE PRINTER. `OP/NSRC` BECAME `OP/NSRC[TARGET]` WHEN THE ARG IS A `Dt`**, on the port
+      (`dc_tok`, and `dc_esig` = `D.dd_esig` with `D.dd_sig1` swapped -- the CONE AND THE JOIN are
+      the port's and are not re-derived) and on CPython (`s1`'s `isinstance(u.arg, DType)`).
+      **MEASURED: 453 `CAST/1` + 33 `BITCAST/1` ON THE PORT LANE AND 741 + 34 ON CPYTHON'S, AND 0
+      OF EITHER CARRIED AN ARGUMENT.** `u.arg.name` IS THE PORT'S SPELLING, NOT A TRANSLATION --
+      `dtypes.uint8.name == "u8"`, `dtypes.float32.name == "f32"`, `dtypes.half.name == "f16"`,
+      `dtypes.bfloat16.name == "bf16"`, `dtypes.fp8e4m3.name == "fp8e4m3"`, which is what
+      `spec.bend:727-742`'s `Dt.nm` holds. **SO NO TABLE ON EITHER SIDE.**
+- [x] **THE ACCEPTANCE TEST PASSES. `A1` MOVES 5 ROWS AND `A1` UNDER THE OLD PRINTER MOVES 0.**
+      `dtype.bend:593,637` hand ONE `ldt` to the fold test AND to the CAST's `ADt` -- CPython's own
+      `DTypeMixin.cast` (dtype.py:36) is that line with a walrus, and `mixin/creation.bend`'s `de`
+      is it with the value made explicit. **`A1` breaks ONLY the `ADt` use and moves
+      `lg3,lg4,lg5,lg6,lgo`; `MOVED-BARE` (the same comparison with every `[...]` stripped, i.e. the
+      printer as it was) is 0.** `A2` breaks the OTHER use and moves 2 rows under both printers,
+      because a fold is a node COUNT. **13 MUTATIONS, 12 MOVE ROWS.**
+- [x] **`witnesses()`: `lg1`'s ONE alternative deletion witness is GONE.** With every cast a distinct
+      token, the left-greedy walk can no longer confuse `CAST(i32->i64)` at index 1 with
+      `CAST(weakint->i32)` at index 2. **MEASURED ZERO over the seven cones under `SHORT_CONE`, and
+      THE GATE NO LONGER PRINTS THE WARNING LINE IT PRINTED AT `rc=0` BEFORE.**
+- [x] **THE CLASS IS STRONGER, NOT WEAKER. `PROMOTION_TARGETS` IS ASSERTED EVERY RUN** and the hand
+      -written six-pair table it replaced is DELETED, because it named `src->target` PAIRS and so
+      needed a node's DTYPE, which NO row carries. **THE OLD TABLE READ `u32 263, i64 14, i32 5`; THE
+      MEASURED DELETED-TARGET MULTISET IS `u32 263, i64 17, i32 2`. THREE ENTRIES IT CALLED `i32` ARE
+      `i64`, AND ITS `3 weakint -> i32` LINE COUNTED THE PORT'S OWN SURVIVING NODE AMONG THE 282 THE
+      CLASS DELETES -- `lg1`'s survivor is `CAST/1[i32]` and its four deleted ones are all `i64`.**
+- [x] **THE FIXTURE AXIS THAT WAS MISSING, AND IT IS ONE OF THE THREE `unpack32` FIXTURES.** `up` reads
+      the pool's `u32` word and passes `xdt = u32`, so `unpack32.bc`'s fold FIRES and the row carries NO
+      BITCAST -- **MEASURED: `A13`, which breaks ONLY that arm's `ADt`, MOVED 0 OF 38 ROWS.** So the
+      BITCAST `ops.py:13` builds was in no row, the same hole `dtype.bend:2824-2830` records for
+      `l2i_cast3.bitc` and calls "live code with zero coverage". **`uq` READS THE POOL'S `i32` WORD AT
+      OFFSET 4, THE FOLD DOES NOT FIRE, AND THE ROW IS `AND/2,BITCAST/1[u32],PARAM/0,CONST/0,FLOODIV/
+      2,CONST/0` ON BOTH SIDES -- AN EXACT MATCH, NO NEW CLASS, AND `A13` NOW MOVES 1 ROW: `uq`.**
+- [ ] **`dd_cast_bool`'s `True` ARM IS A DEAD ARM AND IT IS CPYTHON-CORROBORATED (`A5` = 0 ROWS).**
+      ITS ONLY CALLER IS `l2i_cast1.quo` (dtype.bend:626), REACHED ONLY AT `l2i_cast.got`'s
+      `case 1` (:665), AND `sel == 1` REQUIRES `dd_cast_sel`'s `lng == True` ARM RETURNING 1, WHICH
+      `Bool.pick(U32, srcfl, 1, 0)` DOES ONLY WHEN `dd_is_float(xdt)`. **A FLOAT DTYPE IS
+      `CFloat`/`CWeakFloat` AND `dd_is_bool` IS `CBool`: DISJOINT. `dd_cast_bool`'s `isb` IS `False` AT
+      ITS ONE CALL SITE, FOREVER.** CPython SAYS THE SAME FROM THE OTHER SIDE: dtype.py:33's arm is
+      `dt in (long, ulong)` AFTER dtype.py:30's `uops[0].dtype not in dtypes.floats`, so
+      `uops[0]` is always a float and `(uops[0] / 2**32)` has no bool operand for a `default_float`
+      promotion. **SO THE PORT'S COMMENT ON `l2i_cast1.quo` -- "after `a.cast(default_float)` when `a`
+      is a bool" -- NAMES A TRIGGER ITS OWN SELECTOR HAS ALREADY EXCLUDED. A5 IS A DEAD ARM, NOT A
+      MISSING FIXTURE, AND NO ROW CAN BE ADDED TO REACH IT.** LEFT AS A DEAD DEF: DELETING IT IS A
+      PORT CHANGE.
+- [ ] **`de` ITSELF IS NOT ON THIS GATE'S PATH, AND THAT IS MEASURED NOT ASSUMED.** THE DRIVER'S
+      TRANSITIVE IMPORT CLOSURE IS **8 FILES** -- `LAWS/spec.bend`, `helpers.bend`, `uop/ops.bend`,
+      `uop/fold.bend`, `codegen/decomp/{dtype,op,transcendental}.bend` and the driver -- **AND IT
+      CONTAINS NEITHER `mixin/creation.bend` NOR `tensor.bend`.** THE CONSTs IN THESE CONES COME FROM
+      `uop/ops.bend:2961 def UOp.const(ar, +v: Const)`, **WHICH TAKES NO DTYPE**, BECAUSE THE
+      `.cast(dtype)` HALF OF `ops.py:640` IS A `TODO(p3)` AT ops.bend:5084. **SO NO PRINTER ON ANY
+      SIDE CAN MAKE `de` VISIBLE HERE. CLOSING `DECOUPLE` IS `crp_graph_census`'s UNIT'S WORK AND
+      THIS ONE DID NOT TOUCH THAT GATE.**
+- [ ] **THE REQUESTED FIXTURE IS IMPOSSIBLE, MEASURED OVER 12 DTYPES IN CPYTHON.** THE ASK WAS "A
+      CONST THAT IS `Invalid` AND A REQUESTED DTYPE THAT IS NOT THE DERIVED ONE, SO `de != dt`, THE
+      FOLD DOES NOT FIRE AND A CAST WITH A LOAD-BEARING ARG IS MINTED". **`de != dt` HOLDS IFF
+      `b is Invalid` (ops.py:630), AND THEN `de = from_py(Invalid) = bool = c0` (dtype.py:102), SO
+      `eq_dt(c0, de)` IS TRUE AND THE FOLD FIRES. MEASURED: `UOp.const(Invalid, dt)` IS A BARE
+      `CONST/0` WITH NO CAST AT bool, u8, i32, u32, i64, f32, f64, f16, bf16, weakint, weakfloat AND
+      void. THE CLAIM IS TRUE AS CODE, THE ASKED ROW CANNOT EXIST, AND THE `de`-SHAPED CASE THIS
+      CENSUS CAN REACH IS THE ONE `uq` IS.** ALSO: **THE PREMISE "EVERY ROW HAS `de == dt` SO EVEN A
+      PERFECT PRINTER SEES NOTHING" IS FALSE FOR THIS POPULATION** -- A3 (every `op.bend:208 dc_cast`
+      `ADt` wrong) MOVES 15 ROWS AND A1 MOVES 5, BOTH WITH 0 UNDER THE OLD PRINTER.
+- [ ] **THE THREE `l2i.pick` CONST-MINTING ARMS (CASES 28/29/30: `lgv` `lgw` `lgx`) ARE IN THE
+      CENSUS'S OWN POPULATION PARAGRAPH AND NEITHER LANE DRIVES THEM. MEASURED, AND ADDING THEM IS
+      NOT A ONE-LINE FIXTURE ADD:** CPython `lgv` = `CAST/1[i32],CONST/0,WHERE/3,CMPLT/2,CAST/1[i32],
+      CONST/0` against the port's `CAST/1[i32],CAST/1[u32],CONST/0,CAST/1[i32]`; `lgw` =
+      `CAST/1[u32],CONST/0,WHERE/3,CMPLT/2,CAST/1[u32],CONST/0` against `CAST/1[u32],CONST/0`;
+      `lgx` = 6 tokens against 4 with a `CONST/0` among the deleted. **ALL THREE ARE NEW DIVERGENCES
+      AND NONE IS A `PROMOTION` DELETION -- TWO ARE NOT DELETIONS AT ALL** (`deleted()` leaves the
+      walk unmatched on `lgv` and `lgw`), SO THEY NEED TWO NEW CLASSES. NOT DONE, MEASURED, NAMED.
+      A POPULATION RULE KEYED ON "ARMS THAT READ THE WORD POOL" CANNOT SEE THEM BECAUSE THEY MINT
+      THEIR CONST OUTSIDE `l2i` -- THE SAME CLASS AS `VOP2_FIELDS` HAVING NO `src2`.
+
 ## DECOUPLE -- the fix that CLEARED 19 ROWS HAS A COUPLING NO ROW CAN SEE (2026-10-15)
 
 Answered by `gates/crp_graph_census-mutate.py` + `gates/amd_dsl_census-mutate.py` (`51cceacd7`),
@@ -15087,6 +15192,9 @@ NO -- THE COUPLING IS VACUOUS ON THE ROWS IT WAS ARGUED FROM.**
 - [ ] **THE FIX THAT MAKES IT CHECKABLE IS NAMED AND NOT DONE:** `tok.arg` needs an `O.ADt{d}` arm and
       the oracle a matching `isinstance(u.arg, DType)`. **THAT TURNS C1/C5 FROM 0 ROWS INTO NON-ZERO**
       and makes the claim checkable BY A ROW. **NOT DONE BECAUSE THE GATES ARE NOT THAT UNIT'S.**
+      → **DONE, IN `decomp_graph_census`, MEASURED — see `ADTROW-DG` below. NOT DONE IN
+      `crp_graph_census`: THAT GATE IS NOT THIS UNIT'S, AND `crp_graph_census.bend:155-159`'s `tok.arg`
+      IS BYTE-IDENTICAL TO HEAD (`git hash-object` == `git rev-parse`, measured).**
 - [ ] **THE THREE MODIFIER FLAGS ARE NOT EQUALLY MEASURED, AND THE PINS FILE SAYS SO.** `A5` (loses
       NEG) moves exactly **1** row (`modmask_neg_neg`); `A6` (loses ABS) and `A7` (loses OPSEL) move
       **0 at rc=0** -- **AND THE GATE'S OWN PINS FILE ALREADY CLAIMS THAT IN THE SAME WORDS.** MECHANISM
@@ -15265,6 +15373,26 @@ premise that this is one open convention question is WRONG. `.agents/slop/pinssh
       **OMITS THE HEADER IT ALREADY WRITES FOR ITS OWN SIBLING `gates/wk-f32.bend:84-87`, so the
       convention is already in that generator's output**; and `symcases.rows` needs one line,
       `GENERATED by hand`.
+
+## TODOSHARED -- `.agents/TODO.md` CARRIES TWO UNITS' CHANGES AT ONCE, SO A THIRD CANNOT COMMIT IT (2026-10-15)
+
+**MEASURED WHILE TRYING TO COMMIT `PINSCONV`:** `git add .agents/TODO.md && git commit --only` answers
+**`Not currently on any branch` + `Changes not staged for commit`**, and the pending diff is **22
+insertions and 5 deletions of which MINE ARE ONLY THE INSERTIONS**. THE 5 DELETIONS ARE ANOTHER UNIT'S
+CONCURRENT `cites-census` REWRITE (a `false-fails` progress block). MEASURED: `git diff .agents/TODO.md |
+grep "^-"` returns only that unit's lines.
+
+**SO A THIRD PARTY CANNOT COMMIT THIS FILE WITHOUT ALSO COMMITTING SOMEBODY ELSE'S HALF-FINISHED EDIT,
+AND `git add -p` IS NOT AVAILABLE NON-INTERACTIVELY.** `PINSCONV` IS THEREFORE **RECORDED IN THE WORKING
+TREE AND LEFT THERE**, WHICH IS THE SAME CALL THE UNIT THAT PRODUCED IT MADE, AND IT IS THE RIGHT ONE:
+**COMMITTING A CONCURRENT REWRITE IS WORSE THAN LEAVING YOUR OWN TEXT UNCOMMITTED**, because the rewrite
+is unfinished and the text is not lost.
+
+**THIS IS A RESOURCE CONTENTION THE LEDGER CANNOT SEE.** `gates-pop.ledger.tsv` tracks gate entry
+points and records `LIVE:` lines for untracked tables; **nothing in this tree tracks WHICH UNITS HAVE
+`.agents/TODO.md` OPEN**, which is why two units collided on it inside one session and the collision was
+only visible as a commit that would not take. **THE FILE IS THE SHARED STATE AND THE INDEX IS SHARED AND
+BOTH HAVE AN ARMED-WRITE PROBLEM, AND ONLY ONE OF THEM HAS AN INSTRUMENT.**
 
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 

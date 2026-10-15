@@ -50,7 +50,7 @@ right arity is invisible here by construction, and that is exactly the hole the
 `f2f_dt[fr]` fixture fell into before the note above was written.
 """
 
-from tinygrad.dtype import dtypes
+from tinygrad.dtype import DType, dtypes
 from tinygrad.uop.ops import UOp, Ops, ParamArg, AddrSpace
 from tinygrad.codegen.decomp import dtype as DT
 
@@ -76,6 +76,20 @@ def ws(base, nw):
 
 
 def s1(u):
+    """`OP/NSRC`, AND `OP/NSRC[TARGET]` WHEN THE ARG IS A DTYPE.
+
+    A CAST and a BITCAST are the two ops whose `arg` is a DType (ops.py:640 `cast`,
+    ops.py:846 `bitcast`), and the test is on the ARG and not on the op, so a third op that
+    ever grows one is printed by this and not by a second list that would rot beside it.
+
+    `u.arg.name` IS the port's spelling, not a translation: MEASURED on this checkout
+    `dtypes.uint8.name == "u8"`, `dtypes.float32.name == "f32"`, `dtypes.half.name == "f16"`,
+    `dtypes.bfloat16.name == "bf16"` and `dtypes.fp8e4m3.name == "fp8e4m3"`, which is what
+    `LAWS/spec.bend`'s `Dt.nm` holds (`spec.bend:727-742`) and what `O.dt_name` (ops.bend:5956)
+    returns. So the two sides render the same token with no table on either.
+    """
+    if isinstance(u.arg, DType):
+        return "%s/%d[%s]" % (u.op.name, len(u.src), u.arg.name)
     return "%s/%d" % (u.op.name, len(u.src))
 
 
@@ -152,6 +166,17 @@ for _nm, _op, _dt, _xdt, _base, _nw in L2I:
 
 # `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2850.
 print("up=%s" % drive(DT.unpack32, PAR[9]))
+
+# AND OVER THE POOL'S `i32` WORD AT OFFSET 4, which is the fixture that makes the BITCAST
+# `ops.py:13` builds MINTED: `unpack32(u) = u.bitcast(types.uint32) & 0xFFFF, u.bitcast(
+# types.uint32) >> 16` takes NO dtype and bitcasts unconditionally, so a `u32` receiver folds
+# the node away and an `i32` receiver does not. MEASURED both: `PAR[9]` reads
+# `AND/2,PARAM/0,CONST/0,FLOODIV/2,CONST/0` with no BITCAST and `PAR[4]` reads
+# `AND/2,BITCAST/1[u32],PARAM/0,CONST/0,FLOODIV/2,CONST/0` with the ONE node shared by both
+# halves. The port's `unpack32` takes the receiver's dtype as a parameter (`dtype.bend:591`,
+# `O.eq_dt(xdt, S.uint32())`) to model that fold, so the two fixtures select the two graphs on
+# both sides and the `u32` in the token is a TARGET THAT IS NOT THE SOURCE.
+print("uq=%s" % drive(DT.unpack32, PAR[4]))
 
 # `f2f` (dtype.py:101) over dtype.bend:3053-3061's seven pairs.
 F2F = [("q1", dtypes.fp8e4m3, dtypes.float32), ("q2", dtypes.float32, dtypes.fp8e4m3),

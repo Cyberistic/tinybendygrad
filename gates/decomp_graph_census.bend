@@ -36,12 +36,50 @@ import Base
 import ./../tinybendygrad/helpers.bend as H
 import ./../tinybendygrad/LAWS/spec.bend as S
 import ./../tinybendygrad/uop/ops.bend as O
+import ./../tinybendygrad/codegen/decomp/op.bend as P
 import ./../tinybendygrad/codegen/decomp/dtype.bend as D
 
 # ---------------------------------------------------------------- the printers
 
 def dc_put(+nm: String, +s: String) -> List<&2, String>:
   [String.concat([nm, "=", s])]
+
+# `OP/NSRC`, AND `OP/NSRC[TARGET]` WHEN THE NODE'S ARG IS A `Dt`. MEASURED ON THE BASE
+# LANES AT `d1c1e3a`: 453 `CAST/1` and 33 `BITCAST/1` tokens on the port lane and 741 and 34
+# on CPython's, and NOT ONE carried an argument -- `D.dd_sig1` (dtype.bend:2249) prints the
+# op and the arity and stops, because a node's DTYPE is in no node shape. So the 282 casts
+# `classes_hold` deletes were counted but never READ, a `bool->u32` promotion and a
+# `f32->i32` narrowing were the same token, and `witnesses()` could not separate `lg1`'s
+# `CAST(i32->i64)` at index 1 from its `CAST(weakint->i32)` at index 2. `dc_tok` is the same
+# walk with `dd_sig1` replaced; `P.dc_opname` is the ONE place a bare op name is spelled
+# (op.bend:1508), and `O.dt_name` the ONE place a dtype's name is (ops.bend:5956).
+def dc_tok.plain(+a: O.Arena, +u: U32) -> String:
+  String.concat([P.dc_opname(O.Arena.op(a, u)), "/", U32.show(O.Arena.nsrc(a, u))])
+
+def dc_tok.cast(a: O.Arena, u: U32, d: S.Dt) -> String:
+  String.concat([dc_tok.plain(a, u), "[", O.dt_name(d), "]"])
+
+# `Arena.arg` IS A CALL and `match` neither scrutinises a computed value nor a local binder,
+# so the ARG IS A PARAMETER of the arm-selecting def and the `match` heads that one. The
+# same measured constraint that fixes `crp_graph_census.bend`'s `tok.arg` (driver:155-159).
+def dc_tok(a: O.Arena, u: U32, g: O.Arg) -> String:
+  match g:
+    case O.ADt{d}: dc_tok.cast(a, u, d)
+    case _:        dc_tok.plain(a, u)
+
+def dc_tok.at(+a: O.Arena, +u: U32) -> String: dc_tok(a, u, O.Arena.arg(a, u))
+
+# `D.dd_esig` with `D.dd_sig1` swapped for `dc_tok.at`. The CONE AND THE JOIN are the port's
+# and are not re-derived: a census that walked its own cone would be comparing its walk.
+def dc_esig(+ar: O.Arena, f: Nat, +xs: List<&2, U32>, +first: Bool, +acc: String) -> String:
+  match f:
+    case 0n: acc
+    case 1n+q:
+      match xs:
+        case Nil{}: acc
+        case u <> t:
+          s = D.dd_join.add(first, acc, dc_tok.at(ar, u))
+          dc_esig(ar, q, t, False{}, s)
 
 # `l2i` answers `Maybe<W2>`; `W2.hi == 0` IS "ONE NODE" (dtype.bend:2698), which is how a
 # one-word arm is rooted at `lo` alone -- four of dtype.py's eighteen arms answer one UOp.
@@ -52,7 +90,7 @@ def dc_roots(two: Bool, lo: U32, hi: U32) -> List<&2, U32>:
 
 def dc_sig.put(+ar: O.Arena, two: Bool, +lo: U32, +hi: U32) -> String:
   +f = D.dd_fuel(ar)
-  D.dd_esig(ar, f, D.dd_cone(f, ar, dc_roots(two, lo, hi)), True{}, "")
+  dc_esig(ar, f, D.dd_cone(f, ar, dc_roots(two, lo, hi)), True{}, "")
 
 def dc_sig.w2(+ar: O.Arena, w: D.W2) -> String:
   match w:
@@ -66,7 +104,7 @@ def dc_sig.of(m: Maybe<&2, D.W2>, +ar: O.Arena) -> String:
 # `f2f` answers ONE node, so its cone is rooted at that node alone.
 def dc_sig1(+ar: O.Arena, +u: U32) -> String:
   +f = D.dd_fuel(ar)
-  D.dd_esig(ar, f, D.dd_cone(f, ar, [u]), True{}, "")
+  dc_esig(ar, f, D.dd_cone(f, ar, [u]), True{}, "")
 
 # ------------------------------------------------------------- the `l2i` fixtures
 
@@ -129,6 +167,26 @@ def dc_up() -> List<&2, String>:
   +r = D.unpack32(D.Ga.ar(ga), D.Ga.pool(ga, 9n), S.uint32())
   dc_put("up", dc_up.sig(r))
 
+# THE SECOND `unpack32` FIXTURE, AND IT IS THE ONE THAT MAKES A BITCAST'S `ADt` LOAD-BEARING.
+# `up` reads the pool's `u32` word at offset 9 and passes `xdt = u32`, so
+# `unpack32.bc`'s fold (`dtype.bend:591`, `O.eq_dt(xdt, S.uint32())`) FIRES and the row
+# carries NO BITCAST AT ALL: MEASURED, `up` is `AND/2,PARAM/0,CONST/0,FLOORDIV/2,CONST/0` and
+# `gates/decomp_graph_census-mutate.py` A13 -- which breaks ONLY that arm's `ADt` -- moved
+# 0 of 38 rows and 0 under the bare printer. So the BITCAST `ops.py:13` builds was in no row,
+# which is the same coverage hole `dtype.bend:2824-2830` records for `l2i_cast3.bitc`'s False
+# arm and calls "live code with zero coverage".
+#
+# `uq` READS THE POOL'S `i32` WORD AT OFFSET 4 and passes `xdt = int32`, so the fold does not
+# fire and the BITCAST is minted with `ADt{u32}` -- a target that differs from its SOURCE, so
+# the token says WHICH bitcast it is and not merely that one happened. It is the `de` SHAPE in
+# this file's own vocabulary: a REQUESTED dtype that is not the receiver's, so the fold test
+# is false and the argument is read. CPython's `unpack32` takes no dtype and bitcasts
+# unconditionally (ops.py:13), so the same two fixtures select the same two graphs.
+def dc_up2() -> List<&2, String>:
+  +ga = D.fixtures()
+  +r = D.unpack32(D.Ga.ar(ga), D.Ga.pool(ga, 4n), S.int32())
+  dc_put("uq", dc_up.sig(r))
+
 # THE ANSWER'S OWN ARENA, NOT THE ONE HANDED IN. `f2f` GROWS the arena, so a cone read off
 # `O.Found.ar(p)` -- the arena BEFORE the call -- indexes past its end and `Arena.node`
 # answers `NOOP`, the BOTTOM. MEASURED: this file's first run printed `NOOP/0` for q1..q5
@@ -170,7 +228,9 @@ def dc_f2f_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
 
 # `l2i.pick`'s pool-fed arms are the thirty `case`s above and `f2f.pick`'s are the seven.
 # Both are counted where the header states them, so a reader checks them against
-# `dtype.bend` rather than taking this file's word for it.
+# `dtype.bend` rather than taking this file's word for it. `uq` is the second `unpack32`
+# fixture and is counted in neither, because `unpack32` is ONE def driven ONCE in the header
+# and this file now drives it TWICE -- on purpose, and `dc_up2` says why.
 def L2I_N() -> Nat: 30n
 def F2F_N() -> Nat: 7n
 
@@ -187,5 +247,6 @@ def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- dc_putl(dc_l2i_go(L2I_N(), 0, Nil{}))
     b : Unit <- dc_putl(dc_up())
-    c : Unit <- dc_putl(dc_f2f_go(F2F_N(), 0, Nil{}))
+    c : Unit <- dc_putl(dc_up2())
+    d : Unit <- dc_putl(dc_f2f_go(F2F_N(), 0, Nil{}))
     return Unit{}
