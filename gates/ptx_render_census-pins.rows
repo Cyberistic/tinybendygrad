@@ -3,8 +3,7 @@ lane	row	value
 bd	barrier	bar.sync\t0;
 bn	barrier	bar.sync\t0;
 py	barrier	bar.sync\t0;
-bd	cto_0	pred
-bn	cto_0	pred
+bn	cto_0	
 py	cto_0	REFUSE:KeyError(void)
 bd	cto_1	pred
 bn	cto_1	pred
@@ -1308,8 +1307,7 @@ py	f31_weakint.mod	REFUSE:KeyError
 bd	f31_weakint.r0	NONE
 bn	f31_weakint.r0	NONE
 py	f31_weakint.r0	NONE
-bd	f31_weakint.r1	%ridx_pred_0
-bn	f31_weakint.r1	%ridx_pred_0
+bn	f31_weakint.r1	%ridx_s32_0
 py	f31_weakint.r1	NONE
 bd	f31_weakint.r2	NONE
 bn	f31_weakint.r2	NONE
@@ -1323,8 +1321,7 @@ py	f32_weakfloat.r0	NONE
 bd	f32_weakfloat.r1	NONE
 bn	f32_weakfloat.r1	NONE
 py	f32_weakfloat.r1	NONE
-bd	f32_weakfloat.r2	%alu__0
-bn	f32_weakfloat.r2	%alu__0
+bn	f32_weakfloat.r2	%alu_f32_0
 py	f32_weakfloat.r2	NONE
 bd	f32_weakfloat.r3	NONE
 bn	f32_weakfloat.r3	NONE
@@ -1563,8 +1560,7 @@ py	kpf_3	.visible .entry
 bd	lmax	1024,1024,64
 bn	lmax	1024,1024,64
 py	lmax	1024,1024,64
-bd	mto_0	u8
-bn	mto_0	u8
+bn	mto_0	
 py	mto_0	REFUSE:KeyError(void)
 bd	mto_1	u8
 bn	mto_1	u8
@@ -1683,8 +1679,7 @@ py	tfn_8	a7Eb
 bd	tfn_9	a2Fb
 bn	tfn_9	a2Fb
 py	tfn_9	a2Fb
-bd	tyo_0	pred
-bn	tyo_0	pred
+bn	tyo_0	
 py	tyo_0	REFUSE:KeyError(void)
 bd	tyo_1	pred
 bn	tyo_1	pred

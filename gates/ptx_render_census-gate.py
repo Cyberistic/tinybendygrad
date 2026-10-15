@@ -126,10 +126,10 @@ N_DIVERGES = 58
 # silently is a group nobody read.
 # --------------------------------------------------------------------------
 # GROUP 1 -- the dtype tables. port -> (REFUSE spelling, what the port answers).
-DTYPES_ABSENT = {"void": ("pred", "u8", "pred"), "bf16": ("", "", ""),
+DTYPES_ABSENT = {"void": ("", "", ""), "bf16": ("", "", ""),
                  "fp8e4m3": ("", "", ""), "fp8e5m2": ("", "", ""),
                  "fp8e4m3fnuz": ("", "", ""), "fp8e5m2fnuz": ("", "", "")}
-WEAKINT = ("pred", "u8", "pred")
+WEAKINT = ("", "", "")
 
 
 def dtype_divergences():
@@ -185,7 +185,7 @@ REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
 # GROUP 3b -- GROUP 1 REACHING THE WALK: the five registers the port allocates where
 # ptx.py:181 refuses. THESE ARE THE FINDING'S ACTUAL STRINGS, AND THEY STAY: the dtype
 # tables are still `types_pri`'s `case _ -> ""` and this unit is not `tc_ptx.bend`'s.
-WEAK = {"f31_weakint.r1": "%ridx_pred_0", "f32_weakfloat.r2": "%alu__0",
+WEAK = {"f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
         "f33_bf16cast.r1": "%cast__0", "f34_boolalu.r3": "%alu_pred_1",
         "f34_boolalu.r4": "{%alu_pred_0, %alu_pred_1}"}
 
@@ -396,7 +396,7 @@ def claims_hold() -> bool:
             # RIGHT answer for it. Without this row the fixture could pass by being
             # uniformly wrong.
             "f37_twobufs.r3": "%reg_f32_2",
-            "f31_weakint.r1": "%ridx_pred_0", "f32_weakfloat.r2": "%alu__0",
+            "f31_weakint.r1": "%ridx_s32_0", "f32_weakfloat.r2": "%alu_f32_0",
             "f33_bf16cast.r1": "%cast__0",
             "f35_loadvec.r1": "{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}",
             "f31_weakint.mod": "PORT-ANSWERED", "f08_refuse.mod": "PORT-REFUSED:INDEX",
