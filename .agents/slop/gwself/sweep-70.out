@@ -1,0 +1,75 @@
+POPULATION: directory walk gates/*-gate.py -> 70
+CONTROL   : gates-pop.discover() -> 188 entries + 60 modules (a DIFFERENT question)
+  PASS       23.3s  rc=0    peak=1313MB  gates/amd_dsl_census-gate.py           PASS
+  PASS        4.3s  rc=0    peak= 634MB  gates/bc-u32-gate.py                   PASS
+  PASS       13.8s  rc=0    peak=1881MB  gates/beautiful-mnist-gate.py          PASS
+  PASS        6.7s  rc=0    peak= 779MB  gates/cr_graph_census-gate.py          PASS
+  PASS        9.2s  rc=0    peak= 795MB  gates/crp-mut-gate.py                  PASS
+  PASS        9.8s  rc=0    peak= 688MB  gates/crp_graph_census-gate.py         PASS
+  PASS        9.8s  rc=0    peak=1011MB  gates/cstyle_render_census-gate.py     PASS
+  PASS       29.2s  rc=0    peak= 990MB  gates/decomp_graph_census-gate.py      PASS
+  PASS       37.6s  rc=0    peak=  54MB  gates/decomp_value-gate.py             PASS
+  PASS        5.6s  rc=0    peak= 518MB  gates/ew-consts-gate.py                PASS
+  PASS       13.5s  rc=0    peak=1051MB  gates/ew-explog-gate.py                PASS
+  PASS       16.5s  rc=0    peak= 989MB  gates/ew_graph_census-gate.py          PASS
+  PASS       16.1s  rc=0    peak=1215MB  gates/fold_graph_census-gate.py        PASS
+  PASS        0.4s  rc=0    peak=  20MB  gates/git-massdelete-gate.py           PASS
+  PASS       15.4s  rc=0    peak=1025MB  gates/gr_graph_census-gate.py          PASS
+  PASS        3.5s  rc=0    peak= 410MB  gates/i64-shl-gate.py                  PASS
+  PASS        3.8s  rc=0    peak= 403MB  gates/i64-shr-gate.py                  PASS
+  FAIL        2.1s  rc=1    peak=  71MB  gates/indexread-gate.py                FAIL
+  PASS       15.1s  rc=0    peak=1317MB  gates/linearizer_census-gate.py        PASS
+  PASS       11.1s  rc=0    peak=1198MB  gates/md_graph_census-gate.py          PASS
+  PASS       13.6s  rc=0    peak=1226MB  gates/mixin-op-gate.py                 PASS
+  PASS       12.8s  rc=0    peak=1388MB  gates/mo_graph_census-gate.py          PASS
+  PASS        0.4s  rc=0    peak=  23MB  gates/msgdiff-gate.py                  PASS
+  PASS       11.4s  rc=0    peak=1369MB  gates/mx_graph_census-gate.py          PASS
+  PASS       14.8s  rc=0    peak=1603MB  gates/op_graph_census-gate.py          PASS
+  PASS        8.1s  rc=0    peak= 617MB  gates/ops-core-gate.py                 PASS
+  SKIP       16.6s  rc=-9   peak=2127MB  gates/ops_python_census-gate.py        KILLED-ON-MEMORY
+  SKIP        7.8s  rc=-9   peak=2168MB  gates/ops_python_exec-gate.py          KILLED-ON-MEMORY
+  FAIL        2.0s  rc=1    peak= 118MB  gates/pins-shape-gate.py               FAIL
+  PASS       11.1s  rc=0    peak= 910MB  gates/ptx_render_census-gate.py        PASS
+  PASS       10.0s  rc=0    peak=1335MB  gates/rd_graph_census-gate.py          PASS
+  PASS       12.4s  rc=0    peak=1543MB  gates/realize_graph_census-gate.py     PASS
+  PASS        6.5s  rc=0    peak= 892MB  gates/regalloc_census-gate.py          PASS
+  PASS        2.9s  rc=0    peak= 506MB  gates/render_val_s-gate.py             PASS
+  PASS        4.5s  rc=0    peak= 603MB  gates/replace-gate.py                  PASS
+  PASS       15.0s  rc=0    peak=1525MB  gates/rng_graph_census-gate.py         PASS
+  PASS        5.6s  rc=0    peak= 827MB  gates/tn_add_sub-gate.py               PASS
+  PASS        5.6s  rc=0    peak= 848MB  gates/tn_and_or_xor-gate.py            PASS
+  PASS        8.6s  rc=0    peak=1162MB  gates/tn_binop2_cmp-gate.py            PASS
+  PASS        8.9s  rc=0    peak=1067MB  gates/tn_binop_arena-gate.py           PASS
+  PASS        5.9s  rc=0    peak= 876MB  gates/tn_binop_sweep-gate.py           PASS
+  PASS        8.3s  rc=0    peak=1093MB  gates/tn_bitwise_not-gate.py           PASS
+  PASS        5.6s  rc=0    peak= 866MB  gates/tn_ceil_floor-gate.py            PASS
+  PASS        5.0s  rc=0    peak= 788MB  gates/tn_contiguous_backward-gate.py   PASS
+  PASS        5.0s  rc=0    peak= 769MB  gates/tn_detach-gate.py                PASS
+  PASS        7.9s  rc=0    peak=1103MB  gates/tn_dunder_neg-gate.py            PASS
+  PASS        5.3s  rc=0    peak= 836MB  gates/tn_fdiv_mod-gate.py              PASS
+  PASS       10.9s  rc=0    peak=1275MB  gates/tn_graph_census-gate.py          PASS
+  PASS        8.2s  rc=0    peak=1211MB  gates/tn_isfinite-gate.py              PASS
+  PASS        5.0s  rc=0    peak= 761MB  gates/tn_isnan-gate.py                 PASS
+  PASS        8.2s  rc=0    peak=1088MB  gates/tn_logical_not-gate.py           PASS
+  PASS        5.7s  rc=0    peak= 803MB  gates/tn_lshift_rshift-gate.py         PASS
+  PASS        5.0s  rc=0    peak= 758MB  gates/tn_maximum-gate.py               PASS
+  PASS        0.3s  rc=0    peak=  19MB  gates/tn_minimum-gate.py               PASS
+  PASS        5.3s  rc=0    peak= 849MB  gates/tn_mul-gate.py                   PASS
+  PASS        5.4s  rc=0    peak= 774MB  gates/tn_nary_arena-gate.py            PASS
+  PASS        8.3s  rc=0    peak=1112MB  gates/tn_neg-gate.py                   PASS
+  PASS        9.4s  rc=0    peak=1158MB  gates/tn_nodes-gate.py                 PASS
+  PASS        5.0s  rc=0    peak= 819MB  gates/tn_pow-gate.py                   PASS
+  PASS        5.3s  rc=0    peak= 801MB  gates/tn_relu-gate.py                  PASS
+  PASS        5.3s  rc=0    peak= 795MB  gates/tn_relu6-gate.py                 PASS
+  PASS        5.0s  rc=0    peak= 788MB  gates/tn_sin_log2_exp2_rsqrt-gate.py   PASS
+  PASS        5.0s  rc=0    peak= 796MB  gates/tn_sqrt-gate.py                  PASS
+  PASS        5.3s  rc=0    peak= 775MB  gates/tn_trunc_reciprocal_threefry-gate.py PASS
+  PASS        5.0s  rc=0    peak= 787MB  gates/tn_where-gate.py                 PASS
+  PASS        4.1s  rc=0    peak= 570MB  gates/uop_cast-gate.py                 PASS
+  PASS       12.4s  rc=0    peak=1532MB  gates/wgsl_render_census-gate.py       PASS
+  PASS        9.8s  rc=0    peak=1314MB  gates/wk-cd-gate.py                    PASS
+  PASS       10.4s  rc=0    peak=1415MB  gates/wk-eval-gate.py                  PASS
+  PASS        3.3s  rc=0    peak= 539MB  gates/wk-f32-gate.py                   PASS
+TALLY: DEAD=0  FAIL=2  PASS=66  REFUSED=0  SKIP=2
+THE DENOMINATOR: 68 of 70 gates reached a verdict about the tree; 0 refused, 2 did not finish, 0 crashed or said nothing.
+rows -> gates/artifacts/gates-sweep.rows
