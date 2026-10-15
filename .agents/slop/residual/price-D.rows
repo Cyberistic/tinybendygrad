@@ -1,0 +1,228 @@
+LOST-REFUSED	C	.agents/TODO.md	11444	checks/demo.sh	s first cut snapshotted `find tinybendygrad -name 	1
+LOST-FAIL	C	.agents/TODO.md	5313	codegen/decomp/dtype.bend	s comment; that file is another unit	1
+LOST-REFUSED	C	.agents/TODO.md	7349	uop/fold.bend	s table read; `inp.dtype in dtypes.weaks` needs the dtype fold). The port	1
+LOST-REFUSED	C	.agents/TOOLS.md	1393	oracle/dtype_tables.py	s 14,766 TSV lines, which is why `rebase-gate.py:412`	1
+GAINED-REFUSED	C	.agents/TOOLS.md	1507	checks/differ.py	declared()	1
+LOST-REFUSED	C	.agents/TOOLS.md	1507	checks/differ.py	s `declared()` COMPLETE, or merely correct about ONE run	1
+LOST-REFUSED	C	.agents/slop/DTYPEB.md	59	uop/fold.bend	s call, not this file	1
+GAINED-PASS	C	.agents/slop/E2E-THROUGH-PORT.md	53	runs/e2e/e2e-mm-oracle.json	answer_u32	1
+LOST-REFUSED	C	.agents/slop/E2E-THROUGH-PORT.md	53	runs/e2e/e2e-mm-oracle.json	s `answer_u32` — `e2e_mm.py`	1
+LOST-REFUSED	C	.agents/slop/PROBES.md	178	probes/demo.sh	s first cut snapshotted `find tinybendygrad -name 	1
+LOST-REFUSED	C	.agents/slop/abi4check/abi4_gate.135bf0204.py	2	tinybendygrad/dtype.bend	s SEAM SIGNATURE for each CID, and the measurement
+of what actually crosses is the backend	1
+LOST-REFUSED	C	.agents/slop/abi4check/table-now.py	2	checks/abi4_gate.py	s OWN `main()`, on the live tree, with exactly ONE
+thing changed: `emit()`	1
+LOST-FAIL	C	.agents/slop/abifix/README.md	155	checks/abi.json	s absence is exactly that shape	1
+LOST-REFUSED	C	.agents/slop/beautiful-mnist-gate.py	226	nn/optim.bend	s own `unverified_lamb` row is RED: 1 node vs CPython	1
+GAINED-PASS	C	.agents/slop/beautiful-mnist-gate.py	94	mixin/movement.bend	mx_pool_shape	1
+LOST-FAIL	C	.agents/slop/beautiful-mnist-gate.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`	1
+LOST-REFUSED	C	.agents/slop/bendpin/pin_check.py	2	gates/mixin-op-gate.py	s went stale because a rewrite changed the oracle
+shell	1
+GAINED-REFUSED	C	.agents/slop/capstream/REPORT.md	54	checks/differ.py	declared()	1
+LOST-REFUSED	C	.agents/slop/capstream/REPORT.md	54	checks/differ.py	s `declared()` — the generator	1
+GAINED-REFUSED	C	.agents/slop/capstream/plan.py	2	checks/differ.py	declared()	1
+LOST-REFUSED	C	.agents/slop/capstream/plan.py	2	checks/differ.py	s `declared()`) or REFERENCED (a committed
+code file names it). `sub` splits REFERENCED into `path` (a parent-qualified suffix, >=2 path
+components, appears in committed code -- unambiguously this file) and `basename` (only a bare
+basename appears -- the reader may be bound to a different directory, and this file is a
+COLLISION candidate, which is why sloptxt	1
+LOST-FAIL	C	.agents/slop/cites2/REPORT.md	169	tinybendygrad/renderer/nir_llvmir.bend	String.concat([nm, " = ["]	1
+LOST-REFUSED	C	.agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py	2	nn/optim.bend	s own row is
+                           RED, 1 node against CPython	1
+GAINED-PASS	C	.agents/slop/corpuswire/tree/checks/corpus-figure.py	77	checks/differ.py	PINS	1
+LOST-REFUSED	C	.agents/slop/corpuswire/tree/checks/corpus-figure.py	77	checks/differ.py	s `PINS` -- IMPORTED, never re-declared.
+
+    A second copy of the pin list is a contract with no generator: it rots without
+    anyone noticing, which is the failure `differ.declared()`	1
+LOST-REFUSED	C	.agents/slop/deadarm/bendarm-merge.py	2	renderer/cstyle.bend	s import closure and `cstyle.bend`	1
+GAINED-REFUSED	C	.agents/slop/declared473/CONTRACT.md	9	checks/no-txt.py	.txt	1
+LOST-REFUSED	C	.agents/slop/declared473/CONTRACT.md	9	checks/no-txt.py	s `.txt` carve-out and `differ.py`	1
+LOST-REFUSED	C	.agents/slop/denominator/probe/.agents/slop/eq/eq-census2.py	122	engine/jit.bend	s row is
+
+      msg_dtype_mismatch=args mismatch in JIT: ...expected_input_info=[(UOp(...)] != expected...
+
+  and `= [` occurs at depth 0 TWICE on it -- once in the producer	1
+LOST-REFUSED	C	.agents/slop/denominator/probe/.agents/slop/rebase-gate.py	450	uop/ops.bend	s verdict printed `MOVED #rebase_inner: 	1
+LOST-REFUSED	C	.agents/slop/denominator/probe/checks/dup-census.py	134	uop/fold.bend	s 93 and `prepare`	1
+LOST-FAIL	C	.agents/slop/devrecord/xcheck.py	52	checks/env-precond.py	s METHOD B, on the summary, with METHOD A	1
+LOST-REFUSED	C	.agents/slop/dtypeb/run.py	2	renderer/cstyle.bend	s 17 of
+215 hand-typed constants were caught only because the port disagreed with CPython
+rather than with itself.
+
+The differ compares WHOLE `name=value` LINES, never row names: a name-comparing
+harness reported 0 for all 30 mutations in one unit and 0 for all 68 in another.
+Each moved set is asserted to EQUAL the set the mutation	1
+LOST-FAIL	C	.agents/slop/dup/stage1-census.md	96	renderer/nir_llvmir.bend	s eight `osx=` names were renamed.  The eq unit	1
+LOST-FAIL	C	.agents/slop/e2epy/report.md	267	checks/e2e.py	s docstring, in the shim	1
+LOST-REFUSED	C	.agents/slop/e2esh/repro.py	1	checks/e2e.sh	s ROOT, so the columns are about the ROOT, not about the seven stages
+underneath it. Running all seven needs `bend`, `cc`, `node` and a browser, takes minutes, and would
+make this repro	1
+GAINED-PASS	C	.agents/slop/figure2/plant/broken/checks/corpus-figure.py	77	checks/differ.py	PINS	1
+LOST-REFUSED	C	.agents/slop/figure2/plant/broken/checks/corpus-figure.py	77	checks/differ.py	s `PINS` -- IMPORTED, never re-declared.
+
+    A second copy of the pin list is a contract with no generator: it rots without
+    anyone noticing, which is the failure `differ.declared()`	1
+GAINED-PASS	C	.agents/slop/figure2/plant/real/checks/corpus-figure.py	77	checks/differ.py	PINS	1
+LOST-REFUSED	C	.agents/slop/figure2/plant/real/checks/corpus-figure.py	77	checks/differ.py	s `PINS` -- IMPORTED, never re-declared.
+
+    A second copy of the pin list is a contract with no generator: it rots without
+    anyone noticing, which is the failure `differ.declared()`	1
+GAINED-REFUSED	C	.agents/slop/figurefix/plant/plant.py	1	checks/corpus-figure.py	run_health()	1
+LOST-REFUSED	C	.agents/slop/figurefix/plant/plant.py	1	checks/corpus-figure.py	s `run_health()` can go BOTH ways.
+
+A health check that cannot go red is a comment, and one that cannot go green is a
+gate that will be skipped. So the plant runs the REAL script -- a byte-identical
+copy -- against a scratch root, twice:
+
+  A  green control. The live run	1
+GAINED-REFUSED	C	.agents/slop/flipbool/pin-census.py	2	checks/disagree-gate.py	PIN	1
+LOST-REFUSED	C	.agents/slop/flipbool/pin-census.py	2	checks/disagree-gate.py	s `PIN` are UN-DIAGNOSED.
+
+`shape="BOTH"` and `fault="HARNESS+PORT"` are the same admission written in two columns: a
+row nobody has established whose it is. `AGENTS.md` doctrine 1 says a population is the
+GENERATOR	1
+LOST-REFUSED	C	.agents/slop/graphcmp.py	2882	schedule/allreduce.bend	s header, "THE FLAGS ARE PARAMETERS"), and the two readings
+  are both legitimate, so the probe reads the ENV and the sites are still reached through
+  the port	1
+GAINED-REFUSED	C	.agents/slop/ishr/00-VERDICT.md	49	uop/fold.bend	_min_max	1
+LOST-REFUSED	C	.agents/slop/ishr/00-VERDICT.md	49	uop/fold.bend	s `_min_max` can use it is `fold.bend`	1
+GAINED-REFUSED	C	.agents/slop/ishr/REPORT.md	233	uop/fold.bend	_min_max	1
+LOST-REFUSED	C	.agents/slop/ishr/REPORT.md	233	uop/fold.bend	s `_min_max` can use it is `fold.bend`	1
+LOST-REFUSED	C	.agents/slop/needsaudit/plant.py	2	gates/retention-check.py	s clause II counted `return`s for a
+STRUCTURAL property and deleting the `finally` moved it by ZERO; `G8`	1
+GAINED-PASS	C	.agents/slop/norm/gate.md	25	jslane2/gen_f32_seam.py	norm	1
+LOST-REFUSED	C	.agents/slop/norm/gate.md	25	jslane2/gen_f32_seam.py	s `norm`: a DISAGREEMENT on 2 of 4 comparable rows [	1
+LOST-FAIL	C	.agents/slop/notes/bend2-constraints.md	13667	codegen/simplify.py	s oracle and `ops_nv`	1
+LOST-FAIL	C	.agents/slop/notes/bend2-constraints.md	16578	tinybendygrad/device.bend	<unwired>	1
+LOST-REFUSED	C	.agents/slop/notes/bend2-constraints.md	18597	schedule/multi.bend	s 321 rows are all `t_`-prefixed (`t_pm_n`); `multi-rows.py`	1
+GAINED-REFUSED	C	.agents/slop/notes/bend2-constraints.md	18877	.agents/slop/dd-slotprobe.bend	pre	1
+LOST-REFUSED	C	.agents/slop/notes/bend2-constraints.md	18877	.agents/slop/dd-slotprobe.bend	s `pre` switch adds those three nodes to the PORT	1
+LOST-REFUSED	C	.agents/slop/notes/bend2-constraints.md	19039	renderer/cstyle.bend	s name-comparing harness, `fold.bend`	1
+LOST-FAIL	C	.agents/slop/notes/bend2-constraints.md	21846	renderer/llvmir.bend	s port stdout and its oracle	1
+GAINED-REFUSED	C	.agents/slop/notes/bend2-constraints.md	8245	schedule/rangeify.bend	ct	1
+LOST-FAIL	C	.agents/slop/notes/bend2-constraints.md	8245	schedule/rangeify.bend	s `ct` TABLE", which end at the file	1
+LOST-REFUSED	C	.agents/slop/rebase-gate.py	450	uop/ops.bend	s verdict printed `MOVED #rebase_inner: 	1
+LOST-FAIL	C	.agents/slop/rerun2/REPORT.md	115	checks/env-precond.py	s declarations (or the oracle	1
+LOST-FAIL	C	.agents/slop/restorekit/plants.py	50	checks/differ.py	s constraint rather than this harness	1
+LOST-REFUSED	C	.agents/slop/runsgate/plant.py	2	checks/run-port-mm.sh	s required input, and the two
+verdicts must be DISTINGUISHABLE IN THE TOKEN AND THE EXIT CODE, not just in prose.
+
+  ABSENT   the oracle is not there.  The gate	1
+GAINED-REFUSED	C	.agents/slop/shellgates/siblings.py	179	.agents/slop/rebase-gate.py	]` ends in a repo path that is DATA --
+        the revision of a file -- and reading it as the entry point invented a mismatch against a
+        git call. This is why the rule keys on argv[0]'s KIND, not on 	1
+GAINED-PASS	C	.agents/slop/shellgates/siblings.py	179	checks/bounded.py	--mb	1
+LOST-REFUSED	C	.agents/slop/substrateid/measure-inputs.py	2	quiesce/snapshot.py	s input declaration, by asking its OWN code.
+
+`COPIES` (snapshot.py:63-67) is a hand list and `FILES` (:50-59) is its anchor table. The
+question this answers: how many hand-list entries have NO anchor, i.e. are BARE -- and is that
+the same fault `zerogate` named in `coindependent`	1
+LOST-FAIL	C	.agents/slop/txtexec/REPORT.md	76	checks/oracle-txt-census.py	s token resolution, not the PLAN	1
+LOST-REFUSED	C	.agents/slop/unknowns/plant-unknown.py	119	checks/sweep.py	s own `verdict_for` against the temp tree, with ROOT repointed.
+
+    ONLY `ROOT` MOVES. `declared_names()` reads `CHECKS`, so the AUTHORED row is decided by the real
+    differ	1
+LOST-REFUSED	C	.agents/slop/unobservable-census.py	170	runtime/support/c.bend	s
+    gate and it derives every value by CALLING the port	1
+GAINED-REFUSED	C	.agents/slop/unsetexp/selftest.py	112	checks/no-txt.py	os.walk(ROOT)	1
+LOST-REFUSED	C	.agents/slop/unsetexp/selftest.py	112	checks/no-txt.py	s `os.walk(ROOT)` can see them, and
+    that gate	1
+LOST-PASS	C	.agents/slop/whatisagate/REPORT.md	160	checks/wallcheck.py	tinybendygrad	1
+LOST-REFUSED	C	.agents/slop/whosecache/REPORT.md	170	.agents/slop/SUBJECTS.rows	s shape what `census.py`	1
+LOST-REFUSED	C	checks/abi4_gate.py	2	tinybendygrad/dtype.bend	s SEAM SIGNATURE for each CID, and the measurement
+of what actually crosses is the backend	1
+LOST-REFUSED	C	checks/bounded.py	2	gates/gatekit.py	s `stat().st_size == 0` -- and this
+file says so rather than pretending to have proved something.
+
+WHY IT WATCHES THE TREE AFTER THE DIRECT CHILD EXITS. The runaway this exists for was a SPAWNED
+child, and a grandchild is reparented to init the moment its parent goes: `pgrep -P <dead pid>`
+finds nothing, so a guard that walks from the direct child alone stops watching the process that is
+eating the machine. MEASURED on the pre-fix file: a bomb behind a parent that exited at once gave
+`WITHIN-LIMITS rc=0 peak-RSS=3 MB` with the bomb past 1 GB and still running. The watch list is
+kept and the group is killed by the pgid captured AT SPAWN -- `start_new_session` makes the
+child	1
+GAINED-REFUSED	C	checks/bounded.py	2	gates/gatekit.py	stat().st_size == 0	1
+LOST-REFUSED	C	checks/dup-census.py	134	uop/fold.bend	s 93 and `prepare`	1
+LOST-REFUSED	C	checks/dup-gate.py	2	uop/fold.bend	s own gate found
+`lf_sub_int32_-3_4` printed TWICE and keyed on the first token.  So the guard	1
+LOST-FAIL	C	checks/no-txt.py	137	skipexit/repro.py	s PRE-FIX LANE outputs, DERIVED from the frozen lane	1
+LOST-REFUSED	C	checks/substrate-id.py	2	quiesce/quiesce.py	s per-path mtime log, `substrate-snapshot.py --verify`	1
+LOST-REFUSED	C	gates/beautiful-mnist-gate.py	2	nn/optim.bend	s own row is
+                           RED, 1 node against CPython	1
+LOST-REFUSED	C	gates/beautiful-mnist-oracle.py	226	nn/optim.bend	s own `unverified_lamb` row is RED: 1 node vs CPython	1
+GAINED-PASS	C	gates/beautiful-mnist-oracle.py	94	mixin/movement.bend	mx_pool_shape	1
+LOST-FAIL	C	gates/beautiful-mnist-oracle.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`	1
+GAINED-PASS	C	gates/crp_graph_census-gate.py	909	mixin/op.bend	mo_bin	1
+LOST-REFUSED	C	gates/crp_graph_census-gate.py	909	mixin/op.bend	s `mo_bin` and `tensor.bend`	1
+LOST-REFUSED	C	gates/decomp_graph_census-gate.py	2	gates/rng_graph_census.bend	s row is a (TABLE, NODE) pair whose TABLE axis is
+`grep -c 	1
+LOST-FAIL	C	gates/gate-surface.py	214	checks/abi_gate.py	s rule, in this file	1
+LOST-REFUSED	C	gates/gate-surface.py	241	gates/gatekit.py	s module body, or from `owner` when a plant names one.
+
+    `gatekit` OWNS the five verdicts (`AGENTS.md`	1
+GAINED-PASS	C	gates/mo_graph_census-gate.py	2	mixin/movement.bend	mxw_permute	1
+LOST-REFUSED	C	gates/mo_graph_census-gate.py	2	mixin/movement.bend	s `mxw_permute`), so the defect was LATENT;
+it is fixed and `permute0` is now a COMPARED row.
+
+THE `exp_i32` ROW IS A STRONG-int32 FIXTURE AND IT IS THE ONLY ROW THAT SEES `mo_exp`	1
+LOST-REFUSED	C	gates/realize_graph_census-gate.py	708	tinygrad/engine/realize.py	` lines 128-131, VERBATIM, the only difference
+    being that `Ops.GETADDR` is absent -- is transcribed here and driven on the ORACLE	1
+LOST-REFUSED	C	gates/tn_nodes-oracle.py	2	gates/tn_graph_census.bend	s one.
+
+`argstr` IS A GLYPH TRANSLATION AND NOT A SECOND GRAPH DERIVATION. The structure of every
+row -- which node, which op, which src, which dtype -- is CPython	1
+GAINED-FAIL	C	spec/render.md	36	spec/ops.md	parse, don't validate	1
+LOST-FAIL	C	spec/render.md	36	spec/ops.md	s "parse, don	1
+GAINED-REFUSED	D	.agents/slop/notes/bend2-constraints.md	18597	schedule/multi.bend	#321	1
+GAINED-SKIP	E	.agents/TODO.md	11444	checks/demo.sh	#None	1
+GAINED-SKIP	E	.agents/TODO.md	5313	codegen/decomp/dtype.bend	#None	1
+GAINED-SKIP	E	.agents/TODO.md	7349	uop/fold.bend	#None	1
+GAINED-SKIP	E	.agents/TOOLS.md	1393	oracle/dtype_tables.py	#None	1
+GAINED-SKIP	E	.agents/slop/DTYPEB.md	59	uop/fold.bend	#None	1
+GAINED-SKIP	E	.agents/slop/PROBES.md	178	probes/demo.sh	#None	1
+GAINED-SKIP	E	.agents/slop/abi4check/abi4_gate.135bf0204.py	2	tinybendygrad/dtype.bend	#None	1
+GAINED-SKIP	E	.agents/slop/abi4check/table-now.py	2	checks/abi4_gate.py	#None	1
+GAINED-SKIP	E	.agents/slop/abifix/README.md	155	checks/abi.json	#None	1
+GAINED-SKIP	E	.agents/slop/beautiful-mnist-gate.py	226	nn/optim.bend	#None	1
+GAINED-SKIP	E	.agents/slop/bendpin/pin_check.py	2	gates/mixin-op-gate.py	#None	1
+GAINED-SKIP	E	.agents/slop/cites2/REPORT.md	169	tinybendygrad/renderer/nir_llvmir.bend	#None	1
+GAINED-SKIP	E	.agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py	2	nn/optim.bend	#None	1
+GAINED-SKIP	E	.agents/slop/deadarm/bendarm-merge.py	2	renderer/cstyle.bend	#None	1
+GAINED-SKIP	E	.agents/slop/denominator/probe/.agents/slop/eq/eq-census2.py	122	engine/jit.bend	#None	1
+GAINED-SKIP	E	.agents/slop/denominator/probe/.agents/slop/rebase-gate.py	450	uop/ops.bend	#None	1
+GAINED-SKIP	E	.agents/slop/denominator/probe/checks/dup-census.py	134	uop/fold.bend	#None	1
+GAINED-SKIP	E	.agents/slop/devrecord/xcheck.py	52	checks/env-precond.py	#None	1
+GAINED-SKIP	E	.agents/slop/dtypeb/run.py	2	renderer/cstyle.bend	#None	1
+GAINED-SKIP	E	.agents/slop/dup/stage1-census.md	96	renderer/nir_llvmir.bend	#None	1
+GAINED-SKIP	E	.agents/slop/e2epy/report.md	267	checks/e2e.py	#None	1
+GAINED-SKIP	E	.agents/slop/e2esh/repro.py	1	checks/e2e.sh	#None	1
+GAINED-SKIP	E	.agents/slop/graphcmp.py	2882	schedule/allreduce.bend	#None	1
+GAINED-SKIP	E	.agents/slop/needsaudit/plant.py	2	gates/retention-check.py	#None	1
+GAINED-SKIP	E	.agents/slop/notes/bend2-constraints.md	13667	codegen/simplify.py	#None	1
+GAINED-SKIP	E	.agents/slop/notes/bend2-constraints.md	16578	tinybendygrad/device.bend	#None	1
+GAINED-SKIP	E	.agents/slop/notes/bend2-constraints.md	19039	renderer/cstyle.bend	#None	1
+GAINED-SKIP	E	.agents/slop/notes/bend2-constraints.md	21846	renderer/llvmir.bend	#None	1
+GAINED-SKIP	E	.agents/slop/rebase-gate.py	450	uop/ops.bend	#None	1
+GAINED-SKIP	E	.agents/slop/rerun2/REPORT.md	115	checks/env-precond.py	#None	1
+GAINED-SKIP	E	.agents/slop/restorekit/plants.py	50	checks/differ.py	#None	1
+GAINED-SKIP	E	.agents/slop/runsgate/plant.py	2	checks/run-port-mm.sh	#None	1
+LOST-SKIP	E	.agents/slop/shellgates/siblings.py	179	.agents/slop/rebase-gate.py	#None	1
+LOST-SKIP	E	.agents/slop/shellgates/siblings.py	179	checks/bounded.py	#None	1
+GAINED-SKIP	E	.agents/slop/substrateid/measure-inputs.py	2	quiesce/snapshot.py	#None	1
+GAINED-SKIP	E	.agents/slop/txtexec/REPORT.md	76	checks/oracle-txt-census.py	#None	1
+GAINED-SKIP	E	.agents/slop/unknowns/plant-unknown.py	119	checks/sweep.py	#None	1
+GAINED-SKIP	E	.agents/slop/unobservable-census.py	170	runtime/support/c.bend	#None	1
+GAINED-SKIP	E	.agents/slop/whatisagate/REPORT.md	160	checks/wallcheck.py	#None	1
+GAINED-SKIP	E	.agents/slop/whosecache/REPORT.md	170	.agents/slop/SUBJECTS.rows	#None	1
+GAINED-SKIP	E	checks/abi4_gate.py	2	tinybendygrad/dtype.bend	#None	1
+GAINED-SKIP	E	checks/dup-census.py	134	uop/fold.bend	#None	1
+GAINED-SKIP	E	checks/dup-gate.py	2	uop/fold.bend	#None	1
+GAINED-SKIP	E	checks/no-txt.py	137	skipexit/repro.py	#None	1
+GAINED-SKIP	E	checks/substrate-id.py	2	quiesce/quiesce.py	#None	1
+GAINED-SKIP	E	gates/beautiful-mnist-gate.py	2	nn/optim.bend	#None	1
+GAINED-SKIP	E	gates/beautiful-mnist-oracle.py	226	nn/optim.bend	#None	1
+GAINED-SKIP	E	gates/decomp_graph_census-gate.py	2	gates/rng_graph_census.bend	#None	1
+GAINED-SKIP	E	gates/gate-surface.py	214	checks/abi_gate.py	#None	1
+GAINED-SKIP	E	gates/gate-surface.py	241	gates/gatekit.py	#None	1
+GAINED-SKIP	E	gates/realize_graph_census-gate.py	708	tinygrad/engine/realize.py	#None	1
+GAINED-SKIP	E	gates/tn_nodes-oracle.py	2	gates/tn_graph_census.bend	#None	1

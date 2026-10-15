@@ -1,0 +1,6 @@
+SILENCED	C	.agents/slop/norm/canon.selftest.py	2	jslane2/gen_f32_seam.py	norm
+SILENCED	C	gates/ew_graph_census-gate.py	2	mixin/op.bend	mo_exp
+SILENCED	C	gates/gr_graph_census-gate.py	2	mixin/dtype.bend	cast_at
+NEW-FAIL	C	.agents/slop/needsaudit/plant.py	2	checks/residue.py	s own plant, and the live tree
+NEW-PASS	C	.agents/slop/norm/gate.md	25	jslane2/gen_f32_seam.py	norm
+NEW-PASS	C	.agents/slop/shellgates/siblings.py	179	checks/bounded.py	--mb

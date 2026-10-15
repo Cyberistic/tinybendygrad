@@ -1,0 +1,28 @@
+ABSENT   'BASE_ORACLES'                         in tinybendygrad/codegen/decomp/dtype.bend  |  elsewhere: .agents/TODO.md, .agents/TOOLS.md, .agents/slop/LANE-LIVENESS.md
+ABSENT   'cfunc_buf'                            in tinybendygrad/uop/ops.bend  |  elsewhere: .agents/TODO.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'pad_name'                             in tinybendygrad/viz/serve.bend  |  elsewhere: .agents/TODO.md, .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows
+ABSENT   'main'                                 in tinybendygrad/renderer/cstyle.bend  |  elsewhere: .agents/TODO.md, .agents/TOOLS.md, .agents/UPSTREAM-PIN.md
+ABSENT   'randn_like23_g'                       in tinybendygrad/mixin/rand.bend  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'nv_errstr_N'                          in tinybendygrad/runtime/ops_nv.bend  |  elsewhere: .agents/slop/dup/stage2-classify.md, .agents/slop/eq/REPORT.md, .agents/slop/failaudit/REPORT.md
+ABSENT   'WHAT IS PORTED, DEF BY DEF'           in tinybendygrad/runtime/ops_nv.bend  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'md5 -q'                               in tinybendygrad/codegen/decomp/dtype.bend  |  elsewhere: .agents/TODO.md, .agents/TOOLS.md, .agents/slop/NVROWS.md
+ABSENT   'file:line'                            in tinybendygrad/runtime/dtype.c  |  elsewhere: .agents/TODO.md, .agents/slop/ADEV.md, .agents/slop/BACKWARD-WALK.md
+ABSENT   'DLL._loaded_'                         in tinygrad/runtime/support/c.py  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'Scheduler.reduce_axes'                in tinygrad/codegen/opt/postrange.py  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'encode_submit'                        in tinygrad/runtime/support/hcq2.py  |  elsewhere: .agents/UPSTREAM-PIN.md, .agents/UPSTREAM.md, .agents/slop/canrun/census/checks_marker-audit.py.out
+ABSENT   'pm_dispatch_m case 0'                 in tinybendygrad/uop/ops.bend  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'WITHIN-LIMITS'                        in tinybendygrad/uop/render.bend  |  elsewhere: .agents/TODO.md, .agents/slop/abi4check/135bf0204-run.err, .agents/slop/abi4check/README.md
+ABSENT   'WITHIN-LIMITS'                        in tinybendygrad/uop/upat.bend  |  elsewhere: .agents/TODO.md, .agents/slop/abi4check/135bf0204-run.err, .agents/slop/abi4check/README.md
+ABSENT   "parse, don't validate"                in spec/ops.md  |  elsewhere: .agents/slop/argowner/mine/render.bend, .agents/slop/residual/fails-after.rows, .agents/slop/residual/fails-final.rows
+ABSENT   'a basename match is not a reference'  in .agents/slop/capstream/refsplit.py  |  elsewhere: .agents/slop/declared472/census.py, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+ABSENT   'ABlob{n}'                             in tinybendygrad/uop/ops.bend  |  elsewhere: .agents/slop/denominator/probe/.agents/slop/rebase-gate.py, .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows
+ABSENT   '#rebase_inner'                        in tinybendygrad/uop/spec.bend  |  elsewhere: .agents/TODO.md, .agents/slop/denominator/probe/.agents/slop/rebase-gate.py, .agents/slop/failaudit/REPORT.md
+ABSENT   'sha256'                               in tinybendygrad/renderer/cstyle.bend  |  elsewhere: .agents/TODO.md, .agents/TOOLS.md, .agents/slop/AUDIT-CAN-FAIL.md
+ABSENT   'belts-disagree'                       in tinybendygrad/mixin/dtype.bend  |  elsewhere: .agents/slop/canrun/census/checks_sweep.py.out, .agents/slop/canrun/census/v_checks_sweep.py.out, .agents/slop/cheapguards/PRICES.rows
+ABSENT   'array'                                in tinybendygrad/engine/realize.bend  |  elsewhere: .agents/TODO.md, .agents/slop/DTYPE-ABI.md, .agents/slop/F64-KERNEL.md
+PRESENT  'ARTIFACTS-FRESH'                      in checks/runs-artifacts.py  |  elsewhere: .agents/slop/cheapguards/PRICES.rows, .agents/slop/cheapguards/REPORT.md, .agents/slop/clonesafe/REPORT.md
+PRESENT  'ABlob{bs}'                            in tinybendygrad/uop/ops.bend  |  elsewhere: .agents/slop/argowner/flip-PRISTINE.out, .agents/slop/argowner/flip-handoff.out, .agents/slop/argowner/handoff-graphcmp.bend
+PRESENT  'pad_name'                             in tinybendygrad/viz/cli.bend  |  elsewhere: .agents/TODO.md, .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows
+PRESENT  'DLL._loaded_'                         in tinybendygrad/runtime/support/c.bend  |  elsewhere: .agents/slop/failaudit/REPORT.md, .agents/slop/failaudit/fails.rows, .agents/slop/failaudit/ledger.out
+PRESENT  'setup_ring'                           in tinybendygrad/runtime/support/am/amdev.bend  |  elsewhere: .agents/TODO.md, .agents/UPSTREAM.md, .agents/slop/agent-core.md
+PRESENT  'encode_submit'                        in tinybendygrad/runtime/support/hcq2.bend  |  elsewhere: .agents/UPSTREAM-PIN.md, .agents/UPSTREAM.md, .agents/slop/canrun/census/checks_marker-audit.py.out

@@ -1,0 +1,16 @@
+RETIRED	C	.agents/TODO.md	5313	codegen/decomp/dtype.bend	s comment; that file is another unit
+RETIRED	C	.agents/slop/abifix/README.md	155	checks/abi.json	s absence is exactly that shape
+RETIRED	C	.agents/slop/beautiful-mnist-gate.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`
+RETIRED	C	.agents/slop/devrecord/xcheck.py	52	checks/env-precond.py	s METHOD B, on the summary, with METHOD A
+RETIRED	C	.agents/slop/dup/stage1-census.md	96	renderer/nir_llvmir.bend	s eight `osx=` names were renamed.  The eq unit
+RETIRED	C	.agents/slop/e2epy/report.md	267	checks/e2e.py	s docstring, in the shim
+RETIRED	C	.agents/slop/notes/bend2-constraints.md	13667	codegen/simplify.py	s oracle and `ops_nv`
+RETIRED	C	.agents/slop/notes/bend2-constraints.md	21846	renderer/llvmir.bend	s port stdout and its oracle
+RETIRED	C	.agents/slop/notes/bend2-constraints.md	8245	schedule/rangeify.bend	s `ct` TABLE", which end at the file
+RETIRED	C	.agents/slop/rerun2/REPORT.md	115	checks/env-precond.py	s declarations (or the oracle
+RETIRED	C	.agents/slop/restorekit/plants.py	50	checks/differ.py	s constraint rather than this harness
+RETIRED	C	.agents/slop/txtexec/REPORT.md	76	checks/oracle-txt-census.py	s token resolution, not the PLAN
+RETIRED	C	checks/no-txt.py	137	skipexit/repro.py	s PRE-FIX LANE outputs, DERIVED from the frozen lane
+RETIRED	C	gates/beautiful-mnist-oracle.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`
+RETIRED	C	gates/gate-surface.py	214	checks/abi_gate.py	s rule, in this file
+RETIRED	C	spec/render.md	36	spec/ops.md	s "parse, don

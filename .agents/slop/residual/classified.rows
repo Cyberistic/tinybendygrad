@@ -1,0 +1,51 @@
+FALSE-SHAPE     	.agents/TODO.md:515	codegen/decomp/dtype.bend	BASE_ORACLES	'BASE_ORACLES' is at NOWHERE in codegen/decomp/dtype.bend
+TRUE            	.agents/TODO.md:2023	runtime/webgpu_call.js		runtime/webgpu_call.js has 503 lines, claim says 502
+FALSE-SHAPE     	.agents/TODO.md:3022	uop/ops.bend	cfunc_buf	'cfunc_buf' is at NOWHERE in uop/ops.bend
+FALSE-SHAPE     	.agents/TODO.md:3803	engine/realize.bend	array	'array' is at NOWHERE in engine/realize.bend
+FALSE-SHAPE     	.agents/TODO.md:5635	codegen/decomp/dtype.bend	native	'native' is at NOWHERE in codegen/decomp/dtype.bend
+FALSE-SHAPE     	.agents/TODO.md:5691	uop/render.bend	LANE-DEATH	'LANE-DEATH' is at NOWHERE in uop/render.bend
+FALSE-SHAPE     	.agents/TODO.md:5692	viz/serve.bend	LANE-DEATH	'LANE-DEATH' is at NOWHERE in viz/serve.bend
+TRUE-STALE      	.agents/TODO.md:6653	runtime/ops_python.bend		runtime/ops_python.bend has 2807 lines, claim says 1590
+TRUE-STALE      	.agents/TODO.md:8804	mixin/gradient.bend		mixin/gradient.bend has 2464 lines, claim says 1761
+TRUE-STALE      	.agents/TODO.md:8953	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2373
+TRUE            	.agents/TODO.md:9779	viz/serve.bend	pad_name	'pad_name' is at NOWHERE in viz/serve.bend
+TRUE-STALE      	.agents/TODO.md:9902	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SHAPE     	.agents/UPSTREAM.md:121	runtime/support/am/amdev.bend	AMDev.setup_ring	'AMDev.setup_ring' is at NOWHERE in runtime/support/am/amdev.bend
+FALSE-SHAPE     	.agents/UPSTREAM.md:134	runtime/support/hcq2.py	encode_submit	'encode_submit' is at NOWHERE in runtime/support/hcq2.py
+FALSE-SHAPE     	.agents/slop/CSTYLE2.md:61	renderer/cstyle.bend	main	'main' is at NOWHERE in renderer/cstyle.bend
+FALSE-SHAPE     	.agents/slop/DEADARM.md:186	renderer/cstyle.bend	sha256	'sha256' is at NOWHERE in renderer/cstyle.bend
+TRUE-STALE      	.agents/slop/F64-KERNEL.md:18	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2475
+TRUE-STALE      	.agents/slop/F64-KERNEL.md:141	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SHAPE     	.agents/slop/F64-KERNEL.md:155	renderer/cstyle.bend	sha256 07ae2766…	'sha256 07ae2766…' is at NOWHERE in renderer/cstyle.bend
+TRUE-STALE      	.agents/slop/TENSOR-SURFACE.md:231	mixin/gradient.bend		mixin/gradient.bend has 2464 lines, claim says 1761
+FALSE-SUBJECT   	.agents/slop/chkcites/REPORT.md:87	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SUBJECT   	.agents/slop/chkcites/REPORT.md:88	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SUBJECT   	.agents/slop/cites2/REPORT.md:44	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SUBJECT   	.agents/slop/cites2/REPORT.md:79	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SHAPE     	.agents/slop/deadreg/REPORT.md:190	runtime/dtype.c	file:line	'file:line' is at NOWHERE in runtime/dtype.c
+FALSE-SHAPE     	.agents/slop/declared472/census.py:2	capstream/refsplit.py	a basename match is not a reference	'a basename match is not a reference' is at NOWHERE in capstream/refsplit.py
+TRUE-STALE      	.agents/slop/dup/stage2-classify.md:154	runtime/ops_nv.bend	nv_errstr_N	'nv_errstr_N' is at NOWHERE in runtime/ops_nv.bend
+FALSE-SHAPE     	.agents/slop/emptyevid/REPORT.md:88	gatesrun/CLASSES.tsv	path · class · rc · token · cause · answer	'path · class · rc · token · cause · answer' is at NOWHERE in gatesrun/CLASSES.tsv
+TRUE-STALE      	.agents/slop/env-flag-divergence.md:36	schedule/rangeify.bend		schedule/rangeify.bend has 2839 lines, cited at :3104
+FALSE-SHAPE     	.agents/slop/flipthird/REPORT.md:26	uop/render.bend	WITHIN-LIMITS	'WITHIN-LIMITS' is at NOWHERE in uop/render.bend
+FALSE-SHAPE     	.agents/slop/flipthird/REPORT.md:27	uop/upat.bend	WITHIN-LIMITS	'WITHIN-LIMITS' is at NOWHERE in uop/upat.bend
+TRUE-STALE      	.agents/slop/grw-stage4.md:83	schedule/multi.bend		schedule/multi.bend has 3454 lines, cited at :3506
+FALSE-SHAPE     	.agents/slop/lanedeath-census.md:198	uop/ops.bend	ABlob{n}	'ABlob{n}' is at NOWHERE in uop/ops.bend
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:4280	mixin/rand.bend	randn_like23_g	'randn_like23_g' is at NOWHERE in mixin/rand.bend
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:9001	runtime/ops_nv.bend	WHAT IS PORTED, DEF BY DEF	'WHAT IS PORTED, DEF BY DEF' is at NOWHERE in runtime/ops_nv.bend
+FALSE-SUBJECT   	.agents/slop/notes/bend2-constraints.md:9029	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, claim says 287
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:9225	runtime/ops_nv.bend		runtime/ops_nv.bend has 95 lines, cited at :2729
+FALSE-SHAPE     	.agents/slop/notes/bend2-constraints.md:10608	codegen/opt/postrange.py	Scheduler.reduce_axes	'Scheduler.reduce_axes' is at NOWHERE in codegen/opt/postrange.py
+FALSE-SUBJECT   	.agents/slop/notes/bend2-constraints.md:16308	uop/spec.bend	#rebase_inner	'#rebase_inner' is at NOWHERE in uop/spec.bend
+FALSE-SHAPE     	.agents/slop/notes/bend2-constraints.md:20651	codegen/decomp/dtype.bend	md5 -q	'md5 -q' is at NOWHERE in codegen/decomp/dtype.bend
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:23795	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2373
+FALSE-SHAPE     	.agents/slop/notes/bend2-constraints.md:23901	renderer/cstyle.bend	kern2 CLANG	'kern2 CLANG' is at NOWHERE in renderer/cstyle.bend
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:25579	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+TRUE-STALE      	.agents/slop/notes/bend2-constraints.md:26851	runtime/sz.c		runtime/sz.c has 119 lines, cited at :126
+TRUE-STALE      	.agents/slop/notes/compare/sz.md:26	runtime/sz.c		runtime/sz.c has 119 lines, claim says 88
+FALSE-SHAPE     	.agents/slop/portunknown/REPORT.md:106	mixin/dtype.bend	belts-disagree	'belts-disagree' is at NOWHERE in mixin/dtype.bend
+FALSE-SHAPE     	.agents/slop/rebase/REPORT.md:82	runtime/support/c.py	DLL._loaded_	'DLL._loaded_' is at NOWHERE in runtime/support/c.py
+FALSE-SUBJECT   	.agents/slop/skipexit/prefix/checks/e2e.py:2	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984
+FALSE-SHAPE     	.agents/slop/unobservable-report.md:218	uop/ops.bend	pm_dispatch_m case 0	'pm_dispatch_m case 0' is at NOWHERE in uop/ops.bend
+TRUE-STALE      	.agents/slop/wallrule/RULE.md:162	runtime/sz.c		runtime/sz.c has 119 lines, cited at :126
+TRUE-STALE      	.agents/slop/wallrule/SWEEP.md:69	runtime/sz.c		runtime/sz.c has 119 lines, cited at :126

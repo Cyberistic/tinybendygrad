@@ -385,7 +385,13 @@ def quoted_spans(s: str) -> list[tuple[int, int, str]]:
       break
     out.append((a, b + 1, s[a + 1:b]))
     i = b + 1
-  for m in re.finditer(r"\"([^\"]{4,})\"|'([^']{4,})'", s):
+  # AN APOSTROPHE IS NOT AN OPENING DELIMITER WHEN SOMETHING IS GLUED TO IT.  `` `x.bend`'s
+  # `y` `` put the span's start on the `'` -- one position BEFORE the code span the sentence
+  # names -- so the needle was English prose (`` s `y`, which is `z` ``) and the verdict was
+  # about a sentence.  `\w` alone does not catch it: the `'` follows the closing BACKTICK.
+  # MEASURED 2026-10-15 over the 31,456-row census at HEAD 265d31b7: 16 FAIL rows retired,
+  # 8 FAIL rows became PASS, 0 PASS rows lost.
+  for m in re.finditer(r"\"([^\"]{4,})\"|(?<![\w`])'([^']{4,})'", s):
     out.append((m.start(), m.end(), next(g for g in m.groups() if g)))
   return sorted(out)
 
@@ -678,6 +684,11 @@ def selftest(tree: Path) -> int:
     cases.append(("THOUSANDS: `1,590 lines` extracts 1590, not the trailing 590",
                   lane_bcd("s.md", [(1, f"`a/{subj.name}` is 1,590 lines wide")])[0][0]["num"],
                   1590))
+    # THE POSSESSIVE IS AN EXTRACTOR MATTER TOO: `judge` never sees the span list, so a
+    # `needle_kind` plant cannot fail when `quoted_spans` starts a span on an apostrophe.
+    cases.append(("POSSESSIVE: `` `a/x.txt`'s `beta` `` yields `beta`, not the sentence",
+                  lane_bcd("s.md", [(1, "`a/x.txt`'s `beta` is the `gamma`'s job")])[0][0]["needle"],
+                  "beta"))
     cases.append(("TRUE FAIL SURVIVES: absent text that IS a text claim is still FAIL",
                   judge({"lane": "C", "kind": "content-prose", "file": "s.py",
                          "subject": str(subj), "needle": "epsilon"})["verdict"], FAIL))

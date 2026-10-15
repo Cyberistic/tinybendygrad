@@ -1,0 +1,31 @@
+RETIRED-FAIL	C	.agents/slop/beautiful-mnist-gate.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`	suffix-index
+RETIRED-FAIL	C	.agents/slop/abifix/README.md	155	checks/abi.json	s absence is exactly that shape	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/restorekit/plants.py	50	checks/differ.py	s constraint rather than this harness	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/notes/bend2-constraints.md	8245	schedule/rangeify.bend	s `ct` TABLE", which end at the file	suffix-index
+RETIRED-FAIL	C	gates/beautiful-mnist-oracle.py	94	mixin/movement.bend	s `mx_pool_shape`, which is `_pool`	suffix-index
+RETIRED-FAIL	C	.agents/slop/notes/bend2-constraints.md	13667	codegen/simplify.py	s oracle and `ops_nv`	suffix-index
+RETIRED-FAIL	C	.agents/slop/txtexec/REPORT.md	76	checks/oracle-txt-census.py	s token resolution, not the PLAN	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/notes/bend2-constraints.md	21846	renderer/llvmir.bend	s port stdout and its oracle	suffix-index
+RETIRED-FAIL	C	.agents/TODO.md	5321	codegen/decomp/dtype.bend	s comment; that file is another unit	suffix-index
+RETIRED-FAIL	C	spec/render.md	36	spec/ops.md	s "parse, don	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/rerun2/REPORT.md	115	checks/env-precond.py	s declarations (or the oracle	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/dup/stage1-census.md	96	renderer/nir_llvmir.bend	s eight `osx=` names were renamed.  The eq unit	suffix-index
+RETIRED-FAIL	C	.agents/slop/e2epy/report.md	267	checks/e2e.py	s docstring, in the shim	ROOT-exact
+RETIRED-FAIL	C	checks/no-txt.py	137	skipexit/repro.py	s PRE-FIX LANE outputs, DERIVED from the frozen lane	suffix-index
+RETIRED-FAIL	C	gates/gate-surface.py	214	checks/abi_gate.py	s rule, in this file	ROOT-exact
+RETIRED-FAIL	C	.agents/slop/devrecord/xcheck.py	52	checks/env-precond.py	s METHOD B, on the summary, with METHOD A	ROOT-exact
+SILENCED-PASS	B	.agents/TODO.md	15193	schedule/__init__.py	#None	suffix-index
+SILENCED-PASS	B	.agents/TODO.md	15313	renderer/isa/x86.py	#None	suffix-index
+NEW-FAIL	C	spec/render.md	36	spec/ops.md	parse, don't validate	ROOT-exact
+RECOVERED-PASS	C	.agents/slop/figure2/plant/broken/checks/corpus-figure.py	77	checks/differ.py	PINS	ROOT-exact
+RECOVERED-PASS	C	gates/beautiful-mnist-oracle.py	94	mixin/movement.bend	mx_pool_shape	suffix-index
+RECOVERED-PASS	C	.agents/slop/E2E-THROUGH-PORT.md	53	runs/e2e/e2e-mm-oracle.json	answer_u32	ROOT-exact
+RECOVERED-PASS	C	.agents/slop/corpuswire/tree/checks/corpus-figure.py	77	checks/differ.py	PINS	ROOT-exact
+RECOVERED-PASS	B	.agents/TODO.md	15292	renderer/isa/x86.py	#None	suffix-index
+RECOVERED-PASS	C	.agents/slop/beautiful-mnist-gate.py	94	mixin/movement.bend	mx_pool_shape	suffix-index
+RECOVERED-PASS	C	gates/mo_graph_census-gate.py	2	mixin/movement.bend	mxw_permute	suffix-index
+RECOVERED-PASS	C	.agents/slop/shellgates/siblings.py	179	checks/bounded.py	--mb	ROOT-exact
+RECOVERED-PASS	C	.agents/slop/norm/gate.md	25	jslane2/gen_f32_seam.py	norm	suffix-index
+RECOVERED-PASS	C	gates/crp_graph_census-gate.py	909	mixin/op.bend	mo_bin	suffix-index
+RECOVERED-PASS	B	.agents/TODO.md	15172	schedule/__init__.py	#None	suffix-index
+RECOVERED-PASS	C	.agents/slop/figure2/plant/real/checks/corpus-figure.py	77	checks/differ.py	PINS	ROOT-exact

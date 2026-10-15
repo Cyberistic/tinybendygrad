@@ -1,0 +1,200 @@
+C	.agents/TODO.md:508	codegen/decomp/dtype.bend	'BASE_ORACLES'	'BASE_ORACLES' is at NOWHERE in codegen/decomp/dtype.bend	
+D	.agents/TODO.md:1043	tinygrad/__init__.py	''	tinygrad/__init__.py has 12 lines, claim says 10	
+D	.agents/TODO.md:1067	tinybendygrad/codegen/__init__.bend	''	tinybendygrad/codegen/__init__.bend has 553 lines, claim says 519	
+D	.agents/TODO.md:2016	runtime/webgpu_call.js	''	runtime/webgpu_call.js has 503 lines, claim says 502	
+D	.agents/TODO.md:2041	tinygrad/renderer/wgsl.py	''	tinygrad/renderer/wgsl.py has 122 lines, claim says 1062	
+D	.agents/TODO.md:2266	tinygrad/device.py	''	tinygrad/device.py has 559 lines, claim says 564	
+D	.agents/TODO.md:2667	tinygrad/runtime/ops_nv.py	''	tinygrad/runtime/ops_nv.py has 842 lines, claim says 841	
+C	.agents/TODO.md:3015	uop/ops.bend	'cfunc_buf'	'cfunc_buf' is at NOWHERE in uop/ops.bend	
+C	.agents/TODO.md:3796	engine/realize.bend	'array'	'array' is at NOWHERE in engine/realize.bend	
+C	.agents/TODO.md:5628	codegen/decomp/dtype.bend	'native'	'native' is at NOWHERE in codegen/decomp/dtype.bend	
+C	.agents/TODO.md:5684	uop/render.bend	'LANE-DEATH'	'LANE-DEATH' is at NOWHERE in uop/render.bend	
+C	.agents/TODO.md:5685	viz/serve.bend	'LANE-DEATH'	'LANE-DEATH' is at NOWHERE in viz/serve.bend	
+C	.agents/TODO.md:5715	tinybendygrad/renderer/cstyle.bend	'RE-PORTED'	'RE-PORTED' is at NOWHERE in tinybendygrad/renderer/cstyle.bend	
+C	.agents/TODO.md:6343	tinybendygrad/codegen/decomp/dtype.bend	'ORACLE_CONFORMANCE'	'ORACLE_CONFORMANCE' is at NOWHERE in tinybendygrad/codegen/decomp/dtype.bend	
+D	.agents/TODO.md:6646	runtime/ops_python.bend	''	runtime/ops_python.bend has 2807 lines, claim says 1590	
+D	.agents/TODO.md:8772	tinybendygrad/tensor.bend	''	tinybendygrad/tensor.bend has 2852 lines, claim says 1584	
+D	.agents/TODO.md:8797	mixin/gradient.bend	''	mixin/gradient.bend has 2464 lines, claim says 1761	
+B	.agents/TODO.md:8946	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2373	
+B	.agents/TODO.md:9112	.agents/slop/e2e.sh	''	.agents/slop/e2e.sh has 24 lines, cited at :122	
+C	.agents/TODO.md:9772	viz/serve.bend	'pad_name'	'pad_name' is at NOWHERE in viz/serve.bend	
+B	.agents/TODO.md:9895	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+C	.agents/TODO.md:10470	tinygrad/helpers.py	'TOTALISE'	'TOTALISE' is at NOWHERE in tinygrad/helpers.py	
+D	.agents/TODO.md:11093	tinybendygrad/helpers.bend	''	tinybendygrad/helpers.bend has 2843 lines, claim says 2712	
+C	.agents/TODO.md:13749	tinybendygrad/tensor.bend	'WITHIN-LIMITS'	'WITHIN-LIMITS' is at NOWHERE in tinybendygrad/tensor.bend	
+C	.agents/TODO.md:14112	tinybendygrad/mixin/creation.bend	'el_weakint'	'el_weakint' is at NOWHERE in tinybendygrad/mixin/creation.bend	
+D	.agents/TOOLS.md:391	tinybendygrad/runtime/support/usb.bend	''	tinybendygrad/runtime/support/usb.bend has 2474 lines, claim says 2596	
+C	.agents/TOOLS.md:427	checks/bounded.py	'--tag'	'--tag' is at NOWHERE in checks/bounded.py	
+C	.agents/UPSTREAM.md:121	runtime/support/am/amdev.bend	'AMDev.setup_ring'	'AMDev.setup_ring' is at NOWHERE in runtime/support/am/amdev.bend	
+C	.agents/UPSTREAM.md:134	runtime/support/hcq2.py	'encode_submit'	'encode_submit' is at NOWHERE in runtime/support/hcq2.py	
+C	.agents/slop/CIDSWEEP.md:72	tinybendygrad/runtime/sz.js	'#ifdef'	'#ifdef' is at NOWHERE in tinybendygrad/runtime/sz.js	
+C	.agents/slop/CSTYLE2.md:61	renderer/cstyle.bend	'main'	'main' is at NOWHERE in renderer/cstyle.bend	
+D	.agents/slop/CSTYLE2.md:278	tinybendygrad/renderer/cstyle.bend	''	tinybendygrad/renderer/cstyle.bend has 1367 lines, claim says 2373	
+C	.agents/slop/DEADARM.md:186	renderer/cstyle.bend	'sha256'	'sha256' is at NOWHERE in renderer/cstyle.bend	
+B	.agents/slop/F64-KERNEL.md:18	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2475	
+B	.agents/slop/F64-KERNEL.md:141	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+C	.agents/slop/F64-KERNEL.md:155	renderer/cstyle.bend	'sha256 07ae2766…'	'sha256 07ae2766…' is at NOWHERE in renderer/cstyle.bend	
+D	.agents/slop/FROMBITS.md:219	tinybendygrad/dtype.bend	''	tinybendygrad/dtype.bend has 1132 lines, claim says 971	
+D	.agents/slop/I64MUL.md:3	tinybendygrad/helpers.bend	''	tinybendygrad/helpers.bend has 2843 lines, claim says 2712	
+B	.agents/slop/MUT-LEDGER.md:107	.agents/slop/e2e.sh	''	.agents/slop/e2e.sh has 24 lines, cited at :138	
+B	.agents/slop/NVDUP.md:107	tinybendygrad/runtime/ops_nv.bend	''	tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2344	
+B	.agents/slop/NVDUP.md:275	tinybendygrad/runtime/ops_nv.bend	''	tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2348	
+B	.agents/slop/PROBES.md:32	.agents/slop/e2e.sh	''	.agents/slop/e2e.sh has 24 lines, cited at :138	
+D	.agents/slop/TENSOR-SURFACE.md:231	mixin/gradient.bend	''	mixin/gradient.bend has 2464 lines, claim says 1761	
+B	.agents/slop/WALLMAP.md:304	tinybendygrad/engine/jit.bend	''	tinybendygrad/engine/jit.bend has 435 lines, cited at :1091	
+D	.agents/slop/adevfix/REPORT.md:17	tinygrad/uop/ops.py	''	tinygrad/uop/ops.py has 1920 lines, claim says 1928	
+C	.agents/slop/agend/REPORT.md:190	checks/no-txt.py	'enforces it'	'enforces it' is at NOWHERE in checks/no-txt.py	
+C	.agents/slop/agend/REPORT.md:196	test/null/test_dtype.py	'No module named pytest'	'No module named pytest' is at NOWHERE in test/null/test_dtype.py	
+D	.agents/slop/agend2/REPLACEMENTS.md:134	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+D	.agents/slop/agend2/REPLACEMENTS.md:138	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 766	
+D	.agents/slop/agend2/REPORT.md:49	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+D	.agents/slop/agend2/REPORT.md:102	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+C	.agents/slop/argowner/REPORT.md:13	.agents/slop/argowner/handoff.out	'mv_perm'	'mv_perm' is at NOWHERE in .agents/slop/argowner/handoff.out	
+D	.agents/slop/brief-port.md:32	tinybendygrad/uop/ops.bend	''	tinybendygrad/uop/ops.bend has 8912 lines, claim says 3800	
+D	.agents/slop/brief-port.md:39	tinybendygrad/uop/fold.bend	''	tinybendygrad/uop/fold.bend has 7019 lines, claim says 2208	
+D	.agents/slop/brief-port.md:46	tinybendygrad/uop/spec.bend	''	tinybendygrad/uop/spec.bend has 3322 lines, claim says 3186	
+D	.agents/slop/bullets/REPLACEMENTS.md:73	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+D	.agents/slop/bullets/REPORT.md:129	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+C	.agents/slop/canrun/REPORT.md:266	.agents/slop/portexec/census.py	'from census import PREAMBLE'	'from census import PREAMBLE' is at NOWHERE in .agents/slop/portexec/census.py	
+C	.agents/slop/censusred/REPORT.md:56	runs/graphcmp/D/D0-coverage-census.txt	'oracle-selfcheck'	'oracle-selfcheck' is at NOWHERE in runs/graphcmp/D/D0-coverage-census.txt	
+B	.agents/slop/chkcites/REPORT.md:87	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+B	.agents/slop/chkcites/REPORT.md:88	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+A	.agents/slop/citemass/resolve.py:34	checks/differ.py	'ops.bend'	:149 reads '# row whose expectation predated the measurement, and BOTH o'; the text is at [132, 188, 277, 398]	
+A	.agents/slop/citemass/resolve.py:35	checks/differ.py	'ops.bend'	:177 reads '# `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-self'; the text is at [132, 188, 277, 398]	
+A	.agents/slop/citemass/resolve.py:36	checks/differ.py	'ops.bend'	:177 reads '# `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-self'; the text is at [132, 188, 277, 398]	
+A	.agents/slop/citemass/resolve.py:37	checks/disagree-gate.py	'ops.bend'	:103 reads "# where the PIN's own `__repr__` suppresses it for void (`op"; the text is at [100, 105, 162, 177]	
+A	.agents/slop/citemass/resolve.py:39	checks/e2e.sh	'renderer/cstyle.bend'	:228 reads "# HAS NO `f64` GATE ROW.  The port's cstyle dtype driver (`r"; the text is at NOWHERE	
+A	.agents/slop/citemass/resolve.py:47	checks/nl-gate.py	'ops.bend'	:477 reads 'o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracl'; the text is at [37, 39, 40, 485]	
+A	.agents/slop/citemass/resolve.py:48	checks/nl-gate.py	'ops.bend'	:477 reads 'o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracl'; the text is at [37, 39, 40, 485]	
+A	.agents/slop/citemass/resolve.py:69	checks/unowned.py	'ag-emit.bend'	:66 reads '# A TEMPLATE site: the filename is assembled, so no whole-to'; the text is at [76]	
+B	.agents/slop/cites2/REPORT.md:44	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+B	.agents/slop/cites2/REPORT.md:79	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+C	.agents/slop/cites2/REPORT.md:169	tinybendygrad/renderer/nir_llvmir.bend	'String.concat([nm, " = ["]'	'String.concat([nm, " = ["]' is at NOWHERE in tinybendygrad/renderer/nir_llvmir.bend	
+D	.agents/slop/closure/REPORT.md:263	checks/census.py	''	checks/census.py has 354 lines, claim says 326	
+C	.agents/slop/coldness/COLDNESS.md:248	checks/bounded.py	'-P 3'	'-P 3' is at NOWHERE in checks/bounded.py	
+C	.agents/slop/constfix/REPORT.md:267	.agents/slop/constfix/selftest.py	'21 of 21 PASS'	'21 of 21 PASS' is at NOWHERE in .agents/slop/constfix/selftest.py	
+C	.agents/slop/constfix/REPORT.md:269	checks/nl-gate.py	'gated 205  agree 205  disagree []'	'gated 205  agree 205  disagree []' is at NOWHERE in checks/nl-gate.py	
+C	.agents/slop/corpus24/REPORT.md:27	tinygrad/uop/__init__.py	'mint'	'mint' is at NOWHERE in tinygrad/uop/__init__.py	
+C	.agents/slop/corpusproto/REPORT.md:160	checks/differ.py	'"graphs": "25"'	'"graphs": "25"' is at NOWHERE in checks/differ.py	
+C	.agents/slop/corpusproto/REPORT.md:161	checks/differ.py	'"graphs-unset": "5"'	'"graphs-unset": "5"' is at NOWHERE in checks/differ.py	
+C	.agents/slop/corpusproto/REPORT.md:162	checks/differ.py	'"graphs-answered": "20"'	'"graphs-answered": "20"' is at NOWHERE in checks/differ.py	
+C	.agents/slop/corpusproto/REPORT.md:163	checks/differ.py	'"graphs-agree": "21"'	'"graphs-agree": "21"' is at NOWHERE in checks/differ.py	
+C	.agents/slop/corpusproto/REPORT.md:169	checks/graphcmp-census-audit.py	'"matmul"'	'"matmul"' is at NOWHERE in checks/graphcmp-census-audit.py	
+B	.agents/slop/dangle/REPORT.md:156	.agents/slop/e2e.sh	''	.agents/slop/e2e.sh has 24 lines, cited at :122	
+B	.agents/slop/dangle/REPORT.md:157	tinybendygrad/runtime/ops_nv.bend	''	tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2344	
+B	.agents/slop/dangle/REPORT.md:158	tinybendygrad/engine/jit.bend	''	tinybendygrad/engine/jit.bend has 435 lines, cited at :1091	
+C	.agents/slop/deadgens/REPORT.md:78	checks/gate_norm.py	"ModuleNotFoundError: No module named 'canon'"	"ModuleNotFoundError: No module named 'canon'" is at NOWHERE in checks/gate_norm.py	
+C	.agents/slop/deadgens/REPORT.md:79	checks/census.py	"ModuleNotFoundError: No module named 'graphcmp'"	"ModuleNotFoundError: No module named 'graphcmp'" is at NOWHERE in checks/census.py	
+C	.agents/slop/deadreg/REPORT.md:190	runtime/dtype.c	'file:line'	'file:line' is at NOWHERE in runtime/dtype.c	
+C	.agents/slop/deadwhenabsent/REPORT.md:313	checks/nl-gate.py	'gated 205  agree 205  disagree []'	'gated 205  agree 205  disagree []' is at NOWHERE in checks/nl-gate.py	
+C	.agents/slop/declared472/census.py:2	capstream/refsplit.py	'a basename match is not a reference'	'a basename match is not a reference' is at NOWHERE in capstream/refsplit.py	
+C	.agents/slop/delbullets/REPORT.md:134	tinygrad/runtime/support/system.py	'PCIIfaceBase|USBPCIDevice'	'PCIIfaceBase|USBPCIDevice' is at NOWHERE in tinygrad/runtime/support/system.py	
+C	.agents/slop/denominator/REPORT.md:222	gates/gates-pop.py	'0 of 62'	'0 of 62' is at NOWHERE in gates/gates-pop.py	
+C	.agents/slop/dup/stage2-classify.md:154	runtime/ops_nv.bend	'nv_errstr_N'	'nv_errstr_N' is at NOWHERE in runtime/ops_nv.bend	
+C	.agents/slop/e2estage8/report.md:43	.agents/slop/e2epy/diff.py	'plant-stage8red'	'plant-stage8red' is at NOWHERE in .agents/slop/e2epy/diff.py	
+C	.agents/slop/e2estage8/report.md:134	.agents/slop/xd2/cdp.mjs	'ERR_MODULE_NOT_FOUND'	'ERR_MODULE_NOT_FOUND' is at NOWHERE in .agents/slop/xd2/cdp.mjs	
+C	.agents/slop/emptyevid/REPORT.md:88	gatesrun/CLASSES.tsv	'path · class · rc · token · cause · answer'	'path · class · rc · token · cause · answer' is at NOWHERE in gatesrun/CLASSES.tsv	
+B	.agents/slop/env-flag-divergence.md:36	schedule/rangeify.bend	''	schedule/rangeify.bend has 2839 lines, cited at :3104	
+D	.agents/slop/envprecond/REPORT.md:200	checks/env-precond.py	''	checks/env-precond.py has 457 lines, claim says 362	
+C	.agents/slop/flip/FLIPR.md:169	.agents/slop/graphcmp.py	'FLIPR-1'	'FLIPR-1' is at NOWHERE in .agents/slop/graphcmp.py	
+C	.agents/slop/flipthird/REPORT.md:26	uop/render.bend	'WITHIN-LIMITS'	'WITHIN-LIMITS' is at NOWHERE in uop/render.bend	
+C	.agents/slop/flipthird/REPORT.md:27	uop/upat.bend	'WITHIN-LIMITS'	'WITHIN-LIMITS' is at NOWHERE in uop/upat.bend	
+C	.agents/slop/gatespop/REPORT.md:76	checks/dup-census.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/dup-census.py	
+C	.agents/slop/gatespop/REPORT.md:77	checks/gate.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/gate.py	
+C	.agents/slop/gatespop/REPORT.md:78	checks/gate_norm.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/gate_norm.py	
+C	.agents/slop/gatespop/REPORT.md:79	checks/jsfix_gate.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/jsfix_gate.py	
+C	.agents/slop/gatespop/REPORT.md:80	checks/nl-gate.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/nl-gate.py	
+C	.agents/slop/gatespop/REPORT.md:81	checks/nl-gate-noguard.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/nl-gate-noguard.py	
+C	.agents/slop/gatespop/REPORT.md:82	checks/rn-gate.py	'HERE.parents[2]'	'HERE.parents[2]' is at NOWHERE in checks/rn-gate.py	
+C	.agents/slop/gatespop/REPORT.md:122	gates/gatekit.py	'Gate.__init__'	'Gate.__init__' is at NOWHERE in gates/gatekit.py	
+D	.agents/slop/gatesweep/REPORT.md:12	gates/gates-pop.py	''	gates/gates-pop.py has 1530 lines, claim says 1529	
+D	.agents/slop/gatesweep/REPORT.md:23	checks/gatesweep.py	''	checks/gatesweep.py has 246 lines, claim says 218	
+C	.agents/slop/gatesweep/REPORT.md:33	gates/gatekit.py	'VERDICT = {0:PASS,1:FAIL,3:REFUSED,4:SKIP,5:DEAD}'	'VERDICT = {0:PASS,1:FAIL,3:REFUSED,4:SKIP,5:DEAD' is at NOWHERE in gates/gatekit.py	
+C	.agents/slop/gendirs/TABLE.md:47	checks/hermetic-census.py	'rows-*'	'rows-*' is at NOWHERE in checks/hermetic-census.py	
+C	.agents/slop/grw-stage2-3.md:200	.agents/slop/grw-mut-selftest.py	'SELFTEST PASS'	'SELFTEST PASS' is at NOWHERE in .agents/slop/grw-mut-selftest.py	
+B	.agents/slop/grw-stage4.md:83	schedule/multi.bend	''	schedule/multi.bend has 3454 lines, cited at :3506	
+D	.agents/slop/guardfix/REPORT.md:14	tinybendygrad/runtime/dtype.c	''	tinybendygrad/runtime/dtype.c has 328 lines, claim says 297	
+D	.agents/slop/guardfix/REPORT.md:15	tinybendygrad/runtime/sz.c	''	tinybendygrad/runtime/sz.c has 119 lines, claim says 97	
+D	.agents/slop/guardfix/REPORT.md:16	tinybendygrad/runtime/dtype.js	''	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	
+D	.agents/slop/guardfix/REPORT.md:18	tinybendygrad/runtime/webgpu_call.js	''	tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502	
+C	.agents/slop/guardfix/REPORT.md:100	tinybendygrad/runtime/sz.c	"call to undeclared function 'CID'"	"call to undeclared function 'CID'" is at NOWHERE in tinybendygrad/runtime/sz.c	
+D	.agents/slop/guardfix/REPORT.md:137	tinybendygrad/runtime/dtype.c	''	tinybendygrad/runtime/dtype.c has 328 lines, claim says 297	
+D	.agents/slop/guardfix/REPORT.md:138	tinybendygrad/runtime/sz.c	''	tinybendygrad/runtime/sz.c has 119 lines, claim says 97	
+D	.agents/slop/guardfix/REPORT.md:139	tinybendygrad/runtime/dtype.js	''	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	
+D	.agents/slop/guardfix/REPORT.md:141	tinybendygrad/runtime/webgpu_call.js	''	tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502	
+D	.agents/slop/guardfix/REPORT.md:159	tinybendygrad/runtime/dtype.js	''	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	
+C	.agents/slop/ishr/REPORT.md:209	checks/no-shrink.py	'1 GREW, 0 SHRANK'	'1 GREW, 0 SHRANK' is at NOWHERE in checks/no-shrink.py	
+C	.agents/slop/lanedeath-census.md:198	uop/ops.bend	'ABlob{n}'	'ABlob{n}' is at NOWHERE in uop/ops.bend	
+D	.agents/slop/literal-oracle-report.md:390	.agents/slop/nv-oracle.py	''	.agents/slop/nv-oracle.py has 1205 lines, claim says 574	
+C	.agents/slop/nameless/REPORT.md:211	.agents/slop/nl/nl-oracle.py	'in_head=False on_disk=True'	'in_head=False on_disk=True' is at NOWHERE in .agents/slop/nl/nl-oracle.py	
+C	.agents/slop/nameless/REPORT.md:301	.agents/slop/nameless/hermetic.out	'hermetic-census'	'hermetic-census' is at NOWHERE in .agents/slop/nameless/hermetic.out	
+C	.agents/slop/nostraysshape/REPORT.md:89	checks/no-strays.py	'RESIDUE_NAME'	'RESIDUE_NAME' is at NOWHERE in checks/no-strays.py	
+C	.agents/slop/notes/bend2-constraints.md:4280	mixin/rand.bend	'randn_like23_g'	'randn_like23_g' is at NOWHERE in mixin/rand.bend	
+C	.agents/slop/notes/bend2-constraints.md:9001	runtime/ops_nv.bend	'WHAT IS PORTED, DEF BY DEF'	'WHAT IS PORTED, DEF BY DEF' is at NOWHERE in runtime/ops_nv.bend	
+D	.agents/slop/notes/bend2-constraints.md:9029	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, claim says 287	
+B	.agents/slop/notes/bend2-constraints.md:9225	runtime/ops_nv.bend	''	runtime/ops_nv.bend has 95 lines, cited at :2729	
+C	.agents/slop/notes/bend2-constraints.md:10608	codegen/opt/postrange.py	'Scheduler.reduce_axes'	'Scheduler.reduce_axes' is at NOWHERE in codegen/opt/postrange.py	
+D	.agents/slop/notes/bend2-constraints.md:11548	tinygrad/helpers.py	''	tinygrad/helpers.py has 647 lines, claim says 646	
+D	.agents/slop/notes/bend2-constraints.md:11635	tinygrad/codegen/gpudims.py	''	tinygrad/codegen/gpudims.py has 106 lines, claim says 97	
+C	.agents/slop/notes/bend2-constraints.md:16308	uop/spec.bend	'#rebase_inner'	'#rebase_inner' is at NOWHERE in uop/spec.bend	
+C	.agents/slop/notes/bend2-constraints.md:16578	tinybendygrad/device.bend	'<unwired>'	'<unwired>' is at NOWHERE in tinybendygrad/device.bend	
+C	.agents/slop/notes/bend2-constraints.md:19270	tinybendygrad/runtime/ops_nv.bend	'$TMPDIR'	'$TMPDIR' is at NOWHERE in tinybendygrad/runtime/ops_nv.bend	
+C	.agents/slop/notes/bend2-constraints.md:20167	.agents/slop/validate-oracle.py	'cmp_*'	'cmp_*' is at NOWHERE in .agents/slop/validate-oracle.py	
+C	.agents/slop/notes/bend2-constraints.md:20651	codegen/decomp/dtype.bend	'md5 -q'	'md5 -q' is at NOWHERE in codegen/decomp/dtype.bend	
+B	.agents/slop/notes/bend2-constraints.md:23795	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2373	
+C	.agents/slop/notes/bend2-constraints.md:23901	renderer/cstyle.bend	'kern2 CLANG'	'kern2 CLANG' is at NOWHERE in renderer/cstyle.bend	
+B	.agents/slop/notes/bend2-constraints.md:25579	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+B	.agents/slop/notes/bend2-constraints.md:26851	runtime/sz.c	''	runtime/sz.c has 119 lines, cited at :126	
+D	.agents/slop/notes/compare/sz.md:26	runtime/sz.c	''	runtime/sz.c has 119 lines, claim says 88	
+C	.agents/slop/nv-iowr-mutate.py:2	.agents/slop/nv-oracle.py	'nv_iowr_*'	'nv_iowr_*' is at NOWHERE in .agents/slop/nv-oracle.py	
+B	.agents/slop/nvdup/stage1-the-negative-case.md:109	tinybendygrad/runtime/ops_nv.bend	''	tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2344	
+C	.agents/slop/offrepo/REPORT.md:41	checks/dup-census.py	'parents[2]'	'parents[2]' is at NOWHERE in checks/dup-census.py	
+C	.agents/slop/orcfix/REPORT.md:198	.agents/slop/skipexit/repro.py	'skipexit_repro'	'skipexit_repro' is at NOWHERE in .agents/slop/skipexit/repro.py	
+C	.agents/slop/orcfix/REPORT.md:275	.agents/slop/oracletxt/plant.py	'HEAD'	'HEAD' is at NOWHERE in .agents/slop/oracletxt/plant.py	
+C	.agents/slop/plantthe46/REPORT.md:218	.agents/slop/plantthe46/move.py	'move --rows'	'move --rows' is at NOWHERE in .agents/slop/plantthe46/move.py	
+C	.agents/slop/plantthe46/REPORT.md:329	checks/norm_check.py	'HEAD'	'HEAD' is at NOWHERE in checks/norm_check.py	
+D	.agents/slop/portmarkers/REPORT.md:91	tinybendygrad/PROOF.bend	''	tinybendygrad/PROOF.bend has 494 lines, claim says 6	
+C	.agents/slop/portunknown/REPORT.md:106	mixin/dtype.bend	'belts-disagree'	'belts-disagree' is at NOWHERE in mixin/dtype.bend	
+C	.agents/slop/portunknown/REPORT.md:134	checks/wallcheck.py	'only_B = []'	'only_B = []' is at NOWHERE in checks/wallcheck.py	
+C	.agents/slop/portunknown/REPORT.md:136	.agents/slop/MUT-LEDGER.md	'only_B = []'	'only_B = []' is at NOWHERE in .agents/slop/MUT-LEDGER.md	
+D	.agents/slop/quiescefix/REPORT.md:22	checks/substrate-id.py	''	checks/substrate-id.py has 681 lines, claim says 532	
+D	.agents/slop/quiescefix/REPORT.md:275	.agents/slop/quiesce/quiesce.py	''	.agents/slop/quiesce/quiesce.py has 264 lines, claim says 1	
+D	.agents/slop/quiescefix/REPORT.md:276	.agents/slop/quiesce/freeze-check.py	''	.agents/slop/quiesce/freeze-check.py has 88 lines, claim says 1	
+D	.agents/slop/readback/REPORT.md:65	checks/e2e.py	''	checks/e2e.py has 566 lines, claim says 3	
+D	.agents/slop/readback/REPORT.md:148	gates/ew-explog-gate.py	''	gates/ew-explog-gate.py has 82 lines, claim says 64	
+C	.agents/slop/rebase/REPORT.md:82	runtime/support/c.py	'DLL._loaded_'	'DLL._loaded_' is at NOWHERE in runtime/support/c.py	
+D	.agents/slop/sched-stage3.md:84	tinybendygrad/codegen/__init__.bend	''	tinybendygrad/codegen/__init__.bend has 553 lines, claim says 330	
+B	.agents/slop/skipexit/prefix/checks/e2e.py:2	renderer/cstyle.bend	''	renderer/cstyle.bend has 1367 lines, cited at :2984	
+C	.agents/slop/stale71/REPORT.md:85	checks/rows-trange-bend.rows	'trange'	'trange' is at NOWHERE in checks/rows-trange-bend.rows	
+C	.agents/slop/state-audit-report.md:224	tinybendygrad/codegen/__init__.bend	'broken-here'	'broken-here' is at NOWHERE in tinybendygrad/codegen/__init__.bend	
+D	.agents/slop/substrate/REPORT.md:283	tinybendygrad/runtime/dtype.c	''	tinybendygrad/runtime/dtype.c has 328 lines, claim says 322	
+D	.agents/slop/substrate2/REPORT.md:11	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 765	
+C	.agents/slop/substrate2/REPORT.md:43	.agents/slop/substrate/oracle-check.sh	'6d1000712f0f…600e'	'6d1000712f0f…600e' is at NOWHERE in .agents/slop/substrate/oracle-check.sh	
+D	.agents/slop/substrateid/REPORT.md:239	checks/substrate-id.py	''	checks/substrate-id.py has 681 lines, claim says 533	
+D	.agents/slop/substrateid/REPORT.md:338	checks/substrate-id.py	''	checks/substrate-id.py has 681 lines, claim says 533	
+C	.agents/slop/subtree/REPORT.md:120	gates/oracles/beautiful-mnist-oracle.sh	'sh-selfref'	'sh-selfref' is at NOWHERE in gates/oracles/beautiful-mnist-oracle.sh	
+C	.agents/slop/subtree/REPORT.md:121	gates/oracles/mixin-op-oracle.sh	'sh-selfref'	'sh-selfref' is at NOWHERE in gates/oracles/mixin-op-oracle.sh	
+D	.agents/slop/todo2/REPORT.md:38	.agents/TODO.md	''	.agents/TODO.md has 15574 lines, claim says 12	
+D	.agents/slop/todo2/discover.md:41	.agents/TODO.md	''	.agents/TODO.md has 15574 lines, claim says 12	
+C	.agents/slop/txtexec/REPORT.md:55	.agents/slop/txtexec/verify_renamed.py	'bad: []'	'bad: []' is at NOWHERE in .agents/slop/txtexec/verify_renamed.py	
+C	.agents/slop/txtgen/REPORT.md:154	checks/gate_norm.py	"ModuleNotFoundError: No module named 'canon'"	"ModuleNotFoundError: No module named 'canon'" is at NOWHERE in checks/gate_norm.py	
+C	.agents/slop/unobservable-report.md:218	uop/ops.bend	'pm_dispatch_m case 0'	'pm_dispatch_m case 0' is at NOWHERE in uop/ops.bend	
+C	.agents/slop/unshardtable/REPORT.md:143	runs/graphcmp/D/D1-graph-unshard.txt	'settled=False'	'settled=False' is at NOWHERE in runs/graphcmp/D/D1-graph-unshard.txt	
+D	.agents/slop/w64mile/REPORT.md:36	tinybendygrad/dtype.bend	''	tinybendygrad/dtype.bend has 1132 lines, claim says 638	
+D	.agents/slop/w64mile/REPORT.md:37	tinybendygrad/helpers.bend	''	tinybendygrad/helpers.bend has 2843 lines, claim says 2605	
+B	.agents/slop/wallrule/RULE.md:162	runtime/sz.c	''	runtime/sz.c has 119 lines, cited at :126	
+B	.agents/slop/wallrule/SWEEP.md:69	runtime/sz.c	''	runtime/sz.c has 119 lines, cited at :126	
+C	.agents/slop/whatisagate/REPORT.md:206	checks/nl-gate.py	'gated 205 agree 205 disagree []'	'gated 205 agree 205 disagree []' is at NOWHERE in checks/nl-gate.py	
+C	.agents/slop/whichgroup/REPORT.md:218	.agents/slop/graphcmp.bend	'ls-tree'	'ls-tree' is at NOWHERE in .agents/slop/graphcmp.bend	
+C	.agents/slop/whosecache/REPORT.md:176	checks/rows-key.rows	'graph<TAB>side<TAB>sha256'	'graph<TAB>side<TAB>sha256' is at NOWHERE in checks/rows-key.rows	
+C	.agents/slop/whosecache/REPORT.md:321	checks/nl-gate.py	'gated 205  agree 205  disagree []'	'gated 205  agree 205  disagree []' is at NOWHERE in checks/nl-gate.py	
+D	.agents/slop/whosecache/REPORT.md:328	.agents/slop/graphcmp.py	''	.agents/slop/graphcmp.py has 3253 lines, claim says 34	
+C	.agents/slop/whyarms/REPORT.md:343	.agents/TOOLS.md	'jj status'	'jj status' is at NOWHERE in .agents/TOOLS.md	
+C	.agents/slop/wmmafix/REPORT.md:148	tinybendygrad/uop/ops.bend	'tc: List<&2, U32>'	'tc: List<&2, U32>' is at NOWHERE in tinybendygrad/uop/ops.bend	
+C	.agents/slop/zerogate/REPORT.md:122	checks/norm_check.py	'declares `REFUSED` as its ONLY exit'	'declares `REFUSED` as its ONLY exit' is at NOWHERE in checks/norm_check.py	
+D	AGENTS.md:129	checks/substrate.py	''	checks/substrate.py has 936 lines, claim says 766	
+C	checks/no-txt.py:137	.agents/slop/skipexit/prefix/checks/e2e.py	'3ed5ab069^'	'3ed5ab069^' is at NOWHERE in .agents/slop/skipexit/prefix/checks/e2e.py	
+D	checks/substrate.py:118	checks/c-context.bend	''	checks/c-context.bend has 34 lines, claim says 26	
+D	checks/sweep.py:85	checks/residue.py	''	checks/residue.py has 751 lines, claim says 750	
+C	gates/tn_minimum-oracle.py:2	tinybendygrad/uop/ops.bend	'cpython_ops'	'cpython_ops' is at NOWHERE in tinybendygrad/uop/ops.bend	
+C	spec/render.md:36	spec/ops.md	"parse, don't validate"	"parse, don't validate" is at NOWHERE in spec/ops.md	

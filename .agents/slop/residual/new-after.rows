@@ -1,0 +1,200 @@
+1	C	suffix-index	.agents/TODO.md:508	codegen/decomp/dtype.bend	'BASE_ORACLES'	- [ ] `codegen/decomp/dtype.bend`'s `BASE_ORACLES` lane is RED on exactly 1 of 109 shared
+2	D	ROOT-exact	.agents/TODO.md:1043	tinygrad/__init__.py	''	- [x] `tinybendygrad/__init__.bend` — `tinygrad/__init__.py` is 10 lines and a
+3	D	ROOT-exact	.agents/TODO.md:1067	tinybendygrad/codegen/__init__.bend	''	- [~] `tinybendygrad/codegen/__init__.bend` — 519 lines, **the keystone**:
+4	D	suffix-index	.agents/TODO.md:2016	runtime/webgpu_call.js	''	`ALL PROOFS CHECK`) + `runtime/webgpu_call.js` (502 lines) + the emitted
+5	D	ROOT-exact	.agents/TODO.md:2041	tinygrad/renderer/wgsl.py	''	- [x] `renderer/wgsl.bend` — `tinygrad/renderer/wgsl.py`. 1062 lines, 168 string-diff
+6	D	ROOT-exact	.agents/TODO.md:2266	tinygrad/device.py	''	- [x] `device.bend` — `tinygrad/device.py`, 564 lines → 1546 (207 defs, 9 `# TODO(p3)`
+7	D	ROOT-exact	.agents/TODO.md:2667	tinygrad/runtime/ops_nv.py	''	- [x] `tinybendygrad/runtime/ops_nv.bend` — `tinygrad/runtime/ops_nv.py` (841 lines) +
+8	C	suffix-index	.agents/TODO.md:3015	uop/ops.bend	'cfunc_buf'	every `u.toposort()` (the UOp arena is `uop/ops.bend`), `cfunc_buf`/`ccall`/
+9	C	suffix-index	.agents/TODO.md:3796	engine/realize.bend	'array'	`engine/realize.bend` (50, `array` removed), `runtime/ops_cl.bend` (445), `runtime/ops_cpu_null.bend` (308,
+10	C	suffix-index	.agents/TODO.md:5628	codegen/decomp/dtype.bend	'native'	`codegen/decomp/dtype.bend` = **`native` rc=1 while `interpreted` gave 178 rows, and the file
+11	C	suffix-index	.agents/TODO.md:5684	uop/render.bend	'LANE-DEATH'	| `uop/render.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 85 |
+12	C	suffix-index	.agents/TODO.md:5685	viz/serve.bend	'LANE-DEATH'	| `viz/serve.bend` | `LANE-DEATH` | INSTRUMENT | `interpreted` rc=1, oracle 176 |
+13	C	ROOT-exact	.agents/TODO.md:5715	tinybendygrad/renderer/cstyle.bend	'RE-PORTED'	`rebase-gate.py --port tinybendygrad/renderer/cstyle.bend` → **`RE-PORTED`, rc=0**,
+14	C	ROOT-exact	.agents/TODO.md:6343	tinybendygrad/codegen/decomp/dtype.bend	'ORACLE_CONFORMANCE'	`tinybendygrad/codegen/decomp/dtype.bend` in `ORACLE_CONFORMANCE` from
+15	D	suffix-index	.agents/TODO.md:6646	runtime/ops_python.bend	''	`runtime/ops_python.bend` is 1,590 lines and the direction is unambiguous: root `.bend`'s
+16	D	ROOT-exact	.agents/TODO.md:8772	tinybendygrad/tensor.bend	''	line: `tinybendygrad/tensor.bend` is 1,584 lines = **211 blank / 1,225 comment
+17	D	suffix-index	.agents/TODO.md:8797	mixin/gradient.bend	''	`gr_0`..`gr_32` and gated** (`mixin/gradient.bend`, 1,761 lines). The table
+18	B	suffix-index	.agents/TODO.md:8946	renderer/cstyle.bend	''	`renderer/cstyle.bend:2373` ends its own `main` with `IO.print("")`** — that line is load-
+19	B	ROOT-exact	.agents/TODO.md:9112	.agents/slop/e2e.sh	''	- [x] **STAGE 6 ADDED, NOTHING REPLACED.** `.agents/slop/e2e.sh:122-161` is the whole
+20	C	suffix-index	.agents/TODO.md:9772	viz/serve.bend	'pad_name'	tree's `ansilen` — `viz/serve.bend`'s `pad_name` already used it for exactly this.
+21	B	suffix-index	.agents/TODO.md:9895	renderer/cstyle.bend	''	- [x] **F-6** `renderer/cstyle.bend:2984-3015` calls `rd_row` for SEVEN dtypes and
+22	C	ROOT-exact	.agents/TODO.md:10470	tinygrad/helpers.py	'TOTALISE'	i64 102 (99 CPython-verified via `tinygrad/helpers.py`, 3 `TOTALISE` at `b == 0` where
+23	D	ROOT-exact	.agents/TODO.md:11093	tinybendygrad/helpers.bend	''	`tinybendygrad/helpers.bend` **2605 -> 2712 lines** (+107), **116479 -> 121924 bytes**,
+24	C	ROOT-exact	.agents/TODO.md:13749	tinybendygrad/tensor.bend	'WITHIN-LIMITS'	`bend tinybendygrad/tensor.bend` = **`WITHIN-LIMITS`, rc=0** under
+25	C	ROOT-exact	.agents/TODO.md:14112	tinybendygrad/mixin/creation.bend	'el_weakint'	`iv_` family. Nineteen of twenty FIXED in `tinybendygrad/mixin/creation.bend`; `el_weakint` stands.
+26	D	ROOT-exact	.agents/TOOLS.md:391	tinybendygrad/runtime/support/usb.bend	''	| `.agents/slop/usb-build.py` | the assembler. Reads the pieces in DEPENDENCY order and writes `tinybendygrad/runtime/support/usb.bend`, 2596 lines. The mutation table an
+27	C	ROOT-exact	.agents/TOOLS.md:427	checks/bounded.py	'--tag'	| `.agents/slop/bendpin/compare.py` | **DOES THE PORT COMPILE THE SAME UNDER BOTH?** All **138 of 138** `.bend` files under `tinybendygrad/` (the run's reading, 2026-10-0
+28	C	suffix-index	.agents/UPSTREAM.md:121	runtime/support/am/amdev.bend	'AMDev.setup_ring'	**N6 — `runtime/support/am/amdev.bend`'s `AMDev.setup_ring`.** NOT an upstream defect and
+29	C	suffix-index	.agents/UPSTREAM.md:134	runtime/support/hcq2.py	'encode_submit'	**N8 — `runtime/support/hcq2.py`'s `encode_submit` → `encode_cmdbuf` rename, and
+30	C	ROOT-exact	.agents/slop/CIDSWEEP.md:72	tinybendygrad/runtime/sz.js	'#ifdef'	| `tinybendygrad/runtime/sz.js` | 2 | 2 | — | — | no `#ifdef` exists (CIDS-3) |
+31	C	suffix-index	.agents/slop/CSTYLE2.md:61	renderer/cstyle.bend	'main'	`renderer/cstyle.bend`'s `main` is a flat sequence of row-emitting calls, one call one row, so
+32	D	ROOT-exact	.agents/slop/CSTYLE2.md:278	tinybendygrad/renderer/cstyle.bend	''	WARM   tinybendygrad/renderer/cstyle.bend  (2373 lines)  [bend --check-only]
+33	C	suffix-index	.agents/slop/DEADARM.md:186	renderer/cstyle.bend	'sha256'	`bend F.bend`. Measured on `renderer/cstyle.bend` (at 16:47, `sha256` recorded below): **227 rows
+34	B	suffix-index	.agents/slop/F64-KERNEL.md:18	renderer/cstyle.bend	''	The port's `renderer/cstyle.bend:2475` `render_kernel` was handed four `BArg`s
+35	B	suffix-index	.agents/slop/F64-KERNEL.md:141	renderer/cstyle.bend	''	2. **`renderer/cstyle.bend:2984-3015` calls `rd_row` for seven dtypes and `f64` is not
+36	C	suffix-index	.agents/slop/F64-KERNEL.md:155	renderer/cstyle.bend	'sha256 07ae2766…'	`renderer/cstyle.bend` is at `sha256 07ae2766…` and is WARM now, but **it was at
+37	D	ROOT-exact	.agents/slop/FROMBITS.md:219	tinybendygrad/dtype.bend	''	`tinybendygrad/dtype.bend` (971 lines, live) ·
+38	D	ROOT-exact	.agents/slop/I64MUL.md:3	tinybendygrad/helpers.bend	''	**Landed.** `tinybendygrad/helpers.bend` **2605 → 2712 lines** (+107), **116479 →
+39	B	ROOT-exact	.agents/slop/MUT-LEDGER.md:107	.agents/slop/e2e.sh	''	**Not removed: `tinybendygrad/` is off-limits to me.** `.agents/slop/e2e.sh:138` already calls it
+40	B	ROOT-exact	.agents/slop/NVDUP.md:107	tinybendygrad/runtime/ops_nv.bend	''	held.  The port models the second and says why at `tinybendygrad/runtime/ops_nv.bend:2344-2348`.
+41	B	ROOT-exact	.agents/slop/NVDUP.md:275	tinybendygrad/runtime/ops_nv.bend	''	| **The port's `nv_reloc_bad_n=0` comment cites a measurement of a different fold** — it says keeping the prefix answers `2`; with this fixture the prefix is `1`, and `2`
+42	B	ROOT-exact	.agents/slop/PROBES.md:32	.agents/slop/e2e.sh	''	| prose only, not a gate | `.agents/slop/e2e.sh:138` — *"and `ops_bend.mut.bend` (a scratch copy)"* |
+43	D	suffix-index	.agents/slop/TENSOR-SURFACE.md:231	mixin/gradient.bend	''	`mixin/gradient.bend` is 1,761 lines and 252 defs. **The rule table is 33/33 and
+44	B	ROOT-exact	.agents/slop/WALLMAP.md:304	tinybendygrad/engine/jit.bend	''	`.agents/slop/brief-port.md:177` gives the syntax. `tinybendygrad/engine/jit.bend:1091`
+45	D	ROOT-exact	.agents/slop/adevfix/REPORT.md:17	tinygrad/uop/ops.py	''	(measured off `git show 'ad117c928^:tinygrad/uop/ops.py'`, 1928 lines — **the worktree's numbers
+46	C	ROOT-exact	.agents/slop/agend/REPORT.md:190	checks/no-txt.py	'enforces it'	| 3 | `checks/no-txt.py` "enforces it" (`:19`) | **true as a gate, false as a state** | rc=1. And 692 − 553 = 139 are excused by `differ.declared()` — **imported, not cop
+47	C	ROOT-exact	.agents/slop/agend/REPORT.md:196	test/null/test_dtype.py	'No module named pytest'	| 9 | "Run tests with `-n12`" (`:72`) | **NOT RUNNABLE** | `.venv/bin/python -m pytest test/null/test_dtype.py -x -q -n12` → `No module named pytest`, rc=1. |
+48	D	ROOT-exact	.agents/slop/agend2/REPLACEMENTS.md:134	checks/substrate.py	''	is a 46-line shim onto `.venv/bin/python checks/substrate.py` (765 lines).**
+49	D	ROOT-exact	.agents/slop/agend2/REPLACEMENTS.md:138	checks/substrate.py	''	is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
+50	D	ROOT-exact	.agents/slop/agend2/REPORT.md:49	checks/substrate.py	''	| 11 | `checks/substrate.py (765 lines)` (L122) | **766 @13:00 → 841 @13:03** | **MOVED** | TREE — the file is being edited live |
+51	D	ROOT-exact	.agents/slop/agend2/REPORT.md:102	checks/substrate.py	''	| L122 | `checks/substrate.py` 765 lines | 766→841 | **MOVED** |
+52	C	ROOT-exact	.agents/slop/argowner/REPORT.md:13	.agents/slop/argowner/handoff.out	'mv_perm'	> not a prediction — `.agents/slop/argowner/handoff.out`. **`mv_perm`, `mv_permrep`,
+53	D	ROOT-exact	.agents/slop/brief-port.md:32	tinybendygrad/uop/ops.bend	''	- `tinybendygrad/uop/ops.bend` (~3800 lines, green) — `Arena{nodes: List<&2,
+54	D	ROOT-exact	.agents/slop/brief-port.md:39	tinybendygrad/uop/fold.bend	''	- `tinybendygrad/uop/fold.bend` (2208 lines, green) — derived properties as a
+55	D	ROOT-exact	.agents/slop/brief-port.md:46	tinybendygrad/uop/spec.bend	''	- `tinybendygrad/uop/spec.bend` (3186 lines, green) — a WORKED EXAMPLE of the
+56	D	ROOT-exact	.agents/slop/bullets/REPLACEMENTS.md:73	checks/substrate.py	''	- `checks/substrate-check.sh` (46-line shim → `.venv/bin/python checks/substrate.py`, 765 lines) —
+57	D	ROOT-exact	.agents/slop/bullets/REPORT.md:129	checks/substrate.py	''	`.venv/bin/python checks/substrate.py` (765 lines). `.agents/slop/substrate-check.sh` is a differing
+58	C	ROOT-exact	.agents/slop/canrun/REPORT.md:266	.agents/slop/portexec/census.py	'from census import PREAMBLE'	`.agents/slop/portexec/census.py`. So `from census import PREAMBLE` falls through to
+59	C	ROOT-exact	.agents/slop/censusred/REPORT.md:56	runs/graphcmp/D/D0-coverage-census.txt	'oracle-selfcheck'	`runs/graphcmp/D/D0-coverage-census.txt`: `oracle-selfcheck` = the grep of the token line,
+60	B	suffix-index	.agents/slop/chkcites/REPORT.md:87	renderer/cstyle.bend	''	| `e2e.py:55` | `renderer/cstyle.bend:2984-3015` | seven-dtype `rd_row` dispatch | **DELETED**; was `2152-2193` pre-deletion; `2984` was **never** in range (file max 2373
+61	B	suffix-index	.agents/slop/chkcites/REPORT.md:88	renderer/cstyle.bend	''	| `e2e.sh:228` | `renderer/cstyle.bend:2984-3015` | same | same | DELETED | `e51904b04` |
+62	A	ROOT-exact	.agents/slop/citemass/resolve.py:34	checks/differ.py	'ops.bend'	("checks/differ.py", 149, "ops.bend", 1066, None, "ATuple{ys: List<&2, U32>}"),
+63	A	ROOT-exact	.agents/slop/citemass/resolve.py:35	checks/differ.py	'ops.bend'	("checks/differ.py", 177, "ops.bend", 4554, None, "WALL(p3)"),
+64	A	ROOT-exact	.agents/slop/citemass/resolve.py:36	checks/differ.py	'ops.bend'	("checks/differ.py", 177, "ops.bend", 4560, None, "ABlob"),
+65	A	ROOT-exact	.agents/slop/citemass/resolve.py:37	checks/disagree-gate.py	'ops.bend'	("checks/disagree-gate.py", 103, "ops.bend", 1057, None, "dtype: S.Dt"),
+66	A	ROOT-exact	.agents/slop/citemass/resolve.py:39	checks/e2e.sh	'renderer/cstyle.bend'	("checks/e2e.sh", 228, "renderer/cstyle.bend", 2984, 3015, "rd_row"),
+67	A	ROOT-exact	.agents/slop/citemass/resolve.py:47	checks/nl-gate.py	'ops.bend'	("checks/nl-gate.py", 477, "ops.bend", 7837, None, "vd_text"),
+68	A	ROOT-exact	.agents/slop/citemass/resolve.py:48	checks/nl-gate.py	'ops.bend'	("checks/nl-gate.py", 477, "ops.bend", 7874, None, "vd_dbg"),
+69	A	ROOT-exact	.agents/slop/citemass/resolve.py:69	checks/unowned.py	'ag-emit.bend'	("checks/unowned.py", 66, "ag-emit.bend", 32, None, "bend2-constraints.md"),
+70	B	suffix-index	.agents/slop/cites2/REPORT.md:44	renderer/cstyle.bend	''	e2e.py:55   e2e.sh:228          -> renderer/cstyle.bend:2984-3015  (seven-dtype `rd_row`)
+71	B	suffix-index	.agents/slop/cites2/REPORT.md:79	renderer/cstyle.bend	''	| `checks/e2e.py:55` | cites `renderer/cstyle.bend:2984-3015` | names `rd_row`, records `e51904b04` DELETED it (1061 lines) and the rows survive as data |
+72	C	ROOT-exact	.agents/slop/cites2/REPORT.md:169	tinybendygrad/renderer/nir_llvmir.bend	'String.concat([nm, " = ["]'	("tinybendygrad/renderer/nir_llvmir.bend",'String.concat([nm, " = ["]', "the nl row shape"),
+73	D	ROOT-exact	.agents/slop/closure/REPORT.md:263	checks/census.py	''	`checks/census.py` **224 → 326 lines, 135 → 200 code lines (+65 code, +102 total)**. Most of the
+74	C	ROOT-exact	.agents/slop/coldness/COLDNESS.md:248	checks/bounded.py	'-P 3'	`sweep.sh` runs bend through `checks/bounded.py --mb 2048` at `-P 3`. It does **not**
+75	C	ROOT-exact	.agents/slop/constfix/REPORT.md:267	.agents/slop/constfix/selftest.py	'21 of 21 PASS'	| `.agents/slop/constfix/selftest.py` | **0** | `21 of 21 PASS` (negative control) |
+76	C	ROOT-exact	.agents/slop/constfix/REPORT.md:269	checks/nl-gate.py	'gated 205  agree 205  disagree []'	| `checks/nl-gate.py` | **0** | `gated 205  agree 205  disagree []` → `AGREE` |
+77	C	ROOT-exact	.agents/slop/corpus24/REPORT.md:27	tinygrad/uop/__init__.py	'mint'	`enum` = the `Ops.<NAME>` member in `tinygrad/uop/__init__.py`. `mint` = the `def UOp.<…>`
+78	C	ROOT-exact	.agents/slop/corpusproto/REPORT.md:160	checks/differ.py	'"graphs": "25"'	| `checks/differ.py` | 221 | `"graphs": "25"` | **S** — hardcoded count | YES → `"26"` |
+79	C	ROOT-exact	.agents/slop/corpusproto/REPORT.md:161	checks/differ.py	'"graphs-unset": "5"'	| `checks/differ.py` | 221 | `"graphs-unset": "5"` | **S** — hardcoded count | YES → `"5"` stays or changes |
+80	C	ROOT-exact	.agents/slop/corpusproto/REPORT.md:162	checks/differ.py	'"graphs-answered": "20"'	| `checks/differ.py` | 221 | `"graphs-answered": "20"` | **S** — hardcoded count | YES |
+81	C	ROOT-exact	.agents/slop/corpusproto/REPORT.md:163	checks/differ.py	'"graphs-agree": "21"'	| `checks/differ.py` | 233 | `"graphs-agree": "21"` | **S** — live-run count | YES — re-pin after run |
+82	C	ROOT-exact	.agents/slop/corpusproto/REPORT.md:169	checks/graphcmp-census-audit.py	'"matmul"'	| `checks/graphcmp-census-audit.py` | 76 | `"matmul"` | **S** | Not directly affected |
+83	B	ROOT-exact	.agents/slop/dangle/REPORT.md:156	.agents/slop/e2e.sh	''	| `.agents/slop/e2e.sh:122`, `:138` (×3) | 122–161 | **23 lines** |
+84	B	ROOT-exact	.agents/slop/dangle/REPORT.md:157	tinybendygrad/runtime/ops_nv.bend	''	| `tinybendygrad/runtime/ops_nv.bend:2344`, `:2348` (×2) | 2344 | **94 lines** |
+85	B	ROOT-exact	.agents/slop/dangle/REPORT.md:158	tinybendygrad/engine/jit.bend	''	| `tinybendygrad/engine/jit.bend:1091` | 1091 | **434 lines** |
+86	C	ROOT-exact	.agents/slop/deadgens/REPORT.md:78	checks/gate_norm.py	"ModuleNotFoundError: No module named 'canon'"	| `.venv/bin/python checks/gate_norm.py` | `ModuleNotFoundError: No module named 'canon'` | **same error** | **STILL BROKEN — but NOT because `canon.py` is missing.** See
+87	C	ROOT-exact	.agents/slop/deadgens/REPORT.md:79	checks/census.py	"ModuleNotFoundError: No module named 'graphcmp'"	| `.venv/bin/python checks/census.py` | `ModuleNotFoundError: No module named 'graphcmp'` | **same error plain; RUNS with `PYTHONPATH=.agents/slop`** | **RUNS** once `sys
+88	C	suffix-index	.agents/slop/deadreg/REPORT.md:190	runtime/dtype.c	'file:line'	cites `runtime/dtype.c` by `file:line` in eight places, including `:262-263` for
+89	C	ROOT-exact	.agents/slop/deadwhenabsent/REPORT.md:313	checks/nl-gate.py	'gated 205  agree 205  disagree []'	| `checks/nl-gate.py` | **0** | `gated 205  agree 205  disagree []` — `AGREE 205/205` |
+90	C	suffix-index	.agents/slop/declared472/census.py:2	capstream/refsplit.py	'a basename match is not a reference'	"""Reader census over the live DECLARED-NAME population, refined by capstream's rule.
+91	C	ROOT-exact	.agents/slop/delbullets/REPORT.md:134	tinygrad/runtime/support/system.py	'PCIIfaceBase|USBPCIDevice'	| PCI claim | `rg -l 'PCIDevice' tinygrad/`; `rg -n '^class …' tinygrad/runtime/support/system.py`; `rg -n 'PCIIfaceBase|USBPCIDevice' tinygrad/runtime/ops_amd.py tinygra
+92	C	ROOT-exact	.agents/slop/denominator/REPORT.md:222	gates/gates-pop.py	'0 of 62'	- **1 is a genuine zero and must never be flagged**: `gates/gates-pop.py`, `0 of 62`.
+93	C	suffix-index	.agents/slop/dup/stage2-classify.md:154	runtime/ops_nv.bend	'nv_errstr_N'	which in this tree is `uop/fold.bend` and `runtime/ops_nv.bend` (`nv_errstr_N`).
+94	C	ROOT-exact	.agents/slop/e2estage8/report.md:43	.agents/slop/e2epy/diff.py	'plant-stage8red'	| `.agents/slop/e2epy/diff.py` | `plant-stage8red` DELETED — a plant for a retired stage is the residue the retirement exists to remove; `codes` lost its dead 6th entry; 
+95	C	ROOT-exact	.agents/slop/e2estage8/report.md:134	.agents/slop/xd2/cdp.mjs	'ERR_MODULE_NOT_FOUND'	`.agents/slop/xd2/cdp.mjs` (`ERR_MODULE_NOT_FOUND`, node exits 1) and stage 5 needs
+96	C	suffix-index	.agents/slop/emptyevid/REPORT.md:88	gatesrun/CLASSES.tsv	'path · class · rc · token · cause · answer'	| `.agents/slop/gatesrun/` (27 caps) | `gatesrun/CLASSES.tsv` | `path · class · rc · token · cause · answer` — **27/27 covered** |
+97	B	suffix-index	.agents/slop/env-flag-divergence.md:36	schedule/rangeify.bend	''	TRANSCENDENTAL, `schedule/rangeify.bend:3104-3106` MAX_KERNEL_BUFFERS/VIZ/SPEC,
+98	D	ROOT-exact	.agents/slop/envprecond/REPORT.md:200	checks/env-precond.py	''	- **edited:** `checks/env-precond.py` (343 → 362 lines) — anchor-based `PINS`, anchor lookup
+99	C	ROOT-exact	.agents/slop/flip/FLIPR.md:169	.agents/slop/graphcmp.py	'FLIPR-1'	2. **`.agents/slop/graphcmp.py`** — **`FLIPR-1`, `canon_flip(op, arg)`**: a FLIP's
+100	C	suffix-index	.agents/slop/flipthird/REPORT.md:26	uop/render.bend	'WITHIN-LIMITS'	| baseline | `uop/render.bend` | `WITHIN-LIMITS` | 0 | **clean today** |
+101	C	suffix-index	.agents/slop/flipthird/REPORT.md:27	uop/upat.bend	'WITHIN-LIMITS'	| baseline | `uop/upat.bend` | `WITHIN-LIMITS` | **1** | **ALREADY RED: `expected : cases for ops.AOpLit`** |
+102	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:76	checks/dup-census.py	'HERE.parents[2]'	| `checks/dup-census.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+103	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:77	checks/gate.py	'HERE.parents[2]'	| `checks/gate.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+104	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:78	checks/gate_norm.py	'HERE.parents[2]'	| `checks/gate_norm.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+105	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:79	checks/jsfix_gate.py	'HERE.parents[2]'	| `checks/jsfix_gate.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+106	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:80	checks/nl-gate.py	'HERE.parents[2]'	| `checks/nl-gate.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+107	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:81	checks/nl-gate-noguard.py	'HERE.parents[2]'	| `checks/nl-gate-noguard.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+108	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:82	checks/rn-gate.py	'HERE.parents[2]'	| `checks/rn-gate.py` | `HERE.parents[2]` | `/Users/cyberistic/src` |
+109	C	ROOT-exact	.agents/slop/gatespop/REPORT.md:122	gates/gatekit.py	'Gate.__init__'	**14 of 83 go through `gates/gatekit.py`.** `Gate.__init__` is the one place every gate would
+110	D	ROOT-exact	.agents/slop/gatesweep/REPORT.md:12	gates/gates-pop.py	''	| `gates/gates-pop.py` (1529 lines) | enumerates the gate population by AST `__main__` + shell self-dispatch; never runs one | its own docstring: *"whether a gate is ever
+111	D	ROOT-exact	.agents/slop/gatesweep/REPORT.md:23	checks/gatesweep.py	''	`checks/gatesweep.py` (218 lines incl. docstring). Population by **directory walk**
+112	C	ROOT-exact	.agents/slop/gatesweep/REPORT.md:33	gates/gatekit.py	'VERDICT = {0:PASS,1:FAIL,3:REFUSED,4:SKIP,5:DEAD}'	- **The vocabulary is loaded by path** from `gates/gatekit.py` (`VERDICT = {0:PASS,1:FAIL,3:REFUSED,4:SKIP,5:DEAD}`)
+113	C	ROOT-exact	.agents/slop/gendirs/TABLE.md:47	checks/hermetic-census.py	'rows-*'	| `checks/` (51 `rows-*.rows` + `check.out`) | `checks/census.py:64`, `checks/both-census.py`, `checks/hermetic-census.py` | 4 | 0 | `rows-*` **yes** | 4 | NO | census | 
+114	C	ROOT-exact	.agents/slop/grw-stage2-3.md:200	.agents/slop/grw-mut-selftest.py	'SELFTEST PASS'	`python3 .agents/slop/grw-mut-selftest.py` — `SELFTEST PASS`.
+115	B	suffix-index	.agents/slop/grw-stage4.md:83	schedule/multi.bend	''	| `schedule/multi.bend:3506` | `ops.py:520 ssimplify` | `mu_sym_dim()` is the marker and it is 0 |
+116	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:14	tinybendygrad/runtime/dtype.c	''	COLD  tinybendygrad/runtime/dtype.c  (297 lines)  :: SOME PROOFS FAIL
+117	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:15	tinybendygrad/runtime/sz.c	''	COLD  tinybendygrad/runtime/sz.c     (97 lines)  :: SOME PROOFS FAIL
+118	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:16	tinybendygrad/runtime/dtype.js	''	COLD  tinybendygrad/runtime/dtype.js  (193 lines)  :: SOME PROOFS FAIL
+119	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:18	tinybendygrad/runtime/webgpu_call.js	''	COLD  tinybendygrad/runtime/webgpu_call.js  (502 lines) :: SOME PROOFS FAIL
+120	C	ROOT-exact	.agents/slop/guardfix/REPORT.md:100	tinybendygrad/runtime/sz.c	"call to undeclared function 'CID'"	COLD  tinybendygrad/runtime/sz.c  :: 7 x "call to undeclared function 'CID'"
+121	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:137	tinybendygrad/runtime/dtype.c	''	WARM  tinybendygrad/runtime/dtype.c        (297 lines)  [cc -fsyntax-only + bend's C context]
+122	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:138	tinybendygrad/runtime/sz.c	''	WARM  tinybendygrad/runtime/sz.c           (97 lines)  [cc -fsyntax-only + bend's C context]
+123	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:139	tinybendygrad/runtime/dtype.js	''	WARM  tinybendygrad/runtime/dtype.js       (193 lines) [node --check]
+124	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:141	tinybendygrad/runtime/webgpu_call.js	''	WARM  tinybendygrad/runtime/webgpu_call.js (502 lines) [node --check]
+125	D	ROOT-exact	.agents/slop/guardfix/REPORT.md:159	tinybendygrad/runtime/dtype.js	''	COLD  tinybendygrad/runtime/dtype.js  (193 lines)  [node --check]
+126	C	ROOT-exact	.agents/slop/ishr/REPORT.md:209	checks/no-shrink.py	'1 GREW, 0 SHRANK'	after every gate run and after every plant. `checks/no-shrink.py`: `1 GREW, 0 SHRANK`.
+127	C	suffix-index	.agents/slop/lanedeath-census.md:198	uop/ops.bend	'ABlob{n}'	| 1 | `uop/ops.bend` `ABlob{n}` → `ABlob{bs}`, 04:18 mid-sweep | **6** | **YES** | `dev-wholetree-2.json`, 5 resolve to `fold.bend:1043`; notes ~18064 |
+128	D	ROOT-exact	.agents/slop/literal-oracle-report.md:390	.agents/slop/nv-oracle.py	''	| nv tranche baseline/after | `python3 .agents/slop/nv-oracle.py` → 574 lines / 547 names, 0 value disagreements |
+129	C	ROOT-exact	.agents/slop/nameless/REPORT.md:211	.agents/slop/nl/nl-oracle.py	'in_head=False on_disk=True'	`.agents/slop/nl/nl-oracle.py` (`in_head=False on_disk=True` — since restored by `0d901e986`,
+130	C	ROOT-exact	.agents/slop/nameless/REPORT.md:301	.agents/slop/nameless/hermetic.out	'hermetic-census'	| `.agents/slop/nameless/hermetic.out` | `hermetic-census` rc=0 — the *correct* PASS, subject found at a 2nd path |
+131	C	ROOT-exact	.agents/slop/nostraysshape/REPORT.md:89	checks/no-strays.py	'RESIDUE_NAME'	`checks/no-strays.py`: `RESIDUE_NAME` → `SCRATCH_SHAPE` (widened), walk scoped to
+132	C	suffix-index	.agents/slop/notes/bend2-constraints.md:4280	mixin/rand.bend	'randn_like23_g'	over it: `mixin/rand.bend`'s `randn_like23_g` dies with
+133	C	suffix-index	.agents/slop/notes/bend2-constraints.md:9001	runtime/ops_nv.bend	'WHAT IS PORTED, DEF BY DEF'	1. `runtime/ops_nv.bend` -- a `WHAT IS PORTED, DEF BY DEF` table naming **28 defs
+134	D	suffix-index	.agents/slop/notes/bend2-constraints.md:9029	renderer/cstyle.bend	''	PYTHON and are true. `"renderer/cstyle.bend (287 lines)"` is a claim about a
+135	B	suffix-index	.agents/slop/notes/bend2-constraints.md:9225	runtime/ops_nv.bend	''	tree-wide checker. `runtime/ops_nv.bend:2729,2733,2734,2730` is the ONLY importer
+136	C	suffix-index	.agents/slop/notes/bend2-constraints.md:10608	codegen/opt/postrange.py	'Scheduler.reduce_axes'	* the deleted `reduce_axes` is `codegen/opt/postrange.py`'s `Scheduler.reduce_axes`
+137	D	ROOT-exact	.agents/slop/notes/bend2-constraints.md:11548	tinygrad/helpers.py	''	reported as ambiguous; `tinygrad/helpers.py` is 646 lines and the citation was
+138	D	ROOT-exact	.agents/slop/notes/bend2-constraints.md:11635	tinygrad/codegen/gpudims.py	''	`# tinygrad/codegen/gpudims.py  97 lines  gpu dims (late)` is a claim about a PYTHON
+139	C	suffix-index	.agents/slop/notes/bend2-constraints.md:16308	uop/spec.bend	'#rebase_inner'	`#repro_four_src_reject` and four others in `uop/spec.bend` (5 of 16), `#rebase_inner` in
+140	C	ROOT-exact	.agents/slop/notes/bend2-constraints.md:16578	tinybendygrad/device.bend	'<unwired>'	[oracle-override] tinybendygrad/device.bend: ('<unwired>',) -> .agents/slop/device-oracle.py
+141	C	ROOT-exact	.agents/slop/notes/bend2-constraints.md:19270	tinybendygrad/runtime/ops_nv.bend	'$TMPDIR'	`tinybendygrad/runtime/ops_nv.bend`, `$TMPDIR` and never the live tree, `md5 -q` asserted
+142	C	ROOT-exact	.agents/slop/notes/bend2-constraints.md:20167	.agents/slop/validate-oracle.py	'cmp_*'	(`.agents/slop/validate-oracle.py`'s `cmp_*` rows): `str()` is the IDENTITY on a comparison's
+143	C	suffix-index	.agents/slop/notes/bend2-constraints.md:20651	codegen/decomp/dtype.bend	'md5 -q'	and `codegen/decomp/dtype.bend` 1 of 109.  **`md5 -q` on macOS TAKES EXACTLY ONE FILE, so the
+144	B	suffix-index	.agents/slop/notes/bend2-constraints.md:23795	renderer/cstyle.bend	''	**THE CONSEQUENCE NOBODY WROTE DOWN: `renderer/cstyle.bend:2373` ends its own 227-row `main`
+145	C	suffix-index	.agents/slop/notes/bend2-constraints.md:23901	renderer/cstyle.bend	'kern2 CLANG'	MEASURED 2026-10-04, `bend 2.0.35`. `renderer/cstyle.bend`'s `kern2 CLANG` row — the Clang
+146	B	suffix-index	.agents/slop/notes/bend2-constraints.md:25579	renderer/cstyle.bend	''	`renderer/cstyle.bend:2984-3015` calls `rd_row` for exactly SEVEN dtypes -- f32, f16,
+147	B	suffix-index	.agents/slop/notes/bend2-constraints.md:26851	runtime/sz.c	''	**`#ifdef CID(...)`**, the `cc`-rejected `CID` macro (`runtime/sz.c:126`, and SZ-5's
+148	D	suffix-index	.agents/slop/notes/compare/sz.md:26	runtime/sz.c	''	| the two effects | `runtime/sz.c` 88 lines, `runtime/sz.js` 32 lines |
+149	C	ROOT-exact	.agents/slop/nv-iowr-mutate.py:2	.agents/slop/nv-oracle.py	'nv_iowr_*'	"""nv-iowr-mutate.py -- DO THE ROWS THIS UNIT CONVERTED ACTUALLY MOVE?
+150	B	ROOT-exact	.agents/slop/nvdup/stage1-the-negative-case.md:109	tinybendygrad/runtime/ops_nv.bend	''	`tinybendygrad/runtime/ops_nv.bend:2344-2348`.
+151	C	ROOT-exact	.agents/slop/offrepo/REPORT.md:41	checks/dup-census.py	'parents[2]'	| `checks/dup-census.py` | `parents[2]` AND `SLOP = HERE.parent` (both stale) | repo root + real `.agents/slop` | refuses rc 3 on `eq-census2.py` |
+152	C	ROOT-exact	.agents/slop/orcfix/REPORT.md:198	.agents/slop/skipexit/repro.py	'skipexit_repro'	return set(load(".agents/slop/skipexit/repro.py", "skipexit_repro").declared())
+153	C	ROOT-exact	.agents/slop/orcfix/REPORT.md:275	.agents/slop/oracletxt/plant.py	'HEAD'	`checks/oracle-txt-census.py` and `.agents/slop/oracletxt/plant.py` to `HEAD` **after** they were
+154	C	ROOT-exact	.agents/slop/plantthe46/REPORT.md:218	.agents/slop/plantthe46/move.py	'move --rows'	`.agents/slop/plantthe46/move.py` → `move --rows`. **This is DELETION, not relocation**, and the
+155	C	ROOT-exact	.agents/slop/plantthe46/REPORT.md:329	checks/norm_check.py	'HEAD'	`RETIRED-or-GONE` rows; mine gives `rc=1` with the same twelve. `checks/norm_check.py`: `HEAD` gives
+156	D	ROOT-exact	.agents/slop/portmarkers/REPORT.md:91	tinybendygrad/PROOF.bend	''	Change: `tinybendygrad/PROOF.bend`, 6 lines:
+157	C	suffix-index	.agents/slop/portunknown/REPORT.md:106	mixin/dtype.bend	'belts-disagree'	| **CLASS RIGHT, FILE FINE** — tokenizer artifact | **3** | rows 1, 5, 7 (`codegen/decomp/dtype.bend`, `dtype.bend`, `mixin/dtype.bend`): `belts-disagree` is a pure token
+158	C	ROOT-exact	.agents/slop/portunknown/REPORT.md:134	checks/wallcheck.py	'only_B = []'	- rows 1, 5, 7: `only_A = ['checks/wallcheck.py']`, `only_B = []` — belt A sees a `dtype.bend`
+159	C	ROOT-exact	.agents/slop/portunknown/REPORT.md:136	.agents/slop/MUT-LEDGER.md	'only_B = []'	- row 19: `only_A = ['.agents/slop/MUT-LEDGER.md']`, `only_B = []`.
+160	D	ROOT-exact	.agents/slop/quiescefix/REPORT.md:22	checks/substrate-id.py	''	**(a) "`checks/substrate-id.py` (532 lines)" — the number was right and the file was not.**
+161	D	ROOT-exact	.agents/slop/quiescefix/REPORT.md:275	.agents/slop/quiesce/quiesce.py	''	| `.agents/slop/quiesce/quiesce.py` | **1 line** — loader retargeted; *not in the brief's list; leaving it would have crashed it* |
+162	D	ROOT-exact	.agents/slop/quiescefix/REPORT.md:276	.agents/slop/quiesce/freeze-check.py	''	| `.agents/slop/quiesce/freeze-check.py` | **1 line** — loader retargeted; *same* |
+163	D	ROOT-exact	.agents/slop/readback/REPORT.md:65	checks/e2e.py	''	`.venv/bin/python checks/e2e.py` -> 3 lines, **261 bytes, WHOLE-RUN EXIT 2**:
+164	D	ROOT-exact	.agents/slop/readback/REPORT.md:148	gates/ew-explog-gate.py	''	`gates/ew-explog-gate.py` (64 lines) only, swept into the coordinator's `8bc613f73`.
+165	C	suffix-index	.agents/slop/rebase/REPORT.md:82	runtime/support/c.py	'DLL._loaded_'	`runtime/support/c.py`. `DLL._loaded_` is rebound from `set()` to `{}` (a dict), so
+166	D	ROOT-exact	.agents/slop/sched-stage3.md:84	tinybendygrad/codegen/__init__.bend	''	`tinybendygrad/codegen/__init__.bend` (330 lines):
+167	B	suffix-index	.agents/slop/skipexit/prefix/checks/e2e.py:2	renderer/cstyle.bend	''	"""THE SEVEN-STAGE END-TO-END GATE. The Python successor of `checks/e2e.sh`.
+168	C	ROOT-exact	.agents/slop/stale71/REPORT.md:85	checks/rows-trange-bend.rows	'trange'	- **One of the 51 is an orphan: `checks/rows-trange-bend.rows`.** `trange` is not among the 25
+169	C	ROOT-exact	.agents/slop/state-audit-report.md:224	tinybendygrad/codegen/__init__.bend	'broken-here'	**`tinybendygrad/codegen/__init__.bend`** — `broken-here`, rows=0, attempts=[6,1,0]:
+170	D	ROOT-exact	.agents/slop/substrate/REPORT.md:283	tinybendygrad/runtime/dtype.c	''	`NO INSTRUMENT  tinybendygrad/runtime/dtype.c  (322 lines)  :: cc and a compiling bend C
+171	D	ROOT-exact	.agents/slop/substrate2/REPORT.md:11	checks/substrate.py	''	`exec` shim onto `.venv/bin/python checks/substrate.py` (765 lines, `wc -l`).
+172	C	ROOT-exact	.agents/slop/substrate2/REPORT.md:43	.agents/slop/substrate/oracle-check.sh	'6d1000712f0f…600e'	sha256 of `.agents/slop/substrate/oracle-check.sh` = `6d1000712f0f…600e` (verified on disk, matches).
+173	D	ROOT-exact	.agents/slop/substrateid/REPORT.md:239	checks/substrate-id.py	''	**`checks/substrate-id.py` (533 lines, 07:05) is NOT wired into any gate, is now redundant
+174	D	ROOT-exact	.agents/slop/substrateid/REPORT.md:338	checks/substrate-id.py	''	8. `checks/substrate-id.py` — 533 lines, unwired, now redundant. Flagged, not deleted.
+175	C	ROOT-exact	.agents/slop/subtree/REPORT.md:120	gates/oracles/beautiful-mnist-oracle.sh	'sh-selfref'	| `gates/oracles/beautiful-mnist-oracle.sh` | **`sh-selfref`** | **ENTRY** | yes (`git ls-tree`, HEAD `240469d4c`) |
+176	C	ROOT-exact	.agents/slop/subtree/REPORT.md:121	gates/oracles/mixin-op-oracle.sh	'sh-selfref'	| `gates/oracles/mixin-op-oracle.sh` | **`sh-selfref`** | **ENTRY** | yes |
+177	D	ROOT-exact	.agents/slop/todo2/REPORT.md:38	.agents/TODO.md	''	> `AGENTS.md`: `rg -c '[█▓▒░]' .agents/TODO.md` = **12 lines**
+178	D	ROOT-exact	.agents/slop/todo2/discover.md:41	.agents/TODO.md	''	`AGENTS.md` claims `rg -c '[█▓▒░]' .agents/TODO.md` = **12 lines**.
+179	C	ROOT-exact	.agents/slop/txtexec/REPORT.md:55	.agents/slop/txtexec/verify_renamed.py	'bad: []'	`4d0a2b258` (new name present) by `.agents/slop/txtexec/verify_renamed.py` — `bad: []`.
+180	C	ROOT-exact	.agents/slop/txtgen/REPORT.md:154	checks/gate_norm.py	"ModuleNotFoundError: No module named 'canon'"	| `checks/gate_norm.py` | **`ModuleNotFoundError: No module named 'canon'`** | same | **cannot run** — `canon.py` swept. Never reached the write, so the new extension is 
+181	C	suffix-index	.agents/slop/unobservable-report.md:218	uop/ops.bend	'pm_dispatch_m case 0'	`uop/ops.bend`'s `pm_dispatch_m case 0` sends SINK to `pm_r_sink_m`, which
+182	C	ROOT-exact	.agents/slop/unshardtable/REPORT.md:143	runs/graphcmp/D/D1-graph-unshard.txt	'settled=False'	Read from `runs/graphcmp/D/D1-graph-unshard.txt`: `settled=False`, `field-mismatches=2` —
+183	D	ROOT-exact	.agents/slop/w64mile/REPORT.md:36	tinybendygrad/dtype.bend	''	COLD  tinybendygrad/dtype.bend  (638 lines)  :: SOME PROOFS FAIL   <- its own 14 seams, expected
+184	D	ROOT-exact	.agents/slop/w64mile/REPORT.md:37	tinybendygrad/helpers.bend	''	WARM  tinybendygrad/helpers.bend (2605 lines)
+185	B	suffix-index	.agents/slop/wallrule/RULE.md:162	runtime/sz.c	''	(the `CID` macro a `cc` run rejects, `runtime/sz.c:126`), the `NV` dead arms (`NV-1`'s
+186	B	suffix-index	.agents/slop/wallrule/SWEEP.md:69	runtime/sz.c	''	1. **`#ifdef CID(...)`** — the `CID` macro a `cc` run rejects (`runtime/sz.c:126`), plus SZ-5's
+187	C	ROOT-exact	.agents/slop/whatisagate/REPORT.md:206	checks/nl-gate.py	'gated 205 agree 205 disagree []'	| `checks/nl-gate.py` | **0** | `gated 205 agree 205 disagree []` | 205 lines, both lanes |
+188	C	ROOT-exact	.agents/slop/whichgroup/REPORT.md:218	.agents/slop/graphcmp.bend	'ls-tree'	`.agents/slop/graphcmp.bend` is in `ls-tree` **1** and in the index **1** — same tracked blob, and
+189	C	ROOT-exact	.agents/slop/whosecache/REPORT.md:176	checks/rows-key.rows	'graph<TAB>side<TAB>sha256'	it: `checks/rows-key.rows` is `graph<TAB>side<TAB>sha256`, one row per slot, same shape.
+190	C	ROOT-exact	.agents/slop/whosecache/REPORT.md:321	checks/nl-gate.py	'gated 205  agree 205  disagree []'	| `checks/nl-gate.py` | **0** | `gated 205  agree 205  disagree []` · `AGREE` |
+191	D	ROOT-exact	.agents/slop/whosecache/REPORT.md:328	.agents/slop/graphcmp.py	''	**Not committed, not staged.** Diff surface: `.agents/slop/graphcmp.py` (+62/−34 lines of
+192	C	ROOT-exact	.agents/slop/whyarms/REPORT.md:343	.agents/TOOLS.md	'jj status'	line in `.agents/TOOLS.md`: "`jj status` snapshots; in a colocated repo it writes
+193	C	ROOT-exact	.agents/slop/wmmafix/REPORT.md:148	tinybendygrad/uop/ops.bend	'tc: List<&2, U32>'	`("tinybendygrad/uop/ops.bend", 1197, "tc: List<&2, U32>", "the port's 4th slot cannot hold None")`.
+194	C	ROOT-exact	.agents/slop/zerogate/REPORT.md:122	checks/norm_check.py	'declares `REFUSED` as its ONLY exit'	| `checks/norm_check.py` | "declares `REFUSED` as its ONLY exit", reached `(none)` | **rc=0. It is GREEN at rest.** Its input `.agents/slop/jslane2/gen_f32_seam.py` is PR
+195	D	ROOT-exact	AGENTS.md:129	checks/substrate.py	''	is a 46-line shim onto `.venv/bin/python checks/substrate.py` (**766 lines at 13:00, 841 at 13:03 —
+196	C	ROOT-exact	checks/no-txt.py:137	.agents/slop/skipexit/prefix/checks/e2e.py	'3ed5ab069^'	"""`skipexit/repro.py`'s PRE-FIX LANE outputs, DERIVED from the frozen lane's own write sites.
+197	D	ROOT-exact	checks/substrate.py:118	checks/c-context.bend	''	# THE `.c` PROBE. `checks/c-context.bend` (26 lines, TRACKED, and NOT named `probe-*.bend` because
+198	D	ROOT-exact	checks/sweep.py:85	checks/residue.py	''	"""Execute one of this project's instruments BY PATH, ONCE per process per path.
+199	C	ROOT-exact	gates/tn_minimum-oracle.py:2	tinybendygrad/uop/ops.bend	'cpython_ops'	"""tn_minimum-oracle.py -- CPython's `Ops`, the interpreter-side witness.
+200	C	ROOT-exact	spec/render.md:36	spec/ops.md	"parse, don't validate"	is `spec/ops.md`'s "parse, don't validate" applied to a string.
