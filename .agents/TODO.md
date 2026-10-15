@@ -562,10 +562,23 @@ exit-mislabels [####......] 1/4  A GATE THAT SAYS `REFUSED` AND EXITS `FAIL` IS 
                                        despite having banned gate runs, and `--jobs 1` launched a
                                        real lane and blew my timeout.** No process of mine survived
                                        it, and the verification above is the isolation test instead.
-                                       1/4 = `ops_python_exec-gate`'s three sites; the other 54 sites
-                                       in 23 instruments are OWED and REFUSED here, because each is
-                                       a different file and a wrong exit status in a gate is read as
-                                       a verdict about the PORT.
+                                       **THE INSTRUMENT THAT FINDS THIS CLASS ALREADY EXISTS** --
+                                       I nearly wrote that the other 54 sites are "refused, because
+                                       each is a different file", and that was the WRONG ANSWER, in
+                                       the direction this project cares about most: it is 23 hand
+                                       edits by memory instead of ONE census. `.agents/slop/
+                                       exitcodes/census.py` (336 lines) already AST-walks `checks/`
+                                       + `gates/`, resolves bindings, and its `codes.rows` (389 rows)
+                                       carries **24 `MESSAGE-EXIT` rows, one per instrument, each
+                                       naming its own lines** -- MEASURED, the class is fully
+                                       enumerated before a single one is fixed. So the real next
+                                       step is to PROMOTE that census into the TRACKED gate set so it
+                                       is a gate rather than an untracked `.agents/slop/` artifact
+                                       named by nothing, and let IT drive the fixes. Retyping its
+                                       `is_exit_call` into a second copy is forbidden, and moving 336
+                                       lines at load 25 on one turn is how instruments get moved
+                                       wrong. 1/4 = the three sites; the other 54 are OWED **behind
+                                       that promotion**, not refused.
 
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
@@ -16057,7 +16070,43 @@ ONE BUG.** VERIFIED HERE AGAINST CPython's OWN ORACLE (`.agents/slop/symh/oracle
 THE NARRATION WAS NOT RE-RUN** -- which is `M8`'s class (a document that stops describing its
 subject) and the second time in this one file, after its `0:ADD:2,1` canonical-form readings.
 
-- [ ] **`t_sink` IS THE LAST REAL ONE, AND IT IS A MINTED NOOP WHERE CPYTHON FLATTENS.**
+- [x] **`t_sink` WAS NEVER A DIVERGENCE: THE CENSUS PRINTED A NOOP FOR A NODE THE PORT CORRECTLY
+      MINTED. `37491d5eb`. MEASURED: `t_sink pat12=True sym=Some{5}`, AND `sym_12.put`'s OWN
+      `O.Found` RENDERS 5 IN **ITS** ARENA AS `0:SINK:1,2;1:x:;2:c2:` -- CPython'S OWN ANSWER.
+      CROSS-CHECKED AGAINST CPYTHON: `sym.rewrite(SINK(GROUP(x),c2))` -> `SINK [PARAM, CONST]` AND
+      `sym.rewrite(SINK(x,c2))` -> `None`.
+      **THE MECHANISM, AND IT IS THE SHARPEST INSTRUMENT BUG OF THE SESSION: `Sy.sym` RETURNS AN INDEX
+      INTO THE ARENA *IT GREW*, AND `rewrite` DROPS THAT ARENA AT `Found.i`. THE CENSUS'S `ans`
+      RENDERED IT AGAINST THE ARENA **HANDED** TO `sym`, AND `Arena.node` IS **TOTAL** -- `Arena.at`
+      ANSWERS `None{}` FOR AN INDEX NEVER INTERNED, AND `Arena.bottom()` IS `Node{OpsNOOP{}, Nil{}}`.**
+      **A *MINTED* ANSWER THEREFORE PRINTS AS A NOOP WITH NO SRCS, WHICH IS BYTE-IDENTICAL TO WHAT A
+      RULE THAT REALLY MINTED A NOOP PRINTS.** THE FIX IS `minted(ar, i) = U32.is_ge(i,
+      O.Arena.next(ar))` AT `:553` -- THE LANE NOW SAYS `sym=minted` INSTEAD OF RENDERING A LIE.
+      **AND `t_group`/`t_xor` AGREE ONLY VACUOUSLY: THEIR ANSWERS ARE INDICES THE HANDED ARENA ALREADY
+      HOLDS, SO TWO OF FIVE ROWS COULD NEVER SEE THIS CLASS.**
+- [ ] **`t_xor0` IS A DIFFERENT MECHANISM AND THE ANSWER IS AN INVENTORY LINE.** `:123` NEEDS THE TWO
+      CAPTURES TO BE THE SAME NODE (`y` != `c5`), SO `sym_8` CORRECTLY REFUSES; THE ANSWERING RULE IS
+      `commutative` (`symbolic.py:222-226`), VERIFIED BY CALLING IT --
+      `commutative.rewrite(XOR(XOR(x,c5), y))` **IS** `(XOR y (XOR x c5))` WITH
+      `Ops.PARAM.value 6 < Ops.XOR.value 41` FIRING THE FLIP. **THAT IS `symbolic.bend`'S INVENTORY
+      LINE 14, DEFERRED BEHIND `UOp.tuplize`** -- A MISSING MATCHER, NOT A WRONG RULE.
+- [ ] **`M20` FOUND A REDUNDANT PREDICATE, NOT JUST AN UNTESTED ONE.** `sym_12.pat`'s `any_sink_like`
+      **CANNOT BE MOVED BY ANY FIXTURE**: WITH NO SINK-LIKE SRC THE REBUILD IS BYTE-IDENTICAL,
+      `UOp.new` INTERNS IT BACK ONTO THE SAME SLOT, `sy_novel`'s `ret is not uop` SWALLOWS IT, **AND
+      CPYTHON'S `else None` IS REDUNDANT THE SAME WAY.** RECORDED AS A NEGATIVE IN THE FILE'S OWN
+      MUTATION TABLE, NOT FILED AS A FIXTURE GAP. `M17` (LIST -> `List.tail`, DROPS `src[0]`, RULE STILL
+      FIRES) MOVES **`sinkgrp` ONLY AND `sink` DOES NOT MOVE** -- BECAUSE `sink` READS A **SLOT**:
+      `eq_u(...,6)` IS SATISFIED BY ANY WRONG SRC LIST THAT ALSO MINTS ONE.
+- [ ] **AND THE GATEABILITY PRICE IS MEASURED, NOT GUESSED.** **EVERY MINTER DROPS ITS ARENA AT
+      `O.Found.i`; `grep -c 'O.Found.i(' symbolic.bend` = **31**, SO THREADING `O.Found` THROUGH
+      `sy_tri`/`sym_scan`/`sym_dispatch` TOUCHES 31 SITES IN A 577-DEF FILE. UNTIL THEN `sym=minted`
+      IS THE HONEST CEILING AND IT STAYS A PROBE.**
+- [ ] **TWO STALE `AGENTS.md`/HEADER CLAIMS MEASURED FALSE:** BOTH SAY `symbolic.bend --check-only` IS
+      **RED WITH 18 TODOs**; MEASURED **`ALL PROOFS CHECK`, rc=0**. AND `symbolic.bend`'s OWN HEADER IS
+      STALE THREE WAYS AGAINST ITS OWN RUN: `lay=3` (READS 4), `len_sym=13` (READS 23), `rej=6` (READS
+      14). NOT CORRECTED -- EACH NEEDS ITS OWN MEASUREMENT NOTE.
+
+- [ ] **`t_sink` WAS RECORDED AS A REAL DIVERGENCE BY ME, TWICE, AND IT WAS NEITHER.**
       `symbolic.py:445-449`'s `UPat((Ops.SINK, Ops.GROUP), name="root")` **FLATTENS A GROUP SRC OUT OF
       A SINK**. `symbolic.bend:1555`'s `sym_12.hit` LOOKS LIKE IT ALREADY DOES --
       `H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{}))` -- **SO EITHER SOMETHING ELSE MINTS THE
