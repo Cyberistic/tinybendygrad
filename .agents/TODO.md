@@ -444,6 +444,35 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        `verdict_of()` is **`gatekit.py:98`**, not `:97` as I wrote it
                                        this session. `.agents/slop/exitcodes/`.
 
+rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledgerdrift`), and it is
+                                       ONE DEFECT IN THREE PLACES. `checks/rn-gate.py` has this file's
+                                       own `refuse()` (exit 3) and guards TWO of its declared inputs
+                                       with a HAND LIST, `("rebase-gate", "eq-census2")` at `:93` --
+                                       which is doctrine 1 one level down: the guard lists what the
+                                       file happens to read instead of asking what it reads. So:
+                                       **(1) THE LIVE LANE** ran `[sys.executable] + ORACLE` at `:447`
+                                       against `.agents/slop/xd1/render-gate-oracle.py` -- ABSENT from
+                                       disk, ABSENT from HEAD, and its whole `.agents/slop/xd1/`
+                                       DIRECTORY IS GONE -- and the only signal was `lane failure`,
+                                       **a FAIL for what is an ABSENT SUBJECT**. **(2) THE SELFTEST**
+                                       read a "REAL captured pair", `checks/rn-port.txt` and
+                                       `checks/rn-orc.txt`; BOTH are absent and **0 COMMITS IN THE
+                                       WHOLE HISTORY TOUCH EITHER**, so `--selftest` died on
+                                       `FileNotFoundError` and exited **1** -- read as a red PORT by
+                                       anything that trusts `$?`. **`DEAD` IS NOT A `PASS`, AND NEITHER
+                                       IS IT A `FAIL`.** FIXED with the file's OWN `refuse()`, at the
+                                       POINT OF USE and not at import, because `--oracle-stdout`
+                                       reads a capture and never needs the script -- a guard at import
+                                       would take away a path that works -- and BEFORE the `bend`
+                                       call, so a refused gate costs nothing. MEASURED: live lane
+                                       **rc=3**, selftest **rc=3**, both naming the absent file, and
+                                       **`0` `bend` processes launched**. HEAD's own version was
+                                       confirmed to crash identically, so this is PRE-EXISTING and not
+                                       a regression. 2/4 = the two guards landed; the other 2 are
+                                       OWED but need a heavy run to settle: whether the captured pair
+                                       can be RE-TAKEN (a live `bend` lane) or must be REFUSED
+                                       permanently, and whether the oracle is recoverable from git.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

@@ -389,6 +389,19 @@ def selftest():
   writer's own ` = [` is then the second candidate, so a strict reader either mis-picks or -- with
   `eqs[0]` as the fallback -- silently truncates the name back to `pyrender const` and reports
   `eq=0`.  A control that cannot express the thing it is testing will report a clean 0."""
+  # THE CAPTURED PAIR IS TWO MORE DECLARED INPUTS, AND NEITHER IS GUARDED. MEASURED 2026-10-15:
+  # `checks/rn-port.txt` and `checks/rn-orc.txt` are absent from disk, absent from HEAD, and **0
+  # commits in the whole history touch either** -- so `read_text()` raised `FileNotFoundError` and
+  # `--selftest` exited 1, which reads as a FAILURE OF THE PORT rather than as an absent subject.
+  # **THE SAME CLASS AS THE ORACLE, IN THE SAME FILE, GUARDED IN TWO PLACES AND MISSED IN THE
+  # THIRD.** The guard is a hand list of what this file happens to read; the file's own inputs are
+  # wherever it says they are. Refusing here keeps the lane a lane: `DEAD` is not a `PASS`, and an
+  # unrunnable selftest that exits 1 will be read as a red port by anything that trusts `$?`.
+  for _cap in ("rn-port.txt", "rn-orc.txt"):
+    if not (HERE / _cap).is_file():
+      refuse(f"selftest input absent: {HERE / _cap} -- the captured pair this lane judges was never "
+             f"committed (0 commits touch it), so there is no denominator to judge. Capture it with "
+             f"`--port-stdout` / `--oracle-stdout` on a live lane, or restore it.")
   live = (HERE / "rn-port.txt").read_text()
   orc = (HERE / "rn-orc.txt").read_text()
   base = judge(live, orc)
@@ -441,6 +454,21 @@ def main():
   if a.port_stdout or a.oracle_stdout:
     print("!! CAPTURED LANE INPUT. Not a live run. A verdict over a capture is evidence about the "
           "CAPTURE, never about the tree as it is now.")
+  # AN ABSENT ORACLE IS REFUSED, NOT A LANE FAILURE, and this gate's OWN guard list is why it was
+  # not. The two readers this file LOADS are checked at `:93` by a hand-list of two names, and
+  # `ORACLE` -- this file's own third declared input -- was never in it. MEASURED 2026-10-15:
+  # `.agents/slop/xd1/` is GONE, so the oracle is absent from disk AND from HEAD, and the live lane
+  # ran a script that is not there. The only signal it produced was `lane failure`, which is a
+  # **FAIL for what is an absent subject** -- a gate that cannot tell "my fixture is missing" from
+  # "my fixture behaved" is the defect this file's own `refuse()` was written to remove.
+  # IT IS GUARDED HERE, AT THE POINT OF USE, NOT AT IMPORT: `--oracle-stdout` reads a captured
+  # file and never needs the script, so a guard at import would take away a path that works. And it
+  # sits BEFORE the `bend` call so a refused gate costs nothing.
+  if not a.oracle_stdout and not (REPO / ORACLE[0]).is_file():
+    refuse(f"oracle absent: {REPO / ORACLE[0]} -- the live lane would run a script that is not "
+           f"there (`.agents/slop/xd1/` is gone; recoverable from git if it was ever committed). "
+           f"Pass --oracle-stdout to compare a CAPTURE instead. This gate cannot produce a "
+           f"denominator without its oracle.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
   o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")
