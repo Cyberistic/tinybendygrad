@@ -1,0 +1,241 @@
+--- gates/pins-shape-gate.py	2026-10-15 01:55:44
++++ .agents/slop/pinsshape/scratch/PROPOSED.py	2026-10-15 12:50:56
+@@ -77,6 +77,20 @@
+ # `git ls-files gates/` answers 0 for either, and `.crp-mut-pins.rows` was present in one census run
+ # and gone in the next, with no edit by this unit.
+ TEMP = re.compile(r"^\..*\.rows$")
++# A QUOTED `.rows` PATH IN A NON-PYTHON SOURCE. The sibling of `ast.Constant` for the languages
++# `ast` cannot read; see `namer()`'s second paragraph for the measurement that requires it.
++LITERAL = re.compile(r"""["']([\w./-]+\.rows)["']""")
++# A READER THAT PROVES ITS TABLE IS A TRANSCRIPT. `gates/cstyle-live.rows` is compared
++# BYTE-FOR-BYTE against a process's stdout at `checks/repair-dupes.py:100`
++# (`same = GOOD.read_bytes() == r.stdout.encode()`), and MEASURED this pattern fires on that ONE
++# file tree-wide and on no other reader of any `.rows`. So prepending a `#` header to that file
++# makes the comparison False FOREVER and drives the gate to exit 2 permanently.
++#
++# THIS IS AN EARNED EXEMPTION AND NOT A NAME ON A LIST. There is no manifest, no suffix, no
++# basename set: the file earns it by its reader DEMONSTRATING byte identity against a stream the
++# reader itself produces. Delete `repair-dupes.py:100` and the exemption disappears, which is the
++# falsifiability a hand list does not have.
++CAPTURED = re.compile(r"read_bytes\(\)\s*==\s*[\w.]+\.encode\(\)")
+ 
+ 
+ def _resolve(rel, beside):
+@@ -135,33 +149,59 @@
+     no `-pins` glob can see, and `wgsl_render_census-mutate.py:38` names a dot-prefixed TEMP path
+     that must not be counted as an input. KEYED BY BASENAME because the literal is repo-relative
+     -- `gates/wk-f32-rows.py:69` spells it `gates/wk-f32-table.rows` -- and keying on the literal
+-    made a table that IS named report "named by nothing", which is the worst possible reason."""
++    made a table that IS named report "named by nothing", which is the worst possible reason.
++
++    **A PATH IS A STRING IN EVERY LANGUAGE, AND `ast.parse` READS EXACTLY ONE OF THEM.** The
++    previous version did `if f.suffix != ".py": continue` and so was blind to the other half of
++    this repository's own gate population. MEASURED, twice, and the two halves compound:
++
++      * `gates/symcases.rows` is named at `gates/sym_graph_census.bend:130`
++        (`def CASES() -> String: "gates/symcases.rows"`) and READ AT RUNTIME at `:626`
++        (`f : File <- IO.try(File, File.open(CASES(), "r"))`), and it reported "no gate source
++        names this path" -- a FALSE CHARGE on a table that is read on every run.
++      * The POOL this function is handed is `gates-pop.discover()`, which returns **0 of the 58
++        `.bend` drivers** under `gates/` (MEASURED: 188 entries = 169 `.py` + 17 `.sh` + 1
++        extless + 1 `.mjs`, plus 60 libs of which none is `.bend`). So even a correct parser here
++        would never be handed the file.
++
++    ONE table's owner set changes under the fix (17 tables, 1 disagreement). The POPULATION that
++    was invisible is 58 files wide, so the next `.bend` census that pins a table inherits the
++    false charge -- which is why this is a fix and not a tolerance."""
+     out = {}
+     for f in entries:
+-        if f.suffix != ".py":
+-            continue
+         try:
+             if not stat.S_ISREG(os.lstat(f).st_mode):
+                 continue
+-            # `gate-surface.py` and `gates-pop.py` ship backslash escapes in DOCSTRINGS, so parsing
+-            # a gate is allowed to warn -- and another gate's warning printed under this gate's name
+-            # is a row this gate did not measure.
+-            with warnings.catch_warnings():
+-                warnings.simplefilter("ignore", SyntaxWarning)
+-                tree = ast.parse(f.read_text())
+-        except (SyntaxError, UnicodeDecodeError, OSError):
++            src = f.read_text()
++        except (UnicodeDecodeError, OSError):
+             continue
+-        for node in ast.walk(tree):
+-            if isinstance(node, ast.Constant) and isinstance(node.value, str) \
+-                    and node.value.endswith(".rows"):
+-                out.setdefault(node.value.rsplit("/", 1)[-1], set()).add(f.name)
++        found = set()
++        if f.suffix == ".py":
++            try:
++                # `gate-surface.py` and `gates-pop.py` ship backslash escapes in DOCSTRINGS, so
++                # parsing a gate is allowed to warn -- and another gate's warning printed under
++                # this gate's name is a row this gate did not measure.
++                with warnings.catch_warnings():
++                    warnings.simplefilter("ignore", SyntaxWarning)
++                    tree = ast.parse(src)
++                found = {n.value.rsplit("/", 1)[-1] for n in ast.walk(tree)
++                         if isinstance(n, ast.Constant) and isinstance(n.value, str)
++                         and n.value.endswith(".rows")}
++            except SyntaxError:
++                found = set()
++        if not found:                       # every non-Python language, and unreadable Python
++            found = {m.rsplit("/", 1)[-1] for m in LITERAL.findall(src)}
++        for n in found:
++            out.setdefault(n, set()).add(f.name)
+     return out
+ 
+ 
+-def check(p, owners):
++def check(p, owners, captured=False):
+     """Every check on ONE table, each returning a reason string or None. Per GATE, never tree-wide.
+ 
+-    Returns `(reasons, n_rows, n_cols)`; `n_cols` is None when the rows disagree."""
++    Returns `(reasons, n_rows, n_cols)`; `n_cols` is None when the rows disagree. `captured` is
++    the READER'S OWN PROOF that this file is a transcript -- see `CAPTURED` -- and it is the only
++    thing that excuses check II."""
+     try:
+         rows, head = data_rows(p), header(p)
+     except OSError as e:
+@@ -193,9 +233,9 @@
+     # `indexread-baseline.rows` writes a FLAG, so a path joined onto the table's own directory
+     # reports a generator that is on disk as MISSING.
+     w = WRITER.search(head)
+-    if not w:
++    if not w and not captured:
+         bad.append("no header declares who writes it (a generator, a flag, or `by hand`)")
+-    elif w.group(1).endswith(".py") and not _resolve(w.group(1), p.parent):
++    elif w and w.group(1).endswith(".py") and not _resolve(w.group(1), p.parent):
+         bad.append(f"the header's writer {w.group(1)} is not in the tree")
+ 
+     # III A DECLARED ARITY IS THE ONE MEASURED. Asserted only where the header declares one, and a
+@@ -223,12 +263,67 @@
+         bad.append("the file carries NO rows and does not say so -- 0 from an empty table is not "
+                    "0 from a comparison")
+ 
+-    # VI NAMED BY A GATE. Doctrine 1's shape on this subject: a table nothing reads is a list.
++    # VI NAMED BY A SOURCE IN THIS TREE'S OWN POPULATION. Doctrine 1's shape on this subject: a
++    # table nothing reads is a list.
+     if not owners:
+         bad.append("no gate source names this path")
+     return bad, len(rows), ncol
+ 
+ 
++def owners_pool(entries, libs, opaque):
++    """ALL THREE OF `gates-pop.py`'s OWN BUCKETS, LOADED BY PATH.
++
++    The pool used to be `entries + .py libs`, i.e. `discover()`, which MEASURED returns **0 of the
++    62 `.bend` drivers** that `opaque()` holds (`gates/symcases.rows` is named by one of them, so
++    the owner lookup was blind to 1 of 17 tables and blind to a 62-file population).
++
++    **`opaque()` IS NOT A NEW LIST AND IT IS NOT A DIRECTORY WALK.** It is `gates-pop.py`'s own
++    third bucket -- "a file the walk holds that `entry_reason()` reads as `None`" -- already
++    computed, already with its own denominator, already shared with `gate-surface.py`. MEASURED:
++    swapping `discover()` for `discover() + opaque()` (pool 244 -> 479) finds `sym_graph_census.bend`
++    and changes the owner set of exactly ONE table, adding NO spurious owners.
++
++    A DIRECTORY WALK WAS MEASURED AND REJECTED, and the reason is the finding, not a preference:
++    walking the repo yields a 38,405-file pool that names `classified.tsv`, `scan.tsv` and
++    `measured.json` as "owners" of `cstyle-live.rows` because the STRING occurs in a DATA FIELD.
++    A path in a data field is a datum; a path in code is a declaration, and no suffix set tells
++    them apart -- which is the same residual `gates-pop.py:428-432` already names for JavaScript."""
++    return entries + libs + opaque
++
++
++def captured_tables(entries):
++    """`{(table, reader)}` whose READER proves byte identity against a stream it produces.
++
++    **THE EXEMPTION ATTACHES TO THE PATH THE COMPARISON NAMES, NOT TO EVERY PATH THE READER
++    MENTIONS.** The first version of this collected `f.name in named[n]` over every basename the
++    reader touched, and MEASURED it exempted 5 tables including `-pins.rows` and `.rows` -- because
++    this file's own PLANTS dict spells the comparison out in a comment, so `pins-shape-gate.py`
++    names itself and the reader's capture-ness spread to tables it never touches. An exemption that
++    spreads is not an exemption.
++
++    What survives is the HONEST question -- which table does THIS comparison read -- and the answer
++    has to come from the same expression, so the path and the comparison are read TOGETHER:
++
++        GOOD = <path>          ...  same = GOOD.read_bytes() == r.stdout.encode()
++
++    The binding is `NAME = <...>/"x.rows"` and the use is `NAME.read_bytes() == ... .encode()`. MEASURED
++    tree-wide that binds exactly one pair: `checks/repair-dupes.py` -> `gates/cstyle-live.rows`,
++    whose line 1 is data and therefore cannot carry a header without breaking the comparison."""
++    binds = re.compile(r"""(\w+)\s*=\s*[^\n=]*["']([\w./-]+\.rows)["']""")
++    out = set()
++    for f in entries:
++        try:
++            src = f.read_text()
++        except (UnicodeDecodeError, OSError):
++            continue
++        if not CAPTURED.search(src):
++            continue
++        for var, path in binds.findall(src):
++            if re.search(rf"{re.escape(var)}\.read_bytes\(\)\s*==\s*[\w.]+\.encode\(\)", src):
++                out.add(path.rsplit("/", 1)[-1])
++    return out
++
++
+ def mutate_population(entries):
+     """REPORTED, NOT ASSUMED: the `-mutate.py` files, and how many are actually wired.
+ 
+@@ -277,32 +372,40 @@
+         with warnings.catch_warnings():
+             warnings.simplefilter("ignore", SyntaxWarning)
+             entries, libs = pop.discover(root)
++        opaque = pop.opaque(root)
+     except Exception as e:                                    # a census that cannot pop is not 0
+         return refuse(f"discover() raised {type(e).__name__}: {e}")
+     if not entries:
+         return refuse("the gate population is EMPTY -- a gate over 0 gates cannot fail")
+ 
+-    # OWNERS ARE LOOKED UP IN `entries + libs`, NOT `entries` ALONE, AND THAT IS A MEASUREMENT.
+-    # `gates/wk-f32-rows.py` WRITES `gates/wk-f32-table.rows` (`wk-f32-rows.py:69`) and has no
+-    # `__main__`, so `discover()` files it as a LIB. Reading owners out of `entries` alone made a
+-    # table report "named by nothing" while the file that writes it sat in the same directory --
+-    # doctrine 1's blind spot reproduced inside the instrument built to close it.
+-    owners_pool = entries + [p for p in libs if p.suffix == ".py"]
+-    named = namer(owners_pool)
++    # OWNERS ARE LOOKED UP TREE-WIDE AND THE POPULATION IS THE DIRECTORY. `gates/wk-f32-rows.py`
++    # WRITES `gates/wk-f32-table.rows` (`wk-f32-rows.py:69`) and has no `__main__`, so `discover()`
++    # files it as a LIB; reading owners out of `entries` alone made a table report "named by
++    # nothing" while the file that writes it sat in the same directory. Adding to that: the pool
++    # was `discover()`, and `discover()` cannot see a `.bend` file at all.
++    pool = owners_pool(entries, libs, pop.opaque(root))
++    named = namer(pool)
++    caps = captured_tables(pool)
+     temps = [p.name for p in sorted(HERE.iterdir())
+              if TEMP.match(p.name) and stat.S_ISREG(os.lstat(p).st_mode)]
+     tables = [p for p in sorted(HERE.iterdir())
+               if p.suffix == ".rows" and not p.name.startswith(".")
+               and stat.S_ISREG(os.lstat(p).st_mode)]
+-    print(f"POPULATION: {len(entries)} discovered entry point(s) + {len(owners_pool) - len(entries)}"
+-          f" lib(s) as owners, {len(tables)} checked-in .rows file(s) under gates/, "
++    print(f"POPULATION: {len(entries)} discovered entry point(s) + {len(libs)} lib(s) + "
++          f"{len(opaque)} opaque file(s) as the owner population -- ALL THREE of gates-pop's OWN"
++          f" buckets, loaded BY PATH, because discover() returns 0 of the 62 .bend drivers"
++          f" opaque() holds"
++          f", {len(tables)} checked-in .rows file(s) under gates/, "
+           f"{len(named)} distinct .rows path(s) named by one of them"
+-          + (f", {len(temps)} dot-prefixed TEMP excluded: {', '.join(temps)}" if temps else ""))
++          + (f", {len(temps)} dot-prefixed TEMP excluded: {', '.join(temps)}" if temps else "")
++          + (f"\nCAPTURES: {len(caps)} table(s) whose READER proves byte identity against a "
++             f"stream it produces -- check II cannot apply to a transcript: {', '.join(sorted(caps))}"
++             if caps else ""))
+ 
+     bad, tally, live = [], {}, []
+     git = tracked(None)
+     for p in tables:
+-        why, n, w = check(p, named.get(p.name, set()))
++        why, n, w = check(p, named.get(p.name, set()), p.name in caps)
+         tally[w] = tally.get(w, 0) + 1
+         untracked = git is not None and p.name not in git
+         if untracked:
+@@ -311,7 +414,7 @@
+         print(f"  {p.name:34s} rows={n:5d} cols={w or '-':>2} "
+               f"{'UNTRACKED ' if untracked else ''}"
+               f"owners={','.join(sorted(named.get(p.name, {'NONE'})))[:56]}")
+-    muts, wired = mutate_population(owners_pool)
++    muts, wired = mutate_population(pool)
+     print(f"MUTATIONS: {len(muts)} -mutate.py file(s), {len(wired)} wired; the unwired ones are "
+           f"{', '.join(m for m in muts if m not in wired) or '(none)'} -- REPORTED, not charged: "
+           f"a harness nothing invokes is a coverage gap or a dead def and this cannot tell which")
