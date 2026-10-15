@@ -329,6 +329,44 @@ def F36_regbuf_store():
     return UOp(Ops.INDEX, src=(buf, CCONST(1, I32))).store(CAST(C(1.0), F32))
 
 
+def F38_regload():
+    # THE FIXTURE `ptx_render_census-mutate.py`'s M9 WAS MISSING, and M9's own recorded
+    # reason for moving zero rows was WRONG. M9 makes an on-REG/ALU LOAD take ptx.py:204's
+    # SUBSCRIPT arm instead of its COPY arm, and it moved zero of 557 rows; the census's own
+    # note blamed finding 2 -- "it moves nothing BECAUSE the alias arm already returns the
+    # wrong register" -- which was true only while `rg_at(w, 0)` answered `NONE`. Now that
+    # the arm is FIXED the blame is gone and M9 is still zero, for the real reason, and this
+    # fixture is the one that names it:
+    #
+    #   EVERY on-ALU LOAD in the axis has `src[0]` = a SPECIAL, and a SPECIAL's register is
+    #   a SCALAR STRING, so subscript 0 returns it unchanged. `r[u.src[0]]` and
+    #   `r[u.src[0]][0]` are the SAME STRING for every LOAD the axis has.
+    #
+    # A REG-space BUFFER's register is a LIST of four, so a LOAD of one is the shape where
+    # the two arms genuinely disagree -- `r1` is all four registers here and `%reg_f32_0`
+    # under M9. MEASURED: this graph renders, `R.render` does not refuse it.
+    buf = UOp.placeholder((4,), F32, slot=0, addrspace=AddrSpace.REG)
+    return buf.load()
+
+
+def F37_twobufs():
+    # THE FIXTURE EVERY EARLIER FIXTURE OF THIS CENSUS WAS MISSING, and the census's own
+    # alias finding named it: ptx.py:204 reads `r[u.src[0]][u.src[1].src[0].val]`, and every
+    # other INDEX/SHRINK on a REG src in this axis has its `src[0]` at STEP ZERO -- because a
+    # REG `placeholder` has no srcs, so toposort always emits it first. `u.src[0]` NOT at
+    # index 0 is ORDINARY (it is what `f10_loads`' three LOADs and `f12_after`'s AFTER
+    # already are), and only f12/f10 said so.
+    #
+    # MEASURED, and this is why two buffers rather than one cleverer graph: `r[4][1]` is
+    # `%reg_f32_5` and `r[0][1]` is `%reg_f32_1`, so the two candidate readers of ptx.py:204
+    # ANSWER DIFFERENTLY and the row is a real discriminator rather than a coincidence.
+    # MEASURED toposort, the whole axis of the defect: `INDEX(b, 1)` carries `refs=[4, 6]`.
+    a = UOp.placeholder((4,), F32, slot=0, addrspace=AddrSpace.REG)
+    b = UOp.placeholder((4,), F32, slot=1, addrspace=AddrSpace.REG)
+    return UOp.stack(UOp(Ops.INDEX, src=(a, CCONST(2, I32))),
+                     UOp(Ops.INDEX, src=(b, CCONST(1, I32))))
+
+
 def F34_boolalu():
     # ptx.py:24-28 -- ADD/MUL/XOR/AND/OR BRANCH on `dt == dtypes.bool` and pick `or`/
     # `and`/`and.pred`/`xor.pred`/`or.pred`. A bool ALU node is the only thing that can
@@ -372,6 +410,8 @@ FIXTURES = [
     ("f34_boolalu", F34_boolalu, None),
     ("f35_loadvec", F35_loadvec, None),
     ("f36_regstore", F36_regbuf_store, None),
+    ("f37_twobufs", F37_twobufs, None),
+    ("f38_regload", F38_regload, None),
 ]
 
 # `Ops.WMMA` and the `Ops.IF`/`Ops.ENDIF`/`Ops.RANGE`/`Ops.BACKEDGE` loop trio need

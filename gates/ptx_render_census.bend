@@ -339,7 +339,9 @@ def ax(+i: U32) -> List<&2, P.Wk>:
     case 29: AX.ax29()
     case 30: AX.ax30()
     case 31: AX.ax31()
-    case _:  AX.ax32()
+    case 32: AX.ax32()
+    case 33: AX.ax33()
+    case _:  AX.ax34()
 
 def one_at(+nm: String, +refuses: Bool, +i: U32) -> IO(Unit):
   +w = P.wk_all(ax(i), P.wal0())
@@ -385,6 +387,8 @@ def fixtures() -> IO(Unit):
     ae : Unit <- one_at("f34_boolalu", True{}, 30)
     af : Unit <- one_at("f35_loadvec", True{}, 31)
     ag : Unit <- one_at("f36_regstore", False{}, 32)
+    ah : Unit <- one_at("f37_twobufs", False{}, 33)
+    ai : Unit <- one_at("f38_regload", False{}, 34)
     return Unit{}
 
 # ===========================================================================

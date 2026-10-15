@@ -12,7 +12,7 @@ import ./../tinybendygrad/renderer/ptx.bend as P
 # spells it qualified. A generated body that said `Wk` would not compile -- Bend
 # resolves a name in the IMPORTING file, not in the file that defines it.
 # ==== BEGIN GENERATED FIXTURES
-# FIXTURES f01_alu f02_counter f03_cast5 f04_end f05_regbuf4 f06_regbuf1 f07_reuse f08_refuse f09_special f09b_launch f10_loads f11_stack f12_after f13_param f14_skips f15_bidx f16_bitcast f17_u64 f19_mixed f23_load1 f24_range f25_rangevoid f26_store f27_loadbool f28_name f29_name2 f30_noparam f31_weakint f32_weakfloat f33_bf16cast f34_boolalu f35_loadvec f36_regstore
+# FIXTURES f01_alu f02_counter f03_cast5 f04_end f05_regbuf4 f06_regbuf1 f07_reuse f08_refuse f09_special f09b_launch f10_loads f11_stack f12_after f13_param f14_skips f15_bidx f16_bitcast f17_u64 f19_mixed f23_load1 f24_range f25_rangevoid f26_store f27_loadbool f28_name f29_name2 f30_noparam f31_weakint f32_weakfloat f33_bf16cast f34_boolalu f35_loadvec f36_regstore f37_twobufs f38_regload
 # REFUSES f08_refuse f31_weakint f32_weakfloat f33_bf16cast f34_boolalu f35_loadvec
 def ax00() -> List<&2, P.Wk>:
   [  P.Wk{O.OpsCONST{}, S.weakfloat(), S.Aalu{}, 1, "", [], 0, True{}},
@@ -313,4 +313,19 @@ def ax32() -> List<&2, P.Wk>:
     P.Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", [4], 0, True{}},
     P.Wk{O.OpsSTORE{}, S.void(), S.AReg{}, 1, "", [3, 5], 0, True{}},
     P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [6], 0, True{}}]
+def ax33() -> List<&2, P.Wk>:
+  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+    P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [1], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [0, 2], 2, True{}},
+    P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+    P.Wk{O.OpsCONST{}, S.weakint(), S.Aalu{}, 1, "", [], 0, True{}},
+    P.Wk{O.OpsCAST{}, S.int32(), S.Aalu{}, 1, "", [5], 0, True{}},
+    P.Wk{O.OpsINDEX{}, S.single(), S.AReg{}, 1, "", [4, 6], 1, True{}},
+    P.Wk{O.OpsSTACK{}, S.single(), S.AReg{}, 2, "", [3, 7], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [8], 0, True{}}]
+def ax34() -> List<&2, P.Wk>:
+  [  P.Wk{O.OpsBUFFER{}, S.single(), S.AReg{}, 4, "", [], 0, True{}},
+    P.Wk{O.OpsLOAD{}, S.single(), S.AReg{}, 4, "", [0], 0, True{}},
+    P.Wk{O.OpsSINK{}, S.void(), S.Aalu{}, 1, "test", [1], 0, True{}}]
 # ==== END GENERATED FIXTURES

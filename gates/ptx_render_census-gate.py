@@ -3,8 +3,8 @@
 
     .venv/bin/python gates/ptx_render_census-gate.py
 
-557 ROWS, THREE LANES (CPython, bend interpreted, bend compiled), 62 DECLARED DIVERGENCES
-IN THREE GROUPS. Run `--refresh` to rewrite `gates/ptx_render_census-pins.rows`; that is
+579 ROWS, THREE LANES (CPython, bend interpreted, bend compiled), 58 DECLARED DIVERGENCES
+IN TWO GROUPS. Run `--refresh` to rewrite `gates/ptx_render_census-pins.rows`; that is
 its ONLY writer, and a file nothing can write is a file nothing can check.
 
 WHY A FOURTH RENDER CENSUS, AND WHY THIS ONE IS DIFFERENT AGAIN.
@@ -49,33 +49,43 @@ THE THREE DIVERGENCE GROUPS
     SILENTLY EMPTIED where CPython refuses. "A U32 shift is not an error, it is a smaller
     number"; an empty type field is not an error either, it is a kernel ptxas rejects.
 
-  GROUP 2 -- `<f>.mod`, 31 rows. CARVE-OUT, and the shape is the point. `string_rewrite` is
+  GROUP 2 -- `<f>.mod`, 35 rows. CARVE-OUT, and the shape is the point. `string_rewrite` is
     NOT PORTED, so the module cannot be compared; a divergence that says so in one pinned
     string per fixture is the honest record, and the pin means the day the port grows a
-    module this gate goes red until the row leaves DIVERGES. Five of the thirty-one are not
+    module this gate goes red until the row leaves DIVERGES. Five of the thirty-five are not
     `ABSENT` but `PORT-ANSWERED` (`f31`, `f32`, `f33`, `f34`) or `PORT-REFUSED:INDEX`
     (`f08`): CPython refused and the port did not, which is GROUP 1 reaching the walk.
 
-  GROUP 3 -- the walk, 6 rows. FINDING, NOT A CARVE-OUT. `ptx.bend:502` is
-    `case 2: Wal.rput(w, rg_at(w, 0))`, and `rg_at(w, 0)` reads `Wal.r[0]` -- STEP ZERO --
-    where ptx.py:189 and ptx.py:204 both read `r[u.src[0]]`, i.e. `Wal.r[refs[0]]`. Every
-    one of `ptx.bend`'s OWN twenty-five fixtures puts the aliased node at index 0 (MEASURED:
-    `f12_after_ss` is `BUFFER, AFTER(refs=[0]), SINK`), which is why the defect survived a
-    green gate. This axis does not: `gates/ptx_render_census-gen.py` reads the src indices
-    off CPython's own graph, so `f12_after`'s AFTER carries `refs=[4, 4]` and a LOAD of a
-    SPECIAL carries `refs=[3]`. The port answers `NONE` where CPython answers a register,
-    and `f10_loads.r9` (`{%g0, %g1, %g2}`) is the cascade -- a STACK built from three
-    registers the walk never produced.
-    THE FIX IS `rg_at(w, Wk.refs(s)[0])`, i.e. the port needs a `refs`-aware reader where
-    `rg_pick` has one; and the pin must come out of DIVERGES when it lands.
+  GROUP 3 -- the walk, 5 rows. FINDING, NOT A CARVE-OUT, and it is GROUP 1 REACHING THE
+    WALK: the five registers the port allocates where ptx.py:181 refuses.
+
+  GROUP 3a WAS HERE AND IT IS FIXED. `ptx.bend`'s alias arm was `case 2: Wal.rput(w,
+    rg_at(w, 0))`, and `rg_at(w, 0)` reads `Wal.r[0]` -- STEP ZERO -- where ptx.py:189
+    (`self.r[u] = self.r[u.src[0]]`) and ptx.py:204 (`r[u.src[0]][u.src[1].src[0].val]`)
+    both read `r[u.src[0]]`, i.e. `Wal.r[refs[0]]`. SIX ROWS DIVERGED. Two reasons the
+    defect survived a green gate, and BOTH are about the fixtures rather than the code:
+      * all twenty-five of `ptx.bend`'s OWN fixtures put the aliased node at index 0, and
+        every one of the four INDEX/SHRINK-on-REG nodes in this GENERATED axis did too --
+        a REG `placeholder` has no srcs, so toposort always emitted it first, and step
+        zero is the ONE value `rg_at(w, 0)` gets right. `f37_twobufs` is the fixture that
+        broke the tie, and it was missing because a graph with a NON-ZERO `src[0]` for an
+        INDEX needs TWO register buffers, and no fixture builder made one.
+      * `f12_after` and `f10_loads` DID carry a non-zero `src[0]` and DID diverge -- so
+        the census saw the defect from its first run and its 62 divergences were honest.
+        The thing that hid it was that 62/557 reads as "this census has carve-outs".
+    FIXED in `ptx.bend`: `rg_alias` and `rg_pick` both read `Wk.refs(s)`'s HEAD. The six
+    rows left DIVERGES, are COMPARED rows now, and `claims_hold()` pins what each of them
+    answers -- a fixed divergence cannot be guarded by the divergence table, because it is
+    not in it any more.
 
 WHAT THE DIFF CANNOT SEE, AND WHAT IS SAID INSTEAD
 ---------------------------------------------------
 Two empty lanes would agree on every row, so `claims_hold()` reads the PORT'S OWN `bd.out`
 and asserts structural facts no other row produces: the `fmt` boundary pair
 (`mov.b32` two tabs, `selp.f32` one), the five EMPTY dtype answers, the `barrier` with its
-tab spelled, and the six walk rows that are `NONE` where CPython has a register. A check
-never seen to fail is not a check, so `gates/ptx_render_census-mutate.py` carries thirteen
+tab spelled, and the eight walk rows the alias fix moved (`f37_twobufs.r3` is the one that
+must NOT move). A check never seen to fail is not a check, so
+`gates/ptx_render_census-mutate.py` carries thirteen
 mutations -- including THREE THAT MUTATE THIS GATE'S OWN GUARDS, which is the only way to
 show `names_hold`, `axis_hold` and `claims_hold` go red rather than being decoration.
 """
@@ -93,11 +103,22 @@ DRIVER = HERE / "ptx_render_census.bend"
 AXIS = HERE / "ptx_render_census_axis.bend"
 PINS = HERE / "ptx_render_census-pins.rows"
 
-# 515 rows. The count is DERIVED, never typed: `ROWS = len(run_oracle())` would make the
+# 579 rows. The count is DERIVED, never typed: `ROWS = len(run_oracle())` would make the
 # count follow the population instead of pinning it, and a count that cannot go wrong is a
 # count that cannot catch. So it is asserted instead, and the assertion names the census.
-ROWS = 557
-N_DIVERGES = 62
+# 557 -> 579 is TWO fixtures. `f37_twobufs` adds 15 rows (10 `.r` + `.mod` + `.regn` +
+# 2 `.reg` + `.entry`): ptx.py:204's `r[u.src[0]]` read whose `src[0]` is NOT at step zero,
+# which no other INDEX/SHRINK in the axis had (MEASURED: a REG `placeholder` has no srcs,
+# so toposort always emitted it first, and `u.src[0]` at index 0 is the ONE value
+# `rg_at(w, 0)` gets right). `f38_regload` adds 7 (3 `.r` + `.mod` + `.regn` + `.reg` +
+# `.entry`): a LOAD whose `src[0]` is a REG BUFFER, so its register is a LIST and
+# `r[u.src[0]]` and `r[u.src[0]][0]` are DIFFERENT -- the shape M9 could not move.
+ROWS = 579
+# 62 -> 58. GROUP 3a EMPTIED: `ptx.bend`'s alias arm read `Wal.r[0]` where ptx.py:189 and
+# ptx.py:204 read `r[u.src[0]]`, six rows diverged, the fix landed, and the six are now
+# COMPARED rows like the rest. +2 for `f37_twobufs.mod` and `f38_regload.mod`, which are
+# GROUP 2 like every other `.mod`. 58 = 18 dtype + 5 weak registers + 35 `.mod`.
+N_DIVERGES = 58
 
 # --------------------------------------------------------------------------
 # THE DIVERGENCES, generated ONCE from a real run and then FROZEN here. The three
@@ -134,7 +155,8 @@ FIXTURES = ["f01_alu", "f02_counter", "f03_cast5", "f04_end", "f05_regbuf4", "f0
             "f11_stack", "f12_after", "f13_param", "f14_skips", "f15_bidx", "f16_bitcast",
             "f17_u64", "f19_mixed", "f23_load1", "f24_range", "f25_rangevoid", "f26_store",
             "f27_loadbool", "f28_name", "f29_name2", "f30_noparam", "f31_weakint",
-            "f32_weakfloat", "f33_bf16cast", "f34_boolalu", "f35_loadvec", "f36_regstore"]
+            "f32_weakfloat", "f33_bf16cast", "f34_boolalu", "f35_loadvec", "f36_regstore",
+            "f37_twobufs", "f38_regload"]
 REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
             "f32_weakfloat": "PORT-ANSWERED", "f33_bf16cast": "PORT-ANSWERED",
             "f34_boolalu": "PORT-ANSWERED",
@@ -144,12 +166,25 @@ REFUSALS = {"f08_refuse": "PORT-REFUSED:INDEX", "f31_weakint": "PORT-ANSWERED",
             # refusals is six rather than five and a seventh is red.
             "f35_loadvec": "PORT-ANSWERED"}
 
-# GROUP 3 -- the walk's alias arm.
-# GROUP 3a -- the alias arm reads `Wal.r[0]` where ptx.py:189/204 read `Wal.r[refs[0]]`.
-ALIAS = {"f07_reuse.r4": "%g0", "f10_loads.r4": "%g0", "f10_loads.r6": "%g1",
-         "f10_loads.r8": "%g2", "f10_loads.r9": "{%g0, %g1, %g2}", "f12_after.r5": "%alu_f32_0"}
+# GROUP 3 -- the walk.
+# GROUP 3a IS GONE AND IT IS NOT A CARVE-OUT: `ptx.bend`'s alias arm read `Wal.r[0]`,
+# STEP ZERO, where ptx.py:189 (`self.r[u] = self.r[u.src[0]]`) and ptx.py:204
+# (`r[u.src[0]][u.src[1].src[0].val]`) both read `Wal.r[refs[0]]`. SIX ROWS DIVERGED --
+# `f07_reuse.r4`, `f10_loads.r4`, `.r6`, `.r8`, `.r9` and `f12_after.r5`, the port
+# answering `NONE` where CPython answers `%g0`/`%g1`/`%g2`/`{%g0, %g1, %g2}`/`%alu_f32_0`.
+# `ptx.bend` now reads `Wk.refs(s)`'s HEAD in BOTH arms (`rg_alias` and `rg_pick`), the
+# six rows are COMPARED like every other row, and `claims_hold()` below pins the answer
+# EACH of them now gives -- so the fix is guarded in the same place the defect was.
+# `f37_twobufs` was added in the same commit because the SAME wrong read was in `rg_pick`
+# and NO fixture exercised it: MEASURED, reverting the `rg_pick` line alone moves 2 rows
+# on the whole 579-row census and both are `f37_twobufs`, i.e. without the new fixture that
+# half of the fix is a coverage gap that reads exactly like a correct edit. `f38_regload`
+# is the OTHER such gap, and it is older: `M9` has moved zero rows since this census was
+# first run, and the reason recorded for it -- "it moves nothing BECAUSE the alias arm
+# already returns the wrong register" -- was true only while that arm was broken.
 # GROUP 3b -- GROUP 1 REACHING THE WALK: the five registers the port allocates where
-# ptx.py:181 refuses. THESE ARE THE FINDING'S ACTUAL STRINGS.
+# ptx.py:181 refuses. THESE ARE THE FINDING'S ACTUAL STRINGS, AND THEY STAY: the dtype
+# tables are still `types_pri`'s `case _ -> ""` and this unit is not `tc_ptx.bend`'s.
 WEAK = {"f31_weakint.r1": "%ridx_pred_0", "f32_weakfloat.r2": "%alu__0",
         "f33_bf16cast.r1": "%cast__0", "f34_boolalu.r3": "%alu_pred_1",
         "f34_boolalu.r4": "{%alu_pred_0, %alu_pred_1}"}
@@ -209,7 +244,6 @@ def build_divergences():
     """
     d = {}
     d.update(dtype_divergences())
-    d.update({k: (f"{k}={v}", f"{k}=NONE") for k, v in ALIAS.items()})
     d.update({k: (f"{k}=NONE", f"{k}={v}") for k, v in WEAK.items()})
     d.update(module_divergences({l.split("=", 1)[0]: l.split("=", 1)[1]
                                  for l in run_oracle()}))
@@ -316,7 +350,10 @@ def claims_hold() -> bool:
       * the five EMPTY dtype answers -- an empty value next to a row name is the whole
         claim, and `gatekit._lines` would otherwise have nothing to say about it;
       * `barrier` with its TAB spelled rather than emitted;
-      * the six GROUP-3 walk rows, which must read `NONE` for as long as the pin stands.
+      * the EIGHT GROUP-3 walk rows. Six read `NONE` for as long as the pin stood and now
+        read CPython's register; `f37_twobufs.r3` is the one that must NOT change. They
+        are here because a fixed divergence leaves `DIVERGES` and becomes an ordinary
+        COMPARED row -- which the DIFF does see, but only as one row among 579.
     """
     f = make_gate().dir / "bd.out"
     if not f.exists():
@@ -331,7 +368,23 @@ def claims_hold() -> bool:
             "fmt_18": "$RAW", "fmt_17": "\\tbar.sync\\t0;",
             "tyo_11": "", "mto_11": "", "cto_11": "", "tyo_14": "", "tyo_17": "",
             "barrier": "bar.sync\\t0;",
-            "f07_reuse.r4": "NONE", "f10_loads.r9": "NONE", "f12_after.r5": "NONE",
+            # GROUP 3a, NOW FIXED. These six read `NONE` for exactly as long as the pin
+            # stood and now read CPython's register, so the check that watched the defect
+            # is the check that watches the fix: a REGRESSION to `Wal.r[0]` answers `NONE`
+            # here and turns this guard red, which the DIVERGES table can no longer do --
+            # a fixed row leaves DIVERGES and becomes an ordinary COMPARED row.
+            "f07_reuse.r4": "%g0", "f10_loads.r4": "%g0", "f10_loads.r6": "%g1",
+            "f10_loads.r8": "%g2", "f10_loads.r9": "{%g0, %g1, %g2}",
+            "f12_after.r5": "%alu_f32_0",
+            # AND THE `rg_pick` HALF, WHICH HAD NO FIXTURE UNTIL `f37_twobufs`. `r7` is
+            # `r[4][1]` = `%reg_f32_5`; reading step zero answers `%reg_f32_1`, a
+            # DIFFERENT register of the SAME buffer, so this is a discriminator and not
+            # a coincidence. `r8` is the STACK that consumes it.
+            "f37_twobufs.r7": "%reg_f32_5", "f37_twobufs.r8": "{%reg_f32_2, %reg_f32_5}",
+            # THE NEGATIVE IN THE SAME FIXTURE: `r3` is `r[0][2]`, and step zero is the
+            # RIGHT answer for it. Without this row the fixture could pass by being
+            # uniformly wrong.
+            "f37_twobufs.r3": "%reg_f32_2",
             "f31_weakint.r1": "%ridx_pred_0", "f32_weakfloat.r2": "%alu__0",
             "f33_bf16cast.r1": "%cast__0",
             "f35_loadvec.r1": "{%val_f32_0, %val_f32_1, %val_f32_2, %val_f32_3}",
@@ -433,16 +486,18 @@ if __name__ == "__main__":
         sys.exit(refresh_pins())
     make_gate()
     assert len(DIVERGES) == N_DIVERGES, f"DIVERGES holds {len(DIVERGES)}, the file says {N_DIVERGES}"
-    assert GATE.compared == ROWS - N_DIVERGES == 495
+    assert GATE.compared == ROWS - N_DIVERGES == 521
     sys.exit(gate(make_gate(),
-                  "ptx_render_census-gate: 557 rows, 3 lanes byte-identical over the walk and "
-                  "the SEAM, 62 DECLARED divergences in three groups -- 18 are the dtype "
+                  "ptx_render_census-gate: 579 rows, 3 lanes byte-identical over the walk and "
+                  "the SEAM, 58 DECLARED divergences in two groups -- 18 are the dtype "
                   "tables answering `pred` or the EMPTY STRING where ptx.py:181 raises "
                   "KeyError (the PTX form of the AMDWORD32 defect, REACHABLE through "
                   "UOp.range's default weakint) and FIVE MORE are the registers the port "
                   "then allocates where CPython refuses (`%alu__0`, `%cast__0`, "
-                  "`%ridx_pred_0`); 33 are the un-ported string_rewrite; and 6 are "
-                  "ptx.bend:502's alias arm reading Wal.r[0] where ptx.py:189 reads "
-                  "r[u.src[0]] -- invisible to all 25 of ptx.bend's own fixtures because "
-                  "every one of them puts the aliased node at index 0",
+                  "`%ridx_pred_0`); 35 are the un-ported string_rewrite. The SIX rows that "
+                  "were ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 "
+                  "read r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture "
+                  "whose INDEX carries a non-zero src[0] and the only thing in the axis "
+                  "that can see the same wrong read in `rg_pick`, and `f38_regload` is the one "
+                  "whose LOAD subscripts a LIST rather than a scalar, which is what M9 needed",
                   checks=lambda: (names_hold() and axis_hold() and claims_hold() and pins_hold())))

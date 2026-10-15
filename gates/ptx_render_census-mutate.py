@@ -28,8 +28,8 @@ rather than because it is what went red.
 
   M10 -- the port lane loses its register rows. `gatekit`'s row COUNT catches it first and
     returns DEAD. `names_hold()` also catches it, and its contribution is the DIAGNOSIS: a
-    count says "not 515 rows", a name list says "the oracle still has 515 and the port has
-    285, and here is the first one the port lost."
+    count says "not 579 rows", a name list says "the oracle still has 579 and the port has
+    287, and here is the first one the port lost."
   M11 -- two fixtures swap. The positional diff catches it as a wall of value mismatches.
     `names_hold()`'s contribution is naming it as an ORDER fault at one index.
   M12 -- one refusal flag flips. `axis_hold()`'s contribution is REAL and singular: it is
@@ -40,10 +40,12 @@ rather than because it is what went red.
     ELSE SEES IT: the diff is untouched, `names_hold` is untouched, `axis_hold` is
     untouched, and only `pins_hold()` compares the pins file to the lanes. That is the one
     mutation in this table with a single mechanism, which is why it is in the table.
-  M14 IS THE FIX for GROUP 3 -- `rg_at(w, 0)` becomes a `refs`-aware read. It moves
-  the six rows from `NONE` to the register CPython prints, and the gate then goes RED on
-  the six PINS. That is the intended reading: the pins are what make a fix cost a
-  deliberate edit rather than a silent green.
+  M14 and M14b ARE THE GROUP-3a REGRESSIONS, and they exist BECAUSE THE FIX LANDED. The
+  six rows they move LEFT `DIVERGES` when the fix landed, so no pin and no divergence can
+  see them any more: `claims_hold()` is the only mechanism left that reads them, and a
+  check never seen to fail is not a check. M14 is the `rg_alias` arm (six rows, back to
+  `NONE`); M14b is the `rg_pick` arm (two rows, both `f37_twobufs`, and ZERO before that
+  fixture existed).
 """
 import shutil
 import subprocess
@@ -107,16 +109,37 @@ PORT_MUTATIONS = [
      '  Wal.rput(Wal.kset(w, List.append(&2, String, [P.fmt(line)], Wal.kern(w))), Rg{False{}, [reg]})',
      '  Wal.rput(Wal.kset(w, List.append(&2, String, Wal.kern(w), [P.fmt(line)])), Rg{False{}, [reg]})'),
     ("M9", "arm.regsrc -- a LOAD takes the A_PICK arm, so an on-REG LOAD SUBSCRIPTS the "
-           "register instead of copying it. ptx.py:204.",
+           "register instead of copying it. ptx.py:204. MOVED ZERO ROWS for as long as "
+           "`rg_at(w, 0)` answered `NONE`, and the census blamed the alias defect for it -- "
+           "which was true then and is FALSE now the fix has landed. The real cause is "
+           "MEASURED: every on-ALU LOAD in the axis has `src[0]` = a SPECIAL, whose register "
+           "is a SCALAR STRING, so `r[u.src[0]]` and `r[u.src[0]][0]` are the same string. "
+           "`f38_regload` is the fixture that closes it -- a LOAD of a REG BUFFER, whose "
+           "register is a four-element LIST. MEASURED with it: 2 rows moved, and they "
+           "are ONE name (`f38_regload.r1`) on the two bend lanes, because the oracle lane "
+           "does not move. `{%reg_f32_0, %reg_f32_1, %reg_f32_2, %reg_f32_3}` -> "
+           "`%reg_f32_0`.",
      '  Bool.pick(U32, is_op(op, O.OpsLOAD{}), A_ALIAS(),\n  Bool.pick(U32, idx_ok, A_PICK(), A_REFUSE()))',
      '  Bool.pick(U32, False{}, A_ALIAS(),\n  Bool.pick(U32, idx_ok, A_PICK(), A_REFUSE()))'),
-    ("M14", "THE FIX FOR GROUP 3a: the alias arm reads `Wal.r[refs[0]]` instead of "
-            "`Wal.r[0]`, which is what ptx.py:189 (`self.r[u] = self.r[u.src[0]]`) and "
-            "ptx.py:204 say. It is a TWO-PART edit because the fix needs a `refs`-aware "
-            "reader where `rg_at` is index-only. Expect SIX ROWS TO MOVE and the gate to go "
-            "RED on six pins -- which is what a pin is FOR.",
-     '    case 2: Wal.rput(w, rg_at(w, 0))',
-     '    case 2: Wal.rput(w, rg_at(w, refs0(Wk.refs(s))))'),
+    ("M14", "THE REGRESSION FOR GROUP 3a, and it is THE SAME EDIT THE FIX WAS, reversed: "
+            "ptx.bend's A_ALIAS arm reads `Wal.r[0]` (STEP ZERO) instead of `Wal.r[refs[0]]`, "
+            "which is what ptx.py:189 (`self.r[u] = self.r[u.src[0]]`) and ptx.py:204 say. "
+            "It targets the CALL SITE, not `rg_alias` itself, because `rg_pick` calls it too "
+            "and mutating the def would move M14b's rows as well -- MEASURED, mutating the "
+            "def moved 8 rows and mutating the call site moves 6. Those six rows LEFT "
+            "DIVERGES when the fix landed, so nothing in the divergence table sees them any "
+            "more and only `claims_hold()` reads them -- which is what makes this the one "
+            "mutation that can prove that guard red rather than assume it. Expect SIX ROWS "
+            "TO MOVE, back to `NONE`.",
+     '    case 2: Wal.rput(w, rg_alias(w, s))',
+     '    case 2: Wal.rput(w, rg_at(w, 0))'),
+    ("M14b", "THE SAME REGRESSION IN THE OTHER ARM, and it is the one `f37_twobufs` was "
+             "ADDED FOR: `rg_pick` reads `Wal.r[0]` instead of `Wal.r[refs[0]]`. MEASURED on "
+             "the 579-row census it moves 2 rows and BOTH are `f37_twobufs`, so on the "
+             "557-row census before the fixture it moved ZERO -- a correct-looking edit that "
+             "no row could see, which is the `M9` shape with a DIFFERENT cause.",
+     'rg_pick.pick(List.get(&2, String, Rg.p(rg_alias(w, s)), U32.to_nat(Wk.idx(s))))',
+     'rg_pick.pick(List.get(&2, String, Rg.p(rg_at(w, 0)), U32.to_nat(Wk.idx(s))))'),
 ]
 
 DRV_MUTATIONS = [
@@ -172,16 +195,14 @@ def diff_rows(a, b):
     return len(sa ^ sb), [x for x in sorted(sa - sb)][:2], [x for x in sorted(sb - sa)][:2]
 
 
-# M14's helper goes AFTER THE IMPORTS and BEFORE `wk1.go`, because MEASURED twice in this
-# session: a Bend `def` must be defined BEFORE its caller ("`fixtures` was defined AFTER
-# `main`" answers "an unfilled law is a dead claim" and names the DEF, not the call), and
-# text PREPENDED to the file lands above `import Base` and answers "expected : 'def',
-# 'type' or 'law' / observed : 'i'" at the `import` line.
+# `PORT_PRELUDE` USED TO CARRY M14's `refs0` helper -- a Bend `def` the harness wrote into
+# the scratch copy, because at the time the FIX was the mutation and `ptx.bend` had no
+# `refs`-aware reader of its own. `ptx.bend` HAS ONE NOW (`rg_src0`, MEASURED: the fix
+# landed), so the prelude is EMPTY and `add_prelude` is a no-op kept only so the scratch
+# copy is built by ONE code path whatever a future mutation needs. A helper that exists
+# only to make a mutation apply is a helper that outlives its reason.
 PORT_ANCHOR = "import ./../uop/ops.bend as O\n"
-PORT_PRELUDE = """
-# M14's helper. It is NOT part of `ptx.bend`; the harness writes it into the scratch copy.
-def refs0(+rs: List<&2, U32>) -> U32: Maybe.default(&2, U32, List.get(&2, U32, rs, 0n), 0)
-"""
+PORT_PRELUDE = ""
 
 def apply(text, old, new):
     if text.count(old) != 1:

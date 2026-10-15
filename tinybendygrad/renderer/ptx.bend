@@ -428,8 +428,21 @@ def rg_pick.pick(m: Maybe<&2, String>) -> Rg:
     case Some{x}: Rg{False{}, [x]}
     case None{}  : Rg{False{}, Nil{}}
 
+# ptx.py:189 (`r[u] = self.r[u.src[0]]`) and ptx.py:204 (`r[u.src[0]][u.src[1].src[0].val]`)
+# BOTH read `r[u.src[0]]`, and `Wal.r` is POSITIONAL over walk STEPS -- so the register is
+# `Wal.r[Wk.refs(s)[0]]`, the HEAD of `refs`, and NOT step zero. `Maybe.default` answers
+# step zero for a step with no srcs; every arm that reaches here (AFTER, INDEX, SHRINK,
+# LOAD) HAS one, so the fallback is a totality guard and never the answer.
+# MEASURED the defect this replaces: `rg_at(w, 0)` was right for `f07_reuse` and
+# `f12_after` and wrong for `f10_loads`, whose aliased nodes are at steps 3, 5 and 7, and a
+# GREEN 557-row census could not see it because every one of `ptx.bend`'s own twenty-five
+# fixtures puts the aliased node at step zero. `rg_pick` read it too, from the same `0`.
+def rg_src0(+s: Wk) -> U32: Maybe.default(&2, U32, List.get(&2, U32, Wk.refs(s), 0n), 0)
+
+def rg_alias(w: Wal, +s: Wk) -> Rg: rg_at(w, rg_src0(s))
+
 def rg_pick(w: Wal, +s: Wk) -> Rg:
-  rg_pick.pick(List.get(&2, String, Rg.p(rg_at(w, 0)), U32.to_nat(Wk.idx(s))))
+  rg_pick.pick(List.get(&2, String, Rg.p(rg_alias(w, s)), U32.to_nat(Wk.idx(s))))
 
 # ===========================================================================
 # ===========================================================================
@@ -499,7 +512,7 @@ def wk1.go(+a: U32, +w: Wal, +s: Wk) -> Wal:
   match a:
     case 0: Wal.rput(w, none_rg())
     case 1: Wal.rput(wk_name(w, s), none_rg())
-    case 2: Wal.rput(w, rg_at(w, 0))
+    case 2: Wal.rput(w, rg_alias(w, s))
     case 3: Wal.rput(w, rg_stack(w, s))
     case 4: Wal.rput(w, rg_pick(w, s))
     case 5: Wal.rput(Wal.refset(w, O.Ops.name.of(Wk.op(s))), none_rg())
