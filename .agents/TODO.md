@@ -473,6 +473,36 @@ rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledge
                                        can be RE-TAKEN (a live `bend` lane) or must be REFUSED
                                        permanently, and whether the oracle is recoverable from git.
 
+artefacts-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` unit. `differ.py`'s
+                                       `artefacts_ok()` had **ONE POPULATION DECLARED TWO WAYS**:
+                                       `MISSING` ran off `declared()` after an earlier fix, and
+                                       `present = {p.name for p in D.glob("*.txt")}` still answered
+                                       the `UNEXPECTED`, `EMPTY` and `ONE-LINE` arms. So the arms
+                                       everyone reads were sound and the arms nobody reads were
+                                       **weaker than the function's own docstring claims**: a stale
+                                       artifact with ANY other extension was invisible -- and this
+                                       project is actively retiring `.txt` FOR `.rows`, so the blind
+                                       spot is GROWING. A glob is a set of names this file chooses, so
+                                       the day the extension moves the guard inspects nothing and
+                                       reports nothing: the same finding as `LIVE_UNITS` and
+                                       `ORACLE_WORD`. REPLACED with a DIRECTORY WALK, `*.txt.err`
+                                       EXCLUDED -- and that exclusion is the DECLARED CONVENTION,
+                                       not an extension set, because `snap()` already reads the
+                                       population as `declared()` PLUS the `.err` beside each artifact,
+                                       so an `.err` is derived from a declared name rather than an
+                                       undeclared artifact. **MEASURED, AND THIS IS THE PART THAT
+                                       MAKES IT A FIX RATHER THAN A RE-BASELINE:** on the live run
+                                       there are 242 files, **176 of them this population and 66
+                                       `.err`**, `D.glob("*.txt")` reads **THE SAME 176**, and a
+                                       walk-based `UNEXPECTED` returns **0**. `artefacts_ok()` is
+                                       **0 findings before AND after**, `unhealthy()` is `[]`, and
+                                       `checks/differ.py plant` is **PLANTS GREEN 4/4** including
+                                       plant 3 -- "an ARTIFACT CHANGED WITH THE ROW UNCHANGED MUST
+                                       GO RED", the one that separates a CLAIM from a LABEL. So this
+                                       is a correctness gain at ZERO current cost, and the guard that
+                                       polices the corpus was the last one still answering with a
+                                       suffix set.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

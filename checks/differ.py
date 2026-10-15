@@ -1114,7 +1114,21 @@ def artefacts_ok():
     ignored, which is worse than the guard not existing. It is NOT excused: `repro_bad()` reads it
     and reports it ABSENT, which is the honest complaint at the honest time.
     """
-    present = {p.name for p in D.glob("*.txt")}
+    # `present` IS A DIRECTORY WALK, NOT THE `*.txt` GLOB THIS USED TO BE. It was the last arm of
+    # this function still answering with a suffix set, and that made `UNEXPECTED` and the
+    # `EMPTY`/`ONE-LINE` arms weaker than the function's own docstring claims: a stale artifact
+    # with ANY other extension was invisible to them, while `MISSING` -- the arm everyone reads --
+    # had already moved to `declared()`. **ONE POPULATION, ONE MECHANISM.** A glob is a set of names
+    # this file chooses, so the day the extension moves the guard inspects nothing and reports
+    # nothing, which is the same finding as `LIVE_UNITS` and `ORACLE_WORD`.
+    #
+    # `*.txt.err` IS EXCLUDED, and that is the DECLARED CONVENTION rather than an extension set:
+    # `snap()` already reads the population as `declared()` PLUS the `.err` beside each artifact, so
+    # an `.err` is derived from a declared name and is not an undeclared artifact. MEASURED
+    # 2026-10-15 on the live run: 242 files, of which 176 are this population and 66 are `.err`;
+    # `D.glob("*.txt")` reads **the same 176**, and a walk-based `UNEXPECTED` returns **0** against
+    # the live tree -- so this is a correctness gain at ZERO current cost, not a re-baseline.
+    present = {p.name for p in D.iterdir() if p.is_file() and not p.name.endswith(".err")}
     here = present & declared()
     run_writes = declared() - {f"{n}.txt" for n in REPRO_LITERALS}
     return [f"MISSING {n}" for n in sorted(run_writes - present)] \
