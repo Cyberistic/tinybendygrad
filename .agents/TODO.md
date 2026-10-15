@@ -15298,6 +15298,50 @@ rc=0`, so this is a green gate with no way to ask whether its own claims speak.
 at a time), 20 of 25 lane mutations CAUGHT, 17 of 25 moved a ROW, 5 moved nothing, 30 of 30
 guard mutations red, and 8 guard answers were EXCEPTIONS rather than verdicts.**
 
+## AMD-MUTATE -- ONE OF `dsl.py`'s THREE MODIFIER FLAGS IS MEASURED, AND `X1` RE-DERIVES `AMDWORD32` (2026-10-15)
+
+`gates/amd_dsl_census-mutate.py`. **30 mutations: 9 VALUE / 5 POPULATION / 5 AXIS / 11 GUARD; 18 of
+19 input mutations moved rows; 10 of 11 guards red** (the 11th, `G9b`, is a DELIBERATE WEAKENING and is
+green by design). **MEASURED: 276 s wall, 1.58 GiB peak (one `bend` at a time), no residue.**
+`crp_graph_census-mutate.py` alongside it: **36 mutations, 17 of 25 moved rows, 10 of 11 guards red.**
+
+- [x] **`A6` AND `A7` MOVE 0 OF 1178 AT rc=0, AND THEY ARE THE GATE'S OWN DOCUMENTED GAP.**
+      Deleting `mod_hit.ab` and deleting `mod_hit.opsel` each move nothing; deleting `mod_hit.neg`
+      (`A5`) moves **exactly 1** (`modmask_neg_neg`). **SO EXACTLY ONE OF `dsl.py`'s THREE MODIFIER
+      FLAGS IS MEASURED BY THIS CENSUS**, and the gate's pins file says so in the same words.
+      MEASURED WHY: no fixture sets `Reg.abs_`, and the opsel family asks about `src2`, which
+      `VOP2_FIELDS` has no field for. **THIS IS A DEFECT ROW RE-DERIVED AND CONFIRMED, NOT A NEW
+      FINDING** -- and it is the shape the `DEFECTROW` block above warns about, in the GOOD
+      direction: the claim was made by a harness, is now in the gate, and still measures the same.
+- [x] **`X1` IS THE `AMDWORD32` DEFECT ROW, RE-DERIVED AFTER THE FIX, AND IT NOW MOVES.**
+      `F64_VALS`'s `lit` at the pre-widening value `0x1234` moves **2 of 1178** -- `raw_f64i` and
+      `to_bytes_f64i` -- where before the widening it moved nothing on EITHER lane.
+      **THE WIDENING CLOSED THE HOLE THE FIXTURE ROW WAS HIDING.** This is the `DEFECTROW` rule
+      applied in the direction it exists for.
+- [ ] **`main()` IS `code = run(); if code == 0 and not checks_hold()`, SO THE EIGHT CHECKS ARE
+      UNREACHABLE ONCE A LANE DISAGREES.** MEASURED: `X1` is caught by the diff and its run never
+      reaches a check; calling `checks_hold()` ALONE against the unmutated lanes with a mutated
+      `PORT` returns `False`, with `fixtures_hold: F64_VALS.lit: VALUE port has1:'int:4660',
+      oracle has1:'int:305419896'`. **A FIXTURE DRIFT IS CAUGHT BY TWO INDEPENDENT INSTRUMENTS AND
+      ONE RUN NAMES ONLY ONE OF THEM.** NOT FIXED HERE -- editing the gate is out of scope.
+- [ ] **`axes_hold`'s UNCOVERED-OFFSET MESSAGE CANNOT TELL THE READER WHAT WAS EXPECTED.** Gate:405-408
+      formats `f"...are {sorted(...)}, expected [125, 127]"`, so the ACTUAL list is interpolated into
+      BOTH slots. MEASURED by mutation `G4`: the run prints `the uncovered _NAMES offsets are
+      [125, 127], expected [125, 127] -- the fmt axis grew` -- which is the shape `compared is not
+      len(port_only)` has: a message that cannot disagree with itself. **FILE IT; DO NOT SMOOTH IT.**
+- [ ] **FOUR MUTATIONS A FIRST DRAFT GOT WRONG ARE ALL OF ONE CLASS, AND THE CLASS IS WORTH NAMING.**
+      **(i)** `G5` mutated `PIN` to `ad117c928^^`, which is the GRANDPARENT -- a VALID revision, and
+      `dsl.py` has not moved, so all three blobs are `6526706b` and the guard is green.
+      **A REVISION THAT LOOKS MALFORMED AND RESOLVES IS THE CHEAPEST WAY TO WRITE A GREEN THAT
+      MEANS NOTHING.** **(ii)** `G9` demanded a blob token `00000000`, which is `grep -c` **1** in
+      the pins file, as a substring of `bfset_word64`'s `0x10000000000000000`; the needle is now
+      `65267000`, which is `grep -c` 0. **(iii)** `crp`'s `G7` pointed `drift_hold`'s BODY comparison
+      at `UOp.const` and `UOp.toposort`, which are byte-identical at the pin **BY DESIGN** -- 505 and
+      702 bytes, MEASURED -- so extracting them twice cannot disagree and the assertion cannot fail;
+      it now names `UOp.param_like`, 735 bytes at the pin and 777 at HEAD.
+      **(iv)** `P5` duplicated a row with the wrong statement (`row` and four arguments, where
+      `dsl.bend` spells `srow` with three) and `bend` REFUSED.
+
 THE TWO TEMPLATES THE BRIEF NAMED ARE NOT BOTH THERE. `gates/amd_dsl_census-mutate.py` was
 written at **02:01:52 TODAY**, three minutes before this harness checked for it and AFTER the
 brief was issued; `gates/decomp_graph_census-mutate.py` DOES NOT EXIST. The harness therefore
