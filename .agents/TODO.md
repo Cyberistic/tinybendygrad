@@ -15516,6 +15516,64 @@ UNTOUCHED, both `-gate.py` still hashing equal to `51cceacd7`.
 - [ ] **`A11` (THE CONST SITES' `ADt`) MOVES 15 ROWS BUT 3 BARE** -- **A CONST'S DTYPE IS LOAD-BEARING
       FOR GRAPH SHAPE HERE, NOT ONLY FOR THE LABEL.** Named, not counted as a printer-only win.
 
+## SYMDRV -- THE FRAME STACK PUT NEW FRAMES AT THE BOTTOM, AND THE "TRAVERSAL DISAGREEMENT" WAS THAT ONE BUG (2026-10-15)
+
+Recorded against `SYMBOLIC-PROBE`. `eba5ed5db`, 2 files, +162/-64; `--check-only` = `ALL PROOFS CHECK`,
+and **`symbolic.bend`'s OWN 57 GATE ROWS ARE BYTE-IDENTICAL** before and after -- so this fixed the
+file's TOOLS, not its RULES.
+
+- [x] **THERE WAS NO TRAVERSAL DISAGREEMENT, AND THE PROVE REFUTED ITS OWN HEADER.** MEASURED:
+      `List.append([1,2],[3])` -> `1 2 3` (**APPENDS**); `O.Arena.new([0,1]).srcs` -> `0 1`;
+      `new([1,0]).srcs` -> `1 0` (**THE ARENA PRESERVES SRC ORDER**). AND THE PROBE'S HEADER RECORDS
+      `t_xor in=0:XOR:1,2,1;1:c5:;2:XOR:1;3:x;` WHERE **ITS OWN LIVE OUTPUT NOW READS
+      `t_xor in=0:XOR:1,3;1:XOR:1,2;2:x;3:c5;`.** **"PINNING A TRAVERSAL-ORDER DISAGREEMENT LAUNDERS IT"
+      WAS THE RIGHT CAUTION APPLIED TO A CAUSE THAT DID NOT EXIST**, AND A DECLINE TO PIN BASED ON A
+      HEADER RATHER THAN A MEASUREMENT IS A DEFECT OF THE SAME FAMILY AS A PIN WRITTEN FROM MEMORY.
+- [x] **THE BIG ONE: A NEW FRAME WENT TO THE BOTTOM.** `fz_build.one`'s `THead` arm AND
+      `fz_deliver.at` BOTH DID `List.append(..., u, [new])`. MEASURED `O.Arena.srcs` ON THE ROOT OF
+      `(xor (xor x c5) c5)`: **`2 3 2` -> `1 3`** -- **THE INNER XOR HAD BEEN GIVEN *NO* SRC AND THE
+      OUTER THREE, ONE OF THEM ITS OWN OUTPUT.** `(sink (group x) c2)`'s ROOT ANSWERED `Ops.GROUP`
+      -> `Ops.SINK`. **FLAT CASES WERE UNAFFECTED, WHICH IS EXACTLY WHY THE CORPUS "LOOKED HEALTHY".**
+- [x] **`fz_tok.tok` MINTED `THead` ONLY FOR `wm == 2` AND `md` REACHED 2 FROM NOTHING.** The earlier
+      note said "from 1 or 2"; **MEASURED, FROM NOTHING** -- mode 2 had exactly one edge in, its own
+      self-loop. **AND END-OF-INPUT EMITTED ONE `TClose` PER UNIT OF FUEL** (4096 closes for a 12-char
+      input); the recorded consequence "every close RESETS the root" is **WRONG BY READING** --
+      `fz_close.at`'s `Nil{}` arm **PRESERVES** `root`.
+- [x] **`fz_var` FIXED, AND IT HAD A SECOND BUG.** It hardcoded `Some{"v"}` AND minted into
+      `O.Arena.empty()`. **THE ARENA MATTERED INDEPENDENTLY OF THE NAME: EVERY VARIABLE MINTED INTO
+      `Arena.empty()` LANDED ON THE SAME INDEX, SO `x` AND `y` WOULD HAVE BEEN ONE NODE.** **A CORPUS
+      THAT CANNOT NAME TWO VARIABLES CANNOT STATE A POSITIVE *AND* A NEGATIVE**, which is what blocked
+      `symbolic.py:123/:124/:464`'s identity guard from ever being testable.
+      `fz_run` ON `(add c7 c0)`: **BEFORE `root=1 n=2 op=Ops.CONST selfadd=0 sym=norewrite` -- A CONST
+      WHERE THE S-EXPR SAYS ADD; AFTER `root=3 n=4 op=Ops.ADD selfadd=1 sym=c7`.**
+- [x] **AGAINST CPYTHON `sym.rewrite`: 8 OF 9 NOW AGREE.** `(xor (xor x c5) c5)` answers `x` (was
+      `norewrite`); `(floormod (floormod x y) y)` answers `FLOORMOD(x,y)` (was unreachable).
+- [ ] **`t_sink` SURVIVES AND IS THE FINDING.** `(sink (group x) c2)` STILL ANSWERS `sym=0:NOOP` WHERE
+      `pm_clean_up_group_sink` (`symbolic.py:445`, `sym_12`) ANSWERS `SINK(x, c2)`. **THE PROBE CALLED IT
+      "A RULE FIRED AND BUILT A DIFFERENT GRAPH" -- THE GRAPH **WAS** MALFORMED, BUT AFTER THE FIX THE
+      DIVERGENCE PERSISTS ON A CORRECTLY BUILT `SINK(GROUP(x), c2)`, SO IT IS A REAL PORT DIVERGENCE.**
+- [x] **THE CLASS-(h) SWEEP FOUND ITS HIT, AND `OP_SHIFTS` IS WHY THE FILTER MUST LOOK OUTSIDE THE
+      FILE.** `sy_is_invalid_const` HAD NO CALL SITE AND `p_invalid` RE-SPELLED IT VERBATIM -- now
+      called. **BUT `OP_SHIFTS` READS `1` LOCALLY AND IS USED 3x BY `spec.bend`; A LOCAL COUNT WOULD
+      HAVE SAID DEAD.** THE DERIVATION WAS WRONG TWICE FIRST: a bare `grep -c p_nc` answers **3**
+      (`p_nconst` CONTAINS `p_nc`), AND EXCLUDING ONLY IDENTIFIER CHARS MATCHES `n` IN `n.sub` SO
+      `fold_bitcast` "MATCHES" ITS OWN `fold_bitcast.v`. **THE POPULATION IS THE FAMILY.**
+- [ ] **CLASS (b): ZERO DEFECTS IN THE RULE TABLE**, 16 `OpsCAST{}` SITES TRIAGED, AND TWO FIXTURES
+      WHERE **CPYTHON CANNOT BUILD THE NODE**: `fx_prom0` :2524 CASTS `CONST(3)` TO `weakint` -- ITS OWN
+      DTYPE -- SO THE NEGATIVE FIRES **FOR THE WRONG REASON** (its comment blames the weak promo dtype);
+      AND `fx_castbad` :2314 CASTS `CONST(Invalid)` TO `boolean()`, ALSO ITS OWN DTYPE.
+- [ ] **A GATE IS NOW POSSIBLE FOR THE DRIVER AND NOT FOR THE CENSUS, AND THE DECISION IS THE
+      CALLER'S.** The driver builds correct graphs, names two variables, agrees on 8 of 9, and prints a
+      re-parseable canonical form, so a positive+negative pair per rebind rule is **STATEABLE FOR THE
+      FIRST TIME**. Blocked by `t_sink`, by the census DUPLICATING the driver's scanner and builder
+      verbatim (`sym_graph_census.bend:261` was the same frame-stack line, and fixing it was a
+      correctness fix, not a rewrite -- but hoisting the scanner into `symbolic.bend` and deleting
+      `tk.*` is a census change), and by a corpus at 5 rows against ~90 wanted.
+- [ ] **`gates/sym_graph_census.bend` LINES 44-45 AND 79-84 RECORD READINGS ITS OWN LIVE RUN
+      CONTRADICTS**, AND 460-469 IS A STALE DUPLICATE OF THE CORRECTED NOTE AT 471-474. **SIX OF THE
+      EIGHT FINDINGS THIS SESSION COMMITTED WERE ALSO STALE PROSE; A CENSUS THAT DRIFTS ITS OWN HEADER
+      IS THE `M8` CLASS** -- a row that stops proving what its name says.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
