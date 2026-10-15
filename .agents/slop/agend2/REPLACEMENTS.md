@@ -299,8 +299,20 @@ OLD (`:165`):
 ```
 NEW:
 ```
-| `checks/repro-paths.py:57` `REF` | `(?:sh\|py\|bend\|mjs\|json)` — **fixed** | **6 of 15** `e2e.py` stage inputs were invisible (2 `.mjs`). *"RESTORING THEM MOVED THIS TOOL'S OUTPUT BY EXACTLY ZERO."* |
+| `checks/repro-paths.py:64` `REF` | a five-item **SUFFIX SET**, `(?:sh\|py\|bend\|mjs\|json)` — **fixed 2026-10-15, AND THE FIX WAS RETRACTED IN WHOLE** | **THE `.mjs` REPAIR BOUGHT `6 of 15` `e2e.py` STAGE INPUTS AND MOVED THE TOOL'S OUTPUT BY *EXACTLY ZERO*; THE SET WAS STILL BLIND TO `164` OF THE `715` PATHS THE REPORTS NAME.** AND **IT WAS NOT MERELY BLIND — IT STOPPED AT A *REMEMBERED* EXTENSION, SO A PREFIX OF A PATH WAS READ AS THE PATH, WHICH WROTE FALSE ROWS IN BOTH DIRECTIONS**: `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as `...312.py` (a DANGLING row for a name that never existed) and `whosecache/REPORT.md:73`'s `gates/tn_graph_census-gate.py.bak` was read as `...gate.py`, **A FILE THAT EXISTS, so a broken reference counted as RESOLVED**. NOW a permissive extraction intersected with `os.path.exists`. **AND ONE LEVEL UP, THE SAME FILE ASKED `git ls-files` — the INDEX — FOR ITS DENOMINATOR while its TEXT came from `git show HEAD:` (MEASURED: `584` under an armed index, `541` under a disarmed one, SAME TREE) and so INHERITED `GIT_INDEX_FILE` — the identical defect to `index-arm-gate`'s false `PASS`.** |
 ```
+
+**SUPERSEDED 2026-10-15 — THIS ENTRY LANDED AND WAS THEN MEASURED, AND THE MEASUREMENT
+RETRACTED IT.** The `NEW` block above is what went into `AGENTS.md`, and it recorded the
+suffix set as **fixed**, which was **false in whole**, not incomplete: the set was blind to
+`164` of the `715` paths, and it read `…cpython-312.pyc` as `…312.py` and `…gate.py.bak` as
+`…gate.py` — **a false DANGLING and a false RESOLVE from one remembered-extension rule.**
+`checks/repro-paths.py` now extracts permissively and intersects `os.path.exists`, and the
+same pass found `committed_reports()` asking `git ls-files` for its denominator while the
+evidence came from `git show HEAD:`. Both are measured in
+`.agents/slop/reprorefs/REPORT.md`. **THE LESSON IS THE ROW'S OWN SUBJECT: THE REPLACEMENT
+LIST NAMED A FIX, AND NOBODY RE-DERIVED IT AFTER THE FIX LANDED — WHICH IS HOW A HAND-KEPT
+CITATION ROTS QUIETLY, AND WHY A POPULATION MUST BE A DISCOVERY.**
 
 ---
 

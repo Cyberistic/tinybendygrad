@@ -386,10 +386,14 @@ repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SU
                                        so the differential was right while the denominator was
                                        wrong -- which is why the fix's own commit message quotes
                                        584.
-                                       NOT LANDED, FLAGGED: `AGENTS.md`'s doctrine-1 row and
-                                       `agend2/REPLACEMENTS.md:294` both record this line as
-                                       **fixed** BY the suffix set, which is the claim this
-                                       measurement refutes.
+                                       LANDED, NOT MERELY FLAGGED: `AGENTS.md`'s doctrine-1
+                                       row and `agend2/REPLACEMENTS.md:294` both recorded this
+                                       line as **fixed** BY the suffix set, which is the claim
+                                       this measurement refutes. BOTH are now corrected, and the
+                                       `agend2` entry carries a **SUPERSEDED** note naming the
+                                       lesson: **A REPLACEMENT LIST THAT NAMED A FIX AND NEVER
+                                       RE-DERIVED IT AFTER IT LANDED IS HOW A HAND-KEPT CITATION
+                                       ROTS QUIETLY.**
 sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/residue'] and that
                                        entry is INERT: removing it leaves the corpus at 692
                                        (`INERT=True removed_by_the_entry=0`, 2026-10-15T09:25:03Z,
