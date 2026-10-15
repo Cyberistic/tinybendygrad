@@ -401,7 +401,7 @@ sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/resid
                                        and a 48-dir belt 86; the file-granular arm deletes 0.
                                        `checks/sweep.py` NOT EDITED -- prefer refuse. §3 of
                                        `.agents/slop/sweepdirs/REPORT.md`.
-d10-guard       [#########] 9/10     D10 is NO LONGER REFUSED: the fixture is present, so the
+d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is present, so the
                                        probe RUNS, and `D10-zerorow-guard.txt.err` reads `bend
                                        attempt 1: 0 rows, ANSWER, rc=0`. `classify`
                                        (`graphcmp.py:1999`) calls a `#`-header-only emission an
@@ -409,14 +409,57 @@ d10-guard       [#########] 9/10     D10 is NO LONGER REFUSED: the fixture is pr
                                        control row (`:2008`) names the opposite rule as the defect
                                        ("a retry that fires on an answer"). The `rc=0` in the file
                                        is `emit`'s HARDCODED return (`graphcmp.py:3185`), NOT a
-                                       verdict. OWED: the transcript IS read -- `snap()` is
-                                       `declared()` PLUS the `.err` beside it (`differ.py:310`)
-                                       and `repro` sha256s and byte-compares both across two
-                                       runs -- but it is pinned to NOTHING, so `repro` proves D10
-                                       is REPRODUCIBLE and never that it is RIGHT. Unlike
-                                       `REPRO_PINS` (`:315`), a guard that regressed to retrying
-                                       would give a DETERMINISTIC wrong transcript and still pass
-                                       BOTH checks.
+                                       verdict. LANDED 2026-10-15, the last owed step: the
+                                       transcript is now PINNED TO SOMETHING. `REPRO_PINS` gained
+                                       `d10-transcript` (a second key on the SECOND artifact), and
+                                       `cmd_repro` writes that row from `d10_sha()`, which reads the
+                                       sha256 OUT OF `snap()`'s OWN output rather than rehashing --
+                                       so the pin and the sweep cannot drift apart. The pin is
+                                       `9bfb8517...`, MEASURED to equal `snap()`'s live hash of
+                                       `D10-zerorow-guard.txt.err`. The regression this closes is
+                                       NAMED: a `classify` that reverted to retrying would write
+                                       `attempt 2` in BOTH runs, both runs would AGREE, and
+                                       `repro-rc=rc=0` would stay green -- the pin now reds on it.
+                                       SENSITIVITY MEASURED against the REAL `repro_bad()` over six
+                                       states of `D0-repro.txt`: **5 of 6 RED**, the one GREEN being
+                                       the exact live value, and an absent file answers `ABSENT` so
+                                       the arm fails SAFE. **RUN HEALTH IS NOW RED ON THIS TREE
+                                       UNTIL `checks/differ.py repro` IS RE-RUN**
+                                       (`17 of 17` over the summary, `1 of 2` over `D0-repro.txt`,
+                                       RED: `d10-transcript ABSENT`) -- which is the SANCTIONED
+                                       state, `corpus-figure.py:178`: "a red pin is re-taken, never
+                                       hand-edited." NOT a failure of this change.
+
+pinindep-control [.......] 0/3      FOUND 2026-10-15 while landing `d10-guard`, and PRE-EXISTING --
+                                       it is not caused by that change (verified: the diff to
+                                       `checks/differ.py` touches only the D10 pin and helper).
+                                       `.agents/slop/pinindep/derive.py`'s CONTROL,
+                                       `selfcheck()`, is the instrument that RE-DERIVES
+                                       `D0-run-summary.txt` from the artifacts and REFUSES unless
+                                       it matches BYTE FOR BYTE. It is RED on this tree, and it
+                                       reports **`CONTROL FAILED -- 0 line(s) differ: []`** --
+                                       a FAILURE whose message reads as a SUCCESS, which is the
+                                       five-state doctrine's `DEAD`/`FAIL` confusion at the level of a
+                                       message. TWO defects, both pre-existing:
+                                       (a) `derive.rederive()` yields **22** rows against the live
+                                       summary's **24** -- it never modelled `substrate-start` /
+                                       `substrate-end`, which `checks/differ.py:718` has written
+                                       since `f7979b462` added `substrate_rows()`;
+                                       (b) `selfcheck()`'s `diff` is `[... for g, l in zip(got_d,
+                                       live_d) ...]`, and `zip()` TRUNCATES AT THE SHORTER LIST, so
+                                       a 22-vs-24 shortfall pairs 22 EQUAL lines and reports
+                                       **ZERO differences**. The length check is the missing arm:
+                                       `len(got_d) != len(live_d)` is a difference `zip` cannot see.
+                                       CONSEQUENCE: every conclusion `.agents/slop/repropin/` and
+                                       `.agents/slop/pinindep/` rests on is currently taken against a
+                                       CONTROL THAT IS FAILING FOR A REASON UNRELATED TO WHAT IT
+                                       MEASURES -- so it REFUSES to report (as designed), and the
+                                       `d10-transcript` sensitivity I measured was verified against
+                                       the REAL `differ.repro_bad()` directly instead, NOT through
+                                       this control. OWED: make `rederive()` reproduce the two
+                                       `substrate` rows and add the length arm, THEN re-run
+                                       `repropin/measure.py`. Do NOT "fix" it by loosening the
+                                       control.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare

@@ -312,7 +312,21 @@ PINS = {
 # that must be re-pinned whenever an artifact is added, not a claim. `repro-identical` equals
 # `repro-files` exactly when `repro-rc` is `0`, so a pin on it could only restate this one.
 REPRO_ARTIFACT = "D0-repro.txt"
-REPRO_PINS = {"repro-rc": "rc=0"}
+# `d10-transcript` PINS D10's VERBATIM, WHICH IS THE ONE ARTIFACT THE CORPUS NEVER JUDGED.
+# MEASURED 2026-10-15: `snap()` byte-compares `D10-zerorow-guard.txt.err` across the two runs, so
+# `repro-rc=rc=0` proves it REPRODUCIBLE and says NOTHING about whether it is RIGHT -- and a `classify`
+# (`.agents/slop/graphcmp.py:1999`) that regressed to retrying would write `bend attempt 2` in BOTH
+# runs, so both would AGREE and both checks would pass over a wrong transcript. The sha256 is
+# `snap()`'s OWN output for that file, read back by `d10_sha()` rather than recomputed, so the pin and
+# the sweep cannot disagree about which bytes are the claim.
+#
+# **IT IS A PIN OVER BYTES, SO A COSMETIC CHANGE TO `attempt_note`'s PROSE ALSO REDS IT.** Deliberate:
+# the remedy for a red pin is to RE-TAKE (`checks/differ.py repro`), never to hand-edit -- which is
+# the rule `checks/corpus-figure.py:178` already states. An absent file answers `ABSENT`, which is
+# not the pin, so the arm is fail-safe in the direction that reports.
+D10 = "D10-zerorow-guard"
+REPRO_PINS = {"repro-rc": "rc=0",
+              "d10-transcript": "9bfb85176a4fca0698633780d5845f781076d0e57035e76dd0dfa08cbe6d1e84"}
 # THE ARTIFACT NAMES ARE AN OUTPUT CONTRACT, NOT CONSTANTS, and this is the declaration of it.
 # `oracle-run.sh` writes all `declared()` names and reads twelve of them by name in its own
 # summary block;
@@ -322,7 +336,7 @@ REPRO_PINS = {"repro-rc": "rc=0"}
 # it -- `artefacts_ok()`'s population and `checks/no-txt.py`'s `.txt` carve-out -- ask it here
 # rather than carrying a second copy that would go stale without anyone noticing.
 LITERALS = ("D0-selfcheck", "D1-verdicts", "D2-bytediff", "D0-run-summary", "D4-cross-range",
-            "D7-conf", "D8-dbg-012", "D8-dbg-03", "D9-stability", "D10-zerorow-guard",
+            "D7-conf", "D8-dbg-012", "D8-dbg-03", "D9-stability", D10,
             "D0-coverage-census", "D8b-cpython-dbg1-reachability", "D0-ops-probe")
 # WHAT `cmd_repro` WRITES, HELD SEPARATELY FROM `LITERALS` ON PURPOSE.
 #
@@ -617,12 +631,12 @@ def cmd_run(_a):
     # path (`.agents/slop/diffpy/`, pinned by `ORACLE_PIN`): the same shape, and the same fix.
     probe = Path(".agents/slop/graphcmp-empty.bend")
     if not probe.is_file():
-        write("D10-zerorow-guard.txt",
+        write(f"{D10}.txt",
               "zerorow-guard=REFUSED\nzerorow-guard-rc=3\nzerorow-guard-why=probe "
               ".agents/slop/graphcmp-empty.bend is ABSENT (deleted in 371cc64c9); an absent fixture "
               "cannot witness that a 0-row emission RAISES\n")
     else:
-        run("D10-zerorow-guard.txt", "emit", "--side", "bend", "--bend-probe", str(probe))
+        run(f"{D10}.txt", "emit", "--side", "bend", "--bend-probe", str(probe))
     # THE COVERAGE DENOMINATOR, tabulated, emitting BOTH sides so an op or atom the py side
     # never produces shows up as a per-side difference rather than an absorbed AGREE.
     capture("D0-coverage-census.txt", ".agents/slop/graphcmp-oracle.py", stamp_rc=True)  # DEV/PYTHONHASHSEED/NOOPT/LC_ALL are set by ENV above, not by this call
@@ -967,6 +981,22 @@ def snap(stream=sys.stdout):
         print(f"{hashlib.sha256(body).hexdigest()}  {p.relative_to(ROOT)}", file=stream)
 
 
+def d10_sha(shot: str) -> str:
+    """D10's transcript hash, TAKEN FROM `snap()`'s OWN OUTPUT rather than recomputed here.
+
+    The snapshot `cmd_repro` writes is `<sha256>  <path>` per line, so the pin and the sweep read the
+    SAME number by construction and cannot drift apart -- the alternative, hashing the file again in
+    this function, would be a second copy of `snap()`'s rule (non-blank lines, dotfiles pruned) and a
+    second thing to keep correct. An artifact the snapshot does not carry answers `ABSENT`, which is
+    not any pin, so a missing transcript REDS rather than passes.
+    """
+    for ln in shot.splitlines():
+        sha, sep, rel = ln.partition("  ")
+        if sep and rel.endswith(f"{D10}.txt.err"):
+            return sha
+    return "ABSENT"
+
+
 def settled():
     """ONE probe line, and it is `--check-only`'s FIRST line only: agent-core.md's trap is
     that it exits 1 even on a clean file (`dtype.bend`'s 14 permanently-red laws), so the exit
@@ -1219,12 +1249,15 @@ def cmd_repro(a):
         # independent-measurement count is 10). This two-run byte comparison is the cheapest way to make
         # the denominator 2 -- and it was COMPUTED AND THROWN AWAY: printed, never persisted. So write it,
         # as `key=value`, where a pin can read it BESIDE the summary it makes non-independent.
+        d10 = d10_sha(shots["B"].read_text())
         if shots["A"].read_bytes() == shots["B"].read_bytes():
-            write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical={n}\nrepro-rc=rc=0\n")
+            write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical={n}\nrepro-rc=rc=0\n"
+                                  f"d10-transcript={d10}\n")
             print(f"REPRO: {n} of {n} files identical across two clean runs "
                   "(sha256 over non-blank lines)")
             return 0
-        write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=1\n")
+        write(REPRO_ARTIFACT, f"repro-files={n}\nrepro-identical=0\nrepro-rc=rc=1\n"
+                              f"d10-transcript={d10}\n")
         print(f"REPRO: NOT IDENTICAL -- {n} files:")
         sys.stdout.write(byte_diff(shots["A"], shots["B"], 40))
         return 1
