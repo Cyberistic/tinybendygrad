@@ -14,24 +14,24 @@
 # The CPython value is pinned too, so a pin that moves is visible as a MOVEMENT rather than as a
 # verdict that silently changed its mind.
 
-lg1/z	PORT-REFUSES:AssertionError	0x0000000000000000
-lg1/o	PORT-REFUSES:AssertionError	0xfffffffeffffffff
-lg1/M	PORT-REFUSES:AssertionError	0x0000000000000001
-lg1/H	PORT-REFUSES:AssertionError	0x7fffffff80000000
-lg1/L	PORT-REFUSES:AssertionError	0xfffffffeffffffff
-lg1/Asym	PORT-REFUSES:AssertionError	0xffffffff00000001
-lg1/Near	PORT-REFUSES:AssertionError	0xfffffffe00000001
-lg1/Dvd	PORT-REFUSES:AssertionError	0x0000000000000001
-lg1/Shift	PORT-REFUSES:AssertionError	0x6543210fedcba988
-lg1/Rnd	PORT-REFUSES:AssertionError	0x0112053121524111
-lg1/bp_norm	PORT-REFUSES:AssertionError	0xc07fffffc0800000
-lg1/bp_nan	PORT-REFUSES:AssertionError	0x803fffff80400000
-lg1/bp_inf	PORT-REFUSES:AssertionError	0x807fffff80800000
-lg1/bp_max	PORT-REFUSES:AssertionError	0x8080000080800001
-lg1/bp_tiny	PORT-REFUSES:AssertionError	0xfffffffeffffffff
-lg1/bp_2p24	PORT-REFUSES:AssertionError	0xb47fffffb4800000
-lg1/bp_tie	PORT-REFUSES:AssertionError	0xb47ffffeb47fffff
-lg1/bp_ntie	PORT-REFUSES:AssertionError	0x347ffffe347fffff
+lg1/z	same	0x0000000000000000
+lg1/o	same	0xfffffffeffffffff
+lg1/M	same	0x0000000000000001
+lg1/H	same	0x7fffffff80000000
+lg1/L	same	0xfffffffeffffffff
+lg1/Asym	same	0xffffffff00000001
+lg1/Near	same	0xfffffffe00000001
+lg1/Dvd	same	0x0000000000000001
+lg1/Shift	same	0x6543210fedcba988
+lg1/Rnd	same	0x0112053121524111
+lg1/bp_norm	same	0xc07fffffc0800000
+lg1/bp_nan	same	0x803fffff80400000
+lg1/bp_inf	same	0x807fffff80800000
+lg1/bp_max	same	0x8080000080800001
+lg1/bp_tiny	same	0xfffffffeffffffff
+lg1/bp_2p24	same	0xb47fffffb4800000
+lg1/bp_tie	same	0xb47ffffeb47fffff
+lg1/bp_ntie	same	0x347ffffe347fffff
 lg5/z	same	0x0000000000000000
 lg5/o	same	0x0000000000000001
 lg5/M	BOTH-RAISE:ValueError	n/a
