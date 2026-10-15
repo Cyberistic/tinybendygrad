@@ -3,6 +3,8 @@
 
     .venv/bin/python checks/gatesweep.py --plan           # the population and the control, run nothing
     .venv/bin/python checks/gatesweep.py --prove          # classify REAL captured outcomes, run nothing
+    .venv/bin/python checks/gatesweep.py --selftest       # drive the loop on SYNTHETIC gates, temp-dir
+    .venv/bin/python checks/gatesweep.py --selftest --plant   # ... and the selftest MUST fail
     .venv/bin/python checks/gatesweep.py                  # run every gate, write the rows
 
 THE FOREIGN SWEEP THIS REPLACES. A zsh script under `/tmp` ran `gates/*-gate.py`, kept only `$?`,
@@ -39,6 +41,8 @@ import re
 import stat
 import subprocess
 import sys
+import tempfile
+import threading
 import time
 import warnings
 from pathlib import Path
@@ -52,6 +56,20 @@ TRACEBACK = "Traceback (most recent call last)"
 # <TOKEN>  rc=<child rc>`. The rc here is ALWAYS the child's own, even on a kill, so it is the
 # gate's exit and the TOKEN is the watchdog's -- the one pair that settles the 3/4/5 collision.
 REC = re.compile(r"\[bounded\] (\S+)  rc=(-?\d+)")
+HEADER = "gate\tverdict\ttoken\trc\tseconds"
+
+# THE PROOF'S INPUTS LIVE BESIDE THE GATE, IN GIT, AND ARE PINNED BY CONTENT. `--prove` read
+# `.agents/slop/hooks/`, which is PRUNABLE -- `AGENTS.md` counts 85 of the 169 already-gone paths
+# under `.agents/slop/` -- so one prune leaves this instrument reporting `0/0`, which its own
+# `return 0 if ok == n and n else 1` calls a failure but its denominator cannot say. A missing
+# input is not a smaller proof, it is a proof of nothing. The pin is what makes the move a contract
+# and not a copy: an unpinned transcript can be edited into passing.
+PROVE_COST = "checks/gatesweep-cost.out"        # that run's captured per-gate stdout
+PROVE_TRUTH = "checks/gatesweep-run.tsv"        # and the verdicts it recorded
+PROVE_PIN = {
+    PROVE_COST: "de8038e7bfc24f8be65d8357773e4329d8cfedadb98e86b691ca17a1aebb65b2",
+    PROVE_TRUTH: "d44ab732bf834012d5127b3d099a097312678d013401fa93761320b4b8c555a2",
+}
 
 
 def _load(name: str, path: Path):
@@ -138,8 +156,9 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
     """Classify REAL, already-captured gate outcomes and require the recorded verdict.
 
     Inputs are two transcripts a PRIOR run already wrote, so no gate is run:
-      `cost.tsv`/`cost.out` -- per gate: rc (or `OVER-CAP`), seconds, path, first line of output.
-      `run.tsv`             -- per gate: the VERDICT that run recorded.
+      `checks/gatesweep-cost.out` -- per gate: rc (or `OVER-CAP`), seconds, path, first line.
+      `checks/gatesweep-run.tsv`  -- per gate: the VERDICT that run recorded.
+    Both are pinned by content (see `PROVE_PIN`); drift is a REFUSAL, not a smaller proof.
     The classifier must reproduce every recorded verdict from (rc, first-line) alone.
     """
     truth = {}
@@ -158,7 +177,7 @@ def prove(cost_tsv: Path, truth_tsv: Path) -> int:
         rc = int(rc_s) if rc_s.isdigit() else 0
         btoken = bounded.TIMEOUT if rc_s == "OVER-CAP" else bounded.WITHIN
         verdict, token = classify(btoken, rc, head)
-        # `run.tsv` keys `gate-surface.py --report` by its flags; the path is the subject
+        # `checks/gatesweep-run.tsv` keys `gate-surface.py --report` by its flags; the path is the subject
         want = truth.get(path) or truth.get(path + " --report")
         n += 1
         ok += verdict == want
@@ -194,6 +213,9 @@ def main(argv: list[str]) -> int:
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--plan", action="store_true", help="print the population and the control")
     ap.add_argument("--prove", action="store_true", help="classify real captured outcomes")
+    ap.add_argument("--selftest", action="store_true", help="drive the loop on synthetic gates")
+    ap.add_argument("--plant", action="store_true",
+                    help="with --selftest: mislabel one expected verdict, so the selftest MUST fail")
     ap.add_argument("--seconds", type=int, default=600, help="per-gate wall bound")
     ap.add_argument("--mb", type=int, default=2048, help="per-gate peak-RSS ceiling")
     ap.add_argument("--out", type=Path, default=ROOT / "gates" / "artifacts" / "gates-sweep.rows")
@@ -212,34 +234,124 @@ def main(argv: list[str]) -> int:
         for g in gates:
             print(f"  would run  {g.relative_to(ROOT)}")
         return 0
+    if args.selftest:
+        return selftest(plant=args.plant)
     if args.prove:
-        hooks = ROOT / ".agents" / "slop" / "hooks"
         artifact_census(ROOT)
-        return prove(hooks / "cost.out", hooks / "run.tsv")
+        drift = gatekit.oracle_drift(PROVE_PIN)   # a transcript that MOVED is a proof of other bytes
+        if drift:
+            print("PROVE: REFUSED -- " + "; ".join(drift))
+            return gatekit.REFUSED
+        return prove(ROOT / PROVE_COST, ROOT / PROVE_TRUTH)
 
+    return sweep(gates, args.out, args.seconds, args.mb)
+
+
+def sweep(gates: list[Path], out: Path, seconds: int, mb: int) -> int:
+    """THE LOOP `main()` RUNS: header, one row per gate, tally, denominator. Describes THE RUN.
+
+    `main()`'s default branch is this call and nothing else, so the `--selftest` that drives it drives
+    the REAL path rather than a copy of it. Every row is `flush()`ed as its gate finishes, which is
+    the durability property: a sweep killed at gate 69 leaves 68 rows on disk, not zero -- and that
+    is the one claim a run that COMPLETES cannot make, so `--selftest` reads the file mid-sweep.
+    """
     tally = dict.fromkeys(set(gatekit.VERDICT.values()), 0)
-    args.out.parent.mkdir(parents=True, exist_ok=True)
-    # FLUSHED PER GATE: a sweep that dies at gate 69 must leave 68 rows, not zero
-    sink = args.out.open("w")
-    sink.write("gate\tverdict\ttoken\trc\tseconds\n")
-    rows = 0
-    for g in gates:
-        verdict, token, rc, took, peak = run_one(g, args.seconds, args.mb)
-        tally[verdict] = tally.get(verdict, 0) + 1
-        rel = str(g.relative_to(ROOT))
-        print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
-        sink.write(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}\n")
+    out.parent.mkdir(parents=True, exist_ok=True)
+    with out.open("w") as sink:
+        sink.write(HEADER + "\n")
         sink.flush()
-        rows += 1
-    sink.close()
+        rows = 0
+        for g in gates:
+            verdict, token, rc, took, peak = run_one(g, seconds, mb)
+            tally[verdict] = tally.get(verdict, 0) + 1
+            rel = str(g.relative_to(ROOT))
+            print(f"  {verdict:<8} {took:6.1f}s  rc={rc:<4} peak={peak:>4}MB  {rel:<38} {token}")
+            sink.write(f"{rel}\t{verdict}\t{token}\t{rc}\t{took:.1f}\n")
+            sink.flush()
+            rows += 1
     print("TALLY: " + "  ".join(f"{k}={v}" for k, v in sorted(tally.items())))
     # the denominator, which is not the tally: only PASS/FAIL are verdicts about the TREE
     about = tally.get("PASS", 0) + tally.get("FAIL", 0)
     print(f"THE DENOMINATOR: {about} of {rows} gates reached a verdict about the tree; "
           f"{tally.get('REFUSED', 0)} refused, {tally.get('SKIP', 0)} did not finish, "
           f"{tally.get('DEAD', 0)} crashed or said nothing.")
-    print(f"rows -> {args.out.relative_to(ROOT)}")
+    print(f"rows -> {out.relative_to(ROOT)}")
     return 0 if rows else gatekit.DEAD            # describes THE RUN, never the tree
+
+
+# --------------------------------------------------------------------- the selftest, on plants
+# FIVE ONE-LINE GATES, ONE PER FIXTURE, NAMED SO THE SLEEPER SORTS LAST: `population()` sorts, so
+# `skip-gate.py` being last IS the window the flush proof reads into. Each source is the SMALLEST
+# child that lands on its verdict, and the expected verdict is what `classify` must return -- so a
+# child drifting onto another branch is a FAIL here and not a silent pass.
+PLANTS = (
+    ("dead-gate.py", "DEAD", ""),                                      # rc 0, emitted nothing
+    ("fail-gate.py", "FAIL", "import sys; sys.stderr.write('no\\n'); sys.exit(1)"),
+    ("pass-gate.py", "PASS", "print('ok')"),
+    ("refuse-gate.py", "REFUSED", "import sys; sys.stderr.write('absent\\n'); sys.exit(3)"),
+    ("skip-gate.py", "SKIP", "import time; time.sleep(60)"),           # the 1 s bound kills it
+)
+
+
+def selftest(plant: bool = False) -> int:
+    """Drive `sweep()` on a SYNTHETIC population and assert what it wrote. PASS=0, FAIL=1.
+
+    THE POPULATION IS A TEMP `gates/` INSIDE THE REPO, so `population()` walks it and every
+    `relative_to(ROOT)` in the loop holds -- the loop under test is the loop that runs. Nothing
+    here is a unit test of `classify()`: the subject is the ROWS FILE, because that is the artifact
+    a killed sweep leaves behind and the only thing a reader downstream ever sees.
+
+    `plant=True` MISLABELS ONE EXPECTED VERDICT ON PURPOSE. A selftest that cannot go red is a
+    claim with no counterexample, so the mutation is a flag on the same code path rather than a
+    second harness: `.venv/bin/python checks/gatesweep.py --selftest --plant` MUST return 1.
+    """
+    results: list[tuple[str, bool, str]] = []
+    with tempfile.TemporaryDirectory(prefix="gwself.", dir=ROOT / ".agents" / "slop") as td:
+        root = Path(td)
+        (root / "gates").mkdir()
+        for name, _, src in PLANTS:
+            (root / "gates" / name).write_text(src)
+        gates = population(root)                       # the SAME directory walk the real run uses
+        out = root / "rows.rows"
+        worker = threading.Thread(target=sweep, args=(gates, out, 1, 512), daemon=True)
+        worker.start()
+        # THE FLUSH PROOF. Read the file while the sweep is STILL RUNNING and require rows on disk;
+        # `worker.is_alive()` is sampled with the read, so a file that was complete at exit cannot
+        # be mistaken for one written incrementally. The sleeper holds the window open ~1 s.
+        sample: tuple[int, bool] | None = None
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline:
+            if out.exists() and (n := len(out.read_text().splitlines()) - 1):
+                sample = (n, worker.is_alive())
+                break
+            time.sleep(0.02)
+        worker.join(60)
+
+        lines = out.read_text().splitlines() if out.exists() else []
+        want = {name: token for name, token, _ in PLANTS}
+        if plant:
+            want["dead-gate.py"] = "PASS"              # the planted lie: the row will say DEAD
+        cells = [c for c in (l.split("\t") for l in lines[1:]) if len(c) >= 2]
+        got = {Path(c[0]).name: c[1] for c in cells}
+        wrong = [f"{k} -> {got.get(k)!r}, expected {v!r}" for k, v in want.items() if got.get(k) != v]
+        results.append(("FIVE VERDICTS: the rows file classifies each planted child as planted",
+                        not wrong, "; ".join(wrong) or
+                        "  ".join(f"{k}={v}" for k, v in sorted(got.items()))))
+        results.append(("SHAPE: a header and exactly one row per gate",
+                        lines[:1] == [HEADER] and len(cells) == len(PLANTS),
+                        f"{len(cells)} rows, header {lines[:1]!r}"))
+        results.append(("INCREMENTAL: rows are ON DISK while the sweep is STILL RUNNING",
+                        sample is not None and sample[1] and 1 <= sample[0] < len(PLANTS),
+                        f"read {sample} (rows, sweep-alive) mid-sweep"
+                        if sample else "never saw a row on disk before the sweep exited"))
+
+    failed = 0
+    for name, ok, detail in results:
+        print(f"[{'PASS' if ok else 'FAIL':>4}] {name}\n          {detail}")
+        failed += 1 if not ok else 0
+    print(f"\n=== selftest {'PASS' if not failed else 'FAIL'}: {len(results)} case(s), "
+          f"{failed} failed{' -- PLANTED, and the failure is the point' if plant else ''} ===")
+    return gatekit.FAIL if failed else gatekit.PASS
 
 
 if __name__ == "__main__":

@@ -1,0 +1,19 @@
+POPULATION: directory walk gates/*-gate.py -> 70
+CONTROL   : gates-pop.discover() -> 188 entries + 60 modules (a DIFFERENT question)
+ARTIFACTS: 64 gate dirs -- 63 hold promoted lanes (reached the diff), 1 empty ['cstyle-mut']
+           a dir holds ['bd.cmp', 'bd.out', 'bn.cmp', 'bn.out', 'cmp.rows', 'gate.bin', 'py.cmp', 'py.rows']: LANE files, never a gate's stdout
+  OK   rc=3        checks/dup-census.py             -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=3        checks/dup-gate.py               -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=0        checks/env-precond.py            -> PASS    token=PASS           recorded=PASS
+  OK   rc=3        checks/gate.py                   -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=3        checks/hermetic-census.py        -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=3        checks/nl-gate-noguard.py        -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=3        checks/nl-gate.py                -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=1        checks/no-txt.py                 -> FAIL    token=FAIL           recorded=FAIL
+  OK   rc=0        checks/norm_check.py             -> PASS    token=PASS           recorded=PASS
+  OK   rc=1        checks/oracle_f64.py             -> DEAD    token=TRACEBACK      recorded=DEAD
+  OK   rc=OVER-CAP checks/residue.py                -> SKIP    token=TIMED-OUT      recorded=SKIP
+  OK   rc=3        checks/rn-gate.py                -> REFUSED token=REFUSED        recorded=REFUSED
+  OK   rc=1        checks/wallcheck.py              -> FAIL    token=FAIL           recorded=FAIL
+  OK   rc=0        gates/gate-surface.py            -> PASS    token=PASS           recorded=PASS
+PROOF: 14/14 recorded verdicts reproduced from (rc, first line) alone

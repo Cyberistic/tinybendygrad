@@ -1,0 +1,18 @@
+POPULATION: directory walk gates/*-gate.py -> 70
+CONTROL   : gates-pop.discover() -> 188 entries + 60 modules (a DIFFERENT question)
+  DEAD        0.4s  rc=0    peak=   0MB  .agents/slop/gwself.pa5_3whd/gates/dead-gate.py SILENT
+  FAIL        0.4s  rc=1    peak=   0MB  .agents/slop/gwself.pa5_3whd/gates/fail-gate.py FAIL
+  PASS        0.4s  rc=0    peak=   0MB  .agents/slop/gwself.pa5_3whd/gates/pass-gate.py PASS
+  REFUSED     0.1s  rc=3    peak=   0MB  .agents/slop/gwself.pa5_3whd/gates/refuse-gate.py REFUSED
+  SKIP        1.2s  rc=-9   peak=  18MB  .agents/slop/gwself.pa5_3whd/gates/skip-gate.py TIMED-OUT
+TALLY: DEAD=1  FAIL=1  PASS=1  REFUSED=1  SKIP=1
+THE DENOMINATOR: 2 of 5 gates reached a verdict about the tree; 1 refused, 1 did not finish, 1 crashed or said nothing.
+rows -> .agents/slop/gwself.pa5_3whd/rows.rows
+[FAIL] FIVE VERDICTS: the rows file classifies each planted child as planted
+          dead-gate.py -> 'DEAD', expected 'PASS'
+[PASS] SHAPE: a header and exactly one row per gate
+          5 rows, header ['gate\tverdict\ttoken\trc\tseconds']
+[PASS] INCREMENTAL: rows are ON DISK while the sweep is STILL RUNNING
+          read (1, True) (rows, sweep-alive) mid-sweep
+
+=== selftest FAIL: 3 case(s), 1 failed -- PLANTED, and the failure is the point ===

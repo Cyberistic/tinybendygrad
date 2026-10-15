@@ -1,0 +1,19 @@
+cap=45s per gate; 14 gates (the 13 that declare VERDICTS, + gate-surface as the auditor)
+
+         3     0.0s  checks/dup-census.py               == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         3     0.0s  checks/dup-gate.py                 == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         0     0.0s  checks/env-precond.py              METHOD A -- the source lines that build the child en
+         3     0.0s  checks/gate.py                     == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         3     0.0s  checks/hermetic-census.py          == REFUSED, NOT A VERDICT: input absent: isolate.py 
+         3     0.0s  checks/nl-gate-noguard.py          == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         3     0.0s  checks/nl-gate.py                  == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         1     0.3s  checks/no-txt.py                   175 `.txt` EXCUSED: `checks/differ.py`'s graphcmp ar
+         0     0.1s  checks/norm_check.py               gate under test: .agents/slop/jslane2/gen_f32_seam.p
+         1     0.2s  checks/oracle_f64.py               Traceback (most recent call last):
+  OVER-CAP    45.0s  checks/residue.py                  <SILENT>
+         3     0.0s  checks/rn-gate.py                  == REFUSED, NOT A VERDICT: input absent: /Users/cybe
+         1     1.8s  checks/wallcheck.py                wallcheck  ledger=.agents/slop/wallcheck/walls.tsv  
+         0     1.4s  gates/gate-surface.py              I  DISCOVERED 115 entry point(s) under checks/gates/
+
+TOTAL 49.1s over 14 gates; 1 over the 45s cap (their true cost is UNKNOWN, which is SKIP)
+over cap: checks/residue.py
