@@ -307,6 +307,28 @@ ops-python-exec  [#########] 9/9     the EXECUTOR census, 153 fixtures x 2 lanes
                                        `f32.sqrt.0`. 45 of 47 `op_of` names and 19 of 21
                                        `Prog.dispatch` arms now have rows; `case _: Prog.alu`
                                        is entered by 128 of 153 fixtures. See below.
+gates-sweep     [#########] 9/10     `/tmp/sweep.sh` is FOREIGN and NON-COMPLIANT (shell,
+                                       `/tmp`, `$?` not the verdict token, so a DEAD gate
+                                       reads as PASS). `checks/gatesweep.py` replaces it:
+                                       population by DIRECTORY WALK (70; control
+                                       `gates-pop.discover()` 188+60), verdict from
+                                       `gatekit.VERDICT` LOADED BY PATH, watchdog token read
+                                       off `[bounded] <TOKEN>  rc=<child>` on stderr
+                                       (verified always-present). `--plan`/`--prove` green
+                                       (14/14 recorded verdicts reproduced); `run_one`
+                                       PROVEN live on 4 synthetic children
+                                       (PASS/REFUSED/DEAD-silence/SKIP). OWED: one run over
+                                       the real 70. `--prove`'s inputs sit in the PRUNABLE
+                                       `.agents/slop/hooks/`; they belong beside the gate.
+false-fails     [.........] 0/2      ~29 false FAILs survive guard 1 (a needle containing a
+                                       newline: 14 FAIL retired, 0 PASS silenced). 3 are
+                                       genuinely FALSE claims to fix; 19 are stale-once-true.
+                                       The bar is PASS rows silenced; M>N is REFUTED
+                                       (precedent: 28 FAIL / 102 PASS, reverted).
+sweep-self-dirs [.........] 0/1      `self_output_dirs()` returns 1 on a tree of ~190; the
+                                       recorded blast radius of 0 newly-deletable paths is a
+                                       coincidence of `slop_dir()` being coarser than a
+                                       98.9%-blind resolver, so it is not yet a measurement.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
