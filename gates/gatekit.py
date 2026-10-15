@@ -71,10 +71,19 @@ def verdict_of(code):
     """`code` -> the word, and an UNASSIGNED code is a REFUSAL rather than an exception.
 
     MEASURED, and the reason `gate()`/`main()` no longer index `VERDICT` directly: a gate
-    returning `2` -- which 13 files in this tree do on purpose, `USAGE` by `checks/wallcheck.py`'s
-    own declaration among them -- made `VERDICT[code]` raise `KeyError: 2`, so the runner that
+    returning `2` -- **a code `VERDICT` deliberately does NOT name** -- made `VERDICT[code]`
+    raise `KeyError: 2`, so the runner that
     aggregated it CRASHED while reporting on a gate that had answered. A mapping that raises on a
     legitimate code is not a vocabulary, it is a trapdoor.
+    **THE COUNT IS NOT IN THE SENTENCE ANY MORE, BECAUSE IT WAS NOT RE-TAKABLE.** It read "which 13
+    files in this tree do on purpose"; MEASURED 2026-10-16, that figure reproduces under NONE of the
+    three available definitions: **9** files declare `USAGE` in their own prose (one of them THIS
+    file), **6** of those import `argparse` and so inherit its code rather than choosing it, and a
+    static AST walk of the **226** `.py` files of `checks/`+`gates/` finds **20** that can return `2`
+    at all. Three numbers, three questions, and a bare `13` answering none of them **is the defect
+    this whole table is about** -- so the sentence now states the CLASS (a code `VERDICT` does not
+    name) and names the census that re-takes it: `.agents/slop/exitcodes/census.py`, whose
+    `codes.rows` column 3 is `UNOWNED`.
 
     WHY `REFUSED` AND NOT `DEAD`. `DEAD` is "it ran and emitted nothing" -- a claim about EXECUTION,
     which only something that watched the process can make. A code this table does not define has
