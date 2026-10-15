@@ -136,9 +136,18 @@ def namer(entries):
     that must not be counted as an input. KEYED BY BASENAME because the literal is repo-relative
     -- `gates/wk-f32-rows.py:69` spells it `gates/wk-f32-table.rows` -- and keying on the literal
     made a table that IS named report "named by nothing", which is the worst possible reason."""
+    # `gates/symcases.rows: no gate source names this path` WAS A **FALSE CHARGE**, MEASURED:
+    # `gates/sym_graph_census.bend:130` is `def CASES() -> String: "gates/symcases.rows"` and `:626`
+    # READS IT AT RUNTIME. `namer()` was `ast.parse`-only, so `if f.suffix != ".py": continue` COULD
+    # NOT SEE A `.bend` OWNER. **THAT IS A TOOL LIMIT AND NOT A POLICY**, and the same limit makes
+    # `gates-pop.py` blind to 62 `.bend` drivers -- so NO EXISTING INSTRUMENT ADMITTED `.bend` WHILE
+    # EXCLUDING `.md`. A `.bend` DRIVER IS TEXT, SO A LITERAL SCAN FINDS THE PATH WITHOUT `ast`, AND
+    # THAT IS THE NARROW HALF OF THE FIX. **THE WIDE HALF -- LEARNING EACH OWNER'S FORMAT FROM THE
+    # OWNING GATE -- IS A DIFF IN THE REPORT AND IS NOT APPLIED HERE, BECAUSE A GATE THAT LEARNS
+    # FORMATS FROM ITS OWN SUBJECT MUST NOT ALSO BE THE JUDGE.**
     out = {}
     for f in entries:
-        if f.suffix != ".py":
+        if f.suffix not in (".py", ".bend"):
             continue
         try:
             if not stat.S_ISREG(os.lstat(f).st_mode):
@@ -146,15 +155,23 @@ def namer(entries):
             # `gate-surface.py` and `gates-pop.py` ship backslash escapes in DOCSTRINGS, so parsing
             # a gate is allowed to warn -- and another gate's warning printed under this gate's name
             # is a row this gate did not measure.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", SyntaxWarning)
-                tree = ast.parse(f.read_text())
+            if f.suffix == ".py":
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", SyntaxWarning)
+                    tree = ast.parse(f.read_text())
+                found = [n.value for n in ast.walk(tree)
+                         if isinstance(n, ast.Constant) and isinstance(n.value, str)
+                         and n.value.endswith(".rows")]
+            else:
+                # A `.bend` DRIVER IS NOT PYTHON. `ast.parse` raises, and a gate that SKIPS what it
+                # cannot parse is a gate blind to it -- WHICH IS HOW `symcases.rows` CAME TO REPORT
+                # "NAMED BY NOTHING" WHILE `sym_graph_census.bend` NAMES IT TWICE. A REGEX OVER ITS OWN
+                # TEXT IS DOCTRINE 1 CLAUSE (c), AND A DRIVER'S PATHS ARE LITERALS, NOT COMPUTED.
+                found = re.findall(r"[\w./-]*\.rows", f.read_text(errors="replace"))
+            for lit in found:
+                out.setdefault(lit.rsplit("/", 1)[-1], set()).add(f.name)
         except (SyntaxError, UnicodeDecodeError, OSError):
             continue
-        for node in ast.walk(tree):
-            if isinstance(node, ast.Constant) and isinstance(node.value, str) \
-                    and node.value.endswith(".rows"):
-                out.setdefault(node.value.rsplit("/", 1)[-1], set()).add(f.name)
     return out
 
 
@@ -277,6 +294,14 @@ def census(root=None, home=None):
         with warnings.catch_warnings():
             warnings.simplefilter("ignore", SyntaxWarning)
             entries, libs = pop.discover(root)
+            # `discover()` IS A **TWO-VALUE CONTRACT** -- `gates/gate-surface.py:280` unpacks it
+            # straight into `entries, libs`, and a THIRD return value was MEASURED to raise
+            # `ValueError: too many values to unpack` in a gate this work may not edit. **SO THE
+            # `.bend` POPULATION IS ADDED HERE AND NOT BY CHANGING `discover()`.** `discover()` is
+            # `ast`-BASED AND RETURNS **0 OF THE 62 `.bend` DRIVERS** -- MEASURED -- which is why
+            # `symcases.rows` REPORTED "NAMED BY NOTHING" WHILE `sym_graph_census.bend` NAMES IT
+            # TWICE. **A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A TRADE.**
+            entries = list(entries) + sorted(HERE.glob("*.bend"))
     except Exception as e:                                    # a census that cannot pop is not 0
         return refuse(f"discover() raised {type(e).__name__}: {e}")
     if not entries:
