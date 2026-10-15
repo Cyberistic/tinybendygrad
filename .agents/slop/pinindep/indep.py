@@ -41,10 +41,17 @@ def divergence_tests():
     # `verdict()`) must stay 0 while graphs-agree (which reads the substring anywhere) moves.
     # If this perturbation moves both, the two pins are ONE measurement wearing two hats.
     want_disagree = [g for g, v in derive.differ.WANT.items() if v == "DISAGREE"]
-    cases.append(("graphs-agree vs expect-moved, same 34 artifacts",
-                  f"D1-graph-{want_disagree[0]}.txt",
-                  [("VERDICT: DISAGREE", "VERDICT: AGREE\nSHOULD-VE-LAST VERDICT: DISAGREE")],
-                  {"expect-moved"}, "graphs-agree"))
+    if want_disagree:
+        cases.append(("graphs-agree vs expect-moved, same 34 artifacts",
+                      f"D1-graph-{want_disagree[0]}.txt",
+                      [("VERDICT: DISAGREE", "VERDICT: AGREE\nSHOULD-VE-LAST VERDICT: DISAGREE")],
+                      {"expect-moved"}, "graphs-agree"))
+    # `n=0` IS A MEASUREMENT, NOT A CRASH. The corpus outgrew this case: MEASURED 2026-10-15,
+    # `differ.WANT` is `{AGREE: 34}` -- ZERO graphs expect DISAGREE -- so there is no artifact to
+    # perturb, and `want_disagree[0]` raised IndexError on a tree that had answered the question
+    # perfectly. The print below already renders this as `WITNESSES WANT DISAGREE (n=0)`, so the
+    # honest output when there is nothing to perturb is that line, not a traceback. The section is
+    # SKIPPED, and `rows` still carries the byte-identical case below it.
 
     # byte-identical and not-comparable are two greps of ONE file. A report that says
     # BYTE-IDENTICAL must move only the first; one that says NOT COMPARED only the second.

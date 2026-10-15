@@ -430,7 +430,7 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
 
-pinindep-control [#########] 2/3      FIXED 2026-10-15, see below.
+pinindep-control [##########] 3/3    FIXED 2026-10-15, see below.
                                        `.agents/slop/pinindep/derive.py`'s CONTROL,
                                        `selfcheck()`, was RED and reported **`CONTROL FAILED -- 0 line(s) differ: []`** --
                                        a FAILURE whose message reads as a SUCCESS, which is the
@@ -454,10 +454,25 @@ pinindep-control [#########] 2/3      FIXED 2026-10-15, see below.
                                        completion (rc=0) for the FIRST time and reports `2 of 2`
                                        pins over `D0-repro.txt`; §B correctly shows even its nominal
                                        green state RED on the not-yet-re-taken `d10-transcript`.
-                                       **REMAINING (1/3): the COMMIT** -- these 11 files of
-                                       `pinindep/` + `repropin/` were in NO commit on this branch's
-                                       history (only the diverged `61a3241584` carries them), so the
-                                       fix lands WITH its whole unit rather than as one orphan file.
+                                       **LANDED WITH ITS WHOLE UNIT, NOT AS AN ORPHAN FILE:** these
+                                       11 files were in NO commit on this branch's history (only
+                                       the diverged `61a3241584` carries them), so the fixed
+                                       control travels with its report and its six siblings.
+                                       **SIBLING RE-VERIFICATION (the fix had six dependents).**
+                                       `indep.py`, `layer1.py`, `sens.py`, `table.py`,
+                                       `redundancy.py`, `mtime.py` all import `derive` and call
+                                       `selfcheck()`; MEASURED after the fix: **7 of 7 rc=0**, and
+                                       `repropin/measure.py` rc=0. Fixing the control exposed a
+                                       SECOND, PRE-EXISTING rot in `indep.py`: it perturbs a graph
+                                       whose `differ.WANT` verdict is `DISAGREE`, and the corpus is
+                                       now `{AGREE: 34}` -- **ZERO disagree witnesses** -- so
+                                       `want_disagree[0]` raised `IndexError` at `:45` on a tree
+                                       that had answered the question perfectly, BEFORE it could
+                                       print the `WITNESSES WANT DISAGREE (n=0)` line its own code
+                                       already renders. **A CORPUS THAT OUTGREW ITS OWN PERTURBATION
+                                       IS NOT A FAILURE OF THE TREE.** Now SKIPPED with that
+                                       reason; its remaining case still shows `byte-identical`
+                                       moving alone (`none -- INDEPENDENT`).
                                        **UNRELATED CONSEQUENCE, reported not fixed: `RUN HEALTH` is
                                        RED until `checks/differ.py repro` re-runs
                                        (`d10-transcript ABSENT`) -- the sanctioned state.**
