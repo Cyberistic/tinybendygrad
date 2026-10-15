@@ -434,6 +434,32 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
 
+repro-dangling [##........] 1/3      `checks/repro-paths.py`'s **108** DANGLING rows, TRIAGED 2026-10-15
+                                       against the 99 that no live instrument names. **THE RESULT IS
+                                       THE OPPOSITE OF WHAT THE COUNT SUGGESTS: `0` of the 108 is a
+                                       live instrument missing a required input.** 99 are named only
+                                       by finished units' reports -- a historical record naming a
+                                       pruned tool is ACCURATE, not broken -- and the 9 a live
+                                       instrument does name are ALL prose, a mapping KEY
+                                       (`gates-pop.py:1154` `out["checks/abi_gate.py.fixed"]`), or a
+                                       DECLARED-BUT-ABSENT input whose absence is counted on purpose
+                                       (`checks/substrate-snapshot.py:87` "whether or not it is on
+                                       disk ... THE `else` IS THE WHOLE FIX"). **THE FIRST PASS SAID
+                                       15 AND WAS WRONG IN THE WAY THIS REPO PUNISHES: 7 OF THE 15
+                                       WERE `repro-paths.py` CITING ITSELF**, its docstring naming
+                                       those six instruments as the incident that motivated the gate.
+                                       **AN INSTRUMENT THAT SCANS EVERY FILE INCLUDING ITS OWN COUNTS
+                                       ITS OWN NARRATIVE AS A BROKEN INPUT.** So the gate's opening
+                                       CLAIM -- "every path a committed report tells a reader to run
+                                       must exist" -- is **OVERSTATED FOR ITS POPULATION**: the 108
+                                       is stale historical prose, not a reader being misdirected.
+                                       **NOT FIXED ON PURPOSE.** Narrowing the claim, or splitting
+                                       historical records from live instructions, REDESIGNS what the
+                                       gate asserts, and a guess about which reports are historical
+                                       would silence the one row class genuinely worth a reader's
+                                       attention. 1/3 = the triage; the other 2 are that redesign and
+                                       are deliberately refused, not owed.
+                                       `.agents/slop/reprorefs/DANGLING-TRIAGE.md`.
 e2e-prose-pop [#########] 3/3      FIXED 2026-10-15. `.agents/slop/e2estage8/verdicts.py` was RED
                                        with `e2e.py: PROSE names [0] the CODE does not emit`, and the
                                        claim it made was FALSE: **stage `0` does not exist and never
