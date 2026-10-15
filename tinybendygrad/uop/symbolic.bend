@@ -1014,7 +1014,12 @@ def exec_alu3(+op: O.Op, +dt: S.Dt, +a: O.Const, +b: O.Const, +c: O.Const, trunc
 # symbolic.py:63-68 spells out. Invalid poisons the value: ops move inside the gate
 # so the Invalid reaches the LOAD/STORE and folds there, and this needs to be before
 # symbolic so that `0*something_that_might_be_invalid` doesnt become 0.
-def p_invalid(+x: F.Folded, +u: U32) -> Bool: Bool.and(sy_is_op(x, u, O.OpsCONST{}), sy_is_invalid(x, u))
+# `p_invalid` CALLS `sy_is_invalid_const` rather than re-spelling it. The two were
+# the same expression under two names -- `sy_is_const` IS `sy_is_op(x, u, Ops.CONST{})`
+# by its own def -- and the pattern layer carried the copy while the named helper sat
+# unread. `grep -c sy_is_invalid_const` answered 1 (its own `def` line) and the whole
+# class-(h) sweep found it; `p_invalid` is the only call site that wanted it.
+def p_invalid(+x: F.Folded, +u: U32) -> Bool: sy_is_invalid_const(x, u)
 
 # `invalid_gate` -- `UPat.var("cond").where(UPat.var("x"), invalid_pat)`, which is
 # `WHERE(cond, x, CONST(Invalid))` and three srcs.
@@ -3290,11 +3295,6 @@ def fz_code(s: String) -> U32:
     case SNil{}: 0
     case SCon{Chr{c}, t}: c
 
-def fz_hs(s: String) -> String:
-  match s:
-    case SNil{}: ""
-    case SCon{Chr{c}, t}: String.from_list([Char.from_u32(c)])
-
 # 0 is the end of the line, 1 is `)`, 2 is `(`, 3 is a space, 4 is a word char.
 def fz_cls.pick(cu: U32) -> U32:
   match cu:
@@ -3306,44 +3306,65 @@ def fz_cls.pick(cu: U32) -> U32:
     case 13: 3
     case _: 4
 
-def fz_cls.of(s: String, cu: U32) -> U32:
-  match s:
-    case SNil{}: 0
-    case SCon{Chr{c}, t}: fz_cls.pick(cu)
+def fz_cls.at(cs: List<&2, Char>) -> U32:
+  match cs:
+    case Nil{}: 0
+    case Chr{u} <> _t: fz_cls.pick(u)
 
-def fz_cls(+s: String) -> U32: fz_cls.of(s, fz_code(s))
+def fz_cls(+cs: List<&2, Char>) -> U32: fz_cls.at(cs)
 
-def fz_tok.tok(w: String, wm: U32) -> Tok:
-  match wm:
-    case 2: THead{w}
+def fz_tok.tok(w: String, hd: U32) -> Tok:
+  match hd:
+    case 1: THead{w}
     case _: TLeaf{w}
 
-# A word is emitted the moment its terminator arrives, and a `)` terminates a word
-# AND closes a node, so on a `)` the two tokens go out together. That is what lets
-# every edge below shrink `s`, which is what the fuel buys.
-def fz_tok(n: Nat, md: U32, +s: String, acc: List<&2, Tok>, w: String, k: U32) -> List<&2, Tok>:
-  match n:
-    case 0n: acc
-    case 1n+p:
-      match md:
-        case 0:
-          match k:
-            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [TClose{}]), "", fz_cls(String.drop(s, 1n)))
-            case 1: fz_tok(p, 0, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
-            case 2: fz_tok(p, 0, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
-            case _: fz_tok(p, 1, String.drop(s, 1n), acc, "", fz_cls(String.drop(s, 1n)))
-        case 1:
-          match k:
-            case 4: fz_tok(p, 1, String.drop(s, 1n), acc, String.concat([w, fz_hs(s)]), fz_cls(String.drop(s, 1n)))
-            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md), TClose{}]), "", fz_cls(String.drop(s, 1n)))
-            case _: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md)]), "", fz_cls(String.drop(s, 1n)))
-        case _:
-          match k:
-            case 4: fz_tok(p, 2, String.drop(s, 1n), acc, String.concat([w, fz_hs(s)]), fz_cls(String.drop(s, 1n)))
-            case 0: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md), TClose{}]), "", fz_cls(String.drop(s, 1n)))
-            case _: fz_tok(p, 0, String.drop(s, 1n), List.append(&2, Tok, acc, [fz_tok.tok(w, md)]), "", fz_cls(String.drop(s, 1n)))
+# THE SCANNER, AND IT IS THE THIRD SHAPE OF IT IN THIS FILE. `hd` is a flag that
+# says the NEXT word is a node HEAD: `(` sets it, every other character clears it,
+# and a word is emitted the moment its terminator arrives -- a `)` emits the word AND
+# a close together, and the end of the line emits the word and STOPS.
+#
+# THE TWO SHAPES IT REPLACED, and both are the same fault read two ways. The mode
+# `md` was the class of the word just EMITTED and had exactly one edge INTO 2 -- its
+# own self-loop -- so with the scan starting at `md = 0` the value 2 was UNREACHABLE
+# and `fz_tok.tok`'s `THead` arm was dead code: every op name in a case file arrived
+# as a leaf. MEASURED on `(add c7 c0)` before the fix, `fz_run` answered
+# `root=1 n=2 op=Ops.CONST selfadd=0 sym=norewrite rm=norewrite` -- a CONST where the
+# s-expr says ADD. The second shape then emitted one `TClose` per unit of fuel on the
+# empty tail, which is 4096 closes for a 12-character input and a lane whose cost is
+# set by its fuel rather than by its case. `hd` has neither fault, and it is the same
+# algorithm `gates/sym_graph_census.bend`'s `tk.at` runs, which is the copy MEASURED
+# there -- the duplication is named rather than left to be rediscovered.
+def fz_tk.put(w: String, hd: U32, acc: List<&2, Tok>) -> List<&2, Tok>:
+  match hd:
+    case 1: List.append(&2, Tok, acc, [THead{w}])
+    case _: List.append(&2, Tok, acc, [TLeaf{w}])
 
-def fz_toks(+s: String) -> List<&2, Tok>: fz_tok(4096n, 0, s, Nil{}, "", fz_cls(s))
+def fz_tk.flush(w: List<&2, Char>, hd: U32, acc: List<&2, Tok>) -> List<&2, Tok>:
+  match w:
+    case Nil{}: acc
+    case _: fz_tk.put(String.from_list(w), hd, acc)
+
+def fz_tk.close(w: List<&2, Char>, hd: U32, acc: List<&2, Tok>) -> List<&2, Tok>:
+  List.append(&2, Tok, fz_tk.flush(w, hd, acc), [TClose{}])
+
+# THE PARAMETER ORDER IS LOAD-BEARING: Bend matches parameters in DECLARATION order, so
+# a def that matches its fuel may not then match a parameter declared before it. `n`
+# is first for exactly that reason and the class comes second for the same one.
+def fz_tok(n: Nat, k: U32, +s: List<&2, Char>, acc: List<&2, Tok>, w: List<&2, Char>, +hd: U32) -> List<&2, Tok>:
+  match n:
+    case 0n: fz_tk.flush(w, hd, acc)
+    case 1n+p:
+      match k:
+        case 0: fz_tk.flush(w, hd, acc)
+        case 1: fz_tok(p, fz_cls(List.tail(&2, Char, s)), List.tail(&2, Char, s), fz_tk.close(w, hd, acc), Nil{}, hd)
+        case 2: fz_tok(p, fz_cls(List.tail(&2, Char, s)), List.tail(&2, Char, s), acc, Nil{}, 1)
+        case 3: fz_tok(p, fz_cls(List.tail(&2, Char, s)), List.tail(&2, Char, s), fz_tk.flush(w, hd, acc), Nil{}, 0)
+        case _: match s:
+          case Nil{}: fz_tk.flush(w, hd, acc)
+          case c <> t: fz_tok(p, fz_cls(t), t, acc, List.append(&2, Char, w, [c]), hd)
+
+def fz_toks(+s: String) -> List<&2, Tok>:
+  fz_tok(4096n, fz_cls(String.to_list(s)), String.to_list(s), Nil{}, Nil{}, 0)
 
 # THE VOCABULARY. A head token is the op's own `Ops.name` in lower case, so a typo
 # cannot hide: the driver PRINTS `Ops.name`, so a head it did not recognise comes
@@ -3445,8 +3466,12 @@ def Frm.head(f: Frm) -> String:
 
 def fz_deliver.at(t: List<&2, Frm>, +st: St, i: U32) -> St:
   match t:
-    case +f <> u: St{St.ar(st), List.append(&2, Frm, u,
-      [Frm{List.append(&2, U32, Frm.srcs(f), [i]), Frm.head(f)}]), St.root(st)}
+    # THE UPDATED FRAME GOES BACK ON TOP for the same reason `fz_build.one`'s head arm
+    # does: appending it to `u` moved it BELOW the frames still open, so the next leaf
+    # was delivered to the parent. MEASURED on `(sink (group x) c2)` with the head arm
+    # fixed and this one not, the root answered `op=Ops.GROUP` where the s-expr says
+    # SINK -- the GROUP was still on the stack when the last `)` closed it again.
+    case +f <> u: St{St.ar(st), List.append(&2, Frm, [Frm{List.append(&2, U32, Frm.srcs(f), [i]), Frm.head(f)}], u), St.root(st)}
     case Nil{}: St{St.ar(st), Nil{}, Some{i}}
 
 def fz_deliver(+st: St, i: U32) -> St: fz_deliver.at(St.stk(st), st, i)
@@ -3483,30 +3508,76 @@ def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
 
 # `UOp.variable` -- ops.py:1055, "a Variable is a scalar ALU PARAM with a name
 # and a value range", which is the whole of the `ParamArg` this driver states.
-def fz_var(dt: S.Dt) -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{O.ParamArg.no_slot(), dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{"v"}, S.Aalu{},
+# THE NAME AND THE ARENA ARE PARAMETERS, and both used to be literals: `Some{"v"}`
+# and `O.Arena.empty()`. A case file therefore could not say `x` AND `y`, and the
+# rebind rules -- `(x^y)^y` (symbolic.py:123), `(x%y)%y` (:124), `(x*x*x).recip()`
+# (:464) -- carry an IDENTITY CHECK as their whole guard, so a corpus that cannot
+# name two variables cannot state a positive and a negative for any of them. The
+# arena mattered too: minting every variable into `Arena.empty()` put each one at
+# the same index, so `x` and `y` would have been ONE node.
+def fz_var(+ar: O.Arena, +nm: String, dt: S.Dt) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, Nil{},
+    O.AParam{O.ParamArg{O.ParamArg.no_slot(), dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{nm}, S.Aalu{},
       None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
 # The four CONST spellings and the four VARIABLE dtypes. A leaf is interned into
 # the arena the state already carries, so a repeated `c7` in one case is ONE
 # node -- which is what makes `x // x` and `x // y` distinguishable at all.
-def fz_leaf.go(+ar: O.Arena, +w: String) -> O.Found:
-  match w:
-    case "bad": O.UOp.const(ar, O.CInvalid{})
-    case "bt": O.UOp.const(ar, O.CBool{True{}})
-    case "bf": O.UOp.const(ar, O.CBool{False{}})
-    case "x": fz_var(S.weakint())
-    case "xb": fz_var(S.boolean())
-    case "xf": fz_var(S.weakfloat())
-    case "xi": fz_var(S.int32())
-    case _: fz_leaf.sgn(fz_code(w), w, ar)
+def fz_leaf.var(+ar: O.Arena, +w: String, dt: S.Dt) -> O.Found: fz_var(ar, w, dt)
+
+# `x` weakint, `xb` bool, `xf` weakfloat, `xi` int32 -- the dtype is the LAST
+# character and the NAME is the whole word, so `x` and `y` are two variables at ONE
+# dtype and `xi` is a third node whose dtype is int32. `y` at bool is `yb`.
+def fz_lastu.at(cs: List<&2, Char>) -> U32:
+  match cs:
+    case Nil{}: 32
+    case Chr{u} <> _: u
+
+def fz_lastu(cs: List<&2, Char>) -> U32:
+  match cs:
+    case Nil{}: 32
+    case _ <> t: fz_lastu.at(t)
+
+def fz_vdt.at(u: U32) -> S.Dt:
+  match u:
+    case 98: S.boolean()
+    case 102: S.weakfloat()
+    case 105: S.int32()
+    case _: S.weakint()
+
+def fz_vdt(w: List<&2, Char>) -> S.Dt: fz_vdt.at(fz_lastu(w))
+
+# THE CONST/VARIABLE SPLIT IS THE HEAD CHARACTER, and it is `c`/`n`/one of the three
+# fixed spellings rather than a fixed list of names -- so `x` and `y` are two
+# variables at ONE dtype and `c7`/`n7` stay the two int CONSTs. `fz_code` is the head.
+def fz_is_cst(+w: String) -> Bool:
+  Bool.or(String.eq(w, "bt"), Bool.or(String.eq(w, "bf"),
+    Bool.or(String.eq(w, "bad"), Bool.or(U32.is_eq(fz_code(w), 99), U32.is_eq(fz_code(w), 110)))))
+
+def fz_leaf.go.at(cst: Bool, +ar: O.Arena, +w: String) -> O.Found:
+  match cst:
+    case True{}:
+      match w:
+        case "bad": O.UOp.const(ar, O.CInvalid{})
+        case "bt": O.UOp.const(ar, O.CBool{True{}})
+        case "bf": O.UOp.const(ar, O.CBool{False{}})
+        case _: fz_leaf.sgn(fz_code(w), w, ar)
+    case _: fz_leaf.var(ar, w, fz_vdt(String.to_list(w)))
+
+def fz_leaf.go(+ar: O.Arena, +w: String) -> O.Found: fz_leaf.go.at(fz_is_cst(w), ar, w)
 
 def fz_leaf(+st: St, w: String) -> O.Found: fz_leaf.go(St.ar(st), w)
 
 def fz_build.one(t: Tok, +st: St) -> St:
   match t:
-    case THead{w}: St{St.ar(st), List.append(&2, Frm, St.stk(st), [Frm{Nil{}, w}]), St.root(st)}
+    # A FRAME GOES ON TOP, and `List.append(&2, Frm, [f], St.stk(st))` is the whole of
+    # "on top": appending the new frame to the END put it BELOW the open ones, so every
+    # case with NESTING built a different graph. MEASURED on `(xor (xor x c5) c5)`
+    # before/after, `O.Arena.srcs` on the root read `2 3 2` and reads `3 2`: the inner
+    # XOR had been given NO src and the outer three, one of them its own output. The
+    # flat cases (`(add c7 c0)`, `(group x)`) were right either way, which is why one
+    # corpus row out of two looked healthy.
+    case THead{w}: St{St.ar(st), List.append(&2, Frm, [Frm{Nil{}, w}], St.stk(st)), St.root(st)}
     case TLeaf{w}: fz_close.give(fz_leaf(st, w), St.stk(st), St.root(st))
     case TClose{}: fz_close(st)
 
@@ -3578,17 +3649,19 @@ def fz_render.const(a: O.Arg) -> String:
     case O.APy{v}: fz_render.cval(v)
     case _: "?"
 
-def fz_render.dt(d: S.Dt) -> String:
-  match d:
-    case S.Dt{0, 800, S.CWeakInt{}, _}: "x"
-    case S.Dt{0, 1, S.CBool{}, _}: "xb"
-    case S.Dt{9, 800, S.CWeakFloat{}, _}: "xf"
-    case S.Dt{5, 32, S.CSint{}, _}: "xi"
+def fz_pname(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
     case _: "?"
 
+# A LEAF IS ITS OWN TEXT, and a PARAM PRINTS ITS NAME rather than its dtype. The
+# dtype glyph `x`/`xb`/`xf`/`xi` was a stand-in for a name that did not exist, and
+# with the name now in `ParamArg` it is the wrong text: two variables at ONE dtype
+# would render as the same string and a canonical form that cannot tell `x` from `y`
+# cannot carry a rebind rule's answer.
 def fz_render.param(a: O.Arg) -> String:
   match a:
-    case O.AParam{pa}: fz_render.dt(O.ParamArg.dtype(pa))
+    case O.AParam{pa}: fz_pname(O.ParamArg.name(pa))
     case _: "?"
 
 # THE OP NAME AND ITS DTYPE SUFFIX, which is `Ops.name` plus a `:` and the
@@ -3611,13 +3684,29 @@ def fz_head(+ar: O.Arena, +u: U32) -> String: fz_head.of(O.Arena.op(ar, u), O.Ar
 # counter. The job is destructured in the LIST pattern, so `close` is a binder
 # and the arm below is legal -- a match on `Jz.close(j)` would be a match on a
 # call, which Bend refuses.
+# A LEAF IS NOT A NODE WITH NO SRCS. `fz_head` answers a CONST's value and a PARAM's
+# name for those two ops and the op's own name for every other, so the emitter has to
+# ask WHICH rather than infer it from the src list: it opened a `(` and a space for
+# them too, and `(add c7 c0)` came back as `(add (c7 ) (c0 ))`. A canonical form the
+# harness cannot re-read is not a canonical form, and the trailing space is the part
+# that would have hidden it -- both were invisible while the driver could not build a
+# node at all. MEASURED on `(add c7 c0)` after the frame fix and before this one,
+# `sym` printed `(c7 `.
+def fz_leafop(+op: O.Op) -> Bool:
+  Bool.or(O.eq_op(op, O.OpsCONST{}), O.eq_op(op, O.OpsPARAM{}))
+
+def fz_open.at(leaf: Bool, +u: U32, +ar: O.Arena) -> String:
+  match leaf:
+    case True{}: fz_head(ar, u)
+    case _: String.concat(["(", fz_head(ar, u), " "])
+
 def fz_emit(w: List<Jz>, +ar: O.Arena, acc: String) -> String:
   match w:
     case Nil{}: acc
-    case Jz{u, close} <> rest:
+    case Jz{+u, close} <> rest:
       match close:
         case True{}: fz_emit(rest, ar, String.concat([acc, ")"]))
-        case False{}: fz_emit(rest, ar, String.concat([acc, "(", fz_head(ar, u), " "]))
+        case _: fz_emit(rest, ar, String.concat([acc, fz_open.at(fz_leafop(O.Arena.op(ar, u)), u, ar)]))
 
 def fz_render(+ar: O.Arena, u: U32) -> String: fz_emit(fz_jobs.root(ar, u), ar, "")
 

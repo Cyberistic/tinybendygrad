@@ -258,7 +258,16 @@ def build.put.w(+w: String, st: Sy.St) -> Sy.St: build.put(iscst(w), w, st)
 
 def build.one(t: Sy.Tok, +st: Sy.St) -> Sy.St:
   match t:
-    case Sy.THead{w}: Sy.St{Sy.St.ar(st), List.append(&2, Sy.Frm, Sy.St.stk(st), [Sy.Frm{Nil{}, w}]), Sy.St.root(st)}
+    # A FRAME GOES ON TOP -- `List.append(&2, Sy.Frm, [f], St.stk(st))` -- and NOT at the end.
+    # This is `symbolic.bend`'s own `fz_build.one`, verbatim, and it carried the same fault:
+    # appending the new frame below the open ones meant the next leaf was delivered to the
+    # PARENT, so every case with NESTING built a different graph. MEASURED on
+    # `(xor (xor x c5) c5)` before/after, the root's `Arena.srcs` read `2 3 2` and reads
+    # `1 3`; MEASURED on `(sink (group x) c2)` before/after, `in=` read
+    # `0:GROUP:1,3;1:SINK:1;2:x:;3:c2:` and reads `0:SINK:1,2;1:GROUP:1;2:x:;3:c2:`. The flat
+    # cases (`(add c7 c0)`, `(group x)`) read the same either way, which is why half the
+    # corpus looked healthy over a builder that could not nest.
+    case Sy.THead{w}: Sy.St{Sy.St.ar(st), List.append(&2, Sy.Frm, [Sy.Frm{Nil{}, w}], Sy.St.stk(st)), Sy.St.root(st)}
     case Sy.TLeaf{w}: build.put.w(w, st)
     case Sy.TClose{}: Sy.fz_close(st)
 
