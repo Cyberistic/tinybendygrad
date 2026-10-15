@@ -15394,6 +15394,55 @@ points and records `LIVE:` lines for untracked tables; **nothing in this tree tr
 only visible as a commit that would not take. **THE FILE IS THE SHARED STATE AND THE INDEX IS SHARED AND
 BOTH HAVE AN ARMED-WRITE PROBLEM, AND ONLY ONE OF THEM HAS AN INSTRUMENT.**
 
+## DECOMPADT -- A CAST'S `ADt` IS NOW IN THE TOKEN, AND **THE FIXTURE I ASKED FOR CANNOT EXIST** (2026-10-15)
+
+`e80011fba`, 6 files, **NO PORT FILE IN IT**, `ruff` clean (better than HEAD, which had one pre-existing
+error). `gates/decomp_graph_census-gate.py` -- **39 rows (was 38), 23 exact (was 22), 16 declared,
+rc=0**. This closes the `DECOUPLE` coverage gap. `crp_graph_census*` / `amd_dsl_census*` VERIFIED
+UNTOUCHED, both `-gate.py` still hashing equal to `51cceacd7`.
+
+- [x] **THE ACCEPTANCE TEST PASSES.** `A1` REWRITES `dtype.bend:593,637`'s
+      `dd_cast_fold(ar, x, ldt, O.eq_dt(xdt, ldt))` TO `dd_cast_fold(ar, x, S.boolean(), ...)` --
+      **CPython's OWN `DTypeMixin.cast` WALRUS (`dtype.py:36`) MADE EXPLICIT, WHICH IS `de`'s EXACT
+      SHAPE.** MEASURED WITH AND WITHOUT THE NEW PRINTER:
+          A1 (ADt half only)   ->  **5 rows move**    bare-printer: **0**
+          A2 (fold test only)  ->  2 rows move       bare-printer: 2
+      **`MOVED-BARE` IS THE SAME COMPARISON WITH EVERY `[...]` STRIPPED, SO IT IS THE PRE-FIX INSTRUMENT
+      AND IT SEES NOTHING.** 13 MUTATIONS, 12 MOVE ROWS. **VERIFIED HERE: 453 bare `CAST/1` + 33
+      `BITCAST/1` BECOME ARGUMENT-BEARING -- 5x`BITCAST/1[f32]`, 17x`[i32]`, 9x`[u32]`, 2x`[i64]`,
+      1x`[f64]` -- WHERE 0 CARRIED AN ARGUMENT BEFORE.**
+- [ ] **THE FIXTURE THE BRIEF NAMED IS IMPOSSIBLE, MEASURED OVER 12 DTYPES.** `de != dt` IMPLIES
+      `b is Invalid`, AND THEN `de = from_py(Invalid) = bool = c0`, **SO THE FOLD ALWAYS FIRES.**
+      **VERIFIED HERE: `UOp.const` TAKES NO DTYPE AND ALWAYS ANSWERS A BARE `CONST` AT `weakint`,**
+      and `dtype.py:84` **RAISES** on `None` for every non-float dtype -- **A TRACEBACK IS THE
+      MEASUREMENT.** **THE PREMISE WAS FALSE AND NO ROW WAS FABRICATED TO SATISFY IT.**
+- [x] **AND IT BUILT THE FIXTURE THAT DOES DISTINGUISH: `uq` = `unpack32` OVER THE POOL'S `u32` WORD
+      AT OFFSET 4.** `up` PASSED `xdt = u32`, SO `unpack32.bc`'s FOLD FIRED AND THE ROW HAD **NO BITCAST
+      AT ALL** -- `A13` (BREAK ONLY THAT ARM'S `ADt`) MOVED **0 OF 38**, AND THE NODE `ops.py:13` BUILDS
+      WAS IN NO ROW, IN A HOSE `dtype.bend:2824-2830` ITSELF CALLS "LIVE CODE WITH ZERO COVERAGE".
+      `uq` DOES NOT FIRE THE FOLD, IS AN **EXACT MATCH ON BOTH SIDES, ADDS NO NEW CLASS**, AND `A13` NOW
+      MOVES **1 ROW**. **IT DISTINGUISHES FOLD-FIRES FROM FOLD-DOES-NOT ON A REQUESTED DTYPE != THE
+      RECEIVER'S -- THE `de` SHAPE IN DECOMP'S OWN VOCABULARY.** **SAME SHAPE AS THE AMD GATE'S
+      `VOP2_FIELDS` HAVING NO `src2` FIELD, WHICH IS WHY ONLY 1 OF 3 MODIFIER FLAGS WAS MEASURED.**
+- [ ] **`A5` IS A DEAD ARM, NOT A GAP.** `dd_cast_bool`'s `True` arm's only caller is `l2i_cast1.quo`
+      (`:626`), REACHED ONLY AT `sel == 1`, AND `dd_cast_sel` (`:567-570`) RETURNS 1 ONLY WHEN
+      `dd_is_float(xdt)`; `CFloat`/`CWeakFloat` AND `CBool` ARE DISJOINT. **CPYTHON AGREES --
+      `dtype.py:33`'S ARM SITS AFTER `:30`'s `not in dtypes.floats`.** **THE COMMENT ON
+      `l2i_cast1.quo` NAMING A BOOL TRIGGER NAMES ONE ITS OWN SELECTOR HAS EXCLUDED. NO ROW CAN REACH
+      IT.**
+- [x] **A HAND-WRITTEN TABLE THAT COULD NOT BE CHECKED WAS ALSO WRONG.** `PROMOTION_TARGETS` NOW
+      ASSERTS THE DELETED CASTS' TARGETS EVERY RUN: MEASURED **`u32 263, i64 17, i32 2`** AGAINST THE
+      HAND-WRITTEN TABLE'S **`u32 263, i64 14, i32 5`** -- **WHICH COUNTED THE PORT'S OWN SURVIVING NODE
+      AMONG THE 282 IT DELETES.** **AND `witnesses()` NOW MEASURES ZERO ALTERNATIVE WITNESSES ON `lg1`
+      (WAS ONE, AND IT KEPT THE WRONG NODE).**
+- [ ] **STILL OPEN, AND IT IS A NEW SHAPE:** `l2i.pick` CASES 28/29/30 (`lgv` `lgw` `lgx`) ARE IN THE
+      CENSUS'S OWN POPULATION PARAGRAPH AND DRIVEN BY NEITHER LANE. MEASURED, THEY ARE **NEW
+      DIVERGENCES NEEDING TWO NEW CLASSES** -- `lgv` CPython 6 TOKENS vs PORT 4 AND `lgw` 6 vs 2 ARE
+      **NOT DELETIONS AT ALL. A POPULATION RULE KEYED ON "ARMS THAT READ THE WORD POOL" CANNOT SEE
+      THEM -- THEY MINT THEIR CONST OUTSIDE `l2i`.**
+- [ ] **`A11` (THE CONST SITES' `ADt`) MOVES 15 ROWS BUT 3 BARE** -- **A CONST'S DTYPE IS LOAD-BEARING
+      FOR GRAPH SHAPE HERE, NOT ONLY FOR THE LABEL.** Named, not counted as a printer-only win.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
