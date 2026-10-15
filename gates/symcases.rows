@@ -57,3 +57,5 @@ t_sink|(sink (group x) c2)
 # `bend`-version behaviours rather than port behaviour. They are here because the tree's rule is
 # "a wrong reason is worse than no reason": a reader who assumes `ops.bend` or `symbolic.bend`
 # is at fault will go and change the wrong file.
+t_sink0|(sink x c2)
+t_sink1|(sink (group x))
