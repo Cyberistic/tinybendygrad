@@ -16008,6 +16008,32 @@ FROM CPYTHON** as `types[strong_dtype(d)]` OR `EMPTY` -- **ZERO HAND-WRITTEN STR
 - [ ] **`LAWS/spec.bend:719`: PORT `void` IS `pri` 0 AND CPYTHON'S IS -1 (MEASURED), SO PORT `pri` 0 IS
       `void|bool|weakint`.** OUT OF GRANT, AND **THE FIX ROUTES ON `cls`, WHICH IS RIGHT IN BOTH.**
 
+## SYMTWO -- `t_sink` IS THE **ONLY** REAL DIVERGENCE AND THE OTHER TWO FIXED BLOCKS ARE CORRECTED IN PLACE (2026-10-16)
+
+**`gates/sym_graph_census.bend` HAS NO GATE AND ITS HEADER JUSTIFIED THE ABSENCE WITH A CAUSE THAT WAS
+ONE BUG.** VERIFIED HERE AGAINST CPython's OWN ORACLE (`.agents/slop/symh/oracle.py`, `sym.rewrite`):
+
+    row      port         cpython                      verdict
+    t_add    0:c7:        c7                           agree
+    t_xor    0:x:         x                            **agree -- THE HEADER SAID `norewrite`**
+    t_xor0   norewrite    (XOR y (XOR x c5))           REAL
+    t_group  0:x:         x                            agree
+    t_sink   0:NOOP:      (SINK x c2)                  **REAL**
+
+**THE HEADER SAID THREE DIVERGENCES AND TWO ARE TRUE. `t_xor` WAS FIXED BY THE FRAME-STACK REPAIR AND
+THE NARRATION WAS NOT RE-RUN** -- which is `M8`'s class (a document that stops describing its
+subject) and the second time in this one file, after its `0:ADD:2,1` canonical-form readings.
+
+- [ ] **`t_sink` IS THE LAST REAL ONE, AND IT IS A MINTED NOOP WHERE CPYTHON FLATTENS.**
+      `symbolic.py:445-449`'s `UPat((Ops.SINK, Ops.GROUP), name="root")` **FLATTENS A GROUP SRC OUT OF
+      A SINK**. `symbolic.bend:1555`'s `sym_12.hit` LOOKS LIKE IT ALREADY DOES --
+      `H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{}))` -- **SO EITHER SOMETHING ELSE MINTS THE
+      NOOP OR `sym_12.pat` NEVER FIRES ON THIS SHAPE.** `symbolic.bend:3221`'s OWN `row("sink", ...)`
+      IS ON `fx_sink`, **A THREE-SRC ROOT THE FIVE-ROW CORPUS DID NOT REPRODUCE UNTIL THE FRAME-STACK
+      REPAIR -- SO THE PORT'S OWN 57 GATE ROWS NEVER SAW THIS SHAPE EITHER.** That is why the file's
+      gate passes while the corpus row fails, and it is `ptx.bend`'s ALIAS DEFECT EXACTLY: all 25 of
+      its own fixtures put the aliased node at index 0.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
