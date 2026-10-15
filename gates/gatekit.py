@@ -590,10 +590,40 @@ def gate(g, summary, checks=None):
     verdict away while doing it. `checks` returns a Bool and a False one is a FAIL, not a crash.
     """
     code = g.run()
-    if code == PASS and checks is not None and not checks():
+    if code == PASS and checks is not None and not _checks_answer(checks):
         code = FAIL
     print(summary if code == PASS else f"{g.name}: {verdict_of(code)}")
     return code
+
+
+def _checks_answer(checks) -> bool:
+    """`checks()`, WHERE A RAISE IS A VERDICT AND NOT AN ABSENCE.
+
+    THE DOCSTRING ABOVE ALREADY SAID "a False one is a FAIL, not a crash", AND NOTHING
+    ENFORCED IT. MEASURED, by `gates/realize_graph_census-mutate.py` on a tree where the
+    fix would have mattered: `realize_graph_census-gate.py:958` chains eight checks with `and`,
+    and `classes_hold`/`ret_is_uop_fixed_holds` SUBSCRIPT THE LANE (`port[r]`, `cpy[r]`,
+    `rows[r]`), so a MISSING ROW raised `KeyError` -- 8 TIMES ACROSS FOUR POPULATION MUTATIONS --
+    and the exception PROPAGATED PAST `checks=` AND EXITED 1, WHICH IS THE SAME NUMBER AS AN
+    HONEST `FAIL`.
+
+    SO A CRASHED GATE WAS INDISTINGUISHABLE FROM A FAILING ONE BY EXIT STATUS ALONE, AND
+    BECAUSE `and` SHORT-CIRCUITS, THE CRASH ALSO HID EVERY CHECK AFTER IT. THAT IS THE
+    SIXTEENTH RECORDED INSTANCE OF ONE SHAPE -- AN INSTRUMENT THAT REPORTS A RESULT FOR
+    SOMETHING IT NEVER RAN -- AND IT WAS IN `gatekit`'s OWN CALLING CONVENTION.
+
+    `no_bottom_value`/`compares_holds` USE `.get` AND DEFAULT, so FOUR CHECKS ALREADY
+    DISAGREED ABOUT A MISSING ROW: SOME CRASH, SOME ANSWER. ONE VERDICT, TWO SHAPES.
+
+    THE FIX IS HERE AND NOT IN THE GATES BECAUSE `and` IS THE GATE AUTHOR'S CHOICE AND CANNOT BE
+    PREVENTED FROM OUTSIDE; WHAT CAN BE PREVENTED IS THE CRASH ESCAPING. A `KeyError` HERE IS A
+    CHECK THAT COULD NOT ANSWER, WHICH IS A FAIL WITH A NAME, NOT A TRACEBACK.
+    """
+    try:
+        return bool(checks())
+    except Exception as exc:
+        print(f"CHECK-RAISED {type(exc).__name__}: {exc}")
+        return False
 
 
 def main(gate, summary):
