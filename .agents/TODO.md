@@ -434,8 +434,46 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
 
-pinindep-control [##########] 3/3    FIXED 2026-10-15, see below.
-                                       `.agents/slop/pinindep/derive.py`'s CONTROL,
+pins-shape-hdr [######...] 2/5      `gates/pins-shape-gate.py` asked every `gates/*.rows` to DECLARE
+                                       WHO WRITES IT and found 5 offenders. **3 FIXED 2026-10-15,
+                                       2 REFUSED WITH THE MEASUREMENT.** The gate's `WRITER` regex
+                                       (`pins-shape-gate.py:71`) matches `GENERATED\s+by\s+...`, and
+                                       its shape logic skips `#` (`:111`), so a provenance line is
+                                       both required and harmless. **(1) `wk-f32-table.rows` and (2)
+                                       `ptx_render_census-pins.rows` ARE GENERATED, so the header
+                                       was emitted BY THE WRITER
+                                       (`gates/wk-f32-rows.py:69`, `gates/ptx_render_census-gate.py`),
+                                       not pasted into the output -- a hand-added header is erased by
+                                       the next regeneration, which is how the finding would have
+                                       returned. Doing that exposed a REAL trap: `pins_hold()`
+                                       asserts `lines[0] == 'lane<TAB>row<TAB>value'` and `_lines()`
+                                       does NOT skip `#`, so a leading provenance line would have
+                                       made the gate REFUSE its own pins. `_lines()` is now joined by
+                                       a PINS-ONLY `_pins_lines()` -- `_lines()` feeds `run_oracle()`,
+                                       whose `#` lines ARE content, so one shared filter would drop
+                                       oracle rows. **(3) `gates/symcases.rows` IS HAND-MAINTAINED**
+                                       and nothing writes it, so it declares `by hand` honestly in
+                                       its existing comment block.
+                                       **THE 2 REFUSED ARE REFUSED, NOT MISSED.** (a)
+                                       `gates/cstyle-live.rows` is the e2e stage-7 FIXTURE, and
+                                       `checks/dup-gate.py` publishes **`227 name(s) on the BEFORE
+                                       side have no partner`** as a claim ABOUT ITS LINE COUNT --
+                                       adding a comment line moves a number another gate reports,
+                                       and `e2e.py` stage 7 SKIPs on a cold substrate, so the
+                                       measurement that would re-take it cannot be run here.
+                                       (b) `symcases.rows`'s only READER is
+                                       `gates/sym_graph_census.bend`, and the gate's `discover()`
+                                       finds gate entry points, so the file is **NAMED BY NOTHING**
+                                       in the population the gate searches. That is a REAL finding
+                                       and it is the same class as `agend`'s `xd1/pin`: an entry
+                                       point outside the discovered set.
+                                       **A GATE THAT EXITS 0 HAVING MEASURED NOTHING IS WORSE THAN
+                                       NO GATE**, so the 2 RED rows stay RED.
+                                       **SIDE EFFECT, MEASURED: `gates/indexread-gate.py` IS NOW
+                                       `rc=0`** (it was `rc=1`), and its own output names
+                                       `gone checks/repro-paths.py` -- the `git ls-tree` fix REMOVED
+                                       an index-read offender.
+pinindep-control [##########] 3/3    FIXED 2026-10-15, see below. `.agents/slop/pinindep/derive.py`'s CONTROL,
                                        `selfcheck()`, was RED and reported **`CONTROL FAILED -- 0 line(s) differ: []`** --
                                        a FAILURE whose message reads as a SUCCESS, which is the
                                        five-state doctrine's `DEAD`/`FAIL` confusion at the level of a
