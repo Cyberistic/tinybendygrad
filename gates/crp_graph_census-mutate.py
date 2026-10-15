@@ -234,6 +234,28 @@ def lane_rows(argv):
     return [l for l in r.stdout.splitlines() if "=" in l], []
 
 
+def bare(sig):
+    """THE PRE-REPAIR PRINTER: every `[...]` dropped. `OP/NSRC` is exactly what
+    `tok.arg` (driver:174-179) printed for an `ADt` before the `ADt` arm existed, and what
+    `crp_graph_census-oracle.py`'s `tok` printed for every op but CONST and ALLOC.
+
+    IT IS WHAT MAKES A CLAIM ABOUT THE PRINTER FALSIFIABLE. A mutation can move a row
+    WITHOUT the new `CAST/1[<dt>]` token being the reason, and the way to tell is to run
+    the SAME comparison with the argument dropped: `MOVED > 0` with `BARE == 0` is the
+    repair's own doing, and `MOVED == BARE` is a mutation the old printer already caught.
+    `gates/decomp_graph_census-mutate.py:147` is the sibling instrument and the reason is
+    the same one."""
+    return ",".join(tok.split("[", 1)[0] for tok in sig.split(","))
+
+
+def moved_bare(base, got):
+    """THE POSITIONAL COUNT UNDER `bare()`, or `None` when a lane is dead. Same shape as
+    `moved` on purpose: a DEAD lane must read as dead here too rather than as 0."""
+    if got is None or len(got) != len(base):
+        return None
+    return sum(1 for a, b in zip(base, got) if bare(a.split("=", 1)[1]) != bare(b.split("=", 1)[1]))
+
+
 def moved(base, got):
     """`(moved, appeared, vanished)` POSITIONALLY when the lengths agree -- which is how
     `gatekit` diffs, so a RENAMED row counts as a moved row rather than as an appearance --
@@ -306,16 +328,44 @@ MUTATIONS = [
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), dt)",
      ('("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",',
       '("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), dt)",')),
-    # C5 IS THE QUANTITATIVE FORM OF C4. `tok.arg` (driver:155-159) matches `APy` and `AParam`
-    # and answers everything else with `tok.of(a, u, False{}, "")` -- so a CAST's `ADt` is
-    # printed as the bare token `CAST/1` -- and `crp_graph_census-oracle.py:167-172` does the
-    # same with `f"{u.op.name}/{len(u.src)}"`. MEASURED ON THE BASE LANES: 118 `CAST/1`
-    # occurrences and 0 of them carry an argument, on BOTH sides. So the `ADt` is not merely
-    # UNREACHED, it is UNPRINTED, and hardcoding it to the WRONG dtype at every minted CAST
-    # must move nothing. If C5 moves a row then the base reading above is wrong.
+    # C5 IS THE QUANTITATIVE FORM OF C4, AND IT IS THE MUTATION THE PRINTER REPAIR MADE
+    # LIVE. `tok.arg` used to match `APy` and `AParam` and answer everything else with
+    # `tok.of(a, u, False{}, "")` -- so a CAST's `ADt` printed as the bare token `CAST/1` --
+    # and `crp_graph_census-oracle.py`'s `tok` did the same with `f"{u.op.name}/{len(u.src)}"`.
+    # MEASURED ON THE BASE LANES: 118 `CAST/1` occurrences and 0 of them carried an argument,
+    # on BOTH sides, and the PREDICTION THIS ENTRY USED TO CARRY -- "hardcoding it to the
+    # WRONG dtype at every minted CAST must move nothing" -- WAS TRUE THEN AND IS FALSE NOW.
+    # `tok.arg` grew its `ADt` arm and the oracle grew its `isinstance(u.arg, DType)` arm, so
+    # `BARE == 0` and `MOVED == 118` is the printer's own doing. THE PREDICTION IS KEPT AS
+    # A `BARE` READING BECAUSE `MOVED-BARE` IS THE PRE-REPAIR INSTRUMENT: a reader who
+    # believes this comment can check it by running the same mutation under `bare()`.
     ("C5 every minted CAST's ADt is hardcoded boolean -- 118 wrong arguments", "VALUE", "port",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), S.boolean())"),
+    # C6 IS C1 WITH THE WRONG REPLACEMENT, AND THE PAIR IS THE MEASUREMENT. C1 answers `dt`,
+    # C6 answers `c0` -- the CONST's OWN DERIVED dtype, which is the OTHER operand of the
+    # fold test. `dt == de` at EVERY minted CAST, so C1 is invisible; `c0 != de` at every one
+    # of them, so C6 is not. IF C6 MOVES ROWS AND C1 DOES NOT, THEN THE THIRD ARGUMENT OF
+    # `cr_cast` IS IN THE TOKEN AND `de`'s SECOND USE IS THE VACUOUS ONE -- which is the
+    # claim the printer was added to test, and it is now a number rather than an argument.
+    ("C6 the CAST's ADt argument reads c0 -- the fold test's OTHER operand", "VALUE", "port",
+     "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
+     "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), c0)"),
+
+    # ------------------------------------------------- THE PRINTER, ON BOTH LANES
+    # C5 SAYS THE `ADt` IS NOW IN A TOKEN. THESE TWO SAY WHICH LANE PUT IT THERE, and they
+    # are the pair that stops a printer from being load-bearing on ONE side only: with only
+    # the port's arm, the two lanes would DISAGREE on all 118 casts and the gate would be
+    # RED for a printer difference rather than for a port difference, which is the
+    # `tn_bitwise_not` failure wearing a census's clothes.
+    ("D1 the DRIVER's printer loses its ADt arm -- 118 bare tokens on the port lane",
+     "VALUE", "driver",
+     '    case O.ADt{d}:    tok.of(a, u, True{}, String.concat([tok.plain(a, u), '
+     '"[", T.dt_name(d), "]"]))\n', ""),
+    ("D2 the ORACLE's printer loses its DType arm -- 118 bare tokens on CPython's lane",
+     "VALUE", "oracle",
+     '    if isinstance(u.arg, DType):\n        return f"{u.op.name}/{len(u.src)}'
+     '[{u.arg.name}]"\n', ""),
 
     # ------------------------------------------------------------ POPULATION
     ("P1 the driver walks NO dtypes for the `cl` family", "POPULATION", "driver",
@@ -422,6 +472,20 @@ MUTATIONS = [
      '            if "=" in l and "NOOP" in l.split("=", 1)[1]:',
      '        for l in _lines(f.read_text()):\n'
      '            if "=" in l and "EXPAND" in l.split("=", 1)[1]:'),
+    # G11 AND G12 ARE FOR THE TWO CHECKS THE PRINTER REPAIR MADE STRONGER. A check that has
+    # never been seen to fail is not a check, and these two halves did not exist before.
+    # G11 LOOSENS `SPEC_NM`'s CAPTURE so it reads twenty EMPTY names, which must be a red run
+    # rather than twenty rows that happen to agree.
+    ("G11 dtypes_hold: the nm capture is loosened to a zero-width class", "GUARD", "gate",
+     'r\'^def [a-z_0-9]+\\(\\) -> Dt: Dt\\{[0-9]+, [0-9]+, \\w+\\{\\}, "([^"]+)"\\}\', re.M)',
+     'r\'^def [a-z_0-9]+\\(\\) -> Dt: Dt\\{[0-9]+, [0-9]+, \\w+\\{\\}, "[^"]*"\\}\', re.M)'),
+    # G12 AND G13 ASSERT NUMBERS THAT DID NOT EXIST BEFORE EITHER: the `iv_` rows' zero casts
+    # and their nineteen `de != dt` cells. Both are the row-visible half of FINDING 1b.
+    ("G12 fold_axis_hold: the iv_ count is 20, not 19", "GUARD", "gate",
+     "if req_diff != 19:", "if req_diff != 20:"),
+    ("G13 fold_axis_hold: the casting rows' TARGET is not checked", "GUARD", "gate",
+     'elif f"CAST/1[{d}]" not in py[f"f_{d}"]:',
+     'elif f"CAST/1[zzz]" not in py[f"f_{d}"]:'),
 ]
 
 SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "spec": SPEC,
@@ -496,9 +560,12 @@ def main(argv):
                 bd, w = lane_rows([str(ROOT / "bin" / "bend"), str(MUT_DRIVER)])
                 py, _ = lane_rows([str(ROOT / ".venv" / "bin" / "python"), str(MUT_ORACLE)])
                 mv, ap, va = moved(base_bd, bd)
+                br = moved_bare(base_bd, bd)
                 if py is not None and py != base_py:
                     pm, pa, pv = moved(base_py, py)
                     mv, ap, va = mv + pm, ap + pa, va + pv
+                    qb = moved_bare(base_py, py)
+                    br = None if br is None or qb is None else br + qb
                 rc, out = run_gate(gate_text=gtext)
                 n = mv + len(ap) + len(va)
                 if n:
@@ -509,7 +576,7 @@ def main(argv):
                     # MOVED NOTHING AND STILL WENT RED. This is the reading that matters and
                     # the reason the two lists are separate: the mutation was caught by a
                     # check that does not read a row -- `opscast_hold` matching the gate's
-                    # expectation of the SPELLING, in C5's case -- so the ROWS said nothing
+                    # expectation of the SPELLING, in C1's case -- so the ROWS said nothing
                     # about it and only the guard did.
                     zero_red.append(label)
                 if bd is None:
@@ -517,6 +584,7 @@ def main(argv):
                 print(f"  {label:<{width}}  [{kind}]  rc={rc} "
                       + ("RED" if rc else "GREEN  <-- THE MUTATION WAS NOT FOUND")
                       + f"  {n} rows moved"
+                      + (f"  bare={br}" if br is not None else "  bare=DEAD-LANE")
                       + (f", {len(ap)} appeared" if ap else "")
                       + (f", {len(va)} vanished" if va else "")
                       + (f", bend rc!=0 -- {w[0][:70]}" if bd is None else ""))

@@ -12,8 +12,8 @@
 # FLOAT ARM IS THE SILENT ONE: there both consts cast, so the COUNT agrees and only the
 # CONST's ARG differs, which `Rng.sig` did not print before this session."
 #
-# So this file prints the whole CONE and, inside it, the CONST's VALUE and the ALLOC's
-# `ParamArg`. Three facts become visible that a prefix cannot hold:
+# So this file prints the whole CONE and, inside it, the CONST's VALUE, the ALLOC's
+# `ParamArg` and the CAST's TARGET. Four facts become visible that a prefix cannot hold:
 #
 #   * THE FOLD. `ops.py:634` is `UOp(CONST, arg=dt.const(b)).cast(dt)` and its comment
 #     says ".cast folds away at exactly the dtypes a CONST derives". MEASURED over this
@@ -26,6 +26,17 @@
 #   * THE CONST's ARG. `DType.const` (dtype.py:79-84) is `ConstFloat(truncate[dt](v))`
 #     for a float, `bool(v)` for a bool and `int(v)` otherwise, so ONE call holds `1.0` at
 #     `f16` and `1` at `i32`. `Rng.sig` prints `CONST/0` for both.
+#   * THE CAST's ARG. `cr_cast` (creation.bend:217) mints `OpsCAST` with `O.ADt{dt}` --
+#     ops.py:640's `arg=dt` -- and `cr_const_of` hands it the `de` it also uses as the fold
+#     test's right-hand side (creation.bend:245). MEASURED BEFORE `tok.arg` grew its `ADt`
+#     arm: 118 `CAST/1` occurrences across this census's 207 rows and NOT ONE carried an
+#     argument, on EITHER lane, so the target of every cast in the census was unreadable and
+#     a wrong one could not move a row. IT IS `OP/NSRC[TARGET]` NOW, WHERE `[TARGET]` IS
+#     `T.dt_name` -- `S.Dt{pri, bits, cls, nm}` PROJECTED ONTO `nm` -- WHICH IS CPYTHON'S OWN
+#     `DType.name` WITH NO TABLE ON EITHER SIDE (`gates/crp_graph_census-oracle.py`'s `tok`
+#     prints `u.arg.name` and `dtypes_hold` asserts the twenty `nm` fields against
+#     `dir(dtypes)`). MEASURED AFTER: 118 argument-bearing casts on each lane, 22 at `f32`,
+#     6 at each of the other sixteen dtypes, 0 bare.
 #
 # THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND THE GATE COMPARES THEM.
 # `crp_graph_census-gate.py`'s `methods_hold`, `dtypes_hold`, `frompy_hold` and
@@ -141,21 +152,41 @@ def pval(+p: O.ParamArg) -> String:
   String.concat([T.dt_name(O.ParamArg.dtype(p)), " sz=", msu32(O.ParamArg.size(p)), " ",
                  addrstr(O.ParamArg.addrspace(p)), " bind=", bstr(O.ParamArg.bind_on_realize(p))])
 
+# THE BARE TOKEN, `OP/arity`, AND IT IS SPELLED ONCE HERE so the `ADt` arm below can put a
+# TARGET inside it. `O.Ops.name.of` is the ONE place an op's name is spelled (ops.bend) and
+# `T.dt_name` the ONE place a dtype's name is (tensor.bend:1272, `S.Dt{pri, bits, cls, nm}`
+# projected onto `nm`) -- WHICH IS CPYTHON'S OWN `DType.name`, MEASURED: all twenty of
+# `spec.bend`'s `nm` fields are `void weakint bool i8 u8 i16 u16 i32 u32 i64 u64 weakfloat
+# fp8e4m3 fp8e4m3fnuz fp8e5m2 fp8e5m2fnuz f16 bf16 f32 f64` (spec.bend:719-742) and
+# `dtypes_hold` asserts that field-by-field. SO THERE IS NO TRANSLATION TABLE ON EITHER SIDE.
+def tok.plain(+a: O.Arena, +u: U32) -> String:
+  String.concat([O.Ops.name.of(O.Arena.op(a, u)), "/", U32.show(O.Arena.nsrc(a, u))])
+
 # `OP/arity`, OR THE STRING THE CALLER ALREADY BUILT. A `match` may not scrutinise a
 # computed value, so the op test arrives as a `Bool` -- the `.of` that every other census
 # uses for the same reason.
 def tok.of(+a: O.Arena, +u: U32, c: Bool, s: String) -> String:
   match c:
     case True{}:  s
-    case False{}: String.concat([O.Ops.name.of(O.Arena.op(a, u)), "/", U32.show(O.Arena.nsrc(a, u))])
+    case False{}: tok.plain(a, u)
 
 # `Arena.arg` IS A CALL, AND `match` NEITHER SCRUTINISES A COMPUTED VALUE NOR A LOCAL
 # BINDER -- so the ARG IS A PARAMETER of the arm-selecting def and the `match` heads that
 # one. THE CONE WALK IS THE ONLY CALLER, so this is one def and not a two-step.
-def tok.arg(a: O.Arena, u: U32, g: O.Arg) -> String:
+#
+# `ADt` IS THE FOURTH ARM AND IT IS THE ONE THAT WAS MISSING. `cr_cast` (creation.bend:217)
+# mints its CAST with `O.ADt{dt}` -- ops.py:640's `Ops.CAST, arg=dt` -- and before this arm
+# the token was `CAST/1`: MEASURED ON THE BASE LANES, 118 `CAST/1` occurrences and NOT ONE
+# carried an argument, on BOTH sides. So the `de` that `cr_const_of` hands to `.cast` as its
+# TARGET (creation.bend:245, the third argument) was never in a token, a wrong `ADt` at
+# every minted CAST could not move a row, and `gates/crp_graph_census-mutate.py`'s C5 said
+# so as a prediction. The test is ON THE ARG and not on the op, so a fourth op that ever
+# grows a `Dt` is printed by this and not by a list that would rot beside it.
+def tok.arg(+a: O.Arena, +u: U32, g: O.Arg) -> String:
   match g:
     case O.APy{v}:    tok.of(a, u, True{}, String.concat(["CONST/0[", cval(v), "]"]))
     case O.AParam{p}: tok.of(a, u, True{}, String.concat(["ALLOC/0[", pval(p), "]"]))
+    case O.ADt{d}:    tok.of(a, u, True{}, String.concat([tok.plain(a, u), "[", T.dt_name(d), "]"]))
     case _:           tok.of(a, u, False{}, "")
 
 def tok(+a: O.Arena, +u: U32) -> String: tok.arg(a, u, O.Arena.arg(a, u))

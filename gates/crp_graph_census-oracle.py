@@ -165,10 +165,31 @@ def pval(a) -> str:
 
 
 def tok(u) -> str:
+    """`OP/NSRC`, `CONST/0[...]`, `ALLOC/0[...]`, AND `OP/NSRC[TARGET]` WHEN THE ARG IS A
+    DTYPE.
+
+    The fourth shape is the one this census was missing, and it is `creation.bend`'s own
+    `cr_cast` (creation.bend:217) that needed it: that mints its CAST with `O.ADt{dt}`,
+    which is ops.py:640's `Ops.CAST, arg=dt`, and the two lanes printed it `CAST/1` --
+    MEASURED on the base lanes, 118 occurrences and NOT ONE carrying an argument, on BOTH
+    sides. So the `de` that `cr_const_of` hands `.cast` as its TARGET was in no token and a
+    wrong target at every minted CAST could not move a row.
+
+    A CAST and a BITCAST are the two ops whose `arg` is a DType (ops.py:640 `cast`,
+    ops.py:846 `bitcast`), and the test is on the ARG rather than on the op, so a third op
+    that ever grows one is printed by this and not by a list that would rot beside it.
+
+    `u.arg.name` IS the port's spelling and not a translation: `spec.bend`'s twenty `nm`
+    fields (spec.bend:719-742) are `void weakint bool i8 u8 i16 u16 i32 u32 i64 u64
+    weakfloat fp8e4m3 fp8e4m3fnuz fp8e5m2 fp8e5m2fnuz f16 bf16 f32 f64` and
+    `dtypes_hold` asserts that field against this lane's own `DType.name` on every run.
+    """
     if u.op is Ops.CONST:
         return cval(u)
     if u.op is Ops.ALLOC:
         return pval(u.arg)
+    if isinstance(u.arg, DType):
+        return f"{u.op.name}/{len(u.src)}[{u.arg.name}]"
     return f"{u.op.name}/{len(u.src)}"
 
 

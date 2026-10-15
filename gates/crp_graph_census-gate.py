@@ -16,7 +16,7 @@ SEQUENCE. `realize_graph_census-oracle.py:38-44` names that instrument's own fai
 was used" -- and `creation.bend`'s own header says the same of ITS gate: "THE FLOAT ARM IS
 THE SILENT ONE: there both consts cast, so the COUNT agrees and only the CONST's ARG
 differs, which `Rng.sig` did not print before this session." So this gate prints the whole
-CONE, and inside it the CONST's VALUE and the ALLOC's `ParamArg`.
+CONE, and inside it the CONST's VALUE, the ALLOC's `ParamArg` and the CAST's `ADt`.
 
 WHAT THE DEEP FORM BOUGHT, MEASURED AND NOT ARGUED. Thirty of the 207 rows moved when the
 float arm started printing `H.f32_show` instead of a bit pattern, and EVERY ONE OF THEM WAS
@@ -189,6 +189,14 @@ ALIAS = {"void": "void", "weakint": "weakint", "boolean": "bool", "int8": "i8", 
          "half": "f16", "bfloat16": "bf16", "single": "f32", "double": "f64"}
 CPY_METHOD = re.compile(r"^ *def ([a-z_0-9]+)\((?:self|cls)[,)]", re.M)
 PORT_DEF = re.compile(r"^def ([a-z_0-9]+)\(", re.M)
+# `SPEC_DT` STOPS AFTER `<bits>` AND THAT WAS FINE UNTIL THE PRINTER READ A THIRD FIELD.
+# `ALIAS` above named the twenty dtypes, so `spec.bend`'s OWN `Dt{14, 32, CFloat{}, "f32"}`
+# string -- the one `T.dt_name` (tensor.bend:1272) projects onto `nm`, and the one the new
+# `ADt` arm of `tok.arg` prints on 118 tokens -- was NEVER COMPARED WITH `DType.name`.
+# So the population was discovered, keyed on priority and bits, and the field the printer
+# depends on was not in the key. `dtypes_hold` reads it with this and refuses a `spec.bend`
+# that spells one differently, which is the same defect a table that is nearly right has.
+SPEC_NM = re.compile(r'^def [a-z_0-9]+\(\) -> Dt: Dt\{[0-9]+, [0-9]+, \w+\{\}, "([^"]+)"\}', re.M)
 
 
 def spec_dtypes():
@@ -413,6 +421,20 @@ def dtypes_hold() -> bool:
             off.append(f"{nm}.priority dtypes={d.priority} spec={pri} [DECLARED]")
     if sorted(off) != [f"void.priority dtypes={cpy['void'].priority} spec=0 [DECLARED]"]:
         bad.append(f"the dtype fields that disagree are {off}, expected only void.priority")
+    # AND THE `nm` FIELD, WHICH THE PRINTER NOW READS AND WHICH NOBODY CHECKED. The twenty
+    # of them are CPython's own `DType.name` -- MEASURED, and asserted here rather than in a
+    # comment, because `tok.arg`'s `ADt` arm prints `T.dt_name(d)` on every minted CAST and
+    # a `spec.bend` that spelled one differently would red 118 rows for a reason no check
+    # would have named.
+    nms = SPEC_NM.findall(SPEC.read_text())
+    if len(nms) != len(spec):
+        bad.append(f"spec.bend's nm fields number {len(nms)} and its constructors "
+                   f"{len(spec)} -- the two regexes disagree about the population")
+    elif sorted(nms) != sorted(cpy):
+        only_spec = sorted(set(nms) - set(cpy))
+        only_cpy = sorted(set(cpy) - set(nms))
+        bad.append(f"spec.bend's nm fields differ from CPython's DType.name: "
+                   f"port-only {only_spec}, CPython-only {only_cpy}")
     return report("dtypes_hold", bad)
 
 
@@ -484,7 +506,6 @@ def frompy_hold() -> bool:
     bd, py = lane_rows("bd.out"), lane_rows("py.rows")
     if bd is None or py is None:
         return report("frompy_hold", ["the promoted lanes are not there"])
-    dts = [ALIAS.get(n, n) for n, _, _ in spec_dtypes()]
     witness = {"CInvalid": ("iv_bool", "CONST/0[Invalid:"), "CBool": ("cl_bool", "CONST/0[True:"),
                "CFloat": ("cl_f32", "CONST/0[bits="), "CInt": ("cl_i32", "CONST/0[1:")}
     bad = []
@@ -526,6 +547,17 @@ def opscast_hold() -> bool:
     # history: the nineteen rows it reported were a fold on `from_py(v) == dt` -- on the
     # dtype ops.py:630 had already thrown away -- so a check that looked for the `md_dt_eq`
     # alone would have passed on the broken predicate and on the fixed one alike.
+    #
+    # THIS IS THE ONLY INSTRUMENT IN THE TREE THAT CATCHES `C1`, AND IT IS NOT REDUNDANT.
+    # MEASURED, in `gates/crp_graph_census-mutate.py`: C1 breaks ONLY the CAST's `ADt`
+    # argument (`de` to `dt`, one use) and moves 0 of 207 rows, with `MOVED-BARE == 0` as
+    # well -- so the LANE CANNOT SEE IT EVEN THOUGH THE `ADt` IS NOW IN THE TOKEN, because
+    # `de == dt` at every minted CAST (FINDING 1b, eighty measured cells). C4 is C1 with the
+    # two `want` literals below rewritten to expect the C1 spelling, and it is rc=0 GREEN:
+    # with THIS LOOP silenced, breaking `de`'s second use is completely invisible. So the
+    # spelling assertion is not a weaker substitute for a row, it is the ONLY instrument
+    # there is for a claim no row can reach, and the honest move was to MEASURE that rather
+    # than to weaken either half.
     for want, why in (("+de = cr_cast_dt(F.is_cinvalid.val(v), dt)",
                        "ops.py:630's `b is Invalid` dtype REPLACEMENT"),
                       ("cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
@@ -651,7 +683,8 @@ def classes_hold() -> bool:
 
 
 def fold_axis_hold() -> bool:
-    """THE FOLD SET, MEASURED OFF CPYTHON'S OWN LANE AND NOT READ OFF A COMMENT.
+    """THE FOLD SET, MEASURED OFF CPYTHON'S OWN LANE AND NOT READ OFF A COMMENT -- AND, SINCE
+    THE PRINTER GREW ITS `ADt` ARM, MEASURED OFF THE CAST'S TARGET AND NOT ITS PRESENCE.
 
     `ops.py:634` says the `.cast` "folds away at exactly the dtypes a CONST derives
     (bool/weakint/weakfloat)". Over the `f_` family -- `Tensor.full(shape, dt.const(1),
@@ -659,7 +692,26 @@ def fold_axis_hold() -> bool:
     dtype and none at those three. MEASURED: 3 of 20 rows carry no `CAST/1` and their
     dtypes are exactly `bool`, `weakint`, `weakfloat`; the other 17 carry exactly one. If
     `UOp.const` changes, this goes red, which is the point of writing the comment down as a
-    measurement rather than as prose."""
+    measurement rather than as prose.
+
+    THE SECOND HALF IS NEW AND IT IS THE ONE THE OLD PRINTER COULD NOT HAVE HAD. Counting
+    `CAST/1` says a cast HAPPENED; it says nothing about WHICH cast, so a lane that minted
+    every one of them to `bool` would have passed. `f_<d>` now carries `CAST/1[<d>]` -- the
+    TARGET, which for this family IS the requested dtype -- and that is asserted for all
+    seventeen. It is the same repair `gates/decomp_graph_census-gate.py`'s
+    `PROMOTION_TARGETS` made, and the same reason: a count is a count and a name is a name.
+
+    AND THE `iv_` HALF, WHICH IS THE ROW SET THAT MAKES `de != dt` REACHABLE AND IS THE
+    REASON NO ROW CAN DISTINGUISH `de` FROM `dt` IN THE CAST'S `ADt`. `Tensor.invalids(
+    shape, dtype=dt)` asks for a dtype the value does not have -- `DType.const` returns
+    `Invalid` UNCHANGED (dtype.py:80), so the CONST's DERIVED dtype is `bool` (ops.py:185)
+    at EVERY requested dtype -- and ops.py:630 replaces `dtype` with `from_py(Invalid) =
+    bool`, so the fold is `bool == bool` and NO CAST IS MINTED AT ALL. MEASURED: all twenty
+    `iv_` rows carry zero `CAST/1`, and at NINETEEN of the twenty the requested dtype (in
+    the row's NAME) is not `bool`. `de != dt` IS REACHABLE AND IT IS REACHABLE EXACTLY WHERE
+    NOTHING CAN READ IT. This is asserted rather than written down because it is the check
+    that goes red if `cr_cast_dt`'s True arm regresses -- which is `opscast_hold`'s spelling
+    assertion's only job now, and this one reads a ROW."""
     py = lane_rows("py.rows")
     if py is None:
         return report("fold_axis_hold", ["the promoted lanes are not there"])
@@ -673,8 +725,29 @@ def fold_axis_hold() -> bool:
     if sorted(casty) != sorted(set(dts) - {"bool", "weakfloat", "weakint"}):
         bad.append(f"the casting dtypes are {sorted(casty)}")
     for d in casty:
-        if py[f"f_{d}"].count("CAST/1") != 1:
-            bad.append(f"f_{d} carries {py[f'f_{d}'].count('CAST/1')} CAST/1, expected 1")
+        n = py[f"f_{d}"].count("CAST/1")
+        if n != 1:
+            bad.append(f"f_{d} carries {n} CAST/1, expected 1")
+        elif f"CAST/1[{d}]" not in py[f"f_{d}"]:
+            bad.append(f"f_{d}'s one CAST is not CAST/1[{d}] -- the target is in the token "
+                       f"now and it is not the dtype the row asked for")
+    # THE `iv_` AXIS: THE REQUESTED DTYPE, THE DERIVED DTYPE, AND NO CAST. All three, from
+    # the lane. `re.fullmatch`-free on purpose -- the CONST token is inside a comma list.
+    req_diff = 0
+    for d in dts:
+        v = py.get(f"iv_{d}", "")
+        if "CAST/1" in v:
+            bad.append(f"iv_{d} carries a CAST/1 -- ops.py:630 replaced the dtype with "
+                       f"from_py(Invalid) = bool, so the fold is bool == bool at every one")
+        elif "CONST/0[Invalid:bool]" not in v:
+            bad.append(f"iv_{d} does not print CONST/0[Invalid:bool] -- the CONST's DERIVED "
+                       f"dtype is what `de` is measured against")
+        elif d != "bool":
+            req_diff += 1
+    if req_diff != 19:
+        bad.append(f"{req_diff} of the twenty iv_ rows have a REQUESTED dtype that is not "
+                   f"the CONST's derived one, expected 19 -- `de != dt` is reachable at "
+                   f"nineteen dtypes and at no other place in this census")
     return report("fold_axis_hold", bad)
 
 
@@ -994,6 +1067,70 @@ if __name__ == "__main__":
 # value `de` IS `dt` and the predicate is the old one. The fix moves the `Invalid` arm and
 # nothing else.
 #
+# FINDING 1b -- THE `ADt` IS IN THE TOKEN NOW, AND `de`'s SECOND USE IS *STILL* VACUOUS. THE
+# COUPLING `de` ENFORCES IS NOT REACHABLE BY A ROW, AND THAT IS A PROPERTY OF CPYTHON'S OWN
+# `UOp.const` RATHER THAN OF THIS CENSUS. MEASURED, NOT ARGUED.
+#
+# `tok.arg` (driver:155-179) now matches `O.ADt{d}` and prints `OP/NSRC[TARGET]` where it
+# used to fall through to `tok.of(a, u, False{}, "")`, and the oracle's `tok` prints
+# `u.arg.name` under `isinstance(u.arg, DType)`. MEASURED ON THE BASE LANES: 118 `CAST/1`
+# occurrences and NOT ONE carried an argument, on BOTH sides; MEASURED AFTER: 118
+# argument-bearing casts on each lane -- 22 at `f32` and 6 at each of the other sixteen
+# dtypes, 0 bare. `dtypes_hold` now also asserts `spec.bend`'s OWN `nm` field against
+# `dir(dtypes)`, because that field is what `T.dt_name` prints and NOTHING CHECKED IT: the
+# population was keyed on priority and bits and the field the printer depends on was not in
+# the key.
+#
+# SO THE ACCEPTANCE TEST, STATED EXACTLY. `gates/crp_graph_census-mutate.py` C1 breaks ONLY
+# the CAST's `ADt` argument -- `de` to `dt`, ONE use broken -- and:
+#
+#     C1  the ADt half only                  ->   0 of 207 rows   MOVED-BARE  0
+#     C2  the fold test only                 ->  19 of 207 rows   MOVED-BARE 19
+#     C3  both, i.e. the pre-fix line        ->  19 of 207 rows   MOVED-BARE 19
+#     C4  C1 with `opscast_hold` silenced     ->   0 of 207 rows, rc=0 GREEN
+#     C5  every `ADt` hardcoded `boolean`     -> 118 rows           MOVED-BARE  0
+#     C6  the `ADt` reads `c0`, the fold test's OTHER operand -> 118 rows MOVED-BARE 0
+#
+# C3 MOVES EXACTLY WHAT C2 MOVES, so C3's extra half -- the `ADt` -- contributes nothing the
+# lane can see; and C6 MOVES 118 ROWS WITH `MOVED-BARE == 0`, so the `ADt` IS in the token
+# and C1's invisibility is about `dt == de` and not about an unread argument. `MOVED-BARE`
+# is the SAME COMPARISON WITH EVERY `[...]` STRIPPED -- the pre-repair printer -- and it is
+# what makes "the repair did it" a measurement rather than a claim.
+#
+# WHY `dt == de` AT EVERY MINTED CAST, MEASURED OVER THE WHOLE REACHABLE INPUT SPACE AND NOT
+# OVER THESE 207 ROWS. `cr_const_of`'s whole input space is `O.Const`'s FOUR constructors
+# times `spec.bend`'s twenty `Dt`s -- eighty cells, every cell `creation.bend` can be asked
+# for -- and a throwaway driver called `C.cr_const_of(ar, v, d)` on all eighty and printed
+# them with THIS FILE'S OWN TOKEN:
+#
+#     de != dt              19 of 80 cells -- every `CInvalid` cell except `bool`
+#     fold (no CAST)        23 of 80 -- all 20 `CInvalid`, plus `bool`/`weakint`/`weakfloat` once each
+#     CAST minted           57 of 80 -- and 0 of the 57 carry an `ADt` that is not their own `dt`
+#     de != dt AND minted    0 of 80
+#
+# THE SAME EIGHTY CELLS ON CPYTHON'S SIDE: `de != dt` at 19, folded at 29, minted at 51, and
+# `de != dt` at a minted CAST at 0 of 80. THE TWO SIDES AGREE THE CELL IS EMPTY, WHICH IS
+# WHAT MAKES IT CPYTHON'S SHAPE AND NOT A PORT DEFECT. `cr_cast_dt` answers `boolean` on its
+# `True{}` arm and `dt` otherwise, so `de != dt` REQUIRES a `CInvalid` value; and
+# `cr_from_py(CInvalid)` IS `boolean`, which is `c0`, which is `de` -- so `md_dt_eq(c0, de)`
+# is `bool == bool`, the fold FIRES, and NO CAST IS MINTED. That is ops.py:630
+# (`if dtype is None or b is Invalid: dtype = dtypes.from_py(b)`) and then ops.py:637's
+# `.cast(dtype)` on a value whose own derived dtype IS that `from_py`.
+#
+# THE SHAPE THAT WOULD BE NEEDED, since none is reachable. A row can read `de` in the `ADt`
+# position only if the fold does NOT fire, and the fold cannot fail in the one place where
+# `de` differs from `dt`. SO A FIXTURE MUST SUPPLY A VALUE WHOSE `cr_from_py` ANSWER DIFFERS
+# FROM `cr_cast_dt`'s ANSWER FOR THAT SAME VALUE -- which means `cr_cast_dt` has to stop being
+# a function of `is_cinvalid(v)` ALONE: it would need a third arm that replaces the caller's
+# `dt` with a dtype CHOSEN FROM `v` AND `dt` JOINTLY (a promotion ladder -- `creation.py`'s
+# `dtype or self.dtype` taken one step further) at a `v` for which `from_py(v) !=` that
+# answer. CPYTHON HAS NO SUCH SHAPE: `dtype` is either `None` or the caller's, and `None`
+# means `from_py(b)`. SO THIS IS A FINDING ABOUT CPYTHON, AND THE HONEST INSTRUMENT FOR IT IS
+# A SPELLING ASSERTION ON THE SOURCE TEXT, which is what `opscast_hold` is. `fold_axis_hold`
+# now reads the `iv_` half off the LANE as well -- the row-visible half of the same claim:
+# zero `CAST/1` and `CONST/0[Invalid:bool]` at all twenty, with the REQUESTED dtype differing
+# from the DERIVED one at NINETEEN.
+#
 # WHAT MADE THIS THE THIRD OF ITS CLASS, and the two before it are the reason the
 # instruction "fold on the dtype the CONST ACTUALLY HAS" was the right shape to reach for:
 # `renderer/amd/dsl.bend`'s `src_bit.vdst` compared `"vdst"` WITH ITSELF and so took its arm
@@ -1073,4 +1210,13 @@ if __name__ == "__main__":
 #     (creation.bend's fact 6) and so has no row.
 #   * `ParamArg.slot` is NOT printed. It is `next(UOp.unique_num)` and is covered by
 #     `in_full`/`in_empty`/`in_diff` instead -- a count, which is what can see it.
+#   * THE `ADt` OF `cr_const_of`'s THIRD ARGUMENT CANNOT DISTINGUISH `de` FROM `dt`, AND NO
+#     FIXTURE IN THIS CENSUS -- OR ANY OTHER -- CAN MAKE IT. The token is there now (FINDING
+#     1b) and 118 rows read it, so this is NOT "the printer is too coarse"; it is that
+#     `de == dt` at every minted CAST, measured over all eighty cells of `cr_const_of`'s
+#     input space and on CPython's side of the same eighty. The twenty `iv_` rows ARE the
+#     axis where a requested dtype differs from the value's own (`de != dt` at nineteen of
+#     them) and they mint NO CAST AT ALL, which is ops.py:630's answer rather than a gap in
+#     this file. `opscast_hold`'s SPELLING ASSERTION is therefore load-bearing and is the
+#     ONLY instrument that catches C1 -- C4, C1 with that assertion silenced, is rc=0.
 # ===========================================================================
