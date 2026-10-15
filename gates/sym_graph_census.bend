@@ -17,16 +17,29 @@
 # THE RIGHT CAUTION APPLIED TO A CAUSE THAT DID NOT EXIST**, and a caution taken from a header rather
 # than a measurement is a defect of the same family as a pin written from memory.
 #
-# SO THE THREE `sym=` DIVERGENCES BELOW ARE NOT FINDINGS YET, and this file does not claim them:
-#   t_xor    port `norewrite`  where CPython answers the variable     `(x^c5)^c5 -> x` (:123)
-#   t_xor0   port `norewrite`  where CPython answers `XOR(y, XOR(x,c5))`
-#   t_sink   port `0:NOOP`     where CPython answers `SINK(x, c2)`    (:445, the SINK flatten)
-# `t_sink` is the one to read first: a NOOP is a MINTED node, so a rule FIRED and built a
-# different graph, which is the worst of the three -- and `pm_clean_up_group_sink`'s second rule
-# is `(UPat((Ops.SINK, Ops.GROUP), name="root"), ...)` flattening a GROUP src out of a SINK. The
-# port's `sym_11`/`sym_12` are `group x -> x` and the SINK flatten, and its own gate row `sink`
-# is `eq_u(sym(fx_sink, 5), 6)` on its OWN `fx_sink` fixture -- a three-src root that this corpus
-# does not reproduce yet.
+# SO THE `sym=` DIVERGENCES BELOW ARE FINDINGS, NOT FINDINGS *YET*: **IT SAYS THREE AND ONE IS TRUE.**
+#   t_xor    port `0:x:`        CPython `x`                                  AGREES -- **AND THIS BLOCK
+#              STILL LISTED IT AS `norewrite`**. It was fixed by the frame-stack repair and this
+#              header was not re-run. `DECOUPLE`/`SYMDRV` measured 8 of 9 cases agreeing and this
+#              is one of them.
+#   t_xor0   port `norewrite`  where CPython answers `XOR(y, XOR(x,c5))`   REAL
+#   t_sink   port `minted`      where CPython answers `SINK(x, c2)` (:445)   **NOT A DIVERGENCE**
+# **ONE, NOT TWO OR THREE, AND THE ROW THAT LOOKED WORST WAS THIS LANE LYING.**
+# `t_sink` used to print `sym=0:NOOP:` and this header read it as "a NOOP is a MINTED node, so a
+# rule FIRED and built a different graph". IT DID NOT. `Sy.sym` answers an index into the arena
+# IT GREW and `rewrite` drops that arena (`Found.i`), and `ans` rendered that index against the
+# arena it was HANDED -- where `Arena.node` is TOTAL and answers `Arena.bottom()` =
+# `Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}}` for an index that arena never interned. MEASURED:
+# `sym` answers 5, the handed arena's `Arena.next` is 5, `sym_12.pat` is True, and `sym_12.put`'s
+# own `Found` renders 5 in ITS arena as `0:SINK:1,2;1:x:;2:c2:` -- CPython's `(SINK x c2)`. So
+# `pm_clean_up_group_sink`'s flatten (`symbolic.py:445`) is PORTED and CORRECT, and `ans` now
+# says `minted` for an answer this lane has no arena to read. `t_group` and `t_xor` agree only
+# because their answers are indices the handed arena ALREADY holds -- the vacuous half of this
+# row form, and the reason two of the five rows could never see this class at all. The port-side
+# row that CAN see it is `symbolic.bend`'s own `sinkgrp`, whose fixture pre-interns the answer,
+# and whose mutation M17 (drop the first src of the flattened list) moves `sinkgrp` and NOT
+# `symbolic.bend`'s own `sink` row -- because `eq_u(..., 6)` reads a slot and any wrong src list
+# mints a fresh node at 6 too.
 #
 # WHAT IS MEASURED WORKING, on the five-row corpus in `gates/symcases.rows`:
 #   * THE SCANNER. `(add c7 c0)` tokenises as `H(add) L(c7) L(c0) )` -- four tokens, one close.
@@ -40,7 +53,7 @@
 #     can see it hold on one line and not the other.
 #   * BOTH TABLES ANSWER, so the lane is not a lane that measured nothing: `sym` answers `t_add`
 #     with CONST(7) (:117, `x+0 -> x`), `t_group` with the variable (:444) and `t_sink` with a
-#     NOOP; `pm_remove_invalid` refuses all five.
+#     MINTED node; `pm_remove_invalid` refuses all five.
 #
 # WHAT IS MEASURED WORKING, on the five-row corpus in `gates/symcases.rows`:
 #   * THE SCANNER. `(add c7 c0)` tokenises as `H(add) L(c7) L(c0) )` -- four tokens, one close.
@@ -58,13 +71,13 @@
 #     measures `1 3`. **A GOVERNING DOCUMENT THAT NAMES A READING ITS OWN RUN CONTRADICTS IS THE `M8`
 #     CLASS** -- and six of the eight findings this session committed were also stale prose.
 #   * BOTH TABLES ANSWER. `sym` answers `t_add` with the CONST(7) (`sym=0:c7:`), `t_group` with
-#     the variable (`sym=0:x:`) and `t_sink` with a NOOP (`sym=0:NOOP:`), and `pm_remove_invalid`
-#     refuses all three. So the lane is not a lane that measured nothing.
+#     the variable (`sym=0:x:`) and `t_sink` with a MINTED node (`sym=minted`), and
+#     `pm_remove_invalid` refuses all three. So the lane is not a lane that measured nothing.
 #
 
 # ============================ WHY THIS FILE EXISTS AT ALL ============================
 # `symbolic.bend` is 577 `def`s and `ls gates/ | grep symbolic` is 0. The file's own in-file gate
-# (`fz.gate`, 57 rows) drives 30 hand-written `fx_*` arenas and asks ONE question at ONE index
+# (`fz.gate`, 59 rows) drives 40 hand-written `fx_*` arenas and asks ONE question at ONE index
 # per row (`t_rebind`: "does `sym` answer 3 at node 2"). It never drives the file's OWN fuzz
 # driver over a graph you choose -- and that driver is DEAD, which is why 577 defs could carry no
 # corpus gate unnoticed. MEASURED on the corpus line `(add c7 c0)`, `fz_toks` emits
@@ -524,9 +537,26 @@ def rows.go(fuel: Nat, +ns: List<&2, U32>, +ar: O.Arena, +k: Nat, acc: String) -
 def graph(u: U32, +ar: O.Arena) -> String: rows.go(FUEL(), pre(u, ar), ar, 0n, "")
 
 # ---- one row, and each answer rendered with ITS OWN walk ----
+# `Sy.sym` answers an index into the arena IT GREW, and `rewrite` throws that
+# arena away (`Found.i`, and the header at `symbolic.bend`'s own `sy_tri` names
+# the reason: a grown arena has no owner if its index is thrown away). So an
+# answer the HANDED arena does not ALREADY hold has no node to read here, and
+# reading it anyway is worse than printing nothing: `Arena.node` is TOTAL --
+# `Arena.at` answers None for an index this arena never interned and `Arena.node`
+# defaults to `Arena.bottom()` = `Node{OpsNOOP{}, Nil{}, ABad{}, TNone{}}` -- so a
+# MINTED answer reads as a NOOP with no srcs, which is what a rule that really
+# minted a NOOP reads as too. The two are indistinguishable, and the census said
+# the second about `t_sink`.
+# MEASURED on `t_sink`: `sym` answers 5, the handed arena's `Arena.next` is 5,
+# `sym_12.pat` is True, and `sym_12.put`'s own `Found` renders 5 in ITS arena as
+# `0:SINK:1,2;1:x:;2:c2:` -- CPython's `(SINK x c2)`. The port was RIGHT.
+def minted(ar: O.Arena, i: U32) -> Bool: U32.is_ge(i, O.Arena.next(ar))
+
+def ans.at(+i: U32, +ar: O.Arena) -> String: Bool.pick(String, minted(ar, i), "minted", graph(i, ar))
+
 def ans(ar: O.Arena, m: Maybe<&1, U32>) -> String:
   match m:
-    case Some{i}: graph(i, ar)
+    case Some{i}: ans.at(i, ar)
     case None{}: "norewrite"
 
 def row.at3(+r: U32, +ar: O.Arena, name: String) -> String:

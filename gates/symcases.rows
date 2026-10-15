@@ -24,21 +24,25 @@ t_sink|(sink (group x) c2)
 #   t_add    sym answers CONST(7) -- CPython's `x + 0 -> x` at symbolic.py:117, and the port
 #            firing it is what `selfadd` counts in its own gate;
 #   t_group  sym answers the variable -- `GROUP(x) -> x` at symbolic.py:444;
-#   t_sink   sym answers a NOOP -- the SINK flatten at symbolic.py:445;
-#   t_xor    sym answers NOTHING where CPython answers the variable: `(x^c5)^c5 -> x` is
-#            symbolic.py:123, and the port's `sym_8` is `p_rebind2(x, OpsXOR, u)`. THIS IS THE
-#            ROW TO READ FIRST and it is NOT yet a finding: the port's gate answers `sym` on ITS
-#            OWN `fx_samediv` fixture, which is `(x // x)`, and this corpus line is an XOR whose
-#            two captured names are the same node for a DIFFERENT reason -- the port's header says
-#            `p_rebind2` is "`op` over `op` over two srcs whose src[1] is the SAME node both
-#            times", which `(xor (xor x c5) c5)` does NOT have (it has src[0] the same both
-#            times, because the inner XOR's src[0] is `x` and the outer's src[1] is `c5`). So the
-#            disagreement is EXPECTED for a rule that only tests one side, and the oracle is what
-#            settles it. It is the first row the next run must pin.
-#   t_xor0   sym answers NOTHING, and its fixture differs from `t_xor` in ONE node: the sibling
-#            is `y` instead of `c5`. A rebind rule needs the PAIR to be worth anything, and here
-#            both members of the pair answer `norewrite`, which is the shape `symbolic.bend`'s own
-#            `rebind`/`rebind0` rows are built on -- and those are on FLOORDIV, not XOR.
+#   t_sink   sym answers a MINTED node -- the SINK flatten at symbolic.py:445, which the
+#            port DOES (`sym_12.pat` is True on this shape and `sym_12.put`'s own `Found`
+#            renders `0:SINK:1,2;1:x:;2:c2:`, CPython's `(SINK x c2)`). The lane used to
+#            print `sym=0:NOOP:` for it: `Sy.sym` answers an index into the arena IT GREW
+#            and the lane read that index against the arena it HANDED, where `Arena.node`
+#            is TOTAL and answers `Arena.bottom()` = `OpsNOOP` for an index never interned.
+#            It says `minted` now. The row that CAN read it is `symbolic.bend`'s `sinkgrp`;
+#   t_xor    sym answers the variable (`sym=0:x:`) and CPython answers the variable:
+#            `(x^c5)^c5 -> x` is symbolic.py:123 and the port's `sym_8` is `p_rebind2(x, OpsXOR, u)`.
+#            **THIS LINE USED TO SAY `norewrite` AND WAS WRONG** -- it was a pre-frame-stack-repair
+#            reading, `fz_build.one` sent the new frame to the BOTTOM, and `t_group` and `t_sink`
+#            were re-read on the same run.
+#   t_xor0   sym answers NOTHING where CPython answers `(XOR y (XOR x c5))`, and the reason is
+#            NOT the rebind: `:123` needs the two captures to be the SAME node and `y` is not
+#            `c5`, so `sym_8` correctly refuses. The rule that answers it is `commutative`
+#            (symbolic.py:222-226), `x.replace(src=x.src[::-1]) if x.src[1].tuplize < x.src[0].tuplize`,
+#            and it is DEFERRED behind `UOp.tuplize` -- `symbolic.bend`'s own inventory line 14.
+#            So this row is a MISSING MATCHER, not a wrong one, and it is a different wall from
+#            every other row here.
 #
 # TWO MORE BEND MEASUREMENTS, both found by this corpus and both INVISIBLE to `grep`:
 #   * `String.split(ln, SEP())` -- the separator a DEF returns, passed inline -- splits a healthy

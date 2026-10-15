@@ -2375,6 +2375,41 @@ def fx_sink() -> O.Found:
   +d = O.UOp.const(O.Found.ar(c), O.CInt{H.i64_of_i32(3)})
   f_new(O.Found.ar(d), O.OpsGROUP{}, [f_i(c), f_i(d)], O.ANone{})
 
+# `SINK(GROUP(a), b)` -- THE SHAPE `fx_sink` IS NOT, and the fixture that makes
+# `eq_u` a SHAPE claim and not a SLOT claim. `fx_sink`'s root is a GROUP whose
+# sink-like src is a STACK; here the root is a SINK and the sink-like src is a
+# GROUP, so the flatten runs on a NESTED sink-like src and the root's op is
+# carried over -- neither of which `fx_sink` does. And node 3 is the ANSWER,
+# `SINK(a, b)`, INTERNED BEFORE THE REWRITE: `sym_12` rebuilds the src list, asks
+# `UOp.new`, and interning is structural equality (`intern.find` over op, src,
+# arg, tag), so a correct answer HITS the node already there and answers 3. A
+# wrong src list, or a dropped src, mints a fresh node at 6 and answers 6, and
+# `sink`'s own `eq_u(..., 6)` cannot tell those two apart -- it reads a SLOT.
+def fx_sinkgrp() -> O.Found:
+  +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
+  +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
+  +c = f_new(O.Found.ar(b), O.OpsSINK{}, [f_i(a), f_i(b)], O.ANone{})
+  +d = f_new(O.Found.ar(c), O.OpsGROUP{}, [f_i(a)], O.ANone{})
+  f_new(O.Found.ar(d), O.OpsSINK{}, [f_i(d), f_i(b)], O.ANone{})
+
+# THE NEGATIVE SIDE, and it is a real row rather than a compliment to the positive
+# one -- but the guard it was filed under is NOT the one it witnesses. `sym.rewrite`
+# of CPython's `SINK(a, b)` is `None`, so the shape is right; what M20 measured is
+# that `sym_12.pat`'s `any_sink_like` half is REDUNDANT and not merely untested:
+# with no sink-like src the rebuild is byte-identical to the input, `UOp.new`
+# INTERNS it back onto the same slot, and `sy_novel`'s `ret is not uop` swallows
+# it. So dropping that half moves NOTHING (M20), and no fixture can make it move.
+# CPython carries the same redundancy for the same reason -- `rewrite` also tests
+# `ret is not uop`. What THIS row does witness is the OTHER half: M22, taking
+# `any_sink_like` AND `sink_srcs.of`'s per-src pick together, moves `sinkgrp0`
+# and `sinkgrp` and nothing else. A guard is only pinned once every half of the
+# test it shares with is taken, so the two-sided pair is what makes the shape
+# claimable at all.
+def fx_sinkgrp0() -> O.Found:
+  +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(7)})
+  +b = O.UOp.const(O.Found.ar(a), O.CInt{H.i64_of_i32(2)})
+  f_new(O.Found.ar(b), O.OpsSINK{}, [f_i(a), f_i(b)], O.ANone{})
+
 # `ADD(CONST(1), CONST(2**31))` at int32: the top ADD WRAPS to -2147483647.
 def fx_i32() -> O.Found:
   +a = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
@@ -2669,7 +2704,18 @@ def fx_of(f: O.Found) -> F.Folded: F.folded(O.Found.ar(f))
 #                asks for and it is the reason `rebind` alone is worthless.
 #   group=1      tag 11: `GROUP(x) -> x`.
 #   sink=1       tag 12: `GROUP(STACK(a,b))` -> `GROUP(a,b)` -- the flatten, which
-#                is the only rule here that rebuilds a src LIST.
+#                is the only rule here that rebuilds a src LIST. IT READS A SLOT:
+#                the answer is a FRESH node at 6, and `eq_u(..., 6)` is satisfied by
+#                any wrong src list that also mints one. `sinkgrp` is that row.
+#   sinkgrp      tag 12 at a SINK root, `SINK(GROUP(a), b)` -- the shape `fx_sink`
+#                is not (a nested sink-like src, and the root's OP carried over).
+#                The fixture INTERNS the answer `SINK(a, b)` before the rewrite, so
+#                interning is structural equality and the row pins the src LIST.
+#                M17 drops one src and moves this row and NOT `sink`.
+#   sinkgrp0     `SINK(a, b)` with no sink-like src, which CPython also refuses
+#                (`sym.rewrite` is `None`). M22 is the only mutation that moves it,
+#                and it takes BOTH halves of the sink-like test -- M20 alone moves
+#                nothing because `sy_novel` swallows an identical rebuild.
 #   rm_where=1   `pm_remove_invalid` tag 0: the Invalid false branch becomes a
 #                `const_like(0)` and the op is unchanged.
 #   rm_stack=1   `pm_remove_invalid` tag 1: an Invalid src of a STACK becomes a
@@ -2888,6 +2934,13 @@ def fx_bcast() -> O.Found:
 def t_bcast() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_bcast()), 3), 1))
 
 def t_sink() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_sink()), 5), 6))
+
+# THE SAME RULE AT A SINK ROOT, and the answer is a node that was ALREADY THERE,
+# so this row pins `sym_12`'s src LIST and not the slot it happened to land on.
+# `sinkgrp0` is its other side and the only witness for the `any_sink_like` half.
+def t_sinkgrp() -> U32: Bool.to_u32(eq_u(sym(fx_of(fx_sinkgrp()), 5), 3))
+
+def t_sinkgrp0() -> U32: Bool.to_u32(Maybe.is_none(&1, U32, sym(fx_of(fx_sinkgrp0()), 3)))
 
 def t_rm_where() -> U32: Bool.to_u32(eq_u(pm_remove_invalid(fx_of(fx_where()), 4), 5))
 
@@ -3164,6 +3217,24 @@ def t_promo() -> U32: Bool.to_u32(promo_row())
 # |    `Found.ar(f)`) three of them answered a node one short and `Arena.next` came
 # |    out LOW. A node count is the ONLY thing that sees a stale arena, and every
 # |    index in the gate above is therefore a claim about a threaded mint |
+# | M17 `sym_12.hit`'s flattened src list -> `List.tail`, so the FIRST src is dropped
+# |    and the rule still fires | `sinkgrp` | 1 | **AND `sink` DID NOT MOVE.** This
+# |    is the row the pair was added for: `sink` reads a SLOT (`eq_u(..., 6)`), a
+# |    wrong src list mints a fresh node and still lands on 6, and `sinkgrp` answers
+# |    the PRE-INTERNED `SINK(a, b)` so a wrong list cannot hit it |
+# | M18 `sink_srcs.of`'s `Bool.pick` -> `[s]`, the flatten removed | `sink`,
+# |    `sinkgrp` | 2 |
+# | M21 `sink_srcs.of` always flattens | `sinkgrp` | 1 | one half of M22, and `sink`
+# |    does not move for the reason M17 gives |
+# | M20 `sym_12.pat` drops `any_sink_like` alone | NOTHING | 0 | **AN HONEST NEGATIVE
+# |    AND THE INTERESTING ONE**: the rebuild of a sink-like-free SINK is
+# |    byte-identical to its input, `UOp.new` interns it back onto the same slot and
+# |    `sy_novel` swallows it, so that half of the test is REDUNDANT rather than
+# |    merely untested. CPython's `if any(...) else None` is redundant the same way,
+# |    because `rewrite` also tests `ret is not uop`. No fixture can move it |
+# | M22 M20 AND M21 together, both halves of the sink-like test | `sinkgrp`,
+# |    `sinkgrp0` | 2 | so `sinkgrp0` is not vacuous -- but it takes TWO edits, which
+# |    is the price of a guard that shares a test with the body |
 #
 # WHAT THE TABLE SAYS, in five lines.
 #   * M2 AND M5 MOVED NOTHING, and both are honest negatives. No rule in this
@@ -3225,6 +3296,8 @@ def fz.gate() -> IO(Unit):
     row("xorb", t_xorb())
     row("xorb0", t_xorb0())
     row("bcast", t_bcast())
+    row("sinkgrp", t_sinkgrp())
+    row("sinkgrp0", t_sinkgrp0())
     row("promo", t_promo())
     row("modb", t_modb())
     row("modb0", t_modb0())
