@@ -14983,6 +14983,46 @@ Found by `gates/realize_graph_census-mutate.py` (`9651ecc59`, **55 mutations, 17
       `PINS`; a `finally` that cleans up before the last reader reads is a teardown; **AND A GUARD THAT
       RAISES IS A VERDICT, NOT AN ABSENCE.**
 
+## DECOUPLE -- the fix that CLEARED 19 ROWS HAS A COUPLING NO ROW CAN SEE (2026-10-15)
+
+Answered by `gates/crp_graph_census-mutate.py` + `gates/amd_dsl_census-mutate.py` (`51cceacd7`),
+**66 mutations across both gates, both gates rc=0, no gate and no port file touched**. The brief asked:
+**"did breaking ONE USE of `de` move a row, i.e. are the two uses actually coupled?"** **MEASURED ANSWER:
+NO -- THE COUPLING IS VACUOUS ON THE ROWS IT WAS ARGUED FROM.**
+
+- [ ] **`C1` (break only the CAST's `ADt`) MOVES 0 OF 207 ROWS. `C2` (break only the fold test) MOVES
+      19. `C3` (both) MOVES 19. AND `C4` -- C1 WITH `opscast_hold` TOLD TO EXPECT THE NEW SPELLING --
+      IS **GREEN AT rc=0, 207 ROWS.** VERIFIED HERE: **NO CAST ARG APPEARS IN ANY ROW.**
+- [ ] **TWO INDEPENDENT CAUSES, BOTH MEASURED OFF THE LANE:** (i) `crp_graph_census.bend:155-159` and
+      `oracle:167-172` PRINT A CAST AS BARE `CAST/1` -- **118 OCCURRENCES, 0 CARRYING AN ARGUMENT**;
+      (ii) ALL 20 `iv_` ROWS CARRY **0** `CAST/1` (the fold fires, the arg is never minted) and all
+      118 are in `cl f fl fs nb o ol z zl`, WHERE **`de == dt` BY CONSTRUCTION**.
+- [ ] **SO `de != dt` IMPLIES `is_cinvalid` IMPLIES THE FOLD FIRES IMPLIES THE ARG IS NEVER READ. THE
+      CLAIM IS TRUE AS CODE AND 0 OF 207 ROWS AND 0 OF 118 PRINTED ARGS CAN SEE IT.** **THE ONLY
+      INSTRUMENT COVERING IT IS `opscast_hold`, A SPELLING ASSERTION ON SOURCE TEXT.**
+- [ ] **THE FIX THAT MAKES IT CHECKABLE IS NAMED AND NOT DONE:** `tok.arg` needs an `O.ADt{d}` arm and
+      the oracle a matching `isinstance(u.arg, DType)`. **THAT TURNS C1/C5 FROM 0 ROWS INTO NON-ZERO**
+      and makes the claim checkable BY A ROW. **NOT DONE BECAUSE THE GATES ARE NOT THAT UNIT'S.**
+- [ ] **THE THREE MODIFIER FLAGS ARE NOT EQUALLY MEASURED, AND THE PINS FILE SAYS SO.** `A5` (loses
+      NEG) moves exactly **1** row (`modmask_neg_neg`); `A6` (loses ABS) and `A7` (loses OPSEL) move
+      **0 at rc=0** -- **AND THE GATE'S OWN PINS FILE ALREADY CLAIMS THAT IN THE SAME WORDS.** MECHANISM
+      CONFIRMED: **NO FIXTURE SETS `Reg.abs_`**, AND THE OPSEL FAMILY ASKS ABOUT `src2`, WHICH
+      `VOP2_FIELDS` HAS NO FIELD FOR. **SO 1 OF `dsl.py`'s 3 MODIFIER FLAGS IS MEASURED.**
+- [x] **A GUARD THAT COULD NOT BE MADE TO FAIL BY THE FIRST ATTEMPT, AND WHY THAT IS CORRECT:**
+      crp `G7` pointed at `UOp.const`/`UOp.toposort` are **BYTE-IDENTICAL AT THE PIN BY DESIGN** (505 B
+      and 702 B, measured), so extracting them twice CANNOT disagree. It now names `UOp.param_like`,
+      **735 B at the pin against 777 B at HEAD**, and reds.
+- [ ] **THREE GATE BUGS, UN-SMOOTHED.** (i) **crp: IMPORTING THE GATE EMPTIES ITS OWN ARTIFACTS** --
+      `gatekit.Gate.__init__` calls `_clear()` and `crp_graph_census-gate.py:842` BUILDS `GATE = Gate(...)`
+      AT MODULE SCOPE, so **11 of 11 GUARDS REPORTED `names_hold: bd printed 0 rows`** until the
+      directory was snapshotted around `exec_module`. **amd HAS NO SUCH SHAPE, WHICH IS WHY ITS GUARDS
+      BEHAVED.** (ii) **amd: THE 8 CHECKS ARE UNREACHABLE ONCE A LANE DISAGREES** --
+      `main()` is `if code == 0 and not checks_hold()`, so `X1` is caught by the DIFF and
+      `checks_hold()` alone returns `False` naming a DIFFERENT thing: **TWO INSTRUMENTS CATCH IT, ONE RUN
+      NAMES ONE.** (iii) **amd `axes_hold`'S MESSAGE CANNOT DISAGREE WITH ITSELF** -- `gate:405-408`
+      interpolates the *ACTUAL* list into BOTH slots, so `G4` prints `...are [125, 127], expected
+      [125, 127] -- the fmt axis grew`.
+
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
 ## Progress by category (GENERATED from checkbox counts)
