@@ -317,8 +317,11 @@ gates-sweep     [#########] 9/10     `/tmp/sweep.sh` is FOREIGN and NON-COMPLIAN
                                        (verified always-present). `--plan`/`--prove` green
                                        (14/14 recorded verdicts reproduced); `run_one`
                                        PROVEN live on 4 synthetic children
-                                       (PASS/REFUSED/DEAD-silence/SKIP). OWED: one run over
-                                       the real 70. `--prove`'s inputs sit in the PRUNABLE
+                                       (PASS/REFUSED/DEAD-silence/SKIP); the LOOP path
+                                       (header + sink + flush) is proven only by an AD-HOC
+                                       probe with `population()` swapped, NOT by a
+                                       `--selftest`. OWED: one run over the real 70.
+                                       `--prove`'s inputs sit in the PRUNABLE
                                        `.agents/slop/hooks/`; they belong beside the gate.
 false-fails     [.........] 0/2      ~29 false FAILs survive guard 1 (a needle containing a
                                        newline: 14 FAIL retired, 0 PASS silenced). 3 are
@@ -13809,6 +13812,17 @@ here and NOT fixed there.
       in a message body, because the gate's regex cannot scope it to the enclosing commit. This
       costs the reader the exact figure, which is the thing the message is for, so the ledger is
       the better answer.
+- [ ] **THE DEFAULT INDEX'S GAP WIDENS WITH EVERY OUT-OF-BAND COMMIT, MEASURED.** Committing
+      through `GIT_INDEX_FILE=.git/agent-index` leaves `.git/index` behind, so
+      `checks/index-arm-gate.py` reads `DELETION` for exactly the paths committed that way:
+      **3 at 2026-10-15 after `8cd284f8d`** -- `checks/gatesweep.py`,
+      `.agents/slop/gatesweep/REPORT.md`, `.agents/slop/graphcmp-empty.bend` (**1 at session
+      start, +2 from one commit**) -- plus `STALE (6)`, of which `.agents/TODO.md` and the
+      RUNNING `residual` unit's `checks/cites-census.py` are edited-since. **A bare `git commit`
+      now REVERTS THE GATESWEEP WORK**, which is `c7ad2ac4d`'s silent reversion one level down.
+      NOT REPAIRED ON PURPOSE: a `read-tree HEAD` over the SHARED index is the write that cleared
+      another unit's staged work at `01:55:39Z`, and the 447 `INTENT` entries are not mine. The
+      gate reports; the index is not touched.
 
 **WHILE UNFIXED, A BARE SWEEP READS 55/56.** The green number is `55/56` with `MESSAGE_DIFF_ACK`
 set on HEAD; the other 55 are unaffected.
@@ -15069,6 +15083,36 @@ these is a proxy for a question only a commit can answer.**
     `decomp_value-*` had to use the DEFAULT index.
   * **`GIT_INDEX_FILE` IS CORRECT FOR *NOT TAKING* ANOTHER UNIT'S STAGED WORK AND THE WRONG TOOL FOR
     *RESTORING* A PATH THE INDEX REMOVED. THOSE ARE DIFFERENT PROBLEMS AND `AGENTS.md` NAMES ONLY ONE.**
+
+## PINSHDR -- `pins-shape` CHARGES "NO PROVENANCE HEADER" AND FOR `ptx_render_census-pins.rows` THAT IS
+## UNFIXABLE WITHOUT CHANGING THE GATE, BECAUSE THE GATE'S OWN FORMAT FORBIDS COMMENTS (2026-10-15)
+
+**MEASURED, ATTEMPTED AND REVERTED.** `gates/pins-shape-gate.py` REDs six findings, one of them
+`ptx_render_census-pins.rows: no header declares who writes it`. Adding a header made
+`ptx_render_census-gate.py` FAIL, and the reason is its contract:
+
+    if not lines or lines[0].split("\t") != ["lane", "row", "value"]: ... return False
+    bad = [i for i, l in enumerate(lines[1:], start=2) if len(l.split("\t")) != 3]: ... return False
+    # and `_lines` is `[l for l in text.splitlines() if l.strip()]` -- IT DOES NOT SKIP COMMENTS
+
+**SO THAT GATE'S PINS FORMAT HAS NO ROOM FOR A HEADER BY CONSTRUCTION**: a comment line is a
+ONE-COLUMN row and the `len(...) != 3` check rejects it. The author's format (`lane<TAB>row<TAB>value`,
+header line mandatory at line 1) and `pins-shape`'s demand are **BOTH CORRECT AND MUTUALLY EXCLUSIVE.**
+**THIS IS A FORMAT CONVENTION COLLISION, NOT A FINDING ABOUT ANY ONE FILE**, and the file was RESTORED
+byte-identical rather than fought.
+
+**THE FIX IS ONE LINE IN `ptx_render_census-gate.py` -- `_lines` SHOULD SKIP `#` -- AND THAT IS THE
+GATE'S OWN CONTRACT TO CHANGE, NOT A PINNED TABLE'S.** Until then `pins-shape` is CORRECT TO BE RED on
+this row and WRONG TO BE READ AS A DEFECT IN `ptx_render_census`.
+
+**AND THE ATTEMPT PRODUCED A SEVENTEENTH INSTANCE, IN MY OWN WORKAROUND.** `git checkout <file>`
+restores from **THE INDEX, NOT FROM `HEAD`** -- and the armed index had the `--refresh`-appended copy,
+so restoring what I believed was the committed state **REINSTATED THE 1,545-LINE DOUBLING** (772 rows
+where HEAD holds 388) **AND THE GATE STILL ANSWERED rc=0**, because duplicates are not a shape error.
+**THE RECOVERY THAT WORKS IS `git show HEAD:<path> > <path>`, WHICH READS THE COMMIT TREE AND NOT THE
+INDEX.** That is the same distinction `indexread-gate.py` exists to police -- "a commit tree is
+content-addressed and immutable" -- applied to a repair: **THE FIXTURE I'D REACHED FOR WAS THE VECTOR
+THAT PRODUCES THE BUG.**
 
 <!-- GENERATED-PROGRESS-BARS by .agents/slop/todo2/bars.py; do not hand-edit -->
 
