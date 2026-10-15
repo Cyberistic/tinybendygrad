@@ -347,10 +347,14 @@ d10-guard       [#########] 9/10     D10 is NO LONGER REFUSED: the fixture is pr
                                        control row (`:2008`) names the opposite rule as the defect
                                        ("a retry that fires on an answer"). The `rc=0` in the file
                                        is `emit`'s HARDCODED return (`graphcmp.py:3185`), NOT a
-                                       verdict. OWED: nothing reads the CONTENT -- `LITERALS`
-                                       (`differ.py:324`) only makes `artefacts_ok()` require the
-                                       file to EXIST -- so a wrong D10 verdict still cannot fail
-                                       the run.
+                                       verdict. OWED: the transcript IS read -- `snap()` is
+                                       `declared()` PLUS the `.err` beside it (`differ.py:310`)
+                                       and `repro` sha256s and byte-compares both across two
+                                       runs -- but it is pinned to NOTHING, so `repro` proves D10
+                                       is REPRODUCIBLE and never that it is RIGHT. Unlike
+                                       `REPRO_PINS` (`:315`), a guard that regressed to retrying
+                                       would give a DETERMINISTIC wrong transcript and still pass
+                                       BOTH checks.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare
