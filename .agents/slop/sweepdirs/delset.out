@@ -1,0 +1,199 @@
+# delset 2026-10-15T09:09:00Z  HEAD 265d31b7d
+# shipped  self_output_dirs() = 1 ['.agents/slop/residue']
+# fixed    self_output_dirs() = 22 ['.agents/slop/agend2', '.agents/slop/devrecord', '.agents/slop/exitzero', '.agents/slop/figurefix', '.agents/slop/flipthird', '.agents/slop/foldgap', '.agents/slop/gatecensus', '.agents/slop/instrepair', '.agents/slop/jjhazard', '.agents/slop/jjreset', '.agents/slop/oraclerestore', '.agents/slop/prune4', '.agents/slop/restorekit', '.agents/slop/rosterwire', '.agents/slop/speccite', '.agents/slop/substrate3', '.agents/slop/sweepport', '.agents/slop/twopass', '.agents/slop/unshardfold', '.agents/slop/unverified9', '.agents/slop/w64'] + shipped
+# corpus   648 -> 627 : -21 +0 (204206 bytes lost)
+#   lost  .agents/slop/agend2/REPLACEMENTS.md
+#   lost  .agents/slop/agend2/REPORT.md
+#   lost  .agents/slop/devrecord/README.md
+#   lost  .agents/slop/figurefix/REPORT.md
+#   lost  .agents/slop/flipthird/REPORT.md
+#   lost  .agents/slop/foldgap/REPORT.md
+#   lost  .agents/slop/gatecensus/README.md
+#   lost  .agents/slop/gatecensus/REPORT.md
+#   lost  .agents/slop/instrepair/REPORT.md
+#   lost  .agents/slop/jjhazard/REPORT.md
+#   lost  .agents/slop/jjreset/REPORT.md
+#   lost  .agents/slop/oraclerestore/REPORT.md
+#   lost  .agents/slop/prune4/REPORT.md
+#   lost  .agents/slop/restorekit/README.md
+#   lost  .agents/slop/rosterwire/REPORT.md
+#   lost  .agents/slop/speccite/README.md
+#   lost  .agents/slop/substrate3/REPORT.md
+#   lost  .agents/slop/sweepport/REPORT.md
+#   lost  .agents/slop/twopass/REPORT.md
+#   lost  .agents/slop/unverified9/REPLACEMENTS.md
+#   lost  .agents/slop/unverified9/REPORT.md
+# rows     5428 classified twice, 85 NEWLY DELETE
+#   NEW-DELETE     4022 B  .agents/slop/agend2/measured.json
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/agend2/REPORT.md)
+#   NEW-DELETE   385810 B  .agents/slop/bitcastrow/fold.bend.FIXED
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE      904 B  .agents/slop/bitcastrow/oracle.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE   671296 B  .agents/slop/citeresolve/classified.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE   638219 B  .agents/slop/citeresolve/scan.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE      844 B  .agents/slop/closure/p-scope/one/rows-gate-py.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE      844 B  .agents/slop/closure/p-scope/per/rows-gate-py.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE      986 B  .agents/slop/figurefix/after-devcpu.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/figurefix/REPORT.md)
+#   NEW-DELETE     1331 B  .agents/slop/figurefix/after-devunset.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/figurefix/REPORT.md)
+#   NEW-DELETE      883 B  .agents/slop/figurefix/before-devcpu.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/figurefix/REPORT.md)
+#   NEW-DELETE     1228 B  .agents/slop/figurefix/before-devunset.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/figurefix/REPORT.md)
+#   NEW-DELETE     3970 B  .agents/slop/flipthird/arg22.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     8773 B  .agents/slop/flipthird/argseam.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     1630 B  .agents/slop/flipthird/flipsites.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     6405 B  .agents/slop/flipthird/flipsites.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     3360 B  .agents/slop/flipthird/radius.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     1283 B  .agents/slop/flipthird/radius.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/flipthird/REPORT.md)
+#   NEW-DELETE     6891 B  .agents/slop/foldgap/fold.diff.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE     3027 B  .agents/slop/foldgap/population-before-edit.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE     2728 B  .agents/slop/foldgap/population.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE     3031 B  .agents/slop/foldgap/population.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE       79 B  .agents/slop/foldgap/wmma-broadcast.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE     4792 B  .agents/slop/gatesrun/oracle.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     1239 B  .agents/slop/instrepair/RECLASS.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     2463 B  .agents/slop/instrepair/RESTORED.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     2210 B  .agents/slop/instrepair/TCPTX-REPOINT.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     1781 B  .agents/slop/instrepair/reclass.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     3422 B  .agents/slop/instrepair/repoint.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     3137 B  .agents/slop/instrepair/rerun.json
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     6313 B  .agents/slop/instrepair/rerun.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/instrepair/REPORT.md)
+#   NEW-DELETE     5931 B  .agents/slop/jjhazard/correlate.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE      683 B  .agents/slop/jjhazard/mechanism-demo.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     2855 B  .agents/slop/jjhazard/mechanism_demo.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     1826 B  .agents/slop/jjhazard/passive-watch.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE      326 B  .agents/slop/jjhazard/primitive-tests.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     2906 B  .agents/slop/jjhazard/primitive_tests.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     1035 B  .agents/slop/jjhazard/repro-mechanism.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     2617 B  .agents/slop/jjhazard/repro_index_reset.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     2866 B  .agents/slop/jjhazard/repro_mechanism.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     2436 B  .agents/slop/jjhazard/watch_correlate.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE     1802 B  .agents/slop/jjhazard/watch_index.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjhazard/REPORT.md)
+#   NEW-DELETE      290 B  .agents/slop/jjreset/jj-facts.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/jjreset/REPORT.md)
+#   NEW-DELETE   534126 B  .agents/slop/livenum/named.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE   638175 B  .agents/slop/livenum/scan-before.tsv
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     7778 B  .agents/slop/oraclerestore/debt.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE     1251 B  .agents/slop/oraclerestore/prove.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE     3117 B  .agents/slop/oraclerestore/prove.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE      169 B  .agents/slop/oraclerestore/verify.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE     4365 B  .agents/slop/prune4/HANDOFF.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     1875 B  .agents/slop/prune4/committed-unnamed.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     3568 B  .agents/slop/prune4/dircopies.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     4372 B  .agents/slop/prune4/duphash.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     7147 B  .agents/slop/prune4/floor.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     1818 B  .agents/slop/prune4/liveness.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     4417 B  .agents/slop/prune4/movecopy.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     2349 B  .agents/slop/prune4/orphan.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     7564 B  .agents/slop/prune4/prove.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE     3212 B  .agents/slop/prune4/settle-insprobe.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE     1927 B  .agents/slop/substrate3/node.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/substrate3/REPORT.md)
+#   NEW-DELETE    34646 B  .agents/slop/substrate3/pop.after.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/substrate3/REPORT.md)
+#   NEW-DELETE    33106 B  .agents/slop/substrate3/pop.before.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/substrate3/REPORT.md)
+#   NEW-DELETE     4938 B  .agents/slop/substrate3/pop.files
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/substrate3/REPORT.md)
+#   NEW-DELETE    33301 B  .agents/slop/substrate3/pop138.after.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/substrate3/REPORT.md)
+#   NEW-DELETE      406 B  .agents/slop/substrateid/population.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/foldgap/REPORT.md)
+#   NEW-DELETE       99 B  .agents/slop/sweepport/plan-after-stderr.err
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/sweepport/REPORT.md)
+#   NEW-DELETE       99 B  .agents/slop/sweepport/plan-before-stderr.err
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/sweepport/REPORT.md)
+#   NEW-DELETE     3898 B  .agents/slop/sweepport/plan-before.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/sweepport/REPORT.md)
+#   NEW-DELETE     1026 B  .agents/slop/sweepport/pop.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/sweepport/REPORT.md)
+#   NEW-DELETE       58 B  .agents/slop/twopass/base-check.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     5147 B  .agents/slop/twopass/diff-flip.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE    11573 B  .agents/slop/twopass/fold-gate.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE   391738 B  .agents/slop/twopass/fold.bend.PRE
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE       58 B  .agents/slop/twopass/land-check.out
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE      233 B  .agents/slop/twopass/oracle.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     8729 B  .agents/slop/twopass/plant.bend
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE      266 B  .agents/slop/twopass/refusal-after.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     2510 B  .agents/slop/twopass/regress.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     2230 B  .agents/slop/twopass/twopass-oracle.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE     3046 B  .agents/slop/twopass/twopass-regress.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/twopass/REPORT.md)
+#   NEW-DELETE      441 B  .agents/slop/txtexec/tally.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/prune4/REPORT.md)
+#   NEW-DELETE    22342 B  .agents/slop/unverified9/classify.json
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/unverified9/REPORT.md)
+#   NEW-DELETE    46268 B  .agents/slop/unverified9/gather.json
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/unverified9/REPLACEMENTS.md)
+#   NEW-DELETE     2083 B  .agents/slop/unverified9/gather.py
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/unverified9/REPORT.md)
+#   NEW-DELETE      844 B  .agents/slop/whichgroup/rows/rows-gate-py.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   NEW-DELETE      844 B  .agents/slop/whichgroup/snap/rows-gate-py.rows
+#              was UNKNOWN:residue-internal-citer (named only from inside the residue by .agents/slop/oraclerestore/REPORT.md)
+#   moved UNKNOWN -> DELETE: 85
+#   moved UNKNOWN -> KEEP-CITED: 37
+# wall 22.5 s

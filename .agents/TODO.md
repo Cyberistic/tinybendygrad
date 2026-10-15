@@ -328,10 +328,17 @@ false-fails     [.........] 0/2      ~29 false FAILs survive guard 1 (a needle c
                                        genuinely FALSE claims to fix; 19 are stale-once-true.
                                        The bar is PASS rows silenced; M>N is REFUTED
                                        (precedent: 28 FAIL / 102 PASS, reverted).
-sweep-self-dirs [.........] 0/1      `self_output_dirs()` returns 1 on a tree of ~190; the
-                                       recorded blast radius of 0 newly-deletable paths is a
-                                       coincidence of `slop_dir()` being coarser than a
-                                       98.9%-blind resolver, so it is not yet a measurement.
+sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/residue'] and that
+                                       entry is INERT: removing it leaves the corpus at 692
+                                       (`INERT=True removed_by_the_entry=0`, 2026-10-15T09:25:03Z,
+                                       HEAD `c1e2b9fb2`) -- `residue` is already covered by
+                                       `residue.py:EXCLUDED_DIRS` and by a pathspec that ends one
+                                       level above it. So the "1" is NEITHER a population NOR a
+                                       bug. THE REAL DEFECT IS GRANULARITY: a 22-dir walk
+                                       authorises 85 DELETIONS (3,635,633 B, corpus 648 -> 627)
+                                       and a 48-dir belt 86; the file-granular arm deletes 0.
+                                       `checks/sweep.py` NOT EDITED -- prefer refuse. §3 of
+                                       `.agents/slop/sweepdirs/REPORT.md`.
 ```
 
 ### Coldness — the three numbers, and the one that is allowed to be written bare

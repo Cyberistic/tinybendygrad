@@ -1,0 +1,7 @@
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+# inert 2026-10-15T09:21:32Z  HEAD 1b4983301
+# shipped   self_output_dirs() = ['.agents/slop/residue'] -> corpus 692
+# no entry  self_output_dirs() = ()               -> corpus 692
+# INERT=True  removed_by_the_entry=0
+# wall 3.9 s

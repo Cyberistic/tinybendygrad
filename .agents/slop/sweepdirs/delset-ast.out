@@ -1,0 +1,273 @@
+# delset 2026-10-15T09:14:25Z  HEAD 265d31b7d  mode=ast
+# shipped  self_output_dirs() = 1 ['.agents/slop/residue']
+# fixed    population = 22: ['.agents/slop/agend2', '.agents/slop/devrecord', '.agents/slop/exitzero', '.agents/slop/figurefix', '.agents/slop/flipthird', '.agents/slop/foldgap', '.agents/slop/gatecensus', '.agents/slop/instrepair', '.agents/slop/jjhazard', '.agents/slop/jjreset', '.agents/slop/oraclerestore', '.agents/slop/prune4', '.agents/slop/restorekit', '.agents/slop/rosterwire', '.agents/slop/speccite', '.agents/slop/substrate3', '.agents/slop/sweepport', '.agents/slop/twopass', '.agents/slop/unshardfold', '.agents/slop/unverified9', '.agents/slop/w64'] + shipped
+# corpus   648 -> 627 : -21 +0
+#   lost  .agents/slop/agend2/REPLACEMENTS.md
+#   lost  .agents/slop/agend2/REPORT.md
+#   lost  .agents/slop/devrecord/README.md
+#   lost  .agents/slop/figurefix/REPORT.md
+#   lost  .agents/slop/flipthird/REPORT.md
+#   lost  .agents/slop/foldgap/REPORT.md
+#   lost  .agents/slop/gatecensus/README.md
+#   lost  .agents/slop/gatecensus/REPORT.md
+#   lost  .agents/slop/instrepair/REPORT.md
+#   lost  .agents/slop/jjhazard/REPORT.md
+#   lost  .agents/slop/jjreset/REPORT.md
+#   lost  .agents/slop/oraclerestore/REPORT.md
+#   lost  .agents/slop/prune4/REPORT.md
+#   lost  .agents/slop/restorekit/README.md
+#   lost  .agents/slop/rosterwire/REPORT.md
+#   lost  .agents/slop/speccite/README.md
+#   lost  .agents/slop/substrate3/REPORT.md
+#   lost  .agents/slop/sweepport/REPORT.md
+#   lost  .agents/slop/twopass/REPORT.md
+#   lost  .agents/slop/unverified9/REPLACEMENTS.md
+#   lost  .agents/slop/unverified9/REPORT.md
+# rows     5435 classified twice; before : AUTHORED=116  DELETE=2537  DOC=496  GATE=20  GENERATED=260  KEEP-CITED=630  LIVE-UNIT=20  ORACLE=72  PROTECTED=32  UNKNOWN=1252
+#   moved UNKNOWN -> DELETE: 85
+#   moved UNKNOWN -> KEEP-CITED: 37
+#   NEW-DELETE     4022 B  .agents/slop/agend2/measured.json
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   385810 B  .agents/slop/bitcastrow/fold.bend.FIXED
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      904 B  .agents/slop/bitcastrow/oracle.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   671296 B  .agents/slop/citeresolve/classified.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   638219 B  .agents/slop/citeresolve/scan.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      844 B  .agents/slop/closure/p-scope/one/rows-gate-py.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      844 B  .agents/slop/closure/p-scope/per/rows-gate-py.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      986 B  .agents/slop/figurefix/after-devcpu.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1331 B  .agents/slop/figurefix/after-devunset.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      883 B  .agents/slop/figurefix/before-devcpu.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1228 B  .agents/slop/figurefix/before-devunset.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3970 B  .agents/slop/flipthird/arg22.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     8773 B  .agents/slop/flipthird/argseam.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1630 B  .agents/slop/flipthird/flipsites.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     6405 B  .agents/slop/flipthird/flipsites.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3360 B  .agents/slop/flipthird/radius.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1283 B  .agents/slop/flipthird/radius.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     6891 B  .agents/slop/foldgap/fold.diff.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3027 B  .agents/slop/foldgap/population-before-edit.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2728 B  .agents/slop/foldgap/population.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3031 B  .agents/slop/foldgap/population.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE       79 B  .agents/slop/foldgap/wmma-broadcast.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     4792 B  .agents/slop/gatesrun/oracle.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1239 B  .agents/slop/instrepair/RECLASS.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2463 B  .agents/slop/instrepair/RESTORED.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2210 B  .agents/slop/instrepair/TCPTX-REPOINT.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1781 B  .agents/slop/instrepair/reclass.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3422 B  .agents/slop/instrepair/repoint.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3137 B  .agents/slop/instrepair/rerun.json
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     6313 B  .agents/slop/instrepair/rerun.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     5931 B  .agents/slop/jjhazard/correlate.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      683 B  .agents/slop/jjhazard/mechanism-demo.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2855 B  .agents/slop/jjhazard/mechanism_demo.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1826 B  .agents/slop/jjhazard/passive-watch.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      326 B  .agents/slop/jjhazard/primitive-tests.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2906 B  .agents/slop/jjhazard/primitive_tests.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1035 B  .agents/slop/jjhazard/repro-mechanism.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2617 B  .agents/slop/jjhazard/repro_index_reset.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2866 B  .agents/slop/jjhazard/repro_mechanism.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2436 B  .agents/slop/jjhazard/watch_correlate.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1802 B  .agents/slop/jjhazard/watch_index.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      290 B  .agents/slop/jjreset/jj-facts.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   534126 B  .agents/slop/livenum/named.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   638175 B  .agents/slop/livenum/scan-before.tsv
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     7778 B  .agents/slop/oraclerestore/debt.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1251 B  .agents/slop/oraclerestore/prove.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3117 B  .agents/slop/oraclerestore/prove.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      169 B  .agents/slop/oraclerestore/verify.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     4365 B  .agents/slop/prune4/HANDOFF.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1875 B  .agents/slop/prune4/committed-unnamed.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3568 B  .agents/slop/prune4/dircopies.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     4372 B  .agents/slop/prune4/duphash.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     7147 B  .agents/slop/prune4/floor.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1818 B  .agents/slop/prune4/liveness.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     4417 B  .agents/slop/prune4/movecopy.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2349 B  .agents/slop/prune4/orphan.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     7564 B  .agents/slop/prune4/prove.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3212 B  .agents/slop/prune4/settle-insprobe.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1927 B  .agents/slop/substrate3/node.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    34646 B  .agents/slop/substrate3/pop.after.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    33106 B  .agents/slop/substrate3/pop.before.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     4938 B  .agents/slop/substrate3/pop.files
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    33301 B  .agents/slop/substrate3/pop138.after.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      406 B  .agents/slop/substrateid/population.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE       99 B  .agents/slop/sweepport/plan-after-stderr.err
+#              UNKNOWN -> DELETE
+#   NEW-DELETE       99 B  .agents/slop/sweepport/plan-before-stderr.err
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3898 B  .agents/slop/sweepport/plan-before.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     1026 B  .agents/slop/sweepport/pop.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE       58 B  .agents/slop/twopass/base-check.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     5147 B  .agents/slop/twopass/diff-flip.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    11573 B  .agents/slop/twopass/fold-gate.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE   391738 B  .agents/slop/twopass/fold.bend.PRE
+#              UNKNOWN -> DELETE
+#   NEW-DELETE       58 B  .agents/slop/twopass/land-check.out
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      233 B  .agents/slop/twopass/oracle.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     8729 B  .agents/slop/twopass/plant.bend
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      266 B  .agents/slop/twopass/refusal-after.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2510 B  .agents/slop/twopass/regress.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2230 B  .agents/slop/twopass/twopass-oracle.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     3046 B  .agents/slop/twopass/twopass-regress.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      441 B  .agents/slop/txtexec/tally.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    22342 B  .agents/slop/unverified9/classify.json
+#              UNKNOWN -> DELETE
+#   NEW-DELETE    46268 B  .agents/slop/unverified9/gather.json
+#              UNKNOWN -> DELETE
+#   NEW-DELETE     2083 B  .agents/slop/unverified9/gather.py
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      844 B  .agents/slop/whichgroup/rows/rows-gate-py.rows
+#              UNKNOWN -> DELETE
+#   NEW-DELETE      844 B  .agents/slop/whichgroup/snap/rows-gate-py.rows
+#              UNKNOWN -> DELETE
+#   MOVED         10309 B  .agents/slop/argowner/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         18957 B  .agents/slop/boolexit/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED            85 B  .agents/slop/census7/decoy/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         10987 B  .agents/slop/checkshells/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          5972 B  .agents/slop/concise/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          1378 B  .agents/slop/deadarm/sweep.sh
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          7765 B  .agents/slop/deadwhenabsent/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          3875 B  .agents/slop/declared472/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         18943 B  .agents/slop/declaretwo/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         13275 B  .agents/slop/droppedinput/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         14640 B  .agents/slop/exitsurvey/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          4063 B  .agents/slop/exitzero/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         13809 B  .agents/slop/gatecensus/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          4854 B  .agents/slop/i64mul/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          4128 B  .agents/slop/indextree/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          1018 B  .agents/slop/lastlaw/sweep.sh
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          2112 B  .agents/slop/linfix/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          4653 B  .agents/slop/lostinst/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         19856 B  .agents/slop/msgdiff2/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         31993 B  .agents/slop/nameless/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          1118 B  .agents/slop/newgraphs/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          3009 B  .agents/slop/pairs/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          3325 B  .agents/slop/prune4/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          1762 B  .agents/slop/reach/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         26687 B  .agents/slop/readerdecl/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          3792 B  .agents/slop/remembered103/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          6090 B  .agents/slop/reprofix/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         18006 B  .agents/slop/retrydet/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          4102 B  .agents/slop/shfinish/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          7550 B  .agents/slop/slowgate/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         11878 B  .agents/slop/stalecites/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED         18828 B  .agents/slop/substrateid2/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          5343 B  .agents/slop/synonyms/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED           690 B  .agents/slop/tnisf/sweep.sh
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          5626 B  .agents/slop/untrack/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          8978 B  .agents/slop/verdictcollide/census.py
+#              UNKNOWN -> KEEP-CITED
+#   MOVED          3451 B  .agents/slop/want/census.py
+#              UNKNOWN -> KEEP-CITED
+# wall 20.9 s
