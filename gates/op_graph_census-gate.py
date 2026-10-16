@@ -94,11 +94,12 @@ EXIT STATUS: 0 all three lanes identical after the pins · 1 a lane took the wro
 oracle failed, the compile failed, or the lanes disagree · 3 a precondition was absent · 5 `bend`
 ran and emitted no rows. `SKIP` (4) is not produced.
 """
+import subprocess
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate, gate
+from gatekit import BEND, PY, Gate, gate
 
 ROWS = (
     # the four VALUE rows -- the layer's own non-graph claims, the controls.
@@ -109,32 +110,119 @@ ROWS = (
     "mstep", "vstep", "mhat", "vhat", "lamb_up",
 )
 
-# (CPython's line, the port's line), pinned on both sides. THE SIXTEEN THAT WERE DEFECTS ARE
-# GONE; these TWO are a float-precision divergence (a double `1.0 - b` against an f32 `1.0 - b`)
-# and the pins LOCK both sides so the graphs cannot drift apart unnoticed.
-DIVERGES = {
-    # `(1.0 - self.b1)` -- optim.py:167. CPython subtracts in DOUBLE; the port in f32. The two
-    # graphs are IDENTICAL except this one CONST's bits. See the module docstring.
-    "mstep": ("mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CONST/0:f1036831949 BUFFER/0:- "
-              "MUL/2:- ADD/2:- ",
-              "mstep=7 CONST/0:f1063675494 BUFFER/0:- MUL/2:- CONST/0:f1036831952 BUFFER/0:- "
-              "MUL/2:- ADD/2:- "),
-    # `(1.0 - self.b2)` -- optim.py:168, the same divergence with 0.999.
-    "vstep": ("vstep=8 CONST/0:f1065336439 BUFFER/0:- MUL/2:- CONST/0:f981668463 BUFFER/0:- "
-              "MUL/2:- MUL/2:- ADD/2:- ",
-              "vstep=8 CONST/0:f1065336439 BUFFER/0:- MUL/2:- CONST/0:f981668352 BUFFER/0:- "
-              "MUL/2:- MUL/2:- ADD/2:- "),
-}
+# THE DIVERGENCE POPULATION, DECLARED; THE CONTENT, PINNED BY PATH.
+#
+# THE SPLIT IS THE POINT AND IT IS NOT COSMETIC. These two rows are expected values -- whole lane
+# lines, bit patterns and all -- and until now they were INLINE LITERALS IN THIS FILE, which means
+# (a) a reviewer diffing this gate could not see a moved pin without reading 16 lines of wrapped
+# string, and (b) `gates/assertlit-census.py`'s GATE arm counted them as 50 UNSOURCED tokens, the
+# largest single gate in its table, because a `f1063675494` is a number no CPython expression
+# spells. Moving the CONTENT to `gates/op_graph_census-pins.rows` does NOT make those numbers
+# derived -- nothing can, they are what a divergence IS -- but it makes them a FILE, so the next
+# refresh is a diff instead of a rewrite, which is the whole argument for a pins file.
+#
+# `decomp_graph_census-gate.py` and `crp_graph_census-gate.py` are the shapes copied: the gate
+# declares WHICH rows diverge, `--refresh` is the ONLY writer of the content, and `_pins()` checks
+# the two against each other rather than deriving one from the other. A row pinned and not declared
+# is a pin nothing will exclude; a row declared and not pinned is an exclusion with no content.
+DIVERGING = ("mstep", "vstep")
 
-GATE = Gate(
-    "op_graph_census-gate",
-    bend="op_graph_census.bend",
-    oracle="op_graph_census-oracle.py",
-    rows=len(ROWS),
-    compared=len(ROWS) - len(DIVERGES),
-    diverges=DIVERGES,
-    pins=[(lane, r) for lane in ("py", "bd", "bn") for r in ROWS],
-)
+# `(1.0 - self.b1)` -- optim.py:167. CPython subtracts in DOUBLE; the port in f32. The two graphs
+# are IDENTICAL except this one CONST's bits. `(1.0 - self.b2)` -- optim.py:168, the same with
+# 0.999. See the module docstring for why neither is a graph defect.
+WHY = {"mstep": "FLOAT-PRECISION, optim.py:167 `(1.0 - self.b1)`: CPython subtracts in DOUBLE, "
+                 "the port in f32. Every op, arity and src order is identical",
+       "vstep": "FLOAT-PRECISION, optim.py:168 `(1.0 - self.b2)`: the same with 0.999"}
+
+PINS = Path(__file__).resolve().parent / "op_graph_census-pins.rows"
+
+
+def _pins():
+    """`(DIVERGES, why)` -- the pins LOADED BY PATH, against the declared population.
+
+    A MISSING FILE IS REFUSED, NOT AN EMPTY DICT: `gates/decomp_graph_census-gate.py` records that
+    its predecessor read `DIVERGES` out of `gates/artifacts/`, which `gatekit` EMPTIES before every
+    run, and MEASURED it came back empty -- so the gate demanded all 28 rows agree and `gatekit`'s
+    `bad = [...] [:2]` printed only the FIRST TWO of the disagreements. Twenty-eight rows live in
+    git beside the gate, not in a directory a red run clears.
+    """
+    if not PINS.is_file():
+        return None, (f"{PINS.name} is MISSING -- a gate's declared divergences must live in git, "
+                      f"not in its own output directory. Run --refresh.")
+    pins = {}
+    for ln in PINS.read_text().splitlines():
+        if not ln.strip() or ln.startswith("#"):
+            continue
+        row, py, bd = ln.split("\t")
+        pins[row] = (py, bd)
+    if set(pins) != set(DIVERGING):
+        extra, gone = sorted(set(pins) - set(DIVERGING)), sorted(set(DIVERGING) - set(pins))
+        return None, (f"the pins file and the declared population disagree: pinned but not "
+                      f"declared {extra}, declared but not pinned {gone}")
+    return pins, ""
+
+
+# `crp_graph_census-gate.py` names the second element `WHY` because it has no `WHY` of its own to
+# shadow. This file DOES -- the per-row CLASS dictionary above -- and binding `_pins()`'s refusal
+# string to it turned `WHY.get(r, '')` into `'str'.get(...)`. So the second element is `REFUSAL`
+# here, and the collision is the reason rather than a preference.
+DIVERGES, REFUSAL = _pins()
+
+def refresh() -> int:
+    """REWRITE `op_graph_census-pins.rows` FROM A FRESH PAIR OF LANES. Its only writer.
+
+    **THE VALUES ARE MEASURED, NOT TRANSCRIBED, AND THAT IS THE WHOLE ARGUMENT FOR THE FILE.**
+    A pins file somebody typed is a second copy of the answer with none of the derivation, and the
+    brief's rule is explicit: do not create one whose values you derived yourself. So this runs
+    both lanes and writes whatever DISAGREES. `--refresh` does not go through `Gate.run()` because
+    a refresh is exactly what a run cannot do when the pins are wrong -- the point is to replace
+    them.
+
+    IT ALSO REFUSES TO PIN A ROW THAT IS NOT DECLARED. A `vstep` that stops diverging is a FIX, and
+    pinning the new agreement would hide it behind a green run; `crp_graph_census-gate.py` records
+    the same rule for its cleared `PROMOTION-FOLD` class ("a cleared defect that COMES BACK is a
+    new finding and not a stale pin").
+    """
+    root = PINS.parent.parent
+    py = subprocess.run([str(PY), str(root / "gates" / "op_graph_census-oracle.py")],
+                        capture_output=True, text=True, cwd=root)
+    bd = subprocess.run([str(BEND), str(root / "gates" / "op_graph_census.bend")],
+                        capture_output=True, text=True, cwd=root)
+    if py.returncode or bd.returncode:
+        print(f"--refresh: a lane failed (py rc={py.returncode}, bd rc={bd.returncode}); nothing "
+              f"written", file=sys.stderr)
+        return 1
+    got = {t: {l.split("=", 1)[0]: l for l in s.splitlines() if "=" in l}
+           for t, s in (("py", py.stdout), ("bd", bd.stdout))}
+    same = [r for r in ROWS if got["py"].get(r) == got["bd"].get(r)]
+    rows = [r for r in ROWS if got["py"].get(r) != got["bd"].get(r)]
+    undeclared = sorted(set(rows) - set(DIVERGING))
+    if undeclared:
+        print(f"--refresh: {len(rows)} rows disagree and {len(undeclared)} of them are NOT "
+              f"declared: {undeclared}. Declare the class before refreshing, or a new difference "
+              f"gets pinned as though it had always been expected", file=sys.stderr)
+        return 1
+    out = [
+        "# op_graph_census-pins.rows -- GENERATED by `op_graph_census-gate.py --refresh`, which is",
+        "# its ONLY writer. One TAB-separated TRIPLE per declared divergence:",
+        "# `<row>\\t<CPython's line>\\t<the port's line>`.",
+        "#",
+        f"# {len(rows)} DIVERGENCES of {len(ROWS)} ROWS, {len(same)} OF WHICH AGREE EXACTLY. Both",
+        "# sides are MEASURED from a fresh pair of lanes by the refresh that wrote this file;",
+        "# nothing here is transcribed.",
+        "#",
+        "# THE VALUES ARE BIT PATTERNS AND NO CPYTHON EXPRESSION SPELLS THEM, which is what a",
+        "# divergence IS: the two lanes differ in a float32 CONST's bits and the pin is the",
+        "# disagreement, recorded so a fix has to move it deliberately. `gates/assertlit-census.py`",
+        "# counts them as UNSOURCED, and that is the correct reading -- the file is where they can",
+        "# be DIFFED.",
+    ]
+    for r in rows:
+        out.append(f"# {r:<6} {WHY.get(r, '')}")
+        out.append(f"{r}\t{got['py'][r]}\t{got['bd'][r]}")
+    PINS.write_text("\n".join(out) + "\n")
+    print(f"--refresh: {PINS.name} rewritten -- {len(rows)} divergences, {len(same)} exact matches")
+    return 0
 
 
 def no_noop_unpinned() -> bool:
@@ -149,6 +237,30 @@ def no_noop_unpinned() -> bool:
     rows = {l.split("=", 1)[0] for l in (GATE.dir / "bd.out").read_text().splitlines()
             if "NOOP" in l}
     return rows <= set(DIVERGES)
+
+
+# BOTH DISPATCHES ARE AT MODULE SCOPE AND BOTH ARE ABOVE `Gate(...)`, and that is not a style
+# choice. `gatekit.Gate.__init__` CLEARS `gates/artifacts/op_graph_census-gate/` as it constructs
+# (`gates/gatekit.py`: "A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF
+# `run()`"), so a `--refresh` dispatched after the constructor would have its fresh lanes deleted
+# by the gate it was refreshing -- and `refresh()` is DEFINED ABOVE this block for the same
+# ordering reason. `decomp_graph_census-gate.py:494-503` has the identical shape and the identical
+# reason, which is why this file copies it rather than inventing one.
+if "--refresh" in sys.argv:
+    sys.exit(refresh())
+if DIVERGES is None:
+    print(f"op_graph_census-gate: REFUSED, NOT A VERDICT: {REFUSAL}", file=sys.stderr)
+    sys.exit(3)
+
+GATE = Gate(
+    "op_graph_census-gate",
+    bend="op_graph_census.bend",
+    oracle="op_graph_census-oracle.py",
+    rows=len(ROWS),
+    compared=len(ROWS) - len(DIVERGES),
+    diverges=DIVERGES,
+    pins=[(lane, r) for lane in ("py", "bd", "bn") for r in ROWS],
+)
 
 
 if __name__ == "__main__":
