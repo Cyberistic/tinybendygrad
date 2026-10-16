@@ -17760,6 +17760,40 @@ gatespop-root-spell [#########] 3/3  **THE ONE-SPELLING FIX, MEASURED, BUILT, AN
                                        **A REFUSAL THAT NAMES ITS OWN NEXT STEP IS NOT A DEFERRED
                                        DECISION.**
 
+sweep-population [#########] 3/3  **THE SWEEP'S POPULATION IS A NAMING SUFFIX, AND AT LEAST SIX INSTRUMENTS
+                                       THAT CALL THEMSELVES GATES ARE OUTSIDE IT.** `checks/gatesweep.py`
+                                       discovers `gates/*-gate.py`, so the question "which instruments in
+                                       `gates/` are gates" is answered by a FILE EXTENSION. MEASURED
+                                       2026-10-16 at HEAD: **`gates/*.py` in HEAD = 182**, the sweep's
+                                       population = **80**, the ones it does NOT sweep = **102**, and of
+                                       those **33 are RUNNABLE AND RETURN AN EXIT CODE** -- so the sweep
+                                       has never run them. **33 IS AN UPPER BOUND, NOT A FINDING**: most
+                                       are `*-mutate.py` / `*-oracle.py`, which a gate INVOKES, and no
+                                       static test separates "a gate that reports a verdict" from "a lane
+                                       a gate runs". **THE TIGHT CLAIM IS SMALLER AND SURVIVES THAT
+                                       CAVEAT**: at least **six** files whose OWN DOCSTRINGS call them
+                                       gates are outside the population by NAME -- `gates-pop.py`
+                                       (*"The gate OVER gates"*), `gate-surface.py` (*"THE VERDICT SURFACE
+                                       OF EVERY GATE"*), `runner.py` (*"the PRECONDITIONS a gate sweep
+                                       must satisfy"* and it WRITES THE VERDICT TABLE), plus
+                                       `retention-check.py`, `gendirs.py` and the three
+                                       `*-census.py` files, which each emit a verdict summary.
+                                       **SO THE SWEEP'S HEADLINE ("70 of 70", MEASURED 2026-10-15) IS A
+                                       COUNT OVER A PREFIX OF THE INSTRUMENTS, AND A READER TAKES IT FOR
+                                       THE TREE.** `gates/gates-pop.py:discover()` is already consulted as
+                                       a CONTROL and its population is **deliberately a different
+                                       question**, so the divergence is documented -- but the COST of the
+                                       divergence was never stated as a number, and that is the part worth
+                                       saying out loud. **THE SWEEP IS NOT WRONG AND THE INSTRUMENTS ARE
+                                       NOT MISSING; THE ONLY DEFECT IS THAT A SUFFIX IS ANSWERING A
+                                       QUESTION NOBODY WROTE DOWN.** A verdict-emitting instrument belongs
+                                       to the sweep by what it DOES, so the honest population is a
+                                       DECLARATION each instrument makes about itself -- which is what
+                                       `gates/gatekit.py`'s `VERDICT` already is for every gate that uses
+                                       it. **LANDING THAT IS NOT OWED HERE**: changing the sweep's
+                                       population would change every number it has ever published, and
+                                       the six named above are enough to size the gap.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the
