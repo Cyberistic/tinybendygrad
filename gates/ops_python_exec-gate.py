@@ -64,7 +64,7 @@ from gatekit import BEND, PY, PASS, FAIL, REFUSED                             # 
 def refuse(why):
     """exit 3 = REFUSED, and NOT a verdict -- `gates/gatekit.py`'s own vocabulary.
 
-    **THIS FUNCTION IS THE POINT OF THE CHANGE THAT INTRODUCED IT.** These three sites used
+    **THIS FUNCTION IS THE POINT OF THE CHANGE THAT INTRODUCED IT.** The first three sites used
     `sys.exit(f"...")`, and `sys.exit` with a STRING prints it and exits **1**. So an ABSENT input
     and an OVER-BUDGET refusal both announced themselves in the message -- one of them literally
     beginning `REFUSED:` -- and then exited `FAIL`. MEASURED 2026-10-16: `gatesweep.py` classifies a
@@ -72,6 +72,34 @@ def refuse(why):
     **A GATE THAT SAYS REFUSED AND EXITS FAIL IS TALLIED AS A FAILURE, AND THE TALLY IS THE THING
     THAT IS READ.** Every value here prints BEFORE the exit, so a caller that reads only the status
     still gets a named state.
+
+    AND THIS IS NOT A WEAKENING, WHICH IS THE CLAIM THAT NEEDS EVIDENCE, SO HERE IS THE EVIDENCE.
+    It is a change in the NUMBER a reader gets, not in WHETHER the run is red: 1 and 3 are both
+    non-zero, `gates/runner.py` and `checks/gatesweep.py:classify` both map 3 to `REFUSED`, and
+    nothing is skipped, retried or swallowed on the way there. What 3 buys is the ability to tell
+    "your inputs are absent" from "the executor and CPython disagree", which is the whole reason
+    `gates/gatekit.py` has five exits and not two.
+
+    THE FOUR SITES, AND THE GROUND FOR EACH. **The verdict did not come from this change; it was
+    already written down in this file's own EXIT STATUS paragraph, eighteen lines above, and the code
+    was contradicting it.** :46-49 says verbatim "3 a precondition was absent (the fixture file, the
+    executor, `bin/bend`)", which NAMES all four conditions this function now carries:
+      `fixtures()`  a fixture file that exists but parses to no records is the same class as one
+                    that does not exist, and `main()` already graded THAT REFUSED two hundred lines
+                    below at the `if not p.exists(): refuse(...)` line (:295). An argv with no
+                    gx gy gz is the same thing one parse later.
+      `lane_py()`   the oracle failing to run is `gates/gatekit.py:515-516`'s own words: "CPython
+                    did not run, so nothing was compared" -> `return REFUSED`. A DISAGREEMENT is not
+                    what an oracle that produced no rows can be.
+      `main()`      `the executor <path> is absent` is literally the absent-precondition sentence,
+                    and `main()` grades exactly that sentence REFUSED for the other three paths
+                    at :295-296 above. **ONE FILE, ONE CONDITION, TWO VERDICTS, was the defect.**
+
+    WHAT THE CENSUS SAYS ABOUT THE FOUR, because a fix with no instrument behind it is a fix that
+    rots: `gates/exitcode-census-gate.py` grades the SHAPE of what a site hands the exit, and reads
+    these four as `STR` -- "the code is CPython's to choose from the TYPE" -- against `INT`, which
+    is a number an author picked. Its `--plant` drives that classifier on synthetic sources and
+    goes red if the `STR` branch stops being `STR`.
     """
     print(f"REFUSED, NOT A VERDICT: {why}", file=sys.stderr)
     sys.exit(REFUSED)
@@ -110,9 +138,9 @@ def fixtures():
             recs.append(cur)
         elif cur is not None and ln.strip():
             cur[2].append(ln)
-    if not recs: sys.exit(f"{FIXTURES} has no records")
+    if not recs: refuse(f"{FIXTURES} has no records")
     for n, a, _ in recs:
-        if len(a) < 3: sys.exit(f"{n}: argv {a} has no gx gy gz")
+        if len(a) < 3: refuse(f"{n}: argv {a} has no gx gy gz")
     return [(n, a, "\n".join(p) + "\n") for n, a, p in recs]
 
 
@@ -201,7 +229,7 @@ def lane_bd(exe, fx, jobs):
 def lane_py():
     r = subprocess.run([str(PY), str(GEN)], capture_output=True, text=True, cwd=str(ROOT))
     if r.returncode != 0:
-        sys.exit(f"the oracle lane failed rc={r.returncode}: {r.stderr.strip()[-400:]}")
+        refuse(f"the oracle lane failed rc={r.returncode}: {r.stderr.strip()[-400:]}")
     return [l for l in r.stdout.splitlines() if "=" in l]
 
 
@@ -283,7 +311,7 @@ def main():
     sys.path.insert(0, str(ROOT))
     from tinygrad.runtime import ops_bend
     exe = ops_bend.executor()
-    if not exe.exists(): sys.exit(f"the executor {exe} is absent")
+    if not exe.exists(): refuse(f"the executor {exe} is absent")
     bd = lane_bd(exe, fx, args.jobs)
 
     pinned = set()
