@@ -16,11 +16,14 @@ different shape and is written where it happens, in `run-port-mm.sh`.
 import pathlib
 import sys
 
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
+
 p = pathlib.Path(sys.argv[1])
 s = p.read_text()
 old, new = sys.argv[2], sys.argv[3]
 n = s.count(old)
 if n != 1:
-    sys.exit(f"VACUOUS PLANT: {p} contains {n} copies of the target text, not 1:\n  {old!r}")
+    settle(REFUSED, f"VACUOUS PLANT: {p} contains {n} copies of the target text, not 1", repr(old))
 p.write_text(s.replace(old, new))
 print(f"    planted {p.name}: 1 site, {len(old)} -> {len(new)} bytes")

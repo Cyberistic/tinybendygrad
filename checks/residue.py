@@ -114,6 +114,8 @@ import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+sys.path.insert(0, HERE)
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 OUT = os.path.join(ROOT, ".agents/slop/residue")
 SLOP, RUNS = ".agents/slop", "runs"
 
@@ -513,7 +515,8 @@ def plant(root: str, fixture: str, disabled: set[str]) -> tuple[int, list[str]]:
                 continue
             parts = line.split("\t")
             if len(parts) != 5:
-                raise SystemExit(f"residue-plant.tsv: {len(parts)} columns, want 5: {line!r}")
+                settle(REFUSED, f"residue-plant.tsv: {len(parts)} columns, want 5: {line!r}",
+                       "the fixture's shape is a precondition of this plant, and no case was built")
             rel, content, expect, age_s, tracked_s = (x.strip() for x in parts)
             cases.append((rel, content, expect, int(age_s), tracked_s == "yes"))
     bad = []

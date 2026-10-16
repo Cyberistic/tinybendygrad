@@ -32,6 +32,8 @@ sys.path.insert(0, ROOT)
 from tinygrad.dtype import (fp8_to_float, float_to_bf16,  # noqa: E402
                             float_to_fp16)
 from tinygrad import dtypes  # noqa: E402
+sys.path.insert(0, HERE)
+from verdict import DEAD, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 
 FP8S = [dtypes.fp8e4m3, dtypes.fp8e5m2, dtypes.fp8e4m3fnuz,
         dtypes.fp8e5m2fnuz]
@@ -107,7 +109,8 @@ def main():
         env = dict(os.environ, FB_START=str(start), FB_COUNT=str(count))
         r = subprocess.run(cmd, env=env, capture_output=True, text=True)
         if not r.stdout.strip():
-            raise SystemExit(f"{name}: no rows\n{r.stderr}")
+            settle(DEAD, f"{name}: the lane RAN and emitted no rows; bend rc={r.returncode}",
+                   r.stderr.strip()[:300])
         got = dict(t.split("=", 1) for t in r.stdout.split())
         exp = expected(start, count)
         missing = set(exp) - set(got)

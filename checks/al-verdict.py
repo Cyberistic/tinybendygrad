@@ -28,10 +28,12 @@ import sys
 
 REPO = "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad"
 SLOP = os.path.join(REPO, ".agents/slop")
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, REPO)
 sys.path.insert(0, SLOP)
 os.environ["DEV"] = "CPU"
 
+from verdict import DEAD, FAIL, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 import graphcmp as G  # noqa: E402
 
 G.load_tinygrad()
@@ -72,7 +74,7 @@ def bend_rows(path: str) -> list[str]:
     if ln and not ln.startswith("#") and "available" not in ln:
       rows.append(ln)
   if not rows:
-    raise SystemExit(f"{path}: 0 rows -- an instrument that produced nothing is not a pass")
+    settle(DEAD, f"{path}: 0 rows -- an instrument that produced nothing is not a pass")
   # A row is `i:iN nsrc:NS op:NAME dtype:X shape:X src:N ARG`, so it always carries at
   # least four colons and a `src:` field. A `.bend` SOURCE file passes the emptiness test
   # above and then dies inside `unchunks` with `substring not found` -- MEASURED, and it
@@ -97,8 +99,8 @@ def bend_rows(path: str) -> list[str]:
     except Exception:
       bad.append(r)
   if bad:
-    raise SystemExit(f"{path}: {len(bad)} of {len(rows)} line(s) are not rows, first: {bad[0][:70]!r}"
-                     f" -- pass the probe's OUTPUT, not the probe.")
+    settle(FAIL, f"{path}: {len(bad)} of {len(rows)} line(s) are not rows, first: {bad[0][:70]!r}"
+                 " -- pass the probe's OUTPUT, not the probe.")
   return rows
 
 

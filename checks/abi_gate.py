@@ -84,6 +84,8 @@ for _p in (BEND, JS_LANE, DECL):
 sys.path.insert(0, str(REPO))
 from tinygrad import dtype as td            # noqa: E402
 from tinygrad.helpers import floordiv       # noqa: E402
+sys.path.insert(0, str(HERE))
+from verdict import DEAD, FAIL, REFUSED, settle  # noqa: E402  (gates/gatekit.py's five, BY PATH)
 
 # ---------------------------------------------------------------- the probe.
 # One program, twelve rows, keyed by the ABI id whose convention each row
@@ -354,8 +356,8 @@ def patch(work: pathlib.Path, edits) -> None:
             got = text.count(old)
             want = got if expect == "+" else expect
             if got < 1 or (expect != "+" and got != expect):
-                sys.exit(f"anchor: expected {expect} site(s), found {got}, in {lane}: "
-                         f"{old.splitlines()[0][:70]!r}")
+                settle(REFUSED, f"anchor: expected {expect} site(s), found {got}, in {lane}",
+                       old.splitlines()[0][:70])
             text = text.replace(old, new)
             print(f"    patched {lane}:{got:>2} site(s)  {old.splitlines()[0][:56]!r}")
         (work / rel).write_text(text)
@@ -373,12 +375,18 @@ def drive(work: pathlib.Path, target: str) -> dict[str, str]:
     r = subprocess.run([str(BEND), str(bend), "-o", str(out)],
                        capture_output=True, text=True)
     if r.returncode != 0 or not out.exists():
-        sys.exit(f"bend failed for {target}: {r.stdout}\n{r.stderr}")
+        # `gates/gatekit.py:591-597` SEPARATES THESE TWO: a `bend -o` that exited non-zero is
+        # "the compiled lane's precondition, not its answer" (:595 REFUSED), while a `bend` that
+        # exited 0 and wrote no backend RAN AND EMITTED NOTHING, which is that file's :590 DEAD.
+        settle(DEAD if not r.returncode else REFUSED,
+               f"bend emitted no backend for {target}; bend rc={r.returncode}",
+               (r.stdout + r.stderr).strip()[:600])
     if target == "c":
         k = subprocess.run(["cc", "-O1", "-w", "-o", str(work / "abi_probe.gen"), str(out)],
                            capture_output=True, text=True)
         if k.returncode != 0:
-            sys.exit(f"cc failed: {k.stderr}")
+            settle(REFUSED, f"cc failed for the {target} lane, rc={k.returncode}",
+                   k.stderr.strip()[-600:])
     p = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
     rows = {}
     for line in p.stdout.splitlines():
@@ -392,8 +400,12 @@ def drive(work: pathlib.Path, target: str) -> dict[str, str]:
     # CPython on 12/12` and 12 FAILs downstream.  node's exit status is the check
     # that was missing, and it costs one line.
     if p.returncode != 0 or len(rows) != len(ORACLE):
-        sys.exit(f"{target} lane printed {len(rows)}/{len(ORACLE)} rows "
-                 f"(rc={p.returncode}):\n{p.stderr[:600]}")
+        # `gates/gatekit.py:618` is the rule in one line -- `DEAD if n == 0 else FAIL` -- and
+        # `checks/gatesweep.py:classify:126` adds the crash: a lane that raised is DEAD, because
+        # it demonstrably RAN and demonstrably did not answer.
+        settle(DEAD if p.returncode != 0 or not rows else FAIL,
+               f"{target} lane printed {len(rows)}/{len(ORACLE)} rows, lane rc={p.returncode}",
+               p.stderr.strip()[:600])
     return rows
 
 
@@ -629,7 +641,8 @@ def main() -> None:
                                 "-o", str(gendir / f"probe.{ext}")],
                                capture_output=True, text=True)
             if r.returncode != 0:
-                sys.exit(f"bend failed emitting probe.{ext}: {r.stdout}\n{r.stderr}")
+                settle(REFUSED, f"bend failed emitting probe.{ext}, rc={r.returncode}",
+                       (r.stdout + r.stderr).strip()[:600])
         for a in decl["abi"]:
             for side, entries in a["site"].items():
                 for e in entries:

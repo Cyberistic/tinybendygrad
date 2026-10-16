@@ -88,6 +88,8 @@ if not (SLOP / "emit-f64.bend").is_file():
            "without it.")
 
 sys.path.insert(0, str(ROOT))
+sys.path.insert(0, str(ROOT / "checks"))
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 
 import numpy as np
 from tinygrad.renderer.cstyle import ClangRenderer
@@ -205,11 +207,11 @@ def cpython_exec(body, a, b, d):
 def check_fixture(work):
   """(4) THE CONSTANT, re-derived.  Refuses rather than warns."""
   if repr(DELTA) != DELTA_TEXT:
-    sys.exit(f"FIXTURE CONSTANT MOVED: repr(2.0**-40) is {repr(DELTA)} but "
-             f"emit-f64.bend says {DELTA_TEXT!r}. Refusing to emit an oracle.")
+    settle(REFUSED, f"FIXTURE CONSTANT MOVED: repr(2.0**-40) is {repr(DELTA)} but "
+                    f"emit-f64.bend says {DELTA_TEXT!r}. Refusing to emit an oracle.")
   src = (SLOP / "emit-f64.bend").read_text()
   if DELTA_TEXT not in src:
-    sys.exit(f"FIXTURE CONSTANT ABSENT: {DELTA_TEXT!r} is not in emit-f64.bend.")
+    settle(REFUSED, f"FIXTURE CONSTANT ABSENT: {DELTA_TEXT!r} is not in emit-f64.bend.")
   return src
 
 

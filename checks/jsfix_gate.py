@@ -51,6 +51,8 @@ HERE = pathlib.Path(__file__).resolve().parent
 REPO = HERE.parents[0]
 BEND = REPO / "bin" / "bend"
 JS_LANE = REPO / "tinybendygrad" / "runtime" / "dtype.js"
+sys.path.insert(0, str(HERE))
+from verdict import DEAD, REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 
 
 def refuse(*why: str) -> None:
@@ -193,8 +195,8 @@ def patch(text: str, edits) -> str:
     for old, new, expect in edits:
         got = text.count(old)
         if got != expect:
-            sys.exit(f"anchor: expected {expect} site(s), found {got}: "
-                     f"{old.splitlines()[0][:70]!r}")
+            settle(REFUSED, f"anchor: expected {expect} site(s), found {got}",
+                   old.splitlines()[0][:70])
         text = text.replace(old, new)
     return text
 
@@ -348,12 +350,17 @@ def run_cc_divergence(work: pathlib.Path) -> dict[str, str]:
     r = subprocess.run([str(BEND), str(work / "div.bend"), "-o", str(out)],
                        capture_output=True, text=True)
     if not out.exists():
-        sys.exit(f"no backend emitted for the C ABI-6 rows: rc={r.returncode}\n"
-                 f"{r.stdout}\n{r.stderr}")
+        # `gates/gatekit.py:591-597` SEPARATES THESE TWO: a `bend -o` that exited non-zero is
+        # "the compiled lane's precondition, not its answer" (:595 REFUSED), while a `bend` that
+        # exited 0 and wrote no backend RAN AND EMITTED NOTHING, which is that file's :590 DEAD.
+        settle(DEAD if not r.returncode else REFUSED,
+               f"no backend emitted for the C ABI-6 rows; bend rc={r.returncode}",
+               (r.stdout + r.stderr).strip()[:600])
     k = subprocess.run(["cc", "-O1", "-w", "-o", str(work / "div.gen"), str(out)],
                        capture_output=True, text=True)
     if k.returncode != 0:
-        sys.exit(f"cc failed for the ABI-6 rows: {k.stderr}")
+        settle(REFUSED, f"cc failed for the ABI-6 rows, rc={k.returncode}",
+               k.stderr.strip()[-600:])
     p = subprocess.run([str(work / "div.gen")], capture_output=True, text=True,
                        timeout=300)
     return {m[1]: m[2] for m in map(DIV.match, p.stdout.splitlines()) if m}
@@ -384,7 +391,9 @@ def run(arm: str, work: pathlib.Path) -> tuple[dict[str, str], dict[str, str], i
         # The gate is on the ROWS.  No backend and no rows is a dead lane, never a
         # green one, and bend's rc on its own decides nothing.
         if not out.exists():
-            sys.exit(f"no backend emitted ({arm}): rc={brc}\n{r.stdout}\n{r.stderr}")
+            settle(DEAD if not brc else REFUSED,
+                   f"no backend emitted for arm {arm}; bend rc={brc}",
+                   (r.stdout + r.stderr).strip()[:600])
         p = subprocess.run(["node", str(out)], capture_output=True, text=True,
                            timeout=300)
         for line in p.stdout.splitlines():
@@ -395,10 +404,14 @@ def run(arm: str, work: pathlib.Path) -> tuple[dict[str, str], dict[str, str], i
     out = work / "div.bend.js"
     if out.exists():
         out.unlink()
-    subprocess.run([str(BEND), str(bend), "-o", str(out)], capture_output=True,
-                   text=True)
+    q = subprocess.run([str(BEND), str(bend), "-o", str(out)], capture_output=True,
+                       text=True)
     if not out.exists():
-        sys.exit(f"no backend emitted for the ABI-6 rows ({arm})")
+        # The rc was DISCARDED here, so this site could not tell the two conditions apart -- which
+        # is why it read `== DEAD` unconditionally where its twin 15 lines up carries a ternary.
+        settle(DEAD if not q.returncode else REFUSED,
+               f"no backend emitted for the ABI-6 rows ({arm}); bend rc={q.returncode}",
+               (q.stdout + q.stderr).strip()[:600])
     p = subprocess.run(["node", str(out)], capture_output=True, text=True, timeout=300)
     for line in p.stdout.splitlines():
         m = DIV.match(line)

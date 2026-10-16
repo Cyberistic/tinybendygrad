@@ -102,9 +102,12 @@ def refuse(*why: str) -> None:
     skipped the comparison in silence and exited 0.  Here the same shape raised
     `FileNotFoundError`, which is worse than exit 0 -- an exception is not a red
     gate, it has no denominator and no disagreement, so it is excluded from every
-    count by being uncategorisable.  A refusal is at least a number."""
-    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    sys.exit(3)
+    count by being uncategorisable.  A refusal is at least a number.  The code is
+    `checks/verdict.py`'s, loaded BY PATH inside the function so a missing
+    `gates/gatekit.py` cannot stop this file from refusing in words."""
+    sys.path.insert(0, str(HERE))
+    from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
+    settle(REFUSED, *why)
 
 
 # `parents[N]` is a constant that silently expires when the file moves, and a move
@@ -117,6 +120,9 @@ if not (REPO / "tinybendygrad" / "runtime" / "dtype.js").is_file():
 for _p in (BEND, BEND_LANE, *(REPO / g for g in OTHER_GATES)):
     if not _p.exists():
         refuse(f"input absent: {_p.relative_to(REPO)}")
+
+sys.path.insert(0, str(HERE))
+from verdict import DEAD, FAIL, REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py)
 
 # ------------------------------------------------------------------ the sites.
 # (as shipped, as re-broken).  Anchors must occur exactly once or this exits: an
@@ -295,8 +301,8 @@ def norm(s: str) -> str:
 def swap(text: str, old: str, new: str) -> str:
     got = text.count(old)
     if got != 1:
-        sys.exit(f"anchor: expected 1 site, found {got} -- dtype.js moved:\n"
-                 f"{old.splitlines()[0]}")
+        settle(REFUSED, f"anchor: expected 1 site, found {got} -- dtype.js moved",
+               old.splitlines()[0][:70])
     return text.replace(old, new)
 
 
@@ -315,7 +321,12 @@ def run(work: pathlib.Path, cs: list[Row], label: str) -> dict[str, str]:
     r = subprocess.run([str(BEND), str(bend), "-o", str(out)],
                        capture_output=True, text=True)
     if not out.exists():                      # a dead lane is never a green one
-        sys.exit(f"no backend for arm {label}: rc={r.returncode}\n{r.stdout}\n{r.stderr}")
+        # TWO CONDITIONS, AND `gates/gatekit.py:591-597` SEPARATES THEM: a `bend -o` that exited
+        # non-zero is "the compiled lane's precondition, not its answer" (:595 REFUSED), while a
+        # `bend` that exited 0 and wrote no backend RAN AND EMITTED NOTHING, which is :590 DEAD.
+        settle(DEAD if not r.returncode else REFUSED,
+               f"no backend for arm {label}; bend rc={r.returncode}",
+               (r.stdout + r.stderr).strip()[:600])
     p = subprocess.run(["node", str(out)], capture_output=True, text=True, timeout=300)
     rows = {m[1]: m[2].strip() for m in map(ROW.match, p.stdout.splitlines()) if m}
     # A lane that printed nothing is a DEAD lane, not a green one, and the check
@@ -324,8 +335,12 @@ def run(work: pathlib.Path, cs: list[Row], label: str) -> dict[str, str]:
     # `shipped 57/98`, because this gate measures a PATCHED COPY and so never saw
     # the bytes the tree actually had.
     if p.returncode != 0 or len(rows) != len(cs):
-        sys.exit(f"arm {label}: node printed {len(rows)}/{len(cs)} rows "
-                 f"(rc={p.returncode})\n{p.stderr[:600]}")
+        # `gates/gatekit.py:618` is the rule in one line -- `DEAD if n == 0 else FAIL` -- and
+        # `checks/gatesweep.py:classify:126` adds the crash: a lane that raised is DEAD, because
+        # it demonstrably RAN and demonstrably did not answer.
+        settle(DEAD if p.returncode != 0 or not rows else FAIL,
+               f"arm {label}: node printed {len(rows)}/{len(cs)} rows, node rc={p.returncode}",
+               p.stderr.strip()[:600])
     return rows
 
 
@@ -350,7 +365,9 @@ def main() -> None:
             # as disagreeing with CPython on rows it got RIGHT.  A model that
             # cannot answer is not a lane that is wrong, and when the two disagree
             # the model is the first suspect.
-            sys.exit(f"oracle raised on {r.name}: {type(e).__name__}: {e}")
+            settle(REFUSED, f"the ORACLE could not answer for {r.name}: "
+                            f"{type(e).__name__}: {e} -- a model that cannot answer is not a lane "
+                            "that is wrong")
         oracle[r.name] = norm(str(v)) if isf[r.name] else str(int(v))
 
     pristine = JS_LANE.read_text()

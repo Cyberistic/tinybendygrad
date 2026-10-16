@@ -80,6 +80,8 @@ for _p in (JS_LANE, HERE / "drive.mjs"):
 
 sys.path.insert(0, str(REPO))
 from tinygrad import dtype as td  # noqa: E402
+sys.path.insert(0, str(HERE))
+from verdict import DEAD, FAIL, settle  # noqa: E402  (the five, from gates/gatekit.py)
 
 KINDS = [td.dtypes.fp8e4m3, td.dtypes.fp8e5m2, td.dtypes.fp8e4m3fnuz,
          td.dtypes.fp8e5m2fnuz]
@@ -177,7 +179,7 @@ def worklist(wide: int = WIDE) -> list[list]:
   names = [r[3] for r in rows]
   if len(set(names)) != len(names):
     dup = sorted({n for n in names if names.count(n) > 1})
-    sys.exit(f"gate fixture: {len(dup)} duplicate row names, first {dup[:4]}")
+    settle(FAIL, f"gate fixture: {len(dup)} duplicate row names, first {dup[:4]}")
   return rows
 
 
@@ -200,21 +202,27 @@ def run(tree: pathlib.Path, work: pathlib.Path, rows: list[list]) -> tuple[dict,
   p = subprocess.run(["node", str(HERE / "drive.mjs"), str(tree), str(work)],
                      capture_output=True, text=True, timeout=900)
   if p.returncode != 0:
-    sys.exit(f"node failed rc={p.returncode}\n{p.stdout[-3000:]}\n{p.stderr[-3000:]}")
+    # The DRIVER is this gate's instrument: `checks/gatesweep.py:classify:126` and
+    # `.agents/slop/hooks/run.py:112` both call a process that ran and emitted nothing DEAD rather
+    # than a wrong answer, and here it emitted nothing at all -- not one `F32ROW` -- so the gate
+    # measured no lane and CANNOT answer whether dtype.js agrees with CPython.
+    settle(DEAD, f"the node driver failed, rc={p.returncode}, and emitted "
+                 f"{len(p.stdout.splitlines())} stdout line(s)",
+           p.stderr.strip()[-1000:])
   # The driver appends one line to the live bytes to reach a module-local fn.
   # Assert that here, so "we drove the tree" is a checked claim.
   append = re.search(r'^APPEND (".*")$', p.stdout, re.M).group(1)
   probe = (work / "dtype.probe.mjs").read_text()
   live = tree.read_text()
   if probe != live + json.loads(append):
-    sys.exit("drive.mjs altered dtype.js by more than its declared APPEND")
+    settle(FAIL, "drive.mjs altered dtype.js by more than its declared APPEND")
   got, src_md5 = {}, re.search(r"^SRC_MD5 (\w+)$", p.stdout, re.M).group(1)
   # A census with a zero denominator has found nothing to look at. All TEN of
   # dtype.js's `io_eff` registrations must have run, or the file was never
   # evaluated and every row below would be an absent row.
   reg = re.search(r"^REGISTERED (.*)$", p.stdout, re.M).group(1).split()
   if len(reg) != 10:
-    sys.exit(f"drive.mjs registered {len(reg)} of dtype.js's 10 seams: {reg}")
+    settle(FAIL, f"drive.mjs registered {len(reg)} of dtype.js's 10 seams: {reg}")
   for line in p.stdout.splitlines():
     m = ROW.match(line)
     if m:

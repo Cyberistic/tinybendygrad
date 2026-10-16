@@ -37,6 +37,8 @@ from __future__ import annotations
 import argparse, base64, os, re, shutil, subprocess, sys
 from pathlib import Path
 
+HERE = Path(__file__).resolve().parent
+
 # `parents[1]` IS the repo root, and the depth is PROVED by `refuse()` below, not assumed.
 # `Path(__file__).resolve()` walks from the FILE, so `parents[0]` is `checks/`.  `parents[3]` was
 # correct at this file's original home `.agents/slop/clangshim/`; `3f0e70ff1` moved it to `checks/`,
@@ -66,11 +68,12 @@ def refuse(*why: str) -> None:
 
     Placed BEFORE `FIXH.read_text()`, because that read is at MODULE level and the stale root made
     it raise `FileNotFoundError` — and an assertion DOWNSTREAM of what it asserts cannot turn an
-    exception into a refusal."""
+    exception into a refusal.  The import of the code is INSIDE the function for the same reason:
+    `checks/verdict.py` must not be able to stop this file from refusing in words."""
     sys.path.insert(0, str(REPO / "gates"))
-    from gatekit import REFUSED  # loaded BY PATH; gates/ is not a package
-    print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-    sys.exit(REFUSED)
+    sys.path.insert(0, str(HERE))
+    from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
+    settle(REFUSED, *why)
 
 
 # THREE TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a traceback: the
@@ -84,6 +87,9 @@ for _p in (BEND, PORT, ORACLE, CFFI, FIXH):
         refuse(f"input absent: {_p}  (swept by 371cc64c9; recoverable from git at "
                f"371cc64c9^:.agents/slop/clangshim/{_p.name}.  Restoring a swept instrument is "
                "not this file's call.)  This gate cannot produce a denominator without it.")
+
+sys.path.insert(0, str(HERE))
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 
 C_SPELL_LIVE = re.search(r"#define CL_FIELD_SPELL\s+(.*)", FIXH.read_text()).group(1).strip()
 assert LIVE_IMPORT.split('"')[1] in PORT.read_text(), "the live libclang.bend does not carry the FFI import"
@@ -144,7 +150,7 @@ def fixture_bytes(path: Path = FIXH) -> bytes:
     """CL_FIXTURE_SRC, read out of the C header the port actually compiles."""
     m = re.search(r'CL_FIXTURE_SRC\[\] =((?:\s*"(?:[^"\\]|\\.)*")+);', path.read_text())
     if not m:
-        raise SystemExit(f"{path} has no CL_FIXTURE_SRC")
+        settle(REFUSED, f"input absent its declared shape: {path} has no CL_FIXTURE_SRC")
     parts = re.findall(r'"((?:[^"\\]|\\.)*)"', m.group(1))
     return "".join(p.encode().decode("unicode_escape") for p in parts).encode()
 
@@ -152,7 +158,7 @@ def fixture_bytes(path: Path = FIXH) -> bytes:
 def oracle_src() -> bytes:
     m = re.search(r'SRC = b"""(.*?)"""', ORACLE.read_text(), re.S)
     if not m:
-        raise SystemExit("oracle.py has no SRC")
+        settle(REFUSED, f"input absent its declared shape: {ORACLE.name} has no SRC")
     return m.group(1).encode()
 
 

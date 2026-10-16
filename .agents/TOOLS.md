@@ -30,6 +30,7 @@ nobody can run — check the `INSTRUMENT` rows of
 
 | tool | why |
 | --- | --- |
+| `checks/verdict.py` | **the exit vocabulary, loaded BY PATH from `gates/gatekit.py`, and never re-spelled.** `settle(code, *why)` prints `code`'s sentence on stderr — `== REFUSED, NOT A VERDICT: <file>.py: <why>` (the string `gates/gates-pop.py:561`'s `REFUSE` regex RECOGNISES as the marker of a gate that can refuse) or `== DEAD: <file>.py: <why>` (`gates/citations-census-gate.py:610,630`, glossed by `gates/gatekit.py:55`) — then `sys.exit(code)`. It exists because `sys.exit(<sentence>)` PRINTS the sentence and exits **1**, so `gates/exitcode-census-gate.py` graded 33 sites under `checks/` the `STR` shape and a lane that RAN AND EMITTED NOTHING was indistinguishable from a disagreement. Use `settle(DEAD if not r.returncode else REFUSED, ...)`, which is `gates/gatekit.py:591-597` in one expression. |
 | `./bin/bend FILE` | **the only test mechanism for the Bend code.** A test is a `.bend` file whose trailing `#|` lines are the output its run must print — Bend's own convention, used by `vendor/bend/tests/`. No separate framework. |
 | `./bin/bend PROOF.bend` | the laws gate: prints `ALL PROOFS CHECK` or `SOME PROOFS FAIL`. |
 | `./bin/bend FILE -o OUT && ./OUT` | the native lane. The interpreted lane is for laws and small programs; anything with real work is compiled. |

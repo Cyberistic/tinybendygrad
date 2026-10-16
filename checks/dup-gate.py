@@ -69,6 +69,8 @@ if not (REPO / "pyproject.toml").is_file() or not (REPO / "tinybendygrad").is_di
   refuse(f"REPO does not hold the tree: {REPO} is not the repo root "
          f"(is `parents[N]` stale after a move?)")
 SLOP = REPO / ".agents" / "slop"
+sys.path.insert(0, str(HERE))
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 _EQ = SLOP / "eq" / "eq-census2.py"
 for _p in (SLOP / "rebase-gate.py", _EQ):
   if not _p.is_file():
@@ -201,7 +203,8 @@ def selftest(port_text, oracle_text, pname, oname):
     for i, l in enumerate(arr):
       if "=" in l and l.split("=", 1)[0].strip() == name:
         return i
-    raise SystemExit(f"selftest: no row named {name!r} on this side")
+    settle(REFUSED, f"selftest: no row named {name!r} on this side -- the plant cannot locate its "
+                    "target, so this cell produced no answer")
 
   def ofirst(name):
     return idx_of(name, olines)

@@ -33,6 +33,8 @@ import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
+from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 
 # THE DEVICE IS A DECLARED PRECONDITION OF THIS FIGURE, AND THIS IS WHERE IT IS ENFORCED.
 #
@@ -67,7 +69,7 @@ def pinned_dev() -> str:
     """`checks/devpin.py`'s `PINNED_DEV` -- the one declaration of the device."""
     spec = importlib.util.spec_from_file_location("devpin", ROOT / "checks/devpin.py")
     if spec is None or spec.loader is None:                    # `ty`: both are Optional, and
-        raise SystemExit("checks/devpin.py has no importable spec -- the pin is unreadable")
+        settle(REFUSED, "checks/devpin.py has no importable spec -- the pin is unreadable")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod.PINNED_DEV
@@ -88,7 +90,7 @@ def differ_module():
     """
     spec = importlib.util.spec_from_file_location("differ_pins", ROOT / "checks/differ.py")
     if spec is None or spec.loader is None:                    # `ty`: both are Optional, and
-        raise SystemExit("checks/differ.py has no importable spec -- the pins are unreadable")
+        settle(REFUSED, "checks/differ.py has no importable spec -- the pins are unreadable")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

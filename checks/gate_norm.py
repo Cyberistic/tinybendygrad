@@ -56,9 +56,12 @@ def refuse(*why: str) -> None:
 
   Placed BEFORE the `sys.path` manipulation and before ANY import, because the wrong root made
   `import canon` raise `ModuleNotFoundError` FIRST, and an assertion DOWNSTREAM of what it
-  asserts cannot turn an exception into a refusal."""
-  print("== REFUSED, NOT A VERDICT: " + "; ".join(why), file=sys.stderr)
-  sys.exit(3)
+  asserts cannot turn an exception into a refusal.  The import of the code is INSIDE the function
+  for the same reason: a `checks/verdict.py` that could not be loaded must not stop this file from
+  refusing in words, and `checks/verdict.py` spells that sentence for every other caller."""
+  sys.path.insert(0, str(HERE))
+  from verdict import REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
+  settle(REFUSED, *why)
 
 
 # TWO TRACKED MARKERS, so a FURTHER relocation is a refusal rather than a third exception: the
@@ -80,6 +83,8 @@ from tinygrad import dtype as td  # noqa: E402
 BEND = REPO / "bin" / "bend"
 if not BEND.is_file():
   refuse(f"input absent: {BEND}")
+sys.path.insert(0, str(HERE))
+from verdict import DEAD, REFUSED, settle  # noqa: E402  (the five, from gates/gatekit.py BY PATH)
 ROW = re.compile(r"^(\S+)\s+show=(\S+)\s+bits=(\d+)$")
 
 F32 = "f32"
@@ -115,16 +120,21 @@ def emit(work: pathlib.Path, lane: str) -> dict[str, tuple[str, int]]:
     r = subprocess.run([str(BEND), str(HERE / "gate_norm.bend"), "-o", str(js)],
                        capture_output=True, text=True, timeout=900)
     if not js.exists():
-        sys.exit(f"bend -o emitted no JS:\n{r.stdout}\n{r.stderr}")
+        # TWO CONDITIONS, AND `gates/gatekit.py:591-597` SEPARATES THEM: `bend -o` exiting non-zero
+        # is "the compiled lane's precondition, not its answer" (:595 REFUSED), while a `bend` that
+        # exited 0 and wrote nothing RAN AND EMITTED NOTHING, which is that file's :590 DEAD.
+        settle(DEAD if not r.returncode else REFUSED,
+               f"bend -o emitted no JS; bend rc={r.returncode}", r.stderr.strip()[:400])
     if lane == "c":
         k = subprocess.run([str(BEND), str(HERE / "gate_norm.bend"), "-o", str(c)],
                            capture_output=True, text=True, timeout=900)
         if not c.exists():
-            sys.exit(f"bend -o emitted no C:\n{k.stdout}\n{k.stderr}")
+            settle(DEAD if not k.returncode else REFUSED,
+                   f"bend -o emitted no C; bend rc={k.returncode}", k.stderr.strip()[:400])
         k = subprocess.run(["cc", "-O1", "-w", "-o", str(work / "gn_c"), str(c)],
                            capture_output=True, text=True, timeout=900)
         if k.returncode != 0:
-            sys.exit(f"cc failed:\n{k.stderr[-800:]}")
+            settle(REFUSED, f"cc failed for the C lane, rc={k.returncode}", k.stderr.strip()[-800:])
         cmd = [str(work / "gn_c")]
     else:
         cmd = ["node", str(js)]
