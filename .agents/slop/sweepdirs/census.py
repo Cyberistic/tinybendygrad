@@ -30,12 +30,44 @@ def load(name: str, rel: str):
 
 SW = load("sweep", "checks/sweep.py")
 CODE_EXT = (".py", ".sh", ".mjs", ".js", ".bend")
+# SPELLED ONCE. `SLOP` is `sweep.py`'s own prefix (consumed, not copied, as `slop_file` below
+# already does) because a census of `.agents/slop/<dir>` that hardcodes the prefix is a second copy
+# of a list with no generator.
+PY = ".py"
+NON_PY = tuple(e for e in CODE_EXT if e != PY)
+SLOP = SW.SLOP_PREFIX + "/"
 
 
-def tracked(*pathspecs: str) -> list[str]:
-    r = subprocess.run(["git", "ls-files", "-z", "--", *pathspecs], cwd=ROOT,
-                       capture_output=True, text=True)
-    return sorted(p for p in r.stdout.split("\0") if p and os.path.lexists(os.path.join(ROOT, p)))
+def committed_paths() -> set[str] | None:
+    """THE COMMIT TREE, unfiltered -- or `None` if git did not answer.
+
+    `git ls-tree -r -z --name-only HEAD`, which is `checks/slop-declare.py:148` IN INTENT: one
+    population read out of `.git/objects`, so no index reset can reach it. `--no-optional-locks` so
+    asking the question never writes the index either.
+
+    **THE PATHSPEC IS ABSENT, AND NOT FOR STYLE.** MEASURED: `git ls-tree -r --name-only HEAD --
+    '*.py'` prints **0 rows and exits 0**, and `:(glob)` is `fatal: pathspec magic not supported by
+    this command: 'glob'`. `ls-tree` has no pathspec vocabulary at all, so a pathspec here is a
+    **SILENT ZERO** -- the one failure this census cannot be allowed to have, because `writes 0
+    reads 0` reads as "nothing in this tree touches .agents/slop". `None` is returned instead of
+    `set()` so the caller can tell the two apart, as `slop-declare.py:142` does.
+
+    **AND WHAT IT REPLACES IS NOT A TIDY-UP.** `git ls-files` names the INDEX, and `jj` COLOCATES
+    INTO GIT'S INDEX ON EVERY SNAPSHOT, arming an INTENT-TO-ADD PLACEHOLDER -- the empty blob -- for
+    every untracked file. MEASURED on this tree: **1 096** placeholders carrying
+    `e69de29bb2d1d6434b8b29ae775ad8c2e48c5391` (`git hash-object -t blob /dev/null`), **190** of
+    them ending `.py`, of which **515 tree-wide hold real non-empty content ON DISK**. So the
+    population answered **1 987** `.py` where the tree holds **1 835**: **154 files that are not
+    committed, and 2 committed files it never saw** -- both of them GATES, `gates/upstream-pow-
+    dtype-gate.py` and `gates/upstream-promo-lattice-gate.py`.
+
+    **`--with-tree=HEAD` IS NOT THE FIX AND WAS MEASURED**: it answers **1 989** and every one of
+    the **190** placeholders survives, because it PRETENDS the tree's paths are IN the index. It is
+    a UNION of the two snapshots, which is the defect with a `--with-tree` on it.
+    """
+    r = subprocess.run(["git", "--no-optional-locks", "ls-tree", "-r", "-z", "--name-only", "HEAD"],
+                       cwd=ROOT, capture_output=True, text=True)
+    return None if r.returncode else {p for p in r.stdout.split("\0") if p}
 
 
 def census(files: list[str], namer=SW.slop_dir) -> tuple[set[str], set[str]]:
@@ -66,12 +98,12 @@ def slop_file(value: str) -> str | None:
     ownership claim about `residue/000-the-residue.md` becomes a claim about all of `residue/`.
     Every component must be nameable -- one opaque component makes the whole path opaque.
     """
-    if SW.SLOP_PREFIX + "/" not in value:
+    if SLOP not in value:
         return None
-    tail = value.split(SW.SLOP_PREFIX + "/", 1)[1].strip("/")
+    tail = value.split(SLOP, 1)[1].strip("/")
     if not tail or SW.UNKNOWN_MARK in tail or "." not in tail.rsplit("/", 1)[-1]:
         return None
-    return SW.SLOP_PREFIX + "/" + tail
+    return SLOP + tail
 
 
 REDIRECT = re.compile(r">>?\s*['\"]?|(?:\btee\b|\bcp\b|\bmv\b|\bcat\b)\s+.*?['\"]?(?=[^\s'\"]*\.agents/slop/)")
@@ -96,17 +128,40 @@ def shell_belt(files: list[str]) -> set[str]:
 
 
 def scope(name: str) -> list[str]:
+    """The four populations, each a PREDICATE over ONE tree read.
+
+    `code` is a DISK WALK over `checks/`+`gates/` that never consults git, so it is left exactly
+    as it was. The other three were `git ls-files` PATHSPECS, and a pathspec is not available
+    (`committed_paths`, above), so each is spelled here as the predicate git's pathspec turned out to
+    evaluate to. **THOSE THREE EQUIVALENCES ARE MEASURED AGAINST GIT, NOT ASSUMED** --
+    `git ls-files -- '*.py'` ≡ `endswith(".py")` **SAME**; `:(glob).agents/slop/**/*.py` ∪
+    `.agents/slop/*.py` ≡ `startswith(".agents/slop/") and endswith(".py")` **SAME**; the four
+    `*.sh|*.mjs|*.js|*.bend` ≡ `endswith(CODE_EXT - {".py"})` **SAME** -- each `diff`ed against the
+    index it replaces, so the only thing this change moves is WHICH SNAPSHOT answers.
+
+    `endswith` over a TUPLE is the `nonpy` case, so no per-extension branch exists to rot.
+
+    **THE `os.path.lexists` FILTER IS GONE, AND ITS ABSENCE WAS MEASURED, NOT ASSUMED**: a tree
+    path absent from the worktree is what `census()`'s `except OSError` already swallowed, so
+    dropping the filter could only ever have ADDED rows -- MEASURED **0** in all three scopes
+    (`tree` 1 835, `agents` 760, `nonpy` 607, absent 0/0/0). Membership now comes from ONE snapshot
+    and the readers keep tolerating absence.
+    """
+    paths = committed_paths()
+    if paths is None:
+        raise SystemExit("`git ls-tree -r HEAD` did not answer, so the population is UNKNOWN, not "
+                         "empty: printing `0 instruments` off a broken walk reads as a clean tree")
     if name == "code":            # sweep._instrument_files' own population: disk, checks/ + gates/
         return [os.path.relpath(os.path.join(dp, f), ROOT)
                 for base in ("checks", "gates")
                 for dp, _d, fs in os.walk(os.path.join(ROOT, base))
                 for f in sorted(fs) if f.endswith(".py")]
     if name == "tree":
-        return tracked("*.py")
+        return sorted(p for p in paths if p.endswith(PY))
     if name == "agents":
-        return tracked(":(glob).agents/slop/**/*.py") + tracked(".agents/slop/*.py")
+        return sorted(p for p in paths if p.startswith(SLOP) and p.endswith(PY))
     if name == "nonpy":           # the regex belt's population: every OTHER code file
-        return tracked(*(f"*{e}" for e in CODE_EXT if e != ".py"))
+        return sorted(p for p in paths if p.endswith(NON_PY))
     raise SystemExit(f"unknown scope {name}")
 
 
