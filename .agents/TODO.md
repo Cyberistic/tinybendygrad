@@ -17262,6 +17262,49 @@ onespelling [##........] 1/3      THE CLASS AS AN INSTRUMENT, WITH A CONTROL THA
                                        whether it is wrong depends on a subject the tree never states.
                                        `.agents/slop/onespelling/`.
 
+onespelling-precision [##........] 2/3  **A CENSUS OF 254 FINDINGS NOBODY HAD READ IS NOT A MEASUREMENT,
+                                       AND WHAT IT TAUGHT IS ABOUT INSTRUMENT DESIGN, NOT ABOUT THE TREE.**
+                                       `.agents/slop/onespelling-precision/` re-ran the census and drew a
+                                       hand-labelled sample. **PER-KIND PRECISION, NO POOLED NUMBER**
+                                       (a pooled number across kinds with different base rates is the thing
+                                       this project keeps refusing): `prose-basename-citation` **11 of 40 =
+                                       0.275** [0.161, 0.428], `regex-anchor-set` **1 of 3**, `single-base-
+                                       resolver` **2 of 3**; `extension-set` and `module-attr-table` have
+                                       **0 positives and therefore no denominator at all**. **THE
+                                       STRUCTURAL FINDING BEATS THE NUMBERS.** Every other kind routes
+                                       through `probe[kind](site)` and returns POSITIVE / NEGATIVE /
+                                       UNKNOWN from evidence (`census.py:196-201`, `:248-259`), but
+                                       `prose-basename-citation` is built INLINE at `:453` with
+                                       **`verdict="POSITIVE"` WRITTEN INTO THE LITERAL**: there is no
+                                       probe, no NEGATIVE branch, and **nothing to be wrong about**. It
+                                       supplies **251 of 311** sites -- **80.7%** -- and its yield is
+                                       unbounded, because every bare basename two tracked files answer
+                                       to is a finding by definition. **A KIND THAT CANNOT RETURN NEGATIVE
+                                       WILL DOMINATE ANY CENSUS IT IS IN, BECAUSE A PROBING KIND'S YIELD IS
+                                       BOUNDED BY WHAT IT CAN DISCHARGE AND AN UNPROBED KIND'S IS NOT.**
+                                       **AND THE TWO KINDS THAT CAN BE WRONG DO ERR** (0.333 and 0.667),
+                                       which is the control working: a shape test that can say NO is
+                                       worth having and a shape test that cannot is worth labelling.
+                                       **THREE OF ITS CHARGES FAILED ON READING**: `drift.py:38` DOES have
+                                       the second spelling (a `tails` index plus a dedicated `suffix`
+                                       lane, `:51-54,:70-77,:125`) and `probe_table` has the
+                                       companion-discharge test in the same file while `probe_base` never
+                                       got it; two of `probe.py`'s three are a deliberately retained
+                                       supersession fixture and a **byte-identical copy of the shipped
+                                       fix**. **A CONTROL THE AUDITOR CANNOT CONFIRM CANNOT FALSIFY**:
+                                       `md:differ.py` is one of the census's six controls and the auditor
+                                       read it FALSE, since 3 of its 4 collisions are shadow copies.
+                                       **THE CAVEAT IS THE POINT: the labelling standard is ONE person's,
+                                       there is no second rater, and the labels could not be reduced to a
+                                       mechanical rule** (a shadow-copy test moves ~39 of 251 and does not
+                                       discriminate, 10/11 TRUE vs 18/29 FALSE). **A HAND-LABELLED
+                                       PRECISION WITH NO GENERATOR IS THE LIMIT OF THIS EXERCISE, AND THE
+                                       HONEST MOVE IS TO SAY SO RATHER THAN TO GENERALISE.**
+                                       2/3 = the sample and the per-kind precision; the third step is
+                                       whether `prose-basename-citation` should be RELABELLED `SUGGESTED`
+                                       rather than `POSITIVE`, which is left to the instrument's author
+                                       because changing it invalidates its own REPORT's numbers.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the
