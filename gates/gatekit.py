@@ -60,6 +60,30 @@ TMP = ".tmp."
 PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5
 VERDICT = {PASS: "PASS", FAIL: "FAIL", REFUSED: "REFUSED", SKIP: "SKIP", DEAD: "DEAD"}
 
+# THE SIXTH WORD, AND IT HAS NO EXIT OF ITS OWN. `UNASKABLE` is "the comparison this row
+# exists to make CANNOT BE MADE, and that is the declared design rather than a defect" -- a
+# `gates/docnum-claim-gate.py` site that names the instrument that prints its number and
+# transcribes nothing. It is deliberately NOT `PASS`: "the prose figure equals the instrument
+# figure" cannot be falsified when there is no prose figure, so a green that meant `UNASKABLE`
+# would be a green that measured nothing while claiming to have.
+#
+# WHY `SKIP` AND NOT A SIXTH NUMBER. `AGENTS.md`: "`SKIP` it could not run, so it measured
+# nothing", and the comparison here is the thing that could not run -- not the command, which
+# `TOKEN_VERDICT` already distinguishes. `DEAD` is "it ran and emitted nothing" (it emitted a
+# row) and `REFUSED` is "a precondition was absent" (the site resolved and the command is
+# declared), so both are false here. That leaves `SKIP`, which `gatekit.py`'s own header
+# already fixes as `e2e.py`'s: a reader who knows `e2e.py` returns 4 for a SKIP recognises
+# this without being told, and `checks/gatesweep.py:134` reads the exit through
+# `gatekit.VERDICT` and so needs no change -- 0 of the gates that sweep moves.
+#
+# THE COST, MEASURED, AND IT IS WHY EVERY CALLER RANKS IT LAST: `checks/gatesweep.py:134` maps
+# the EXIT to the word, and its summary prints `"%d did not finish"`. A gate whose only
+# verdict is `UNASKABLE` therefore sweeps as "did not finish", which is a wrong description of
+# a gate that ran and answered every row. So `UNASKABLE` must never be the aggregate unless
+# it is the ONLY thing on the table.
+UNASKABLE = "UNASKABLE"
+UNASKABLE_EXIT = SKIP
+
 # THE FIVE ARE ALL SPELLED. `return SKIP` had no site in THIS file and was reported as a vacant
 # slot, which is a claim about a NAME rather than about a CODE PATH: `SKIP` is produced by
 # `gates/msgdiff-gate.py` (3 sites) and `checks/wallcheck.py` (as 4), and `run()` below can only

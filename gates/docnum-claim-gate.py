@@ -47,15 +47,44 @@ generator's own declaration loaded by path IS a population. What is NOT allowed 
 population of files, and this file names no prose file except as the target of a claim: the
 prose SITES come from `--sites` (below) which is a walk, and `--plan` prints how many walked.
 
-THE FIVE VERDICTS, SPELLED, AND WHY EACH IS REACHABLE HERE
-----------------------------------------------------------
-    PASS 0    every claim's site was read and every measuring command agreed
-    FAIL 1    a site was read and DISAGREED with a command that ran -- the load-bearing case
-    REFUSED 3 a precondition was absent: no repo root, or a measuring command not on disk
-    SKIP 4    a measuring command RAN and produced nothing to compare -- `DEAD` if it also
-              emitted nothing at all, which are two different defects and get two different
-              tokens. `SKIP IS NOT PASS` and the exit status says so, per `AGENTS.md`.
-    DEAD 5    this gate ran and emitted no verdict row
+THE SIX VERDICTS, AND WHY `UNASKABLE` IS BORROWED RATHER THAN INVENTED
+------------------------------------------------------------------------
+    PASS 0        every claim's site was read and every measuring command agreed
+    FAIL 1        a site was read and DISAGREED with a command that ran -- the load-bearing case
+    REFUSED 3     a precondition was absent: no repo root, or a measuring command not on disk
+    SKIP 4        a measuring command RAN and produced nothing to compare -- `DEAD` if it also
+                  emitted nothing at all, which are two different defects and get two different
+                  tokens. `SKIP IS NOT PASS` and the exit status says so, per `AGENTS.md`.
+    DEAD 5        this gate ran and emitted no verdict row
+    UNASKABLE     the comparison this row exists to make CANNOT BE MADE, because the site
+                  transcribes no figure, AND it names the instrument that prints it. Its exit
+                  is `SKIP` (4) -- `gatekit`'s, NOT a sixth number -- because `DEAD` is false
+                  (a row WAS emitted) and `REFUSED` is false (nothing was absent). It is NOT
+                  `PASS`: "the prose figure equals the instrument figure" cannot be falsified
+                  when there is no prose figure, so a green that meant `UNASKABLE` would be a
+                  green that measured nothing while claiming to have. See `gatekit.py`.
+
+    ...AND THE COST, WHICH IS WHY IT IS RANKED LAST. `checks/gatesweep.py:134` reads the EXIT
+    through `gatekit.VERDICT` and its summary prints `"%d did not finish"`, so a gate whose
+    only verdict is `UNASKABLE` sweeps as "did not finish". `UNASKABLE` therefore never wins
+    the aggregate unless it is the only state on the table.
+
+THE BENIGN/UNCHECKED DISTINCTION IS THE GATE'S OWN DECISION, NOT A CAVEAT
+--------------------------------------------------------------------------
+`UNASKABLE` is NOT INFERRED from "the site has no figure here". It is DECLARED: a contract
+row carries `prose_shape=None`, meaning "this site is asserted to transcribe nothing". For such
+a row the gate asks a falsifiable question -- DOES THE SITE STILL NAME THE INSTRUMENT? -- and
+answers `FAIL` when it does not. That is the whole cost of the verdict, and it is the point:
+
+  the figure removed on purpose   site names the instrument  -> UNASKABLE  (benign)
+  the ANCHOR DRIFTED              site names nothing         -> FAIL       (unchecked)
+
+MEASURED, AND THE SECOND ROW IS NOT HYPOTHETICAL: every `CLAIMS` anchor was exact at
+`c1cb04413` and the caller's `9555d823f` inserted 8 lines above line 66, so all five README
+anchors read +8 too high. A rule that inferred `UNASKABLE` from an empty match would have
+reported five rows as benign while the gate was reading the WRONG LINES -- so the anchors were
+moved back onto the sentences the contract names, and that move is what makes the verdict
+reachable at all.
 
 THE ORDER IS A CLAIM AND IT IS ARGUED IN `worst()`, not assumed.
 """
@@ -69,7 +98,8 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import DEAD, FAIL, PASS, REFUSED, SKIP, verdict_of  # noqa: E402
+from gatekit import (DEAD, FAIL, PASS, REFUSED, SKIP, UNASKABLE,  # noqa: E402
+                     UNASKABLE_EXIT, verdict_of)
 
 PY = ".venv/bin/python"
 
@@ -78,7 +108,9 @@ PY = ".venv/bin/python"
 #   what       what the site ASSERTS, in words, for a human reading a FAIL row
 #   argv       the COMMAND that prints the number, run under `checks/bounded.py`
 #   out_shape  a regex over the command's output with one group PER FIGURE
-#   prose_shape a regex over the site's lines with one group PER FIGURE, in the SAME ORDER
+#   prose_shape a regex over the site's lines with one group PER FIGURE, in the SAME ORDER;
+#               or None when the site is DECLARED to transcribe no figure, in which case the
+#               row is UNASKABLE if the site names the instrument and FAIL if it does not
 #   dated      True when the site carries its own MEASURED date, so a historical reading is
 #              STALE-BUT-DATED rather than STALE-UNDATED. `AGENTS.md`: "QUOTE THIS NUMBER WITH
 #              A TIMESTAMP OR NOT AT ALL", and a dated reading is the RECORD, not the defect.
@@ -89,28 +121,34 @@ PY = ".venv/bin/python"
 # that fits the instrument and not the document measures the instrument twice.
 #
 # NO FIGURE APPEARS IN THIS TABLE. `--plan` prints every row and there is no number to read.
+#
+# THE ANCHORS ARE A DECLARATION AND THEY DRIFT: `gates/README.md`'s `A`, `B`, `INDEX-ARM` and
+# cost-projection rows were lines 75, 76, 97 and 130 at `c1cb04413` -- MEASURED, by driving
+# this gate against that commit's tree -- and `9555d823f` edited all four and added 8 lines
+# above line 66, so they now read 83, 84, 105 and 138. A `path:line` anchor is the one
+# transcribed figure left in this table, and it is the one the pointer check exists to catch.
 CLAIMS = (
-    ("gates/README.md:75",
+    ("gates/README.md:83",
      "the gate population (A) = the `*-gate.py` walk",
      (PY, "checks/gatesweep.py", "--plan"),
      r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
-     r"\|\s*(\d[\d,]*)\s*\|\s*$", False),
-    ("gates/README.md:76",
+     None, False),
+    ("gates/README.md:84",
      "the control denominator (B) = `gates-pop.discover()`",
      (PY, "checks/gatesweep.py", "--plan"),
      r"CONTROL\s*: gates-pop\.discover\(\) -> (\d+) entries",
-     r"\|\s*(\d[\d,]*)\s*\|\s*$", False),
-    ("gates/README.md:97",
+     None, False),
+    ("gates/README.md:105",
      "the armed-index intent-to-add count behind 'this is why a sweep cannot run today'",
      (PY, "checks/index-arm-gate.py"),
      r"intent-to-add=(\d+)",
-     r"(\d[\d,]*) intent-to-add", False),
-    ("gates/README.md:130",
-     "the 77-gate set the cost projection is stated over",
+     None, False),
+    ("gates/README.md:138",
+     "the run set the cost projection is stated over",
      (PY, "checks/gatesweep.py", "--plan"),
      r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
-     r"[Pp]rojected over the (\d+)-gate set", False),
-    ("gates/README.md:66",
+     None, False),
+    ("gates/README.md:74",
      "the sweep tally the loop is described by",
      (PY, "checks/gatesweep.py", "--plan"),
      r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
@@ -232,8 +270,32 @@ def _figures(m):
     return [int(g.replace(",", "")) for g in m.groups() if g is not None]
 
 
+def names_instrument(prose, argv):
+    """-> (ok, what the site is missing). THE FALSIFIABLE HALF OF `UNASKABLE`.
+
+    `UNASKABLE` claims the comparison cannot be made, which is not falsifiable on its own -- so
+    a `prose_shape=None` row is answered by asking something that IS: does the site still name
+    the thing that prints the number? The test is deliberately a NAMES test and not a FIGURES
+    test, because "the site asserts a figure" and "the site points at the instrument" are the
+    two things the caller chose, and only the second survives the removal of the first.
+
+    The names are DERIVED from `argv`, not transcribed: the basename of every non-interpreter
+    element, plus every `--flag` verbatim. A transposed figure is the one thing this table
+    already refuses to hold, and a transcribed tool name would be the same defect wearing a
+    different hat. The BASENAME rather than the path, MEASURED: `gates/README.md:84` writes
+    ``**`gatesweep.py --plan`**`` and `argv` says `checks/gatesweep.py`, so demanding the path
+    turned a correct pointer into a FAIL -- which is a wrong reason, and worse than none. The
+    interpreter is skipped by NAME, because `.venv/bin/python` appears in no row of any table in
+    this tree and requiring it would make every row a FAIL.
+    """
+    missing = [a for a in argv[1:]
+               if not os.path.basename(a).startswith("python")
+               and os.path.basename(a) not in prose and a not in prose]
+    return (not missing, ",".join(missing))
+
+
 def check(root, claims=None):
-    """-> [(site, what, state, detail)]. `state` is one of the five VERDICT words.
+    """-> [(site, what, state, detail)]. `state` is one of the six VERDICT words.
 
     `claims` is a PARAMETER so `--plant` can drive THIS FUNCTION on a synthetic contract.
     A plant that reaches past the decision into the helpers is not a plant of the decision
@@ -247,6 +309,17 @@ def check(root, claims=None):
             rows.append((site, what, "REFUSED", "the site does not resolve"))
             continue
         prose = "\n".join(lines)
+        if prose_shape is None:
+            # THE DECLARED NO-FIGURE ROW. Not "the regex did not match" -- the contract SAYS
+            # there is nothing here to match. So the question is whether the pointer survived,
+            # and a site that names nothing is FAIL: an unchecked claim is not a claim this
+            # gate has verified, and reading it as UNASKABLE would launder it into a verdict.
+            ok, _missing = names_instrument(prose, argv)
+            rows.append((site, what, UNASKABLE if ok else "FAIL",
+                         "no figure is transcribed and the site names %s" % " ".join(argv[1:])
+                         if ok else "no figure is transcribed AND the site names none of %s"
+                         % " ".join(argv[1:])))
+            continue
         pm = re.search(prose_shape, prose, re.M)
         if not pm:
             rows.append((site, what, "FAIL", "the site's sentence no longer has this shape"))
@@ -294,21 +367,30 @@ def check(root, claims=None):
     return rows
 
 
-def worst(codes):
+def worst(states):
     """THE ORDER IS A CLAIM. `DEAD` first: a claim that measured nothing cannot be outranked
     by one that measured something, because its answer is unknown rather than good. `FAIL`
-    LAST: it is the only one of the four that means an answer WAS produced."""
-    for code in (DEAD, REFUSED, SKIP, FAIL):
-        if code in codes:
-            return code
-    return PASS
+    before `UNASKABLE`: it is the only one of the six that means an answer WAS produced, and
+    an answer must never be masked by a row that declined to ask its question.
+
+    `UNASKABLE` IS LAST, AND THAT IS THE WHOLE ARGUMENT FOR IT. Its exit is `SKIP`, which sits
+    THIRD in this list, so ranking it here is what stops a set of `UNASKABLE` rows from
+    outvoting a single real `FAIL` -- MEASURED, the alternative returned 4 on a tree carrying a
+    wrong figure. It costs the converse: a table of nothing but `UNASKABLE` rows reports `SKIP`,
+    which `checks/gatesweep.py`'s summary renders as "did not finish". Both are true; the
+    second is why no caller may rank it higher."""
+    for word in ("DEAD", "REFUSED", "SKIP", "FAIL", UNASKABLE):
+        if word in states:
+            return word
+    return "PASS"
 
 
 def emit_plan(out):
     out.write("CLAIMS (a generator's own declaration; NO FIGURE IS TRANSCRIBED)\n")
-    for site, what, argv, _o, _p, dated in CLAIMS:
-        out.write("  %-22s dated=%-5s %-46s %s\n"
-                  % (site, dated, what[:46], " ".join(argv[1:])))
+    for site, what, argv, _o, prose_shape, dated in CLAIMS:
+        out.write("  %-22s dated=%-5s prose=%-9s %-46s %s\n"
+                  % (site, dated, "NO-FIGURE" if prose_shape is None else "FIGURE",
+                     what[:46], " ".join(argv[1:])))
     files = prose_sites(ROOT)
     out.write("PROSE IN SCOPE (a walk of %s): %d file(s)\n"
               % (", ".join(SITE_ROOTS), len(files)))
@@ -372,11 +454,41 @@ def plant(out):
             ok = got == want
             bad += 0 if ok else 1
             out.write("%s %s == %s -- %s\n" % ("OK  " if ok else "FAIL", got, want, why))
+
+        # THREE NO-FIGURE STATES, AND THE THIRD IS THE ONE THAT MATTERS. `UNASKABLE` is only
+        # honest while it can be wrong in BOTH directions: a site that removed its figure and
+        # kept naming the instrument, a site that removed its figure AND the pointer (which is
+        # an UNCHECKED claim and is a FAIL, not a verdict), and a table of `UNASKABLE` rows
+        # alone -- which must aggregate to `SKIP`, NEVER to `PASS`. That last assertion is what
+        # stops the verdict from being the trapdoor `verdict_of`'s docstring is about: a green
+        # that measured nothing while claiming to have. MEASURED against the live tree: the
+        # alternative ranking returned 4 with a wrong figure sitting in `runner.py:48`.
+        (root / "gates/NAME.md").write_text(
+            "| **A** | a walk | **`oracle.py --plan`** |\n", encoding="utf-8")
+        (root / "gates/BARE.md").write_text("| **A** | a walk | the same set |\n", encoding="utf-8")
+        argv = (sys.executable, "oracle.py", "--plan")
+        bare = check(root, (("gates/NAME.md:1", "figure removed, pointer kept",
+                             argv, r"ANSWER (\d+)", None, False),
+                            ("gates/BARE.md:1", "figure AND pointer removed",
+                             argv, r"ANSWER (\d+)", None, False)))
+        for site, what, state, detail in bare:
+            out.write("  %-10s %-28s %s\n" % (state, what, detail))
+        only = worst([bare[0][2]])
+        for got, want, why in (
+                (bare[0][2], UNASKABLE, "the pointer survived, so the row is UNASKABLE"),
+                (bare[1][2], "FAIL", "no figure and no pointer is an UNCHECKED claim"),
+                (verdict_of({"PASS": PASS, "FAIL": FAIL, "REFUSED": REFUSED, "SKIP": SKIP,
+                             "DEAD": DEAD, UNASKABLE: UNASKABLE_EXIT}[only]),
+                 "SKIP", "a table of nothing but UNASKABLE must NOT aggregate to PASS"),
+                (worst([bare[0][2], "FAIL"]), "FAIL", "UNASKABLE must not outvote a real FAIL")):
+            ok = got == want
+            bad += 0 if ok else 1
+            out.write("%s %s == %s -- %s\n" % ("OK  " if ok else "FAIL", got, want, why))
     if bad:
         out.write("PLANT FAILED: %d expectation(s) unmet\n" % bad)
         return 1
     out.write("PLANT OK: the gate FAILED a wrong figure, PASSED a right one, REFUSED an "
-              "absent site and SKIPPED an absent command\n")
+              "absent site, SKIPPED an absent command, and held UNASKABLE to a pointer\n")
     return 0
 
 
@@ -396,13 +508,12 @@ def main() -> int:
         return REFUSED
     rows = check(ROOT)
     for site, what, state, detail in rows:
-        print("%-8s %-22s %-52s %s" % (state, site, what[:52], detail))
-    codes = [{"PASS": PASS, "FAIL": FAIL, "REFUSED": REFUSED, "SKIP": SKIP,
-              "DEAD": DEAD}.get(r[2], REFUSED) for r in rows]
-    code = PASS if all(c == PASS for c in codes) else worst(codes)
+        print("%-10s %-22s %-52s %s" % (state, site, what[:52], detail))
+    w = worst([r[2] for r in rows])
     print("docnum-claim-gate: %s -- %d claim(s), %d figure(s) transcribed: 0"
-          % (verdict_of(code), len(rows), 0))
-    return code
+          % (w, len(rows), 0))
+    return {"PASS": PASS, "FAIL": FAIL, "REFUSED": REFUSED, "SKIP": SKIP, "DEAD": DEAD,
+            UNASKABLE: UNASKABLE_EXIT}[w]
 
 
 if __name__ == "__main__":
