@@ -135,7 +135,7 @@ the repeats present in it):
 | `decomp_graph_census-gate` | 35.9–36.8 | 740–1024 | 1.03× · **+38%** |
 
 Three runs of the ten gave **`PASS=8 FAIL=2` every time** — the verdicts are stable — and
-**113.1 s / 113.0 s / 110.5 s wall**. Projected over the run set: **788–913 s (13.1–15.2 min)**.
+**113.1 s / 113.0 s / 110.5 s wall**. Projected over the run set `gatesweep.py --plan` prints: **788–913 s (13.1–15.2 min)**.
 
 **THE MEASUREMENT NOISE IS PART OF THE ANSWER.** `decomp_graph_census-gate`'s peak moved **740 →
 1024 MB (+38%)** and `indexread-gate`'s runtime moved **1.8 → 3.5 s (1.94×)** on the SAME command

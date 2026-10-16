@@ -153,11 +153,11 @@ CLAIMS = (
      (PY, "checks/gatesweep.py", "--plan"),
      r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
      r"over (\d+) gates in", True),
-    ("gates/runner.py:48",
+    ("gates/runner.py:49",
      "the same population, quoted by the gate that DELEGATES to the sweep",
      (PY, "checks/gatesweep.py", "--plan"),
      r"POPULATION: directory walk gates/\*-gate\.py -> (\d+)",
-     r"MEASURED (\d+)\.", False),
+     None, False),
 )
 
 # HOW MUCH PROSE IS IN SCOPE. A walk, so the denominator is a measurement, not a list.

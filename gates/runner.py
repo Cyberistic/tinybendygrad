@@ -45,7 +45,10 @@ That is `checks/index-arm-gate.py`'s own shape, copied rather than invented.
 
 THE POPULATION IS DERIVED, AND THE DERIVATION'S BLIND SPOT IS A NUMBER, NOT A HOPE.
 
-  A       `checks/gatesweep.py:population()` -- a directory walk for `*-gate.py`. MEASURED 76.
+  A       `checks/gatesweep.py:population()` -- a directory walk for `*-gate.py`.
+          The figure is `gatesweep.py --plan`'s POPULATION line; it is NOT transcribed here
+          because the population moves as other units land gates -- it read 76, 77, 78, 79 and
+          80 within one session, and `gates/docnum-claim-gate.py` is what holds the comparison.
   B       `gates/gates-pop.py:discover()`, filtered to the `gates/` home: entry points by AST
           `__main__`, in HOMES derived by `gate_homes()`. MEASURED 114.
   LANES   the entry points some gate NAMES AS ITS OWN INPUT, read from the kernel's own
