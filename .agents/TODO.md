@@ -17475,6 +17475,41 @@ onespelling-precision [##........] 2/3  **A CENSUS OF 254 FINDINGS NOBODY HAD RE
                                        rather than `POSITIVE`, which is left to the instrument's author
                                        because changing it invalidates its own REPORT's numbers.
 
+gatespop-root-spell [#########] 3/3  **THE ONE-SPELLING FIX, MEASURED, BUILT, AND THEN REFUSED ON THE
+                                       EVIDENCE -- AND THE REFUSAL IS THE RESULT.** `gatespopred`
+                                       MEASURED that `gates-pop.py`'s standing RED is an
+                                       INSTRUMENT_LIMITATION, and that `ROOT_CONST`/`ROOT_INLINE` both
+                                       END in `\.parents\[(\d)\]`, so they cannot see the CHAINED
+                                       spelling the tree also writes: `Path(__file__).resolve()
+                                       .parent.parent`, `HERE.parent`, `HERE.parent / "checks"`.
+                                       **MEASURED 2026-10-16 over the 181 `gates/*.py` of that
+                                       revision: 167 DECLARE a root and the regex saw 107 -- AN
+                                       INSTRUMENT FINDING 64% OF WHAT IT IS LOOKING FOR IS REPORTING
+                                       THE SHAPE IT WAS WRITTEN AGAINST.** I BUILT THE FIX: both
+                                       patterns take `(?:(?:\.parent\b)+|\.parents\[\d\])`, and a
+                                       `root_depth()` turns either spelling into the one number
+                                       `resolve_root()` already took, so the single caller at `:706`
+                                       does not change shape. **IT WORKS AS A DETECTOR**: "name a root"
+                                       went **85 -> 150**. **AND IT WAS STILL REFUSED**, for two reasons
+                                       the measurement produced rather than for any feeling:
+                                       **(1) `.parent` IS `parents[0]`, NOT `parents[1]`, AND GETTING
+                                       THAT WRONG MOVED 52 FILES TO off-repo** (1 -> 53) before the
+                                       off-by-one was found and subtracted; **(2) WITH THE OFF-BY-ONE
+                                       FIXED, off-repo READS 99**, because `Path(__file__).parent` is a
+                                       gate's OWN DIRECTORY, so every gate that legitimately operates
+                                       on `gates/` is now reported as resolving outside the repo.
+                                       **LANDING THAT WOULD HAVE CONVERTED A NEAR-SILENT CLAUSE INTO 99
+                                       FINDINGS OF UNKNOWN VALUE, AND DECIDED THE off-repo SEMANTIC BY
+                                       SIDE EFFECT RATHER THAN BY ARGUMENT.** **THE ENTRY-POINT COUNT
+                                       ALSO MOVED 209 -> 211 MID-MEASUREMENT** (another session is
+                                       committing), so the before/after was not controlled either.
+                                       `gates/gates-pop.py` IS **REVERTED**; the fix is recorded here so
+                                       it is one edit away, and the two questions a lander must answer
+                                       FIRST are named: *is a gate rooted at its own directory a
+                                       DEFECT?* and *what should the clause be called if it is not?*
+                                       **A REFUSAL THAT NAMES ITS OWN NEXT STEP IS NOT A DEFERRED
+                                       DECISION.**
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the
