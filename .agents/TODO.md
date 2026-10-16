@@ -580,6 +580,35 @@ exit-mislabels [####......] 1/4  A GATE THAT SAYS `REFUSED` AND EXITS `FAIL` IS 
                                        wrong. 1/4 = the three sites; the other 54 are OWED **behind
                                        that promotion**, not refused.
 
+sweep-deletes-pop [##........] 1/3  MEASURED 2026-10-16, and this is the LARGEST BLIND SPOT found this
+                                       session. `checks/sweep.py`'s `FS_DELETES` is keyed on
+                                       `(module, attr)` and **ALL FOUR KEYS ARE MODULE FORM** --
+                                       `("os","remove")`, `("os","rmdir")`, `("os","unlink")`,
+                                       `("shutil","rmtree")`. **THE LANGUAGE HAS TWO SPELLINGS FOR ONE
+                                       OPERATION AND THE TABLE ONLY HAS ONE.** Over `checks/`+`gates/`:
+                                       **7** delete sites in MODULE form, all caught; **38** in
+                                       METHOD form (`x.unlink()`), **and 0 of them can match**, because
+                                       a method call carries no module to key on. **THE CENSUS SEES 7
+                                       OF 45 DELETE SITES.** One of the invisible ones is
+                                       **`checks/differ.py:658`, `(D / stale).unlink()` -- deleting a
+                                       corpus artifact, in the file that OWNS `runs/graphcmp/D`**;
+                                       also `checks/bounded.py:499,502`, `checks/abi4_gate.py:314`,
+                                       `checks/substrate-id.py:507,525`. This is doctrine 1 with a new
+                                       hat: **the population is keyed on a SHAPE when the SUBJECT has
+                                       two spellings**, so a delete census cannot see the spelling
+                                       the tree actually uses. `FS_DELETES` itself already records
+                                       the shape's blind spot in prose -- `:278` says "**no scope
+                                       reproduces 11**" -- and `:276` says the arm is "STATED AND
+                                       UNBUILT"; this measurement says the stated part is ALSO
+                                       incomplete, not merely unbuilt. **NOT LANDED ON PURPOSE:**
+                                       `FS_DELETES` feeds `self_output_dirs()`'s COLLISION REFUSAL,
+                                       so widening it can make the sweep refuse MORE directories,
+                                       and the sweep is a heavy operation whose output I cannot
+                                       re-take inside this session's machine budget. **Prefer refuse
+                                       to repair**: the finding is worth more recorded than a change
+                                       that cannot be verified. 1/3 = the measurement; the other 2 are
+                                       the landing and the re-take of sweep's output.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the
