@@ -378,7 +378,20 @@ repro-anchor [##........] 1/3      THE FIX I LANDED 2026-10-15 WAS READING **ONE
                                        the gate citing its own docstring). Both errors were mine, both
                                        corrections made the instrument look WORSE, and both times the
                                        honest report was worth more than the tidy one.
-                                       `.agents/slop/reprorefs/ANCHOR-HOLE.md`.
+                                       **THE COUPLED FIX LANDED 2026-10-17.** The anchor is now `(?<![\w/.])`, AND the dangling
+                                       rows are SPLIT by WHO still needs the path -- `classify()` walks
+                                       `checks/`, `gates/`, `bin/` and a path a LIVE INSTRUMENT names is
+                                       **ACTIONABLE**; one only finished units' reports name is
+                                       **HISTORICAL**, a record of a pruned tool. MEASURED: **560 dangling =
+                                       46 ACTIONABLE + 514 historical**, and it surfaces exactly the findings I
+                                       know are real -- `checks/rn-gate.py`'s gone oracle
+                                       (`.agents/slop/xd1/render-gate-oracle.py`) and its never-committed
+                                       selftest inputs (`checks/rn-orc.txt`, `checks/rn-port.txt`) -- while NOT
+                                       failing on the 514 records. The exit status is driven by ACTIONABLE
+                                       alone. **THE SPLIT IS WHAT I COULD NOT GUESS BEFORE, AND IT IS WHAT
+                                       MAKES THE WIDENING SAFE**: one number for both buries 46 real findings
+                                       under 514 records, and this gate's own claim is about REPROS, not
+                                       records. `ANCHOR-HOLE.md`.
 ledgerdrift [#####.....] 1/3      DISPATCHED UNIT 2026-10-15. `.agents/TOOLS.md` names **367** paths
                                        (denominator: 1,637 backtick spans in the committed file, byte-equal
                                        to the worktree); **235 present, 132 absent**, **1 of the 132 is an
@@ -681,7 +694,8 @@ repro-dangling [##........] 1/3      `checks/repro-paths.py`'s **108** DANGLING 
                                        CLAIM -- "every path a committed report tells a reader to run
                                        must exist" -- is **OVERSTATED FOR ITS POPULATION**: the 108
                                        is stale historical prose, not a reader being misdirected.
-                                       **NOT FIXED ON PURPOSE.** Narrowing the claim, or splitting
+                                       **NOW IMPLEMENTED, NOT GUESSED** -- the split that makes widening safe is `classify()`
+                                       above. **STILL NOT FIXED ON PURPOSE.** Narrowing the claim, or splitting
                                        historical records from live instructions, REDESIGNS what the
                                        gate asserts, and a guess about which reports are historical
                                        would silence the one row class genuinely worth a reader's

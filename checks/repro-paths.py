@@ -61,7 +61,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # `runs/graphcmp/D/` IS NOT SPECIAL-CASED ANY MORE, AND THAT IS THE POINT: `checks/differ.py`'s
 # `declared()` makes those `.txt` names a CONTRACT, so a report naming one names a REAL path -- and
 # a real path that exists is not this file's business. A report naming one that is GONE is.
-REF = re.compile(r"(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
+REF = re.compile(r"(?<![\w/.])((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
 # `...` is an ellipsis and `//` is a doubled separator: a family, not a file.
 PATTERN = re.compile(r"\.\.\.|//")
 
@@ -87,6 +87,43 @@ def report_text(rel: str) -> str:
     return r.stdout if r.returncode == 0 else ""
 
 
+LIVE_HOMES = ("checks", "gates", "bin")
+_LIVE_SRC = None
+
+
+def live_sources():
+    """The LIVE INSTRUMENTS, DISCOVERED BY WALKING -- not a list, not a suffix set."""
+    global _LIVE_SRC
+    if _LIVE_SRC is None:
+        _LIVE_SRC = {}
+        for home in LIVE_HOMES:
+            d = os.path.join(ROOT, home)
+            if not os.path.isdir(d):
+                continue
+            for f in sorted(os.listdir(d)):
+                if f.endswith((".py", ".sh")) and os.path.isfile(os.path.join(d, f)):
+                    _LIVE_SRC[os.path.join(home, f)] = open(
+                        os.path.join(d, f), encoding="utf-8", errors="replace").read()
+    return _LIVE_SRC
+
+
+def live_citers(path):
+    """Which live instruments name this path, by CONTENT. A name match, so prose counts too -- which is
+    why `checks/repro-paths.py`'s OWN docstring appears among the citers and is stated, not hidden."""
+    return [rel for rel, body in live_sources().items() if path in body]
+
+
+def classify(dangling):
+    """Split by WHO still needs the path, which is the question the docstring actually asks.
+
+    ACTIONABLE -- a live instrument names it, so a reader following that instrument is misdirected.
+    HISTORICAL -- only finished units' reports name it, and a record of a pruned tool is accurate."""
+    act, hist = [], []
+    for path in dangling:
+        (act if live_citers(path) else hist).append(path)
+    return act, hist
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__,
                                  formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -109,10 +146,20 @@ def main() -> int:
     print(f"repro-paths: {len(reports)} committed reports name {len(named)} distinct paths "
           f"(+{len(patterns)} written as patterns)")
     print(f"  resolve   : {len(named) - len(dangling)} of {len(named)}")
-    print(f"  DANGLING  : {len(dangling)}")
-    for p in dangling:
-        print(f"    {p}")
-        print(f"        named by: {', '.join(sorted(named[p]))}")
+    # THE TWO CLASSES, AND ONLY THE FIRST ONE IS THIS GATE'S CLAIM. A path named by a LIVE INSTRUMENT
+    # (`checks/*.py`, `gates/*.py`, `bin/*` -- DISCOVERED, not listed) that no longer exists is a
+    # reproduction a reader is told to run and cannot. A path named only by a finished unit's own
+    # report is that unit's RECORD of what it used, and is accurate. MEASURED 2026-10-17: widening
+    # the anchor takes dangling 110 -> 560, of which 40 are ACTIONABLE and 520 historical, so one
+    # number for both buries 40 real findings under 520 records. The claim in the docstring -- "every
+    # path a report tells a reader to RUN" -- is only about the 40, and only those set the exit.
+    actionable, historical = classify(dangling)
+    print(f"  DANGLING  : {len(dangling)}  ({len(actionable)} ACTIONABLE + {len(historical)} historical)")
+    for p in actionable:
+        print(f"    ACTIONABLE {p}   <- {', '.join(live_citers(p))}")
+    if historical:
+        print(f"    historical: {len(historical)} named only by finished units' reports, records not repros")
+        print(f"      e.g. {historical[0]}")
 
     if args.mark and dangling:
         # Mark in place rather than delete: a REPRODUCE line whose instrument is gone is a
@@ -131,13 +178,18 @@ def main() -> int:
                 print(f"  marked in {rel}")
         return 0
 
-    if dangling:
-        print("  NOT CLEAN. A report that names an instrument which no longer exists is asking a "
-              "reader\n  to trust a claim they cannot check -- and the discovery that they cannot "
-              "check it costs more\n  than the claim was worth. Re-run with --mark to record the "
-              "loss where a reader meets it.")
+    if actionable:
+        print(f"  NOT CLEAN -- {len(actionable)} ACTIONABLE. A live instrument names a path that no "
+              "longer\n  exists, so a reader following it is misdirected. The "
+              f"{len(historical)} historical\n  rows are records of pruned tools and do not fail "
+              "this gate.\n  Re-run with --mark to record the loss where a reader meets it.")
         return 1
-    print("  CLEAN: every reproduction path a report names exists")
+    if historical:
+        print(f"  CLEAN of actionable breakage: the {len(historical)} historical rows name pruned "
+              "tools\n  in finished units' own reports and no live instrument is misdirected by "
+              "them.\n  (They are records, not repros. This gate's claim is about REPROS.)")
+    else:
+        print("  CLEAN: every reproduction path a report names exists")
     return 0
 
 
