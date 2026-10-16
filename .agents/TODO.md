@@ -16547,6 +16547,62 @@ rc=0 (0 BEFORE). `decomp_value` STILL PASS 198/0 DIFFER.**
       `MACHINE: VIOLATED -- loadavg 5.2..20.1`**, SO **NO WALL TIME HERE IS ATTRIBUTABLE TO THE CHILD.**
       **QUOTE A NUMBER WITH ITS TIMESTAMP OR NOT AT ALL.**
 
+## UNGATED3 -- THREE "UNGATED" LAYERS, AND **TWO HAD A WORKING GATE THAT NOTHING WIRED** (2026-10-16)
+
+**`nn/onnx` 167 ROWS · `nn/state` 85 · `mixin/rand` 51 -- ALL rc=0. NO PORT FILE EDITED.
+NO `.agents/TODO.md` EDIT BY THE UNIT. PEAK 1 946 / 706 / 1 092 MB.**
+
+- [x] **"UNGATED" MEASURED, NOT ASSERTED -- AND THE TRUTH IS SHARPER: TWO OF THE THREE HAD **A WRITTEN
+      CPYTHON LANE THAT RAN** AND NOTHING NAMED IT.** `.agents/slop/onnx-gate.py` (**11 566 B, rc 0, 123
+      ROWS, BYTE-IDENTICAL** TO `bend tinybendygrad/nn/onnx.bend`); `.agents/slop/state-gate.py`
+      (**6 396 B, rc 0, 14 ROWS, BYTE-IDENTICAL**). **NO `gates/*onnx*` NAMED EITHER, NOTHING IMPORTED
+      EITHER, NO LEDGER ROW.**
+- [ ] **AND `mixin/rand`'s LANE IS **GONE**, NOT UNWIRED.** `mixin/rand.bend:85-86` NAMES
+      `$ORACLE_DIR/rd-gate.sh` AND `$ORACLE_DIR/rd-truth.py`; `$ORACLE_DIR` IS **`.agents/slop/`**, AND
+      `rd-truth.py`, `rd-gate.sh`, `rd-mutate.py` ARE **ABSENT** WITH
+      **`git log --all -- .agents/slop/rd-truth.py` = 0 COMMITS**. **ITS HEADER'S "31 OF 49 SHARED ROWS
+      MATCH, RED" CANNOT BE RE-TAKEN.** **THIS IS `AGENTS.md`'S RECORDED CLASS EXACTLY: A PATH INSIDE A
+      SWEPT TREE IS DELETABLE WHILE THE GATE STILL NAMES IT.** THE ONLY SURVIVING GATE IS
+      `gates/rd_graph_census-gate.py` -- **4 ROWS OVER 185 DEFS.**
+- [x] **`nn/onnx.bend` IS **DEAD CODE**, 218 DEFS, AND THE 0 HOLDS -- BUT ONLY AFTER A NAMED
+      DISTINCTION.** THE CALLER'S WALK FINDS **7** FILES NAMING IT; **5 ARE PROSE AND **TWO ARE PORT
+      FILES** -- `tinybendygrad/helpers.bend:1716` AND `tinybendygrad/nn/datasets.bend:238` -- **BOTH IN
+      COMMENTS, AND BOTH CITING **A NOTE INSIDE `onnx.bend`** -- CITATIONS OF CITATIONS, THE
+      `realize.bend:881` SHAPE.** THE CLAIM IS ABOUT **REACHABILITY** (0 OF 218) AND REACHABILITY THROUGH
+      A COMMENT **IS** 0. **THE CONTROL IS THAT THE SAME WALK YIELDS 1 AND 2 FOR THE OTHER TWO, SO IT IS
+      NOT BLIND.** `test/models/test_onnx.py` MATCHED ON **`tinygrad.nn.onnx`** -- CPYTHON'S, NOT THE
+      BEND FILE.
+- [x] **A **PORT** DEFECT, IN A PLACE THE RECORD HAD WRITTEN OFF, AND **ITS SEMANTIC HALF IS IN **NO** ROW.**
+      `mixin/rand.bend:19-20` SAYS `counter.assign` "EXISTS ONLY TO WRITE A COUNTER BACK TO A DEVICE, SO
+      `rd_next` RETURNS THE SAME `low.cat(high)`". **THAT IS WRONG, AND THE CALLER VERIFIED IT AT THE
+      SOURCE -- THE READ IS **DOWNSTREAM** OF THE WRITE:**
+
+          counter.assign(new_low.cat(new_high))      # tensor.py:468   THE WRITE
+          low  = counter[0:1] - (num & 0xffffffff)   # tensor.py:469   THE READ, AFTER IT
+          high = counter[1:2] - (num >> 32) - (...)  # tensor.py:470
+
+      **AND `assign` MUTATES `self.uop` (`:237`, `self.uop = self.uop.clone()`).** MEASURED BY THE UNIT:
+      `_next_counter("PYTHON", 6)` RETURNS **`[0, 0]`** WHILE THE PRE-ASSIGN READING THE PORT MODELS IS
+      **`[4294967290, 0]`**. **GRAPH HALF = THE FOUR `st_*` PINNED DIVERGENCES (PORT 13/14/24/13 NODES vs
+      CPYTHON 30/32/44/32); THE SEMANTIC HALF IS IN **NO** ROW. FIX NEEDS `mixin/rand.bend` -- OUT OF
+      GRANT.**
+- [ ] **TWO ORACLE FILES ARE **STALE AGAINST HEAD** AND **NOTHING REGENERATES EITHER**:
+      `oracles/tinybendygrad_nn_onnx.bend.rows` **2/123**; `oracles/tinybendygrad_mixin_rand.bend.rows`
+      **19/51**. **12 OF 13 `DType.name` SPELLINGS MOVED TO RUST NAMES AND THE PORT ALREADY MOVED WITH IT
+      (`nn/onnx.bend:820-823`); ONLY THE FROZEN FILES ARE BEHIND.** **`len(differ.declared())` = 176 AND
+      NEITHER IS IN IT.** **A CARVE-OUT MUST BE A GENERATOR'S DECLARATION LOADED BY PATH; A FILE NO
+      GENERATOR NAMES IS NOT AN ORACLE, IT IS A SNAPSHOT.**
+- [x] **AND A **CONTROL ROW IS IMPOSSIBLE** FOR THE CLASS THAT CARRIES THE MOST ROWS -- `C-BOOL` (35/21/21).
+      **ITS EXPECTED VALUE LIVES *IN* THE LANE, SO THERE IS NO THIRD PLACE TO PERTURB IT.** **THIS IS
+      "A FIXTURE THAT CANNOT FAIL IS WORSE THAN NO FIXTURE" *PROVEN IMPOSSIBLE* RATHER THAN MERELY
+      WRITTEN DOWN, AND IT IS WHY THE `C-VALUE` ROWS EXIST.** THE OTHER FLOORS ARE REFUSALS AND THEY
+      FIRED: **`state` FAILED AT `C-CTRL n=1` UNTIL `ctrl_bool`/`ctrl_get`/`ctrl_strip`/`ctrl_seek` WERE
+      ADDED -- THE RECORDED M7 LESSON (`moved == 0` ON LIVE CODE IS A MISSING ROW).**
+- [ ] **AND THREE TIMES AN **ORACLE** WAS WRONG RATHER THAN THE PORT** -- THE CLASS THAT HAS COST THIS TREE
+      THE MOST: `sd_safedt` REIMPLEMENTED `OnnxDataType.to_dtype` (`KeyError: 'f8_e4m3'`);
+      **`v_odt_*` USED `to_dtype().name.lower()` FOR A KEY THAT IS `name.lower()`**; AND `val_keys_n` WAS A
+      LITERAL `7` TYPED INTO THE DRIVER AGAINST CPYTHON'S **6**.
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
