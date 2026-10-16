@@ -1954,7 +1954,7 @@ tinybendygrad	tinybendygrad/engine/worker.bend	256	runtime/ops_bend.bend	ON-DISK
 tinybendygrad	tinybendygrad/engine/worker.bend	427	.agents/slop/probe/worker_oracle.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/engine/worker.bend	449	/tmp/o.py	OUTSIDE-TREE	no	no	-	out of tree by construction	no	-
 tinybendygrad	tinybendygrad/engine/worker.bend	523	tinygrad/helpers.py	ON-DISK/TRACKED	yes	no	code	tinygrad/helpers.py	yes	-
-tinybendygrad	tinybendygrad/engine/worker.bend	606	gates/worker-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/worker-mutate.py	no	-
+tinybendygrad	tinybendygrad/engine/worker.bend	606	gates/worker-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/worker-mutate.py	no	-
 tinybendygrad	tinybendygrad/engine/worker.bend	607	.agents/slop/probe/mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/engine/worker.bend	642	mixin/creation.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/creation.bend	no	-
 tinybendygrad	tinybendygrad/engine/worker.bend	646	.agents/slop/probe/jit_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -2050,9 +2050,6 @@ tinybendygrad	tinybendygrad/mixin/creation.bend	125	tinybendygrad/mixin/creation
 tinybendygrad	tinybendygrad/mixin/creation.bend	126	/tmp/bd.rows	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
 tinybendygrad	tinybendygrad/mixin/creation.bend	126	/tmp/bn.rows	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
 tinybendygrad	tinybendygrad/mixin/creation.bend	126	/tmp/py.rows	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
-tinybendygrad	tinybendygrad/mixin/creation.bend	129	$ORACLE_DIR/cr-gate.sh	UNRESOLVED-ENV	yes	yes	-	BASENAME-ABSENT	no	-
-tinybendygrad	tinybendygrad/mixin/creation.bend	129	$ORACLE_DIR/cr-mutate.py	UNRESOLVED-ENV	yes	yes	-	BASENAME-ABSENT	no	-
-tinybendygrad	tinybendygrad/mixin/creation.bend	129	$ORACLE_DIR/cr-truth.py	UNRESOLVED-ENV	yes	yes	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/mixin/creation.bend	136	gates/cr_graph_census.bend	ON-DISK/TRACKED	yes	no	code	gates/cr_graph_census.bend	no	-
 tinybendygrad	tinybendygrad/mixin/creation.bend	136	gates/crp_graph_census.bend	ON-DISK/TRACKED	yes	no	code	gates/crp_graph_census.bend	no	-
 tinybendygrad	tinybendygrad/mixin/creation.bend	137	gates/cr_graph_census-oracle.py	ON-DISK/TRACKED	yes	no	code	gates/cr_graph_census-oracle.py	no	-
@@ -2307,7 +2304,6 @@ tinybendygrad	tinybendygrad/mixin/reduce.bend	22	/tmp/bn.rows	OUTSIDE-TREE	yes	n
 tinybendygrad	tinybendygrad/mixin/reduce.bend	22	tinybendygrad/mixin/reduce.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/reduce.bend	no	-
 tinybendygrad	tinybendygrad/mixin/reduce.bend	23	/tmp/bd.rows	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
 tinybendygrad	tinybendygrad/mixin/reduce.bend	23	/tmp/bn.rows	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
-tinybendygrad	tinybendygrad/mixin/reduce.bend	25	$TMP/mixin-reduce-gate.py	UNRESOLVED-ENV	yes	yes	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/mixin/reduce.bend	29	oracles/rows-reduce-py.rows	ON-DISK/TRACKED	yes	no	code	oracles/rows-reduce-py.rows	no	-
 tinybendygrad	tinybendygrad/mixin/reduce.bend	30	oracles/rows-reduce-bend.rows	ON-DISK/TRACKED	yes	no	code	oracles/rows-reduce-bend.rows	no	-
 tinybendygrad	tinybendygrad/mixin/reduce.bend	64	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
@@ -2373,17 +2369,17 @@ tinybendygrad	tinybendygrad/nn/datasets.bend	38	nn/datasets.py	MIRROR/UPSTREAM	y
 tinybendygrad	tinybendygrad/nn/datasets.bend	40	tinybendygrad/nn/datasets.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/nn/datasets.bend	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	41	tinybendygrad/nn/datasets.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/nn/datasets.bend	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	42	tinybendygrad/nn/datasets.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/nn/datasets.bend	no	-
-tinybendygrad	tinybendygrad/nn/datasets.bend	43	gates/datasets-oracle.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-oracle.py	no	-
+tinybendygrad	tinybendygrad/nn/datasets.bend	43	gates/datasets-oracle.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-oracle.py	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	84	nn/state.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/nn/state.py	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	86	cifar-10-batches-bin/data_batch_i.bin	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	89	mixin/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/movement.bend	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	109	./../helpers.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/helpers.bend	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	238	nn/onnx.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/nn/onnx.bend	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	299	cifar-10-batches-bin/test_batch.bin	NEITHER	no	no	-	BASENAME-ABSENT	no	-
-tinybendygrad	tinybendygrad/nn/datasets.bend	426	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/nn/datasets.bend	426	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
 tinybendygrad	tinybendygrad/nn/datasets.bend	428	.agents/slop/dk-mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/nn/datasets.bend	432	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
-tinybendygrad	tinybendygrad/nn/datasets.bend	433	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/nn/datasets.bend	432	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/nn/datasets.bend	433	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
 tinybendygrad	tinybendygrad/nn/onnx.bend	2	./../LAWS/spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
 tinybendygrad	tinybendygrad/nn/onnx.bend	3	./../dtype.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/dtype.bend	no	-
 tinybendygrad	tinybendygrad/nn/onnx.bend	4	./../helpers.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/helpers.bend	no	-
@@ -2715,7 +2711,7 @@ tinybendygrad	tinybendygrad/renderer/tc.bend	6	renderer/ptx.bend	ON-DISK/TRACKED
 tinybendygrad	tinybendygrad/renderer/tc.bend	7	./tc.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/renderer/tc.bend	no	-
 tinybendygrad	tinybendygrad/renderer/tc.bend	24	.agents/slop/tcptx-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/renderer/tc.bend	39	/tmp/pyall.rows	OUTSIDE-TREE	yes	no	-	out of tree by construction	no	-
-tinybendygrad	tinybendygrad/renderer/tc.bend	39	gates/tc_ptx_render-oracle.py	ON-DISK/UNTRACKED	yes	no	prose	gates/tc_ptx_render-oracle.py	no	-
+tinybendygrad	tinybendygrad/renderer/tc.bend	39	gates/tc_ptx_render-oracle.py	ON-DISK/TRACKED	yes	no	prose	gates/tc_ptx_render-oracle.py	no	-
 tinybendygrad	tinybendygrad/renderer/tc.bend	40	/tmp/bd_i.rows	OUTSIDE-TREE	yes	no	-	out of tree by construction	no	-
 tinybendygrad	tinybendygrad/renderer/tc.bend	40	tinybendygrad/renderer/tc_ptx.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/renderer/tc_ptx.bend	no	-
 tinybendygrad	tinybendygrad/renderer/tc.bend	41	/tmp/bd_n.rows	OUTSIDE-TREE	yes	no	-	out of tree by construction	no	-
@@ -3169,10 +3165,10 @@ tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2124	.agents/slop/ops_bend-mil
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2703	.agents/slop/bend_mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2705	../helpers.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/helpers.bend	no	-
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2792	.agents/slop/bend_oracle.py	WAS-OURS	yes	yes	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2798	gates/ops_bend_exec-e2e.py	ON-DISK/UNTRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2806	gates/ops_bend_exec-e2e.py	ON-DISK/UNTRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2810	gates/ops_bend_exec-e2e.py	ON-DISK/UNTRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2813	gates/ops_bend_exec-e2e.py	ON-DISK/UNTRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2798	gates/ops_bend_exec-e2e.py	ON-DISK/TRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2806	gates/ops_bend_exec-e2e.py	ON-DISK/TRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2810	gates/ops_bend_exec-e2e.py	ON-DISK/TRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2813	gates/ops_bend_exec-e2e.py	ON-DISK/TRACKED	yes	no	code	gates/ops_bend_exec-e2e.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2814	.agents/slop/bend_e2e.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2817	gates/README.md	ON-DISK/TRACKED	yes	no	code	gates/README.md	no	-
 tinybendygrad	tinybendygrad/runtime/ops_bend.bend	2819	checks/no-txt.py	ON-DISK/TRACKED	yes	no	code	checks/no-txt.py	no	-
@@ -3217,12 +3213,12 @@ tinybendygrad	tinybendygrad/runtime/ops_disk.bend	198	./../helpers.bend	ON-DISK/
 tinybendygrad	tinybendygrad/runtime/ops_disk.bend	199	./../device.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/device.bend	no	-
 tinybendygrad	tinybendygrad/runtime/ops_disk.bend	276	tinygrad/runtime/autogen/io_uring.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/io_uring.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_disk.bend	1464	disk:/tmp/dk.bin	NEITHER	no	no	-	BASENAME-ABSENT	no	-
-tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2093	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2093	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2094	.agents/slop/dk-mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2095	nn/datasets.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/nn/datasets.bend	no	-
-tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2098	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2099	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2100	gates/datasets-mutate.py	ON-DISK/UNTRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2098	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2099	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_disk.bend	2100	gates/datasets-mutate.py	ON-DISK/TRACKED	yes	no	prose	gates/datasets-mutate.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_dsp.bend	1	tinybendygrad/runtime/ops_dsp.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/runtime/ops_dsp.bend	no	-
 tinybendygrad	tinybendygrad/runtime/ops_dsp.bend	1	tinygrad/runtime/ops_dsp.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/ops_dsp.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_dsp.bend	101	autogen/qcom_dsp.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/qcom_dsp.py	no	-
@@ -3317,9 +3313,9 @@ tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	1	tinygrad/runtime/ops_qcom.py
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	69	tinygrad/runtime/autogen/mesa.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/mesa.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	70	.agents/slop/qc_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	155	tinygrad/runtime/autogen/mesa.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/mesa.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	158	gates/qcom-oracle.py	ON-DISK/UNTRACKED	yes	yes	code	gates/qcom-oracle.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	159	gates/qcom_stage3-oracle.py	ON-DISK/UNTRACKED	yes	yes	prose	gates/qcom_stage3-oracle.py	no	-
-tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	160	gates/qcom_cache-oracle.py	ON-DISK/UNTRACKED	yes	yes	prose	gates/qcom_cache-oracle.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	158	gates/qcom-oracle.py	ON-DISK/TRACKED	yes	yes	code	gates/qcom-oracle.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	159	gates/qcom_stage3-oracle.py	ON-DISK/TRACKED	yes	yes	prose	gates/qcom_stage3-oracle.py	no	-
+tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	160	gates/qcom_cache-oracle.py	ON-DISK/TRACKED	yes	yes	prose	gates/qcom_cache-oracle.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	161	.agents/slop/qc_exec_oracle.py	WAS-OURS	yes	yes	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	167	.agents/slop/qc_check.py	ON-DISK/TRACKED	yes	yes	code	.agents/slop/qc_check.py	no	-
 tinybendygrad	tinybendygrad/runtime/ops_qcom.bend	171	gates/README.md	ON-DISK/TRACKED	yes	no	code	gates/README.md	no	-
@@ -3412,13 +3408,12 @@ tinybendygrad	tinybendygrad/runtime/support/autogen.bend	533	.agents/slop/ag-mut
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	640	schedule/indexing.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/schedule/indexing.bend	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	727	references/bend/bend2/base.bend	ON-DISK/UNTRACKED	yes	yes	code	references/bend/bend2/base.bend	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	854	.agents/slop/ag-scope.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1099	gates/ag-fixture.h	ON-DISK/UNTRACKED	yes	no	prose	gates/ag-fixture.h	no	-
-tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1099	gates/autogen-oracle.py	ON-DISK/UNTRACKED	yes	no	prose	gates/autogen-oracle.py	no	-
+tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1099	gates/ag-fixture.h	ON-DISK/TRACKED	yes	no	prose	gates/ag-fixture.h	no	-
+tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1099	gates/autogen-oracle.py	ON-DISK/TRACKED	yes	no	prose	gates/autogen-oracle.py	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1100	.agents/slop/ag-emit-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1102	runtime/ops_nv.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/runtime/ops_nv.bend	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1104	.agents/slop/ag-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1105	.agents/slop/ag-fixture.h	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-tinybendygrad	tinybendygrad/runtime/support/autogen.bend	1108	.agents/slop/ag-oracle.py	WAS-OURS	yes	yes	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 tinybendygrad	tinybendygrad/runtime/support/c.bend	1	tinybendygrad/runtime/support/c.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/runtime/support/c.bend	no	-
 tinybendygrad	tinybendygrad/runtime/support/c.bend	1	tinygrad/runtime/support/c.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/support/c.py	no	-
 tinybendygrad	tinybendygrad/runtime/support/c.bend	10	renderer/nir.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/renderer/nir.bend	no	-
@@ -3880,9 +3875,9 @@ tinybendygrad	tinybendygrad/tensor.bend	2185	mixin/movement.py	MIRROR/UPSTREAM	y
 tinybendygrad	tinybendygrad/tensor.bend	2194	mixin/elementwise.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/elementwise.py	no	-
 tinybendygrad	tinybendygrad/tensor.bend	2218	.agents/slop/tensor-oracle.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/tensor.bend	2300	mixin/gradient.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/gradient.bend	no	-
-tinybendygrad	tinybendygrad/tensor.bend	2798	.agents/slop/tensor-mutate.py	ON-DISK/UNTRACKED	yes	no	code	.agents/slop/tensor-mutate.py	no	-
-tinybendygrad	tinybendygrad/tensor.bend	2799	.agents/slop/tensor-mutate.py	ON-DISK/UNTRACKED	yes	no	code	.agents/slop/tensor-mutate.py	no	-
-tinybendygrad	tinybendygrad/tensor.bend	2800	.agents/slop/zero-classify.py	ON-DISK/UNTRACKED	yes	no	code	.agents/slop/zero-classify.py	no	-
+tinybendygrad	tinybendygrad/tensor.bend	2798	.agents/slop/tensor-mutate.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/tensor-mutate.py	no	-
+tinybendygrad	tinybendygrad/tensor.bend	2799	.agents/slop/tensor-mutate.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/tensor-mutate.py	no	-
+tinybendygrad	tinybendygrad/tensor.bend	2800	.agents/slop/zero-classify.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/zero-classify.py	no	-
 tinybendygrad	tinybendygrad/tensor.bend	2811	.agents/slop/backward/bwd-mutate.sh	NEITHER	yes	yes	-	BASENAME-ABSENT	no	-
 tinybendygrad	tinybendygrad/tensor.bend	2815	tinybendygrad/tensor.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/tensor.bend	no	-
 tinybendygrad	tinybendygrad/tensor.bend	2815	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
