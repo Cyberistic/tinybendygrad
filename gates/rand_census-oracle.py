@@ -4,10 +4,13 @@
     .venv/bin/python gates/rand_census-gate.py
     .venv/bin/python gates/rand_census-oracle.py > /tmp/py.txt
 
-35 ROWS OUT OF THE 51 `tinybendygrad/mixin/rand.bend` PRINTS. THE OTHER SIXTEEN HAVE NO ROW
-HERE, AND THAT IS THE POINT OF THIS FILE -- it is the first CPython lane this layer has had,
-because the one it had, `.agents/slop/rd-truth.py`, IS GONE: not on disk, and not in any git
-history (`git log --all -- .agents/slop/rd-truth.py` is empty). So the sixteen are declared
+36 ROWS OUT OF THE 55 `tinybendygrad/mixin/rand.bend` PRINTS, AND THE OTHER NINETEEN HAVE NO ROW
+HERE. (The first version of this header said "35 out of the 51 ... the other sixteen";
+MEASURED, this file printed 32 and the port-only set is 19, so BOTH numbers were wrong by 3 and
+the count was a transcription rather than a measurement.) THAT IS THE POINT OF THIS FILE --
+it is the first CPython lane this layer has had, because the one it had,
+`.agents/slop/rd-truth.py`, IS GONE: not on disk, and not in any git history
+(`git log --all -- .agents/slop/rd-truth.py` is empty). So the nineteen are declared
 `port_only` by the gate, which ASSERTS THEIR ABSENCE here, rather than being quietly dropped.
 
 WHAT IS HERE, AND WHY EACH ROW IS CPYTHON'S ANSWER RATHER THAN A RESTATEMENT.
@@ -15,9 +18,17 @@ WHAT IS HERE, AND WHY EACH ROW IS CPYTHON'S ANSWER RATHER THAN A RESTATEMENT.
   * `st_zero_g` .. `st_max_g` call `Tensor._next_counter(DEVICE, num)` -- the real method at
     `tinygrad/tensor.py:460`, with `Tensor._device_rng_counters[DEVICE]` RESET to the
     `Tensor([0,0], uint32)` the port injects, because the port's `rd_state` is
-    `Tensor.empty(2, uint32)` and `rand.bend`'s header says the two agree only because the
-    injected counter IS the stored one. The graph signature is CPython's own
+    `Tensor.empty(2, uint32)`. The graph signature is CPython's own
     `t.uop.toposort()`, so a wrong node ANYWHERE moves the row.
+  * `st_zero_v` .. `st_max_v` are the SAME calls read as VALUES: `_next_counter`'s own returned
+    `low.cat(high)`, realised, printed as the `hi:lo` pair `H.i64_text` prints on the port
+    side. `_next_counter` takes NO counter argument, so "set the stored counter to the fixture"
+    is not a parameterisation this file invents -- it is the only way the method can be
+    called at all. THESE FOUR ARE THE WITNESS for `counter.assign` (tensor.py:468), and
+    MEASURED: with the port reading the counter before the write they read
+    `0:0 / 4294967295:4294967290 / 0:4294967289 / 4294967295:1` against CPython's
+    `0:0 / 0:0 / 0:4294967295 / 0:0`, while the four `_g` graph rows were BYTE-IDENTICAL to
+    their pins. A graph row cannot see this defect; a value row can.
   * every `ref_*` row asks a predicate that exists in `tinygrad/mixin/rand.py` and is asked
     AS a predicate, with the same fixture the port's row uses. `ref_*_not` rows are the
     negative arm of each: a predicate family whose every fixture is positive is
@@ -78,6 +89,31 @@ row("st_zero_g", sig(st(0, fresh())))
 row("st_six_g", sig(st(6, fresh())))
 row("st_after_g", sig(st(6)))
 row("st_max_g", sig(st(0xFFFFFFFF, fresh())))
+
+# THE SAME FOUR, AS VALUES. `Tensor._next_counter`'s OWN returned `low.cat(high)`, realised
+# and read, against the STORED counter the fixture sets. THIS IS THE WITNESS, and it is
+# here because the four `_g` rows above CANNOT BE: `num` reaches `_next_counter`'s graph
+# only as CONSTANTS, so dropping `counter.assign` (:468) shifts every returned WORD by
+# `num` and changes no node at all -- MEASURED, dropping it left `st_zero_g`..`st_max_g`
+# byte-identical while it made `st_six_v`, `st_wrap_v` and `st_max_v` wrong.
+# `st_wrap_v`'s counter is `[0xFFFFFFFF, 0]` and its `num` is 6, so `new_low` WRAPS and
+# both halves of tensor.py:467/470's borrow comparison are True. `st_after` did not and
+# could not do this: its counter is whatever the stored one was, and no CONSTANT ever
+# reaches a graph row.
+# THE STORED COUNTER IS RESET ON EVERY ROW, INCLUDING `st_six_v` and `st_max_v` AFTER
+# `st_after_g` HAS LEFT IT AT `[6, 0]` -- `_next_counter` mutates it, so a row that did not
+# reset would be reading the previous row's write.
+def st_v(lo, hi, num):
+  Tensor._device_rng_counters[DEVICE] = Tensor([lo, hi], device=DEVICE, dtype=dtypes.uint32)
+  _, low_high = Tensor._next_counter(DEVICE, num)
+  low, high = low_high.tolist()
+  return i64pair((high << 32) | low)
+
+
+row("st_zero_v", st_v(0, 0, 0))
+row("st_six_v", st_v(0, 0, 6))
+row("st_wrap_v", st_v(0xFFFFFFFF, 0, 6))
+row("st_max_v", st_v(0, 0, 0xFFFFFFFF))
 
 # --- C-REFS. Every predicate below is asked with the fixture `t_ref` uses. -------------
 

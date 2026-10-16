@@ -16,17 +16,27 @@
 # clock becomes a `U32` PARAMETER (a row that can print two answers is not a row), the seed
 # key becomes a 2-element `uint32` TENSOR parameter, and the per-device counter becomes a
 # counter TENSOR handed IN -- `_next_counter`'s five arithmetic lines are ported over it
-# verbatim. `counter.assign(...)` (tensor.py:468) is NOT ported: it is nine nodes that exist
-# only to write a counter back to a device, so `rd_next` returns the same `low.cat(high)` and
-# drops the store. Full derivation: notes, search `RAND-STATE`.
+# VERBATIM, INCLUDING THE WRITE, because the write REBINDS the counter's `UOp` and the two
+# lines after it READ the rebound value. Full derivation: notes, search `RAND-STATE`.
 #     new_low  = counter[0:1] + (num & 0xffffffff)                     tensor.py:466
 #     new_high = counter[1:2] + (num >> 32) + (new_low < counter[0])   tensor.py:467
+#     counter.assign(new_low.cat(new_high))                             tensor.py:468
 #     low      = counter[0:1] - (num & 0xffffffff)                     tensor.py:469
 #     high     = counter[1:2] - (num >> 32) - (counter[0] < (num & 0xffffffff))
 #     return seed, low.cat(high)                                       tensor.py:471
-# Python reads the ALREADY-STORED counter here and the port's `st_*` rows read the INJECTED
-# one, so the two agree only because the injected counter IS the stored one -- `st_after` is
-# the row that exercises that rather than assuming it.
+# WHAT THIS USED TO SAY, AND WHY IT WAS WRONG: that `counter.assign(...)` "is nine nodes that
+# exist only to write a counter back to a device, so `rd_next` returns the same `low.cat(high)`
+# and drops the store", and that the port's `st_*` rows read an INJECTED counter "so the two
+# agree only because the injected counter IS the stored one". BOTH HALVES WERE FALSE.
+#   * `assign` is NOT write-only. MEASURED on this tree: before `_next_counter("PYTHON", 6)`
+#     `counter.uop.op == BUFFER`, after it is `AFTER` with value `[6, 0]`, and :469-:470 read
+#     THAT. The port that dropped the store returned `[4294967290, 0]` where CPython returns
+#     `[0, 0]` -- the counter MINUS `num`, for every `num`.
+#   * the injected counter is the PRE-write counter and so is CPython's `-- which is why the
+#     two lanes agree after the fix, not before.
+# `st_after` fed `st_six`'s answer back in "so the borrow is exercised"; it did not, because
+# the counter is an ALLOC and no counter VALUE reaches a graph row. The borrow is exercised by
+# `st_wrap_v`, whose counter is a CONSTANT. See the four `_v` rows and `rd_next.v`.
 #
 # THE WALLS. Four of the first five are OWNERSHIP walls (the def lives in a file this unit
 # may not write); only W6 is a device-state wall. Each `TODO(pN)` below is the tracker.
@@ -82,26 +92,39 @@
 #      TODO(p3) mixin/rand.py:249  `randperm` -- `argsort`.
 #
 # THE GATE. Nothing is executed; every graph row is the SIGNATURE of the lazy graph.
-#   sh $ORACLE_DIR/rd-gate.sh
-#   .venv/bin/python $ORACLE_DIR/rd-truth.py                  > /tmp/py.txt
-#   ./bin/bend tinybendygrad/mixin/rand.bend                  > /tmp/bd.txt
-#   ./bin/bend tinybendygrad/mixin/rand.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
-#   diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
-# Four row kinds, because four kinds of bug are invisible to the others. `<n>_g` puts node
+#   .venv/bin/python gates/rand_census-gate.py
+# and that is THE WHOLE PROCEDURE. This block used to name three files under
+# `$ORACLE_DIR` (`rd-gate.sh`, `rd-truth.py`, `rd-mutate.py`, where `$ORACLE_DIR` is
+# `.agents/slop/`) and a four-line `diff` of two transcripts. MEASURED: all three are ABSENT
+# and `git log --all -- <each>` is EMPTY -- none of them was EVER COMMITTED, so the recipe
+# was never runnable and the "GATE STATUS, MEASURED 2026-10-02: 31 of 49 shared rows match"
+# under it has no instrument behind it and is not re-takeable. `AGENTS.md` names the cause
+# ("do not put a gate's inputs under `.agents/slop/` -- that prescription is what deleted
+# them"; "a gate's required input belongs BESIDE THE GATE, IN GIT"). The recipe is deleted
+# rather than reconstructed: a reconstruction would be a guess wearing a fixture's clothes,
+# and the gate that exists is `gates/rand_census-gate.py` -- beside its own driver and its
+# own oracle, in git, and it RUNS. `gates/rand_census-oracle.py` is the CPython lane and
+# `./bin/bend tinybendygrad/mixin/rand.bend` is the port lane, because THIS FILE IS THE
+# DRIVER: `main` is the row generator and nothing about the row set is transcribed anywhere.
+# Five row kinds, because five kinds of bug are invisible to the others. `<n>_g` puts node
 # count, root op, root nsrc AND the root's src-op sequence in ONE string (a count row printed
 # `ALLOC|ALLOC|` for a two-src root while every `nsrc=` stayed correct). `<n>_d` reads
 # shape/dtype through the node the fold DOES answer, because "can the fold answer X" is a
-# property of the whole subgraph. `st_*` runs CPython's own five `_next_counter` lines against
-# `Tensor([lo, hi], dtype=dtypes.u32)`, so the expectations are CPython's answer and not this
-# port's. `ref_*` asks the REFUSALS as CPython's own predicates, because a pure Bend def
+# property of the whole subgraph. `st_*_g` is CPython's OWN `Tensor._next_counter` graph and
+# `st_*_v` is CPython's OWN `_next_counter` return VALUE, both against a counter the oracle
+# sets to the fixture, so the expectations are CPython's answer and not this port's -- and
+# the `_v` half exists BECAUSE the `_g` half cannot see a value (see the header).
+# `ref_*` asks the REFUSALS as CPython's own predicates, because a pure Bend def
 # cannot raise.
 #
-# GATE STATUS, MEASURED 2026-10-02: **RED**. `ALL PROOFS CHECK` in both lanes and the two
-# lanes print BYTE-IDENTICAL output; 31 of 49 shared rows match and 18 do not. It is here
-# rather than in a report because a reader who runs the gate will otherwise think the file is
-# broken. All 31 green rows are non-graph (17 `ref_*` refusals, 7 `ref_*` dtype arithmetic, 2
-# `ref_*` counts, 3 `ref_drop_arm*`, 2 BEND-ONLY fold-can-answer rows); all 18 red rows are
-# graph rows, which is the whole of the graph rows the file prints.
+# GATE STATUS. `gates/rand_census-gate.py`: rc=0, 55 rows, 32 compared and byte-identical,
+# 4 `st_*_g` DECLARED DIVERGENCES pinned on BOTH sides, 19 port-only. The four divergences
+# are the `st_*` GRAPH rows and they are RED BECAUSE THE PORT'S ARENA IS NOT THREADED (R1),
+# not because of anything the header above used to claim: MEASURED with the `_v` rows
+# present and `counter.assign` PORTED, all 32 compared rows agree, so no `ref_*` predicate
+# and no counter VALUE is red. The graph divergence is a WALL (`O.Arena` is affine), it is
+# pinned so it cannot drift silently, and it is the same wall `bits6_g` and `arange3_g`
+# are pinned against.
 #   R1 THE ARENA, and it is not "build in the last arena". `bits6_g` prints
 #      `n=1 op=RESHAPE nsrc=2 srcops=STACK|STACK topo=CONST/0` against CPython's `n=81`, and
 #      `st_six_g` prints `n=2` against CPython's `n=20`. A toposort of ONE node means the
@@ -628,20 +651,32 @@ def rd_rand(contig: Bool, +ar: O.Arena, +key: T.Tensor, +ctr: T.Tensor, +ds: Lis
   rd_rand.of(contig, rd_btr(False{}, ar, rd_bits(ar, key, ctr, rd_bits_num(ds, dt), dev), ds, dt), ds, dt, dev)
 
 # ===========================================================================
-# rand.py:46 `_next_counter` -- the arithmetic is the WHOLE of it once the device write is
-# gone, and it is ported over an INJECTED counter tensor. See the header.
+# rand.py:46 `_next_counter` -- ported over an INJECTED counter tensor, WITH THE WRITE.
 # `U32` cannot be read twice in one expression, so the five lines are six defs and
 # `rd_next.nlo` is read twice (once for the compare, once for nothing -- Python's `new_high`
-# reads `new_low` and `low` separately) while `ctr` is read in three of them. The
+# reads `new_low` and `low` separately). The
 # `CAST(bool -> uint32)` of each `CMPLT` IS A NODE: nodes 49/50 and 63/64 of
 # `Tensor.rand(2,3)`, and dropping either is a two-node change every `nsrc` and `op` row
 # cannot see.
 # `rd_next.cat` is `low.cat(high)`, which is `op_cat1` and therefore a STACK over
 # `low.cat(high)`'s two operands in `high`'s arena.
-# TODO(p3) tinygrad/tensor.py:468  `counter.assign(...)` -- the device write. It needs
-#   `Tensor.assign` (tensor.py:236) in full, whose other eight arms want a `Buffer`,
-#   `has_buffer_identity`, `is_realized` and `UOp.clone`; `mixin/tensor.bend` records it
-#   as its own `TODO(p3)`.
+#
+# THE WRITE IS PORTED, AND IT WAS NOT A DEVICE DETAIL. `counter.assign(new_low.cat
+# (new_high))` (tensor.py:468) REBINDS `counter.uop` to the `AFTER` node it builds
+# (tensor.py:237 for a weak dtype, :250-252 for the rest), so `counter[0:1]` at :469 and
+# `counter[0]`/`counter[1:2]` at :470 READ THE WRITTEN VALUE. The header used to claim the
+# assign "exists only to write a counter back to a device, so `rd_next` returns the same
+# `low.cat(high)` and drops the store", and the claim was false twice over: the store is not
+# write-only, and dropping it CHANGES THE VALUE. `rd_next.stored` is the rebound counter and
+# `rd_next.lo`/`cmp2`/`hi2` read IT, which is what tensor.py:469-470 do.
+#   before  `_next_counter("PYTHON", 6)` returns [0, 0] with counter [0, 0] stored as [6, 0]
+#   dropping the write            returned [4294967290, 0]  -- the counter MINUS `num`
+# Gated by `st_six_v`, `st_wrap_v` and `st_max_v`, which print the VALUE.
+# TODO(p3) tinygrad/tensor.py:468  `counter.assign(...)` -- the DEVICE write itself, the
+#   STORE the AFTER spine writes. It needs `Tensor.assign` (tensor.py:236) in full, whose
+#   other eight arms want a `Buffer`, `has_buffer_identity`, `is_realized` and `UOp.clone`;
+#   `mixin/tensor.bend` records it as its own `TODO(p3)`. WHAT IS LEFT IS EXACTLY THE STORE:
+#   the REBINDING is above, and it is the half that changes the answer.
 # ===========================================================================
 def rd_mask(n: U32) -> U32: n
 def rd_hi32(n: U32) -> U32: U32.shrn(n, 32n)
@@ -653,17 +688,49 @@ def rd_next.hi1(+q: U1, +ctr: T.Tensor) -> T.Tensor:
   MO.mo_bin_c(rd_slice(ctr, 1), O.OpsADD{}, MO.mo_ki(rd_hi32(U1.v(q))))
 def rd_next.nhi(+q: U1, +ctr: T.Tensor) -> T.Tensor:
   MO.mo_bin(rd_next.hi1(q, ctr), O.OpsADD{}, rd_next.cmp(q, ctr))
-def rd_next.lo(+q: U1, +ctr: T.Tensor) -> T.Tensor:
-  MO.mo_sub(rd_slice(ctr, 0), MO.mo_const_t(ctr, MO.mo_ki(rd_mask(U1.v(q)))))
-def rd_next.cmp2(+q: U1, +ctr: T.Tensor) -> T.Tensor:
-  MO.mo_cast_t(MO.mo_bin(rd_scalar(ctr, 0), O.OpsCMPLT{}, MO.mo_const_t(ctr, MO.mo_ki(rd_mask(U1.v(q))))), S.uint32())
-def rd_next.hi2(+q: U1, +ctr: T.Tensor) -> T.Tensor:
-  MO.mo_sub(MO.mo_sub(rd_slice(ctr, 1), MO.mo_const_t(ctr, MO.mo_ki(rd_hi32(U1.v(q))))), rd_next.cmp2(q, ctr))
-def rd_next.hi(+q: U1, +ctr: T.Tensor) -> T.Tensor: rd_next.hi2(q, ctr)
 def rd_next.cat(+x: T.Tensor, +y: T.Tensor) -> T.Tensor: op_cat1(x, y)
+def rd_next.stored(+q: U1, +ctr: T.Tensor) -> T.Tensor:
+  rd_next.cat(rd_next.nlo(q, ctr), rd_next.nhi(q, ctr))
+# THE THREE READS ARE OFF THE REBOUND COUNTER `c`, WHICH IS NOT `ctr`. THAT IS THE WHOLE
+# FIX, and it is three words of argument name: the previous three defs read `ctr`.
+def rd_next.lo(+q: U1, +c: T.Tensor) -> T.Tensor:
+  MO.mo_sub(rd_slice(c, 0), MO.mo_const_t(c, MO.mo_ki(rd_mask(U1.v(q)))))
+def rd_next.cmp2(+q: U1, +c: T.Tensor) -> T.Tensor:
+  MO.mo_cast_t(MO.mo_bin(rd_scalar(c, 0), O.OpsCMPLT{}, MO.mo_const_t(c, MO.mo_ki(rd_mask(U1.v(q))))), S.uint32())
+def rd_next.hi2(+q: U1, +c: T.Tensor) -> T.Tensor:
+  MO.mo_sub(MO.mo_sub(rd_slice(c, 1), MO.mo_const_t(c, MO.mo_ki(rd_hi32(U1.v(q))))), rd_next.cmp2(q, c))
 def rd_next(+ar: O.Arena, n: U32, +ctr: T.Tensor) -> T.Tensor:
   +q: U1 = U1{n}
-  rd_next.cat(rd_next.lo(q, ctr), rd_next.hi(q, ctr))
+  +c: T.Tensor = rd_next.stored(q, ctr)
+  rd_next.cat(rd_next.lo(q, c), rd_next.hi2(q, c))
+# `rd_next.v` -- THE SAME FIVE LINES OVER A COUNTER THAT HAS A VALUE, because a graph row
+# cannot see one: `rd_ctr` is an ALLOC, so every `st_*_g` row is a SHAPE and the shape is
+# shift-invariant -- dropping the write moved 0 of 4 of them. `H.i64_of_hi_lo` IS what
+# `low.cat(high)` is (a 64-bit counter, and `H.i64_text` prints the `hi:lo` the oracle's
+# `i64pair` prints). It reads no Tensor, so a defect in the SHRINK/RESHAPE/STACK plumbing
+# above is invisible to it -- and that plumbing is what `st_*_g` is for. Between them the two
+# row kinds cover disjoint halves, which is why the fix needed both.
+#
+# AND IT IS BLIND TO `num`, AND THAT IS NOT A GAP -- IT IS THE ALGEBRA. `_next_counter`
+# RETURNS THE COUNTER, so `low = (ctr0 + m) - m = ctr0` and
+# `high = (ctr1 + h + (nl < ctr0)) - h - (nl < m)` with the two borrows the SAME comparison,
+# and `m` and `h32` CANCEL. MEASURED, M1 (`rd_mask`'s mask dropped, `n -> n - 1`) moves 2 rows
+# -- `st_zero_g` and `st_max_g` -- and NONE of the four `_v` rows. A value row that moved on
+# `num` would be pinning something CPython says does not exist. SO: the `_v` rows pin the
+# five lines' ALGEBRA and the `_g` rows pin `num`'s ARRIVAL, and neither alone is the method.
+def rd_next.v.put(b: Bool) -> U32: Bool.pick(U32, b, 1, 0)
+# THREE `U32`s AND A RECORD, for the reason `PK` carries: a `U32` cannot be read twice in one
+# expression, `lo` is read by the increment and by the increment's borrow, and `n` by
+# `rd_mask` and by `rd_hi32`. `PK` is the pair and `U1` the scalar, so both already exist.
+def rd_next.v(lo: U32, hi: U32, n: U32) -> H.I64:
+  +c: PK = PK{lo, hi}
+  +q: U1 = U1{n}
+  +m = rd_mask(U1.v(q))
+  +nl = U32.add(PK.i(c), m)
+  +bh = rd_next.v.put(U32.is_lt(nl, PK.i(c)))
+  +nh = U32.add(U32.add(PK.k(c), rd_hi32(U1.v(q))), bh)
+  +bl = rd_next.v.put(U32.is_lt(nl, m))
+  H.i64_of_hi_lo(U32.sub(U32.sub(nh, rd_hi32(U1.v(q))), bl), U32.sub(nl, m))
 
 # ===========================================================================
 # rand.py:50 `rand`. `dt = to_dtype(dtype or dtypes.default_float)` (rand.py:62) and the
@@ -1070,6 +1137,23 @@ def t_drop2() -> IO(Unit): CR.cr_row("drop_arm2", rd_drop.pick(rd_drop.arm(True{
 #                               so the two lanes AGREE here. They DISAGREE for num > 2**32
 #                               and that is unreachable (17 GiB of random bits); the header
 #                               names it rather than a row pretending to cover it
+#
+# THE FOUR `_v` ROWS ARE THE VALUE HALF, AND THE GRAPH ROWS CANNOT REPLACE THEM. A graph
+# row is the SIGNATURE of the lazy graph, and this counter's signature is INVARIANT under
+# the defect: `num` appears only as CONSTANTS, so reading the counter before the write and
+# reading it after differ by exactly `num` in every word and NOT AT ALL in the node set.
+# MEASURED on the three fixtures below with the write DROPPED: `st_six_v`, `st_wrap_v` and
+# `st_max_v` were wrong and `st_zero_v` agreed, and `st_zero_g`..`st_max_g` were all
+# unchanged -- four graph rows that cannot see it and three value rows that can.
+#   st_zero_v  ctr [0,0]           num 0          the CONTROL: both lanes answer [0,0]
+#   st_six_v   ctr [0,0]           num 6          what `rand(2,3)` asks for
+#   st_wrap_v  ctr [4294967295,0]  num 6          THE BORROW: `new_low` wraps, so both
+#                                                   halves of the borrow compare are TRUE
+#   st_max_v   ctr [0,0]           num 2**32-1    `(num & 0xffffffff)` is the identity and
+#                                                   the mask is the WHOLE low word
+# `st_after` was the borrow's fixture and it is NOT: the counter is an ALLOC, so no counter
+# VALUE reaches it and the borrow was never exercised there -- it is exercised by
+# `st_wrap_v`, where the counter is a CONSTANT and `0 + 6` does wrap.
 # ===========================================================================
 def t_st_zero() -> IO(Unit):
   +ar = O.Arena.empty()
@@ -1092,6 +1176,12 @@ def t_st_max() -> IO(Unit):
   +k = rd_key(ar)
   +c = rd_ctr(T.Tensor.ar(k))
   rd_row("st_max_g", rd_next(T.Tensor.ar(c), 4294967295, c))
+def t_st_val() -> IO(Unit):
+  do IO<Unit>:
+    rd_nm("st_zero_v", H.i64_text(rd_next.v(0, 0, 0)))
+    rd_nm("st_six_v", H.i64_text(rd_next.v(0, 0, 6)))
+    rd_nm("st_wrap_v", H.i64_text(rd_next.v(4294967295, 0, 6)))
+    rd_nm("st_max_v", H.i64_text(rd_next.v(0, 0, 4294967295)))
 
 
 # ===========================================================================
@@ -1145,6 +1235,7 @@ def main() -> IO(Unit):
     b : Unit <- t_st_six()
     c : Unit <- t_st_after()
     d : Unit <- t_st_max()
+    t_st_val()
     t_ref()
     e : Unit <- t_arange3()
     f : Unit <- t_arange5()
@@ -1160,8 +1251,10 @@ def main() -> IO(Unit):
 # ===========================================================================
 # THE MEASURED MUTATION TABLE. EIGHT one-token edits through the INTERPRETED lane,
 # each diffed row-by-row against the unmutated output and reverted from a byte snapshot.
-# Baseline: 49 printed rows, 31 shared with CPython and GREEN. Driver: `$ORACLE_DIR/
-# rd-mutate.py`. Full table with row sets: `.agents/slop/notes/bend2-constraints.md`.
+# Baseline: 55 printed rows, 32 shared with CPython and GREEN. Driver: this file is its own
+# driver, so the mutation is a one-token edit here re-run under `gates/rand_census-gate.py`;
+# the transcript is `gates/artifacts/rand_census-gate/bd.out`. Full table with row sets:
+# `.agents/slop/notes/bend2-constraints.md`.
 #
 #  M1 `rd_mask`'s mask dropped (`n` -> `n - 1`)                2  st_max_g, st_zero_g
 #  M2 `rd_p64`'s two args SWAPPED (reversed srcs)               1  tfb3_g
@@ -1171,6 +1264,27 @@ def main() -> IO(Unit):
 #  M6 `rd_drop.arm`'s innermost arm 2 -> 1                      1  ref_drop_arm1
 #  M7 `rd_p_ok`'s `<= 1` relaxed to `< 1`   [MOVED 0, THEN 1]   1  ref_dropout_p1 (see below)
 #  M8 CONTROL: a comment                                       0  nothing, which is the point
+#  M9 `rd_next`'s three reads moved BACK to the pre-write `ctr` 4  st_zero_g, st_six_g, st_after_g,
+#                                                                    st_max_g -- AND NONE OF THEM
+#                                                                    IS A `_v` ROW (see below)
+#  M10 M9 PLUS `rd_next.v` transcribed against the same pre-write 7  the 4 `_g` rows AND st_six_v,
+#      counter -- THE PORT AS IT STOOD                                  st_wrap_v, st_max_v
+#
+# M9 AND M10 ARE THE COST OF THE WITNESS, IN NUMBERS, AND M9 IS THE NINTH RECORDED CAUSE.
+# `rd_next.v` is a HOST `H.I64` model of the same five lines, so it does not read the tensor
+# `rd_next` and does not follow it. MEASURED: reverting the tensor `rd_next` ALONE moved 4 of
+# 55 rows and every one of them was a `st_*_g` PIN, which means the pins were GREEN on a port
+# that returned the wrong number -- the reason the semantic half needed a second row kind at
+# all. M10 reverts both and 3 of the 4 `_v` rows disagree with CPython
+# (`4294967295:4294967290`, `0:4294967289`, `4294967295:1` against `0:0`, `0:4294967295`,
+# `0:0`) while `st_zero_v` agrees, because `num = 0` is the control. THE CAUSE FOR M9 IS
+# "the witness is a separate def": a defect in the tensor form's CHOICE OF BASE moves no row.
+# What a future regression needs is M9 AND M10 TOGETHER, and the honest statement is that a
+# regression in the tensor form alone is caught by a re-read of `rd_next.v` against it, not by
+# a row.
+#
+# M1 IS BLIND TO THE `_v` ROWS AND THE REASON IS THE ALGEBRA, NOT A COVERAGE GAP: see
+# `rd_next.v`'s own comment. `_next_counter` returns the counter, so `num` cancels.
 #
 # FIVE THINGS THIS TABLE SAYS THAT "31 GREEN ROWS" DOES NOT.
 #
