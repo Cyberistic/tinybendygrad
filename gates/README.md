@@ -42,10 +42,18 @@ nothing about any particular gate, so a bug in it cannot be a bug in a claim.
 
 This section used not to exist, and its absence is why `gates/README.md` spent its header on why
 gates are Python and never answered the only question a reader has: **who invokes them.** MEASURED
-before `runner.py`: `bin/`, `checks/e2e.sh` and `checks/differ.py` between them name **3** paths
-under `gates/`, and all three are `cstyle-live.rows` (a fixture), `gatekit.py` (the plumbing) and
-`retention-check.py` (a checker). **The numerator of "a gate that anything runs" was 0 of 77.** So
-every instruction any agent received that said *run gate X* was a sentence nobody could act on.
+2026-10-16T15:55Z, **walking `checks/` rather than naming paths in it**: **`checks/gatesweep.py` is
+the one instrument under `checks/` that names a gate, and it sweeps every `gates/*-gate.py` by
+directory walk**; `gates/runner.py` delegates to it by pinned `sha256`. MEASURED over the ten
+automated surfaces (`.github/workflows/*.yml` and `.pre-commit-config.yaml`), **0** invoke a gate or
+a `checks/` instrument — so *nothing that runs automatically runs a gate*, and **no CI-verdict claim
+can be made**.
+
+**A RUNNER ALREADY EXISTED AND AN EARLIER REVISION OF THIS FILE SAID IT DID NOT.** The "numerator 0"
+reading came from naming three paths — `bin/`, `checks/e2e.sh`, `checks/differ.py` — instead of
+walking `checks/`, so it was right by accident and its denominator was already wrong.
+`gates/docnum-claim-gate.py` HOLDS THE COMPARISON AND IS WHAT CAUGHT IT; `AGENTS.md` RECORDS
+`checks/gatesweep.py` FIVE TIMES AND THIS SECTION READ IT WRONG FOR ONE DAY.
 
 ### RUN ONE
 
@@ -72,10 +80,10 @@ hour of `bend` at 1–2 GiB a piece.
 
 | | how | measured |
 |---|---|---|
-| **A** | `checks/gatesweep.py:population()` — a directory walk for `*-gate.py` | 77 |
-| **B** | `gates/gates-pop.py:discover()` in the `gates/` home — AST `__main__`, homes derived by `gate_homes()` | 115 |
+| **A** | `checks/gatesweep.py:population()` — a directory walk for `*-gate.py` | **`gatesweep.py --plan`** |
+| **B** | `gates/gates-pop.py:discover()` in the `gates/` home — AST `__main__`, homes derived by `gate_homes()` | **`gatesweep.py --plan`, the CONTROL line** |
 | **LANES** | entry points a gate names as **its own input**, read from `gatekit.Gate(bend=…, oracle=…)` string literals | 12 |
-| **RUN SET** | `A \ LANES` | **77** |
+| **RUN SET** | `A \ LANES` | **`gatesweep.py --plan`** |
 | **EDGE** | gates that construct a `Gate` and are *outside* the run set — **the shape's hole, measured** | **0** |
 | | gates in the run set that construct no `Gate` (hand-rolled: `msgdiff-gate`, `indexread-gate`, `devtag-gate`, …) | 14 |
 | | entry points that are neither (mutators, generators, meta-instruments) | 26 |
@@ -94,7 +102,7 @@ from the kernel's own `Gate(...)` declaration instead, and the 9 gates are back.
 |---|---|---|
 | `PIN-DRIFT` | `gatekit.oracle_drift(DELEGATED)` — the three files `runner.py` delegates to moved | `checks/gatesweep.py` sha mismatch |
 | `NO-POPULATION` | an empty derivation, or a `Gate`-constructing gate outside the run set | the empty-tree plant |
-| `INDEX-ARM` | `checks/index-arm-gate.py:report()` ≠ `PASS` — **47 paths right now** (31 deletion, 16 stale, 0 foreign-add, 555 intent-to-add) | **this is why a sweep cannot run today** |
+| `INDEX-ARM` | `checks/index-arm-gate.py:report()` ≠ `PASS` — **read the count from that gate; do not transcribe it here** | **this is why a sweep cannot run today** |
 | `LOCK-HELD` | `gates/artifacts/.runner.lock` exists, live **or stale** | a crashed sweep bricks the tree until you `rm` it, by design |
 | `TOKEN-MISMATCH` | a gate that **says** one of `gatekit`'s five and **exits** another | `gates/ops_python_exec-gate.py:113,115,204` `sys.exit(<string>)` → prints, exits 1 |
 
@@ -127,7 +135,7 @@ the repeats present in it):
 | `decomp_graph_census-gate` | 35.9–36.8 | 740–1024 | 1.03× · **+38%** |
 
 Three runs of the ten gave **`PASS=8 FAIL=2` every time** — the verdicts are stable — and
-**113.1 s / 113.0 s / 110.5 s wall**. Projected over the 77-gate set: **788–913 s (13.1–15.2 min)**.
+**113.1 s / 113.0 s / 110.5 s wall**. Projected over the run set: **788–913 s (13.1–15.2 min)**.
 
 **THE MEASUREMENT NOISE IS PART OF THE ANSWER.** `decomp_graph_census-gate`'s peak moved **740 →
 1024 MB (+38%)** and `indexread-gate`'s runtime moved **1.8 → 3.5 s (1.94×)** on the SAME command
