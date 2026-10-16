@@ -1,6 +1,0 @@
-gates/decomp_graph_census.bend
-gates/decomp_graph_census-gate.py
-gates/decomp_graph_census-oracle.py
-gates/decomp_graph_census-mutate.py
-gates/decomp_graph_census-pins.rows
-.agents/slop/l2ipool
