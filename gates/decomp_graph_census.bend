@@ -12,9 +12,15 @@
 # rule has nothing to discover. The substitute axis is the FIXTURE, and the fixture
 # population is the port's OWN: `l2i.pick` (:2780, thirty-three arms), `dd_cmx.pick`
 # (:2931, eight) and `f2f.pick` (:3053, seven). Thirty of `l2i.pick`'s arms read the word
-# pool and three mint a CONST (`l2i.const`), and `dd_cmx.pick`'s eight print a scalar, so
-# the population is 30 `l2i` + 3 `l2i.const` + 2 `unpack32` + 7 `f2f` = **42**. Both bend
-# lanes emit every row including a refusal, so the counts agree BY CONSTRUCTION and no
+# pool and three mint a CONST (`l2i.const`).
+#
+# THE POPULATION IS 30 `l2i.pick` arms + `lgz` + 3 `l2i.const` + 2 `unpack32` + 7 `f2f` = **43**,
+# and THE 31ST `l2i` ROW IS A CELL `l2i.pick` DOES NOT LIST. Thirty of `l2i.pick`'s arms read the
+# word pool and three mint a CONST, `dd_cmx.pick`'s eight print a scalar, `uq` is a second
+# `unpack32` fixture on purpose, and `lgz` is a second CAST cell on purpose: a target axis that is
+# the port's own fixture table has **zero** 64-bit-float cells, and that is the third member of
+# the pool-fed-blindness class this file already names twice (`l2i.const`'s three, and `uq`).
+# Both bend lanes emit every row including a refusal, so the counts agree BY CONSTRUCTION and no
 # exclusion list is needed to make them meet.
 #
 # `l2i.const`'s THREE ARE HERE BECAUSE A POOL-FED RULE CANNOT SEE THEM. `l2i.pick`'s cases
@@ -154,6 +160,28 @@ def dc_l2i_pick(+i: U32) -> List<&2, String>:
     case 26: dc_l2i1("lgs", O.OpsCDIV{}, S.uint32(), S.uint32(), 9n, 4)
     case 27: dc_l2i1("lgt", O.OpsCMOD{}, S.uint32(), S.uint32(), 9n, 4)
     case 28: dc_l2i1("lgu", O.OpsCAST{}, S.single(), S.single(), 19n, 2)
+    # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, AND IT IS NOT ONE OF
+    # `l2i.pick`'s ARMS. A TARGET AXIS THAT IS THE PORT'S OWN FIXTURE TABLE HAS **ZERO**
+    # 64-BIT-FLOAT CELLS, AND THAT IS THE THIRD MEMBER OF THE POOL-FED-BLINDNESS CLASS:
+    # MEASURED over the 33 arms of `l2i.pick` (:2780-2834), `dt` ranges over {i32, i64, u64,
+    # u32, f32} and `dd_wpool` has no f64 word, so `S.double()` -- the only member of
+    # `LAWS/spec.bend`'s own `Dt` population with 64 bits AND `CFloat` (:742) -- reaches `l2i`
+    # from NO ROW. `uq` is this file's answer to the same blindness from the SOURCE side (it is
+    # the second `unpack32` fixture and `dc_up2` says why); `lgz` is the answer from the TARGET
+    # side, and it is counted in NEITHER count in the header for the same reason `uq` is not.
+    #
+    # IT IS NOT A NEW CLASS. Same op, same source, same two pool words, and `dt` differing by
+    # ONE FIELD -- `bits`, 32 against 64 -- which is the `de` shape in this file's vocabulary:
+    # a requested dtype that the receiver's differs from, so the guard that decides is read.
+    # AND THE PAIR IS WHAT LOCATES THE GUARD, because `lg5` is already a row at `(i64, f32)`:
+    # MEASURED (`.agents/slop/l2ipool/probe65.bend`),
+    #   lg5 i64<-f32  sel=1  l2i_dt=i32    -> BUILDS `l2i_cast1`
+    #   lgz f64<-f32  sel=1  l2i_dt=NONE   -> REFUSES
+    # SAME `sel`, SAME source, SAME words, and `l2i_cast.ldt`'s `case 3` is the only arm that
+    # bypasses the guard, so the refusal is `l2i_cast.wide`'s `l2i_dt(dt) == None`
+    # (dtype.bend:678) and NOT `l2i_cast.got`'s `case 2: None{}` (:667). That REFUTES this
+    # gate's own footer, which named :667.
+    case 29: dc_l2i1("lgz", O.OpsCAST{}, S.double(), S.single(), 19n, 2)
     case _: dc_l2i1("lgy", O.OpsCAST{}, S.int32(), S.int32(), 4n, 2)
 
 def dc_l2i_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
@@ -267,13 +295,15 @@ def dc_f2f_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
 
 # ----------------------------------------------------------------------- the fold
 
-# `l2i.pick`'s pool-fed arms are the thirty `case`s above, `l2i.const`'s are the three in
-# `dc_lc_pick`, and `f2f.pick`'s are the seven. All are counted where the header states them,
-# so a reader checks them against `dtype.bend` rather than taking this file's word for it.
-# `uq` is the second `unpack32` fixture and is counted in neither count above, because
-# `unpack32` is ONE def the header counts ONCE and this file drives it TWICE -- on purpose,
-# and `dc_up2` says why.
-def L2I_N() -> Nat: 30n
+# `l2i.pick`'s pool-fed arms are the THIRTY `case`s above, plus `lgz`, which is a cell of the
+# `(dt, xdt)` product that `l2i.pick` does NOT list and that this file drives on purpose; then
+# `l2i.const`'s three in `dc_lc_pick`, and `f2f.pick`'s seven. The thirty are counted where the
+# header states them, so a reader checks them against `dtype.bend` rather than taking this
+# file's word for it. `uq` is the second `unpack32` fixture and `lgz` is the target-side
+# counterpart; NEITHER is counted in either count above, because `unpack32` is ONE def the
+# header counts ONCE and this file drives it TWICE, and because `lgz` is not `l2i.pick`'s arm
+# to begin with -- both on purpose, and both say so where they are defined.
+def L2I_N() -> Nat: 31n
 def LC_N() -> Nat: 3n
 def F2F_N() -> Nat: 7n
 

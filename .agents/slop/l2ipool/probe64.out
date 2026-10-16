@@ -1,0 +1,16 @@
+f64<-f32@19=refused:unported
+
+f32<-f32@19=refused:unported
+
+f64<-u32@9 =refused:unported
+
+f64<-i32@4 =refused:unported
+
+f64<-bool@14=refused:unported
+
+f16<-f32@19=refused:unported
+
+bf16<-f32@19=refused:unported
+
+i64<-f32@19=CAST/1[i32],PARAM/0,ADD/2,CAST/1[i32],MUL/2,RECIPROCAL/1,CONST/0,MUL/2,AND/2,CMPLT/2,CONST/0,CMPNE/2,CONST/0,CONST/0
+

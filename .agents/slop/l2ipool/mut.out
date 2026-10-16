@@ -1,0 +1,33 @@
+staging 3 copies; every bend run is one file at a time
+BASE LANE: 43 rows, and the gate's `ROWS` names 43
+LABEL  KIND  MOVED BARE  ROWS / VERDICT
+A1     ADt       6    0  lg3,lg4,lg5,lg6,lgo,lgv  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_cast0/cast1's CAST ADt reads boolean -- ONE use of ldt broken
+A2     FOLD      4    4  lg2,lg4,lgw,lgx  visible under the bare printer too
+                         l2i_cast0/cast1's fold test reads boolean -- the OTHER use of ldt
+A3     ADt      16    0  lg3,lg4,lg5,lg6,lg7,lgo,lgq,lgs,lgv,lgy,q1,q2,q3,q4,q5,q7  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         EVERY dc_cast ADt is hardcoded boolean -- op.bend's own CAST helper
+A4     ADt       6    0  lg3,lg4,lg5,lg6,lgo,lgv  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         dd_cast_fold's False arm mints boolean -- the helper A1 goes through
+A5     ADt       0    0  -  DEAD on this population
+                         dd_cast_bool's True arm is boolean, not single -- DEAD BY REACHABILITY, which is a DIFFERENT ANSWER FROM A MISSING FIXTURE: `sel == 1` requires `dd_is_float(xdt)` and `dd_is_bool(xdt)` is `Cls.is_bool`, DISJOINT over the seven-member `Cls` (spec.bend:67-74), so 0 of the 400 cells of `l2i_cast`'s dtype product can select it. See the gate's footer; `A13` moved a row because a fixture was MISSING and this one cannot move one because no cell can REACH it
+A6     ADt       4    0  lg9,lga,lgy,uq  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         dd_bcast's False arm BITCASTs to boolean
+A7     ADt       1    0  lg5  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_cast1.quo's closing CAST is boolean
+A8     ADt       2    0  lg7,lgy  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_cast3's CAST is boolean
+A9     ADt       1    0  lg9  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_shl's low BITCAST is boolean
+A10    ADt       1    0  lga  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_shr's low BITCAST is boolean
+A11    ADt      18    4  lg1,lg2,lg3,lg4,lg6,lg9,lgb,lgo,lgq,lgr,lgs,lgt,lgv,lgw,lgx,q2,q3,q5  visible under the bare printer too
+                         dd_const.int's AND dd_cf's ADt is boolean -- the CONST sites
+A12    ADt       3    0  lg8,lgq,lgr  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         l2i_bitcast's low BITCAST is boolean -- dtype.py:40's own arm
+A13    ADt       1    0  uq  VISIBLE ONLY WITH THE `ADt` PRINTED
+                         unpack32.bc's BITCAST ADt is boolean, not uint32
+A14    GUARD     1    1  lgz  visible under the bare printer too
+                         l2i_dt learns a CFloat entry, so a 64-bit float TARGET is not a KeyError -- and the refusal `lgz` pins becomes a graph. THE FIXTURE-REPAIR PROOF FOR `lgz`
+
+1 MUTATION(S) MOVED NO ROW: A5=DEAD on this population

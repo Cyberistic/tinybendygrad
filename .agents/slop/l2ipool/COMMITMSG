@@ -1,0 +1,73 @@
+decomp_graph_census: lgz -- a 64-BIT FLOAT TARGET THE TARGET POOL NEVER PRODUCED, AND IT REFUTES THIS GATE'S OWN FOOTER
+
+42 -> 43 ROWS, 26 EXACT, 17 DECLARED DIVERGENCES, rc=0. `tinybendygrad/codegen/decomp/` IS
+BYTE-IDENTICAL (`git diff --stat HEAD -- tinybendygrad/codegen/decomp/` is EMPTY).
+
+THE POOL THAT IS FED AND DECLINED. `dc_l2i_pick` fed `l2i` 30 `(op, dt, xdt)` cells and
+`dc_lc_pick` three more, and MEASURED the TARGET multiset was `int32 19, int64 6, uint32 3,
+uint64 1, single 1` -- **ZERO 64-BIT FLOATS**, so `double`, the only member of `spec.bend`'s
+own `Dt` population with 64 bits AND `CFloat` (:742), reached `l2i` from no row. That is the
+third member of the pool-fed-blindness class this gate has now named three times, after
+`l2i.const`'s three and `uq`. `lgz` is `l2i(Ops.CAST, f64, <the pool's two f32 words at
+19,20>)`: `lgu`'s OWN CELL WITH `dt`'s WIDTH CHANGED and nothing else.
+
+NO NEW CLASS, AND NO PIN BUT ONE MOVED. `UNBUILT` is `("lgu", "lgz")` because both are
+dtype.py:35-38, one arm at two target widths, and `classes_hold`'s UNBUILT assertion
+(`port == "refused:unported"` and CPython's cone starting `WHERE/3`) holds on both.
+`--refresh` rewrote FOUR lines: the header count, `lgu`'s class comment, `lgz`'s comment,
+`lgz`'s pin. The other 15 pins are byte-identical.
+
+THE FOOTER WAS RIGHT ABOUT ITS COUNTS AND WRONG ABOUT ITS CONSEQUENCE, AND THE ROWS SAY SO.
+`lg5` is `(i64 <- f32)` and already was a row; `lgz` is `(f64 <- f32)`; `lgv` is
+`(i64 <- u32)`. MEASURED (`probe65.bend`): `dd_cast_sel` reads 1 for BOTH `lg5` and `lgz`, and
+1 for `lgv` and `f64 <- u32`. `lg5` and `lgv` BUILD; `lgz` and `f64 <- u32` REFUSE. Two
+same-`sel` opposite-answer pairs, each differing in ONE field of `dt` -- its CLASS at 64 bits
+-- so `sel` IS NOT WHAT DECIDES. The previous revision of this file's footer said the 20
+`dt == double` cells "ARE MISATTRIBUTED ... reached through a wrong guard", named
+`l2i_cast.got`'s `case 2: None{}` (dtype.bend:667) as the blocker and said "THE SELECTOR MUST
+BE FIXED FIRST". Its counts stand (`bits == 64` True for 3 of 20, `dt in (long, ulong)` for 2
+of 20, the 20 cells split 12 at `sel == 0` and 8 at `sel == 1`) and its inference does not:
+all 20 cells REFUSE, none reaches `l2i_cast0` or `l2i_cast1`, and `l2i_cast.ldt` (:680-683)
+routes `case 0`, `case 1` AND `case 2` through `l2i_cast.wide` (:675-678), whose `match m`
+refuses on `l2i_dt(dt) == None` ONE LINE BEFORE `l2i_cast.got` IS ENTERED. Fixing `dd_is_long`
+changes nothing observable. What f64 needs is a `case 2:` at `l2i_cast.ldt`'s level -- the
+shape `case 3` already has at :682 -- AND A BODY, and NEITHER IS LANDED, because a half-fix
+makes `classes_hold` red on "`lgz` is now a DELETION ... drop it from UNBUILT", which is a new
+finding and not a partial green.
+
+A FIXTURE THAT CANNOT FAIL IS WORSE THAN NO FIXTURE, SO A NEW ROW HAS TO BE SHOWN LIVE, AND
+`lgz`'s TOKEN IS A REFUSAL -- WHICH MEANS NO `ADt`/`FOLD` MUTATION CAN MOVE IT. MEASURED: A1
+through A13 move exactly the rows they moved at 42 (6/4/16/6/0/4/1/2/1/1/18/3/1), i.e. zero of
+them touch `lgz`. So the mutate harness gains **A14**, its first non-`ADt` entry: teach
+`l2i_dt` a `CFloat` arm (dtype.bend:276) and `l2i_dt(double)` answers, `l2i_cast.wide` stops
+refusing, and `sel == 1` builds. MEASURED: **A14 moves 1 of 43 rows and it is `lgz`**,
+`refused:unported` becoming a 14-token `l2i_cast1` cone. The one remaining zero-mover is `A5`,
+DEAD BY REACHABILITY, cause already named.
+
+THE TWO THINGS THIS DID NOT MAKE ONE FINDING. `lgv`/`lgw`/`lgx` are byte-identical on both lanes
+today (measured, 43 rows each lane, same names) because the fixture defect is FIXED and both
+sides pass `uint32` -- that defect was on the SOURCE axis of three rows, and the f64
+starvation is on the TARGET axis of a different table, so **it is TWO causes and not one.**
+
+NO NEIGHBOUR MOVED. `decomp_value-gate.py`: PASS, 11 PROMOTION rows x 18 families = 198 value
+comparisons, 0 DIFFER, unchanged -- it loads `CENSUS.PROMOTION_CASTS` by path and `lgz` is not
+a PROMOTION row. `pins-shape-gate.py` reads `decomp_graph_census-pins.rows rows=17 cols=3`,
+the declared shape; its rc=1 is PRE-EXISTING and names `cstyle-live.rows`, and it is
+byte-identically red at HEAD (measured by restoring the HEAD pins and re-running).
+
+PEAK RSS, THREE READINGS OF ONE COMMAND ON ONE TREE: **599 / 925 / 1211 MB** at 12:39, 12:46
+and 12:55 UTC -- a 2.02x spread, so one of these numbers quoted without its timestamp is a
+lie. Every run reported `[bounded] WITHIN-LIMITS` under an 8192 MB ceiling and every run
+reported `MACHINE: VIOLATED -- loadavg 5.2..20.1 on 12 cores`, so **NO WALL TIME HERE IS
+ATTRIBUTABLE TO THE CHILD.** The mutate harness (14 sequential bend runs) peaked at 1071 MB.
+
+NOT DONE, AND SAID: `l2i.pick` in `dtype.bend` still has no `f64` arm -- the census MIRRORS it
+rather than reading it, so the row needed no port edit, and landing one would move
+`dtype.bend`'s own 208-row gate in the largest file in the port where another unit is
+adjacent. The `f16` and `bf16` cells refuse too and are NOT rows, because the census's single
+refusal token cannot tell them from `lgu`. And the 400-cell `(dt, xdt)` product is still
+measured OFF-GATE by another unit's scratch script: a gate that RANGED it would make the
+target axis DISCOVERED instead of HAND-WRITTEN, which is the only real cure for this class,
+and that is a new instrument rather than a row.
+
+Full numbers, the probes and the mutation table: `.agents/slop/l2ipool/REPORT.md`.

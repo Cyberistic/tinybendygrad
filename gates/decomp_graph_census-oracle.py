@@ -158,6 +158,22 @@ L2I = [
     ("lgs",  Ops.CDIV, dtypes.uint32, dtypes.uint32, 9, 4),
     ("lgt",  Ops.CMOD, dtypes.uint32, dtypes.uint32, 9, 4),
     ("lgu",  Ops.CAST, dtypes.float32, dtypes.float32, 19, 2),
+    # `lgz` IS `lgu`'S OWN CELL WITH THE TARGET'S WIDTH CHANGED, and it is NOT `l2i.pick`'s
+    # arm 33 -- `l2i.pick` (dtype.bend:2780-2834) does not list it, and a target axis that is
+    # the port's own fixture table therefore has ZERO 64-bit-float cells. MEASURED over the
+    # 33 arms: `dt` ranges over {i32, i64, u64, u32, f32} and the pool has no f64 word, so
+    # `dtypes.double` -- the only member of `LAWS/spec.bend`'s own `Dt` population with 64 bits
+    # AND `CFloat` (spec.bend:742) -- is in no row at all. THIS IS `uq`'s IDEA FROM THE TARGET
+    # SIDE: a cell of the `(dt, xdt)` product that the fixture table declines.
+    #
+    # SAME op, SAME source dtype, SAME two pool words as `lgu` (the f32 words at 19,20), and
+    # the ONLY difference is `dt`'s WIDTH -- so the pair is the `de` shape in this file's own
+    # vocabulary, and it is what separates `dd_cast_sel`'s answer from `l2i_dt`'s. MEASURED
+    # (`.agents/slop/l2ipool/probe65.bend`): `dd_cast_sel` reads **1 for BOTH** `lg5`
+    # (i64 <- f32) and `lgz` (f64 <- f32), and `lg5` BUILDS while `lgz` REFUSES, so the
+    # SELECTOR cannot be what decides and the refusal is `l2i_dt(dt) == None`. `lgu` reads
+    # `sel == 2` and refuses for that same reason, so `lgz` is not a second shape of refusal.
+    ("lgz",  Ops.CAST, dtypes.double, dtypes.float32, 19, 2),
     ("lgy",  Ops.CAST, dtypes.int32, dtypes.int32, 4, 2),
 ]
 

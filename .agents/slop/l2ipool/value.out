@@ -1,0 +1,35 @@
+  lg1: one-cast mutants 5, LIVE on 1, up to 18/18 families moved
+  lg5: one-cast mutants 2, LIVE on 2, up to 5/18 families moved
+  lga: one-cast mutants 2 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lgc: one-cast mutants 0 -- NO MUTANT EXISTS: the cone's only CAST/1 IS the promotion, so this row's coverage rests on the population, not on itself
+  lgd: one-cast mutants 0 -- NO MUTANT EXISTS: the cone's only CAST/1 IS the promotion, so this row's coverage rests on the population, not on itself
+  lge: one-cast mutants 6 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lgq: LIMITATION, not a failure -- 68 deleted node(s) sat at a src[0] whose op is order-sensitive and not commutative ['CMPLT', 'MUL']. The census's token is `op/nsrc` with src[0] read first, so it cannot pin src ORDER; this gate's splice replaces a node IN PLACE and never reorders, so the ORDER it evaluates is CPython's. A port that had reordered would be invisible here and to the census.
+  lgq: one-cast mutants 16 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lgr: LIMITATION, not a failure -- 69 deleted node(s) sat at a src[0] whose op is order-sensitive and not commutative ['CMPLT', 'MUL']. The census's token is `op/nsrc` with src[0] read first, so it cannot pin src ORDER; this gate's splice replaces a node IN PLACE and never reorders, so the ORDER it evaluates is CPython's. A port that had reordered would be invisible here and to the census.
+  lgr: one-cast mutants 16 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lgs: one-cast mutants 16 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lgt: one-cast mutants 16 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  q5: one-cast mutants 3 -- NOT TRIGGERED: one more or one fewer CAST moves no family at these operands, so this row is robustly value-inert HERE
+  lg1: CPython's cone == neg on 18 of 18 families
+  lgq: CPython's cone == div on 17 of 18 families
+  lgs: CPython's cone == div on 17 of 18 families
+  lgr: CPython's cone == mod on 17 of 18 families
+  lgt: CPython's cone == mod on 17 of 18 families
+  walk == PythonProgram on 11 CPython cones x 18 families = 198 comparisons, or `measure()` would have refused
+decomp_value-gate: PASS -- 11 PROMOTION rows x 18 operand families = 198 value comparisons; 0 DIFFER, on no row
+  SAME value at every evaluable operand: ['lg1', 'lga', 'lgc', 'lgd', 'lge', 'lgq', 'lgr', 'lgs', 'lgt', 'q5']
+  NOT EVALUABLE, the port's graph is not a tinygrad UOp graph: 0 of 11 rows (none)
+  OPERAND neither lane accepts: 1 rows (lg5)
+  NOT EXECUTABLE by PythonProgram because of a missing promotion: 10 of 11 rows (lg1, lg5, lgc, lgd, lge, lgq, lgr, lgs, lgt, q5)
+  lg1: splice 4 CAST -> the port's pinned cone (True), 0 alternative witness(es), 5 dropped-at-src[0] (all commutative: True), PythonProgram refuses 3 of its nodes
+  lg5: splice 1 CAST -> the port's pinned cone (True), 0 alternative witness(es), 1 dropped-at-src[0] (all commutative: True), PythonProgram refuses 1 of its nodes
+  lga: splice 2 CAST -> the port's pinned cone (True), 0 alternative witness(es), 0 dropped-at-src[0] (all commutative: True), PythonProgram refuses 0 of its nodes
+  lgc: splice 1 CAST -> the port's pinned cone (True), 0 alternative witness(es), 0 dropped-at-src[0] (all commutative: True), PythonProgram refuses 1 of its nodes
+  lgd: splice 1 CAST -> the port's pinned cone (True), 0 alternative witness(es), 1 dropped-at-src[0] (all commutative: True), PythonProgram refuses 1 of its nodes
+  lge: splice 6 CAST -> the port's pinned cone (True), 0 alternative witness(es), 2 dropped-at-src[0] (all commutative: True), PythonProgram refuses 5 of its nodes
+  lgq: splice 69 CAST -> the port's pinned cone (True), 0 alternative witness(es), 68 dropped-at-src[0] (all commutative: False), PythonProgram refuses 66 of its nodes
+  lgr: splice 70 CAST -> the port's pinned cone (True), 0 alternative witness(es), 69 dropped-at-src[0] (all commutative: False), PythonProgram refuses 67 of its nodes
+  lgs: splice 63 CAST -> the port's pinned cone (True), 0 alternative witness(es), 63 dropped-at-src[0] (all commutative: True), PythonProgram refuses 63 of its nodes
+  lgt: splice 64 CAST -> the port's pinned cone (True), 0 alternative witness(es), 64 dropped-at-src[0] (all commutative: True), PythonProgram refuses 64 of its nodes
+  q5: splice 1 CAST -> the port's pinned cone (True), 0 alternative witness(es), 1 dropped-at-src[0] (all commutative: True), PythonProgram refuses 1 of its nodes

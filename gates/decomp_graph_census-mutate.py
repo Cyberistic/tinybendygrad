@@ -12,7 +12,7 @@ and the recorded cause was that the printer rendered `OpsCAST{}` without its arg
 the mutation had nothing to move. This lane now prints it (`decomp_graph_census.bend`'s
 `dc_tok`, `decomp_graph_census-oracle.py`'s `s1`), so the same question is asked again here.
 
-TWO COLUMNS, AND THE SECOND IS THE POINT. `MOVED` is how many of the 42 rows differ with
+TWO COLUMNS, AND THE SECOND IS THE POINT. `MOVED` is how many of the 43 rows differ with
 the printer in place. `MOVED-BARE` is the same comparison after every `[...]` is stripped
 off both lanes, which is EXACTLY the printer as it was before the repair -- no second bend
 run, and no risk of the two runs seeing different substrates. `MOVED > 0` with
@@ -20,13 +20,16 @@ run, and no risk of the two runs seeing different substrates. `MOVED > 0` with
 mutation with `MOVED == 0` AND `MOVED-BARE == 0` is not that: it is a DEAD mutation on this
 population, and each one below is named for which of the two it is.
 
-THE 42 AND THE THREE ROWS THAT MADE IT. `l2i.const`'s `lgv lgw lgx` joined at 39 -> 42, and
+THE 43 AND THE ROW THAT MADE IT. `l2i.const`'s `lgv lgw lgx` joined at 39 -> 42, and
 MEASURED they are NOT inert: `lgv` is what moved A1 5 -> 6, A3 15 -> 16, A4 5 -> 6 and
 A11 17 -> 18, and `lgw`/`lgx` are two of A2's four rows. `A2` is the only mutation visible
 under the bare printer besides A11, and `lgw`/`lgx` are why: breaking the fold test at
 dtype.bend:593 makes dtype.py's sign-extension cone appear, which changes the token SEQUENCE
 and not merely a `[target]`. So the three rows that mint their CONST outside `l2i` bought
-coverage on the CONST sites, which the pool-fed arms reached only through `zero`.
+coverage on the CONST sites, which the pool-fed arms reached only through `zero`. `lgz` joins at
+42 -> 43 and **MOVES NOTHING IN A1..A13**, and that is a MEASURED PROPERTY OF THE ROW AND NOT
+A GAP IN IT: its token is `refused:unported`, a refusal, and no `ADt`/`FOLD` substitution can
+change a refusal. `A14` IS THE ENTRY THAT CAN, AND IT EXISTS FOR THAT REASON.
 
 NO PORT FILE IS EVER WRITTEN. Every mutation edits a COPY that sits beside its original --
 `dtype-mut.bend` beside `dtype.bend`, `op-mut.bend` beside `op.bend`, `decomp-mut-driver.bend`
@@ -150,6 +153,20 @@ TABLE = (
     ("A13", "ADt", "unpack32.bc's BITCAST ADt is boolean, not uint32",
      PORT, "  dd_bcast(isu, ar, v, S.uint32())",
      "  dd_bcast(isu, ar, v, S.boolean())", 1),
+    # A14 IS THE ONLY ENTRY THAT IS NOT ABOUT A CAST'S ARGUMENT, AND IT IS THE FIXTURE-REPAIR
+    # PROOF FOR `lgz`. `l2i_dt` (dtype.bend:271-282) IS CPython'S TWO-ENTRY DICT
+    # `{long: int, ulong: uint}` AND ITS CATCH-ALL REFUSES, SO A 64-BIT `CFloat` IS A KeyError
+    # THERE. GIVING IT A `CFloat` ENTRY MAKES `l2i_dt(double)` ANSWER, SO `l2i_cast.wide` STOPS
+    # REFUSING AND `l2i_cast.got`'s `sel == 1` ARM BUILDS. A FIXTURE THAT CANNOT FAIL IS WORSE
+    # THAN NO FIXTURE, SO A NEW ROW HAS TO BE SHOWN LIVE, AND `lgz`'s TOKEN IS A REFUSAL -- WHICH
+    # MEANS NO `ADt`/`FOLD` ENTRY CAN MOVE IT AND ONLY A GUARD ENTRY CAN. MEASURED: A14 moves
+    # 1 of 43 rows and it is `lgz`. EXPECTED ON ANY FUTURE POPULATION: `double` alone, because
+    # it is the only member of `spec.bend`'s own `Dt` population with 64 bits AND `CFloat`, and
+    # `l2i_cast` is the only `l2i_dt` caller on this gate's cone.
+    ("A14", "GUARD", "l2i_dt learns a CFloat entry, so a 64-bit float TARGET is not a KeyError "
+     "-- and the refusal `lgz` pins becomes a graph. THE FIXTURE-REPAIR PROOF FOR `lgz`",
+     PORT, "        case S.CUint{}: Some{S.uint32()}",
+     "        case S.CUint{}: Some{S.uint32()}\n        case S.CFloat{}: Some{S.int32()}", 1),
 )
 
 

@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=1211 MB (ceiling 8192)  29s  :: .venv/bin/python gates/decomp_graph_census-gate.py  out=845B err=0B
+  MACHINE: **VIOLATED** -- loadavg 7.8 on 12 cores, swap free 1.13 of 20.00 GiB; swap free 1.13 of 20.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

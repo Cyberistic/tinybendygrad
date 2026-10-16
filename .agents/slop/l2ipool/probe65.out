@@ -1,0 +1,16 @@
+lg5 i64<-f32 sel=1 is_long=T srcfl=T flt=F l2i_dt=i32
+
+lgz f64<-f32 sel=1 is_long=T srcfl=T flt=T l2i_dt=NONE
+
+lgu f32<-f32 sel=2 is_long=F srcfl=T flt=T l2i_dt=NONE
+
+lgv i64<-u32 sel=0 is_long=T srcfl=F flt=F l2i_dt=i32
+
+lg2 i64<-i32 sel=0 is_long=T srcfl=F flt=F l2i_dt=i32
+
+f16<-f32   sel=2 is_long=F srcfl=T flt=T l2i_dt=NONE
+
+f64<-u32   sel=0 is_long=T srcfl=F flt=T l2i_dt=NONE
+
+u64<-f32   sel=1 is_long=T srcfl=T flt=F l2i_dt=u32
+
