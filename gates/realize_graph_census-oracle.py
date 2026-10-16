@@ -300,7 +300,8 @@ def apay(u) -> str:
         # `is_bound_var` (`ops.py:1023`) AND `UOp.const(s.arg.val)` (`realize.py:18`), and
         # `name` is `s.expr` (`ops.py`) AND `has_dnum`'s `_device_num` test (`realize.py`:
         # 139). The nine omitted: `device` has NO SHARED SPELLING (a CPython NAME against a
-        # port TAG -- `Device.tag` does not exist in this tree, see `kern_blind_holds`),
+        # port TAG -- CPython has no `str -> int` device index for one to be checked
+        # against, `device_vocab_holds` measures that every run),
         # and `dtype`, `size`, `vmin_vmax`, `multiple_of`, `addrspace`, `volatile`, `image`
         # and `buffer` are constant or unread across all nineteen of this fixture's
         # `ParamArg`s -- MEASURED, every one is `dtypes.i32`, `addrspace` is GLOBAL on the
@@ -350,7 +351,8 @@ def apay(u) -> str:
     if isinstance(a, str):
         # `Ops.GETADDR`'s arg is a DEVICE NAME and `Ops.SOURCE`'s is TEXT, and the port's
         # GETADDR arg is `ADev{S.D1{tag}}` -- a TAG (`ops.bend:7815`) with no CPython
-        # counterpart, because `Device.tag` does not exist in this tree (`kern_blind_holds`
+        # counterpart, because CPython has no `str -> int` device index
+        # (`device_vocab_holds` measures that, and `kern_blind_holds`
         # measures that). So this is the ONE arm that needs an op test, and printing it
         # anyway takes five rows red: `arg_51`, `arg_63`, `beam_51`, `beam_63`, `res_51`.
         # It is Box 1's blindness inside the payload rather than beside it.
@@ -509,11 +511,12 @@ def drive(drv: str, u):
         if drv == "kern":
             # THE COUNT, AND NOT THE LIST, FOR THE REASON `rs_d_kern` GIVES AT LENGTH: the
             # answer's `d` is a device NAME (or a tuple of them, or `None`) and the port's
-            # is a TAG, and there is no table to convert between them -- `Device.tag` does
-            # not exist in this tree (`hasattr(Device, 'tag')` is False) and the port's only
+            # is a TAG, and there is no table to convert between them -- CPython
+            # has no `str -> int` device index (`hasattr(Device, 'tag')` is False) and the port's only
             # tag/name function is `device.bend:344`'s three-valued sentinel. So this lane
             # prints the LENGTH, the port prints the LENGTH, and `gates/realize_graph_census-gate.py`'s
-            # `kern_blind_holds` measures the residual rather than asserting it away.
+            # `device_vocab_holds` MEASURES that premise every run while `kern_blind_holds`
+            # measures the residual rather than asserting it away.
             # `dm` (node 65) is a CALL whose `src[1]` is a TWO-device BUFFER, so `len` is
             # finally tested on a list of length 2 rather than only 0 and 1.
             return str(len(RZ.get_call_kernels(u)))

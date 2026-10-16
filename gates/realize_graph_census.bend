@@ -260,7 +260,8 @@ def rs_pay(a: O.Arg, ar: O.Arena) -> String:
     # `_device_num` test, `val` is `is_bound_var` (`ops.py:1023`) AND
     # `UOp.const(s.arg.val)` (`realize.py:18`). NINE FIELDS OMITTED, each named in the
     # oracle's `apay`: `device` has NO SHARED SPELLING (a CPython NAME against a port TAG,
-    # and `Device.tag` does not exist in this tree -- `kern_blind_holds`), and the other
+    # and CPython has no `str -> int` device index to compare one against --
+    # `device_vocab_holds`), and the other
     # eight are constant across all nineteen of this fixture's `ParamArg`s (MEASURED: every
     # `dtype` is `dtypes.i32`, `addrspace` is GLOBAL on the eleven buffer args and ALU on
     # the four var args, `size` is `16` or absent).
@@ -287,8 +288,9 @@ def rs_pay(a: O.Arg, ar: O.Arena) -> String:
     # `Ops.GETADDR`'s `arg` IS A DEVICE AND NEITHER LANE CAN SPELL IT. CPython's is
     # `str|tuple[str, ...]` (`ops.py:611`, and `ops.py:844`'s `self.device`), this port's is
     # `ADev{S.D1{tag}}` / `ADev{S.Dn{tags}}` (`ops.bend:7815` mints `ADev{dev}`) -- and
-    # `Device.tag` DOES NOT EXIST IN THIS TREE'S CPython (`hasattr(Device,'tag')` is False,
-    # `kern_blind_holds` measures it), so a tag printed here would be compared against a NAME
+    # CPYTHON HAS NO `str -> int` DEVICE INDEX for a tag to be checked
+    # against (`device_vocab_holds` measures that every run: `hasattr(Device,'tag')` is False),
+    # so a tag printed here would be compared against a NAME
     # the other lane cannot produce from a tag. MEASURED, printing it anyway answers `[?]`
     # here and `[CPU]` there and takes FIVE rows red: `arg_51`, `arg_63`, `beam_51`,
     # `beam_63` and `res_51`. SO THIS ARM PRINTS NOTHING, and the blindness is the SAME ONE
@@ -791,14 +793,20 @@ def rs_d_wbuf(ar: O.Arena, n: U32) -> String:
 # `dev_tags` returns `D1{tag}` -> `[tag]` and `Dn{tags}` -> `tags`, and the port's own
 # comment at that def says the NAME behind each tag is `helpers.bend`'s DEV parse, "P6" --
 # so the LIST is right there and this printer throws it away. IT IS THE RIGHT THING TO
-# THROW AWAY, AND THE GATE MEASURES WHY, in `kern_blind_holds`:
-#   * `S.D1`'s tag is NOT an index into a device table. `Device.tag` -- the table
-#     `uop/spec.bend:1488` cites -- DOES NOT EXIST in this tree's CPython: `Device` is
-#     `_Device` (`device.py:21,62`) and MEASURED `hasattr(Device, 'tag')` is False.
+# THROW AWAY, AND THE GATE MEASURES WHY, in `kern_blind_holds` over `device_vocab_holds`:
+#   * `S.D1`'s tag is NOT an index into a device table, AND THIS IS NOW CHECKED RATHER THAN
+#     QUOTED. An earlier revision of this comment justified it by naming `Device.tag` in
+#     `uop/spec.bend:1488` -- a symbol that DOES NOT EXIST in this tree's CPython, so a
+#     driver was quoting a paragraph that named nothing. `device_vocab_holds` now re-measures
+#     the premise in CPython on every run: `hasattr(Device, 'tag')` is False, `ParamArg.device`
+#     (`uop/ops.py:34`) is `str|tuple[str, ...]|None`, `ALL_DEVICES` (`device.py:20`) is a
+#     `list[str]`, and `Device.__getitem__` (`device.py:29`) is keyed by STRING -- SO CPython
+#     HAS NO `str -> int` DEVICE INDEX, and a `U32 -> String` table is the PORT'S OWN to mint.
 #   * the port's ONLY tag/name function, `device.bend:344 tag_of`, is a THREE-VALUED
 #     SENTINEL -- DISK 6, NPY 10, PYTHON 13, EVERYTHING ELSE 0 -- built to decide
 #     `ALLOW_DEVICE_USAGE`, and it puts CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU
-#     and every typo on the same 0.
+#     and every typo on the same 0. `device_vocab_holds` reads its arm list out of
+#     `device.bend`'s CODE every run, so if it grows an arm this wall goes RED.
 #   * and there is a SECOND tag space that disagrees with it: `schedule/memory.bend:999`
 #     is `disk() = S.D1{1}` where `tag_of("DISK")` is 6, which `uop/validate.bend:2532`
 #     records and refuses to arbitrate.

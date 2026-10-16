@@ -134,7 +134,8 @@ that it stays visible.
   The spelling is the SIBLING'S, `crp_graph_census`'s `OP/NSRC[TARGET]` and `md_graph_census`'s
   ` arg=`, with the bracket because this token is per NODE rather than per root. FIELDS
   OMITTED, each with its reason at the arm: `ParamArg.device` and the `Ops.GETADDR` `ADev`
-  arm BOTH because `Device.tag` does not exist in this tree (`kern_blind_holds`), and
+  arm BOTH because CPython has no `str -> int` device index for a tag to be checked
+  against (`device_vocab_holds`, measured every run), and
   `KernelInfo.estimates` because `ops.bend` DROPS the field (P5). `argkinds_hold` requires
   that no promoted lane contains the `[?]` an unspelled kind would print, so an arg kind
   outside the twelve both lanes spell is a red run and not a green placeholder match.
@@ -166,9 +167,10 @@ THE 65 DIVERGENCES, CLASSIFIED, PINNED ON BOTH SIDES, AND EVERY CLASS MEASURED.
       port never answers a VALUE there, which is the shape a stale-arena self-loop takes.
 
   13 `NAME_ARM` -- `get_call_name` (realize.py:43). The port implements the PROGRAM and
-      `encdec` arms; the STORE arm needs a device NAME (`Device.tag` is P6,
-      `uop/spec.bend:1488` -- AND THAT CITATION IS WRONG ABOUT THIS TREE, see
-      `kern_blind_holds`) and the fallthrough is a `raise`, which the port spells `none`.
+      `encdec` arms; the STORE arm needs a device NAME, which requires the port's own
+      `U32 -> String` table (P6) -- CPython HAS NO `str -> int` DEVICE INDEX TO MIRROR,
+      MEASURED by `device_vocab_holds` -- and the fallthrough is a `raise`, which the port
+      spells `none`.
       Eleven rows are the `NotImplementedError`, one is `name_18`, whose STORE arm reaches
       `bufs[0]` on the census's `bufs=[]` and raises `IndexError`, and one is `name_57`,
       whose PROGRAM's `src[0]` is a SINK with `arg=None` and CPython raises
@@ -246,9 +248,10 @@ the fixture minted has a spelling and no row compared a placeholder against a pl
 a list of TWO DISTINCT devices on BOTH lanes and `kern_65` really is `2` -- which is the
 precondition under which `rs_d_kern`'s COUNT is worth comparing at all, and the measure of
 what is left blind when it is (an ORDER SWAP inside `Dn{[6, 0]}`, because the port has no
-device vocabulary to be wrong in: `Device.tag` does not exist in this tree's CPython and
-`device.bend:344`'s `tag_of` is a three-valued sentinel). It says so out loud rather than
-in a comment.
+device vocabulary to be wrong in: `device_vocab_holds` MEASURES that CPython has no
+`str -> int` device index and that `device.bend:344`'s `tag_of` is a three-valued sentinel,
+and `kern_blind_holds` refuses to read its own rows if that premise did not hold). It says
+so out loud rather than in a comment.
 
 EXIT STATUS: 0 all three lanes identical after the pins and every class check holds ·
 1 a lane took the wrong row count, the oracle failed, the native compile failed, the lanes
@@ -380,7 +383,8 @@ def argkinds_hold() -> bool:
     IT IS A LANE CHECK AND NOT A LIST OF KINDS: the population is whatever the fixture mints,
     and the question is whether every kind it minted has a spelling. A `?` on either lane
     answers no. `ADev` is the one kind that DELIBERATELY has no spelling -- `Ops.GETADDR`'s
-    device, which `rs_pay` prints as nothing because `Device.tag` does not exist in this tree
+    device, which `rs_pay` prints as nothing because CPython has no `str -> int` device
+    index for the port's tag to be checked against (`device_vocab_holds`)
     -- and it prints nothing on BOTH sides, so it cannot produce a `?`.
     """
     ok = True
@@ -1144,6 +1148,120 @@ def _compared() -> tuple[int, int, int]:
     return (ROWS[0] - refused - len(BOTTOM), refused, len(BOTTOM))
 
 
+def device_vocab_holds() -> bool:
+    """THE P6 WALL'S PREMISE, MEASURED INSTEAD OF QUOTED. **THIS IS THE REPLACEMENT FOR
+    `uop/spec.bend:1488` AS THIS GATE'S REASON, AND IT CAN GO RED WHERE THE COMMENT
+    COULD NOT.**
+
+    THE DEFECT THIS FIXES, STATED AS A SHAPE. This guard used to justify itself by naming a
+    symbol -- `Device.tag` -- that it had read out of ANOTHER FILE'S COMMENT. **A GATE THAT
+    READS A COMMENT CANNOT FAIL ON THE COMMENT BEING WRONG**, and the comment WAS wrong:
+    `Device.tag` does not exist in this tree. So an instrument was treating a defect record
+    as the truth, and the record's own subject was a symbol absent from the upstream it
+    described. NOTHING BELOW READS A COMMENT: `_code()` strips them first, which is this
+    file's `ORACLE_WORD`/`LIVE_UNITS` lesson applied to its own prose.
+
+    THE PREMISE IS A NEGATIVE ABOUT CPYTHON AND IT HAS SIX POSITIVE WITNESSES, all
+    re-measured on every run rather than believed:
+      1. `hasattr(Device, 'tag')` is **False** and `type(Device)` is `tinygrad.device._Device`.
+      2. `uop/ops.py:34` types `ParamArg.device` as `str|tuple[str, ...]|None` -- **the
+         device IS a string end to end**, so there is no index a tag could be checked against.
+         This is the very field the census's `ParamArg.device` omission turns on.
+      3. `device.py:20`'s `ALL_DEVICES` is a `list[str]`.
+      4. `device.py:29`'s device table is `__getitem__(self, ix: str)` -- **STRING-KEYED**.
+      5. `device.py:25`'s only memo over a device name is `@functools.cache` on
+         `_canonicalize(self, device: str) -> str` -- a `str -> str`, **not a `str -> int`**.
+      6. `device.bend`'s `tag_of` is a THREE-VALUED sentinel (DISK 6, NPY 10, PYTHON 13,
+         everything else 0), so CPU, METAL, AMD and every typo all land on 0.
+    SO CPython has NO `str -> int` DEVICE INDEX: a `U32` tag has no counterpart there, and a
+    `U32 -> String` table is the PORT'S OWN to mint rather than a mirror of one. That is the
+    wall, and it is asserted -- so when P6 lands, or `tag_of` grows a fourth arm, this goes
+    RED and the prose has to be rewritten WITH it, instead of the gate going on quoting a
+    paragraph nobody re-reads. **THE WALL IS NOT ASSERTED-NOT-CHECKED: IT IS CHECKED.**
+
+    WITNESS 6 is read out of `device.bend` THROUGH `_code`, and it is the one whose shape is
+    a claim about a SENTINEL rather than an absence, so it is the one that can fail while
+    everything above stays true. That is deliberate: a guard that only ever checks
+    absences cannot notice a port that quietly grew an arm.
+    """
+    ok = True
+
+    def bad(msg):
+        nonlocal ok
+        print(f"  device_vocab_holds: {msg}")
+        ok = False
+
+    # CPython is asked for 1-5 as `name=value` rows, so a witness that did not print is a
+    # MISSING ROW and not a silent absence of output -- the `DEAD` state, which
+    # `gates/gatekit.py` spells with exit 5 and which a bare `assert` here would have worn.
+    # `typing.get_type_hints` and not `__annotations__`: MEASURED, this tree runs under
+    # `from __future__ import annotations`, so the raw annotation is the STRING `'str'` and
+    # an `is str` test on it answers False forever -- a check that could only ever go red.
+    probe = (
+        "import typing, tinygrad.device as td, tinygrad.uop.ops as tops;"
+        "print('has_tag=%s' % hasattr(td.Device, 'tag'));"
+        "print('all_devices_str=%s' % all(isinstance(x, str) for x in td.ALL_DEVICES));"
+        "print('getitem_key_str=%s' % (typing.get_type_hints("
+        "td.Device.__getitem__).get('ix') is str));"
+        "print('arg_device_str=%s' % ('str' in str(tops.ParamArg.__annotations__['device'])));"
+        "print('canonicalize_str=%s' % (td.Device.canonicalize('cpu') == 'CPU'))"
+    )
+    try:
+        r = subprocess.run([str(PY), "-c", probe], capture_output=True, text=True,
+                           cwd=str(ROOT), timeout=300)
+    except (OSError, subprocess.SubprocessError) as exc:
+        bad(f"CPython would not run ({exc}), so the wall's premise is UNMEASURED, not held")
+        return False
+    if r.returncode:
+        bad(f"the probe failed (rc={r.returncode}, {r.stderr.strip()[:120]}); "
+            f"the wall's premise is UNMEASURED, not held")
+        return False
+    got = dict(l.split("=", 1) for l in r.stdout.splitlines() if "=" in l)
+    # `has_tag` is the one row whose TRUTH is its absence, so it is expected to print
+    # `False`; the other four are expected to print `True`. Both directions are checked,
+    # because a missing row and a row saying the wrong thing are different defects.
+    expected_false = (("has_tag", "a `Device.tag` would be an int-indexed device table and "
+                                   "the whole premise would be stale"),)
+    expected_true = (("all_devices_str", "CPython's device vocabulary stopped being a list "
+                                         "of names"),
+                     ("getitem_key_str", "`Device.__getitem__` stopped being string-keyed, so "
+                                         "a tag may have an index after all"),
+                     ("arg_device_str", "`ParamArg.device` stopped being a `str`, which is "
+                                        "the field the census omits"),
+                     ("canonicalize_str", "`Device.canonicalize` stopped being the `str -> str` "
+                                          "fold the memo claim rests on"))
+    for row, why in expected_false:
+        if got.get(row) != "False":
+            bad(f"`{row}` is {got.get(row)!r} and not 'False' ({why})")
+    for row, why in expected_true:
+        if got.get(row) != "True":
+            bad(f"`{row}` is {got.get(row)!r} and not 'True' ({why})")
+
+    # WITNESS 6, THE PORT SIDE, READ AS CODE. `_code()` is what keeps the census's own
+    # `S.Dn{[6, 0]}` prose (measured once already, in `_code`'s docstring) out of this count.
+    # THE SIGNATURE LINE IS MATCHED TO ITS OWN END OF LINE rather than to `):` -- MEASURED,
+    # this file spells the return type BEFORE the colon (`-> U32:`), so a `):` match finds
+    # no `tag_of` at all and reports a missing def that is sitting right there.
+    dev = _code((ROOT / "tinybendygrad" / "device.bend").read_text())
+    m = re.search(r"^def tag_of\([^\n]*\n((?:[ \t]+[^\n]*\n)*)", dev, re.M)
+    if m is None:
+        bad("`device.bend` has no `tag_of` to read, so the port's only `String -> U32` map "
+            "is not the three-valued sentinel the ceiling is stated in terms of")
+        return False
+    body = m.group(1)
+    arms = sorted(set(re.findall(r'String\.eq\([^,]+,\s*"(\w+)"\)', body)))
+    if arms != ["DISK", "NPY", "PYTHON"]:
+        bad(f"`tag_of`'s named arms are {arms} and not ['DISK', 'NPY', 'PYTHON'], so the "
+            f"sentinel grew or shrank and the CEILING this guard states has moved")
+    # AND THE `else 0` THAT MAKES IT A SENTINEL: without it, an untagged name would raise
+    # rather than land on 0, and "every real device and every typo shares one tag" -- the
+    # half of the ceiling that is about ABSENCE, not about the three arms -- would be false.
+    if not re.search(r",\s*0\)\)*\s*$", body):
+        bad("`tag_of` does not end in a literal `, 0`, so it is not the sentinel that maps "
+            "every untagged device NAME and every typo onto 0")
+    return ok
+
+
 def kern_blind_holds() -> bool:
     """THE `kern` DRIVER COMPARES A COUNT WHERE THE THINGS ARE NAMES, AND THIS IS THE
     MEASUREMENT THAT SAYS WHY IT CANNOT BE MORE, ON BOTH SIDES, TODAY.
@@ -1156,20 +1274,23 @@ def kern_blind_holds() -> bool:
          (realize.bend:679) answers `List<&2, U32>` and `dev_tags` (realize.bend:650)
          returns `D1{tag}` -> `[tag]` and `Dn{tags}` -> `tags`. So printing the tags is a
          one-line change and it is NOT made here, for (2) and (3).
-      2. **`Device.tag` DOES NOT EXIST IN THIS TREE'S CPYTHON.** `uop/spec.bend:1488`
-         calls it "the table that interns a device NAME ... `Device.tag`, which is P6", and
-         `gates/realize_graph_census-gate.py`'s own previous text repeated it. MEASURED,
-         `.venv/bin/python`: `type(Device)` is `tinygrad.device._Device` (`device.py:21`,
-         `:62`) and `hasattr(Device, 'tag')` is **False**. The table the port inherits and
-         does not check is a table CPython does not have -- so the port's tag has NO
-         CPython counterpart, and a cross-lane tag comparison would be comparing two
-         fixtures' private numbering with nothing to say they agree.
+      2. **CPYTHON HAS NO `str -> int` DEVICE INDEX, AND THIS IS NOW CHECKED, NOT QUOTED.**
+         It used to be justified here by naming `Device.tag` in `uop/spec.bend:1488`'s
+         COMMENT -- a gate reading a comment cannot fail on the comment being wrong, and the
+         comment was wrong. **`device_vocab_holds()` above now measures the premise in
+         CPython and in `device.bend` on every run**, against six witnesses, and
+         `uop/spec.bend`'s three citations were rewritten to name the mechanism those
+         witnesses describe. The port's tag has NO CPython counterpart, so a cross-lane tag
+         comparison would be comparing two fixtures' private numbering with nothing to say
+         they agree.
       3. **THE PORT'S OWN ONLY TAG/NAME FUNCTION IS A THREE-VALUED SENTINEL, AND A SECOND
          ONE DISAGREES WITH IT.** `device.bend:344 tag_of` is DISK 6, NPY 10, PYTHON 13,
          EVERYTHING ELSE 0 -- built to decide `ALLOW_DEVICE_USAGE` (`device.py:31`), and it
          puts CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU and every typo on the same
          0. And `schedule/memory.bend:999` is `disk() = S.D1{1}`, where `tag_of("DISK")` is
          6; `uop/validate.bend:2532` records the disagreement and refuses to arbitrate it.
+         **`device_vocab_holds` asserts `tag_of`'s arm list, so the sentinel growing an arm
+         takes this guard RED** -- a guard that only checked absences could not notice that.
          **SO `S.D1{tag}` IS NOT AN INDEX INTO ANY DEVICE TABLE THE PORT OR CPYTHON HAS.**
 
     What it checks instead is the property that IS decidable: that the fixture's multi-device
@@ -1180,12 +1301,17 @@ def kern_blind_holds() -> bool:
     `S.Dn{[6, 0]}` over `("DISK", "CPU")` and a CALL over it, so `kern_65` is now 2 on both
     lanes and a dropped or duplicated device moves the count.
 
-    **WHAT IT STILL CANNOT DISTINGUISH, STATED RATHER THAN ASSERTED AWAY:** an ORDER SWAP
+    What it still cannot distinguish, stated rather than asserted away: an ORDER SWAP
     inside `Dn{[6, 0]}`, and any tag that is wrong but drawn from a space the port and
     CPython do not share. There is no vocabulary to be wrong in. The ceiling is a DECLARED
-    BLINDNESS, and the measurement above is why the closure is not available in this layer
-    or in any layer: the fix would be `Device.tag`, which does not exist.
+    BLINDNESS, `device_vocab_holds` is what holds the reason it rests on, and the closure
+    is not available in this layer or in any layer until the port mints its own
+    `U32 -> String` table -- which is P6's work, not a missing symbol's.
     """
+    if not device_vocab_holds():
+        print("  kern_blind_holds: the wall's PREMISE did not hold, so the ceiling it "
+              "states is not this run's ceiling and the rows below are not worth reading")
+        return False
     census = _code((HERE / "realize_graph_census.bend").read_text())
     port_src = census + "\n" + _code(PORT.read_text())
     # THE MINT IS A `S.Dn{[...]}` OR A `S.D1{N}`; THE MATCH ARM IS `S.D1{tag}`.
@@ -1287,10 +1413,15 @@ if __name__ == "__main__":
         f"ALL: with the old single bit, mutating that default `0` -> `1` moved ZERO of the "
         f"rows (`V2`, reported as vacuous), because the claim was folded away.** THE `kern` "
         f"DRIVER COMPARES A COUNT WHERE THE THINGS ARE NAMES, and `kern_blind_holds` "
-        f"measures why that is the CEILING -- `Device.tag` does not exist in this tree's "
-        f"CPython (`hasattr(Device,'tag')` is False) and the port's own `tag_of` is a "
-        f"three-valued sentinel -- while a NEW TWO-DEVICE node makes the count 2 on both "
-        f"lanes for the first time. THE `arg` PAYLOAD IS IN EVERY TOKEN NOW: TWO FIXTURE "
+        f"measures why that is the CEILING -- `device_vocab_holds` MEASURES THE PREMISE "
+        f"EVERY RUN (CPython has no `str -> int` device index: `hasattr(Device,'tag')` is "
+        f"False, `ParamArg.device` is a `str`, `Device.__getitem__` is string-keyed) and the "
+        f"port's own `tag_of` is a three-valued sentinel -- while a TWO-DEVICE node makes the "
+        f"count 2 on both lanes. The gate no longer justifies that wall by naming a symbol in "
+        f"`uop/spec.bend`'s comment; it measures the wall, and `uop/spec.bend`'s three "
+        f"`Device.tag` citations were rewritten to the mechanism those measurements "
+        f"describe. "
+        f"THE `arg` PAYLOAD IS IN EVERY TOKEN NOW: TWO FIXTURE "
         f"NODES THAT PRINT ALIKE ARE TWO NODES A READER CAN CONFUSE, AND MEASURED OVER "
         f"THE 65 NODES THIS CENSUS SPELLED 32 DISTINCT TOKENS FOR 65 NODES -- 147 of the "
         f"2080 pairs indistinguishable -- against 60 and 8 after, every one of the eight a "

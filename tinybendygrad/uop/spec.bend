@@ -1466,8 +1466,8 @@ def sp_dev_is(+fx: F.Folded, s: U32) -> Bool:
 
 # `all(isinstance(s.device, str) for s in x.src)` -- spec.py:184, :271. A `D1`
 # IS a device name and a `Dn` is a tuple of them, so "is a str" and "is a tuple of
-# strs" are both just "is a `Some`": the name-ness is `Device.tag`'s job and that
-# is P6. See the `is_device` note below.
+# strs" are both just "is a `Some`". That a `U32` tag really names a `str` is P6's
+# job, and CPython CANNOT be the witness -- see the `is_device` note below.
 def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
   match srcs:
     case Nil{}: acc
@@ -1484,9 +1484,18 @@ def all_dev(srcs: List<&2, U32>, +fx: F.Folded, acc: Bool) -> Bool:
 # `all(...)` is the `List` being well-formed. Both are TRUE of every `S.Dev` BY
 # CONSTRUCTION, so `is_device` is total on a `Dev` and only the `None` case is a
 # question, which Python answers False and so do I.
-# WHAT IT CANNOT STATE: that a `U32` tag really names a `str`. The tag is an
-# interned device NAME and the table that interns it is `Device.tag`, which is P6,
-# so the string-ness is an invariant this port INHERITS rather than CHECKS.
+# WHAT IT CANNOT STATE: that a `U32` tag really names a `str`. CPython's device IS a
+# string end to end, so there is no index for a tag to be checked against: `uop/ops.py:34`
+# types `ParamArg.device` as `str|tuple[str, ...]|None`, `device.py:20`'s `ALL_DEVICES` is
+# a `list[str]`, `device.py:29`'s device table is `__getitem__(self, ix: str)` -- STRING-
+# KEYED -- and `device.py:25`'s only memo over a device name is `@functools.cache` on
+# `_canonicalize(self, device: str) -> str`, a `str -> str` and not a `str -> int`. What the
+# port has instead is `device.bend:344`'s `tag_of`, a THREE-VALUED sentinel (DISK 6, NPY
+# 10, PYTHON 13, everything else 0) built for `ALLOW_DEVICE_USAGE` at `device.py:31`, so
+# CPU, METAL, AMD and every typo all land on 0. A `U32 -> String` table is P6's to mint,
+# not CPython's to mirror, so the string-ness is an invariant this port INHERITS rather
+# than CHECKS. `gates/realize_graph_census-gate.py`'s `device_vocab_holds` asserts all six
+# of those facts on every run instead of trusting this paragraph.
 # ===========================================================================
 def is_device(m: Maybe<&2, S.Dev>) -> Bool:
   dopt_is(dev_opt(m))
@@ -3145,8 +3154,11 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #      for a symbolic end, and `shard_shape`. It is the largest single unlock in
 #      the fold and three of the six TODOs above are behind it.
 #   2. `storage_base` (ops.py:801) unblocks `sh_31`'s deferred arm.
-#   3. `Device.tag` (P6) makes `is_device`'s string-ness CHECKABLE rather than
-#      INHERITED, and `is_disk_device` answers with it.
+#   3. A `U32 -> String` device NAME table (P6) makes `is_device`'s string-ness
+#      CHECKABLE rather than INHERITED, and `is_disk_device` answers with it. It is
+#      THE PORT'S OWN table: CPython has no `str -> int` device index to mirror --
+#      `ParamArg.device` (`uop/ops.py:34`) is a `str` and `device.py:29`'s is
+#      string-keyed. See the `is_device` note above for all six witnesses.
 #   4. `SPEC` / `test_pyrender` (P3/VIZ) close `type_verify` and give the pyrender
 #      round-trip a reason to exist at all.
 # ===========================================================================
