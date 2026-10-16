@@ -129,21 +129,11 @@ tinybendygrad/test/_probe/
 # These are tracked on purpose and a future sweep must leave them alone:
 #   arange-ucache/  TOOLS.md's ledger and notes/bend2-constraints.md cite it as the
 #                   measurement behind the ARange ucache collision.
-#   runs/           ROOT `runs/` is GENERATED OUTPUT and is ignored -- see the
-#                   `/runs/` rule at the foot of this file. It was this bullet's
-#                   claim ("tracked on purpose") that hid the bug: as written it
-#                   matched `runs/` at ANY depth and suppressed renamed evidence
-#                   one level down. `runs/README.md`, which this line used to
-#                   cite, does NOT exist (measured 2026-10-06). The gate input
-#                   that was `runs/e2e/e2e-mm-oracle.json` is no longer there:
-#                   it lives at the TRACKED `checks/e2e-mm-oracle.json`, beside
-#                   `checks/run-port-mm.sh:58` which reads it, recovered
-#                   byte-identical from `cf2d14fa4^` (see `.agents/slop/runsgate/`).
-#                   NOTE (was `retention-check clause V`): clause V's
-#                   IGNORED-BUT-INDEXED rule only sees a directory that is BOTH
-#                   indexed AND ignored; `runs/e2e/` was neither, so clause V
-#                   NEVER reported this -- the citation was a third witness to a
-#                   rule that does not implement it.
+# `runs/` WAS ON THIS LIST AND IS NOT ANY MORE: it held 0 COMMITTED entries
+# (`git ls-tree -r HEAD -- runs/` = 0, measured 2026-10-17), so it failed the
+# heading's own test -- "a report cites it" is a reason to TRACK, and this one
+# is generated. Its history is at the `/runs/` rule below, which is where the
+# rule lives. A path listed here is one a sweep must not touch.
 #   probe/, commentpass/  hold AUTHORED harnesses (.py) that re-running cannot recreate.
 
 # GENERATED OUTPUT IS NOT A SOURCE FILE. `gates/retention-check.py` CLAUSE III: "an output directory is
@@ -176,6 +166,44 @@ gates/artifacts/
 # written for `runs/e2e/` and `runs/graphcmp/D/` at the root and is now exactly
 # that. Renamed EVIDENCE under a nested `runs/` (e2epy fixtures, differverdict
 # pristine) is the reason to free it, not the reason to keep it.
+#
+# WHAT ONE `rm -rf runs/graphcmp/D` COSTS, MEASURED 2026-10-17 02:35. The
+# directory holds 242 files / 1.0 MB and 0 of them are in git, so git restores
+# none of it. WHAT SURVIVES IS THE VERDICT, NOT THE EVIDENCE: `checks/differ.py`
+# is tracked, and its `PINS` (12 keys read from `D0-run-summary.txt`) and
+# `REPRO_PINS` (`repro-rc`, `d10-transcript`, read from `D0-repro.txt`) are
+# literals in it -- so "34 of 34 graphs agree, byte-identical, 2 runs
+# reproducible" is in git even when the directory is not. WHAT DIES IS THE
+# 1.0 MB of per-graph evidence, and `checks/differ.py repro` re-derives it and
+# byte-compares the result against itself (`repro-identical=242`).
+#
+# **THOSE TWO SUMMARY FILES ARE DELIBERATELY NOT TRACKED, AND TRACKING THEM WAS
+# MEASURED TO BE A NEW PERMANENT RED, NOT A FIX.** `gates/retention-check.py`
+# clause III is "an output directory is not in the index"; planting the two
+# paths in a throwaway index made it print `III TRACKED runs/graphcmp/D: 2
+# entries` plus `UNSATISFIABLE BY ITSELF`, and it cannot be un-redden except by
+# a commit that untracks, because `.gitignore` cannot untrack. It also splits
+# the gate's two halves across two git sources -- clause III reads the INDEX
+# and clause V(1) reads `git ls-tree -r HEAD`, the COMMITTED TREE, deliberately
+# (`gates/gendirs.py:475-483`, because the index holds intent-to-add
+# placeholders) -- so tracking buys that red now and clause V(1)'s after the
+# first commit. And `D0-run-summary.txt` would be a diff at the rate the PORT
+# moves, not the rate the RUN moves: rows `substrate-start`/`substrate-end` are
+# `differ.substrate_digest()` over `tinybendygrad/**`, and MEASURED it went
+# `5d3f3119..` -> `be6874ca..` inside 4 minutes when another unit touched
+# `tinybendygrad/nn/optim.bend`. `D0-repro.txt` carries no substrate row and is
+# stable, but `checks/differ.py:341-350` holds it out of `LITERALS` on purpose:
+# `cmd_repro` writes it one command after `cmd_run`, so it does not belong in a
+# run-shaped record.
+#
+# `runs/README.md` does NOT exist (measured 2026-10-06) and no line here cites
+# it. The gate input that WAS `runs/e2e/e2e-mm-oracle.json` is now the TRACKED
+# `checks/e2e-mm-oracle.json`, beside `checks/run-port-mm.sh:58` which reads it,
+# recovered byte-identical from `cf2d14fa4^` (`.agents/slop/runsgate/`).
+# NOTE (was `retention-check clause V`): clause V's IGNORED-BUT-INDEXED rule
+# only sees a directory that is BOTH in the committed tree AND ignored;
+# `runs/e2e/` was neither, so clause V NEVER reported it -- the citation was a
+# third witness to a rule that does not implement it.
 /runs/
 
 # `checks/both-census.py` writes these BESIDE itself and READS them when present

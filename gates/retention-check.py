@@ -48,8 +48,34 @@ declares nothing would enter with a denominator it cannot support.
 The other tracked directories under runs/ are NOT in the denominator and are printed as
 unregistered, because a rule that grows its own denominator stops being a measurement.
 
-EXIT: 0 when no clause is red. 1 when any clause is red. 2 when a precondition is missing (no
-git, an output root that is not there), because a check that cannot measure must not report 0.
+WHICH VOCABULARY THIS FILE IS ON, DECLARED RATHER THAN ASSUMED. `gates/gatekit.py:60` spells
+`PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5`, and **every verdict this file can reach from
+its command line is one of those five, measured one arm at a time** (`--dir graphcmp=<scratch>`
+so no arm touches the live corpus; 2026-10-17):
+
+    arm                                             exit  gatekit's name for it
+    ----------------------------------------------  ----  ---------------------
+    fresh corpus, a clause red (`report()`)             1  FAIL
+    corpus ABSENT            (`ra.require`)             3  REFUSED
+    corpus present, 48 h old (`ra.require`)             3  REFUSED
+    corpus present, ZERO files (`ra.require`)           5  DEAD
+    SKIP (4)                                         --    never emitted: this file
+                                                             always measures or refuses
+
+**AND THERE IS ONE EXIT THAT IS NOT IN THE FIVE: `refuse()`'s 2.** It is DECLARED HERE, NOT
+ADOPTED, for the reason the brief gives: it PREDATES this file's readers and changing it would
+be a BEHAVIOUR CHANGE rather than a fix, so the honest move is to say which vocabulary each exit
+belongs to. `gatekit.verdict_of(2)` answers `UNASSIGNED (code 2 is not one of the five)`
+(MEASURED, and this paragraph used to claim the opposite -- see `refuse()`), so a caller that
+pattern-matches `3` for REFUSED misses this file's instrument-gone case. `gates/gendirs.py`
+exits 3 for the identical sentence, so **the tree has two numbers for one meaning and this is
+the second one.** SKIP stays unused: an UNMEASURABLE health function is reported by clause IV
+and deliberately does not charge `rc` (see `registry()`), which is a clause-I/II/III/V verdict,
+not a skipped one.
+
+EXIT, IN PLAIN WORDS: 0 when no clause is red. 1 when any clause is red. 3 when the corpus is
+absent or stale. 5 when it is present and empty. 2 when a precondition of THIS FILE is missing
+(no git, `gates/gendirs.py` gone), which is the divergent exit named above.
 """
 import argparse
 import ast
@@ -141,15 +167,30 @@ def label(path):
 def refuse(why):
     """Exit 2, and the NUMBER was chosen here before either site below was written.
 
-    This file's own EXIT paragraph says "2 when a precondition is missing (no git, an output
-    root that is not there), because a check that cannot measure must not report 0", and both
-    sites `refuse()` carries are that class verbatim -- `git` could not answer, and the
-    discovered population itself is absent. What was wrong was only the CODE: `sys.exit` (and
+    This file's own EXIT paragraph says a precondition of the INSTRUMENT is 2, and both sites
+    `refuse()` carries are that class verbatim -- `git` could not answer, and the discovered
+    population itself is absent. What was wrong was only the CODE: `sys.exit` (and
     `raise SystemExit`) handed a STRING, which CPython prints and exits **1**, and 1 is FAIL.
     MEASURED, the string was the whole disagreement -- a missing input was tallied as a red
-    clause. The tree's reader names 2 as `REFUSED` too, through `gatekit.verdict_of`'s
-    "an unassigned INT is a REFUSAL" rule, so this costs the reader nothing and buys the
-    writer the ability to say REFUSED without contradicting the header."""
+    clause.
+
+    **2 IS NOT ONE OF GATEKIT'S FIVE, AND THIS DOCSTRING USED TO SAY IT WAS.** It claimed "the
+    tree's reader names 2 as REFUSED too, through `gatekit.verdict_of`'s 'an unassigned INT is a
+    REFUSAL' rule, so this costs the reader nothing". MEASURED 2026-10-17 against
+    `gates/gatekit.py:60`:
+
+        verdict_of(0) = PASS      verdict_of(3) = REFUSED
+        verdict_of(1) = FAIL      verdict_of(4) = SKIP
+        verdict_of(2) = UNASSIGNED (code 2 is not one of the five)
+        verdict_of(5) = DEAD
+
+    So gatekit does NOT read 2 as a REFUSAL; it reads it as NOT A VERDICT AT ALL, which is the
+    opposite of what the sentence claimed and is a WORSE reading: a caller cannot even tell this
+    file's instrument-gone case from a caller bug. The exit is KEPT -- it predates the readers
+    and renumbering it is a behaviour change, not a fix -- and the divergence is now declared in
+    the EXIT paragraph instead of being argued away here. `gates/gendirs.py` exits 3 for the
+    identical sentence, so the tree carries two numbers for one meaning and this is the second.
+    """
     print(f"== REFUSED, NOT A VERDICT: retention-check: {why}", file=sys.stderr)
     raise SystemExit(2)
 
