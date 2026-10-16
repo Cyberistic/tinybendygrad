@@ -2048,8 +2048,15 @@ def t_beam_new(+l: Land) -> U32:
 # fixture, so a fixture that lost a node cannot pass unnoticed either.
 #
 # EVERY `want_*` BELOW IS CPYTHON'S OWN OUTPUT, read out of a live run of
-# `tinygrad/engine/realize.py` -- `.agents/slop/notes/rz-oracle.py`, run as
-#   python3 .agents/slop/notes/rz-oracle.py
+# `tinygrad/engine/realize.py` -- `gates/realize_graph_census-oracle.py`, run as
+#   .venv/bin/python gates/realize_graph_census-oracle.py
+# MEASURED 2026-10-16: rc=0, 1004 rows. **RETARGETED.** This read
+# `.agents/slop/notes/rz-oracle.py`, deleted by the sweep of 2026-10-05 (blob e853efc4b,
+# 11868 B) and RED when recovered: it dies `AttributeError: 'str' object has no attribute
+# 'name'` inside the live `tinygrad/engine/realize.py:26`, whose `ast.arg.name == "encdec"`
+# now expects a UOp where the old fixture passed a plain string. Its replacement calls the
+# same twelve functions of the same module over a fixture that mirrors `main_arena`.
+#
 # -- so the expectations are the interpreter and not a transcription of this
 # file's own reading of it. Where the port DEVIATES from Python on purpose, the
 # row says so in its name and the reason is at the def.
