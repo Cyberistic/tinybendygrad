@@ -441,7 +441,7 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        exits **1**, so to `$?` all 57 read as an honest `FAIL` and the
                                        only witness is a sentence invented at the call site. It also
                                        CORRECTED MY OWN CITATION: the unassigned branch of
-                                       `verdict_of()` is **`gatekit.py:98`**, not `:97` as I wrote it
+                                       `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
 rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledgerdrift`), and it is
