@@ -30,7 +30,7 @@ divergences below were INVISIBLE TO THE SIBLING'S SIGNATURE ENTIRELY -- `Rng.sig
 `CONST/0` for a constant whatever it holds and prints no `ParamArg` at all -- so neither
 could ever have been reported by a prefix.
 
-THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND ELEVEN CHECKS COMPARE THEM EVERY RUN.
+THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND TWELVE CHECKS COMPARE THEM EVERY RUN.
     methods_hold    the TEN `cr_*` defs that mirror a `creation.py` METHOD. Discovered by
                     intersecting `creation.bend`'s `def cr_*` names with `creation.py`'s
                     `def <n>(self|cls`, both by `re` -- NEITHER LIST TYPED -- and the
@@ -54,6 +54,14 @@ THE POPULATIONS ARE DISCOVERED, ON BOTH SIDES, AND ELEVEN CHECKS COMPARE THEM EV
                     inside `cr_cast`, and `cr_cast` HAS a fold arm -- and the nineteen `iv_`
                     rows say what that fold gets wrong. A tree-wide grep is NOT the answer,
                     because most of its hits are pattern-matcher arms; this file has one.
+    couple_hold      THE PREMISE `opscast_hold`'s SECOND LITERAL STANDS ON: `cr_cast` has one
+                    call site, `cr_cast_dt.of` has exactly two arms and its non-identity arm
+                    answers a CONSTANT, and every value that reaches that branch derives that
+                    constant's own dtype. Those three facts say a CAST is minted only where
+                    `de == dt`, so the fix's `de`-as-`ADt` rewrite (`C1`) is an ALPHA-RENAME on
+                    the whole input space and its 0 moved rows are the correct reading rather
+                    than a population that failed to cover it. `C7`/`C8` measure the other
+                    side of that: break the premise and `C1` moves 38 rows at `bare == 0`.
     drift_hold      SEVEN vendored files, THREE blobs each, plus -- for the TWO THAT HAVE
                     DRIFTED since `ad117c928^` -- the BODY of every def the rows read,
                     compared between the pin and HEAD. See THE VENDORED answer below.
@@ -148,6 +156,7 @@ ORACLE = HERE / "crp_graph_census-oracle.py"
 PORT = ROOT / "tinybendygrad" / "mixin" / "creation.bend"
 CPY = ROOT / "tinygrad" / "mixin" / "creation.py"
 SPEC = ROOT / "tinybendygrad" / "LAWS" / "spec.bend"
+FOLD = ROOT / "tinybendygrad" / "uop" / "fold.bend"
 OPS = ROOT / "tinybendygrad" / "uop" / "ops.bend"
 PIN = "ad117c928^"          # the pin AGENTS.md names for a drifted file
 
@@ -605,6 +614,90 @@ def opscast_hold() -> bool:
     return report("opscast_hold", bad)
 
 
+# THE PREMISE `opscast_hold`'s SECOND LITERAL STANDS ON, AND IT IS NOT A ROW. `de` differs
+# from `dt` only where `cr_cast_dt` takes its non-`dt` branch, that branch answers a
+# CONSTANT, and the fold test compares `c0 = cr_from_py(v)` against it -- so wherever `de`
+# and `dt` disagree the two operands of the fold test are EQUAL, nothing is minted, and the
+# disagreement is exactly where no row can read it. `cr_cast` has ONE call site, so `cr_cast_dt`
+# is reached from ONE place, and THAT is what makes the branch's constant and the fold test's
+# right-hand side the same value.
+ARM = re.compile(r"^ *case ([^:\n]+): *([^\n]+)$", re.M)
+CTOR = re.compile(r"^ *case (O\.C\w+)\{[^}]*\}: *(.+)$", re.M)
+
+
+def _def(src, name):
+    m = re.search(rf"^def {re.escape(name)}\(.*?(?=^def )", src, re.M | re.S)
+    return m.group(0) if m else ""
+
+
+def couple_hold() -> bool:
+    r"""THE COUPLING'S PREMISE, PARSED, SO THAT `opscast_hold`'s SPELLING ASSERTION HAS A
+    STATED SOUNDNESS CONDITION INSTEAD OF AN ASSUMED ONE.
+
+    `de` is the fold test's right-hand side AND the CAST's `ADt`, and `C1` rewrites the second
+    use to `dt`. MEASURED, `C1` moves 0 of the rows and `C4` -- `C1` with that spelling
+    assertion silenced -- is GREEN, which reads as a coverage hole. IT IS NOT ONE, and this
+    check is the reason, stated as three facts about the source rather than as an argument:
+
+      H1  `cr_cast` HAS ONE CALL SITE, so `cr_cast_dt` is reached from one place and its
+          answer is a function of `(is_cinvalid(v), dt)` alone. A second call site could hand
+          `cr_cast` a `dt` of its own that disagrees with the fold's, and no row reads a
+          `de`'s SOURCE. `opscast_hold` counts `OpsCAST` SITES, which is a different set: it
+          is one either way.
+      H2  `cr_cast_dt.of` HAS EXACTLY TWO ARMS: the identity arm answers `dt` and the other
+          answers a CONSTANT that mentions neither `dt` nor `v`. A third arm, or an answer
+          computed from `dt`, makes `de` capable of differing from `dt` at a MINT.
+      H3  EVERY VALUE THAT REACHES THAT BRANCH DERIVES THE CONSTANT'S OWN DTYPE. `de`'s
+          non-identity arm is `cr_from_py(O.CInvalid{})`, `is_cinvalid.val`'s true set is read
+          out of `fold.bend`, and `cr_from_py` is asked what it answers for EACH of those
+          constructors. Today that set is `{O.CInvalid}` and both answers are `S.boolean()`.
+
+    H2 ∧ H3 GIVE, BY CONTRAPOSITION: a CAST is minted only where `cr_from_py(v) != de`, and
+    H3 says `cr_from_py(v) = de` wherever `de != dt`, so a mint forces `de = dt`. `C1` IS AN
+    ALPHA-RENAME ON THE WHOLE INPUT SPACE, and 0 rows is the correct reading of it rather than
+    a population that failed to cover it. `crp_graph_census-mutate.py`'s `C7`/`C8` are the
+    measured counterpart: `C7` breaks H2, all forty `de != dt` cells (`iv_` and `vr_CInvalid_`
+    are the same twenty, walked twice) start minting and 40 rows move at `bare == 40`, and `C8`
+    IS `C7` PLUS `C1` READ AGAINST `C7`: 38 rows move at `bare == 0`, because the token set is
+    unchanged and only the `[...]` differs. THE TWO THAT DO NOT MOVE ARE `iv_weakint` AND
+    `vr_CInvalid_weakint`, WHERE `dt` HAPPENS TO BE `C7`'s OWN CONSTANT -- so `C1` is an
+    alpha-rename there too, and the census would have said so per row.
+
+    THE ROW-LEVEL SHADOW OF ALL THREE IS ALREADY ASSERTED ELSEWHERE AND IS NOT RESTATED HERE:
+    `value_axis_hold` claim 1 is "every minted `CAST/1` carries its own row's dtype" over the
+    eighty `vr_` cells, and `fold_axis_hold` is "`iv_` mints nothing at all twenty". This check
+    is what says those two are EVIDENCE rather than COINCIDENCE.
+    """
+    src, fold = PORT.read_text(), FOLD.read_text()
+    bad, why = [], []
+    calls = [i + 1 for i, l in enumerate(src.splitlines())
+             if "cr_cast(" in l and not l.lstrip().startswith("def ")]
+    if len(calls) != 1:
+        bad.append(f"`cr_cast` has {len(calls)} call sites at {calls}, expected 1 -- a second "
+                   f"one may pass a `de` of its own and `de == dt` at a mint stops following")
+    arms = ARM.findall(_def(src, "cr_cast_dt.of"))
+    if arms != [("True{}", "cr_from_py(O.CInvalid{})"), ("_", "dt")]:
+        bad.append(f"`cr_cast_dt.of` answers {arms}; the premise needs the identity arm on `dt` "
+                   f"and the other on a constant, and a third arm can break `de == dt` at a mint")
+    else:
+        setmap = dict(CTOR.findall(_def(src, "cr_from_py")))
+        truth = ARM.findall(_def(fold, "is_cinvalid.val"))
+        reach = [h[:-2] for h, _ in truth if h != "_"]
+        if sorted(reach) != ["O.CInvalid"]:
+            bad.append(f"`is_cinvalid.val` is TRUE for {reach}, and `cr_cast_dt` then answers "
+                       f"`cr_from_py(O.CInvalid{{}})` whatever value that was")
+        for c in reach:
+            if setmap.get(c) != setmap.get("O.CInvalid"):
+                bad.append(f"`cr_from_py` answers {setmap.get(c)} for {c} and "
+                           f"{setmap.get('O.CInvalid')} for O.CInvalid -- the branch `de` takes "
+                           f"must derive the dtype the fold test compares it against")
+        why.append(f"`cr_cast` called at {calls[0]}; `de`'s branch answers "
+                   f"{setmap.get('O.CInvalid')} for each of {sorted(reach)}")
+    for l in why:
+        print(f"  {l}")
+    return report("couple_hold", bad)
+
+
 def _blob(rev, rel):
     r = subprocess.run(["git", "rev-parse", "--short=8", f"{rev}:{rel}"],
                        capture_output=True, text=True, cwd=str(ROOT))
@@ -821,8 +914,9 @@ def value_axis_hold() -> bool:
        fill CONST. So each of the eighty rows is compared against the `f_` row beside it and
        sorted into three classes, which is why the independence criterion needs no prose:
        `CONSTRUCTOR` (a different derived dtype), `PAYLOAD` (the same derived dtype, a
-       different value) and `DERIVED` (byte-identical to `cv1(dt)`). MEASURED: 20 CONSTRUCTOR,
-       38 PAYLOAD, 22 DERIVED, and THE DERIVED 22 ARE THE CONTROL -- they are `DType.const`'s
+       different value) and `DERIVED` (byte-identical to `cv1(dt)`). MEASURED, AND PRINTED BY
+       THIS CHECK ON EVERY RUN: 19 CONSTRUCTOR,
+       39 PAYLOAD, 22 DERIVED, and THE DERIVED 22 ARE THE CONTROL -- they are `DType.const`'s
        three arms over the literal `True` (`cr_cval1` IS `dt.const(True)`) and the `bool`
        cell of each of the other two columns, where `bool(1)`, `bool(7)` and `bool(2.5)` are
        all `True`. A reader who does not believe the axis is independent can read the three
@@ -1104,7 +1198,8 @@ GATE = Gate(
 )
 
 CHECKS = (names_hold, methods_hold, dtypes_hold, receiver_hold, frompy_hold, opscast_hold,
-          drift_hold, classes_hold, fold_axis_hold, value_axis_hold, no_noop_bottom)
+          couple_hold, drift_hold, classes_hold, fold_axis_hold, value_axis_hold,
+          no_noop_bottom)
 
 # THE `iv_` FAMILY, DISCOVERED from the row population and NOT TYPED. `cr_cast_dt` cleared
 # every one of these twenty rows, and the verdict below counts them from here so the number
@@ -1127,7 +1222,7 @@ if __name__ == "__main__":
                         f"byte and {len(DIVERGES)} are DECLARED -- "
                         f"{sum(1 for c, _ in DIVERGES.values() if c == 'W3-BOUNDS')} is W3's "
                         f"missing vmin/vmax and NOTHING is the class-(b) NEVER-FOLDING CAST, "
-                        f"whose {len(CLEARED)} `iv_` rows `cr_const_dt` cleared; the ten census "
+                        f"whose {len(CLEARED)} `iv_` rows `cr_cast_dt` cleared; the ten census "
                         f"METHODS are the intersection of "
                         f"creation.bend's cr_* names and creation.py's (self|cls names; the "
                         f"fold set is measured at bool/weakint/weakfloat; no lane reads the "

@@ -274,7 +274,10 @@ def moved(base, got):
 
 # THE TABLE. `(label, kind, file, find, replace)`. `file` is one of port/driver/oracle/pins/
 # spec/gate, and every `find` is ASSERTED UNIQUE before it is applied, so a mutation that
-# silently stopped matching is a REFUSED entry and not a green one.
+# silently stopped matching is a REFUSED entry and not a green one. `find`/`replace` MAY BE TWO
+# LISTS OF EQUAL LENGTH (`C8`), and the sixth field MAY BE A DICT carrying `gate` (a patch
+# applied to THE GATE ITSELF alongside the input) and/or `vs` (the label this entry is to be
+# READ AGAINST instead of the unmutated baseline).
 MUTATIONS = [
     # ---------------------------------------------------------------- VALUE
     ("V1 cr_cast_dt's True arm answers dt -- the PRE-FIX predicate", "VALUE", "port",
@@ -351,8 +354,41 @@ MUTATIONS = [
     ("C6 the CAST's ADt argument reads c0 -- the fold test's OTHER operand", "VALUE", "port",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)",
      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), c0)"),
+    # C7 AND C8 ARE THE PAIR THAT MAKES C1 A MEASUREMENT INSTEAD OF A PUZZLE, and neither of
+    # them is a defect injection: `C7` answers `cr_cast_dt`'s non-identity arm with a constant
+    # that is NEITHER `dt` NOR `c0`, which is the first edit in this table that can leave `de`
+    # differing from `dt` AT A MINT. `couple_hold` in the gate names that as the PREMISE and
+    # reds here. MEASURED, and the two readings are the point: against the baseline `C7` moves
+    # 40 rows -- the twenty `iv_` and the twenty `vr_CInvalid_`, which are the SAME twenty
+    # cells of `cr_const_of`'s input space walked through two different `cr_*` calls and the
+    # ONLY cells at which `de != dt` -- at `bare == 40`, because a CAST
+    # APPEARS where there was none. `C8` IS `C7` PLUS `C1` AND IS READ AGAINST `C7`, NOT
+    # against the baseline: it moves 38 rows at `bare == 0`, because the token set is unchanged and only
+    # the `[...]` differs. THE TWO THAT DO NOT MOVE ARE `iv_weakint` AND `vr_CInvalid_weakint`,
+    # WHERE `dt` IS `C7`'s OWN CONSTANT, so `C1` is an alpha-rename there too. SO `C1` IS NOT
+    # INVISIBLE, IT IS AN ALPHA-RENAME ON A POPULATION WHERE `de == dt` AT EVERY MINT --
+    # `couple_hold`'s H2/H3 -- and the census WOULD report it, per row, the day such a cell
+    # exists. `C7` is the shape that cell takes.
+    ("C7 cr_cast_dt's True arm answers weakint -- de != dt AT A MINT", "VALUE", "port",
+     "    case True{}: cr_from_py(O.CInvalid{})",
+     "    case True{}: S.weakint()"),
+    ("C8 C7 plus C1 -- the ADt argument reads dt, READ AGAINST C7", "VALUE", "port",
+     ["    case True{}: cr_from_py(O.CInvalid{})",
+      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)"],
+     ["    case True{}: S.weakint()",
+      "  cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), dt)"],
+     {"vs": "C7"}),
 
-    # ------------------------------------------------- THE PRINTER, ON BOTH LANES
+    # C9 IS THE SECOND HALF OF THE PREMISE, AND THE ONE `opscast_hold` CANNOT SEE. `C7` breaks
+    # `cr_cast_dt` and both checks go red; this one adds a SECOND CALL SITE of `cr_cast` that
+    # folds (`same = True{}`, so it returns its own argument and no row can notice) and hands
+    # `cr_cast` a `de` OF ITS OWN -- `S.weakint()` -- so `de == dt` at a mint no longer
+    # follows from anything. `opscast_hold` counts `OpsCAST` SITES, which stays 1, so it is
+    # GREEN here and only `couple_hold`'s H1 reds. MEASURED, and the two together are the
+    # argument for keeping both: the spelling assertion is necessary and not sufficient.
+    ("C9 a SECOND call site of cr_cast, folded -- opscast_hold's blind spot", "VALUE", "port",
+     "  +val = cr_expand(cr_const_of(ar, v, dt), ds)",
+     "  +val = cr_cast(True{}, cr_expand(cr_const_of(ar, v, dt), ds), S.weakint())"),
     # C5 SAYS THE `ADt` IS NOW IN A TOKEN. THESE TWO SAY WHICH LANE PUT IT THERE, and they
     # are the pair that stops a printer from being load-bearing on ONE side only: with only
     # the port's arm, the two lanes would DISAGREE on all 118 casts and the gate would be
@@ -519,10 +555,22 @@ MUTATIONS = [
     # one -- which is worth knowing and is not worth hiding.
     ("G15 value_axis_hold: claim 1 is REMOVED (a WEAKENING, expected GREEN)", "GUARD", "gate",
      "                if casts != [d]:", "                if False:"),
+    # G16 IS THE GUARD FOR THE CHECK THAT NAMES WHY `C1` MOVES NOTHING. It weakens H2's first
+    # half -- the non-identity arm's answer -- so the premise this gate parses is false on a
+    # tree `C7` would happily create, and it must be a red run: a premise check that has never
+    # been seen to fail is not a premise.
+    ("G16 couple_hold: the premise's constant is spelled in full at the call site", "GUARD",
+     "gate", 'if arms != [("True{}", "cr_from_py(O.CInvalid{})"), ("_", "dt")]:',
+     'if arms != [("True{}", "S.boolean()"), ("_", "dt")]:'),
 ]
 
 SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "spec": SPEC,
            "gate": GATE}
+
+# LABEL -> ENTRY, FOR AN INSTRUMENT THAT WANTS ONE ENTRY WITHOUT COPYING THE TABLE.
+# Keyed on the same first token `main()` filters on, so there is one keying in
+# the tree rather than two.
+MUTATIONS_BY = {e[0].split()[0]: e for e in MUTATIONS}
 
 
 def main(argv):
@@ -543,6 +591,7 @@ def main(argv):
     width = max(len(m[0]) for m in want)
     kinds, moved_any, zero, zero_red, refused, guards, guard_fail, notrun = \
         {}, 0, [], [], 0, 0, 0, []
+    lanes = {}                  # LABEL -> (bd rows, py rows), for an entry with a `vs` field
     try:
         _write_mutations()          # the UNMUTATED copies: every path must EXIST, because a
         # missing one is a REFUSED exit for the wrong reason and a baseline that is
@@ -559,13 +608,36 @@ def main(argv):
               f"{sum(1 for a, b in zip(base_py, base_bd) if a != b)} divergence(s)\n")
         for entry in want:
             label, kind, f, old, new = entry[:5]
-            gate_patch = entry[5] if len(entry) > 5 else None
+            # THE SIXTH FIELD IS OPTIONAL AND MAY BE EITHER SHAPE: the tuple `(old, new)` a
+            # C4-shaped entry already used to patch THE GATE alongside the input, or a dict
+            # carrying `gate` and/or `vs`. `vs` NAMES THE MUTATION THIS ONE IS TO BE READ
+            # AGAINST instead of the unmutated baseline, which is what makes a PAIR
+            # measurable -- and the `C1`/`C6` and `C4`/`C1` pairs are pairs for a reason, so
+            # the table could not measure its own central claim until this existed. AN ENTRY
+            # WHOSE `vs` TARGET THIS RUN DID NOT PRODUCE IS REFUSED, because falling back to
+            # the baseline would print a number about a different question.
+            extra = entry[5] if len(entry) > 5 else None
+            gate_patch, vs = (extra, None) if isinstance(extra, tuple) else \
+                (extra.get("gate"), extra.get("vs")) if isinstance(extra, dict) else (None, None)
+            if vs is not None and vs not in lanes:
+                refused += 1
+                print(f"  {label:<{width}}  [{kind}]  REFUSED: it is to be read against {vs!r}, "
+                      f"which this run did not produce first -- pass {vs} as well")
+                continue
             kinds[kind] = kinds.get(kind, 0) + 1
             mv, ap, va = 0, [], []
             src = SOURCES[f].read_text()
-            if src.count(old) != 1:
+            # `old`/`new` MAY BE TWO LISTS OF EQUAL LENGTH, and then every pattern is applied
+            # in order. `C8` needs it because `C7`'s edit and `C1`'s edit are FIFTEEN LINES
+            # APART in `creation.bend`, so one contiguous `find` cannot carry both and an
+            # entry that could only carry one could not state the pair the whole `C` series
+            # is about. Every pattern is asserted UNIQUE on the PRISTINE source, so a later
+            # edit that made one of them ambiguous is a REFUSED entry and not a green one.
+            pairs = list(zip(old, new)) if isinstance(old, list) else [(old, new)]
+            dup = [o for o, _ in pairs if src.count(o) != 1]
+            if dup:
                 print(f"  {label:<{width}}  [{kind}]  REFUSED: the pattern occurs "
-                      f"{src.count(old)} times, expected 1")
+                      f"{src.count(dup[0])} times, expected 1: {dup[0]!r}")
                 refused += 1
                 continue
             gtext = None
@@ -579,7 +651,9 @@ def main(argv):
                     refused += 1
                     continue
                 gtext = GATE.read_text().replace(*gate_patch)
-            text = src.replace(old, new)
+            text = src
+            for o, n in pairs:
+                text = text.replace(o, n)
             if f == "gate":
                 rc, out = run_gate(gate_text=text, checks_only=True)
                 guards += 1
@@ -592,12 +666,15 @@ def main(argv):
                 _write_mutations(**{f: text})
                 bd, w = lane_rows([str(ROOT / "bin" / "bend"), str(MUT_DRIVER)])
                 py, _ = lane_rows([str(ROOT / ".venv" / "bin" / "python"), str(MUT_ORACLE)])
-                mv, ap, va = moved(base_bd, bd)
-                br = moved_bare(base_bd, bd)
-                if py is not None and py != base_py:
-                    pm, pa, pv = moved(base_py, py)
+                ref_bd, ref_py = lanes[vs] if vs else (base_bd, base_py)
+                if vs is None:
+                    lanes[label.split()[0]] = (bd, py)
+                mv, ap, va = moved(ref_bd, bd)
+                br = moved_bare(ref_bd, bd)
+                if py is not None and py != ref_py:
+                    pm, pa, pv = moved(ref_py, py)
                     mv, ap, va = mv + pm, ap + pa, va + pv
-                    qb = moved_bare(base_py, py)
+                    qb = moved_bare(ref_py, py)
                     br = None if br is None or qb is None else br + qb
                 rc, out = run_gate(gate_text=gtext)
                 n = mv + len(ap) + len(va)
@@ -618,6 +695,7 @@ def main(argv):
                       + ("RED" if rc else "GREEN  <-- THE MUTATION WAS NOT FOUND")
                       + f"  {n} rows moved"
                       + (f"  bare={br}" if br is not None else "  bare=DEAD-LANE")
+                      + (f", against {vs}" if vs else "")
                       + (f", {len(ap)} appeared" if ap else "")
                       + (f", {len(va)} vanished" if va else "")
                       + (f", bend rc!=0 -- {w[0][:70]}" if bd is None else ""))
