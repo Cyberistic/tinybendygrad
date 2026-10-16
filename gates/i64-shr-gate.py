@@ -76,8 +76,19 @@ def lane_file(lane):
     staged = sorted(GATE.dir.glob(f".tmp*/{lane}*.out")) + sorted(GATE.dir.glob(f"{lane}.txt.*"))
     if staged:
         return staged[0]
-    raise SystemExit(f"i64-shr-gate: no lane file for {lane} under {GATE.dir} -- the claims "
-                     "would run on nothing")
+    print(f"i64-shr-gate: no lane file for {lane} under {GATE.dir} -- the claims "
+          "would run on nothing", file=sys.stderr)
+    raise SystemExit(1)   # 1 CHOSEN, and this is a NEGATIVE RESULT worth keeping: main() at
+                          # :115 CATCHES this raise for `bd` and returns 1, and main() at :118
+                          # returns 1 for the same condition in words ("bd.out is absent or not
+                          # 301 rows"). So this file grades "the claims would run on nothing"
+                          # as 1 in two places already, and any other number HERE would put
+                          # two verdicts for one condition in one file -- the defect `fef1b64d7`
+                          # is written about. It was a string, and a string is 1 anyway; the
+                          # edit is that the author now says so. WHETHER AN ABSENT LANE FILE
+                          # IS REFUSED(3) RATHER THAN FAILED IS THE OPEN QUESTION, and it is
+                          # :118's to answer, not this raise's: that line CONFLATES "absent"
+                          # with "the wrong row count", which are two different verdicts.
 
 
 def rows_of(lane):

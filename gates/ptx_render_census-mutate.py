@@ -204,15 +204,30 @@ def diff_rows(a, b):
 PORT_ANCHOR = "import ./../uop/ops.bend as O\n"
 PORT_PRELUDE = ""
 
+def refuse(why):
+    """3, and the number the file already PRINTS.
+
+    MEASURED, `main()` at :306-309 wraps `run_port_mutation()` in `except SystemExit` and
+    writes `REFUSED: {e}` for each entry, so the word REFUSED was already in this file's
+    output and only the code disagreed with it: a string handed to `SystemExit` is 1, which
+    is FAIL. All three sites are one class -- a pattern this harness was written against is
+    no longer uniquely present, so the edit cannot be applied -- and the class is the same one
+    `tc_ptx_types-mutate.py:78` names with a byte-identical message. For `apply()` and
+    `add_prelude()` this is LATENT, because the only caller is inside that `except`; for
+    `run_guard_mutation()` it is live, because `main()` calls it at :324 with no handler."""
+    print(f"== REFUSED, NOT A VERDICT: ptx_render_census-mutate: {why}", file=sys.stderr)
+    raise SystemExit(3)
+
+
 def apply(text, old, new):
     if text.count(old) != 1:
-        raise SystemExit(f"the edit must appear EXACTLY ONCE; it appears {text.count(old)}")
+        refuse(f"the edit must appear EXACTLY ONCE; it appears {text.count(old)}")
     return text.replace(old, new)
 
 
 def add_prelude(text):
     if text.count(PORT_ANCHOR) != 1:
-        raise SystemExit(f"the import anchor appears {text.count(PORT_ANCHOR)} times, expected 1")
+        refuse(f"the import anchor appears {text.count(PORT_ANCHOR)} times, expected 1")
     return text.replace(PORT_ANCHOR, PORT_ANCHOR + PORT_PRELUDE)
 
 
@@ -269,7 +284,7 @@ def run_guard_mutation(name):
     txt = (HERE / "ptx_render_census-gate.py").read_text()
     old = '"barrier": "bar.sync\\\\t0;"'
     if txt.count(old) != 1:
-        raise SystemExit(f"M13: the claim string appears {txt.count(old)} times, expected 1")
+        refuse(f"M13: the claim string appears {txt.count(old)} times, expected 1")
     d = Path(tempfile.mkdtemp())
     try:
         for f in ("ptx_render_census-gate.py",):

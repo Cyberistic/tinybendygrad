@@ -458,7 +458,13 @@ def git(*args: str) -> str:
     error -- `retention-check.py` already established that, and the reason is in its docstring."""
     r = subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True)
     if r.returncode != 0 and "outside repository" not in r.stderr:
-        raise SystemExit(f"gendirs: git {' '.join(args)} failed: {r.stderr.strip()[:200]}")
+        print(f"== REFUSED, NOT A VERDICT: gendirs: git {' '.join(args)} failed: "
+              f"{r.stderr.strip()[:200]}", file=sys.stderr)
+        raise SystemExit(3)   # `git` could not answer, so the half that asks it measured
+                               # nothing. MEASURED, 20 files in this tree already exit a
+                               # CHOSEN 3 for a precondition absent and 16 of the 20 do not
+                               # import gatekit, so 3 is the tree's number and not this
+                               # file's invention. It was a string, which CPython exits 1.
     return r.stdout
 
 

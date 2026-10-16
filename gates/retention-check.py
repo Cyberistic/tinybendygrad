@@ -138,6 +138,22 @@ def label(path):
         return str(path)
 
 
+def refuse(why):
+    """Exit 2, and the NUMBER was chosen here before either site below was written.
+
+    This file's own EXIT paragraph says "2 when a precondition is missing (no git, an output
+    root that is not there), because a check that cannot measure must not report 0", and both
+    sites `refuse()` carries are that class verbatim -- `git` could not answer, and the
+    discovered population itself is absent. What was wrong was only the CODE: `sys.exit` (and
+    `raise SystemExit`) handed a STRING, which CPython prints and exits **1**, and 1 is FAIL.
+    MEASURED, the string was the whole disagreement -- a missing input was tallied as a red
+    clause. The tree's reader names 2 as `REFUSED` too, through `gatekit.verdict_of`'s
+    "an unassigned INT is a REFUSAL" rule, so this costs the reader nothing and buys the
+    writer the ability to say REFUSED without contradicting the header."""
+    print(f"== REFUSED, NOT A VERDICT: retention-check: {why}", file=sys.stderr)
+    raise SystemExit(2)
+
+
 def git(*args):
     """`git` as a MEASUREMENT, not a dependency: `ls-files` reads the index, and this file's
     only git-shaped claim is about what is IN the index.
@@ -151,7 +167,7 @@ def git(*args):
     if r.returncode != 0:
         if "outside repository" in r.stderr:
             return ""
-        raise SystemExit(f"retention-check: git {' '.join(args)} failed: {r.stderr.strip()[:200]}")
+        refuse(f"git {' '.join(args)} failed: {r.stderr.strip()[:200]}")
     return r.stdout
 
 
@@ -165,8 +181,8 @@ def load_gendirs():
     """
     p = ROOT / "gates" / "gendirs.py"
     if not p.is_file():
-        raise SystemExit("retention-check: gates/gendirs.py is gone -- it IS the discovered "
-                         "population, and a check whose population is missing must not report 0")
+        refuse("gates/gendirs.py is gone -- it IS the discovered population, and a check "
+               "whose population is missing must not report 0")
     spec = importlib.util.spec_from_file_location("gendirs", p)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

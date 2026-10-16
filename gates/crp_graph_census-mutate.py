@@ -131,8 +131,16 @@ def _write_mutations(port=None, driver=None, oracle=None, pins=None, spec=None):
     MUT_SPEC.write_text(SPEC.read_text() if spec is None else spec)
     src = DRIVER.read_text() if driver is None else driver
     if DRIVER_IMPORT not in src:
-        raise SystemExit(f"{DRIVER}: the creation.bend import {DRIVER_IMPORT!r} is gone -- "
-                         f"this harness rewrites it and cannot")
+        # 2, and it is THIS FILE'S OWN NUMBER, not the tree's: `assert_pins()` above already
+        # exits 2 for "THE PINS SHAPE IS NOT WHAT THIS HARNESS EXPECTS", eleven lines up and
+        # in the same before-anything-is-counted position. This is the same class -- a
+        # required input is not what this harness needs -- and going to 3 here would put two
+        # numbers for one class in one file, which is the defect the model commit
+        # (`fef1b64d7`) was written about. It was a string, which CPython exits 1.
+        print(f"== REFUSED, NOT A VERDICT: {DRIVER}: the creation.bend import "
+              f"{DRIVER_IMPORT!r} is gone -- this harness rewrites it and cannot",
+              file=sys.stderr)
+        raise SystemExit(2)
     MUT_DRIVER.write_text(src.replace(DRIVER_IMPORT, DRIVER_MUT_IMPORT))
 
 

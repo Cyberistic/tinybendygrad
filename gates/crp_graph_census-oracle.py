@@ -50,6 +50,7 @@ graph, which is why a 287-row census runs with no device work.
 
 import re
 import struct
+import sys
 from pathlib import Path
 
 from tinygrad import dtypes
@@ -93,6 +94,20 @@ ALIAS = {"void": "void", "weakint": "weakint", "boolean": "bool", "int8": "i8", 
          "half": "f16", "bfloat16": "bf16", "single": "f32", "double": "f64"}
 
 
+def refuse(why):
+    """Exit 3, and both sites below are the ONE class this function's own docstring names.
+
+    `dtypes_()` cannot produce a row for a dtype it did not resolve, and `DTNAMES` is built by
+    CALLING it at import time, so the lane emits nothing at all when either site fires. The
+    docstring above already wrote the word -- "THE EMPTY POPULATION IS REFUSED, NOT RETURNED"
+    -- and this makes the CODE say it too: `SystemExit(<str>)` prints the string and exits
+    **1**, which is FAIL, so a lane that measured nothing was tallied as a lane that
+    disagreed. MEASURED tree-wide, 20 files already exit a chosen 3 for a precondition absent
+    and 16 of the 20 never import gatekit."""
+    print(f"== REFUSED, NOT A VERDICT: crp_graph_census-oracle: {why}", file=sys.stderr)
+    raise SystemExit(3)
+
+
 def dtypes_():
     """`spec.bend`'s dtype constructors, in FILE order, resolved to CPython's `DType`s.
 
@@ -102,18 +117,19 @@ def dtypes_():
     rows and **exited 0**. A population that discovers as empty and says nothing is a lane
     that measured nothing and reported success -- the shape
     `rebase-gate-selftest.py:1168` documents as "compared nothing". Two things catch it and
-    both are here: `SystemExit` below names it at the point it happens, and `gatekit`'s row
+    both are here: `refuse()` below names it at the point it happens, and `gatekit`'s row
     COUNT refuses the short lane whatever this file does. The first is the diagnosis and the
     second is the backstop, and neither replaces the other."""
     hits = SPEC_DT.findall(SPEC.read_text())
     if not hits:
-        raise SystemExit(f"{SPEC} has no `def <n>() -> Dt: Dt{{` constructor -- the dtype "
-                         f"population discovered EMPTY, which is not a measurement")
+        refuse(f"{SPEC} has no `def <n>() -> Dt: Dt{{` constructor -- the dtype "
+               f"population discovered EMPTY, which is not a measurement")
     out = []
     for nm, _pri, _bits in hits:
         d = getattr(dtypes, ALIAS.get(nm, nm), None)
         if not isinstance(d, DType):
-            raise SystemExit(f"spec.bend's {nm!r} is not a dtypes attribute -- the mirror is stale")
+            refuse(f"spec.bend's {nm!r} is not a dtypes attribute -- the mirror is stale, "
+                   "so this lane cannot produce the row it is named for")
         out.append(d)
     return out
 

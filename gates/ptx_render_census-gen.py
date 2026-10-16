@@ -52,7 +52,15 @@ ADDR = {AddrSpace.REG: "AReg", AddrSpace.LOCAL: "ALocal", AddrSpace.GLOBAL: "AGl
 def dt_of(d):
     nm = d.name if hasattr(d, "name") else str(d).rsplit(".", 1)[-1]
     if nm not in DT:
-        raise SystemExit(f"unmapped dtype {d!r}")
+        print(f"== REFUSED, NOT A VERDICT: ptx_render_census-gen: unmapped dtype {d!r} -- "
+              f"DT covers {len(DT)} names and this one is not among them, so the axis "
+              "cannot be emitted", file=sys.stderr)
+        raise SystemExit(3)   # 3, NOT 1: this generator's whole job is to emit every node
+                              # CPython built, and a name it cannot map is a node it cannot
+                              # emit -- the lane measured nothing. A string was 1, which is
+                              # FAIL, and FAIL says the answer was wrong. See the sibling
+                              # `gates/crp_graph_census-oracle.py`, whose own docstring calls
+                              # the same class "THE EMPTY POPULATION IS REFUSED, NOT RETURNED".
     return "S." + DT[nm] + "()"
 
 

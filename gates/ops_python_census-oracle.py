@@ -87,7 +87,16 @@ def tid_of(cores):
     for nm, v in TC_TABLES.items():
         if cores is getattr(tc, nm, None):
             return v
-    sys.exit(f"an unknown tensor-core table reached the oracle: {cores!r}")
+    print(f"== REFUSED, NOT A VERDICT: ops_python_census-oracle: an unknown tensor-core "
+          f"table reached the oracle: {cores!r}", file=sys.stderr)
+    sys.exit(3)   # 3, and this file's OWN header at :36 already said what to do -- "so a
+                  # renamed table is a `SystemExit` rather than a silent 0". A `SystemExit`
+                  # of a STRING is 1, so the intent and the code disagreed and the code won.
+                  # `main()` runs to completion or not at all, and `ops_python_census-gate.py
+                  # :276` maps ANY non-zero rc of this oracle to a FAIL row, so the only
+                  # reader this buys anything for is one reading `$?` directly. The site
+                  # BELOW it is left alone and that is deliberate -- see the report: whether
+                  # a stale upstream FIXTURE is a refusal or a wrong answer is not settled.
 
 
 def refused(fn):

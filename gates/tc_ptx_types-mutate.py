@@ -73,9 +73,21 @@ MUTATIONS = [
 ]
 
 
+def refuse(why):
+    """3, and both sites below are the SAME class as `ptx_render_census-mutate.py`'s two,
+    whose messages two of these are byte-identical to: a pattern this harness was written
+    against is not uniquely present, so the mutation cannot be applied and the run would
+    count a number about a different question. `main()` returns 0 on every path that
+    completes, so the only non-zero exits here are refusals, and a string is 1 -- FAIL, which
+    says an answer was wrong. Measured tree-wide, 20 files already exit a chosen 3 for a
+    precondition absent and 16 of the 20 never import gatekit."""
+    print(f"== REFUSED, NOT A VERDICT: tc_ptx_types-mutate: {why}", file=sys.stderr)
+    raise SystemExit(3)
+
+
 def apply(text, old, new):
     if text.count(old) != 1:
-        raise SystemExit(f"the edit must appear EXACTLY ONCE; it appears {text.count(old)}")
+        refuse(f"the edit must appear EXACTLY ONCE; it appears {text.count(old)}")
     return text.replace(old, new)
 
 
@@ -92,7 +104,7 @@ def main():
     # The control's anchor does not exist yet, so it is ADDED to the BASE and to every
     # mutant alike. A control that edits a comment nobody has written is not a control.
     if port.count(MUTATIONS[5][2]) != 0:
-        raise SystemExit("the control's anchor already exists; pick another")
+        refuse("the control's anchor already exists; pick another")
     port = port.replace("# THE KeyError ARM.",
                         MUTATIONS[5][2] + "\n# THE KeyError ARM.")
     base = lanes(DRV)

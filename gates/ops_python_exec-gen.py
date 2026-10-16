@@ -530,8 +530,23 @@ def sweep(emit):
         n += 1
         emit(f, None)
         keep_canon(canon, f)
-    if PAIR_BAD: sys.exit(f"PAIR_BAD {PAIR_BAD}")
-    if not canon: sys.exit("no harvested kernel has a single-STORE ALU spine")
+    if PAIR_BAD:
+        print(f"== FAIL: PAIR_BAD {PAIR_BAD}", file=sys.stderr)   # 1 CHOSEN. This file's own
+        sys.exit(1)   # header at :39 says "`PAIR_BAD` counts the failures and MUST BE 0" -- it
+                      # is a CLAUSE THAT FAILED, not a missing input, and a disagreement is
+                      # FAIL. It was a string, so the number is the one CPython picked anyway
+                      # and the author is now the one who picked it.
+    if not canon:
+        print("== REFUSED, NOT A VERDICT: no harvested kernel has a single-STORE ALU spine, "
+              "so this generator has no population to emit", file=sys.stderr)
+        sys.exit(3)       # 3, and the class is the tree's: a POPULATION DISCOVERED EMPTY is a
+                          # lane that measured nothing, which is the shape `crp_graph_census-
+                          # oracle.py` writes down as "THE EMPTY POPULATION IS REFUSED, NOT
+                          # RETURNED". Both `sweep()` callers reach here -- `--coverage` at
+                          # :565 and the row path at :580 -- and BOTH are consumed by
+                          # `ops_python_exec-gate.py:276`, which maps ANY non-zero rc of this
+                          # generator to `coverage_hold` FAIL, so a direct reader of `$?` is
+                          # the only one this buys anything for. It was a string, which is 1.
     for f in alu_fixtures(canon):
         n += 1
         emit(f, None)
