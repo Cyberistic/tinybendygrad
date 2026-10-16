@@ -40,7 +40,20 @@ whether or not it earned the label, so a bad label cannot hide a row.
 
 ---
 
-## 2. THE TABLE — 30 rows, 25 distinct paths (24 broken + 1 recipe product), 17 port files
+## 2. THE TABLE — 30 rows, 24 distinct paths, 17 port files
+
+**READ THIS BEFORE THE TABLE: `tinybendygrad/mixin/rand.bend` IS NOT IN IT, BECAUSE IT WAS FIXED
+WHILE THIS CENSUS RAN.** My first pass found `rand.bend:85-86` naming `$ORACLE_DIR/rd-gate.sh` and
+`$ORACLE_DIR/rd-truth.py`, which is the instance the brief named. A concurrent unit replaced that
+block between my runs: `rand.bend` now prints `.venv/bin/python gates/rand_census-gate.py` at line
+95, **that gate exists (23 888 B, on disk, in HEAD)**, and the dead `$ORACLE_DIR` tokens survive only
+as prose at line 97, where `$ORACLE_DIR` is followed by a backtick and not a `/`, so the extractor
+emits no row for it at all. `gates/rand_census-gate.py` is now the 4th `.agents/slop`-free port gate
+recipe; the census counted it `ON-DISK/TRACKED` at `rand.bend:95,105,120,1255`.
+
+**SO THE 30 ROWS BELOW ARE A MOVING NUMBER, AND `rand.bend` IS THE PROOF: 32 ROWS IN 18 FILES WAS
+THE COUNT 40 MINUTES AGO.** Every row below was re-verified against the committed
+`checks/unrunnable-recipes.rows` and, for 10 of them, against the file itself by `sed`.
 
 State key: **`WAS-OURS`** = not on disk, not in HEAD, **but `git log HEAD` touched it** (recoverable).
 **`NEITHER`** = not on disk, not in HEAD, **not in our history at all**. **`UNRESOLVED-ENV`** = a
@@ -52,8 +65,6 @@ State key: **`WAS-OURS`** = not on disk, not in HEAD, **but `git log HEAD` touch
 | `tinybendygrad/mixin/creation.bend:125` | `$ORACLE_DIR/cr-truth.py` | UNRESOLVED-ENV |
 | `tinybendygrad/mixin/creation.bend:126` | `$ORACLE_DIR/cr-mutate.py` | UNRESOLVED-ENV |
 | `tinybendygrad/mixin/creation.bend:129` | `$ORACLE_DIR/cr-truth.py` | UNRESOLVED-ENV |
-| `tinybendygrad/mixin/rand.bend:85` | `$ORACLE_DIR/rd-gate.sh` | UNRESOLVED-ENV |
-| `tinybendygrad/mixin/rand.bend:86` | `$ORACLE_DIR/rd-truth.py` | UNRESOLVED-ENV |
 | `tinybendygrad/mixin/reduce.bend:21` | `$TMP/mixin-reduce-gate.py` | UNRESOLVED-ENV |
 | `tinybendygrad/codegen/late/linearizer.bend:150` | `tinybendygrad/codegen/late.bend` | WAS-OURS |
 | `tinybendygrad/codegen/late/linearizer.bend:935` | `tinybendygrad/codegen/late.bend` | WAS-OURS |
@@ -79,17 +90,19 @@ State key: **`WAS-OURS`** = not on disk, not in HEAD, **but `git log HEAD` touch
 | `tinybendygrad/uop/ops.bend:3863` | `.agents/slop/notes/compiled-matcher-shape.bend` | WAS-OURS |
 | `tinybendygrad/runtime/autogen/libclang.bend:6` | `.agents/slop/ag-emit.bin` | **RECIPE-PRODUCT** (see §4.10) |
 
-By state (distinct paths): **19 WAS-OURS · 4 UNRESOLVED-ENV · 1 NEITHER · 1 RECIPE-PRODUCT.**
+By state (distinct paths): **19 WAS-OURS · 4 UNRESOLVED-ENV · 1 NEITHER**, plus **1 RECIPE-PRODUCT**
+(`ag-emit.bin`, §4.10) which is deliberately counted separately rather than as a miss. **24 broken.**
 
 **THE HEADLINE, MEASURED: 19 DISTINCT INSTRUMENTS UNDER `.agents/slop/` ARE CITED BY 14 SHIPPED PORT
 FILES AS THINGS TO RUN, AND 18 OF THE 19 WERE DELETED FROM OUR OWN HISTORY.**
 
 ### 2a. The `$ORACLE_DIR` family is worse than "missing"
 
-`$ORACLE_DIR` is **assigned nowhere in the tree** — not in `rand.bend`, not in `creation.bend`, not in
-any `.md`/`.py`/`.sh` (`grep -rn 'ORACLE_DIR=' --include=*.bend *.md *.py *.sh` → 0 hits). So the
-variable is unresolvable in-file, which is the third state the brief asked for. **But the basenames
-were never at any path, on any ref:**
+`$ORACLE_DIR` is **assigned nowhere in the tree** — not in `creation.bend`, not in `rand.bend`
+(where it survives only as prose at `:97`), not in any `.md`/`.py`/`.sh`
+(`grep -rn 'ORACLE_DIR=' --include=*.bend *.md *.py *.sh` → 0 hits). So the variable is unresolvable
+in-file, which is the third state the brief asked for. **But the basenames were never at any path, on
+any ref:**
 
 ```
 $ for b in cr-gate.sh cr-truth.py cr-mutate.py rd-gate.sh rd-truth.py rd-mutate.py \
@@ -103,6 +116,9 @@ cr-mutate.py allRefs=0
 `/tmp/allhist.paths` is `git log --all --pretty=format: --name-only | sort -u` = **81 533 paths**,
 of which **52 766 are under `.agents/slop/`**. So this is not a directory the sweep cannot see.
 **THE CALLER'S VERIFICATION IS CONFIRMED AND STRENGTHENED: not merely absent, never committed.**
+`creation.bend:126` says as much in its own prose — *"`$ORACLE_DIR` is outside the tree because the
+brief makes `.agents/` append-only for this unit"* — which is a claim the file could not have made
+honestly, because the files it names are in no tree this repository has ever had.
 
 ### 2b. `tinybendygrad/codegen/late.bend` — a deleted PORT file with a live oracle
 
@@ -267,3 +283,9 @@ rather than dropped.
    tokens with a `/` but no dotted final segment (`tinybendygrad/runtime`, `checks/gates`). They are
    not files, but **9 234 is a number I have not explained**, and an unexplained bucket that large is
    exactly where a tenth extractor defect is hiding.
+9. **THE COUNT IS A MOVING NUMBER AND I CAUGHT IT MOVING.** `rand.bend` is absent from §2 because a
+   concurrent unit replaced its `$ORACLE_DIR` recipe with `gates/rand_census-gate.py` mid-session;
+   the census reads `rand.bend:85-86` as two `UNRESOLVED-ENV` rows on the first pass and as **zero**
+   on the committed pass. **A census over a tree that other agents are writing reports a number with a
+   timestamp on it or it reports nothing** — this is the same rule `AGENTS.md` records for `ruff`'s
+   error count moving between four reads 193 s apart.
