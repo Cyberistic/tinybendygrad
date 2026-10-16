@@ -1,0 +1,395 @@
+verdict	regression_or_blank	claiming_site	subject	how	needle	why
+DANGLING-FILE		.agents/TODO.md:821	references/bend/bend2/main.ts:815	absent	grep -c TODO	no file in the walk or in HEAD is 'references/bend/bend2/main.ts'
+DANGLING-FILE		.agents/TODO.md:868	rebase-oracle-ops.py:54	absent		no file in the walk or in HEAD is 'rebase-oracle-ops.py'
+DANGLING-FILE		.agents/TODO.md:883	rebase-oracle-ops.py:54	absent		no file in the walk or in HEAD is 'rebase-oracle-ops.py'
+DANGLING-FILE		.agents/TODO.md:895	ops-oracle.py:13-14	absent		no file in the walk or in HEAD is 'ops-oracle.py'
+DANGLING-FILE		.agents/TODO.md:916	oracles/dsl_oracle.txt:1604	absent		no file in the walk or in HEAD is 'oracles/dsl_oracle.txt'
+DANGLING-FILE		.agents/TODO.md:927	REVIVE.md:217	absent		no file in the walk or in HEAD is 'REVIVE.md'
+DANGLING-FILE		.agents/TODO.md:1040	.agents/slop/rebase-oracle-ops.py:54	absent		no file in the walk or in HEAD is '.agents/slop/rebase-oracle-ops.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:1105	ops_nv.bend:2348	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2348
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:1106	ops_nv.bend:2372	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2372
+DANGLING-FILE		.agents/TODO.md:1110	llvmir-oracle.py:866	absent	(1, f32, True)	no file in the walk or in HEAD is 'llvmir-oracle.py'
+DANGLING-FILE		.agents/TODO.md:1110	tcptx-oracle.py:394	absent	"ret;"	no file in the walk or in HEAD is 'tcptx-oracle.py'
+DANGLING-FILE		.agents/TODO.md:1113	llvmir-oracle.py:866	absent		no file in the walk or in HEAD is 'llvmir-oracle.py'
+DANGLING-FILE		.agents/TODO.md:1114	tcptx-oracle.py:394	absent	fold.bend	no file in the walk or in HEAD is 'tcptx-oracle.py'
+DANGLING-FILE		.agents/TODO.md:1117	vz/viz_oracle.py:79-80	absent		no file in the walk or in HEAD is 'vz/viz_oracle.py'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:1904	ops.py:1545	suffix	1790	'1790' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:2303	gradient.py:8	suffix	_min_max	'_min_max' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+DANGLING-FILE		.agents/TODO.md:2384	decomp.bend:126	absent		no file in the walk or in HEAD is 'decomp.bend'
+DANGLING-FILE		.agents/TODO.md:2749	bend2/main.ts:363	absent		no file in the walk or in HEAD is 'bend2/main.ts'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:3317	ops.py:244	suffix	UOp.from_buffer	'UOp.from_buffer' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:4092	render.py:365	suffix	render.bend	tinygrad/uop/render.py has 167 lines, cited at :365
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:4628	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
+DANGLING-FILE		.agents/TODO.md:4689	uop/fold_mm_work.bend:2015-2016	absent		no file in the walk or in HEAD is 'uop/fold_mm_work.bend'
+DANGLING-FILE		.agents/TODO.md:4886	wip/gen_main.py:73	absent	r.type_map.get(dt, dt.name)	no file in the walk or in HEAD is 'wip/gen_main.py'
+DANGLING-FILE		.agents/TODO.md:4979	references/bend/CHANGELOG.md:214-218	absent		no file in the walk or in HEAD is 'references/bend/CHANGELOG.md'
+DANGLING-FILE		.agents/TODO.md:5314	dd-cmp.py:65	absent		no file in the walk or in HEAD is 'dd-cmp.py'
+DANGLING-FILE		.agents/TODO.md:5330	dd-oracle.py:36	absent		no file in the walk or in HEAD is 'dd-oracle.py'
+DANGLING-FILE		.agents/TODO.md:5346	dd-oracle.py:179-191	absent		no file in the walk or in HEAD is 'dd-oracle.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:5415	base.bend:172	suffix		tinybendygrad/base.bend has 56 lines, cited at :172
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:5582	cstyle.bend:1760	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :1760
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:5601	generate.py:273	suffix	enum rdna3	'enum rdna3' is NOWHERE in tinygrad/renderer/amd/generate.py (541 lines)
+DANGLING-FILE		.agents/TODO.md:5659	oracles/naming-gate-baseline.txt:47	absent		no file in the walk or in HEAD is 'oracles/naming-gate-baseline.txt'
+DANGLING-FILE		.agents/TODO.md:5939	.agents/slop/dd-oracle.py:370-374	absent		no file in the walk or in HEAD is '.agents/slop/dd-oracle.py'
+DANGLING-FILE		.agents/TODO.md:6087	rebase-stability.py:284	absent		no file in the walk or in HEAD is 'rebase-stability.py'
+DANGLING-FILE		.agents/TODO.md:6481	unobservable-gr-probe.bend:141-142	absent		no file in the walk or in HEAD is 'unobservable-gr-probe.bend'
+DANGLING-FILE		.agents/TODO.md:6534	c-oracle.py:134	absent		no file in the walk or in HEAD is 'c-oracle.py'
+DANGLING-FILE		.agents/TODO.md:6622	late-oracle.py:224	absent		no file in the walk or in HEAD is 'late-oracle.py'
+DANGLING-FILE		.agents/TODO.md:7040	ops-python-mutate.py:107	absent		no file in the walk or in HEAD is 'ops-python-mutate.py'
+DANGLING-FILE		.agents/TODO.md:7041	ops-python-mutations.txt:7	absent		no file in the walk or in HEAD is 'ops-python-mutations.txt'
+DANGLING-FILE		.agents/TODO.md:7143	.agents/slop/mm-mutate.py:17	absent		no file in the walk or in HEAD is '.agents/slop/mm-mutate.py'
+DANGLING-FILE		.agents/TODO.md:7164	runtime/ops_bend.mut.bend:10	absent		no file in the walk or in HEAD is 'runtime/ops_bend.mut.bend'
+DANGLING-FILE		.agents/TODO.md:7360	.agents/slop/ops-oracle.py:244	absent		no file in the walk or in HEAD is '.agents/slop/ops-oracle.py'
+DANGLING-FILE		.agents/TODO.md:7516	mt_mutate.py:168	absent		no file in the walk or in HEAD is 'mt_mutate.py'
+DANGLING-FILE		.agents/TODO.md:7521	ops-python-mutations.txt:7	absent		no file in the walk or in HEAD is 'ops-python-mutations.txt'
+DANGLING-FILE		.agents/TODO.md:8227	dd-bandoracle.py:133	absent		no file in the walk or in HEAD is 'dd-bandoracle.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:8645	cstyle.bend:1758	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :1758
+DANGLING-FILE		.agents/TODO.md:8705	nv_nvdev_mutrun.py:13	absent		no file in the walk or in HEAD is 'nv_nvdev_mutrun.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:8861	cstyle.bend:1758	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :1758
+DANGLING-FILE		.agents/TODO.md:8862	renderer_oracle.py:396	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		.agents/TODO.md:8911	jit-oracle.py:44	absent		no file in the walk or in HEAD is 'jit-oracle.py'
+DANGLING-FILE		.agents/TODO.md:8941	ops-501-oracle.py:209	absent	multi	no file in the walk or in HEAD is 'ops-501-oracle.py'
+DANGLING-FILE		.agents/TODO.md:8942	ops-501-oracle.py:164	absent	Ops.ALLOC	no file in the walk or in HEAD is 'ops-501-oracle.py'
+DANGLING-FILE		.agents/TODO.md:8944	ops-501-oracle.py:45	absent		no file in the walk or in HEAD is 'ops-501-oracle.py'
+DANGLING-FILE		.agents/TODO.md:8956	ops-501-oracle.py:209	absent		no file in the walk or in HEAD is 'ops-501-oracle.py'
+DANGLING-FILE		.agents/TODO.md:9143	renderer_oracle.py:551-552	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		.agents/TODO.md:9193	ffi-port-cost.py:496	absent	denom	no file in the walk or in HEAD is 'ffi-port-cost.py'
+DANGLING-FILE		.agents/TODO.md:9195	sched-cmp.py:132	absent		no file in the walk or in HEAD is 'sched-cmp.py'
+DANGLING-FILE		.agents/TODO.md:9348	gate_kern2_clang.c:3	absent		no file in the walk or in HEAD is 'gate_kern2_clang.c'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:9362	ops_cpu.py:29-72	suffix	PYTHON	'PYTHON' is NOWHERE in tinygrad/runtime/ops_cpu.py (96 lines)
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:9396	renderer/cstyle.bend:2373	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :2373
+DANGLING-FILE		.agents/TODO.md:9490	sched-cmp.py:123	absent	specs_attempted=6	no file in the walk or in HEAD is 'sched-cmp.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:9562	.agents/slop/e2e.sh:122-161	exact		.agents/slop/e2e.sh has 24 lines, cited at :122-161
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:9598	cstyle.bend:2367-2368	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :2367-2368
+DANGLING-FILE		.agents/TODO.md:9599	renderer_oracle.py:563-565	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		.agents/TODO.md:9600	renderer_oracle.py:551-552	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		.agents/TODO.md:10079	comp.ts:3055	absent		no file in the walk or in HEAD is 'comp.ts'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:10092	cstyle.bend:49	suffix	def _render	'def _render' is NOWHERE in tinybendygrad/renderer/cstyle.bend (1367 lines)
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:10345	renderer/cstyle.bend:2984-3015	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :2984-3015
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:10369	cstyle.bend:2984-3015	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :2984-3015
+DANGLING-FILE		.agents/TODO.md:10416	comp.ts:3385	absent	main.ts:361	no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:10416	main.ts:361	absent	node	no file in the walk or in HEAD is 'main.ts'
+DANGLING-FILE		.agents/TODO.md:10576	comp.ts:3385	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:10832	w64mile/STATUS.md:44	absent		no file in the walk or in HEAD is 'w64mile/STATUS.md'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:10863	broken.c:298	suffix	const x = ;	.agents/slop/ccdead2/broken.c has 120 lines, cited at :298
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:11067	elementwise.py:693	suffix	ew-gate	'ew-gate' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+DANGLING-FILE		.agents/TODO.md:11258	references/bend/bend2/comp.ts:5591	absent		no file in the walk or in HEAD is 'references/bend/bend2/comp.ts'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:11340	elementwise.py:769	suffix	ew-gate	'ew-gate' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:11415	ops.py:451	suffix	no shape handling for X	'no shape handling for X' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		.agents/TODO.md:11856	.agents/slop/bend_mutate.py:9	absent	T = F.with_name(...)	no file in the walk or in HEAD is '.agents/slop/bend_mutate.py'
+DANGLING-FILE		.agents/TODO.md:11861	triage/allfiles.txt:70	absent		no file in the walk or in HEAD is 'triage/allfiles.txt'
+DANGLING-FILE		.agents/TODO.md:11863	bend_mutate.py:46	absent		no file in the walk or in HEAD is 'bend_mutate.py'
+DANGLING-FILE		.agents/TODO.md:11864	bend_mutate.py:6-8	absent		no file in the walk or in HEAD is 'bend_mutate.py'
+DANGLING-FILE		.agents/TODO.md:11923	bend_mutate.py:46	absent		no file in the walk or in HEAD is 'bend_mutate.py'
+DANGLING-FILE		.agents/TODO.md:12103	references/bend/bend2/base.bend:60	absent		no file in the walk or in HEAD is 'references/bend/bend2/base.bend'
+DANGLING-FILE		.agents/TODO.md:12109	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:12222	gen_fp8.py:35	absent		no file in the walk or in HEAD is 'gen_fp8.py'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:12479	mixin/dtype.bend:52-53	suffix	`MUL` … `i64_mul` NOWHERE	'`MUL` … `i64_mul` NOWHERE' is NOWHERE in tinybendygrad/mixin/dtype.bend (1004 lines)
+DANGLING-FILE		.agents/TODO.md:12491	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:12524	comp.ts:539-546	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:12588	cshape/cs-plantir.bend:56	absent		no file in the walk or in HEAD is 'cshape/cs-plantir.bend'
+DANGLING-FILE		.agents/TODO.md:12613	cshape/cs-plantir.bend:56	absent		no file in the walk or in HEAD is 'cshape/cs-plantir.bend'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:12638	elementwise.py:757	suffix	ew-gate	'ew-gate' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+DANGLING-FILE		.agents/TODO.md:12709	dc-oracle.py:135	absent		no file in the walk or in HEAD is 'dc-oracle.py'
+DANGLING-FILE		.agents/TODO.md:12713	jstage.py:308	absent	graphcmp.py:459	no file in the walk or in HEAD is 'jstage.py'
+DANGLING-FILE		.agents/TODO.md:12714	tx-oracle.py:21	absent	tx-arena.py:135	no file in the walk or in HEAD is 'tx-oracle.py'
+DANGLING-FILE		.agents/TODO.md:12715	tc-audit.py:39	absent		no file in the walk or in HEAD is 'tc-audit.py'
+DANGLING-FILE		.agents/TODO.md:12715	dtypeb/gen_fp8.py:40	absent		no file in the walk or in HEAD is 'dtypeb/gen_fp8.py'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:12716	f64/oracle_f64.py:114	suffix	dt32	'dt32' is NOWHERE in .agents/slop/f64/oracle_f64.py (254 lines)
+DANGLING-FILE		.agents/TODO.md:12723	dc-oracle.py:130	absent		no file in the walk or in HEAD is 'dc-oracle.py'
+DANGLING-FILE		.agents/TODO.md:12776	comp.ts:788	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		.agents/TODO.md:12776	bend.ts:1197	absent		no file in the walk or in HEAD is 'bend.ts'
+DANGLING-FILE		.agents/TODO.md:12783	bend_e2e.py:71	absent		no file in the walk or in HEAD is 'bend_e2e.py'
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:12851	base.bend:1697	suffix		tinybendygrad/base.bend has 56 lines, cited at :1697
+DANGLING-FILE		.agents/TODO.md:12868	walk-row.txt:50	absent		no file in the walk or in HEAD is 'walk-row.txt'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:12958	renderer/tc_ptx.bend:191	suffix	Bend has no signed type	'Bend has no signed type' is NOWHERE in tinybendygrad/renderer/tc_ptx.bend (1108 lines)
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:12959	mixin/rand.bend:455	suffix	`i64_mul`, `i64_div`, `i64_mod` do not exist	'`i64_mul`, `i64_div`, `i64_mod` do not exist' is NOWHERE in tinybendygrad/mixin/rand.bend (1325 lines)
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:13675	README.md:93	exact		README.md has 28 lines, cited at :93
+DANGLING-FILE		.agents/TODO.md:13871	decomp.bend:126	absent		no file in the walk or in HEAD is 'decomp.bend'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:13969	ops.py:57	suffix	axis_to_pos	'axis_to_pos' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:13972	ops.py:913	suffix	return AddrSpace.REG	'return AddrSpace.REG' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	.agents/TODO.md:15752	gates/wk-f32.bend:84-87	exact		gates/wk-f32.bend has 36 lines, cited at :84-87
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:15891	symbolic.py:445	suffix	sym_12	'sym_12' is NOWHERE in tinygrad/uop/symbolic.py (475 lines)
+DANGLING-FILE		.agents/TODO.md:16457	census.bend:564	absent		no file in the walk or in HEAD is 'census.bend'
+DANGLING-FILE		.agents/TODO.md:16552	census.bend:181-182	absent		no file in the walk or in HEAD is 'census.bend'
+ABSENT-TEXT	NOT-MOVED	.agents/TODO.md:16966	hooks/run.py:112	suffix	CRASHED, NOT A VERDICT	'CRASHED, NOT A VERDICT' is NOWHERE in .agents/slop/hooks/run.py (178 lines)
+DANGLING-FILE		.agents/TOOLS.md:150	bend2/main.ts:363	absent		no file in the walk or in HEAD is 'bend2/main.ts'
+DANGLING-FILE		.agents/TOOLS.md:972	.agents/slop/mm-mutate.py:17	absent		no file in the walk or in HEAD is '.agents/slop/mm-mutate.py'
+DANGLING-FILE		.agents/TOOLS.md:1452	comp.ts:3385	absent	effect_srcs(fl, ".js", …)	no file in the walk or in HEAD is 'comp.ts'
+ABSENT-TEXT	FALSIFIED	checks/census.json:161	ops.bend:1406	suffix	xsin	'xsin' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+ABSENT-TEXT	FALSIFIED	checks/census.json:162	ops.bend:1406	suffix	xsin	'xsin' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:1375	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:1377	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:1378	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	checks/census.json:1749	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
+ABSENT-TEXT	NOT-MOVED	checks/census.json:1784	ops.py:1160	suffix	fill_value	'fill_value' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:1785	ops.py:1160	suffix	fill_value	'fill_value' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3451	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3452	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3585	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3586	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3650	elementwise.py:59	suffix	graph_rewrite	'graph_rewrite' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:3651	elementwise.py:59	suffix	graph_rewrite	'graph_rewrite' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+DANGLING-FILE		checks/census.json:4490	mixin/uop/ops.py:833	absent	dtype_from_uop	no file in the walk or in HEAD is 'mixin/uop/ops.py'
+DANGLING-FILE		checks/census.json:4492	mixin/uop/ops.py:833	absent	dtype_from_uop	no file in the walk or in HEAD is 'mixin/uop/ops.py'
+DANGLING-FILE		checks/census.json:4493	mixin/uop/ops.py:833	absent	dtype_from_uop	no file in the walk or in HEAD is 'mixin/uop/ops.py'
+ABSENT-TEXT	NOT-MOVED	checks/census.json:7955	x86.py:199	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:7955	x86.py:210	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8039	x86.py:267	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8039	x86.py:297	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8066	x86.py:689	suffix	X86Renderer.__init__	'X86Renderer.__init__' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8067	x86.py:689	suffix	X86Renderer.__init__	'X86Renderer.__init__' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8155	x86.py:717	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:8155	x86.py:719	suffix	.\n#	'.\\n#' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:11475	hcq2.py:63	suffix	reg_ops	'reg_ops' is NOWHERE in tinygrad/runtime/support/hcq2.py (628 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:11847	ops_nv.py:101-103	suffix	NVQueue.q_rewrite	'NVQueue.q_rewrite' is NOWHERE in tinygrad/runtime/ops_nv.py (842 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:11849	ops_nv.py:101-103	suffix	NVQueue.q_rewrite	'NVQueue.q_rewrite' is NOWHERE in tinygrad/runtime/ops_nv.py (842 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:11850	ops_nv.py:101-103	suffix	NVQueue.q_rewrite	'NVQueue.q_rewrite' is NOWHERE in tinygrad/runtime/ops_nv.py (842 lines)
+DANGLING-LINE	NOT-MOVED	checks/census.json:13586	base.bend:264-301	suffix		tinybendygrad/base.bend has 56 lines, cited at :264-301
+DANGLING-LINE	NOT-MOVED	checks/census.json:13648	base.bend:182	suffix	Process.run(program, args, input, max_output, timeout_ms)	tinybendygrad/base.bend has 56 lines, cited at :182
+ABSENT-TEXT	NOT-MOVED	checks/census.json:14916	compiler_mesa.py:119	suffix	info.num_ssbos	'info.num_ssbos' is NOWHERE in tinygrad/runtime/support/compiler_mesa.py (133 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:14918	compiler_mesa.py:119	suffix	info.num_ssbos	'info.num_ssbos' is NOWHERE in tinygrad/runtime/support/compiler_mesa.py (133 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:14919	compiler_mesa.py:119	suffix	info.num_ssbos	'info.num_ssbos' is NOWHERE in tinygrad/runtime/support/compiler_mesa.py (133 lines)
+DANGLING-LINE	NOT-MOVED	checks/census.json:15186	base.bend:172	suffix		tinybendygrad/base.bend has 56 lines, cited at :172
+ABSENT-TEXT	NOT-MOVED	checks/census.json:15442	compiler_qcom.py:46	suffix	lib[ofs:ofs + n2]	'lib[ofs:ofs + n2]' is NOWHERE in tinygrad/runtime/support/compiler_qcom.py (47 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:15444	compiler_qcom.py:46	suffix	lib[ofs:ofs + n2]	'lib[ofs:ofs + n2]' is NOWHERE in tinygrad/runtime/support/compiler_qcom.py (47 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:15445	compiler_qcom.py:46	suffix	lib[ofs:ofs + n2]	'lib[ofs:ofs + n2]' is NOWHERE in tinygrad/runtime/support/compiler_qcom.py (47 lines)
+DANGLING-LINE	NOT-MOVED	checks/census.json:15473	base.bend:182	suffix		tinybendygrad/base.bend has 56 lines, cited at :182
+DANGLING-LINE	NOT-MOVED	checks/census.json:18381	ops.py:3370	suffix		tinygrad/uop/ops.py has 1920 lines, cited at :3370
+DANGLING-LINE	NOT-MOVED	checks/census.json:18383	ops.py:3370	suffix		tinygrad/uop/ops.py has 1920 lines, cited at :3370
+DANGLING-LINE	NOT-MOVED	checks/census.json:18384	ops.py:3370	suffix		tinygrad/uop/ops.py has 1920 lines, cited at :3370
+ABSENT-TEXT	NOT-MOVED	checks/census.json:23104	divandmod.py:50-55	suffix	gcd_with_remainder: factor out common gcd from\n#   numerator	'gcd_with_remainder: factor out common gcd from\\n' is NOWHERE in tinygrad/uop/divandmod.py (109 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:23105	divandmod.py:50-55	suffix	gcd_with_remainder: factor out common gcd from\n#   numerator	'gcd_with_remainder: factor out common gcd from\\n' is NOWHERE in tinygrad/uop/divandmod.py (109 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:29094	ops.py:76	suffix	word_wrap	'word_wrap' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:29096	ops.py:76	suffix	word_wrap	'word_wrap' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	checks/census.json:29097	ops.py:76	suffix	word_wrap	'word_wrap' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		checks/census.py:30	.agents/slop/arith/both-census.py:24	absent		no file in the walk or in HEAD is '.agents/slop/arith/both-census.py'
+DANGLING-FILE		checks/census.py:130	tinygrad/Tensor.py:8	absent		no file in the walk or in HEAD is 'tinygrad/Tensor.py'
+DANGLING-FILE		checks/coverage.py:25	renderer_oracle.py:551-552	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		checks/coverage.py:136	renderer_oracle.py:551-552	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-FILE		checks/differ.py:901	quiesce/snapshot.py:80-85	absent		no file in the walk or in HEAD is 'quiesce/snapshot.py'
+DANGLING-FILE		checks/gate_dtype.bend:18	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/gate_dtype.py:17	comp.ts:539	absent	f32_from_bits	no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/gate_norm.bend:10	bend.ts:1197	absent	) and	no file in the walk or in HEAD is 'bend.ts'
+DANGLING-FILE		checks/gate_norm.bend:11	comp.ts:525-545	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/gate_norm.py:162	dc-oracle.py:131	absent		no file in the walk or in HEAD is 'dc-oracle.py'
+DANGLING-FILE		checks/gate_norm.py:244	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/nan_census.mjs:7	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/nan_census.mjs:7	comp.ts:541	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/nan_census.mjs:11	comp.ts:391	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		checks/nan_census.mjs:18	references/bend/bend2/comp.ts:539-546	absent		no file in the walk or in HEAD is 'references/bend/bend2/comp.ts'
+DANGLING-FILE		checks/no-strays.py:115	.agents/slop/mm-mutate.py:17	absent		no file in the walk or in HEAD is '.agents/slop/mm-mutate.py'
+DANGLING-FILE		checks/repair-dupes.py:16	cstyle-live/run-all.log:5	absent		no file in the walk or in HEAD is 'cstyle-live/run-all.log'
+DANGLING-FILE		checks/run-f64.sh:104	cstyle-live/run-all.log:5	absent		no file in the walk or in HEAD is 'cstyle-live/run-all.log'
+DANGLING-FILE		checks/substrate-id.py:47	snapshot.py:74-77	absent		no file in the walk or in HEAD is 'snapshot.py'
+DANGLING-FILE		checks/substrate-id.py:308	snapshot.py:74-77	absent		no file in the walk or in HEAD is 'snapshot.py'
+DANGLING-FILE		checks/substrate.py:520	frag.c:2891	absent		no file in the walk or in HEAD is 'frag.c'
+DANGLING-FILE		checks/unrunnable-recipes.py:82	foo.py:12	absent		no file in the walk or in HEAD is 'foo.py'
+DANGLING-FILE		examples/beautiful_mnist.bend:143	tinygrad/examples/beautiful_mnist.py:33	absent		no file in the walk or in HEAD is 'tinygrad/examples/beautiful_mnist.py'
+ABSENT-TEXT	NOT-MOVED	examples/beautiful_mnist.bend:320	examples/beautiful_mnist.py:9-16	exact	MnPool	'MnPool' is NOWHERE in examples/beautiful_mnist.py (48 lines)
+ABSENT-TEXT	NOT-MOVED	examples/beautiful_mnist.bend:756	reduce.py:15	suffix	MO.mo_log_softmax	'MO.mo_log_softmax' is NOWHERE in tinygrad/mixin/reduce.py (138 lines)
+ABSENT-TEXT	NOT-MOVED	examples/beautiful_mnist.bend:1141	ops.py:635	suffix	CBool	'CBool' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	examples/beautiful_mnist.bend:1144	examples/beautiful_mnist.py:38	exact	out_d	'out_d' is NOWHERE in examples/beautiful_mnist.py (48 lines)
+DANGLING-FILE		examples/openpilot/load_pickle.py:36	wte.time:6	absent		no file in the walk or in HEAD is 'wte.time'
+DANGLING-LINE	NOT-MOVED	gates/amd_dsl_census-gate.py:101	base.bend:504	suffix		tinybendygrad/base.bend has 56 lines, cited at :504
+DANGLING-FILE		gates/citations-census-gate.py:279	subj.bend:2	absent	beta	no file in the walk or in HEAD is 'subj.bend'
+DANGLING-FILE		gates/citations-census-gate.py:510	llvmir-oracle.py:866	absent		no file in the walk or in HEAD is 'llvmir-oracle.py'
+ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-gate.py:427	creation.py:16-20	suffix	cr_full_like	'cr_full_like' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
+ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-gate.py:495	creation.py:86	suffix	weakint	'weakint' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
+ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-mutate.py:459	creation.py:16-20	suffix	cr_full_like	'cr_full_like' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
+ABSENT-TEXT	NOT-MOVED	gates/cstyle_render_census-oracle.py:196	upat.py:26	suffix	passes the enum, and	'passes the enum, and' is NOWHERE in tinygrad/uop/upat.py (186 lines)
+ABSENT-TEXT	NOT-MOVED	gates/decomp_graph_census-oracle.py:192	mixin/dtype.py:36	suffix	l2i_dt[ulong] == dtypes.uint	'l2i_dt[ulong] == dtypes.uint' is NOWHERE in tinygrad/mixin/dtype.py (142 lines)
+ABSENT-TEXT	NOT-MOVED	gates/docnum-claim-gate.py:335	gates/README.md:1	exact	a deliberately wrong figure	'a deliberately wrong figure' is NOWHERE in gates/README.md (244 lines)
+ABSENT-TEXT	NOT-MOVED	gates/docnum-claim-gate.py:337	gates/README.md:1	exact	the same figure, made true	'the same figure, made true' is NOWHERE in gates/README.md (244 lines)
+DANGLING-FILE		gates/docnum-claim-gate.py:357	gates/GONE.md:1	absent	absent site	no file in the walk or in HEAD is 'gates/GONE.md'
+ABSENT-TEXT	NOT-MOVED	gates/docnum-claim-gate.py:359	gates/README.md:1	exact	absent command	'absent command' is NOWHERE in gates/README.md (244 lines)
+ABSENT-TEXT	NOT-MOVED	gates/docnum-claim-gate.py:362	gates/README.md:1	exact	command prints another shape	'command prints another shape' is NOWHERE in gates/README.md (244 lines)
+ABSENT-TEXT	NOT-MOVED	gates/gates-pop.py:546	checks/census.py:14	exact	457b81619^	'457b81619^' is NOWHERE in checks/census.py (354 lines)
+ABSENT-TEXT	NOT-MOVED	gates/gates-pop.py:1377	checks/census.py:14	exact	457b81619^	'457b81619^' is NOWHERE in checks/census.py (354 lines)
+ABSENT-TEXT	NOT-MOVED	gates/mx_graph_census-gate.py:92	ops.py:106-110	suffix	reshape_256	'reshape_256' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		gates/ops-core.bend:31	decomp.bend:126	absent		no file in the walk or in HEAD is 'decomp.bend'
+ABSENT-TEXT	NOT-MOVED	gates/realize_graph_census-oracle.py:33	realize.py:60	suffix	written out. Both are values	'written out. Both are values' is NOWHERE in tinygrad/engine/realize.py (297 lines)
+ABSENT-TEXT	NOT-MOVED	gates/rng_graph_census.bend:85	rangeify.py:133	suffix	ab_8	'ab_8' is NOWHERE in tinygrad/schedule/rangeify.py (374 lines)
+ABSENT-TEXT	NOT-MOVED	gates/tn_and_or_xor-oracle.py:46	elementwise.py:159	suffix	c & d	'c & d' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+ABSENT-TEXT	NOT-MOVED	gates/tn_binop2_cmp.bend:14	elementwise.py:339	suffix	self != x	'self != x' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+ABSENT-TEXT	NOT-MOVED	gates/wgsl_render_census-gate.py:782	wgsl.bend:1224-1226	suffix	says of	'says of' is NOWHERE in tinybendygrad/renderer/wgsl.bend (1808 lines)
+DANGLING-FILE		langs/README.md:58	bend2/main.ts:363	absent		no file in the walk or in HEAD is 'bend2/main.ts'
+DANGLING-FILE		oracles/baseline.json:21323	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		oracles/baseline.json:21501	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		oracles/baseline.json:21679	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-LINE	NOT-MOVED	oracles/fold.bend.orig-stage0:186	ops.py:1925	suffix	int|UOp	tinygrad/uop/ops.py has 1920 lines, cited at :1925
+DANGLING-LINE	NOT-MOVED	oracles/fold.bend.orig-stage0:225	base.bend:822	suffix		tinybendygrad/base.bend has 56 lines, cited at :822
+DANGLING-LINE	NOT-MOVED	oracles/hq-oracle.rows:368	hcq2.py:630	suffix		tinygrad/runtime/support/hcq2.py has 628 lines, cited at :630
+DANGLING-FILE		oracles/rebase/baseline.json:21323	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		oracles/rebase/baseline.json:21501	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		oracles/rebase/baseline.json:21679	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		oracles/tinybendygrad_viz_serve.bend.viz_oracle.rows:163	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		runs/e2e/e2e-f64.out:10	cstyle-live/run-all.log:5	absent		no file in the walk or in HEAD is 'cstyle-live/run-all.log'
+DANGLING-FILE		runs/e2e/e2e-port-mm.out:44	renderer_oracle.py:551-552	absent		no file in the walk or in HEAD is 'renderer_oracle.py'
+DANGLING-LINE	NOT-MOVED	runs/margsym/snap/graphcmp.bend:405	ops.py:1925	suffix	int|UOp	tinygrad/uop/ops.py has 1920 lines, cited at :1925
+DANGLING-LINE	NOT-MOVED	tinybendygrad/base.bend:11	base.bend:60	suffix		tinybendygrad/base.bend has 56 lines, cited at :60
+DANGLING-LINE	NOT-MOVED	tinybendygrad/base.bend:26	base.bend:1545	suffix		tinybendygrad/base.bend has 56 lines, cited at :1545
+DANGLING-LINE	NOT-MOVED	tinybendygrad/base.bend:30	base.bend:1697	suffix		tinybendygrad/base.bend has 56 lines, cited at :1697
+DANGLING-FILE		tinybendygrad/base.bend:39	comp.ts:391	absent		no file in the walk or in HEAD is 'comp.ts'
+DANGLING-FILE		tinybendygrad/base.bend:43	comp.ts:539	absent		no file in the walk or in HEAD is 'comp.ts'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/dtype.bend:384	mixin/dtype.py:36	suffix	dd_bcast	'dd_bcast' is NOWHERE in tinygrad/mixin/dtype.py (142 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/dtype.bend:2813	mixin/dtype.py:36	suffix	l2i_dt[ulong]	'l2i_dt[ulong]' is NOWHERE in tinygrad/mixin/dtype.py (142 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1145	base.bend:1542	suffix	i % 2	tinybendygrad/base.bend has 56 lines, cited at :1542
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/op.bend:1607	tinygrad/uop/divandmod.py:68	exact	dc_ival	'dc_ival' is NOWHERE in tinygrad/uop/divandmod.py (109 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental.bend:1340	elementwise.py:426	suffix	neg_base	'neg_base' is NOWHERE in tinygrad/mixin/elementwise.py (1093 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental_f32.bend:85	base.bend:1705	suffix		tinybendygrad/base.bend has 56 lines, cited at :1705
+DANGLING-LINE	NOT-MOVED	tinybendygrad/codegen/decomp/transcendental_f32.bend:108	base.bend:1705	suffix		tinybendygrad/base.bend has 56 lines, cited at :1705
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/codegen/simplify.bend:58	simplify.py:87-101	suffix	ru_range	'ru_range' is NOWHERE in tinygrad/codegen/simplify.py (156 lines)
+DANGLING-FILE		tinybendygrad/device.bend:113	bend2/bend.ts:1503	absent		no file in the walk or in HEAD is 'bend2/bend.ts'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/device.bend:506	device.py:262	suffix	HostAllocator.__init__	'HostAllocator.__init__' is NOWHERE in tinygrad/device.py (559 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/dtype.bend:619	base.bend:1251	suffix	Word.sub	tinybendygrad/base.bend has 56 lines, cited at :1251
+DANGLING-LINE	NOT-MOVED	tinybendygrad/engine/jit.bend:104	base.bend:511	suffix		tinybendygrad/base.bend has 56 lines, cited at :511
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/engine/realize.bend:389	realize.py:18	suffix	Maybe	'Maybe' is NOWHERE in tinygrad/engine/realize.py (297 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/engine/realize.bend:712	realize.py:60	suffix	if ast.op is Ops.STORE or ast.arg == "encdec"	'if ast.op is Ops.STORE or ast.arg == "encdec"' is NOWHERE in tinygrad/engine/realize.py (297 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/engine/realize.bend:1304	ops.py:1618	suffix	M.hop_self	'M.hop_self' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/engine/realize.bend:1379	realize.py:230	suffix	nsrc	'nsrc' is NOWHERE in tinygrad/engine/realize.py (297 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/function.bend:38	function.py:50-98	suffix	_function.__call__	'_function.__call__' is NOWHERE in tinygrad/function.py (113 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/function.bend:625	function.py:19-25	suffix	Data	'Data' is NOWHERE in tinygrad/function.py (113 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/function.bend:1073	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:155	base.bend:172	suffix		tinybendygrad/base.bend has 56 lines, cited at :172
+DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:2567	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
+DANGLING-LINE	NOT-MOVED	tinybendygrad/helpers.bend:2842	base.bend:1556	suffix		tinybendygrad/base.bend has 56 lines, cited at :1556
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:39	ops.py:1160	suffix	fill_value	'fill_value' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:253	tinygrad/uop/ops.py:105	exact	T.tn_mop	'T.tn_mop' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:395	creation.py:61	suffix	cr_invalids	'cr_invalids' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/creation.bend:709	creation.py:14	suffix	self's shape is non-empty	"self's shape is non-empty" is NOWHERE in tinygrad/mixin/creation.py (165 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:671	ops.py:818	suffix	ATuple{ys: List<U32>}	'ATuple{ys: List<U32>}' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:822	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:906	gradient.py:62	suffix	gr_30	'gr_30' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:1110	gradient.py:111	suffix	Data	'Data' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:1163	gradient.py:112	suffix	match	'match' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:2121	gradient.py:134-138	suffix	if k in grads: grads[k] = grads[k] + v else: grads[k] = v	'if k in grads: grads[k] = grads[k] + v else: gra' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/gradient.bend:2124	gradient.py:120	suffix	if t0 not in grads ... continue	'if t0 not in grads ... continue' is NOWHERE in tinygrad/mixin/gradient.py (145 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/movement.bend:85	ops.py:515	suffix	mxm_marg	'mxm_marg' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/movement.bend:705	ops.py:413	suffix	mx_cat	'mx_cat' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	FALSIFIED	tinybendygrad/mixin/movement.bend:1359	ops.bend:2295	suffix	next + edges	'next + edges' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/op.bend:34	ops.py:652	suffix	mo_reduce	'mo_reduce' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/op.bend:242	mixin/movement.py:287	suffix	mo_eqmul	'mo_eqmul' is NOWHERE in tinygrad/mixin/movement.py (640 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/op.bend:725	ops.py:655	suffix	T.tn_rop	'T.tn_rop' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/op.bend:761	reduce.py:18	suffix	RESHAPE	'RESHAPE' is NOWHERE in tinygrad/mixin/reduce.py (138 lines)
+DANGLING-FILE		tinybendygrad/mixin/rand.bend:374	mixin/uop/ops.py:833	absent	dtype_from_uop	no file in the walk or in HEAD is 'mixin/uop/ops.py'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/mixin/reduce.bend:5	reduce.py:10	suffix	rc_sum_dt	'rc_sum_dt' is NOWHERE in tinygrad/mixin/reduce.py (138 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/nn/onnx.bend:466	onnx.py:40-51	suffix	Data	'Data' is NOWHERE in tinygrad/nn/onnx.py (1319 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/renderer/amd/dsl.bend:1198	dsl.py:318	suffix	Reg.abs_	'Reg.abs_' is NOWHERE in tinygrad/renderer/amd/dsl.py (456 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/dsl.bend:1261	base.bend:504	suffix		tinybendygrad/base.bend has 56 lines, cited at :504
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/dsl.bend.bak:1225	base.bend:504	suffix		tinybendygrad/base.bend has 56 lines, cited at :504
+DANGLING-FILE		tinybendygrad/renderer/amd/elf.bend:345	references/bend/CHANGELOG.md:214-218	absent		no file in the walk or in HEAD is 'references/bend/CHANGELOG.md'
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/generate.bend:2599	cstyle.bend:1760	suffix		tinybendygrad/renderer/cstyle.bend has 1367 lines, cited at :1760
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/generate.bend:2601	base.bend:2009	suffix		tinybendygrad/base.bend has 56 lines, cited at :2009
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/generate.bend:2603	base.bend:1980	suffix		tinybendygrad/base.bend has 56 lines, cited at :1980
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/generate.bend:2604	base.bend:1806	suffix		tinybendygrad/base.bend has 56 lines, cited at :1806
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/amd/generate.bend:2617	base.bend:1932	suffix		tinybendygrad/base.bend has 56 lines, cited at :1932
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/renderer/isa/x86.bend:84	tinygrad/uop/ops.py:1588	exact	List<&2, Pattern>	'List<&2, Pattern>' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/renderer/isa/x86.bend:953	base.bend:829	suffix		tinybendygrad/base.bend has 56 lines, cited at :829
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/renderer/isa/x86.bend:1014	x86.py:557	suffix	no_demote	'no_demote' is NOWHERE in tinygrad/renderer/isa/x86.py (770 lines)
+DANGLING-FILE		tinybendygrad/renderer/llvmir.bend:67	llvmir-oracle.py:647-648	absent		no file in the walk or in HEAD is 'llvmir-oracle.py'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/renderer/llvmir.bend:491	llvmir.py:232-242	suffix	amd0	'amd0' is NOWHERE in tinygrad/renderer/llvmir.py (286 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/renderer/ptx.bend:78	ptx.py:175	suffix	kern	'kern' is NOWHERE in tinygrad/renderer/ptx.py (231 lines)
+DANGLING-FILE		tinybendygrad/runtime/autogen/libclang.bend:48	references/bend/bend2/comp.ts:3385	absent		no file in the walk or in HEAD is 'references/bend/bend2/comp.ts'
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/ops_bend.bend:1673	base.bend:57	suffix		tinybendygrad/base.bend has 56 lines, cited at :57
+DANGLING-FILE		tinybendygrad/runtime/ops_bend.bend:1868	references/bend/bend2/base.bend:182	absent		no file in the walk or in HEAD is 'references/bend/bend2/base.bend'
+DANGLING-FILE		tinybendygrad/runtime/ops_bend.bend:2014	references/bend/bend2/base.bend:264-299	absent		no file in the walk or in HEAD is 'references/bend/bend2/base.bend'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_cl.bend:695	device.py:360	suffix	isimg	'isimg' is NOWHERE in tinygrad/device.py (559 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_cpu.bend:217	ops_cpu.py:40	suffix	PROT_READ|PROT_WRITE|PROT_EXEC	'PROT_READ|PROT_WRITE|PROT_EXEC' is NOWHERE in tinygrad/runtime/ops_cpu.py (96 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_cuda.bend:239	ops_cuda.py:104-122	suffix	didx	'didx' is NOWHERE in tinygrad/runtime/ops_cuda.py (129 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_hip.bend:187	ops_hip.py:14-24	suffix	didx	'didx' is NOWHERE in tinygrad/runtime/ops_hip.py (71 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_metal.bend:446	ops_metal.py:86	suffix	SELECTORS	'SELECTORS' is NOWHERE in tinygrad/runtime/ops_metal.py (286 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/ops_metal.bend:3919	device.py:1611	suffix	rewrite	tinygrad/device.py has 559 lines, cited at :1611
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_npy.bend:321	device.py:494	suffix	NpyDevice.__init__	'NpyDevice.__init__' is NOWHERE in tinygrad/device.py (559 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_npy.bend:469	device.py:328	suffix	host != host	'host != host' is NOWHERE in tinygrad/device.py (559 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_null.bend:765	ops_null.py:60-66	suffix	NullDevice.__init__	'NullDevice.__init__' is NOWHERE in tinygrad/runtime/ops_null.py (73 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_nv.bend:23	hcq2.py:63	suffix	reg_ops	'reg_ops' is NOWHERE in tinygrad/runtime/support/hcq2.py (628 lines)
+DANGLING-FILE		tinybendygrad/runtime/ops_python.bend:267	../base.bend:54	absent		no file in the walk or in HEAD is '../base.bend'
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/ops_python.bend:270	base.bend:1697	suffix		tinybendygrad/base.bend has 56 lines, cited at :1697
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/ops_webgpu.bend:164	wgsl.py:118	suffix	Program.__call__	'Program.__call__' is NOWHERE in tinygrad/renderer/wgsl.py (122 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/support/autogen.bend:718	autogen.py:140	suffix	_anon{struct|union}{anoncnt}	'_anon{struct|union}{anoncnt}' is NOWHERE in tinygrad/runtime/support/autogen.py (289 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/c.bend:1037	base.bend:1941	suffix		tinybendygrad/base.bend has 56 lines, cited at :1941
+DANGLING-FILE		tinybendygrad/runtime/support/compiler_amd.bend:10	references/bend/bend2/base.bend:182	absent		no file in the walk or in HEAD is 'references/bend/bend2/base.bend'
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compiler_amd.bend:59	base.bend:2009	suffix	String.split	tinybendygrad/base.bend has 56 lines, cited at :2009
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compiler_amd.bend:125	base.bend:264-301	suffix		tinybendygrad/base.bend has 56 lines, cited at :264-301
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compiler_cpu.bend:12	base.bend:182	suffix	Process.run(program, args, input, max_output, timeout_ms)	tinybendygrad/base.bend has 56 lines, cited at :182
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/support/compiler_mesa.bend:83	compiler_mesa.py:119	suffix	info.num_ssbos	'info.num_ssbos' is NOWHERE in tinygrad/runtime/support/compiler_mesa.py (133 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compiler_mesa.bend:302	base.bend:1932	suffix		tinybendygrad/base.bend has 56 lines, cited at :1932
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compiler_qcom.bend:54	base.bend:172	suffix		tinybendygrad/base.bend has 56 lines, cited at :172
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/runtime/support/compiler_qcom.bend:80	compiler_qcom.py:46	suffix	lib[ofs:ofs + n2]	'lib[ofs:ofs + n2]' is NOWHERE in tinygrad/runtime/support/compiler_qcom.py (47 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/compileserver.bend:57	base.bend:182	suffix		tinybendygrad/base.bend has 56 lines, cited at :182
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:153	ops_nv.bend:2917-2945	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2917-2945
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:193	ops_nv.bend:205	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :205
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:194	ops_nv.bend:181	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :181
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:199	ops_nv.bend:205	suffix	0, 4, 8, 16, 24, 28	tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :205
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:203	ops_nv.bend:971	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :971
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:206	ops_nv.bend:1599	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :1599
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:636	ops_nv.bend:2917	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2917
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:647	ops_nv.bend:2934-2936	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2934-2936
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:688	ops_nv.bend:1439-1452	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :1439-1452
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:1028	ops_nv.bend:205	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :205
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:1861	ops_nv.bend:181	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :181
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:1890	ops_nv.bend:205	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :205
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/hcq2.bend:1895	ops_nv.bend:1439-1452	suffix		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :1439-1452
+DANGLING-LINE	NOT-MOVED	tinybendygrad/runtime/support/memory.bend:927	base.bend:1446	suffix	U32.log2.go(5n, n, 0n)	tinybendygrad/base.bend has 56 lines, cited at :1446
+DANGLING-LINE	NOT-MOVED	tinybendygrad/schedule/__init__.bend:78	ops.py:3370	suffix		tinygrad/uop/ops.py has 1920 lines, cited at :3370
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/__init__.bend:1683	ops.py:1239	suffix	UOp.param_like	'UOp.param_like' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/__init__.bend:1703	tinygrad/uop/ops.py:192	exact	apply_movement_op	'apply_movement_op' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/indexing.bend:110	indexing.py:12	suffix	Data	'Data' is NOWHERE in tinygrad/schedule/indexing.py (328 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/schedule/memory.bend:72	base.bend:1015-1023	suffix		tinybendygrad/base.bend has 56 lines, cited at :1015-1023
+DANGLING-LINE	NOT-MOVED	tinybendygrad/schedule/multi.bend:397	base.bend:504	suffix		tinybendygrad/base.bend has 56 lines, cited at :504
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/multi.bend:683	multi.py:58-59	suffix	mu_ss_out	'mu_ss_out' is NOWHERE in tinygrad/schedule/multi.py (311 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/schedule/multi.bend:1883	base.bend:1501	suffix		tinybendygrad/base.bend has 56 lines, cited at :1501
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/multi.bend:2579	multi.py:68-75	suffix	ml_kind	'ml_kind' is NOWHERE in tinygrad/schedule/multi.py (311 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/prepare.bend:391	ops.py:1592	suffix	<t>_pd_<OP>	'<t>_pd_<OP>' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/prepare.bend:978	upat.py:47	suffix	PMEntry	'PMEntry' is NOWHERE in tinygrad/uop/upat.py (186 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/rangeify.bend:131	ops.py:785	suffix	Maybe	'Maybe' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/rangeify.bend:172	ops.py:265	suffix	op is CONST and val is Invalid	'op is CONST and val is Invalid' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/rangeify.bend:570	tinygrad/uop/ops.py:1618	exact	M.hop_self	'M.hop_self' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/schedule/rangeify.bend:994	ops.py:192	suffix	apply_movement_op	'apply_movement_op' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	FALSIFIED	tinybendygrad/tensor.bend:291	ops.bend:1255	suffix	type Arena is Data: Arena{nodes, shp}	'type Arena is Data: Arena{nodes, shp}' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+ABSENT-TEXT	FALSIFIED	tinybendygrad/tensor.bend:330	ops.bend:5857	suffix	tn_add	'tn_add' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/tensor.bend:1136	ops.py:267	suffix	W.wk_is_weak_const	'W.wk_is_weak_const' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/tensor.bend:1217	tensor.py:124-126	suffix	self.is_param = is_param; return self	'self.is_param = is_param; return self' is NOWHERE in tinygrad/tensor.py (591 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/tensor.bend:2857	ops.py:630	suffix	tn_alu_ord	'tn_alu_ord' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-LINE	NOT-MOVED	tinybendygrad/uop/fold.bend:319	ops.py:1925	suffix	int|UOp	tinygrad/uop/ops.py has 1920 lines, cited at :1925
+DANGLING-LINE	NOT-MOVED	tinybendygrad/uop/fold.bend:358	base.bend:822	suffix		tinybendygrad/base.bend has 56 lines, cited at :822
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/fold.bend:1127	ops.py:365	suffix	ABlob	'ABlob' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/fold.bend:1387	GUIDE.md:113-121	absent		no file in the walk or in HEAD is 'GUIDE.md'
+DANGLING-FILE		tinybendygrad/uop/fold.bend:1398	references/bend/guide/GUIDE.md:113-121	absent		no file in the walk or in HEAD is 'references/bend/guide/GUIDE.md'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/fold.bend:1534	ops.py:1146	suffix	GroupOp.Defines and arg.vmin_vmax is not None	'GroupOp.Defines and arg.vmin_vmax is not None' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/fold.bend:4710	ops.py:483	suffix	UOp._ranges	'UOp._ranges' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/fold.bend:6887	symbolic.py:269	suffix	ssimplify	'ssimplify' is NOWHERE in tinygrad/uop/symbolic.py (475 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/movement.bend:198	tinygrad/uop/ops.py:261	exact	CBool	'CBool' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/ops.bend:616	codegen/late.bend:902	absent		no file in the walk or in HEAD is 'codegen/late.bend'
+DANGLING-LINE	NOT-MOVED	tinybendygrad/uop/ops.bend:813	ops.py:1925	suffix	sint = int|UOp	tinygrad/uop/ops.py has 1920 lines, cited at :1925
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:1150	ops.py:691	suffix	the tuple of sharded axes, sorted	'the tuple of sharded axes, sorted' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:1469	function.bend:153	suffix	u32_none	'u32_none' is NOWHERE in tinybendygrad/function.bend (1977 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:1951	ops.py:42	suffix	PyConst = float|int|bool	'PyConst = float|int|bool' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:2325	ops.py:1448	suffix	src_in	'src_in' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/ops.bend:2983	codegen/late.bend:910	absent		no file in the walk or in HEAD is 'codegen/late.bend'
+DANGLING-FILE		tinybendygrad/uop/ops.bend:2986	uop/fold2_work.bend:2280	absent		no file in the walk or in HEAD is 'uop/fold2_work.bend'
+DANGLING-FILE		tinybendygrad/uop/ops.bend:2986	uop/fold_mm_work.bend:2280	absent		no file in the walk or in HEAD is 'uop/fold_mm_work.bend'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:3451	ops.py:1480	suffix	self.match_dtype[0] if ... else dtypes.void	'self.match_dtype[0] if ... else dtypes.void' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/ops.bend:5563	decomp.bend:126	absent		no file in the walk or in HEAD is 'decomp.bend'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:6196	ops.py:42	suffix	PyConst = float|int|bool	'PyConst = float|int|bool' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:7197	ops.py:562	suffix	if self.op is not Ops.CALL: raise; return self.src[0]	'if self.op is not Ops.CALL: raise; return self.s' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/ops.bend:8371	references/bend/bend2/base.bend:2551	absent		no file in the walk or in HEAD is 'references/bend/bend2/base.bend'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:8711	ops.py:1394	suffix	eq_customfunction	'eq_customfunction' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:8718	ops.py:201	suffix	ABlob	'ABlob' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/ops.bend:8729	ops.py:201	suffix	AFloat	'AFloat' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/render.bend:662	pin/tinygrad/uop/ops.py:1401-1404	absent		no file in the walk or in HEAD is 'pin/tinygrad/uop/ops.py'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/spec.bend:207	ops.py:782	suffix	Some{b}	'Some{b}' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/uop/symbolic.bend:1464	mixin/upat.py:100-105	absent		no file in the walk or in HEAD is 'mixin/upat.py'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/validate.bend:1268	validate.py:83-84	suffix	Dt.is_int or Dt.is_bool	'Dt.is_int or Dt.is_bool' is NOWHERE in tinygrad/uop/validate.py (103 lines)
+DANGLING-FILE		tinybendygrad/uop/validate.bend:2510	ops-501-oracle.py:164	absent		no file in the walk or in HEAD is 'ops-501-oracle.py'
+ABSENT-TEXT	FALSIFIED	tinybendygrad/uop/validate.bend:2555	ops.bend:6490	suffix	Node{OpsSHRINK{}, [1], ATuple{Nil{}}}	'Node{OpsSHRINK{}, [1], ATuple{Nil{}}}' is NOWHERE in tinybendygrad/uop/ops.bend (8919 lines)
+DANGLING-FILE		tinybendygrad/uop/validate.bend:2594	ops-501-oracle.py:164	absent		no file in the walk or in HEAD is 'ops-501-oracle.py'
+DANGLING-FILE		tinybendygrad/uop/validate.bend:2607	ops-501-oracle.py:61	absent		no file in the walk or in HEAD is 'ops-501-oracle.py'
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/uop/weak.bend:694	ops.py:629-635	suffix	wk_bare_const	'wk_bare_const' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+ABSENT-TEXT	NOT-MOVED	tinybendygrad/viz/serve.bend:74	ops.py:76	suffix	word_wrap	'word_wrap' is NOWHERE in tinygrad/uop/ops.py (1920 lines)
+DANGLING-FILE		tinybendygrad/viz/serve.bend:1766	f.py:9	absent		no file in the walk or in HEAD is 'f.py'
+DANGLING-FILE		tinygrad/runtime/autogen/__init__.py:87	/kernel-open/common/inc/nvstatus.h:37	absent	nv_status_codes	no file in the walk or in HEAD is '/kernel-open/common/inc/nvstatus.h'
+DANGLING-FILE		tinygrad/runtime/autogen/__init__.py:102	/src/nvidia/inc/kernel/vgpu/rpc_global_enums.h:8	absent	rpc_fns	no file in the walk or in HEAD is '/src/nvidia/inc/kernel/vgpu/rpc_global_enums.h'
+DANGLING-FILE		tinygrad/runtime/autogen/__init__.py:103	/src/nvidia/inc/kernel/vgpu/rpc_global_enums.h:244	absent	rpc_events	no file in the walk or in HEAD is '/src/nvidia/inc/kernel/vgpu/rpc_global_enums.h'
+DANGLING-FILE		tinygrad/viz/assets/d3js.org/d3.v7.min.js:2	Math.log:10	absent		no file in the walk or in HEAD is 'Math.log'
