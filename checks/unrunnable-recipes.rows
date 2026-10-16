@@ -51,7 +51,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	514	runs/graphcmp/probe/p9-shape-none.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	737	llm/kernels/amd.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/llm/kernels/amd.py	no	-
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	790	runs/graphcmp/probe/p15-comm.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
-.agents	.agents/slop/argowner/handoff-graphcmp.bend	872	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/argowner/handoff-graphcmp.bend	872	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	923	tinybendygrad/schedule/__init__.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/schedule/__init__.bend	no	-
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	931	runs/graphcmp/D/D1-graph-lin.txt	ON-DISK/UNTRACKED	yes	no	declared-by:checks/differ.py	runs/graphcmp/D/D1-graph-lin.txt	no	-
 .agents	.agents/slop/argowner/handoff-graphcmp.bend	1329	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
@@ -60,7 +60,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/movement.bend	4	mixin/movement.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/movement.py	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	7	tinybendygrad/uop/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/movement.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	8	tinygrad/uop/movement.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/movement.py	no	-
-.agents	.agents/slop/argowner/mine/movement.bend	9	./fold.bend	NEITHER	yes	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/mine/movement.bend	9	./fold.bend	NEITHER	yes	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	9	./ops.bend	NEITHER	yes	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	12	uop/movement.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/movement.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	16	uop/movement.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/movement.bend	no	-
@@ -75,10 +75,10 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/movement.bend	86	uop/symbolic.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/uop/symbolic.py	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	88	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	90	../tinybendygrad/mixin/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/movement.bend	no	-
-.agents	.agents/slop/argowner/mine/movement.bend	111	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/argowner/mine/movement.bend	112	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/argowner/mine/movement.bend	111	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/argowner/mine/movement.bend	112	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	113	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/argowner/mine/movement.bend	114	./../uop/fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/mine/movement.bend	114	./../uop/fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	115	./../tensor.bend	NEITHER	no	no	-	tinybendygrad/tensor.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	116	./op.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/op.bend;tinybendygrad/mixin/op.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	333	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
@@ -90,7 +90,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/movement.bend	1212	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	1272	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	1706	.agents/slop/notes/mxm-mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/argowner/mine/movement.bend	1707	./../helpers.bend	NEITHER	yes	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/argowner/mine/movement.bend	1707	./../helpers.bend	NEITHER	yes	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	1709	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
 .agents	.agents/slop/argowner/mine/movement.bend	1746	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	1	tinybendygrad/schedule/prepare.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/schedule/prepare.bend	no	-
@@ -101,10 +101,10 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/prepare.bend	67	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	78	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	78	uop/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/spec.bend	no	-
-.agents	.agents/slop/argowner/mine/prepare.bend	80	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/argowner/mine/prepare.bend	81	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/argowner/mine/prepare.bend	80	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/argowner/mine/prepare.bend	81	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	82	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/argowner/mine/prepare.bend	83	./../uop/fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/mine/prepare.bend	83	./../uop/fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	151	LAWS/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/LAWS/spec.bend	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	306	.agents/slop/prep-gen-tables.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/argowner/mine/prepare.bend	437	.agents/slop/prep-gen-tables.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -119,9 +119,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/render.bend	169	tinygrad/uop/render.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/render.py	no	-
 .agents	.agents/slop/argowner/mine/render.bend	172	.agents/slop/xd1/render-oracle.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 .agents	.agents/slop/argowner/mine/render.bend	182	./ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/argowner/mine/render.bend	183	./fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
-.agents	.agents/slop/argowner/mine/render.bend	184	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/argowner/mine/render.bend	185	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/argowner/mine/render.bend	183	./fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/mine/render.bend	184	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/argowner/mine/render.bend	185	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/argowner/mine/render.bend	535	.agents/slop/xd1/argrepr.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 .agents	.agents/slop/argowner/mine/render.bend	587	.agents/slop/xd1/render-oracle.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 .agents	.agents/slop/argowner/mine/render.bend	600	.agents/slop/xd1/argrepr.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
@@ -142,9 +142,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/mine/render.bend	3013	.agents/slop/xd1/argrepr.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 .agents	.agents/slop/argowner/mine/render.bend	3056	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/argowner/mine/upat.bend	1	tinygrad/uop/upat.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/upat.py	no	-
-.agents	.agents/slop/argowner/mine/upat.bend	103	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/argowner/mine/upat.bend	103	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/argowner/mine/upat.bend	104	./ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/argowner/mine/upat.bend	105	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/argowner/mine/upat.bend	105	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/argowner/mine/upat.bend	960	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
 .agents	.agents/slop/argowner/mine/upat.bend	1831	tinygrad/uop/upat.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/upat.py	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	1	mixin/movement.bend	SUFFIX/TRACKED	yes	yes	code	resolves as a path SUFFIX: tinybendygrad/mixin/movement.bend	no	-
@@ -152,7 +152,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/movement.AFTER.bend	4	mixin/movement.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/movement.py	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	7	tinybendygrad/uop/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/movement.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	8	tinygrad/uop/movement.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/movement.py	no	-
-.agents	.agents/slop/argowner/movement.AFTER.bend	9	./fold.bend	NEITHER	yes	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/movement.AFTER.bend	9	./fold.bend	NEITHER	yes	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	9	./ops.bend	NEITHER	yes	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	12	uop/movement.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/movement.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	16	uop/movement.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/movement.bend	no	-
@@ -167,10 +167,10 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/movement.AFTER.bend	86	uop/symbolic.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/uop/symbolic.py	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	88	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	90	../tinybendygrad/mixin/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/movement.bend	no	-
-.agents	.agents/slop/argowner/movement.AFTER.bend	111	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/argowner/movement.AFTER.bend	112	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/argowner/movement.AFTER.bend	111	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/argowner/movement.AFTER.bend	112	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	113	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/argowner/movement.AFTER.bend	114	./../uop/fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/argowner/movement.AFTER.bend	114	./../uop/fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	115	./../tensor.bend	NEITHER	no	no	-	tinybendygrad/tensor.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	116	./op.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/op.bend;tinybendygrad/mixin/op.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	333	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
@@ -182,7 +182,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/argowner/movement.AFTER.bend	1212	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	1272	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	1706	.agents/slop/notes/mxm-mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/argowner/movement.AFTER.bend	1707	./../helpers.bend	NEITHER	yes	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/argowner/movement.AFTER.bend	1707	./../helpers.bend	NEITHER	yes	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	1709	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
 .agents	.agents/slop/argowner/movement.AFTER.bend	1746	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.bend	no	-
 .agents	.agents/slop/bendpin/twoarg-probe.bend	6	tests/check/spec_arg_depth.bend	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
@@ -253,9 +253,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/f64/emit-f64.bend	55	../../../tinybendygrad/LAWS/spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
 .agents	.agents/slop/ga-green-87.bend	1	tinybendygrad/renderer/amd/generate.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/renderer/amd/generate.bend	no	-
 .agents	.agents/slop/ga-green-87.bend	1	tinygrad/renderer/amd/generate.py	ON-DISK/TRACKED	yes	no	code	tinygrad/renderer/amd/generate.py	no	-
-.agents	.agents/slop/ga-green-87.bend	9	runtime/support/autogen.bend	AMBIGUOUS-SUFFIX	yes	no	-	runtime/support/autogen.bend matches .agents/slop/strays/working/tinybendygrad/runtime/support/autogen.bend;tinybendygrad/runtime/support/autogen.bend;.agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/ga-green-87.bend	9	runtime/support/autogen.bend	AMBIGUOUS-SUFFIX	yes	no	-	runtime/support/autogen.bend matches .agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend;.agents/slop/strays/working/tinybendygrad/runtime/support/autogen.bend;tinybendygrad/runtime/support/autogen.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/ga-green-87.bend	14	.agents/slop/ga-meas2.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/ga-green-87.bend	49	runtime/support/autogen.bend	AMBIGUOUS-SUFFIX	yes	no	-	runtime/support/autogen.bend matches .agents/slop/strays/working/tinybendygrad/runtime/support/autogen.bend;tinybendygrad/runtime/support/autogen.bend;.agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/ga-green-87.bend	49	runtime/support/autogen.bend	AMBIGUOUS-SUFFIX	yes	no	-	runtime/support/autogen.bend matches .agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend;.agents/slop/strays/working/tinybendygrad/runtime/support/autogen.bend;tinybendygrad/runtime/support/autogen.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/ga-green-87.bend	81	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
 .agents	.agents/slop/ga-green-87.bend	1339	.agents/slop/ga_fix.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/ga-green-87.bend	1366	.agents/slop/ga_fix.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -265,7 +265,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/ga-green-87.bend	1498	.agents/slop/ga-oracle.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/ga-green-87.bend	1501	.agents/slop/ga_fix.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/graphcmp-empty.bend	1	./../../tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/graphcmp-probe-optq.bend	7	./../../../../.agents/slop/graphcmp.bend	NEITHER	yes	no	-	runs/margsym/snap/graphcmp.bend;.agents/slop/graphcmp.bend	no	-
+.agents	.agents/slop/graphcmp-probe-optq.bend	7	./../../../../.agents/slop/graphcmp.bend	NEITHER	yes	no	-	.agents/slop/graphcmp.bend;runs/margsym/snap/graphcmp.bend	no	-
 .agents	.agents/slop/graphcmp-probe-optq.bend	19	./graphcmp.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/graphcmp.bend	no	-
 .agents	.agents/slop/graphcmp-probe-optq.bend	20	./../../tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/graphcmp.bend	3	.agents/slop/graphcmp.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/graphcmp.py	no	-
@@ -285,14 +285,14 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/graphcmp.bend	522	runs/graphcmp/probe/p9-shape-none.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/graphcmp.bend	745	llm/kernels/amd.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/llm/kernels/amd.py	no	-
 .agents	.agents/slop/graphcmp.bend	798	runs/graphcmp/probe/p15-comm.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
-.agents	.agents/slop/graphcmp.bend	880	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/graphcmp.bend	880	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/graphcmp.bend	931	tinybendygrad/schedule/__init__.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/schedule/__init__.bend	no	-
 .agents	.agents/slop/graphcmp.bend	939	runs/graphcmp/D/D1-graph-lin.txt	ON-DISK/UNTRACKED	yes	no	declared-by:checks/differ.py	runs/graphcmp/D/D1-graph-lin.txt	no	-
 .agents	.agents/slop/graphcmp.bend	1337	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/helpers-mut/gate.bend	5	.agents/slop/helpers-tc-gate.sh	ON-DISK/TRACKED	yes	yes	code	.agents/slop/helpers-tc-gate.sh	no	-
 .agents	.agents/slop/helpers-mut/gate.bend	7	.agents/slop/helpers-oracle.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/helpers-oracle.py	no	-
 .agents	.agents/slop/helpers-mut/gate.bend	11	tinybendygrad/helpers.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/helpers.bend	no	-
-.agents	.agents/slop/helpers-mut/gate.bend	18	./helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/helpers-mut/gate.bend	18	./helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/helpers-tc.bend	5	.agents/slop/helpers-tc-gate.sh	ON-DISK/TRACKED	yes	yes	code	.agents/slop/helpers-tc-gate.sh	no	-
 .agents	.agents/slop/helpers-tc.bend	7	.agents/slop/helpers-oracle.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/helpers-oracle.py	no	-
 .agents	.agents/slop/helpers-tc.bend	11	tinybendygrad/helpers.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/helpers.bend	no	-
@@ -333,7 +333,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	475	runs/graphcmp/probe/p9-shape-none.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	698	llm/kernels/amd.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/llm/kernels/amd.py	no	-
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	751	runs/graphcmp/probe/p15-comm.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
-.agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	833	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	833	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	884	tinybendygrad/schedule/__init__.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/schedule/__init__.bend	no	-
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	892	runs/graphcmp/D/D1-graph-lin.txt	ON-DISK/UNTRACKED	yes	no	declared-by:checks/differ.py	runs/graphcmp/D/D1-graph-lin.txt	no	-
 .agents	.agents/slop/linfix/before/drivers/two/gcmp.bend	1291	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
@@ -353,7 +353,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	48	.agents/slop/ip_check.sh	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	49	.agents/slop/ip_mutate.sh	ON-DISK/TRACKED	yes	no	code	.agents/slop/ip_mutate.sh	no	-
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	50	.agents/slop/ip_sweep.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	89	../../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	89	../../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	1268	autogen/am/pm4_soc15.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/pm4_soc15.py	no	-
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	1279	autogen/am/pm4_soc15.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/pm4_soc15.py	no	-
 .agents	.agents/slop/portzz/relocated/runtime/support/am/ip_scratch_sweep.bend	1656	autogen/am/am.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/am.py	no	-
@@ -389,7 +389,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/rf2root/helpers.bend	14	.agents/slop/helpers-tc-gate.sh	ON-DISK/TRACKED	yes	no	code	.agents/slop/helpers-tc-gate.sh	no	-
 .agents	.agents/slop/rf2root/helpers.bend	17	.agents/slop/helpers-i64-mutate.sh	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/helpers.bend	19	.agents/slop/helpers-i64-mutations.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/rf2root/helpers.bend	22	./dtype.bend	NEITHER	yes	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
+.agents	.agents/slop/rf2root/helpers.bend	22	./dtype.bend	NEITHER	yes	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
 .agents	.agents/slop/rf2root/helpers.bend	48	.agents/slop/env-coercion-table.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/helpers.bend	58	.agents/slop/env-coercion-table.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/helpers.bend	74	.agents/slop/nocolor-bend.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -409,7 +409,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/rf2root/helpers.bend	2563	.agents/slop/helpers-oracle.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/helpers-oracle.py	no	-
 .agents	.agents/slop/rf2root/helpers.bend	2709	.agents/slop/helpers-tc-gate.sh	ON-DISK/TRACKED	yes	no	code	.agents/slop/helpers-tc-gate.sh	no	-
 .agents	.agents/slop/rf2root/helpers.bend	2767	tinygrad/helpers.py	ON-DISK/TRACKED	yes	no	code	tinygrad/helpers.py	yes	-
-.agents	.agents/slop/rf2root/helpers.bend	2772	./dtype.bend	NEITHER	yes	yes	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
+.agents	.agents/slop/rf2root/helpers.bend	2772	./dtype.bend	NEITHER	yes	yes	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
 .agents	.agents/slop/rf2root/helpers.bend	2772	runtime/dtype.c	ON-DISK/UNTRACKED	yes	no	code	.agents/slop/rf2root/runtime/dtype.c	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	1	tinygrad/schedule/rangeify.py	ON-DISK/TRACKED	yes	no	code	tinygrad/schedule/rangeify.py	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	8	tinygrad/schedule/rangeify.py	ON-DISK/TRACKED	yes	no	code	tinygrad/schedule/rangeify.py	no	-
@@ -431,7 +431,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	217	./../uop/fold.bend	ON-DISK/UNTRACKED	no	no	code	.agents/slop/rf2root/uop/fold.bend	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	218	./../uop/movement.bend	ON-DISK/UNTRACKED	no	no	code	.agents/slop/rf2root/uop/movement.bend	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	1226	.agents/slop/rf-ct-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/rf2root/schedule/rf2_work.bend	1241	schedule/prepare.bend	AMBIGUOUS-SUFFIX	yes	no	-	schedule/prepare.bend matches tinybendygrad/schedule/prepare.bend;.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend (+-4) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/rf2root/schedule/rf2_work.bend	1241	schedule/prepare.bend	AMBIGUOUS-SUFFIX	yes	no	-	schedule/prepare.bend matches .agents/slop/strays/working/tinybendygrad/schedule/prepare.bend;tinybendygrad/schedule/prepare.bend (+-4) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	1384	.agents/slop/rf-ct-oracle.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	1416	.agents/slop/rf-ct-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	1922	.agents/slop/rf-claims.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -448,7 +448,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	3119	.agents/slop/rf2-mutate.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/rf2-mutate.py	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	3128	.agents/slop/rf2-mutations.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/rf2root/schedule/rf2_work.bend	3267	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/rf2root/schedule/rf2_work.bend	3285	schedule/prepare.bend	AMBIGUOUS-SUFFIX	yes	no	-	schedule/prepare.bend matches tinybendygrad/schedule/prepare.bend;.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend (+-4) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/rf2root/schedule/rf2_work.bend	3285	schedule/prepare.bend	AMBIGUOUS-SUFFIX	yes	no	-	schedule/prepare.bend matches .agents/slop/strays/working/tinybendygrad/schedule/prepare.bend;tinybendygrad/schedule/prepare.bend (+-4) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/sched-fixture.bend	1	.agents/slop/sched-fixture.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/sched-fixture.bend	5	.agents/slop/sched-oracle.txt	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/sched-fixture.bend	14	./../../tinybendygrad/helpers.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/helpers.bend	no	-
@@ -456,13 +456,13 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/sched-fixture.bend	16	./../../tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/sched-fixture.bend	17	./../../tinybendygrad/schedule/__init__.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/schedule/__init__.bend	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	1	tinygrad/uop/spec.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/spec.py	no	-
-.agents	.agents/slop/speccite/plants/spec.bend	63	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/speccite/plants/spec.bend	64	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/speccite/plants/spec.bend	63	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/speccite/plants/spec.bend	64	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	65	./ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/speccite/plants/spec.bend	66	./fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+.agents	.agents/slop/speccite/plants/spec.bend	66	./fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	617	tinygrad/uop/validate.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/validate.py	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	1053	uop/ops.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/ops.bend	no	-
-.agents	.agents/slop/speccite/plants/spec.bend	1061	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+.agents	.agents/slop/speccite/plants/spec.bend	1061	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	1693	tinygrad/device.py	ON-DISK/TRACKED	yes	no	code	tinygrad/device.py	no	-
 .agents	.agents/slop/speccite/plants/spec.bend	1886	tinygrad/uop/spec.py	ON-DISK/TRACKED	yes	yes	code	tinygrad/uop/spec.py	no	6c3d401cf324
 .agents	.agents/slop/speccite/plants/spec.bend	1915	.agents/slop/rebase-oracle-spec.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -499,9 +499,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend	1120	.agents/slop/ag-emit-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/origin/tinybendygrad/runtime/support/autogen.bend	1121	runtime/ops_nv.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/runtime/ops_nv.bend	no	-
 .agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	1	tinygrad/uop/ops.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/ops.py	no	-
-.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	132	./../dtype.bend	NEITHER	yes	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	171	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	172	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	132	./../dtype.bend	NEITHER	yes	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	171	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	172	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	173	./ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	210	LAWS/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/LAWS/spec.bend	no	-
 .agents	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend	253	.agents/slop/dtype-pri-m7.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -559,8 +559,8 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	43	.agents/slop/unobservable-gr-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	56	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	57	./../uop/render.bend	NEITHER	no	no	-	.agents/slop/argowner/mine/render.bend;tinybendygrad/uop/render.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	58	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	59	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	58	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	59	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	200	.agents/slop/grw-loop-probe.bend	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	228	uop/ops.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/__init__.bend	304	.agents/slop/codegen-init-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -577,8 +577,8 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	65	.agents/slop/notes/rw-truth.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	67	late/coalesce.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/codegen/late/coalesce.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	76	.agents/slop/codegen3-gate.sh	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	81	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	82	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	81	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	82	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	83	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	84	./../uop/fold.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend	85	./rewriter.bend	NEITHER	no	no	-	tinybendygrad/codegen/rewriter.bend	no	-
@@ -597,8 +597,8 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	100	uop/fold.bend	ON-DISK/TRACKED	yes	no	code	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	150	/tmp/opencode/late-oracle.py	OUTSIDE-TREE	yes	yes	-	out of tree by construction	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	150	tinybendygrad/codegen/late.bend	WAS-OURS	yes	yes	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	156	./../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	157	./../../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	156	./../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	157	./../../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	158	./../../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	159	./../../uop/fold.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/late/linearizer.bend	160	./../kernel.bend	NEITHER	no	no	-	tinybendygrad/codegen/kernel.bend	no	-
@@ -614,14 +614,14 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	17	codegen/rewriter.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/codegen/rewriter.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	56	codegen/rewriter.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/codegen/rewriter.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	90	.agents/slop/split-codegen3.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	119	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	120	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	119	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	120	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	121	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	122	./../uop/fold.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	123	./rewriter.bend	NEITHER	no	no	-	tinybendygrad/codegen/rewriter.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/codegen/simplify.bend	758	.agents/slop/notes/codegen-mut.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/device.bend	1	tinygrad/device.py	ON-DISK/TRACKED	yes	no	code	tinygrad/device.py	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/device.bend	117	./LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/device.bend	117	./LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/device.bend	1033	./uop/ops.bend	NEITHER	yes	yes	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/device.bend	1164	tinygrad/device.py	ON-DISK/TRACKED	yes	no	code	tinygrad/device.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/device.bend	1423	tinygrad/device.py	ON-DISK/TRACKED	yes	no	code	tinygrad/device.py	no	-
@@ -633,8 +633,8 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	19	examples/beautiful_mnist.ts	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.ts	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	23	engine/jit.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/engine/jit.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	77	examples/beautiful_mnist.ts	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.ts	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	93	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	94	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	93	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	94	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	95	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	96	./realize.bend	NEITHER	no	no	-	tinybendygrad/engine/realize.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/engine/jit.bend	104	mixin/rand.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/rand.bend	no	-
@@ -667,7 +667,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	25	tinygrad/runtime/autogen/amd/rdna4/operands.py	ON-DISK/TRACKED	yes	yes	code	tinygrad/runtime/autogen/amd/rdna4/operands.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	26	tinygrad/runtime/autogen/amd/cdna/operands.py	ON-DISK/TRACKED	yes	yes	code	tinygrad/runtime/autogen/amd/cdna/operands.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	45	.agents/slop/dsl_constmap.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	48	../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	48	../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	133	.agents/slop/dsl_constmap.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	977	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	1274	.agents/slop/dsl_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -706,7 +706,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	42	/operands.py	OUTSIDE-TREE	yes	no	-	out of tree by construction	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	45	tinygrad/runtime/autogen/sqtt.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/sqtt.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	46	renderer/amd/sqtt.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/renderer/amd/sqtt.py	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	50	../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	50	../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	51	./dsl.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/renderer/amd/sqtt.bend	289	.agents/slop/sqtt_gen.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/autogen/libclang.bend	3	.agents/slop/ag-emit.bend	ON-DISK/TRACKED	yes	no	code	.agents/slop/ag-emit.bend	no	-
@@ -738,9 +738,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	1	tinybendygrad/runtime/ops_cpu.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/runtime/ops_cpu.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	1	tinygrad/runtime/ops_cpu.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/ops_cpu.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	5	runtime/ops_null.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/runtime/ops_null.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	124	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	124	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	125	../device.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/device.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	126	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_cpu.bend	126	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	1	tinybendygrad/runtime/ops_disk.bend	ON-DISK/TRACKED	yes	yes	code	tinybendygrad/runtime/ops_disk.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	1	tinygrad/runtime/ops_disk.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/ops_disk.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	43	tinybendygrad/runtime/ops_disk.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/runtime/ops_disk.bend	no	-
@@ -748,7 +748,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	45	tinybendygrad/runtime/ops_disk.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/runtime/ops_disk.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	47	.agents/slop/dk-oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	58	./x.c	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	198	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	198	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	199	./../device.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/device.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	276	tinygrad/runtime/autogen/io_uring.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/io_uring.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/ops_disk.bend	1464	disk:/tmp/dk.bin	NEITHER	no	no	-	BASENAME-ABSENT	no	-
@@ -766,7 +766,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	48	.agents/slop/ip_check.sh	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	49	.agents/slop/ip_mutate.sh	ON-DISK/TRACKED	yes	no	code	.agents/slop/ip_mutate.sh	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	50	.agents/slop/ip_sweep.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	89	../../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	89	../../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	1268	autogen/am/pm4_soc15.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/pm4_soc15.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	1279	autogen/am/pm4_soc15.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/pm4_soc15.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/am/ip.bend	1656	autogen/am/am.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/am/am.py	no	-
@@ -842,7 +842,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	197	autogen/nv_570.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/nv_570.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	284	.agents/slop/nv_ip_mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	355	.agents/slop/nv_ip_oracle4.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/nv_ip_oracle4.py	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	363	../../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	363	../../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	364	../../../device.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/device.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	367	.agents/slop/nv_ip_gen.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/nv_ip_gen.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/nv/ip.bend	2561	autogen/nv_570.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/nv_570.py	no	-
@@ -864,7 +864,7 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	4	.agents/slop/usb-build.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/usb-build.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	5	autogen/libusb.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/libusb.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	28	tinygrad/runtime/autogen/libusb.py	ON-DISK/TRACKED	yes	no	code	tinygrad/runtime/autogen/libusb.py	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	86	../../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	86	../../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	129	autogen/libusb.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/libusb.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	156	autogen/libusb.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/libusb.py	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend	173	autogen/libusb.py	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinygrad/runtime/autogen/libusb.py	no	-
@@ -896,8 +896,8 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	67	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	78	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	78	uop/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/uop/spec.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	80	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	81	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	80	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	81	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	82	./../uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	83	./../uop/fold.bend	ON-DISK/TRACKED	no	no	code	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	151	LAWS/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/LAWS/spec.bend	no	-
@@ -907,9 +907,9 @@ stratum	file	line	token	state	in-comment	recipe	reads	note	negated	revision
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	866	.agents/slop/prep-mutate.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/schedule/prepare.bend	964	schedule/indexing.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/indexing.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	1	tinygrad/uop/ops.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/ops.py	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	132	./../dtype.bend	NEITHER	yes	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	171	./../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	172	./../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	132	./../dtype.bend	NEITHER	yes	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	171	./../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+.agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	172	./../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	173	./ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	210	LAWS/spec.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/LAWS/spec.bend	no	-
 .agents	.agents/slop/strays/working/tinybendygrad/uop/fold.bend	253	.agents/slop/dtype-pri-m7.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
@@ -1016,16 +1016,16 @@ checks	checks/c-context.bend	16	runtime/dtype.c	SUFFIX/TRACKED	yes	no	code	resol
 checks	checks/c-context.bend	17	runtime/sz.c	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/runtime/sz.c	no	-
 checks	checks/c-context.bend	23	../tinybendygrad/runtime/sz.c	ON-DISK/TRACKED	no	no	code	tinybendygrad/runtime/sz.c	no	-
 checks	checks/c-context.bend	29	../tinybendygrad/runtime/sz.c	ON-DISK/TRACKED	no	no	code	tinybendygrad/runtime/sz.c	no	-
-checks	checks/gate.bend	1	../../../tinybendygrad/uop/fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
-checks	checks/gate.bend	2	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-checks	checks/gate.bend	3	../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+checks	checks/gate.bend	1	../../../tinybendygrad/uop/fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
+checks	checks/gate.bend	2	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+checks	checks/gate.bend	3	../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 checks	checks/gate.bend	4	../../../tinybendygrad/uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
 checks	checks/gate.bend	6	.agents/slop/shlscope/gen.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
 checks	checks/gate_dtype.bend	22	../../../tinybendygrad/base.bend	NEITHER	no	no	-	tinybendygrad/base.bend	no	-
-checks	checks/gate_dtype.bend	23	../../../tinybendygrad/dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-checks	checks/gate_dtype.bend	24	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+checks	checks/gate_dtype.bend	23	../../../tinybendygrad/dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+checks	checks/gate_dtype.bend	24	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 checks	checks/gate_norm.bend	27	../../../tinybendygrad/base.bend	NEITHER	no	no	-	tinybendygrad/base.bend	no	-
-checks	checks/gate_norm.bend	28	../../../tinybendygrad/dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
+checks	checks/gate_norm.bend	28	../../../tinybendygrad/dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
 examples	examples/beautiful_mnist.bend	1	examples/beautiful_mnist.bend	ON-DISK/TRACKED	yes	yes	code	examples/beautiful_mnist.bend	no	-
 examples	examples/beautiful_mnist.bend	1	tinygrad/examples/beautiful_mnist.py	NEITHER	yes	no	-	examples/beautiful_mnist.py	no	-
 examples	examples/beautiful_mnist.bend	4	examples/beautiful_mnist.py	ON-DISK/TRACKED	yes	no	code	examples/beautiful_mnist.py	no	-
@@ -1038,7 +1038,7 @@ examples	examples/beautiful_mnist.bend	52	mixin/op.bend	SUFFIX/TRACKED	yes	no	co
 examples	examples/beautiful_mnist.bend	108	mixin/rand.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/rand.py	no	-
 examples	examples/beautiful_mnist.bend	117	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
 examples	examples/beautiful_mnist.bend	125	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
-examples	examples/beautiful_mnist.bend	132	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+examples	examples/beautiful_mnist.bend	132	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 examples	examples/beautiful_mnist.bend	134	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
 examples	examples/beautiful_mnist.bend	138	mixin/op.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/mixin/op.bend	no	-
 examples	examples/beautiful_mnist.bend	151	mixin/rand.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/rand.py	no	-
@@ -1165,7 +1165,7 @@ gates	gates/fold_graph_census.bend	2	tinybendygrad/uop/fold.bend	ON-DISK/TRACKED
 gates	gates/fold_graph_census.bend	4	gates/fold_graph_census-gate.py	ON-DISK/TRACKED	yes	no	code	gates/fold_graph_census-gate.py	no	-
 gates	gates/fold_graph_census.bend	13	tinygrad/uop/ops.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/ops.py	no	-
 gates	gates/fold_graph_census.bend	17	schedule/rangeify.bend	SUFFIX/TRACKED	yes	no	code	resolves as a path SUFFIX: tinybendygrad/schedule/rangeify.bend	no	-
-gates	gates/fold_graph_census.bend	18	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+gates	gates/fold_graph_census.bend	18	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 gates	gates/fold_graph_census.bend	46	gates/ew_graph_census.bend	ON-DISK/TRACKED	yes	no	code	gates/ew_graph_census.bend	no	-
 gates	gates/fold_graph_census.bend	67	./../tinybendygrad/helpers.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/helpers.bend	no	-
 gates	gates/fold_graph_census.bend	68	./../tinybendygrad/LAWS/spec.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/LAWS/spec.bend	no	-
@@ -1180,11 +1180,11 @@ gates	gates/gr_graph_census.bend	47	./../tinybendygrad/uop/ops.bend	ON-DISK/TRAC
 gates	gates/gr_graph_census.bend	48	./../tinybendygrad/mixin/gradient.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/mixin/gradient.bend	no	-
 gates	gates/i64-shl.bend	1	gates/i64-shl-gate.py	ON-DISK/TRACKED	yes	no	code	gates/i64-shl-gate.py	no	-
 gates	gates/i64-shl.bend	3	gates/i64-shl-gate.py	ON-DISK/TRACKED	yes	no	code	gates/i64-shl-gate.py	no	-
-gates	gates/i64-shl.bend	32	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+gates	gates/i64-shl.bend	32	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 gates	gates/i64-shr.bend	1	gates/i64-shr-gate.py	ON-DISK/TRACKED	yes	no	code	gates/i64-shr-gate.py	no	-
 gates	gates/i64-shr.bend	3	gates/i64-shr-gate.py	ON-DISK/TRACKED	yes	no	code	gates/i64-shr-gate.py	no	-
 gates	gates/i64-shr.bend	5	tinybendygrad/helpers.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/helpers.bend	no	-
-gates	gates/i64-shr.bend	43	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+gates	gates/i64-shr.bend	43	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 gates	gates/md_graph_census.bend	2	tinybendygrad/mixin/dtype.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/mixin/dtype.bend	no	-
 gates	gates/md_graph_census.bend	4	gates/md_graph_census-gate.py	ON-DISK/TRACKED	yes	no	code	gates/md_graph_census-gate.py	no	-
 gates	gates/md_graph_census.bend	7	tinygrad/mixin/dtype.py	ON-DISK/TRACKED	yes	no	code	tinygrad/mixin/dtype.py	no	-
@@ -1511,39 +1511,39 @@ gates	gates/wk-f32.bend	2	./../tinybendygrad/helpers.bend	ON-DISK/TRACKED	no	no	
 gates	gates/wk-f32.bend	3	./../tinybendygrad/uop/weak.bend	ON-DISK/TRACKED	no	no	code	tinybendygrad/uop/weak.bend	no	-
 langs	langs/core.bend	16	langs/NOTES.md	ON-DISK/TRACKED	yes	no	code	langs/NOTES.md	no	-
 oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/ddcheck/tree/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-oracles	oracles/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-oracles	oracles/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+oracles	oracles/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/fold-mvt-e2e.bend	4	.agents/slop/notes/bend2-constraints.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/notes/bend2-constraints.md	no	-
-oracles	oracles/fold-mvt-e2e.bend	9	./../../../tinybendygrad/uop/fold.bend	NEITHER	no	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+oracles	oracles/fold-mvt-e2e.bend	9	./../../../tinybendygrad/uop/fold.bend	NEITHER	no	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 oracles	oracles/fold-mvt-e2e.bend	10	./../../../tinybendygrad/uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-oracles	oracles/fold-mvt-e2e.bend	11	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/fold-mvt-e2e.bend	12	./../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/fold-mvt-e2e.bend	11	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/fold-mvt-e2e.bend	12	./../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/fold-probe-mvt2.bend	4	../../../tinybendygrad/uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-oracles	oracles/fold-probe-mvt2.bend	5	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
+oracles	oracles/fold-probe-mvt2.bend	5	../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
 oracles	oracles/probe-su.bend	4	./../../../tinybendygrad/uop/ops.bend	NEITHER	no	no	-	tinybendygrad/uop/ops.bend	no	-
-oracles	oracles/probe-su.bend	5	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/probe-su.bend	6	./../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/probe-su.bend	5	./../../../tinybendygrad/helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/probe-su.bend	6	./../../../tinybendygrad/LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+oracles	oracles/render-wt/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+runs	runs/gr-init/base/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 runs	runs/margsym/snap/graphcmp.bend	3	.agents/slop/graphcmp.py	ON-DISK/TRACKED	yes	no	code	.agents/slop/graphcmp.py	no	-
 runs	runs/margsym/snap/graphcmp.bend	5	.agents/slop/pin-tree-oracle-report.md	ON-DISK/TRACKED	yes	no	code	.agents/slop/pin-tree-oracle-report.md	no	-
 runs	runs/margsym/snap/graphcmp.bend	16	tinybendygrad/uop/ops.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/ops.bend	no	-
@@ -1560,13 +1560,13 @@ runs	runs/margsym/snap/graphcmp.bend	302	runs/graphcmp/probe/pb-buf-binary.bend	
 runs	runs/margsym/snap/graphcmp.bend	429	runs/graphcmp/probe/p9-shape-none.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
 runs	runs/margsym/snap/graphcmp.bend	652	llm/kernels/amd.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/llm/kernels/amd.py	no	-
 runs	runs/margsym/snap/graphcmp.bend	705	runs/graphcmp/probe/p15-comm.py	NEITHER	yes	no	-	BASENAME-ABSENT	no	-
-runs	runs/margsym/snap/graphcmp.bend	787	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
+runs	runs/margsym/snap/graphcmp.bend	787	uop/fold.bend	AMBIGUOUS-SUFFIX	yes	no	-	uop/fold.bend matches .agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend (+-3) -- root unknown, so NOT counted as resolved	no	-
 runs	runs/margsym/snap/graphcmp.bend	838	tinybendygrad/schedule/__init__.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/schedule/__init__.bend	no	-
 runs	runs/margsym/snap/graphcmp.bend	846	runs/graphcmp/D/D1-graph-lin.txt	ON-DISK/UNTRACKED	yes	no	declared-by:checks/differ.py	runs/graphcmp/D/D1-graph-lin.txt	no	-
 runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	3	.agents/slop/oracle/dtype_oracle.py	WAS-OURS	yes	no	-	deleted from our history; `git log HEAD -- <path>` finds the commit	no	-
-runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/mixin/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/codegen/decomp/dtype.bend	no	-
-runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	tinybendygrad/helpers.bend;.agents/slop/rf2root/helpers.bend	no	-
-runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	tinybendygrad/uop/spec.bend;.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend	no	-
+runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	12	../dtype.bend	NEITHER	no	no	-	tinybendygrad/codegen/decomp/dtype.bend;tinybendygrad/dtype.bend;tinybendygrad/mixin/dtype.bend	no	-
+runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	13	../helpers.bend	NEITHER	no	no	-	.agents/slop/rf2root/helpers.bend;tinybendygrad/helpers.bend	no	-
+runs	runs/margsym/snap/tinybendygrad/test/dtype_oracle.bend	14	../LAWS/spec.bend	NEITHER	no	no	-	.agents/slop/speccite/plants/spec.bend;tinybendygrad/LAWS/spec.bend;tinybendygrad/uop/spec.bend	no	-
 tinybendygrad	tinybendygrad/LAWS.bend	4	spec/tinyspec.tex	ON-DISK/TRACKED	yes	no	code	spec/tinyspec.tex	no	-
 tinybendygrad	tinybendygrad/LAWS.bend	9	LAWS/spec.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/LAWS/spec.bend	no	-
 tinybendygrad	tinybendygrad/LAWS.bend	11	uop/ops.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/uop/ops.py	no	-
@@ -2156,7 +2156,7 @@ tinybendygrad	tinybendygrad/mixin/movement.bend	1	tinygrad/mixin/movement.py	ON-
 tinybendygrad	tinybendygrad/mixin/movement.bend	4	mixin/movement.py	MIRROR/UPSTREAM	yes	no	code	tinygrad/mixin/movement.py	no	-
 tinybendygrad	tinybendygrad/mixin/movement.bend	7	tinybendygrad/uop/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/movement.bend	no	-
 tinybendygrad	tinybendygrad/mixin/movement.bend	8	tinygrad/uop/movement.py	ON-DISK/TRACKED	yes	no	code	tinygrad/uop/movement.py	no	-
-tinybendygrad	tinybendygrad/mixin/movement.bend	9	./fold.bend	NEITHER	yes	no	-	tinybendygrad/uop/fold.bend;.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend	no	-
+tinybendygrad	tinybendygrad/mixin/movement.bend	9	./fold.bend	NEITHER	yes	no	-	.agents/slop/strays/origin/tinybendygrad/uop/fold.bend;.agents/slop/strays/working/tinybendygrad/uop/fold.bend;tinybendygrad/uop/fold.bend	no	-
 tinybendygrad	tinybendygrad/mixin/movement.bend	9	./ops.bend	NEITHER	yes	no	-	tinybendygrad/uop/ops.bend	no	-
 tinybendygrad	tinybendygrad/mixin/movement.bend	12	uop/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/movement.bend	no	-
 tinybendygrad	tinybendygrad/mixin/movement.bend	16	uop/movement.bend	ON-DISK/TRACKED	yes	no	code	tinybendygrad/uop/movement.bend	no	-

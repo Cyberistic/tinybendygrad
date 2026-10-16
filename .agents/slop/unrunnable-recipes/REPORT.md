@@ -228,6 +228,16 @@ Every number below is the difference between two runs of `checks/unrunnable-reci
 | **10** | **A git revision read as a path.** `uop/ops.bend:1056`'s `6c3d401cf324:tinygrad/uop/ops.py` — the path is real, the revision is the part that may not be. | **3** rows | peel a leading `[0-9a-f]{7,40}:`; answer the revision separately with `git cat-file -t` ⇒ **`6c3d401cf324=commit`** |
 | **11** | **Ellipses and globs counted as files.** `ops_cl.bend:7`'s `.../a.bend`, `ops_qcom.bend:69`'s `.../kgsl.py`, `tinygrad/runtime/autogen/*.py`. | 4 + 3 | `…`, `//`, `*`, `?` are families |
 | **12** | **A reader index that can only see literals.** §3 — it called `D1-graph-mselect.txt` unread. | 2 false `prose` | ask every module that defines a **top-level** `def declared(` (discovered by walk, not typed) |
+| **13** | **A `set`-iteration order in an output column.** The `note` column joins every path sharing a basename, and it joined them in `set` order. **The table was NOT byte-reproducible:** `1f83544…` at `PYTHONHASHSEED=1` vs `97a6135…` at `=2`, differing in **20 rows a reader cannot tell apart**. | 20 rows, per run | build both indexes over `sorted(disk)`; verified `seed1 == seed7 == random == 929af948…` after the fix |
+
+### 4.12 And the output was not reproducible until I checked
+
+Cause 13 is the one that would have made every number in this report unciteable. `checks/differ.py
+repro` exists to prove one run is reproducible, and **my table failed that test** — not because the
+census was wrong, but because a `note` column joined paths in `set` order and `PYTHONHASHSEED`
+changes `set` order for strings. Two runs of the same tree gave different sha256s in 20 rows.
+**An instrument whose output cannot be diffed against itself cannot be reviewed**, so it is fixed and
+the fix is verified across `PYTHONHASHSEED=1`, `=7`, and `=random`: `929af948…` three times.
 
 ### 4.10 And the one class I had to ADD, because a wrong exclusion deletes a true row
 

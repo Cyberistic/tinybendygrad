@@ -43,6 +43,14 @@ SOMETHING EXECUTES IT" ARE DIFFERENT ROWS AND THE SECOND IS RARE.
 
 OUTPUT.  A `.rows` table, one row per named path, plus a summary on stdout.  Exit 0 always: this is a
 CENSUS, and a census that returns non-zero is a gate, and nothing calls this.
+
+THE OUTPUT IS BYTE-REPRODUCIBLE, AND IT WAS NOT UNTIL THIS SENTENCE EXISTED.  The `note` column
+joins the paths that share a basename, and it joined them in `set`-iteration order, so the table's
+sha256 changed between runs of the SAME TREE: MEASURED `1f83544…` at `PYTHONHASHSEED=1` and
+`97a6135…` at `PYTHONHASHSEED=2`, differing in 20 rows that a reader cannot tell apart.  **A census
+whose table cannot be reproduced is a census nobody can diff**, which is the one property
+`checks/differ.py repro` exists to protect and this file would have failed it.  Both indexes now
+build over `sorted(disk)`.  Re-verify with two seeds before believing any number here.
 """
 from __future__ import annotations
 
@@ -167,7 +175,7 @@ def suffix_index(disk: set[str]) -> dict[str, list[str]]:
     writes 46 false dangling rows; the suffix index answers the question the citation actually asks,
     and a token with MORE THAN ONE match is reported as ambiguous rather than as resolved."""
     idx: dict[str, list[str]] = {}
-    for p in disk:
+    for p in sorted(disk):
         parts = p.split("/")
         for i in range(1, len(parts)):
             idx.setdefault("/".join(parts[i:]), []).append(p)
@@ -274,7 +282,7 @@ def resolve(token: str, containing: str) -> tuple[str, str]:
 
 def basename_index(disk: set[str]) -> dict[str, list[str]]:
     idx: dict[str, list[str]] = {}
-    for p in disk:
+    for p in sorted(disk):
         idx.setdefault(os.path.basename(p), []).append(p)
     return idx
 
