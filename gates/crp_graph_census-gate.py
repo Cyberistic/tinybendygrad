@@ -1195,6 +1195,21 @@ GATE = Gate(
     rows=ROWS,
     compared=ROWS - len(DIVERGES),
     diverges={r: v for r, (_c, v) in DIVERGES.items()},
+    # THE ONE CENSUS GATE WHOSE ROWS ARE DEVICE-BOUND, AND SO THE ONE THAT NAMES ITS DEVICE.
+    # `crp_graph_census-oracle.py:61` pins `DEV = "PYTHON"` and every `Tensor` this census
+    # builds carries it, so these 287 rows are the product of that device and a reader is owed
+    # the name. `gates/gatekit.py`'s `device=` is the spelling; `NO_DEVICE` is the default and
+    # the honest answer for a gate whose lanes take every device from a literal.
+    #
+    # MEASURED 2026-10-16, DEV in {CPU, PYTHON, DISK, NPY, UNSET, BOGUS, METAL}: the ANSWER
+    # DOES NOT MOVE -- 5 runs, byte-identical stdout and byte-identical artifacts -- because
+    # that literal shadows the ambient on every construction. **SO THIS REFUSAL IS POINTER,
+    # NOT DETECTOR, and it is worth saying so where the refusal happens.** It is still the
+    # right trade: `runs/graphcmp/D` is the recorded case where an undeclared device cost a
+    # 313-vs-312 census (`checks/env-precond.py`'s `DEV=CPU` row exists because it happened
+    # one directory over), and REFUSED (3) is not FAIL (1) -- the tree is fine, the DEVICE is
+    # pointed somewhere this gate's pins do not describe.
+    device="PYTHON",
 )
 
 CHECKS = (names_hold, methods_hold, dtypes_hold, receiver_hold, frompy_hold, opscast_hold,
