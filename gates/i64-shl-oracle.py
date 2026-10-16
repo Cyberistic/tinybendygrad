@@ -182,6 +182,10 @@ def main():
     assert "neg1:63" not in z, f"neg1@63 is the int64 sign bit and cannot be 0:0"
 
     print("\n".join(out))
+    # A CHOSEN 0, not a fallen-off `None`. `gates/gatekit.py:446` reads this oracle's exit code
+    # as LIVENESS and :547 grades a zero-row lane `DEAD`, which only a 0 here can reach -- so 0 is
+    # the value that keeps both verdicts, and the return is what makes the AUTHOR its author.
+    return 0
 
 
 def unpair_u(s):

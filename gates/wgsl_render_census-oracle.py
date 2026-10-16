@@ -951,6 +951,10 @@ def main():
         g()
     for ln in ROWS:
         print(ln)
+    # A CHOSEN 0, not a fallen-off `None`: `gates/gatekit.py:446` reads this exit as LIVENESS and
+    # :547 grades a zero-row lane `DEAD`, and only a 0 here reaches that branch. See the same
+    # three lines at `gates/i64-shl-oracle.py:184`.
+    return 0
 
 
 if __name__ == "__main__":

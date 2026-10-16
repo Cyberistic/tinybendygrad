@@ -288,6 +288,10 @@ def main():
     assert (0x80000000 >> 1) != 0xC0000000
 
     print("\n".join(out))
+    # A CHOSEN 0, not a fallen-off `None`: `gates/gatekit.py:446` reads this exit as LIVENESS and
+    # :547 grades a zero-row lane `DEAD`, and only a 0 here reaches that branch. See the same
+    # three lines at `gates/i64-shl-oracle.py:184`.
+    return 0
 
 
 if __name__ == "__main__":

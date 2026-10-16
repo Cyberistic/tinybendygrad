@@ -61,6 +61,27 @@ runtime data is `OTHER`. `MAYBE-NONE` -- `sys.exit(main())` where `main` has a b
 run off its end -- is a LEXICAL LOWER BOUND over that same shallow resolution, and is reported as
 such. A census that claimed to be complete here would be claiming the one thing it did not measure.
 
+**`MAYBE-NONE` IS NOW 0, AND THE RE-TAKING IS THE FINDING** (0 of the 291 sites in the run that
+took it; `W` moves while other units write the tree, so quote it with the run or not at all). It
+read 5, over four CPython oracles and one mutation harness, and they were not the same kind of
+thing:
+
+    gates/decomp_graph_census-mutate.py:314   A FALSE POSITIVE, and this file's own.
+        `main` returns 3/1/1/0 and never falls off the end; a `try/finally` has no `handlers`, so
+        `_terminates` answered False. One clause, one row, 290 others untouched.
+    the four oracles                          REAL, and repaired at the site rather than excused
+        here. `main` ended in `print(...)`, so `sys.exit(main())` was `sys.exit(None)`, which is 0,
+        which is `PASS` -- on a path that had emitted nothing. Each now `return 0`, CHOSEN.
+
+**WHY `0` IS THE REPAIR AND NOT `DEAD`, which is the tree's word for the thing.** `gates/gatekit.py:446`
+reads an oracle's exit code as LIVENESS and :547 returns `DEAD` for a zero-row lane -- and :515
+`if not self._oracle(): return REFUSED`, so ANY non-zero here costs the gate its `DEAD` and bills it
+a `REFUSED` whose precondition was not absent. **`return 0` is the unique value that keeps both
+verdicts, and it changes nothing a reader gets: MEASURED, all four oracles still exit 0 and still
+print BYTE-IDENTICAL output (7757 / 25852 / 3201 / 7079 bytes).** So the oracle cannot say "DEAD"
+from its own exit code, and the residual is NOT in these four files; it is that one line in
+`gates/gatekit.py`, which is not this gate's to change.
+
 **AND THERE IS NO `--root`, MEASURED, because one was written and removed.** `gates/runner.py:481`
 offers `--root` for the same reason; here it did not work. The census SET is
 `gates/gates-pop.py:gate_homes()`, and that function certifies a directory as a gate home only when
@@ -176,16 +197,28 @@ def _terminates(stmts):
     `gates/msgdiff-gate.py:593` is why the `Try` arm exists: `main`'s body is one `try:` whose
     every branch ends in `return`, so the first version's "the last statement is not a `return`"
     test called it MAYBE-NONE and that was FALSE. A `try` terminates when its body terminates and
-    it has a handler to catch what would otherwise fall through; a `with` is its body; an `if`
-    needs both arms. Anything else -- a loop, a bare call, a `match` -- answers False, which is
-    the SAFE direction: False means MAYBE-NONE, and MAYBE-NONE fails the gate."""
+    it has something to run afterwards; a `with` is its body; an `if` needs both arms. Anything
+    else -- a loop, a bare call, a `match` -- answers False, which is the SAFE direction: False
+    means MAYBE-NONE, and MAYBE-NONE fails the gate.
+
+    **`finally` COUNTS AS THAT SOMETHING, MEASURED, AND IT WAS THE LAST FALSE POSITIVE.**
+    `gates/decomp_graph_census-mutate.py:314` is `sys.exit(main(sys.argv[1:]))` over a `main`
+    whose last statement is a `try: ... finally:` cleanup -- and a `try/finally` has NO
+    `handlers`, so `bool(last.handlers)` said False and the census called it MAYBE-NONE. **HAND BY
+    HAND, `main` returns 3 (`:245` no such label), 1 (`:254` base lane dead), 1 (`:262` the base
+    lane is not the census's population) and 0 (`:307`); there is no path that falls off the end.**
+    MEASURED, the one-character-class fix below moved that ONE site MAYBE-NONE -> FOREIGN and
+    left all other 290 sites on their existing shape. A `finally` cannot swallow a return: it runs,
+    and the body's value stands -- `try/except/finally` terminates if EITHER an `except` handler OR
+    a `finally` is present, and if both are absent the exception propagates and `main` never
+    returned at all."""
     if not stmts:
         return False
     last = stmts[-1]
     if isinstance(last, (ast.Return, ast.Raise)):
         return True
     if isinstance(last, ast.Try):
-        return bool(last.handlers) and _terminates(last.body)
+        return _terminates(last.body) and (bool(last.handlers) or bool(last.finalbody))
     if isinstance(last, (ast.With, ast.AsyncWith)):
         return _terminates(last.body)
     if isinstance(last, ast.If) and last.orelse:
@@ -416,6 +449,25 @@ PLANT_CASES = (
     ("a try/except main that always returns is safe",
      'def main():\n  try:\n    return 3\n  except E:\n    return 5\nsys.exit(main())',
      1, "FOREIGN", None, "-", True),
+    # THE LAST FALSE POSITIVE THIS CENSUS HAD, and the two rows that lock its repair. A
+    # `try/finally` has NO `handlers`, so the first `_terminates` answered False on
+    # `gates/decomp_graph_census-mutate.py:314` -- whose `main` returns 0/1/1/3 and never falls off
+    # the end. A `finally` cannot swallow a return; it runs, and the body's value stands.
+    ("a try/FINALLY main that always returns is safe",
+     'def main():\n  try:\n    return 3\n  finally:\n    clean()\nsys.exit(main())',
+     1, "FOREIGN", None, "-", True),
+    ("a try/except/finally main is safe either way",
+     'def main():\n  try:\n    return 3\n  except E:\n    return 1\n  finally:\n    clean()\n'
+     'sys.exit(main())', 1, "FOREIGN", None, "-", True),
+    ("a try/finally whose BODY falls off is still MAYBE-NONE",
+     'def main():\n  try:\n    clean()\n  finally:\n    pass\nsys.exit(main())',
+     1, "MAYBE-NONE", None, "-", False),
+    # THE SHAPE THE FOUR ORACLES WERE FIXED FROM, locked in its repaired form. Deleting the
+    # `return 0` from `gates/i64-shl-oracle.py:188` puts this row back to MAYBE-NONE and the plant
+    # goes red, which is the point of holding the fix here and not only in the census's own run.
+    ("a main that RETURNS A CHOSEN 0 is FOREIGN, not MAYBE-NONE",
+     'def main():\n  print(1)\n  return 0\nsys.exit(main())',
+     1, "FOREIGN", None, "-", True),
     ("a computed code is OTHER, not INT", 'sys.exit(1 if x else 3)', 1, "OTHER", None, "-", True),
     ("a runtime-bound name is OTHER, not chosen", 'sys.exit(rc)', 1, "OTHER", None, "-", True),
 )
@@ -488,7 +540,21 @@ def plant():
             bad.append(f"verdict_of({code}) = {got!r}, expected {gatekit.VERDICT[code]!r}")
     if gatekit.SKIP == gatekit.FAIL or gatekit.REFUSED == gatekit.FAIL:
         bad.append("the five collapsed; DEAD(5) and REFUSED(3) must stay distinct from FAIL(1)")
-    print(f"\n  {len(PLANT_CASES)} shapes + {len(trees)} decision states + 5 verdicts; "
+    # WHICH VERDICT A `MAYBE-NONE` PATH MEANS, AND WHY NO SIXTH STATE IS INVENTED FOR IT. `sys.exit`
+    # of a `None` is rc 0 (MEASURED, `extract()`'s docstring), and `gatekit.verdict_of(0)` is
+    # `PASS`. The tree's own word for a lane that RAN AND EMITTED NOTHING is `DEAD` = 5 --
+    # `AGENTS.md`'s five, `gates/gatekit.py:55`'s gloss, and `gates/gatekit.py:547`, which already
+    # RETURNS `DEAD` for an oracle's zero-row lane. So the right verdict EXISTS, it is DEAD, and
+    # this file does not add one: the defect is the COLLISION, 0 standing in for 5. `SKIP` is
+    # wrong for the same reason `checks/gatesweep.py:classify:126` is: these lanes DO run.
+    collide = gatekit.verdict_of(gatekit.PASS) == "PASS" and gatekit.DEAD != gatekit.PASS
+    if not collide:
+        bad.append("MAYBE-NONE's rc 0 and the tree's DEAD no longer differ, so the collision this "
+                   "class exists to name cannot exist -- which means the class is stale")
+    print(f"  {'OK  ' if collide else 'BAD '} {'a MAYBE-NONE path reads PASS, not DEAD':<42} "
+          f"rc={gatekit.PASS} reads {gatekit.verdict_of(gatekit.PASS)}; the word for it is "
+          f"{gatekit.verdict_of(gatekit.DEAD)}={gatekit.DEAD}, and NO sixth state is invented")
+    print(f"\n  {len(PLANT_CASES)} shapes + {len(trees)} decision states + 5 verdicts + 1 collision; "
           f"{unowned_agreed} unowned INT(s) graded CHOSEN-and-reported, which is the `2` consensus "
           f"surviving untouched")
     print(f"--plant: {'all states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")

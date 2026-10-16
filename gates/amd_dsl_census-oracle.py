@@ -1084,6 +1084,10 @@ def main():
     # a lane that emitted nothing and a lane that emitted 1174 rows are
     # otherwise told apart only by the count, which is checked separately.
     print("dsl-done=1")
+    # A CHOSEN 0, not a fallen-off `None`: `gates/gatekit.py:446` reads this exit as LIVENESS and
+    # :547 grades a zero-row lane `DEAD`, and only a 0 here reaches that branch. See the same
+    # three lines at `gates/i64-shl-oracle.py:184`.
+    return 0
 
 
 if __name__ == "__main__":
