@@ -16,11 +16,19 @@ THE FOUR KINDS ARE REPORTED APART BECAUSE THEY FAIL DIFFERENTLY:
               THIS IS THE KIND THAT FINDS INSTRUMENT BLINDNESS.
   AXIS        the FIXTURE AXES drift. A fixture axis can drift with EVERY ROW STILL MATCHING,
               which no value comparison can see.
-  GUARD       one of the gate's own eight checks is driven with a world it must reject. The
+  GUARD       one of the gate's own NINE checks is driven with a world it must reject. The
               gate file is NEVER EDITED: each guard is exercised by corrupting what it
               watches (a source file it re-derives, or the lane rows it reads), which is
               stronger evidence than editing the check -- it shows the check REJECTS a world,
               not that the check's text changed.
+  VACUOUS     **A FIFTH KIND, AND IT IS THE ONE THAT EXCUSES NOTHING BY ITSELF.** A mutation
+              that cannot move any row because no row reaches the branch it edits is not a
+              coverage gap -- it is a declared blindness -- and from the outside the two
+              read IDENTICALLY: green at rc=0, zero rows moved. `V2` sat in the unclassified
+              bucket for a session and the reason turned out to be the PRINTER, so an
+              unlabelled green is a place a finding goes to die. An entry that declares
+              itself `VACUOUS` is printed as such, with its reason, and counted APART from
+              the ones that were not found.
 
 TWO PHASES, AND WHY. PHASE 1 mutates a source, runs the two lanes BY HAND, counts the rows
 that moved, and then runs the real gate. PHASE 2 runs no `bend` at all: it drives each guard
@@ -56,8 +64,13 @@ measured reasons, and the third is this harness's own bug caught before it ran:
 
 NO FIXTURE IN HERE ALLOCATES PER ROW. `decomp_value`'s fixture generator minted
 `bytes(4390684688)` per launch and filled a 926 GiB volume. Nothing below builds a list whose
-size is a row count; the only allocation sized by the population is the 974-entry row dict
+size is a row count; the only allocation sized by the population is the lane row dict
 the harness reads back from a captured lane, and it is built ONCE per phase.
+
+THE EXPECTED LANE WIDTH IS `declared_rows()` -- THE GATE'S OWN `ROWS[0]`, READ BY PATH --
+and not a number written here. It was `974` in this file until the census grew to 1004
+rows, and a literal like that is `checks/sweep.py`'s `LIVE_UNITS`: it agrees with itself
+for as long as nobody notices and then refuses a correct run.
 
 MEMORY. One `bend` process at a time, never two, because AGENTS.md's precondition is the SUM
 of the concurrently running files' peak RSS and `.agents/slop/peakrss/census.rows` reads
@@ -103,15 +116,16 @@ LANES = MUT_ART / "lanes"
 DRIVER_IMPORT = "import ./../tinybendygrad/engine/realize.bend as RZ"
 DRIVER_MUT_IMPORT = "import ./../tinybendygrad/engine/realize-mut.bend as RZ"
 
-# THE EIGHT CHECKS `gate()` chains, IN ITS OWN ORDER. `and` SHORT-CIRCUITS, so an
+# THE NINE CHECKS `gate()` chains, IN ITS OWN ORDER. `and` SHORT-CIRCUITS, so an
 # end-to-end run only ever hears the FIRST failure; PHASE 2 calls each on its own, which is
 # the entire reason it exists. `arms_all_reached` is named in the gate's own prose and in
 # `no_bottom_value`'s docstring and IS NOT A DEF (MEASURED, `grep -c 'def arms_all_reached'`
 # is 0): it is the `arm_* == 0` loop folded into `no_bottom_value`. `rows_hold` and
 # `pin_lines()` are named in the BRIEF and ARE NOT IN THE FILE at all (both 0) -- the row
 # count is `gatekit.Gate._lane`'s and the pin count is `_pins()`'s.
-CHECKS = ("classes_hold", "no_bottom_value", "drivers_hold", "calls_hold",
-          "pin_drift_holds", "compares_holds", "kern_blind_holds", "ret_is_uop_fixed_holds")
+CHECKS = ("classes_hold", "no_bottom_value", "drivers_hold", "axis_hold", "calls_hold",
+          "pin_drift_holds", "compares_holds", "kern_blind_holds",
+          "ret_is_uop_fixed_holds")
 
 # THE TWO GENERATED RUNNERS. Both repoint `gatekit.ART` BEFORE the gate module is executed
 # (see the header's third reason), both re-derive `DIVERGES` from the staged pins because it
@@ -335,6 +349,13 @@ PHASE1 = [
                "  rz_arg_uops.go(ar, O.Arena.src_from(ar, call, 1), Nil{})",
        "def get_call_arg_uops(+ar: O.Arena, call: U32) -> List<&2, U32>:\n"
        "  rz_arg_uops.go(ar, O.Arena.src_without_body(ar, call), Nil{})")]),
+    # **THIS ONE WAS VACUOUS AND NO LONGER IS.** It moved ZERO of the 974 rows at rc=0 and
+    # was reported as a coverage gap; the cause was the PRINTER, not the fixture.
+    # `rs_d_beam` printed `Bool.and(claimed, index != 0)` as a single `"0"`, and the default
+    # this mutation changes is read only by `bm_zero` -- the CLAIM -- on the one node whose
+    # rewrite is the identity, so the claim moved and the printed answer did not.
+    # `<claim><fired>` prints `10` at the current default and `00` at this one, so this
+    # moves `beam_55` and `bea0_55`. MEASURED after the change.
     ("V2 `rz_kernel_beam` DEFAULTS a KernelInfo-less SINK to 1 (SINK_NO_KI's wrong answer)",
      "VALUE",
      [("port", "def rz_kernel_beam(a: O.Arg) -> U32:\n  match a:\n"
@@ -382,8 +403,18 @@ PHASE1 = [
      "DEAD-DEF",
      [("port", "def va_1(+ar: O.Arena, +self: U32) -> O.Verdict:\n  fl_0(ar, self)",
        "def va_1(+ar: O.Arena, +self: U32) -> O.Verdict:\n  O.VSkip{}")]),
+    # VACUOUS BY CONSTRUCTION, and it is a DECLARED BLINDNESS rather than a coverage gap. The
+    # anchor is `realize.py:18`'s own slice and the port's own comment says every caller
+    # passes a CALL, so the two spellings are the same VALUE wherever the port is run. The
+    # reason no row can reach the difference: `get_call_var_uops` is driven by `var`, which
+    # is CALL-only on BOTH lanes because `u.body` raises for a non-CALL, and for a CALL
+    # `O.Arena.src_from(ar, call, 1)` and `Arena.src_without_body(ar, call)` ARE one value.
+    # Closing it needs a BUFFER whose `src[0]` is a BOUND VAR -- `b0`/`b1` over `CONST 3`
+    # cannot witness it, because `is_bound_var` drops a CONST either way -- AND a driver
+    # that passes `prg` explicitly. That driver is honest (`realize.py`'s signature takes
+    # `prg`) and is recorded in the commit as NOT DONE here.
     ("Z2 `rz_bound_map` -- SRC_BODY's SECOND fix site -- reverts to the op-conditional slice",
-     "DEAD-DEF",
+     "VACUOUS",
      [("port", "def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:\n"
                "  rz_bound.walk(ar, O.Arena.src_from(ar, call, 1), Nil{})",
        "def rz_bound_map(+ar: O.Arena, call: U32) -> List<&2, Bnd>:\n"
@@ -391,18 +422,25 @@ PHASE1 = [
     ("Z3 `rs_cval`'s non-`CInt` arm (a float CONST) is never taken", "DEAD-DEF",
      [("driver", "    case O.CInt{i}: rs_cval.cint(i)\n    case _: \"f\"",
        "    case O.CInt{i}: rs_cval.cint(i)\n    case _: \"0\"")]),
+    # -- THE MULTI-DEVICE ROW, AND IT IS THE ONLY MUTATION THAT PROVES `rs_x64`/`rs_x65`
+    #    ARE NOT DECORATION. Before them every device in the fixture was a scalar `S.D1`, so
+    #    `dev_tags`'s `Dn` arm -- `realize.bend:652` -- was DEAD and nothing could say so.
+    ("V10 `dev_tags`'s `Dn` arm drops the second device, so `kern` answers a COUNT of 1 for "
+     "a two-device buffer", "VALUE",
+     [("port", "  match d:\n    case S.D1{tag}: [tag]\n    case S.Dn{tags}: tags",
+            "  match d:\n    case S.D1{tag}: [tag]\n    case S.Dn{tags}: [0]")]),
     # ---------------------------------------------------------------------- POPULATION
-    ("P1 node 63 stops being minted: `arena_n` moves 64 -> 63 and the 15 `*_63` rows answer "
+    ("P1 node 63 stops being minted: `arena_n` moves 66 -> 65 and the 15 `*_63` rows answer "
      "something else, while the `rows` COUNT is unchanged", "POPULATION",
      [("driver", "def rs_x63(+ar: O.Arena) -> O.Found:\n  rs_call(\"vv\", ar, [7, 3, 62, 42])",
        "def rs_x63(+ar: O.Arena) -> O.Found:\n  rs_x61(ar)")]),
-    ("P2 two drivers take the name `beam`: 63 `bea0_*` rows AND `b_bea0` VANISH (64), and 63 "
+    ("P2 two drivers take the name `beam`: 65 `bea0_*` rows AND `b_bea0` VANISH (66), and 65 "
      "`beam_*` DUPLICATE while the row COUNT still matches", "POPULATION",
      [("driver", "    case 6: \"bea0\"", "    case 6: \"beam\"")]),
     ("P3 `rs_arms_n()` drops an arm: one `arm_*` row VANISHES", "POPULATION",
      [("driver", "def rs_arms_n() -> Nat: 12n", "def rs_arms_n() -> Nat: 11n")]),
-    ("P4 `rs_n()` drops a node: 974 rows become 911", "POPULATION",
-     [("driver", "def rs_n() -> Nat: 63n", "def rs_n() -> Nat: 62n")]),
+    ("P4 `rs_n()` drops a node: 1004 rows become 989", "POPULATION",
+     [("driver", "def rs_n() -> Nat: 65n", "def rs_n() -> Nat: 64n")]),
     ("P5 the pins file loses ONE declared divergence", "POPULATION",
      [("pins", "res_63\tres_63=BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)\t"
                "res_63=BUFFER/1@0+GETADDR/1<-PARAM/0@0+CONST(1)\n", "")]),
@@ -432,7 +470,15 @@ PHASE1 = [
      [("port", "+n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(3)})",
        "+n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(4)})"),
       ("oracle", "c3 = _add(UOp.const(3))", "c3 = _add(UOp.const(4))")]),
-    ("X5 BOTH fixtures' `k2` SINK carries beam 5, not 2", "AXIS",
+    # VACUOUS BY CONSTRUCTION, and this one is a PRINTER LIMIT rather than an unreachable
+    # branch. `KernelInfo.beam`'s VALUE -- as opposed to "is it zero" -- is in no row: the
+    # `:b=` suffix prints the REWRITTEN sink's beam, which is the ctx (7 or 0), never the
+    # fixture's. MEASURED on the promoted lane: `grep -c 'b=2$' bd.out` is **0** and
+    # `grep -c 'b=' bd.out` is 9, all of them `b=7` or `b=0` from a ctx. So `k2`'s beam can
+    # be 2 or 5 or 900 and `bm_zero`'s `== 0` cannot tell the three apart and nothing else
+    # looks. A second non-zero beam would need a row that PRINTS it, which is the same shape
+    # of closure as Box 3's two bits and is NOT done here.
+    ("X5 BOTH fixtures' `k2` SINK carries beam 5, not 2", "VACUOUS",
      [("port", "O.AKernel{kernel_info(\"k2\", 2)}", "O.AKernel{kernel_info(\"k2\", 5)}"),
       ("oracle", "k2 = _add(UOp(Ops.SINK, src=(), arg=_ki(\"k2\", 2)))",
        "k2 = _add(UOp(Ops.SINK, src=(), arg=_ki(\"k2\", 5)))")]),
@@ -466,8 +512,8 @@ PHASE2 = [
      {"bd.out": {"wbuf_60": "BUFFER/1@0"}}, None),
     ("G9 classes_hold: `res_63` is no longer the declared GETADDR drift pair", "GUARD",
      {"bd.out": {"res_63": "BUFFER/1@0+GETADDR/1<-PARAM/0@0+CONST(1)@0"}}, None),
-    ("G10 classes_hold: a `RET_IS_UOP_FIXED` ctx-0 row stops being `0`", "GUARD",
-     {"bd.out": {"bea0_23": "1:CALL/2,SINK/0"}}, None),
+    ("G10 classes_hold: a `RET_IS_UOP_FIXED` ctx-0 row stops being `10`", "GUARD",
+     {"bd.out": {"bea0_23": "11:CALL/2,SINK/0"}}, None),
     # -- `no_bottom_value`: slot 0 and the arm-coverage rows, on BOTH port lanes.
     ("G11 no_bottom_value: the BOTTOM slot answers a value", "GUARD",
      {"bd.out": {"b_arg": "CONST(3)"}}, None),
@@ -477,13 +523,16 @@ PHASE2 = [
      "GUARD", {"bn.out": {"b_nb": "CONST(3)"}}, None),
     # -- `ret_is_uop_fixed_holds`: FINDING 2's regression row, both halves.
     ("G14 ret_is_uop_fixed_holds: no ctx-7 row FIRED (a fix that dropped every rewrite)",
-     "GUARD", {"bd.out": {r: "0" for r in
+     "GUARD", {"bd.out": {r: "00" for r in
                           ("beam_23", "beam_49", "beam_50", "beam_51", "beam_52", "beam_53",
                            "beam_61", "beam_63")}}, None),
     ("G15 ret_is_uop_fixed_holds: a ctx-7 row fired but no longer carries `b=7`", "GUARD",
-     {"bd.out": {"beam_23": "1:CALL/4,SINK/0,PARAM/0@1:b=3"}}, None),
-    ("G16 ret_is_uop_fixed_holds: a ctx-0 `bea0_*` row stopped answering `0`", "GUARD",
-     {"bd.out": {"bea0_49": "1:CALL/2,SINK/0"}}, None),
+     {"bd.out": {"beam_23": "11:CALL/4,SINK/0,PARAM/0@1:b=3"}}, None),
+    ("G16 ret_is_uop_fixed_holds: a ctx-0 `bea0_*` row stopped answering `10`", "GUARD",
+     {"bd.out": {"bea0_49": "11:CALL/2,SINK/0"}}, None),
+    ("G16b ret_is_uop_fixed_holds: NO row is REFUSED, so a claim that fires on everything "
+     "would pass the ctx-0 check alone", "GUARD",
+     {"bd.out": "@all:00->10"}, None),
     # -- `calls_hold`: the ONE hand-written index list in the file, re-derived from lanes.
     #    THE TAMPER DIRECTION MATTERS and was wrong on the first two attempts: `calls_hold`
     #    asserts `(rows["oi_%d" % n] == "notacall") == (n not in CALLS)`, so editing a row
@@ -512,18 +561,49 @@ PHASE2 = [
      {"bd.out": {"res_63": "BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)"}}, None),
     ("G23 pin_drift_holds: the pin ALSO answers `res_52`, so 'only one arm' is wrong",
      "GUARD", {"bd.out": {"res_52": "BUFFER/1@0+MSTACK/2<-BUFFER/1@1"}}, None),
-    # -- `kern_blind_holds`: TWO SOURCE-TEXT claims. Mutated in the SOURCE it re-derives,
-    #    which for the PORT half is the DRIVER file -- `kern_blind_holds` reads
-    #    `(HERE / "realize_graph_census.bend")` and concatenates it with `PORT`, and all
-    #    three `S.D1{` mints are in the DRIVER (`rs_cpu`, `rs_x47`, `rs_x62`), not in
-    #    `realize.bend`. Mutating `realize.bend` instead would have left the regex reading
-    #    the unchanged DRIVER and reported the guard silent.
-    ("G24 kern_blind_holds: the PORT fixture mints a device with tag 1, not 0", "GUARD",
-     None, ("driver", "def rs_cpu() -> S.Dev:\n  S.D1{0}",
-            "def rs_cpu() -> S.Dev:\n  S.D1{1}")),
-    ("G25 kern_blind_holds: the CPython fixture's device vocabulary parts from `CPU`",
-     "GUARD", None, ("oracle", "addrspace=AddrSpace.GLOBAL, device=\"CPU\"",
-                     "addrspace=AddrSpace.GLOBAL, device=\"CUDA\"")),
+# -- `kern_blind_holds`: a SOURCE claim on the driver's `S.Dn{[...]}` and the oracle's
+    #    `("DISK", "CPU")`, AND a LANE claim on `kern_65`. **G24's old anchor was
+    #    `rs_cpu`'s `S.D1{0}` and G25's was `device="CPU"`, and BOTH ARE SILENT against the
+    #    current check** -- it no longer asks "is there exactly one device", because there
+    #    is a second one on purpose now. A guard mutation aimed at what the guard stopped
+    #    watching measures nothing and reads exactly like a guard that never speaks, which
+    #    is the third time this harness has made that mistake, so both anchors were
+    #    re-aimed at what it watches NOW.
+    ("G24 kern_blind_holds: the PORT fixture's two tags are NOT distinct", "GUARD",
+     None, ("driver", "def rs_duo() -> S.Dev:\n  S.Dn{[6, 0]}",
+             "def rs_duo() -> S.Dev:\n  S.Dn{[6, 6]}")),
+    ("G25 kern_blind_holds: the CPython fixture's multi-device parts from ('DISK', 'CPU')",
+     "GUARD", None,
+     ("oracle", '_buf_dev(3, "g2", ("DISK", "CPU"))',
+      '_buf_dev(3, "g2", ("CUDA", "CPU"))')),
+    ("G25b kern_blind_holds: the promoted PORT lane's `kern_65` is not 2", "GUARD",
+     {"bd.out": {"kern_65": "1"}}, None),
+    ("G25c kern_blind_holds: the CPython lane's `kern_65` is not 2", "GUARD",
+     {"py.rows": {"kern_65": "1"}}, None),
+    # -- `axis_hold`: THE DRIVER AXIS, READ BACK FROM FOUR PLACES. Five mutations, one per
+    #    site plus the ORDER, because a check that reads four places and can only be made to
+    #    fail by editing one of them has not been shown to read the other three.
+    ("G31 axis_hold: the bend lane's `rs_drv_name` RENAMES a driver the oracle still spells "
+     "its own way", "GUARD", None,
+     ("driver", '    case 2: "res"', '    case 2: "resolve"')),
+    ("G32 axis_hold: the ORACLE's `DRIVERS` renames a driver the bend lane still spells its "
+     "own way", "GUARD", None,
+     ("oracle", 'DRIVERS = ("arg", "nb", "res", "flat"', 'DRIVERS = ("arg", "nb", "RES", "flat"')),
+    ("G33 axis_hold: `rs_drv_name` REORDERS two arms, so arm N no longer names the driver at "
+     "index N", "GUARD", None,
+     ("driver", '    case 0: "arg"\n    case 1: "nb"', '    case 0: "nb"\n    case 1: "arg"')),
+    ("G34 axis_hold: `rs_call_only` flips one arm, so the PORT and the oracle disagree about "
+     "which drivers are CALL-only", "GUARD", None,
+     ("driver", "    case 3: False{}\n    case 4: False{}",
+      "    case 3: True{}\n    case 4: False{}")),
+    ("G35 axis_hold: the oracle's `drive` ladder loses an arm, so that driver would answer "
+     "`raise=NoDriver`", "GUARD", None,
+     ("oracle", '        if drv == "nb":\n            return nb_sig(u)\n', "")),
+    # -- `no_bottom_value`: the beam claim bit IS an answer and is accepted as one, so the
+    #    mutation has to be a CONE to be a stale-arena read. Aimed at the old single-bit
+    #    `"0"` it reads SILENT after the two-bit printer, which is why it is spelled this way.
+    ("G35b no_bottom_value: the BOTTOM slot answers a beam CONE", "GUARD",
+     {"bd.out": {"b_beam": "11:CALL/2,SINK/0,PARAM/0@0:b=7"}}, None),
     # -- `drivers_hold`: the DRIVER AXIS, re-derived from `realize.bend` and `realize.py`.
     ("G26 drivers_hold: `realize.bend` loses a `*_table` driver", "GUARD", None,
      ("port", "def flatten_table() -> O.PMEntrys:", "def flatten_tab() -> O.PMEntrys:")),
@@ -551,16 +631,12 @@ PHASE2 = [
 ]
 
 
-def declared_divergences():
-    """`set(DIVERGING)` -- THE GATE'S OWN DECLARATION, LOADED BY PATH, IN THIS PROCESS.
+def _gate_module():
+    """THE GATE, LOADED BY PATH, WITH `gatekit.ART` REPOINTED FIRST.
 
     `gatekit.ART` is repointed BEFORE the import because the gate module constructs its
     `Gate` at import time and `Gate.__init__` empties that directory; without this the
     harness's own bookkeeping would delete `gates/artifacts/realize_graph_census-gate/`.
-    A harness that counts the pins file's own rows has learned only that the file agrees
-    with itself -- `decomp_value-pins.rows` records `same` AND `DIFFER` verdicts in ONE
-    column and a tally that counted both reported 452 declared divergences against a truth
-    of 254.
     """
     sys.path.insert(0, str(HERE))
     import gatekit
@@ -568,9 +644,33 @@ def declared_divergences():
     spec = importlib.util.spec_from_file_location("rgz_decl", GATE)
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
+
+
+def declared_divergences():
+    """`set(DIVERGING)` -- THE GATE'S OWN DECLARATION, LOADED BY PATH, IN THIS PROCESS.
+
+    A harness that counts the pins file's own rows has learned only that the file agrees
+    with itself -- `decomp_value-pins.rows` records `same` AND `DIFFER` verdicts in ONE
+    column and a tally that counted both reported 452 declared divergences against a truth
+    of 254.
+    """
+    mod = _gate_module()
     if mod.DIVERGES is None:
         raise RuntimeError("the gate declares no divergences: " + mod.WHY)
     return set(mod.DIVERGING)
+
+
+def declared_rows():
+    """`ROWS[0]` -- THE EXPECTED LANE WIDTH, READ OFF THE GATE AND NOT WRITTEN HERE.
+
+    It was `974` in this file until the census grew to 1004 rows, and a literal like that
+    is `checks/sweep.py`'s `LIVE_UNITS`: it agrees with itself for as long as nobody
+    notices, and then it refuses a correct run. `gates/realize_graph_census-gate.py:727`
+    compared `len(base_bd) != 974` and would have said "THE BASELINE DOES NOT REPRODUCE"
+    about a green tree.
+    """
+    return _gate_module().ROWS[0]
 
 
 def src_of(which):
@@ -592,10 +692,9 @@ def apply_edits(edits):
 
 def phase1(base_py, base_bd, only=None):
     width = max(len(m[0]) for m in PHASE1)
-    moved_n = green = exc = 0
+    moved_n = green = exc = vacuous = 0
     caught = [0]                       # CAUGHT is not MOVED: three mutations below move no
                                        # row and are still caught, because they move a PIN
-    moved_n = green = exc = 0
     for label, kind, edits in PHASE1:
         if only and only not in label:
             continue
@@ -645,9 +744,22 @@ def phase1(base_py, base_bd, only=None):
                 for ln in guards[n][:1]:
                     print(f"        {ln[:150]}")
         elif rc == 0:
-            print("      GREEN at rc=0  <-- the mutation was NOT found")
-            green += 1
-    return moved_n, green, exc, caught[0]
+            # "GREEN at rc=0 <-- the mutation was NOT found" IS A FINDING, and it is a
+            # COVERAGE GAP and a DEAD BRANCH and a VACUOUS MUTATION three different things.
+            # The three read identically from here, so the harness cannot tell them apart
+            # and must not pretend to: an entry that DECLARES itself `VACUOUS` is printed
+            # as such, with its reason in the entry, and is counted apart from the
+            # unclassified ones. That is the whole point -- `V2` sat in the second bucket
+            # for a session and the reason turned out to be a PRINTER, so a bucket nobody
+            # re-examines is a place a finding goes to die.
+            if kind == "VACUOUS":
+                print("      VACUOUS BY CONSTRUCTION, declared in the entry: no row can "
+                      "reach the difference. NOT counted as a coverage gap.")
+                vacuous += 1
+            else:
+                print("      GREEN at rc=0  <-- the mutation was NOT found")
+                green += 1
+    return moved_n, green, exc, caught[0], vacuous
 
 
 def phase2(base_py, base_bd, only=None):
@@ -688,6 +800,18 @@ def phase2(base_py, base_bd, only=None):
             rows = {"py.rows": dict(base_py), "bd.out": dict(base_bd),
                     "bn.out": dict(base_bd)}
             for lane, vals in (patch or {}).items():
+                # `"@all:<value>-><replacement>"` IS EVERY ROW OF THAT LANE WHOSE BASELINE
+                # VALUE IS `<value>`, SET TO `<replacement>`. A guard that holds a SHAPE
+                # ("some row fired AND some row was refused") cannot be broken by a
+                # six-row patch, and a six-row patch that reads SILENT looks exactly like a
+                # guard that never speaks -- `compares_holds`' own comment above records
+                # the third time this harness aimed at the wrong size. The population is
+                # DISCOVERED from that lane's own captured rows rather than hand-listed,
+                # because a 57-name literal is a second place for the census's shape to rot.
+                if isinstance(vals, str):
+                    was, _, now = vals.removeprefix("@all:").partition("->")
+                    src = base_py if lane == "py.rows" else base_bd
+                    vals = {r: now for r, v in src.items() if v == was}
                 rows[lane].update(vals)
             guards = run_guards(rows)
         finally:
@@ -724,9 +848,11 @@ def main():
     print(f"-- unmutated: gate rc={rc0}, py rows={len(base_py)} (rc {pyrc}), "
           f"bd rows={len(base_bd)} (rc {bdrc}), pins data rows={len(pins)} "
           f"(all 3 fields)")
-    if rc0 != 0 or len(base_py) != 974 or len(base_bd) != 974:
+    want_rows = declared_rows()
+    if rc0 != 0 or len(base_py) != want_rows or len(base_bd) != want_rows:
         print(f"-- THE BASELINE DOES NOT REPRODUCE; every reading below would be about a "
-              f"broken harness:\n{out0[-800:]}")
+              f"broken harness (the gate's own ROWS is {want_rows}, read off it by path):"
+              f"\n{out0[-800:]}")
         return 1
     # THE DIVERGENCE POPULATION IS THE GATE'S OWN DECLARATION, LOADED BY PATH -- never a
     # count written here, which is how a hand-maintained number goes stale un-noticed. And
@@ -741,13 +867,13 @@ def main():
     print(f"-- the gate's own `_pins()` declares {len(declared)} divergences and every pins "
           f"row names one of them")
 
-    moved_n = silent = boom = 0
+    moved_n = silent = boom = vacuous = 0
     only = None
     if "--only" in argv:
         only = argv[argv.index("--only") + 1]
     if "--phase" not in argv or "1" in argv:
         print("\n== PHASE 1: VALUE / POPULATION / AXIS -- each one runs both lanes and the gate")
-        moved_n, green, boom, caught_n = phase1(base_py, base_bd, only)
+        moved_n, green, boom, caught_n, vacuous = phase1(base_py, base_bd, only)
         silent += green
     if "--phase" not in argv or "2" in argv:
         print("\n== PHASE 2: GUARD -- no bend; each check is driven with a world it must reject")
@@ -770,6 +896,10 @@ def main():
         print(f"== {moved_n} of {len(PHASE1)} lane mutations moved a row, and {caught_n} of "
               f"{len(PHASE1)} were CAUGHT (a pins mutation moves no row and is still caught, "
               f"so 'moved' and 'caught' are counted apart rather than conflated)")
+        print(f"== {vacuous} of them are DECLARED VACUOUS -- unreachable by construction, "
+              f"named with the reason in the entry -- and are NOT counted in the "
+              f"{silent} found-nothing below, because a stated ceiling and an undiscovered "
+              f"gap are not the same finding")
     print(f"== {silent} entries found NOTHING (a coverage gap or a dead def, named above "
           f"rather than hidden) -- {len(PHASE1) + len(PHASE2)} mutations in the full run")
     if boom:

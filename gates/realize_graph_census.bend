@@ -54,7 +54,7 @@ import ./../tinybendygrad/engine/realize.bend as RZ
 
 # ============================================================ the printers
 
-def rs_n() -> Nat: 63n
+def rs_n() -> Nat: 65n
 def rs_drv_n() -> Nat: 15n
 def rs_arms_n() -> Nat: 12n
 
@@ -256,7 +256,7 @@ def rs_vskip(v: O.Verdict) -> Bool:
 # ==================================================================== the arena
 
 # `rs_ext` CHAINS ONTO `main_arena`'s arena rather than rebuilding it: slot 42 is the
-# first new node, so `main_arena`'s index map (realize.bend:1373-1401) still reads true
+# first new node, so `main_arena`'s index map (realize.bend:1485-1507) still reads true
 # and the census cannot silently renumber the port's fixture. `O.UOp.new` returns the
 # GROWN arena inside an `O.Found`, so each node chains on `O.Found.ar` of the last --
 # handing back a bare index would be the stale-arena self-loop.
@@ -266,9 +266,15 @@ def rs_cpu() -> S.Dev:
 def rs_zf() -> O.PyRange:
   O.PyRange{H.i64_of_i32(0), H.i64_of_i32(4)}
 
-def rs_buf(slot: U32, nm: String) -> O.ParamArg:
+# `rs_buf` WITH THE DEVICE AS A PARAMETER, because `rs_x64` needs a `Dn` and a
+# `ParamArg` field cannot be chosen by a caller that was handed the tag. The 13 fields
+# are `main_arena`'s `buf_arg` (`realize.bend:1552`) index for index; only the 8th moves.
+def rs_buf_dev(slot: U32, nm: String, d: S.Dev) -> O.ParamArg:
   O.ParamArg{slot, S.int32(), Some{16}, None{}, None{}, Some{nm}, S.AGlobal{},
-             Some{rs_cpu()}, False{}, None{}, Some{0}, False{}, None{}}
+             Some{d}, False{}, None{}, Some{0}, False{}, None{}}
+
+def rs_buf(slot: U32, nm: String) -> O.ParamArg:
+  rs_buf_dev(slot, nm, rs_cpu())
 
 def rs_var(slot: U32, nm: String) -> O.ParamArg:
   O.ParamArg{slot, S.int32(), None{}, Some{rs_zf()}, Some{1}, Some{nm}, S.Aalu{},
@@ -294,17 +300,21 @@ def rs_pi(gs: List<&2, U32>, vars: List<&2, U32>, outs: List<&2, U32>, ins: List
 def rs_call(nm: String, +ar: O.Arena, src: List<&2, U32>) -> O.Found:
   O.UOp.new(ar, O.OpsCALL{}, src, O.ACall{rs_ci(nm)}, O.TNone{})
 
-# The 20 new nodes, in slot order 42..61. `main_arena` has no MSELECT, no GETADDR, no
+# The 22 new nodes, in slot order 42..63, plus `rs_x64`/`rs_x65` after them. `main_arena`
+# has no MSELECT, no GETADDR, no
 # MSTACK, no SHRINK, no SINK without a KernelInfo, no PROGRAM whose kernel is unnamed and
 # no MSELECT in an `outs` slot, so `rz_arm`'s MSELECT/SHRINK/MSTACK arms, HEAD's GETADDR
 # arm, `gcc_sink`'s and `gcc_pick.prog`'s DEFAULT arms, `gn_prog`'s default arm and
 # `get_call_written_bufs`'s MSELECT wall would ALL be unreachable rows without them.
 #
+# ... has no MULTI-DEVICE buffer either, so `len()` was only ever tested on lists of
+# length 0 and 1 -- `rs_x64`/`rs_x65` are that node.
+#
 # THE SRC LISTS ARE LITERAL INDICES, and that is the same invariant `main_arena` states
 # for itself: node k is at index k because the ORDER of the `UOp.new` calls IS the arena.
 # It holds only while every node here is DISTINCT -- `UOp.new` hash-conses, so a repeat
 # would take no slot and renumber everything after it. `arena_n` is the guard: it reads
-# 62, and a hash-consed node makes it 61 and takes the lane red.
+# 66, and a hash-consed node makes it 65 and takes the lane red.
 def rs_x42(+ar: O.Arena) -> O.Found:
   O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
 
@@ -386,7 +396,33 @@ def rs_x62(+ar: O.Arena) -> O.Found:
 def rs_x63(+ar: O.Arena) -> O.Found:
   rs_call("vv", ar, [7, 3, 62, 42])
 
-# THE ARENA. `main_arena`'s 42 slots, index for index, plus the twenty above chained onto
+# THE MULTI-DEVICE BUFFER, AND IT IS THE ROW `kern` HAD NO ANSWER FOR. `realize.py:41` is
+# `[(d, call, None) for d in to_tuple(call.src[1].device)]` and `to_tuple`
+# (`helpers.py:52`) is `x if isinstance(x, tuple) else (x,)` -- so a device that is a
+# TUPLE puts MORE THAN ONE KERNEL in the answer, and `helpers.py:52` answers `(None,)` for
+# a `None` device rather than the empty tuple. EVERY device in `main_arena` and in the
+# twenty nodes above is a scalar `S.D1`, so all 22 `kern_*` rows were lists of length 0 or
+# 1 and `len()` -- which is all `rs_d_kern` prints -- was only ever tested on a list that
+# could not surprise it. MEASURED, `.venv/bin/python`, calling `realize.py`'s own
+# `get_call_kernels` on a `ParamArg(device=("DISK","CPU"))`: n=2, first fields
+# `('DISK','CPU')`. No device is OPENED: `ParamArg.device` is `str | tuple[str, ...]`, so a
+# name is data and not hardware.
+#
+# **AND THE TWO TAGS ARE DISTINCT ON PURPOSE.** `S.Dn{[6, 0]}` is DISK and "not DISK",
+# and `device.bend:344`'s `tag_of` gives DISK the tag 6 and everything else 0 -- so a bug
+# that emitted one device twice, or dropped one, moves the count, and the tags differ.
+# WHAT IT STILL CANNOT SEE IS STATED AT `rs_d_kern` AND MEASURED IN THE GATE.
+def rs_duo() -> S.Dev:
+  S.Dn{[6, 0]}
+
+def rs_x64(+ar: O.Arena) -> O.Found:
+  O.UOp.new(ar, O.OpsBUFFER{}, [1], O.AParam{rs_buf_dev(3, "g2", rs_duo())}, O.TNone{})
+
+# THE CALL WHOSE `src[1]` IS IT, so `kern` has a row with TWO devices in the answer.
+def rs_x65(+ar: O.Arena) -> O.Found:
+  rs_call("dm", ar, [11, 64])
+
+# THE ARENA. `main_arena`'s 42 slots, index for index, plus the twenty-two above chained onto
 # its arena -- `O.UOp.new` returns the GROWN arena inside an `O.Found`, so handing back a
 # bare index would be the stale-arena self-loop this tree has found in nine places.
 def rs_arena() -> O.Arena:
@@ -413,7 +449,9 @@ def rs_arena() -> O.Arena:
   +e61 = rs_x61(O.Found.ar(e60))
   +e62 = rs_x62(O.Found.ar(e61))
   +e63 = rs_x63(O.Found.ar(e62))
-  O.Found.ar(e63)
+  +e64 = rs_x64(O.Found.ar(e63))
+  +e65 = rs_x65(O.Found.ar(e64))
+  O.Found.ar(e65)
 
 # `inputs` ARE THE TWO BUFFERs IN REVERSE -- slot 0 answers the g1 BUFFER, slot 1 the g0
 # one -- and that is a PRINTER decision and not a convenience. `g0` and `g1` are both
@@ -468,14 +506,16 @@ def rs_d_flat.go(+f: O.Found, fired: Bool) -> String:
 # shape, so `beam 2 -> 7` rewrites a cone that prints identically. MEASURED on the oracle
 # lane: with the suffix nowhere, `beam_24` read as a port divergence on a graph the two
 # sides agreed about node for node. This is the `arg=` repair, on the driver's own subject.
-def rs_d_beam.go(+f: O.Found, fired: Bool) -> String:
-  Bool.pick(String, fired,
-            String.concat(["1:", String.concat([rs_cone_sig(rs_fuel(O.Found.ar(f)), O.Found.ar(f),
-                                                            rs_cone(O.Found.ar(f), [O.Found.i(f)]),
-                                                            "", True{})]),
-                           ":b=", U32.show(RZ.rz_kernel_beam(O.Arena.arg(O.Found.ar(f),
-                                                                          O.Arena.src(O.Found.ar(f), O.Found.i(f), 0))))]),
-            "0")
+# `11` IS THIS PREFIX AND NOT `1`, and the second digit is the point of Box 3: the whole
+# answer is `<claim><fired>` and only a CLAIMED, NEW node reaches this branch. Its `fired`
+# parameter is GONE because there is now exactly one way in -- `rs_d_beam.fired.go` -- and
+# `Bool.pick` would have evaluated this arm's `rs_cone` for the refused nodes too.
+def rs_d_beam.go(+f: O.Found) -> String:
+  String.concat(["11:", String.concat([rs_cone_sig(rs_fuel(O.Found.ar(f)), O.Found.ar(f),
+                                                 rs_cone(O.Found.ar(f), [O.Found.i(f)]),
+                                                 "", True{})]),
+                         ":b=", U32.show(RZ.rz_kernel_beam(O.Arena.arg(O.Found.ar(f),
+                                                                    O.Arena.src(O.Found.ar(f), O.Found.i(f), 0))))])
 
 def rs_d_flat(ar: O.Arena, +n: U32) -> String:
   +a = ar
@@ -524,11 +564,46 @@ def rs_d_val(ar: O.Arena, +n: U32) -> String:
 # MEASURED, the two contexts this driver exists for: at ctx 7 the answer is a NEW node on
 # both sides and the two lanes agree byte for byte; at ctx 0 every replacement is the
 # identity, the port now answers index 0 and so does CPython.
+#
+# **AND THE TWO ANSWERS ARE NOW TWO BITS, NOT ONE.** The single `"0"` this printer used to
+# emit for `Bool.and(not vskip, index != 0)` was TRUE OF TWO DIFFERENT WORLDS: "the rule
+# did not claim this node" and "the rule claimed it and every replacement was the
+# identity". MEASURED, both were printed `0`: `beam_1` (a CONST, `rz_claim` false) and
+# `bea0_23` (a SINK already carrying beam 0, `rz_claim` true and the rewrite the identity).
+# That collapse is what made mutation `V2` -- `rz_kernel_beam`'s no-`KernelInfo` default
+# `0` -> `1` -- move ZERO of the 974 rows at rc=0: the default is read only by `bm_zero`,
+# the CLAIM, and on the one node that reads it (`cNk`, a CALL over a bodyless SINK) the
+# claim is the only thing that changes while the answer stays "no rewrite". So the row is
+# `<claim><fired>`: `00` not claimed, `10` claimed and the rewrite was the identity, `11`
+# claimed and it produced a new node. `V2` moves `beam_55` and `bea0_55` now, and `V4`
+# (`bm_zero` always true) moves `beam_24`/`bea0_24`.
+def rs_d_beam.fired.go(+f: O.Found, is_zero: Bool) -> String:
+  match is_zero:
+    case True{}: "10"
+    case False{}: rs_d_beam.go(f)
+
+# THE BODY RUNS ONLY WHERE THE JUDGE HELD. The previous version called `RZ.bm_new` on
+# EVERY node and folded the claim into a `Bool.and`, which ran `pm_beam`'s body over nodes
+# its own judge had refused -- and `rs_d_beam` is not a CALL-only driver, so that was a
+# body over a CONST. `Bool.pick` evaluates both arms (the reason `rs_d_val` passes the
+# claim as a `.go` PARAMETER) and `match` refuses a computed scrutinee (the reason
+# `is_zero` and `skipped` are parameters and not calls), so BOTH gates are `.go`
+# parameters. CPython needs no repair here: `PatternMatcher.rewrite`
+# (`ops.py:1613-1619`) calls the body INSIDE `if (ret:=match(uop, ctx)) is not None`, so
+# the oracle lane was right and the PORT lane was the sloppy one.
+def rs_d_beam.fired(+ar: O.Arena, n: U32, ctx: U32) -> String:
+  +f = RZ.bm_new(ar, n, ctx)
+  rs_d_beam.fired.go(f, U32.is_eq(O.Found.i(f), 0))
+
+def rs_d_beam.claim(+ar: O.Arena, n: U32, ctx: U32, skipped: Bool) -> String:
+  match skipped:
+    case True{}: "00"
+    case False{}: rs_d_beam.fired(ar, n, ctx)
+
 def rs_d_beam(ar: O.Arena, +n: U32, ctx: U32) -> String:
   +a = ar
   +v = RZ.beam_rewrite(a, n)
-  +f = RZ.bm_new(a, n, ctx)
-  rs_d_beam.go(f, Bool.and(Bool.not(rs_vskip(v)), U32.is_ne(O.Found.i(f), 0)))
+  rs_d_beam.claim(a, n, ctx, rs_vskip(v))
 
 def rs_d_arg(ar: O.Arena, n: U32) -> String:
   +a = ar
@@ -565,6 +640,29 @@ def rs_d_wbuf(ar: O.Arena, n: U32) -> String:
   +l = RZ.get_call_written_bufs(a, n)
   rs_lst(rs_fuel(a), a, l, "", True{})
 
+# WHY IT IS `len()` AND NOT THE LIST, WITH THE MEASUREMENT THAT SETTLES IT.
+# `get_call_kernels` (realize.bend:679) already answers a LIST OF DEVICE TAGS --
+# `dev_tags` returns `D1{tag}` -> `[tag]` and `Dn{tags}` -> `tags`, and the port's own
+# comment at that def says the NAME behind each tag is `helpers.bend`'s DEV parse, "P6" --
+# so the LIST is right there and this printer throws it away. IT IS THE RIGHT THING TO
+# THROW AWAY, AND THE GATE MEASURES WHY, in `kern_blind_holds`:
+#   * `S.D1`'s tag is NOT an index into a device table. `Device.tag` -- the table
+#     `uop/spec.bend:1488` cites -- DOES NOT EXIST in this tree's CPython: `Device` is
+#     `_Device` (`device.py:21,62`) and MEASURED `hasattr(Device, 'tag')` is False.
+#   * the port's ONLY tag/name function, `device.bend:344 tag_of`, is a THREE-VALUED
+#     SENTINEL -- DISK 6, NPY 10, PYTHON 13, EVERYTHING ELSE 0 -- built to decide
+#     `ALLOW_DEVICE_USAGE`, and it puts CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU
+#     and every typo on the same 0.
+#   * and there is a SECOND tag space that disagrees with it: `schedule/memory.bend:999`
+#     is `disk() = S.D1{1}` where `tag_of("DISK")` is 6, which `uop/validate.bend:2532`
+#     records and refuses to arbitrate.
+# So printing a tag would print a sentinel that no name can be checked against, and a row
+# that LOOKED like it tested the index while testing three values IS A GUARD THAT AGREES
+# WITH ITS SUBJECT. `len()` is the one projection of the answer that does not depend on a
+# tag space neither side has, and `rs_x64`/`rs_x65` make it a list of TWO devices so the
+# count is tested on a list that can surprise it. THE RESIDUAL, stated rather than hidden:
+# an ORDER SWAP or a WRONG-BUT-EQUAL TAG inside `Dn{[6, 0]}` is invisible, because the port
+# has no vocabulary to be wrong in.
 def rs_d_kern(ar: O.Arena, n: U32) -> String:
   U32.show(U32.from_nat(List.length(&2, U32, RZ.get_call_kernels(ar, n))))
 
@@ -893,7 +991,7 @@ def rs_arena_n(ar: O.Arena) -> U32:
 # `rows` IS THE COUNT, PRINTED, so a lane that stopped emitting a row cannot pass
 # unnoticed. It is `arena_n`'s sibling and realize.bend's own `gate_count` is the same
 # idea: Bend has no assertion form, so the row count IS the check on the gate itself.
-# 2 header rows + 15 bottoms + 12 arm-coverage rows + 15 drivers x 61 nodes = 944.
+# 2 header rows + 15 bottoms + 12 arm-coverage rows + 15 drivers x 65 nodes = 1004.
 def rs_prod() -> U32:
   U32.mul(U32.from_nat(rs_n()), U32.from_nat(rs_drv_n()))
 
@@ -904,7 +1002,7 @@ def rs_cnt() -> U32:
 # THE ARENA IS REBUILT ONCE PER SECTION, not once per row: the rows that GROW it
 # (`res`, `var`, `flat`, `beam`, `bea0`) take a COPY and grow that, and the six readers
 # that do not are read-only throughout. `decomp_graph_census.bend` rebuilds per row
-# because EVERY `l2i` call grows; here that would be 915 arenas for no safety at all.
+# because EVERY `l2i` call grows; here that would be 1005 arenas for no safety at all.
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- rs_putl(rs_put("arena_n", U32.show(rs_arena_n(rs_arena()))))

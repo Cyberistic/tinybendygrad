@@ -5,7 +5,7 @@
 # check is `want not in raw[lane]` -- a LIST-MEMBERSHIP test, so a bare value would never be
 # found. MEASURED: with the values alone the first run answered `py's arg_10 is not 'none'`.
 #
-# 63 DIVERGENCES, 911 OF THE 974 ROWS AGREE EXACTLY. It is git-resident and
+# 63 DIVERGENCES, 941 OF THE 1004 ROWS AGREE EXACTLY. It is git-resident and
 # beside the gate because `AGENTS.md`'s own rule is that a gate's required inputs live in
 # git and not in `gates/artifacts/`: `gatekit` EMPTIES that directory before it runs and
 # UNLINKS what it staged when the run was not green, so a divergence list read from there
@@ -35,13 +35,41 @@
 #     fix is `O.Arena.src_from(ar, call, 1)` in `get_call_arg_uops` AND in `rz_bound_map`
 #     (realize.py:18 is the same slice). `SRC_BODY_FIXED` names the fifty-two and
 #     `classes_hold` asserts `cpy[r] == port[r]` on each.
+#
+#   `VAL_BODY`'s ELEVENTH ROW, `val_27` -- NOW AGREE, and it was NOT A BODY AT ALL.
+#     `pm_validate` is `PatternMatcher([...]) + pm_flatten_linear` (realize.py:214) and
+#     `PatternMatcher.__add__` is `PatternMatcher(self.patterns+more.patterns)` (ops.py:1611),
+#     so tag 1 is the flatten rule and `rewrite` tries it on the same node whenever tag 0
+#     does not claim. The census driver asked tag 0's CLAIM alone and answered `0`, while
+#     CPython answered the flatten cone. MEASURED: CPython's `val_27` and `flat_27` are
+#     BYTE-IDENTICAL, so both lanes already agreed on that cone at the `flat` driver --
+#     the body was already in the port -- the driver reaches `fl_0` through `rs_d_flat`,
+#     because a `Verdict` cannot print a cone. The fix is a two-arm `match` in
+#     `rs_d_val`, NOT a new body. IT DOES NOT REVIVE `va_1`: `va_1` and `va_0` are dead
+#     defs called by nothing, and that is its own zero-row finding (MEASURED -- replacing
+#     `va_1`'s body with `VSkip` moves ZERO of the 1004 rows and the gate stays GREEN).
+#
+#   `NAME_ARM`'s ONE ROW WITH A VALUE, `name_22` -- NOW AGREE, AND THE RECORDED REASON
+#     FOR LEAVING IT WAS WRONG. The pin said the `encdec` arm "needs `sym_infer`, which is
+#     `exec` of GENERATED SOURCE (ops.py:1177 -- `_sym_fxn`)". It does not: `sym_infer` is
+#     `uop.sym_infer(vv) if isinstance(uop, UOp) else uop` (ops.py:93), and
+#     `prod(shape) * dtype.itemsize` is an INT for a concrete shape, so the `else` branch
+#     runs and no symbolic machinery is reached. MEASURED on this very node: shape `(16,)`,
+#     dtype `i32`, product `64`, `sym_infer(64, {}) == 64`. What the arm needed was
+#     `size_to_str` and `colored`, BOTH ALREADY PORTED (`helpers.bend:1143`, `:1083`), plus
+#     `rz_nbytes`, which was in `realize.bend` and already answers `None` for a SYMBOLIC
+#     dim -- and CPython's `sym_infer` on a symbolic node with `var_vals or {}` = `{}`
+#     raises `NameError`, so that `None` is the faithful absence. EIGHTH instance in this
+#     tree of a correct def that was present and unread, and the WRONG REASON is the
+#     finding: it had been quoted forward from `realize.bend`'s own header, which is how a
+#     wall becomes a fact without anyone measuring it.
 
 # b_arg         BOTTOM                                   cpy     12 B 96814c40b8d9 | port     10 B eff9cf9b9d91
 b_arg	b_arg=bottom	b_arg=none
-# b_bea0        BOTTOM                                   cpy     13 B 1fa991fcc5a4 | port      8 B bcea2dd68b5d
-b_bea0	b_bea0=bottom	b_bea0=0
-# b_beam        BOTTOM                                   cpy     13 B d15ccfa3f661 | port      8 B aecd78e880f6
-b_beam	b_beam=bottom	b_beam=0
+# b_bea0        BOTTOM                                   cpy     13 B 1fa991fcc5a4 | port      9 B c7a1bd8a398c
+b_bea0	b_bea0=bottom	b_bea0=00
+# b_beam        BOTTOM                                   cpy     13 B d15ccfa3f661 | port      9 B 035a29baa6c5
+b_beam	b_beam=bottom	b_beam=00
 # b_dnum        BOTTOM                                   cpy     13 B affd8c2fd798 | port     15 B 5ddc285101da
 b_dnum	b_dnum=bottom	b_dnum=notacall
 # b_est         BOTTOM                                   cpy     12 B 62bb6e19a06d | port     14 B 0802b21a926a
@@ -66,10 +94,10 @@ b_val	b_val=bottom	b_val=0
 b_var	b_var=bottom	b_var=notacall
 # b_wbuf        BOTTOM                                   cpy     13 B edc024d5882c | port     15 B 02c2adf7bd30
 b_wbuf	b_wbuf=bottom	b_wbuf=notacall
-# bea0_55       ARG_SLOT                                 cpy     28 B f403bef1d2dc | port      9 B e94039ba668e
-bea0_55	bea0_55=raise=AttributeError	bea0_55=0
-# beam_55       ARG_SLOT                                 cpy     28 B 69d03d075ea3 | port      9 B 87ecbce42fe6
-beam_55	beam_55=raise=AttributeError	beam_55=0
+# bea0_55       ARG_SLOT                                 cpy     28 B f403bef1d2dc | port     10 B e4d9f78b3b21
+bea0_55	bea0_55=raise=AttributeError	bea0_55=10
+# beam_55       ARG_SLOT                                 cpy     28 B 69d03d075ea3 | port     10 B dc760d24932c
+beam_55	beam_55=raise=AttributeError	beam_55=10
 # est_57        ARG_SLOT                                 cpy     27 B c2fd98029b2d | port      8 B f0a85ba71c8c
 est_57	est_57=raise=AttributeError	est_57=0
 # gcc_50        ARG_SLOT                                 cpy     27 B 9699d90b0720 | port      8 B 34638d9aa500

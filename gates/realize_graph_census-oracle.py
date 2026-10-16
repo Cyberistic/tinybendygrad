@@ -52,7 +52,7 @@ and that equals `git rev-parse 'ad117c928:tinygrad/engine/realize.py'`, NOT the 
 `ad117c928^` is the pin. **THE ONE PIECE OF THAT DRIFT THAT TOUCHES A PORTED ARM IS
 `_resolve`'s `Ops.GETADDR`**, and it is the gate's one FINDING: HEAD's `realize.py:129`
 is `if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST, Ops.GETADDR)` and the port's
-`rz_arm` (realize.bend:976-983) has NO `OpsGETADDR` arm, so the port answers a GETADDR
+`rz_arm` (realize.bend:1048) has NO `OpsGETADDR` arm, so the port answers a GETADDR
 argument UNCHANGED where HEAD resolves through it. UNDER THE PIN THAT ARM DOES NOT EXIST
 (`git show 'ad117c928^:tinygrad/engine/realize.py'` line 129 reads
 `if b.op in (Ops.MSELECT, Ops.SHRINK, Ops.BITCAST):`), so the port's five arms are exactly
@@ -67,15 +67,23 @@ from tinygrad.helpers import prod
 import tinygrad.engine.realize as RZ
 
 # ============================================================ THE FIXTURE
-# `main_arena` (realize.bend:1594-1644) index for index, then 19 nodes the port's own
+# `main_arena` (realize.bend:1701-1744) index for index, then 22 nodes the port's own
 # fixture LACKS and that its dispatch arms need -- each named by the arm it exists for.
 # Slot 0 is `Arena.bottom()` on the port and has NO CPython counterpart, so the lane
 # emits `bottom` there and the gate declares those 15 rows as one class.
 def _buf(slot, nm):
-    # realize.bend:1445 `buf_arg`. `buffer=Some{0}` is the port's index into a device
+    # realize.bend:1552 `buf_arg`. `buffer=Some{0}` is the port's index into a device
     # buffer table and CPython's `ParamArg.buffer` is a REALIZED `Buffer`; nothing in
     # realize.py's readers reads it, so this lane leaves it None and the gate says so.
-    return ParamArg(slot, dtypes.int32, 16, name=nm, addrspace=AddrSpace.GLOBAL, device="CPU")
+    return _buf_dev(slot, nm, "CPU")
+
+
+def _buf_dev(slot, nm, dev):
+    """`device` IS THE ONE FIELD `_buf` CANNOT HARD-CODE, because `rs_x64` needs a TUPLE
+    and a tuple of device NAMES is data: `ParamArg.device` is `str | tuple[str, ...]`
+    (`ops.py:611`), so `("DISK","CPU")` opens nothing. MEASURED, calling `realize.py`'s own
+    `get_call_kernels` on such a `ParamArg`: n=2, first fields `('DISK','CPU')`."""
+    return ParamArg(slot, dtypes.int32, 16, name=nm, addrspace=AddrSpace.GLOBAL, device=dev)
 
 
 def _var(slot, nm):
@@ -90,7 +98,7 @@ def _bnd(slot, nm):
 
 def _ki(nm, beam):
     # `KernelInfo` is FIVE fields (`ops.py:1342-1347`: name, applied_opts, opts_to_apply,
-    # estimates, beam) and `realize.bend:1419` records the port as carrying FOUR, because
+    # estimates, beam) and `realize.bend:1525` records the port as carrying FOUR, because
     # `Estimates` is `renderer/__init__.py:16` -- P5. MEASURED: `KernelInfo(nm, (), None,
     # beam)` POSITIONALLY puts the beam into `estimates` and leaves `beam` at 0, so
     # `pm_beam`'s `sink.arg.beam == 0` guard fired on node 24 whose sink carries beam 2,
@@ -109,9 +117,12 @@ def _call(nm, *s):
 
 # `B[i]` is the node at arena slot i. THE INDEX IS THE ARENA'S, NOT THE LIST'S: Bend's
 # `Arena.empty` spends slot 0 on `bottom()`, so a node minted Nth here sits at slot N.
-# `_add` RETURNS THE SLOT so a node can be named by its slot and a LATER node can be
-# built from it -- `B[26]` is not yet appended when `B[27]`'s own `src` is evaluated, so
-# every reference below is a local, never a subscript.
+# **THIS PARAGRAPH USED TO SAY `_add` RETURNS THE SLOT AND THE DOCSTRING BELOW SAYS IT
+# RETURNS THE NODE, AND THE CODE RETURNS THE NODE** -- the same shape as the SRC_BODY
+# header, which listed a fix at two sites when only one of them had a row behind it. The
+# slot is `len(B)-1` AFTER the append, so a later node is named by the LOCAL it was bound
+# to and never by a subscript: `B[26]` does not exist yet when `B[27]`'s own `src` is
+# evaluated, which is why every reference below is a local.
 B = [None]
 
 
@@ -168,7 +179,7 @@ by = _add(UOp(Ops.BINARY, src=(), arg=b"a"))                                 # 3
 pK = _add(UOp(Ops.PROGRAM, src=(k1, l3, sy, by), arg=_pi((), (0, 1), (0,), (1,))))  # 39
 cK = _add(_call("p", pK, g0, g1))                                            # 40 compiled
 bc = _add(UOp(Ops.BITCAST, src=(g1,), arg=dtypes.int32))                     # 41
-# ---- the 20 nodes `main_arena` lacks, each named by the arm it exists for ----
+# ---- the 22 nodes `main_arena` lacks, each named by the arm it exists for ----
 c1 = _add(UOp.const(1))                                                          # 42
 c0 = _add(UOp.const(0))                                                          # 43
 c2 = _add(UOp.const(2))                                                          # 44
@@ -206,9 +217,28 @@ gv = _add(UOp(Ops.GETADDR, src=(g0,), arg="CPU"))                               
 # (`run_linear` iterates `linear.src`, `lower_and_compile` walks `linear.toposort()`),
 # so "unreferenced" is a fact about roots and not about garbage.
 cVv = _add(_call("vv", k1, g1, gv, c1))                                         # 63 GETADDR as arg
+# THE MULTI-DEVICE BUFFER AND THE CALL WHOSE `src[1]` IS IT -- the answer `kern` had no row
+# for. `realize.py:41` is `[(d, call, None) for d in to_tuple(call.src[1].device)]` and
+# `to_tuple` (`helpers.py:52`) is `x if isinstance(x, tuple) else (x,)`, so a device that is
+# a TUPLE puts more than one kernel in the answer. Every device above is the scalar "CPU",
+# so all 22 `kern_*` rows were lists of length 0 or 1 and the COUNT that both lanes print
+# was only ever tested on a list that could not surprise it. `Port: S.Dn{[6, 0]}` -- DISK
+# and not-DISK, per `device.bend:344`'s `tag_of` -- so a dropped or a duplicated device
+# moves the count, and the two tags are distinct on purpose. NOTHING IS OPENED.
+g2 = _add(UOp(Ops.BUFFER, src=(c3,), arg=_buf_dev(3, "g2", ("DISK", "CPU"))))       # 64
+cDm = _add(_call("dm", p0, g2))                                                    # 65 two devices
 
-NODES = len(B) - 1     # 63 real nodes, slots 1..63; slot 0 is the port's bottom
-assert NODES == 63, NODES
+NODES = len(B) - 1     # 65 real nodes, slots 1..65; slot 0 is the port's bottom
+assert NODES == 65, NODES
+
+# THE DRIVER AXIS, DECLARED ONCE, IN THE ORDER `gatekit` DIFFS THE LANES BY. It was
+# written out FOUR times -- the two `__main__` loops and the `drive` ladder, plus the
+# gate's own `DRV` -- and `gates/realize_graph_census-gate.py` read NONE of them back, so a
+# driver that existed on one side only was a population the instrument could not see. The
+# gate now LOADS THIS TUPLE BY PATH and checks it against all three of the bend lane's own
+# dispatch tables (`axis_hold`). ONE declaration, four readers.
+DRIVERS = ("arg", "nb", "res", "flat", "val", "beam", "bea0", "oi", "wbuf", "kern",
+           "name", "est", "var", "gcc", "dnum")
 
 # THE 15 OP TAGS THE PORT DISPATCHES ON, one row each: `arm_<OP>` is the NUMBER OF
 # FIXTURE NODES whose op is that tag. It is the population's own coverage row -- the
@@ -217,11 +247,11 @@ assert NODES == 63, NODES
 ARMS = ("PROGRAM", "STORE", "CUSTOM_FUNCTION", "RANGE", "PARAM", "SINK", "LINEAR",
         "MSELECT", "SHRINK", "BITCAST", "MSTACK", "GETADDR")
 
-# THE DRIVER AXIS, and WHERE EACH DRIVER'S ANSWER COMES FROM. A CALL-only driver is one
-# whose CPython entry point reads `call.body` (`realize.py:562`, which RAISES for a
-# non-CALL) or `call.src[1]`; both sides apply the SAME rule -- the node's op must be
-# `Ops.CALL` -- so the refusal is a byte-identical row rather than an exclusion list.
-CALL_ONLY = ("oi", "wbuf", "kern", "name", "est", "var", "gcc", "dnum", "nb")
+# THE CALL-ONLY RULE IS CPYTHON'S AND IT IS A FROZENSET OF `DRIVERS`, not a second list:
+# a member that was not in `DRIVERS` would be a driver nobody drives, and `axis_hold`
+# checks the set against the bend lane's own `rs_call_only` table.
+CALL_ONLY = frozenset(d for d in DRIVERS if d in
+                      ("oi", "wbuf", "kern", "name", "est", "var", "gcc", "dnum", "nb"))
 
 
 # ============================================================ THE SIGNATURES
@@ -296,20 +326,42 @@ def rewrite_sig(pm, u, ctx=None) -> str:
     return "0" if r is None or r is u else "1:" + cone([r])
 
 
+# `pm_beam`'s COMPILED BODY, i.e. `realize.py:218`'s lambda as CPython's own matcher built
+# it. `PatternMatcher` has no public "did the rule claim" entry point -- `rewrite`
+# (`ops.py:1613-1619`) is `if (ret:=match(uop, ctx)) is not None and ret is not uop:
+# return ret`, which collapses "did not claim" and "claimed and the answer IS the input"
+# into the same `None`. `pdict[Ops.CALL][0][1]` is that same `match`, one call up, so
+# asking it is CPython's own code answering and NOT a transcribed predicate: the second
+# transcription this lane would otherwise have needed (`dnum_sig`) stays the only one.
+# MEASURED, `.venv/bin/python`, over every fixture shape: a non-CALL answers `None`
+# without raising, a SINK carrying beam 2 answers `None`, a CALL over a bodyless SINK
+# raises `AttributeError`, and at ctx 0 over a zero-beam SINK it returns the node itself.
+BEAM_BODY = RZ.pm_beam.pdict[Ops.CALL][0][1]
+
+
 def beam_sig(u, ctx) -> str:
-    """`pm_beam`'s answer WITH THE BEAM, because a cone cannot see it. `realize.py:219` is
-    `sink.replace(arg=replace(sink.arg, beam=ctx))` and `KernelInfo.beam` is in NO node
-    shape, so `beam_2 -> beam_7` rewrites a cone that prints identically -- MEASURED: with
-    `beam` printed nowhere, `beam_24` read as a port divergence on a graph the two sides
-    agreed about node for node. The suffix is the `arg=` repair the brief asks for, and it
-    is the driver's own subject rather than an extra field bolted on."""
+    """`pm_beam`'s answer as TWO BITS -- `<claim><fired>` -- plus the BEAM, because a cone
+    cannot see it. `realize.py:219` is `sink.replace(arg=replace(sink.arg, beam=ctx))` and
+    `KernelInfo.beam` is in NO node shape, so `beam_2 -> beam_7` rewrites a cone that
+    prints identically -- MEASURED: with `beam` printed nowhere, `beam_24` read as a port
+    divergence on a graph the two sides agreed about node for node.
+
+    `00` the rule did not claim · `10` it claimed and the rewrite was the identity, which
+    is what `ret is not uop` drops and what the port's `M.hop_self` turns into index 0 ·
+    `11` it claimed and produced a new node. THE SINGLE `"0"` this lane used to print for
+    both `00` and `10` is what made mutation `V2` (`rz_kernel_beam`'s no-`KernelInfo`
+    default `0` -> `1`) move zero rows at rc=0: the default is read only by the CLAIM, and
+    the only node that reads it is the one whose rewrite is the identity."""
     try:
+        claim = BEAM_BODY(u, ctx) is not None
         r = RZ.pm_beam.rewrite(u, ctx)
     except Exception as e:                                   # noqa: BLE001
         return "raise=%s" % type(e).__name__
+    if not claim:
+        return "00"
     if r is None or r is u:
-        return "0"
-    return "1:%s:b=%d" % (cone([r]), r.src[0].arg.beam)
+        return "10"
+    return "11:%s:b=%d" % (cone([r]), r.src[0].arg.beam)
 
 
 def dnum_sig(call) -> str:
@@ -351,6 +403,15 @@ def drive(drv: str, u):
         if drv == "wbuf":
             return lst(RZ.get_call_written_bufs(u))
         if drv == "kern":
+            # THE COUNT, AND NOT THE LIST, FOR THE REASON `rs_d_kern` GIVES AT LENGTH: the
+            # answer's `d` is a device NAME (or a tuple of them, or `None`) and the port's
+            # is a TAG, and there is no table to convert between them -- `Device.tag` does
+            # not exist in this tree (`hasattr(Device, 'tag')` is False) and the port's only
+            # tag/name function is `device.bend:344`'s three-valued sentinel. So this lane
+            # prints the LENGTH, the port prints the LENGTH, and `gates/realize_graph_census-gate.py`'s
+            # `kern_blind_holds` measures the residual rather than asserting it away.
+            # `dm` (node 65) is a CALL whose `src[1]` is a TWO-device BUFFER, so `len` is
+            # finally tested on a list of length 2 rather than only 0 and 1.
             return str(len(RZ.get_call_kernels(u)))
         # THE NAME IS CPython's, ANSI INCLUDED -- `get_call_name` wraps the STORE and
         # `encdec` arms in `colored(...)` (realize.py:49-50) and the port has no
@@ -394,14 +455,13 @@ def drive(drv: str, u):
 if __name__ == "__main__":
     # THE COUNT, PRINTED, so a lane that stopped emitting a row cannot pass unnoticed.
     # `arena_n` is the fixture's SIZE and `rows` is what this lane is about to print:
-    # 2 + 15 bottoms + 12 arm-coverage + 15 drivers x 60 nodes.
+    # 2 header + 15 bottoms + 12 arm-coverage + 15 drivers x NODES.
     print("arena_n=%d" % (NODES + 1))
-    print("rows=%d" % (2 + 15 + len(ARMS) + 15 * NODES))
+    print("rows=%d" % (2 + len(DRIVERS) + len(ARMS) + len(DRIVERS) * NODES))
     # THE BOTTOM, once per driver. Slot 0 is `Arena.bottom()` (`Arena.empty` spends it),
     # and CPython's UOp metaclass has no such node, so there is nothing to compare and the
     # row exists to say so rather than to hide it.
-    for drv in ("arg", "nb", "res", "flat", "val", "beam", "bea0",
-                "oi", "wbuf", "kern", "name", "est", "var", "gcc", "dnum"):
+    for drv in DRIVERS:
         print("b_%s=bottom" % drv)
     # THE ARM COVERAGE, one row per op tag the port dispatches on: the number of fixture
     # nodes carrying it. A tag with no node is an arm no row can reach.
@@ -409,7 +469,6 @@ if __name__ == "__main__":
         print("arm_%s=%d" % (tag, sum(1 for n in range(1, NODES + 1) if B[n].op.name == tag)))
     # EVERY (DRIVER, NODE) PAIR IS EMITTED, refusals included, so the two lanes carry the
     # same row count BY CONSTRUCTION and no exclusion list is needed to make them meet.
-    for drv in ("arg", "nb", "res", "flat", "val", "beam", "bea0",
-                "oi", "wbuf", "kern", "name", "est", "var", "gcc", "dnum"):
+    for drv in DRIVERS:
         for n in range(1, NODES + 1):
             print("%s_%d=%s" % (drv, n, drive(drv, B[n])))
