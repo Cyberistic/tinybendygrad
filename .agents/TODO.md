@@ -17793,6 +17793,22 @@ sweep-population [#########] 3/3  **THE SWEEP'S POPULATION IS A NAMING SUFFIX, A
                                        it. **LANDING THAT IS NOT OWED HERE**: changing the sweep's
                                        population would change every number it has ever published, and
                                        the six named above are enough to size the gap.
+                                       **AND THE DEFECT HAS A SHAPE, MEASURED THE SAME WAY.** A gate that
+                                       DECLARES ITSELF -- mentions `gatekit` or `VERDICT` -- is a population
+                                       BY DECLARATION, which is what `gates/gatekit.py`'s `VERDICT` already
+                                       is for every gate that uses it. MEASURED 2026-10-16 at HEAD:
+                                       **`gates/*.py` 182, suffix `-gate.py` 80, DECLARING 105 -- AND
+                                       `SWEPT BUT NOT DECLARING` IS `0`.** So the suffix is a **STRICT
+                                       SUBSET** of what declares: it never over-includes, it only
+                                       under-includes, by **25** instruments. **A POPULATION DEFINED BY A
+                                       NAME CAN ONLY BE WRONG IN ONE DIRECTION, AND THAT DIRECTION IS
+                                       THE INVISIBLE ONE.** Among the 25 are the six already named plus
+                                       `gatekit.py`, `docnum-census.py`, `state_census.py` and
+                                       `ops_python_exec-gen.py`. **THE DECLARATION TEST IS ITSELF LOOSE --
+                                       `*-mutate.py` and `*-oracle.py` mention `VERDICT` in prose and import
+                                       `gatekit` for a helper, so 105 IS ANOTHER UPPER BOUND** -- but the
+                                       SUBSET RESULT DOES NOT DEPEND ON IT, because it is a statement about
+                                       what the suffix MISSES and not about what the declaration catches.
 
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
