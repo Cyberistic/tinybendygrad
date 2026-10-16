@@ -16458,3 +16458,80 @@ Category = each level<=2 (`#`/`##`) heading, found by discovery; 187 of 222 sect
 • AN EXCEPTION EXITS 1 -- THE SAME NUMBER AS AN HONEST FAIL (2026-10-15) — ██░░░░░░░░ 1/6  17%
 • DECOUPLE -- the fix that CLEARED 19 ROWS HAS A COUPLING NO ROW CAN SE... — █░░░░░░░░░ 1/7  14%
 • PINSCONV -- THE 5 pins-shape FINDINGS ARE 1 CONVENTION, 1 FALSE CHA... — █████████░ 6/7  86%
+two-spellings [#########] 4/4  A NEGATIVE RESULT, WHICH IS THE POINT. Three defects found 2026-10-16 were
+                                       ONE SHAPE -- an instrument that reads one SPELLING of a thing
+                                       and calls it the whole: `checks/repro-paths.py`'s SUFFIX SET, a
+                                       bare-BASENAME citation, and `.agents/slop/toolsledger/extract.py`'s
+                                       SINGLE-BASE path resolution. **SO THE CLASS IS TESTABLE: does
+                                       the subject have a second spelling the instrument cannot see?**
+                                       MEASURED over all **1,829** tracked `.py` from HEAD: **13**
+                                       module-level `(module, attr)` tables exist in `checks/`+`gates/`,
+                                       and **3 of them name an IO call that is ALSO called in method
+                                       form** -- `checks/sweep.py`'s `FS_WRITES` (`mkdir` 126x, `replace`
+                                       235x, `open` 41x, `rename` 1x), `FS_READS` (`stat` 18x) and
+                                       `FS_DELETES` (`unlink` 43x, `remove` 8x, `rmtree` 1x). **ALL
+                                       THREE ARE IN ONE FILE, AND THAT FILE ALREADY SOLVES IT FOR BOTH
+                                       LIVE TABLES:** `FS_METHOD_WRITES` at `:490` and
+                                       `FS_READ_METHODS` at `:491` are method-form COMPANIONS consulted
+                                       by the same classifier arm. **THE ONLY TABLE WITH THE GAP IS
+                                       `FS_DELETES` -- THE DELIBERATELY DEAD ONE.** So the class does
+                                       NOT extend past the one parked table: **IN NO LIVE TABLE IN THIS
+                                       TREE DOES AN INSTRUMENT MISS AN IO CALL'S SECOND SPELLING.**
+                                       **THE PROCESS IS THE OTHER HALF OF THIS ROW.** Three attempts:
+                                       the FIRST crashed and printed a nonsense column; the SECOND
+                                       printed **`NONE`**, which was a FALSE NEGATIVE -- it accepted
+                                       only `Set`/`Tuple`/`List` literals and **a `Dict` has `.keys`,
+                                       not `.elts`**, so it skipped the entire `FS_*` family, i.e. the
+                                       exact shape under study; the THIRD worked but reported "3 tables
+                                       cannot see it", which would have been a FALSE CHARGE against a
+                                       file that pairs its live tables with method companions.
+                                       **MY OWN CENSUS HAD THE CLASS I WAS LOOKING FOR, THREE TIMES,
+                                       BEFORE IT MEASURED ANYTHING.**
+
+repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
+                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
+                                       with any other extension was INVISIBLE to it -- the
+                                       doctrine-1 shape, patched one extension at a time (`2 .mjs`
+                                       were once invisible). REPLACED 2026-10-15 with a permissive
+                                       extraction intersected with the FILESYSTEM (`os.path.exists`
+                                       just below it): the population is now "tokens that name a
+                                       path", not "tokens whose suffix is on a list". MEASURED over
+                                       the SAME 541 reports at HEAD `db24cf3d0`, before -> after:
+                                       named 560 -> 714, resolve 483 -> 606, DANGLING 77 -> 108,
+                                       with ADDED 164 (125 resolving) and LOST 10 (2 resolving). **AND THE SET WROTE FALSE ROWS IN
+                                       BOTH DIRECTIONS, which is why "it only missed things" was
+                                       the wrong worry: it stops at a REMEMBERED extension, so
+                                       `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as
+                                       `...312.py` (a DANGLING row for a name that never existed)
+                                       and `whosecache/REPORT.md:73`'s
+                                       `gates/tn_graph_census-gate.py.bak` was read as
+                                       `gates/tn_graph_census-gate.py`, A FILE THAT EXISTS -- a
+                                       broken reference counted as RESOLVED.** The gate was
+                                       ALREADY red (77 dangling), so this adds truth to a failing
+                                       census rather than creating a failure, and the 108 are REAL
+                                       reports pointing at REAL paths that are GONE
+                                       (`cstyle-live/port.txt`, `coldness/population.txt`).
+                                       `.agents/slop/reprorefs/REPORT.md` + its `probe.py`.
+                                       A SECOND DEFECT IN THE SAME FILE, FOUND BY THE FIRST:
+                                       `committed_reports()` ran `git ls-files` -- the INDEX -- while
+                                       the TEXT came from `git show HEAD:`, so the DENOMINATOR moved
+                                       with the index's arming state (584 armed, 541 disarmed) under
+                                       the printed word *committed*, AND it INHERITED
+                                       `GIT_INDEX_FILE`, so an agent's shell measured a different
+                                       population than a bare one -- the SAME defect and the same
+                                       shape as `checks/index-arm-gate.py`'s false `PASS`. FIXED to
+                                       `git ls-tree -r --name-only HEAD`: 541 under the default
+                                       index, under `.git/agent-index`, AND under a bogus path that
+                                       exists nowhere. The 43 phantom entries contributed NO text,
+                                       so the differential was right while the denominator was
+                                       wrong -- which is why the fix's own commit message quotes
+                                       584.
+                                       LANDED, NOT MERELY FLAGGED: `AGENTS.md`'s doctrine-1
+                                       row and `agend2/REPLACEMENTS.md:294` both recorded this
+                                       line as **fixed** BY the suffix set, which is the claim
+                                       this measurement refutes. BOTH are now corrected, and the
+                                       `agend2` entry carries a **SUPERSEDED** note naming the
+                                       lesson: **A REPLACEMENT LIST THAT NAMED A FIX AND NEVER
+                                       RE-DERIVED IT AFTER IT LANDED IS HOW A HAND-KEPT CITATION
+                                       ROTS QUIETLY.**
+
