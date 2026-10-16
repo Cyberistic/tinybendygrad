@@ -5,7 +5,7 @@
     .venv/bin/python gates/decomp_graph_census-gate.py
     .venv/bin/python gates/decomp_graph_census-gate.py --refresh   # rewrites the pins file
 
-39 ROWS, THREE LANES, 23 EXACT MATCHES AND 16 DECLARED DIVERGENCES -- 11 PROMOTION, 2
+42 ROWS, THREE LANES, 26 EXACT MATCHES AND 16 DECLARED DIVERGENCES -- 11 PROMOTION, 2
 REFUSALS, 1 UNBUILT ARM AND 2 FINDINGS.
 
 EVERY CAST AND BITCAST CARRIES ITS TARGET DTYPE IN THE TOKEN, `OP/NSRC[TARGET]`, AND THAT
@@ -27,7 +27,7 @@ could not see, and it is visible HERE because `decomp`'s own helpers mint the `A
 tree, its intern count, its DEEP CONE and its constants. What was ungated was the GRAPH
 AGAINST CPYTHON: nothing compared a cone to the one dtype.py builds, so a port that built a
 different node agreed with itself. `op.bend` ships a 146-row `gate()` (:2171) with the same
-gap. This gate is the CPython lane for the 39 of those rows that are a GRAPH.
+gap. This gate is the CPython lane for the 42 of those rows that are a GRAPH.
 
 THE POPULATION IS THE PORT'S OWN FIXTURE SET, AND THE RULE IS NOT THE `*_table` RULE.
 `gates/rng_graph_census.bend`'s row is a (TABLE, NODE) pair whose TABLE axis is
@@ -37,10 +37,14 @@ THE POPULATION IS THE PORT'S OWN FIXTURE SET, AND THE RULE IS NOT THE `*_table` 
 tables and the rng rule has nothing to range over; the substitute axis is the FIXTURE, and
 the fixture population is the port's own `l2i.pick` (:2780, 33 arms), `dd_cmx.pick` (:2931,
 8) and `f2f.pick` (:3053, 7). Thirty of `l2i.pick`'s arms read the word pool and three mint
-a CONST, so the pool-fed set is 30 + 1 `unpack32` + 7 `f2f` = **38**, and a SECOND `unpack32`
+a CONST, so the pool-fed set is 30 + 1 `unpack32` + 7 `f2f` = **38**, a SECOND `unpack32`
 fixture is driven on purpose for 39 -- `uq`, over the pool's `i32` word, because `up` FOLDS
 the BITCAST away and `gates/decomp_graph_census-mutate.py` A13 measured that breaking the
-unfolded arm's `ADt` moved 0 of 38 rows. THE COUNT IS THE PORT'S AND IT IS NOW ASSERTED
+unfolded arm's `ADt` moved 0 of 38 rows -- and `l2i.const`'s THREE arms (`lgv lgw lgx`) are
+driven for **42**, because they mint their CONST OUTSIDE `l2i` at `xdt` and so read no word of
+the pool at all. A population rule keyed on "ARMS THAT READ THE POOL" cannot see them, which is
+the same class as `amd_dsl_census`'s `VOP2_FIELDS` having no `src2`. THE COUNT IS THE PORT'S AND
+IT IS NOW ASSERTED
 TWICE: `gatekit` refuses the run if a lane disagrees with `ROWS`, and the mutate harness
 refuses to compare against a base lane of any other length. BOTH BEND LANES EMIT EVERY ROW
 including a refusal, so the two counts agree BY CONSTRUCTION and no exclusion list is
@@ -51,7 +55,8 @@ and the oracle's are the same thirty rows index for index, which is the rng orac
 `dd_cmx.pick`'s EIGHT ARMS ARE NOT ROWS HERE, AND THE REASON IS SHAPE AND NOT OMISSION. They
 are the `c*` rows and they print `F(<bits>)` -- a scalar from `f2f_clamp_max` (dtype.bend:2920)
 -- where this census prints a CONE. `unpack32` is a def this census can reach as a graph, and
-it is now reached twice.
+it is now reached twice. `l2i.const` is reached three times, and those three rows are the
+ONLY rows whose operand the census did not take out of the pool.
 
 THE ORACLE CALLS THE REAL CPYTHON. Every row is a call into `tinygrad/codegen/decomp/` --
 `l2i` (dtype.py:21), `unpack32` (:13), `f2f` (:101) -- on a fixture mirroring `l2i.pick`
@@ -143,14 +148,16 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from gatekit import BEND, PY, Gate, REFUSED, gate
 
-# THE 39 ROWS, in the port's own order: `l2i.pick`'s thirty pool-fed arms, then
+# THE 42 ROWS, in the port's own order: `l2i.pick`'s thirty pool-fed arms, then `l2i.const`'s
+# THREE (`lgv lgw lgx`, `l2i.pick`'s cases 28/29/30, whose CONST is minted OUTSIDE `l2i`), then
 # `unpack32` TWICE -- `up` on the pool's u32 word and `uq` on its i32 word, the second so the
 # BITCAST `ops.py:13` builds is in a row at all -- then `f2f.pick`'s seven. The COUNT is the
-# file's, and the bend lane emits all 39 including refusals, so this is a MEASUREMENT of the
+# file's, and the bend lane emits all 42 including refusals, so this is a MEASUREMENT of the
 # lanes and not a typed inventory: `gatekit` refuses the run if a lane disagrees with it.
 ROWS = ("lg1", "lg2", "lg3", "lg4", "lg5", "lg6", "lg7", "lg8", "lg9", "lga", "lgb", "lgc",
         "lgd", "lge", "lgf", "lgg", "lgh", "lgi", "lgj", "lgk", "lgl", "lgm", "lgn",
         "lgo", "lgq", "lgr", "lgs", "lgt", "lgu", "lgy",
+        "lgv", "lgw", "lgx",
         "up", "uq",
         "q1", "q2", "q3", "q4", "q5", "q6", "q7")
 
@@ -324,16 +331,29 @@ def deleted(cpy, port):
 
 # THE SEARCH IS ONLY EXACT FOR A ROW SHORT ENOUGH TO RUN EVERY RUN. `witnesses` costs one
 # O(len) rebuild per candidate. MEASURED per row: the seven rows under the cap cost 0.000 s IN
-# TOTAL and the four over it cost 56.2 s between them (`lgq` 24.5, `lgs` 14.8, `lgr` 9.9,
-# `lgt` 7.0) -- so the cap is not a share of the cost, it is ALL of it, and a gate must not pay
-# 56 s for a printed observation. The cap is 200 TOKENS: `_lane()` hands back a STRING and
+# TOTAL and the four over it cost 47.1 s between them (`lgq` 19.1, `lgs` 12.3, `lgr` 8.8,
+# `lgt` 6.8) -- so the cap is not a share of the cost, it is ALL of it, and a gate must not pay
+# 47 s for a printed observation. The cap is 200 TOKENS: `_lane()` hands back a STRING and
 # `len()` of that is characters, so the row is split on `,` first -- MEASURED, reading it as
 # tokens made the count 6 where it is 4, and a message that names the wrong unit is a lie.
 # The cap covers `lg1 lg5 lga lgc lgd lge q5` and skips `lgq lgr lgs lgt`.
 # THAT SKIP IS A LIMITATION OF THIS INSTRUMENT AND NOT A CLEAN BILL: nothing ON EVERY RUN says
-# the four skipped rows' witness is unique. It IS measured OFF the gate, and `lgr` and `lgq` each
-# admit one alternative while `lgs` and `lgt` admit none -- so the rows the class is a COUNT for
-# are `lg1 lgq lgr`, and the gate prints the one it re-measures every run.
+# the four skipped rows' witness is unique. **IT IS NOW MEASURED OFF THE GATE AND IT HAS MOVED:
+# ALL FOUR ADMIT ZERO ALTERNATIVE WITNESSES** (47.1 s, `lgq` 2500 tokens n=69 -> 0, `lgr` 2288
+# n=70 -> 0, `lgs` 2459 n=63 -> 0, `lgt` 2248 n=64 -> 0). The previous revision of this comment
+# said `lgr` and `lgq` each admit ONE; the `ADt` printer is what removed them, because each cast
+# is a distinct STRING now and two adjacent ones are no longer interchangeable. So the eleven
+# `PROMOTION` cones have a UNIQUE deletion witness each, 11 of 11, and what is still missing is
+# only the EVERY-RUN half of it -- which the cap buys at 47 s a run and this gate will not pay.
+# **THE `src`-ORDER PREMISE IS ALSO FALSE, AND IT IS MEASURED RATHER THAN ARGUED.** The recorded
+# worry was that `OP/NSRC` "cannot pin order" because `src[0]` is read first. It pins order on
+# every one of the 42 rows: the 26 exact rows by the lane DIFF, which is a line-for-line
+# equality; the 16 divergences by VERBATIM PINS (`gatekit` asserts `want in raw[lane]` on the
+# whole row string); and `classes_hold`'s `deleted()` is a SEQUENCE test that REBUILDS the
+# surviving list and compares it -- MEASURED, swapping any two adjacent non-CAST tokens in a
+# port line makes `deleted()` return `None` and the class check go RED, on `lg1`, `lgc`, `lgd`
+# and `q2`. What `OP/NSRC` genuinely cannot carry is a node's dtype and a CONST's value, and
+# those are named where they bite: the `q2` site above, and this file's own `q1` note.
 SHORT_CONE = 200
 
 
@@ -476,7 +496,7 @@ GATE = Gate(
 
 if __name__ == "__main__":
     n_cast = sum(PROMOTION_CASTS.values())
-    sys.exit(gate(GATE, f"decomp_graph_census-gate: {len(ROWS)} rows (30 l2i arms + 2 unpack32 fixtures + 7 f2f "
+    sys.exit(gate(GATE, f"decomp_graph_census-gate: {len(ROWS)} rows (30 pool-fed l2i arms + 3 l2i.const arms + 2 unpack32 fixtures + 7 f2f "
                         f"pairs), 3 lanes, {len(ROWS) - len(DIVERGES)} deep cones match "
                         f"CPython byte-for-byte and {len(DIVERGING)} are DECLARED "
                         f"divergences -- {len(PROMOTION)} are the PROMOTION CASTS "
@@ -539,16 +559,52 @@ if __name__ == "__main__":
 # THE TWO FINDINGS. `tinybendygrad/codegen/decomp/dtype.bend` IS LEFT BYTE-IDENTICAL;
 # these are REPORTED, not fixed.
 #
-# FINDING 1, 2 -- `f2f`'s NARROWING ARM IS NOT A DELETION OF CPython's CONE. `q2` is
-# `f2f(f32 -> fp8e4m3)` and `q3` is `f2f(f32 -> fp8e5m2)`, dtype.py:115-124, both DOWN.
-# MEASURED: CPython's cone carries `CAST/1` x2, `CONST/0` x1 and `OR/2` x2 that the port's
-# does not (57 against 52 and 58 against 53 entries), the port carries NOTHING CPython
-# lacks, and the residue is in a different order -- so it is not an extra node and it is not
-# a missing one in place. It lives in dtype.py:118-124's `sign`/`nan`/`underflow`
-# expressions, where the port builds `sign` at the TARGET's unsigned width and CPython
-# builds it at `f2f_dt[fr]` and casts. THE EXACT SITE IS NOT LOCATED and naming one would be
-# a guess; `f2f.down.inner` (:1862) and `f2f.down.ocp` (:1868) both call `P.dc_cast` on it,
-# so the CAST IS PRESENT IN THE PORT TOO -- what differs is what it is cast FROM.
+# FINDING 1, 2 -- `f2f`'s NARROWING ARM IS NOT A DELETION OF CPython's CONE, AND THE SITE IS
+# NOW LOCATED TO TWO LINES. `q2` is `f2f(f32 -> fp8e4m3)` and `q3` is `f2f(f32 -> fp8e5m2)`,
+# dtype.py:115-124, both DOWN. THE MISSING MULTISET IS IDENTICAL ON BOTH ROWS, so the
+# localisation is done once and not twice: `CONST/0` x1, `CAST/1[u8]` x1, `OR/2` x2,
+# `CAST/1[u32]` x1, and the port's multiset is a strict SUBSET of CPython's on both rows. THE
+# PORT'S WALK IS NOT A SUBSEQUENCE OF CPython'S, so this is NOT a dedup artefact -- and the test
+# discriminates, because `lgw`/`lgx` (which differ only by an order swap) DO pass it.
+#
+#   DEFECT 1, ONE TOKEN: `tinybendygrad/codegen/decomp/dtype.bend:1909`. `f2f.narrow` computes
+#   `+nn = f2f.down.npat(...)` -- dtype.py:121's `nan`, CAST to `f2f_dt[to]` -- at :1907, and then
+#   calls `f2f.down.tail(..., ii, nm, ts, to)` with **`nm`**, the `nan_MANTISSA`. `nn` is DEAD from
+#   :1908 on, and `f2f.down.ocp`'s final line (:1877) puts `nm` in the `true` branch of
+#   `is_nan.where(...)` where dtype.py:124 puts `nan`. THE PORT'S OWN WIDENING ARM HAS THE
+#   PARAMETER: `f2f.ocp` (:1730) takes BOTH `+nm` and `+nn` and `f2f.up.tail` (:1740) threads `nn`
+#   through, so the narrowing arm LOST a parameter the widening arm kept. `f2f.down.fnuz` (:1864)
+#   does not need `nan` at all (dtype.py:123 returns `is_nan.where(shl(1, ts - 1), ...)`), which is
+#   WHY `q5` IS A `PROMOTION` ROW AND NOT A FINDING -- the classification already said so before
+#   the site was located.
+#     MEASURED, AND IT IS NOT A SHAPE CLAIM. fp8e4m3's ONE NaN encoding is `0x7F` (MEASURED: the
+#     only pattern in 0..127 satisfying the S.1111.111 rule); dtype.py:121's `nan` is
+#     `sign | nan_mantissa | shl(shl(1, te) - 1, tm)` = `sign | 7 | 120` = **127 = the NaN**, and
+#     the port's true branch is `nan_mantissa` = **7 = 0b00000111, WHICH IS NOT NaN**. So
+#     `f2f(NaN, f32, fp8e4m3)` returns a small positive number where tinygrad returns NaN. That is
+#     a THIRD WITNESS -- dtype.py's own constants and the fp8 NaN rule -- and not the port re-run.
+#     MEASURED FIX, OFF-GATE, ON A COPY: the single substitution `nm` -> `nn` at :1909 moves
+#     **2 OF 42 ROWS, `q2` AND `q3`, AND NOTHING ELSE**, and it removes FOUR of the five missing
+#     tokens -- `q2` goes 52 -> 56 tokens against CPython's 57 and `q3` 53 -> 57 against 58, and
+#     both cpy-only multisets collapse from five tokens to `{CAST/1[u32]: 1}`.
+#
+#   DEFECT 2, ONE NODE: `dtype.bend:1467`, `rne.go`'s `+g = dd_or(..., O.Found.i(e), O.Found.i(f))`.
+#   `e` is dtype.py:99's `(v & ((1 << (s - 1)) - 1)).ne(0)`, a BOOL; `f` is `shr(v, s) & 1`; the OR
+#   makes `e` the u32 one, which is `ElementwiseMixin._broadcasted`'s `promote` minting
+#   `CAST/1[u32]`. MEASURED OFF `q2`'s CPython cone WITH THE FIELDS THE TOKEN CANNOT CARRY (a
+# census token is `OP/NSRC[TARGET]`: no child's dtype, no CONST's value), node 49 is
+# `CAST/1[u32]` over node 50 `CMPNE/2` -- that promotion, and the only `CAST/1[u32]` in the cone.
+# So the LAST missing token is the SAME missing promotion the eleven `PROMOTION` rows record,
+# reached through `f2f`'s narrowing arm and `rne` instead of `l2i`.
+#
+#   AND WHAT BOTH FIXES WOULD DO TO THE CLASSES, MEASURED SO IT IS NOT A GUESS: with defect 1
+#   fixed, `deleted()` answers `['CAST/1[u32]']` on BOTH rows -- a one-CAST deletion. Fix defect 2
+#   as well and `q2`/`q3` join the eleven `PROMOTION` rows at target `u32 x1` each and
+#   **`FINDING` IS EMPTY**, which by this file's own rule means dropping it from the class tuples,
+#   moving its story into the pins header and fixing the pin COUNT assertions in FOUR places.
+#   NEITHER FIX IS LANDED: `tinybendygrad/codegen/decomp/` stays BYTE-IDENTICAL (this file's
+#   standing policy), and half a fix makes `classes_hold` red on "q2 is now a DELETION ... drop it
+#   from FINDING" -- a RED run, not a partial green one.
 #
 # WHAT WAS RULED OUT, BY MEASUREMENT RATHER THAN BY ARGUMENT:
 #   * NOT THE ORACLE'S FIXTURE. This lane used to hand `f2f` a `float32` PARAM for every
@@ -603,7 +659,8 @@ if __name__ == "__main__":
 # capability: `lg1` admitted exactly one alternative deletion witness while every cast was the
 # same token, and the greedy walk demonstrably kept the WRONG node -- CPython's `lg1` cone
 # carries `CAST(i32->i64)` at index 1 AND `CAST(weakint->i32)` at index 2. MEASURED after the
-# repair: ZERO alternative witnesses over the seven cones under `SHORT_CONE`.
+# repair: ZERO alternative witnesses over the seven cones under `SHORT_CONE`, **and now over the
+# four OVER it as well -- 11 of 11 -- re-measured off the gate at 47.1 s.**
 #
 # WHAT IS STILL NOT IN THE ROW, so the "not all the same mechanism" claim above is bounded:
 # the SOURCE half of each pair. `PROMOTION_TARGETS` says what each deleted cast was cast TO;
@@ -629,18 +686,33 @@ if __name__ == "__main__":
 # ONE ROW: `uq`. It is the `de` SHAPE in this file's own vocabulary -- a REQUESTED dtype that is
 # not the receiver's, so the fold test is false and the `ADt` is read.
 #
-# `A5` -- `dd_cast_bool`'s `True` arm (dtype.bend:454) -- IS A DEAD ARM AND NO ROW CAN REACH IT.
-# Its ONE caller is `l2i_cast1.quo` (:626), reached only at `l2i_cast.got`'s `case 1` (:665), and
-# `sel == 1` is reachable only through `dd_cast_sel`'s `lng == True` arm (:567-570), where
-# `Bool.pick(U32, srcfl, 1, 0)` returns 1 only when `srcfl` -- `dd_is_float(xdt)` -- is TRUE. A
-# float dtype is `CFloat`/`CWeakFloat` and `dd_is_bool` is `Cls.is_bool` = `CBool`: DISJOINT. So
-# `dd_cast_bool`'s `isb` is `False` at its one call site, forever. CPython AGREES FROM THE OTHER
-# SIDE: dtype.py:33's arm is `dt in (long, ulong)` AFTER dtype.py:30's
-# `uops[0].dtype not in dtypes.floats`, so `uops[0]` is always a float and
+# `A5` -- `dd_cast_bool`'s `True` arm (dtype.bend:454) -- IS A DEAD ARM, AND THE QUANTITY IS
+# MEASURED OVER THE WHOLE INPUT SPACE AND NOT ARGUED. `grep -n dd_cast_bool tinybendygrad/` is
+# ONE call site, :626, inside `l2i_cast1.quo`, whose only caller is `l2i_cast1` (:641), whose
+# only caller is `l2i_cast.got`'s `case 1` (:665). So the arm fires iff some cell of `l2i_cast`'s
+# `(dt, xdt)` product has `sel == 1` AND `dd_is_bool(xdt)`. A CONSTRUCTION THAT PRINTS SAYS
+# NOTHING ABOUT THAT, so the arm was never driven and the census's own rows cannot witness it
+# either way. MEASURED, over the 400 cells of the port's own `Dt` product (DISCOVERED from
+# `tinybendygrad/LAWS/spec.bend`'s `def <n>() -> Dt:` lines -- 20 distinct values, one alias
+# `index() == weakint()` -- by `.agents/slop/decomppromo/dtdt.py --emit`, whose generated fixture
+# `ax_boolarm.bend` builds NO NODE and only asks the selector):
+#     cells with `sel == 1`                     24 of 400
+#     cells with `dd_is_bool(xdt)`              20 of 400  (every one has `xdt = bool`)
+#     the `sel` values those 20 cells carry     {0: 3, 2: 7, 3: 10}   -- NEVER 1
+#     `sel == 1` AND `dd_is_bool(xdt)`           0 of 400
+# `sel == 1` requires `dd_cast_sel`'s `lng == True` arm (dtype.bend:567-570), where
+# `Bool.pick(U32, srcfl, 1, 0)` returns 1 only when `srcfl` -- `dd_is_float(xdt)` -- is TRUE,
+# and `Cls.is_float` (spec.bend:134-140) and `Cls.is_bool` (:147-150) are DISJOINT `match`es over
+# the SEVEN-member `Cls` datatype (spec.bend:67-74), so the two cannot both hold at one `xdt`.
+# CPython AGREES FROM THE OTHER SIDE: dtype.py:33's arm is `dt in (long, ulong)` AFTER
+# dtype.py:28's `uops[0].dtype not in dtypes.floats`, so `uops[0]` is always a float and
 # `(uops[0] / 2**32)` has no bool operand for an `elementwise.py` `default_float` promotion to
-# convert. **THE PORT'S COMMENT ON `l2i_cast1.quo` -- "after `a.cast(default_float)` when `a` is a
-# bool" -- NAMES A TRIGGER ITS OWN SELECTOR HAS ALREADY EXCLUDED.** Deleting the arm is a PORT
-# change and is not made here.
+# convert. **THE PORT'S COMMENT AT dtype.bend:644-648 -- "after `a.cast(default_float)` when `a`
+# is a bool" -- NAMES A TRIGGER ITS OWN SELECTOR HAS ALREADY EXCLUDED**, and `:647` is the line
+# that says so. Deleting the arm is a PORT change and is not made here. A5 is therefore a DEAD
+# MUTATION BY REACHABILITY, not by coverage, and the two are different answers to different
+# questions: `A13` moved a row because a fixture was missing, `A5` moves none because no cell of
+# the input space can select it.
 # ===========================================================================
 # `de` IS NOT IN THIS GATE'S CONE, MEASURED, AND THAT IS WHY THE RECORDED FINDING ABOUT IT
 # CANNOT BE CLOSED HERE. `mixin/creation.bend:242-245`'s `cr_const_of` hands ONE value `de` to
@@ -673,15 +745,48 @@ if __name__ == "__main__":
 # THIS POPULATION: A3 (every `op.bend:208 dc_cast` `ADt` wrong) MOVES 15 ROWS and A1 MOVES 5,
 # both with 0 under the printer as it was.
 #
-# AND THE THREE ARMS THIS CENSUS'S OWN POPULATION PARAGRAPH NAMES AND NEITHER LANE DRIVES:
-# `l2i.pick`'s cases 28/29/30, `lgv` `lgw` `lgx`, the ones that mint their CONST OUTSIDE `l2i`
-# (`l2i.const`, dtype.bend:2773, over `dd_const.int` at `xdt`) and hand it in. A population rule
-# keyed on "ARMS THAT READ THE WORD POOL" cannot see them, which is the same class as
-# `amd_dsl_census`'s `VOP2_FIELDS` having no `src2`. MEASURED, AND ADDING THEM IS NOT A ONE-LINE
-# FIXTURE ADD -- CPython's `lgv` reads `CAST/1[i32],CONST/0,WHERE/3,CMPLT/2,CAST/1[i32],CONST/0`
-# against the port's `CAST/1[i32],CAST/1[u32],CONST/0,CAST/1[i32]`; `lgw` reads
-# `CAST/1[u32],CONST/0,WHERE/3,CMPLT/2,CAST/1[u32],CONST/0` against `CAST/1[u32],CONST/0`; and
-# `lgx` reads 6 tokens against the port's 4. ALL THREE ARE NEW DIVERGENCES AND NONE OF THE THREE
-# IS A `PROMOTION` DELETION -- `deleted()` leaves the walk unmatched on `lgv` and `lgw`, so their
-# difference is not "N more casts". THEY NEED TWO NEW CLASSES AND ARE NOT ADDED BLIND.
+# THE THREE ARMS A POOL-FED POPULATION CANNOT SEE ARE NOW ROWS, AND THEY ARE ALL EXACT MATCHES.
+# `l2i.pick`'s cases 28/29/30 mint their CONST OUTSIDE `l2i` (`l2i.const`, dtype.bend:2773, over
+# `dd_const.int` at `xdt`) and hand it in, so a population rule keyed on "ARMS THAT READ THE WORD
+# POOL" cannot see them -- the same class as `amd_dsl_census`'s `VOP2_FIELDS` having no `src2`.
+# **`dc_lc1` is the template and `ROWS` carries them: 39 -> 42, 23 -> 26 exact matches, and the
+# SAME 16 declared divergences. NOTHING WAS ADDED TO `DIVERGING`, SO NO NEW CLASS WAS NEEDED.**
+#    lgv  CAST/1[i32],CAST/1[u32],CONST/0,CAST/1[i32]   byte-identical, both lanes
+#    lgw  CAST/1[u32],CONST/0]                          byte-identical, both lanes
+#    lgx  CAST/1[u32],CONST/0,CAST/1[u32],CONST/0]      byte-identical, both lanes
+#
+# THIS REFUTES THE PREVIOUS REVISION OF THIS FOOTER, WHICH SAID ALL THREE DIVERGED AND NAMED THE
+# PORT'S HALF EXACTLY RIGHT. Its CPython half is `CAST/1[i32],CONST/0,WHERE/3,CMPLT/2,
+# CAST/1[i32],CONST/0` for `lgv`, and that string is REPRODUCIBLE -- from
+# `l2i(Ops.CAST, dtypes.int64, UOp.const(0, dtypes.INT32))`, an `i32` SOURCE, where dtype.py:31's
+# `x.dtype in dtypes.uints` early return does not fire and the sign-extension cone at :32 is
+# built. `l2i.const` passes `S.uint32()` (dtype.bend:2812/:2816/:2817) and `UOp.const(0, u32)`
+# takes dtype.py:31, so there is no sign extension to disagree about. **THE CPython LANE WAS DRIVEN
+# ON A DIFFERENT `xdt` FROM THE PORT LANE.** That is the `tn_bitwise_not` post-mortem a FOURTH
+# time and it happened in this file's PROSE: a lane that could not answer was reported as one
+# that had, and it would have cost TWO NEW CLASSES. THE THREE ROWS ARE ALSO WORTH HAVING for what
+# they say about `de`: the CONST is already AT `xdt`, so `dd_const.int`'s CAST at :333 is not
+# folded and the row carries `CAST/1[u32]` -- a target EQUAL to its source, the mirror image of
+# `uq`'s target that is not. `lgw`/`lgx` are the pair that separates an order-keeping walker
+# from a multiset: same two words, `lgx`'s cone is in the other order.
+# ===========================================================================
+# `dd_is_long` IS `bits == 64` AND CPYTHON'S GUARD IS A MEMBERSHIP TEST, SO `double` IS ADMITTED
+# TO A `LONG` ARM IT NEVER REACHED. NEW, AND NOT IN ANY PIN. `dd_is_long` (dtype.bend:229-230) is
+# `U32.is_eq(bits, 64)` and dtype.py:28/:33 both read `dt in (dtypes.long, dtypes.ulong)` -- a
+# two-element SET, not a width. MEASURED over the WHOLE product of the port's own `Dt`
+# population, DISCOVERED from `tinybendygrad/LAWS/spec.bend`'s own `def <n>() -> Dt:` lines (20
+# distinct values plus one alias `index() == weakint()`), i.e. 400 cells:
+#     `bits == 64`   answers True for {double, int64, uint64}  -- 3 of 20
+#     `dt in (long, ulong)`  answers True for {int64, uint64}   -- 2 of 20
+# `double` IS 64 bits wide and is NOT `long`. CONSEQUENCE, MEASURED PER CELL: the port REFUSES on
+# 160 of the 400 cells where CPython builds, and they split 140 / 12 / 8 by the port's selector
+# (2, 0, 1). **THE 20 CELLS WITH `dt == double` -- 12 at `sel == 0` and 8 at `sel == 1` -- ARE
+# MISATTRIBUTED**: they are not a second missing arm, they are `lgu`'s missing arm reached
+# through a wrong guard. AND THE ORDER IS LOAD-BEARING: with `dd_is_long(double)` fixed to
+# `False`, those 20 cells read `sel == 2` and hit the SAME `case 2: None{}` that `lgu` does, so
+# BUILDING dtype.py:35-38's arm ALONE WOULD NOT FIX `f64` -- `l2i_cast.got`'s `case 2` is
+# `None{}` (:667) and `l2i_dt(double)` is `None` because `l2i_dt` keys on the same 64 bits but
+# also demands `CSint`/`CUint`. THE SELECTOR MUST BE FIXED FIRST. Blast radius, measured:
+# `grep -n dd_is_long tinybendygrad/` returns ONE non-comment site, :686, so this is the whole of
+# it; and no `l2i.pick` arm has `double` for a TARGET, which is why 42 rows cannot see it.
 # ===========================================================================

@@ -2,7 +2,7 @@
 # which is its ONLY writer. One TAB-separated triple per declared divergence:
 # `<row>\t<CPython's line>\t<the port's line>`, i.e. the expected content on BOTH sides.
 #
-# 16 DIVERGENCES, 23 OF THE 39 ROWS AGREE EXACTLY. It is git-resident and beside the
+# 16 DIVERGENCES, 26 OF THE 42 ROWS AGREE EXACTLY. It is git-resident and beside the
 # gate because `AGENTS.md`'s own rule is that a gate's required inputs live in git and not
 # in `gates/artifacts/`: `gatekit` EMPTIES that directory before it runs and UNLINKS what
 # it staged when the run was not green, so a divergence list read from there is destroyed

@@ -12,9 +12,16 @@
 # rule has nothing to discover. The substitute axis is the FIXTURE, and the fixture
 # population is the port's OWN: `l2i.pick` (:2780, thirty-three arms), `dd_cmx.pick`
 # (:2931, eight) and `f2f.pick` (:3053, seven). Thirty of `l2i.pick`'s arms read the word
-# pool and three mint a CONST (`l2i.const`), so the pool-fed population is
-# 30 + 1 `unpack32` + 7 `f2f` = **38**. Both bend lanes emit every row including a refusal,
-# so the counts agree BY CONSTRUCTION and no exclusion list is needed to make them meet.
+# pool and three mint a CONST (`l2i.const`), and `dd_cmx.pick`'s eight print a scalar, so
+# the population is 30 `l2i` + 3 `l2i.const` + 2 `unpack32` + 7 `f2f` = **42**. Both bend
+# lanes emit every row including a refusal, so the counts agree BY CONSTRUCTION and no
+# exclusion list is needed to make them meet.
+#
+# `l2i.const`'s THREE ARE HERE BECAUSE A POOL-FED RULE CANNOT SEE THEM. `l2i.pick`'s cases
+# 28/29/30 mint the CONST at `xdt` and hand it in, so they read no word of `dd_wpool`, and
+# "ARMS THAT READ THE WORD POOL" is exactly the kind of population rule that misses them --
+# `amd_dsl_census`'s `VOP2_FIELDS` having no `src2` is the same defect. MEASURED, all three
+# are EXACT MATCHES against the real dtype.py.
 #
 # THE PRINTER IS THE PORT'S OWN, AND IT IS DEEPER THAN `Rng.sig`. `Rng.sig` prints a toposort
 # COUNT, the TOP op and a 3-op src PREFIX -- `gates/rng_graph_census.bend`'s own header
@@ -154,6 +161,40 @@ def dc_l2i_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
     case 0n: acc
     case 1n+p: dc_l2i_go(p, U32.add(i, 1), List.append(&2, String, acc, dc_l2i_pick(i)))
 
+# --------------------------------------------------- `l2i.const`'s three arms
+
+# `l2i.const` (dtype.bend:2773) MINTS ITS CONST OUTSIDE `l2i` -- at `xdt`, by `dd_const.int`
+# (:333) -- and hands the word in, so these three arms read NO word of the pool. A population
+# rule keyed on "ARMS THAT READ THE WORD POOL" therefore cannot see them, which is the same
+# class as `amd_dsl_census`'s `VOP2_FIELDS` having no `src2`, and `l2i.pick`'s cases 28/29/30
+# are exactly these three.
+#
+# THE `de` SHAPE AGAIN, AND FOR THE OPPOSITE REASON TO `uq`. Here the CONST is already at
+# `xdt`, so `dd_const.int`'s CAST is NOT folded and the row carries `CAST/1[u32]` -- a target
+# that equals its source, which `uq`'s does not. `lgw` is the row where CPython's own cast
+# FOLDS (`l2i_dt[ulong]` is `uint`, so `uops[0].cast(l2i_dt[dt])` is the const itself,
+# `mixin/dtype.py:36`) and `lgx` is the ORDER-SENSITIVE neighbour of `lgw`: same words, and
+# a different cone order, so the pair is what distinguishes a walker that keeps order from one
+# that keeps the multiset.
+def dc_lc.put(+nm: String, +dt: S.Dt, +xdt: S.Dt, +c: O.Found) -> List<&2, String>:
+  match c:
+    case O.Found{+ar, +i}: dc_put(nm, dc_sig.of(D.l2i(ar, O.OpsCAST{}, dt, xdt, [i]), ar))
+
+def dc_lc1(+nm: String, +v: U32, +dt: S.Dt, +xdt: S.Dt) -> List<&2, String>:
+  +ga = D.fixtures()
+  dc_lc.put(nm, dt, xdt, D.dd_const.int(D.Ga.ar(ga), H.i64_of_i32(v), xdt))
+
+def dc_lc_pick(+i: U32) -> List<&2, String>:
+  match i:
+    case 0: dc_lc1("lgv", 0, S.int64(), S.uint32())
+    case 1: dc_lc1("lgw", 0, S.uint64(), S.uint32())
+    case _: dc_lc1("lgx", 1, S.uint64(), S.uint32())
+
+def dc_lc_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
+  match fuel:
+    case 0n: acc
+    case 1n+p: dc_lc_go(p, U32.add(i, 1), List.append(&2, String, acc, dc_lc_pick(i)))
+
 # ------------------------------------------------------- `unpack32` and the `f2f`s
 
 # `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2850. `match`
@@ -226,12 +267,14 @@ def dc_f2f_go(fuel: Nat, +i: U32, acc: List<&2, String>) -> List<&2, String>:
 
 # ----------------------------------------------------------------------- the fold
 
-# `l2i.pick`'s pool-fed arms are the thirty `case`s above and `f2f.pick`'s are the seven.
-# Both are counted where the header states them, so a reader checks them against
-# `dtype.bend` rather than taking this file's word for it. `uq` is the second `unpack32`
-# fixture and is counted in neither, because `unpack32` is ONE def driven ONCE in the header
-# and this file now drives it TWICE -- on purpose, and `dc_up2` says why.
+# `l2i.pick`'s pool-fed arms are the thirty `case`s above, `l2i.const`'s are the three in
+# `dc_lc_pick`, and `f2f.pick`'s are the seven. All are counted where the header states them,
+# so a reader checks them against `dtype.bend` rather than taking this file's word for it.
+# `uq` is the second `unpack32` fixture and is counted in neither count above, because
+# `unpack32` is ONE def the header counts ONCE and this file drives it TWICE -- on purpose,
+# and `dc_up2` says why.
 def L2I_N() -> Nat: 30n
+def LC_N() -> Nat: 3n
 def F2F_N() -> Nat: 7n
 
 def dc_putl(xs: List<&2, String>) -> IO(Unit):
@@ -246,7 +289,8 @@ def dc_putl(xs: List<&2, String>) -> IO(Unit):
 def main() -> IO(Unit):
   do IO<Unit>:
     a : Unit <- dc_putl(dc_l2i_go(L2I_N(), 0, Nil{}))
-    b : Unit <- dc_putl(dc_up())
-    c : Unit <- dc_putl(dc_up2())
-    d : Unit <- dc_putl(dc_f2f_go(F2F_N(), 0, Nil{}))
+    b : Unit <- dc_putl(dc_lc_go(LC_N(), 0, Nil{}))
+    c : Unit <- dc_putl(dc_up())
+    d : Unit <- dc_putl(dc_up2())
+    e : Unit <- dc_putl(dc_f2f_go(F2F_N(), 0, Nil{}))
     return Unit{}

@@ -164,6 +164,21 @@ L2I = [
 for _nm, _op, _dt, _xdt, _base, _nw in L2I:
     print("%s=%s" % (_nm, drive(DT.l2i, _op, _dt, *ws(_base, _nw))))
 
+# `l2i.const`'s THREE arms -- `l2i.pick`'s cases 28/29/30 (dtype.bend:2812, :2816, :2817),
+# `l2i(Ops.CAST, dt, UOp.const(v, xdt))`. The argument is minted OUTSIDE the call, at `xdt`, so
+# it reads NO word of the pool and no pool-based population rule can see these three; they are
+# `uq`'s idea again from the other side, a CONST already AT the source dtype.
+#
+# `UOp.const` (ops.py:634) is `UOp(CONST, arg=dt.const(b)).cast(dt)`, so on this checkout it is
+# itself a CAST -- MEASURED, printed above as `arg op=CAST dtype=u32` -- and the port's mirror of
+# that half is `dd_const.int` (dtype.bend:333). Both sides therefore carry the argument's own
+# `CAST/1[u32]`, and `lgw` is the row where CPython's `uops[0].cast(l2i_dt[dt])` FOLDS on top of
+# it (`mixin/dtype.py:36`, `l2i_dt[ulong] == dtypes.uint`) while `lgx` is the ORDER-SENSITIVE
+# NEIGHBOUR of `lgw`: the same two words, a different cone order.
+for _nm, _v, _dt in (("lgv", 0, dtypes.int64), ("lgw", 0, dtypes.uint64),
+                     ("lgx", 1, dtypes.uint64)):
+    print("%s=%s" % (_nm, drive(DT.l2i, Ops.CAST, _dt, UOp.const(_v, dtypes.uint32))))
+
 # `unpack32` (dtype.py:13) over the pool's u32 word at offset 9 -- dtype.bend:2850.
 print("up=%s" % drive(DT.unpack32, PAR[9]))
 

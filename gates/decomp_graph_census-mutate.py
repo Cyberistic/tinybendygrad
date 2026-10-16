@@ -12,13 +12,21 @@ and the recorded cause was that the printer rendered `OpsCAST{}` without its arg
 the mutation had nothing to move. This lane now prints it (`decomp_graph_census.bend`'s
 `dc_tok`, `decomp_graph_census-oracle.py`'s `s1`), so the same question is asked again here.
 
-TWO COLUMNS, AND THE SECOND IS THE POINT. `MOVED` is how many of the 38 rows differ with
+TWO COLUMNS, AND THE SECOND IS THE POINT. `MOVED` is how many of the 42 rows differ with
 the printer in place. `MOVED-BARE` is the same comparison after every `[...]` is stripped
 off both lanes, which is EXACTLY the printer as it was before the repair -- no second bend
 run, and no risk of the two runs seeing different substrates. `MOVED > 0` with
 `MOVED-BARE == 0` is the shape that says the REPAIR is what made the coupling visible. A
 mutation with `MOVED == 0` AND `MOVED-BARE == 0` is not that: it is a DEAD mutation on this
 population, and each one below is named for which of the two it is.
+
+THE 42 AND THE THREE ROWS THAT MADE IT. `l2i.const`'s `lgv lgw lgx` joined at 39 -> 42, and
+MEASURED they are NOT inert: `lgv` is what moved A1 5 -> 6, A3 15 -> 16, A4 5 -> 6 and
+A11 17 -> 18, and `lgw`/`lgx` are two of A2's four rows. `A2` is the only mutation visible
+under the bare printer besides A11, and `lgw`/`lgx` are why: breaking the fold test at
+dtype.bend:593 makes dtype.py's sign-extension cone appear, which changes the token SEQUENCE
+and not merely a `[target]`. So the three rows that mint their CONST outside `l2i` bought
+coverage on the CONST sites, which the pool-fed arms reached only through `zero`.
 
 NO PORT FILE IS EVER WRITTEN. Every mutation edits a COPY that sits beside its original --
 `dtype-mut.bend` beside `dtype.bend`, `op-mut.bend` beside `op.bend`, `decomp-mut-driver.bend`
@@ -110,7 +118,12 @@ TABLE = (
     ("A4", "ADt", "dd_cast_fold's False arm mints boolean -- the helper A1 goes through",
      PORT, "    case False{}: P.dc_cast(ar, x, dt)",
      "    case False{}: P.dc_cast(ar, x, S.boolean())", 1),
-    ("A5", "ADt", "dd_cast_bool's True arm is boolean, not single",
+    ("A5", "ADt", "dd_cast_bool's True arm is boolean, not single -- DEAD BY REACHABILITY, "
+     "which is a DIFFERENT ANSWER FROM A MISSING FIXTURE: `sel == 1` requires "
+     "`dd_is_float(xdt)` and `dd_is_bool(xdt)` is `Cls.is_bool`, DISJOINT over the seven-member "
+     "`Cls` (spec.bend:67-74), so 0 of the 400 cells of `l2i_cast`'s dtype product can select it. "
+     "See the gate's footer; `A13` moved a row because a fixture was MISSING and this one "
+     "cannot move one because no cell can REACH it",
      PORT, "    case True{}: P.dc_cast(ar, x, S.single())",
      "    case True{}: P.dc_cast(ar, x, S.boolean())", 1),
     ("A6", "ADt", "dd_bcast's False arm BITCASTs to boolean",
