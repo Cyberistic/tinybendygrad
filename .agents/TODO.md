@@ -647,6 +647,20 @@ d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is pre
                                        RED: `d10-transcript ABSENT`) -- which is the SANCTIONED
                                        state, `corpus-figure.py:178`: "a red pin is re-taken, never
                                        hand-edited." NOT a failure of this change.
+                                        **THE WRITER IS NOW VERIFIED AGAINST THE PIN WITHOUT THE
+                                        HEAVY RUN, WHICH IS WHAT THE RED WAS HIDING.** MEASURED
+                                        2026-10-17: `d10_sha(snap(live))` EQUALS `REPRO_PINS`
+                                        EXACTLY -- **the row `cmd_repro` would write is the row the pin
+                                        expects** -- and `d10_sha` on a snapshot not carrying the
+                                        file still answers `ABSENT`. So the one promise this change
+                                        makes is exercised on the REAL artifacts, and the remaining
+                                        RED is only "the second measurement has not been re-taken
+                                        SINCE the writer changed", not an unexercised code path.
+                                        **A CONCURRENT SESSION'S `differ.py repro` RAN AND DID NOT
+                                        CLEAR IT**, because it ran a `differ.py` that predates the
+                                        writer change; `D0-repro.txt` still carries only its three
+                                        rows. **A PIN CANNOT BE CLEARED BY A RUN OF THE CODE THAT
+                                        PRE-DATES THE PIN.**
 
 repro-dangling [##........] 1/3      `checks/repro-paths.py`'s **108** DANGLING rows, TRIAGED 2026-10-15
                                        against the 99 that no live instrument names. **THE RESULT IS
@@ -17411,6 +17425,35 @@ WHAT WAS VERIFIED, NOT THE RE-RUN.)*
       `retention-check.py:154`'S OWN REFUSAL **PRE-EXISTED AS A PRE-SUMMARY EXIT**, SO **NOTHING REGRESSED.**
       (b) `i64-shr-gate.py:118` CONFLATES `bd.out IS ABSENT` (**REFUSED**) AND `NOT 301 ROWS` (**FAIL**) IN
       ONE `return 1`. BOTH RECORDED IN COMMENTS RATHER THAN SILENTLY DECIDED.
+
+## GATEKITRULING -- **TWO RULINGS THE `STRSWEEP` UNIT CORRECTLY REFUSED TO MAKE** (2026-10-17)
+
+**BOTH ARE `gates/gatekit.py`'s OWNER'S, WHICH IS THE CALLER. `bea641050` NAMED BOTH AND DID NOT TOUCH
+EITHER, AND THAT WAS RIGHT.**
+
+- [x] **RULING 1 -- "A PREMISE NO LONGER HOLDS" IS `REFUSED` OR `FAIL`? THE DISCRIMINATOR: **DID THE
+      HARNESS PRODUCE THE ANSWER TO THE QUESTION IT SET OUT TO ANSWER?****
+
+      * **NO -> `REFUSED` (3).** THE INSTRUMENT **CANNOT MEASURE ITS SUBJECT.** THIS IS A STATEMENT ABOUT THE
+        ***INSTRUMENT***, NOT ABOUT THE TREE.
+      * **YES, AND THE ANSWER IS WRONG -> `FAIL` (1).** THE INSTRUMENT MEASURED AND GOT A DISAGREEMENT.
+
+      **APPLIED TO THE TWO THAT LOOKED IDENTICAL, AND THEY SEPARATE CLEANLY:**
+
+      | site | what happened | ruling |
+      |---|---|---|
+      | `ops_python_exec-gen.py:533` `PAIR_BAD` | its own header says the clause **MUST BE 0** and it was **not** -- **THE INSTRUMENT ANSWERED** | **`FAIL` (1)** |
+      | `tc_ptx_types-mutate.py:78` "my pattern is gone" | the harness **CANNOT APPLY THE MUTATION IT WAS ASKED TO APPLY** | **`REFUSED` (3)** |
+      | **`ops_python_census-oracle.py:303` `pywma_first_wins`** | two upstream cores stopped sharing a triple, so **THE ROW THE ORACLE EMITS IS NOT THE ROW IT IS NAMED FOR** -- it *does* emit an answer, **but THE ANSWER ANSWERS A DIFFERENT QUESTION** | **`REFUSED` (3)** -- **THE UNIT LEFT THIS AS THE SOLE REMAINING `gates/` `STR` ROW; THIS RULING RESOLVES IT** |
+
+- [x] **RULING 2 -- `gendirs.py` EXITS **3** AND `retention-check.py` EXITS **2** FOR THE **IDENTICAL**
+      `git`-FAILED SENTENCE. **`gatekit`'s FIVE ARE THE TREE'S VOCABULARY, AND A FILE THAT DECLARES ITS OWN
+      EXIT PARAGRAPH **HAS NOT ADOPTED THE VOCABULARY**, WHICH IS A **FACT ABOUT THE FILE**, NOT A
+      DISAGREEMENT TO BE AVERAGED.** SO `gendirs.py`'s **3** (VIA `gatekit.verdict_of`) IS CORRECT; AND
+      `retention-check.py`'s **2** IS **SEMANTICALLY RIGHT** -- "A PRECONDITION IS MISSING (NO GIT...)" **IS
+      `REFUSED`'S MEANING** -- **BUT SYNTACTICALLY NON-STANDARD, AND IT *PRE-EXISTED*, SO CHANGING IT WOULD BE
+      A BEHAVIOUR CHANGE RATHER THAN A FIX.**** **THE RIGHT MOVE IS FOR THE FILE TO SAY WHICH VOCABULARY IT
+      IS ON, NOT FOR ONE NUMBER TO WIN.**
 
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
