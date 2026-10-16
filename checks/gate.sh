@@ -20,6 +20,21 @@ _d=${0%/*}; case $_d in "$0") _d=.;; esac
 cd "$_d/.." || exit 2
 [ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 SL=.agents/slop/shlscope
+# THE GENERATOR IS AN ABSENT PRECONDITION, AND `set -e` ALREADY KNEW THAT -- WITH A NUMBER
+# THIS TREE HAS NOT ASSIGNED A MEANING TO. MEASURED before this guard: `zsh checks/gate.sh`
+# answers **rc=2**, `python3: can't open file '.agents/slop/shlscope/gen.py'`, and **NO `DIED`**,
+# because errexit aborts at the call BELOW. Two consequences, and only the first is fixable here:
+#   * the observable exit was `UNASSIGNED(2)`, which `checks/gatesweep.py:classify` folds to
+#     REFUSED with the token `UNASSIGNED(2)` -- right verdict, for a reason nobody wrote;
+#   * THE FOUR `DIED`/`exit 2` GUARDS AT 44-59 ARE UNREACHABLE, so renumbering them would be a
+#     line no run could exercise. They are left alone on purpose, not overlooked.
+# `$SL/gen.py` is absent from the tree AND from HEAD -- `checks/unrunnable-recipes.py` calls that
+# state `NEITHER` and notes `BASENAME-ABSENT`, and it is in history at `5444ea42e` -- so this is
+# the file's ordinary shape rather than a flake, and a guard that names it is the honest reading.
+# EXIT 3 AND THE `== REFUSED, NOT A VERDICT:` PREFIX ARE `checks/sb-gate.sh:62`'s OWN SPELLING
+# OF EXACTLY THIS SAYING, for exactly this reason. 2 IS NOT A VERDICT; 5 WOULD BE WRONG, BECAUSE
+# NO LANE RAN.
+[ -f "$SL/gen.py" ] || { echo "== REFUSED, NOT A VERDICT: the generator is absent: $SL/gen.py" >&2; exit 3; }
 OUT=$(mktemp -d "${TMPDIR:-/tmp}/shlscope.XXXXXX")
 trap 'rm -rf "$OUT"' EXIT
 

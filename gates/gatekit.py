@@ -465,13 +465,56 @@ class Gate:
         self._say("bend produced no --check-only output in 25 tries (the stack flake)")
         return False
 
-    def _oracle(self):
+    def _oracle(self) -> int:
+        """CPython's lane, AND A VERDICT RATHER THAN A BOOL: THE EXIT STATUS IS NOT THE VERDICT.
+
+        IT WAS A BOOL, AND THE BOOL WAS `returncode != 0` -- A QUESTION ABOUT THE **PROCESS**.
+        Its two sibling lanes ask a question about the **OUTPUT**: `_lane` asks "did it produce
+        `self.rows` rows?", and `:563` asks it again and answers `DEAD if n == 0 else FAIL`. So
+        the oracle lane's ROW COUNT is already the thing this file holds to be that lane's
+        verdict, thirty lines further down, ON THE SAME FILE -- and `:539` decided it on the
+        exit status instead, one screen earlier. An oracle that emits no rows and exits 0 is
+        `DEAD`; THE SAME ORACLE EXITING 1 IS `REFUSED`, WHICH CLAIMS A PRECONDITION WAS ABSENT
+        WHEN NOTHING WAS ABSENT. AN ORACLE CANNOT SAY `DEAD` FROM ITS OWN EXIT CODE BECAUSE 0
+        ALREADY MEANS `PASS` AND EVERY OTHER VALUE BELONGS TO SOMEBODY ELSE.
+
+        THE FIX IS TO ASK THE QUESTION THE LANES ASK. `_said(stderr)` IS THIS FILE'S OWN
+        DISCRIMINATOR -- `_warm` and `_lane` both use it to separate "bend NAMED it" from "the
+        stack flake" -- so the three signals a subprocess can carry map onto the three verdicts
+        they can honestly mean:
+
+          rc 0                  -> `PASS`, and `:563` still decides the row count, unchanged
+          rc!=0, it SAID it     -> `REFUSED`: a traceback, an import error, a file it cannot
+                                       open. It named its own failure, so a precondition is
+                                       the reading, and this is exactly what it read before.
+          rc!=0, it printed rows-> `REFUSED`: it ANSWERED and then failed. `:563` is not
+                                       consulted, so this is deliberately NOT awarded a green
+                                       it cannot justify -- an oracle whose rows are right and
+                                       whose exit is wrong is still a defect to look at.
+          rc!=0, silent, no rows-> `DEAD`: it ran and emitted nothing, which is `:563`'s own
+                                       `DEAD if n == 0` applied to the lane it skipped.
+
+        ONE CELL MOVES. MEASURED, NOT ASSUMED: the population is
+        `checks/gatesweep.py:population()` -- A DIRECTORY WALK, LOADED BY PATH, not a list --
+        and each gate's oracle was taken from its OWN `Gate(oracle=...)` argument and run.
+        **80 gates, 60 of them `Gate`s with a declared oracle, 60 of 60 EXIT 0, 0 verdicts
+        move.** So the cell is UNREACHABLE for the whole population, and not merely for the
+        gates that are green -- a green one could not have reached it in principle, because
+        `return REFUSED` was the only way in and `REFUSED` is not a pass. The other 20 gates
+        run their own lanes and never call `_oracle` at all.
+        """
         r = subprocess.run([str(PY), str(self.oracle)], capture_output=True, text=True)
-        if r.returncode != 0:
-            self._say(f"the oracle failed rc={r.returncode}: {r.stderr.strip()[:200]}")
-            return False
-        (self.dir / _staged("py.rows")).write_text(r.stdout)
-        return True
+        if r.returncode == 0:
+            (self.dir / _staged("py.rows")).write_text(r.stdout)
+            return PASS
+        said, rows = _said(r.stderr), len(_lines_text(r.stdout))
+        if not said and not rows:
+            self._say(f"the oracle ran, said nothing and emitted no rows (rc={r.returncode})")
+            return DEAD
+        self._say(f"the oracle failed rc={r.returncode}: "
+                  + (said[:200] if said
+                     else f"it emitted {rows} rows and still exited non-zero"))
+        return REFUSED
 
     def _lane(self, argv, name):
         """Retried while it emits the wrong ROW COUNT, because `bend`'s machine stack
@@ -536,8 +579,12 @@ class Gate:
                 return code
             if not self._warm():
                 return REFUSED          # the substrate could not be checked at all
-            if not self._oracle():
-                return REFUSED          # CPython did not run, so nothing was compared
+            # THE VERDICT THE ORACLE EARNED, NOT ONE THIS FILE GUESSES. `not self._oracle()`
+            # could only ever say `REFUSED`, which is why a silent non-zero oracle lost the
+            # `DEAD` it had earned; `_oracle` now returns the exit, so `run()` returns it.
+            # THE WALRUS IS COMPARED, NOT UNPACKED -- a tuple is never `== PASS` (see above).
+            if (ocode := self._oracle()) != PASS:
+                return ocode
             bd, bn, binp = (self.dir / _staged(n) for n in ("bd.out", "bn.out", "gate.bin"))
             if not self._lane([str(BEND), str(self.bend)], "bd.out"):
                 return DEAD             # `bend` ran and emitted no rows to compare
