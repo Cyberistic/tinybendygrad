@@ -16735,6 +16735,51 @@ CENSUS IS WHAT SAYS ZERO AND GOES RED ON THE NEXT ONE** -- SO THE CLASS NOW HAS 
       A WRITE RACE WITH NO LOCK, AND `gates/artifacts/` IS `.gitignore`d SO NOTHING RECORDS THAT IT
       HAPPENED.**
 
+## UNRUNNABLE -- **331 `.bend` FILES, 4192 RECIPE ROWS, AND 30 OF THEM NAME SOMETHING THAT IS GONE** (2026-10-16)
+
+`checks/unrunnable-recipes.py` (3 COMMITS, 3 FILES). **POPULATION = `os.walk` OVER 15 DECLARED ROOTS,
+`.bend` SUFFIX, 8 SKIP-DIRS** -- A DIRECTORY WALK, NOT A LIST. `references/` EXCLUDED (`.gitignore:2`,
+1714 THIRD-PARTY `.bend`).
+
+    331 .bend files  (tinybendygrad/ 134 · .agents/ 112 · gates/ 60 · oracles/ 16 · checks/ 4 · runs/ 3 ·
+                       examples/ 1 · langs/ 1)
+    4192 rows · 136 files carry a recipe-position row · 27 files carry AN UNRUNNABLE RECIPE · 48 rows
+    PORT:  2624 rows · 95 files · **17 files carry an unrunnable recipe · 30 rows**
+
+- [x] **19 DISTINCT INSTRUMENTS UNDER `.agents/slop/` ARE CITED BY **14 SHIPPED PORT FILES** AS THINGS TO
+      RUN; **18 WERE DELETED FROM OUR OWN HISTORY.**** CHECKED AGAINST **81 533 `git log --all` PATHS**,
+      OF WHICH **52 766 ARE UNDER `.agents/slop/`**.
+- [x] **AND `$ORACLE_DIR` IS **ASSIGNED NOWHERE**: 0 ASSIGNMENTS TREE-WIDE, 5 READS IN
+      `tinybendygrad/mixin/{creation,reduce}.bend` AND `mixin/rand.bend`.** SO IT IS AN ENVIRONMENT
+      VARIABLE WITH **NO SETTER**, AND THE RECIPES THAT USE IT ARE UNRUNNABLE BY CONSTRUCTION UNLESS THE
+      OPERATOR INVENTS A VALUE.
+- [x] **AND THE SHARPEST ONE, VERIFIED BY THE CALLER -- "THE ACCEPTANCE TEST" OF A SHIPPED PORT FILE IS A
+      DIFF AGAINST A **TEMPORARY DIRECTORY**":**
+
+          tinybendygrad/codegen/late/linearizer.bend:150
+            diff <(python3 /tmp/opencode/late-oracle.py) <(./bin/bend tinybendygrad/codegen/late.bend)
+
+      **`/tmp/opencode/late-oracle.py` EXISTS = N. AND `tinybendygrad/codegen/late.bend` EXISTS = N** --
+      THE PORT MOVED INTO `late/` AS `linearizer.bend` (THE DIRECTORY HOLDS **5** FILES). **SO NEITHER
+      SIDE OF THE DIFF EXISTS.** AND **`oracles/tinybendygrad_codegen_late.bend.rows` IS IN `HEAD`,
+      128 ROWS, AND IS **NOT** NAMED BY `differ.declared()`** -- VERIFIED BY THE CALLER. **THE CPYTHON
+      SOURCE IT DESCRIBES, `tinygrad/codegen/late/linearizer.py`, **DOES** EXIST** -- SO THE 128 ROWS
+      ARE **NOT ORPHANED CONTENT, THEY ARE A SNAPSHOT WITH NO GENERATOR AND NO CONSUMER.** A CARVE-OUT
+      MUST BE A GENERATOR'S DECLARATION LOADED BY PATH.
+- [x] **AND THE EXTRACTOR WAS WRONG IN **THIRTEEN** PLACES, TWO OF WHICH MATTER.** **#6: A PAIR-SHORTHAND
+      RULE `\A[^/]*\.[A-Za-z0-9]+/` MATCHED DOTFILES** (`[^/]*` MATCHES EMPTY) AND **DELETED **666 TRUE
+      ROWS**, INCLUDING **23 OF THE DANGLING INSTRUMENTS THIS CENSUS EXISTS TO FIND**. THE MORAL IS THE
+      SENTENCE: **A TRUNCATED TOKEN WRITES A FALSE ROW; A WRONG EXCLUSION WRITES NO ROW, AND NO ROW DOES
+      NOT ARGUE BACK. HENCE EVERY REJECTION RULE NOW TALLIES ITSELF.** **#7: `anyCommit=no` REPORTED FOR
+      21 TOKENS OFF A **0-BYTE** FILE BUILT INSIDE A TIMED-OUT COMMAND -- WRONG FOR **20** OF THEM.**
+      **#13: THE TABLE WAS **NOT BYTE-REPRODUCIBLE** (`set`-ORDER IN `note`; `1f83544...` vs
+      `97a6135...`); FIXED TO `929af948...` ACROSS **THREE SEEDS**.**
+- [x] **AND "EXISTS" IS NOT "RUNS": PORT = 2022 `code`, 2 `declared-by`, 2 `prose`.** SO **NOT ONE** OF
+      THE PORT'S OWN FILES IS "EXISTS, NOTHING EXECUTES IT". THE 2 PROSE ROWS ARE GITIGNORED
+      `references/bend/tests/` FIXTURES. **AND THE 2 `declared-by` ROWS ARE EXACTLY WHAT A LITERAL-SCAN
+      READER GETS WRONG: `differ.py` *DERIVES* ITS 176 NAMES FROM `corpus()`, SO NO LITERAL APPEARS IN
+      CODE AND `D1-graph-mselect.txt` READS AS UNREAD. MEASURED FALSE.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
