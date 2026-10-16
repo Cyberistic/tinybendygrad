@@ -17760,100 +17760,33 @@ gatespop-root-spell [#########] 3/3  **THE ONE-SPELLING FIX, MEASURED, BUILT, AN
                                        **A REFUSAL THAT NAMES ITS OWN NEXT STEP IS NOT A DEFERRED
                                        DECISION.**
 
-sweep-population [#########] 3/3  **THE SWEEP'S POPULATION IS A NAMING SUFFIX, AND AT LEAST SIX INSTRUMENTS
-                                       THAT CALL THEMSELVES GATES ARE OUTSIDE IT.** `checks/gatesweep.py`
-                                       discovers `gates/*-gate.py`, so the question "which instruments in
-                                       `gates/` are gates" is answered by a FILE EXTENSION. MEASURED
-                                       2026-10-16 at HEAD: **`gates/*.py` in HEAD = 182**, the sweep's
-                                       population = **80**, the ones it does NOT sweep = **102**, and of
-                                       those **33 are RUNNABLE AND RETURN AN EXIT CODE** -- so the sweep
-                                       has never run them. **33 IS AN UPPER BOUND, NOT A FINDING**: most
-                                       are `*-mutate.py` / `*-oracle.py`, which a gate INVOKES, and no
-                                       static test separates "a gate that reports a verdict" from "a lane
-                                       a gate runs". **THE TIGHT CLAIM IS SMALLER AND SURVIVES THAT
-                                       CAVEAT**: at least **six** files whose OWN DOCSTRINGS call them
-                                       gates are outside the population by NAME -- `gates-pop.py`
-                                       (*"The gate OVER gates"*), `gate-surface.py` (*"THE VERDICT SURFACE
-                                       OF EVERY GATE"*), `runner.py` (*"the PRECONDITIONS a gate sweep
-                                       must satisfy"* and it WRITES THE VERDICT TABLE), plus
-                                       `retention-check.py`, `gendirs.py` and the three
-                                       `*-census.py` files, which each emit a verdict summary.
-                                       **SO THE SWEEP'S HEADLINE ("70 of 70", MEASURED 2026-10-15) IS A
-                                       COUNT OVER A PREFIX OF THE INSTRUMENTS, AND A READER TAKES IT FOR
-                                       THE TREE.** `gates/gates-pop.py:discover()` is already consulted as
-                                       a CONTROL and its population is **deliberately a different
-                                       question**, so the divergence is documented -- but the COST of the
-                                       divergence was never stated as a number, and that is the part worth
-                                       saying out loud. **THE SWEEP IS NOT WRONG AND THE INSTRUMENTS ARE
-                                       NOT MISSING; THE ONLY DEFECT IS THAT A SUFFIX IS ANSWERING A
-                                       QUESTION NOBODY WROTE DOWN.** A verdict-emitting instrument belongs
-                                       to the sweep by what it DOES, so the honest population is a
-                                       DECLARATION each instrument makes about itself -- which is what
-                                       `gates/gatekit.py`'s `VERDICT` already is for every gate that uses
-                                       it. **LANDING THAT IS NOT OWED HERE**: changing the sweep's
-                                       population would change every number it has ever published, and
-                                       the six named above are enough to size the gap.
-                                       **AND THE DEFECT HAS A SHAPE, MEASURED THE SAME WAY.** A gate that
-                                       DECLARES ITSELF -- mentions `gatekit` or `VERDICT` -- is a population
-                                       BY DECLARATION, which is what `gates/gatekit.py`'s `VERDICT` already
-                                       is for every gate that uses it. MEASURED 2026-10-16 at HEAD:
-                                       **`gates/*.py` 182, suffix `-gate.py` 80, DECLARING 105 -- AND
-                                       `SWEPT BUT NOT DECLARING` IS `0`.** So the suffix is a **STRICT
-                                       SUBSET** of what declares: it never over-includes, it only
-                                       under-includes, by **25** instruments. **A POPULATION DEFINED BY A
-                                       NAME CAN ONLY BE WRONG IN ONE DIRECTION, AND THAT DIRECTION IS
-                                       THE INVISIBLE ONE.** Among the 25 are the six already named plus
-                                       `gatekit.py`, `docnum-census.py`, `state_census.py` and
-                                       `ops_python_exec-gen.py`. **THE DECLARATION TEST IS ITSELF LOOSE --
-                                       `*-mutate.py` and `*-oracle.py` mention `VERDICT` in prose and import
-                                       `gatekit` for a helper, so 105 IS ANOTHER UPPER BOUND** -- but the
-                                       SUBSET RESULT DOES NOT DEPEND ON IT, because it is a statement about
-                                       what the suffix MISSES and not about what the declaration catches.
-
-repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
-                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
-                                       with any other extension was INVISIBLE to it -- the
-                                       doctrine-1 shape, patched one extension at a time (`2 .mjs`
-                                       were once invisible). REPLACED 2026-10-15 with a permissive
-                                       extraction intersected with the FILESYSTEM (`os.path.exists`
-                                       just below it): the population is now "tokens that name a
-                                       path", not "tokens whose suffix is on a list". MEASURED over
-                                       the SAME 541 reports at HEAD `db24cf3d0`, before -> after:
-                                       named 560 -> 714, resolve 483 -> 606, DANGLING 77 -> 108,
-                                       with ADDED 164 (125 resolving) and LOST 10 (2 resolving). **AND THE SET WROTE FALSE ROWS IN
-                                       BOTH DIRECTIONS, which is why "it only missed things" was
-                                       the wrong worry: it stops at a REMEMBERED extension, so
-                                       `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as
-                                       `...312.py` (a DANGLING row for a name that never existed)
-                                       and `whosecache/REPORT.md:73`'s
-                                       `gates/tn_graph_census-gate.py.bak` was read as
-                                       `gates/tn_graph_census-gate.py`, A FILE THAT EXISTS -- a
-                                       broken reference counted as RESOLVED.** The gate was
-                                       ALREADY red (77 dangling), so this adds truth to a failing
-                                       census rather than creating a failure, and the 108 are REAL
-                                       reports pointing at REAL paths that are GONE
-                                       (`cstyle-live/port.txt`, `coldness/population.txt`).
-                                       `.agents/slop/reprorefs/REPORT.md` + its `probe.py`.
-                                       A SECOND DEFECT IN THE SAME FILE, FOUND BY THE FIRST:
-                                       `committed_reports()` ran `git ls-files` -- the INDEX -- while
-                                       the TEXT came from `git show HEAD:`, so the DENOMINATOR moved
-                                       with the index's arming state (584 armed, 541 disarmed) under
-                                       the printed word *committed*, AND it INHERITED
-                                       `GIT_INDEX_FILE`, so an agent's shell measured a different
-                                       population than a bare one -- the SAME defect and the same
-                                       shape as `checks/index-arm-gate.py`'s false `PASS`. FIXED to
-                                       `git ls-tree -r --name-only HEAD`: 541 under the default
-                                       index, under `.git/agent-index`, AND under a bogus path that
-                                       exists nowhere. The 43 phantom entries contributed NO text,
-                                       so the differential was right while the denominator was
-                                       wrong -- which is why the fix's own commit message quotes
-                                       584.
-                                       LANDED, NOT MERELY FLAGGED: `AGENTS.md`'s doctrine-1
-                                       row and `agend2/REPLACEMENTS.md:294` both recorded this
-                                       line as **fixed** BY the suffix set, which is the claim
-                                       this measurement refutes. BOTH are now corrected, and the
-                                       `agend2` entry carries a **SUPERSEDED** note naming the
-                                       lesson: **A REPLACEMENT LIST THAT NAMED A FIX AND NEVER
-                                       RE-DERIVED IT AFTER IT LANDED IS HOW A HAND-KEPT CITATION
-                                       ROTS QUIETLY.**
-
+sweep-population [#########] 3/3  **THE SWEEP'S POPULATION IS A NAMING SUFFIX -- AND THE CLAIM I BUILT ON IT
+                                       WAS WRONG, DISPROVEN BY MY OWN TRANSCRIPT.** MEASURED 2026-10-16 at
+                                       HEAD: **`gates/*.py` in HEAD = 182**, the suffix population = **80**,
+                                       and **at least six** files whose OWN DOCSTRINGS call them gates are
+                                       outside it by NAME: `gates-pop.py` (*"The gate OVER gates"*),
+                                       `gate-surface.py` (*"THE VERDICT SURFACE OF EVERY GATE"*), `runner.py`
+                                       (*"the PRECONDITIONS a gate sweep must satisfy"* -- and it WRITES THE
+                                       VERDICT TABLE), plus `retention-check.py`, `gendirs.py` and three
+                                       `*-census.py` files. **I THEN WROTE THAT A READER OF THE HEADLINE
+                                       "TAKES IT FOR THE TREE", AND MY OWN TRANSCRIPT SAYS OTHERWISE**:
+                                       `.agents/slop/gwself/sweep-70.out:1-2` reads
+                                       `POPULATION: directory walk gates/*-gate.py -> 70` directly above
+                                       `CONTROL   : gates-pop.discover() -> 188 entries + 60 modules (a
+                                       DIFFERENT question)`, and `checks/gatesweep.py:225` SAYS SO IN ITS
+                                       OWN SOURCE -- *"the control, printed every run"*. **THE GAP WAS
+                                       PUBLISHED, LABELLED, IN THE VERY ARTIFACT I CITED AS EVIDENCE OF
+                                       IT BEING HIDDEN.** That is the error, and it is worth more than the
+                                       finding was: **I attacked a claim about a reader without reading what
+                                       the reader is shown.**
+                                       **WHAT SURVIVES IS THE SHAPE, AND IT IS STILL WORTH HAVING.**
+                                       MEASURED the same way: 105 of the 182 `gates/*.py` DECLARE a verdict
+                                       (they mention `gatekit` or `VERDICT`), and **`SWEPT BUT NOT DECLARING`
+                                       IS `0`** -- so the suffix is a **STRICT SUBSET** of what declares: it
+                                       never over-includes, it under-includes by **25**, and **A POPULATION
+                                       DEFINED BY A NAME CAN ONLY BE WRONG IN THE INVISIBLE DIRECTION.**
+                                       (The declaration test is loose -- `*-oracle.py` mentions `VERDICT` in
+                                       prose -- so 105 is another upper bound; the subset result does not
+                                       depend on that, because it is a claim about what the suffix MISSES.)
+                                       **NOT OWED HERE:** changing the population would move every number
+                                       the sweep has published, and the six named files are enough to size it.
