@@ -34,7 +34,8 @@ def git(*a: str) -> str:
 
 
 def main() -> int:
-    files = [f for f in git("ls-files").split() if f.startswith(D)]
+    files = [f for f in git("ls-tree", "-r", "-z", "--name-only", "HEAD").split("\0")
+             if f.startswith(D)]
     print("file\tbytes\tcode_readers\treader_names\tverdict\treason")
     for f in sorted(files):
         name = pathlib.Path(f).name

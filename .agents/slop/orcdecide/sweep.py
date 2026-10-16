@@ -26,7 +26,7 @@ def git(*args: str) -> str:
 
 
 def main() -> int:
-    tracked = git("ls-files").split()
+    tracked = [f for f in git("ls-tree", "-r", "-z", "--name-only", "HEAD").split("\0") if f]
     dirs: dict[str, list[str]] = {}
     loose: list[str] = []
     for f in tracked:
