@@ -193,7 +193,7 @@ ABSENT-TEXT	NOT-MOVED	examples/beautiful_mnist.bend:1144	examples/beautiful_mnis
 DANGLING-FILE		examples/openpilot/load_pickle.py:36	wte.time:6	absent		no file in the walk or in HEAD is 'wte.time'
 DANGLING-LINE	NOT-MOVED	gates/amd_dsl_census-gate.py:101	base.bend:504	suffix		tinybendygrad/base.bend has 56 lines, cited at :504
 DANGLING-FILE		gates/citations-census-gate.py:279	subj.bend:2	absent	beta	no file in the walk or in HEAD is 'subj.bend'
-DANGLING-FILE		gates/citations-census-gate.py:510	llvmir-oracle.py:866	absent		no file in the walk or in HEAD is 'llvmir-oracle.py'
+DANGLING-FILE		gates/citations-census-gate.py:523	llvmir-oracle.py:866	absent		no file in the walk or in HEAD is 'llvmir-oracle.py'
 ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-gate.py:427	creation.py:16-20	suffix	cr_full_like	'cr_full_like' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
 ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-gate.py:495	creation.py:86	suffix	weakint	'weakint' is NOWHERE in tinygrad/mixin/creation.py (165 lines)
 ABSENT-TEXT	NOT-MOVED	gates/crp_graph_census-mutate.py:459	creation.py:16-20	suffix	cr_full_like	'cr_full_like' is NOWHERE in tinygrad/mixin/creation.py (165 lines)

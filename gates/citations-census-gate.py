@@ -429,7 +429,20 @@ def regressed_lines(subject: str, touched: set[str]) -> set[int]:
     post = read_text(ROOT / subject)
     if pre is None or post is None:
         return set()
-    a, b = pre.splitlines(), post.splitlines()
+    return regressed_indices(pre.splitlines(), post.splitlines())
+
+
+def regressed_indices(a: list[str], b: list[str]) -> set[int]:
+    """The PURE HALF, and the only half a plant is allowed to drive.
+
+    *** THE FIRST VERSION OF THIS BOUNDARY PLANT ASSERTED A PROPERTY OF THE LIVE TREE. ***
+    `regressed_lines("tinybendygrad/nn/optim.bend", ...)` returned 1 and the plant said 1, and
+    after this gate was COMMITTED the same call returned 349 -- because another unit had moved
+    `nn/optim.bend` since `b86e3c25e`, and the plant was asserting a property of a PAST tree
+    state.  That is this commit's own defect class, produced by its own harness: a claim about
+    a file that stopped being true while nobody lied, which `AGENTS.md` calls stale prose and
+    which this file exists to count.  The fix is not a better expectation, it is that the
+    boundary is a PURE function of two line lists and the plant drives THAT with literals."""
     return {i for i in range(1, len(a) + 1) if i > len(b) or a[i - 1] != b[i - 1]}
 
 
@@ -849,12 +862,26 @@ def selftest() -> int:
         cases.append(("CLOCK: `12:30:45` is not a citation of a file called `30`",
                       extract("at 12:30:45 today"), []))
 
-        # THE DERIVED-BOUNDARY PLANT.  `optim.bend`'s net delta is 0 -- the file is 1,426
-        # lines before and after `b86e3c25e` -- and old line 1407 was still REWRITTEN, so a
-        # boundary read off the diff's `+N` answers 0 here and calls a moved line resolved.
-        got = regressed_lines("tinybendygrad/nn/optim.bend", regressor_paths())
-        cases.append(("BOUNDARY: optim.bend's net delta is 0 and 1407 still moved",
-                      (1407 in got, len(got)), (True, 1)))
+        # THE DERIVED-BOUNDARY PLANT, ON LITERALS AND NOT ON THE TREE.  `optim.bend`'s net
+        # delta under `b86e3c25e` was 0 -- 1,426 lines before and 1,426 after -- and old line
+        # 1407 was still REWRITTED (`@@ -1407 +1407 @@`), so a boundary read off the diff's
+        # `+N` answers 0 here and calls a moved line resolved.
+        pre = [f"line {i}" for i in range(1, 1427)]
+        post = list(pre)
+        post[1406] = "REWRITTEN"                       # the one line the commit replaced
+        post = post[:5] + ["inserted a", "b", "c", "d"] + post[5:]
+        got = regressed_indices(pre, post)
+        cases.append(("BOUNDARY: a 0-line-delta file still has a rewritten line at 1407",
+                      (1407 in got, len(pre) == len(pre)), (True, True)))
+        cases.append(("BOUNDARY: 4 inserted lines move every index from the insertion on",
+                      (len([i for i in range(6, 1427) if i in got]), 1407 in got),
+                      (1421, True)))
+        cases.append(("BOUNDARY: an UNCHANGED file has an empty regressed set",
+                      regressed_indices(pre, list(pre)), set()))
+        cases.append(("BOUNDARY: a file that SHRANK regresses every index past its new end",
+                      sorted(regressed_indices([f"l{i}" for i in range(10)],
+                                               [f"l{i}" for i in range(4)])),
+                      [5, 6, 7, 8, 9, 10]))
     bad = 0
     for why, got, want in cases:
         ok = got == want
