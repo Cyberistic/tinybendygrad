@@ -60,9 +60,9 @@ CPython's five arms under the pin. The gate therefore declares the GETADDR rows 
 IN THE REPORT that the pin is where they vanish.
 """
 
-from tinygrad.dtype import dtypes, AddrSpace
+from tinygrad.dtype import dtypes, AddrSpace, DType
 from tinygrad.uop.ops import (UOp, Ops, ParamArg, KernelInfo, ProgramInfo, CallInfo,
-                              AxisType)
+                              CustomFunction, AxisType)
 from tinygrad.helpers import prod
 import tinygrad.engine.realize as RZ
 
@@ -255,21 +255,125 @@ CALL_ONLY = frozenset(d for d in DRIVERS if d in
 
 
 # ============================================================ THE SIGNATURES
-# THE PARAM/BUFFER SLOT IS THE `arg=` SUFFIX, AND IT IS NOT COSMETIC. `realize.py:131`
+# THE PARAM/BUFFER SLOT IS THE `@<slot>` SUFFIX, AND IT IS NOT COSMETIC. `realize.py:131`
 # is `inputs[b.arg.slot]`, so the SLOT is the mechanism every `res` row exercises and it
 # is in NO node shape: `PARAM/0` and `PARAM/1` print alike, and this fixture's `inputs`
 # are `(b1, b0)` -- two BUFFERs, slot 1 and slot 0 -- which print ALIKE too. MEASURED on
 # the lane this replaces: a port reading `slot`, `slot+1` or a literal `0` would answer
-# `BUFFER/1` on every `res` row and agree with CPython on all 63 of them. `md_graph_census`
-# answered the same shape of hole with an ` arg=` suffix; this is that suffix, on the
-# field the driver's own subject is. `@<slot>` and nothing else: the NAME, the DTYPE and
-# the DEVICE are other `ParamArg` fields and `kern`/`nb`/`name` are the rows for those.
-def s1(u) -> str:
-    """`OP/arity` + `@<slot>` for a PARAM or a BUFFER, and `CONST(value)`."""
+# `BUFFER/1` on every `res` row and agree with CPython on all 63 of them.
+def _ids(xs) -> str:
+    """`a,b,c`, and `-` for empty -- the SAME token `oi_sig` prints for an empty index list
+    (`realize.py:24-27` answers `()`), so an absent list and an empty one are one row on
+    both lanes rather than two spellings of one answer."""
+    return ",".join(str(x) for x in xs) if xs else "-"
+
+
+# ============================================================ THE `arg` PAYLOAD
+# `[...]` ON EVERY NODE WHOSE `arg` IS NOT `None`, AND IT IS NOT COSMETIC.
+#
+# THE HOLE, MEASURED, NOT ASSERTED: over this fixture's own 65 nodes the previous token
+# spelled **32 DISTINCT TOKENS FOR 65 NODES**, so 147 of the 2080 node pairs printed
+# IDENTICALLY -- fifteen CALLs as `CALL/3`, seven PROGRAMs as `PROGRAM/1`, three SINKs as
+# `SINK/0`, two PARAMs as `PARAM/0@2` (`.agents/slop/realizegaps/collide.py`). Two nodes
+# that print alike are two nodes a reader can confuse, in every row that carries either.
+#
+# THE SPELLING IS THE SIBLING'S, NOT A NEW ONE. `gates/crp_graph_census-oracle.py`'s `tok`
+# and `gates/decomp_graph_census-oracle.py`'s print `OP/NSRC[TARGET]` -- the payload INSIDE
+# the token -- and `gates/md_graph_census.bend` appends ` arg=`; the bracket is the one that
+# travels PER NODE rather than on a root, and this census's token is per node. The test is
+# ON THE ARG and not on the op, so a fourth op that ever grows a `ParamArg` is printed by
+# this and not by a list of ops that would rot beside it.
+#
+# `UOp.arg` IS `Any` AND THE PORT'S IS A 24-CONSTRUCTOR SUM (`ops.bend:1190`), so this side
+# needs `u.op is Ops.CONST` where the port needs nothing: a CONST's arg is a BARE `int` at
+# HEAD and an MSELECT's shard index is a bare `int` too (`ops.py:769`), and only the op
+# separates them. That asymmetry is the price of CPython's `Any` and is named here rather
+# than papered over with a table.
+def apay(u) -> str:
+    """THE ARG'S PAYLOAD IN BRACKETS, or `""` when the arg IS `None` -- there is nothing to
+    print and `s1` used to print nothing for it either."""
+    a = u.arg
     if u.op is Ops.CONST:
-        return "CONST(%d)" % u.arg
+        return "[%d]" % a
+    if isinstance(a, ParamArg):
+        # NAME : VAL, AND NOT THE OTHER ELEVEN FIELDS. `slot` is `@<slot>` above, `val` is
+        # `is_bound_var` (`ops.py:1023`) AND `UOp.const(s.arg.val)` (`realize.py:18`), and
+        # `name` is `s.expr` (`ops.py`) AND `has_dnum`'s `_device_num` test (`realize.py`:
+        # 139). The nine omitted: `device` has NO SHARED SPELLING (a CPython NAME against a
+        # port TAG -- `Device.tag` does not exist in this tree, see `kern_blind_holds`),
+        # and `dtype`, `size`, `vmin_vmax`, `multiple_of`, `addrspace`, `volatile`, `image`
+        # and `buffer` are constant or unread across all nineteen of this fixture's
+        # `ParamArg`s -- MEASURED, every one is `dtypes.i32`, `addrspace` is GLOBAL on the
+        # eleven buffer args and ALU on the four var args, and `size` is `16` or absent.
+        return "[%s:%s]" % ("-" if a.name is None else a.name,
+                         "-" if a.val is None else a.val)
+    if isinstance(a, KernelInfo):
+        # NAME : BEAM, and the BEAM is why this arm exists: `rz_kernel_beam` reads it and
+        # `pm_beam` writes it, so `k1` (beam 0) and `k2` (beam 2) printed `SINK/0` ALIKE in
+        # every cone, and `gates/realize_graph_census-mutate.py`'s `X5` -- `k2`'s beam 2 ->
+        # 5, on BOTH fixtures -- was declared VACUOUS for exactly that reason.
+        # `estimates` IS DELIBERATELY ABSENT: `ops.bend` DROPS the field (`Estimates` is
+        # `renderer/__init__.py:16`, P5), so there is nothing on the port side to print and
+        # a value there would be this lane's fixture talking to itself.
+        return "[%s:%d]" % (a.name, a.beam)
+    if isinstance(a, ProgramInfo):
+        # VARS ; GLOBALS ; OUTS ; INS -- the four fields `realize.py` reads
+        # (`get_call_outs_ins` :24-27 and `get_call_var_uops` :18) plus `globals`, which is
+        # `realize.py:139`'s walk over `prg.arg.globals`. A var is printed by its NAME and
+        # not by its slot, because `get_call_var_uops` keys `bound` on `s.expr` -- THE NAME
+        # -- and `vars` is in no node shape at all, so a program holding the wrong variable
+        # used to print identically. `global_size`/`local_size` are `4,1,1`/`1,1,1` on all
+        # nine and no `realize.py` reader touches them.
+        return "[%s;%s;%s;%s]" % (_ids([v.arg.name for v in a.vars]), _ids(a.globals),
+                                  _ids(a.outs), _ids(a.ins))
+    if isinstance(a, CallInfo):
+        # `-` FOR AN ABSENT NAME, NOT `None`, AND THE PORT SPELLS THE ABSENCE THE SAME WAY:
+        # `rs_opt_str` prints `-` for a `Maybe<&2, String>`'s `None`, and the two sides
+        # differing on an ABSENCE would be a divergence manufactured by the printer.
+        # MEASURED WHY IT MATTERS HERE: CPython's OWN `_validate` body mints unnamed calls
+        # (`CallInfo(None, None, ...)`), so `val_*`'s py cones carry `CALL/3[None]` --
+        # thirteen occurrences on the CPython lane and none on the port's, because the port
+        # answers the claim bit (VAL_BODY) and builds no cone at all.
+        return "[%s]" % ("-" if a.name is None else a.name)
+    if isinstance(a, CustomFunction):
+        return "[%s]" % a.name
+    if isinstance(a, DType):
+        # crp's arm, verbatim: `Ops.BITCAST`'s arg IS the target dtype (`ops.py:846`).
+        return "[%s]" % a.name
+    if isinstance(a, tuple):
+        # `Ops.RANGE`: `(axis_type, *dims)` (`ops.py:201`'s key). `d` or `-` for the axis
+        # and the dimension ids after it; crp's `addrstr` is the same one-Bool-per-choice
+        # shape for `AddrSpace`. RESIDUAL, STATED: the other seven CPython axes and the
+        # port's two bend-only ones (`AXIS_REDUCE`, `AXIS_UNROLL`) all print `-`, and this
+        # fixture has exactly ONE RANGE, so nothing here can be wrong.
+        return "[%s%s]" % ("d" if a[0] is AxisType.DEVICE else "-", _ids(a[1]))
+    if isinstance(a, str):
+        # `Ops.GETADDR`'s arg is a DEVICE NAME and `Ops.SOURCE`'s is TEXT, and the port's
+        # GETADDR arg is `ADev{S.D1{tag}}` -- a TAG (`ops.bend:7815`) with no CPython
+        # counterpart, because `Device.tag` does not exist in this tree (`kern_blind_holds`
+        # measures that). So this is the ONE arm that needs an op test, and printing it
+        # anyway takes five rows red: `arg_51`, `arg_63`, `beam_51`, `beam_63`, `res_51`.
+        # It is Box 1's blindness inside the payload rather than beside it.
+        return "" if u.op is Ops.GETADDR else "[%s]" % a
+    if isinstance(a, bytes):
+        return "[%s]" % _ids(a)
+    if isinstance(a, int):
+        return "[%d]" % a
+    if a is None:
+        return ""
+    # AN ARG KIND NEITHER LANE SPELLS. It is bracketed as `?` and
+    # `gates/realize_graph_census-gate.py`'s `argkinds_hold` requires that no promoted lane
+    # contains one -- so a fixture node carrying an unspelled kind is a RED RUN and not a
+    # silently degenerate token.
+    return "[?]"
+
+
+def s1(u) -> str:
+    """`OP/arity`, `@<slot>` for a PARAM or a BUFFER, and `[<the Arg payload>]`."""
     base = "%s/%d" % (u.op.name, len(u.src))
-    return base + ("@%d" % u.arg.slot if isinstance(u.arg, ParamArg) else "")
+    if isinstance(u.arg, ParamArg):
+        base += "@%d" % u.arg.slot
+    return base + apay(u)
 
 
 # THE FIVE `_resolve` VIEW OPS (realize.py:129-131 plus HEAD's `Ops.GETADDR`). A view

@@ -116,10 +116,10 @@ def rs_cone(ar: O.Arena, roots: List<&2, U32>) -> List<&2, U32>:
   +a = ar
   rs_cone.go(a, rs_fuel(a), roots)
 
-# `CONST(value)`. `UOp.const` mints `APy{CInt}`, and a CONST's VALUE is in no node shape
-# at all -- `decomp_graph_census-gate.py`'s own footer names that hole and the `f2f_dt[fr]`
+# A CONST's VALUE, and a `ParamArg`'s BOUND VALUE are in no node shape at all --
+# `decomp_graph_census-gate.py`'s own footer names that hole and the `f2f_dt[fr]`
 # fixture defect that lived in it. `var` and `res` are exactly the readers whose subject is
-# a bound value, so here it is printed.
+# a bound value, so here it is printed: `APy{CInt}` and `ParamArg.val`.
 def rs_cval.cint(i: H.I64) -> String:
   U32.show(H.lo32(i))
 
@@ -128,18 +128,183 @@ def rs_cval.go(v: O.Const) -> String:
     case O.CInt{i}: rs_cval.cint(i)
     case _: "f"
 
-def rs_cval(+a: O.Arg) -> String:
-  match a:
-    case O.APy{v}: rs_cval.go(v)
-    case _: "?"
+def rs_opt_str(m: Maybe<&2, String>) -> String:
+  match m:
+    case Some{s}: s
+    case _: "-"
 
-# THE CONST TEST IS THE OP, not the arg: `UOp.const` mints `APy{CInt}` and a
-# `custom_function` body mints `APy{CustomFunction}`, so matching the arg would call a
-# float a constant. CPython's `u.op is Ops.CONST` is the same test.
-def rs_s1.go(+ar: O.Arena, +u: U32, is_const: Bool) -> String:
-  Bool.pick(String, is_const,
-            String.concat(["CONST(", String.concat([rs_cval(O.Arena.arg(ar, u)), ")"])]),
-            String.concat([O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u))]))
+def rs_opt_const(m: Maybe<&2, O.Const>) -> String:
+  match m:
+    case Some{v}: rs_cval.go(v)
+    case _: "-"
+
+def rs_pay.box(s: String) -> String:
+  String.concat(["[", s, "]"])
+
+# THE COMMA JOIN AND THE `-` FOR AN EMPTY LIST, HERE BECAUSE THE `arg` PAYLOAD BELOW IS THE
+# FIRST READER. `oi`'s two index lists and `ProgramInfo`'s four are all `rs_ids`, and both
+# `-` FOR AN EMPTY LIST AND NOT `none`: `realize.py:24-27` answers `()` and
+# `tuple(range(...))`, so an empty `outs` prints `-`, while `rs_join.dash`'s `none` is the
+# LIST drivers' spelling (`dst is None`) and reusing it here made ten `oi` rows read as
+# divergences that were a dash.
+def rs_join2.add(first: Bool, +acc: String, +s: String) -> String:
+  match first:
+    case True{}: s
+    case False{}: String.concat([acc, ",", s])
+
+def rs_ids.dash(first: Bool, acc: String) -> String:
+  match first:
+    case True{}: "-"
+    case False{}: acc
+
+def rs_ids(f: Nat, xs: List<&2, U32>, +acc: String, +first: Bool) -> String:
+  match f:
+    case 0n: rs_ids.dash(first, acc)
+    case 1n+q:
+      match xs:
+        case Nil{}: rs_ids.dash(first, acc)
+        case +h <> t:
+          s = rs_join2.add(first, acc, U32.show(h))
+          rs_ids(q, t, s, False{})
+
+# `ProgramInfo.vars` IS A LIST OF NODES, NOT OF INTEGERS, so `rs_ids` cannot print it and
+# the var is resolved through ITS OWN `ParamArg`. THE NAME AND NOT THE SLOT, because
+# `realize.py:18`'s `bound = {s.expr: ...}` keys on `s.expr` -- THE NAME (ops.py's
+# `UOp.expr`) -- so a PROGRAM holding the wrong variable is invisible unless the name is
+# printed. `vars` is in NO node shape otherwise: it is not a `src` of the PROGRAM.
+def rs_pay.paname(a: O.Arg) -> String:
+  match a:
+    case O.AParam{pa}: rs_opt_str(O.ParamArg.name(pa))
+    case _: "-"
+
+def rs_pay.var(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, first: Bool) -> String:
+  match f:
+    case 0n: rs_ids.dash(first, acc)
+    case 1n+q:
+      match xs:
+        case Nil{}: rs_ids.dash(first, acc)
+        case +h <> t:
+          s = rs_join2.add(first, acc, rs_pay.paname(O.Arena.arg(ar, h)))
+          rs_pay.var(q, ar, t, s, False{})
+
+# VARS ; GLOBALS ; OUTS ; INS -- `realize.py:24-27`'s two lists, `realize.py:18`'s `vars`
+# and `realize.py:139`'s `globals`. `global_size`/`local_size` are `4,1,1`/`1,1,1` on all
+# nine PROGRAMs and no `realize.py` reader touches them. THE DESTRUCTURING IS NOT STYLE: a
+# record holding `List<&2, ...>` is AFFINE, so `O.ProgramInfo.globals(pi)` after
+# `O.ProgramInfo.vars(pi)` is `consumed more than once` -- MEASURED, that is the error.
+def rs_pay.pi(+ar: O.Arena, pi: O.ProgramInfo) -> String:
+  match pi:
+    case O.ProgramInfo{gs, ls, vars, globals, outs, ins}:
+      g = rs_ids(rs_fuel(ar), globals, "", True{})
+      o = rs_ids(rs_fuel(ar), outs, "", True{})
+      i = rs_ids(rs_fuel(ar), ins, "", True{})
+      v = rs_pay.var(rs_fuel(ar), ar, vars, "", True{})
+      String.concat([v, ";", g, ";", o, ";", i])
+
+# `Ops.RANGE`'s arg is `(axis_type, *dims)` (`ops.py:201`'s key) and this port spells it
+# `ARange{ids, at}`. `d` or `-` for the axis -- ONE Bool, which is `crp_graph_census.bend`'s
+# `addrstr` for `AddrSpace` and is honest about the rest: the other seven CPython axes and
+# this port's two bend-only ones (`AXIS_REDUCE`, `AXIS_UNROLL`) ALL print `-`, and this
+# fixture has exactly ONE RANGE, so nothing here can be wrong.
+#
+# `Ops.BITCAST`'s `ADt` arm IS crp's, verbatim, and it reads the dtype's name through
+# `fold.bend:5891`'s `dt_nm` -- already imported as `F` -- because `spec.bend` has NO reader
+# for `Dt{..., nm}` (`jit.bend:435` records that as the blocker it was) and `dt_nm` is the
+# one the tree has. It is tinygrad's own `DType.name`, so `apay`'s `a.name` is the same
+# string and not a translation.
+def rs_pay.ax(at: O.AxisType) -> String:
+  Bool.pick(String, O.eq_axis(at, O.AXIS_DEVICE{}), "d", "-")
+
+# A `ParamArg` IS AFFINE, so `O.ParamArg.name(pa)` and `O.ParamArg.val(pa)` in ONE
+# expression is `consumed more than once` -- MEASURED -- and `O.AParam` binds its ONE field
+# (`pa`) rather than the record's thirteen, so the record is destructured in a NESTED
+# match. Both halves are `PArg.of` (`realize.bend:231`), verbatim.
+def rs_pay.pa(pa: O.ParamArg) -> String:
+  match pa:
+    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device,
+                    volatile, image, buffer, bind_on_realize, val}:
+      rs_pay.box(String.concat([rs_opt_str(name), ":", rs_opt_const(val)]))
+
+def rs_pay.ki(ki: O.KernelInfo) -> String:
+  match ki:
+    case O.KernelInfo{name, applied_opts, opts_to_apply, beam}:
+      rs_pay.box(String.concat([name, ":", U32.show(beam)]))
+
+# THE `arg` PAYLOAD, IN BRACKETS, ON EVERY NODE WHOSE ARG IS NOT `None`. THE HOLE IT FILLS
+# IS MEASURED, NOT ASSERTED: over this fixture's own 65 nodes the previous token spelled
+# **32 DISTINCT TOKENS FOR 65 NODES** -- 147 of the 2080 node pairs printed IDENTICALLY
+# (fifteen CALLs as `CALL/3`, seven PROGRAMs as `PROGRAM/1`, `k1`/`k2`/the bodyless SINK as
+# `SINK/0`, a bound and an unbound var as `PARAM/0@2`); MEASURED after, 60 tokens and 8
+# pairs, and every one of the eight is a pair whose TWO ARGS ARE EQUAL
+# (`.agents/slop/realizegaps/collide.py`).
+#
+# THE SPELLING IS THE SIBLING'S: `crp_graph_census.bend`'s `tok.arg` prints `OP/NSRC[TARGET]`
+# and `md_graph_census.bend` appends ` arg=`, and the bracket is the one that travels PER
+# NODE rather than on a root. THE TEST IS ON THE ARG AND NOT ON THE OP -- so an op that
+# ever grows one of these is printed by this and not by a list of ops that would rot beside
+# it -- and it needs no `Ops.CONST` conjunct here, because this port's `Arg` is a
+# 24-CONSTRUCTOR SUM (`ops.bend:1190`) with a separate `APy` and `AInt`. CPython's `arg` is
+# `Any`, so the oracle's ladder DOES need `u.op is Ops.CONST` to tell a CONST's bare `int`
+# from an MSELECT's shard index; that asymmetry is the price of `Any`.
+#
+# `ANone{}` PRINTS NOTHING, and so do the two pairs the payload cannot close: the four
+# PROGRAMs whose `ProgramInfo` is EQUAL (they differ in `src[0]`), and the four LINEARs
+# whose arg is `None`. Printing `src[0]` on every node would close them and is NOT this
+# change -- `rs_s2`'s view rule is a separate decision about arity.
+def rs_pay(a: O.Arg, ar: O.Arena) -> String:
+  match a:
+    case O.ANone{}: ""
+    case O.ADt{dt}: rs_pay.box(F.dt_nm(dt))
+    case O.APy{v}: rs_pay.box(rs_cval.go(v))
+    # NAME : VAL. `slot` is `@<slot>` below, `name` is `s.expr` AND `has_dnum`'s
+    # `_device_num` test, `val` is `is_bound_var` (`ops.py:1023`) AND
+    # `UOp.const(s.arg.val)` (`realize.py:18`). NINE FIELDS OMITTED, each named in the
+    # oracle's `apay`: `device` has NO SHARED SPELLING (a CPython NAME against a port TAG,
+    # and `Device.tag` does not exist in this tree -- `kern_blind_holds`), and the other
+    # eight are constant across all nineteen of this fixture's `ParamArg`s (MEASURED: every
+    # `dtype` is `dtypes.i32`, `addrspace` is GLOBAL on the eleven buffer args and ALU on
+    # the four var args, `size` is `16` or absent).
+    case O.AParam{pa}: rs_pay.pa(pa)
+    case O.ACustom{cf}: rs_pay.box(O.CustomFunction.name(cf))
+    case O.ACall{ci}: rs_pay.box(rs_opt_str(O.CallInfo.name(ci)))
+    # NAME : BEAM, AND THE BEAM IS WHY THIS ARM IS HERE: `rz_kernel_beam` reads it and
+    # `pm_beam` writes it, so `k1` (beam 0) and `k2` (beam 2) printed `SINK/0` ALIKE in every
+    # cone, and `gates/realize_graph_census-mutate.py`'s `X5` -- `k2`'s beam 2 -> 5 -- was
+    # declared VACUOUS for exactly that reason. `estimates` IS ABSENT DELIBERATELY: `ops.bend`
+    # DROPS the field (`Estimates` is `renderer/__init__.py:16`, P5) and every SINK here
+    # carries `None` on CPython's side, so there is nothing to compare.
+    case O.AKernel{ki}: rs_pay.ki(ki)
+    # THE ARENA IS MOVED IN, NOT COPIED, AND ONLY ON THIS ARM: `ProgramInfo.vars` IS A LIST
+    # OF NODES, so resolving a var's name needs the arena, and `+a = ar` (the `rs_cone`
+    # idiom, `realize_graph_census.bend:116`) is how an affine value is turned linear where a
+    # `match` arm may not carry a linear binder of its own.
+    case O.AProgram{pi}:
+      +ar2 = ar
+      rs_pay.box(rs_pay.pi(ar2, pi))
+    case O.ARange{ids, at}: rs_pay.box(String.concat([rs_pay.ax(at),
+                                                     rs_ids(rs_fuel(ar), ids, "", True{})]))
+    case O.AStr{s}: rs_pay.box(s)
+    # `Ops.GETADDR`'s `arg` IS A DEVICE AND NEITHER LANE CAN SPELL IT. CPython's is
+    # `str|tuple[str, ...]` (`ops.py:611`, and `ops.py:844`'s `self.device`), this port's is
+    # `ADev{S.D1{tag}}` / `ADev{S.Dn{tags}}` (`ops.bend:7815` mints `ADev{dev}`) -- and
+    # `Device.tag` DOES NOT EXIST IN THIS TREE'S CPython (`hasattr(Device,'tag')` is False,
+    # `kern_blind_holds` measures it), so a tag printed here would be compared against a NAME
+    # the other lane cannot produce from a tag. MEASURED, printing it anyway answers `[?]`
+    # here and `[CPU]` there and takes FIVE rows red: `arg_51`, `arg_63`, `beam_51`,
+    # `beam_63` and `res_51`. SO THIS ARM PRINTS NOTHING, and the blindness is the SAME ONE
+    # Box 1 names: a GETADDR over the WRONG DEVICE prints identically. It is also why
+    # `ParamArg.device` is omitted above -- one fact, two sites.
+    case O.ADev{dev}: ""
+    # THE BYTES THEMSELVES, comma-joined by the `rs_ids` `oi` already uses, and NOT a
+    # length: `List.length` is `Quant` and this is a `List<&2, U32>`, while `rs_ids` folds
+    # the affine list and prints every byte. `b'a'` is `[97]` on CPython and `[97]` here.
+    case O.ABlob{bs}: rs_pay.box(rs_ids(rs_fuel(ar), bs, "", True{}))
+    case O.AInt{i}: rs_pay.box(U32.show(i))
+    # AN ARG KIND NEITHER LANE SPELLS, bracketed as `?`. `argkinds_hold` in the gate
+    # requires that no promoted lane contains one, so a fixture node carrying an unspelled
+    # kind is a RED RUN rather than a silently degenerate token. `ABad` is the arena's
+    # bottom and `ANone` is above, so neither reaches here.
+    case _: rs_pay.box("?")
 
 # THE `@<slot>` SUFFIX, THE PARAM/BUFFER SLOT, AND IT IS THE `arg=` REPAIR ON THIS
 # DRIVER'S OWN SUBJECT. `realize.py:131` is `inputs[b.arg.slot]`, so the SLOT is the
@@ -150,10 +315,10 @@ def rs_s1.go(+ar: O.Arena, +u: U32, is_const: Bool) -> String:
 # `md_graph_census` closed the same shape of hole with an ` arg=` suffix; this is that
 # suffix and it is the ONE `ParamArg` field `res`, `arg` and `wbuf` can all read.
 #
-# THE OP GUARD IS THE POINT, exactly as it is for CONST: the arg of a non-PARAM/BUFFER is
-# an `AProgram`, an `AKernel`, an `AInt` (MSELECT), an `ADev` (GETADDR) -- none of which
-# is a `ParamArg`, so reading `.slot` off them would print a slot for a node that has
-# none. CPython guards with `isinstance(u.arg, ParamArg)` and so does the oracle's `s1`.
+# THE OP GUARD IS THE POINT: the arg of a non-PARAM/BUFFER is an `AProgram`, an `AKernel`,
+# an `AInt` (MSELECT), an `ADev` (GETADDR) -- none of which is a `ParamArg`, so reading
+# `.slot` off them would print a slot for a node that has none. CPython guards with
+# `isinstance(u.arg, ParamArg)` and so does the oracle's `s1`.
 def rs_s1.slot(op: O.Op, sl: U32, s: String) -> String:
   match op:
     case O.OpsPARAM{}: String.concat([s, "@", U32.show(sl)])
@@ -165,10 +330,17 @@ def rs_pslot.go(a: O.Arg) -> U32:
     case O.AParam{pa}: O.ParamArg.slot(pa)
     case _: 0
 
+# `OP/arity` + `@<slot>` + `[<the Arg payload>]` -- ONE SHAPE, and the CONST value is the
+# `APy` payload like every other arg's, so `rs_s1.go`'s `is_const` Bool (which existed only
+# because a `match` may not scrutinise a computed value) is gone.
+def rs_s1.base(+ar: O.Arena, +u: U32) -> String:
+  String.concat([O.Ops.name.of(O.Arena.op(ar, u)), "/", U32.show(O.Arena.nsrc(ar, u))])
+
 def rs_s1(ar: O.Arena, +u: U32) -> String:
   +a = ar
-  rs_s1.slot(O.Arena.op(a, u), rs_pslot.go(O.Arena.arg(a, u)),
-             rs_s1.go(a, u, O.op_is(a, u, O.OpsCONST{})))
+  String.concat([rs_s1.slot(O.Arena.op(a, u), rs_pslot.go(O.Arena.arg(a, u)),
+                            rs_s1.base(a, u)),
+                 rs_pay(O.Arena.arg(a, u), a)])
 
 # THE FIVE `_resolve` VIEW OPS -- realize.py:129-131 plus HEAD's `Ops.GETADDR`.
 def rs_is_view(+op: O.Op) -> Bool:
@@ -205,11 +377,6 @@ def rs_lst(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, +first: Bool) 
           s = rs_join.add(first, acc, rs_s2(ar, h))
           rs_lst(q, ar, t, s, False{})
 
-def rs_join2.add(first: Bool, +acc: String, +s: String) -> String:
-  match first:
-    case True{}: s
-    case False{}: String.concat([acc, ",", s])
-
 def rs_cone_sig(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, +first: Bool) -> String:
   match f:
     case 0n: rs_join.dash(first, acc)
@@ -219,27 +386,6 @@ def rs_cone_sig(f: Nat, +ar: O.Arena, xs: List<&2, U32>, +acc: String, +first: B
         case +h <> t:
           s = rs_join2.add(first, acc, rs_s1(ar, h))
           rs_cone_sig(q, ar, t, s, False{})
-
-# `oi`'s two index lists. `-` for empty on BOTH sides, so an empty `outs` and an absent
-# one are the same row -- which is what CPython's `()` prints.
-# `-` FOR AN EMPTY LIST AND NOT `none`, and the difference is CPython's: realize.py:24-27
-# answers `()` and `tuple(range(...))`, so an empty `outs` prints `-`. `rs_join.dash`'s
-# `none` is the LIST drivers' spelling (`dst is None`), and reusing it here made ten `oi`
-# rows read as divergences that were a dash.
-def rs_ids.dash(first: Bool, acc: String) -> String:
-  match first:
-    case True{}: "-"
-    case False{}: acc
-
-def rs_ids(f: Nat, xs: List<&2, U32>, +acc: String, +first: Bool) -> String:
-  match f:
-    case 0n: rs_ids.dash(first, acc)
-    case 1n+q:
-      match xs:
-        case Nil{}: rs_ids.dash(first, acc)
-        case +h <> t:
-          s = rs_join2.add(first, acc, U32.show(h))
-          rs_ids(q, t, s, False{})
 
 def rs_bl(b: Bool) -> String:
   Bool.pick(String, b, "1", "0")

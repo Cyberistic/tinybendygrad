@@ -59,7 +59,10 @@ OWN write site and compared for content, order, dense indexing and distinct call
 THE CALL-ONLY RULE IS CPYTHON'S, APPLIED ON BOTH SIDES. `UOp.body` (ops.py:562) RAISES
 for a non-CALL and nine of realize's readers read `call.body` or `call.src[1]`, so those
 rows have no CPython answer. Both lanes answer the literal `notacall` there, decided by
-the node's OWN op tag -- a fixture fact, not a list -- and 369 of the rows are that.
+the node's OWN op tag -- a fixture fact, not a list -- and 378 of the rows are that, which
+is nine drivers times the 42 non-CALL nodes. It read 369 of 974 at 9 x 41 and the +9 is
+ARITHMETIC rather than a correction: the two nodes added since are a BUFFER (64) and a CALL
+over it (65), so only the first of them is a non-CALL.
 
 THE ORACLE CALLS THE REAL THING, and it cost two defects to get there.
 `gates/tn_bitwise_not-oracle.py`'s docstring is the post-mortem for an oracle that
@@ -118,6 +121,23 @@ that it stays visible.
   rewrite really changes the node and the two sides agree on the cone AND on the beam,
   which is why `ret_is_uop_fixed_holds()` insists some ctx-7 row still carries `b=7` --
   a fix that dropped every rewrite would pass the ctx-0 check alone.
+
+  BOX 2 -- THE `arg` PAYLOAD, `[...]` PER NODE. `UOp.arg` is `Any` on CPython and a
+  24-CONSTRUCTOR SUM in the port (`ops.bend:1190`), and this lane printed NONE of it, so two
+  nodes whose args differ printed alike. MEASURED over the fixture's own 65 nodes:
+  **32 DISTINCT TOKENS FOR 65 NODES, so 147 of the 2080 NODE PAIRS WERE INDISTINGUISHABLE**
+  -- fifteen CALLs as `CALL/3`, seven PROGRAMs as `PROGRAM/1`, `k1`/`k2`/the bodyless SINK
+  as `SINK/0`, and a bound and an unbound var as `PARAM/0@2`
+  (`.agents/slop/realizegaps/collide.py`). AFTER: **60 tokens and 8 pairs, and every one of
+  the eight is a pair whose TWO ARGS ARE EQUAL** -- four PROGRAMs whose `ProgramInfo` is
+  `(-, 0,1, 0, 1)` and differ only in `src[0]`, and four LINEARs whose arg is `None`.
+  The spelling is the SIBLING'S, `crp_graph_census`'s `OP/NSRC[TARGET]` and `md_graph_census`'s
+  ` arg=`, with the bracket because this token is per NODE rather than per root. FIELDS
+  OMITTED, each with its reason at the arm: `ParamArg.device` and the `Ops.GETADDR` `ADev`
+  arm BOTH because `Device.tag` does not exist in this tree (`kern_blind_holds`), and
+  `KernelInfo.estimates` because `ops.bend` DROPS the field (P5). `argkinds_hold` requires
+  that no promoted lane contains the `[?]` an unspelled kind would print, so an arg kind
+  outside the twelve both lanes spell is a red run and not a green placeholder match.
 
 THE 65 DIVERGENCES, CLASSIFIED, PINNED ON BOTH SIDES, AND EVERY CLASS MEASURED.
 
@@ -220,7 +240,9 @@ the bend lane's own `rs_drv_name` and `rs_d.go` -- so a driver that exists on on
 is a red run rather than a population only the driver can see. `calls_hold`: the 23 CALL
 nodes are the ones both lanes refused to drive the CALL-only drivers on.
 `compares_holds`: the refusal population is the whole `CALL_ONLY x NONCALL` product and
-neither lane refused alone. `kern_blind_holds`: the fixture's multi-device answer really is
+neither lane refused alone. `argkinds_hold`: no lane printed a `[?]`, so every `Arg` kind
+the fixture minted has a spelling and no row compared a placeholder against a placeholder.
+`kern_blind_holds`: the fixture's multi-device answer really is
 a list of TWO DISTINCT devices on BOTH lanes and `kern_65` really is `2` -- which is the
 precondition under which `rs_d_kern`'s COUNT is worth comparing at all, and the measure of
 what is left blind when it is (an ORDER SWAP inside `Dn{[6, 0]}`, because the port has no
@@ -343,6 +365,37 @@ RET_IS_UOP_FIXED = ("bea0_23", "bea0_49", "bea0_50", "bea0_51", "bea0_52", "bea0
 DIVERGING = (BOTTOM + SRC_BODY + NAME_ARM + VARS_BODY + VAL_BODY + ARG_SLOT +
              SLOT_MISS + MSELECT_WALL + MSTACK_WALL + GETADDR_DRIFT + RET_IS_UOP)
 ROWS = (2 + len(BOTTOM) + 12 + len(DRV) * NODES,)
+
+
+def argkinds_hold() -> bool:
+    """NO PROMOTED LANE MAY CONTAIN A `[?]` -- AN `Arg` KIND NEITHER LANE SPELLS.
+
+    **BOX 2's GUARD.** `rs_pay` (the bend lane) and `apay` (the oracle) print `[...]` per
+    `Arg` constructor and the last arm of each is `?`, so a fixture node carrying a kind
+    outside the twelve both spell would print `[?]` and BE COMPARED -- one lane's `[?]` against
+    the other's `[?]`, an exact match, and the row would be green. That is the shape of defect
+    this instrument has produced before (`ptx.bend`'s alias under twenty-five fixtures that all
+    put the node at index 0), so it is checked rather than assumed.
+
+    IT IS A LANE CHECK AND NOT A LIST OF KINDS: the population is whatever the fixture mints,
+    and the question is whether every kind it minted has a spelling. A `?` on either lane
+    answers no. `ADev` is the one kind that DELIBERATELY has no spelling -- `Ops.GETADDR`'s
+    device, which `rs_pay` prints as nothing because `Device.tag` does not exist in this tree
+    -- and it prints nothing on BOTH sides, so it cannot produce a `?`.
+    """
+    ok = True
+    for lane in ("py.rows", "bd.out", "bn.out"):
+        rows = _lane(lane)
+        if rows is None:
+            print(f"  argkinds_hold: {lane} is not there")
+            return False
+        for r, v in rows.items():
+            if "[?]" in v:
+                print(f"  argkinds_hold: {lane} {r}={v!r} contains an `[?]`, so a node's "
+                      f"`Arg` kind has no spelling on this lane and the row compared a "
+                      f"placeholder against a placeholder")
+                ok = False
+    return ok
 
 
 def _pins():
@@ -563,14 +616,15 @@ def classes_hold() -> bool:
         if cpy[r] != "raise=IndexError" or port[r] == "none":
             bad(f"{r}: cpy={cpy[r]!r} port={port[r]!r}, not the declared SLOT_MISS pair")
     # MSELECT_WALL: CPython resolves the MSELECT to its storage base and the port drops it.
-    if (cpy["wbuf_60"], port["wbuf_60"]) != ("BUFFER/1@0", "none"):
+    if (cpy["wbuf_60"], port["wbuf_60"]) != ("BUFFER/1@0[g0:-]", "none"):
         bad(f"wbuf_60: cpy={cpy['wbuf_60']!r} port={port['wbuf_60']!r}, "
             f"not the declared MSELECT wall")
-    # GETADDR_DRIFT, THE VENDORED-DRIFT FINDING: the SAME node with the SAME op and arity,
+    # GETADDR_DRIFT, THE VENDORED-DRIFT FINDING: THE SAME NODE WITH THE SAME OP AND ARITY,
     # differing only in what `src[0]` BECAME -- and the `@<slot>` suffix is what says WHICH
     # input it became, which `BUFFER/1` alone could not. One more level is the instrument.
-    if (cpy["res_63"], port["res_63"]) != ("BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)",
-                                           "BUFFER/1@0+GETADDR/1<-PARAM/0@0+CONST(1)"):
+    if (cpy["res_63"], port["res_63"]) != (
+            "BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]",
+            "BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]"):
         bad(f"res_63: cpy={cpy['res_63']!r} port={port['res_63']!r}, "
             f"not the declared GETADDR drift pair")
     # RET_IS_UOP, NOW FIXED: at ctx 0 both lanes answer `10` -- CLAIMED and the rewrite was
@@ -944,12 +998,13 @@ def pin_drift_holds() -> bool:
     has been absent from `rz_arm` in BOTH versions, which is what makes "only one arm" a
     measurement instead of an adjective.
 
-    MEASURED, the two rows it compares (the `@<slot>` suffix is `s1`'s `arg=` repair, so
-    "WHICH BUFFER" is visible -- `b0` and `b1` printed `BUFFER/1` alike until then):
-        HEAD   res_63=BUFFER/1@0+GETADDR/1<-BUFFER/1@1+CONST(1)
-        PIN    res_63=BUFFER/1@0+GETADDR/1<-PARAM/0@0+CONST(1)    <-- AND SO DOES THE PORT
-        HEAD   res_52=BUFFER/1@0+MSTACK/2<-BUFFER/1@1
-        PIN    res_52=BUFFER/1@0+MSTACK/2<-BUFFER/1@1             <-- AND SO DOES NOT THE PORT
+    MEASURED, the two rows it compares (the `@<slot>` suffix is `s1`'s slot repair and the
+    `[...]` is its `arg` payload, so "WHICH BUFFER" is visible and so is WHICH KERNEL -- they
+    printed alike until then):
+        HEAD   res_63=BUFFER/1@0[g0:-]+GETADDR/1<-BUFFER/1@1[g1:-]+CONST/0[1]
+        PIN    res_63=BUFFER/1@0[g0:-]+GETADDR/1<-PARAM/0@0[g0:-]+CONST/0[1]  <-- AND SO THE PORT
+        HEAD   res_52=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]
+        PIN    res_52=BUFFER/1@0[g0:-]+MSTACK/2<-BUFFER/1@1[g1:-]           <-- AND SO NOT THE PORT
     """
     try:
         RO = _load_oracle()
@@ -1072,9 +1127,15 @@ def _compared() -> tuple[int, int, int]:
     (MEASURED: the first version of this printed `0` of `974` and still exited 0).
 
     The refusal population is the ORACLE'S OWN `CALL_ONLY` declaration, loaded by path,
-    times the 41 NON-CALL nodes: a CALL-only driver refuses every non-CALL and refuses
+    times the 42 NON-CALL nodes: a CALL-only driver refuses every non-CALL and refuses
     nothing else. `compares_holds()` then measures both facts off the promoted lanes, so
     this is a CLAIM the lanes confirm rather than a second reader.
+
+    RE-MEASURED AT 1004 ROWS, NOT CARRIED: 378 = 9 x 42. The 974-row reading was 369 = 9 x
+    41, and the +9 is arithmetic, not a correction: the two nodes the previous unit added are
+    a BUFFER (node 64, `S.Dn{[6, 0]}`) and a CALL over it (node 65), so `NONCALL` went 41 ->
+    42, `CALLS` went 22 -> 23, and 9 drivers x 1 new non-CALL = 9 new refusals. `compared` is
+    1004 - 378 - 15 = 611.
     """
     try:
         refused = len(_load_oracle().CALL_ONLY) * len(NONCALL)
@@ -1229,13 +1290,18 @@ if __name__ == "__main__":
         f"measures why that is the CEILING -- `Device.tag` does not exist in this tree's "
         f"CPython (`hasattr(Device,'tag')` is False) and the port's own `tag_of` is a "
         f"three-valued sentinel -- while a NEW TWO-DEVICE node makes the count 2 on both "
-        f"lanes for the first time. THE DRIVER AXIS IS READ BACK FROM FOUR PLACES BY "
-        f"`axis_hold`: the oracle's `DRIVERS` BY PATH, the oracle's `drive` ladder, and the "
-        f"bend lane's own `rs_drv_name` and `rs_d.go`.",
+        f"lanes for the first time. THE `arg` PAYLOAD IS IN EVERY TOKEN NOW: TWO FIXTURE "
+        f"NODES THAT PRINT ALIKE ARE TWO NODES A READER CAN CONFUSE, AND MEASURED OVER "
+        f"THE 65 NODES THIS CENSUS SPELLED 32 DISTINCT TOKENS FOR 65 NODES -- 147 of the "
+        f"2080 pairs indistinguishable -- against 60 and 8 after, every one of the eight a "
+        f"pair whose TWO ARGS ARE EQUAL. `argkinds_hold` REQUIRES THAT NO LANE PRINTED THE "
+        f"`[?]` AN UNSPELLED `Arg` KIND WOULD PRINT. THE DRIVER AXIS IS READ BACK FROM FOUR "
+        f"PLACES BY `axis_hold`: the oracle's `DRIVERS` BY PATH, the oracle's `drive` ladder, "
+        f"and the bend lane's own `rs_drv_name` and `rs_d.go`.",
         checks=lambda: (classes_hold() and no_bottom_value() and drivers_hold()
                         and axis_hold() and calls_hold() and pin_drift_holds()
                         and compares_holds() and kern_blind_holds()
-                        and ret_is_uop_fixed_holds())))
+                        and argkinds_hold() and ret_is_uop_fixed_holds())))
 
 # ===========================================================================
 # THE TWO FINDINGS, WITH THEIR MEASUREMENTS, AND WHAT WAS DONE ABOUT THEM.
