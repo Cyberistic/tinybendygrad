@@ -40,7 +40,7 @@
 #     ./bin/bend tinybendygrad/nn/datasets.bend --check-only        # ALL PROOFS CHECK
 #     ./bin/bend tinybendygrad/nn/datasets.bend                     # interpreted lane
 #     ./bin/bend tinybendygrad/nn/datasets.bend -o /tmp/d && /tmp/d # native lane
-#     python3 .agents/slop/dst-oracle.py                            # the CPython lane
+#     .venv/bin/python gates/datasets-oracle.py                     # the CPython lane
 #
 # The two lanes are diffed against each other and against the oracle, and all four
 # agree byte for byte. The mutation table at the foot is MEASURED, not predicted:
@@ -423,11 +423,14 @@ def main() -> IO(Unit):
     IO.print("dst-done=1")
 
 # ===========================================================================
-# THE MUTATION TABLE. **MEASURED** by `python3 .agents/slop/dk-mutate.py`, which
+# THE MUTATION TABLE. **MEASURED** by `.venv/bin/python gates/datasets-mutate.py`, which
 # applies each edit in place, runs the interpreted lane and diffs the baseline.
+# (RESTORED 2026-10-16 from `.agents/slop/dk-mutate.py`, blob e853efc4b, 20941 B, byte for
+# byte. The sweep of 2026-10-05 took it and this recipe outlived it, which made the recipe a
+# claim about a file that did not exist.)
 #
-#     python3 .agents/slop/dk-mutate.py          # run all mutations, both files
-#     python3 .agents/slop/dk-mutate.py --list   # the table, unrun
+#     .venv/bin/python gates/datasets-mutate.py          # run all mutations, both files
+#     .venv/bin/python gates/datasets-mutate.py --list   # the table, unrun
 #
 # `CHANGED` counts rows present in both runs whose VALUE differs. `MOVED` -- a row
 # NAME appearing or disappearing -- is 0 for all 13: no mutation changed the shape

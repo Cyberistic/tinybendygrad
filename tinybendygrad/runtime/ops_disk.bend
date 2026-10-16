@@ -2090,11 +2090,14 @@ def main() -> IO(Unit):
 
 # ===========================================================================
 # THE MUTATION TABLE. **MEASURED, NOT PREDICTED** -- every number below is
-# `python3 .agents/slop/dk-mutate.py` output, and re-running it reproduces this file.
+# `.venv/bin/python gates/datasets-mutate.py` output, and re-running it reproduces this file.
+# (RESTORED 2026-10-16 from `.agents/slop/dk-mutate.py`, blob e853efc4b, 20941 B, byte for byte;
+# the same instrument serves `nn/datasets.bend`'s table, so it is named for what it measures
+# rather than for the file it was swept out of.)
 #
-#     python3 .agents/slop/dk-mutate.py          # run all 56, print the measured table
-#     python3 .agents/slop/dk-mutate.py --list   # the table, unrun
-#     python3 .agents/slop/dk-mutate.py M7 M31   # a subset
+#     .venv/bin/python gates/datasets-mutate.py          # run all 56, print the measured table
+#     .venv/bin/python gates/datasets-mutate.py --list   # the table, unrun
+#     .venv/bin/python gates/datasets-mutate.py M7 M31   # a subset
 #
 # The harness applies each edit IN PLACE, runs the interpreted lane, and diffs the
 # baseline. `CHANGED` is the number of rows whose NAME is present in both runs and

@@ -71,7 +71,13 @@ def Flags.defaults() -> Flags:
 # `NO_COLOR` is `ContextVar("NO_COLOR", 0)` (helpers.py:239), so `type(default)`
 # is `int` and getenv coerces through `int`, NOT through `bool`. `bool(NO_COLOR)`
 # is then `bool(int(...))`. MEASURED, 31 probes, live CPython
-# (.agents/slop/nocolor-oracle.txt vs .agents/slop/nocolor-bend.txt):
+# (oracles/nocolor-oracle.rows vs the Bend lane):
+# **RETARGETED 2026-10-16.** This read `.agents/slop/nocolor-oracle.txt` AND
+# `.agents/slop/nocolor-bend.txt`. The first is `oracles/nocolor-oracle.rows` and the two are
+# BYTE-IDENTICAL -- 206 B either way, verified with `cmp` -- so the content survived the sweep
+# and only the name went stale. The SECOND HAS NO SUCCESSOR AT ANY PATH ON ANY REF: its
+# basename is absent from all 18110 paths `git rev-list --all --objects` names, so the Bend
+# side of this comparison was never preserved. Named here rather than quietly dropped.
 #   "0", "00", "-0", "+0", "0 " and " 0" all read as 0 and leave COLOUR ON, and
 #   "1", "2", "007", "+1", "-1", "1_0", " 1 ", "\t2" and "2\n" all read non-zero
 #   and switch it OFF. So the rule is not "any text is truthy": that INVERTS

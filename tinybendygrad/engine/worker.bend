@@ -603,7 +603,11 @@ def main() -> IO(Unit):
 
 # ===========================================================================
 # THE MEASURED MUTATION TABLE. Reproduce with
-#     python3 .agents/slop/probe/mutate.py worker
+#     .venv/bin/python gates/worker-mutate.py worker
+# RESTORED 2026-10-16 from `.agents/slop/probe/mutate.py`, blob ecc45370e, 12832 B, byte for
+# byte. MEASURED from `gates/`: rc=0, 16 rows, and it still reports a mutation that moves
+# nothing ("MUTATIONS THAT MOVED NOTHING (1): W6 ... [does not check]"), so it is not a
+# table of intentions.
 # 13 mutations, 56 rows, `--check-only` and the interpreted lane re-run for each.
 #
 #   W1  pool_refused: the `PARALLEL == 0` guard dropped          1  refused_parallel0

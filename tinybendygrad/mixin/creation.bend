@@ -120,16 +120,22 @@
 # signature of the lazy graph, which needs no device. ONE COMMAND, THREE LANES, and it
 # runs `--check-only` first because that is the fastest way to find a proof failure:
 #
-#   sh $ORACLE_DIR/cr-gate.sh      # ALL PROOFS CHECK + 66 shared rows + 3 lanes identical
+#   .venv/bin/python gates/crp_graph_census-oracle.py > /tmp/py.rows
+#   ./bin/bend tinybendygrad/mixin/creation.bend                 > /tmp/bd.rows
+#   ./bin/bend tinybendygrad/mixin/creation.bend -o /tmp/bn && /tmp/bn > /tmp/bn.rows
+#   diff /tmp/py.rows /tmp/bd.rows && diff /tmp/py.rows /tmp/bn.rows
 #
-# The oracle is `$ORACLE_DIR/cr-truth.py` and the mutation driver is
-# `$ORACLE_DIR/cr-mutate.py`; `$ORACLE_DIR` is outside the tree because the brief makes
-# `.agents/` append-only for this unit and nothing else in it mine.
-#
-#   .venv/bin/python $ORACLE_DIR/cr-truth.py                     > /tmp/py.txt
-#   ./bin/bend tinybendygrad/mixin/creation.bend                 > /tmp/bd.txt
-#   ./bin/bend tinybendygrad/mixin/creation.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
-#   diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
+# **THREE CITATIONS DELETED 2026-10-16, AND THEY WERE NEVER REAL.** This block ran a
+# `cr-gate.sh`, an `cr-truth.py` and a `cr-mutate.py` out of an `ORACLE_DIR` variable, and
+# said in so many words that "`$ORACLE_DIR` is outside the tree". MEASURED: `ORACLE_DIR` has
+# ZERO ASSIGNMENTS tree-wide and FIVE reads, and all three basenames are ABSENT AT EVERY PATH ON
+# EVERY REF -- `git rev-list --all --objects` over 193760 objects names 18110 distinct paths and
+# `cr-gate.sh`, `cr-truth.py`, `cr-mutate.py` are ZERO of them. So the oracle was never written,
+# not merely lost, and a recipe naming it was a claim about a file that never existed.
+# What stands here instead is a live gate over this same file:
+# `gates/cr_graph_census.bend` + `gates/crp_graph_census.bend` with
+# `gates/cr_graph_census-oracle.py` (MEASURED rc=0, 28 rows) and
+# `gates/crp_graph_census-oracle.py` (rc=0, 287 rows).
 #
 # SIX KINDS OF ROW, because six kinds of bug are invisible to the others.
 #

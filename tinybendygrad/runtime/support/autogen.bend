@@ -1096,10 +1096,19 @@ def types_fixture() -> List<&2, Gt>:
 # SECTION 17 -- the GATE.
 #
 # Every `py=` expectation below was produced by CALLING CPython: run
-# `.agents/slop/ag-oracle.py ag-fixture.h` and read `ag-oracle.txt`, or run
-# `.agents/slop/ag-emit-oracle.py` and read `ag-emit-oracle.txt`. None of these
+#   .venv/bin/python gates/autogen-oracle.py "$(cat gates/ag-fixture.h)"
+# and read stdout, or run `.agents/slop/ag-emit-oracle.py` and read
+# `ag-emit-oracle.txt`. None of these
 # rows is typed from memory, which is the rule `runtime/ops_nv.bend` broke with
 # 33 wrong constants behind 590 green rows.
+# BOTH THE ORACLE AND ITS FIXTURE WERE RESTORED 2026-10-16 (`.agents/slop/ag-oracle.py`,
+# blob e853efc4b, 2110 B, and `.agents/slop/ag-fixture.h`, 1020 B, both byte for byte) and
+# MEASURED from `gates/`: rc=0, 51 rows. **THE ARGUMENT IS THE HEADER TEXT, NOT ITS PATH** --
+# `gates/autogen-oracle.py:49` does `hdr = sys.argv[1]` and feeds it to `ag.gen`, so the old
+# spelling passed a PATH where TEXT was wanted. **AND MEASURED: all 51 rows are IDENTICAL for the real header and for the string
+# `GARBAGE NOT C AT ALL`**, so 43 of the 51 rows do not depend on the header at all; only the
+# 8 `gen|` rows address it. Reported, not repaired -- the TYPEHINT block above them does call
+# libclang and does move.
 #
 # THE ABI LADDER IS GATED, NOT LEFT DEAD. Every constant in SECTION 0 is a
 # number this project has been wrong about before -- `ops_nv`'s audit found 33

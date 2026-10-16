@@ -18,10 +18,16 @@
 # separates, and `red=none` means the graph holds no REDUCE at all. Nothing is
 # executed -- every row is the signature of the lazy graph, and the oracle is
 # DERIVED FROM CPYTHON, never restated from this file.
-#     .venv/bin/python $TMP/mixin-reduce-gate.py   > /tmp/py.txt
-#     ./bin/bend tinybendygrad/mixin/reduce.bend    > /tmp/bd.txt
-#     ./bin/bend tinybendygrad/mixin/reduce.bend -o /tmp/bn && /tmp/bn > /tmp/bn.txt
-#     diff /tmp/py.txt /tmp/bd.txt && diff /tmp/py.txt /tmp/bn.txt
+#     ./bin/bend tinybendygrad/mixin/reduce.bend    > /tmp/bd.rows
+#     ./bin/bend tinybendygrad/mixin/reduce.bend -o /tmp/bn && /tmp/bn > /tmp/bn.rows
+#     diff /tmp/bd.rows /tmp/bn.rows
+# **THE CPYTHON LINE THAT OPENED THIS BLOCK IS DELETED 2026-10-16 BECAUSE IT WAS NEVER REAL.**
+# It ran a `mixin-reduce-gate.py` out of a `TMP` variable that has no assignment in this file.
+# MEASURED: that basename is ABSENT AT EVERY PATH ON EVERY REF -- `git rev-list --all --objects`
+# names 18110 distinct paths and this is zero of them. The two
+# `bend` lanes above DO run and are left standing; the CPython half of this comparison has no
+# instrument in the tree, which is a hole rather than a citation, and `oracles/rows-reduce-py.rows`
+# and `oracles/rows-reduce-bend.rows` exist with no code reader of their own.
 #
 # TWO MEASURED DEFECTS IN OTHER FILES, REPORTED NOT FIXED. Four of the 32 rows are
 # red and every one is one of these. The rows STAY red: they are the measurement,

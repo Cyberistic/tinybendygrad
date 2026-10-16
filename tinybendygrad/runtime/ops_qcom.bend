@@ -155,11 +155,23 @@
 # `tinygrad/runtime/autogen/mesa.py` and `.../kgsl.py` BY CALLING THEM, and
 # every expectation in the gate is printed by CPython:
 #
-#   .agents/slop/qc_oracle.py        the tables, the parse, the cache key
-#   .agents/slop/qc_stage3_oracle.py  the headers, the refusals, layout_args
-#   .agents/slop/qc_cache_oracle.py   the REAL `_qcom_program_cache` dict
-#   .agents/slop/qc_exec_oracle.py    the REAL `QCOMComputeQueue.exec`
+#   gates/qcom-oracle.py         the tables, the parse, the cache key
+#   gates/qcom_stage3-oracle.py  the headers, the refusals, layout_args
+#   gates/qcom_cache-oracle.py   the REAL `_qcom_program_cache` dict
+#   .agents/slop/qc_exec_oracle.py    the REAL `QCOMComputeQueue.exec` -- **NOT RESTORED, IT IS
+#                                     RED**: its own stub device `D` has no `tag`, and the live
+#                                     `ops_qcom.py:132` calls `self.dev.tag("stack")`, so it dies
+#                                     `AttributeError: 'D' object has no attribute 'tag'`. It
+#                                     measured a thing that still exists; the FIXTURE is one
+#                                     method behind it. Reported, not fabricated.
 #   .agents/slop/qc_check.py         diffs the gate's output against all four
+#
+# THE FIRST THREE WERE RESTORED 2026-10-16 from `.agents/slop/{qc,qc_stage3,qc_cache}_oracle.py`
+# (blobs e853efc4b, 17567/8870/2449 B, byte for byte) and now live in `gates/`, because
+# `gates/README.md` says a gate's oracle lives beside its gate and the sweep of 2026-10-05
+# proved the other directory cannot be depended on. MEASURED from `gates/`: rc=0 and 588 / 108 /
+# 6 rows respectively, and `qcom_cache-oracle.py` drives the REAL `_qcom_program_cache` dict,
+# so it is a call and not a transcription.
 #
 # Nothing in this file is a number somebody typed.
 

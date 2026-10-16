@@ -36,10 +36,13 @@
 # is a plain concatenation of the two stages, so the Bend side is ONE print --
 # `IO.print`'s own newline is the only frame, and it is the one `"\n"` the
 # oracle's `sys.stdout.write(... + "\n")` supplies.
-#   python3 .agents/slop/tcptx-oracle.py rows > .agents/slop/tcptx/pyall.txt
-#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend > /tmp/bd_i.txt
-#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend -o /tmp/tcptx && /tmp/tcptx > /tmp/bd_n.txt
-#   diff /tmp/bd_i.txt .agents/slop/tcptx/pyall.txt && diff /tmp/bd_n.txt .agents/slop/tcptx/pyall.txt
+#   .venv/bin/python gates/tc_ptx_render-oracle.py rows > /tmp/pyall.rows
+#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend > /tmp/bd_i.rows
+#   ./bin/bend tinybendygrad/renderer/tc_ptx.bend -o /tmp/tcptx && /tmp/tcptx > /tmp/bd_n.rows
+#   diff /tmp/bd_i.rows /tmp/pyall.rows && diff /tmp/bd_n.rows /tmp/pyall.rows
+# The oracle was RESTORED 2026-10-16 from `.agents/slop/tcptx-oracle.py` (blob e853efc4b,
+# 20580 B, byte for byte) and MEASURED from `gates/`: rc=0, `rows` prints 620 -- the same 620
+# this header claims -- so the number above and the instrument agree today.
 # `stage1` and `stage2` print the halves, 286 and 334 rows, for a localised
 # diff when a row moves.
 #

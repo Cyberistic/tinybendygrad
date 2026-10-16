@@ -33,11 +33,16 @@
 #
 # ===========================================================================
 # THE GATE. 224 rows, all STRINGS, and `py=` is a LITERAL, never an expression:
-#   python3 .agents/slop/ptx-s3-oracle.py rows > .agents/slop/ptxown/s3py.txt
-#   ./bin/bend tinybendygrad/renderer/ptx.bend          > .agents/slop/ptxown/bd.txt
-#   ./bin/bend tinybendygrad/renderer/ptx.bend -o /tmp/p3 && /tmp/p3 > .agents/slop/ptxown/bdn.txt
-#   diff .agents/slop/ptxown/bd.txt  .agents/slop/ptxown/s3py.txt
-#   diff .agents/slop/ptxown/bdn.txt .agents/slop/ptxown/s3py.txt
+#   .venv/bin/python gates/ptx_render_census-oracle.py > /tmp/s3py.rows
+#   ./bin/bend tinybendygrad/renderer/ptx.bend          > /tmp/bd.rows
+#   ./bin/bend tinybendygrad/renderer/ptx.bend -o /tmp/p3 && /tmp/p3 > /tmp/bdn.rows
+#   diff /tmp/bd.rows  /tmp/s3py.rows
+#   diff /tmp/bdn.rows /tmp/s3py.rows
+# **RETARGETED 2026-10-16.** These four lines read `.agents/slop/ptx-s3-oracle.py` and
+# `.agents/slop/ptxown/{s3py,bd,bdn}.txt`; the oracle was deleted by the sweep of 2026-10-05
+# (blob e853efc4b, 13071 B) and `ptxown/` is gone with it. The oracle that replaced it is
+# `gates/ptx_render_census-oracle.py`, MEASURED rc=0 at 579 rows from `gates/`. The path
+# extensions are `.rows` because a `.txt` is a HARD row for `checks/no-txt.py`.
 # BOTH lanes byte-identical, and never gate on an exit status: `--check-only`
 # exits 1 on this repo even when the file is fine (14 unfilled `dtype.bend`
 # laws). Read its FIRST LINE.
@@ -1216,7 +1221,10 @@ def main() -> IO(Unit):
 # IMPORTS ./tc_ptx.bend by a relative path and a copy in a scratch dir cannot
 # resolve it. Full table with every row count: `.agents/slop/notes/bend2-constraints.md`,
 # search `MUT-PTX-S3`.
-#   python3 .agents/slop/ptx-s3-mutate.py > .agents/slop/ptxown/mut.txt
+#   .venv/bin/python gates/ptx_render_census-mutate.py > /tmp/ptxmut.rows
+# **RETARGETED 2026-10-16.** This read `.agents/slop/ptx-s3-mutate.py`, deleted by the sweep of
+# 2026-10-05 (blob e853efc4b, 10195 B). The harness that replaced it is
+# `gates/ptx_render_census-mutate.py`, beside its own gate and its own `.bend` driver.
 #
 # WHAT THE TABLE SAYS
 # ---------------------------------------------------------------------------

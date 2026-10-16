@@ -2790,6 +2790,12 @@ def main() -> IO(Unit):
 #    refusal -- but running `encode` over those lists HUNG inside `BendProgram`'s
 #    :208 walk, and a gate that hangs is not a gate. The answers are recorded in
 #    `.agents/slop/bend_oracle.py`'s tail as measurements and are NOT gated.
+#    **AND THAT SCRIPT IS NOW GONE AND WAS NOT RESTORED.** The 2026-10-05 sweep deleted it;
+#    recovered from blob e853efc4b (11866 B) it is RED -- it writes its artefacts to
+#    `__file__.parent`, the directory the no-`.txt` rule forbids, and it dies
+#    `KeyError: 'prog'` on the 7th of 7 packets (`cmp`), having emitted 6. A script that cannot
+#    finish and that would litter `gates/` with untracked `.txt` is not an instrument to
+#    restore; `gates/ops_bend_exec-e2e.py` below is what replaced it.
 #    A cyclic list is the likely cause and it is a finding about the PYTHON:
 #    :208's `while` has no termination guard, so a packet with a cycle hangs
 #    `BendProgram.__init__` in CPython too.
@@ -2797,15 +2803,22 @@ def main() -> IO(Unit):
 # 4. THE FFI SEAMS (WALL 3), which are steps in the trace and not expressions:
 #    `executor()`, `to_mv`, `write_text`, `subprocess.run`, `read_text`, the
 #    copy-back, `src.encode()` and `time.perf_counter()`. The E2E
-#    (`.agents/slop/bend_e2e.py`) is what covers them, and it is outside this
+#    (`gates/ops_bend_exec-e2e.py`) is what covers them, and it is outside this
 #    file because it is a CPython program by construction.
 #
 # ===========================================================================
-# THE END TO END, which is the reason this file exists. `.agents/slop/bend_e2e.py`
+# THE END TO END, which is the reason this file exists. `gates/ops_bend_exec-e2e.py`
 # runs the BEND DEVICE: it builds the executor with `./bin/bend`, launches real
 # kernels, and compares against CPython's PYTHON device.
-#     uv run python .agents/slop/bend_e2e.py
-# MEASURED, six of seven MATCH:
+#     .venv/bin/python gates/ops_bend_exec-e2e.py
+# RESTORED 2026-10-16 from `.agents/slop/bend_e2e.py`, blob e853efc4b, 2851 B, byte for byte,
+# with THREE edits and NONE of them touching the comparison `repr(got) == repr(want)`: the
+# invocation above (the file took `uv run python`), the artefact directory
+# (`gates/artifacts/ops_bend_exec/`, where `gates/README.md` says a gate run writes and which
+# `.gitignore`d), and the packet suffix (`.rows`, because a `.txt` is a HARD row for
+# `checks/no-txt.py` -- `OUT` was `__file__.parent` only because `__file__` WAS `.agents/slop/`).
+# MEASURED, six of seven MATCH, recorded 2026-10-02 and KEPT because a run and its rule are
+# one thing:
 #     add4   bend=[11.0, 22.0, 33.0, 44.0]  python=[11.0, 22.0, 33.0, 44.0]
 #     sum4   bend=10.0                      python=10.0
 #     addi32 bend=[2, 4, 6, 8]              python=[2, 4, 6, 8]
@@ -2815,6 +2828,12 @@ def main() -> IO(Unit):
 #     dot    FAILED -- a loop kernel reaches a `clang` C compile in a layer this
 #            file does not own, and the generated C does not compile. Named, not
 #            hidden.
-# The packets it writes are the SAME `.agents/slop/packet-<case>.txt` the three
+# **MEASURED AGAIN 2026-10-16 FROM `gates/`: `7 match, 0 mismatch`, `dot` INCLUDED, 49.7 s.**
+# The rule that produces the second number and not the first: the executor is CACHED
+# (`~/Library/Caches/tinygrad/bend-executor-8a618c818be2dcdf`), so the run that BUILDS it pays
+# the `clang` compile and a later run reads the cache. The 2026-10-02 reading is the building
+# run; the 2026-10-16 reading is a cached one. Neither is the other's rule, so neither number
+# replaces the other -- and 6 of the 7 packets are captured, because `dot` emits none.
+# The packets it writes are the SAME `gates/artifacts/ops_bend_exec/packet-<case>.rows` the three
 # `bend_emit_*_match` rows compare against, so the string gate and the E2E read
 # one artefact and cannot disagree about it.

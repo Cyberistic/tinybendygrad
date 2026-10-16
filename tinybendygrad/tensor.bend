@@ -2796,11 +2796,33 @@ def main() -> IO(Unit):
 # THE MUTATION TABLE, MEASURED, and re-runnable:
 #
 #     .venv/bin/python .agents/slop/tensor-mutate.py
+# RESTORED 2026-10-16 from `.agents/slop/tensor-mutate.py`, blob e853efc4b, 5821 B, byte for
+# byte, together with `.agents/slop/zero-classify.py` (18662 B), the dependency its
+# `import patch_not_apply` chain needed and had lost. **IT STAYS AT ITS OLD PATH AND THAT IS
+# THE POINT**: `patch_not_apply.py` has 10 other tracked consumers under `.agents/slop/`
+# (`usb-mutate.py`, `ga_mutate.py`, `state-mutate.py`, `dd-mutate.py`, `ansi_gate.py`,
+# `nn-init-mutate.py`, `anchor-audit.py`, `rf2-mutate.py`, ...) that import it as a SIBLING, so
+# moving the library into `gates/` would break ten files this unit does not own. The library
+# wins the path argument; the sweep's real defect was that the files were gone, not where they
+# were. MEASURED from the restored path: rc=0, 21 rows, 21.3 s, and it reproduces this table
+# including its three `**NOTHING**` rows (M4, M14, and M17, which is a declared control).
+#
+# M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
+#     sh .agents/slop/backward/bwd-mutate.sh <arm>
+# **AND THAT HARNESS IS NOT IN THIS TREE AND IS NOT RESTORED.** It exists on exactly one ref,
+# `5444ea42e`, which is not an ancestor of HEAD, so `git log HEAD -- <path>` returns nothing
+# and `git rev-list --all --objects` names it once. It is 11620 B and its three inputs
+# (`./bin/bend`, `tinybendygrad/tensor.bend`, `tinybendygrad/uop/ops.bend`) all still exist, so
+# it is RECOVERABLE -- but it is a SHELL harness and `gates/README.md` retires the shell form
+# with four measured failures recorded against it, so porting it is a decision, not a restore.
+# M18-M20 therefore have no instrument today. Named, not hidden.
 #
 # Seventeen one-token edits, each applied, run, and reverted. 15 of the 17 move at
 # least one row; the two that move NOTHING are reported below rather than quietly
 # dropped, because a mutation that moves nothing is a measurement of what the gate does
-# NOT see and it is the most useful line in the table.
+# NOT see and it is the most useful line in the table. (MEASURED 2026-10-16 from the
+# restored path: "17 mutations, 3 moved nothing" -- M4, M14, and M17, which is itself a
+# declared control, so 15 of 17 is what the harness reports.)
 #
 # M18-M20 ARE NOT IN `tensor-mutate.py`: they are measured by
 #     sh .agents/slop/backward/bwd-mutate.sh <arm>
