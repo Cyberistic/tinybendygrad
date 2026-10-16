@@ -1070,9 +1070,17 @@ def nop_names(ns: List<&2, NewOpt>, acc: String) -> String:
     case +n <> t: nop_names(t, String.concat([acc, nop_name(n), ":", U32.show(nop_n(n)), ","]))
 
 # an Optim with EVERY field at its default, which is all `_new_optim_param` reads:
-# `self.fused` (False), `self.device` (a D1 and not a Dn) and `self.params`.
-def g_opt() -> Optim:
-  Optim{O.Arena.empty(), Nil{}, Nil{}, S.D1{0}, S.single(), False{}, 0, Nil{},
+# `self.fused` (False), `self.device` and `self.params`.
+#
+# THE DEVICE IS THE ONE PARAMETER, and it is a parameter rather than the literal
+# `S.D1{0}` because `op_nop.arm` selects on the device's CLASS and nothing else: a
+# fixture pinned to one class can never reach the other arm, so a pinned fixture
+# gates one arm and reports nothing about the other. `S.Dn{[6, 0]}` is the
+# two-device list `device.bend:344 tag_of` interns DISK into (6) alongside a tag-0
+# device, and `schedule/memory.bend:1008` already mints `S.Dn{[2, 3]}`, so the
+# multi-device spelling needs no interner and no missing symbol.
+def g_opt.on(d: S.Dev) -> Optim:
+  Optim{O.Arena.empty(), Nil{}, Nil{}, d, S.single(), False{}, 0, Nil{},
     Nil{}, 0.9, 0.999, 0.00000001, 0.0, True{}, 0, 0, Nil{}, Nil{},
     0.9, 0, Nil{}, False{}, True{}, True{}, 0.0}
 
@@ -1100,8 +1108,16 @@ def t_acc() -> IO(Unit):
 # and this row has no arena to hand it, while the record carries the one its params
 # were built in. A row that passed a fresh `Arena.empty()` would read every shape as
 # the fold's bottom and print two zeros -- which is the mistake this comment prevents.
-def t_nop.of3(ns: List<&2, NewOpt>) -> IO(Unit):
-  row("op_nop", String.eq(nop_names(ns, ""), "Nzs:2,Nzs:3,"))
+#
+# NO `t_nop.of3`, AND THAT DELETION IS THE FIX: one helper holding the expectation made
+# the two arms share a cell, so a fixture that reached one of them had to be edited away
+# from the other. Each row below carries its OWN device and its OWN expected string, and
+# the two literals disagree on the LETTER -- `Nzs:2,Nzs:3,` against `Nzl:2,Nzl:3,`. **AND
+# THAT IS NOT THE WHOLE OF THE DISCRIMINATION, WHICH IS WHY THERE IS A THIRD ROW:** two
+# literals that differ do not stop a single edit from satisfying both at once, and
+# `t_nop.tag`'s comment below names the edit and the two green rows it produced. What the
+# differing literals DO buy is that each row fails if its own fixture stops reaching its own
+# arm, which is the reading to take from the first two and not more than the reading.
 
 # THE RECORD CARRIES THE ARENA ITS PARAMS LIVE IN, and that is load-bearing rather
 # than tidy: `op_nop` reads each param's shape through `o.ar`, so a record built with
@@ -1129,11 +1145,40 @@ def op_last_ar(xs: List<&2, T.Tensor>, d: O.Arena) -> O.Arena:
     case Nil{}: d
     case x <> t: op_last_ar(t, T.Tensor.ar(x))
 
-def g_opt.grown(+xs: List<&2, T.Tensor>) -> Optim:
-  op_with_arena(op_set_params(g_opt(), op_filter.of(True{}, xs)), op_last_ar(xs, O.Arena.empty()))
+def g_opt.grown.on(d: S.Dev, +xs: List<&2, T.Tensor>) -> Optim:
+  op_with_arena(op_set_params(g_opt.on(d), op_filter.of(True{}, xs)), op_last_ar(xs, O.Arena.empty()))
 
+# THE ONE-ARGUMENT FORM IS NOT A CONVENIENCE, IT IS A PEER'S ENTRY POINT.
+# `gates/op_graph_census.bend:293` calls `Op.op_nop(Op.g_opt.grown(Op.g_two(...)))` with
+# ONE argument, and that file is not this unit's to edit, so `g_opt.grown` keeps its
+# arity and its `S.D1{0}` and the device-parameterised form is the sibling. MEASURED: the
+# census gate's `nop=` row is byte-identical before and after this change.
+def g_opt.grown(+xs: List<&2, T.Tensor>) -> Optim:
+  g_opt.grown.on(S.D1{0}, xs)
+
+# ONE ROW PER ARM, and each row builds its OWN arena and its OWN record. `op_nop.dn` is
+# the `S.Dn` arm of `op_nop.arm` (optim.py:26, `isinstance(self.device, tuple)`), whose
+# body is `Tensor.zeros_like` rather than `Tensor.zeros` -- `Nzl` against `Nzs`.
 def t_nop() -> IO(Unit):
-  t_nop.of3(op_nop(g_opt.grown(g_two(O.Arena.empty()))))
+  row("op_nop", String.eq(nop_names(op_nop(g_opt.grown.on(S.D1{0}, g_two(O.Arena.empty()))), ""), "Nzs:2,Nzs:3,"))
+
+def t_nop.dn() -> IO(Unit):
+  row("op_nop.dn", String.eq(nop_names(op_nop(g_opt.grown.on(S.Dn{[6, 0]}, g_two(O.Arena.empty()))), ""), "Nzl:2,Nzl:3,"))
+
+# THE PRINTER'S OWN ROW, AND IT IS THE ONE THAT MAKES THE TWO ABOVE NON-VACUOUS. Both of them
+# compare `nop_names`' OUTPUT against a literal, so any edit that moves the output and the
+# literal together leaves them green -- MEASURED, and this row was written because it did:
+# collapsing `nop_name`'s `Nzl` arm to `Nzs` AND replacing `op_nop.dn`'s expectation with
+# `op_nop`'s printed `op_nop=True` AND `op_nop.dn=True` at rc=0 with the `Nzl`/`Nzs`
+# distinction GONE. The vacuity route never hands both rows one string; it collapses the
+# PRINTER until both rows read the same line, and only `op_nop.dn`'s literal has to move
+# because `op_nop`'s was already `Nzs`. This row builds the three `NewOpt`s BY HAND, so
+# nothing in `op_nop.arm`, in the fixtures or in the device can reach it, and it pins all
+# THREE letters -- including `Nz`, which no `op_nop` fixture can print. THAT IS THE NINTH
+# CAUSE, "the witness is a separate def": the witness for a printer is a row of its own,
+# because every other row's use of it is a comparison whose other operand moves with it.
+def t_nop.tag() -> IO(Unit):
+  row("op_nop.tag", String.eq(nop_names([Nz{7}, Nzl{7}, Nzs{7}], ""), "Nz:7,Nzl:7,Nzs:7,"))
 
 
 # --- 5-13: the GRAPH rows ------------------------------------------------------
@@ -1339,11 +1384,11 @@ def t_lamb() -> IO(Unit):
   t_lamb.of(g_step())
 
 # ===========================================================================
-# THE FILE'S OWN `main`, AND ITS HONEST STATE. FOUR VALUE ROWS AND SEVEN GRAPH ROWS.
+# THE FILE'S OWN `main`, AND ITS HONEST STATE. SIX VALUE ROWS AND SEVEN GRAPH ROWS.
 #
 # THE ARENA PLUMBING IS FINISHED. `gates/op_graph_census-gate.py` drives each builder directly
 # and diffs the deep toposort (with each node's arg) against CPython's own graph; as of
-# 2026-10-09 all 24 graph rows and the four value rows match, and the seven rows below that
+# 2026-10-09 all 24 graph rows and the four value rows of the day match, and the seven rows below that
 # used to print `1 NOOP/0` (or a one-node graph) now print CPython's exact trees. The
 # `unverified_*` NAMES ARE HISTORICAL, kept only so this file's own output is stable.
 #
@@ -1389,30 +1434,43 @@ def main() -> IO(Unit):
     b : Unit <- t_bufs()
     c : Unit <- t_acc()
     t_nop()
+    t_nop.dn()
+    t_nop.tag()
     d : Unit <- t_unverified()
     e : Unit <- t_unverified3()
     t_unverified2()
 # ===========================================================================
-# THE MUTATION TABLE, MEASURED, and it is SHORT because only four rows are claims.
+# THE MUTATION TABLE, MEASURED, and it is SHORT because only the rows below are claims.
 #
-#     cp tinybendygrad/nn/optim.bend /tmp/o.bak
-#     <edit one token>            # as named below
-#     ./bin/bend tinybendygrad/nn/optim.bend
-#     cp /tmp/o.bak tinybendygrad/nn/optim.bend
+# THE TABLE IS ALSO A HARNESS NOW. The prose here was typed by hand, which is a claim, so every
+# entry below is re-runnable and the runs are what the third column says:
+#
+#     .venv/bin/python gates/optim-nop-mutate.py     # 11 entries, 13 rows of base
+#
+# IT READS THIS FILE'S OWN `main`, WRITES A COPY BESIDE IT (`optim-mut.bend`, `.gitignore`d),
+# AND NEVER WRITES THIS FILE. Eleven entries: four of these rows, five PLANTS that must turn an
+# arm red, and two that are expected to move nothing with the cause named beside them.
 #
 # | mutation | the edit | rows that MOVED | what it was testing |
 # | --- | --- | --- | --- |
 # | M1 | `op_acc`: `op_acc.go(params, [0])` -> `(params, Nil{})` | `op_acc` | `initial=0` at the HEAD of `itertools.accumulate` (optim.py:22). Without it the prefix sum is `[2,5]` and the fused slice bounds at :53 are off by one for every parameter. |
-# | M2 | `op_filter.t`: `True{}` -> `False{}` | `op_params` `op_nop` | optim.py:13's `if x.is_param`, the half of the pair that :15's `if not x.is_param` is written against. `op_nop` moves too because it builds its `params` through the same filter, so the row that reads shapes is downstream of the row that selects tensors. |
-# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | **NOTHING** | A NEGATIVE, and the gate's honest limit. `op_nop`'s fixture uses a `S.D1` device, so the `Dn` arm NEVER FIRES and swapping it for the `S.D1` arm's body changes nothing. `_new_optim_param`'s multi-device branch (optim.py:26, `isinstance(self.device, tuple)`) is therefore UNGATED. **THE REASON THIS ROW GAVE WAS MEASURED WRONG, AND `gates/devtag-gate.py` IS THE INSTRUMENT THAT FALSIFIED IT:** the closure does not need a missing symbol, it needs a FIXTURE NOBODY WROTE. `device.bend:344 tag_of` already interns TWO names into TWO DISTINCT TAGS -- DISK gets 6 and every other name gets 0 -- so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1000` already mints `S.Dn{[2, 3]}`. MEASURED on a copy of this tree, three steps: `g_opt()`'s `S.D1{0}` -> `S.Dn{[6, 0]}` took `op_nop` True -> **False**; this row's own `Nzs` -> `Nzl` in `t_nop.of3` took it back -> **True**; M3's edit then took it -> **False**, so the `Dn` arm IS gateable in three tokens. **NOT LANDED HERE** -- a `Dn` fixture would un-gate the `D1` arm, and one row per arm is the fix, not one row per arm instead. The residual limit it would leave is the one no token removes: CPython's two arms have the SAME shapes (MEASURED, `Optimizer(params, device='CPU')` and `device=('CPU','METAL')` both give nums `[2, 3]`), so `Nzl` against `Nzs` is a PORT spelling only the toposort can see. |
-# | M4 | a no-op edit | **NOTHING** | a control. A mutation table with no row that CANNOT move is a table of coincidences. |
+# | M2 | `op_filter.t`: `True{}` -> `False{}` | `op_params` `op_nop` `op_nop.dn` | optim.py:13's `if x.is_param`, the half of the pair that :15's `if not x.is_param` is written against. `op_nop` moves too because it builds its `params` through the same filter, so the row that reads shapes is downstream of the row that selects tensors. `op_nop.dn` joined it when the second row landed, which is the price of a second row and is paid here in the open. |
+# | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | **CLOSED.** This row read **NOTHING** and the reason it gave was MEASURED FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was ONE row with ONE fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a REPLACEMENT, because there was no second row to put it in. Nothing needed a symbol: `device.bend:344 tag_of` interns two names into two DISTINCT tags (DISK gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1008` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` ABOVE, and `g_opt.grown` keeps its ONE argument because `gates/op_graph_census.bend:293` calls it with one. MEASURED on the shipped tree, not on a copy: M3 moves `op_nop.dn` and **nothing else** -- `op_nop` is unaffected, which is the whole claim. |
+# | M4 | a no-op edit | **NOTHING** | a control, and its zero is a VACUOUS EDIT rather than a gap: a mutation table with no row that CANNOT move is a table of coincidences. |
+# | P1 | `g_opt.on` ignores its `d` and writes `S.D1{0}` | `op_nop.dn` | the PLANT for "a later fixture edit". It edits the def BOTH rows call, not the row, which is what such an edit is in practice. `op_nop` stays green. |
+# | P2 | `op_nop.dn`'s expectation `Nzl:2,Nzl:3,` -> `Nzs:2,Nzs:3,` | `op_nop.dn` | HALF the vacuity edit, and on its own it does NOT make the new row vacuous: the `Dn` fixture still prints `Nzl`. |
+# | P3 | `op_nop.dn`'s fixture `S.Dn{[6, 0]}` -> `S.D1{0}` | `op_nop.dn` | the prior unit's three-token edit, re-measured on the row it belongs to. Its damage is now LOCAL; before this change it landed on `op_nop`. |
+# | P4 | `nop_name`'s `Nzl` arm -> `"Nzs"` | `op_nop.dn` `op_nop.tag` | the PRINTER's letters collapse. `ptx.bend`'s alias-defect shape, where every fixture put the aliased node at one position. |
+# | P5 | P2 and P4 TOGETHER | `op_nop.tag` | **THE VACUITY PLANT, AND IT IS WHY `op_nop.tag` EXISTS.** With only `op_nop` and `op_nop.dn`, this pair left BOTH green at rc=0 -- MEASURED, once, before the third row existed -- with the `Nzl`/`Nzs` distinction that is the whole of the two arms GONE. "The two expectations are mutually exclusive" is NOT a guard: the vacuity route never hands both rows one string, it collapses the printer until both read the same line, and only `op_nop.dn`'s literal has to move because `op_nop`'s was already `Nzs`. `op_nop.tag` builds the three `NewOpt`s by hand, so nothing in `op_nop.arm`, in the fixtures or in the device reaches it. |
+# | Z1 | `nop_name`'s `Nz` arm -> `"Nzl"` | `op_nop.tag` | the `Nz` LETTER, which no `op_nop` fixture can print. Closed by `op_nop.tag`. |
+# | Z2 | `op_nop.arm`'s `case True{} _` -> `[Nzs{op_last(pp)}]` | **NOTHING** | **THE ONE MEASURED LIMIT LEFT IN THIS FILE: DEAD ARM.** Every `g_opt.on` record has `fused=False{}`, so the FUSED arm -- `Tensor.zeros(self.pos_params[-1])` -- never fires and its body is changed by nothing. **IT IS NOT THREE TOKENS, and that is the measurement rather than an excuse:** a fused record needs `fused=True{}` AND `pos_params = op_acc(params)`, and `op_pos.of` already computes the right `pos_params` from `fused` and the tensors, so the only missing piece is a record mutation -- and `Optim` has twenty-four fields, which is why `op_with_arena` is a def and why closing this costs one more def rather than one more token. |
 #
 # THE SEVEN `unverified_*` ROWS ARE NOW CLAIMS TOO: the census gate drives each builder and
 # diffs the deep toposort against CPython, and all seven match. They are not mutated HERE --
-# the census gate's pins ARE their mutation -- so this table stays the four VALUE rows' table.
+# the census gate's pins ARE their mutation -- so this table stays the VALUE rows' table.
 #
 # BOTH LANES AGREE. `./bin/bend tinybendygrad/nn/optim.bend` and
-# `./bin/bend tinybendygrad/nn/optim.bend -o <bin>` are byte identical on all eleven rows,
+# `./bin/bend tinybendygrad/nn/optim.bend -o <bin>` are byte identical on all THIRTEEN rows,
 # measured.
 
 # THE GATE, AS A COMMAND. The graph rows are gated by `gates/op_graph_census-gate.py`, which
@@ -1421,6 +1479,7 @@ def main() -> IO(Unit):
 #
 #     .venv/bin/python gates/op_graph_census-gate.py
 #
-# This file's own `main` prints the eleven rows below. The four value rows print the value
+# This file's own `main` prints the thirteen rows below. The SIX value rows print the value
 # (`op_params=2,3`) while the port prints the VERDICT (`op_params=True`), because the row defs
 # compare against the literal; the seven `unverified_*` rows now print CPython's exact trees.
+# `gates/optim-nop-mutate.py` is the table above, made re-runnable.
