@@ -151,6 +151,80 @@ def _said(stream, lines=3):
     return " | ".join(said[:lines])
 
 
+# THE DEVICE PRECONDITION. `DEV` is `helpers.py:237`'s `_DEV("DEV", "")`, a `ContextVar`, and
+# `ContextVar.__init__` (`helpers.py:187`) does `self.value = getenv(key, default_value)` --
+# SO THE DEVICE IS READ FROM THE ENVIRONMENT ONCE, AT IMPORT. It is not inert, and it is not
+# the port's: `device.py:59` writes `os.environ["DEV"]` back when a device is selected with
+# no `DEV` given, so an undeclared device becomes an inherited one.
+#
+# MEASURED 2026-10-16, over `DEV` in {CPU, PYTHON, DISK, NPY} x 14 census gates: NO gate's
+# answer moves, and `DEV` re-run reproduces. Every device those gates use is a LITERAL in
+# their own source -- `crp_graph_census-oracle.py:61` `DEV = "PYTHON"`,
+# `realize_graph_census-oracle.py:78` `"CPU"`, `ops_python_exec-gen.py:194`
+# `Context(DEV="PYTHON")`, and `device=None` in the rest -- which is a STRONGER claim than
+# "it does not depend on the device": it does not depend on an ambient one because it never
+# reads one. THE HAZARD IS REAL ONE DIRECTORY OVER: `checks/env-precond.py` declares
+# `DEV=CPU` for `runs/graphcmp/D` because `graphcmp.py:2839` supplies it as an argparse
+# DEFAULT in a third file `checks/differ.py` does not know exists.
+#
+# WHAT WAS MISSING IS NOT THE CHECK, IT IS THE DECLARATION: `gates/artifacts/<gate>/`
+# recorded nothing about a device, so a reader could not tell whether a gate HAD one.
+NO_DEVICE = "NO_DEVICE"
+
+
+def device_precondition(declared, ambient) -> tuple[int, str]:
+    """THE DEVICE A GATE'S ROWS WERE TAKEN UNDER, against the environment's. `(code, why)`.
+
+    TWO STATES, AND NEITHER IS A CLAIM ABOUT THE TREE. `NO_DEVICE` -- the default, and the
+    honest answer for a gate whose lanes take every device from a literal -- has nothing to
+    compare and PASSES. A NAME is a PRECONDITION on the environment, shaped exactly as
+    `checks/index-arm-gate.py`'s is a precondition on the index: the tree is fine either
+    way, and a caller reading `$?` must be able to tell "your DEVICE is pointed wrong" from
+    "your CONTENT is wrong", which is what exit 3 buys and exit 1 spends.
+
+    AN UNSET `DEV` PASSES, because `crp_graph_census` is the only gate here whose rows are
+    device-bound at all and it takes its device from a literal, so demanding an ambient value
+    would REFUSE runs whose answer is provably identical -- and **a wrong reason is worse
+    than no reason.** Where a gate genuinely reads the ambient, the ambient is the thing to
+    declare; this compares, and does not resolve.
+
+    NO `Target` GRAMMAR HERE, DELIBERATELY. `DEV` is `Target.parse`d by tinygrad (`;`, `+`,
+    `:`); re-implementing that in this file is a second grammar that rots alone, so the
+    comparison is on the RAW STRING and a `DEV` that merely CONTAINS the declared device
+    (`CPU:1`, `CPU,NULL`) REFUSES. Conservative in the safe direction: REFUSED is not FAIL.
+    """
+    if declared == NO_DEVICE or ambient is None or ambient == declared:
+        return PASS, ""
+    return REFUSED, (f"the DEVICE precondition is {declared!r} and the environment says "
+                     f"DEV={ambient!r}")
+
+
+def device_plant() -> int:
+    """THE FIVE STATES OF A DECLARED DEVICE, IN TOKEN AND EXIT CODE -- no `bend` runs.
+
+        .venv/bin/python -c "import sys;sys.path.insert(0,'gates');import gatekit;\\
+                             sys.exit(gatekit.device_plant())"
+
+    FIVE AND NOT THREE: the two `NO_DEVICE` rows are the point of the instrument, because a
+    gate that declares no device must be able to say SO on every device, and a refusal that
+    only fires for a string cannot demonstrate that. The last row is the load-bearing one --
+    a precondition that cannot refuse is a comment.
+    """
+    cases = ((NO_DEVICE, None, PASS), (NO_DEVICE, "CPU", PASS), ("CPU", None, PASS),
+             ("CPU", "CPU", PASS), ("CPU", "PYTHON", REFUSED))
+    bad = []
+    for declared, ambient, want in cases:
+        code, why = device_precondition(declared, ambient)
+        show = ambient if ambient is not None else "UNSET"
+        print(f"  declared={declared:<9} ambient={show:<7} "
+              f"{VERDICT[code] if code != REFUSED else 'REFUSED, NOT A VERDICT':<26} rc={code}"
+              + (f"  -- {why}" if why else ""))
+        if code != want:
+            bad.append(f"declared={declared} ambient={show}: rc={code}, expected {want}")
+    print(f"--plant: {'all five states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    return 1 if bad else 0
+
+
 def output_dir_plant() -> int:
     """THE TWO STATES OF A GATE'S OUTPUT DIRECTORY, IN TOKEN AND EXIT CODE -- no `bend` runs.
 
@@ -249,10 +323,15 @@ class Gate:
               `--check-only || true` and says in its own header that it "does NOT gate on that
               line", so a COLD driver is REPORTED and the lanes are diffed anyway. Same driver,
               same verdict, opposite exit status, and the difference is the shell's.
+    device    the DEVICE these rows were taken under, or the module's `NO_DEVICE` (the
+              default) for a gate whose lanes take every device from a literal in their own
+              source. `device_precondition` is consulted on EVERY run, so a gate that adopts
+              one needs no code here; see that function for the two states and why an unset
+              `DEV` passes.
     """
 
     def __init__(self, name, *, bend, oracle, rows, compared=None, diverges=None,
-                 pins=None, port_only=None, warm="fatal"):
+                 pins=None, port_only=None, warm="fatal", device=NO_DEVICE):
         self.name = name
         # A GATE CLEARS ITS OWN OUTPUT BEFORE ANY CHECK CAN FAIL, NOT AT THE TOP OF `run()`.
         # MEASURED 2026-10-06: `_clear()` sat in `run()`, and **5 of 17 exits are AFTER the lanes write** —
@@ -276,6 +355,10 @@ class Gate:
         self.port_only = list(port_only or [])
         self.pins = list(pins or [])
         self.warm_mode = warm
+        # THE DEVICE PRECONDITION IS STATE, NOT AN ARGUMENT THE LANES SEE. Kept beside
+        # `warm` because it is the same kind of declaration: something about the RUN's
+        # standing conditions, checked once in `run()` and never threaded into a lane.
+        self.device = device
         # THE WARM CHECK'S OWN STDOUT, kept so a gate can REPRODUCE the shell's whole output
         # rather than a summary of it. `--check-only` prints `ALL PROOFS CHECK` and
         # `Use --verdict for mathematical validity.` on stdout and both `.sh` gates let those
@@ -412,6 +495,21 @@ class Gate:
             if (rc := self._ensure_dir()) != PASS:
                 return rc               # the output directory cannot be created: REFUSED
             self._clear()
+            # FIRST, AND BEFORE `_warm`: the DEVICE precondition is the cheapest thing this
+            # file knows and the only one a caller can fix without touching the tree, so a
+            # run refused for it must not first spend a `bend` warm check to say so.
+            # `why` is printed BEFORE the return -- `checks/devpin.py`'s measured reason, "a
+            # refusal you cannot read is a refusal you cannot test".
+            # A TUPLE IS NEVER `== PASS`. `(code, why) != 0` IS ALWAYS TRUE, SO THE BRANCH WAS ALWAYS
+            # TAKEN; AND `code` IN `!= PASS` IS A **LOAD**, NOT THE TUPLE'S FIRST ELEMENT, SO IT RAISED
+            # `NameError: name 'code' is not defined` ON **EVERY GATE**. THE WALRUS BINDS THE NAME;
+            # IT DOES NOT UNPACK IT INTO THE COMPARISON.
+            code, why = device_precondition(self.device, os.environ.get("DEV"))
+            if code != PASS:
+                if why:
+                    self._say(why)
+                print(f"== REFUSED, NOT A VERDICT: {self.name}: {why}", file=sys.stderr)
+                return code
             if not self._warm():
                 return REFUSED          # the substrate could not be checked at all
             if not self._oracle():
