@@ -110,7 +110,13 @@ SHELL_SHEBANG = re.compile(r"^#!.*\b(bash|sh|zsh|dash|ksh)\b")
 #: The verbs that CREATE a file or a directory. A shell READ is not extracted: a read is any
 #: string-shaped token, and a permissive reader is how the first prototype produced `echo`, `fi`
 #: and `local` as paths. **A WRITE IS A NARROW SET OF VERBS; A READ IS NOT.**
-SH_CREATE = re.compile(r"(?<![0-9A-Za-z_.-])(mkdir|cp|mv|install|touch|tee|ln|rsync|git)\b")
+#: `git` IS NOT IN THIS SET AND IS IN `SH_GIT` INSTEAD. MEASURED: with a bare `git` alternative,
+#: `checks/disarm.sh` yielded **20 sites of which 0 existed, and every one of them was a command
+#: name** -- `git`, `grep`, `diff`, `cut`, `sort`, `say`, `OWN`, `i.e.`. Only `git clone` and
+#: `git init` create anything, and `git clone` is the one that matters here: it is
+#: `tools/get-bend.sh:21`, the whole of `references/bend`.
+SH_CREATE = re.compile(r"(?<![0-9A-Za-z_.-])(mkdir|cp|mv|install|touch|tee|ln|rsync)\b")
+SH_GIT = re.compile(r"(?<![0-9A-Za-z_.-])git\s+(clone|init)\b")
 #: `NAME=value`, `export NAME=value`, `local NAME=value` -- one assignment shape, three prefixes,
 #: and the fixed point is 4 rounds because `D=$ROOT/x` needs `ROOT` first.
 SH_ASSIGN = re.compile(r"""(?m)^\s*(?:export\s+|declare\s+-x\s+|local\s+|readonly\s+)*"""
@@ -426,6 +432,11 @@ def shell_sites(root=ROOT, tracked=None):
                           else [shell_value(b, env) for b in bare]):
                     if v:
                         out.append((rel, "write", v))
+            for m in SH_GIT.finditer(line):  # `git clone URL DEST` -- DEST is the last token.
+                bare = [t.strip("\"'") for t in re.findall(r"\"[^\"]*\"|'[^']*'|\S+",
+                                                          line[m.end():])]
+                if bare and (v := shell_value(bare[-1], env)):
+                    out.append((rel, "write", v))
     return out
 
 
