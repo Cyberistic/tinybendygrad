@@ -606,6 +606,18 @@ sweep-deletes-pop [##........] 1/3  **I OVERSTATED THIS AND THE CORRECTION IS TH
                                        names, refused here because reviving a dead table changes a
                                        load-bearing exclusion set and the diff it asks for has not
                                        been taken.
+                                       **AND THE DENOMINATOR IS A QUESTION, NOT A FACT -- WHICH IS
+                                       WHY THIS NUMBER HAS LOOKED WRONG THREE SEPARATE TIMES.**
+                                       MEASURED 2026-10-16 over `checks/`+`gates/`, the NUMERATOR is
+                                       stable at **15** module-form deletes (`shutil.rmtree` 8,
+                                       `os.unlink` 4, `os.remove` 2, `os.rmdir` 1) on `FS_DELETES`'
+                                       own four keys. The DENOMINATOR depends on what counts as
+                                       "method form": NAME receivers give **15 of 47**, expression
+                                       receivers **15 of 23**, and earlier readings said 45 and 22.
+                                       **ALL FOUR ARE DEFENSIBLE AND NONE OF THEM WAS WRITTEN WITH ITS
+                                       DEFINITION**, so a reader cannot tell whether a change is drift or
+                                       arithmetic. **QUOTE THE NUMERATOR WITH THE QUESTION THAT
+                                       GENERATES ITS DENOMINATOR, OR THE NUMBER IS NOT A RESULT.**
 
 d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is present, so the
                                        probe RUNS, and `D10-zerorow-guard.txt.err` reads `bend
