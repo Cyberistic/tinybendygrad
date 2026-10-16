@@ -17692,6 +17692,65 @@ NOW A REAL BLOB IN `HEAD`.
       `graphcmp-empty.bend` **ALREADY HAS**; AND ITS `.err` MISLABELS: **"BROKE AFTER 3 ATTEMPT(S)" PRINTS
       **ONE** NOTE** (`tries` IS THE LIMIT, NOT THE COUNT).
 
+## CHECKSDEAD -- **`STR` 34 -> 1**, AND ONE MEASUREMENT DECIDED **SEVEN** SITES AT ONCE (2026-10-17)
+
+`9a182bb67` -- **15 FILES, +214/-53**, ANOTHER UNIT's IN-FLIGHT `checks/runs-artifacts.py` /
+`citation-gate.ledger.tsv` / `unrunnable-recipes.rows` **EXCLUDED AND VERIFIED ABSENT FROM IT**.
+**`ruff` OVER THE 14 TOUCHED FILES: **12 ERRORS BEFORE, 12 AFTER -- ZERO ADDED.****
+
+- [x] **AND THE BRIEF NAMED **3** OF THE 5 `DEAD`-CLASS SITES. THE UNIT FOUND **THE OTHER TWO**:
+      `checks/al-verdict.py:75` (THE 4th) AND `checks/gate.py:203` (THE 5th).**
+- [x] **AND THE MEASUREMENT THAT DECIDED **ALL SEVEN** `bend -o` SITES AT ONCE:
+      **`bin/bend bad.bend -o bad.js` -> rc=1, NO ARTEFACT WRITTEN** (PEAK RSS **37 MB**, 0.03 s).
+      **SO `not out.exists()` *SPANS TWO CONDITIONS* -- AND THE TREE **ALREADY** SEPARATES THEM, VERIFIED BY
+      THE CALLER:**
+
+          gates/gatekit.py:590   return DEAD     # `bend` ran and emitted no rows to compare
+          gates/gatekit.py:593   if c.returncode != 0:
+          gates/gatekit.py:596       return REFUSED  # the compiled lane's PRECONDITION, not its ANSWER
+
+      **HENCE THE TERNARY AT SEVEN SITES, AND **BOTH ARMS OF EVERY ONE WERE DRIVEN.****
+- [x] **AND THE SPELLING WAS FOUND, NOT INVENTED, **AND IT IS LOAD-BEARING**: `== REFUSED, NOT A VERDICT:` IS
+      WHAT **`gates/gates-pop.py:561`'s `REFUSE` REGEX AND `:764`'s `_CERTIFY_OR` MATCH TO DECIDE **A FILE *CAN
+      REFUSE***; AND `== DEAD:` IS `gates/citations-census-gate.py:610,630` (VERIFIED BY THE CALLER) --
+      **THE TREE's ONLY `==`-PREFIXED `DEAD` AND THE STRUCTURAL TWIN.** BOTH GO TO **STDERR**, BOTH IN ONE NEW
+      MODULE `checks/verdict.py` (**5 036 B**, **7** REFERENCES TO `gatekit` -- VERIFIED BY THE CALLER)
+      **WHOSE FIVE CODES ARE `gatekit`'s, LOADED BY PATH AND NEVER RE-SPELLED.**
+- [x] **AND TWO "ALREADY CORRECT" SITES IT **NEARLY** GOT WRONG:
+      **`abi_gate.py:356`'s `want = got if expect == "+" else expect` LOOKS LIKE THE BUG `ruff` NAMES
+      (UNUSED-VARIABLE `want`) -- AND IT IS NOT ONE**: `ARMS` AT `:300` HOLDS THE EXPECTATION AS AN **INT**
+      (`1`), **NOT THE STRING `"1"`**, SO `got != expect` IS **INT-VS-INT AND CORRECT**. **ITS FIRST PROBE
+      PASSED A STRING AND GOT A FALSE REFUSAL.** VERIFIED AGAINST `git show HEAD:` -- **BYTE-IDENTICAL TO HEAD.**
+      **AND `gate.py:203`'s NEIGHBOURS `run():206,211,215` ARE NOT A DEFECT BUT A ***DESIGN***: `p.returncode !=
+      0` IS CHECKED FIRST, **AND A CLEAN EXIT THAT OMITS A ROW IS PRECISELY WHAT `:217` EXISTS TO CATCH.****
+- [x] **AND IT **DEPARTED FROM THE CALLER's BUCKET** AND RULED `DEAD` FOR `gate.py:203`, **WITH GROUND**:
+      `gates/gatekit.py:590` IS A GATE ***HOLDING CAPTURED STDOUT*** RETURNING `DEAD` FOR A CHILD THAT
+      EMITTED NOTHING; `:140` *"A TRACEBACK STAYS `DEAD`"*; `checks/gatesweep.py:classify:126` MAPS rc 1 +
+      TRACEBACK TO `DEAD`; `.agents/slop/hooks/run.py:112` SAYS **"CRASHED, NOT A VERDICT"**. **AND IT MAKES
+      `run()` SELF-CONSISTENT -- ITS NEIGHBOURS ALREADY CRASH WITH `AttributeError` ON A DRIVER THAT PRINTED NO
+      `APPEND`.** ***THE CALLER ACCEPTS THE RULING; IT IS RIGHT AND THE BUCKET WAS WRONG.***
+- [x] **AND **THE TWO FAIL-CLASS SITES IT MADE TERNARIES** ARE `abi4_gate.py:327` AND `abi_gate.py:395`** --
+      **THEIR *NORMAL* CASE IS `FAIL`, BUT THEY ALSO CARRIED **1** FOR A CRASHED LANE **AND** FOR A ZERO-ROW
+      LANE, **WHICH IS 1 FOR THREE DIFFERENT VERDICTS**.****
+- [x] **CENSUS: `STR` **34 -> 1**; EXIT SITES **289 -> 254**; `W` **256 -> 257** (**+1 = `checks/verdict.py`**).
+      rc **STILL 1** BUT NOW **ATTRIBUTABLE ***ENTIRELY*** TO THE ONE `gates/` ROW; `checks/` CONTRIBUTES
+      **ZERO**. `--plant` **rc=0**, **26 SHAPES + 4 DECISION STATES + 5 VERDICTS + 1 COLLISION**, UNREGRESSED.
+- [x] **AND `HANDMADE = 5 OF 216`, AND IT **DID NOT MOVE** -- MEASURED BY RENAMING THE NEW FILE ASIDE AND
+      RE-READING, **NOT BY ARGUMENT**.** ITS FIVE ARE `.venv`, `.venv/bin`, `.venv/bin/python`, `bin/bend`,
+      `checks/gen`.
+- [ ] **AND `gate.py` CANNOT RUN IN PLACE**: `checks/drive.mjs` WAS SWEPT BY `371cc64c9`. IT DROVE ITS FOUR
+      SITES IN A **SYMLINKED TEMP TREE** WITH A STUB DRIVER **AND RESTORED NOTHING.**
+- [ ] **AND THE `2`-IS-`USAGE` CONSENSUS IS **DELIBERATELY NOT A CARVE-OUT**:
+      `sys.exit(2)` AT `al-verdict.py:132` AND `checks/repair-dupes.py:99` ARE THAT CONSENSUS, AND
+      `gates/exitcode-census-gate.py:36-38` **KEEPS IT AS A **REPORTED COLUMN** AND NEVER A CARVE-OUT.****
+      **9 UNOWNED `INT`s REMAIN, 2 OF THEM IN `checks/`.**
+- [ ] **AND A LATENT HAZARD NAMED AND NOT TOUCHED: `checks/gatesweep.py:702` LOADS `checks/residue.py` BY PATH
+      WITH **NO** `sys.path` HELP**, SO `residue.py` CANNOT USE A BARE `from verdict import …`; IT USES
+      `sys.path.insert(0, HERE)`. **ANY ***FUTURE*** FILE LOADED BY PATH WILL NEED THE SAME TWO LINES, AND
+      NOTHING ENFORCES THAT.**
+- [x] **COST: `bend` RAN **ONCE**, ON A **23-BYTE** FILE, **37 MB / 0.03 s**; THE 45 EXECUTIONS USED **FAKES**,
+      NOT THE COMPILER.** CENSUS **130 MB / 2.41 s**.
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
