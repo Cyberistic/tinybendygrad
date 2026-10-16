@@ -1048,15 +1048,30 @@ def g_grad(ar: O.Arena) -> T.Tensor:
 
 # --- the `_new_optim_param` printers, ABOVE the row that uses them -----------
 
-# `_new_optim_param`'s three arms, printed as `Tag:numel`. The ORACLE prints the same
-# from `type(x).__name__` and `x.numel()`, and the TAG is what says WHICH ARM fired:
-# a `_new_optim_param` that always took the fused arm would print `Nz` twice and every
-# count row would still match. That is the row the tag exists for.
+# `_new_optim_param`'s three arms, printed as `CONSTRUCTOR:numel`. The LETTER IS
+# UPSTREAM'S, NOT THIS PORT'S: `optim.py:24-27` calls `Tensor.zeros` on the fused arm and on
+# the `t.shape` arm and `Tensor.zeros_like` on the tuple arm, so those are the two names there
+# are, and `gates/op_graph_census-oracle.py` reads its half off `Tensor.zeros.__name__` rather
+# than typing a string. A port-only spelling (`Nz`/`Nzl`/`Nzs`) graded UNSOURCED -- driver and
+# oracle agreed on a LETTER NEITHER COMPUTED, and the census's own header held that CPython
+# had no name for it, which is FALSE: `_new_optim_param()[0].dtype.name` IS `f32`, and `f32`
+# is no better because it is `f32` on ALL THREE ARMS.
+#
+# `Nz` and `Nzs` therefore print the SAME letter, and that is UPSTREAM'S ANSWER rather than a
+# collapse: `optim.py:24` and `optim.py:27` both call `Tensor.zeros`. What still tells those
+# two arms apart is what always told them apart -- the COUNT (1 against 2) and the numel (the
+# fused arm returns the running total) -- and what no value ever told them apart is the
+# dtype: MEASURED, shape, numel, device, `dtype.name` and the ENTIRE deep toposort of the
+# returned tensor are IDENTICAL across the tuple and non-tuple arms.
+#
+# The tag is still what says WHICH ARM fired: a `_new_optim_param` that always took the fused
+# arm would print `zeros` ONCE and every count row would still match. That is the row the tag
+# exists for.
 def nop_name(n: NewOpt) -> String:
   match n:
-    case Nz{n}: "Nz"
-    case Nzl{sz}: "Nzl"
-    case Nzs{sz}: "Nzs"
+    case Nz{n}: "zeros"
+    case Nzl{sz}: "zeros_like"
+    case Nzs{sz}: "zeros"
 
 def nop_n(n: NewOpt) -> U32:
   match n:
@@ -1112,8 +1127,8 @@ def t_acc() -> IO(Unit):
 # NO `t_nop.of3`, AND THAT DELETION IS THE FIX: one helper holding the expectation made
 # the two arms share a cell, so a fixture that reached one of them had to be edited away
 # from the other. Each row below carries its OWN device and its OWN expected string, and
-# the two literals disagree on the LETTER -- `Nzs:2,Nzs:3,` against `Nzl:2,Nzl:3,`. **AND
-# THAT IS NOT THE WHOLE OF THE DISCRIMINATION, WHICH IS WHY THERE IS A THIRD ROW:** two
+# the two literals disagree on the LETTER -- `zeros:2,zeros:3,` against `zeros_like:2,zeros_like:3,`.
+# **AND THAT IS NOT THE WHOLE OF THE DISCRIMINATION, WHICH IS WHY THERE IS A THIRD ROW:** two
 # literals that differ do not stop a single edit from satisfying both at once, and
 # `t_nop.tag`'s comment below names the edit and the two green rows it produced. What the
 # differing literals DO buy is that each row fails if its own fixture stops reaching its own
@@ -1158,27 +1173,28 @@ def g_opt.grown(+xs: List<&2, T.Tensor>) -> Optim:
 
 # ONE ROW PER ARM, and each row builds its OWN arena and its OWN record. `op_nop.dn` is
 # the `S.Dn` arm of `op_nop.arm` (optim.py:26, `isinstance(self.device, tuple)`), whose
-# body is `Tensor.zeros_like` rather than `Tensor.zeros` -- `Nzl` against `Nzs`.
+# body is `Tensor.zeros_like` rather than `Tensor.zeros` -- `zeros_like` against `zeros`.
 def t_nop() -> IO(Unit):
-  row("op_nop", String.eq(nop_names(op_nop(g_opt.grown.on(S.D1{0}, g_two(O.Arena.empty()))), ""), "Nzs:2,Nzs:3,"))
+  row("op_nop", String.eq(nop_names(op_nop(g_opt.grown.on(S.D1{0}, g_two(O.Arena.empty()))), ""), "zeros:2,zeros:3,"))
 
 def t_nop.dn() -> IO(Unit):
-  row("op_nop.dn", String.eq(nop_names(op_nop(g_opt.grown.on(S.Dn{[6, 0]}, g_two(O.Arena.empty()))), ""), "Nzl:2,Nzl:3,"))
+  row("op_nop.dn", String.eq(nop_names(op_nop(g_opt.grown.on(S.Dn{[6, 0]}, g_two(O.Arena.empty()))), ""), "zeros_like:2,zeros_like:3,"))
 
 # THE PRINTER'S OWN ROW, AND IT IS THE ONE THAT MAKES THE TWO ABOVE NON-VACUOUS. Both of them
 # compare `nop_names`' OUTPUT against a literal, so any edit that moves the output and the
 # literal together leaves them green -- MEASURED, and this row was written because it did:
-# collapsing `nop_name`'s `Nzl` arm to `Nzs` AND replacing `op_nop.dn`'s expectation with
-# `op_nop`'s printed `op_nop=True` AND `op_nop.dn=True` at rc=0 with the `Nzl`/`Nzs`
+# collapsing `nop_name`'s `zeros_like` arm to `zeros` AND replacing `op_nop.dn`'s expectation with
+# `op_nop`'s printed `op_nop=True` AND `op_nop.dn=True` at rc=0 with the `zeros_like`/`zeros`
 # distinction GONE. The vacuity route never hands both rows one string; it collapses the
 # PRINTER until both rows read the same line, and only `op_nop.dn`'s literal has to move
-# because `op_nop`'s was already `Nzs`. This row builds the three `NewOpt`s BY HAND, so
+# because `op_nop`'s was already `zeros`. This row builds the three `NewOpt`s BY HAND, so
 # nothing in `op_nop.arm`, in the fixtures or in the device can reach it, and it pins all
-# THREE letters -- including `Nz`, which no `op_nop` fixture can print. THAT IS THE NINTH
+# THREE TAGS -- including `Nz`, which no `op_nop` fixture can print and which prints the SAME
+# letter as `Nzs` because upstream calls `Tensor.zeros` from both. THAT IS THE NINTH
 # CAUSE, "the witness is a separate def": the witness for a printer is a row of its own,
 # because every other row's use of it is a comparison whose other operand moves with it.
 def t_nop.tag() -> IO(Unit):
-  row("op_nop.tag", String.eq(nop_names([Nz{7}, Nzl{7}, Nzs{7}], ""), "Nz:7,Nzl:7,Nzs:7,"))
+  row("op_nop.tag", String.eq(nop_names([Nz{7}, Nzl{7}, Nzs{7}], ""), "zeros:7,zeros_like:7,zeros:7,"))
 
 
 # --- 5-13: the GRAPH rows ------------------------------------------------------
@@ -1447,6 +1463,15 @@ def main() -> IO(Unit):
 #
 #     .venv/bin/python gates/optim-nop-mutate.py     # 11 entries, 13 rows of base
 #
+# **FOUR OF ITS ELEVEN FIND-STRINGS ARE NOW STALE AND IT WILL SAY SO.** `nop_name` stopped
+# printing the port-only `Nz`/`Nzl`/`Nzs` and prints upstream's constructor names instead
+# (`zeros` / `zeros_like`), which moves the text of P2, P4, Z1 and, through them, P5. The
+# harness REFUSES a pattern it cannot match uniquely and prints `REFUSED` per entry rather
+# than reporting a green it did not measure -- MEASURED, `gates/optim-nop-mutate.py:142-143`
+# is `text.replace(...) if text.count(f) == 1 else None` -- but it still exits 0, so the
+# refusal is in its OUTPUT and not in its `$?`. That harness is another unit's file; the four
+# strings it needs are its own table rows and this file's three `nop_name` arms.
+#
 # IT READS THIS FILE'S OWN `main`, WRITES A COPY BESIDE IT (`optim-mut.bend`, `.gitignore`d),
 # AND NEVER WRITES THIS FILE. Eleven entries: four of these rows, five PLANTS that must turn an
 # arm red, and two that are expected to move nothing with the cause named beside them.
@@ -1458,11 +1483,11 @@ def main() -> IO(Unit):
 # | M3 | `op_nop.arm`: the `S.Dn{tags}` arm -> `map_nzs` | `op_nop.dn` | **CLOSED.** This row read **NOTHING** and the reason it gave was MEASURED FALSE: "a `Dn` fixture would un-gate the `D1` arm". It would not have, and the mechanism is that `op_nop` was ONE row with ONE fixture and the device was hardcoded inside `g_opt` -- so *any* `Dn` fixture was a REPLACEMENT, because there was no second row to put it in. Nothing needed a symbol: `device.bend:344 tag_of` interns two names into two DISTINCT tags (DISK gets 6, everything else 0), so `S.Dn{[6, 0]}` needs no interner, and `schedule/memory.bend:1008` already mints `S.Dn{[2, 3]}`. The fix is `op_nop.dn` ABOVE, and `g_opt.grown` keeps its ONE argument because `gates/op_graph_census.bend:293` calls it with one. MEASURED on the shipped tree, not on a copy: M3 moves `op_nop.dn` and **nothing else** -- `op_nop` is unaffected, which is the whole claim. |
 # | M4 | a no-op edit | **NOTHING** | a control, and its zero is a VACUOUS EDIT rather than a gap: a mutation table with no row that CANNOT move is a table of coincidences. |
 # | P1 | `g_opt.on` ignores its `d` and writes `S.D1{0}` | `op_nop.dn` | the PLANT for "a later fixture edit". It edits the def BOTH rows call, not the row, which is what such an edit is in practice. `op_nop` stays green. |
-# | P2 | `op_nop.dn`'s expectation `Nzl:2,Nzl:3,` -> `Nzs:2,Nzs:3,` | `op_nop.dn` | HALF the vacuity edit, and on its own it does NOT make the new row vacuous: the `Dn` fixture still prints `Nzl`. |
+# | P2 | `op_nop.dn`'s expectation `zeros_like:2,zeros_like:3,` -> `zeros:2,zeros:3,` | `op_nop.dn` | HALF the vacuity edit, and on its own it does NOT make the new row vacuous: the `Dn` fixture still prints `zeros_like`. |
 # | P3 | `op_nop.dn`'s fixture `S.Dn{[6, 0]}` -> `S.D1{0}` | `op_nop.dn` | the prior unit's three-token edit, re-measured on the row it belongs to. Its damage is now LOCAL; before this change it landed on `op_nop`. |
-# | P4 | `nop_name`'s `Nzl` arm -> `"Nzs"` | `op_nop.dn` `op_nop.tag` | the PRINTER's letters collapse. `ptx.bend`'s alias-defect shape, where every fixture put the aliased node at one position. |
-# | P5 | P2 and P4 TOGETHER | `op_nop.tag` | **THE VACUITY PLANT, AND IT IS WHY `op_nop.tag` EXISTS.** With only `op_nop` and `op_nop.dn`, this pair left BOTH green at rc=0 -- MEASURED, once, before the third row existed -- with the `Nzl`/`Nzs` distinction that is the whole of the two arms GONE. "The two expectations are mutually exclusive" is NOT a guard: the vacuity route never hands both rows one string, it collapses the printer until both read the same line, and only `op_nop.dn`'s literal has to move because `op_nop`'s was already `Nzs`. `op_nop.tag` builds the three `NewOpt`s by hand, so nothing in `op_nop.arm`, in the fixtures or in the device reaches it. |
-# | Z1 | `nop_name`'s `Nz` arm -> `"Nzl"` | `op_nop.tag` | the `Nz` LETTER, which no `op_nop` fixture can print. Closed by `op_nop.tag`. |
+# | P4 | `nop_name`'s `Nzl` arm -> `"zeros"` | `op_nop.dn` `op_nop.tag` | the PRINTER's letters collapse. `ptx.bend`'s alias-defect shape, where every fixture put the aliased node at one position. |
+# | P5 | P2 and P4 TOGETHER | `op_nop.tag` | **THE VACUITY PLANT, AND IT IS WHY `op_nop.tag` EXISTS.** With only `op_nop` and `op_nop.dn`, this pair left BOTH green at rc=0 -- MEASURED, once, before the third row existed -- with the `zeros_like`/`zeros` distinction that is the whole of the two arms GONE. "The two expectations are mutually exclusive" is NOT a guard: the vacuity route never hands both rows one string, it collapses the printer until both read the same line, and only `op_nop.dn`'s literal has to move because `op_nop`'s was already `zeros`. `op_nop.tag` builds the three `NewOpt`s by hand, so nothing in `op_nop.arm`, in the fixtures or in the device reaches it. |
+# | Z1 | `nop_name`'s `Nz` arm -> `"zeros_like"` | `op_nop.tag` | the `Nz` TAG, which no `op_nop` fixture can print, and which prints `zeros` rather than a letter of its own because `optim.py:24` and `:27` both call `Tensor.zeros`. Closed by `op_nop.tag`. |
 # | Z2 | `op_nop.arm`'s `case True{} _` -> `[Nzs{op_last(pp)}]` | **NOTHING** | **THE ONE MEASURED LIMIT LEFT IN THIS FILE: DEAD ARM.** Every `g_opt.on` record has `fused=False{}`, so the FUSED arm -- `Tensor.zeros(self.pos_params[-1])` -- never fires and its body is changed by nothing. **IT IS NOT THREE TOKENS, and that is the measurement rather than an excuse:** a fused record needs `fused=True{}` AND `pos_params = op_acc(params)`, and `op_pos.of` already computes the right `pos_params` from `fused` and the tensors, so the only missing piece is a record mutation -- and `Optim` has twenty-four fields, which is why `op_with_arena` is a def and why closing this costs one more def rather than one more token. |
 #
 # THE SEVEN `unverified_*` ROWS ARE NOW CLAIMS TOO: the census gate drives each builder and

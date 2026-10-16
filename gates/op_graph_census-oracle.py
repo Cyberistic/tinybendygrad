@@ -94,7 +94,21 @@ o = optim.Optimizer([pa, pbuf, pc], lr=0.1)
 print("params=%s," % ",".join(str(t.numel()) for t in o.params))
 print("bufs=%s," % ",".join(str(t.numel()) for t in o.buffers))
 print("acc=%s," % ",".join(str(x) for x in optim.Optimizer([pa, pc], lr=0.1, fused=True).pos_params))
-print("nop=%s," % ",".join("%s:%d" % ("Nzs", x.numel()) for x in o._new_optim_param()))
+# `nop`'s LETTER IS UPSTREAM'S OWN CONSTRUCTOR NAME and it is READ, not typed: it was the
+# literal `"Nzs"`, a PORT-ONLY tag, so driver and oracle agreed on a letter NEITHER COMPUTED
+# and `gates/assertlit-census.py` graded the row UNSOURCED. `Tensor.zeros.__name__` is the
+# expression that names the call `optim.py:27` makes, so an upstream RENAME now propagates
+# here and turns this gate red instead of going stale quietly.
+#
+# WHAT IT IS NOT, STATED SO NOBODY READS IT AS MORE: it is not an ARM DETECTOR. This fixture
+# is `Optimizer(..., lr=0.1)` -- no tuple device, `fused=False{}` -- so `optim.py:24-27` takes
+# the `Tensor.zeros(t.shape, ...)` arm and that IS the arm that calls `Tensor.zeros`. MEASURED,
+# and this is why the other candidate derivations were rejected rather than preferred:
+# `_new_optim_param()[0].dtype.name` is `f32`, so the dtype was derivable and USELESS -- `f32`
+# on all three arms; and shape, numel, device and the whole deep toposort are byte-identical
+# across the tuple and non-tuple arms, so NO VALUE tells those two apart. The arm-2 row lives in
+# `nn/optim.bend` beside the arm that owns it, which is the only place it can be honest.
+print("nop=%s," % ",".join("%s:%d" % (Tensor.zeros.__name__, x.numel()) for x in o._new_optim_param()))
 
 # ---- the graph rows ----
 a, g, bb, lr = fa(), fg(), fb(), flr()

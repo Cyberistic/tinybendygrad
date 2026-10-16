@@ -147,7 +147,7 @@ DRIFT_PIN = {
     "4be73faf9bfdb30d04cad9825a2dc7b48b4750a703fa85fb18b41f5e43d19c87",
   "tinygrad/dtype.py":
     "356ba326d9d221bdf5d6f9253d561b94f18b224499d5fc77c21e88c0aed00504",
-  "gates/rand_census-oracle.py": "255ea537ad12ebd97e38c719a4edec4adf82151acd8accbec4e7ae7b8e34a158",
+  "gates/rand_census-oracle.py": "ee782a0ef7107341f9dc2857823f49ed63359bd1c72018ea6f97b8ac4376b92c",
 }
 
 # THE FOUR `st_*` ROWS, PINNED ON BOTH SIDES. The PORT side is measured from

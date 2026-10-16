@@ -68,8 +68,18 @@ def sig(t):
 
 
 def i64pair(v):
-  """`H.i64_text` prints `hi:lo`; this is the same pair so a value is legible on both lanes."""
-  v &= 0xFFFFFFFFFFFFFFFF
+  """`H.i64_text` prints `hi:lo`; this is the same pair so a value is legible on both lanes.
+
+  THERE IS NO MASK HERE, AND THERE WAS ONE. `v &= 0xFFFFFFFFFFFFFFFF` was an INVENTED WIDTH:
+  upstream `tensor.py:466-470` masks `num & 0xffffffff` and never with 64 bits, because its
+  `low`/`high` are `uint32` TENSORS. The only caller composes `(high << 32) | low` from that
+  tensor's `.tolist()`, and `uint32.tolist()` never returns a negative -- MEASURED over 0, 1,
+  2^31-1, 2^31 and 2^32-1 -- so `v` is in [0, 2^64) by arithmetic and the mask was the IDENTITY
+  on the whole reachable set: at the maximum, `0xffffffffffffffff & 0xffffffffffffffff` is
+  `0xffffffffffffffff`. MEASURED, 0 of 4 rows rendered differently with and without it.
+  This is NOT the `0-is-standing-in-for-5` class: there the mask made the helper RIGHT where
+  upstream is WRONG, and here it did nothing at all, so removing it costs no discrimination.
+  """
   return f"{v >> 32}:{v & 0xFFFFFFFF}"
 
 
