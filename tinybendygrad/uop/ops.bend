@@ -862,9 +862,16 @@ type Img is Data:
 #     slot, not a placeholder: `UOp.buffer`, `UOp.realized` and the ucache key
 #     all read it.
 #   * `device: str|tuple[str, ...]|None` -- a device NAME or a tuple of them, so
-#     it is `S.Dev` (spec.bend's `D1{tag}` / `Dn{tags}`) with a `U32` tag per
-#     name interned by the runtime. `Device.tag` below is where the P6 device
-#     table plugs in.
+#     it is `S.Dev` (spec.bend's `D1{tag}` / `Dn{tags}`). AND THE TAG IS NOT ONE PER
+#     NAME, which the field's own comment used to claim: `device.bend:344 tag_of` is
+#     a THREE-VALUED sentinel (DISK 6, NPY 10, PYTHON 13, everything else 0), so
+#     CPU, METAL, AMD, NV, CUDA, QCOM, CL, DSP, WEBGPU AND EVERY TYPO SHARE 0.
+#     `device_vocab_holds` reads that arm list out of `device.bend`'s CODE every run,
+#     and `gates/devtag-gate.py` reads the VALUES out of it as well. THE NAMES PLUG IN
+#     AT A `U32 -> String` TABLE (P6), and it is THE PORT'S OWN to mint: CPython has
+#     no `str -> int` device index to mirror -- this very field is `str|tuple[str,
+#     ...]|None` (`uop/ops.py:34`) and `device.py:29`'s table is string-keyed. See
+#     `spec.bend`'s `is_device` note for all six witnesses.
 # ===========================================================================
 
 type ParamArg is Data:

@@ -187,12 +187,20 @@ def mem_collect_of(fuel: Nat, ar: O.Arena, u: U32) -> List<&2, U32>:
 #
 # THE DEVICE NAME TEST IS A WALL AND IT IS THE INTERESTING ONE. Python tests
 # `d.startswith(("DISK", "CL", "WEBGPU"))` on a device NAME. Here a device is
-# `S.Dev` -- a `U32` tag per name, interned by the runtime -- so there is no
-# string to test and this file cannot ask the question. The unplannable TAGS are
-# therefore a PARAMETER (`unpl`), and the caller is the device table, which is
-# P6: `Device.tag` is exactly where the names live. This is not a shortcut, it is
-# the only shape a name-prefix test has once the name is gone, and it is the same
-# treatment the RING/ALL2ALL flags get in `allreduce.bend`.
+# `S.Dev` -- a `U32` tag -- so there is no string to test and this file cannot ask
+# the question. The unplannable TAGS are therefore a PARAMETER (`unpl`), and WHO
+# SUPPLIES IT IS A MEASUREMENT, not a plan: `unpl() = [1, 4]` (`:1002`) is a LITERAL
+# beside the fixtures, and `disk() = S.D1{1}` (`:999`) is this file's OWN tag space,
+# which DISAGREES with `device.bend:344`'s `tag_of("DISK") = 6` -- `uop/validate.bend`'s
+# `c2d` note records the disagreement and refuses to arbitrate it. So the two tag
+# spaces are the reason the literal is hand-written, and a `U32 -> String` table (P6)
+# is what would replace it with the prefix test itself. That table is THE PORT'S OWN
+# to mint: CPython has no `str -> int` device index to mirror -- `ParamArg.device`
+# (`uop/ops.py:34`) is a `str` and `device.py:29`'s table is string-keyed --
+# and `device_vocab_holds` measures all six of those facts every run. This is not a
+# shortcut, it is the only shape a name-prefix test has once the name is gone, and it
+# is the same treatment the RING/ALL2ALL flags get in `allreduce.bend` (`:24`: the
+# flags are a `Cfg` PARAMETER of every def that reads one).
 #
 # `devs = (b.device,) if isinstance(b.device, str) else b.device` -- `D1` is the
 # one-name case and `Dn` the tuple case, and `fold.device` already answers in

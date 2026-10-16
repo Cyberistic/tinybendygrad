@@ -877,9 +877,13 @@ def gn_cf(a: O.Arg, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
   gn_cf.is_e(arg_is_encdec(a), ar, call)
 
 # realize.py:48/49/50 in Python's order, and the fallthrough is its `raise`, which here
-# is `None` -- a STORE answers `None` because `_dev_str` reads a device NAME and
-# `Device.tag` is P6 (`uop/spec.bend:1488`), and with the census's `bufs=[]` CPython
-# raises `IndexError` at `bufs[0]` before any name is read.
+# is `None` -- a STORE answers `None` because `_dev_str` reads a device NAME, and the
+# NAME behind a `U32` tag needs a `U32 -> String` table this port has to MINT (P6):
+# CPython has no `str -> int` device index to mirror, so there is nothing to inherit
+# here either (`device_vocab_holds` measures all six of those facts every run; see
+# `uop/spec.bend`'s `is_device` note). WITH THE CENSUS'S `bufs=[]` CPython raises
+# `IndexError` at `bufs[0]` before any name is read, and THAT is pinned:
+# `realize_graph_census-pins.rows`'s `name_18=raise=IndexError` against `name_18=none`.
 def gn_body(op: O.Op, a: O.Arg, +ar: O.Arena, +call: U32) -> Maybe<&2, String>:
   match op:
     case O.OpsPROGRAM{}: gn_kernel(ar, rz_body(ar, call))
