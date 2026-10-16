@@ -16807,6 +16807,64 @@ two-spellings [#########] 4/4  A NEGATIVE RESULT, WHICH IS THE POINT. Three defe
                                        **MY OWN CENSUS HAD THE CLASS I WAS LOOKING FOR, THREE TIMES,
                                        BEFORE IT MEASURED ANYTHING.**
 
+claimaudit [####......] 1/3      AN ADVERSARIAL RE-AUDIT OF THE ORCHESTRATOR'S OWN COMMITS, and it found
+                                       **10 FALSE claims, FOUR OF THEM MINE.** Selection stated and
+                                       reproducible: commits dated 2026-10-16 whose message mentions one
+                                       of ten named literals -- **24 commits** -- and the unit says the
+                                       cut is ambiguous (a 200-commit window gives 86, a last-20 window
+                                       16) and that it chose the boundary it did not invent.
+                                       **165 CLAIMS EXTRACTED AND CHECKED: 103 CONFIRMED, 44
+                                       UNVERIFIABLE, 8 STALE, 10 FALSE.** **MINE, AND ALL FOUR ARE
+                                       CITATIONS OR COUNTS:** (a) `9fad284ea` claimed
+                                       `verdict_of`'s unassigned branch is `:98` -- `:98` is blank, the
+                                       returns are `:104` and `:107`, **so the original `:97` AND the
+                                       correction were both wrong**, in the commit whose subject is a
+                                       number that reproduced under no definition (`:107` is now fixed
+                                       and verified); (b) `059c22cab` cited lines `267`/`268`/`270`
+                                       against **pre-edit** text at **post-edit** line numbers, off by
+                                       16; (c) `6eb1ec151` said "**THE CENSUS SEES 7 OF 45 DELETE
+                                       SITES**" and the truth is **15 of 22** under `FS_DELETES`' own
+                                       four keys -- **I DROPPED THE 8 `shutil.rmtree` CALLS** because my
+                                       attribute test was `('unlink','rmdir','remove')` and never
+                                       mentioned `rmtree`, which the table itself names; (d) `2fb32340f`'s
+                                       own **+14** stale-citation correction REPRODUCES EXACTLY, which
+                                       is what makes the other three findings rather than noise.
+                                       **I RE-VERIFIED (c) MYSELF AND THE AUDIT IS RIGHT**, and "7 of
+                                       45" now appears **0 times** in `.agents/TODO.md` and
+                                       `.agents/TOOLS.md` because an earlier rewrite had already removed
+                                       it. **THE LOAD-BEARING CLAIMS HELD**: `hasattr(Device,'tag')` is
+                                       False; five `.agents/TODO.md` line citations exact; six empty-blob
+                                       figures exact (541 / 1096 / 7850 / 190 / 515 / 5180); the `59c22cab`
+                                       "57 sites in 24 instruments" exact to the digit; the `437e651e`
+                                       11 tables identical and in order. **THE 44 UNVERIFIABLE ARE A
+                                       BUDGET COST, NOT SOFT SPOTS**: `gates/artifacts/` is
+                                       gitignored, so one claim is unverifiable BY CONSTRUCTION.
+                                       `.agents/slop/claimaudit/`.
+onespelling [##........] 1/3      THE CLASS AS AN INSTRUMENT, WITH A CONTROL THAT EARNED ITS KEEP.
+                                       `.agents/slop/onespelling/census.py` (543 lines) walks the
+                                       COMMITTED tree (`git ls-tree -r HEAD`, never the index),
+                                       `ast.parse`s every `.py`, and enumerates **100,951** module-level
+                                       literals to find **307 candidate sites** in five kinds.
+                                       Verdicts **254 POSITIVE / 27 NEGATIVE / 26 UNKNOWN**, and it finds
+                                       all three known positives -- `REF`'s anchor reads **728** names
+                                       where a widened one reads **3510**, so **2,782 spellings are
+                                       invisible**, with the delimiter histogram measured (backtick
+                                       x8,983 dominates). **THE CONTROL REFUSED THREE TIMES DURING
+                                       DEVELOPMENT AND EVERY REFUSAL FOUND A REAL BUG**, the first being
+                                       that `os.path.dirname` is an attribute OF AN ATTRIBUTE so
+                                       `func.value.id == "os"` is false -- **THE INSTRUMENT HAD THE
+                                       SECOND SPELLING OF A MODULE AND COULD NOT SEE IT**, which is the
+                                       exact class it exists to find. `FS_DELETES` is charged NEGATIVE
+                                       with `0 reads` in its evidence, and the self-check FAILS if that
+                                       string is ever absent -- so the known FALSE CHARGE is pinned.
+                                       **THREE OF ITS OWN FINDINGS IT WITHDREW RATHER THAN SHIPPED**:
+                                       13 extension sets charged on a prefix relation that `endswith`
+                                       does not have; a dtype table read as a call table; `\.agents`
+                                       charged as an extension. The regex branch now MEASURES the
+                                       truncation on 4,591 real filenames and reports UNKNOWN because
+                                       whether it is wrong depends on a subject the tree never states.
+                                       `.agents/slop/onespelling/`.
+
 repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
                                        `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
                                        with any other extension was INVISIBLE to it -- the

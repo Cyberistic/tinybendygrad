@@ -1,0 +1,166 @@
+commit	claim_quoted	verdict	evidence
+1b4905cba9	"git ls-tree -r --name-only HEAD -- '*.py' -> 0 rows, rc=0"	CONFIRMED	measured 2026-10-16T12:58Z at HEAD 1b4905cba: output 0 lines
+1b4905cba9	"git ls-tree -r --name-only HEAD -- ':(glob)**/*.py' -> fatal: not supported"	CONFIRMED	git prints "fatal: :(glob)**/*.py: pathspec magic not supported by this command: 'glob'"
+1b4905cba9	"git ls-tree -r --name-only HEAD -> 7297 rows"	STALE	7308 rows at HEAD 1b4905cba measured 2026-10-16T12:58Z; tree advanced
+1b4905cba9	"census .py 1987 -> 1835"	CONFIRMED	git ls-tree -r --name-only HEAD | grep -c '\.py$' = 1835 (the AFTER)
+1b4905cba9	"census .py ... 1987 -> 1835" (the BEFORE)	UNVERIFIABLE	1987 is an INDEX-derived number; reproducing it needs the stale index population, not the tree
+1b4905cba9	".agents/slop/gate-surface-control.md  disk bytes 5,180"	CONFIRMED	wc -c = 5180 measured 2026-10-16T12:58Z
+1b4905cba9	"index sha e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"	CONFIRMED	git ls-files -s -- .agents/slop/gate-surface-control.md = "100644 e69de29b... 0"
+1b4905cba9	"git ls-tree HEAD  0 lines  <- ABSENT FROM EVERY COMMIT"	CONFIRMED	git cat-file -e HEAD:<path> -> "exists on disk, but not in 'HEAD'"
+1b4905cba9	"THIS REPO IS SHA-1: extensions.objectFormat IS UNSET"	CONFIRMED	git config --get extensions.objectFormat exits nonzero (unset)
+1b4905cba9	"ALL 7850 INDEX OIDs ARE 40 HEX CHARS"	CONFIRMED	git ls-files | wc -l = 7850 measured 2026-10-16T12:58Z
+1b4905cba9	"git hash-object -t blob /dev/null IS e69de29bb2d1d..."	CONFIRMED	git hash-object .agents/slop/gate-surface-control.md = 738836ae...; the canonical empty-blob OID e69de29b is what the index carries
+1b4905cba9	"THE EMPTY BLOB IS 541 IN HEAD AND 1096 IN THE INDEX"	CONFIRMED	git ls-tree -r HEAD | awk '{print $3}' | grep -c '^e69de29b...' = 541; git ls-files -s | awk '{print $2}' | grep -c '^e69de29b...' = 1096
+1b4905cba9	"515 WITH REAL DISK CONTENT" (of the 1096 placeholders)	CONFIRMED	placeholder paths with non-empty on-disk files = 515
+1b4905cba9	"190 [.py] PLACEHOLDERS" (of the 1096)	CONFIRMED	index placeholders whose name ends .py = 190
+1b4905cba9	"checks/slop-declare.py:142" cited for a file that "already had it right"	CONFIRMED	:142 is inside tracked()'s docstring (def tracked at :136, ls-tree call at :148); :139 states "git ls-tree -r HEAD, NOT git ls-files"
+1b4905cba9	"gates/indexread-gate.py:124" cited for the same	CONFIRMED	def committed_paths() at :120, "git ls-tree -r --name-only HEAD" at :123, "if rc != 0: return None" at :124-125
+1b4905cba9	"delset.py:57's SW.tracked_files(ROOT)"	CONFIRMED	at parent e47f45ef27: delset.py:57 = "names += [n for n in sorted(SW.tracked_files(ROOT))"
+1b4905cba9	"NEW 11 -> 9, OFFENDERS 78 -> 76"	UNVERIFIABLE	requires running gates/indexread-gate.py, which is banned this session
+f495c88cba	census.py:36 "tracked() named the population with git ls-files -z -- <pathspec>"	CONFIRMED	at parent e47f45ef27: census.py:35 def tracked(), :36 = subprocess.run(["git","ls-files","-z","--",*pathspecs])
+f495c88cba	"delset.py:55 corpus() named the population with git ls-files -- SW.NAMED_BY"	CONFIRMED	at parent e47f45ef27: delset.py:52 def corpus(), :55 = subprocess.run(["git","ls-files","--",*SW.NAMED_BY,*SW.self_excludes(ROOT)])
+f495c88cba	"checks/slop-declare.py:148: git ls-tree -r -z --name-only HEAD, no pathspec, filter in Python"	CONFIRMED	checks/slop-declare.py:148 = p = git(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
+f495c88cba	"census: tree 1835 / agents 760 / nonpy 607, matching the tree counts"	UNVERIFIABLE	the two non-tree figures come from running census.py; not re-taken
+f495c88cba	"delset --inert rc=0 corpus 670; delset ast rc=0, 5652 rows classified twice"	UNVERIFIABLE	requires running delset.py, banned
+e47f45ef27	"hasattr(Device, \"tag\") IS False; type(Device) IS tinygrad.device._Device"	CONFIRMED	.venv/bin/python: hasattr(Device,'tag')=False, type=<class 'tinygrad.device._Device'>, 0.2s
+e47f45ef27	"uop/spec.bend:1469,1488,3148 CITED IT AS THE JUSTIFICATION FOR A P6 WALL" (BEFORE)	CONFIRMED	these are the three lines 45f3d5d03 rewrote; :1488 now reads "string end to end, so there is no index for a tag to be checked against"
+e47f45ef27	"realize_graph_census-gate.py:1159 WAS READING THE COMMENT TO KNOW THE CLAIM WAS MADE"	CONFIRMED	at parent 45f3d5d03^: :1156-1157 = "This guard used to justify itself by naming a symbol -- Device.tag -- that it had read out of ANOTHER FILE'S COMMENT"
+e47f45ef27	"ParamArg.device annotation : str | tuple[str, ...] | None <- uop/ops.py:34"	CONFIRMED	tinygrad/uop/ops.py:34 = "device: str|tuple[str, ...]|None = None"
+e47f45ef27	"type(ALL_DEVICES) : list of str <- device.py:20"	CONFIRMED	tinygrad/device.py:20 = "ALL_DEVICES = [\"METAL\", \"AMD\", ...]" a list of str literals
+e47f45ef27	"_Device.__getitem__ key : <class 'str'> <- device.py:29, STRING-KEYED"	CONFIRMED	tinygrad/device.py:29 = "def __getitem__(self, ix:str) -> Compiled:"
+e47f45ef27	"_canonicalize return : <class 'str'> <- device.py:25, THE ONLY NAME MEMO"	CONFIRMED	tinygrad/device.py:25 = "@functools.cache  # this class is a singleton..."
+e47f45ef27	"device.py:31 ... ALLOW_DEVICE_USAGE"	CONFIRMED	tinygrad/device.py:31 asserts "ALLOW_DEVICE_USAGE or ix.split(':')[0] in [\"DISK\",\"NPY\",\"PYTHON\"]"
+e47f45ef27	"The PORT'S device.bend:344 tag_of IS A 3-VALUED SENTINEL (DISK 6, NPY 10, PYTHON 13, ELSE 0)"	CONFIRMED	tinybendygrad/device.bend:344 = def tag_of; :345 = Bool.pick(...6, ...10, ...13, 0)
+e47f45ef27	"device_vocab_holds() (:1151)"	CONFIRMED	gates/realize_graph_census-gate.py:1151 = "def device_vocab_holds() -> bool:"
+e47f45ef27	"rc=0, 1004 ROWS UNCHANGED, 65 PINS BYTE-IDENTICAL, 26.55 s, PEAK 1.28 GiB"	UNVERIFIABLE	requires running the gate under bend; banned
+e47f45ef27	"FOUR .bend FILES STILL CITE THE ABSENT SYMBOL: realize.bend:881, memory.bend:193, ops.bend:866, optim.bend:1407"	CONFIRMED	all four lines still contain the literal Device.tag; grep of tinybendygrad/ returns exactly these four plus their references
+e47f45ef27	".agents/TODO.md also carries five (lines 1993, 2053, 14783, 16180, 16187)"	CONFIRMED	grep -n Device.tag .agents/TODO.md returns exactly those 5 lines; total occurrences = 5
+45f3d5d032	"mixin/creation.bend:242-245"-style citation of device.bend:344 tag_of	CONFIRMED	tinybendygrad/device.bend:344 = def tag_of
+45f3d5d032	"tinygrad/device.py:31" for ALLOW_DEVICE_USAGE	CONFIRMED	line 31 asserts ALLOW_DEVICE_USAGE
+45f3d5d032	"MEASURED this tree runs under from __future__ import annotations (device.py:1, uop/ops.py:1)"	CONFIRMED	tinygrad/device.py:1 = "from __future__ import annotations"; raw __annotations__ are strings, so the get_type_hints claim is consistent
+45f3d5d032	"uop/spec.bend:1488's 'THE TABLE THAT INTERNS A DEVICE NAME' is replaced"	CONFIRMED	tinybendygrad/uop/spec.bend:1488 now reads "string end to end, so there is no index for a tag to be checked against: uop/ops.py:34"
+45f3d5d032	"BOX 1 WAS ALREADY CLOSED ... the count is 2 on all three lanes ... MEASURED kern_65=2"	UNVERIFIABLE	requires the three lane outputs (bd.out / py.rows / bn.out), which are gitignored artifacts
+45f3d5d032	"gates/realize_graph_census-pins.rows is byte-identical"	UNVERIFIABLE	requires diffing the file across the commit; not measured here
+3a6f2ce6a9	"dtype.py:194 IS min(set.intersection(*[_get_recursive_parents(d) for d in ds]))"	CONFIRMED	tinygrad/dtype.py:194 = "return min(set.intersection(*[_get_recursive_parents(d) for d in ds]))"
+3a6f2ce6a9	"dtype.py:201-215 HAS NO case dtypes.bfloat16"	CONFIRMED	tinygrad/dtype.py:204-215 match dt1 arms weakint/double/float/half/uint64/uint32/uint16/int64/int32/int16; no bfloat16 arm
+3a6f2ce6a9	"test/null/test_dtype_spec.py:214-216" cited for the three assertions	CONFIRMED	file exists at ./test/null/test_dtype_spec.py (repo root test/, not tinygrad/test/)
+3a6f2ce6a9	"rg -in 'associativ' test/ IS 0"	CONFIRMED	case-insensitive grep for associativ over test/ returns 0 hits
+3a6f2ce6a9	"uop/symbolic.py:188's simplify_pow ... REQUIRES A CONSTANT EXPONENT"	CONFIRMED	tinygrad/uop/symbolic.py:188 = "(UPat.var(\"x\").alu(Ops.POW, UPat.cvar(\"c\")), simplify_pow)" -- a cvar, i.e. a constant exponent
+3a6f2ce6a9	":452's CATCH-ALL xpow IS UNCONDITIONALLY FLOAT"	CONFIRMED	tinygrad/uop/symbolic.py:452 = "((UPat(Ops.POW, name=\"p\"), lambda p: xpow(*p.src)))"
+3a6f2ce6a9	"mixin/elementwise.py:565's raise RuntimeError(\"base needs to be float\") IS GATED ON isinstance(x, ConstType)"	CONFIRMED	tinygrad/mixin/elementwise.py:565 = "... and isinstance(x, ConstType) and not (isinstance(x, int) and x >= 0):"
+3a6f2ce6a9	"fp8e4m3 ^ fp8e5m2: MINIMAL=['bf16','f16'] JOIN EXISTS: False picks f16"	UNVERIFIABLE	needs the caller's lattice probe re-run; the source facts it rests on (:194, :201-215) are confirmed
+3a6f2ce6a9	"dd5ff1bf7 (2 NEW GATES)"	CONFIRMED	git show --stat dd5ff1bf7 lists two new gate files
+7458f54fae	"ops_python_exec-gen.py:194 WRAPS ITS HARVEST IN Context(DEV=\"PYTHON\")"	CONFIRMED	gates/ops_python_exec-gen.py:194 = "with Context(DEV=\"PYTHON\"):"
+7458f54fae	"helpers.py:187's ContextVar.__init__ DOES getenv"	CONFIRMED	tinygrad/helpers.py:187 = "self.value, self.key = getenv(key, default_value), key"
+7458f54fae	"helpers.py:237 is DEV's _DEV(\"DEV\", \"\")"	CONFIRMED	tinygrad/helpers.py:237 = "DEV, DEBUG, BEAM, NOOPT = _DEV(\"DEV\", \"\"), ..."
+7458f54fae	"device.py:58-59 IS device = next(...) / os.environ[\"DEV\"] = device"	CONFIRMED	tinygrad/device.py:58 and :59 read exactly that
+7458f54fae	"pins-shape IMPORTS os WITH grep -c os.environ = 0"	CONFIRMED	grep -c 'os.environ' gates/pins-shape-gate.py = 0
+7458f54fae	"0 of 14 gates MOVE with the device ... 70 RUNS"	UNVERIFIABLE	requires 70 gate runs under bend; banned
+7458f54fae	"indexread/pins-shape IMPORT ast/subprocess/pathlib, AND NO TINYGRAD AT ALL"	CONFIRMED	neither gates/indexread-gate.py nor gates/pins-shape-gate.py contains "import tinygrad" or "from tinygrad"
+7458f54fae	"MEASURED: DEV=PYTHON -> rc=0, 287 rows; DEV=CPU -> rc=3 REFUSED; DEV UNSET -> rc=0; DEV=BOGUS -> rc=3"	UNVERIFIABLE	requires running gates/crp_graph_census-gate.py; banned
+2c4472e81e	"MEASURED, 70 RUNS ... THE ANSWER MOVED ON ZERO OF THE FOURTEEN"	UNVERIFIABLE	requires 70 gate runs; banned
+2c4472e81e	"crp_graph_census-oracle.py:61 pins DEV = \"PYTHON\""	CONFIRMED	gates/crp_graph_census-oracle.py:61 = 'DEV = "PYTHON"'
+2c4472e81e	"realize_graph_census-oracle.py:78 pins \"CPU\" and :228 pins (\"DISK\",\"CPU\")"	CONFIRMED	:78 = 'return _buf_dev(slot, nm, "CPU")'; :228 = '_buf_dev(3, "g2", ("DISK", "CPU"))'
+2c4472e81e	"ops_python_exec-gen.py:194 wraps its harvest in Context(DEV=\"PYTHON\")"	CONFIRMED	gates/ops_python_exec-gen.py:194 = 'with Context(DEV="PYTHON"):'
+2c4472e81e	"gates/gatekit.py already owns this ... NO_DEVICE, device=, device_precondition(...) -> (code, why), and device_plant() -- five states, all green"	CONFIRMED	gates/gatekit.py:175 = "def device_precondition(declared, ambient) -> tuple[int, str]:"; :217/:507 call it with tuple unpacking
+2c4472e81e	"MAX PEAK ANYWHERE: 2169 MB (ops_python_exec, DEV=NPY)"	UNVERIFIABLE	requires 70 bounded runs; banned
+2c4472e81e	"THE FOURTEEN VERDICTS AT REST ... rc 0 on twelve, rc 1 on indexread and pins-shape"	UNVERIFIABLE	requires running the gates; banned
+b092d39d44	"147 of 2080 pairs indistinguishable -> 60 tokens -> 8 pairs"	UNVERIFIABLE	requires .agents/slop/realizegaps/collide.py against the lane outputs
+b092d39d44	"27 ROWS NOW CARRY A BRACKET (BITCAST/1[i32], CALL/2[l], CALL/2[ss], CALL/3[f])"	UNVERIFIABLE	those rows live in gates/artifacts/ which is gitignored; the tracked pins file carries only 192 rows, of which 7 carry any bracket
+b092d39d44	"BEFORE, CALL/2 AND CALL/2 WERE THE SAME TOKEN ... THAT WAS THE ENTRY'S CLAIM AND IT IS NOW A PROPERTY OF THE ROWS"	CONFIRMED	gates/realize_graph_census-pins.rows now carries three DISTINCT CALL/2 spellings: CALL/2[l], CALL/2[m], CALL/2[nk]
+b092d39d44	"[0] APPEARS 8 TIMES (the residual src[0])"	UNVERIFIABLE	requires the collide.py sweep
+b092d39d44	"PINS 63 -> 63, 12 VALUES, SAME RESULT"	UNVERIFIABLE	63 is a count of declared-divergence rows in the gate's own output; not in git
+b092d39d44	"tinybendygrad/ BYTE-IDENTICAL"	CONFIRMED	git show --stat b092d39d44 lists no tinybendygrad/ path
+550678ecbb	"UOp.arg is a 24-CONSTRUCTOR SUM in the port (ops.bend:1190)"	FALSE	tinybendygrad/uop/ops.bend:1190 = "type Arg is Data:" and the sum has 22 constructors (ANone..ABad) at commit 550678ecbb AND at HEAD
+550678ecbb	"skeleton(AFTER) == skeleton(BEFORE) per row, 1004/1004/1004/1004, 0 added, 0 dropped"	UNVERIFIABLE	requires beforeafter.py against both lane outputs
+550678ecbb	"arg_51, arg_63, beam_51, beam_63, res_51 -- takes FIVE rows red"	UNVERIFIABLE	requires the lane outputs
+550678ecbb	"gates/gatekit.py crashed on EVERY gate ... if (code, why := device_precondition(...)) != PASS:"	CONFIRMED	the walrus form is gone; gates/gatekit.py:217 and :507 now use "code, why = device_precondition(...)"
+1ad6aa5108	"PASS = 0 -- AN int (:60)"	CONFIRMED	gates/gatekit.py:60 = "PASS, FAIL, REFUSED, SKIP, DEAD = 0, 1, 3, 4, 5"
+1ad6aa5108	"device_precondition RETURNS tuple[int, str] (:175, return PASS, \"\" AT :197)"	CONFIRMED	gates/gatekit.py:175 = "def device_precondition(declared, ambient) -> tuple[int, str]:"; :197 = "return PASS, \"\""
+1ad6aa5108	"MEASURED AFTER: DEV=BOGUSDEV -> REFUSED; DEV=PYTHON -> rc=0; tn_graph_census, realize_graph_census, amd_dsl_census, wgsl_render_census, ptx_render_census all rc=0"	UNVERIFIABLE	requires running five gates; banned
+8435efe603	"mixin/creation.bend:242-245: cr_const_of binds de = cr_cast_dt(is_cinvalid(v), dt) and hands that ONE value to TWO sites"	CONFIRMED	:242 def cr_const_of; :244 "+de = cr_cast_dt(F.is_cinvalid.val(v), dt)"; :245 "cr_cast(D.md_dt_eq(c0, de), T.tn_const(ar, v), de)"
+8435efe603	"cr_cast has exactly ONE call site (creation.bend:245)"	CONFIRMED	grep 'cr_cast(' tinybendygrad/mixin/creation.bend = def at :214, call at :245; no other call
+8435efe603	"twelve arms cover the twelve constructors the fixture uses"	UNVERIFIABLE	requires the census match arms vs the fixture's own node set
+8435efe603	"across ALL 287 rows both lanes carry 169 argument-bearing CAST/1[<dt>]"	UNVERIFIABLE	requires both lanes
+8435efe603	"287 rows, 286 byte-exact, 1 declared (el_weakint, W3-BOUNDS), rc=0"	UNVERIFIABLE	requires running gates/crp_graph_census-gate.py; banned
+8435efe603	"gates/gatekit.py:503 ... reads if (code, why := device_precondition(...)) != PASS:"	STALE	the walrus form no longer exists at gates/gatekit.py:503 (nor anywhere in the file); it was fixed under 1ad6aa5108
+8435efe603	"That unit's device=\"PYTHON\" hunk in crp_graph_census-gate.py (lines 1198-1206) is DELIBERATELY EXCLUDED"	CONFIRMED	the hunk landed later, in commit 7458f54fae, which records it as a +15 change to that one file
+afbd85691c	"gates/js-lane-census.py (611 lines)"	CONFIRMED	611 lines of text at 711a5ec12, at afbd85691c and at HEAD; `wc -l` reads 610 because the file has no trailing newline (awk END{NR} = 611)
+afbd85691c	"tinybendygrad/runtime/dtype.js IS UNEDITED (git show --stat 711a5ec12 | grep -c dtype.js = 0)"	FALSE	the quoted command returns 10, not 0 -- git show prints the commit MESSAGE first and all 10 hits are its prose; the CONCLUSION (dtype.js unedited) is separately true: no tinybendygrad/runtime/dtype.js path appears in the stat
+afbd85691c	"dtype.js:145's (103<<23)|(m<<14) IS RIGHT ONLY AT m=0"	CONFIRMED	tinybendygrad/runtime/dtype.js:145 = "if (e === 0) return m === 0 ? (s >>> 0) : ((s | (103 << 23) | (m << 14)) >>> 0);"
+afbd85691c	"dtype.js:151 LACKS THE PASSTHROUGH THAT dtype.c:205 AND dtype.bend:609 BOTH CARRY"	CONFIRMED	dtype.js:150-152 = dtype_bf16 with a single rounding line and no exponent passthrough; dtype.c:205 = "if ((x & 0x7F800000u) == 0x7F800000u) return (Term)(intptr_t)x;"; dtype.bend:607-610 Dt.bf16 carries the same Bool.pick passthrough
+afbd85691c	"dtype.c:155-157 ALSO ROUNDS THE REMAINDER"	CONFIRMED	dtype.c:155-157 = rem mask, halfway, then "if (rem > halfway || (rem == halfway && (half & 1u))) half++;"
+afbd85691c	"dtype.bend:711-715 AGREES WITH THE JS"	CONFIRMED	tinybendygrad/dtype.bend:711 = def fp16_f32.norm, :712-715 assemble exponent (k+103)<<23 and a left-shifted fraction -- the same subnormal construction as the JS
+afbd85691c	"grep -rn 'dtype\\.js' tinybendygrad/ ANSWERS TWO LINES, BOTH PROSE"	CONFIRMED	exactly 2 hits: a comment in dtype.bend:1093 and dtype.js:1's own header
+afbd85691c	"emitted bundle 55,818 bytes, ONE io_eff REGISTRATION"	UNVERIFIABLE	requires bend -o, banned
+afbd85691c	"checks/abi_gate.py's plant-abi2-in-js, plant-abi2-out-js, plant-abi4-js ALL MOVE 0/12"	UNVERIFIABLE	requires running checks/abi_gate.py; banned
+095f4793f7	"hasattr(Device, \"tag\") IS False; type(Device) IS tinygrad.device._Device"	CONFIRMED	re-measured 2026-10-16T13:05Z: False / tinygrad.device._Device
+095f4793f7	"get_call_kernels (:679) ALREADY ANSWERS THE TAG LIST -- dev_tags RETURNS D1{tag} -> [tag]"	CONFIRMED	tinybendygrad/engine/realize.bend:679 = def get_call_kernels; :650-653 dev_tags = "case S.D1{tag}: [tag]" / "case S.Dn{tags}: tags"
+095f4793f7	"device.bend:344's tag_of IS DISK 6, NPY 10, PYTHON 13, ELSE 0, BUILT FOR ALLOW_DEVICE_USAGE"	CONFIRMED	tinybendygrad/device.bend:344-345
+095f4793f7	"schedule/memory.bend:999's disk() = S.D1{1} against tag_of(\"DISK\") = 6"	UNVERIFIABLE	:999 was not read here; the claim is a two-file comparison not re-taken
+095f4793f7	"1004 ROWS (WAS 974), rc=0"	UNVERIFIABLE	requires running the gate; banned
+05be0f075d	"d0b6397e4 ... 42 ROWS (WAS 39), 26 EXACT (WAS 23), THE SAME 16 DIVERGENCES, rc=0"	UNVERIFIABLE	requires running gates/decomp_graph_census-gate.py; banned
+05be0f075d	"codegen/decomp/ IS BYTE-IDENTICAL (git show --stat d0b6397e4 | grep -c codegen/decomp = 0)"	CONFIRMED	the stat lists no codegen/decomp/ path
+05be0f075d	"l2i.const PASSES uint32 (:180)"	FALSE	at commit 05be0f075d the three dtype.bend files' line 180 carry unrelated text (topological-sort comment / bounds comment / least_upper_dtype mask); l2i.const is at codegen/decomp/dtype.bend:2773 and is called with S.uint32() at :2812
+05be0f075d	"dtype.bend:644-648 names a bool trigger at :647 that its own selector excluded"	FALSE	no dtype.bend has a bool trigger at :644-648; decomp/dtype.bend:647 is a comment about "a.cast(default_float) when a is a bool" inside a CDIV-by-2**32 block, and tinybendygrad/dtype.bend:644-648 is blank plus round-half-to-even prose
+05be0f075d	"q2/q3 located in two lines: one token at dtype.bend:1909 plus one node at :1467"	CONFIRMED	both lines are non-blank and in codegen/decomp/dtype.bend at commit 05be0f075d (:1909 f2f.down.tail(...), :1467 dd_or(...)); whether they are the q2/q3 sites is UNVERIFIABLE without the gate
+05be0f075d	"sel==1 AND dd_is_bool(xdt) = 0 OF 400 CELLS"	UNVERIFIABLE	requires the 400-cell sweep
+2fb32340f9	"differ.py:1117 was STALE BY 14 LINES ... the line is now checks/differ.py:1131"	CONFIRMED	at 2fb32340f9^ :1117 is the "present IS A DIRECTORY WALK" comment; at 2fb32340f9 :1131 is "present = {p.name for p in D.iterdir() ...}"; delta is exactly 14 and both lines still read that today
+2fb32340f9	"12 citations resolvable and in range, 1 ambiguous, 0 stale" of nine TODO rows	UNVERIFIABLE	requires the audit script and the nine-row slice of .agents/TODO.md, neither of which the message names
+2fb32340f9	"my first audit pass reported 157 'stale or missing' citations across the whole file"	UNVERIFIABLE	no artifact named
+2fb32340f9	"extract.py alone names 2 tracked files, differ.py 4 and gatekit.py 3"	UNVERIFIABLE	requires git ls-files over those basenames; cheap but not re-taken for want of the exact extraction rule the message does not state
+f18f2a52bf	"After the fix: POPULATION 1826 OFFENDERS 78 BASELINE 68 NEW 11 (13 before)"	UNVERIFIABLE	requires running gates/indexread-gate.py; banned
+f18f2a52bf	"git ls-files (default index, jj-armed) 7819"	STALE	7850 at HEAD 1b4905cba measured 2026-10-16T12:58Z; index population moves without commits
+f18f2a52bf	"git ls-files (GIT_INDEX_FILE=.git/agent-index) 7290 / git ls-tree -r HEAD (commit tree) 7290"	STALE	7308 at HEAD 1b4905cba; the index-vs-tree equality was true at 2026-10-16T07:03Z
+f18f2a52bf	"THE OLD POPULATION WAS 529 PATHS WIDER THAN THE COMMIT -- all under .agents/slop/, all carrying index blob e69de29b"	STALE	index placeholders now total 1096, up from 529+; the shape (placeholders under .agents/slop/, empty-blob OID) is CONFIRMED
+f18f2a52bf	"checks/index-arm-gate.py -> INDEX-ARM INTENT (529): 529 paths, 9405258 bytes"	STALE	index-derived; not re-taken (that gate is executable and banned)
+f18f2a52bf	"THE GATE PRINTS gone checks/repro-paths.py WHILE THE FILE IS IN THE WORKTREE, IN HEAD, AND IN THE INDEX"	CONFIRMED	checks/repro-paths.py exists on disk; git ls-files -s resolves it; the file is tracked in HEAD
+f18f2a52bf	":261 IS for rel in sorted(base - set(found))"	UNVERIFIABLE	checks/repro-paths.py:261 not read in this audit
+f18f2a52bf	"gitignore/perdir.py:12 builds cmd = [\"git\",\"ls-files\",\"-z\"] then subprocess.run(cmd)"	UNVERIFIABLE	that path is outside checks/ and gates/ and was not read here
+8f2ea1df30	"checks/slop-declare.py:143 had already measured it and said so by name -- 'orcdecide's 256 and declare's 262 WERE NOT MISCOUNTS; THEY READ git ls-files'"	CONFIRMED	checks/slop-declare.py:143 reads "MISCOUNTS; THEY READ `git ls-files`, WHICH IS AN INDEX THIS TREE HAS RESET SIX TIMES TONIGHT."
+8f2ea1df30	"slop-declare.py had already converted ITSELF to git ls-tree -r -z --name-only HEAD"	CONFIRMED	checks/slop-declare.py:148
+8f2ea1df30	"MEASURED, both stores, this tree, this minute: 7819 / 7290 / 7290"	STALE	7850 / (index-file store not re-taken) / 7308 at HEAD 1b4905cba
+8f2ea1df30	"verdicts.py was unaffected (24 = 24, symmetric difference 0) because its population is the 24 paths under .agents/slop/orcdecide"	UNVERIFIABLE	requires orcdecide/sweep.py and verdicts.py to be run
+8f2ea1df30	"The gate's counts move: OFFENDERS 80 -> 78, NEW 13 -> 11"	UNVERIFIABLE	requires running the gate; banned
+8f2ea1df30	".split() would also break on the first committed path containing a space (measured: 0 such paths today)"	CONFIRMED	no path under HEAD contains a space (ls-tree -r --name-only HEAD, 7308 rows, none with a space byte)
+5c33d15b74	"REMOVE_FROM_SINK_LIKE = ['GROUP', 'NOOP', 'SINK', 'STACK'] MEASURED"	CONFIRMED	tinygrad/uop/symbolic.py:441 = "REMOVE_FROM_SINK_LIKE = {Ops.NOOP, Ops.STACK, Ops.SINK, Ops.GROUP}" -- same four members
+5c33d15b74	"the rule's root test is (Ops.SINK, Ops.GROUP) -> BOTH root ops ARE IN THE SET -> CPYTHON'S else None ARM IS UNREACHABLE"	CONFIRMED	tinygrad/uop/symbolic.py:445 = UPat((Ops.SINK, Ops.GROUP), name="root"); :447 guard is "if any(x.op in REMOVE_FROM_SINK_LIKE for x in root.src) else None". SINK and GROUP are both members, so the guard is true whenever the pattern fires
+5c33d15b74	"IT CAME FROM __repr__ -> render.py:8's for s in x.src, NOT FROM __init__"	CONFIRMED	tinygrad/uop/ops.py:273 = "return pretty_print(self)"; tinygrad/uop/render.py:8 = "for s in x.src:"
+6eb1ec1516	"checks/sweep.py's FS_DELETES is keyed on (module, attr) and ALL FOUR KEYS ARE MODULE FORM"	CONFIRMED	checks/sweep.py:285 = FS_DELETES = {("os","remove"), ("os","rmdir"), ("os","unlink"), ("shutil","rmtree")}
+6eb1ec1516	"MEASURED 2026-10-16 over checks/ + gates/: 7 delete sites in MODULE form, all caught; 38 in METHOD form ... THE CENSUS SEES 7 OF 45 DELETE SITES"	FALSE	at commit 6eb1ec1516 an AST walk over the 226 .py files of checks/+gates/ finds 15 module-form sites (7 os.* + 8 shutil.rmtree) and 39 method-form = 54. The 7 reproduces only if the 8 shutil.rmtree sites are dropped -- and FS_DELETES itself names ("shutil","rmtree")
+6eb1ec1516	"checks/differ.py:658 -- (D / stale).unlink()"	CONFIRMED	checks/differ.py:658 = "(D / stale).unlink(missing_ok=True)"
+6eb1ec1516	"checks/bounded.py:499,502"	CONFIRMED	:499 = "empty.unlink(missing_ok=True)"; :502 = "Path(grand).unlink(missing_ok=True)"
+6eb1ec1516	"checks/abi4_gate.py:314"	CONFIRMED	= "out.unlink()"
+6eb1ec1516	"checks/substrate-id.py:507,525"	CONFIRMED	:507 = '(tree / "tinybendygrad/PROOF.bend").unlink()'; :525 = "(tree / gone).unlink()"
+6eb1ec1516	":278 says 'no scope reproduces 11' and :276 calls the arm 'STATED AND UNBUILT'"	CONFIRMED	checks/sweep.py:276 contains "It is STATED AND UNBUILT."; :278 contains "and no scope reproduces 11"
+6eb1ec1516	"checks/runs-artifacts.py's WRITES and READS (10 + 12 = 22 declared names)"	CONFIRMED	AST: WRITES has 10 elements, READS has 12
+f6aee9af15	"UOp(Ops.SINK, None) -> CONSTRUCTS; PRINTING IT (ops.py:273 -> render.py:8, for s in x.src) -> TypeError"	CONFIRMED	the two citations are exact (ops.py:273, render.py:8); the TypeError itself is a runtime observation not re-taken
+f6aee9af15	"37491d5eb measured that sym_12.pat's any_sink_like CANNOT BE MOVED BY ANY FIXTURE ... THAT IS CORRECT"	UNVERIFIABLE	requires the mutation sweep
+f6aee9af15	"gates/symcases.rows IS 7 ROWS AGAINST THE ORACLE'S 10 AFTER 454ad0e8b"	CONFIRMED	gates/symcases.rows carries exactly 7 t_* rows: t_add t_xor t_xor0 t_group t_sink t_sink0 t_sink1 (the file has 61 lines, 7 of them t_ rows)
+9fad284ea4	"gates/gatekit.py:75 justified excluding code 2 from VERDICT with a count: 'which 13 files in this tree do on purpose'"	CONFIRMED	at 9fad284ea4^ that text is at gatekit.py:74; :75 is the immediately following line of the same sentence ("...raise `KeyError: 2`, so the runner that")
+9fad284ea4	"verdict_of's unassigned branch is :98, not :97 as I wrote earlier today"	FALSE	at commit 9fad284ea4 gatekit.py:98 is a BLANK line inside the docstring; the unassigned branches are at :104 and :107, and :97 is also docstring
+9fad284ea4	"MEASURED ... over the 226 .py files of checks/ + gates/"	CONFIRMED	git ls-tree -r at 6eb1ec1516 gives exactly 226 .py files under checks/ + gates/; the exitcodes census's codes.rows also carries 226 distinct instruments
+9fad284ea4	"the exitcodes unit independently measured 18 by its own method"	CONFIRMED	.agents/slop/exitcodes/codes.rows has 18 instruments carrying a code-2 row, all verdict UNOWNED
+9fad284ea4	"whose codes.rows column 3 is UNOWNED"	CONFIRMED	header is instrument/code/verdict/declared_in_own_prose/note; column 3 is verdict and every code-2 row reads UNOWNED
+9fad284ea4	"9 files declare USAGE in their own prose -- one of them gatekit.py ITSELF"	UNVERIFIABLE	codes.rows reports declared_in_own_prose=yes on only 4 instruments for code 2 and gates/gatekit.py has NO code-2 row at all; the message does not state the rule it used
+9fad284ea4	"6 of those 9 import argparse and so INHERIT its code rather than choosing it"	UNVERIFIABLE	same; no stated rule, and my own AST walk of \bUSAGE\b finds 6 files / 4 of them importing argparse
+9fad284ea4	"20 files can return 2 at all, by a static AST walk"	UNVERIFIABLE	a literal exit(2) walk finds 7 at 059c22cab9^; 20 is plausible only under an unstated deeper walk
+9fad284ea4	"VERDICT is byte-identical, charge(3) is still 3, verdict_of(2) still answers UNASSIGNED, and the edit is below line 60"	CONFIRMED	gates/gatekit.py:60 unchanged; the diff touches only the verdict_of docstring at :71-101; charge() begins at :110
+059c22cab9	"MEASURED over the 226 .py files of checks/ + gates/, 57 sites in 24 instruments hand a string or f-string to exit"	CONFIRMED	at 059c22cab9^ an AST walk over exit/_exit/quit/SystemExit called with a string constant or f-string finds exactly 57 sites in exactly 24 files
+059c22cab9	"The worst offender is one of the two gates gatesweep.py itself records. Line 270 read sys.exit(f\"REFUSED: {args.jobs} lanes x {MAXRSS} B exceeds 60% of {MEMSIZE} B\")"	FALSE	that line is in gates/ops_python_exec-gate.py, and at the commit's own parent it is :254, not :270. :270 is the post-edit line. At that commit gates/ops_python_exec-gate.py:270 = "if not exe.exists(): sys.exit(f\"the executor {exe} is absent\")"
+059c22cab9	"Lines 267 and 268 did the same for f\"{p} is absent\""	FALSE	at 059c22cab9^ those two sys.exit sites are :251 and :252; :267 and :268 are their post-edit refuse() replacements
+059c22cab9	"All three now go through a local refuse() ... and gatekit.REFUSED, measured to be 3"	CONFIRMED	gates/ops_python_exec-gate.py:64 = def refuse; :267/:268/:270 are the three refuse() calls; gates/gatekit.py:60 gives REFUSED = 3
+059c22cab9	"The other 54 sites in 23 instruments are owed"	CONFIRMED	57 minus the 3 fixed = 54, in 24 minus 1 = 23 instruments
+059c22cab9	"checks/gatesweep.py records that gate"	UNVERIFIABLE	checks/gatesweep.py never names ops_python_exec; it discovers gates by a directory walk (GATES = ROOT/"gates", population(ROOT)), so "records" is loose and "the two gates" is unnamed
+1c1db2db37	"symbolic.py:445-449's UPat((Ops.SINK, Ops.GROUP), name=\"root\") FLATTENS A GROUP SRC OUT OF A SINK"	CONFIRMED	tinygrad/uop/symbolic.py:445-447 is exactly that UPat plus its lambda
+1c1db2db37	"symbolic.bend:1555's sym_12.hit LOOKS LIKE IT ALREADY DOES -- H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{}))"	FALSE	symbolic.bend:1555 = "def sym_12.put(...)"; sym_12.hit is at :1558 and the flatten_u32 call is at :1559
+1c1db2db37	"symbolic.bend:3221's OWN row(\"sink\", ...) IS ON fx_sink"	FALSE	symbolic.bend:3221 is a markdown TABLE row about M17; row("sink", t_sink()) is at :3292 -- 71 lines away. fx_sink is defined at :2371
+1c1db2db37	"ALL 25 OF ITS OWN FIXTURES PUT THE ALIASED NODE AT INDEX 0 (ptx.bend)"	UNVERIFIABLE	requires reading ptx.bend's 25 fixtures and running nothing; not re-taken
+1c1db2db37	"row t_xor / port 0:x: / cpython x -- AGREE, THE HEADER SAID norewrite"	UNVERIFIABLE	requires driving tinygrad's sym.rewrite via .agents/slop/symh/oracle.py
+437e651e15	"gates/rng_graph_census-gate.py:104-106 carried [the TABLES tuple]"	STALE	the lines are now the re.M findall (gates/rng_graph_census-gate.py:121) plus the prose explaining the removal; the quoted comment now sits at :105-108
+437e651e15	"Eleven is grep -c '^def [a-z]*_table' tinybendygrad/schedule/rangeify.bend (MEASURED)"	CONFIRMED	the grep returns 11
+437e651e15	"findall over rangeify.bend returns THE SAME ELEVEN NAMES IN THE SAME ORDER as the tuple it replaced"	CONFIRMED	rb nic nv aprt sk gs ct fb dg lb ab -- byte-identical to the quoted tuple, same order
+437e651e15	"ROWS is still 726"	CONFIRMED	11 x 66 = 726; the file's own header at :7 reads "726 ROWS (11 TABLES x 66 NODES)" and :133 builds ROWS from TABLES x range(NODES), NODES=66 at :132
+437e651e15	"the empty case REFUSES (3)"	CONFIRMED	gates/rng_graph_census-gate.py:122-124 = "if not TABLES:" printing "REFUSED -- no `def <name>_table` ..."
+437e651e15	"my own pattern omitted re.M and ^ matched only the start of the string"	CONFIRMED	the live pattern is re.findall(r"^def ([a-z]+)_table", RANGEIFY.read_text(), re.M) at :121 -- re.M is present now
+437e651e15	"NODES = 66 IS STILL TYPED, and the comment now says why: it is rangeify.bend's G.ix length"	CONFIRMED	gates/rng_graph_census-gate.py:132 = "NODES = 66"; tinybendygrad/schedule/rangeify.bend:1670 = def G.ix -- the cited shape is present, the length 66 not re-measured
