@@ -580,92 +580,33 @@ exit-mislabels [####......] 1/4  A GATE THAT SAYS `REFUSED` AND EXITS `FAIL` IS 
                                        wrong. 1/4 = the three sites; the other 54 are OWED **behind
                                        that promotion**, not refused.
 
-sweep-deletes-pop [##........] 1/3  MEASURED 2026-10-16, and this is the LARGEST BLIND SPOT found this
-                                       session. `checks/sweep.py`'s `FS_DELETES` is keyed on
-                                       `(module, attr)` and **ALL FOUR KEYS ARE MODULE FORM** --
-                                       `("os","remove")`, `("os","rmdir")`, `("os","unlink")`,
-                                       `("shutil","rmtree")`. **THE LANGUAGE HAS TWO SPELLINGS FOR ONE
-                                       OPERATION AND THE TABLE ONLY HAS ONE.** Over `checks/`+`gates/`:
-                                       **7** delete sites in MODULE form, all caught; **38** in
-                                       METHOD form (`x.unlink()`), **and 0 of them can match**, because
-                                       a method call carries no module to key on. **THE CENSUS SEES 7
-                                       OF 45 DELETE SITES.** One of the invisible ones is
-                                       **`checks/differ.py:658`, `(D / stale).unlink()` -- deleting a
-                                       corpus artifact, in the file that OWNS `runs/graphcmp/D`**;
-                                       also `checks/bounded.py:499,502`, `checks/abi4_gate.py:314`,
-                                       `checks/substrate-id.py:507,525`. This is doctrine 1 with a new
-                                       hat: **the population is keyed on a SHAPE when the SUBJECT has
-                                       two spellings**, so a delete census cannot see the spelling
-                                       the tree actually uses. `FS_DELETES` itself already records
-                                       the shape's blind spot in prose -- `:278` says "**no scope
-                                       reproduces 11**" -- and `:276` says the arm is "STATED AND
-                                       UNBUILT"; this measurement says the stated part is ALSO
-                                       incomplete, not merely unbuilt. **NOT LANDED ON PURPOSE:**
-                                       `FS_DELETES` feeds `self_output_dirs()`'s COLLISION REFUSAL,
-                                       so widening it can make the sweep refuse MORE directories,
-                                       and the sweep is a heavy operation whose output I cannot
-                                       re-take inside this session's machine budget. **Prefer refuse
-                                       to repair**: the finding is worth more recorded than a change
-                                       that cannot be verified. 1/3 = the measurement; the other 2 are
-                                       the landing and the re-take of sweep's output.
+sweep-deletes-pop [##........] 1/3  **I OVERSTATED THIS AND THE CORRECTION IS THE FINDING.**
+                                       `checks/sweep.py:270-284` says, in a comment I had NOT READ,
+                                       that `FS_DELETES` is **DEAD -- NOTHING READS THIS TABLE**, kept
+                                       *"BECAUSE IT IS THE ONLY MACHINE-READABLE RECORD OF A
+                                       DECISION"*, and that reviving it needs one named measurement
+                                       first: *"the directories `FS_WRITES` + `FS_DELETES` would mark
+                                       as written, diffed against what `FS_WRITES` marks today --
+                                       that changes a load-bearing exclusion set, so it is measured
+                                       before it is built."* **SO THERE IS NO LIVE DELETE CENSUS BEING
+                                       FOOLED AND NOTHING TO FIX; I CALLED A DELIBERATELY PARKED TABLE
+                                       A BLIND SPOT.** My first framing also counted `checks/` +
+                                       `gates/` rather than the comment's own scope.
+                                       **WHAT THE MEASUREMENT DOES ADD, AT THE COMMENT'S OWN SCOPE**
+                                       -- all **1,829** tracked `.py` from **HEAD**, **0** unparseable:
+                                       MODULE form **147** (the comment says 143; the tree moved), and
+                                       **METHOD form `x.unlink()` 110 + `x.rmdir()` 2 = 112, WHICH THE
+                                       COMMENT DOES NOT MENTION AT ALL.** **THE RECORD OF THE DECISION
+                                       UNDERSTATES DELETES BY 112 -- 43% MORE** -- because the comment's
+                                       own 143 counted only the module spelling, and this table carries
+                                       the same one-spelling gap the rest of the file avoids by holding
+                                       `FS_READ_METHODS` beside `FS_READS`. **A DECISION RECORDED WITH A
+                                       COUNT THAT IS 43% LOW IS NOT A RECORD.** 1/3 = the corrected
+                                       measurement; the other 2 are the DECISION the comment already
+                                       names, refused here because reviving a dead table changes a
+                                       load-bearing exclusion set and the diff it asks for has not
+                                       been taken.
 
-repro-paths-ref [#########] 1/1      `checks/repro-paths.py:63`'s `REF` WAS a SUFFIX SET,
-                                       `(?:sh|py|bend|mjs|json)`, so a gate input named in prose
-                                       with any other extension was INVISIBLE to it -- the
-                                       doctrine-1 shape, patched one extension at a time (`2 .mjs`
-                                       were once invisible). REPLACED 2026-10-15 with a permissive
-                                       extraction intersected with the FILESYSTEM (`os.path.exists`
-                                       just below it): the population is now "tokens that name a
-                                       path", not "tokens whose suffix is on a list". MEASURED over
-                                       the SAME 541 reports at HEAD `db24cf3d0`, before -> after:
-                                       named 560 -> 714, resolve 483 -> 606, DANGLING 77 -> 108,
-                                       with ADDED 164 (125 resolving) and LOST 10 (2 resolving). **AND THE SET WROTE FALSE ROWS IN
-                                       BOTH DIRECTIONS, which is why "it only missed things" was
-                                       the wrong worry: it stops at a REMEMBERED extension, so
-                                       `untrack/REPORT.md:142`'s `...cpython-312.pyc` was read as
-                                       `...312.py` (a DANGLING row for a name that never existed)
-                                       and `whosecache/REPORT.md:73`'s
-                                       `gates/tn_graph_census-gate.py.bak` was read as
-                                       `gates/tn_graph_census-gate.py`, A FILE THAT EXISTS -- a
-                                       broken reference counted as RESOLVED.** The gate was
-                                       ALREADY red (77 dangling), so this adds truth to a failing
-                                       census rather than creating a failure, and the 108 are REAL
-                                       reports pointing at REAL paths that are GONE
-                                       (`cstyle-live/port.txt`, `coldness/population.txt`).
-                                       `.agents/slop/reprorefs/REPORT.md` + its `probe.py`.
-                                       A SECOND DEFECT IN THE SAME FILE, FOUND BY THE FIRST:
-                                       `committed_reports()` ran `git ls-files` -- the INDEX -- while
-                                       the TEXT came from `git show HEAD:`, so the DENOMINATOR moved
-                                       with the index's arming state (584 armed, 541 disarmed) under
-                                       the printed word *committed*, AND it INHERITED
-                                       `GIT_INDEX_FILE`, so an agent's shell measured a different
-                                       population than a bare one -- the SAME defect and the same
-                                       shape as `checks/index-arm-gate.py`'s false `PASS`. FIXED to
-                                       `git ls-tree -r --name-only HEAD`: 541 under the default
-                                       index, under `.git/agent-index`, AND under a bogus path that
-                                       exists nowhere. The 43 phantom entries contributed NO text,
-                                       so the differential was right while the denominator was
-                                       wrong -- which is why the fix's own commit message quotes
-                                       584.
-                                       LANDED, NOT MERELY FLAGGED: `AGENTS.md`'s doctrine-1
-                                       row and `agend2/REPLACEMENTS.md:294` both recorded this
-                                       line as **fixed** BY the suffix set, which is the claim
-                                       this measurement refutes. BOTH are now corrected, and the
-                                       `agend2` entry carries a **SUPERSEDED** note naming the
-                                       lesson: **A REPLACEMENT LIST THAT NAMED A FIX AND NEVER
-                                       RE-DERIVED IT AFTER IT LANDED IS HOW A HAND-KEPT CITATION
-                                       ROTS QUIETLY.**
-sweep-self-dirs [#########] 9/10     `self_output_dirs()` = ['.agents/slop/residue'] and that
-                                       entry is INERT: removing it leaves the corpus at 692
-                                       (`INERT=True removed_by_the_entry=0`, 2026-10-15T09:25:03Z,
-                                       HEAD `c1e2b9fb2`) -- `residue` is already covered by
-                                       `residue.py:EXCLUDED_DIRS` and by a pathspec that ends one
-                                       level above it. So the "1" is NEITHER a population NOR a
-                                       bug. THE REAL DEFECT IS GRANULARITY: a 22-dir walk
-                                       authorises 85 DELETIONS (3,635,633 B, corpus 648 -> 627)
-                                       and a 48-dir belt 86; the file-granular arm deletes 0.
-                                       `checks/sweep.py` NOT EDITED -- prefer refuse. §3 of
-                                       `.agents/slop/sweepdirs/REPORT.md`.
 d10-guard       [##########] 10/10  D10 is NO LONGER REFUSED: the fixture is present, so the
                                        probe RUNS, and `D10-zerorow-guard.txt.err` reads `bend
                                        attempt 1: 0 rows, ANSWER, rc=0`. `classify`
