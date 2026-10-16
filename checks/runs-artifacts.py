@@ -62,9 +62,12 @@ from __future__ import annotations
 import ast
 import glob
 import os
+import re
 import subprocess
 import sys
+import tempfile
 import time
+from pathlib import Path
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -95,6 +98,41 @@ WRITES = {"makedirs", "mkdir", "write_text", "write_bytes", "open", "touch",
 #: PLANT, where the string is the CONTENT of a file written into a TemporaryDirectory.
 READS = {"read_text", "read_bytes", "iterdir", "glob", "rglob", "is_dir", "is_file", "exists",
          "stat", "scandir", "listdir", "readlink"}
+
+#: A SHELL LANE IS FOUND BY ITS SHEBANG, NOT BY ITS NAME. MEASURED 2026-10-17: the tree holds
+#: **272 tracked files whose first line names a shell**, and only **21 of them end in `.sh`** --
+#: `checks/bend`, `bin/bend`, `gates/oracles/*.sh` and 16 more. A `*.sh` glob would have missed
+#: every one of those, which is the same suffix-set defect `checks/repro-paths.py` shipped and
+#: retracted. `gates/gates-pop.py` PLANT 6 found the identical thing independently: its
+#: denominator is a **21-entry walk**, and its own header says a `glob("*.sh")` population was
+#: "a population it had chosen".
+SHELL_SHEBANG = re.compile(r"^#!.*\b(bash|sh|zsh|dash|ksh)\b")
+#: The verbs that CREATE a file or a directory. A shell READ is not extracted: a read is any
+#: string-shaped token, and a permissive reader is how the first prototype produced `echo`, `fi`
+#: and `local` as paths. **A WRITE IS A NARROW SET OF VERBS; A READ IS NOT.**
+SH_CREATE = re.compile(r"(?<![0-9A-Za-z_.-])(mkdir|cp|mv|install|touch|tee|ln|rsync|git)\b")
+#: `NAME=value`, `export NAME=value`, `local NAME=value` -- one assignment shape, three prefixes,
+#: and the fixed point is 4 rounds because `D=$ROOT/x` needs `ROOT` first.
+SH_ASSIGN = re.compile(r"""(?m)^\s*(?:export\s+|declare\s+-x\s+|local\s+|readonly\s+)*"""
+                       r"""([A-Za-z_][A-Za-z0-9_]*)=(?:"([^"]*)"|'([^']*)'|([^\s#;&|]*))""")
+#: `ROOT=$(cd "$(dirname "$0")/.." && pwd)` -- the shell spelling of `Path(__file__).resolve()`,
+#: which `resolve()` above already maps to `""`. **THE SAME IDIOM GETS THE SAME ANSWER**, so
+#: `"$ROOT/references/bend"` resolves to `references/bend` and not to a dropped token. MEASURED:
+#: without this binding the extractor produced **0** sites for `tools/get-bend.sh`, whose entire
+#: job is to write `references/bend`. The `\b` and not `\s` because `SH_ASSIGN` captures an
+#: UNQUOTED value only up to the first space, so the captured text is `$(cd` and nothing else.
+SH_SELF_ROOT = re.compile(r"\$\(\s*cd\b|\$\(\s*dirname\b|\$\(\s*pwd\b")
+#: `cp SRC DEST` CREATES `DEST`. MEASURED: the first extractor took every path-shaped token after
+#: the verb, so `cp runs/x "$T/y"` recorded `runs/x` as a WRITE -- laundering a plant's own
+#: fixture into `GENERATOR`, which is the exact defect `plant_writes()` documents at length. For
+#: these five verbs the LAST path token is the target and the rest are sources.
+SH_DEST_LAST = ("cp", "mv", "ln", "install", "rsync")
+#: A token is a PATH if it is relative, slash-or-extension shaped, and free of every metacharacter
+#: that means "assembled at runtime". Existence is NOT checked here -- `clone_paths()` does that,
+#: and this is the `checks/repro-paths.py` repair read backwards: PERMISSIVE EXTRACTION
+#: INTERSECTED WITH `os.path.exists`.
+SH_PATH = re.compile(r"^[A-Za-z0-9._@-]+(?:/[A-Za-z0-9._@-]+)*$")
+SH_DROP = set("/~") | set("*?\"'\\$&;()<>|")
 
 
 def resolve(node, env, depth=0):
@@ -207,13 +245,18 @@ def _under(value, prefix):
     return parts[:len(want)] == want
 
 
-def sites(root=ROOT):
+def sites(root=ROOT, tracked=None):
     """Every call site in `checks/` or `gates/` that NAMES a filesystem path, as
     `(relpath, role, value)` with `role` in `read`, `write`.
 
     THE POPULATION IS A DIRECTORY WALK (`glob` over `checks/*.py` and `gates/*.py`) PLUS A
     RESOLVER OVER THE TREE'S OWN READ AND WRITE SITES. It is not a basename, not a suffix set, not
     a hand list, and not a cache.
+
+    `tracked` IS THE SEAM, and it is one argument rather than a fixture: it is the `git ls-tree`
+    answer the SHELL walk needs, it saves a second `git` process, and `--plant` passes a list
+    instead of a repository so the plant can drive THIS FUNCTION on a synthetic tree. **A PLANT
+    THAT DRIVES A COPY OF THE DECISION IS NOT A PLANT.**
     """
     out = []
     for path in sorted(glob.glob(os.path.join(root, "checks", "*.py"))
@@ -262,6 +305,127 @@ def sites(root=ROOT):
                     v = resolve(leaf, env)
                     if isinstance(v, str) and v.strip("/"):
                         out.append((os.path.relpath(path, root), role, v))
+    return out + shell_sites(root, tracked)
+
+
+def shell_lanes(root=ROOT, tracked=None):
+    """Every TRACKED file whose first line names a shell, as a path relative to `root`.
+
+    **DISCOVERY BY `git ls-tree` AND BY CONTENT. TWO CANDIDATE POPULATIONS WERE MEASURED AGAINST
+    EACH OTHER AND BOTH WRONG POPULATIONS ARE NAMED HERE SO THE NEXT ONE IS NOT PROPOSED:**
+
+        `glob("checks/*.sh")`            17 files, and it MISSES `checks/bend` and `bin/bend`, two
+                                         tracked `#!/bin/sh` lanes with no dot in the name.
+        EVERY tracked file, whole tree   272 shell lanes, of which **145 are vendored upstream**
+                                         (`examples/` 119, `extra/` 21) and **102 sit under
+                                         `.agents/slop/`**, a tree this project is pruning.
+
+    The scope is not a hand list of homes, for the same reason `HOMES = ("checks", "gates")` is the
+    one universe `gates/gates-pop.py` admits by hand. **TRACKEDNESS IS THE SCOPE AND IT IS THE
+    RIGHT SCOPE BECAUSE THE QUESTION IS ABOUT A FRESH CLONE: a clone cannot execute an untracked
+    script, so an untracked lane cannot produce anything for the reader asking.** Vendored lanes
+    are KEPT on the same reasoning -- a clone HAS them, so a writer among them is a real writer,
+    and dropping them would be a false `HANDMADE`.
+    """
+    paths = tracked_files(root) if tracked is None else tracked
+    out = []
+    for t in dict.fromkeys(paths):  # A SET OF LANES. `git ls-tree` cannot repeat a path, and
+        if t.endswith(".py"):        # `clone_report()` prints `len(sites(root))` as a denominator.
+            continue
+        try:
+            with open(os.path.join(root, t), errors="replace") as fh:
+                if SHELL_SHEBANG.match(fh.readline()):
+                    out.append(t)
+        except OSError:
+            continue
+    return out
+
+
+def shell_env(text):
+    """`NAME=value` bindings to a fixed point.
+
+    **THE EMPTY STRING IS A BINDING AND NOT A MISSING ONE, AND THAT IS THE WHOLE OF CASE D.**
+    MEASURED: the first version ended in `if v:`, so `ROOT` -- bound to `""` precisely because it
+    IS the repo root -- was never stored, `"$ROOT/runs/x"` stayed unresolved, and
+    `--plant-shell` case D went red. An ordinary `FOO=` is still skipped, because in a shell
+    `"$FOO/x"` is `/x`, an ABSOLUTE path, and inventing a repo root for it would be the
+    truncation this file exists to refuse.
+    """
+    env = {}
+    for _ in range(4):
+        for m in SH_ASSIGN.finditer(text):
+            v = m.group(2) or m.group(3) or m.group(4) or ""
+            if SH_SELF_ROOT.search(v):  # `$(cd "$(dirname "$0")/.." && pwd)` IS `Path(__file__)`.
+                env[m.group(1)] = ""  # The fixed point cannot improve on the root, and this is
+            elif v:                    # what makes the loop terminate on the second pass.
+                env[m.group(1)] = v
+    return env
+
+
+def shell_value(tok, env):
+    """A shell token to a path, or `None`. **THE PERMISSIVE HALF: EXISTENCE IS NOT CHECKED HERE.**
+
+    `checks/repro-paths.py` shipped a suffix set that stopped at a *remembered* extension and wrote
+    false rows in BOTH directions -- a dangling row for a name that never existed, and a broken
+    reference marked `RESOLVED` because the truncated path happened to exist. Every guard below
+    exists to make the other failure impossible: **A TOKEN IS REFUSED, NEVER SHORTENED.**
+    """
+    # `\x00` IS UNBOUND and `\x01` IS BOUND-TO-EMPTY (the repo root). MEASURED: with a plain
+    # substitution `ROOT=""` turned `"$ROOT/runs/x"` into `/runs/x`, and the absolute-path guard
+    # then refused it -- case D of `--plant-shell` went RED for exactly that. `\x01` eats the slash
+    # that joins it, the way `os.path.join("", "runs/x")` does; `/tmp/x` carries no marker, so a
+    # genuine absolute path is still refused.
+    def sub(m):
+        v = env.get(m.group(1) or m.group(2), "\x00")
+        return "\x01" if v == "" else v
+
+    for _ in range(4):
+        nxt = re.sub(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)", sub, tok)
+        if nxt == tok:
+            break
+        tok = nxt
+    if "\x00" in tok:
+        return None
+    tok = re.sub(r"\x01/?", "", tok)
+    if not tok or "\x01" in tok or "$" in tok or tok[0] in SH_DROP:
+        return None
+    return tok if SH_PATH.match(tok) else None
+
+
+def shell_sites(root=ROOT, tracked=None):
+    """The write sites of every shell lane, as `(relpath, 'write', value)`.
+
+    **NO READS ARE EXTRACTED, AND THAT IS THE SHAPE OF THE MEDICINE.** MEASURED: the first
+    prototype read as well as wrote and returned `echo`, `fi`, `local`, `python3` and `zsh` as
+    paths -- **115 sites, 6 of which existed.** A read in shell is any string-shaped token, so a
+    permissive reader is noise with a denominator. A write is a closed verb set plus a redirect,
+    so a permissive *writer* is 90 sites of which the same 6 exist. Neither number is tuned away;
+    both are recorded because `clone_paths()` intersects with `os.path.exists`, and **a permissive
+    extraction is sound under a consumer that checks the filesystem, while a truncated token is
+    unsound under every consumer.**
+    """
+    out = []
+    for rel in shell_lanes(root, tracked):
+        text = open(os.path.join(root, rel), errors="replace").read()
+        env = shell_env(text)
+        for line in re.sub(r"(?m)^\s*#.*$", "", text).splitlines():  # A COMMENT IS NOT A USE.
+            for m in re.finditer(r"(?<![0-9&])>>?\s*(\"[^\"]*\"|'[^']*'|\S+)", line):
+                v = shell_value(m.group(1).strip("\"'"), env)
+                if v and v not in ("1", "2", "&"):  # `>&2` IS A FILE DESCRIPTOR, NOT A PATH.
+                    out.append((rel, "write", v))
+            for m in SH_CREATE.finditer(line):
+                toks = [t for t in re.findall(r"\"[^\"]*\"|'[^']*'|\S+", line[m.end():])
+                        if not t.startswith("-")]
+                bare = [t[1:-1] if t[:1] in "\"'" else t for t in toks]
+                # A `DEST_LAST` VERB NAMES ITS TARGET IN THE LAST TOKEN AND ITS SOURCES IN ALL
+                # THE OTHERS, SO IF THE LAST TOKEN DOES NOT RESOLVE THERE IS NO SITE AT ALL.
+                # MEASURED: taking the last *resolvable* token made `cp runs/x "$T/y"` a WRITE of
+                # `runs/x` -- a plant's own fixture laundered into `GENERATOR`, the defect
+                # `plant_writes()` exists to prevent, reintroduced through the shell door.
+                for v in ([shell_value(bare[-1], env)] if m.group(1) in SH_DEST_LAST and bare
+                          else [shell_value(b, env) for b in bare]):
+                    if v:
+                        out.append((rel, "write", v))
     return out
 
 
@@ -421,7 +585,6 @@ def plant(root=None):
     about this directory is that nothing may delete it, and the way to honour that is not to
     write a test that does.**
     """
-    import tempfile
     bad = []
     now = 1000.0
     with tempfile.TemporaryDirectory() as td:
@@ -527,7 +690,7 @@ def plant_writes(root=ROOT):
     return out
 
 
-def clone_paths(root=ROOT):
+def clone_paths(root=ROOT, tracked=None):
     """Every path an instrument reads or writes that exists here, with the facts a clone cares about:
     is it in the TREE, what `.gitignore` line hides it, does a sweep root name it, and WHO WRITES
     IT. **THE POPULATION IS `sites()` -- a directory walk plus an AST walk -- so adding an
@@ -549,11 +712,11 @@ def clone_paths(root=ROOT):
     this tree's layout and not a guarantee** -- the day an instrument moves one directory deeper
     this silently mis-roots it, and no verdict here would notice."""
     roots = sweep_roots(root)
-    tracked = set(tracked_files(root))
+    tracked = set(tracked_files(root)) if tracked is None else set(tracked)
     plants = plant_writes(root)  # A PLANT IS NOT A GENERATOR. See `plant_writes`.
     reads: dict[str, set[str]] = {}
     writes: dict[str, set[str]] = {}
-    for rel, role, value in sites(root):
+    for rel, role, value in sites(root, tracked):
         if value.startswith("/") or (role == "write" and value in plants):
             continue  # A SYSTEM PATH, or a temporary directory. `/bin/sh` is not this tree's `bin/`.
         parts = [p for p in value.split("/") if p not in ("", ".", "..")]
@@ -619,17 +782,16 @@ def clone_report(root=ROOT):
     across the 209-instrument population, **0** of its bytes in `HEAD`, and 10 readers -- and
     `tools/get-bend.sh`, which is tracked, clones `references/bend` and never writes the shim.
 
-    AND THE SCOPE SLIP, WHICH IS THE CENSUS'S OWN BLIND SPOT AND IS STATED RATHER THAN FIXED:
-    `sites()` walks `checks/*.py` + `gates/*.py` = 209 instruments. This tree also has 17
-    `checks/*.sh` and 1 `checks/*.mjs`, and `tools/get-bend.sh` at the root, and **A SHELL
-    GENERATOR IS INVISIBLE TO AN AST WALK THAT ONLY OPENS `.py`**. So `writers=0` means "no `.py`
-    writer in `checks/`+`gates/`", and every `HANDMADE` verdict is a LOWER BOUND on the damage."""
+    AND THE SCOPE SLIP IS GONE, AND WHAT REPLACED IT IS SMALLER AND MEASURED. THE OLD ADMISSION
+    READ "18 FURTHER INSTRUMENTS (17 checks/*.sh, 1 checks/*.mjs) ... ARE INVISIBLE TO THIS WALK",
+    WHICH WAS TRUE AND WHICH NAMED A POPULATION BY EXTENSION. `sites()` now also walks every
+    TRACKED file whose shebang names a shell -- 272 lanes tree-wide, 21 of which have no `.sh` in
+    their name at all -- and `tools/get-bend.sh` is one of them. See `shell_lanes()`.
+
+    WHAT IS LEFT IS STATED BY COUNT AND NOT BY APOLOGY, IN `residual()`."""
     holes = clone_paths(root)
     for h in holes:
-        hidden = bool(h["rule"] or h["sweep"])
-        h["verdict"] = ("TRACKED" if h["n_tracked"] else
-                        "RESTORABLE" if not hidden else
-                        "GENERATOR" if h["writers"] else "HANDMADE")
+        h["verdict"] = verdict(h)
     print("CAN A FRESH CLONE PRODUCE IT?  -- git ls-tree -r HEAD is the tree, `git check-ignore` is "
           "git's own\nmatcher, RESIDUE_ROOTS is read by AST. Nothing here is listed.")
     for v in ("TRACKED", "GENERATOR", "HANDMADE", "RESTORABLE"):
@@ -645,18 +807,227 @@ def clone_report(root=ROOT):
     handmade = [h for h in holes if h["verdict"] == "HANDMADE" and h["readers"]]
     n_py = len(glob.glob(os.path.join(root, "checks", "*.py"))) + \
            len(glob.glob(os.path.join(root, "gates", "*.py")))
-    print(f"\nDENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites in "
-          f"{n_py} `.py` instruments, out of {len(tracked_files(root))} files in HEAD.")
-    print("SCOPE SLIP: 18 further instruments (17 checks/*.sh, 1 checks/*.mjs) and a root "
-          "tools/get-bend.sh are INVISIBLE to this walk, so HANDMADE is a LOWER BOUND.")
-    print(f"THE COSTLY LINE: {len(handmade)} read path(s) have no writer at all: "
+    lanes = shell_lanes(root)
+    print(f"\nDENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites, from "
+          f"{n_py} `.py` instruments by AST\n            and {len(lanes)} tracked shell lanes by "
+          f"shebang, out of {len(tracked_files(root))} files in HEAD.")
+    print("RESIDUAL: " + residual(root))
+    print(f"THE COSTLY LINE: {len(handmade)} read path(s) have no writer in ANY walked form: "
           f"{', '.join(h['path'] for h in handmade) or 'none'}")
     return holes
 
 
+#: A tracked file with a PYTHON shebang and no `.py` name, or a NODE lane, is invisible to BOTH
+#: resolvers -- and the first version of `residual()` got this backwards, reporting three
+#: `#!/usr/bin/env python3` files as "a language neither resolver reads". **AN ADMISSION THAT
+#: MISDESCRIBES ITS OWN POPULATION IS WORSE THAN NO ADMISSION**, so both classes are matched by
+#: CONTENT and counted, never by extension.
+PY_SHEBANG = re.compile(r"^#!.*\bpython[0-9.]*\b")
+#: `from "node:fs"` / `require("...")` -- how a Node lane with NO shebang announces itself.
+#: MEASURED: `checks/nan_census.mjs` begins with a `//` comment, so no shebang test can find it
+#: and an extension test is the suffix-set defect this file was written to close.
+NODE_LANE = re.compile(r"""from\s+["']node:|require\(\s*["']""")
+
+
+def residual(root=ROOT):
+    """WHAT IS STILL INVISIBLE, AS THREE COUNTS, SO THE ADMISSION IS FALSIFIABLE AND NOT A MOOD.
+
+    **THE OLD LINE SAID "18 FURTHER INSTRUMENTS ... ARE INVISIBLE TO THIS WALK" AND NAMED THEM BY
+    EXTENSION, WHICH WAS THE DEFECT IT WAS ADMITTING.** This one measures, and each class is a
+    population matched BY CONTENT:
+
+        `py_named`   tracked lanes with a PYTHON shebang and no `.py` name. The AST walk globs
+                     `*.py`, so these are Python the walk cannot open. MEASURED 2026-10-17: **3**
+                     (`oracles/graphcmp-oracle.py.BASELINE`, `oracles/llvmir-oracle.py.PRENAME`,
+                     `oracles/nl-oracle.py.PRENAME`).
+        `node`       tracked lanes importing `node:` builtins with no shell shebang.
+                     MEASURED 2026-10-17: **17**, of which the one in this project's own
+                     instrument home is `checks/nan_census.mjs` -- a `//` comment on line 1, so
+                     no shebang test finds it.
+        `opaque`     shell lanes this extractor reads and finds no create-verb in.
+                     MEASURED 2026-10-17: **225 of 272**. **THIS IS A FLOOR ON WHAT IS UNREAD,
+                     NOT A COUNT OF WHAT IS MISSING**, and the difference is the whole point: a
+                     reader who cannot tell those two apart reads the wrong number as a result.
+
+    There is a fourth, and it is the largest, so it is named rather than left for the next reader:
+    **THE AST RESOLVER LOSES A DIRECTORY.** `resolve()` returns `""` for `Path(__file__).resolve()`,
+    and its `Attribute` branch answers a no-argument `.parent` by descending into the `Call` below
+    it, so `HERE = Path(__file__).resolve().parent` binds `HERE` to `""` and `HERE / "gen"` is
+    recorded as the bare token `gen`. MEASURED 2026-10-17: `checks/abi_gate.py` writes
+    `checks/gen/` and the census prints `writer=NOTHING` for it. **THIS IS THE BRIEF'S OWN WARNING
+    LIVE IN A `.py` FILE**: a truncated token is not a harmlessly blind one, it is a token that
+    writes false rows. Repairing it needs the file's own directory threaded through `_env`,
+    `sites()` and `plant_writes()`; a correctly-normpath'd prototype still LOST 51 existing paths,
+    so it is NOT a one-line repair and it is NOT shipped here on top of a measured hole.
+    """
+    py_named, node = [], []
+    for t in tracked_files(root):
+        if t.endswith(".py") or not os.path.isfile(os.path.join(root, t)):
+            continue
+        with open(os.path.join(root, t), errors="replace") as fh:
+            head = fh.read(4096)
+        first = head.split("\n", 1)[0]
+        if SHELL_SHEBANG.match(first):
+            continue
+        if PY_SHEBANG.match(first):
+            py_named.append(t)
+        elif NODE_LANE.search(head):
+            node.append(t)
+    lanes = shell_lanes(root)
+    opaque = sum(1 for t in lanes if not shell_sites(root, [t]))
+    return (f"{len(py_named)} tracked Python lane(s) the `*.py` glob cannot name "
+            f"({', '.join(sorted(py_named))}), {len(node)} tracked Node lane(s) "
+            f"(e.g. {', '.join(sorted(node)[:2]) or 'none'}), "
+            f"{opaque} of {len(lanes)} shell lanes yield no site (a FLOOR on what is unread, "
+            f"not a count of what is missing), and the AST resolver loses a directory "
+            f"(`HERE` -> \"\"): HANDMADE is a LOWER BOUND.")
+
+
+def verdict(h):
+    """THE FOUR VERDICTS, AS A FUNCTION. `--plant` drives THIS, not a transcription of it.
+
+    `gates/runner.py --plant`'s first version reached past its twelve cases into the helpers, and
+    breaking `preconditions`' branch left the plant GREEN -- a plant that cannot go red is the
+    class this file's own header is about. **THE DECISION IS ONE EXPRESSION AND IT LIVES HERE
+    ONCE**, so `clone_report()` and `plant_shell()` cannot drift into disagreeing about what
+    `HANDMADE` means.
+    """
+    hidden = bool(h["rule"] or h["sweep"])
+    return ("TRACKED" if h["n_tracked"] else "RESTORABLE" if not hidden
+            else "GENERATOR" if h["writers"] else "HANDMADE")
+
+
+def plant_shell(root=None):
+    """TWELVE DIRECTIONS AGAINST `clone_paths()` AND `verdict()` -- THE SHIPPED PAIR.
+
+    `gates/runner.py --plant` drives its twelve cases through the SHIPPED decision function, and
+    records why: its first version reached past them into the helpers, and breaking
+    `preconditions`' branch left the plant GREEN. **So every case here builds a tree, calls
+    `clone_paths()` -- which calls `verdict()` -- and reads the verdict back. None of them
+    re-implements the decision, and none of them reaches past it.**
+
+    The tree is a `TemporaryDirectory`, so `runs/` in THIS repository is never touched: **the one
+    rule about the live artefact set is that nothing may delete it, and the way to honour that is
+    not to write a test that does.** `runs/x` inside the temporary tree is the sweep-hidden target,
+    because `RESIDUE_ROOTS` is read out of the synthetic `checks/sweep.py` and a `git check-ignore`
+    in a non-repository answers nothing.
+
+    THE CASE THAT MATTERS MOST IS **B**, THE NEGATIVE CONTROL: the same tree with the create-verb
+    deleted. A plant of only positives cannot distinguish a working walk from a walk that returns
+    every path as written, which is the `gates/gates-pop.py` PLANT 6 defect in its other dress.
+    """
+    bad = []
+    with tempfile.TemporaryDirectory() as td:
+        r = Path(td)
+        (r / "checks").mkdir()
+        (r / "checks" / "sweep.py").write_text('RESIDUE_ROOTS = (".agents/slop", "runs")\n')
+        (r / "runs").mkdir()
+        (r / "runs" / "x").mkdir()  # the target EXISTS, so only the walk can decide it
+        lanes = {}
+        # A LANE THAT NAMES THE TARGET AND WRITES NOTHING, SO `runs/x` ALWAYS HAS A ROW. Without
+        # it a case that correctly finds no writer returns NO-ROW, and `NO-ROW` is not a verdict --
+        # **a census that cannot distinguish "absent from the population" from "in the population
+        # with no writer" is the `AGENTS.md` STALE case**, and a plant that returns NO-ROW for
+        # half its cases is not a plant.
+        lanes["reader"] = "checks/reader.py"
+        (r / "checks" / "reader.py").write_text(
+            'RUN = "runs/x"\n\ndef main():\n    print(RUN)\n\n'
+            "if __name__ == '__main__':\n    main()\n")
+
+        def lane(name, body):
+            lanes[name] = f"checks/{name}"
+            (r / "checks" / name).write_text(body)
+            return lanes[name]
+
+        # A -- a create-verb names the target. THE CASE THE WHOLE TASK EXISTS FOR.
+        lane("a.sh", "#!/bin/sh\nmkdir -p runs/x\n")
+        # B -- THE NEGATIVE CONTROL: same tree, verb deleted, so the answer MUST become HANDMADE.
+        lane("b.sh", "#!/bin/sh\n# mkdir -p runs/x\n")
+        # C -- the target arrives through a variable, so a walk that never dereferences misses it.
+        lane("c.sh", "#!/bin/sh\nD=runs\nmkdir -p \"$D/x\"\n")
+        # D -- the self-root idiom, which is `tools/get-bend.sh`'s exact shape and which a walk
+        #     that strips an unresolved `$ROOT` would either drop or truncate to `references/bend`.
+        lane("d.sh", '#!/bin/sh\nROOT=$(cd "$(dirname "$0")/.." && pwd)\nmkdir -p "$ROOT/runs/x"\n')
+        # E -- NO DOT IN THE NAME. `glob("*.sh")` cannot see this file, and `checks/bend` and
+        #     `bin/bend` are two live instances of the shape.
+        lanes["probe"] = "checks/probe"
+        (r / "checks" / "probe").write_text("#!/bin/sh\nmkdir -p runs/x\n")
+        # F -- A TARGET THAT DOES NOT EXIST MUST NOT BECOME A ROW. This is the `os.path.exists`
+        #     intersection, and it is what makes a permissive extractor sound.
+        lane("f.sh", "#!/bin/sh\nmkdir -p runs/never-created\n")
+        # G -- an ABSOLUTE PATH IS A SYSTEM PATH, not this tree's `bin/`.
+        lane("g.sh", "#!/bin/sh\nmkdir -p /tmp/plant-shell\n")
+        # H -- `>&2` IS A FILE DESCRIPTOR. A regex that reads it as a path writes a false row.
+        lane("h.sh", "#!/bin/sh\nmkdir -p runs/x\necho nope >&2\n")
+        # I -- A PLANT IS NOT A GENERATOR: a lane that writes into a temporary directory laundered
+        #     into `GENERATOR` once already, at `plant_writes()`'s own docstring.
+        lane("i.sh", '#!/bin/sh\nT=$(mktemp -d)\ncp runs/x "$T/y"\n')
+
+        cases = [
+            ("A a create-verb writes the target", ["a.sh"], "GENERATOR"),
+            ("B THE CONTROL: same tree, verb deleted", ["b.sh"], "HANDMADE"),
+            ("C a variable-resolved target", ["c.sh"], "GENERATOR"),
+            ("D the self-root $(cd $(dirname $0) idiom", ["d.sh"], "GENERATOR"),
+            ("E a shell lane with NO DOT in its name", ["probe"], "GENERATOR"),
+            ("G an absolute path is a SYSTEM path", ["g.sh"], "HANDMADE"),
+            ("H >&2 is a file descriptor, not a path", ["h.sh"], "GENERATOR"),
+            ("I cp SRC $TMP/DEST writes the DEST only", ["i.sh"], "HANDMADE"),
+            ("J an untracked lane is invisible", [], "HANDMADE"),
+        ]
+
+        def read_back(tracked_paths):
+            """`clone_paths()` THEN `verdict()` -- THE SHIPPED PAIR, never a transcription of it."""
+            return next((verdict(h) for h in
+                         clone_paths(root=r, tracked=[lanes["reader"]] + tracked_paths)
+                         if h["path"] == "runs/x"), "NO-ROW")
+
+        for label, ls, want in cases:
+            got = read_back([lanes[n] for n in ls])
+            ok = got == want
+            bad += [] if ok else [f"{label}: got {got}, wanted {want}"]
+            print(f"  {'OK  ' if ok else 'FAIL'}  {label:<46} -> {got}")
+
+        # F -- A TARGET THAT DOES NOT EXIST MUST NOT BECOME A ROW. This is the `os.path.exists`
+        #     intersection, and it is what makes a permissive extractor sound. The FIRST version of
+        #     this case asserted `runs/x` was `HANDMADE`, which was the WRONG CLAIM: `mkdir -p
+        #     runs/never-created` really does write INTO `runs`, so `GENERATOR` is the true
+        #     verdict for `runs`. The claim is about the ABSENT PATH, not about the existing one.
+        rows = [h["path"] for h in clone_paths(root=r, tracked=[lanes["reader"], lanes["f.sh"]])]
+        ok = "runs/never-created" not in rows
+        bad += [] if ok else ["F a nonexistent target produced a row"]
+        print(f"  {'OK  ' if ok else 'FAIL'}  {'F a nonexistent target produces NO row':<46} "
+              f"-> {'absent' if ok else 'PRESENT'}")
+
+        # K -- A `.py` LANE IS STILL FOUND. The shell walk was ADDED; had it REPLACED the AST walk
+        #     this row would be NO-ROW, and eleven green plants would then mean nothing.
+        (r / "checks" / "k.py").write_text(
+            "from pathlib import Path\n"
+            "def main():\n    (Path(__file__).parent / 'runs' / 'x').mkdir()\n"
+            "if __name__ == '__main__':\n    main()\n")
+        got = read_back(["checks/k.py"])
+        ok = got == "GENERATOR"
+        bad += [] if ok else [f"K a .py lane: got {got}, wanted GENERATOR"]
+        print(f"  {'OK  ' if ok else 'FAIL'}  {'K a .py lane is still found':<46} -> {got}")
+
+        # L -- THE POPULATION IS A SET OF LANES, NOT A LIST OF OCCURRENCES. `git ls-tree` cannot
+        #     repeat a path, so this is defensive -- and it is ASSERTED rather than assumed,
+        #     because `sites()` RETURNS A LIST and `clone_report()` prints `len(sites(root))` as
+        #     the census denominator, so a duplicate would silently inflate a printed number.
+        once = len(shell_lanes(r, tracked=[lanes["a.sh"]]))
+        twice = len(shell_lanes(r, tracked=[lanes["a.sh"]] * 3))
+        ok = once == twice == 1
+        bad += [] if ok else [f"L a lane listed 3 times yields {twice} lane(s), wanted 1"]
+        print(f"  {'OK  ' if ok else 'FAIL'}  {'L one lane listed 3 times is still one lane':<46} "
+              f"-> {once}=={twice}")
+    print(f"--plant-shell: {'12 directions OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    return 1 if bad else 0
+
+
 def main():
+    if "--plant-shell" in sys.argv:
+        return plant_shell()
     if "--plant" in sys.argv:
-        return plant()
+        return plant() or plant_shell()
     if "--clone" in sys.argv:
         return PASS if clone_report() else DEAD
     if "--all" in sys.argv:
