@@ -1,0 +1,35 @@
+A seed: keep.py HEAD 1bec7ddb2a9f gone.py HEAD c553f6708fb1
+S empty blob present in the object db: e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 (is the empty blob: True)
+S ls-files --debug after the byte patch:
+   keep.py
+   ctime: 1792165635:633227698
+   mtime: 1792165635:497612611
+   dev: 16777235	ino: 669294544
+   uid: 501	gid: 20
+   size: 8100	flags: 0
+S ls-files -s : 100644 e69de29bb2d1d6434b8b29ae775ad8c2e48c5391 0	keep.py
+S worktree on disk: 8100 bytes
+
+--- the real gate, run on A (clean) ---
+INDEX-ARM HEAD 3a2742e2edc7  TREE 2  INDEX 2
+INDEX-ARM SHAPES deletion=0 stale=0 foreign-add=0 intent-to-add=0
+INDEX-ARM INTENT detail: 0 paths, 0 bytes with content on disk; 2.50.1 (Apple Git-155), measured 2026-10-11 -- on this version a bare `git commit` REFUSES intent-to-add entries
+INDEX-ARM PASS: the index agrees with HEAD on all 2 paths. A bare `git commit` carries nothing it did not stage.
+--- the real gate, run on S (forged empty-blob entry, pre-commit) ---
+INDEX-ARM HEAD 3a2742e2edc7  TREE 2  INDEX 2
+INDEX-ARM SHAPES deletion=0 stale=1 foreign-add=0 intent-to-add=0
+INDEX-ARM EMPTIED (1 of the 1 stale): index holds the EMPTY blob with flags: 0 while HEAD holds content. A bare `git commit` writes a 0-byte file and rc=0. MEASURED in .agents/slop/armclass/plant-stat.py. keep.py
+INDEX-ARM INTENT detail: 0 paths, 0 bytes with content on disk; 2.50.1 (Apple Git-155), measured 2026-10-11 -- on this version a bare `git commit` REFUSES intent-to-add entries
+INDEX-ARM STALE (1): keep.py
+INDEX-ARM REFUSED, NOT A VERDICT: 1 path(s) a bare `git commit` acts on RIGHT NOW (0 deletion, 1 stale, 0 foreign addition). The tree is fine; the TOOL is pointed wrong.
+
+S bare `git commit` rc=0 stderr=''
+S HEAD:keep.py after = e69de29bb2d1  IS EMPTY BLOB = True
+S worktree after      = 8100 bytes on disk
+S log   = bc3750e bare
+3a2742e seed
+
+PLANT gate verdict A=PASS (want PASS=0)  S=REFUSED (want REFUSED=3)
+PLANT gate EMPTIED on S = ['keep.py']
+PLANT bare commit wrote the empty blob = True
+PLANT OK: the gate names the shape, A did not soften, and the shape is real.

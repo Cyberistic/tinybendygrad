@@ -32,6 +32,16 @@ FOUR SHAPES, ALL MEASURED, NONE GUESSED:
              visualjj branching server issues on its own. 350 such paths, 7.89 MB, live at
              HEAD 05aab2165 on 2026-10-11T02:04:42Z.
   STALE      the index has the path under a different blob than HEAD does.
+  EMPTIED    the index holds `e69de29b` for a path HEAD holds as non-empty, AND the entry is NOT
+             flagged intent-to-add (`git ls-files --debug` prints `flags: 0`, not `0x20004000`).
+             MEASURED 2026-10-16 on 12 paths here, and `.agents/slop/armclass/plant-stat.py`
+             FORGES that exact entry -- empty blob, stat cache still naming the worktree's real
+             size, flags clear -- because no `git` command produces it: `update-index --cacheinfo`
+             zeroes the stat cache, so git re-reads the file and the shape never happens by
+             accident. That plant bare-commits it: rc=0, and `HEAD:<path>` becomes the empty blob
+             while the worktree still holds its 8 KB. A STALE entry reverts a file; an EMPTIED
+             entry DELETES ITS CONTENTS. It is reported as a SUBSET of STALE, never as a
+             replacement, so no count here shrinks and no verdict softens.
   UNTRACKED  the path is in the index, absent from HEAD, and NOT at the empty blob -- i.e.
              somebody else's fully staged work is sitting in the shared index waiting for
              your `git commit`.
@@ -124,10 +134,33 @@ def census(root: Path, rev: str) -> dict:
     for p in sorted(set(idx) & set(tree)):            # SHAPE C: same path, different blob
         if idx[p][0] != tree[p]:
             stale.append(p)
+    # SHAPE C': a SUBSET of stale, split out because it is not the same accident. The intent test
+    # above cannot excuse these -- it is `index == EMPTY_BLOB` and these DO carry the empty blob
+    # while HEAD carries content. The discriminator is the intent-to-add flag, which only
+    # `ls-files --debug` reports, so it is measured rather than inferred.
+    emptied = [p for p in stale if idx[p][0] == EMPTY_BLOB and tree[p] != EMPTY_BLOB]
     return {
         "rev": rev, "n_index": len(idx), "n_tree": len(tree),
         "DELETION": deleted, "INTENT": intent, "FOREIGN": foreign, "STALE": stale,
+        "EMPTIED": emptied,
     }
+
+
+def not_intent_to_add(root: Path, paths: list[str]) -> list[str]:
+    """`git ls-files --debug` prints the intent-to-add bit in its `flags:` line. An ITA entry is the
+    INTENT shape and git 2.50.1 refuses it; only the UNFLAGGED ones are EMPTIED and destructive."""
+    if not paths:
+        return []
+    rc, out, err = git(root, "ls-files", "--debug", "--", *paths)
+    if rc != 0:
+        raise RuntimeError(f"ls-files --debug rc={rc}: {err.strip()}")
+    cur, flags = None, {}
+    for line in out.splitlines():
+        if not line.startswith("  "):
+            cur = line.strip()
+        elif line.strip().startswith("flags:"):
+            flags[cur] = int(line.split("flags:")[1].strip(), 16)
+    return [p for p in paths if flags.get(p, 0) & 0x4000 == 0]
 
 
 def destructive(c: dict) -> list[str]:
@@ -169,8 +202,15 @@ def report(root: Path, rev: str | None = None) -> tuple[int, dict]:
 
     kills = destructive(c)
     n_i, n_d, n_f, n_s = (len(c["INTENT"]), len(c["DELETION"]), len(c["FOREIGN"]), len(c["STALE"]))
+    emptied = not_intent_to_add(root, c["EMPTIED"])
     print(f"INDEX-ARM HEAD {rev[:12]}  TREE {c['n_tree']}  INDEX {c['n_index']}")
     print(f"INDEX-ARM SHAPES deletion={n_d} stale={n_s} foreign-add={n_f} intent-to-add={n_i}")
+    if emptied:
+        print(f"INDEX-ARM EMPTIED ({len(emptied)} of the {n_s} stale): index holds the EMPTY blob "
+              f"with flags: 0 while HEAD holds content. A bare `git commit` writes a 0-byte file "
+              f"and rc=0. MEASURED in .agents/slop/armclass/plant-stat.py. "
+              + ", ".join(emptied[:10])
+              + (f", ... and {len(emptied) - 10} more" if len(emptied) > 10 else ""))
     print(f"INDEX-ARM INTENT detail: {n_i} paths, {disk_bytes(root, c['INTENT'])} bytes with content "
           f"on disk; {GIT_VERSION}")
 

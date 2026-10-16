@@ -1,0 +1,100 @@
+# blob_sha selfcheck on .agents/TODO.md: 754619071c2af7a28fa4f1726680020879a03ab9 == 754619071c2af7a28fa4f1726680020879a03ab9 -> True
+# HEAD eae9ccb53f1a  TREE 7347  INDEX 7968  ARMED 32
+# SHAPE     ON-DISK    SIZE  IN-HEAD        IN-INDEX       ON-DISK-BLOB   VERDICT
+deletion  yes        5821  7b69c9c57b13   -none-         7b69c9c57b13   PROVABLE-WRONG  .agents/slop/tensor-mutate.py
+deletion  yes       18662  4dbd703f008c   -none-         4dbd703f008c   PROVABLE-WRONG  .agents/slop/zero-classify.py
+deletion  yes        1020  d19bd7f38016   -none-         d19bd7f38016   PROVABLE-WRONG  gates/ag-fixture.h
+stale     yes     1330984  754619071c2a   8abacc58e14c   754619071c2a   PROVABLE-WRONG  .agents/TODO.md
+stale     yes      634310  6cfb51392271   ba87ab3dfe46   6cfb51392271   PROVABLE-WRONG  checks/unrunnable-recipes.rows
+stale     yes       15519  c8746524bbf6   a6729d4e1968   c8746524bbf6   PROVABLE-WRONG  gates/README.md
+stale     yes        2110  5a6f43d3f491   e69de29bb2d1   5a6f43d3f491   PROVABLE-WRONG  gates/autogen-oracle.py
+stale     yes       20941  23477d24d6b9   e69de29bb2d1   23477d24d6b9   PROVABLE-WRONG  gates/datasets-mutate.py
+stale     yes        5318  eb05b1274b00   e69de29bb2d1   eb05b1274b00   PROVABLE-WRONG  gates/datasets-oracle.py
+stale     yes        3564  591def1f21f4   e69de29bb2d1   591def1f21f4   PROVABLE-WRONG  gates/ops_bend_exec-e2e.py
+stale     yes       40460  ac9578adfb34   e69de29bb2d1   ac9578adfb34   PROVABLE-WRONG  gates/oracle-census-gate.py
+stale     yes       17567  6e381834250e   e69de29bb2d1   6e381834250e   PROVABLE-WRONG  gates/qcom-oracle.py
+stale     yes        2449  521e8bf54da3   e69de29bb2d1   521e8bf54da3   PROVABLE-WRONG  gates/qcom_cache-oracle.py
+stale     yes        8870  8e276c93dff2   e69de29bb2d1   8e276c93dff2   PROVABLE-WRONG  gates/qcom_stage3-oracle.py
+stale     yes        1206  6918677560a8   e69de29bb2d1   6918677560a8   PROVABLE-WRONG  gates/runner-cost.rows
+stale     yes       33208  e36cdafe4780   e69de29bb2d1   e36cdafe4780   PROVABLE-WRONG  gates/runner.py
+stale     yes       20580  0cb0818c9272   e69de29bb2d1   0cb0818c9272   PROVABLE-WRONG  gates/tc_ptx_render-oracle.py
+stale     yes       12832  977591e59db1   e69de29bb2d1   977591e59db1   PROVABLE-WRONG  gates/worker-mutate.py
+stale     yes       95673  1bef7025b654   aaaf411c9bf2   1bef7025b654   PROVABLE-WRONG  tinybendygrad/codegen/late/linearizer.bend
+stale     yes      112407  5e5be858a822   723d35117196   5e5be858a822   PROVABLE-WRONG  tinybendygrad/engine/realize.bend
+stale     yes       34495  8dc9d1ee9028   07b21f6d2f64   8dc9d1ee9028   PROVABLE-WRONG  tinybendygrad/engine/worker.bend
+stale     yes      131232  b177e7bcb280   32974424b650   b177e7bcb280   PROVABLE-WRONG  tinybendygrad/helpers.bend
+stale     yes       58494  8325c6e9b3da   8e9d64bcca19   8325c6e9b3da   PROVABLE-WRONG  tinybendygrad/mixin/creation.bend
+stale     yes       24378  122d12029990   ca29faaccb1d   122d12029990   PROVABLE-WRONG  tinybendygrad/mixin/reduce.bend
+stale     yes       25323  da34cdbe4fc3   7ca1ec646f58   da34cdbe4fc3   PROVABLE-WRONG  tinybendygrad/nn/datasets.bend
+stale     yes       68515  3a37fb70aa6e   f12078c51770   3a37fb70aa6e   PROVABLE-WRONG  tinybendygrad/renderer/ptx.bend
+stale     yes       62869  85a18276cc06   5ea5c4dc05c6   85a18276cc06   PROVABLE-WRONG  tinybendygrad/renderer/tc.bend
+stale     yes      150864  4c0962242967   a177a5326f92   4c0962242967   PROVABLE-WRONG  tinybendygrad/runtime/ops_bend.bend
+stale     yes      122042  5a231a0ef153   6b8569df73b7   5a231a0ef153   PROVABLE-WRONG  tinybendygrad/runtime/ops_disk.bend
+stale     yes      196541  5621d1cee34c   8f853dc5b8d0   5621d1cee34c   PROVABLE-WRONG  tinybendygrad/runtime/ops_qcom.bend
+stale     yes       66285  7b3b2be005de   c260402cf3ee   7b3b2be005de   PROVABLE-WRONG  tinybendygrad/runtime/support/autogen.bend
+stale     yes      161523  c42706f72bf3   a12fe1404bb3   c42706f72bf3   PROVABLE-WRONG  tinybendygrad/tensor.bend
+
+PROVABLE-WRONG  deletion  .agents/slop/tensor-mutate.py
+                 -> index=-none- exists in NO current witness; HEAD=7b69c9c57b13 disk=7b69c9c57b13
+PROVABLE-WRONG  deletion  .agents/slop/zero-classify.py
+                 -> index=-none- exists in NO current witness; HEAD=4dbd703f008c disk=4dbd703f008c
+PROVABLE-WRONG  deletion  gates/ag-fixture.h
+                 -> index=-none- exists in NO current witness; HEAD=d19bd7f38016 disk=d19bd7f38016
+PROVABLE-WRONG  stale     .agents/TODO.md
+                 -> index=8abacc58e14c exists in NO current witness; HEAD=754619071c2a disk=754619071c2a
+PROVABLE-WRONG  stale     checks/unrunnable-recipes.rows
+                 -> index=ba87ab3dfe46 exists in NO current witness; HEAD=6cfb51392271 disk=6cfb51392271
+PROVABLE-WRONG  stale     gates/README.md
+                 -> index=a6729d4e1968 exists in NO current witness; HEAD=c8746524bbf6 disk=c8746524bbf6
+PROVABLE-WRONG  stale     gates/autogen-oracle.py
+                 -> index is the EMPTY blob; HEAD=5a6f43d3f491 disk=5a6f43d3f491
+PROVABLE-WRONG  stale     gates/datasets-mutate.py
+                 -> index is the EMPTY blob; HEAD=23477d24d6b9 disk=23477d24d6b9
+PROVABLE-WRONG  stale     gates/datasets-oracle.py
+                 -> index is the EMPTY blob; HEAD=eb05b1274b00 disk=eb05b1274b00
+PROVABLE-WRONG  stale     gates/ops_bend_exec-e2e.py
+                 -> index is the EMPTY blob; HEAD=591def1f21f4 disk=591def1f21f4
+PROVABLE-WRONG  stale     gates/oracle-census-gate.py
+                 -> index is the EMPTY blob; HEAD=ac9578adfb34 disk=ac9578adfb34
+PROVABLE-WRONG  stale     gates/qcom-oracle.py
+                 -> index is the EMPTY blob; HEAD=6e381834250e disk=6e381834250e
+PROVABLE-WRONG  stale     gates/qcom_cache-oracle.py
+                 -> index is the EMPTY blob; HEAD=521e8bf54da3 disk=521e8bf54da3
+PROVABLE-WRONG  stale     gates/qcom_stage3-oracle.py
+                 -> index is the EMPTY blob; HEAD=8e276c93dff2 disk=8e276c93dff2
+PROVABLE-WRONG  stale     gates/runner-cost.rows
+                 -> index is the EMPTY blob; HEAD=6918677560a8 disk=6918677560a8
+PROVABLE-WRONG  stale     gates/runner.py
+                 -> index is the EMPTY blob; HEAD=e36cdafe4780 disk=e36cdafe4780
+PROVABLE-WRONG  stale     gates/tc_ptx_render-oracle.py
+                 -> index is the EMPTY blob; HEAD=0cb0818c9272 disk=0cb0818c9272
+PROVABLE-WRONG  stale     gates/worker-mutate.py
+                 -> index is the EMPTY blob; HEAD=977591e59db1 disk=977591e59db1
+PROVABLE-WRONG  stale     tinybendygrad/codegen/late/linearizer.bend
+                 -> index=aaaf411c9bf2 exists in NO current witness; HEAD=1bef7025b654 disk=1bef7025b654
+PROVABLE-WRONG  stale     tinybendygrad/engine/realize.bend
+                 -> index=723d35117196 exists in NO current witness; HEAD=5e5be858a822 disk=5e5be858a822
+PROVABLE-WRONG  stale     tinybendygrad/engine/worker.bend
+                 -> index=07b21f6d2f64 exists in NO current witness; HEAD=8dc9d1ee9028 disk=8dc9d1ee9028
+PROVABLE-WRONG  stale     tinybendygrad/helpers.bend
+                 -> index=32974424b650 exists in NO current witness; HEAD=b177e7bcb280 disk=b177e7bcb280
+PROVABLE-WRONG  stale     tinybendygrad/mixin/creation.bend
+                 -> index=8e9d64bcca19 exists in NO current witness; HEAD=8325c6e9b3da disk=8325c6e9b3da
+PROVABLE-WRONG  stale     tinybendygrad/mixin/reduce.bend
+                 -> index=ca29faaccb1d exists in NO current witness; HEAD=122d12029990 disk=122d12029990
+PROVABLE-WRONG  stale     tinybendygrad/nn/datasets.bend
+                 -> index=7ca1ec646f58 exists in NO current witness; HEAD=da34cdbe4fc3 disk=da34cdbe4fc3
+PROVABLE-WRONG  stale     tinybendygrad/renderer/ptx.bend
+                 -> index=f12078c51770 exists in NO current witness; HEAD=3a37fb70aa6e disk=3a37fb70aa6e
+PROVABLE-WRONG  stale     tinybendygrad/renderer/tc.bend
+                 -> index=5ea5c4dc05c6 exists in NO current witness; HEAD=85a18276cc06 disk=85a18276cc06
+PROVABLE-WRONG  stale     tinybendygrad/runtime/ops_bend.bend
+                 -> index=a177a5326f92 exists in NO current witness; HEAD=4c0962242967 disk=4c0962242967
+PROVABLE-WRONG  stale     tinybendygrad/runtime/ops_disk.bend
+                 -> index=6b8569df73b7 exists in NO current witness; HEAD=5a231a0ef153 disk=5a231a0ef153
+PROVABLE-WRONG  stale     tinybendygrad/runtime/ops_qcom.bend
+                 -> index=8f853dc5b8d0 exists in NO current witness; HEAD=5621d1cee34c disk=5621d1cee34c
+PROVABLE-WRONG  stale     tinybendygrad/runtime/support/autogen.bend
+                 -> index=c260402cf3ee exists in NO current witness; HEAD=7b3b2be005de disk=7b3b2be005de
+PROVABLE-WRONG  stale     tinybendygrad/tensor.bend
+                 -> index=a12fe1404bb3 exists in NO current witness; HEAD=c42706f72bf3 disk=c42706f72bf3
