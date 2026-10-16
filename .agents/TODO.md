@@ -16078,9 +16078,10 @@ subject) and the second time in this one file, after its `0:ADD:2,1` canonical-f
 
 - [ ] **`t_sink` WAS RECORDED AS A REAL DIVERGENCE BY ME, TWICE, AND IT WAS NEITHER.**
       `symbolic.py:445-449`'s `UPat((Ops.SINK, Ops.GROUP), name="root")` **FLATTENS A GROUP SRC OUT OF
-      A SINK**. `symbolic.bend:1555`'s `sym_12.hit` LOOKS LIKE IT ALREADY DOES --
+      A SINK**. `tinybendygrad/uop/symbolic.bend:1558`'s `sym_12.hit` (the `flatten_u32` call is `:1559`) LOOKS
+        LIKE IT ALREADY DOES --
       `H.flatten_u32(sink_srcs.go(sy_srcs(x, u), x, Nil{}))` -- **SO EITHER SOMETHING ELSE MINTS THE
-      NOOP OR `sym_12.pat` NEVER FIRES ON THIS SHAPE.** `symbolic.bend:3221`'s OWN `row("sink", ...)`
+      NOOP OR `sym_12.pat` NEVER FIRES ON THIS SHAPE.** `tinybendygrad/uop/symbolic.bend:3292`'s OWN `row("sink", ...)`
       IS ON `fx_sink`, **A THREE-SRC ROOT THE FIVE-ROW CORPUS DID NOT REPRODUCE UNTIL THE FRAME-STACK
       REPAIR -- SO THE PORT'S OWN 57 GATE ROWS NEVER SAW THIS SHAPE EITHER.** That is why the file's
       gate passes while the corpus row fails, and it is `ptx.bend`'s ALIAS DEFECT EXACTLY: all 25 of
@@ -16141,8 +16142,10 @@ codegen/decomp` = 0.**
 
 - [x] **`A5` IS A DEAD ARM, CONFIRMED BY REACHABILITY AND NOT BY INSPECTION.** `sel==1 AND
       dd_is_bool(xdt)` = **0 OF 400 CELLS**; `sel==1` HOLDS ON 24, `isb` ON 20, AND **THOSE 20 CARRY
-      `sel IN {0:3, 2:7, 3:10}` -- NEVER 1**. `dtype.bend:644-648` NAMES A BOOL TRIGGER AT `:647` THAT
-      ITS OWN SELECTOR EXCLUDED; `grep -c dd_cast_bool` = 1 CALL SITE (`:626`) -> `l2i_cast1.quo` ->
+      `sel IN {0:3, 2:7, 3:10}` -- NEVER 1**. **`tinybendygrad/codegen/decomp/dtype.bend:644-648` NAMES NO BOOL TRIGGER AT ALL** -- a
+      line-number citation that reproduced under NO reading, found false by the `claimaudit`
+      unit and verified here -- and the arm that actually consults one,
+      `Bool.or(dd_is_bool(xdt), dd_is_uint(xdt))`, is at **`:664`**; `grep -c dd_cast_bool` = 1 CALL SITE (`:626`) -> `l2i_cast1.quo` ->
       `l2i_cast.got case 1` (`:665`). **THE COMMENT AND THE CODE DISAGREE, AND THE CODE IS RIGHT.**
 - [x] **`A13`/`uq` CLOSED**: `A13` MOVES **1** ROW (`uq`) WITH BARE **0**; `up` HAS NO BITCAST (THE FOLD
       FIRES) AND `uq` CARRIES `BITCAST/1[u32]`. **THE VALUE AXIS AND THE FOLD AXIS ARE NOW SEPARATE.**
