@@ -389,12 +389,12 @@ ledgerdrift [#####.....] 1/3      DISPATCHED UNIT 2026-10-15. `.agents/TOOLS.md`
                                        stated plainly:** `TOOLS.md`'s header says 164/169/85; its own
                                        generator's `toolsledger/paths.tsv` says 160/173/96; `AGENTS.md`
                                        says 153/180. **AND THE GENERATOR ITSELF IS A WRONG INSTRUMENT**:
-                                       `extract.py:29-32` resolves every token against ONE base (the repo
+                                       `.agents/slop/toolsledger/extract.py:29-32` resolves every token against ONE base (the repo
                                        root), but the ledger does not write paths from the root
                                        (`uop/ops.bend` means `tinybendygrad/uop/ops.bend`), so re-running
                                        it as written keeps reporting drift that IS NOT DRIFT. The unit
                                        resolved by DISCOVERY instead and **REFUSED to reproduce
-                                       164/169** (`extract.py:18` read the git INDEX and no 2026-10-07
+                                       164/169** (`.agents/slop/toolsledger/extract.py:18` read the git INDEX and no 2026-10-07
                                        index exists), reporting 165/168 from `git ls-tree` instead.
                                        Three "instruments" (`bc-oracle.py`, `graphcmp.py`, `wt-sync.sh`)
                                        were **DEMOTED to stale locations** -- basename collisions, the
@@ -409,7 +409,7 @@ shapecensus [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 instruments 
                                        `gates-pop.py HOMES` (an AST measurement at `:1504`),
                                        `verdicts.py PROSE` (my 2026-10-15 fix, confirmed present).
                                        **STILL PRESENT: `artefacts_ok()`'s `present` arm is
-                                       `D.glob("*.txt")` at `differ.py:1117`** even though
+                                       `D.glob("*.txt")` at `checks/differ.py:1131`** even though
                                        `MISSING`/`UNEXPECTED` now run off `declared()` -- **the same
                                        population, two mechanisms, in one function.** The unit also
                                        caught `gates/rng_graph_census-gate.py:104-106` **commenting
@@ -429,7 +429,7 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        exit codes** across the 86 instruments that can produce a literal
                                        one -- `0 1 2 3 4 5 126 127` -- and `VERDICT` names FIVE.
                                        **UNOWNED: 20 rows / 18 instruments.** Code `2` on 18 is the
-                                       argparse/USAGE class, REPORTED not called a bug (`dup-gate.py:362`
+                                       argparse/USAGE class, REPORTED not called a bug (`checks/dup-gate.py:362`
                                        records the decision and its plant is LIVE); **9 import argparse,
                                        9 do NOT** -- the other 9 choose `2` themselves, two of them at
                                        MODULE SCOPE as a REFUSED shape. `126`/`127` are UNOWNED in
@@ -441,7 +441,7 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        exits **1**, so to `$?` all 57 read as an honest `FAIL` and the
                                        only witness is a sentence invented at the call site. It also
                                        CORRECTED MY OWN CITATION: the unassigned branch of
-                                       `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
+                                       `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
 rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledgerdrift`), and it is
@@ -473,7 +473,7 @@ rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledge
                                        can be RE-TAKEN (a live `bend` lane) or must be REFUSED
                                        permanently, and whether the oracle is recoverable from git.
 
-artefacts-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` unit. `differ.py`'s
+artefacts-pop [#########] 3/3     FIXED 2026-10-15, found by the `shapecensus` unit. `checks/differ.py:1131`'s
                                        `artefacts_ok()` had **ONE POPULATION DECLARED TWO WAYS**:
                                        `MISSING` ran off `declared()` after an earlier fix, and
                                        `present = {p.name for p in D.glob("*.txt")}` still answered
