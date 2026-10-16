@@ -16086,6 +16086,53 @@ subject) and the second time in this one file, after its `0:ADD:2,1` canonical-f
       gate passes while the corpus row fails, and it is `ptx.bend`'s ALIAS DEFECT EXACTLY: all 25 of
       its own fixtures put the aliased node at index 0.
 
+## INDEXREADQ-RESOLVED -- THE TWO GENUINE ONES FIXED, AND THE ADMISSION MECHANISM **BUILT, MEASURED, AND DECLINED** (2026-10-16)
+
+`8f2ea1df3` (2 files, +3 -2) plus the negative result, which is the part worth keeping.
+
+- [x] **THE INVENTORY WAS STALE: 13 NEW, NOT 7.** AFTER THE FIX `POPULATION 1826  OFFENDERS 78
+      BASELINE 68 NEW 11`; **13 BEFORE**. ALL 13 CLASSIFIED: **4 GENUINE, 9 CUSTODIANS.**
+- [x] **BOTH GENUINE ONES CONVERTED, FOLLOWING THE IN-TREE PRECEDENT VERBATIM.**
+      `checks/slop-declare.py:139-148`'s `tracked()` IS `git ls-tree -r -z --name-only HEAD`, AND ITS
+      DOCSTRING **ALREADY NAMES `orcdecide` BY NAME** (`:143`) -- IT HAD CONVERTED ITSELF AND THESE TWO
+      HAD NOT. **MEASURED BOTH STORES IN THE SAME MINUTE:**
+          `git ls-files` (default index, jj-armed)          **7819**
+          `git ls-files` (`GIT_INDEX_FILE=.git/agent-index`)  7290
+          `git ls-tree -r HEAD` (commit tree)                 **7290**
+      **THE OLD POPULATION WAS 529 PATHS WIDER THAN THE COMMIT** -- ALL UNDER `.agents/slop/`, ALL
+      CARRYING INDEX BLOB `e69de29b`, JJ'S INTENT-TO-ADD EMPTY-BLOB PLACEHOLDER.
+- [ ] **AND TWO MORE GENUINE ONES THE BRIEF DID NOT NAME.** `.agents/slop/sweepdirs/delset.py:55`
+      TAKES ITS **NAMES** FROM `ls-files` AND ITS **TEXTS** FROM `git cat-file --batch` FED `HEAD:{n}`
+      -- **THE EXACT "INDEX FOR THE DENOMINATOR, TREE FOR THE TEXT" SPLIT `repro-paths.py` HAD.** AND
+      `.agents/slop/sweepdirs/census.py:36` USES `tracked()` AS THE POPULATION FOR 3 OF ITS 4 SCOPES.
+      BOTH REPORTED, NOT EDITED.
+- [ ] **THE ADMISSION MECHANISM WAS BUILT AND IT MISCLASSIFIES IN BOTH DIRECTIONS, SO IT WAS NOT
+      SHIPPED.** THE PREDICATE: **`C1 EMITS`** (a tainted name reaches an f-string/print) **OR
+      `C2 SYNTHETIC`** (git cwd != ROOT) **OR `C3 SECOND-STORE`** (the file itself invokes `ls-tree`).
+      **FALSE ADMISSION: `sweepdirs/census.py`, A GENUINE DEFECT, -> `CUSTODIAN EMITS`** (name-based
+      taint crosses scopes). **AND 13 UNVERIFIED ADMISSIONS FROM THE PINNED BASELINE**, INCLUDING
+      `checks/sweep.py`, `checks/wallcheck.py` AND `gates/msgdiff-gate.py` -- **FILES ON THE
+      DO-NOT-TOUCH LIST. SHIPPING IT WOULD RETROACTIVELY GRANT IMMUNITY TO 13 PRE-EXISTING OFFENDERS
+      THAT NO UNIT HAS AUDITED. THAT IS WEAKENING BY ANOTHER NAME.**
+- [ ] **A TIGHTENING WAS ALSO DECLINED.** CHARGE A LITERAL ONLY IF IT REACHES A **NON-REGEX `Call`**:
+      THAT DROPS 3 OF 78, BUT **ONE IS A FALSE DROP** -- `gitignore/perdir.py:12` BUILDS
+      `cmd = ["git","ls-files","-z"]` THEN `subprocess.run(cmd)`, AND A VARIABLE INDIRECTION DEFEATS THE
+      PARENT-WALK. **TWO PRECISION GAINS BOUGHT WITH A CORRECTNESS LOSS IN THE DIRECTION THAT MATTERS.**
+- [x] **THE GATE WAS NOT WEAKENED, NOT BASELINED, NOT TAUGHT TO SKIP.** STILL `RC=1 FAIL`.
+- [ ] **AND A NEW FALSE POSITIVE, MEASURED BY ME: THE GATE PRINTS `gone checks/repro-paths.py` WHILE
+      THE FILE IS IN THE WORKTREE, IN HEAD, AND IN THE INDEX.** `:261` IS
+      `for rel in sorted(base - set(found))` -- **THE BASELINE WAS WRITTEN AGAINST THE INDEX WHILE
+      `found` IS A WALK OF THE COMMITTED TREE, SO JJ'S 529 PLACEHOLDERS PUT PATHS IN `base` THAT THE
+      TREE WALK NEVER SEES. A BASELINE IS A SNAPSHOT OF A STORE, AND THIS ONE MIXED TWO.**
+- [ ] **WHAT THE GATE STILL CANNOT SEE, AND IT CANNOT BE BRIDGED BY A RULE VALIDATED HERE:** AN INDEX
+      READ ROUTED THROUGH A VARIABLE (`perdir.py`); A PATTERN THAT MERELY NAMES A FORM
+      (`indextree/census.py` IS CHARGED FOR A **DICT KEY** AND A `re.compile`); **AND THE REAL LIMIT --
+      IT CANNOT TELL A CUSTODIAN FROM A DEFECT AT ALL. ITS CHARGE IS SYNTACTIC; ITS CLAIM IS
+      SEMANTIC.** CLOSING THAT NEEDS A HUMAN ACCEPTANCE PER FILE OR A DATAFLOW ANALYSIS NOT SHOWN
+      SOUND ON THIS POPULATION. `pinindep/redundancy.py` IS A GENUINE GREY: `git ls-files <one path>`
+      -> `bool()` -> PRINTED -- A POINT PREDICATE, NOT A POPULATION, AND THE GATE HAS NO THIRD CATEGORY
+      FOR IT.
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
