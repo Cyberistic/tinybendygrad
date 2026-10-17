@@ -19346,6 +19346,54 @@ RSS, **NO `bend` PROCESS RUN**, `ruff` CLEAN.
 - [x] **AND `tn_minimum-gate.py` IS STILL **rc=1** (`extra_in_port=['FLIP','GROUP']`) **UNCHANGED BECAUSE NOTHING
       LANDED. NO PIN MOVED.** PEAKS **567 / 600 / 456 MB**, **1-3 s** EACH, ONE `bend` AT A TIME.
 
+## AXISFLIP -- **THE GATE's ROWS WERE ***STRUCTURALLY BLIND*** TO THE VERY AXIS UNDER TEST** (2026-10-17)
+
+`tinygrad/` UNTOUCHED AND BYTE-IDENTICAL TO `upstream`. **`axisflip-gate` rc=0, `groupflip-gate` rc=0 WITH PINS
+UNCHANGED (VERIFIED BY THE CALLER).**
+
+- [x] **AND ***`shape[0]` IS SPECIAL IN THE ***PORT***, NOT IN UPSTREAM*** -- WHICH EXPLAINS WHY `axis==0` IS THE
+      ***DEGENERATE*** CASE. UPSTREAM `movement.py:256-259` TAKES `x.shape[1:]` WHERE **`x = ret.transpose(0,
+      axis)`**, AND `transpose` (`:356-358`) SWAPS DIMS **0** AND `axis`, **SO `x.shape[j] = ret.shape[ord0[j]]`
+      WITH `ord0 = [axis,1,…,axis-1,0,axis+1,…]`, HENCE `x.shape[1:]` IS `sh` ***WITH DIM `axis` REMOVED***.**
+      ***UPSTREAM NEVER NAMES DIM **0***. THE PORT READ `mxw_dims_of(ret)[1:]` (`movement.bend:1675`), WHICH
+      ***DROPS DIM **0** AND ***KEEPS*** DIM `axis`*** -- **SO THE TWO LISTS AGREE IFF
+      `shape[0]==shape[axis]`, AND FOR `axis==0` ***THEY ARE THE SAME STATEMENT***.**
+- [x] **AND WHICH OF THE THREE UNPORTED UPSTREAM BEHAVIOURS BITES ON A NON-ZERO AXIS: ***NONE OF THEM*****, MEASURED
+      ONE BY ONE -- `_resolve_dim` IS **THE IDENTITY FOR `dim >= 0`**; THE `dedup` REFUSAL IS **A FUNCTION OF
+      THE AXIS LIST's ***LENGTH***, NOT ITS VALUES**; AND `resolve(…)`/`m = n+2` IS **DEAD BEHIND THE `n <= 1`
+      GUARD FOR ***EVERY*** AXIS**, **AND `mxf_compose` HAS NO `n+2` TERM AT ALL.** ***SO NONE OF THE THREE WAS
+      THE CAUSE, AND GUESSING WOULD HAVE COST A FIX.***
+- [ ] **AND ***THE MOST IMPORTANT FINDING: A NEW BASE ALONE WOULD ***NOT*** HAVE CLOSED THE GATE***, BECAUSE
+      **EVERY ROW CARRYING A ***COUNT / ROOT OP / NSRC / SRC-OP SEQUENCE*** WAS ***BYTE-IDENTICAL ACROSS THE
+      FIX*** WHILE ***THE SHAPE*** MOVED** (`ctl_a1` `33 Ops.PERMUTE/1 Ops.RESHAPE` IDENTICAL; `ctl_a1x2` `47`
+      IDENTICAL; `cut_flip01_above_base` **28** IDENTICAL; `shape_a1` `4,4,8,8` -> **`1,4,8,8`**).
+      ***SO THE ROWS THAT CERTIFY `flip` ***CANNOT SEE THE AXIS*** -- ***NONE OF THEM CARRIED A SHAPE.****
+      **AND A NEW BASE IS **NEEDED AND CONSTRAINED**: `256 = 2^8`, AND THE PARTITIONS OF **8** INTO **FOUR**
+      POSITIVE PARTS ARE `{5,1,1,1} {4,2,1,1} {3,3,1,1} {2,2,2,2}` -> ***EVERY ONE REPEATS A DIM***, **SO NO
+      RANK-4 BASE OF FOUR ***DISTINCT*** DIMS EXISTS AT **256**.** `(2,4,4,8)` IS THE BEST AVAILABLE;
+      `(4,4,4,4)` **IS BLIND ON ***EVERY*** AXIS**, AND `(1,4,8,8)` HAS A SIZE-**1** AXIS **0** THAT `:255`
+      SKIPS.
+- [x] **AND THE GATE CARRIES ITS ***OWN BLINDNESS GUARD AS A COMPARED ROW, NOT A COMMENT*** (VERIFIED BY THE
+      CALLER: `gates/axisflip-gate.py:23` SAYS SO, AND `:46`'s `ROWS` **INCLUDES `"axis1"`**):
+      **IT PRINTS `base.shape[1:]` AGAINST `base.transpose(0,1).shape[1:]` -- ***THE TWO LISTS THE DEFECT IS
+      ABOUT*** -- **WHICH READS `4,4,8` vs `2,4,8` HERE AND WOULD READ `4,4,4` vs `4,4,4` ON A CUBE, ***TURNING
+      THE GATE RED WITH EVERY OTHER ROW GREEN***.** ***A GATE THAT PROVES IT ***CAN*** SEE WHAT IT CLAIMS TO SEE,
+      AS A ROW, IS THE DIFFERENCE BETWEEN A GREEN GATE AND A ***USEFUL*** ONE.***
+- [x] **AND THE FIX IS ***ONE EXPRESSION***, NO NEW WALK** -- `movement.bend:1686`:
+      `+crop = List.drop(&2, U32, mxm_pick_all(sh, ord0), 1n)` (`ord0` WAS ALREADY BOUND, AND
+      `mxm_pick_all(sh, ord0)` ***IS*** `x.shape`). **VERIFIED: `flip([0])`/`flip([1])`/`flip([2])`/`flip([0,1])`
+      ALL NOW ANSWER CPython's SHAPES, WHERE BEFORE ONLY `flip([0])` DID.**
+- [x] **AND IT DID **NOT** FIX A **PRINTER**: *"NO ROW, PIN, OR EXPECTATION WAS TOUCHED; `groupflip`'s ROWS AND PINS
+      ARE BYTE-IDENTICAL. `axisflip`'s `n=` WAS MADE ***COMPARABLE*** (PER-SIDE CUT), **NOT** MADE TO AGREE."***
+- [x] **AND `axisflip-gate`'s ***FIRST*** RUN WAS ***FAIL rc=1*** ON AN ***ABSOLUTE*** `n=`** (CPython **10** vs
+      PORT **9** ON THE BASE ROW -- THE KNOWN `ParamArg.size` BUFFER DIVERGENCE); **THE CUT FIXED IT.** ***SO THE
+      GATE WAS BUILT AND IT **FAILED HONESTLY** ON THE FIRST RUN, WHICH IS WHAT THE CUT IS FOR.***
+- [ ] **AND TWO STALE-PROSE CLEAN-UPS: `gates/mx_graph_census.bend:93-109` STILL NAMES **`movement.bend` *AND*
+      `uop/ops.bend`** AS OWNING THE DEFECT -- ***ONLY `movement.bend` HAD IT, AND `ops.bend` NEEDED NOTHING*** --
+      **OUT OF GRANT. AND **`flip([1,1])`: UPSTREAM ***RAISES*** (`dedup`), THE PORT ***FLIPS TWICE***; UNTESTED
+      EITHER WAY**, AND `ctl_a1x2` WAS **BYTE-IDENTICAL ACROSS THE FIX, SO THE FIX ***NEITHER HELPED NOR HARMED
+      IT***.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
