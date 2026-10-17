@@ -1546,44 +1546,169 @@ def mxw_shrink(+t: T.Tensor, +offs: List<&2, U32>, +sizes: List<&2, U32>) -> T.T
   +made = mxw_shrink.go(t, offs, sizes)
   mxw_pick(mxw_same(T.Tensor.ar(made), T.Tensor.u(made), T.Tensor.u(t)), t, made)
 
-# --- flip (movement.py:233-254) ---------------------------------------------
-# `flip_arg = tuple([i in axis_arg for i in range(len(self.shape))])` and
-# `return self._mop(Ops.FLIP, arg=flip_arg) if any(flip_arg) else self`. FLIP's arg is
-# the FLAG LIST in the `ABoolList` -- `O.bools_of(flags)` is the `i in axis_arg` half and
-# it is NOT a STACK of CONSTs, so the node has ONE src -- the
-# row `flip` prints `nsrc=1 srcops=<the op above>` and a two-src flip would be a
-# different op.
-def mxw_flip_new(+t: T.Tensor, +flags: List<&2, U32>) -> O.Found:
-  O.UOp.new(T.Tensor.ar(t), O.OpsFLIP{}, [T.Tensor.u(t)], O.ABoolList{O.bools_of(flags)}, O.TNone{})
-
-# `+t` BECAUSE `mxw_flip_new(t, flags)` IS CALLED TWICE and `T.Tensor` is a `Data`
-# record so `+` is a refcount rather than a copy. `O.UOp.new` is pure given its arena
-# (the arena carries the intern table) so the two calls find the same node -- the same
-# trade as `mxw_stk` and `mxw_pairs_node2`, and the third time in this file.
-def mxw_flip.put(+t: T.Tensor, +flags: List<&2, U32>) -> T.Tensor:
-  T.tn_new(O.Found.ar(mxw_flip_new(t, flags)), O.Found.i(mxw_flip_new(t, flags)))
-
-# `any(flip_arg)` IS `not (every flag is 0)`, and it is the identity test here -- there
-# is NO shape comparison, because a FLIP does not change the shape. That is worth saying
-# because it is the one movement wrapper whose identity test is not `mxw_same`, and a
-# gate that assumed otherwise would not see a FLIP dropped.
+# --- flip (movement.py:233-267) ---------------------------------------------
+# UPSTREAM HAS NO `Ops.FLIP` AND HAS NOT FOR A WEEK. `900880433` ("remove Ops.FLIP",
+# 2026-10-11) deleted the member and reimplemented `Tensor.flip` as a COMPOSITION --
+# `movement.py:253-267` is now `_mop(Ops.PAD, ...)` / `Ops.SHRINK` / `.transpose` and nothing
+# else -- so this wrapper no longer MINTS A NODE OF ITS OWN. It CALLS `mxw_pad`, `mxw_shrink`,
+# `mxw_reshape` and `mxw_permute`, one call per line of the Python, and the graph it builds is
+# the graph upstream builds. `mxw_flip_new` and `mxw_flip.put`, which minted `OpsFLIP{}`, are
+# gone with the op, and so is the `mxw_any` identity test: a flip of an axis list is not a
+# no-op test any more, it is upstream's `if resolve((n:=ret.shape[axis]) <= 1, False): continue`
+# PER AXIS.
 #
-# `sofar` IS "have we SEEN a non-zero flag" and it is a PARAMETER with the `match` on the
-# list head -- the fold-verdict shape. The `case _ True{}: True{}` arm short-circuits
-# without an early return, which is the only spelling available: an early return from the
-# middle of a walk needs a def that calls back into the walk, and that is mutual
-# recursion.
-def mxw_any.go(flags: List<&2, U32>, sofar: Bool) -> Bool:
-  match flags sofar:
-    case Nil{} _: sofar
-    case _ True{}: True{}
-    case f <> t _: mxw_any.go(t, Bool.or(sofar, Bool.not(U32.is_zero(f))))
+# THE ARGUMENT IS THE AXIS LIST, NOT A FLAG VECTOR, and that is the behavioural half of the
+# change. The old port took `flip_arg` -- the 0/1 vector `tuple(i in axis_arg for i in
+# range(len(self.shape)))` -- because the old upstream fed it to `_mop(Ops.FLIP, arg=flip_arg)`.
+# Current upstream LOOPS over `axis_arg`, and the order of that loop is observable: each axis
+# appends its own PAD/PAD/PAD/SHRINK/SHRINK/SHRINK chain to the running tensor, so `flip(0, 1)`
+# and `flip(1, 0)` are the same nodes in a different sequence. A flag vector is a SET, so it
+# cannot say which order the caller asked for. `mxw_flip`'s callers that still pass a flag
+# vector (`gates/mx_graph_census.bend`) are reading the OLD contract and are stale by
+# construction; they are named rather than silently reinterpreted.
+#
+# NOT PORTED, each with its reason. `_resolve_dim` (movement.py:249) -- negative-axis
+# resolution needs the Python-int/`Sint` comparison the whole file defers, so an axis here is
+# the caller's own `U32`. The `dedup` refusal (movement.py:251) -- Bend has no `raise`, and the
+# file's own `mxw_reshape`/`mxw_permute` headers already record "PORTABLE, NOT DONE" for the
+# same reason, so a repeated axis here flips twice instead of raising. `resolve(...)` -- every
+# shape in this file is `List<&2, U32>` and never a `Sint`, so `resolve` is the identity and
+# the `else` arm of `m = n if resolve(n >= 2, False) else n+2` is unreachable: the guard above
+# it already refused `n <= 1`.
+#
+# `tail = tuple(s if resolve(s > 0, False) else s+1 for s in x.shape[1:])` -- the shape minus
+# dim 0, with an EMPTY dim bumped to 1 because a 0-length dim has no anti-diagonal to read off.
+#
+# **NO `List.reverse` AT THE END, AND THAT IS THE THIRD TIME IT HAD TO BE REMOVED FROM THIS
+# SECTION.** `List.append(&2, T, acc, [x])` APPENDS AT THE END -- `mxw_fold_shape.go` and
+# `mxw_srcops.go` build their lists down the walk with no reversal and print them in order, and
+# `dbg_made_shape`'s own history is the record of what happens when a direction is wrong. So a
+# walk that appends is already in order and a trailing `List.reverse` TURNS IT UPSIDE DOWN.
+# MEASURED: with the reversal in, `mxf_order(4n, 0)` answered `[3,2,1,0]` and `mxf_order(4n, 1)`
+# answered `[3,2,0,1]`; `mxf_tail` inverted a non-uniform shape the same way. The port builds
+# wrong permutations that STILL LOOK like permutations, which is the "right length, wrong values"
+# hole this file's own `mxw_stk` header records. `mxf_order`'s reversal was invisible in all six
+# flip rows until the row carried the ORDER rather than only the op: `Ops.PERMUTEx1` cannot tell
+# `[1,0,2,3]` from `[3,2,0,1]`, so `flip_1` read AGREE with a wrong permutation on both sides of
+# that middle permute.
+def mxf_tail.go(+xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: mxf_tail.go(t, List.append(&2, U32, acc, [mx_smax1(h)]))
 
-def mxw_any(flags: List<&2, U32>) -> Bool:
-  mxw_any.go(flags, False{})
+def mxf_tail(+xs: List<&2, U32>) -> List<&2, U32>: mxf_tail.go(xs, Nil{})
 
-def mxw_flip(+t: T.Tensor, +flags: List<&2, U32>) -> T.Tensor:
-  mxw_pick(Bool.not(mxw_any(flags)), t, mxw_flip.put(t, flags))
+# `zeros(k)` -- the `lo` of every PAD and the offsets of every SHRINK except the one that
+# moves (`m-1`, `m-n`). Named once because five of the eleven `_mop` calls need it and the
+# alternative is five inline walks. IT RECURSES ON `MO.mo_range(n)` AND NOT ON A COUNTER,
+# because MEASURED on this checker: Bend accepts a self-call that shrinks a LIST TAIL and
+# refuses both `U32.sub(k, 1)` and `Nat.sub(rem, 1n)` on a scalar parameter ("expected a
+# decreasing self-call"). A counter would be one allocation cheaper and it does not compile.
+def mxf_zeros.go(+xs: List<&2, U32>, acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: mxf_zeros.go(t, List.append(&2, U32, acc, [0]))
+
+def mxf_zeros(n: Nat) -> List<&2, U32>: mxf_zeros.go(MO.mo_range(n), Nil{})
+
+# `order = list(range(self.ndim)); order[dim0], order[dim1] = order[dim1], order[dim0]` --
+# `transpose`'s own two lines (movement.py:356-358), with `dim0=0` and `dim1=axis`. It is a
+# function of the RANK and the AXIS alone, so this walks a counter and never reads the list it
+# is permuting -- which is what lets the SAME def serve `transpose(0, 1)` on the (n, n, *tail)
+# of the middle step, where the list it would otherwise read is a shape and not a range.
+# THE THREE-WAY MATCH IS THE PYTHON'S TWO-LINE SWAP: `zero` writes the head, `at` writes the
+# axis, and the arm that is neither keeps `h`. The two Bools are PARAMETERS because Bend
+# refuses a computed scrutinee -- `match U32.is_eq(h, axis):` is an error, "give it its own
+# def" -- and a parameter is this file's own answer to that, the same one `mxw_any.go` uses.
+# The walk is over `MO.mo_range(n)` for the reason `mxf_zeros.go` gives.
+def mxf_order.put(h: U32, +axis: U32, zero: Bool, at: Bool, acc: List<&2, U32>) -> List<&2, U32>:
+  match zero at:
+    case True{} _ : List.append(&2, U32, acc, [axis])
+    case _ True{}: List.append(&2, U32, acc, [0])
+    case _ False{}: List.append(&2, U32, acc, [h])
+
+def mxf_order.go(+xs: List<&2, U32>, +axis: U32, acc: List<&2, U32>) -> List<&2, U32>:
+  match xs:
+    case Nil{}: acc
+    case h <> t: mxf_order.go(t, axis, mxf_order.put(h, axis, U32.is_zero(h), U32.is_eq(h, axis), acc))
+
+def mxf_order(n: Nat, +axis: U32) -> List<&2, U32>: mxf_order.go(MO.mo_range(n), axis, Nil{})
+
+# ONE AXIS. `movement.py:253-267`, in Python's order and with Python's shapes:
+#   x = ret.transpose(0, axis)                       -> p1..p2
+#   x = x._mop(Ops.PAD, ((0, m),)+tail_pad).reshape(m, 1, *tail)
+#   x = x._mop(Ops.PAD, ((0, m), (0, m-1))+tail_pad).reshape(m*(m-1), *tail)
+#   x = x._mop(Ops.PAD, ((m-1, m*m),)+tail_pad).reshape(m, m, *tail).transpose(0, 1).reshape(m*m, *tail)
+#   x = x._mop(Ops.SHRINK, ((m-1, m*(m-1)),)+tail_pad).reshape(m, m-1, *tail)
+#   x = x.shrink((None, (0, 1))+bounds).reshape(m, *tail)
+#   ret = x.shrink(((m-n, m),)+crop).transpose(0, axis)
+# A `None` in a PAD/SHRINK arg is `(0, s)` in each (movement.py:189/:194), so `bounds` -- the
+# all-`None` tail of the fifth line -- is an all-zero offset list against `mxf_tail`, and the
+# `crop` of the last line is `(0, x.shape[j+1])` over the TRANSPOSED ORIGINAL's tail, which is
+# the UNMODIFIED drop: `tail` bumps an empty dim to 1 and `crop` does not.
+#
+# **THE FIRST FOUR CALLS ARE `_mop` AND NOT `Tensor.pad`/`Tensor.shrink`, AND THAT IS THE WHOLE
+# DIFFICULTY.** `Tensor.pad` (movement.py:186) and `Tensor.shrink` (:192) each end
+# `return self if ret.shape == self.shape else ret`, and `mxw_pad`/`mxw_shrink` are their ports
+# and carry that identity test. `_mop` (ops.py:796) has no such test: its only early return is
+# the zero-length ARG (`:799`). So a `_mop(Ops.PAD, ...)` that does not change the shape STILL
+# BUILDS A PAD, and the first of the three -- `((0, m),)` with `m == n`, i.e. offset 0 and end
+# `n` on a dim of size `n` -- is exactly that case. MEASURED: calling `mxw_pad` there instead
+# of `mxw_pad.go` answered the source and the graph lost two nodes against CPython on all six
+# flip rows. So the four `_mop` calls go through the `.go` half -- which is `_mop`, and the
+# wrappers' own `.go`/wrapper split is already that pair -- and the two `shrink` calls go
+# through the wrapper, where the identity test is upstream's.
+# **AND EVERY `_mop` ARG LIST HAS THE LENGTH OF THE NODE IT IS APPLIED TO, WHICH IS NOT ALWAYS
+# `nd`.** `tail_pad` is `(0, s) for s in tail` -- `nd-1` entries -- so the three PAD/SHRINK args
+# that carry a leading pair are `nd` long (`(0,m)`/`(m-1, m*m)`/`(m-n, m)` plus `tail_pad` or
+# `crop`) and the two that carry TWO leading pairs, or one pair plus the `None` tail
+# `bounds`, are `nd+1`. MEASURED: one `zeros(nd)` used for all five offset lists made the last
+# shrink's offsets `nd+1` against `nd` sizes, `mxm_marg_pair`'s zip grew a fifth pair whose
+# second element read the default `0`, and the identity test compared `[4,4,4,4,0]` against
+# `[4,4,4,4]` -- so the port built a SHRINK upstream drops and lost the row on all six flip
+# rows. Three lists, named for what they pad: `z` is `nd`, `z1` is `nd+1`, `zp` is `nd-1`.
+def mxf_compose(+ret: T.Tensor, +sh: List<&2, U32>, +axis: U32, +n: U32) -> T.Tensor:
+  +rank = mxw_len_nat(sh)
+  +z = mxf_zeros(rank)
+  +z1 = mxf_zeros(Nat.add(rank, 1n))
+  +zp = mxf_zeros(Nat.sub(rank, 1n))
+  +crop = List.drop(&2, U32, sh, 1n)
+  +tail = mxf_tail(crop)
+  +ord0 = mxf_order(rank, axis)
+  +n1 = U32.sub(n, 1)
+  +nn = U32.mul(n, n)
+  +nn1 = U32.mul(n, n1)
+  +p1 = mxw_pad.go(mxw_permute(ret, ord0), z, List.append(&2, U32, [n], tail))
+  +p2 = mxw_reshape(p1, List.append(&2, U32, [n, 1], tail))
+  +p3 = mxw_pad.go(p2, z1, List.append(&2, U32, [n, n1], tail))
+  +p4 = mxw_reshape(p3, List.append(&2, U32, [nn1], tail))
+  +p5 = mxw_pad.go(p4, List.append(&2, U32, [n1], zp), List.append(&2, U32, [nn], tail))
+  +p6 = mxw_reshape(p5, List.append(&2, U32, [n, n], tail))
+  +p7 = mxw_permute(p6, mxf_order(Nat.add(rank, 1n), 1))
+  +p8 = mxw_reshape(p7, List.append(&2, U32, [nn], tail))
+  +s1 = mxw_shrink.go(p8, List.append(&2, U32, [n1], zp), List.append(&2, U32, [nn1], tail))
+  +s2 = mxw_reshape(s1, List.append(&2, U32, [n, n1], tail))
+  +s3 = mxw_shrink(s2, z1, List.append(&2, U32, [n, 1], tail))
+  +s4 = mxw_reshape(s3, List.append(&2, U32, [n], tail))
+  +s5 = mxw_shrink(s4, List.append(&2, U32, [0], zp), List.append(&2, U32, [n], crop))
+  mxw_permute(s5, ord0)
+
+def mxf_axis.at(+ret: T.Tensor, small: Bool, +sh: List<&2, U32>, +axis: U32, +n: U32) -> T.Tensor:
+  match small:
+    case True{}: ret
+    case False{}: mxf_compose(ret, sh, axis, n)
+
+def mxf_axis(+ret: T.Tensor, +axis: U32) -> T.Tensor:
+  +sh = mxw_dims_of(T.Tensor.ar(ret), T.Tensor.u(ret))
+  +n = mxm_pick(sh, axis)
+  mxf_axis.at(ret, U32.is_lt(n, 2), sh, axis, n)
+
+def mxf_flip.go(+axes: List<&2, U32>, +ret: T.Tensor) -> T.Tensor:
+  match axes:
+    case Nil{}: ret
+    case a <> rest: mxf_flip.go(rest, mxf_axis(ret, a))
+
+def mxw_flip(+t: T.Tensor, +axes: List<&2, U32>) -> T.Tensor: mxf_flip.go(axes, t)
 
 # THE BASE TENSOR: `Tensor.empty(1, 4, 8, 8)`, which CPython builds as
 # `RESHAPE(BUFFER, STACK(4x CONST))` -- `mxm-oracle.py` prints
@@ -1663,9 +1788,12 @@ def mxw_resh_row(+t: T.Tensor) -> IO(Unit):
     mxw_row("pad_noop", mxw_pad(t, [0, 0, 0, 0], [1, 4, 8, 8]))
     mxw_row("shrink", mxw_shrink(t, [0, 0, 1, 1], [1, 4, 4, 4]))
     mxw_row("shrink_noop", mxw_shrink(t, [0, 0, 0, 0], [1, 4, 8, 8]))
-    mxw_row("flip0", mxw_flip(t, [1, 0, 0, 0]))
-    mxw_row("flip01", mxw_flip(t, [1, 1, 0, 0]))
-    mxw_row("flip_noop", mxw_flip(t, [0, 0, 0, 0]))
+    # THE THREE FLIP ROWS ARE AXIS LISTS NOW, not the old 0/1 flag vectors: `flip0` is
+    # axis 0, `flip01` is axes 0 then 1, and `flip_noop` is the EMPTY axis list, which is
+    # upstream's own `for axis in ()` -- no node at all.
+    mxw_row("flip0", mxw_flip(t, [0]))
+    mxw_row("flip01", mxw_flip(t, [0, 1]))
+    mxw_row("flip_noop", mxw_flip(t, []))
     # W7'S ROW. `mxw_shape_of`'s `case _ False{}` arm -- the one that answers a NON-
     # movement op from the FOLD -- had NO fixture, so answering `Nil{}` there moved
     # nothing. Every node in the rows above is a movement op, and the one non-movement

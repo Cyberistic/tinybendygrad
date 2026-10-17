@@ -2789,21 +2789,6 @@ def UOp.new.shp(+ar: Arena, +op: Op, +src: List<&2, U32>, +arg: Arg, +tag: Tag, 
 def UOp.sink(ar: Arena, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, OpsSINK{}, srcs, ANone{}, TNone{})
 
-# group -- ops.py:561. `if len(srcs) == 1 and isinstance(srcs[0], UOp): return
-# srcs[0]` -- the one-element case IS the node itself, not a GROUP, so that arm
-# hands the arena back unchanged. Zero srcs still makes a GROUP, which is the
-# Python's `UOp(Ops.GROUP, src=())`.
-def UOp.group.of(srcs: List<&2, U32>, ar: Arena, nar: Arena) -> Found:
-  match srcs:
-    case Nil{}: Found{nar, 0}
-    case s <> t:
-      match t:
-        case Nil{}: Found{ar, s}
-        case _ <> _: UOp.new(nar, OpsGROUP{}, srcs, ANone{}, TNone{})
-
-def UOp.group(+ar: Arena, +srcs: List<&2, U32>) -> Found:
-  UOp.group.of(srcs, ar, UOp.make(ar, OpsGROUP{}, srcs, ANone{}, TNone{}))
-
 # alu -- ops.py:630. `UOp(op, src=(self, *src), **kwargs)`
 def UOp.alu(ar: Arena, +op: Op, +srcs: List<&2, U32>) -> Found:
   UOp.new(ar, op, srcs, ANone{}, TNone{})
@@ -2842,6 +2827,34 @@ def UOp.after.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Foun
 # schedule/prepare unit, which built its own AFTER in the right order to route around it.
 def UOp.after(+ar: Arena, +self: U32, +srcs: List<&2, U32>) -> Found:
   UOp.after.go(srcs, ar, self, UOp.new(ar, OpsAFTER{}, List.append(&2, U32, [self], srcs), ANone{}, TNone{}))
+
+# group -- ops.py:536-538, and upstream DELETED `Ops.GROUP` to get there:
+#   `if len(srcs) == 1 and isinstance(srcs[0], UOp): return srcs[0]`
+#   `return UOp(Ops.STACK).after(*[x for x in srcs if x is not None], **kwargs)`
+# IT SITS BELOW `UOp.after` BECAUSE IT CALLS IT, and Bend's checker refuses a live use of a
+# definition it has not filled yet ("an unfilled law is a dead claim"). `sink` is above and
+# `group` is here, so the two sugar defs are no longer adjacent; that is the price of the
+# call and it is the same trade every other `.go`/`.of` split in this section already made.
+#
+# The one-element case IS the node itself, so that arm hands the arena back UNCHANGED and
+# upstream's own `UOp(Ops.STACK)` is never the answer. The STACK the `of` arm was handed is
+# then stranded in the arena; `mxw_count` walks from a ROOT (`toposort(budget, ar, u)`, not
+# `len(Arena.nodes(ar))`) so a stranded node is invisible to it.
+# ZERO srcs is `UOp(Ops.STACK).after()` with nothing to after, and `after` is
+# `... if len(src) else self`, so the answer is the BARE STACK -- a real node with no srcs,
+# which is what the old `Found{nar, 0}` meant when it named index 0 of an arena that had
+# nothing in it. TWO OR MORE is an AFTER over `(STACK,) + srcs`: one op changed and one node
+# ADDED, and `UOp.after` already spells `src=(self,)+srcs` with SELF FIRST.
+def UOp.group.of(srcs: List<&2, U32>, ar: Arena, +stk: Found) -> Found:
+  match srcs:
+    case Nil{}: stk
+    case s <> t:
+      match t:
+        case Nil{}: Found{ar, s}
+        case _ <> _: UOp.after(Found.ar(stk), Found.i(stk), srcs)
+
+def UOp.group(+ar: Arena, +srcs: List<&2, U32>) -> Found:
+  UOp.group.of(srcs, ar, UOp.new(ar, OpsSTACK{}, Nil{}, ANone{}, TNone{}))
 
 # end -- ops.py:619. `UOp(Ops.END, src=(self,)+src) if len(src) else self`
 def UOp.end.go(srcs: List<&2, U32>, ar: Arena, self: U32, made: Found) -> Found:
