@@ -19549,6 +19549,66 @@ UNCHANGED (VERIFIED BY THE CALLER).**
       LIVES INSIDE THE TREE `AGENTS.md` RECORDS AS BEING PRUNED*** -- **ITS INPUT SHOULD SIT IN GIT BESIDE THE
       GATE.****
 
+## PATHCENSUS -- **EQUAL DEPTH, EQUAL BYTES: THE FIX ***PROVES*** THE PATH WAS THE WHOLE DEFECT** (2026-10-18)
+
+`60d9fe8bb` -- **10 FILES, +730/-26 -- AND ***THE **26** DELETIONS ARE ***EXACTLY THE IMPORT LINES***.**
+NO SWEEP. **`tinybendygrad/` (137) AND `tinygrad/` (229) INTACT.**
+
+- [x] **THE CENSUS, EXACT: 193 `.bend` / **1 030 IMPORT SITES**, POPULATION **DISCOVERED** FROM
+      `checks/compile-census.py:discover()` **PLUS** `checks/substrate.py:discover(POP_ROOT)`, **BOTH LOADED *BY
+      PATH***, EXCLUSIONS READ OFF `SKIP_DIRS`. ***CAUSES TAKEN FROM ***BEND's OWN STDERR***, NOT INFERENCE, AND
+      THE BOUNDARY IS ***BEND's OWN IMPORT SEMANTICS***, NOT A `../`-COUNT HEURISTIC: **NO `..` => THE DECLARING
+      DIRECTORY DECIDES, FULL STOP; A `..` => THE RESOLUTION IS THE AUTHOR's INTENT AND IS ONLY SUSPECT WHEN THE
+      TAIL IS AMBIGUOUS.** AND `7 + 6 + 7 + 1 + 1 = **22**`, EXACT:
+
+      | cause | n |
+      |---|---|
+      | **wrong path, names a checkout OUTSIDE the tree** | **7** |
+      | **wrong path, names a MISSING path INSIDE the tree** | **6** |
+      | **real code coldness** (stale fixtures written against a dialect that had `String`/`IO`/`Nil` in scope) | **7** |
+      | ***COLD BY DESIGN*** (`checks/c-context.bend`, `3 defs rely on unsafe or foreign code`, **MUST** import a `.c`) | **1** |
+      | already WARM | 1 |
+
+      ***AND `MISDIRECTED` (RESOLVES ***TOO FAR***, TO AN ***EXISTING*** WRONG FILE) = **0 SITES** -- A NEGATIVE
+      RESULT, AND IT IS THE CLASS A *DOES-IT-EXIST* CHECK ***CANNOT*** SEE.***
+- [ ] **AND IT CORRECTED **MY COUNT**: I SAID ***NINE*** FILES NAME A CHECKOUT OUTSIDE THE TREE; ***7** DO***
+      (VERIFIED BY THE CALLER). `gates/.realize-mut-stage/realize_graph_census.bend` ANSWERS
+      **`<repo>/gates/tinybendygrad/helpers.bend`** -- ***INSIDE*** -- **AND `oracles/fold-mvt-e2e.bend` WAS
+      ALREADY FIXED.** ***SO "THEY ARE A DIFFERENT DEFECT" IS RIGHT ***IN KIND*** (THEY WERE ***NEVER RUN***:
+      `../../../` FROM DEPTH **1** ASSUMES A REPO NESTED TWO LEVELS DOWN) **AND THE COUNT IS **7**, NOT **9**.**
+      **AND `checks/compile-census.rows` LINE **1** SAYS **87** WHILE `discover()` HANDS **91** -- **AND THE **4**
+      THAT ACCOUNT FOR IT ARE ***ALL IN `HEAD`***, **SO THAT HEADER ***UNDER-COUNTS***; IT ISN'T STALENESS.**
+- [x] **AND ***THE FIX ***PROVES*** THE PATH WAS THE ONLY DIFFERENCE***: THE **5** `dtype_oracle` COPIES WERE ONE
+      FILE IN `HEAD` (`f8ddaece…`) WITH ***OPPOSITE VERDICTS***; AFTER REWRITING EACH IMPORT TO ITS ***OWN DEPTH***
+      THEY GROUP ***BY DEPTH*** -- `ddcheck` + `render-wt` (BOTH DEPTH **4**) ARE IDENTICAL AT `23adacc37f…`;
+      `MUTANT{,2}` (BOTH DEPTH **5**) AT `73a9d77b4…`. ***EQUAL DEPTH, EQUAL BYTES.*** ***AND THAT PROOF IS ONLY
+      AVAILABLE ***AFTER*** THE FIX.***
+- [x] **AND THE ANCHOR IS **DERIVED, NEVER NAMED***: `../dtype.bend` MATCHES ***THREE*** FILES, SO IT IS READ OFF
+      THE FILE's ***OTHER*** IMPORTS (`tinybendygrad` IS THE ONLY PREFIX WITH `dtype.bend` A ***DIRECT CHILD***,
+      BESIDE `helpers.bend`, NOT DOWN AMONG THE DECOYS), **AND WHERE A FILE GIVES NO IN-FILE SIGNAL, OFF A
+      ***BYTE-IDENTICAL COPY THAT RESOLVES***.**
+- [x] **AND ***10** FIXED, `rc=1 -> rc=0`, ALL `WITHIN-LIMITS`, EACH ***EMITS ROWS***, AND ***NO CLAIM
+      DISAPPEARED***; **PEAK RSS ROSE **40 MB -> 406-474 MB** -- *"THE COMPILER HAD BEEN DYING BEFORE DOING ANY
+      WORK."*** **AND **THE GATE ***NAMES*** ALL **THREE** UNFIXED SIBLINGS (`gates/i64-shl.bend`,
+      `gates/i64-shr.bend`, `gates/.realize-mut-stage/realize_graph_census.bend`) **AND FAILS ON THEM RATHER THAN
+      BEING WEAKENED TO GO GREEN.**
+- [x] **AND A DISCREPANCY IT REPORTED RATHER THAN PAPERED OVER:** **`tinybendygrad/runtime/autogen/libclang.bend`
+      CARRIES **335** IMPORTS OF A **207 KB** `.c` THAT ***RESOLVES*** -- **BUT THE INDEX CANNOT SEE IT BECAUSE
+      `.agents` IS A DECLARED SKIP DIR.** ***IT GAVE THAT ***ITS OWN NON-DEFECTIVE CLASS***, `RESOLVED-UNINDEXED`,
+      RATHER THAN PASSING IT SILENTLY **OR INVENTING A DEFECT** FOR IT.**
+- [x] **AND TWO OF ITS OWN BUGS IT FIXED RATHER THAN PAPERED OVER:** **THE `direct child` HEURISTIC REPORTED
+      **346** FALSE `MISDIRECTED` ON FILES THAT ***COMPILE*** (***IT OUTVOTED WHAT `./` ***MEANS***)**, AND **THE
+      PLANT's FIRST BUILD JUDGED A CORRECT IMPORT MISSING BECAUSE ITS FIXTURE WAS IN A TEMP TREE.**
+      **AND ITS `--self-test` CAUGHT SOMETHING ONLY A GOOD PLANT CAN CATCH: **DROPPING THE ANCHOR LEAVES THE
+      CENSUS's TALLY ***UNCHANGED*** AND IS CAUGHT BY THE ***PLANT ALONE*** -- AND ***THE OUTPUT SAYS SO INSTEAD OF
+      CREDITING THE CENSUS WITH THE PLANT's WORK.****
+- [ ] **AND TWO CONTRADICTIONS THAT ARE ***NOT*** THE UNIT's TO SETTLE: (a) `checks/gate.bend`'s HEADER NAMES A
+      GENERATOR THAT IS ***ABSENT*** (`.agents/slop/shlscope/gen.py`), WITH `GENERATED … NOT HAND-WRITTEN` --
+      ***SO ITS PROVENANCE CLAIM IS NOW FALSE, AND ***REWRITING A PROVENANCE CLAIM IS A DIFFERENT ACT FROM FIXING A
+      PATH***.** (b) **`oracles/probe-su.bend` IS `.gitignore`d (`probe-*.bend` AT `:37`), SO IT IS FIXED **ON DISK**
+      **AND THE COMMIT CANNOT CARRY IT** -- ***IT DID NOT FORCE-ADD A DELIBERATELY-IGNORED FILE***, **AND
+      NAMED THAT AS A CONTRADICTION BETWEEN THE IGNORE RULE AND THE INSTRUCTION.****
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
