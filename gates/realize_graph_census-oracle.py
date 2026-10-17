@@ -86,13 +86,21 @@ def _buf_dev(slot, nm, dev):
     return ParamArg(slot, dtypes.int32, 16, name=nm, addrspace=AddrSpace.GLOBAL, device=dev)
 
 
+# THE VACATED POSITIONAL IS DROPPED, AND THIS IS A PROVABLE NO-OP. Upstream 72f98ffe0
+# ("move size from ParamArg to src (#18624)") deleted the `size` field, so slot #3 is now
+# `vmin_vmax`. Both helpers passed the old `size=None` there AND `vmin_vmax=(0,4)` by
+# keyword, which is the LOUD twin of the silent shift: `TypeError: got multiple values for
+# argument 'vmin_vmax'`. Deleting the positional leaves `vmin_vmax=(0,4)` and every other
+# field byte-identical, because the vacated slot held `None` and the field it vacated onto
+# wants `None` too. THE PORT MIRRORS THIS: `realize.bend:1562` `var_arg` and `:1568`
+# `bnd_arg` both spell `None{}` in the size slot.
 def _var(slot, nm):
-    return ParamArg(slot, dtypes.int32, None, vmin_vmax=(0, 4), multiple_of=1, name=nm,
+    return ParamArg(slot, dtypes.int32, vmin_vmax=(0, 4), multiple_of=1, name=nm,
                     addrspace=AddrSpace.ALU)
 
 
 def _bnd(slot, nm):
-    return ParamArg(slot, dtypes.int32, None, vmin_vmax=(0, 4), multiple_of=1, name=nm,
+    return ParamArg(slot, dtypes.int32, vmin_vmax=(0, 4), multiple_of=1, name=nm,
                     addrspace=AddrSpace.ALU, val=4)
 
 

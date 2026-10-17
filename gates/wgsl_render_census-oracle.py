@@ -315,10 +315,18 @@ def R(target_arch=""):
 
 
 def buf_of(dt, addr, numel):
-    """A real buffer `UOp`: `UOp(Ops.BUFFER, arg=ParamArg(...))`. `max_numel` of
-    that node is `size` and `buf_uop` of it is itself, which is what
-    `is_packed`, `buf_map` and `_packed_size` read."""
-    return UOp(Ops.BUFFER, arg=ParamArg(0, DT[dt], size=numel, addrspace=ADDRS[addr]))
+    """A real buffer `UOp`, built by `UOp._buffer(size, dtype, slot, addrspace=)` --
+    THE SIBLING SPELLING (`oracles/fold-probe1.py:8`, `oracles/mm-survey.py:58`), and the
+    UPSTREAM one (`tinygrad/uop/ops.py:828-830`).
+
+    WHY NOT `ParamArg(size=numel)`: upstream 72f98ffe0 ("move size from ParamArg to src
+    (#18624)") DELETED the `size` field and moved the value into `src`, so the keyword is a
+    `TypeError` and the 3rd POSITIONAL now lands on `vmin_vmax`. DELETING the size instead is
+    the trap, not the fix: MEASURED, a `BUFFER` with no `src[0]` raises `IndexError` on
+    `_shape` and `UOp(...) is UOp(...)` for EVERY size, so one node would answer every row.
+    `max_numel` of this node IS `numel` -- it reads `src[0]` now, where it read `arg.size`
+    before -- and `is_packed`, `buf_map` and `_packed_size` all read it."""
+    return UOp._buffer(numel, DT[dt], 0, addrspace=ADDRS[addr])
 
 
 # ===========================================================================

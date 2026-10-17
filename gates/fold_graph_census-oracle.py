@@ -90,12 +90,29 @@ def C(v):
     return UOp.const(v)
 
 
+def _size_src(size):
+    """THE SIZE SLOT, SPELLED WHERE UPSTREAM PUT IT. Upstream 72f98ffe0 ("move size from
+    ParamArg to src (#18624)") DELETED `ParamArg.size` and moved the value into `src[0]`,
+    so `size=` is a `TypeError` and the 3rd POSITIONAL is now `vmin_vmax` -- which is why
+    this file failed LOUDLY at both sites (`fold_buf_i32` is its 7th row). This is
+    `UOp.param`'s OWN line (`ops.py`), verbatim in shape:
+
+        src=(shape_to_shape_arg((prod(...),) if shape else ()),)
+
+    `size=None` IS the scalar case and it is NOT `size=1`: `shape_to_shape_arg(())` is
+    `UOp(Ops.STACK, src=())` (MEASURED, and identical to `UOp(Ops.STACK)` by interning),
+    whose `as_shape` is `()`, where `shape_to_shape_arg((0,))` is `UOp(Ops.CONST, arg=0)`
+    whose `as_shape` is `(0,)`. DELETING the size instead would leave `src=()` and
+    `_shape` would raise `IndexError` on every row while `f(4) is f(6)` (MEASURED)."""
+    return (shape_to_shape_arg((size,) if size is not None else ()),)
+
+
 def BUFFER(dt, size=None, vmm=None):
-    return UOp(Ops.BUFFER, (), ParamArg(0, dt, size=size, vmin_vmax=vmm))
+    return UOp(Ops.BUFFER, _size_src(size), ParamArg(0, dt, vmin_vmax=vmm))
 
 
 def PARAM(dt, size=None, vmm=None):
-    return UOp(Ops.PARAM, (), ParamArg(0, dt, size=size, vmin_vmax=vmm))
+    return UOp(Ops.PARAM, _size_src(size), ParamArg(0, dt, vmin_vmax=vmm))
 
 
 def RESH22(src):

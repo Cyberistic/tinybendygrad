@@ -182,8 +182,14 @@ def build():
     # a CAST whose src[0] dtype differs: render_ptr's `d != src[0].dtype` arm
     cast = UOp(Ops.CAST, src=(UOp(Ops.CONST, arg=3),), arg=dtypes.float)
     fx["cast"] = (cast, "cast0")
-    # render_buffer: a LOCAL buffer
-    buf = UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.float, size=4, addrspace=AddrSpace.LOCAL))
+    # render_buffer: a LOCAL buffer. THE SIZE LIVES IN `src[0]`, not in the arg: upstream
+    # 72f98ffe0 ("move size from ParamArg to src (#18624)") DELETED the `size` FIELD and
+    # moved it to `src`, so `ParamArg(size=4)` is a `TypeError` and the 3rd POSITIONAL is
+    # now `vmin_vmax`. `UOp._buffer(size, dtype, slot, addrspace=)` is the SIBLING SPELLING
+    # (`oracles/fold-probe1.py:8`, `oracles/mm-survey.py:58`) and it is the UPSTREAM one:
+    # `ops.py:828-830`. `render_buffer` reads `x.max_numel()`, which reads `src[0]`, so this
+    # is not a cosmetic port -- `rb_local_*` moves if the size is lost or defaulted.
+    buf = UOp._buffer(4, dtypes.float, 0, addrspace=AddrSpace.LOCAL)
     fx["buffer"] = (buf, "buf0")
     # render_index arms
     ab4 = UOp.alloc((4,), dtypes.float, slot=2, addrspace=AddrSpace.ALU)
@@ -259,7 +265,7 @@ def main():
     for dev in range(6):
         for tag, addr in (("alu", AddrSpace.ALU), ("local", AddrSpace.LOCAL),
                           ("global", AddrSpace.GLOBAL)):
-            b = UOp(Ops.BUFFER, arg=ParamArg(0, dtypes.float, size=4, addrspace=addr))
+            b = UOp._buffer(4, dtypes.float, 0, addrspace=addr)
             R[dev].r = {b: "buf0"}
             row(f"rb_{dev}_{tag}", safe(lambda: R[dev].render_buffer(b)))
     R[0].r = FX["_r"]
