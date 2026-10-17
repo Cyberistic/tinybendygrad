@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
+from gatekit import DEAD, FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
 
 # THE FIXTURE, and it is read from the ENVIRONMENT because the driver reads it from the
 # environment too (`H.getenv_int("I64SHR_SEED", 7)` at shr.bend). Both port lanes inherit
@@ -149,11 +149,25 @@ def main():
     try:
         bd = lane_file("bd")
         n = len([l for l in bd.read_text().splitlines() if l])
+        # THREE CONDITIONS, THREE EXITS. The previous `return FAIL` here was ONE exit for a
+        # count that carries TWO of the five: `n == 0` is `DEAD` ("it ran and ALSO emitted
+        # nothing") and `n != 0` is `FAIL` ("yes and wrong"). `gates/gatekit.py:648` already
+        # spells the split for its own lanes -- `return DEAD if n == 0 else FAIL` -- and the
+        # comment above claimed this arm WAS that mapping while the code was a bare `FAIL`.
+        # MEASURED with `gates/verdictcopy-gate.py`, which walks every `.py` under
+        # `checks/`+`gates/` for a row-count guard that cannot tell the two apart: this line
+        # and `gates/i64-shl-gate.py`'s were the ONLY TWO in the tree, and both answered `1`
+        # (FAIL) for an EMPTY `bd.out`.
+        #
+        # **`run()`'s OWN VERDICT STILL OUTRANKS THIS ONE**, because a `DEAD` from the lanes is
+        # a fact about the lanes and this arm is about the FILE ON DISK. Hence the shape:
+        # `code if code != PASS else DEAD/FAIL` -- the same precedence `main()` already applies
+        # to the absent-lane arm below, and the reason a bare `return DEAD` would be WRONG here.
         if n != ROWS:
             print(f"i64-shr-gate: {bd.name} holds {n} rows, expected {ROWS}, so the "
                   "literal-vs-runtime claim is SKIPPED rather than answered from a stale file",
                   file=sys.stderr)
-            return FAIL
+            return code if code != PASS else (DEAD if n == 0 else FAIL)
         lanes = {t: rows_of(t) for t in ("py", "bd", "bn")}
     except SystemExit as e:
         print(e, file=sys.stderr)

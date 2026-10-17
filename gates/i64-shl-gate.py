@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
+from gatekit import DEAD, FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
 
 
 def _coindep():
@@ -129,11 +129,25 @@ def main():
     try:
         bd_text = (GATE.dir / "bd.out").read_text()
         n = len([l for l in bd_text.splitlines() if l])
+        # THREE CONDITIONS, THREE EXITS, AND THE COUNT IS STILL ONE `if`. The ABSENT case is
+        # the `OSError` arm below (`REFUSED`, or `run()`'s own verdict when that is not
+        # `PASS`); the count is the arm here, and it carries TWO of the five: an EMPTY `bd.out`
+        # is `DEAD` ("it ran and ALSO emitted nothing") and a wrong NON-EMPTY one is `FAIL`.
+        # `gates/gatekit.py:648` already spells the split -- `return DEAD if n == 0 else FAIL`
+        # -- and the block comment above claimed THIS arm WAS that mapping while the code was
+        # a bare `return FAIL`. MEASURED with `gates/verdictcopy-gate.py` (which walks every
+        # `.py` under `checks/`+`gates/` for a row-count guard that cannot tell the two
+        # apart): this line and `gates/i64-shr-gate.py`'s were the ONLY TWO in the tree, and
+        # both answered `1` (FAIL) for an EMPTY `bd.out`.
+        #
+        # **`run()`'s OWN VERDICT OUTRANKS THIS ONE** -- a `DEAD` from the lanes is a fact
+        # about the lanes, and this arm is about the FILE ON DISK -- so the shape is
+        # `code if code != PASS else DEAD/FAIL`, identical to the two arms below it.
         if n != ROWS:
             print("i64-shl-gate: bd.out holds %d rows, expected %d, so the literal-vs-runtime "
                   "claim is SKIPPED rather than answered from a stale file" % (n, ROWS),
                   file=sys.stderr)
-            return FAIL
+            return code if code != PASS else (DEAD if n == 0 else FAIL)
         lanes = {t: rows_of(t) for t in ("py", "bd", "bn")}
     except OSError as e:
         print(f"i64-shl-gate: bd.out is absent under {GATE.dir}: {e.strerror}, so the "
