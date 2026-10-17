@@ -18027,6 +18027,57 @@ COHORT.**
 - [x] **AND IT **LEFT `gates/assertlit.rows` UNCOMMITTED** BECAUSE ITS DIFF vs HEAD IS **ANOTHER UNIT's WORK**
       PLUS ITS OWN A/B RE-RUN.**** **CORRECT RESTRAINT UNDER AN ARMED INDEX.**
 
+## MANIFEST -- **THE MANIFEST IS THE DIGEST, UNFOLDED** -- AND A FOLD **CANNOT** BE RECONSTRUCTED (2026-10-17)
+
+`5cbc16162` (the instrument) + `f19347f66` (a finding). **`runs/graphcmp/MANIFEST.tsv` LEFT IN PLACE (GITIGNORED)
+AS LIVE EVIDENCE OF THE ANTI-STALENESS CHECK AGAINST `5d3f31197e88`.**
+
+- [x] **THE PROOF OF SHAPE, RUN BY THE CALLER: **`differ.substrate_digest()` FOLDS `rel NUL sha256hex NUL` OVER
+      `sorted(substrate_entries())`, **SO THE ROWS ***ARE*** ITS INPUT.**
+
+          members                   : 151
+          151 rows re-folded        : 454e85956b37
+          differ.substrate_digest() : 454e85956b37
+          AGREE                     : True
+
+      **AND THAT IS ALSO WHAT MAKES A **STALE** MANIFEST DETECTABLE.**
+- [ ] **AND THE NEGATIVE, WHICH IS THE POINT: FOR THE RECORDED RUN `5d3f31197e88` THE MANIFEST **DOES NOT EXIST
+      AND **CANNOT BE RECONSTRUCTED** -- ***A SHA256 FOLD IS MANY-TO-ONE OVER THE 2^151 SUBSETS.*** **THERE IS NO
+      RECOVERY PATH. THAT IS WHY IT MUST BE WRITTEN ***BY THE RUN***.****
+- [x] **FIVE STATES, FIVE SENTENCES, AND **TWO OF THEM ARE `REFUSED`** -- WHICH IS EXACTLY RIGHT. A DIGEST IS A
+      FOLD, SO `recorded != live` IS **ONE BIT OVER **151** MEMBERS**: ***EDIT, ADD AND DELETE ALL PRINT IT
+      IDENTICALLY.***
+
+      | case | rc | sentence |
+      |---|---|---|
+      | same paths, different bytes | `FAIL` 1 | `1 of 151 member(s) differ -- the population is the same` + `MOVED <rel> recorded=<12> live=<12>` |
+      | recorded paths ≠ tree's paths | `FAIL` 1 | **`THE DIGEST IS OVER A DIFFERENT POPULATION -- 151 against 152`** + `RECORDED-ONLY`/`TREE-ONLY` |
+      | manifest ≠ the run's recorded row | **`REFUSED` 3** | **`A MANIFEST FROM A DIFFERENT RUN`** |
+      | no manifest | **`REFUSED` 3** | **`0 of 151 members per-path`** |
+      | nothing moved | `PASS` 0 | `0 of 151 recorded member(s) differ` |
+
+- [x] **COST: **153 ROWS, 15 164 B, 13.7 ms** PER DIGEST PASS, **AND THE MARGINAL HASHING IS ZERO** -- A RUN THAT
+      STAMPS HAS ***ALREADY*** CALLED `substrate_entries()` FOR `substrate_start`; **THE PRICE IS A SORT AND A 15 KB
+      WRITE.**
+- [x] **AND THE TRADE THE CALLER POSED IS **RESOLVED BY MEASUREMENT**: ***ONE MOVED MEMBER IS `1 of 151` DIFFERING
+      ROWS, SO THE COMMON CASE IS A ONE-ROW DIFF EITHER WAY -- WHAT CHANGES IS THAT THE ROW NAMES A PATH.*** ***THE
+      CALLER ASKED WHETHER 151 ROWS IS WORSE THAN 1. **IT IS ONE ROW EITHER WAY.****
+- [x] **AND THE CALLER's "**1 OF 176** CHANGED" IS **A DIFFERENT POPULATION AND NOT THE SAME TRADE**: 1 OF 176
+      ***ARTEFACTS*** CHANGED, **AND THAT NAMES A ***SYMPTOM***.** KNOWING `D1-graph-matmul.txt` MOVED **DOES NOT SAY
+      WHETHER `matmul.bend`, `graphcmp.bend` OR `devpin.py` CAUSED IT.**
+- [x] **AND WHEN IT **IS** A BAD TRADE, NAMED: **WHEN MEMBERS CHURN** (THE LIVE DIGEST WENT `be6874ca` ->
+      `454e8595` **THIS SESSION**) **A MANIFEST READS `N of 151` WITH LARGE `N` -- **AND THAT IS EXACTLY THE CASE
+      `substrate_bad()` ALREADY REFUSES, SO A LARGE `N` IS READ FOR A **DIAGNOSIS**, NEVER FOR A **VERDICT**.****
+- [x] **AND THE DENOMINATOR IS **`len(writer.substrate_entries())`**, ASKED OF `checks/differ.py` IN **EVERY
+      SURFACE**, WITH **TWO DENOMINATORS REFUSED ***BY NAME*** SO A LATER EDIT CANNOT PICK ONE UP**:
+      `substrate-snapshot.py`'s `COPIES` (**153**) AND `differ.declared()` (**176**). **AND ***WHERE THE FILE
+      GOES WAS MEASURED BY ASKING THE EXISTING INSTRUMENT***: INSIDE `D/` THE REAL `artefacts_ok()` GOES
+      **0 -> 1** (`UNEXPECTED MANIFEST.tsv`), **SO IT GOES ***BESIDE*** `D/`.**
+- [x] **AND THE PLANT WENT **RED FOUR TIMES ON THREE REAL DEFECTS**, INCLUDING THE SHARP ONE: ***TWO OF THE THREE
+      PATCHES HAD NOT APPLIED AT ALL*** -- **MARKER OCCURRED **0** TIMES AND **`None` WAS COUNTED AS "NOT
+      CAUGHT"** -- **NOW REPORTED SEPARATELY.** AND **A REAL MISDIAGNOSIS: WITHOUT `members=` A ROW-DROPPED MANIFEST
+      **CLAIMED THE TREE HAD GAINED A FILE**.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
