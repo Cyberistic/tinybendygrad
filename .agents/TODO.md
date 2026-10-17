@@ -364,7 +364,11 @@ repro-anchor [##........] 1/3      THE FIX I LANDED 2026-10-15 WAS READING **ONE
                                        (**4.9x**), dangling **108 -> 434**, **LOST: NONE** (a strict
                                        superset). **EVERY NUMBER `repro-paths.py` HAS PRINTED CARRIES
                                        THAT FACTOR**, including the `108` in `DANGLING-TRIAGE.md`.
-                                       **NOT LANDED:** widening alone takes `DANGLING` from 108 to 434
+                                       **NOT LANDED AT THE TIME OF WRITING -- AND THAT IS NOW
+                                       SUPERSEDED BY THE LANDED FIX BELOW; THIS ROW CONTRADICTED ITSELF
+                                       FOR ONE CYCLE, WHICH IS THE CLASS THIS SESSION KEEPS FINDING.
+                                       A DOCUMENT MUST NOT SAY TWO THINGS ABOUT ONE FACT.**
+                                       Widening alone takes `DANGLING` from 108 to 434
                                        and `DANGLING-TRIAGE.md` MEASURED that essentially NONE of the
                                        108 were a live instrument missing an input -- they are
                                        finished units naming their own pruned tools. The 326 new rows

@@ -19,7 +19,7 @@ stale twice today.
 | | commit | date | measured |
 |---|---|---|---|
 | **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `6c3d401cf324` | 2026-09-29 | 230 vendored blobs |
-| **UPSTREAM HEAD** | `91b8cb5fa6c0` | 2026-10-02 | 59 commits ahead |
+| **UPSTREAM HEAD** | `91b8cb5fa6c0` | 2026-10-02 | **59 commits ahead AS OF 2026-10-02 — DO NOT READ AS CURRENT; RE-TAKE IT** |
 | **PIN MATCH** | **204/230** | | 26 blobs are past the pin |
 | of which **HAND-EDITED** | **1** | | `runtime/ops_bend.py` — matches no upstream commit |
 | of which **RE-VENDORED** | **25** | | a coupled batch landed; each equals a post-pin commit |

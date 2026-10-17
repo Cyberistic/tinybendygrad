@@ -33,7 +33,7 @@ Rows: `.agents/slop/duptree/dups.rows`.
 | COVERAGE PROOF | union of 5 `--max-count/--skip` windows `sort -u` = **16,176** = the population exactly |
 | DUPLICATED COMMITS | **1** |
 | DUPLICATED PATHS | **1** (`gates`, ×3) |
-| ON ORIGIN | **no** — `git merge-base --is-ancestor 591f6b499 origin/master` **rc=1**; origin/master is `52d77134b` |
+| ON ORIGIN | **no** — `git merge-base --is-ancestor 591f6b499 origin/master` **rc=1**; origin/master is `52d77134b` **AS OF MY LAST FETCH -- AND A CACHED REF IS NOT A MEASUREMENT OF THE REMOTE. Re-take with `git ls-remote origin master`, NOT `git rev-parse origin/master`, which reads the FETCH CACHE. TODO.md proves this one was stale while it still read as current** |
 | IN THE REQUESTED 500-WINDOW | 1 / 500 = 0.2% |
 | COST | 16,176 root trees in ~22 s across 5 processes, peak RSS **25 MB** (`.agents/slop/duptree/chunk0.time`) |
 
