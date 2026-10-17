@@ -19650,6 +19650,64 @@ VERIFIED EQUAL `HEAD~1` vs `HEAD`.** ***"CORRECT -- A FIXTURE GREEN FOR THE WRON
 - [ ] **AND **9** MODULE FILES PRINTED AS `CONTEXT`, NOT ADJUDICATED** -- THEIR "LOST" IS THE TAG RULE READING
       `"p1="` / `"size=5, no vmin_vmax: n="`, **WHICH IS WHY THE VERDICT IS ***OVER FRAGMENTS ONLY***.**
 
+## RESIDUE -- **THE WALL WAS A ***PATH***, NOT A MISSING DEF** -- AND ONE "STALE" MEASUREMENT WAS ***FABRICATED*** (2026-10-18)
+
+`2806d3dc0` -- **5 FILES, +135/-16, ***0 DELETIONS***.** ***NOTHING DELETED: NO ROW DROPPED, NO GATE WEAKENED, NO
+INSTRUMENT RE-SPELLED.***
+
+- [ ] **AND THE CALLER **PREDICTED** FIXING THE `../` WOULD ***NOT*** BE THE FIX. ***REFUTED, MEASURED:***
+
+      | file | before | after |
+      |---|---|---|
+      | `gates/i64-shl.bend` | `rc=1 no such file: …/src/tinybendygrad/helpers.bend`, **PEAK **0 MB**** | `rc=0 ALL PROOFS CHECK`, **PEAK **293 MB****, **0 -> 151 ROWS** |
+      | `gates/i64-shr.bend` | same | `rc=0`, **0 -> 301 ROWS** |
+
+      ***SO ***BOTH GATES WERE **DEAD OVER **0** ROWS** AND NOW PASS, **AND ***THE WALL WAS A PATH, NOT A MISSING
+      DEF***.***
+- [x] **AND ***A "STALE" MEASUREMENT THAT WAS ***FABRICATED***, AND ONE COMMAND TELLS THEM APART***:
+      `gates/i64-shr.bend`'s HEADER CLAIMED `def i64_shr` *"EXISTS NOWHERE -- `grep -c` IS **0**"*. ***VERIFIED BY
+      THE CALLER: `i64_shr` OCCURS **8** TIMES IN `HEAD`***, **AND THE UNIT MEASURED **4** AT ***EVERY** COMMIT
+      THAT EVER ADDED THE FILE** (`4ff8ca126`, `813bbec3e`, `02329daf0`)** -- ***SO THE NUMBER WAS WRONG THE DAY
+      IT WAS WRITTEN. THE HEADER NOW RECORDS WHAT IT USED TO SAY.** ***AND ***"STALE"** AND **"FABRICATED"** LOOK
+      ***IDENTICAL*** FROM HERE; **ONE `git log` OVER THE FILE SEPARATES THEM.***
+- [ ] **AND THE THIRD IS ***NOT*** A SIBLING: `gates/.realize-mut-stage/realize_graph_census.bend` IS
+      ***UNTRACKED*** (VERIFIED BY THE CALLER: *"EXISTS ON DISK, BUT NOT IN `HEAD`"*) **AND IS ***BYTE-IDENTICAL***
+      OVER **1 166** LINES TO THE TRACKED SOURCE.** IT IS A ***STAGED REVISION*** WRITTEN BY
+      `gates/realize_graph_census-mutate.py:109` (`STAGE = HERE / ".realize-mut-stage"`). ***SO CORRECTING ITS
+      `../` WOULD EDIT A SCRATCH COPY IN A DIRECTORY THE HARNESS REGENERATES.*** **NOT FIXED; ***OWNER NAMED***.**
+      **AND IT WAS ***UNTRACKED *AND*** UNIGNORED***, SO `.gitignore` GAINED `gates/.*` -- ***0** TRACKED PATHS
+      EATEN**, **9** MACHINERY ENTRIES NEWLY IGNORED. **AND `.gitignore` IS ***NOT*** A POPULATION: THE FILE IS
+      STILL IN `os.walk`.***
+- [x] **AND `probe-su.bend`'s ***CONSEQUENCE*** WAS MEASURED AND ***WRITTEN WHERE THE RULE LIVES***:
+      **`discover()` WALKS THE ***WORKING COPY*** -- OF **91** HANDED, ***86** IN `HEAD`, **5** NOT. SO THE CENSUS
+      PRINTS `.bend=193` HERE, ***188** IN A CLONE***, **AND `compile-census.rows:87` IS A COMMITTED ROW FOR A
+      PATH ***NO CHECKOUT HAS***.***** ***AND ***THAT*** IS `discover()`'s DECISION, NOT `.gitignore`'s*** --
+      ***A CENSUS WHOSE POPULATION IS THE WORKING COPY HAS ***NO REPRODUCIBLE DENOMINATOR***.***
+- [x] **AND `gate.bend`'s CLAIM WAS ***PROVED-FOUND, NOT CHANGED TO TRUTH***, ***BECAUSE IT WAS ***ALREADY
+      TRUE***: `gen.py` (205 LINES) RECOVERED FROM `5444ea42e`; `gen.py --emit-bend` EMITS **370** LINES AND
+      **DIFFS ON EXACTLY **4** -- ***THE IMPORTS***. ***ALL **366** EXECUTABLE LINES ARE THE GENERATOR's
+      BYTE-FOR-BYTE***, **AND THE **4** DIFFER BECAUSE THE GENERATOR EMITS FOR `.agents/slop/shlscope/`
+      (3 LEVELS) WHILE THE FILE LIVES IN `checks/` (1) -- ***THE SAME OFF-BY-A-LEVEL CLASS***.
+      ***AND "REWRITING A PROVENANCE CLAIM IS A DIFFERENT ACT FROM FIXING A PATH" WAS THE ***RIGHT*** REFUSAL:
+      THE ANSWER WAS ***GO FIND THE GENERATOR***.**
+- [x] **AND IT ***CORRECTED THE CALLER's OWN FRAMING*** ON THE **4**: THE CALLER SAID *"IT IS NOT STALENESS"*;
+      ***THE TIMESTAMPS CONTRADICT THAT*** -- `compile-census.rows` HAS EXACTLY **ONE** COMMIT @ `08:36:03` **AND
+      THE FOUR ENTERED `HEAD` AFTER IT** (`08:42:19`, `13:42:35`, `14:18:50`). ***IT IS STALENESS.***
+      **AND ***THE CENSUS WAS NOT RE-RUN, AND THAT IS THE MEASUREMENT***: **6** OF THE **27** INDEX-vs-`HEAD`
+      PATHS CARRY GIT's ***EMPTY BLOB**, **SO A BARE `git commit` WRITES ***0 BYTES*** FOR
+      `gates/import-path-census-gate.py` (**40 KB**), `gates/axisflip*`, `gates/verdictcopy-gate.py`,
+      `checks/revendor-struct.py` -- ***ALREADY OWNED*** BY `checks/index-arm-gate.py`'S `EMPTIED` VERDICT,
+      WHICH **NAMES ALL NINE AND SETTLES `REFUSED` AT rc=3**.**
+- [x] **AND A BONUS DEFECT, IN GRANT, ***FIXED***: **ALL **THREE** `REFUSED` PATHS IN `compile-census.py` WERE
+      ***DEAD***** -- **THEY READ `ROOT/"gates"` BUT THE MODULE IS `checks/verdict.py`.** BEFORE:
+      `ModuleNotFoundError` **+ TRACEBACK**; AFTER: **`== REFUSED, NOT A VERDICT` AND **EXIT **3***.
+      ***"THE INSTRUMENT COULD NOT SAY ITS OWN WORD" -- AND THAT IS THE `exitcode-census` FINDING (A WRONG IMPORT
+      PATH PUTTING `sys.exit` INSIDE A COMMENT) ***REPRODUCED IN A DIFFERENT FILE***.***
+- [x] **AND IT CLEANED UP ***AFTER ITSELF***: ITS PRIVATE-INDEX COMMIT LEFT **5** PATHS STALE IN THE ***SHARED***
+      `.git/index`; IT **RAN A BOUNDED `git add` OF EXACTLY THOSE **5** TO CLEAR THE REVERSION**, VERIFIED
+      **43 -> 38** STAGED. ***AN AGENT THAT ARMS THE SHARED INDEX **AND SAYS SO AND FIXES IT** IS THE OPPOSITE OF
+      THE UNITS THAT LEFT **88** FOR ANOTHER TO CLEAN UP.***
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
