@@ -289,6 +289,18 @@ def load_tinygrad() -> None:
                    GroupOp=GroupOp)
   from tinygrad.helpers import Context
   globals().update(Context=Context)
+  # `COMM` IS FILLED HERE AND NOT ONLY IN `_main`, MEASURED 2026-10-17 by
+  # `gates/corpuslane-gate.py`. This function is what every importer calls, `_main`'s
+  # `global COMM; COMM = commutative()` ran for the CLI and for nothing else, so an importer
+  # that is not the CLI held `frozenset()`: `plant_srcswap` raised
+  # `SystemExit: no commutative node in the graph at all; COMM has 0 ops` ON A GRAPH THAT HAS
+  # ONE, and `--equiv` was the identity. The header above promised the opposite -- "a run that
+  # forgot to fill it fails loudly rather than making `--equiv` the identity" -- and what it
+  # actually did was fail on a DIFFERENT SUBJECT, which is worse: the message named commutative
+  # nodes rather than an uninitialised global. Filling it at the import hook is the one place
+  # both callers pass through.
+  global COMM
+  COMM = commutative()
 
 
 def commutative() -> frozenset:
@@ -474,8 +486,14 @@ def konst(x) -> str:
 # `ALLREDUCE` ran a second renderer (`dev`) that flattened the tuple to `sCPU,CPU` -- one
 # value, two spellings, two nodes apart (`ADEV.md` §5). `dev` is deleted, not retuned
 # (ADEV-2).
-def carg(op: Ops, x) -> str:
-  """R7, CPython side. Mirrors `argstr` in graphcmp.bend character for character."""
+def carg(op: Ops, x, owner: UOp | None = None) -> str:
+  """R7, CPython side. Mirrors `argstr` in graphcmp.bend character for character.
+
+  `owner` is the UOp whose `arg` this is, and it exists for exactly one reason:
+  `ParamArg.size` LEFT THE RECORD at `72f98ffe0` ("move size from ParamArg to src
+  (#18624)") and is now `src[0]`, which a bare `ParamArg` cannot reach. It is NOT
+  propagated into `_carg`'s recursion -- only the arg's own top level is a ParamArg,
+  and threading it further would attribute a nested record to the wrong node."""
   if op is Ops.CONST:
     return konst(x)
   if op is Ops.RANGE:
@@ -561,10 +579,10 @@ def carg(op: Ops, x) -> str:
     # floats are rendered as `f<value>` so a float size is visible rather than truncated.
     return "pI(" + ",".join([_carg(x.global_size), _carg(x.local_size), _carg(x.vars),
                              _carg(x.globals), _carg(x.outs), _carg(x.ins)]) + ")"
-  return _carg(x)
+  return _carg(x, owner)
 
 
-def _carg(x) -> str:
+def _carg(x, owner: UOp | None = None) -> str:
   """The generic value grammar: one letter per kind, no letter reused, and a NAMED `raw`
   for anything unmapped. A fallback that printed `repr` here would reintroduce the whole
   problem this file exists to remove.
@@ -657,7 +675,7 @@ def _carg(x) -> str:
     # this is a refusal rather than a fix. The comment said "the arg's identity is
     # already carried by the graph's `src` edges". MEASURED, calling CPython:
     #   `p = UOp(Ops.PYLITERAL, (), (UOp.const(4),))`  ->  `len(p.src) == 0` and
-    #   `p.toposort() == [p]` -- the nested UOp is in NEITHER. So it has no index in the
+    #   `p.toposort(enter_calls=True) == [p]` -- the nested UOp is in NEITHER. So it has no index in the
     #   toposort this file numbers arenas by, and there is no arena index to compare. The
     #   port's only carriers are `ATuple`/`TTuple` of U32, and `ATuple` also serves
     #   PERMUTE, where the U32s are LITERAL ints (graphcmp.bend's own matmul builds
@@ -666,7 +684,7 @@ def _carg(x) -> str:
     #   shows the resulting node as one-sided rather than as agreement.
     return ATOMS["uop"]
   if isinstance(x, ParamArg):
-    return paramarg(x)
+    return paramarg(x, owner)
   if type(x).__name__ == "Invalid":      # dtype.py:32; a CONST holding one is a refusal
     return ATOMS["invalid"]
   if hasattr(x, "__dataclass_fields__"):
@@ -682,7 +700,35 @@ def _carg(x) -> str:
     f"{k}={_carg(v)}" for k, v in d.items() if k != "grad_fxn") + ")"
 
 
-def paramarg(pa: ParamArg) -> str:
+def size_of(n: UOp) -> int | None:
+  """WHERE `size` WENT. Upstream commit `72f98ffe0` (2026-10-06, "move size from ParamArg
+  to src (#18624)") DELETED `size: int|None` from `ParamArg` and moved the element count
+  into `src[0]`. MEASURED against upstream `002630241`, not remembered:
+
+    * `tinygrad/uop/ops.py:24-40` -- the `ParamArg` record now starts
+      `slot, dtype, vmin_vmax, ...` with NO `size` anywhere.
+    * `ops.py:353-358` -- `_shape` for `BUFFER | ALLOC | PARAM` reads
+      `assert len(self.src[0].as_shape) <= 1` then `return self.src[0].as_shape`.
+    * `ops.py:103-107` -- `shape_to_shape_arg`: a 1-tuple becomes that element itself, and
+      the EMPTY tuple becomes `UOp(Ops.STACK)` with NO src.
+    * `ops.py:783-786` -- `as_shape`: a `CONST` is `(self.val,)`, an empty `STACK` is `()`.
+    * `ops.py:1211-1221`, `:1180-1183`, `:833-836`, `:838-841`, `:997-999` -- EVERY
+      constructor (`param`, `alloc`, `placeholder`, `new_buffer`, `from_buffer`) writes
+      `src[0]`, and `variable`/scalar-`param` write the empty `STACK`.
+
+  So `None` (the scalar case the old `size: int|None` spelled) is `src[0]` being an empty
+  `STACK`, and an int is `src[0]` being a `CONST`. `as_shape` CAN return a simplified
+  symbolic `UOp` in principle, so the `isinstance` arm below is a named refusal rather
+  than an assumption: `gates/corpuslane-gate.py` records how often it fires."""
+  src = n.src[0].as_shape if len(n.src) else ()
+  return src[0] if src and isinstance(src[0], int) else None
+
+
+def _size(owner: UOp | None) -> str:
+  return ATOMS["none"] if owner is None or size_of(owner) is None else u(size_of(owner))
+
+
+def paramarg(pa: ParamArg, owner: UOp | None = None) -> str:
   # Field 11 (`buffer`) is PRESENCE and nothing else, and that is a CHANGE, not a
   # restatement. It used to be `f"realized{u(pa.buffer)}"`, which is `"realized" + "i" +
   # str(<Buffer>)` -- MEASURED on `Tensor.empty(4,3).realize().uop`:
@@ -707,7 +753,7 @@ def paramarg(pa: ParamArg) -> str:
   # ONE spelling for absence instead of two.
   return "P(" + ",".join([
     u(pa.slot), dt(pa.dtype),
-    u(pa.size) if pa.size is not None else ATOMS["none"],
+    _size(owner),
     "r(" + i64(pa.vmin_vmax[0]) + "," + i64(pa.vmin_vmax[1]) + ")" if pa.vmin_vmax is not None else ATOMS["none"],
     u(pa.multiple_of) if pa.multiple_of is not None else ATOMS["none"],
     bstr(pa.name) if pa.name is not None else ATOMS["none"],
@@ -830,7 +876,7 @@ def ctag(t) -> str:
 
 def row_of(n: UOp, k: int, ix: dict) -> str:
   return " ".join(chunk(v) for v in [u(k), n.op.name, n.dtype.name, cshape(n), u(cdepth(n)),
-                                     ctag(n.tag), carg(n.op, n.arg), tup([u(ix[id(s)]) for s in n.src])])
+                                     ctag(n.tag), carg(n.op, n.arg, n), tup([u(ix[id(s)]) for s in n.src])])
 
 
 # ---------------------------------------------------------------------------
@@ -1019,6 +1065,32 @@ def g_indexed():
   return UOp.sink(p.index(UOp.const(0)).barrier(r), arg=KernelInfo())
 
 
+def _storage(op: Ops, slot: int, dtype, size: int | None = None, **arg) -> UOp:
+  """THE ONLY WAY THIS FILE MINTS A `BUFFER`/`ALLOC`/`PARAM` BY HAND, and it is here
+  because the re-vendor of 2026-10-17 made the obvious spelling a SILENT WRONG ANSWER.
+
+  Upstream `72f98ffe0` DELETED `size` from `ParamArg` and moved the element count to
+  `src[0]`. A hand-written `UOp(Ops.BUFFER, src=(), arg=ParamArg(1, dtypes.float, 16,
+  device="CPU"))` therefore means, under the CURRENT record:
+
+      src       = ()   -> `_shape` raises `IndexError` at ops.py:356 on `src[0]`
+      vmin_vmax = 16   -> not a size; multiple_of/name/addrspace/device shift one place
+
+  and the SHIFT IS THE PART THAT MATTERS: where the node HAS a `src`, nothing raises at
+  all and the graph is simply WRONG. This file had 6 such call sites (`_variable`,
+  `g_loop`, `g_gate` x2, `g_getaddr`, `plant_dtype`) and MEASURED `_variable`'s silent
+  corruption: `ParamArg(0, weakint, None, (1,100), 1, "n", AddrSpace.ALU)` reads back as
+  `multiple_of=(1, 100), name=1, addrspace=AddrSpace('n')`.
+
+  So `**arg` is KEYWORD-ONLY, on purpose: a `ParamArg` that loses a field can then only
+  raise `TypeError: unexpected keyword argument`, never quietly move a value into the
+  wrong slot. `gates/corpuslane-gate.py` is what makes that true rather than intended --
+  it runs every graph and every plant and fails on any raise."""
+  from tinygrad.uop.ops import ParamArg
+  return UOp(op, src=(UOp(Ops.STACK),) if size is None else (UOp.const(size),),
+             arg=ParamArg(slot, dtype, **arg))
+
+
 def _variable(name: str, slot: int = 0):
   """A scalar ALU PARAM with a VALUE RANGE and no size -- what puts a symbolic dim into a
   shape. It is `UOp.variable(name, 1, 100)` (ops.py:1014-1018) with the SLOT SPELLED.
@@ -1047,9 +1119,8 @@ def _variable(name: str, slot: int = 0):
   normal-form defect found by widening and NOT fixed, because choosing a sentinel is an
   owner decision and not a harness one."""
   from tinygrad.dtype import AddrSpace
-  from tinygrad.uop.ops import ParamArg
-  return UOp(Ops.PARAM, src=(), arg=ParamArg(slot, dtypes.weakint, None, (1, 100), 1, name,
-                                             AddrSpace.ALU))
+  return _storage(Ops.PARAM, slot, dtypes.weakint, None,
+                  vmin_vmax=(1, 100), multiple_of=1, name=name, addrspace=AddrSpace.ALU)
 
 
 def g_sym():
@@ -1174,10 +1245,13 @@ def g_loop():
   with `volatile=True` itself (`tl.replace(arg=replace(tl.arg, volatile=True))`), so the
   volatility is not a fixture choice but a consequence -- which is why the row says `b1`."""
   from tinygrad.dtype import dtypes
-  from tinygrad.uop.ops import ParamArg
   from tinygrad.runtime.support.hcq2 import hcq_fence
-  tv = UOp(Ops.PARAM, src=(), arg=ParamArg(3, dtypes.uint64, 1, device="CPU"))
-  return hcq_fence(tv, tv, tv, 0)
+  # `hcq_fence` LOST ITS `tv` PARAMETER in the re-vendor: `runtime/support/hcq2.py:73`
+  # reads `def hcq_fence(slots, tl, last)` against `def hcq_fence(slots, tl, tv, last)` at
+  # `a741a469f^:406`. The four-argument call raised `TypeError: too many positional
+  # arguments` out of `UOp.outlined` (ops.py:1321), so this graph produced no rows at all.
+  tv = _storage(Ops.PARAM, 3, dtypes.uint64, 1, device="CPU")
+  return hcq_fence(tv, tv, 0)
 
 
 def g_gate():
@@ -1210,11 +1284,11 @@ def g_gate():
   because there is no ALLOC to convert. The LINEAR wrapper is NOT taken as the root, so
   `Ops.LINEAR` stays unreached; taking it would add one op and one arg shape for nothing."""
   from tinygrad.dtype import dtypes
-  from tinygrad.uop.ops import KernelInfo, ParamArg
+  from tinygrad.uop.ops import KernelInfo
   from tinygrad.codegen import line_rewrite, pm_linearize_cleanups
   from tinygrad.codegen.late.linearizer import linearize
-  buf = UOp(Ops.BUFFER, src=(), arg=ParamArg(1, dtypes.float, 16, device="CPU"))
-  val = UOp(Ops.PARAM, src=(), arg=ParamArg(0, dtypes.float, 16, device="CPU", name="v0"))
+  buf = _storage(Ops.BUFFER, 1, dtypes.float, 16, device="CPU")
+  val = _storage(Ops.PARAM, 0, dtypes.float, 16, device="CPU", name="v0")
   r = UOp.range(4, 0)
   st = buf.index(r).store(val.index(r), r < UOp.const(3)).end(r)
   sk = st.sink(arg=KernelInfo(name="gated"))
@@ -1223,7 +1297,7 @@ def g_gate():
   # `ENDIF`'s only src is the `IF`, and NOTHING points at the `ENDIF` -- so the rewritten
   # SINK's toposort is 12 nodes and it does NOT CONTAIN THE ENDIF. `line_rewrite` answers a
   # LINE LIST and the LINEAR node is the only thing that holds every line (MEASURED:
-  # `UOp(Ops.LINEAR, src=tuple(lines)).toposort()` is 14 rows, ENDIF among them, against 12
+  # `UOp(Ops.LINEAR, src=tuple(lines)).toposort(enter_calls=True)` is 14 rows, ENDIF among them, against 12
   # for the new SINK alone). So taking the last line as the root would have reported a
   # 12-node graph and quietly lost the op this fixture exists to reach -- an "unexplained
   # zero" in the exact place where the artifact exists to put a number.
@@ -1508,9 +1582,7 @@ def g_getaddr():
   MEASURED as 2. Reaches `Ops.GETADDR`. MEASURED: `ALLOC=1 GETADDR=1`. NO `GROUP`: two rows
   cannot carry three ops."""
   from tinygrad.dtype import AddrSpace
-  from tinygrad.uop.ops import ParamArg
-  alloc = UOp(Ops.ALLOC, src=(), arg=ParamArg(0, dtypes.float, 12, device="CPU",
-              bind_on_realize=True))
+  alloc = _storage(Ops.ALLOC, 0, dtypes.float, 12, device="CPU", bind_on_realize=True)
   return UOp(Ops.GETADDR, src=(alloc,), arg="CPU")
 
 
@@ -1622,7 +1694,7 @@ def _rebuild_with(ast: UOp, op: Ops, fn) -> UOp:
   """Rebuild the DAG replacing `fn(u)` for the node of `op` and `ast` itself. Written as a
   fold over the TOPOSORT (ops.py:297) rather than as a positional rebuild, because a
   positional rebuild of 18 nodes is 18 chances to name the wrong child."""
-  par = {c: n for n in ast.toposort() for c in n.src}
+  par = {c: n for n in ast.toposort(enter_calls=True) for c in n.src}
   par[ast] = None
   new: dict[UOp, UOp] = {}
 
@@ -1651,9 +1723,12 @@ def plant_dtype(ast: UOp) -> UOp:
   def retype(n: UOp) -> UOp:
     if n.op is not Ops.ALLOC:
       return n
-    a = n.arg
-    return UOp(Ops.ALLOC, src=(), arg=ParamArg(a.slot, dtypes.int, a.size, device=a.device,
-                                               bind_on_realize=True))
+    # `src` is COPIED, not rebuilt: since `72f98ffe0` the element count IS `src[0]`, a real
+    # CONST node, so keeping `n.src` is what leaves that CONST IDENTICAL -- which is what
+    # this plant's own docstring says the CONST nodes must do. The old spelling read
+    # `a.size` (a field that no longer exists) and rebuilt `src=()`.
+    return UOp(Ops.ALLOC, src=n.src, arg=ParamArg(n.arg.slot, dtypes.int,
+                                                 device=n.arg.device, bind_on_realize=True))
   return _rebuild_with(ast, Ops.ALLOC, retype)
 
 
@@ -1678,7 +1753,7 @@ def plant_srcswap(ast: UOp) -> UOp:
   # membership test here is on `n.op.name` and not on `n.op`. MEASURED: `Ops.ADD in COMM`
   # is `False`, and `Ops.ADD == "ADD"` is `False` too, so the wrong spelling here answers
   # an EMPTY list and the plant reports "no commutative op" on a graph built out of six.
-  counts = collections.Counter(n.op.name for n in ast.toposort() if n.op.name in COMM)
+  counts = collections.Counter(n.op.name for n in ast.toposort(enter_calls=True) if n.op.name in COMM)
   if not counts:
     raise SystemExit(f"plant srcswap: no commutative node in the graph at all; COMM has "
                      f"{len(COMM)} ops and none of them is here")
@@ -1686,7 +1761,7 @@ def plant_srcswap(ast: UOp) -> UOp:
   if not singles:
     raise SystemExit(f"plant srcswap: no commutative op occurs exactly once in "
                      f"{dict(counts)}")
-  op = next(n.op for n in ast.toposort() if n.op.name in singles)
+  op = next(n.op for n in ast.toposort(enter_calls=True) if n.op.name in singles)
   return _rebuild_with(ast, op, lambda n: UOp(op, src=(n.src[1], n.src[0])))
 
 
@@ -1724,7 +1799,7 @@ def plant_shape(ast: UOp) -> UOp:
   # STACK's shape is its element COUNT (`_shape`, ops.py:331), so all four of this graph's
   # STACKs answer `(2,)` or `(3,)`. The outer RESHAPE's `marg` is still `(4,1,3)` and the
   # element count is unchanged, so no other node's shape moves.
-  sts = [n for n in ast.toposort() if n.op is Ops.STACK and [s.arg for s in n.src] == [4, 3]]
+  sts = [n for n in ast.toposort(enter_calls=True) if n.op is Ops.STACK and [s.arg for s in n.src] == [4, 3]]
   assert len(sts) == 1, f"expected exactly one (4,3) STACK, got {len(sts)}"
   st = sts[0]
   return _rebuild_with(ast, Ops.STACK,
@@ -1821,7 +1896,7 @@ def plant_disarm(ast: UOp) -> UOp:
   between "the differ can see a difference" and "the differ names the field the difference
   is in". `bw-p2.py` asserts both, and it asserts the disarm's AGREE with the same
   preconditions it applies to the plant."""
-  xs = [n for n in ast.toposort() if n.op is Ops.EXPAND]
+  xs = [n for n in ast.toposort(enter_calls=True) if n.op is Ops.EXPAND]
   targ = [n for n in xs if n.src[1].op is Ops.CONST and n.src[1].arg == 3]
   if len(targ) != 1:
     raise SystemExit(f"plant disarm: expected exactly 1 EXPAND whose margin is `CONST 3`, got "
@@ -1870,7 +1945,7 @@ def plant_dsexpand(ast: UOp) -> UOp:
   and survives construction order changing. `n.shape` cannot name it -- a CONST's shape is
   `()` for EVERY value (ops.py:331) -- which is why `plant_shape` names a STACK by its
   children's `arg` too."""
-  xs = [n for n in ast.toposort() if n.op is Ops.EXPAND]
+  xs = [n for n in ast.toposort(enter_calls=True) if n.op is Ops.EXPAND]
   if len(xs) != 2:
     raise SystemExit(f"plant dsexpand: expected exactly 2 EXPAND nodes in the graph, got "
                      f"{len(xs)} -- the plant is written against `bw`'s measured census "
@@ -1884,7 +1959,7 @@ def plant_dsexpand(ast: UOp) -> UOp:
   # contains no node that exists only to be a margin -- the ucache (ops.py:201) would return
   # that same node for a fresh `UOp.const(1)` anyway, so minting one would be a second
   # spelling of the same node rather than a new fact.
-  one = next(n for n in ast.toposort() if n.op is Ops.CONST and n.arg == 1)
+  one = next(n for n in ast.toposort(enter_calls=True) if n.op is Ops.CONST and n.arg == 1)
   tgt = targ[0]
   return _rebuild_with(ast, Ops.EXPAND,
                        lambda n: UOp(Ops.EXPAND, src=(n.src[0], one)) if n is tgt else n)
@@ -1912,7 +1987,16 @@ def emit_py(graph: str, plant: str | None) -> list[str]:
   # but with the alignment the two canonical files are byte-comparable and a plain
   # `diff 01-canon-py.txt 02-canon-bend-bound.txt` is ITSELF a check -- the cheapest one
   # in this file, and the one that fails first when an atom letter moves.
-  lst = list(ast.toposort())
+  #
+  # `enter_calls=True` IS NOT OPTIONAL AND WAS NOT BEFORE EITHER. The re-vendor FLIPPED the
+  # default: upstream `002630241:286` reads `def toposort(self, gate=None, enter_calls=False)`
+  # against `a741a469f^:297` `def toposort(self, gate=None, enter_calls=True)`, with a
+  # byte-identical body. A caller relying on the default therefore got a DIFFERENT ARENA
+  # and no error at all: on `loop` the arena was 3 nodes (CALL, PARAM, CONST) because the
+  # whole kernel body hangs off the CALL, and `row_of` then raised `KeyError` on the first
+  # `ix[id(s)]` for a body node. Spelled out at every call site, so the next flip is a
+  # `TypeError` and not a three-node arena.
+  lst = list(ast.toposort(enter_calls=True))
   ix = {id(n): i + 1 for i, n in enumerate(lst)}
   return [row_of(n, i + 1, ix) for i, n in enumerate(lst)]
 
@@ -1929,7 +2013,126 @@ def clean_env(dev: str) -> dict:
   return e
 
 
-def emit_bend(dev: str, graph: str, tries: int = 5,
+# THE TRANSIENT, IN THE COMPILER'S OWN WORDS, AND THE ARITHMETIC THAT BOUNDS IT.
+#
+# `bend` stack-overflows on roughly 1 run in 20.  At the PINNED compiler that failure is LOUD,
+# and the pin is what makes that nameable rather than a matter of faith:
+#   `bend2/comp.ts:159-167`  `ERRS[7]` is the literal `memory fault (machine stack overflow?)`.
+#   `bend2/comp.ts:3415`     `ERR_DEEP 7`, the code that text is filed under.
+#   `bend2/comp.ts:3642-3645` `err_fail` writes it: `fflush(stdout); fprintf(stderr, "bend:
+#                             %s\n", msg); _exit(1)`.  `err_trap` (:3649-3651) is what calls it,
+#                             from the SIGSEGV/SIGBUS that the guarded mmap raises.
+#   `bend2/comp.ts:6337`     the interpreter lane translates a host `RangeError` into the SAME
+#                             `ERRS[7]` string, and `main.ts:971` has a second spelling for one
+#                             raised above that.  Both lanes go to fd 2 and both exit 1.
+#   `tests/io/stack_fault_trap.bend:59-60` is the compiler's OWN regression for it, expecting
+#                             `#|bend: memory fault (machine stack overflow?)` and `#|exit 1`.
+# So a machine-stack overflow is NOT a signal death -- `rc` is 1, never -11/139/-9 -- and NOT an
+# empty stream.  `references/bend` is a DEPTH-1 clone (`git rev-list --count HEAD` == 1), so
+# what the OLDER compilers printed here is NOT CHECKABLE from this tree; `gates/gatekit.py:135`
+# measured "no stdout and no error at all" on one of them and that claim is STALE for this pin.
+STACK_OVERFLOW = ("memory fault (machine stack overflow?)", "machine stack overflowed")
+
+# HOW MANY ATTEMPTS, AND HOW LONG ONE MAY TAKE.  Both are arithmetic from a measurement, not
+# taste.  MEASURED on the pinned v2.0.37 and CITED, not re-taken by this edit: one emission is
+# 1.29 s, the 34-graph corpus is 44 s, `differ.py run` is 182 s.
+#   60 s is 46x that mean, and it is the CEILING ON A HANG, not a budget: a graph that takes 46x
+#   the corpus mean is not slow, it is a different machine, and TIMED-OUT is the truthful name
+#   for that.  A timeout RAISES rather than retries, so too tight a bound costs a loud failure
+#   and never a wrong answer.
+#   WORST CASE PER GRAPH  3 x 60 = 180 s, against 5 x 1800 = 9000 s before: 50x less, and no
+#   single graph can cost thirty minutes.  WORST CASE FOR THE CORPUS  34 x 180 = 6120 s.
+#   3 attempts, not 5: at 1-in-20, P(three in a row) = 1/8000 and P(at least one of 34 graphs
+#   gives up) = 1 - (1 - 1/8000)^34 = 0.42%.  Attempts 4 and 5 divide that by ~400 and cost
+#   2.4x the worst case for 0.006% of the expected cost (1.0531 vs 1.0525 attempts per graph).
+TRIES, BEND_TIMEOUT = 3, 60
+
+
+def classify(rc: int, out: str, err: str) -> tuple[list[str], list[str], str]:
+  """`(rows, header, verdict)` for ONE bend attempt, and the verdict is one of four.
+
+  `RETRY`   bend NAMED a machine stack overflow -- the one documented transient, and the only
+            shape worth another attempt.  Decided by the STRING, never by `rc` and never by the
+            emptiness of stdout: `rc` is 1 for a stack overflow AND for a missing file AND for
+            `SOME PROOFS FAIL` (`runs/graphcmp/D/D10-zerorow-guard.txt.err`, measured), and an
+            empty stream is an ANSWER as often as it is a death.
+  `ANSWER`  rc == 0 and the probe PRINTED.  Whatever the row count, this is what was asked
+            for, and the witness is that it printed rather than that it printed in this
+            file's shape -- `--bend-probe` may point `emit_bend` at any file.
+  `EMPTY`   rc == 0 and nothing printed: an ANSWER that is empty.  An answer must not be
+            retried, because retried it is a lie told in the direction of green.
+  `BROKE`   it did not finish and it did not name the flake.  bend said what was wrong, so
+            another attempt costs another 554 MB to learn the same thing.
+
+  WHY THE EXIT STATUS CANNOT BE THE GATE, in this file's own evidence: `graphcmp.py`'s header
+  trap 6 records that `--check-only` exits 1 on a CLEAN file, the D10 transcript above records
+  rc=1 with 0 rows for a file that does not exist, and `main.ts:187-213` prints
+  `bend <ver> is available: run bend update` on stderr on ANY run -- which is why the D10 stderr
+  tail ends in the update notice and why "stderr is non-empty" is worth nothing.
+  """
+  lines = [ln for ln in out.splitlines() if ln.strip()]
+  rows = [ln for ln in lines if not ln.startswith("#")]
+  hdr = [ln for ln in lines if ln.startswith("#")]
+  if any(t in err for t in STACK_OVERFLOW):
+    return rows, hdr, "RETRY"
+  if rc != 0:
+    return rows, hdr, "BROKE"
+  # `lines`, not `hdr`: `--bend-probe` can point `emit_bend` at any file, and one that prints
+  # rows with no `#` header is still an answer.  The witness is that the probe PRINTED, not
+  # that it printed in this file's shape.
+  return (rows, hdr, "ANSWER") if lines else (rows, hdr, "EMPTY")
+
+
+# THE CONTROL TABLE for `classify`, read by `selfcheck`.  Each row is a shape the PINNED
+# compiler can produce and the verdict is decided by reading the row, so this gate costs no
+# `bend` run and does not wait for a 1-in-20 flake to arm itself.
+CRASH_CONTROL = [
+  (0, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n", "", "ANSWER",
+   "graphcmp.bend:1671 prints the `#` header then the rows and `main() -> IO(Unit)` exits 0"),
+  (0, "# root=0 nodes=1 settled=True\n", "", "ANSWER",
+   "an EMPTY answer: the probe ran and the graph has no arena nodes. The old rule retried "
+   "this five times and then called it a failure -- a retry that fires on an answer"),
+  (0, "1:ADD 2:MUL\n", "", "ANSWER",
+   "a `--bend-probe` file with rows and no `#` header is still an answer"),
+  (1, "", "bend: memory fault (machine stack overflow?)\n", "RETRY",
+   "comp.ts:3415 `ERR_DEEP 7` -> :3642-3645 `err_fail` -> stderr, `_exit(1)`; the compiler's "
+   "own `tests/io/stack_fault_trap.bend:59-60` expects exactly this string and `#|exit 1`"),
+  (1, "", "Error: the machine stack overflowed (a deep recursion, or a literal too large to "
+   "expand)\n", "RETRY",
+   "main.ts:971 `book_err`'s RangeError arm -- the interpreter lane's second spelling"),
+  (1, "", "SOME PROOFS FAIL\nError: - message : no such file: "
+   ".agents/slop/graphcmp-empty.bend\nbend 2.0.35 is available: run bend update\n",
+   "BROKE", "the D10 transcript VERBATIM (`runs/graphcmp/D/D10-zerorow-guard.txt.err`, "
+   "measured): five identical attempts, rc=1, a file that does not exist, and the old rule "
+   "reporting it as the stack flake"),
+  (1, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n", "", "BROKE",
+   "a TORN run -- rows printed and the exit status still non-zero. `gates/gatekit.py:370` "
+   "already requires `rc == 0` for the same reason; taking rows from a failed run reports a "
+   "byte mismatch as a port bug"),
+  (0, "# root=0 nodes=18 settled=True\n1:ADD 2:MUL\n",
+   "bend 2.0.37 is available: run bend update\n", "ANSWER",
+   "main.ts:187-213 prints the update notice on stderr on ANY run, so a non-empty stderr must "
+   "not demote an answer -- and 'stderr is non-empty' is worthless as a discriminator"),
+  (0, "", "bend 2.0.37 is available: run bend update\n", "EMPTY",
+   "the notice alone with nothing printed: still not a crash"),
+  (1, "", "", "BROKE",
+   "rc != 0 and silence. `gates/gatekit.py:135` measured THIS shape as the stack overflow on "
+   "an older compiler; at the pinned v2.0.37 the compiler prints ERRS[7], so a silent one is "
+   "a failure -- and a stale token degrades to a loud failure, never to a silent green"),
+]
+
+
+def attempt_note(attempt: int, rc: int, rows: list[str], hdr: list[str],
+                 verdict: str, err: str) -> str:
+  """One line per attempt.  It carries the VERDICT and the whole stderr rather than its tail:
+  the D10 transcript's tail is the update notice, so a tail can hide the only line that says
+  what went wrong."""
+  return (f"bend attempt {attempt}: {len(rows)} rows, {verdict}, rc={rc}"
+          + (f", {' | '.join(hdr)}" if hdr else "")
+          + f", stderr: {' '.join(err.split())[-240:] or '(empty)'}")
+
+
+def emit_bend(dev: str, graph: str, tries: int = TRIES,
               probe: pathlib.Path | None = None) -> tuple[list[str], list[str]]:
   """`graph` is REQUIRED, with no default, and that is the fix rather than the style.
   MEASURED: `graph` defaulted to `"matmul"` and all three call sites passed only `dev`, so
@@ -1944,24 +2147,28 @@ def emit_bend(dev: str, graph: str, tries: int = 5,
   nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
   20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
   is exactly the guard that does not work."""
-  """`probe` exists so the re-run guard can be SEEN TO FIRE: point it at a file that prints
-  nothing and this must raise, not answer. Measured 20 consecutive runs of the real probe:
-  20 x 18 rows, zero empty, so the trap never fired naturally today and an untested guard
-  is exactly the guard that does not work."""
   notes = []
   for attempt in range(1, tries + 1):
-    c = subprocess.run([str(BEND), str(probe or BEND_PROBE), graph], cwd=REPO, capture_output=True, text=True,
-                       env=clean_env(dev), timeout=1800)
-    lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
-    rows = [ln for ln in lines if not ln.startswith("#")]
-    hdr = [ln for ln in lines if ln.startswith("#")]
-    if rows:
-      notes.append(f"bend attempt {attempt}: {len(rows)} rows, {' | '.join(hdr)}")
+    try:
+      c = subprocess.run([str(BEND), str(probe or BEND_PROBE), graph], cwd=REPO,
+                         capture_output=True, text=True, env=clean_env(dev),
+                         timeout=BEND_TIMEOUT)
+    except subprocess.TimeoutExpired:
+      # A HANG IS NOT THE FLAKE, and a hang is the one shape where a retry costs the most:
+      # another attempt is another full budget of a 554 MB process. So this raises on the
+      # first one. Before this, a timeout was an uncaught `TimeoutExpired` -- a traceback,
+      # which names nothing.
+      raise SystemExit(f"emit bend {graph}: TIMED-OUT after {BEND_TIMEOUT}s on attempt "
+                       f"{attempt} -- a FAILURE, not a verdict, and deliberately NOT retried: "
+                       f"{tries - attempt} attempt(s) held back")
+    rows, hdr, verdict = classify(c.returncode, c.stdout, c.stderr)
+    notes.append(attempt_note(attempt, c.returncode, rows, hdr, verdict, c.stderr))
+    if verdict == "ANSWER":
       return rows, notes
-    notes.append(f"bend attempt {attempt}: 0 rows, rc={c.returncode}, "
-                f"stderr tail: {' '.join(c.stderr.split())[-160:] or '(empty)'}")
-  raise SystemExit("emit bend: 0 rows after %d attempts -- a FAILURE, not a verdict:\n  %s"
-                   % (tries, "\n  ".join(notes)))
+    if verdict != "RETRY":
+      break
+  raise SystemExit("emit bend %s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
+                   % (graph, verdict, tries, "\n  ".join(notes)))
 
 
 # ---------------------------------------------------------------------------
@@ -2732,6 +2939,17 @@ def selfcheck(dev: str = "CPU") -> int:
   if "MUL" not in COMM:
     bad.append(f"MUL is not in the commutative set {sorted(COMM)}: `--plant srcswap` "
                f"reorders a MUL, so `--equiv` could not answer for it")
+  # THE CRASH/ANSWER CONTROL, and it is the control this file's own header trap 4 says it
+  # needed and did not have.  Every row below is a stream shape the PINNED compiler can
+  # produce, each one cited, and the verdict is decided by READING the row -- no `bend` runs,
+  # so this costs nothing on top of the two the rows above already made.  A control that can
+  # only be exercised by waiting for a 1-in-20 flake is not a control.
+  #
+  #   (rc, stdout, stderr)                                       expect  where that shape comes from
+  for rc, out, err, want, why in CRASH_CONTROL:
+    _, _, got = classify(rc, out, err)
+    if got != want:
+      bad.append(f"classify({rc}, {out!r}, ...{err[-60:]!r}) is {got}, not {want} -- {why}")
   print("# SELFCHECK: " + ("OK" if not bad else "FAIL"))
   for b in bad:
     print("#   " + b)
@@ -2744,8 +2962,10 @@ def selfcheck(dev: str = "CPU") -> int:
 # trustworthy -- `control` shows it is quiet against itself, `cross` and `conf` show it is
 # loud against something else, `dbg` runs it across DEBUG levels on a FIXED graph, and
 # `selfcheck` asserts the pieces it rests on.
-def debug_run(dev: str, level: int, tries: int = 5) -> tuple[list[str], list[str]]:
-  """ONE bend process at ONE `DEBUG` level, with the 0-row re-run guard `emit_bend` has.
+def debug_run(dev: str, level: int, tries: int = TRIES) -> tuple[list[str], list[str]]:
+  """ONE bend process at ONE `DEBUG` level, with the 0-row re-run guard `emit_bend` has, and
+  through the SAME `classify` -- so the two lanes cannot drift into disagreeing about what a
+  crash is, which is exactly what a second hand-written copy of the rule guarantees.
 
   `DEBUG` GOES IN THE ENVIRONMENT and not in an argument, because that is where the port
   reads it: `H.debug()` is `IO(U32)` over `getenv_int("DEBUG", 0)` (helpers.bend:307-308).
@@ -2755,21 +2975,25 @@ def debug_run(dev: str, level: int, tries: int = 5) -> tuple[list[str], list[str
   are both legitimate, so the probe reads the ENV and the sites are still reached through
   the port's own `*_dbg*` defs with `d` threaded in. Which of the two is under test is
   stated rather than blurred: this exercises the ENV READ and the seven gates."""
-  rows, notes = [], []
+  notes, verdict = [], "BROKE"
   for attempt in range(1, tries + 1):
     e = clean_env(dev)
     e["DEBUG"] = str(level)
-    c = subprocess.run([str(BEND), str(BEND_DBG)], cwd=REPO, capture_output=True, text=True,
-                       env=e, timeout=1800)
-    lines = [ln for ln in c.stdout.splitlines() if ln.strip()]
-    got = [ln for ln in lines if not ln.startswith("#")]
-    if got:
-      notes.append(f"DEBUG={level} attempt {attempt}: {len(got)} rows")
-      return got, notes
-    notes.append(f"DEBUG={level} attempt {attempt}: 0 rows, rc={c.returncode}, "
-                 f"stderr tail: {' '.join(c.stderr.split())[-160:] or '(empty)'}")
-  raise SystemExit("emit debug: 0 rows after %d attempts -- a FAILURE, not a verdict:\n  %s"
-                   % (tries, "\n  ".join(notes)))
+    try:
+      c = subprocess.run([str(BEND), str(BEND_DBG)], cwd=REPO, capture_output=True, text=True,
+                         env=e, timeout=BEND_TIMEOUT)
+    except subprocess.TimeoutExpired:
+      raise SystemExit(f"emit debug DEBUG={level}: TIMED-OUT after {BEND_TIMEOUT}s on attempt "
+                       f"{attempt} -- a FAILURE, not a verdict, and deliberately NOT retried")
+    rows, hdr, verdict = classify(c.returncode, c.stdout, c.stderr)
+    notes.append(f"DEBUG={level} "
+                 + attempt_note(attempt, c.returncode, rows, hdr, verdict, c.stderr))
+    if verdict == "ANSWER":
+      return rows, notes
+    if verdict != "RETRY":
+      break
+  raise SystemExit("emit debug DEBUG=%s: %s after %d attempt(s) -- a FAILURE, not a verdict:\n  %s"
+                   % (level, verdict, tries, "\n  ".join(notes)))
 
 
 def split_debug(rows: list[str]) -> tuple[list[str], list[str]]:
@@ -2864,8 +3088,8 @@ def cmd_conf(dev: str) -> int:
   # objects in separate processes and the disagreement names a node in each.
   m0 = base("matmul")
   swapped = PLANTS["srcswap"](m0)
-  mul0 = [n for n in m0.toposort() if n.op is Ops.MUL][0]
-  mul1 = [n for n in swapped.toposort() if n.op is Ops.MUL][0]
+  mul0 = [n for n in m0.toposort(enter_calls=True) if n.op is Ops.MUL][0]
+  mul1 = [n for n in swapped.toposort(enter_calls=True) if n.op is Ops.MUL][0]
   out.append("# CONFLATION 1 -- `arg` differs STRUCTURALLY but `repr(arg)` is IDENTICAL.")
   out.append(f"#   MEASURED: repr(arg) before={mul0.arg!r} after={mul1.arg!r} "
              f"equal={mul0.arg.__repr__() == mul1.arg.__repr__()}  "
@@ -2933,16 +3157,16 @@ def cmd_conf(dev: str) -> int:
   # differ can only answer through `shape`, it CANNOT see this and the limit stands.
   # MEASURED: it can, and it names `src`.
   s_two, s_one = base("sym"), PLANTS["sym1"](base("sym"))
-  sh_two = sorted(gc_shape(n) for n in s_two.toposort() if "U" in gc_shape(n))
-  sh_one = sorted(gc_shape(n) for n in s_one.toposort() if "U" in gc_shape(n))
+  sh_two = sorted(gc_shape(n) for n in s_two.toposort(enter_calls=True) if "U" in gc_shape(n))
+  sh_one = sorted(gc_shape(n) for n in s_one.toposort(enter_calls=True) if "U" in gc_shape(n))
   out.append("# CONFLATION 4 -- TWO DIFFERENT symbolic dims against ONE, on a graph whose "
              "`shape` columns are IDENTICAL.")
   out.append(f"#   MEASURED: symbolic-dim nodes two={len(sh_two)} one={len(sh_one)} and the "
              f"shape texts are {sorted(set(sh_two))} against {sorted(set(sh_one))} -- EQUAL as "
              f"sets, so the shape column cannot separate them. Node counts "
-             f"{len(list(s_two.toposort()))} against {len(list(s_one.toposort()))}. The "
+             f"{len(list(s_two.toposort(enter_calls=True)))} against {len(list(s_one.toposort(enter_calls=True)))}. The "
              f"PARAMs' `arg` texts differ in ParamArg's SIXTH field (`name`, ops.py:32): "
-             f"{[carg(Ops.PARAM, n.arg) for n in s_two.toposort() if n.op is Ops.PARAM]!r}.")
+             f"{[carg(Ops.PARAM, n.arg) for n in s_two.toposort(enter_calls=True) if n.op is Ops.PARAM]!r}.")
   rc4, txt4 = report(emit_py("sym", None), emit_py("sym", "sym1"), "sym1",
                      "two-symbolic-dims", "one-symbolic-dim")
   for ln in txt4.splitlines():
