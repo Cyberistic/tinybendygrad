@@ -5,7 +5,12 @@ The last one is the contract five other units are porting, so it gets its own
 `layout` section driven through the REAL `layout_args`/`pack_args`.
 """
 import sys, struct
+from pathlib import Path
 sys.path.insert(0, '.')
+# The five verdicts and their exits, from `gates/gatekit.py` BY PATH via `checks/verdict.py`, whose
+# own module level is inert. Reach idiom: `gates/retention-check.py:89`.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "checks"))
+from verdict import REFUSED, settle
 
 
 def p(*a):
@@ -164,7 +169,24 @@ def flags():
 
 
 if __name__ == '__main__':
+    # WHY THIS BLOCK, MEASURED. `--help` used to match NONE of the `w in (...)` tests below, so the
+    # oracle fell through every one, printed ZERO bytes and exited 0 -- `gates/help-census.py` scored
+    # that `SILENT`, which `gates/gatekit.py:55` defines as `DEAD`, "it ran and emitted nothing",
+    # while its rc 0 read as `PASS` to any caller switching on the exit code. It was not a TTY
+    # artifact either: MEASURED under `script(1)`, a real pty, `--help` emitted the same 4 bytes as
+    # a control program that provably prints nothing (`^D\b\b`, the pty's own teardown echo). The
+    # same fall-through is reached by ANY unrecognized selector, so the block below names the
+    # sections and settles `REFUSED` (3, "a precondition was absent") rather than exiting 0 having
+    # produced no rows. MEASURED: no caller in `gates/` or `checks/` passes a selector to this file
+    # today, so nothing can depend on the silent rc 0.
+    SECTIONS = ('hdr', 'layout', 'submit', 'rf', 'arch', 'fl')
     w = sys.argv[1] if len(sys.argv) > 1 else 'all'
+    if w in ('-h', '--help'):
+        print('usage: qcom_stage3-oracle.py [all|%s]\n%s' % ('|'.join(SECTIONS), __doc__))
+        sys.exit(0)
+    if w != 'all' and w not in SECTIONS:
+        settle(REFUSED, "no section is named %r; this oracle emits one of %s, or `all`"
+                        % (w, '|'.join(SECTIONS)))
     if w in ('all', 'hdr'):
         hdr()
     if w in ('all', 'layout'):

@@ -1,8 +1,15 @@
 # mypy: ignore-errors
 #!/usr/bin/env python3
-import os, ctypes, ctypes.util, struct, platform, time
+import importlib.util, os, ctypes, ctypes.util, struct, platform, time
+from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
 from tinygrad.runtime.autogen import libc, qcom_dsp
 def to_mv(ptr, sz) -> memoryview: return memoryview(ctypes.cast(ptr, ctypes.POINTER(ctypes.c_uint8 * sz)).contents).cast("B")
+# `hexdump` is a pip package and this interpreter does not carry it (MEASURED: absent from `.venv`
+# AND from the bare `python3`). A missing LIBRARY is `REFUSED`, not `FAIL` and not a crash; the
+# raise this replaced exited 1, which `gates/gatekit.py`'s own table spells `FAIL`.
+_absent = [m for m in ("hexdump",) if importlib.util.find_spec(m) is None]  # THIS FILE's own third-party imports
+if _absent:
+  settle(REFUSED, f"needs {', '.join(_absent)}, absent from this interpreter and from this repository")
 from hexdump import hexdump
 
 def get_struct(argp, stype):

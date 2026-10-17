@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
-import os, sys
+import importlib.util, os, sys
 import token
 import tokenize
 import itertools
+from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
+# `tabulate` is a pip package and this interpreter does not carry it (MEASURED: absent from `.venv`
+# AND from the bare `python3`, so no ledger row can be made true by naming one). A missing LIBRARY is
+# `REFUSED`, not `FAIL` and not a crash, and `--help` is not this file's usage anyway: it takes a
+# base path, and the raise it replaced exited 1, which `gates/gatekit.py`'s own table spells `FAIL`.
+_absent = [m for m in ("tabulate",) if importlib.util.find_spec(m) is None]  # THIS FILE's own third-party imports
+if _absent:
+  settle(REFUSED, f"needs {', '.join(_absent)}, absent from this interpreter and from this repository")
 from tabulate import tabulate
 from tinygrad.uop import Ops
 from tinygrad.helpers import ContextVar

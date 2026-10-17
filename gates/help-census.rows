@@ -1,225 +1,227 @@
 instrument	reason	shape	verdict	read_as	rc	token	peak_mb	seconds	last_line
-checks/abi4_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	459.0	1.54	6 |     IO.print("F32ROW abi4_fp16_1p5 = " ++ F32.show(v0))
-checks/abi_gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	590.0	32.44	  gate rc: 1
-checks/al-verdict.py	py-main	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	23.0	0.37	FIXTURES, still refuse. It is a monkeypatch and NOTHING ON DISK CARRIES IT.
-checks/bend	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.34	Read the guide (`bend guide`) before writing Bend code.
-checks/bend-health.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	1.23	  rows -> checks/bend-health.rows
-checks/both-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	  --only ONLY  comma list of graphs, for a re-measure of one
-checks/bounded-selftest.sh	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	47.0	5.6	=== selftest PASS: 13 case(s) run, 0 failed ===
-checks/bounded.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	                     them holds
-checks/census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	  --fresh
-checks/citation-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	21.0	0.35	  GREEN: no citation names a rule git says was added and then removed.
-checks/cites-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	                        precision with each lane's own n
-checks/cl-port-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  --plants
-checks/classify.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.34	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/classify.sh: ledger absent: .agents/slop/mutledger/BLOBHIST.tsv -- STALE and PLANT are opposites and cannot be told
-checks/cli.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.35	  --json                Emit profiler output as JSON
-checks/compile.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	ModuleNotFoundError: No module named 'llvmlite'
-checks/corpus-figure.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.38	  --write     also print the CORPUS.md figure block
-checks/coverage.py	py-main	RAISED-PRECONDITION	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.37	IsADirectoryError: [Errno 21] Is a directory: '--help'
-checks/demo.sh	sh-selfref	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	31.0	10.39	index untouched by this script? it never calls git
-checks/devgate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	                 precedes
-checks/devpin.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	                        if seen
-checks/diary-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  --plant
-checks/differ.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	  -h, --help            show this help message and exit
-checks/disagree-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.36	  --lane {pin,citations,plant,coverage,all}
-checks/disarm.sh	sh-selfref	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	52.0	2.78	staged copies of it? 0
-checks/dup-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	  --one ONE [ONE ...]
-checks/dup-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  --selftest
-checks/e2e.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	and it is not a verdict.
-checks/e2e.sh	sh-selfref	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	752.0	60.24	== 6/6 the matmul THROUGH THE PORT (no Node, no browser, no navigator.gpu)
-checks/env-precond.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	  --plant {satisfied,moved}
-checks/fw_live.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	ModuleNotFoundError: No module named 'common'
-checks/gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.36	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/drive.mjs  (this gate's driver; its last home was .agents/slop/jsfp8/drive.mjs, moved by 3f0e70ff1 and swept by 371cc64c9 -- recoverable from git at 371cc64c9^:.agents/slop/jsfp8/drive.mjs.  Restoring it is not this file's call.)  This gate cannot produce a denominator without it.
-checks/gate.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.08	== REFUSED, NOT A VERDICT: the generator is absent: .agents/slop/shlscope/gen.py
-checks/gate_dtype.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --ranges
-checks/gate_norm.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	25.0	0.77	28 | import ../../../tinybendygrad/dtype.bend as D
-checks/gatesweep.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	  --out OUT
-checks/gen.sh	sh-selfref	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	101.0	1.66	CONTROL must-die     (k=3, 2^48)       exit=1 (want nonzero)
-checks/git-index-guard.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.73	usage: git-index-guard.py (snap | check --expect <token>)
-checks/graphcmp-census-audit.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.66	StopIteration
-checks/hermetic-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	  --no-publish  census without writing artifacts
-checks/index-arm-gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	23.0	0.36	INDEX-ARM REFUSED, NOT A VERDICT: 39 path(s) a bare `git commit` acts on RIGHT NOW (27 deletion, 8 stale, 4 foreign addition). The tree is fine; the TOOL is pointed wrong.
-checks/jsfix_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	442.0	1.23	7 |     IO.print("SEAM trunc #0 = " ++ H.i64_text(r))
-checks/lint_demo.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	27.0	4.17	THE LINT DID NOT FLIP -- one of the two numbers is a constant.
-checks/lintable-gate.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	224.0	0.66	lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'
-checks/llama.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	23.0	0.35	ModuleNotFoundError: No module named 'extra'
-checks/marker-audit.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	19.0	0.35	          nobody can check.
-checks/nan_census.mjs	js-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	14.0	5.8	}
-checks/nl-gate-noguard.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.36	  --oracle-stdout ORACLE_STDOUT
-checks/nl-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --oracle-stdout ORACLE_STDOUT
-checks/no-shrink.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	                        40)
-checks/no-strays.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	29.0	0.37	  NOT CLEAN. 4 scratch-shaped file(s) in tinybendygrad -- a run's output belongs under .agents/slop/, beside the source.
-checks/no-txt.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	25.0	0.66	note: ARTIFACTS-FRESH  (not charged to this gate's exit; see the module docstring)
-checks/norm_check.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	FIXED 5/5 assertions hold   PLANT (repr(float(s)) with no round trip) 4/5
-checks/nvrows-deadrow-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	                        .agents/slop/strays/working/.../nvdev.bend)
-checks/oracle-txt-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --gate
-checks/oracle_f64.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	24.0	0.35	== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 1 argument(s). Without them there is no denominator to publish.
-checks/pathresolve.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	281.0	19.71	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-checks/plant.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.06	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/plant.sh:26: REPO: set REPO to the repo root
-checks/process_replay.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	22.0	0.36	process replay err: process_replay_24 isn't accessible in master, did DB_VERSION change?
-checks/render-gate-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	65.0	0.65	# rows=80
-checks/repair-dupes.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	IndexError: list index out of range
-checks/repro-paths.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	  --mark      append a DANGLING marker next to each broken reference, in place
-checks/residue.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	                        it (DEFAULT 500)
-checks/rn-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --oracle-stdout ORACLE_STDOUT
-checks/romless.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	ModuleNotFoundError: No module named 'common'
-checks/run-all.sh	sh-selfref	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	351.0	1.32	python3: can't open file '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/derive.py': [Errno 2] No such file or directory
-checks/run-f64.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.07	usage: mkdir [-pv] [-m mode] directory_name ...
-checks/run-port-mm.sh	sh-selfref	RAISED-PRECONDITION	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	3.0	0.37	usage: rm [-f | -i] [-dIPRrvWx] file ...
-checks/run.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	24.0	0.35	ModuleNotFoundError: No module named 'hexdump'
-checks/runs-artifacts.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	35.0	2.74	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-checks/sb-gate.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.06	== REFUSED, NOT A VERDICT: the CPython oracle is absent: .agents/slop/schedule-bodies/sb-oracle.py
-checks/serve.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	                        Path to profile
-checks/slop-declare.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	  --root ROOT  the repository to walk
-checks/substrate-check.sh	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	21.0	0.35	                     judged as before
-checks/substrate-current.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	  --plant
-checks/substrate-id.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	  --sweeps SWEEPS
-checks/substrate-manifest.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	  --plant
-checks/substrate-snapshot.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	  --plant
-checks/substrate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.35	                     judged as before
-checks/sweep.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --yes                 required for DELETE
-checks/sz.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.38	ModuleNotFoundError: No module named 'tabulate'
-checks/test_rewrite_bottom_up_gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	                                       in MyTestCase
-checks/txt-owners.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	60.0	41.05	       2  --help/
-checks/unowned.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	               instead of live -- the set moves while six units are running
-checks/unrunnable-recipes.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	  --out OUT
-checks/vz_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.35	REFUSED, NOT A VERDICT: oracle absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/viz_oracle.py -- this gate's whole denominator comes from it, so there is nothing to measure without it. (It was never committed: 0 commits touch it, so there is nothing to restore.)
-checks/walk-mutate.sh	sh-selfref	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	2.0	0.37	UNKNOWN ARM --help
-checks/wallcheck.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	                        `sys.exit`
-checks/wt-sync.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.07	cp: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/wt: No such file or directory
-gates/.wgsl-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.36	srneg 16 const=NOMATCH
-gates/amd-mut-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1250.0	14.33	amd_dsl_census: PASS -- 1178 rows x 3 lanes, 1147 exact, 31 pinned (31 names)
-gates/amd-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	28.0	0.36	dsl-done=1
-gates/amd_dsl_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1199.0	13.24	amd_dsl_census: PASS -- 1178 rows x 3 lanes, 1147 exact, 31 pinned (31 names)
-gates/amd_dsl_census-mutate.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.34	ValueError: max() iterable argument is empty
-gates/amd_dsl_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	34.0	0.45	dsl-done=1
-gates/assertlit-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.43	  --plant     twelve cases against the shipped fns
-gates/bc-u32-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	612.0	4.95	bc-u32-gate: 39 rows, 3 lanes, 2 pinned divergences at the 2**63 window edge
-gates/bc-u32-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	wrote bc-u32.bend (39 rows) and bc-u32-oracle.py (39 rows)
-gates/bc-u32-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	G_g_i4_at=[1,1152921504606846976]
-gates/bc_u32_table.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  G: pre-fix 1 agree / 3 DIFFER   modes=['L1', 'L1+L2']
-gates/beautiful-mnist-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1523.0	16.63	beautiful-mnist-gate: 30 shared rows, 3 lanes identical
-gates/citations-census-gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	444.0	38.62	VERDICT: FAIL -- 426 DANGLING or FALSIFIED citations in the 16777-row headline (2.54%); over the whole walk, including the 460664 archived rows of earlier censuses, it is 5110 of 477441. A dangling citation looks fine to a reader, which is why it is the class this tree counts.
-gates/cr_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	837.0	9.67	cr_graph_census-gate: 28 rows, 3 lanes, 4 DECLARED divergences -- every ported public cr_* has NO NOOP BOTTOM and 22 compared op sequences match CPython byte-for-byte; 4 divergences are the ONE empty-src-root rendering carve-out (identical to ew_ufix) and 2 are the PINNED zeros_like/ones_like bool-receiver defect (7 nodes vs 6)
-gates/crp_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	930.0	9.93	crp_graph_census-gate: 287 rows (9 dtype families x 20 dtypes + 4 value constructors x 20 dtypes + 5 shape families x 4 shapes + 7), 3 lanes, 286 deep cones match CPython byte for byte and 1 are DECLARED -- 1 is W3's missing vmin/vmax and NOTHING is the class-(b) NEVER-FOLDING CAST, whose 20 `iv_` rows `cr_cast_dt` cleared; the ten census METHODS are the intersection of creation.bend's cr_* names and creation.py's (self|cls names; the fold set is measured at bool/weakint/weakfloat; no lane reads the NOOP bottom
-gates/crp_graph_census-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	labels: C1 C2 C3 C4 C5 C6 C7 C8 C9 D1 D2 G1 G10 G11 G12 G13 G14 G15 G16 G2 G3 G4 G5 G6 G7 G7b G8 G9 P1 P2 P3 P4 P5 P6 P6b P7 P8 V1 V2 V3 V4 V5 V6 V7 V8 W1 W2 W3 W4 X1 X2 X3
-gates/crp_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	32.0	0.39	ctl_2=ALLOC/0[f32 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2
-gates/cstyle-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	0.37	cfw_5_l=__ockl_get_local_id(1)
-gates/cstyle_render_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	995.0	9.54	cstyle_render_census-gate: 361 rows, 3 lanes byte-identical over the wide surface, 15 DECLARED divergences -- 6 unmapped-dtype refusals from the tinygrad drift where THE PORT IS RIGHT, and 9 refusals Bend cannot raise (5 dropped ALU ops, 4 empty workitem dicts) which the port now spells UNHANDLED(...) instead of the empty string; base float4 None AGREES and its pin is dropped; the ONE DEFECT it found (render_index's non-ALU branch stripping parens on an AReduce where CPython strips only on a literal-op arg) IS FIXED; the port's own strings carry the sz>1 suffix, the image arms, the device prefixes and the ASCII workitem
-gates/cstyle_render_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1537.0	60.24	
-gates/cstyle_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.36	cfw_5_l=__ockl_get_local_id(1)
-gates/decomp_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1497.0	27.9	decomp_graph_census-gate: 43 rows (30 pool-fed l2i arms + 1 l2i cell l2i.pick does not list + 3 l2i.const arms + 2 unpack32 fixtures + 7 f2f pairs), 3 lanes, 26 deep cones match CPython byte-for-byte and 17 are DECLARED divergences -- 11 are the PROMOTION CASTS `ElementwiseMixin._broadcasted`'s `promote` mints (mixin/elementwise.py:24-32) and decomp's raw `O.UOp.alu` never does (282 CAST entries, each verified by DELETING them from CPython's cone, rebuilding the port's, and checking the TARGET dtype each one was cast to), 2 are refusals, 2 rows are the ONE unbuilt float-target CAST arm at two target widths, and q2/q3 ARE FINDINGS: f2f's narrowing arm is not a deletion of CPython's cone; no lane answers the NOOP bottom
-gates/decomp_graph_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1046.0	60.14	
-gates/decomp_value-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	53.0	37.15	  q5: splice 1 CAST -> the port's pinned cone (True), 0 alternative witness(es), 1 dropped-at-src[0] (all commutative: True), PythonProgram refuses 1 of its nodes
-gates/devtag-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.38	devtag-gate: PASS -- two claims, no bend lane, no row of its own
-gates/docnum-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --root ROOT
-gates/docnum-claim-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.36	  --plant
-gates/ew-consts-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	607.0	4.24	ew-consts-gate: 21 rows, 3 lanes byte-identical
-gates/ew-consts-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	k_two_pi=1086918619
-gates/ew-explog-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1361.0	9.98	ew-explog-gate: 3 rows, 3 lanes byte-identical
-gates/ew-explog-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	# fixture dtype = dtypes.weakint
-gates/ew_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1755.0	10.7	ew_graph_census-gate: 46 rows, 3 lanes, 1 DECLARED divergence -- every ported public ew_* has NO NOOP BOTTOM and 45 op sequences match CPython's byte-for-byte; ew_ufix differs only in the empty-src rendering, and both DEFECTS are FIXED so their pins are GONE: ew_floor builds b-1 and ew_exp has all three casts (7 Ops.CAST/1 Ops.EXP2)
-gates/exitcode-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.35	  --rows      write the per-site table and stop
-gates/falseclaim-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.36	  --rows ROWS  where the .rows artifact is written
-gates/fold_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1634.0	10.42	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/fold_graph_census-gate.py:58: SyntaxWarning: invalid escape sequence '\.'
-gates/fold_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	fold_reshbare_w=n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM dtype=i32 shape=raise base=Ops.BUFFER self=0 invalid=0 vmin=-0:2147483648 vmax=+0:2147483647
-gates/gate-surface.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/gate-surface.py:299: SyntaxWarning: invalid escape sequence '\`'
-gates/gates-pop.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	63.0	0.64	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-gates/gendirs.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.35	DENOMINATOR: the number of source files the scan READ and the number PRESENT, and the number of write sites resolved. A population with no denominator is a claim nobody can check.
-gates/git-massdelete-gate.py	py-main	SKIP	SKIP/SKIP	SKIP	4	WITHIN-LIMITS	0.0	0.34	unknown mode '--help'
-gates/gr_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1645.0	10.07	gr_graph_census-gate: 32 rows, 3 lanes, NO divergences -- every ported graph-producing pm_gradient rule is NOOP-free and ALL 18 deep trees and all 14 walk rows match CPython byte-for-byte (gr_0's identity-CAST fold and gr_10's POW gradient are both fixed)
-gates/help-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	22.0	0.35	  --only ONLY        substring filter on the instrument path
-gates/i64-shl-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	384.0	2.39	i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all 30 (value, amount) pairs
-gates/i64-shl-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	KeyError: 'I64SHL_SEED'
-gates/i64-shr-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	435.0	2.41	i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pairs, and every one of the 18 past-the-width cells saturates to the sign
-gates/i64-shr-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.35	KeyError: 'I64SHR_SEED'
-gates/indexread-gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	92.0	1.53	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-gates/js-lane-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  --quick               skip the REACH section
-gates/linearizer_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1593.0	11.03	linearizer_census: 71 rows, 69 compared, 2 declared divergences
-gates/linearizer_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1743.0	60.3	
-gates/md_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1498.0	8.67	md_graph_census-gate: 22 rows, 3 lanes, 10 graph-building dtype methods -- no NOOP bottom, 17 op sequences match CPython byte-for-byte, and the 5 divergences are ALL representation carve-outs (3 zero-src renderings, 2 raise-vs-None refusals), NO defect
-gates/mixin-op-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1553.0	10.71	mixin-op-gate: 32 shared rows, 3 lanes identical
-gates/mo_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1722.0	10.48	mo_graph_census-gate: 38 rows, 3 lanes, 30 public mo_* defs -- all 38 op sequences match CPython byte-for-byte (the callerless mo_permute NOOP defect is fixed and its pin dropped; `exp_i32` is the strong-int32 row that separates `mo_exp`'s three casts)
-gates/msgdiff-gate.py	py-main	SKIP	SKIP/SKIP	SKIP	4	WITHIN-LIMITS	0.0	0.38	unknown mode '--help'
-gates/mx_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1493.0	9.26	mx_graph_census-gate: 17 rows, 3 lanes, NO declared divergence -- every ported public movement wrapper has NO NOOP BOTTOM and all 17 op sequences match CPython's byte-for-byte; reshape_256's one-element shape-arg defect (bare CONST vs STACK) was FIXED by `mxw_stk.done`, so its pin is GONE
-gates/onnx_census-gate.py	py-main	SKIP	SKIP/KILLED-ON-MEMORY	UNASSIGNED(-9)	-9	KILLED-ON-MEMORY	2054.0	10.1	
-gates/op_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1953.0	11.66	op_graph_census-gate: 28 rows, 3 lanes, 2 DECLARED divergences. The four value rows and all 24 graph rows match CPython byte-for-byte EXCEPT the `(1.0 - b)` CONST of `mstep`/`vstep`, a DOUBLE-vs-F32 difference Bend cannot close (no f64). The 16 fixed rows were `apply`/`neg` (wrong op), `cast` (empty arena) and 13 stale-arena self-loops
-gates/ops-core-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	700.0	4.53	ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymmetry, pop_const's two conditions, ssimplify's three arms and valid's node shape all agree with CPython
-gates/ops-core-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	pynest_signed_zero_interns=0
-gates/ops_bend_exec-e2e.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	655.0	44.27	# 7 match, 0 mismatch
-gates/ops_python_census-gate.py	py-main	SKIP	SKIP/KILLED-ON-MEMORY	UNASSIGNED(-9)	-9	KILLED-ON-MEMORY	2060.0	8.89	
-gates/ops_python_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	21.0	0.37	py-done=1
-gates/ops_python_exec-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.36	  --jobs JOBS
-gates/ops_python_exec-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.38	  --coverage  print the coverage census and exit
-gates/optim-nop-mutate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	874.0	10.89	optim.bend: 5 of 7 mutations moved rows; 2 moved nothing at rc=0 and 2 of those 2 were EXPECTED to (4 refused: a non-unique pattern or a form that did not compile)
-gates/oracle-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.39	                      PYTHONHASHSEEDs
-gates/oracleblind-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	0.39	  --only ONLY  census one oracle by basename, for iteration
-gates/path-resolve-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	303.0	18.68	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-gates/pins-shape-gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	119.0	1.8	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
-gates/ptx_render_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	872.0	13.95	ptx_render_census-gate: 579 rows, 3 lanes byte-identical over the walk and the SEAM, 58 DECLARED divergences in two groups -- 18 are the dtype tables answering `pred` or the EMPTY STRING where ptx.py:181 raises KeyError (the PTX form of the AMDWORD32 defect, REACHABLE through UOp.range's default weakint) and FIVE MORE are the registers the port then allocates where CPython refuses (`%alu__0`, `%cast__0`, `%ridx_pred_0`); 35 are the un-ported string_rewrite. The SIX rows that were ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 read r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture whose INDEX carries a non-zero src[0] and the only thing in the axis that can see the same wrong read in `rg_pick`, and `f38_regload` is the one whose LOAD subscripts a LIST rather than a scalar, which is what M9 needed
-gates/ptx_render_census-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	46.0	1.28	# ==== END GENERATED FIXTURES
-gates/ptx_render_census-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	416.0	1.88	no scratch file survived
-gates/ptx_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	45.0	0.98	f38_regload.mod=.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<4>;\n\tret;\n}
-gates/qcom-oracle.py	py-main	SILENT	DEAD/SILENT	PASS	0	WITHIN-LIMITS	25.0	0.39	
-gates/qcom_cache-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	second= ['HIT'] fourth= ['HIT']
-gates/qcom_stage3-oracle.py	py-main	SILENT	DEAD/SILENT	PASS	0	WITHIN-LIMITS	0.0	0.35	
-gates/rand_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1553.0	12.89	rand_census-gate: 55 port rows, 32 compared against CPython and all 32 agree byte-for-byte, 4 `st_*` divergences PINNED ON BOTH SIDES, 19 port-only with their absence from the oracle asserted; four CPython pins intact
-gates/rd_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1331.0	9.56	rd_graph_census-gate: 4 rows, 3 lanes, all 4 op sequences match CPython byte-for-byte and NO row has a NOOP bottom (the `rd_take`/`rd_tail`, `mxm_as_shape` and `rd_tfb.cat` defects are fixed, so the two pins are dropped)
-gates/realize-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	dnum_65=0
-gates/realize_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1772.0	12.22	realize_graph_census-gate: 1004 rows (15 drivers x 65 nodes + 15 bottom + 12 arm-coverage + 2 header), 3 lanes, 941 answers match CPython byte-for-byte and 63 are DECLARED divergences over NINE classes -- OF THOSE 1004 ROWS ONLY 611 CARRY A COMPARISON: 378 are the CALL-only drivers refusing a non-CALL (both lanes answer `notacall`, so they count as matches) and 15 are `Arena.bottom()`, where CPython has no node. 15 divergences are that bottom, 13 are `get_call_name`'s STORE arm and its fallthrough, 12 are `prg.arg.vars` over a non-`ProgramInfo` body, 10 are `pm_validate`'s UNPORTED BODY (claim against cone), 8 are a CALL whose `src[1]` is not a PARAM or a BUFFER, 2 are `inputs[slot]` where CPython has no default, 1 is the MSELECT `storage_base` wall, 1 the MSTACK walk. THE `SRC_BODY` CLASS IS GONE: 52 rows that used to be realize.py:15's UNCONDITIONAL `src[1:]` against the port's op-CONDITIONAL `Arena.src_without_body` now AGREE, and `classes_hold` asserts every one of them still does -- **AND `rz_bound_map`, the SECOND of its two fix sites, IS NOT COVERED BY ANY OF THEM: MEASURED, reverting it moves ZERO rows, because no driver reaches `get_call_var_uops` on a non-CALL (`var` is refused there by `u.body`) and for a CALL the two spellings ARE the same slice. The port's own comment says so; this header did not.** ONE FINDING STANDS: `res_63` -- HEAD's `_resolve` has an `Ops.GETADDR` arm and `rz_arm` does NOT, so a GETADDR argument is left un-resolved; IT VANISHES UNDER THE PIN `ad117c928^`, whose line 129 has no GETADDR, so the port is correct against the pin and incomplete against HEAD, and `pin_drift_holds` runs the pin's code on every run to keep saying so. `ret is not uop` IS FIXED: the 8 `bea0_*` rows agree on `10` -- CLAIMED and the rewrite was the identity -- and the ctx-7 rows still begin `11` and carry `b=7`. **THE TWO BITS ARE WHY `rz_kernel_beam`'s NO-`KernelInfo` DEFAULT IS A ROW AT ALL: with the old single bit, mutating that default `0` -> `1` moved ZERO of the rows (`V2`, reported as vacuous), because the claim was folded away.** THE `kern` DRIVER COMPARES A COUNT WHERE THE THINGS ARE NAMES, and `kern_blind_holds` measures why that is the CEILING -- `device_vocab_holds` MEASURES THE PREMISE EVERY RUN (CPython has no `str -> int` device index: `hasattr(Device,'tag')` is False, `ParamArg.device` is a `str`, `Device.__getitem__` is string-keyed) and the port's own `tag_of` is a three-valued sentinel -- while a TWO-DEVICE node makes the count 2 on both lanes. The gate no longer justifies that wall by naming a symbol in `uop/spec.bend`'s comment; it measures the wall, and `uop/spec.bend`'s three `Device.tag` citations were rewritten to the mechanism those measurements describe. THE `arg` PAYLOAD IS IN EVERY TOKEN NOW: TWO FIXTURE NODES THAT PRINT ALIKE ARE TWO NODES A READER CAN CONFUSE, AND MEASURED OVER THE 65 NODES THIS CENSUS SPELLED 32 DISTINCT TOKENS FOR 65 NODES -- 147 of the 2080 pairs indistinguishable -- against 60 and 8 after, every one of the eight a pair whose TWO ARGS ARE EQUAL. `argkinds_hold` REQUIRES THAT NO LANE PRINTED THE `[?]` AN UNSPELLED `Arg` KIND WOULD PRINT. THE DRIVER AXIS IS READ BACK FROM FOUR PLACES BY `axis_hold`: the oracle's `DRIVERS` BY PATH, the oracle's `drive` ladder, and the bend lane's own `rs_drv_name` and `rs_d.go`.
-gates/realize_graph_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1814.0	60.33	
-gates/realize_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.37	dnum_65=0
-gates/regalloc_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	868.0	5.98	regalloc_census: 48 rows, 48 compared, 0 declared divergences
-gates/regalloc_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1013.0	60.18	
-gates/render_val_s-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	495.0	2.43	render_val_s-gate: 8 rows, 3 lanes -- render_val_s's signed 32-bit decimal printer agrees with CPython's str(int(v)) on zero, the small positives, the small negatives, INT32_MIN, and INT32_MAX
-gates/replace-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	578.0	4.24	replace-gate: 8 rows, 3 lanes -- UOp.replace's identity, single-field swap, two-field swap, multi-src swap, and the change-detection row all agree with CPython
-gates/retention-check.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	DENOMINATOR: one dir per gate under gates/artifacts/ + runs/graphcmp/D, 2 generators. A verdict with no denominator is a claim nobody can check.
-gates/rng_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1600.0	14.38	rng_graph_census-gate: 726 rows (11 tables x 66 nodes), 3 lanes, 44 DECLARED divergences -- 682 op sequences match CPython's byte for byte; 38 are the # WALL(p3) rule bodies this file records as unported (each pinned with the rangeify.py line MEASURED to fire) and 6 are the zero-src `-` rendering. 0 FINDINGS: the three this gate found (ct_20, ab_28, ab_29) are FIXED, each was RED on its pin first, and all three rows now match; gs and lb answer nothing on 132 nodes, asserted
-gates/rng_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.38	ab_65=none
-gates/runner.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.38	  --out OUT
-gates/state_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1226.0	8.07	state_census-gate: 85 rows, 3 lanes byte-identical, 64 of them VALUES rather than the 21 Booleans the lane also carries; population and class census clean; four CPython pins intact
-gates/tc_ptx_render-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	25.0	0.38	KeyError: '--help'
-gates/tc_ptx_types-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	529.0	3.01	tc_ptx_types-gate: 60 rows, 3 lanes, 24 pinned divergences -- every dtype CPython's `types` refuses resolves to `strong_dtype`'s PTX type or to EMPTY, never to a concrete wrong one
-gates/tc_ptx_types-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	389.0	3.87	      NOTHING, as a control must -- an edit outside the tables cannot move a row, which is what makes the other five numbers mean something.
-gates/tn_add_sub-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	820.0	5.44	tn_add_sub-gate: 19 rows, 3 lanes -- tn_add, tn_radd, tn_sub, and tn_rsub all agree with CPython's Tensor.__add__ / __radd__ / __sub__ / __rsub__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
-gates/tn_and_or_xor-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	844.0	5.45	tn_and_or_xor-gate: 25 rows, 3 lanes -- tn_and, tn_rand, tn_or, tn_ror, tn_xor, and tn_rxor all agree with CPython's Tensor.__and__ / __rand__ / __or__ / __ror__ / __xor__ / __rxor__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
-gates/tn_binop2_cmp-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1047.0	8.14	tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, tn_cmpne (no-broadcast binop ports for __lt__/__gt__/__ne__) and tn_dunder_ge, tn_dunder_le, tn_eq (chains through tn_logical_not) all agree with CPython
-gates/tn_binop_arena-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1149.0	7.86	tn_binop_arena-gate: 8 rows, 3 lanes, 0 divergences -- src[1] names the caller's operand at depths 0, 1 AND 2; the sibling-arena wall is CLOSED by O.Arena.merge
-gates/tn_binop_sweep-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	858.0	5.47	tn_binop_sweep-gate: 28 rows, 3 lanes, 0 divergences -- ALL SIXTEEN binops re-mint the right operand before reading its index, at depth 1, plus the ELEVEN reverse arms, and the depth-0 and same-tensor controls
-gates/tn_bitwise_not-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1126.0	7.8	tn_bitwise_not-gate: 7 rows, 3 lanes -- six on the BOOL arm of the three-arm dispatch at `elementwise.py:156-157` (op/arg/srcs/the identity-cast FOLD/the fold's precondition/input purity) and one on the SIGNED `^ -1` arm. The UNSIGNED arm is built but UNMEASURED: no fixture is unsigned, because it takes a `CAST(..., u8)` first
-gates/tn_ceil_floor-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	836.0	5.47	tn_ceil_floor-gate: 16 rows, 3 lanes -- tn_ceil and tn_floor both agree with CPython's Tensor.ceil / Tensor.floor (the WHERE-chain composition of trunc + cmplt + add/sub + where; _broadcasted seam still walls the broadcasting case)
-gates/tn_contiguous_backward-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	791.0	4.88	tn_contiguous_backward-gate: 5 rows, 3 lanes -- tn_contiguous_backward's op/src/arg set, input purity and reachability all agree with CPython's Tensor.contiguous_backward
-gates/tn_detach-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	788.0	4.83	tn_detach-gate: 5 rows, 3 lanes -- tn_detach's op/src/arg set, input purity and reachability all agree with CPython's Tensor.detach (the one-line port closes the second of the four Tensor methods nn/__init__.bend:241 named)
-gates/tn_dunder_neg-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1019.0	7.76	tn_dunder_neg-gate: 5 rows, 3 lanes -- tn_dunder_neg (the __neg__ dunder wrapper) agrees with CPython on bool/arith op, arith srcs, input purity and reachability (delegates to fully-ported tn_neg)
-gates/tn_fdiv_mod-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	805.0	5.18	tn_fdiv_mod-gate: 17 rows, 3 lanes -- tn_fdiv, tn_rfdiv, tn_mod, and tn_rmod all agree with CPython's Tensor.__floordiv__ / __rfloordiv__ / __mod__ / __rmod__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
-gates/tn_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1459.0	10.23	tn_graph_census-gate: 51 rows, 3 lanes, ZERO declared divergences -- every ported tn_* has NO NOOP BOTTOM and ALL 51 op sequences match CPython's byte-for-byte, tn_isfinite included: its weakint `self` is now REHASHED to weakfloat by `_broadcasted`'s promote half, which `remint` does and which lives in uop/weak.bend so tensor.bend can call it
-gates/tn_isfinite-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1131.0	8.12	tn_isfinite-gate: 6 rows, 3 lanes -- tn_isfinite's CMPNE/2-srcs graph (op/arg/nsrc/reachability + src[1] is the CONST and is not the node itself) all agree with CPython's Tensor.isfinite; the src[0] CAST-vs-OR fold is recorded at mixin/elementwise.bend
-gates/tn_isnan-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	790.0	4.84	tn_isnan-gate: 5 rows, 3 lanes -- tn_isnan's CMPNE/self-src graph (op/arg/srcs/purity/reachability) all agree with CPython's Tensor.isnan
-gates/tn_logical_not-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1014.0	7.79	tn_logical_not-gate: 8 rows, 3 lanes -- tn_logical_not's CMPNE/CAST/CONST graph on a bool AND an int input (op/arg/purity/reachability/srcs/no-self-reference) all agree with CPython's Tensor.logical_not
-gates/tn_lshift_rshift-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	808.0	4.87	tn_lshift_rshift-gate: 9 rows, 3 lanes -- tn_lshift / tn_rlshift / tn_rshift all agree with CPython's Tensor.lshift / __rlshift__ / rshift (no-broadcasting case)
-gates/tn_maximum-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	654.0	5.36	tn_maximum-gate: 4 rows, 3 lanes -- tn_maximum agrees with CPython's Tensor.maximum (no-broadcasting case)
-gates/tn_minimum-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	19.0	0.37	tn_minimum-gate: PASS -- CPython `Ops` and the port's `Ops` are the SAME 77 members, and CPython has no MIN
-gates/tn_mul-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	801.0	5.17	tn_mul-gate: 13 rows, 3 lanes -- tn_mul, tn_rmul, and tn_square all agree with CPython's Tensor.__mul__ / __rmul__ / .square() (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
-gates/tn_nary_arena-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	735.0	5.4	tn_nary_arena-gate: 12 rows, 3 lanes, 0 divergences -- tn_where's THREE operands and tn_threefry's two are re-minted before they are read, at depth 0 and depth 1; no src is ever the NOOP bottom
-gates/tn_neg-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1106.0	8.16	tn_neg-gate: 8 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) and arith arm (MUL/srcs/self-no-mutation) all agree with CPython's Tensor.neg (the two-arm dispatch closes the wall that lived on the elementwise.py:74 boundary)
-gates/tn_nodes-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1191.0	9.08	tn_nodes-gate: 15 rows, 3 lanes -- every node of tn_isfinite (op/nsrc/srcs-by-toposort-position/arg/dtype) agrees with CPython's Tensor.isfinite, in order and with no declared divergence
-gates/tn_pow-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	697.0	5.24	tn_pow-gate: 9 rows, 3 lanes -- tn_pow and tn_rpow both agree with CPython's Tensor.__pow__ / __rpow__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
-gates/tn_relu-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	693.0	5.17	tn_relu-gate: 6 rows, 3 lanes -- tn_relu's op/arg/srcs/purity and reachability all agree with CPython's Tensor.relu (the WHERE-chain composition; _broadcasted seam still walls the broadcasting case)
-gates/tn_relu6-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	723.0	5.54	tn_relu6-gate: 6 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity and reachability all agree with CPython's Tensor.relu6 (the nested WHERE-chain composition)
-gates/tn_sin_log2_exp2_rsqrt-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	684.0	5.2	tn_sin_log2_exp2_rsqrt-gate: 11 rows, 3 lanes -- tn_sin, tn_log2, tn_exp2 (pure one-liners) and tn_rsqrt (chained sqrt -> reciprocal) all agree with CPython
-gates/tn_sqrt-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	689.0	4.88	tn_sqrt-gate: 5 rows, 3 lanes -- tn_sqrt's op/src/arg set, input purity and reachability all agree with CPython's Tensor.sqrt (the one-line port closes nn/__init__.bend:241)
-gates/tn_trunc_reciprocal_threefry-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	649.0	5.14	tn_trunc_reciprocal_threefry-gate: 9 rows, 3 lanes -- tn_trunc, tn_reciprocal, tn_threefry all agree with CPython on op/src/arg/purity/reachability
-gates/tn_where-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	628.0	5.22	tn_where-gate: 5 rows, 3 lanes -- tn_where's op/arg/srcs set, input purity, and reachability all agree with CPython's Tensor.where (the no-broadcasting case; broadcasting case stays walled on _broadcasted)
-gates/tnvalue-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	  --rss       peak RSS + wall clock only
-gates/uop_cast-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	578.0	4.25	uop_cast-gate: 8 rows, 3 lanes -- UOp.cast's op/src/arg set, new-node build, ALU reachability, input purity and dedup all agree with CPython (graph bloat when dtypes already match is the documented DEVIATION)
-gates/upstream-pow-dtype-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	  --plant {green,red}
-gates/upstream-promo-lattice-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.38	  --plant {green,red}
-gates/wgsl_render_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1256.0	12.29	wgsl_render_census: PASS -- 227 rows x 3 lanes, 213 exact, 14 pinned lane divergences in 6 classes, 0 stale self-checks
-gates/wgsl_render_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1469.0	60.35	
-gates/wgsl_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.35	srneg 16 const=NOMATCH
-gates/wk-cd-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1168.0	9.35	wk-cd-gate: 7 rows identical, 3 lanes, 0 documented divergences -- the cd_none row that this gate was pinned on is closed (commit_dtype.weak now supplies the widest int64 range when bounds are unavailable, and commit_int answers i64 the same way CPython's commit_int does)
-gates/wk-cd-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	# DIVERGES=
-gates/wk-eval-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1213.0	9.62	wk-eval-gate: 22 rows, 3 lanes, 0 documented divergences -- _eval's dtype set, single-number check, and CAST passthrough all agree with CPython (the int_weakint row that this gate was pinned on is now closed)
-gates/wk-eval-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	bool_false_dt=1
-gates/wk-f32-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	540.0	3.03	wk-f32-gate: 18 rows, 3 lanes byte-identical
-gates/wk-f32-rows.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.38	p45p1=1459617792
+checks/.tmp-amd_dsl_census-mutate.py	py-main	RAISED-PRECONDITION	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.18	FileNotFoundError: [Errno 2] No such file or directory: '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/amd_dsl_census-pins.rows'
+checks/.tmp-coverage.py	py-main	RAISED-PRECONDITION	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.17	IsADirectoryError: [Errno 21] Is a directory: '--help'
+checks/.tmp-graphcmp-census-audit.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.17	StopIteration
+checks/.tmp-tc_ptx_render-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	32.0	0.49	KeyError: '--help'
+checks/abi4_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	351.0	4.01	6 |     IO.print("F32ROW abi4_fp16_1p5 = " ++ F32.show(v0))
+checks/abi_gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	463.0	60.59	    ABI-2 c tinybendygrad/runtime/dtype.c line 212: line 212
+checks/al-verdict.py	py-main	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	28.0	0.56	FIXTURES, still refuse. It is a monkeypatch and NOTHING ON DISK CARRIES IT.
+checks/bend	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.64	Read the guide (`bend guide`) before writing Bend code.
+checks/bend-health.py	py-main	SKIP	SKIP/SKIP	SKIP	4	WITHIN-LIMITS	25.0	2.53	  SKIP WROTE NOTHING: checks/bend-health.rows left as it was (a skipped run must not replace a record with half a measurement)
+checks/both-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.18	  --only ONLY  comma list of graphs, for a re-measure of one
+checks/bounded-selftest.sh	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	43.0	12.15	=== selftest PASS: 13 case(s) run, 0 failed ===
+checks/bounded.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.33	                     them holds
+checks/census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.51	  --fresh
+checks/citation-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	31.0	0.48	  GREEN: no citation names a rule git says was added and then removed.
+checks/cites-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.16	                        precision with each lane's own n
+checks/cl-port-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.54	  --plants
+checks/classify.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.22	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/classify.sh: ledger absent: .agents/slop/mutledger/BLOBHIST.tsv -- STALE and PLANT are opposites and cannot be told
+checks/cli.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	35.0	2.03	  --json                Emit profiler output as JSON
+checks/compile.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.36	== REFUSED, NOT A VERDICT: compile.py: needs llvmlite, hexdump, adsprpc, ion, msm_ion, every one absent from this interpreter; adsprpc, ion and msm_ion are in neither this repository nor any wheel, so this file cannot run on this host at all
+checks/corpus-figure.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.9	  --write     also print the CORPUS.md figure block
+checks/coverage.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.82	== REFUSED, NOT A VERDICT: coverage.py: not a readable file: --help
+checks/demo.sh	sh-selfref	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	25.0	60.27	### C. THE SAME FILE REMOVED -- the split returns to A
+checks/devgate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	1.31	                 precedes
+checks/devpin.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.48	                        if seen
+checks/diary-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.85	  --plant
+checks/differ.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.73	  -h, --help            show this help message and exit
+checks/disagree-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	1.01	  --lane {pin,citations,plant,coverage,all}
+checks/disarm.sh	sh-selfref	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	52.0	9.57	staged copies of it? 0
+checks/dup-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	51.0	2.76	  --one ONE [ONE ...]
+checks/dup-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	57.0	1.0	  --selftest
+checks/e2e.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.17	and it is not a verdict.
+checks/e2e.sh	sh-selfref	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	295.0	60.73	== 5/5 port's own device (the port's ops_bend runtime executes)
+checks/env-precond.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.22	  --plant {satisfied,moved}
+checks/fw_live.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	32.0	0.95	                        PCIe transport (default: USB first, then native PCI)
+checks/gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.12	== REFUSED, NOT A VERDICT: input absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/drive.mjs  (this gate's driver; its last home was .agents/slop/jsfp8/drive.mjs, moved by 3f0e70ff1 and swept by 371cc64c9 -- recoverable from git at 371cc64c9^:.agents/slop/jsfp8/drive.mjs.  Restoring it is not this file's call.)  This gate cannot produce a denominator without it.
+checks/gate.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.2	== REFUSED, NOT A VERDICT: the generator is absent: .agents/slop/shlscope/gen.py
+checks/gate_dtype.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	0.71	  --ranges
+checks/gate_norm.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	35.0	1.16	28 | import ../../../tinybendygrad/dtype.bend as D
+checks/gatesweep.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.47	  --out OUT
+checks/gen.sh	sh-selfref	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	110.0	5.99	CONTROL must-die     (k=3, 2^48)       exit=1 (want nonzero)
+checks/git-index-guard.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.76	usage: git-index-guard.py (snap | check --expect <token>)
+checks/graphcmp-census-audit.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.46	states: baseline drop-three port-dead port-invents drop-sole-op py-dead
+checks/hermetic-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.34	  --no-publish  census without writing artifacts
+checks/index-arm-gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	25.0	1.94	INDEX-ARM REFUSED, NOT A VERDICT: 53 path(s) a bare `git commit` acts on RIGHT NOW (30 deletion, 20 stale, 3 foreign addition). The tree is fine; the TOOL is pointed wrong.
+checks/jsfix_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	271.0	22.18	7 |     IO.print("SEAM trunc #0 = " ++ H.i64_text(r))
+checks/lint_demo.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	24.0	18.43	THE LINT DID NOT FLIP -- one of the two numbers is a constant.
+checks/lintable-gate.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	203.0	18.42	lintable-gate: the probe --check-only says 'SOME PROOFS FAIL'
+checks/llama.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	29.0	1.13	== REFUSED, NOT A VERDICT: llama.py: needs sentencepiece, tiktoken, absent from this interpreter -- its own line 2 names the pip install: `pip3 install sentencepiece tiktoken blobfile`
+checks/marker-audit.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	19.0	1.0	          nobody can check.
+checks/nan_census.mjs	js-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	11.0	26.61	}
+checks/nl-gate-noguard.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	20.0	1.61	  --oracle-stdout ORACLE_STDOUT
+checks/nl-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	17.0	1.8	  --oracle-stdout ORACLE_STDOUT
+checks/no-shrink.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.57	                        40)
+checks/no-strays.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	25.0	5.84	  NOT CLEAN. 4 scratch-shaped file(s) in tinybendygrad -- a run's output belongs under .agents/slop/, beside the source.
+checks/no-txt.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	48.0	3.42	note: ARTIFACTS-FRESH  (not charged to this gate's exit; see the module docstring)
+checks/norm_check.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	27.0	1.11	FIXED 5/5 assertions hold   PLANT (repr(float(s)) with no round trip) 4/5
+checks/nvrows-deadrow-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.54	                        .agents/slop/strays/working/.../nvdev.bend)
+checks/oracle-txt-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.59	  --gate
+checks/oracle_f64.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	40.0	1.41	== REFUSED, NOT A VERDICT: needs <workdir> <mm-rows>; got 1 argument(s). Without them there is no denominator to publish.
+checks/pathresolve.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	74.0	60.57	<unknown>:10: SyntaxWarning: invalid escape sequence '\.'
+checks/plant.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.19	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/plant.sh:26: REPO: set REPO to the repo root
+checks/process_replay.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	30.0	0.69	process replay err: process_replay_24 isn't accessible in master, did DB_VERSION change?
+checks/render-gate-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	61.0	3.04	# rows=80
+checks/repair-dupes.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.2	IndexError: list index out of range
+checks/repro-paths.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.61	  --mark      append a DANGLING marker next to each broken reference, in place
+checks/residue.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.35	                        it (DEFAULT 500)
+checks/rn-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	1.88	  --oracle-stdout ORACLE_STDOUT
+checks/romless.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	36.0	1.65	  --prescale PRESCALE   SCK prescaler 0..15 (default: 8)
+checks/run-all.sh	sh-selfref	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	287.0	22.88	python3: can't open file '/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/derive.py': [Errno 2] No such file or directory
+checks/run-f64.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.59	usage: mkdir [-pv] [-m mode] directory_name ...
+checks/run-port-mm.sh	sh-selfref	RAISED-PRECONDITION	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	2.0	3.06	usage: rm [-f | -i] [-dIPRrvWx] file ...
+checks/run.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	34.0	1.19	== REFUSED, NOT A VERDICT: run.py: needs hexdump, absent from this interpreter and from this repository
+checks/runs-artifacts.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	29.0	9.93	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+checks/sb-gate.sh	sh-selfref	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.58	== REFUSED, NOT A VERDICT: the CPython oracle is absent: .agents/slop/schedule-bodies/sb-oracle.py
+checks/serve.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	42.0	1.72	                        Path to profile
+checks/slop-declare.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.7	  --root ROOT  the repository to walk
+checks/substrate-check.sh	sh-dispatch	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	1.24	                     judged as before
+checks/substrate-current.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	  --plant
+checks/substrate-id.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.54	  --sweeps SWEEPS
+checks/substrate-manifest.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.81	  --plant
+checks/substrate-snapshot.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.38	  --plant
+checks/substrate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.39	                     judged as before
+checks/sweep.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.87	  --yes                 required for DELETE
+checks/sz.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.44	== REFUSED, NOT A VERDICT: sz.py: needs tabulate, absent from this interpreter and from this repository
+checks/test_rewrite_bottom_up_gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	32.0	1.3	                                       in MyTestCase
+checks/txt-owners.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	55.0	60.55	
+checks/unowned.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.85	               instead of live -- the set moves while six units are running
+checks/unrunnable-recipes.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.41	  --out OUT
+checks/vz_gate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	0.0	0.73	REFUSED, NOT A VERDICT: oracle absent: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/checks/viz_oracle.py -- this gate's whole denominator comes from it, so there is nothing to measure without it. (It was never committed: 0 commits touch it, so there is nothing to restore.)
+checks/walk-mutate.sh	sh-selfref	SAID	REFUSED/UNASSIGNED(2)	UNASSIGNED(2)	2	WITHIN-LIMITS	4.0	1.22	UNKNOWN ARM --help
+checks/wallcheck.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.56	                        `sys.exit`
+checks/wt-sync.sh	sh-selfref	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	0.0	0.15	cp: /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/xd1/wt: No such file or directory
+gates/.wgsl-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	34.0	1.56	srneg 16 const=NOMATCH
+gates/amd_dsl_census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	344.0	60.6	
+gates/amd_dsl_census-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.68	labels: A1 A2 A3 A4 A5 A6 A7 A8 A9 G1 G2 G3 G4 G5 G6 G7 G8 G8b G9 G9b P1 P2 P3 P4 P5 X1 X2 X3 X4 X5
+gates/amd_dsl_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	2.06	dsl-done=1
+gates/assertlit-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.71	  --plant     twelve cases against the shipped fns
+gates/bc-u32-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	309.0	60.85	
+gates/bc-u32-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.55	wrote bc-u32.bend (39 rows) and bc-u32-oracle.py (39 rows)
+gates/bc-u32-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	53.0	1.6	G_g_i4_at=[1,1152921504606846976]
+gates/bc_u32_table.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	53.0	1.64	  G: pre-fix 1 agree / 3 DIFFER   modes=['L1', 'L1+L2']
+gates/beautiful-mnist-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	688.0	60.34	
+gates/citations-census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	209.0	60.97	
+gates/cr_graph_census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	384.0	60.93	
+gates/crp_graph_census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	384.0	60.9	
+gates/crp_graph_census-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.55	labels: C1 C2 C3 C4 C5 C6 C7 C8 C9 D1 D2 G1 G10 G11 G12 G13 G14 G15 G16 G2 G3 G4 G5 G6 G7 G7b G8 G9 P1 P2 P3 P4 P5 P6 P6b P7 P8 V1 V2 V3 V4 V5 V6 V7 V8 W1 W2 W3 W4 X1 X2 X3
+gates/crp_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	61.0	1.5	ctl_2=ALLOC/0[f32 sz=6 GLOBAL bind=True],CONST/0[2:weakint],CONST/0[3:weakint],STACK/2,RESHAPE/2
+gates/cstyle-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	33.0	0.92	cfw_5_l=__ockl_get_local_id(1)
+gates/cstyle_render_census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	328.0	60.41	
+gates/cstyle_render_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	607.0	60.41	
+gates/cstyle_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	30.0	0.93	cfw_5_l=__ockl_get_local_id(1)
+gates/decomp_graph_census-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	670.0	60.4	
+gates/decomp_graph_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	591.0	60.65	
+gates/decomp_value-gate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	46.0	60.33	
+gates/devtag-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.37	devtag-gate: PASS -- two claims, no bend lane, no row of its own
+gates/docnum-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.35	  --root ROOT
+gates/docnum-claim-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	  --plant
+gates/ew-consts-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	541.0	12.7	ew-consts-gate: 21 rows, 3 lanes byte-identical
+gates/ew-consts-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.11	k_two_pi=1086918619
+gates/ew-explog-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1117.0	24.43	ew-explog-gate: 3 rows, 3 lanes byte-identical
+gates/ew-explog-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	68.0	1.17	# fixture dtype = dtypes.weakint
+gates/ew_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1088.0	21.97	ew_graph_census-gate: 46 rows, 3 lanes, 1 DECLARED divergence -- every ported public ew_* has NO NOOP BOTTOM and 45 op sequences match CPython's byte-for-byte; ew_ufix differs only in the empty-src rendering, and both DEFECTS are FIXED so their pins are GONE: ew_floor builds b-1 and ew_exp has all three casts (7 Ops.CAST/1 Ops.EXP2)
+gates/exitcode-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.39	  --rows      write the per-site table and stop
+gates/falseclaim-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.43	  --rows ROWS  where the .rows artifact is written
+gates/fold_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	992.0	25.8	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/fold_graph_census-gate.py:58: SyntaxWarning: invalid escape sequence '\.'
+gates/fold_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.41	fold_reshbare_w=n=3 op=Ops.RESHAPE nsrc=2 srcops=Ops.BUFFER|Ops.PARAM dtype=i32 shape=raise base=Ops.BUFFER self=0 invalid=0 vmin=-0:2147483648 vmax=+0:2147483647
+gates/gate-surface.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.38	/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/gates/gate-surface.py:299: SyntaxWarning: invalid escape sequence '\`'
+gates/gates-pop.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	66.0	1.03	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+gates/gendirs.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.39	DENOMINATOR: the number of source files the scan READ and the number PRESENT, and the number of write sites resolved. A population with no denominator is a claim nobody can check.
+gates/git-massdelete-gate.py	py-main	SKIP	SKIP/SKIP	SKIP	4	WITHIN-LIMITS	0.0	0.51	unknown mode '--help'
+gates/gr_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1380.0	29.65	gr_graph_census-gate: 32 rows, 3 lanes, NO divergences -- every ported graph-producing pm_gradient rule is NOOP-free and ALL 18 deep trees and all 14 walk rows match CPython byte-for-byte (gr_0's identity-CAST fold and gr_10's POW gradient are both fixed)
+gates/help-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.56	  --only ONLY        substring filter on the instrument path
+gates/i64-shl-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	458.0	6.66	i64-shl-gate: 151 rows, 3 lanes identical, and the literal and runtime routes agree at all 30 (value, amount) pairs
+gates/i64-shl-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.14	KeyError: 'I64SHL_SEED'
+gates/i64-shr-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	486.0	6.68	i64-shr-gate: 301 rows, 3 lanes identical, both routes agree at all 60 (value, amount) pairs, and every one of the 18 past-the-width cells saturates to the sign
+gates/i64-shr-oracle.py	py-main	RAISED-INTRINSIC	DEAD/TRACEBACK	FAIL	1	WITHIN-LIMITS	0.0	0.6	KeyError: 'I64SHR_SEED'
+gates/indexread-gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	84.0	4.34	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+gates/js-lane-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.5	  --quick               skip the REACH section
+gates/linearizer_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	999.0	27.9	linearizer_census: 71 rows, 69 compared, 2 declared divergences
+gates/linearizer_census-mutate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	981.0	26.26	linearizer_census-gate.py: the UNMUTATED tree is rc=1, so a mutation reading would be meaningless
+gates/md_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1190.0	21.91	md_graph_census-gate: 22 rows, 3 lanes, 10 graph-building dtype methods -- no NOOP bottom, 17 op sequences match CPython byte-for-byte, and the 5 divergences are ALL representation carve-outs (3 zero-src renderings, 2 raise-vs-None refusals), NO defect
+gates/mixin-op-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1220.0	29.82	mixin-op-gate: 32 shared rows, 3 lanes identical
+gates/mo_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	968.0	29.3	mo_graph_census-gate: 38 rows, 3 lanes, 30 public mo_* defs -- all 38 op sequences match CPython byte-for-byte (the callerless mo_permute NOOP defect is fixed and its pin dropped; `exp_i32` is the strong-int32 row that separates `mo_exp`'s three casts)
+gates/msgdiff-gate.py	py-main	SKIP	SKIP/SKIP	SKIP	4	WITHIN-LIMITS	23.0	0.46	unknown mode '--help'
+gates/mx_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1008.0	25.41	mx_graph_census-gate: 17 rows, 3 lanes, NO declared divergence -- every ported public movement wrapper has NO NOOP BOTTOM and all 17 op sequences match CPython's byte-for-byte; reshape_256's one-element shape-arg defect (bare CONST vs STACK) was FIXED by `mxw_stk.done`, so its pin is GONE
+gates/onnx_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1971.0	36.95	onnx_census-gate: 167 rows (the port's own 123 plus 44 value rows), 3 lanes byte-identical; population and class census clean; four CPython pins intact
+gates/op_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1265.0	33.54	op_graph_census-gate: 28 rows, 3 lanes, 2 DECLARED divergences. The four value rows and all 24 graph rows match CPython byte-for-byte EXCEPT the `(1.0 - b)` CONST of `mstep`/`vstep`, a DOUBLE-vs-F32 difference Bend cannot close (no f64). The 16 fixed rows were `apply`/`neg` (wrong op), `cast` (empty arena) and 13 stale-arena self-loops
+gates/ops-core-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	575.0	11.89	ops-core-gate: 32 rows, 3 lanes -- CONST identity, the arg-type asymmetry, pop_const's two conditions, ssimplify's three arms and valid's node shape all agree with CPython
+gates/ops-core-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	28.0	0.68	pynest_signed_zero_interns=0
+gates/ops_bend_exec-e2e.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	612.0	60.37	
+gates/ops_python_census-gate.py	py-main	SKIP	SKIP/KILLED-ON-MEMORY	UNASSIGNED(-9)	-9	KILLED-ON-MEMORY	2071.0	23.01	
+gates/ops_python_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	39.0	1.1	py-done=1
+gates/ops_python_exec-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.48	  --jobs JOBS
+gates/ops_python_exec-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	36.0	0.75	  --coverage  print the coverage census and exit
+gates/optim-nop-mutate.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	829.0	25.71	optim.bend: 5 of 7 mutations moved rows; 2 moved nothing at rc=0 and 2 of those 2 were EXPECTED to (4 refused: a non-unique pattern or a form that did not compile)
+gates/oracle-census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.55	                      PYTHONHASHSEEDs
+gates/oracleblind-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	0.56	  --only ONLY  census one oracle by basename, for iteration
+gates/path-resolve-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	256.0	36.51	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+gates/pins-shape-gate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	113.0	5.28	<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+gates/ptx_render_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	756.0	26.59	ptx_render_census-gate: 579 rows, 3 lanes byte-identical over the walk and the SEAM, 58 DECLARED divergences in two groups -- 18 are the dtype tables answering `pred` or the EMPTY STRING where ptx.py:181 raises KeyError (the PTX form of the AMDWORD32 defect, REACHABLE through UOp.range's default weakint) and FIVE MORE are the registers the port then allocates where CPython refuses (`%alu__0`, `%cast__0`, `%ridx_pred_0`); 35 are the un-ported string_rewrite. The SIX rows that were ptx.bend's alias arm reading Wal.r[0] where ptx.py:189 and :204 read r[u.src[0]] are FIXED and COMPARED, `f37_twobufs` is the fixture whose INDEX carries a non-zero src[0] and the only thing in the axis that can see the same wrong read in `rg_pick`, and `f38_regload` is the one whose LOAD subscripts a LIST rather than a scalar, which is what M9 needed
+gates/ptx_render_census-gen.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	45.0	9.18	# ==== END GENERATED FIXTURES
+gates/ptx_render_census-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	325.0	7.92	no scratch file survived
+gates/ptx_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	45.0	2.32	f38_regload.mod=.version VERSION\n.target TARGET\n.address_size 64\n.visible .entry test (\n\t\n)\n.maxntid 1\n{\n\t.reg\t\t.f32 %reg_f32_<4>;\n\tret;\n}
+gates/qcom-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	27.0	0.4	                        .venv/bin/python .agents/slop/qc_oracle.py bit      (one)
+gates/qcom_cache-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	second= ['HIT'] fourth= ['HIT']
+gates/qcom_stage3-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.39	`layout` section driven through the REAL `layout_args`/`pack_args`.
+gates/rand_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	1007.0	26.65	rand_census-gate: 55 port rows, 32 compared against CPython and all 32 agree byte-for-byte, 4 `st_*` divergences PINNED ON BOTH SIDES, 19 port-only with their absence from the oracle asserted; four CPython pins intact
+gates/rd_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	812.0	21.18	rd_graph_census-gate: 4 rows, 3 lanes, all 4 op sequences match CPython byte-for-byte and NO row has a NOOP bottom (the `rd_take`/`rd_tail`, `mxm_as_shape` and `rd_tfb.cat` defects are fixed, so the two pins are dropped)
+gates/realize-mut-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	26.0	0.42	dnum_65=0
+gates/realize_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	880.0	27.46	realize_graph_census-gate: 1004 rows (15 drivers x 65 nodes + 15 bottom + 12 arm-coverage + 2 header), 3 lanes, 941 answers match CPython byte-for-byte and 63 are DECLARED divergences over NINE classes -- OF THOSE 1004 ROWS ONLY 611 CARRY A COMPARISON: 378 are the CALL-only drivers refusing a non-CALL (both lanes answer `notacall`, so they count as matches) and 15 are `Arena.bottom()`, where CPython has no node. 15 divergences are that bottom, 13 are `get_call_name`'s STORE arm and its fallthrough, 12 are `prg.arg.vars` over a non-`ProgramInfo` body, 10 are `pm_validate`'s UNPORTED BODY (claim against cone), 8 are a CALL whose `src[1]` is not a PARAM or a BUFFER, 2 are `inputs[slot]` where CPython has no default, 1 is the MSELECT `storage_base` wall, 1 the MSTACK walk. THE `SRC_BODY` CLASS IS GONE: 52 rows that used to be realize.py:15's UNCONDITIONAL `src[1:]` against the port's op-CONDITIONAL `Arena.src_without_body` now AGREE, and `classes_hold` asserts every one of them still does -- **AND `rz_bound_map`, the SECOND of its two fix sites, IS NOT COVERED BY ANY OF THEM: MEASURED, reverting it moves ZERO rows, because no driver reaches `get_call_var_uops` on a non-CALL (`var` is refused there by `u.body`) and for a CALL the two spellings ARE the same slice. The port's own comment says so; this header did not.** ONE FINDING STANDS: `res_63` -- HEAD's `_resolve` has an `Ops.GETADDR` arm and `rz_arm` does NOT, so a GETADDR argument is left un-resolved; IT VANISHES UNDER THE PIN `ad117c928^`, whose line 129 has no GETADDR, so the port is correct against the pin and incomplete against HEAD, and `pin_drift_holds` runs the pin's code on every run to keep saying so. `ret is not uop` IS FIXED: the 8 `bea0_*` rows agree on `10` -- CLAIMED and the rewrite was the identity -- and the ctx-7 rows still begin `11` and carry `b=7`. **THE TWO BITS ARE WHY `rz_kernel_beam`'s NO-`KernelInfo` DEFAULT IS A ROW AT ALL: with the old single bit, mutating that default `0` -> `1` moved ZERO of the rows (`V2`, reported as vacuous), because the claim was folded away.** THE `kern` DRIVER COMPARES A COUNT WHERE THE THINGS ARE NAMES, and `kern_blind_holds` measures why that is the CEILING -- `device_vocab_holds` MEASURES THE PREMISE EVERY RUN (CPython has no `str -> int` device index: `hasattr(Device,'tag')` is False, `ParamArg.device` is a `str`, `Device.__getitem__` is string-keyed) and the port's own `tag_of` is a three-valued sentinel -- while a TWO-DEVICE node makes the count 2 on both lanes. The gate no longer justifies that wall by naming a symbol in `uop/spec.bend`'s comment; it measures the wall, and `uop/spec.bend`'s three `Device.tag` citations were rewritten to the mechanism those measurements describe. THE `arg` PAYLOAD IS IN EVERY TOKEN NOW: TWO FIXTURE NODES THAT PRINT ALIKE ARE TWO NODES A READER CAN CONFUSE, AND MEASURED OVER THE 65 NODES THIS CENSUS SPELLED 32 DISTINCT TOKENS FOR 65 NODES -- 147 of the 2080 pairs indistinguishable -- against 60 and 8 after, every one of the eight a pair whose TWO ARGS ARE EQUAL. `argkinds_hold` REQUIRES THAT NO LANE PRINTED THE `[?]` AN UNSPELLED `Arg` KIND WOULD PRINT. THE DRIVER AXIS IS READ BACK FROM FOUR PLACES BY `axis_hold`: the oracle's `DRIVERS` BY PATH, the oracle's `drive` ladder, and the bend lane's own `rs_drv_name` and `rs_d.go`.
+gates/realize_graph_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1411.0	60.13	
+gates/realize_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	28.0	0.56	dnum_65=0
+gates/regalloc_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	698.0	8.75	regalloc_census: 48 rows, 48 compared, 0 declared divergences
+gates/regalloc_census-mutate.py	py-main	SAID	FAIL/FAIL	FAIL	1	WITHIN-LIMITS	739.0	6.68	regalloc_census-gate.py: the UNMUTATED tree is rc=1, so a mutation reading would be meaningless
+gates/render_val_s-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	518.0	3.16	render_val_s-gate: 8 rows, 3 lanes -- render_val_s's signed 32-bit decimal printer agrees with CPython's str(int(v)) on zero, the small positives, the small negatives, INT32_MIN, and INT32_MAX
+gates/replace-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	553.0	5.43	replace-gate: 8 rows, 3 lanes -- UOp.replace's identity, single-field swap, two-field swap, multi-src swap, and the change-detection row all agree with CPython
+gates/retention-check.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	21.0	0.39	DENOMINATOR: one dir per gate under gates/artifacts/ + runs/graphcmp/D, 2 generators. A verdict with no denominator is a claim nobody can check.
+gates/rng_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	820.0	42.8	rng_graph_census-gate: 726 rows (11 tables x 66 nodes), 3 lanes, 44 DECLARED divergences -- 682 op sequences match CPython's byte for byte; 38 are the # WALL(p3) rule bodies this file records as unported (each pinned with the rangeify.py line MEASURED to fire) and 6 are the zero-src `-` rendering. 0 FINDINGS: the three this gate found (ct_20, ab_28, ab_29) are FIXED, each was RED on its pin first, and all three rows now match; gs and lb answer nothing on 132 nodes, asserted
+gates/rng_graph_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.38	ab_65=none
+gates/runner.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	23.0	0.39	  --out OUT
+gates/state_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	846.0	30.0	state_census-gate: 85 rows, 3 lanes byte-identical, 64 of them VALUES rather than the 21 Booleans the lane also carries; population and class census clean; four CPython pins intact
+gates/tc_ptx_render-oracle.py	py-main	REFUSED	REFUSED/REFUSED	REFUSED	3	WITHIN-LIMITS	24.0	0.37	== REFUSED, NOT A VERDICT: tc_ptx_render-oracle: no selector is '--help'; selectors: rows stage1 stage2
+gates/tc_ptx_types-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	354.0	11.54	tc_ptx_types-gate: 60 rows, 3 lanes, 24 pinned divergences -- every dtype CPython's `types` refuses resolves to `strong_dtype`'s PTX type or to EMPTY, never to a concrete wrong one
+gates/tc_ptx_types-mutate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	407.0	15.55	      NOTHING, as a control must -- an edit outside the tables cannot move a row, which is what makes the other five numbers mean something.
+gates/tn_add_sub-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	660.0	9.19	tn_add_sub-gate: 19 rows, 3 lanes -- tn_add, tn_radd, tn_sub, and tn_rsub all agree with CPython's Tensor.__add__ / __radd__ / __sub__ / __rsub__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
+gates/tn_and_or_xor-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	633.0	8.89	tn_and_or_xor-gate: 25 rows, 3 lanes -- tn_and, tn_rand, tn_or, tn_ror, tn_xor, and tn_rxor all agree with CPython's Tensor.__and__ / __rand__ / __or__ / __ror__ / __xor__ / __rxor__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
+gates/tn_binop2_cmp-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	982.0	12.73	tn_binop2_cmp-gate: 29 rows, 3 lanes -- tn_cmplt, tn_rcmplt, tn_cmpne (no-broadcast binop ports for __lt__/__gt__/__ne__) and tn_dunder_ge, tn_dunder_le, tn_eq (chains through tn_logical_not) all agree with CPython
+gates/tn_binop_arena-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	844.0	18.64	tn_binop_arena-gate: 8 rows, 3 lanes, 0 divergences -- src[1] names the caller's operand at depths 0, 1 AND 2; the sibling-arena wall is CLOSED by O.Arena.merge
+gates/tn_binop_sweep-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	539.0	12.73	tn_binop_sweep-gate: 28 rows, 3 lanes, 0 divergences -- ALL SIXTEEN binops re-mint the right operand before reading its index, at depth 1, plus the ELEVEN reverse arms, and the depth-0 and same-tensor controls
+gates/tn_bitwise_not-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	760.0	17.75	tn_bitwise_not-gate: 7 rows, 3 lanes -- six on the BOOL arm of the three-arm dispatch at `elementwise.py:156-157` (op/arg/srcs/the identity-cast FOLD/the fold's precondition/input purity) and one on the SIGNED `^ -1` arm. The UNSIGNED arm is built but UNMEASURED: no fixture is unsigned, because it takes a `CAST(..., u8)` first
+gates/tn_ceil_floor-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	660.0	13.89	tn_ceil_floor-gate: 16 rows, 3 lanes -- tn_ceil and tn_floor both agree with CPython's Tensor.ceil / Tensor.floor (the WHERE-chain composition of trunc + cmplt + add/sub + where; _broadcasted seam still walls the broadcasting case)
+gates/tn_contiguous_backward-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	751.0	7.6	tn_contiguous_backward-gate: 5 rows, 3 lanes -- tn_contiguous_backward's op/src/arg set, input purity and reachability all agree with CPython's Tensor.contiguous_backward
+gates/tn_detach-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	659.0	6.68	tn_detach-gate: 5 rows, 3 lanes -- tn_detach's op/src/arg set, input purity and reachability all agree with CPython's Tensor.detach (the one-line port closes the second of the four Tensor methods nn/__init__.bend:241 named)
+gates/tn_dunder_neg-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	829.0	22.63	tn_dunder_neg-gate: 5 rows, 3 lanes -- tn_dunder_neg (the __neg__ dunder wrapper) agrees with CPython on bool/arith op, arith srcs, input purity and reachability (delegates to fully-ported tn_neg)
+gates/tn_fdiv_mod-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	526.0	13.29	tn_fdiv_mod-gate: 17 rows, 3 lanes -- tn_fdiv, tn_rfdiv, tn_mod, and tn_rmod all agree with CPython's Tensor.__floordiv__ / __rfloordiv__ / __mod__ / __rmod__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
+gates/tn_graph_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	962.0	37.42	tn_graph_census-gate: 51 rows, 3 lanes, ZERO declared divergences -- every ported tn_* has NO NOOP BOTTOM and ALL 51 op sequences match CPython's byte-for-byte, tn_isfinite included: its weakint `self` is now REHASHED to weakfloat by `_broadcasted`'s promote half, which `remint` does and which lives in uop/weak.bend so tensor.bend can call it
+gates/tn_isfinite-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	768.0	31.27	tn_isfinite-gate: 6 rows, 3 lanes -- tn_isfinite's CMPNE/2-srcs graph (op/arg/nsrc/reachability + src[1] is the CONST and is not the node itself) all agree with CPython's Tensor.isfinite; the src[0] CAST-vs-OR fold is recorded at mixin/elementwise.bend
+gates/tn_isnan-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	634.0	17.74	tn_isnan-gate: 5 rows, 3 lanes -- tn_isnan's CMPNE/self-src graph (op/arg/srcs/purity/reachability) all agree with CPython's Tensor.isnan
+gates/tn_logical_not-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	798.0	17.79	tn_logical_not-gate: 8 rows, 3 lanes -- tn_logical_not's CMPNE/CAST/CONST graph on a bool AND an int input (op/arg/purity/reachability/srcs/no-self-reference) all agree with CPython's Tensor.logical_not
+gates/tn_lshift_rshift-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	680.0	8.34	tn_lshift_rshift-gate: 9 rows, 3 lanes -- tn_lshift / tn_rlshift / tn_rshift all agree with CPython's Tensor.lshift / __rlshift__ / rshift (no-broadcasting case)
+gates/tn_maximum-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	640.0	8.28	tn_maximum-gate: 4 rows, 3 lanes -- tn_maximum agrees with CPython's Tensor.maximum (no-broadcasting case)
+gates/tn_minimum-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	19.0	0.45	tn_minimum-gate: PASS -- CPython `Ops` and the port's `Ops` are the SAME 77 members, and CPython has no MIN
+gates/tn_mul-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	797.0	9.52	tn_mul-gate: 13 rows, 3 lanes -- tn_mul, tn_rmul, and tn_square all agree with CPython's Tensor.__mul__ / __rmul__ / .square() (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
+gates/tn_nary_arena-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	673.0	9.64	tn_nary_arena-gate: 12 rows, 3 lanes, 0 divergences -- tn_where's THREE operands and tn_threefry's two are re-minted before they are read, at depth 0 and depth 1; no src is ever the NOOP bottom
+gates/tn_neg-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	885.0	14.8	tn_neg-gate: 8 rows, 3 lanes -- tn_neg's bool arm (CMPNE/ANone) and arith arm (MUL/srcs/self-no-mutation) all agree with CPython's Tensor.neg (the two-arm dispatch closes the wall that lived on the elementwise.py:74 boundary)
+gates/tn_nodes-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	992.0	15.05	tn_nodes-gate: 15 rows, 3 lanes -- every node of tn_isfinite (op/nsrc/srcs-by-toposort-position/arg/dtype) agrees with CPython's Tensor.isfinite, in order and with no declared divergence
+gates/tn_pow-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	641.0	8.1	tn_pow-gate: 9 rows, 3 lanes -- tn_pow and tn_rpow both agree with CPython's Tensor.__pow__ / __rpow__ (op/arg/srcs/purity on the no-broadcasting case; the broadcasting case stays walled on _broadcasted)
+gates/tn_relu-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	656.0	7.84	tn_relu-gate: 6 rows, 3 lanes -- tn_relu's op/arg/srcs/purity and reachability all agree with CPython's Tensor.relu (the WHERE-chain composition; _broadcasted seam still walls the broadcasting case)
+gates/tn_relu6-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	651.0	6.93	tn_relu6-gate: 6 rows, 3 lanes -- tn_relu6's op/arg/srcs/purity and reachability all agree with CPython's Tensor.relu6 (the nested WHERE-chain composition)
+gates/tn_sin_log2_exp2_rsqrt-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	658.0	6.98	tn_sin_log2_exp2_rsqrt-gate: 11 rows, 3 lanes -- tn_sin, tn_log2, tn_exp2 (pure one-liners) and tn_rsqrt (chained sqrt -> reciprocal) all agree with CPython
+gates/tn_sqrt-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	631.0	7.2	tn_sqrt-gate: 5 rows, 3 lanes -- tn_sqrt's op/src/arg set, input purity and reachability all agree with CPython's Tensor.sqrt (the one-line port closes nn/__init__.bend:241)
+gates/tn_trunc_reciprocal_threefry-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	738.0	8.27	tn_trunc_reciprocal_threefry-gate: 9 rows, 3 lanes -- tn_trunc, tn_reciprocal, tn_threefry all agree with CPython on op/src/arg/purity/reachability
+gates/tn_where-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	600.0	9.51	tn_where-gate: 5 rows, 3 lanes -- tn_where's op/arg/srcs set, input purity, and reachability all agree with CPython's Tensor.where (the no-broadcasting case; broadcasting case stays walled on _broadcasted)
+gates/tnvalue-census.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	25.0	0.37	  --rss       peak RSS + wall clock only
+gates/uop_cast-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	443.0	10.61	uop_cast-gate: 8 rows, 3 lanes -- UOp.cast's op/src/arg set, new-node build, ALU reachability, input purity and dedup all agree with CPython (graph bloat when dtypes already match is the documented DEVIATION)
+gates/upstream-pow-dtype-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.53	  --plant {green,red}
+gates/upstream-promo-lattice-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.25	  --plant {green,red}
+gates/wgsl_render_census-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	811.0	54.72	wgsl_render_census: PASS -- 227 rows x 3 lanes, 213 exact, 14 pinned lane divergences in 6 classes, 0 stale self-checks
+gates/wgsl_render_census-mutate.py	py-main	SKIP	SKIP/TIMED-OUT	UNASSIGNED(-9)	-9	TIMED-OUT	1458.0	60.25	
+gates/wgsl_render_census-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	33.0	0.76	srneg 16 const=NOMATCH
+gates/wk-cd-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	815.0	46.13	wk-cd-gate: 7 rows identical, 3 lanes, 0 documented divergences -- the cd_none row that this gate was pinned on is closed (commit_dtype.weak now supplies the widest int64 range when bounds are unavailable, and commit_int answers i64 the same way CPython's commit_int does)
+gates/wk-cd-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	54.0	2.1	# DIVERGES=
+gates/wk-eval-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	951.0	42.46	wk-eval-gate: 22 rows, 3 lanes, 0 documented divergences -- _eval's dtype set, single-number check, and CAST passthrough all agree with CPython (the int_weakint row that this gate was pinned on is now closed)
+gates/wk-eval-oracle.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	24.0	0.37	bool_false_dt=1
+gates/wk-f32-gate.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	527.0	3.34	wk-f32-gate: 18 rows, 3 lanes byte-identical
+gates/wk-f32-rows.py	py-main	USAGE	PASS/PASS	PASS	0	WITHIN-LIMITS	0.0	0.37	p45p1=1459617792

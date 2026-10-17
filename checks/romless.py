@@ -3,6 +3,11 @@
 from __future__ import annotations
 import argparse, hashlib, sys, time
 from pathlib import Path
+# `common` is IN THIS REPO at `extra/amdflash/common.py`, its own directory; running this file by
+# path puts `checks/` on `sys.path` instead, so the import below raised `ModuleNotFoundError` and
+# made the first six lines unreadable. MEASURED: with this one line, `--help` prints 696 bytes of
+# usage and exits 0. This file is byte-identical to `extra/amdflash/romless.py` (MEASURED, `diff`).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "extra" / "amdflash"))
 from common import MMIO, open_gpu, wait_until
 
 FLASH_SIZE, SECTOR_SIZE, PAGE_SIZE, MAX_DATA = 0x200000, 0x1000, 0x100, 0x100

@@ -5,11 +5,27 @@
 
 from pathlib import Path
 from typing import List, Optional
-import argparse, json
+import argparse, importlib.util, json, sys
+from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
 from tinygrad import Tensor, Device, GlobalCounters, nn
 from tinygrad.helpers import Context, Timing, Profiling, DEBUG, JIT, getenv, colored
 from tinygrad.nn.state import safe_load, torch_load, load_state_dict, get_parameters
+# `extra` is IN THIS REPO and is a PEP-420 namespace package (MEASURED: no `extra/__init__.py` and no
+# `extra/models/__init__.py`, and `import extra.models.llama` resolves from the repo root). Running
+# this file by path puts `checks/` on `sys.path`, so the import below raised `ModuleNotFoundError`
+# and the FIRST of two absent preconditions -- MEASURED, with this one line the failure moves from
+# `No module named 'extra'` to `No module named 'sentencepiece'`, which is the real second one.
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from extra.models.llama import Transformer, convert_from_huggingface, fix_bf16
+# Both are named by THIS FILE'S OWN line 2 (`pip3 install sentencepiece tiktoken blobfile`) and neither
+# is in this repository or in this interpreter (MEASURED, `.venv` and the bare `python3` alike). A
+# missing LIBRARY is `REFUSED`, not `FAIL` and not a crash; the raise this replaced exited 1, which
+# `gates/gatekit.py`'s own table spells `FAIL`.
+_absent = [m for m in ("sentencepiece", "tiktoken")  # THIS FILE's own third-party imports
+           if importlib.util.find_spec(m) is None]
+if _absent:
+  settle(REFUSED, f"needs {', '.join(_absent)}, absent from this interpreter -- its own line 2 names"
+                   f" the pip install: `pip3 install sentencepiece tiktoken blobfile`")
 from sentencepiece import SentencePieceProcessor
 import tiktoken, sys
 from tiktoken.load import load_tiktoken_bpe

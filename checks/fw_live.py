@@ -7,6 +7,11 @@ driver or AMDev loads SOS. A fully initialized SOS rejects those commands.
 from __future__ import annotations
 import argparse, struct, sys, time
 from pathlib import Path
+# `common` is IN THIS REPO at `extra/amdflash/common.py`, its own directory; running this file by
+# path puts `checks/` on `sys.path` instead, so the import below raised `ModuleNotFoundError` and
+# made the first ten lines unreadable. MEASURED: with this one line, `--help` prints 1229 bytes of
+# usage and exits 0. This file is byte-identical to `extra/amdflash/fw_live.py` (MEASURED, `diff`).
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "extra" / "amdflash"))
 from common import MMIO, open_gpu, wait_until
 
 ROM_CNTL, ROM_INDEX, ROM_DATA = 0x5A380, 0x5A390, 0x5A394

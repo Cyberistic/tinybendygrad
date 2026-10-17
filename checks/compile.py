@@ -1,5 +1,20 @@
 #!/usr/bin/env python3
-import os, ctypes, time, fcntl, mmap
+import ctypes, fcntl, importlib.util, mmap, os, time
+from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
+# FIVE preconditions are absent and NO PACKAGE MANAGER CAN MAKE THIS FILE IMPORTABLE ON A NON-ANDROID
+# HOST. `llvmlite` and `hexdump` are pip packages this interpreter does not carry (MEASURED, `.venv`
+# and the bare `python3` alike); `adsprpc`, `ion` and `msm_ion` are Qualcomm/Adreno userspace C-binding
+# shims in NEITHER this repository NOR any wheel (MEASURED, a tree-wide `find` returns nothing for
+# those three names), so the legal state when `adsprpc` is absent is PERMANENT. Every absent name is
+# reported at once, because a reader who fixes the first is otherwise re-taught the rest one run at a
+# time. A missing LIBRARY is `REFUSED`, not `FAIL` and not a crash; the raise this replaced exited 1,
+# which `gates/gatekit.py`'s own table spells `FAIL`.
+_absent = [m for m in ("llvmlite", "hexdump", "adsprpc", "ion", "msm_ion")
+           if importlib.util.find_spec(m) is None]
+if _absent:
+  settle(REFUSED, f"needs {', '.join(_absent)}, every one absent from this interpreter; adsprpc, ion"
+                   f" and msm_ion are in neither this repository nor any wheel, so this file cannot"
+                   f" run on this host at all")
 import llvmlite.binding as llvm
 from tinygrad.helpers import getenv, to_mv
 from tinygrad.runtime.support.elf import elf_loader
