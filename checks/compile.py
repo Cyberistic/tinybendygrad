@@ -1,4 +1,26 @@
 #!/usr/bin/env python3
+"""compile.py -- **THIS FILE IS NOT A COMPILE CHECK.** It is the Qualcomm Hexagon DSP / ION driver
+script, and the name is the only thing about it that suggests otherwise.
+
+MEASURED 2026-10-17, BY AST AND BY RUN. The module body is `ctypes`/`fcntl`/`mmap`/`os`/`time`,
+`ion_iowr`, an `adsprpc` CDLL, an `ION_IOC_*` ioctl table, and one `if __name__ == "__main__":`
+block that opens `/dev/ion`, mmaps a Hexagon shared buffer and calls `remote_handle64_invoke`. **NOT
+ONE LINE OF IT COMPILES ANYTHING IN THIS REPOSITORY.** It is the upstream `tinygrad` ION/DSP
+driver, which upstream no longer ships at this path (MEASURED: `git ls-tree -r HEAD` over the
+vendored `tinygrad/` holds `runtime/ops_dsp.py` and `runtime/autogen/qcom_dsp.py` and NO
+`runtime/dsp.py`, and `git log --all --diff-filter=D -- tinygrad/runtime/dsp.py` is EMPTY, so it
+was never in this repository's history either).
+
+WHY THE NAME IS WORTH CORRECTING RATHER THAN LEAVING. A reader told "the whole-port compile check
+`REFUSED`" opens this file, sees five absent modules, and concludes the port cannot be compile-checked
+because a DSP driver cannot find Qualcomm's C bindings. **THE INFERENCE IS FALSE, AND THE TOOL THAT
+REFUTES IT IS ALREADY IN THIS TREE**: `checks/substrate.py` is the per-file compile check -- an
+`os.walk` population (`POP_ROOT = "tinybendygrad"`), `bin/bend <file> --check-only` per file under
+`checks/bounded.py`, a `WARM`/`COLD` verdict each and a `ROUTE` denominator -- and
+`checks/compile-census.py` is its `.bend` census over the rest of the tree. **MEASURED on this file:
+the REFUSED below is TRUE and its reason is UNCHANGED**; only the sentence saying what this file is
+is new. A wrong reason would be worse than none, so nothing here was re-derived to fit this docstring.
+"""
 import ctypes, fcntl, importlib.util, mmap, os, time
 from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
 # FIVE preconditions are absent and NO PACKAGE MANAGER CAN MAKE THIS FILE IMPORTABLE ON A NON-ANDROID

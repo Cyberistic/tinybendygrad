@@ -1,0 +1,97 @@
+POPULATION .bend handed=87  ::  the complement of substrate.py POP_ROOT=tinybendygrad/ under os.walk('.')
+EXCLUDED     141  ::  already covered by substrate.py POP_ROOT=tinybendygrad
+EXCLUDED     113  ::  skipped dir .agents/ -- agent scratch, 113 .bend under slop/, swept by checks/sweep.py
+EXCLUDED    1714  ::  skipped dir references/ -- .gitignore:2, the vendored bend compiler, 1714 .bend
+EXCLUDED       3  ::  skipped dir runs/ -- run artifacts; runs/margsym/snap/ is a SNAPSHOT OF THE PORT
+COLD            checks/c-context.bend                            [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            checks/gate.bend                                 [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            checks/gate_dtype.bend                           [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            checks/gate_norm.bend                            [WITHIN-LIMITS] SOME PROOFS FAIL
+WARM            examples/beautiful_mnist.bend                    [WITHIN-LIMITS] WARM        examples/beautiful_mnist.bend  (1166 lines)  [bend --check-only]
+WARM            gates/bc-u32.bend                                [WITHIN-LIMITS] WARM        gates/bc-u32.bend  (97 lines)  [bend --check-only]
+WARM            gates/cr_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/cr_graph_census.bend  (239 lines)  [bend --check-only]
+WARM            gates/crp_graph_census.bend                      [WITHIN-LIMITS] WARM        gates/crp_graph_census.bend  (497 lines)  [bend --check-only]
+WARM            gates/cstyle-mut-driver.bend                     [WITHIN-LIMITS] WARM        gates/cstyle-mut-driver.bend  (498 lines)  [bend --check-only]
+WARM            gates/cstyle_render_census.bend                  [WITHIN-LIMITS] WARM        gates/cstyle_render_census.bend  (498 lines)  [bend --check-only]
+WARM            gates/decomp-mut-driver.bend                     [WITHIN-LIMITS] WARM        gates/decomp-mut-driver.bend  (325 lines)  [bend --check-only]
+WARM            gates/decomp_graph_census.bend                   [WITHIN-LIMITS] WARM        gates/decomp_graph_census.bend  (325 lines)  [bend --check-only]
+WARM            gates/ew-consts.bend                             [WITHIN-LIMITS] WARM        gates/ew-consts.bend  (64 lines)  [bend --check-only]
+WARM            gates/ew-explog.bend                             [WITHIN-LIMITS] WARM        gates/ew-explog.bend  (10 lines)  [bend --check-only]
+WARM            gates/ew_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/ew_graph_census.bend  (418 lines)  [bend --check-only]
+WARM            gates/fold_graph_census.bend                     [WITHIN-LIMITS] WARM        gates/fold_graph_census.bend  (343 lines)  [bend --check-only]
+WARM            gates/gr_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/gr_graph_census.bend  (312 lines)  [bend --check-only]
+COLD            gates/i64-shl.bend                               [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            gates/i64-shr.bend                               [WITHIN-LIMITS] SOME PROOFS FAIL
+WARM            gates/md_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/md_graph_census.bend  (233 lines)  [bend --check-only]
+WARM            gates/mo_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/mo_graph_census.bend  (240 lines)  [bend --check-only]
+WARM            gates/mx_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/mx_graph_census.bend  (165 lines)  [bend --check-only]
+WARM            gates/onnx_census.bend                           [WITHIN-LIMITS] WARM        gates/onnx_census.bend  (218 lines)  [bend --check-only]
+WARM            gates/op_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/op_graph_census.bend  (325 lines)  [bend --check-only]
+WARM            gates/ops-core.bend                              [WITHIN-LIMITS] WARM        gates/ops-core.bend  (192 lines)  [bend --check-only]
+WARM            gates/opseven.bend                               [WITHIN-LIMITS] WARM        gates/opseven.bend  (243 lines)  [bend --check-only]
+WARM            gates/ptx_render_census.bend                     [WITHIN-LIMITS] WARM        gates/ptx_render_census.bend  (460 lines)  [bend --check-only]
+WARM            gates/ptx_render_census_axis.bend                [WITHIN-LIMITS] WARM        gates/ptx_render_census_axis.bend  (331 lines)  [bend --check-only]
+WARM            gates/rd_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/rd_graph_census.bend  (84 lines)  [bend --check-only]
+WARM            gates/realize-mut-driver.bend                    [WITHIN-LIMITS] WARM        gates/realize-mut-driver.bend  (1166 lines)  [bend --check-only]
+WARM            gates/realize_graph_census.bend                  [WITHIN-LIMITS] WARM        gates/realize_graph_census.bend  (1166 lines)  [bend --check-only]
+WARM            gates/render_val_s.bend                          [WITHIN-LIMITS] WARM        gates/render_val_s.bend  (36 lines)  [bend --check-only]
+WARM            gates/replace.bend                               [WITHIN-LIMITS] WARM        gates/replace.bend  (100 lines)  [bend --check-only]
+WARM            gates/rng_graph_census.bend                      [WITHIN-LIMITS] WARM        gates/rng_graph_census.bend  (296 lines)  [bend --check-only]
+WARM            gates/state_census.bend                          [WITHIN-LIMITS] WARM        gates/state_census.bend  (239 lines)  [bend --check-only]
+WARM            gates/sym_graph_census.bend                      [WITHIN-LIMITS] WARM        gates/sym_graph_census.bend  (684 lines)  [bend --check-only]
+WARM            gates/tc_ptx_types.bend                          [WITHIN-LIMITS] WARM        gates/tc_ptx_types.bend  (60 lines)  [bend --check-only]
+WARM            gates/tn_add_sub.bend                            [WITHIN-LIMITS] WARM        gates/tn_add_sub.bend  (196 lines)  [bend --check-only]
+WARM            gates/tn_and_or_xor.bend                         [WITHIN-LIMITS] WARM        gates/tn_and_or_xor.bend  (235 lines)  [bend --check-only]
+WARM            gates/tn_binop2_cmp.bend                         [WITHIN-LIMITS] WARM        gates/tn_binop2_cmp.bend  (214 lines)  [bend --check-only]
+WARM            gates/tn_binop_arena.bend                        [WITHIN-LIMITS] WARM        gates/tn_binop_arena.bend  (140 lines)  [bend --check-only]
+WARM            gates/tn_binop_sweep.bend                        [WITHIN-LIMITS] WARM        gates/tn_binop_sweep.bend  (201 lines)  [bend --check-only]
+WARM            gates/tn_bitwise_not.bend                        [WITHIN-LIMITS] WARM        gates/tn_bitwise_not.bend  (170 lines)  [bend --check-only]
+WARM            gates/tn_ceil_floor.bend                         [WITHIN-LIMITS] WARM        gates/tn_ceil_floor.bend  (209 lines)  [bend --check-only]
+WARM            gates/tn_contiguous_backward.bend                [WITHIN-LIMITS] WARM        gates/tn_contiguous_backward.bend  (55 lines)  [bend --check-only]
+WARM            gates/tn_detach.bend                             [WITHIN-LIMITS] WARM        gates/tn_detach.bend  (57 lines)  [bend --check-only]
+WARM            gates/tn_dunder_neg.bend                         [WITHIN-LIMITS] WARM        gates/tn_dunder_neg.bend  (75 lines)  [bend --check-only]
+WARM            gates/tn_fdiv_mod.bend                           [WITHIN-LIMITS] WARM        gates/tn_fdiv_mod.bend  (185 lines)  [bend --check-only]
+WARM            gates/tn_graph_census.bend                       [WITHIN-LIMITS] WARM        gates/tn_graph_census.bend  (331 lines)  [bend --check-only]
+WARM            gates/tn_isfinite.bend                           [WITHIN-LIMITS] WARM        gates/tn_isfinite.bend  (108 lines)  [bend --check-only]
+WARM            gates/tn_isnan.bend                              [WITHIN-LIMITS] WARM        gates/tn_isnan.bend  (67 lines)  [bend --check-only]
+WARM            gates/tn_logical_not.bend                        [WITHIN-LIMITS] WARM        gates/tn_logical_not.bend  (97 lines)  [bend --check-only]
+WARM            gates/tn_lshift_rshift.bend                      [WITHIN-LIMITS] WARM        gates/tn_lshift_rshift.bend  (83 lines)  [bend --check-only]
+WARM            gates/tn_maximum.bend                            [WITHIN-LIMITS] WARM        gates/tn_maximum.bend  (51 lines)  [bend --check-only]
+WARM            gates/tn_mul.bend                                [WITHIN-LIMITS] WARM        gates/tn_mul.bend  (136 lines)  [bend --check-only]
+WARM            gates/tn_nary_arena.bend                         [WITHIN-LIMITS] WARM        gates/tn_nary_arena.bend  (150 lines)  [bend --check-only]
+WARM            gates/tn_neg.bend                                [WITHIN-LIMITS] WARM        gates/tn_neg.bend  (119 lines)  [bend --check-only]
+WARM            gates/tn_nodes.bend                              [WITHIN-LIMITS] WARM        gates/tn_nodes.bend  (143 lines)  [bend --check-only]
+WARM            gates/tn_pow.bend                                [WITHIN-LIMITS] WARM        gates/tn_pow.bend  (111 lines)  [bend --check-only]
+WARM            gates/tn_relu.bend                               [WITHIN-LIMITS] WARM        gates/tn_relu.bend  (71 lines)  [bend --check-only]
+WARM            gates/tn_relu6.bend                              [WITHIN-LIMITS] WARM        gates/tn_relu6.bend  (67 lines)  [bend --check-only]
+WARM            gates/tn_sin_log2_exp2_rsqrt.bend                [WITHIN-LIMITS] WARM        gates/tn_sin_log2_exp2_rsqrt.bend  (94 lines)  [bend --check-only]
+WARM            gates/tn_sqrt.bend                               [WITHIN-LIMITS] WARM        gates/tn_sqrt.bend  (57 lines)  [bend --check-only]
+WARM            gates/tn_trunc_reciprocal_threefry.bend          [WITHIN-LIMITS] WARM        gates/tn_trunc_reciprocal_threefry.bend  (90 lines)  [bend --check-only]
+WARM            gates/tn_where.bend                              [WITHIN-LIMITS] WARM        gates/tn_where.bend  (72 lines)  [bend --check-only]
+WARM            gates/uop_cast.bend                              [WITHIN-LIMITS] WARM        gates/uop_cast.bend  (91 lines)  [bend --check-only]
+WARM            gates/wk-cd.bend                                 [WITHIN-LIMITS] WARM        gates/wk-cd.bend  (61 lines)  [bend --check-only]
+WARM            gates/wk-eval.bend                               [WITHIN-LIMITS] WARM        gates/wk-eval.bend  (195 lines)  [bend --check-only]
+WARM            gates/wk-f32.bend                                [WITHIN-LIMITS] WARM        gates/wk-f32.bend  (36 lines)  [bend --check-only]
+COLD            gates/.realize-mut-stage/realize_graph_census.bend [WITHIN-LIMITS] SOME PROOFS FAIL
+WARM            langs/core.bend                                  [WITHIN-LIMITS] WARM        langs/core.bend  (343 lines)  [bend --check-only]
+COLD            oracles/dtype_oracle.bend                        [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/fold-mvt-e2e.bend                        [WITHIN-LIMITS] SOME PROOFS FAIL
+WARM            oracles/fold-probe-mvt.bend                      [WITHIN-LIMITS] WARM        oracles/fold-probe-mvt.bend  (68 lines)  [bend --check-only]
+COLD            oracles/fold-probe-mvt2.bend                     [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/lift-rows.bend                           [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/nv_ip_rows_c.bend                        [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/nv_ip_rows_d.bend                        [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/nv_ip_rows_e.bend                        [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/post-oracle-bend.bend                    [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/pre-oracle-bend.bend                     [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/probe-su.bend                            [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/usb-arith-rows.bend                      [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/ddcheck/tree/test/dtype_oracle.bend      [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/proof-close/MUTANT/tinybendygrad/test/dtype_oracle.bend [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/proof-close/MUTANT2/tinybendygrad/test/dtype_oracle.bend [WITHIN-LIMITS] SOME PROOFS FAIL
+COLD            oracles/render-wt/tinybendygrad/test/dtype_oracle.bend [WITHIN-LIMITS] SOME PROOFS FAIL
+
+CENSUS      COLD=22
+CENSUS      WARM=65
+DENOMINATOR handed=87 judged=87 (.bend outside tinybendygrad/); warm=65 cold=22 unjudged=0
+ARTIFACT    checks/compile-census.rows
