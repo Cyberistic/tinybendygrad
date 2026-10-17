@@ -75,7 +75,7 @@ from tinygrad import Tensor                                                  # n
 from tinygrad.dtype import dtypes                                            # noqa: E402
 from tinygrad.helpers import Context, Target, to_mv                        # noqa: E402
 from tinygrad.runtime import ops_python as OPY                               # noqa: E402
-from tinygrad.runtime.ops_bend import buf_extent, encode, is_buf, wire_arg   # noqa: E402
+from ops_bend import buf_extent, encode, is_buf, wire_arg   # noqa: E402
 from tinygrad.uop import GroupOp                                            # noqa: E402
 from tinygrad.uop.ops import Ops, UOp, python_alu                            # noqa: E402
 

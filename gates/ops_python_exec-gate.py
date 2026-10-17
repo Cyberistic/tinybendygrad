@@ -309,7 +309,7 @@ def main():
     if not coverage_hold(fx): sys.exit(FAIL)
 
     sys.path.insert(0, str(ROOT))
-    from tinygrad.runtime import ops_bend
+    import ops_bend
     exe = ops_bend.executor()
     if not exe.exists(): refuse(f"the executor {exe} is absent")
     bd = lane_bd(exe, fx, args.jobs)

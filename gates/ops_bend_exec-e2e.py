@@ -30,7 +30,14 @@ from tinygrad.dtype import dtypes
 OUT = pathlib.Path(__file__).resolve().parent / 'artifacts' / 'ops_bend_exec'
 CAP = []
 
-import tinygrad.runtime.ops_bend as OB
+# `ops_bend` LIVES AT THE REPO ROOT, NOT IN `tinygrad/`: it is this project's CPython-side
+# emulator and `tinygrad/` IS THE ORACLE. `git log upstream --find-object` finds NO upstream
+# commit carrying it, while every OTHER file under `tinygrad/` has its blob in upstream
+# history -- so it was the ONE local edit inside the reference implementation. ROOT goes on the
+# path here because this file had none, and `sys.path[0]` when a gate is run is `gates/`.
+sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent))
+
+import ops_bend as OB
 OB.executor  # the cached builder; reading it is what makes the import real
 _orn = OB.BendRenderer.render
 def _render(self, uops):

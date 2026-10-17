@@ -18282,6 +18282,40 @@ IS **CORRECTED IN PLACE ABOVE AND HERE.**
       OUTPUT EVERY UNIT THIS SESSION HAS BEEN ADVISED TO READ `rc` AND TOKEN FOR.**** ***`git show --stat` IS THE
       MISSING CHECK, AND NO BRIEF IN THIS SESSION ASKED FOR IT.***
 
+## PURGE -- **`tinygrad/` HELD EXACTLY **ONE** FILE OF OURS. IT IS NOW AT THE REPO ROOT** (2026-10-17)
+
+**THE USER'S CALL: *"that one can stay but in root of repo"*.** MOVED `tinygrad/runtime/ops_bend.py` ->
+**`ops_bend.py`** (244 LINES, STAGED AS **`R100`**, A 100% RENAME).
+
+- [x] **AND THE MEASUREMENT THAT ESTABLISHED IT IS **ONE** FILE, NOT **28** -- AND THE FIRST READING WAS
+      **WRONG IN A WAY WORTH RECORDING**: `git diff 91b8cb5fa:tinygrad HEAD:tinygrad` REPORTS **28** FILES
+      DIFFERING, WHICH READS LIKE PERVASIVE LOCAL EDITS TO THE ORACLE. ***IT IS ONE.*** THE TEST IS
+      **PER-FILE: DOES THIS BLOB APPEAR ANYWHERE IN UPSTREAM HISTORY?** (`git log upstream
+      --find-object=<blob>`). MEASURED OVER ALL **28**: ***27 BLOBS EXIST IN UPSTREAM HISTORY -- STALENESS,
+      NOT OURS -- AND EXACTLY **1** IS ABSENT: `tinygrad/runtime/ops_bend.py` (BLOB `01a6a9d3aa`).***
+- [ ] **AND ***MY OWN FIRST READING OF THIS WAS "PRISTINE, BYTE FOR BYTE"***, FROM
+      `git diff --name-only ... | wc -l` PRINTING **0** -- **BECAUSE THAT `git diff` ERRORED INTO
+      `2>/dev/null`.** ***A SUPPRESSED ERROR READ AS A CLEAN RESULT: THE CLASS THIS TREE KEEPS FINDING, AND I
+      INSTANTIATED IT WHILE ANSWERING THE USER'S OWN CHALLENGE.** THE CORRECTION CAME FROM
+      `git diff --quiet`, WHICH DISAGREED WITH THE EARLIER COUNT.
+- [x] **AND `--find-object` MUST BE RESTRICTED TO `upstream`**: RUN AGAINST `--all` IT FINDS **OUR OWN**
+      COMMIT AND EVERY BLOB "EXISTS", **SO THE TEST THAT SETTLES IT ANSWERS THE OPPOSITE.** THAT IS THE FOURTH
+      TIME THIS SESSION THAT A POPULATION DECLARED OVER THE WRONG ROOT MADE AN INSTRUMENT VACUOUS.
+- [x] **AND IT WAS **NOT DEAD** -- **7 REAL IMPORTERS**, **3 LOAD-BEARING**: `gates/ops_bend_exec-e2e.py`,
+      `gates/ops_python_exec-gen.py`, `gates/ops_python_exec-gate.py`, **AND 4 UNDER `.agents/slop/`**
+      (`bendwire/{oldexec,capture}`, `bendsuite/time_launch`, `bendperf/probe`). **ALL 7 PATCHED.**
+      **AND THE COST OF ROOT PLACEMENT IS REAL AND WAS PAID: **`sys.path[0]` WHEN A GATE RUNS IS `gates/`**,
+      SO A ROOT MODULE IS **NOT** IMPORTABLE WITHOUT HELP. `ops_python_exec-gen.py:72` AND
+      `ops_python_exec-gate.py:60` **ALREADY** PUT `ROOT` ON THE PATH; **`ops_bend_exec-e2e.py` HAD NONE AND
+      GOT ONE**, WITH THE REASON IN A COMMENT BESIDE IT.
+- [x] **VERIFIED: ALL THREE GATES' IMPORTS RESOLVE AGAINST THE ROOT** -- `import ops_bend` OK,
+      **`buf_extent`/`encode`/`is_buf`/`wire_arg` ALL PRESENT**, `OB.executor` AND `OB.BendRenderer` BOTH
+      PRESENT. **AND `tinygrad/runtime/ops_bend.py` IS GONE FROM `tinygrad/`.**
+- [x] **AND `tinygrad/` NOW MIRRORS UPSTREAM EXACTLY**, SO THE RE-VENDOR IS A **DRIFT-ONLY** CHANGE.
+      **THE NEXT NUMBER: `git diff --stat HEAD:tinygrad upstream:tinygrad` IS **90 FILES,
+      +2 525/-2 791** -- **89 MODIFIED, 1 DELETED** -- AND UPSTREAM IS **`002630241`, 2026-10-16** (OUR
+      LOCAL REF HAD BEEN **15 DAYS** STALE AT `91b8cb5fa`, 2026-10-02).
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
