@@ -19771,6 +19771,67 @@ BYTES AND `RUSAGE_CHILDREN` IS A RUNNING MAX**.
       (`dead->KEYWORD-DEAD clean->SAFE`) **OR THE GATE `REFUSES`**. ***AND IT IS ***rc=1 FAIL*** ON THE WORKING
       TREE, **BECAUSE THE ***THREE*** REMAINING SITES ARE GENUINELY WRONG.** ***
 
+## LANDED -- **THE PORT IS **75** OPS AND THE ACCEPTANCE TEST ***PASSES***: `tn_minimum-gate` rc 1 -> 0** (2026-10-18)
+
+`540e91416` -- **18 FILES, +369/-483, NO SWEEP.** `read-tree`+`add`+`commit`+`show --stat` IN **ONE** COMMAND,
+SAME LITERAL PRIVATE-INDEX PATH THROUGHOUT. **`git diff --cached` AFTER: EMPTY. THE DEFAULT INDEX WAS NEVER WRITTEN
+TO.**
+
+- [x] **THE ACCEPTANCE TEST **PASSES**, VERIFIED BY THE CALLER:**
+
+          tn_minimum-gate: PASS -- CPython `Ops` and the port's `Ops` are the SAME 75 members   rc=0
+          n_ops=75  has_GROUP=False  has_FLIP=False
+
+      **AND THE PROOF: `declared 75 · upstream 75 · value arms 75 · name arms 75 · all_ops 75 · THREE TABLES IN
+      DECLARATION ORDER: True · NUMBERS `1..75` **NO GAP** · `NEW Ops.value == upstream`: **True** ·
+      `mismatches: 0` · `GROUP`/`FLIP` REFS IN `ops.bend`: **0**.**
+- [ ] **AND ***THE CALLER's OWN PREMISE WAS STALE***, WHICH IT LED WITH: ***"`GROUP=0`/`FLIP=0` IN THE ENUM" AND
+      "**16** OF **21** CANNOT COMPILE" ARE **FALSE** AT THIS TREE***.** MEASURED **BEFORE** IT TOUCHED
+      ANYTHING: `git diff HEAD -- tinybendygrad/` **EMPTY**; `ops.bend` DECLARED **77**; COMPILE CENSUS OVER THE
+      FILES REFERENCING THE CONSTRUCTORS: ***20 WARM, 0 COLD***. **SO THE HALF-APPLIED RENUMBERING IS ***NOT*** IN
+      THIS TREE -- THE PRIOR UNIT ***REVERTED*** IT. ***AND THE POPULATION IS **20** FILES, NOT **21***."
+      ***SO THE CALLER (AND **TWO** PRIOR UNITS) HAD SPENT THREE BRIEFS DESCRIBING A TREE STATE THAT DID NOT
+      EXIST.***
+- [ ] **AND ***IT FOUND A REAL DEFECT IN THE "PROVEN" `shift_sh.py`***: IT DELETES `sh_19`'s ***DEF*** BUT
+      NEVER `shared_table`'s ***ENTRY*** -- LEAVING **33** TABLE TAGS WITH A DANGLING `[OpsGROUP{}]` AT **19**
+      AGAINST A LADDER REBUILT TO **32** ARMS. ***THE PRIOR UNIT's "shared_table entries / tags: **32**
+      (**0..31**)" CLAIM IS **FALSE***.** **SO ***THE "PROVEN" SCRIPT WAS ***NOT*** PROVEN***, AND IT WAS CAUGHT
+      **BECAUSE THE UNIT ASSERTED ***ALL SEVEN*** POST-CONDITIONS RATHER THAN ONE.****
+- [x] **AND **THE COMPILE CENSUS NEVER REGRESSED**: **20 WARM / 0 COLD BEFORE *AND* AFTER**; PEAK **955 MB**,
+      **22 s**. `checks/substrate.py --root tinybendygrad` (**148** FILES): rc=1, **9** COLD **+ 1** NO INSTRUMENT
+      -- ***AN IDENTICAL LIST AND IDENTICAL `TOTALS` AS A PRISTINE `git archive HEAD` COPY IT RAN FOR COMPARISON***,
+      `refs=41732 exact=41732 unresolved=0` BOTH SIDES. **"I INTRODUCED ZERO FINDINGS AND FIXED ZERO."**
+- [x] **AND `REMOVE_FROM_SINK_LIKE` **BOTH** HALVES, VERIFIED AGAINST UPSTREAM ITSELF**:
+      MEMBER LIST `[NOOP, STACK, SINK, GROUP]` -> `[NOOP, STACK, SINK, ***AFTER***]`; ROOT `[SINK, GROUP]` ->
+      **`[SINK]`** ALONE; AND **`grep 'Ops.GROUP' upstream:symbolic.py` -> NOTHING**. **FLATTENING STILL HAPPENS**:
+      `sym_11.pat` = `Bool.and(sy_op_in(x,u,[O.OpsSINK{}]), any_sink_like(...))`.
+- [x] **AND `sym_table` LOSES ***ONLY **11***, AS CORRECTED**: **23 -> 22** ENTRIES, DENSE `0..21`. **TAG **11** IS
+      `[O.OpsSINK{}]` -- `pm_clean_up_group_sink`, ***INTACT AND NOW CARRYING `AFTER`***. **22** DEFS, **22** LADDER
+      ARMS `case i: sym_i`.
+- [x] **AND `r_full_su` = **2** BEFORE AND AFTER** -- ***THE `mu_src_src.of` LADDER RENUMBER IS PART OF THE EDIT,
+      NOT A FOLLOW-UP***. ALL **25** RAW PROBE ROWS AGREE WITH THE PRIOR UNIT's INDEPENDENT TABLE. FINAL
+      SELF-TEST: ***321 ROWS, 0 GONE, 0 NEW***; ONLY **3** DIFFER -- `t_own_n 19->18`, `t_pm_n 25->24`,
+      `t_late_n 26->25` -- **ALL BARE READOUTS WITH NO `eq()`.** ***AND `t_t25_off`/`t_tag25` WERE ***REPOINTED***
+      `25n -> 24n` (`mt_tag(late,24)=24` **MEASURED, NOT INFERRED**) -- **NOT DELETED.****
+- [ ] **AND `opseven-gate` WENT **0 -> 1**, AND ***THE RED IS CORRECT AND ***INFORMATIVE***: ITS FOUR
+      `OPS_VALUE` PINS RECORD THE **77**-MEMBER INDICES, **WHILE THE PORT NOW ANSWERS **58/59/60/75** AND
+      **CPYTHON ANSWERS `58/59/60/75` -- SO ***THOSE FOUR ROWS ***AGREE NOW***.** THE REMEDY IS ITS OWN
+      `--refresh`; **OUT OF GRANT, SO IT LEFT IT.**
+- [x] **AND ROWS **REMOVED** -- **SUBJECTS REMOVED UPSTREAM, NOT FAILURES**: `t_group`, `t_first` + `fx_group`,
+      `fx_two` -- ***THEY EXISTED TO MAKE TAGS **11**/**12** ***DISAGREE***, AND ***WITH THE OP AND THE RULE PAIR
+      GONE THERE IS NOTHING TO DISAGREE***.** **AND `prepare.bend`'s `flip` WALK ENTRY.**
+- [x] **AND ***IT DID **NOT** RUN `jj`***, **BECAUSE `AGENTS.md` RECORDS `jj` SNAPSHOTTING OTHER UNITS' STAGED
+      WORK** -- ***THE HAZARD THIS SESSION HAS BEEN FIGHTING FOR TWO DAYS, AVOIDED BY A UNIT THAT WAS TOLD NOTHING
+      ABOUT IT.***
+- [ ] **AND TWO OF ITS OWN MISTAKES `mech.py`'s COUNTS CAUGHT **BEFORE** THE TREE**: THE `.r[N]` ROWS EXIST IN
+      **THREE** `ptx.bend` FIXTURES AND **ONLY `f14_skips` LOST A STEP**; **AND ***ITS OWN "IS IT DENSE?" CHECK
+      READ THE TAG LIST ***AFTER*** THE DELETION AND ***PASSED A LIST WITH A HOLE IN IT***.** AND THREE SCRIPTS'
+      SELF-CHECKS CAUGHT REAL BUGS (A `dense-check` MATCHING **"CONTAINS GROUP" AGAINST THE ***SURVIVING*** RULE**,
+      AND **A `src.splitlines()` THAT SILENTLY DISCARDED A DELETION**). **AND `dv_unsup_two` COULD NOT KEEP ITS
+      SHAPE: ITS PARENT WAS `OpsGROUP{}`; `OpsBINARY` WAS THE UNIT's FIRST GUESS AND ***WRONG***; `OpsADD` (RULE
+      **10**, `GroupOp.ALU`) KEEPS BOTH STACK MESSAGES, SO THE CLAIM SURVIVES -- ***BUT `n` IS **3**, NOT **2**,
+      AND IT CORRECTED THE HEADER RATHER THAN LEAVE IT LYING.***
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
