@@ -37,12 +37,26 @@ for i, (pat, rep) in enumerate(ag.base_rules):
     print(f"rule {i} : {pat} => {rep}")
 
 # ---- typehint over every CXType kind libclang knows -------------------------
+# MEASURED 2026-10-17, AND THIS BLOCK WAS DEAD (doctrine 2's fifth verdict: it ran and
+# emitted a value, so nothing looked red). It read the population with
+# `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`, and `libclang.py` does not
+# spell its enums that way: it generates
+# `enum_CXTypeKind: dict[int, str] = {(CXType_Invalid:=0): 'CXType_Invalid', ...}`.
+# That pattern matched **0 of the 256 `CXType_` occurrences in the file**, so
+# `cxkind_count` printed `0` -- the length of an empty list, reported as a census of
+# libclang. `names` was built from the same 0-match scan and never read.
+# The population is read now from the generator's OWN declarations, BY ATTRIBUTE, which is
+# the shape doctrine 1 asks for (`differ.declared()`): `clang.enum_CXTypeKind` is libclang's
+# own enumeration, already imported. `cxkind_names` is printed beside it because libclang
+# ALIASES -- 128 `CXType_*` names over 122 distinct kinds, MEASURED -- and the same trap
+# is written down at `autogen.bend:1195-1200` ("Keyed on the integer, 78 constants collapse
+# onto 58 keys and the diff passes over the wrong pairs"), so both numbers are here rather
+# than one.
+# `typehint` itself is NOT printed: it takes a `clang.CXType`, not a kind, and its
+# fall-through arm calls `tname` -> `clang_getTypeDeclaration` on the value it is given.
+# That is WALL 1 and it is why the census is a COUNT and not a table.
 print("### TYPEHINT over every CXType_ kind")
-import re
-src = open(clang.__file__).read()
-kinds = sorted(int(m.group(2)) for m in re.finditer(r"^CXType_(\w+) = (\d+)$", src, re.M))
-names = {int(m.group(2)): m.group(1) for m in re.finditer(r"^CXType_(\w+) = (\d+)$", src, re.M)}
-print("cxkind_count " + str(len(kinds)))
+print(f"cxkind_count {len(clang.enum_CXTypeKind)} cxkind_names {sum(k.startswith('CXType_') for k in vars(clang))}")
 
 # ---- the real end-to-end run ----------------------------------------------
 print("### GEN output")

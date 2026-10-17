@@ -1095,20 +1095,95 @@ def types_fixture() -> List<&2, Gt>:
 # ===========================================================================
 # SECTION 17 -- the GATE.
 #
-# Every `py=` expectation below was produced by CALLING CPython: run
-#   .venv/bin/python gates/autogen-oracle.py "$(cat gates/ag-fixture.h)"
-# and read stdout, or run `.agents/slop/ag-emit-oracle.py` and read
-# `ag-emit-oracle.txt`. None of these
-# rows is typed from memory, which is the rule `runtime/ops_nv.bend` broke with
-# 33 wrong constants behind 590 green rows.
-# BOTH THE ORACLE AND ITS FIXTURE WERE RESTORED 2026-10-16 (`.agents/slop/ag-oracle.py`,
-# blob e853efc4b, 2110 B, and `.agents/slop/ag-fixture.h`, 1020 B, both byte for byte) and
-# MEASURED from `gates/`: rc=0, 51 rows. **THE ARGUMENT IS THE HEADER TEXT, NOT ITS PATH** --
-# `gates/autogen-oracle.py:49` does `hdr = sys.argv[1]` and feeds it to `ag.gen`, so the old
-# spelling passed a PATH where TEXT was wanted. **AND MEASURED: all 51 rows are IDENTICAL for the real header and for the string
-# `GARBAGE NOT C AT ALL`**, so 43 of the 51 rows do not depend on the header at all; only the
-# 8 `gen|` rows address it. Reported, not repaired -- the TYPEHINT block above them does call
-# libclang and does move.
+# Every `py=` expectation below was produced by CALLING CPython:
+#   .venv/bin/python gates/autogen-oracle.py gates/ag-fixture.h
+# and read stdout. None of these rows is typed from memory, which is the rule
+# `runtime/ops_nv.bend` broke with 33 wrong constants behind 590 green rows.
+#
+# ----------------------------------------------------------------------------
+# MEASURED 2026-10-17. THE PARAGRAPH THIS ONE REPLACED WAS WRONG IN THREE WAYS,
+# AND TWO OF THEM WERE FALSE CLAIMS RATHER THAN STALE NUMBERS, so it is quoted
+# and answered here instead of deleted.
+# ----------------------------------------------------------------------------
+# IT SAID: `gates/autogen-oracle.py`, run from `gates/`, "answers rc=0, 51 rows",
+# and that "all 51 rows are IDENTICAL for the real header and for the string
+# `GARBAGE NOT C AT ALL`, so 43 of the 51 rows do not depend on the header at
+# all; only the 8 `gen|` rows address it."
+#
+# ANSWERED, from `gates/`, `.venv/bin/python`, against the header beside the gate:
+#
+#   gates/ag-fixture.h                -> 117 rows, rc=0
+#   a 0-byte file                     ->  51 rows, rc=0
+#   `GARBAGE NOT C AT ALL\n`          ->  53 rows, rc=0
+#   base + one extra anonymous struct -> 123 rows, rc=0
+#
+# So the 51 was the EMPTY file, not the real header; the real header is 117. And
+# "IDENTICAL" was never true: 50 row NAMES are invariant and **56 MOVE**. The 56
+# that move are exactly the `### GEN output` block, and the 50 that do not are
+# 6 `###` section LABELS (the oracle's own, not values), the module's own tables
+# -- 18 `ag.tmap`, 4 `ag.uints/ints/fps/specs`, `ag.arc_families`, 13
+# `ag.base_rules` -- `cxkind_count`, and the 7 `gen|` preamble lines that
+# autogen.py:273-276 hardcodes. Not one of the 36 table rows mentions a symbol
+# from the header, and not one of them CAN: they are module-level literals.
+#
+# ----------------------------------------------------------------------------
+# IT SAID: "the TYPEHINT block above them does call libclang and does move."
+# **FALSE, AND THE BLOCK WAS DEAD.** `gates/autogen-oracle.py` counted kinds with
+# `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`. libclang.py does
+# not spell its enums that way -- it generates
+# `enum_CXTypeKind: dict[int, str] = {(CXType_Invalid:=0): 'CXType_Invalid', ...}`
+# -- so that pattern matched **0 of the 256 `CXType_` occurrences in the file** and
+# `cxkind_count` printed `0`: the length of an empty list, reported as a census of
+# libclang, and invariant because NO change to libclang could move it. It is now
+# `len(clang.enum_CXTypeKind)` = **122** over **128** `CXType_*` names (libclang
+# ALIASES, which is why both numbers are printed), read BY ATTRIBUTE from the
+# generator's own declaration. Proof the row is live and was not: with one kind
+# added to the population the repaired row answers 123 and the old one still
+# answered 0.
+#
+# ----------------------------------------------------------------------------
+# THE "6-ROW FLOOR" IS NOT A FLOOR, AND `gates/oracleblind.rows` SHOULD NOT BE
+# READ AS ONE. The census's ARGV arm reports `EMPTY=54 GARBAGE=56
+# VALID-DIFFERENT=6` and takes `floor = 6 of 117 rows`. MEASURED, that 6 is the
+# EMISSION COST OF THE ONE PERTURBATION THE INSTRUMENT CHOSEN -- appending a
+# single struct, which this generator emits as exactly 6 lines (`@c.record`,
+# `class X(c.Struct):`, `  SIZE = 16`, two field lines, `X.register_fields([...])`).
+# Appending N such structs moves 6, 10, 14, 18, 22, 26 rows for N = 1..6, and the
+# physical-line delta is 6N exactly: `rows_moved` is a linear function of what the
+# header added, so the oracle's resolution is ONE EMITTED LINE. The floor is a
+# property of the FIXTURE, not a blindness of the oracle and not a limit of the
+# instrument.
+#
+# ----------------------------------------------------------------------------
+# THIS FILE PRINTS ZERO ROWS, AND EVERY py= EXPECTATION ABOVE IS THEREFORE
+# UNREACHABLE TODAY. MEASURED: `./bin/bend tinybendygrad/runtime/support/autogen.bend`
+# is `rc=1`, 0 bytes on stdout, 0.5 s, peak RSS 31 MB under
+# `checks/bounded.py --mb 2048` (`WITHIN-LIMITS`, so the verdict is the compiler's,
+# not the watchdog's). The first error is at `:745`:
+#
+#     - expected : 1 patterns (one per scrutinee)
+#     - observed : 'c1 c2 rest'
+#
+# Bend spells that `case [c1, c2] <> rest:`, and `rep_go1:753` the same way. Both
+# clear. The NEXT stop is `rep_emit2:740`, `c2 : Char / c2 consumed more than
+# once` -- and that one is NOT a spelling bug: `Bool.pick` evaluates both arms, so
+# `c2` is consumed by the predicate and again by the value. That is the constraint
+# this file states at :99-102 ("a computed Bool can never GUARD a call") biting its
+# own WALL 2 workaround, and `colons_to_underscores` / `spaces_to_underscores` are
+# unreachable until it is redesigned. Reported, not repaired: a redesign of the
+# WALL 2 mouth is a porting decision and not a citation fix.
+#
+# ----------------------------------------------------------------------------
+# TEN OF THE TWELVE PATHS CITED BY THIS HEADER ARE GONE, and the two that remain
+# are `.agents/slop/notes/bend2-constraints.md` (1,665,622 B) and
+# `gates/ag-fixture.h` (1,020 B). Absent: `ag-wall1-census.py`,
+# `ag-wall1-census.txt`, `ag-wall4-repro.bend`, `ag-wall4-control.bend`,
+# `ag-scope.txt`, `ag-oracle.py`, `ag-emit-oracle.py`, `ag-emit-oracle.txt`, and
+# `ag-abi-oracle.py` at BOTH `gates/` and `.agents/slop/`. The WALL claims are
+# therefore NOT re-measured by this unit and are NOT withdrawn: an absent artifact
+# is not a refutation, and deleting a claim because its witness was swept is how a
+# wall becomes a guess.
+# ----------------------------------------------------------------------------
 #
 # THE ABI LADDER IS GATED, NOT LEFT DEAD. Every constant in SECTION 0 is a
 # number this project has been wrong about before -- `ops_nv`'s audit found 33
