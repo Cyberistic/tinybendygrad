@@ -32,40 +32,41 @@ in a transiently-broken state and then restored them.** `mtime` proves it:
 unit's four-orphans finding was probably measured the same way and is probably about
 the same window.
 
-### THE STATE AT HEAD, MEASURED, `git diff HEAD` EMPTY FOR ALL FIVE
+### THE STATE AT HEAD, RE-MEASURED AT 14:40 (a later unit landed `ORACLES4`/`ORACLEREVIVE`)
 
 | oracle | rc | what it says |
 |---|---|---|
-| `gates/ptx_render_census-oracle.py` | **0** | **BUT `f14_skips` IS A DEAD LANE** |
+| `gates/ptx_render_census-oracle.py` | **0** | **GREEN.** `f14_skips` emits a full 11-row walk |
 | `oracles/fold-probe1.py` | **0** | prints `Ops.FLIP present: False` and degrades |
 | `oracles/mm-survey.py` | **0** | green |
 | `oracles/fold-mvt-oracle.py` | **1** | `TypeError: ParamArg.__init__() got an unexpected keyword argument 'size'` |
 | `oracles/fold-mvt-rows.py` | **1** | same |
 
-**`ptx_render_census-oracle.py` RETURNS 0 AND ITS `f14_skips` LANE IS DEAD.** This is
-doctrine 2's `DEAD` verdict wearing a `PASS` costume, and it is worse than an `rc=1`
-because it is trusted. `run_fixture` (`gates/ptx_render_census-oracle.py:439-443`)
-catches a build failure and emits a refusal row:
+**CORRECTION TO MY OWN FIRST REPORT.** At 14:20 I recorded
+`ptx_render_census-oracle.py` as `rc=0` **but with `f14_skips` DEAD** —
+`f14_skips.mod=REFUSE:build:AttributeError`. **THAT WAS TRUE AT 14:20 AND IS FALSE
+NOW.** `ORACLES4` (`6304f5b53`) rewrote `F14_skips` to stop minting `UOp(Ops.GROUP, ...)`;
+`grep -c 'Ops\.GROUP\|Ops\.FLIP'` on that file is now **1**, and it is a **comment** at
+`:199` ("Ops.GROUP WAS the third skip here and UPSTREAM DELETED IT"), verified by an
+`ast` walk, not by eye. The fixture now answers:
 
 ```
-441:  try:
-442:    root = build()
-443:  except Exception as e:  # a fixture that cannot be BUILT is a refusal, and is loud
-444:    row(f"{name}.mod", f"REFUSE:build:{type(e).__name__}")
+f14_skips.r0=NONE  ...  f14_skips.r10   (11 walk rows)
+f14_skips.mod=.version VERSION\n.target TARGET\n... mov.b32 ...\n\tret;\n}
 ```
 
-MEASURED, `f14_skips` is registered at `:394` and its body is `UOp(Ops.GROUP, ...)`
-at `:198`:
+**SO THAT ORACLE IS GREEN AND MY EARLIER `DEAD` VERDICT ON IT WAS WRONG.** It is worth
+recording HOW it was wrong: I found the `REFUSE:` row, believed the `DEAD` reading, and
+wrote it down -- while another unit was mid-fix. **The `REFUSE:` prefix IS the file's own
+marker for "this did not measure the thing", and I treated a marker I had not finished
+reading as a verdict.** The three checks that would have caught it, and that I did not
+run, are: `git log -1 -- <file>` for a newer commit, the `ast` check for comment-vs-code,
+and re-running the fixture to see whether its row COUNT matches its neighbours'.
 
-```
-$ .venv/bin/python gates/ptx_render_census-oracle.py | grep '^f14'
-f14_skips.mod=REFUSE:build:AttributeError
-```
+**THE NET IS UNCHANGED IN THE ONE PLACE THAT DECIDES THE LAND:** the two `fold-mvt`
+oracles are still `rc=1` at the current HEAD, and they still die on `ParamArg.size`.
 
-**ONE ROW WHERE THE OTHER 37 FIXTURES EMIT A `.mod` PLUS A WALK.** The `REFUSE:` prefix
-is the file's own marker for "this did not measure the thing", and it is being carried
-out of the oracle as `rc=0`. **`checks/bounded.py`'s exit-status note applies verbatim:
-read the token, never the status.**
+### THE TWO THAT ARE STILL DEAD, AND WHY IT IS NOT `Ops.FLIP`
 
 ### **THE IMPORTANT PART: TWO ORACLES DIE FOR A REASON THAT IS NOT `Ops.FLIP`**
 
@@ -92,6 +93,13 @@ since before anyone touched `ops.bend`.
 > the reason this unit did not fix them under the grant rather than stopping: dropping a
 > deliberate `size=k` from a fixture is a DIFFERENT defect with a DIFFERENT owner, and
 > doing it inside the re-index commit is exactly the "one edit, not two" failure.
+>
+> **AND NOTE `ORACLEREVIVE`'s OWN COMMIT MESSAGE AGREES ABOUT THE SHAPE OF THIS TRAP**
+> (`80471aa4c275`, quoted): *"run_fixture SWALLOWED THE AttributeError AS
+> `REFUSE:build:AttributeError` -- alongside `REFUSE:KeyError` at :530 -- THE SAME
+> SPELLING FAMILY AS THE CENSUS's FOUR DELIBERATE REFUSALS. SO A DELETED SYMBOL MASKED
+> ITSELF AS [a refusal]"*. **A `REFUSE:` row is a spelling family, not a verdict, and
+> I read one as a verdict -- see the correction above.**
 
 ### AND THE BRIEF'S OWN FILE LIST IS PARTLY WRONG
 
@@ -228,7 +236,7 @@ GROUP/FLIP references left in ops.bend: 0
 
 | item | why |
 |---|---|
-| **THE LAND** | two oracles are hard-dead at `HEAD`, one `rc=0` oracle has a DEAD lane, and the dead pair dies on `ParamArg.size` -- outside the grant |
+| **THE LAND** | two `fold-mvt` oracles are hard-dead at `HEAD` on `ParamArg.size`, a CPython-side defect outside the grant; see section 1 |
 | `REMOVE_FROM_SINK_LIKE` BOTH HALVES | in `uop/symbolic.bend`, not in `multi.bend`'s closure; not measured, so not done |
 | `sym_table` loses only 11 | same file; the prior unit's reading of `symbolic.py:440/:444/:445` stands unverified by me |
 | the other 8 re-index files | outside what a stopped unit should touch |
