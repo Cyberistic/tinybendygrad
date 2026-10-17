@@ -1,8 +1,8 @@
 # P6..P10 -- the exact walk shapes the five movement arms need, probed before
 # fold.bend is edited. P1..P5 are in fold-probe-mvt.bend.
 import Base
-import ../../../tinybendygrad/uop/ops.bend as O
-import ../../../tinybendygrad/helpers.bend as H
+import ../tinybendygrad/uop/ops.bend as O
+import ../tinybendygrad/helpers.bend as H
 
 # ---------------------------------------------------------------------------
 # A DIM AS A COUNT, or a refusal. Python's `resolve(sz>=0)` and friends read a

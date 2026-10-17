@@ -19,9 +19,9 @@
 # different pattern -- a false red, not a bug. `gate_dtype.py` decides that from
 # the ORACLE's answer, not from the driver's, and prints the skipped count.
 import Base
-import ../../../tinybendygrad/base.bend as F
-import ../../../tinybendygrad/dtype.bend as D
-import ../../../tinybendygrad/helpers.bend as H
+import ../tinybendygrad/base.bend as F
+import ../tinybendygrad/dtype.bend as D
+import ../tinybendygrad/helpers.bend as H
 
 def r1(p: U32, b: U32) -> String:
   String.concat(["bf16_", U32.show(p), "=", U32.show(F32.bits(D.Dt.bf16(b))),

@@ -9,9 +9,9 @@
 # Written in dependency order: bend has no forward references, so every def here
 # is below everything it calls and the file reads top to bottom.
 import Base
-import ../dtype.bend as D
-import ../helpers.bend as H
-import ../LAWS/spec.bend as S
+import ../tinybendygrad/dtype.bend as D
+import ../tinybendygrad/helpers.bend as H
+import ../tinybendygrad/LAWS/spec.bend as S
 
 # ===========================================================================
 # The twenty dtypes: name, priority, bits, itemsize, the three predicates dtype.py

@@ -24,8 +24,8 @@
 #     `IO.pure({ty}, {ex})` with `ty = "F32"`, so that lane has the same shape in
 #     it; `jstage` is not this unit's file, so it is REPORTED, not edited.
 import Base
-import ../../../tinybendygrad/base.bend as FB
-import ../../../tinybendygrad/dtype.bend as D
+import ../tinybendygrad/base.bend as FB
+import ../tinybendygrad/dtype.bend as D
 
 def show_of(v: F32) -> String: F32.show(v)
 def bits_of(v: F32) -> String: U32.show(F32.bits(v))
