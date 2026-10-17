@@ -19708,6 +19708,69 @@ INSTRUMENT RE-SPELLED.***
       **43 -> 38** STAGED. ***AN AGENT THAT ARMS THE SHARED INDEX **AND SAYS SO AND FIXES IT** IS THE OPPOSITE OF
       THE UNITS THAT LEFT **88** FOR ANOTHER TO CLEAN UP.***
 
+## PARAMARGSLOT -- **`npos > 2` IS ***NOT*** THE CLASS**: IT FLAGS **24** SITES AND **8** ARE ***PROVABLY SAFE**** (2026-10-18)
+
+`4e640878a` -- **5 PATHS, BOUNDED.** **NO `bend` WAS RUN** -- THE FIX IS ***ENTIRELY
+CPYTHON-SIDE*** FOR THE FOUR FILES, **SO THERE IS NO `bend` RSS TO REPORT.** PEAK **<= 47.6 MB**, ALL
+**<= 0.14 s** (GATE **0.66 s**), WITH A **FRESH** MEASURING PROCESS PER FILE **BECAUSE macOS `ru_maxrss` IS
+BYTES AND `RUSAGE_CHILDREN` IS A RUNNING MAX**.
+
+- [ ] **AND THE CLASSIFIER **IN THE CALLER's OWN BRIEF** WAS ***WRONG BY AN ORDER OF MAGNITUDE, AND WRONG IN THE
+      DIRECTION OF ACCUSING SAFE CODE.*** THE CALLER SAID *"A POSITIONAL `ParamArg` SLOT"* AND SUPPLIED
+      `npos>2` AS THE TEST. ***MEASURED BY THE CALLER OVER **306** FILES** (INDEPENDENTLY, BY THE CALLER:
+      **45** `ParamArg(` SITES, **24** WITH `>2` POSITIONALS, **8** OF THOSE WITH **THE 3rd POSITIONAL = LITERAL
+      `None`**):***
+
+          45  ParamArg( sites walked
+          24  with >2 positionals  (THE CALLER's CLASSIFIER's SET)
+           8  of those, 3rd positional is literal None
+          => THE CALLER's CLASSIFIER WOULD REPORT ~16 FALSE POSITIVES
+
+      ***AND THE REASON IS EXACT AND IT IS THE CLASS: ***NONE*** PUTS ***NONE`*** WHERE THE FIELD
+      ***`vmin_vmax`*** ***WANTS*** ***NONE`***.*** **SO THE CLASS IS NOT ***ARITY*** -- IT IS ***WHICH FIELD THE
+      VACATED SLOT NOW LANDS ON, COMPARED AGAINST WHAT THAT FIELD WANTS.*** **THE PRIOR UNIT's OWN CENSUS SAID
+      THE SAME THING** -- *"SAFE-BY-COINCIDENCE"*, ***3*** GENUINELY WRONG OF **21** -- **AND THIS IS THE SECOND
+      CLASSIFIER **IN** ONE SESSION **THAT** ACCUSES **BEFORE** IT** CHECKS WHAT THE TARGET FIELD WANTS**.**
+
+- [x] **AND THE `size=0` SEPARATION, WHICH IS ***THE*** ROW THAT ***DISTINGUISHES THE THREE FIXES***:**
+
+      | spelling | reads |
+      |---|---|
+      | size in `src` (`shape_to_shape_arg((0,))`) | `as_shape (0,)`, `max_numel 0`, node **distinct** from size **1** |
+      | **defaulted / `0` TREATED AS `1`** | `(1,)`, `max_numel 1`, **SAME NODE AS SIZE 1** |
+      | **deleted** (`src=()`) | `_shape` -> `IndexError`; `f(4) is f(6)` -> **True, ONE NODE FOR EVERY SIZE** |
+
+      **AND ***NO `size=0` ROW WAS ADDED*** TO THE FOUR GATES, **AND THAT REFUSAL ***COST SOMETHING***:**
+      `gatekit.py:666` REQUIRES EVERY LANE TO CARRY THE ***SAME ROW COUNT***, AND EACH PORT HALF EITHER
+      ***HARD-CODES*** ITS SIZE (`cstyle_render_census.bend:284` -> `4`) **OR LIVES UNDER `tinybendygrad/` (wgsl ->
+      `tinybendygrad/renderer/wgsl.bend`).** ***SO AN ORACLE-ONLY ZERO ROW WOULD BE A FAIL ***MANUFACTURED BY THE FIX
+      ITSELF***.***
+- [ ] **AND ONE CLAIM IS ***INVISIBLE***, AND IT IS **THE WORST KIND**: `realize`'s `_buf_dev` **`16`** --
+      **THE ORACLE's **1 004** ROWS ARE ***BYTE-IDENTICAL WITH AND WITHOUT IT***.** ***AND IT IS ***NOT MERELY
+      UNOBSERVED***: `u.vmin` ON SUCH A NODE ***RAISES*** `TypeError: 'int' object is not subscriptable`.** **SO IT
+      IS A ***LIVE LANDMINE*** THAT THIS PARTICULAR CENSUS HAPPENS NOT TO STEP ON. ***A CLAIM NO ROW READS, IN A NODE
+      WHOSE ACCESSOR RAISES.***
+- [x] **AND ***FOUR*** `REFUSED` GATES BECAME `FAIL` -- ***DEAD INSTRUMENTS BECOME LIVE ONES REPORTING ***TRUE*** PORT
+      FINDINGS***:** `cstyle_render_census-oracle.py` **0 B -> 7 476 B** (18 `rb_*` rows) · `wgsl_render_census-oracle.py`
+      **0 B -> 7 745 B** (227 rows) · `fold_graph_census-oracle.py` **711 B -> 3 975 B** (28 rows) ·
+      `realize_graph_census-oracle.py` **0 B -> 16 526 B** (**1 004** ROWS, **941** COMPARED).
+      **AND `fold`'s IS PRECISELY THE RIGHT MOVE:** CPYTHON `nsrc=1 srcops=Ops.CONST` vs THE PORT's `nsrc=0
+      srcops=`, WITH `shape=(4)` ON ***BOTH*** SIDES -- ***THE SIZES AGREE, ONLY THE ENCODING DIFFERS.***
+- [ ] **AND IT ***CORRECTED THE CALLER's PREMISE AGAIN***: ***"THE BRIEF's 'THE DEFECT IS CPYTHON-SIDE' IS ***TRUE
+      FOR THE **FOUR** I FIXED AND ***FALSE FOR `realize`***."*** BECAUSE `tinybendygrad/uop/ops.bend:869-870`
+      ***STILL DECLARES `size` IN SLOT **2** *WITH THE PRE-MOVE COMMENT VERBATIM***, `:1473` ***STILL HAS
+      `ParamArg.size`***, **AND ***NINE*** FIXTURES ARE SPELLED PRE-MOVE** (`fold.bend:4291,4491,5223,5300,5618`;
+      `divandmod.bend:733` -- ***WHOSE SIZE IS `Some{0}`, A ZERO***; `realize.bend:1557,1563,1569`).
+      ***AND `ops.bend` WAS MODIFIED **2 MIN** BEFORE IT READ IT -- SO IT SAID SO RATHER THAN ASSUMING.***
+- [x] **AND ***BOTH `-mut-oracle.py` FILES ARE `GENERATED` AND WERE LEFT UNCOMMITTED ON PURPOSE***: THEIR MUTATE
+      PARENTS WRITE THEM AND `unlink` IN CLEANUP, **BOTH ARE ***ORPHANS FROM RUNS THAT MISSED THEIR
+      `finally`***, AND **NEITHER IS IN `HEAD`**. ***"COMMITTING THEM WOULD HAVE ADDED TWO GENERATED
+      BYPRODUCTS."*** **AND THE GATE's `KEYWORD-DEAD=1` IS PRECISELY `.wgsl-mut-oracle.py:321`.**
+- [x] **AND ITS NEW GATE **REFUSES RATHER THAN REPORTING A ZERO****: A BAD PIN -> **rc=3 `REFUSED`**; **A WALK THAT
+      FINDS NOTHING -> **rc=5 `DEAD`** (FAULT-INJECTED ON A COPY); AND **THE CONTROL FIRES**
+      (`dead->KEYWORD-DEAD clean->SAFE`) **OR THE GATE `REFUSES`**. ***AND IT IS ***rc=1 FAIL*** ON THE WORKING
+      TREE, **BECAUSE THE ***THREE*** REMAINING SITES ARE GENUINELY WRONG.** ***
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
