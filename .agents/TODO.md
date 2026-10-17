@@ -19205,6 +19205,54 @@ AT **9** -- HEAD's OWN **9**.**
       THEY ARE **76** (OMIT `CONST`, PRE-EXISTING) AND WOULD GO TO **74** AGAINST UPSTREAM's **75**;
       ***`dd_ops.all()` IS A THIRD COPY THAT GETS IT RIGHT.***
 
+## ORACLEREVIVE -- **A DELETED SYMBOL WAS ***MASQUERADING AS A DISCOVERED FINDING***, BEHIND ***THE SAME
+SPELLING*** AS FOUR DELIBERATE REFUSALS** (2026-10-17)
+
+`6304f5b530a` -- **4 FILES**, PORT UNTOUCHED, `tinygrad/` STILL BYTE-IDENTICAL TO `upstream`. **NO ROW DELETED,
+NO PIN DROPPED, NO EXPECTED VALUE TRANSCRIBED.**
+
+- [x] **AND ***ONE*** OF THE **4** WAS DEAD FOR THE REASON THE CALLER GAVE, **NOT ***ALL FOUR***:
+      `gates/ptx_render_census-oracle.py` (`REFUSE:` MASQUERADE) · `oracles/fold-mvt-e2e.bend` (**FIXTURE PATH
+      ARITHMETIC**: `./../../../` -> `./../`) · `oracles/fold-probe1.py` (`ParamArg(size=)` -> `UOp._buffer`,
+      FLIP -> **RECORD ABSENCE**) · `oracles/mm-survey.py` (**DELETED SYMBOLS x4**).
+- [x] **AND ***THE CALLER's FILE LIST WAS WRONG***: IT NAMED `oracles/fold-probe1.bend` AND
+      `oracles/mm-survey*.bend`; **ON DISK THEY ARE `fold-probe1.py` AND `mm-survey.py`.**
+- [ ] **AND THE MOST IMPORTANT FINDING IS THE MASQUERADE, AND IT IS ***NOT*** THE TRAP THE CALLER NAMED**:
+      **UPSTREAM DELETED `Ops.GROUP` *AND* REMOVED IT FROM `ptx.py:187`'s SKIP SET, **SO THERE WAS ***NEVER A
+      GROUP RULE IN THE RENDERER TO DELETE***. `run_fixture` **SWALLOWED THE `AttributeError` AS
+      `REFUSE:build:AttributeError`** (VERIFIED BY THE CALLER AT `ptx_render_census-oracle.py:201`,
+      **ALONGSIDE `REFUSE:KeyError` AT `:530`**) -- ***THE SAME SPELLING FAMILY AS THE CENSUS's FOUR DELIBERATE
+      REFUSALS***. **SO A DELETED SYMBOL ***MASKED ITSELF AS A DISCOVERED PTX FINDING***, AND REFUSED-BUILD
+      COUNT WENT **1 -> 0** ONLY ONCE THE CALLER NAMED IT.**
+      ***THE CALLER's BRIEF WARNED THAT "A FIXTURE THAT GOES GREEN BECAUSE ITS SUBJECT WAS DELETED IS NOT A
+      PASSED FIXTURE" -- AND ***THE TRAP WAS IN THE ***ORACLE***, NOT THE FIXTURE***: ***AN ***ABSENT*** SYMBOL
+      AND A ***DISCOVERED*** FINDING PRINTED ***THE SAME WORDS***. THE TRAP IS ***NOT*** GREEN; IT IS
+      ***INDISTINGUISHABLE***.***
+- [x] **AND ***ONE*** ROOT CAUSE BEHIND ***THREE*** OF THE FOUR** -- VERIFIED BY THE CALLER AT
+      `upstream:tinygrad/uop/ops.py:828-829`: **`def _buffer(size, dtype, slot, …)` NOW RETURNS
+      `UOp(Ops.BUFFER, src=(shape_to_shape_arg((size,)),)+UOp.device_range_src(device), …)`** -- ***THE SIZE **IS**
+      NOW A `src[0]` CONST.*** AND `ParamArg`'s FIELDS ARE NOW `slot, dtype, vmin_vmax, …` -- **NO `size`, NO
+      `vmin`/`vmax`.**
+- [ ] **AND TWO PORT DEFECTS FOUND, ***NOT*** FIXED, WITH OWNERS: **(1) THE `_buffer` SHAPE MOVE IS **NOT
+      ABSORBED** -- **15** FIXTURES SHIFT **+1**, AND ***ALL ***THREE*** PIN LANES (`py`/`bd`/`bn`) RECORD THE
+      ***PRE-`_buffer`*** INDEX** (ALL THREE READ `f05_regbuf4.r0={%reg_f32_0..3}` WHILE LIVE CPYTHON READS
+      `r0=NONE, r1={…}`) -- ***ONLY CPYTHON MOVED.*** OWNER: `renderer/ptx.bend` + `tc_ptx.bend` +
+      `gates/ptx_render_census.bend`. **(2) `ROWS = 579` IS ***HAND-TYPED*** WHILE ITS OWN COMMENT SAYS
+      *"DERIVED, never typed"* -- ***DOCTRINE 1 INSIDE THE CENSUS's OWN ROW-COUNT GATE.***
+      **AND THE GATE IS **STILL rc=1** (`py.rows has 593 rows, expected 579`), ALL REMAINING DRIFT BEING THE PORT
+      DEFECT PLUS `f14`'s LEGITIMATE **9 -> 8** WALK-STEP CHANGE. `--refresh` IS ***rc=3 `REFUSED`***
+      (ARTEFACTS DIR EMPTY).**
+- [x] **AND IT **DID NOT WEAKEN `ROWS`** TO GO GREEN**: **THE ONLY WAY THIS GATE GOES GREEN IS THE PORT ABSORBING
+      `_buffer`, THEN A REAL `--refresh` -- **NOT REACHABLE THROUGH `ops.bend` OR THE PINS.****
+- [ ] **AND IT CORRECTED ***THE CALLER's OTHER CLAIM***, AND THE CALLER HAD ***GENERALISED A MEASUREMENT OF
+      ***ONE FILE*** INTO A FACT ABOUT **21**: *"THE BRIEF's WARNING THAT **16 OF 21** PORT FILES CANNOT COMPILE* DID
+      **NOT** HOLD FOR THIS ORACLE's **FOUR** IMPORTS -- `fold.bend`, `ops.bend`, `helpers.bend`,
+      `LAWS/spec.bend` ALL COMPILED IN **1 s**. **WORTH RE-MEASURING BEFORE THAT CLAIM IS RELIED ON.***"
+      ***THE **16** WAS CORRECT -- FOR THE FILES CARRYING `OpsGROUP{}`/`OpsFLIP{}` -- AND THE ***GENERALISATION***
+      WAS NOT: ***A FILE WITH NO REFERENCE TO A DELETED CONSTRUCTOR COMPILES FINE.*** THE PORT WAS **PARTLY BROKEN,
+      NOT UNCOMPILABLE** -- AND THE DIFFERENCE MATTERS, BECAUSE ***"BROKEN"** AND **"UNCOMPILABLE"** CALL FOR
+      DIFFERENT AMOUNTS OF PANIC.***
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
