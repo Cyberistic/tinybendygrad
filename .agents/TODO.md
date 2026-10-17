@@ -457,26 +457,34 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
-rn-PUSH-BLOCKED [#####.....] 1/2  **NOT LANDED ON ORIGIN -- BLOCKED BY A LOCAL REPO-INTEGRITY FAULT, NOT BY
-                                       ANY DEFECT IN THIS CHANGE.** 2026-10-17: commit `8c8ad8b0c`
-                                       (the `absent-inputs` census + the two guarded fixes) is COMMITTED
-                                       and REACHABLE FROM HEAD, but `git push` is rejected:
-                                       `remote: error: object d83cf685...: duplicateEntries:
-                                       contains duplicate file entries / fatal: fsck error in packed
-                                       object`. **DIAGNOSED**: `d83cf685` is a **dangling, UNREACHABLE
-                                       TREE** -- `git fsck --unreachable` finds it once, and
-                                       `merge-base --is-ancestor` says it is reachable from NEITHER
-                                       HEAD NOR origin/master, and NONE of my commits reference it.
-                                       `git push` walks the whole local object store, so ONE corrupt
-                                       unreachable object fails the entire push. **ORIGIN IS INTACT**
-                                       (still at `52d77134b`) and my history is safe locally. The
-                                       remedy is to clear the unreachable objects -- but there are
-                                       **3,309** of them and a concurrent session is actively
-                                       committing (its `02329daf0 REPAIR` recovered 178 phantom
-                                       deletions and may be the author of this tree), so a wholesale
-                                       `git prune` could destroy an object another agent is
-                                       mid-recovery on. **PREFER REFUSE TO REPAIR: THE SAFEST ACTION
-                                       IS TO STOP AND SAY SO.** 1/2 = the commit exists locally and is
+rn-PUSH-BLOCKED [######...] 2/3  **NOT LANDED ON ORIGIN -- BLOCKED BY A REAL CORRUPT COMMIT, NOT BY DEBRIS.**
+                                       **MY FIRST DIAGNOSIS WAS WRONG AND THE CORRECTION MATTERS MORE THAN
+                                       THE BLOCKER.** I reported `d83cf685` as a "dangling, UNREACHABLE tree"
+                                       on the strength of `git fsck --unreachable` finding it once --
+                                       but I had tested it with `merge-base --is-ancestor`, AND **A TREE IS
+                                       NOT AN ANCESTOR OF A COMMIT**, so that test could not mean what I
+                                       read into it. IT IS THE TREE OF A REAL COMMIT, `591f6b499`
+                                       ("TWORED: two correctly-red gates measured"), one of the **20
+                                       unpushed commits**. **THE DEFECT IS SPECIFIC AND SMALL**: that
+                                       commit's tree lists **`gates` TWICE** -- **21 entries, 19 distinct**
+                                       -- so `git push` fsck-rejects the whole push with
+                                       `duplicateEntries: contains duplicate file entries`. **ORIGIN IS
+                                       INTACT** (`52d77134b`) and `591f6b499` is **NOT on origin**, so
+                                       nothing broken has shipped.
+                                       **WHY I DID NOT "FIX" IT.** `git -c
+                                       push.fsck.skipList=duplicateEntries push --dry-run` SUCCEEDS, so
+                                       the push is one flag away -- **and taking it would put a
+                                       malformed tree into origin's history, which is strictly worse than
+                                       an unpushed branch.** And the commit is not mine: amending or
+                                       rebasing another agent's commit is forbidden here, and 19 further
+                                       commits from the concurrent session sit on top of it.
+                                       **PREFER REFUSE TO REPAIR.** The owner of `591f6b499` rewrites it
+                                       (it is unpushed, so this is local and cheap) and the 20 commits
+                                       push. **A DUPLICATE TREE ENTRY IS ALSO A THIRD ARM OF THE ARMED-
+                                       INDEX CLASS** -- `checks/index-arm-gate.py` measures `deletion /
+                                       stale / foreign-add / intent-to-add` and has no arm for an index
+                                       that DUPLICATES an entry, which is what produced this.
+1/2 = the commit exists locally and is
                                        reachable; 2/2 = it reaches origin, which needs the owner to
                                        clear the dangling object.
 
