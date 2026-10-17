@@ -2027,30 +2027,40 @@ def te_rewrite(+ts: O.PMEntrys, fx: F.Folded, self: U32) -> O.Verdict:
 def tensor_rewrite(fx: F.Folded, self: U32) -> O.Verdict:
   te_rewrite(tensor_table(), fx, self)
 
-# `GroupOp.All` is every op, so the "claim" is just "there is an op here", which is
-# what `Arena.op` answers for a live index.
-def pr_0.claims(fx: F.Folded, self: U32) -> Bool:
-  Bool.not(O.UOp.is_none(self))
+# `GroupOp.All` is every op, so `GroupOp.All-GroupOp.Defines` is "there is an op
+# here" MINUS the size-defining ops: `UOp.is_none` is the arena's bottom slot (the
+# port's `x.op is None`) and `Arena.op` is the op `GroupOp.defines` reads.
+def pr_0.claims(+fx: F.Folded, +self: U32) -> Bool:
+  Bool.and(Bool.not(O.UOp.is_none(self)), Bool.not(O.GroupOp.defines(O.Arena.op(sp_ar(fx), self))))
 
-def pr_0.body(fx: F.Folded, self: U32) -> Bool:
-  Bool.not(sp_op(fx, self, O.OpsCAST{}))
+def pr_0.body(+fx: F.Folded, +self: U32) -> Bool:
+  Bool.and(Bool.not(sp_op(fx, self, O.OpsCAST{})), any_const(sp_srcs(fx, self), fx, False{}))
 
 # ===========================================================================
 # `spec_program` -- spec.py:205-228. Nine rules, then `+ spec_shared`.
 # "these ops can exist in programs but not the tensor spec. example: LOAD"
 # ===========================================================================
-# spec.py:204 (UPat(GroupOp.All, name="x"),
+# spec.py:204 (UPat(GroupOp.All-GroupOp.Defines, name="x"),
 #              lambda x: False if x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src) else None)
 # A CONST under anything but a CAST is not allowed in a program: every width is
-# stated by the CAST, and a bare CONST is a vconst that survived lowering.
+# stated by the CAST, and a bare CONST is a vconst that survived lowering. BOTH
+# halves are load-bearing: the op set is the CLAIM, and PARAM/BUFFER/ALLOC are the
+# three ops whose src is a size that is meant to be a bare CONST
+# (tinygrad/uop/__init__.py:114, `Defines = {Ops.PARAM, Ops.BUFFER, Ops.ALLOC}`),
+# so claiming them would reject upstream's own legal nodes.
 def pr_0(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(pr_0.claims(fx, self), sp_vd(sp_tri(pr_0.body(fx, self), False{})))
 
 # spec.py:205 (UPat(GroupOp.All-{Ops.CONST}, dtypes.weaks), lambda: False)
 # `dtypes.weaks` is a TWO-element set, so upat.py:35 emits `dtype in {weakint,
-# weakfloat}` -- a class test, and the only weak node in a program is illegal.
+# weakfloat}` -- a class test, and the only weak node in a program is illegal. Its own
+# CLAIM, because upstream's two sets are different: sharing pr_0's would type this
+# rule `All-Defines`, which upstream never wrote.
+def pr_1.claims(+fx: F.Folded, +self: U32) -> Bool:
+  Bool.and(Bool.not(O.UOp.is_none(self)), Bool.not(sp_op(fx, self, O.OpsCONST{})))
+
 def pr_1(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(pr_0.claims(fx, self), sp_is_weak(fx, self)), O.VFalse{})
+  O.pm_when(Bool.and(pr_1.claims(fx, self), sp_is_weak(fx, self)), O.VFalse{})
 
 def pr_2.pat.of(op: Bool, b: Bool, c: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(b, Bool.and(c, n)))

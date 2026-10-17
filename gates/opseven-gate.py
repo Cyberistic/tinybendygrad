@@ -4,7 +4,7 @@
     .venv/bin/python gates/opseven-gate.py
     .venv/bin/python gates/opseven-gate.py --refresh    # rewrites the pins file
 
-31 ROWS, THREE LANES, 16 DECLARED DIVERGENCES IN TWO CLASSES. THE SEVEN are `CUSTOM CUSTOMI INS
+31 ROWS, THREE LANES, 4 DECLARED DIVERGENCES IN ONE CLASS. THE SEVEN are `CUSTOM CUSTOMI INS
 PROGRAM PYLITERAL REWRITE_ERROR SOURCE`: the seven members of `tinybendygrad/uop/ops.bend`'s 77-variant
 `type Op is Data:` block that the 34-graph corpus does not build, so nothing in this tree ever had an
 opinion about the port's answers for them.
@@ -13,8 +13,8 @@ opinion about the port's answers for them.
 `gates/opseven-oracle.py` builds the same twelve from upstream's own construction sites, and the two
 lanes are diffed. That is the `gates/ops_bend_exec-e2e.py` move -- force the shape rather than wait for
 a program to make it -- and it is what makes the port's answer comparable to CPython's for the FIRST
-time on these ops. Thirteen of the fifteen compared rows are the op, the src count, the dtype and the
-shape; `classes_hold` below proves what the two divergence classes ARE rather than naming them.
+time on these ops. Twenty-seven of the thirty-one rows are compared exactly and the four that are not are
+one class; `classes_hold` below proves what the divergence class IS rather than naming it.
 
 CAN CPYTHON EMIT ALL SEVEN? YES, and six of the seven by one `UOp(...)` call -- `REWRITE_ERROR`
 (ops.py:1713), `PYLITERAL` (upat.py:26 and :29), `SOURCE` (codegen/__init__.py:453), `CUSTOM`
@@ -27,8 +27,9 @@ in programs but not the tensor spec / everything should be deleted from here" --
 ON ITS OWN TERMS (`rewrite_error=... st=9 sf=1 sh=9 sk=9`, `sp_rewrite_error=9`) rather than forced
 into a program graph.
 
-CLASS 1, `SPEC_PROGRAM` (12 rows, `sp_*`). **THE PORT'S `spec_program` REJECTS EVERY NODE THAT IS NOT A
-CAST, AND THIS GATE IS THE FIRST CALLER OF IT IN THE TREE.** `tinybendygrad/uop/spec.bend:2033` reads
+CLASS 1, `SPEC_PROGRAM`, WAS A DEFECT IN `tinybendygrad/uop/spec.bend` AND IS NOW FIXED, so it is no longer
+a class of pinned divergence: it is a REGRESSION GUARD on the fix, stated in the falsifiable form -- the
+port's `sp_*` column is not constant. The port read
 
     def pr_0.claims(fx, self): Bool.not(O.UOp.is_none(self))
     def pr_0.body(fx, self):   Bool.not(sp_op(fx, self, O.OpsCAST{}))
@@ -38,27 +39,19 @@ where `spec.py:204` is
     (UPat(GroupOp.All-GroupOp.Defines, name="x"),
      lambda x: False if x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src) else None)
 
-so `pr_0.body` is missing the SECOND CONJUNCT -- `any(s.op is Ops.CONST for s in x.src)` -- and the file's
-OWN HEADER QUOTES IT, three lines above the def that drops it. `spec_tri(body, False)` answers
-`VFalse` when the body holds, so a node that is not a CAST and has no CONST src answers VFalse where
-CPython answers `VSkip` or `VTrue`. MEASURED here: the port's `sp_*` column is the CONSTANT `0` on
-**12 of 12** rows while CPython's takes three values on the same twelve -- **5 at `1`, 4 at `9`,
-3 at `0`** -- so the port's column carries no information about the node at all. **3 OF THE 12 AGREE,
-AND ALL THREE AGREE BY COINCIDENCE**: `custom_void`, `custom_f32` and `customi_f32` each carry a CONST
-src, so CPython's `pr_0` fires on the conjunct the port dropped while the port fires on being
-non-CAST. Same verdict, two different rules, so `3 of 12` is NOT a pass rate and `spec_program_holds`
-asserts the claim over all twelve and names the three.
+so the claim DROPPED `-GroupOp.Defines` and the body DROPPED THE SECOND CONJUNCT, and the file's OWN HEADER
+quoted the rule it dropped, three lines above the def that dropped it. MEASURED here while it was live:
+the port's `sp_*` column was the CONSTANT `0` on **12 of 12** rows while CPython's took three values on
+the same twelve -- **5 at `1`, 4 at `9`, 3 at `0`** -- so the column carried no information about the
+node. **3 OF THE 12 AGREED, AND ALL THREE AGREED BY COINCIDENCE**: `custom_void`, `custom_f32` and
+`customi_f32` each carry a CONST src, so CPython's `pr_0` fired on the conjunct the port dropped while the
+port fired on being non-CAST. Same verdict, two different rules, so `3 of 12` was NOT a pass rate.
 
-IT IS CURRENTLY LATENT, AND THAT IS MEASURED, NOT ASSUMED. `sf` (`spec_full`) agrees on **12 of 12**:
-`spec.bend`'s own header records that `spec_full`'s table is first-wins and that `spec_tensor`'s entries
-come FIRST, so every one of these nodes is answered by `spec_tensor` before the program table is reached
--- the defect is shielded by ordering. And `grep -rn 'verify_program|program_rewrite' tinybendygrad gates`
-returns NOTHING outside `uop/spec.bend` itself, so `spec_program` had **zero** callers before this file.
-The one named reference to the sibling is a WALL note, `tinybendygrad/schedule/__init__.bend:1339`,
-"BLOCKED: needs the `if SPEC:` gate wired to `uop/spec.bend`'s `verify_tensor`". NOT REPORTED, NOT FIXED:
-`uop/spec.bend` is outside this unit's grant, and the fix is one line -- `pr_0.body` becomes
-`Bool.and(Bool.not(sp_op(fx, self, O.OpsCAST{})), <any src is CONST>)`. `classes_hold` asserts the CLAIM
-(`port sp == 0 for every non-CAST row`), not just the class name.
+AFTER THE FIX the column agrees with CPython's on **12 of 12** and the nine pinned rows are COMPARED rows,
+so the ordinary diff guards them: re-drop either half and nine rows go red, which no pin is needed for.
+Both halves call code that was ALREADY PORTED AND UNCALLED -- `GroupOp.defines` at `ops.bend:495` and
+`any_const` at `spec.bend:526` -- so the fix was a caller, not a reimplementation. The gate keeps the claim
+because a guard that names nothing can go green by accident.
 
 CLASS 2, `OPS_VALUE` (4 rows, `value_custom value_customi value_ins value_pyliteral`). NOT A DEFECT: the
 port's `Ops.value` table is a FAITHFUL reading of its own 77-member enum. `FastEnum`'s
@@ -123,23 +116,17 @@ OPS_BEND = ROOT / "tinybendygrad" / "uop" / "ops.bend"
 FIXTURES = ("rewrite_error", "pyliteral_op", "pyliteral_str", "source", "custom_void", "custom_f32",
             "customi_void", "customi_f32", "ins_void", "ins_f32", "program_1", "program_4")
 SP_ROWS = tuple(f"sp_{r}" for r in FIXTURES)
-# THE THREE THAT AGREE BY COINCIDENCE, AND THE NINE THAT DO NOT. `custom_void`, `custom_f32` and
-# `customi_f32` each carry a CONST src, so CPython's `pr_0` FIRES on spec.py:204's SECOND conjunct --
-# `any(s.op is Ops.CONST for s in x.src)`, the one the port dropped -- and answers False. The port
-# answers False too, for the wrong reason (not being a CAST). Same verdict, different rule, so the
-# raw agreement count of 3 of 12 OVERSTATES the port: `spec_program_holds` asserts the claim over ALL
-# TWELVE and states that the port's column is CONSTANT where CPython's is not.
-SP_AGREE = ("sp_custom_void", "sp_custom_f32", "sp_customi_f32")
-SPEC_PROGRAM = tuple(r for r in SP_ROWS if r not in SP_AGREE)
 VALUE_OPS = ("rewrite_error", "source", "program", "custom", "customi", "ins", "pyliteral")
 VALUE_ROWS = tuple(f"value_{o}" for o in VALUE_OPS)
 ROWS = tuple(r for f in FIXTURES for r in (f, f"sp_{f}")) + VALUE_ROWS
 
-# THE DIVERGENCE POPULATION, HAND-DECLARED IN GIT, AND THE TWO CLASSES ARE CHECKED AGAINST EACH OTHER
-# IN BOTH DIRECTIONS BY `_pins()`. A row pinned and not declared is a pin nothing will ever exclude; a
-# row declared and not pinned is an exclusion with no content behind it.
+# THE DIVERGENCE POPULATION, HAND-DECLARED IN GIT, AND THE CLASS IS CHECKED AGAINST IT IN BOTH
+# DIRECTIONS BY `_pins()`. A row pinned and not declared is a pin nothing will ever exclude; a row
+# declared and not pinned is an exclusion with no content behind it. There is ONE class: the
+# `spec_program` rows are COMPARED rows now, so a second class naming them would be a pin with no
+# divergence behind it -- and `_pins()` refuses that shape rather than accepting it.
 OPS_VALUE = ("value_custom", "value_customi", "value_ins", "value_pyliteral")
-DIVERGING = SPEC_PROGRAM + OPS_VALUE
+DIVERGING = OPS_VALUE
 
 # UPSTREAM DELETED THESE TWO, AND THE GATE FINDS THEM ITSELF: `_removed()` parses the port's own
 # `type Op is Data:` block and returns every variant upstream does not have, so the class-2 prediction
@@ -197,21 +184,24 @@ def _header(n_div, n_same):
 # writer. One TAB-separated triple per declared divergence: `<row>\\t<CPython's line>\\t<the port's
 # line>`, i.e. the expected content on BOTH sides.
 #
-# {n_div} DIVERGENCES IN TWO CLASSES, {n_same} OF THE {len(ROWS)} ROWS AGREE EXACTLY. It is git-resident and beside the
+# {n_div} DIVERGENCES IN ONE CLASS, {n_same} OF THE {len(ROWS)} ROWS AGREE EXACTLY. It is git-resident and beside the
 # gate because a gate's required inputs live in git and not in `gates/artifacts/`: `gatekit` EMPTIES
 # that directory before it runs and UNLINKS what it staged when the run was not green, so a
 # divergence list read from there is destroyed by the first red run and there is then nothing to edit.
 #
-# CLASS `SPEC_PROGRAM` ({len(SPEC_PROGRAM)} rows of the {len(SP_ROWS)} `sp_*`): `tinybendygrad/uop/spec.bend:2033`'s
-# `pr_0.body` reads `Bool.not(sp_op(fx, self, O.OpsCAST{{}}))` where spec.py:204 reads
-# `x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src)` -- the SECOND CONJUNCT IS DROPPED, and
-# the file's own header quotes it three lines above the def. The port's `spec_program` therefore answers
-# VFalse for every node that is not a CAST: MEASURED, a CONSTANT `0` on {len(SP_ROWS)} of {len(SP_ROWS)} rows where
-# CPython takes three values (5 at '1', 4 at '9', 3 at '0'). The {len(SP_AGREE)} agreements are COINCIDENCE -- a CONST
-# src makes CPython's dropped conjunct fire too -- so they are not evidence and they stay in the
-# COMPARED lane. It is LATENT: `spec_full` agrees on {len(SP_ROWS)} of {len(SP_ROWS)} because that table is
-# first-wins with `spec_tensor` ahead of the program entries, and `verify_program` had ZERO callers in
-# the tree before this gate. NOT FIXED HERE -- `uop/spec.bend` is outside this unit's grant.
+# NO `SPEC_PROGRAM` CLASS ANY MORE, AND THE REASON IS THE POINT: `tinybendygrad/uop/spec.bend`'s `pr_0`
+# dropped spec.py:204's `-GroupOp.Defines` op set AND the body's `any(s.op is Ops.CONST for s in x.src)`
+# conjunct, so the port's `spec_program` answered VFalse for every node that was not a CAST -- MEASURED,
+# a CONSTANT `0` on {len(SP_ROWS)} of {len(SP_ROWS)} rows where CPython took three values. It is FIXED:
+# both halves now call code that was already ported and uncalled (`GroupOp.defines` at `ops.bend:495`,
+# `any_const` at `spec.bend:526`), and the {len(SP_ROWS)} `sp_*` rows agree with CPython EXACTLY, so they are
+# COMPARED rows and the ordinary diff guards them -- re-drop either half and {len(SP_ROWS)} rows go red.
+# `spec_program_holds` keeps the claim in its falsifiable form, "the column is not constant", because a
+# check that names nothing goes green by accident. What this fix did NOT do is measure `spec_full`: the
+# only reader of the spec tables in the tree is `gates/opseven.bend`'s `sf` column, and `sf` is 1 on
+# {len(SP_ROWS)} of {len(SP_ROWS)} before and after, so the unmasking it performs in `full_table` -- where `pr_0`
+# sits at tag 59, behind 63 entries, so entries 60..70 were dead -- is REAL BY CONSTRUCTION and
+# UNOBSERVED HERE. That is a gap, not a result, and it is named here so the next reader inherits it.
 #
 # CLASS `OPS_VALUE` ({len(OPS_VALUE)} rows): NOT A DEFECT. The port's `Ops.value` table is declaration order
 # over its own 77-member enum, measured arm-by-arm, and upstream declares 75 because it deleted `GROUP`
@@ -244,11 +234,9 @@ def refresh() -> int:
   rows = [r for r in ROWS if got["py"].get(r) != got["bd"].get(r)]
   out = [_header(len(rows), len(ROWS) - len(rows))]
   for r in rows:
-    cls = ("SPEC_PROGRAM, spec.bend:2033 pr_0.body drops `any(s.op is CONST)`"
-           if r in SPEC_PROGRAM else
-           "OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's")
     out.append("# %-20s %-72s cpy %4dB %s | port %4dB %s" % (
-      r, cls, len(got["py"][r]), hashlib.sha256(got["py"][r].encode()).hexdigest()[:12],
+      r, "OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's",
+      len(got["py"][r]), hashlib.sha256(got["py"][r].encode()).hexdigest()[:12],
       len(got["bd"][r]), hashlib.sha256(got["bd"][r].encode()).hexdigest()[:12]))
     out.append("%s\t%s\t%s" % (r, got["py"][r], got["bd"][r]))
   PINS.write_text("\n".join(out) + "\n")
@@ -299,18 +287,21 @@ def _lane(name):
 
 
 def spec_program_holds() -> bool:
-  """CLASS 1's CLAIM, not its name: the port's `spec_program` column is CONSTANT across all twelve
-  rows where CPython's is not.
+  """CLASS 1 AS A REGRESSION GUARD: the port's `spec_program` column is NOT the constant `0` it was.
 
-  Stated as "constant" rather than "always 0" because that is the falsifiable form: a port whose column
-  varied would carry information and this class would be wrong. Three assertions, all of which can fail:
+  `spec.bend`'s `pr_0` dropped BOTH halves of spec.py:204 -- the `-GroupOp.Defines` op set and the
+  body's `any(s.op is Ops.CONST ...)` conjunct -- so the column was `0` on every row and carried no
+  information about the node. The fix made it agree with CPython on all twelve. Stated as "not constant"
+  rather than only as "agrees with CPython" because the ordinary diff already owns the second claim, and
+  what the diff does NOT own is that this column was ever a constant: this check is what makes the old
+  defect unrepresentable as a green gate.
 
-    1. the port answers `0` on all twelve `sp_*` rows (a `CAST` row, or a `9`, or a `1`, fails);
-    2. CPython's twelve values take MORE THAN ONE distinct value, so the two columns are not
-       accidentally equal (a CPython column of all-zeros fails);
-    3. the three rows where the two columns DO agree are exactly `SP_AGREE`, and they are the three
-       whose fixture carries a CONST src -- i.e. the agreement is a coincidence of two different
-       rules, not evidence, and a reader counting `3 of 12` as a pass rate is wrong.
+  Four assertions, all of which can fail:
+
+    1. every `sp_*` row is present on BOTH lanes -- a missing row is a named False, not a `KeyError`;
+    2. the port's twelve values take MORE THAN ONE distinct value: the old defect's exact shape;
+    3. CPython's column is not itself constant, so assertion 2 cannot pass by CPython being flat;
+    4. the two columns agree on all twelve, and a disagreement is printed with both values.
 
   It reads `.get` with a default rather than subscripting, so a MISSING row is a False here and not a
   `KeyError` that `gate()` would report as the same number as an honest FAIL.
@@ -319,38 +310,32 @@ def spec_program_holds() -> bool:
     print("spec_program_holds: the pins file is absent, so there is nothing to hold")
     return False
   port, py = _lane("bd"), _lane("py")
-  cpy = {r: (py.get(r) if py.get(r) is not None else DIVERGES[r][0].split("=", 1)[1])
-         for r in SP_ROWS if py.get(r) is not None or r in DIVERGES}
+  cpy = {r: (py[r] if r in py else DIVERGES[r][0].split("=", 1)[1])
+         for r in SP_ROWS if r in py or r in DIVERGES}
   for r in SP_ROWS:
-    got = port.get(r)
-    if got is None:
-      print(f"spec_program_holds: bd has no {r} row")
+    if r not in port or r not in cpy:
+      print(f"spec_program_holds: {r} is missing from the {'port' if r not in port else 'CPython'} lane")
       return False
-    if got != "0":
-      print(f"spec_program_holds: {r}={got!r}, expected '0' -- the class-1 claim is that spec.bend's "
-            f"pr_0.body rejects every non-CAST node, and this row does not")
-      return False
-  if len(cpy) != len(SP_ROWS):
-    print(f"spec_program_holds: only {len(cpy)} of {len(SP_ROWS)} CPython sp_* values were found "
-          f"(compared lane + pins file)")
+  if len(set(port[r] for r in SP_ROWS)) < 2:
+    print(f"spec_program_holds: the port's sp_* column is CONSTANT ({sorted({port[r] for r in SP_ROWS})})"
+          " -- spec.bend's pr_0 has dropped spec.py:204's `-GroupOp.Defines` or its `any(... CONST)` "
+          "conjunct again, and a constant column carries no information about the node")
     return False
   if len(set(cpy.values())) < 2:
     print(f"spec_program_holds: CPython's sp_* column is constant ({sorted(set(cpy.values()))}), so "
-          f"'the port's is constant too' would be vacuous")
+          "'the port's is not' would be vacuous")
     return False
-  agree = tuple(sorted(r for r in SP_ROWS if port.get(r) == cpy[r]))
-  if agree != tuple(sorted(SP_AGREE)):
-    print(f"spec_program_holds: the rows where the two columns agree are {list(agree)}, declared "
-          f"{list(sorted(SP_AGREE))}")
+  bad = [(r, port[r], cpy[r]) for r in SP_ROWS if port[r] != cpy[r]]
+  if bad:
+    print(f"spec_program_holds: {len(bad)} of {len(SP_ROWS)} rows disagree with CPython: {bad}")
     return False
   n1 = sum(1 for v in cpy.values() if v == "1")
   n9 = sum(1 for v in cpy.values() if v == "9")
-  print(f"spec_program_holds: SPEC_PROGRAM holds -- the port's sp_* is '0' on {len(SP_ROWS)} of "
-        f"{len(SP_ROWS)}, CPython's takes {len(set(cpy.values()))} values ({n1} at '1', {n9} at '9', "
-        f"{len(cpy) - n1 - n9} at '0'), and the {len(SP_AGREE)} agreements are exactly the rows whose "
-        f"fixture carries a CONST src -- a coincidence of spec.py:204's dropped conjunct, not evidence")
+  print(f"spec_program_holds: SPEC_PROGRAM holds -- the port's sp_* is NOT the constant it was and agrees "
+        f"with CPython on {len(SP_ROWS)} of {len(SP_ROWS)} ({n1} at '1', {n9} at '9', "
+        f"{len(cpy) - n1 - n9} at '0'); spec.py:204's `-GroupOp.Defines` and its `any(... CONST)` "
+        f"conjunct are both in the rule")
   return True
-
 
 def ops_value_holds() -> bool:
   """CLASS 2's claim, DERIVED: the offset is the count of upstream-deleted members declared EARLIER.
@@ -423,9 +408,8 @@ def main() -> int:
     return 3
   return gate(GATE,
               f"opseven-gate: PASS -- {len(ROWS)} rows, {len(ROWS) - len(DIVERGING)} compared exactly, "
-              f"{len(DIVERGING)} pinned divergences in 2 classes "
-              f"({len(SPEC_PROGRAM)} SPEC_PROGRAM, {len(OPS_VALUE)} OPS_VALUE)",
-              checks=classes_hold)
+              f"{len(DIVERGING)} pinned divergences in 1 class "
+              f"({len(OPS_VALUE)} OPS_VALUE)", checks=classes_hold)
 
 
 if __name__ == "__main__":

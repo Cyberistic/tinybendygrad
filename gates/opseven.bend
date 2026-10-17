@@ -41,10 +41,10 @@
 # spec.py:204's FIRST `spec_program` rule returns False for "a CONST under anything but a CAST".
 # So those three nodes are genuinely not program-legal, for a reason that has nothing to do with
 # CUSTOM. `customi_void` has NO srcs and so passes -- which is the discrimination: the three
-# rows that fail and the one that passes differ in exactly the CONST src. AND THAT IS EXACTLY WHY
-# THE THREE ARE ALSO THE ONLY `sp_*` ROWS WHERE THE TWO LANES AGREE: CPython rejects them on the
-# conjunct the port dropped, while the port rejects every row for a different reason. Same verdict,
-# two rules, so `3 of 12` is a coincidence and not a pass rate.
+# rows that fail and the one that passes differ in exactly the CONST src. SO ALL TWELVE `sp_*`
+# ROWS AGREE NOW, on the SAME reason where they agree: before the fix in `spec.bend` the port
+# rejected all twelve for the wrong reason (non-CAST) and these three for the right one, so the
+# 3 of 12 that agreed agreed BY COINCIDENCE and `3 of 12` was not a pass rate.
 #
 # WHAT IS PRINTED, AND WHY NOTHING HERE REIMPLEMENTS A PROPERTY. `dtype` is `F.UOp.dtype` read
 # off the finished fold (the port's only well-founded spelling -- Bend refuses the mutual
@@ -55,18 +55,22 @@
 # and NOT `is not None`, because `rewrite` returns the lambda's answer, so `is not None` would
 # score a REJECTED rule as a pass, and this lane's whole job is to say which rules REJECT.
 #
-# WHY `spec_program` GETS A ROW TO ITSELF. It is the ONE column that does not agree, on any of the
+# WHY `spec_program` GETS A ROW TO ITSELF. It is the ONE column that did not agree, on any of the
 # twelve rows, and keeping it inline would have turned twelve real matches into twelve divergences
 # with no way for a reader to tell which half of a row was sound. The split is the finding made
-# readable: `tinybendygrad/uop/spec.bend:2033`'s `pr_0.body` is
+# readable: `tinybendygrad/uop/spec.bend`'s `pr_0` read
 # `Bool.not(sp_op(fx, self, O.OpsCAST{}))` where spec.py:204 reads
-# `x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src)` -- the second conjunct is DROPPED,
-# and the file's OWN HEADER quotes it three lines above the def -- so the port's `spec_program`
-# answers VFalse for every node that is not a CAST. MEASURED: the port's column is the CONSTANT `0`
-# on 12 of 12 while CPython's takes three values (5 at '1', 4 at '9', 3 at '0'). `gates/opseven-gate.py`
-# pins the nine that differ and leaves the three that agree in the compared lane, because those three
-# are a COINCIDENCE -- a CONST src makes CPython's dropped conjunct fire too -- and a class that
-# counted them as passes would be wrong.
+# `x.op is not Ops.CAST and any(s.op is Ops.CONST for s in x.src)` -- the second conjunct DROPPED, the
+# claim's `-GroupOp.Defines` DROPPED, and the file's OWN HEADER quoted the rule three lines above the
+# def that dropped it -- so the port's `spec_program` answered VFalse for every node that is not a CAST.
+# MEASURED while it was live: the port's column was the CONSTANT `0` on 12 of 12 while CPython's took
+# three values (5 at '1', 4 at '9', 3 at '0'). FIXED in `spec.bend`: `pr_0.claims` now reads
+# `GroupOp.defines` (already ported at `ops.bend:495`, uncalled until now) and `pr_0.body` now reads
+# `any_const` (already ported at `spec.bend:526`, likewise uncalled), and this column agrees with
+# CPython's on 12 of 12 -- so the nine rows that used to be pinned divergences are COMPARED rows and
+# the ordinary diff guards them. `gates/opseven-gate.py` keeps `spec_program_holds` as a regression
+# guard in its falsifiable form, "the column is not constant", because a check that names nothing goes
+# green by accident.
 #
 # `Ops.value` IS A SEPARATE ROW SET, and it is the only thing in this file that is PORT-DEPENDENT
 # BY CONSTRUCTION: `UOp.tuplize` puts `op.value` first in the sort key, and `FastEnum`'s
