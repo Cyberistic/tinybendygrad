@@ -45,6 +45,18 @@ WHAT THIS GATE CANNOT SEE, NAMED.
   (d) `_resolve_dim` AND THE `dedup` REFUSAL. `movement.py:249` resolves negative axes and
       `:251` raises on a repeated one; neither is ported, for the reasons `mixin/movement.bend`'s
       new flip header names. `flip_10` therefore exercises the ORDER and not the refusal.
+  (e) **THE AXIS, AND THAT IS A LIMIT OF THE BASE AND NOT OF THE ROW FORMAT ALONE.**
+      `mxw_reshape(mxw_base(), [4,4,4,4])` has `shape[0] == shape[axis]` on every axis, and
+      `movement.py:257-259` reads `crop`/`tail` from `x.shape[1:]` with `x = ret.transpose(0,
+      axis)` (`:256`) -- the shape minus the AXIS dim -- where a port reading
+      `mxw_dims_of(ret)[1:]` drops dim 0 and keeps dim `axis`. The two lists agree iff
+      `shape[0] == shape[axis]`, so on a cube of 4s the defect is the IDENTITY and these eleven
+      rows cannot see it. MEASURED: the wrong `crop` moved `mxw_flip`'s result shape on
+      `mxw_base()` and on (2,4,4,8) while leaving every row of THIS gate byte-identical.
+      `gates/axisflip-gate.py` is the gate that carries the shape, on (2,4,4,8), and its `axis1`
+      row is that gate's own blindness guard. It was green for the wrong reason on a blind base
+      until the shape rows existed; this gate is green on an order claim, which is a real one, but
+      it is not a claim that `flip` gets the axis right.
 """
 
 import subprocess

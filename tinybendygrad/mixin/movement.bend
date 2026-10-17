@@ -1576,8 +1576,9 @@ def mxw_shrink(+t: T.Tensor, +offs: List<&2, U32>, +sizes: List<&2, U32>) -> T.T
 # the `else` arm of `m = n if resolve(n >= 2, False) else n+2` is unreachable: the guard above
 # it already refused `n <= 1`.
 #
-# `tail = tuple(s if resolve(s > 0, False) else s+1 for s in x.shape[1:])` -- the shape minus
-# dim 0, with an EMPTY dim bumped to 1 because a 0-length dim has no anti-diagonal to read off.
+# `tail = tuple(s if resolve(s > 0, False) else s+1 for s in x.shape[1:])` -- `x` is the
+# TRANSPOSE of line 256, so this is the shape minus the AXIS dim, with an EMPTY dim bumped to 1
+# because a 0-length dim has no anti-diagonal to read off.
 #
 # **NO `List.reverse` AT THE END, AND THAT IS THE THIRD TIME IT HAD TO BE REMOVED FROM THIS
 # SECTION.** `List.append(&2, T, acc, [x])` APPENDS AT THE END -- `mxw_fold_shape.go` and
@@ -1646,6 +1647,15 @@ def mxf_order(n: Nat, +axis: U32) -> List<&2, U32>: mxf_order.go(MO.mo_range(n),
 # all-`None` tail of the fifth line -- is an all-zero offset list against `mxf_tail`, and the
 # `crop` of the last line is `(0, x.shape[j+1])` over the TRANSPOSED ORIGINAL's tail, which is
 # the UNMODIFIED drop: `tail` bumps an empty dim to 1 and `crop` does not.
+# **`crop` IS `sh` MINUS THE `axis` ELEMENT, NOT `sh[1:]`, AND THE DIFFERENCE IS THE WHOLE BUG.**
+# `x = ret.transpose(0, axis)` (movement.py:256) is `permute` by `ord0`, so `x.shape[1:]` is
+# `ord0`'s tail read through `sh` -- `mxm_pick_all(sh, ord0)` then `List.drop(.., 1n)`. Reading
+# `sh[1:]` instead drops dim 0 and KEEPS dim `axis`, so the two lists agree iff
+# `shape[0] == shape[axis]`. MEASURED, `mxw_base()` = (1,4,8,8): `flip([0])` reads `1,4,8,8`
+# (right) and `flip([1])`,`flip([2])`,`flip([3])` read `4,4,8,8`, `8,4,8,8`, `8,4,8,8` against
+# CPython's `1,4,8,8` for all three. On `gates/groupflip.bend`'s (4,4,4,4) base every axis has
+# `shape[0] == shape[axis]`, so the gate's eleven rows agreed on a substitution that is the
+# identity there -- a green on a base that cannot distinguish the axis.
 #
 # **THE FIRST FOUR CALLS ARE `_mop` AND NOT `Tensor.pad`/`Tensor.shrink`, AND THAT IS THE WHOLE
 # DIFFICULTY.** `Tensor.pad` (movement.py:186) and `Tensor.shrink` (:192) each end
@@ -1672,9 +1682,9 @@ def mxf_compose(+ret: T.Tensor, +sh: List<&2, U32>, +axis: U32, +n: U32) -> T.Te
   +z = mxf_zeros(rank)
   +z1 = mxf_zeros(Nat.add(rank, 1n))
   +zp = mxf_zeros(Nat.sub(rank, 1n))
-  +crop = List.drop(&2, U32, sh, 1n)
-  +tail = mxf_tail(crop)
   +ord0 = mxf_order(rank, axis)
+  +crop = List.drop(&2, U32, mxm_pick_all(sh, ord0), 1n)
+  +tail = mxf_tail(crop)
   +n1 = U32.sub(n, 1)
   +nn = U32.mul(n, n)
   +nn1 = U32.mul(n, n1)

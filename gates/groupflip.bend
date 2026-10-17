@@ -61,6 +61,18 @@
 # and it is (4, 4, 4, 4) rather than (4, 4, 8, 8) because the base's BUFFER holds 256 ELEMENTS
 # and `prod((4,4,4,4)) == prod((1,4,8,8)) == 256`, so the SAME base is legal on both sides.
 # `groupflip-oracle.py`'s `fbase` docstring is where CPython's size check is measured.
+#
+# **AND (4,4,4,4) IS THE LIMIT OF WHAT THIS GATE CAN ASK, WHICH IS WHY IT IS NOT THE ONLY GATE.**
+# All four dims are 4, so `shape[0] == shape[axis]` on EVERY axis, and that is exactly the
+# condition under which a defect here is invisible: `movement.py:257-259` reads `crop`/`tail` from
+# `x.shape[1:]` with `x = ret.transpose(0, axis)` (:256) -- the shape minus the AXIS dim -- whereas
+# reading `mxw_dims_of(ret)[1:]` drops dim 0 and KEEPS dim `axis`, and the two lists agree iff
+# `shape[0] == shape[axis]`. On this base they agree on every row, so these eleven rows certify the
+# OP SEQUENCE and not the SHAPE. A row that carries the shape, on a base where the two lists
+# DIFFER, is `gates/axisflip-gate.py`: (2,4,4,8), the same 256 elements, its `axis1` row reading
+# `4,4,8` against `2,4,8` so that the gate is RED if its own base ever goes back to a cube. This
+# gate keeps (4,4,4,4) because its ORDER witness needs BOTH flipped axes to compose -- and
+# (2,4,4,8) gives that too; what (4,4,4,4) uniquely adds is the blindness.
 
 import Base
 import ./../tinybendygrad/helpers.bend as H

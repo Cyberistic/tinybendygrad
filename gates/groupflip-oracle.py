@@ -17,7 +17,7 @@ THE FIXTURES ARE CPYTHON'S OWN CALL SITES, NOT TRANSCRIPTIONS:
                 STACK; one src -> `srcs[0]` itself and NO node; two or more -> `AFTER(STACK,
                 ...)`. `group2` is the corpus's own `g_group` shape (`ops.py` `UOp.group` over
                 an ADD and a MUL on one base) and `group6` is `g_commute`'s arity.
-  `Tensor.flip` movement.py:233-267, the loop over `axis_arg`. The base is (4,3,8,8) and NOT
+  `Tensor.flip` movement.py:233-267, the loop over `axis_arg`. The base is (4,4,4,4) and NOT
                 (1,4,8,8), because `if resolve((n:=ret.shape[axis]) <= 1, False): continue`
                 skips a length-1 axis and the ORDER witness (`flip_01` against `flip_10`) is
                 vacuous unless both axes compose. `flip_none` is `flip(())`, which is upstream's
@@ -130,7 +130,11 @@ row("group6", UOp.group(a, b, c, d, e, f))
 _N = UOp.group(None, a)
 sys.stderr.write(f"gap_none_filter=op={_N.op.name} nsrc={len(_N.src)} port_can_spell=no\n")
 
-# --- Tensor.flip, over the (4,4,8,8) base, WITH THE CUT. ---
+# --- Tensor.flip, over the (4,4,4,4) base, WITH THE CUT. ---
+# AND THE BASE IS THE LIMIT OF WHAT THIS LANE CAN ASK, NOT A NEUTRAL CHOICE: all four dims are 4,
+# so `shape[0] == shape[axis]` on every axis and the defect that replaced `x.shape[1:]`
+# (`movement.py:257-259`, over `x = ret.transpose(0, axis)`) with `shape[1:]` is the IDENTITY on
+# every row below. `gates/axisflip-gate.py` is the gate that can see it, on (2,4,4,8).
 FB = Tensor(fbase())
 CUT = len(list(FB.uop.toposort())) - 1
 row("flip_none", FB.flip(()).uop, CUT)
