@@ -190,13 +190,19 @@ def F13_param():
 
 
 def F14_skips():
-    # ptx.py:187 skips NOOP, GROUP and CONST. `UOp.stack` refuses a NOOP (it has no
-    # shape), so the skips come in through the ops that CONSUME them: GROUP's own srcs,
+    # ptx.py:187 skips NOOP and CONST. `UOp.stack` refuses a NOOP (it has no shape), so the
+    # skips come in through the ops that CONSUME them: a NOOP that is a SINK's direct child,
     # and a CONST that is a SINK's direct child. MEASURED: the first draft's
     # `UOp.stack(UOp(Ops.NOOP), ...)` answers "shape requested, but Ops.NOOP doesn't
     # have a shape" -- the ORACLE's own bug, found by reading the message.
-    grp = UOp(Ops.GROUP, src=(UOp(Ops.NOOP), UOp(Ops.NOOP)))
-    return (grp, C(7.0), F01_alu())
+    #
+    # Ops.GROUP WAS the third skip here and UPSTREAM DELETED IT: there is no GROUP node left
+    # to walk past and no GROUP in ptx.py's skip set, so a GROUP here raised inside `build()`
+    # and `run_fixture` spelled it `REFUSE:build:AttributeError` -- the SAME SPELLING as this
+    # census's four DELIBERATE refusals, so a deleted symbol read as a discovered PTX refusal.
+    # The two skips that survive are the ones still worth pinning, and a bare NOOP is a
+    # SINK child that renders: MEASURED, walk step 0 answers `NONE`.
+    return (UOp(Ops.NOOP), C(7.0), F01_alu())
 
 
 def F15_bidx():

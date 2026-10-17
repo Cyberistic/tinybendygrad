@@ -6,10 +6,10 @@
 # IS A PROPERTY OF THE WHOLE SUBGRAPH". Before this unit, a graph containing an
 # EXPAND made the ROOT unanswerable. Now it does not, and this file prints the ROOT's
 # four facts and its answer.
-import ./../../../tinybendygrad/uop/fold.bend as F
-import ./../../../tinybendygrad/uop/ops.bend as O
-import ./../../../tinybendygrad/helpers.bend as H
-import ./../../../tinybendygrad/LAWS/spec.bend as S
+import ./../tinybendygrad/uop/fold.bend as F
+import ./../tinybendygrad/uop/ops.bend as O
+import ./../tinybendygrad/helpers.bend as H
+import ./../tinybendygrad/LAWS/spec.bend as S
 
 def pa(size: U32) -> O.ParamArg:
   O.ParamArg{0, S.int32(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},

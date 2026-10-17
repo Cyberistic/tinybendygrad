@@ -11,7 +11,7 @@ sys.path.insert(0, '.')
 from tinygrad.uop.ops import UOp, Ops, ParamArg           # noqa: E402
 from tinygrad.uop import GroupOp                          # noqa: E402
 from tinygrad import dtypes                               # noqa: E402
-from tinygrad.uop.ops import shape_to_shape_arg, Invalid  # noqa: E402
+from tinygrad.uop.ops import shape_to_shape_arg              # noqa: E402
 
 i32 = dtypes.i32
 u32 = dtypes.u32
@@ -54,8 +54,9 @@ for op in [Ops.MUL, Ops.MAX, Ops.CMOD, Ops.FLOORDIV, Ops.FLOORMOD, Ops.CDIV]:
   show(f"nn_{op.name.lower()}", binop(op, c(-12, i32), c(-10, i32)))
 
 print("== non-const (unbounded) srcs ==")
-buf = UOp(Ops.BUFFER, (), ParamArg(0, i32, size=4))
-bu = UOp(Ops.BUFFER, (), ParamArg(0, u32, size=4))
+# A BUFFER's size lives in `src[0]` as a CONST upstream (`UOp._buffer`), not in `ParamArg.size`.
+buf = UOp._buffer(4, i32, 0)
+bu = UOp._buffer(4, u32, 0)
 for op in B:
   show(f"buf_{op.name.lower()}", binop(op, buf, c(10, i32)))
 print("-- with an unsigned buffer --")
@@ -75,7 +76,9 @@ show("reshape", UOp(Ops.RESHAPE, (buf, shape_to_shape_arg((2, 2))), ()))
 show("permute", UOp(Ops.PERMUTE, (buf,), (1, 0)))
 show("expand", UOp(Ops.EXPAND, (buf, shape_to_shape_arg((4, 4))), ()))
 show("shrink", UOp(Ops.SHRINK, (buf, shape_to_shape_arg((2, 2))), ()))
-show("flip", UOp(Ops.FLIP, (buf,), (0,)))
+# Ops.FLIP is NOT a member upstream any more: `mixin/movement.py`'s `flip` builds a
+# PAD/SHRINK/TRANSPOSE chain, so there is no flip node left for `_min_max` to answer for.
+print("flip           Ops.FLIP present:", hasattr(Ops, "FLIP"))
 show("index", UOp(Ops.INDEX, (buf, c(2, i32), c(1, i32)), ()))
 show("contig_back", UOp(Ops.CONTIGUOUS_BACKWARD, (buf, c(2, i32), c(1, i32), c(1, i32)), ()))
 
@@ -84,13 +87,13 @@ show("i32_to_f32", c(3, i32).cast(f32))
 show("i32_to_u32", c(-3, i32).cast(u32))
 show("i32_to_i8", c(300, i32).cast(dtypes.i8))
 show("i32_to_bool", c(3, i32).cast(dtypes.bool))
-show("f32_to_i32", UOp(Ops.BUFFER, (), ParamArg(0, f32, size=4)).cast(i32))
-show("u32_to_i32", UOp(Ops.BUFFER, (), ParamArg(0, u32, size=4)).cast(i32))
+show("f32_to_i32", UOp._buffer(4, f32, 0).cast(i32))
+show("u32_to_i32", UOp._buffer(4, u32, 0).cast(i32))
 show("f32_cast_f32", buf.cast(f32))
 
 print("== defines / param ==")
 show("param_plain", UOp(Ops.PARAM, (), ParamArg(0, i32)))
-show("param_vminmax", UOp(Ops.PARAM, (), ParamArg(0, i32, vmin=0, vmax=255)))
+show("param_vminmax", UOp(Ops.PARAM, (), ParamArg(0, i32, vmin_vmax=(0, 255))))
 
 print("== floats ==")
 for op in [Ops.ADD, Ops.MUL, Ops.MAX, Ops.FLOORDIV, Ops.FLOORMOD, Ops.CDIV, Ops.CMOD]:
@@ -100,11 +103,13 @@ show("f32_nan", UOp.const(float('nan'), f32))
 show("f32_mulneg", binop(Ops.MUL, c(1.5, f32), c(-2.5, f32)))
 
 print("== invalid ==")
-show("invalid", UOp(Ops.CONST, (), (dtypes.bool, Invalid)))
+# `UOp.const(Invalid)`, not a hand-built `CONST` with arg `(bool, Invalid)`: `Invalid` is a
+# VALUE (`InvalidType`), and `dtype_from_uop` reads a CONST's dtype off the arg's type.
+show("invalid", UOp.invalid())
 
 print("== 64-bit: does the DEFAULT branch ever reach an i64 limit ==")
-b64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i64, size=4))
-bu64 = UOp(Ops.BUFFER, (), ParamArg(0, dtypes.u64, size=4))
+b64 = UOp._buffer(4, dtypes.i64, 0)
+bu64 = UOp._buffer(4, dtypes.u64, 0)
 show("buf64", b64)
 show("buf64_add", binop(Ops.ADD, b64, c(3, dtypes.i64)))
 show("buf64_mul", binop(Ops.MUL, b64, c(3, dtypes.i64)))
@@ -133,5 +138,5 @@ for dt in [dtypes.i8, dtypes.i16, i32, dtypes.i64, u32, dtypes.u64, f32, dtypes.
   for v in [0, 1, -1, 7]:
     cases.append((dt, v))
 for dt in [dtypes.i8, dtypes.i16, i32, dtypes.i64, u32, dtypes.u64, f32, dtypes.f16]:
-  bb = UOp(Ops.BUFFER, (), ParamArg(0, dt, size=4))
+  bb = UOp._buffer(4, dt, 0)
   print(f"buffer({dt.name:8s}) = {bb._min_max!r}   min={dt.min!r} max={dt.max!r}")
