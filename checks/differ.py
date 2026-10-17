@@ -903,13 +903,20 @@ SUBSTRATE_ROWS = ("substrate-start", "substrate-end")
 
 #: The inputs, by DISCOVERY where the tree can be walked and by this file's OWN declarations
 #: where it cannot. The port is a DIRECTORY WALK. The eight named files are the ones `run`
-#: hands to a subprocess or reads itself, and each is anchored to the line that names it:
-#:   :43 GCMP        .agents/slop/graphcmp.py      :845 ./bin/bend
-#:   :845 BEND_PROBE .agents/slop/graphcmp.bend    :763 devpin
-#:   :544,:547,:551 the three `capture()` oracle scripts
+#: hands to a subprocess or reads itself, and each is anchored to the line that names it.
+#: CORRECTED 2026-10-17 -- ALL SIX NUMBERS BELOW WERE WRONG, EACH RESOLVED BY PRINTING IT:
+#:   :44 GCMP         .agents/slop/graphcmp.py      :1040 ./bin/bend
+#:   :1040 BEND_PROBE .agents/slop/graphcmp.bend    :840 devpin
+#:   :671,:674,:678   the three `capture()` oracle scripts
 #:   and `checks/differ.py` itself, which every artifact's driver is. A path here with no
-#: anchor would be a bare hand-list entry, and `--declare` in `.agents/slop/quiesce/snapshot.py`
-#: is the instrument that checks this table against the tree.
+#:   anchor would be a bare hand-list entry. THE READER IS `checks/substrate-snapshot.py
+#:   --declare` -- BESIDE THE GATE AND IN GIT; `.agents/slop/quiesce/snapshot.py`, WHICH THIS
+#:   COMMENT NAMED, IS ABSENT (7 paths in HEAD under that directory, none of them `snapshot.py`).
+#:   BUT `--declare` DOES NOT READ THESE NUMBERS: `checks/substrate-snapshot.py:201` IS
+#:   `ok = any(tok in ln for ln in src.splitlines())`, A WHOLE-FILE SEARCH, SO IT REPORTS `ok` ON
+#:   6 OF 8 ANCHORS THAT ARE AT THE WRONG LINE AND EXITS 0. IT ANSWERS "DOES THIS STRING APPEAR
+#:   ANYWHERE?" WHERE THE CALLER ASKED "DOES LINE N STILL NAME IT?", SO THIS TABLE IS A HUMAN
+#:   CONTRACT AND SAYS SO INSTEAD OF NAMING A CHECKER THAT CANNOT CHECK IT.
 SUBSTRATE_INPUTS = ("checks/differ.py", "checks/devpin.py", "bin/bend",
                     ".agents/slop/graphcmp.py", ".agents/slop/graphcmp.bend",
                     ".agents/slop/graphcmp-oracle.py", ".agents/slop/graphcmp-dbg-oracle.py",

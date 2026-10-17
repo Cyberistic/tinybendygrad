@@ -201,6 +201,24 @@ def main() -> int:
         work.mkdir()
         lanes = {lane: emit(work, lane) for lane in ("js", "c")}
 
+    # THE `"Bend 2.0.34"` DEFAULT ON THE NEXT LINE IS A LITERAL, NOT A MEASUREMENT, AND IT IS
+    # STALE. MEASURED 2026-10-17: `tools/get-bend.sh:6` DECLARES `REF=${BEND_REF:-v2.0.37}`,
+    # `sh tools/get-bend.sh` ANSWERS `references/bend already at v2.0.37`, AND
+    # `git -C references/bend describe --tags --exact-match HEAD` ANSWERS `v2.0.37` AT
+    # `4ff8545f19b09b7d2b8ca2303668100eac8efd66` -- THE SHA IS THE PIN, AND NOTHING HERE RECORDS
+    # IT, BECAUSE A TAG IS A NAME ON A REMOTE THAT CAN MOVE.
+    # THE FALLBACK PATH WAS **NOT** TAKEN ON THIS MACHINE, WHICH IS THE MEASUREMENT: `./bin/bend
+    # --help` UNDER `checks/bounded.py --mb 2048` IS `[bounded] WITHIN-LIMITS rc=0`, 1198 B OF
+    # STDOUT, 5 LINES CONTAINING `Bend`, AND THIS EXPRESSION EVALUATED ON THAT STDOUT YIELDS
+    # `Bend 2.0.37: check, run, build and publish Bend programs.` -- SO TODAY THE LINE IS RIGHT.
+    # THE TRIGGER IS REAL AND `rc` IS NEVER CONSULTED: THE SAME EXPRESSION OVER A STUB WITH rc=1
+    # AND 0 B OF STDOUT YIELDS `Bend 2.0.34`. `:84`'s `BEND.is_file()` CHECKS EXISTENCE, NOT
+    # RUNNABILITY, AND `:204` IS THE ONE BEND CALL IN THIS FILE WITH NO `bounded.py` AND NO
+    # `timeout=` (THE ONLY ONE IS `:141`), SO AN OOM OR A HUNG `bun` IS REACHABLE. WHEN IT FIRES
+    # THE REPORT CARRIES A VERSION MEASURED NOWHERE, INDISTINGUISHABLE FROM ONE THAT WAS.
+    # NOT DONE, AND IT IS CODE: A FABRICATED FALLBACK NEEDS A `REFUSED`, NOT A LITERAL, AND THIS
+    # FILE ALREADY IMPORTS THE VOCABULARY AT `:87` (`DEAD, REFUSED, settle` FROM `verdict`) AND
+    # DOES NOT USE IT HERE. `REFUSED` ON AN UNREADABLE COMPILER, THEN `--version` OR THE SHA.
     help_ = subprocess.run([str(BEND), "--help"], capture_output=True, text=True).stdout
     log = ["GATE NORM -- one normaliser, one declared width per row, both lanes",
            "  " + next((l.strip() for l in help_.splitlines() if "Bend" in l), "Bend 2.0.34"),

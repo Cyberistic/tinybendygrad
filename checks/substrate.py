@@ -535,23 +535,46 @@ def provenance(paths: list[str]) -> tuple[list[str], int]:
 
     THE CRITERION IS DERIVED, NOT DECLARED. A registry -- a `PROBES.md` the router reads, or a
     list of known-scratch names -- reproduces the defect one level down, because the probe that
-    moves the count is the probe nobody remembered to register. Instead: PORT iff `git ls-files`
-    knows the path. No registration, no convention, no memory. `no-upstream` is the SECOND,
+    moves the count is the probe nobody remembered to register. Instead: PORT iff the TREE owns
+    the path. No registration, no convention, no memory. `no-upstream` is the SECOND,
     WEAKER criterion and is REPORTED, NOT FAILED: 16 files are legitimately not 1:1 with an
     upstream `.py`, so failing on it would report 16 findings forever.
     FAIL-SAFE DIRECTION: the alarm fails, and the only way to silence it is to `git add` the file.
     SCOPE: the alarm fires only for a path INSIDE `tinybendygrad/` -- a `$TMPDIR` scratch copy is
-    not in the index either, and failing it would be a false positive on a sanctioned workflow.
+    not owned either, and failing it would be a false positive on a sanctioned workflow.
     THE RESIDUAL IS A SUBTRACTION AND NOT A CLAIM, because a conditional sentence about agreement
     is a claim that can be wrong.
+
+    MEASURED 2026-10-17, AND IT IS WHY `:555` IS WRONG: `:555` ASKS THE INDEX
+    (`git ls-files --error-unmatch`), AND THE INDEX IS NOT THE TREE. TWO-SIDED, tree-wide:
+    673 PATHS THE INDEX CALLS OWNED THAT `git ls-tree -r HEAD` DOES NOT CONTAIN -- every one an
+    intent-to-add placeholder whose index blob is `e69de29b` (git's EMPTY blob) while all 673
+    carry content on disk -- AND 27 PATHS `ls-tree` PUTS IN HEAD THAT THE INDEX CALLS NOT-OWNED,
+    ALL 27 ON DISK, NONE GITIGNORED (4 more at `DA`, 31 in all). SO THE FALSE-OWNED SIDE IS THE
+    DANGEROUS ONE: IT SILENCES THE FAIL-SAFE, AND `jj` COLOCATED `git add -N`s EVERY FILE IT
+    WALKS, SO THE SENTENCE ABOVE -- "the only way to silence it is to `git add` the file" -- IS
+    MEASURED FALSE. `git add` IS NO LONGER THE AUTHOR'S ACT.
+    ON THIS POPULATION IT COSTS ZERO: `os.walk("tinybendygrad")` HANDS OVER 149 PATHS AND THE TWO
+    SOURCES AGREE ON ALL 149 -- 137 OWNED BY BOTH, 12 BY NEITHER (`*-mut.bend`, `dsl.bend.bak`,
+    `_p6.bend`, `test/_probe/v5.bend`, `probe-mmcore.bend`). THAT IS LUCK, NOT CONSTRUCTION.
+    THE FIX IS `git ls-tree -r HEAD`, THE ANSWER `checks/index-arm-gate.py:110-111` GIVES --
+    `THE TREE. git ls-tree -r <rev>. Never the index.` -- AND WHAT IT COSTS: IT SEES NO UNTRACKED
+    FILE AND NO STAGED-BUT-UNCOMMITTED ONE, SO BOTH READ NOT-OWNED, WHICH IS THE FAIL-SAFE
+    DIRECTION AND IS CORRECT. AN `os.walk` COSTS THE COMPLEMENT: IT SEES NO DELETED MEMBER AND
+    ANSWERS NOTHING ABOUT OWNERSHIP. NEITHER IS COMPLETE AND THE DIFFERENCE IS THE POINT. IT IS
+    CODE, IT IS NOT DONE, AND IT IS OUT OF THE GRANT THIS EDIT CAME UNDER: THE EMITTED TEXT AT
+    `:586` SAYS "not in the index" AND MUST MOVE WITH THE CRITERION OR IT NAMES A DIFFERENT
+    QUESTION THAN THE ONE ABOVE.
     """
     port = non = not_index = no_up = alarm = bendpop = nonbend = 0
     rows: list[str] = []
     alarms: list[str] = []
     for p in paths:
-        # AN EXACT PATHSPEC. `git ls-files <path>` IS THE QUESTION; a `grep -r tinybendygrad` is
-        # not -- a path SUBSTRING is not a path, and that mistake produced 315 phantom "files
-        # swept", every one a `.agents/slop/.../tinybendygrad/...` copy.
+        # AN EXACT PATHSPEC, AND NOT A SUBSTRING: `git ls-files <path>` IS THE QUESTION; a
+        # `grep -r tinybendygrad` is not, and that mistake produced 315 phantom "files swept",
+        # every one a `.agents/slop/.../tinybendygrad/...` copy. BUT THE SOURCE IS WRONG --
+        # it reads the INDEX and the criterion wants the TREE. See the docstring for the
+        # measured 673/27 both-ways divergence and for `git ls-tree -r HEAD`, which is the fix.
         idx = subprocess.run(["git", "ls-files", "--error-unmatch", "--", p],
                              capture_output=True).returncode == 0
         live = p.startswith("tinybendygrad/")
@@ -812,6 +835,12 @@ def refuse(prog: str) -> int:
 
 
 def run(files: list[str], opts: argparse.Namespace, tmp: Path, origin: str | None = None) -> int:
+    # MEASURED 2026-10-17: THE `which("bend")` ARM IS DEAD HERE -- `command -v bend` answers
+    # NONE and `./bin/bend` is `-rwxr-xr-x`, so `os.access` always wins. IT IS NOT HARMLESS
+    # IF IT EVER FIRES: `which` RETURNS `""` (`:205`), `instrument_for` STILL RETURNS
+    # `("bend", ...)` FOR A `.bend` (`:406-407`), SO EVERY PORT FILE WOULD BE ROUTED TO
+    # `bounded(["", ...])` AND RECORDED AS A VERDICT INSTEAD OF REFUSED. AN ABSENT INSTRUMENT
+    # ANSWERS A NEARBY QUESTION -- "is this file named?" -- WHEN THE CALLER ASKED "CAN IT RUN?".
     bend = "./bin/bend" if os.access("./bin/bend", os.X_OK) else which("bend")
     cc = which("cc", "clang")
     node = which("node")
