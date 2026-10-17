@@ -1,0 +1,108 @@
+walk(tinybendygrad/**/*.bend) = 141; tracked in HEAD = 131; UNTRACKED (mutation-harness copies, NOT substrate) = 10
+    tinybendygrad/codegen/decomp/dtype-mut.bend
+    tinybendygrad/codegen/decomp/op-mut.bend
+    tinybendygrad/codegen/late/.linearizer-mut.bend
+    tinybendygrad/codegen/late/.regalloc-mut.bend
+    tinybendygrad/engine/realize-mut.bend
+    tinybendygrad/renderer/.wgsl-mut.bend
+    tinybendygrad/renderer/cstyle-mut.bend
+    tinybendygrad/runtime/_p6.bend
+    tinybendygrad/test/_probe/v5.bend
+    tinybendygrad/uop/probe-mmcore.bend
+
+SITES = 70 occurrences on 66 lines in 18 files
+    EMIT      17   GROUP=  9  FLIP=  8
+    CONSUME   20   GROUP= 13  FLIP=  7
+    SHAPE     33   GROUP= 14  FLIP= 19
+    PROSE      0   GROUP=  0  FLIP=  0
+
+-- EMIT (17) --
+   FLIP  mixin/movement.bend:1004  G.flip
+   FLIP  mixin/movement.bend:1557  mxw_flip_new
+   GROUP renderer/ptx.bend:940   f14_skips_ss
+   FLIP  schedule/indexing.bend:1407  g_ds x2
+   FLIP  schedule/prepare.bend:278   pr_flip
+   FLIP  tensor.bend:2431  t_mop_flip
+   FLIP  uop/fold.bend:5526  g_mv_flip
+   FLIP  uop/fold.bend:6355  main
+   GROUP uop/ops.bend:2802  UOp.group.of
+   GROUP uop/ops.bend:2805  UOp.group
+   GROUP uop/render.bend:2561  rnd_ar
+   GROUP uop/symbolic.bend:2366  fx_group
+   GROUP uop/symbolic.bend:2376  fx_sink
+   GROUP uop/symbolic.bend:2392  fx_sinkgrp
+   GROUP uop/symbolic.bend:2427  fx_two
+   GROUP uop/validate.bend:2200  dv_unsup_two.of
+
+-- CONSUME (20) --
+   GROUP codegen/late/regalloc.bend:167   ra_is_pseudo3
+   FLIP  mixin/movement.bend:539   mxm_arg_op
+   FLIP  mixin/movement.bend:1287  mxw_mv
+   GROUP renderer/ptx.bend:386   arm.of
+   GROUP runtime/ops_python.bend:503   op_of
+   GROUP runtime/ops_python.bend:1344  opname
+   GROUP runtime/ops_python.bend:2039  Prog.dispatch
+   GROUP uop/fold.bend:2363  addrspace_of
+   FLIP  uop/fold.bend:2559  dt_shape
+   GROUP uop/fold.bend:2571  dt_shape
+   FLIP  uop/fold.bend:4267  mm.lift.rest
+   FLIP  uop/ops.bend:518   GroupOp.movement
+   GROUP uop/spec.bend:1032  sh_19
+   FLIP  uop/spec.bend:1184  sh_31.tri.of
+   GROUP uop/symbolic.bend:1523  sym_11.pat
+   GROUP uop/symbolic.bend:1534  p_sink_like
+   GROUP uop/symbolic.bend:1553  sym_12.pat
+   GROUP uop/symbolic.bend:3479  fz_op
+   GROUP viz/serve.bend:1806  main
+   FLIP  viz/serve.bend:1865  main
+
+-- SHAPE (33) --
+   FLIP  codegen/decomp/dtype.bend:1989  dd_ops.all x2
+   GROUP codegen/late/regalloc.bend:148   ra_pseudo_tbl
+   FLIP  mixin/gradient.bend:958   gr_table
+   FLIP  schedule/indexing.bend:1168  ix_mv_ops
+   FLIP  schedule/multi.bend:273   mu_move_ops
+   FLIP  schedule/multi.bend:304   mu_own
+   GROUP schedule/prepare.bend:370   pr_ear_table x2
+   FLIP  schedule/prepare.bend:446   pr_ear_keys x2
+   GROUP schedule/rangeify.bend:862   GS_ALL
+   FLIP  schedule/rangeify.bend:872   GS_ALL
+   FLIP  schedule/rangeify.bend:914   MOPS_FB
+   GROUP uop/ops.bend:193   <DATA BLOCK>
+   FLIP  uop/ops.bend:272   <DATA BLOCK>
+   GROUP uop/ops.bend:304   Ops.name.of
+   FLIP  uop/ops.bend:363   Ops.name.of
+   GROUP uop/ops.bend:390   Ops.value
+   FLIP  uop/ops.bend:449   Ops.value
+   GROUP uop/ops.bend:4152  all_ops
+   FLIP  uop/ops.bend:4157  all_ops
+   FLIP  uop/spec.bend:1037  OP_AFTER20
+   GROUP uop/spec.bend:1251  shared_table
+   FLIP  uop/spec.bend:1656  OP_PERMFLIP
+   GROUP uop/spec.bend:2134  OP_ALL
+   FLIP  uop/spec.bend:2144  OP_ALL
+   FLIP  uop/spec.bend:2147  OP_MOVE
+   FLIP  uop/spec.bend:2551  OP_AFTER12
+   GROUP uop/symbolic.bend:2098  sym_table
+   GROUP uop/symbolic.bend:2099  sym_table
+   GROUP viz/serve.bend:1488  op_list
+   FLIP  viz/serve.bend:1496  op_list
+
+-- PROSE: NONE
+
+== (a) `Ops.value`: declared=77, removed at 1-based positions [14, 73]
+     unchanged  n= 13 positions 1..13  SPECIAL: 1->1
+     shift -1   n= 58 positions 15..72  STACK: 15->14
+     shift -2   n=  4 positions 74..77  UNSHARD: 74->72
+     deleted    n=  2 positions 14..73  GROUP: 14->14
+     => 62 of 77 arms RENUMBER. The `58` is the shift-by-one band alone; a second band of 4 moves by two, so quoting 58 alone undercounts.
+     Ops.name.of  n=77 -> 75; entries at [(14, 'GROUP'), (73, 'FLIP')]. KEYED, not positional: no other entry moves.
+     all_ops      n=77 -> 75; entries at [(14, 'GROUP'), (73, 'FLIP')]. KEYED, not positional: no other entry moves.
+
+== (b) `O.PMEntrys{[ ... ]}` tables carrying the tag as a FIELD
+     tinybendygrad/mixin/gradient.bend:935  tags=33 (0..32)  hits=[(22, ['FLIP'])]  => 10 tags above shift by -1
+     tinybendygrad/schedule/prepare.bend:343  tags=29 (0..28)  hits=[(26, ['FLIP', 'GROUP'])]  => 2 tags above shift by -1
+     tinybendygrad/uop/spec.bend:1231  tags=33 (0..32)  hits=[(19, ['GROUP'])]  => 13 tags above shift by -1
+     tinybendygrad/uop/symbolic.bend:2086  tags=23 (0..22)  hits=[(11, ['GROUP']), (12, ['GROUP'])]  => 10 tags above shift by -2
+
+wrote .agents/slop/opsref/classified.rows
