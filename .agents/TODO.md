@@ -19306,6 +19306,46 @@ RSS, **NO `bend` PROCESS RUN**, `ruff` CLEAN.
       CONTRADICTION BUT A COMPLEMENT: ***ONE IS ***THIS*** SESSION's WORK, THE OTHER IS ***EVERYONE's***.***
       *(RELayed: THE CALLER COULD NOT RE-DERIVE THE `jj` CONFIGURATION, SO THIS IS ITS MEASUREMENT, NOT MINE.)*
 
+## REINDEX3 -- ***TWO*** UNITS IN A ROW REFUSED TO LAND IT, AND ***BOTH WERE RIGHT*** (2026-10-17)
+
+**`.agents/slop/reindex2/` ONLY, 2 COMMITS, `5 files +1173` THEN `1 file +29/-21`, NO SWEEP.
+`tinybendygrad/` IS ***BYTE-IDENTICAL*** TO `HEAD`.**
+
+- [ ] **AND THE BLOCKER IS **PRECISELY LOCATED**, AND ***IT IS NOT `Ops.FLIP`***: THE REMAINING DEAD PAIR DIES
+      ON **`ParamArg.size`**. **VERIFIED BY THE CALLER: UPSTREAM's `ParamArg` HAS **0** `size` FIELDS, AND
+      `oracles/fold-mvt-oracle.py:31` IS `UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=size))` -- **IT
+      PASSES `size=` TO CPYTHON, WHICH NO LONGER ACCEPTS IT.** BOTH ORACLES **rc=1**.**
+      ***AND ***NO EDIT TO `tinybendygrad/` CAN MAKE THEM GREEN*** -- **THE DEFECT IS ***CPYTHON-SIDE*** AND
+      ***OUTSIDE BOTH GRANTS***, AND THE UNIT **DECLINED TO REPAIR IT INSIDE THE COMMIT**: *"IT'S A DIFFERENT
+      DEFECT WITH A DIFFERENT OWNER."***
+      **THE OTHER THREE ARE **GREEN**: `ptx_render_census-oracle.py` (rc=0; ITS LONE `Ops.GROUP` IS A ***COMMENT***
+      AT `:199`, CONFIRMED BY **`ast`**), `oracles/fold-probe1.py` (rc=0, PRINTS `Ops.FLIP present: False`),
+      `oracles/mm-survey.py` (rc=0).
+- [x] **AND THE MEASUREMENT THE CALLER REFUSED TO SKIP ***FOUND A SIXTH SITE THE PRIOR REPORT MISSED***:
+      `multi.bend:2102`'s `mu_src_src.of` IS **A `match tag:` OVER TAG ***NUMBERS*** (20 ARMS)**. ***LEFT ALONE,
+      `r_full_su` WENT **2 -> 1*** -- ***A ***COUNT*** MOVING, NOT A RENUMBERING, WHICH IS EXACTLY THE
+      CALLER's OWN STOP-SIGNAL*** -- **AND RENUMBERING RESTORED IT TO **2**.** ***SO `multi.bend` IS **3** SITES
+      **PLUS A CASCADE**, NOT **2**.** AND THE MEASUREMENTS: `t_rej_n` **21 -> 20** · `t_rej_late` **21 -> 20**
+      · `t_ops_n` **57 -> 56** · `t_mov_n` **6 -> 5**.
+- [ ] **AND A ROW THAT NOW **POINTS PAST THE END** OF A TABLE THAT SHRANK **26 -> 25**:
+      `t_t25_off`/`t_tag25`. ***NOT NUMBER FIXES -- REPOINT `25n` -> `24n`; INDEX **24** MEASURES `MSELECT` /
+      TAG **24**, ALREADY CORRECT.*** ***AND ***DELETING EITHER WOULD BE DELETING A ROW TO MAKE A GATE PASS***,
+      WHICH IS WHY IT IS NAMED RATHER THAN DONE.***
+- [x] **AND THE UNIT ADMITTED ***TWO*** OF ITS OWN ERRORS WITH THEIR FIXES: **(1) **ITS FIRST `rc` READING WAS
+      WRONG*** -- AT **14:05** ALL FOUR READ `rc=1`, **TWO ARE `rc=0` NOW**, ANOTHER UNIT HAD THEM MID-EDIT, **SO
+      ***"A `rc` CITED WITHOUT A TIMESTAMP IS A `rc` THAT CHANGES UNDER YOU."*** **(2) **IT GOT THE `DEAD`
+      VERDICT ON `ptx_render_census-oracle.py` WRONG** AND **COMMITTED THE CORRECTION SEPARATELY (NO AMEND)**
+      -- ***IT READ A `REFUSE:` MARKER AS A VERDICT***, **AND `ORACLEREVIVE`'s OWN MESSAGE NAMES THE SAME
+      TRAP.** **THREE CHECKS WOULD HAVE CAUGHT IT: `git log -1 -- <file>`, AN `ast` COMMENT-vs-CODE WALK, AND
+      COMPARING ROW COUNTS TO NEIGHBOURS.**
+- [x] **AND ITS OWN SCRIPT'S CHECKS CAUGHT ***THREE*** OF ITS BUGS ***PRE-WRITE***: TAG **0** OUTSIDE THE MAP
+      DOMAIN · A LINE-INDEX USED AS A TAG · `own_n` COUNTING ***LINES*** NOT ENTRIES. ***CHECKS THAT RUN BEFORE
+      THE WRITE ARE WORTH MORE THAN CHECKS THAT RUN AFTER.***
+- [ ] **AND ANOTHER CITATION TO THE ***WRONG FILE***: **`LAWS/spec.bend` IS NOT `uop/spec.bend`**, AND
+      `shift_sh.py` EDITS THE LATTER, **WHICH `multi.bend` DOES NOT IMPORT.**
+- [x] **AND `tn_minimum-gate.py` IS STILL **rc=1** (`extra_in_port=['FLIP','GROUP']`) **UNCHANGED BECAUSE NOTHING
+      LANDED. NO PIN MOVED.** PEAKS **567 / 600 / 456 MB**, **1-3 s** EACH, ONE `bend` AT A TIME.
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
