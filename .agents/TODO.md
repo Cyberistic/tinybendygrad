@@ -18976,6 +18976,66 @@ AT **9** -- HEAD's OWN **9**.**
       `gates/pins-shape-gate.py:41`'s *"`gates-pop.py`'s OWN CLAUSE III CALLS IT A **DIARY**"* -- **CLAUSE III NO
       LONGER CALLS IT A DIARY**, **SO THE CONCLUSION IS UNAFFECTED AND THE REASON IS STALE.**
 
+## GROUDFLIP -- **THE 34-GRAPH CORPUS's CPYTHON LANE IS ***DEAD*** SINCE THE RE-VENDOR, AND THE RE-VENDOR IS WHY** (2026-10-17)
+
+`4719853fc` -- **6 FILES, +727/-55, NO SWEEP.** `HEAD:tinygrad == upstream:tinygrad ==
+62319c8ae612e51102916000d401d601a090353f` **AFTER** THE COMMIT.
+
+- [ ] **AND THE HEADLINE IS THAT ***THE PROJECT's OWN ORACLE IS DEAD***, AND **THE RE-VENDOR BROKE IT**:
+      **`.agents/slop/graphcmp.py emit --side py` RAISES, ON ALL **12** GRAPHS** (VERIFIED BY THE CALLER):
+
+          File ".../graphcmp.py", line ..., in ...
+            u(pa.size) if pa.size is not None else ATOMS["none"],
+                                      ^^^^^^^
+          AttributeError: 'ParamArg' object has no attribute 'size'
+
+      **AND UPSTREAM MOVED IT: `git log upstream -S'  size: int' -- tinygrad/uop/ops.py` GIVES
+      **`72f98ffe0 2026-10-06 "move size from ParamArg to src (#18624)"`** -- **SO UPSTREAM's `ParamArg` HAS NO
+      `size`, **WHILE THE PORT's `ops.bend:877-895` STILL HAS IT (2 HITS)**.** ***SO THE `ParamArg` the port still
+      models is the **OLD** SHAPE, AND `.agents/slop/` -- WRITTEN AGAINST THE OLD SHAPE -- CANNOT RUN.***
+      ***AND `runs/graphcmp/D/D1-graph-*.txt` HAS MTIME `Oct 17 01:50`, THE RE-VENDOR `a741a469f` IS
+      `Oct 17 07:14`, AND THE DUMPS SAY *"of **77** upstream ops"*.** **SO ***EVERY "34/34 AGREE" READING IN
+      THIS SESSION IS FROM A ***PRE-RE-VENDOR*** ARTEFACT***, AND **THE HEADLINE ORACLE HAS PRODUCED **NO** ROW
+      SINCE 07:14 TODAY.*****
+- [x] **AND THE PORT's BEHAVIOUR **IS** RIGHT: **11 OF **11** ROWS BYTE-IDENTICAL TO CPython**
+      (`gates/groupflip-gate.py` rc=0, **0 DECLARED DIVERGENCES**). **AND TWO PLACES IT ***NEARLY*** WAS NOT, BOTH
+      FOUND **BY THE TOPOSORT**, NOT BY A RETURN VALUE:**
+      **(1) `_mop` IS ***NOT*** `Tensor.pad`/`Tensor.shrink`** -- `movement.py:184/190/212` ALL END
+      `return self if ret.shape == self.shape else ret`, WHILE `ops.py:796 _mop` **DOES NOT**. SO
+      `_mop(Ops.PAD, ((0,m),)+tail_pad)` WITH `m == n` IS ***A SHAPE-PRESERVING PAD UPSTREAM ***STILL BUILDS***.
+      USING THE PORT's `mxw_pad` (WHICH CARRIES THE IDENTITY TEST) **DROPPED IT: TWO NODES LOST ON ALL **SIX**
+      FLIP ROWS.** (2) **ARG-LIST LENGTH **IS** THE NODE's ***RANK***, NOT `nd`** -- `tail_pad`/`crop` ARE
+      `nd-1`, SO ONE-LEADING-PAIR ARGS ARE `nd` **AND** TWO-LEADING-PAIR-OR-`None`-TAIL ARGS ARE `nd+1`; ONE
+      `zeros(nd)` FOR ALL FIVE OFFSET LISTS **GREW A FIFTH PAIR**, WHOSE SECOND ELEMENT READ THE DEFAULT `0`, SO
+      THE LAST IDENTITY TEST COMPARED `[4,4,4,4,0]` AGAINST `[4,4,4,4]` **AND THE PORT BUILT A SHRINK UPSTREAM
+      DROPS.****
+- [ ] **AND THE CORPUS CANNOT FOLLOW, **AND THAT IS ITS FINDING**: `.agents/slop/graphcmp.bend` MINTS
+      `O.UOp.new(..., O.OpsGROUP{}, ...)` AT **11** SITES **AND** `O.OpsFLIP{}` AT **1**, **AND CALLS
+      `O.UOp.group` ***0*** TIMES **AND** `MX.mxw_flip` ***0*** TIMES (MEASURED BY GREP). ***IT TRANSCRIBES THE
+      CONSTRUCTION UPSTREAM USED ***BEFORE*** THE DELETION.*** `.agents/slop/` **IS OUTSIDE EVERY GRANT.**
+- [x] **AND THE ORDER WITNESS IS **NOT** ABOUT LENGTH OR MULTISET: `flip_01` vs `flip_10` HAVE **IDENTICAL
+      LENGTH, IDENTICAL OP MULTISET, AND IDENTICAL PERMUTATION ORDERS** (`{1,0,2,3}` AND `{1,0,2,3,4}`) --
+      ***ONLY THE SEQUENCE DIFFERS**, AND THE PORT MATCHES ON BOTH.** **AND A REVERSED PERMUTATION IS STILL A
+      PERMUTATION: `mxf_order(4n, 1)` ANSWERED `[3,2,0,1]` -- THE REVERSE OF `[1,0,2,3]` -- AND `flip_1` READ
+      ***AGREE***.** ***THREE OF ITS OWN WALKS CARRIED A TRAILING `List.reverse` COPIED FROM `mxm_pick_all`, WHICH IS
+      RIGHT ***THERE*** (IT APPENDS AT THE ***FRONT***) AND WRONG HERE.**** **SO THE ROW FORMAT `op/nsrc/srcops`
+      ***CANNOT*** SEE ORDER AT ALL, AND THAT IS A ROW-SHAPE LIMIT, NOT A PORT DEFECT.**
+- [ ] **AND `UOp.group`'s `None` FILTER **CANNOT** BE PORTED**: UPSTREAM's `len(srcs)` COUNTS THE ***UNFILTERED***
+      TUPLE, **SO `UOp.group(None, a)` IS `AFTER(STACK, a)` WHILE THE PORT's IS `a`** -- **AND THE PORT's
+      PARAMETER IS `List<&2, U32>` WITH **NO SPELLING FOR AN ABSENT ELEMENT** (`Nil{}` IS THE ***EMPTY LIST***).
+      MEASURED `gap_none_filter=op=AFTER nsrc=2 port_can_spell=no`; **NOT A ROW, A NUMBER ON STDERR.**
+- [x] **AND **THE **12** CORPUS GRAPHS ARE **BYTE-IDENTICAL** BEFORE AND AFTER** -- `GROUP 1/1` ON alu bit bw cdiv
+      commute group late move sym threefry where, `FLIP 1/1` ON flip, **UNCHANGED** -- **WHICH IS THE ***DESIRED***
+      OUTCOME AND **ALSO** WHY THE WORK WAS INVISIBLE: ***THE BEHAVIOUR DID NOT CHANGE, SO A COMPARISON OF THE
+      OLD AND NEW ARTIFACTS CANNOT SEE THAT ANYTHING HAPPENED.***
+- [ ] **AND `gates/mx_graph_census.bend:136,140,144` ARE **NOW STALE** AND OUT OF GRANT**: THEY PASS THE **OLD**
+      FLAG VECTORS `MX.mxw_flip(t, [1,0,0,0])`, `[1,1,0,0]`, `[0,0,0,0]`, **WHICH ARE NOW ***AXIS LISTS*** ->
+      THREE/TWO/FOUR FLIPS. **MEASURED `flip_0=69` AGAINST CPython's `7`.** THE THREE LINES WANT `[0]`,
+      `[0, 1]`, `[]`.
+- [x] **AND SIX BEND-CHECKER CONSTRAINTS COST THREE REWORK ROUNDS, **EACH MEASURED** AND **EACH NOW IN THE
+      FILE's COMMENTS***: A COMPUTED `match` SCRUTINEE NEEDS **ITS OWN DEF**; A SELF-CALL MUST **SHRINK A *LIST
+      TAIL*** (`U32.sub` AND `Nat.sub` ON A SCALAR ARE ***BOTH REFUSED***); A CALLEE MUST BE FILLED **BEFORE** USE.
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
