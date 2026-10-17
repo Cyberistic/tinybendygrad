@@ -821,14 +821,24 @@ def clone_report(root=ROOT):
     # THE DENOMINATOR IS RENAMED, AND THE MEASUREMENT IS WHY. The old line read
     #   "DENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites"
     # and `sites()` returns ONE ROW PER CALL SITE, so the word `DENOMINATOR` sat over an
-    # OCCURRENCE COUNT while the number beside it was a count of DISTINCT PATHS. **MEASURED
-    # 2026-10-17: 11 060 call sites over 6 643 distinct values, of which 5 854 carry no `/` at
-    # all** -- `=`, `,`, `store_true`, `PYTHON`, `echo` -- and 6 032 name no file on this tree.
-    # So 88.6% of the printed denominator was bare tokens, and the ratio 213/11 060 read as
-    # COVERAGE ("2% of our named paths are reproducible") when it is not a ratio of like units.
+    # OCCURRENCE COUNT while the number beside it was a count of DISTINCT PATHS. **MEASURED TWICE
+    # ON 2026-10-17, AND THE COUNTS MOVE BECAUSE OTHER UNITS ARE WRITING THIS TREE:
+    # 11 060 / 6 643 / 5 854 AND THEN 11 141 / 6 680 / 5 890** -- call-site OCCURRENCES, distinct
+    # NAMED VALUES, and distinct values carrying no `/` at all (`=`, `,`, `store_true`, `PYTHON`,
+    # `echo`). So 88.2% of the distinct values and 88.7% of the occurrences are BARE TOKENS, and
+    # 214/11 141 read as COVERAGE ("2% of our named paths are reproducible") when it is not a
+    # ratio of like units.
     # **A DENOMINATOR THAT DOES NOT MATCH ITS NUMERATOR's SUBJECT IS THE `SPEC=2` CLASS ONE LEVEL
     # DOWN**, and no verdict moved -- `clone_paths()` intersects with `os.path.exists` before
     # anything is graded -- which is exactly why it survived: the only symptom was a printed line.
+    #
+    # **AND NO FIGURE IS TRANSCRIBED HERE, WHICH IS THE POINT OF THE WHOLE REVISION.** The first
+    # version of this comment carried a fourth number -- "6 032 name no file on this tree" -- that
+    # NO COMMAND HAD PRODUCED. It was written because it fit the sentence, and a number that fits
+    # a sentence is exactly the `gates/docnum-claim-gate.py` class: **a number written where a
+    # measurement could be taken, in prose that outlives the measurement.** It is gone rather than
+    # corrected, because the printed line below now reports the bare-token share ITSELF, every
+    # run, so a reader who wants the figure takes it from the instrument and not from here.
     #
     # WHAT IT COUNTS NOW, AND EACH NUMBER NAMES ITS UNIT: `paths` is the graded population,
     # `values` is the DISTINCT set `sites()` named (the only denominator in the same unit as
