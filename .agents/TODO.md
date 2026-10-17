@@ -18797,6 +18797,72 @@ GATES MOVED**, SEE §4.
       TWO; THE POPULATION IS **141 ON DISK / 131 TRACKED**, NOT **134**; AND **`gates/tn_minimum-gate.py` IS RED**,
       MEASURED `rc=1`, `extra_in_port=['FLIP','GROUP']`.
 
+## COMPILECENSUS -- **THE CALLER's PREMISE WAS WRONG TWICE**, AND THE FINDING IS **FOUR COPIES OF ONE FILE** (2026-10-17)
+
+`ec2a2492` -- **4 FILES, +427/-0, NO SWEEP.** `2026-10-17 08:04 -> 08:32`, **ONE `bend` AT A TIME**.
+
+- [x] **AND **`checks/compile.py` IS **NOT A COMPILE CHECK AT ALL** -- **VERIFIED BY THE CALLER**: ITS BODY IS
+      `ctypes`/`fcntl`/`mmap`/`os`/`time`, `ion_iowr`, AN `adsprpc` CDLL, AN `ION_IOC_*` IOCTL TABLE, AND A
+      `__main__` **THAT OPENS `/dev/ion`, MMAPS A HEXAGON SHARED BUFFER AND CALLS `remote_handle64_invoke`.**
+      ***ONLY **2** MENTIONS OF `bend`/`tinybendygrad` IN THE WHOLE FILE, AND **BOTH ARE THE DOCSTRING THIS UNIT
+      ADDED**.* IT IS THE **QUALCOMM HEXAGON DSP / ION DRIVER**, **AND UPSTREAM NO LONGER SHIPS IT AT THAT PATH**
+      (`git log --all --diff-filter=D -- tinygrad/runtime/dsp.py` IS **EMPTY**). ***SO THE CALLER's BRIEF NAMED
+      FIVE MODULES **AS IF IT WERE A COMPILE CHECK**, AND **NONE OF THE **3** UNSUPPLYABLE ONES HAS ANYTHING TO
+      DO WITH COMPILING THIS PORT**.***
+- [x] **AND THE WHEEL TABLE ON RECORD IS WRONG, VERIFIED BY THE CALLER OVER THE PyPI JSON API:
+      `ion` IS **0.6.4 -- *"Ion is an MVC Web Framework"***. ***SO `pip install ion` ***SUCCEEDS AND INSTALLS THE
+      WRONG MODULE***: A ***PYTHON-2*** MVC FRAMEWORK, NOT QUALCOMM's ION ALLOCATOR. ***THAT IS **WORSE** THAN AN
+      ABSENT ONE: A READER WHO INSTALLS IT IS **RE-TAUGHT** THE SAME ABSENT-ATTRIBUTE ERROR **WITH A PACKAGE NOW
+      PRESENT**.** (`adsprpc` AND `msm_ion` ARE GENUINELY PyPI-**404**; `llvmlite` AND `hexdump` ARE WHEELS.)
+- [x] **AND **THE PER-FILE CHECK ***ALREADY EXISTED***: `checks/substrate.py` ***IS*** IT (`POP_ROOT =
+      "tinybendygrad"`, `os.walk`, `bin/bend <file> --check-only` UNDER `bounded.py`, WARM/COLD). **SO IT BUILT
+      NO GATE** -- IT BUILT **`checks/compile-census.py`**, WHICH **IMPORTS `substrate` ***BY PATH*** AND READS
+      `POP_ROOT` ***OFF IT*** (DOCTRINE 1: NEVER LIST WHAT AN INSTRUMENT DISCOVERS), CALLS IT AS A
+      ***SUBPROCESS RATHER THAN REIMPLEMENTING ANY VERDICT RULE***, AND SETTLES THROUGH `checks/verdict.py` ->
+      `gates/gatekit.py`.** **SHAPE: A `.rows` ARTEFACT OF `state\tpeak_MB\ttoken\tfile\tfirst_line` ROWS; EXIT
+      **0** ALL-WARM · **1** ANY COLD · **3** `REFUSED` IF **ANY** FILE IS **UNJUDGED**. READS `bounded.py`'s
+      ***TOKEN***, NEVER ITS EXIT STATUS.**
+- [x] **COUNT: `handed=87 judged=87 unjudged=0 WARM=65 COLD=22`.** ALL **87** `WITHIN-LIMITS`; MEDIAN **442 MB**,
+      p90 **573 MB**, MAX **1 168 MB**; **9** OF **87** REPORT **0 MB** (**`bend` FAILS BEFORE THE WATCHDOG's FIRST
+      POLL**); EVERY RUN EMITTED `MACHINE: **VIOLATED** -- loadavg 5.4-7.1`.
+- [ ] **AND **THE **22** COLD ARE **TWO** CLASSES -- **14** WRONG RELATIVE DEPTH, **8** GENUINE PARSE FAILURES --
+      AND ***THE FIRST CLASS ***IS*** THE FINDING***: **BYTE-IDENTICAL FILES WITH ***OPPOSITE VERDICTS***, BY
+      SHA256 **`f8ddaeceee7e0852`** -- `oracles/dtype_oracle.bend`, `oracles/ddcheck/tree/test/...`, BOTH
+      `proof-close/MUTANT{,2}` COPIES, AND `tinybendygrad/test/dtype_oracle.bend` ARE ***FOUR COPIES OF ONE
+      FILE***. ***THE PORT's COPY IS **WARM** (465 MB, 1 s); THE `oracles/` COPY IS **COLD**
+      (`no such file: <repo>/dtype.bend`) BECAUSE `../dtype.bend` RESOLVES ***ONE LEVEL TOO SHALLOW***.***
+      ***A COMPILE CHECK THAT ***HASHES*** ITS INPUT ***CANNOT*** SEE THIS. **ONLY THE PATH CAN.*** AND **FOUR OF
+      THE **22** COLD ARE THAT **ONE FACT** FOUR TIMES.**
+- [x] **AND IT CAUGHT A REAL BREAKAGE **IT DID NOT PLANT**: `checks/gate_norm.bend`, WHICH
+      `checks/gate_norm.py:120` POPS -- **THAT GATE `REFUSED`s TODAY BECAUSE ITS DRIVER CANNOT RESOLVE **ITS OWN
+      IMPORTS**.** AND ITS OWN PLANTS BOTH WAYS: A SYNTAX ERROR APPENDED TO A COPY -> **`COLD`**; AN UNRESOLVABLE
+      IMPORT APPENDED TO A COPY -> **`COLD`**.
+- [ ] **AND THE HONEST LIMIT: ITS FIRST PLANT's BASELINE **HAD GONE COLD SINCE THE CENSUS FINISHED** --
+      `uop/ops.bend` IS **MID-EDIT BY ANOTHER UNIT** (`UOp.group.of`, `ops.bend:2853`, `expected: a defined
+      name / observed: O.Found.ar`). ***THE CENSUS IS A SNAPSHOT, AND OVER A TREE **THREE** UNITS ARE EDITING, ITS
+      ROWS ***DECAY***. QUOTE THEM WITH THEIR TIMESTAMP OR NOT AT ALL.****
+- [ ] **AND **ITS OWN CENSUS WAS WRONG ONCE, AND IT IS **IN THE COMMIT****: FIRST RUN **35 OF **35**
+      `NO-MEASUREMENT` WHILE ALL **35** WERE `WARM`** -- `substrate.py:302` RE-EMITS AS
+      `[substrate] <file>: [bounded] ...`, **SO ITS ANCHORED `startswith` FOUND NOTHING**. ***A CENSUS MEASURING
+      ZERO OVER A FULL POPULATION IS `gatekit`'s **`DEAD`** WEARING A COUNT.*** FIXED TO SEARCH ACROSS THE LINE,
+      AND **A MISSING TOKEN IS NOW `<state>?NOTOKEN` -- MEASUREMENT KEPT, READER TOLD -- BECAUSE ***DISCARDING A
+      VERDICT THAT WAS TAKEN IS THE OPPOSITE ERROR***.**
+- [ ] **AND THE **14** DEPTH-BROKEN FILES ARE **THE HIGHEST-VALUE FOLLOW-UP**, BECAUSE **A WRONG `../` IS A
+      ***PATH*** DEFECT, INVISIBLE TO HASHING **AND** TO EVERY PER-FILE GATE THAT ONLY RUNS ITS OWN DRIVER**:
+      `checks/gate.bend`, `checks/gate_dtype.bend`, `checks/gate_norm.bend`, `gates/i64-shl.bend`,
+      `gates/i64-shr.bend`, `gates/.realize-mut-stage/realize_graph_census.bend` **AND FOUR UNDER `oracles/`**
+      **ALL ANSWER `no such file: /Users/cyberistic/src/tinybendygrad/...` -- A CHECKOUT THAT DOES NOT EXIST.**
+- [ ] **AND **A **LIVE** PORT DEFECT, WHICH THE `cc` LANE REPORTED**: `comp.ts:5335` DECLARES `io_eff` WITH
+      **TWO** PARAMETERS AND EVERY `.c` IN BEND's OWN `tests/io/` PASSES **TWO** -- **BUT THE PORT HAS **TWELVE
+      THREE-ARGUMENT CALLS**: **10** AT `tinybendygrad/runtime/dtype.c:281-326`, **2** AT `runtime/sz.c:87,116`.
+      **`sz.c` IS LIVE** (`sz.bend:125,133` IMPORTS IT), **SO THE C BACKEND CANNOT COMPILE IT**; `dtype.c` IS
+      ORPHANED. SUBSTRATE REPORTS `sz.c:87: too many arguments to function call, expected 2, have 3`.**
+- [x] **AND IT IS **NOT** THE **12th** FORK**: `def _lane` IS IN **11** FILES AND IT ADDS NONE; NO RE-SPELLED
+      VERDICT; NO REIMPLEMENTED INSTRUMENT; **NO OWNED POPULATION.**
+- [x] **AND **THE SHARED INDEX HELD **88** STAGED PATHS FROM OTHER UNITS ON ARRIVAL** -- ***A BARE COMMIT WOULD
+      HAVE SWEPT **88*** -- AND IT COMMITTED THROUGH **A PATH IT VERIFIED ABSENT FIRST AND REUSED BYTE-IDENTICALLY**,
+      **LEAVING THE SHARED INDEX UNTOUCHED.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
