@@ -19448,6 +19448,55 @@ UNCHANGED (VERIFIED BY THE CALLER).**
       TRUTHS***: ***`graphcmp.py:710` READ `pa.size` AT **13:40** AND **DID NOT** AT **13:42** -- THREE UNITS
       WORKING IN THIS TREE.***
 
+## ORACLEBLOCK -- **THE ORACLES WERE **DEAD**, NOT RED: **0 BYTES**. TWO UNITS MEASURED `rc=1` AND CALLED IT "RED"** (2026-10-18)
+
+`d62b84676` -- **2 FILES, +100/-29**, NO SWEEP. **`tinygrad/` AND `tinybendygrad/` UNCHANGED AGAINST `HEAD`.
+**VERIFICATION SET NOW **4 OF **4** -- AND *TWO* OF THE FIXED FILES WENT FROM ***0 BYTES*** TO ***4 005*** AND
+***3 213*** (VERIFIED BY THE CALLER).**
+
+- [ ] **AND THE FINDING UNDERNEATH THE BLOCKER IS WORSE THAN THE BLOCKER: **BOTH FILES WERE **DEAD, NOT RED**,
+      AND ***NO ROW HAD EVER BEEN PRINTED BY EITHER FILE AS COMMITTED***.** **`buf(4)` IS THE ***SECOND STATEMENT***
+      OF THE FIXTURES IN BOTH, **SO EVERY ROW DIED WITH IT.** ***VERIFIED BY THE CALLER:
+      `oracles/fold-mvt-oracle.py` **0 B -> 4 005 B** AND `oracles/fold-mvt-rows.py` **0 B -> 3 213 B`.***
+      ***SO "rc=1" WAS MEASURED BY ***TWO*** SEPARATE UNITS AND RECORDED AS "RED" -- AND **A FILE THAT HAS NEVER
+      PRODUCED A ROW ***IS NOT A RED GATE***, IT IS A **DEAD** ONE, **AND THE TWO HAVE DIFFERENT CURES.***
+- [x] **AND ***DELETING `size=` WOULD HAVE MADE THE ORACLE ***PASS BY ASSERTING SOMETHING FALSE***.** THREE
+      SPELLINGS, MEASURED SIDE BY SIDE:
+
+      | spelling | result |
+      |---|---|
+      | `ParamArg(0,i32,size=k)` | `TypeError` |
+      | **`ParamArg(0,i32)` (DELETE)** | **`_shape` -> `IndexError` ON *EVERY* ROW (`ops.py:355-357` READS `self.src[0].as_shape`); **AND `f(4) is f(6) -> True` -- ONE NODE FOR EVERY SIZE** |
+      | **`UOp._buffer(k, i32, 0)`** | `nsrc=1 srcops=[CONST]`, `_shape=(4,)`, **`f(4) is f(6) -> False`** |
+
+      ***SO THE OBVIOUS FIX IS ***NOT*** "REMOVE THE FIELD" -- IT IS "READ THE FIELD FROM WHERE UPSTREAM PUT
+      IT", AND ***THE DELETION PATH WOULD HAVE CONVERTED A CRASH INTO A **SILENTLY WRONG PASS**.****
+      ***AND THE SPELLING WAS ALREADY IN THE SIBLINGS: `oracles/fold-probe1.py:8` AND `mm-survey.py:58`.***
+- [x] **AND ***NO CLAIM DISAPPEARED*** -- **SET-COMPARED, NOT COUNTED**: `fold-mvt-oracle.py` **21 NAMED AT `HEAD`
+      / **21** PRINTED**, `fold-mvt-rows.py` **22 / 22**, **DELETED **0**, ADDED **0**.**
+- [x] **AND THE **5** `FLIP` ROWS WERE ***KEPT, NOT DELETED***: `gone(tag)` PRINTS THEM AS
+      `op=ABSENT shape=ABSENT dtype=ABSENT`, **SO THE TAG SURVIVES AND THE UNPORTABLE CLAIM IS ***STATED***.**
+      ***THAT IS THE ***OPPOSITE*** OF DELETING A ROW TO GO GREEN, AND IT IS WHAT "UNVERIFIABLE" LOOKS LIKE WHEN IT
+      IS DONE RIGHT.***
+- [x] **AND ***THE RATIONALE WAS WRONG THE DAY IT WAS WRITTEN***: `72f98ffe0` IS **2026-10-06**; THE ORACLES ARE
+      DATED **2026-10-07** -- ***ONE DAY LATER***. **SO THE COMMENT AT `fold-mvt-rows.py:13` PINNED ***THE PORT's
+      LAG*** -- **AND ***NOBODY RAN THE FILE***.** (ITS CONTENT IS OTHERWISE FAITHFUL AND VERIFIABLE:
+      `fold.bend:5253`'s `g_mv_pa` PASSES `Some{size}` AS `ParamArg`'s **3rd** FIELD, `ops.bend:880`'s
+      `size: Maybe<&2, U32>` WITH ITS ACCESSOR AT `:1481`, AND `fold.bend:5278` MINTS **NO SRCS**.)
+- [ ] **AND **4 MORE FILES OUTSIDE THAT GRANT CARRY THE ***IDENTICAL*** DEAD `size=` SPELLING AND ARE `rc=1`
+      -- 7 CALL SITES** (VERIFIED BY THE CALLER): `gates/cstyle_render_census-oracle.py:186,262` ·
+      `gates/cstyle-mut-oracle.py:186,262` · `gates/wgsl_render_census-oracle.py:321` ·
+      `gates/fold_graph_census-oracle.py:94,98` -- **PLUS `gates/.wgsl-mut-oracle.py:321`** (A DOT-PREFIXED STAGE
+      COPY, NOT RUN). ***AND `gates/realize_graph_census-oracle.py:86` IS ***THE SAME ROOT CAUSE, A DIFFERENT
+      SPELLING***: **THE POSITIONAL `16` THAT WAS `size` NOW LANDS ON `vmin_vmax` AND COLLIDES
+      (`got multiple values for argument 'vmin_vmax'`).** ***SO THE CLASS IS ***NOT*** "THE `size=` KEYWORD" -- IT IS
+      ***"A POSITIONAL `ParamArg` SLOT"***, ***WHICH IS EXACTLY THE ***SILENT SHIFT*** `gates/corpuslane-gate.py`
+      ALREADY CENSUSED.***
+- [ ] **AND ***TWO GREEN FILES IT ***DID NOT*** CLAIM ARE CORRECT***: `gates/tc_ptx_render-oracle.py` (**624**
+      LINES) AND `gates/rng_graph_census-oracle.py` (**726** LINES) **ARE GREEN WITH NO SYMPTOM -- *"I DID NOT
+      TRACE WHY THEY SURVIVE AND **DO NOT CLAIM THEY ARE CORRECT**."*** ***THAT IS THE THIRD TIME THIS SESSION THAT
+      ***"GREEN, AND NOBODY KNOWS WHY"*** HAS BEEN **SAID RATHER THAN ASSUMED.****
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
