@@ -13,18 +13,32 @@
 # `ParamArg(slot=0, int32, size=k)`, so `buf(4)` is `g_mv_exp1`'s source and the
 # node counts agree with the Bend arena because both hash-cons.
 #
+# THE `size=k` ABOVE WAS THE PORT'S RECORD, NOT CPython's, AND IT KILLED THIS FILE.
+# Upstream moved the size OUT of ParamArg and INTO `src[0]` in `72f98ffe0` 2026-10-06
+# ("move size from ParamArg to src (#18624)"); `UOp._buffer` (ops.py:828-830) is the
+# spelling. This file was written 2026-10-07, one day LATER, so `buf(4)` raised
+# `TypeError: ParamArg.__init__() got an unexpected keyword argument 'size'` and the
+# file printed ZERO ROWS -- a DEAD oracle, not a green one that went red. `buf` is now
+# `UOp._buffer(size, dtypes.i32, 0)`, and `ParamArg` is no longer imported: nothing
+# else in this file mints one.
+# WHY NOT JUST DELETE `size=` -- MEASURED, and it DELETES THE CLAIMS:
+# `UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32))` has no `src`, so ops.py:355-357's
+# `return self.src[0].as_shape` raises IndexError on EVERY row here, AND it hash-conses
+# `f(4) is f(6) -> True` -- one node for every size. Asserting the node instead raises
+# NOTHING: every `mv_` tag below still prints, and only `n=` moves (BUFFER is n=2).
+#
 # WHAT A `raise` PRINTS: nothing. This file prints `RAISE` for a Python raise and
 # `ABSENT` for a node the FOLD does not answer, and the two are the same statement
 # in fold.bend's convention -- so the diff cannot distinguish them. The rows where
 # they really differ are listed at the bottom under DIVERGES and are NOT smoothed.
 import sys
 sys.path.insert(0, '.')
-from tinygrad.uop.ops import UOp, Ops, ParamArg, shape_to_shape_arg   # noqa: E402
+from tinygrad.uop.ops import UOp, Ops, shape_to_shape_arg               # noqa: E402
 from tinygrad import dtypes                                           # noqa: E402
 
 
 def buf(size):
-  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=size))
+  return UOp._buffer(size, dtypes.i32, 0)
 
 
 def st23(ar):
@@ -79,6 +93,16 @@ def row(tag, u):
   except Exception:
     dt = "ABSENT"
   print(f"mv_{tag} {sig(u)} shape={sh} dtype={dt}")
+
+
+def gone(tag):
+  """A row whose OP upstream DELETED, so there is no node to answer with.
+
+  Same field spelling, `ABSENT` everywhere, and the tag still prints. Kept in the
+  stream on purpose: a tag that stops printing is indistinguishable from a claim
+  that was dropped, and dropping one to go green is what these rows must not do.
+  """
+  print(f"mv_{tag} n=0 op=ABSENT nsrc=0 srcops= shape=ABSENT dtype=ABSENT")
 
 
 # ---------------------------------------------------------------------------
@@ -182,31 +206,33 @@ row("shr1", shk(b4, 1, 2))
 row("shr23", UOp(Ops.SHRINK, (r23, shape_to_shape_arg((0, 1)), shape_to_shape_arg((2, 1)))))
 row("shrbad", shk(b4, 1, 4))
 
-# PERMUTE and FLIP. `marg` for both is `self.arg` (ops.py:818) -- the arena's
-# `ATuple`, a list of plain indices -- so neither reads `as_shape` and NEITHER is
-# behind the `ssimplify` wall the port's header recorded for them.
-#
-# `flip` builds `flip_arg = tuple([i in axis_arg for i in range(len(self.shape))])`
-# (movement.py:253) -- a tuple of BOOLS, one per dim -- and the arena erases True/False
-# into 1/0. CPython's `all(isinstance(x, bool))` is measured to be unreachable as a
-# rejection: intern the int spelling first and `UOp(Ops.FLIP, src, (True, False))`
-# returns the INT node (the ucache key is `(op, src, arg, tag, type(arg))` and
-# `type(arg)` is `tuple` for both while `True == 1` as dict keys), so a FLIP built
-# through `movement.py` always answers. The LENGTH check is the reachable half.
+# PERMUTE. `marg` is `self.arg` (ops.py:818) -- the arena's `ATuple`, a list of plain
+# indices -- so it does not read `as_shape` and is NOT behind the `ssimplify` wall the
+# port's header recorded for these two ops.
 row("perm", UOp(Ops.PERMUTE, (r23,), (1, 0)))
 row("permrep", UOp(Ops.PERMUTE, (r23,), (0, 0)))
 row("permlen", UOp(Ops.PERMUTE, (r23,), (1, 0, 2)))
-row("flip", UOp(Ops.FLIP, (r23,), (True, False)))
-row("fliplen", UOp(Ops.FLIP, (r23,), (True,)))
+
+# FLIP. `Ops.FLIP` IS NOT A MEMBER UPSTREAM ANY MORE, so there is no node to pin and
+# the whole paragraph this file used to carry about `flip_arg` being a tuple of BOOLS
+# (movement.py:253) describes code that is GONE. MEASURED: `hasattr(Ops, "FLIP")` is
+# False and `grep -rn "Ops.FLIP" tinygrad/` is EMPTY; `tinygrad/mixin/movement.py:233`'s
+# `flip` transposes, pads the anti-diagonal and extracts it instead. `fold-probe1.py:40`
+# records the same measurement.
+# THE TWO ROWS ARE KEPT, NOT DELETED -- see `gone`. Porting them needs the PORT: `O.OpsFLIP`
+# is still minted in ops.bend (5 uses) and consumed by prepare/indexing/rangeify/multi and
+# mixin-gradient, and fold.bend:2559 still dispatches the arm. That is a retirement.
+gone("flip")
+gone("fliplen")
 
 print("== DIVERGES (CPython answers, the fold refuses; fold.bend prints ABSENT) ==")
 print(f"  mv_expsym: CPython shape {dims(expsym._shape)} -- `s.val if s.op is Ops.CONST "
       f"else ssimplify(s)` over a SPECIAL whose END IS ZERO, whose interval [0,-1] is "
       f"EMPTY; `sym_dim` refuses an empty interval because ops.py:408's `all(x >= 0)` "
       f"is then decidable and this file cannot decide it")
-print(f"  mv_reshbare_dis: CPython shape=ABSENT (it RAISES) while fold.bend answers "
-      f"`(U(PARAM:w))` -- `resolve`'s default is only reached when the two products' "
-      f"intervals are NOT disjoint, and this fold cannot multiply intervals")
+print("  mv_reshbare_dis: CPython shape=ABSENT (it RAISES) while fold.bend answers "
+      "`(U(PARAM:w))` -- `resolve`'s default is only reached when the two products' "
+      "intervals are NOT disjoint, and this fold cannot multiply intervals")
 
 print()
 print("== THE `raise`s, BY MESSAGE -- the refuse rows' ground truth ==")
@@ -214,8 +240,11 @@ for tag, u in [("padr", UOp(Ops.PAD, (b4, shape_to_shape_arg((0, 1)), shape_to_s
                ("padr2", pad(b4, 1, 3)), ("shrbad", shk(b4, 1, 4)),
                ("permrep", UOp(Ops.PERMUTE, (r23,), (0, 0))),
                ("permlen", UOp(Ops.PERMUTE, (r23,), (1, 0, 2))),
-               ("fliplen", UOp(Ops.FLIP, (r23,), (True,))),
+               ("fliplen", None),
                ("reshbare_dis", disjoint)]:
+  if u is None:
+    print("  mv_fliplen: NO NODE TO RAISE ON -- Ops.FLIP is not a member upstream")
+    continue
   try:
     u._shape
     print(f"  mv_{tag}: NO RAISE")

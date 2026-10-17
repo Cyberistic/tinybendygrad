@@ -16,19 +16,31 @@
 #     ./bin/bend tinybendygrad/uop/fold.bend                    > $OUT/bend.txt
 #     diff <(grep '^mv_' $OUT/py.txt) <(grep '^mv_' $OUT/bend.txt)
 #
-# `buf(k)` is BUFFER(int32, size=k) with NO srcs, which is what `g_resh22` builds, so
-# the two arenas intern the same nodes. CPython's `toposort()` length is the node count
-# the Bend side gets from `List.length(O.UOp.toposort(...))`.
+# `buf(k)` is BUFFER(int32) with the size in `src[0]` AS A CONST -- `UOp._buffer`
+# (ops.py:828-830), which is where upstream put it in `72f98ffe0` 2026-10-06,
+# "move size from ParamArg to src (#18624)". This file used to spell it
+# `UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=k))` and said the NO-srcs shape
+# was "what `g_resh22` builds, so the two arenas intern the same nodes". That rationale
+# mirrored the PORT, which still carries `size` as `ParamArg`'s third field
+# (ops.bend:880) -- and it was ALREADY WRONG THE DAY IT WAS WRITTEN: the oracle is from
+# 2026-10-07 and upstream moved the field on 2026-10-06, so `size=` raised a TypeError
+# and this file printed ZERO ROWS. DEAD, not green-when-it-worked.
+# MEASURED, and this is why DELETING the field instead is not the fix:
+#   `UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32))` -> `_shape` raises IndexError, because
+#   ops.py:355-357 reads `self.src[0].as_shape` for BUFFER, and it also hash-conses
+#   `f(4) is f(6) -> True`, so EVERY size becomes ONE node. Deleting `size` turns all
+#   24 rows below into `RAISE`; asserting the node turns NONE of them into one, and
+#   moves only `n=` (a BUFFER is `n=2`, not `n=1`). RE-DERIVED, NOT PINNED.
 import sys
 sys.path.insert(0, '.')
-from tinygrad.uop.ops import UOp, Ops, ParamArg, shape_to_shape_arg   # noqa: E402
+from tinygrad.uop.ops import UOp, Ops, shape_to_shape_arg               # noqa: E402
 from tinygrad import dtypes                                           # noqa: E402
 
 DIV = {}
 
 
 def buf(size):
-  return UOp(Ops.BUFFER, (), ParamArg(0, dtypes.i32, size=size))
+  return UOp._buffer(size, dtypes.i32, 0)
 
 
 def st(*dims):
@@ -63,6 +75,22 @@ def no(tag, u, why):
   """A node the FOLD REFUSES and CPython answers; the row pins the refusal."""
   DIV[tag] = (why, sig(u))
   print(f"mv_{tag} {sig(u)}")
+
+
+def gone(tag):
+  """A row whose OP upstream deleted, so there is no node to answer with.
+
+  Same four facts plus the answer, and `op` is the absence. Kept in the stream on
+  purpose: a tag that stops printing is indistinguishable from a claim that was
+  dropped, and dropping one to go green is the one thing these rows must not do.
+  """
+  DIV[tag] = ("CPython has NO Ops.FLIP to answer with -- `mixin/movement.py:233`'s "
+              "`flip` is a TRANSPOSE + PAD/SHRINK chain now, so the op, its marg and "
+              "its `_shape` arm are GONE. The PORT still has the arm (fold.bend:2559) "
+              "and still mints `O.OpsFLIP` (ops.bend, 5 uses), so this row is a "
+              "RETIREMENT the port has not made, not a disagreement about a value.",
+              "op=ABSENT shape=ABSENT dtype=ABSENT")
+  print(f"mv_{tag} n=0 op=ABSENT nsrc=0 srcops= shape=ABSENT dtype=ABSENT")
 
 
 # ---------------------------------------------------------------------------
@@ -114,9 +142,20 @@ row("permlen", UOp(Ops.PERMUTE, (r43,), (1, 0, 2)))
 # FLIP: marg is `self.arg` and the answer is `ps`. CPython's arg is a TUPLE OF BOOLS
 # (`all(isinstance(x, bool) for x in marg)`), and the arena's `ATuple` is
 # `List<&2, U32>` (ops.bend:763), so the bool half of the check is NOT EXPRESSIBLE.
-row("flip", UOp(Ops.FLIP, (r43,), (True, False)))
-row("fliplen", UOp(Ops.FLIP, (r43,), (True,)))
-row("flipint", UOp(Ops.FLIP, (r43,), (1, 0)))
+#
+# BUT `Ops.FLIP` IS NOT A MEMBER UPSTREAM ANY MORE, so there is no node to pin.
+# MEASURED: `hasattr(Ops, "FLIP")` is False and `grep -rn "Ops.FLIP" tinygrad/` is EMPTY.
+# `mixin/movement.py:233`'s `flip` is now a TRANSPOSE-then-PAD/SHRINK chain ("place the
+# values on an anti-diagonal, transpose it, then extract the anti-diagonal"), so the op,
+# its `marg` and its `_shape` arm are all gone. `fold-probe1.py:40-42` records the same
+# measurement and stopped there; this file has to RUN, so it goes on.
+# THE THREE ROWS ARE KEPT, NOT DELETED. `gone` prints them in the same field spelling
+# with the op spelled absent, so the tag survives in the `mv_` stream and the claim that
+# CANNOT BE PORTED is stated instead of quietly removed. Porting them needs the PORT:
+# `O.OpsFLIP` is still live in ops.bend (5 uses) and in prepare/indexing/rangeify/multi/
+# mixin-gradient, and fold.bend:2559 still has the arm. THAT is a retirement, not a fix.
+for _t in ("flip", "fliplen", "flipint"):
+  gone(_t)
 
 # THE dtype LADDER OVER A NON-int32 SRC, so a fold arm that answered `void` or
 # `src[0].dtype` on the wrong node would move this row. `buf(6)`, because
@@ -146,9 +185,12 @@ for tag, u, why in [
     ("shrr", UOp(Ops.SHRINK, (b4, UOp.const(1), UOp.const(4))), "o + sz <= s"),
     ("permrep", UOp(Ops.PERMUTE, (r43,), (0, 0)), "sorted(marg) != range"),
     ("permlen", UOp(Ops.PERMUTE, (r43,), (1, 0, 2)), "sorted(marg) != range"),
-    ("fliplen", UOp(Ops.FLIP, (r43,), (True,)), "len(ps) != len(marg)"),
-    ("flipint", UOp(Ops.FLIP, (r43,), (1, 0)), "all(isinstance(x, bool)) -- NOT in the arena"),
+    ("fliplen", None, "len(ps) != len(marg) -- NO Ops.FLIP UPSTREAM"),
+    ("flipint", None, "all(isinstance(x, bool)) -- NO Ops.FLIP UPSTREAM"),
 ]:
+  if u is None:
+    print(f"  mv_{tag}: NO NODE TO RAISE ON -- {why}")
+    continue
   try:
     u._shape
     print(f"  mv_{tag}: NO RAISE -- {why}")
