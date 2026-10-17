@@ -31,7 +31,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate  # noqa: E402, VERDICT
+from gatekit import FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
 
 # THE FIXTURE, and it is read from the ENVIRONMENT because the driver reads it from the
 # environment too (`H.getenv_int("I64SHR_SEED", 7)` at shr.bend). Both port lanes inherit
@@ -78,17 +78,26 @@ def lane_file(lane):
         return staged[0]
     print(f"i64-shr-gate: no lane file for {lane} under {GATE.dir} -- the claims "
           "would run on nothing", file=sys.stderr)
-    raise SystemExit(1)   # 1 CHOSEN, and this is a NEGATIVE RESULT worth keeping: main() at
-                          # :115 CATCHES this raise for `bd` and returns 1, and main() at :118
-                          # returns 1 for the same condition in words ("bd.out is absent or not
-                          # 301 rows"). So this file grades "the claims would run on nothing"
-                          # as 1 in two places already, and any other number HERE would put
-                          # two verdicts for one condition in one file -- the defect `fef1b64d7`
-                          # is written about. It was a string, and a string is 1 anyway; the
-                          # edit is that the author now says so. WHETHER AN ABSENT LANE FILE
-                          # IS REFUSED(3) RATHER THAN FAILED IS THE OPEN QUESTION, and it is
-                          # :118's to answer, not this raise's: that line CONFLATES "absent"
-                          # with "the wrong row count", which are two different verdicts.
+    raise SystemExit(REFUSED)   # **REFUSED(3), AND THE QUESTION THIS COMMENT ASKED IS ANSWERED.**
+                                # The previous revision raised `SystemExit(1)` and left the number
+                                # undecided, because `main()` caught that raise and returned 1 and
+                                # also returned 1 further down "for the same condition in words" --
+                                # and the words named TWO conditions, "bd.out is absent or not 301
+                                # rows". A raise about a lane file that DOES NOT EXIST and a return
+                                # about a lane file with the WRONG NUMBER OF ROWS are two
+                                # conditions, and treating them as one is what let one exit serve
+                                # both. So they are split: THIS raise is `REFUSED`, because no claim
+                                # can run and a precondition is missing, which is what `REFUSED`
+                                # means in `gates/gatekit.py:60`'s five; the wrong-row-count arm
+                                # below is `FAIL`, which is `gatekit.py:618`'s own mapping
+                                # (`DEAD if n == 0 else FAIL`) applied to a lane that produced rows
+                                # and the wrong number of them.
+                                #
+                                # MEASURED 2026-10-17, by stubbing `GATE.run` and pointing
+                                # `GATE.dir` at a scratch dir: with `bd.out` ABSENT this file exited
+                                # 1 for **all four** of `run()`'s verdicts -- 0, 1, 3 and 5 -- so a
+                                # REFUSED precondition and a DEAD lane both left as `FAIL`. `main()`
+                                # now returns `run()`'s own exit, so 3 stays 3 and 5 stays 5.
 
 
 def rows_of(lane):
@@ -121,17 +130,34 @@ def main():
 # claim about nothing. `gatekit` has since grown a clear-and-promote policy for its own
 # reads; this one is kept because it guards THIS function, which reads the lane files
 # directly and would otherwise inherit whatever is on disk.
+    #
+    # TWO CONDITIONS, TWO EXITS, AND THE SPLIT IS THE POINT. "the lane file is ABSENT" and
+    # "the lane file holds the WRONG NUMBER OF ROWS" were ONE `return 1` whose message named
+    # both, so a missing lane and a malformed lane were one verdict. The absent case is the
+    # raise in `lane_file`, which now answers `run()`'s own exit; the count is a `FAIL`,
+    # which is `gatekit.py:618`'s own `DEAD if n == 0 else FAIL` applied to a lane that
+    # produced rows and the wrong number of them. The lane READS stayed inside the same `try`
+    # because an absent `py.rows` or `bn.out` is the SAME condition as an absent `bd.out`
+    # and used to escape as an uncaught `SystemExit` -- a THIRD exit for one condition --
+    # and the COUNT is still tested BEFORE them, so a malformed `bd.out` reports `FAIL`
+    # rather than being pre-empted by a sibling it did not cause.
+    #
+    # **`code if code != PASS else REFUSED`, NEVER BARE `code`.** MEASURED 2026-10-17:
+    # `run()` returns `PASS` with nothing promoted only if something outside this process
+    # wrote `GATE.dir`, and returning `code` there would be a GREEN EXIT THAT MEASURED
+    # NOTHING -- the one shape `gates/gatekit.py:60` reserves `DEAD` for.
     try:
         bd = lane_file("bd")
+        n = len([l for l in bd.read_text().splitlines() if l])
+        if n != ROWS:
+            print(f"i64-shr-gate: {bd.name} holds {n} rows, expected {ROWS}, so the "
+                  "literal-vs-runtime claim is SKIPPED rather than answered from a stale file",
+                  file=sys.stderr)
+            return FAIL
+        lanes = {t: rows_of(t) for t in ("py", "bd", "bn")}
     except SystemExit as e:
         print(e, file=sys.stderr)
-        return 1
-    if len([l for l in bd.read_text().splitlines() if l]) != ROWS:
-        print(f"i64-shr-gate: {bd.name} is absent or not {ROWS} rows, so the "
-              "literal-vs-runtime claim is SKIPPED rather than answered from a stale file",
-              file=sys.stderr)
-        return 1
-    lanes = {t: rows_of(t) for t in ("py", "bd", "bn")}
+        return code if code != PASS else REFUSED
 
     # THE SEED, on all three lanes. `== str(SEED)` rather than "the row is present",
     # because a pin that only asserts presence passes when the driver silently used its
@@ -249,11 +275,27 @@ def main():
               file=sys.stderr)
         ok = False
 
+    code_out = PASS if ok else (code if code != PASS else FAIL)
     print(f"i64-shr-gate: {ROWS} rows, 3 lanes identical, both routes agree at all "
           f"{len(VALUES) * AMOUNTS} (value, amount) pairs, and every one of the "
           f"{wide} past-the-width cells saturates to the sign" if ok
-          else f"{GATE.name}: {VERDICT[code]}")
-    return 0 if ok else 1
+          else f"{GATE.name}: {VERDICT[code_out]}")
+    # PASS ONLY IF EVERYTHING PASSED, AND OTHERWISE `run()`'s OWN VERDICT RATHER THAN A
+    # HARD 1. `gatekit.py:618` can return `DEAD(5)` for a lane that emitted nothing while
+    # `bd.out` IS promoted -- the `bn` lane is the one that can fail with `bd` intact -- so
+    # this is a REACHABLE shape and the previous `return 0 if ok else 1` answered a `DEAD`
+    # as a `FAIL`. `gates/gatekit.py:770-774`'s own `gate()` propagates `run()`'s exit, and
+    # this is the same rule. It can only make the exit MORE specific: `ok` is already
+    # `code == PASS`, so `PASS` is unreachable on a red `code`.
+    #
+    # **`VERDICT[code_out]`, NOT `VERDICT[code]`.** MEASURED 2026-10-17: with `run()` stubbed
+    # to return `PASS` and one claim forced false, the message printed `i64-shr: PASS` while
+    # the process exited 1. `code` is the LANES' verdict and the exit here is the GATE'S, and
+    # when a claim is what failed they differ -- a confidently wrong word is worse than the
+    # `NameError` this line used to raise, because a reader cannot tell a wrong word from a
+    # right one. `code_out` is computed first so the printed token and the returned exit are
+    # the same expression and cannot drift.
+    return code_out
 
 
 if __name__ == "__main__":

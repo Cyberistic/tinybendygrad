@@ -30,7 +30,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from gatekit import Gate  # noqa: E402, VERDICT
+from gatekit import FAIL, PASS, REFUSED, VERDICT, Gate  # noqa: E402  (the five, BY PATH)
 
 
 def _coindep():
@@ -78,8 +78,25 @@ GATE = Gate(
 
 
 def rows_of(lane):
+    """`{name: value}` for one lane. An ABSENT lane is a `REFUSED`, not a `FileNotFoundError`.
+
+    THE SIBLING'S SHAPE, AND IT WAS NOT THIS ONE. `gates/i64-shr-gate.py` resolves a lane
+    through a `lane_file()` that raises `SystemExit(REFUSED)`; this file read the published
+    path directly, so a missing `py.rows` escaped as `FileNotFoundError` and a missing
+    `bd.out` was folded into the freshness guard's `ok = False`. MEASURED 2026-10-17, by
+    stubbing `GATE.run` and pointing `GATE.dir` at a scratch dir: with every lane absent this
+    file exited 1 through a `FileNotFoundError`, so "a lane is absent" had ONE exit and THREE
+    mechanisms. ONE condition, ONE verdict, ONE mechanism.
+    """
+    p = GATE.dir / f"{lane}.{'rows' if lane == 'py' else 'out'}"
+    try:
+        text = p.read_text()
+    except OSError as e:
+        print(f"i64-shl-gate: no lane file for {lane} under {GATE.dir}: {e.strerror} -- the "
+              "claims would run on nothing", file=sys.stderr)
+        raise SystemExit(REFUSED) from e
     out = {}
-    for line in (GATE.dir / f"{lane}.{'rows' if lane == 'py' else 'out'}").read_text().splitlines():
+    for line in text.splitlines():
         if "=" in line:
             k, v = line.split("=", 1)
             out[k] = v
@@ -88,96 +105,126 @@ def rows_of(lane):
 
 def main():
     code = GATE.run()
-    ok = code == 0
+    ok = code == PASS
 
     # THE CLAIMS RUN WHATEVER THE DIFF DID, and that ordering is not cosmetic.
-    # `gatekit.run()` returning 1 on a lane disagreement is exactly the situation in
+    # `gatekit.run()` returning non-zero is exactly the situation in
     # which "the two routes reached DIFFERENT amounts" is the thing worth saying, so a
     # gate that skipped its claims on a failed diff could never report the failure it
     # exists to report.  They run on `bd.out` and are SKIPPED, loudly, unless that file
     # holds exactly ROWS rows -- a stale artifact from a previous run would otherwise be
     # read as this run's answer, which is a claim about nothing.
-    fresh = [(GATE.dir / "bd.out").exists()
-             and len([l for l in (GATE.dir / "bd.out").read_text().splitlines() if l]) == ROWS]
-    if not fresh[0]:
-        print("i64-shl-gate: bd.out is absent or not %d rows, so the literal-vs-runtime "
-              "claim is SKIPPED rather than answered from a stale file" % ROWS,
-              file=sys.stderr)
-        ok = False
-    else:
+    #
+    # TWO CONDITIONS, TWO EXITS -- THE SAME SPLIT AS `gates/i64-shr-gate.py`, WHICH IS WHY
+    # IT IS THE SAME SHAPE HERE. The previous line was one boolean over `exists() and
+    # count == ROWS`, so "bd.out is ABSENT" and "bd.out holds the WRONG NUMBER OF ROWS"
+    # were one verdict reached by one exit. The absent case is `rows_of`'s `SystemExit`,
+    # which answers `run()`'s own exit; the count is a `FAIL`, which is
+    # `gatekit.py:618`'s own `DEAD if n == 0 else FAIL` for a lane that produced rows and
+    # the wrong number of them. MEASURED 2026-10-17 on the previous revision: `bd.out`
+    # absent exited 1 through a `FileNotFoundError` for all four of `run()`'s verdicts.
+    #
+    # **`code if code != PASS else REFUSED`, NEVER BARE `code`** -- a `PASS` from `run()`
+    # with no lane to read would be a GREEN EXIT THAT MEASURED NOTHING.
+    try:
+        bd_text = (GATE.dir / "bd.out").read_text()
+        n = len([l for l in bd_text.splitlines() if l])
+        if n != ROWS:
+            print("i64-shl-gate: bd.out holds %d rows, expected %d, so the literal-vs-runtime "
+                  "claim is SKIPPED rather than answered from a stale file" % (n, ROWS),
+                  file=sys.stderr)
+            return FAIL
         lanes = {t: rows_of(t) for t in ("py", "bd", "bn")}
+    except OSError as e:
+        print(f"i64-shl-gate: bd.out is absent under {GATE.dir}: {e.strerror}, so the "
+              "literal-vs-runtime claim is SKIPPED rather than answered from a stale file",
+              file=sys.stderr)
+        return code if code != PASS else REFUSED
+    except SystemExit as e:
+        print(e, file=sys.stderr)
+        return code if code != PASS else REFUSED
 
-        # THE SEED, on both sides. `== str(SEED)` rather than "the row is present",
-        # because a pin that only asserts presence passes when the driver silently used
-        # its default.  `py` reads the same variable, so all three are asserted.
-        for t in ("py", "bd", "bn"):
-            if lanes[t].get("seed") != str(SEED):
-                print(f"i64-shl-gate: {t} read seed {lanes[t].get('seed')!r}, expected {SEED}",
-                      file=sys.stderr)
-                ok = False
-
-        # NO ROW MAY BE EMPTY. The recorded failure mode is a guard comparing `""` to
-        # `""` and passing, so every value compared below is asserted NON-EMPTY first --
-        # otherwise a driver that printed nothing but the right NUMBER of empty rows
-        # would sail through this whole function.
-        for t, r in lanes.items():
-            for k, v in r.items():
-                if v == "":
-                    print(f"i64-shl-gate: {t}'s {k} is EMPTY -- a row that compares "
-                          '"":"" can never fail', file=sys.stderr)
-                    ok = False
-            # AND EVERY ROW MUST BE THERE. A lane that printed the right NUMBER of empty
-            # rows would pass the count check and mean nothing, so the expected NAMES are
-            # asserted too rather than the count alone.
-            missing = [k for k in EXPECTED if k not in r]
-            if missing:
-                print(f"i64-shl-gate: {t} is missing {len(missing)} rows, first "
-                      f"{missing[0]} -- a row count is not a row set", file=sys.stderr)
-                ok = False
-
-        # THE CLAIM. For each value and each AMOUNT, the literal route's answer and the
-        # runtime route's answer must be the same string. Joined on the amount, not on
-        # the row, because the two routes reach the same amount on DIFFERENT rows --
-        # that permutation is the point of the seed.
-        lit, rt = {}, {}
-        for name in ("neg1", "one", "lowhi"):
-            for i in range(10):
-                b = f"sh_{name}_{i}"
-                lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][f"{b}_lc"])
-                rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"][f"{b}_rt"])
-        if len(lit) != 30 or len(rt) != 30:
-            print(f"i64-shl-gate: {len(lit)} literal (value, amount) pairs and {len(rt)} "
-                  f"runtime ones, expected 30 each -- the permutation is not a permutation",
+    # THE SEED, on both sides. `== str(SEED)` rather than "the row is present",
+    # because a pin that only asserts presence passes when the driver silently used
+    # its default.  `py` reads the same variable, so all three are asserted.
+    for t in ("py", "bd", "bn"):
+        if lanes[t].get("seed") != str(SEED):
+            print(f"i64-shl-gate: {t} read seed {lanes[t].get('seed')!r}, expected {SEED}",
                   file=sys.stderr)
             ok = False
-        for key, got in sorted(lit.items()):
-            if key not in rt:
-                print(f"i64-shl-gate: the runtime route never reached {key}", file=sys.stderr)
-                ok = False
-            elif rt[key] != got:
-                print(f"i64-shl-gate: {key[0]} at amount {key[1]}: literal route says "
-                      f"{got}, runtime route says {rt[key]} -- a runtime shift amount is "
-                      "NOT a Nat", file=sys.stderr)
-                ok = False
 
-        # THE BOUNDARY, restated over the PORT'S OWN rows rather than the oracle's: at
-        # `k = 63` the pair must still be nonzero for `neg1`, and at `k = 64` it must be
-        # `0:0`. This is the wall's row and the row one below it, and asserting both
-        # here is what stops the pair of amounts being collapsed into one answer.
-        neg1_63 = lit.get(("neg1", "63"))
-        neg1_64 = lit.get(("neg1", "64"))
-        if neg1_63 in (None, "0:0"):
-            print(f"i64-shl-gate: neg1 << 63 answers {neg1_63} -- that is the int64 sign "
-                  "bit, so 63 and 64 have been collapsed", file=sys.stderr)
-            ok = False
-        if neg1_64 != "0:0":
-            print(f"i64-shl-gate: neg1 << 64 answers {neg1_64}, expected 0:0 -- the pair "
-                  "is 64 bits wide and 2**64 does not fit it", file=sys.stderr)
+    # NO ROW MAY BE EMPTY. The recorded failure mode is a guard comparing `""` to
+    # `""` and passing, so every value compared below is asserted NON-EMPTY first --
+    # otherwise a driver that printed nothing but the right NUMBER of empty rows
+    # would sail through this whole function.
+    for t, r in lanes.items():
+        for k, v in r.items():
+            if v == "":
+                print(f"i64-shl-gate: {t}'s {k} is EMPTY -- a row that compares "
+                      '"":"" can never fail', file=sys.stderr)
+                ok = False
+        # AND EVERY ROW MUST BE THERE. A lane that printed the right NUMBER of empty
+        # rows would pass the count check and mean nothing, so the expected NAMES are
+        # asserted too rather than the count alone.
+        missing = [k for k in EXPECTED if k not in r]
+        if missing:
+            print(f"i64-shl-gate: {t} is missing {len(missing)} rows, first "
+                  f"{missing[0]} -- a row count is not a row set", file=sys.stderr)
             ok = False
 
+    # THE CLAIM. For each value and each AMOUNT, the literal route's answer and the
+    # runtime route's answer must be the same string. Joined on the amount, not on
+    # the row, because the two routes reach the same amount on DIFFERENT rows --
+    # that permutation is the point of the seed.
+    lit, rt = {}, {}
+    for name in ("neg1", "one", "lowhi"):
+        for i in range(10):
+            b = f"sh_{name}_{i}"
+            lit.setdefault((name, lanes["bd"][f"{b}_amt"]), lanes["bd"][f"{b}_lc"])
+            rt.setdefault((name, lanes["bd"][f"{b}_rt_amt"]), lanes["bd"][f"{b}_rt"])
+    if len(lit) != 30 or len(rt) != 30:
+        print(f"i64-shl-gate: {len(lit)} literal (value, amount) pairs and {len(rt)} "
+              f"runtime ones, expected 30 each -- the permutation is not a permutation",
+              file=sys.stderr)
+        ok = False
+    for key, got in sorted(lit.items()):
+        if key not in rt:
+            print(f"i64-shl-gate: the runtime route never reached {key}", file=sys.stderr)
+            ok = False
+        elif rt[key] != got:
+            print(f"i64-shl-gate: {key[0]} at amount {key[1]}: literal route says "
+                  f"{got}, runtime route says {rt[key]} -- a runtime shift amount is "
+                  "NOT a Nat", file=sys.stderr)
+            ok = False
+
+    # THE BOUNDARY, restated over the PORT'S OWN rows rather than the oracle's: at
+    # `k = 63` the pair must still be nonzero for `neg1`, and at `k = 64` it must be
+    # `0:0`. This is the wall's row and the row one below it, and asserting both
+    # here is what stops the pair of amounts being collapsed into one answer.
+    neg1_63 = lit.get(("neg1", "63"))
+    neg1_64 = lit.get(("neg1", "64"))
+    if neg1_63 in (None, "0:0"):
+        print(f"i64-shl-gate: neg1 << 63 answers {neg1_63} -- that is the int64 sign "
+              "bit, so 63 and 64 have been collapsed", file=sys.stderr)
+        ok = False
+    if neg1_64 != "0:0":
+        print(f"i64-shl-gate: neg1 << 64 answers {neg1_64}, expected 0:0 -- the pair "
+              "is 64 bits wide and 2**64 does not fit it", file=sys.stderr)
+        ok = False
+
+    code_out = PASS if ok else (code if code != PASS else FAIL)
     print(f"i64-shl-gate: {ROWS} rows, 3 lanes identical, and the literal and runtime "
-          "routes agree at all 30 (value, amount) pairs" if ok else f"{GATE.name}: {VERDICT[code]}")
-    return 0 if ok else 1
+          "routes agree at all 30 (value, amount) pairs" if ok
+          else f"{GATE.name}: {VERDICT[code_out]}")
+    # PASS ONLY IF EVERYTHING PASSED, AND OTHERWISE `run()`'s OWN VERDICT RATHER THAN A
+    # HARD 1 -- `gates/gatekit.py:770-774`'s own `gate()` propagates, and `gatekit.py:618`
+    # can return `DEAD(5)` for a lane that emitted nothing while `bd.out` IS promoted.
+    #
+    # **`VERDICT[code_out]`, NOT `VERDICT[code]`** -- MEASURED 2026-10-17 on the sibling:
+    # with `run()` stubbed to `PASS` and one claim forced false, `VERDICT[code]` printed
+    # `PASS` while the process exited 1. The printed token and the returned exit are the
+    # same expression here so they cannot drift.
+    return code_out
 
 
 if __name__ == "__main__":

@@ -461,7 +461,38 @@ def plant():
 
 def _plant_repo(repo):
     """Two committed files, then one deleted and staged: the smallest tree that arms an index. The
-    index file is `agent-index` so the plant cannot leave the tree's own index staged."""
+    index file is `agent-index` so the plant cannot leave the tree's own index staged.
+
+    **AND IT IS NOT A SHARED PATH, WHICH A SHAPE-HUNT ALMOST REPORTED IT AS. MEASURED
+    2026-10-17 by calling this function and reading the `GIT_INDEX_FILE` it builds:**
+    the resolved path was `<TemporaryDirectory>/repo/.git/agent-index`, `INSIDE .git/ = False`
+    against this tree's own `.git`, `INSIDE the temp root = True`, and
+    `exists AFTER the TemporaryDirectory closed = False` -- it is deleted with the scratch repo.
+    The root is `tempfile.TemporaryDirectory(prefix="runner.plant.", dir=HERE/"artifacts")`
+    at `plant()`, so the directory is unique per run and `gates/artifacts/` is `.gitignore`d
+    (`.gitignore:159`). The plant's own output names the root it used: the LOCK and PIN-DRIFT
+    rows print `gates/artifacts/runner.plant.<random>/lock`.
+
+    **SO IT FAILS ALL THREE COUNTS OF THE CLASS `AGENTS.md` DEFINES** -- a shared writable
+    path, NAMED IN AN INSTRUCTION. It is not shared, it is not writable after the `with`
+    block, and nothing instructs any unit to use it. **THE NAME IS ALSO THE POINT**:
+    `gates/runner.py` does not write `.git/index`, and its INDEX-ARM case is about a
+    *foreign* index being armed, so the plant wants a distinctly-named file it can arm
+    without the shape of the tree's own index appearing in the run.
+
+    **THE TWO SITES THAT ARE NOT LIKE THIS ARE `gates/upstream-pow-dtype-gate.py:140` AND
+    `gates/upstream-promo-lattice-gate.py:85`**, and they are named here because the next
+    shape-hunt will read the same string. Both set `GIT_INDEX_FILE = ROOT/".git"/"agent-index"`
+    with `ROOT = HERE.parent`, i.e. **this tree's own `.git`, under ONE hard-coded name, in two
+    files at once** -- the exact path `AGENTS.md` calls "a shared path" and `gatekit`'s owner
+    replaced with `agent-index-<unit>`. What keeps them out of the class is MEASURED and not
+    assumed: **the only git verb either file runs is `git show <rev>:<path>`, and `git show`
+    does not open the index.** With `GIT_INDEX_FILE` naming a path that did not exist,
+    `git show HEAD:README.md` returned rc 0 with 3 839 B on stdout and **the index file still
+    did not exist afterwards**; `git status --porcelain=v2` likewise left it absent. So they
+    NAME a shared path and never WRITE it, and the hazard is latent -- one `git add` away.
+    Both files are out of this unit's grant.
+    """
     repo.mkdir(parents=True, exist_ok=True)
     env = dict(os.environ, GIT_INDEX_FILE=str(repo / ".git" / "agent-index"))
     for cmd in (["init", "-q"], ["config", "user.email", "r@x"], ["config", "user.name", "r"]):
