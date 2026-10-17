@@ -212,3 +212,15 @@ manifest being path-free and mtime-free for the same reason `differ.substrate_di
 - **`ruff check .` OVER THE TREE IS rc=1 AND WAS BEFORE THIS FILE** (18 781–19 679 findings across
   four readings in `AGENTS.md`); `checks/substrate-manifest.py` alone is clean.
 - **`differ.substrate_bad()` IS UNTOUCHED**, so `unhealthy()` is byte-identical before and after.
+- **AND A FRESH INSTANCE OF THE ARMED-INDEX PHANTOM, MEASURED RIGHT AFTER THIS COMMIT AT
+  2026-10-17T00:37:01Z, BECAUSE IT IS NOW OPERATIONAL:** `HEAD` = **7 435** entries, the default
+  index = **8 084**, `.git/agent-index` = **7 435**, and **`HEAD − default index` = exactly 2
+  paths — both mine, both ON DISK**. `checks/index-arm-gate.py` prints
+  `INDEX-ARM REFUSED, NOT A VERDICT: 2 path(s) a bare \`git commit\` acts on RIGHT NOW (2 deletion…)`.
+  So **a bare `git commit` in this tree right now would try to DELETE
+  `checks/substrate-manifest.py` and this report.** Nothing is wrong with the commit — verified by
+  content, `HEAD` blob == disk blob for both (`12fd7cfde992…`, `4457b17640ec…`) — and the armed
+  index is not mine: this commit went through `GIT_INDEX_FILE=.git/agent-index` set in the SAME
+  command as the `git add`, as `AGENTS.md` requires. **The phantom reads a COMMITTED file as
+  deleted, which is the benign direction** (the file is on disk and in `HEAD`); the direction that
+  destroys is `git commit -a`, which would write the LIVE content back and silently revert it.
