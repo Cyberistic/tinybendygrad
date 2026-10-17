@@ -457,7 +457,30 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
-rn-absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledgerdrift`), and it is
+rn-PUSH-BLOCKED [#####.....] 1/2  **NOT LANDED ON ORIGIN -- BLOCKED BY A LOCAL REPO-INTEGRITY FAULT, NOT BY
+                                       ANY DEFECT IN THIS CHANGE.** 2026-10-17: commit `8c8ad8b0c`
+                                       (the `absent-inputs` census + the two guarded fixes) is COMMITTED
+                                       and REACHABLE FROM HEAD, but `git push` is rejected:
+                                       `remote: error: object d83cf685...: duplicateEntries:
+                                       contains duplicate file entries / fatal: fsck error in packed
+                                       object`. **DIAGNOSED**: `d83cf685` is a **dangling, UNREACHABLE
+                                       TREE** -- `git fsck --unreachable` finds it once, and
+                                       `merge-base --is-ancestor` says it is reachable from NEITHER
+                                       HEAD NOR origin/master, and NONE of my commits reference it.
+                                       `git push` walks the whole local object store, so ONE corrupt
+                                       unreachable object fails the entire push. **ORIGIN IS INTACT**
+                                       (still at `52d77134b`) and my history is safe locally. The
+                                       remedy is to clear the unreachable objects -- but there are
+                                       **3,309** of them and a concurrent session is actively
+                                       committing (its `02329daf0 REPAIR` recovered 178 phantom
+                                       deletions and may be the author of this tree), so a wholesale
+                                       `git prune` could destroy an object another agent is
+                                       mid-recovery on. **PREFER REFUSE TO REPAIR: THE SAFEST ACTION
+                                       IS TO STOP AND SAY SO.** 1/2 = the commit exists locally and is
+                                       reachable; 2/2 = it reaches origin, which needs the owner to
+                                       clear the dangling object.
+
+absent-inputs [######....] 2/4  FOUND BY A DISPATCHED UNIT 2026-10-15 (`ledgerdrift`), and it is
                                        ONE DEFECT IN THREE PLACES. `checks/rn-gate.py` has this file's
                                        own `refuse()` (exit 3) and guards TWO of its declared inputs
                                        with a HAND LIST, `("rebase-gate", "eq-census2")` at `:93` --
