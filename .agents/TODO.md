@@ -19138,6 +19138,46 @@ AT **9** -- HEAD's OWN **9**.**
       `matmul` ***DISAGREE*** ON `src` (**20** vs **18** ROWS) BECAUSE ***UPSTREAM MATERIALISES THE SIZE AS A
       REAL `CONST` NODE NOW***, AND THE PORT DOES NOT.**
 
+## REINDEX2 -- **IT PROVED THE EDIT, CORRECTED THE BRIEF, HIT THE RENAME CASCADE ***TWICE***, AND THEN ***DID NOT LAND IT**** (2026-10-17)
+
+**`tinybendygrad/` IS ***BYTE-IDENTICAL*** TO `HEAD`. IT REVERTED ALL NINE FILES IT HAD EDITED.** REPORT AT
+`.agents/slop/reindex/REPORT.md`; SCRIPT AT `.agents/slop/reindex/reindex_ops.py`.
+
+- [x] **AND THE EDIT IS ***PROVEN*** -- `declared 75, upstream 75, NEW Ops.value == upstream: True,
+      mismatches: 0`, ALL THREE TABLES **75** ENTRIES **IN DECLARATION ORDER**, NUMBERS `1..75` ***NO GAP***,
+      **AND THE RENUMBERING IS ***DERIVED FROM THE FILE's OWN `type Op is Data:` BLOCK***, NOT TRANSCRIBED.**
+      ***IT ALSO RE-MEASURED THE "PROVEN STATE" RATHER THAN TRUSTING THE CALLER's, AND IT HOLDS.***
+- [x] **AND IT FOUND A ***SECOND HALF*** OF AN EDIT THE CALLER DESCRIBED AS ONE:** **`REMOVE_FROM_SINK_LIKE` IS
+      ***TWO*** DIFFERENT EDITS** -- **THE MEMBER LIST GAINS `AFTER`, AND ***THE ROOT MATCHER NARROWS TO
+      `[SINK]`***. **THE CALLER SAID "GROUP -> AFTER" AND GOT HALF THE EDIT.**
+- [ ] **AND IT ***CORRECTED THE CALLER's BRIEF*** ON THE TAG SHIFTS, ON ***THE VERY RULE THE CALLER INSISTED MUST
+      BE PROTECTED***: THE CALLER SAID `sym_table` LOSES **BOTH **11** AND **12** AND **10** TAGS SHIFT BY
+      **TWO**. ***IT LOSES ***ONLY **11***.*** **VERIFIED BY THE CALLER: `pm_clean_up_group_sink` ***SURVIVES
+      UPSTREAM*** (`symbolic.py:440`, `+`d AT `:472`), **AND THE PORT's `symbolic.bend:44` DOCUMENTS *"table
+      `pm_clean_up_group_sink` **2** of **2**"*** -- **SO DELETING IT WOULD MAKE **THE `AFTER` WARNING THE CALLER
+      ASKED FOR ***VACUOUS***.** MEASURED, NOT ARGUED.
+- [x] **AND IT HIT THE ***EXACT TRAP `spec.bend` NAMES ITS OWN GONE GUARDS FOR***, ***TWICE***: **A DESCENDING
+      RENAME REWRITES `sh_20`->`sh_19` AND THEN **CATCHES THAT NEW `sh_19`** AND SENDS IT TO `sh_18`,
+      ***COLLIDING WITH THE REAL `sh_18`***; **AND MAPPING `sh_19` AT ALL POINTS THE ARM AT THE WRONG RULE.**
+      FIXED BY **ONE SIMULTANEOUS PASS PLUS A ***REBUILT*** LADDER**. POST-CONDITIONS: **32** ENTRY POINTS,
+      **NO DUPLICATES**, **32** LADDER ARMS `case i: sh_i`, TABLE **32** ENTRIES, **`sh_19` = THE `AFTER` RULE.**
+- [x] **AND EVERY GATE IT COULD RUN, `WITHIN-LIMITS`: `tn_minimum` rc=1 **19 MB** · `opseven` rc=0 **1 167 MB**
+      15 s · `groupflip` rc=0 **1 227 MB** 10 s · `ops-core` rc=0 **663 MB** 5 s · `specshadow-oracle` rc=0 ·
+      **`substrate.py -n` HALF 2 `refs=41870 unresolved=0`**. `differ.py run`/`repro` **COULD NOT RUN** --
+      THE CORPUS CPYTHON LANE **WAS** DEAD WHEN IT STARTED.
+- [ ] **AND ***WHY IT DID NOT LAND*** IS THE MOST IMPORTANT PART OF THE REPORT, AND ***IT IS CORRECT***:
+      **(a) **FOUR ORACLES** (`ptx_render_census`, `fold-mvt*`, `fold-probe1`, `mm-survey`) **ARE ***ALREADY DEAD
+      AT `HEAD`***** BECAUSE `tinygrad/` **IS** THE **75**-MEMBER TREE -- **SO FIX BEFORE A LAND, OR THE
+      VERIFICATION SET IS MEANINGLESS.** (b) **`multi.bend`'s `t_rej_n`/`t_ops_n` ARE ***MEASUREMENTS***, AND
+      THEIR POST-DELETION VALUES NEED A `bend` RUN IT COULD NOT TAKE** -- ***AND A GUESSED TAG-SHIFT NUMBER IS
+      EXACTLY THE ***SILENT LIE*** THE CALLER's BRIEF FORBIDS.** (c) **FOUR `symbolic.bend` FIXTURES WHOSE ENTIRE
+      CLAIM IS *"TAGS 11 AND 12 DISAGREE"* -- WHICH IT HAD ***JUST PROVEN FALSE***.**
+- [ ] **AND THE LAND **NEEDS A WIDENED GRANT** COVERING `gates/opseven-gate.py`,
+      `gates/ptx_render_census-oracle.py` **AND THE FOUR `oracles/` FILES** -- ***OTHERWISE IT LANDS BROKEN**,
+      WHICH IS THE ONE OUTCOME WORSE THAN NOT LANDING.** **AND `GS_ALL`/`OP_ALL` WERE ***NAMED, NOT FIXED***:
+      THEY ARE **76** (OMIT `CONST`, PRE-EXISTING) AND WOULD GO TO **74** AGAINST UPSTREAM's **75**;
+      ***`dd_ops.all()` IS A THIRD COPY THAT GETS IT RIGHT.***
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
