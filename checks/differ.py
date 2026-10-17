@@ -396,6 +396,35 @@ def run(out, *args):
     reproducibility difference whose difference was "the second file is shorter". The temp is
     dot-named and inside the artifact dir, so the rename is same-directory (atomic) and no
     snapshot can see a temp a kill left behind.
+
+    THE `.err` THIS WRITES CARRIES A CEILING WHERE A COUNT BELONGS, AND THE FIX IS **NOT IN THIS
+    FILE**. MEASURED 2026-10-17 by AST over `.agents/slop/graphcmp.py` (the frozen oracle this
+    driver runs; `ORACLE_PIN` above pins only the two `.sh` files, not this one):
+
+        :2086-2087   `... after %d attempt(s) ...`  %  `(graph, verdict, tries, notes)`  -- `%d` IS `tries`
+        :2911-2912   `... after %d attempt(s) ...`  %  `(level, verdict, tries, notes)`  -- `%d` IS `tries`
+        :1964        `TRIES, BEND_TIMEOUT = 3, 60`
+        :2085,:2910  `break` on any verdict that is not `RETRY`
+
+    `emit_bend()` returns on `ANSWER`, breaks on anything else, and then formats **`tries`** into
+    a sentence that reads like an observation. So `emit bend allred: BROKE after 3 attempt(s)` with
+    **ONE** `bend attempt 1:` note under it is the expected shape whenever the FIRST attempt is not
+    a `RETRY`: the number is the loop's CEILING, never its count. It is true only when all `tries`
+    attempts ran. **AND THE SAME FUNCTION GETS IT RIGHT TEN LINES EARLIER** -- `:2077-2078` prints
+    `TIMED-OUT after {BEND_TIMEOUT}s on attempt {attempt}` and
+    `{tries - attempt} attempt(s) held back`, both derived from the attempt it is standing ON --
+    so one function carries two opposite conventions ten lines apart, and a reader of a `.err` has
+    no way to tell which one produced the sentence in front of them.
+
+    THE PATCH IS TWO FORMAT STRINGS AND IT IS NOT APPLIED HERE, FOR THE REASON THAT MATTERS:
+    `.agents/slop/graphcmp.py` is outside this unit's grant, and a `.slop/` file is inside a tree
+    other units are pruning, so the honest action is to NAME IT rather than to patch a file whose
+    next revision may not be mine. `%d attempt(s)` becomes `%d of %d attempt(s)` with
+    `(len(notes), tries)` in both tuples -- `len(notes)` is `attempt` on the exhaustion path and
+    `1` on the break path, so it is the count in every case where the message is printed at all.
+    NOTHING READS THE NUMBER: `checks/substrate-id.py`'s `--repro-files` counts `.err` FILES, and
+    `snap()` compares them byte-wise, so the mislabel moves no verdict here -- **which is exactly
+    why it survived, and the same reason a documented defect outlives the document that found it.**
     """
     tmp = D / f".tmp.{out}"
     with tmp.open("wb") as f, (D / f"{out}.err").open("wb") as err:

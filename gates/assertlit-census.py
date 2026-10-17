@@ -820,11 +820,37 @@ def subject_tokens():
     CPython spells -- and the REPORT names the holder, because "nameable" has to be checkable by a
     reader and not merely asserted by this file.
 
-    ITS LIMIT IS ALSO ITS HONESTY BOUNDARY. A dtype NAME such as `float32` is spelled in
-    `tinygrad/dtype.py` and is a dtype `.name`; `CONST` is spelled in `tinygrad/uop/ops.py` and is
-    an `Ops` member; but the token `f32` also occurs there and is not what
-    `_new_optim_param()[0].dtype.name` returns. So a `SOURCED-BY-SUBJECT` is a CANDIDATE
-    derivation and the census labels it that way in the header rather than promoting it.
+    ITS LIMIT IS ALSO ITS HONESTY BOUNDARY, AND **THE PREVIOUS REVISION OF THIS SENTENCE NAMED
+    THE WRONG TOKEN, WHICH IS THE DEFECT THIS PARAGRAPH NOW EXISTS TO RECORD.** It read "the token
+    `f32` also occurs there and is not what `_new_optim_param()[0].dtype.name` returns".
+    **THAT CALL RETURNS `f32`.** MEASURED 2026-10-17 in the repo's own interpreter:
+    `Optimizer([Tensor([1.0,2.0])], lr=0.1)._new_optim_param()[0].dtype.name` is `f32`, on the
+    `device=CPU` arm and on the `device=('CPU','METAL')` arm alike. So the sentence was FALSE, and
+    it was false in the direction that matters: a reader who believed it concluded that
+    `component_verdict()` needed an `f32` carve-out, and `component_verdict()` has none --
+    **THE SENTENCE WAS THE ONLY EVIDENCE FOR A BRANCH THAT WAS NEVER WRITTEN.** A false statement
+    in an instrument is not a documentation defect; it is a verdict defect, because the next
+    reader reasons from the prose and not from the code.
+
+    THE REAL BOUNDARY IS `float32`, WHICH IS SPELLED IN THE SUBJECT TREE AND IS NOT WHAT THAT
+    EXPRESSION RETURNS: `dtypes.float32.name` is `f32` (MEASURED, same interpreter). So
+    `component_verdict('float32', True)` is `SOURCED-BY-SUBJECT` and the derivation it names,
+    `dtypes.float32`, is the wrong one -- which is the whole reason a `SOURCED-BY-SUBJECT` is a
+    CANDIDATE derivation and the census labels it that way in the header rather than promoting it.
+    `component_verdict('f32', True)` is also `SOURCED-BY-SUBJECT` and there it is CORRECT, because
+    `f32` is spelled in `tinygrad/dtype.py` AND is the `.name` the call returns. **A TEST THAT CAN
+    BE RIGHT AND WRONG ON DIFFERENT TOKENS IS A CANDIDATE TEST, NOT A BROKEN ONE**, and the old
+    sentence mistook "this test is a candidate" for "this test is wrong here".
+
+    AND THE ROW THIS SENTENCE WAS READ ALONG WITH IS `UNSOURCED` FOR A DIFFERENT REASON:
+    `gates/op_graph_census-oracle.py` used to print the literal `"Nzs"`, and `Nzs` occurs **0**
+    times in `tinygrad/`, so `component_verdict('Nzs', False)` is `UNSOURCED` -- on the TOKEN, not
+    on any dtype. The oracle now prints `Tensor.zeros.__name__`, and its census row reads `DERIVED`.
+    So the verdict never moved and the reason never applied, which is the honest summary of this
+    paragraph: **THE SENTENCE WAS FALSE, IT WAS READ BY NOBODY, AND IT WOULD HAVE CHANGED WHAT A
+    READER BELIEVED THE CODE DOES.** A gate that catches claims of this shape is
+    `gates/falseclaim-census-gate.py`; it reports this very row as `UNASKABLE(ERR:NameError)`
+    because `_new_optim_param()` needs a receiver the sentence does not name.
     """
     out = {}
     word = re.compile(r"\b([A-Za-z_][A-Za-z0-9_]*)\b")

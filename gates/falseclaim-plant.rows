@@ -1,0 +1,31 @@
+# falseclaim-census-gate -- THE PLANT'S DIRECTIONS, AS DATA.
+#
+# WHY THEY ARE NOT PYTHON SOURCE. `gates/falseclaim-census-gate.py` is in its own census's
+# population (`gates/gates-pop.py:gate_homes()` answers `checks`, `gates`), so a case whose
+# PROSE is "`2` is not what `1+1` returns" -- deliberately FALSE, because it is the shape of
+# Finding 1 -- made the gate read its own fixture and report `FALSE` on itself. The two escapes
+# were both worse than the fix: a skip list (a population named by hand, the defect this file's
+# own header cites) or rewording the case until it stopped being false (a plant that cannot reach
+# the row it exists to reach).
+#
+# SO THE FIXTURES ARE ROWS AND THE SOURCE IS EMPTY OF THEM. The census's population is instrument
+# SOURCES; the plant's inputs are not prose in any instrument, so there is nothing to exclude and
+# no exclusion to rot. This file is the plant's own DECLARATION, which is doctrine 1(a) in the
+# only shape that shape is allowed to take.
+#
+# COLUMNS, TAB-SEPARATED: kind, label, prose, form, value, call, want, want-why.
+#   kind `case`  a claim the SHIPPED extract/run/grade must grade to `want`.
+#   kind `line`  a claim whose LINE NUMBER is the thing under test (plant case H).
+# `want` and `want-why` are joined with `|` before comparison; `-` means "no row expected".
+# `\n` and `\t` are the only escapes, and `\n` is how a multi-line docstring survives one row.
+# NO EXPECTED COUNT APPEARS HERE: `--plant` prints what it measured.
+kind	label	prose	form	value	call	want	want-why
+case	A a true claim agrees	`1+1` returns `2`	RETURNS	2	1+1	AGREE	-
+case	B THE FINDING-1 SHAPE: a false NEGATION	`2` is not what `1+1` returns	NEG-RETURNS	2	1+1	FALSE	-
+case	C a true NEGATION agrees	`3` is not what `1+1` returns	NEG-RETURNS	3	1+1	AGREE	-
+case	D a call that RAISES is UNASKABLE	`1//0` returns `0`	RETURNS	0	1//0	UNASKABLE	ERR:ZeroDivisionError
+case	F a call that TIMES OUT is UNASKABLE	`__import__('time').sleep(60)` returns `0`	RETURNS	0	__import__('time').sleep(60)	UNASKABLE	TIMEOUT
+case	J a BOOL result is not an INT claim	`1` is not returned by `1 == 1`	NEG-RETURNED-BY	1	1 == 1	AGREE	-
+case	E a call that EXITS THE CHILD costs only its own row	`__import__('os')._exit(3)` returns `0`	RETURNS	0	__import__('os')._exit(3)	UNASKABLE	NO-ROW:
+case	G A CALL THAT IS NOT AN EXPRESSION IS ADMITTED OUT	`/bin/sh` returns `-c`	RETURNS	-c	/bin/sh	-	-
+line	H a claim is reported at ITS line, not the docstring's first line	"""HEADER.\n  a leading sentence that is not a claim at all.\n\n  but the token `2` also occurs there and is not what\n\n  `1+1` returns"""\nX = 1	LINE	4	-	4	-

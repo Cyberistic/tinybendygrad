@@ -710,10 +710,9 @@ def clone_paths(root=ROOT, tracked=None):
     THE SUBJECT IS A PATH, NOT A DIRECTORY, and that is the whole finding. `bin/` is NOT ignored
     while `bin/bend` IS (`.gitignore:5`), and `bin/bend` is read by 10 of the 209 instruments while
     `bin/` is read by 0 -- a directory-only census reports the subject that matters as clean.
-
-    THE SUBJECT IS A PATH, NOT A DIRECTORY, and that is the whole finding. `bin/` is NOT ignored
-    while `bin/bend` IS (`.gitignore:5`), and `bin/bend` is read by 10 of the 209 instruments while
-    `bin/` is read by 0 -- a directory-only census reports the subject that matters as clean.
+    (This paragraph was in this docstring TWICE, verbatim, before 2026-10-17: a duplicated
+    paragraph is a second witness with no second measurement behind it, and `gates/docnum-
+    claim-gate.py`'s whole subject is a number copied forward. One copy, here.)
 
     `..` IS DROPPED FROM EVERY RESOLVED VALUE, AND HERE IS WHAT THAT COSTS. `resolve()` renders
     `parents[n]` as `"../"*n`, which is OFF BY ONE for an instrument at depth 1: `checks/bounded.py`
@@ -819,9 +818,35 @@ def clone_report(root=ROOT):
     n_py = len(glob.glob(os.path.join(root, "checks", "*.py"))) + \
            len(glob.glob(os.path.join(root, "gates", "*.py")))
     lanes = shell_lanes(root)
-    print(f"\nDENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites, from "
-          f"{n_py} `.py` instruments by AST\n            and {len(lanes)} tracked shell lanes by "
-          f"shebang, out of {len(tracked_files(root))} files in HEAD.")
+    # THE DENOMINATOR IS RENAMED, AND THE MEASUREMENT IS WHY. The old line read
+    #   "DENOMINATOR: {len(holes)} on-disk paths named by {len(sites(root))} call sites"
+    # and `sites()` returns ONE ROW PER CALL SITE, so the word `DENOMINATOR` sat over an
+    # OCCURRENCE COUNT while the number beside it was a count of DISTINCT PATHS. **MEASURED
+    # 2026-10-17: 11 060 call sites over 6 643 distinct values, of which 5 854 carry no `/` at
+    # all** -- `=`, `,`, `store_true`, `PYTHON`, `echo` -- and 6 032 name no file on this tree.
+    # So 88.6% of the printed denominator was bare tokens, and the ratio 213/11 060 read as
+    # COVERAGE ("2% of our named paths are reproducible") when it is not a ratio of like units.
+    # **A DENOMINATOR THAT DOES NOT MATCH ITS NUMERATOR's SUBJECT IS THE `SPEC=2` CLASS ONE LEVEL
+    # DOWN**, and no verdict moved -- `clone_paths()` intersects with `os.path.exists` before
+    # anything is graded -- which is exactly why it survived: the only symptom was a printed line.
+    #
+    # WHAT IT COUNTS NOW, AND EACH NUMBER NAMES ITS UNIT: `paths` is the graded population,
+    # `values` is the DISTINCT set `sites()` named (the only denominator in the same unit as
+    # `paths`), and `sites` is the occurrence count, labelled OCCURRENCES because that is what it
+    # is. **THE CONSUMERS ARE ZERO** -- MEASURED by grep, not assumed: `grep -rn DENOMINATOR` over
+    # `*.py *.sh *.mjs *.md *.rows` returns this file's own two mentions and nothing that reads
+    # this line, and `clone_report()`'s stdout is parsed by no instrument in the tree. So the
+    # rename costs one line and no consumer edit; had there been a consumer, the count is the
+    # number a reader would need and not the number this file could supply.
+    named = sites(root)
+    values = {v for _, _, v in named}
+    bare = sum(1 for v in values if "/" not in v.strip("/"))
+    print(f"\nDENOMINATOR: {len(holes)} on-disk PATHS, graded, from {len(values)} distinct NAMED "
+          f"VALUES\n            over {len(named)} call-site OCCURRENCES; {bare} of those values are BARE "
+          f"TOKENS with no `/`, so\n            the occurrence count is NOT a path count and "
+          f"must not be read as coverage. From {n_py}\n            `.py` instruments by AST and "
+          f"{len(lanes)} tracked shell lanes by shebang, out of "
+          f"{len(tracked_files(root))} files in HEAD.")
     print("RESIDUAL: " + residual(root))
     print(f"THE COSTLY LINE: {len(handmade)} read path(s) have no writer in ANY walked form: "
           f"{', '.join(h['path'] for h in handmade) or 'none'}")
