@@ -1,0 +1,5 @@
+SELFCHECK REFUSED -- nothing written:
+  pos1 anchored path regex: no POSITIVE regex-anchor-set site matching checks/repro-paths.py
+real 8.97
+user 7.39
+sys 0.50

@@ -1,0 +1,18 @@
+POPULATION : 2440 committed .md/.py files (git ls-tree -r HEAD)
+LANE A     : 70  positional (path, int, str) AST tuple literals
+LANE B     : 3501  `path:NNN` in prose -- EXISTENCE claims, no needle
+LANE C     : 3409  path + quoted content on one line
+LANE D     : 326  path + `N lines|rows|files|bytes`
+LANE E     : 27666  mentions -- COUNTED, NEVER A VERDICT
+UNCLASSIFIED: 59094  basename/bare-filename=40743, basename/position=6305, directory name used as a citation (the first check's trap)=11916, name-locator (resolvable by parser, not by this census)=130
+VERDICT A   : PASS=26 FAIL=11 REFUSED=33
+VERDICT B   : PASS=3237 FAIL=31 REFUSED=233
+VERDICT C   : PASS=312 FAIL=164 REFUSED=2933
+VERDICT D   : PASS=46 FAIL=66 REFUSED=214
+REFUSALS BY KIND (the kinds a FAIL would have been): cell-label=2278, fragment=158, code=138, short=81, reference=79, digest=76, command=31, exit-status=19, output=11, delta=10, expired-anchor=4
+TOTAL       : PASS=3621 FAIL=272 REFUSED=3413
+LOWER-BOUND : 3237 claims PASS on EXISTENCE and check nothing else -- they CANNOT FAIL
+ANCHORS     : 29 of 326 numeric claims carry a date; the other 297 assert present tense with nothing to expire them
+VERDICT: FAIL (exit 1)
+SCOPE     : 2700 on-disk .md/.py; 260 are NOT in HEAD (ignored or intent-to-add) and are NOT censused
+ROWS      : 34972 rows -> .agents/slop/citesbacklog/census.rows

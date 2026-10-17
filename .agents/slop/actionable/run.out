@@ -1,0 +1,54 @@
+repro-paths: 562 committed reports name 3586 distinct paths (+2 written as patterns)
+  resolve   : 3026 of 3586
+  DANGLING  : 560  (45 ACTIONABLE + 515 historical)
+    ACTIONABLE .agents/slop/abi/abi.json   <- checks/jsfix_gate.py
+    ACTIONABLE .agents/slop/ag-emit.bin   <- checks/unrunnable-recipes.py
+    ACTIONABLE .agents/slop/bend_e2e.py   <- gates/ops_bend_exec-e2e.py
+    ACTIONABLE .agents/slop/blob-intern-gate.sh   <- checks/repro-paths.py
+    ACTIONABLE .agents/slop/cstyle-live/run-all.log   <- checks/run-f64.sh
+    ACTIONABLE .agents/slop/dk-mutate.py   <- checks/unrunnable-recipes.py, gates/datasets-mutate.py
+    ACTIONABLE .agents/slop/dsl_gen.py   <- gates/amd_dsl_census-gate.py
+    ACTIONABLE .agents/slop/dst-oracle.py   <- gates/datasets-oracle.py
+    ACTIONABLE .agents/slop/eq/lane.py   <- checks/nl-gate.py, checks/rn-gate.py
+    ACTIONABLE .agents/slop/eq/nl-gate-noguard.py   <- checks/nl-gate-noguard.py
+    ACTIONABLE .agents/slop/guardfix/probe-c.bend   <- checks/repro-paths.py, checks/substrate.py
+    ACTIONABLE .agents/slop/jsfp8/drive.mjs   <- checks/gate.py
+    ACTIONABLE .agents/slop/li/li-control.sh   <- checks/repro-paths.py
+    ACTIONABLE .agents/slop/marker-audit.py   <- checks/marker-audit.py
+    ACTIONABLE .agents/slop/mathlib/const_probe.bend   <- checks/repro-paths.py
+    ACTIONABLE .agents/slop/mm-mutate.py   <- checks/no-strays.py
+    ACTIONABLE .agents/slop/ops-gate.sh   <- checks/repro-paths.py
+    ACTIONABLE .agents/slop/ops_bend-milestone-expected.txt   <- checks/e2e.sh
+    ACTIONABLE .agents/slop/probe/mutate.py   <- gates/worker-mutate.py
+    ACTIONABLE .agents/slop/ptx-s3-oracle.py   <- gates/ptx_render_census-gen.py
+    ACTIONABLE .agents/slop/qc_oracle.py   <- gates/qcom-oracle.py
+    ACTIONABLE .agents/slop/quiesce/snapshot.py   <- checks/differ.py
+    ACTIONABLE .agents/slop/rd-truth.py   <- gates/onnx_census-gate.py, gates/rand_census-gate.py, gates/rand_census-oracle.py, gates/state_census-gate.py
+    ACTIONABLE .agents/slop/schedule-bodies/BEFORE-rows.txt   <- checks/oracle-txt-census.py
+    ACTIONABLE .agents/slop/schedule-bodies/sb-oracle.py   <- checks/sb-gate.sh
+    ACTIONABLE .agents/slop/shlscope/gate.sh   <- checks/gate.sh
+    ACTIONABLE .agents/slop/shlscope/gen.py   <- checks/gate.sh
+    ACTIONABLE .agents/slop/tcptx-oracle.py   <- gates/tc_ptx_render-oracle.py
+    ACTIONABLE .agents/slop/triage/allfiles.txt   <- checks/demo.sh
+    ACTIONABLE .agents/slop/vz/viz_oracle.py   <- checks/vz_gate.py
+    ACTIONABLE .agents/slop/wallrule/wallcheck.sh   <- checks/repro-paths.py
+    ACTIONABLE .agents/slop/xd1/render-gate-oracle.py   <- checks/rn-gate.py
+    ACTIONABLE checks/abi_gate.py.fixed   <- gates/gates-pop.py
+    ACTIONABLE checks/bad.py   <- gates/gates-pop.py
+    ACTIONABLE checks/drive.mjs   <- gates/js-lane-census.py
+    ACTIONABLE checks/driver.py   <- gates/gates-pop.py
+    ACTIONABLE checks/first.py   <- gates/gates-pop.py
+    ACTIONABLE checks/gate.out   <- checks/gate_norm.py
+    ACTIONABLE checks/good.py   <- gates/gates-pop.py
+    ACTIONABLE checks/isolate.py   <- checks/hermetic-census.py
+    ACTIONABLE checks/nl-port-post.txt   <- checks/nl-gate.py
+    ACTIONABLE checks/rn-orc.txt   <- checks/rn-gate.py
+    ACTIONABLE checks/rn-port.txt   <- checks/rn-gate.py
+    ACTIONABLE gates/artifacts/cstyle-live/port.txt   <- checks/repair-dupes.py
+    ACTIONABLE gates/tn_graph_census-gate.py.bak   <- checks/repro-paths.py, checks/unrunnable-recipes.py, gates/oracle-census-gate.py
+    historical: 515 named only by finished units' reports, records not repros
+      e.g. .agents/slop/CLAIMS.txt
+  NOT CLEAN -- 45 ACTIONABLE. A live instrument names a path that no longer
+  exists, so a reader following it is misdirected. The 515 historical
+  rows are records of pruned tools and do not fail this gate.
+  Re-run with --mark to record the loss where a reader meets it.

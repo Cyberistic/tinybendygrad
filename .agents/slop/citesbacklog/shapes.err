@@ -1,0 +1,33 @@
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:428: SyntaxWarning: invalid escape sequence '\d'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:83: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:10: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:10: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:58: SyntaxWarning: invalid escape sequence '\.'
+<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+<unknown>:299: SyntaxWarning: invalid escape sequence '\`'
+Traceback (most recent call last):
+  File "/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/citesbacklog/shapes.py", line 84, in <module>
+    if c["lane"] == "D" and (c, v) not in lines:
+                            ^^^^^^^^^^^^^^^^^^^
+TypeError: unhashable type: 'dict'
+       17.72 real        16.63 user         0.41 sys
+           307527680  maximum resident set size
+                   0  average shared memory size
+                   0  average unshared data size
+                   0  average unshared stack size
+               63411  page reclaims
+                 347  page faults
+                   0  swaps
+                   0  block input operations
+                   0  block output operations
+                   0  messages sent
+                   0  messages received
+                   0  signals received
+                3738  voluntary context switches
+                5730  involuntary context switches
+        243076240795  instructions retired
+         56127077763  cycles elapsed
+           296731272  peak memory footprint

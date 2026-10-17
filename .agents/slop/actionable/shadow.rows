@@ -1,0 +1,463 @@
+=== PATH .agents/slop/abi/abi.json
+  CITER checks/jsfix_gate.py
+    L571   print("  `abi.json` states ABI-6 as 'both lanes answer 0 where tinygrad's helpers")
+=== PATH .agents/slop/ag-emit.bin
+  CITER checks/unrunnable-recipes.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/bend_e2e.py
+  CITER gates/ops_bend_exec-e2e.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/blob-intern-gate.sh
+  CITER checks/repro-paths.py
+    L64    REF = re.compile(r"(?<![\w/.])((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
+=== PATH .agents/slop/cstyle-live/run-all.log
+  CITER checks/run-f64.sh
+    L104   say "   quoted cstyle-live/run-all.log:5  sha256 $(grep -m1 'live    cstyle.bend' "$ROOT/.agents/slop/cstyle-live/run-all.log" | awk '{print $NF}')"
+=== PATH .agents/slop/dk-mutate.py
+  CITER checks/unrunnable-recipes.py
+    (no live code line names the basename or its directory)
+  CITER gates/datasets-mutate.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/dsl_gen.py
+  CITER gates/amd_dsl_census-gate.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/dst-oracle.py
+  CITER gates/datasets-oracle.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/eq/lane.py
+  CITER checks/nl-gate.py
+    L488   "zero on this lane is a REQUEST FOR A RETRY through `.agents/slop/eq/lane.py`, never a "
+  CITER checks/rn-gate.py
+    L92    _SWEEP = "  (swept by 371cc64c9; recoverable from git at 371cc64c9^:.agents/slop/eq/%s.py)"
+    L121   """THE STRUCTURAL READER, IMPORTED from `.agents/slop/eq/eq-census2.py` -- the same one the re-census
+    L484   "through `.agents/slop/eq/lane.py`, never a result.")
+=== PATH .agents/slop/eq/nl-gate-noguard.py
+  CITER checks/nl-gate-noguard.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/guardfix/probe-c.bend
+  CITER checks/repro-paths.py
+    (no live code line names the basename or its directory)
+  CITER checks/substrate.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/jsfp8/drive.mjs
+  CITER checks/gate.py
+    L72    for _p in (JS_LANE, HERE / "drive.mjs"):
+    L75    + ("  (this gate's driver; its last home was .agents/slop/jsfp8/drive.mjs, moved by"
+    L77    " 371cc64c9^:.agents/slop/jsfp8/drive.mjs.  Restoring it is not this file's call.)"
+    L78    if _p.name == "drive.mjs" else "")
+    L202   p = subprocess.run(["node", str(HERE / "drive.mjs"), str(tree), str(work)],
+    L218   settle(FAIL, "drive.mjs altered dtype.js by more than its declared APPEND")
+    L225   settle(FAIL, f"drive.mjs registered {len(reg)} of dtype.js's 10 seams: {reg}")
+=== PATH .agents/slop/li/li-control.sh
+  CITER checks/repro-paths.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/marker-audit.py
+  CITER checks/marker-audit.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/mathlib/const_probe.bend
+  CITER checks/repro-paths.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/mm-mutate.py
+  CITER checks/no-strays.py
+    L212   print("          -> it is CITED, so MOVE it under .agents/slop/ and keep the "
+    L225   f"{' or '.join(SOURCE_TREES)} -- a run's output belongs under .agents/slop/, "
+=== PATH .agents/slop/ops-gate.sh
+  CITER checks/repro-paths.py
+    L64    REF = re.compile(r"(?<![\w/.])((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
+=== PATH .agents/slop/ops_bend-milestone-expected.txt
+  CITER checks/e2e.sh
+    L55    if ./bin/bend .agents/slop/e2e_mm.bend > "$RUN/e2e-mm-bend.out" 2> "$RUN/e2e-mm-bend.err"; then
+    L102   "$PY" .agents/slop/e2e_mm.py
+    L113   set +e; node .agents/slop/e2e_mm_run.mjs; nsrc=$?; set -e
+    L126   "$PY" .agents/slop/e2e_mm_gate.py "$RUN/e2e-mm-bend.out" > "$RUN/e2e-mm-gate.out" 2>&1
+    L161   ./.agents/slop/opsbend-milestone.sh > "$RUN/e2e-opsbend.out" 2>&1
+    L209   zsh .agents/slop/e2e_port/run-port-mm.sh > "$RUN/e2e-port-mm.out" 2>&1
+    L248   zsh .agents/slop/f64/run-f64.sh > "$RUN/e2e-f64.out" 2>&1
+=== PATH .agents/slop/probe/mutate.py
+  CITER gates/worker-mutate.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/ptx-s3-oracle.py
+  CITER gates/ptx_render_census-gen.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/qc_oracle.py
+  CITER gates/qcom-oracle.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/quiesce/snapshot.py
+  CITER checks/differ.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/rd-truth.py
+  CITER gates/onnx_census-gate.py
+    (no live code line names the basename or its directory)
+  CITER gates/rand_census-gate.py
+    L353   f"because `.agents/slop/rd-truth.py` -- the only oracle this layer ever had -- is gone")
+  CITER gates/rand_census-oracle.py
+    (no live code line names the basename or its directory)
+  CITER gates/state_census-gate.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/schedule-bodies/BEFORE-rows.txt
+  CITER checks/oracle-txt-census.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/schedule-bodies/sb-oracle.py
+  CITER checks/sb-gate.sh
+    L48    D=.agents/slop/schedule-bodies
+    L56    ORACLE=$D/sb-oracle.py
+=== PATH .agents/slop/shlscope/gate.sh
+  CITER checks/gate.sh
+    L22    SL=.agents/slop/shlscope
+=== PATH .agents/slop/shlscope/gen.py
+  CITER checks/gate.sh
+    L22    SL=.agents/slop/shlscope
+    L37    [ -f "$SL/gen.py" ] || { echo "== REFUSED, NOT A VERDICT: the generator is absent: $SL/gen.py" >&2; exit 3; }
+    L41    python3 $SL/gen.py > "$OUT/all.txt"
+    L42    python3 $SL/gen.py --emit-bend > "$SL/gate.bend"
+=== PATH .agents/slop/tcptx-oracle.py
+  CITER gates/tc_ptx_render-oracle.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/triage/allfiles.txt
+  CITER checks/demo.sh
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/vz/viz_oracle.py
+  CITER checks/vz_gate.py
+    L60    rc, py, err = run([sys.executable, os.path.join(HERE, "viz_oracle.py")])
+=== PATH .agents/slop/wallrule/wallcheck.sh
+  CITER checks/repro-paths.py
+    (no live code line names the basename or its directory)
+=== PATH .agents/slop/xd1/render-gate-oracle.py
+  CITER checks/rn-gate.py
+    L74    ORACLE = [".agents/slop/xd1/render-gate-oracle.py", "--gate"]
+    L469   f"there (`.agents/slop/xd1/` is gone; recoverable from git if it was ever committed). "
+=== PATH checks/abi_gate.py.fixed
+  CITER gates/gates-pop.py
+    L1032  f"each reports on\n               a tree that is not this one. `checks/census.py`'s "
+    L1143  "checks/census.py": "457b81619^",
+    L1144  "checks/hermetic-census.py": "457b81619^",
+    L1145  "checks/abi_gate.py": "b3aa1b0f1^",
+    L1154  out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+    L1159  "checks/census.py":
+    L1161  "checks/hermetic-census.py":
+    L1163  "checks/abi_gate.py":
+    L1240  checks = []
+    L1243  r = Path(td); _tree(r, "checks")
+    L1246  (r / "checks" / "substrate-check.sh").write_text(
+    L1248  'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
+    L1249  (r / "checks" / "mod.py").write_text("X = 1\n")
+    L1256  ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+    L1257  checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+    L1284  checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
+    L1291  r = Path(td); _tree(r, "checks")
+    L1292  (r / "checks" / "bad.py").write_text(BAD_ROOT)
+    L1293  (r / "checks" / "good.py").write_text(GOOD_ROOT)
+    L1294  (r / "checks" / "wrong-shallow.py").write_text(
+    L1299  bad, good, shallow = (rows["checks/bad.py"], rows["checks/good.py"],
+    L1300  rows["checks/wrong-shallow.py"])
+    L1306  checks.append(("1: an off-repo root is RED in BOTH directions (n too deep, n too "
+    L1313  r = Path(td); _tree(r, "checks", "gates")
+    L1318  (r / "checks" / "driver.py").write_text("def drive(): pass\n")
+    L1322  out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
+    L1323  and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
+    L1332  checks.append(("2: a gate this instrument does NOT notice is EXCLUDED and COUNTED",
+    L1339  checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
+    L1348  r = Path(td); _tree(r, "checks")
+    L1349  (r / "checks" / "first.py").write_text(GOOD_ROOT)
+    L1358  write_ledger([("checks/first.py", "py-main", "x", True, True),
+    L1359  ("checks/home-witness.py", "py-main", "x", True, True)], syn)
+    L1370  ok4 = (rc_new == 1 and "NEW  checks/undeclared.py" in said
+    L1372  checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
+    L1373  ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
+    L1385  r = Path(td); _tree(r, "checks")
+    L1390  fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") == "on-root+assert"
+    L1392  checks.append(("5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, "
+    L1410  r = Path(td); _tree(r, "checks")
+    L1411  (r / "checks" / "documented.py").write_text(LIT_PY)
+    L1412  (r / "checks" / "documented.sh").write_text(LIT_SH)
+    L1413  ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
+    L1414  and root_facts(r / "checks" / "documented.sh", r)[2])
+    L1415  checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
+    L1428  checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+    L1449  r = Path(td); _tree(r, "checks", "gates")
+    L1450  (r / "checks" / "nan.mjs").write_text(
+    L1452  (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+    L1455  (r / "checks" / "expected.rows").write_text(
+    L1459  mjs_ok = "checks/nan.mjs" in got
+    L1460  shim_ok = "checks/shim" in got
+    L1462  rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+    L1474  checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+    L1483  "spot is the one nobody\nelse checks")
+    L1484  for name, ok, got in checks:
+    L1487  print(f"PLANTS: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for c in checks if c[1])}/{len(checks)})")
+    L1512  epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
+=== PATH checks/bad.py
+  CITER gates/gates-pop.py
+    L1032  f"each reports on\n               a tree that is not this one. `checks/census.py`'s "
+    L1143  "checks/census.py": "457b81619^",
+    L1144  "checks/hermetic-census.py": "457b81619^",
+    L1145  "checks/abi_gate.py": "b3aa1b0f1^",
+    L1154  out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+    L1159  "checks/census.py":
+    L1161  "checks/hermetic-census.py":
+    L1163  "checks/abi_gate.py":
+    L1240  checks = []
+    L1243  r = Path(td); _tree(r, "checks")
+    L1246  (r / "checks" / "substrate-check.sh").write_text(
+    L1248  'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
+    L1249  (r / "checks" / "mod.py").write_text("X = 1\n")
+    L1256  ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+    L1257  checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+    L1284  checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
+    L1291  r = Path(td); _tree(r, "checks")
+    L1292  (r / "checks" / "bad.py").write_text(BAD_ROOT)
+    L1293  (r / "checks" / "good.py").write_text(GOOD_ROOT)
+    L1294  (r / "checks" / "wrong-shallow.py").write_text(
+    L1299  bad, good, shallow = (rows["checks/bad.py"], rows["checks/good.py"],
+    L1300  rows["checks/wrong-shallow.py"])
+    L1306  checks.append(("1: an off-repo root is RED in BOTH directions (n too deep, n too "
+    L1313  r = Path(td); _tree(r, "checks", "gates")
+    L1318  (r / "checks" / "driver.py").write_text("def drive(): pass\n")
+    L1322  out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
+    L1323  and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
+    L1332  checks.append(("2: a gate this instrument does NOT notice is EXCLUDED and COUNTED",
+    L1339  checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
+    L1348  r = Path(td); _tree(r, "checks")
+    L1349  (r / "checks" / "first.py").write_text(GOOD_ROOT)
+    L1358  write_ledger([("checks/first.py", "py-main", "x", True, True),
+    L1359  ("checks/home-witness.py", "py-main", "x", True, True)], syn)
+    L1370  ok4 = (rc_new == 1 and "NEW  checks/undeclared.py" in said
+    L1372  checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
+    L1373  ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
+    L1385  r = Path(td); _tree(r, "checks")
+    L1390  fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") == "on-root+assert"
+    L1392  checks.append(("5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, "
+    L1410  r = Path(td); _tree(r, "checks")
+    L1411  (r / "checks" / "documented.py").write_text(LIT_PY)
+    L1412  (r / "checks" / "documented.sh").write_text(LIT_SH)
+    L1413  ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
+    L1414  and root_facts(r / "checks" / "documented.sh", r)[2])
+    L1415  checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
+    L1428  checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+    L1449  r = Path(td); _tree(r, "checks", "gates")
+    L1450  (r / "checks" / "nan.mjs").write_text(
+    L1452  (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+    L1455  (r / "checks" / "expected.rows").write_text(
+    L1459  mjs_ok = "checks/nan.mjs" in got
+    L1460  shim_ok = "checks/shim" in got
+    L1462  rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+    L1474  checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+    L1483  "spot is the one nobody\nelse checks")
+    L1484  for name, ok, got in checks:
+    L1487  print(f"PLANTS: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for c in checks if c[1])}/{len(checks)})")
+    L1512  epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
+=== PATH checks/drive.mjs
+  CITER gates/js-lane-census.py
+    L292   // of one masked by the other.  `checks/abi_gate.py` cannot see either: its three fp16 rows
+=== PATH checks/driver.py
+  CITER gates/gates-pop.py
+    L1032  f"each reports on\n               a tree that is not this one. `checks/census.py`'s "
+    L1143  "checks/census.py": "457b81619^",
+    L1144  "checks/hermetic-census.py": "457b81619^",
+    L1145  "checks/abi_gate.py": "b3aa1b0f1^",
+    L1154  out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+    L1159  "checks/census.py":
+    L1161  "checks/hermetic-census.py":
+    L1163  "checks/abi_gate.py":
+    L1240  checks = []
+    L1243  r = Path(td); _tree(r, "checks")
+    L1246  (r / "checks" / "substrate-check.sh").write_text(
+    L1248  'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
+    L1249  (r / "checks" / "mod.py").write_text("X = 1\n")
+    L1256  ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+    L1257  checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+    L1284  checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
+    L1291  r = Path(td); _tree(r, "checks")
+    L1292  (r / "checks" / "bad.py").write_text(BAD_ROOT)
+    L1293  (r / "checks" / "good.py").write_text(GOOD_ROOT)
+    L1294  (r / "checks" / "wrong-shallow.py").write_text(
+    L1299  bad, good, shallow = (rows["checks/bad.py"], rows["checks/good.py"],
+    L1300  rows["checks/wrong-shallow.py"])
+    L1306  checks.append(("1: an off-repo root is RED in BOTH directions (n too deep, n too "
+    L1313  r = Path(td); _tree(r, "checks", "gates")
+    L1318  (r / "checks" / "driver.py").write_text("def drive(): pass\n")
+    L1322  out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
+    L1323  and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
+    L1332  checks.append(("2: a gate this instrument does NOT notice is EXCLUDED and COUNTED",
+    L1339  checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
+    L1348  r = Path(td); _tree(r, "checks")
+    L1349  (r / "checks" / "first.py").write_text(GOOD_ROOT)
+    L1358  write_ledger([("checks/first.py", "py-main", "x", True, True),
+    L1359  ("checks/home-witness.py", "py-main", "x", True, True)], syn)
+    L1370  ok4 = (rc_new == 1 and "NEW  checks/undeclared.py" in said
+    L1372  checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
+    L1373  ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
+    L1385  r = Path(td); _tree(r, "checks")
+    L1390  fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") == "on-root+assert"
+    L1392  checks.append(("5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, "
+    L1410  r = Path(td); _tree(r, "checks")
+    L1411  (r / "checks" / "documented.py").write_text(LIT_PY)
+    L1412  (r / "checks" / "documented.sh").write_text(LIT_SH)
+    L1413  ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
+    L1414  and root_facts(r / "checks" / "documented.sh", r)[2])
+    L1415  checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
+    L1428  checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+    L1449  r = Path(td); _tree(r, "checks", "gates")
+    L1450  (r / "checks" / "nan.mjs").write_text(
+    L1452  (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+    L1455  (r / "checks" / "expected.rows").write_text(
+    L1459  mjs_ok = "checks/nan.mjs" in got
+    L1460  shim_ok = "checks/shim" in got
+    L1462  rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+    L1474  checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+    L1483  "spot is the one nobody\nelse checks")
+    L1484  for name, ok, got in checks:
+    L1487  print(f"PLANTS: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for c in checks if c[1])}/{len(checks)})")
+    L1512  epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
+=== PATH checks/first.py
+  CITER gates/gates-pop.py
+    L1032  f"each reports on\n               a tree that is not this one. `checks/census.py`'s "
+    L1143  "checks/census.py": "457b81619^",
+    L1144  "checks/hermetic-census.py": "457b81619^",
+    L1145  "checks/abi_gate.py": "b3aa1b0f1^",
+    L1154  out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+    L1159  "checks/census.py":
+    L1161  "checks/hermetic-census.py":
+    L1163  "checks/abi_gate.py":
+    L1240  checks = []
+    L1243  r = Path(td); _tree(r, "checks")
+    L1246  (r / "checks" / "substrate-check.sh").write_text(
+    L1248  'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
+    L1249  (r / "checks" / "mod.py").write_text("X = 1\n")
+    L1256  ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+    L1257  checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+    L1284  checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
+    L1291  r = Path(td); _tree(r, "checks")
+    L1292  (r / "checks" / "bad.py").write_text(BAD_ROOT)
+    L1293  (r / "checks" / "good.py").write_text(GOOD_ROOT)
+    L1294  (r / "checks" / "wrong-shallow.py").write_text(
+    L1299  bad, good, shallow = (rows["checks/bad.py"], rows["checks/good.py"],
+    L1300  rows["checks/wrong-shallow.py"])
+    L1306  checks.append(("1: an off-repo root is RED in BOTH directions (n too deep, n too "
+    L1313  r = Path(td); _tree(r, "checks", "gates")
+    L1318  (r / "checks" / "driver.py").write_text("def drive(): pass\n")
+    L1322  out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
+    L1323  and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
+    L1332  checks.append(("2: a gate this instrument does NOT notice is EXCLUDED and COUNTED",
+    L1339  checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
+    L1348  r = Path(td); _tree(r, "checks")
+    L1349  (r / "checks" / "first.py").write_text(GOOD_ROOT)
+    L1358  write_ledger([("checks/first.py", "py-main", "x", True, True),
+    L1359  ("checks/home-witness.py", "py-main", "x", True, True)], syn)
+    L1370  ok4 = (rc_new == 1 and "NEW  checks/undeclared.py" in said
+    L1372  checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
+    L1373  ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
+    L1385  r = Path(td); _tree(r, "checks")
+    L1390  fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") == "on-root+assert"
+    L1392  checks.append(("5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, "
+    L1410  r = Path(td); _tree(r, "checks")
+    L1411  (r / "checks" / "documented.py").write_text(LIT_PY)
+    L1412  (r / "checks" / "documented.sh").write_text(LIT_SH)
+    L1413  ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
+    L1414  and root_facts(r / "checks" / "documented.sh", r)[2])
+    L1415  checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
+    L1428  checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+    L1449  r = Path(td); _tree(r, "checks", "gates")
+    L1450  (r / "checks" / "nan.mjs").write_text(
+    L1452  (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+    L1455  (r / "checks" / "expected.rows").write_text(
+    L1459  mjs_ok = "checks/nan.mjs" in got
+    L1460  shim_ok = "checks/shim" in got
+    L1462  rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+    L1474  checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+    L1483  "spot is the one nobody\nelse checks")
+    L1484  for name, ok, got in checks:
+    L1487  print(f"PLANTS: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for c in checks if c[1])}/{len(checks)})")
+    L1512  epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
+=== PATH checks/gate.out
+  CITER checks/gate_norm.py
+    L271   (HERE / "gate.out").write_text(text)
+=== PATH checks/good.py
+  CITER gates/gates-pop.py
+    L1032  f"each reports on\n               a tree that is not this one. `checks/census.py`'s "
+    L1143  "checks/census.py": "457b81619^",
+    L1144  "checks/hermetic-census.py": "457b81619^",
+    L1145  "checks/abi_gate.py": "b3aa1b0f1^",
+    L1154  out["checks/abi_gate.py.fixed"] = GOOD_ROOT
+    L1159  "checks/census.py":
+    L1161  "checks/hermetic-census.py":
+    L1163  "checks/abi_gate.py":
+    L1240  checks = []
+    L1243  r = Path(td); _tree(r, "checks")
+    L1246  (r / "checks" / "substrate-check.sh").write_text(
+    L1248  'cd "$_d/.." || exit 2\nexec .venv/bin/python checks/substrate.py "$@"\n')
+    L1249  (r / "checks" / "mod.py").write_text("X = 1\n")
+    L1256  ok0 = len(e) == 2 and {"checks/substrate-check.sh", "checks/home-witness.py"} == got
+    L1257  checks.append(("0: a shell gate found by SELF-DISPATCH, not by `__main__`, in a home the "
+    L1284  checks.append(("6: the two shell tokenizers DISAGREE, and their UNION is the population "
+    L1291  r = Path(td); _tree(r, "checks")
+    L1292  (r / "checks" / "bad.py").write_text(BAD_ROOT)
+    L1293  (r / "checks" / "good.py").write_text(GOOD_ROOT)
+    L1294  (r / "checks" / "wrong-shallow.py").write_text(
+    L1299  bad, good, shallow = (rows["checks/bad.py"], rows["checks/good.py"],
+    L1300  rows["checks/wrong-shallow.py"])
+    L1306  checks.append(("1: an off-repo root is RED in BOTH directions (n too deep, n too "
+    L1313  r = Path(td); _tree(r, "checks", "gates")
+    L1318  (r / "checks" / "driver.py").write_text("def drive(): pass\n")
+    L1322  out_ok = ("checks/driver.py" in {str(p.relative_to(r)) for p in libs}
+    L1323  and "checks/driver.py" not in {str(p.relative_to(r)) for p in e})
+    L1332  checks.append(("2: a gate this instrument does NOT notice is EXCLUDED and COUNTED",
+    L1339  checks.append(("3: an EMPTY population is REFUSED (2), never green", rc_empty == 2,
+    L1348  r = Path(td); _tree(r, "checks")
+    L1349  (r / "checks" / "first.py").write_text(GOOD_ROOT)
+    L1358  write_ledger([("checks/first.py", "py-main", "x", True, True),
+    L1359  ("checks/home-witness.py", "py-main", "x", True, True)], syn)
+    L1370  ok4 = (rc_new == 1 and "NEW  checks/undeclared.py" in said
+    L1372  checks.append(("4: a NEW GATE nobody declared makes the ledger MOVE and the run RED",
+    L1373  ok4, f"rc={rc_new} said_added={'NEW  checks/undeclared.py' in said}"))
+    L1385  r = Path(td); _tree(r, "checks")
+    L1390  fixed_ok = got.get("checks/abi_gate.py.fixed", "off-repo") == "on-root+assert"
+    L1392  checks.append(("5: THE REPLAY -- all 3 pre-fix instances from git history are CAUGHT, "
+    L1410  r = Path(td); _tree(r, "checks")
+    L1411  (r / "checks" / "documented.py").write_text(LIT_PY)
+    L1412  (r / "checks" / "documented.sh").write_text(LIT_SH)
+    L1413  ok7 = (root_facts(r / "checks" / "documented.py", r)[2]
+    L1414  and root_facts(r / "checks" / "documented.sh", r)[2])
+    L1415  checks.append(("7: PROSE IS NOT CODE -- a comment quoting the hunted expression is NOT a "
+    L1428  checks.append(("8: THIS FILE READ BY THIS FILE IS ON-REPO -- a meta-instrument that cannot "
+    L1449  r = Path(td); _tree(r, "checks", "gates")
+    L1450  (r / "checks" / "nan.mjs").write_text(
+    L1452  (r / "checks" / "shim").write_text('#!/bin/sh\n_d=${0%/*}\nexec .venv/bin/python x.py "$@"\n')
+    L1455  (r / "checks" / "expected.rows").write_text(
+    L1459  mjs_ok = "checks/nan.mjs" in got
+    L1460  shim_ok = "checks/shim" in got
+    L1462  rows_ok = "checks/expected.rows" in {str(p.relative_to(r)) for p in po}
+    L1474  checks.append(("9: THE POPULATION IS A DIRECTORY -- a `.mjs` gate and an EXTENSIONLESS "
+    L1483  "spot is the one nobody\nelse checks")
+    L1484  for name, ok, got in checks:
+    L1487  print(f"PLANTS: {'GREEN' if rc == 0 else 'RED'} ({sum(1 for c in checks if c[1])}/{len(checks)})")
+    L1512  epilog="DENOMINATOR: entry points under checks/ and gates/, discovered by AST and by "
+=== PATH checks/isolate.py
+  CITER checks/hermetic-census.py
+    L87    _ISOLATE = next((d / "isolate.py" for d in _ISOLATE_DIRS if (d / "isolate.py").is_file()), None)
+    L89    refuse("input absent: isolate.py (this file's former sibling, deleted by the sweep 371cc64c9; "
+    L90    "restored from git at 371cc64c9^:.agents/slop/hermetic/isolate.py, 4 181 B). "
+=== PATH checks/nl-port-post.txt
+  CITER checks/nl-gate.py
+    L416   _live = HERE / "nl-port-post.txt"
+=== PATH checks/rn-orc.txt
+  CITER checks/rn-gate.py
+    L400   for _cap in ("rn-port.txt", "rn-orc.txt"):
+    L406   orc = (HERE / "rn-orc.txt").read_text()
+=== PATH checks/rn-port.txt
+  CITER checks/rn-gate.py
+    L400   for _cap in ("rn-port.txt", "rn-orc.txt"):
+    L405   live = (HERE / "rn-port.txt").read_text()
+=== PATH gates/artifacts/cstyle-live/port.txt
+  CITER checks/repair-dupes.py
+    (no live code line names the basename or its directory)
+=== PATH gates/tn_graph_census-gate.py.bak
+  CITER checks/repro-paths.py
+    L64    REF = re.compile(r"(?<![\w/.])((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)")
+    L90    LIVE_HOMES = ("checks", "gates", "bin")
+  CITER checks/unrunnable-recipes.py
+    L70    ROOTS = ("tinybendygrad", "gates", "checks", "oracles", "examples", "langs", "runs", "spec",
+    L305   for root in ("checks", "gates"):
+  CITER gates/oracle-census-gate.py
+    L132   LIVE_HOMES = ("checks", "gates", "langs", "examples")
+    L663   "own gates, so it is off by default and the default run reads nothing.")

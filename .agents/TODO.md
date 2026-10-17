@@ -812,6 +812,24 @@ pinindep-control [##########] 3/3    FIXED 2026-10-15, see below. `.agents/slop/
                                        (`d10-transcript ABSENT`) -- the sanctioned state.**
 ```
 
+rn-recoverable [##########] 4/4  MEASURED 2026-10-17 by a dispatched unit, and IT CORRECTED MY OWN
+                                       PROSE. All three missing inputs of `checks/rn-gate.py` --
+                                       `.agents/slop/xd1/render-gate-oracle.py`, `checks/rn-port.txt`,
+                                       `checks/rn-orc.txt` -- have **0 COMMITS IN THE WHOLE HISTORY**.
+                                       **NEVER COMMITTED IS DIFFERENT FROM DELETED, AND MY REFUSAL
+                                       TEXT SAID THE WRONG ONE**: it read *"recoverable from git if it
+                                       was ever committed"*, a hedge over a settled fact, and the
+                                       failure is SILENT -- the gate keeps exiting 3 while the prose
+                                       implies a recovery exists. **BOTH LANES ARE PERMANENTLY
+                                       REFUSED**, not waiting on a cleanup, and the refusal now says
+                                       so and names the one live alternative (an oracle-side capture
+                                       IS committed elsewhere; a port-side one does not exist at any
+                                       path). The unit also found the oracle's SUBJECT is in git at
+                                       `checks/render-gate-oracle.py` but its upstream `head/` seam
+                                       is in neither HEAD nor disk, so **restoring the path would buy
+                                       an `ImportError` instead of an `exit 3` -- a `DEAD` lane
+                                       wearing a `FAIL`'s clothes**, which is why it is not restored.
+
 ### Coldness — the three numbers, and the one that is allowed to be written bare
 
 - [x] **THE THREE CIRCULATING NUMBERS ARE THREE DIFFERENT QUESTIONS, AND ALL THREE WERE

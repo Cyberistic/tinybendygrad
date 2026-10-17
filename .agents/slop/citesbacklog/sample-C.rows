@@ -1,0 +1,14 @@
+1	C	.agents/slop/residual/REPORT.md:72	codegen/decomp/dtype.bend	BASE_ORACLES	'BASE_ORACLES' is at NOWHERE in codegen/decomp/dtype.bend	
+2	C	.agents/TODO.md:986	codegen/decomp/dtype.bend	BASE_ORACLES	'BASE_ORACLES' is at NOWHERE in codegen/decomp/dtype.bend	
+3	C	.agents/slop/notes/bend2-constraints.md:4280	mixin/rand.bend	randn_like23_g	'randn_like23_g' is at NOWHERE in mixin/rand.bend	
+4	C	.agents/slop/gatespop/REPORT.md:76	checks/dup-census.py	HERE.parents[2]	'HERE.parents[2]' is at NOWHERE in checks/dup-census.py	
+5	C	.agents/slop/corpusproto/REPORT.md:160	checks/differ.py	"graphs": "25"	'"graphs": "25"' is at NOWHERE in checks/differ.py	
+6	C	.agents/slop/oracleblind/REPORT.md:178	gates/beautiful-mnist-oracle.py	cstyle_render_census	'cstyle_render_census' is at NOWHERE in gates/beautiful-mnist-oracle.py	
+7	C	.agents/slop/shapecensus/REPORT.md:94	checks/sweep.py	ROLE_DIRS = {'oracles':'ORACLE','gates':'GATE','checks':'GATE'}	"ROLE_DIRS = {'oracles':'ORACLE','gates':'GATE','" is at NOWHERE in checks/sweep.py	
+8	C	.agents/slop/exitcodes-report/REPORT.md:183	gates/msgdiff-gate.py	WITHIN-LIMITS	'WITHIN-LIMITS' is at NOWHERE in gates/msgdiff-gate.py	
+9	C	.agents/slop/portunknown/REPORT.md:106	mixin/dtype.bend	belts-disagree	'belts-disagree' is at NOWHERE in mixin/dtype.bend	
+10	C	.agents/UPSTREAM.md:121	runtime/support/am/amdev.bend	AMDev.setup_ring	'AMDev.setup_ring' is at NOWHERE in runtime/support/am/amdev.bend	
+11	C	.agents/slop/agend/REPORT.md:190	checks/no-txt.py	enforces it	'enforces it' is at NOWHERE in checks/no-txt.py	
+12	C	.agents/slop/constfix/REPORT.md:267	.agents/slop/constfix/selftest.py	21 of 21 PASS	'21 of 21 PASS' is at NOWHERE in .agents/slop/constfix/selftest.py	
+13	C	.agents/slop/deadgens/REPORT.md:78	checks/gate_norm.py	ModuleNotFoundError: No module named 'canon'	"ModuleNotFoundError: No module named 'canon'" is at NOWHERE in checks/gate_norm.py	
+14	C	.agents/slop/e2estage8/report.md:43	.agents/slop/e2epy/diff.py	plant-stage8red	'plant-stage8red' is at NOWHERE in .agents/slop/e2epy/diff.py	

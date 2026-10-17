@@ -1,0 +1,6 @@
+HEAD 7a826eb70a4599392e229b750782a5e9d76a2f24
+population : 1878 committed .py, 562 committed .md, 7386 committed paths -- every one from `git ls-tree -r HEAD`
+module-level literals examined : 101323  (from 1410 .py parsed; 468 dropped by the column-0 grammar gate)
+CANDIDATE SITES : 314   extension-set=50  module-attr-table=3  prose-basename-citation=253  regex-anchor-set=2  single-base-resolver=6
+bare basenames cited : 4341, ambiguous 253
+VERDICTS : NEGATIVE=30  POSITIVE=258  UNKNOWN=26

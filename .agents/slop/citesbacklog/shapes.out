@@ -1,0 +1,19 @@
+verdicts.rows: 7306 rows, 7270 DISTINCT (lane,file:at,subject) keys, 36 colliding rows (the join is lossy at that count)
+JOINED 7286/35022 claims; verdicts.rows holds no lane E (27,666 SKIP mentions)
+
+--- LANE C CLASSIFIER WIDENINGS (N = FAIL retired, M = PASS silenced) ---
+C: needle has brackets/braces but NO parentheses -- `code`'s blind spot N=26    M=14    already-REFUSED=14
+C: gap is an ENUMERATION separator -- the next list item is not a predicate N=0     M=0     already-REFUSED=1
+C: needle is an ALL-CAPS token                               N=35    M=102   already-REFUSED=2315
+C: needle contains a SPACE (a phrase, not a literal)         N=58    M=32    already-REFUSED=192
+C: needle is a DOTTED name, no space, no slash (qualified symbol) N=17    M=6     already-REFUSED=78
+C: needle contains ANY dot at all (the widest dotted rule)   N=21    M=12    already-REFUSED=165
+C: citing LINE is a markdown table row                       N=70    M=46    already-REFUSED=2512
+
+--- LANE C: THE ADJACENCY RULE (`_is_connector`), PRICED AS ONE REGEX ---
+gap is PUNCTUATION ONLY -- a table cell / list separator, not a connector N=1     M=1     already-REFUSED=44
+gap contains a PIPE -- the needle is in the NEXT TABLE CELL  N=64    M=39    already-REFUSED=2444
+gap contains a MIDDOT -- the needle is the NEXT LIST ITEM    N=15    M=4     already-REFUSED=1
+gap contains an ASCII DOT surrounded by spaces -- enumeration N=1     M=0     already-REFUSED=0
+
+--- LANE D, PRICED FROM THE CITING LINE (UPPER BOUND: gap ⊆ line) ---

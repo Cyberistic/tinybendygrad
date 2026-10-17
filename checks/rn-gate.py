@@ -400,8 +400,9 @@ def selftest():
   for _cap in ("rn-port.txt", "rn-orc.txt"):
     if not (HERE / _cap).is_file():
       refuse(f"selftest input absent: {HERE / _cap} -- the captured pair this lane judges was never "
-             f"committed (0 commits touch it), so there is no denominator to judge. Capture it with "
-             f"`--port-stdout` / `--oracle-stdout` on a live lane, or restore it.")
+             f"committed (0 commits touch it), so there is nothing to restore and no `git show` "
+             f"recovers it. Capture it with `--oracle-stdout` (an oracle-side capture IS committed "
+             f"elsewhere) or leave this lane PERMANENTLY REFUSED.")
   live = (HERE / "rn-port.txt").read_text()
   orc = (HERE / "rn-orc.txt").read_text()
   base = judge(live, orc)
@@ -466,9 +467,10 @@ def main():
   # sits BEFORE the `bend` call so a refused gate costs nothing.
   if not a.oracle_stdout and not (REPO / ORACLE[0]).is_file():
     refuse(f"oracle absent: {REPO / ORACLE[0]} -- the live lane would run a script that is not "
-           f"there (`.agents/slop/xd1/` is gone; recoverable from git if it was ever committed). "
-           f"Pass --oracle-stdout to compare a CAPTURE instead. This gate cannot produce a "
-           f"denominator without its oracle.")
+           f"there, and `.agents/slop/xd1/` is gone. **IT WAS NEVER COMMITTED** -- 0 commits in the "
+           f"whole history touch it, so there is nothing to restore and no `git show` recovers it; "
+           f"this lane is PERMANENTLY REFUSED, not waiting on a cleanup. Pass --oracle-stdout to "
+           f"compare a CAPTURE instead. This gate cannot produce a denominator without its oracle.")
   p = (subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")
        if a.port_stdout else run(["./bin/bend", PORT]))
   o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracle_stdout).read_text(), "")

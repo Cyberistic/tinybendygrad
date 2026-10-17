@@ -1,0 +1,3 @@
+hand labels joined to branches : 40 of 40 prose labels
+  branch POSITIVE  : TRUE  2  FALSE  6  n=8   precision 0.250
+  branch SUGGESTED : TRUE  9  FALSE 23  n=32  precision 0.281

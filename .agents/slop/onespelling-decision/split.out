@@ -1,0 +1,10 @@
+HEAD 7a826eb70a4599392e229b750782a5e9d76a2f24
+committed .md documents : 562
+bare-basename CITING LINES     : 14303
+bare basenames cited (DENOM)   : 4342
+AMBIGUOUS (>=2 tracked files)  : 253
+SPLIT branch A  POSITIVE  = >=1 citing line in a fenced or indented code block : 22
+SPLIT branch B  SUGGESTED = every citing line is ordinary prose                 : 231
+cross-tab (branch, any_citing_line_carries_a_slash): POSITIVE/slash=0: 3  POSITIVE/slash=1: 19  SUGGESTED/slash=0: 81  SUGGESTED/slash=1: 150
+citing lines inside the ambiguous set : 3303   (fenced 37  indented 8  prose 3258)
+collision-count histogram : 2:144  3:41  4:17  5:9  6:12  7:2  8:2  9:3  10:4  11:6  13:4  14:2  15:1  22:1  27:1  31:1  56:1  65:1  219:1

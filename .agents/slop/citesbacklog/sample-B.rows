@@ -1,0 +1,10 @@
+1	B	.agents/TODO.md:9424	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2373	
+2	B	.agents/slop/notes/bend2-constraints.md:9225	runtime/ops_nv.bend		runtime/ops_nv.bend has 95 lines, cited at :2729	
+3	B	.agents/slop/dangle/REPORT.md:156	.agents/slop/e2e.sh		.agents/slop/e2e.sh has 24 lines, cited at :122	
+4	B	.agents/slop/F64-KERNEL.md:18	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2475	
+5	B	.agents/slop/NVDUP.md:107	tinybendygrad/runtime/ops_nv.bend		tinybendygrad/runtime/ops_nv.bend has 95 lines, cited at :2344	
+6	B	.agents/slop/chkcites/REPORT.md:87	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984	
+7	B	.agents/slop/cites2/REPORT.md:44	renderer/cstyle.bend		renderer/cstyle.bend has 1367 lines, cited at :2984	
+8	B	.agents/slop/MUT-LEDGER.md:107	.agents/slop/e2e.sh		.agents/slop/e2e.sh has 24 lines, cited at :138	
+9	B	.agents/slop/PROBES.md:32	.agents/slop/e2e.sh		.agents/slop/e2e.sh has 24 lines, cited at :138	
+10	B	.agents/slop/WALLMAP.md:304	tinybendygrad/engine/jit.bend		tinybendygrad/engine/jit.bend has 435 lines, cited at :1091	

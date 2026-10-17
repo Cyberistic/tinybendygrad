@@ -1,0 +1,10 @@
+1	D	.agents/TODO.md:1521	tinygrad/__init__.py	10	tinygrad/__init__.py has 12 lines, claim says 10	
+2	D	.agents/slop/guardfix/REPORT.md:14	tinybendygrad/runtime/dtype.c	297	tinybendygrad/runtime/dtype.c has 328 lines, claim says 297	
+3	D	.agents/slop/brief-port.md:32	tinybendygrad/uop/ops.bend	3800	tinybendygrad/uop/ops.bend has 8919 lines, claim says 3800	
+4	D	.agents/slop/notes/bend2-constraints.md:9029	renderer/cstyle.bend	287	renderer/cstyle.bend has 1367 lines, claim says 287	
+5	D	.agents/slop/quiescefix/REPORT.md:22	checks/substrate-id.py	532	checks/substrate-id.py has 688 lines, claim says 532	
+6	D	.agents/slop/agend2/REPLACEMENTS.md:134	checks/substrate.py	765	checks/substrate.py has 936 lines, claim says 765	
+7	D	.agents/slop/agend2/REPORT.md:49	checks/substrate.py	765	checks/substrate.py has 936 lines, claim says 765	
+8	D	.agents/slop/gatesweep/REPORT.md:12	gates/gates-pop.py	1529	gates/gates-pop.py has 1530 lines, claim says 1529	
+9	D	.agents/slop/readback/REPORT.md:65	checks/e2e.py	3	checks/e2e.py has 566 lines, claim says 3	
+10	D	.agents/slop/residual/REPORT.md:128	runtime/webgpu_call.js	502	runtime/webgpu_call.js has 503 lines, claim says 502	

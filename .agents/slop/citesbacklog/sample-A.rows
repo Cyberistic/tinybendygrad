@@ -1,0 +1,11 @@
+1	A	.agents/slop/citemass/resolve.py:33	checks/abi_gate.py	dtype.bend	:94 reads '# prints both words so it can be checked rather than believe'; the text is at [95, 96, 104]	
+2	A	.agents/slop/citemass/resolve.py:34	checks/differ.py	ops.bend	:149 reads '# row whose expectation predated the measurement, and BOTH o'; the text is at [132, 188, 277, 412]	
+3	A	.agents/slop/citemass/resolve.py:35	checks/differ.py	ops.bend	:177 reads '# `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-self'; the text is at [132, 188, 277, 412]	
+4	A	.agents/slop/citemass/resolve.py:36	checks/differ.py	ops.bend	:177 reads '# `BYTE-IDENTICAL (143 bytes both sides)`, with `oracle-self'; the text is at [132, 188, 277, 412]	
+5	A	.agents/slop/citemass/resolve.py:37	checks/disagree-gate.py	ops.bend	:103 reads "# where the PIN's own `__repr__` suppresses it for void (`op"; the text is at [100, 105, 162, 177]	
+6	A	.agents/slop/citemass/resolve.py:39	checks/e2e.sh	renderer/cstyle.bend	:228 reads "# HAS NO `f64` GATE ROW.  The port's cstyle dtype driver (`r"; the text is at NOWHERE	
+7	A	.agents/slop/citemass/resolve.py:42	checks/gate_norm.py	base.bend	:242 reads '"  so the SAME value is a DISAGREEMENT at f64 and an AGREEME'; the text is at [252, 253, 264]	
+8	A	.agents/slop/citemass/resolve.py:47	checks/nl-gate.py	ops.bend	:477 reads 'o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracl'; the text is at [37, 39, 40, 485]	
+9	A	.agents/slop/citemass/resolve.py:48	checks/nl-gate.py	ops.bend	:477 reads 'o = (subprocess.CompletedProcess([], 0, pathlib.Path(a.oracl'; the text is at [37, 39, 40, 485]	
+10	A	.agents/slop/citemass/resolve.py:63	checks/rn-gate.py	render.bend	:399 reads '# unrunnable selftest that exits 1 will be read as a red por'; the text is at [2, 10, 26, 40]	
+11	A	.agents/slop/citemass/resolve.py:69	checks/unowned.py	ag-emit.bend	:66 reads '# A TEMPLATE site: the filename is assembled, so no whole-to'; the text is at [76]	
