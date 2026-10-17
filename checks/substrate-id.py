@@ -165,9 +165,9 @@ def population(root: pathlib.Path) -> list[pathlib.Path]:
     return sorted(present + absent)
 
 
-def digest(root: pathlib.Path) -> dict:
-    """ONE sha256 over `relpath NUL bytes`, sorted by relpath. See the module docstring for the
-    three choices; this is where they are load-bearing.
+def digest(root: pathlib.Path, members: list[pathlib.Path] | None = None) -> dict:
+    """ONE sha256 over `relpath NUL bytes`, in the order `population()` returned. See the module
+    docstring for the three choices; this is where they are load-bearing.
 
     A declared-but-absent input contributes its PATH and the token `\\0ABSENT` rather than
     being dropped, so "the input is gone" is a DIFFERENT digest from "the input was never
@@ -175,9 +175,16 @@ def digest(root: pathlib.Path) -> dict:
     against.
 
     `declarer` IS A FACT ABOUT THIS MEASUREMENT, recorded beside it rather than inferred by the
-    caller: it is what lets `empty_population()` name a CAUSE instead of only a symptom."""
+    caller: it is what lets `empty_population()` name a CAUSE instead of only a symptom.
+
+    `members` EXISTS TO ANSWER "DO THESE TWO PRODUCERS DISAGREE, OR ONLY THEIR POPULATIONS DO?"
+    in this file's OWN encoding rather than in a second copy of it: `checks/substrate-current.py`
+    passes `differ.substrate_entries()` here so the two ids can be compared over ONE population.
+    A caller that wanted that number would otherwise re-type these six lines, and a re-typed
+    aggregation is a pin that goes red when somebody tidies it. `None` is the declared population,
+    which is what every other caller wants and what the two ids are each about."""
     h, n, absent, total = hashlib.sha256(), 0, [], 0
-    for p in population(root):
+    for p in (population(root) if members is None else members):
         rel = p.relative_to(root).as_posix()
         h.update(rel.encode())
         h.update(b"\0")
