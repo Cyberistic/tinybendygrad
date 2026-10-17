@@ -2,7 +2,7 @@
 """THE GATE for `tinybendygrad/viz/serve.bend`. Three lanes, and ALL THREE must
 agree:
 
-  1. CPython   `.venv/bin/python .agents/slop/vz/viz_oracle.py`  -- CALLS
+  1. CPython   `.venv/bin/python checks/viz_oracle.py`  -- CALLS
                `tinygrad/viz/serve.py`'s own functions on the same fixtures.
   2. BEND      `./bin/bend tinybendygrad/viz/serve.bend`         -- 151 rows.
   3. CHECK     `./bin/bend tinybendygrad/viz/serve.bend --check-only` -- reads
@@ -56,8 +56,26 @@ def _err():
   except Exception:
     return ""
 
+ORACLE = os.path.join(HERE, "viz_oracle.py")
+
+def refuse(why):
+  """exit 3 = REFUSED, and NOT a verdict.
+
+  **AN ABSENT ORACLE IS REFUSED, NOT A LANE FAILURE, AND `sys.exit(<str>)` SAYS FAILURE.** The arm
+  below used to `sys.exit("ORACLE EXITED %d ...")` on a string, which CPython PRINTS and then exits 1 --
+  so an oracle that is simply not there read as a lane failure, and `checks/exitcodes`'s
+  MESSAGE-EXIT class counted it. MEASURED 2026-10-17: `checks/viz_oracle.py` is absent from disk AND
+  from HEAD, and this lane had no existence guard at all, so the failure mode was an OS error on a
+  missing file rather than a named refusal."""
+  sys.stderr.write("REFUSED, NOT A VERDICT: " + why + "\n")
+  sys.exit(3)
+
 def lanes():
-  rc, py, err = run([sys.executable, os.path.join(HERE, "viz_oracle.py")])
+  if not os.path.isfile(ORACLE):
+    refuse(f"oracle absent: {ORACLE} -- this gate's whole denominator comes from it, so there is "
+           f"nothing to measure without it. (It was never committed: 0 commits touch it, so there "
+           f"is nothing to restore.)")
+  rc, py, err = run([sys.executable, ORACLE])
   if rc != 0:
     sys.exit("ORACLE EXITED %d -- its output is not evidence\n%s" % (rc, err[:400]))
   rc2, bd, _ = run(["./bin/bend", BEND])

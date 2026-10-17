@@ -812,6 +812,28 @@ pinindep-control [##########] 3/3    FIXED 2026-10-15, see below. `.agents/slop/
                                        (`d10-transcript ABSENT`) -- the sanctioned state.**
 ```
 
+vz-absent-oracle [##########] 4/4  FOUND BY THE `actionable` UNIT AS A BYSTANDER, and it is a
+                                       THIRD instance of "an absent declared input reads as a lane
+                                       failure". `checks/vz_gate.py:60` ran
+                                       `checks/viz_oracle.py` -- **absent from disk AND from HEAD** --
+                                       with **NO EXISTENCE GUARD**, so the failure mode was an OS
+                                       error on a missing file rather than a named refusal. AND THE
+                                       EXIT CHANNEL WAS WRONG TOO: its error arm was
+                                       `sys.exit("ORACLE EXITED %d ...")`, a STRING exit, which
+                                       CPython prints and then exits **1** -- so an absent oracle
+                                       read as a lane FAILURE, and this is the `MESSAGE-EXIT` class
+                                       `checks/exitcodes`'s census counted (24 instruments, 57
+                                       sites). FIXED: `lanes()` guards `os.path.isfile(ORACLE)` and
+                                       refuses with **exit 3** naming the path and stating it was
+                                       never committed (0 commits touch it), and the docstring -- which
+                                       named a DIFFERENT location (`.agents/slop/vz/viz_oracle.py`)
+                                       than the code resolved -- now agrees. MEASURED: refuses
+                                       cleanly before any subprocess. **THE THIRD FIX IN THIS CLASS
+                                       AFTER `rn-gate.py`'s TWO LANES, AND NONE OF THE THREE HAD A
+                                       GUARD ON A DECLARED INPUT** -- every one was reachable only
+                                       because the file went missing, and every one read as a lane
+                                       failure rather than an absent subject.
+
 rn-recoverable [##########] 4/4  MEASURED 2026-10-17 by a dispatched unit, and IT CORRECTED MY OWN
                                        PROSE. All three missing inputs of `checks/rn-gate.py` --
                                        `.agents/slop/xd1/render-gate-oracle.py`, `checks/rn-port.txt`,
