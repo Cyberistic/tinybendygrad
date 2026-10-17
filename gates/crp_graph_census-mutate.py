@@ -3,6 +3,7 @@
 
     .venv/bin/python gates/crp_graph_census-mutate.py            # the whole table
     .venv/bin/python gates/crp_graph_census-mutate.py C1 C2      # only these labels
+    .venv/bin/python gates/crp_graph_census-mutate.py --help     # the labels, and nothing else
 
 ONE JOB: prove each of the gate's claims has a mutation, and prove the POPULATION and AXIS
 guards speak when the population or the fixture axis is wrong. Four kinds are kept apart,
@@ -580,8 +581,27 @@ SOURCES = {"port": PORT, "driver": DRIVER, "oracle": ORACLE, "pins": PINS, "spec
 # the tree rather than two.
 MUTATIONS_BY = {e[0].split()[0]: e for e in MUTATIONS}
 
+# `--help` USED TO CRASH, AND THE REASON WAS THAT THE SELECTOR BELOW WAS NOT TOTAL. It filtered
+# `MUTATIONS` on `argv`, so `--help` -- which is not a label -- selected NOTHING, and the `max()`
+# two lines under `want.sort` had nothing to take a maximum of: `ValueError: max() iterable
+# argument is empty`, exit 1, which `gatekit.VERDICT` reads as `FAIL` while `gates/gatekit.py:140`
+# says a traceback is `DEAD`. **THE ARGUMENT CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED**,
+# so `want` is never empty, and a label that exists is the only thing that selects a mutation.
+LABELS = " ".join(sorted(MUTATIONS_BY))
+USAGE = f"usage: {Path(__file__).name} [LABEL ...]   no argument runs the whole table\nlabels: {LABELS}"
+
 
 def main(argv):
+    if {"-h", "--help"} & set(argv):
+        print(USAGE)
+        return 0
+    unknown = [a for a in argv if a not in MUTATIONS_BY]
+    if unknown:
+        # 3 IS THIS FILE'S OWN REFUSAL ALREADY (`_runner`'s head at :193 `sys.exit(3)`), so the
+        # absence is reported in the vocabulary the file already uses rather than by crashing.
+        print(f"{Path(__file__).name}: no mutation is labelled {' '.join(unknown)}\nlabels: {LABELS}",
+              file=sys.stderr)
+        return 3
     pins = assert_pins(PINS, 4, (2, 3), (1,))
     classes = sorted({p[1] for p in pins})
     print(f"crp pins shape ASSERTED: 4 fields, column 2 is a CLASS in {classes}, columns 3 "
