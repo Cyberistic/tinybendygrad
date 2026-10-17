@@ -36,6 +36,40 @@ _mut_*.bend
 *mut.bend
 probe-*.bend
 probe-*.bend.mut
+# `oracles/probe-su.bend` IS THIS RULE, AND IT IS NOT AN ACCIDENT -- IT IS THE ANSWER,
+# WRITTEN DOWN WHERE THE RULE LIVES SO THE NEXT READER DOES NOT RE-DERIVE IT.
+#
+# WHAT IT IS: a probe. Its own first line is "EVERY READER THAT COULD MINT ONE IS PROBED
+# HERE", it emits 2 rows, and NO GATE CONSUMES IT -- `rg probe-su` over `*.py`/`*.sh` finds
+# none. Its one citer is `.agents/slop/notes/bend2-constraints.md:7488` ("is the
+# reproducer"), which is agent scratch and is being pruned. `probe-*.bend` below says a
+# probe is never a source; this one is not a source.
+#
+# WHAT IT COST, MEASURED 2026-10-18, AND IT IS NOT NOTHING. Its `../../../tinybendygrad/
+# ...` import was fixed in place on 2026-10-17 and the fix CANNOT BE COMMITTED, because the
+# rule above eats the file. So on disk it is WARM and in the tree it is ABSENT, and the
+# instruments that walk the WORKING COPY cannot tell the difference:
+#   `checks/compile-census.py:discover()` hands 91 here and 86 in a clean clone, and
+#   `checks/compile-census.rows:87` is a committed row for a file no checkout has;
+#   `gates/import-path-census-gate.py` prints `.bend=193` here and 188 in a clean clone.
+# Five uncommittable `.bend` are in that gap: this one, `gates/.realize-mut-stage/
+# realize_graph_census.bend` (now ignored by `gates/.*` below, which does NOT remove it
+# from an `os.walk` -- `.gitignore` is not a population), and `gates/{cstyle,decomp,realize}-
+# mut-driver.bend`. **A CENSUS WHOSE POPULATION IS THE WORKING COPY HAS NO REPRODUCIBLE
+# DENOMINATOR.** That is the owner's decision to make, and it is NOT this file's: the
+# population belongs to `checks/compile-census.py:discover()`.
+#
+# THE THREE OPTIONS AND WHAT EACH COSTS, because "just add -f" is how the tree ends up with
+# a tracked scratch probe and a rule that says it is ignored:
+#   `git add -f` -- FORBIDDEN here, and it would put a probe in the index against the rule
+#     that says probes are never sources. `.gitignore:48-50` records the mirror trap: a
+#     pattern WILL NOT UNTRACK, so the next edit to the rule reads as success and is not.
+#   leave it as it is -- the fix is LOST on the next unit that touches `oracles/`, and the
+#     file stays a member of a population no clone can reproduce. **THIS IS THE STATE THE
+#     TREE IS IN.**
+#   rename it out of the probe class to make it committable -- a dodge, not a fix: nothing
+#     reads it, so a new tracked name would be a tracked file with no consumer.
+# So the fix stays on disk, and the denominator problem is reported, not solved here.
 # Two scratch names the four lines above MISS, found by asking the question the
 # patterns imply instead of the question they were written for: "does any `.bend`
 # in the tree still look like scratch?". `probe-*.bend` needs the hyphen, so
@@ -59,6 +93,27 @@ _*[0-9].bend
 # 12-file `--check-only` sweep), and one careless `jj split` commits a whole stale
 # ops.bend. Matches 0 real files.
 tinybendygrad/**/*ATREST-*.bend
+
+# THE SAME CLASS, ONE LEVEL UP AND IN `gates/`: a mutation harness stages a REVISION of a
+# tracked driver under a DOT-DIRECTORY, so `m.HERE` can be pointed at it and every
+# `HERE / "<name>"` read inside the gate finds the mutant. `gates/realize_graph_census-mutate.py:109`
+# (`STAGE = HERE / ".realize-mut-stage"`) is the only one today, and its staged
+# `realize_graph_census.bend` is BYTE-IDENTICAL to the tracked
+# `gates/realize_graph_census.bend` (`diff` = 0 lines over 1166) -- so at a deeper path its
+# `./../tinybendygrad/...` imports resolve INSIDE the repo, `gates/import-path-census-gate.py`
+# reads that as `UNRESOLVED-INSIDE`, and a second gate reports a defect in a scratch copy of a
+# file the same gate already reports green. Correcting the COPY's `../` would edit a revision
+# of a tracked file in a directory the harness regenerates; the stage is not the source.
+#
+# ONE RULE, NOT A LIST: `gates/.*` matches every dot-ENTRY under `gates/`, which is what the
+# convention is (`.mut-run.py`, `.realize-mut-cfg.json`, `.wgsl-mut-pins.rows`,
+# `.realize-mut-stage/`, `.cstyle-mut-artifacts/`, `.beforeprobe/`). MEASURED, it eats **0**
+# tracked paths -- `git ls-tree -r HEAD -- gates/ | grep -cE '^gates/\.'` is 0 -- while **9**
+# on-disk entries are untracked AND unignored today, i.e. one `jj split` from a commit, which
+# is the same hazard the `xd1/` rule below cites. Two tracked dot-paths exist elsewhere
+# (`checks/.out`, `checks/.err`), which is why this is scoped to `gates/` and carries no
+# trailing slash rather than being written `.*/` at the root.
+gates/.*
 
 # comment-realignment pass: the measurement + edit harness (spec*.py, apply.py,
 # final.py, cite.py, dist.py) and the four report artifacts. Never sources; the

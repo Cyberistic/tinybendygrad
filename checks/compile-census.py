@@ -12,13 +12,25 @@ WHY THIS IS NOT A GATE, MEASURED. `checks/substrate.py` IS ALREADY the per-file 
 `POP_ROOT` off it, so the coverage boundary is the INSTRUMENT'S declaration and not a hand list
 here. `AGENTS.md` doctrine 1: "Never list in this file what an instrument discovers."
 
-THE GAP, MEASURED. `os.walk(".")` over the repo, `references/` excluded (`.gitignore:2`, the
-vendored bend compiler's own 1,714 `.bend`), `.agents/slop/` excluded (agent scratch; 113 `.bend`),
-`runs/` excluded (run artifacts; `runs/margsym/snap/` is a SNAPSHOT OF THE PORT, so compiling it
-twice is not a second opinion), leaves **90 `.bend`** that `substrate.py`'s default root never sees.
-82 of them are in `git ls-tree -r HEAD`. THEY ARE THE GATES' OWN DRIVERS (`gates/*.bend`), the
-oracle drivers (`oracles/*.bend`), `checks/*.bend`, `examples/`, `langs/` -- i.e. the files the
+THE GAP, AND ITS TWO NUMBERS ARE NOW COMPUTED, NOT TRANSCRIBED. `os.walk(".")` over the repo,
+`references/` excluded (`.gitignore:2`, the vendored bend compiler's own 1,714 `.bend`),
+`.agents/slop/` excluded (agent scratch), `runs/` excluded (run artifacts; `runs/margsym/snap/` is a
+SNAPSHOT OF THE PORT, so compiling it twice is not a second opinion), leaves the `.bend` that
+`substrate.py`'s default root never sees. THE COUNT USED TO BE WRITTEN HERE AND WAS 90, WITH 82 IN
+`git ls-tree -r HEAD`; both were a second copy of a measurement the tool recomputes on every run, so
+both rotted. THEY ARE NOT HERE ANY MORE: `main()` prints `POPULATION .bend handed=` and
+`POPULATION untracked=`, and those are the numbers. THEY ARE THE GATES' OWN DRIVERS (`gates/*.bend`),
+the oracle drivers (`oracles/*.bend`), `checks/*.bend`, `examples/`, `langs/` -- i.e. the files the
 harness RUNS, which are exactly the files a driver that does not compile cannot report.
+
+`untracked=` IS A DENOMINATOR CAVEAT AND IT IS NOT COSMETIC. `discover()` walks the WORKING COPY, so
+the population is whatever is on the machine, and part of it cannot be committed: MEASURED 2026-10-18,
+of 91 handed, **86 are in HEAD and 5 are not** -- `gates/{cstyle,decomp,realize}-mut-driver.bend`,
+`gates/.realize-mut-stage/realize_graph_census.bend` and `oracles/probe-su.bend`. **SO THE `.rows`
+ARTEFACT IS A CENSUS OF A TREE THAT DOES NOT EXIST IN A CLONE**, where `discover()` hands 86 and the
+committed file carries 87 rows, one of them for a path no checkout has. Every number this tool prints
+is therefore a reading of THIS MACHINE at THIS MOMENT, which is why the header now carries the run's
+UTC stamp.
 
 THE FIRST REAL BREAKAGE, FOUND BEFORE ANYTHING WAS INTRODUCED. `checks/gate_norm.bend:27` imports
 `../../../tinybendygrad/base.bend`. From `checks/` that is THREE levels above the repo root, so it
@@ -48,9 +60,17 @@ import os
 import re
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+# `checks/verdict.py` IS BESIDE THIS FILE, not under `gates/`. The three `sys.path.insert`
+# sites below read `ROOT / "gates"`, and `gates/verdict.py` does not exist -- MEASURED, so every
+# REFUSED path in this file raised `ModuleNotFoundError: No module named 'verdict'` instead of
+# printing its sentence and exiting 3. `SKIP IS NOT PASS` and exit 3 is `REFUSED`, so the
+# instrument could not say the one word it exists to say. `checks/verdict.py`'s own header spells
+# the import (`sys.path.insert(0, str(Path(__file__).resolve().parent))`); that is `HERE`.
+HERE = Path(__file__).resolve().parent
 PY = ".venv/bin/python"
 
 # THE INSTRUMENT'S OWN POPULATION DECLARATION, LOADED BY PATH. Not re-typed here: a second copy of
@@ -158,19 +178,31 @@ def main() -> int:
     a = ap.parse_args()
 
     if not (ROOT / "bin" / "bend").is_file():
-        sys.path.insert(0, str(ROOT / "gates"))
+        sys.path.insert(0, str(HERE))
         from verdict import REFUSED, settle
         settle(REFUSED, "bin/bend is absent, so no file in this population can be judged; a census "
                         "over zero judged files is not a census")
     pop, dropped = discover()
     if not pop:
-        sys.path.insert(0, str(ROOT / "gates"))
+        sys.path.insert(0, str(HERE))
         from verdict import REFUSED, settle
         settle(REFUSED, f"the walk found no .bend outside {substrate.POP_ROOT}/ and the skipped "
                         "directories; the population is empty and an empty census proves nothing")
 
+    # THE COMMITTED TREE, BY `ls-tree` AND NOT BY `ls-files`: `AGENTS.md` -- the index is ARMED
+    # (`jj` colocated snapshots stage into `.git/index`), so `ls-files` answers with intent-to-add
+    # placeholders and would report scratch this tree cannot check out. `ls-tree -r HEAD` is the
+    # tree. THE NUMBER IS A CAVEAT, NOT A FILTER: nothing is dropped below, because a `.bend` on
+    # disk and uncommittable is still a `.bend` a reader of this artefact cannot reproduce.
+    committed = set(subprocess.run(["git", "ls-tree", "-r", "HEAD", "--name-only"],
+                                   cwd=ROOT, capture_output=True, text=True).stdout.split("\n"))
+    untracked = [p for p in pop if p not in committed]
     print(f"POPULATION .bend handed={len(pop)}  ::  the complement of substrate.py "
           f"POP_ROOT={substrate.POP_ROOT}/ under os.walk('.')")
+    print(f"POPULATION untracked={len(untracked)} of {len(pop)}  ::  in the WORKING COPY and NOT in "
+          f"`git ls-tree -r HEAD`, so a clean clone's discover() hands {len(pop) - len(untracked)}")
+    for p in untracked:
+        print(f"UNTRACKED  {p}")
     for reason, n in dropped:
         print(f"EXCLUDED   {n:5d}  ::  {reason}")
 
@@ -179,6 +211,12 @@ def main() -> int:
     with sink.open("w") as fh:
         fh.write(f"# compile-census: per-file `bin/bend --check-only` over the {len(pop)} .bend that "
                  f"checks/substrate.py's POP_ROOT={substrate.POP_ROOT}/ does not walk.\n"
+                 f"# taken={time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())}  "
+                 f"committed={len(pop) - len(untracked)}  untracked={len(untracked)}  ::  A SNAPSHOT. "
+                 f"`discover()` walks the WORKING COPY, so that count is `len(discover())` AT THIS "
+                 f"MOMENT and it MOVES as drivers land; a run whose `handed=` differs from the number "
+                 f"on the line above is the tree having moved, not this file being wrong. Re-run to "
+                 f"re-take it.\n"
                  f"# state= WARM|COLD|NO-MEASUREMENT|NO-INSTRUMENT|<state>?NOTOKEN  token= checks/bounded.py's OWN verdict token, "
                  f"read off stderr because its exit status cannot mean one thing.\n"
                  "# first_line= the instrument's first stderr line, or the verdict row.\n"
@@ -205,7 +243,7 @@ def main() -> int:
           f"{substrate.POP_ROOT}/); warm={tally.get('WARM', 0)} cold={cold} unjudged={unjudged}")
     print(f"ARTIFACT    {a.rows}")
     if unjudged:
-        sys.path.insert(0, str(ROOT / "gates"))
+        sys.path.insert(0, str(HERE))
         from verdict import REFUSED, settle
         settle(REFUSED, f"{unjudged} of {judged} files were NOT judged, so the warm count above is "
                         f"not a verdict about the population")

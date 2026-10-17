@@ -3,7 +3,7 @@
 #   I64SHL_SEED=7 .venv/bin/python gates/i64-shl-gate.py
 #
 # THE QUESTION THIS FILE EXISTS TO SETTLE. `i64_shl` takes a `+k: Nat`
-# (`tinybendygrad/helpers.bend:1819`), and a wall records that "a runtime shift amount
+# (`tinybendygrad/helpers.bend:1825`), and a wall records that "a runtime shift amount
 # cannot be a `Nat`". Every row here is reached through `H.`, so a mutation of
 # helpers.bend moves them; this file defines no `I64` arithmetic of its own and
 # `rg '^def (i64_|hi32|lo32)'` over it must find nothing.
@@ -29,7 +29,7 @@
 #          for `k >= 32` only the low word may. Its magnitude is 33 bits, so its own
 #          signed-range boundary is `k = 31`, and the amounts include 31/32/33.
 import Base
-import ./../../../tinybendygrad/helpers.bend as H
+import ./../tinybendygrad/helpers.bend as H
 
 def p(+nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))

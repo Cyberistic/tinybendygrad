@@ -7,6 +7,27 @@ import ../tinybendygrad/uop/ops.bend as O
 # fixtures are written ONCE in the generator and both this file and the CPython
 # expectations are emitted from them. The row is one `mm.lift` call printed as a
 # PAIR, so the row IS the answer and not a Bool over it.
+#
+# PROVENANCE, AND IT IS NOW CHECKABLE. The generator is absent from the disk AND from
+# HEAD, so for a while that claim named a path no reader could open. It is recovered in
+# git at `5444ea42e:.agents/slop/shlscope/gen.py` (205 lines), and MEASURED 2026-10-18:
+#   git cat-file blob 5444ea42e:.agents/slop/shlscope/gen.py > /tmp/gen.py
+#   .venv/bin/python /tmp/gen.py --emit-bend > /tmp/regen.bend
+#   diff /tmp/regen.bend checks/gate.bend
+# emits 370 lines and differs on **4 of them -- the imports, and nothing else**. So the
+# claim is TRUE, and this file is the generator's output plus a depth correction: the
+# generator writes `../../../tinybendygrad/...` because it emits into
+# `.agents/slop/shlscope/` (3 levels down) and this file lives in `checks/` (1). That is
+# the SAME off-by-a-level import that `60d9fe8bb` fixed in ten other files, and it is why
+# `diff` is not empty and still proves the provenance.
+#
+# THE REGENERATION CAVEAT, because this file is a GENERATED ARTEFACT and edits to it die:
+# `gen.py --emit-bend > checks/gate.bend` reverts BOTH the depth fix and this block, and
+# writes to `checks/` at a depth the generator's hardcoded `../../../` does not match. The
+# writer that IS in the tree, `checks/gate.sh:42`, redirects to `$SL/gate.bend` =
+# `.agents/slop/shlscope/gate.bend`, so it neither regenerates this path nor refuses. So the
+# owner of `checks/gate.sh` owns a second contradiction, and it is NOT this file's.
+# This file is WARM and emits 337 rows under `bin/bend checks/gate.bend` (rc=0, 713 MB).
 
 def ss_row(nm: String, +b: F.Bnd2) -> IO(Unit):
   IO.print(String.concat([nm, " lo=", F.bnd_show(F.Bnd2.lo(b)), " hi=", F.bnd_show(F.Bnd2.hi(b))]))

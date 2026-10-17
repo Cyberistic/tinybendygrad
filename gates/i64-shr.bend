@@ -2,10 +2,15 @@
 #
 #   I64SHR_SEED=7 .venv/bin/python gates/i64-shr-gate.py
 #
-# `def i64_shr` EXISTS NOWHERE -- `grep -c '^def i64_shr' tinybendygrad/helpers.bend` is
-# 0 -- while its mirror `def i64_shl(+x: I64, +k: Nat) -> I64` is at `tinybendygrad/
-# helpers.bend:1819`. `mixin/dtype.bend:58` records the pair as one row, `SHL/SHR ->
-# NOWHERE`, so the row is half dead. This file is the rows for the half that is open.
+# `def i64_shr` EXISTS -- `grep -c '^def i64_shr' tinybendygrad/helpers.bend` is 4, the
+# arm at `helpers.bend:1900` -- and its mirror `def i64_shl(+x: I64, +k: Nat) -> I64` is at
+# `helpers.bend:1825`. **THIS HEADER USED TO SAY `i64_shr` "EXISTS NOWHERE ... IS 0", AND
+# THAT WAS NEVER TRUE**: it is 4 at EVERY commit that ever added this file (`4ff8ca126`,
+# `813bbec3e`, `02329daf0`), so it was a fabricated measurement, not a stale one. What the
+# driver never had was an IMPORT THAT RESOLVED -- `../../../tinybendygrad/helpers.bend` from
+# `gates/` names `/Users/cyberistic/src/tinybendygrad`, a checkout that does not exist -- so
+# bend answered `SOME PROOFS FAIL` and the 301 rows below did not exist. The wall this file
+# was written against was a PATH, not a missing def.
 #
 # EVERY ROW IS REACHED THROUGH `H.`, so a mutation of the def moves them; this file
 # defines no `I64` arithmetic of its own and `rg '^def (i64_shr|hi32|lo32|match_hi)'`
@@ -40,7 +45,7 @@
 #          a `mod 64` amount would answer `x` itself.
 #   zero   0.  Exact 0 at every amount, so it can never be evidence of anything.
 import Base
-import ./../../../tinybendygrad/helpers.bend as H
+import ./../tinybendygrad/helpers.bend as H
 
 def p(+nm: String, v: String) -> IO(Unit):
   IO.print(String.concat([nm, "=", v]))
