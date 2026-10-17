@@ -106,6 +106,30 @@ FORMS = {
 # `add` alone is ambiguous, so it only counts when a git-shaped word is a sibling in the same
 # call. That is what removes `seen.add(` without removing `git("add", "-A")`.
 GIT_WORDS = {"git", "-C", "commit", "commit-tree", "hash-object", "update-index"}
+# THE FOUR FORMS THAT ARE EXACT STRINGS, SEPARATED OUT BECAUSE `add` IS NOT ONE OF THEM.
+EXACT_FORMS = ("ls-files", "--cached", "read-tree", "--porcelain")
+
+# A FORM WRITTEN WITH ITS OWN ARGUMENT IS STILL THE FORM, AND EQUALITY DOES NOT SEE IT.
+# `--porcelain=v1` is `--porcelain`, and `s in FORMS` answers False for it. MEASURED, live: the
+# equality test classifies `checks/unowned.py` CLEAN while `:131` runs
+# `git("status", "--porcelain=v1", "-z")` through a `def git(*args)` wrapper at `:118` -- so a
+# file that reads index+worktree is in neither the offender set NOR `indexread-baseline.rows`.
+# **A CENSUS THAT MISSES ONE IS NOT A SMALLER CENSUS; IT IS A CENSUS THAT COMPARED NOTHING.** This
+# is doctrine 2's "0 disagreements over 0 comparisons" and it was found by reading the classifier
+# rather than by being told. THE THREE CANDIDATE WIDENINGS, MEASURED OVER THE 1887-FILE
+# POPULATION: `s == f` finds 0. `s.startswith(f)` finds **5, of which 4 are PROSE** --
+# `--cached makes a deletion while LEAVING the file on disk` (a capability DESCRIPTION in
+# `whyarms/armsites.py`'s own dict), `ls-files rc=` and `ls-files --debug rc=` (two ERROR
+# MESSAGES in `index-arm-gate.py`), `--cached|\bdiff-index\b` (a regex) -- so `startswith` buys
+# ONE true positive for FOUR false ones and is a net LOSS. `s.startswith(f + "=")` takes the one
+# and leaves the four, because PROSE continues with a SPACE and an ARGUMENT with `=`. THAT IS
+# THIS FUNCTION, AND IT IS **STRICTLY ADDITIVE**: it can only ADD offenders, never remove one, so
+# it cannot be a weakening.
+def form_of(s: str) -> str | None:
+  """The exact index form `s` spells, with its own argument attached, or None.
+
+  `+ "="` IS THE WHOLE OF IT, AND IT IS A MEASUREMENT rather than a taste: see the block above."""
+  return next((f for f in EXACT_FORMS if s == f or s.startswith(f + "=")), None)
 # The pre-filter's spellings of a quoted `"add"`. A git invocation ALWAYS quotes it; `seen.add(`
 # never does, and that one difference is the whole of the 106 false positives the regex census had.
 ADD_QUOTED = ('"add"', "'add'", "add -A", "add -C")
@@ -186,8 +210,9 @@ def offenders_of(rel):
   strs = bare_strings(ROOT / rel)
   hits = set()
   for s in strs:
-    if s in ("ls-files", "--cached", "read-tree", "--porcelain"):
-      hits.add(s)
+    exact = form_of(s)
+    if exact:
+      hits.add(exact)
     elif s == "add" and GIT_WORDS & set(strs):
       hits.add("add")
   return sorted(hits)

@@ -74,8 +74,8 @@ WRITER = re.compile(r"GENERATED\s+by\s+(?:#\s*)?`?([\w./-]+(?:\.py)?|hand|[-]\w[
 # `gatekit.TMP` already uses, and it is a NAME SHAPE, which doctrine 1 forbids as a population --
 # so it is applied to the EXCLUSION and the count of what it hid is printed on every run.
 # MEASURED: `gates/.crp-mut-pins.rows` and `gates/.wgsl-mut-pins.rows` are mutate-harness scratch,
-# `git ls-files gates/` answers 0 for either, and `.crp-mut-pins.rows` was present in one census run
-# and gone in the next, with no edit by this unit.
+# `git ls-tree -r --name-only HEAD` answers 0 for either, and `.crp-mut-pins.rows` was present in
+# one census run and gone in the next, with no edit by this unit.
 TEMP = re.compile(r"^\..*\.rows$")
 
 
@@ -209,9 +209,28 @@ def check(p, owners):
     # `ops_python_exec-fixtures.rows` writes `gates/ops_python_exec-gen.py --write` and
     # `indexread-baseline.rows` writes a FLAG, so a path joined onto the table's own directory
     # reports a generator that is on disk as MISSING.
+    #
+    # **TWO FINDINGS, NOT ONE, BECAUSE THE ONE WAS A WRONG REASON FOR 3 OF THE 6 TABLES RED TODAY.**
+    # MEASURED on this tree: all six findings are check II, and `gates/falseclaim-plant.rows`
+    # carries **21 `#` header lines** -- so "no header declares who writes it" is FALSE about it,
+    # and `gates/falseclaim-census-gate.py:486` sends its reader to look at "its own header".
+    # A WRONG REASON IS WORSE THAN NO REASON: it sends the next agent to add a `#` line to a file
+    # that already has twenty-one of them. **THE TWO ARE ALSO NOT EQUALLY CLOSABLE** -- a file with
+    # no header can be GIVEN one, while a file whose header names nobody has to have its WRITER
+    # NAMED -- so they are two findings with two fixes.
+    #
+    # AND THE OWNER GOES ON THE LINE, because check VI's own output supplies the writer's name one
+    # line above and the finding used to contradict it: `gates/cstyle-live.rows` is written by
+    # `checks/repair-dupes.py` (named, at `:48`), which is exactly why its finding says "nobody can
+    # regenerate it". THE FINDING THAT NAMES NO OWNER IS THE ONE NOBODY CAN CLOSE.
     w = WRITER.search(head)
     if not w:
-        bad.append("no header declares who writes it (a generator, a flag, or `by hand`)")
+        bad.append(("no header at all, so nobody declared who writes it"
+                    if not head else
+                    f"its {len(head.splitlines())}-line header names no writer "
+                    f"(a generator, a flag, or `by hand`)")
+                   + (f" -- but {','.join(sorted(owners))} names it"
+                      if owners else " -- and NO GATE SOURCE NAMES IT"))
     elif w.group(1).endswith(".py") and not _resolve(w.group(1), p.parent):
         bad.append(f"the header's writer {w.group(1)} is not in the tree")
 
@@ -267,18 +286,60 @@ def mutate_population(entries):
 
 
 def tracked(names):
-    """`{name}` per `git ls-files`, ONCE, and NEVER as the population.
+    """`{name}` per `git ls-tree -r --name-only HEAD`, ONCE, and NEVER as the population.
 
     `AGENTS.md` measures `git ls-files --others --exclude-standard` answering ~1% of what
     `git ls-files` answers and `jj` arming the index on every snapshot, so a census that FILTERS on
     git can silently shrink its own population. This is therefore REPORTED and not charged, and the
     reason it matters: MEASURED at `c7e7c886`, `gates/crp-mut-pins.rows` and `gates/crp-mut-gate.py`
     appeared mid-session, untracked, written at 01:53 by another unit -- so this census's table set
-    is LIVE and a count without a timestamp is a count about nothing."""
-    r = subprocess.run(["git", "ls-files", "gates/"], capture_output=True, text=True, cwd=ROOT)
+    is LIVE and a count without a timestamp is a count about nothing.
+
+    **IT USED TO SAY `git ls-files gates/`, AND `gates/indexread-gate.py` CHARGED THIS FILE FOR IT.
+    THE REASON IT CHARGED IT IS THE REASON IT IS WRONG ABOUT THIS FILE: the index is not this
+    census's SUBJECT, it was a *diagnostic* on a census whose population is `iterdir` + `discover()`.
+    `indexread-gate.py`'s own header draws the line -- "the index is reported as a DIAGNOSTIC ONLY,
+    never as the population" (`:237`) -- and it drew it for itself while charging a file that had
+    done nothing the rule forbids. **`ls-tree -r --name-only HEAD` reads a COMMIT TREE OBJECT in
+    `.git/objects`; no index reset reaches it** (`indexread-gate.py:29-32`), and it is the very
+    call that gate uses for its own population.
+    MEASURED, this swap moves the diagnostic on **0 of 23** tables: `git ls-files gates/` and
+    `git ls-tree -r --name-only HEAD -- gates/` return the SAME 272 names on this tree and all 23
+    `.rows` tables read `tracked` under both. THE VERDICT IS PRESERVED AND THE AUTHORITY IS BETTER.
+    **THIS IS NOT AN ADMISSION AND NOT A RE-PIN:** no baseline row moved, no finding was deleted,
+    and this file simply stopped reading the thing whose reading the census was about."""
+    r = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD", "--", "gates/"],
+                       capture_output=True, text=True, cwd=ROOT)
     if r.returncode != 0:
         return None
     return {l.rsplit("/", 1)[-1] for l in r.stdout.splitlines() if l.strip()}
+
+
+def colhead_note(p, n):
+    """A NOTE ON THE DENOMINATOR, NEVER A CHANGE TO IT.
+
+    `data_rows()` drops `#` COMMENT lines and keeps everything else, so a table that declares its
+    columns as a **TAB-DELIMITED HEADER ROW** -- not a `#` comment -- has that row COUNTED AS DATA.
+    MEASURED on this tree: `citations-census-findings.rows` reads **395** here while
+    `gates/citations-census-gate.py:131` documents **394**, and `oracleblind.rows` reads **99**
+    against 98 oracles. **THE CENSUS AND THE OWNING GATE DISAGREE BY EXACTLY THE HEADER ROW.**
+
+    **AND NO SOUND SHAPE TEST EXISTS TO FIX IT, WHICH IS WHY IT IS A NOTE.** The obvious
+    discriminator -- "a header row's fields are lowercase identifiers" -- admits
+    `citations-census-findings.rows` (`verdict\\tregression_or_blank\\t...`, all lowercase) and
+    REJECTS `oracleblind.rows`, whose row 1 carries `EMPTY` and `VALID-DIFFERENT`. MEASURED BOTH
+    WAYS. **A NAME SHAPE IS NOT A POPULATION (doctrine 1), so the denominator is printed BOTH WAYS
+    AND NEVER ADJUSTED**: silently subtracting a row whose role this file cannot establish would
+    move a denominator on a guess, and this file's own header forbids a tree-wide rule for exactly
+    the reason the guess would be wrong.
+    """
+    try:
+        first = next((l for l in p.read_text().splitlines() if l.strip()), "")
+    except OSError:
+        return ""
+    if not (first and "\t" in first and not first.startswith("#")):
+        return ""
+    return f"  <- row 1 is a COLUMN HEADER ROW, not data: {n - 1} rows if so"
 
 
 def census(root=None, home=None):
@@ -301,7 +362,21 @@ def census(root=None, home=None):
             # `ast`-BASED AND RETURNS **0 OF THE 62 `.bend` DRIVERS** -- MEASURED -- which is why
             # `symcases.rows` REPORTED "NAMED BY NOTHING" WHILE `sym_graph_census.bend` NAMES IT
             # TWICE. **A FIX THAT BREAKS A CALLER IS NOT A FIX; IT IS A TRADE.**
-            entries = list(entries) + sorted(HERE.glob("*.bend"))
+            #
+            # **`home`, NOT `HERE` -- AND THIS WAS A RED PLANT SINCE THE PLANTS WERE WRITTEN.**
+            # `root`/`home` exist SO `--plant` can drive the REFUSED paths on a synthetic tree. This
+            # line read the module global instead, so on the `refuse/empty-pop` plant -- whose whole
+            # point is `discover()` returning `([], [])` -- the glob reached back into the LIVE
+            # `gates/` and found **60** real `.bend` drivers. `entries` became 60, the
+            # "0 entry points is not a green census" refusal NEVER FIRED, and the plant ran a FULL
+            # CENSUS OF THE REAL TREE inside a synthetic-root refusal and returned **1**.
+            # MEASURED: `--plant` at HEAD already prints `refuse/empty-pop  rc=1  NOT OK` -- and
+            # **rc=1 IS ALSO WHAT A GENUINE RED FINDING RETURNS**, so a broken plant and a working
+            # gate are the same exit code. That is doctrine 2's shape one level down: this file
+            # publishes its own exit-code table and cannot hear its own harness.
+            # **ON THE LIVE RUN `home IS HERE`** (`census()`: `home = home or HERE`), so this is a
+            # **ZERO-EFFECT CHANGE TO THE REAL CENSUS** and a total fix to the plant.
+            entries = list(entries) + sorted(home.glob("*.bend"))
     except Exception as e:                                    # a census that cannot pop is not 0
         return refuse(f"discover() raised {type(e).__name__}: {e}")
     if not entries:
@@ -335,7 +410,8 @@ def census(root=None, home=None):
         bad += [f"{p.name}: {r}" for r in why]
         print(f"  {p.name:34s} rows={n:5d} cols={w or '-':>2} "
               f"{'UNTRACKED ' if untracked else ''}"
-              f"owners={','.join(sorted(named.get(p.name, {'NONE'})))[:56]}")
+              f"owners={','.join(sorted(named.get(p.name, {'NONE'})))[:56]}"
+              + colhead_note(p, n))
     muts, wired = mutate_population(owners_pool)
     print(f"MUTATIONS: {len(muts)} -mutate.py file(s), {len(wired)} wired; the unwired ones are "
           f"{', '.join(m for m in muts if m not in wired) or '(none)'} -- REPORTED, not charged: "
