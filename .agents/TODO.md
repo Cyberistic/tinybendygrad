@@ -465,8 +465,23 @@ rn-PUSH-BLOCKED [######...] 2/3  **NOT LANDED ON ORIGIN -- BLOCKED BY A REAL COR
                                        NOT AN ANCESTOR OF A COMMIT**, so that test could not mean what I
                                        read into it. IT IS THE TREE OF A REAL COMMIT, `591f6b499`
                                        ("TWORED: two correctly-red gates measured"), one of the **20
-                                       unpushed commits**. **THE DEFECT IS SPECIFIC AND SMALL**: that
-                                       commit's tree lists **`gates` TWICE** -- **21 entries, 19 distinct**
+                                       unpushed commits**. **THE DEFECT IS BIGGER THAN I SAID, AND I UNDERSTATED IT TWICE.**
+                                       MEASURED by a second unit: that commit's tree lists **`gates`
+                                       THREE times** (I wrote TWICE from a `uniq -d` line I read
+                                       without its count), **and the duplicate was MASKING A ROOT-LEVEL
+                                       MASS DELETION**: the same tree also DROPS **9 top-level paths /
+                                       36 files** (`langs`, `mkdocs.yml`, `opencode.json`,
+                                       `pyproject.toml`, `serve_docs.sh`, `spec`, `sz.py`, `tools`,
+                                       `uv.lock`), and the arithmetic reconciles exactly
+                                       (`7435 - 182 + 252 = 7505`), with the 36 inside the 182
+                                       phantom deletions `02329daf` repaired. I could NOT reproduce
+                                       that second claim with my own one-liner and say so rather than
+                                       adopt it silently. **ONE DUPLICATE ROOT ENTRY ALSO HIDES A WHOLE
+                                       SUBTREE FROM THE READER**: `ls-tree -r -t` emits **8,572 lines
+                                       for 8,318 distinct paths**, because `gates` is enumerated 3x, and
+                                       `index-arm-gate.py:105,119` build DICTS KEYED BY PATH -- **A DICT
+                                       CANNOT REPRESENT A DUPLICATE ENTRY, SO THE STATE HAS NO
+                                       REPRESENTATION** and `git ls-tree -r` still exits 0.
                                        -- so `git push` fsck-rejects the whole push with
                                        `duplicateEntries: contains duplicate file entries`. **ORIGIN IS
                                        INTACT** (`52d77134b`) and `591f6b499` is **NOT on origin**, so

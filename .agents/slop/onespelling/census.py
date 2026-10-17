@@ -2,7 +2,8 @@
 """Census of the ONE-SPELLING class: a site that reads ONE spelling of a thing and reports the
 result as the whole population.  Four instances were found in one day and they are one shape.
 
-    a delimiter class in a regex  checks/repro-paths.py REF: `(?:^|\\s)` cannot see a backticked path
+    a delimiter class in a regex  checks/repro-paths.py REF: `(?:^|\\s)` could not see a backticked path
+                                  -- RESOLVED at 0895758717, which re-anchored it to `(?<![\\w/.])`
     a BARE BASENAME in prose      `differ.py` is four tracked files
     a single resolution root      .agents/slop/toolsledger/extract.py resolves every token under ROOT
     a MODULE-form call table      checks/sweep.py FS_WRITES, which has a method-form companion
@@ -23,6 +24,14 @@ VERDICTS are doctrine 2's, and SKIP IS NOT PASS:
   POSITIVE  a second spelling exists in this tree and this site cannot see it
   NEGATIVE  looked, and there is none -- a companion covers it, or nothing reads it
   UNKNOWN   not decidable from the tree; the evidence column says why
+
+THE BLIND SPOT THIS FILE NOW HAS, MEASURED 2026-10-17 at HEAD `08554e409`: `widened()` recognises a
+leading `(?:^|...)` and NOTHING else, so a LOOKBEHIND-anchored regex is never a `regex-anchor-set`
+candidate.  `checks/repro-paths.py:64` is `(?<![\\w/.])(...)` and therefore yields ZERO rows -- so no
+future one-spelling defect in that file can be found by this census, and the self-check CANNOT SEE THAT
+IT CANNOT, because a control that asserts a POSITIVE at that path refuses rather than reports the loss.
+Widening `widened()` to also match a leading `(?<!...)` is a change to the KIND DEFINITION, not a control
+fix, and it needs its own brief.
 """
 from __future__ import annotations
 
@@ -463,8 +472,13 @@ def prefixes(path: str) -> list[str]:
 
 # --- self-check ---------------------------------------------------------------------------------
 
+# pos1's path pin died with the defect it named: 0895758717 re-anchored `checks/repro-paths.py:64 REF`
+# to `(?<![\w/.])`, and a POSITIVE asserts a defect that EXISTS -- a repaired site has none left to miss.
+# `None` asks the population question the control was always for: does this KIND still yield this verdict?
+# It still catches a broken `widened()` or an inverted `probe_regex`.  Full argument, with the numbers:
+# .agents/slop/onespelling-control/decision.md.
 CONTROLS = (
-    ("pos1 anchored path regex", "regex-anchor-set", "POSITIVE", "checks/repro-paths.py"),
+    ("pos1 anchored path regex", "regex-anchor-set", "POSITIVE", None),
     ("pos2 bare basename differ.py", "prose-basename-citation", "POSITIVE", "differ.py"),
     ("pos2 bare basename gatekit.py", "prose-basename-citation", "POSITIVE", "gatekit.py"),
     ("pos2 bare basename extract.py", "prose-basename-citation", "POSITIVE", "extract.py"),
@@ -477,8 +491,10 @@ def selfcheck(rows: list[dict], stats: dict) -> list[str]:
     """The control.  Returns its failures; an empty list means the census may be reported."""
     bad = []
     for label, kind, verdict, frag in CONTROLS:
-        if not [r for r in rows if r["kind"] == kind and frag in r["site"] and r["verdict"] == verdict]:
-            bad.append(f"{label}: no {verdict} {kind} site matching {frag}")
+        found = [r for r in rows if r["kind"] == kind and r["verdict"] == verdict
+                 and (frag is None or frag in r["site"])]
+        if not found:
+            bad.append(f"{label}: no {verdict} {kind} site" + (f" matching {frag}" if frag else ""))
     # THE TRAP: FS_DELETES is keyed module-form only, and that is NOT a live blind spot -- nothing
     # reads it, and checks/sweep.py:270-284 says so.  Charging it would be a false charge.
     fd = next((r for r in rows if r["site"].endswith(":FS_DELETES")), None)

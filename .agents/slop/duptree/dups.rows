@@ -1,0 +1,21 @@
+#	dupscan.py output, TAB-separated. ONE HEADER LINE, marked with '#', because
+#	the header convention exists in the tree (see 591f6b499's own message about
+#	gates/oracleblind.rows: two .rows files carried an UNMARKED header and wc -l
+#	was wrong on both). Denominator is stated, because a count without one is
+#	not a result.
+#
+# PINNED_BASE	d0d7ec47086e6a29a078f0e828f81a4f0b05e8da
+# HEAD_AT_FIRST_READ	08554e4097b25bf2ccff295996725fee14825ece
+# HEAD_AT_MEASUREMENT	311e476575e5f043243be6f1a9adaec7ed2db72c   (moved 3x during this task)
+# MEASURED_AT	2026-10-17T03:44:00Z
+# POPULATION	git rev-list <pin> = 16,176 commits
+# SCANNED	16,176 (100% of the population; union of 5 windows, verified == population)
+# METHOD	git cat-file --batch, RAW tree objects, entries vs distinct names, recurse on dup
+# RATE	1/16176 = 0.0062% of commits; 1/500 = 0.2% in the requested 500-window
+# CONTROL	PASS (fires on 591f6b499, silent on 60 origin-verified commits)
+# NOT_MEASURED	duplicate entries in trees that are NOT a commit's root tree, across the
+#	whole history. Only subtrees of a duplicated root were recursed. A memoised
+#	full-tree walk is PROPOSED below and is UNMEASURED.
+#
+commit	duplicated_path	entries	distinct	on_origin_yes_no
+591f6b4993364806eec638d1e69dce547028c132	gates	21	19	no

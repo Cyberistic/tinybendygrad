@@ -1,3 +1,4 @@
+.agents/slop/absentinputs/discover.py:46:WRITE	extension-set	NEGATIVE	no	3 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 .agents/slop/capstream/discover.py:28:CODE_EXT	extension-set	NEGATIVE	no	8 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/capstream/refsplit.py:23:CODE_EXT	extension-set	NEGATIVE	no	8 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/concise/census.py:30:SUFFIXES	extension-set	NEGATIVE	no	2 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 0 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
@@ -8,31 +9,31 @@
 .agents/slop/emptyevid/siblings.py:14:CAP	extension-set	NEGATIVE	no	5 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 0 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/formblind-census.py:75:CODE_EXT	extension-set	UNKNOWN	?	4 extensions; 2 TRACKED extension(s) are longer and start with a member: .json, .sha256, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/gatesrun/run.py:35:SUFFIXES	extension-set	UNKNOWN	?	2 extensions; 1 TRACKED extension(s) are longer and start with a member: .sha256, but the call this set is used at was not located, so truncation is unproven
-.agents/slop/gatesrun/run.py:44:WRITE_SRC	extension-set	NEGATIVE	no	3 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+.agents/slop/gatesrun/run.py:44:WRITE_SRC	extension-set	NEGATIVE	no	3 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 .agents/slop/gatesrun/scan.py:18:SUFFIXES	extension-set	UNKNOWN	?	2 extensions; 1 TRACKED extension(s) are longer and start with a member: .sha256, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/inst13/recount.py:76:CODE_EXT	extension-set	UNKNOWN	?	5 extensions; 2 TRACKED extension(s) are longer and start with a member: .json, .sha256, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/inst13/restore.py:13:CODE_EXT	extension-set	UNKNOWN	?	5 extensions; 2 TRACKED extension(s) are longer and start with a member: .json, .sha256, but the call this set is used at was not located, so truncation is unproven
-.agents/slop/lostinst/crosscheck.py:13:EXT	extension-set	NEGATIVE	no	22 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+.agents/slop/lostinst/crosscheck.py:13:EXT	extension-set	NEGATIVE	no	22 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 .agents/slop/needsaudit/plant.py:42:CODE_EXT	extension-set	UNKNOWN	?	6 extensions; 3 TRACKED extension(s) are longer and start with a member: .json, .sha256, .tsv, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/needsaudit/plant.py:43:ECHO_EXT	extension-set	UNKNOWN	?	5 extensions; 0 TRACKED extension(s) are longer and start with a member: , but the call this set is used at was not located, so truncation is unproven
-.agents/slop/nostraysshape/counts.py:16:OLD	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
-.agents/slop/nostraysshape/counts.py:17:NEW	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+.agents/slop/nostraysshape/counts.py:16:OLD	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+.agents/slop/nostraysshape/counts.py:17:NEW	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 .agents/slop/offrepo/callers.py:34:DOC_SUFFIX	extension-set	UNKNOWN	?	9 extensions; 0 TRACKED extension(s) are longer and start with a member: , but the call this set is used at was not located, so truncation is unproven
 .agents/slop/orcdecide/verdicts.py:16:CODE	extension-set	NEGATIVE	no	6 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
-.agents/slop/orcfix/discover.py:15:LIB	extension-set	UNKNOWN	yes	2 extension(s) inside a pattern; applied to 4591 tracked filenames it reads bounded-selftest.sh.0.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
-.agents/slop/orcfix/lanes.py:29:LIB	extension-set	UNKNOWN	yes	2 extension(s) inside a pattern; applied to 4591 tracked filenames it reads bounded-selftest.sh.0.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
+.agents/slop/orcfix/discover.py:15:LIB	extension-set	UNKNOWN	yes	2 extension(s) inside a pattern; applied to 4718 tracked filenames it reads bounded-selftest.sh.0.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
+.agents/slop/orcfix/lanes.py:29:LIB	extension-set	UNKNOWN	yes	2 extension(s) inside a pattern; applied to 4718 tracked filenames it reads bounded-selftest.sh.0.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
 .agents/slop/shadowcopies/scanplants.py:27:EXTS	extension-set	UNKNOWN	?	15 extensions; 8 TRACKED extension(s) are longer and start with a member: .cmp, .cpp, .css, .cu, .cuh, .json, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/sloptxt/readers.py:19:CODE_EXT	extension-set	NEGATIVE	no	8 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/substrateid2/census.py:190:PROGRAMS	extension-set	NEGATIVE	no	9 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/substratepop/measure.py:25:POP_SUFFIXES	extension-set	NEGATIVE	no	4 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 6 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 .agents/slop/sweepdirs/census.py:32:CODE_EXT	extension-set	UNKNOWN	?	5 extensions; 2 TRACKED extension(s) are longer and start with a member: .json, .sha256, but the call this set is used at was not located, so truncation is unproven
 .agents/slop/toolsledger/probe.py:30:EXTS	extension-set	NEGATIVE	no	21 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 7 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
-checks/abi_gate.py:492:UNDECLARED_REF	extension-set	NEGATIVE	no	5 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
-checks/cites-census.py:105:LOCATORISH	extension-set	UNKNOWN	yes	13 extension(s) inside a pattern; applied to 4591 tracked filenames it reads D0-selfcheck.txt.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
+checks/abi_gate.py:504:UNDECLARED_REF	extension-set	NEGATIVE	no	5 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+checks/cites-census.py:105:LOCATORISH	extension-set	UNKNOWN	yes	13 extension(s) inside a pattern; applied to 4718 tracked filenames it reads D0-selfcheck.txt.err as a member plus the tail '.err'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
 checks/cites-census.py:50:EXTS	extension-set	UNKNOWN	?	2 extensions; 0 TRACKED extension(s) are longer and start with a member: , but the call this set is used at was not located, so truncation is unproven
-checks/no-strays.py:121:SCRATCH_SHAPE	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
-checks/no-strays.py:73:SCRATCH_NAME	extension-set	NEGATIVE	no	7 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
-checks/nvrows-deadrow-gate.py:84:CALL	extension-set	NEGATIVE	no	2 extension(s) inside a pattern; applied to 4591 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+checks/no-strays.py:121:SCRATCH_SHAPE	extension-set	NEGATIVE	no	4 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+checks/no-strays.py:73:SCRATCH_NAME	extension-set	NEGATIVE	no	7 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
+checks/nvrows-deadrow-gate.py:84:CALL	extension-set	NEGATIVE	no	2 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 checks/oracle-txt-census.py:76:GATE_CODE	extension-set	UNKNOWN	?	2 extensions; 1 TRACKED extension(s) are longer and start with a member: .sha256, but the call this set is used at was not located, so truncation is unproven
 checks/oracle-txt-census.py:79:TRUTHFUL	extension-set	UNKNOWN	?	10 extensions; 1 TRACKED extension(s) are longer and start with a member: .sha256, but the call this set is used at was not located, so truncation is unproven
 checks/slop-declare.py:101:CODE	extension-set	UNKNOWN	?	7 extensions; 3 TRACKED extension(s) are longer and start with a member: .json, .sha256, .tsv, but the call this set is used at was not located, so truncation is unproven
@@ -42,9 +43,12 @@ checks/sweep.py:164:TOOL_EXT	extension-set	UNKNOWN	?	7 extensions; 8 TRACKED ext
 checks/txt-owners.py:54:CODE	extension-set	NEGATIVE	no	8 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 checks/unowned.py:74:PROSE	extension-set	NEGATIVE	no	7 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 0 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 checks/unowned.py:78:HASH_COMMENT	extension-set	NEGATIVE	no	10 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 3 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
+checks/unrunnable-recipes.py:187:EXECUTABLE_SUFFIX	extension-set	NEGATIVE	no	14 extension(s) inside a pattern; applied to 4718 tracked filenames it reads none of them as a member plus a tail, so none is rewritten
 checks/wallcheck.py:48:SUFFIXES	extension-set	UNKNOWN	?	12 extensions; 8 TRACKED extension(s) are longer and start with a member: .cmp, .cpp, .css, .cu, .cuh, .html, but the call this set is used at was not located, so truncation is unproven
+gates/docnum-census.py:100:PROSE_EXT	extension-set	NEGATIVE	no	3 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 0 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
+gates/docnum-claim-gate.py:165:SITE_SUFFIX	extension-set	NEGATIVE	no	3 extensions handed to endswith/fnmatch, which compare the tail exactly, so none of the 0 longer tracked extension(s) is rewritten. A use site that builds a pattern from this set was not excluded
 gates/gendirs.py:70:SOURCE_SUFFIXES	extension-set	UNKNOWN	?	4 extensions; 2 TRACKED extension(s) are longer and start with a member: .json, .sha256, but the call this set is used at was not located, so truncation is unproven
-gates/msgdiff-gate.py:111:PATH	extension-set	UNKNOWN	yes	26 extension(s) inside a pattern; applied to 4591 tracked filenames it reads D-after.sha256 as a member plus the tail '.sha256'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
+gates/msgdiff-gate.py:111:PATH	extension-set	UNKNOWN	yes	26 extension(s) inside a pattern; applied to 4718 tracked filenames it reads D-after.sha256 as a member plus the tail '.sha256'. The second spelling EXISTS; whether reading it is wrong depends on the subject, which the tree does not state
 checks/sweep.py:257:FS_WRITES	module-attr-table	NEGATIVE	yes	16 (module, attr) entries read 1x; FS_METHOD_WRITES is the method-form companion, sharing mkdir, open, rename, replace
 checks/sweep.py:285:FS_DELETES	module-attr-table	NEGATIVE	yes	4 (module, attr) entries, 0 reads: DEAD, and a table nothing reads cannot mislead a reader
 checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) entries read 1x; FS_READ_METHODS is the method-form companion, sharing lstat, readlink, stat
@@ -55,6 +59,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:CLAIM.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/arith/CLAIM.md, .agents/slop/flip/CLAIM.md
 .md:D0-run-summary.rows	prose-basename-citation	POSITIVE	yes	8 tracked files share this basename: .agents/slop/corpusproto/tree/D0-run-summary.rows, .agents/slop/differverdict/pristine/runs/graphcmp/D/D0-run-summary.rows, .agents/slop/differverdict/shell-D/D0-run-summary.rows, .agents/slop/differverdict/warm-oracle/D0-run-summary.rows
 .md:D0-run-summary.txt	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/figure2/plant/broken/runs/graphcmp/D/D0-run-summary.txt, .agents/slop/figure2/plant/real/runs/graphcmp/D/D0-run-summary.txt
+.md:D0-selfcheck.txt.err	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/figurefix/plant/D-live/D0-selfcheck.txt.err, .agents/slop/rerun/D-before/D0-selfcheck.txt.err
 .md:D10-zerorow-guard.txt.err	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/figurefix/plant/D-live/D10-zerorow-guard.txt.err, .agents/slop/rerun/D-before/D10-zerorow-guard.txt.err
 .md:FINDINGS.md	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/arghalf/FINDINGS.md, .agents/slop/e2esh/FINDINGS.md, .agents/slop/loopfix/FINDINGS.md, .agents/slop/preconds/FINDINGS.md
 .md:MANIFEST.tsv	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/land71/MANIFEST.tsv, .agents/slop/oracles259/MANIFEST.tsv, .agents/slop/slopcopies/MANIFEST.tsv, .agents/slop/strays/MANIFEST.tsv
@@ -65,7 +70,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:PLANT.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clearfix/PLANT.rows, .agents/slop/stalefix/PLANT.rows
 .md:README.md	prose-basename-citation	POSITIVE	yes	56 tracked files share this basename: .agents/slop/abi4/README.md, .agents/slop/abi4check/README.md, .agents/slop/abifix/README.md, .agents/slop/bitcastrow/README.md
 .md:REPLACEMENTS.md	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/agend2/REPLACEMENTS.md, .agents/slop/agendop/REPLACEMENTS.md, .agents/slop/agendop2/REPLACEMENTS.md, .agents/slop/bullets/REPLACEMENTS.md
-.md:REPORT.md	prose-basename-citation	POSITIVE	yes	208 tracked files share this basename: .agents/slop/adev/REPORT.md, .agents/slop/adevfix/REPORT.md, .agents/slop/agend/REPORT.md, .agents/slop/agend2/REPORT.md
+.md:REPORT.md	prose-basename-citation	POSITIVE	yes	227 tracked files share this basename: .agents/slop/absentinputs/REPORT.md, .agents/slop/actionable/REPORT.md, .agents/slop/adev/REPORT.md, .agents/slop/adevfix/REPORT.md
 .md:STAGE1.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clangshim/STAGE1.md, .agents/slop/portexec/STAGE1.md
 .md:STAGE2.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clangshim/STAGE2.md, .agents/slop/portexec/STAGE2.md
 .md:STAGE3.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clangshim/STAGE3.md, .agents/slop/portexec/STAGE3.md
@@ -98,14 +103,15 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:cdp.mjs	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/fixures/xd2/cdp.mjs, .agents/slop/xd2/cdp.mjs
 .md:census.json	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/declared472/census.json, .agents/slop/lostinst/census.json, .agents/slop/oracles259/census.json, .agents/slop/oracletxt/census.json
 .md:census.out	prose-basename-citation	POSITIVE	yes	13 tracked files share this basename: .agents/slop/dangle/census.out, .agents/slop/deadwhenabsent/census.out, .agents/slop/figure2/census.out, .agents/slop/nameless/census.out
-.md:census.py	prose-basename-citation	POSITIVE	yes	26 tracked files share this basename: .agents/slop/argowner/census.py, .agents/slop/census7/decoy/census.py, .agents/slop/checkshells/census.py, .agents/slop/concise/census.py
+.md:census.py	prose-basename-citation	POSITIVE	yes	27 tracked files share this basename: .agents/slop/argowner/census.py, .agents/slop/census7/decoy/census.py, .agents/slop/checkshells/census.py, .agents/slop/concise/census.py
 .md:census.rows	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/argowner/census.rows, .agents/slop/indextree/census.rows, .agents/slop/peakrss/census.rows, .agents/slop/prune4/census.rows
 .md:cited.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/cited.py, .agents/slop/orcdecide/retired/cited.py
 .md:cites.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/citetruth/cites.rows, .agents/slop/dangle/cites.rows
 .md:cl-port-gate.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clangshim/cl-port-gate.py, checks/cl-port-gate.py
+.md:claims.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/claimaudit/claims.rows, .agents/slop/claimaudit2/claims.rows, .agents/slop/precision/claims.rows
 .md:classified.json	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/emptyblob/classified.json, .agents/slop/emptyevid/classified.json, .agents/slop/oracles259/classified.json, .agents/slop/orcdecide/retired/classified.json
 .md:classify.err	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/classify.err, .agents/slop/orcdecide/retired/classify.err
-.md:classify.py	prose-basename-citation	POSITIVE	yes	9 tracked files share this basename: .agents/slop/emptyblob/classify.py, .agents/slop/emptyevid/classify.py, .agents/slop/gatecensus/classify.py, .agents/slop/oracles259/classify.py
+.md:classify.py	prose-basename-citation	POSITIVE	yes	10 tracked files share this basename: .agents/slop/armclass/classify.py, .agents/slop/emptyblob/classify.py, .agents/slop/emptyevid/classify.py, .agents/slop/gatecensus/classify.py
 .md:cli.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: checks/cli.py, tinygrad/llm/cli.py, tinygrad/viz/cli.py
 .md:common.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: extra/amdflash/common.py, tinygrad/runtime/autogen/amd/common.py
 .md:compare.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/bendpin/compare.py, .agents/slop/flagtable/compare.py, .agents/slop/prune2/compare.py
@@ -118,6 +124,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:counts.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/nostraysshape/counts.rows, .agents/slop/substratepop/counts.rows
 .md:counts.tsv	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/declared472/counts.tsv, .agents/slop/declared473/counts.tsv
 .md:coverage.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/e2e_port/coverage.py, checks/coverage.py
+.md:decision.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/onespelling-control/decision.md, .agents/slop/onespelling-decision/decision.md
 .md:declared_join.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/declared_join.py, .agents/slop/orcdecide/retired/declared_join.py
 .md:delete.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/prune3/delete.py, .agents/slop/prune4/delete.py, .agents/slop/strayblobs/delete.py
 .md:derive.py	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/declared472/derive.py, .agents/slop/declared473/derive.py, .agents/slop/emptyact/derive.py, .agents/slop/pinindep/derive.py
@@ -131,7 +138,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:differ-run2.out	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/rerun2/differ-run2.out, .agents/slop/runfinal/differ-run2.out
 .md:differ.py	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/corpuswire/tree/checks/differ.py, .agents/slop/figure2/plant/broken/checks/differ.py, .agents/slop/figure2/plant/real/checks/differ.py, checks/differ.py
 .md:disarm.sh	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/guardfix/disarm.sh, checks/disarm.sh
-.md:discover.py	prose-basename-citation	POSITIVE	yes	9 tracked files share this basename: .agents/slop/capstream/discover.py, .agents/slop/emptyblob/discover.py, .agents/slop/emptyevid/discover.py, .agents/slop/orcfix/discover.py
+.md:discover.py	prose-basename-citation	POSITIVE	yes	10 tracked files share this basename: .agents/slop/absentinputs/discover.py, .agents/slop/capstream/discover.py, .agents/slop/emptyblob/discover.py, .agents/slop/emptyevid/discover.py
 .md:divergence.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/shellgates/divergence.rows, .agents/slop/suffixset/divergence.rows
 .md:dsl.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/strays/working/tinybendygrad/renderer/amd/dsl.bend, tinybendygrad/renderer/amd/dsl.bend
 .md:dtype.bend	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: tinybendygrad/codegen/decomp/dtype.bend, tinybendygrad/dtype.bend, tinybendygrad/mixin/dtype.bend
@@ -150,6 +157,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:extract.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/shapecensus/extract.py, .agents/slop/toolsledger/extract.py
 .md:final.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/prune4/final.py, .agents/slop/residual/final.py, .agents/slop/subtree/final.py
 .md:final.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/residual/final.rows, .agents/slop/subtree/final.rows
+.md:findings.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/armclasstxt/findings.rows, .agents/slop/onespelling/findings.rows, .agents/slop/shapecensus/findings.rows
 .md:fold.bend	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/strays/origin/tinybendygrad/uop/fold.bend, .agents/slop/strays/working/tinybendygrad/uop/fold.bend, tinybendygrad/uop/fold.bend
 .md:freeze.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clearfix/freeze.py, .agents/slop/residual/freeze.py
 .md:frozen.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/residual/frozen.rows, .agents/slop/roster2/frozen.rows
@@ -162,6 +170,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:gate.sh	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/cidsweep/gate.sh, .agents/slop/frombits/gate.sh, .agents/slop/i64div/gate.sh, checks/gate.sh
 .md:gatekit.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/clearfix/gk/gatekit.py, .agents/slop/clearfix/gk2/gatekit.py, gates/gatekit.py
 .md:gen.sh	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: checks/gen.sh, extra/dsp/gen.sh, extra/qcom_gpu_driver/gen.sh
+.md:gen_gate.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/i64mul/gen_gate.py, checks/gen_gate.py
 .md:generate.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/strays/working/tinybendygrad/renderer/amd/generate.bend, tinybendygrad/renderer/amd/generate.bend
 .md:git-massdelete-gate.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/jjreset/git-massdelete-gate.py, gates/git-massdelete-gate.py
 .md:gpudims.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/strays/working/tinybendygrad/codegen/gpudims.bend, tinybendygrad/codegen/gpudims.bend
@@ -180,7 +189,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:manifest-write.out	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/manifest-write.out, .agents/slop/orcdecide/retired/manifest-write.out
 .md:manifest.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/manifest.py, .agents/slop/orcdecide/retired/manifest.py
 .md:measure.out	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/ledgerdrift/measure.out, .agents/slop/oraclerestore/measure.out, .agents/slop/repropin/measure.out, .agents/slop/substrateid/measure.out
-.md:measure.py	prose-basename-citation	POSITIVE	yes	11 tracked files share this basename: .agents/slop/agend2/measure.py, .agents/slop/citetruth/measure.py, .agents/slop/nostraysshape/measure.py, .agents/slop/oraclerestore/measure.py
+.md:measure.py	prose-basename-citation	POSITIVE	yes	12 tracked files share this basename: .agents/slop/agend2/measure.py, .agents/slop/citetruth/measure.py, .agents/slop/nostraysshape/measure.py, .agents/slop/onespelling-control/measure.py
 .md:measure2.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/nostraysshape/measure2.py, .agents/slop/subtree/measure2.py
 .md:memory.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: tinybendygrad/runtime/support/memory.bend, tinybendygrad/schedule/memory.bend
 .md:memory.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: tinygrad/runtime/support/memory.py, tinygrad/schedule/memory.py
@@ -212,7 +221,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:ordering.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/ordering.py, .agents/slop/orcdecide/retired/ordering.py
 .md:othercopies.json	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/othercopies.json, .agents/slop/orcdecide/retired/othercopies.json
 .md:othercopies.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/oracles259/othercopies.py, .agents/slop/orcdecide/retired/othercopies.py
-.md:paths.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/ledgerdrift/paths.rows, .agents/slop/oracles259/paths.rows, .agents/slop/orcdecide/retired/paths.rows
+.md:paths.rows	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/ledgerdrift/paths.rows, .agents/slop/oracles259/paths.rows, .agents/slop/orcdecide/retired/paths.rows, .agents/slop/rninputs/paths.rows
 .md:plan.py	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/capstream/plan.py, .agents/slop/declared472/plan.py, .agents/slop/sloptxt/plan.py, .agents/slop/stale269/plan.py
 .md:plant-disarm.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/clearfix/plant-disarm.py, .agents/slop/stalefix/plant-disarm.py
 .md:plant.err	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/argowner/plant.err, .agents/slop/jjreset/plant.err, .agents/slop/laws17/plant.err, .agents/slop/needsaudit/plant.err
@@ -224,7 +233,7 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:prepare.bend	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/argowner/mine/prepare.bend, .agents/slop/strays/working/tinybendygrad/schedule/prepare.bend, tinybendygrad/schedule/prepare.bend
 .md:probe.err	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/portunknown/probe.err, .agents/slop/twopass/probe.err
 .md:probe.out	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/hooks/probe.out, .agents/slop/portunknown/probe.out, .agents/slop/reprorefs/probe.out, .agents/slop/substrateid2/probe.out
-.md:probe.py	prose-basename-citation	POSITIVE	yes	10 tracked files share this basename: .agents/slop/bendperf/probe.py, .agents/slop/buffergraphs/probe.py, .agents/slop/clauseVfix/probe.py, .agents/slop/onemodule/probe.py
+.md:probe.py	prose-basename-citation	POSITIVE	yes	11 tracked files share this basename: .agents/slop/bendperf/probe.py, .agents/slop/buffergraphs/probe.py, .agents/slop/citesbacklog/probe.py, .agents/slop/clauseVfix/probe.py
 .md:probe.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/abifix/probe.rows, .agents/slop/jjhazard/probe.rows, .agents/slop/onemodule/probe.rows
 .md:proof.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/corpusproto/proof.py, .agents/slop/corpuswire/tree/proof.py
 .md:properties.md	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/gendirs/properties.md, docs/tensor/properties.md
@@ -258,15 +267,18 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:rows-threefry-bend.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/whichgroup/rows/rows-threefry-bend.rows, .agents/slop/whichgroup/snap/rows-threefry-bend.rows, checks/rows/rows-threefry-bend.rows
 .md:rows.json	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: oracles/abi4/rows.json, oracles/jsfix/rows.json, oracles/rows.json
 .md:rows.out	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/substrateid2/rows.out, .agents/slop/tcptxweak/rows.out
+.md:rows.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/absentinputs/rows.py, .agents/slop/stale269/rows.py
 .md:run-all.sh	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/cstyle-live/run-all.sh, checks/run-all.sh
 .md:run-f64.sh	prose-basename-citation	POSITIVE	yes	14 tracked files share this basename: .agents/slop/e2epy/fixtures/plant-deadbend/.agents/slop/f64/run-f64.sh, .agents/slop/e2epy/fixtures/plant-no-node/.agents/slop/f64/run-f64.sh, .agents/slop/e2epy/fixtures/plant-no-zsh/.agents/slop/f64/run-f64.sh, .agents/slop/e2epy/fixtures/plant-pass/.agents/slop/f64/run-f64.sh
 .md:run-port-mm.sh	prose-basename-citation	POSITIVE	yes	14 tracked files share this basename: .agents/slop/e2e_port/run-port-mm.sh, .agents/slop/e2epy/fixtures/plant-deadbend/.agents/slop/e2e_port/run-port-mm.sh, .agents/slop/e2epy/fixtures/plant-no-node/.agents/slop/e2e_port/run-port-mm.sh, .agents/slop/e2epy/fixtures/plant-no-zsh/.agents/slop/e2e_port/run-port-mm.sh
 .md:run.err	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/censusred/run.err, .agents/slop/rerun/run.err, .agents/slop/run34/run.err, .agents/slop/run34b/run.err
-.md:run.out	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/censusred/run.out, .agents/slop/inst13/run.out, .agents/slop/opdenom/run.out, .agents/slop/rerun/run.out
+.md:run.out	prose-basename-citation	POSITIVE	yes	7 tracked files share this basename: .agents/slop/actionable/run.out, .agents/slop/censusred/run.out, .agents/slop/inst13/run.out, .agents/slop/opdenom/run.out
 .md:run.py	prose-basename-citation	POSITIVE	yes	9 tracked files share this basename: .agents/slop/dtypeb/run.py, .agents/slop/gatecensus/run.py, .agents/slop/gatesrun/run.py, .agents/slop/hooks/run.py
-.md:runner.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/declareverdict/runner.py, .agents/slop/inst13/runner.py
+.md:runner.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/declareverdict/runner.py, .agents/slop/inst13/runner.py, gates/runner.py
+.md:sample.rows	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/citesbacklog/sample.rows, .agents/slop/dangle/sample.rows, .agents/slop/onespelling-precision/sample.rows
 .md:sb-oracle.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: oracles/sb-oracle.rows, oracles/schedule-bodies/sb-oracle.rows
-.md:scan.py	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/chkcites/scan.py, .agents/slop/denominator/scan.py, .agents/slop/envguard/scan.py, .agents/slop/gatesrun/scan.py
+.md:scan.py	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/actionable/scan.py, .agents/slop/chkcites/scan.py, .agents/slop/denominator/scan.py, .agents/slop/envguard/scan.py
+.md:self.rows	prose-basename-citation	POSITIVE	yes	6 tracked files share this basename: .agents/slop/loopfix/self-old/self.rows, .agents/slop/loopfix/self-probe/self.rows, .agents/slop/loopfix/self2-new/self.rows, .agents/slop/loopfix/self2-old/self.rows
 .md:selftest.out	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/gwself/selftest.out, .agents/slop/oracletxt/selftest.out
 .md:selftest.py	prose-basename-citation	POSITIVE	yes	5 tracked files share this basename: .agents/slop/concise/selftest.py, .agents/slop/constfix/selftest.py, .agents/slop/oracletxt/selftest.py, .agents/slop/unsetexp/selftest.py
 .md:serve.py	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: checks/serve.py, extra/remote/serve.py, tinygrad/llm/serve.py, tinygrad/viz/serve.py
@@ -279,7 +291,8 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:static-check.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/bendarms/static-check.py, .agents/slop/threegraphs/static-check.py
 .md:substrate-check.sh	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/substrate-check.sh, checks/substrate-check.sh
 .md:summarize.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/declared473/summarize.py, .agents/slop/gitignore/summarize.py
-.md:sweep.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/bendsuite/sweep.py, .agents/slop/orcdecide/sweep.py, checks/sweep.py
+.md:summary.out	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/citesbacklog/summary.out, .agents/slop/gitignore/summary.out
+.md:sweep.py	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/bendsuite/sweep.py, .agents/slop/maybenone/sweep.py, .agents/slop/orcdecide/sweep.py, checks/sweep.py
 .md:sweep.sh	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/deadarm/sweep.sh, .agents/slop/lastlaw/sweep.sh
 .md:sz.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: checks/sz.py, sz.py
 .md:table.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/bitcastrow/table.py, .agents/slop/pinindep/table.py
@@ -289,16 +302,16 @@ checks/sweep.py:292:FS_READS	module-attr-table	NEGATIVE	yes	5 (module, attr) ent
 .md:usb.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/strays/working/tinybendygrad/runtime/support/usb.bend, tinybendygrad/runtime/support/usb.bend
 .md:usb.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: test/mockgpu/usb.py, tinygrad/runtime/support/usb.py
 .md:verdicts.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/e2estage8/verdicts.py, .agents/slop/orcdecide/verdicts.py, .agents/slop/shells/verdicts.py
-.md:verify.py	prose-basename-citation	POSITIVE	yes	3 tracked files share this basename: .agents/slop/lostinst/verify.py, .agents/slop/oraclerestore/verify.py, .agents/slop/realizegaps/verify.py
+.md:verdicts.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/citesbacklog/verdicts.rows, .agents/slop/jjreset/verdicts.rows
+.md:verify.py	prose-basename-citation	POSITIVE	yes	4 tracked files share this basename: .agents/slop/lostinst/verify.py, .agents/slop/maybenone/verify.py, .agents/slop/oraclerestore/verify.py, .agents/slop/realizegaps/verify.py
 .md:webgpu_call.js	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/e2e/webgpu_call.js, tinybendygrad/runtime/webgpu_call.js
 .md:webgpu_call.mjs	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/e2e/webgpu_call.mjs, tinybendygrad/runtime/webgpu_call.mjs
 .md:where.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/offrepo/where.py, .agents/slop/stale269/where.py
 .md:wire.py	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/hooks/wire.py, .agents/slop/jjreset/wire.py
 .md:wk-f32-table.rows	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/wk-f32-table.rows, gates/wk-f32-table.rows
 .md:wk-f32.bend	prose-basename-citation	POSITIVE	yes	2 tracked files share this basename: .agents/slop/wk-f32.bend, gates/wk-f32.bend
-.agents/slop/reprorefs/probe.py:26:OLD	regex-anchor-set	POSITIVE	yes	over 551 committed .md files: anchored names 572, anchor dropped names 1340. 768 spellings invisible. Preceding delimiter: '`'x4962 ' 'x1458 '\n'x148 '/'x84 '"'x41
-.agents/slop/reprorefs/probe.py:27:PERMISSIVE	regex-anchor-set	POSITIVE	yes	over 551 committed .md files: anchored names 728, anchor dropped names 3510. 2782 spellings invisible. Preceding delimiter: '`'x8983 ' 'x3136 "'"x718 '/'x666 '\n'x203
-checks/repro-paths.py:64:REF	regex-anchor-set	POSITIVE	yes	over 551 committed .md files: anchored names 728, anchor dropped names 3510. 2782 spellings invisible. Preceding delimiter: '`'x8983 ' 'x3136 "'"x718 '/'x666 '\n'x203
+.agents/slop/reprorefs/probe.py:26:OLD	regex-anchor-set	POSITIVE	yes	over 572 committed .md files: anchored names 604, anchor dropped names 1436. 832 spellings invisible. Preceding delimiter: '`'x5678 ' 'x1533 '\n'x160 '/'x88 '"'x45
+.agents/slop/reprorefs/probe.py:27:PERMISSIVE	regex-anchor-set	POSITIVE	yes	over 572 committed .md files: anchored names 784, anchor dropped names 3656. 2872 spellings invisible. Preceding delimiter: '`'x9826 ' 'x3242 "'"x724 '/'x673 '\n'x218
 .agents/slop/ledgerdrift/drift.py:38:ROOT	single-base-resolver	POSITIVE	yes	ROOT resolves every token under one base; 26 of the '/'-bearing tokens .agents/TOOLS.md writes resolve only under a different root, e.g. LAWS/spec.bend -> tinybendygrad/LAWS/spec.bend, codegen/decomp/dtype.bend -> tinybendygrad/codegen/decomp/dtype.bend, codegen/late/linearizer.bend -> tinybendygrad/codegen/late/linearizer.bend
 .agents/slop/prune4/census.py:10:ROOT	single-base-resolver	UNKNOWN	?	input corpus '.agents/slop/prune4/census.rows' is not a committed .md file
 .agents/slop/shapecensus/toolsmd.py:20:ROOT	single-base-resolver	POSITIVE	yes	ROOT resolves every token under one base; 26 of the '/'-bearing tokens .agents/TOOLS.md writes resolve only under a different root, e.g. LAWS/spec.bend -> tinybendygrad/LAWS/spec.bend, codegen/decomp/dtype.bend -> tinybendygrad/codegen/decomp/dtype.bend, codegen/late/linearizer.bend -> tinybendygrad/codegen/late/linearizer.bend

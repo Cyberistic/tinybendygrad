@@ -1,10 +1,15 @@
 # ONE SPELLING: a census of instruments that read one spelling of a thing and call it the population
 
-**MEASURED 2026-10-16T13:21:36Z at HEAD `037d5d536e215b599d7770955ca3733f79b02fca`** (the tree is a
-moving target; another session commits continuously, and this HEAD is not the one this file was
-written against). Instrument: `census.py`, 543 lines. Rows: `findings.rows`, 307 lines, TAB-separated
-`site / kind / verdict / second_spelling_found / evidence`. `.venv/bin/python census.py --selfcheck`
-exits 3 without writing anything if the control fails.
+**MEASURED 2026-10-17T03:32Z at HEAD `25daf8555c70abc1ee92f50e3fabf8d045748741`** (the tree is a
+moving target; another session commits continuously). **This run is green: `selfcheck : OK -- 6
+controls`** and rc 0 — the fourth refusal, and it was the control's, not the instrument's; see THE
+SELF-CHECK below. Instrument: `census.py`, 559 lines. Rows: `findings.rows`, 320 lines,
+TAB-separated `site / kind / verdict / second_spelling_found / evidence`. `.venv/bin/python census.py
+--selfcheck` exits 3 without writing anything if the control fails.
+
+**KNOWN BLIND SPOT, introduced by that repair:** `checks/repro-paths.py:64` is no longer in this
+census's population at all (0 rows), so no future one-spelling defect in that file can be found here,
+and the self-check cannot see that it cannot. Stated in `census.py`'s docstring.
 
 ## THE CLASS
 
@@ -13,7 +18,7 @@ reports the result as the whole population.** The four, each verified by reading
 
 | # | site | one spelling | the second spelling it cannot see |
 |---|---|---|---|
-| 1 | `checks/repro-paths.py:64` `REF` | a path is preceded by `^` or whitespace | markdown writes it inside BACKTICKS |
+| 1 | `checks/repro-paths.py:64` `REF` | a path is preceded by `^` or whitespace | markdown writes it inside BACKTICKS — **RESOLVED at `0895758717`**, which re-anchored it to `(?<![\w/.])` |
 | 2 | `.agents/TOOLS.md` and the reports | `differ.py` is a file | 4 tracked files are |
 | 3 | `.agents/slop/toolsledger/extract.py:15` `ROOT` | every token resolves under one base | the ledger writes `uop/ops.bend` for `tinybendygrad/uop/ops.bend` |
 | 4 | `checks/sweep.py:257` `FS_WRITES` | a write is `("os", "makedirs")` | it is also `p.mkdir()` — which is why the table has a companion |
@@ -23,20 +28,20 @@ reports the result as the whole population.** The four, each verified by reading
 Nothing is listed; everything is walked.
 
 ```
-population : 1835 committed .py, 551 committed .md, 7308 committed paths
+population : 1901 committed .py, 572 committed .md, 7461 committed paths
              -- every one from `git ls-tree -r HEAD`, never from the index
-module-level literals examined : 100951  (from 1369 .py parsed; 466 dropped by the column-0 grammar gate)
-CANDIDATE SITES : 307
-   extension-set=47  module-attr-table=3  prose-basename-citation=248  regex-anchor-set=3  single-base-resolver=6
-bare basenames cited : 4228, ambiguous 248
-VERDICTS : NEGATIVE=27  POSITIVE=254  UNKNOWN=26
+module-level literals examined : 101549  (from 1433 .py parsed; 468 dropped by the column-0 grammar gate)
+CANDIDATE SITES : 320
+   extension-set=51  module-attr-table=3  prose-basename-citation=258  regex-anchor-set=2  single-base-resolver=6
+bare basenames cited : 4429, ambiguous 258
+VERDICTS : NEGATIVE=31  POSITIVE=263  UNKNOWN=26
 ```
 
-**How the 100,951 were enumerated.** `ast.parse` over the committed `.py`, then every module-level
+**How the 101,549 were enumerated.** `ast.parse` over the committed `.py`, then every module-level
 `Assign`/`AnnAssign` whose target is a bare name. A line that starts at column 0 with an identifier
-and `=` is a NECESSARY condition of that, so 466 files were dropped before parsing — reported above,
+and `=` is a NECESSARY condition of that, so 468 files were dropped before parsing — reported above,
 not swallowed — and dropping them lost no candidate: the literal count is identical with and without
-the gate (100,951).
+the gate (101,549).
 
 **The four candidate kinds**, and what makes a site one:
 
@@ -55,17 +60,24 @@ the gate (100,951).
 
 ## THE VERDICTS, WITH MEMBERS NAMED
 
-### POSITIVE — 254
+### POSITIVE — 263
 
-**`regex-anchor-set`, 3 sites, and this is known positive #1.** `checks/repro-paths.py:64` `REF`, over
-the 551 committed `.md`: the anchored pattern names **728** distinct group-1 matches, the same pattern
-with its anchor dropped names **3510**, so **2782 spellings are invisible**. The preceding delimiter
-histogram is measured, not guessed: `` ` ``×8983, space×3136, `'`×718, `/`×666, newline×203. The
-other two are `.agents/slop/reprorefs/probe.py:26` `OLD` (572 → 1340, 768 invisible) and `:27`
-`PERMISSIVE` (728 → 3510, the same numbers, which is the cross-check: that file reproduces the shipped
-pattern). `checks/repro-paths.py`'s own corpus, measured the same way, is **726 named + 2 patterns**
-against 551 reports — the tree moved between the brief's reading (543 reports, 716/3473) and this one,
-so quote the pair, never either number alone.
+**`regex-anchor-set`, 2 sites, and this is known positive #1 no longer among them.** `checks/repro-paths.py:64`
+`REF` was this class's only confirmed instance and it is **RESOLVED** — `0895758717` replaced its
+`(?:^|\s)` delimiter class with the lookbehind `(?<![\w/.])`, and a POSITIVE asserts a defect that
+exists, so a repaired site correctly stops being reported. The **whole population is now 2 sites, both
+in `.agents/slop/reprorefs/probe.py`**, over the 572 committed `.md`: `:26 OLD` anchors **603** names,
+the same pattern with its anchor dropped names **1433**, so **830 spellings are invisible** (preceding
+delimiters `` ` ``×5653, space×1531, `\n`×160, `/`×88, `"`×45); `:27 PERMISSIVE` anchors **782**,
+anchor-dropped **3652**, **2870 invisible** (`` ` ``×9800, space×3239, `'`×724, `/`×673, `\n`×218).
+
+**THE COST OF THAT REPAIR, MEASURED, AND IT IS NOT SMALL:** `widened()` recognises a leading
+`(?:^|…)` and nothing else, so a lookbehind-anchored regex is never a candidate and `checks/repro-paths.py`
+now contributes **0 rows**. **This census is structurally blind to that file, and the self-check cannot
+see that it is blind** — a control that asserts a POSITIVE there refuses rather than reporting the
+loss. Fixing the defect put the file outside the instrument's kind definition, which is a change to the
+kind definition and not a control fix. The same trade the census makes everywhere: a quiet instrument
+and a blind instrument print the same thing.
 
 **`single-base-resolver`, 3 sites, and this is known positive #3.**
 `.agents/slop/toolsledger/extract.py:15`, `.agents/slop/shapecensus/toolsmd.py:20`,
@@ -75,13 +87,13 @@ tree contains: `LAWS/spec.bend` → `tinybendygrad/LAWS/spec.bend`,
 `codegen/decomp/dtype.bend` → `tinybendygrad/codegen/decomp/dtype.bend`. Verified by hand:
 `tinybendygrad/uop/ops.bend` exists at HEAD and `.agents/TOOLS.md` writes `uop/ops.bend` 8 times.
 
-**`prose-basename-citation`, 248 of 4228 cited bare basenames, and this is known positive #2.**
+**`prose-basename-citation`, 258 of 4429 cited bare basenames, and this is known positive #2.**
 `differ.py` = 4 tracked files, `gatekit.py` = 3, `extract.py` = 2
 (`.agents/slop/shapecensus/extract.py`, `.agents/slop/toolsledger/extract.py`). The severity is not
 uniform and the collision count is in the evidence: `REPORT.md` 208, `__init__.py` 65, `README.md` 56,
 `plant.py` 31, `census.py` 26. A bare `census.py` in prose names 26 files.
 
-### NEGATIVE — 27
+### NEGATIVE — 31
 
 **`module-attr-table`, 3 of 3 — including the trap.** `checks/sweep.py:285` `FS_DELETES` is keyed
 module-form only, and it is **DEAD**: 0 reads, because a comment is not an AST node. A table nothing
@@ -92,15 +104,15 @@ replace` with `FS_METHOD_WRITES`, `FS_READS` shares `lstat, readlink, stat` with
 The name overlap is the evidence that the two tables are two spellings of one vocabulary rather than
 two unrelated lists.
 
-**`extension-set`, 24.** A set handed to `endswith`/`fnmatch` truncates nothing: `"x.cpp".endswith(".c")`
-is `False`, because both compare the tail exactly. These 24 are at such a call. (Getting this wrong
+**`extension-set`, 28.** A set handed to `endswith`/`fnmatch` truncates nothing: `"x.cpp".endswith(".c")`
+is `False`, because both compare the tail exactly. These 28 are at such a call. (Getting this wrong
 was my own first draft, which charged 13 sites on the *prefix* relation; reading `checks/substrate.py:844`
 — `f.endswith(POP_SUFFIXES)` with `(".bend", ".c", ".js", ".mjs")` — showed the charge was false, and
 it was withdrawn.)
 
 ### UNKNOWN — 26, and each says why
 
-- **4 `extension-set`, regex-spelled, where the measurement IS made.** The pattern is run over **4591**
+- **4 `extension-set`, regex-spelled, where the measurement IS made.** The pattern is run over **4704**
   tracked filenames and the ones it reads as a member plus a tail are named — e.g.
   `checks/cites-census.py:105` `LOCATORISH` (`\.(?:md|py|rows|out|err|tsv|txt|bend|c|h|js|mjs|json)\b`)
   reads `D0-selfcheck.txt.err` as `D0-selfcheck.txt` + `.err`;
@@ -117,13 +129,14 @@ it was withdrawn.)
 
 A set that is merely INCOMPLETE — `CODE_EXT` without `.md` — is this class in the general case, and it
 is not decidable here: without the subject, a missing `.md` is indistinguishable from a deliberate
-scope. That question is open on **all 47** extension-set rows and closed on none of them.
+scope. That question is open on **all 51** extension-set rows and closed on none of them.
 
 ## THE SELF-CHECK, AND WHAT IT REFUSED
 
-`--selfcheck` asserts six controls (the three known positives by site and verdict; the known negative),
-the trap, and that the extractor reads both AST spellings. It has **refused three times during
-development, and each refusal found a real bug** — which is the point of shipping it:
+`--selfcheck` asserts six controls (the known positives by kind and verdict, the known negative),
+the trap, and that the extractor reads both AST spellings. It has **refused four times during
+development, and each refusal found a real bug — except the fourth, which found a real REPAIR** —
+which is the point of shipping it:
 
 1. **`no POSITIVE single-base-resolver … toolsledger`** — `os.path.dirname` is an attribute OF an
    attribute, so `func.value.id == "os"` is false for it. The instrument had the second spelling of
@@ -141,6 +154,18 @@ List=593, re.compile=325, Set=128, frozenset(Set)=26, sorted(List)=2, sorted(Set
 and a non-`Dict` (a, b) table were read. `FS_DELETES` is still found and still NEGATIVE. Exit codes:
 0 written, 3 REFUSED (self-check failed, nothing written), 1 error.
 
+4. **`no POSITIVE regex-anchor-set site matching checks/repro-paths.py`** — **the CONTROL was wrong, not
+   the instrument.** The control pinned the one TRUE instance of its own kind, so the commit that
+   repaired it turned a passing assertion into a refusal. A control that pins a defect cannot survive
+   the defect's repair. `frag` became `None`, which asks the population question the control was
+   always for — *does this kind still yield this verdict anywhere* — and still catches a broken
+   `widened()` or an inverted `probe_regex`; what it gives up is sensitivity to losing **one** site,
+   and that loss is the census's job to report, not the control's to forbid. A path fragment in a
+   control tuple is also doctrine 1's forbidden hand list. **No row total changed**: the file was already
+   contributing 0, so `320` sites and `263` positives are the same numbers before and after the fix.
+   Full argument with the measurements, and the two fixes considered and rejected:
+   `.agents/slop/onespelling-control/decision.md`.
+
 ## WHAT I COULD NOT DETERMINE
 
 - **Whether a read `(module, attribute)` table has a second spelling.** 29 sites are UNKNOWN for this.
@@ -150,10 +175,18 @@ and a non-`Dict` (a, b) table were read. `FS_DELETES` is still found and still N
   right for `checks/repro-paths.py` and a guess for the other two. Stated in the row, not hidden.
 - **Whether a base's tokens are *meant* relative to it.** The 26 lost tokens under
   `tinybendygrad/` may be a second spelling or may be the corpus being wrong.
-- **Severity of the 248 basename citations.** Ambiguity is measured; whether a given reader was
+- **Severity of the 258 basename citations.** Ambiguity is measured; whether a given reader was
   misled is not, and the collision count is the proxy.
-- **Files the gate drops.** 466 `.py` with no column-0 bare-name assignment. The grammar says no
-  candidate can hide there; I did not verify it 466 times, and I am not claiming I did.
+- **Files the gate drops.** 468 `.py` with no column-0 bare-name assignment. The grammar says no
+  candidate can hide there; I did not verify it 468 times, and I am not claiming I did.
+- **Whether `checks/repro-paths.py` still has a defect.** It has left this census's population, so this
+  instrument's silence about it is not evidence either way, and the residual question is **not measured
+  here**. A separate brief measured it at HEAD `444890672` over that HEAD's **568** `.md` — the shipped
+  lookbehind naming **3612** against **3618** for the anchor-dropped form, leaving **6** invisible
+  spellings, all `/`-prefixed or relative forms (`.agents/slop/onespelling-control/measure.py`,
+  `decision.md` §6). **Do not read those as current**: the corpus is 572 `.md` here and those counts
+  will have moved. Whether reading a `/`-joined tail is wrong depends on the subject, which the tree
+  does not state — **not charged, not cleared.**
 
 ## COST
 
