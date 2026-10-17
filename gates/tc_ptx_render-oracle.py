@@ -410,10 +410,31 @@ STAGE2 = lambda: (ptx_guard_rows() + asm_rows() + half_rows() + modifier_rows() 
 def rows():
   return STAGE1() + STAGE2()
 
+# `--help` USED TO CRASH, AND THE REASON WAS THAT THE LOOKUP BELOW WAS NOT TOTAL: it indexed a
+# three-name dict with `sys.argv[1]`, and `--help` is not one of the three, so it raised
+# `KeyError: '--help'` and exited 1. MEASURED with no argument: this oracle runs `rows` and prints
+# 621 lines, so the flag was the WHOLE cause. **THE CONTRACT IS STATED HERE INSTEAD OF BEING
+# INFERRED.** `--help` IS NOT GIVEN rc 0 HERE, AND THE REASON IS THIS FILE'S OWN OUTPUT CHANNEL:
+# stdout IS the artifact (`... > /tmp/pyall.rows`, then `diff` against the Bend lane), so a
+# `--help` that exits 0 having written nothing to stdout is the SILENT shape -- rc 0 with nothing
+# said -- which `gates/help-census.py` already has two rows of (`gates/qcom-oracle.py`,
+# `gates/qcom_stage3-oracle.py`). Every out-of-domain selector therefore takes ONE refusal.
+SELECTORS = {"rows": rows, "stage1": STAGE1, "stage2": STAGE2}
+
 if __name__ == "__main__":
   what = sys.argv[1] if len(sys.argv) > 1 else "rows"
   # FRAMING, and it is not a fudge: every `row` already ends in "\n", and the
   # Bend side prints the WHOLE table with one `IO.print`, which appends its own
   # "\n". So the oracle's output needs exactly one more, the same one
   # wgsl-oracle.py's `print` per row supplies. `diff` is byte-exact after this.
-  sys.stdout.write({"rows": rows, "stage1": STAGE1, "stage2": STAGE2}[what]() + "\n")
+  # A BAD SELECTOR IS 3, NOT 0 AND NOT 1. Nothing is imported here and no gate runs this
+  # oracle as a lane (MEASURED: `grep 'tc_ptx_render-oracle' gates/*.py` is empty), so 1 --
+  # which CPython chooses for an uncaught exception and for a string `SystemExit`, and which
+  # `gates/gatekit.py:60` reads as `FAIL` -- would bill a caller for an answer it never got.
+  # 3 is `REFUSED` in that same line, and the tree's measured answer for a file that never
+  # imports gatekit is the same number (`gates/tc_ptx_types-mutate.py:81-83`).
+  if what not in SELECTORS:
+    sys.stderr.write("== REFUSED, NOT A VERDICT: tc_ptx_render-oracle: no selector is %r; "
+                     "selectors: %s\n" % (what, " ".join(SELECTORS)))
+    raise SystemExit(3)
+  sys.stdout.write(SELECTORS[what]() + "\n")

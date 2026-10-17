@@ -2,6 +2,7 @@
 """e2e_port/coverage.py -- HOW MUCH OF THE PORT IS EXECUTION, WITH THE DENOMINATOR.
 
     .venv/bin/python .agents/slop/e2e_port/coverage.py <port-rows.txt> <lane-log>...
+    .venv/bin/python checks/coverage.py --help        # REFUSED (3): --help is not a path
 
 WHY THIS FILE EXISTS.  `cstyle-gate.py:554` builds BOTH of its lanes from
 `subprocess.CompletedProcess([], 0, pathlib.Path(a.port_stdout).read_text(), "")`,
@@ -44,14 +45,42 @@ ROW_RE = re.compile(r"^\s*PORT ROW\s*:\s*(.+?)\s*$", re.M)
 PASS_RE = re.compile(r"^PASS \[(\d+)\] (\d+) u32 words bit-identical", re.M)
 DIFF_RE = re.compile(r"diff bytes: (\d+)")
 
+USAGE = (f"usage: {pathlib.Path(__file__).name} PORT-ROWS LANE-LOG...\n"
+         f"  PORT-ROWS  the port lane's own stdout -- THE DENOMINATOR\n"
+         f"  LANE-LOG   what `run-kernel.sh` printed; EXECUTED is read out of these")
+ARGV = sys.argv[1:]
+
 
 def pct(n, d):
     return "  --  " if not d else f"{100.0 * n / d:5.2f}%"
 
 
 def main():
-    rows = port_rows(pathlib.Path(sys.argv[1]))
-    logs = [pathlib.Path(p) for p in sys.argv[2:]]
+    # `sys.argv[1]` AS A PATH IS NOT THE SHAPE THE THREE SIBLINGS HAVE, AND IT CRASHED BOTH WAYS
+    # FOR TWO DIFFERENT REASONS. MEASURED today: with no argument, `IndexError` at the
+    # `sys.argv[1]` subscript; with `--help`, a `pathlib` error -- and WHICH error is a property of
+    # the WORKING DIRECTORY, not of this file. A directory named `--help` sits in the repository
+    # root, created 03:49 today by `checks/run-f64.sh`, whose `W=${1:-...}` took the flag as its
+    # scratch directory, so the answer is `IsADirectoryError: [Errno 21] Is a directory: '--help'`
+    # where the same code over a cwd without that entry answers `FileNotFoundError`. Commit
+    # 16220ac10's message records the `FileNotFoundError` and `gates/help-census.rows:18` records
+    # the `IsADirectoryError`, in ONE commit. THERE IS NO LOOKUP TABLE HERE -- the argument IS the
+    # path -- so this is a different shape from `MUTATIONS`, `STATES` and `{rows, stage1, stage2}`,
+    # and it carries a defect the other three do not have: a REQUIRED POSITIONAL that was never
+    # stated. Stating it fixes both, and it is the same remedy: a precondition before the work.
+    if not ARGV:
+        print(USAGE, file=sys.stderr)
+        print("== REFUSED, NOT A VERDICT: coverage.py: no PORT-ROWS was named, and without it "
+              "there is no denominator to divide by", file=sys.stderr)
+        return 3
+    absent = [a for a in ARGV if not pathlib.Path(a).is_file()]
+    if absent:
+        print(USAGE, file=sys.stderr)
+        print(f"== REFUSED, NOT A VERDICT: coverage.py: not a readable file: "
+              f"{' '.join(absent)}", file=sys.stderr)
+        return 3
+    rows = port_rows(pathlib.Path(ARGV[0]))
+    logs = [pathlib.Path(p) for p in ARGV[1:]]
     total = len(rows)
 
     # ---- the executed rows, read out of the lane logs' OWN claims -------------
@@ -143,7 +172,11 @@ def main():
                       "executed_of_the_rows": executed_in,
                       "executed_outside_the_rows": executed_out,
                       "still_text": total - executed_in}, indent=1))
+    # `main()` FELL OFF ITS END, which `.agents/slop/exitcodes-report/REPORT.md:109-117` grades as
+    # `MAYBE-NONE`: `sys.exit(None)` is 0, a PASS, on a path that may not have answered. It is
+    # now 0 because 3 above is a refusal, so a reader of `$?` can tell them apart.
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

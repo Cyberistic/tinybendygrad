@@ -154,10 +154,36 @@ STATES = (
     ("py-dead", kill_py, "DISARM 1  py side 0 rows (the side NOT REACHED reads)"),
 )
 
+# `--help` USED TO CRASH, AND THE REASON WAS THAT THE LOOKUP IN `one` WAS NOT TOTAL: it was a bare
+# `next(m for n, m, _ in STATES if n == name)`, and `--help` is not a state name, so it raised
+# `StopIteration` at :159 and exited 1. MEASURED both ways today: with no argument this file runs
+# its BASELINE and prints `SELFCHECK OK (rc=0)`, so the flag was the WHOLE cause. **THE ARGUMENT
+# CONTRACT IS STATED HERE INSTEAD OF BEING INFERRED**, and the same table below no longer has to
+# be scanned twice per run: `one()` took TWO passes over `STATES` for one row.
+STATES_BY = {n: (m, l) for n, m, l in STATES}
+NAMES = " ".join(STATES_BY)
+USAGE = (f"usage: {os.path.basename(__file__)} [STATE | --all]\nstates: {NAMES}")
+
+
+def refuse(why):
+    """3, and 3 IS FREE IN THIS FILE'S EXIT SPACE.
+
+    `one()` returns the ORACLE's rc, and MEASURED `.agents/slop/graphcmp-oracle.py` holds no
+    `exit 3` at all -- its own exits are `0`, `1`, and two `raise SystemExit(<str>)` refusals
+    which CPython turns into 1 -- so 3 cannot be confused with a state the oracle reported. 3 is
+    `REFUSED` in `gates/gatekit.py:60`, and the tree's measured answer for a file that never
+    imports gatekit is the same number: `gates/tc_ptx_types-mutate.py:81-83` records "20 files
+    already exit a chosen 3 for a precondition absent and 16 of the 20 never import gatekit".
+    A crash here would be 1, which is `FAIL`: an answer was wrong, and none was given.
+    """
+    print(f"== REFUSED, NOT A VERDICT: {os.path.basename(__file__)}: {why}", file=sys.stderr)
+    return 3
+
 
 def one(name: str) -> int:
-    mutate = next(m for n, m, _ in STATES if n == name)
-    label = next(l for n, _, l in STATES if n == name)
+    if name not in STATES_BY:
+        return refuse(f"no state is called {name!r}; states: {NAMES}")
+    mutate, label = STATES_BY[name]
     got = measure(name, mutate)
     print(f"{label}")
     print(f"    graphs={got['graphs']} nodes={got['nodes']} distinct={got['distinct']} "
@@ -172,7 +198,13 @@ if __name__ == "__main__":
     print("DENOMINATOR  len(list(Ops)) is printed by the oracle per state, read live (CPython)")
     print("=" * 78)
     if len(sys.argv) > 1 and sys.argv[1] == "--all":
-        for name, _, _ in STATES:
+        for name in STATES_BY:
             subprocess.run([sys.executable, os.path.abspath(__file__), name])
+        raise SystemExit(0)
+    # `--help` PRINTS THE STATES AND RUNS NOTHING, which is the `USAGE` shape `gates/help-census.py`
+    # grades PASS. It is NOT a contract the tree has: `checks/e2e.sh --help` ignores the flag and
+    # runs the whole tree, so this line is about THIS file's six states, not about `--help`.
+    if len(sys.argv) > 1 and sys.argv[1] in ("-h", "--help"):
+        print(USAGE)
         raise SystemExit(0)
     sys.exit(one(sys.argv[1] if len(sys.argv) > 1 else "baseline"))

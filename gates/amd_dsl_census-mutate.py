@@ -3,6 +3,7 @@
 
     .venv/bin/python gates/amd_dsl_census-mutate.py          # the whole table
     .venv/bin/python gates/amd_dsl_census-mutate.py A1 A2    # only these labels
+    .venv/bin/python gates/amd_dsl_census-mutate.py --help   # the labels, and nothing else
 
 ONE JOB: prove each of the eight checks has a mutation, and prove the POPULATION and AXIS
 guards speak when the row set or a fixture axis is wrong. Four kinds, kept apart because a
@@ -361,8 +362,36 @@ MUTATIONS = [
 
 SOURCES = {"port": PORT, "oracle": ORACLE, "pins": PINS, "gate": GATE}
 
+# `--help` USED TO CRASH, AND THE REASON WAS THAT THE SELECTOR IN `main` WAS NOT TOTAL. It
+# filtered `MUTATIONS` on `argv`, so `--help` -- which is not a label -- selected NOTHING and the
+# `max()` two lines under `want.sort` had nothing to take a maximum of:
+# `ValueError: max() iterable argument is empty`, rc 1, which `gates/gatekit.py:60` reads as
+# `FAIL` while the same file calls a traceback `DEAD`. **THE ARGUMENT CONTRACT IS STATED HERE
+# INSTEAD OF BEING INFERRED**, so `want` is empty only when `MUTATIONS` is and the crash site is
+# structurally unreachable. `MUTATIONS_BY` keys on the SAME first token the selector filters on,
+# so the domain the contract names is the domain the selector reads.
+MUTATIONS_BY = {e[0].split()[0]: e for e in MUTATIONS}
+LABELS = " ".join(sorted(MUTATIONS_BY))
+USAGE = (f"usage: {Path(__file__).name} [LABEL ...]   no argument runs the whole table"
+         f"\nlabels: {LABELS}")
+
 
 def main(argv):
+    if {"-h", "--help"} & set(argv):
+        print(USAGE)
+        return 0
+    unknown = [a for a in argv if a not in MUTATIONS_BY]
+    if unknown:
+        # 3 IS `REFUSED` IN `gates/gatekit.py:60`, AND IT IS WHAT THIS FILE'S OWN FAMILY ALREADY
+        # DOES FOR AN EMPTY SELECTION: `gates/decomp_graph_census-mutate.py:243-245` returns 3
+        # naming the table, `gates/tc_ptx_types-mutate.py:83`'s `refuse()` returns 3, and
+        # `gates/tc_ptx_types-mutate.py:81-83` records it as tree-wide: "20 files already exit a
+        # chosen 3 for a precondition absent and 16 of the 20 never import gatekit". `main`
+        # below completes at 0 and refuses at 1, so a bare label selected nothing has to say so
+        # with a code that is not either.
+        print(f"{Path(__file__).name}: no mutation is labelled {' '.join(unknown)}\n"
+              f"labels: {LABELS}", file=sys.stderr)
+        return 3
     pins = assert_pins(PINS, 3, (1, 2), empty_allowed=ORACLE_EMPTY)
     print(f"amd pins shape ASSERTED: 3 fields (row<TAB>oracle<TAB>port), columns 2 and 3 are "
           f"rendered values, {len(ORACLE_EMPTY)} of them declared EMPTY (CPython does not "
