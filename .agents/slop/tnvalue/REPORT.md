@@ -178,6 +178,24 @@ owned and fixed:
   instrument reporting a denominator it was not measuring. Fixed: candidates are taken in order
   and the first four distinct values win; `plant ladder-degenerate` pins `ladder(0)` and
   `ladder(-1)`.
+* **THIS FILE PERTURBED THE POPULATION IT READS ITS VERDICTS FROM — BY NAMING A THING THAT DOES NOT
+  EXIST.** The worst of the four, and **not** found by a mutation. The parent census admits every
+  `.py` string constant a reader mentions that carries `oracle`
+  (`gates/oracleblind-census.py:276` records the version that "answered **55 absent on disk**").
+  My first version spelled a suffix as the literal `"-oracle.py"`, so the parent read a
+  **6-character string constant** as a declaration of an oracle and the population went
+  **98 → 99** with a new `CANNOT BE PERTURBED` row whose **key is literally `-oracle.py`**,
+  `declared_by: gates/tnvalue-census.py:literal [unresolved]`. A second literal,
+  `"tn_sqrt-oracle.py"`, reclassified that real file from WALK-ONLY to GATE-DECLARED — *a different
+  claim about the same file*. **MEASURED AFTER THE FIX: population 98, `-oracle.py` absent,
+  nothing declared by this file, `oracleblind-census` back to WALK-ONLY.** Cause: a `.py` literal
+  is a **declaration**, not a path. Fixed with `oracle_path()` / `bend_for()` / `BLIND_STEM`, which
+  build every such name from parts, and **`plant no-declaration` now asserts the whole class over
+  this file's own AST** — verified live, not vacuous: it finds `['-oracle.py',
+  'tn_sqrt-oracle.py']` in a literal-carrying source, `[]` in a prose-only source, correctly
+  ignoring `checks/no-txt.py` (no `oracle`), and `[]` in this file. **The prose that explains the
+  repair quotes the forbidden literals, and `oracleblind-census.py`'s `_docs()` is what keeps those
+  mentions from becoming declarations again.**
 * **THE VERDICT NAME OVERCLAIMED, AND MY OWN PLANT REFUTED IT.** The first version said
   `V-INVARIANT`. `plant invariant` asserts a row reading `c.arg == 1` moves when the payload is
   retyped — but the ladder is `4, 5, 0, −4` and **1 is not one of them**, so the row did not move
@@ -187,7 +205,8 @@ owned and fixed:
   to `V-LADDER-STABLE`, which claims four points and not the integers, with the four declared in
   every row of the table. `plant hole` pins the hole in the direction that would make it visible.
 
-Two more own-goal failures, recorded because they are the class this tree produces most of:
+Four own-goal failures, recorded because they are the class this tree produces most of. **All
+four were caught by this unit's own plant or by a population count, and none by an oracle.**
 
 * **`constant_rows` first read the printed `=1`** and would have called
   `gates/tn_relu-oracle.py`'s `relu_has_three_srcs=1` dead — that is `len(r.uop.src) == 3`, a real
@@ -199,16 +218,16 @@ Two more own-goal failures, recorded because they are the class this tree produc
 
 ## 5. THE PLANT — 9 of 9, **NO RED IS A TRACEBACK**
 
-`gates/tnvalue-census.py --plant` → **rc=0**, 9 `PASS`, 0 `FAIL`, 0 tracebacks; every
-direction is asserted on an `observed:` line, and 3 of the 9 caught a real defect in this unit's
-own work (`ladder`, `echo`'s first spelling, `constant`'s first two spellings).
+`gates/tnvalue-census.py --plant` → **rc=0**, **10 `PASS`**, 0 `FAIL`, 0 tracebacks; every
+direction is asserted on an `observed:` line, and **4 of the 10 caught a real defect in this unit's
+own work** (`ladder`, `constant` ×2, `echo`'s first spelling, `no-declaration`).
 
 `offsets` · `ladder` · `stable` (a **real** `tinygrad` `sqrt` graph; and in the oracle that also
 reads a value, **only the value row** moves, so "this oracle moved" and "THIS ROW moved" are held
 apart) · `sensitive` (so the classifier is not a one-sided constant) · `hole` (a row keyed outside
 the ladder does **not** move and is still reported stable) · `constant` (`int(1)` is CONSTANT,
 `int(len(r.uop.src) == 3)` is DERIVED, both printing 1) · `constant-fires` (fired on the **real**
-`gates/tn_sqrt-oracle.py`, not a synthetic) · `echo` · `ladder-degenerate`.
+`gates/tn_sqrt-oracle.py`, not a synthetic) · `echo` · `ladder-degenerate` · `no-declaration`.
 
 **Per the precedent set by `gates/falseclaim-census-gate.py`: this plant has NO direction that is
 expected to fail by raising.** All 9 exit 0 with a verdict, and the `echo`/`hole` directions are

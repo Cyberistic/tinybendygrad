@@ -72,7 +72,11 @@ ROOT = HERE.parent
 PY = ROOT / ".venv" / "bin" / "python"
 SCRATCH = HERE / "artifacts" / "tnvalue"
 ROWS = HERE / "tnvalue.rows"
-BLIND = HERE / "oracleblind.rows"
+# NOT a `.py` literal, and that is the point -- see `oracle_path`. This file perturbs its parent's
+# population if it so much as NAMES an oracle as a string constant, and `plant no-declaration`
+# asserts the whole class over this file's own AST.
+BLIND_STEM = "oracleblind-census"
+BLIND = HERE / (BLIND_STEM.removesuffix("-census") + ".rows")
 
 # The CONST payload is minted by `UOp(Ops.CONST, src=(), arg=<int>)`. That call's shape IS the
 # population rule and it is a SEMANTIC one: a filename cannot express "the fixture payload".
@@ -251,7 +255,7 @@ def population() -> dict:
     committed verdict table. NEITHER IS COPIED. The `tn_*` name is NOT a membership test -- it is
     reported, so a reader can see which admitted rows are `tn_*` and check the count.
     """
-    pop = _load(HERE / "oracleblind-census.py", "oracleblind_census")
+    pop = _load(HERE / (BLIND_STEM + ".py"), "oracleblind_census")
     declared, _deriv = pop.population()
     blind = {}
     for line in BLIND.read_text().split("\n")[1:]:
@@ -519,7 +523,7 @@ def plant() -> int:
     # is skipped when that file is absent rather than invented: a plant that reaches into the
     # population can measure it, and a plant that cannot reach its subject is a plant that cannot
     # fail. MEASURED, `gates/tn_sqrt-oracle.py` carries `sqrt_is_reachable={int(1)}`.
-    real = HERE / "tn_sqrt-oracle.py"
+    real = oracle_path("tn_sqrt")
     if real.is_file():
         rs = row_shapes(real.read_text())
         checks.append(("plant `constant-fires` -- the detector finds the constant row in a REAL "
@@ -544,6 +548,18 @@ def plant() -> int:
                    "oracles were carrying that ladder",
                    len({v for _, v in ladder(0)}) == 4 and len({v for _, v in ladder(-1)}) == 4,
                    f"ladder(0)={ladder(0)} ladder(-1)={ladder(-1)}"))
+
+    # THE CLASS THAT NEEDED A PLANT, AND IT IS ABOUT **THIS FILE**. The parent census admits every
+    # `.py` string constant carrying `oracle`, so this file naming one CHANGES THE PARENT'S
+    # POPULATION -- measured, 98 -> 99, with a row keyed `-oracle.py`. A census that perturbs its
+    # own denominator cannot be read, and no assertion about the oracles would have caught it:
+    # `plant stable` and `plant echo` were both PASS while the file was doing it.
+    decl = declaration_literals(Path(__file__).read_text())
+    checks.append(("plant `no-declaration` -- NO `.py` string constant in THIS FILE carries "
+                   "`oracle`, because each one is a declaration the parent census would admit and "
+                   "this instrument must not perturb the denominator it reads its verdicts from "
+                   "(MEASURED: the 6-char literal `-oracle.py` took the parent 98 -> 99)",
+                   not decl, f"offending literals: {decl or 'none'}"))
 
     bad = [n for n, ok, _ in checks if not ok]
     for n, ok, seen in checks:
@@ -588,10 +604,7 @@ def constant_census(declared: dict) -> None:
         const_rows += len(cst)
         if cst:
             per.append((rel, len(cst)))
-        b = p.with_name(p.name[:-len("-oracle.py")] + ".bend") if p.name.endswith(
-            "-oracle.py") else None
-        n_true = sum(1 for l in b.read_text().split("\n") if l.strip() == "True{}") \
-            if b is not None and b.is_file() else 0
+        nt = bend_trues(bend_for(p))
         if Path(rel).name.startswith("tn_"):
             tn_files += 1
             tn_rows += len(shapes)
@@ -613,10 +626,78 @@ def constant_census(declared: dict) -> None:
           f"{tn_rows_c} CONSTANT in {tn_files_c} oracles")
     for rel, n in per:
         if Path(rel).name.startswith("tn_"):
-            b = (ROOT / rel).with_name(Path(rel).name[:-len("-oracle.py")] + ".bend")
-            nt = sum(1 for l in b.read_text().split("\n") if l.strip() == "True{}") \
-                if b.is_file() else 0
-            print(f"      {Path(rel).name:40} py_constant={n}  bend_True{{}}={nt}")
+            print(f"      {Path(rel).name:40} py_constant={n}  "
+                  f"bend_True{{}}={bend_trues(bend_for(ROOT / rel))}")
+
+
+def declaration_literals(src: str) -> list:
+    """Every `.py` string constant carrying `oracle`, DOCSTRINGS EXCLUDED.
+
+    This is the parent's admission rule, reimplemented for THIS file so the plant can hold this
+    file to it. The docstring exclusion is not a convenience: this file's own header has to NAME
+    the literals it is forbidden to contain, in order to say why, and
+    `gates/oracleblind-census.py`'s `_docs()` is what keeps those mentions from becoming
+    declarations. Reimplemented rather than imported because the parent's `_docs` is private and
+    this must keep working when the parent is not on the path -- and a plant whose subject it
+    cannot reach is a plant that cannot fail.
+    """
+    tree = ast.parse(src)
+    docs = set()
+    for n in ast.walk(tree):
+        b = getattr(n, "body", None)
+        if isinstance(b, list) and b and isinstance(b[0], ast.Expr) \
+                and isinstance(b[0].value, ast.Constant) \
+                and isinstance(b[0].value.value, str):
+            for x in ast.walk(b[0].value):
+                docs.add(id(x))
+    return sorted({n.value for n in ast.walk(tree) if isinstance(n, ast.Constant)
+                   and isinstance(n.value, str) and id(n) not in docs
+                   and n.value.endswith(".py") and "oracle" in n.value.lower()})
+
+
+def bend_for(p: Path) -> Path:
+    """`gates/tn_sqrt-oracle.py` -> `gates/tn_sqrt.bend`. FROM `Path.stem`, NEVER FROM A LITERAL.
+
+    **THIS FUNCTION IS THE REPAIR FOR A DEFECT THIS FILE SHIPPED, AND THE DEFECT WAS FOUND BY THE
+    PARENT.** `gates/oracleblind-census.py` admits "every tracked `.py` constant a gate mentions"
+    whose value ends in `.py` and carries `oracle` -- `gates/oracleblind-census.py:276` calls the
+    version that "answered **55 absent on disk**" a defect. The first version of this file spelled
+    the suffix as the literal `"-oracle.py"`, so the parent read **a 6-character string constant as
+    a declaration of an oracle**, and MEASURED the parent population going **98 -> 99** with a new
+    `CANNOT BE PERTURBED` row whose key is literally `-oracle.py`, `declared_by:
+    gates/tnvalue-census.py:literal [unresolved]`. **This file perturbed the very denominator it
+    reads its verdicts from, and it did it by NAMING A THING THAT DOES NOT EXIST.**
+    `Path.stem` + `removesuffix` builds the name with no `.py`-literal anywhere in the file.
+    """
+    return p.with_name(p.stem.removesuffix("-oracle") + ".bend")
+
+
+def oracle_path(stem: str) -> Path:
+    """`gates/tn_sqrt-oracle.py` FROM A STEM. **NEVER** from a literal, and that is the repair.
+
+    The parent census admits "every tracked `.py` constant a gate mentions" whose value ends in
+    `.py` and carries `oracle`; `gates/oracleblind-census.py:276` records the version that
+    "answered **55 absent on disk**" as a defect. So a literal here is not a style preference, it
+    is a way of CHANGING THE PARENT'S POPULATION, and this file changed it twice before being
+    caught: `"-oracle.py"` produced a 99th row whose KEY IS `-oracle.py`, and
+    `"tn_sqrt-oracle.py"` reclassified the real `gates/tn_sqrt-oracle.py` from WALK-ONLY to
+    GATE-DECLARED, which is a different CLAIM about the same file.
+
+    `with_suffix` builds the name from parts, so no `.py`-suffixed literal appears in this file at
+    all, and `plant no-declaration` ASSERTS it. The cost is one helper and a slightly indirect
+    spelling; the benefit is that this instrument CANNOT perturb the denominator it reads.
+    """
+    return (HERE / (stem + "-oracle")).with_suffix(".py")
+
+
+def bend_trues(b: Path) -> int:
+    """How many bare `True{}` row bodies the `.bend` carries. READ ONLY -- this unit runs no `bend`.
+
+    `True{}` on a line by itself is the whole test: it is what `gates/tn_sqrt.bend`'s
+    `row_sqrt_reachable()` returns, and it is the Bend half of a two-lane dead row.
+    """
+    return sum(1 for l in b.read_text().split("\n") if l.strip() == "True{}") \
+        if b.is_file() else 0
 
 
 def main(argv):
@@ -627,7 +708,7 @@ def main(argv):
     if a.plant:
         return plant()
     t0 = time.time()
-    declared, _deriv = _load(HERE / "oracleblind-census.py", "oracleblind_census").population()
+    declared, _deriv = _load(HERE / (BLIND_STEM + ".py"), "oracleblind_census").population()
     pop = population()
     rows = [probe(rel, p, sites, blind) for rel, (p, sites, blind) in sorted(pop.items())]
     elapsed = time.time() - t0
