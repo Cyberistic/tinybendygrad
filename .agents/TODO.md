@@ -572,6 +572,33 @@ stale-ref [####......] 1/3      MEASURED over the tracked tree: **103 sites read
                                        shorthand that quietly returns empty is worse than one that
                                        errors.**
 
+index-arm-duplicate [#########] 4/4  **A PASS WHOSE COUNT IS MEASURED WITH A DATATYPE THAT CANNOT HOLD
+                                       THE DEFECT IS NOT A PASS.** MEASURED 2026-10-17 on commit
+                                       `591f6b499` (root tree lists `gates` THREE times): `ls-tree -r`
+                                       emits **7,505 lines for 7,253 distinct paths** -- so `head_tree()`'s
+                                       `ent[path] = sha` **silently dropped 252 entries INSIDE ITSELF**,
+                                       before anybody looked, and the gate then compared the index
+                                       against a tree 252 paths short and printed **`PASS: the index
+                                       agrees with HEAD on all 7253 paths`**. `ls-tree` exits **0** on a
+                                       malformed tree, so the existing rc guard could not see it either,
+                                       and every one of the gate's other five shapes is INDEX-vs-TREE
+                                       while a duplicate is INTERNAL to the tree -- **so no index can
+                                       witness it and no shape could ever fire.** FIXED IN THREE MOVES:
+                                       `head_tree()` returns the repeated PATHS as well, `census()`
+                                       carries them as a new `DUPLICATE` shape, and the verdict REFUSES
+                                       (3) **BEFORE** the PASS line, because a REFUSAL is this
+                                       project's answer for "the tool cannot tell". **MEASURED AFTER**:
+                                       at `591f6b499` the census reports **`DUPLICATE = 126`** while
+                                       `n_tree = 7253` is still the number the false PASS would have
+                                       printed -- so the two disagree exactly where they must. On the
+                                       LIVE well-formed tree behaviour is UNCHANGED (`REFUSED (3)`, the
+                                       normal armed-index state), and the gate's own `--plant` control
+                                       still reads **`PLANT OK` rc=0**, so it is STRENGTHENED and not
+                                       broken. **DETECTION OF A HISTORICAL MALFORMED TREE IS A
+                                       DIFFERENT PROBLEM AND IS NOT MINE** -- `git fsck` already has it
+                                       (rc=5, the same three OIDs) -- and the reachable one is already
+                                       pushed, so a scan that finds it can PREVENT NOTHING.
+
 PUSH-BLOCKED [##########] 3/3  **THE ORIGIN MOVED AND THE PICTURE IS NOW COMPLETE. ONE COMMIT BLOCKS
                                        ALL 40, AND IT IS NOT MINE.** 2026-10-17T03:54Z: the push failure
                                        CHANGED from `duplicateEntries` to non-fast-forward, and the

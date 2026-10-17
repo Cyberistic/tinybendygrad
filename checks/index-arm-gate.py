@@ -106,23 +106,36 @@ def index_entries(root: Path) -> dict[str, tuple[str, str]]:
     return ent
 
 
-def head_tree(root: Path, rev: str) -> dict[str, str]:
-    """path -> sha. THE TREE. `git ls-tree -r <rev>`. Never the index."""
+def head_tree(root: Path, rev: str) -> tuple[dict[str, str], list[str]]:
+    """path -> sha. THE TREE. `git ls-tree -r <rev>`. Never the index.
+
+    **AND THE PATHS `ls-tree` EMITTED MORE THAN ONCE, BECAUSE A DICT CANNOT HOLD A DUPLICATE.**
+    MEASURED 2026-10-17 on commit `591f6b499`, whose root tree lists `gates` THREE times: `ls-tree -r`
+    emits **7,505** lines for **7,253** distinct paths, and building the dict **silently dropped 252**,
+    so `census()` went on to compare the index against a tree **252 paths shorter than the tree** and
+    `main()` printed `PASS: the index agrees with HEAD on all 7253 paths`. **THE DUPLICATE WAS
+    DESTROYED INSIDE THIS FUNCTION, BEFORE ANYBODY LOOKED.** `ls-tree` exits 0 on a malformed tree, so
+    the rc guard above cannot see it either. The second element is the list of repeated paths; empty on
+    a well-formed tree, and `census()` turns it into the `DUPLICATE` shape.
+    """
     rc, out, err = git(root, "ls-tree", "-r", rev)
     if rc != 0:
         raise RuntimeError(f"ls-tree rc={rc}: {err.strip()}")
-    ent = {}
+    ent: dict[str, str] = {}
+    dupes: list[str] = []
     for line in out.splitlines():
         meta, _, path = line.partition("\t")
         fields = meta.split()
         if len(fields) >= 3:
+            if path in ent and path not in dupes:
+                dupes.append(path)
             ent[path] = fields[2]
-    return ent
+    return ent, sorted(dupes)
 
 
 def census(root: Path, rev: str) -> dict:
     idx = index_entries(root)
-    tree = head_tree(root, rev)
+    tree, repeated = head_tree(root, rev)
     deleted = sorted(set(tree) - set(idx))            # SHAPE D: absent from the index entirely
     intent, foreign, stale = [], [], []
     for p in sorted(set(idx) - set(tree)):            # SHAPE B / E: index has it, HEAD does not
@@ -143,6 +156,9 @@ def census(root: Path, rev: str) -> dict:
         "rev": rev, "n_index": len(idx), "n_tree": len(tree),
         "DELETION": deleted, "INTENT": intent, "FOREIGN": foreign, "STALE": stale,
         "EMPTIED": emptied,
+        # SHAPE F: the tree names a path more than once. Every other shape compares the INDEX to the
+        # TREE, and this one is internal to the TREE, so no index can witness it.
+        "DUPLICATE": repeated,
     }
 
 
@@ -232,6 +248,19 @@ def report(root: Path, rev: str | None = None) -> tuple[int, dict]:
               f"{disk_bytes(root, c['INTENT'])} bytes of real work that `git diff --cached` names 0 of. "
               f"git 2.50.1 refuses to commit them, so nothing is lost YET -- and a later `git add -A` "
               f"converts every one of them into a committed empty file.")
+        return REFUSED, c
+    # THE PASS IS A CLAIM ABOUT A COUNT, AND `n_tree` IS NOT A COUNT OF THE TREE IF THE TREE NAMES A
+    # PATH TWICE. Measured 2026-10-17: on `591f6b499` `ls-tree -r` emits 7,505 lines for 7,253 distinct
+    # paths, so this line would have said "all 7253 paths" about a tree with 7,505 entries. **A PASS
+    # WHOSE COUNT IS MEASURED WITH A DATATYPE THAT CANNOT HOLD THE DEFECT IS NOT A PASS.**
+    if c["DUPLICATE"]:
+        print(f"INDEX-ARM REFUSED, NOT A VERDICT: HEAD's tree names {len(c['DUPLICATE'])} path(s) MORE "
+              f"THAN ONCE ({', '.join(c['DUPLICATE'][:3])}"
+              + (", ..." if len(c["DUPLICATE"]) > 3 else "")
+              + f"), so `ls-tree -r` emits more lines than there are paths and the "
+              f"{c['n_tree']}-path figure below would UNDERSTATE the tree. "
+              f"Every shape above compares the INDEX to the TREE and this one is INTERNAL to the tree, "
+              f"so no index can witness it. This is a WRONG TREE, not a wrong tool.")
         return REFUSED, c
     print(f"INDEX-ARM PASS: the index agrees with HEAD on all {c['n_tree']} paths. "
           f"A bare `git commit` carries nothing it did not stage.")
