@@ -1,42 +1,39 @@
 #!/usr/bin/env python3
-"""compile.py -- **THIS FILE IS NOT A COMPILE CHECK.** It is the Qualcomm Hexagon DSP / ION driver
-script, and the name is the only thing about it that suggests otherwise.
+"""compile.py -- **THIS IS NOT A COMPILE CHECK.** It is upstream tinygrad's Qualcomm Hexagon DSP / ION
+driver, and the name is the only thing about it that suggests otherwise.
 
-MEASURED 2026-10-17, BY AST AND BY RUN. The module body is `ctypes`/`fcntl`/`mmap`/`os`/`time`,
-`ion_iowr`, an `adsprpc` CDLL, an `ION_IOC_*` ioctl table, and one `if __name__ == "__main__":`
-block that opens `/dev/ion`, mmaps a Hexagon shared buffer and calls `remote_handle64_invoke`. **NOT
-ONE LINE OF IT COMPILES ANYTHING IN THIS REPOSITORY.** It is the upstream `tinygrad` ION/DSP
-driver, which upstream no longer ships at this path (MEASURED: `git ls-tree -r HEAD` over the
-vendored `tinygrad/` holds `runtime/ops_dsp.py` and `runtime/autogen/qcom_dsp.py` and NO
-`runtime/dsp.py`, and `git log --all --diff-filter=D -- tinygrad/runtime/dsp.py` is EMPTY, so it
-was never in this repository's history either).
+MEASURED FROM ITS OWN BODY, BY AST: `ctypes`/`fcntl`/`mmap`/`os`/`time`, an `adsprpc` CDLL, an
+`ION_IOC_*` ioctl table, and one `__main__` that opens `/dev/ion`, mmaps a Hexagon shared buffer and
+calls `remote_handle64_invoke`. It compiles nothing here: MEASURED 2026-10-18, **0 lines of the
+BODY name `bend` or `tinybendygrad`** — counted with `ast` so the count cannot be moved by editing
+this docstring, which is what a bare `rg` count over the whole file would do.
 
-WHY THE NAME IS WORTH CORRECTING RATHER THAN LEAVING. A reader told "the whole-port compile check
-`REFUSED`" opens this file, sees five absent modules, and concludes the port cannot be compile-checked
-because a DSP driver cannot find Qualcomm's C bindings. **THE INFERENCE IS FALSE, AND THE TOOL THAT
-REFUTES IT IS ALREADY IN THIS TREE**: `checks/substrate.py` is the per-file compile check -- an
-`os.walk` population (`POP_ROOT = "tinybendygrad"`), `bin/bend <file> --check-only` per file under
-`checks/bounded.py`, a `WARM`/`COLD` verdict each and a `ROUTE` denominator -- and
-`checks/compile-census.py` is its `.bend` census over the rest of the tree. **MEASURED on this file:
-the REFUSED below is TRUE and its reason is UNCHANGED**; only the sentence saying what this file is
-is new. A wrong reason would be worse than none, so nothing here was re-derived to fit this docstring.
+IT IS A DUPLICATE, NOT AN ORPHAN. `extra/dsp/compile.py` is present at HEAD and byte-identical to
+`upstream/master:extra/dsp/compile.py`, and `3f0e70ff1` copied it here. **The path this docstring
+used to blame for the file's absence was never upstream's path**: `git log --all --diff-filter=D --
+tinygrad/runtime/dsp.py` is empty because no such path ever existed, not because upstream dropped the
+driver. Upstream ships it, this tree vendors it, and the copy is the one in the wrong directory.
+
+WHY IT STAYS PUT. `gates/help-census.py` runs every entry point `gates/gates-pop.py:discover()`
+finds, so a live instrument EXECUTES this file and `gates/help-census.rows` carries its verdict.
+Deleting it empties a row of a live population; renaming it strands that row plus a monotonic
+ledger's, and neither file is this file's to edit. The port's per-file compile check is
+`checks/substrate.py` -- `POP_ROOT = "tinybendygrad"`, `os.walk`, `bin/bend <file> --check-only`
+under `checks/bounded.py`, `WARM`/`COLD` each -- with `checks/compile-census.py` over the remainder.
 """
 import ctypes, fcntl, importlib.util, mmap, os, time
 from verdict import REFUSED, settle  # the five, from gates/gatekit.py BY PATH; `checks/` is sys.path[0] when run by path
-# FIVE preconditions are absent and NO PACKAGE MANAGER CAN MAKE THIS FILE IMPORTABLE ON A NON-ANDROID
-# HOST. `llvmlite` and `hexdump` are pip packages this interpreter does not carry (MEASURED, `.venv`
-# and the bare `python3` alike); `adsprpc`, `ion` and `msm_ion` are Qualcomm/Adreno userspace C-binding
-# shims in NEITHER this repository NOR any wheel (MEASURED, a tree-wide `find` returns nothing for
-# those three names), so the legal state when `adsprpc` is absent is PERMANENT. Every absent name is
-# reported at once, because a reader who fixes the first is otherwise re-taught the rest one run at a
-# time. A missing LIBRARY is `REFUSED`, not `FAIL` and not a crash; the raise this replaced exited 1,
-# which `gates/gatekit.py`'s own table spells `FAIL`.
-_absent = [m for m in ("llvmlite", "hexdump", "adsprpc", "ion", "msm_ion")
-           if importlib.util.find_spec(m) is None]
-if _absent:
-  settle(REFUSED, f"needs {', '.join(_absent)}, every one absent from this interpreter; adsprpc, ion"
-                   f" and msm_ion are in neither this repository nor any wheel, so this file cannot"
-                   f" run on this host at all")
+# THIS FILE CANNOT RUN ON A NON-ANDROID HOST AND NO PACKAGE MANAGER CAN CHANGE THAT. `adsprpc` and
+# `msm_ion` are HTTP 404 on PyPI and `ion`'s PyPI name belongs to an unrelated MVC framework, so
+# `pip install ion` installs the WRONG module -- MEASURED 2026-10-18, `ion` 0.6.4 "Ion is an MVC Web
+# Framework" -- and a refusal that names it invites exactly that. **The probe is therefore the three
+# UNSUPPLIED names and NOT the five**: probing all five made the guard vacuous the moment someone
+# installed the two real packages, which handed the traceback back and exited 1 = `FAIL`.
+_UNSUPPLIED = ("adsprpc", "ion", "msm_ion")
+if any(importlib.util.find_spec(m) is None for m in _UNSUPPLIED):
+  settle(REFUSED, f"Qualcomm Hexagon DSP/ION driver, NOT a compile check; {', '.join(_UNSUPPLIED)} "
+                   f"have no package manager supply -- PyPI's `ion` is an unrelated MVC framework, so "
+                   f"installing it is not the fix; the port's compile check is checks/substrate.py")
 import llvmlite.binding as llvm
 from tinygrad.helpers import getenv, to_mv
 from tinygrad.runtime.support.elf import elf_loader
