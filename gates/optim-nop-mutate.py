@@ -46,11 +46,25 @@ record needs `fused=True{}` AND `pos_params = op_acc(params)`, and `Optim` has t
 fields, so it costs a second record-mutation def rather than an edit.** `op_pos.of` already
 computes the right `pos_params` from `fused` and the tensors, so the missing piece is the record
 mutation and nothing else.
+
+**AND THE EXIT IS NOW THE RUN, BECAUSE FOUR OF ELEVEN ENTRIES PRINTED `REFUSED` AND EXITED 0.**
+`gates/exitcode-census-gate.py` reads this file's `sys.exit(main())` as `FOREIGN`, which is CORRECT
+and was never the complaint: the trailing `0` is a number the author chose, so the shape census
+cannot see this and should not be asked to. What it cannot see is one process up -- the harness
+computed three states, printed every one of them, and returned a constant. The three, and the number
+each gets, are `gatekit`'s and are not invented here: a `find` that matched nothing or twice is
+`REFUSED` (a precondition was absent), a `bend` that ran and emitted no rows is `DEAD` (it ran and
+emitted nothing), and an entry that moved nothing without being expected to is `FAIL` (the table
+carries a rule no row observes). `gates/gatekit.py:766` `gate()` is the precedent for combining:
+FIRST NON-PASS WINS, and a later finding can only move `PASS` somewhere else. MEASURED on the run
+that motivated it: `P2`, `P4`, `P5` and `Z1` name `find` strings with 0 occurrences in
+`nn/optim.bend`, so that run now exits `3` instead of `0`.
 """
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
+import gatekit
 import mutkit
 
 DRIVER = Path(__file__).resolve().parents[1] / "tinybendygrad/nn/optim.bend"
@@ -160,9 +174,14 @@ def main():
         print(f"{DRIVER.name}: the UNMUTATED file is rc={brc} and printed {len(base)} rows, so "
               f"a mutation reading would be meaningless"
               + ("" if brc == 0 else " -- it did not run"))
-        return 1
+        # A BASELINE THAT DID NOT RUN IS `REFUSED`, NOT `FAIL`. `gatekit.py`: "REFUSED a
+        # precondition was absent"; the precondition here is the base reading, and the message
+        # above already says the run did not happen, so billing it FAIL said the TABLE was wrong
+        # when what was missing was the measurement.
+        return gatekit.REFUSED
     mut = DRIVER.with_name("optim-mut.bend")   # `.gitignore`d as `*mut.bend`
     zeros, moved_any, refused, expected = [], 0, 0, 0
+    code = gatekit.PASS
     try:
         print(f"{DRIVER.name}: BASE rc=0, {len(base)} rows\n")
         for name, line, find, repl in MUTATIONS:
@@ -171,6 +190,8 @@ def main():
             if text is None:
                 print(f"  REFUSED   {name}: a pattern is not unique ({line})")
                 refused += 1
+                if code == gatekit.PASS:
+                    code = gatekit.REFUSED
                 continue
             mut.write_text(text)
             rows, mrc = mutkit.bend_rows(mut)
@@ -191,6 +212,11 @@ def main():
                 print(f"  {name:<62} bend rc={mrc}, {len(rows)} rows  DID NOT COMPILE -- "
                       f"no reading, counted as neither a movement nor a zero")
                 refused += 1
+                # NOT `REFUSED`. `bend` RAN and emitted nothing, and `gatekit.py` already has a word
+                # for exactly that and a number for it: DEAD. Calling it REFUSED would bill a
+                # caller a "precondition was absent" whose precondition WAS present.
+                if code == gatekit.PASS:
+                    code = gatekit.DEAD
                 continue
             got = len(moved) + len(appeared) + len(vanished)
             moved_any += bool(got)
@@ -209,13 +235,30 @@ def main():
                 else:
                     print("      MOVED NOTHING AT rc=0 -- NOT EXPECTED. COVERAGE GAP: this "
                           "rule has no row.")
+                    # A TABLE ENTRY THAT MEASURED NOTHING AND WAS NOT SUPPOSED TO IS A FAIL OF THE
+                    # TABLE. It was already the loudest line this harness prints; here it also
+                    # reaches `$?`.
+                    if code == gatekit.PASS:
+                        code = gatekit.FAIL
     finally:
         mut.unlink(missing_ok=True)
     print(f"\n{DRIVER.name}: {moved_any} of {len(MUTATIONS) - refused} mutations moved rows; "
           f"{len(zeros)} moved nothing at rc=0 and {expected} of those {len(zeros)} were "
           f"EXPECTED to ({refused} refused: a non-unique pattern or a form that did not "
           f"compile)")
-    return 0
+    # THE EXIT IS THE RUN, NOT A CONSTANT.  THE PRECEDENT IS `gates/gatekit.py`'s OWN COMBINING
+    # RULE -- `gate(g, summary, checks)`: `code = g.run(); if code == PASS and not
+    # _checks_answer(checks): code = FAIL` -- so FIRST NON-PASS WINS and a later finding can only
+    # ever move PASS somewhere else. No precedence table is invented here, and no sixth state is.
+    #
+    # MEASURED, AND IT IS NOT HYPOTHETICAL: at the time this was written `P2`, `P4`, `P5` and `Z1`
+    # each name a `find` string with **0** occurrences in `nn/optim.bend`, so this loop printed four
+    # `REFUSED` lines and then returned 0, and a caller reading `$?` saw PASS on a run in which
+    # four of eleven mutations were never applied. `gates/exitcode-census-gate.py` grades that
+    # site FOREIGN -- the `0` at the end IS a number the author chose -- so the shape census was
+    # right and still could not see this: the defect is one process up, and it is the state the
+    # harness COMPUTED AND DISCARDED.
+    return code
 
 
 if __name__ == "__main__":

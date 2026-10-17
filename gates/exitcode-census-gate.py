@@ -226,10 +226,70 @@ def _terminates(stmts):
     return False
 
 
+def _always_exits(fn):
+    """Can this function be shown to REACH AN EXIT on every path? The question `returns_none` cannot
+    ask, and the reason `_callee` needs both.
+
+    MEASURED, AND THE HOLE IT CLOSES IS THE ORDER OF TWO `if`s. `_callee` asked `delegated` FIRST
+    -- "the callee has an exit of its own, so the call site is not a second defect" -- and that is
+    a COUNTING argument, not a SAFETY argument: `own_exits` finds an exit at ANY depth of the body,
+    so `def f():\n  if c:\\n    sys.exit(3)` is `delegated` while every path where `c` is false falls
+    off the end and `sys.exit(f())` is `sys.exit(None)` == 0 == PASS. **`delegated` answers "does
+    the callee CONTAIN an exit", and CHOSEN needs "does the callee REACH one".** Those are
+    different claims and only the second one is the verdict.
+
+    STRUCTURED AFTER `_terminates`, AND CONSERVATIVE IN THE SAME DIRECTION: a body whose last
+    statement IS an exit, an `if` whose BOTH arms are, a `with` over such a body, a `try` whose
+    body and EVERY handler and else are. A `For`/`While` is NOT an arm even with an unconditional
+    body -- it may not iterate -- and `else`/`finally` blocks that merely run are not arms, so a
+    `try/finally` still needs its body to be one.
+
+    LIVE INSTANCES MEASURED **0** over the census set (`.agents/slop/maybenone/sweep.py`), and that
+    is a MEASUREMENT rather than a licence: `checks/vz_gate.py:249` is the census's own named
+    `DELEGATED` exemplar and this guard agrees it is safe -- hand-read, `verify`'s `sys.exit` at
+    `:106` is at FUNCTION-BODY level AFTER the `for` at `:104`, so it runs whatever the loop does --
+    but the guard asks the question anyway, and PLANT_CASE locks it. The two plants below are the
+    pair that differ ONLY in that conditionality, and the first one was already the file's own
+    `DELEGATED` row."""
+    return _exits_at(fn.body)
+
+
+def _is_exit_call(node):
+    """`sys.exit(...)` / `exit(...)` / `quit(...)`, the three spellings `extract()` accepts."""
+    if not isinstance(node, ast.Call):
+        return False
+    f = node.func
+    return ((isinstance(f, ast.Attribute) and f.attr == "exit"
+             and isinstance(f.value, ast.Name) and f.value.id == "sys")
+            or (isinstance(f, ast.Name) and f.id in ("exit", "quit")))
+
+
+def _exits_at(stmts):
+    """`_always_exits` over a STATEMENT LIST, so the recursion mirrors `_terminates`'."""
+    if not stmts:
+        return False
+    st = stmts[-1]
+    if isinstance(st, ast.Expr) and _is_exit_call(st.value):
+        return True
+    if isinstance(st, (ast.With, ast.AsyncWith)):
+        return _exits_at(st.body)
+    if isinstance(st, ast.If) and st.orelse:
+        return _exits_at(st.body) and _exits_at(st.orelse)
+    if isinstance(st, ast.Try):
+        # EVERY handler, not `bool(handlers)`: one arm that falls off the end is one path that
+        # returns None. `else` likewise, and a `finally` is not an arm because it cannot exit.
+        return (_exits_at(st.body)
+                and (not st.orelse or _exits_at(st.orelse))
+                and all(_exits_at(h.body) for h in st.handlers))
+    return False
+
+
 def returns_none(fn):
     """Can this same-module function hand back `None`? A bare `return`, or a body that can run off
     its end. LEXICAL, depth-1, and said to be: it does not follow a call, so a function that always
-    returns `0` from a callee reads as MAYBE.
+    returns `0` from a callee reads as MAYBE. **A function that EXITS rather than returns reads
+    MAYBE here too, and `_callee` corrects that with `_always_exits` -- `not _terminates(fn.body)`
+    is FALSE KNOWLEDGE about `def f(): sys.exit(3)`, not a measurement.**
 
     NESTED `def`s ARE NOT DESCENDED INTO, and MEASURED, that is not a detail: `ast.walk` visits
     them, so the first version read `gates/msgdiff-gate.py:593` as MAYBE-NONE on the strength of a
@@ -248,14 +308,23 @@ def returns_none(fn):
 
 
 def _callee(name, env):
-    """The shape of `sys.exit(<same-module function>())`, in the order the evidence is good."""
+    """The shape of `sys.exit(<same-module function>())`, in the order the evidence is good.
+
+    **`returns_none` IS ASKED FIRST, AND `_always_exits` IS THE REASON THAT IS NOT A REORDER.** A
+    plain reorder breaks the file's own `DELEGATED` plant, because `returns_none` calls
+    `def f(): sys.exit(3)` a MAYBE -- `not _terminates(f.body)` is True of a body whose last
+    statement is a call to something else. So the question is not "which check runs first" but
+    "which claim each check makes", and `_always_exits` is the second claim: MAYBE unless the callee
+    REACHES an exit on every path. `delegated` keeps its meaning -- do not count the call site and
+    the callee's own site twice -- and loses its power to excuse a fall-off path.
+    """
     fn = env["funcs"][name]
+    if returns_none(fn) and not _always_exits(fn):
+        return ("MAYBE-NONE", None,
+                f"{name}() can return None, and sys.exit(None) is 0 == PASS")
     if name in env["delegated"]:
         return ("DELEGATED", None,
                 f"{name}() contains an exit of its own, counted at that site")
-    if returns_none(fn):
-        return ("MAYBE-NONE", None,
-                f"{name}() can return None, and sys.exit(None) is 0 == PASS")
     return "FOREIGN", None, f"{name}() resolves inside this module"
 
 
@@ -442,6 +511,18 @@ PLANT_CASES = (
     # Counting the call site AND the exit site would count one defect twice.
     ("a callee's own exit is DELEGATED, once",
      'def f():\n  sys.exit("x")\nsys.exit(f())', 2, "DELEGATED", None, "-", True),
+    # AND THE ROW THAT LOCKS THE HOLE `_always_exits` CLOSES, which differs from the row above by
+    # ONE WORD. `own_exits` answers "does `f` CONTAIN an exit" and answers True for both; the
+    # `if` means one path returns None, so `sys.exit(f())` is `sys.exit(None)` == 0 == PASS on that
+    # path and the site is MAYBE-NONE. BEFORE `_always_exits` the census read it DELEGATED, which is
+    # the shape `gates/runner.py:391`'s lesson names: a rule that passes for the wrong reason is not
+    # a rule. MEASURED 0 live instances over the census set, so this row changes no count today --
+    # it is here so the next one cannot pass unnoticed.
+    ("a callee whose exit is CONDITIONAL is MAYBE-NONE, not DELEGATED",
+     'def f():\n  if c:\n    sys.exit("x")\nsys.exit(f())', 2, "MAYBE-NONE", None, "-", False),
+    ("an UNCONDITIONAL if/else of exits is DELEGATED",
+     'def f():\n  if c:\n    sys.exit("x")\n  else:\n    sys.exit(3)\nsys.exit(f())',
+     3, "DELEGATED", None, "-", True),
     ("sys.exit(g()) across a module boundary", 'import gatekit\nsys.exit(gatekit.main())',
      1, "FOREIGN", None, "-", True),
     ("sys.exit(main()) with a real exit is safe", 'def main():\n  return 3\nsys.exit(main())',
