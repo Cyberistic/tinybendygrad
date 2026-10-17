@@ -19609,6 +19609,47 @@ NO SWEEP. **`tinybendygrad/` (137) AND `tinygrad/` (229) INTACT.**
       **AND THE COMMIT CANNOT CARRY IT** -- ***IT DID NOT FORCE-ADD A DELIBERATELY-IGNORED FILE***, **AND
       NAMED THAT AS A CONTRADICTION BETWEEN THE IGNORE RULE AND THE INSTRUCTION.****
 
+## DIALECTFIXTURES -- **THE PRIOR CENSUS's CAUSE NAME IS ***FALSE***, AND THE FIXTURES WERE ***NEVER COMPILABLE*** (2026-10-18)
+
+`1dad0a84e` -- **1 FILE, +180, NO SWEEP.** **ALL SEVEN ***UNCHANGED***: COLD BEFORE, COLD AFTER, **BLOB SHAs
+VERIFIED EQUAL `HEAD~1` vs `HEAD`.** ***"CORRECT -- A FIXTURE GREEN FOR THE WRONG REASON IS NOT PASSED."***
+
+- [ ] **AND THE ***REFUTATION*** IS ONE LINE OF THE COMPILER, VERIFIED BY THE CALLER:**
+
+      references/bend/bend2/comp.ts:269-270
+        // lays out itself; OWNED are the Base names the compiler encodes,
+        // which a file without `import Base` may declare but not compile.
+      comp.ts:1875   die("a build needs import Base");
+
+      ***SO THE PRIOR CENSUS's CAUSE NAME -- ***"STALE FIXTURES WRITTEN AGAINST A BEND DIALECT THAT HAD
+      `String`/`IO`/`Nil` IN SCOPE"*** -- IS **FALSE**: ***THE DIALECT NEVER HAD THEM IN SCOPE WITHOUT
+      `import Base`, AND THESE SEVEN FILES NEVER HAD `import Base`.* **`guide/GUIDE.md:16-21`'s HELLO-WORLD
+      ***IS*** `import Base`.**
+- [x] **AND ***`import Base` FIXES ***ZERO*** OF THE SEVEN***: EACH STILL FAILS ON A NAME ***ABSENT FROM THE
+      FILE ITSELF*** -- **130 / 114 / 37 / 90 / 90 / 102 / 55** MISSING-HEAD NAMES RESPECTIVELY.
+      ***AND `imports=0` ALONE IS ***NOT*** THE FAULT EITHER***: A **6-LINE** ZERO-IMPORT PROBE IS **WARM**,
+      **WHILE THE ***SAME*** PROBE NAMING `U32` ANSWERS `observed : U32`.**
+- [x] **AND THE REAL ANSWER IS ***THAT THEY ARE FRAGMENTS, NOT PROGRAMS*** -- **AND THEY NEVER WERE ANYTHING
+      ELSE.** **A NEW GATE, `gates/dialect-fixture-gate.py`, rc=0, MEASURES EXACTLY THAT**:
+      **`FRAGMENTS files=7 claims=5281 carried=5124 carried_renamed=157 lost=0`** -- **e.g.
+      `usb-arith-rows.bend` IS PIECE `ARITH` OF `usb-build.py:24-31` -> `tinybendygrad/runtime/support/usb.bend`.
+      ***SO ***"COLD"** IS ***NOT A VERDICT*** ON A FRAGMENT, IT IS ***THE EXPECTED ANSWER***, AND
+      ***`checks/compile-census.py` HANDING THEM **22** IS ***A DENOMINATOR THAT COUNTS PIECES AS PROGRAMS***.***
+- [x] **AND ***THE HISTORY SAYS IT DIRECTLY***: `git log` OVER ***EVERY VERSION*** OF ALL SEVEN GIVES
+      **`imports=0` IN EVERY ONE**, FROM `07cb5a85a` (2026-10-04) TO `HEAD`. ***THEY WERE NEVER COMPILABLE;
+      NOTHING WENT STALE.*** ***SO A CENSUS THAT NAMED A CAUSE WITHOUT OPENING `git log` ***FOR THE FILES IT
+      ACCUSES*** NAMED A CAUSE IT COULD HAVE REFUTED IN ONE COMMAND.***
+- [x] **AND ***NO*** NAME COLLISION: **NO `.bend` OUTSIDE `references/` DECLARES ITS OWN `Nil`, `String` OR
+      `IO`** (ZERO HITS). **`Nil{}` IS Base's LIST-EMPTY, THE SAME ONE THE PORT USES.** THE ONLY ADJACENT
+      SPELLING IS **`Word.Nil`** (`base.bend:51`), **A NAMESPACED TYPE WITH CONSTRUCTOR `WNil{}`.**
+- [x] **AND ITS OWN INSTRUMENT WAS WRONG ***THREE REVISIONS IN THE SAME DIRECTION***: LINE-CONTAINMENT READS
+      `lift-rows` **0%** BECAUSE IT IS RE-INDENTED INSIDE A `def` IN `fold.bend` -- ***"MEASURING ROW TAGS, NOT
+      LINES, IS WHAT AVOIDS CALLING **127** LIVE ROWS LOST."*** **AND ITS GATE IS ***FALSIFIABLE***: PLANTED ONE
+      FRAGMENT WITH A NOWHERE-EXISTING TAG -> **rc=1**; REMOVED -> **rc=0**. PEAKS **8 / 38 / 0 / 0 / 42 / 55 /
+      42 MB**, **0.35-0.41 s** EACH, **16 RUNS, NEVER TWO CONCURRENT.**
+- [ ] **AND **9** MODULE FILES PRINTED AS `CONTEXT`, NOT ADJUDICATED** -- THEIR "LOST" IS THE TAG RULE READING
+      `"p1="` / `"size=5, no vmin_vmax: n="`, **WHICH IS WHY THE VERDICT IS ***OVER FRAGMENTS ONLY***.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
