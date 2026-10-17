@@ -19497,6 +19497,58 @@ UNCHANGED (VERIFIED BY THE CALLER).**
       TRACE WHY THEY SURVIVE AND **DO NOT CLAIM THEY ARE CORRECT**."*** ***THAT IS THE THIRD TIME THIS SESSION THAT
       ***"GREEN, AND NOBODY KNOWS WHY"*** HAS BEEN **SAID RATHER THAN ASSUMED.****
 
+## VERDICTCOPY -- **A NAME GREP PRODUCED THE "SHARED PLUMBING HAS FORKS" FINDING. IT IS A ***NAME COLLISION*** (2026-10-18)
+
+`cc1d6652a` -- **3 FILES, NO SWEEP.** **`gatekit.py` IS ***NOT*** IN THE COMMIT; `VERDICT` STILL READS `0 1 3 4 5`.
+**NO `SKIP` COLLAPSED, NO `DEAD` -> GREEN.**
+
+- [ ] **AND THE CALLER's CENTRAL PREMISE -- ***THE TEN FORKS*** -- IS **FALSE, MEASURED**:** `def _lane*` IS IN
+      **12** FILES, ***NOT **11*** (THE CALLER's NUMBER WAS OFF BY ONE)**, **AND ***IT IS NOT **11** COPIES***.**
+      **`gates/gatekit.py:539` IS `def _lane(self, argv, name)` -- IT ***RUNS A SUBPROCESS***. ALL **11** OTHERS
+      ARE ARTIFACT ***READERS*** WITH DIFFERENT SIGNATURES.** VERIFIED BY THE CALLER -- SEVEN **DISTINCT**
+      SIGNATURES TREE-WIDE:
+
+          def _lane(self, argv, name)   <- gatekit: THE ONLY RUNNER
+          def _lane(name) · def _lane_text() · def _lanes()
+          def _lane_raw(n) · def _lane_raw_or_empty(n) · def _lane_order(f)
+
+      ***SO **SIX READER VARIANTS, **THREE** ARITIES, **ONE** RUNNER -- AND A `grep -l 'def _lane'` TALLYING
+      **11-12** PRODUCED A "TEN FORKS" FINDING THAT IS **A NAME COLLISION, NOT A DUPLICATION**.***
+      ***AND ***THIS CORRECTS THE CALLER's OWN `DISAGREE` RECORD, WHICH REPORTED THE SAME NUMBER AS FORKS.***
+- [x] **AND **THE CALLER's THREE RULINGS WERE ***ALREADY LANDED*** (`4dde92b72` IS AN ANCESTOR OF `HEAD`;
+      `git show HEAD:` CONFIRMS `return FAIL` AT `:156`, THE `2` DECLARATION AT `retention-check.py:65-78`,
+      `3` AT `gendirs.py:463`). ***SO ***THREE EDITS WERE ***NOT*** THE WORK*** -- AND THE CORRECT DELIVERABLE
+      TURNED OUT TO BE **A CENSUS**, ***RE-RUN RATHER THAN REWRITTEN***: **THE EXIT-COPY QUESTION IS **23**
+      UNOWNED ROWS OVER **21** FILES, AND ***THAT INSTRUMENT ***ALREADY EXISTED*** AT
+      `.agents/slop/exitcodes/census.py` -- WHICH `gates/gatekit.py:109` ***ALREADY CITES***.**
+- [ ] **AND ***THE REAL FINDING IS WORSE THAN THE TASK***: ***BOTH LANDING COMMENTS CLAIMED THE COUNT ARM* "IS
+      `gatekit.py:618`'s ***OWN MAPPING*** (`DEAD if n == 0 else FAIL`)"*. **THE CODE WAS A BARE `return FAIL`.
+      ***THE MAPPING WAS ***CLAIMED BUT NOT APPLIED*** -- ***THE SPLIT LANDED ONE LEVEL TOO SHALLOW:***
+
+      | condition | before | after |
+      |---|---|---|
+      | `bd.out` **absent** | 3 REFUSED | 3 REFUSED |
+      | **`bd.out` EMPTY (`n==0`)** | ***1 FAIL*** ✗ | ***5 DEAD*** ✓ |
+      | `bd.out` wrong non-empty | 1 FAIL | 1 FAIL |
+
+      ***SO ***A COMMENT THAT DESCRIBES A FIX RATHER THAN A FACT IS A LANDED DEFECT*** -- **THE **COMMENT** SAID THE
+      MAPPING WAS THERE AND **THE **CODE** DID NOT HAVE IT, **AND THE UNIT THAT FIXED IT ***VERIFIED NEITHER***.***
+      ***AND `return code if code != PASS else (DEAD if n == 0 else FAIL` -- `run()`'s OWN VERDICT STILL
+      OUTRANKS***, **WHICH IS WHY ***SOME***ONE ELSE HAD TO FIX IT.***
+- [x] **AND `retention-check.py` -- ***NOTHING TO WRITE***: IT ***ALREADY*** DECLARES ITS VOCABULARY AT
+      `:65-78`, AND THE UNIT ***VERIFIED RATHER THAN RE-WROTE***: `refuse()`'S ***TWO** SITES ***BOTH*** RAISE
+      `SystemExit 2`, AND `verdict_of(2)` = `UNASSIGNED`. **BYTE-IDENTICAL TO `HEAD` -- ***NOT*** IN THE COMMIT.**
+- [x] **AND THE PLANT: **8-CASE PROBE, **6** OF **8** DISAGREED -> **0** OF **8**,** AND ***NO MASK*** --
+      **`n=1,2,ROWS-1` STILL `FAIL(1)`.** GATES: `verdictcopy-gate` (NEW) **rc=1 -> rc=0**;
+      `i64-shr` **rc=0 / 301 ROWS**; `i64-shl` **rc=0 / 151 ROWS**; `gatekit`/`wk-f32`/`gendirs` **rc=0**
+      UNCHANGED; `retention-check` **rc=1** (PRE-EXISTING CLAUSE **V**, NOT ITS OWN).
+- [ ] **AND TWO THINGS IT FOUND AND DID **NOT*** CLAIM: **A PRE-EXISTING `KeyError`** --
+      `bd.out` WITH THE ***RIGHT COUNT*** AND WRONG ROW NAMES CRASHES AT `i64-shr-gate.py:211`
+      (**IDENTICAL IN `HEAD` AND ITS TREE -- IT MEASURED BOTH**); **AND
+      `.agents/slop/exitcodes/census.py` IS THE TREE's EXIT-CODE CENSUS, `gatekit.py:109` CITES IT, ***AND IT
+      LIVES INSIDE THE TREE `AGENTS.md` RECORDS AS BEING PRUNED*** -- **ITS INPUT SHOULD SIT IN GIT BESIDE THE
+      GATE.****
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
