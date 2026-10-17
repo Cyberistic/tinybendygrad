@@ -1,0 +1,12 @@
+sha	lane	measured	expected	match	detail
+00b101574	CLAIM	REFUSED	REFUSED	MATCH	oracles259/plants.py is present in its tree at e6e31707; measured checked=1 uncheckable=0 refused=['oracles259/plants.py']
+9144d179e25a	CLAIM	PASS	PASS	MATCH	0 checked, 0 uncheckable -- no claim sentence; measured checked=0 uncheckable=0 refused=[]
+c83f04ad1c12	CLAIM	PASS	PASS	MATCH	0 checked, 0 uncheckable -- no claim sentence; measured checked=0 uncheckable=0 refused=[]
+75ab9b8f8984	CLAIM	PASS	PASS	MATCH	0 checked, 0 uncheckable -- no claim sentence; measured checked=0 uncheckable=0 refused=[]
+9144d179e25a	SUBJECT	REFUSED	REFUSED	MATCH	removed 110 paths, message names 7 globs and none; measured removals=110 undeclared=110
+c83f04ad1c12	SUBJECT	REFUSED	REFUSED	MATCH	removed 66 paths as R100 renames; measured removals=66 undeclared=66
+75ab9b8f8984	SUBJECT	REFUSED	REFUSED	MATCH	removed 4 paths, message names none; measured removals=4 undeclared=4
+9b55d16a4	SUBJECT	PASS	PASS	MATCH	honest strays-removal: GLOB/DIR declare all four; measured removals=4 undeclared=0
+169ee6ac8	CLAIM	PASS	PASS	MATCH	meta-report: the predecessor's claim IS FALSE; measured checked=0 uncheckable=2 refused=[]
+3c4ceeea3	CLAIM	PASS	PASS	MATCH	MOVED, NOT DELETED / retire 19 -- negated, kept; measured checked=0 uncheckable=3 refused=[]
+3188c1af86a1	SUBJECT	PASS	PASS	MATCH	four relocated paths named relative to tinybendygrad/; measured removals=4 undeclared=0

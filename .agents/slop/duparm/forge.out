@@ -1,0 +1,22 @@
+# forge-scratch control -- every line is `git <cmd>` output or its exit code
+
+## REPEATED
+git mktree rc=0 oid=d2ec77dbd2c54f82afa6f4ae2a645e5e97a654af
+git commit-tree rc=0 commit=83f2a4f12faa59238888e506a320e45065036a62
+git ls-tree -r rc=0 lines=2 unique_names=1
+100644 blob 975fbec8256d3e8a3797e7a3611380f27c49f4ac	sub/b.rows
+100644 blob 975fbec8256d3e8a3797e7a3611380f27c49f4ac	sub/b.rows
+git fsck --strict rc=1 duplicateEntries=1 :: error in tree d2ec77dbd2c54f82afa6f4ae2a645e5e97a654af: duplicateEntries: contains duplicate file entries
+git fsck (no --strict) rc=1 duplicateEntries=1
+
+## CONFLICTING
+git mktree rc=0 oid=676e68f4652698dbb0f78fe412ebc5d45962eeb0
+git commit-tree rc=0 commit=7e801ec63e5626e48fd267a3ab72f4d27819b7a6
+git ls-tree -r rc=0 lines=1 unique_names=1
+100644 blob 975fbec8256d3e8a3797e7a3611380f27c49f4ac	sub/b.rows
+git fsck --strict rc=1 duplicateEntries=2 :: error in tree 676e68f4652698dbb0f78fe412ebc5d45962eeb0: duplicateEntries: contains duplicate file entries
+git fsck (no --strict) rc=1 duplicateEntries=2
+
+## THE INDEX
+git update-index --index-info (two entries, one name) rc=0 index_bytes 245 -> 226 delta=-19
+git ls-files --stage lines for keep.rows = 1

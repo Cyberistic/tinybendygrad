@@ -1,0 +1,9 @@
+.agents/slop/dictkeyed/dictdrop.py
+.agents/slop/dictkeyed/discover.py
+.agents/slop/dictkeyed/discover.rows
+.agents/slop/dictkeyed/p42.rows
+.agents/slop/staleref/HEAD-tracked-paths.rows
+.agents/slop/unpushed/audit.py
+.agents/slop/unpushed/findings.rows
+.agents/slop/unpushed/range.rows
+.agents/slop/unpushed/range.sha.rows

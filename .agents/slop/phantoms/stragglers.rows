@@ -1,0 +1,4 @@
+path	index_oid	empty_blob_yes_no	live_consumer	consumer_line
+gates/assertlit.rows	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	yes	no	gates/assertlit-census.py:1286 (REPORT.write_text -- WRITES it; no reader)
+gates/falseclaim.rows	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	yes	no	gates/falseclaim-census-gate.py:635 (Path(a.rows).write_text -- WRITES it; no reader)
+gates/oracleblind.rows	e69de29bb2d1d6434b8b29ae775ad8c2e48c5391	yes	no	gates/oracleblind-census.py:1321 (REPORT.write_text -- WRITES it; no reader)

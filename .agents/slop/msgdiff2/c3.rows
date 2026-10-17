@@ -1,0 +1,4 @@
+strength	sha	removed_paths	subject
+strict	9b55d16a4fa1	tinybendygrad/runtime/support/elf.bend.mut	strays: **THE LAST FOUR TRACKED STRAGY FILES IN `tinybendygrad/` ARE REMOVED — `elf.bend.mut` (255,9
+weak	b70551451278	.agents/slop/adev/CLAIM.md,.agents/slop/backward-graph/BW-GRAPH.md,.agents/slop/backward/walk-plant.md,.agents/slop/bf16fix/STUB.md	restore-68-was-half-a-restore: **`git checkout <tree> -- <path>` ADDS AND OVERWRITES BUT **NEVER DEL
+weak	3fb8dde1af26	tinybendygrad/uop/ops.staged-blob-36145,tinybendygrad/uop/ops.staged-blob-64022,tinybendygrad/uop/ops.staged-blob-66397,tinybendygrad/uop/ops.staged-blob-97648	strayblobs: **FOUR TRACKED STRAYS WITH PIDs IN THEIR NAMES, AND TWO OF THEM ARE **KILLED MUTANTS**. 

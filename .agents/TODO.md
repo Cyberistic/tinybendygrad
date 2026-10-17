@@ -457,7 +457,50 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
-rn-UNPUSHED-DELETES [#####.....] 1/3  **LOUDER THAN THE PUSH BLOCKER, AND FOUND BY THE `unpushed` UNIT.**
+rn-phantom-exact [#########] 3/3  THE CLASS IS EXACTLY 3, AND A UNIT FOUND A LARGER FINGERPRINT BESIDE IT.
+                                       MEASURED 2026-10-17: origin−HEAD is **4** paths, of which **3** are
+                                       on disk (the pins stragglers) and 1 is not; all three carry
+                                       empty blob `e69de29b` with `git status --porcelain=v2` reading
+                                       `1 .A N...`, reached by TWO INDEPENDENT ROUTES. **THE
+                                       DANGEROUS SUBSET IS EMPTY**: all three are WRITE targets of
+                                       their own census gates (`assertlit-census.py:1286`,
+                                       `falseclaim-census-gate.py:635`, `oracleblind-census.py:1321`)
+                                       and **NOTHING READS THEM** -- a grep answer called
+                                       `tnvalue-census.py:52` a consumer, but AST shows that claim is
+                                       DOCSTRING PROSE and the file's only `.rows` literal is
+                                       `tnvalue.rows`. **A GREP-BASED ANSWER WOULD HAVE CALLED A
+                                       DOCUMENT A CONSUMER.** And **restoring from origin would be a
+                                       REGRESSION**: all three disk blobs are AHEAD of origin's. The
+                                       agent's control passed 3/3 with 0 false positives, and it
+                                       found the disk predicate is LOAD-BEARING -- dropping it yields
+                                       4 candidates at a 25% false-positive rate. **THE LARGER
+                                       FINGERPRINT IT DECLINED TO LEAVE UNMENTIONED: 552 empty-index
+                                       entries ARE in HEAD, and 9 HAVE REAL CONTENT THERE** (all under
+                                       `.agents/slop/`), intact only on disk -- a commit naming any
+                                       replaces content with an empty blob, and that set is invisible
+                                       to the origin−HEAD test BY CONSTRUCTION.
+malformed-trees [#########] 3/3  **THREE MALFORMED TREES, NOT ONE -- VERIFIED.** MEASURED 2026-10-17:
+                                       `git fsck` reports `duplicateEntries` on **`d57bc484`**, **`d83cf685`**
+                                       AND **`3a60f33f`**; only `d83cf685` (the `591f6b499` root) is
+                                       reachable from HEAD. **I MISSED TWO BECAUSE I SUPPRESSED FSCK's
+                                       OUTPUT WITH `2>/dev/null` -- A SHORTHAND THAT QUIETLY HIDES A
+                                       FINDING IS THE SAME DEFECT AS A SHORTHAND THAT QUIETLY RETURNS
+                                       NOTHING.** The reachable root-tree population is **16,024**, not
+                                       the 1,137 I reported. **AND THE REACHABLE ONE IS ALREADY AN
+                                       ANCESTOR OF HEAD AND ALREADY PUSHED**, so a scan that finds it
+                                       can PREVENT NOTHING -- **detection and prevention are different
+                                       problems and conflating them is how a gate gets built that only
+                                       reports yesterday.** A review unit's verdict on the proposed
+                                       DUPLICATE arm: **DETECTION -- DO NOT BUILD, `git fsck` HAS IT**
+                                       (rc=5, 15.74 s, the same three OIDs); but **`index-arm-gate.py`'s
+                                       OWN `n_tree` IS ALREADY A LIE** -- `head_tree()`'s dict destroys
+                                       the duplicate before `census()` runs, so the gate would print
+                                       *"agrees with HEAD on all 7253 paths"* over a tree `ls-tree -r`
+                                       enumerates as 7,505. **BUILD THAT, IN `head_tree()`: COUNT
+                                       `ls-tree`'s LINES, COMPARE TO THE DICT, REFUSE.** Zero new git
+                                       calls, no new verdict token, no plant change.
+
+UNPUSHED-DELETES [#####.....] 1/3  **LOUDER THAN THE PUSH BLOCKER, AND FOUND BY THE `unpushed` UNIT.**
                                        MEASURED 2026-10-17 over the **49-commit** range
                                        `52d77134b..c0795853a`: **THREE pins files are ON
                                        `origin/master` AND ABSENT FROM LOCAL `HEAD`** -- confirmed
@@ -468,11 +511,17 @@ rn-UNPUSHED-DELETES [#####.....] 1/3  **LOUDER THAN THE PUSH BLOCKER, AND FOUND 
                                        UNTRACKED and a commit right now would DELETE THEM FROM THE
                                        TREE.** And one is a **REQUIRED INPUT of a live gate**:
                                        `gates/oracleblind-census.py:118` sets
-                                       `REPORT = HERE / "oracleblind.rows"`. **THIS IS THE SAME
-                                       PHANTOM-DELETION CLASS `02329daf` ALREADY REPAIRED** -- its own
-                                       message names these as the 4 files it DELIBERATELY WITHHELD, and
-                                       `gates-pop.py` was picked up later but **these three never
-                                       were.** **THE WORKTREE BYTES DIFFER FROM ORIGIN'S, so "just
+                                       `REPORT = HERE / "oracleblind.rows"`. **AND I MIS-STATED WHY, VERIFIED AND CORRECTED 2026-10-17:**
+                                       `02329daf`'s OWN MESSAGE NAMES ALL THREE --
+                                       *"LIVE WORK AND ARE **NOT** IN THIS COMMIT*: gates/assertlit.rows,
+                                       gates/falseclaim.rows, gates/gates-pop.py,
+                                       gates/oracleblind.rows" -- so they were **DELIBERATELY
+                                       WITHHELD AS IN-FLIGHT WORK, NOT MISSED**, and its arithmetic
+                                       (`178 restored + 4 withheld = 182`) closes exactly. A unit
+                                       confirmed the record is ACCURATE and simply unfinished:
+                                       **zero undercount, zero over-withholding**, and `gates-pop.py`
+                                       has since landed via `b37c73190`. **THE STRAGGLER CLASS IS
+                                       EXACTLY 3, NOT 'BIGGER THAN 3' -- I had the premise inverted.** **THE WORKTREE BYTES DIFFER FROM ORIGIN'S, so "just
                                        re-add them" IS NOT SAFE AND I REFUSED TO GUESS WHICH VERSION
                                        TO COMMIT.** OWNER'S CALL.
                                        **ALSO MEASURED, AND IT CORRECTED THE BLOCKER'S SCALE:** the

@@ -1,0 +1,4 @@
+gates/assertlit.rows
+gates/falseclaim.rows
+gates/oracleblind.rows
+tinygrad/runtime/ops_bend.py

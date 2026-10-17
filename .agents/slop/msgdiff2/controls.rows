@@ -1,0 +1,3 @@
+control	sha	verdict	expectation	result
+C1_negative_add	3173198bd80e	UNCLEAR	must not fire	PASS
+C2_negative_delete	4f747540b372	CONFIRMED	CONFIRMED	PASS

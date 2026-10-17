@@ -1,0 +1,4 @@
+stage	cmd	seconds	rss_kb
+gate-calls	rev-parse-verify	.019977000
+gate-calls	ls-files--stage	.025921000
+gate-calls	ls-tree_-r_HEAD	.029458000

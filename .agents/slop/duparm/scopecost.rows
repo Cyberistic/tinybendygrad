@@ -1,0 +1,5 @@
+scope	commits	distinct_trees	seconds_to_enumerate
+HEAD	16208	16024	0.0443
+HEAD~1000	15208	15061	0.0381
+HEAD~100	16108	15925	0.0359
+HEAD~10	16198	16014	0.0403

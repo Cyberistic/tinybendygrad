@@ -1,0 +1,6 @@
+stage	count	denominator	definition
+1-verb-present	25	55	message contains a delete verb (VERB matched somewhere)
+2-not-negated-not-meta	20	55	NEGATION in the 48 chars before it, or META in its clause, did not demote it
+3-governs-a-path	4	55	_nearest_path found a PATH within 40 chars and no GAP_STOP between
+4-path-resolves	4	55	the token matches a path in this commit's diff D-set or in its tree
+5-witnessed-or-contradicted	4	55	the claim was graded; this is the instrument's real denominator
