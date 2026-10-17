@@ -18466,6 +18466,93 @@ DOCSTRING**: VERIFIED BY AST, **STRIPPING ALL DOCSTRINGS LEAVES THE EXECUTABLE C
       `runs/graphcmp/D/` WAS PRODUCED THROUGH THE ARMED INDEX** -- **SO IF `differ.py` RAN WITH THE INDEX ARMED,
       THE `H0`/`H1` SUBSTRATE ROWS COULD BE KEYED ON INDEX CONTENT.**
 
+## ARGVLOOKUP -- **THE SAME SHAPE AT FOUR SITES, AND `--help` IS **DELIBERATELY** rc 0 AT TWO AND rc 3 AT TWO** (2026-10-17)
+
+`1e2ab382c` -- **EXACTLY **4** FILES, VERIFIED WITH `git show --stat`.** **+29/-0 · +35/-3 · +22/-1 · +36/-3.
+**NO `try`, NO `except`, NO CATCH-ALL, NO WEAKENED CHECK, NO VERDICT MAPPED TO GREEN.****
+
+- [x] **THE PER-SITE GROUNDS ARE **THE FILES' OWN VOCABULARIES**, NOT `3` BY DEFAULT:**
+      `amd_dsl_census-mutate` -> rc **0** FOR `--help`, rc **3** FOR AN UNKNOWN LABEL (GROUND:
+      `gates/decomp_graph_census-mutate.py:243-245` RETURNS **3** FOR THE BYTE-EQUIVALENT EMPTY SELECTION) ·
+      `graphcmp-census-audit` -> rc **0** / rc **3**, GROUND **3 IS FREE IN THIS FILE's EXIT SPACE, MEASURED**:
+      `one()` PROPAGATES ONLY THE ORACLE's rc AND `.agents/slop/graphcmp-oracle.py` HOLDS **0** `exit 3` ·
+      `tc_ptx_render-oracle` -> **EVERY** OUT-OF-DOMAIN SELECTOR IS rc **3** WITH **0 BYTES ON STDOUT**, GROUND:
+      ***STDOUT ***IS*** THE ARTIFACT** (`> /tmp/pyall.rows`, THEN `diff`), SO rc 0 WITH NOTHING ON STDOUT IS THE
+      `SILENT` SHAPE `gates/help-census.py` ALREADY HAS **2** ROWS OF** · `coverage.py` -> rc **3**.
+- [x] **AND `--help` IS **DELIBERATELY** rc 0 AT TWO SITES AND rc 3 AT TWO, AND ***THAT IS NOT
+      INCONSISTENCY***: **AT THE HARNESSES `--help` HAS A NATURAL ANSWER (THE LABELS); AT THE ORACLE **STDOUT IS A
+      DATA CHANNEL**; AND AT `coverage.py` THE ARGUMENT ***IS*** A PATH.** ***GRADING `--help` AS A UNIVERSAL
+      CONTRACT IS EXACTLY WHAT THE CALLER's BRIEF FORBIDS, AND IT IS THE THING THAT WOULD HAVE FORCED TWO OF
+      THESE FOUR TO BE WRONG.****
+- [ ] **AND **`coverage.py` IS ***NOT*** THE SAME SHAPE**, AND THE MEASUREMENT SETTLES IT: ***THE `--help` EXCEPTION
+      ***CLASS*** IS A PROPERTY OF THE WORKING DIRECTORY, NOT OF THE FILE.*** `./--help/` **IS A REAL DIRECTORY**
+      (VERIFIED BY THE CALLER: **9 FILES**, **IN HEAD? 0**, **GITIGNORED? NO**) CREATED BY
+      `checks/run-f64.sh`'s `W=${1:-...}`, **SO TODAY's ANSWER IS `IsADirectoryError` WHILE THE EARLIER COMMIT
+      RECORDS `FileNotFoundError` **FOR THE SAME CODE IN THE SAME COMMIT. TWO GROUNDS, NOT ONE.*** AND IT
+      **CARRIES A DEFECT THE OTHER THREE DO NOT HAVE** -- **A REQUIRED POSITIONAL NEVER STATED**, `IndexError` ON A
+      BARE CALL -- **SO A `--help`-ONLY FIX WOULD HAVE LEFT IT CRASHING ON ITS REAL CONTRACT.**
+- [x] **AND UNREACHABILITY PROVEN **TWICE**: **(a) **121 LEGAL `argv`s ENUMERATED IN-PROCESS** (EMPTY, EVERY SINGLE
+      LABEL, 90 TWO-LABEL COMBOS) -> `want` EMPTY IN ***NONE***, **SO `max()`'s PRECONDITION IS NEVER MET**;
+      (b) `G1` **GREEN END-TO-END** UNDER `checks/bounded.py --mb 2048`: rc 0, 139 s, PEAK **1 478 MB**,
+      `UNMUTATED rc=0 bd=1178 py=1178 31 divergence(s)`, `1 of 1 guard mutations went red`.
+- [ ] **AND A **FIFTH** LIVE INSTANCE, OUT OF GRANT, **WHICH HAS ALREADY DIRTIED THE TREE**:
+      `checks/run-f64.sh:49`'s `W=${1:-...}` TOOK `--help` AS ITS **SCRATCH DIRECTORY** AND LEFT `./--help/`
+      **UNTRACKED AND UN-GITIGNORED**, HOLDING **ANOTHER UNIT's LIVE WORK** (`a.log`, `b.log`, `c-C1.log`,
+      `c-C2.log`, `port-words.txt`, ...). **IT DID NOT DELETE IT.** *(THE CALLER SAW `./--help/` IN `git status`
+      EARLIER IN THE SESSION AND CALLED IT **LITTER** -- **IT WAS NEVER LITTER.**)*
+- [ ] **AND **`checks/coverage.py` IS A NEAR-DUPLICATE WHOSE TWIN IS **THE ONE CALLERS USE****: IT DIFFERS FROM
+      `.agents/slop/e2e_port/coverage.py` BY **ONE LINE** (`:39`, THE `sys.path` DEPTH), AND
+      `checks/run-port-mm.sh:153` CALLS THE **slop** COPY. ***THE COPY THAT WAS FIXED HAS ***NO CALLER*** -- IT IS
+      REACHABLE ONLY AS A CENSUS ENTRY POINT. **BOTH COPIES STILL CRASH ON A BARE INVOCATION.****
+
+## BASELINE68 -- **THE GATE's OWN HEADER NAMES THE FAULT AT `:57-61` AND `:163` DOES IT ANYWAY** (2026-10-17)
+
+**AUDIT COMPLETE. **IT CHANGED NOTHING** -- `git diff -- gates/indexread-gate.py gates/indexread-baseline.rows`
+**IS EMPTY** -- **AND THAT IS THE FINDING.**
+
+- [ ] **AND WHAT THE BASELINE ITSELF CANNOT SEE IS ***NOT AN ALIAS*** -- IT IS A **SUFFIX SET**.
+      `gates/indexread-gate.py:163` IS `if not fn.endswith(".py"): continue`, **AND ITS OWN HEADER AT
+      **`:57-61` SAYS, VERBATIM AND VERIFIED BY THE CALLER:**
+
+          # ...a census from a hand list cannot notice a fourth directory, and a census from a
+          # suffix set cannot notice an EXTENSIONLESS `#!/bin/sh` (`checks/bend`).
+
+      ***SO THE HEADER NAMES THE FAULT, NAMES THE FILE THAT PROVES IT, AND `:163` COMMITS IT.*** **271 SHEBANG +
+      249 EXEC-BIT NON-`.py` FILES ARE NEVER WALKED. **`checks/bend` IS COMMITTED AT MODE `100755` (VERIFIED) AND
+      IS GENUINELY CLEAN -- A **NEGATIVE RESULT**, AND THE ONLY ONE THE SHAPE HAS PRODUCED.**
+- [x] **AND TWO REAL LIVE OFFENDERS BEHIND THE FILTER: **`checks/disarm.sh`** (100755) -- `:26 { git diff --cached
+      --name-only; git status --porcelain …}`, `:38 git update-index --add`, `:42 git update-index
+      --force-remove` -- **A CUSTODIAN-SHAPED FILE WRITTEN IN ZSH: IT EXISTS TO ARM/DISARM THE ALARM**; AND
+      `.agents/slop/substrate/oracle-check.sh` -- `git ls-files --error-unmatch`, THE `PROVENANCE` COLUMN, LIVE,
+      INSIDE A HEREDOC.
+- [ ] **AND **`update-index` ITSELF IS UNSEEABLE**: IT IS IN `GIT_WORDS` (`:108`) AND IN **NEITHER** `FORMS` **NOR**
+      `EXACT_FORMS` -- **A PURE INDEX ***WRITER*** THE GATE HAS NO FORM FOR.** IN `.py` IT COSTS NOTHING TODAY; **IN
+      SHELL IT IS HALF OF `disarm.sh`.**
+- [x] **AND THE **68** CLASSIFIED BY **THE QUESTION EACH FILE ANSWERS**, NOT BY SYNTAX: **44** `P` ("WHICH PATHS
+      EXIST") · **16** `A`-scratch ("DOES THE PLANT MOVE THE NUMBER" -- THE INDEX IS A ***THROWAWAY*** THE HARNESS
+      `git init`ed) · **3** `C` · **2** `A`-**LIVE INDEX** (`clauseVfix/plant.py`,
+      `jjhazard/repro_index_reset.py` -- **THE DANGEROUS RESIDUE**) · **1** `W` · **2** `X`.
+      **AND **1 OF **68** IS UNCLASSIFIABLE ***BY DECLARATION, NOT BY AMBIGUITY***:
+      `.agents/slop/toolsledger/probe.py` HAS NO DOCSTRING, NO FUNCTIONS, **44 LINES OF MODULE-LEVEL SIDE
+      EFFECTS** AND `ROOT = os.getcwd()`.
+- [x] **AND **NINE ALIAS SHAPES HUNTED AND ***NOT*** FOUND** -- ALL NEGATIVES OVER 1 898 FILES: `status --short`
+      / `-s` -> **0** (ALL **18** `--short` ARE `rev-parse --short`; ALL `-s` ARE `ls-files -s`/`show -s`/`cat-file -s`)
+      · LIVE WHOLE-COMMAND STRING (`shell=True`) -> **0 INVISIBLE** · `.join(["ls","-files"])` -> **0** ·
+      F-STRING BUILDING A FORM -> 12 SITES, ALL **PROSE INSIDE F-STRINGS**, **EVERY CONTAINING FILE ALREADY AN
+      OFFENDER** · `--porcelain=v1`/`=v2` -> **ALREADY FIXED** IN THE LIVE GATE (`form_of`, `:132`).
+- [x] **AND **ZERO BASELINE ROWS ARE DELETABLE, AND NONE SHOULD BE.**** TWO ARE WRONG ***ON THE CHARGE*** AND BOTH
+      ARE **NAMED, NOT REMOVED**. ***AND `checks/repro-paths.py` IS A **CORRECT TOMBSTONE**: THE GATE NOW CATCHES
+      IT AND PRINTS `gone … re-pin the baseline deliberately` -- **AND ***THAT ROW MUST STAY***, BECAUSE IT IS **THE
+      ONLY RECORD THAT THIS FILE WAS ONCE AN OFFENDER**, AND **RE-PINNING DELETES EXACTLY THE THING THAT MAKES THE
+      NEXT `ls-files` IN IT VISIBLE**.** ITS OWN DOCSTRING RECORDS THE MEASURED REASON (**584** UNDER AN ARMED INDEX
+      VS **541** DISARMED, SAME TREE).**
+- [x] **AND IT ***CHANGED NOTHING***, `git diff` EMPTY, AND **IT DID NOT COMMIT AT ALL** -- **AND THAT IS THE BEST
+      RESTRAINT OF THE SESSION**: *"GIVEN TWO COMMITS THIS SESSION SWEPT 430+ FILES ON A SHARED INDEX,
+      MANUFACTURING A NO-OP COMMIT WAS THE LARGER RISK."*
+      **AND IT NOTED **THE CALLER's OWN BRIEF NUMBERS HAD MOVED**: IT SAID **14 OFFENDERS / 81 BASELINE**; THE
+      TREE NOW READS **82 / 68**, **AND THE OFFENDER SET DIFFERS AGAIN** (`checks/unowned.py` IS NOW CAUGHT BY THE
+      WIDENED `form_of`). **AND THE INDEX STATE ITSELF MOVED: 8 086 / 653 ITA -> 8 130 / **0** ITA.**
+
 ## **INDEXRACE -- THE ARMED-INDEX HAZARD FIRED **ON THE CALLER's OWN COMMIT**, AND `--only` DID **NOT** BOUND IT** (2026-10-17)
 
 **NOT COMMITTED BY DESIGN -- IT IS IN THE WORKING TREE ONLY. SEE THE FINAL NOTE.**
