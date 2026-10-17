@@ -536,7 +536,7 @@ def mxm_as_shape(+ar: O.Arena, +i: U32) -> List<&2, U32>:
 # `ops.bend`'s membership test and an empty set is a subset of everything, so the
 # set is written out rather than left empty.
 def mxm_arg_op(op: O.Op) -> Bool:
-  O.op_in([O.OpsPERMUTE{}, O.OpsFLIP{}], op)
+  O.op_in([O.OpsPERMUTE{}], op)
 
 # IS A MOVEMENT OP WHOSE `marg` IS A SHAPE -- RESHAPE and EXPAND.
 def mxm_dim_op(op: O.Op) -> Bool:
@@ -999,10 +999,6 @@ def G.permute(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
 
 # A FLIP, same arg reader, and its marg is a list of 0/1 FLAGS -- the row that
 # separates the two `MOrder` cases by the permutation test.
-def G.flip(+ar: O.Arena, +ys: List<&2, U32>) -> O.Found:
-  +b = G.base(ar)
-  O.UOp.new(O.Found.ar(b), O.OpsFLIP{}, [O.Found.i(b)], O.ABoolList{O.bools_of(ys)}, O.TNone{})
-
 # THE ARENA ROWS, one def per row, and each is an `IO(Unit)` def rather than a line of
 # `main` for two reasons: a `do` block cannot contain a `match`, and each row needs to
 # build a fixture whose arena is threaded through two calls.
@@ -1101,10 +1097,6 @@ def marg_ord.go(+m: MxMarg, +f: O.Found, +nm: String) -> IO(Unit):
 def marg_perm_row() -> IO(Unit):
   +f = G.permute(O.Arena.empty(), [1, 0, 2, 3])
   marg_ord.go(mxm_marg(O.Found.ar(f), O.Found.i(f)), f, "perm")
-
-def marg_flip_row() -> IO(Unit):
-  +f = G.flip(O.Arena.empty(), [1, 0, 0, 0])
-  marg_ord.go(mxm_marg(O.Found.ar(f), O.Found.i(f)), f, "flip")
 
 # THE RESHAPE ROW, and it is the `MDim` arm: `mxm_shape` answers the marg unchanged,
 # which is ops.py:412's `return self.marg`. CPython's `reshape_2_8_16 ... marg=(1,2,8,16)`.
@@ -1284,7 +1276,7 @@ def mxw_stk(+vs: List<&2, U32>, +ar: O.Arena, +acc: List<&2, U32>) -> O.Found:
 # membership because `O.op_in` wants a list of ops and building one per call is the
 # copy the brief forbids.
 def mxw_mv(op: O.Op) -> Bool:
-  O.op_in([O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsPERMUTE{}, O.OpsFLIP{}], op)
+  O.op_in([O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsPERMUTE{}], op)
 
 # THE FOLD'S ANSWER AS `U32`s, for the nodes `mxm_marg` does not claim. A movement op
 # never reaches it -- that is the whole split -- and a dim the fold holds symbolically
@@ -1854,7 +1846,6 @@ def main() -> IO(Unit):
     marg_pad_row(1)
     marg_reshape_row()
     marg_perm_row()
-    marg_flip_row()
     marg_permchk_row()
     f_neg_row()
     marg_other_row()

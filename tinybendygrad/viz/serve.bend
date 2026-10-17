@@ -1485,7 +1485,7 @@ def op_row(nm: String, py: String, op: O.Op) -> IO(Unit):
 def op_list() -> List<&2, O.Op>:
   List.concat(&2, O.Op, [
     [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{}, O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}],
-    [O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsGROUP{}, O.OpsSTACK{}, O.OpsGETADDR{}],
+    [O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{}],
     [O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{}, O.OpsBITCAST{}, O.OpsEXP2{}],
     [O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}],
     [O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}],
@@ -1493,7 +1493,7 @@ def op_list() -> List<&2, O.Op>:
     [O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{}, O.OpsEND{}, O.OpsENDIF{}],
     [O.OpsBACKEDGE{}, O.OpsCONST{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}],
     [O.OpsCOPY{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}],
-    [O.OpsFLIP{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}, O.OpsPYLITERAL{}]])
+    [O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}, O.OpsPYLITERAL{}]])
 
 def wave_of.at(m: Maybe<&1, String>) -> String:
   match m:
@@ -1803,7 +1803,6 @@ def main() -> IO(Unit):
     op_row("op_color.BINARY", "#404040", O.OpsBINARY{})
     op_row("op_color.SINK", "#ffffff", O.OpsSINK{})
     op_row("op_color.AFTER", "#8A7866", O.OpsAFTER{})
-    op_row("op_color.GROUP", "#ffffff", O.OpsGROUP{})
     op_row("op_color.STACK", "#D8F9E4", O.OpsSTACK{})
     op_row("op_color.GETADDR", "#9DB1F0", O.OpsGETADDR{})
     op_row("op_color.INDEX", "#CEF9B7", O.OpsINDEX{})
@@ -1862,7 +1861,6 @@ def main() -> IO(Unit):
     op_row("op_color.PERMUTE", "#D8F9E4", O.OpsPERMUTE{})
     op_row("op_color.EXPAND", "#D8F9E4", O.OpsEXPAND{})
     op_row("op_color.PAD", "#D8F9E4", O.OpsPAD{})
-    op_row("op_color.FLIP", "#D8F9E4", O.OpsFLIP{})
     op_row("op_color.UNSHARD", "#f6ccff", O.OpsUNSHARD{})
     op_row("op_color.REDUCE", "#FF5B5B", O.OpsREDUCE{})
     op_row("op_color.ALLREDUCE", "#ff40a0", O.OpsALLREDUCE{})

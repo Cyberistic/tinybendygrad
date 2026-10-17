@@ -859,7 +859,7 @@ def gs_0(+ar: O.Arena, self: U32) -> M.Hop: M.Hop{ar, 0}
 def GS_ALL() -> List<&2, O.Op>:
   [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{},
    O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
-   O.OpsPYLITERAL{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsGROUP{}, O.OpsSTACK{}, O.OpsGETADDR{},
+   O.OpsPYLITERAL{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{},
    O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{},
    O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{},
    O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{},
@@ -869,7 +869,7 @@ def GS_ALL() -> List<&2, O.Op>:
    O.OpsEND{}, O.OpsENDIF{}, O.OpsBACKEDGE{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{},
    O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}, O.OpsCOPY{}, O.OpsMSELECT{},
    O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{},
-   O.OpsPAD{}, O.OpsFLIP{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}]
+   O.OpsPAD{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}]
 
 def gs_table() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, GS_ALL(), Nil{}}]   # 47  b -> raise BottomUpGate (a no-answer here)
@@ -911,7 +911,7 @@ def MOPS_ROOT_EN() -> List<&2, O.Op>: [O.OpsEND{}]     # prepare.py:82  root of 
 # NOT the pdict key, which is what the port confused them for. `mops_child_fb` is
 # 6 and `mops_root0` is the INDEX op NUMBER, and both are rows because the two
 # numbers being different is the finding.
-def MOPS_FB() -> List<&2, O.Op>: [O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
+def MOPS_FB() -> List<&2, O.Op>: [O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsSHRINK{}]
 
 def MOPS_AFTER() -> List<&2, O.Op>:
   List.append(&2, O.Op, MOPS_FB(), [O.OpsINDEX{}])

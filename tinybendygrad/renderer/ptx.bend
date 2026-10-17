@@ -383,7 +383,7 @@ def arm.regsrc(+op: O.Op, idx_ok: Bool) -> U32:
   Bool.pick(U32, idx_ok, A_PICK(), A_REFUSE()))
 
 def arm.of(+op: O.Op, +addr: S.Addr, idx_ok: Bool) -> U32:
-  Bool.pick(U32, is_any3(op, [O.OpsNOOP{}, O.OpsGROUP{}, O.OpsCONST{}]), A_SKIP(),
+  Bool.pick(U32, is_any3(op, [O.OpsNOOP{}, O.OpsCONST{}]), A_SKIP(),
   Bool.pick(U32, is_op(op, O.OpsSINK{}), A_NAME(),
   Bool.pick(U32, is_op(op, O.OpsAFTER{}), A_ALIAS(),
   Bool.pick(U32, is_op(op, O.OpsSTACK{}), A_STACK(),
@@ -589,7 +589,7 @@ def Wt.want(+w: Wt) -> String:
 #
 # `r[i]` for every step the walk gave a register to, in the FIXTURE'S OWN order.
 # A skipped uop (NOOP/GROUP/CONST/SINK) contributes no row, and that ABSENCE is
-# a claim: `f14_skips` has three skipped steps at indices 0..2 and its first `r`
+# a claim: `f14_skips` has two skipped steps at indices 0..1 and its first `r`
 # row is `[3]`.
 def r_go.put(+r: Rg, i: U32, +s: Wk) -> List<&2, String>:
   Bool.pick(List<&2, String>, has_rg(r), [rgl.of(r)], Nil{})
@@ -937,7 +937,6 @@ def f13_param() -> String: r_fix("f13_param", f13_param_ss(),
    Wt{".rows", "7"}])
 def f14_skips_ss() -> List<&2, Wk>:
    [Wk{O.OpsNOOP{}, S.single(), S.Aalu{}, 1, "", Nil{}, 0, True{}},
-   Wk{O.OpsGROUP{}, S.single(), S.Aalu{}, 1, "", Nil{}, 0, True{}},
    Wk{O.OpsCONST{}, S.single(), S.Aalu{}, 1, "", Nil{}, 0, True{}},
    Wk{O.OpsBUFFER{}, S.single(), S.AGlobal{}, 1, "", Nil{}, 0, True{}},
    Wk{O.OpsCAST{}, S.single(), S.Aalu{}, 1, "", Nil{}, 0, True{}},
@@ -945,9 +944,9 @@ def f14_skips_ss() -> List<&2, Wk>:
    Wk{O.OpsSINK{}, S.single(), S.Aalu{}, 1, "test", Nil{}, 0, True{}}]
 
 def f14_skips() -> String: r_fix("f14_skips", f14_skips_ss(),
-   [Wt{".r[3] BUFFER", "%local_u64_0"},
-   Wt{".r[4] CAST", "%cast_f32_0"},
-   Wt{".r[5] ADD", "%alu_f32_0"},
+   [Wt{".r[2] BUFFER", "%local_u64_0"},
+   Wt{".r[3] CAST", "%cast_f32_0"},
+   Wt{".r[4] ADD", "%alu_f32_0"},
    Wt{".reg.count", "3"},
    Wt{".reg[0]", "\\t.reg\\t\\t.u64 %local_u64_<1>;"},
    Wt{".reg[1]", "\\t.reg\\t\\t.f32 %cast_f32_<1>;"},

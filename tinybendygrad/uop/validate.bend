@@ -2197,7 +2197,7 @@ def dv_unsup_two.of(+ar: O.Arena, nm: String) -> String:
   +c7 = fx_const(O.Found.ar(c5), 7)
   +s1 = O.UOp.new(O.Found.ar(c7), O.OpsSTACK{}, [O.Found.i(c2), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +s2 = O.UOp.new(O.Found.ar(s1), O.OpsSTACK{}, [O.Found.i(c5), O.Found.i(c7)], O.ANone{}, O.TNone{})
-  +t = O.UOp.new(O.Found.ar(s2), O.OpsGROUP{}, [O.Found.i(s1), O.Found.i(s2)], O.ANone{}, O.TNone{})
+  +t = O.UOp.new(O.Found.ar(s2), O.OpsADD{}, [O.Found.i(s1), O.Found.i(s2)], O.ANone{}, O.TNone{})
   +g = fx_const_bool(O.Found.ar(t), True{})
   String.concat([dv2(b, t, g, Nil{}), vz_walk_ops(b, O.Found.ar(g), O.Found.i(t), O.Found.i(g))])
 
@@ -2276,9 +2276,28 @@ def dv_unsup_stack() -> String:
   dv_unsup_stack.of(O.Arena.empty(), "dv_unsup_stack")
 
 # --- THE COUNT ROW. CPython STOPS at the first unsupported op; this collects
-# BOTH, so `n=2` is the strengthening the file header declares and this row pins
+# BOTH, so the count is the strengthening the file header declares and this row pins
 # it. Two STACKs over the SAME constants is the fixture: hash-consing makes them
 # the SAME node, so a two-node graph needs two DISTINCT masks.
+#
+# THE PARENT WAS `Ops.GROUP`, AND UPSTREAM DELETED THAT OP WITH IT, so it is now
+# `Ops.ADD` -- upstream's TWO-SRC ALU op, and validate.py's rule 10 is `GroupOp.ALU`, so
+# the walk DESCENDS through it exactly as it descended through the GROUP.
+# MEASURED, and the first guess was wrong: `Ops.BINARY` is NOT in `z3_alu`/`python_alu`
+# and answered `Ops.BINARY is not supported by z3`, making the count THREE.
+# The claim this row pins (this collects
+# BOTH unsupported children where CPython stops at the first) is a property of the
+# WALK, not of the parent op, so it survives the substitution; the `_dt` row does not,
+# because GROUP's dtype was `dtypes.void` and ADD's is not.
+#
+# MEASURED, `n` IS NOW **3** AND NOT 2, AND THE EXTRA MESSAGE IS HONEST: rule 10's
+# `zall` needs BOTH srcs translated, and they are STACKs, so `zat.src` misses and
+# says `rule 10 src0: Ops.ADD has 2 srcs, needs 1`. The claim the row exists to pin
+# -- this collects BOTH unsupported children where CPython stops at the first --
+# is untouched by that: both `Ops.STACK is not supported by z3` messages are still
+# there, against `dv_unsup_stack`'s ONE. `oracles/validate-oracle-run1.rows` still
+# carries the GROUP-era rows (`dv_unsup_two_dt=dtypes.void`) and CANNOT be
+# regenerated, because the op it was recorded against no longer exists upstream.
 def dv_unsup_two() -> String:
   dv_unsup_two.of(O.Arena.empty(), "dv_unsup_two")
 

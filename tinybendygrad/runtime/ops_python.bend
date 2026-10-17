@@ -500,7 +500,6 @@ def op_of(nm: String) -> Maybe<&1, O.Op>:
     case "BARRIER": Some{O.OpsBARRIER{}}
     case "SINK": Some{O.OpsSINK{}}
     case "NOOP": Some{O.OpsNOOP{}}
-    case "GROUP": Some{O.OpsGROUP{}}
     case "ADD": Some{O.OpsADD{}}
     case "SUB": Some{O.OpsSUB{}}
     case "MUL": Some{O.OpsMUL{}}
@@ -1341,7 +1340,6 @@ def opname(op: O.Op) -> String:
     case O.OpsCONST{}: "CONST"
     case O.OpsSHL{}: "SHL"
     case O.OpsADD{}: "ADD"
-    case O.OpsGROUP{}: "GROUP"
     case O.OpsSINK{}: "SINK"
     case _: "?"
 
@@ -2036,7 +2034,6 @@ def Prog.dispatch(+p: Prog, +u: Uop, op: O.Op) -> Prog:
     case O.OpsBARRIER{}: Prog.next(p)
     case O.OpsSINK{}: Prog.next(p)
     case O.OpsNOOP{}: Prog.next(p)
-    case O.OpsGROUP{}: Prog.next(p)
     case O.OpsEND{}: Prog.at(p, Uop.src1(u))
     case O.OpsBACKEDGE{}: Prog.backedge(p, u)
     case O.OpsRANGE{}: Prog.rng(p, u)

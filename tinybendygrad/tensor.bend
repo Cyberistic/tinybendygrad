@@ -2426,11 +2426,6 @@ def t_mop_shr() -> IO(Unit):
 # FLIP and PERMUTE, the `src_args = []` arm: no shape arg at all, and the ORDER tuple
 # rides in the node's `arg` as `ATuple`. These two rows are the only ones that see
 # `tn_mop.order`.
-def t_mop_flip() -> IO(Unit):
-  +b = g_t4()
-  +f = tn_mop(O.Found.ar(b), O.Found.i(b), O.OpsFLIP{}, AOrder{[0]})
-  tn_sig("tn_mop_flip", O.Found.ar(f), O.Found.i(f))
-
 def t_mop_perm0() -> IO(Unit):
   +b = g_t4()
   +f = tn_mop(O.Found.ar(b), O.Found.i(b), O.OpsPERMUTE{}, AOrder{Nil{}})
@@ -2765,7 +2760,6 @@ def main() -> IO(Unit):
     h : Unit <- t_mop_exp()
     i : Unit <- t_mop_pad()
     j : Unit <- t_mop_shr()
-    k : Unit <- t_mop_flip()
     l : Unit <- t_mop_perm0()
     m : Unit <- t_rop0()
     n : Unit <- t_ropmax()

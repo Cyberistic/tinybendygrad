@@ -270,7 +270,7 @@ def mu_alu_ops() -> List<&2, O.Op>:
 # `GroupOp.Movement` -- six members, and it is `ra_4`'s pdict key
 # (`UPat(GroupOp.Movement, src=(UPat.var("s"),), name="v")`, multi.py:41).
 def mu_move_ops() -> List<&2, O.Op>:
-  [O.OpsSHRINK{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsFLIP{}]
+  [O.OpsSHRINK{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}]
 
 # the FIVE of multi.py:305 -- `(Ops.CAST, Ops.BITCAST, Ops.STAGE, Ops.DETACH,
 # Ops.CONTIGUOUS_BACKWARD)`, all of `passthrough_multi`. It is written out rather
@@ -301,18 +301,17 @@ def mu_own() -> List<&2, O.PMEntry>:
    O.PMEntry{4,  [O.OpsPAD{}],                        mu_rej_uns()},  # 286
    O.PMEntry{5,  [O.OpsSHRINK{}],                     mu_rej_uns()},  # 287
    O.PMEntry{6,  [O.OpsPERMUTE{}],                    mu_rej_uns()},  # 288
-   O.PMEntry{7,  [O.OpsFLIP{}],                       mu_rej_uns()},  # 289
-   O.PMEntry{8,  [O.OpsSTACK{}],                      mu_rej_uns()},  # 290
-   O.PMEntry{9,  [O.OpsINDEX{}],                      mu_rej_uns()},  # 291
-   O.PMEntry{10, [O.OpsAFTER{}],                      mu_rej_su()},   # 292  AFTER(STORE(UNSHARD,UNSHARD))
-   O.PMEntry{11, [O.OpsCOPY{}],                       mu_rej_uns()},  # 294  COPY of a sharded value
-   O.PMEntry{12, [O.OpsALLREDUCE{}],                  mu_rej_uns()},  # 295
-   O.PMEntry{13, [O.OpsCALL{}],                       mu_rej_nil()},  # 300  CALL -> rewrite_into_function
-   O.PMEntry{14, [O.OpsAFTER{}, O.OpsCALL{}],         mu_rej_uns()},  # 301  passthrough_multi
-   O.PMEntry{15, [O.OpsCALL{}],                       mu_rej_uns()},  # 303  a void CALL: strip UNSHARD
-   O.PMEntry{16, mu_pass_ops(),                       mu_rej_uns()},  # 305  passthrough_multi
-   O.PMEntry{17, [O.OpsSTORE{}],                      mu_rej_uns()},  # 308  STORE into a WHOLE dest
-   O.PMEntry{18, [O.OpsSTORE{}],                      mu_rej_uns()}]  # 310  STORE into a SHARDED dest
+   O.PMEntry{7,  [O.OpsSTACK{}],                      mu_rej_uns()},  # 290
+   O.PMEntry{8,  [O.OpsINDEX{}],                      mu_rej_uns()},  # 291
+   O.PMEntry{9, [O.OpsAFTER{}],                      mu_rej_su()},   # 292  AFTER(STORE(UNSHARD,UNSHARD))
+   O.PMEntry{10, [O.OpsCOPY{}],                       mu_rej_uns()},  # 294  COPY of a sharded value
+   O.PMEntry{11, [O.OpsALLREDUCE{}],                  mu_rej_uns()},  # 295
+   O.PMEntry{12, [O.OpsCALL{}],                       mu_rej_nil()},  # 300  CALL -> rewrite_into_function
+   O.PMEntry{13, [O.OpsAFTER{}, O.OpsCALL{}],         mu_rej_uns()},  # 301  passthrough_multi
+   O.PMEntry{14, [O.OpsCALL{}],                       mu_rej_uns()},  # 303  a void CALL: strip UNSHARD
+   O.PMEntry{15, mu_pass_ops(),                       mu_rej_uns()},  # 305  passthrough_multi
+   O.PMEntry{16, [O.OpsSTORE{}],                      mu_rej_uns()},  # 308  STORE into a WHOLE dest
+   O.PMEntry{17, [O.OpsSTORE{}],                      mu_rej_uns()}]  # 310  STORE into a SHARDED dest
 
 # ---------------------------------------------------------------------------
 # `replace_allreduce` (multi.py:29-45), SIX rules. Its tags in `multi_pm` are
@@ -344,8 +343,8 @@ def mu_ra_shift(+off: U32, es: List<&2, O.PMEntry>, acc: List<&2, O.PMEntry>) ->
 
 def mu_ra_cfg.go(late: Bool, acc: List<&2, O.PMEntry>) -> List<&2, O.PMEntry>:
   match late:
-    case True{} : mu_ra_shift(19, mu_ra_base(), acc)
-    case False{}: mu_ra_shift(20, mu_ra_base(), List.append(&2, O.PMEntry, acc, [mu_ea0()]))
+    case True{} : mu_ra_shift(18, mu_ra_base(), acc)
+    case False{}: mu_ra_shift(19, mu_ra_base(), List.append(&2, O.PMEntry, acc, [mu_ea0()]))
 
 def mu_ra_cfg(cfg: Cfg) -> List<&2, O.PMEntry>: mu_ra_cfg.go(Cfg.late(cfg), Nil{})
 
@@ -2108,20 +2107,19 @@ def mu_src_src.of(tag: U32, unsh0: Bool, unsh1: Bool, ms0: Bool, mov0: Bool, alu
     case 4  : ex2
     case 5  : ex2
     case 6  : ex2
-    case 7  : ex2
+    case 7  : unsh0
     case 8  : unsh0
-    case 9  : unsh0
-    case 11 : unsh0
-    case 12 : ex2
+    case 10 : unsh0
+    case 11 : ex2
+    case 13 : unsh0
     case 14 : unsh0
-    case 15 : unsh0
-    case 16 : ex2
-    case 17 : unsh1
-    case 18 : unsh0
+    case 15 : ex2
+    case 16 : unsh1
+    case 17 : unsh0
+    case 20 : ms0
     case 21 : ms0
-    case 22 : ms0
-    case 23 : mov0
-    case 24 : alu0
+    case 22 : mov0
+    case 23 : alu0
     case _: True{}
 
 def mu_src_src(tag: U32, +ar: O.Arena, +self: U32) -> Bool:
@@ -2379,23 +2377,23 @@ def mt_op(ts: List<&2, O.PMEntry>, i: Nat) -> U32:
   mt_op.of(O.PMEntry.ops(mt_entry(ts, i)))
 
 def t_t19_on() -> U32: eq(mt_op(mu_table(mu_c_early()), 19n), COPY())
-def t_t20_on() -> U32: eq(mt_op(mu_table(mu_c_early()), 20n), COPY())
-def t_t19_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 19n), ALLREDUCE())
+def t_t20_on() -> U32: eq(mt_op(mu_table(mu_c_early()), 20n), MSELECT())
+def t_t19_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 19n), COPY())
 def t_t24_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 24n), MSELECT())
-def t_t25_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 25n), MSELECT())
+def t_t25_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 24n), MSELECT())
 def t_t20_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 20n), COPY())
 def SHRINKV() -> U32: O.Ops.value(O.OpsSHRINK{})
-def t_t23_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 23n), SHRINKV())
+def t_t23_off() -> U32: eq(mt_op(mu_table(mu_c_late()), 23n), MSELECT())
 def t_tag19() -> U32: eq(mt_tag(mu_table(mu_c_early()), 19n), 19)
-def t_tag25() -> U32: eq(mt_tag(mu_table(mu_c_late()), 25n), 25)
+def t_tag25() -> U32: eq(mt_tag(mu_table(mu_c_late()), 24n), 24)
 
 # THE INVENTORY COUNTS.
-def t_rej_n() -> U32: eq(mt_rej_n(mu_table(mu_c_early())), 21)
-def t_rej_late() -> U32: eq(mt_rej_n(mu_table(mu_c_late())), 21)
-def t_ops_n() -> U32: eq(mt_ops_n(mu_table(mu_c_early())), 57)
+def t_rej_n() -> U32: eq(mt_rej_n(mu_table(mu_c_early())), 20)
+def t_rej_late() -> U32: eq(mt_rej_n(mu_table(mu_c_late())), 20)
+def t_ops_n() -> U32: eq(mt_ops_n(mu_table(mu_c_early())), 56)
 def t_alu_n() -> U32: eq(mt_ops_n([O.PMEntry{0, mu_alu_ops(), mu_rej_nil()}]), 28)
 def t_pass_n() -> U32: eq(mt_ops_n([O.PMEntry{16, mu_pass_ops(), mu_rej_nil()}]), 5)
-def t_mov_n() -> U32: eq(mt_ops_n([O.PMEntry{23, mu_move_ops(), mu_rej_nil()}]), 6)
+def t_mov_n() -> U32: eq(mt_ops_n([O.PMEntry{23, mu_move_ops(), mu_rej_nil()}]), 5)
 
 # ---------------------------------------------------------------------------
 # THE CLAIM ROWS -- the brief's two-rules-one-node fixture. `CP` is a COPY, and
@@ -2435,8 +2433,8 @@ def t_full_ad() -> U32: eq(mu_claim_full(mu_table(mu_c_early()), G.ar(g()), g_ad
 # `mu_first` needed a sentinel -- 0 is both "tag 0" and "nothing", and with a `0`
 # seed this row could not tell them apart.
 def t_first_ad() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_ad(g())), 0)
-def t_first_st() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_st(g())), 17)
-def t_first_su() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_su(g())), 17)
+def t_first_st() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_st(g())), 16)
+def t_first_su() -> U32: eq(mu_first(mu_table(mu_c_early()), G.ar(g()), g_su(g())), 16)
 def t_first_m0() -> U32: mu_first(mu_table(mu_c_early()), G.ar(g()), g_m0(g()))
 
 def mu_head_sh(sh: List<&2, Sh>) -> Sh:

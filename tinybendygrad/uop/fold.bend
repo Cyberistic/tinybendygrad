@@ -1985,33 +1985,6 @@ def perm_ds(+ar: O.Arena, i: U32, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&
 # The length check IS in the arena and IS ported, and it is the reachable one.
 # ===========================================================================
 
-def flip_ds.put(ny: Nat, +ps: List<&2, O.Sint>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  dt_of_if(Nat.is_eq(ny, List.length(&2, O.Sint, ps)), src_dt(0, ss), Some{ps})
-
-def flip_ds.of(ny: Nat, ps: Maybe<&2, List<&2, O.Sint>>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  match ps:
-    case Some{p}: flip_ds.put(ny, p, ss)
-    case None{}  : None{}
-
-# `flip_ds` reads the LENGTH of `self.marg`, never its elements -- the reachable half
-# of ops.py:429's `if len(ps) != len(self.marg) or not all(isinstance(x, bool) ...)`
-# is the length, and `flip_ds.put` uses `ys` for nothing else.  So it asks for a
-# COUNT and not for the list: with FLIP's arg spelled `ABoolList` there is no
-# `List<&2, U32>` to hand back, and a `Bool.to_u32` round trip would be a second
-# answer to a question that only asks how many.  `order_arg` keeps answering
-# `List<&2, U32>` for `perm_ds`, which does read the permutation.
-def flip_len(arg: O.Arg) -> Nat:
-  match arg:
-    case O.ABoolList{bs}: List.length(&2, Bool, bs)
-    case O.ATuple{ys}   : List.length(&2, U32, ys)
-    case _              : 0n
-
-def flip_ds(+ar: O.Arena, i: U32, arg: O.Arg, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
-  flip_ds.of(flip_len(arg), src_shape(0, ss), ss)
-
-# `if len(ps) != len(self.marg) or not all(...)` then `return tuple(sz for _,sz in
-# marg)` -- the answer and the flag out of ONE walk, and `marg` is
-# `zip(as_shape(src[1]), as_shape(src[2]))`, so the sizes ARE the answer.
 def pair_ds.put(+pad: Bool, x: Maybe<&1, Pairs>, +ss: List<&2, Derived>) -> Maybe<&2, DtShape>:
   match x:
     case Some{+v}: dt_of_if(Pairs.ok(v), src_dt(0, ss), Some{Pairs.szs(v)})
@@ -2360,7 +2333,6 @@ def addrspace_of(arg: O.Arg, op: O.Op, ss: List<&2, Derived>) -> Maybe<&2, S.Add
     case O.OpsUNSHARD{}: src_addr(0, ss)
     case O.OpsSTACK{}: one_addr(ss)
     case O.OpsWMMA{}: one_addr(ss)
-    case O.OpsGROUP{}: one_addr(ss)
     # `if self.op in GroupOp.Movement` and `or GroupOp.Elementwise`
     case _: addrspace_of.rest(op, ss)
 
@@ -2556,7 +2528,6 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     # `self.arg` (ops.py:815), which is the arena's `ATuple` of plain indices, so
     # neither reads `as_shape`. See `perm_ds` and `flip_ds` above.
     case O.OpsPERMUTE{}: perm_ds(ar, i, arg, ss)
-    case O.OpsFLIP{}: flip_ds(ar, i, arg, ss)
 
     # RANGE | SPECIAL: pass through first, then `return ()`
     case O.OpsRANGE{}: rlike(ss)
@@ -2568,7 +2539,6 @@ def dt_shape(ar: O.Arena, i: U32, op: O.Op, arg: O.Arg, +ss: List<&2, Derived>) 
     case O.OpsLINEAR{}: late()
     case O.OpsSOURCE{}: late()
     case O.OpsSINK{}: late()
-    case O.OpsGROUP{}: late()
     case O.OpsBARRIER{}: late()
     case O.OpsIF{}: late()
     case O.OpsENDIF{}: late()
@@ -4264,7 +4234,6 @@ def mm.lift.rest(+op: O.Op, +srcs: List<&2, Bnd2>, arg: O.Arg, +d: S.Dt) -> Bnd2
     case O.OpsEXPAND{}: mm.lift.mv(srcs)
     case O.OpsPERMUTE{}: mm.lift.mv(srcs)
     case O.OpsSHRINK{}: mm.lift.mv(srcs)
-    case O.OpsFLIP{}: mm.lift.mv(srcs)
     case O.OpsINDEX{}: mm.lift.mv(srcs)
     case O.OpsSTAGE{}: mm.lift.mv(srcs)
     case O.OpsAFTER{}: mm.lift.mv(srcs)
@@ -5518,25 +5487,6 @@ def g_mv_permrep() -> O.Found: g_mv_perm([0, 0])
 # `sorted(marg) == list(range(n))` that a bound-only test would miss.
 def g_mv_permlen() -> O.Found: g_mv_perm([1, 0, 2])
 
-# FLIP(RESHAPE(6), (1, 0)) -- `shape=(2,3)` UNCHANGED, `n=6 nsrc=1`. The shape is the
-# src's, verbatim, which is what ops.py:431's `return ps` says; the row exists so a
-# port that accidentally PERMUTED it would move.
-def g_mv_flip(ys: List<&2, U32>) -> O.Found:
-  +r = g_mv_r23()
-  O.UOp.new(O.Found.ar(r), O.OpsFLIP{}, [O.Found.i(r)], O.ABoolList{O.bools_of(ys)}, O.TNone{})
-
-def g_mv_flip10() -> O.Found: g_mv_flip([1, 0])
-
-# FLIP whose arg is SHORTER than the shape -- `len(ps) != len(self.marg)`,
-# `bad flip on (4, 3), (True,)`. The length check is the reachable half of that
-# `if`; see `flip_ds`'s header for why the `isinstance(x, bool)` half is not here.
-def g_mv_fliplen() -> O.Found: g_mv_flip([1])
-
-# ---------------------------------------------------------------------------
-# THE PRINTER. `n=` is the `toposort` LENGTH, which is what CPython's oracle counts,
-# so the two arenas are compared on the same measure rather than on `Arena.next`.
-# ---------------------------------------------------------------------------
-
 def sig_srcops.go(+ar: O.Arena, +ss: List<&2, U32>, acc: List<&2, String>) -> List<&2, String>:
   match ss:
     case Nil{}: acc
@@ -6228,8 +6178,6 @@ def main() -> IO(Unit):
     mv_of("perm", g_mv_perm10())
     mv_of("permrep", g_mv_permrep())
     mv_of("permlen", g_mv_permlen())
-    mv_of("flip", g_mv_flip10())
-    mv_of("fliplen", g_mv_fliplen())
     # THE RANGES ROWS, in the oracle's order: `diff` of the two lanes is the test.
     rng_of_row("none", rg_f_none())
     rng_of_row("self", rg_f_self())
@@ -6352,7 +6300,6 @@ def main() -> IO(Unit):
     lf_row("mv_expand", mm.lift(O.OpsEXPAND{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
     lf_row("mv_permute", mm.lift(O.OpsPERMUTE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
     lf_row("mv_shrink", mm.lift(O.OpsSHRINK{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
-    lf_row("mv_flip", mm.lift(O.OpsFLIP{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
     lf_row("mv_index", mm.lift(O.OpsINDEX{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
     lf_row("mv_stage", mm.lift(O.OpsSTAGE{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))
     lf_row("mv_after", mm.lift(O.OpsAFTER{}, lf_c1(BndInt{False{}, H.i64_of_hi_lo(0, 3)}), O.ANone{}, S.int32()))

@@ -1986,7 +1986,7 @@ def dd_ops.all() -> List<&2, O.Op>:
    O.OpsBINARY{}, O.OpsBITCAST{}, O.OpsBUFFER{}, O.OpsCALL{}, O.OpsCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{},
    O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCONST{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsCOPY{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{},
    O.OpsCUSTOM_FUNCTION{}, O.OpsDETACH{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsEXP2{}, O.OpsEXPAND{}, O.OpsFDIV{},
-   O.OpsFLIP{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsGETADDR{}, O.OpsGROUP{}, O.OpsIF{}, O.OpsINDEX{},
+   O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsGETADDR{}, O.OpsIF{}, O.OpsINDEX{},
    O.OpsINS{}, O.OpsLINEAR{}, O.OpsLOAD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsMUL{},
    O.OpsMULACC{}, O.OpsNEG{}, O.OpsNOOP{}, O.OpsOR{}, O.OpsPAD{}, O.OpsPARAM{}, O.OpsPERMUTE{}, O.OpsPOW{},
    O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIPROCAL{}, O.OpsREDUCE{}, O.OpsRESHAPE{},

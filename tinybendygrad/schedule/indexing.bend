@@ -1165,7 +1165,7 @@ def par_all_n() -> U32: 79
 # the six are written out; `mv_ops_n` is the row that would notice an omission.
 
 def ix_mv_ops() -> List<&2, O.Op>:
-  [O.OpsEXPAND{}, O.OpsFLIP{}, O.OpsPAD{}, O.OpsPERMUTE{}, O.OpsRESHAPE{}, O.OpsSHRINK{}]
+  [O.OpsEXPAND{}, O.OpsPAD{}, O.OpsPERMUTE{}, O.OpsRESHAPE{}, O.OpsSHRINK{}]
 
 def par_table() -> O.PMEntrys:
   O.PMEntrys{[O.PMEntry{0, [O.OpsREDUCE{}], Nil{}},
@@ -1404,7 +1404,6 @@ def g_ds() -> IO(Unit):
     g_ds_row(O.OpsCOPY{}, "copy", ix_g3(O.OpsCOPY{}))
     g_ds_row(O.OpsPAD{}, "pad", ix_g3(O.OpsPAD{}))
     g_ds_row(O.OpsSHRINK{}, "shrink", ix_g3(O.OpsSHRINK{}))
-    g_ds_row(O.OpsFLIP{}, "flip", ix_g3(O.OpsFLIP{}))
     g_ds_row(O.OpsEXPAND{}, "expand", ix_g3(O.OpsEXPAND{}))
     g_ds_row(O.OpsRESHAPE{}, "reshape", ix_g3(O.OpsRESHAPE{}))
     g_ds_row(O.OpsPERMUTE{}, "permute", ix_g3(O.OpsPERMUTE{}))

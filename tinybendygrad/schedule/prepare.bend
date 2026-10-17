@@ -274,9 +274,6 @@ def pr_expand(ar: O.Arena, +x: O.Found, +s: O.Found) -> O.Found:
 def pr_perm(ar: O.Arena, +x: O.Found, +a: U32, b: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPERMUTE{}, [O.Found.i(x)], O.ATuple{[a, b]}, O.TNone{})
 
-def pr_flip(ar: O.Arena, +x: O.Found, a: U32, b: U32) -> O.Found:
-  O.UOp.new(ar, O.OpsFLIP{}, [O.Found.i(x)], O.ABoolList{O.bools_of([a, b])}, O.TNone{})
-
 # ---------------------------------------------------------------------------
 # REPORTED, NOT USED: `ops.bend`'s `UOp.after` (ops.bend:2085) and `UOp.end`
 # (ops.bend:2094) build `List.append(srcs, [self])`, which is `srcs ++ [self]`.
@@ -367,7 +364,7 @@ def pr_ear_table() -> O.PMEntrys:
     O.PMEntry{23, [O.OpsSTORE{}], [O.OpsBITCAST{}]},  # 23 STORE rej=BITCAST slen=1 rlen=2 any=0 nalts=1 name=-
     O.PMEntry{24, [O.OpsBITCAST{}], Nil{}},  # 24 BITCAST rej=- slen=0 rlen=0 any=0 nalts=0 name=bc
     O.PMEntry{25, [O.OpsREDUCE{}], Nil{}},  # 25 REDUCE rej=- slen=1 rlen=1 any=0 nalts=1 name=reduce
-    O.PMEntry{26, [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{}, O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}, O.OpsAFTER{}, O.OpsGROUP{}, O.OpsSTACK{}, O.OpsGETADDR{}, O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{}, O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{}, O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsBACKEDGE{}, O.OpsCONST{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}, O.OpsCOPY{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsFLIP{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}, O.OpsPYLITERAL{}], Nil{}},  # 26 ADD AFTER ALLOC ALLREDUCE AND BACKEDGE BARRIER BINARY BITCAST BUFFER CALL CAST CDIV CMOD CMPEQ CMPLT CMPNE CONST CONTIGUOUS_BACKWARD COPY CUSTOM CUSTOMI CUSTOM_FUNCTION DETACH END ENDIF EXP2 EXPAND FDIV FLIP FLOORDIV FLOORMOD GETADDR GROUP IF INDEX INS LINEAR LOAD LOG2 MAX MSELECT MSTACK MUL MULACC NEG NOOP OR PAD PARAM PERMUTE POW PROGRAM PYLITERAL RANGE RECIPROCAL REDUCE RESHAPE REWRITE_ERROR SHL SHR SHRINK SIN SOURCE SPECIAL SQRT STACK STAGE STORE SUB THREEFRY TRUNC UNSHARD WHERE WMMA XOR rej=- slen=0 rlen=0 any=0 nalts=0 name=x
+    O.PMEntry{26, [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{}, O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{}, O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{}, O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{}, O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{}, O.OpsMAX{}, O.OpsCMOD{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCMPEQ{}, O.OpsXOR{}, O.OpsOR{}, O.OpsAND{}, O.OpsTHREEFRY{}, O.OpsSUB{}, O.OpsFDIV{}, O.OpsPOW{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsWHERE{}, O.OpsMULACC{}, O.OpsBARRIER{}, O.OpsRANGE{}, O.OpsIF{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsBACKEDGE{}, O.OpsCONST{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}, O.OpsCOPY{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{}, O.OpsPAD{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}, O.OpsPYLITERAL{}], Nil{}},  # 26 ADD AFTER ALLOC ALLREDUCE AND BACKEDGE BARRIER BINARY BITCAST BUFFER CALL CAST CDIV CMOD CMPEQ CMPLT CMPNE CONST CONTIGUOUS_BACKWARD COPY CUSTOM CUSTOMI CUSTOM_FUNCTION DETACH END ENDIF EXP2 EXPAND FDIV FLIP FLOORDIV FLOORMOD GETADDR GROUP IF INDEX INS LINEAR LOAD LOG2 MAX MSELECT MSTACK MUL MULACC NEG NOOP OR PAD PARAM PERMUTE POW PROGRAM PYLITERAL RANGE RECIPROCAL REDUCE RESHAPE REWRITE_ERROR SHL SHR SHRINK SIN SOURCE SPECIAL SQRT STACK STAGE STORE SUB THREEFRY TRUNC UNSHARD WHERE WMMA XOR rej=- slen=0 rlen=0 any=0 nalts=0 name=x
     O.PMEntry{27, [O.OpsSINK{}], Nil{}},  # 27 SINK rej=- slen=0 rlen=0 any=0 nalts=0 name=s
     O.PMEntry{28, [O.OpsAFTER{}], Nil{}},  # 28 AFTER rej=- slen=0 rlen=0 any=0 nalts=0 name=s
   ]}
@@ -443,7 +440,7 @@ def pr_fma_keys() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsAFTER{}, O.OpsAND{}, O.Op
 def pr_mop_keys() -> List<&2, O.Op>: [O.OpsAFTER{}, O.OpsEND{}, O.OpsINDEX{}]
 def pr_inl_keys() -> List<&2, O.Op>: [O.OpsAFTER{}, O.OpsCALL{}]
 def pr_dsk_keys() -> List<&2, O.Op>: [O.OpsCOPY{}]
-def pr_ear_keys() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsAFTER{}, O.OpsALLOC{}, O.OpsALLREDUCE{}, O.OpsAND{}, O.OpsBACKEDGE{}, O.OpsBARRIER{}, O.OpsBINARY{}, O.OpsBITCAST{}, O.OpsBUFFER{}, O.OpsCALL{}, O.OpsCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCONST{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsCOPY{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsCUSTOM_FUNCTION{}, O.OpsDETACH{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsEXP2{}, O.OpsEXPAND{}, O.OpsFDIV{}, O.OpsFLIP{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsGETADDR{}, O.OpsGROUP{}, O.OpsIF{}, O.OpsINDEX{}, O.OpsINS{}, O.OpsLINEAR{}, O.OpsLOAD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsNOOP{}, O.OpsOR{}, O.OpsPAD{}, O.OpsPARAM{}, O.OpsPERMUTE{}, O.OpsPOW{}, O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIPROCAL{}, O.OpsREDUCE{}, O.OpsRESHAPE{}, O.OpsREWRITE_ERROR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSHRINK{}, O.OpsSIN{}, O.OpsSINK{}, O.OpsSOURCE{}, O.OpsSPECIAL{}, O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSTAGE{}, O.OpsSTORE{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsUNSHARD{}, O.OpsWHERE{}, O.OpsWMMA{}, O.OpsXOR{}]
+def pr_ear_keys() -> List<&2, O.Op>: [O.OpsADD{}, O.OpsAFTER{}, O.OpsALLOC{}, O.OpsALLREDUCE{}, O.OpsAND{}, O.OpsBACKEDGE{}, O.OpsBARRIER{}, O.OpsBINARY{}, O.OpsBITCAST{}, O.OpsBUFFER{}, O.OpsCALL{}, O.OpsCAST{}, O.OpsCDIV{}, O.OpsCMOD{}, O.OpsCMPEQ{}, O.OpsCMPLT{}, O.OpsCMPNE{}, O.OpsCONST{}, O.OpsCONTIGUOUS_BACKWARD{}, O.OpsCOPY{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsCUSTOM_FUNCTION{}, O.OpsDETACH{}, O.OpsEND{}, O.OpsENDIF{}, O.OpsEXP2{}, O.OpsEXPAND{}, O.OpsFDIV{}, O.OpsFLOORDIV{}, O.OpsFLOORMOD{}, O.OpsGETADDR{}, O.OpsIF{}, O.OpsINDEX{}, O.OpsINS{}, O.OpsLINEAR{}, O.OpsLOAD{}, O.OpsLOG2{}, O.OpsMAX{}, O.OpsMSELECT{}, O.OpsMSTACK{}, O.OpsMUL{}, O.OpsMULACC{}, O.OpsNEG{}, O.OpsNOOP{}, O.OpsOR{}, O.OpsPAD{}, O.OpsPARAM{}, O.OpsPERMUTE{}, O.OpsPOW{}, O.OpsPROGRAM{}, O.OpsPYLITERAL{}, O.OpsRANGE{}, O.OpsRECIPROCAL{}, O.OpsREDUCE{}, O.OpsRESHAPE{}, O.OpsREWRITE_ERROR{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsSHRINK{}, O.OpsSIN{}, O.OpsSINK{}, O.OpsSOURCE{}, O.OpsSPECIAL{}, O.OpsSQRT{}, O.OpsSTACK{}, O.OpsSTAGE{}, O.OpsSTORE{}, O.OpsSUB{}, O.OpsTHREEFRY{}, O.OpsTRUNC{}, O.OpsUNSHARD{}, O.OpsWHERE{}, O.OpsWMMA{}, O.OpsXOR{}]
 def pr_mcl_keys() -> List<&2, O.Op>: [O.OpsINDEX{}, O.OpsPERMUTE{}, O.OpsRESHAPE{}, O.OpsSHRINK{}, O.OpsSTACK{}]
 
 # THE `pdict` ROW: the ordered rule indices ONE op claims.  `List.append` is
@@ -771,8 +768,7 @@ def wm_fix() -> WMF:
   +rs41 = pr_reshape(O.Found.ar(rs22), a4, sh41)
   +rs4 = pr_reshape(O.Found.ar(rs41), a4, sh4)
   +pm22 = pr_perm(O.Found.ar(rs4), rs22, 1, 0)
-  +fl22 = pr_flip(O.Found.ar(pm22), rs22, 1, 0)
-  +c0 = pr_shp1(O.Found.ar(fl22), 0)
+  +c0 = pr_shp1(O.Found.ar(pm22), 0)
   +pd = pr_pad(O.Found.ar(c0), a4, c0, sh4)
   +pe = pr_expand(O.Found.ar(pd), a4, sh4)
   +r0 = pr_range(O.Found.ar(pe), 4, 0)
@@ -799,7 +795,6 @@ def wm_fix() -> WMF:
   +irs41 = O.Found.i(rs41)
   +irs4 = O.Found.i(rs4)
   +ipm22 = O.Found.i(pm22)
-  +ifl22 = O.Found.i(fl22)
   +ipd = O.Found.i(pd)
   +ipe = O.Found.i(pe)
   +iix = O.Found.i(ix)
@@ -815,7 +810,7 @@ def wm_fix() -> WMF:
   +imom = O.Found.i(mom)
   WMF{F.folded(O.Found.ar(mom)), [
     WMI{"buf", ia4}, WMI{"reshape", irs22}, WMI{"rs41", irs41}, WMI{"rs4", irs4},
-    WMI{"permute", ipm22}, WMI{"flip", ifl22}, WMI{"pad", ipd}, WMI{"expand", ipe},
+    WMI{"permute", ipm22}, WMI{"pad", ipd}, WMI{"expand", ipe},
     WMI{"index", iix}, WMI{"bitcast", ibc}, WMI{"cast", icf},
     WMI{"alu", ial}, WMI{"after_plain", iaf}, WMI{"after_mov", iafm},
     WMI{"after_mov2", iafm2}, WMI{"after_idx", iafi}, WMI{"nested_mov", inest},

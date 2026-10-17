@@ -190,7 +190,6 @@ type Op is Data:
   # GROUP is a NOOP that just merges things together
   OpsSINK{}
   OpsAFTER{}
-  OpsGROUP{}
   # vector creation / item selection
   OpsSTACK{}
   # hcq specific
@@ -269,7 +268,6 @@ type Op is Data:
   OpsPERMUTE{}
   OpsEXPAND{}
   OpsPAD{}
-  OpsFLIP{}
   # UNSHARD is really a movement op
   OpsUNSHARD{}
   # reduce
@@ -301,7 +299,6 @@ def Ops.name.of(op: Op) -> String:
     case OpsBINARY{}: "BINARY"
     case OpsSINK{}: "SINK"
     case OpsAFTER{}: "AFTER"
-    case OpsGROUP{}: "GROUP"
     case OpsSTACK{}: "STACK"
     case OpsGETADDR{}: "GETADDR"
     case OpsINDEX{}: "INDEX"
@@ -360,7 +357,6 @@ def Ops.name.of(op: Op) -> String:
     case OpsPERMUTE{}: "PERMUTE"
     case OpsEXPAND{}: "EXPAND"
     case OpsPAD{}: "PAD"
-    case OpsFLIP{}: "FLIP"
     case OpsUNSHARD{}: "UNSHARD"
     case OpsREDUCE{}: "REDUCE"
     case OpsALLREDUCE{}: "ALLREDUCE"
@@ -387,71 +383,68 @@ def Ops.value(op: Op) -> U32:
     case OpsBINARY{}: 11
     case OpsSINK{}: 12
     case OpsAFTER{}: 13
-    case OpsGROUP{}: 14
-    case OpsSTACK{}: 15
-    case OpsGETADDR{}: 16
-    case OpsINDEX{}: 17
-    case OpsSHRINK{}: 18
-    case OpsLOAD{}: 19
-    case OpsSTORE{}: 20
-    case OpsWMMA{}: 21
-    case OpsCAST{}: 22
-    case OpsBITCAST{}: 23
-    case OpsEXP2{}: 24
-    case OpsLOG2{}: 25
-    case OpsSIN{}: 26
-    case OpsSQRT{}: 27
-    case OpsRECIPROCAL{}: 28
-    case OpsNEG{}: 29
-    case OpsTRUNC{}: 30
-    case OpsADD{}: 31
-    case OpsMUL{}: 32
-    case OpsSHL{}: 33
-    case OpsSHR{}: 34
-    case OpsCDIV{}: 35
-    case OpsMAX{}: 36
-    case OpsCMOD{}: 37
-    case OpsCMPLT{}: 38
-    case OpsCMPNE{}: 39
-    case OpsCMPEQ{}: 40
-    case OpsXOR{}: 41
-    case OpsOR{}: 42
-    case OpsAND{}: 43
-    case OpsTHREEFRY{}: 44
-    case OpsSUB{}: 45
-    case OpsFDIV{}: 46
-    case OpsPOW{}: 47
-    case OpsFLOORDIV{}: 48
-    case OpsFLOORMOD{}: 49
-    case OpsWHERE{}: 50
-    case OpsMULACC{}: 51
-    case OpsBARRIER{}: 52
-    case OpsRANGE{}: 53
-    case OpsIF{}: 54
-    case OpsEND{}: 55
-    case OpsENDIF{}: 56
-    case OpsBACKEDGE{}: 57
-    case OpsCONST{}: 58
-    case OpsCUSTOM{}: 59
-    case OpsCUSTOMI{}: 60
-    case OpsINS{}: 61
-    case OpsCONTIGUOUS_BACKWARD{}: 62
-    case OpsDETACH{}: 63
-    case OpsSTAGE{}: 64
-    case OpsCOPY{}: 65
-    case OpsMSELECT{}: 66
-    case OpsMSTACK{}: 67
-    case OpsCUSTOM_FUNCTION{}: 68
-    case OpsRESHAPE{}: 69
-    case OpsPERMUTE{}: 70
-    case OpsEXPAND{}: 71
-    case OpsPAD{}: 72
-    case OpsFLIP{}: 73
-    case OpsUNSHARD{}: 74
-    case OpsREDUCE{}: 75
-    case OpsALLREDUCE{}: 76
-    case OpsPYLITERAL{}: 77
-
+    case OpsSTACK{}: 14
+    case OpsGETADDR{}: 15
+    case OpsINDEX{}: 16
+    case OpsSHRINK{}: 17
+    case OpsLOAD{}: 18
+    case OpsSTORE{}: 19
+    case OpsWMMA{}: 20
+    case OpsCAST{}: 21
+    case OpsBITCAST{}: 22
+    case OpsEXP2{}: 23
+    case OpsLOG2{}: 24
+    case OpsSIN{}: 25
+    case OpsSQRT{}: 26
+    case OpsRECIPROCAL{}: 27
+    case OpsNEG{}: 28
+    case OpsTRUNC{}: 29
+    case OpsADD{}: 30
+    case OpsMUL{}: 31
+    case OpsSHL{}: 32
+    case OpsSHR{}: 33
+    case OpsCDIV{}: 34
+    case OpsMAX{}: 35
+    case OpsCMOD{}: 36
+    case OpsCMPLT{}: 37
+    case OpsCMPNE{}: 38
+    case OpsCMPEQ{}: 39
+    case OpsXOR{}: 40
+    case OpsOR{}: 41
+    case OpsAND{}: 42
+    case OpsTHREEFRY{}: 43
+    case OpsSUB{}: 44
+    case OpsFDIV{}: 45
+    case OpsPOW{}: 46
+    case OpsFLOORDIV{}: 47
+    case OpsFLOORMOD{}: 48
+    case OpsWHERE{}: 49
+    case OpsMULACC{}: 50
+    case OpsBARRIER{}: 51
+    case OpsRANGE{}: 52
+    case OpsIF{}: 53
+    case OpsEND{}: 54
+    case OpsENDIF{}: 55
+    case OpsBACKEDGE{}: 56
+    case OpsCONST{}: 57
+    case OpsCUSTOM{}: 58
+    case OpsCUSTOMI{}: 59
+    case OpsINS{}: 60
+    case OpsCONTIGUOUS_BACKWARD{}: 61
+    case OpsDETACH{}: 62
+    case OpsSTAGE{}: 63
+    case OpsCOPY{}: 64
+    case OpsMSELECT{}: 65
+    case OpsMSTACK{}: 66
+    case OpsCUSTOM_FUNCTION{}: 67
+    case OpsRESHAPE{}: 68
+    case OpsPERMUTE{}: 69
+    case OpsEXPAND{}: 70
+    case OpsPAD{}: 71
+    case OpsUNSHARD{}: 72
+    case OpsREDUCE{}: 73
+    case OpsALLREDUCE{}: 74
+    case OpsPYLITERAL{}: 75
 def GroupOp.unary(op: Op) -> Bool:
   match op:
     case OpsEXP2{}: True{}
@@ -515,7 +508,6 @@ def GroupOp.movement(op: Op) -> Bool:
     case OpsPERMUTE{}: True{}
     case OpsPAD{}: True{}
     case OpsSHRINK{}: True{}
-    case OpsFLIP{}: True{}
     case _: False{}
 
 def GroupOp.commutative(op: Op) -> Bool:
@@ -4162,12 +4154,12 @@ def pm_r_alloc_m(+ctx: List<&2, U32>, +ar: Arena, +self: U32) -> Maybe<&2, U32>:
 # count and the set against `from tinygrad.uop import Ops`.
 def all_ops() -> List<&2, Op>:
   [OpsSPECIAL{} OpsBUFFER{} OpsALLOC{} OpsNOOP{} OpsREWRITE_ERROR{} OpsPARAM{} OpsCALL{} OpsPROGRAM{} OpsLINEAR{} OpsSOURCE{} OpsBINARY{},
-   OpsSINK{} OpsAFTER{} OpsGROUP{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
+   OpsSINK{} OpsAFTER{} OpsSTACK{} OpsGETADDR{} OpsINDEX{} OpsSHRINK{} OpsLOAD{} OpsSTORE{} OpsWMMA{} OpsCAST{},
    OpsBITCAST{} OpsEXP2{} OpsLOG2{} OpsSIN{} OpsSQRT{} OpsRECIPROCAL{} OpsNEG{} OpsTRUNC{} OpsADD{} OpsMUL{} OpsSHL{},
    OpsSHR{} OpsCDIV{} OpsMAX{} OpsCMOD{} OpsCMPLT{} OpsCMPNE{} OpsCMPEQ{} OpsXOR{} OpsOR{} OpsAND{} OpsTHREEFRY{},
    OpsSUB{} OpsFDIV{} OpsPOW{} OpsFLOORDIV{} OpsFLOORMOD{} OpsWHERE{} OpsMULACC{} OpsBARRIER{} OpsRANGE{} OpsIF{} OpsEND{},
    OpsENDIF{} OpsBACKEDGE{} OpsCONST{} OpsCUSTOM{} OpsCUSTOMI{} OpsINS{} OpsCONTIGUOUS_BACKWARD{} OpsDETACH{} OpsSTAGE{} OpsCOPY{} OpsMSELECT{},
-   OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsFLIP{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
+   OpsMSTACK{} OpsCUSTOM_FUNCTION{} OpsRESHAPE{} OpsPERMUTE{} OpsEXPAND{} OpsPAD{} OpsUNSHARD{} OpsREDUCE{} OpsALLREDUCE{} OpsPYLITERAL{}]
 
 # `x.tag is not None` -- the guard of ops.py:1904's
 # `lambda x: x.replace(tag=None) if x.tag is not None else None`. `Tag`'s bottom

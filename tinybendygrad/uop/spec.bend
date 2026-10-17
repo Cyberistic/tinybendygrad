@@ -52,7 +52,7 @@
 # 2. A NAME BOUND TWICE MUST EMIT AN IDENTITY CHECK (`upat.py:100-105` builds it
 #    as a literal `"{0} is {1}"`, and `mixin/gradient.py:101` and
 #    `schedule/__init__.py:182` both depend on it). The only name bound twice in
-#    THIS file is `uidx`, in `sh_27`..`sh_30`, and both bindings are in the two
+#    THIS file is `uidx`, in `sh_26`..`sh_29`, and both bindings are in the two
 #    ALTERNATIVES of one `is_any` -- `is_any` copies the store per alternative, so
 #    they never meet and no `is` is emitted. Adding one would be a bug: it would
 #    turn `LOAD(INDEX(...))` and `LOAD(CAST(INDEX(...)))` into a conjunction. The
@@ -315,7 +315,7 @@ def arg_str.go(a: O.Arg) -> Bool:
 # long and started at :110; at HEAD :110 reads `isinstance(x.arg, CustomFunction)`
 # and the CUSTOM_FUNCTION rule that was at :161 in `spec_tensor` is deleted, so
 # `arg_str` is a SPECIAL and REWRITE_ERROR question and nothing else. The pin's
-# numbers are kept because this file is a pin port everywhere `sh_22` is not.
+# numbers are kept because this file is a pin port everywhere `sh_21` is not.
 def arg_str(a: O.Arg) -> Bool:
   arg_str.go(a)
 
@@ -411,7 +411,7 @@ def arg_call.go(a: O.Arg) -> Maybe<&2, S.Dt>:
 
 # spec.py:113 `lambda x: isinstance(x.arg, CallInfo)` -- the WHOLE rule at HEAD. The
 # x.dtype-is-x.arg.dtype conjunct was ADDED at 6f4bfde23 and REMOVED at ad117c928, so
-# arg_call and sh_23.body are STRICTER THAN THE SPEC. Not retypable: AUTHORING.
+# arg_call and sh_22.body are STRICTER THAN THE SPEC. Not retypable: AUTHORING.
 def arg_call(a: O.Arg) -> Maybe<&2, S.Dt>:
   arg_call.go(a)
 
@@ -1024,29 +1024,22 @@ def sh_18.pat(+fx: F.Folded, +self: U32) -> Bool:
 def sh_18(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_18.pat(fx, self), sp_vb(arg_blob(sp_arg(fx, self))))
 
-# spec.py:98  (UPat(Ops.GROUP, dtypes.void, src=UPat(dtype=dtypes.void)), lambda: True)
-# `src=UPat(..)` is `itertools.repeat`, so the pattern is "EVERY src is void" and
-# the arity is unbounded -- upat.py:59 adds a `len(src) != 0` clause only when the
-# inner pattern BINDS a name, and this one does not.
-def sh_19(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsGROUP{}), sp_dt_is(fx, self, S.void())), sp_vb(all_void(sp_srcs(fx, self), fx, True{})))
-
-def OP_AFTER20() -> List<&2, O.Op>:
+def OP_AFTER19() -> List<&2, O.Op>:
   [O.OpsPARAM{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsSTAGE{}, O.OpsINDEX{},
    O.OpsAFTER{}, O.OpsUNSHARD{}, O.OpsBITCAST{}, O.OpsINS{},
-   O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
+   O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}]
 
 # spec.py:101 (UPat(Ops.AFTER, src=(UPat(Movement|PARAM|BUFFER|ALLOC|STAGE|INDEX|AFTER|
 #                     UNSHARD|BITCAST|INS),), allow_any_len=True), lambda: True)
-def sh_20(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(Bool.and(sp_op(fx, self, O.OpsAFTER{}), nsrc_ge(fx, self, 1)), sp_vb(sp_src_in(fx, self, 0, OP_AFTER20())))
+def sh_19(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(Bool.and(sp_op(fx, self, O.OpsAFTER{}), nsrc_ge(fx, self, 1)), sp_vb(sp_src_in(fx, self, 0, OP_AFTER19())))
 
 # spec.py:106 (UPat((Ops.CUSTOMI, Ops.CUSTOM), name="x"),
 #              lambda x: isinstance(x.arg, tuple) and len(x.arg) == 2 and
 #                isinstance(x.arg[0], str) and isinstance(x.arg[1], DType))
 # `AInk` IS that pair, and it is the only constructor that is, so all four
 # conjuncts are one arm.
-def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_20(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op_in(fx, self, [O.OpsCUSTOMI{}, O.OpsCUSTOM{}]), sp_vb(arg_ink(sp_arg(fx, self))))
 
 # THE WALL IS CLOSED, and it closed the only way it could: by the `Arg` datatype
@@ -1068,104 +1061,104 @@ def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
 # directions, which is what makes the pair worth having: under the pin's body
 # `cf_arg_ok` was 0 and `cf_arg_str` was 1, and under HEAD's they are 1 and 0.
 # spec.py:110 (UPat(Ops.CUSTOM_FUNCTION, name="x", allow_any_len=True), lambda x: isinstance(x.arg, CustomFunction))
-def sh_22(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_21(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsCUSTOM_FUNCTION{}), sp_vb(arg_customfunction(sp_arg(fx, self))))
 
-def sh_23.body_op.go(op: O.Op) -> Bool:
+def sh_22.body_op.go(op: O.Op) -> Bool:
   O.GroupOp.opaque_call_bodies(op)
 
-def sh_23.body_op(+fx: F.Folded, self: U32) -> Bool:
-  sh_23.body_op.go(O.Arena.op(sp_ar(fx), sp_src(fx, self, 0)))
+def sh_22.body_op(+fx: F.Folded, self: U32) -> Bool:
+  sh_22.body_op.go(O.Arena.op(sp_ar(fx), sp_src(fx, self, 0)))
 
-def sh_23.pat(+fx: F.Folded, +self: U32) -> Bool:
-  Bool.and(Bool.and(sp_op(fx, self, O.OpsCALL{}), sh_23.body_op(fx, self)), nsrc_ge(fx, self, 1))
+def sh_22.pat(+fx: F.Folded, +self: U32) -> Bool:
+  Bool.and(Bool.and(sp_op(fx, self, O.OpsCALL{}), sh_22.body_op(fx, self)), nsrc_ge(fx, self, 1))
 
-def sh_23.body.pick(ci: Maybe<&2, S.Dt>, d: Maybe<&2, S.Dt>) -> Bool:
+def sh_22.body.pick(ci: Maybe<&2, S.Dt>, d: Maybe<&2, S.Dt>) -> Bool:
   match ci d:
     case Some{a} Some{b}: O.eq_dt(a, b)
     case _ _: False{}
 
-def sh_23.body.go(ci: Maybe<&2, S.Dt>, d: Maybe<&2, S.Dt>) -> Bool:
-  sh_23.body.pick(ci, d)
+def sh_22.body.go(ci: Maybe<&2, S.Dt>, d: Maybe<&2, S.Dt>) -> Bool:
+  sh_22.body.pick(ci, d)
 
-def sh_23.body(+fx: F.Folded, +self: U32) -> Bool:
-  sh_23.body.go(arg_call(sp_arg(fx, self)), sp_dt(fx, self))
+def sh_22.body(+fx: F.Folded, +self: U32) -> Bool:
+  sh_22.body.go(arg_call(sp_arg(fx, self)), sp_dt(fx, self))
 
 # spec.py:113 (UPat(Ops.CALL, src=(UPat(tuple(OPAQUE_CALL_BODIES)),), allow_any_len=True, name="x"),
 #              lambda x: isinstance(x.arg, CallInfo))
-def sh_23(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sh_23.pat(fx, self), sp_vb(sh_23.body(fx, self)))
+def sh_22(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sh_22.pat(fx, self), sp_vb(sh_22.body(fx, self)))
 
 # spec.py:116 (UPat(Ops.PYLITERAL), lambda: True) -- pattern-compiler IR
-def sh_24(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_23(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsPYLITERAL{}), O.VTrue{})
 
 # spec.py:119 (UPat(Ops.BARRIER, dtypes.void), lambda: True) -- TODO: spec_program only
-def sh_25(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_24(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsBARRIER{}), sp_dt_is(fx, self, S.void())), O.VTrue{})
 
 # spec.py:122 (UPat(Ops.INS, name="x"),
 #              lambda x: isinstance(x.arg, tuple) and len(x.arg) == 2 and isinstance(x.arg[1], DType))
-def sh_26(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_25(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sp_op(fx, self, O.OpsINS{}), sp_vb(arg_ink(sp_arg(fx, self))))
 
-def sh_27.pat.of(op: Bool, u: Bool, n: Bool) -> Bool:
+def sh_26.pat.of(op: Bool, u: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(u, n))
 
-def sh_27.uidx(+fx: F.Folded, self: U32) -> Bool:
+def sh_26.uidx(+fx: F.Folded, self: U32) -> Bool:
   uidx_or_casted(fx, sp_src(fx, self, 0))
 
-def sh_27.pat(+fx: F.Folded, +self: U32) -> Bool:
-  sh_27.pat.of(sp_op(fx, self, O.OpsLOAD{}), sh_27.uidx(fx, self), nsrc_is(fx, self, 1))
+def sh_26.pat(+fx: F.Folded, +self: U32) -> Bool:
+  sh_26.pat.of(sp_op(fx, self, O.OpsLOAD{}), sh_26.uidx(fx, self), nsrc_is(fx, self, 1))
 
 # spec.py:125 (UPat((Ops.INDEX, Ops.SHRINK), name="uidx").or_casted().load(), validate_index)
 # `uidx` is bound in BOTH `is_any` alternatives, which is the SAFE duplicate the
 # header describes: no identity check, and `uidx_or_casted` is a disjunction.
-def sh_27(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sh_27.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
+def sh_26(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sh_26.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
 
-def sh_28.pat.of(op: Bool, u: Bool, g: Bool, n: Bool) -> Bool:
+def sh_27.pat.of(op: Bool, u: Bool, g: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(u, Bool.and(g, n)))
 
-def sh_28.pat(+fx: F.Folded, +self: U32) -> Bool:
-  sh_28.pat.of(sp_op(fx, self, O.OpsLOAD{}), sh_27.uidx(fx, self), sp_src_dt(fx, self, 2, S.boolean()), nsrc_is(fx, self, 3))
+def sh_27.pat(+fx: F.Folded, +self: U32) -> Bool:
+  sh_27.pat.of(sp_op(fx, self, O.OpsLOAD{}), sh_26.uidx(fx, self), sp_src_dt(fx, self, 2, S.boolean()), nsrc_is(fx, self, 3))
 
-def sh_28.body(+fx: F.Folded, +self: U32) -> Bool:
+def sh_27.body(+fx: F.Folded, +self: U32) -> Bool:
   sp_md(fx, sp_src(fx, self, 1), sp_dt_v(fx, self))
 
 # spec.py:126 (... .load(UPat.var("alt"), UPat.var("gate", dtype=dtypes.bool), name="load"),
 #              lambda uidx,gate,alt,load: validate_index(uidx, gate)
 #                                           if matches_dtype(alt, load.dtype) else False)
-def sh_28(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sh_28.pat(fx, self), sp_vd(sp_tri_v(sh_28.body(fx, self), validate_index(fx, sp_src(fx, self, 0)))))
+def sh_27(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sh_27.pat(fx, self), sp_vd(sp_tri_v(sh_27.body(fx, self), validate_index(fx, sp_src(fx, self, 0)))))
 
-def sh_29.pat.of(op: Bool, u: Bool, n: Bool) -> Bool:
+def sh_28.pat.of(op: Bool, u: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(u, n))
 
-def sh_29.pat(+fx: F.Folded, +self: U32) -> Bool:
-  sh_29.pat.of(sp_op(fx, self, O.OpsSTORE{}), sh_27.uidx(fx, self), nsrc_is(fx, self, 2))
+def sh_28.pat(+fx: F.Folded, +self: U32) -> Bool:
+  sh_28.pat.of(sp_op(fx, self, O.OpsSTORE{}), sh_26.uidx(fx, self), nsrc_is(fx, self, 2))
 
 # spec.py:128 (UPat((Ops.INDEX, Ops.SHRINK), name="uidx").or_casted().store(UPat()), validate_index)
+def sh_28(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sh_28.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
+
+def sh_29.pat.of(op: Bool, u: Bool, g: Bool, n: Bool) -> Bool:
+  Bool.and(op, Bool.and(u, Bool.and(g, n)))
+
+def sh_29.pat(+fx: F.Folded, +self: U32) -> Bool:
+  sh_29.pat.of(sp_op(fx, self, O.OpsSTORE{}), sh_26.uidx(fx, self), sp_src_dt(fx, self, 2, S.boolean()), nsrc_is(fx, self, 3))
+
+# spec.py:129 (... .store(UPat(), UPat.var("gate", dtype=dtypes.bool)), validate_index)
 def sh_29(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(sh_29.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
 
-def sh_30.pat.of(op: Bool, u: Bool, g: Bool, n: Bool) -> Bool:
-  Bool.and(op, Bool.and(u, Bool.and(g, n)))
-
-def sh_30.pat(+fx: F.Folded, +self: U32) -> Bool:
-  sh_30.pat.of(sp_op(fx, self, O.OpsSTORE{}), sh_27.uidx(fx, self), sp_src_dt(fx, self, 2, S.boolean()), nsrc_is(fx, self, 3))
-
-# spec.py:129 (... .store(UPat(), UPat.var("gate", dtype=dtypes.bool)), validate_index)
-def sh_30(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sh_30.pat(fx, self), sp_vd(validate_index(fx, sp_src(fx, self, 0))))
-
-def sh_31.pat.of(op: Bool, d: Bool, n: Bool) -> Bool:
+def sh_30.pat.of(op: Bool, d: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(d, n))
 
-def sh_31.pat(+fx: F.Folded, +self: U32) -> Bool:
-  sh_31.pat.of(sp_op(fx, self, O.OpsSTORE{}), sp_dt_is(fx, self, S.void()), nsrc_is(fx, self, 2))
+def sh_30.pat(+fx: F.Folded, +self: U32) -> Bool:
+  sh_30.pat.of(sp_op(fx, self, O.OpsSTORE{}), sp_dt_is(fx, self, S.void()), nsrc_is(fx, self, 2))
 
-def sh_31.tri.of(x: O.Op) -> Maybe<&1, Bool>:
+def sh_30.tri.of(x: O.Op) -> Maybe<&1, Bool>:
   match x:
     case O.OpsBUFFER{}: Some{True{}}
     case O.OpsALLOC{}: Some{True{}}
@@ -1181,14 +1174,13 @@ def sh_31.tri.of(x: O.Op) -> Maybe<&1, Bool>:
     case O.OpsPERMUTE{}: None{}
     case O.OpsPAD{}: None{}
     case O.OpsSHRINK{}: None{}
-    case O.OpsFLIP{}: None{}
     case _: Some{False{}}
 
-def sh_31.tri.go(x: O.Op) -> Maybe<&1, Bool>:
-  sh_31.tri.of(x)
+def sh_30.tri.go(x: O.Op) -> Maybe<&1, Bool>:
+  sh_30.tri.of(x)
 
-def sh_31.tri(+fx: F.Folded, self: U32) -> Maybe<&1, Bool>:
-  sh_31.tri.go(O.Arena.op(sp_ar(fx), sp_src(fx, self, 0)))
+def sh_30.tri(+fx: F.Folded, self: U32) -> Maybe<&1, Bool>:
+  sh_30.tri.go(O.Arena.op(sp_ar(fx), sp_src(fx, self, 0)))
 
 # spec.py:133 (UPat(Ops.STORE, dtypes.void, (UPat(name="x"), UPat())),
 #              lambda x: True if (b:=x.storage_base).op in {BUFFER, ALLOC, PARAM, STAGE}
@@ -1203,12 +1195,12 @@ def sh_31.tri(+fx: F.Folded, self: U32) -> Maybe<&1, Bool>:
 # STORE into a RESHAPE of a BUFFER is not verified by this rule; it is not
 # REJECTED either, because `type_verify` fails only when NO rule answers. See the
 # TODO on `storage_base`.
-def sh_31(+fx: F.Folded, +self: U32) -> O.Verdict:
-  O.pm_when(sh_31.pat(fx, self), sp_vd(sh_31.tri(fx, self)))
+def sh_30(+fx: F.Folded, +self: U32) -> O.Verdict:
+  O.pm_when(sh_30.pat(fx, self), sp_vd(sh_30.tri(fx, self)))
 
 # spec.py:137 (UPat(Ops.WMMA, src=(UPat(), UPat(), UPat()), name="x"),
 #              lambda x: isinstance(x.arg, tuple) and len(x.arg) == 4)
-def sh_32(+fx: F.Folded, +self: U32) -> O.Verdict:
+def sh_31(+fx: F.Folded, +self: U32) -> O.Verdict:
   O.pm_when(Bool.and(sp_op(fx, self, O.OpsWMMA{}), nsrc_is(fx, self, 3)), sp_vb(arg_wmma(sp_arg(fx, self))))
 
 def OP_ALU.go() -> List<&2, O.Op>:
@@ -1248,20 +1240,19 @@ def shared_table() -> O.PMEntrys:
     O.PMEntry{16, [O.OpsPARAM{}],              Nil{}},   # 92
     O.PMEntry{17, [O.OpsBUFFER{}],             Nil{}},   # 93
     O.PMEntry{18, [O.OpsBINARY{}],             Nil{}},   # 95
-    O.PMEntry{19, [O.OpsGROUP{}],              Nil{}},   # 98
-    O.PMEntry{20, [O.OpsAFTER{}],              Nil{}},   # 101
-    O.PMEntry{21, [O.OpsCUSTOMI{}, O.OpsCUSTOM{}], Nil{}},# 106
-    O.PMEntry{22, [O.OpsCUSTOM_FUNCTION{}],    Nil{}},   # 110
-    O.PMEntry{23, [O.OpsCALL{}],               Nil{}},   # 112
-    O.PMEntry{24, [O.OpsPYLITERAL{}],          Nil{}},   # 116
-    O.PMEntry{25, [O.OpsBARRIER{}],            Nil{}},   # 119
-    O.PMEntry{26, [O.OpsINS{}],                Nil{}},   # 122
-    O.PMEntry{27, [O.OpsLOAD{}],               Nil{}},   # 125
-    O.PMEntry{28, [O.OpsLOAD{}],               Nil{}},   # 126
-    O.PMEntry{29, [O.OpsSTORE{}],              Nil{}},   # 128
-    O.PMEntry{30, [O.OpsSTORE{}],              Nil{}},   # 129
-    O.PMEntry{31, [O.OpsSTORE{}],              Nil{}},   # 133
-    O.PMEntry{32, [O.OpsWMMA{}],               Nil{}}]}  # 137
+    O.PMEntry{19, [O.OpsAFTER{}],              Nil{}},   # 101
+    O.PMEntry{20, [O.OpsCUSTOMI{}, O.OpsCUSTOM{}], Nil{}},# 106
+    O.PMEntry{21, [O.OpsCUSTOM_FUNCTION{}],    Nil{}},   # 110
+    O.PMEntry{22, [O.OpsCALL{}],               Nil{}},   # 112
+    O.PMEntry{23, [O.OpsPYLITERAL{}],          Nil{}},   # 116
+    O.PMEntry{24, [O.OpsBARRIER{}],            Nil{}},   # 119
+    O.PMEntry{25, [O.OpsINS{}],                Nil{}},   # 122
+    O.PMEntry{26, [O.OpsLOAD{}],               Nil{}},   # 125
+    O.PMEntry{27, [O.OpsLOAD{}],               Nil{}},   # 126
+    O.PMEntry{28, [O.OpsSTORE{}],              Nil{}},   # 128
+    O.PMEntry{29, [O.OpsSTORE{}],              Nil{}},   # 129
+    O.PMEntry{30, [O.OpsSTORE{}],              Nil{}},   # 133
+    O.PMEntry{31, [O.OpsWMMA{}],               Nil{}}]}  # 137
 
 # ===========================================================================
 # THE DRIVER, and it is duplicated five more times. See the header for why.
@@ -1300,7 +1291,6 @@ def sh_dispatch.go(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
     case 29: sh_29(fx, self)
     case 30: sh_30(fx, self)
     case 31: sh_31(fx, self)
-    case 32: sh_32(fx, self)
     case _: O.VSkip{}
 
 def sh_dispatch(tag: U32, +fx: F.Folded, +self: U32) -> O.Verdict:
@@ -1653,7 +1643,7 @@ def te_6(+fx: F.Folded, +self: U32) -> O.Verdict:
             sp_vb(sp_shape_same(fx, sp_src(fx, self, 1), sp_src(fx, self, 2))))
 
 def OP_PERMFLIP() -> List<&2, O.Op>:
-  [O.OpsPERMUTE{}, O.OpsFLIP{}]
+  [O.OpsPERMUTE{}]
 
 # spec.py:166 (UPat((Ops.PERMUTE, Ops.FLIP), name="mv", src=(UPat(),)), lambda mv: isinstance(mv.arg, tuple))
 def te_7(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -1923,7 +1913,7 @@ def bump(n: U32, ts: O.PMEntrys) -> O.PMEntrys:
 # which is CPython's. `te_len` moved 56 -> 55 and `fu_len` 71 -> 70, and both were RED
 # before and are green now, read from `.agents/slop/rebase-oracle-spec.py` calling the real
 # `tinygrad.uop.spec`. A CUSTOM_FUNCTION node is no longer scanned twice either -- once by
-# `sh_22` and again by `te_4` -- which changed no ANSWER, because first-wins made the
+# `sh_21` and again by `te_4` -- which changed no ANSWER, because first-wins made the
 # second unreachable.
 #
 # THE DELETE WAS NOT ONE LINE, AND THAT IS THE PART TO CARRY AWAY. Renaming the rule defs
@@ -2131,7 +2121,7 @@ def pr_8(+fx: F.Folded, +self: U32) -> O.Verdict:
 def OP_ALL() -> List<&2, O.Op>:
   [O.OpsSPECIAL{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsNOOP{}, O.OpsREWRITE_ERROR{},
    O.OpsPARAM{}, O.OpsCALL{}, O.OpsPROGRAM{}, O.OpsLINEAR{}, O.OpsSOURCE{}, O.OpsBINARY{},
-   O.OpsPYLITERAL{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsGROUP{}, O.OpsSTACK{}, O.OpsGETADDR{},
+   O.OpsPYLITERAL{}, O.OpsSINK{}, O.OpsAFTER{}, O.OpsSTACK{}, O.OpsGETADDR{},
    O.OpsINDEX{}, O.OpsSHRINK{}, O.OpsLOAD{}, O.OpsSTORE{}, O.OpsWMMA{}, O.OpsCAST{},
    O.OpsBITCAST{}, O.OpsEXP2{}, O.OpsLOG2{}, O.OpsSIN{}, O.OpsSQRT{}, O.OpsRECIPROCAL{},
    O.OpsNEG{}, O.OpsTRUNC{}, O.OpsADD{}, O.OpsMUL{}, O.OpsSHL{}, O.OpsSHR{}, O.OpsCDIV{},
@@ -2141,10 +2131,10 @@ def OP_ALL() -> List<&2, O.Op>:
    O.OpsEND{}, O.OpsENDIF{}, O.OpsBACKEDGE{}, O.OpsCUSTOM{}, O.OpsCUSTOMI{}, O.OpsINS{},
    O.OpsCONTIGUOUS_BACKWARD{}, O.OpsDETACH{}, O.OpsSTAGE{}, O.OpsCOPY{}, O.OpsMSELECT{},
    O.OpsMSTACK{}, O.OpsCUSTOM_FUNCTION{}, O.OpsRESHAPE{}, O.OpsPERMUTE{}, O.OpsEXPAND{},
-   O.OpsPAD{}, O.OpsFLIP{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}]
+   O.OpsPAD{}, O.OpsUNSHARD{}, O.OpsREDUCE{}, O.OpsALLREDUCE{}]
 
 def OP_MOVE() -> List<&2, O.Op>:
-  [O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
+  [O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}]
 
 def program_own() -> O.PMEntrys:
   O.PMEntrys{[
@@ -2537,7 +2527,7 @@ def kg_11.pat.of(op: Bool, s: Bool, n: Bool) -> Bool:
   Bool.and(op, Bool.and(s, n))
 
 def kg_11.pat(+fx: F.Folded, +self: U32) -> Bool:
-  kg_11.pat.of(sp_op(fx, self, O.OpsCALL{}), sh_23.body_op(fx, self), nsrc_ge(fx, self, 1))
+  kg_11.pat.of(sp_op(fx, self, O.OpsCALL{}), sh_22.body_op(fx, self), nsrc_ge(fx, self, 1))
 
 # spec.py:276 (UPat(Ops.CALL, src=(UPat(tuple(OPAQUE_CALL_BODIES)),), allow_any_len=True), lambda: True)
 def kg_11(+fx: F.Folded, +self: U32) -> O.Verdict:
@@ -2548,7 +2538,7 @@ def kg_12.pat.of(op: Bool, s: Bool, n: Bool) -> Bool:
 
 def OP_AFTER12() -> List<&2, O.Op>:
   [O.OpsPARAM{}, O.OpsAFTER{}, O.OpsBUFFER{}, O.OpsALLOC{}, O.OpsMSTACK{}, O.OpsMSELECT{},
-   O.OpsBITCAST{}, O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}, O.OpsFLIP{}]
+   O.OpsBITCAST{}, O.OpsRESHAPE{}, O.OpsEXPAND{}, O.OpsPERMUTE{}, O.OpsPAD{}, O.OpsSHRINK{}]
 
 def kg_12.pat(+fx: F.Folded, +self: U32) -> Bool:
   kg_12.pat.of(sp_op(fx, self, O.OpsAFTER{}), sp_src_in(fx, self, 0, OP_AFTER12()), nsrc_ge(fx, self, 1))
@@ -3024,7 +3014,7 @@ def t_shl_wins() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_f
 # rules are not both being tried.
 def t_shl_ok() -> U32: show_v(shared_rewrite(Land.fx(main_arena()), Land.shl_i(main_arena())))
 
-# spec.py:110 -- `sh_22`, and the row that COULD NOT BE WRITTEN while `sh_22` was the
+# spec.py:110 -- `sh_21`, and the row that COULD NOT BE WRITTEN while `sh_21` was the
 # pin's `isinstance(x.arg, str)`. THE FIXTURE IS A LOCAL ARENA rather than two more
 # `main_arena` fields: `Land` is a thirteen-field record read POSITIONALLY by thirteen
 # `case Land{...}` accessors, so two fixtures there are twenty-six positional edits --
@@ -3049,11 +3039,11 @@ def t_cf_arg_str() -> U32:
   +n = O.UOp.new(O.Arena.empty(), O.OpsCUSTOM_FUNCTION{}, Nil{}, O.AStr{"sel_registerName"}, O.TNone{})
   show_v(shared_rewrite(F.folded(O.Found.ar(n)), O.Found.i(n)))
 
-# `sh_22`'s OP GATE, and the row for it, which the pair above cannot be: both fixtures
+# `sh_21`'s OP GATE, and the row for it, which the pair above cannot be: both fixtures
 # ARE CUSTOM_FUNCTIONs, so deleting `sp_op(fx, self, O.OpsCUSTOM_FUNCTION{})` from
-# `sh_22` leaves both answers untouched. This node is the one that separates them --
+# `sh_21` leaves both answers untouched. This node is the one that separates them --
 # an AFTER (no src) carrying a `CustomFunction` arg, which upstream cannot build and
-# which is therefore purely adversarial. `sh_20` needs `len(src) >= 1`, so no rule
+# which is therefore purely adversarial. `sh_19` needs `len(src) >= 1`, so no rule
 # claims it and the honest answer is `VSkip` = 9.
 # CPython AGREES, and that is what makes this a row and not an artifact of the port:
 # `spec_shared.rewrite(UOp(Ops.AFTER, src=(), arg=CustomFunction("f")))` is None.
@@ -3142,10 +3132,10 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   is a validator nobody can use. The two lines not here are the `SPEC > 1` arm
 #   and the `DEBUG >= 3` print. WALL: P3/VIZ for both.
 # TODO(p3) spec.py:133 lambda x: `b := x.storage_base` -- a `while` over BITCAST,
-#   AFTER and UNSHARD on top of `base`, so it is not a fold this port has. `sh_31`
+#   AFTER and UNSHARD on top of `base`, so it is not a fold this port has. `sh_30`
 #   IS ported for every node where `b is x` -- the common case, a STORE straight
 #   into a BUFFER -- and answers `None` for a view of a view. A STORE into a
-#   RESHAPE of a BUFFER is therefore unverified by `sh_31`; it is not REJECTED,
+#   RESHAPE of a BUFFER is therefore unverified by `sh_30`; it is not REJECTED,
 #   because `type_verify` fails only when no rule answers. WALL: `storage_base`,
 #   which is `base` plus a seventh `Derived` field. P3.
 # TODO(p3) spec.py:57  lambda x: `type(x.val) is type(x.dtype.const(x.val))` --
@@ -3163,7 +3153,7 @@ def t_multidev_bad() -> U32: show_v(tensor_rewrite(Mdev.fx(main_mdev(O.AXIS_GLOB
 #   1. `_min_max` (ops.py:1104) unblocks `validate_index`'s body, `valid_device_range`
 #      for a symbolic end, and `shard_shape`. It is the largest single unlock in
 #      the fold and three of the six TODOs above are behind it.
-#   2. `storage_base` (ops.py:801) unblocks `sh_31`'s deferred arm.
+#   2. `storage_base` (ops.py:801) unblocks `sh_30`'s deferred arm.
 #   3. A `U32 -> String` device NAME table (P6) makes `is_device`'s string-ness
 #      CHECKABLE rather than INHERITED, and `is_disk_device` answers with it. It is
 #      THE PORT'S OWN table: CPython has no `str -> int` device index to mirror --

@@ -17,7 +17,7 @@
 # matches only when they are the SAME node. `upat.py:100-105` emits the identity compare as
 # an ordinary clause (`"{0} is {1}"`), and the interpreter states the same constraint as a
 # store rejection. Without the check the rule matches strictly more nodes than Python does,
-# and it still typechecks and still runs -- so it is LOAD-BEARING, not decorative. `gr_29`
+# and it still typechecks and still runs -- so it is LOAD-BEARING, not decorative. `gr_28`
 # emits it; the `rebind`/`rebind_off` gate rows are the two-sided check, and `gr_29_nocheck`
 # is the mutation that proves it. THE TAG SPACE is Python's own: 0..32 in `pm_gradient.pdict`
 # insertion order, which is the compiled form (`UPAT_COMPILE=1` is the default, ops.py:1588).
@@ -674,14 +674,6 @@ def gr_20(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # build the PERMUTE. This is the one MOVEMENT rule with no `Sint` arithmetic in it.
 def gr_21(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
-# --- 22. FLIP -- gradient.py:90. `(ctx.flip([i for i,x in enumerate(ret.marg) if x]),)`
-#
-# A FLIP's arg is a tuple of BOOLS, one per axis, so `marg` is `[True, False]` for a
-# 2-D flip (measured). The rule keeps the indices whose flag is set. ops.bend's
-# `ATuple{ys: List<U32>}` holds U32s, and a bool flag is 0/1, so the filter is
-# `U32.is_zero` and the mapping is exact.
-def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
-
 # --- 23. STACK -- gradient.py:91. `tuple(ctx[i] for i in range(len(ret.src)))`
 #
 # ONE GRADIENT PER SRC, each `ctx[i]` -- an INDEX of the gradient by a CONST. That is
@@ -690,7 +682,7 @@ def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 #
 # TODO(p3) mixin/gradient.py:91  STACK -- `ctx[i]` is `Tensor.__getitem__` with an int,
 #   i.e. `op.py`'s indexing machinery. Phase P3 owns `op.py`.
-def gr_23(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_22(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 24. COPY -- gradient.py:92.
 #   (ctx.copy_to_device(ret.src[0].device),) + (None,)*(len(ret.src)-1)
@@ -707,7 +699,7 @@ def gr_23(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # TODO(p3) mixin/gradient.py:92  COPY -- `copy_to_device` (ops.py:761) needs a device
 #   fold plus the DISK and weak-dtype refusals; and the rule RAISES at 1 src in
 #   Python (measured, `t_copy_raises`).
-def gr_24(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_23(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 25. UNSHARD -- gradient.py:93. `ctx.shard(ret.device, ret.axis).src`
 #
@@ -719,7 +711,7 @@ def gr_24(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # TODO(p3) mixin/gradient.py:93  UNSHARD -- `_shard` (ops.py:751) reads `int(rng.vmax)`,
 #   which is `_min_max`. `_min_max` is the single largest wall in the fold and
 #   `mixin/dtype.bend`'s header already names it as the blocker for `commit_dtype`.
-def gr_25(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_24(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 26. SINK -- gradient.py:94. `ctx.src`
 #
@@ -728,7 +720,7 @@ def gr_25(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # `grads[root] = root_grad` type correct -- `root_grad` is a SINK and its srcs are the
 # per-output gradients. The answer is `ctx`'s srcs, so `gs` is a copy of a list that
 # lives in the arena rather than a new node; `sink_*` reads its length against ctx's.
-def gr_26(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired(O.Arena.srcs(ar, ctx), ar)
+def gr_25(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired(O.Arena.srcs(ar, ctx), ar)
 
 # --- 27. AFTER with a CALL -- gradient.py:95-96.
 #   (ctx, UOp.sink(*([ctx if i == k.src.index(d)-1 else UOp(Ops.NOOP) for i in range(len(k.src)-1)])))
@@ -738,7 +730,7 @@ def gr_26(+ar: O.Arena, +ctx: U32, +self: U32) -> GRes: fired(O.Arena.srcs(ar, c
 # `List.get`-style walking is for; ops.bend has no `List.index_of`, so it is one
 # two-line fold. `UOp(Ops.NOOP)` is the arena's bottom node (index 0), which is why
 # the holes and the NOOPs share an encoding here.
-def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_26(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 28. AFTER, ordering-only -- gradient.py:98-99.
 #   lambda ctx, dest, t: (ctx, None) if t.buf_uop is not dest.buf_uop else None
@@ -752,7 +744,7 @@ def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # TODO(p3) mixin/gradient.py:98  ordering-only AFTER -- `buf_uop` (ops.py:925) walks
 #   through `base` and stops at BUFFER/ALLOC/PARAM/STAGE/MSTACK, and `base` needs the
 #   fold plus a second walk. fold.bend carries `fold.base` but not `buf_uop`.
-def gr_28(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_27(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 29. AFTER, clone/assign -- gradient.py:101. `(None, ctx)`
 #
@@ -762,7 +754,7 @@ def gr_28(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 # the rule claims every `AFTER(_, STORE(_,_))` -- including the ordering-only shape of
 # tag 28 and the partial-store shape of tag 30 -- and it still typechecks.
 #
-# `gr_29` is therefore SPLIT: the identity test is a separate def, `gr_29_same`, and the
+# `gr_28` is therefore SPLIT: the identity test is a separate def, `gr_29_same`, and the
 # rule answers `GSkip{}` when it fails. That is the honest port -- not "the rule claims
 # and then declines", but "the pattern does not match", because in the compiled form
 # the `is` is part of the MATCH. The two-sided gate is `rebind` (same node -> fires) and
@@ -798,14 +790,14 @@ def gr_29_same(+ar: O.Arena, +self: U32) -> Bool: gr_29_same.go(ar, self)
 # The `match` may only scrutinise a PARAMETER, so the `Bool` `gr_29_same` computes is
 # handed to `pick` as an argument and the two arms are its cases. This is notes rule 2
 # and it is the reason every such def in this file is a `.pick`/`.of` pair.
-def gr_29.pick(ok: Bool, ar: O.Arena, +ctx: U32) -> GRes:
+def gr_28.pick(ok: Bool, ar: O.Arena, +ctx: U32) -> GRes:
   match ok:
     case True{}: fired([0, ctx], ar)
     case False{}: GSkip{}
 
-def gr_29.go(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_29.pick(gr_29_same(ar, self), ar, ctx)
+def gr_28.go(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.pick(gr_29_same(ar, self), ar, ctx)
 
-def gr_29(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_29.go(ar, ctx, self)
+def gr_28(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_28.go(ar, ctx, self)
 
 # --- 30. AFTER, partial store -- gradient.py:102-103. `partial_store_gradient(ctx, dest, view)`
 #
@@ -813,28 +805,28 @@ def gr_29(+ar: O.Arena, +ctx: U32, self: U32) -> GRes: gr_29.go(ar, ctx, self)
 # walls here. `gradient.py:54-58` walks `base` up through
 # `{RESHAPE, SHRINK, PERMUTE, FLIP}` accumulating a `path`, and returns `None` if it
 # never reaches `dest`; `gradient.py:62` then calls `pm_gradient.rewrite(mop, ctx=mask)`
-# -- THE MATCHER CALLING ITSELF. That is mutual recursion between `gr_30` and
+# -- THE MATCHER CALLING ITSELF. That is mutual recursion between `gr_29` and
 # `gr_rewrite`, and Bend refuses mutual recursion outright (notes, "There is no mutual
 # recursion"). The loop itself is a `while` with a mutable list, which Bend expresses as
 # a self-call on the tail, but it cannot be entered FROM the rewrite.
 #
 # TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body RE-ENTERS
-#   `pm_gradient.rewrite` (gradient.py:62), so `gr_30` and `gr_rewrite` would be mutually
+#   `pm_gradient.rewrite` (gradient.py:62), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses that. It also needs `mop.replace(src=(grad,)+mop.src[1:])`
 #   (a src rewrite with an `Arg` preserved) and `grad.const_like(1)`.
-def gr_30(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
+def gr_29(ar: O.Arena, ctx: U32, self: U32) -> GRes: GSkip{}
 
 # --- 31. STORE -- gradient.py:104. `(None, ctx)`
 # Gradient flows to the stored VALUE, not the buffer: slot 0 is a hole and slot 1 is
 # `ctx` verbatim. Same answer shape as tag 29 with the slots the other way round, which
 # is what makes them a good pair -- `store_0_hole` and `rebind_1_ctx` are the two rows
 # that say which half of the AFTER/STORE pair goes where.
-def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, ctx], ar)
+def gr_30(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0, ctx], ar)
 
 # --- 32. BITCAST -- gradient.py:106. `(None,)`
 # "there's no gradient for bitcast" -- ONE hole, for a ONE-src node. It is the arity
 # twin of tag 7's two holes and the smallest possible answer.
-def gr_32(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
+def gr_31(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 
 
 # ===========================================================================
@@ -901,9 +893,9 @@ def gr_32(ar: O.Arena, ctx: U32, +self: U32) -> GRes: fired([0], ar)
 #
 # `partial_store_gradient` -- gradient.py:52-63, the helper tag 30 calls. Its WALL is
 # MUTUAL RECURSION and it is the one wall in this file that is a Bend LAW rather than a
-# missing dependency, so it is stated under `gr_30` and repeated here:
+# missing dependency, so it is stated under `gr_29` and repeated here:
 # TODO(p3) mixin/gradient.py:102  partial_store_gradient -- the body calls
-#   `pm_gradient.rewrite` (gradient.py:62), so `gr_30` and `gr_rewrite` would be mutually
+#   `pm_gradient.rewrite` (gradient.py:62), so `gr_29` and `gr_rewrite` would be mutually
 #   recursive and Bend refuses mutual recursion outright.
 #
 # WHAT NEXT, in the order the walls fall.
@@ -955,17 +947,16 @@ def gr_table() -> O.PMEntrys:
     O.PMEntry{19, [O.OpsPAD{}],                  Nil{}},                        # 87
     O.PMEntry{20, [O.OpsSHRINK{}],               Nil{}},                        # 88
     O.PMEntry{21, [O.OpsPERMUTE{}],              Nil{}},                        # 89
-    O.PMEntry{22, [O.OpsFLIP{}],                 Nil{}},                        # 90
-    O.PMEntry{23, [O.OpsSTACK{}],                Nil{}},                        # 91
-    O.PMEntry{24, [O.OpsCOPY{}],                 Nil{}},                        # 92
-    O.PMEntry{25, [O.OpsUNSHARD{}],              Nil{}},                        # 93
-    O.PMEntry{26, [O.OpsSINK{}],                 Nil{}},                        # 94
-    O.PMEntry{27, [O.OpsAFTER{}],                [O.OpsCALL{}]},                # 95
-    O.PMEntry{28, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 98
-    O.PMEntry{29, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 101
-    O.PMEntry{30, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 102
-    O.PMEntry{31, [O.OpsSTORE{}],                Nil{}},                        # 104
-    O.PMEntry{32, [O.OpsBITCAST{}],              Nil{}}]}                       # 106
+    O.PMEntry{22, [O.OpsSTACK{}],                Nil{}},                        # 91
+    O.PMEntry{23, [O.OpsCOPY{}],                 Nil{}},                        # 92
+    O.PMEntry{24, [O.OpsUNSHARD{}],              Nil{}},                        # 93
+    O.PMEntry{25, [O.OpsSINK{}],                 Nil{}},                        # 94
+    O.PMEntry{26, [O.OpsAFTER{}],                [O.OpsCALL{}]},                # 95
+    O.PMEntry{27, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 98
+    O.PMEntry{28, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 101
+    O.PMEntry{29, [O.OpsAFTER{}],                [O.OpsSTORE{}]},               # 102
+    O.PMEntry{30, [O.OpsSTORE{}],                Nil{}},                        # 104
+    O.PMEntry{31, [O.OpsBITCAST{}],              Nil{}}]}                       # 106
 
 # ===========================================================================
 # THE DISPATCH, duplicated rather than abstracted. `ops.bend` cannot call a def in this
@@ -1008,7 +999,6 @@ def gr_dispatch.go(tag: U32, +ar: O.Arena, +ctx: U32, self: U32) -> GRes:
     case 29: gr_29(ar, ctx, self)
     case 30: gr_30(ar, ctx, self)
     case 31: gr_31(ar, ctx, self)
-    case 32: gr_32(ar, ctx, self)
     case _: GSkip{}
 
 def gr_dispatch(tag: U32, +ar: O.Arena, +ctx: U32, self: U32) -> GRes:
@@ -1936,7 +1926,7 @@ def t_const_raw() -> U32:
 def t_neginf() -> U32: k_neginf_bits()
 
 # `gr_table()[29].ops == [AFTER]` and `gr_table()[29].rej == [STORE]` -- the tag the
-# name-rebind LIVES AT, read out of the TABLE rather than off `gr_29`. If the table were
+# name-rebind LIVES AT, read out of the TABLE rather than off `gr_28`. If the table were
 # reordered the rebind would still work and the header's tag claim would be a lie.
 # THE BOOL READER. Every gate row is a `U32`, so `1` is a claim that held and `0` a claim
 # that did not -- and Bend has no assertion form, so a `0` in the output is the signal.
@@ -1982,7 +1972,7 @@ def t_rebind_1_ctx() -> U32: b32(U32.is_eq(gs_get(rw(fx_ar(fix()), Fix.n(fix()),
 # "no rule fired", and the row says so rather than claiming tag 28's answer.
 def t_rebind_off() -> U32: b32(gs_is_skip(rw(fx_ar(fix()), Fix.n(fix()), Fix.af28(fix()))))
 
-# THE CLAIM, counted over the whole table rather than read off `gr_29`: how many entries
+# THE CLAIM, counted over the whole table rather than read off `gr_28`: how many entries
 # claim `af28`. Python claims tags 27..30 by op and `rej` and then 28's BODY decides; the
 # port claims ONE, tag 29, and the identity check rejects it. So the port's claim count
 # on `af28` is 0 and on `af29` is 1. Two rows, one node each, and they are the pair that

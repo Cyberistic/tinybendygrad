@@ -145,7 +145,7 @@ import ./linearizer.bend as LT
 # BARRIER or GROUP moved nothing until the count became a length.
 def ra_pseudo_tbl() -> List<&2, O.PMEntry>:
   [O.PMEntry{0, [O.OpsCONST{}, O.OpsCAST{}, O.OpsBITCAST{}, O.OpsNOOP{},
-                 O.OpsAFTER{}, O.OpsBARRIER{}, O.OpsGROUP{}, O.OpsSTACK{}], Nil{}}]
+                 O.OpsAFTER{}, O.OpsBARRIER{}, O.OpsSTACK{}], Nil{}}]
 
 def ra_count.go(ops: List<&2, O.Op>, n: U32) -> U32:
   match ops:
@@ -164,7 +164,7 @@ def ra_is_pseudo2(+op: O.Op) -> Bool:
 
 def ra_is_pseudo3(+op: O.Op) -> Bool:
   Bool.or(Bool.or(LT.lt_op_is(op, O.OpsAFTER{}), LT.lt_op_is(op, O.OpsBARRIER{})),
-          Bool.or(LT.lt_op_is(op, O.OpsGROUP{}), LT.lt_op_is(op, O.OpsSTACK{})))
+          LT.lt_op_is(op, O.OpsSTACK{}))
 
 # AND the rewrite reads the SAME test, so the table and the predicate cannot drift:
 # `regalloc.py:101`'s `if x.op in PSEUDO_OPS: return None` is `ra_is_pseudo` and

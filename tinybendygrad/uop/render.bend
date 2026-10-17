@@ -2558,7 +2558,7 @@ def rnd_ar() -> O.Arena:
     O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CBool{True{}}}, O.TNone{}},
     O.Node{O.OpsCONST{}, Nil{}, O.APy{O.CFloat{1.5}}, O.TNone{}},
     O.Node{O.OpsSPECIAL{}, Nil{}, O.AStr{"gidx"}, O.TNone{}},
-    O.Node{O.OpsGROUP{}, [1], O.ANone{}, O.TNone{}}], [0]}
+], [0]}
 
 # `none` is BARE, not `none:AttributeError`: this `Maybe` is the refusal of an
 # arm this subset does not have, which is a different thing from a raise. The
