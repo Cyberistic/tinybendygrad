@@ -1,0 +1,26 @@
+# re-derived from census.py's own literal_sites()+probe_regex() over a necessary-condition
+# pre-filter (`git grep -F '(?:^|' HEAD -- '*.py'`), at the HEAD named in decision.md
+# git-grep files	9	.agents/slop/checkshells/census.py,.agents/slop/clangshim/cl-port-gate.py,.agents/slop/fixures/blind-spot.py,.agents/slop/onespelling/census.py,.agents/slop/reprorefs/probe.py,.agents/slop/shapecensus/build.py,checks/cl-port-gate.py,checks/devgate.py,gates/docnum-census.py
+# prose files	568
+# census literal_sites stats on the subset	{"parsed": 9, "dropped": 0, "literals": 99, "spellings": {"Dict": 9, "Set": 9, "re.compile": 10, "List": 5, "Tuple": 14}, "tables": {"List": 1, "Tuple": 1}}
+regex-anchor-set	.agents/slop/reprorefs/probe.py:26:OLD	POSITIVE	over 568 committed .md files: anchored names 593, anchor dropped names 1412. 819 spellings invisible. Preceding delimiter: '`'x5548 ' 'x1518 '\n'x156 '/'x84 '"'x42
+regex-anchor-set	.agents/slop/reprorefs/probe.py:27:PERMISSIVE	POSITIVE	over 568 committed .md files: anchored names 764, anchor dropped names 3618. 2854 spellings invisible. Preceding delimiter: '`'x9660 ' 'x3217 "'"x721 '/'x668 '\n'x212
+control	frag='checks/repro-paths.py'	holds=False
+control	frag='.agents/slop/reprorefs/probe.py'	holds=True
+control	frag=''	holds=True
+repro-paths-literal	6 module-level literals	spellings={'re.compile': 2, 'Tuple': 1}	sites=0
+control-pos2	frag=differ.py	holds=True	files=4
+control-pos2	frag=gatekit.py	holds=True	files=3
+control-pos2	frag=extract.py	holds=True	files=2
+control-pos3	.agents/slop/toolsledger/extract.py:15:ROOT	POSITIVE	ROOT resolves every token under one base; 26 of the '/'-bearing tokens .agents/TOOLS.md writes resolve only under a different root, e.g. LAWS/spec.bend -> tinybendygrad/LAWS/spec.bend, codegen/decomp/dtype.bend -> tinybendygrad/codegen/decomp/dtype.bend, codegen/late/linearizer.bend -> tinybendygrad/codegen/late/linearizer.bend
+fix-commit	08957587170ef6ea323c8131180e3bf68e45ddf1	parent=3a195037176ede3bdb043bc20e72b254cb7595b4
+before-fix	checks/repro-paths.py@3a195037176e:64:REF	kind=regex-anchor-set	POSITIVE	(?:^|\s)((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)
+after-fix	checks/repro-paths.py@HEAD	sites=0	literals=6	(?<![\w/.])((?:\.agents/slop/|checks/|gates/)[\w./-]*\.[A-Za-z0-9]+)
+pattern-identity	probe.py:27 PERMISSIVE == shipped BEFORE fix: True	== shipped AFTER fix: False
+repaired-REF	shipped=3612	no-anchor-clause=3618	invisible=6	widened()=None
+repaired-REF-still-invisible	.agents/slop/JSFP8.md	.agents/TODO.md: ...' lanes](../../'
+repaired-REF-still-invisible	.agents/slop/proof-close/MUTANT/tinybendygrad/uop/ops.bend	.agents/slop/shadowtrees/REPORT.md: ...'rverdict/root/'
+repaired-REF-still-invisible	.agents/slop/twopass/corpus/matmul.txt	.agents/slop/residue/000-the-residue.md: ...'al to .agents/'
+repaired-REF-still-invisible	.agents/slop/xd2/serve.mjs	examples/webgpu/mnist/README.md: ...'-e \'import("./'
+repaired-REF-still-invisible	checks/deeper/e2e.sh	.agents/slop/e2esh/FINDINGS.md: ...'tinybendygrad/'
+repaired-REF-still-invisible	checks/differ_wantdummy.py	.agents/slop/remembered103/REPORT.md: ...'rpuswire/tree/'

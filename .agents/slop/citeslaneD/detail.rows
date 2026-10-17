@@ -1,0 +1,326 @@
+FAIL	.agents/TODO.md:11571	tinybendygrad/helpers.bend	tinybendygrad/helpers.bend has 2849 lines, claim says 2712	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:1521	tinygrad/__init__.py	tinygrad/__init__.py has 12 lines, claim says 10	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:1545	tinybendygrad/codegen/__init__.bend	tinybendygrad/codegen/__init__.bend has 553 lines, claim says 519	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:18237	.agents/slop/onespelling/census.py	.agents/slop/onespelling/census.py has 544 lines, claim says 543	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:2519	tinygrad/renderer/wgsl.py	tinygrad/renderer/wgsl.py has 122 lines, claim says 1062	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:2744	tinygrad/device.py	tinygrad/device.py has 559 lines, claim says 564	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:3145	tinygrad/runtime/ops_nv.py	tinygrad/runtime/ops_nv.py has 842 lines, claim says 841	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:7124	runtime/ops_python.bend	runtime/ops_python.bend has 2807 lines, claim says 1590	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:9250	tinybendygrad/tensor.bend	tinybendygrad/tensor.bend has 2874 lines, claim says 1584	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TODO.md:9275	mixin/gradient.bend	mixin/gradient.bend has 2464 lines, claim says 1761	repro=n	-	splitlines=None nl=None
+FAIL	.agents/TOOLS.md:392	tinybendygrad/runtime/support/usb.bend	tinybendygrad/runtime/support/usb.bend has 2474 lines, claim says 2596	repro=y	cell-label=cell	splitlines=2474 nl=True
+FAIL	.agents/slop/CSTYLE2.md:278	tinybendygrad/renderer/cstyle.bend	tinybendygrad/renderer/cstyle.bend has 1367 lines, claim says 2373	repro=y	-	splitlines=1367 nl=False
+FAIL	.agents/slop/FROMBITS.md:219	tinybendygrad/dtype.bend	tinybendygrad/dtype.bend has 1132 lines, claim says 971	repro=y	-	splitlines=1132 nl=True
+FAIL	.agents/slop/I64MUL.md:3	tinybendygrad/helpers.bend	tinybendygrad/helpers.bend has 2849 lines, claim says 2712	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=2849 nl=True
+FAIL	.agents/slop/TENSOR-SURFACE.md:231	mixin/gradient.bend	mixin/gradient.bend has 2464 lines, claim says 1761	repro=y	-	splitlines=2464 nl=False
+FAIL	.agents/slop/adevfix/REPORT.md:17	tinygrad/uop/ops.py	tinygrad/uop/ops.py has 1920 lines, claim says 1928	repro=y	-	splitlines=1920 nl=True
+FAIL	.agents/slop/agend2/REPLACEMENTS.md:134	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	-	splitlines=936 nl=False
+FAIL	.agents/slop/agend2/REPLACEMENTS.md:138	checks/substrate.py	checks/substrate.py has 936 lines, claim says 766	repro=y	-	splitlines=936 nl=False
+FAIL	.agents/slop/agend2/REPORT.md:102	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|cell-label=cell	splitlines=936 nl=False
+FAIL	.agents/slop/agend2/REPORT.md:49	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|fragment(quoted)=quoted|cell-label=cell	splitlines=936 nl=False
+FAIL	.agents/slop/brief-port.md:32	tinybendygrad/uop/ops.bend	tinybendygrad/uop/ops.bend has 8919 lines, claim says 3800	repro=y	-	splitlines=8919 nl=True
+FAIL	.agents/slop/brief-port.md:39	tinybendygrad/uop/fold.bend	tinybendygrad/uop/fold.bend has 7019 lines, claim says 2208	repro=y	-	splitlines=7019 nl=True
+FAIL	.agents/slop/brief-port.md:46	tinybendygrad/uop/spec.bend	tinybendygrad/uop/spec.bend has 3334 lines, claim says 3186	repro=y	-	splitlines=3334 nl=True
+FAIL	.agents/slop/bullets/REPLACEMENTS.md:73	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=936 nl=False
+FAIL	.agents/slop/bullets/REPORT.md:129	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	-	splitlines=936 nl=False
+FAIL	.agents/slop/claimaudit2/REPORT.md:271	mixin/rand.bend	mixin/rand.bend has 1325 lines, claim says 190	repro=y	fragment(quoted)=quoted	splitlines=1325 nl=True
+FAIL	.agents/slop/closure/REPORT.md:263	checks/census.py	checks/census.py has 354 lines, claim says 326	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=354 nl=True
+FAIL	.agents/slop/envprecond/REPORT.md:200	checks/env-precond.py	checks/env-precond.py has 457 lines, claim says 362	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=457 nl=False
+FAIL	.agents/slop/gatesweep/REPORT.md:12	gates/gates-pop.py	gates/gates-pop.py has 1530 lines, claim says 1529	repro=y	cell-label=cell	splitlines=1643 nl=False
+FAIL	.agents/slop/gatesweep/REPORT.md:23	checks/gatesweep.py	checks/gatesweep.py has 358 lines, claim says 218	repro=y	-	splitlines=358 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:137	tinybendygrad/runtime/dtype.c	tinybendygrad/runtime/dtype.c has 328 lines, claim says 297	repro=y	-	splitlines=328 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:138	tinybendygrad/runtime/sz.c	tinybendygrad/runtime/sz.c has 119 lines, claim says 97	repro=y	-	splitlines=119 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:139	tinybendygrad/runtime/dtype.js	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	repro=y	-	splitlines=211 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:14	tinybendygrad/runtime/dtype.c	tinybendygrad/runtime/dtype.c has 328 lines, claim says 297	repro=y	-	splitlines=328 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:141	tinybendygrad/runtime/webgpu_call.js	tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502	repro=y	wc -l claim+1 [NO KIND]=explained(no trailing \n)|wc -l CAUSAL [NO KIND]=causal(no trailing \n)	splitlines=503 nl=False
+FAIL	.agents/slop/guardfix/REPORT.md:15	tinybendygrad/runtime/sz.c	tinybendygrad/runtime/sz.c has 119 lines, claim says 97	repro=y	-	splitlines=119 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:159	tinybendygrad/runtime/dtype.js	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	repro=y	-	splitlines=211 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:16	tinybendygrad/runtime/dtype.js	tinybendygrad/runtime/dtype.js has 211 lines, claim says 193	repro=y	-	splitlines=211 nl=True
+FAIL	.agents/slop/guardfix/REPORT.md:18	tinybendygrad/runtime/webgpu_call.js	tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502	repro=y	wc -l claim+1 [NO KIND]=explained(no trailing \n)|wc -l CAUSAL [NO KIND]=causal(no trailing \n)	splitlines=503 nl=False
+FAIL	.agents/slop/ledgerdrift/REPORT.md:3	.agents/TOOLS.md	.agents/TOOLS.md has 1644 lines, claim says 1631	repro=y	-	splitlines=1644 nl=True
+FAIL	.agents/slop/literal-oracle-report.md:390	.agents/slop/nv-oracle.py	.agents/slop/nv-oracle.py has 1205 lines, claim says 574	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|cell-label=cell	splitlines=1205 nl=True
+FAIL	.agents/slop/notes/bend2-constraints.md:11548	tinygrad/helpers.py	tinygrad/helpers.py has 647 lines, claim says 646	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=647 nl=True
+FAIL	.agents/slop/notes/bend2-constraints.md:11635	tinygrad/codegen/gpudims.py	tinygrad/codegen/gpudims.py has 106 lines, claim says 97	repro=y	fragment(quoted)=quoted	splitlines=106 nl=True
+FAIL	.agents/slop/notes/bend2-constraints.md:9029	renderer/cstyle.bend	renderer/cstyle.bend has 1367 lines, claim says 287	repro=y	fragment(quoted)=quoted	splitlines=1367 nl=False
+FAIL	.agents/slop/notes/compare/sz.md:26	runtime/sz.c	runtime/sz.c has 119 lines, claim says 88	repro=y	cell-label=cell	splitlines=32 nl=True
+FAIL	.agents/slop/portmarkers/REPORT.md:91	tinybendygrad/PROOF.bend	tinybendygrad/PROOF.bend has 494 lines, claim says 6	repro=y	-	splitlines=494 nl=True
+FAIL	.agents/slop/quiescefix/REPORT.md:22	checks/substrate-id.py	checks/substrate-id.py has 688 lines, claim says 532	repro=y	fragment(quoted)=quoted	splitlines=688 nl=False
+FAIL	.agents/slop/quiescefix/REPORT.md:275	.agents/slop/quiesce/quiesce.py	.agents/slop/quiesce/quiesce.py has 264 lines, claim says 1	repro=y	cell-label=cell	splitlines=264 nl=True
+FAIL	.agents/slop/quiescefix/REPORT.md:276	.agents/slop/quiesce/freeze-check.py	.agents/slop/quiesce/freeze-check.py has 88 lines, claim says 1	repro=y	cell-label=cell	splitlines=88 nl=True
+FAIL	.agents/slop/readback/REPORT.md:148	gates/ew-explog-gate.py	gates/ew-explog-gate.py has 82 lines, claim says 64	repro=y	-	splitlines=82 nl=True
+FAIL	.agents/slop/readback/REPORT.md:65	checks/e2e.py	checks/e2e.py has 566 lines, claim says 3	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=566 nl=False
+FAIL	.agents/slop/residual/REPORT.md:128	runtime/webgpu_call.js	runtime/webgpu_call.js has 503 lines, claim says 502	repro=y	cell-label=cell|wc -l claim+1 [NO KIND]=explained(no trailing \n)|wc -l CAUSAL [NO KIND]=causal(no trailing \n)	splitlines=503 nl=False
+FAIL	.agents/slop/residual/REPORT.md:138	runtime/webgpu_call.js	runtime/webgpu_call.js has 503 lines, claim says 502	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|wc -l claim+1 [NO KIND]=explained(no trailing \n)|wc -l CAUSAL [NO KIND]=causal(no trailing \n)	splitlines=503 nl=False
+FAIL	.agents/slop/sched-stage3.md:84	tinybendygrad/codegen/__init__.bend	tinybendygrad/codegen/__init__.bend has 553 lines, claim says 330	repro=y	-	splitlines=553 nl=True
+FAIL	.agents/slop/substrate/REPORT.md:283	tinybendygrad/runtime/dtype.c	tinybendygrad/runtime/dtype.c has 328 lines, claim says 322	repro=y	-	splitlines=328 nl=True
+FAIL	.agents/slop/substrate2/REPORT.md:11	checks/substrate.py	checks/substrate.py has 936 lines, claim says 765	repro=y	-	splitlines=936 nl=False
+FAIL	.agents/slop/substrateid/REPORT.md:239	checks/substrate-id.py	checks/substrate-id.py has 688 lines, claim says 533	repro=y	-	splitlines=688 nl=False
+FAIL	.agents/slop/substrateid/REPORT.md:338	checks/substrate-id.py	checks/substrate-id.py has 688 lines, claim says 533	repro=y	-	splitlines=688 nl=False
+FAIL	.agents/slop/todo2/REPORT.md:38	.agents/TODO.md	.agents/TODO.md has 18368 lines, claim says 12	repro=y	-	splitlines=18506 nl=True
+FAIL	.agents/slop/todo2/discover.md:41	.agents/TODO.md	.agents/TODO.md has 18368 lines, claim says 12	repro=y	-	splitlines=18506 nl=True
+FAIL	.agents/slop/unrunnable-recipes/REPORT.md:3	checks/unrunnable-recipes.py	checks/unrunnable-recipes.py has 603 lines, claim says 594	repro=y	-	splitlines=603 nl=False
+FAIL	.agents/slop/w64mile/REPORT.md:36	tinybendygrad/dtype.bend	tinybendygrad/dtype.bend has 1132 lines, claim says 638	repro=y	-	splitlines=1132 nl=True
+FAIL	.agents/slop/w64mile/REPORT.md:37	tinybendygrad/helpers.bend	tinybendygrad/helpers.bend has 2849 lines, claim says 2605	repro=y	-	splitlines=2849 nl=True
+FAIL	.agents/slop/whosecache/REPORT.md:328	.agents/slop/graphcmp.py	.agents/slop/graphcmp.py has 3253 lines, claim says 34	repro=y	-	splitlines=3253 nl=False
+FAIL	AGENTS.md:129	checks/substrate.py	checks/substrate.py has 936 lines, claim says 766	repro=y	-	splitlines=936 nl=False
+FAIL	checks/substrate.py:118	checks/c-context.bend	checks/c-context.bend has 34 lines, claim says 26	repro=y	-	splitlines=34 nl=True
+PASS	.agents/TODO.md:1304	tinygrad/uop/upat.py	tinygrad/uop/upat.py has 186 lines, claim says 186	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:14554	.agents/slop/tnisf/dump2.bend	.agents/slop/tnisf/dump2.bend has 49 lines, claim says 49	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:15215	gates/decomp_value-gate.py	gates/decomp_value-gate.py has 954 lines, claim says 954	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:16276	gates/js-lane-census.py	gates/js-lane-census.py has 611 lines, claim says 611	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:1964	tinygrad/engine/realize.py	tinygrad/engine/realize.py has 297 lines, claim says 297	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:2493	runtime/webgpu_call.bend	runtime/webgpu_call.bend has 1312 lines, claim says 1312	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:2494	runtime/webgpu_call.js	runtime/webgpu_call.js has 503 lines, claim says 503	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:2525	tinygrad/renderer/tc.py	tinygrad/renderer/tc.py has 141 lines, claim says 141	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:2526	tinygrad/renderer/ptx.py	tinygrad/renderer/ptx.py has 231 lines, claim says 231	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:2622	examples/beautiful_mnist.ts	examples/beautiful_mnist.ts has 611 lines, claim says 611	repro=n	-	splitlines=None nl=None
+PASS	.agents/TODO.md:3441	tinygrad/schedule/indexing.py	tinygrad/schedule/indexing.py has 328 lines, claim says 328	repro=n	-	splitlines=None nl=None
+PASS	.agents/slop/CITES-PRECISION.md:14	.agents/slop/e2e.sh	.agents/slop/e2e.sh has 24 lines, claim says 24	repro=y	-	splitlines=24 nl=False
+PASS	.agents/slop/CITES-PRECISION.md:15	tinybendygrad/runtime/ops_nv.bend	tinybendygrad/runtime/ops_nv.bend has 95 lines, claim says 95	repro=y	-	splitlines=95 nl=False
+PASS	.agents/slop/CITES-PRECISION.md:16	tinybendygrad/engine/jit.bend	tinybendygrad/engine/jit.bend has 435 lines, claim says 435	repro=y	-	splitlines=435 nl=False
+PASS	.agents/slop/FROMBITS.md:218	tinybendygrad/base.bend	tinybendygrad/base.bend has 56 lines, claim says 56	repro=y	-	splitlines=56 nl=True
+PASS	.agents/slop/agend2/REPORT.md:131	tinygrad/viz/README.md	tinygrad/viz/README.md has 93 lines, claim says 93	repro=y	cell-label=cell	splitlines=93 nl=True
+PASS	.agents/slop/audit/01-proofs-34of34.md:23	LAWS/PROOF-ALL.bend	LAWS/PROOF-ALL.bend has 15 lines, claim says 15	repro=y	-	splitlines=15 nl=True
+PASS	.agents/slop/audit/01-proofs-34of34.md:8	tinybendygrad/LAWS/spec.bend	tinybendygrad/LAWS/spec.bend has 869 lines, claim says 869	repro=y	-	splitlines=869 nl=True
+PASS	.agents/slop/bendwire/REPORT.md:69	tinybendygrad/base.bend	tinybendygrad/base.bend has 56 lines, claim says 56	repro=y	-	splitlines=56 nl=True
+PASS	.agents/slop/ccdead2/REPORT.md:23	tinybendygrad/runtime/dtype.c	tinybendygrad/runtime/dtype.c has 328 lines, claim says 328	repro=y	-	splitlines=328 nl=True
+PASS	.agents/slop/ccdead2/REPORT.md:24	tinybendygrad/runtime/sz.c	tinybendygrad/runtime/sz.c has 119 lines, claim says 119	repro=y	-	splitlines=119 nl=True
+PASS	.agents/slop/ccdead2/REPORT.md:31	tinybendygrad/runtime/dtype.c	tinybendygrad/runtime/dtype.c has 328 lines, claim says 328	repro=y	-	splitlines=328 nl=True
+PASS	.agents/slop/ccdead2/REPORT.md:32	tinybendygrad/runtime/sz.c	tinybendygrad/runtime/sz.c has 119 lines, claim says 119	repro=y	-	splitlines=119 nl=True
+PASS	.agents/slop/claimaudit/REPORT.md:364	gates/js-lane-census.py	gates/js-lane-census.py has 611 lines, claim says 611	repro=y	-	splitlines=611 nl=False
+PASS	.agents/slop/claimaudit2/REPORT.md:273	tinybendygrad/mixin/rand.bend	tinybendygrad/mixin/rand.bend has 1325 lines, claim says 1325	repro=y	-	splitlines=1325 nl=True
+PASS	.agents/slop/dangle/REPORT.md:161	checks/e2e.sh	checks/e2e.sh has 340 lines, claim says 340	repro=y	-	splitlines=340 nl=True
+PASS	.agents/slop/e2esh/FINDINGS.md:110	.agents/slop/e2epy/artifacts/plant-no-node.port.err	.agents/slop/e2epy/artifacts/plant-no-node.port.err has 2 lines, claim says 2	repro=y	-	splitlines=2 nl=True
+PASS	.agents/slop/envprecond/REPORT.md:202	.agents/slop/envprecond/plant.py	.agents/slop/envprecond/plant.py has 91 lines, claim says 91	repro=y	-	splitlines=91 nl=True
+PASS	.agents/slop/guardfix/REPORT.md:140	tinybendygrad/runtime/sz.js	tinybendygrad/runtime/sz.js has 32 lines, claim says 32	repro=y	-	splitlines=32 nl=True
+PASS	.agents/slop/guardfix/REPORT.md:142	tinybendygrad/runtime/webgpu_call.mjs	tinybendygrad/runtime/webgpu_call.mjs has 6963 lines, claim says 6963	repro=y	-	splitlines=6963 nl=True
+PASS	.agents/slop/guardfix/REPORT.md:17	tinybendygrad/runtime/sz.js	tinybendygrad/runtime/sz.js has 32 lines, claim says 32	repro=y	-	splitlines=32 nl=True
+PASS	.agents/slop/guardfix/REPORT.md:19	tinybendygrad/runtime/webgpu_call.mjs	tinybendygrad/runtime/webgpu_call.mjs has 6963 lines, claim says 6963	repro=y	-	splitlines=6963 nl=True
+PASS	.agents/slop/hooks/REPORT.md:13	.agents/slop/jjreset/wire.py	.agents/slop/jjreset/wire.py has 52 lines, claim says 52	repro=y	-	splitlines=52 nl=True
+PASS	.agents/slop/memory-report.md:3	tinygrad/runtime/support/memory.py	tinygrad/runtime/support/memory.py has 288 lines, claim says 288	repro=y	-	splitlines=288 nl=True
+PASS	.agents/slop/nameless/REPORT.md:293	.agents/slop/nameless/subjects.rows	.agents/slop/nameless/subjects.rows has 346 lines, claim says 346	repro=y	cell-label=cell	splitlines=346 nl=True
+PASS	.agents/slop/nameless/REPORT.md:294	.agents/slop/nameless/subjects-c83f04ad1.rows	.agents/slop/nameless/subjects-c83f04ad1.rows has 341 lines, claim says 341	repro=y	cell-label=cell	splitlines=341 nl=True
+PASS	.agents/slop/nameless/REPORT.md:70	.agents/slop/nameless/subjects.rows	.agents/slop/nameless/subjects.rows has 346 lines, claim says 346	repro=y	-	splitlines=346 nl=True
+PASS	.agents/slop/notes/bend2-constraints.md:11535	uop/__init__.py	uop/__init__.py has 135 lines, claim says 135	repro=y	-	splitlines=135 nl=True
+PASS	.agents/slop/notes/bend2-constraints.md:17628	tinybendygrad/uop/probe-mmcore.bend	tinybendygrad/uop/probe-mmcore.bend has 471 lines, claim says 471	repro=y	-	splitlines=471 nl=True
+PASS	.agents/slop/notes/bend2-constraints.md:22879	.agents/slop/sched-fixture.bend	.agents/slop/sched-fixture.bend has 600 lines, claim says 600	repro=y	-	splitlines=600 nl=True
+PASS	.agents/slop/notes/compare/sz.md:26	runtime/sz.js	runtime/sz.js has 32 lines, claim says 32	repro=y	cell-label=cell	splitlines=32 nl=True
+PASS	.agents/slop/substrate2/REPORT.md:10	checks/substrate-check.sh	checks/substrate-check.sh has 46 lines, claim says 46	repro=y	-	splitlines=46 nl=True
+PASS	.agents/slop/substrate3/REPORT.md:62	tinybendygrad/base.bend	tinybendygrad/base.bend has 56 lines, claim says 56	repro=y	-	splitlines=56 nl=True
+PASS	.agents/slop/tc-REPORT.md:7	tinygrad/codegen/decomp/transcendental.py	tinygrad/codegen/decomp/transcendental.py has 277 lines, claim says 277	repro=y	cell-label=cell	splitlines=277 nl=True
+PASS	.agents/slop/untrack/REPORT.md:242	checks/unowned.py	checks/unowned.py has 243 lines, claim says 243	repro=y	-	splitlines=243 nl=True
+PASS	.agents/slop/unverified9/REPORT.md:157	docs/env_vars.md	docs/env_vars.md has 73 lines, claim says 73	repro=y	-	splitlines=73 nl=True
+REFUSED	.agents/TODO.md:10214	.agents/slop/BACKWARD-WALK.md	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:10638	.agents/slop/ew-consts-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:108	.agents/slop/abi/abi.json	unreadable or absent: .agents/slop/abi/abi.json	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:12067	tinybendygrad/uop/fold.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:12772	norm/gate.txt	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13093	tinybendygrad/helpers.bend	unit 'byte' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13094	tinybendygrad/runtime/support/compiler_mesa.bend	unit 'byte' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13095	.agents/slop/graphcmp.py	unit 'byte' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13096	.agents/slop/rf2root/helpers.bend	unit 'byte' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13454	gates/bc-u32-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:13892	gates/ops-core-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14402	gates/amd_dsl_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14454	gates/amd_dsl_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14559	gates/tn_nodes-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14674	gates/wgsl_render_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14749	gates/amd_dsl_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14773	gates/linearizer_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14773	gates/regalloc_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:14931	gates/decomp_graph_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:15369	gates/ptx_render_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:15371	gates/ptx_render_census-pins.rows	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:15807	gates/decomp_graph_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:16179	gates/decomp_graph_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:1670	checks/lintable-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:18007	runtime/ops_nv.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:18045	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3080	runtime/ops_nv.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3295	tinybendygrad/nn/torch.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3304	tinybendygrad/runtime/ops_npy.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3309	tinybendygrad/runtime/ops_rdma.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3475	iprep/pp-rows.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:3994	renderer/cstyle.py	unit 'file' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4270	codegen/kernel.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4360	uop/spec.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4361	codegen/opt/search.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4361	codegen/rewriter.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4373	oracles/ga-oracle.txt	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4489	.agents/slop/dd-oracle.py	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4495	.agents/slop/dd-gate.txt	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:4641	.agents/slop/helpers-tc-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:5503	.agents/slop/debug-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:6016	.agents/slop/ops-501-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:6444	codegen/__init__.bend	ambiguous subject: 2 tracked paths end in /codegen/__init__.bend	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:67	mixin/gradient.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2464 nl=False
+REFUSED	.agents/TODO.md:6842	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:7156	renderer/csprobe.bend	unreadable or absent: renderer/csprobe.bend	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:7161	runtime/_p6.bend	unreadable or absent: runtime/_p6.bend	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:7170	uop/probe-mmcore.bend	unreadable or absent: uop/probe-mmcore.bend	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:8229	codegen/decomp/dtype.bend	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TODO.md:9695	checks/census.tsv	unit 'row' has no unambiguous meaning for a file	repro=n	-	splitlines=None nl=None
+REFUSED	.agents/TOOLS.md:1498	gates/bc-u32-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=97 nl=False
+REFUSED	.agents/TOOLS.md:574	uop/spec.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=3334 nl=True
+REFUSED	.agents/TOOLS.md:576	codegen/opt/search.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=627 nl=True
+REFUSED	.agents/TOOLS.md:594	renderer/amd/generate.bend	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line|cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/TOOLS.md:719	.agents/slop/e2e_mm_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=250 nl=True
+REFUSED	.agents/slop/AUDIT-CAN-FAIL.md:75	tinybendygrad/schedule/__init__.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2269 nl=True
+REFUSED	.agents/slop/BACKWARD-WALK.md:151	.agents/slop/backward/bwd-row.txt	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/slop/CSTYLE2.md:1	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/DTYPE-ABI.md:10	gen/probe.gen.c	unreadable or absent: gen/probe.gen.c	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/DTYPEB.md:4	dtypeb/dtype.patched.bend	unreadable or absent: dtypeb/dtype.patched.bend	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/F64-KERNEL.md:167	cstyle-live/port.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/JSFP8.md:212	checks/gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=292 nl=False
+REFUSED	.agents/slop/LINEAR-TABLE.md:15	checks/lintable-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=200 nl=False
+REFUSED	.agents/slop/MMFOLD.md:154	.agents/slop/reader-contracts.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/NONSHAPE.md:3	tinybendygrad/uop/fold.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=7019 nl=True
+REFUSED	.agents/slop/NONSHAPE.md:84	tinybendygrad/uop/fold.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=7019 nl=True
+REFUSED	.agents/slop/NORM.md:148	norm/gate.txt	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/NVDUP.md:4	.agents/slop/nv-oracle.py	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=1205 nl=True
+REFUSED	.agents/slop/W64.md:190	tinybendygrad/runtime/dtype.js	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=211 nl=True
+REFUSED	.agents/slop/W64.md:220	wallmap/census.json	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/WALLMAP.md:11	checks/census.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=1029 nl=True
+REFUSED	.agents/slop/abi4check/README.md:3	checks/abi4_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=588 nl=True
+REFUSED	.agents/slop/abifix/README.md:243	tinybendygrad/uop/ops.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=8919 nl=True
+REFUSED	.agents/slop/abifix/README.md:3	checks/abi_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=879 nl=True
+REFUSED	.agents/slop/agend/REPORT.md:84	.agents/slop/peakrss/census.txt	unit 'file' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/ansi_gate.py:2	.agents/slop/ansi_probe.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/audit/03-sched-60of60.md:46	tinybendygrad/schedule/__init__.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2269 nl=True
+REFUSED	.agents/slop/bf16/BF16.md:113	.agents/slop/bf16/plants.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=175 nl=False
+REFUSED	.agents/slop/bf16/BF16.md:212	.agents/slop/bf16/gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=234 nl=False
+REFUSED	.agents/slop/clangshim/clang-analyze.py:2	.agents/slop/ag-libclang.tramp	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=324 nl=True
+REFUSED	.agents/slop/clangshim/clangshim-gen.py:2	.agents/slop/ag-libclang.tramp	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=324 nl=True
+REFUSED	.agents/slop/clearfix/frozen-prefix/beautiful-mnist-gate.py:2	.agents/slop/beautiful-mnist-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=228 nl=False
+REFUSED	.agents/slop/clearfix/frozen-prefix/mixin-op-gate.py:2	.agents/slop/mixin-op-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=149 nl=True
+REFUSED	.agents/slop/closure/REPORT.md:249	.agents/slop/closure/rekey-out-of-process.py	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line|cell-label=cell	splitlines=82 nl=False
+REFUSED	.agents/slop/cstyle-nameshape-control.md:94	pre/cstyle-gate.py	unreadable or absent: pre/cstyle-gate.py	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/dd-mutations-report.md:5	.agents/slop/dd-gate-base-182.txt	unit 'row' has no unambiguous meaning for a file	repro=y	fragment(quoted)=quoted	splitlines=None nl=None
+REFUSED	.agents/slop/deadarm/bendarm.py:2	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/deadclause/REPORT.md:140	checks/residue.py	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=754 nl=False
+REFUSED	.agents/slop/deadreg/REPORT.md:252	tinybendygrad/helpers.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=2849 nl=True
+REFUSED	.agents/slop/denominator/probe/.agents/slop/rebase-gate.py:829	tinybendygrad/runtime/support/nv/nvdev.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2345 nl=True
+REFUSED	.agents/slop/dup/stage3-multiset.md:8	.agents/slop/usb-oracle-trace.py	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2efix/report.md:40	.agents/slop/cstyle-live/port.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2efix/report.md:45	gates/artifacts/cstyle-live/port.txt	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2epy/fixtures/plant-passskip/runs/e2e/e2e-f64.md:2	renderer/amd/generate.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2epy/fixtures/plant-refuse/runs/e2e/e2e-f64.md:2	renderer/amd/generate.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2epy/fixtures/plant/runs/e2e/e2e-f64.md:2	renderer/amd/generate.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/e2epy/report.md:216	runtime/dtype.js	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=211 nl=True
+REFUSED	.agents/slop/e2epy/report.md:92	checks/e2e.sh	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=340 nl=True
+REFUSED	.agents/slop/emptyevid/REPORT.md:101	.agents/slop/emptyevid/CAPTURES.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=202 nl=True
+REFUSED	.agents/slop/emptyevid/REPORT.md:179	.agents/slop/emptyevid/CAPTURES.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=202 nl=True
+REFUSED	.agents/slop/eq/REPORT.md:3	tinybendygrad/renderer/nir_llvmir.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1221 nl=True
+REFUSED	.agents/slop/f64/repair-dupes.py:2	gates/artifacts/cstyle-live/port.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/gatecensus/REPORT.md:3	.agents/slop/gatecensus/run.log	the claim is MEASURED 2026-10-05 and .agents/slop/gatecensus/run.log last changed 2026-10-05: the anchor has expired, so the claim is STALE, not FALSE	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/graphcmp-report.md:732	.agents/slop/graphcmp-repro.sh	unit 'file' has no unambiguous meaning for a file	repro=y	-	splitlines=16 nl=True
+REFUSED	.agents/slop/grw-stage2-3.md:226	.agents/slop/sched-fixture.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=600 nl=True
+REFUSED	.agents/slop/hygiene-2026-10-04.md:104	renderer/csprobe.bend	unreadable or absent: renderer/csprobe.bend	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/i64shl/REPORT.md:28	gates/i64-shl-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=184 nl=False
+REFUSED	.agents/slop/ishr/00-VERDICT.md:63	gates/i64-shr-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=260 nl=False
+REFUSED	.agents/slop/jjreset/REPORT.md:35	~/.config/jj/config.toml	unreadable or absent: ~/.config/jj/config.toml	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/jsfix/README.md:10	checks/jsfix_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=658 nl=True
+REFUSED	.agents/slop/jsfix/README.md:25	checks/abi_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=879 nl=True
+REFUSED	.agents/slop/jsfix/README.md:26	jslane2/gen_js_seam.py	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=282 nl=False
+REFUSED	.agents/slop/jsfix/README.md:27	checks/jsfix_gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=658 nl=True
+REFUSED	.agents/slop/lanedeath-census.md:233	uop/spec.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=3334 nl=True
+REFUSED	.agents/slop/lanedeath-census.md:234	codegen/rewriter.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=292 nl=True
+REFUSED	.agents/slop/last79/REPORT.md:34	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=0 nl=False
+REFUSED	.agents/slop/last79/REPORT.md:56	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=0 nl=False
+REFUSED	.agents/slop/last79/REPORT.md:91	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	.agents/slop/laws17/REPORT.md:107	tinybendygrad/helpers.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=2849 nl=True
+REFUSED	.agents/slop/ledgerdrift/REPORT.md:60	toolsledger/paths.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell|wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=334 nl=True
+REFUSED	.agents/slop/lintable/03-PROBE.md:4	checks/lintable-gate.sh	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=200 nl=False
+REFUSED	.agents/slop/literal-oracle-report.md:388	tinybendygrad/codegen/kernel.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=1394 nl=True
+REFUSED	.agents/slop/live-writer-conversions.md:25	tinybendygrad/uop/ops.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=8919 nl=True
+REFUSED	.agents/slop/nameless/REPORT.md:208	.agents/slop/SUBJECTS.rows	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=10 nl=True
+REFUSED	.agents/slop/nostraysshape/REPORT.md:166	test/_probe/v5.bend	unreadable or absent: test/_probe/v5.bend	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:12553	.agents/slop/cs_oracle.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:14265	renderer/amd/generate.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:14265	.agents/slop/ga-oracle.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:15252	.agents/slop/tensor-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=110 nl=True
+REFUSED	.agents/slop/notes/bend2-constraints.md:15253	.agents/slop/tensor-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=110 nl=True
+REFUSED	.agents/slop/notes/bend2-constraints.md:15718	.agents/slop/ga_rows.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:15901	tinygrad/nn/torch.py	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=5 nl=False
+REFUSED	.agents/slop/notes/bend2-constraints.md:15902	tinygrad/runtime/support/compileserver.py	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=13 nl=True
+REFUSED	.agents/slop/notes/bend2-constraints.md:17345	tinybendygrad/renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/notes/bend2-constraints.md:17633	tinybendygrad/renderer/csprobe.bend	unreadable or absent: tinybendygrad/renderer/csprobe.bend	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:18597	schedule/multi.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=3454 nl=False
+REFUSED	.agents/slop/notes/bend2-constraints.md:23583	.agents/slop/helpers-tc-gate.py	unreadable or absent: .agents/slop/helpers-tc-gate.py	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:23612	renderer/ptx.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1291 nl=True
+REFUSED	.agents/slop/notes/bend2-constraints.md:25289	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/notes/bend2-constraints.md:26355	tinybendygrad/uop/fold.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=7019 nl=True
+REFUSED	.agents/slop/notes/bend2-constraints.md:26661	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/notes/bend2-constraints.md:7778	.agents/slop/amdev_oracle.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/notes/bend2-constraints.md:8551	.agents/slop/mm-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=162 nl=False
+REFUSED	.agents/slop/opshapes/00-rows.md:50	runs/graphcmp/D/D2-canon-py-flip.txt	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=6 nl=True
+REFUSED	.agents/slop/opshapes/00-rows.md:51	runs/graphcmp/D/D2-canon-bend-flip.txt	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=6 nl=True
+REFUSED	.agents/slop/oracleblind/REPORT.md:52	gates/oracleblind.rows	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=99 nl=True
+REFUSED	.agents/slop/oracletxt/REPORT.md:21	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=0 nl=False
+REFUSED	.agents/slop/oracletxt/shape_of_stale.py:2	.agents/slop/oracles259/census.json	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2894 nl=False
+REFUSED	.agents/slop/orcdecide/REPORT.md:191	.agents/slop/orcdecide/verdicts.py	unit 'file' has no unambiguous meaning for a file	repro=y	-	splitlines=58 nl=True
+REFUSED	.agents/slop/orcfix/REPORT.md:163	.agents/slop/skipexit/repro.py	unit 'file' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=202 nl=False
+REFUSED	.agents/slop/plancarve/REPORT.md:155	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	.agents/slop/portexec/STAGE1.md:58	tinybendygrad/renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=1367 nl=False
+REFUSED	.agents/slop/portmarkers/REPORT.md:111	tinybendygrad/PROOF.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=494 nl=True
+REFUSED	.agents/slop/portmarkers/REPORT.md:135	tinybendygrad/helpers.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=2849 nl=True
+REFUSED	.agents/slop/portunknown/REPORT.md:261	.agents/slop/portunknown/probe.py	unit 'file' has no unambiguous meaning for a file	repro=y	-	splitlines=75 nl=True
+REFUSED	.agents/slop/portzz/REPORT.md:19	support/am/ip.bend	ambiguous subject: 2 tracked paths end in /support/am/ip.bend	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line|cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/slop/readback/REPORT.md:98	runtime/dtype.js	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=211 nl=True
+REFUSED	.agents/slop/rebase-gate-selftest.py:1305	schedule/multi.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=3454 nl=False
+REFUSED	.agents/slop/rebase-gate-selftest.py:1306	.agents/slop/multi-rows.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/rebase-gate.py:829	tinybendygrad/runtime/support/nv/nvdev.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=2345 nl=True
+REFUSED	.agents/slop/ruling-naming-gate-getenv-int.md:222	tinygrad/nn/torch.py	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=5 nl=False
+REFUSED	.agents/slop/ruling-naming-gate-getenv-int.md:223	tinygrad/runtime/support/compileserver.py	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=13 nl=True
+REFUSED	.agents/slop/runs/README.md:15	codegen/simplify.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/slop/speccite/README.md:150	checks/citation-gate.ledger.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=589 nl=True
+REFUSED	.agents/slop/stale71/REPORT.md:127	gen/probe.js	unreadable or absent: gen/probe.js	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/substrate2/REPORT.md:56	ROOT/tinybendygrad/renderer/cstyle.bend	unit 'file' has no unambiguous meaning for a file	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=None nl=None
+REFUSED	.agents/slop/substrate2/REPORT.md:57	tinybendygrad/runtime/zzread.bend	unit 'file' has no unambiguous meaning for a file	repro=y	output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=14 nl=True
+REFUSED	.agents/slop/substrateid/REPORT.md:209	checks/differ.py	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=1354 nl=True
+REFUSED	.agents/slop/subtree/REPORT.md:133	gates/oracles/beautiful-mnist-oracle.sh	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=64 nl=False
+REFUSED	.agents/slop/subtree/REPORT.md:136	gates/oracles/mixin-op-oracle.sh	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=35 nl=False
+REFUSED	.agents/slop/tc-REPORT.md:11	oracles/tc-rows-value.txt	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/slop/tcptxweak/REPORT.md:101	gates/tc_ptx_types-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=80 nl=False
+REFUSED	.agents/slop/todo2/REPORT.md:105	.agents/slop/todo2/tasks.idx.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=1318 nl=True
+REFUSED	.agents/slop/todo2/dashboard.md:32	runtime/ops_nv.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=95 nl=False
+REFUSED	.agents/slop/todo2/dashboard.md:70	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=1367 nl=False
+REFUSED	.agents/slop/todo2/discover.md:158	runtime/ops_nv.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=95 nl=False
+REFUSED	.agents/slop/todo2/discover.md:209	renderer/cstyle.bend	unit 'row' has no unambiguous meaning for a file	repro=y	cell-label=cell	splitlines=1367 nl=False
+REFUSED	.agents/slop/todo2/dup.md:23	.agents/slop/todo2/tasks.idx.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=1318 nl=True
+REFUSED	.agents/slop/txt259/REPORT.md:175	oracles/rf-arg-oracle.txt	unreadable or absent: oracles/rf-arg-oracle.txt	repro=y	cell-label=cell	splitlines=None nl=None
+REFUSED	.agents/slop/txtexec/REPORT.md:67	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	.agents/slop/txtexec/rename.py:2	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	.agents/slop/txtresidual/REPORT.md:61	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	.agents/slop/unrunnable-recipes/REPORT.md:131	tinybendygrad/codegen/late.bend	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.	repro=y	-	splitlines=None nl=None
+REFUSED	.agents/slop/unrunnable-recipes/REPORT.md:278	oracles/tinybendygrad_codegen_late.bend.rows	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=128 nl=True
+REFUSED	checks/no-shrink.py:2	tinybendygrad/renderer/amd/generate.bend	the claim is MEASURED 2026-10-05 and tinybendygrad/renderer/amd/generate.bend last changed 2026-10-07: the anchor has expired, so the claim is STALE, not FALSE	repro=y	-	splitlines=2736 nl=True
+REFUSED	checks/no-txt.py:124	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	checks/no-txt.py:2	oracles/rows-bd.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=0 nl=False
+REFUSED	checks/repair-dupes.py:2	gates/artifacts/cstyle-live/port.txt	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=None nl=None
+REFUSED	checks/slop-declare.py:2	.agents/slop/strays/MANIFEST.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=260 nl=True
+REFUSED	checks/slop-declare.py:2	.agents/slop/oracles259/MANIFEST.tsv	unit 'row' has no unambiguous meaning for a file	repro=y	wc -l claim+1 [NO KIND]=UNEXPLAINED(subject ends \n)	splitlines=260 nl=True
+REFUSED	checks/sweep.py:85	checks/residue.py	the claim is MEASURED 2026-10-14 and checks/residue.py last changed 2026-10-17: the anchor has expired, so the claim is STALE, not FALSE	repro=y	-	splitlines=754 nl=False
+REFUSED	gates/bc-u32-gate.py:2	gates/bc-u32-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=97 nl=False
+REFUSED	gates/beautiful-mnist-gate.py:2	.agents/slop/beautiful-mnist-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=228 nl=False
+REFUSED	gates/citations-census-gate.py:363	tinybendygrad/uop/fold.bend	unit 'byte' has no unambiguous meaning for a file	repro=y	-	splitlines=7019 nl=True
+REFUSED	gates/docnum-census.py:2	checks/gatesweep.py	the claim is MEASURED 2026-10-06 and checks/gatesweep.py last changed 2026-10-15: the anchor has expired, so the claim is STALE, not FALSE	repro=y	-	splitlines=358 nl=True
+REFUSED	gates/ew-consts-gate.py:2	gates/ew-consts-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=55 nl=True
+REFUSED	gates/mixin-op-gate.py:2	.agents/slop/mixin-op-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=149 nl=True
+REFUSED	gates/onnx_census-gate.py:2	gates/onnx_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=143 nl=True
+REFUSED	gates/ops-core-gate.py:2	gates/ops-core-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=84 nl=True
+REFUSED	gates/ops_python_census-oracle.py:2	gates/ops_python_census-oracle.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=327 nl=False
+REFUSED	gates/rand_census-gate.py:2	gates/rand_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=374 nl=True
+REFUSED	gates/render_val_s-gate.py:2	gates/i64-shl-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=260 nl=False
+REFUSED	gates/render_val_s-gate.py:2	gates/i64-shr-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=260 nl=False
+REFUSED	gates/state_census-gate.py:2	gates/state_census-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=181 nl=True
+REFUSED	gates/tn_add_sub-oracle.py:1	gates/tn_add_sub.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=197 nl=False
+REFUSED	gates/tn_and_or_xor-oracle.py:2	gates/tn_and_or_xor.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=235 nl=True
+REFUSED	gates/tn_binop2_cmp-oracle.py:2	gates/tn_binop2_cmp.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=215 nl=False
+REFUSED	gates/tn_binop_sweep-oracle.py:2	gates/tn_binop_sweep.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=201 nl=True
+REFUSED	gates/tn_fdiv_mod-oracle.py:2	gates/tn_fdiv_mod.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=185 nl=True
+REFUSED	gates/tn_mul-oracle.py:2	gates/tn_mul.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=136 nl=True
+REFUSED	gates/tn_pow-oracle.py:2	gates/tn_pow.bend	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=111 nl=True
+REFUSED	gates/wk-cd-gate.py:2	gates/wk-cd-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=67 nl=True
+REFUSED	gates/wk-eval-gate.py:2	gates/wk-eval-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	-	splitlines=81 nl=True
+REFUSED	gates/wk-f32-gate.py:2	gates/wk-f32-gate.py	unit 'row' has no unambiguous meaning for a file	repro=y	output=line|output+UNICODE ARROW=line|output+UNICODE+`=>`=line	splitlines=77 nl=True

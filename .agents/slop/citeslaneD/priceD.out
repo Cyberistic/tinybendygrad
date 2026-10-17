@@ -1,0 +1,39 @@
+HEAD 444890672d9baebb6309952495f480623f481fc5
+lane D population 326 = FAIL 66 + PASS 46 + REFUSED 214
+re-extraction at THIS HEAD reproduces 56/66 lane-D FAIL rows from 153 citing files (rows file written at a DIFFERENT HEAD)
+re-extraction at THIS HEAD reproduces 35/46 lane-D PASS rows from 153 citing files (rows file written at a DIFFERENT HEAD)
+
+--- candidate kinds on lane D (N = FAIL retired, M = PASS silenced) ---
+candidate                     N    M   breakdown of N over 66 FAIL
+output                        1    0   {'line': 1}
+output+UNICODE ARROW          9    0   {'line': 9}
+output+UNICODE+`=>`           9    0   {'line': 9}
+command                       0    0   {}
+fragment(quoted)              5    0   {'quoted': 5}
+cell-label                    9    5   {'cell': 9}
+wc -l claim+1 [NO KIND]       5    0   {'explained(no trailing \\n)': 4, 'UNEXPLAINED(subject ends \\n)': 1}
+wc -l CAUSAL [NO KIND]        4    0   {'causal(no trailing \\n)': 4}
+
+UNION: FAIL discharged 22/66 (surviving as `text` 44/66); PASS silenced 5/46
+UNION over rows the re-extraction reproduced: 56/66 FAIL, 35/46 PASS
+
+--- SAFETY of the wc -l rule, over the reproduced FAIL rows ---
+claim+1 AND subject lacks a trailing newline (convention EXPLAINS): 4
+claim+1 AND subject ENDS with a newline (rule CANNOT explain):       1
+    .agents/slop/guardfix/REPORT.md:18  tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502
+    .agents/slop/guardfix/REPORT.md:141  tinybendygrad/runtime/webgpu_call.js has 503 lines, claim says 502
+    .agents/slop/residual/REPORT.md:128  runtime/webgpu_call.js has 503 lines, claim says 502
+    .agents/slop/residual/REPORT.md:138  runtime/webgpu_call.js has 503 lines, claim says 502
+    .agents/slop/notes/bend2-constraints.md:11548  tinygrad/helpers.py has 647 lines, claim says 646
+
+--- anchors ---
+FAIL rows whose citing line carries an ISO date: 0/66
+    COUNT DRIFT FAIL .agents/slop/gatesweep/REPORT.md:12  census=1530 mine=1643  subject=gates/gates-pop.py
+    COUNT DRIFT FAIL .agents/slop/notes/compare/sz.md:26  census=119 mine=32  subject=runtime/sz.c
+    COUNT DRIFT FAIL .agents/slop/todo2/REPORT.md:38  census=18368 mine=18506  subject=.agents/TODO.md
+    COUNT DRIFT FAIL .agents/slop/todo2/discover.md:41  census=18368 mine=18506  subject=.agents/TODO.md
+
+--- validity of MY subject line count vs the census's own evidence ---
+agrees 87, DISAGREES 4 (of 91 comparable rows)
+
+wrote .agents/slop/citeslaneD/detail.rows (326 lane-D rows)

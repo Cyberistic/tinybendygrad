@@ -135,7 +135,18 @@ for x in DEC_X:
     ZERO_ROWS.discard(f"t_{x}")
 
 # ------------------------------------------------------------------ .bend ---
-HEADER = open(os.path.join(HERE, "hdr.bend")).read()
+# AN ABSENT HEADER IS REFUSED, NOT A TRACEBACK, AND THIS READ IS AT MODULE SCOPE (column 0), so
+# the old failure was `FileNotFoundError` DURING IMPORT -- before `main()` -- which reads as
+# neither FAIL nor DEAD but a crashed import. MEASURED 2026-10-17: `checks/hdr.bend` is absent
+# from disk AND from HEAD, and this file had ZERO existence guards in its 221 lines.
+_HDR = os.path.join(HERE, "hdr.bend")
+if not os.path.isfile(_HDR):
+    sys.stderr.write(f"REFUSED, NOT A VERDICT: header absent: {_HDR} -- every expected row in\n"
+                     f"  this generator comes from it, so there is nothing to generate without\n"
+                     f"  it. It was never committed (0 commits touch it), so there is nothing to\n"
+                     f"  restore.\n")
+    raise SystemExit(3)
+HEADER = open(_HDR).read()
 
 ACC = """
 def drow(nm: String, ah: U32, al: U32, bh: U32, bl: U32) -> IO(Unit):

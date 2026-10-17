@@ -1,0 +1,326 @@
+1	FAIL	-	UNLABELLED	splitlines=2849 claim=2712
+2	FAIL	-	REAL	splitlines=12 claim=10
+3	FAIL	-	UNLABELLED	splitlines=553 claim=519
+4	FAIL	-	UNLABELLED	splitlines=544 claim=543
+5	FAIL	-	UNLABELLED	splitlines=122 claim=1062
+6	FAIL	-	UNLABELLED	splitlines=559 claim=564
+7	FAIL	-	UNLABELLED	splitlines=842 claim=841
+8	FAIL	-	UNLABELLED	splitlines=2807 claim=1590
+9	FAIL	-	UNLABELLED	splitlines=2874 claim=1584
+10	FAIL	-	UNLABELLED	splitlines=2464 claim=1761
+11	FAIL	-	REAL	splitlines=2474 claim=2596
+12	FAIL	-	UNLABELLED	splitlines=1367 claim=2373
+13	FAIL	-	UNLABELLED	splitlines=1132 claim=971
+14	FAIL	-	FALSE_POSITIVE	splitlines=2849 claim=2712
+15	FAIL	-	UNLABELLED	splitlines=2464 claim=1761
+16	FAIL	-	UNLABELLED	splitlines=1920 claim=1928
+17	FAIL	-	REAL	splitlines=936 claim=765
+18	FAIL	-	UNLABELLED	splitlines=936 claim=766
+19	FAIL	-	REAL	splitlines=936 claim=765
+20	FAIL	-	REAL	splitlines=936 claim=765
+21	FAIL	-	REAL	splitlines=8919 claim=3800
+22	FAIL	-	UNLABELLED	splitlines=7019 claim=2208
+23	FAIL	-	UNLABELLED	splitlines=3334 claim=3186
+24	FAIL	-	REAL	splitlines=936 claim=765
+25	FAIL	-	UNLABELLED	splitlines=936 claim=765
+26	FAIL	-	FALSE_POSITIVE	splitlines=1325 claim=190
+27	FAIL	-	FALSE_POSITIVE	splitlines=354 claim=326
+28	FAIL	-	FALSE_POSITIVE	splitlines=457 claim=362
+29	FAIL	-	REAL	splitlines=1530 claim=1529
+30	FAIL	-	UNLABELLED	splitlines=358 claim=218
+31	FAIL	-	UNLABELLED	splitlines=328 claim=297
+32	FAIL	-	UNLABELLED	splitlines=119 claim=97
+33	FAIL	-	UNLABELLED	splitlines=211 claim=193
+34	FAIL	-	REAL	splitlines=328 claim=297
+35	FAIL	wc -l basis	FALSE_POSITIVE	splitlines=503 claim=502
+36	FAIL	-	UNLABELLED	splitlines=119 claim=97
+37	FAIL	-	UNLABELLED	splitlines=211 claim=193
+38	FAIL	-	UNLABELLED	splitlines=211 claim=193
+39	FAIL	wc -l basis	FALSE_POSITIVE	splitlines=503 claim=502
+40	FAIL	-	UNLABELLED	splitlines=1644 claim=1631
+41	FAIL	-	FALSE_POSITIVE	splitlines=1205 claim=574
+42	FAIL	-	REAL	splitlines=647 claim=646
+43	FAIL	-	FALSE_POSITIVE	splitlines=106 claim=97
+44	FAIL	-	FALSE_POSITIVE	splitlines=1367 claim=287
+45	FAIL	-	AMBIGUOUS	splitlines=119 claim=88
+46	FAIL	-	UNLABELLED	splitlines=494 claim=6
+47	FAIL	-	FALSE_POSITIVE	splitlines=688 claim=532
+48	FAIL	-	AMBIGUOUS	splitlines=264 claim=1
+49	FAIL	-	AMBIGUOUS	splitlines=88 claim=1
+50	FAIL	-	UNLABELLED	splitlines=82 claim=64
+51	FAIL	output	FALSE_POSITIVE	splitlines=566 claim=3
+52	FAIL	wc -l basis	FALSE_POSITIVE	splitlines=503 claim=502
+53	FAIL	wc -l basis	FALSE_POSITIVE	splitlines=503 claim=502
+54	FAIL	-	UNLABELLED	splitlines=553 claim=330
+55	FAIL	-	UNLABELLED	splitlines=328 claim=322
+56	FAIL	-	UNLABELLED	splitlines=936 claim=765
+57	FAIL	-	UNLABELLED	splitlines=688 claim=533
+58	FAIL	-	UNLABELLED	splitlines=688 claim=533
+59	FAIL	-	UNLABELLED	splitlines=18368 claim=12
+60	FAIL	-	UNLABELLED	splitlines=18368 claim=12
+61	FAIL	-	UNLABELLED	splitlines=603 claim=594
+62	FAIL	-	UNLABELLED	splitlines=1132 claim=638
+63	FAIL	-	UNLABELLED	splitlines=2849 claim=2605
+64	FAIL	-	UNLABELLED	splitlines=3253 claim=34
+65	FAIL	-	UNLABELLED	splitlines=936 claim=766
+66	FAIL	-	UNLABELLED	splitlines=34 claim=26
+67	PASS	-	UNLABELLED	splitlines=186 claim=186
+68	PASS	-	UNLABELLED	splitlines=49 claim=49
+69	PASS	-	UNLABELLED	splitlines=954 claim=954
+70	PASS	-	UNLABELLED	splitlines=611 claim=611
+71	PASS	-	UNLABELLED	splitlines=297 claim=297
+72	PASS	-	UNLABELLED	splitlines=1312 claim=1312
+73	PASS	-	UNLABELLED	splitlines=503 claim=503
+74	PASS	-	UNLABELLED	splitlines=141 claim=141
+75	PASS	-	UNLABELLED	splitlines=231 claim=231
+76	PASS	-	UNLABELLED	splitlines=611 claim=611
+77	PASS	-	UNLABELLED	splitlines=328 claim=328
+78	PASS	-	UNLABELLED	splitlines=24 claim=24
+79	PASS	-	UNLABELLED	splitlines=95 claim=95
+80	PASS	-	UNLABELLED	splitlines=435 claim=435
+81	PASS	-	UNLABELLED	splitlines=56 claim=56
+82	PASS	-	UNLABELLED	splitlines=93 claim=93
+83	PASS	-	UNLABELLED	splitlines=15 claim=15
+84	PASS	-	UNLABELLED	splitlines=869 claim=869
+85	PASS	-	UNLABELLED	splitlines=56 claim=56
+86	PASS	-	UNLABELLED	splitlines=328 claim=328
+87	PASS	-	UNLABELLED	splitlines=119 claim=119
+88	PASS	-	UNLABELLED	splitlines=328 claim=328
+89	PASS	-	UNLABELLED	splitlines=119 claim=119
+90	PASS	-	UNLABELLED	splitlines=611 claim=611
+91	PASS	-	UNLABELLED	splitlines=1325 claim=1325
+92	PASS	-	UNLABELLED	splitlines=340 claim=340
+93	PASS	-	UNLABELLED	splitlines=2 claim=2
+94	PASS	-	UNLABELLED	splitlines=91 claim=91
+95	PASS	-	UNLABELLED	splitlines=32 claim=32
+96	PASS	-	UNLABELLED	splitlines=6963 claim=6963
+97	PASS	-	UNLABELLED	splitlines=32 claim=32
+98	PASS	-	UNLABELLED	splitlines=6963 claim=6963
+99	PASS	-	UNLABELLED	splitlines=52 claim=52
+100	PASS	-	UNLABELLED	splitlines=288 claim=288
+101	PASS	-	UNLABELLED	splitlines=346 claim=346
+102	PASS	-	UNLABELLED	splitlines=341 claim=341
+103	PASS	-	UNLABELLED	splitlines=346 claim=346
+104	PASS	-	UNLABELLED	splitlines=135 claim=135
+105	PASS	-	UNLABELLED	splitlines=471 claim=471
+106	PASS	-	UNLABELLED	splitlines=600 claim=600
+107	PASS	-	AMBIGUOUS	splitlines=32 claim=32
+108	PASS	-	UNLABELLED	splitlines=46 claim=46
+109	PASS	-	UNLABELLED	splitlines=56 claim=56
+110	PASS	-	UNLABELLED	splitlines=277 claim=277
+111	PASS	-	UNLABELLED	splitlines=243 claim=243
+112	PASS	-	UNLABELLED	splitlines=73 claim=73
+113	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+114	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+115	REFUSED	-	UNLABELLED	unreadable or absent: .agents/slop/abi/abi.json
+116	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+117	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+118	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+119	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+120	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+121	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+122	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+123	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+124	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+125	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+126	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+127	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+128	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+129	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+130	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+131	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+132	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+133	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+134	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+135	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+136	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+137	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+138	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+139	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+140	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+141	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+142	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+143	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+144	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+145	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+146	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+147	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+148	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+149	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+150	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+151	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+152	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+153	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+154	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+155	REFUSED	-	UNLABELLED	ambiguous subject: 2 tracked paths end in /codegen/__init__.bend
+156	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+157	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+158	REFUSED	-	UNLABELLED	unreadable or absent: renderer/csprobe.bend
+159	REFUSED	-	UNLABELLED	unreadable or absent: runtime/_p6.bend
+160	REFUSED	-	UNLABELLED	unreadable or absent: uop/probe-mmcore.bend
+161	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+162	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+163	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+164	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+165	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+166	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+167	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+168	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+169	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+170	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+171	REFUSED	-	UNLABELLED	unreadable or absent: gen/probe.gen.c
+172	REFUSED	-	UNLABELLED	unreadable or absent: dtypeb/dtype.patched.bend
+173	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+174	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+175	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+176	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+177	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+178	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+179	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+180	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+181	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+182	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+183	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+184	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+185	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+186	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+187	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+188	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+189	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+190	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+191	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+192	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+193	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+194	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+195	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+196	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+197	REFUSED	-	UNLABELLED	unreadable or absent: pre/cstyle-gate.py
+198	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+199	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+200	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+201	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+202	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+203	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+204	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+205	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+206	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+207	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+208	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+209	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+210	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+211	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+212	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+213	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+214	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+215	REFUSED	-	UNLABELLED	the claim is MEASURED 2026-10-05 and .agents/slop/gatecensus/run.log last changed 2026-10-05: the anchor has expired, so the claim is STALE, not FALSE
+216	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+217	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+218	REFUSED	-	UNLABELLED	unreadable or absent: renderer/csprobe.bend
+219	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+220	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+221	REFUSED	-	UNLABELLED	unreadable or absent: ~/.config/jj/config.toml
+222	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+223	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+224	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+225	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+226	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+227	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+228	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+229	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+230	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+231	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+232	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+233	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+234	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+235	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+236	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+237	REFUSED	-	UNLABELLED	unreadable or absent: test/_probe/v5.bend
+238	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+239	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+240	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+241	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+242	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+243	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+244	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+245	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+246	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+247	REFUSED	-	UNLABELLED	unreadable or absent: tinybendygrad/renderer/csprobe.bend
+248	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+249	REFUSED	-	UNLABELLED	unreadable or absent: .agents/slop/helpers-tc-gate.py
+250	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+251	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+252	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+253	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+254	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+255	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+256	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+257	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+258	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+259	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+260	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+261	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+262	REFUSED	output	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+263	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+264	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+265	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+266	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+267	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+268	REFUSED	-	UNLABELLED	ambiguous subject: 2 tracked paths end in /support/am/ip.bend
+269	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+270	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+271	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+272	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+273	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+274	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+275	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+276	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+277	REFUSED	-	UNLABELLED	unreadable or absent: gen/probe.js
+278	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+279	REFUSED	-	UNLABELLED	unit 'file' has no unambiguous meaning for a file
+280	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+281	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+282	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+283	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+284	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+285	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+286	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+287	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+288	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+289	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+290	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+291	REFUSED	-	UNLABELLED	unreadable or absent: oracles/rf-arg-oracle.txt
+292	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+293	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+294	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+295	REFUSED	-	UNLABELLED	the number is a DELTA (added/deleted/replaced/signed), a claim about a DIFF. This census reads files, not diffs.
+296	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+297	REFUSED	-	UNLABELLED	the claim is MEASURED 2026-10-05 and tinybendygrad/renderer/amd/generate.bend last changed 2026-10-07: the anchor has expired, so the claim is STALE, not FALSE
+298	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+299	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+300	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+301	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+302	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+303	REFUSED	-	UNLABELLED	the claim is MEASURED 2026-10-14 and checks/residue.py last changed 2026-10-17: the anchor has expired, so the claim is STALE, not FALSE
+304	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+305	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+306	REFUSED	-	UNLABELLED	unit 'byte' has no unambiguous meaning for a file
+307	REFUSED	-	UNLABELLED	the claim is MEASURED 2026-10-06 and checks/gatesweep.py last changed 2026-10-15: the anchor has expired, so the claim is STALE, not FALSE
+308	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+309	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+310	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+311	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+312	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+313	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+314	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+315	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+316	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+317	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+318	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+319	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+320	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+321	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+322	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+323	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+324	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+325	REFUSED	-	UNLABELLED	unit 'row' has no unambiguous meaning for a file
+326	REFUSED	output	UNLABELLED	unit 'row' has no unambiguous meaning for a file

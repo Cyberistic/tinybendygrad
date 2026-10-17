@@ -18,6 +18,14 @@ cd "$_d/.." || exit 1
 [ -f pyproject.toml ] && [ -d tinybendygrad ] || { echo "$0: not at the repo root (pwd $PWD)" >&2; exit 3; }
 ROOT="$1"
 H=.agents/slop/mutledger/BLOBHIST.tsv
+# A MISSING LEDGER MUST NOT BE A CLEAN CLASSIFICATION. `grep -q` against a file that is not
+# there exits 2, so the `else` below fired for EVERY differing file and labelled them all
+# PLANT -- and the script still exited 0. MEASURED 2026-10-17: this ledger is absent from disk
+# AND from HEAD, so this gate was GREEN AND WRONG, which is worse than red: PLANT and STALE
+# are opposites and a reader cannot tell which one a missing answer produced.
+# The `|| exit 3` idiom is this file's own, from the repo-root check at :18.
+[ -f "$H" ] || { echo "$0: ledger absent: $H -- STALE and PLANT are opposites and cannot be told
+  apart without it, so every differing file would be reported PLANT. Refusing." >&2; exit 3; }
 for f in $(cd "$ROOT" && find . -type f | sed 's|^\./||' | sort); do
   live="tinybendygrad/$f"
   if [ ! -e "$live" ]; then printf 'NOREF\t%s\n' "$f"; continue; fi

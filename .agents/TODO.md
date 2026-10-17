@@ -812,6 +812,33 @@ pinindep-control [##########] 3/3    FIXED 2026-10-15, see below. `.agents/slop/
                                        (`d10-transcript ABSENT`) -- the sanctioned state.**
 ```
 
+absent-inputs [#########] 3/3  THE CLASS SIZED: **2 DEFECTS IN 89 INSTRUMENTS**, and one is WORSE THAN A
+                                       FAILURE. A dispatched unit walked `checks/`+`gates/` from HEAD:
+                                       **279** instruments in scope, **89** name an external input,
+                                       **910** candidate literals, **162** absent, but **133 of those
+                                       162 are PLANTS the instrument creates itself** -- counting them
+                                       would have inflated the class **66x**. Disposed of mechanically,
+                                       and `decided_by` is a column so no count silently mixes tiers.
+                                       **THE TWO REAL ONES.** (1) `checks/gen_gate.py:138` did
+                                       `open(...).read()` on `checks/hdr.bend` at **COLUMN 0, so it
+                                       fired DURING IMPORT**, before `main()` -- absent from disk AND
+                                       HEAD, 0 commits ever, and **ZERO existence guards in 221 lines**.
+                                       That reads as neither FAIL nor DEAD but a crashed import.
+                                       (2) `checks/classify.sh:26` greps `.agents/slop/mutledger/
+                                       BLOBHIST.tsv`; `grep` on a missing file exits 2, so the `else`
+                                       labelled **EVERY** differing file `PLANT` instead of `STALE`
+                                       and the script **EXITED 0** -- **GREEN AND WRONG**, which is
+                                       worse than red because PLANT and STALE are opposites and a
+                                       reader cannot tell which a missing answer produced. **BOTH
+                                       FIXED WITH THE FILE'S OWN IDIOM** (`classify.sh:18` already
+                                       used `|| exit 3`): each now refuses with exit 3 naming the
+                                       absent file, verified rc=3, and the guard sits UPSTREAM of the
+                                       use so the fail-open arm is unreachable. **THE UNIT ALSO RAN
+                                       ITS CONTROL NINE TIMES AGAINST ITSELF AND IT FAILED NINE
+                                       TIMES** -- docstring prose, `../` prefixes and shell variables
+                                       were inventing absences -- and recorded that, because the
+                                       numbers are only defensible with that visible.
+
 vz-absent-oracle [##########] 4/4  FOUND BY THE `actionable` UNIT AS A BYSTANDER, and it is a
                                        THIRD instance of "an absent declared input reads as a lane
                                        failure". `checks/vz_gate.py:60` ran
@@ -18133,6 +18160,84 @@ AS LIVE EVIDENCE OF THE ANTI-STALENESS CHECK AGAINST `5d3f31197e88`.**
       **13 NON-CUSTODIAN** FILES' POPULATION SOURCE -- **AND AN ADMISSION MECHANISM WAS DECLINED AND STAYS
       DECLINED**; GATE 1 IS **UNGREENABLE FOR `cstyle-live.rows` BY CONSTRUCTION**. **THE **68** BASELINE OFFENDERS
       REMAIN UNAUDITED, AND THE UNIT DID NOT AUDIT THEM.**
+
+## AUTOGEN -- **WHAT THE ORACLE SHOULD CATCH WAS WRITTEN DOWN **BY THE PORT**, BEFORE THE AUDIT (2026-10-17)
+
+`40dccd1ba`. ***NOT COMMITTED -- HELD WITH THE OTHER UNCOMMITTED RECORDS UNTIL THE RUNNING UNITS ARE IN. SEE
+`INDEXRACE`.***
+
+- [x] **THE ANSWER CAME FROM THE THIRD SOURCE, AND IT IS A **THIRD THING**:
+      `tinybendygrad/runtime/support/autogen.bend:1175-1183` -- **THE PORT's OWN `main()`** -- PRINTS THE
+      ORACLE's **ROW NAMES, SPELLED THE SAME**: `tmap N = V`, `uints`, `ints`, `fps`, `specs`, `arc`,
+      `rule I : pat => rep`. **AND `:544-576` IS THE PORT's OWN MUTATION TABLE** NAMING WHICH ROWS MUST MOVE PER
+      MUTATION (`tmap 2`, `tmap 13`, `tmap 10`, `tmap 6`, `tmap.miss16`, `arc`, `rule 9`, `rule 4`, `rule 11`).***
+      ***SO WHAT THE ORACLE SHOULD CATCH WAS WRITTEN DOWN BY THE PORT BEFORE THIS AUDIT: THE **7 TABLES** IT
+      ALREADY EMITS (**36 ROWS**) + THE `### GEN output` BLOCK (**63** HEADER-DRIVEN ROWS).*** **AND THE PORT
+      PRINTS **0 ROWS**, SO THAT COMPARISON IS **UNREACHABLE TODAY** -- AND THAT, NOT THE FLOOR, IS THE REAL GAP.**
+- [x] **AND THE OTHER TWO SOURCES ANSWERED **"THE PORT's CLAIM IS TRUE"**, WHICH REFUTES THE AUDIT's PREMISE:**
+      **14 OF 15 LINE CITATIONS RESOLVE EXACTLY**, AND **36 TABLE ROWS COMPARED AGAINST THE PORT's OWN
+      DECLARATIONS, RESOLVED THROUGH ITS OWN ABI LADDER (**73 CONSTANTS**), GAVE **8 TABLES, 79 VALUES, 0
+      MISMATCHES**. ***SO **THE 50 INVARIANT ROWS ARE **NOT** A DEFECT** -- THEY ARE A TRUE CLAIM, AND THE FIRST
+      REPORT's "NEVER TOUCHES THE HEADER" WAS NOT A FINDING.****
+- [x] **AND THE 6-ROW FLOOR IS **A LIMIT OF THE FIXTURE**, NOT OF THE INSTRUMENT AND **NOT** A BLINDNESS OF THE
+      ORACLE:**
+
+          N added structs:   1 2     3     4     5     6
+          rows_moved:        6    10    14    18    22    26
+          physical delta:    6    10    14    18    22    26   <- IDENTICAL: THE ROWMAP HIDES NOTHING
+          multiset delta:    6    12    18    24    30    36   <- 6N EXACTLY
+
+      ***`rows_moved` IS LINEAR IN WHAT THE HEADER ADDED; RESOLUTION IS **ONE EMITTED LINE**. AND **THE ORACLE
+      *DID* PRODUCE ROWS FOR THE THING -- ALL **63**.***
+- [ ] **AND WHAT WAS ACTUALLY WRONG: `cxkind_count` WAS **DEAD**.** IT READ WITH
+      `re.finditer(r"^CXType_(\w+) = (\d+)$", <libclang.py>, re.M)`; `libclang.py` SPELLS `(CXType_Void:=2)`, **SO
+      THE PATTERN MATCHED **0** OF THE **256** `CXType_` OCCURRENCES AND PRINTED `0`** -- **THE LENGTH OF AN EMPTY
+      LIST, REPORTED AS A CENSUS OF LIBCLANG, AND LOGGED BY THE CENSUS AS ONE OF THE **50 ROWS THAT "AGREE"**.****
+      ***PROOF IT WAS DEAD AND NOT MERELY UNCHANGED: **WITH ONE KIND ADDED TO THE POPULATION, THE OLD EXPRESSION
+      STILL ANSWERS **0**; THE NEW ONE ANSWERS **123**.** NOW `len(clang.enum_CXTypeKind)` = **122** OVER **128**
+      `CXType_*` NAMES -- **READ BY ATTRIBUTE FROM THE GENERATOR's OWN DECLARATION. DISCOVERED, NOT INVENTED.****
+- [x] **AND THE DIFF IS **ONE LINE**: `git show HEAD~1:gates/autogen-oracle.py` vs THE REPAIRED FILE -- rc=0 BOTH,
+      **117 ROWS BOTH**, `diff` REPORTS **LINE 42 AND NOTHING ELSE**, **116/117 ROWS BYTE-IDENTICAL**.
+      `autogen.bend` IS **COMMENT-ONLY**, PROVED BY A **SHARED COMMENT-STRIPPED SHA `6e780f4a…`**, AND IT REPLACED
+      **A RETRACTED MEASUREMENT** AND **A FALSE CLAIM** (*"THE TYPEHINT BLOCK … DOES CALL LIBCLANG AND DOES
+      MOVE"*) **WITH A TRUE ONE.**
+- [x] **AND THE PORT IS **A DEAD LANE**, AND THE UNIT **STOPPED** RATHER THAN HALF-FIXING IT: rc=1, 0 ROWS,
+      `:745` `expected : 1 patterns (one per scrutinee)`. IT FIXED THAT **AND `:753`**, THEN HIT `:740`
+      **`c2 consumed more than once`** -- **`Bool.pick` EVALUATES BOTH ARMS**, WHICH IS **THE CONSTRAINT THE FILE
+      ITSELF STATES AT `:99-102` BITING ITS OWN WALL2 WORKAROUND. ***THAT IS A REDESIGN, NOT A TYPO.** REVERTED
+      BYTE-EXACT (SHA `b218a5e3…`).**
+- [x] **AND IT **DID NOT BUILD** THE TABLE-DIFF GATE, FOR THE RIGHT REASON: **"A GATE WRITTEN AGAINST MY OWN READING
+      OF THE PORT IS THE `tn_bitwise_not` CLASS THIS TREE ALREADY PAID SEVEN ROWS FOR. **THE SPEC IS NOW WRITTEN
+      DOWN; THE GATE IS MECHANICAL.**"**** **AND THE 6 `UNSOURCED` COMPONENTS AFTER THE CHANGE ARE **4x `int(k)`**,
+      `ag.arc_families`, **AND THE ROW ***LABEL*** `cxkind_count` -- **NOT ONE IS AN INVENTED EXPECTED VALUE.**
+- [ ] **AND THE `abi` ROW's COUNTER-ORACLE **DOES NOT EXIST** (`ag-abi-oracle.py`, NEITHER PATH), **SO **73** ABI
+      CONSTANTS HAVE NO ORACLE ROW. THE PORT's HEADER SAYS **78**; THE UNIT COUNTED **73** -- UNRESOLVED, NAMED.**
+
+## **INDEXRACE -- THE ARMED-INDEX HAZARD FIRED **ON THE CALLER's OWN COMMIT**, AND `--only` DID **NOT** BOUND IT** (2026-10-17)
+
+**NOT COMMITTED BY DESIGN -- IT IS IN THE WORKING TREE ONLY. SEE THE FINAL NOTE.**
+
+- [x] **`591f6b499` (`TWORED`) NAMED **ONE** PATH IN ITS `--only` AND CARRIED **435 CHANGED FILES** AND
+      `delete mode 100644 gates/README.md`.** SO **`--only` IS NOT A BOUNDARY IN THIS TREE**, AND EVERY BRIEF THIS
+      SESSION THAT DESCRIBED IT AS ONE WAS **DESCRIBING AN INTENT RATHER THAN A MEASUREMENT**.
+- [x] **MEASURED BEFORE REPAIRING: `HEAD~1` **7 435**, `HEAD` **7 505**, **182 LOST**, **252 ADDED**, **AND ALL
+      **182** EXIST ON DISK** -- ***182 PHANTOM DELETIONS, ZERO WORK LOST***.
+- [x] **REPAIRED BY `02329daf0`: THE **178** THAT ARE **BYTE-IDENTICAL TO `HEAD~1`** WERE RESTORED VERBATIM, AND
+      **`gates/README.md` IS BACK IN `HEAD`** (`create mode 100644 gates/README.md`). THE **4** THAT DIFFER ARE **LIVE
+      WORK AND WERE DELIBERATELY LEFT OUT**: `gates/assertlit.rows`, `gates/falseclaim.rows`,
+      `gates/gates-pop.py`, `gates/oracleblind.rows` -- **`gates-pop.py` BEING EDITED AT THE MOMENT OF THE
+      MEASUREMENT.** POST-REPAIR: HEAD **7 431**, **ONLY THOSE **4** ABSENT, BY DESIGN.
+- [ ] **AND **THE REPAIR COMMIT ALSO SWEPT 430 FILES** -- INCLUDING `uv.lock` (**4 234 LINES**) AND
+      `tools/get-bend.sh`, **ANOTHER UNIT's IN-FLIGHT WORK.** ***SO A SECOND `--only` WITH **178 EXPLICIT PATHS**
+      ALSO FAILED TO BOUND THE COMMIT.**** **WHICH MEANS THE MECHANISM IS NOT "--only IS SLOPPY" -- IT IS **THAT
+      `.git/agent-index` IS NO LONGER A RECEIPT.** **IT HELD **38** ENTRIES WHEN MEASURED EARLIER TODAY AND
+      HOLDS **7 435** NOW: **EVERY COMMIT THROUGH IT ADDS ITS PATHS AND NOTHING EVER PRUNES IT.**** **SO IT HAS
+      BECOME A REAL INDEX, AND `AGENTINDEX`'s "IT IS NOT AN INDEX AT ALL -- IT IS A ***RECEIPT***" IS **NOW
+      FALSE**, AND WAS TRUE ONLY WHILE IT WAS UNUSED.****
+- [x] **AND THE LESSON IS **NOT** "BE MORE CAREFUL": IT IS THAT **A COMMIT's `--stat` IS THE CHECK.** `435 FILES
+      CHANGED` ON A ONE-PATH `--only` IS A **SIGNAL**, AND THE SIGNAL ARRIVED **AFTER** THE COMMIT, IN THE SAME
+      OUTPUT EVERY UNIT THIS SESSION HAS BEEN ADVISED TO READ `rc` AND TOKEN FOR.**** ***`git show --stat` IS THE
+      MISSING CHECK, AND NO BRIEF IN THIS SESSION ASKED FOR IT.***
 
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
