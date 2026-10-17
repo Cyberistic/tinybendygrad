@@ -19036,6 +19036,52 @@ AT **9** -- HEAD's OWN **9**.**
       FILE's COMMENTS***: A COMPUTED `match` SCRUTINEE NEEDS **ITS OWN DEF**; A SELF-CALL MUST **SHRINK A *LIST
       TAIL*** (`U32.sub` AND `Nat.sub` ON A SCALAR ARE ***BOTH REFUSED***); A CALLEE MUST BE FILLED **BEFORE** USE.
 
+## MXFLIP -- **THE CALLER's PARITY THEORY WAS REFUTED **WITH A CONTROL ROW**, AND THE FIXTURE FIX ***DID NOT CHANGE THE VERDICT*** (2026-10-17)
+
+`55c51074e` -- **EXACTLY **2** PATHS, NO SWEEP.**
+
+- [x] **AND **THE CALLER's REASON FOR `flip_noop` WAS WRONG, AND IT REFUTED IT WITH ***CONTROL ROWS, NOT AN
+      ARGUMENT***: THE CALLER SAID *"[0,0,0,0] IS ***FOUR*** FLIPS OF ***AXIS 0*** -- AN ***EVEN*** COUNT -- SO IT
+      ***COINCIDENTALLY*** LANDS ON THE BASE."*** **MEASURED WITH `gates/mxgraph-fixture-rows.bend`:
+      `flip([])`, `flip([0])`, `flip([0,0])` AND `flip([0,0,0,0])` **ALL RETURN ARENA INDEX **6**,
+      **WHICH *IS*** `mxw_base()`** -- **AXIS **0** OF `(1,4,8,8)` HAS ***SIZE 1***, SO
+      `movement.py:255`'s `if resolve((n:=ret.shape[axis]) <= 1, False): continue` **FIRES ON ALL FOUR
+      ITERATIONS AND MINTS NOTHING**. PARITY **REFUTED BY THE CONTROL ROWS**: `flip([1])`=**33**,
+      `flip([1,1])`=**47**, `flip([1,1,1,1])`=**75**. ***SO **THREE DISTINCT CAUSES ALL PRINT THE BASE**
+      (LOOP NEVER ENTERED / ENTERED ONCE AND CONTINUED / ENTERED **FOUR** TIMES AND CONTINUED **FOUR** TIMES),
+      **AND ONLY THE FIRST IS `flip(())`.** IT *WAS* A ***WRONG-REASON*** PASS -- **DETERMINISTIC RATHER THAN
+      COINCIDENTAL.*** A COINCIDENTAL PASS **SURVIVES** THE FIX; A DETERMINISTIC ONE **CANNOT**, **AND SAYING WHICH
+      IS WHAT DECIDES WHETHER A FIXTURE NEEDS CHANGING AT ALL.**
+- [x] **AND THE THREE FIXTURES ARE FIXED, WITH ROOTS AND SRC-OPS NOW MATCHING CPYTHON ON ALL THREE**:
+      `[0]`/`[0,1]`/`[]`, GIVING `flip_0` **69 -> 6**, `flip_01` **71 -> 33**, `flip_noop` **6 -> 6** (CPython **7**,
+      **34**, **7**). **AND ***THE VERDICT IS ***BYTE-IDENTICAL*** BEFORE AND AFTER -- `DISAGREE (bd): n=16 of 17`
+      BOTH SIDES -- **ONLY THE ROW CONTENTS MOVED**.** ***WHICH IS CORRECT AND IS THE POINT: THE FIXTURE FIX ***WAS
+      NOT*** THE FIX, AND A VERDICT THAT MOVED WOULD HAVE SOLD IT AS ONE.***
+- [ ] **AND IT **DECLINED** TO ADD A `cut`, FOR EXACTLY THE REASON THE CALLER ASKED FOR: A CUT WOULD TAKE THE GATE
+      **16-OF-17 RED -> 1-OF-17 RED** **AND ***LOOK LIKE THE FIX LANDED***. ***IT ISN'T: THE RESIDUAL IS A REAL
+      PORT DEFECT OUTSIDE ITS GRANT, AND A CUT WOULD TURN `flip_01` ***GREEN ON A WRONG-SHAPED GRAPH*** -- THE
+      ***WRONG-REASON PASS*** THE CALLER TOLD IT NOT TO CREATE.**
+- [ ] **AND THE **16** CELLS **DO** SHARE **ONE** DEFECT, MEASURED **CUT-RELATIVE**: `pad_1_1` **6/6**,
+      `flip_01` **28/28**, `flip_0` **1/1**, `flip_noop` **1/1**, **AND `reshape_256` IS THE LONE HOLDOUT AT **2**
+      (CPython) / **3** (PORT)**. CAUSE: **UPSTREAM's BUFFER CARRIES ITS SIZE AS A ***CONST SRC*** (`72f98ffe0`),
+      THE PORT's IN THE ***ARG*** (`size: Maybe<&2, U32>`, `ops.bend:877-895`; `mxw_buf`,
+      `movement.bend:1236`, BUILDS `Nil{}` SRCS).** OWNER: **`uop/ops.bend` + `mixin/movement.bend` -- NOT ITS
+      GRANT** (ALREADY NAMED AT `groupflip-oracle.py:63-70` AND `groupflip.bend:170-180`, **WHICH PAY WITH A CUT AND
+      ARE GREEN**).
+- [ ] **AND A ***SECOND*** REAL PORT DEFECT, ALSO NOT ITS OWN: `mxw_flip` ***ONLY WORKS FOR AXIS 0***.
+      MEASURED: `mxf_compose` TAKES `tail`/`crop` FROM `mxw_dims_of(ret)[1:]`, WHILE `movement.py:257-259` TAKES
+      THEM FROM `transpose(0,axis).shape[1:]` = `sh[1:]` **WITH POSITION `axis` HOLDING `sh[0]`**. ***EQUAL IFF
+      `shape[0]==shape[axis]`*** -- **SO FLIP IS RIGHT FOR AXIS **0** AND WRONG FOR **EVERY OTHER**
+      (`flip([2])`/`flip([3])` -> `(8,4,8,8)`).** **AND `groupflip.bend`'s `(4,4,4,4)` BASE IS ***BLIND FOR THE SAME
+      REASON***: ON `(2,4,4,8)` THE PORT ANSWERS `(4,4,4,8)`. ***SO THE GREEN **11/11** CONTROL IS GREEN ON A BASE
+      THAT CANNOT DISTINGUISH THE AXIS.***
+- [ ] **AND EVERY MEASUREMENT ABOVE WAS TAKEN **BEFORE** THE SUBSTRATE WENT COLD AT **13:40:42Z** -- VERIFIED BY
+      THE CALLER AT **13:41**: THE VARIANTS ARE **`GROUP=0`, `FLIP=0`** IN THE ENUM, ***AND ***21** PORT FILES STILL
+      NAME THEM (`OpsGROUP{}` **11**, `OpsFLIP{}` **10**), AND **16** OF **21** ***CANNOT COMPILE***** --
+      `bend --check-only` ANSWERS `SOME PROOFS FAIL / a declared constructor (unknown: ...
+      ops.OpsGROUP)`, **AND `renderer/ptx.bend` FAILS ON `O.OpsSINK{}`**, **WHICH IS THE ***TAG-RESOLUTION***
+      FAILURE OF A HALF-APPLIED **RENUMBERING**, NOT A MISSING CONSTRUCTOR.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
