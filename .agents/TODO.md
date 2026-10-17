@@ -19082,6 +19082,62 @@ AT **9** -- HEAD's OWN **9**.**
       ops.OpsGROUP)`, **AND `renderer/ptx.bend` FAILS ON `O.OpsSINK{}`**, **WHICH IS THE ***TAG-RESOLUTION***
       FAILURE OF A HALF-APPLIED **RENUMBERING**, NOT A MISSING CONSTRUCTOR.**
 
+## CORPUSLANE -- **THE ORACLE IS **ALIVE AGAIN**, AND **30 OF 34 GRAPHS WERE RAISING** (2026-10-17)
+
+**THE CPYTHON LANE IS REVIVED. **ALL **9** BROKEN ITEMS FIXED AND MEASURED:** `34/34 graphs emit`,
+`9/9 plants emit`, `selfcheck OK`, `control OK`. ***THE LANE WAS **DEAD, NOT *UNREPAIRABLE***.**
+
+- [x] **AND `size` ***LEFT THE RECORD ENTIRELY*** (VERIFIED BY THE CALLER FROM `upstream:tinygrad/uop/ops.py`):
+      **`ParamArg` IS NOW `slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
+      buffer, bind_on_realize, val, spec`. **NO `size`.** THE ELEMENT COUNT IS NOW **`src[0]`**
+      (`ops.py:355-358`: `assert len(self.src[0].as_shape) <= 1; ...; return self.src[0].as_shape`; AND
+      `shape_to_shape_arg` (`:103-107`) TURNS THE EMPTY TUPLE INTO `UOp(Ops.STACK)` WITH NO SRC.
+- [ ] **AND THE MOST DANGEROUS OF THE **9** IS **NOT** A RAISE -- IT IS A ***SILENT*** SHIFT:
+      **A POSITIONAL `ParamArg(0,weakint,None,(1,100),1,"n",ALU)` NOW READS BACK
+      `multiple_of=(1,100), name=1, addrspace=AddrSpace('n')` -- ***EVERY POSITIONAL AFTER `dtype` SHIFTS BY
+      ONE, AND WHERE THE NODE HAS A `src`, **NOTHING RAISES AND THE GRAPH IS ***WRONG***.**** **AFFECTS **6**
+      SITES / **4** GRAPHS. ***A SILENT SHIFT IS WORSE THAN A RAISE, BECAUSE A RAISE IS A VERDICT AND A SILENT
+      SHIFT IS AN ***AGREEMENT***.***
+- [x] **AND THE REMAINING **8**, WITH GRAPH COUNTS: **#1** `ParamArg.size` -> `src[0]` (**26** GRAPHS) ·
+      **#3** **`UOp.toposort()` FLIPPED ITS DEFAULT `enter_calls=True`->`False`, *WITH A **BYTE-IDENTICAL
+      BODY*** (**1**: `loop`, A **3**-NODE ARENA) · **#4** `hcq_fence` LOST `tv` (**1**) · **#5** `Ops.GROUP` GONE,
+      `UOp.group` BUILDS `AFTER(src=(STACK,)+srcs)` (**12**) · **#6** `Ops.FLIP` GONE, LOWERS TO
+      `PAD+SHRINK+PERMUTE` (**1**: `flip`, **6 -> 29** NODES) · **#7** `len(list(Ops))` **77 -> 75** (THE
+      DENOMINATOR IN EVERY REPORT) · **#8** `dsexpand`/`disarm` **IN NO DECLARATION ANYWHERE** (**2** UNWIRED
+      LANES) · **#9** **`COMM` FILLED ONLY IN `_main()`**, SO ANY IMPORTER HELD `frozenset()` (**1**).
+      ***COUNT THAT NO LONGER EXISTS: **2** ENUM MEMBERS, **1** DATACLASS FIELD, **1** FUNCTION PARAMETER,
+      **1** FLIPPED DEFAULT.*** REPO-WIDE CORPUS DELTA: **PY ROWS 386 -> 482.** ***30 OF 34 GRAPHS RAISED.***
+- [x] **AND THE PROOF THE REPAIR IS FAITHFUL **RATHER THAN A GUESS** IS THE RIGHT ONE FOR A HARNESS FIX**:
+      **IT RAN THE ***PRE-RE-VENDOR*** DRIVER (`git show a741a469f^:.agents/slop/graphcmp.py`) AGAINST THE
+      ***PRE-RE-VENDOR*** TREE AND IT ***REPRODUCES THE **01:50** ARTEFACT ROW COUNTS EXACTLY**
+      (`matmul=18 lin=46 loop=25 flip=6 gate=14 sym=12`). AGAINST THAT CONTROL THE REPAIRED DRIVER's `P(...)`
+      FIELD IS ***BYTE-IDENTICAL*** (`P(i0,Df32,i12,N,N,N,SGLOBAL,sCPU,b0,N,N,b1,N)` BOTH SIDES) **AND THE
+      ***SIZE MULTISET OVER **33** GRAPHS IS IDENTICAL** (`i12`x36, `i15`x3, `i16`x3, `i8`, `i20`, `i64`,
+      `i32`, `N`x2).** ***RUN THE OLD HARNESS AGAINST THE OLD TREE AND SHOW THE NEW ONE MATCHES IT.***
+- [x] **AND **TWO OF ITS OWN INSTRUMENTS WERE WRONG FIRST -- BOTH THE CLASS `AGENTS.md` NAMES**: A PLAIN
+      `Ops.` REGEX **MATCHES THE TAIL OF `OptOps.TC`** (**3** PHANTOM MEMBERS); **ADDING A LOOKBEHIND IS ***STILL
+      NOT ENOUGH*** BECAUSE **A REGEX OVER SOURCE TEXT READS ***COMMENTS***, AND `graphcmp.py:1373` DOCUMENTS
+      `Ops.FLIP` IN PROSE.** ***THE POPULATION IS THE PARSED ***AST***.*** AND ITS POSITIVE CONTROL **INITIALLY
+      LEFT ITS OWN PROBE IN THE MISS TALLY, WHICH WOULD HAVE MADE EVERY RUN RED.**
+- [x] **AND `II LEFTOVER` WAS ***MEASURED, NOT GUESSED***: `attempts('runs/graphcmp/D')` = **1 CLUSTER** TODAY
+      (**242** FILES, 01:41->01:50 = **540 s**, INSIDE THE **600 s** SLACK); AND `differ.py` CLEARS **ONLY THREE
+      *NAMED* STALE STABILITY ARTEFACTS** (`:686-689`), **NOT THE DIRECTORY**. **A FULL RUN WOULD REWRITE A
+      SUBSET AT ~NOW AND LEAVE THE REST AT 01:45 -- A GAP **>> 600 s** -- SO `n` WOULD GO **1 -> 2** AND
+      `II LEFTOVER` ***WOULD FIRE***. ***THE CALLER's CAUTION WAS RIGHT, AND THE QUESTION IS MOOT WHILE THE BEND
+      LANE IS DEAD.***
+- [x] **AND ITS PLANT **TREATS A RAISER AS `FAIL`, NEVER A PASS**, WITH **7/7** EXPECTATIONS HELD -- AND ***THE
+      COMMENT-ONLY CONTROL IS THE LOAD-BEARING ONE***: **A CHANGE-DETECTOR WOULD PASS THE FIRST **5** WHILE
+      MEASURING NOTHING.** AND **A FAILED CONTROL IS `REFUSED`, NOT `PASS`** -- ***AN INSTRUMENT THAT CANNOT
+      DETECT ANYTHING REPORTS A CLEAN ZERO*** (THE `MAYBE-NONE` LESSON).
+- [ ] **AND THE **BEND** LANE IS DEAD AND **NOT ITS GRANT**: `graphcmp.bend` RETURNED **19** ROWS / **575 MB**
+      AND NOW **0**, ON AN ***UNMODIFIED*** DRIVER, BECAUSE A CONCURRENT UNIT's `ops.bend` REMOVED
+      `OpsGROUP`/`OpsFLIP`.** **HANDOFF, MEASURED: **13** CONSTRUCTOR SITES (`O.OpsGROUP` x11 AND `O.OpsFLIP` x1,
+      WITH **EXACT LINES**) AND **30 MORE** DANGLING SITES IN `ptx.bend`, `prepare.bend`, `multi.bend`,
+      `indexing.bend`.** ***IT JOINED NO IN-FLIGHT REFACTOR.***
+- [ ] **AND A CORPUS-VISIBLE CONSEQUENCE THAT BELONGS TO THE `ops.bend` UNIT: THE CORPUS WILL NOW REPORT
+      `matmul` ***DISAGREE*** ON `src` (**20** vs **18** ROWS) BECAUSE ***UPSTREAM MATERIALISES THE SIZE AS A
+      REAL `CONST` NODE NOW***, AND THE PORT DOES NOT.**
+
 ## ANYSLIKE -- `M20`'s "REDUNDANT PREDICATE" IS **NOT** REDUNDANT, AND I ALMOST SAID OTHERWISE (2026-10-16)
 
 `37491d5eb` MEASURED THAT `sym_12.pat`'s `any_sink_like` **CANNOT BE MOVED BY ANY FIXTURE** AND
