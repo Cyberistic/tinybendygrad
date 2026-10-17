@@ -1,0 +1,47 @@
+instrument	reader	data_model	duplicate_representable_yes_no	evidence
+checks/index-arm-gate.py:109-120 head_tree	git ls-tree -r <rev>	DICT-OVERWRITE ent[path]=oid	NO	MEASURED on 591f6b499: 7505 emitted -> 7253, drop 252. isolate.py
+checks/index-arm-gate.py:95-106 index_entries	git ls-files --stage (INDEX)	DICT-OVERWRITE ent[path]=(sha,stage)	NO	same shape on the INDEX side; ls-files --stage emits one line per STAGE during a conflict and the dict keeps the last. UNMEASURED: index is 8194 entries all stage 0, 0 multi-stage today
+checks/index-arm-gate.py:149-163 not_intent_to_add	git ls-files --debug (INDEX)	DICT-OVERWRITE flags[path]=int	NO	one flags line per path-stage; last write wins
+gates/docnum-census.py:169-179 pin_trees	git ls-tree -r <PIN>	DICT-OVERWRITE tree[path]=oid	NO	same shape as head_tree, and the rev is an ARBITRARY PIN so this reader can be pointed AT 591f6b499
+gates/gendirs.py:471-500 tracked_dirs	git ls-tree -r HEAD	DICT-ACCUMULATE d[dirname]=count	NO	MEASURED same-commit: gates emits 378 where distinct is 126, delta +252. Loaded BY PATH by gates-pop.py and gates/retention-check.py
+gates/msgdiff-gate.py:279-309 commit_view	ls-tree -r --name-only <sha> + diff-tree -M	SET present/deleted/removed	NO	MEASURED 7505 -> 7253 on 591f6b499
+gates/indexread-gate.py:145-150 committed_paths	git ls-tree -r --name-only HEAD	SET	NO	MEASURED 7505 -> 7253. This is the gate that exists to police INDEX reads; it reads the tree into a set
+checks/unrunnable-recipes.py:210-218 head_paths	git ls-tree -r --name-only HEAD	SET-COMPREHENSION	NO	MEASURED 7505 -> 7253
+gates/oracle-census-gate.py:165-177 head_paths	git ls-tree -r HEAD --name-only	SET-COMPREHENSION	NO	MEASURED 7505 -> 7253
+checks/sweep.py:842-859 tracked_files	git ls-files -z (INDEX)	SET-COMPREHENSION	NO	deduplicated at insert
+checks/residue.py:211-219 git_tracked	git ls-files -z (INDEX)	SET	NO	deduplicated at insert
+checks/runs-artifacts.py:443-462 _tracked_tops	git ls-tree -r --name-only HEAD	SET of directory prefixes	NO	dedup at insert; also collapses on distinct full paths sharing a prefix
+gates/pins-shape-gate.py:288-315 tracked	git ls-tree -r --name-only HEAD -- gates/	SET of BASENAMES	NO	dedup at insert AND a second dedup on basename, so two distinct paths under gates/ already collapse to one here
+checks/unowned.py:198	git ls-tree -r --name-only HEAD	SET	NO	dedup at insert
+gates/citations-census-gate.py:399-410 regressor_paths	git diff --name-only R^ R	SET	NO	dedup at insert; the reader is a DIFF so a duplicate is not reachable from a malformed TREE through this lane
+checks/cites-census.py:182-205 suffix_index	git ls-tree -r HEAD --name-only	DICT-OF-LIST idx.setdefault(k,[]).append(path)	YES	setdefault+append keeps every copy; the only path-keyed reader in the population that can hold two
+checks/cites-census.py:59-65 committed	git ls-tree -r HEAD --name-only	LIST (sorted list comprehension)	YES	MEASURED 7505 on the malformed rev; duplicates survive to be counted
+checks/cites-census.py:198 _TRACKED	r.stdout.splitlines()	LIST	YES	MEASURED 7505
+checks/pathresolve.py:320-327 tree_paths	git ls-tree -r HEAD --name-only	LIST (splitlines)	YES	MEASURED 7505
+checks/repro-paths.py:71-81 committed_reports	git ls-tree -r --name-only HEAD	LIST (sorted comprehension)	YES	MEASURED 7505
+checks/slop-declare.py:136-151 tracked	git ls-tree -r -z --name-only HEAD	LIST (NUL split)	YES	MEASURED 7505
+gates/gates-pop.py:793-816 _tree_paths	git ls-tree -r --name-only HEAD	LIST (sorted)	YES	MEASURED 7505; this is the shared population source loaded BY PATH
+gates/citations-census-gate.py:182-192 tracked	git ls-tree -r HEAD --name-only	LIST (sorted comprehension)	YES	MEASURED 7505
+checks/runs-artifacts.py:540-547 tracked_files	git ls-tree -r --name-only HEAD	LIST (splitlines)	YES	MEASURED 7505
+gates/retention-check.py:357-361 tracked	git ls-files -z -- <dir> (INDEX)	LIST (NUL split)	YES	duplicates survive on the index side too
+checks/git-index-guard.py:52-63 fingerprint	git diff --cached --name-status -z	LIST + str(len(entries))	YES	duplicates survive into the fingerprint, so a duplicate CHANGES the token
+checks/no-shrink.py:54-104 main	git diff HEAD --numstat -- <port>/	LIST of (added,deleted,path) tuples	YES	duplicates survive as repeated rows
+checks/diary-census.py:277-289 tracked_has	git ls-tree -r HEAD -- <rel>	SCALAR-COUNTER n+=1	NO-IDENTITY	MEASURED: counts the duplicate so it returns the emitted count; moves a number and never names a path
+checks/disarm.sh:26 state()	git diff --cached --name-only + git status --porcelain	SHELL sort | uniq	NO	the only shell reader found; `sort` makes copies adjacent and `uniq` then collapses them. Not AST-classified (19 .sh walked)
+checks/disarm.sh:54	git diff --cached --name-only -- <probe> | grep -c ''	SHELL scalar count	NO-IDENTITY	counts lines only
+gates/oracle-census-gate.py:524-556 report	git ls-tree -r HEAD (population only)	NOT-PATH-KEYED (named_by/read_by/current/kinds)	n/a	dicts keyed by a label, not by a path
+checks/unowned.py:199	git log --all -1 -- <path> per path	NOT-PATH-KEYED (key from git status, deduped by dict.fromkeys at :195)	n/a	reads git for OIDs not for a path population
+checks/pathresolve.py:298	(AST constant propagation)	NOT-PATH-KEYED env[variable_name]	n/a	verified by reading :293-298; a name, not a path
+checks/pathresolve.py:501	(AST constant propagation)	NOT-PATH-KEYED buckets[class_label]	n/a	verified by reading :496-501
+checks/residue.py:207	differ.declared() loaded by path	NOT-PATH-KEYED out[module_name]	n/a	verified by reading :200-207; values are a set union of artifact names
+checks/repro-paths.py:105	os.listdir (NOT git)	NOT-PATH-KEYED _LIVE_SRC[path]	n/a	verified by reading :98-107; a directory walk, not a git enumeration
+gates/runner.py:143	(NOT a git enumeration)	NOT-PATH-KEYED mods[tag]	n/a	verified by reading :138-144
+gates/runner.py:369	(NOT a git enumeration)	NOT-PATH-KEYED tally[verdict]	n/a	verified by reading :363-376
+gates/retention-check.py:340-352	iterdir (NOT git)	NOT-PATH-KEYED clusters (list of lists)	n/a	verified by reading :340-352
+gates/citations-census-gate.py:510	os.walk (NOT git)	NOT-PATH-KEYED bodies[path]	YES	n/a - key comes from the walk, and the walk cannot repeat a path
+checks/differ.py	git diff (lane control)	NOT-PATH-KEYED (graph/lane names)	n/a	no path enumeration found by funcs.py
+checks/denominator.py	git ls-tree -r HEAD --name-only (prose)	NONE IN CODE	n/a	the only ls-tree mention is a comment at :8; no path-producing function
+checks/substrate-id.py	git ls-tree -r HEAD (docstring only)	NONE IN CODE	n/a	no path-producing function
+checks/substrate-snapshot.py	git ls-tree -r HEAD (docstring only)	NONE IN CODE	n/a	no path-producing function
+checks/substrate.py	git ls-files + ls-tree (diagnostics)	NOT-PATH-KEYED	n/a	no path-producing function; ls-tree is cited at :560 as prose
+checks/cites-census.py (Universe/read)	self	SET union of walk and tracked	NO	keys collapse; see suffix_index for the representable reader in the same file

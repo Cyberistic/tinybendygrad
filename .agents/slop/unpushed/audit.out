@@ -1,0 +1,43 @@
+range=52d77134b90312eb001ab3362477dc5db9ebac5e..030a34fe19fddb9a1e166294460ef92836621ee2 n=49
+head=030a34fe19fddb9a1e166294460ef92836621ee2
+origin=473d7ce988d0f0741e26bccf5e8c1495d864be4c
+merge_base=52d77134b90312eb001ab3362477dc5db9ebac5e
+n_commits=49
+author_identities=1 Cyberistic <Cyb3ristic@gmail.com>
+merge_commits=0
+recursive_parse_fail=0
+raw_tree_parse_fail=0
+root_dup_trees=1
+  DUP 591f6b4993364806eec638d1e69dce547028c132 [('gates', 3)]
+commits_with_root_drop=1
+  DROP 591f6b4993364806eec638d1e69dce547028c132 n=9 ['langs', 'mkdocs.yml', 'opencode.json', 'pyproject.toml', 'serve_docs.sh', 'spec', 'sz.py', 'tools', 'uv.lock']
+msg_deletion_words_and_D_present=2
+  WITHDEL a1a7d370ac84208a97a098865f0ba861bc83c9a6 nD=1 PURGE: tinygrad/ held EXACTLY ONE file of ours. It is now at the repo 
+  WITHDEL 02329daf0847df82b44d1f0c68ed45dc86ac55f9 nD=252 REPAIR: 178 phantom deletions from an armed-index race, restored verba
+msg_deletion_words_but_no_D=26
+  NODEL c0795853ae9bc75b4442db43eb6cf035ddddf4a6 SPECFIX: sp went from 3 of 12 to 12 of 12, and fixing one conjunct UNM
+  NODEL 57b8f71c9466f71ea9b1bbdd037a09d1034bc48b SPECPROGRAM: pr_0 dropped BOTH halves of spec.py:204, and the header q
+  NODEL 2e6474cac96eddb74312bf7c8aa33a6ad4e6c720 SPECPROGRAM: the file quotes the rule it drops a conjunct from, 8 line
+  NODEL 168968a59e1fbfbf7ee6f251374170d551fde91a opseven: the 7 Ops the corpus never reaches, COMPARED, and the compari
+  NODEL 0ba43aaef6f35dc823f557304148f0614693c7f9 REVENDOR: tinygrad/ is now BYTE-IDENTICAL to upstream 002630241, and m
+  NODEL a741a469f90dfe975d01cc861922c3a30b662f8a RE-VENDOR tinygrad/ to upstream 002630241 (2026-10-16), AND MOVE EVERY
+  NODEL 103d4dfa3582bc480733860fd511c4e02794f957 Eight unreadable instruments: two printed nothing on a TTY either, six
+  NODEL 15de0d7eb2712598eea777030b0dc092d65bc4c0 PUSH BLOCKED: my own stale ref misreported the remote, and one commit 
+  NODEL 1099e5be77771bd2be7a122ed865b84532d2a4ed the census is GREEN again, and the duplicate tree entry was hiding a m
+  NODEL 4f747540b3723f1912a43770f3082a63b3358d60 idxpriv: AGENTS.md's commit prescription becomes PER-UNIT, and the fix
+  NODEL 7f9cc41f8512f275fe6da6bffbb8e98dd1f26114 ARGVLOOKUP + BASELINE68: four argv sites closed, and the gate's header
+  NODEL 1e2ab382c3be058c410148111bb0654e96aaab6c ARGV: 3 OF THE 4 REMAINING SITES STATE THEIR CONTRACT, AND THE 4TH IS 
+  NODEL 25daf8555c70abc1ee92f50e3fabf8d045748741 checks: three instruments answered a nearby question; comments only, c
+  NODEL 08554e4097b25bf2ccff295996725fee14825ece PUSH BLOCKED: my first diagnosis was WRONG, and it is a real commit, n
+  NODEL aff3e00e86b90aaf052e407cbc087b700f257e27 HELPCENSUS: 14 instruments crash instead of refusing, and the class is
+  NODEL 1655307d1f3786397fa3191b7fc93200d946ffa2 Six held records, landed together: the resolver, the value axis, the c
+  NODEL b37c73190d404265d5b5c63463127b2cb9e15cf6 gates-pop: THE LEDGER WAS A COPY OF A MEASUREMENT THAT IS PERMANENTLY 
+  NODEL 339f51b662b7efd41c9fd943e343755af8988c8d checks/pathresolve.py + gates/path-resolve-gate.py: ONE resolver, THRE
+  NODEL 07c5354683a72796df0ca3387bfe6b50904b9557 tnvalue: A `.py` LITERAL IS A DECLARATION, and this file had one for a
+  NODEL 8a5366f5c7075663ed6d50f875ed570f24a738b6 tnvalue: THE VALUE AXIS SHOULD NOT BE ADDED, AND 24 ROWS THAT ARE CONS
+  NODEL 57a1796bd6e702c190de44e7d1e9c79f8cc73ae8 PUSH BLOCKED: a dangling corrupt tree, not a defect in this change
+  NODEL 96f1611c8ea229f2e712b0697325af8b3795de91 bend: measure the compiler's own health surface, five questions, all f
+  NODEL 40dccd1baa6aab622e6b54dab00a0b407864fcc8 autogen-oracle: ONE ROW WAS DEAD AND 50 ROWS WERE NOT A FLOOR -- AND T
+  NODEL 444890672d9baebb6309952495f480623f481fc5 MANIFEST: the manifest is THE DIGEST, UNFOLDED -- and a fold CANNOT be
+  NODEL f19347f66e205b798214b8cf1284a465e3a440bf manifestcost/REPORT.md: the armed index now reads this commit's two pa
+  NODEL 5cbc16162e145d8aa84328316a8d6d8d9693b13e checks/substrate-manifest.py: WHICH FILE MOVED is answerable, and the 

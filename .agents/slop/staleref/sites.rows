@@ -1,0 +1,104 @@
+site	fetches_first	claims_remote_fact	verdict	evidence
+.agents/TODO.md:464	yes	yes	SOUND	origin/master` still said `52d77134b` while `git ls-remote`
+.agents/TODO.md:465	yes	yes	SOUND	said `473d7ce98`. **`git rev-parse origin/master` IS NOT A
+.agents/TODO.md:3848	no	yes	STALE-CITATION	(`git archive upstream/master`), and **no row's expected value was ever
+.agents/TODO.md:4020	no	yes	STALE-CITATION	`upstream/master` (`git diff 6c3d401cf324 HEAD -- tinygrad/` is 20 files),
+.agents/TODO.md:4597	no	yes	STALE-CITATION	dtypes.weakint` at the pin `6c3d401cf324` AND at `upstream/master` `91b8cb5fa6`;
+.agents/TODO.md:13460	no	yes	SOUND	Landed on `origin/master` as `459e6562` ('gates: the lane files are `.rows` and `.out`, and the
+.agents/TOOLS.md:546	no	yes	STALE-CITATION	| `.agents/slop/xd1/render-gate-oracle.py` / `rw-gate-oracle.py` | the CPython halves, run against `.agents/slop/xd1/head` (`git archive upstream/mast
+.agents/UPSTREAM-PIN.md:151	no	no	STALE-CITATION	`git checkout upstream/master -- <files>` **applied to the working tree**.
+.agents/UPSTREAM-PIN.md:313	no	no	STALE-CITATION	git checkout upstream/master -- $(python3 .agents/slop/rebase-plan.py --json \
+.agents/UPSTREAM-PIN.md:321	no	yes	STALE-CITATION	`git checkout upstream/master -- tinygrad/`, and only then is the table at the top of this
+.agents/UPSTREAM-PIN.md:324	no	yes	MENTION	**`git checkout upstream/master -- tinygrad/` on its own is the same mistake as per-file
+.agents/UPSTREAM-PIN.md:406	no	yes	STALE-CITATION	upstream/master -- tinygrad/` reports only `M`, no `A` and no `D` — so 'at the pin' and 'at
+.agents/UPSTREAM-PIN.md:452	no	yes	STALE-CITATION	`11217606b` matches **no commit in any ref** — not `upstream/master`, not any of the ~500
+.agents/UPSTREAM-PIN.md:487	no	yes	STALE-CITATION	`tinygrad/examples/` directory at all** — `git ls-tree upstream/master -- tinygrad/examples/` is
+.agents/UPSTREAM-PIN.md:506	no	no	MENTION	method: content match. Hash all 230 of our blobs, compare against upstream/master's tree,
+.agents/UPSTREAM-PIN.md:534	no	yes	MENTION	It also bounded the search to the last **120** commits of `upstream/master`. That made the
+.agents/UPSTREAM-PIN.md:559	no	yes	STALE-CITATION	`upstream/master` (+4/-4). It is bucket **B**, and `unvendored.py` now says so.
+.agents/UPSTREAM-PIN.md:571	no	yes	STALE-CITATION	`renderer/cstyle.py:266` at `upstream/master` has `def param_type`. Our copy has zero
+.agents/UPSTREAM-PIN.md:585	no	no	STALE-CITATION	upstream/master True
+.agents/slop/LINEAR-TABLE.md:22	no	no	STALE-CITATION	`git diff origin/master -- tinybendygrad/uop/ops.bend` before my first edit:
+.agents/slop/argowner/mine/render.bend:178	no	yes	STALE-CITATION	# expectation here comes from `xd1/head`, which is `git archive upstream/master`.
+.agents/slop/dangle/cites.rows:13371	no	yes	MENTION	E mention SKIP .agents/slop/notes/bend2-constraints.md:10605 upstream/master:tinygrad/nn/__init__.py a mention is not a claim
+.agents/slop/dd-mutate.py:286	no	yes	MENTION	# Same shape as the two mutants that reached origin/master (`l2i_shl.hi`'s
+.agents/slop/dd-mutations-report.md:142	no	no	MENTION	`origin/master` with 147 rows green. It wants a row that *reads* it.
+.agents/slop/denominator/probe/.agents/slop/rebase-gate.py:577	no	no	STALE-CITATION	d = sh('git', 'diff', '--stat', pin, 'upstream/master', '--', src)
+.agents/slop/duptree/REPORT.md:36	no	yes	STALE-CITATION	| ON ORIGIN | **no** — `git merge-base --is-ancestor 591f6b499 origin/master` **rc=1**; origin/master is `52d77134b` |
+.agents/slop/duptree/REPORT.md:204	no	yes	SOUND	| NEGATIVE | **60** commits, each individually proven good by `git merge-base --is-ancestor <c> origin/master` = true — *origin accepted them*, not 't
+.agents/slop/duptree/REPORT.md:210	no	yes	SOUND	**THE NEGATIVE POPULATION IS DISCOVERED, NOT LISTED** (`git rev-list origin/master`, minus the known
+.agents/slop/duptree/control.py:7	no	yes	SOUND	origin/master, and origin accepted them. `git merge-base --is-ancestor`
+.agents/slop/duptree/control.py:27	no	yes	SOUND	['git', 'merge-base', '--is-ancestor', c, 'origin/master'],
+.agents/slop/duptree/control.py:35	no	no	SOUND	# NEGATIVE population: the newest n commits on origin/master, minus GOOD.
+.agents/slop/duptree/control.py:36	no	no	SOUND	neg = [c for c in git(['rev-list', '--max-count=%d' % n_neg, 'origin/master']).decode().split()
+.agents/slop/duptree/control.py:48	no	no	SOUND	print('# NEGATIVE\tn=%d (all verified on origin/master)\trows=%d' % (len(neg), len(neg_rows)))
+.agents/slop/jjreset/git-massdelete-gate.py:6	no	yes	MENTION	`6168 files changed, 1 insertion(+), 1947172 deletions(-)` -- and `origin/master` was left
+.agents/slop/lostinst/census.json:386	no	no	MENTION	'| `.agents/slop/xd1/render-gate-oracle.py` / `rw-gate-oracle.py` | the CPython halves, run against `.agents/slop/xd1/head` (`git archive upstream/mas
+.agents/slop/notes/bend2-constraints.md:8948	no	no	STALE-CITATION	`git checkout upstream/master -- <one file>` leaves a tree that mixes two commits, and
+.agents/slop/notes/bend2-constraints.md:8958	no	no	STALE-CITATION	git archive upstream/master tinygrad | tar -x -C /tmp/up-tree
+.agents/slop/notes/bend2-constraints.md:10605	no	no	MENTION	HEAD** — `git show upstream/master:tinygrad/nn/__init__.py | grep -n reduce_axes`
+.agents/slop/notes/bend2-constraints.md:10615	no	no	MENTION	citing file even means the same symbol.** `git show upstream/master:<the file that
+.agents/slop/notes/bend2-constraints.md:10633	no	no	MENTION	Cite `git log --oneline -S NAME <pin>..upstream/master -- <file>`, which names both
+.agents/slop/notes/bend2-constraints.md:11737	no	yes	STALE-CITATION	`upstream/master` (`git diff 6c3d401cf324 HEAD -- tinygrad/` is 20 files), so any baseline
+.agents/slop/notes/bend2-constraints.md:11773	no	yes	MENTION	are porting TO with `git archive upstream/master | tar -x -C <dir>` and point
+.agents/slop/notes/bend2-constraints.md:13977	no	yes	MENTION	`upstream/master` `91b8cb5fa6`; `weakint in dtypes.all` is **False** and
+.agents/slop/notes/bend2-constraints.md:14000	no	no	MENTION	spelling>]`. Measured against the tree the gate actually runs on (`upstream/master`
+.agents/slop/notes/bend2-constraints.md:14798	no	yes	MENTION	### 1. `xd1/head` IS NOT `upstream/master`, AND `opstree` IS `xd1/head`
+.agents/slop/notes/bend2-constraints.md:14802	no	yes	MENTION	`upstream/master` (`91b8cb5fa6c0`) on 215 and differs on 14, including `uop/ops.py`
+.agents/slop/notes/bend2-constraints.md:14806	no	yes	MENTION	is `git archive upstream/master` is false against current upstream. Owner of that
+.agents/slop/notes/bend2-constraints.md:15074	no	yes	MENTION	upstream/master, so it is a long-standing port bug and NOT rebase drift.
+.agents/slop/notes/bend2-constraints.md:17528	no	yes	MENTION	### 45. THE PAIR-SWAP CLASS OF MUTANT IS THE ONE THAT REACHES `origin/master`. TEST FOR IT
+.agents/slop/pin-tree-oracle-report.md:14	no	yes	STALE-CITATION	| vendor `tinygrad/` | equals `origin/master`'s `tinygrad/` **230/230, 0 differ**. Differs from the pin on **25** files (the re-vendor list in `UPSTRE
+.agents/slop/pin-tree-oracle-report.md:15	no	yes	STALE-CITATION	| `xd1/head` | **not** a commit. `tinygrad/` vs `upstream/master` (`91b8cb5fa6c0`): **215 same, 14 differ**. |
+.agents/slop/pin-tree-oracle-report.md:16	no	yes	MENTION	| `opstree` | byte-identical to `xd1/head` (**229/229, 0 differ**). The ops and search oracles' default 'upstream archive' is this snapshot, not curre
+.agents/slop/pin-tree-oracle-report.md:18	no	yes	MENTION	The 14 files where `xd1/head` ≠ `upstream/master`: `device.py`, `helpers.py`, `renderer/amd/generate.py`, `renderer/cstyle.py`, `runtime/ops_{amd,cuda
+.agents/slop/pin-tree-oracle-report.md:22	no	no	MENTION	| file | pin | origin/master | upstream/master | xd1/head | vendor |
+.agents/slop/pin-tree-oracle-report.md:32	no	yes	MENTION	Pin is an ancestor of `upstream/master` (`git merge-base --is-ancestor` yes). Three commits after the pin touch `render.py` (`e78671eb6`, `78d482262`,
+.agents/slop/pin-tree-oracle-report.md:34	no	yes	STALE-CITATION	`xd1/head`'s `ops.py` (`6f7b9996431e`) matches **neither** the pin nor `upstream/master`, and it does have `CustomFunction` (3) and lacks the dtype cl
+.agents/slop/pin-tree-oracle-report.md:93	no	yes	STALE-CITATION	'24 other oracles use the pin vendor' is false. The pin vendor is not what they import. 27 import the working vendor, which is `origin/master`, 25 fil
+.agents/slop/pin-tree-oracle-report.md:272	no	yes	STALE-CITATION	The tree the gates actually measure is the working vendor (`origin/master`) for 27 oracles, and the `xd1/head` snapshot for the three that select it (
+.agents/slop/pin-tree-oracle-report.md:304	no	yes	MENTION	- `TOOLS.md` says `xd1/head` is `git archive upstream/master`. Against current `upstream/master` that is false for 14 files. Owner: the xd1 unit that 
+.agents/slop/precision/claims.rows:13778	no	yes	MENTION	E mention SKIP .agents/slop/notes/bend2-constraints.md:10605 upstream/master:tinygrad/nn/__init__.py a mention is not a claim
+.agents/slop/prune4/REPORT.md:345	no	no	SOUND	from a ref' without saying *which*, and I had guessed the wrong one — I assumed `origin/master`,
+.agents/slop/rebase-gate.py:577	no	no	STALE-CITATION	d = sh('git', 'diff', '--stat', pin, 'upstream/master', '--', src)
+.agents/slop/rebase/REPORT.md:8	no	yes	MENTION	Window: pin `6c3d401cf324` → `upstream/master`. 46 changed files under `tinygrad/`.
+.agents/slop/state-audit-report.md:305	no	yes	MENTION	method: content match over 400 commits of upstream/master; newest wins a tie.
+.agents/slop/upstream-delta.py:48	no	no	STALE-CITATION	UPSTREAM = 'upstream/master'
+.agents/slop/whyarms/REPORT.md:64	no	yes	MENTION	| 4 | *(the jj index wipe)* | 10-07 | **6141** | whole-tree wipe, `origin/master` left with 2 files | `813bbec3ee` 'RESTORE 6141 FILES DELETED BY THE 
+.github/actions/process-replay/action.yml:15	yes	no	SELF-REFRESHING	cp test/external/process_replay/process_replay.py ./process_replay.py && git fetch origin master && git -c advice.detachedHead=false checkout origin/m
+gates/git-massdelete-gate.py:6	no	yes	MENTION	`6168 files changed, 1 insertion(+), 1947172 deletions(-)` -- and `origin/master` was left
+tinybendygrad/codegen/decomp/dtype.bend:2861	no	yes	MENTION	# that swap reached origin/master with 147 rows green, so the order wants a row
+tinybendygrad/uop/render.bend:178	no	yes	STALE-CITATION	# expectation here comes from `xd1/head`, which is `git archive upstream/master`.
+.agents/TODO.md:478	no	yes	SOUND	NOT on origin. **TWO OF MY COMMITS ALREADY REACHED ORIGIN**
+.agents/TODO.md:484	no	no	MENTION	commits get destroyed to save one, and a corrupt tree on origin
+.agents/TODO.md:3844	no	yes	STALE-CITATION	fact and shapes every expectation: `uop/ops.py` is at upstream HEAD while
+.agents/TODO.md:18319	no	yes	SOUND	## REVENDOR -- **`tinygrad/` IS NOW **BYTE-IDENTICAL** TO UPSTREAM `002630241`**, AND **MY NAMED HAZARD WAS THE WRONG ONE** (2026-10-17)
+.agents/UPSTREAM-PIN.md:22	no	yes	STALE-CITATION	| **UPSTREAM HEAD** | `91b8cb5fa6c0` | 2026-10-02 | 59 commits ahead |
+.agents/UPSTREAM-PIN.md:447	no	yes	STALE-CITATION	equals upstream HEAD 189
+.agents/UPSTREAM-PIN.md:552	no	yes	SOUND	equals upstream 87a4311b3c3a 'dead codes cleanup [PR] (#18579)' 2026-10-02 08:51 -0400
+.agents/UPSTREAM.md:376	no	yes	SOUND	in any ref' is wrong. It equals upstream `87a4311b3c3` byte for byte; `param_type` was
+.agents/slop/agend/ruff.rows:8553	no	no	MENTION	196 | 'upstream_head': head, 'head_date': head_date,
+.agents/slop/duptree/REPORT.md:155	no	yes	STALE-CITATION	**IT WAS NEVER ON ORIGIN AND IT WAS REPAIRED LOCALLY.** rc=1 for `--is-ancestor`; the child `02329daf`
+.agents/slop/fixures/xd2/cdp.mjs:37	no	no	MENTION	'--remote-allow-origins=*', // Node's WebSocket sends an Origin header; DevTools rejects it
+.agents/slop/plans/REPORT.md:17	no	no	MENTION	behavioural divergence from the Python original, missing cases, wrong
+.agents/slop/plans/REPORT.md:227	no	yes	MENTION	- `tools/sz` reports ≥ the Python original's line count per file, and the
+.agents/slop/state-audit-report.md:308	no	yes	STALE-CITATION	UPSTREAM 91b8cb5fa6c0 2026-10-02 BEHIND 59 commits, 124 files, 51 under tinygrad/
+.agents/slop/strays/working/tinybendygrad/device.bend:56	no	yes	SOUND	# 1. Upstream `bdddaad21` ('ccall by symbol', #18521) DELETED rule 3 outright.
+.agents/slop/strays/working/tinybendygrad/device.bend:1002	no	yes	SOUND	# TWO rules, and this file used to carry three. Upstream `bdddaad21`
+.agents/slop/strays/working/tinybendygrad/device.bend:1441	no	yes	SOUND	# upstream `bdddaad21` deleted the `cfunc_buf` rule, so this row
+.agents/slop/upstream-delta.py:196	no	no	STALE-CITATION	'upstream_head': head, 'head_date': head_date,
+.agents/slop/upstream-delta.py:210	no	yes	STALE-CITATION	print(f' UPSTREAM {head[:12]} {head_date} BEHIND {behind} commits, {len(changed)} files, '
+.agents/slop/xd2/cdp.mjs:37	no	no	MENTION	'--remote-allow-origins=*', // Node's WebSocket sends an Origin header; DevTools rejects it
+checks/render-gate-oracle.py:5	no	yes	SOUND	imports upstream HEAD, not the vendored hybrid. The rebase gate's row parser
+gates/js-lane-census.py:90	no	yes	SOUND	# ALL THREE SHAs BELOW MOVED WITH THE DELIBERATE RE-VENDOR TO upstream `002630241`
+gates/onnx_census-gate.py:78	no	yes	SOUND	# **THE TWO `tinygrad/` SHAs BELOW MOVED WITH THE RE-VENDOR TO upstream `002630241`
+gates/rand_census-gate.py:144	no	yes	SOUND	# upstream `002630241` (2026-10-16) -- not drift to restore. `tinygrad/mixin/rand.py` did
+gates/state_census-gate.py:109	no	yes	SOUND	# DELIBERATE RE-VENDOR TO upstream `002630241` (2026-10-16) -- not drift to restore.
+tinybendygrad/device.bend:56	no	yes	SOUND	# 1. Upstream `bdddaad21` ('ccall by symbol', #18521) DELETED rule 3 outright.
+tinybendygrad/device.bend:1006	no	yes	SOUND	# TWO rules, and this file used to carry three. Upstream `bdddaad21`
+tinybendygrad/device.bend:1445	no	yes	SOUND	# upstream `bdddaad21` deleted the `cfunc_buf` rule, so this row
+tinybendygrad/renderer/llvmir.bend:87	no	no	MENTION	# `N.lop.cell`'s CPython original and `L.render_wmma_amd`; this file calls the Bend
+tinybendygrad/runtime/ops_metal.bend:2855	no	yes	SOUND	# upstream `bdddaad21` deleted `pm_bufferize`'s `cfunc_buf` rule, so the trailing
+tinybendygrad/runtime/support/hcq2.bend:55	no	yes	SOUND	# THE TAIL OF THIS LIST IS RE-NUMBERED AT UPSTREAM HEAD `cff94ae88` and the HEAD
+tinybendygrad/runtime/support/hcq2.bend:173	no	yes	SOUND	# upstream `cff94ae88` ('hcq2: drop input table', #18577) removed the ONLY
+tinygrad/uop/ops.py:1795	no	yes	MENTION	# bottom-up: try bpm on original node first, if it rewrites, use result as-is (no traversal into replacement)

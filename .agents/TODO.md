@@ -457,7 +457,73 @@ exitcodes [####......] 1/3      DISPATCHED UNIT 2026-10-15. **226 `.py` files** 
                                        `verdict_of()`: see the exitcodes row -- the unassigned return of `verdict_of` is **`gates/gatekit.py:107`**. IT WAS NOT `:97` AND IT WAS NOT `:98` EITHER: the unit measured `:98` BEFORE this session's own `gatekit.py` edit, that edit added 7 lines and moved it, and propagating the unit's number unexamined would have committed a stale citation one commit after creating it. **A LINE-NUMBER CITATION INTO A FILE THE SAME SESSION IS EDITING HAS A HALF-LIFE MEASURED IN COMMITS.** Nothing in the tree cites `verdict_of` by line at all, so the honest form is the SYMBOL plus the line it is at today.
                                        this session. `.agents/slop/exitcodes/`.
 
-rn-PUSH-BLOCKED [##########] 3/3  **THE ORIGIN MOVED AND THE PICTURE IS NOW COMPLETE. ONE COMMIT BLOCKS
+rn-UNPUSHED-DELETES [#####.....] 1/3  **LOUDER THAN THE PUSH BLOCKER, AND FOUND BY THE `unpushed` UNIT.**
+                                       MEASURED 2026-10-17 over the **49-commit** range
+                                       `52d77134b..c0795853a`: **THREE pins files are ON
+                                       `origin/master` AND ABSENT FROM LOCAL `HEAD`** -- confirmed
+                                       directly:
+                                       `gates/oracleblind.rows`, `gates/assertlit.rows`,
+                                       `gates/falseclaim.rows`. **THEY EXIST ON DISK, BUT GIT'S INDEX
+                                       HOLDS `e69de29b` (the EMPTY blob) FOR ALL THREE, so they are
+                                       UNTRACKED and a commit right now would DELETE THEM FROM THE
+                                       TREE.** And one is a **REQUIRED INPUT of a live gate**:
+                                       `gates/oracleblind-census.py:118` sets
+                                       `REPORT = HERE / "oracleblind.rows"`. **THIS IS THE SAME
+                                       PHANTOM-DELETION CLASS `02329daf` ALREADY REPAIRED** -- its own
+                                       message names these as the 4 files it DELIBERATELY WITHHELD, and
+                                       `gates-pop.py` was picked up later but **these three never
+                                       were.** **THE WORKTREE BYTES DIFFER FROM ORIGIN'S, so "just
+                                       re-add them" IS NOT SAFE AND I REFUSED TO GUESS WHICH VERSION
+                                       TO COMMIT.** OWNER'S CALL.
+                                       **ALSO MEASURED, AND IT CORRECTED THE BLOCKER'S SCALE:** the
+                                       push blocker `591f6b499` does not drop 9 top-level paths / 36
+                                       files as I reported -- **it deletes 182 files** (146 under
+                                       `gates/` + the 36 elsewhere), adds 252, changes 435. **MY "36
+                                       FILES" UNDERSTATED IT BY 4x.** A root-only duplicate scan is
+                                       also **not** sufficient -- `git ls-tree` never emits the root
+                                       tree, so a root-only pass reports ZERO duplicates; the
+                                       all-trees pass found the one. **`591f6b499`'s root tree is the
+                                       ONLY malformed tree of 1,137 reachable trees, and its `gates`
+                                       entry is REPEATED 3x at the same blob OID -- zero
+                                       CONFLICTING.**
+dictkeyed [#########] 3/3       **A DICT KEYED BY PATH CANNOT REPRESENT A DUPLICATE PATH ENTRY, SO THE
+                                       STATE HAS NO REPRESENTATION -- MEASURED, NOT ARGUED.** Of **46**
+                                       git-reading sites, **42 go green on a malformed tree**:
+                                       **4 DICT-OVERWRITE + 11 SET** sites, plus 1 DICT-ACCUMULATE
+                                       (which MOVES a count rather than dropping it), 2 shell
+                                       `sort|uniq`, 1 scalar counter. `index-arm-gate.py`'s five
+                                       shapes are all INDEX-vs-TREE and a duplicate is INTERNAL to
+                                       the tree, so no index can witness it and `ls-tree` exits 0, so
+                                       `REFUSED` cannot fire either. **THE CLASSIFICATION I ASKED FOR
+                                       (DICT-KEYED vs LIST-BASED) WAS THE WRONG BINOMIAL** and the
+                                       agent corrected it in place. **`checks/runs-artifacts.py:338`
+                                       ASSERTS IN A COMMENT THAT `git ls-tree` CANNOT REPEAT A PATH --
+                                       THAT IS FALSE**, and this repo's own history is the
+                                       counterexample; its dedup is "asserted rather than assumed",
+                                       against a HAND-BUILT `[lane]*3` list, never a real tree.
+                                       **ZERO of the 42 has a duplicate-entry shape.** The
+                                       vocabulary already exists here applied to ROWS
+                                       (`crp_graph_census-gate.py:343`) -- that gap IS the finding.
+stale-ref [####......] 1/3      MEASURED over the tracked tree: **103 sites read a remote-tracking ref;
+                                       EXACTLY ONE obtains the remote's state from git rather than from
+                                       the ref cache -- and it is a GitHub ACTION, not an instrument.**
+                                       Split: **SELF-REFRESHING 1 · STALE-CITATION 35 (34%) · SOUND 29 ·
+                                       MENTION 38.** **`gates/git-massdelete-gate.py` `mode_push` IS THE
+                                       TEMPLATE**: it takes the sha from git's pre-push stdin, so it is
+                                       STRUCTURALLY IMMUNE without fetching. **A STALE CITATION THAT
+                                       REACHED A TRUE VERDICT**: `UPSTREAM-PIN.md:22` says `59 commits
+                                       ahead`; true when taken, now **212 commits behind** the pinned
+                                       sha and **271** behind `upstream/master` -- the LABEL rotted
+                                       while the number looked current. **`duptree/REPORT.md:36` cites
+                                       `origin/master is 52d77134b` -- AND `TODO.md` PROVES THAT WAS THE
+                                       CACHED VALUE** while `ls-remote` said `473d7ce98`; cache and
+                                       remote agree TODAY, which is exactly why it is invisible. The
+                                       unit also found `` SILENTLY RETURNS NOTHING in this git's
+                                       `grep -E`, which cost it a whole discovery shape -- **a
+                                       shorthand that quietly returns empty is worse than one that
+                                       errors.**
+
+PUSH-BLOCKED [##########] 3/3  **THE ORIGIN MOVED AND THE PICTURE IS NOW COMPLETE. ONE COMMIT BLOCKS
                                        ALL 40, AND IT IS NOT MINE.** 2026-10-17T03:54Z: the push failure
                                        CHANGED from `duplicateEntries` to non-fast-forward, and the
                                        reason was **MY OWN STALE LOCAL REF**: `git rev-parse

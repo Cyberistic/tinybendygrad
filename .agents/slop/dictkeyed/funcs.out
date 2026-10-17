@@ -1,0 +1,590 @@
+
+===== checks/cites-census.py:59-65  fn=committed  verbs=['ls-tree'] shape=LINEWISE keyed_container=False
+     59| def committed(exts: tuple[str, ...] = EXTS) -> list[str]:
+     60|   r = subprocess.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], cwd=ROOT,
+     61|                      capture_output=True, text=True)
+     62|   if r.returncode != 0:
+     63|     print(f"{REFUSED}: git ls-tree rc={r.returncode}: {r.stderr.strip()}")
+     64|     sys.exit(EXITS[REFUSED])
+     65|   return sorted(p for p in r.stdout.splitlines() if p.endswith(exts))
+
+===== checks/cites-census.py:182-205  fn=suffix_index  verbs=['ls-tree'] shape=LINEWISE keyed_container=True
+    182| def suffix_index() -> dict[str, list[str]]:
+    183|     """Every tracked path under every `/`-aligned suffix of itself, so `uop/ops.bend` finds
+    184|     `tinybendygrad/uop/ops.bend`.  The population is `git ls-tree -r HEAD`, the extractor that
+    185|     already declared it -- NOT a hand list of roots.  MEASURED 2026-10-15: the tree has 14 tracked
+    186|     top-level directories and `ROOT` is the repo root, so `ROOT/"uop/ops.py"` names nothing while
+    187|     the claim's own spelling names `tinygrad/uop/ops.py`.  That mismatch was 1,047 of the 1,262
+    188|     `unreadable or absent` rows, and **0 of those 324 subjects resolved at ROOT.**
+    189|     A value may hold several paths: `.agents/slop/strays/{origin,working}/` keep full copies, so
+    190|     suffix matching is genuinely ambiguous and `read` refuses it rather than picking one."""
+    191|     global _SUFFIX, _TRACKED
+    192|     if _SUFFIX is None:
+    193|         r = subprocess.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], cwd=ROOT,
+    194|                            capture_output=True, text=True)
+    195|         if r.returncode != 0:
+    196|             print(f"{REFUSED}: git ls-tree rc={r.returncode}: {r.stderr.strip()}")
+    197|             sys.exit(EXITS[REFUSED])
+    198|         _TRACKED, idx = r.stdout.splitlines(), {}
+    199|         for path in _TRACKED:
+    200|             i = path.find("/")
+    201|             while i != -1:
+    202|                 idx.setdefault(path[i:], []).append(path)
+    203|                 i = path.find("/", i + 1)
+    204|         _SUFFIX = idx
+    205|     return _SUFFIX
+
+===== checks/diary-census.py:277-289  fn=tracked_has  verbs=['ls-tree'] shape=TAB keyed_container=False
+    277| def tracked_has(rel: str) -> tuple[int, int]:
+    278|     """`(entries under rel in the COMMITTED tree, entries that are git's EMPTY BLOB)`."""
+    279|     empty = "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+    280|     r = subprocess.run(["git", "ls-tree", "-r", "HEAD", "--", rel],
+    281|                        cwd=ROOT, capture_output=True, text=True)
+    282|     n = e = 0
+    283|     for line in r.stdout.splitlines():
+    284|         meta, _, _path = line.partition("\t")
+    285|         parts = meta.split()
+    286|         if len(parts) >= 3 and parts[1] == "blob":
+    287|             n += 1
+    288|             e += parts[2] == empty
+    289|     return n, e
+
+===== checks/git-index-guard.py:52-63  fn=fingerprint  verbs=['diff'] shape=LINEWISE keyed_container=False
+     52| def fingerprint() -> tuple[str | None, str, str]:
+     53|     """(token, head, error). token is None on an unreadable repository."""
+     54|     rc, head = git("rev-parse", "HEAD")
+     55|     if rc != 0:
+     56|         return None, "", "not a git repository or no HEAD"
+     57|     rc, staged = git("diff", "--cached", "--name-status", "-z")
+     58|     if rc != 0:
+     59|         return None, "", "git diff --cached failed"
+     60|     head = head.strip()
+     61|     entries = [e for e in staged.split("\0") if e]
+     62|     body = "\n".join(["head", head, "staged", str(len(entries)), *entries])
+     63|     return hashlib.sha256(body.encode()).hexdigest(), head, ""
+
+===== checks/index-arm-gate.py:95-106  fn=index_entries  verbs=['ls-files'] shape=TAB keyed_container=False
+     95| def index_entries(root: Path) -> dict[str, tuple[str, str]]:
+     96|     """path -> (sha, stage). THE INDEX. `git ls-files --stage`."""
+     97|     rc, out, err = git(root, "ls-files", "--stage")
+     98|     if rc != 0:
+     99|         raise RuntimeError(f"ls-files rc={rc}: {err.strip()}")
+    100|     ent = {}
+    101|     for line in out.splitlines():
+    102|         meta, _, path = line.partition("\t")
+    103|         fields = meta.split()
+    104|         if len(fields) == 3:
+    105|             ent[path] = (fields[1], fields[2])
+    106|     return ent
+
+===== checks/index-arm-gate.py:109-120  fn=head_tree  verbs=['ls-tree'] shape=TAB keyed_container=False
+    109| def head_tree(root: Path, rev: str) -> dict[str, str]:
+    110|     """path -> sha. THE TREE. `git ls-tree -r <rev>`. Never the index."""
+    111|     rc, out, err = git(root, "ls-tree", "-r", rev)
+    112|     if rc != 0:
+    113|         raise RuntimeError(f"ls-tree rc={rc}: {err.strip()}")
+    114|     ent = {}
+    115|     for line in out.splitlines():
+    116|         meta, _, path = line.partition("\t")
+    117|         fields = meta.split()
+    118|         if len(fields) >= 3:
+    119|             ent[path] = fields[2]
+    120|     return ent
+
+===== checks/index-arm-gate.py:149-163  fn=not_intent_to_add  verbs=['ls-files'] shape=LINEWISE keyed_container=False
+    149| def not_intent_to_add(root: Path, paths: list[str]) -> list[str]:
+    150|     """`git ls-files --debug` prints the intent-to-add bit in its `flags:` line. An ITA entry is the
+    151|     INTENT shape and git 2.50.1 refuses it; only the UNFLAGGED ones are EMPTIED and destructive."""
+    152|     if not paths:
+    153|         return []
+    154|     rc, out, err = git(root, "ls-files", "--debug", "--", *paths)
+    155|     if rc != 0:
+    156|         raise RuntimeError(f"ls-files --debug rc={rc}: {err.strip()}")
+    157|     cur, flags = None, {}
+    158|     for line in out.splitlines():
+    159|         if not line.startswith("  "):
+    160|             cur = line.strip()
+    161|         elif line.strip().startswith("flags:"):
+    162|             flags[cur] = int(line.split("flags:")[1].strip(), 16)
+    163|     return [p for p in paths if flags.get(p, 0) & 0x4000 == 0]
+
+===== checks/no-shrink.py:54-104  fn=main  verbs=['diff'] shape=TAB keyed_container=True
+     54| def main() -> int:
+     55|     ap = argparse.ArgumentParser(description=__doc__,
+     56|                                  formatter_class=argparse.RawDescriptionHelpFormatter)
+     57|     ap.add_argument("--tolerance", type=int, default=40,
+     58|                     help="lines a file may lose before this reports it (default 40)")
+     59|     args = ap.parse_args()
+     60| 
+     61|     ns = sh("diff", "HEAD", "--numstat", "--", f"{PORT}/").splitlines()
+     62|     rows = []
+     63|     for ln in ns:
+     64|         p = ln.split("\t")
+     65|         if len(p) < 3 or p[0] == "-":
+     66|             continue
+     67|         rows.append((int(p[0]), int(p[1]), p[2]))
+     68| 
+     69|     shrank = [(d - a, a, d, path) for a, d, path in rows if d > a]
+     70|     grew = [(a - d, a, d, path) for a, d, path in rows if a > d]
+     71|     print(f"no-shrink: {len(rows)} port files differ from HEAD uncommitted -- "
+     72|           f"{len(grew)} GREW, {len(shrank)} SHRANK, tolerance {args.tolerance} lines")
+     73| 
+     74|     # The empty-file trap, counted first because it is the cheapest way to pass a gate.
+     75|     # THE UNPACK HERE WAS WRONG ON THE FIRST RUN -- `rows` holds 3-tuples and this asked for 4 --
+     76|     # SO THE GATE RAISED ON A CLEAN TREE. A GUARD THAT CRASHES WHERE THERE IS NOTHING TO REPORT IS
+     77|     # THE SAME DEFECT AS ONE THAT PASSES WHERE THERE IS EVERYTHING TO REPORT: both leave the caller
+     78|     # with no verdict, and a caller that cannot tell "clean" from "crashed" will assume clean.
+     79|     empties = [path for _a, _d, path in rows
+     80|                if os.path.exists(os.path.join(ROOT, path))
+  ... (24 more lines)
+
+===== checks/pathresolve.py:320-327  fn=tree_paths  verbs=['ls-tree'] shape=LINEWISE keyed_container=False
+    320| def tree_paths(root=ROOT):
+    321|     """`git ls-tree -r HEAD --name-only`. **THE TREE, NOT THE INDEX.** `INDEX_IS_NOT_THE_TREE`
+    322|     names the measurement."""
+    323|     r = subprocess.run(["git", "-C", root, "ls-tree", "-r", "--name-only", "HEAD"],
+    324|                        capture_output=True, text=True)
+    325|     if r.returncode != 0:
+    326|         raise RuntimeError(f"git ls-tree rc={r.returncode}: {r.stderr.strip()}")
+    327|     return r.stdout.splitlines()
+
+===== checks/repro-paths.py:71-81  fn=committed_reports  verbs=['ls-files'] shape=LINEWISE keyed_container=False
+     71| def committed_reports() -> list[str]:
+     72|     """EVERY `REPORTS` FILE AT HEAD, ASKED OF HEAD.  This asked `git ls-files`, which reads the INDEX,
+     73|     while the TEXT below comes from `git show HEAD:` -- so the DENOMINATOR moved with the index's
+     74|     arming STATE and the SAME TREE answered twice: MEASURED 2026-10-15, 584 reports while the default
+     75|     index was armed and 541 once it agreed with HEAD.  It also inherited `GIT_INDEX_FILE`, so an agent
+     76|     that commits the prescribed way ran a different population than one that did not -- the same defect
+     77|     and the same shape as `checks/index-arm-gate.py`'s false `PASS`.  HEAD is not a shell variable, so
+     78|     nothing has to be scrubbed now."""
+     79|     r = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD"],
+     80|                        cwd=ROOT, capture_output=True, text=True)
+     81|     return sorted(p for p in r.stdout.split() if p.endswith(REPORTS))
+
+===== checks/residue.py:211-219  fn=git_tracked  verbs=['ls-files'] shape=LINEWISE keyed_container=True
+    211| def git_tracked(root: str) -> set[str]:
+    212|     """`git ls-files` MINUS the tracked-but-deleted. `ls-files` alone returns paths that are not on
+    213|     disk, so a count taken from it can exceed the tree and a DELETED count can come out NEGATIVE."""
+    214|     r = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, text=True)
+    215|     live = set()
+    216|     for p in r.stdout.split("\0"):
+    217|         if p and os.path.lexists(os.path.join(root, p)):
+    218|             live.add(p)
+    219|     return live
+
+===== checks/runs-artifacts.py:443-462  fn=_tracked_tops  verbs=['ls-tree'] shape=LINEWISE keyed_container=True
+    443| def _tracked_tops(root=ROOT):
+    444|     """EVERY directory prefix of every file `git ls-tree -r HEAD` names, at EVERY depth.
+    445| 
+    446|     **MY OWN MEASUREMENT WAS WRONG HERE AND THE BEFORE-VALUE WAS A CLEAN, CONFIDENT WRONG ANSWER.**
+    447|     The first version recorded a top-level directory as tracked only if a tracked file sat AT its
+    448|     root, which is true of `checks/` and false of `.agents/` -- so it printed `tracked=0` for a
+    449|     directory holding **4,496** tracked files, and `.agents/` came out of `unrecoverable_dirs()` as
+    450|     a deletion target. `runs/` is genuinely absent from the tree, and one level of prefix was
+    451|     enough to tell those apart by accident. A depth-1 lookup is a basename shape.
+    452| 
+    453|     **NOT `git ls-files`**: MEASURED 2026-10-06, `jj git colocation` stages an empty blob for every
+    454|     untracked file, so the index carries 906 `--intent-to-add` placeholders and reading it answers a
+    455|     question about the editor, not about the repository.
+    456|     """
+    457|     pref: set[str] = set()
+    458|     for line in tracked_files(root):
+    459|         parts = line.split("/")
+    460|         for i in range(1, len(parts) + 1):
+    461|             pref.add("/".join(parts[:i]))
+    462|     return pref
+
+===== checks/runs-artifacts.py:465-503  fn=unrecoverable_dirs  verbs=['ls-tree'] shape=LINEWISE keyed_container=True
+    465| def unrecoverable_dirs(root=ROOT):
+    466|     """Every directory an instrument WRITES into that git cannot restore a single byte of.
+    467| 
+    468|     **THIS IS THE ANSWER TO `checks/sweep.py:72`, AND IT IS A DERIVATION, NOT A REVERSAL.**
+    469|     `RESIDUE_ROOTS = (".agents/slop", "runs")` is a hand list of two names, and it is the same
+    470|     defect `AGENTS.md` records for `LIVE_UNITS` -- a tuple of 14 literal directory names that held
+    471|     53% of `.slop`. The question a sweep must answer is not "which directories are outputs" but
+    472|     **"where is a deletion IRREVERSIBLE"**, and that has an exact instrument: `git ls-tree -r HEAD`.
+    473| 
+    474|     MEASURED 2026-10-12 16:04, and the two names split cleanly:
+    475| 
+    476|         directory                 tracked files   written into by
+    477|         runs/                             0   checks/differ.py   (`differ.py:42`, the generator)
+    478|         runs/graphcmp/                    0   checks/differ.py
+    479|         .agents/slop/                 4,491   -- RESTORABLE, so it is not in this set
+    480|         gates/artifacts/                 0   gates/*.py via gatekit
+    481|         checks/                         172   --
+    482|         oracles/                        357   --
+    483| 
+    484|     So the derivation finds `runs/` **because it is untracked and written into**, and it does not
+    485|     need to be told. It also finds `gates/artifacts/`, which `RESIDUE_ROOTS` correctly omits
+    486|     because `AGENTS.md` records `rm -rf gates/artifacts` as a live command -- so a bare
+    487|     "untracked and written into" is NOT the whole rule, and the difference is stated below rather
+    488|     than hidden in the set.
+    489|     """
+    490|     tracked = _tracked_tops(root)
+    491|     found: dict[str, set[str]] = {}
+  ... (12 more lines)
+
+===== checks/runs-artifacts.py:540-547  fn=tracked_files  verbs=['ls-files', 'ls-tree'] shape=LINEWISE keyed_container=False
+    540| def tracked_files(root=ROOT):
+    541|     """`git ls-tree -r HEAD` -- THE TREE. **NOT `git ls-files`, WHICH READS THE INDEX**: MEASURED
+    542|     2026-10-06, `jj git colocation` stages an empty blob for every untracked file, so the index
+    543|     carries 906 `--intent-to-add` placeholders and reading it answers a question about the editor,
+    544|     not about the repository."""
+    545|     r = subprocess.run(["git", "-C", root, "ls-tree", "-r", "--name-only", "HEAD"],
+    546|                        capture_output=True, text=True)
+    547|     return r.stdout.splitlines()
+
+===== checks/slop-declare.py:136-151  fn=tracked  verbs=['ls-files', 'ls-tree'] shape=LINEWISE keyed_container=False
+    136| def tracked(root: Path) -> list[str] | None:
+    137|     """Every path in the TREE, or None if git did not answer. `-z`, so a space in a name is data.
+    138| 
+    139|     **`git ls-tree -r HEAD`, NOT `git ls-files`** — and this is the **third** population in this tree read
+    140|     from the INDEX. `declaretwo` MEASURED WHY IT MATTERS HERE: **THE INDEX CARRIED 282 DIRECTORIES AT
+    141|     18:45 AND 460 AT 19:31 — IT MOVED BY 178 IN 46 MINUTES WITH NO COMMIT** — and the SAME INSTRUMENT
+    142|     over three revisions reads **250 -> 262 -> 265**. **`orcdecide`'s 256 AND `declare`'s 262 WERE NOT
+    143|     MISCOUNTS; THEY READ `git ls-files`, WHICH IS AN INDEX THIS TREE HAS RESET SIX TIMES TONIGHT.**
+    144|     ***A POPULATION READ FROM A THING BEING REBUILT UNDER IT IS NOT A POPULATION, IT IS A READING OF
+    145|     THE WEATHER.** The REVISION IS PRINTED ON EVERY RUN (`rev()`), because a count without the commit it
+    146|     was measured at is `pinindep`'s finding with a different subject.
+    147|     """
+    148|     p = git(root, "ls-tree", "-r", "-z", "--name-only", "HEAD")
+    149|     if p.returncode != 0:
+    150|         return None
+    151|     return [f for f in p.stdout.split("\0") if f]
+
+===== checks/sweep.py:842-859  fn=tracked_files  verbs=['ls-files'] shape=LINEWISE keyed_container=False
+    842| def tracked_files(root: str = ROOT) -> set[str]:
+    843|     """`git ls-files` MINUS the tracked-but-deleted.
+    844| 
+    845|     `git ls-files` RETURNS TRACKED-BUT-DELETED PATHS, so membership tested against it alone calls a
+    846|     file committed when it is not on disk at all -- and an uncommitted row would then be deleted as
+    847|     if `git` could restore it.
+    848| 
+    849|     **`os.path.lexists`, NOT `Path.exists()`: `exists()` FOLLOWS SYMLINKS AND THIS TREE HAS 167 OF
+    850|     THEM**, so a dangling link inside `.slop` is reported here as ABSENT while `git` tracks it, and a
+    851|     tracked row would be called untracked on the strength of a link's target.
+    852| 
+    853|     MEASURED, because the count was quoted as a defect that has since stopped being one: `git
+    854|     ls-files` returns 4,609 paths on this tree and **all 4,609 are on disk -- 0 phantom, 0 entries
+    855|     carrying the intent-to-add empty-blob SHA `e69de29`.** The 4,109 figure in circulation was true
+    856|     earlier today and is FALSE NOW, which is exactly why a premise that is not re-measured decays.
+    857|     """
+    858|     r = subprocess.run(["git", "ls-files", "-z"], cwd=root, capture_output=True, text=True)
+    859|     return {p for p in r.stdout.split("\0") if p and os.path.lexists(os.path.join(root, p))}
+
+===== checks/unowned.py:185-222  fn=main  verbs=['ls-tree', 'status'] shape=TAB keyed_container=False
+    185| def main() -> int:
+    186|     ap = argparse.ArgumentParser()
+    187|     ap.add_argument("--tsv", action="store_true")
+    188|     ap.add_argument("--why", metavar="PATH")
+    189|     ap.add_argument("--from", dest="src", metavar="FILE",
+    190|                     help="read the path list from a captured `git status --porcelain` instead of "
+    191|                          "live -- the set moves while six units are running")
+    192|     a = ap.parse_args()
+    193| 
+    194|     paths = [ln[3:] for ln in open(a.src).read().splitlines() if len(ln) > 3] if a.src else status_paths()
+    195|     paths = [p for p in dict.fromkeys(paths) if p != os.path.relpath(__file__, ROOT)]
+    196|     if a.why:
+    197|         paths = [a.why]
+    198|     head = set(git("ls-tree", "-r", "--name-only", "HEAD").splitlines())
+    199|     owner = {p: (git("log", "--all", "--format=%h", "-1", "--", p).strip() or "NOBODY") for p in paths}
+    200|     hits = scan([a.why] if a.why else paths)
+    201| 
+    202|     print("path\towner\tin_head\tcited\texec\twritten\tverdict" if a.tsv else
+    203|           f"{'PATH':<50} {'OWNER':<10} {'HEAD':<5} {'CIT':>4} {'EXE':>4} {'WRT':>4}  VERDICT")
+    204|     for p in paths:
+    205|         keep = [(w, uncommented(w, t)) for w, t in hits.get(p, []) if w.rsplit(":", 1)[0] != p]
+    206|         tok = [x for x in tokens_of(p) if x]
+    207|         exe = [w for w, t in keep if is_code(w) and any(quoted(t, x) for x in tok)]
+    208|         wrt = [w for w, t in keep if is_code(w) and writes(t) and any(quoted(t, x) for x in tok)]
+    209|         cit = [(w, t) for w, t in hits.get(p, []) if w.rsplit(":", 1)[0] != p]
+    210|         gen, holds = generator_for(p)
+    211|         print(f"{p}\t{owner[p]}\t{int(p in head)}\t{len(cit)}\t{len(exe)}\t{len(wrt)}\t"
+  ... (11 more lines)
+
+===== checks/unrunnable-recipes.py:210-218  fn=head_paths  verbs=['ls-files', 'ls-tree'] shape=LINEWISE keyed_container=True
+    210| def head_paths() -> set[str]:
+    211|     """HEAD, NOT THE INDEX.  The colocated `jj` index holds `e69de29b` intent-to-add placeholders for
+    212|     untracked files, so `git ls-files` answers about the INDEX and moves with `GIT_INDEX_FILE`.
+    213|     `git ls-tree -r HEAD` is the immutable question."""
+    214|     r = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD"],
+    215|                        cwd=ROOT, capture_output=True, text=True, check=False)
+    216|     if r.returncode != 0:
+    217|         return set()
+    218|     return {line for line in r.stdout.splitlines() if line}
+
+===== gates/citations-census-gate.py:182-192  fn=tracked  verbs=['ls-files', 'ls-tree'] shape=LINEWISE keyed_container=False
+    182| def tracked() -> list[str]:
+    183|     """`git ls-tree -r HEAD` -- git's OWN declaration of the tree.  NOT `git ls-files`, which
+    184|     reads the INDEX, and this repo arms that index with intent-to-add placeholders by design
+    185|     (`jj git colocation`); AGENTS.md measured 882 such placeholders and 7.9 MB across 149
+    186|     directories on this tree."""
+    187|     r = subprocess.run(["git", "ls-tree", "-r", "HEAD", "--name-only"], cwd=ROOT,
+    188|                        capture_output=True, text=True)
+    189|     if r.returncode != 0:
+    190|         print(f"== REFUSED, NOT A VERDICT: git ls-tree rc={r.returncode}: {r.stderr.strip()}")
+    191|         sys.exit(REFUSED)
+    192|     return sorted(p for p in r.stdout.splitlines() if p)
+
+===== gates/citations-census-gate.py:399-410  fn=regressor_paths  verbs=['diff'] shape=LINEWISE keyed_container=True
+    399| def regressor_paths() -> set[str]:
+    400|     """The files the regressor TOUCHED, asked of git.  DISCOVERED, NOT NAMED.
+    401| 
+    402|     A four-element tuple of paths would be a hand list -- the `checks/sweep.py` `LIVE_UNITS`
+    403|     shape -- and it would go stale the moment a fifth file moved. `git diff --name-only`
+    404|     between the regressor and its parent IS the generator's own declaration, and it is one
+    405|     subprocess for the whole lane instead of two `git show` per RESOLVED PATH, which is what
+    406|     the first live run did: MEASURED, that version spent its time shelling out to `git show`
+    407|     for thousands of paths that were never regressed at all."""
+    408|     r = subprocess.run(["git", "diff", "--name-only", REGRESSOR + "^", REGRESSOR],
+    409|                        cwd=ROOT, capture_output=True, text=True)
+    410|     return set(r.stdout.split()) if r.returncode == 0 else set()
+
+===== gates/citations-census-gate.py:599-768  fn=main  verbs=['ls-tree'] shape=TAB keyed_container=True
+    599| def main() -> int:
+    600|     argv = sys.argv[1:]
+    601|     if "--selftest" in argv:
+    602|         return selftest()
+    603|     report_only = "--report" in argv
+    604|     rows_out = argv[argv.index("--rows") + 1] if "--rows" in argv else None
+    605|     find_out = argv[argv.index("--findings") + 1] if "--findings" in argv else None
+    606| 
+    607|     paths, tally, nbytes, nbig = walk()
+    608|     tpaths = tracked()
+    609|     if not paths:
+    610|         print("== DEAD: the walk found no file to read; the census measured nothing")
+    611|         return DEAD
+    612|     U = Universe(paths, tpaths)
+    613|     only_walk = [p for p in paths if p not in set(tpaths)]
+    614|     only_head = [p for p in tpaths if p not in U.on_disk]
+    615| 
+    616|     claims: list[dict] = []
+    617|     bodies: dict[str, list[str]] = {}
+    618|     nfile = 0
+    619|     for rel in paths:
+    620|         text = read_text(ROOT / rel)
+    621|         if text is None:
+    622|             tally["not text (binary or unreadable)"] += 1
+    623|             continue
+    624|         nfile += 1
+    625|         for row in extract(text):
+  ... (143 more lines)
+
+===== gates/docnum-census.py:169-179  fn=pin_trees  verbs=['ls-tree'] shape=TAB keyed_container=False
+    169| def pin_trees(root, pin):
+    170|     """path -> blob sha from ONE `git ls-tree -r`, so the map cannot disagree with itself."""
+    171|     proc = subprocess.run(["git", "ls-tree", "-r", pin], cwd=root,
+    172|                           capture_output=True, text=True, check=True)
+    173|     tree = {}
+    174|     for line in proc.stdout.splitlines():
+    175|         meta, _, path = line.partition("\t")
+    176|         bits = meta.split()
+    177|         if len(bits) >= 3:
+    178|             tree[path] = bits[2]
+    179|     return tree
+
+===== gates/gates-pop.py:793-816  fn=_tree_paths  verbs=['ls-tree'] shape=LINEWISE keyed_container=False
+    793| def _tree_paths(root):
+    794|     """`(sorted tracked paths, source)` -- `git ls-tree -r --name-only HEAD`, or the working copy.
+    795| 
+    796|     **THE COMMIT TREE IS THE PRUNE, WHICH IS WHY THERE IS NO PRUNE LIST.** `references/`,
+    797|     `.venv/`, `node_modules/`, `.agents/slop/opstree/`, `/runs/`, `/bin/bend` are every one of them
+    798|     `.gitignore`d, so a candidate set read off the TREE excludes them by construction --
+    799|     `checks/gendirs.py` cannot do this and carries a `SKIP_TOP` tuple for it. The fallback exists
+    800|     for `--plant`, whose synthetic trees are not repositories, and it SAYS WHICH it used: a
+    801|     derivation whose provenance is unprinted is a claim, and `gate-surface.py`'s `walk_control` is
+    802|     the second instance of this exact shape.
+    803|     """
+    804|     r = subprocess.run(["git", "-C", str(root), "ls-tree", "-r", "--name-only", "HEAD"],
+    805|                        capture_output=True, text=True)
+    806|     if r.returncode == 0 and r.stdout.strip():
+    807|         return sorted(r.stdout.splitlines()), "COMMIT TREE (git ls-tree -r HEAD)"
+    808|     # `find -type f` DOES NOT DESCEND A SYMLINKED DIRECTORY (196 under `e2epy/` here), so
+    809|     # `rglob` can report fewer files than `os.walk` would and the denominator would understate
+    810|     # itself. `os.walk` with `followlinks=False` is the honest walk, and it is the same one
+    811|     # `gate_homes` uses a few lines below.
+    812|     out = []
+    813|     for dirpath, dirnames, filenames in os.walk(root):
+    814|         dirnames[:] = [d for d in dirnames if d not in _SKIP]
+    815|         out += [str((Path(dirpath) / f).relative_to(root)) for f in filenames]
+    816|     return sorted(out), "WORKING COPY (git absent)"
+
+===== gates/gendirs.py:471-500  fn=tracked_dirs  verbs=['ls-files', 'ls-tree'] shape=TAB keyed_container=False
+    471| def tracked_dirs(root: Path = ROOT) -> tuple[dict[str, int], dict[str, int]]:
+    472|     """`(all, empty)`: `{dir: n COMMITTED tree entries}` and, of those, entries whose blob is git's
+    473|     EMPTY BLOB.
+    474| 
+    475|     **`git ls-tree -r HEAD`, NOT `git ls-files -s`, AND THAT IS THE WHOLE POINT: `ls-files` READS
+    476|     THE INDEX, AND THE INDEX HOLDS `git add --intent-to-add` PLACEHOLDERS WHOSE BLOB IS THE EMPTY
+    477|     BLOB.** MEASURED: with 1006 intent-to-add entries staged, `ls-files -s` answered **1252**
+    478|     empty blobs where the COMMITTED tree holds **246** — and **815 of the 1252 were 0-17 KB on
+    479|     disk.** Clause V printed `… : 10 entries, 10 at git's EMPTY BLOB` for files that had content.
+    480| 
+    481|     `git ls-tree` PRINTS THE MODE, THE TYPE AND THE SHA, IN THAT ORDER. This function used to read
+    482|     `ls-files -s`'s TWO fields and had to reason about MODE-vs-SHA; the committed tree states the
+    483|     type, so a submodule is `commit` and not a `160000` mode to be guessed at.
+    484|     """
+    485|     out: dict[str, int] = {}
+    486|     empty: dict[str, int] = {}
+    487|     for line in git("ls-tree", "-r", "HEAD").splitlines():
+    488|         meta, _, path = line.partition("\t")
+    489|         parts = meta.split()
+    490|         if len(parts) < 3:
+    491|             continue
+    492|         _mode, kind, sha = parts[0], parts[1], parts[2]
+    493|         if kind != "blob":                                 # a submodule, not a blob
+    494|             continue
+    495|         d = os.path.dirname(path)
+    496|         out[d] = out.get(d, 0) + 1
+    497|         if sha == GIT_EMPTY_BLOB:
+  ... (3 more lines)
+
+===== gates/indexread-gate.py:145-150  fn=committed_paths  verbs=['ls-tree'] shape=LINEWISE keyed_container=True
+    145| def committed_paths():
+    146|   """The COMMITTED population, from the TREE. `--name-only` or trap 1 gets you."""
+    147|   rc, out = git("ls-tree", "-r", "--name-only", "HEAD")
+    148|   if rc != 0:
+    149|     return None, f"git ls-tree -r --name-only HEAD failed rc={rc}"
+    150|   return set(out.splitlines()), ""
+
+===== gates/indexread-gate.py:228-294  fn=main  verbs=['ls-files', 'ls-tree'] shape=TAB keyed_container=False
+    228| def main(argv):
+    229|   strict = "--strict" in argv
+    230|   committed, err = committed_paths()
+    231|   if committed is None:
+    232|     print(f"INDEXREAD {VERDICT[REFUSED]}: {err}")
+    233|     return REFUSED
+    234|   base, err = baseline_set()
+    235|   if base is None:
+    236|     print(f"INDEXREAD {VERDICT[REFUSED]}: {err}")
+    237|     return REFUSED
+    238|   if "--print-baseline" in argv:
+    239|     for rel in sorted(base):
+    240|       print(rel)
+    241|     return PASS
+    242|   if "--write-baseline" in argv:
+    243|     found0 = {p: h for p, h in
+    244|               ((p, offenders_of(p)) for p in
+    245|                [q for q in walk_population(committed) if q != str(GATE.relative_to(ROOT))])
+    246|               if h}
+    247|     with BASELINE.open("w", encoding="utf-8") as fh:
+    248|       fh.write("# indexread-gate.py baseline -- GENERATED by --write-baseline, do not hand-edit.\n")
+    249|       fh.write("# Every committed instrument that reads the INDEX, discovered by os.walk over\n")
+    250|       fh.write("# ROOTS and filtered by `git ls-tree -r --name-only HEAD`.\n")
+    251|       for rel in sorted(found0):
+    252|         fh.write(f"{rel}\t{','.join(found0[rel])}\n")
+    253|       fh.write(f"# TOTAL {len(found0)}\n")
+    254|     print(f"INDEXREAD BASELINE-WRITTEN {len(found0)}")
+  ... (40 more lines)
+
+===== gates/msgdiff-gate.py:279-309  fn=commit_view  verbs=['ls-tree'] shape=TAB keyed_container=True
+    279| def commit_view(root, sha):
+    280|     """(present, deleted, removed, changed) for one commit.
+    281| 
+    282|     `deleted` is the `D` set under rename detection (`-M`), so a pure MOVE is not a delete --
+    283|     and it is the set the MESSAGE lane judges against, UNCHANGED.
+    284| 
+    285|     `removed` is `D` PLUS every rename SOURCE, and it is a SEPARATE set for a reason that is a
+    286|     measurement rather than a preference: `c83f04ad1c12` reverted 46 renames and git records
+    287|     them as `R100`, so `deleted` sees NONE of them -- which is exactly why they were
+    288|     "invisible in a diffstat". A rename removes its source path; a set built from `D` alone
+    289|     cannot see a removal. Folding the two would CHANGE this lane's verdicts (a claim about a
+    290|     rename source would become witnessed), and this lane's verdicts are not this unit's to move.
+    291| 
+    292|     The two sets are kept apart so ONE commit can carry two subjects -- the DIFF-removal and
+    293|     the MESSAGE-claim -- and each has its own verdict. See `gates/README.md`.
+    294|     """
+    295|     present = set(_git(root, "ls-tree", "-r", "--name-only", sha).splitlines())
+    296|     status = _git(root, "diff-tree", "-r", "-M", "--root", "--no-commit-id",
+    297|                   "--name-status", sha)
+    298|     deleted, removed, changed = set(), set(), 0
+    299|     for line in status.splitlines():
+    300|         parts = line.split("\t")
+    301|         if len(parts) < 2:
+    302|             continue
+    303|         changed += 1
+    304|         if parts[0].startswith("D"):
+    305|             deleted.add(parts[-1])
+  ... (4 more lines)
+
+===== gates/oracle-census-gate.py:165-177  fn=head_paths  verbs=['diff', 'ls-tree'] shape=LINEWISE keyed_container=False
+    165| def head_paths(paths=()) -> set[str]:
+    166|     """Every tracked path, from the COMMIT.
+    167| 
+    168|     NOT `git ls-files`: `jj git colocation` stages an `e69de29b` placeholder for every untracked
+    169|     file, and MEASURED on this tree that changes the answer (`AGENTS.md`: 882 placeholders, 7.9 MB
+    170|     across 149 owner directories, `git diff --cached` naming 0). The index is a question about the
+    171|     editor. `git ls-tree -r HEAD` is the question about the repository.
+    172|     """
+    173|     cmd = ["git", "ls-tree", "-r", "HEAD", "--name-only"]
+    174|     if paths:
+    175|         cmd += ["--", *paths]
+    176|     out = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True)
+    177|     return {p for p in out.stdout.split("\n") if p}
+
+===== gates/oracle-census-gate.py:524-556  fn=report  verbs=['ls-tree'] shape=LINEWISE keyed_container=False
+    524| def report(rows: list[dict[str, object]], twin: dict[str, list[str]]) -> None:
+    525|     """Everything below is REPORTED and not charged; see the docstring.
+    526| 
+    527|     **TO STDERR, UNCONDITIONALLY, AND THIS IS A FIX.** The human summary went to stdout while
+    528|     `--table` also wrote the table there, so a caller parsing the table got 373 lines for a
+    529|     population of 357 -- MEASURED, and it is the `checks/no-txt.py:215` rule ("stdout is what
+    530|     callers parse") restated for a gate. A header row, twelve indented detail rows and one
+    531|     summary line arrived interleaved with the data, and an `awk -F'\\t'` over it reported a class
+    532|     of 15 rows whose fourth field was empty -- fifteen rows that do not exist.
+    533|     """
+    534|     out = sys.stderr
+    535|     named = {}
+    536|     for r in rows:
+    537|         named[r["named_by"]] = named.get(r["named_by"], 0) + 1
+    538|     reads = {}
+    539|     for r in rows:
+    540|         reads[r["read_by"]] = reads.get(r["read_by"], 0) + 1
+    541|     cur = {}
+    542|     for r in rows:
+    543|         cur[r["current"]] = cur.get(r["current"], 0) + 1
+    544|     print(f"  population      {len(rows)} tracked paths under {ORACLE_DIR}/ "
+    545|           f"(git ls-tree -r HEAD, every depth)", file=out)
+    546|     print("  named by        " + " ".join(f"{k}={v}" for k, v in sorted(named.items())), file=out)
+    547|     print("  read by         " + " ".join(f"{k}={v}" for k, v in sorted(reads.items())), file=out)
+    548|     print("  current         " + " ".join(f"{k}={v}" for k, v in sorted(cur.items())), file=out)
+    549|     kinds = {}
+    550|     for _, k in classify(rows, twin):
+  ... (6 more lines)
+
+===== gates/pins-shape-gate.py:288-315  fn=tracked  verbs=['ls-files', 'ls-tree'] shape=LINEWISE keyed_container=False
+    288| def tracked(names):
+    289|     """`{name}` per `git ls-tree -r --name-only HEAD`, ONCE, and NEVER as the population.
+    290| 
+    291|     `AGENTS.md` measures `git ls-files --others --exclude-standard` answering ~1% of what
+    292|     `git ls-files` answers and `jj` arming the index on every snapshot, so a census that FILTERS on
+    293|     git can silently shrink its own population. This is therefore REPORTED and not charged, and the
+    294|     reason it matters: MEASURED at `c7e7c886`, `gates/crp-mut-pins.rows` and `gates/crp-mut-gate.py`
+    295|     appeared mid-session, untracked, written at 01:53 by another unit -- so this census's table set
+    296|     is LIVE and a count without a timestamp is a count about nothing.
+    297| 
+    298|     **IT USED TO SAY `git ls-files gates/`, AND `gates/indexread-gate.py` CHARGED THIS FILE FOR IT.
+    299|     THE REASON IT CHARGED IT IS THE REASON IT IS WRONG ABOUT THIS FILE: the index is not this
+    300|     census's SUBJECT, it was a *diagnostic* on a census whose population is `iterdir` + `discover()`.
+    301|     `indexread-gate.py`'s own header draws the line -- "the index is reported as a DIAGNOSTIC ONLY,
+    302|     never as the population" (`:237`) -- and it drew it for itself while charging a file that had
+    303|     done nothing the rule forbids. **`ls-tree -r --name-only HEAD` reads a COMMIT TREE OBJECT in
+    304|     `.git/objects`; no index reset reaches it** (`indexread-gate.py:29-32`), and it is the very
+    305|     call that gate uses for its own population.
+    306|     MEASURED, this swap moves the diagnostic on **0 of 23** tables: `git ls-files gates/` and
+    307|     `git ls-tree -r --name-only HEAD -- gates/` return the SAME 272 names on this tree and all 23
+    308|     `.rows` tables read `tracked` under both. THE VERDICT IS PRESERVED AND THE AUTHORITY IS BETTER.
+    309|     **THIS IS NOT AN ADMISSION AND NOT A RE-PIN:** no baseline row moved, no finding was deleted,
+    310|     and this file simply stopped reading the thing whose reading the census was about."""
+    311|     r = subprocess.run(["git", "ls-tree", "-r", "--name-only", "HEAD", "--", "gates/"],
+    312|                        capture_output=True, text=True, cwd=ROOT)
+    313|     if r.returncode != 0:
+    314|         return None
+  ... (1 more lines)
+
+===== gates/retention-check.py:357-361  fn=tracked  verbs=['ls-files'] shape=LINEWISE keyed_container=False
+    357| def tracked(directory):
+    358|     """What the index holds for this directory. `git ls-files` takes a PATHSPEC, and a path
+    359|     outside the repo is not one -- so a `--dir` copy reports 0 tracked, which is the truthful
+    360|     answer for a scratch tree and is exactly what a plant wants to see."""
+    361|     return [p for p in git("ls-files", "-z", "--", label(directory)).split("\0") if p]
