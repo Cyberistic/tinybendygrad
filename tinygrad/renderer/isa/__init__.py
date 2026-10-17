@@ -10,7 +10,6 @@ class Register:
   name: str
   index: int
   _cons: tuple[Register, ...] = field(default_factory=tuple)
-  # vreg size represents the area an instructions output occupies, not necessarily the entire register
   size: int = 8
   @property
   def cons(self): return self._cons or (self,)
@@ -19,6 +18,7 @@ class Register:
 class IselContext:
   def __init__(self, sink:UOp):
     self.reg_n = itertools.count()
+    self.alloc_n = itertools.count(max((u.arg.slot for u in sink.toposort() if u.op is Ops.ALLOC), default=-1)+1)
     def arg_key(u:UOp): return (1, u.arg) if u.op is Ops.SPECIAL else (0, u.arg.slot)
     self.func_args = sorted([u for u in sink.toposort() if u.op in {Ops.PARAM, Ops.SPECIAL}], key=arg_key)
 
@@ -34,6 +34,7 @@ class LinearContext:
   def __init__(self, ren:ISARenderer):
     self.ren, self.stack_size = ren, 0
     self.loop_label: dict[UOp, str] = {}
+  def insert_linearized(self, uops:list[UOp]) -> list[UOp]: return uops
   def assign_spill_slot(self, r:Register, u:UOp) -> Any: raise NotImplementedError("arch specific")
 
 class ISARenderer(Renderer):

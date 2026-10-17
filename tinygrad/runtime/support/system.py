@@ -1,7 +1,6 @@
 from __future__ import annotations
 import os, mmap, array, functools, ctypes, ctypes.util, select, contextlib, dataclasses, sys, struct, socket, enum, itertools
-try: import fcntl # windows misses that
-except ImportError: fcntl = None #type:ignore[assignment]
+import fcntl
 from tinygrad.device import BufferStorage, Buffer, Device
 from tinygrad.helpers import round_up, getenv, OSX, temp, DEBUG, pluralize, DEV
 from tinygrad.runtime.autogen import libc, pci, vfio
@@ -186,8 +185,6 @@ class _System:
     return bars
 
   def flock_acquire(self, name:str) -> int:
-    import fcntl # to support windows
-
     os.umask(0) # Set umask to 0 to allow creating files with 0666 permissions
 
     # Avoid O_CREAT because we don’t want to re-create/replace an existing file (triggers extra perms checks) when opening as non-owner.
@@ -343,16 +340,16 @@ class PCIIfaceBase:
       if self.remote is None: System.lock_memory(lo, size)
       paddrs = [(x, 0x1000) for x in (b.meta if self.remote is not None else System.system_paddrs(lo, size))]
       aspace, snooped, uncached = AddrSpace.SYS, True, True
-    elif isinstance(ifa:=getattr(Device[b.device], "iface", None), PCIIfaceBase):
+      if b.options.cpu_access: lo = self.dev_impl.mm.alloc_vaddr(size) # nv semaphores only reach 40 bits
+    elif isinstance(ifa:=getattr(Device[b.device], "iface", None), PCIIfaceBase) and ifa.peer_group == self.peer_group:
       if ifa.is_bar_small(): raise RuntimeError(f"P2P mapping not supported for small bar devices: {b.device} -> {self.dev.device}")
-      if ifa.peer_group != self.peer_group: raise RuntimeError(f"P2P mapping across peer groups: {b.device} -> {self.dev.device}")
       lo, size, snooped, uncached = b._buf, b.meta.mapping.size, True, b.meta.mapping.uncached
       if b.meta.mapping.aspace is AddrSpace.SYS: paddrs, aspace = b.meta.mapping.paddrs, AddrSpace.SYS
       else: paddrs, aspace = ifa.p2p_paddrs(b.meta.mapping.paddrs)
     else: raise RuntimeError(f"map failed: {b.device} -> {self.dev.device}")
 
     self.dev_impl.mm.map_range(lo, size, paddrs, aspace=aspace, snooped=snooped, uncached=uncached)
-    return BufferStorage(b._buf, (lo, size))
+    return BufferStorage(lo, (lo, size))
 
 # *** Remote PCI: memory and program execution on extra/remote/serve.py
 

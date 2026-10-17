@@ -87,10 +87,12 @@ CTL_JS = ROOT / "references/bend" / "tests" / "io" / "effect_runtime_shadow.js"
 
 # THE CPYTHON SIDE IS THREE FILES AND ALL THREE ARE PINNED BY BYTES, so a re-vendor that
 # changes what `fp8_to_float` answers moves a pin instead of silently moving 78k rows.
+# ALL THREE SHAs BELOW MOVED WITH THE DELIBERATE RE-VENDOR TO upstream `002630241`
+# (2026-10-16) -- not drift to restore. See `gates/onnx_census-gate.py:DRIFT_PIN`.
 ORACLE_PIN = {
-    "tinygrad/dtype.py": "356ba326d9d221bdf5d6f9253d561b94f18b224499d5fc77c21e88c0aed00504",
-    "tinygrad/helpers.py": "a7413fc30dd815d7bfb92cb5bbdecd140eadc8310edc72741c19d97b9cdb5390",
-    "tinygrad/renderer/ptx.py": "ba88d9c20bfccc2cd82b897ef8f0c042606a747fb6beb9952d1c21388b1bbd28",
+    "tinygrad/dtype.py": "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
+    "tinygrad/helpers.py": "eda095ab2c35d045e40523cf8f025543c45b012ff217ddeaed6143610330f308",
+    "tinygrad/renderer/ptx.py": "906bd04176ef07274e0fc9d9bf99bc86bb8d8bc9674a3099aee2eceff3d3d3e0",
 }
 
 # THE SEAM POPULATION IS DISCOVERED, NEVER LISTED -- and this regex was WRONG TWICE, both

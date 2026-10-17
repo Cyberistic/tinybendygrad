@@ -810,7 +810,7 @@ class OpMixin(ElementwiseMixin, ReduceMixin):
     values, n = self._split_cumalu(axis, Ops.MAX), int(self.shape[axis])
     x, values_t = self.transpose(axis, -1), values.transpose(axis, -1)
     match = x.unsqueeze(-1).eq(values_t.unsqueeze(-2)) * self._tri(n, n)
-    idx = (-(match * type(self).arange(n, 0, -1).reshape(n, 1)).max(-2) + n).cast(dtypes.int32)
+    idx = (match * type(self).arange(n).reshape(n, 1)).max(-2).cast(dtypes.int32)
     return values, idx.transpose(-1, axis)
 
   def cummin(self, axis:int=0) -> tuple[Self, Self]:
@@ -1172,7 +1172,7 @@ class OpMixin(ElementwiseMixin, ReduceMixin):
     for dim in reversed(axes):
       mask, values = functools.reduce(lambda x,y: (x[0]|y[0], y[0].where(y[1], x[1])), zip(mask.split(1, dim), values.split(1, dim)))
     # remove extra dims from reduce
-    for dim in reversed(axes): mask, values = mask.squeeze(dim), values.squeeze(dim)
+    mask, values = mask.squeeze(axes), values.squeeze(axes)
     # select from values for each True element in mask else select from self
     return mask.where(values, self)
 
@@ -1641,6 +1641,23 @@ class OpMixin(ElementwiseMixin, ReduceMixin):
     padding = flatten((((k-1)*d-pB,(k-1)*d-pA+op) for k,d,(pB,pA),op in reversed(list(zip(HW, dilation, padding, output_padding)))))
     return x.conv2d(w.flatten(end_dim=1), groups=groups, bias=bias, dilation=dilation, padding=padding)
 
+  def rmsnorm(self, axis:int|tuple[int,...]=-1, eps:float=1e-6) -> Self:
+    """
+    Applies Root Mean Square Normalization over a mini-batch of inputs.
+
+    - Paper: https://arxiv.org/abs/1910.07467
+
+    ```python exec="true" source="above" session="tensor" result="python"
+    t = Tensor.randn(8, 10, 16) * 2 + 8
+    print(t.square().mean().sqrt().item())
+    ```
+    ```python exec="true" source="above" session="tensor" result="python"
+    t = t.rmsnorm()
+    print(t.square().mean().sqrt().item())
+    ```
+    """
+    return self.mul(self.square().mean(axis, keepdim=True).add(eps).rsqrt())
+
   def layernorm(self, axis:int|tuple[int,...]=-1, eps:float=1e-5) -> Self:
     """
     Applies Layer Normalization over a mini-batch of inputs.
@@ -1656,8 +1673,7 @@ class OpMixin(ElementwiseMixin, ReduceMixin):
     print(t.mean().item(), t.std().item())
     ```
     """
-    y = (self - self.mean(axis, keepdim=True))
-    return y.mul((y*y).mean(axis, keepdim=True).add(eps).rsqrt())
+    return (self - self.mean(axis, keepdim=True)).rmsnorm(axis, eps)
 
   def batchnorm(self, weight:Self|None, bias:Self|None, mean:Self, invstd:Self, axis:int|tuple[int, ...]=1) -> Self:
     """

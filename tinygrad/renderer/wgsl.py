@@ -16,8 +16,9 @@ def packed_store(s:UOp):
   bidx, var, *gate = s.src
   idx, shift_am, mask = packed_field(bidx, var.dtype)
   new_v, wmask = (var.cast(dtypes.uint32) & mask) << shift_am, ((mask << shift_am) ^ 0xFFFFFFFF).cast(dtypes.uint32)
-  buf = idx.cast(dtypes.uint32).load(*((UOp.const(0, dtypes.uint32), *gate) if gate else ()))
-  return idx.store((buf & wmask) | new_v, *gate)
+  word = idx.cast(dtypes.uint32)
+  buf = word.load(*((UOp.const(0, dtypes.uint32), *gate) if gate else ()))
+  return word.store((buf & wmask) | new_v, *gate)
 
 # load for char: sign_extend(buf[idx/4] >> ((idx%4)*8))
 def packed_load(root:UOp):
@@ -85,7 +86,7 @@ class WGSLRenderer(CStyleLanguage):
       lambda ctx,b,v,gate: f"select({ctx[v]}, {ctx.render_load(ctx[b], b.src[0])}, {ctx[gate]})"),
     (UPat.load(UPat.var("b")), lambda ctx, b: ctx.render_load(ctx[b], b)),
     # packed_store writes (load & wmask) | new_v: atomicAnd clears the field, atomicAdd sets it. new_v is gone when it is 0
-    (UPat.store(UPat.var("b"), UPat.any(packed_rmw, packed_rmw | UPat.var("nv"))), lambda ctx,b,wmask,nv=None:
+    (UPat.store(UPat(Ops.CAST, src=(UPat.var("b"),)), UPat.any(packed_rmw, packed_rmw | UPat.var("nv"))), lambda ctx,b,wmask,nv=None:
      f"atomicAnd(&{ctx[b]},{ctx[wmask]});"+(f"\n  atomicAdd(&{ctx[b]},{ctx[nv]});" if nv is not None else "") if is_packed(b) else None),
     (UPat.store(UPat.var("b"), UPat.var("v")), lambda ctx,b,v: f"{ctx[b]} = {ctx[v]};"),
     (UPat(Ops.INDEX, src=(UPat.var("b"), UPat.var("idx"))),
@@ -112,7 +113,7 @@ class WGSLRenderer(CStyleLanguage):
     prg = "enable f16;\n" if any(uop.dtype == dtypes.half for uop in uops) else ""
     prg += "fn nan() -> f32 { let bits = 0xffffffffu; return bitcast<f32>(bits); }\n"
     prg += "@group(0) @binding(0)\nvar<uniform> INFINITY : f32;\n"
-    prg += "\n".join((external_local_bufs or [])+[f"@group(0) @binding({next(bind_it)+1})" +
+    prg += "\n".join(external_local_bufs+[f"@group(0) @binding({next(bind_it)+1})" +
       f"{'var<storage,read_write>' if u.addrspace == AddrSpace.GLOBAL else 'var<uniform>'}" +
       f"{name}:{f'array<{self.buf_map(u)}>' if u.addrspace == AddrSpace.GLOBAL else self.buf_map(u)};" for name,(u,_) in bufs])
     prg += f"\n@compute @workgroup_size({','.join([str(x) for x in local_size])}) fn {function_name}(@builtin(workgroup_id) gindex: vec3<u32>,"

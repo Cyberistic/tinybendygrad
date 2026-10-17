@@ -1,7 +1,7 @@
 from __future__ import annotations
-import platform, sys, ctypes, mmap, struct
-from typing import cast, Any
-from tinygrad.helpers import OSX, WIN, mv_address, suppress_finalizing, unwrap, data64_le, cpu_profile
+import platform, ctypes, mmap, struct
+from typing import Any
+from tinygrad.helpers import OSX, mv_address, unwrap, data64_le, cpu_profile
 from tinygrad.device import Compiled, TinyELF, Program, HostAllocator
 from tinygrad.runtime.support.c import DLL
 from tinygrad.renderer.cstyle import ClangRenderer
@@ -16,24 +16,14 @@ from tinygrad.runtime.autogen import libc
 MAP_JIT = 0x0800
 
 class CPUProgram(Program['CPUDevice']):
-  rt_lib, libm = DLL('rt', 'System' if OSX else 'kernel' if WIN else 'gcc_s'), DLL('m', 'm')
+  rt_lib, libm = DLL('rt', 'System' if OSX else 'gcc_s'), DLL('m', 'm')
 
-  def _load(self, lib, base=0): return lib if lib[:4] != libc.ELFMAG.encode() else jit_loader(lib, base=base, link_libs=[self.libm, self.rt_lib])
+  def _load(self, lib, base=0): return lib if lib[:4] != libc.ELFMAG.encode() else jit_loader(lib, base=base, link_libs=list(DLL._loaded_.values()))
 
   def __init__(self, dev:CPUDevice, obj:TinyELF):
     self.dev, self.name, self.signature, self.profile_key = dev, obj.name, obj.signature, obj.profile_key
     self.lvp = obj.target.renderer == "LVP"
     if dev.remote is not None: self.fxn:Any = dev.remote.rpc(RemoteCmd.LOAD_PROG, len(obj.lib), payload=obj.lib)[0]
-    elif sys.platform == "win32": # mypy doesn't understand when WIN is used here
-      PAGE_EXECUTE_READWRITE, MEM_COMMIT, MEM_RESERVE = 0x40, 0x1000, 0x2000
-      ctypes.windll.kernel32.VirtualAlloc.restype = ctypes.c_void_p
-      self.addr = ctypes.windll.kernel32.VirtualAlloc(ctypes.c_void_p(0), ctypes.c_size_t(len(obj.lib)), MEM_COMMIT | MEM_RESERVE,
-                                                      PAGE_EXECUTE_READWRITE)
-      ctypes.memmove(self.addr, (loaded:=self._load(obj.lib, self.addr)), len(loaded))
-      ctypes.windll.kernel32.GetCurrentProcess.restype = ctypes.c_void_p
-      proc = ctypes.windll.kernel32.GetCurrentProcess()
-      ctypes.windll.kernel32.FlushInstructionCache(ctypes.c_void_p(proc), ctypes.c_void_p(self.addr), ctypes.c_size_t(len(loaded)))
-      self.fxn = ctypes.CFUNCTYPE(None, ctypes.c_void_p)(self.addr) if self.lvp else ctypes.CFUNCTYPE(None)(self.addr)
     else:
       # On apple silicon with SPRR enabled (it always is in macos) RWX pages are unrepresentable: https://blog.svenpeter.dev/posts/m1_sprr_gxf/
       # MAP_JIT allows us to easily flip pages from RW- to R-X and vice versa. It is a noop on intel cpus. (man pthread_jit_write_protect_np)
@@ -55,27 +45,21 @@ class CPUProgram(Program['CPUDevice']):
 
       self.fxn = ctypes.CFUNCTYPE(None, ctypes.c_void_p)(self.addr) if self.lvp else ctypes.CFUNCTYPE(None)(self.addr)
 
-  def __call__(self, *bufs:int, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int,int,int]=(1,1,1),
-               vals:tuple[int|None, ...]=(), wait:bool=False, timeout:int|None=None) -> float|None:
-    args = [*bufs, *cast(tuple[int, ...], vals)]
+  def __call__(self, *args:int, global_size:tuple[int,int,int]=(1,1,1), local_size:tuple[int,int,int]=(1,1,1),
+               wait:bool=False, timeout:int|None=None) -> float|None:
     if (remote:=self.dev.remote) is not None:
       data = struct.pack(f'<{len(args)}Q', *(a & 0xffffffffffffffff for a in args))
       ret = (remote._rpc if wait else remote._post)(remote.sock, RemoteCmd.EXEC_PROG, self.fxn, len(args), int(wait), payload=data)
       return ret[0] / 1e9 if ret is not None else None
     with cpu_profile(self.name, self.dev.device, profile_key=self.profile_key) as prof:
       if self.lvp:
-        lvp_args = bytearray(12 + (len(bufs) + len(vals)) * 8)
+        lvp_args = bytearray(12 + len(args) * 8)
         addr = mv_address(lvp_args)
-        struct.pack_into(f'<3I{len(bufs)}Q', lvp_args, 0, *data64_le(addr+12), (len(bufs)+len(vals))*2, *bufs)
-        for v,(off,dt) in zip(vals, TinyELF.iter_sig(self.signature[-len(vals):], len(bufs)*8)): struct.pack_into(f'<{dt.fmt}', lvp_args, 12+off, v)
+        struct.pack_into('<3I', lvp_args, 0, *data64_le(addr+12), len(args)*2)
+        for a,(off,dt) in zip(args, TinyELF.iter_sig(self.signature)): struct.pack_into(f'<{dt.fmt}', lvp_args, 12+off, a)
         self.fxn(addr)
       else: self.fxn(*[ctypes.c_uint64(x) for x in args])
     return float(unwrap(prof.en) - prof.st) * 1e-6 if wait else None
-
-  @suppress_finalizing
-  def __del__(self):
-    if self.dev.remote is None and sys.platform == 'win32':
-      ctypes.windll.kernel32.VirtualFree(ctypes.c_void_p(self.addr), ctypes.c_size_t(0), 0x8000) #0x8000 - MEM_RELEASE
 
 class CPUDevice(Compiled):
   wait_timeout_ms = 30000

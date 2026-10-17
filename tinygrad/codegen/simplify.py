@@ -1,6 +1,6 @@
 import itertools
 from typing import Callable
-from tinygrad.uop.ops import UOp, PatternMatcher, UPat, Ops, graph_rewrite, _substitute, range_start, AxisType
+from tinygrad.uop.ops import UOp, PatternMatcher, UPat, Ops, graph_rewrite, _substitute, range_start, AxisType, identity_element
 from tinygrad.uop.symbolic import symbolic
 from tinygrad.helpers import partition, dedup
 from tinygrad.dtype import dtypes
@@ -76,7 +76,7 @@ pm_split_ranges = PatternMatcher([
 
 # **** reduce simplification ****
 
-def no_range(u:UOp) -> bool: return not any(x.op is Ops.RANGE for x in u.backward_slice_with_self)
+def no_range(u:UOp) -> bool: return not u.op_in_backward_slice_with_self(Ops.RANGE)
 
 def reduce_unparented(red:UOp) -> UOp|None:
   if red.arg[0] not in {Ops.ADD, Ops.MAX, Ops.MUL}: return None
@@ -84,10 +84,10 @@ def reduce_unparented(red:UOp) -> UOp|None:
   reduce_parented, reduce_unparented = partition(red.src[1:], lambda x: x in red.src[0].ranges)
   if len(reduce_unparented) == 0: return None
   ret = red.replace(src=(red.src[0],)+tuple(reduce_parented)) if len(reduce_parented) else red.src[0]
-  if red.arg[0] is Ops.ADD:
-    for r in reduce_unparented: ret = ret * r.src[0]
-  if red.arg[0] is Ops.MUL:
-    for r in reduce_unparented: ret = ret ** r.src[0]
+  for r in reduce_unparented:
+    # an idempotent op (MAX, and bool ADD/MUL which are OR/AND) applied N times is the op once, or the identity when N is 0
+    if red.arg[0] is Ops.MAX or red.dtype is dtypes.bool: ret = (r.src[0] > 0).where(ret, ret.const_like(identity_element(red.arg[0], red.dtype)))
+    else: ret = ret * r.src[0] if red.arg[0] is Ops.ADD else ret ** r.src[0]
   return ret
 
 pm_reduce_unparented = PatternMatcher([
@@ -148,7 +148,7 @@ pm_reduce_simplify = pm_reduce_unparented + PatternMatcher([
   (UPat(Ops.REDUCE, src=(UPat.var("u"),), allow_any_len=True, arg=(Ops.ADD, 0), name="red"), reduce_collapse),
 ])
 # remove REDUCE on load, comes from indexing a tensor with another tensor
-def no_load(u:UOp) -> bool: return not any(x.op is Ops.INDEX for x in u.backward_slice_with_self)
+def no_load(u:UOp) -> bool: return not u.op_in_backward_slice_with_self(Ops.INDEX)
 pm_load_collapse = PatternMatcher([
   (UPat(Ops.REDUCE, arg=(Ops.ADD, 0), src=(UPat.var("u"), UPat()), name="red"), reduce_load_collapse),
   # we want to make sure we dont do math on a loaded index since that can cause overflow, this undoes the rule in pm_reduce_load_collapse

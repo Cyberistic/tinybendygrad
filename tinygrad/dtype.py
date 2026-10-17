@@ -195,26 +195,20 @@ def least_upper_dtype(*ds:DType) -> DType:
 def least_upper_float(dt:DType) -> DType:
   return dtypes.weakfloat if dt is dtypes.weakint else dt if dtypes.is_float(dt) else least_upper_dtype(dt, dtypes.default_float)
 
-DTYPES_DICT = {k: v for k, v in DTypes.__dict__.items() if isinstance(v, DType) and not k.startswith(("default", "void", "weak", "_"))}
+DTYPES_DICT = {k: v for k, v in DTypes.__dict__.items() if isinstance(v, DType) and not k.startswith(("void", "weak", "_"))}
 
 @functools.cache
 def can_lossless_cast(dt0:DType, dt1:DType) -> bool:
   # return if dt1 preserves value of dt0
   # similar to https://numpy.org/doc/stable/reference/generated/numpy.can_cast.html
   if dt0 == dt1 or dt0 == dtypes.bool: return True
-  match dt1:
-    case dtypes.weakint: return dt0 in dtypes.ints
-    case dtypes.double: return dt0 in (dtypes.float, dtypes.half, dtypes.bfloat16, *dtypes.fp8s,
-      dtypes.uint32, dtypes.uint16, dtypes.uint8, dtypes.int32, dtypes.int16, dtypes.int8)
-    case dtypes.float: return dt0 in (dtypes.half, dtypes.bfloat16, *dtypes.fp8s, dtypes.uint16, dtypes.uint8, dtypes.int16, dtypes.int8)
-    case dtypes.half: return dt0 in (*dtypes.fp8s, dtypes.uint8, dtypes.int8)
-    case dtypes.uint64: return dt0 in (dtypes.uint32, dtypes.uint16, dtypes.uint8)
-    case dtypes.uint32: return dt0 in (dtypes.uint16, dtypes.uint8)
-    case dtypes.uint16: return dt0 in (dtypes.uint8,)
-    case dtypes.int64: return dt0 in (dtypes.uint32, dtypes.uint16, dtypes.uint8, dtypes.int32, dtypes.int16, dtypes.int8)
-    case dtypes.int32: return dt0 in (dtypes.uint16, dtypes.uint8, dtypes.int16, dtypes.int8)
-    case dtypes.int16: return dt0 in (dtypes.uint8, dtypes.int8)
-    case _: return False
+  if dtypes.is_int(dt1): return dtypes.is_int(dt0) and dt1.min <= dt0.min and dt0.max <= dt1.max
+  if dt1 not in dtypes.floats: return False
+  e1, m1 = dtypes.finfo(dt1)
+  if dtypes.is_int(dt0): return dt0.bitsize - (dt0 in dtypes.sints) <= m1 + 1
+  if dt0 not in dtypes.floats: return False
+  e0, m0 = dtypes.finfo(dt0)
+  return e0 <= e1 and m0 <= m1 and (e0, m0) != (e1, m1)
 
 def sum_acc_dtype(dt:DType):
   # default acc dtype for sum
@@ -263,7 +257,7 @@ def float_to_fp8(x: float, dtype: DType) -> int:
     res, half = mantissa >> shift, half_ulp << shift
     round_bits = (xbits | (1 << 52)) & ((half << 1) - 1)
     if round_bits > half or (round_bits == half and res & 1): res += 1
-  return 0 if dtype in dtypes.fp8_fnuz and res == 0 else int(res | sign)  # fnuz has no negative zero
+  return 0 if dtype in dtypes.fp8_fnuz and res == 0 else res | sign  # fnuz has no negative zero
 
 def fp8_to_float(x: int, dtype: DType) -> float:
   assert dtype in dtypes.fp8s, "Only for fp8s"

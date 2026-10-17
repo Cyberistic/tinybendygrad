@@ -105,14 +105,16 @@ ORACLE = "state_census-oracle.py"
 PORT = "tinybendygrad/nn/state.bend"
 ROOT = Path(__file__).resolve().parent.parent
 
-# THE THREE CPYTHON-SIDE BLOBS, MEASURED 2026-10-16 by `shasum -a 256`.
+# THE CPYTHON-SIDE BLOBS. `tinygrad/dtype.py` and `tinygrad/tensor.py` MOVED WITH THE
+# DELIBERATE RE-VENDOR TO upstream `002630241` (2026-10-16) -- not drift to restore.
+# `tinygrad/nn/state.py` did not change. See `gates/onnx_census-gate.py:DRIFT_PIN`.
 DRIFT_PIN = {
   "tinygrad/nn/state.py":
     "8b709853bca9edf31b99eb7e76c756968cb9bf521747f7dc50a86110ff974e6b",
   "tinygrad/dtype.py":
-    "356ba326d9d221bdf5d6f9253d561b94f18b224499d5fc77c21e88c0aed00504",
+    "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
   "tinygrad/tensor.py":
-    "4be73faf9bfdb30d04cad9825a2dc7b48b4750a703fa85fb18b41f5e43d19c87",
+    "5680ec3b2a716e435ae8f8ca42f39697ed46de7a3d50018a7becb9a368bcc56d",
   # THE ORACLE ITSELF, so a gate whose subject moved cannot keep reporting on the old one.
   "gates/state_census-oracle.py":
     "62a4cec98c564997db1896ec97ef6c3c6c98da9551f91b6118c73b681388f593",

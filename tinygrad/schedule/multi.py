@@ -57,7 +57,7 @@ def shard_srcs(msrcs:tuple[UOp, ...], axis:int) -> list[UOp]:
   assert all_same(devices), f"all buffers must have the same device {devices}"
   # without devices the sharding range comes from the UNSHARD itself (e.g. a LOCAL thread range);
   # device shards range over the devices instead
-  if len(devices): sharding_rng = UOp.range(len(devices[0]), -1, AxisType.DEVICE)
+  if len(devices): sharding_rng = UOp.range(len(devices[0]), 0, AxisType.DEVICE)
   else:
     sharding_rng = next((m.src[1] for m in msrcs if m.op is Ops.UNSHARD), None)
     assert sharding_rng is not None, "shard_srcs requires a device or a sharding range"
@@ -86,7 +86,6 @@ def shard_subview(full:UOp, multi:UOp) -> UOp:
 
 def alu_multi(root:UOp):
   multis = [m for m in root.src if m.op is Ops.UNSHARD]
-  if not multis: return None
   sharding = multis[0].sharding
   target = multis[0]
   def can_handle(m:UOp) -> bool:
@@ -127,7 +126,7 @@ def reshape_multi(root:UOp, multi:UOp):
   # map every sharded axis through the reshape: the axis boundary must survive intact and stay divisible by its shard count
   arg_acc:list[sint] = [1]
   for s in new_shape: arg_acc.append(ssimplify(arg_acc[-1]*s))
-  new_shardings = []
+  new_shardings, new_counts = [], {}
   for ax, rng in multi.sharding:
     count = int(rng.vmax)+1
     target = ssimplify(prod(multi.shape[:ax]))
@@ -135,8 +134,8 @@ def reshape_multi(root:UOp, multi:UOp):
     new_ax = len(arg_acc) - arg_acc[::-1].index(target) - 1
     if new_shape[new_ax] % count != 0: raise RuntimeError(f"reshape {multi.shape} -> {new_shape} moved items between shards")
     new_shardings.append((new_ax, rng))
-  new_axs = {a for a, _ in new_shardings}
-  new_shape = tuple(s//(int(rng.vmax)+1) if a in new_axs else s for a,s in enumerate(new_shape))
+    new_counts[new_ax] = count
+  new_shape = tuple(s//new_counts.get(a, 1) for a,s in enumerate(new_shape))
   return multi.src[0].reshape(new_shape).unshard(tuple(a for a,_ in new_shardings), tuple(r for _,r in new_shardings))
 
 def expand_multi(root:UOp, multi:UOp):
@@ -180,15 +179,9 @@ def shrink_multi(root:UOp, multi:UOp):
   val = multi.src[0]._mop(Ops.SHRINK, tuple(local_marg))
   return val if not remaining else val.unshard(tuple(a for a,_ in remaining), tuple(r for _,r in remaining))
 
-def flip_multi(root:UOp, multi:UOp):
-  for ax, _ in multi.sharding:
-    if root.marg[ax]: raise RuntimeError(f"flipping not supported on sharded axis {ax}")
-  return multi.src[0].flip([i for i,x in enumerate(root.marg) if x]).unshard(multi.arg, multi.src[1:])
-
 def stack_multi(root:UOp):
   # STACK adds a leading axis: srcs are sharded one axis below the output
   multis = [m for m in root.src if m.op is Ops.UNSHARD]
-  if not multis: return None
   sharding = multis[0].sharding
   if all(m.sharding == sharding for m in multis):
     srcs = [m.src[0] if m.op is Ops.UNSHARD else m for m in root.src]
@@ -286,7 +279,6 @@ multi_pm = PatternMatcher([
   (UPat(Ops.PAD, src=(UPat(Ops.UNSHARD, name="multi"), UPat(), UPat()), name="root"), pad_multi),
   (UPat(Ops.SHRINK, src=(UPat(Ops.UNSHARD, name="multi"), UPat(), UPat()), name="root"), shrink_multi),
   (UPat(Ops.PERMUTE, src=(UPat(Ops.UNSHARD, name="multi"), ), name="root"), permute_multi),
-  (UPat(Ops.FLIP, src=(UPat(Ops.UNSHARD, name="multi"), ), name="root"), flip_multi),
   (UPat(Ops.STACK, name="root", custom_early_reject=set([Ops.UNSHARD])), stack_multi),
   (UPat(Ops.INDEX, src=(UPat(Ops.UNSHARD, name="multi"),), name="root", allow_any_len=True), index_multi),
   (UPat(Ops.AFTER, src=(UPat(Ops.UNSHARD), UPat(Ops.STORE, src=(UPat(Ops.UNSHARD, name="dest"), UPat(Ops.UNSHARD, name="src"))))), store_after_multi),
@@ -298,7 +290,7 @@ multi_pm = PatternMatcher([
   # rewrite value-producing calls explicitly for UNSHARD
   # NOTE: lambda for late binding, rewrite_into_function references multi_pm
   (UPat(Ops.CALL, name="call"), lambda call: rewrite_into_function(call)),
-  (UPat((Ops.CALL, Ops.AFTER), src=(UPat(Ops.UNSHARD, name="multi"), ), name="root", allow_any_len=True), passthrough_multi),
+  (UPat(Ops.AFTER, src=(UPat(Ops.UNSHARD, name="multi"), ), name="root", allow_any_len=True), passthrough_multi),
   # just strip the UNSHARD from non-value-producing CALLs (custom kernels, etc.) — value-producing CALLs are handled by rewrite_into_function
   (UPat(Ops.CALL, dtype=dtypes.void, name="root", custom_early_reject=set([Ops.UNSHARD])), lambda root:
     UOp(root.op, src=tuple(x.src[0] if x.op is Ops.UNSHARD else x for x in root.src), arg=root.arg)),

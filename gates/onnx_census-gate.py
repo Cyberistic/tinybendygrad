@@ -73,13 +73,19 @@ ORACLE = "onnx_census-oracle.py"
 PORT = "tinybendygrad/nn/onnx.bend"
 ROOT = Path(__file__).resolve().parent.parent
 
-# THE CPYTHON-SIDE BLOBS, MEASURED 2026-10-16 by `shasum -a 256`. Four, not three:
-# `tinygrad/dtype.py` is the one that MOVED (793abbb16, twelve of thirteen `DType.name`
-# spellings) and it is pinned so that the day it moves again the gate REFUSES with a reason
-# instead of reporting a diff about vocabulary.
+# THE CPYTHON-SIDE BLOBS. Four, not three.
+#
+# **THE TWO `tinygrad/` SHAs BELOW MOVED WITH THE RE-VENDOR TO upstream `002630241`
+# (2026-10-16). THAT WAS DELIBERATE AND IT IS NOT DRIFT TO BE "FIXED" BACK.** `AGENTS.md`
+# warns that a drift which looks like an upstream fix is usually this project's own
+# re-vendor -- so the reader who finds these shas disagreeing with an old report must
+# re-vendor and move the pin, never "restore" it. `gates/rand_census-gate.py`,
+# `gates/state_census-gate.py` and `gates/js-lane-census.py` moved in the same commit.
+# The pin is here so that the day one of these blobs moves again the gate REFUSES with a
+# reason instead of reporting a diff about vocabulary.
 DRIFT_PIN = {
-  "tinygrad/nn/onnx.py": "743f447feb4d12406a1a526b866d2d14c16a5716b19cab8421f87abecd7374ba",
-  "tinygrad/dtype.py": "356ba326d9d221bdf5d6f9253d561b94f18b224499d5fc77c21e88c0aed00504",
+  "tinygrad/nn/onnx.py": "670eaffe1386d496e8337f4be5a472cd7b3786fa610a47ba767d89871346503b",
+  "tinygrad/dtype.py": "7800592dcccbdd5a5beaee889342b5f62790d37445938fe601416c8b76057926",
   "tinygrad/nn/state.py": "8b709853bca9edf31b99eb7e76c756968cb9bf521747f7dc50a86110ff974e6b",
   "gates/onnx_census-oracle.py": "5e28720a1bb704b9a39901a1a6377647b28609f6cec98404d2c93b39f4f37c81",
 }
