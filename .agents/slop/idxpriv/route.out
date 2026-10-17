@@ -1,0 +1,4 @@
+ROUTE BARE    carried 19 paths on a commit that NAMED none (9 foreign adds + 9 deletions + 1 own = 19 expected)
+ROUTE REWRITE under a concurrent index writer: SWEEP=0 BOUNDED=10 commit-rc-nonzero=2 of 12
+ISOLATED shared   my bare commit carried 10 paths, 9 of them the other unit's (SWEEP)
+ISOLATED private  my bare commit carried 1 paths, 0 of them the other unit's (ISOLATED)

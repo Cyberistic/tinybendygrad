@@ -1,0 +1,26 @@
+unit0: index=agent-index-idxpriv-0 contaminated-with=7163 paths (git add rc=0)
+unit1: index=agent-index-idxpriv-1 contaminated-with=7163 paths (git add rc=0)
+unit2: index=agent-index-idxpriv-2 contaminated-with=7163 paths (git add rc=0)
+
+--- unit0 311e476575e5 ---
+311e47657 idxpriv: unit 0 commits ONE path through PRIVATE index `agent-index-idxpriv-0`
+
+ .agents/slop/idxpriv/p0.rows | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+    VERDICT unit0: summary line says 1 file(s) changed -> ONE PATH, CORRECT
+
+--- unit1 271cfdca6ebf ---
+271cfdca6 idxpriv: unit 0 commits ONE path through PRIVATE index `agent-index-idxpriv-0`
+
+ .agents/slop/idxpriv/p1.rows | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+    VERDICT unit1: summary line says 1 file(s) changed -> ONE PATH, CORRECT
+
+--- unit2 4014b7857cc6 ---
+4014b7857 idxpriv: unit 0 commits ONE path through PRIVATE index `agent-index-idxpriv-0`
+
+ .agents/slop/idxpriv/p2.rows | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+    VERDICT unit2: summary line says 1 file(s) changed -> ONE PATH, CORRECT
+
+THREE CONCURRENT COMMITS, THREE PRIVATE INDEXES: ALL THREE CARRIED EXACTLY ONE PATH

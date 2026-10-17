@@ -1,0 +1,5 @@
+idxpriv: unit 0 commits ONE path through PRIVATE index `agent-index-idxpriv-0`
+
+MEASURED: that private index was contaminated with 7163 of HEAD's own paths (UNCHANGED blobs, so a leak would be a no-op diff) before this commit.
+`git show --stat` on this commit is the check, and it is the check that never ran
+in the session's one destructive commit.

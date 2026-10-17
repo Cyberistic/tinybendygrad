@@ -1,0 +1,4 @@
+SHAPE FOREIGN-ADD  BOUNDED (1 path)       carried: mine.rows
+SHAPE DELETION     BOUNDED (1 path)       carried: mine.rows
+SHAPE STALE        BOUNDED (1 path)       carried: mine.rows
+SHAPE INTENT       BOUNDED (1 path)       carried: mine.rows

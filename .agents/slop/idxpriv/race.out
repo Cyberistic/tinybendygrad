@@ -1,0 +1,2 @@
+ARM shared: SWEEP=0 INDEX-LOCK=0 OTHER=0 ref-retries=70 over 12 trials
+ARM private: SWEEP=0 INDEX-LOCK=0 OTHER=0 ref-retries=36 over 12 trials
