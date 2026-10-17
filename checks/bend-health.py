@@ -401,8 +401,19 @@ def main() -> int:
     # The rows go to a `.rows` file, never a `.txt`: a `.txt` is a declaration that the author
     # did not know what the file was, and `checks/no-txt.py` enforces it.
     out = HERE / "bend-health.rows"
-    out.write_text("\n".join(rows) + f"\noverall={NAME[code]}\n")
-    print(f"  rows -> {out.relative_to(ROOT)}")
+    # A SKIP MUST NOT WRITE A RECORD, and this was measured the hard way: a run that SKIPped
+    # clause III because another unit's compile was live overwrote the committed PASS rows with
+    # half a measurement, so the committed artifact and the last run disagreed about the state
+    # of the tree. `SKIP IS NOT PASS` is not only an exit code -- a file full of the rows a
+    # skipped run happened to collect is a record that reads like a record. So a SKIP prints its
+    # rows to STDOUT and leaves the file alone; DEAD and everything else write, because a DEAD
+    # clause measured something true about itself and hiding it would be the other failure.
+    if code == SKIP:
+        print(f"  SKIP WROTE NOTHING: {out.relative_to(ROOT)} left as it was "
+              f"(a skipped run must not replace a record with half a measurement)")
+    else:
+        out.write_text("\n".join(rows) + f"\noverall={NAME[code]}\n")
+        print(f"  rows -> {out.relative_to(ROOT)}")
     return code
 
 
