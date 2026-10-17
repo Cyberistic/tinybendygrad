@@ -152,6 +152,15 @@ LANE_ROWS = ".rows"   # the oracle's EXPECTED VALUES, verbatim
 LANE_OUT = ".out"     # the two CAPTURED STREAMS, verbatim
 LANE_CMP = ".cmp"     # the rows that SURVIVED the exclusion list -- what the diff saw
 
+# HOW MANY ROW PAIRS A `DISAGREE` LINE SHOWS, AND HOW MANY TIMES A LANE IS RETRIED. Both are
+# printed numbers, so both are DECLARED once and read where they are used: a bound written into a
+# message as a literal is a second number that can drift from the loop it describes. `SHOWN` is
+# the line's WIDTH and nothing else -- the disagreement's true size is counted separately and
+# printed, so raising this cannot hide anything. `TRIES` buys nothing but flake tolerance: a lane
+# with the wrong row count is a FAIL once, not twenty-five times.
+SHOWN = 2
+TRIES = 25
+
 
 def _staged(name):
     """The name a run WRITES. `checks/differ.py:158`'s convention, unchanged."""
@@ -245,12 +254,18 @@ def device_plant() -> int:
               + (f"  -- {why}" if why else ""))
         if code != want:
             bad.append(f"declared={declared} ambient={show}: rc={code}, expected {want}")
-    print(f"--plant: {'all five states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    # THE COUNT IS `len(cases)`, NOT A WORD. "all five states" was prose beside the table, and
+    # prose is a second number nobody checks: a sixth case would have been added to `cases` and
+    # the summary would still have said five. This file already has the rule, at `run`'s
+    # `want = self.rows - len(self.port_only)`: "a second number that can disagree with the
+    # first is a number nobody can check."
+    ok = f"all {len(cases)} states OK"
+    print(f"--plant: {ok if not bad else 'FAILED: ' + '; '.join(bad)}")
     return 1 if bad else 0
 
 
 def output_dir_plant() -> int:
-    """THE TWO STATES OF A GATE'S OUTPUT DIRECTORY, IN TOKEN AND EXIT CODE -- no `bend` runs.
+    """THE THREE STATES OF A GATE'S OUTPUT DIRECTORY, IN TOKEN AND EXIT CODE -- no `bend` runs.
 
         .venv/bin/python gates/wk-cd-gate.py --plant
 
@@ -264,18 +279,20 @@ def output_dir_plant() -> int:
       blocked  a FILE sits where the dir must go          -> token `REFUSED, NOT A VERDICT`, rc 3
     """
     global ART
-    keep, bad = ART, []
+    keep, bad, states = ART, [], []
     try:
         with tempfile.TemporaryDirectory() as td:
             ART = Path(td) / "fresh" / "artifacts"
             g = Gate("plant-absent", bend="unused.bend", oracle="unused.py", rows=1)
             hit = g.dir.is_dir()
             print(f"  absent   {'OUTPUT-CREATED' if hit else 'OUTPUT-MISSING'}")
+            states.append(hit)
             bad += [] if hit else ["absent: the output directory was not created"]
 
             ART.mkdir(parents=True, exist_ok=True)
             g = Gate("plant-present", bend="unused.bend", oracle="unused.py", rows=1)
             print(f"  present  OUTPUT-PRESENT  rc={g.dir_rc}")
+            states.append(g.dir_rc == PASS)
             bad += [] if g.dir_rc == PASS else [f"present: rc={g.dir_rc}, expected 0"]
 
             blocker = Path(td) / "blocked"
@@ -283,10 +300,12 @@ def output_dir_plant() -> int:
             ART = blocker
             g = Gate("plant-blocked", bend="unused.bend", oracle="unused.py", rows=1)
             print(f"  blocked  REFUSED, NOT A VERDICT  rc={g.dir_rc}")
+            states.append(g.dir_rc == REFUSED)
             bad += [] if g.dir_rc == REFUSED else [f"blocked: rc={g.dir_rc}, expected {REFUSED}"]
     finally:
         ART = keep
-    print(f"--plant: {'all three states OK' if not bad else 'FAILED: ' + '; '.join(bad)}")
+    ok = f"all {len(states)} states OK"
+    print(f"--plant: {ok if not bad else 'FAILED: ' + '; '.join(bad)}")
     return 1 if bad else 0
 
 
@@ -437,7 +456,7 @@ class Gate:
         # WHAT COUNTS AS THE FLAKE IS `_said(stderr)` AND NOT THE EXIT STATUS -- see `_said`.
         # The guard was `not stdout and rc != 0`, which is the flake's shape AND a type error's
         # shape, so a deterministic failure was retried 25 times and then reported AS the flake.
-        for _ in range(25):
+        for tries in range(1, TRIES + 1):
             out = subprocess.run([str(BEND), str(self.bend), "--check-only"],
                                  capture_output=True, text=True)
             first = (out.stdout or "").splitlines()[:1]
@@ -462,7 +481,8 @@ class Gate:
                       + (" -- REPORTED, not gated on: the shell ran this `|| true`"
                          if self.warm_mode == "report" else ""))
             return self.warm_mode == "report"
-        self._say("bend produced no --check-only output in 25 tries (the stack flake)")
+        self._say(f"bend produced no --check-only output in {tries} "
+                  f"{'try' if tries == 1 else 'tries'} (the stack flake)")
         return False
 
     def _oracle(self) -> int:
@@ -526,16 +546,26 @@ class Gate:
         could not leak into a verdict.
         """
         out = self.dir / _staged(name)
-        for _ in range(25):
+        for tries in range(1, TRIES + 1):
             r = subprocess.run(argv, capture_output=True, text=True)
             if r.returncode == 0 and len(_lines_text(r.stdout)) == self.rows:
                 out.write_text(r.stdout)
                 return True
             if _said(r.stderr):
                 break  # bend NAMED it, so it is not the flake and 24 more tries cannot help
-        said = _said(r.stderr)
-        self._say(f"lane {name} did not produce {self.rows} rows"
-                  + (f" -- {said}" if said else " in 25 tries (the flake)"))
+        # THE COUNT IS WHAT THE LANE PRODUCED, NOT WHAT IT WAS ASKED FOR. The sentence used to
+        # print `self.rows` and no observed count, so nothing on it separated the three ways this
+        # loop ends -- and `gates/cstyle_render_census-mutate.py:46` records the cost: a driver
+        # mis-wired to emit nothing printed "did not produce 358 rows in 25 tries (the flake)", a
+        # verdict about a mis-wired harness wearing the flake's name. It could, because the
+        # OBSERVED count was the one number the line withheld. `tries` is the real count and not
+        # the bound, because this loop also leaves on the first try.
+        said, got = _said(r.stderr), len(_lines_text(r.stdout))
+        tries = f"{tries} {'try' if tries == 1 else 'tries'}"
+        self._say(f"lane {name} produced {got} of {self.rows} rows in {tries}"
+                  + (f" -- {said}" if said
+                     else f", nothing on stderr: the flake is one reading and a mis-wired driver "
+                          f"is the other, and the {got} is what tells them apart"))
         return False
 
     def run(self):
@@ -658,10 +688,22 @@ class Gate:
             for tag in ("bd", "bn"):
                 other = _lines(subs[tag])
                 if other != base:
-                    bad = [(x, y) for x, y in zip(base, other) if x != y][:2]
+                    # THE COUNT IS A FIGURE OF ITS OWN AND NOT THE LIST'S LENGTH. `[:2]` printed
+                    # 2 of 8 and said nothing, so a reader who counted the pairs -- the only count
+                    # the line offered -- undercounted 4x. MEASURED here, through the real `run()`
+                    # and a stand-in `bin/bend` that answers 8 of 12 rows wrongly.
+                    #
+                    # THE TRUNCATION STAYS. A 941-row gate can disagree on hundreds of rows and a
+                    # wall of pairs is unreadable, so printing all of them trades an UNDERcount for
+                    # a line nobody can read -- the SAME defect, because either way the true count
+                    # does not come off the line. What makes the truncation honest is that the
+                    # count is printed BESIDE the list and `SHOWN` says how many the list holds,
+                    # so they are two numbers and can never be read as one.
+                    bad = [(x, y) for x, y in zip(base, other) if x != y]
                     extra = (f" (len {len(base)} vs {len(other)})"
                               if len(base) != len(other) else "")
-                    self._say(f"DISAGREE ({tag}){extra}: {bad}")
+                    self._say(f"DISAGREE ({tag}){extra}: n={len(bad)} of {len(base)} rows, "
+                              f"{min(SHOWN, len(bad))} shown: {bad[:SHOWN]}")
                     return 1
 
             # PINNED ROWS, for the claims a diff cannot express. `want` here is the lane the
