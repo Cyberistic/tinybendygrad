@@ -377,3 +377,41 @@ work outstanding.**
    op set changes meaning (`GROUP` -> `AFTER`). The pinned slots (`eq_u(..., 6)` vs `3`) in
    `fx_sinkgrp`'s own comment may move. **Not measured** -- that needs `bend`.
 7. **`.agents/TODO.md` was not touched**, per instruction. This task is not on it.
+
+---
+
+## 9. THE TREE MOVED UNDER THIS REPORT -- AND IT MOVED THE RIGHT WAY
+
+**Every count in §1-§5 is a reading of `tinybendygrad/` at the moment `gates/opsref-census.py` last
+printed 70. A concurrent unit then landed, and the census now reads 68.** Recorded here rather than
+silently re-run, because a number that was true and is quietly replaced is the failure this tree's
+own doctrine is about.
+
+Measured delta, `gates/opsref-census.py` re-run, `git diff -- tinybendygrad/uop/ops.bend`:
+
+| | was | now |
+|---|---:|---:|
+| SITES | 70 | **68** |
+| EMIT | 17 | **15** |
+| CONSUME / SHAPE / PROSE | 20 / 33 / 0 | 20 / 33 / 0 (unchanged) |
+| files | 18 | 18 |
+
+The **two** sites that left are **`uop/ops.bend:2802` (`UOp.group.of`) and `:2805` (`UOp.group`)** --
+and they left because the other unit **replaced `UOp.group` with `UOp(Ops.STACK).after(...)`**,
+quoting `ops.py:536-538` and the `if len(srcs) == 1 ... return srcs[0]` guard, with `OpsGROUP{}`
+still present in the `type Op is Data:` block and in `all_ops` (`:4160`).
+
+**That is §7's Step 1, arrived at independently, and it confirms the ordering:** the declaration and
+the four enumeration tables were left for LAST, so every intermediate state is still compilable and
+HALF 1 is not red mid-flight. `all_ops` moved `:4152 -> :4160` and `:4157 -> :4165` (+8 lines) with
+no op removed from it, which is why **line numbers in §2-§5 are only valid against the commit
+`0fd4e2f9229bfdaaf0ff059b076b7fe92de135be`**; the **def names** in §2-§5 are the durable locators
+and are unaffected.
+
+**What this means for a next agent: re-run `gates/opsref-census.py` before planning, and treat the
+def NAME, not the line number, as the locator.** An instrument that printed a number is worth
+nothing if the number's subject has moved and the instrument cannot say so.
+
+**And it is a second measured instance of the point the brief opened with** -- a reference is not a
+site. `UOp.group.of` was an `EMIT` at 70 and is not one at 68, for a reason that has nothing to do
+with the census and everything to do with the tree.
