@@ -696,10 +696,24 @@ type DtShape is Data:
 
 # The two constructors every arm of the ladder ends in, hoisted: a real shape, and
 # a real shape under a condition (Python's `assert` and `raise` arms).
+#
+# THE `None` ARM ANSWERS `(dt, None)`, AND THAT IS THE WHOLE FIX. `dt_of` builds the PAIR
+# upstream's two ladders answer together, and `(dtype, None)` is a real pair: `_shape`'s
+# passthrough is `return self.src[0]._shape` (ops.py:377) and NOOP's is
+# `self.src[0]._shape if len(self.src) >= 1 else None` (ops.py:338), so an op whose src[0]
+# has no shape gets `(src[0].dtype, None)` -- dtype `void` for a NOOP src, per
+# `always void` (ops.py:117) and `return src[0].dtype` (ops.py:142).
+#
+# IT WAS THE OUTER `None`, AND THE OUTER `None` IS PORT-ONLY: `derived.put` passes it on
+# and `Kahn.ans.of` turns it into A MISSING TABLE ENTRY, so the node reads `?` in BOTH
+# columns -- a hole CPython cannot print -- rather than reading `R`. `late()` below is this
+# same pair spelled once, for the dtype that is void by name.
+# MEASURED 2026-10-18, `graphcmp.py diff --graph loop`: `?=32` (16 nodes) -> 0, because
+# `thru0`'s AFTER arm is the ONLY caller here whose `src[0]` is a bare NOOP.
 def dt_of(dt: S.Dt, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, DtShape>:
   match m:
     case Some{ds}: Some{DtShape{dt, Some{ds}}}
-    case None{}: None{}
+    case None{}: Some{DtShape{dt, None{}}}
 
 def param_ds.shape(dt: S.Dt, arg: O.Arg, size: Maybe<&2, U32>) -> Maybe<&2, DtShape>:
   dt_of(dt, Some{param_shape.of(arg, size)})
@@ -713,8 +727,10 @@ def bitcast_ds.shape(dt: S.Dt, out: U32, inp: U32, m: Maybe<&2, List<&2, O.Sint>
   Maybe.bind(&2, List<&2, O.Sint>, DtShape, bitcast_dims(m, out, inp), ds => dt_of(dt, Some{ds}))
 
 # a `raise` on `ok` guarding the same pair, so the guard is a whole extra answer and
-# not a field of it: `ok` false and `m` None are the same `None`, and the one place
-# they differ -- `ok` true with a real shape -- is `dt_of` itself.
+# not a field of it: `ok` false is the OUTER `None` and no arm downstream reads it as a
+# shape, so the guard has to be its own arm. Since `dt_of` now answers `(dt, None)` for a
+# shape that is None, `ok` true answers that pair where `ok` false does not -- which is
+# what a `raise` does upstream and why this cannot fold into `dt_of`.
 def dt_of_if(ok: Bool, dt: S.Dt, m: Maybe<&2, List<&2, O.Sint>>) -> Maybe<&2, DtShape>:
   match ok:
     case True{}: dt_of(dt, m)
