@@ -118,7 +118,21 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   `gates/retention-check.py` says `IV OK runs/graphcmp/D/` (the run's own measure is healthy; its rc=1
   is now clause V's `gates/artifacts/` — `0/11 dirs can report health`), and `corpus-figure.py`
   reads **all 17** pins (it imports `differ.PINS`) and prints `RUN HEALTH : OK` only when all 17 are
-  green. TRUST THE RED ONE.** See `checks/README.md` and `.agents/slop/difftxt/`.
+  green. TRUST THE RED ONE.**
+  **AND AS OF **2026-10-19** (`65d64bb74`) **THE CORPUS IS **GREEN** AND **THIS **IS **A **FIRST**:**
+  `graphs=34 graphs-answered=34 graphs-agree=34 graphs-disagree=0 byte-identical=34 graphs-refused=0`,
+  `?=0`, `SHARED cores 52`, `plants-disagree 7 of 7`, `controls 5 of 5`, `conflations 4 of 4`,
+  `stable-pairs 5 of 5`, `oracle-selfcheck=OK`, `census-rc=rc=0`, **`selfcheck=# SELFCHECK: OK`**,
+  **`unhealthy() -> 0 line(s)`** (THE READING IS **EMPTY**, NOT "0 COMPLAINTS"), **`artefacts_ok() -> 0`**,
+  **`repro_bad() -> 0`**, AND **`repro`: `310 of 310 files identical across two clean runs`**
+  (`D0-repro.txt` mtime **`Oct 19 00:16`**, **2 DAYS STALE BEFORE THAT**). **EVERY GRAPH IN THE 34 IS
+  BYTE-IDENTICAL, AND THE VERDICT **REPRODUCES** — **WHICH ARE **TWO **DIFFERENT **CLAIMS** AND **ONLY THE
+  SECOND **IS **PROVEN.** **THE **THREE **MALFORMED **TREES **ARE **ORPHANED**: `d83cf685` IS OWNED BY
+  `591f6b499`, `3a60f33f` BY `63b64ebad`, **NONE IS AN ANCESTOR OF HEAD**, **SO A PUSH OF HEAD WOULD NOT
+  CARRY THEM.** **AND `?git diff HEAD` IS **UNRELIABLE **ON **THIS **TREE** **RIGHT **NOW**: THE ARMED INDEX
+  LISTS FRESH FILES AS DELETIONS, SO IT REPORTED **120** DELETIONS ON A FILE WHOSE `git hash-object`
+  **EQUALS `HEAD:`** — **USE `git hash-object` vs `git rev-parse HEAD:<path>`, AND `git show --stat`,
+  WHICH **HOLD.** **See `checks/README.md` and `.agents/slop/difftxt/`.
 - `e2e.py` — **the SEVEN-stage end-to-end gate**, and `e2e.sh` beside it. Do not rewrite it to tidy it.
   **NOT GREEN, AND NOT FOR THE REASON PREVIOUSLY WRITTEN HERE.** Stages 3, 4, 5 and 6 all **PASS** on the
   last transcript, and `.agents/slop/xd2/cdp.mjs` and `.agents/slop/ops_bend-milestone-expected.txt` —
