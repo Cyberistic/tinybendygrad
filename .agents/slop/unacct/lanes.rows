@@ -1,0 +1,79 @@
+lane_member	artifact	state	counted_in_summary_column
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-allred.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-alu.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-binblob.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-bit.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-buffer.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-bw.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-cast.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-cdiv.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-commute.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-custom_function.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-flip.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-gate.txt	DISAGREE	graphs-disagree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-getaddr.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-group.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-indexed.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-late.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-lin.txt	DISAGREE	graphs-disagree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-loop.txt	REFUSED	NEITHER
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-matmul.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-move.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-mselect.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-mstack.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-mulacc.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-range.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-rangeflat.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-reduce.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-sink.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-special.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-stage.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-sym.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-threefry.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-unshard.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-where.txt	AGREE	graphs-agree
+D1-graph (verdict)	runs/graphcmp/D/D1-graph-wmma.txt	AGREE	graphs-agree
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-allred.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-alu.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-binblob.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-bit.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-buffer.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-bw.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-cast.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-cdiv.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-commute.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-custom_function.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-flip.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-gate.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-getaddr.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-group.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-indexed.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-late.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-lin.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-loop.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-matmul.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-move.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-mselect.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-mstack.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-mulacc.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-range.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-rangeflat.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-reduce.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-sink.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-special.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-stage.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-sym.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-threefry.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-unshard.txt	BYTE-IDENTICAL	byte-identical
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-where.txt	DIFFERS	NEITHER
+D2-cmp (byte diff)	runs/graphcmp/D/D2-cmp-wmma.txt	BYTE-IDENTICAL	byte-identical
+D3-control	runs/graphcmp/D/D3-control-binblob.txt	OK	controls
+D3-control	runs/graphcmp/D/D3-control-gate.txt	OK	controls
+D3-control	runs/graphcmp/D/D3-control-group.txt	OK	controls
+D3-control	runs/graphcmp/D/D3-control-loop.txt	OK	controls
+D3-control	runs/graphcmp/D/D3-control-matmul.txt	OK	controls
+D9-stability	runs/graphcmp/D/D9-stability-commute-{a,b}.txt	BYTE-IDENTICAL	stable-pairs
+D9-stability	runs/graphcmp/D/D9-stability-group-{a,b}.txt	BYTE-IDENTICAL	stable-pairs
+D9-stability	runs/graphcmp/D/D9-stability-sym-{a,b}.txt	BYTE-IDENTICAL	stable-pairs
+D9-stability	runs/graphcmp/D/D9-stability-loop-{a,b}.txt	REFUSED-BOTH-SIDES	stable-failed
+D9-stability	runs/graphcmp/D/D9-stability-gate-{a,b}.txt	BYTE-IDENTICAL	stable-pairs

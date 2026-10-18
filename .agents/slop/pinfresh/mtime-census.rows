@@ -1,0 +1,6 @@
+# declared-input mtimes, 156 of 156 members are files on disk
+# buckets: after-run-end > 2026-10-18T17:26:49Z | run-end-to-run-start 2026-10-18T02:51:48Z..2026-10-18T17:26:49Z | at-or-before 2026-10-18T02:51:48Z
+path	mtime-UTC	window	state
+tinybendygrad/mixin/movement.bend	2026-10-18T02:52:13Z	inside-the-02:51-run-window	moved
+checks/differ.py	2026-10-18T17:29:01Z	after-the-17:26:49Z-run-end	moved
+# buckets: 1 after run end, 1 inside the earlier window, 154 at or before the 02:51:48Z summary write -- of 156 members

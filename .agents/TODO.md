@@ -631,6 +631,99 @@ no-txt-green [##########] 3/3  **rc=0, AND IT WAS TWO SEPARATE CAUSES, NOT ONE.*
                                        GATE THAT WRITES WHERE ITS ARGV POINTS WILL DEPOSIT FILES IN THE
                                        REPO ROOT.** That belongs to the `modulerefuse` unit, not here.
 
+corpus-MIXTURE [#####.....] 1/2  **THE 31/2/34 READING IS NOT A MEASUREMENT OF ONE TREE, AND EVERY NUMBER I
+                                       QUOTED THIS SESSION IS AFFECTED.** MEASURED 2026-10-18T20:32Z by
+                                       calling `checks/differ.py`'s OWN `substrate_bad()` in-process (no
+                                       compile): **`substrate-start=a842e832` but
+                                       `substrate-end=7f84fd3d` -- "THE SUBSTRATE MOVED WHILE THE RUN WAS
+                                       IN FLIGHT, so `D/` holds a MIXTURE of two substrates and no
+                                       artifact set here describes one thing."** `checks/differ.py`
+                                       itself was modified at **20:29:01Z** and the summary rewritten at
+                                       **20:32** -- **THE GATE MOVED WHILE THE RUN WAS IN FLIGHT.** A
+                                       dispatched unit's replay identifies the moved member exactly:
+                                       **1 of the 156 declared inputs**, `checks/differ.py`, and
+                                       restoring that one member's sha folds the digest back to
+                                       `a842e832` exactly. **SO: `graphs-agree=31` IS A COUNT OVER
+                                       ARTIFACTS FROM TWO TREES, AND 10 OF 17 PINS ARE INDEPENDENTLY
+                                       RED** (`oracle-selfcheck` FAIL, `census-rc` rc=1, `expect-moved`
+                                       3 != 0). **THE ANSWER TO "HOW FAR FROM 1:1" IS CURRENTLY NOT A
+                                       NUMBER.** ALSO MEASURED, AND IT EXPLAINS WHY: the digest covers
+                                       **156 inputs = 148 walked `tinybendygrad/**` + 8 named, and
+                                       `0` of the `213` `tinygrad/*.py`** the CPython side every graph
+                                       is compared against, and NOT the compiler behind `bin/bend`.
+gate-DIVERGENCE [#########] 3/3  **`gate` DIVERGES BY ONE CHILD, AND MY OWN PREMISE WAS WRONG ON THE UNIT.**
+                                       I told the unit the `49` vs `46` was "3 rows missing". It is
+                                       **BYTES**: `graphcmp.py:351` `chunk()` documents
+                                       `<bytecount>:<bytes>` and the unit quoted it. MEASURED:
+                                       **15 canonical rows on BOTH sides, the op census IDENTICAL
+                                       node-for-node, and `49 - 46 = 3` = `len(',i1')` exactly.** So
+                                       **0 rows missing, 0 ops missing** -- ONE child missing. `i1` is
+                                       `CONST weakint () l0:16`, the element count, minted by
+                                       `_storage` as `src[0]`. **ROOT CAUSE, DATED: the 2026-10-17
+                                       RE-VENDOR moved `ParamArg.size` into `src[0]`, ADDING the shape
+                                       const.** CPython picks it up free via
+                                       `list(sink.toposort())`; the port has **no `linearize` and no
+                                       `line_rewrite`** and spells out 13 refs, and
+                                       `UOp.new.param` interns the const internally and returns only
+                                       the PARAM's `Found` -- **so `g_gate` CANNOT NAME IT.** Two prose
+                                       claims are stale the same way (`graphcmp.py:1258` says "13 nodes
+                                       under the SINK", `graphcmp.bend:1083` says "FOURTEEN nodes" over a
+                                       thirteen-entry list). NOT deliberate: the nearest comment argues
+                                       the opposite.
+lin-DIVERGENCE [#########] 3/3  **`lin` DIVERGES BY EXACTLY ONE NODE, NOT ~42** -- the `9,50c9,49` hunk
+                                       is an unaligned POSITIONAL block replace; drop CPython's single
+                                       extra node and renumber and **47 of 49 rows are
+                                       byte-identical**. CPython **50** nodes / port **49**; the op
+                                       census differs by exactly one: **`AFTER` 1/0.** CPython wraps the
+                                       bound in an `AFTER`; the port hangs the ordering dependency off
+                                       the RANGE as a second src. **SAME RE-VENDOR DRIFT AS `gate`**:
+                                       `tinybendygrad/codegen/late/linearizer.bend:1617` does
+                                       `List.append(srcs, [edge])` where
+                                       `tinygrad/codegen/late/linearizer.py:85` now does
+                                       `x.src[0].after(y)` -- `git show a79832b01` proves the port
+                                       implemented the OLD spelling correctly, and upstream changed it
+                                       in re-vendor `86c4f1343` (2026-10-17T04:14Z). The port HAS
+                                       `UOp.after` and uses it three lines later in `g_loop`.
+                                       **`checks/differ.py:135` PINS `lin` TO `AGREE` UNDER A COMMENT
+                                       SAYING IT "AGREES NOW, AND IT LEFT THE DISAGREEMENT SET
+                                       ENTIRELY" AT `46` NODES. IT NOW READS DISAGREE AT 50.**
+loop-REFUSAL [#########] 3/3  **`loop` IS NEITHER A PORT GAP NOR A CORRECT REFUSAL -- IT IS A STALE HARNESS
+                                       FIXTURE, AND A REGRESSION FROM A VERDICT IT USED TO PRODUCE.**
+                                       The refusal comes from `graphcmp.py:3320-3329` comparing the
+                                       two sides' device sets. MEASURED: py has **4 extra `N` params**,
+                                       every one `addrspace=SREG`, from upstream's
+                                       `UOp.placeholder(..., addrspace=AddrSpace.REG)` (`hcq2.py:67,70`)
+                                       now reachable because `hcq_fence` calls `get_time_ms`. The bend
+                                       fixture `g_loop` models none of them: all four params come from
+                                       `paramd` (`graphcmp.bend:942`), which hardcodes
+                                       `S.AGlobal{}`/`Some{S.D1{0}}`. **THE PORT CAN ALREADY EMIT `N`
+                                       -- `ParamArg.device` is `Maybe<S.Dev>`, `S.AReg{}` exists and is
+                                       constructed, and `dm` (`graphcmp.bend:261`) IS THE CODE THAT
+                                       WRITES THE STRING `"N"`.** And the message's own advice cannot
+                                       work: `--dev` cannot fix it, the py side's `CPU` is hardcoded at
+                                       `graphcmp.py:1253`. **`LIMITS.md:33,83,822` RECORD `loop` AS
+                                       DISAGREE at 25 nodes AND `differ.py:141` PINS IT `AGREE`.**
+unaccounted-states [#########] 3/3  **THE SUMMARY HAS NO ROW FOR FOUR STATES THIS RUN ACTUALLY PRODUCED.**
+                                       Control PASS (the unit reproduced 31 and 2 from the artifacts
+                                       alone). (1) **`loop` is not the only unaccounted graph-state** --
+                                       but in the byte-diff lane it is worse: **`D2-cmp-*` has 14 of 34
+                                       UNACCOUNTED** (`alu bit bw cdiv commute gate group late lin loop
+                                       move sym threefry where`) because there is **no `DIFFERS` row**,
+                                       and **two lanes over one population disagree about how many of
+                                       34 were measured (33 vs 34)** -- `loop` is REFUSED in the verdict
+                                       lane yet DIFFERS in the byte lane. (2) `D9-stability` **MISLABELS**
+                                       `loop`: its a/b are `cmp`-IDENTICAL (a deterministic refusal) yet
+                                       the guard reports "ONE SIDE IS A 0-ROW FAILURE", so
+                                       `stable-pairs=4 of 5` under-reports. (3) **`D0-ops-probe.txt`
+                                       CRASHED** (206 lines, one `IndexError` at `tinygrad/uop/ops.py:356`)
+                                       and has no `rc=` line -- **`differ.py:691` omits `stamp_rc=True`
+                                       while `:684` passes it** -- and **10 artifacts have no summary
+                                       row at all**. (4) `DEAD` has no row anywhere. **PROPOSAL, NOT
+                                       BUILT: ONE `graphs-refused=` ROW** beside `graphs-disagree`,
+                                       computed from the `verdict()` map **the run ALREADY BUILDS AT
+                                       `:563` AND THROWS AWAY** -- zero new subprocesses, zero new
+                                       reads.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

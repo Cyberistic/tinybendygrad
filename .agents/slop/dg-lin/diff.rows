@@ -1,0 +1,7 @@
+side	first_divergent_node	n_nodes_side	n_nodes_port	note
+cpython	i9 (arena row 8 of 50)	50	49	first divergence: op=AFTER dtype=i32 tag=N arg=N src=n(i7,i5); AFTER count 1 of 50 nodes; py is the LONGER side by 1
+port	i9 (arena row 8 of 49)	50	49	first divergence: op=RANGE dtype=i32 arg=rg(i0,XWEAK,n(i2)) src=n(i7,i5) TWO srcs; AFTER count 0 of 49 nodes
+op-census	-	50	49	ADD 7/7 AFTER 1/0 CAST 6/6 CONST 9/9 END 2/2 INDEX 7/7 LOAD 6/6 MUL 5/5 PARAM 3/3 RANGE 2/2 SINK 1/1 STORE 1/1 (1 of 12 ops differ in count)
+align-drop-after	-	49	49	drop py arena row 8 and renumber every py index above it: 47 of 49 rows byte-identical, 2 residual
+residual-row 8	i9 RANGE	50	49	src py=n(i8) port=n(i7,i5)
+residual-row 48	i49 SINK	50	49	tag py=N port=i1

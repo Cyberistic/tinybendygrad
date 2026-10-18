@@ -1,0 +1,34 @@
+side	node	rows	inputs	note
+py	i1	line 1 of 15	0: 	CONST weakint l0:16 -- the PARAM/BUFFER SHAPE const `_storage` mints as src[0] (graphcmp.py:1090). A node on BOTH sides; the port's LINEAR src does not NAME it. row byte-identical on both sides
+bend	i1	line 1 of 15	0: 	CONST weakint l0:16 -- the PARAM/BUFFER SHAPE const `_storage` mints as src[0] (graphcmp.py:1090). A node on BOTH sides; the port's LINEAR src does not NAME it. row byte-identical on both sides
+py	i2	line 2 of 15	1: i1	PARAM v0, src=n(i1) on both sides. row byte-identical on both sides
+bend	i2	line 2 of 15	1: i1	PARAM v0, src=n(i1) on both sides. row byte-identical on both sides
+py	i3	line 3 of 15	1: i1	BUFFER slot 1, src=n(i1) on both sides. row byte-identical on both sides
+bend	i3	line 3 of 15	1: i1	BUFFER slot 1, src=n(i1) on both sides. row byte-identical on both sides
+py	i4	line 4 of 15	0: 	row byte-identical on both sides
+bend	i4	line 4 of 15	0: 	row byte-identical on both sides
+py	i5	line 5 of 15	0: 	row byte-identical on both sides
+bend	i5	line 5 of 15	0: 	row byte-identical on both sides
+py	i6	line 6 of 15	1: i5	row byte-identical on both sides
+bend	i6	line 6 of 15	1: i5	row byte-identical on both sides
+py	i7	line 7 of 15	2: i3,i6	row byte-identical on both sides
+bend	i7	line 7 of 15	2: i3,i6	row byte-identical on both sides
+py	i8	line 8 of 15	2: i2,i6	row byte-identical on both sides
+bend	i8	line 8 of 15	2: i2,i6	row byte-identical on both sides
+py	i9	line 9 of 15	2: i6,i4	row byte-identical on both sides
+bend	i9	line 9 of 15	2: i6,i4	row byte-identical on both sides
+py	i10	line 10 of 15	2: i9,i7	row byte-identical on both sides
+bend	i10	line 10 of 15	2: i9,i7	row byte-identical on both sides
+py	i11	line 11 of 15	2: i7,i8	row byte-identical on both sides
+bend	i11	line 11 of 15	2: i7,i8	row byte-identical on both sides
+py	i12	line 12 of 15	1: i10	row byte-identical on both sides
+bend	i12	line 12 of 15	1: i10	row byte-identical on both sides
+py	i13	line 13 of 15	2: i11,i6	row byte-identical on both sides
+bend	i13	line 13 of 15	2: i11,i6	row byte-identical on both sides
+py	i14	line 14 of 15	1: i13	row byte-identical on both sides
+bend	i14	line 14 of 15	1: i13	row byte-identical on both sides
+py	i15	line 15 of 15	14: i1,i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13,i14	DIFFERS: THE ONLY DIVERGING NODE. 14 src children (py) vs 13 (port); src chunk 49 bytes vs 46, delta exactly the 3 characters ',i1'.
+bend	i15	line 15 of 15	13: i2,i3,i4,i5,i6,i7,i8,i9,i10,i11,i12,i13,i14	DIFFERS: THE ONLY DIVERGING NODE. 14 src children (py) vs 13 (port); src chunk 49 bytes vs 46, delta exactly the 3 characters ',i1'.
+py	TOTAL	15 rows of 15	14 children on i15	CONST=3 INDEX=2 PARAM=1 BUFFER=1 RANGE=1 CMPLT=1 IF=1 STORE=1 ENDIF=1 END=1 SINK=1 LINEAR=1 (12 distinct ops)
+bend	TOTAL	15 rows of 15	13 children on i15	CONST=3 INDEX=2 PARAM=1 BUFFER=1 RANGE=1 CMPLT=1 IF=1 STORE=1 ENDIF=1 END=1 SINK=1 LINEAR=1 (12 distinct ops) -- IDENTICAL census, no missing op
+delta	rows	0 of 15	-1 child (i1) on i15	the '3' is BYTES of the src chunk, not rows: chunk() at graphcmp.py:351-356 emits <bytecount>:<bytes>

@@ -1,0 +1,10 @@
+pin	recorded	recomputed	agrees	note
+substrate-start	a842e8323cbebc391833efa9c76d15bb3822ec4355f6050fbaeb9f53a691df64	7f84fd3da93791c9752ebce076970e62c353f66516844d4a68413bc5b2d4dd3a	False	the run's OWN start row; live read 156 members
+substrate-end	7f84fd3da93791c9752ebce076970e62c353f66516844d4a68413bc5b2d4dd3a	7f84fd3da93791c9752ebce076970e62c353f66516844d4a68413bc5b2d4dd3a	True	the run's OWN end row; differ.substrate_bad() -> ['substrate-start=a842e8323cbe but substrate-end=7f84fd3da937 -- THE SUBSTRATE MOVED WHILE THE RUN WAS IN FLIGHT, so D/ holds a MIXTURE of two substrates and no artifact set here describes one thing']
+start==end	a842e8323cbe==7f84fd3da937	pair broken	False	D/ is a MIXTURE of two substrates by differ.py:980-999's own reading
+replay-1-member	a842e8323cbebc391833efa9c76d15bb3822ec4355f6050fbaeb9f53a691df64	7f84fd3da93791c9752ebce076970e62c353f66516844d4a68413bc5b2d4dd3a	HIT	live with checks/differ.py@17:28:36Z folds to the run's substrate-end; replay.py
+members	ABSENT-IN-SUMMARY	156	False	the run records NO population size, so any recorded digest's member count is unrecoverable
+graphs	34	34	True	len(corpus()) read NOW off .agents/slop/graphcmp.py, one of the 8 named inputs
+oracle-selfcheck	# ORACLE SELFCHECK: FAIL	n/a	False	the run records FAIL and census-rc=rc=1; PINS wants ORACLE SELFCHECK: OK
+PINS	10 of 17 agree	miss: expect-moved, graphs-agree, byte-identical, census-rc, stable-pairs, stable-failed, oracle-selfcheck	False	differ.py:248's own pin table read against the live summary; a red run is red independently of substrate freshness
+manifest-2026-10-17	454e85956b37ea89cd290f249f125b7efbeebd401fcc01cd946719159cd1fd44	454e85956b37ea89cd290f249f125b7efbeebd401fcc01cd946719159cd1fd44	True	151 members, re-folded here; the only per-member record on disk, 26 h before

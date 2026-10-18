@@ -1,0 +1,14 @@
+# EVERY READING THIS UNIT TOOK, IN ORDER. The `auto` rows are appended by `measure.py`; the
+# `transcribed` rows are this unit's own earlier tool output in the same session, kept here
+# because the file they came from has since been overwritten by the very runs being measured.
+# NOTHING HERE IS ESTIMATED: each row's `provenance` column says which tool printed it.
+read-at-UTC	summary-mtime	start	end	live	members	head	verdict	provenance
+2026-10-18T17:22:22Z	2026-10-18T02:51:48Z	9528bb5e2489	9528bb5e2489	-not-read-	-not-read-	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	one-substrate	transcribed: read D0-run-summary.txt + TZ=UTC stat
+2026-10-18T17:28:36Z	2026-10-18T17:26:49Z	9528bb5e2489	a842e8323cbe	a842e8323cbe	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	transcribed: retake.py stdout, live digest + summary parse
+2026-10-18T17:29:01Z	-	-	-	-	-	-	-	transcribed: TZ=UTC stat -f %Sm checks/differ.py
+2026-10-18T17:30:09Z	-	-	-	-	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	-	transcribed: attrib.py stdout, live digest
+2026-10-18T17:32:00Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	transcribed: measure.py stdout, a 4th run's summary
+2026-10-18T17:32:59Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	this-unit/auto2026-10-18T17:32:59Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	this-unit/auto
+2026-10-18T17:33:08Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	this-unit/auto
+2026-10-18T17:33:57Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	this-unit/auto
+2026-10-18T17:35:24Z	2026-10-18T17:32:00Z	a842e8323cbe	7f84fd3da937	7f84fd3da937	156	4b42c0ccf7e53bb140680a19bbcdaddad2f02bf4	MIXTURE	this-unit/auto

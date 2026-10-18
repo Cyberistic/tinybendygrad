@@ -1,0 +1,2 @@
+graph	verdict_state	py_devices	bend_devices	classification
+loop	REFUSED (exit 2, no VERDICT line, D1-graph-loop.txt == "rc=2")	['N', 'sCPU']	['sCPU']	HARNESS_FIXTURE_STALE (NOT a port gap: port has S.AReg + Maybe<S.Dev>=None and renders it as "N")

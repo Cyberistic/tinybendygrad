@@ -1,0 +1,35 @@
+CONTROL=PASS
+  ok  corpus() size == graphs=: got 34 want 34
+  ok  files_with(D1, AGREE) == graphs-agree: got 31 want 31
+  ok  files_with(D1, DISAGREE) == graphs-disagree: got 2 want 2
+  ok  census AGREE == summary graphs-agree: got 31 want 31
+  ok  census DISAGREE == summary graphs-disagree: got 2 want 2
+  ok  loop is REFUSED: got 'REFUSED' want 'REFUSED'
+
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/unacct/graphs.rows (34 graphs, denominator = 34)
+wrote /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/.agents/slop/unacct/lanes.rows
+
+D1-graph (verdict): denominator=34 {'graphs-agree': 31, 'graphs-disagree': 2, 'NEITHER': 1}
+    AGREE: 31 ['allred', 'alu', 'binblob', 'bit', 'buffer', 'bw', 'cast', 'cdiv', 'commute', 'custom_function', 'flip', 'getaddr', '...']
+    DISAGREE: 2 ['gate', 'lin']
+ !! REFUSED: 1 ['loop']
+
+D2-cmp (byte diff): denominator=34 {'byte-identical': 20, 'NEITHER': 14}
+    BYTE-IDENTICAL: 20 ['D2-cmp-allred', 'D2-cmp-binblob', 'D2-cmp-buffer', 'D2-cmp-cast', 'D2-cmp-custom_function', 'D2-cmp-flip', 'D2-cmp-getaddr', 'D2-cmp-indexed', 'D2-cmp-matmul', 'D2-cmp-mselect', 'D2-cmp-mstack', 'D2-cmp-mulacc', '...']
+ !! DIFFERS: 14 ['D2-cmp-alu', 'D2-cmp-bit', 'D2-cmp-bw', 'D2-cmp-cdiv', 'D2-cmp-commute', 'D2-cmp-gate', 'D2-cmp-group', 'D2-cmp-late', 'D2-cmp-lin', 'D2-cmp-loop', 'D2-cmp-move', 'D2-cmp-sym', '...']
+
+D3-control: denominator=5 {'controls': 5}
+    OK: 5 ['D3-control-binblob', 'D3-control-gate', 'D3-control-group', 'D3-control-loop', 'D3-control-matmul']
+
+D9-stability: denominator=5 {'stable-pairs': 4, 'stable-failed': 1}
+    BYTE-IDENTICAL: 4 ['D9-stability-commute', 'D9-stability-group', 'D9-stability-sym', 'D9-stability-gate']
+    REFUSED-BOTH-SIDES: 1 ['D9-stability-loop']
+
+SUMMARY ROWS, RE-DERIVED FROM THE ARTIFACTS:
+  byte-identical=20 summary=20
+  not-comparable=0 summary=0
+  differs(no row)=14 corpus=34
+  stable-pairs=4 summary=4 of 5
+  stable-failed=1 summary=1 of 5
+  stable-differ=0 summary=0 of 5
+  controls=5 summary=5 of 5
