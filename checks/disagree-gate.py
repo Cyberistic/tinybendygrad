@@ -84,13 +84,6 @@ PIN = {
   # fixed the normal form, so the CLEAN RE-RUN reads `VERDICT: AGREE` with `D2-cmp-allred.txt`
   # BYTE-IDENTICAL. **A PIN TAKEN FROM A PREDICTION IS A PIN THAT CANNOT FAIL, which is why the
   # prediction lived here where a reader of the pin lands -- and why its REFUTATION belongs here too.**
-  "flip":   dict(row=6, fields=("arg",), shape="BOTH", fault="HARNESS+PORT"),
-  # `unshard` JOINED THIS TABLE FROM THE CLEAN RE-RUN: row 8, `dtype`/`shape` read `?` where py has
-  # `f32` and `(l0:8,l0:3)`. It was NEVER ASKED before (`armfour` armed it, `foldgap` measured it),
-  # and `foldgap` REFUSED the fix on purpose: the fold needs `int(r.vmax+1)` and `dt_shape` gets no
-  # `BTable`, so claiming a shape would be a LIE and the node stays an honest `?`. **A MEASURED
-  # REFUSAL IS NOT AN UNFIXED DEFECT, AND THIS ROW IS THE DIFFERENCE.**
-  "unshard": dict(row=8, fields=("dtype", "shape"), shape="WRONG SHAPE", fault="PORT"),
   # `cdiv` and `late` LEFT THIS TABLE (2026-10-06): they were NOT-A-ROW, i.e. never asked,
   # and once armed their atoms matched field for field (`threegraphs` §4, predicted AGREE).
   # They are not pinned-and-agreeing; they left, which is why `len(PIN)` is what
@@ -99,12 +92,48 @@ PIN = {
   # where the pin has a three-field `Opt`; the port now defines `OPT{op, axis, arg}` in
   # `uop/ops.bend` and `graphcmp.bend` renders it. MEASURED on the live driver: row 46 goes
   # 45/46 -> 46/46 and the corpus fraction 311/336 -> 312/336 with no other graph moving.
-  # `loop` LEFT THIS TABLE: the port's `callinfo` printed the dtype slot unconditionally
-  # where the PIN's own `__repr__` suppresses it for void (`ops.py:1404`), so row 25 read
-  # `cI(shcq_fence,b0,b0,Dvoid)` against `cI(shcq_fence,b0,b0)`.  MEASURED 25/25
+  # `loop` LEFT THIS TABLE ON 2026-10-06: the port's `callinfo` printed the dtype slot
+  # unconditionally where the PIN's own `__repr__` suppresses it for void (`ops.py:1404`), so
+  # row 25 read `cI(shcq_fence,b0,b0,Dvoid)` against `cI(shcq_fence,b0,b0)`.  MEASURED 25/25
   # byte-identical on the live driver, and the field itself is CORRECT (`ops.bend:1057`
   # against `ops.py:1398`), so the row was a SPELLING and not a shape.
 }
+# *** THE TABLE IS EMPTY AND AN EMPTY TABLE IS A CLAIM, NOT A VACUITY. ***
+#
+# `flip` AND `unshard` LEFT ON 2026-10-18, and this is the FOURTH time this instrument has
+# had to do that (`allred`, `cdiv`, `late`, `lin`, `loop` before them).  MEASURED 2026-10-18
+# 20:13Z, on the coherent run whose `substrate-start` EQUALS its `substrate-end` at
+# `c74f32ca629d` (a run whose two substrate rows differ is a MIXTURE and names nothing):
+# `.agents/slop/disagree/names.py --json` answers `disagree: []`, `substituted: []`,
+# `wire_shape_defect: null`, and `D0-run-summary.txt` reads `graphs-disagree=0`.  So the pin
+# on `['flip','unshard']` was recording "**THESE TWO GRAPHS DISAGREE**", that sentence is
+# FALSE, and **A PIN ON AN EMPTY SET IS A CLAIM THAT NOTHING DISAGREES.**
+#
+# **WHY DELETION AND NOT A "MUST KEEP AGREEING" PIN.** `len(PIN)` IS the `graphs-disagree`
+# denominator -- this dict has four columns (`row`, `fields`, `shape`, `fault`) and NOT ONE of
+# them can spell "agrees", so a graph that agrees is not representable in this table and a
+# regression row added here would break the arithmetic `lane_pin` derives.  The claim is not
+# LOST by the deletion: `lane_pin` asserts the generator's OWN `graphs-disagree=0` row
+# directly, and MEASURED 2026-10-18 20:13Z `differ.PINS` has **NO `graphs-disagree` key** --
+# so that row is asserted HERE and NOWHERE ELSE.  `PINS["graphs-agree"]="34"` over
+# `PINS["graphs"]="34"` implies it only ARITHMETICALLY, and only while nothing is REFUSED,
+# which is a weaker claim and is not what this lane checks.
+#
+# **AND THE LANE KEEPS FOUR TEETH WITH AN EMPTY TABLE**, so this is not a gate turned off:
+# any disagreement reds it (`named != sorted(PIN)`), any dispatcher substitution reds it, a
+# malformed wire reds it, and a summary that stops reading `graphs-disagree=0` reds it.
+#
+# **`loop` IS DELIBERATELY NOT PINNED, AND IT IS NOT PINNED-AND-AGREEING.**  On this run
+# `D1-graph-loop.txt` reads `rc=2` and carries NO `VERDICT:` line at all, so `names.py`
+# records it as `NO-VERDICT(rc=2)` and it is not in `disagree`.  That is this tree's REFUSED:
+# the port's `fold.bend` AFTER arm (`thru0`, `fold.bend:2564` -> `dt_of`, `fold.bend:699`)
+# returns the PORT-ONLY outer `None` -- the `?` marker -- for an `AFTER` whose `src[0]` has
+# NO SHAPE, where upstream reads `self.src[0]._shape` (`ops.py:384`), so 16 of `loop`'s 52
+# nodes answer `?` in BOTH columns.  **TODO(differ-corpus): `loop` is REFUSED, not AGREE, and
+# a REFUSED graph is not a disagreement -- the fix belongs in `tinybendygrad/uop/fold.bend`
+# (`dt_of` needs the `nil_ds.shape` pair that `fold.bend:1117` already spells as `late()`),
+# which is OUT OF THIS GATE'S GRANT.  WHEN IT IS FIXED `loop` WILL AGREE; WHEN A FIX MAKES
+# IT DISAGREE, PIN IT FROM THE RUN, NOT FROM THIS NOTE.**
 # NO HAND LIST HERE.  `names.py` DERIVES the substituted set from `graphcmp.py`'s `GRAPHS`
 # against `rows.pick3`'s own arms: a name with no arm falls through to the dispatcher's
 # single fallback builder, so the two sides build DIFFERENT graphs and the disagreement is
@@ -143,22 +172,44 @@ PIN = {
 # AN ABSENT ANCHOR IS `REFUSED` (exit 3), NEVER A SILENT PASS AND NEVER A `FAIL`: the gate
 # cannot distinguish "the code moved" from "the citation was wrong about the code", and
 # guessing is the thing this table is being removed for.
+#
+# *** ONE ROW OF THIS TABLE WAS A NEGATIVE CLAIM ABOUT A FIXTURE, AND IT ROTTED IN THE ONLY
+# DIRECTION A NEGATIVE CLAIM CAN. *** The row read "the bend fixture builds that GROUP by
+# hand, bypassing `UOp.group`" and it was TRUE on 2026-10-09. MEASURED 2026-10-18T19:06Z with
+# `checks/disagree-gate.py --lane citations`: `[REFUSED] .agents/slop/graphcmp.bend: no line
+# carries 'O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}...'`. **AND IT IS **NOT** CAUSED BY ANY
+# RECENT COMMIT: `git log -S` puts the needle's last presence at `bbe246aca` (2026-10-09) and
+# its removal at `3001661a7` (2026-10-18), and `grep -c` on `git show HEAD~1..HEAD~5` reads 0
+# on every one of them -- so the lane was ALREADY RED before the units that are working now
+# touched it.
+# **THE DEFECT IT RECORDED WAS FIXED, WHICH IS A PIN FAILING BECAUSE THE TREE GOT BETTER** --
+# the same one-directional rot `arms_wired` was written to close, in the same table, nine lines
+# below it. `bbe246aca` proved `UOp.group` of ONE src RETURNS THE src (`ops.py:559`, still
+# `ops.py:537` today) so `g_flip` builds NO group node at all; `69bfc2ee9` then DELETED
+# `Ops.GROUP` from the port's enum (77 -> 75 ops), which makes a hand-built one-src GROUP not
+# merely wrong but **UNSPELLABLE** -- `bin/bend graphcmp.bend --check-only` rejects a declared
+# constructor `ops.Op` does not declare.
+# **SO THE ROW IS RESTATED AS THE POSITIVE CLAIM, AND THE REPLACEMENT IS THE PORT's OWN
+# `mxw_flip`**: a transcription of CPython's PAD/SHRINK chain would stop testing the port and
+# start testing this fixture's typing, which is the `readerdecl` `2x2` rule applied to a
+# fixture. It goes red if `g_flip` is ever rewritten by hand, which is the direction that
+# matters.
 CITES = (
   # (locator, must-contain, why this line is load-bearing)
   ("AT:.agents/slop/graphcmp.bend", "def rows.pick3",
    "the fixture dispatcher; its DEFAULT arm is what substituted the matmul"),
   ("DEF:.agents/slop/graphcmp.py:g_allred", "g_allred",
-   "the py fixture that has no bend twin"),
+   "the py fixture for `allred`; `arms_wired` below asserts the bend twin exists, defined once"),
   ("DEF:.agents/slop/graphcmp.py:g_cdiv", "g_cdiv", "ditto"),
   ("DEF:.agents/slop/graphcmp.py:g_late", "g_late", "ditto"),
   ("DEF:tinygrad/uop/ops.py:UOp", "if len(srcs) == 1",
    "`UOp.group` of ONE src is the src, so `g_flip` builds NO GROUP node"),
   ("DEF:.agents/slop/graphcmp.py:g_flip", "UOp.group(a.flip(0).uop)",
    "a ONE-element group -- the whole of the bend-only GROUP#7"),
-  ("AT:.agents/slop/graphcmp.bend",
-   "O.UOp.new(O.Found.ar(mul), O.OpsGROUP{}, [O.Found.i(add), O.Found.i(mul)], "
-   "O.ANone{}, O.TNone{})",
-   "the bend fixture builds that GROUP by hand, bypassing `UOp.group`"),
+  ("AT:.agents/slop/graphcmp.bend", "+fk = MX.mxw_flip(fb, [0])",
+   "`g_flip` calls the PORT's OWN `mxw_flip`, the way CPython calls `a.flip(0)`, and mints no "
+   "group node -- `O.OpsGROUP` was deleted from the port at `69bfc2ee9` (Ops 77 -> 75), so "
+   "the hand-built one-src GROUP this row used to cite is no longer spellable"),
   ("AT:tinybendygrad/uop/ops.bend",
    "CallInfo{name: Maybe<&2, String>, precompile: Bool, precompile_backward: Bool, "
    "dtype: S.Dt}",
