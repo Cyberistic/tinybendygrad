@@ -4305,7 +4305,7 @@ def g_buf() -> O.ParamArg:
 def g_add() -> O.Found:
   +z = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(0)})
   +s = O.UOp.special(O.Found.ar(z), O.Found.i(z), "4")
-  +b = O.UOp.new(O.Found.ar(s), O.OpsBUFFER{}, O.param_src(O.Found.ar(s), Some{4}), O.AParam{g_buf()}, O.TNone{})
+  +b = O.UOp.new.param(O.Found.ar(s), O.OpsBUFFER{}, Some{4}, O.AParam{g_buf()}, O.TNone{})
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(3)})
   O.UOp.alu(O.Found.ar(c), O.OpsADD{}, [O.Found.i(b), O.Found.i(c)])
 
@@ -5252,7 +5252,7 @@ def g_mv_r23_of(+b: O.Found) -> O.Found:
 # `bad reshape: (12,) -> (2, 3)` in CPython and is refused here, and the first
 # version of `g_mv_pad23` had that bug and read ABSENT until it was fixed.
 def g_mv_r23() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{6}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{6}, O.AParam{g_mv_pa()}, O.TNone{})
   g_mv_r23_of(b)
 
 # EXPAND(BUFFER(4), CONST(2)) -- `n=3 op=EXPAND nsrc=2 srcops=BUFFER|CONST
@@ -5260,14 +5260,14 @@ def g_mv_r23() -> O.Found:
 # (`shape_to_shape_arg` returns `src[0]` for a 1-tuple, ops.py:110), which is what
 # makes this fixture the `marg.one` arm rather than the `marg.stack` one.
 def g_mv_exp1() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +c = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
 # EXPAND(BUFFER(4), STACK(2, 3)) -- `shape=(2,3,4)`, the two-element marg and the
 # `marg.stack.go` arm.
 def g_mv_exp23() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +k = g_mv_st23(O.Found.ar(b))
   O.UOp.new(O.Found.ar(k), O.OpsEXPAND{}, [O.Found.i(b), O.Found.i(k)], O.ANone{}, O.TNone{})
 
@@ -5278,7 +5278,7 @@ def g_mv_exp23() -> O.Found:
 # says a movement's dtype is not "always void" -- `t_resh_noop` already says it for
 # RESHAPE and this says it for EXPAND.
 def g_mv_expnoop() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +n = O.UOp.new(O.Found.ar(b), O.OpsNOOP{}, [O.Found.i(b)], O.ANone{}, O.TNone{})
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
   O.UOp.new(O.Found.ar(c), O.OpsEXPAND{}, [O.Found.i(n), O.Found.i(c)], O.ANone{}, O.TNone{})
@@ -5290,7 +5290,7 @@ def g_mv_expnoop() -> O.Found:
 # `mv_expsym_pos` below is the same graph with a real end, and the two rows together
 # are what say the refusal is about the interval.
 def g_mv_expsym() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +z = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(0)})
   +n = O.UOp.special(O.Found.ar(z), O.Found.i(z), "N")
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
@@ -5321,7 +5321,7 @@ def g_mv_var_n(ar: O.Arena, nm: String) -> O.Found:
 # `prod(ps) = 4` against a marg whose product is `n*m`: unresolvable, which is
 # ops.py:410's `resolve(..., False)` DEFAULT and so no raise.
 def g_mv_reshsym_nm() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +n = g_mv_var_n(O.Found.ar(b), "n")
   +m = g_mv_var_n(O.Found.ar(n), "m")
   +k = O.UOp.new(O.Found.ar(m), O.OpsSTACK{}, [O.Found.i(n), O.Found.i(m)], O.ANone{}, O.TNone{})
@@ -5334,7 +5334,7 @@ def g_mv_reshsym_nm() -> O.Found:
 # (`3` against `SU`) and leave the node unanswered, so this row is what says the
 # point arm ran rather than merely compiled.
 def g_mv_reshsym_pt() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{3}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{3}, O.AParam{g_mv_pa()}, O.TNone{})
   +p = g_mv_var(O.Found.ar(b), H.i64_of_i32(3), H.i64_of_i32(3), "p")
   +c = O.UOp.const(O.Found.ar(p), O.CInt{H.i64_of_i32(1)})
   +k = O.UOp.new(O.Found.ar(c), O.OpsSTACK{}, [O.Found.i(p), O.Found.i(c)], O.ANone{}, O.TNone{})
@@ -5345,7 +5345,7 @@ def g_mv_reshsym_pt() -> O.Found:
 # `(2,U(SPECIAL:N),4)` on both lanes, and it is the row that separates "symbolic dims
 # are refusals" (which was true until `sym_dim`) from "symbolic dims are SU".
 def g_mv_expsym_pos() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +e = O.UOp.const(O.Found.ar(b), O.CInt{H.i64_of_i32(99)})
   +n = O.UOp.special(O.Found.ar(e), O.Found.i(e), "N")
   +c = O.UOp.const(O.Found.ar(n), O.CInt{H.i64_of_i32(2)})
@@ -5358,7 +5358,7 @@ def g_mv_expsym_pos() -> O.Found:
 # CPython's answer is `(U(PARAM:n))`; `n` over `[0, 0xFFFFFF]` against `prod(ps) = 4`
 # is unresolvable, so no raise.
 def g_mv_reshbare_n() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +n = g_mv_var_n(O.Found.ar(b), "n")
   O.UOp.new(O.Found.ar(n), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(n)], O.ANone{}, O.TNone{})
 
@@ -5366,7 +5366,7 @@ def g_mv_reshbare_n() -> O.Found:
 # products are 4 and 4, and the shape is `(4)` -- an AGREEING row with no `U` in it,
 # which is what says the bare-PARAM arm is answered and not merely refused.
 def g_mv_reshbare_q() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +q = g_mv_var(O.Found.ar(b), H.i64_of_i32(4), H.i64_of_i32(4), "q")
   O.UOp.new(O.Found.ar(q), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(q)], O.ANone{}, O.TNone{})
 
@@ -5378,7 +5378,7 @@ def g_mv_reshbare_q() -> O.Found:
 # see disjointness; the oracle's DIVERGES block names the row and this comment names
 # the cause, and the input class is ONE instead of "every symbolic marg".
 def g_mv_reshbare_w() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +w = g_mv_var(O.Found.ar(b), H.i64_of_i32(0), H.i64_of_i32(3), "w")
   O.UOp.new(O.Found.ar(w), O.OpsRESHAPE{}, [O.Found.i(b), O.Found.i(w)], O.ANone{}, O.TNone{})
 
@@ -5417,7 +5417,7 @@ def g_mv_st21(ar: O.Arena) -> O.Found:
 # reads `1+1<=3` against PAD's order `1+3<=1` which fails. So this row is the one
 # that tells the two arms apart on a dim where the operands are not interchangeable.
 def g_mv_shr23() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{6}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{6}, O.AParam{g_mv_pa()}, O.TNone{})
   +r = g_mv_r23_of(b)
   +o = g_mv_st01(O.Found.ar(r))
   +z = g_mv_st21(O.Found.ar(o))
@@ -5427,14 +5427,14 @@ def g_mv_shr23() -> O.Found:
 # srcops=Ops.BUFFER|Ops.CONST|Ops.CONST shape=(6) dtype=int`. Offsets 0 and size 6
 # over a source dim of 4: `o + s <= sz` is `0+4 <= 6`, and the answer is the SIZE.
 def g_mv_pad1() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 0)
   +z = g_mv_cst(O.Found.ar(o), 6)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
 
 # SHRINK(BUFFER(4), CONST(1), CONST(2)) -- `shape=(2)`: `o + sz <= s` is `1+2 <= 4`.
 def g_mv_shr1() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
   +z = g_mv_cst(O.Found.ar(o), 2)
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
@@ -5443,7 +5443,7 @@ def g_mv_shr1() -> O.Found:
 # TWO dims is the row that matters: a one-dim fixture cannot tell `o+s<=sz` from
 # `o+sz<=s`, because with one dim the two sums put the same pair on the same side.
 def g_mv_pad23() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{6}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{6}, O.AParam{g_mv_pa()}, O.TNone{})
   +r = g_mv_r23_of(b)
   +o = g_mv_st01(O.Found.ar(r))
   +z = g_mv_st65(O.Found.ar(o))
@@ -5453,7 +5453,7 @@ def g_mv_pad23() -> O.Found:
 # PAD whose marg is LONGER than ps -- `len(ps) != len(self.marg)`, ops.py:421's first
 # disjunct, and the ValueError is `invalid pad ((0, 6), (1, 5)) for (4,)`.
 def g_mv_padr() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_st01(O.Found.ar(b))
   +z = g_mv_st65(O.Found.ar(o))
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
@@ -5461,7 +5461,7 @@ def g_mv_padr() -> O.Found:
 # PAD whose sum fails on ONE dim -- offset 1, size 3 over a source dim of 4:
 # `o + s <= sz` is `1+4 <= 3`, which is ops.py's `invalid pad ((1, 3),) for (4,)`.
 def g_mv_padr2() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
   +z = g_mv_cst(O.Found.ar(o), 3)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
@@ -5471,7 +5471,7 @@ def g_mv_padr2() -> O.Found:
 # row that tells PAD's sum from SHRINK's: `g_mv_padr2` is rejected by both, so a port
 # that had the two arms swapped would pass every other row.
 def g_mv_shrbad() -> O.Found:
-  +b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{g_mv_pa()}, O.TNone{})
+  +b = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{g_mv_pa()}, O.TNone{})
   +o = g_mv_cst(O.Found.ar(b), 1)
   +z = g_mv_cst(O.Found.ar(o), 4)
   O.UOp.new(O.Found.ar(z), O.OpsSHRINK{}, [O.Found.i(b), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
@@ -5627,7 +5627,7 @@ def mw_pa(dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def mw_b(+ar: O.Arena) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{mw_pa(S.int32(), None{})}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{mw_pa(S.int32(), None{})}, O.TNone{})
 
 # A BINARY OP OVER TWO CONSTs, as ONE builder for the order pair. `SUB(3,4)` is `(-1,-1)`
 # and `SUB(4,3)` is `(1,1)`, so the two rows differ only in the ARGUMENT ORDER here, and a
@@ -5673,8 +5673,8 @@ def mw_stack() -> O.Found:
 # `vmin_vmax` is `(5,9)` is the one fixture that has each, so the src is the size CONST.
 # The passthrough would answer `(5,9)` and CPython answers `(0,9)`.
 def mw_pad() -> O.Found:
-  +p = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4}),
-    O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(5), H.i64_of_i32(9)}})}, O.TNone{})
+  +p = O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(5), H.i64_of_i32(9)}})}, O.TNone{})
+
   +o = mw_c(O.Found.ar(p), 0)
   +z = mw_c(O.Found.ar(o), 11)
   O.UOp.new(O.Found.ar(z), O.OpsPAD{}, [O.Found.i(p), O.Found.i(o), O.Found.i(z)], O.ANone{}, O.TNone{})
@@ -5684,8 +5684,8 @@ def mw_pad() -> O.Found:
 # pair is the same pair the PAD row needs, and two rows that cannot tell each other apart
 # are one row twice.
 def mw_param() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4}),
-    O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(4294967293), H.i64_of_i32(7)}})}, O.TNone{})
+  O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{mw_pa(S.int32(), Some{O.PyRange{H.i64_of_i32(4294967293), H.i64_of_i32(7)}})}, O.TNone{})
+
 
 # THE TWO WINDOW ROWS, and the reason `weak.bend` waits on this def: `2**64-1` does not
 # fit a signed word, so `uint64`'s ceiling and `int64`'s floor are the rows that say the
@@ -5700,7 +5700,7 @@ def mw_threefry() -> O.Found:
   O.UOp.new(O.Found.ar(c), O.OpsTHREEFRY{}, [O.Found.i(a), O.Found.i(b), O.Found.i(c)], O.ANone{}, O.TNone{})
 
 def mw_buf_i64() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{mw_pa(S.int64(), None{})}, O.TNone{})
+  O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{4}, O.AParam{mw_pa(S.int64(), None{})}, O.TNone{})
 
 # A VOID DTYPE'S DEFAULT ARM, so `bnd_lim`'s one void arm is reached THROUGH THE SWEEP and
 # not only through a hand-built `lf` row.

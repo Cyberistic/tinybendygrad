@@ -1,0 +1,22 @@
+FILES-WALKED	141
+REFUSED-STATEMENTS	6
+TOTAL-NIL-SRC-PARAM-NODES	53
+KIND	O.OpsPARAM{}	44
+KIND	O.OpsBUFFER{}	9
+--- per file ---
+FILE	codegen/decomp/op-mut.bend	7
+FILE	codegen/decomp/op.bend	7
+FILE	uop/divandmod.bend	7
+FILE	uop/fold.bend	7
+FILE	engine/realize-mut.bend	6
+FILE	engine/realize.bend	4
+FILE	codegen/__init__.bend	2
+FILE	codegen/decomp/transcendental.bend	2
+FILE	schedule/rangeify.bend	2
+FILE	tensor.bend	2
+FILE	uop/validate.bend	2
+FILE	codegen/decomp/dtype-mut.bend	1
+FILE	codegen/decomp/dtype.bend	1
+FILE	codegen/late/.linearizer-mut.bend	1
+FILE	codegen/late/linearizer.bend	1
+FILE	uop/symbolic.bend	1

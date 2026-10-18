@@ -1,0 +1,105 @@
+arenaparam: the 62 self-parenting nodes are threaded, and the corpus is 31/34 BEFORE AND AFTER
+
+SHAPE (A), CHOSEN BY ERROR COUNT. `UOp.new(ar, KIND, param_src(ar, n), ARG, TAG)` became
+`UOp.new.param(ar, KIND, n, ARG, TAG)` at all 62 `O.UOp.new` sites in 17 files, and the 4
+`fx_node` sites in `function.bend` became a new `fx_node.param`. THE REASON IS THAT (A) IS
+ARITY-NEUTRAL -- `UOp.new` and `UOp.new.param` both take FIVE arguments -- so there is no
+cascade to hide a half-done migration in. MEASURED: `uop/fold.bend` (23 of the 62) went
+`errLines=0 peak=291MB` -> `errLines=0 peak=340MB`, one invocation.
+
+(B) WAS MEASURED AND REJECTED. Changing `param_src`'s return type to `Found` and rewriting
+the nested `mxw_buf.of(ar, O.UOp.new(...))` site gives `errLines=1` -- and the error is NOT
+at the site that was migrated: bend's type error is global and reports ONE site at a time,
+4,300 lines away in a file that was not touched (`uop/fold.bend:4308`, `g_add`). Fixing it
+gives `errLines=1` again at `uop/fold.bend:5255` (`g_mv_r23`). TWO ITERATIONS, TWO SINGLE
+ERRORS, NO DENOMINATOR -- the same two numbers a 1-site and a 61-site migration both print.
+(B) costs 62 edit-check-fix cycles across 17 files. Both files were restored byte-exactly.
+
+`ops.bend`'s three functions are UNCHANGED by (A). `shape_to_shape_arg` and `param_src` now
+have 0 call sites and are KEPT, because a census that reads "0 callers" must not be able to
+get that answer by deleting the function.
+
+THE POPULATION IS DISCOVERED, NOT LISTED. `gates/arenasrc_census.py` walks
+`tinybendygrad/**/*.bend` (141 files) and classifies every `param_src(` call by the
+innermost call containing it: `TOTAL-param_src-CALL-SITES 66 -> 0`, `param_src/O.UOp.new 62`,
+`param_src/fx_node 4`. The brief's "62 in 17" is confirmed by measurement; the 4 `fx_node`
+sites were a shape nobody had counted. THE REWRITER CHECKS RATHER THAN ASSUMES the one
+claim (A) rests on -- `param_src`'s arena argument IS `UOp.new`'s, textually -- at all 62
+sites, 0 mismatches, and a mismatch aborts the whole run. `--apply` writes nothing at all if
+any site refuses.
+
+THE ACCEPTANCE ROWS, FROM AN INSTRUMENT THAT NOW LIVES IN GIT. The only probe that emitted
+`src0_op`/`size` for `mxw_buf` was at `.agents/slop/sizetosrc/paramsrc_probe.bend`, i.e. in
+a tree being pruned -- the exact shape that took seven of nine gate drivers out from under
+gates. It is now `gates/arenasrc_rows.bend` (named around `.gitignore:85's `*probe.bend`, because a
+gate driver behind an ignore rule is a cleared input in miniature):
+
+  BEFORE  idiom_Some12    next=2 src0_op=BUFFER size=N     <- self-parent
+          mxw_buf         next=2 src0_op=BUFFER size=N     <- the port's OWN builder
+          threaded_Some12 next=3 src0_op=CONST  size=12    <- the good spelling
+  AFTER   mxw_buf_src0_op=CONST  mxw_buf_size=12  mxw_buf_next=3
+          mxw_buf0_src0_op=CONST mxw_buf0_size=0           <- zero is a shape, not an absence
+          fx_buf_src0_op=CONST   fx_buf_size=12            <- function.bend's builder
+          idiom_src0_op=BUFFER idiom_size=N                 <- THE CONTROL, still bad on purpose
+
+THE PLANT, AND IT FAILED FOUR TIMES BEFORE IT COULD FAIL MEANINGFULLY.
+`--plant tinybendygrad/mixin/movement.bend:1229` -> `mxw_buf_src0_op=BUFFER mxw_buf_size=N
+mxw_buf_next=2`, restore -> 20/20 rows back, rc=0. The defects it exposed: a mis-indented
+`i = j + 1` inside a quote-skip `while`, so strings were never skipped and 0 of 62 sites
+planned; a replacement span starting at the callee's `(` instead of its NAME, printing
+`O.UOp.newO.UOp.new.param`; a splice ending at the opening bracket instead of past the
+original call's closer, which made the lane emit NOTHING while the check asked only "did the
+row change?" -- A DEAD LANE SCORED AS A SUCCESSFUL PLANT. It now requires a measured row to
+change AND no measured row to go absent. Two plants on other sites correctly REFUSE
+(`uop/fold.bend:4308`, `tensor.bend:2251`): "the plant changed no row this gate measures".
+Nothing the plant moves is bound at import.
+
+THE ACCEPTANCE SIGNAL THAT BEAT A GREEN BUILD. The prior unit would not run the fix because
+"it moves node counts in 17 files I could not re-verify". Node counts are other
+instruments' business, so `checks/gatesweep.py` ran over all 95 gates twice, once with the
+18 files restored to HEAD and once migrated:
+
+  BEFORE  DEAD=3  FAIL=27  PASS=57  REFUSED=7  SKIP=1
+  AFTER   DEAD=3  FAIL=20  PASS=64  REFUSED=7  SKIP=1
+  7 verdict changes, ALL FAIL -> PASS, none the other way:
+    axisflip  beautiful-mnist  groupflip  mixin-op  mo_graph_census
+    mx_graph_census  rd_graph_census
+
+`mx_graph_census`'s subject IS `mxw_buf`. The 20 still-FAILing and 3 DEAD were already red
+at HEAD and are untouched here, including `paramarg-shape-gate` and `paramarg-site-gate`,
+which are settled and were not modified.
+
+18 of 18 touched files re-verified with `bend <file> --check-only`, one at a time, under
+`checks/bounded.py --mb 2048`, TOKEN (never `$?`) read per run: ALL `WITHIN-LIMITS`,
+ALL 0 errors, peak RSS 412-646 MB, max single process 646 MB against a 9.6 GB
+sum-precondition. The brief names 17 files; 18 were touched and 18 were verified.
+
+THE CORPUS DID NOT MOVE, AND SAYING THAT IS THE FINDING. `graphs-agree=31`,
+`graphs-disagree=2`, `expect-moved=3`, `byte-identical=20` before and after, over
+`graphs=34 graphs-answered=34 graphs-unset=0`. Two clean runs byte-compared rather than one
+singular reading.
+
+`repro` CANNOT FINISH AND THE REASON IS MEASURED. `differ.py repro` wraps its two runs in
+`clean_run()`, which refuses any run whose `unhealthy()` is non-empty and retries 9 times.
+`differ.py`'s own `unhealthy()` -- loaded by path -- returns 7 complaints on the run on
+disk: `expect-moved=3 (expected 0)`, `graphs-agree=31 (expected 34)`,
+`byte-identical=20 (expected 34)`, `stable-pairs=4 of 5`, `stable-failed=1 of 5`,
+`oracle-selfcheck=FAIL`, `census-rc=rc=1`. So `repro` cannot return a verdict at all; the
+600 s the last unit recorded is that loop and not a ceiling. The two runs were therefore
+taken with `differ.py run` twice and snapshotted with `differ.py`'s own `snap()`.
+
+`D0-repro.txt` IS NAMED AS STALE. It is dated Oct 17 01:50, reads `repro-files=242
+repro-rc=rc=0`, and `repro_bad()` returns `[]` -- so a two-day-old artifact from before the
+size->src migration is SATISFYING the second-witness pin right now. It is left on disk
+unchanged: `repro` is its only writer and no green run was obtained, so writing a value by
+hand would be transcription.
+
+`Nil{}-src`, THE NEXT POPULATION, MEASURED AND NOT ACTED ON: 53 param-shaped nodes with an
+empty `src` (44 `PARAM`, 9 `BUFFER`, 0 `ALLOC`) in 16 files, of which 38 are git-tracked
+and 15 sit in untracked `*-mut.bend` scratch. Not 207 -- and I did not go hunting for a
+third rule to make 207 come out. This is a DIFFERENT defect: `nsrc == 0` is not
+`nsrc == 1` with a wrong index, the node simply has no size node, and both print `size=N`.
+Whether an empty `src` is right for a given scalar PARAM is a FOLD question, not a census
+question.
+
+No `*-mut.bend` was edited or added. `tinygrad/` untouched.

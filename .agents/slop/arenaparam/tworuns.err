@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=899 MB (ceiling 4096)  357s  :: .venv/bin/python .agents/slop/arenaparam/tworuns.py  out=969B err=0B
+  MACHINE: **VIOLATED** -- loadavg 4.2 on 12 cores, swap free 0.64 of 17.00 GiB; swap free 0.64 of 17.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

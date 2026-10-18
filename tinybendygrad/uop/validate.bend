@@ -1947,9 +1947,9 @@ def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
 # `ParamArg` HAS THIRTEEN FIELDS and a record literal must name every one of
 # them, so this is one long line rather than a builder nobody else would read.
 def fx_var(+ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsPARAM{}, O.param_src(ar, None{}),
-    O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
-    O.TNone{})
+  O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
+
+
 
 # the `_min_max` entry for a fixture variable
 def mm_i(n: U32, lo: U32, hi: U32) -> List<&2, MRng>:

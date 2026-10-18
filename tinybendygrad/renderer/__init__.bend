@@ -451,10 +451,10 @@ def pa_g(slot: U32, dt: S.Dt) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def g_buf() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{pa_g(0, S.int32())}, O.TNone{})
+  O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{4}, O.AParam{pa_g(0, S.int32())}, O.TNone{})
 
 def g_alloc() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{pa_g(0, S.int32())}, O.TNone{})
+  O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{4}, O.AParam{pa_g(0, S.int32())}, O.TNone{})
 
 def g_idx(+b: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(b), O.OpsINDEX{}, [O.Found.i(b)], O.ANone{}, O.TNone{})

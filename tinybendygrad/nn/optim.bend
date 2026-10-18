@@ -90,7 +90,7 @@ def barg(slot: U32, dt: S.Dt) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def pbuf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{barg(slot, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{barg(slot, dt)}, O.TNone{})
 
 # ===========================================================================
 # `numel` -- mixin/movement.py:38, `prod(self.shape)`.

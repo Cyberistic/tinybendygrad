@@ -1015,13 +1015,13 @@ def unpl() -> List<&2, U32>: [1, 4]
 
 def walk_of() -> Walk:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{16}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
+  +n2 = O.UOp.new.param(O.Found.ar(n1), O.OpsBUFFER{}, Some{16}, O.AParam{mem_buf(0, cpu())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsMSELECT{}, [O.Found.i(n2)], O.ATuple{[0]}, O.TNone{})
   +n4 = O.UOp.new(O.Found.ar(n3), O.OpsMSTACK{}, [O.Found.i(n3), O.Found.i(n3)], O.ANone{}, O.TNone{})
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(1)}}, O.TNone{})
   +n6 = O.UOp.new(O.Found.ar(n5), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n5)], O.ANone{}, O.TNone{})
-  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), Some{32}), O.AParam{mem_buf(9, mdev())}, O.TNone{})
-  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), Some{32}), O.AParam{mem_buf(8, mdev_cl())}, O.TNone{})
+  +n7 = O.UOp.new.param(O.Found.ar(n6), O.OpsBUFFER{}, Some{32}, O.AParam{mem_buf(9, mdev())}, O.TNone{})
+  +n8 = O.UOp.new.param(O.Found.ar(n7), O.OpsBUFFER{}, Some{32}, O.AParam{mem_buf(8, mdev_cl())}, O.TNone{})
   Walk{F.folded(O.Found.ar(n8)), O.Found.i(n2), O.Found.i(n3), O.Found.i(n4), O.Found.i(n6),
        O.Found.i(n5), O.Found.i(n7), O.Found.i(n8)}
 
@@ -1054,13 +1054,13 @@ def plan_plan(fx: F.Folded) -> Plan:
 
 def proj_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{1024}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
-  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsBUFFER{}, O.param_src(O.Found.ar(n2), Some{2048}), O.AParam{mem_buf(1, cpu())}, O.TNone{})
-  +n4 = O.UOp.new(O.Found.ar(n3), O.OpsBUFFER{}, O.param_src(O.Found.ar(n3), Some{512}), O.AParam{mem_buf(2, cpu())}, O.TNone{})
-  +n5 = O.UOp.new(O.Found.ar(n4), O.OpsBUFFER{}, O.param_src(O.Found.ar(n4), Some{256}), O.AParam{mem_buf(3, cpu())}, O.TNone{})
-  +n6 = O.UOp.new(O.Found.ar(n5), O.OpsBUFFER{}, O.param_src(O.Found.ar(n5), Some{128}), O.AParam{mem_buf(4, cpu())}, O.TNone{})
-  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), Some{64}), O.AParam{mem_buf(5, cpu())}, O.TNone{})
-  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), Some{4096}), O.AParam{mem_buf(6, disk())}, O.TNone{})
+  +n2 = O.UOp.new.param(O.Found.ar(n1), O.OpsBUFFER{}, Some{1024}, O.AParam{mem_buf(0, cpu())}, O.TNone{})
+  +n3 = O.UOp.new.param(O.Found.ar(n2), O.OpsBUFFER{}, Some{2048}, O.AParam{mem_buf(1, cpu())}, O.TNone{})
+  +n4 = O.UOp.new.param(O.Found.ar(n3), O.OpsBUFFER{}, Some{512}, O.AParam{mem_buf(2, cpu())}, O.TNone{})
+  +n5 = O.UOp.new.param(O.Found.ar(n4), O.OpsBUFFER{}, Some{256}, O.AParam{mem_buf(3, cpu())}, O.TNone{})
+  +n6 = O.UOp.new.param(O.Found.ar(n5), O.OpsBUFFER{}, Some{128}, O.AParam{mem_buf(4, cpu())}, O.TNone{})
+  +n7 = O.UOp.new.param(O.Found.ar(n6), O.OpsBUFFER{}, Some{64}, O.AParam{mem_buf(5, cpu())}, O.TNone{})
+  +n8 = O.UOp.new.param(O.Found.ar(n7), O.OpsBUFFER{}, Some{4096}, O.AParam{mem_buf(6, disk())}, O.TNone{})
   +n9 = O.UOp.new(O.Found.ar(n8), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n3)], O.ANone{}, O.TNone{})
   +n10 = O.UOp.sink(O.Found.ar(n9), [O.Found.i(n9), O.Found.i(n3)])
   +n11 = O.UOp.new(O.Found.ar(n10), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n4)], O.ANone{}, O.TNone{})
@@ -1523,7 +1523,7 @@ def p_nplan() -> U32: mem_len(Planned.bs(mem_plan(proj_of())))
 
 def empty_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{4096}), O.AParam{mem_buf(0, disk())}, O.TNone{})
+  +n2 = O.UOp.new.param(O.Found.ar(n1), O.OpsBUFFER{}, Some{4096}, O.AParam{mem_buf(0, disk())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsCUSTOMI{}, Nil{}, O.AStr{"x"}, O.TNone{})
   +n4 = O.UOp.sink(O.Found.ar(n3), [O.Found.i(n3)])
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsLINEAR{}, [O.Found.i(n4)], O.ANone{}, O.TNone{})
@@ -1538,7 +1538,7 @@ def empty_of() -> Proj:
 # rounds to 512.
 def unaligned_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{100}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
+  +n2 = O.UOp.new.param(O.Found.ar(n1), O.OpsBUFFER{}, Some{100}, O.AParam{mem_buf(0, cpu())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsADD{}, [O.Found.i(n2), O.Found.i(n2)], O.ANone{}, O.TNone{})
   +n4 = O.UOp.sink(O.Found.ar(n3), [O.Found.i(n3), O.Found.i(n2)])
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsLINEAR{}, [O.Found.i(n4)], O.ANone{}, O.TNone{})

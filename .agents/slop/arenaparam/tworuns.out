@@ -1,0 +1,18 @@
+# run A: rc=1 in 179s, 242 files snapshotted
+# run A unhealthy: expect-moved=3 (expected 0)
+# run A unhealthy: graphs-agree=31 (expected 34)
+# run A unhealthy: byte-identical=20 (expected 34)
+# run A unhealthy: stable-pairs=4 of 5 (expected 5 of 5)
+# run A unhealthy: stable-failed=1 of 5 (expected 0 of 5)
+# run A unhealthy: oracle-selfcheck=# ORACLE SELFCHECK: FAIL (expected # ORACLE SELFCHECK: OK)
+# run A unhealthy: census-rc=rc=1 (expected rc=0)
+# run B: rc=1 in 177s, 242 files snapshotted
+# run B unhealthy: expect-moved=3 (expected 0)
+# run B unhealthy: graphs-agree=31 (expected 34)
+# run B unhealthy: byte-identical=20 (expected 34)
+# run B unhealthy: stable-pairs=4 of 5 (expected 5 of 5)
+# run B unhealthy: stable-failed=1 of 5 (expected 0 of 5)
+# run B unhealthy: oracle-selfcheck=# ORACLE SELFCHECK: FAIL (expected # ORACLE SELFCHECK: OK)
+# run B unhealthy: census-rc=rc=1 (expected rc=0)
+
+TWORUNS: 242 of 242 files identical across two clean runs: True

@@ -1226,7 +1226,7 @@ def mxw_buf.of(+ar: O.Arena, +f: O.Found) -> T.Tensor:
   T.tn_wrap_uop(O.Found.ar(f), O.Found.i(f))
 
 def mxw_buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
-  mxw_buf.of(ar, O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{mxw_pbuf(slot)}, O.TNone{}))
+  mxw_buf.of(ar, O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{mxw_pbuf(slot)}, O.TNone{}))
 
 # A SHAPE ARG of ARBITRARY LENGTH, interned as a STACK of CONSTs. It walks the VALUE LIST
 # rather than a `Nat` countdown, which is what makes it one def: the list tail `t` is a strict

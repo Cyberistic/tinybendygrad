@@ -1761,7 +1761,7 @@ def g_pv(+nm: String, val: Maybe<&2, O.Const>) -> O.ParamArg:
 def g_buf(+slot: U32, +nm: String, ar: O.Arena) -> O.Found:
   +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
   +sp = O.UOp.special(O.Found.ar(z), O.Found.i(z), nm)
-  O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), Some{4}), O.AParam{g_pb(slot, nm)}, O.TNone{})
+  O.UOp.new.param(O.Found.ar(sp), O.OpsBUFFER{}, Some{4}, O.AParam{g_pb(slot, nm)}, O.TNone{})
 
 # `UOp(Ops.SINK, src=(UOp(Ops.STORE, src=(UOp.const(0), UOp.const(n))),))`
 def g_body(+n: U32, ar: O.Arena) -> O.Found:
@@ -1777,8 +1777,8 @@ def fx1() -> O.Found:
   +b = g_buf(1, "b", O.Found.ar(a))
   +d1 = g_body(1, O.Found.ar(b))
   +d2 = g_body(2, O.Found.ar(d1))
-  +vb = O.UOp.new(O.Found.ar(d2), O.OpsPARAM{}, O.param_src(O.Found.ar(d2), None{}), O.AParam{g_pv("v", Some{O.CInt{H.i64_of_i32(3)}})}, O.TNone{})
-  +vu = O.UOp.new(O.Found.ar(vb), O.OpsPARAM{}, O.param_src(O.Found.ar(vb), None{}), O.AParam{g_pv("v", None{})}, O.TNone{})
+  +vb = O.UOp.new.param(O.Found.ar(d2), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", Some{O.CInt{H.i64_of_i32(3)}})}, O.TNone{})
+  +vu = O.UOp.new.param(O.Found.ar(vb), O.OpsPARAM{}, None{}, O.AParam{g_pv("v", None{})}, O.TNone{})
   +k1 = O.UOp.new(O.Found.ar(vu), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
   +k2 = O.UOp.new(O.Found.ar(k1), O.OpsCALL{}, [O.Found.i(d2), O.Found.i(b), O.Found.i(vb)], O.ANone{}, O.TNone{})
   +e2 = O.UOp.new(O.Found.ar(k2), O.OpsEND{}, [O.Found.i(k2)], O.ANone{}, O.TNone{})

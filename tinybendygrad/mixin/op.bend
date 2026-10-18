@@ -1176,7 +1176,7 @@ def mo_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def mo_buf4(+ar: O.Arena, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
 
 def mo_fx1d() -> T.Tensor:
   +b = mo_buf4(O.Arena.empty(), S.single())

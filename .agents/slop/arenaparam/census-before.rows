@@ -1,0 +1,97 @@
+codegen/simplify.bend:543	O.UOp.new	+buf = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), 
+engine/realize.bend:1708	O.UOp.new	+n2 = O.UOp.new(O.Found.ar(n1), O.OpsPARAM{}, O.param_src(O.Found.ar(n1), So
+engine/realize.bend:1709	O.UOp.new	+n3 = O.UOp.new(O.Found.ar(n2), O.OpsPARAM{}, O.param_src(O.Found.ar(n2), So
+engine/realize.bend:1715	O.UOp.new	+n9 = O.UOp.new(O.Found.ar(n8), O.OpsBUFFER{}, O.param_src(O.Found.ar(n8), S
+engine/realize.bend:1716	O.UOp.new	+n10 = O.UOp.new(O.Found.ar(n9), O.OpsBUFFER{}, O.param_src(O.Found.ar(n9), 
+function.bend:1208	fx_node	fx_node(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{fx_pa(slot,
+function.bend:1222	fx_node	fx_node(ar, O.OpsALLOC{}, O.param_src(ar, Some{4}), O.AParam{fx_pa(slot, S.s
+function.bend:1230	fx_node	fx_node(ar, O.OpsPARAM{}, O.param_src(ar, size), O.AParam{fx_pa(slot, S.int3
+function.bend:1317	fx_node	fx_node(ar, O.OpsPARAM{}, O.param_src(ar, Some{4}), O.AParam{fx_pa(slot, S.s
+mixin/creation.bend:306	O.UOp.new	T.tn_alu.put(O.UOp.new(ar, O.OpsALLOC{}, O.param_src(ar, Some{size}), O.APar
+mixin/elementwise.bend:1042	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{ew_buf.arg(0
+mixin/movement.bend:1229	O.UOp.new	mxw_buf.of(ar, O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.A
+mixin/op.bend:1179	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{mo_buf.arg(0
+nn/optim.bend:93	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{barg(slot
+renderer/__init__.bend:454	O.UOp.new	O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4
+renderer/__init__.bend:457	O.UOp.new	O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, O.param_src(O.Arena.empty(), Some{4
+REFUSED-LINE	runtime/ops_bend.bend:1757	UNTERMINATED '"'
+REFUSED-LINE	runtime/ops_bend.bend:1771	UNTERMINATED '"'
+REFUSED-LINE	runtime/ops_bend.bend:1772	UNTERMINATED '"'
+REFUSED-LINE	runtime/ops_bend.bend:1801	UNTERMINATED '"'
+REFUSED-LINE	runtime/ops_bend.bend:1802	UNTERMINATED '"'
+REFUSED-LINE	runtime/ops_bend.bend:1836	UNTERMINATED '"'
+schedule/__init__.bend:1764	O.UOp.new	O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), Some{4}
+schedule/__init__.bend:1780	O.UOp.new	+vb = O.UOp.new(O.Found.ar(d2), O.OpsPARAM{}, O.param_src(O.Found.ar(d2), No
+schedule/__init__.bend:1781	O.UOp.new	+vu = O.UOp.new(O.Found.ar(vb), O.OpsPARAM{}, O.param_src(O.Found.ar(vb), No
+schedule/memory.bend:1018	O.UOp.new	+n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), S
+schedule/memory.bend:1023	O.UOp.new	+n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), S
+schedule/memory.bend:1024	O.UOp.new	+n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), S
+schedule/memory.bend:1057	O.UOp.new	+n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), S
+schedule/memory.bend:1058	O.UOp.new	+n3 = O.UOp.new(O.Found.ar(n2), O.OpsBUFFER{}, O.param_src(O.Found.ar(n2), S
+schedule/memory.bend:1059	O.UOp.new	+n4 = O.UOp.new(O.Found.ar(n3), O.OpsBUFFER{}, O.param_src(O.Found.ar(n3), S
+schedule/memory.bend:1060	O.UOp.new	+n5 = O.UOp.new(O.Found.ar(n4), O.OpsBUFFER{}, O.param_src(O.Found.ar(n4), S
+schedule/memory.bend:1061	O.UOp.new	+n6 = O.UOp.new(O.Found.ar(n5), O.OpsBUFFER{}, O.param_src(O.Found.ar(n5), S
+schedule/memory.bend:1062	O.UOp.new	+n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), S
+schedule/memory.bend:1063	O.UOp.new	+n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), S
+schedule/memory.bend:1526	O.UOp.new	+n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), S
+schedule/memory.bend:1541	O.UOp.new	+n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), S
+schedule/prepare.bend:222	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{pr_pa(slo
+tensor.bend:2251	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{g_buf.arg
+uop/fold.bend:4308	O.UOp.new	+b = O.UOp.new(O.Found.ar(s), O.OpsBUFFER{}, O.param_src(O.Found.ar(s), Some
+uop/fold.bend:5255	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5263	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5270	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5281	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5293	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5324	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5337	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5348	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5361	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5369	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5381	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5420	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5430	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5437	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5446	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5456	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5464	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5474	O.UOp.new	+b = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), 
+uop/fold.bend:5630	O.UOp.new	O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{mw_pa(S.int3
+uop/fold.bend:5676	O.UOp.new	+p = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), S
+uop/fold.bend:5687	O.UOp.new	O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4
+uop/fold.bend:5703	O.UOp.new	O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, O.param_src(O.Arena.empty(), Some{
+uop/movement.bend:871	O.UOp.new	+b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), S
+uop/movement.bend:872	O.UOp.new	+b0 = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, O.param_src(O.Found.ar(b4), N
+uop/movement.bend:873	O.UOp.new	+b24 = O.UOp.new(O.Found.ar(b0), O.OpsBUFFER{}, O.param_src(O.Found.ar(b0), 
+uop/movement.bend:874	O.UOp.new	+big = O.UOp.new(O.Found.ar(b24), O.OpsBUFFER{}, O.param_src(O.Found.ar(b24)
+uop/movement.bend:875	O.UOp.new	+o1 = O.UOp.new(O.Found.ar(big), O.OpsBUFFER{}, O.param_src(O.Found.ar(big),
+uop/movement.bend:876	O.UOp.new	+o2 = O.UOp.new(O.Found.ar(o1), O.OpsBUFFER{}, O.param_src(O.Found.ar(o1), S
+uop/spec.bend:2810	O.UOp.new	+n21 = O.UOp.new(O.Found.ar(n20), O.OpsBUFFER{}, O.param_src(O.Found.ar(n20)
+uop/spec.bend:2923	O.UOp.new	+d3 = O.UOp.new(O.Found.ar(d2), O.OpsBUFFER{}, O.param_src(O.Found.ar(d2), S
+uop/validate.bend:1950	O.UOp.new	O.UOp.new(ar, O.OpsPARAM{}, O.param_src(ar, None{}),
+uop/weak.bend:288	O.UOp.new	Some{O.UOp.new(ar, O.OpsPARAM{}, O.param_src(ar, None{}),
+FILES-WALKED	141
+REFUSED-LINES	6
+REFUSED-LINES-WITH-A-SITE	0
+TOTAL-param_src-CALL-SITES	66
+CLASS	O.UOp.new	62
+CLASS	fx_node	4
+--- per file ---
+FILE	uop/fold.bend	23
+FILE	schedule/memory.bend	12
+FILE	uop/movement.bend	6
+FILE	engine/realize.bend	4
+FILE	function.bend	4
+FILE	schedule/__init__.bend	3
+FILE	renderer/__init__.bend	2
+FILE	uop/spec.bend	2
+FILE	codegen/simplify.bend	1
+FILE	mixin/creation.bend	1
+FILE	mixin/elementwise.bend	1
+FILE	mixin/movement.bend	1
+FILE	mixin/op.bend	1
+FILE	nn/optim.bend	1
+FILE	schedule/prepare.bend	1
+FILE	tensor.bend	1
+FILE	uop/validate.bend	1
+FILE	uop/weak.bend	1

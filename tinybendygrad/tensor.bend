@@ -2248,7 +2248,7 @@ def g_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def g_buf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{g_buf.arg(slot, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{g_buf.arg(slot, dt)}, O.TNone{})
 
 # a `Tensor([1, 2, 3, 4], device='PYTHON')`: one BUFFER, int32, size 4.
 def g_t4() -> O.Found:

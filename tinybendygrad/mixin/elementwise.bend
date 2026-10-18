@@ -1039,7 +1039,7 @@ def ew_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
     False{}, None{}, None{}, False{}, None{}}
 
 def ew_buf(+ar: O.Arena, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{ew_buf.arg(0, dt)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{4}, O.AParam{ew_buf.arg(0, dt)}, O.TNone{})
 
 def ew_f32(ar: O.Arena) -> O.Found: ew_buf(ar, S.single())
 def ew_i8(ar: O.Arena) -> O.Found: ew_buf(ar, S.int8())

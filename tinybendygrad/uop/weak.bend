@@ -284,12 +284,12 @@ def wk_is_virtual(+fx: F.Folded, +i: U32) -> Bool:
 # CPython's `param` is three arms; the other two want `prod(to_max_shape(shape))` plus a `view_as`
 # RESHAPE, and `view_as` is ABSENT from the port (so is `unique_num`, which the other arm wants).
 def wk_param_noshape(+ar: O.Arena, slot: U32, +dt: S.Dt, vmm: Maybe<&2, O.PyRange>) -> Maybe<&1, O.Found>:
-  Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),
-            Some{O.UOp.new(ar, O.OpsPARAM{}, O.param_src(ar, None{}),
-                           O.AParam{O.ParamArg{slot, dt, vmm, None{}, None{}, S.AGlobal{},
-                                              None{}, False{}, None{}, None{}, False{}, None{}}},
-                           O.TNone{})},
-            None{})
+  Bool.pick(Maybe<&1, O.Found>, Bool.not(D.md_weak(dt)),            Some{O.UOp.new.param(ar, O.OpsPARAM{}, None{}, O.AParam{O.ParamArg{slot, dt, vmm, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})},            None{})
+
+
+
+
+
 
 # `S.int32()` IS CPython'S `default_int=None` SET TO int32, which is what
 # `absorb_weak_src` and `lower_weak_node` pass (`s.commit_dtype(dtypes.i32)`), and it is

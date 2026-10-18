@@ -303,7 +303,7 @@ def cr_alloc.arg(slot: U32, +dt: S.Dt, dev: S.Dev) -> O.ParamArg:
 # (movement.bend, "arena.next is NOT a containment test"): it is a NAME, and here the
 # name is only ever compared for EQUALITY.
 def cr_alloc(+ar: O.Arena, +dt: S.Dt, size: U32, dev: S.Dev) -> T.Tensor:
-  T.tn_alu.put(O.UOp.new(ar, O.OpsALLOC{}, O.param_src(ar, Some{size}), O.AParam{cr_alloc.arg(O.Arena.next(ar), dt, dev)}, O.TNone{}))
+  T.tn_alu.put(O.UOp.new.param(ar, O.OpsALLOC{}, Some{size}, O.AParam{cr_alloc.arg(O.Arena.next(ar), dt, dev)}, O.TNone{}))
 
 # `ret.shape == self.shape` for the `reshape(max_shape)` of creation.py:42, where
 # `ret.shape` is `max_shape` and an ALLOC's shape is `(size,)` -- `param_ds`,

@@ -219,7 +219,7 @@ def pr_pa(slot: U32, name: String, dev: U32) -> O.ParamArg:
 def pr_wm_same(self: U32, b: U32) -> Bool: U32.is_eq(b, self)
 
 def pr_buf(+ar: O.Arena, slot: U32, size: U32, name: String, dev: U32) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{pr_pa(slot, name, dev)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{pr_pa(slot, name, dev)}, O.TNone{})
 
 def pr_range(+ar: O.Arena, n: U32, ax: U32) -> O.Found:
   +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})

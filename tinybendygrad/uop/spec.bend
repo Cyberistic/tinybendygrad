@@ -2807,7 +2807,7 @@ def main_arena() -> Land:
   +n18 = O.UOp.new(O.Found.ar(n17), O.OpsBINARY{}, Nil{}, O.ABlob{[97, 98, 99, 100]}, O.TNone{})
   +n19 = O.UOp.new(O.Found.ar(n18), O.OpsPROGRAM{}, [O.Found.i(n3), O.Found.i(n16), O.Found.i(n17), O.Found.i(n18)], O.AProgram{O.ProgramInfo.of()}, O.TNone{})
   +n20 = O.UOp.special(O.Found.ar(n19), O.Found.i(n1), "0")
-  +n21 = O.UOp.new(O.Found.ar(n20), O.OpsBUFFER{}, O.param_src(O.Found.ar(n20), Some{4}), O.AParam{buf_param()}, O.TNone{})
+  +n21 = O.UOp.new.param(O.Found.ar(n20), O.OpsBUFFER{}, Some{4}, O.AParam{buf_param()}, O.TNone{})
   +n22 = O.UOp.new(O.Found.ar(n21), O.OpsAFTER{}, [O.Found.i(n21)], O.ANone{}, O.TNone{})
   +n23 = O.UOp.new(O.Found.ar(n22), O.OpsGETADDR{}, [O.Found.i(n21)], O.ADev{S.D1{0}}, O.TNone{})
   +n24 = O.UOp.new(O.Found.ar(n23), O.OpsGETADDR{}, [O.Found.i(n22)], O.ADev{S.D1{0}}, O.TNone{})
@@ -2920,7 +2920,7 @@ def mdev_param() -> O.ParamArg:
 def main_mdev(ax: O.AxisType) -> Mdev:
   +d1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(2)})
   +d2 = O.UOp.range_end(O.Found.ar(d1), O.Found.i(d1), [0], ax)
-  +d3 = O.UOp.new(O.Found.ar(d2), O.OpsBUFFER{}, O.param_src(O.Found.ar(d2), Some{4}), O.AParam{mdev_param()}, O.TNone{})
+  +d3 = O.UOp.new.param(O.Found.ar(d2), O.OpsBUFFER{}, Some{4}, O.AParam{mdev_param()}, O.TNone{})
   Mdev{F.folded(O.Found.ar(d3)), O.Found.i(d3)}
 
 # ===========================================================================

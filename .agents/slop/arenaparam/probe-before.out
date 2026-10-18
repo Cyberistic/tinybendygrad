@@ -1,0 +1,7 @@
+idiom_Some12 nsrc=1 next=2 op=BUFFER src0=1 src0_op=BUFFER src0_nsrc=1 size=N
+idiom_None nsrc=1 next=2 op=BUFFER src0=1 src0_op=BUFFER src0_nsrc=1 size=N
+threaded_Some12 nsrc=1 next=3 op=BUFFER src0=1 src0_op=CONST src0_nsrc=0 size=12
+threaded_Some0 nsrc=1 next=3 op=BUFFER src0=1 src0_op=CONST src0_nsrc=0 size=0
+threaded_None nsrc=1 next=3 op=BUFFER src0=1 src0_op=STACK src0_nsrc=0 size=N
+mxw_buf nsrc=1 next=2 op=BUFFER src0=1 src0_op=BUFFER src0_nsrc=1 size=N
+reintern_4_4=True distinct_4_6=True distinct_0_1=True distinct_0_none=True
