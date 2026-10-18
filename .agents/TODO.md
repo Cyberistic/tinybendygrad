@@ -838,6 +838,46 @@ immovable-denoms [#########] 3/3  **SEVEN SUMMARY ROWS CARRY A DENOMINATOR TYPED
                                        `graphs-refushed`, docstring says 24 rows). ANY FIX MUST
                                        TOUCH BOTH FILES OR IT IS NOT ONE EDIT.**
 
+driver-coverage [##########] 3/3  **TWO DRIVERS THE RUN EXECUTES WERE NOT IN THE DIGEST, AND A GREP CENSUS
+                                       MISSES BOTH.** `.agents/slop/` is reached ONLY by explicit names
+                                       in `SUBSTRATE_INPUTS`, and neither of these appeared, so a
+                                       substrate move in either was invisible to the digest that
+                                       exists to catch one. **`graphcmp-dbg.bend` IS ASSEMBLED AT
+                                       RUNTIME** (`SLOP / "graphcmp-dbg.bend"`, handed to
+                                       `subprocess.run` at `graphcmp.py:3064`), **so SEARCHING THE
+                                       SOURCE FOR THE LITERAL FINDS NOTHING**;
+                                       `graphcmp-empty.bend` is the `else` branch at
+                                       `checks/differ.py:904`. An AST census that resolves
+                                       runtime-assembled constants found both and rejected all **7**
+                                       PROSE mentions, including the two hardest -- an *assignment*
+                                       at `:897`, and a path inside a `write(...)` refusal string at
+                                       `:901`. PINNED; the declared population is **387 -> 389** and
+                                       the digest VALUE MOVED, which is the point: the population's
+                                       DEFINITION changed, so the pin must. **THE CONTROL EARNED ITS
+                                       KEEP: IT CAUGHT TWO REAL DEFECTS IN THE INSTRUMENT FIRST** --
+                                       `REPO = …parents[2]` is not constant, and returning `None`
+                                       silently unbound `SLOP`/`BEND`/`BEND_DBG` together and
+                                       yielded ZERO hits in `graphcmp.py`; and a bare `Path(...)` was
+                                       scored as an invocation.
+comment-decay-restored [######...] 3/3  **A SWEEP THAT DELETES A FILE MAKES A LATER RESTORE INVISIBLE TO
+                                       EVERY SENTENCE THAT REMEMBERS THE DELETE.** `differ.py:888`
+                                       asserted *"THAT PROBE NO LONGER EXISTS ... deleted in sweep
+                                       371cc64c9"*. Sweep `371cc64c9` (2026-10-05) DID delete
+                                       both `graphcmp-empty.bend` and `graphcmp-dbg.bend` -- and
+                                       **both were RESTORED**: the first by `c51c5ffd2` (2026-10-15),
+                                       the second by `1a0ef5108` (2026-10-17). **BOTH ARE IN `HEAD`
+                                       TODAY**, so the claim stopped being true and nothing updated
+                                       it. **THE BELIEF OUTLIVED ITS CAUSE BECAUSE
+                                       `.agents/slop/graphcmp.py:2138` KEEPS A VERBATIM FROZEN COPY OF
+                                       THE OLD STDERR AS A `CRASH_CONTROL` FIXTURE** -- the dead
+                                       error text still appears, character for character, in a tracked
+                                       file, so the claim stays greppable forever. Corrected with
+                                       the restore commits named. **THE SECOND MENTION AT `:901` WAS
+                                       DELIBERATELY NOT CHANGED**: it is a string INSIDE the
+                                       `if not probe.is_file():` branch, accurate when it fires --
+                                       editing it would make the guard lie about itself, which is
+                                       the same defect one line up.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still

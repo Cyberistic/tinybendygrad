@@ -885,7 +885,17 @@ def cmd_run(_a):
     # the code it sits above. `CRASH_CONTROL`'s second row already names the opposite rule as a
     # defect: "a retry that fires on an answer".
     #
-    # MEASURED 2026-10-07 (`midrun`): **THAT PROBE NO LONGER EXISTS** -- it and `graphcmp-dbg.bend`
+    # HISTORY, CORRECTED 2026-10-18: this said **THAT PROBE NO LONGER EXISTS**, deleted in sweep
+    # `371cc64c9`. Sweep `371cc64c9` (2026-10-05) DID delete it -- and both files were RESTORED
+    # after that, `graphcmp-empty.bend` by `c51c5ffd2` (2026-10-15) and `graphcmp-dbg.bend` by
+    # `1a0ef5108` (2026-10-17). **BOTH ARE IN `HEAD` TODAY**, so the claim stopped being true and
+    # nothing updated it: a sweep that deletes a file makes a later restore invisible to every
+    # sentence that remembers the delete. The belief outlived its cause because
+    # `.agents/slop/graphcmp.py:2138` keeps a VERBATIM FROZEN COPY of the old stderr as a
+    # `CRASH_CONTROL` fixture, so the old error text still appears verbatim in a tracked file.
+    # (The second mention, at the `write(...)` below, is a string INSIDE the `if not
+    # probe.is_file():` branch -- accurate when it fires, so it is deliberately NOT changed.)
+    # HISTORY: it and `graphcmp-dbg.bend`
     # were deleted in sweep `371cc64c9`, so `D10-zerorow-guard.txt` has been reading `rc=1` off a
     # **`no such file`**, which is the SAME exit code the guard raises when the probe WORKS. **A GUARD
     # THAT CANNOT DISTINGUISH "MY FIXTURE IS MISSING" FROM "MY FIXTURE BEHAVED" IS CERTIFYING A MISSING
@@ -1171,8 +1181,16 @@ SUBSTRATE_ROWS = ("substrate-start", "substrate-end")
 #:   6 OF 8 ANCHORS THAT ARE AT THE WRONG LINE AND EXITS 0. IT ANSWERS "DOES THIS STRING APPEAR
 #:   ANYWHERE?" WHERE THE CALLER ASKED "DOES LINE N STILL NAME IT?", SO THIS TABLE IS A HUMAN
 #:   CONTRACT AND SAYS SO INSTEAD OF NAMING A CHECKER THAT CANNOT CHECK IT.
+# THE TWO DRIVERS `cmd_run` ACTUALLY EXECUTES, AND A GREP CENSUS MISSES BOTH. `.agents/slop/` is
+# reached ONLY by explicit names here, and neither name appeared, so a substrate move in either file
+# was invisible to the digest that exists to catch one. `graphcmp-dbg.bend` is assembled at RUNTIME
+# (`SLOP / "graphcmp-dbg.bend"`) and handed to `subprocess.run` at `graphcmp.py:3064`, so searching
+# the source for the literal finds nothing; `graphcmp-empty.bend` is the `else` branch at `:904`.
+# MEASURED 2026-10-18 by an AST census that resolves runtime-assembled constants: both were
+# uncovered, and the same census rejected all 7 PROSE mentions of them.
 SUBSTRATE_INPUTS = ("checks/differ.py", "checks/devpin.py", "bin/bend",
                     ".agents/slop/graphcmp.py", ".agents/slop/graphcmp.bend",
+                    ".agents/slop/graphcmp-dbg.bend", ".agents/slop/graphcmp-empty.bend",
                     ".agents/slop/graphcmp-oracle.py", ".agents/slop/graphcmp-dbg-oracle.py",
                     ".agents/slop/graphcmp-p13-ops.py")
 
