@@ -6,9 +6,8 @@ every `ALWAYS`, every `MUST`, every named command and every named path, and whet
 **A LINE IN HERE WITH NO MEASUREMENT AND NO NAMED INSTRUMENT IS A LINE YOU MUST NOT TRUST, AND
 DELETING IT IS CHEAPER THAN LEAVING IT.** The cheapest test of a prescription is to FOLLOW it, and
 nobody had been doing that: this file told every agent CI uses `SPEC=2`, and `SPEC=2` takes the corpus
-census from 70 of 70 program ops (70 of 77 enum members; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) with 14 of 25 graphs failing. It also told every agent to put a
-gate's inputs under `.agents/slop/`, and **180 of the 333 paths `.agents/TOOLS.md` names are gone (measured
-2026-10-06 13:00; it was 173 when written — the 7 that moved are the `oracles/*.txt`→`.rows` rename) — **14 of them
+census from 70 of 70 program ops (70 of 77 enum members — **THE ENUM DENOMINATOR IS NOW **75**; THIS IS THE **2026-10-06** READING**; 34-graph corpus, read 2026-10-06 14:16) to 26 of 77 (the enum denominator it was measured against; a 25-graph `SPEC=2` reading, not re-taken) with 14 of 25 graphs failing. It also told every agent to put a
+gate's inputs under `.agents/slop/`, and **THE LEDGER'S PATH COUNTS ARE **NO LONGER IN **THIS** FILE**, AND **NEITHER ARE `.agents/TOOLS.md`'s OWN** — **THE COUNT IS **A FIXED-POINT PROBLEM AND NOT A STYLE**: MEASURED **2026-10-18**, **ONE COMMIT'S EDITS MOVED IT **401 -> 408** DISTINCT AND **178 -> 179** ABSENT, SO **RE-DERIVE IT** (`.agents/slop/toolsledger/extract.py`, **ASKING `git ls-tree -r HEAD`, **NOT `git ls-files` WHICH IS **THE INDEX**) — the 2026-10-06 reading was 180 of 333 — **14 of them
 INSTRUMENTS** (`kind()` COUNTED 16; TWO ARE CLASSIFIER ERRORS, SEE THE CLASS TABLE BELOW).** **A
 GOVERNING DOCUMENT THAT NOBODY CHECKS AGAINST REALITY PROPAGATES INTO EVERY BRIEF THAT CITES IT.**
 
@@ -138,12 +137,15 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   now calls that defect **REPAIRED**: the fixture is recovered from git to the tracked
   `gates/cstyle-live.rows` (`e2e.py:99-106`) — **stage 7 SKIPs on a COLD SUBSTRATE, not on the fixture.**
   **RE-MEASURED RULE AND ITS NUMBERS (2026-10-07): of the **333** distinct paths `.agents/TOOLS.md` names, **164 are present and
-  **169 are gone** — **85 of those under `.agents/slop/`** — and **16 of the gone are INSTRUMENTS, a rule's would-be
+  **THE DENOMINATORS BELOW ARE THE **2026-10-07** READING AND **BOTH MOVED**; RE-DERIVE THEM** — **gone** now
+**179**, **85 of those under `.agents/slop/`** (**THE ONLY FIGURE THAT DID NOT MOVE**), and **6 of the gone are INSTRUMENTS
+BY `extract.py`'s LEXICAL `kind()`** — **DOWN FROM 16, AND THAT IS A **CLASSIFIER** CHANGE NOT A **RECOVERY**: a rule's
+ would-be
   enforcer** (`.agents/slop/toolsledger/extract.py` regenerates this). **BY CONTENT IT IS **14**, NOT 16:
 `lostinst` VERIFIED 14 — **13 RECOVERABLE** (every restore `git cat-file blob` non-empty, 110 B – 23,711 B, all 14
 distinct) AND **1 GONE: `.agents/slop/xd1/mutate.py`** — NO BLOB IN ANY REF, AND ALL 75,336 HISTORY PATHS CONTAIN NO
-`xd1/mutate.py`. THE OTHER TWO ARE CLASSIFIER ERRORS: **`xd1/pin` IS A REVISION REFERENCE** (`TOOLS.md:645` says it
-equals `6c3d401cf324`, WHICH `git cat-file -t` ANSWERS AS `commit`) AND **`runs/elf-checkonly-2026-10-04.txt` IS A
+`xd1/mutate.py`. THE OTHER TWO ARE CLASSIFIER ERRORS: **`xd1/pin` IS A REVISION REFERENCE** (WHICH `git cat-file -t`
+ANSWERS AS `commit`) AND **`runs/elf-checkonly-2026-10-04.txt` IS A
 CAPTURED STDOUT** (110 B of `ALL PROOFS CHECK`). **A BASENAME REGEX MATCHED THE WORD `pin` AND THE SUBSTRING `check`,
 WHICH IS DOCTRINE 1's FAILURE REPRODUCED INSIDE THE CENSUS OF DOCTRINE 1.** **AND ALL 16 APPEAR **ONLY** UNDER
 `extract.py`'s RULE A: EVERY EXTENSION-GATED RULE DROPS `xd1/pin`, BECAUSE IT HAS NO EXTENSION — **THE SAME STRUCTURAL
@@ -386,7 +388,7 @@ Most important ones are DEBUG and VIZ. You can mock hardware with DEBUG.
 | `JIT`                | 1 (2 on OSX/x86) | 0=off, 1=on, 2=on but device graphs off                                             |
 | `VIZ`                | 0                | 1=record rewrites and open the viz UI (implies PROFILE)                             |
 | `PROFILE`            | VIZ              | 1=enable profiling infrastructure                                                   |
-| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (70 of 77 enum members) on the 34-graph corpus, read 2026-10-06 14:16 · `SPEC=2` 26 of 77 enum members, 14 of 25 graphs FAIL, exit 1 · `SPEC=3` 0 of 77 enum members, all 25 FAIL — the `SPEC=2` and `SPEC=3` rows are 25-graph readings, STALE now that the corpus is 34 graphs, and re-taking them needs `bend` |
+| `SPEC`               | 1                | UOp spec validation after rewrites. **STAY AT 1.** Upstream's own CI runs `SPEC=2` on `test/null/`, but MEASURED: `SPEC=1` 70 of 70 program ops (**70 of 77 enum members — THE ENUM IS NOW **75**; THIS IS THE 2026-10-06 READING**) on the 34-graph corpus, read 2026-10-06 14:16 · `SPEC=2` 26 of 77 enum members, 14 of 25 graphs FAIL, exit 1 · `SPEC=3` 0 of 77 enum members, all 25 FAIL — the `SPEC=2` and `SPEC=3` rows are 25-graph readings, STALE now that the corpus is 34 graphs, and re-taking them needs `bend` |
 | `BEAM`               | 0                | Beam search iterations for kernel optimization                                      |
 | `NOOPT`              | 0                | 1=disable all kernel optimizations                                                  |
 | `DEFAULT_FLOAT`      | float32          | Default float dtype (HALF, BFLOAT16, FLOAT64)                                       |
