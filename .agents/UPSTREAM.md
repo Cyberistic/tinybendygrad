@@ -193,7 +193,9 @@ for all 17 `dtypes.all` × 6 renderers, at `87a4311b3`:
 | `CUDARenderer` | `fp8e4m3fnuz`, `fp8e5m2fnuz` |
 | `HIPRenderer` | `fp8e4m3fnuz`, `fp8e5m2fnuz` |
 
-**18 of 102 combinations.** At the pin `6c3d401cf324`, all 102 return a string. `weakint`
+**18 of 102 combinations.** At the superseded pin — the tree `.agents/UPSTREAM-PIN.md`
+labels `SUPERSEDED PIN`, which is the vendored tree this comparison was taken against
+and NOT the `OUR PIN` row beside it — all 102 return a string. `weakint`
 and `weakfloat` are absent from every `type_map` too, but they are unreachable through
 `_render_dtype` on a rangeified graph because the `UPat.cvar("c").cast()` rules consume
 CONSTs first — EXCEPT on an un-rangeified graph, where `renderer-oracle.py`'s `f_range`
@@ -201,14 +203,14 @@ fixture has a `CAST(LOAD(f32) -> weakint)` node and dies with `KeyError: dtypes.
 That fixture is a synthetic graph, so it is evidence of the shape, not of a real kernel.
 
 **Verified here, precisely:**
-- `cstyle_oracle.py` against the **pin** tree: **210 rows, rc 0.**
+- `cstyle_oracle.py` against the **superseded pin**: **210 rows, rc 0.**
 - `cstyle_oracle.py` against **upstream** `87a4311b3`: **`KeyError: dtypes.fp8e4m3`, 0 rows,
   rc 1** — the unit's own oracle cannot produce a single row any more.
 - The 18-cell table above, by direct `_render_dtype` calls.
 - The `tmap` rows change **value** even where nothing raises: `type_map.get(dt, dt.name)`
-  over `dtypes.all` answers `fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz` where the pin answers
-  `float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz`, on all six renderers, and the
-  two `fnuz` entries additionally change on CUDA and HIP. **That is 6 of our committed
+  over `dtypes.all` answers `fp8e4m3,fp8e5m2,fp8e4m3fnuz,fp8e5m2fnuz` where the superseded
+  pin answers `float8_e4m3,float8_e5m2,float8_e4m3fnuz,float8_e5m2fnuz`, on all six renderers,
+  and the two `fnuz` entries additionally change on CUDA and HIP. **That is 6 of our committed
   `tmap` rows whose expected values are now stale for a reason that is upstream's rename
   and not our bug** — they must be re-derived from the new oracle, not hand-edited.
 
@@ -225,9 +227,9 @@ intentional restriction** rather than a crash bug. Either way it is upstream's t
 were the `.name` fallback values and some backend will need them), or make `_render_dtype`
 raise a `KeyError` that names the dtype and the renderer, which it half does already.
 
-**What the port does:** `renderer/cstyle.bend` does NOT bend. It keeps the pin's C spellings
-(`signed char`, `float`, `__bf16`, …) because those are what a C backend wants, and its
-`type_map` rows are the authority for the spelling rather than `dtype.name`. Its `tmap`
+**What the port does:** `renderer/cstyle.bend` does NOT bend. It keeps the superseded pin's
+C spellings (`signed char`, `float`, `__bf16`, …) because those are what a C backend wants,
+and its `type_map` rows are the authority for the spelling rather than `dtype.name`. Its `tmap`
 rows are **recorded as needing re-derivation**, not edited — see the drift report. The port
 diverges from upstream on `dtype.name` deliberately: upstream's `DType.name` is now a dtype
 IDENTIFIER (`f32`), and a C type name is a renderer concern, so the port's split (dtype name
