@@ -309,3 +309,112 @@ CPython lane (`gates/.wgsl-mut-oracle.py:321`, `checks/.tmp-tc_ptx_render-oracle
 and **not one `.bend` construction is in its population**. The brief's "that gate reads
 POS-SHIFT=21 because Bend accepts a 13-argument positional construction" is not what this
 instrument measures.
+
+### A FALSE CLAIM IN A READ-ONLY INSTRUMENT, REPORTED NOT FIXED
+
+`gates/paramarg-shape-gate.py:210` hardcodes, as the summary string it prints on PASS:
+
+```
+"the nsrc rows are where the size lives, and upstream moved it into src[0] and this port did not"
+```
+
+The last clause is now false -- the port did move it. The gate is read-only for this unit, so
+it stands. It is also why the gate is `FAIL` and not `PASS`: `checks=lambda: equal`
+(`:210`) judges ONLY `structural()`, and the one remaining divergence is the missing `spec`.
+
+## 8. PEAK RSS, RUNTIME, INVOCATION COUNT
+
+All under `checks/bounded.py --mb 2048`, `SPEC=1`, `DEV=CPU`, token read from stderr
+(`WITHIN-LIMITS` on every one). Machine `hw.memsize` 17179869184 (16 GiB), `hw.ncpu` 12.
+
+| command | peak RSS | wall | token |
+|---|---|---|---|
+| `checks/bend .agents/slop/graphcmp.bend group` (record migrated, `param_src`) | 205 MB | 1s | WITHIN-LIMITS |
+| `checks/bend .agents/slop/graphcmp.bend buffer` (the self-loop) | 557 MB | 2s | WITHIN-LIMITS |
+| `checks/bend .agents/slop/sizetosrc/paramsrc_probe.bend` (final) | 370 MB | 7s | WITHIN-LIMITS |
+| `checks/bend .agents/slop/graphcmp.bend buffer` (after) | 571 MB | 2s | WITHIN-LIMITS |
+| `checks/bend .agents/slop/graphcmp.bend group` (after) | 629 MB | 2s | WITHIN-LIMITS |
+| `checks/bend .agents/slop/graphcmp.bend matmul` (after) | 734 MB | 2s | WITHIN-LIMITS |
+| `checks/bend gates/paramarg_shape.bend` | 431 MB | 1s | WITHIN-LIMITS |
+| `checks/bend examples/beautiful_mnist.bend` | 734 MB | 1s | WITHIN-LIMITS |
+
+**21 direct `bend` invocations** by this unit, the eleven `paramsrc_probe.bend` runs being
+its write-fix-rerun loop (peaks 13/0/40/145/278/302/325/386/390/370 MB as the probe stopped
+being a syntax error and started being a measurement).
+
+**The corpus run's own invocations are NOT in this table and I did not capture them.**
+`checks/differ.py` has exactly one occurrence of the string `bounded` and it is in a
+docstring about waiting for health, not an RSS record -- `grep -c 'peak-RSS\|peak_rss\|bounded'
+checks/differ.py` = 1. So the 34-graph corpus's per-invocation RSS is not recorded by the
+instrument that runs it. Reported as an absence, not as a number.
+
+**Never two concurrent `bend` processes.** The `repro` run was started only after the last
+direct invocation finished, and nothing was run against a file the corpus imports while it
+was in flight (no `bend` at all after it started; `paramarg-site-gate.py` is pure Python and
+`git fsck` does not touch the substrate).
+
+## 9. `git show --stat` AND `git fsck`
+
+```
+$ GIT_INDEX_FILE=.git/agent-index-sizetosrc git commit ...
+1af4ba921 sizetosrc: size -> src[0], and the corpus is 31 of 34, not 4 of 34
+ 36 files changed, 1151 insertions(+), 356 deletions(-)
+```
+
+`git diff --cached --name-status` before the commit: **33 `M` + 3 `A`, zero `D`, zero
+foreign paths**. The default index was **armed at 8733 entries against HEAD's 7629** for the
+whole of this unit, and was never written to; the private index
+`GIT_INDEX_FILE=.git/agent-index-sizetosrc` was `read-tree HEAD` first and read back at
+`7632` = 7629 + my 3 new files immediately before staging.
+
+```
+$ git fsck --no-progress | grep duplicateEntries
+error in tree 3a60f33f...: duplicateEntries: contains duplicate file entries
+error in tree d57bc484...: duplicateEntries: contains duplicate file entries
+error in tree d83cf685...: duplicateEntries: contains duplicate file entries
+```
+
+**Three, and the same three as before the commit.** My commit's tree is `7632` entries and
+`git cat-file -p HEAD^{tree}` reads it; it is not among the three. **I added no fourth.**
+
+## 10. FOUND BUT NOT DONE
+
+1. **62 `param_src` sites in 17 files still self-loop** (section 3's table; `fold.bend` 23,
+   `schedule/memory.bend` 12, `uop/movement.bend` 6, `engine/realize.bend` 4,
+   `schedule/__init__.bend` 3, `uop/spec.bend` 2, `renderer/__init__.bend` 2, and 1 each in
+   `uop/weak`, `uop/validate`, `tensor`, `schedule/prepare`, `nn/optim`, `mixin/op`,
+   `mixin/movement`, `mixin/elementwise`, `mixin/creation`, `codegen/simplify`). Inside the
+   inherited migration, not introduced here; do not affect the corpus (`graphcmp.bend` calls
+   only `MX.mxw_flip`). Fix: `.venv/bin/python .agents/slop/sizetosrc/thread_src.py <files>
+   --apply`. Not run: it moves node counts in 17 more files and in every gate whose driver
+   builds a buffer, which I could not re-verify in this window.
+
+2. **207 `Nil{}`-src sites in 31 files have no size node at all.** After the record migration
+   `size` exists nowhere in the port, so each of these is either an upstream `variable` /
+   `range_var` (correct: the empty STACK, `None{}`) or a sized `param`/`alloc` whose size is
+   simply lost and must come from whoever knows it. **Which is which is a per-fixture
+   reading, not a mechanical rule**, and my tool REFUSES all of them rather than guess
+   (35 of the 92 refusals are this class: the `ParamArg` is built INLINE, so there is no
+   helper to read a size index from).
+
+3. **`loop` is still REFUSED** (`rc=2`, `py=['N','sCPU'] bend=['sCPU']`). A device/fixture
+   question, not a size question -- see section 5.
+
+4. **`gate` (LINEAR 14 srcs vs 13) and `lin` (SINK `tag py=N bend=i1`) are the two remaining
+   disagreements.** Neither is downstream of this migration.
+
+5. **`oracle-selfcheck=# ORACLE SELFCHECK: FAIL` and `census-rc=rc=1`** are unchanged from the
+   before-summary and are not mine.
+
+6. **The two-run reproducibility byte-comparison did not complete** (section 5). The next unit
+   should finish it in the background.
+
+7. **`.agents/slop/sizetosrc/paramsrc_probe.bend` is deliberately NOT committed.** `.gitignore:85`
+   (`*probe.bend`) covers it and `.gitignore:63-66` says `git add -f` is FORBIDDEN here --
+   "a probe is never a source". It is on disk and runs; `.agents/slop/sizetosrc/thread_src.py`
+   and its output in this report are its evidence.
+
+8. **Two instruments would now measure the `.bend` lane if their `census()` walked the tree
+   instead of `PORT_ROOT`**: `gates/paramarg-shape-gate.py` reported `94 sites in 30 files`
+   while two of the un-migrated drivers sat outside its walk. Mine does (`census.py`), and
+   intersects with `git ls-tree -r HEAD` rather than `git ls-files`.
