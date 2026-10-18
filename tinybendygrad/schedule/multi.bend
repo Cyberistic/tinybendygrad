@@ -2281,8 +2281,8 @@ def G.ix(g: G) -> List<&2, U32>:
 def g_n(g: G, i: Nat) -> U32:
   Maybe.default(&2, U32, List.get(&2, U32, G.ix(g), i), 0)
 
-def g_psize(slot: U32, n: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{n}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{},
+def g_psize(slot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{},
              None{}, None{}, False{}, None{}}
 
 # an UNSHARD's arg is the sharded AXES (ops.py:748), which is `ATuple{ys}`
@@ -2308,9 +2308,9 @@ def g() -> G:
   +rd = O.UOp.range_end(O.Found.ar(c24), O.Found.i(c4), [4294967295], O.AXIS_DEVICE{})
   +rd2 = O.UOp.range_end(O.Found.ar(rd), O.Found.i(c8), [4294967294], O.AXIS_DEVICE{})
   +b8 = O.UOp.new(O.Found.ar(rd2), O.OpsBUFFER{}, [O.Found.i(c24)],
-                  O.AParam{g_psize(0, 8)}, O.TNone{})
+                  O.AParam{g_psize(0)}, O.TNone{})
   +b24 = O.UOp.new(O.Found.ar(b8), O.OpsBUFFER{}, [O.Found.i(c24)],
-                   O.AParam{g_psize(1, 24)}, O.TNone{})
+                   O.AParam{g_psize(1)}, O.TNone{})
   +m0 = O.UOp.new(O.Found.ar(b24), O.OpsUNSHARD{}, [O.Found.i(b8), O.Found.i(rd)],
                   g_u([0]), O.TNone{})
   +m1 = O.UOp.new(O.Found.ar(m0), O.OpsUNSHARD{}, [O.Found.i(b24), O.Found.i(rd)],

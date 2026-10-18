@@ -10,14 +10,17 @@
 # field was DELETED (upstream 72f98ffe0, "move size from ParamArg to src (#18624)").
 # `UOp._shape`'s BUFFER/ALLOC/PARAM arm (ops.py:355-357) then reads `self.src[0]`.
 #
-# This port did not move it. `ops.bend`'s `ParamArg` still declares `size` in the
-# slot `vmin_vmax` occupies upstream, `fold.bend`'s `param_shape.pa` still reads
-# `ParamArg.size`, and this driver still BUILDS the size into `ParamArg`.
+# THE PORT HAS MOVED IT, AND THIS FILE IS WHERE THAT IS VISIBLE. `ops.bend`'s `ParamArg`
+# is twelve fields with no `size`, `UOp.new.param` interns the element count into `src[0]`
+# through `shape_to_shape_arg`, and `O.ParamArg.size(ar, i)` reads it back out of `src[0]`
+# -- the same reader upstream's `_shape` arm is (`ops.py:355-357`). This driver used to
+# build the size into `ParamArg` and to emit `Nil{}` for the src, so it could not
+# COMPILE against the migrated record and the gate was REFUSED rather than red: an
+# instrument that measures nothing is not a measurement.
 #
-# SO THE TWO LANES ARE ASKED THE SAME QUESTION AND THEY ANSWER IT DIFFERENTLY, and
-# the diff IS the finding. There is no `diverges` carve-out here on purpose: a
-# carve-out would make this file agree with the port, and this file is written
-# against UPSTREAM. `gates/paramarg-shape-gate.py` measures the disagreement.
+# There is still no `diverges` carve-out, on purpose: a carve-out would make this file
+# agree with the port whatever the port does, and this file is written against UPSTREAM.
+# `gates/paramarg-shape-gate.py` measures the disagreement.
 #
 # WHY `nsrc` IS A ROW AND NOT A COMMENT. `shape` alone CANNOT see this defect: the
 # port reads the size out of `ParamArg` and upstream reads it out of `src[0]`, and
@@ -40,11 +43,19 @@ import ./../tinybendygrad/LAWS/spec.bend as S
 import ./../tinybendygrad/uop/ops.bend as O
 import ./../tinybendygrad/uop/fold.bend as F
 
-def pa(dt: S.Dt, size: Maybe<&2, U32>) -> O.ParamArg:
-  O.ParamArg{0, dt, size, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
+# THE PORT HAS NOW MOVED IT, AND THIS DRIVER IS THE MIGRATION'S OWN WITNESS.
+# `ops.bend`'s `ParamArg` is twelve fields (`slot, dtype, vmin_vmax, ...`), `UOp.new.param`
+# interns the size into `src[0]` via `shape_to_shape_arg`, and `O.ParamArg.size(ar, i)`
+# reads it back out of `src[0]`. So `pa` no longer takes a size and `buf` threads it.
+# THE ROWS, THEIR NAMES AND THEIR COUNT ARE UNCHANGED (six), so the comparison in
+# `gates/paramarg-shape-gate.py` is untouched: this file moved to the port's shape, not
+# to an easier answer. The `nsrc` row is the one that can tell the two apart, and it is
+# the reason `nsrc` is a row at all.
+def pa(dt: S.Dt) -> O.ParamArg:
+  O.ParamArg{0, dt, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
 
 def buf(ar: O.Arena, size: Maybe<&2, U32>) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{pa(S.single(), size)}, O.TNone{})
+  O.UOp.new.param(ar, O.OpsBUFFER{}, size, O.AParam{pa(S.single())}, O.TNone{})
 
 def shapev(+ar: O.Arena, m: Maybe<&2, Maybe<&2, List<&2, O.Sint>>>) -> String:
   match m:

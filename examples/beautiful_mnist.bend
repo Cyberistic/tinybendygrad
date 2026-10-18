@@ -684,14 +684,16 @@ def mn_pool_in() -> MnShape: mn_pool_in.go(mn_layers(), mn_in())
 # `size = 4`, which is right for its rows and wrong for a second bias of size 2.
 # ===========================================================================
 
-def mn_pbuf(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
-  # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile,
-  # image, buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+# The element count is NOT a field of `ParamArg` (upstream 72f98ffe0 moved it to
+# `src[0]`), so it appears in `mn_buf1`'s `UOp.new.param` and not here. This comment
+# used to name the old thirteen-field order and `Some{size}` sat third; deleting the
+# field is the whole migration and the record is `slot, dtype, vmin_vmax, ...`.
+def mn_pbuf(slot: U32, dt: S.Dt) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def mn_buf1(ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
-  +f = O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{mn_pbuf(slot, size, S.single())}, O.TNone{})
+  +f = O.UOp.new.param(ar, O.OpsBUFFER{}, Some{size}, O.AParam{mn_pbuf(slot, S.single())}, O.TNone{})
   T.tn_wrap_uop(O.Found.ar(f), O.Found.i(f))
 
 def mn_zero() -> E.Ew: E.ECon{O.CFloat{0.0}}

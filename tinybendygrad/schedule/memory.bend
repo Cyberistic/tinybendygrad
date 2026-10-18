@@ -267,13 +267,17 @@ def mem_arg.of(a: O.Arg) -> Maybe<&2, O.ParamArg>:
 def mem_arg(+fx: F.Folded, +self: U32) -> Maybe<&2, O.ParamArg>:
   mem_arg.of(O.Arena.arg(F.Folded.ar(fx), self))
 
-def mem_numel_of(m: Maybe<&2, O.ParamArg>) -> U32:
+# `max_numel` for a memory node, and it is `src[0]` and not a `ParamArg` field:
+# `72f98ffe0` moved `size` out of the record, so the element count is the size CONST
+# the owner carries. `Folded.ar` IS the arena the owner's index names, so the fold --
+# which already carries both -- is what makes this reachable.
+def mem_numel_of(+ar: O.Arena, self: U32, m: Maybe<&2, O.ParamArg>) -> U32:
   match m:
-    case Some{+pa}: mem_size_of(O.ParamArg.size(pa))
+    case Some{+pa}: mem_size_of(O.ParamArg.size(ar, self))
     case _: 0
 
 def mem_numel(+fx: F.Folded, +self: U32) -> U32:
-  mem_numel_of(mem_arg(fx, self))
+  mem_numel_of(F.Folded.ar(fx), self, mem_arg(fx, self))
 
 def mem_dt(+fx: F.Folded, +self: U32) -> S.Dt:
   Maybe.default(&2, S.Dt, F.fold.dt(F.Folded.ar(fx), F.Folded.t(fx), self), S.void())
@@ -999,8 +1003,8 @@ def Walk.k(w: Walk) -> U32:
   match w:
     case Walk{fx, a, msel, mstack, st, k, md, mc}: k
 
-def mem_buf(+slot: U32, size: U32, dev: S.Dev) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
+def mem_buf(+slot: U32, dev: S.Dev) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{dev},
              False{}, None{}, Some{slot}, False{}, None{}}
 
 def cpu() -> S.Dev: S.D1{0}
@@ -1011,13 +1015,13 @@ def unpl() -> List<&2, U32>: [1, 4]
 
 def walk_of() -> Walk:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(0, 16, cpu())}, O.TNone{})
+  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{16}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsMSELECT{}, [O.Found.i(n2)], O.ATuple{[0]}, O.TNone{})
   +n4 = O.UOp.new(O.Found.ar(n3), O.OpsMSTACK{}, [O.Found.i(n3), O.Found.i(n3)], O.ANone{}, O.TNone{})
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsCONST{}, Nil{}, O.APy{O.CInt{H.i64_of_i32(1)}}, O.TNone{})
   +n6 = O.UOp.new(O.Found.ar(n5), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n5)], O.ANone{}, O.TNone{})
-  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(9, 32, mdev())}, O.TNone{})
-  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(8, 32, mdev_cl())}, O.TNone{})
+  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), Some{32}), O.AParam{mem_buf(9, mdev())}, O.TNone{})
+  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), Some{32}), O.AParam{mem_buf(8, mdev_cl())}, O.TNone{})
   Walk{F.folded(O.Found.ar(n8)), O.Found.i(n2), O.Found.i(n3), O.Found.i(n4), O.Found.i(n6),
        O.Found.i(n5), O.Found.i(n7), O.Found.i(n8)}
 
@@ -1050,13 +1054,13 @@ def plan_plan(fx: F.Folded) -> Plan:
 
 def proj_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(0, 1024, cpu())}, O.TNone{})
-  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(1, 2048, cpu())}, O.TNone{})
-  +n4 = O.UOp.new(O.Found.ar(n3), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(2, 512, cpu())}, O.TNone{})
-  +n5 = O.UOp.new(O.Found.ar(n4), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(3, 256, cpu())}, O.TNone{})
-  +n6 = O.UOp.new(O.Found.ar(n5), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(4, 128, cpu())}, O.TNone{})
-  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(5, 64, cpu())}, O.TNone{})
-  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(6, 4096, disk())}, O.TNone{})
+  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{1024}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
+  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsBUFFER{}, O.param_src(O.Found.ar(n2), Some{2048}), O.AParam{mem_buf(1, cpu())}, O.TNone{})
+  +n4 = O.UOp.new(O.Found.ar(n3), O.OpsBUFFER{}, O.param_src(O.Found.ar(n3), Some{512}), O.AParam{mem_buf(2, cpu())}, O.TNone{})
+  +n5 = O.UOp.new(O.Found.ar(n4), O.OpsBUFFER{}, O.param_src(O.Found.ar(n4), Some{256}), O.AParam{mem_buf(3, cpu())}, O.TNone{})
+  +n6 = O.UOp.new(O.Found.ar(n5), O.OpsBUFFER{}, O.param_src(O.Found.ar(n5), Some{128}), O.AParam{mem_buf(4, cpu())}, O.TNone{})
+  +n7 = O.UOp.new(O.Found.ar(n6), O.OpsBUFFER{}, O.param_src(O.Found.ar(n6), Some{64}), O.AParam{mem_buf(5, cpu())}, O.TNone{})
+  +n8 = O.UOp.new(O.Found.ar(n7), O.OpsBUFFER{}, O.param_src(O.Found.ar(n7), Some{4096}), O.AParam{mem_buf(6, disk())}, O.TNone{})
   +n9 = O.UOp.new(O.Found.ar(n8), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n3)], O.ANone{}, O.TNone{})
   +n10 = O.UOp.sink(O.Found.ar(n9), [O.Found.i(n9), O.Found.i(n3)])
   +n11 = O.UOp.new(O.Found.ar(n10), O.OpsSTORE{}, [O.Found.i(n2), O.Found.i(n4)], O.ANone{}, O.TNone{})
@@ -1519,7 +1523,7 @@ def p_nplan() -> U32: mem_len(Planned.bs(mem_plan(proj_of())))
 
 def empty_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(0, 4096, disk())}, O.TNone{})
+  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{4096}), O.AParam{mem_buf(0, disk())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsCUSTOMI{}, Nil{}, O.AStr{"x"}, O.TNone{})
   +n4 = O.UOp.sink(O.Found.ar(n3), [O.Found.i(n3)])
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsLINEAR{}, [O.Found.i(n4)], O.ANone{}, O.TNone{})
@@ -1534,7 +1538,7 @@ def empty_of() -> Proj:
 # rounds to 512.
 def unaligned_of() -> Proj:
   +n1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(1)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{mem_buf(0, 100, cpu())}, O.TNone{})
+  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsBUFFER{}, O.param_src(O.Found.ar(n1), Some{100}), O.AParam{mem_buf(0, cpu())}, O.TNone{})
   +n3 = O.UOp.new(O.Found.ar(n2), O.OpsADD{}, [O.Found.i(n2), O.Found.i(n2)], O.ANone{}, O.TNone{})
   +n4 = O.UOp.sink(O.Found.ar(n3), [O.Found.i(n3), O.Found.i(n2)])
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsLINEAR{}, [O.Found.i(n4)], O.ANone{}, O.TNone{})

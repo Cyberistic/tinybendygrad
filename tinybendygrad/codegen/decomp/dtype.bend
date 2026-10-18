@@ -1386,7 +1386,7 @@ def l2i_define.size2(m: Maybe<&2, U32>) -> Maybe<&2, U32>:
 # x.arg.size*2)`
 
 def l2i_define.arg(dt: S.Dt, +pa: O.ParamArg) -> O.Arg:
-  O.AParam{O.ParamArg{O.ParamArg.slot(pa), dt, l2i_define.size2(O.ParamArg.size(pa)),
+  O.AParam{O.ParamArg{O.ParamArg.slot(pa), dt,
     O.ParamArg.vmin_vmax(pa), O.ParamArg.multiple_of(pa), O.ParamArg.name(pa),
     O.ParamArg.addrspace(pa), O.ParamArg.device(pa), O.ParamArg.volatile(pa),
     O.ParamArg.image(pa), O.ParamArg.buffer(pa), O.ParamArg.bind_on_realize(pa),
@@ -2506,7 +2506,7 @@ def rows.put(+nm: String, ok: Bool, u: U32, +ar: O.Arena, +from: U32) -> String:
 # ===========================================================================
 
 def dd_par(+ar: O.Arena, +nm: String, +dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{O.ParamArg{0, dt, Some{0},
+  O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{O.ParamArg{0, dt,
     Some{O.PyRange{H.i64_of_i32(0), H.i64_of_i32(0)}}, Some{1}, Some{nm}, S.Aalu{}, None{},
     False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 

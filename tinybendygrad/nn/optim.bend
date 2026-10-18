@@ -83,14 +83,14 @@ import ./../dtype.bend as DT
 # exactly the failure tensor.bend's mutation table M13 records.
 # ---------------------------------------------------------------------------
 
-def barg(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
+def barg(slot: U32, dt: S.Dt) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile,
   # image, buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def pbuf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{barg(slot, size, dt)}, O.TNone{})
+  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{barg(slot, dt)}, O.TNone{})
 
 # ===========================================================================
 # `numel` -- mixin/movement.py:38, `prod(self.shape)`.

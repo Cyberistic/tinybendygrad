@@ -3567,7 +3567,7 @@ def fz_leaf.sgn(c: U32, w: String, ar: O.Arena) -> O.Found:
 # the same index, so `x` and `y` would have been ONE node.
 def fz_var(+ar: O.Arena, +nm: String, dt: S.Dt) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{O.ParamArg.no_slot(), dt, None{}, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{nm}, S.Aalu{},
+    O.AParam{O.ParamArg{O.ParamArg.no_slot(), dt, Some{O.PyRange{H.i64_of_hi_lo(0, 0), H.i64_of_i32(100)}}, Some{1}, Some{nm}, S.Aalu{},
       None{}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
 # The four CONST spellings and the four VARIABLE dtypes. A leaf is interned into

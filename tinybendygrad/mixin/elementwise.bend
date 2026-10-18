@@ -1034,12 +1034,12 @@ def ew_dtsrc(nm: String, +t: T.Tensor, k: U32) -> IO(Unit):
 # outside the arena that produced it, and two fixtures built from two `Arena.empty()`s
 # would intern the same node over the same index twice. tensor.bend's header records
 # this and it is the reason its gate has a COUNT in every row.
-def ew_buf.arg(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def ew_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def ew_buf(+ar: O.Arena, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{ew_buf.arg(0, 4, dt)}, O.TNone{})
+  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{ew_buf.arg(0, dt)}, O.TNone{})
 
 def ew_f32(ar: O.Arena) -> O.Found: ew_buf(ar, S.single())
 def ew_i8(ar: O.Arena) -> O.Found: ew_buf(ar, S.int8())

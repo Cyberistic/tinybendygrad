@@ -1682,15 +1682,15 @@ def g_tb(g: G) -> F.Table: F.Folded.t(G.fx(g))
 
 # `ParamArg(slot, int32, size=n, addrspace=GLOBAL)` -- the shape a BUFFER's
 # `size` gives it (`(n,)`), which is what makes `b4`'s shape `(4,)`.
-def g_psize(slot: U32, n: U32, a: S.Addr) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{n}, None{}, None{}, None{}, a, None{}, False{},
+def g_psize(slot: U32, a: S.Addr) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, a, None{}, False{},
              None{}, None{}, False{}, None{}}
 
 # A `ParamArg` WITH A DEVICE, which is the only thing `s.device is None` reads.
 # `fold.bend`'s `device_of.param` is how a BUFFER's device is answered, and this
 # is the one fixture node that gives it a `Some` to read.
-def g_pdev(slot: U32, n: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{n}, None{}, None{}, None{}, S.AGlobal{},
+def g_pdev(slot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{},
              Some{S.D1{1}}, False{}, None{}, None{}, False{}, None{}}
 def g_buf.slot(slot: U32, n: U32, a: S.Addr, s: U32) -> O.Arena: O.Arena.empty()
 
@@ -1711,9 +1711,9 @@ def g() -> G:
   +c4 = O.UOp.const(O.Found.ar(c2), O.CInt{H.i64_of_i32(4)})
   +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "0")
   +b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(sp)],
-                  O.AParam{g_psize(0, 4, S.AGlobal{})}, O.TNone{})
+                  O.AParam{g_psize(0, S.AGlobal{})}, O.TNone{})
   +bx = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, [O.Found.i(sp)],
-                  O.AParam{g_psize(1, 4, S.AGlobal{})}, O.TNone{})
+                  O.AParam{g_psize(1, S.AGlobal{})}, O.TNone{})
   +r0 = O.UOp.range_end(O.Found.ar(bx), O.Found.i(c4), [0], O.AXIS_WEAK{})
   +r1 = O.UOp.range_end(O.Found.ar(r0), O.Found.i(c4), [1], O.AXIS_WEAK{})
   +n0 = O.UOp.new(O.Found.ar(r1), O.OpsNOOP{}, Nil{}, O.ANone{}, O.TNone{})
@@ -1746,9 +1746,9 @@ def g() -> G:
   +sts = O.UOp.new(O.Found.ar(sti), O.OpsSTORE{}, [O.Found.i(b4), O.Found.i(b4)], O.ANone{}, O.TNone{})
   +std = O.UOp.new(O.Found.ar(sts), O.OpsSTORE{}, [O.Found.i(b4), O.Found.i(bx)], O.ANone{}, O.TNone{})
   +pg = O.UOp.new(O.Found.ar(std), O.OpsPARAM{}, Nil{},
-                  O.AParam{g_psize(2, 4, S.AGlobal{})}, O.TNone{})
+                  O.AParam{g_psize(2, S.AGlobal{})}, O.TNone{})
   +pa = O.UOp.new(O.Found.ar(pg), O.OpsPARAM{}, Nil{},
-                  O.AParam{g_psize(3, 4, S.Aalu{})}, O.TNone{})
+                  O.AParam{g_psize(3, S.Aalu{})}, O.TNone{})
   +ipg = O.UOp.new(O.Found.ar(pa), O.OpsINDEX{}, [O.Found.i(pg)], O.ANone{}, O.TNone{})
   +ipa = O.UOp.new(O.Found.ar(ipg), O.OpsINDEX{}, [O.Found.i(pa)], O.ANone{}, O.TNone{})
   +r0t = rf_rtag.found(O.Found.ar(ipa), O.Found.i(r0), rf_empty_tag())
@@ -1812,7 +1812,7 @@ def g() -> G:
 # CT8R0 the SAME node with `ANone`             the negative one row from it
 # CT7A  INDEX(AFTER)          ct_7's claim: root INDEX, child AFTER
   +bd = O.UOp.new(O.Found.ar(clik0), O.OpsBUFFER{}, [O.Found.i(sp)],
-                  O.AParam{g_pdev(4, 9)}, O.TNone{})
+                  O.AParam{g_pdev(4)}, O.TNone{})
   +ixb4 = O.UOp.new(O.Found.ar(bd), O.OpsINDEX{}, [O.Found.i(b4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct4a = O.UOp.new(O.Found.ar(ixb4), O.OpsSTAGE{}, [O.Found.i(ixb4), O.Found.i(r0)], O.ANone{}, O.TNone{})
   +ct4d = O.UOp.new(O.Found.ar(ct4a), O.OpsSTAGE{}, [O.Found.i(ixb4), O.Found.i(r1)], O.ANone{}, O.TNone{})

@@ -552,7 +552,7 @@ def dc_l_fold(+acc: Hit,+tag: U32, m: Maybe<&2, O.Found>) -> Hit:
 # them out against ops.py:1015's `ParamArg(-1, dtype, name=name,
 # vmin_vmax=(min_val,max_val), multiple_of=multiple_of, addrspace=AddrSpace.ALU)`.
 def dcp.range(+dt: S.Dt,+mult: U32,+nm: String,+lo: U32,+vmax: U32) -> O.ParamArg:
-  O.ParamArg{0, dt, Some{0}, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
+  O.ParamArg{0, dt, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
              Some{mult}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
 
 def dcp(+dt: S.Dt,+mult: U32,+nm: String) -> O.ParamArg:

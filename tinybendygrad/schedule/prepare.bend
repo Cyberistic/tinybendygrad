@@ -211,15 +211,15 @@ def pr_c(v: U32) -> O.Found: O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(v)
 # through `ops.bend:697`. A BUFFER's `src` is EMPTY in Python
 # (`UOp(Ops.BUFFER, arg=...)`), so this is a 0-src node.
 
-def pr_pa(slot: U32, size: U32, name: String, dev: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{size}, None{}, None{}, Some{name}, S.AGlobal{},
+def pr_pa(slot: U32, name: String, dev: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.int32(), None{}, None{}, Some{name}, S.AGlobal{},
     Some{S.D1{dev}}, False{}, None{}, None{}, False{}, None{}}
 
 
 def pr_wm_same(self: U32, b: U32) -> Bool: U32.is_eq(b, self)
 
 def pr_buf(+ar: O.Arena, slot: U32, size: U32, name: String, dev: U32) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{pr_pa(slot, size, name, dev)}, O.TNone{})
+  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{pr_pa(slot, name, dev)}, O.TNone{})
 
 def pr_range(+ar: O.Arena, n: U32, ax: U32) -> O.Found:
   +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(n)})

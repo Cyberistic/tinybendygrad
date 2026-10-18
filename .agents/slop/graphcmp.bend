@@ -296,8 +296,19 @@ def bufo(m: Maybe<&2, U32>) -> String:
 # because `Buffer` has no slot to name (MEASURED -- see `bufo`). Field NAMES are the
 # format: a positional reader would encode the order and pass a swap, and ops.bend:2432-2440
 # records that swapping two shape args leaves op, nsrc and the src sequence identical.
-# THE THIRTEEN-FIELD READER, one `Maybe` per def, because `match` may scrutinise only a
+# THE THIRTEEN-TOKEN READER, one `Maybe` per def, because `match` may scrutinise only a
 # PARAMETER or a pattern binder and reading a `Maybe` field is a CALL.
+#
+# THIRTEEN TOKENS AND TWELVE FIELDS, AND THE GAP IS THE MIGRATION. The NORMAL FORM is
+# unchanged by 72f98ffe0 -- CPython renders thirteen tokens because `graphcmp.py`'s
+# `paramarg(pa, owner)` puts `_size(owner)` at token 2 and reads it off `src[0]`
+# (`graphcmp.py:731`, `size_of` at :703) -- so `.of` KEEPS its `size` parameter and it is
+# still rendered second. What the move changed is WHERE `paramarg` GETS it: `size` left
+# the record (`ops.bend:870` is twelve fields, `slot, dtype, vmin_vmax, ...`), so the
+# twelve-field pattern below cannot bind it, and `O.ParamArg.size(ar, self)`
+# (`ops.bend:3037`) reaches the owner's `src[0]` instead. THAT is why this def takes the
+# arena and the node index: `carg(op, x, owner)` on the CPython side threads the owner
+# for exactly this one field, and a def that cannot see the owner cannot see the size.
 def paramarg.of(+slot: U32, +dtx: S.Dt, +size: Maybe<&2, U32>, +vmin_vmax: Maybe<&2, O.PyRange>, +multiple_of: Maybe<&2, U32>,
   +name: Maybe<&2, String>, +addrspace: S.Addr, +device: Maybe<&2, S.Dev>, +volatile: Bool, +image: Maybe<&2, O.Img>,
   +buffer: Maybe<&2, U32>, +bind_on_realize: Bool, +val: Maybe<&2, O.Const>) -> String:
@@ -305,12 +316,12 @@ def paramarg.of(+slot: U32, +dtx: S.Dt, +size: Maybe<&2, U32>, +vmin_vmax: Maybe
     ",", addr1(addrspace), ",", dm(device), ",", bo(volatile), ",", imgm(image), ",", bufo(buffer), ","
     bo(bind_on_realize), ",", valm(val), ")"])
 
-def paramarg(pa: O.ParamArg) -> String:
+def paramarg(+ar: O.Arena, self: U32, pa: O.ParamArg) -> String:
   match pa:
-    case O.ParamArg{slot, dtx, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer,
+    case O.ParamArg{slot, dtx, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer,
       bind_on_realize, val}:
-      paramarg.of(slot, dtx, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer,
-        bind_on_realize, val)
+      paramarg.of(slot, dtx, O.ParamArg.size(ar, self), vmin_vmax, multiple_of, name, addrspace, device, volatile,
+        image, buffer, bind_on_realize, val)
 
 def custom_fn(c: O.CustomFunction) -> String:
   match c:
@@ -422,12 +433,12 @@ def prog_info(pi: O.ProgramInfo) -> String:
 # graphs equal. `Arena.depth` (ops.bend:1135) is the nesting count the port already
 # carries for exactly this, and it is emitted BOTH as its own field and inside the arg,
 # so it cannot hide and the arg stays self-describing.
-def argstr(a: O.Arg, depth: U32) -> String:
+def argstr(+ar: O.Arena, self: U32, a: O.Arg, depth: U32) -> String:
   match a:
     case O.ANone{}: "N"
     case O.ADt{ad}: dt(ad)
     case O.APy{av}: konst(av)
-    case O.AParam{pa}: paramarg(pa)
+    case O.AParam{pa}: paramarg(ar, self, pa)
     case O.ACustom{cf}: custom_fn(cf)
     case O.ACall{ci}: callinfo(ci)
     case O.AKernel{ki}: kernelinfo(ki)
@@ -584,7 +595,7 @@ def row(+ar: O.Arena, +tb: F.Table, +k: U32) -> String:
   String.concat([chunk(i(k)), " ", chunk(O.Ops.name.of(O.Arena.op(ar, k))), " ",
     chunk(dt_str(F.UOp.dtype(ar, tb, k))), " ", chunk(shape_str(F.UOp.shape(ar, tb, k))), " ",
     chunk(i(O.Arena.depth(ar, k))), " ", chunk(tagstr(O.Arena.tag(ar, k))), " ",
-    chunk(argstr(O.Arena.arg(ar, k), O.Arena.depth(ar, k))), " ", chunk(srclist(ar, k))])
+    chunk(argstr(ar, k, O.Arena.arg(ar, k), O.Arena.depth(ar, k))), " ", chunk(srclist(ar, k))])
 
 def rows.go(+ar: O.Arena, +tb: F.Table, ks: List<&2, U32>) -> IO(Unit):
   match ks:
@@ -607,8 +618,8 @@ def rows.go(+ar: O.Arena, +tb: F.Table, ks: List<&2, U32>) -> IO(Unit):
 # Python side, not read off a comment, because a wrong slot is a normal form that differs
 # only in a slot number and a slot number is exactly the kind of field a differ is
 # supposed to be able to miss.
-def alloc(slot: U32, size: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def alloc(slot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, True{}, None{}}
 
 # `matmul_of` TAKES AN ARENA and `g_matmul` supplies an empty one, because `--graph
@@ -616,7 +627,7 @@ def alloc(slot: U32, size: U32) -> O.ParamArg:
 # builds are two arenas, the ids do not line up, and the report is then a cascade of
 # `src` differences with the cause in none of them.
 def matmul_of(+ar: O.Arena) -> O.Found:
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -624,7 +635,7 @@ def matmul_of(+ar: O.Arena) -> O.Found:
   +c1 = O.UOp.const(O.Found.ar(r43), O.CInt{H.i64_of_i32(1)})
   +s413 = O.UOp.new(O.Found.ar(c1), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c1), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r413 = O.UOp.new(O.Found.ar(s413), O.OpsRESHAPE{}, [O.Found.i(r43), O.Found.i(s413)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(r413), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 15)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(r413), O.OpsALLOC{}, Some{15}, O.AParam{alloc(1)}, O.TNone{})
   +c5 = O.UOp.const(O.Found.ar(a1), O.CInt{H.i64_of_i32(5)})
   +s35 = O.UOp.new(O.Found.ar(c5), O.OpsSTACK{}, [O.Found.i(c3), O.Found.i(c5)], O.ANone{}, O.TNone{})
   +r35 = O.UOp.new(O.Found.ar(s35), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s35)], O.ANone{}, O.TNone{})
@@ -657,7 +668,7 @@ def g_rangeflat() -> O.Found:
 # in the corpus is a `ParamArg` FIELD -- so it is the fixture for graphcmp.bend's
 # `case O.ADt{ad}: dt(ad)`, which no other graph reached.
 def g_cast() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -691,7 +702,7 @@ def g_binblob() -> O.Found:
 #   * the PERMUTE is `(1, 0)` on a `(4,8)` giving `(8,4)`, and the REDUCE collapses axis 0,
 #     so the result is `(4,)`.
 def g_reduce() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 32)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{32}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c8 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(8)})
   +s48 = O.UOp.new(O.Found.ar(c8), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c8)], O.ANone{}, O.TNone{})
@@ -724,12 +735,12 @@ def rows.of(+ar: O.Arena, +tb: F.Table, +f: O.Found) -> IO(Unit):
 # = next(UOp.unique_num)`) and a realized buffer's slot is not the ALLOC's. Writing 0 here
 # because "it was 0 before the realize" is exactly the reading the measurement forbids.
 # `bind_on_realize` is False on a BUFFER and True on an ALLOC -- also measured, also here.
-def allocbuf(slot: U32, size: U32, bslot: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def allocbuf(slot: U32, bslot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, Some{bslot}, False{}, None{}}
 
 def g_buffer() -> O.Found:
-  +b0 = O.UOp.new(O.Arena.empty(), O.OpsBUFFER{}, Nil{}, O.AParam{allocbuf(1, 12, 7)}, O.TNone{})
+  +b0 = O.UOp.new.param(O.Arena.empty(), O.OpsBUFFER{}, Some{12}, O.AParam{allocbuf(1, 7)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(b0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -795,7 +806,7 @@ def g_sink() -> O.Found:
 # AUTHORITATIVE, machine-regenerated ones are the `OPS REACHED` rows in
 # `runs/graphcmp/D/D1-graph-*.txt`, written by this run.
 def g_group() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -820,12 +831,12 @@ def g_group() -> O.Found:
 #     an `XOR` node with dtype `f32` (`promo_dtype` of f32 and f32), so the port's
 #     `promo` path answers f32 and not "the bitwise dtype".
 def g_commute() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +ra = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(ra), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(ra), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +rb = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +add = O.UOp.new(O.Found.ar(rb), O.OpsADD{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +ne = O.UOp.new(O.Found.ar(add), O.OpsCMPNE{}, [O.Found.i(ra), O.Found.i(rb)], O.ANone{}, O.TNone{})
@@ -841,8 +852,8 @@ def g_commute() -> O.Found:
 # and everything else at its default. `bind_on_realize` is FALSE on a PARAM (it is the
 # ALLOC's flag, and `g_buffer` measures that reading already) and the buffer slot is
 # absent, so `bufo` answers `N`.
-def paramf(slot: U32, size: U32, nm: String) -> O.ParamArg:
-  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, Some{nm}, S.AGlobal{}, Some{S.D1{0}},
+def paramf(slot: U32, nm: String) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), None{}, None{}, Some{nm}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 # `--graph indexed`: `UOp.sink(p.index(UOp.const(0)).barrier(UOp.range(UOp.const(4), 0,
@@ -862,7 +873,7 @@ def paramf(slot: U32, size: U32, nm: String) -> O.ParamArg:
 #     the corpus. `WEAK` is what `range`/`rangeflat` already cover; reusing it here would
 #     have looked like coverage and been none.
 def g_indexed() -> O.Found:
-  +p0 = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{}, O.AParam{paramf(0, 8, "p0")}, O.TNone{})
+  +p0 = O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{8}, O.AParam{paramf(0, "p0")}, O.TNone{})
   +c0 = O.UOp.const(O.Found.ar(p0), O.CInt{H.i64_of_i32(0)})
   +ix = O.UOp.new(O.Found.ar(c0), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(c0)], O.ANone{}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(ix), O.CInt{H.i64_of_i32(4)})
@@ -885,7 +896,7 @@ def g_indexed() -> O.Found:
 # `S.Aalu{}`, and `dtype=weakint` is `S.weakint()` (spec.bend:720) -- MEASURED off the py
 # side's own row `P(i0,Dweakint,N,r(l0:1,l0:100),i1,sn,SALU,N,b0,N,N,b0,N)`.
 def var(nm: String) -> O.ParamArg:
-  O.ParamArg{0, S.weakint(), None{}, Some{O.PyRange{H.i64_of_i32(1), H.i64_of_i32(100)}}, Some{1},
+  O.ParamArg{0, S.weakint(), Some{O.PyRange{H.i64_of_i32(1), H.i64_of_i32(100)}}, Some{1},
     Some{nm}, S.Aalu{}, None{}, False{}, None{}, None{}, False{}, None{}}
 
 # `--graph sym`: `UOp.group(RESHAPE(a, STACK(n, CONST 4)), RESHAPE(a, STACK(m, CONST 4)))`,
@@ -910,15 +921,15 @@ def var(nm: String) -> O.ParamArg:
 # hole in the SHAPE COLUMN alone and not in the differ's identity, and
 # `graphcmp.py`'s `conf` measures exactly that (CONFLATION 4).
 def g_sym() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +a1 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +pn = O.UOp.new(O.Found.ar(a1), O.OpsPARAM{}, Nil{}, O.AParam{var("n")}, O.TNone{})
+  +pn = O.UOp.new.param(O.Found.ar(a1), O.OpsPARAM{}, None{}, O.AParam{var("n")}, O.TNone{})
   +sn = O.UOp.new(O.Found.ar(pn), O.OpsSTACK{}, [O.Found.i(pn), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +rn = O.UOp.new(O.Found.ar(sn), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(sn)], O.ANone{}, O.TNone{})
-  +pm = O.UOp.new(O.Found.ar(rn), O.OpsPARAM{}, Nil{}, O.AParam{var("m")}, O.TNone{})
+  +pm = O.UOp.new.param(O.Found.ar(rn), O.OpsPARAM{}, None{}, O.AParam{var("m")}, O.TNone{})
   +sm = O.UOp.new(O.Found.ar(pm), O.OpsSTACK{}, [O.Found.i(pm), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +rm = O.UOp.new(O.Found.ar(sm), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(sm)], O.ANone{}, O.TNone{})
   O.UOp.group(O.Found.ar(rm), [O.Found.i(rn), O.Found.i(rm)])
@@ -928,8 +939,8 @@ def g_sym() -> O.Found:
 # `g_indexed` and `g_sym` are measured against, and a widened spelling of it would move
 # those two fixtures' bytes. `loop` needs `u64` and a volatile PARAM; `lin` needs three
 # UNNAMED f32 PARAMs; `gate` needs one named and one unnamed.
-def paramd(slot: U32, dtx: S.Dt, size: U32, nm: Maybe<&2, String>, vol: Bool) -> O.ParamArg:
-  O.ParamArg{slot, dtx, Some{size}, None{}, None{}, nm, S.AGlobal{}, Some{S.D1{0}},
+def paramd(slot: U32, dtx: S.Dt, nm: Maybe<&2, String>, vol: Bool) -> O.ParamArg:
+  O.ParamArg{slot, dtx, None{}, None{}, nm, S.AGlobal{}, Some{S.D1{0}},
     vol, None{}, None{}, False{}, None{}}
 
 # ===========================================================================
@@ -964,7 +975,7 @@ def paramd(slot: U32, dtx: S.Dt, size: U32, nm: Maybe<&2, String>, vol: Bool) ->
 # `sym`/`pm_simplify_ranges` pass turns each range bound into a CAST of a weakint literal.
 # The two are separate nodes and the corpus measures that rather than assuming it.
 def g_lin() -> O.Found:
-  +p0 = O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{}, O.AParam{paramd(0, S.single(), 20, None{}, False{})}, O.TNone{})
+  +p0 = O.UOp.new.param(O.Arena.empty(), O.OpsPARAM{}, Some{20}, O.AParam{paramd(0, S.single(), None{}, False{})}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(p0), O.CInt{H.i64_of_i32(4)})
   +c4i = O.UOp.new(O.Found.ar(c4), O.OpsCAST{}, [O.Found.i(c4)], O.ADt{S.int32()}, O.TNone{})
   +ra = O.UOp.range_end(O.Found.ar(c4i), O.Found.i(c4i), [1], O.AXIS_WEAK{})
@@ -982,13 +993,13 @@ def g_lin() -> O.Found:
   +rb = O.UOp.new(O.Found.ar(off), O.OpsRANGE{}, [O.Found.i(c5i), O.Found.i(ra)], O.ARange{[2], O.AXIS_WEAK{}}, O.TNone{})
   +of1 = O.UOp.new(O.Found.ar(rb), O.OpsADD{}, [O.Found.i(off), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +ix0 = O.UOp.new(O.Found.ar(of1), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(of1)], O.ANone{}, O.TNone{})
-  +p1 = O.UOp.new(O.Found.ar(ix0), O.OpsPARAM{}, Nil{}, O.AParam{paramd(1, S.single(), 12, None{}, False{})}, O.TNone{})
+  +p1 = O.UOp.new.param(O.Found.ar(ix0), O.OpsPARAM{}, Some{12}, O.AParam{paramd(1, S.single(), None{}, False{})}, O.TNone{})
   +c3 = O.UOp.const(O.Found.ar(p1), O.CInt{H.i64_of_i32(3)})
   +c3i = O.UOp.new(O.Found.ar(c3), O.OpsCAST{}, [O.Found.i(c3)], O.ADt{S.int32()}, O.TNone{})
   +ia = O.UOp.new(O.Found.ar(c3i), O.OpsMUL{}, [O.Found.i(ra), O.Found.i(c3i)], O.ANone{}, O.TNone{})
   +ix1 = O.UOp.new(O.Found.ar(ia), O.OpsINDEX{}, [O.Found.i(p1), O.Found.i(ia)], O.ANone{}, O.TNone{})
   +ld0 = O.UOp.new(O.Found.ar(ix1), O.OpsLOAD{}, [O.Found.i(ix1)], O.ANone{}, O.TNone{})
-  +p2 = O.UOp.new(O.Found.ar(ld0), O.OpsPARAM{}, Nil{}, O.AParam{paramd(2, S.single(), 15, None{}, False{})}, O.TNone{})
+  +p2 = O.UOp.new.param(O.Found.ar(ld0), O.OpsPARAM{}, Some{15}, O.AParam{paramd(2, S.single(), None{}, False{})}, O.TNone{})
   +ix2 = O.UOp.new(O.Found.ar(p2), O.OpsINDEX{}, [O.Found.i(p2), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +ld1 = O.UOp.new(O.Found.ar(ix2), O.OpsLOAD{}, [O.Found.i(ix2)], O.ANone{}, O.TNone{})
   +m0 = O.UOp.new(O.Found.ar(ld1), O.OpsMUL{}, [O.Found.i(ld0), O.Found.i(ld1)], O.ANone{}, O.TNone{})
@@ -1032,8 +1043,8 @@ def g_lin() -> O.Found:
 # and the caller's PARAM is slot 3 and UNNAMED.
 def g_loop() -> O.Found:
   +ar = O.Arena.empty()
-  +p0 = O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{paramd(0, S.uint64(), 1, Some{"slots"}, False{})}, O.TNone{})
-  +p1 = O.UOp.new(O.Found.ar(p0), O.OpsPARAM{}, Nil{}, O.AParam{paramd(1, S.uint64(), 1, Some{"tl"}, True{})}, O.TNone{})
+  +p0 = O.UOp.new.param(ar, O.OpsPARAM{}, Some{1}, O.AParam{paramd(0, S.uint64(), Some{"slots"}, False{})}, O.TNone{})
+  +p1 = O.UOp.new.param(O.Found.ar(p0), O.OpsPARAM{}, Some{1}, O.AParam{paramd(1, S.uint64(), Some{"tl"}, True{})}, O.TNone{})
   +c0 = O.UOp.const(O.Found.ar(p1), O.CInt{H.i64_of_i32(0)})
   +ix0 = O.UOp.new(O.Found.ar(c0), O.OpsINDEX{}, [O.Found.i(p0), O.Found.i(c0)], O.ANone{}, O.TNone{})
   +ld0 = O.UOp.new(O.Found.ar(ix0), O.OpsLOAD{}, [O.Found.i(ix0)], O.ANone{}, O.TNone{})
@@ -1052,7 +1063,7 @@ def g_loop() -> O.Found:
   +af2 = O.UOp.new(O.Found.ar(be), O.OpsAFTER{}, [O.Found.i(p1), O.Found.i(be)], O.ANone{}, O.TNone{})
   +c1 = O.UOp.const(O.Found.ar(af2), O.CInt{H.i64_of_i32(1)})
   +ix2 = O.UOp.new(O.Found.ar(c1), O.OpsINDEX{}, [O.Found.i(af2), O.Found.i(c1)], O.ANone{}, O.TNone{})
-  +p2 = O.UOp.new(O.Found.ar(ix2), O.OpsPARAM{}, Nil{}, O.AParam{paramd(2, S.uint64(), 1, Some{"tv"}, False{})}, O.TNone{})
+  +p2 = O.UOp.new.param(O.Found.ar(ix2), O.OpsPARAM{}, Some{1}, O.AParam{paramd(2, S.uint64(), Some{"tv"}, False{})}, O.TNone{})
   +cv = O.UOp.new(O.Found.ar(p2), O.OpsCAST{}, [O.Found.i(c1)], O.ADt{S.uint64()}, O.TNone{})
   +ad = O.UOp.new(O.Found.ar(cv), O.OpsADD{}, [O.Found.i(p2), O.Found.i(cv)], O.ANone{}, O.TNone{})
   +st = O.UOp.new(O.Found.ar(ad), O.OpsSTORE{}, [O.Found.i(ix2), O.Found.i(ad)], O.ANone{}, O.TNone{})
@@ -1060,7 +1071,7 @@ def g_loop() -> O.Found:
   +ix3 = O.UOp.new(O.Found.ar(af3), O.OpsINDEX{}, [O.Found.i(af3), O.Found.i(c0)], O.ANone{}, O.TNone{})
   +st2 = O.UOp.new(O.Found.ar(ix3), O.OpsSTORE{}, [O.Found.i(ix3), O.Found.i(ad)], O.ANone{}, O.TNone{})
   +sk = O.UOp.new(O.Found.ar(st2), O.OpsSINK{}, [O.Found.i(st2)], O.ANone{}, O.TNone{})
-  +p3 = O.UOp.new(O.Found.ar(sk), O.OpsPARAM{}, Nil{}, O.AParam{paramd(3, S.uint64(), 1, None{}, False{})}, O.TNone{})
+  +p3 = O.UOp.new.param(O.Found.ar(sk), O.OpsPARAM{}, Some{1}, O.AParam{paramd(3, S.uint64(), None{}, False{})}, O.TNone{})
   # `@uopfunc` WRAPS the kernel in a CALL, and the root of `hcq_fence(...)` is the CALL --
   # MEASURED. Its `CallInfo` has THREE slots on the py side (`name`, `precompile`,
   # `precompile_backward`) against the port's FOUR (`graphcmp.bend`'s `callinfo` also emits
@@ -1077,8 +1088,8 @@ def g_loop() -> O.Found:
 # the PROGRAM ORDER of the kernel, which no other graph in the corpus has.
 def g_gate() -> O.Found:
   +ar = O.Arena.empty()
-  +p0 = O.UOp.new(ar, O.OpsPARAM{}, Nil{}, O.AParam{paramd(0, S.single(), 16, Some{"v0"}, False{})}, O.TNone{})
-  +bf = O.UOp.new(O.Found.ar(p0), O.OpsBUFFER{}, Nil{}, O.AParam{paramd(1, S.single(), 16, None{}, False{})}, O.TNone{})
+  +p0 = O.UOp.new.param(ar, O.OpsPARAM{}, Some{16}, O.AParam{paramd(0, S.single(), Some{"v0"}, False{})}, O.TNone{})
+  +bf = O.UOp.new.param(O.Found.ar(p0), O.OpsBUFFER{}, Some{16}, O.AParam{paramd(1, S.single(), None{}, False{})}, O.TNone{})
   +c3 = O.UOp.const(O.Found.ar(bf), O.CInt{H.i64_of_i32(3)})
   +c4 = O.UOp.const(O.Found.ar(c3), O.CInt{H.i64_of_i32(4)})
   +rg = O.UOp.range_end(O.Found.ar(c4), O.Found.i(c4), [0], O.AXIS_WEAK{})
@@ -1131,7 +1142,7 @@ def g_gate() -> O.Found:
 # were NOT the same and neither was right -- see graphcmp.py's `f32bits`.
 def g_bw() -> O.Found:
   #  1  ALLOC slot 1 size 12 -- `b`, visited first because `a`'s gradient expands into it
-  +a1 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +c3 = O.UOp.const(O.Found.ar(a1), O.CInt{H.i64_of_i32(3)})
   +c4 = O.UOp.const(O.Found.ar(c3), O.CInt{H.i64_of_i32(4)})
   +s34 = O.UOp.new(O.Found.ar(c4), O.OpsSTACK{}, [O.Found.i(c3), O.Found.i(c4)], O.ANone{}, O.TNone{})
@@ -1175,7 +1186,7 @@ def g_bw() -> O.Found:
   +s43 = O.UOp.new(O.Found.ar(r4_1_3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43b = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(r4_1_3), O.Found.i(s43)], O.ANone{}, O.TNone{})
   # 23  the OTHER ALLOC, slot 0 -- `a`
-  +a0 = O.UOp.new(O.Found.ar(r43b), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Found.ar(r43b), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +r43a = O.UOp.new(O.Found.ar(a0), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +r4_1_3b = O.UOp.new(O.Found.ar(r43a), O.OpsRESHAPE{}, [O.Found.i(r43a), O.Found.i(s341)], O.ANone{}, O.TNone{})
   +ma = O.UOp.new(O.Found.ar(r4_1_3b), O.OpsMUL{}, [O.Found.i(r4_1_3b), O.Found.i(p012)], O.ANone{}, O.TNone{})
@@ -1210,8 +1221,8 @@ def g_bw() -> O.Found:
 # would have moved every downstream node's dtype too, so the two spellings coexist and
 # `alloc` is left byte-for-byte alone (the graphs already measured against it must not
 # move).
-def allocd(slot: U32, dtx: S.Dt, size: U32) -> O.ParamArg:
-  O.ParamArg{slot, dtx, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def allocd(slot: U32, dtx: S.Dt) -> O.ParamArg:
+  O.ParamArg{slot, dtx, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, True{}, None{}}
 
 # `--graph alu`: `UOp.group(sqrt(a), reciprocal(a), a**a, log2(a), exp2(a), sin(a),
@@ -1230,7 +1241,7 @@ def allocd(slot: U32, dtx: S.Dt, size: U32) -> O.ParamArg:
 # upstream's `shape` (ops.py) is `thru0` for it and so is `CONTIGUOUS_BACKWARD`'s, which
 # is why they share an arm and not why they are the same kind of node.
 def g_alu() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1255,7 +1266,7 @@ def g_alu() -> O.Found:
 # different arm than a real integer program does. MEASURED on the py side, the ALLOC's row
 # is `P(i0,Di32,i12,...)` and every op below it reads `dt=i32`.
 def g_bit() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.int32(), 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{allocd(0, S.int32())}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1278,7 +1289,7 @@ def g_bit() -> O.Found:
 # `.dtype`, so the op census it printed was a census of a graph that cannot be emitted at
 # all. Every candidate after that one is checked through `emit_py`.
 def g_where() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1305,7 +1316,7 @@ def g_where() -> O.Found:
 #     a fresh `CONST 3` would silently get wrong.
 def g_move() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1315,7 +1326,7 @@ def g_move() -> O.Found:
   +c5 = O.UOp.const(O.Found.ar(s00), O.CInt{H.i64_of_i32(5)})
   +s55 = O.UOp.new(O.Found.ar(c5), O.OpsSTACK{}, [O.Found.i(c5), O.Found.i(c5)], O.ANone{}, O.TNone{})
   +pd = O.UOp.new(O.Found.ar(s55), O.OpsPAD{}, [O.Found.i(r43), O.Found.i(s00), O.Found.i(s55)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(pd), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 64)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(pd), O.OpsALLOC{}, Some{64}, O.AParam{alloc(1)}, O.TNone{})
   +c8 = O.UOp.const(O.Found.ar(a1), O.CInt{H.i64_of_i32(8)})
   +s88 = O.UOp.new(O.Found.ar(c8), O.OpsSTACK{}, [O.Found.i(c8), O.Found.i(c8)], O.ANone{}, O.TNone{})
   +r88 = O.UOp.new(O.Found.ar(s88), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s88)], O.ANone{}, O.TNone{})
@@ -1382,7 +1393,7 @@ def g_move() -> O.Found:
 # IT IS THE ONLY SINGLE-SRC GROUP IN THIS FILE, and after that commit it is not a group call
 # at all: the other 11 call sites became `O.UOp.group` and every one of those carries 2-8 srcs.
 def g_flip() -> O.Found:
-  +a0 = O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(O.Arena.empty(), O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1399,7 +1410,7 @@ def g_flip() -> O.Found:
 # "expected : name / observed : name (consumed more than once)" at `rows.pick3`.
 def g_getaddr() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   # THE ARENA `UOp.new` RETURNED, NOT THE ONE IT WAS HANDED. Arena is immutable and
   # `UOp.new.of` returns `Found{made, ..}` -- the ALLOC lives in `Found.ar(a0)`, whose
   # index `Found.i(a0)` names it. Passing the PRE-`new` `ar` put `Found.i(a0)` past its
@@ -1417,7 +1428,7 @@ def g_getaddr() -> O.Found:
 # and FLIP share.
 def g_unshard() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1433,15 +1444,15 @@ def g_unshard() -> O.Found:
 # dtype is u64, not the f32 `alloc` spells.
 def g_threefry() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.uint64(), 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{allocd(0, S.uint64())}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{allocd(1, S.uint64(), 12)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(r0), O.OpsALLOC{}, Some{12}, O.AParam{allocd(1, S.uint64())}, O.TNone{})
   +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +tf0 = O.UOp.new(O.Found.ar(r1), O.OpsTHREEFRY{}, [O.Found.i(r0), O.Found.i(r1)], O.ANone{}, O.TNone{})
-  +a2 = O.UOp.new(O.Found.ar(tf0), O.OpsALLOC{}, Nil{}, O.AParam{allocd(2, S.uint64(), 12)}, O.TNone{})
+  +a2 = O.UOp.new.param(O.Found.ar(tf0), O.OpsALLOC{}, Some{12}, O.AParam{allocd(2, S.uint64())}, O.TNone{})
   +r2 = O.UOp.new(O.Found.ar(a2), O.OpsRESHAPE{}, [O.Found.i(a2), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +tf1 = O.UOp.new(O.Found.ar(r2), O.OpsTHREEFRY{}, [O.Found.i(r0), O.Found.i(r2)], O.ANone{}, O.TNone{})
   O.UOp.group(O.Found.ar(tf1), [O.Found.i(tf0), O.Found.i(tf1)])
@@ -1451,14 +1462,14 @@ def g_threefry() -> O.Found:
 # GROUP in the py rows, whatever the fixture's docstring says.
 def g_mulacc() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(r0), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +a2 = O.UOp.new(O.Found.ar(r1), O.OpsALLOC{}, Nil{}, O.AParam{alloc(2, 12)}, O.TNone{})
+  +a2 = O.UOp.new.param(O.Found.ar(r1), O.OpsALLOC{}, Some{12}, O.AParam{alloc(2)}, O.TNone{})
   +r2 = O.UOp.new(O.Found.ar(a2), O.OpsRESHAPE{}, [O.Found.i(a2), O.Found.i(s43)], O.ANone{}, O.TNone{})
   O.UOp.new(O.Found.ar(r2), O.OpsMULACC{}, [O.Found.i(r0), O.Found.i(r1), O.Found.i(r2)], O.ANone{}, O.TNone{})
 
@@ -1474,15 +1485,15 @@ def g_mulacc() -> O.Found:
 # (the same class as `flip`'s `tuple[bool]`) reported rather than papered over.
 def g_wmma() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 16)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{16}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +s44 = O.UOp.new(O.Found.ar(c4), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c4)], O.ANone{}, O.TNone{})
   +r44 = O.UOp.new(O.Found.ar(s44), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s44)], O.ANone{}, O.TNone{})
-  +b0 = O.UOp.new(O.Found.ar(r44), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +b0 = O.UOp.new.param(O.Found.ar(r44), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +c3 = O.UOp.const(O.Found.ar(b0), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +acc0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{alloc(2, 12)}, O.TNone{})
+  +acc0 = O.UOp.new.param(O.Found.ar(r43), O.OpsALLOC{}, Some{12}, O.AParam{alloc(2)}, O.TNone{})
   +racc = O.UOp.new(O.Found.ar(acc0), O.OpsRESHAPE{}, [O.Found.i(acc0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   O.UOp.wmma(O.Found.ar(racc), O.Found.i(r44), O.Found.i(r43), O.Found.i(racc), [3, 4, 4], S.single(), 256, None{})
 
@@ -1504,7 +1515,7 @@ def g_wmma() -> O.Found:
 # order: ALLOC CONST CONST STACK RESHAPE CONST RANGE COPY ALLREDUCE.
 def g_allred() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1519,12 +1530,12 @@ def g_allred() -> O.Found:
 # RESHAPE CMOD CDIV GROUP.
 def g_cdiv() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{allocd(0, S.int32(), 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{allocd(0, S.int32())}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +b0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{allocd(1, S.int32(), 12)}, O.TNone{})
+  +b0 = O.UOp.new.param(O.Found.ar(r43), O.OpsALLOC{}, Some{12}, O.AParam{allocd(1, S.int32())}, O.TNone{})
   +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +cm = O.UOp.new(O.Found.ar(rb), O.OpsCMOD{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +cd = O.UOp.new(O.Found.ar(cm), O.OpsCDIV{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
@@ -1537,12 +1548,12 @@ def g_cdiv() -> O.Found:
 # RESHAPE ALLOC RESHAPE SUB NEG CMPEQ FDIV GROUP.
 def g_late() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r43 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +b0 = O.UOp.new(O.Found.ar(r43), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +b0 = O.UOp.new.param(O.Found.ar(r43), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +rb = O.UOp.new(O.Found.ar(b0), O.OpsRESHAPE{}, [O.Found.i(b0), O.Found.i(s43)], O.ANone{}, O.TNone{})
   +sb = O.UOp.new(O.Found.ar(rb), O.OpsSUB{}, [O.Found.i(r43), O.Found.i(rb)], O.ANone{}, O.TNone{})
   +ng = O.UOp.new(O.Found.ar(sb), O.OpsNEG{}, [O.Found.i(r43)], O.ANone{}, O.TNone{})
@@ -1564,7 +1575,7 @@ def g_late() -> O.Found:
 # RESHAPE CUSTOM_FUNCTION.
 def g_custom_function() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1577,7 +1588,7 @@ def g_custom_function() -> O.Found:
 # the port's own. Order: ALLOC CONST CONST STACK RESHAPE CONST RANGE COPY MSELECT.
 def g_mselect() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
@@ -1591,12 +1602,12 @@ def g_mselect() -> O.Found:
 # CONST STACK RESHAPE ALLOC RESHAPE MSTACK.
 def g_mstack() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})
   +r0 = O.UOp.new(O.Found.ar(s43), O.OpsRESHAPE{}, [O.Found.i(a0), O.Found.i(s43)], O.ANone{}, O.TNone{})
-  +a1 = O.UOp.new(O.Found.ar(r0), O.OpsALLOC{}, Nil{}, O.AParam{alloc(1, 12)}, O.TNone{})
+  +a1 = O.UOp.new.param(O.Found.ar(r0), O.OpsALLOC{}, Some{12}, O.AParam{alloc(1)}, O.TNone{})
   +r1 = O.UOp.new(O.Found.ar(a1), O.OpsRESHAPE{}, [O.Found.i(a1), O.Found.i(s43)], O.ANone{}, O.TNone{})
   O.UOp.mstack(O.Found.ar(r1), O.Found.i(r0), [O.Found.i(r1)])
 
@@ -1607,7 +1618,7 @@ def g_mstack() -> O.Found:
 # STACK RESHAPE CONST ADD STAGE.
 def g_stage() -> O.Found:
   +ar = O.Arena.empty()
-  +a0 = O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{alloc(0, 12)}, O.TNone{})
+  +a0 = O.UOp.new.param(ar, O.OpsALLOC{}, Some{12}, O.AParam{alloc(0)}, O.TNone{})
   +c4 = O.UOp.const(O.Found.ar(a0), O.CInt{H.i64_of_i32(4)})
   +c3 = O.UOp.const(O.Found.ar(c4), O.CInt{H.i64_of_i32(3)})
   +s43 = O.UOp.new(O.Found.ar(c3), O.OpsSTACK{}, [O.Found.i(c4), O.Found.i(c3)], O.ANone{}, O.TNone{})

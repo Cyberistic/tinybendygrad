@@ -1946,9 +1946,9 @@ def dv.of(+nm: String, +acc: Vz, idx: U32) -> String:
 #
 # `ParamArg` HAS THIRTEEN FIELDS and a record literal must name every one of
 # them, so this is one long line rather than a builder nobody else would read.
-def fx_var(ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{slot, dtype, None{}, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
+def fx_var(+ar: O.Arena, slot: U32, nm: String, dtype: S.Dt) -> O.Found:
+  O.UOp.new(ar, O.OpsPARAM{}, O.param_src(ar, None{}),
+    O.AParam{O.ParamArg{slot, dtype, None{}, None{}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
     O.TNone{})
 
 # the `_min_max` entry for a fixture variable
@@ -2562,7 +2562,7 @@ def c2d_pa(slot: U32, dt: S.Dt) -> O.ParamArg: O.ParamArg.of(slot, dt)
 # positive control for the 761 guard needs the thirteen-field literal, and every field that is
 # not the device is `ParamArg.of`'s own default.
 def c2d_pat(slot: U32, dt: S.Dt) -> O.ParamArg:
-  O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{O.s5.d1(0)},
              False{}, None{}, None{}, False{}, None{}}
 
 def c2d_buf(+ar: O.Arena, slot: U32, dt: S.Dt) -> O.Found:
@@ -2622,11 +2622,13 @@ def c2d_u32_is_none(m: Maybe<&2, U32>) -> Bool:
     case None{}: True{}
     case _: False{}
 
-# `ParamArg.size is None` -- `s5.pa` leaves `size` unset (ops.bend:1363) and
-# `ops-501-oracle.py:61` sets 9. The second of the four differences.
+# `ParamArg.size is None` -- and after `72f98ffe0` that is `src[0]` being the empty
+# STACK rather than a CONST. `s5.pa` builds the size-less half (ops.bend:1363) and
+# `ops-501-oracle.py:61` sets 9. The second of the four differences. `sp0` IS the
+# node whose arg this is, and `sr0` its size CONST, so the OWNER is index 0.
 def c2d_arg_size_is_none(a: O.Arg) -> Bool:
   match a:
-    case O.AParam{pa}: c2d_u32_is_none(O.ParamArg.size(pa))
+    case O.AParam{pa}: c2d_u32_is_none(O.ParamArg.size(O.Arena.empty(), 0))
     case _: False{}
 
 def c2d_dev_is_none(m: Maybe<&2, S.Dev>) -> Bool:

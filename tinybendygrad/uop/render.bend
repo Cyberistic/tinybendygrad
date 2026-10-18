@@ -502,15 +502,29 @@ def pa_buffer.of(has: Bool, slot: U32, dev: String, size: String, dt: String) ->
     case True{}: String.concat([", buffer=UOp.new_buffer(", dev, ", ", size, ", ", dt, ", ", U32.show(slot), ").buffer"])
     case False{}: ""
 
-def pa_tail(+pa: O.ParamArg) -> List<&2, String>:
-  pa_size(O.ParamArg.size(pa)) <> pa_vmin_vmax.of1(O.ParamArg.vmin_vmax(pa)) <> pa_multiple_of(O.ParamArg.multiple_of(pa))
+# `ParamArg.__repr__` (ops.py:41-49). TWO EDITS, both forced by `72f98ffe0`:
+#
+#   * `size` IS NOT A FIELD ANY MORE, so it is not printed. Upstream's own line is
+#     `args = [repr(self.slot), repr(self.dtype)] + [f"{k}={v!r}" ...]` with no
+#     size term -- MEASURED, `repr(Tensor.empty(4,3).realize().uop.arg)` is
+#     `ParamArg(2, dtypes.f32, device='CPU', buffer=UOp.new_buffer('CPU', 12,
+#     dtypes.f32, 2).buffer)`, and the pre-move line had
+#     `([repr(self.size)] if self.size is not None else [])`.
+#   * THE `buffer=` CLAUSE STILL PRINTS A SIZE, and it is why THIS TAKES THE OWNER:
+#     upstream now writes `self.buffer.size`, the size of the device Buffer, and the
+#     only spelling of "how big is this storage" a bare `ParamArg` can still reach
+#     is `src[0]` -- which is that same value, because `new_buffer` built the Buffer
+#     from it. The port's `buffer` field is a `Maybe<&2, U32>` SLOT (P6), so it has
+#     no `.size` to read and `src[0]` is the faithful stand-in.
+def pa_tail(+ar: O.Arena, +self: U32, +pa: O.ParamArg) -> List<&2, String>:
+  pa_vmin_vmax.of1(O.ParamArg.vmin_vmax(pa)) <> pa_multiple_of(O.ParamArg.multiple_of(pa))
     <> pa_name(O.ParamArg.name(pa)) <> pa_addrspace(O.ParamArg.addrspace(pa)) <> pa_device(O.ParamArg.device(pa))
     <> pa_flag("volatile", O.ParamArg.volatile(pa)) <> pa_image.of1(O.ParamArg.image(pa))
     <> pa_flag("bind_on_realize", O.ParamArg.bind_on_realize(pa)) <> pa_val(O.ParamArg.val(pa))
-    <> [pa_buffer.of(pa_buffer.has(O.ParamArg.buffer(pa)), O.ParamArg.slot(pa), pa_buffer.device(O.ParamArg.device(pa)), pa_buffer.size(O.ParamArg.size(pa)), dt_repr(O.ParamArg.dtype(pa)))]
+    <> [pa_buffer.of(pa_buffer.has(O.ParamArg.buffer(pa)), O.ParamArg.slot(pa), pa_buffer.device(O.ParamArg.device(pa)), pa_buffer.size(O.ParamArg.size(ar, self)), dt_repr(O.ParamArg.dtype(pa)))]
 
-def paramarg_repr(+pa: O.ParamArg) -> String:
-  String.concat(["ParamArg(", U32.show(O.ParamArg.slot(pa)), ", ", dt_repr(O.ParamArg.dtype(pa)), String.join(pa_tail(pa), ""), ")"])
+def paramarg_repr(+ar: O.Arena, +self: U32, +pa: O.ParamArg) -> String:
+  String.concat(["ParamArg(", U32.show(O.ParamArg.slot(pa)), ", ", dt_repr(O.ParamArg.dtype(pa)), String.join(pa_tail(ar, self, pa), ""), ")"])
 
 # `repr` of the ARG. Wall (d) above: Python dispatches on the runtime type of an
 # `Any` and Bend dispatches on a CLOSED DATATYPE, so what is one dynamic `repr`
@@ -714,13 +728,13 @@ def aprogram_repr(+pi: O.ProgramInfo) -> String:
 def customfunction_repr(+cf: O.CustomFunction) -> String:
   String.concat(["CustomFunction(name='", O.CustomFunction.name(cf), "', dtype=", dt_repr(O.CustomFunction.dtype(cf)), ")"])
 
-def arg_repr(a: O.Arg) -> String:
+def arg_repr(+ar: O.Arena, +self: U32, a: O.Arg) -> String:
   match a:
     case O.ANone{}: "None"
     case O.ADt{dt}: dt_repr(dt)
     case O.ACustom{+cf}: customfunction_repr(cf)
     case O.APy{v}: const_repr(v)
-    case O.AParam{pa}: paramarg_repr(pa)
+    case O.AParam{pa}: paramarg_repr(ar, self, pa)
     case O.ACall{ci}: acall_repr(ci)
     case O.AKernel{ki}: akernel_repr(ki)
     case O.AProgram{pi}: aprogram_repr(pi)
@@ -1131,11 +1145,11 @@ def ismeta_of(a: O.Arg) -> Bool:
 def pmp.fb.args.of(ismeta: Bool, +s: String) -> String:
   Bool.pick(String, ismeta, String.concat([", ", s, ")"]), ")")
 
-def pmp.fb.args(a: O.Arg, ismeta: Bool) -> String:
-  pmp.fb.args.of(ismeta, arg_repr(a))
+def pmp.fb.args(+ar: O.Arena, +u: U32, a: O.Arg, ismeta: Bool) -> String:
+  pmp.fb.args.of(ismeta, arg_repr(ar, u, a))
 
 def pmp.fb.of(ismeta: Bool, +ar: O.Arena, ctx: Ctx, +u: U32) -> String:
-  String.concat(["UOp(", O.Ops.name(O.Arena.op(ar, u)), ", ", srcs(ctx, O.Arena.srcs(ar, u)), pmp.fb.args(O.Arena.arg(ar, u), ismeta)])
+  String.concat(["UOp(", O.Ops.name(O.Arena.op(ar, u)), ", ", srcs(ctx, O.Arena.srcs(ar, u)), pmp.fb.args(ar, u, O.Arena.arg(ar, u), ismeta)])
 
 def pmp.fb(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.fb.of(ismeta_of(O.Arena.arg(ar, u)), ar, ctx, u)
@@ -1197,7 +1211,7 @@ def is_const(ar: O.Arena, u: U32) -> Bool: is_const.of(O.Arena.op(ar, u))
 def pmp.special.of(one: Bool, isconst: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   Bool.pick(String, Bool.not(one), pmp.fb(ar, ctx, u),
     Bool.pick(String, Bool.not(isconst), pmp.fb(ar, ctx, u),
-      String.concat(["UOp.special(", val_str(O.Arena.arg(ar, O.Arena.src0(ar, u))), ", ", arg_repr(O.Arena.arg(ar, u)), ")"])))
+      String.concat(["UOp.special(", val_str(O.Arena.arg(ar, O.Arena.src0(ar, u))), ", ", arg_repr(ar, u, O.Arena.arg(ar, u)), ")"])))
 
 def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.special.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 1n), is_const(ar, O.Arena.src0(ar, u)), ar, ctx, u)
@@ -1249,7 +1263,7 @@ def pmp.special(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 # ONE src pattern matches any non-empty src list, so the guard is nsrc >= 1.
 def pmp.copy.of(any: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
   Bool.pick(String, Bool.not(any), pmp.fb(ar, ctx, u),
-    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".copy_to_device(", arg_repr(O.Arena.arg(ar, u)), ")"]))
+    String.concat([ctx_get(ctx, O.Arena.src0(ar, u)), ".copy_to_device(", arg_repr(ar, u, O.Arena.arg(ar, u)), ")"]))
 
 def pmp.copy(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.copy.of(Nat.is_le(1n, List.length(&2, U32, O.Arena.srcs(ar, u))), ar, ctx, u)
@@ -1259,7 +1273,7 @@ def pmp.copy(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
 # The `src=` KEYWORD is literal here and not in rule 15 -- tinygrad writes the
 # keyword in one and not the other, and a differential catches it.
 def pmp.cfn(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
-  String.concat(["UOp(Ops.CUSTOM_FUNCTION, src=", srcs(ctx, O.Arena.srcs(ar, u)), ", arg=", arg_repr(O.Arena.arg(ar, u)), ")"])
+  String.concat(["UOp(Ops.CUSTOM_FUNCTION, src=", srcs(ctx, O.Arena.srcs(ar, u)), ", arg=", arg_repr(ar, u, O.Arena.arg(ar, u)), ")"])
 
 def reduce_op.of(a: O.Arg) -> String:
   match a:
@@ -1405,8 +1419,8 @@ def pmp.syms.of(two: Bool, +ar: O.Arena, +ctx: Ctx, +u: U32) -> String:
 def pmp.syms(+ar: O.Arena, ctx: Ctx, +u: U32) -> String:
   pmp.syms.of(Nat.is_eq(List.length(&2, U32, O.Arena.srcs(ar, u)), 2n), ar, ctx, u)
 
-def arg_clause.of(ismeta: Bool, a: O.Arg) -> String:
-  Bool.pick(String, ismeta, String.concat(["arg=", arg_repr(a)]), "")
+def arg_clause.of(+ar: O.Arena, +u: U32, ismeta: Bool, a: O.Arg) -> String:
+  Bool.pick(String, ismeta, String.concat(["arg=", arg_repr(ar, u, a)]), "")
 
 def sugar_args.go(ar: O.Arena, +ctx: Ctx, u: U32, +ss: List<&2, U32>, +acc: List<&2, String>) -> List<&2, String>:
   match ss:
@@ -1586,15 +1600,15 @@ def op_depth(+ar: O.Arena, u: U32, +dep: Map<&2, U32>) -> U32:
 def pmp.cast(+ar: O.Arena, +tb: F.Table, ctx: Ctx, +u: U32) -> String:
   pmp.cast.of(dt_same(tb, ar, u), ar, tb, ctx, u)
 
-def arg_clause(+a: O.Arg) -> String:
-  arg_clause.of(ismeta_of(a), a)
+def arg_clause(+ar: O.Arena, +u: U32, +a: O.Arg) -> String:
+  arg_clause.of(ar, u, ismeta_of(a), a)
 
 # `[ctx[y] for y in x.src[1:]] + [f'arg={repr(x.arg)}'] if x.arg is not None else []`
 # -- the SRCS FIRST and the arg clause LAST, so the clause rides in as the
 # accumulator's TAIL SEED and the walk only ever appends a src. Seeding it as the
 # HEAD put `arg=(0, AxisType.LOOP)` before the index it belongs after.
 def sugar_tail(+ar: O.Arena, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
-  Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(O.Arena.arg(ar, u))]), acc)
+  Bool.pick(List<&2, String>, ismeta_of(O.Arena.arg(ar, u)), List.append(&2, String, acc, [arg_clause(ar, u, O.Arena.arg(ar, u))]), acc)
 
 def sugar_args(+ar: O.Arena, ctx: Ctx, +u: U32, +acc: List<&2, String>) -> List<&2, String>:
   sugar_args.go(ar, ctx, u, O.Arena.src_from(ar, u, 1), sugar_tail(ar, u, acc))
@@ -1952,18 +1966,18 @@ def pyr_buffer.pa(a: O.Arg) -> Bool:
 # anything in this fixture. A wall written from a diff of a MISINDEXED fixture is a wall
 # against the wrong thing, and the fixture was the thing that was wrong.
 def pa1() -> O.ParamArg:
-  O.ParamArg{1, S.single(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
+  O.ParamArg{1, S.single(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{2}},
     False{}, None{}, None{}, False{}, None{}}
 
 # ParamArg(2, dtypes.i32, name='g') -- no size, and size is the one POSITIONAL
 # optional, so a `size` that printed when it is None moves every later field.
 def pa2() -> O.ParamArg:
-  O.ParamArg{2, S.int32(), None{}, None{}, None{}, Some{"g"}, S.AGlobal{}, None{},
+  O.ParamArg{2, S.int32(), None{}, None{}, Some{"g"}, S.AGlobal{}, None{},
     False{}, None{}, None{}, False{}, None{}}
 
 # ParamArg(3, dtypes.f32, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))
 def pa3() -> O.ParamArg:
-  O.ParamArg{3, S.single(), Some{4}, None{}, None{}, None{}, S.ALocal{}, None{},
+  O.ParamArg{3, S.single(), None{}, None{}, None{}, S.ALocal{}, None{},
     True{}, Some{O.Img{2, 2}}, None{}, False{}, None{}}
 
 # ===========================================================================
@@ -2022,7 +2036,7 @@ def f_rng_ids(ar: O.Arena, n: U32, ids: List<&2, U32>) -> O.Found:
 # rule prints; a fixed device would make that row unreachable.
 def f_buf_r(+r: O.Found, dev: S.Dev, size: U32) -> O.Found:
   O.UOp.new(O.Found.ar(r), O.OpsBUFFER{}, [O.Found.i(r)],
-    O.AParam{O.ParamArg{0, S.int32(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
+    O.AParam{O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{dev},
       False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
 def f_buf(ar: O.Arena, dev: S.Dev, +size: U32) -> O.Found:
@@ -2160,12 +2174,12 @@ def f_bufr(+r: O.Found, pa: O.ParamArg) -> O.Found:
 
 def g_buflocal() -> O.Found:
   f_bufr(f_rng(O.Arena.empty(), 4, 0),
-    O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.ALocal{}, Some{S.D1{0}},
+    O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.ALocal{}, Some{S.D1{0}},
       False{}, None{}, None{}, False{}, None{}})
 
 def g_bufnodev() -> O.Found:
   f_bufr(f_rng(O.Arena.empty(), 4, 0),
-    O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, None{},
+    O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{},
       False{}, None{}, None{}, False{}, None{}})
 
 # `ParamArg` is read POSITIONALLY (ops.bend:865-881), so its field ORDER is the
@@ -2173,7 +2187,7 @@ def g_bufnodev() -> O.Found:
 # naming the wrong field -- the one place a field-order mistake is LOUD.
 def g_bufimage() -> O.Found:
   f_bufr(f_rng(O.Arena.empty(), 4, 0),
-    O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+    O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
       False{}, Some{O.Img{2, 2}}, None{}, False{}, None{}})
 
 # THE ONE FIXTURE THAT EXERCISES `pyr_buffer`, the second refusal. A ParamArg
@@ -2191,7 +2205,7 @@ def g_bufimage() -> O.Found:
 # not a neutral choice.
 def g_bufrefused() -> O.Found:
   f_bufr(f_rng(O.Arena.empty(), 4, 0),
-    O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+    O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
       False{}, None{}, Some{9}, False{}, None{}})
 
 # RULE 6. The arg is a `CustomFunction`, not a string. HEAD pyrender prints
@@ -2455,7 +2469,7 @@ def rnd_is_set(m: Maybe<&2, String>) -> Bool:
 
 def rnd_named(p: O.ParamArg) -> Maybe<&2, String>:
   match p:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
 
 # THE THREE ARMS, and they are three arms rather than one because the OPS differ:
 # PARAM is its own pattern upstream, BUFFER and ALLOC share one, and CONST is a
@@ -2539,8 +2553,8 @@ def rnd_leaf(+ar: O.Arena, +i: U32) -> Maybe<&2, String>:
 # are the pair that makes the ALLOC branch of `rnd_pick.of` reachable at all.
 def rnd_pa.put(p: O.ParamArg, nm: Maybe<&2, String>) -> O.ParamArg:
   match p:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      O.ParamArg{slot, dtype, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
 
 def rnd_pa(slot: U32, nm: Maybe<&2, String>) -> O.ParamArg:
   rnd_pa.put(O.ParamArg.of(slot, S.int32()), nm)
@@ -2770,7 +2784,7 @@ def pu_line(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<
     multirange_str(f, ar, F.Rng.rs(F.UOp.ranges(ar, rt, u)), 10), " ",
     H.pad_right(pu_dtype(tb, ar, u), 40), " ",
     H.pad_right(pu_srcs(ar, uops, u), 32), " ",
-    arg_repr(O.Arena.arg(ar, u))])
+    arg_repr(ar, u, O.Arena.arg(ar, u))])
 
 def pu_line.go(+f: H.Flags, +rt: F.RTable, +tb: F.Table, +ar: O.Arena, +uops: List<&2, U32>, +t: List<&2, U32>, +acc: List<&2, String>, +i: U32) -> List<&2, String>:
   match t:
@@ -2802,7 +2816,7 @@ def print_uops(+ar: O.Arena, +uops: List<&2, U32>) -> List<&2, String>:
 # needs, and the last column of the row is this record, so the ones that are NOT
 # default would change the row text and `pu_argrepr` would need a reason.
 def pu_pa(slot: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{4}, None{}, None{}, Some{"b"}, S.AGlobal{},
+  O.ParamArg{slot, S.int32(), None{}, None{}, Some{"b"}, S.AGlobal{},
     None{}, False{}, None{}, None{}, False{}, None{}}
 
 def pu_ar() -> O.Arena:
@@ -2996,46 +3010,46 @@ def main() -> IO(Unit):
     IO.print("syms_of MUL      = [" ++ syms_of(O.OpsMUL{}) ++ "]   py=*")
     IO.print("prec_of MUL      = [" ++ U32.show(precedence_of(O.OpsMUL{})) ++ "]   py=1")
     IO.print("prec_of CDIV     = [" ++ U32.show(precedence_of(O.OpsCDIV{})) ++ "]   py=99")
-    IO.print("arg_repr ANone   = [" ++ arg_repr(O.ANone{}) ++ "]   py=None")
-    IO.print("arg_repr ADt     = [" ++ arg_repr(O.ADt{S.int32()}) ++ "]   py=dtypes.i32")
-    IO.print("arg_repr AStr    = [" ++ arg_repr(O.AStr{"g"}) ++ "]   py='g'")
+    IO.print("arg_repr ANone   = [" ++ arg_repr(O.Arena.empty(), 0, O.ANone{}) ++ "]   py=None")
+    IO.print("arg_repr ADt     = [" ++ arg_repr(O.Arena.empty(), 0, O.ADt{S.int32()}) ++ "]   py=dtypes.i32")
+    IO.print("arg_repr AStr    = [" ++ arg_repr(O.Arena.empty(), 0, O.AStr{"g"}) ++ "]   py='g'")
     # MOVED with `78d482262`. `py=` MEASURED, `.agents/slop/xd1/argrepr.py` row
     # `arg_repr ARng1id`: the pin's arg is `((0,), AxisType.GLOBAL)` and head's is
     # `(AxisType.GLOBAL, 0)` -- the type FIRST and NO inner tuple, because head's
     # `axis_id` is `arg[1:]`, the flat tail. The old answer was also missing the
     # one-element comma (see `u32_tuple_repr`), which is why it read `((0), ...)`.
-    IO.print("arg_repr ARng    = [" ++ arg_repr(O.ARange{[0], O.AXIS_GLOBAL{}}) ++ "]   py=(AxisType.GLOBAL, 0)")
-    IO.print("arg_repr ARed    = [" ++ arg_repr(O.AReduce{O.OpsADD{}, 2}) ++ "]   py=(Ops.ADD, 2)")
-    IO.print("arg_repr ATup    = [" ++ arg_repr(O.ATuple{[1, 2]}) ++ "]   py=(1, 2)")
+    IO.print("arg_repr ARng    = [" ++ arg_repr(O.Arena.empty(), 0, O.ARange{[0], O.AXIS_GLOBAL{}}) ++ "]   py=(AxisType.GLOBAL, 0)")
+    IO.print("arg_repr ARed    = [" ++ arg_repr(O.Arena.empty(), 0, O.AReduce{O.OpsADD{}, 2}) ++ "]   py=(Ops.ADD, 2)")
+    IO.print("arg_repr ATup    = [" ++ arg_repr(O.Arena.empty(), 0, O.ATuple{[1, 2]}) ++ "]   py=(1, 2)")
     # `ATup1` EXISTS BECAUSE MUTATION M-h MOVED NOTHING. `ATup` has TWO elements,
     # so `u32_tuple_repr`'s one-element comma arm had no fixture at all and the
     # comma could be deleted with every row green. `repr((0,)) == '(0,)'` and
     # `repr(()) == '()'` are MEASURED at both ends (`.agents/slop/xd1/argrepr.py`),
     # so the three rows together pin all three lengths -- and the `ATup0` row is
     # what separates "empty" from "one element with a comma".
-    IO.print("arg_repr ATup1   = [" ++ arg_repr(O.ATuple{[7]}) ++ "]   py=(7,)")
-    IO.print("arg_repr ATup0   = [" ++ arg_repr(O.ATuple{Nil{}}) ++ "]   py=()")
-    IO.print("arg_repr AInk    = [" ++ arg_repr(O.AInk{"w", S.single()}) ++ "]   py=('w', dtypes.f32)")
-    IO.print("arg_repr AAllred = [" ++ arg_repr(O.AAllred{O.OpsADD{}, S.D1{2}}) ++ "]   py=(Ops.ADD, 'METAL')")
-    IO.print("arg_repr ADev    = [" ++ arg_repr(O.ADev{S.D1{2}}) ++ "]   py='METAL'")
-    IO.print("arg_repr ACALL   = [" ++ arg_repr(O.ACall{O.CallInfo.of()}) ++ "]   py=CallInfo(None, None, False, False)")
+    IO.print("arg_repr ATup1   = [" ++ arg_repr(O.Arena.empty(), 0, O.ATuple{[7]}) ++ "]   py=(7,)")
+    IO.print("arg_repr ATup0   = [" ++ arg_repr(O.Arena.empty(), 0, O.ATuple{Nil{}}) ++ "]   py=()")
+    IO.print("arg_repr AInk    = [" ++ arg_repr(O.Arena.empty(), 0, O.AInk{"w", S.single()}) ++ "]   py=('w', dtypes.f32)")
+    IO.print("arg_repr AAllred = [" ++ arg_repr(O.Arena.empty(), 0, O.AAllred{O.OpsADD{}, S.D1{2}}) ++ "]   py=(Ops.ADD, 'METAL')")
+    IO.print("arg_repr ADev    = [" ++ arg_repr(O.Arena.empty(), 0, O.ADev{S.D1{2}}) ++ "]   py='METAL'")
+    IO.print("arg_repr ACALL   = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{O.CallInfo.of()}) ++ "]   py=CallInfo(None, None, False, False)")
     # ACALL is the control: void already omitted `dtype=`, so dropping the clause
     # moves nothing here. ACALL2 (name, int32) and ACALL3 (no name, weakint) are
     # the two that the PIN repr printed a dtype for. HEAD ops.py:1408-1410 does
     # not. Flipping `acall_repr` back to the dtype tail moves these two and not ACALL.
-    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False)")
-    IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False)")
-    IO.print("arg_repr AKern   = [" ++ arg_repr(O.AKernel{O.KernelInfo.of()}) ++ "]")
+    IO.print("arg_repr ACALL2  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_named()}) ++ "]   py=CallInfo(None, 'f', False, False)")
+    IO.print("arg_repr ACALL3  = [" ++ arg_repr(O.Arena.empty(), 0, O.ACall{ci_weak()}) ++ "]   py=CallInfo(None, None, False, False)")
+    IO.print("arg_repr AKern   = [" ++ arg_repr(O.Arena.empty(), 0, O.AKernel{O.KernelInfo.of()}) ++ "]")
     IO.print("                     py=KernelInfo(name='test', applied_opts=(), opts_to_apply=None, estimates=None, beam=0)")
-    IO.print("arg_repr AProgr  = [" ++ arg_repr(O.AProgram{O.ProgramInfo.of()}) ++ "]")
+    IO.print("arg_repr AProgr  = [" ++ arg_repr(O.Arena.empty(), 0, O.AProgram{O.ProgramInfo.of()}) ++ "]")
     IO.print("                     py=ProgramInfo(global_size=(1, 1, 1), local_size=(1, 1, 1), vars=(), globals=(), outs=(), ins=(), target=)")
     IO.print("ops_repr ADD     = [" ++ O.Ops.name(O.OpsADD{}) ++ "]   py=Ops.ADD")
-    IO.print("arg_repr AParam1 = [" ++ arg_repr(O.AParam{pa1()}) ++ "]")
-    IO.print("                     py=ParamArg(1, dtypes.f32, 4, device='METAL')")
-    IO.print("arg_repr AParam2 = [" ++ arg_repr(O.AParam{pa2()}) ++ "]")
+    IO.print("arg_repr AParam1 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa1()}) ++ "]")
+    IO.print("                     py=ParamArg(1, dtypes.f32, device='METAL')")
+    IO.print("arg_repr AParam2 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa2()}) ++ "]")
     IO.print("                     py=ParamArg(2, dtypes.i32, name='g')")
-    IO.print("arg_repr AParam3 = [" ++ arg_repr(O.AParam{pa3()}) ++ "]")
-    IO.print("                     py=ParamArg(3, dtypes.f32, 4, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
+    IO.print("arg_repr AParam3 = [" ++ arg_repr(O.Arena.empty(), 0, O.AParam{pa3()}) ++ "]")
+    IO.print("                     py=ParamArg(3, dtypes.f32, addrspace=AddrSpace.LOCAL, volatile=True, image=(2, 2))")
     IO.print("tag_str  TStr    = [" ++ tag_str(O.TStr{"x"}) ++ "]   py=x")
     IO.print("tag_repr TStr    = [" ++ tag_repr(O.TStr{"x"}) ++ "]   py='x'")
     IO.print("tag_repr TNone   = [" ++ tag_repr(O.TNone{}) ++ "]   py=None")

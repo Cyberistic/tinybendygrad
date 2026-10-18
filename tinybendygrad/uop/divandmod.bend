@@ -730,7 +730,7 @@ def dm_rejlen(n: U32) -> U32:
   dm_rejlen.put(List.get(&2, O.PMEntry, O.PMEntrys.es(dm_table()), U32.to_nat(n)), 0)
 
 def dm_param.range(dt: S.Dt, mult: U32, nm: String, lo: U32, vmax: U32) -> O.ParamArg:
-  O.ParamArg{0, dt, Some{0}, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
+  O.ParamArg{0, dt, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
              Some{mult}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
 def dm_param(dt: S.Dt, mult: U32, nm: String) -> O.ParamArg:
   dm_param.range(dt, mult, nm, 0, 100)

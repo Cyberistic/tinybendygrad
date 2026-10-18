@@ -1550,7 +1550,7 @@ def tx_t_apply(+op: O.Op, +ar: O.Arena, +d: U32, +dt: S.Dt) -> O.Found:
 # `C(2)` and every src index after it would move.
 # ===========================================================================
 def txp.range(+dt: S.Dt, +lo: U32, +vmax: U32, +nm: String) -> O.ParamArg:
-  O.ParamArg{0, dt, Some{0}, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
+  O.ParamArg{0, dt, Some{O.PyRange{H.i64_of_i32(lo), H.i64_of_i32(vmax)}},
              Some{1}, Some{nm}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
 
 def t_fixtures() -> O.Arena:
@@ -1597,7 +1597,7 @@ def tx_carg.pn(m: Maybe<&2, String>) -> String:
 
 def tx_carg.pa(pa: O.ParamArg) -> String:
   match pa:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace,
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace,
                    device, volatile, image, buffer, bind_on_realize, val}:
       tx_carg.pn(name)
 

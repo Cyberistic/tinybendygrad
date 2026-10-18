@@ -290,8 +290,8 @@ def cr_after(+r: T.Tensor, +v: T.Tensor) -> T.Tensor:
 # `ParamArg` in ITS order (ops.bend:696-712), which is NOT the prose order: `addrspace`
 # is the eighth field and `device` the ninth. `bind_on_realize` is the ALLOC's one
 # difference from a BUFFER (creation.py:41 vs ops.py:852) and it is `True`.
-def cr_alloc.arg(slot: U32, +dt: S.Dt, size: U32, dev: S.Dev) -> O.ParamArg:
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
+def cr_alloc.arg(slot: U32, +dt: S.Dt, dev: S.Dev) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{dev},
     False{}, None{}, None{}, True{}, None{}}
 
 # `next(UOp.unique_num)` -- ops.py:1208 -- is a MONOTONE slot counter that "must never be
@@ -303,7 +303,7 @@ def cr_alloc.arg(slot: U32, +dt: S.Dt, size: U32, dev: S.Dev) -> O.ParamArg:
 # (movement.bend, "arena.next is NOT a containment test"): it is a NAME, and here the
 # name is only ever compared for EQUALITY.
 def cr_alloc(+ar: O.Arena, +dt: S.Dt, size: U32, dev: S.Dev) -> T.Tensor:
-  T.tn_alu.put(O.UOp.new(ar, O.OpsALLOC{}, Nil{}, O.AParam{cr_alloc.arg(O.Arena.next(ar), dt, size, dev)}, O.TNone{}))
+  T.tn_alu.put(O.UOp.new(ar, O.OpsALLOC{}, O.param_src(ar, Some{size}), O.AParam{cr_alloc.arg(O.Arena.next(ar), dt, dev)}, O.TNone{}))
 
 # `ret.shape == self.shape` for the `reshape(max_shape)` of creation.py:42, where
 # `ret.shape` is `max_shape` and an ALLOC's shape is `(size,)` -- `param_ds`,

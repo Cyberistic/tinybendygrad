@@ -1215,8 +1215,8 @@ def pool_wide_row() -> IO(Unit):
 # sizes; `mn_buf1` in `examples/beautiful_mnist.bend` is the same copy and the reason
 # is the same, which is a duplication three files now carry and which a shared
 # `ops.bend` builder would delete.
-def mxw_pbuf(slot: U32, size: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.single(), Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def mxw_pbuf(slot: U32) -> O.ParamArg:
+  O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, None{}, False{}, None{}}
 
 # A BUFFER, which is the bottom of every movement graph and the only node in one whose
@@ -1226,7 +1226,7 @@ def mxw_buf.of(+ar: O.Arena, +f: O.Found) -> T.Tensor:
   T.tn_wrap_uop(O.Found.ar(f), O.Found.i(f))
 
 def mxw_buf(+ar: O.Arena, slot: U32, size: U32) -> T.Tensor:
-  mxw_buf.of(ar, O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{mxw_pbuf(slot, size)}, O.TNone{}))
+  mxw_buf.of(ar, O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{mxw_pbuf(slot)}, O.TNone{}))
 
 # A SHAPE ARG of ARBITRARY LENGTH, interned as a STACK of CONSTs. It walks the VALUE LIST
 # rather than a `Nat` countdown, which is what makes it one def: the list tail `t` is a strict

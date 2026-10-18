@@ -1429,17 +1429,20 @@ def dev_opt(m: Maybe<&2, S.Dev>) -> DevOpt:
 def pa_of.all(size: Maybe<&2, U32>, vmin_vmax: Maybe<&2, O.PyRange>, device: Maybe<&2, S.Dev>, buffer: Maybe<&2, U32>) -> Pa:
   Pa{True{}, is_some_u32(size), dev_opt(device), is_some_u32(buffer), is_some_range(vmin_vmax)}
 
-def pa_of.pick(m: Maybe<&1, O.ParamArg>) -> Pa:
+# `size` IS `src[0]`, not a field (`72f98ffe0`), so this takes the OWNER -- the
+# folded arena and the node's own index -- for the same reason `graphcmp.py:703`'s
+# `size_of(n)` takes a `UOp`. `pa_of`'s caller already had both.
+def pa_of.pick(m: Maybe<&1, O.ParamArg>, size: Maybe<&2, U32>) -> Pa:
   match m:
-    case Some{O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}}:
+    case Some{O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}}:
       pa_of.all(size, vmin_vmax, device, buffer)
     case _: Pa{False{}, False{}, DNo{}, False{}, False{}}
 
-def pa_of.go(m: Maybe<&1, O.ParamArg>) -> Pa:
-  pa_of.pick(m)
+def pa_of.go(m: Maybe<&1, O.ParamArg>, size: Maybe<&2, U32>) -> Pa:
+  pa_of.pick(m, size)
 
-def pa_of(fx: F.Folded, self: U32) -> Pa:
-  pa_of.go(arg_param(sp_arg(fx, self)))
+def pa_of(+fx: F.Folded, +self: U32) -> Pa:
+  pa_of.go(arg_param(sp_arg(fx, self)), O.ParamArg.size(F.Folded.ar(fx), self))
 
 # `is_device` over the three states: `DNo` is Python's `None`, and
 # `isinstance(None, str)` and `isinstance(None, tuple)` are both False.
@@ -2728,7 +2731,7 @@ def verify_kernel_graph(+fx: F.Folded, sink: U32) -> Maybe<&2, U32>:
 # `ParamArg` for a GLOBAL BUFFER of `int32` with a size and a device. `ops.bend`
 # lays the thirteen fields out in declaration order and this is that order.
 def buf_param() -> O.ParamArg:
-  O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
              False{}, None{}, Some{0}, False{}, None{}}
 
 # ===========================================================================
@@ -2804,7 +2807,7 @@ def main_arena() -> Land:
   +n18 = O.UOp.new(O.Found.ar(n17), O.OpsBINARY{}, Nil{}, O.ABlob{[97, 98, 99, 100]}, O.TNone{})
   +n19 = O.UOp.new(O.Found.ar(n18), O.OpsPROGRAM{}, [O.Found.i(n3), O.Found.i(n16), O.Found.i(n17), O.Found.i(n18)], O.AProgram{O.ProgramInfo.of()}, O.TNone{})
   +n20 = O.UOp.special(O.Found.ar(n19), O.Found.i(n1), "0")
-  +n21 = O.UOp.new(O.Found.ar(n20), O.OpsBUFFER{}, [O.Found.i(n20)], O.AParam{buf_param()}, O.TNone{})
+  +n21 = O.UOp.new(O.Found.ar(n20), O.OpsBUFFER{}, O.param_src(O.Found.ar(n20), Some{4}), O.AParam{buf_param()}, O.TNone{})
   +n22 = O.UOp.new(O.Found.ar(n21), O.OpsAFTER{}, [O.Found.i(n21)], O.ANone{}, O.TNone{})
   +n23 = O.UOp.new(O.Found.ar(n22), O.OpsGETADDR{}, [O.Found.i(n21)], O.ADev{S.D1{0}}, O.TNone{})
   +n24 = O.UOp.new(O.Found.ar(n23), O.OpsGETADDR{}, [O.Found.i(n22)], O.ADev{S.D1{0}}, O.TNone{})
@@ -2907,7 +2910,7 @@ def Mdev.buf(x: Mdev) -> U32:
   Mdev.buf.go(x)
 
 def mdev_param() -> O.ParamArg:
-  O.ParamArg{0, S.int32(), Some{4}, None{}, None{}, None{}, S.AGlobal{}, Some{S.Dn{[0, 1]}},
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, Some{S.Dn{[0, 1]}},
              False{}, None{}, Some{0}, False{}, None{}}
 
 # THE TWO MULTI-DEVICE ARENAS, and they are separate on purpose: the rows they feed
@@ -2917,7 +2920,7 @@ def mdev_param() -> O.ParamArg:
 def main_mdev(ax: O.AxisType) -> Mdev:
   +d1 = O.UOp.const(O.Arena.empty(), O.CInt{H.i64_of_i32(2)})
   +d2 = O.UOp.range_end(O.Found.ar(d1), O.Found.i(d1), [0], ax)
-  +d3 = O.UOp.new(O.Found.ar(d2), O.OpsBUFFER{}, [O.Found.i(d2)], O.AParam{mdev_param()}, O.TNone{})
+  +d3 = O.UOp.new(O.Found.ar(d2), O.OpsBUFFER{}, O.param_src(O.Found.ar(d2), Some{4}), O.AParam{mdev_param()}, O.TNone{})
   Mdev{F.folded(O.Found.ar(d3)), O.Found.i(d3)}
 
 # ===========================================================================

@@ -853,11 +853,11 @@ def b2u(b: Bool) -> U32:
 # `ParamArg(0, int32, size=..., image=...)`, the only thing that makes a BUFFER's shape
 # `(size,)` or `(h, w, 4)`.
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
-  O.ParamArg{0, S.int32(), n, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
 
 def pimage(h: U32, w: U32) -> O.ParamArg:
-  O.ParamArg{0, S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{},
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{},
              Some{O.Img{h, w}}, None{}, False{}, None{}}
 
 # THE FIXTURE. Built in the order above, one `+` per node, because Bend has no mutable
@@ -868,12 +868,12 @@ def g() -> G:
   +c2 = O.UOp.const(O.Found.ar(c1), O.CInt{H.i64_of_i32(2)})
   +c4 = O.UOp.const(O.Found.ar(c2), O.CInt{H.i64_of_i32(4)})
   +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "0")
-  +b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{psize(Some{4})}, O.TNone{})
-  +b0 = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{psize(None{})}, O.TNone{})
-  +b24 = O.UOp.new(O.Found.ar(b0), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{pimage(2, 4)}, O.TNone{})
-  +big = O.UOp.new(O.Found.ar(b24), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{pimage(2, 7)}, O.TNone{})
-  +o1 = O.UOp.new(O.Found.ar(big), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{psize(Some{2})}, O.TNone{})
-  +o2 = O.UOp.new(O.Found.ar(o1), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{psize(Some{7})}, O.TNone{})
+  +b4 = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), Some{4}), O.AParam{psize(Some{4})}, O.TNone{})
+  +b0 = O.UOp.new(O.Found.ar(b4), O.OpsBUFFER{}, O.param_src(O.Found.ar(b4), None{}), O.AParam{psize(None{})}, O.TNone{})
+  +b24 = O.UOp.new(O.Found.ar(b0), O.OpsBUFFER{}, O.param_src(O.Found.ar(b0), None{}), O.AParam{pimage(2, 4)}, O.TNone{})
+  +big = O.UOp.new(O.Found.ar(b24), O.OpsBUFFER{}, O.param_src(O.Found.ar(b24), None{}), O.AParam{pimage(2, 7)}, O.TNone{})
+  +o1 = O.UOp.new(O.Found.ar(big), O.OpsBUFFER{}, O.param_src(O.Found.ar(big), Some{2}), O.AParam{psize(Some{2})}, O.TNone{})
+  +o2 = O.UOp.new(O.Found.ar(o1), O.OpsBUFFER{}, O.param_src(O.Found.ar(o1), Some{7}), O.AParam{psize(Some{7})}, O.TNone{})
   +s1 = O.UOp.new(O.Found.ar(o2), O.OpsSHRINK{}, [O.Found.i(b4), O.Found.i(c2), O.Found.i(c2)], O.ANone{}, O.TNone{})
   +s2 = O.UOp.new(O.Found.ar(s1), O.OpsSHRINK{}, [O.Found.i(s1), O.Found.i(c1), O.Found.i(c1)], O.ANone{}, O.TNone{})
   +t2 = O.UOp.new(O.Found.ar(s2), O.OpsSTACK{}, [O.Found.i(c0), O.Found.i(c1)], O.ANone{}, O.TNone{})

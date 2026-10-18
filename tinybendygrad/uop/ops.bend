@@ -868,8 +868,6 @@ type Img is Data:
 
 type ParamArg is Data:
   ParamArg{slot: U32, dtype: S.Dt,
-    # number of elements in the buffer. always a concrete int (never symbolic), None for scalars (shape ())
-    size: Maybe<&2, U32>,
     vmin_vmax: Maybe<&2, PyRange>,
     multiple_of: Maybe<&2, U32>,
     name: Maybe<&2, String>,
@@ -1437,7 +1435,7 @@ def VarVals.m(x: VarVals) -> Map<&2, H.I64>:
 
 def ParamArg.slot(x: ParamArg) -> U32:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: slot
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: slot
 
 # `-1` IS `4294967295` IN A `U32`, and this def is where that is SAID ONCE, in the
 # file that OWNS the field. `ParamArg.slot` is a bare `U32` because a `Maybe` here
@@ -1468,51 +1466,47 @@ def ParamArg.has_slot(x: ParamArg) -> Bool:
 
 def ParamArg.dtype(x: ParamArg) -> S.Dt:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: dtype
-
-def ParamArg.size(x: ParamArg) -> Maybe<&2, U32>:
-  match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: size
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: dtype
 
 def ParamArg.vmin_vmax(x: ParamArg) -> Maybe<&2, PyRange>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
 
 def ParamArg.multiple_of(x: ParamArg) -> Maybe<&2, U32>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
 
 def ParamArg.name(x: ParamArg) -> Maybe<&2, String>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
 
 def ParamArg.addrspace(x: ParamArg) -> S.Addr:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
 
 def ParamArg.device(x: ParamArg) -> Maybe<&2, S.Dev>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: device
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: device
 
 def ParamArg.volatile(x: ParamArg) -> Bool:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: volatile
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: volatile
 
 def ParamArg.image(x: ParamArg) -> Maybe<&2, Img>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: image
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: image
 
 def ParamArg.buffer(x: ParamArg) -> Maybe<&2, U32>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: buffer
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: buffer
 
 def ParamArg.bind_on_realize(x: ParamArg) -> Bool:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: bind_on_realize
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: bind_on_realize
 
 def ParamArg.val(x: ParamArg) -> Maybe<&2, Const>:
   match x:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: val
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: val
 
 # ParamArg -- ops.py:23's constructor with every default the dataclass declares.
 def ParamArg.of(slot: U32, dtype: S.Dt) -> ParamArg:
@@ -1527,7 +1521,7 @@ def ParamArg.of(slot: U32, dtype: S.Dt) -> ParamArg:
   # buffer: Buffer|MultiBuffer|None = None
   # bind_on_realize: bool = False
   # val: PyConst|None = None
-  ParamArg{slot, dtype, None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
+  ParamArg{slot, dtype, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}
 
 def KernelInfo.name(x: KernelInfo) -> String:
   match x:
@@ -1986,19 +1980,23 @@ def eq_opt_pynest(x: Maybe<&2, Const>, y: Maybe<&2, Const>) -> Bool:
     case None{} Some{b}: False{}
     case Some{a} None{}: False{}
 
-# ParamArg -- the 13-field dataclass of ops.py:23. A record of records, so the
-# comparison is the conjunction of the field comparisons; nothing is skipped.
+# ParamArg -- the 12-field dataclass of ops.py:23 (13 before `72f98ffe0` moved `size`
+# out). A record of records, so the comparison is the conjunction of the field
+# comparisons; nothing is skipped. `size` is NOT compared here and CANNOT be: it is
+# `src[0]` now, and it is compared as part of the NODE's src list by `eq_node`, which
+# is where upstream compares it too -- the ucache key is `(op, src, arg, tag)` and
+# `src` is one of its four terms.
 
 def eq_paramarg(x: ParamArg, y: ParamArg) -> Bool:
   match x y:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val} ParamArg{s2, d2, z2, v2, m2, n2, a2, dv2, vo2, i2, b2, br2, w2}:
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val} ParamArg{s2, d2, v2, m2, n2, a2, dv2, vo2, i2, b2, br2, w2}:
       Bool.and(U32.is_eq(slot, s2), Bool.and(eq_dt(dtype, d2),
-        Bool.and(eq_opt_u32(size, z2), Bool.and(eq_opt_pyrange(vmin_vmax, v2),
+        Bool.and(eq_opt_pyrange(vmin_vmax, v2),
         Bool.and(eq_opt_u32(multiple_of, m2), Bool.and(eq_opt_str(name, n2),
         Bool.and(eq_addr(addrspace, a2), Bool.and(eq_opt_dev(device, dv2),
         Bool.and(eq_bool(volatile, vo2), Bool.and(eq_opt_img(image, i2),
         Bool.and(eq_opt_u32(buffer, b2), Bool.and(eq_bool(bind_on_realize, br2),
-          eq_opt_pynest(val, w2)))))))))))))
+          eq_opt_pynest(val, w2))))))))))))
 
 def eq_kernelinfo(x: KernelInfo, y: KernelInfo) -> Bool:
   match x y:
@@ -2972,6 +2970,100 @@ def UOp.broadcast(+ar: Arena, +self: U32, +count: U32) -> Found:
 # the C-effect seam ./dtype.bend already has). Both land with the dtype fold.
 def UOp.const(ar: Arena, +v: Const) -> Found:
   UOp.new(ar, OpsCONST{}, Nil{}, APy{v}, TNone{})
+
+# `shape_to_shape_arg` -- ops.py:103-107, NEW to this file. Upstream:
+#
+#     def shape_to_shape_arg(arg:tuple[sint, ...]) -> UOp:
+#       src = tuple(x if isinstance(x, UOp) else UOp.const(x) for x in arg)
+#       return src[0] if len(src) == 1 else UOp(Ops.STACK, src=src)
+#
+# It is called with a SHAPE and every call site this port reaches passes a 1-tuple or
+# the empty tuple -- `alloc` and `_buffer` pass `(prod(...),)`, `param` passes
+# `(prod(...),) if shape else ()`, and `variable` passes nothing at all -- so the
+# multi-dim STACK arm has no caller here and the argument is therefore the `Maybe`
+# that already separated the two cases when `size` was a field. THE TWO ARMS ARE
+# BOTH LOAD-BEARING:
+#
+#   * `Some{n}` -> `UOp.const(n)`. `_shape` reads `src[0].as_shape`, and a CONST's
+#     `as_shape` is `(self.val,)` (ops.py:783-786), so the shape is `(n,)`.
+#   * `None{}` -> `UOp(Ops.STACK)` with NO src, whose `as_shape` is `()`. This is
+#     the scalar case -- a `variable`, an ALU PARAM bound by name -- and `src=(UOp(
+#     Ops.STACK),)` is upstream's own spelling at `ops.py:1002`.
+#
+# AND THE EMPTY CASE IS NOT COSMETIC: `src=()` makes `_shape`'s `self.src[0]` raise
+# `IndexError`, and a scalar PARAM whose src is a CONST `1` is a DIFFERENT NODE from
+# one whose src is an empty STACK. MEASURED on CPython, `Tensor.empty(1).uop.src` is a
+# CONST and a `variable`'s is a STACK, and their interning keys differ.
+def shape_to_shape_arg.of(+ar: Arena, +made: Arena, n: Maybe<&2, U32>) -> Found:
+  match n:
+    case Some{k}: UOp.const(made, CInt{H.i64_of_i32(k)})
+    case None{}: UOp.new(made, OpsSTACK{}, Nil{}, ANone{}, TNone{})
+
+def shape_to_shape_arg(+ar: Arena, n: Maybe<&2, U32>) -> U32:
+  Found.i(shape_to_shape_arg.of(ar, ar, n))
+
+# `src=(shape_to_shape_arg(...),)+UOp.device_range_src(device)` -- ops.py:829, :1187,
+# :1219, :1002. The `device_range_src` half is P6 (no multi-device ALLOC in the port)
+# and is `()` for a single device (`mixin/creation.bend:23` says so), so the src of a
+# PARAM/BUFFER/ALLOC here is exactly this one element.
+def param_src(+ar: Arena, n: Maybe<&2, U32>) -> List<&2, U32>:
+  [shape_to_shape_arg(ar, n)]
+
+# `UOp.new.param` IS THE ONLY SAFE WAY TO BUILD ONE OF THESE THREE NODES, and
+# `param_src` is NOT. An `Arena` is an immutable `Data` VALUE (`ops.bend:1255`), so
+# `shape_to_shape_arg` -- which hands back `Found.i(...)` and DROPS the arena it interned
+# the size node into -- returns an index into an arena the caller does not hold. The
+# caller then interns the node into the arena it DOES hold, where that index names
+# nothing, and `Arena.src0` reads the arena BOTTOM. `Arena.src(ar, i, 0)` answers
+# `Maybe.default(..., 0)` (`ops.bend:1369`), so there is no error: the node comes out
+# pointing at INDEX 0 or at ITSELF.
+#
+# MEASURED, `gates/../sizetosrc/paramsrc_probe.bend` over both spellings on one BUFFER:
+#
+#     idiom_Some12  nsrc=1 next=2 op=BUFFER src0=1 src0_op=BUFFER size=N
+#     threaded_*    nsrc=1 next=3 op=BUFFER src0=1 src0_op=CONST  size=12
+#
+# `next=2` says the size CONST was never interned; `src0_op=BUFFER` says the BUFFER is
+# its OWN parent, a self-loop, which is why the fold does not settle (`F.Kahn.settled`
+# false) and why `rows.of` emits nothing. `size=N` says `ParamArg.size` -- which reads
+# `src[0]` -- cannot answer. And it is not a fixture: `MX.mxw_buf`
+# (`mixin/movement.bend:1229`) is the port's own BOTTOM-OF-EVERY-GRAPH builder and
+# measured `nsrc=1 next=2 src0_op=BUFFER size=N` on the live library.
+#
+# So `param_src` is kept only so its 62 call sites can be migrated one at a time and this
+# note can name them; it is not a second way to build a node. `shape_to_shape_arg.of`
+# ALREADY returns the `Found` -- arena and index -- and this is its only correct use.
+def UOp.new.param(+ar: Arena, +op: Op, n: Maybe<&2, U32>, arg: Arg, tag: Tag) -> Found:
+  +f = shape_to_shape_arg.of(ar, ar, n)
+  UOp.new(Found.ar(f), op, [Found.i(f)], arg, tag)
+
+# THE READER, and the reason it takes the OWNER. `ops.py:353-357`:
+#
+#     case Ops.BUFFER | Ops.ALLOC | Ops.PARAM:
+#       assert len(self.src[0].as_shape) <= 1
+#       if (img:=self.arg.image) is not None: return (img[0], img[1], 4)
+#       return self.src[0].as_shape
+#
+# so the size is `src[0]`'s VALUE and a bare `ParamArg` cannot reach it -- the same
+# reason upstream's `size_of(owner)` takes a `UOp` (`.agents/slop/graphcmp.py:703`).
+# `H.lo32` is the CONST's own reader (`UOp.index.slot.go` above), so a size CONST
+# interns against a `UOp.const` written anywhere else, which is the whole of the
+# identity `f(4) is f(6) == False` rests on.
+def ParamArg.size.const(arg: Arg) -> Maybe<&2, U32>:
+  match arg:
+    case APy{CInt{i}}: Some{H.lo32(i)}
+    case _: None{}
+
+def ParamArg.size.node(op: Op, arg: Arg) -> Maybe<&2, U32>:
+  match op:
+    case OpsCONST{}: ParamArg.size.const(arg)
+    case _: None{}
+
+def ParamArg.size.of(+ar: Arena, self: U32, +n: U32) -> Maybe<&2, U32>:
+  ParamArg.size.node(Node.op(Arena.node(ar, n)), Arena.arg(ar, n))
+
+def ParamArg.size(+ar: Arena, +self: U32) -> Maybe<&2, U32>:
+  ParamArg.size.of(ar, self, Arena.src0(ar, self))
 
 # range -- ops.py:642. `UOp(Ops.RANGE, src=(sint_to_uop(end, dtype),)+src,
 # arg=(axis_type, axis_id), **kwargs)`. `end` is already a UOp index here,
@@ -5712,7 +5804,7 @@ def t_eq_addr() -> Bool:
 # carries one. Two PARAMs differing ONLY in addrspace are one node when `eq_addr`
 # conflates Aalu with AReg and two when it does not.
 def g_param_addr(slot: U32, as: S.Addr) -> ParamArg:
-  ParamArg{slot, S.uint32(), None{}, None{}, None{}, None{}, as, None{}, False{}, None{}, None{}, False{}, None{}}
+  ParamArg{slot, S.uint32(), None{}, None{}, None{}, as, None{}, False{}, None{}, None{}, False{}, None{}}
 
 def g_param_twice(+p1: ParamArg, +p2: ParamArg) -> U32:
   +c = UOp.const(Arena.empty(), CInt{H.i64_of_i32(0)})
@@ -6203,7 +6295,7 @@ def t_const_bool_vs_int_splits() -> Bool:
 # key. The fixture is a pair of PARAMs differing in EXACTLY ONE FIELD, `val`: a comparator
 # that dropped any other field could not satisfy it, and one that dropped `val` cannot pass.
 def pa_with(v: Maybe<&2, Const>) -> Arg:
-  AParam{ParamArg{0, S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
+  AParam{ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
                   None{}, False{}, v}}
 
 def pynest_same(v1: Maybe<&2, Const>, v2: Maybe<&2, Const>) -> Bool:
@@ -7503,8 +7595,8 @@ def sg.unbound.rows(+ar: Arena) -> IO(Unit):
 
 def sg.pa.put(p: ParamArg, bor: Bool) -> ParamArg:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bor, val}
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bor, val}
 
 # `ParamArg.of` hardcodes `bind_on_realize=False` and this family needs both values
 # of it, so the bound one is the same record with the field spelled. It is one def
@@ -7927,7 +8019,7 @@ def UOp.expr.go(arg: Arg) -> Maybe<&2, String>:
   match arg:
     case AParam{pa}:
       match pa:
-        case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+        case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
     case _: None{}
 
 def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
@@ -7935,8 +8027,8 @@ def UOp.expr(+ar: Arena, +self: U32) -> Maybe<&2, String>:
 
 def vr.pa.name(pa: ParamArg, nm: Maybe<&2, String>) -> ParamArg:
   match pa:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      ParamArg{slot, dtype, size, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
 
 # ==== the `vr_expr_*` fixture and rows =====================================
 #
@@ -8249,8 +8341,8 @@ def rra.rows(+ar: Arena) -> IO(Unit):
 # record as an argument.
 def UOp.variable.pa.of(base: ParamArg, nm: String, r: PyRange, mo: U32) -> ParamArg:
   match base:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      ParamArg{slot, dtype, size, Some{r}, Some{mo}, Some{nm}, S.Aalu{},
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, Some{r}, Some{mo}, Some{nm}, S.Aalu{},
         device, volatile, image, buffer, bind_on_realize, val}
 
 def UOp.variable.pa(nm: String, lo: H.I64, hi: H.I64, mo: U32, dt: S.Dt) -> ParamArg:
@@ -8316,15 +8408,15 @@ def vrn_hi(m: Maybe<&2, PyRange>) -> String:
 
 def vrn_f5(p: ParamArg) -> Maybe<&2, U32>:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: multiple_of
 
 def vrn_f4(p: ParamArg) -> Maybe<&2, PyRange>:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: vmin_vmax
 
 def vrn_f3(p: ParamArg) -> Maybe<&2, String>:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: name
 
 # The five field readers, one match each. Seven defs and not one that returns a
 # record, because a record would have to spell all thirteen fields and a
@@ -8336,7 +8428,7 @@ def vrn_pa_of(arg: Arg) -> ParamArg:
 
 def vrn_f7(p: ParamArg) -> S.Addr:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}: addrspace
 
 def vrn_row(nm: String, +f: Found) -> IO(Unit):
   +ar = Found.ar(f)
@@ -8461,8 +8553,8 @@ def ProgramInfo.vals(+ar: Arena, v: VarVals, x: ProgramInfo) -> Maybe<&2, List<&
 # would be one row. Missing on the SECOND name is what proves the fold STOPS.
 def vd_pa.put(p: ParamArg, nm: Maybe<&2, String>) -> ParamArg:
   match p:
-    case ParamArg{slot, dtype, size, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
-      ParamArg{slot, dtype, size, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
+    case ParamArg{slot, dtype, vmin_vmax, multiple_of, _n, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+      ParamArg{slot, dtype, vmin_vmax, multiple_of, nm, addrspace, device, volatile, image, buffer, bind_on_realize, val}
 
 def vd_pa(slot: U32, nm: Maybe<&2, String>) -> ParamArg:
   vd_pa.put(ParamArg.of(slot, S.weakint()), nm)

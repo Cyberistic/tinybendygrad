@@ -116,10 +116,13 @@ def with_storage.is_store(op: O.Op) -> Bool:
     case O.OpsALLOC{}: True{}
     case _: False{}
 
-# `replace(x.arg, dtype=dt)`. Thirteen accessors, because there is no projection
-# syntax -- convention 6.
+# `replace(x.arg, dtype=dt)`. Twelve accessors, because there is no projection
+# syntax -- convention 6. AND THE SIZE IS NOT AMONG THEM, which is the one thing
+# `72f98ffe0` made SIMPLER here: a `replace` that re-lists the fields has to carry
+# `size` across, and the move deleted the field, so a dtype replacement can no longer
+# drop the storage size. It is `src[0]` now, and `with_storage` never rewrites `src`.
 def with_storage.arg(+pa: O.ParamArg, dt: S.Dt) -> O.ParamArg:
-  O.ParamArg{O.ParamArg.slot(pa), dt, O.ParamArg.size(pa), O.ParamArg.vmin_vmax(pa), O.ParamArg.multiple_of(pa),
+  O.ParamArg{O.ParamArg.slot(pa), dt, O.ParamArg.vmin_vmax(pa), O.ParamArg.multiple_of(pa),
     O.ParamArg.name(pa), O.ParamArg.addrspace(pa), O.ParamArg.device(pa), O.ParamArg.volatile(pa),
     O.ParamArg.image(pa), O.ParamArg.buffer(pa), O.ParamArg.bind_on_realize(pa), O.ParamArg.val(pa)}
 
@@ -443,15 +446,15 @@ def supported_dtypes(emu: List<&2, S.Dt>) -> List<&2, S.Dt>: supported_dtypes.go
 # arena.
 # ===========================================================================
 
-def pa_g(slot: U32, dt: S.Dt, size: U32) -> O.ParamArg:
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+def pa_g(slot: U32, dt: S.Dt) -> O.ParamArg:
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def g_buf() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, Nil{}, O.AParam{pa_g(0, S.int32(), 4)}, O.TNone{})
+  O.UOp.new(O.Arena.empty(), O.OpsPARAM{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{pa_g(0, S.int32())}, O.TNone{})
 
 def g_alloc() -> O.Found:
-  O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, Nil{}, O.AParam{pa_g(0, S.int32(), 4)}, O.TNone{})
+  O.UOp.new(O.Arena.empty(), O.OpsALLOC{}, O.param_src(O.Arena.empty(), Some{4}), O.AParam{pa_g(0, S.int32())}, O.TNone{})
 
 def g_idx(+b: O.Found) -> O.Found:
   O.UOp.new(O.Found.ar(b), O.OpsINDEX{}, [O.Found.i(b)], O.ANone{}, O.TNone{})

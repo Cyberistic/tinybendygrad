@@ -552,7 +552,7 @@ def sc_var.of(op: O.Op, arg: O.Arg, shape: List<&2, O.Sint>) -> Bool:
     case _           : False{}
 
 def sc_is_bound_var(+ar: O.Arena, +i: U32) -> Bool:
-  Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
+  Bool.and(sc_var.of(sc_op(ar, i), sc_arg(ar, i), F.param_shape(ar, i, sc_arg(ar, i))), sc_val.some(sc_arg(ar, i)))
 
 # `t not in k.backward_slice` -- ops.py:1378 is `toposort(enter_calls=False)` minus
 # self, and the `t is not k` test runs FIRST, so self may stay in the list.
@@ -1605,9 +1605,9 @@ def apply_binds(+ar: O.Arena, +si: U32) -> U32:
 # ---------------------------------------------------------------------------
 def ca_slot.of(x: O.ParamArg, n: U32) -> O.ParamArg:
   match x:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device,
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device,
                     volatile, image, buffer, bind_on_realize, val}:
-      O.ParamArg{n, dtype, size, vmin_vmax, multiple_of, name, addrspace, device,
+      O.ParamArg{n, dtype, vmin_vmax, multiple_of, name, addrspace, device,
         volatile, image, buffer, bind_on_realize, val}
 
 def ca_arg.of(arg: O.Arg) -> Maybe<&2, O.ParamArg>:
@@ -1748,20 +1748,20 @@ def canonicalize_alloc(+c: CallifyCtx, +ar: O.Arena, +b: U32) -> CaPut:
 # `ParamArg(slot=0, dtype=int32, size=4, name='a', device='CPU')`. The port
 # interned device NAMES as `S.D1{tag}`, and tag 0 stands for CPU.
 def g_pb(+slot: U32, +nm: String) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), Some{4}, None{}, None{}, Some{nm}, S.AGlobal{},
+  O.ParamArg{slot, S.int32(), None{}, None{}, Some{nm}, S.AGlobal{},
     Some{S.D1{0}}, False{}, None{}, None{}, False{}, None{}}
 
 # `UOp.variable("v", 0, 10, dtype=int32)` and `.bind(3)`. The slot is `None` in
 # Python's `-1`; nothing in this file reads a slot, so it is 0 here.
 def g_pv(+nm: String, val: Maybe<&2, O.Const>) -> O.ParamArg:
-  O.ParamArg{0, S.int32(), None{}, Some{O.PyRange{H.i64_of_i32(0), H.i64_of_i32(10)}},
+  O.ParamArg{0, S.int32(), Some{O.PyRange{H.i64_of_i32(0), H.i64_of_i32(10)}},
     Some{1}, Some{nm}, S.Aalu{}, None{}, False{}, None{}, None{}, False{}, val}
 
 # `UOp(Ops.BUFFER, src=(UOp(Ops.SPECIAL, arg=name, src=(UOp.const(1),)),), arg=...)`
 def g_buf(+slot: U32, +nm: String, ar: O.Arena) -> O.Found:
   +z = O.UOp.const(ar, O.CInt{H.i64_of_i32(1)})
   +sp = O.UOp.special(O.Found.ar(z), O.Found.i(z), nm)
-  O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{g_pb(slot, nm)}, O.TNone{})
+  O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), Some{4}), O.AParam{g_pb(slot, nm)}, O.TNone{})
 
 # `UOp(Ops.SINK, src=(UOp(Ops.STORE, src=(UOp.const(0), UOp.const(n))),))`
 def g_body(+n: U32, ar: O.Arena) -> O.Found:
@@ -1777,8 +1777,8 @@ def fx1() -> O.Found:
   +b = g_buf(1, "b", O.Found.ar(a))
   +d1 = g_body(1, O.Found.ar(b))
   +d2 = g_body(2, O.Found.ar(d1))
-  +vb = O.UOp.new(O.Found.ar(d2), O.OpsPARAM{}, Nil{}, O.AParam{g_pv("v", Some{O.CInt{H.i64_of_i32(3)}})}, O.TNone{})
-  +vu = O.UOp.new(O.Found.ar(vb), O.OpsPARAM{}, Nil{}, O.AParam{g_pv("v", None{})}, O.TNone{})
+  +vb = O.UOp.new(O.Found.ar(d2), O.OpsPARAM{}, O.param_src(O.Found.ar(d2), None{}), O.AParam{g_pv("v", Some{O.CInt{H.i64_of_i32(3)}})}, O.TNone{})
+  +vu = O.UOp.new(O.Found.ar(vb), O.OpsPARAM{}, O.param_src(O.Found.ar(vb), None{}), O.AParam{g_pv("v", None{})}, O.TNone{})
   +k1 = O.UOp.new(O.Found.ar(vu), O.OpsCALL{}, [O.Found.i(d1), O.Found.i(a)], O.ANone{}, O.TNone{})
   +k2 = O.UOp.new(O.Found.ar(k1), O.OpsCALL{}, [O.Found.i(d2), O.Found.i(b), O.Found.i(vb)], O.ANone{}, O.TNone{})
   +e2 = O.UOp.new(O.Found.ar(k2), O.OpsEND{}, [O.Found.i(k2)], O.ANone{}, O.TNone{})

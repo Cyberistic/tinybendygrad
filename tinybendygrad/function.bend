@@ -1186,13 +1186,18 @@ def fn_trace(depth: U32, key8: U32, ms: U32, name: String) -> String:
 
 # -- the fixture builders ----------------------------------------------------
 #
-# `ParamArg` is a thirteen-field `Data` record and `ParamArg.of` fixes nine of
+# `ParamArg` is a twelve-field `Data` record and `ParamArg.of` fixes eight of
 # them, so a fixture that needs `bind_on_realize` or a value range builds the
 # literal. `volatile` is a RESERVED WORD in Bend 2.0.34 (measured, rule 25) and
-# is the ninth field, so it is `False{}` here with the field's own name.
-def fx_pa(slot: U32, dt: S.Dt, size: Maybe<&2, U32>, vv: Maybe<&2, O.PyRange>,
+# is the eighth field, so it is `False{}` here with the field's own name.
+#
+# AND IT TAKES NO `size`: `72f98ffe0` moved the element count into `src[0]`, so the
+# size is now an argument of the NODE below and not of its arg. That is upstream's
+# own shape -- `_buffer`, `param` and `alloc` each build `src` and `arg` together
+# and there is no "give me just the ParamArg" entry point on either side.
+def fx_pa(slot: U32, dt: S.Dt, vv: Maybe<&2, O.PyRange>,
           addr: S.Addr, bor: Bool, buf: Maybe<&2, U32>) -> O.ParamArg:
-  O.ParamArg{slot, dt, size, vv, None{}, None{}, addr, None{}, False{}, None{}, buf, bor, None{}}
+  O.ParamArg{slot, dt, vv, None{}, None{}, addr, None{}, False{}, None{}, buf, bor, None{}}
 
 def fx_node(+ar: O.Arena, +op: O.Op, srcs: List<&2, U32>, arg: O.Arg) -> O.Found:
   O.UOp.new(ar, op, srcs, arg, O.TNone{})
@@ -1200,7 +1205,7 @@ def fx_node(+ar: O.Arena, +op: O.Op, srcs: List<&2, U32>, arg: O.Arg) -> O.Found
 # a realized BUFFER: `buffer` is `Some`, which is `is_realized` and is the whole
 # of the third conjunct of `invalid_outputs`.
 def fx_buf.of(+ar: O.Arena, slot: U32, size: U32, buf: Maybe<&2, U32>) -> O.Found:
-  fx_node(ar, O.OpsBUFFER{}, Nil{}, O.AParam{fx_pa(slot, S.single(), Some{size}, None{}, S.AGlobal{}, False{}, buf)})
+  fx_node(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{fx_pa(slot, S.single(), None{}, S.AGlobal{}, False{}, buf)})
 
 # a device-less BUFFER, which is what the `imp_*` rows need: CPython prints
 # `str(None)` and `tn_repr.devname` prints `"None"`, so the two sides agree.
@@ -1214,12 +1219,15 @@ def fx_buf(slot: U32, size: U32, buf: Maybe<&2, U32>) -> O.Found:
   fx_buf.of(O.Arena.empty(), slot, size, buf)
 
 def fx_alloc.of(+ar: O.Arena, slot: U32, bor: Bool) -> O.Found:
-  fx_node(ar, O.OpsALLOC{}, Nil{}, O.AParam{fx_pa(slot, S.single(), Some{4}, None{}, S.AGlobal{}, bor, None{})})
+  fx_node(ar, O.OpsALLOC{}, O.param_src(ar, Some{4}), O.AParam{fx_pa(slot, S.single(), None{}, S.AGlobal{}, bor, None{})})
 
 # a scalar ALU PARAM carrying a value range: `size = None` is what makes the
-# fold answer `()` and the node a `Variable`.
+# fold answer `()` and the node a `Variable`, and it is `src[0]` being the EMPTY
+# STACK -- upstream's `src=(UOp(Ops.STACK),)` at `ops.py:1002`, which is exactly
+# what `param_src(ar, None{})` builds. `src=()` would be a DIFFERENT node that
+# cannot answer a shape at all.
 def fx_scalar.of(+ar: O.Arena, slot: U32, vv: Maybe<&2, O.PyRange>, addr: S.Addr, size: Maybe<&2, U32>) -> O.Found:
-  fx_node(ar, O.OpsPARAM{}, Nil{}, O.AParam{fx_pa(slot, S.int32(), size, vv, addr, False{}, None{})})
+  fx_node(ar, O.OpsPARAM{}, O.param_src(ar, size), O.AParam{fx_pa(slot, S.int32(), vv, addr, False{}, None{})})
 
 def fx_alloc(slot: U32, bor: Bool) -> O.Found:
   fx_alloc.of(O.Arena.empty(), slot, bor)
@@ -1306,7 +1314,7 @@ def pctx_of(+c0: FnCtx, +f: O.Found) -> String:
 def fx_aft(+ar: O.Arena, d: U32, g: U32) -> O.Found:
   fx_node(ar, O.OpsAFTER{}, [d, g], O.ANone{})
 def fx_buf_param_on(+ar: O.Arena, slot: U32) -> O.Found:
-  fx_node(ar, O.OpsPARAM{}, Nil{}, O.AParam{fx_pa(slot, S.single(), Some{4}, None{}, S.AGlobal{}, False{}, None{})})
+  fx_node(ar, O.OpsPARAM{}, O.param_src(ar, Some{4}), O.AParam{fx_pa(slot, S.single(), None{}, S.AGlobal{}, False{}, None{})})
 def fx_buf_param(slot: U32) -> O.Found:
   fx_buf_param_on(O.Arena.empty(), slot)
 

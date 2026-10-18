@@ -865,7 +865,7 @@ def linearize(+ar: O.Arena, +lst: List<&2, U32>, vms: List<&2, U32>, +sink: U32)
 # version of this file lacked.
 # ===========================================================================
 def lt_pa(slot: U32, dt: S.Dt, ad: S.Addr) -> O.ParamArg:
-  O.ParamArg{slot, dt, None{}, None{}, None{}, None{}, ad, None{}, False{}, None{},
+  O.ParamArg{slot, dt, None{}, None{}, None{}, ad, None{}, False{}, None{},
              None{}, False{}, None{}}
 
 def lt_i32.go(+made: O.Found, ar: O.Arena) -> O.Found:

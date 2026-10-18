@@ -527,7 +527,7 @@ def symbolic_len() -> U32:
 # ===========================================================================
 
 def psize(n: Maybe<&2, U32>) -> O.ParamArg:
-  O.ParamArg{0, S.int32(), n, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
+  O.ParamArg{0, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
 
 # `UOp(Ops.REDUCE, src=(x,)+rngs, arg=(rop, len(rngs)))` -- ops.py:657.
@@ -540,7 +540,7 @@ def g() -> RW.G:
   +c2 = O.UOp.const(O.Found.ar(c1), O.CInt{H.i64_of_i32(2)})
   +c4 = O.UOp.const(O.Found.ar(c2), O.CInt{H.i64_of_i32(4)})
   +sp = O.UOp.special(O.Found.ar(c4), O.Found.i(c4), "0")
-  +buf = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, [O.Found.i(sp)], O.AParam{psize(Some{4})}, O.TNone{})
+  +buf = O.UOp.new(O.Found.ar(sp), O.OpsBUFFER{}, O.param_src(O.Found.ar(sp), Some{4}), O.AParam{psize(Some{4})}, O.TNone{})
   +r0 = O.UOp.range_end(O.Found.ar(buf), O.Found.i(c4), [0], O.AXIS_LOOP{})
   +r1 = O.UOp.range_end(O.Found.ar(r0), O.Found.i(c2), [1], O.AXIS_LOOP{})
   +r2 = O.UOp.range_end(O.Found.ar(r1), O.Found.i(c4), [2], O.AXIS_LOOP{})

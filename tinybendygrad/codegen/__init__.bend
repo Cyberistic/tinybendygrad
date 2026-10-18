@@ -325,15 +325,13 @@ def pm_post_sched_cache() -> O.PMEntrys:
 # fixture's slot and the ctx's slot are different facts.
 def ctx_param(ar: O.Arena, slot: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{slot, S.int32(),
-      None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
+    O.AParam{O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
     O.TNone{})
 
 # A test PARAM with a real slot, for the fixture.
 def test_param(ar: O.Arena, slot: U32) -> O.Found:
   O.UOp.new(ar, O.OpsPARAM{}, Nil{},
-    O.AParam{O.ParamArg{slot, S.int32(),
-      None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
+    O.AParam{O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{}, None{}, False{}, None{}}},
     O.TNone{})
 
 # A test ALLOC.

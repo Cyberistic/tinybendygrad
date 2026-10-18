@@ -228,7 +228,7 @@ type PArg is Data:
 
 def PArg.of.p(pa: O.ParamArg) -> PArg:
   match pa:
-    case O.ParamArg{slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
+    case O.ParamArg{slot, dtype, vmin_vmax, multiple_of, name, addrspace, device, volatile, image, buffer, bind_on_realize, val}:
       PArg{True{}, has_cst(val), O.eq_addr(addrspace, S.Aalu{}), has_range(vmin_vmax), slot, name, device}
 
 def PArg.of(a: O.Arg) -> PArg:
@@ -1554,19 +1554,19 @@ def Slot.slot(s: Slot) -> U32:
 # `buf_param` uses -- and `is_bound_var` reads `val` only, so the difference is
 # invisible to this file's readers and no row depends on it.
 def buf_arg(+w: Slot) -> O.ParamArg:
-  O.ParamArg{Slot.slot(w), S.int32(), Some{16}, None{}, None{}, Slot.nm(w), S.AGlobal{},
+  O.ParamArg{Slot.slot(w), S.int32(), None{}, None{}, Slot.nm(w), S.AGlobal{},
              Some{cpu_dev()}, False{}, None{}, Some{0}, False{}, None{}}
 
 # A kernel-graph VARIABLE: `size=None`, `addrspace=ALU`, a `vmin_vmax`, and
 # `val=None` -- which is exactly what makes `is_bound_var` FALSE (ops.py:1025).
 def var_arg(+w: Slot) -> O.ParamArg:
-  O.ParamArg{Slot.slot(w), S.int32(), None{}, Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
+  O.ParamArg{Slot.slot(w), S.int32(), Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
              None{}, False{}, None{}, Some{0}, False{}, None{}}
 
 # The SAME shape with `val` set: the one field `is_bound_var` tests, and the reason
 # realize.py:15's filter drops this node from `get_call_arg_uops`.
 def bnd_arg(+w: Slot) -> O.ParamArg:
-  O.ParamArg{Slot.slot(w), S.int32(), None{}, Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
+  O.ParamArg{Slot.slot(w), S.int32(), Some{zero_four()}, Some{1}, Slot.nm(w), S.Aalu{},
              None{}, False{}, None{}, Some{0}, False{}, Some{O.CInt{H.i64_of_i32(4)}}}
 
 # `Land` is the fixture: the arena plus the indices the gate reads. The FULL index
@@ -1705,15 +1705,15 @@ def Land.callH(l: Land) -> U32:
 def main_arena() -> Land:
   +a0 = O.Arena.empty()
   +n1 = O.UOp.const(a0, O.CInt{H.i64_of_i32(3)})
-  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsPARAM{}, Nil{}, O.AParam{buf_arg(Slot.of(0, "g0"))}, O.TNone{})
-  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsPARAM{}, Nil{}, O.AParam{buf_arg(Slot.of(1, "g1"))}, O.TNone{})
+  +n2 = O.UOp.new(O.Found.ar(n1), O.OpsPARAM{}, O.param_src(O.Found.ar(n1), Some{16}), O.AParam{buf_arg(Slot.of(0, "g0"))}, O.TNone{})
+  +n3 = O.UOp.new(O.Found.ar(n2), O.OpsPARAM{}, O.param_src(O.Found.ar(n2), Some{16}), O.AParam{buf_arg(Slot.of(1, "g1"))}, O.TNone{})
   +n4 = O.UOp.new(O.Found.ar(n3), O.OpsPARAM{}, Nil{}, O.AParam{var_arg(Slot.of(2, "n"))}, O.TNone{})
   +n5 = O.UOp.new(O.Found.ar(n4), O.OpsPARAM{}, Nil{}, O.AParam{bnd_arg(Slot.of(2, "n"))}, O.TNone{})
   +n6 = O.UOp.new(O.Found.ar(n5), O.OpsPARAM{}, Nil{}, O.AParam{var_arg(Slot.of(3, "m"))}, O.TNone{})
   +n7 = O.UOp.new(O.Found.ar(n6), O.OpsSINK{}, Nil{}, O.AKernel{kernel_info("k1", 0)}, O.TNone{})
   +n8 = O.UOp.new(O.Found.ar(n7), O.OpsSINK{}, Nil{}, O.AKernel{kernel_info("k2", 2)}, O.TNone{})
-  +n9 = O.UOp.new(O.Found.ar(n8), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{buf_arg(Slot.of(0, "g0"))}, O.TNone{})
-  +n10 = O.UOp.new(O.Found.ar(n9), O.OpsBUFFER{}, [O.Found.i(n1)], O.AParam{buf_arg(Slot.of(1, "g1"))}, O.TNone{})
+  +n9 = O.UOp.new(O.Found.ar(n8), O.OpsBUFFER{}, O.param_src(O.Found.ar(n8), Some{16}), O.AParam{buf_arg(Slot.of(0, "g0"))}, O.TNone{})
+  +n10 = O.UOp.new(O.Found.ar(n9), O.OpsBUFFER{}, O.param_src(O.Found.ar(n9), Some{16}), O.AParam{buf_arg(Slot.of(1, "g1"))}, O.TNone{})
   +n11 = O.UOp.new(O.Found.ar(n10), O.OpsPROGRAM{}, [O.Found.i(n7)], O.AProgram{pi(Nil{}, [0, 1], [0], [1])}, O.TNone{})
   +n12 = O.UOp.new(O.Found.ar(n11), O.OpsPROGRAM{}, [O.Found.i(n7)], O.AProgram{pi([O.Found.i(n4)], [0, 1], [0], [1])}, O.TNone{})
   +n13 = O.UOp.new(O.Found.ar(n12), O.OpsPROGRAM{}, [O.Found.i(n7)], O.AProgram{pi([O.Found.i(n6)], [0, 1], [0], [1])}, O.TNone{})

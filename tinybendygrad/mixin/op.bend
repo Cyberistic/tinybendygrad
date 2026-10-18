@@ -1169,14 +1169,14 @@ def mo_row(nm: String, b: Bool) -> IO(Unit):
 # buffer RESHAPED, which is `BUFFER CONST STACK/2 RESHAPE/2`. Both spellings are
 # measured against CPython's own `toposort` -- see `t_lit1d` and `t_lit2d`.
 
-def mo_buf.arg(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
+def mo_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile,
   # image, buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def mo_buf4(+ar: O.Arena, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{mo_buf.arg(0, 4, dt)}, O.TNone{})
+  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{4}), O.AParam{mo_buf.arg(0, dt)}, O.TNone{})
 
 def mo_fx1d() -> T.Tensor:
   +b = mo_buf4(O.Arena.empty(), S.single())

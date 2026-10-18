@@ -281,7 +281,7 @@ def kn_slot(+ar: O.Arena, i: U32) -> U32:
   kn_slot.of(kn_arg(ar, i), u32_none())
 
 def pa(slot: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
 
 # `x.arg.slot != -1` -- and the slot is a `U32`, so Python's -1 is not
@@ -996,7 +996,7 @@ def K.at(k: K, n: Nat) -> U32:
   K.at.go(K.ix(k), n)
 
 def pa1(slot: U32) -> O.ParamArg:
-  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
+  O.ParamArg{slot, S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{}, False{}, None{},
              None{}, False{}, None{}}
 
 def kn_fixture() -> K:
@@ -1037,7 +1037,7 @@ def kn_fixture() -> K:
 def KN.param.arg(a: O.Arg) -> O.ParamArg:
   match a:
     case O.AParam{pa}: pa
-    case _: O.ParamArg{u32_none(), S.int32(), None{}, None{}, None{}, None{}, S.AGlobal{}, None{},
+    case _: O.ParamArg{u32_none(), S.int32(), None{}, None{}, None{}, S.AGlobal{}, None{},
                         False{}, None{}, None{}, False{}, None{}}
 
 def KN.param(+np: NP) -> O.ParamArg:

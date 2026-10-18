@@ -1490,7 +1490,7 @@ def tn_as_param.of(slot: U32, +src: O.ParamArg) -> O.ParamArg:
   # states), and `param_like` CLEARS `val` upstream (ops.py:1300) so re-slotting a bound
   # Variable drops its binding -- arm 1, a named TODO, and `tn_asparam_slot` is the row
   # that would move if it were ported.
-  O.ParamArg{slot, O.ParamArg.dtype(src), O.ParamArg.size(src), None{}, None{}, None{},
+  O.ParamArg{slot, O.ParamArg.dtype(src), None{}, None{}, None{},
     S.AGlobal{}, O.ParamArg.device(src), False{}, None{}, None{}, False{}, None{}}
 
 # `Tensor(self.uop.param_like(slot))`. The `Maybe` is the port's `tn_len` convention: a
@@ -2241,14 +2241,14 @@ def tn_backward(+ar: O.Arena, +root: U32, scope: Tensors, root_grad: U32) -> Bwd
 # (ops.py:851). So the node is buildable and the `buffer=buf` field is left `None`,
 # which is the ONE field of `ParamArg` that needs a device. These are the gate's
 # fixtures, not the port's, and the header says so.
-def g_buf.arg(slot: U32, size: U32, dt: S.Dt) -> O.ParamArg:
+def g_buf.arg(slot: U32, dt: S.Dt) -> O.ParamArg:
   # slot, dtype, size, vmin_vmax, multiple_of, name, addrspace, device, volatile, image,
   # buffer, bind_on_realize, val -- ops.bend's `ParamArg`, in its order.
-  O.ParamArg{slot, dt, Some{size}, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
+  O.ParamArg{slot, dt, None{}, None{}, None{}, S.AGlobal{}, Some{S.D1{0}},
     False{}, None{}, None{}, False{}, None{}}
 
 def g_buf(+ar: O.Arena, slot: U32, size: U32, dt: S.Dt) -> O.Found:
-  O.UOp.new(ar, O.OpsBUFFER{}, Nil{}, O.AParam{g_buf.arg(slot, size, dt)}, O.TNone{})
+  O.UOp.new(ar, O.OpsBUFFER{}, O.param_src(ar, Some{size}), O.AParam{g_buf.arg(slot, dt)}, O.TNone{})
 
 # a `Tensor([1, 2, 3, 4], device='PYTHON')`: one BUFFER, int32, size 4.
 def g_t4() -> O.Found:
@@ -2268,7 +2268,7 @@ def g_t4a(+ar: O.Found) -> O.Found:
 # built on.
 def g_sbuf(+ar: O.Arena, slot: U32) -> O.Found:
   O.UOp.new(ar, O.OpsBUFFER{}, Nil{},
-    O.AParam{O.ParamArg{slot, S.single(), None{}, None{}, None{}, None{}, S.AGlobal{},
+    O.AParam{O.ParamArg{slot, S.single(), None{}, None{}, None{}, S.AGlobal{},
       Some{S.D1{0}}, False{}, None{}, None{}, False{}, None{}}}, O.TNone{})
 
 # EVERY FIXTURE TAKES THE INCOMING ARENA. Two `Found`s from two `Arena.empty()`s are two
