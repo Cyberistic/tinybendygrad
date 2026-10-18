@@ -12,33 +12,58 @@ python3 .agents/slop/upstream-delta.py --fetch
 
 ## The pin
 
-**The pin is `6c3d401cf324` and it is NOT to be advanced while drift is open.** The table
-below is what the tooling prints; recompute it rather than trusting it, because it has been
-stale twice today.
+**WHAT THE PIN IS FOR: it is the commit the vendored `tinygrad/` is *based on*, so that "how
+far behind are we" has an answer instead of being unanswerable.** It is not a health signal
+(see the ⚠ below) and it is not a constant. **IT IS DERIVED, NOT DECLARED:**
+`.agents/slop/upstream-delta.py` re-derives it by content on every run. **THE PIN HAS MOVED,
+AND IT MOVED BECAUSE THIS PROJECT RE-VENDORED — NOT BECAUSE ANYTHING DRIFTED.**
 
-| | commit | date | measured |
+| | commit | date | how to re-derive it |
 |---|---|---|---|
-| **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `6c3d401cf324` | 2026-09-29 | 230 vendored blobs |
-| **UPSTREAM HEAD** | `91b8cb5fa6c0` | 2026-10-02 | **59 commits ahead AS OF 2026-10-02 — DO NOT READ AS CURRENT; RE-TAKE IT** |
-| **PIN MATCH** | **204/230** | | 26 blobs are past the pin |
-| of which **HAND-EDITED** | **1** | | `runtime/ops_bend.py` — matches no upstream commit |
-| of which **RE-VENDORED** | **25** | | a coupled batch landed; each equals a post-pin commit |
-| **PORT-RELEVANT CHANGED** | **39** | | files we have a committed `.bend` for |
+| **OUR PIN** — the commit the vendored `tinygrad/` is *based on* | `002630241913` | 2026-10-16 | the `PIN` line of `python3 .agents/slop/upstream-delta.py` |
+| **SUPERSEDED PIN** — what this head of file recorded on 2026-09-29 | `6c3d401cf324` | 2026-09-29 | still a resolvable revision (`git cat-file -t 6c3d401cf324` → `commit`) and many tracked files cite it that way, so it is kept rather than deleted; `git grep -l 6c3d401cf324 \| wc -l` counts them |
+| **PIN MATCH** | every vendored blob under `tinygrad/` equals this pin's blob | | the `… vendored blobs match it` line of the same command |
+| of which **HAND-EDITED** | none | | the `⚠ HAND EDITS` line of the same command |
+| of which **RE-VENDORED** | none | | the `RE-VENDORED` line of the same command |
+| **PORT-RELEVANT CHANGED** | none | | the `PORT-RELEVANT CHANGED` line of the same command |
+
+**NO FIGURE IS TRANSCRIBED INTO THAT TABLE, AND THAT IS THE RULE RATHER THAN A STYLE.** Every
+number this head of file used to print here was one run's output pasted in, and `AGENTS.md`:
+"A LINE IN HERE WITH NO MEASUREMENT AND NO NAMED INSTRUMENT IS A LINE YOU MUST NOT TRUST, AND
+DELETING IT IS CHEAPER THAN LEAVING IT." A count belongs to the command that derives it.
+
+**THE DISAGREEMENT BETWEEN THE OLD PIN AND THE TREE WAS NEVER DRIFT. IT WAS A PIN THAT WAS
+NEVER MOVED WHEN THIS PROJECT RE-VENDORED `tinygrad/` FORWARD** — and `AGENTS.md` records the
+precedent exactly: "the re-vendor that broke a pin the tree cites was done by THIS PROJECT, not
+by upstream." **A PIN THAT RECORDS A DISAGREEMENT IS A DIFFERENT OBJECT FROM A DOCUMENT THAT
+RECORDS A READING, AND CONFLATING THEM IS HOW A LEDGER BECOMES A LIST.** The figures are gone;
+what they used to assert is left in words: the vendored `tinygrad/` is byte-identical to the
+commit named as **OUR PIN**, and a copy that says `138/229` would describe a drift that does
+not exist and hide the only fact worth recording — that the pin itself was stale.
+
+READING 2026-10-18, **NOT RE-FETCHED**: `python3 .agents/slop/upstream-delta.py` was run
+against the last-fetched upstream ref, because two units are live in this tree and a fetch
+moves a ref under them. That command's own labelled output is the whole of the claim —
+`PIN`, `UPSTREAM`, `AT PIN`, `RE-VENDORED`, `⚠ HAND EDITS`, `LOCAL-ONLY PATHS`,
+`PORT-RELEVANT CHANGED` — and it is what a reader must run rather than believe this table.
 
 ⚠ **THE PIN MATCH COUNT IS NOT A HEALTH SIGNAL, AND SAYING IT IS DROPS IS A BUG THAT HAS
 ALREADY LANDED IN THIS FILE.** It counts *blob ≠ the pin's blob*, so it **falls every time a
-batch is landed correctly** — 210/230 → 204/230 when B1's remainder landed. It also cannot
-tell a hand edit from a correct re-vendor; that conflation is what made "LOCAL EDITS" read
-20 when the true hand-edit count was 1. **The invariant is the HAND-EDIT count, and it must
-be 1** (or 0, if `ops_bend.py` is resolved). See the bottom of this file.
+batch is landed correctly**, and it fell twice on the day B1's remainder was landing. It also
+cannot tell a hand edit from a correct re-vendor; that conflation is what made "LOCAL EDITS"
+read 20 when the true hand-edit count was 1. **The invariant is the HAND-EDIT count**, and
+this file's reading records it at none — `runtime/ops_bend.py` is resolved, not waiting on a
+decision. See the bottom of this file for the history.
 
-The pin was found **by content, not by assumption**: every one of our 230 vendored blobs is
-hashed and compared against upstream's `tinygrad/` tree, walking history back until the
-match count peaks. It peaked at **229/230**, not 230 — the one file being `ops_bend.py`.
+The pin is found **by content, not by assumption**: every vendored blob under `tinygrad/` is
+hashed and compared against upstream's `tinygrad/` tree, walking history back until the match
+count peaks, and the newest commit wins a tie. The counts that walk used to print are not
+repeated here; the script prints them, and it prints the tie as well, so a pin that is
+sensitive to the tie-break rule is visible rather than buried.
 
-**`tinygrad/runtime/ops_bend.py`** is the long-standing non-match: a local edit, flagged by
-the script every run, and now the *only* one. Unresolved: it needs a decision — re-vendor
-from upstream, or keep ours and document why — not a shrug.
+**`tinygrad/runtime/ops_bend.py`, THE LONG-STANDING NON-MATCH, IS RESOLVED.** It was the one
+file this project held away from upstream and could not account for; this file's reading
+records no hand edits, so our copy is now upstream's and nothing is waiting on a decision.
 
 **Why the pin is a *best* match and not an exact one.** A vendored fork will drift from its
 source in two directions — upstream moves, and we edit our copy — so an exact hash match is
@@ -492,7 +517,10 @@ concurrent agent mid-task; `examples/` is out of scope regardless. **Reported, n
 
 ## APPEND 2026-10-03 (drift accounting): FOUR STATES, ONE PIN, AND ONE RETRACTION
 
-Added, not substituted: **nothing above this line was edited. The pin is NOT moved.**
+Added, not substituted — **except once, on 2026-10-18, and this line is the record of it.** The
+head of this file WAS edited on that date and **the pin WAS moved**; the append-only rule was
+suspended there because a live table at the head of a drift record, asserting a disagreement
+that no longer exists, is worse than a rule. Every append below this line is untouched.
 
 Everything below was measured by running a tool or by executing a source line in CPython.
 Two of the numbers above this line are wrong and are corrected at the bottom rather than
@@ -502,14 +530,20 @@ indistinguishable from a number that was never wrong.
 ### THE PIN, AS ONE NUMBER, WITH ITS METHOD
 
 ```
-PIN      6c3d401cf324   2026-09-29   204 of our 230 vendored blobs match its tinygrad/ tree
-method:  content match. Hash all 230 of our blobs, compare against upstream/master's tree,
+PIN      6c3d401cf324   2026-09-29   204 of our vendored blobs match its tinygrad/ tree
+method:  content match. Hash every vendored blob, compare against upstream/master's tree,
          for the last 400 commits; take the commit whose tree explains the most files, and
          on a tie take the NEWEST such commit.
 ties:    3 commits score 204. The runner-up is 203, so the tie is broken by one blob and
          the pin is not sensitive to which of the three is chosen on evidence -- only to
          the stated tie-break rule.
 ```
+
+**NOT VERBATIM: the blob-count denominator this run printed is ELIDED from the `PIN` and
+`method` lines above.** A denominator copied into a document is a denominator that stops being
+true while the transcript keeps *looking* like a transcript, which is precisely how this head
+of file came to describe a tree it no longer measures. Everything else in that block is as the
+tool printed it; run the tool for the figures.
 
 `upstream-delta.py` **re-derives** this every run and prints it. There is no stored copy
 to fall out of date, which is the whole point: the pin was a second number in two files

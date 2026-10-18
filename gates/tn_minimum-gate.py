@@ -6,8 +6,12 @@
 THE ANSWER IS: NONE. The brief that spawned this gate believed `Tensor.minimum`
 was walled on a missing `OpsMIN{}`; that is false twice over. CPython's `Ops`
 has no `MIN` member at all -- `minimum` (mixin/elementwise.py:393) is built from
-`Ops.MAX` -- and the port's `Ops` and CPython's `Ops` are the SAME 77 members,
-so no constructor is missing in either direction.
+`Ops.MAX` -- and the port's `Ops` and CPython's `Ops` are the SAME member SET,
+so no constructor is missing in either direction. THE FIGURE IS NOT WRITTEN HERE: it is an
+OUTPUT of this gate and not an input to it, so run `.venv/bin/python
+gates/tn_minimum-gate.py` rather than believe this paragraph -- `cpython_ops_count` and
+`port_ops_count` are the two halves and `missing_from_port` / `extra_in_port` are what make
+"the same" checkable instead of adjectival.
 
 TWO LANES, BOTH BY DISCOVERY, AND NEITHER READS THE OTHER'S SOURCE:
 

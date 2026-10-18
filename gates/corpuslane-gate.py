@@ -4,20 +4,31 @@
     .venv/bin/python gates/corpuslane-gate.py
     .venv/bin/python gates/corpuslane-gate.py --driver PATH   # point at another driver
 
-WHY THIS GATE EXISTS, AND THE MEASUREMENT THAT PROVES THE GAP. The corpus's headline oracle
-is `.agents/slop/graphcmp.py emit --side py`, and on 2026-10-17 the re-vendor `a741a469f`
-made it raise on **30 of its 34 graphs**. MEASURED by running the PRE-re-vendor driver
-(`git show a741a469f^:.agents/slop/graphcmp.py`) against current upstream `002630241`:
-**30 raised, 4 emitted** -- and the 4 are exactly the graphs with no `BUFFER`/`ALLOC`/
-`PARAM` node (`range`, `rangeflat`, `sink`, `special`), so "4 of 34 AGREE" was not four
-successes, it was four graphs that never reach the broken read.
+WHY THIS GATE EXISTS, AND THE SHAPE OF THE GAP. The corpus's headline oracle is
+`.agents/slop/graphcmp.py emit --side py`, and it reads `tinygrad/` through attributes, so a
+re-vendor that moves one of them turns every read into an `AttributeError`. That is what the
+re-vendor `a741a469f` did on 2026-10-17: run against that `tinygrad/`, the PRE-re-vendor
+driver (`git show a741a469f^:.agents/slop/graphcmp.py`) raised across most of
+`graphcmp.GRAPHS`, and the graphs that did NOT raise were the ones with no `BUFFER`/`ALLOC`/
+`PARAM` node (`range`, `rangeflat`, `sink`, `special`) -- they never reach the broken read,
+so their survival was never evidence that the lane worked.
+
+**NOT ONE FIGURE OF THAT RUN IS REPEATED HERE, AND THAT IS DELIBERATE.** A count read off one
+`tinygrad/` tree is a transcription, and `AGENTS.md`: "A LINE IN HERE WITH NO MEASUREMENT AND
+NO NAMED INSTRUMENT IS A LINE YOU MUST NOT TRUST, AND DELETING IT IS CHEAPER THAN LEAVING
+IT." THE ONLY PLACE THIS GATE'S CURRENT FIGURES LIVE IS ITS OWN TOTALS LINE, WHICH
+`gates/prose-census.py` READS BACK AND CHECKS AGAINST THIS FILE -- so a reader who wants the
+numbers runs `.venv/bin/python gates/corpuslane-gate.py` and reads its last line, and a
+reviewer who wants to know whether THIS PARAGRAPH agrees with this gate gets an answer
+instead of having to take a docstring's word for it.
 
 **A RAISER IS INVISIBLE TO EVERY EXISTING GATE, AND THAT IS THE POINT.** `checks/differ.py`
 runs the corpus and counts ROWS; a lane that raised produced no rows, so the count read as
-"a graph with nothing to say" and the run reported `graphs-agree=34` from PRE-re-vendor
-artefacts (`runs/graphcmp/D/D0-run-summary.txt`, mtime `Oct 17 01:50`, against a re-vendor
-at `07:14`). **A gate that runs ITS OWN driver cannot see this one raise**, which is why
-this gate is a separate file and not a line in `differ.py`.
+"a graph with nothing to say" and the run reported a FULL SLATE OF AGREEMENT from
+PRE-re-vendor artefacts. Those artefacts are `runs/graphcmp/D/D0-run-summary.txt`, and what
+dates one is its own `substrate-start` / `substrate-end` pair -- the substrate it was written
+against -- and not its mtime, which dates the WRITE. **A gate that runs ITS OWN driver cannot
+see this one raise**, which is why this gate is a separate file and not a line in `differ.py`.
 
 WHAT IT MEASURES, TWO THINGS, BOTH OF WHICH A COUNT CANNOT:
 
@@ -25,12 +36,15 @@ WHAT IT MEASURES, TWO THINGS, BOTH OF WHICH A COUNT CANNOT:
      not named here (`AGENTS.md` doctrine 1: "Never list in this file what an instrument
      discovers") -- is emitted, and a raise is a FAIL with its type and message. `SKIP IS NOT
      PASS`: an unrunnable graph is `FAIL` here, not a skip, because the corpus's own
-     denominator is "34 graphs answered" and a graph that cannot answer is not in it.
+     denominator is "every graph in `graphcmp.GRAPHS` answered" and a graph that cannot
+     answer is not in it.
   2. **THE LANE READS ONLY WHAT UPSTREAM STILL HAS.** A `__getattr__` recorder is installed
      on every class the emitter receives a value of. `__getattr__` is reached ONLY when
      normal lookup FAILS, so every name it records is a name the class does not have. This is
-     what found `ParamArg.size` and it is what will find the next one. MEASURED on the
-     pre-re-vendor driver against current upstream: `ParamArg.size`, 26 reads, 26 graphs.
+     what found `ParamArg.size` -- the attribute the `a741a469f` re-vendor moved -- and it
+     is what will find the next one. Its current read count is not written here: every miss
+     is its own `missing.<class>.<name>` row in this gate's artifact, and a clean run prints
+     `0 missing attrs` only because the control below proved the recorder fires.
 
 THE POSITIVE CONTROL, AND IT IS THE GATE'S MOST IMPORTANT LINE. An instrument that cannot
 detect anything reports a clean zero, and "0 missing attributes" from an instrument that was
