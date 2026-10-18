@@ -1,0 +1,2 @@
+[bounded] WITHIN-LIMITS  rc=0  peak-RSS=798 MB (ceiling 2048)  40s  :: .venv/bin/python .agents/slop/graphcmp-oracle.py  out=8576B err=0B
+  MACHINE: **VIOLATED** -- loadavg 7.7 on 12 cores, swap free 1.20 of 10.00 GiB; swap free 1.20 of 10.00 GiB; A TIME BOUND HERE IS NOT ATTRIBUTABLE TO THE CHILD

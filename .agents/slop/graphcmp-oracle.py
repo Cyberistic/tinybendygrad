@@ -168,6 +168,41 @@ def symdim_rows(lines: list[str]) -> list[str]:
 #   count of the enum and the two answer different questions.
 NON_NODE_MARKERS = ("aren't rendered", "renderer", "pattern compiler IR",
                     "output strings into codegen", "machine instruction")
+
+# THE ABSENCE ATOM, ASKED OF THE TABLE THAT DEFINES IT. `devnames` hands back ParamArg's eighth
+# field as TEXT, and that field is `N` -- `ATOMS["none"]` -- whenever `device` is None, so a
+# device NAME and an ABSENCE arrive in one set. Read from `ATOMS` rather than written here, so
+# the day the atom is respelled the partition follows it. MEASURED 2026-10-18: `ATOMS["none"]`
+# is `"N"`, `graphcmp.py`'s `paramarg` prints it for `device=None` and `sNULL` for the NULL
+# DEVICE, and `graphcmp.bend:261-264` (`dm`) prints the same `N`.
+NODEV = frozenset({G.ATOMS["none"]})
+
+
+def device_verdict(py: set[str], bd: set[str]) -> tuple[str, str]:
+  """The census's device precondition, as a VERDICT and its evidence. PURE, so
+  `gates/census-dev-gate.py` asserts it without `bend` and without a second copy of the rule.
+
+  `devnames` returns ParamArg's eighth field as TEXT and that field is the absence atom
+  whenever `device` is None, so the sets arriving here mix device NAMES with an ABSENCE. Three
+  answers, and the middle one is the fifth verdict rather than a failure:
+
+    `AGREE` -- the device NAMES match. This is the invariant the check was written for: an
+    ALLOC's device selects its `core`, and a core that differs between the two sides turns the
+    comparison into a cascade of `src` differences with the cause in none of them.
+    `DIFFERENT-DEVICES` -- the names disagree. Fails the census, which is what the check did
+    for its whole life.
+    `ONE-SIDE-DEVICE-LESS` -- the names match and the ABSENCE does not. One side carries rows
+    the other does not, which is a ROW COUNT, already printed as `BAD` in the `cnt` column,
+    already REFUSED by `graphcmp.py`'s `_dispatch` (`rc=2`, "PARTIAL FIXTURE"), and already
+    counted as `graphs-refused` by `differ.py`. Not a device disagreement, so not a census
+    failure -- and reported either way, so the refinement is never a quiet drop.
+  """
+  pdev, bdev = py - NODEV, bd - NODEV
+  if pdev != bdev:
+    return ("DIFFERENT-DEVICES", f"py {sorted(pdev)} against bend {sorted(bdev)}")
+  if py != bd:
+    return ("ONE-SIDE-DEVICE-LESS", f"py {sorted(py)} bend {sorted(bd)}")
+  return ("AGREE", "")
 SECTION_RE = re.compile(r"^\s*# \*\* (\d+) -- (.+?) \*\*\s*$")
 ASSIGN_RE = re.compile(r"\b([A-Z][A-Z0-9_]*)\s*=\s*auto\(\)")
 CLASS_RE = re.compile(r"^class Ops\(FastEnum\):")
@@ -256,6 +291,7 @@ def main() -> int:
   graphs_of: collections.Counter = collections.Counter()
   all_res: collections.Counter = collections.Counter()
   bad: list[str] = []
+  nodevised: list[str] = []
   for g in sorted(G.GRAPHS):
     py = census(G.emit_py(g, None))
     bd = census(G.emit_bend(DEV, g)[0])
@@ -265,15 +301,46 @@ def main() -> int:
     tot_comm |= py["ops"] & G.COMM
     tot_sym += len(py["symdims"])
     # THE PRECONDITION `graphcmp.py` ALREADY HAS AND THIS FILE COULD NOT REACH. It lives in
-    # `_dispatch` (:2958), which checks `pdev != bdev` and calls it "NOT WELL-POSED, and this
+    # `_dispatch` (:3366), which checks `pdev != bdev` and calls it "NOT WELL-POSED, and this
     # is NOT a verdict" -- and this file calls `emit_py` and `emit_bend` DIRECTLY, so the
     # guard sat on a path the guarded thing never takes. An ALLOC's device selects its `core`,
     # which propagates to every consumer, so a two-device census is a number about a graph no
     # artifact contains. It is a FAILURE and not a note: the only channel this file has is `bad`.
-    if py["devs"] != bd["devs"]:
-      bad.append(f"{g}: the two sides opened DIFFERENT devices -- py {sorted(py['devs'])} "
-                 f"against bend {sorted(bd['devs'])} -- so this row's node/op/shape/atom "
-                 f"counts are about two different graphs")
+    #
+    # IT COMPARED THE DEVICE *FIELD*, AND THE ABSENCE ATOM IS NOT A DEVICE. MEASURED 2026-10-18,
+    # with no `bend`: `devnames` returns ParamArg's eighth field's TEXT, and that field prints
+    # `N` -- `ATOMS["none"]`, the atom for Python `None` -- when `device` is None, so the set it
+    # returned mixed a device NAME with an ABSENCE. `graphcmp.py`'s own `paramarg` prints the
+    # three cases apart (`device=None` -> `'N'`, `device="NULL"` -> `'sNULL'`,
+    # `device="CPU"` -> `'sCPU'`), and the PORT renders its device-less ParamArg as the SAME `'N'`
+    # (`graphcmp.bend:261-264`, `dm`), so the two sides were never spelled differently.
+    # `sym` is the control that proves the bend side CAN print it: its py side carries `N` on the
+    # ALU ParamArg from `graphcmp.bend:898-900` (`var()`, `device=None{}`), it does NOT appear in
+    # `bad`, and the only other token it carries is `sCPU`. So the bend side's device set equals
+    # the py side's there, and the bend side prints `N`.
+    #
+    # SO THE CONDITION WAS FIRING ON A FIXTURE'S MISSING ROWS, NOT ON A DEVICE DISAGREEMENT, and
+    # `loop` is where the two come apart: CPython's `@uopfunc` bodies (`get_time_ms` /
+    # `do_get_time_ms`, `hcq2.py:65-78`) put four addrspace-REG temps in the graph with NO device,
+    # and the bend fixture models `hcq_fence`'s loop body without them. Two devices cannot
+    # disagree here -- the graph is on CPU on both sides, MEASURED over all 34 graphs, whose only
+    # device NAME is `sCPU` -- so the sentence it printed, "this row's counts are about two
+    # different graphs", was FALSE on this run, and it was false in the direction that matters:
+    # `tot_nodes`, `tal`, `graphs_of`, `tot_comm` and `tot_sym` read the PY side only, and the two
+    # unions it does take are MEASURED uncontaminated (68 py-only distinct ops against a printed
+    # union of 68; 16 py-only atom letters against a printed 16). So the row counts ARE CPython's.
+    #
+    # WHICH IS WHY THE ASYMMETRY IS REPORTED AND NOT COMPARED. It is a ROW-COUNT fact, and the
+    # `cnt` column above already prints it as `BAD`, and `graphcmp.py`'s own `_dispatch` already
+    # REFUSES the graph over it (`D1-graph-loop.txt`: `rc=2`, "PARTIAL FIXTURE: the bend side
+    # models 25 of the 52 nodes"), and `differ.py` counts that as `graphs-refused`. A gate that
+    # owns a question must not be a second, harsher gate for it.
+    why, detail = device_verdict(py["devs"], bd["devs"])
+    if why == "DIFFERENT-DEVICES":
+      bad.append(f"{g}: the two sides opened DIFFERENT devices -- {detail} -- so this row's "
+                 f"node/op/shape/atom counts are about two different graphs")
+    elif why == "ONE-SIDE-DEVICE-LESS":
+      nodevised.append(f"{g} {detail}")
     tal.update(py["per_op"])
     graphs_of.update(py["ops"])
     for m in py["residual"] | bd["residual"]:
@@ -285,6 +352,21 @@ def main() -> int:
           f"{len(py['shapes']):>6} {len(py['depths']):>6} "
           f"{len(py['symdims']):>2}/{len(bd['symdims']):<2} "
           f"{','.join(sorted(py['residual'] | bd['residual'])) or '-'}  [{same}]")
+  # ROWS ONE SIDE HAS AND THE OTHER DOES NOT, BY THE `cnt` COLUMN'S OWN REASON. A row the
+  # `cnt` column prints `BAD` on is not comparable, and every number this census takes from
+  # such a row is the PY side's -- the two unions it does take are the census's `tot_ops` and
+  # `tot_atoms`, and a graph whose bend side added a NAME would show in the two selfchecks
+  # below, which is where a name from a row the port never modelled belongs. Printing the
+  # names is what keeps the asymmetry from being a silent drop: `NODEV` is a REFINEMENT of
+  # what is compared, and a refinement that does not say what it discarded is a quiet
+  # deletion. It is the fifth verdict again -- `loop` is REFUSED, not DISAGREEING -- so the
+  # census prints it instead of failing on it.
+  if nodevised:
+    print(f"# ONE SIDE'S DEVICE-LESS ROWS ONLY (NOT A DEVICE DISAGREEMENT, NOT A CENSUS "
+          f"FAILURE): {len(nodevised)} of {len(G.GRAPHS)} graphs -- " + "; ".join(nodevised))
+    print(f"#   `cnt` prints those rows `BAD`, `graphcmp.py`'s `_dispatch` REFUSES them "
+          f"(`rc=2`, `PARTIAL FIXTURE`) and `differ.py` counts them as `graphs-refused`, so "
+          f"the rows that differ are accounted for where they are compared")
   print(f"# TOTAL: {len(G.GRAPHS)} graphs, {tot_nodes} nodes per side, "
         f"{len(tot_ops)} distinct ops: {' '.join(sorted(tot_ops))}")
   print(f"# FIELDS COMPARED PER NODE: {len(G.WIRE)} on the wire, {len(G.FIELDS)} in the "

@@ -1,0 +1,73 @@
+# tree=/Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/__init__.py
+# DEV=CPU -- graphcmp.py's own `--dev` default, exported to BOTH sides. Every count below is about this device and about no other.
+# graph      nodes  cnt  ops arg-atoms shapes depths   sym  live-ledger
+  allred     10/10   ok    7 DNOSXabilrs      4      1  0/0  -  [same]
+  alu        16/16   ok   13   DNSbils      4      1  0/0  -  [same]
+  binblob    21/21   ok    8 DNOSbilrs     14      1  0/0  y  [same]
+  bit        12/12   ok    9   DNSbils      4      1  0/0  -  [same]
+  buffer      6/6    ok    4   DNSbils      4      1  0/0  z  [same]
+  bw         34/34   ok   10 DNOSbfilrs     12      1  0/0  -  [same]
+  cast        7/7    ok    5   DNSbils      4      1  0/0  -  [same]
+  cdiv       12/12   ok    7   DNSbils      4      1  0/0  -  [same]
+  commute    16/16   ok   11   DNSbils      4      1  0/0  -  [same]
+  custom_function  7/7    ok    5  DNSbcils      5      1  0/0  -  [same]
+  flip       29/29   ok    7   DNSbils     10      1  0/0  -  [same]
+  gate       15/15   ok   12 DNSXbiklrs      3      1  0/0  -  [same]
+  getaddr     3/3    ok    3    DSbils      2      1  0/0  -  [same]
+  group      10/10   ok    7   DNSbils      4      1  0/0  -  [same]
+  indexed     8/8    ok    6 DNSXbiklrs      3      1  0/0  -  [same]
+  late       14/14   ok    9   DNSbils      4      1  0/0  -  [same]
+  lin        50/50   ok   12 DENOSXbiklrs      5      1  0/0  E  [same]
+  loop       52/25  BAD   19 DNSXbcilrs      4      1  0/0  -  [PY-BEND OPs DIFFER: ['AND', 'BUFFER', 'CUSTOM_FUNCTION', 'FLOORDIV', 'MUL']]
+  matmul     20/20   ok    7 DNOSbilrs     13      1  0/0  -  [same]
+  move       25/25   ok    9   DNSbils      8      1  0/0  -  [same]
+  mselect    10/10   ok    7 DNSXbilrs      4      1  0/0  -  [same]
+  mstack      9/9    ok    5   DNSbils      4      1  0/0  -  [same]
+  mulacc     11/11   ok    5   DNSbils      4      1  0/0  -  [same]
+  range       2/2    ok    2      Xilr      1      2  0/0  -  [same]
+  rangeflat   2/2    ok    2      Xilr      1      1  0/0  -  [same]
+  reduce      8/8    ok    6 DNOSbilrs      6      1  0/0  -  [same]
+  sink        2/2    ok    2      ikls      2      1  0/0  -  [same]
+  special     2/2    ok    2        ls      1      1  0/0  -  [same]
+  stage       9/9    ok    6  DNSbfils      4      1  0/0  -  [same]
+  sym        14/14   ok    6   DNSbils      5      1  2/2  -  [same]
+  threefry   14/14   ok    6   DNSbils      4      1  0/0  -  [same]
+  unshard     9/9    ok    6 DNSXbilrs      5      1  0/0  -  [same]
+  where      10/10   ok    7   DNSbils      4      1  0/0  -  [same]
+  wmma       13/13   ok    5  DNSbilsw      6      1  0/0  -  [same]
+# ONE SIDE'S DEVICE-LESS ROWS ONLY (NOT A DEVICE DISAGREEMENT, NOT A CENSUS FAILURE): 1 of 34 graphs -- loop py ['N', 'sCPU'] bend ['sCPU']
+#   `cnt` prints those rows `BAD`, `graphcmp.py`'s `_dispatch` REFUSES them (`rc=2`, `PARTIAL FIXTURE`) and `differ.py` counts them as `graphs-refused`, so the rows that differ are accounted for where they are compared
+# TOTAL: 34 graphs, 482 nodes per side, 68 distinct ops: ADD AFTER ALLOC ALLREDUCE AND BACKEDGE BARRIER BINARY BITCAST BUFFER CALL CAST CDIV CMOD CMPEQ CMPLT CMPNE CONST CONTIGUOUS_BACKWARD COPY CUSTOM_FUNCTION DETACH END ENDIF EXP2 EXPAND FDIV FLOORDIV FLOORMOD GETADDR IF INDEX LINEAR LOAD LOG2 MAX MSELECT MSTACK MUL MULACC NEG NOOP OR PAD PARAM PERMUTE POW RANGE RECIPROCAL REDUCE RESHAPE SHL SHR SHRINK SIN SINK SPECIAL SQRT STACK STAGE STORE SUB THREEFRY TRUNC UNSHARD WHERE WMMA XOR
+# FIELDS COMPARED PER NODE: 8 on the wire, 6 in the equality decision (dtype, shape, depth, tag, arg, src); `id` is reporting-only by R1
+# COMPOSITE ARG FORMS SPELLED BY BOTH SIDES: ['P(', 'al(', 'cF(', 'cI(', 'in(', 'kI(', 'pI(', 'rd(', 'rg(', 'wm(']
+# DISTINCT ARG ATOM LETTERS REACHED: DENOSXabcfiklrsw (16 distinct = 10 atom letters + 6 composite-form prefixes; a letter that is NEITHER an atom nor a composite prefix would be an unmapped value: none)
+# LEDGER MARKERS LIVE ON AT LEAST ONE GRAPH: {'E': 1, 'y': 1, 'z': 1} of 8 markers
+#   ^ SORTED, and that is DEFECT 20 (2026-10-04, found by the two-run byte check and by nothing else). `all_res` is a `Counter` whose insertion order is the order the markers were first seen, and it is fed by `py['residual'] | bd['residual']` -- a SET UNION, whose iteration order over STRINGS follows the per-process string hash and is therefore randomized by `PYTHONHASHSEED`. MEASURED: three consecutive runs of this oracle gave three answers, `{'y': 1, 'z': 1, 'q': 1, 'E': 1, '?': 2}` against `{'y': 1, 'z': 1, 'E': 1, 'q': 1, '?': 2}` against the first again, and the two-run sha256 check over `runs/graphcmp/D` caught it on `D0-coverage-census.txt` as the ONLY differing file out of 158.
+#   It is the exact class the brief names: a COUNT that is right and an ORDER that is not, printed where a reader will read it as one line of fact. That is why 157 of 158 files were stable and this one was not.
+#   AND THE CLASS HAD A SECOND MEMBER IN THIS FILE, WHICH THE PARAGRAPH ABOVE USED TO
+#   DENY: 'Every OTHER iteration of a set in this file is already `sorted(...)`'. That sentence was
+#   FALSE -- the `PY-BEND OPs DIFFER` row printed a SET LITERAL, `{py['ops'] ^ bd['ops']}` -- so the
+#   sort and the correction are in ONE edit, because a comment that has stopped describing the code
+#   is a pin that has stopped pinning. MEASURED, with no `bend` at all: three seeds gave
+#   `{'PERMUTE','RANGE','REDUCE','COPY','ALLREDUCE','MUL'}`, `{'RANGE','COPY','MUL','REDUCE','PERMUTE','ALLREDUCE'}
+#   and `{'MUL','COPY','ALLREDUCE','PERMUTE','REDUCE','RANGE'}` -- THREE renderings of ONE fact, and a
+#   `repro` lane that reported `D0-coverage-census.txt: 2 runs DIFFER` on 1 of 196.
+#   WHY SORTING AND NOT PINNING A SEED: a PIN IS A SEED AND A SORT IS A LAW. A seed fixes the order on
+#   THIS interpreter and buys nothing on the next one, while the claim being protected -- 'the port and
+#   CPython disagree' -- must survive a Python upgrade. An oracle whose set print follows the hash is a lane
+#   that can never be green, and no amount of correctness in the port makes it so.
+# LEDGER MARKERS NEVER LIVE ON ANY GRAPH: ['u', 'q', 'X!', 'BAD', '?']
+# COMMUTATIVE OPS (read from CPython): ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']
+# COMMUTATIVE OPS REACHED BY A NODE: 8/8 ['ADD', 'AND', 'CMPEQ', 'CMPNE', 'MAX', 'MUL', 'OR', 'XOR']; NOT REACHED [] (--equiv is MEASURED on 8 of 8)
+# SYMBOLIC-DIM NODES: 2 of 482 py-side nodes carry a `U` dim (MEASURED off the shape column of every graph above)
+# FIELD-RECORDS PER SIDE: 482 nodes x 6 compared fields = 2892
+# PER-OP NODE COUNTS ACROSS THE CORPUS -- the denominator for every op claim:
+#   ADD 12/5  AFTER 19/13  ALLOC 39/25  ALLREDUCE 1/1  AND 2/2  BACKEDGE 1/1  BARRIER 1/1  BINARY 1/1  BITCAST 1/1  BUFFER 5/3  CALL 4/1  CAST 9/4  CDIV 1/1  CMOD 1/1  CMPEQ 1/1  CMPLT 4/3  CMPNE 1/1  CONST 125/34  CONTIGUOUS_BACKWARD 1/1  COPY 2/2  CUSTOM_FUNCTION 2/2  DETACH 1/1  END 3/2  ENDIF 1/1  EXP2 1/1  EXPAND 2/1  FDIV 1/1  FLOORDIV 2/2  FLOORMOD 1/1  GETADDR 1/1  IF 1/1  INDEX 18/4  LINEAR 1/1  LOAD 8/2  LOG2 1/1  MAX 1/1  MSELECT 1/1  MSTACK 1/1  MUL 12/6  MULACC 1/1  NEG 1/1  NOOP 1/1  OR 1/1  PAD 4/2  PARAM 11/5  PERMUTE 10/5  POW 1/1  RANGE 10/9  RECIPROCAL 1/1  REDUCE 5/4  RESHAPE 57/25  SHL 1/1  SHR 1/1  SHRINK 3/2  SIN 1/1  SINK 6/5  SPECIAL 1/1  SQRT 1/1  STACK 63/25  STAGE 1/1  STORE 3/3  SUB 1/1  THREEFRY 2/1  TRUNC 1/1  UNSHARD 1/1  WHERE 1/1  WMMA 1/1  XOR 1/1   (nodes/graphs)
+# OPS PER ENUM SECTION (parsed from /Users/cyberistic/src/tries/2026-09-30-tinybendygrad/tinygrad/uop/__init__.py): 1 defines/special: 3; 2 non op uops: 12; 3 load/store: 4; 4 math: 31; 5 control flow / consts / custom: 10; 6 ops that don't exist in programs: 14; 7 pattern compiler IR (used in upat.py): 1
+# NOT REACHED (7 of 75 ENUM MEMBERS): REWRITE_ERROR PROGRAM SOURCE CUSTOM CUSTOMI INS PYLITERAL
+#   OF WHICH 7 CANNOT APPEAR IN A PROGRAM GRAPH AT ALL (by construction): CUSTOM CUSTOMI INS PROGRAM PYLITERAL REWRITE_ERROR SOURCE
+#   AND 0 ARE PROGRAM OPS NO GRAPH DRIVES YET (unexercised): 
+# DENOMINATOR: 75 enum members -> 68 PROGRAM OPS (7 excluded by the enum's own markers: aren't rendered, renderer, pattern compiler IR, output strings into codegen, machine instruction)
+# COVERAGE: 68 of 68 program ops === 68 of 75 enum members (the denominators answer different questions)
+# OP NAMES ALL IN Ops: 68/68   (the census's vocabulary is verified against Ops, not assumed)
+# ORACLE SELFCHECK: OK
