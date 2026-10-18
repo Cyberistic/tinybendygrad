@@ -603,40 +603,29 @@ index-arm-duplicate [#########] 4/4  **A PASS WHOSE COUNT IS MEASURED WITH A DAT
                                        (rc=5, the same three OIDs) -- and the reachable one is already
                                        pushed, so a scan that finds it can PREVENT NOTHING.
 
-PUSH-BLOCKED [##########] 3/3  **THE ORIGIN MOVED AND THE PICTURE IS NOW COMPLETE. ONE COMMIT BLOCKS
-                                       ALL 40, AND IT IS NOT MINE.** 2026-10-17T03:54Z: the push failure
-                                       CHANGED from `duplicateEntries` to non-fast-forward, and the
-                                       reason was **MY OWN STALE LOCAL REF**: `git rev-parse
-                                       origin/master` still said `52d77134b` while `git ls-remote`
-                                       said `473d7ce98`. **`git rev-parse origin/master` IS NOT A
-                                       MEASUREMENT OF THE REMOTE, AND EVERY "ORIGIN IS AT X" I HAVE
-                                       SAID THIS SESSION CAME FROM IT.** MEASURED PROPERLY: the
-                                       merge-base is `52d77134b` (my last good push), origin added
-                                       **ONE** commit -- `473d7ce98 Update README.md` -- and local has
-                                       **40** on top of the base. **SO THERE IS NO REWRITE AND NO REAL
-                                       CONFLICT; it is a one-commit README divergence**, and a plain
-                                       merge would absorb it.
-                                       **WHAT IS ACTUALLY BLOCKING:** commit **`591f6b499`** (the
-                                       `TWORED` unit's, NOT mine) has a tree that lists **`gates`
-                                       THREE times** and drops **9 top-level paths / 36 files** --
-                                       **AND IT IS STILL IN MY LOCAL HISTORY**, so every push carries
-                                       it and fsck rejects the lot. **IT DID NOT SHIP**: `591f6b499` is
-                                       NOT on origin. **TWO OF MY COMMITS ALREADY REACHED ORIGIN**
-                                       (`089575871`, `52d77134b`); the rest are committed locally and
-                                       safe. **THE FIX IS THE OWNER'S AND IT IS ONE COMMIT**: rewrite
-                                       `591f6b499` (it is unpushed, so this is local and cheap), then
-                                       merge origin's single README commit and push 40. **I WILL NOT
-                                       REBASE, AMEND, OR FORCE-PUSH** -- a rebase is how 39 good
-                                       commits get destroyed to save one, and a corrupt tree on origin
-                                       is worse than an unpushed branch.
+PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
+                                       `591f6b499` was rewritten by its owner (not by me), the tree
+                                       fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
+                                       names the same 3 malformed trees, but **none is in
+                                       `origin/master`'s first 300 commits**, which is exactly why the
+                                       push passed: git fsck-checks REACHABLE objects, and a rewrite
+                                       un-references them. **`origin/master == HEAD`, 0 unpushed, and
+                                       the session's work is ON ORIGIN.** VERIFIED BY **CONTENT, NOT
+                                       SHA**, because the rewrite moved shas: my `index-arm` DUPLICATE
+                                       fix is at `e68462216` and that sha is NOT an ancestor of
+                                       `origin/master` -- but `checks/index-arm-gate.py:112-125` in
+                                       `origin/master` CARRIES THE FIX. **A SHA IS NOT THE QUESTION;
+                                       THE BYTES ARE.** And the three pins files
+                                       (`gates/{oracleblind,assertlit,falseclaim}.rows`) were resolved
+                                       by the same rewrite and are no longer my open question.
+                                       **THE LESSON THAT OUTLIVES THE BLOCK:** `git show --stat`
+                                       answers "WHAT CHANGED" and **`git fsck --no-progress` answers
+                                       "IS THIS COMMIT ***MALFORMED***", and the second is the one
+                                       that blocks a push** -- `--stat` was green over a 435-file
+                                       armed-index sweep whose tree listed `gates` twice. BOTH, IN THE
+                                       SAME COMMAND, FROM NOW ON (AGENTS.md now says so).
 
-```
-
-absent-inputs [#########] 3/3  THE CLASS SIZED: **2 DEFECTS IN 89 INSTRUMENTS**, and one is WORSE THAN A
-                                       FAILURE. A dispatched unit walked `checks/`+`gates/` from HEAD:
-                                       **279** instruments in scope, **89** name an external input,
-                                       **910** candidate literals, **162** absent, but **133 of those
-                                       162 are PLANTS the instrument creates itself** -- counting them
+re PLANTS the instrument creates itself** -- counting them
                                        would have inflated the class **66x**. Disposed of mechanically,
                                        and `decided_by` is a column so no count silently mixes tiers.
                                        **THE TWO REAL ONES.** (1) `checks/gen_gate.py:138` did
