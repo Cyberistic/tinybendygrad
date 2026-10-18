@@ -1254,9 +1254,11 @@ def g_loop():
   py's i52 has three. `cmd_diff` then refused the graph on the device precondition and wrote
   nothing but `rc=2` to `D1-graph-loop.txt`, so `D1-verdicts.txt` printed `loop: VERDICT=
   EXPECTED=AGREE` with an EMPTY cell. **THE BEND FIXTURE WAS REBUILT TO ALL 52 ON 2026-10-18**,
-  so `loop` no longer REFUSES: it now runs the whole comparison and DISAGREEs with
-  `?=0/32`, because `fold.bend` cannot answer `AFTER(NOOP, u64)` -- the `?` LEDGER row and
-  `selfcheck`'s `loop` assertion both carry the cause and the measured count.
+  so `loop` no longer REFUSES, and `f251d80d` then closed the ONE THING THE REBUILD EXPOSED:
+  `?=0/32` -> `?=0` on the bend side, `settled=False` -> `True`, and all 52 rows BYTE-IDENTICAL
+  to CPython's. The `?` LEDGER row and `selfcheck`'s `loop` assertion both carry the cause; the
+  plant that can move that assertion is the port-side one in `gates/questionmark-plant-gate.py`,
+  because no entry in `PLANTS` can reach a bend-side measurement.
 
   WHY THIS ONE AND NOT A HAND-WRITTEN `UOp.backedge(...)` CALL. `UOp.backedge` is a real
   constructor (ops.py:620) and `hand-writing` it would have reached BACKEDGE at the cost of
@@ -2445,18 +2447,17 @@ LEDGER = (
    "on `--graph sym`: fold.bend's `marg.of` answered None for a STACK element that is not a "
    "CONST (the `ssimplify` wall), which unsettled the RESHAPE's whole `Derived` and so took "
    "`dtype` with it. CLOSED 2026-10-04 and `selfcheck` keeps `sym` as a REGRESSION ROW on that "
-   "closure. **LIVE AGAIN ON `--graph loop` SINCE 2026-10-18, ON A DIFFERENT CAUSE**: that "
-   "graph's bend fixture was rebuilt to all 52 of CPython's nodes (it carried 25) and the node "
-   "is `AFTER(NOOP, u64)` (py's i32), so `fold.bend`'s AFTER arm -- `thru0` (fold.bend:2564) -> "
-   "`dt_of` (fold.bend:699) -- is asked for upstream's `(void, None)`, which is ops.py:384's "
-   "`return self.src[0]._shape` read off a NOOP, and `dt_of`'s `None` arm returns the PORT-ONLY "
-   "outer `None` instead. That is what `?` IS. MEASURED 2026-10-18T18:56:36Z: `?=0/32`, 32 rung-1 "
-   "`dtype`/`shape` mismatches, `settled=False`. **IT IS A PORT LIMIT, NOT A FIXTURE DEFECT**: "
-   "all 52 nodes pair on their structural core (`SHARED cores=52 ONLY-PY=0 ONLY-BEND=0`), so "
-   "`op`, `arg`, `src`, `tag` and `depth` agree on EVERY one of them and only the two "
-   "fold-derived columns do not. The two-column claim is still also asserted on a fabricated "
-   "line below, because a claim with no fixture is a claim with no denominator -- and it now "
-   "has a LIVE one as well, which is the better of the two."),
+   "closure. **CLOSED AGAIN 2026-10-18 BY `f251d80d`, ON THE SAME GRAPH AND A DIFFERENT "
+    "CAUSE**: `loop`'s bend fixture had been rebuilt to all 52 of CPython's nodes (it carried "
+    "25) and the node is `AFTER(NOOP, u64)` (py's i32), so `thru0` (fold.bend:906, dispatched "
+    "from fold.bend:2580) asks `dt_of` (fold.bend:713) for upstream's `(void, None)` -- "
+    "ops.py:338's `self.src[0]._shape if len(self.src) >= 1 else None`, read off a NOOP -- and "
+    "`dt_of`'s `None` arm returned the PORT-ONLY outer `None` instead of `(dt, None)`. That is "
+    "what `?` IS, and BOTH `?=0` rows are therefore REGRESSION ROWS. **AND NEITHER IS "
+    "VACUOUS**: `gates/questionmark-plant-gate.py` reverts that ONE line in a COPY of the port "
+    "and measures `?=32` over 16 nodes again, against `?=0` on the unmutated copy of the same "
+    "tree, 52 rows on both. All four `fold.bend` line numbers here are MEASURED; both this "
+    "entry cited before (`fold.bend:2564`, `fold.bend:699`) were WRONG."),
   ("E", (6,), "an enum member outside {Ops, AxisType, AddrSpace}: NAME only",
    "`OptOps` (codegen/opt/__init__.py:6). Before the enum arm this CRASHED: the generic "
    "`vars()` fallback followed `__objclass__` into the enum CLASS, walked its 17 "
@@ -2905,22 +2906,32 @@ def selfcheck(dev: str = "CPU") -> int:
   # two rows that are each still true for a named reason:
   #   * `sym` must answer `?=0` -- a REGRESSION ROW on the closure, and its failure text says
   #     the wall is back rather than saying "expected 6, got 0";
-  #   * `loop` must answer `?=32` -- **MOVED BACK TO NONZERO 2026-10-18, AND NOT BY A
-  #     REGRESSION OF `fold.bend` BUT BY A FIXTURE THAT STOPPED MODELLING PART OF A GRAPH.**
-  #     `loop`'s bend fixture was rebuilt to all 52 of CPython's nodes (it carried 25), and
-  #     the 27 it gained include `AFTER(NOOP, u64)` (py's i32), which is the first node in
-  #     the corpus whose AFTER has a SHAPELESS `src[0]`. `uop/fold.bend`'s AFTER arm is
-  #     `thru0` (fold.bend:2564) = `dt_of(src_dt(0), src_shape(0))` (fold.bend:699), and
-  #     `dt_of`'s `None` arm returns the OUTER `None` -- the port-only "the fold produced no
-  #     `Derived`" -- so it cannot spell upstream's `(void, None)`, which is ops.py:384's
-  #     `return self.src[0]._shape` read off a NOOP. MEASURED 2026-10-18T18:56:36Z:
-  #     `# root=52 nodes=53 settled=False`, `?=0/32` on the bend side, 32 rung-1 field
-  #     mismatches, all of them `dtype`/`shape`, `SHARED cores=52 ONLY-PY=0 ONLY-BEND=0`.
-  #     **THE PIN IS THE SIZE, NOT ZERO**, so a change in EITHER direction is caught, and its
-  #     failure text names the cause instead of saying "expected 0, got 32" -- which is the
-  #     mistake the `sym` row above was written to avoid. It is a PORT LIMIT, and the fix
-  #     belongs in `fold.bend`'s `dt_of` (a `Some{DtShape{dt, None{}}}` arm, the spelling
-  #     `late()` already uses), not in this assertion.
+  #   * `loop` must answer `?=0` -- **A REGRESSION ROW, NOT A DELETION, AND NOT BY TASTE: IT
+  #     PINNED `?=32` UNTIL `f251d80d` GAVE `dt_of` ITS `(dt, None)` ARM.** It read `?=32`
+  #     because `dt_of`'s `None` arm returned the OUTER `None` -- the port-only "the fold
+  #     produced no `Derived`", which `Kahn.ans.of` turns into a MISSING TABLE ENTRY -- and
+  #     so could not spell upstream's `(void, None)` for a node whose `src[0]` is a bare NOOP
+  #     (`ops.py:338`'s `self.src[0]._shape if len(self.src) >= 1 else None` over
+  #     `ops.py:377`'s `return self.src[0]._shape`). `loop` was the only graph in the corpus
+  #     carrying one, which is why it was the only one that read `?`.
+  #     **A ROW THAT NOW AGREES SHOULD NOT BE PINNED AT ALL, BUT AN ABSENCE MUST BE, AND
+  #     ABSENCES ARE THE THING THIS TREE KEEPS GETTING WRONG:** the outer `None` is
+  #     PORT-ONLY, and reading it as `?` moves no node count, so it can come back without
+  #     anything else in the run going red.
+  #     **AND IT IS A ROW THAT CAN FIRE -- MEASURED, NOT ASSUMED, WHICH A `?=0` ROW NORMALLY
+  #     IS NOT.** `gates/questionmark-plant-gate.py` reverts that ONE line in a COPY of the
+  #     port and re-emits `loop`: `?=32` over 16 nodes planted, `?=0` on the UNMUTATED copy of
+  #     the same tree, 52 rows on both. The plant is the EXACT INVERSE of `f251d80d`, so 32
+  #     is known to be CAUSED by that arm rather than merely observed beside it.
+  #     **THE PLANT IS NOT IN `PLANTS` AND CANNOT BE.** `PLANTS` is applied by `emit_py`, and
+  #     `bend_loop_rows` calls `emit_bend(dev, "loop")`, which takes NO plant -- every
+  #     py-side plant is structurally unable to reach a bend-side measurement. `f251d80d`
+  #     recorded `--plant dtype` on `loop` as VACUOUS (0 ALLOCs, byte-identical emission),
+  #     which is the same fact seen from inside `PLANTS`. The plant has to be on the PORT.
+  #     **AND THE LINE NUMBERS IN THE FAILURE TEXT BELOW ARE MEASURED, NOT TRANSCRIBED; all
+  #     three this row used to cite were WRONG** -- `thru0` at "fold.bend:2564" is really
+  #     905-906 and is dispatched from 2580, and "`dt_of` at fold.bend:699" is really 713
+  #     with its arm on 716. A failure text naming a line that has moved is one that lies.
   # HOISTED, because `emit_bend` is a subprocess and the failure message needed the number
   # too. MEASURED: the first version called it twice and `selfcheck` paid two full probe
   # runs to format one sentence.
@@ -2930,14 +2941,16 @@ def selfcheck(dev: str = "CPU") -> int:
     bad.append(f"the `ssimplify` wall is BACK: `--graph sym` answers ?={qsym} on the bend "
                f"side where the port's `fold.bend` `sym_dim.pa` (`fold.bend:1273`) says the "
                f"symbolic-dim case is closed and `--graph sym` VERDICT is AGREE")
-  if qloop != 32:
-    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`, not the 32 it "
-               f"measured at 2026-10-18T18:56:36Z. The cause is `fold.bend`'s AFTER arm "
-               f"(`thru0` at fold.bend:2564 -> `dt_of` at fold.bend:699), whose `None` arm "
-               f"returns the port-only outer `None` instead of upstream's `(void, None)`, so "
-               f"`AFTER(NOOP, u64)` and the 15 nodes above it read `?`. A count that is "
-               f"not 32 means `fold.bend` gained or lost that arm -- either way this row "
-               f"moved, and it must move by being RE-MEASURED and not by being edited.")
+  if qloop != 0:
+    bad.append(f"the `?` ledger row counts ?={qloop} on `--graph loop`, not the 0 it "
+               f"measured at 2026-10-18 after `f251d80d`. The cause is `dt_of`'s `None` "
+               f"arm (fold.bend:716) answering the PORT-ONLY outer `None` instead of "
+               f"upstream's `(dt, None)`: `thru0` (fold.bend:906, dispatched for AFTER at "
+               f"fold.bend:2580) is `dt_of(src_dt(0), src_shape(0))`, and on "
+               f"`AFTER(NOOP, u64)` that `src[0]` has no shape, so the 16 nodes above it read "
+               f"`?` where CPython prints `(void, None)`. A count that is not 0 means that "
+               f"arm is BACK or was otherwise changed, and it must move by being "
+               f"RE-MEASURED and not by being edited.")
   # THE TWO-COLUMN ROW, DIRECTLY. `?` lands in `dtype` (field 2) and `shape` (field 3)
   # together; every live graph that used to carry it is closed, so the count is asserted on a
   # line this check fabricates -- the only way to keep the two-column claim tested.
@@ -3454,13 +3467,17 @@ def _dispatch(a) -> int:
   # no device on its REG-addrspace PARAMs, so `pdev` held the absence token and `bdev` did
   # not). The fixture is now all 52 (MEASURED 2026-10-18T18:57:01Z: `devices py=['N',
   # 'sCPU'] bend=['N', 'sCPU']`, `py rows=52 bend rows=52`, `CALL nodes py=4 bend=4`), and
-  # what is left is the port: `fold.bend`'s AFTER arm is `thru0` (fold.bend:2564) -> `dt_of`
-  # (fold.bend:699), and `dt_of`'s `None` arm returns the port-only outer `None` instead of
-  # upstream's `(void, None)`, so `AFTER(NOOP, u64)` cannot be rendered. **THIS IS A
-  # REFUSAL EITHER WAY AND THE DIFFERENCE IS WHICH LIE IS AVAILABLE**: without the arm, the
-  # run's own verdict cell asserts a disagreement nobody measured; with it, the artifact says
-  # "16 of 52 nodes are unreadable and here is the one node type that causes it", which is
-  # what the next unit needs and what `selfcheck`'s `?=32` assertion keeps honest.
+  # what is left WAS the port: `thru0` (fold.bend:906, dispatched from fold.bend:2580) asks
+  # `dt_of` (fold.bend:713), whose `None` arm returned the port-only outer `None` instead of
+  # upstream's `(void, None)`, so `AFTER(NOOP, u64)` could not be rendered. `f251d80d` closed
+  # it, so this arm NO LONGER FIRES on the live corpus; it is left standing because the shape
+  # is real and the next node type the fold cannot answer will land here. **THIS IS A REFUSAL
+  # EITHER WAY AND THE DIFFERENCE IS WHICH LIE IS AVAILABLE**: without the arm, the run's own
+  # verdict cell asserts a disagreement nobody measured; with it, the artifact says "16 of 52
+  # nodes are unreadable and here is the one node type that causes it", which is what the next
+  # unit needs and what `selfcheck`'s `?=0` regression row keeps honest. The plant that can
+  # move that row is `gates/questionmark-plant-gate.py`, and all three `fold.bend` line
+  # numbers above are MEASURED -- the two this block used to cite were wrong.
   qbd = dict(ledger(bd))["?"]
   if qbd:
     bnodes = len(bd) - qbd // 2
@@ -3471,16 +3488,17 @@ def _dispatch(a) -> int:
     print(f"# PORT LIMIT, NOT A PARTIAL FIXTURE: the bend side models {len(bd)} of the "
           f"{len(py)} nodes and every one of them pairs on its structural core, but "
           f"{qbd // 2} of them answer `?` in the dtype AND shape columns because "
-          f"`uop/fold.bend` did not settle them. The cause is ONE node type: an `AFTER` "
-          f"whose `src[0]` has NO SHAPE. `fold.bend`'s AFTER arm is `thru0` (fold.bend:2564) "
-          f"= `dt_of(src_dt(0), src_shape(0))` (fold.bend:699), and `dt_of`'s `None` arm "
+          f"whose `src[0]` has NO SHAPE. `fold.bend`'s AFTER arm is `thru0` (fold.bend:906) "
+          f"= `dt_of(src_dt(0), src_shape(0))` (fold.bend:713), and `dt_of`'s `None` arm "
           f"returns the PORT-ONLY outer `None` -- `?` -- where upstream returns "
-          f"`self.src[0]._shape` (ops.py:384), which for a NOOP is `None` INSIDE a real "
-          f"`(dtype, shape)` pair. `nil_ds.shape` (fold.bend:1117) already spells that pair "
-          f"as `late()` for a void dtype; `dt_of` has no arm for it. Fix belongs in "
-          f"`fold.bend`, and `selfcheck` pins the count at 32 so the hole cannot grow "
-          f"unnoticed. This is stated here and NOT compared (exit 2, REFUSED, never a "
-          f"verdict): do not read this artifact as a disagreement about the port.")
+          f"`self.src[0]._shape` (ops.py:377), which for a NOOP is `None` INSIDE a real "
+          f"`(dtype, shape)` pair. `nil_ds.shape` (fold.bend:1133) already spells that pair "
+          f"as `late()` (fold.bend:1114) for a void dtype; `dt_of` had no arm for it, and "
+          f"`f251d80d` gave it one. The fix belongs in `fold.bend`, and `selfcheck` pins the "
+          f"count at 0 so the hole cannot come back unnoticed -- and that pin CAN fire: "
+          f"`gates/questionmark-plant-gate.py` reverts `dt_of`'s arm in a copy of the port and "
+          f"measures it back at 32. This is stated here and NOT compared (exit 2, REFUSED, "
+          f"never a verdict): do not read this artifact as a disagreement about the port.")
     return 2
   rc, txt = report(py, bd, a.plant, equiv=a.equiv)
   print(txt)
