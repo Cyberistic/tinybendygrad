@@ -187,6 +187,14 @@ BLINDNESS ONE LEVEL DOWN.** **A GATE'S
   **APPEND `-2`, `-3`, ... AND RETRY.**
   **AND `git show --stat` IS **STILL** THE CHECK -- RUN IT **IN THE SAME COMMAND**,
   BECAUSE THE NEXT COMMIT OVERWRITES `HEAD` AND THE CHECK IS GONE.**
+  **AND NOW ***ALSO*** RUN `git fsck --no-progress`, BECAUSE `--stat` **CANNOT** SEE A MALFORMED COMMIT AT ALL.**
+  **MEASURED 2026-10-17, AND IT IS THE ONE CHECK EVERY UNIT IN THIS SESSION MISSED:** **A PUSH OF THIS TREE FAILED
+  WITH `remote: error: object d83cf685…: duplicateEntries: contains duplicate file entries` / `remote: fatal:
+  fsck error in packed object` / `remote unpack failed` -- A COMMIT WHOSE TREE LISTED **`gates` TWICE**.** IT WAS
+  THE **435-FILE ARMED-INDEX SWEEP**, IT WAS AN ANCESTOR OF `HEAD`, **AND EVERY LOCAL COMMAND READ IT AS FINE.**
+  `git fsck --no-progress` NAMES **3** SUCH TREES IN **UNDER A SECOND**, ***AND IT WAS ONLY RUN BECAUSE THE PUSH
+  FAILED.*** **`git show --stat` ANSWERS "WHAT CHANGED"; `git fsck` ANSWERS "IS THIS COMMIT ***MALFORMED***" -- AND
+  **THE SECOND QUESTION IS THE ONE THAT BLOCKS A PUSH.** **SO: **BOTH**, **IN THE SAME COMMAND**.**
   **WHY THE PRIVATE INDEX, MEASURED 2026-10-17 IN A THROWAWAY REPO (`.agents/slop/idxpriv/`), NOT ON REAL
   WORK: `--only` IS **ALREADY BOUNDED**, AND THE FIX IS **NOT** ABOUT CONCURRENCY.** **`--only` CARRIED
   **EXACTLY ONE PATH** AGAINST **EVERY** SHAPE `checks/index-arm-gate.py` NAMES — `FOREIGN-ADD`, `DELETION`,
