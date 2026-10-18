@@ -724,6 +724,33 @@ unaccounted-states [#########] 3/3  **THE SUMMARY HAS NO ROW FOR FOUR STATES THI
                                        `:563` AND THROWS AWAY** -- zero new subprocesses, zero new
                                        reads.
 
+substrate-coverage [##########] 3/3  **A DIGEST THAT OMITS THE SUBJECT OF THE COMPARISON IS A PIN ON THE
+                                       SCALE, NOT THE SUBJECT.** MEASURED 2026-10-18: the digest covered
+                                       **156** declared inputs -- `tinybendygrad/**` walked plus 8 named
+                                       -- and **0 of the 213** `tinygrad/*.py`. **So if the CPython side
+                                       moved mid-run, `substrate_digest()` COULD NOT NOTICE, and the
+                                       run's whole claim ("ONE run measured ONE substrate") was blind to
+                                       the one input that decides every comparison.** That is not
+                                       hypothetical: the substrate DID move during the last run
+                                       (`corpus-MIXTURE`), and the replay that identified the member
+                                       could only find it because `checks/differ.py` happens to be a NAMED
+                                       input -- had the mover been any of the 213 unpinned files, it
+                                       would have been invisible. The dependency is EXECUTED, not
+                                       decorative: `graphcmp-oracle.py:244` does `import tinygrad` and
+                                       `graphcmp-p13-ops.py:33` does `from tinygrad import Tensor,
+                                       dtypes`. FIXED by making the walk a list,
+                                       `SUBSTRATE_WALKS = ("tinybendygrad", "tinygrad")`, so the subject is
+                                       pinned by the same rule as the port and a substrate move NAMES
+                                       the member that moved. MEASURED AFTER: **156 -> 385 declared
+                                       inputs, 213 of 213 `tinygrad/*.py` covered**, and `substrate_bad()`
+                                       still returns clean on the newer run (start == end).
+                                       **THE COST IS DELIBERATE AND IT INVALIDATES OLD PINS**: every
+                                       substrate digest recorded before this change was computed over a
+                                       population that did not include the reference, so those values
+                                       are not comparable to any taken after it. That is the correct
+                                       direction for a pin -- it should move when the population's
+                                       DEFINITION moves -- but it means one re-run re-takes them.
+
 PUSH-BLOCKED [##########] 3/3  **RESOLVED 2026-10-18T00:17Z: THE PUSH SUCCEEDED.** The corrupt commit
                                        `591f6b499` was rewritten by its owner (not by me), the tree
                                        fsck rejected is now **UNREFERENCED debris** -- `git fsck` still
