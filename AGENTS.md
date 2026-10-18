@@ -37,7 +37,15 @@ Development:
   declaration that the author did not know what the file was, and a sweep that reads basenames cannot
   tell a row dump from a diary entry.
   **THE RULE IS RIGHT AND THE TREE IS BEHIND IT, SO THE RULE STAYS WHILE THE COUNT IS NOT A FACT: as
-  measured 2026-10-06 13:00 `checks/no-txt.py` exits 1 with **550 HARD and 139 EXCUSED — 689 owned `.txt`** (the HARD count
+  measured 2026-10-06 13:00 `checks/no-txt.py` exited 1 with **550 HARD and 139 EXCUSED — 689 owned `.txt`** — **RE-MEASURED
+  2026-10-18 19:13Z: **183 HARD / 249 EXCUSED / 433 OWNED.** ***THE HARD COUNT IS **NOT A COUNT OF SLOPPINESSES**: **183** OF
+  THEM ARE **ONE DIRECTORY**, `.agents/slop/graphcmp-run1/D-published-backup/`, WHICH HOLDS **176** — **A RETAINED EARLIER
+  CORPUS RUN** (`filecmp`: **13** identical / **163** differing from live), **AND ITS BASENAMES **ARE** DECLARED **AT **A
+  DIFFERENT RELATIVE PATH, SO THE CARVE-OUT CORRECTLY REFUSES THEM.** ***DO **NOT** DELETE IT: **THE REFUSAL **IS **THE
+  MECHANISM WORKING.*** **AND THE COUNTS ARE **NOT** TRANSCRIBED HERE **BECAUSE **THEY **CANNOT BE**: **MEASURED, EXCUSED
+  READ 249 -> 250 WITH HARD UNMOVED **BECAUSE TWO `differ` RUNS WERE IN FLIGHT** **AND THE 250TH FILE WAS
+  `.tmp.D1-graph-commute.txt`, **THE STAGING NAME, COVERED BY CONSTRUCTION.*** **RE-DERIVE BOTH BY RUNNING `checks/no-txt.py`
+  AND READING ITS OWN ROWS;** (the HARD count
   MOVES as units write; it read **830** before `oracles/`'s 258 `.txt`-to-`.rows` rename landed, and **258** is the
   exact delta both ways), of which
   `oracle-txt-census.py` classed 249 of the 259 under `oracles/` as ROW DUMPS (the extension was wrong, the content
@@ -92,8 +100,14 @@ The gates at the top of the tree, and what each one CLAIMS. Run `--help` before 
   (`ORACLE_PIN`; `:58` is a comment) and read BY ARTIFACT NAME — `oracle-repro.sh:61` and `:105`
   (both verified today), and `checks/corpus-figure.py:175` (`:170` is the summary path; `:72` is
   `module_from_spec`, NOT the read).
-  So the **175** `.txt` names there — `len(differ.declared())` = **175**, and 175 on disk (2026-10-07; `len(differ.declared())`) — are a contract,
-  not sloppiness: `checks/no-txt.py` carves out `differ.declared()` (imported, not copied) and nothing
+  So the `.txt` names there — `len(differ.declared())` = **244** AND **244** on disk, **MEASURED **2026-10-18 19:13Z**, **0
+  DECLARED-AND-ABSENT AND **0** ON-DISK-AND-UNDECLARED** — are a contract,
+  not sloppiness: `checks/no-txt.py` carves out **`FIVE` GENERATORS' DECLARATIONS**, **NOT** `differ.declared()` **AND
+  NOTHING ELSE** — **THIS LINE NAMED ONE** ***(the 2026-10-07 reading said **175** ON BOTH SIDES; **BOTH **MOVED **TO
+  **244** **TOGETHER**, **+69**, **WHICH IS **THE **GOOD **NEWS**: **THE DECLARATION **IS **A GENERATOR's OWN
+  `declared()`, NOT A HAND LIST, **SO IT MOVED **WITH **THE **THING **IT **DESCRIBES**.)** ***RE-DERIVE **BOTH** SIDES
+  WITH `len(differ.declared())` **AND **AN `os.walk` + `endswith` + `os.path.exists` **WALK** -- **`glob` IS **A **TRAP
+  HERE**: **`AGENTS.md` RECORDS THAT `glob('*.bend')` RETURNS `[]` WHEN `.bend` FILES **ARE** ON DISK.***
   else, and renaming them means the pin has to move with them in one commit. **THE `103` WAS FIXED IN BOTH
   WITNESSES (measured 2026-10-06 13:00: `checks/README.md:51-58` now says `139`, and `checks/no-txt.py`
   now computes `len(differ.declared())` and names no number at all) — so only this file still needs it
