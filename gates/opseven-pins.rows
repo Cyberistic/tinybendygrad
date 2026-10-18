@@ -2,7 +2,7 @@
 # writer. One TAB-separated triple per declared divergence: `<row>\t<CPython's line>\t<the port's
 # line>`, i.e. the expected content on BOTH sides.
 #
-# 4 DIVERGENCES IN ONE CLASS, 27 OF THE 31 ROWS AGREE EXACTLY. It is git-resident and beside the
+# 0 DIVERGENCES IN ONE CLASS, 31 OF THE 31 ROWS AGREE EXACTLY. It is git-resident and beside the
 # gate because a gate's required inputs live in git and not in `gates/artifacts/`: `gatekit` EMPTIES
 # that directory before it runs and UNLINKS what it staged when the run was not green, so a
 # divergence list read from there is destroyed by the first red run and there is then nothing to edit.
@@ -27,11 +27,3 @@
 # two sit in the port's own block, so it is derived; when the re-vendor removes them from `ops.bend` these
 # pins go stale ON PURPOSE and the gate goes RED until `--refresh`.
 
-# value_custom         OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's cpy   15B 786c44f7e9d5 | port   15B 16c757f13bad
-value_custom	value_custom=58	value_custom=59
-# value_customi        OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's cpy   16B 0008b143f9d9 | port   16B beea1b09d70c
-value_customi	value_customi=59	value_customi=60
-# value_ins            OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's cpy   12B 37556800aea0 | port   12B 395cd35981bb
-value_ins	value_ins=60	value_ins=61
-# value_pyliteral      OPS_VALUE, declared after GROUP; the port's enum has 2 more members than upstream's cpy   18B 67e5044d2deb | port   18B 4824dd7d82a6
-value_pyliteral	value_pyliteral=75	value_pyliteral=77
