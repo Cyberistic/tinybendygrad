@@ -67,7 +67,7 @@
 # three values (5 at '1', 4 at '9', 3 at '0'). FIXED in `spec.bend`: `pr_0.claims` now reads
 # `GroupOp.defines` (already ported at `ops.bend:495`, uncalled until now) and `pr_0.body` now reads
 # `any_const` (already ported at `spec.bend:526`, likewise uncalled), and this column agrees with
-# CPython's on 12 of 12 -- so the nine rows that used to be pinned divergences are COMPARED rows and
+# CPython's on 12 of 12 -- so the twelve rows that used to be pinned divergences are COMPARED rows and
 # the ordinary diff guards them. `gates/opseven-gate.py` keeps `spec_program_holds` as a regression
 # guard in its falsifiable form, "the column is not constant", because a check that names nothing goes
 # green by accident.
@@ -75,12 +75,14 @@
 # `Ops.value` IS A SEPARATE ROW SET, and it is the only thing in this file that is PORT-DEPENDENT
 # BY CONSTRUCTION: `UOp.tuplize` puts `op.value` first in the sort key, and `FastEnum`'s
 # `_generate_next_value_` is 1 + max, so the number IS the declaration order. MEASURED on this
-# tree: the `Ops.value` table has 77 arms, `Ops.name.of` has 77, `all_ops` has 77, the `type Op
-# is Data:` block has 77 variants, and every one of the 77 sits at its own declaration position.
-# So the table is not transcribed wrong -- it is a faithful reading of a 77-member enum, and
-# `GROUP` (position 14) plus `FLIP` (position 73) are the whole of the disagreement with
-# upstream's 75. Three of the seven rows therefore ALREADY AGREE (`rewrite_error` 5, `source` 10,
-# `program` 8 -- all declared before `GROUP`), and four are pinned divergences.
+# tree by `gates/opseven-gate.py --plant`'s siblings and by its own live run: the `Ops.value` table,
+# `Ops.name.of`, `all_ops` and the `type Op is Data:` block all carry the SAME count and every arm
+# sits at its own declaration position -- so the table is not transcribed wrong, it is a faithful
+# reading of this port's own enum, and it is the SAME count as upstream's. `GROUP` (once position 14)
+# and `FLIP` (once position 73) were the whole of the disagreement until `69bfc2ee9` re-indexed them
+# OUT of this file too, so all seven rows now AGREE and none of them is pinned. The count is not
+# written here on purpose: a header that carries a count stops carrying it the day the enum moves, and
+# `ops_value_is_declaration_order` prints the live one on every run.
 
 import Base
 import ./../tinybendygrad/helpers.bend as H

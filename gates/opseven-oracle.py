@@ -44,11 +44,16 @@ WHAT IS PRINTED, AND WHY NOTHING HERE REIMPLEMENTS A PROPERTY:
           lambda's own answer, so `is not None` would score a REJECTED rule as a pass and this
           lane's whole job is to say which rules REJECT.
 
-`TGROOT` (optional) prefixes `sys.path`. That is how every row below was MEASURED against
-`git archive upstream:tinygrad` rather than the working tree: this tree's `tinygrad/` is the
-PRE-re-vendor vendor and still declares `GROUP` and `FLIP`, so it reads 77 members where upstream
-reads 75. MEASURED: the 31 rows of this file are byte-identical under BOTH roots; the only number
-in the file that moves is `n_ops`, which is printed to stderr precisely so it cannot.
+`TGROOT` (optional) prefixes `sys.path`. It exists so a lane can be read against a vendor OTHER than
+the checked-out one. It was introduced when this tree's `tinygrad/` was the PRE-re-vendor vendor (77
+members, `GROUP` and `FLIP` present) while upstream read 75, and it is how every row below was measured
+against `git archive upstream:tinygrad` rather than the working tree. `a741a469f` (2026-10-17)
+RE-VENDORED `tinygrad/` to upstream `002630241`, so the two are now ONE tree -- MEASURED today,
+`HEAD:tinygrad` and `upstream:tinygrad` are both `62319c8ae612e51102916000d401d601a090353f` and both
+read 75 members -- and the default `TGROOT=""` already reads the 75-member enum. `TGROOT` STAYS because
+the next re-vendor needs it: a lane that can only be read against whatever is checked out cannot be
+re-read against an older vendor. The 31 rows of this file are byte-identical under BOTH roots; the only
+number that moves is `n_ops`, which is printed to stderr precisely so it cannot move a row.
 """
 
 import os
@@ -135,12 +140,15 @@ row("program_4", UOp(Ops.PROGRAM, src=(SINK, LIN, SRC, BIN_), arg=PI))
 
 # --- `Ops.value`: the toposort sort key (`UOp.tuplize`, ops.py:314). PORT-DEPENDENT BY
 #     CONSTRUCTION and therefore its own row set: `FastEnum._generate_next_value_` is 1 + max, so
-#     the number IS the declaration order, and this tree declares 77 where upstream declares 75.
-#     MEASURED on `tinybendygrad/uop/ops.bend`: the `Ops.value` table has 77 arms, `Ops.name.of`
-#     has 77, `all_ops` has 77, the `type Op is Data:` block has 77 variants, and every one of
-#     the 77 sits at its own declaration position -- so the table is a faithful reading of a
-#     77-member enum and `GROUP` (position 14) plus `FLIP` (position 73) are the whole of the
-#     disagreement. Three rows therefore ALREADY agree and four are pinned divergences. ---
+#     the number IS the declaration order. MEASURED on `tinybendygrad/uop/ops.bend` by
+#     `gates/opseven-gate.py`'s `ops_value_is_declaration_order`, over EVERY arm rather than over the
+#     rows below: `Ops.value`, `Ops.name.of` and `all_ops` each carry as many entries as the
+#     `type Op is Data:` block, every entry sits at its own declaration position, and `Ops.value`
+#     numbers them `1..N` with no gap -- so the table is a faithful reading of this port's own enum
+#     and it is the SAME count as upstream's. Upstream used to be two members shorter (`GROUP` and
+#     `FLIP`, since re-indexed out of the port too, `69bfc2ee9`), so four of these seven rows were
+#     pinned divergences once. They are COMPARED rows now and this comment names no count: a comment
+#     that carries a count stops carrying it the day the enum moves, and the gate prints the live one. ---
 for _n in ("REWRITE_ERROR", "SOURCE", "PROGRAM", "CUSTOM", "CUSTOMI", "INS", "PYLITERAL"):
   print(f"value_{_n.lower()}={int(getattr(Ops, _n).value)}")
 
